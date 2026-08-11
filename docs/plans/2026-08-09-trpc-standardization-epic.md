@@ -431,8 +431,10 @@ boxes as slices land; add follow-on slices under S8.
   `createCrudRouter` builds its scoped procedures INLINE from `config.spec` (the
   cast-free inline `.use()` pattern), so there's no builder-type param at all.
   Spec: `docs/superpowers/specs/2026-08-10-s6a-collapse-create-entity-router-design.md`.
-  - [ ] **S6a · AFK · blocked-by: none** — **`createCrudRouter` builds procedures
-    inline; collapse the factory.** `createCrudRouter` drops its two procedure
+  - [x] **S6a · AFK · blocked-by: none** — **`createCrudRouter` builds procedures
+    inline; collapse the factory.** ✅ Shipped (commit `f9b5e84a`, 2026-08-11):
+    proposals + customer-notes off the factory; `createCrudRouter` params dropped,
+    IO types stay concrete; factory/registry FILES kept for S7. `createCrudRouter` drops its two procedure
     params (+ the generics/cast problem) and builds `authedProcedure =
     agentProcedure.use(...resolveVisibilityScope(config.spec)...)` +
     `shareableProcedure = baseProcedure.use(shareableMiddleware(config.spec))`
@@ -446,17 +448,43 @@ boxes as slices land; add follow-on slices under S8.
     - AC: no cast/added-generics in `createCrudRouter`; built CRUD router IO types
       stay CONCRETE (not `any` — tsc-clean is not sufficient, a prior attempt
       passed tsc with `any` types); all `*.crud.*` paths stable; tsc+lint green.
-  - [ ] **S6b · AFK · blocked-by: S6a** — replicate the S6a shape (procedures.ts
+  - [x] **S6b · AFK · blocked-by: S6a** — replicate the S6a shape (procedures.ts
     + standalone `crud.router.ts` + pure index) onto `customers`, `meetings`,
     `applications` (no child-entity work). `customer-notes` already fully
     migrated in S6a (pure-crud → its `entity` arg went unused once crud built
-    inline). Unblocks S7.
-- [ ] **S7 · AFK · blocked-by: S4, S5, S6b** — delete `createEntityRouter` +
+    inline). Unblocks S7. ✅ Shipped (commit `84d60b88`, 2026-08-11) via
+    subagent-driven-development: all 3 entities factory-free; key order preserved
+    → tRPC paths byte-identical; exit gate met (zero `createEntityRouter(` /
+    `EntityToolkit<` in `src/trpc/routers/`); tsc+lint green.
+- [x] **S7 · AFK · blocked-by: S4, S5, S6b** — delete `createEntityRouter` +
   `entity-registry.ts` (zero consumers once S6b lands); write the **ADR-0002
   amendment** + rewrite the
   `src/trpc/DOCS.md` entity-router section to match reality (kill the
   toolkit/registry story; document `procedures.ts` + `subEntitySpec` +
   one-shape leaves + pure index). Docs change here, when the code matches.
+  - **✅ Shipped (2026-08-11):**
+    - **Deleted** `src/trpc/lib/create-entity-router.ts` +
+      `src/trpc/lib/entity-registry.ts` (both were dead — only mutual reference).
+      tsc+lint green after removal.
+    - **ADR-0002 amended** (not rewritten): status banner flipped to
+      IMPLEMENTED; new "Amendment (2026-08-11)" section records removed pieces,
+      the definition-once replacement (§3 superseded), the killed 3 toolkit casts,
+      and the `EntityServerSpec.parent` child model (supersedes the `subEntitySpec`
+      idea). Historical Decision sections retained, marked superseded.
+    - **`src/trpc/DOCS.md` rewritten:** intro + layout + `base-procedure-types`;
+      `entity-router-via-factory` replaced by `#procedures-defined-once` +
+      `#one-leaf-shape` + `#pure-composition-index`; `scope-middleware-…` →
+      `#scope-resolution-is-the-core-superpower`; `entity-registry-prevents-
+      duplicates` → `#entity-registry-removed`; migration table + anti-patterns
+      updated. Fixed the JSDoc in `src/shared/dal/server/types.ts` that named the
+      deleted factory.
+  - **⚠️ Flagged, deferred (not deleted in S7):** removing `createEntityRouter`
+    orphaned the `.use()`-factory **`scopeMiddleware`** in
+    `scope-middleware.ts` (its sibling `resolveVisibilityScope` is what the inline
+    pattern uses and stays). It's an unused export → tsc/lint stay green. Delete
+    it (+ the stale prose mention in `customers/dal/server/queries.ts`) as a
+    trivial follow-up once confirmed — left in place to keep S7's blast radius to
+    the two named files.
 - [ ] **S8 · HITL · blocked-by: S7** — audit `projects` + `lead-sources`
   against R1–R13; append follow-on slices here. (Note: `projectServerSpec` +
   `projectCrud` now land in **S5a**; if S5a only adds the spec/DAL alongside the

@@ -1,14 +1,18 @@
 # Entity Server System
 
-> **Status update (2026-08-09): partially superseded — decision agreed, not yet
-> implemented.** The `EntityServerSpec` data model, scope/shareable middleware,
-> `createCrudRouter`, and the DAL all stand. The *router-construction mechanism*
-> — the `createEntityRouter` factory, the `EntityToolkit` param, and the
-> write-only `entity-registry` — is being replaced by the **tRPC Standardization
-> Epic** (`docs/plans/2026-08-09-trpc-standardization-epic.md`): per-entity
-> procedures defined once in `<entity>.router/procedures.ts`, plain-router
-> leaves, a pure `index.ts`, and child tables as `subEntitySpec` entities. This
-> ADR is amended (not rewritten) when that epic's slice S7 lands.
+> **Status update (2026-08-11): partially superseded — replacement IMPLEMENTED
+> (epic S1–S7 complete).** The `EntityServerSpec` data model, scope/shareable
+> middleware, `createCrudRouter`, and the DAL all stand. The
+> *router-construction mechanism* — the `createEntityRouter` factory, the
+> `EntityToolkit` param, and the write-only `entity-registry` — has been
+> **removed** by the **tRPC Standardization Epic**
+> (`docs/plans/2026-08-09-trpc-standardization-epic.md`) and replaced by
+> per-entity procedures defined once in `<entity>.router/procedures.ts`, plain
+> `createTRPCRouter` leaves, and a pure `index.ts`. See the **Amendment
+> (2026-08-11)** section below for the delta; the operational rules live in
+> `src/trpc/DOCS.md`. The Decision sections below describe the ORIGINAL design
+> and are retained for history — read §3 (Entity Procedure Builders) and §5
+> (registry) as superseded.
 
 Every business **Entity** (Customer, Meeting, Proposal, Project) declares a typed **EntityServerSpec** that configures a factory (`createEntityRouter`) producing a tRPC router with uniform auth, visibility scoping, schema validation, and standardized CRUD — all backed by a standardized Data Access Layer. We chose this over the existing pattern of hand-written tRPC routers because the four entity routers had already drifted into divergent CRUD shapes, 1,400+ lines of database access were inlined in procedure bodies, and the `isOmni`-or-predicate dance had been copied 30+ times with no forcing function preventing further drift. This is the server-side counterpart of ADR-0001's Entity Action System: same forcing-function pattern, same typed-registry shape, applied one layer deeper.
 
@@ -190,4 +194,21 @@ Each entity's identity string lives in `entities/<entity>/lib/constants.ts`; `do
 
 - **Middleware uses `t.middleware` (`createMiddleware`).** Both `scopeMiddleware` and `shareableMiddleware` use `createMiddleware` from `init.ts` — tRPC's native middleware factory. This lets tRPC track ctx transformations through the middleware chain. Downstream procedures get properly typed ctx without casts.
 
-- **9 casts remain — all at framework boundaries, all documented inline.** Three categories: (1) tRPC ProcedureBuilder type after `.use()` — 3 casts at toolkit assembly in `createEntityRouter`, unavoidable with per-entity factory pattern; (2) Zod→Drizzle type boundary — 2 casts in `createCrudRouter` where API schemas intentionally `.omit()` server-derived fields; (3) Drizzle/tRPC framework APIs — 3 casts for `PgTable` column lookup and `getRawInput()` returning `unknown`. Each cast has an inline comment explaining why it exists.
+- **9 casts remain — all at framework boundaries, all documented inline.** Three categories: (1) tRPC ProcedureBuilder type after `.use()` — 3 casts at toolkit assembly in `createEntityRouter`, unavoidable with per-entity factory pattern; (2) Zod→Drizzle type boundary — 2 casts in `createCrudRouter` where API schemas intentionally `.omit()` server-derived fields; (3) Drizzle/tRPC framework APIs — 3 casts for `PgTable` column lookup and `getRawInput()` returning `unknown`. Each cast has an inline comment explaining why it exists. *(Amended 2026-08-11: the 3 toolkit-assembly casts in category (1) are gone — see Amendment below.)*
+
+## Amendment (2026-08-11) — router-construction mechanism replaced
+
+The **tRPC Standardization Epic** (`docs/plans/2026-08-09-trpc-standardization-epic.md`, slices S1–S7) replaced the *router-construction mechanism* of this ADR with **definition-once instead of generation**. The `EntityServerSpec` data model, scope/shareable resolution, `createCrudRouter`, and the DAL are unchanged. What changed:
+
+**Removed** (S7, 2026-08-11):
+- `createEntityRouter(spec, factory)` factory — deleted (`src/trpc/lib/create-entity-router.ts`).
+- The `EntityToolkit` param threaded into sub-routers (`createXxxRouter(entity)`) — gone.
+- `entity-registry.ts` + `registerEntity(spec)` — deleted. It was write-only (never read in `src/`); the "future use: openapi gen, admin scaffolds" (§5) never materialized. Removal dropped only a dev-time duplicate-`entityName` throw at module load — **no runtime regression**.
+
+**Replaces §3 (Entity Procedure Builders):** per-entity pre-scoped procedures are now defined **once** as top-level consts in `<entity>.router/procedures.ts` (`<entity>Procedure`, `<entity>ShareableProcedure`, `<entity>PublicProcedure`/`systemProcedure`), imported directly by plain `createTRPCRouter` leaves. `index.ts` is pure composition. `createCrudRouter` builds its scoped procedures **inline from `config.spec`** — no procedure params, no toolkit.
+
+**Kills the 3 toolkit-assembly casts** (Consequences, category 1): the old factory needed `as typeof agentProcedure` because the standalone `scopeMiddleware` is typed against the root (nullable-session) context. The scope step is now an **inline `.use()`** on `agentProcedure`, which infers `ctx` from the procedure so the non-null narrowing flows through — cast-free. Scope math stays DRY in the shared `resolveVisibilityScope(spec, { userId, ability })`.
+
+**Child tables** are modeled as an `EntityServerSpec` that declares a `parent: { spec, fk }` with optional `visibility` (a pure child omits its own `visibility`; effective scope is the recursive parent bridge, resolved by `resolveEffectiveScope`). This supersedes the "business procedures on the parent's router" alternative (Considered alternatives) AND the interim `subEntitySpec`/`defineSubEntity` idea floated during the epic — there is no second spec type.
+
+**Operational rules** now live in `src/trpc/DOCS.md` (rewritten in S7): `#procedures-defined-once`, `#one-leaf-shape`, `#pure-composition-index`, `#scope-resolution-is-the-core-superpower`, `#entity-registry-removed`. **Follow-up:** `projects.router` + `lead-sources` migration is epic slice S8.

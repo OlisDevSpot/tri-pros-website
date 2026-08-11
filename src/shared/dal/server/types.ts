@@ -64,7 +64,8 @@ export interface VisibilityScope {
  *
  * Consumed by:
  * - `createCrudDal(spec)` — DAL crud factory
- * - `createEntityRouter(spec, factory)` — tRPC factory
+ * - `createCrudRouter({ spec, schemas })` — tRPC CRUD leaf (builds scoped procedures inline)
+ * - `<entity>.router/procedures.ts` — per-entity pre-scoped procedures (defined once)
  * - `buildUserContext(userId, spec)` — context builder for services/jobs
  */
 export interface EntityServerSpec<

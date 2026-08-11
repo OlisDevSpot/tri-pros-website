@@ -1,6 +1,8 @@
 # tRPC — Entity Server System Operational Rules
 
-tRPC is the client-to-server typesafe glue layer. The **Entity Server System** (ADR-0002) gives each business entity (Customer, Meeting, Proposal, Project) a typed `EntityServerSpec` consumed by `createEntityRouter` to produce a tRPC router with uniform auth, visibility scoping, schema validation, and standardized CRUD — all backed by a standardized DAL.
+tRPC is the client-to-server typesafe glue layer. The **Entity Server System** (ADR-0002) gives each business entity (Customer, Meeting, Proposal, Project) a typed `EntityServerSpec` that drives uniform auth, visibility scoping, schema validation, and standardized CRUD — all backed by a standardized DAL.
+
+The router for an entity is assembled by **definition, not generation**: per-entity pre-scoped procedures are defined once in `<entity>.router/procedures.ts`, every sub-router is a plain `createTRPCRouter` leaf importing them, and `index.ts` is pure composition. (This replaced the `createEntityRouter` factory + `EntityToolkit` param + `entity-registry` — removed in the tRPC Standardization Epic, slice S7, 2026-08-11.)
 
 This DOCS.md captures the **operational rules** for using the system. The **why** lives in [ADR-0002](../../docs/adr/0002-entity-server-system.md). The **how to add an entity** recipe is at [docs/how-to/add-an-entity.md](../../docs/how-to/add-an-entity.md).
 
@@ -14,25 +16,25 @@ src/trpc/
   types.ts                   re-exports DAL types + tRPC-specific context types
 
   lib/                       Entity Server System primitives
-    create-entity-router.ts  top-level factory: spec + factory → router
-    create-crud-router.ts    CRUD sub-router factory (5 single-row ops)
-    entity-registry.ts       module-load registry: EntityName → spec
+    create-crud-router.ts    CRUD sub-router factory (5 single-row ops); builds
+                             its scoped procedures inline from config.spec
     dal-to-trpc.ts           DalReturn → TRPCError bridge
     create-http-context.ts   builds HTTPTRPCContext from HTTP request (+ RSC variant)
     prefetch.ts              prefetch (fire-and-forget, both tiers) into the per-request query client
     middleware/
-      scope-middleware.ts    resolves ctx.scope from spec.visibility
+      scope-middleware.ts    resolveVisibilityScope(spec, auth) → ctx.scope SQL
       shareable-middleware.ts token-or-session dual-credential resolution
 
   components/                HydrateClient + hydration error boundary (server↔client seam)
 
   routers/                   all tRPC routers (registered in app.ts)
-    proposals.router/        MIGRATED to entity server system (canonical)
-    customers.router/        MIGRATED — full CRUD via createCrudRouter + business sub-router
-    meetings.router/         MIGRATED to entity server system
-    customer-notes.router/   MIGRATED to entity server system
-    applications.router/     MIGRATED to entity server system
-    projects.router/         NOT MIGRATED (uses agentProcedure directly)
+    <entity>.router/         each: procedures.ts + crud.router.ts + leaf files + pure index.ts
+    proposals.router/        MIGRATED to entity server system (canonical exemplar)
+    customers.router/        MIGRATED — full CRUD + profile + business leaves
+    meetings.router/         MIGRATED — crud + reads + participants + business leaves
+    customer-notes.router/   MIGRATED — pure CRUD
+    applications.router/     MIGRATED — crud + business + draft leaves
+    projects.router/         NOT MIGRATED (uses agentProcedure directly; spec/DAL exist, router pending S8)
     lead-sources.router.ts   NOT MIGRATED
     ... other routers ...
     app.ts                   root router; mounts everything
@@ -51,11 +53,11 @@ src/trpc/
 | `agentProcedure` | Extends protected; FORBIDDEN unless `ability.can('access', 'Dashboard')` (internal users) | same as protected |
 | `superAdminProcedure` | Extends agent; FORBIDDEN unless `ability.can('manage', 'all')` (super-admin omni grant) | same as protected |
 
-Entity routers **never** call `agentProcedure` directly inside the factory — they use the entity toolkit (`entity.authedProcedure` / `entity.shareableProcedure`) which has scope middleware baked in.
+Entity sub-routers **never** call `agentProcedure` directly — they import the entity's pre-scoped procedure (`<entity>Procedure` / `<entity>ShareableProcedure`) from `<entity>.router/procedures.ts`, which has scope resolution baked on at definition time.
 
-**Why**: scope middleware injects `ctx.scope` (the per-user visibility predicate). Bypassing it means agents could read rows they shouldn't.
-**Reference impl**: `src/trpc/init.ts`
-**Enforced by**: tsc (different procedure-builder types) + convention
+**Why**: scope resolution injects `ctx.scope` (the per-user visibility predicate). Bypassing it means agents could read rows they shouldn't.
+**Reference impl**: `src/trpc/init.ts`; `src/trpc/routers/proposals.router/procedures.ts`
+**Enforced by**: convention (a bare `agentProcedure` leaves `ctx.scope` null → DAL runs unscoped)
 
 ### superadmin-procedure
 
@@ -78,73 +80,89 @@ disqualify: agentProcedure.input(...).mutation(async ({ ctx }) => {
 **Reference impl**: `src/trpc/init.ts`, `src/trpc/routers/lead-sources.router.ts`
 **Enforced by**: convention
 
-### entity-router-via-factory
+### procedures-defined-once
 
-> ⚠️ **Being replaced — do not build further on this.** The
-> `createEntityRouter` factory, the `EntityToolkit` param, and the
-> `entity-registry` are slated for removal by the **tRPC Standardization Epic**
-> (`docs/plans/2026-08-09-trpc-standardization-epic.md`, approved 2026-08-09).
-> The replacement: per-entity procedures defined once in
-> `<entity>.router/procedures.ts`, plain-`createTRPCRouter` leaves, a pure
-> `index.ts`, and child tables as `subEntitySpec` entities. This section is
-> rewritten in that epic's slice S7 — when the code lands, not before.
-
-Migrated entities use `createEntityRouter(spec, factory)`:
+Per-entity pre-scoped procedures are defined **once** as top-level consts in `<entity>.router/procedures.ts` and imported directly by every sub-router. No factory generates them at call time; there is no toolkit argument.
 
 ```ts
-export const proposalsRouter = createEntityRouter(proposalServerSpec, (entity) =>
-  createTRPCRouter({
-    crud: createCrudRouter({
-      spec: proposalServerSpec,
-      schemas: { ...proposalSchemas, id: z.string().uuid() },
-      authedProcedure: entity.authedProcedure,
-      shareableProcedure: entity.shareableProcedure,
-      // No handler overrides — lifecycle hooks on the spec handle enrichment.
-    }),
-    business: createTRPCRouter({ ... }),
-    media: createProposalMediaRouter(entity), // sub-routers still on the toolkit
-  })
-)
+// proposals.router/procedures.ts
+/** Agent-only. Session + ability guaranteed; `ctx.scope` resolved (null for omni). */
+export const proposalProcedure = agentProcedure.use(async ({ ctx, next }) => {
+  const scope = resolveVisibilityScope(proposalServerSpec, { userId: ctx.session.user.id, ability: ctx.ability })
+  return next({ ctx: { ...ctx, scope } })
+})
+
+/** Token-or-session. Token path → `ctx.scope = eq(token, …)`, `ctx.ability = null`. */
+export const proposalShareableProcedure = baseProcedure.use(shareableMiddleware(proposalServerSpec))
+
+/** No auth. Pass-through of baseProcedure — the caller enforces authorization inline. */
+export const proposalPublicProcedure = baseProcedure
 ```
 
-> **S1 landed (2026-08-09):** `delivery` + `contracts` are already off the
-> toolkit — they're plain `createTRPCRouter` leaves importing pre-scoped
-> procedures from `proposals.router/procedures.ts`. `createDeliveryRouter` /
-> `createContractsRouter` no longer exist. `crud`/`business`/`media` still use
-> the toolkit until later slices. Full rewrite of this section = S7.
+**The agent scope step is inlined, NOT `.use(scopeMiddleware(spec))`.** The standalone `scopeMiddleware` is typed against the ROOT context (nullable `session`); chaining it widens `ctx.session` back to null and forces an `as typeof agentProcedure` cast — the crutch the old factory needed. An inline `.use()` infers `ctx` from `agentProcedure`, so the non-null session/ability narrowing flows through and no cast is needed. The scope math stays DRY via the shared `resolveVisibilityScope(spec, { userId, ability })`.
 
-The factory receives an `EntityToolkit`:
+**Naming**: the agent procedure is `<entity>Procedure`; shareable/public/system variants are `<entity>ShareableProcedure` / `<entity>PublicProcedure` / `systemProcedure`. Only declare the variants an entity actually uses (proposals needs all; meetings/applications need only the agent one).
 
-| Member | What it is |
-|---|---|
-| `entity.authedProcedure` | `agentProcedure.use(scopeMiddleware(spec))` |
-| `entity.shareableProcedure` | `baseProcedure.use(shareableMiddleware(spec))` |
-| `entity.publicProcedure` | `baseProcedure` pass-through |
-| `entity.spec` | The spec itself, for sub-routers that need it |
-
-**These are NOT custom abstractions** — they ARE tRPC procedures. Full type inference. Full middleware composability. You can chain `.use(rateLimiter)` after them.
-
-**Why**: factory function API gives sub-routers (delivery, contracts, etc.) the same scope/shareable superpowers as CRUD — not just the CRUD slots.
-**Reference impl**: `src/trpc/lib/create-entity-router.ts`; `src/trpc/routers/proposals.router/index.ts`
+**Why**: `server-spec.ts` stays a pure data object (imported by the DAL) — the tRPC runtime is pulled in only here, router-side, never into the entity/DAL layer. tRPC-idiomatic `const + typeof` deletes the cast.
+**Reference impl**: `src/trpc/routers/proposals.router/procedures.ts`
 **Enforced by**: convention
 
-### scope-middleware-is-the-core-superpower
+### one-leaf-shape
 
-`scopeMiddleware(spec)` resolves `ctx.scope`:
+Every sub-router is `export const xxxRouter = createTRPCRouter({...})` in its own `*.router.ts` file, importing procedures from `./procedures`. No factory functions (`createXxxRouter(entity)`), no toolkit param.
 
 ```ts
-const isOmni = ctx.ability.can('manage', 'all')
-const scope = isOmni ? null : spec.visibility({ userId: ctx.session.user.id, ability: ctx.ability })
-return next({ ctx: { ...ctx, scope } })
+// proposals.router/business.router.ts
+export const businessRouter = createTRPCRouter({
+  list: proposalProcedure.input(schema).query(async ({ ctx, input }) => dalToTrpc(await listProposals(ctx, input))),
+  getFullView: proposalProcedure.input(schema).query(...),
+})
 ```
 
-Every entity procedure inherits this. DAL functions receive `ctx.scope` and apply it to WHERE clauses (`.where(and(..., ctx.scope ?? undefined))`).
+CRUD is its own leaf, `crud.router.ts`, built by `createCrudRouter({ spec, schemas, handlers? })` — which builds its own scoped procedures **inline from `config.spec`** (same inline pattern, no cast, no procedure params).
+
+**Reference impl**: `src/trpc/routers/proposals.router/crud.router.ts`, `.../business.router.ts`
+**Enforced by**: convention
+
+### pure-composition-index
+
+`index.ts` is imports + one `createTRPCRouter({...})`. No procedure bodies, no factory call, one construction style.
+
+```ts
+// proposals.router/index.ts
+export const proposalsRouter = createTRPCRouter({
+  crud: crudRouter,
+  business: businessRouter,
+  incentives: incentivesRouter,
+  funding: fundingRouter,
+  delivery: deliveryRouter,
+  views: viewsRouter,
+  contracts: contractsRouter,
+  media: proposalMediaRouter,
+})
+```
+
+Router key order **is** the tRPC path — preserve it exactly when refactoring (`proposals.business.list` etc.).
+
+**Reference impl**: `src/trpc/routers/proposals.router/index.ts`
+**Enforced by**: convention
+
+### scope-resolution-is-the-core-superpower
+
+`resolveVisibilityScope(spec, { userId, ability })` resolves `ctx.scope`:
+
+```ts
+const isOmni = ability.can('manage', 'all')
+return isOmni ? null : resolveEffectiveScope(spec, { userId, ability })   // SQL predicate | null
+```
+
+Every entity procedure bakes this on at definition time (the inline `.use()` above). DAL functions receive `ctx.scope` and apply it to WHERE clauses (`.where(and(..., ctx.scope ?? undefined))`). For child entities the resolved scope is the parent bridge (`fk IN (SELECT parent.pk WHERE <parent scope>)`) — see ADR-0002 and `dal/server/lib/scope.ts`.
 
 This replaces the `isOmni`-or-predicate dance that previously had to be inlined in every procedure body.
 
-**Why**: visibility scoping was being copy-pasted 30+ times across the codebase and had silently drifted. Centralizing in middleware makes it auditable and prevents new drift.
-**Reference impl**: `src/trpc/lib/middleware/scope-middleware.ts`
-**Enforced by**: convention (entity procedures chain it automatically; non-entity procedures must opt in manually)
+**Why**: visibility scoping was being copy-pasted 30+ times across the codebase and had silently drifted. Resolving it in one shared helper, baked onto each entity procedure, makes it auditable and prevents new drift. Omni stays a procedure/context concern — never inside an entity predicate.
+**Reference impl**: `src/trpc/lib/middleware/scope-middleware.ts` (`resolveVisibilityScope`); `src/shared/dal/server/lib/scope.ts` (`resolveEffectiveScope`)
+**Enforced by**: convention (entity procedures chain it at definition; a bare `agentProcedure` leaves `ctx.scope` null)
 
 ### shareable-middleware-token-or-session
 
@@ -252,15 +270,9 @@ Services / jobs that consume the same DAL inspect `DalReturn` directly — they 
 **Reference impl**: `src/trpc/lib/dal-to-trpc.ts`
 **Enforced by**: tsc (`DalReturn<T>` is a discriminated union; switch must be exhaustive)
 
-### entity-registry-prevents-duplicates
+### entity-registry-removed
 
-`registerEntity(spec)` is called by `createEntityRouter` on module load. The registry is a `Partial<Record<EntityName, EntityServerSpec>>`. Duplicate registrations throw immediately at module-load time.
-
-Phase 1a shipped the registry empty — only entities migrated to the system populate it. Broad adoption followed: Customer, Meeting, Proposal, Application, and CustomerNote all register today (see migration status table below). Project and Lead Source remain unmigrated and don't register.
-
-**Why**: forcing function. The registry can't have two specs for the same `entityName`; if two files try to register the same name, the second import throws — caught at startup, not at first request.
-**Reference impl**: `src/trpc/lib/entity-registry.ts`
-**Enforced by**: runtime throw on duplicate
+The `entityRegistry` + `registerEntity(spec)` duplicate-registration guard was **deleted in S7 (2026-08-11)** along with the `createEntityRouter` factory that populated it. The registry was write-only — never read anywhere in `src/` (its speculative "future use: openapi gen, admin scaffolds" never materialized, epic R7). Removing it dropped only a dev-time duplicate-`entityName` throw at module load; there is **no runtime regression** (nothing consumed the map). If a duplicate-name forcing-function is ever wanted again, add it where entity names are already centralized (`ENTITY_NAMES` in `abilities.ts`), not in a router-side registry.
 
 ### shareable-controls-which-procedure-crud-uses
 
@@ -274,8 +286,10 @@ const updateProcedure = spec.shareable ? shareableProcedure : authedProcedure
 
 When `spec.shareable` is set, `getById` and `update` accept `?token=` and bypass CASL on the token path. `create`, `delete`, `duplicate` remain agent-only — even shareable entities can't be created or destroyed by an unauthenticated client.
 
+When `spec.shareable` is falsy, `createCrudRouter` builds `authedProcedure` inline from the spec (`agentProcedure.use(...resolveVisibilityScope...)`) and uses it for every slot — the same inline pattern as `procedures.ts`, no cast.
+
 **Why**: customers can read AND update their own proposal (e.g., choose a finance option) via the share URL, but they can't create/delete. The dual-credential model is targeted at read + non-destructive update.
-**Reference impl**: `src/trpc/lib/create-crud-router.ts` (lines 76–80)
+**Reference impl**: `src/trpc/lib/create-crud-router.ts` (`readProcedure` / `updateProcedure` selection)
 **Enforced by**: factory wiring; convention
 
 ### jsonb-merge-columns-merge-on-update
@@ -313,35 +327,38 @@ A flat `*.router.ts` is fine for one router. When a router has 2+ sub-routers, p
 
 ```
 proposals.router/
-  index.ts             createEntityRouter call composing the children
-  contracts.router.ts  service sub-router
-  delivery.router.ts   service sub-router
+  procedures.ts        per-entity pre-scoped procedures (defined once)
+  index.ts             pure createTRPCRouter({...}) composing the children
+  crud.router.ts       createCrudRouter({ spec, schemas }) leaf
+  contracts.router.ts  service sub-router leaf
+  delivery.router.ts   service sub-router leaf
 ```
 
 **Reference impl**: `src/trpc/routers/proposals.router/`, `src/trpc/routers/notion.router/`
 **Enforced by**: convention
 
-## Migration status (as of 2026-08-05)
+## Migration status (as of 2026-08-11)
 
-Adoption is broad now, not limited to the original canonical example — most agent-facing entities run through `EntityServerSpec` + `createEntityRouter`:
+Adoption is broad now, not limited to the original canonical example — most agent-facing entities run through `EntityServerSpec` + the definition-once router shape (`procedures.ts` + `createCrudRouter` + pure `index.ts`). The `createEntityRouter` factory is gone (S6/S7); every migrated router below is factory-free.
 
 | Entity | Status | Notes |
 |---|---|---|
-| Proposal | ✅ Migrated (PR #207) | Canonical example — full CRUD + business + delivery + contracts |
-| Customer | ✅ Migrated | Full CRUD via `createCrudRouter` + business sub-router |
-| Meeting | ✅ Migrated | `createEntityRouter` + `createCrudRouter` |
-| Application | ✅ Migrated | `entities/applications/` |
-| Customer Note | ✅ Migrated | `entities/customer-notes/` — author-or-admin hooks, see `../shared/entities/customers/DOCS.md#note-authorship` |
+| Proposal | ✅ Migrated (PR #207) | Canonical exemplar — crud + business + delivery + contracts + child entities (media/views/incentives) |
+| Customer | ✅ Migrated | crud + profile + business leaves |
+| Meeting | ✅ Migrated | crud + reads + participants + business leaves |
+| Application | ✅ Migrated | crud + business + draft leaves |
+| Customer Note | ✅ Migrated | pure CRUD; author-or-admin hooks, see `../shared/entities/customers/DOCS.md#note-authorship` |
 | Voip (calls, campaigns, DIDs, contacts, messages, link-tokens, contact-attributes) | ✅ Migrated | `entities/voip-*/` |
 | App Settings | ✅ Migrated | `entities/app-settings/` |
-| Project | ❌ Not migrated | Multi-sub-router but uses `agentProcedure` directly; DAL lives in `features/project-management/` |
-| Lead Source | ❌ Not migrated | Single-file router |
+| Project | ⚠️ Partial | `projectServerSpec` + `projectCrud` exist (S5a); `projects.router` still hand-written on `agentProcedure` directly — router migration is S8 |
+| Lead Source | ❌ Not migrated | Single-file router; audited + scheduled in S8 |
 
-Project and Lead Source remain the known gaps — migrate them as they're touched (ADR-0002's original order was Proposal → Customer → Meeting → Project; Project is the one step not yet taken).
+Project (router) and Lead Source are the known gaps — the tRPC Standardization Epic slice **S8** audits both against R1–R13 and migrates `projects.router` onto `createCrudRouter`.
 
 ## Anti-patterns
 
-- **Calling `agentProcedure` inside an entity router factory.** Use `entity.authedProcedure` — scope middleware is mandatory.
+- **Calling `agentProcedure` directly in an entity sub-router.** Import the entity's `<entity>Procedure` from `./procedures` — scope resolution is mandatory; a bare `agentProcedure` leaves `ctx.scope` null and the DAL runs unscoped.
+- **Reintroducing a factory / toolkit / registry.** Procedures are defined once in `procedures.ts`; `index.ts` is pure composition. No `createEntityRouter`, no `EntityToolkit` param, no `entityRegistry`.
 - **Inline `db.select()` / `db.insert()` in a procedure body.** Move to DAL.
 - **Manual `isOmni` / visibility-predicate branching in a procedure.** That's what `scopeMiddleware` exists for.
 - **Adding a CASL check on the shareable token path.** Token IS authorization; `ctx.ability` is null. Gating must be inside `if (ctx.ability)`.
