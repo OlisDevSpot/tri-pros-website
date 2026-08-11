@@ -114,9 +114,9 @@ const sectionMetaSchema = z.object({
  * @deprecated Legacy blob-envelope parse schema. W3 (2026-07-26) moved these
  * scalars to the `price_display_mode` / `envelope_document_ids` columns. Only
  * legitimate importers: the Drizzle `$type` on the frozen column and
- * `scripts/backfill-wave3-scalars.ts`. Parses HISTORICAL stored JSON — the
- * stored key is `pricingMode` and must NEVER be renamed. Dies on the W4 push
- * (deprecation ledger).
+ * `scripts/backfill-wave3-scalars.ts` (verified by grep — keep it that way).
+ * Parses HISTORICAL stored JSON — the stored key is `pricingMode` and must
+ * NEVER be renamed. Dies on the W4 push (deprecation ledger).
  */
 export const formMetaSectionSchema = z.object({
   pricingMode: z.enum(['total', 'breakdown']),
@@ -137,7 +137,13 @@ export const projectSectionSchema = z.object({
 
 /**
  * @deprecated Legacy blob-envelope parse schema — same rules as
- * `formMetaSectionSchema` above. Canonical flat shape: `fundingDataSchema`.
+ * `formMetaSectionSchema` above. Canonical flat shape: `fundingDataSchema`;
+ * the money-math façade types against THAT, never against this envelope.
+ * Legitimate importers, exhaustively (verified by grep — keep it that way):
+ * this schema is parsed by `scripts/backfill-wave3-scalars.ts` and
+ * `scripts/backfill-wave2-children.ts`; its derived `FundingSection` type is
+ * used by the Drizzle `$type` on the frozen column and by
+ * `lib/scrub-blob-incentives.ts` (which dies in Task 9).
  */
 export const fundingSectionSchema = z.object({
   data: fundingDataSchema,

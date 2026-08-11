@@ -2,14 +2,15 @@ import type { PricingBreakdownModel } from './compute-breakdown'
 import type { SectionFinancials } from './compute-section'
 import type { MultiplierTier } from './tiers'
 import type { PriceDisplayMode } from '@/shared/constants/enums'
-import type { FundingSection, ProjectSection } from '@/shared/entities/proposals/types'
+import type { FundingData } from '@/shared/entities/proposals/schemas'
+import type { ProjectSection } from '@/shared/entities/proposals/types'
 import { buildPricingBreakdown } from './compute-breakdown'
 import { computeFinalTcp, computeTotalDiscounts, computeTotalSectionIncentives } from './compute-price-side'
 import { computeSectionFinancials } from './compute-section'
 import { getMultiplierTier } from './tiers'
 
 export interface ProposalFinancialsInput {
-  funding: FundingSection['data']
+  funding: FundingData
   sow: ProjectSection['data']['sow']
   priceDisplayMode: PriceDisplayMode
 }

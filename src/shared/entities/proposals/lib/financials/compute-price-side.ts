@@ -1,4 +1,5 @@
-import type { FundingSection, ProjectSection } from '@/shared/entities/proposals/types'
+import type { FundingData } from '@/shared/entities/proposals/schemas'
+import type { ProjectSection } from '@/shared/entities/proposals/types'
 
 /**
  * Price side of the proposal financial model — what the customer pays.
@@ -7,7 +8,7 @@ import type { FundingSection, ProjectSection } from '@/shared/entities/proposals
  * Never persisted (Stage-1 draft math per ADR-0005 Addendum A); the Stage-2
  * rollup lives in `proposals.final_tcp_cents`. see ../../DOCS.md#final-tcp-derived
  */
-export function computeTotalDiscounts(data: FundingSection['data']): number {
+export function computeTotalDiscounts(data: FundingData): number {
   return data.incentives.reduce((sum, inc) => {
     return inc.type === 'discount' ? sum + inc.amount : sum
   }, 0)
@@ -26,7 +27,7 @@ export function computeTotalSectionPrices(sow: ProjectSection['data']['sow']): n
 }
 
 export interface FinalTcpInputs {
-  funding: FundingSection['data']
+  funding: FundingData
   sow: ProjectSection['data']['sow']
 }
 

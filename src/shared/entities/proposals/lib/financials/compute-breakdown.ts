@@ -1,5 +1,6 @@
 import type { PriceDisplayMode } from '@/shared/constants/enums'
-import type { FundingSection, ProjectSection } from '@/shared/entities/proposals/types'
+import type { FundingData } from '@/shared/entities/proposals/schemas'
+import type { ProjectSection } from '@/shared/entities/proposals/types'
 import { computeFinalTcp, computeTotalSectionIncentives } from './compute-price-side'
 
 export interface BreakdownSectionLine {
@@ -45,7 +46,7 @@ export interface PricingBreakdownModel {
 }
 
 export interface PricingBreakdownInput {
-  funding: FundingSection['data']
+  funding: FundingData
   sow: ProjectSection['data']['sow']
   priceDisplayMode: PriceDisplayMode
 }

@@ -81,11 +81,14 @@ export async function setCashInDeal(
     }
     // Post-W3-flip rows carry a NULL blob — this writer becomes a column write
     // in Task 8. Until then, fail loudly rather than resurrect a dead envelope.
+    // The reason is a BARE TOKEN on purpose: `dalToTrpc` forwards it verbatim
+    // into the TRPCError message, and this procedure is shareable — the string
+    // reaches the homeowner share page. Developer detail goes to the log only.
     if (!proposal.fundingJSON) {
-      throw new ThrowableDalError({
-        type: 'precondition-failed',
-        reason: 'funding_blob_absent — setCashInDeal still writes the frozen fundingJSON blob (flips to cash_in_deal_cents in W3 Task 8)',
-      })
+      console.error(
+        `[proposals] setCashInDeal on proposal ${input.proposalId}: fundingJSON is NULL — this writer still targets the frozen blob and flips to cash_in_deal_cents in W3 Task 8`,
+      )
+      throw new ThrowableDalError({ type: 'precondition-failed', reason: 'funding_unavailable' })
     }
 
     const fundingJSON = scrubBlobIncentives({

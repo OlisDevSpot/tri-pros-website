@@ -106,8 +106,12 @@ What the code actually does:
 ### jsonb-merge-on-update
 
 **Retired (Wave 1, epic #256); the mechanism itself deleted entirely (Wave 2).**
-`formMetaJSON`, `projectJSON`, `fundingJSON` are whole-document columns: every writer
-reconstructs and submits the full blob, so updates REPLACE the column (plain CRUD path).
+`projectJSON` is a whole-document column: every writer reconstructs and submits the full
+blob, so updates REPLACE the column (plain CRUD path). It is the only one left — as of the
+Wave-3 write-seam flip `formMetaJSON` and `fundingJSON` are FROZEN: nullable, omitted from
+`insertProposalSchema` (so Zod strips them on every create/update), and carrying zero
+API-surface writers. New rows leave both NULL; they are renamed `*Deprecated` in the W3
+freeze commit and dropped on the W4 push. The rule below still governs `projectJSON`.
 They were previously registered in `spec.update.jsonbMergeColumns`, which shallow-merged
 top-level keys and silently prevented field-clearing — deregistered in Wave 1 because no
 caller ever sent a partial. As of Wave 2, `spec.update.jsonbMergeColumns` no longer exists
@@ -117,7 +121,10 @@ nothing to re-register into. Do not hand-write a `||` merge against these column
 Postgres `||` is still shallow and would resurrect deleted keys the same way the deleted
 mechanism did. See `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested`.
 Global incentives moved out of `fundingJSON` into `proposal_incentives` in Wave 2 (see
-`#final-tcp-derived`); the rest of these blobs decompose in Wave 3
+`#final-tcp-derived`); the remaining `fundingJSON`/`formMetaJSON` scalars became columns in
+Wave 3 (`starting_tcp_cents`, `deposit_amount_cents`, `cash_in_deal_cents`,
+`misc_price_cents`, `price_display_mode`, `envelope_document_ids`); `projectJSON`
+decomposes in Wave 4
 (see docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md §2 verdicts + §3 wave structure).
 
 ### final-tcp-derived
@@ -128,13 +135,15 @@ Global incentives moved out of `fundingJSON` into `proposal_incentives` in Wave 
 
 Canonical implementation: `computeFinalTcp({ funding, sow })` in `lib/financials/compute-price-side.ts` — it now
 requires BOTH the funding data and the SOW sections. It stays the source of truth for live
-form-state math (create/edit views, PDF, Zoho context, AI summary — all fed hydrated data).
+form-state math (create/edit views, PDF, Zoho context, AI summary). Since Wave 3 those
+consumers are fed by `toFundingInputs(row)` — the cents columns + incentive rows assembled
+JIT at each call site — not by a hydrated blob.
 As of decomposition Wave 2 the value is also maintained as the stored `proposals.final_tcp_cents`
 rollup by `recomputeProposalFinancials`, and list filter/sort read that column directly
 (see `docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md` Addendum A).
 
 **Rollup, not blob.** The homeowner-facing value is re-derived at read time via `computeFinalTcp`
-on getFullView-hydrated data; list price filter/sort read the `final_tcp_cents` rollup column.
+over `toFundingInputs(row)`; list price filter/sort read the `final_tcp_cents` rollup column.
 
 **The three-stage lifecycle standard** (Addendum A.2 — supersedes the old blanket "never
 persist derived values" rule):
@@ -146,13 +155,16 @@ persist derived values" rule):
 | **Frozen (locked)** | Snapshot = the rows themselves become immutable; append-only afterward | The proposal lock ladder (`#proposal-lock-ladder`); corrections via AWD, never in-place edits |
 
 `recomputeProposalFinancials` is THE financial-rollup choke point — a single idempotent SQL
-statement (`GREATEST(0, starting_tcp_cents − SUM over proposal_incentives − …)`). As of Wave 2
-it carries **two documented jsonb residues**, confined to this one statement and nowhere
-else: the `startingTcp` base read from `fundingJSON.data.startingTcp`, and the section-incentives
-term read from `projectJSON.data.sow[].financials.incentives[]`. Both die in Wave 3 when
-section incentives migrate into `proposal_incentives(sow_item_id)` and the recompute becomes a
-pure `SUM` over rows. Global incentives already live in `proposal_incentives` (`sow_item_id IS
-NULL`) as of Wave 2.
+statement (`GREATEST(0, starting_tcp_cents − SUM over proposal_incentives − …)`). As of the
+Wave-3 write-seam flip it carries **ONE documented jsonb residue**, confined to this one
+statement and nowhere else: the section-incentives term read from
+`projectJSON.data.sow[].financials.incentives[]`. It dies in Wave 4 when section incentives
+migrate into `proposal_incentives(sow_item_id)` and the recompute becomes a pure `SUM` over
+rows. The `startingTcp` base is no longer a residue — it reads the `starting_tcp_cents`
+column directly (Wave 3). Global incentives already live in `proposal_incentives`
+(`sow_item_id IS NULL`) as of Wave 2, and the discount subquery now carries an explicit
+`AND pi.sow_item_id IS NULL` predicate: a no-op today (every row is global) that pre-lands
+the Wave-4 double-count guard structurally.
 
 **Freeze gate**: writes to the incentive rows (and all user-authored proposal content) are
 gated by the proposal lock ladder — see `#proposal-lock-ladder` for the canonical rule,
@@ -317,7 +329,7 @@ Cost helpers return `null` (not 0) when cost data is incomplete — distinguishe
 
 ### agreement-context-as-coherent-unit
 
-Customer age (`customer.age` — plain column, epic #256/#259; see `../customers/DOCS.md#three-jsonb-profiles`) and the envelope-document selection (`proposal.formMetaJSON.envelopeDocumentIds`) together form *the agreement context* — the set of inputs that determine what the Zoho Sign envelope will contain. Age is the source of truth; the document registry classifies every doc as required, optional, or forbidden for a given age + proposal kind. The selection is reconciled against age automatically on every change.
+Customer age (`customer.age` — plain column, epic #256/#259; see `../customers/DOCS.md#three-jsonb-profiles`) and the envelope-document selection (`proposal.envelopeDocumentIds` — plain array column since Wave 3; it previously lived at `formMetaJSON.envelopeDocumentIds`, now frozen) together form *the agreement context* — the set of inputs that determine what the Zoho Sign envelope will contain. Age is the source of truth; the document registry classifies every doc as required, optional, or forbidden for a given age + proposal kind. The selection is reconciled against age automatically on every change.
 
 - **Single procedure**: `proposalsRouter.contracts.applyEnvelopeContext({ id, token?, age?, envelopeDocumentIds? })` is the only writer for these two fields. Either input is optional; at least one must be present. Server reconciles the saved selection against the (possibly just-applied) age before persisting.
 - **Reconciliation is silent**: on age change, required docs are auto-added and forbidden docs are auto-dropped from the saved selection without surfacing notifications. The reconciled result is returned to the caller so the UI can render it immediately.
@@ -345,7 +357,7 @@ The proposal lifecycle (`status`, `sentAt`, `approvedAt`) and the contract lifec
 
 ### duplicate-resets-and-redrives
 
-Duplicating a proposal: status resets to `draft`, ownership reassigns to the current user, token + kind are freshly server-derived via `hooks.create.before` (which fires automatically because duplicate routes through `createImpl`). Only the JSONB content (`formMetaJSON`, `projectJSON`, `fundingJSON`) and `financeOptionId` / `meetingId` are copied via `spec.duplicate.exclude` + `spec.duplicate.overrides`.
+Duplicating a proposal: status resets to `draft`, ownership reassigns to the current user, token + kind are freshly server-derived via `hooks.create.before` (which fires automatically because duplicate routes through `createImpl`). `duplicateImpl` copies the whole source row minus `spec.duplicate.exclude` + the PK, then applies `spec.duplicate.overrides` and routes the result through `createImpl` — which Zod-parses it against `insertProposalSchema`. So what actually survives is: `projectJSON`, the Wave-3 scalars (`priceDisplayMode`, `startingTcpCents`, `depositAmountCents`, `cashInDealCents`, `miscPriceCents`, `envelopeDocumentIds`), and `financeOptionId` / `meetingId`. The frozen blobs do NOT survive — `insertProposalSchema.omit()` strips `formMetaJSON` and `fundingJSON`, so duplicates are born with both NULL. `finalTcpCents` / `calcVersion` are likewise omitted and re-derived by `create.after`. Global incentive ROWS are not part of the row copy at all; `duplicateProposalWithIncentives` clones them explicitly and re-runs the rollup (see `dal/server/duplicate.ts`).
 
 **Why**: a duplicate is "start a new proposal from this template," not "clone." Server-derivation prevents the duplicate from inheriting stale state (wrong kind if the meeting has changed projects, an existing-but-disclosed share token, etc.).
 **Reference impl**: `lib/server-spec.ts:duplicate` (exclude + overrides config); `lib/server-spec.ts:hooks.create.before` (kind + token derivation fires on every create, including duplicates)
