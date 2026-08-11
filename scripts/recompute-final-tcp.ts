@@ -30,9 +30,10 @@ async function findDrift(): Promise<DriftRow[]> {
     SELECT id::text AS id,
            final_tcp_cents::text AS stored,
            (GREATEST(0::numeric, (
-             ROUND(COALESCE(("funding_JSON"->'data'->>'startingTcp')::numeric, 0) * 100)
+             COALESCE(starting_tcp_cents, 0)
              - COALESCE((SELECT SUM(pi.amount_cents) FROM proposal_incentives pi
-                 WHERE pi.proposal_id = proposals.id AND pi.type = 'discount'), 0)
+                 WHERE pi.proposal_id = proposals.id AND pi.type = 'discount'
+                   AND pi.sow_item_id IS NULL), 0)
              - COALESCE((SELECT ROUND(SUM((si->>'amount')::numeric) * 100)
                  FROM jsonb_array_elements("project_JSON"->'data'->'sow') AS sec,
                       jsonb_array_elements(COALESCE(sec->'financials'->'incentives', '[]'::jsonb)) AS si), 0)

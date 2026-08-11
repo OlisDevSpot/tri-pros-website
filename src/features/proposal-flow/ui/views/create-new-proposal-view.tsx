@@ -22,6 +22,7 @@ import { Form } from '@/shared/components/ui/form'
 import { ROOTS } from '@/shared/config/roots'
 
 import { useSession } from '@/shared/domains/auth/client'
+import { fundingDomainToColumns } from '@/shared/entities/proposals/lib/funding-columns'
 import { useTRPC } from '@/trpc/helpers'
 import { getProposalAggregates } from '../../lib/get-proposal-aggregates'
 import { CustomerInfoHeader } from '../components/customer-info-header'
@@ -71,22 +72,14 @@ export function CreateNewProposalView() {
       label: data.project.data.label,
       ownerId: session?.user.id || '',
       meetingId: meetingId || undefined,
-      formMetaJSON: data.meta,
+      priceDisplayMode: data.priceDisplayMode,
       projectJSON: {
         data: { ...data.project.data, sow },
         meta: data.project.meta,
       },
-      fundingJSON: {
-        // finalTcp is derived — never written. See `computeFinalTcp`.
-        data: {
-          ...data.funding.data,
-          // Rows are the source of truth (Wave 2); the blob array is dead.
-          // getFullView re-hydrates it from proposal_incentives on read.
-          incentives: [],
-          cashInDeal: finalTcp,
-        },
-        meta: data.funding.meta,
-      },
+      // finalTcp is derived — never written. See `computeFinalTcp`. Incentives
+      // are rows, written by replaceProposalIncentives after the insert lands.
+      ...fundingDomainToColumns({ ...data.funding, cashInDeal: finalTcp }),
     }
   }
 
@@ -99,9 +92,9 @@ export function CreateNewProposalView() {
         }
         // Rows are the source of truth (Wave 2). Only write child rows when
         // the form actually carries incentives; otherwise skip straight to nav.
-        if (data.funding.data.incentives.length > 0) {
+        if (data.funding.incentives.length > 0) {
           replaceIncentives.mutate(
-            { proposalId: proposal.id, incentives: data.funding.data.incentives },
+            { proposalId: proposal.id, incentives: data.funding.incentives },
             {
               onSuccess: finish,
               onError: error => toast.error(error.message),

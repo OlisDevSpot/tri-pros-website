@@ -36,9 +36,12 @@ export const proposals = pgTable('proposals', {
   qbInvoiceId: text('qb_invoice_id'),
   qbPaymentStatus: text('qb_payment_status'),
 
-  formMetaJSON: jsonb('form_meta_JSON').$type<FormMetaSection>().notNull(),
+  // Nullable since the W3 write-seam flip (Task 7): no code path writes these
+  // blobs any more, so new rows carry NULL. Frozen + renamed `*Deprecated` in
+  // Task 9; dropped on the W4 push (jsonb deprecation ledger).
+  formMetaJSON: jsonb('form_meta_JSON').$type<FormMetaSection>(),
   projectJSON: jsonb('project_JSON').$type<ProjectSection>().notNull(),
-  fundingJSON: jsonb('funding_JSON').$type<FundingSection>().notNull(),
+  fundingJSON: jsonb('funding_JSON').$type<FundingSection>(),
 
   // ── Wave 3 (epic #256): fundingJSON/formMetaJSON scalars promoted to
   // columns. Money is integer cents; nullable only for the additive/backfill
@@ -109,13 +112,14 @@ export const proposalsRelations = relations(proposals, ({ one }) => ({
 
 export const selectProposalSchema = createSelectSchema(proposals, {
   projectJSON: projectSectionSchema,
-  fundingJSON: fundingSectionSchema,
+  // Nullable since the W3 write-seam flip — new rows never carry the blob.
+  // The whole override is dropped in Task 9 with the freeze.
+  fundingJSON: fundingSectionSchema.nullable(),
 })
 export type Proposal = z.infer<typeof selectProposalSchema>
 
 export const insertProposalSchema = createInsertSchema(proposals, {
   projectJSON: projectSectionSchema,
-  fundingJSON: fundingSectionSchema,
   startingTcpCents: z.number().int().min(0).nullish(),
   depositAmountCents: z.number().int().min(0).nullish(),
   cashInDealCents: z.number().int().min(0).nullish(),
@@ -126,6 +130,11 @@ export const insertProposalSchema = createInsertSchema(proposals, {
   updatedAt: true,
   finalTcpCents: true,
   calcVersion: true,
+  // W3 write-seam flip (Task 7): the legacy blobs are unwritable through the
+  // API surface. Known exceptions live outside it — the backfill script's raw
+  // `db.update` and the paused AI-summary escape hatch (projectJSON only).
+  formMetaJSON: true,
+  fundingJSON: true,
 }).extend({
   // Server-derived fields: hooks.create.before sets these. Optional so
   // clients don't send them (hook fills in), but Zod doesn't strip them.

@@ -23,6 +23,7 @@ import { Form } from '@/shared/components/ui/form'
 import { ROOTS } from '@/shared/config/roots'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/financials'
+import { fundingDomainToColumns, toFundingInputs } from '@/shared/entities/proposals/lib/funding-columns'
 import { getProposalLockState } from '@/shared/entities/proposals/lib/proposal-lock'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { useTRPC } from '@/trpc/helpers'
@@ -76,9 +77,9 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
   const initProposalValues = useMemo(() => {
     if (proposal.data) {
       const initialValues: OverrideProposalValues = {
-        meta: proposal.data.formMetaJSON,
+        priceDisplayMode: proposal.data.priceDisplayMode,
         project: proposal.data.projectJSON,
-        funding: proposal.data.fundingJSON,
+        funding: toFundingInputs(proposal.data),
       }
 
       return initialValues
@@ -112,24 +113,21 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
     // clamp cashInDeal to the current final TCP so a downward revision of
     // startingTcp / discounts cannot leave a cash-in-deal that exceeds
     // what the homeowner actually owes.
-    const nextFinalTcp = computeFinalTcp({ funding: rawData.funding.data, sow: rawData.project.data.sow })
+    const nextFinalTcp = computeFinalTcp({ funding: rawData.funding, sow: rawData.project.data.sow })
 
     return {
       id: proposalId,
       data: {
         label: rawData.project.data.label,
-        formMetaJSON: rawData.meta,
+        priceDisplayMode: rawData.priceDisplayMode,
         projectJSON: rawData.project,
-        fundingJSON: {
+        // Incentives are rows — they flow through replaceProposalIncentives,
+        // never the update payload. envelopeDocumentIds deliberately absent —
+        // applyEnvelopeContext is the only writer (spec §2).
+        ...fundingDomainToColumns({
           ...rawData.funding,
-          data: {
-            ...rawData.funding.data,
-            // Rows are the source of truth (Wave 2); the blob array is dead.
-            // getFullView re-hydrates it from proposal_incentives on read.
-            incentives: [],
-            cashInDeal: rawData.funding.data.cashInDeal > nextFinalTcp ? nextFinalTcp : rawData.funding.data.cashInDeal,
-          },
-        },
+          cashInDeal: Math.min(rawData.funding.cashInDeal, nextFinalTcp),
+        }),
       },
     }
   }
@@ -142,7 +140,7 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
     updateProposal.mutate(buildMutationData(rawData), {
       onSuccess: () => {
         replaceIncentives.mutate(
-          { proposalId, incentives: rawData.funding.data.incentives },
+          { proposalId, incentives: rawData.funding.incentives },
           {
             onSuccess: () => {
               toast.success('Proposal updated')
@@ -164,7 +162,7 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
     updateProposal.mutate(buildMutationData(rawData), {
       onSuccess: () => {
         replaceIncentives.mutate(
-          { proposalId, incentives: rawData.funding.data.incentives },
+          { proposalId, incentives: rawData.funding.incentives },
           {
             onSuccess: () => toast.success('Proposal saved'),
             onError: error => toast.error(error.message),

@@ -14,7 +14,6 @@ import { PROPOSAL } from '@/shared/entities/proposals/lib/constants'
 import { deriveProposalKind } from '@/shared/entities/proposals/lib/derive-proposal-kind'
 import { generateShareToken } from '@/shared/entities/proposals/lib/generate-share-token'
 import { isProposalFrozen, touchesFrozenLockedFields } from '@/shared/entities/proposals/lib/proposal-lock'
-import { scrubBlobIncentives } from '@/shared/entities/proposals/lib/scrub-blob-incentives'
 import { snapSowFromMeeting } from '@/shared/entities/proposals/lib/snap-sow-from-meeting'
 import { proposalVisibility } from '@/shared/entities/proposals/lib/visibility'
 
@@ -43,23 +42,25 @@ export const proposalServerSpec = {
       // see ../DOCS.md#kind-derived-from-meeting-project
       // see ../DOCS.md#share-token-generated-at-insert
       // see ../DOCS.md#sow-snapshot-from-meeting-on-create
+      // No blob scrub: `insertProposalSchema` omits fundingJSON/formMetaJSON
+      // since the W3 write-seam flip, so nothing can arrive here to scrub.
       async before(input, _ctx) {
-        const scrubbed = { ...input, fundingJSON: scrubBlobIncentives(input.fundingJSON, 'create') }
-        if (!scrubbed.meetingId) {
-          return { ...scrubbed, kind: deriveProposalKind(null), token: generateShareToken() }
+        if (!input.meetingId) {
+          return { ...input, kind: deriveProposalKind(null), token: generateShareToken() }
         }
 
         const meeting = dalVerifySuccess(
-          await meetingCrud.getById(SYSTEM_CONTEXT, { id: scrubbed.meetingId }),
+          await meetingCrud.getById(SYSTEM_CONTEXT, { id: input.meetingId }),
         )
         const kind = deriveProposalKind(meeting?.projectId ?? null)
         const token = generateShareToken()
-        const enriched = snapSowFromMeeting(scrubbed, meeting?.flowStateJSON ?? null)
+        const enriched = snapSowFromMeeting(input, meeting?.flowStateJSON ?? null)
 
         return { ...enriched, kind, token }
       },
       // New proposals get their rollup immediately (rows are empty at create;
-      // startingTcp/section terms come from the blobs until W3).
+      // startingTcp comes from the column; section terms from projectJSON
+      // until W4).
       async after(row, _ctx) {
         dalVerifySuccess(await recomputeProposalFinancials(row.id))
       },
@@ -79,15 +80,13 @@ export const proposalServerSpec = {
         if (isProposalFrozen(signals)) {
           throw new ThrowableDalError({ type: 'precondition-failed', reason: 'proposal_frozen' })
         }
-        if (input.fundingJSON) {
-          return { ...input, fundingJSON: scrubBlobIncentives(input.fundingJSON, `update of proposal ${meta.id}`) }
-        }
         return input
       },
-      // Whole-document fundingJSON/projectJSON writes must re-converge the
-      // rollup. Cheap + idempotent; skipped when neither blob was touched.
+      // Any write that moves a finalTcp input must re-converge the rollup:
+      // the startingTcp column, or projectJSON (section incentives, until W4).
+      // Cheap + idempotent; skipped when neither was touched.
       async after(row, _ctx, meta) {
-        if ('fundingJSON' in meta.input || 'projectJSON' in meta.input) {
+        if ('startingTcpCents' in meta.input || 'projectJSON' in meta.input) {
           dalVerifySuccess(await recomputeProposalFinancials(row.id))
         }
       },

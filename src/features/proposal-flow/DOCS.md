@@ -58,7 +58,7 @@ The toggle UI itself lives in the navbar kebab popover (`ui/components/navbar/na
 
 Most steps are **static**: their content comes from constants + portfolio data. Two steps are **customizable**: agents edit `funding` and `agreement` per proposal (defined in `proposal-steps.ts:customizableSections`).
 
-**Why**: project overview, trusted contractor, past results are brand/portfolio surfaces — same for every proposal. Scope of Work edits the proposal's `projectJSON.data.sow`. Funding edits `fundingJSON.data`. Agreement reads contract status from the proposal record (no edits in flow — signing is via Zoho).
+**Why**: project overview, trusted contractor, past results are brand/portfolio surfaces — same for every proposal. Scope of Work edits the proposal's `projectJSON.data.sow`. Funding edits the proposal's scalar money columns (`starting_tcp_cents`, `deposit_amount_cents`, `cash_in_deal_cents`, `misc_price_cents`) plus its `proposal_incentives` rows — W3 retired the `fundingJSON` blob. Agreement reads contract status from the proposal record (no edits in flow — signing is via Zoho).
 
 **Reference impl**: `constants/proposal-steps.ts:customizableSections`
 **Enforced by**: convention (which steps render edit UI for the agent view)
@@ -120,7 +120,7 @@ When a Zoho webhook fires, contracts service updates these timestamps and the pa
 
 - **Adding a new step without role gating.** Even if it's visible to both today, the `roles` field is the future seam — don't drop it.
 - **Bypassing `useViewMode`.** Always go through the hook so the CASL gate runs. Reading `searchParams.get('view')` directly is a bug.
-- **Sending a partial `projectJSON` / `fundingJSON` object on update.** Both are whole-document columns; `update` always plain-replaces (the `jsonbMergeColumns` mechanism these were deregistered from in Wave 1 was deleted entirely in Wave 2) — always reconstruct and submit the full object. See `../../shared/entities/proposals/DOCS.md#jsonb-merge-on-update`.
+- **Sending a partial `projectJSON` object on update.** It is a whole-document column; `update` always plain-replaces (the `jsonbMergeColumns` mechanism it was deregistered from in Wave 1 was deleted entirely in Wave 2) — always reconstruct and submit the full object. See `../../shared/entities/proposals/DOCS.md#jsonb-merge-on-update`. (`fundingJSON` no longer applies — W3 moved funding to scalar columns + incentive rows, and the blob is omitted from the insert/update schemas.)
 - **Storing a denormalized "contract status" enum.** Derive from the timestamp columns.
 - **Manual proposal status flips inside the flow** (e.g., setting `status = 'approved'` from a button). Approval is a contract-event consequence (`completed` webhook), or the explicit approve mutation.
 - **Putting cost-line edits in the customer view.** Cost lines are agent-only — they show margin/multiplier info that must not leak to homeowners.

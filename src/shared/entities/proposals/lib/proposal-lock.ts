@@ -58,9 +58,13 @@ export function isProposalFrozen(proposal: ProposalLockSignals): boolean {
  */
 export const frozenProposalLockedFields = [
   'label',
-  'formMetaJSON',
   'projectJSON',
-  'fundingJSON',
+  'startingTcpCents',
+  'depositAmountCents',
+  'cashInDealCents',
+  'miscPriceCents',
+  'priceDisplayMode',
+  'envelopeDocumentIds',
   'financeOptionId',
   'meetingId',
 ] as const

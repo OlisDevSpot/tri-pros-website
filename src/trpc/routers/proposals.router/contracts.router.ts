@@ -7,7 +7,7 @@
 //
 // `applyEnvelopeContext` is the single cross-entity orchestration on this
 // router. It writes to BOTH `customer.age` (plain column, epic #256/#259)
-// AND `proposal.formMetaJSON.envelopeDocumentIds` because they're two faces of
+// AND `proposal.envelopeDocumentIds` because they're two faces of
 // the same business concept — see DOCS.md anchor below.
 // see `src/shared/entities/proposals/DOCS.md#agreement-context-as-coherent-unit`
 
@@ -122,7 +122,7 @@ export const contractsRouter = createTRPCRouter({
       }
 
       const customerAge = proposal.customer.customerAge ?? null
-      const savedSelection = proposal.formMetaJSON?.envelopeDocumentIds ?? []
+      const savedSelection = proposal.envelopeDocumentIds ?? []
 
       // Without an age we can't evaluate registry rules that depend on it.
       // Surface an empty docs list — UI prompts for the age first.
@@ -230,7 +230,7 @@ export const contractsRouter = createTRPCRouter({
       const evaluation = evalCtx ? evaluateDocuments(evalCtx) : null
 
       // 3. Reconcile the selection (silently add required / drop forbidden).
-      const currentSelection = proposal.formMetaJSON?.envelopeDocumentIds ?? []
+      const currentSelection = proposal.envelopeDocumentIds ?? []
       let finalSelection = input.envelopeDocumentIds ?? currentSelection
       if (evalCtx && evaluation) {
         finalSelection = reconcileEnvelopeSelection(finalSelection, evaluation)
@@ -245,15 +245,11 @@ export const contractsRouter = createTRPCRouter({
         }
       }
 
-      // 4. Persist the proposal-side change.
+      // 4. Persist the proposal-side change (W3: the scalar column is THE
+      // store — `formMetaJSON` is frozen and unwritable through the API).
       dalToTrpc(await proposalCrud.update(ctx, {
         id: input.id,
-        data: {
-          formMetaJSON: {
-            ...(proposal.formMetaJSON ?? {}),
-            envelopeDocumentIds: finalSelection,
-          },
-        },
+        data: { envelopeDocumentIds: finalSelection },
       }))
 
       return {

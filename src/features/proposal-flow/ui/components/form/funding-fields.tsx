@@ -27,7 +27,7 @@ export function FundingFields({ pricingMode }: Props) {
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: 'funding.data.incentives',
+    name: 'funding.incentives',
   })
 
   const [openIncentives, setOpenIncentives] = useState<Set<number>>(() => new Set())
@@ -37,9 +37,9 @@ export function FundingFields({ pricingMode }: Props) {
     message: 'Are you sure you want to delete this incentive? This action cannot be undone.',
   })
 
-  const incentives = useWatch({ control: form.control, name: 'funding.data.incentives' })
+  const incentives = useWatch({ control: form.control, name: 'funding.incentives' })
   const sow = useWatch({ control: form.control, name: 'project.data.sow' })
-  const miscPrice = useWatch({ control: form.control, name: 'funding.data.miscPrice' })
+  const miscPrice = useWatch({ control: form.control, name: 'funding.miscPrice' })
 
   function toggleIncentive(index: number) {
     setOpenIncentives((prev) => {
@@ -83,7 +83,7 @@ export function FundingFields({ pricingMode }: Props) {
     if (!totalSOWPriceBreakdown || totalSOWPriceBreakdown === 0) {
       return
     }
-    form.setValue('funding.data.startingTcp', totalSOWPriceBreakdown + (miscPrice ?? 0))
+    form.setValue('funding.startingTcp', totalSOWPriceBreakdown + (miscPrice ?? 0))
   }, [sow, miscPrice, pricingMode, form])
 
   return (
@@ -95,7 +95,7 @@ export function FundingFields({ pricingMode }: Props) {
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 lg:gap-4">
             {pricingMode === 'breakdown' && (
               <FormField
-                name="funding.data.miscPrice"
+                name="funding.miscPrice"
                 control={form.control}
                 render={({ field }) => (
                   <FormItem>
@@ -116,7 +116,7 @@ export function FundingFields({ pricingMode }: Props) {
               />
             )}
             <FormField
-              name="funding.data.startingTcp"
+              name="funding.startingTcp"
               control={form.control}
               render={({ field }) => (
                 <FormItem>
@@ -137,7 +137,7 @@ export function FundingFields({ pricingMode }: Props) {
               )}
             />
             <FormField
-              name="funding.data.depositAmount"
+              name="funding.depositAmount"
               control={form.control}
               render={({ field }) => (
                 <FormItem>
@@ -223,7 +223,7 @@ export function FundingFields({ pricingMode }: Props) {
                                 <div className="space-y-3 px-3 pb-3 lg:space-y-4 lg:px-4 lg:pb-4">
                                   <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4">
                                     <FormField
-                                      name={`funding.data.incentives.${index}.type`}
+                                      name={`funding.incentives.${index}.type`}
                                       control={form.control}
                                       render={({ field }) => (
                                         <FormItem>
@@ -253,7 +253,7 @@ export function FundingFields({ pricingMode }: Props) {
                                     />
                                     {incentives[index]?.type === 'discount' && (
                                       <FormField
-                                        name={`funding.data.incentives.${index}.amount`}
+                                        name={`funding.incentives.${index}.amount`}
                                         control={form.control}
                                         render={({ field }) => (
                                           <FormItem>
@@ -275,7 +275,7 @@ export function FundingFields({ pricingMode }: Props) {
                                     )}
                                     {incentives[index]?.type === 'exclusive-offer' && (
                                       <FormField
-                                        name={`funding.data.incentives.${index}.offer`}
+                                        name={`funding.incentives.${index}.offer`}
                                         control={form.control}
                                         render={({ field }) => (
                                           <FormItem>
@@ -291,7 +291,7 @@ export function FundingFields({ pricingMode }: Props) {
                                   </div>
                                   <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4">
                                     <FormField
-                                      name={`funding.data.incentives.${index}.notes`}
+                                      name={`funding.incentives.${index}.notes`}
                                       control={form.control}
                                       render={({ field }) => (
                                         <FormItem>
@@ -322,7 +322,7 @@ export function FundingFields({ pricingMode }: Props) {
                                       )}
                                     />
                                     <FormField
-                                      name={`funding.data.incentives.${index}.expiresAt`}
+                                      name={`funding.incentives.${index}.expiresAt`}
                                       control={form.control}
                                       render={({ field }) => (
                                         <FormItem>

@@ -1,5 +1,5 @@
 import z from 'zod'
-import { envelopeDocumentIds, projectTypes, validThroughTimeframes } from '@/shared/constants/enums'
+import { envelopeDocumentIds, priceDisplayModes, projectTypes, validThroughTimeframes } from '@/shared/constants/enums'
 import { homeAreas } from '@/shared/domains/construction/constants/enums'
 import { createEmptySowSection } from '../lib/create-empty-sow-section'
 
@@ -82,11 +82,14 @@ const projectDataSchema = z.object({
 // `computeFinalTcp({ funding, sow })` in `entities/proposals/lib/financials`.
 // Persisted derived values invite drift between inputs and the cached number;
 // always compute on demand from `startingTcp` − global discounts − section incentives.
-/** Canonical funding domain shape (flat dollars): assembled from the W3 cents
- *  columns + incentive rows by getFullView, AND the live RHF funding form
- *  state — one shape for the financials façade. The legacy blob envelope
- *  (`fundingSectionSchema`) derives from this, not vice versa.
- *  Tally marker: re-examine the assembled-view-model seam post-waves (ledger). */
+/**
+ * Canonical funding domain shape (flat dollars). Two legitimate sources, and
+ * only two: `toFundingInputs(row)` — the W3 cents columns + incentive rows,
+ * derived JIT at each call site (never materialized on the row) — and the
+ * live RHF funding form state. One shape for the financials façade. The
+ * legacy blob envelope (`fundingSectionSchema`) derives from this, not vice
+ * versa. Tally marker: re-examine the JIT-assembly seam post-waves (ledger).
+ */
 export const fundingDataSchema = z.object({
   cashInDeal: z.number(),
   depositAmount: z.number(),
@@ -97,11 +100,24 @@ export const fundingDataSchema = z.object({
 
 export type FundingData = z.infer<typeof fundingDataSchema>
 
+/**
+ * Legacy blob-envelope `meta` block. `enabled` is written-always-true and
+ * read-never — it survives ONLY inside `projectSectionSchema`, which is
+ * blob-backed until W4. Dies W4 with the project envelope (ledger tally).
+ */
 const sectionMetaSchema = z.object({
   enabled: z.boolean(),
 })
 
 // MAIN SCHEMAS
+/**
+ * @deprecated Legacy blob-envelope parse schema. W3 (2026-07-26) moved these
+ * scalars to the `price_display_mode` / `envelope_document_ids` columns. Only
+ * legitimate importers: the Drizzle `$type` on the frozen column and
+ * `scripts/backfill-wave3-scalars.ts`. Parses HISTORICAL stored JSON — the
+ * stored key is `pricingMode` and must NEVER be renamed. Dies on the W4 push
+ * (deprecation ledger).
+ */
 export const formMetaSectionSchema = z.object({
   pricingMode: z.enum(['total', 'breakdown']),
   /**
@@ -119,6 +135,10 @@ export const projectSectionSchema = z.object({
   meta: sectionMetaSchema,
 })
 
+/**
+ * @deprecated Legacy blob-envelope parse schema — same rules as
+ * `formMetaSectionSchema` above. Canonical flat shape: `fundingDataSchema`.
+ */
 export const fundingSectionSchema = z.object({
   data: fundingDataSchema,
   meta: sectionMetaSchema,
@@ -134,9 +154,15 @@ export const fundingSectionSchema = z.object({
  * derivation, `*Schema` for validation.
  */
 export const proposalFormShape = z.object({
-  meta: formMetaSectionSchema,
+  // Display preference — a proposal scalar, not a "meta section". Ratified
+  // vocabulary (2026-07-24 pricing-editor ruling). Until that editor lands it
+  // still gates breakdown-mode validation + the client-side startingTcp sync.
+  priceDisplayMode: z.enum(priceDisplayModes),
+  // projectJSON is blob-backed until W4 — its {data, meta} envelope survives
+  // in form state until then (ledger tally; dies W4).
   project: projectSectionSchema,
-  funding: fundingSectionSchema,
+  // Canonical flat shape — no {data, meta} envelope.
+  funding: fundingDataSchema,
 })
 
 /**
@@ -147,7 +173,7 @@ export const proposalFormShape = z.object({
  * is the safety net at submit time.
  */
 export const proposalFormSchema = proposalFormShape.superRefine((proposal, ctx) => {
-  const isBreakdown = proposal.meta.pricingMode === 'breakdown'
+  const isBreakdown = proposal.priceDisplayMode === 'breakdown'
 
   proposal.project.data.sow.forEach((section, sectionIndex) => {
     // 1. Section price required + positive in breakdown mode
@@ -179,9 +205,7 @@ export const proposalFormSchema = proposalFormShape.superRefine((proposal, ctx) 
 export type ProposalFormSchema = z.infer<typeof proposalFormSchema>
 
 export const proposalFormBaseDefaultValues: ProposalFormSchema = {
-  meta: {
-    pricingMode: 'total',
-  },
+  priceDisplayMode: 'total',
   project: {
     data: {
       type: 'general-remodeling',
@@ -199,15 +223,10 @@ export const proposalFormBaseDefaultValues: ProposalFormSchema = {
     },
   },
   funding: {
-    data: {
-      cashInDeal: 0,
-      depositAmount: 1000,
-      incentives: [],
-      miscPrice: 0,
-      startingTcp: 0,
-    },
-    meta: {
-      enabled: true,
-    },
+    cashInDeal: 0,
+    depositAmount: 1000,
+    incentives: [],
+    miscPrice: 0,
+    startingTcp: 0,
   },
 }

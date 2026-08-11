@@ -6,7 +6,7 @@ import { Button } from '@/shared/components/ui/button'
 import { formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 
-type Incentive = ProposalFormSchema['funding']['data']['incentives'][number]
+type Incentive = ProposalFormSchema['funding']['incentives'][number]
 
 interface Props {
   incentive: Incentive

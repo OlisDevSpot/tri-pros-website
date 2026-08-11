@@ -28,7 +28,6 @@ import { meetings } from '@/shared/db/schema/meetings'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
 import { listProposalIncentives } from '@/shared/entities/proposal-incentives/dal/server/queries'
-import { incentiveRowsToDomain } from '@/shared/entities/proposal-incentives/lib/incentive-rows'
 import { listHomeownerProposalMedia, toProposalMediaView } from '@/shared/entities/proposal-media-files/dal/server/queries'
 
 // ── Types ───────────────────────────────────────────────────────────────
@@ -140,23 +139,18 @@ export async function getFullView(
         }
       : null
 
-    // W2→W3 bridge: incentive ROWS are the source of truth; re-hydrate the
-    // legacy funding shape at THE read choke point so every getFullView
-    // consumer (PDF, Zoho context, AI summary, edit form) renders correct
-    // incentives with zero per-site changes. The blob's own incentives array
-    // is dead (writers store []). Dies in W3 with fundingJSON itself.
+    // Incentive ROWS are the source of truth (W2). The W3 write-seam flip
+    // retired the funding-blob hydration bridge: every consumer now reads the
+    // cents columns + these rows through `toFundingInputs` (Option 3 ruling —
+    // the row NEVER gains a materialized `funding` property).
     const incentives = dalVerifySuccess(await listProposalIncentives(row.id))
-    const hydratedFunding = {
-      ...row.fundingJSON,
-      data: { ...row.fundingJSON.data, incentives: incentiveRowsToDomain(incentives) },
-    }
 
     // Homeowner-visible media, derived at this read choke point (public bucket)
     // so the customer-facing gallery renders with zero per-site fetching.
     const mediaRows = await listHomeownerProposalMedia(row.id)
     const media = mediaRows.map(toProposalMediaView)
 
-    return { ...row, fundingJSON: hydratedFunding, customer, incentives, media } as ProposalWithCustomer
+    return { ...row, customer, incentives, media } as ProposalWithCustomer
   })
 }
 

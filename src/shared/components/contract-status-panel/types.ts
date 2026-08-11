@@ -6,7 +6,8 @@ export interface ContractStatusPanelProps {
   isAgent: boolean
   customerAge?: number | null
   /**
-   * Agent-picked envelope document selection from `formMetaJSON`.
+   * Agent-picked envelope document selection — the `envelope_document_ids`
+   * column (W3; `applyEnvelopeContext` is its single writer).
    * Null = not yet configured (gates the agent draft-config form).
    */
   envelopeDocumentIds?: readonly EnvelopeDocumentId[] | null

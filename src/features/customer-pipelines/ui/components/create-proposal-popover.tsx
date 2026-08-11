@@ -16,6 +16,7 @@ import { ROOTS } from '@/shared/config/roots'
 import { useSession } from '@/shared/domains/auth/client'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { createEmptySowSection } from '@/shared/entities/proposals/lib/create-empty-sow-section'
+import { fundingDomainToColumns } from '@/shared/entities/proposals/lib/funding-columns'
 import { useTRPC } from '@/trpc/helpers'
 
 interface Props {
@@ -53,7 +54,8 @@ export function CreateProposalPopover({ meetings }: Props) {
       ownerId: session.user.id,
       label: '',
       status: 'draft',
-      formMetaJSON: { pricingMode: 'total' },
+      priceDisplayMode: 'total',
+      // projectJSON keeps its {data, meta} envelope — blob-backed until W4.
       projectJSON: {
         data: {
           label: '',
@@ -66,15 +68,7 @@ export function CreateProposalPopover({ meetings }: Props) {
         },
         meta: { enabled: true },
       },
-      fundingJSON: {
-        data: {
-          cashInDeal: 0,
-          depositAmount: 0,
-          startingTcp: 0,
-          incentives: [],
-        },
-        meta: { enabled: true },
-      },
+      ...fundingDomainToColumns({ startingTcp: 0, depositAmount: 0, cashInDeal: 0 }),
     })
   }
 

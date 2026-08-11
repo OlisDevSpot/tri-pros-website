@@ -31,15 +31,15 @@ export function buildProposalDefaults(
   if (flowState.dealStructure) {
     const ds = flowState.dealStructure
     if (ds.startingTcp !== undefined) {
-      defaults.funding.data.startingTcp = ds.startingTcp
+      defaults.funding.startingTcp = ds.startingTcp
     }
     if (ds.depositAmount !== undefined) {
-      defaults.funding.data.depositAmount = ds.depositAmount
+      defaults.funding.depositAmount = ds.depositAmount
     }
     // Cash mode: seed cashInDeal with the meeting's derived final TCP.
     // Neither side stores finalTcp — both compute it on demand.
     if (ds.mode === 'cash') {
-      defaults.funding.data.cashInDeal = computeDealFinalTcp(ds)
+      defaults.funding.cashInDeal = computeDealFinalTcp(ds)
     }
 
     // Map incentives. Only positive amounts may become price-reducing
@@ -47,7 +47,7 @@ export function buildProposalDefaults(
     // meeting stage is informational and must not survive the handoff as a
     // price cut. see spec Addendum A (#256).
     if (ds.incentives && ds.incentives.length > 0) {
-      defaults.funding.data.incentives = ds.incentives
+      defaults.funding.incentives = ds.incentives
         .filter(inc => (inc.amount ?? 0) > 0)
         .map(inc => ({
           type: 'discount' as const,

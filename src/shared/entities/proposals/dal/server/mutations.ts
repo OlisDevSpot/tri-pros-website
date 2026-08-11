@@ -17,9 +17,11 @@ import { scrubBlobIncentives } from '@/shared/entities/proposals/lib/scrub-blob-
 /**
  * THE financial-rollup choke point (Addendum A.2, stage 2). One idempotent
  * SQL statement; re-running always converges from rows (verify = repair).
- * DOCUMENTED W2 jsonb residue, confined to THIS statement only (both die in
- * W3): startingTcp base from fundingJSON; section-incentives term from
- * projectJSON. Discounts already SUM over proposal_incentives rows.
+ * ONE remaining jsonb residue after the W3 write-seam flip: the
+ * section-incentives term still reads projectJSON — it dies in W4. The
+ * startingTcp base is the `starting_tcp_cents` column; discounts SUM over
+ * proposal_incentives rows. The `sow_item_id IS NULL` predicate is a no-op
+ * today (every row is global) and pre-lands the W4 double-count guard.
  * see ../../DOCS.md#final-tcp-derived
  */
 export async function recomputeProposalFinancials(
@@ -28,9 +30,10 @@ export async function recomputeProposalFinancials(
   return dalDbOperation(async () => {
     const [row] = await db.update(proposals).set({
       finalTcpCents: sql`GREATEST(0::numeric, (
-        ROUND(COALESCE((${proposals.fundingJSON}->'data'->>'startingTcp')::numeric, 0) * 100)
+        COALESCE(${proposals.startingTcpCents}, 0)
         - COALESCE((SELECT SUM(pi.amount_cents) FROM proposal_incentives pi
-            WHERE pi.proposal_id = ${proposals.id} AND pi.type = 'discount'), 0)
+            WHERE pi.proposal_id = ${proposals.id} AND pi.type = 'discount'
+              AND pi.sow_item_id IS NULL), 0)
         - COALESCE((SELECT ROUND(SUM((si->>'amount')::numeric) * 100)
             FROM jsonb_array_elements(${proposals.projectJSON}->'data'->'sow') AS sec,
                  jsonb_array_elements(COALESCE(sec->'financials'->'incentives', '[]'::jsonb)) AS si), 0)
@@ -75,6 +78,14 @@ export async function setCashInDeal(
     }
     if (isProposalFrozen(proposal)) {
       throw new ThrowableDalError({ type: 'precondition-failed', reason: 'proposal_frozen' })
+    }
+    // Post-W3-flip rows carry a NULL blob — this writer becomes a column write
+    // in Task 8. Until then, fail loudly rather than resurrect a dead envelope.
+    if (!proposal.fundingJSON) {
+      throw new ThrowableDalError({
+        type: 'precondition-failed',
+        reason: 'funding_blob_absent — setCashInDeal still writes the frozen fundingJSON blob (flips to cash_in_deal_cents in W3 Task 8)',
+      })
     }
 
     const fundingJSON = scrubBlobIncentives({

@@ -1,12 +1,16 @@
 import type { ProposalFormSchema } from '../schemas/form-schema'
-import type { Proposal } from '@/shared/db/schema'
+import type { ProposalWithCustomer } from '@/shared/entities/proposals/dal/server/queries'
 
-export function proposalToFormValues(proposal: Proposal): ProposalFormSchema {
-  const data: ProposalFormSchema = {
-    meta: proposal.formMetaJSON,
+import { toFundingInputs } from '@/shared/entities/proposals/lib/funding-columns'
+
+/**
+ * Server row → RHF form state. Funding comes from the cents columns +
+ * incentive rows via `toFundingInputs` — never from the frozen blob.
+ */
+export function proposalToFormValues(proposal: ProposalWithCustomer): ProposalFormSchema {
+  return {
+    priceDisplayMode: proposal.priceDisplayMode,
     project: proposal.projectJSON,
-    funding: proposal.fundingJSON,
+    funding: toFundingInputs(proposal),
   }
-
-  return data
 }

@@ -9,8 +9,12 @@ export interface ProposalStep<P> {
   Component: (props: P) => React.ReactNode
 }
 
+/**
+ * Partial form-state seed applied over `baseDefaultValues` (section-shallow).
+ * Derived from `ProposalFormSchema` — never hand-mirrored.
+ */
 export interface OverrideProposalValues {
-  meta?: Partial<ProposalFormSchema['meta']>
+  priceDisplayMode?: ProposalFormSchema['priceDisplayMode']
   project?: Partial<ProposalFormSchema['project']>
   funding?: Partial<ProposalFormSchema['funding']>
 }

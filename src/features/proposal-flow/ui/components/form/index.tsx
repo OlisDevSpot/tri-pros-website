@@ -53,7 +53,7 @@ function deepMergeDefaults(base: ProposalFormSchema, override: Props['initialVal
 
   return {
     ...base,
-    meta: { ...base.meta, ...(override.meta ?? {}) },
+    ...(override.priceDisplayMode ? { priceDisplayMode: override.priceDisplayMode } : {}),
     project: { ...base.project, ...(override.project ?? {}) },
     funding: { ...base.funding, ...(override.funding ?? {}) },
   }
@@ -71,7 +71,7 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
   const [saveOpenMobile, setSaveOpenMobile] = useState(false)
   const [saveOpenDesktop, setSaveOpenDesktop] = useState(false)
   const saveOpen = saveOpenMobile || saveOpenDesktop
-  const pricingMode = useWatch({ control: form.control, name: 'meta.pricingMode' })
+  const pricingMode = useWatch({ control: form.control, name: 'priceDisplayMode' })
   const { open: openModal, setModal } = useModalStore()
 
   function handleInternalFinancials() {
@@ -80,9 +80,9 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
       accessor: 'InternalFinancials',
       Component: InternalFinancialsModal,
       props: {
-        funding: v.funding.data,
+        funding: v.funding,
         sow: v.project.data.sow,
-        priceDisplayMode: v.meta.pricingMode,
+        priceDisplayMode: v.priceDisplayMode,
       },
     })
     openModal()
@@ -192,7 +192,7 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
                             id="pricing-mode"
                             checked={pricingMode === 'breakdown'}
                             onCheckedChange={checked =>
-                              form.setValue('meta.pricingMode', checked ? 'breakdown' : 'total')}
+                              form.setValue('priceDisplayMode', checked ? 'breakdown' : 'total')}
                           />
                         </div>
                       </div>
