@@ -26,7 +26,8 @@
 | Writer-flip + drop-ceremony code deployed | n/a | ⬜ **this ceremony** (`git push` deploys all of it at once) |
 
 **The ceremony in one sentence:** re-run the backfill (blob→column sync), run
-7 DDL statements in the Neon prod console, `git push` immediately — one sitting.
+`pnpm db:push:prod` (answering the rename prompt with **renamed**), `git push`
+immediately — one sitting.
 
 **What the push deploys:** everything on local `main` past `8c0ce467` — all 20
 Wave-3 commits **plus your S6b tRPC-standardization commits** (`84d60b88` etc.).
@@ -90,20 +91,31 @@ live backfill re-run, which is part of the real ceremony this time.
 - [ ] 5. Parity proof: paste **Appendix A** (canonical runbook) into the
       branch's SQL console → every count **0** (the enrichment sanity probe is
       annotated as possibly > 0).
-- [ ] 6. Paste the 7-statement DDL block (Step 3.4 below) into the branch's
-      SQL console. All must succeed.
-- [ ] 7. Push-parity proof:
+- [ ] 6. The DDL via drizzle (dry-run of Step 3.4 — same command, branch
+      target thanks to the exported `DATABASE_URL`):
 
   ```bash
-  DRIZZLE_TARGET=prod pnpm drizzle-kit push
+  pnpm db:push:prod
   ```
 
-  Expect **`No changes detected`**. Anything else → **STOP**, the manual DDL
-  and the Drizzle schema disagree.
+  This is the rehearsal's most important moment — it shows you the EXACT
+  interactive session prod will give you:
+  - the **rename prompt**: "`contract_envelope_id` created or renamed from
+    `signing_request_id`?" → select **renamed** (emits `RENAME COLUMN`,
+    data-preserving). Selecting "created" here would DROP+ADD and destroy
+    the column data — this is the one keystroke that matters.
+  - the 6 blob `DROP COLUMN`s flagged as data-loss → expected, approve.
+  - **read the full statement list** (config is `verbose: true`): any
+    statement outside the ceremony set (rename + 6 drops + additive enum
+    values) → **STOP**, abort at the strict-mode confirm, ping Claude.
 
-- [ ] 8. `DRIZZLE_TARGET=prod pnpm tsx scripts/recompute-final-tcp.ts --dry-run`
+  Then verify: `SELECT contract_envelope_id FROM proposals LIMIT 1` returns
+  data (rename preserved values), and re-running `pnpm db:push:prod` says
+  **`No changes detected`**.
+
+- [ ] 7. `DRIZZLE_TARGET=prod pnpm tsx scripts/recompute-final-tcp.ts --dry-run`
       → expect zero drift.
-- [ ] 9. Spot-check:
+- [ ] 8. Spot-check:
 
   ```sql
   SELECT contract_envelope_id FROM proposals LIMIT 1;  -- rename took
@@ -113,8 +125,8 @@ live backfill re-run, which is part of the real ceremony this time.
   -- expect zero rows
   ```
 
-- [ ] 10. Delete the rehearsal branch (Neon console).
-- [ ] 11. **`unset DATABASE_URL`** — a lingering export silently redirects the
+- [ ] 9. Delete the rehearsal branch (Neon console).
+- [ ] 10. **`unset DATABASE_URL`** — a lingering export silently redirects the
       next `DRIZZLE_TARGET=prod` command.
 
 **Only a clean rehearsal authorizes Step 3.**
@@ -157,8 +169,25 @@ signal**. Keep the gap short.
       into the Neon **prod** SQL console. Every count **0**. Any non-zero →
       **STOP**, ping Claude with the output.
 
-- [ ] **3.4 The DDL** — Neon **prod** SQL console. Never via `drizzle-kit
-      push` (the rename would render as DROP+ADD and destroy the column data):
+- [ ] **3.4 The DDL — via drizzle**, exactly like the rehearsal
+      (Step 0 sanity holds: no `.env.local`, no lingering `DATABASE_URL`
+      export; banner/host printed by the tool must be prod):
+
+  ```bash
+  pnpm db:push:prod
+  ```
+
+  Same interactive session as rehearsed:
+  1. Rename prompt → **renamed** from `signing_request_id` ("created" here
+     destroys the column data — this is the keystroke that matters).
+  2. Statement list (verbose) must match the rehearsal: the rename, the 6
+     blob `DROP COLUMN`s, plus any additive enum values seen in rehearsal.
+     Anything else → abort at the strict confirm, ping Claude.
+  3. Approve the data-loss confirm (the 6 drops are the ceremony).
+
+  Note the timestamp (Neon PITR restore-window bookkeeping — last-resort
+  backstop). Fallback if the interactive prompts misbehave: run the
+  equivalent SQL by hand in the Neon prod console —
 
   ```sql
   ALTER TABLE proposals RENAME COLUMN signing_request_id TO contract_envelope_id;
@@ -169,9 +198,6 @@ signal**. Keep the gap short.
   ALTER TABLE "user" DROP COLUMN agent_profile_json;
   ALTER TABLE lead_sources DROP COLUMN voip_config_json;
   ```
-
-  Note the timestamp (Neon PITR restore-window bookkeeping — last-resort
-  backstop).
 
 - [ ] **3.5 Deploy — immediately:**
 
