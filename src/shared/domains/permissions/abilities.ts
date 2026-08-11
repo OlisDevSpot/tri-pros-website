@@ -105,7 +105,7 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
     case 'agent':
       can('access', 'Dashboard')
 
-      can('read', 'Customer')
+      can('read', 'Customer', { $participatesViaMeeting: { via: 'customerId' } })
       // `age` is the only Customer-owned field an agent may write directly —
       // the other 23 sales-discovery fields moved to the customer_profiles
       // child table (Addendum B, 2026-07-14) and are gated below on the
@@ -221,7 +221,7 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       can('access', 'Dashboard')
       can('read', 'LeadsPool') // sees the shared leads pool (drives visibility + phone + pipeline access)
 
-      can('read', 'Customer')
+      can('read', 'Customer', { $inDerivedPipeline: ['leads', 'rehash'] })
       // Lead-contact fields only — NOT the sales-discovery JSON profiles.
       can('update', 'Customer', ['name', 'phone', 'email', 'address', 'city', 'state', 'zip', 'pipelineStage'])
 
