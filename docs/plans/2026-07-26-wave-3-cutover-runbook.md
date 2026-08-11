@@ -161,7 +161,7 @@ DRIZZLE_TARGET=prod pnpm tsx scripts/recompute-final-tcp.ts --dry-run      # exp
 Then the smoke drive, in prod, against real (or a disposable test) data:
 
 1. Create a proposal from a meeting.
-2. Edit + save it in both price-display modes (total / itemized).
+2. Edit + save it in both price-display modes (total / breakdown).
 3. Generate the PDF.
 4. Generate the AI summary.
 5. Assemble a Zoho envelope.

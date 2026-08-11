@@ -183,6 +183,8 @@ newer rule:
 |---|---|---|
 | `1` | 2026-07-09 | `max(0, startingTcp − Σ global 'discount' incentives − Σ ALL section incentives)`, integer cents (`ROUND(x * 100)`), no floats stored |
 
+**2026-07-26 W3**: `startingTcp` source moved to the `starting_tcp_cents` column (was `fundingJSON.data.startingTcp`) — value-identical, NOT a version bump.
+
 **Pricing-mode invariant**: in breakdown pricing mode, the form keeps `startingTcp = Σ sectionPrice + miscPrice` in sync client-side (`funding-fields.tsx`) — this is what makes the formula above pricing-mode-agnostic and lets the PDF Subtotal reconcile with the form's Contract Price. This sync is client-side only today; no server-side enforcement exists yet.
 
 **Why**: line-item edits would silently invalidate a hand-stored TCP; the rollup is recomputed on every write. Single source of truth for the formula; the rollup column keeps server-side filter/sort fast and correct.
@@ -337,6 +339,7 @@ Cost helpers return `null` (not 0) when cost data is incomplete — distinguishe
 Customer age (`customer.age` — plain column, epic #256/#259; see `../customers/DOCS.md#three-jsonb-profiles`) and the envelope-document selection (`proposal.envelopeDocumentIds` — plain array column since Wave 3; it previously lived at `formMetaJSON.envelopeDocumentIds`, now frozen) together form *the agreement context* — the set of inputs that determine what the Zoho Sign envelope will contain. Age is the source of truth; the document registry classifies every doc as required, optional, or forbidden for a given age + proposal kind. The selection is reconciled against age automatically on every change.
 
 - **Single procedure**: `proposalsRouter.contracts.applyEnvelopeContext({ id, token?, age?, envelopeDocumentIds? })` is the only writer for these two fields. Either input is optional; at least one must be present. Server reconciles the saved selection against the (possibly just-applied) age before persisting.
+- **Tightening is now SCHEMA-level, not just conventional.** `envelopeDocumentIds` left form state entirely at the W3 form rewrite — `ProposalFormSchema` is `{ priceDisplayMode, project: projectSectionSchema, funding: fundingDataSchema }` (flat `funding`, no `meta` section; `project`'s `{data, meta}` envelope survives blob-backed until W4). There is no field in that shape for envelope documents, so `applyEnvelopeContext` isn't merely convention-designated as the sole writer — no other write path can touch the column at all, form or otherwise.
 - **Reconciliation is silent**: on age change, required docs are auto-added and forbidden docs are auto-dropped from the saved selection without surfacing notifications. The reconciled result is returned to the caller so the UI can render it immediately.
 - **Lock**: refuses to apply while the proposal is anywhere on the lock ladder (`isProposalFrozen` — see `#proposal-lock-ladder`, #264). The envelope was assembled from this context; to edit, discard the draft or recall the envelope.
 - **Auth**: shareable procedure — agent (session) and homeowner (proposal token) drive the same writes. The customers entity does not carry its own token; the proposal's token gates writes to the customer-age field through this procedure.

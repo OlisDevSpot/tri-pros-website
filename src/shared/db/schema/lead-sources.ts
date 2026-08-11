@@ -13,7 +13,7 @@ export const leadSourcesTable = pgTable('lead_sources', {
   slug: text('slug').notNull().unique(),
   token: text('token').notNull().unique(),
   formConfigJSON: jsonb('form_config_json').$type<LeadSourceFormConfig>().notNull(),
-  // ── Wave-1 decomposition: voipConfigJSONDeprecated.campaigns → columns (epic #256 / #259) ──
+  // ── Wave-1 decomposition: former voip_config_json blob's campaigns sub-object → columns (epic #256 / #259) ──
   // Ownership semantics unchanged: policy is SOURCE-owned; campaigns stay pools.
   // Unset defaultCampaignId ⇒ auto-enroll inert (no guessing).
   // see src/shared/entities/lead-sources/DOCS.md

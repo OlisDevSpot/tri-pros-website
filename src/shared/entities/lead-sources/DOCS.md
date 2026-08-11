@@ -83,7 +83,7 @@ A customer's lead source is tracked as `customers.leadSourceId` (FK with `onDele
 
 ### voip-campaigns-policy-lives-on-the-source
 
-A source's CloudTalk-campaign policy lives on plain `lead_sources` columns (epic #256/#259 — split out of the old `voipConfigJSON.campaigns` blob; see `voipConfigJSONDeprecated` in `src/shared/db/schema/lead-sources.ts`), NOT on the campaign — campaigns are pools, never source-owned (see `../voip-campaigns/DOCS.md#admin-binding`). Fields, each set via the Setup tab's per-source policy table through the single `setVoipCampaignsPolicy` mutation (plain column UPDATE, no read-modify-write):
+A source's CloudTalk-campaign policy lives on plain `lead_sources` columns (epic #256/#259 — split out of the old `voip_config_json.campaigns` blob). That column — and the `voipConfigJSONDeprecated` property that once typed it — no longer exists: dropped at the Wave-3 ceremony (dev 2026-08-11; prod via `docs/plans/2026-07-26-wave-3-cutover-runbook.md`). Policy is NOT on the campaign — campaigns are pools, never source-owned (see `../voip-campaigns/DOCS.md#admin-binding`). Fields, each set via the Setup tab's per-source policy table through the single `setVoipCampaignsPolicy` mutation (plain column UPDATE, no read-modify-write):
 
 | Column | Meaning | Where enforced |
 |---|---|---|

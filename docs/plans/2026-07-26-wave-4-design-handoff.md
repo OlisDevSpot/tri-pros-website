@@ -31,6 +31,13 @@ cutover is verified. If it hasn't, stop — this handoff assumes its end-state.
 
 ## Post-W3 state you inherit (don't re-derive)
 
+**CONFIRMED 2026-08-11 (Task 13 truth pass).** This section was written predictively on
+2026-07-26, before Wave 3 implementation started — it has now been verified against the
+actually-shipped code (commits `5c721a83`, `996ba590`, `a9f5539b`, `fb41da12`, `6d5b705c`)
+and matches. Dev DB cutover is complete; prod DDL (the drop/rename ceremony) is still
+pending via `docs/plans/2026-07-26-wave-3-cutover-runbook.md` — treat the schema facts below
+as the code/dev-DB end-state, not yet prod's live state until that runbook's §3b runs.
+
 - `proposals` columns: `starting_tcp_cents`, `deposit_amount_cents`, `cash_in_deal_cents`,
   `misc_price_cents`, `price_display_mode` (text-enum, renamed per pricing-editor vocabulary),
   `envelope_document_ids text[]`, plus `final_tcp_cents`, `calc_version` (still 1),
@@ -114,7 +121,13 @@ check. Proposal editing is the **highest-traffic sales tool** (program spec risk
    `type='discount'` (fits the existing CHECK: amount_cents NOT NULL; recompute's discount
    subquery then REQUIRES the `sow_item_id IS NULL` predicate — the double-count guard) vs mint a
    third type value `'section'`. Either way `label` becomes meaningful (notNull for section rows)
-   and position is per-section. The same-deploy predicate constraint is non-negotiable (ledger).
+   and position is per-section. **Pre-landed 2026-08-10 (`5c721a83`, W3 Task 7): the
+   `sow_item_id IS NULL` predicate is already live** on the global-discount subquery in
+   `recomputeProposalFinancials` (a no-op today — every `proposal_incentives` row is global) —
+   the original same-deploy ordering hazard this question worried about is structurally
+   defused. W4 only has to make sure section-incentive rows are written with a non-null
+   `sow_item_id` for the existing predicate to start doing real exclusion work; there is no
+   longer a "predicate must land in the same deploy as the rows" race to coordinate.
 4. **Cost-line exposure on the shareable path**: today cost lines ride the blob into the
    token-path `getFullView` payload (UI hides them; PDF never reads them). W4 is the moment to
    exclude them from the homeowner payload structurally — separate agent-gated fetch or

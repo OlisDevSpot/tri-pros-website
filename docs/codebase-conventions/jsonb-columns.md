@@ -38,7 +38,7 @@ test above isn't specific enough — it only distinguishes column/JSONB/child-ta
 for collections. Run this checklist (Addendum B, spec §10; ADR-0005 amended
 2026-07-14) before defaulting a 1:1 cluster to "nullable columns on the parent":
 
-1. **Is it a named domain concept?** A noun in `docs/domain/ubiquitous-language.md`
+1. **Is it a named domain concept?** A noun in `docs/ubiquitous-language.md`
    — not just "fields we happened to collect at the same intake step." If no →
    columns on the parent, stop here.
 2. **Does it differ from the parent in ≥1 structural way?**
@@ -131,7 +131,7 @@ can't tell old-shape rows from new-shape rows. (Existing blobs predate this rule
 ### one-canonical-key-per-concept
 
 A concept has exactly one key name across all JSONB blobs. Don't spell the same thing
-`phone` here and `phoneNumber` there. Reuse the term from `docs/domain/ubiquitous-language.md`.
+`phone` here and `phoneNumber` there. Reuse the term from `docs/ubiquitous-language.md`.
 
 ### zod-parse-at-write-boundary
 
@@ -235,5 +235,5 @@ still physically lives in JSONB.
 
 - ADR-0005 — JSONB vs Column vs Child Table (the *why*)
 - `docs/codebase-conventions/database-schema.md` — column/pgEnum/timestamp conventions
-- `docs/domain/ubiquitous-language.md` — canonical key names
+- `docs/ubiquitous-language.md` — canonical key names
 - `docs/superpowers/specs/2026-07-03-jsonb-restructure-design.md` — the full restructure

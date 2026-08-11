@@ -81,14 +81,22 @@ all five foreseen bridges shipped as planned; no additional bridge was introduce
 these (customers-side attribution/enrichment is a permanent nested composed read, not a
 temporary legacy-shape bridge — see `entities/customers/dal/server/queries.ts:CustomerFullView`).
 
+Reconciled at Task 13 (W3 truth pass) against what actually shipped in the W3 write-seam
+flip (`5c721a83`, `996ba590`, `fb41da12`): all bridges below died on schedule, in the
+commits named. Two bonus dead-shape deletions swept in the same wave (not pre-registered
+by the original plan, found during the flip): `get-proposal-aggregates.ts`'s dual-shape
+`'meta' in proposal ? ... : ...` type-punning branch (`5c721a83`) and `formValuesToProposal`,
+the dead old-shape form→proposal converter (`9b5f67a5`, ahead of the flip once the pricing
+components took façade-input props directly).
+
 | | Item | Where | W3 replacement |
 |---|---|---|---|
-| [ ] | `getFullView` incentive hydration bridge (rows → `fundingJSON.data.incentives`) | `entities/proposals/dal/server/queries.ts` (confirmed: `listProposalIncentives` + `incentiveRowsToDomain` rehydrate into `fundingJSON.data.incentives` at read time) | dies with `fundingJSON` itself |
-| [ ] | Recompute jsonb residues: `startingTcp` base + section-incentives term inside `recomputeProposalFinancials` | `entities/proposals/dal/server/mutations.ts` (confirmed present, comment cites "W3") | `starting_tcp_cents` column + `proposal_incentives(sow_item_id)` rows. **W3 ordering constraint (final review, this task)**: the SQL must add `sow_item_id IS NULL` to the existing global-discount subquery THE SAME MOMENT section rows land in `proposal_incentives` — if section rows are inserted before that predicate is added, the discount SUM would double-count them alongside the still-present `projectJSON.data.sow[].financials.incentives[]` jsonb term |
-| [ ] | `incentives: []` blank-write in `buildMutationData` (edit + create views) + third blank-writer found by 2026-07-15 seam audit: `features/customer-pipelines/ui/components/create-proposal-popover.tsx:69-77` | `features/proposal-flow/ui/views/edit-proposal-view.tsx` + `create-new-proposal-view.tsx` (confirmed both) + the pipelines popover | dies with fundingJSON decomposition |
-| [ ] | Freeze-gate gap: only `replaceProposalIncentives` + `applyEnvelopeContext` are gated; blob-wide financial freeze | proposals DAL (confirmed: no other write path is freeze-gated yet) | W3 write refactor extends the gate (Addendum A.1.2) |
-| [ ] | Incentive scrub-with-tripwire (**built `295c20b1`**): `scrubBlobIncentives` in `entities/proposals/lib/scrub-blob-incentives.ts`, wired into `server-spec.ts` `create.before`/`update.before` + `setCashInDeal` (forces `fundingJSON.data.incentives = []`, warns loudly on non-empty scrub) | `entities/proposals/lib/scrub-blob-incentives.ts` + `lib/server-spec.ts` hooks + `dal/server/mutations.ts:setCashInDeal` | Sanctioned bridge per `ubiquitous-language.md` — exists ONLY because the blob incentives array survives until W3; dies in the same commit that decomposes `fundingJSON`. If found alive after W3 ships, that's a bug. If the tripwire warning fires before W3, escalate scrub→reject |
-| [ ] | `proposal-doc-definition.ts` / AI-summary / Zoho-context reading blob-shaped `funding`/`sow` | via getFullView bridge (confirmed: `pdf.service.ts` + proposal-flow query/view consumers all read through `getFullView`, none read `proposal_incentives` directly) | W3 flips them to rows |
+| [x] deleted (`5c721a83`) | `getFullView` incentive hydration bridge (rows → `fundingJSON.data.incentives`) | `entities/proposals/dal/server/queries.ts` (confirmed: `listProposalIncentives` + `incentiveRowsToDomain` rehydrate into `fundingJSON.data.incentives` at read time) | dies with `fundingJSON` itself — commit message: "getFullView's hydratedFunding bridge is deleted; consumers derive funding JIT via toFundingInputs" |
+| [x] HALF — `startingTcp` base done (`5c721a83`); section-incentives term REMAINS (kill trigger: W4, ledger "Rides the Wave 4" section) | Recompute jsonb residues: `startingTcp` base + section-incentives term inside `recomputeProposalFinancials` | `entities/proposals/dal/server/mutations.ts` (verified: SQL now reads `COALESCE(proposals.starting_tcp_cents, 0)` for the base; the section-incentives term still walks `jsonb_array_elements(proposals.projectJSON->'data'->'sow')`) | `starting_tcp_cents` column (DONE) + `proposal_incentives(sow_item_id)` rows (W4). The `sow_item_id IS NULL` predicate on the global-discount subquery landed in the SAME commit as the `starting_tcp_cents` switch (`5c721a83`) — pre-lands the W4 double-count guard as a no-op today |
+| [x] deleted (`5c721a83`) | `incentives: []` blank-write in `buildMutationData` (edit + create views) + third blank-writer found by 2026-07-15 seam audit: `features/customer-pipelines/ui/components/create-proposal-popover.tsx:69-77` | `features/proposal-flow/ui/views/edit-proposal-view.tsx` + `create-new-proposal-view.tsx` (confirmed both) + the pipelines popover | dies with fundingJSON decomposition — verified: `buildMutationData` no longer writes an `incentives` key at all (incentives flow exclusively through `replaceProposalIncentives`); the popover's create payload carries no `incentives` field either |
+| [x] tightened (`5c721a83`) | Freeze-gate gap: only `replaceProposalIncentives` + `applyEnvelopeContext` are gated; blob-wide financial freeze | proposals DAL (confirmed: no other write path is freeze-gated yet) | W3 write refactor extends the gate (Addendum A.1.2) — `frozenProposalLockedFields` now lists `startingTcpCents`, `depositAmountCents`, `cashInDealCents`, `miscPriceCents`, `priceDisplayMode`, `envelopeDocumentIds` (replacing the old `formMetaJSON`/`fundingJSON` blob-wide entries) |
+| [x] deleted (`996ba590`) | Incentive scrub-with-tripwire (**built `295c20b1`**): `scrubBlobIncentives` in `entities/proposals/lib/scrub-blob-incentives.ts`, wired into `server-spec.ts` `create.before`/`update.before` + `setCashInDeal` (forces `fundingJSON.data.incentives = []`, warns loudly on non-empty scrub) | `entities/proposals/lib/scrub-blob-incentives.ts` + `lib/server-spec.ts` hooks + `dal/server/mutations.ts:setCashInDeal` | Sanctioned bridge per `ubiquitous-language.md` — exists ONLY because the blob incentives array survives until W3; dies in the same commit that decomposes `fundingJSON`. Verified gone from `src/`/`scripts/` (only a tombstone doc-comment reference remains at `entities/proposals/schemas/index.ts:147`, sanctioned per Task 9 precedent). Tripwire never escalated to reject before W3 shipped |
+| [x] flipped (`fb41da12`) | `proposal-doc-definition.ts` / AI-summary / Zoho-context reading blob-shaped `funding`/`sow` | via getFullView bridge (confirmed: `pdf.service.ts` + proposal-flow query/view consumers all read through `getFullView`, none read `proposal_incentives` directly) | W3 flips them to rows — verified: `proposal-doc-definition.ts`, `src/app/api/proposals/[proposalId]/summary/route.ts`, and `zoho-sign/lib/documents/proposal-context.ts` all call `toFundingInputs(proposal)` now, zero `fundingJSON` reads remain in any of the three |
 
 ## Superseded design docs — kill trigger: plan Task 11 (this wave)
 
@@ -133,6 +141,24 @@ temporary legacy-shape bridge — see `entities/customers/dal/server/queries.ts:
 - Recompute jsonb residue #1 (`startingTcp` base from `fundingJSON`) dies → `starting_tcp_cents`
   column; `scripts/recompute-final-tcp.ts` SQL updated in the same commit (keep-in-sync contract).
 
+**New W3-introduced scaffolding, kill trigger the Wave 4 push (registered Task 13)**:
+
+| | Item | Where | Why it survives W3 |
+|---|---|---|---|
+| [ ] | `scripts/backfill-wave3-scalars.ts` | `scripts/` | **Cutover-window-only tool, retained (not deleted) per the cutover-runbook Aftercare section** — it's the ongoing drift-check (`--dry-run`) against the still-live `fundingJSONDeprecated`/`formMetaJSONDeprecated` blobs. Dies in the same commit that drops those columns |
+| [ ] | `fundingJSONDeprecated` / `formMetaJSONDeprecated` columns | `db/schema/proposals.ts` | Frozen at the W3 write-seam flip (zero writers since `996ba590`/`a9f5539b`); one-release rollback window per the drop protocol. Batched with `projectJSON`'s W4 freeze-then-drop, not W3's own drop ceremony (which only touched the 6 W1/W2 columns) |
+| [ ] | Legacy envelope-parse schemas `fundingSectionSchema` / `formMetaSectionSchema` (`@deprecated`) | `entities/proposals/schemas/index.ts` | Only legitimate importers: the Drizzle `$type<>` on the frozen columns + `scripts/backfill-wave3-scalars.ts` (verified by grep — keep it that way). Parse HISTORICAL stored JSON whose keys (e.g. `pricingMode`) must never be renamed |
+| [ ] | **Project form envelope tally** — `projectSectionSchema`'s `{data, meta}` wrapper + `sectionMetaSchema` + the written-never-read `meta.enabled` | `entities/proposals/schemas/index.ts` | Survive ONLY because `projectJSON` is still blob-backed (W4 scope). Kill trigger: W4 form-shape flattening |
+| [ ] | **Cents-native façade tally** — the financials façade keeps its dollars `{funding, sow}` input this wave | `entities/proposals/lib/financials/` | ONLY because (a) RHF form state round-trips dollars on every keystroke and (b) SOW amounts stay dollars inside `projectJSON` until W4. Kill trigger: W4 SOW normalization enables a cents-native façade (existing ledger direction "row-cents at the edge") |
+
+**Superseded marker**: the 2026-07-26 design spec's proposed "assembled view-model revisit"
+tally never became a ledger row — Amendment 2 (Option 3 read-shape ruling, Oliver 2026-07-27,
+made *before* this wave's implementation started) killed the materialized-view-model concept
+outright, so there was never a seam to schedule a revisit for. `ProposalWithCustomer` carries
+cents columns + incentive rows only; `FundingData` is derived JIT via `toFundingInputs(row)` at
+call sites. No action needed here beyond this note — recorded so a future audit doesn't go
+looking for a marker that was intentionally never created.
+
 ### Rides the Wave 4 (SOW) prod push
 
 - `proposals.projectJSON` frozen at the W4 cutover, dropped the release AFTER (post-waves
@@ -142,8 +168,11 @@ temporary legacy-shape bridge — see `entities/customers/dal/server/queries.ts:
   SQL in customer-pipelines/agent-dashboard, `projects.router` `business.router.ts:82` untyped
   sow-scopes walk, Zoho `registry.ts`/`assemble-envelope.ts` raw `ctx.proposal.*JSON` reads
 - Recompute jsonb residue #2 (section incentives from `projectJSON`) dies; the
-  `sow_item_id IS NULL` predicate on the global-discount subquery lands in the SAME deploy the
-  section rows appear (double-count guard, see W2-bridges row above); `calc_version` → 2
+  `sow_item_id IS NULL` predicate on the global-discount subquery **already landed** in
+  `5c721a83` alongside the `starting_tcp_cents` switch (a no-op today — every row is global) —
+  W4 only needs to insert section rows for the predicate to start doing real work; no
+  same-deploy ordering hazard remains (see W2-bridges row above and the Wave-4 handoff's
+  question 3). `calc_version` → 2
 
 ## Seam-tightening register — permissive seams / escape hatches (audit 2026-07-15)
 

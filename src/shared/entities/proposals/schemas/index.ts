@@ -79,10 +79,15 @@ const projectDataSchema = z.object({
   sow: z.array(sowSchema).min(1, { message: 'At least one scope is required' }),
 })
 
-// `finalTcp` is NOT stored here — it is derived via
+// `finalTcp` is NOT part of this domain shape — it is derived via
 // `computeFinalTcp({ funding, sow })` in `entities/proposals/lib/financials`.
-// Persisted derived values invite drift between inputs and the cached number;
-// always compute on demand from `startingTcp` − global discounts − section incentives.
+// Three-stage lifecycle standard (DOCS.md#final-tcp-derived, Addendum A.2):
+// drafting computes on read (this schema, never persisted); lists/reports
+// cache a rollup in `proposals.final_tcp_cents`, recomputed at the single
+// `recomputeProposalFinancials` choke point; frozen proposals snapshot via
+// the lock ladder. The rollup is a cache with one writer, not a second
+// source of truth — always derive from `startingTcp` − global discounts −
+// section incentives at the drafting stage.
 /**
  * Canonical funding domain shape (flat dollars). Two legitimate sources, and
  * only two: `toFundingInputs(row)` — the W3 cents columns + incentive rows,

@@ -82,21 +82,13 @@ plain-replaces a column now, so this is simply how `update` behaves, not an opt-
 
 ### customer-token-access-is-update-capable
 
-Homeowners access their proposal via `?token=<shareToken>` (see `../../shared/entities/proposals/DOCS.md#shareable-via-token`). Crucially, the token allows **read AND update** — homeowners can change their finance option selection from the customer view (which writes to `fundingJSON.data.selectedFinanceOptionId`).
+Homeowners access their proposal via `?token=<shareToken>` (see `../../shared/entities/proposals/DOCS.md#shareable-via-token`). Crucially, the token allows **read AND update** — homeowners can change their finance option selection from the customer view (which writes to the `proposals.financeOptionId` scalar column, FK → `finance_options`).
+
+**Corrected 2026-08-11**: `selectedFinanceOptionId` was never a real field — it was never stored in either JSONB blob (verified: zero rows, dev 59 blobs / prod 100 blobs, carried that key). The finance-option selection has always lived on the plain `financeOptionId` column; this rule previously mis-cited a blob path that doesn't exist.
 
 **Why**: finance selection is part of the homeowner's decision; forcing them to call the agent to flip an option breaks the self-service flow.
-**Reference impl**: `proposalServerSpec.shareable = { tokenColumn: 'token' }` + `createCrudRouter` selecting `shareableProcedure` for update
+**Reference impl**: `proposalServerSpec.shareable = { tokenColumn: 'token' }` + `createCrudRouter` selecting `shareableProcedure` for update; `db/schema/proposals.ts:financeOptionId`
 **Enforced by**: server spec + shareable middleware
-
-### funding-mode-cash-vs-finance
-
-The funding step has two pricing modes: `cash` and `finance`. The mode toggles which inputs are visible (deposit amount + percentage vs. APR + term + monthly payment) and which derived values are computed.
-
-Mode is stored in `fundingJSON.data.mode`. Both modes share `startingTcp` + `incentives`; only the mode-specific fields differ.
-
-**Why**: residential remodeling sells in both modalities — cash gets a deposit discussion, finance gets a monthly-payment discussion. Same proposal, different framing per customer.
-**Reference impl**: `schemas/`; UI in `ui/components/proposal/funding/`
-**Enforced by**: Zod (discriminated union or branching `optional()` fields per mode)
 
 ### contract-status-panel-derives-from-proposal-row
 

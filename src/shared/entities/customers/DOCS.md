@@ -233,9 +233,9 @@ Separately: the customer profile's **activity timeline** (Overview tab) is **der
 - **Hardcoding `status === 'sent'` for phone-unlock UI logic.** Use `hasSentProposal` (the boolean computed by `hasSentProposalSql`) — it already encodes the threshold.
 - **Storing computed `isSigned` on the customer row.** Always derive via `isSignedCustomerSql` (or check projects directly).
 - **Setting `pipelineStage` on a customer that has meetings.** It's meaningless for non-leads.
-- **Writing to `customerProfileJSONDeprecated` / `propertyProfileJSONDeprecated` / `financialProfileJSONDeprecated`.** Frozen Wave-1 blobs, zero writers, dropped next release. Patch the real columns via `upsertCustomerProfile` (`age` via `customerCrud.update`) — see `#three-jsonb-profiles`.
+- **Writing to `customerProfileJSONDeprecated` / `propertyProfileJSONDeprecated` / `financialProfileJSONDeprecated`.** These no longer exist — dropped at the Wave-3 ceremony (dev 2026-08-11; prod via `docs/plans/2026-07-26-wave-3-cutover-runbook.md`). Patch the real columns via `upsertCustomerProfile` (`age` via `customerCrud.update`) — see `#three-jsonb-profiles`.
 - **Reading `customer.triggerEvent` (or any profile-trio field) straight off a bare `Customer` row.** Those fields live on the `customer_profiles` child table now — use the composed `CustomerWithProfile` type (flattened-spread joined) or `CustomerProfileRow | null`, never a `Partial` spread off `Customer` that would compile even when the join is missing.
-- **Writing to `leadMetaJSONDeprecated`, or attempting to update `customer_lead_attribution`.** Frozen Wave-2 blob, zero writers, dropped next release. Attribution is write-once via `upsertLeadAttribution` at capture; there is no update path by design — see `#lead-attribution-child`.
+- **Writing to `leadMetaJSONDeprecated`, or attempting to update `customer_lead_attribution`.** `leadMetaJSONDeprecated` no longer exists — dropped at the Wave-3 ceremony (dev 2026-08-11; prod via `docs/plans/2026-07-26-wave-3-cutover-runbook.md`). Attribution is write-once via `upsertLeadAttribution` at capture; there is no update path by design — see `#lead-attribution-child`.
 - **Bypassing the senior-age path mismatch.** Customer profile = bucket; contract flow = precise number. Pick the right helper.
 
 ## See also
