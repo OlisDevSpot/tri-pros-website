@@ -11,10 +11,11 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { PinIcon } from 'lucide-react'
+import { PinIcon, RefreshCw } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { SKELETON_CELL_WIDTHS, SKELETON_ROW_HEIGHT_CLASS } from '@/shared/components/data-table/constants/skeleton-widths'
+import { PULL_TO_REFRESH_THRESHOLD, usePullToRefresh } from '@/shared/components/data-table/hooks/use-pull-to-refresh'
 import { createDateRangeFilterFn } from '@/shared/components/data-table/lib/filter-fns'
 import { DataTableFilterBar } from '@/shared/components/data-table/ui/data-table-filter-bar'
 import { DataTablePagination } from '@/shared/components/data-table/ui/data-table-pagination'
@@ -139,6 +140,9 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const [containerWidth, setContainerWidth] = useState(0)
+
+  // -- Pull-to-refresh (touch) ----------------------------------------------
+  const { pullDistance, isRefreshing } = usePullToRefresh(scrollRef, serverPagination?.onRefresh)
 
   useEffect(() => {
     const el = scrollRef.current
@@ -390,7 +394,26 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
         </div>
       )}
 
-      <div className="grow min-h-0 flex flex-col rounded-xl border border-border/50 overflow-hidden">
+      <div className="relative grow min-h-0 flex flex-col rounded-xl border border-border/50 overflow-hidden">
+        {serverPagination?.onRefresh && (pullDistance > 0 || isRefreshing) && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-center"
+            style={{
+              transform: `translateY(${Math.max(pullDistance - 20, 0)}px)`,
+              opacity: Math.min(pullDistance / PULL_TO_REFRESH_THRESHOLD, 1),
+            }}
+          >
+            <div className="mt-1 rounded-full border border-border/50 bg-background p-1.5 shadow-sm">
+              <RefreshCw
+                className={cn(
+                  'size-4 text-muted-foreground',
+                  isRefreshing && 'motion-safe:animate-spin',
+                )}
+              />
+            </div>
+          </div>
+        )}
         <div
           ref={scrollRef}
           onScroll={handleScroll}
@@ -468,6 +491,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                         {/* Resize handle — centred on the column's right edge */}
                         {header.column.getCanResize() && !isLastCol && (
                           <div
+                            data-resize-handle
                             onMouseDown={header.getResizeHandler()}
                             onTouchStart={header.getResizeHandler()}
                             onDoubleClick={() => header.column.resetSize()}
@@ -488,6 +512,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                         {/* Last column: resize handle on the RIGHT edge (inside the cell) */}
                         {header.column.getCanResize() && isLastCol && (
                           <div
+                            data-resize-handle
                             onMouseDown={header.getResizeHandler()}
                             onTouchStart={header.getResizeHandler()}
                             onDoubleClick={() => header.column.resetSize()}
