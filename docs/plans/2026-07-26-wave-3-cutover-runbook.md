@@ -173,11 +173,12 @@ DRIZZLE_TARGET=prod pnpm tsx scripts/backfill-wave3-scalars.ts
 > create. Run §3a-fix below **immediately**, independent of the rest of the
 > ceremony.
 
-### 3a-fix. DROP NOT NULL completion — run NOW (safe under any deployed code)
+### 3a-fix. DROP NOT NULL completion — ✅ DONE 2026-08-11 (Oliver-authorized, applied + verified)
 
-Neon SQL console, prod. Making a column nullable is compatible with both
-pre-flip code (which still writes the blobs) and post-flip code (which omits
-them) — there is no ordering hazard and no error window:
+Applied against prod (`ep-flat-wind-...`) on 2026-08-11 with Oliver's explicit
+authorization; `information_schema` verification confirmed both columns now
+`is_nullable=YES`. The §2 rehearsal-branch caveat in step 4 above is moot for
+branches cut after this point. Recorded statements:
 
 ```sql
 ALTER TABLE proposals ALTER COLUMN "funding_JSON" DROP NOT NULL;
