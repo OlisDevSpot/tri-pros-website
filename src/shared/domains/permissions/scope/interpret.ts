@@ -4,7 +4,7 @@ import type { PgColumn } from 'drizzle-orm/pg-core'
 import type { CompoundNode, FieldNode, ScopeNode } from './ast'
 import type { OperatorCtx } from './operators'
 
-import { and, eq, inArray, or } from 'drizzle-orm'
+import { and, eq, inArray, not, or, sql } from 'drizzle-orm'
 
 import { isCompound } from './ast'
 import { getScopeOperator } from './operators'
@@ -18,14 +18,24 @@ import './operators/meeting-participation' // registers the domain operators
  * the caller maps to "no WHERE".
  */
 export function interpret(node: ScopeNode, ctx: OperatorCtx): SQL | null {
+  // Custom document operators ($participatesViaMeeting, $hasNoMeeting,
+  // $inDerivedPipeline) parse to `{ operator, value }` with NO `field`, so
+  // isCompound would misfile them. Route by the registry first.
+  const custom = getScopeOperator(node.operator)
+  if (custom)
+    return custom.toSql(node as FieldNode, ctx)
   return isCompound(node) ? interpretCompound(node, ctx) : interpretField(node, ctx)
 }
 
 function interpretCompound(node: CompoundNode, ctx: OperatorCtx): SQL | null {
-  // Only AND/OR are supported. Anything else (e.g. a ucast `not` compound from a
-  // `cannot`-with-conditions rule) must fail LOUD, never fall through to an
-  // implicit AND — a silently mis-compiled negation is a false-ALLOW leak.
-  // Full `not`/negation support lands in Phase 1 with the CASL parser wiring.
+  if (node.operator === 'not') {
+    const [child] = node.value
+    const inner = child ? interpret(child, ctx) : null
+    return inner ? not(inner) : sql`false` // not(allow-all) → deny
+  }
+  // Only AND/OR/NOT are supported. Anything else must fail LOUD, never fall
+  // through to an implicit AND — a silently mis-compiled negation is a
+  // false-ALLOW leak.
   if (node.operator !== 'and' && node.operator !== 'or')
     throw new Error(`[scope] unsupported compound operator '${node.operator}'`)
   const parts = node.value

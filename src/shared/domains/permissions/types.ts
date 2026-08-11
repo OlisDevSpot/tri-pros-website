@@ -9,7 +9,7 @@
 //   - The non-entity subjects below are feature/route gates that aren't
 //     real business entities — they stay hand-maintained.
 
-import type { MongoAbility } from '@casl/ability'
+import type { MongoAbility, MongoQuery } from '@casl/ability'
 
 import type { EntityName } from './abilities'
 
@@ -37,7 +37,20 @@ export type AppSubject
     | 'LeadsPool'
     | 'User'
 
+// Row conditions our rules use — the three custom document operators
+// (see scope/operators/*.ts) plus the scalar column conditions CASL already
+// supports (e.g. { ownerId }). Kept open (`| MongoQuery` union) so existing
+// scalar conditions still type-check. NOTE: these keys are how conditions are
+// AUTHORED in `can()` calls (with the leading `$`) — that's independent of
+// how the `defineScopeOperator` REGISTRY names them internally; see
+// scope/conditions-matcher.ts for why the registry drops the `$`.
+export type AppConditions
+  = MongoQuery
+    | { $participatesViaMeeting?: { via: 'customerId' | 'meetingId' | 'projectId' | 'self' } }
+    | { $hasNoMeeting?: boolean }
+    | { $inDerivedPipeline?: readonly ('dead' | 'fresh' | 'leads' | 'projects' | 'rehash')[] }
+
 // The main ability type used throughout the app.
 // MongoAbility is CASL's default ability class — named "Mongo" for historical
 // reasons but works with any backend. It's just the standard CASL ability.
-export type AppAbility = MongoAbility<[AppAction, AppSubject]>
+export type AppAbility = MongoAbility<[AppAction, AppSubject], AppConditions>

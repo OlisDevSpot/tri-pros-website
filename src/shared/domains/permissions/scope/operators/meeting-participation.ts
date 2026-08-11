@@ -13,9 +13,21 @@ type ParticipationVia = 'customerId' | 'meetingId' | 'projectId' | 'self'
  * body switches on `via`. Correlates to the outer subject via `ctx.pk`, except
  * `meetingId` (Proposal), which correlates on the subject's own FK column
  * `proposals.meeting_id`.
+ *
+ * Registry `name` has NO leading `$`, even though rules are authored with one
+ * (`can('read','Customer',{ $participatesViaMeeting: {...} })`). Verified
+ * against the installed @casl/ability@6.8.0 / @ucast/mongo@2.4.3: CASL's
+ * `MongoQueryParser` hardcodes `operatorToConditionName: e => e.slice(1)` in
+ * its OWN constructor and does NOT forward `buildMongoQueryMatcher`'s options
+ * arg to it — so the leading `$` is unconditionally stripped from every
+ * parsed node's `operator`, standard (`$eq`→`eq`) and custom alike. That's
+ * why `interpretField` already switches on `'eq'`/`'in'` without `$`; this
+ * registry follows the same, empirically-verified convention. See
+ * conditions-matcher.ts for how the `$`-prefixed condition key maps back to
+ * this unprefixed registry name.
  */
 defineScopeOperator({
-  name: '$participatesViaMeeting',
+  name: 'participatesViaMeeting',
   parseValue: value => value, // { via } — consumed by the CASL parser seam in Phase 1
   toSql: (node, ctx) => {
     if (ctx.actor.kind !== 'user') {
@@ -61,7 +73,7 @@ defineScopeOperator({
  * customers/dal/server/visibility.ts:22). Correlates on `ctx.pk` = customers.id.
  */
 defineScopeOperator({
-  name: '$hasNoMeeting',
+  name: 'hasNoMeeting',
   toSql: (_node, ctx) =>
     not(exists(db.select({ x: sql`1` }).from(meetings).where(eq(meetings.customerId, ctx.pk)))),
 })
