@@ -6,7 +6,7 @@
 // Import from: `@/shared/dal/server/types`
 
 import type { SQL } from 'drizzle-orm'
-import type { PgTable } from 'drizzle-orm/pg-core'
+import type { PgColumn, PgTable } from 'drizzle-orm/pg-core'
 import type z from 'zod'
 
 import type { Insert, Row, Update } from '@/shared/db/types'
@@ -74,7 +74,24 @@ export interface EntityServerSpec<
 > {
   entityName: EntityName
   caslSubject: AppSubject
-  visibility: (scope: VisibilityScope) => SQL
+  /**
+   * The entity's OWN visibility fragment (references THIS table's columns).
+   * Optional: a pure child entity (one with a `parent` link and no independent
+   * ownership) omits it — its effective scope is entirely parent-derived. A
+   * top-level entity without a `parent` MUST declare it, else it would be
+   * unscoped. Enforced at resolve time (`resolveEffectiveScope`), which ANDs
+   * this fragment with the parent bridge. Omni is handled by the callers of
+   * `resolveEffectiveScope`, never here.
+   */
+  visibility?: (scope: VisibilityScope) => SQL
+  /**
+   * Parent link for a sub-entity. `fk` is the CHILD column that references the
+   * parent's primary key. `resolveEffectiveScope` composes
+   * `fk IN (SELECT parent.pk FROM parent WHERE <parent effective scope>)` and
+   * ANDs it with this entity's own `visibility` (additive). Children reuse the
+   * parent's `caslSubject`. see dal/server/lib/scope.ts
+   */
+  parent?: { spec: EntityServerSpec, fk: PgColumn }
   table: TTable
   schemas: {
     insert: z.ZodObject<Record<string, z.ZodTypeAny>>

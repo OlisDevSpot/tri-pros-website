@@ -1,5 +1,15 @@
 # Entity Server System
 
+> **Status update (2026-08-09): partially superseded — decision agreed, not yet
+> implemented.** The `EntityServerSpec` data model, scope/shareable middleware,
+> `createCrudRouter`, and the DAL all stand. The *router-construction mechanism*
+> — the `createEntityRouter` factory, the `EntityToolkit` param, and the
+> write-only `entity-registry` — is being replaced by the **tRPC Standardization
+> Epic** (`docs/plans/2026-08-09-trpc-standardization-epic.md`): per-entity
+> procedures defined once in `<entity>.router/procedures.ts`, plain-router
+> leaves, a pure `index.ts`, and child tables as `subEntitySpec` entities. This
+> ADR is amended (not rewritten) when that epic's slice S7 lands.
+
 Every business **Entity** (Customer, Meeting, Proposal, Project) declares a typed **EntityServerSpec** that configures a factory (`createEntityRouter`) producing a tRPC router with uniform auth, visibility scoping, schema validation, and standardized CRUD — all backed by a standardized Data Access Layer. We chose this over the existing pattern of hand-written tRPC routers because the four entity routers had already drifted into divergent CRUD shapes, 1,400+ lines of database access were inlined in procedure bodies, and the `isOmni`-or-predicate dance had been copied 30+ times with no forcing function preventing further drift. This is the server-side counterpart of ADR-0001's Entity Action System: same forcing-function pattern, same typed-registry shape, applied one layer deeper.
 
 ## Context

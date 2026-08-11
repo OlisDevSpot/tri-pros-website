@@ -1,4 +1,5 @@
 import type { SQL } from 'drizzle-orm'
+import type { VisibilityScope } from '@/shared/dal/server/types'
 import { and, eq, exists } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { meetingParticipants, meetings, projects } from '@/shared/db/schema'
@@ -18,6 +19,17 @@ export function projectParticipationScope(userId: string): SQL {
         eq(meetingParticipants.userId, userId),
       )),
   )
+}
+
+/**
+ * `projectServerSpec.visibility` — the `VisibilityScope`-shaped fragment over
+ * `projectParticipationScope`. Correlates on `projects.id`, so it doubles as the
+ * parent bridge for project-media (`mediaFiles.projectId`) via
+ * `resolveEffectiveScope`. `ability` is unused (participation is purely
+ * ownership-based); omni is handled upstream in the scope gates.
+ */
+export function projectVisibility({ userId }: VisibilityScope): SQL {
+  return projectParticipationScope(userId)
 }
 
 /**

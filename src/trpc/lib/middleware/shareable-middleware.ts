@@ -7,6 +7,7 @@ import type { EntityServerSpec } from '@/shared/dal/server/types'
 import { TRPCError } from '@trpc/server'
 import { eq } from 'drizzle-orm'
 
+import { resolveEffectiveScope } from '@/shared/dal/server/lib/scope'
 import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
 import { createMiddleware } from '@/trpc/init'
 
@@ -61,7 +62,7 @@ export function shareableMiddleware(spec: EntityServerSpec) {
     })
 
     const isOmni = ability.can('manage', 'all')
-    const scope = isOmni ? null : spec.visibility({ userId: ctx.session.user.id, ability })
+    const scope = isOmni ? null : resolveEffectiveScope(spec, { userId: ctx.session.user.id, ability })
 
     return next({
       ctx: {

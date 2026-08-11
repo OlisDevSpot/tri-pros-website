@@ -27,6 +27,16 @@ export const createMiddleware = t.middleware
 export const createCallerFactory = t.createCallerFactory
 export const baseProcedure = t.procedure
 
+// ── systemProcedure ─────────────────────────────────────────────────────────
+// Public, unauthenticated procedure for system-level / event-ingestion
+// endpoints where authorization is EXTERNAL to the session — a share token
+// proves the caller, or a webhook signature does. The handler owns its own
+// authorization (manual token match, signature check) and runs its DAL calls
+// under SYSTEM_CONTEXT (no ctx.scope). Use INSTEAD of a bare baseProcedure so
+// the "no session, auth is external" intent is explicit and greppable.
+// Canonical use: proposalsRouter.views.recordView (homeowner-open, token-gated).
+export const systemProcedure = baseProcedure
+
 // ── protectedProcedure ────────────────────────────────────────────────────
 // Any authenticated user. Use for endpoints that homeowners/default users
 // might need in the future (e.g., viewing their own proposal).

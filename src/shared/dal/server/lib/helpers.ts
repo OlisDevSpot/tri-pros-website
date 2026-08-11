@@ -24,6 +24,7 @@ import type { UserRole } from '@/shared/constants/enums'
 import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
 
 import { dalError, dalSuccess, ThrowableDalError } from '../types'
+import { resolveEffectiveScope } from './scope'
 
 // ── dalDbOperation ──────────────────────────────────────────────────────
 //
@@ -68,7 +69,7 @@ export function buildUserContext(
   return {
     session: { user: { id: userId, role: userRole } } as ScopedContext['session'],
     ability,
-    scope: isOmni ? null : spec.visibility({ userId, ability }),
+    scope: isOmni ? null : resolveEffectiveScope(spec, { userId, ability }),
   }
 }
 
