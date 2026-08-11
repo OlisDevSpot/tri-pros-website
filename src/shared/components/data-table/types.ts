@@ -76,6 +76,11 @@ export interface DataTableServerPagination {
   isFetching?: boolean
   /** When true, the empty-state slot renders an error message instead of "no rows". */
   isError?: boolean
+  /**
+   * Invalidate + refetch the whole dataset for this table's procedure. Wired to
+   * pull-to-refresh in DataTable. Forwarded from `usePaginatedQuery().refresh`.
+   */
+  onRefresh?: () => Promise<unknown> | void
 }
 
 // -- Server-side sort control --
