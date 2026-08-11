@@ -394,26 +394,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
         </div>
       )}
 
-      <div className="relative grow min-h-0 flex flex-col rounded-xl border border-border/50 overflow-hidden">
-        {serverPagination?.onRefresh && (pullDistance > 0 || isRefreshing) && (
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-center"
-            style={{
-              transform: `translateY(${Math.max(pullDistance - 20, 0)}px)`,
-              opacity: Math.min(pullDistance / PULL_TO_REFRESH_THRESHOLD, 1),
-            }}
-          >
-            <div className="mt-1 rounded-full border border-border/50 bg-background p-1.5 shadow-sm">
-              <RefreshCw
-                className={cn(
-                  'size-4 text-muted-foreground',
-                  isRefreshing && 'motion-safe:animate-spin',
-                )}
-              />
-            </div>
-          </div>
-        )}
+      <div className="grow min-h-0 flex flex-col rounded-xl border border-border/50 overflow-hidden">
         <div
           ref={scrollRef}
           onScroll={handleScroll}
@@ -537,6 +518,27 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
             </TableHeader>
 
             <TableBody>
+              {/* Pull-to-refresh spacer — reflows the rows down (no transform,
+                  so the frozen first column's sticky-left survives). Sits below
+                  the sticky header and above row 1; holds at the threshold while
+                  refreshing, then retracts. */}
+              {serverPagination?.onRefresh && (pullDistance > 0 || isRefreshing) && (
+                <tr aria-hidden>
+                  <td colSpan={table.getVisibleFlatColumns().length} className="border-0 p-0">
+                    <div
+                      className="flex items-center justify-center overflow-hidden"
+                      style={{ height: isRefreshing ? PULL_TO_REFRESH_THRESHOLD : pullDistance }}
+                    >
+                      <div
+                        className="rounded-full border border-border/50 bg-background p-1.5 shadow-sm"
+                        style={{ opacity: Math.min((isRefreshing ? PULL_TO_REFRESH_THRESHOLD : pullDistance) / PULL_TO_REFRESH_THRESHOLD, 1) }}
+                      >
+                        <RefreshCw className={cn('size-4 text-muted-foreground', isRefreshing && 'motion-safe:animate-spin')} />
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
               {(() => {
                 const dataRows = table.getRowModel().rows
                 if (dataRows.length > 0) {
