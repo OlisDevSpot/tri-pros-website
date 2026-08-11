@@ -80,6 +80,15 @@ disqualify: agentProcedure.input(...).mutation(async ({ ctx }) => {
 
 ### entity-router-via-factory
 
+> ⚠️ **Being replaced — do not build further on this.** The
+> `createEntityRouter` factory, the `EntityToolkit` param, and the
+> `entity-registry` are slated for removal by the **tRPC Standardization Epic**
+> (`docs/plans/2026-08-09-trpc-standardization-epic.md`, approved 2026-08-09).
+> The replacement: per-entity procedures defined once in
+> `<entity>.router/procedures.ts`, plain-`createTRPCRouter` leaves, a pure
+> `index.ts`, and child tables as `subEntitySpec` entities. This section is
+> rewritten in that epic's slice S7 — when the code lands, not before.
+
 Migrated entities use `createEntityRouter(spec, factory)`:
 
 ```ts
@@ -93,11 +102,16 @@ export const proposalsRouter = createEntityRouter(proposalServerSpec, (entity) =
       // No handler overrides — lifecycle hooks on the spec handle enrichment.
     }),
     business: createTRPCRouter({ ... }),
-    delivery: createDeliveryRouter(entity),
-    contracts: createContractsRouter(entity),
+    media: createProposalMediaRouter(entity), // sub-routers still on the toolkit
   })
 )
 ```
+
+> **S1 landed (2026-08-09):** `delivery` + `contracts` are already off the
+> toolkit — they're plain `createTRPCRouter` leaves importing pre-scoped
+> procedures from `proposals.router/procedures.ts`. `createDeliveryRouter` /
+> `createContractsRouter` no longer exist. `crud`/`business`/`media` still use
+> the toolkit until later slices. Full rewrite of this section = S7.
 
 The factory receives an `EntityToolkit`:
 

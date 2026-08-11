@@ -24,7 +24,7 @@ export function Proposal() {
   const proposal = useCurrentProposal()
   const { setRootEl } = useScrollRoot()
   const trpc = useTRPC()
-  const recordView = useMutation(trpc.proposalsRouter.delivery.recordView.mutationOptions())
+  const recordView = useMutation(trpc.proposalsRouter.views.recordView.mutationOptions())
   const ability = useAbility()
   const viewMode = useViewMode()
   const hasRecorded = useRef(false)
