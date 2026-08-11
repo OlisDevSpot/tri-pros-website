@@ -185,7 +185,9 @@ an earlier commit, **stop** — the backfill-before-writer-flip ordering
 constraint from §3a isn't actually satisfied regardless of what the backfill
 script reported, and the rest of this section assumes it is.
 
-With that confirmed, re-run the drift dry-run:
+With that confirmed, run the pre-drop parity proof (Appendix A below — the
+drop protocol's step 2, read-only SQL in the Neon console; expect every check
+to return 0), then re-run the drift dry-run:
 
 ```bash
 DRIZZLE_TARGET=prod pnpm tsx scripts/backfill-wave3-scalars.ts --dry-run
@@ -295,6 +297,119 @@ and escalate per normal incident process rather than continuing down this list.
   — see `progress.md`, 2026-08-11 ruling entries). It may be deleted once this
   ceremony is confirmed clean; it has no ledger obligations and was never
   wired into any script/CI path.
+
+## Appendix A — Pre-drop data-parity proof (drop-protocol step 2)
+
+Read-only SQL, paste into the Neon SQL console against **prod** (and/or the §2
+rehearsal branch) immediately before §3b Step 2. Every count must be **0**
+unless annotated otherwise. Two caveats on how to read results:
+
+- **Presence, not equality.** The W1 backfill normalized legacy enum values and
+  legacy key names (`LEGACY_ENUM_MAP` / `normalizeLegacyKeys`) — value-equality
+  diffs between blob and column can be benign normalization. The real loss
+  signal is a **populated blob field whose promoted home is NULL**.
+- These checks supplement (not replace) the primary guarantee: prod backfills
+  ran + were re-run post-deploy at the W1 (2026-07-13) and W2 (2026-07-15)
+  cutovers with built-in parity checks, and the blobs have had **zero writers
+  since** — every write surface `.omit()`s them (seam-audit "CLEAN" section of
+  the deprecation ledger), so parity as-of-verification cannot have decayed.
+
+```sql
+-- ── A1. customers: three profile blobs → customer_profiles child row ──
+-- Populated blob (ignoring nulls; 'age' excluded — it lives on customers) with no child row:
+SELECT count(*) AS missing_child_rows
+FROM customers c
+LEFT JOIN customer_profiles p ON p.customer_id = c.id
+WHERE p.customer_id IS NULL
+  AND (
+    coalesce(jsonb_strip_nulls(c.customer_profile_json), '{}'::jsonb) - 'age' <> '{}'::jsonb
+    OR coalesce(jsonb_strip_nulls(c.property_profile_json), '{}'::jsonb) <> '{}'::jsonb
+    OR coalesce(jsonb_strip_nulls(c.financial_profile_json), '{}'::jsonb) <> '{}'::jsonb
+  );
+
+-- age promoted onto customers itself:
+SELECT count(*) AS age_unpromoted
+FROM customers
+WHERE (customer_profile_json ->> 'age') IS NOT NULL AND age IS NULL;
+
+-- Per-field presence sweep (blob field populated, promoted column NULL):
+SELECT count(*) AS unpromoted_profile_fields
+FROM customers c
+JOIN customer_profiles p ON p.customer_id = c.id
+WHERE (c.customer_profile_json ->> 'triggerEvent'                          IS NOT NULL AND p.trigger_event IS NULL)
+   OR (c.customer_profile_json #>> '{mainPainPoint,accessor}'              IS NOT NULL AND p.main_pain_accessor IS NULL)
+   OR (c.customer_profile_json #>> '{mainPainPoint,urgencyRating}'         IS NOT NULL AND p.main_pain_urgency IS NULL)
+   OR (jsonb_array_length(coalesce(c.customer_profile_json -> 'additionalPainPoints', '[]'::jsonb)) > 0
+                                                                            AND p.additional_pain_points IS NULL)
+   OR (c.customer_profile_json ->> 'outcomePriority'                       IS NOT NULL AND p.outcome_priority IS NULL)
+   OR (c.customer_profile_json ->> 'timeInHome'                            IS NOT NULL AND p.time_in_home IS NULL)
+   OR (c.customer_profile_json ->> 'householdType'                         IS NOT NULL AND p.household_type IS NULL)
+   OR (c.customer_profile_json ->> 'priorContractorExperience'             IS NOT NULL AND p.prior_contractor_experience IS NULL)
+   OR (c.customer_profile_json ->> 'constructionOutlookFavorabilityRating' IS NOT NULL AND p.construction_outlook_favorability_rating IS NULL)
+   OR (c.customer_profile_json ->> 'sellPlan'                              IS NOT NULL AND p.sell_plan IS NULL)
+   OR (c.customer_profile_json ->> 'decisionTimeline'                      IS NOT NULL AND p.decision_timeline IS NULL)
+   OR (c.customer_profile_json ->> 'projectNecessityRating'                IS NOT NULL AND p.project_necessity_rating IS NULL)
+   OR (c.customer_profile_json ->> 'ageGroup'                              IS NOT NULL AND p.age_group IS NULL)
+   OR (c.property_profile_json ->> 'hoa'                                   IS NOT NULL AND p.hoa IS NULL)
+   OR (c.property_profile_json ->> 'yearBuilt'                             IS NOT NULL AND p.year_built IS NULL)
+   OR (c.property_profile_json ->> 'roofType'                              IS NOT NULL AND p.roof_type IS NULL)
+   OR (c.property_profile_json ->> 'foundationType'                       IS NOT NULL AND p.foundation_type IS NULL)
+   OR (c.property_profile_json ->> 'hvacType'                              IS NOT NULL AND p.hvac_type IS NULL)
+   OR (c.property_profile_json ->> 'hvacComponents'                        IS NOT NULL AND p.hvac_components IS NULL)
+   OR (c.property_profile_json ->> 'windowsType'                           IS NOT NULL AND p.windows_type IS NULL)
+   OR (c.property_profile_json ->> 'insulationLevel'                       IS NOT NULL AND p.insulation_level IS NULL)
+   OR (c.financial_profile_json ->> 'numQuotesReceived'                    IS NOT NULL AND p.num_quotes_received IS NULL)
+   OR (c.financial_profile_json ->> 'creditScore'                          IS NOT NULL AND p.credit_score IS NULL);
+-- Caveat: legacy-KEYED blobs (pre-normalizeLegacyKeys key names) are invisible to
+-- this sweep — they were handled and verified by the W1 backfill at cutover time.
+
+-- ── A2. customers.lead_meta_json → customer_lead_attribution (+ customer_enrichment) ──
+-- Populated blob with no attribution row (capture_json holds the FULL immutable
+-- LeadMeta snapshot minus source.enrichment, so the blob survives verbatim there):
+SELECT count(*) AS leadmeta_without_attribution
+FROM customers c
+LEFT JOIN customer_lead_attribution a ON a.customer_id = c.id
+WHERE coalesce(jsonb_strip_nulls(c.lead_meta_json), '{}'::jsonb) <> '{}'::jsonb
+  AND a.customer_id IS NULL;
+
+-- Sanity probe FIRST (guards the next check against a silently-wrong JSON path):
+-- expect > 0 if any pre-W2 funnel leads carried enrichment.
+SELECT count(*) AS blobs_with_enrichment
+FROM customers WHERE lead_meta_json #> '{source,enrichment}' IS NOT NULL;
+
+-- Blob enrichment present but no enrichment rows:
+SELECT count(*) AS enrichment_unmigrated
+FROM customers c
+WHERE c.lead_meta_json #> '{source,enrichment}' IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM customer_enrichment e WHERE e.customer_id = c.id);
+
+-- ── A3. "user".agent_profile_json → flat user columns ──
+SELECT count(*) AS unpromoted_agent_fields
+FROM "user" u
+WHERE (u.agent_profile_json ->> 'quote'             IS NOT NULL AND u.quote IS NULL)
+   OR (u.agent_profile_json ->> 'bio'               IS NOT NULL AND u.bio IS NULL)
+   OR (u.agent_profile_json ->> 'yearsOfExperience' IS NOT NULL AND u.years_of_experience IS NULL)
+   OR (jsonb_array_length(coalesce(u.agent_profile_json -> 'tradeSpecialties', '[]'::jsonb)) > 0 AND u.trade_specialties IS NULL)
+   OR (jsonb_array_length(coalesce(u.agent_profile_json -> 'languagesSpoken', '[]'::jsonb)) > 0 AND u.languages_spoken IS NULL)
+   OR (jsonb_array_length(coalesce(u.agent_profile_json -> 'certifications', '[]'::jsonb)) > 0 AND u.certifications IS NULL)
+   OR (u.agent_profile_json ->> 'headshotUrl'       IS NOT NULL AND u.headshot_url IS NULL)
+   OR (u.agent_profile_json -> 'headshotCropData'   IS NOT NULL AND u.headshot_crop_data IS NULL);
+
+-- ── A4. lead_sources.voip_config_json → flat columns + voip_inhouse_config_json ──
+SELECT count(*) AS unmigrated_voip_fields
+FROM lead_sources ls
+WHERE ((ls.voip_config_json #>> '{campaigns,enabled}')::boolean IS DISTINCT FROM ls.voip_campaigns_enabled
+       AND ls.voip_config_json #> '{campaigns,enabled}' IS NOT NULL)
+   OR ((ls.voip_config_json #>> '{campaigns,autoEnroll}')::boolean IS DISTINCT FROM ls.voip_auto_enroll
+       AND ls.voip_config_json #> '{campaigns,autoEnroll}' IS NOT NULL)
+   OR (ls.voip_config_json #>> '{campaigns,defaultCampaignId}'    IS NOT NULL AND ls.default_campaign_id IS NULL)
+   OR (ls.voip_config_json #>> '{campaigns,dailyDialVolumeCap}'   IS NOT NULL AND ls.daily_dial_volume_cap IS NULL)
+   OR (ls.voip_config_json #> '{campaigns,messageTemplateOverrides}' IS NOT NULL AND ls.message_template_overrides_json IS NULL)
+   OR (ls.voip_config_json #> '{inHouse}'                         IS NOT NULL AND ls.voip_inhouse_config_json IS NULL);
+```
+
+The rename (`signing_request_id` → `contract_envelope_id`) needs no parity
+proof — `ALTER TABLE ... RENAME COLUMN` is metadata-only, zero data movement.
 
 ---
 
