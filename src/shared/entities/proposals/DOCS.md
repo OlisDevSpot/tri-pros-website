@@ -108,10 +108,15 @@ What the code actually does:
 **Retired (Wave 1, epic #256); the mechanism itself deleted entirely (Wave 2).**
 `projectJSON` is a whole-document column: every writer reconstructs and submits the full
 blob, so updates REPLACE the column (plain CRUD path). It is the only one left — as of the
-Wave-3 write-seam flip `formMetaJSON` and `fundingJSON` are FROZEN: nullable, omitted from
-`insertProposalSchema` (so Zod strips them on every create/update), and carrying zero
-API-surface writers. New rows leave both NULL; they are renamed `*Deprecated` in the W3
-freeze commit and dropped on the W4 push. The rule below still governs `projectJSON`.
+Wave-3 write-seam flip `formMetaJSON` and `fundingJSON` are FROZEN: nullable and omitted
+from `insertProposalSchema`, so Zod strips them on every create/update. `formMetaJSON` has
+zero writers left. `fundingJSON` has exactly ONE — `setCashInDeal` (`dal/server/mutations.ts`,
+live via the shareable `funding.router.ts` procedure) still read-modify-writes the legacy
+blob on any row whose `fundingJSON` is non-null, i.e. every pre-flip row; it throws
+`precondition-failed: funding_unavailable` on post-flip rows and flips to a
+`cash_in_deal_cents` column write in W3 Task 8. New rows leave both blobs NULL; both are
+renamed `*Deprecated` in the W3 freeze commit and dropped on the W4 push. The rule below
+still governs `projectJSON`.
 They were previously registered in `spec.update.jsonbMergeColumns`, which shallow-merged
 top-level keys and silently prevented field-clearing — deregistered in Wave 1 because no
 caller ever sent a partial. As of Wave 2, `spec.update.jsonbMergeColumns` no longer exists
