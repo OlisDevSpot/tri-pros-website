@@ -1,6 +1,21 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
+/* Explicit source registration for Tailwind's class detection.
+ *
+ * Tailwind v4 automatic content detection intermittently skipped
+ * `src/features/agent-dashboard/` on production `next build`: classes used
+ * ONLY there (e.g. the meetings calendar's `md:w-fit` / `md:shrink-0` /
+ * `md:p-3` and the day-agenda's `w-18`) were absent from the compiled CSS,
+ * while sibling feature dirs (proposal-flow, etc.) scanned fine — so the
+ * calendar shipped stuck at base `w-full` with `aspect-square` day cells,
+ * blowing the cells up to full-column squares and collapsing the agenda.
+ * `globals.css` lives at `src/app/(frontend)/`, so `../..` is `src/`.
+ * Registering the whole source tree makes detection deterministic and
+ * immune to whatever heuristic dropped that subtree. Auto-detection stays
+ * on; this only ADDS a guaranteed source. */
+@source '../..';
+
 @custom-variant dark (&:is(.dark *));
 
 :root,
