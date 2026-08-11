@@ -22,11 +22,11 @@ const PROPOSAL_ID = 'baaf55ef-31b1-4393-b721-cdba21610021'
 async function main() {
   const c1 = new Client({ connectionString: process.env.DATABASE_URL })
   await c1.connect()
-  const before = await c1.query(`SELECT signing_request_id FROM proposals WHERE id = $1`, [PROPOSAL_ID])
-  const originalContractEnvelopeId = before.rows[0]?.signing_request_id ?? null
-  await c1.query(`UPDATE proposals SET signing_request_id = NULL WHERE id = $1`, [PROPOSAL_ID])
+  const before = await c1.query(`SELECT contract_envelope_id FROM proposals WHERE id = $1`, [PROPOSAL_ID])
+  const originalContractEnvelopeId = before.rows[0]?.contract_envelope_id ?? null
+  await c1.query(`UPDATE proposals SET contract_envelope_id = NULL WHERE id = $1`, [PROPOSAL_ID])
   await c1.end()
-  console.log(`cleared signing_request_id (was: ${originalContractEnvelopeId ?? 'NULL'})`)
+  console.log(`cleared contract_envelope_id (was: ${originalContractEnvelopeId ?? 'NULL'})`)
 
   let createdRequestId: string | null = null
   try {
@@ -68,11 +68,11 @@ async function main() {
     const c3 = new Client({ connectionString: process.env.DATABASE_URL })
     await c3.connect()
     await c3.query(
-      `UPDATE proposals SET signing_request_id = $1 WHERE id = $2`,
+      `UPDATE proposals SET contract_envelope_id = $1 WHERE id = $2`,
       [originalContractEnvelopeId, PROPOSAL_ID],
     )
     await c3.end()
-    console.log(`restored original signing_request_id (${originalContractEnvelopeId ?? 'NULL'})`)
+    console.log(`restored original contract_envelope_id (${originalContractEnvelopeId ?? 'NULL'})`)
   }
 }
 main().catch((err) => { console.error(err); process.exit(1) })

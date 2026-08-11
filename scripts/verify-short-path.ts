@@ -52,11 +52,11 @@ async function main() {
 
   const c2 = new Client({ connectionString: process.env.DATABASE_URL })
   await c2.connect()
-  const before = await c2.query(`SELECT signing_request_id FROM proposals WHERE id = $1`, [target.id])
-  const originalContractEnvelopeId = before.rows[0]?.signing_request_id ?? null
-  await c2.query(`UPDATE proposals SET signing_request_id = NULL WHERE id = $1`, [target.id])
+  const before = await c2.query(`SELECT contract_envelope_id FROM proposals WHERE id = $1`, [target.id])
+  const originalContractEnvelopeId = before.rows[0]?.contract_envelope_id ?? null
+  await c2.query(`UPDATE proposals SET contract_envelope_id = NULL WHERE id = $1`, [target.id])
   await c2.end()
-  console.log(`  cleared signing_request_id (was: ${originalContractEnvelopeId ?? 'NULL'})`)
+  console.log(`  cleared contract_envelope_id (was: ${originalContractEnvelopeId ?? 'NULL'})`)
 
   let createdRequestId: string | null = null
   try {
@@ -94,11 +94,11 @@ async function main() {
     const c3 = new Client({ connectionString: process.env.DATABASE_URL })
     await c3.connect()
     await c3.query(
-      `UPDATE proposals SET signing_request_id = $1 WHERE id = $2`,
+      `UPDATE proposals SET contract_envelope_id = $1 WHERE id = $2`,
       [originalContractEnvelopeId, target.id],
     )
     await c3.end()
-    console.log(`  restored original signing_request_id (${originalContractEnvelopeId ?? 'NULL'})`)
+    console.log(`  restored original contract_envelope_id (${originalContractEnvelopeId ?? 'NULL'})`)
   }
 }
 main().catch((err) => { console.error(err); process.exit(1) })

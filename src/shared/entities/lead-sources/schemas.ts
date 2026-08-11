@@ -57,15 +57,3 @@ export const voipInHousePolicySchema = z.object({
   }).optional(),
 })
 export type VoipInHousePolicy = z.infer<typeof voipInHousePolicySchema>
-
-/**
- * @deprecated Wave-1 frozen (epic #256/#259). Types the frozen
- * `voipConfigJSONDeprecated` column only — kept for the backfill script's Zod
- * gate. `inHouse` now lives on its own live column, `voipInHouseConfigJSON`
- * (typed by `voipInHousePolicySchema`, which stays live).
- */
-export const voipConfigSchema = z.object({
-  campaigns: voipCampaignsPolicySchema.optional(),
-  inHouse: voipInHousePolicySchema.optional(),
-})
-export type VoipConfig = z.infer<typeof voipConfigSchema>

@@ -1,6 +1,6 @@
 import type z from 'zod'
 
-import type { AgentProfile, HeadshotCropData } from '@/shared/entities/users/schemas'
+import type { HeadshotCropData } from '@/shared/entities/users/schemas'
 import { relations } from 'drizzle-orm'
 import { boolean, index, integer, jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
 import { createSelectSchema } from 'drizzle-zod'
@@ -26,11 +26,6 @@ export const user = pgTable('user', {
   birthdate: text('birthdate'),
   startDate: text('start_date'),
   funFact: text('fun_fact'),
-  /**
-   * @deprecated Wave-1 frozen (epic #256/#259). Zero writers. Read only by
-   * scripts/backfill-wave1-columns.ts. Dropped next release.
-   */
-  agentProfileJSONDeprecated: jsonb('agent_profile_json').$type<AgentProfile>(),
   // ── Wave-1 decomposition: agentProfileJSON → columns (epic #256 / #259) ──
   quote: text('quote'),
   bio: text('bio'),

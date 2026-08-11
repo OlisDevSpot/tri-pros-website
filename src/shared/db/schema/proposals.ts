@@ -29,10 +29,10 @@ export const proposals = pgTable('proposals', {
     .references(() => user.id, { onDelete: 'cascade' }),
   token: text('token').notNull(),
   // `contractEnvelope` is the canonical domain term (2026-07-18 ruling): the
-  // legal snapshot of the agreement, held in Zoho Sign. Column renames to
-  // `contract_envelope_id` with the Wave-3 prod push — see the deprecation
-  // ledger's seam-tightening register.
-  contractEnvelopeId: text('signing_request_id'),
+  // legal snapshot of the agreement, held in Zoho Sign. Renamed at the W3
+  // ceremony, 2026-07-26 — see the deprecation ledger's seam-tightening
+  // register.
+  contractEnvelopeId: text('contract_envelope_id'),
   qbInvoiceId: text('qb_invoice_id'),
   qbPaymentStatus: text('qb_payment_status'),
 
