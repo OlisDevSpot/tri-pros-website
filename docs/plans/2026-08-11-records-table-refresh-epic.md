@@ -29,7 +29,7 @@ Legend: `AFK` = mergeable without live user decisions · `HITL` = needs a user r
   - **Plan:** `docs/superpowers/plans/2026-08-11-records-refresh-phase-1-surface-refresh.md`
   - **AC:** `refresh` on the interface + hook; tsc+lint green; a scratch confirms `queryKey[0]` is the procedure path and that calling `refresh()` re-issues the network request; no UI consumer yet (`git grep` shows only the hook/type touched).
 
-- [ ] **Phase 2 · AFK · blocked-by: Phase 1 — `QueryToolbar.RefreshButton` + `Standard` preset.**
+- [x] **Phase 2 · AFK · blocked-by: Phase 1 — `QueryToolbar.RefreshButton` + `Standard` preset.** ✅ Done 2026-08-11. Atom added + in `Standard`; 4 tables (proposals, projects, meetings, customers) inherit it from `.Standard`; 4 atomic-slot toolbars (leads-filter-bar, all-customers, lead-source-customers, activities) got an explicit `<QueryToolbar.RefreshButton />`. tsc+lint green. (Live spin/breakpoint check pending user inspection — no running app in session.)
   New `RefreshButton` atom mirroring `FilterTrigger`/`ColumnsTrigger` (44×44 mobile, `h-9` desktop, `RefreshCw` spinning on `isFetching`, disabled mid-fetch), added to the `Standard` preset and exported on the compound (spec §5). Audit the 8 tables: `.Standard` tables get it free; atomic-slot tables get a one-line add.
   - **Plan:** `docs/superpowers/plans/2026-08-11-records-refresh-phase-2-toolbar-button.md`
   - **AC:** button present on all 8 tables at both breakpoints; spins/disables on fetch; no layout shift in the cluster; tsc+lint green.
