@@ -1,7 +1,7 @@
 import type { ProposalIncentiveRow } from '@/shared/db/schema'
 import type { FundingData } from '@/shared/entities/proposals/schemas'
 
-import { incentiveRowsToDomain } from '@/shared/entities/proposals/lib/incentive-rows'
+import { incentiveRowsToDomain } from '@/shared/entities/proposal-incentives/lib/incentive-rows'
 
 interface FundingSourceRow {
   startingTcpCents: number | null
@@ -18,12 +18,14 @@ export interface FundingColumns {
   miscPriceCents: number | null
 }
 
-/** THE only sanctioned way to build façade inputs from a server row
+/**
+ * THE only sanctioned way to build façade inputs from a server row
  *  (cents columns + incentive rows → flat dollars `FundingData`, derived
  *  JIT at the call site — Option 3 ruling 2026-07-27; NEVER materialized on
  *  the row). Takes the whole row-shape on purpose: hand-rolling this and
  *  forgetting `incentives` silently inflates finalTcp. Live RHF form state
- *  is the only other legitimate `FundingData` source. */
+ *  is the only other legitimate `FundingData` source.
+ */
 export function toFundingInputs(row: FundingSourceRow): FundingData {
   return {
     startingTcp: (row.startingTcpCents ?? 0) / 100,
@@ -34,8 +36,10 @@ export function toFundingInputs(row: FundingSourceRow): FundingData {
   }
 }
 
-/** Form dollars → column cents. Incentives are NOT here — they are rows
- *  (replaceProposalIncentives). */
+/**
+ * Form dollars → column cents. Incentives are NOT here — they are rows
+ *  (replaceProposalIncentives).
+ */
 export function fundingDomainToColumns(
   data: Pick<FundingData, 'startingTcp' | 'depositAmount' | 'cashInDeal' | 'miscPrice'>,
 ): FundingColumns {

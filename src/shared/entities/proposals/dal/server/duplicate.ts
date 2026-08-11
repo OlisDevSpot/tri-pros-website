@@ -9,15 +9,12 @@
 // above them in the dependency graph.
 
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
-import type { InsertProposalIncentive } from '@/shared/db/schema/proposal-incentives'
 import type { Proposal } from '@/shared/db/schema/proposals'
 
 import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
-import { db } from '@/shared/db'
-import { proposalIncentives } from '@/shared/db/schema/proposal-incentives'
+import { cloneProposalIncentives } from '@/shared/entities/proposal-incentives/dal/server/mutations'
 import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
 import { recomputeProposalFinancials } from '@/shared/entities/proposals/dal/server/mutations'
-import { listProposalIncentives } from '@/shared/entities/proposals/dal/server/queries'
 
 /**
  * Duplicate override — clones the source proposal's GLOBAL incentive rows
@@ -37,23 +34,10 @@ export async function duplicateProposalWithIncentives(
   return dalDbOperation(async () => {
     const duplicated = dalVerifySuccess(await proposalCrud.duplicate(ctx, input))
 
-    const sourceIncentives = dalVerifySuccess(await listProposalIncentives(input.id))
-    if (sourceIncentives.length === 0) {
+    const cloned = dalVerifySuccess(await cloneProposalIncentives(input.id, duplicated.id))
+    if (cloned === 0) {
       return duplicated
     }
-
-    const rows: InsertProposalIncentive[] = sourceIncentives.map(row => ({
-      proposalId: duplicated.id,
-      sowItemId: null,
-      type: row.type,
-      position: row.position,
-      label: row.label,
-      amountCents: row.amountCents,
-      offer: row.offer,
-      notes: row.notes,
-      expiresAt: row.expiresAt,
-    }))
-    await db.insert(proposalIncentives).values(rows)
 
     // `create.after` already ran `recomputeProposalFinancials` once, against
     // zero incentive rows — `duplicated.finalTcpCents` reflects that stale

@@ -6,13 +6,12 @@ import type { MeetingPipeline } from '@/shared/constants/enums'
 import type { PaginatedResult } from '@/shared/dal/server/lib/query/output'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { ProposalIncentiveRow } from '@/shared/db/schema/proposal-incentives'
-import type { ProposalView } from '@/shared/db/schema/proposal-views'
 import type { Proposal } from '@/shared/db/schema/proposals'
 import type { Row } from '@/shared/db/types'
 import type { ProposalMediaView } from '@/shared/entities/proposal-media-files/dal/server/queries'
 import type { ProposalLockSignals } from '@/shared/entities/proposals/lib/proposal-lock'
 
-import { and, asc, count, desc, eq, getTableColumns, gte, inArray, isNotNull, isNull, lte, max, or, sql } from 'drizzle-orm'
+import { and, count, desc, eq, getTableColumns, gte, inArray, isNotNull, isNull, lte, max, or, sql } from 'drizzle-orm'
 import z from 'zod'
 
 import { proposalKinds, proposalStatuses } from '@/shared/constants/enums'
@@ -26,11 +25,11 @@ import { ThrowableDalError } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
-import { proposalIncentives } from '@/shared/db/schema/proposal-incentives'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
+import { listProposalIncentives } from '@/shared/entities/proposal-incentives/dal/server/queries'
+import { incentiveRowsToDomain } from '@/shared/entities/proposal-incentives/lib/incentive-rows'
 import { listHomeownerProposalMedia, toProposalMediaView } from '@/shared/entities/proposal-media-files/dal/server/queries'
-import { incentiveRowsToDomain } from '@/shared/entities/proposals/lib/incentive-rows'
 
 // ── Types ───────────────────────────────────────────────────────────────
 
@@ -162,23 +161,6 @@ export async function getFullView(
 }
 
 /**
- * GLOBAL incentive rows (sow_item_id IS NULL) for a proposal, position-ordered.
- * The read half of the replace-all upsert; also the W2→W3 hydration source
- * consumed by `getFullView`. see ../../DOCS.md#final-tcp-derived
- */
-export async function listProposalIncentives(
-  proposalId: string,
-): Promise<DalReturn<ProposalIncentiveRow[]>> {
-  return dalDbOperation(async () => {
-    return await db
-      .select()
-      .from(proposalIncentives)
-      .where(and(eq(proposalIncentives.proposalId, proposalId), isNull(proposalIncentives.sowItemId)))
-      .orderBy(asc(proposalIncentives.position))
-  })
-}
-
-/**
  * Server-paginated proposals list. Drives Past Proposals table + dashboard
  * recent-proposals strip. Search: ilike on proposals.label OR customers.name.
  * Sort whitelist below. Default: createdAt DESC.
@@ -300,36 +282,8 @@ export async function listProposals(
   })
 }
 
-// ── getProposalViews ─────────────────────────────────────────────────────────
-
-export interface ProposalViewStats {
-  totalViews: number
-  lastViewedAt: string | null
-  emailViews: number
-  directViews: number
-  views: ProposalView[]
-}
-
-/** View stats for a proposal: total, last-viewed, source breakdown, raw records (newest first). */
-export async function getProposalViews(
-  input: { proposalId: string },
-): Promise<DalReturn<ProposalViewStats>> {
-  return dalDbOperation(async () => {
-    const views = await db
-      .select()
-      .from(proposalViews)
-      .where(eq(proposalViews.proposalId, input.proposalId))
-      .orderBy(desc(proposalViews.viewedAt))
-
-    return {
-      totalViews: views.length,
-      lastViewedAt: views[0]?.viewedAt ?? null,
-      emailViews: views.filter(v => v.source === 'email').length,
-      directViews: views.filter(v => v.source === 'direct').length,
-      views,
-    }
-  })
-}
+// getProposalViews + ProposalViewStats moved to
+// entities/proposal-views/dal/server/queries.ts (S3a).
 
 /**
  * Light lock probe for the whole-proposal freeze gate (`update.before` hook +

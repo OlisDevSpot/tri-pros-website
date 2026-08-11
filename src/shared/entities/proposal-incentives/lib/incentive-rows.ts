@@ -1,6 +1,6 @@
 // Proposal incentive row ↔ domain mappers (Wave 2 child table). Rows are
 // integer cents at the DAL boundary; domain shape (Incentive) is dollars —
-// same convention as the rest of the funding form. see ../DOCS.md#final-tcp-derived
+// same convention as the rest of the funding form. see ../../proposals/DOCS.md#final-tcp-derived
 
 import type { InsertProposalIncentive, ProposalIncentiveRow } from '@/shared/db/schema/proposal-incentives'
 import type { Incentive } from '@/shared/entities/proposals/schemas'
