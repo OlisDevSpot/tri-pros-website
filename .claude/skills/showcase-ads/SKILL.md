@@ -55,10 +55,15 @@ Verify with side-by-side stills of the boundary frames before assembling.
   logo language as the stills (`still-ad-standard.md#logo-treatment`). It lives
   in ONE component, `src/components/reel-logo.tsx`, which owns BOTH the intro
   glide and the settled badge (no separate watermark ↔ logo-intro handoff, no
-  pop). Hardcoded position **TOP-LEFT at (x 80, y 310)** (raised from y 440 on
-  2026-07-30 to a true top-left corner — clears the feed 4:5 crop by 25 px and
-  the Reels top chrome by 40 px; see `still-ad-standard.md#legibility-qc`
-  Logo-Y rationale), compact panel
+  pop). Hardcoded position **TOP-LEFT at (x 80, y 430)** — the badge must read
+  correctly in BOTH placements Meta serves this 9:16 master into: full 9:16
+  (Reels/Stories) AND the 4:5 Feed center-crop (285 px off the top). y 430 sits
+  a clean ~145 px below the 4:5 crop line and a safe ~160 px below the Reels top
+  chrome. ⛔ Supersedes the 2026-07-30 y 310 experiment, which chased a Reels
+  "true corner" but left only 25 px above the 4:5 crop → the badge jammed at the
+  top edge in Feed (Oliver 2026-08-10). Stay inside the persistent safe band
+  y 420–1248; NEVER raise the logo above y 420. See
+  `still-ad-standard.md#legibility-qc`, compact panel
   (~148 px wide). `logoIntro` prop still gates the opening glide (stacked logo
   springs in centered, glides to the corner, panel forms around it on landing);
   `null` = badge simply present from frame 0. `watermarkSrc` is now only an
@@ -161,7 +166,7 @@ Composition `ShowcaseReel` (1080×1920@30) is fully props-driven — see
 gets Ken Burns), `layout` full|framed (framed = native-aspect card on dark
 ground; label chip or checkmark rows above via `checkmarkClipIndex`), hook
 word-stagger on clip 1, captions mirror the VO (muted viewers), the `ReelLogo`
-badge docked top-LEFT at (x 80, y 310) — see the logo-treatment + safe-rects
+badge docked top-LEFT at (x 80, y 430) — see the logo-treatment + safe-rects
 rules above (`watermarkSrc` non-null just enables it; the art is always the
 stacked-panel badge) — logo end card with CTA pill (end-card CTA inside
 y 420–1248 too).
@@ -253,8 +258,12 @@ reel must clear — study it before building. Two things it locked in:
   → THE DEAL (the catch/trade, stated light + casual — "at no-commission
   pricing… we get to film the before and after") → THE CATCH (scarcity close —
   "Only *five* spots — once they're gone, this round's closed") → HOW TO QUALIFY
-  (the plain checklist — own your home / kitchen *five* years or older / ready to
-  start soon) → APPLY (CTA — "Tap below to see if you qualify"). Pictures carry
+  (HARD, disqualifying "you must" language — Oliver 2026-08-10 — stated as
+  concrete criteria: "To qualify, *you must* own your home, your kitchen *must
+  be* five years or older, and *you must* be ready for the transformation within
+  the next 60 days." The phrase "you must" appears ONLY in this section; every
+  other beat stays inviting, not gating) → APPLY (CTA — "Tap below to see if you
+  qualify"). Pictures carry
   the transformation; every SPOKEN word carries the OFFER — never narrate what
   the visual already shows. Coherence killers to avoid (all were real defects):
   non-sequitur beat transitions, using "five" for two different things (age vs
@@ -301,7 +310,7 @@ QA every render: extract frames at each beat, view them, check safe zones /
 caption legibility / logo presence. Copy the mp4 (+ any audio takes needing a
 decision) to `/mnt/c/Users/porat/Downloads/` and stop for Oliver's review.
 
-## Captions — build-as-spoken reveal (MANDATORY for every reel)
+## Captions — phrase-chunk pop (MANDATORY for every reel)
 
 Captions are word-synced, timed from the audio itself — NEVER hand-timed
 frames (they drift), and the hook title is NEVER duplicated as a subtitle (VO
@@ -335,10 +344,15 @@ Cap emphasis at a 1–2-word unit per caption page. If two adjacent emphasized
 words ever look jammed, the cause is the scale-vs-fontSize regression below,
 NOT the marking — fix the component, don't strip the emphasis.
 
-Rendering: `RevealCaptions` (`src/components/reveal-captions.tsx`) — build-
-as-spoken: each word fades/rises in over ~3f exactly at its own whisper-timed
-start, so the line visibly assembles under the narrator's voice and holds
-until the sentence completes. Emphasis words (marked `*word*` above) render
+Rendering: `RevealCaptions` (`src/components/reveal-captions.tsx`) — **phrase-
+chunk pop (Oliver 2026-08-10, supersedes build-as-spoken):** the ENTIRE 3–4-word
+page appears TOGETHER the instant its page becomes active — one unified pop/rise
+entrance (~4f) — then holds fully placed until the page ends. The word being
+spoken gets a subtle opacity highlight (1.0 vs 0.82) so the line still tracks the
+voice, but NO word ever appears on its own timestamp. ⛔ The old per-word reveal
+(each word fading in at its own whisper start) was KILLED — it read as choppy
+"one word at a time" and Oliver rejected it twice; never reintroduce a per-word
+opacity/transform keyed to `token.fromMs`. Emphasis words (marked `*word*` above) render
 in the house emphasis serif (`EMPHASIS_FONT` in `video/src/lib/fonts.ts` —
 FROZEN: Playfair Display italic, Oliver's pick 2026-07-14), brand blue, ~1.15×
 larger. Base words: **Montserrat ExtraBold (800), 64px, letter-spacing 2, thin
@@ -356,11 +370,27 @@ overlap ("five kitchens" collided pre-fix). `transform` in the span is
 reserved for the reveal translateY ONLY.
 
 Pagination is ours, not the library's (`src/lib/paginate-captions.ts`,
-unit-tested): max 3 words / 16 chars per page (single line, can never
-overflow), sentence punctuation breaks pages, and timing is GAPLESS — a page
-appears the moment its predecessor's last word ends and holds until its
-successor appears, so pages can never lag the voice or blink out between
-sentences.
+unit-tested). **Phrase chunks, not word-by-word karaoke** (Oliver 2026-08-10):
+
+- **3–4 words per page** (`MAX_WORDS = 4`), `≤22 chars` joined (`MAX_CHARS`,
+  calibrated for the ACTUAL 64px render — the old "16 @ fontSize 56" ceiling was
+  stale). 4 is the hard cap so a chunk never sprawls into weird timing; the char
+  ceiling still binds first on long words.
+- **Semantic chunking — meaning decides the break, not just the count:**
+  - `KEEP_TOGETHER` atoms **never split across pages** — `"Tri Pros Remodeling"`
+    is one unit or nothing. Add multi-word brand/offer units to that array.
+  - A **sentence-final word is never orphaned** alone: the paginator pulls the
+    previous word forward so every sentence closes on a ≥2-word chunk. Sentence
+    punctuation still ends the page (boundaries never straddle sentences).
+- Timing is GAPLESS — a page appears the moment its predecessor's last word ends
+  and holds until its successor appears, so pages never lag the voice or blink
+  out between sentences.
+
+The whole page is the unit of appearance: the 3–4-word phrase lands as ONE block
+and holds. This is NOT single-word karaoke and NOT the old per-word build-as-
+spoken reveal — both read as "word by word" and are banned. The only within-page
+motion is the active-word opacity highlight (layout-safe; never a per-word
+transform, which would jitter the centered line).
 
 Upgrade path when a direct ElevenLabs key exists: `/v1/text-to-speech/{voice}/
 with-timestamps` returns synthesis-native character timing (zero drift by
@@ -387,6 +417,47 @@ levels). READ both before designing any new variant. Composition rules:
   scale effect AND a fade/kenBurns), and never stack two scale animations
   within ~1s of each other or straddling a cut. Emphasis comes from sfx +
   caption highlight, not frame-scale jolts. Leave both arrays `[]`.
+- ⛔ **NEVER hold a static/near-static frame while the VO is talking — not once
+  (Oliver 2026-08-10).** A still image (or a video clip that has effectively
+  frozen — e.g. a framed proof card parked on one shot) held under narration is
+  the #1 slop tell; the ~16s frozen proof card in `material-hero-01` is exactly
+  what got rejected. Every beat that plays under VO must carry CONTINUOUS motion.
+  Enforcement: (a) a single clip may not hold on screen longer than **~4s** under
+  VO unless it has genuine continuous camera movement (a real walkthrough glide
+  counts; a locked-off card does not); (b) `kind: 'image'` beats always ride Ken
+  Burns — never a dead hold; (c) **the only place stills belong is a photo
+  moment, and even there it must be EDITED, not parked** — use the `photoBurst`
+  montage (each photo enters full-bleed with a shutter-pop + flash on its frame),
+  the "again & again" repeat-word burst, `flashFrames`, and the SFX grammar
+  already specified above; a proof/qualify beat that needs to breathe gets a
+  photo-burst or a moving walkthrough behind it, never one frozen card. The end
+  card is the one permitted near-static graphic — and even it should keep a
+  living element (CTA-pill glow / logo settle), never a dead freeze.
+- ⛔ **NEVER reuse the same clip twice in one reel — and do NOT lean on one
+  material/room (Oliver 2026-08-10, "horrific and lazy").** Reusing `qz-wide`
+  ×3 + `mh-built-glow` ×3 with only Ken-Burns variation is exactly the defect
+  that got `material-hero-02` rejected — it reads as padding, not craft.
+  Enforcement:
+  - **Every VIDEO clip in a reel is a DISTINCT file. Zero repeats.** A source
+    file appears at most once. If the timeline needs N video beats, pick N
+    different clips. (An `image` still may recur only inside a deliberate
+    photo-burst; video never repeats.)
+  - **The library is deep — USE it.** `video/public/clips/` + the Downloads
+    b-roll folder hold DOZENS of distinct finished kitchens (quartzite,
+    `kx-kitchen-black|gray|marble`, `kx-axiom`/`kx-bastion` walkthroughs,
+    `kitchens-picasso`/`tableau`/`travertine`, `kitchens02-*` walkthroughs, the
+    `kitchens-ba-A|B|C` cuts, …). Before building, `ls` both folders and extract
+    a vetting thumbnail from each candidate; assemble the beat list from the
+    WIDEST spread of distinct real projects that still cut together cleanly.
+  - **A reel does NOT have to be single-material/single-room.** A coherent
+    "our past projects" montage across many distinct kitchens is STRONGER and
+    less fatiguing than lingering on one hero surface. Concept #1 (material-
+    hero) is only ONE angle — reach for the montage/scarcity spine (concept #2,
+    `build-scout.mjs`) when the clean footage for one material runs thin, rather
+    than repeating a clip to fill time. Chain-of-custody still applies within a
+    continuous material sequence, but distinct labeled projects are free to cut.
+  - Pre-score HARD gate: if any source file appears more than once in the clip
+    list, the reel FAILS before scoring — rebuild with distinct clips.
 - Schema knobs already implemented in `ShowcaseReel` (full menu mapping:
   `references/variation-axes.md`): `punchIns` (deprecated, see above),
   `flashFrames` (luma flash peaked on chapter cuts), `sfx` (cues; grammar:
@@ -443,12 +514,37 @@ renders are disposable.
 
 ## The "postable" gate (scored — MANDATORY before publish)
 
-No reel is offered for activation until it clears this gate. Score the FINAL
-render (view the beat stills — don't guess) on five dimensions; **publish only
-if total ≥ 32/40 AND every critical floor is met.** Below bar = reroll the
-failing dimension, not ship-and-hope. Record the score in the ledger row beside
-the concept + axes; a reroll re-scores from scratch (never average with its
+**Scoring is a MANDATORY, AUTOMATIC step of every create/edit invocation — not
+an optional final check, and NEVER graded from memory (Oliver 2026-08-10).**
+Before ANY draft is delivered to Oliver, the skill run must, on its own:
+1. Extract beat stills at every clip boundary (full 9:16 AND the 4:5 Feed crop —
+   `crop=1080:1350:0:285`), using the bundled compositor ffmpeg if system ffmpeg
+   is absent.
+2. Actually VIEW those stills and score all five dimensions below, **citing the
+   specific frame filename that justifies each dimension's score.** Grade
+   adversarially — assume it's slop and make the frames prove it isn't. (A prior
+   draft was self-reported 38/40 from memory and was really 23/40; that failure
+   is why this step is now automatic and evidence-cited.)
+3. Include the full scorecard (with the concept-fidelity + continuity checks
+   below) in the delivery message. A draft presented without its scorecard is a
+   process violation.
+
+No reel is offered for activation until it clears this gate: **publish only if
+total ≥ 32/40 AND every critical floor is met.** Below bar = reroll the failing
+dimension, not ship-and-hope. Record the score in the ledger row beside the
+concept + axes; a reroll re-scores from scratch (never average with its
 predecessor).
+
+**Three pre-score gates (all hard-fail, checked before the 5 dimensions):**
+- **Distinct clips** — no source video file may appear more than once in the
+  clip list (see the ⛔ no-reuse rule above). Any repeat fails before scoring —
+  rebuild from the deep library, don't Ken-Burns the same clip twice.
+- **Concept fidelity** — the cold open + clip sequence must match the chosen
+  concept skeleton's mandated shot types (e.g. material-hero MUST open on a
+  tactile macro held ≥90f, not a wide). A mismatch fails before scoring.
+- **Continuity / no static hold** — clips must read as one continuous world (or
+  be explicitly labeled distinct projects), and NO beat may hold a static frame
+  under VO (see the ⛔ motion rule above). Either violation fails before scoring.
 
 Truthfulness / AI-disclosure is NOT scored here — it is a separate, mandatory
 **manual owner check** (genuine same-room before/after pairs; "AI Info" toggled

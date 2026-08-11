@@ -38,7 +38,8 @@ either side changes, reconcile both in the same change.
   cyan-accent panel — same language as the stills; `src/components/reel-logo.tsx`
   owns intro glide + settled badge), watermark on/off, end-card layout, brand
   block content, safe rects x 65–1015 / y 420–1248 with the logo badge docked
-  top-LEFT (x 80, y 440), compact so it never reaches the centered chapter
+  top-LEFT (x 80, y 430) (4:5-safe — reads in both 9:16 and the 4:5 Feed crop;
+  canonical in SKILL.md logo-treatment, Oliver 2026-08-10), compact so it never reaches the centered chapter
   label. 2026-07-27 research superseded the old 14/35/6 rule (feed crops 9:16 to
   4:5/1:1, erasing the top 285–420 px); logo treatment codified in
   `.claude/skills/showcase-ads/SKILL.md` (logo-treatment + safe-rects rules) and
@@ -161,7 +162,7 @@ bed whose `file` ≠ the previous reel's `musicSrc`, per the ledger.
 | music-bed-04-warm-piano.m4a | 80 | warm piano |
 | music-bed-05-clap-stomp.m4a | 110 | clap-stomp percussive |
 | music-bed-06-soul-retro.m4a | 100 | retro soul groove |
-| music-bed-07-minimal-pulse.m4a | 120 | minimal electronic pulse |
+| music-bed-07-minimal-pulse.m4a | 120 | ⛔ VETOED (Oliver 2026-08-10) — never use on any reel |
 | music-bed-08-acoustic-sunrise.m4a | 95 | acoustic sunrise |
 | music-bed-09-orchestral-luxe.m4a | 105 | orchestral luxe |
 

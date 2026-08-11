@@ -24,8 +24,18 @@ Structure doctrine (research-validated 2026-07-26, spec:
 - **Ad set = product.** The ONLY sanctioned ad-set split (different landing pages
   + per-product budget guarantees). Never split by interests/demographics — the
   learning phase lives per ad set and fragmentation starves it.
-- **ABO, not CBO.** Budgets live on ad sets. With identical audiences, CBO
-  arbitrates on cheapest lead and over-funds the cheaper product.
+- **CBO, campaign-level budget** (Oliver 2026-08-09, supersedes the earlier
+  ABO lean). The budget lives on the CAMPAIGN (`dailyBudgetCents` in the spec →
+  `daily_budget` + `bid_strategy` on the Meta campaign); ad sets carry NEITHER
+  (sending either on an ad set throws "you can only set an ad set OR a campaign
+  budget"). Doctrine: **campaign = offer** — you test the offer, not offer+product,
+  so a new offer is a NEW campaign with its own CBO, never a per-product ABO split
+  inside one campaign. The old ABO concern (CBO over-funds the cheaper product) is
+  moot now that the offer runs a single product ad set (bathrooms folded out
+  2026-08-09) — with one ad set, CBO ≈ ABO anyway, and the CBO choice is about the
+  offer-per-campaign roadmap, not immediate arbitration. Change the budget by
+  editing `dailyBudgetCents` and running `--apply` (sync POSTs `daily_budget` to
+  `/{campaignId}` via `updateCampaign`); ≤20% per move.
 - **Naming:** campaign key = offer slug; ad set key = product slug; ad key =
   `<product>-<concept>-<nn>` (unique campaign-wide — ad lock keys are
   `<campaignKey>/<adKey>`).
@@ -36,9 +46,11 @@ Structure doctrine (research-validated 2026-07-26, spec:
 - **Settings:** Advantage+ audience ON (geo is the hard control; age 35–65+
   rides as an Advantage+ suggestion — hard age_min caps at 25 under A+
   audience), attribution 7-day click only, highest-volume bidding, 24/7.
-- **Learning reality:** at ~$58/day/ad set, "Learning Limited" is permanent and
-  fine. Judge on 2–4-week windows. Budget changes ≤20% per move; never duplicate
-  ad sets to test.
+- **Learning reality:** at this scale (campaign CBO ~$75/day) "Learning Limited"
+  is permanent and fine — an affordable exit would need ~50 leads/7d (~$429/day at
+  ~$60 CPL, well past the ceiling). Win by lowering NEW creative's CPL, not by
+  chasing a learning-exit or a budget ramp. Judge on 2–4-week windows. Budget
+  changes ≤20% per move; never duplicate ad sets to test.
 - **Housing-SAC fallback:** if Meta ever flags remodeling as the housing special
   category, ZIP lists + age floors lock; fallback = 15-mile radius, 18–65+.
 
