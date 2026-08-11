@@ -20,6 +20,7 @@ import type { AppAbility } from './types'
 import type { UserRole } from '@/shared/constants/enums'
 
 import { AbilityBuilder, createMongoAbility } from '@casl/ability'
+import { userRoles } from '@/shared/constants/enums'
 
 // Per-entity identity constants colocated with the entity. The derived
 // `EntityName` union is the entity portion of `AppSubject` — every entity
@@ -42,6 +43,8 @@ import { VOIP_CONTACT_ATTRIBUTE } from '@/shared/entities/voip-contact-attribute
 import { VOIP_DID } from '@/shared/entities/voip-dids/lib/constants'
 import { VOIP_LINK_TOKEN } from '@/shared/entities/voip-link-tokens/lib/constants'
 import { VOIP_MESSAGE } from '@/shared/entities/voip-messages/lib/constants'
+import { buildScopeConditionsMatcher } from './scope/conditions-matcher'
+import { assertScopeWiring } from './scope/exhaustiveness'
 
 export const ENTITY_NAMES = [
   CUSTOMER,
@@ -82,7 +85,7 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
   if (!user) {
     // No user = no permissions. The returned ability will answer
     // `can(anything)` with false. This is used for unauthenticated visitors.
-    return build()
+    return build({ conditionsMatcher: buildScopeConditionsMatcher() })
   }
 
   switch (user.role) {
@@ -241,5 +244,12 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       break
   }
 
-  return build()
+  return build({ conditionsMatcher: buildScopeConditionsMatcher() })
 }
+
+// Fail loud at startup if any role's rules reference a scope operator that
+// isn't registered (spec §11.4). Runs once when this module is first
+// imported. With every rule above still conditionless, `referenced` is
+// empty in `assertScopeWiring`, so this never throws — it's dormant until
+// Tasks 6-9 add conditions to real rules.
+assertScopeWiring(userRoles.map(role => defineAbilitiesFor({ id: '__assert__', role })))
