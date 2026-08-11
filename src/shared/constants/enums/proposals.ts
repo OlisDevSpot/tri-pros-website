@@ -19,9 +19,6 @@ export type ProposalKind = (typeof proposalKinds)[number]
 export const projectTypes = ['general-remodeling', 'energy-efficient'] as const
 export type ProjectType = (typeof projectTypes)[number]
 
-export const incentiveTypes = ['discount', 'tax-credit', 'cash-back', 'exclusive-offer', 'other'] as const
-export type IncentiveType = (typeof incentiveTypes)[number]
-
 export const validThroughTimeframes = ['30 days', '60 days', '90 days', '180 days', '365 days'] as const
 export type ValidThroughTimeframe = (typeof validThroughTimeframes)[number]
 

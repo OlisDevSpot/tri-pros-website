@@ -1,5 +1,5 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
-import type { IncentiveType } from '@/shared/constants/enums'
+import type { IncentiveType } from '@/shared/entities/proposals/schemas'
 import { PlusIcon } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useState } from 'react'
@@ -12,7 +12,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shar
 import { Input } from '@/shared/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Textarea } from '@/shared/components/ui/textarea'
-import { incentiveTypes } from '@/shared/constants/enums'
+import { incentiveTypes } from '@/shared/entities/proposals/schemas'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { IncentiveCollapsibleHeader } from './incentive-collapsible-header'
 
@@ -239,7 +239,7 @@ export function FundingFields({ pricingMode }: Props) {
                                                 <SelectValue placeholder="Select an incentive type" />
                                               </SelectTrigger>
                                               <SelectContent {...field}>
-                                                {incentiveTypes.filter(t => t === 'discount' || t === 'exclusive-offer').map(t => (
+                                                {incentiveTypes.map(t => (
                                                   <SelectItem key={t} value={t}>
                                                     {t.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
                                                   </SelectItem>

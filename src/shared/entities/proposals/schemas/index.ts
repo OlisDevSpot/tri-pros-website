@@ -59,6 +59,7 @@ const exclusiveOfferIncentiveSchema = z.object({
 
 // Closed vocabulary for proposal_incentives.type (text({ enum }), never pgEnum).
 export const incentiveTypes = ['discount', 'exclusive-offer'] as const
+export type IncentiveType = (typeof incentiveTypes)[number]
 
 export const incentiveSchema = z.discriminatedUnion('type', [discountIncentiveSchema, exclusiveOfferIncentiveSchema])
 export type Incentive = z.infer<typeof incentiveSchema>
