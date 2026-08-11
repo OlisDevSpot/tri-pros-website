@@ -133,7 +133,7 @@ export async function getActionQueue(userId: string, isOmni = false, canSeeUngat
     .leftJoin(customers, eq(customers.id, meetings.customerId))
     .leftJoin(proposalViews, eq(proposalViews.proposalId, proposals.id))
     .where(and(
-      isOmni ? undefined : eq(proposals.ownerId, userId),
+      isOmni ? undefined : userParticipatesInMeeting(userId, proposals.meetingId),
       eq(proposals.status, 'sent'),
     ))
     // customers.id included so the correlated EXISTS subquery inside

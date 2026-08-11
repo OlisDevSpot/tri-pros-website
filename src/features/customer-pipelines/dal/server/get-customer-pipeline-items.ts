@@ -195,7 +195,7 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean, canSeeUnga
     .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
     .innerJoin(customers, eq(customers.id, meetings.customerId))
     .where(and(
-      isOmni ? undefined : eq(proposals.ownerId, userId),
+      isOmni ? undefined : userParticipatesInMeeting(userId, proposals.meetingId),
       inArray(customers.id, customerIds),
     ))
     .groupBy(customers.id)
@@ -246,7 +246,7 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean, canSeeUnga
     .from(proposals)
     .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
     .where(and(
-      isOmni ? undefined : eq(proposals.ownerId, userId),
+      isOmni ? undefined : userParticipatesInMeeting(userId, proposals.meetingId),
       inArray(meetings.customerId, customerIds),
     ))
     .orderBy(desc(proposals.createdAt))
