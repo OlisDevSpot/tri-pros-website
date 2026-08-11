@@ -24,7 +24,7 @@ Each phase ships **green** and is independently reviewable. Phase 1 is foundatio
 
 Legend: `AFK` = mergeable without live user decisions · `HITL` = needs a user ruling mid-phase.
 
-- [ ] **Phase 1 · AFK · blocked-by: none — Surface `refresh` from `usePaginatedQuery`.**
+- [x] **Phase 1 · AFK · blocked-by: none — Surface `refresh` from `usePaginatedQuery`.** ✅ Done 2026-08-11. `refresh()` invalidates `[queryKey[0]]` (procedure path). Key-shape verified from `@trpc/tanstack-react-query@11.9.0` `getQueryKeyInternal` (`[splitPath, {input,type}]`) + the repo's no-`keyPrefix` invariant asserted in `trpc/lib/prefetch.ts`/`trpc/DOCS.md:319`. tsc+lint green; `git grep` confirms no UI consumer yet.
   Add `refresh(): Promise<void>` to the hook (procedure-level `invalidateQueries` self-derived from `baseOptions.queryKey[0]`, spec §4) and to the `PaginatedQueryResult<TRow>` interface. **Wires nothing into the UI** — purely additive capability; behavior change is zero until Phase 2/3 consume it. First task **empirically verifies the tRPC query-key shape** (spec §11) before trusting `queryKey[0]`.
   - **Plan:** `docs/superpowers/plans/2026-08-11-records-refresh-phase-1-surface-refresh.md`
   - **AC:** `refresh` on the interface + hook; tsc+lint green; a scratch confirms `queryKey[0]` is the procedure path and that calling `refresh()` re-issues the network request; no UI consumer yet (`git grep` shows only the hook/type touched).
