@@ -1,192 +1,128 @@
-# S6a — Finalize the canonical proposals shape (collapse `createEntityRouter`)
+# S6a — Collapse `createEntityRouter` (crud builds its procedures inline)
 
 > Part of the tRPC Layer Standardization Epic
 > (`docs/plans/2026-08-09-trpc-standardization-epic.md`). Splits the former
-> S6 into **S6a** (this slice — finalize the shape on proposals) and **S6b**
-> (replicate onto customers / meetings / applications / customer-notes).
+> S6 into **S6a** (this slice) and **S6b** (finish customers / meetings /
+> applications).
+>
+> **Revised 2026-08-11.** The first approach — generalize `createCrudRouter`'s
+> procedure params over the tRPC builder type — was abandoned: it forced either
+> a relocated cast or a generics explosion (the sound bound had to reproduce
+> tRPC's entire `ProcedureBuilder` parameter list, and the naive `any` bound
+> silently collapsed the built router's IO types to `any`). Root cause: making a
+> shared factory *name* a procedure-builder type at a parameter boundary, which
+> tRPC cannot cleanly express. The fix removes the boundary entirely.
 
-**Goal:** Prove the final, factory-free router shape on the proposals router —
-a standalone `crud.router.ts` leaf driven by the `procedures.ts` scoped
-procedures — so S6b can replicate it verbatim onto the other four entities.
-Behavior byte-for-byte identical; `pnpm tsc` + `pnpm lint` green.
+**Goal:** Make the proposals tRPC router factory-free — a standalone
+`crud.router.ts` leaf — by having `createCrudRouter` **build its scoped
+procedures inline from the spec it already receives**, instead of taking them as
+parameters. No cast, no added generics.
 
 ## Background
 
 The epic replaced the `createEntityRouter` factory + `EntityToolkit` argument
-with define-once procedures in each `<entity>.router/procedures.ts`. On the
-proposals router, S1–S5b already moved every sub-router (business, incentives,
-funding, delivery, views, contracts, media) onto plain leaves that import their
-pre-scoped procedures directly from `./procedures`. The `createEntityRouter`
-wrapper now survives for **one reason only**: `crud` (built by
-`createCrudRouter`) types its procedure params as `typeof agentProcedure` /
-`typeof baseProcedure`, and only the toolkit's `as typeof agentProcedure` cast
-([create-entity-router.ts:55](../../../src/trpc/lib/create-entity-router.ts))
-satisfies those from a post-`.use()` procedure.
+with per-entity procedures defined once in `<entity>.router/procedures.ts`. On
+proposals, every sub-router except `crud` is already a plain leaf importing its
+pre-scoped procedure from `./procedures`. `crud` alone still needs the factory,
+because `createCrudRouter` takes `authedProcedure` / `shareableProcedure` as
+params typed `typeof agentProcedure` / `typeof baseProcedure`, and the only value
+that satisfies those from a post-`.use()` scoped procedure is the toolkit's
+`scopedAgentProcedure as typeof agentProcedure` cast
+([create-entity-router.ts:44-56](../../../src/trpc/lib/create-entity-router.ts)).
 
-Verified state (2026-08-10):
-- In the whole proposals router, `entity` is referenced in exactly one place —
-  `crud`'s `authedProcedure` / `shareableProcedure`
-  ([index.ts:39-40](../../../src/trpc/routers/proposals.router/index.ts)).
-- `createCrudRouter` only ever calls `.input().query()/.mutation()` on those two
-  params ([create-crud-router.ts:87+](../../../src/trpc/lib/create-crud-router.ts)) —
-  the param types are stricter than the usage.
-- `entity-registry` is write-only: `registerEntity` is the sole meaningful
-  export and `entityRegistry` has zero readers anywhere in `src/`.
-- `proposal-media` already came off the toolkit in S5b (plain leaf on
-  `proposalMediaProcedure`).
+**Why passing the procedure in is the trap:** after `agentProcedure.use(...)`,
+the builder's *type* changes (it carries the added `scope`), and tRPC exposes no
+type for "a procedure builder of any middleware depth." Any attempt to type such
+a parameter precisely forces a cast or an unsound/explosive generic. But the
+hand-written leaves have no such problem — they call `proposalProcedure.input().query()`
+**directly**, and tRPC infers everything cast-free (the S1 inline-`.use()`
+pattern). `createCrudRouter` can do the same: build its procedures inline.
 
-Therefore, once `createCrudRouter` accepts the inline-scoped procedure, the
-factory has no remaining job on proposals and can be dropped from its
-`index.ts`.
+Verified facts (2026-08-10/11):
+- In proposals, `entity` is referenced only by `crud`
+  ([index.ts:39-40](../../../src/trpc/routers/proposals.router/index.ts)); every
+  other sub-router is already a plain leaf.
+- `createCrudRouter` uses its two procedure params only via
+  `.input().query()/.mutation()` ([create-crud-router.ts:72-140](../../../src/trpc/lib/create-crud-router.ts)).
+- The scope helpers are spec-generic: `resolveVisibilityScope(spec: EntityServerSpec, { userId, ability })`
+  and `shareableMiddleware(spec: EntityServerSpec)` — the same ones
+  `procedures.ts` and the toolkit already use.
+- `entity-registry` is write-only (zero readers); an entity dropping out of it
+  is behavior-neutral.
+- All 5 entities call `createCrudRouter` and pass the two procedure params:
+  proposals, customers, meetings, applications, customer-notes.
+
+## Approach
+
+`createCrudRouter` **drops** its `authedProcedure` / `shareableProcedure`
+parameters and builds them internally from `config.spec`, using the cast-free
+inline pattern:
+
+```ts
+const authedProcedure = agentProcedure.use(async ({ ctx, next }) =>
+  next({ ctx: { ...ctx, scope: resolveVisibilityScope(config.spec, { userId: ctx.session.user.id, ability: ctx.ability }) } }))
+const shareableProcedure = baseProcedure.use(shareableMiddleware(config.spec))
+```
+
+Because these are built and chained inline (never named at a boundary), tRPC
+infers their types fully: no cast, no `unstable-core` import, no added generics.
+`createCrudRouter`'s signature returns to its original four generics
+(`TTable, TId, TInsert, TUpdate`). The built router's IO types and resolver `ctx`
+stay concrete. This is behavior-identical to what the toolkit built from the same
+spec (`agentProcedure.use(scopeMiddleware(spec))`), minus the cast.
 
 ## Scope
 
-**In scope (proposals only):**
+Removing the two params changes `createCrudRouter`'s interface, so **all five
+crud call sites** are touched — mechanical and behavior-preserving:
 
-1. **Generalize `createCrudRouter`'s two procedure params.**
-2. **Add `proposals.router/crud.router.ts`** — a plain leaf.
-3. **Reduce `proposals.router/index.ts` to pure composition** (drop
-   `createEntityRouter`).
+**In scope:**
 
-**Out of scope (deferred):**
-- `create-entity-router.ts` and `entity-registry.ts` are **not deleted** —
-  customers / meetings / applications / customer-notes still call the factory.
-  They are deleted in **S7**, after S6b migrates those four.
-- The ADR-0002 amendment and `src/trpc/DOCS.md` rewrite remain in **S7** (docs
-  land when the code fully matches).
-- No child-entity work, no DAL changes, no scope-semantics changes.
+1. **`src/trpc/lib/create-crud-router.ts`** — build the two procedures inline
+   from `config.spec`; delete the two config fields + their doc; drop the
+   `authedProcedure`/`shareableProcedure` selection to use the local consts.
+   Value-import `agentProcedure`/`baseProcedure` (were type-only) +
+   `resolveVisibilityScope` + `shareableMiddleware`.
+2. **proposals** — drop the 2 crud args; `entity` becomes unused → drop
+   `createEntityRouter`; `index.ts` → pure composition; extract the `crud`
+   config into a standalone `proposals.router/crud.router.ts` leaf
+   (`export const crudRouter = createCrudRouter({ spec, schemas, handlers })`).
+3. **customer-notes** — pure-crud; drop the 2 args → `entity` unused → drop
+   `createEntityRouter`; `index.ts` → `createTRPCRouter({ crud: createCrudRouter({ spec, schemas }) })`.
+4. **customers / meetings / applications** — drop only the 2 dead crud args from
+   their existing `createCrudRouter` call. They **keep** `createEntityRouter` +
+   the `entity` toolkit for their other leaves (business/reads/participants/
+   profile/draft). Their full migration to procedures.ts + standalone
+   crud.router.ts stays **S6b**.
 
-## Design
-
-### Change 1 — Generalize `createCrudRouter` procedure params
-
-**File:** `src/trpc/lib/create-crud-router.ts`
-
-The two params typed as concrete tRPC procedures:
-
-```ts
-/** Pre-scoped agent procedure (agentProcedure + scope middleware). */
-authedProcedure: typeof agentProcedure
-/** Pre-scoped shareable procedure (baseProcedure + shareable middleware). */
-shareableProcedure: typeof baseProcedure
-```
-
-become generic over the procedure-builder type, bounded to a tRPC procedure
-builder that exposes `.input().query()/.mutation()`. The function body is
-unchanged — it already only chains those three methods. Both the toolkit's
-cast-typed procedures (`typeof agentProcedure`) and the inline-scoped
-`procedures.ts` procedures (`agentProcedure.use(...)`) satisfy the looser bound,
-so:
-
-- **`crud.router.ts` passes `proposalProcedure` / `proposalShareableProcedure`
-  with no cast** — the point of the slice.
-- **The four entities still on the toolkit keep compiling unchanged** — a
-  backward-compatible widening (a stricter type still satisfies a looser bound).
-
-**Known tricky bit:** pinning the exact tRPC builder type for the generic bound
-so both the cast-typed and inline-`.use()` procedures satisfy it. tRPC's
-`ProcedureBuilder` type changes shape after every `.use()`, which is the very
-reason the cast existed. The implementer must land a bound broad enough to
-accept any middleware-depth builder yet precise enough that
-`.input().query()/.mutation()` type-check and inference on the resulting router
-is preserved (the returned router type must stay identical to today's). This is
-the one place the diff is more than mechanical.
-
-### Change 2 — `proposals.router/crud.router.ts`
-
-**File (create):** `src/trpc/routers/proposals.router/crud.router.ts`
-
-A plain leaf, structurally identical to the other proposal sub-routers, that
-imports its procedures from `./procedures`:
-
-```ts
-import z from 'zod'
-
-import { duplicateProposalWithIncentives } from '@/shared/entities/proposals/dal/server/duplicate'
-import { proposalSchemas, proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
-
-import { createCrudRouter } from '../../lib/create-crud-router'
-import { proposalProcedure, proposalShareableProcedure } from './procedures'
-
-export const crudRouter = createCrudRouter({
-  spec: proposalServerSpec,
-  schemas: { ...proposalSchemas, id: z.string().uuid() },
-  authedProcedure: proposalProcedure,
-  shareableProcedure: proposalShareableProcedure,
-  handlers: {
-    duplicate: duplicateProposalWithIncentives,
-  },
-})
-```
-
-The load-bearing crud comments currently in `index.ts` — the getById phone-gate
-/ row-shape note and the `crud.duplicate` override rationale (it copies
-`proposal_incentives`, which the generic `duplicateImpl` would drop) — move here
-verbatim with the code they annotate.
-
-### Change 3 — `proposals.router/index.ts` → pure composition
-
-**File (modify):** `src/trpc/routers/proposals.router/index.ts`
-
-Drop the `createEntityRouter(proposalServerSpec, (entity) => …)` wrapper and the
-`createCrudRouter` call. The file becomes imports + one `createTRPCRouter`:
-
-```ts
-import { createTRPCRouter } from '../../init'
-import { businessRouter } from './business.router'
-import { contractsRouter } from './contracts.router'
-import { crudRouter } from './crud.router'
-import { deliveryRouter } from './delivery.router'
-import { fundingRouter } from './funding.router'
-import { incentivesRouter } from './incentives.router'
-import { proposalMediaRouter } from './media.router'
-import { viewsRouter } from './views.router'
-
-export const proposalsRouter = createTRPCRouter({
-  crud: crudRouter,
-  business: businessRouter,
-  incentives: incentivesRouter,
-  funding: fundingRouter,
-  delivery: deliveryRouter,
-  views: viewsRouter,
-  contracts: contractsRouter,
-  media: proposalMediaRouter,
-})
-```
-
-- tRPC path `proposals.crud.*` (and every other sub-path) is unchanged → zero
-  client changes.
-- `createEntityRouter`'s side effect (`registerEntity(proposalServerSpec)`) no
-  longer fires for proposals; since the registry has no readers this is
-  behavior-neutral.
-- Imports removed: `createEntityRouter`, `createCrudRouter`, `z`,
-  `duplicateProposalWithIncentives`, `proposalSchemas`/`proposalServerSpec` (all
-  now consumed inside `crud.router.ts`).
+**Out of scope / deferred:**
+- `create-entity-router.ts` + `entity-registry.ts` are **not deleted** (still
+  used by customers/meetings/applications) → S7.
+- procedures.ts + standalone crud.router.ts for customers/meetings/applications
+  → S6b.
+- ADR-0002 amendment + `src/trpc/DOCS.md` rewrite → S7.
 
 ## Testing
 
-Consistent with every prior slice — this codebase gates router-shape changes on
-type-check + lint + path stability, not a unit suite:
+This repo has no router unit-test suite; the epic gates router-shape slices on
+`pnpm tsc` + `pnpm lint` + path stability.
 
-1. `pnpm tsc` — clean (only the pre-existing `src/trpc/server.ts:6` WIP
-   trailing-space error may remain, unrelated to this slice).
-2. `pnpm lint` — clean (import ordering via `perfectionist/sort-imports`;
-   autofix with `npx eslint --fix` on touched files).
-3. Confirm the four still-on-toolkit routers (customers, meetings, applications,
-   customer-notes) compile **unchanged** — proves the `createCrudRouter`
-   widening is backward-compatible.
-4. Confirm the composed router still exposes `proposals.crud.getById/create/
-   update/delete/duplicate` and all other sub-paths (path stability = no client
-   breakage).
+1. `pnpm tsc` — no NEW errors (pre-existing unrelated working-tree errors from
+   other uncommitted slices — `lead-drawer-identity.tsx`, `customer-search.tsx`,
+   `server.ts:6` — are out of scope). Critically: **type fidelity is preserved**
+   — the built CRUD routers' input/output types stay concrete (not `any`), and
+   resolver `ctx` is not `any`. tsc-clean alone is not sufficient evidence;
+   confirm a wrong-shape call to a CRUD procedure is a tsc error.
+2. `pnpm lint` — clean (autofix import order with `npx eslint --fix`).
+3. tRPC paths unchanged: `proposals.crud.*` and every other `*.crud.*` and
+   sub-path identical → zero client changes.
+4. Behavior identical: each entity's inline-built procedure equals what the
+   toolkit built from the same spec.
 
 ## Knock-on to the epic
 
-- **S6b** (the former S6 body) now replicates *this finalized shape* —
-  `procedures.ts` + standalone `crud.router.ts` + pure `index.ts` — onto
-  customers, meetings, applications, customer-notes. No "wrapper lingers for
-  crud" caveat anymore.
-- **S7** shrinks to pure demolition: delete `create-entity-router.ts` +
-  `entity-registry.ts` (now zero consumers), then the ADR-0002 amendment +
-  `src/trpc/DOCS.md` rewrite.
-- S7's `blocked-by: S4, S5, S6` is satisfied by S6a + S6b together; numbering of
-  S7/S8 is unchanged.
+- **S6b** shrinks: customer-notes is already done; it now finishes
+  customers/meetings/applications (procedures.ts + standalone crud.router.ts +
+  drop their `createEntityRouter`).
+- **S7** unchanged: delete `create-entity-router.ts` + `entity-registry.ts` once
+  those three are off the factory; ADR + DOCS rewrite.

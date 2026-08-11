@@ -2,23 +2,18 @@
 // Each slot wires: CASL action gate + Zod input + DAL handler + dalToTrpc bridge.
 // spec.shareable controls whether getById/update use shareable vs authed procedure.
 
-// tRPC does not publicly re-export its procedure-builder type outside the
-// `unstable-core-do-not-import` subpath. `AnyProcedureBuilder` (the obvious
-// alias) pins the builder's 8th generic (`TCaller`) to `any`; because that's
-// a concrete `any` rather than a deferred type parameter once accessed
-// through a constrained generic, `.query()`/`.mutation()`'s
-// `TCaller extends true ? ... : ...` return type distributes into an
-// unassignable union. `ProcedureBuilder` (the underlying generic interface,
-// also exported from this subpath) lets us pin `TCaller` to `false` instead —
-// the only value real router procedures use (`true` is the standalone-caller
-// variant) — which keeps `.input().query()/.mutation()` resolving to a single
-// concrete `AnyProcedure`, exactly like `typeof agentProcedure` already does.
-import type { ProcedureBuilder } from '@trpc/server/unstable-core-do-not-import'
+// The scoped procedures are built INLINE from `config.spec` at the top of
+// `createCrudRouter`'s body — never accepted as config params. This mirrors
+// the per-entity `procedures.ts` pattern (see proposals.router/procedures.ts):
+// an inline `.use()` chained directly off `agentProcedure`/`baseProcedure`
+// infers `ctx` concretely, so no cast and no "procedure builder of any
+// middleware depth" type is ever needed at a param boundary. Because no
+// builder type crosses the function signature, `createCrudRouter` keeps its
+// original four generics — nothing added for procedure typing.
 
 import type { PgTable } from 'drizzle-orm/pg-core'
 import type { Insert } from '@/shared/db/types'
 import type { AppAction, AppSubject } from '@/shared/domains/permissions/types'
-import type { agentProcedure, baseProcedure } from '@/trpc/init'
 
 import type { CrudHandlers, EntityServerSpec, SlotName } from '@/trpc/types'
 
@@ -26,17 +21,10 @@ import { TRPCError } from '@trpc/server'
 import z from 'zod'
 
 import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
-import { createTRPCRouter } from '@/trpc/init'
+import { agentProcedure, baseProcedure, createTRPCRouter } from '@/trpc/init'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
-
-/**
- * "A procedure builder of any middleware depth" — needed so this factory
- * accepts both the cast `typeof agentProcedure` (toolkit callers) and the
- * inline-scoped `agentProcedure.use(...)` builders from an entity's
- * procedures.ts, with no cast. See the import comment above for why this
- * isn't just tRPC's own `AnyProcedureBuilder`.
- */
-type AnyRouterProcedureBuilder = ProcedureBuilder<any, any, any, any, any, any, any, false>
+import { resolveVisibilityScope } from '@/trpc/lib/middleware/scope-middleware'
+import { shareableMiddleware } from '@/trpc/lib/middleware/shareable-middleware'
 
 // Action mapping per slot — fixed (not entity-configurable).
 const SLOT_ACTIONS: Record<SlotName, AppAction> = {
@@ -52,8 +40,6 @@ export interface CreateCrudRouterConfig<
   TId extends string | number,
   TInsert extends z.ZodObject<z.ZodRawShape>,
   TUpdate extends z.ZodObject<z.ZodRawShape>,
-  TAuthed extends AnyRouterProcedureBuilder = typeof agentProcedure,
-  TShareable extends AnyRouterProcedureBuilder = typeof baseProcedure,
 > {
   /** Entity spec — runtime config (table, visibility, casl, shareable). */
   spec: EntityServerSpec<TTable, TId>
@@ -64,10 +50,6 @@ export interface CreateCrudRouterConfig<
    * `update`: Entity's update schema (concrete, not type-erased)
    */
   schemas: { id: z.ZodType<TId>, insert: TInsert, update: TUpdate }
-  /** Pre-scoped agent procedure — any middleware-depth builder (was `typeof agentProcedure`). */
-  authedProcedure: TAuthed
-  /** Pre-scoped shareable procedure — any middleware-depth builder (was `typeof baseProcedure`). */
-  shareableProcedure: TShareable
   /**
    * Override individual CRUD handlers. Merged with createCrudDal defaults.
    * ⚠️ Overrides BYPASS spec.hooks entirely — the override replaces the
@@ -83,9 +65,7 @@ export function createCrudRouter<
   TId extends string | number,
   TInsert extends z.ZodObject<z.ZodRawShape>,
   TUpdate extends z.ZodObject<z.ZodRawShape>,
-  TAuthed extends AnyRouterProcedureBuilder = typeof agentProcedure,
-  TShareable extends AnyRouterProcedureBuilder = typeof baseProcedure,
->(config: CreateCrudRouterConfig<TTable, TId, TInsert, TUpdate, TAuthed, TShareable>) {
+>(config: CreateCrudRouterConfig<TTable, TId, TInsert, TUpdate>) {
   // Merge default DAL handlers with any caller-provided overrides.
   const defaults = createCrudDal(config.spec)
   // Cast: spread merge of defaults + Partial overrides loses the full interface
@@ -94,13 +74,16 @@ export function createCrudRouter<
   // explicit ?? per key — deferred for readability.
   const handlers = { ...defaults, ...config.handlers } as CrudHandlers<TTable, TId>
 
+  // Scoped procedures built inline from the spec — the cast-free inline `.use()`
+  // pattern (ctx infers from agentProcedure, so no builder-type cast is needed).
+  // Equivalent to what createEntityRouter's toolkit built from the same spec.
+  const authedProcedure = agentProcedure.use(async ({ ctx, next }) =>
+    next({ ctx: { ...ctx, scope: resolveVisibilityScope(config.spec, { userId: ctx.session.user.id, ability: ctx.ability }) } }))
+  const shareableProcedure = baseProcedure.use(shareableMiddleware(config.spec))
+
   // Select the right procedure based on shareable config.
-  const readProcedure = config.spec.shareable
-    ? config.shareableProcedure
-    : config.authedProcedure
-  const updateProcedure = config.spec.shareable
-    ? config.shareableProcedure
-    : config.authedProcedure
+  const readProcedure = config.spec.shareable ? shareableProcedure : authedProcedure
+  const updateProcedure = config.spec.shareable ? shareableProcedure : authedProcedure
 
   // Input schemas — token always optional (harmless on non-shareable entities).
   const { id: idZod } = config.schemas
@@ -123,7 +106,7 @@ export function createCrudRouter<
         return row
       }),
 
-    create: config.authedProcedure
+    create: authedProcedure
       .input(config.schemas.insert)
       .mutation(async ({ ctx, input }) => {
         assertCan(ctx.ability, 'create', config.spec)
@@ -150,14 +133,14 @@ export function createCrudRouter<
         return row
       }),
 
-    delete: config.authedProcedure
+    delete: authedProcedure
       .input(idOnlyInput)
       .mutation(async ({ ctx, input }) => {
         assertCan(ctx.ability, 'delete', config.spec)
         dalToTrpc(await handlers.delete(ctx, { id: input.id }))
       }),
 
-    duplicate: config.authedProcedure
+    duplicate: authedProcedure
       .input(idOnlyInput)
       .mutation(async ({ ctx, input }) => {
         assertCan(ctx.ability, 'duplicate', config.spec)
