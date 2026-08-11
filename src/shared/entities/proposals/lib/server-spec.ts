@@ -42,8 +42,9 @@ export const proposalServerSpec = {
       // see ../DOCS.md#kind-derived-from-meeting-project
       // see ../DOCS.md#share-token-generated-at-insert
       // see ../DOCS.md#sow-snapshot-from-meeting-on-create
-      // No blob scrub: `insertProposalSchema` omits fundingJSON/formMetaJSON
-      // since the W3 write-seam flip, so nothing can arrive here to scrub.
+      // No blob scrub: `insertProposalSchema` omits the frozen blob columns
+      // (fundingJSONDeprecated/formMetaJSONDeprecated) since the W3
+      // write-seam flip, so nothing can arrive here to scrub.
       async before(input, _ctx) {
         if (!input.meetingId) {
           return { ...input, kind: deriveProposalKind(null), token: generateShareToken() }

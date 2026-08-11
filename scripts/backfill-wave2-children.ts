@@ -229,7 +229,7 @@ async function backfillProposals(): Promise<Stats> {
   const rows = await db.select().from(proposals)
   for (const row of rows) {
     try {
-      const funding = fundingSectionSchema.parse(normalizeFundingMeta(row.fundingJSON, row.id))
+      const funding = fundingSectionSchema.parse(normalizeFundingMeta(row.fundingJSONDeprecated, row.id))
       const project = projectSectionSchema.parse(normalizeLegacyProject(row.projectJSON, row.id))
       const incentiveRows = funding.data.incentives.map((inc, i) => ({
         proposalId: row.id,
@@ -259,7 +259,7 @@ async function backfillProposals(): Promise<Stats> {
       // Rollup recompute — SAME statement recomputeProposalFinancials uses (keep in sync)
       await db.update(proposals).set({
         finalTcpCents: sql`GREATEST(0::numeric, (
-          ROUND(COALESCE((${proposals.fundingJSON}->'data'->>'startingTcp')::numeric, 0) * 100)
+          ROUND(COALESCE((${proposals.fundingJSONDeprecated}->'data'->>'startingTcp')::numeric, 0) * 100)
           - COALESCE((SELECT SUM(pi.amount_cents) FROM proposal_incentives pi
               WHERE pi.proposal_id = ${proposals.id} AND pi.type = 'discount'), 0)
           - COALESCE((SELECT ROUND(SUM((si->>'amount')::numeric) * 100)

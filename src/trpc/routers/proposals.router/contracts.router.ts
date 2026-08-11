@@ -246,7 +246,7 @@ export const contractsRouter = createTRPCRouter({
       }
 
       // 4. Persist the proposal-side change (W3: the scalar column is THE
-      // store — `formMetaJSON` is frozen and unwritable through the API).
+      // store — `formMetaJSONDeprecated` is frozen and unwritable through the API).
       dalToTrpc(await proposalCrud.update(ctx, {
         id: input.id,
         data: { envelopeDocumentIds: finalSelection },

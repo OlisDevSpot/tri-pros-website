@@ -7,7 +7,7 @@ import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import z from 'zod'
 
 import { envelopeDocumentIds, priceDisplayModes, proposalKinds, proposalStatuses } from '@/shared/constants/enums'
-import { fundingSectionSchema, projectSectionSchema } from '@/shared/entities/proposals/schemas'
+import { projectSectionSchema } from '@/shared/entities/proposals/schemas'
 import { createdAt, id, label, updatedAt } from '../lib/schema-helpers'
 import { user } from './auth'
 import { financeOptions } from './finance-options'
@@ -36,16 +36,17 @@ export const proposals = pgTable('proposals', {
   qbInvoiceId: text('qb_invoice_id'),
   qbPaymentStatus: text('qb_payment_status'),
 
-  // Nullable since the W3 write-seam flip (Task 7): no code path writes these
-  // blobs any more, so new rows carry NULL. Frozen + renamed `*Deprecated` in
-  // Task 9; dropped on the W4 push (jsonb deprecation ledger).
-  formMetaJSON: jsonb('form_meta_JSON').$type<FormMetaSection>(),
+  /** @deprecated W3 froze this blob (2026-07-26 spec). Scalars live in the
+   * price_display_mode/envelope_document_ids columns. Read only by
+   * scripts/backfill-wave3-scalars.ts. Dropped on the Wave-4 push (ledger). */
+  formMetaJSONDeprecated: jsonb('form_meta_JSON').$type<FormMetaSection>(),
   projectJSON: jsonb('project_JSON').$type<ProjectSection>().notNull(),
-  fundingJSON: jsonb('funding_JSON').$type<FundingSection>(),
+  /** @deprecated same — scalars in *_cents columns, incentives in proposal_incentives. */
+  fundingJSONDeprecated: jsonb('funding_JSON').$type<FundingSection>(),
 
-  // ── Wave 3 (epic #256): fundingJSON/formMetaJSON scalars promoted to
+  // ── Wave 3 (epic #256): the frozen blob columns' scalars promoted to
   // columns. Money is integer cents; nullable only for the additive/backfill
-  // window (Zod requires values on write). fundingJSON/formMetaJSON freeze at
+  // window (Zod requires values on write). The frozen blob columns freeze at
   // the W3 cutover — see the deprecation ledger "Waves 3 & 4" section.
   startingTcpCents: bigint('starting_tcp_cents', { mode: 'number' }),
   depositAmountCents: bigint('deposit_amount_cents', { mode: 'number' }),
@@ -112,9 +113,6 @@ export const proposalsRelations = relations(proposals, ({ one }) => ({
 
 export const selectProposalSchema = createSelectSchema(proposals, {
   projectJSON: projectSectionSchema,
-  // Nullable since the W3 write-seam flip — new rows never carry the blob.
-  // The whole override is dropped in Task 9 with the freeze.
-  fundingJSON: fundingSectionSchema.nullable(),
 })
 export type Proposal = z.infer<typeof selectProposalSchema>
 
@@ -133,8 +131,8 @@ export const insertProposalSchema = createInsertSchema(proposals, {
   // W3 write-seam flip (Task 7): the legacy blobs are unwritable through the
   // API surface. Known exceptions live outside it — the backfill script's raw
   // `db.update` and the paused AI-summary escape hatch (projectJSON only).
-  formMetaJSON: true,
-  fundingJSON: true,
+  formMetaJSONDeprecated: true,
+  fundingJSONDeprecated: true,
 }).extend({
   // Server-derived fields: hooks.create.before sets these. Optional so
   // clients don't send them (hook fills in), but Zod doesn't strip them.

@@ -25,8 +25,8 @@ async function main() {
 
   const rows = await db.select({
     id: proposals.id,
-    fundingJSON: proposals.fundingJSON,
-    formMetaJSON: proposals.formMetaJSON,
+    fundingJSONDeprecated: proposals.fundingJSONDeprecated,
+    formMetaJSONDeprecated: proposals.formMetaJSONDeprecated,
     startingTcpCents: proposals.startingTcpCents,
     depositAmountCents: proposals.depositAmountCents,
     cashInDealCents: proposals.cashInDealCents,
@@ -35,13 +35,13 @@ async function main() {
     envelopeDocumentIds: proposals.envelopeDocumentIds,
   }).from(proposals)
     // Rows created after the writer flip have no blobs — nothing to backfill.
-    .where(and(isNotNull(proposals.fundingJSON), isNotNull(proposals.formMetaJSON)))
+    .where(and(isNotNull(proposals.fundingJSONDeprecated), isNotNull(proposals.formMetaJSONDeprecated)))
 
   const failures: string[] = []
   let written = 0
   for (const row of rows) {
-    const funding = fundingSectionSchema.safeParse(row.fundingJSON)
-    const formMeta = formMetaSectionSchema.safeParse(row.formMetaJSON)
+    const funding = fundingSectionSchema.safeParse(row.fundingJSONDeprecated)
+    const formMeta = formMetaSectionSchema.safeParse(row.formMetaJSONDeprecated)
     if (!funding.success || !formMeta.success) {
       failures.push(`${row.id}: zod ${funding.success ? 'formMeta' : 'funding'} ${(funding.error ?? formMeta.error)?.message}`)
       continue
