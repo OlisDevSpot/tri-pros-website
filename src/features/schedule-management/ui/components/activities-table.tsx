@@ -47,7 +47,7 @@ export function ActivitiesTable() {
           columns={columns}
           entityName="activity"
           serverPagination={toDataTablePagination(pagination)}
-          serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
+          serverSorting={toDataTableSorting(pagination)}
         />
       )}
     />

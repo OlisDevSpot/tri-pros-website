@@ -20,12 +20,17 @@ interface ToDataTableSortingOptions {
  * the server input.
  *
  * @example
+ *   // Default: newest-first arrow on the createdAt column, no options needed.
  *   const pagination = usePaginatedQuery(...)
  *   <DataTable
  *     serverPagination={toDataTablePagination(pagination)}
- *     serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
+ *     serverSorting={toDataTableSorting(pagination)}
  *     {...}
  *   />
+ *
+ * @example
+ *   // Override when the default arrow should sit on a different column:
+ *   toDataTableSorting(pagination, { fallbackVisual: { id: 'sentAt', desc: true } })
  */
 export function toDataTableSorting<T>(
   p: PaginatedQueryResult<T>,
@@ -35,6 +40,6 @@ export function toDataTableSorting<T>(
     sortBy: p.sortBy,
     sortDir: p.sortDir,
     onSortChange: p.setSort,
-    fallbackVisual: options.fallbackVisual,
+    fallbackVisual: options.fallbackVisual ?? { id: 'createdAt', desc: true },
   }
 }

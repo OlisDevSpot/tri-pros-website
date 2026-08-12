@@ -124,7 +124,7 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
           entityName="customer"
           onRowClick={row => handleViewProfile(row.id)}
           serverPagination={toDataTablePagination(pagination)}
-          serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
+          serverSorting={toDataTableSorting(pagination)}
           columnVisibility={visibility.columnVisibility}
         />
       </div>

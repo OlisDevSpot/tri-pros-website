@@ -93,7 +93,7 @@ export function CustomersTable() {
             rowDataAttribute="data-customer-row"
             onRowClick={row => handleViewProfile(row.id)}
             serverPagination={toDataTablePagination(pagination)}
-            serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
+            serverSorting={toDataTableSorting(pagination)}
             columnVisibility={visibility.columnVisibility}
           />
         )}
