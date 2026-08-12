@@ -128,7 +128,7 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       can('update', 'CustomerNote')
       can('delete', 'CustomerNote')
 
-      can('read', 'Meeting')
+      can('read', 'Meeting', { $participatesViaMeeting: { via: 'self' } })
       can('create', 'Meeting')
       can('update', 'Meeting')
       can('own', 'Meeting') // agents own the meetings they create (implicitly the sales rep)
@@ -228,7 +228,7 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       // 1:1 attribution child (Addendum B) — read-only, SYSTEM-written at capture.
       can('read', 'CustomerLeadAttribution')
 
-      can('read', 'Meeting')
+      can('read', 'Meeting', { $participatesViaMeeting: { via: 'self' } })
       can('create', 'Meeting') // books appointments (lands unassigned — see resolve-owner.ts)
       can('update', 'Meeting')
       // Note: NO can('own','Meeting') — this is what makes their bookings unassigned.
