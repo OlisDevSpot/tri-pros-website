@@ -1,8 +1,16 @@
+import type { ProjectStatusBucket, ProjectVisibility } from '@/shared/constants/enums'
+import type { DateRange, PaginationFields, SortFields } from '@/shared/dal/server/lib/query/schemas'
+import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { MediaFile, Project } from '@/shared/db/schema'
 import type { PortfolioProject, PortfolioProjectDetail } from '@/shared/entities/projects/types'
-import { and, asc, desc, eq, inArray } from 'drizzle-orm'
+import { and, asc, count, desc, eq, getTableColumns, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm'
+import { stagesForBuckets } from '@/shared/constants/enums'
+import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
+import { buildFilterWhere } from '@/shared/dal/server/lib/query/filters'
+import { buildOrderBy } from '@/shared/dal/server/lib/query/sort'
 import { db } from '@/shared/db'
 import { mediaFiles, projects, x_projectScopes } from '@/shared/db/schema'
+import { hasAssociatedMeeting } from '@/shared/entities/projects/lib/visibility'
 
 export async function getPortfolioProjects(): Promise<PortfolioProject[]> {
   const rows = await db
@@ -164,4 +172,148 @@ export async function getAllProjects(): Promise<ProjectWithScopeIds[]> {
     ...project,
     scopeIds: scopesByProject.get(project.id) ?? [],
   }))
+}
+
+/** `crud.list` input shape — mirrors the router's `paginatedQueryInput({...})` schema (kept in crud.router.ts). */
+export interface ProjectListInput {
+  pagination: PaginationFields
+  sort?: SortFields
+  search?: string
+  filters?: {
+    statusBucket?: ProjectStatusBucket[]
+    excludePortfolio?: boolean
+    visibility?: ProjectVisibility
+    completedAt?: DateRange
+    createdAt?: DateRange
+  }
+}
+
+/**
+ * Server-paginated projects list for /dashboard/projects. Each row carries
+ * `scopeIds` (aggregated from x_projectScopes) so the detail sheet can
+ * resolve trade names without a per-row fetch. Scope is set by middleware
+ * (`projectProcedure` → `ctx.scope`; null for omni).
+ */
+export async function listProjects(
+  ctx: ScopedContext,
+  input: ProjectListInput,
+): Promise<DalReturn<{ rows: ProjectWithScopeIds[], total: number }>> {
+  return dalDbOperation(async () => {
+    const scopeWhere = ctx.scope ?? undefined
+
+    const searchTerm = input.search?.trim()
+    const searchWhere = searchTerm
+      ? or(
+          ilike(projects.title, `%${searchTerm}%`),
+          ilike(projects.city, `%${searchTerm}%`),
+        )
+      : undefined
+
+    const filterWhere = buildFilterWhere(input.filters, {
+      // Expand the requested buckets to their stages. coalesce null→'closed'
+      // so a stray unset-stage project groups with Completed, matching
+      // deriveProjectStatusBucket's null fallback. (Pure-portfolio nulls are
+      // separately dropped by excludePortfolio.)
+      statusBucket: v => (v.length > 0 ? inArray(sql`coalesce(${projects.pipelineStage}, 'closed')`, stagesForBuckets(v)) : undefined),
+      excludePortfolio: v => (v ? hasAssociatedMeeting() : undefined),
+      visibility: v => eq(projects.isPublic, v === 'public'),
+      completedAt: v => and(
+        v.from ? gte(projects.completedAt, v.from) : undefined,
+        v.to ? lte(projects.completedAt, v.to) : undefined,
+      ),
+      createdAt: v => and(
+        v.from ? gte(projects.createdAt, v.from) : undefined,
+        v.to ? lte(projects.createdAt, v.to) : undefined,
+      ),
+    })
+
+    const where = and(scopeWhere, searchWhere, filterWhere)
+
+    const orderBy = buildOrderBy(input.sort, {
+      title: projects.title,
+      city: projects.city,
+      isPublic: projects.isPublic,
+      completedAt: projects.completedAt,
+      createdAt: projects.createdAt,
+    }, desc(projects.createdAt))
+
+    // Page query resolves first; count + scopes overlap in flight.
+    // Scopes only depend on the page's projectIds, not the count, so
+    // serializing scopes behind `paginate()` would waste a round-trip.
+    const rows = await db
+      .select(getTableColumns(projects))
+      .from(projects)
+      .where(where)
+      .orderBy(...orderBy)
+      .limit(input.pagination.limit)
+      .offset(input.pagination.offset)
+
+    const projectIds = rows.map(r => r.id)
+
+    const [total, scopeRows] = await Promise.all([
+      db
+        .select({ c: count(projects.id) })
+        .from(projects)
+        .where(where)
+        .then(r => r[0]?.c ?? 0),
+      projectIds.length > 0
+        ? db
+            .select({
+              projectId: x_projectScopes.projectId,
+              scopeId: x_projectScopes.scopeId,
+            })
+            .from(x_projectScopes)
+            .where(inArray(x_projectScopes.projectId, projectIds))
+        : Promise.resolve([] as { projectId: string, scopeId: string }[]),
+    ])
+
+    const scopesByProject = new Map<string, string[]>()
+    for (const row of scopeRows) {
+      const list = scopesByProject.get(row.projectId)
+      if (list) {
+        list.push(row.scopeId)
+      }
+      else {
+        scopesByProject.set(row.projectId, [row.scopeId])
+      }
+    }
+
+    return {
+      rows: rows.map(project => ({
+        ...project,
+        scopeIds: scopesByProject.get(project.id) ?? [],
+      })),
+      total,
+    }
+  })
+}
+
+/**
+ * Grouped scope-match counts for `getTradeImages` (landing page trade
+ * carousels): how many of `scopeNotionIds` each matching project has
+ * (`matchingRows`), and how many scopes each of those projects has in total
+ * (`totalRows`) — used to tell single-trade projects from multi-trade ones.
+ */
+export async function getProjectScopeCountsByScopeIds(scopeNotionIds: string[]): Promise<{
+  matchingRows: { projectId: string, matchCount: number }[]
+  totalRows: { projectId: string, totalCount: number }[]
+}> {
+  const matchingRows = await db
+    .select({ projectId: x_projectScopes.projectId, matchCount: count() })
+    .from(x_projectScopes)
+    .where(inArray(x_projectScopes.scopeId, scopeNotionIds))
+    .groupBy(x_projectScopes.projectId)
+
+  const projectIds = matchingRows.map(r => r.projectId)
+  if (projectIds.length === 0) {
+    return { matchingRows, totalRows: [] }
+  }
+
+  const totalRows = await db
+    .select({ projectId: x_projectScopes.projectId, totalCount: count() })
+    .from(x_projectScopes)
+    .where(inArray(x_projectScopes.projectId, projectIds))
+    .groupBy(x_projectScopes.projectId)
+
+  return { matchingRows, totalRows }
 }

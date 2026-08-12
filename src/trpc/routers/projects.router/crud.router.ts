@@ -1,16 +1,14 @@
-import { and, count, desc, eq, getTableColumns, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
+
 import { createProject, deleteProject, updateProject } from '@/features/project-management/dal/server/manage-project'
-import { projectStatusBuckets, projectVisibilities, stagesForBuckets } from '@/shared/constants/enums'
-import { buildFilterWhere } from '@/shared/dal/server/lib/query/filters'
+import { projectStatusBuckets, projectVisibilities } from '@/shared/constants/enums'
 import { dateRangeSchema, paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
-import { buildOrderBy } from '@/shared/dal/server/lib/query/sort'
-import { db } from '@/shared/db'
-import { projects, x_projectScopes } from '@/shared/db/schema'
-import { getAllProjects, getProjectForEdit } from '@/shared/entities/projects/dal/server/queries'
-import { hasAssociatedMeeting, projectParticipationScope } from '@/shared/entities/projects/lib/visibility'
+import { getAllProjects, getProjectForEdit, listProjects } from '@/shared/entities/projects/dal/server/queries'
 import { projectFormSchema } from '@/shared/entities/projects/schemas'
+
 import { agentProcedure, createTRPCRouter } from '../../init'
+import { dalToTrpc } from '../../lib/dal-to-trpc'
+import { projectProcedure } from './procedures'
 
 export const crudRouter = createTRPCRouter({
   getAll: agentProcedure
@@ -21,7 +19,7 @@ export const crudRouter = createTRPCRouter({
   // Server-paginated projects list for /dashboard/projects.
   // Each row carries `scopeIds` (aggregated from x_projectScopes) so the
   // detail sheet can resolve trade names without a per-row fetch.
-  list: agentProcedure
+  list: projectProcedure
     .input(paginatedQueryInput({
       // Status is derived from `pipelineStage`, never stored — callers filter by
       // the coarse bucket (active/completed/on_hold/cancelled) and the handler
@@ -34,95 +32,7 @@ export const crudRouter = createTRPCRouter({
       completedAt: dateRangeSchema.optional(),
       createdAt: dateRangeSchema.optional(),
     }))
-    .query(async ({ ctx, input }) => {
-      const isOmni = ctx.ability.can('manage', 'all')
-      const scopeWhere = isOmni ? undefined : projectParticipationScope(ctx.session.user.id)
-
-      const searchTerm = input.search?.trim()
-      const searchWhere = searchTerm
-        ? or(
-            ilike(projects.title, `%${searchTerm}%`),
-            ilike(projects.city, `%${searchTerm}%`),
-          )
-        : undefined
-
-      const filterWhere = buildFilterWhere(input.filters, {
-        // Expand the requested buckets to their stages. coalesce null→'closed'
-        // so a stray unset-stage project groups with Completed, matching
-        // deriveProjectStatusBucket's null fallback. (Pure-portfolio nulls are
-        // separately dropped by excludePortfolio.)
-        statusBucket: v => (v.length > 0 ? inArray(sql`coalesce(${projects.pipelineStage}, 'closed')`, stagesForBuckets(v)) : undefined),
-        excludePortfolio: v => (v ? hasAssociatedMeeting() : undefined),
-        visibility: v => eq(projects.isPublic, v === 'public'),
-        completedAt: v => and(
-          v.from ? gte(projects.completedAt, v.from) : undefined,
-          v.to ? lte(projects.completedAt, v.to) : undefined,
-        ),
-        createdAt: v => and(
-          v.from ? gte(projects.createdAt, v.from) : undefined,
-          v.to ? lte(projects.createdAt, v.to) : undefined,
-        ),
-      })
-
-      const where = and(scopeWhere, searchWhere, filterWhere)
-
-      const orderBy = buildOrderBy(input.sort, {
-        title: projects.title,
-        city: projects.city,
-        isPublic: projects.isPublic,
-        completedAt: projects.completedAt,
-        createdAt: projects.createdAt,
-      }, desc(projects.createdAt))
-
-      // Page query resolves first; count + scopes overlap in flight.
-      // Scopes only depend on the page's projectIds, not the count, so
-      // serializing scopes behind `paginate()` would waste a round-trip.
-      const rows = await db
-        .select(getTableColumns(projects))
-        .from(projects)
-        .where(where)
-        .orderBy(...orderBy)
-        .limit(input.pagination.limit)
-        .offset(input.pagination.offset)
-
-      const projectIds = rows.map(r => r.id)
-
-      const [total, scopeRows] = await Promise.all([
-        db
-          .select({ c: count(projects.id) })
-          .from(projects)
-          .where(where)
-          .then(r => r[0]?.c ?? 0),
-        projectIds.length > 0
-          ? db
-              .select({
-                projectId: x_projectScopes.projectId,
-                scopeId: x_projectScopes.scopeId,
-              })
-              .from(x_projectScopes)
-              .where(inArray(x_projectScopes.projectId, projectIds))
-          : Promise.resolve([] as { projectId: string, scopeId: string }[]),
-      ])
-
-      const scopesByProject = new Map<string, string[]>()
-      for (const row of scopeRows) {
-        const list = scopesByProject.get(row.projectId)
-        if (list) {
-          list.push(row.scopeId)
-        }
-        else {
-          scopesByProject.set(row.projectId, [row.scopeId])
-        }
-      }
-
-      return {
-        rows: rows.map(project => ({
-          ...project,
-          scopeIds: scopesByProject.get(project.id) ?? [],
-        })),
-        total,
-      }
-    }),
+    .query(async ({ ctx, input }) => dalToTrpc(await listProjects(ctx, input))),
 
   getForEdit: agentProcedure
     .input(z.object({ id: z.string().uuid() }))
