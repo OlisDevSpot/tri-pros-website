@@ -1,8 +1,8 @@
 import { z } from 'zod'
 
-import { createProject, deleteProject, updateProject } from '@/features/project-management/dal/server/manage-project'
 import { projectStatusBuckets, projectVisibilities } from '@/shared/constants/enums'
 import { dateRangeSchema, paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
+import { createProject, deleteProject, updateProject } from '@/shared/entities/projects/dal/server/mutations'
 import { getAllProjects, getProjectForEdit, listProjects } from '@/shared/entities/projects/dal/server/queries'
 import { projectFormSchema } from '@/shared/entities/projects/schemas'
 
