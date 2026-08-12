@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server'
-import { and, count, desc, eq, getTableColumns, gte, ilike, inArray, lte, or } from 'drizzle-orm'
+import { and, count, eq, getTableColumns, gte, ilike, inArray, lte, or } from 'drizzle-orm'
 import z from 'zod'
 
 import { activityEntityTypes, activityTypes, gcalSyncableActivityTypes } from '@/shared/constants/enums'
@@ -64,7 +64,7 @@ export const activitiesRouter = createTRPCRouter({
         scheduledFor: activities.scheduledFor,
         dueAt: activities.dueAt,
         createdAt: activities.createdAt,
-      }, desc(activities.createdAt))
+      })
 
       return paginate({
         query: () => db

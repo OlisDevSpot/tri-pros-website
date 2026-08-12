@@ -235,7 +235,7 @@ export async function listProjects(
       isPublic: projects.isPublic,
       completedAt: projects.completedAt,
       createdAt: projects.createdAt,
-    }, desc(projects.createdAt))
+    })
 
     // Page query resolves first; count + scopes overlap in flight.
     // Scopes only depend on the page's projectIds, not the count, so

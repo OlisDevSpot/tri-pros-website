@@ -308,7 +308,7 @@ export const leadSourcesRouter = createTRPCRouter({
         name: customers.name,
         email: customers.email,
         createdAt: customers.createdAt,
-      }, desc(customers.createdAt))
+      })
 
       return paginate({
         // Source fields are joined so the row carries the same shape as
