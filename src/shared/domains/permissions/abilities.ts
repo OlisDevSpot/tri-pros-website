@@ -221,7 +221,7 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       can('access', 'Dashboard')
       can('read', 'LeadsPool') // sees the shared leads pool (drives visibility + phone + pipeline access)
 
-      can('read', 'Customer', { $inDerivedPipeline: ['leads', 'rehash'] })
+      can('read', 'Customer', { $inDerivedPipeline: ['leads'] })
       // Lead-contact fields only — NOT the sales-discovery JSON profiles.
       can('update', 'Customer', ['name', 'phone', 'email', 'address', 'city', 'state', 'zip', 'pipelineStage'])
 
