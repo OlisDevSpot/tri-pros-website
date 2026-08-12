@@ -51,16 +51,28 @@ export async function updateProject(
   scopeIds?: string[],
 ): Promise<Project> {
   // `updatedAt` is NOT set manually here — the schema column stamps it via
-  // `.$onUpdate()` (schema-helpers.ts), which Drizzle applies to every
-  // `.update().set()` call regardless of whether `data` is empty (a
-  // scopes-only update): `onUpdateFn` columns are force-included in the
-  // generated SET clause even when absent from the object passed to `.set()`.
+  // `.$onUpdate()` (schema-helpers.ts) whenever `.update().set()` runs with
+  // at least one field. But Drizzle's `mapUpdateSet` throws "No values to
+  // set" if the object passed to `.set()` is empty — it filters
+  // `Object.entries(values)` BEFORE `$onUpdate` columns are ever consulted,
+  // so `$onUpdate` can't rescue an empty `.set({})` call. `data` legitimately
+  // arrives empty on a scopes-only update (crud.router.ts destructures
+  // `scopeIds` out of the input and forwards the rest as `data`), so guard
+  // on it explicitly rather than calling `.set()` unconditionally. A
+  // scopes-only update intentionally does NOT bump `projects.updatedAt` —
+  // nothing on the projects row itself changed.
   // see memory/feedback-no-manual-updated-at.md
-  const [project] = await db
-    .update(projects)
-    .set(data)
-    .where(eq(projects.id, projectId))
-    .returning()
+  const hasFields = Object.keys(data).length > 0
+  const [project] = hasFields
+    ? await db
+        .update(projects)
+        .set(data)
+        .where(eq(projects.id, projectId))
+        .returning()
+    : await db
+        .select()
+        .from(projects)
+        .where(eq(projects.id, projectId))
 
   if (scopeIds !== undefined) {
     await setProjectScopes(projectId, scopeIds)
