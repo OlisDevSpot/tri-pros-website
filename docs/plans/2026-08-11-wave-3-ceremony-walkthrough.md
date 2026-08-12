@@ -92,7 +92,7 @@ live backfill re-run, which is part of the real ceremony this time.
 - [ ] 5. Parity proof: paste **Appendix A** (canonical runbook) into the
       branch's SQL console → every count **0** (the enrichment sanity probe is
       annotated as possibly > 0).
-- [ ] 6. The DDL via drizzle (dry-run of Step 3.4 — same command, branch
+- [ ] 6. The DDL via drizzle (dry-run of Step 3.5 — same command, branch
       target thanks to the exported `DATABASE_URL`):
 
   ```bash
@@ -165,7 +165,7 @@ ready and keep that gap to seconds.
   ```
 
   Then `--dry-run` once more → **zero drift**. ⚠️ This is the LAST legitimate
-  live run ever. The moment 3.5's deploy is live, writers flip to the columns
+  live run ever. The moment 3.4's deploy is live, writers flip to the columns
   and a live re-run would overwrite fresh column data with stale blob data —
   from then on, `--dry-run` only, permanently.
 
@@ -242,7 +242,7 @@ ready and keep that gap to seconds.
   Recompute: zero drift. Backfill dry-run: zero drift on untouched rows;
   drift appearing on rows edited **after** the deploy is the new normal
   (column fresh, blob frozen) — proof the cutover works. Drift on a row NOT
-  edited post-deploy = a write raced the 3.2→3.5 window → ping Claude with
+  edited post-deploy = a write raced the 3.2→3.4 window → ping Claude with
   the row id for a targeted one-row fix (do NOT re-run the backfill live).
 
 - [ ] **4.2 Smoke drive** in prod (real or disposable test data):
