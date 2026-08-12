@@ -25,9 +25,10 @@
 | 6 W1/W2 blob columns dropped | ✅ | ⬜ **this ceremony** |
 | Writer-flip + drop-ceremony code deployed | n/a | ⬜ **this ceremony** (`git push` deploys all of it at once) |
 
-**The ceremony in one sentence:** re-run the backfill (blob→column sync), run
-`pnpm db:push:prod` (answering the rename prompt with **renamed**), `git push`
-immediately — one sitting.
+**The ceremony in one sentence:** re-run the backfill (blob→column sync),
+`git push` and wait for the deploy to go live, then immediately run
+`pnpm db:push:prod` (answering the rename prompt with **renamed**) — one
+sitting.
 
 **What the push deploys:** everything on local `main` past `8c0ce467` — all 20
 Wave-3 commits **plus your S6b tRPC-standardization commits** (`84d60b88` etc.).
@@ -133,16 +134,19 @@ live backfill re-run, which is part of the real ceremony this time.
 
 ## Step 3 — Prod ceremony (one sitting, low-traffic window)
 
-Sequence: backfill sync → parity proof → DDL → push. Run 3.2 → 3.5
-back-to-back; every minute between the backfill (3.2) and the deploy going
-live (3.5) is a window where a prod blob edit would land *after* the sync —
-at current volume that risk is near zero, and 4.1's dry-run detects it if it
-happens.
+Sequence: backfill sync → parity proof → snapshot → **push → deploy live →
+DDL** (deploy-first, decided 2026-08-11: new code tolerates the old DB except
+for the rename — extra blob columns are invisible to Drizzle — so pushing
+first shrinks the broken window from "four tables for the whole Vercel
+build" to "proposals reads only, for the seconds between deploy-live and the
+DDL"). Run 3.2 → 3.5 back-to-back; a prod blob edit landing between the
+backfill (3.2) and deploy-live (3.4) would leave that row's scalars stale —
+at current volume near zero risk, and 4.1's dry-run detects it.
 
-Between the DDL (3.4) and the new deploy going live, full-row reads on
-`proposals`, `customers`, `"user"`, and `lead_sources` will 500 with Postgres
-`42703` — **expected, self-resolves when the deploy is live, not a rollback
-signal**. Keep the gap short.
+Between the deploy going live (3.4) and the DDL (3.5), reads on `proposals`
+will 500 with Postgres `42703` (`contract_envelope_id` doesn't exist yet) —
+**expected, closes the moment the DDL runs, not a rollback signal**. Sit
+ready and keep that gap to seconds.
 
 - [ ] **3.1 Drift preview** (banner must show real prod host):
 
@@ -185,7 +189,16 @@ signal**. Keep the gap short.
   );
   ```
 
-- [ ] **3.4 The DDL — via drizzle**, exactly like the rehearsal
+- [ ] **3.4 Deploy first:**
+
+  ```bash
+  git push
+  ```
+
+  Watch the Vercel build. The moment the new deployment is **live**,
+  proposals reads start failing with `42703` — go straight to 3.5.
+
+- [ ] **3.5 The DDL — via drizzle**, exactly like the rehearsal
       (Step 0 sanity holds: no `.env.local`, no lingering `DATABASE_URL`
       export; banner/host printed by the tool must be prod):
 
@@ -215,14 +228,7 @@ signal**. Keep the gap short.
   ALTER TABLE lead_sources DROP COLUMN voip_config_json;
   ```
 
-- [ ] **3.5 Deploy — immediately:**
-
-  ```bash
-  git push
-  ```
-
-  Watch the Vercel build; the `42703` window closes the instant the new
-  deployment is live.
+  The `42703` window closes the instant the DDL commits.
 
 ## Step 4 — Post-deploy verification
 
