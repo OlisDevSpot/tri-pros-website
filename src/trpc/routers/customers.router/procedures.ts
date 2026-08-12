@@ -14,8 +14,8 @@
 // and force an `as typeof agentProcedure` cast (the old factory's crutch).
 // An inline `.use()` infers `ctx` from `agentProcedure`, so the non-null
 // session/ability narrowing flows through and no cast is needed. The scope
-// math stays DRY via the shared `resolveActorScope` (compiled from CASL —
-// see task-6-report.md, docs/superpowers/sdd/2026-08-11-casl-phase-1-per-entity-cutover/).
+// math stays DRY via the shared `resolveActorScope` (compiled from CASL
+// rules — see `lib/middleware/resolve-actor-scope.ts`).
 
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 
