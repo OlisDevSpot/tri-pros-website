@@ -1,6 +1,5 @@
 import { z } from 'zod'
-import { getPortfolioProjectDetail } from '@/features/project-management/dal/server/get-portfolio-project-detail'
-import { getPortfolioProjects } from '@/features/project-management/dal/server/get-portfolio-projects'
+import { getPortfolioProjectDetail, getPortfolioProjects } from '@/shared/entities/projects/dal/server/queries'
 import { baseProcedure, createTRPCRouter } from '../../init'
 
 export const showroomDisplayRouter = createTRPCRouter({
