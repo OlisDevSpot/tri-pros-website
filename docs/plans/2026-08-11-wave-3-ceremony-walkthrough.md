@@ -169,6 +169,22 @@ signal**. Keep the gap short.
       into the Neon **prod** SQL console. Every count **0**. Any non-zero →
       **STOP**, ping Claude with the output.
 
+- [ ] **3.3b Legacy-value snapshot** — the 2026-08-11 four-agent audit proved
+      the drops lose exactly 7 values on 5 customers: legacy enum strings
+      Wave 1 intentionally ruled unmappable (PR #260), whose last copy lives
+      in the blobs. Save this query's output to a local file before the DDL
+      (Neon prod SQL console):
+
+  ```sql
+  SELECT id, customer_profile_json FROM customers WHERE id IN (
+    'd48451df-20f7-42bc-87c4-aaf9284b0052',  -- householdType 'Senior(s)'
+    '542185cf-38c2-4a6b-87ee-5fb48d94bfb7',  -- householdType 'Senior(s)'
+    '3e5aca0f-4fe5-4019-9585-3c4c721416a2',  -- 'Senior(s)' + familyStatus 'Single man'
+    '3c47d209-3077-4abd-8212-ca6278353812',  -- 'Empty nester(s)' + 'Single man'
+    'b51854c8-5645-486a-acaa-23c08493767a'   -- familyStatus 'Couple'
+  );
+  ```
+
 - [ ] **3.4 The DDL — via drizzle**, exactly like the rehearsal
       (Step 0 sanity holds: no `.env.local`, no lingering `DATABASE_URL`
       export; banner/host printed by the tool must be prod):
