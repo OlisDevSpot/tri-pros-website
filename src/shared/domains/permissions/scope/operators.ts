@@ -39,7 +39,29 @@ export function getScopeOperator(name: string): ScopeOperator | undefined {
   return REGISTRY.get(name)
 }
 
-/** All registered operator names — used by the Phase-1 exhaustiveness check. */
+/** All registered operator names (those with a `toSql` body). */
 export function registeredOperatorNames(): string[] {
   return [...REGISTRY.keys()]
+}
+
+/**
+ * Server-side boot assert: the runtime registry (operators with a `toSql`) must
+ * match the static `SCOPE_OPERATOR_NAMES` contract exactly, in both directions.
+ * The client-safe surfaces (matcher + exhaustiveness) validate against the
+ * static contract; this closes the loop on the server, where the impls actually
+ * load. `missingImpl` = declared name with no `toSql` (a rule using it would
+ * fail deep in the interpreter); `undeclared` = a `toSql` the contract never
+ * lists (invisible to the matcher, so its rules never parse). Either is a wiring
+ * bug — fail loud at boot, not per-request. Called from interpret.ts, after its
+ * operator side-effect imports have populated the registry.
+ */
+export function assertRegistryMatchesContract(contract: readonly string[]): void {
+  const declared = new Set(contract)
+  const missingImpl = contract.filter(name => !REGISTRY.has(name))
+  const undeclared = [...REGISTRY.keys()].filter(name => !declared.has(name))
+  if (missingImpl.length || undeclared.length) {
+    throw new Error(
+      `[scope] operator registry ↔ contract mismatch: missingImpl=[${missingImpl.join(', ')}] undeclared=[${undeclared.join(', ')}]`,
+    )
+  }
 }

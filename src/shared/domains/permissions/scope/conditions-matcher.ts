@@ -4,16 +4,19 @@ import type { AppConditions } from '@/shared/domains/permissions/types'
 
 import { buildMongoQueryMatcher } from '@casl/ability'
 
-import { registeredOperatorNames } from './operators'
-
-import './operators/meeting-participation' // registers participatesViaMeeting, hasNoMeeting
-import './operators/derived-pipeline' // registers inDerivedPipeline
+import { SCOPE_OPERATOR_NAMES } from './operator-names'
 
 /**
  * A CASL conditionsMatcher that teaches `rulesToAST` our document operators.
- * - Each registered scope operator becomes a `{ type: 'document' }` parsing
- *   instruction, so `{ $op: value }` at the top of a rule's conditions parses
- *   to a DocumentCondition whose `value` is the raw payload.
+ * - Each scope operator becomes a `{ type: 'document' }` parsing instruction,
+ *   so `{ $op: value }` at the top of a rule's conditions parses to a
+ *   DocumentCondition whose `value` is the raw payload.
+ * - Names come from the static `SCOPE_OPERATOR_NAMES` contract, NOT the runtime
+ *   registry. ⚠️ This is a client-bundle boundary: `abilities.ts` (which this
+ *   feeds) is imported by client components, and reading names off the registry
+ *   would require side-effect-importing `operators/*.ts`, whose `toSql` bodies
+ *   pull in `db` → `pg` → `fs` and break the browser build. The impl modules
+ *   are loaded server-side only, via interpret.ts. See operator-names.ts.
  * - Instruction keys are `$`-prefixed (`$participatesViaMeeting`) because that
  *   MUST match the literal key used in `can()` conditions — ucast looks up the
  *   instruction by the query object's own key, unchanged.
@@ -28,16 +31,16 @@ import './operators/derived-pipeline' // registers inDerivedPipeline
  *   op` still yielded `operator: 'participatesViaMeeting'`, no `$`). So the
  *   `$` is unconditionally stripped — same as the built-in operators
  *   (`$eq`→`eq`), which is exactly what `interpretField` already assumes.
- *   `registeredOperatorNames()` therefore holds UNPREFIXED names (see
- *   operators/meeting-participation.ts), and we re-add the `$` only for the
- *   instruction-key side of this map.
+ *   `SCOPE_OPERATOR_NAMES` therefore holds UNPREFIXED names (see
+ *   operator-names.ts), and we re-add the `$` only for the instruction-key
+ *   side of this map.
  * We supply NO custom interpreters (2nd arg): on the server the matcher fn is
  * never invoked — only `.ast` is read by rulesToAST. The Client Mirror (toJS)
  * lands later via the same operator registration, not here.
  */
 export function buildScopeConditionsMatcher(): ConditionsMatcher<AppConditions> {
   const instructions = Object.fromEntries(
-    registeredOperatorNames().map(name => [`$${name}`, { type: 'document' as const }]),
+    SCOPE_OPERATOR_NAMES.map(name => [`$${name}`, { type: 'document' as const }]),
   )
   // Boundary cast: ucast's instruction/matcher generics (keyed off `MongoQuery`)
   // don't line up structurally with our narrower `AppConditions` union — same

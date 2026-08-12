@@ -1,18 +1,21 @@
 import type { AppAbility } from '../types'
 
-import { registeredOperatorNames } from './operators'
+import { SCOPE_OPERATOR_NAMES } from './operator-names'
 
 /**
  * Fail LOUD at startup if any role's rules reference a scope operator that
- * isn't registered (spec §11.4). Walks every ability's built rules and
+ * isn't declared (spec §11.4). Walks every ability's built rules and
  * collects the `$`-prefixed condition keys as AUTHORED (e.g.
  * `$participatesViaMeeting`), then checks the STRIPPED form against
- * `registeredOperatorNames()` — the registry holds UNPREFIXED names
+ * `SCOPE_OPERATOR_NAMES` — the contract holds UNPREFIXED names
  * (`participatesViaMeeting`, `hasNoMeeting`, `inDerivedPipeline`; see
- * operators/meeting-participation.ts + operators/derived-pipeline.ts for why:
- * CASL's `MongoQueryParser` unconditionally strips the leading `$` from every
- * parsed node's `operator`). The error message keeps the original
- * `$`-prefixed spelling so it points straight at the rule as authored.
+ * operator-names.ts for why: CASL's `MongoQueryParser` unconditionally strips
+ * the leading `$` from every parsed node's `operator`). The error message keeps
+ * the original `$`-prefixed spelling so it points straight at the rule as
+ * authored. Validating against the static contract (not the runtime registry)
+ * keeps this module — reachable from client-imported `abilities.ts` — free of
+ * the server-only operator impls. The contract↔registry match is asserted
+ * separately, server-side, in interpret.ts.
  *
  * Takes already-built abilities as an argument (not `userRoles` +
  * `defineAbilitiesFor` internally) to avoid an import cycle with
@@ -23,7 +26,7 @@ import { registeredOperatorNames } from './operators'
  * Phase 3 with the entity registry — this ships only the operator half.
  */
 export function assertScopeWiring(abilitiesByRole: AppAbility[]): void {
-  const registered = new Set(registeredOperatorNames())
+  const declared = new Set<string>(SCOPE_OPERATOR_NAMES)
   const referenced = new Set<string>()
 
   for (const ability of abilitiesByRole) {
@@ -38,7 +41,7 @@ export function assertScopeWiring(abilitiesByRole: AppAbility[]): void {
     }
   }
 
-  const missing = [...referenced].filter(key => !registered.has(key.slice(1)))
+  const missing = [...referenced].filter(key => !declared.has(key.slice(1)))
   if (missing.length)
-    throw new Error(`[scope] rules reference unregistered operators: ${missing.join(', ')}`)
+    throw new Error(`[scope] rules reference undeclared operators: ${missing.join(', ')}`)
 }

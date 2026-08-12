@@ -7,10 +7,17 @@ import type { OperatorCtx } from './operators'
 import { and, eq, inArray, not, or, sql } from 'drizzle-orm'
 
 import { isCompound } from './ast'
-import { getScopeOperator } from './operators'
+import { SCOPE_OPERATOR_NAMES } from './operator-names'
+import { assertRegistryMatchesContract, getScopeOperator } from './operators'
 
 import './operators/meeting-participation' // registers the domain operators
 import './operators/derived-pipeline' // registers inDerivedPipeline
+
+// Server-only boot check: every declared operator has a `toSql` and vice versa.
+// This is the server counterpart to the client-safe exhaustiveness assert —
+// it runs here, where the `db`-bound impls actually load, so it can never drag
+// them into a client bundle. Must sit AFTER the side-effect imports above.
+assertRegistryMatchesContract(SCOPE_OPERATOR_NAMES)
 
 /**
  * Hand-walk the ucast AST → Drizzle SQL (spec §4). Standard field/compound
