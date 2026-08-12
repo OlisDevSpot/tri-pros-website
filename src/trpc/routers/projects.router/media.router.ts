@@ -1,3 +1,5 @@
+// TODO(1f): inline db — de-inline via media.service + account DAL (media.service brainstorm slice)
+
 import type { R2BucketName } from '@/shared/services/providers/r2/types'
 import { TRPCError } from '@trpc/server'
 import { and, eq, inArray, like } from 'drizzle-orm'

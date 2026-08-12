@@ -4,7 +4,7 @@ A **Project** is a signed contract — the business symbol of a converted custom
 
 Projects also serve as the public **portfolio** when `isPublic = true` — the marketing site reads them as case studies. Both purposes share the same row.
 
-This directory holds: schemas (`schemas/`), types (`types.ts`), constants (action configs, `lib/constants.ts`), columns registry (`lib/columns-registry.tsx`), and action-config hooks (`hooks/`). Project DAL currently lives in `features/project-management/dal/server/` and the tRPC router is **not yet migrated** to the entity server system (see `#migration-status`).
+This directory holds: schemas (`schemas/`), types (`types.ts`), constants (action configs, `lib/constants.ts`), columns registry (`lib/columns-registry.tsx`), action-config hooks (`hooks/`), and DAL (`dal/server/queries.ts` reads, `mutations.ts` writes). The tRPC router (`src/trpc/routers/projects.router/`) is **partially migrated** to the entity server system — per-entity scoped procedures + DAL calls, but not yet on `createCrudRouter` (see `#migration-status`).
 
 ## Relationships
 
@@ -42,17 +42,16 @@ lied. A project's coarse state is now **derived** from `pipelineStage` via
 
 ### projects-created-from-approved-proposals-only
 
-A project is created exclusively through the `create` business mutation, which requires:
+There are **two** project-creation paths; this rule keeps the *operational* one honest.
 
-1. The meeting must have at least one proposal (validated at handler entry)
-2. The customer must exist
-3. The meeting is linked to the new project (`meetings.projectId`)
-4. The meeting outcome flips to `converted_to_project`
-5. Scope IDs are extracted from proposals' `projectJSON.data.sow` and inserted into `x_project_scopes`
+1. **Operational project** — via the `business.create` mutation, which requires: (a) the meeting has ≥1 proposal (validated at handler entry); (b) the customer exists; (c) the meeting is linked (`meetings.projectId`); (d) the meeting outcome flips to `converted_to_project`; (e) scope ids are **derived** from the proposals' `projectJSON.data.sow` (see `#scope-extraction-from-proposals`).
+2. **Portfolio project** — via the `crud.create` mutation (the portfolio editor). No proposal, no meeting, null `pipelineStage` → a pure-portfolio showcase (`#pure-portfolio-projects-are-not-real-projects`); its scopes are **hard-set** directly, not derived.
 
-**Why**: a project represents revenue commitment; without an approved proposal there's no contract basis. The proposal-approval flow IS the trigger; manual project creation is gated by this validation.
-**Reference impl**: `src/trpc/routers/projects.router/business.router.ts:create`
-**Enforced by**: handler-side TRPCError on missing proposals; convention (no other code path creates projects)
+The invariant "every *operational* project originates from a signed proposal" **is** true and must stay truthful — but it is upheld by **not exposing a UI to manually add an operational project**, NOT by a code-level prohibition. Projects can (and must) be created/controlled from other code paths through the projects DAL; there is simply no manual "add operational project" surface. The only manual-add UI is the portfolio editor, explicitly for showcases.
+
+**Why**: an operational project represents revenue commitment — without an approved proposal there's no contract basis, so we give users no way to conjure one. Portfolio entries are marketing assets with no contract basis: a separate, legitimate path.
+**Reference impl**: `business.router.ts:create` (operational); `crud.router.ts:create` (portfolio)
+**Enforced by**: `business.create` validates proposal-existence; the operational invariant is upheld by **UI omission** (no manual operational-create surface), not code gating
 
 ### one-project-per-birthing-meeting
 
@@ -105,6 +104,16 @@ Do **not** re-encode the stage→bucket relationship anywhere else. The `project
 **Reference impl**: `PROJECT_STAGE_BUCKET` + `deriveProjectStatusBucket` in `src/shared/constants/enums/pipelines.ts`; consumed by `src/features/agent-dashboard/constants/dashboard-queries.ts` (`activeProjectsInput` / `onHoldProjectsInput`)
 **Enforced by**: convention; the `Record<ProjectPipelineStage, …>` type makes the map exhaustive (omitting a stage fails `pnpm tsc`)
 
+### project-visibility-scope
+
+The **canonical derivation of which projects a user can see** (their visibility scope): a user can see a project **iff they are a participant on ≥1 meeting of the project whose outcome is NOT negative**. Formally — `EXISTS meeting M where M.projectId = project.id AND participant(user, M) AND MEETING_OUTCOME_SENTIMENT[M.meetingOutcome] !== 'negative'`.
+
+Negative-outcome meetings (lost/failed — `not_good`, `pns`, `npns`, `ftd`, `no_show`, … per `MEETING_OUTCOME_SENTIMENT`) do **not** confer visibility: a user who attended only a dead-lead meeting on a project has no live operational stake in it. Omni (super-admin) bypasses the predicate entirely (scope = `null`). Pure-portfolio projects (no meetings) fall outside this predicate by construction — see `#pure-portfolio-projects-are-not-real-projects`.
+
+**Why**: participation defines stake, but surfacing a project reached only through a lost meeting is noise. The non-negative filter keeps a user's project list to the ones they have a living stake in.
+**Reference impl**: `projectParticipationScope` / `projectVisibility` in `src/shared/entities/projects/lib/visibility.ts`; negative set from `MEETING_OUTCOME_SENTIMENT` (`src/shared/constants/enums/meetings.ts`)
+**Enforced by**: the entity scope compiler (`ctx.scope`). ⚠️ **Code gap**: the negative-outcome exclusion is NOT yet implemented — `projectParticipationScope` is participation-only today. Added during the projects standardization epic (coordinated with the CASL scope-compiler refactor, issue #285).
+
 ### pure-portfolio-projects-are-not-real-projects
 
 A **pure-portfolio project** has **no meetings** linked to it (`meetings.projectId`). Because a real project is only ever minted from an approved proposal on a birthing meeting (`#projects-created-from-approved-proposals-only`), zero meetings means the row was created purely to showcase work on the marketing portfolio — it never ran the signed→closed lifecycle (its `pipelineStage` is NULL). These must be **completely disregarded** in operational lists, analytics, filtering, and aggregations.
@@ -133,11 +142,16 @@ The predicate is meeting-existence, NOT a null-stage check — meeting existence
 
 ### scope-extraction-from-proposals
 
-On project create, the handler scans all the meeting's proposals' `projectJSON.data.sow` for scope IDs and de-dupes them into `x_project_scopes` join-table rows.
+A project's `x_project_scopes` (its set of Notion trade-scope ids) is populated **differently per population**:
 
-**Why**: a project may aggregate scopes from multiple proposals (initial-sale + additional-work). The portfolio surfaces show "what trades does this project cover" — that's the union of all proposal SOWs.
-**Reference impl**: `business.router.ts:create` (lines 70–93)
-**Enforced by**: convention (re-extraction on additional-work approval is a future concern)
+- **Operational projects**: scopes are **dictated by the project's approved proposals** — the union of the meeting's proposals' `projectJSON.data.sow` scope ids, de-duped (a project may aggregate initial-sale + additional-work). The derivation is a **pure helper in `entities/projects/lib/`** (no `db`); persistence is a full-replace.
+- **Portfolio projects**: have **no linked proposals**, so they **hard-set** their own scopes directly via the portfolio editor.
+
+Both paths write `x_project_scopes` **only through the projects DAL** (`entities/projects/dal/server/`) — never inline `db` in a router. The projects router orchestrates from the UI; other code paths reach the same functions through the projects entity namespace.
+
+**Why**: operational scope = "what did the customer sign for" (proposal-derived, tracks the contract); portfolio scope = "what trades does this showcase cover" (curated, no contract). Same column, two sources of truth, split by population.
+**Reference impl**: derivation helper in `entities/projects/lib/`; persistence in `entities/projects/dal/server/`
+**Enforced by**: convention — never-inline-`db` (`docs/codebase-conventions/dal-conventions.md`); re-extraction when a proposal's SOW changes post-creation is a future concern (Wave 4 SOW normalization)
 
 ### ownership-and-customer-cascade
 
@@ -150,13 +164,15 @@ On project create, the handler scans all the meeting's proposals' `projectJSON.d
 
 ### migration-status
 
-The projects entity is **not yet migrated** to the Entity Server System (ADR-0002). The current router uses `agentProcedure` directly, inlines `db.select()` / `db.insert()` calls, and lives in `src/trpc/routers/projects.router/`. Project DAL is split between `features/project-management/dal/server/` (legacy location) and inline router code.
+The projects entity is **partially migrated** to the Entity Server System (ADR-0002) — projects-standardization epic Phase 1 (`docs/plans/2026-08-11-projects-standardization-epic.md`). Shipped: DAL consolidated under `src/shared/entities/projects/dal/server/` (`queries.ts` reads incl. `listProjects`; `mutations.ts` writes — `createProject`/`updateProject`/`deleteProject`/`setProjectScopes`); the legacy feature-scoped DAL location (`features/project-management/`) is gone. The router (`src/trpc/routers/projects.router/`) now uses per-entity scoped procedures (`procedures.ts` → `projectProcedure`, injecting `ctx.scope` via `resolveVisibilityScope`) and calls the DAL; `crud.router.ts`'s `list` consumes `ctx.scope`.
 
-Migration order from ADR-0002: Proposal → Customer → Meeting → **Project**. Proposal is done (PR #207). The others, including this entity, are pending.
+Not yet done — projects-standardization **Phase 3**: the router is not on `createCrudRouter`, and mutations do not yet route through `createCrudDal`, so server-spec hooks do not fire. Residual inline `db`: `business.create`'s two cross-entity reads (tagged `BYPASS(crud)`, → Phase 3) and the `media`/`google-drive` sub-routers (tagged `TODO(1f)`, → media.service brainstorm slice).
 
-**Why this matters now**: the business rules above describe what the code does *today*, not what an ideal entity-router implementation would look like. Don't extrapolate the proposals entity's structure (server-spec, dal/server/queries+mutations) onto projects — that's the migration's job.
+Migration order from ADR-0002: Proposal → Customer → Meeting → **Project**. Proposal is done (PR #207); Project's Phase 1 (DAL relocation + scoped procedures) is done, full factory adoption is Phase 3.
 
-**Reference impl**: `docs/adr/0002-entity-server-system.md`; the compliance sweep todo (item #13) will surface migration tasks.
+**Why this matters now**: the business rules above describe what the code does *today*. Projects now DOES have `dal/server/queries+mutations` like the proposals entity, but not yet its `createCrudRouter`/`createCrudDal` factory wiring (generated CRUD surface, hooks firing) — don't assume full parity with proposals' entity-server-system adoption until Phase 3 lands.
+
+**Reference impl**: `docs/adr/0002-entity-server-system.md`; `docs/plans/2026-08-11-projects-standardization-epic.md`; the compliance sweep todo (item #13) will surface remaining migration tasks.
 
 ## Anti-patterns
 

@@ -14,6 +14,16 @@ Only files under `src/shared/dal/` or `src/shared/entities/*/dal/` import the `d
 **Reference impl**: any file in `src/shared/entities/proposals/dal/server/`
 **Enforced by**: convention (compliance sweep tracks violations — see compliance todo in this migration)
 
+### dal-lives-under-entities-never-features
+
+DAL modules live under `src/shared/entities/<entity>/dal/` (per-entity) or `src/shared/dal/` (shared machinery) — **never** under `src/features/*/dal/`. `features/*/dal/` is a **deprecated pattern**: DAL acts on *entities*, and orchestration (composing multiple DAL calls, cross-entity workflows, business gating) is the job of tRPC procedures and services, not a feature-scoped data layer. A feature that needs project data imports `entities/projects/dal/server/…`; it does not host its own DAL.
+
+When you find a `features/*/dal/`, migrate it: pure entity reads/writes move into the owning entity's `dal/server/`; any orchestration logic that was tangled in moves up to the procedure or service layer. Feature folders keep their client concerns (`ui/`, `hooks/`, `lib/`, `constants/`) — they just don't own persistence.
+
+**Why**: a feature is a UI/flow grouping, not an ownership boundary for data. Splitting an entity's persistence between `entities/<e>/dal/` and `features/<f>/dal/` creates split-brain DAL (two homes for the same table, one of them invisible to the entity server system) — exactly the drift the projects entity accumulated before its S8 migration.
+**Reference impl**: `src/shared/entities/projects/dal/server/` (post-migration home; `features/project-management/dal/` was retired here)
+**Enforced by**: convention
+
 ### dal-returns-dalreturn
 
 Every exported DAL function returns `Promise<DalReturn<T>>`. Construct with `dalSuccess(data)` / `dalError({ type: 'not-found' })`. Never throw on domain errors (not-found, forbidden, etc.). Use `ThrowableDalError` inside a `dalDbOperation` block when a mid-query check needs to short-circuit.
@@ -43,7 +53,7 @@ Every DAL function takes `ctx: ScopedContext` as its first argument. `ctx.scope`
 
 Two pathways construct `ScopedContext`:
 
-1. **Via tRPC** — middleware (`scopeMiddleware`, `shareableMiddleware`) resolves session, ability, and scope from the HTTP request and forwards `AuthedContext` (a narrowed `ScopedContext`) to the procedure body.
+1. **Via tRPC** — per-entity `procedures.ts` files (e.g. `customers.router/procedures.ts`, `projects.router/procedures.ts`) define pre-scoped procedures that chain `agentProcedure.use(...)` and call `resolveVisibilityScope(spec, { userId, ability })` inline to set `ctx.scope`, forwarding `AuthedContext` (a narrowed `ScopedContext`) to the procedure body. Dual-credential (session-or-share-token) access goes through `shareableMiddleware`, used by `createCrudRouter` and the proposals share-token path.
 
 2. **Via server-initiated work** (jobs, webhooks, cron, RSC) — caller imports `SYSTEM_CONTEXT` (full access, scope = null) or builds a scoped context via a future `buildUserContext()` helper.
 
