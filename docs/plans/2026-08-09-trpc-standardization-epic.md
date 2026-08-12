@@ -485,11 +485,14 @@ boxes as slices land; add follow-on slices under S8.
     it (+ the stale prose mention in `customers/dal/server/queries.ts`) as a
     trivial follow-up once confirmed — left in place to keep S7's blast radius to
     the two named files.
-- [ ] **S8 · HITL · blocked-by: S7** — audit `projects` + `lead-sources`
+- [x] **S8 · HITL · blocked-by: S7** — audit `projects` + `lead-sources`
   against R1–R13; append follow-on slices here. (Note: `projectServerSpec` +
   `projectCrud` now land in **S5a**; if S5a only adds the spec/DAL alongside the
   hand-written router, migrating `projects.router` onto `createCrudRouter` is
   the projects half of this audit.)
+  - ✅ **Audited + grilled (2026-08-11).** Both halves spun out into their own epics:
+    - **Projects:** `docs/plans/2026-08-11-projects-standardization-epic.md` — migrate onto the new structure **and** use projects as the case study driving the `createCrudDal` mutation-interface extension. Coordinates with #285 (owns visibility).
+    - **Lead-sources:** grilling paused (spec-driven entity confirmed; router decomposition + analytics de-dup outstanding); deferred to **after** projects.
 
 ## Tracking
 
