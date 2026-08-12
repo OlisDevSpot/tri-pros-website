@@ -142,7 +142,12 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       can('create', 'Application')
       can('update', 'Application')
 
-      can('read', 'Project')
+      // Row-security = participation OR ownerId=me (CASL OR-merges same-subject
+      // rules). `isPublic` is intentionally NOT an authz condition here — it
+      // stays a display/public-query filter only (projects.router/crud.router.ts
+      // `visibility` filter, unrelated to row-security).
+      can('read', 'Project', { ownerId: user.id })
+      can('read', 'Project', { $participatesViaMeeting: { via: 'projectId' } })
       can('create', 'Project')
       can('update', 'Project')
 

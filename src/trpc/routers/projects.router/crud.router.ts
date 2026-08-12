@@ -8,9 +8,11 @@ import { dateRangeSchema, paginatedQueryInput } from '@/shared/dal/server/lib/qu
 import { buildOrderBy } from '@/shared/dal/server/lib/query/sort'
 import { db } from '@/shared/db'
 import { projects, x_projectScopes } from '@/shared/db/schema'
-import { hasAssociatedMeeting, projectParticipationScope } from '@/shared/entities/projects/lib/visibility'
+import { projectServerSpec } from '@/shared/entities/projects/lib/server-spec'
+import { hasAssociatedMeeting } from '@/shared/entities/projects/lib/visibility'
 import { projectFormSchema } from '@/shared/entities/projects/schemas'
 import { agentProcedure, createTRPCRouter } from '../../init'
+import { resolveActorScope } from '../../lib/middleware/resolve-actor-scope'
 
 export const crudRouter = createTRPCRouter({
   getAll: agentProcedure
@@ -35,8 +37,10 @@ export const crudRouter = createTRPCRouter({
       createdAt: dateRangeSchema.optional(),
     }))
     .query(async ({ ctx, input }) => {
-      const isOmni = ctx.ability.can('manage', 'all')
-      const scopeWhere = isOmni ? undefined : projectParticipationScope(ctx.session.user.id)
+      // Compiled from CASL (abilities.ts agent Project rules: participation OR
+      // ownerId=me) — null for omni (super-admin `manage all` compiles to no
+      // constraint), so the old manual `isOmni` branch is subsumed here.
+      const scopeWhere = resolveActorScope(projectServerSpec, { userId: ctx.session.user.id, ability: ctx.ability }) ?? undefined
 
       const searchTerm = input.search?.trim()
       const searchWhere = searchTerm

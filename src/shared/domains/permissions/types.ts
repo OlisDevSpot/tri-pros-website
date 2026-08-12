@@ -38,17 +38,22 @@ export type AppSubject
     | 'User'
 
 // Row conditions our rules use — the three custom document operators
-// (see scope/operators/*.ts) plus the scalar column conditions CASL already
-// supports (e.g. { ownerId }). Kept open (`| MongoQuery` union) so existing
-// scalar conditions still type-check. NOTE: these keys are how conditions are
-// AUTHORED in `can()` calls (with the leading `$`) — that's independent of
-// how the `defineScopeOperator` REGISTRY names them internally; see
+// (see scope/operators/*.ts) plus explicit scalar column conditions (e.g.
+// `{ ownerId }`). `MongoQuery` alone (a generic, HKT-branded container) does
+// NOT reliably type-check plain scalar object literals through the
+// `AbilityBuilder.can()` overloads' generic inference — hence the dedicated
+// `{ ownerId: string }` member below rather than relying on the `MongoQuery`
+// branch. Add further scalar columns the same way as they're needed. NOTE:
+// these keys are how conditions are AUTHORED in `can()` calls (with the
+// leading `$` for custom operators) — that's independent of how the
+// `defineScopeOperator` REGISTRY names them internally; see
 // scope/conditions-matcher.ts for why the registry drops the `$`.
 export type AppConditions
   = MongoQuery
     | { $participatesViaMeeting?: { via: 'customerId' | 'meetingId' | 'projectId' | 'self' } }
     | { $hasNoMeeting?: boolean }
     | { $inDerivedPipeline?: readonly ('dead' | 'fresh' | 'leads' | 'projects' | 'rehash')[] }
+    | { ownerId: string }
 
 // The main ability type used throughout the app.
 // MongoAbility is CASL's default ability class — named "Mongo" for historical

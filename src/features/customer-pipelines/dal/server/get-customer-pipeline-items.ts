@@ -362,9 +362,12 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean, canSeeU
     .innerJoin(customers, eq(customers.id, projects.customerId))
     .where(and(
       isNotNull(projects.customerId),
+      // Row-security = participation OR ownerId=me (abilities.ts agent Project
+      // rules). `isPublic` is intentionally NOT part of authz — a non-participating
+      // agent on a public-but-unowned project must not see it in their pipeline.
       isOmni
         ? undefined
-        : sql`(${projects.ownerId} = ${userId} OR ${projects.isPublic} = true OR EXISTS (SELECT 1 FROM meetings m INNER JOIN meeting_participants mp ON mp.meeting_id = m.id WHERE m.project_id = ${projects.id} AND mp.user_id = ${userId}))`,
+        : sql`(${projects.ownerId} = ${userId} OR EXISTS (SELECT 1 FROM meetings m INNER JOIN meeting_participants mp ON mp.meeting_id = m.id WHERE m.project_id = ${projects.id} AND mp.user_id = ${userId}))`,
     ))
     .orderBy(desc(projects.createdAt))
 
