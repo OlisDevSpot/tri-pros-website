@@ -133,7 +133,7 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       can('update', 'Meeting')
       can('own', 'Meeting') // agents own the meetings they create (implicitly the sales rep)
 
-      can('read', 'Proposal')
+      can('read', 'Proposal', { $participatesViaMeeting: { via: 'meetingId' } })
       can('create', 'Proposal')
       can('update', 'Proposal')
 

@@ -13,19 +13,21 @@
 // `session` is nullable — chaining it would widen `ctx.session` back to null
 // and force an `as typeof agentProcedure` cast (the old factory's crutch).
 // An inline `.use()` infers `ctx` from `agentProcedure`, so the non-null
-// session/ability narrowing flows through and no cast is needed. The scope
-// math stays DRY via the shared `resolveVisibilityScope`.
+// session/ability narrowing flows through and no cast is needed. Proposal
+// scope is compiled from CASL via `resolveActorScope`; the media child
+// entity still resolves via the legacy `resolveVisibilityScope` (unmigrated).
 
 import { proposalMediaServerSpec } from '@/shared/entities/proposal-media-files/lib/server-spec'
 import { proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
 
 import { agentProcedure, baseProcedure } from '../../init'
+import { resolveActorScope } from '../../lib/middleware/resolve-actor-scope'
 import { resolveVisibilityScope } from '../../lib/middleware/scope-middleware'
 import { shareableMiddleware } from '../../lib/middleware/shareable-middleware'
 
-/** Agent-only. Session + ability guaranteed; `ctx.scope` resolved from proposal visibility (null for omni). */
+/** Agent-only. Session + ability guaranteed; `ctx.scope` compiled from CASL (null for omni). */
 export const proposalProcedure = agentProcedure.use(async ({ ctx, next }) => {
-  const scope = resolveVisibilityScope(proposalServerSpec, { userId: ctx.session.user.id, ability: ctx.ability })
+  const scope = resolveActorScope(proposalServerSpec, { userId: ctx.session.user.id, ability: ctx.ability })
   return next({ ctx: { ...ctx, scope } })
 })
 
