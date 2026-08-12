@@ -6,8 +6,10 @@ import { projectServerSpec } from '@/shared/entities/projects/lib/server-spec'
  *
  * Row-level foundation (S5a): `getById`/`update`/`delete`/`duplicate` compose
  * `ctx.scope` (project participation) automatically. Lifecycle side-effects
- * (x_projectScopes, R2 media cleanup on delete) are NOT here yet — they stay in
- * `features/project-management/dal/server/manage-project.ts` until the projects
- * router migrates onto `createCrudRouter` (S8). See `../../lib/server-spec.ts`.
+ * (x_projectScopes, R2 media cleanup on delete) are NOT here yet — they live in
+ * `../mutations.ts` (`createProject`/`updateProject`/`deleteProject`/
+ * `setProjectScopes`), invoked directly by the projects router, until those
+ * mutations are routed through `createCrudDal` so its hooks fire
+ * (projects-standardization Phase 3). See `../../lib/server-spec.ts`.
  */
 export const projectCrud = createCrudDal(projectServerSpec)

@@ -31,9 +31,10 @@ export const projectSchemas = {
  * SCOPE (S5a): this ships the spec + `projectCrud` (`dal/server/crud.ts`) as the
  * foundation. It deliberately carries NO `hooks`/`duplicate` yet — the existing
  * lifecycle side-effects (x_projectScopes insert/replace, R2 media cleanup on
- * delete, the manual `updatedAt` stamp) live in the hand-written
- * `features/project-management/dal/server/manage-project.ts`, which remains the
- * lifecycle authority until the router migrates onto `createCrudRouter` (S8).
+ * delete) live in `dal/server/mutations.ts` (`createProject`/`updateProject`/
+ * `deleteProject`/`setProjectScopes`), which remains the lifecycle authority
+ * until those mutations are routed through `createCrudDal` (projects-
+ * standardization Phase 3).
  * Migrating the router also TIGHTENS behavior (create/update/delete gain
  * `ctx.scope`; `delete` gates on `can('delete','Project')`, which agents lack
  * today) — hence deferred to its own reviewed slice. Until then `projectCrud` is
