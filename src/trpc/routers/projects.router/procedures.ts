@@ -1,6 +1,7 @@
+import { projectServerSpec } from '@/shared/entities/projects/lib/server-spec'
+
 import { agentProcedure, baseProcedure } from '../../init'
 import { resolveVisibilityScope } from '../../lib/middleware/scope-middleware'
-import { projectServerSpec } from '@/shared/entities/projects/lib/server-spec'
 
 /** Agent-scoped: injects ctx.scope = project participation fragment (null for omni). */
 export const projectProcedure = agentProcedure.use(async ({ ctx, next }) =>
