@@ -6,7 +6,7 @@ import type { FieldNode } from './ast'
 
 /**
  * The interpreter threads this to every custom operator: the OUTER subject
- * table/pk being compiled (built by `resolveScope` from the spec in hand — NOT
+ * table/pk being compiled (built by `resolveActorScope` from the spec in hand — NOT
  * a subject registry, spec §2 "ctx sourcing") plus the acting principal.
  */
 export interface OperatorCtx { table: PgTable, pk: PgColumn, actor: Actor }

@@ -14,10 +14,10 @@
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 
 import { agentProcedure } from '../../init'
-import { resolveActorScope } from '../../lib/middleware/resolve-actor-scope'
+import { resolveTrpcActorScope } from '../../lib/middleware/resolve-trpc-actor-scope'
 
 /** Agent-only. Session + ability guaranteed; `ctx.scope` resolved from meeting visibility (null for omni). */
 export const meetingProcedure = agentProcedure.use(async ({ ctx, next }) => {
-  const scope = resolveActorScope(meetingServerSpec, { userId: ctx.session.user.id, ability: ctx.ability })
+  const scope = resolveTrpcActorScope(meetingServerSpec, { userId: ctx.session.user.id, ability: ctx.ability })
   return next({ ctx: { ...ctx, scope } })
 })

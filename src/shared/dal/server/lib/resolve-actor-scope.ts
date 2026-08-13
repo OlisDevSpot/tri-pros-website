@@ -17,7 +17,7 @@ import { compileScope } from '@/shared/domains/permissions/scope/compile-scope'
  *   null       → no constraint (allow)
  *   sql`false` → deny (own-verb denied)
  */
-export function resolveScope(spec: EntityServerSpec, actor: Actor): SQL | null {
+export function resolveActorScope(spec: EntityServerSpec, actor: Actor): SQL | null {
   const ctx = { table: spec.table, pk: pkColumn(spec), actor }
   const own = spec.parent
     ? verbOnly(actor, 'read', spec.caslSubject) // CHILD: verb-only (spec §5)
@@ -26,7 +26,7 @@ export function resolveScope(spec: EntityServerSpec, actor: Actor): SQL | null {
     ? inArray(
         fkColumn(spec),
         db.select({ pk: pkColumn(spec.parent.spec) }).from(spec.parent.spec.table)
-          .where(resolveScope(spec.parent.spec, actor) ?? sql`true`),
+          .where(resolveActorScope(spec.parent.spec, actor) ?? sql`true`),
       )
     : null
   return combine(own, bridge)
@@ -58,9 +58,9 @@ export async function canAccess(
 ): Promise<boolean> {
   const ctx = { table: spec.table, pk: pkColumn(spec), actor }
   // NOTE: the child branch resolves READ visibility regardless of `action`
-  // (resolveScope is read-only today); thread `action` through the bridge in Phase 4.
+  // (resolveActorScope is read-only today); thread `action` through the bridge in Phase 4.
   const scope = spec.parent
-    ? resolveScope(spec, actor)
+    ? resolveActorScope(spec, actor)
     : compileScope(actor, action, spec.caslSubject, ctx)
   const [row] = await db
     .select({ ok: sql`1` })

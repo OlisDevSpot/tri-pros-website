@@ -14,20 +14,20 @@
 // and force an `as typeof agentProcedure` cast (the old factory's crutch).
 // An inline `.use()` infers `ctx` from `agentProcedure`, so the non-null
 // session/ability narrowing flows through and no cast is needed. Proposal
-// scope is compiled from CASL via `resolveActorScope`; the media child
+// scope is compiled from CASL via `resolveTrpcActorScope`; the media child
 // entity still resolves via the legacy `resolveVisibilityScope` (unmigrated).
 
 import { proposalMediaServerSpec } from '@/shared/entities/proposal-media-files/lib/server-spec'
 import { proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
 
 import { agentProcedure, baseProcedure } from '../../init'
-import { resolveActorScope } from '../../lib/middleware/resolve-actor-scope'
+import { resolveTrpcActorScope } from '../../lib/middleware/resolve-trpc-actor-scope'
 import { resolveVisibilityScope } from '../../lib/middleware/scope-middleware'
 import { shareableMiddleware } from '../../lib/middleware/shareable-middleware'
 
 /** Agent-only. Session + ability guaranteed; `ctx.scope` compiled from CASL (null for omni). */
 export const proposalProcedure = agentProcedure.use(async ({ ctx, next }) => {
-  const scope = resolveActorScope(proposalServerSpec, { userId: ctx.session.user.id, ability: ctx.ability })
+  const scope = resolveTrpcActorScope(proposalServerSpec, { userId: ctx.session.user.id, ability: ctx.ability })
   return next({ ctx: { ...ctx, scope } })
 })
 

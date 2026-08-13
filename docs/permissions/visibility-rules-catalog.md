@@ -214,7 +214,7 @@ rule.
 1. **The Policy** — one `defineAbilitiesFor(principal)`, now *with conditions*. Roles + row-conditions
    + field-grants live here and nowhere else. Deletes the `lib/visibility.ts` role branches and the
    `LeadsPool` fan-out.
-2. **The Scope Compiler** — `resolveScope(spec, principal) → SQL | null`: `rulesToAST('read',subject)`
+2. **The Scope Compiler** — `resolveActorScope(spec, principal) → SQL | null`: `rulesToAST('read',subject)`
    → Drizzle interpreter hosting custom operators (`$participatesIn`, `$participatesViaMeetingPath`,
    `$hasNoMeeting`). `spec.visibility` the *function* disappears; the spec declares its `subject` + FK
    paths. Absorbs `resolveEffectiveScope`, all four `lib/visibility.ts`, and all 4 omni null-collapses.

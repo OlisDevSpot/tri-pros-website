@@ -12,7 +12,7 @@ import { projectServerSpec } from '@/shared/entities/projects/lib/server-spec'
 import { hasAssociatedMeeting } from '@/shared/entities/projects/lib/visibility'
 import { projectFormSchema } from '@/shared/entities/projects/schemas'
 import { agentProcedure, createTRPCRouter } from '../../init'
-import { resolveActorScope } from '../../lib/middleware/resolve-actor-scope'
+import { resolveTrpcActorScope } from '../../lib/middleware/resolve-trpc-actor-scope'
 
 export const crudRouter = createTRPCRouter({
   getAll: agentProcedure
@@ -40,7 +40,7 @@ export const crudRouter = createTRPCRouter({
       // Compiled from CASL (abilities.ts agent Project rules: participation OR
       // ownerId=me) — null for omni (super-admin `manage all` compiles to no
       // constraint), so the old manual `isOmni` branch is subsumed here.
-      const scopeWhere = resolveActorScope(projectServerSpec, { userId: ctx.session.user.id, ability: ctx.ability }) ?? undefined
+      const scopeWhere = resolveTrpcActorScope(projectServerSpec, { userId: ctx.session.user.id, ability: ctx.ability }) ?? undefined
 
       const searchTerm = input.search?.trim()
       const searchWhere = searchTerm

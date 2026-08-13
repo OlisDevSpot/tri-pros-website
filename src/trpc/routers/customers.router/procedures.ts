@@ -14,17 +14,17 @@
 // and force an `as typeof agentProcedure` cast (the old factory's crutch).
 // An inline `.use()` infers `ctx` from `agentProcedure`, so the non-null
 // session/ability narrowing flows through and no cast is needed. The scope
-// math stays DRY via the shared `resolveActorScope` (compiled from CASL
-// rules — see `lib/middleware/resolve-actor-scope.ts`).
+// math stays DRY via the shared `resolveTrpcActorScope` (compiled from CASL
+// rules — see `lib/middleware/resolve-trpc-actor-scope.ts`).
 
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 
 import { agentProcedure, baseProcedure } from '../../init'
-import { resolveActorScope } from '../../lib/middleware/resolve-actor-scope'
+import { resolveTrpcActorScope } from '../../lib/middleware/resolve-trpc-actor-scope'
 
 /** Agent-only. Session + ability guaranteed; `ctx.scope` resolved from customer visibility (null for omni). */
 export const customerProcedure = agentProcedure.use(async ({ ctx, next }) => {
-  const scope = resolveActorScope(customerServerSpec, { userId: ctx.session.user.id, ability: ctx.ability })
+  const scope = resolveTrpcActorScope(customerServerSpec, { userId: ctx.session.user.id, ability: ctx.ability })
   return next({ ctx: { ...ctx, scope } })
 })
 
