@@ -5,6 +5,7 @@
 
 import z from 'zod'
 
+import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { meetingSchemas, meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 
 import { createCrudRouter } from '../../lib/create-crud-router'
@@ -12,4 +13,5 @@ import { createCrudRouter } from '../../lib/create-crud-router'
 export const crudRouter = createCrudRouter({
   spec: meetingServerSpec,
   schemas: { ...meetingSchemas, id: z.string().uuid() },
+  crud: meetingCrud,
 })

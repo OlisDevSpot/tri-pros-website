@@ -19,10 +19,9 @@
 // sales-discovery columns moved to the `customer_profiles` child table and go
 // through `profile.upsert`, gated on the CustomerProfile subject instead.
 
-import type { customerCrud } from '@/shared/entities/customers/dal/server/crud'
-
 import z from 'zod'
 
+import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { getCustomer } from '@/shared/entities/customers/dal/server/queries'
 import { customerSchemas, customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 
@@ -31,6 +30,7 @@ import { createCrudRouter } from '../../lib/create-crud-router'
 export const crudRouter = createCrudRouter({
   spec: customerServerSpec,
   schemas: { ...customerSchemas, id: z.string().uuid() },
+  crud: customerCrud,
   handlers: {
     // Cast: getCustomer returns CustomerWithProfile (a structural superset of
     // Row<typeof customers> — phone-gated + flattened-spread joined against

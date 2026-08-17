@@ -20,7 +20,6 @@ import type { CrudHandlers, EntityServerSpec, SlotName } from '@/trpc/types'
 import { TRPCError } from '@trpc/server'
 import z from 'zod'
 
-import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
 import { agentProcedure, baseProcedure, createTRPCRouter } from '@/trpc/init'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 import { resolveVisibilityScope } from '@/trpc/lib/middleware/scope-middleware'
@@ -51,6 +50,13 @@ export interface CreateCrudRouterConfig<
    */
   schemas: { id: z.ZodType<TId>, insert: TInsert, update: TUpdate }
   /**
+   * The entity's single CRUD instance, built once via
+   * `createCrudDal(spec, configFactory)` in the entity's `dal/server/crud.ts`.
+   * REQUIRED — the router never rebuilds handlers, so no code path can produce
+   * un-hooked ones (the hookless-rebuild failure mode is eliminated by construction).
+   */
+  crud: CrudHandlers<TTable, TId>
+  /**
    * Override individual CRUD handlers. Merged with createCrudDal defaults.
    * ⚠️ Overrides BYPASS spec.hooks entirely — the override replaces the
    * full DAL function including its before/after hook invocations.
@@ -66,13 +72,8 @@ export function createCrudRouter<
   TInsert extends z.ZodObject<z.ZodRawShape>,
   TUpdate extends z.ZodObject<z.ZodRawShape>,
 >(config: CreateCrudRouterConfig<TTable, TId, TInsert, TUpdate>) {
-  // Merge default DAL handlers with any caller-provided overrides.
-  const defaults = createCrudDal(config.spec)
-  // Cast: spread merge of defaults + Partial overrides loses the full interface
-  // type. TS can't prove all 5 keys are present after the merge (even though
-  // defaults has all 5 and Partial can only override, not remove). Fixable by
-  // explicit ?? per key — deferred for readability.
-  const handlers = { ...defaults, ...config.handlers } as CrudHandlers<TTable, TId>
+  // Merge the entity's hooked instance with any bespoke slot overrides.
+  const handlers = { ...config.crud, ...config.handlers } as CrudHandlers<TTable, TId>
 
   // Scoped procedures built inline from the spec — the cast-free inline `.use()`
   // pattern (ctx infers from agentProcedure, so no builder-type cast is needed).
