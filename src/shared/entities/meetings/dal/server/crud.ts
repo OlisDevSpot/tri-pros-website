@@ -26,7 +26,7 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
       // owned by another user. Resolution branches on the `own Meeting`
       // capability (CASL), never on input and never on a role string: agents /
       // super-admin own their meetings; dispatchers create unassigned
-      // (system-owned) ones — see ./resolve-owner.ts. SYSTEM_CONTEXT callers
+      // (system-owned) ones — see ../../lib/resolve-owner.ts. SYSTEM_CONTEXT callers
       // (orchestrators like customers.createFromIntake) have ctx.session ===
       // null and supply ownerId explicitly — the hook passes their value
       // through unchanged.

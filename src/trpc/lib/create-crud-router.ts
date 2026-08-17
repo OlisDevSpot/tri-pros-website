@@ -72,7 +72,10 @@ export function createCrudRouter<
   TInsert extends z.ZodObject<z.ZodRawShape>,
   TUpdate extends z.ZodObject<z.ZodRawShape>,
 >(config: CreateCrudRouterConfig<TTable, TId, TInsert, TUpdate>) {
-  // Merge the entity's hooked instance with any bespoke slot overrides.
+  // Merge the entity's hooked instance with any bespoke slot overrides. The cast
+  // reasserts the full interface: spreading the Partial `handlers` overrides widens
+  // the property types to include `undefined`, so TS needs the assertion to treat
+  // the merge as a complete `CrudHandlers`.
   const handlers = { ...config.crud, ...config.handlers } as CrudHandlers<TTable, TId>
 
   // Scoped procedures built inline from the spec — the cast-free inline `.use()`
