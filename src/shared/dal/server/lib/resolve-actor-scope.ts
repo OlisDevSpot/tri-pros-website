@@ -5,7 +5,7 @@ import type { EntityServerSpec } from '@/shared/dal/server/types'
 import type { Actor } from '@/shared/domains/permissions/scope/actor'
 import type { AppAction, AppSubject } from '@/shared/domains/permissions/types'
 
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { and, eq, getTableName, inArray, sql } from 'drizzle-orm'
 
 import { db } from '@/shared/db'
 import { compileScope } from '@/shared/domains/permissions/scope/compile-scope'
@@ -94,9 +94,22 @@ function pkColumn(spec: EntityServerSpec): PgColumn {
   return pk
 }
 
-/** The child→parent FK column. `parent.fk` is required in the current spec type. */
+/**
+ * The child→parent FK column. Guards §11.2: a `parent.fk` pointing at a column
+ * on ANOTHER table (e.g. the parent's own pk) would emit a self-correlated
+ * `parent.pk IN (SELECT parent.pk …)` wrong-join that silently passes every
+ * child row — a false-ALLOW leak. Turn that mis-wire into a loud throw here,
+ * the single point the bridge reads this column.
+ */
 function fkColumn(spec: EntityServerSpec): PgColumn {
   if (!spec.parent)
     throw new Error(`[scope] ${spec.entityName} has no parent fk`)
-  return spec.parent.fk
+  const fk = spec.parent.fk
+  if (getTableName(fk.table) !== getTableName(spec.table)) {
+    throw new Error(
+      `[scope] ${spec.entityName}.parent.fk must be a column on ${spec.entityName}'s own table `
+      + `(got ${getTableName(fk.table)}.${fk.name}) — a mis-pointed FK emits a wrong-join (spec §11.2)`,
+    )
+  }
+  return fk
 }
