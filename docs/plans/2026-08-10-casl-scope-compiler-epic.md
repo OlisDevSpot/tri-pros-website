@@ -81,7 +81,7 @@ Policy: any backwards-compat shim left standing carries a `@deprecated` JSDoc �
 | Seam | `@deprecated` → | Retired in |
 |---|---|---|
 | `SYSTEM_CONTEXT` | `systemActor(reason)` / `systemProcedure` | Phase 4 classifies each site; fully gone Phase 8 |
-| `scope.ts` engine (`isVisible`/`isInScope`/`resolveEffectiveScope`/`bridgeToParent`) | Actor engine (`resolveActorScope`/`canAccess`) | Phase 8 |
+| `scope.ts` engine (`isVisible`/`isInScope`/`resolveEffectiveScope`/`bridgeToParent`) | Actor engine (`resolveActorScope`/`canAccess`) | Phase 8 — NB: `isInScope` (`scope.ts:94`) still holds a `ctx.scope ?? undefined` KNOWINGLY LEFT by Phase-4's `requireResolvedScope` sweep (do-not-churn-dead-code); its sole caller `getProposalViews` runs under `proposalProcedure` (scope always resolved) so `undefined` is unreachable today — the residual dies with the fn here |
 | `resolveVisibilityScope` / `scopeMiddleware` | `resolveActorScope` (+ actor-on-ctx) | Phase 7/8 |
 | interim staff gate (`can('access','Dashboard')`) | future is-staff reconception | marker/TODO only — not a coexistence shim |
 
