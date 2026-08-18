@@ -9,9 +9,11 @@ import { z } from 'zod'
 import { buildPersonaProfile } from '@/features/meeting-flow/lib/build-persona-profile'
 import { getCachedPainPoints } from '@/features/meeting-flow/lib/get-cached-pain-points'
 import { buildUserContext } from '@/shared/dal/server/lib/helpers'
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { canAccess, resolveActorScope } from '@/shared/dal/server/lib/resolve-actor-scope'
 import { customerProfilePatchSchema } from '@/shared/db/schema'
+import { userActor } from '@/shared/domains/permissions/scope/actor'
 import { upsertCustomerProfile } from '@/shared/entities/customers/dal/server/mutations'
+import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { getByIdWithJoins } from '@/shared/entities/meetings/dal/server/queries'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 import { ably } from '@/shared/services/providers/upstash/realtime'
@@ -37,10 +39,19 @@ export const meetingFlowRouter = createTRPCRouter({
         })
       }
       const { meetingId, customerId, patch } = input
-      const updated = dalToTrpc(await upsertCustomerProfile(SYSTEM_CONTEXT, {
-        customerId,
-        patch,
-      }))
+
+      // Row-probe: can this actor reach THIS customer? (read visibility gates
+      // the profile write — a 'create' probe would deny every legitimate
+      // upsert since agents have no `create Customer` rule; §6.)
+      const actor = userActor(ctx.session.user.id, ctx.ability)
+      if (!(await canAccess(customerServerSpec, actor, customerId, 'read'))) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Customer not found' })
+      }
+
+      const updated = dalToTrpc(await upsertCustomerProfile(
+        { session: ctx.session, ability: ctx.ability, scope: resolveActorScope(customerServerSpec, actor) },
+        { customerId, patch },
+      ))
       // Inline await — ephemeral realtime fan-out is the explicit exception
       // to background-side-effects-via-qstash-jobs (routing through QStash
       // would defeat sub-100ms broadcast). Failure is logged, not surfaced —
