@@ -12,6 +12,7 @@ import type z from 'zod'
 import type { Insert, Row, Update } from '@/shared/db/types'
 import type { BetterAuthSession } from '@/shared/domains/auth/server'
 import type { EntityName } from '@/shared/domains/permissions/abilities'
+import type { SystemReason } from '@/shared/domains/permissions/scope/system-reasons'
 import type { AppAbility, AppSubject } from '@/shared/domains/permissions/types'
 
 // ── Context ─────────────────────────────────────────────────────────────
@@ -42,6 +43,19 @@ export const SYSTEM_CONTEXT: ScopedContext = {
   session: null,
   ability: null,
   scope: null,
+}
+
+/**
+ * Named, auditable system context — the ScopedContext-layer analogue of
+ * `systemActor(reason)`. Same allow-all shape as `SYSTEM_CONTEXT`, but the
+ * required `SystemReason` makes each unrestricted call site greppable and
+ * forces a conscious "why is this bypass safe?" at review. Prefer this over
+ * the bare `SYSTEM_CONTEXT` for any NEW privileged write.
+ * see ../../../plans/2026-08-10-casl-scope-compiler-epic.md (Retiring-Seams Register)
+ */
+export function systemContext(reason: SystemReason): ScopedContext {
+  void reason // reason is documentation-at-call-site; captured for greppability
+  return { session: null, ability: null, scope: null }
 }
 
 // ── Visibility Scope ────────────────────────────────────────────────────
