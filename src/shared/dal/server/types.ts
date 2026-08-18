@@ -9,6 +9,7 @@ import type { SQL } from 'drizzle-orm'
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core'
 import type z from 'zod'
 
+import type { Tx } from '@/shared/db'
 import type { Insert, Row, Update } from '@/shared/db/types'
 import type { BetterAuthSession } from '@/shared/domains/auth/server'
 import type { EntityName } from '@/shared/domains/permissions/abilities'
@@ -32,6 +33,8 @@ export interface ScopedContext {
   session: BetterAuthSession | null
   ability: AppAbility | null
   scope: SQL | null
+  /** Present ⇒ run on the caller's ambient transaction (composed atomicity). Absent ⇒ autocommit on `db`. Threaded via `withTx` (see dal/server/lib/helpers.ts). */
+  tx?: Tx
 }
 
 /**

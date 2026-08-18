@@ -33,4 +33,5 @@ const db = drizzle(pool, {
 
 export type DB = typeof db
 export type DbOrTx = DB | Parameters<Parameters<DB['transaction']>[0]>[0]
+export type Tx = Parameters<Parameters<DB['transaction']>[0]>[0]
 export { db }
