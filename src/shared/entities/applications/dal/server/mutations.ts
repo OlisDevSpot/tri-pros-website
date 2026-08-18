@@ -7,7 +7,7 @@ import type { ApplicationDraft } from '@/shared/entities/applications/schemas'
 
 import { and, eq, sql } from 'drizzle-orm'
 
-import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
+import { dalDbOperation, requireResolvedScope } from '@/shared/dal/server/lib/helpers'
 import { ThrowableDalError } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { applicationAnswers } from '@/shared/db/schema/application-answers'
@@ -31,7 +31,7 @@ export async function saveDraft(
     const [application] = await db
       .select({ id: applications.id, status: applications.status })
       .from(applications)
-      .where(and(eq(applications.id, input.applicationId), ctx.scope ?? undefined))
+      .where(and(eq(applications.id, input.applicationId), requireResolvedScope(ctx.scope)))
     if (!application) {
       throw new ThrowableDalError({ type: 'not-found' })
     }
@@ -71,7 +71,7 @@ export async function submitApplication(
         draftAnswersJSON: applications.draftAnswersJSON,
       })
       .from(applications)
-      .where(and(eq(applications.id, input.applicationId), ctx.scope ?? undefined))
+      .where(and(eq(applications.id, input.applicationId), requireResolvedScope(ctx.scope)))
     if (!application) {
       throw new ThrowableDalError({ type: 'not-found' })
     }
@@ -160,7 +160,7 @@ export async function withdraw(
     const [application] = await db
       .select({ id: applications.id, status: applications.status })
       .from(applications)
-      .where(and(eq(applications.id, input.applicationId), ctx.scope ?? undefined))
+      .where(and(eq(applications.id, input.applicationId), requireResolvedScope(ctx.scope)))
     if (!application) {
       throw new ThrowableDalError({ type: 'not-found' })
     }

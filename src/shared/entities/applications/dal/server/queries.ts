@@ -8,7 +8,7 @@ import { and, asc, eq } from 'drizzle-orm'
 import z from 'zod'
 
 import { applicationStatuses, applicationTypes } from '@/shared/constants/enums'
-import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
+import { dalDbOperation, requireResolvedScope } from '@/shared/dal/server/lib/helpers'
 import { ThrowableDalError } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { applicationAnswers } from '@/shared/db/schema/application-answers'
@@ -28,7 +28,7 @@ export async function listApplications(
 ): Promise<DalReturn<Application[]>> {
   return dalDbOperation(async () => {
     const filters = [
-      ctx.scope ?? undefined,
+      requireResolvedScope(ctx.scope),
       input.meetingId ? eq(applications.meetingId, input.meetingId) : undefined,
       input.type ? eq(applications.type, input.type) : undefined,
       input.status ? eq(applications.status, input.status) : undefined,
@@ -54,7 +54,7 @@ export async function getApplicationWithAnswers(
   return dalDbOperation(async () => {
     const [application] = await db.select()
       .from(applications)
-      .where(and(eq(applications.id, input.applicationId), ctx.scope ?? undefined))
+      .where(and(eq(applications.id, input.applicationId), requireResolvedScope(ctx.scope)))
     if (!application) {
       throw new ThrowableDalError({ type: 'not-found' })
     }

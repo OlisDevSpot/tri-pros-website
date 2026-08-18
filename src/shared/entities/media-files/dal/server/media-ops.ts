@@ -11,7 +11,7 @@ import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 
 import { and, asc, eq } from 'drizzle-orm'
 
-import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
+import { dalDbOperation, requireResolvedScope } from '@/shared/dal/server/lib/helpers'
 import { db } from '@/shared/db'
 
 /** Every media table shares `baseMediaColumns()` (→ `id`, `sortOrder`). */
@@ -31,7 +31,7 @@ export function listMediaByOwner(
     db
       .select()
       .from(table)
-      .where(and(eq(ownerColumn, ownerId), ctx.scope ?? undefined))
+      .where(and(eq(ownerColumn, ownerId), requireResolvedScope(ctx.scope)))
       .orderBy(asc(table.sortOrder)) as Promise<Record<string, unknown>[]>,
   )
 }
@@ -52,7 +52,7 @@ export function reorderMedia(
     }
     await db.transaction(async (tx) => {
       for (const { id, sortOrder } of updates) {
-        await tx.update(table).set({ sortOrder }).where(and(eq(table.id, id), ctx.scope ?? undefined))
+        await tx.update(table).set({ sortOrder }).where(and(eq(table.id, id), requireResolvedScope(ctx.scope)))
       }
     })
   })

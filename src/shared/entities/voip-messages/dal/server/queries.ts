@@ -9,7 +9,7 @@ import type { VoipMessage } from '@/shared/db/schema/voip-messages'
 
 import { and, desc, eq } from 'drizzle-orm'
 
-import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
+import { dalDbOperation, requireResolvedScope } from '@/shared/dal/server/lib/helpers'
 import { db } from '@/shared/db'
 import { voipMessages } from '@/shared/db/schema/voip-messages'
 
@@ -37,7 +37,7 @@ export async function fetchThread(
       .where(and(
         eq(voipMessages.voipDidId, input.voipDidId),
         eq(voipMessages.remoteE164, input.remoteE164),
-        ctx.scope ?? undefined,
+        requireResolvedScope(ctx.scope),
       ))
       .orderBy(desc(voipMessages.createdAt))
       .limit(limit)

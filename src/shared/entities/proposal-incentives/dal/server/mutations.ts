@@ -9,7 +9,7 @@ import type { Incentive } from '@/shared/entities/proposals/schemas'
 
 import { and, eq, isNull } from 'drizzle-orm'
 
-import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { dalDbOperation, dalVerifySuccess, requireResolvedScope } from '@/shared/dal/server/lib/helpers'
 import { ThrowableDalError } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { proposalIncentives } from '@/shared/db/schema/proposal-incentives'
@@ -42,7 +42,7 @@ export async function replaceProposalIncentives(
         contractDeclinedAt: proposals.contractDeclinedAt,
       })
       .from(proposals)
-      .where(and(eq(proposals.id, input.proposalId), ctx.scope ?? undefined))
+      .where(and(eq(proposals.id, input.proposalId), requireResolvedScope(ctx.scope)))
     if (!proposal) {
       throw new ThrowableDalError({ type: 'not-found' })
     }

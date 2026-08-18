@@ -7,7 +7,7 @@ import type { FreshPipelineStage } from '@/shared/domains/pipelines/constants/fr
 import { TRPCError } from '@trpc/server'
 import { and, eq } from 'drizzle-orm'
 
-import { buildUserContext, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { buildUserContext, dalVerifySuccess, requireResolvedScope } from '@/shared/dal/server/lib/helpers'
 import { db } from '@/shared/db'
 import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
@@ -107,7 +107,7 @@ export async function moveCustomerPipelineItem({
       .from(meetings)
       .where(and(
         eq(meetings.customerId, customerId),
-        ctx.scope ?? undefined,
+        requireResolvedScope(ctx.scope),
         eq(meetings.meetingOutcome, 'not_set'),
       ))
       .orderBy(meetings.createdAt)
@@ -139,7 +139,7 @@ export async function moveCustomerPipelineItem({
       .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
       .where(and(
         eq(meetings.customerId, customerId),
-        ctx.scope ?? undefined,
+        requireResolvedScope(ctx.scope),
         eq(proposals.status, 'sent'),
       ))
 

@@ -46,7 +46,7 @@ import { and, eq } from 'drizzle-orm'
 import { db } from '@/shared/db'
 
 import { ThrowableDalError } from '../types'
-import { dalDbOperation } from './helpers'
+import { dalDbOperation, requireResolvedScope } from './helpers'
 
 export function createCrudDal<TTable extends PgTable, TId extends string | number = string>(
   spec: EntityServerSpec<TTable, TId>,
@@ -114,7 +114,7 @@ async function getByIdImpl<TTable extends PgTable>(
   input: { id: string | number },
 ): Promise<DalReturn<Row<TTable> | undefined>> {
   return dalDbOperation(async () => {
-    const where = and(eq(pkColumn, input.id), ctx.scope ?? undefined)
+    const where = and(eq(pkColumn, input.id), requireResolvedScope(ctx.scope))
     const [row] = await db
       .select()
       .from(spec.table as PgTable)
@@ -210,7 +210,7 @@ async function updateImpl<TTable extends PgTable, TId extends string | number>(
 
     // Real write. `.set(validated)` — Drizzle filters undefined and auto-appends
     // $onUpdate columns (updatedAt bumps here, on a genuine change).
-    const where = and(eq(pkColumn, input.id), ctx.scope ?? undefined)
+    const where = and(eq(pkColumn, input.id), requireResolvedScope(ctx.scope))
     const [updated] = await db.update(spec.table as PgTable).set(validated as Record<string, unknown>).where(where).returning()
     if (!updated) {
       throw new ThrowableDalError({ type: 'not-found' })
@@ -261,7 +261,7 @@ async function deleteImpl<TTable extends PgTable, TId extends string | number>(
     if (callsite?.before)
       await callsite.before(row!, ctx)
 
-    const where = and(eq(pkColumn, input.id), ctx.scope ?? undefined)
+    const where = and(eq(pkColumn, input.id), requireResolvedScope(ctx.scope))
     const deleted = await db.delete(spec.table as PgTable).where(where).returning({ id: pkColumn })
     if (deleted.length === 0) {
       throw new ThrowableDalError({ type: 'not-found' })

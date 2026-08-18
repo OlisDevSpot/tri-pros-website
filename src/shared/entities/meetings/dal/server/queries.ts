@@ -14,7 +14,7 @@ import z from 'zod'
 
 import { meetingOutcomes } from '@/shared/constants/enums'
 import { pipelines } from '@/shared/constants/enums/pipelines'
-import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
+import { dalDbOperation, requireResolvedScope } from '@/shared/dal/server/lib/helpers'
 import { buildFilterWhere } from '@/shared/dal/server/lib/query/filters'
 import { paginate } from '@/shared/dal/server/lib/query/output'
 import { dateRangeSchema, paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
@@ -148,7 +148,7 @@ export async function listMeetings(
       projectId: v => eq(meetings.projectId, v),
     })
 
-    const where = and(ctx.scope ?? undefined, searchWhere, filterWhere)
+    const where = and(requireResolvedScope(ctx.scope), searchWhere, filterWhere)
 
     const orderBy = buildOrderBy(input.sort, {
       customerName: customers.name,
@@ -291,7 +291,7 @@ export async function getByIdWithJoins(
       .leftJoin(user, eq(user.id, meetings.ownerId))
       .where(and(
         eq(meetings.id, input.id),
-        ctx.scope ?? undefined,
+        requireResolvedScope(ctx.scope),
       ))
 
     if (!row) {

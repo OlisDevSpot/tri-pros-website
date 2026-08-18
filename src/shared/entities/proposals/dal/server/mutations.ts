@@ -5,7 +5,7 @@ import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 
 import { and, eq, sql } from 'drizzle-orm'
 
-import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
+import { dalDbOperation, requireResolvedScope } from '@/shared/dal/server/lib/helpers'
 import { ThrowableDalError } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { proposals } from '@/shared/db/schema/proposals'
@@ -67,7 +67,7 @@ export async function setCashInDeal(
         contractDeclinedAt: proposals.contractDeclinedAt,
       })
       .from(proposals)
-      .where(and(eq(proposals.id, input.proposalId), ctx.scope ?? undefined))
+      .where(and(eq(proposals.id, input.proposalId), requireResolvedScope(ctx.scope)))
     if (!proposal) {
       throw new ThrowableDalError({ type: 'not-found' })
     }

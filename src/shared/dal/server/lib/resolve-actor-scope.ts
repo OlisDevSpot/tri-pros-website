@@ -10,6 +10,8 @@ import { and, eq, getTableName, inArray, sql } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { compileScope } from '@/shared/domains/permissions/scope/compile-scope'
 
+import { requireResolvedScope } from './helpers'
+
 /**
  * The spec-aware scope authority (spec §5). Roots compile their conditions;
  * children resolve `own` as verb-only and inherit rows via the structural parent
@@ -65,7 +67,7 @@ export async function canAccess(
   const [row] = await db
     .select({ ok: sql`1` })
     .from(spec.table)
-    .where(and(eq(pkColumn(spec), id), scope ?? undefined))
+    .where(and(eq(pkColumn(spec), id), requireResolvedScope(scope)))
     .limit(1)
   return !!row
 }

@@ -17,6 +17,8 @@
 //     })
 //   }
 
+import type { SQL } from 'drizzle-orm'
+
 import type { DalReturn, EntityServerSpec, ScopedContext } from '../types'
 
 import type { UserRole } from '@/shared/constants/enums'
@@ -71,6 +73,30 @@ export function buildUserContext(
     ability,
     scope: isOmni ? null : resolveEffectiveScope(spec, { userId, ability }),
   }
+}
+
+// ── Scope Guards ─────────────────────────────────────────────────────────
+
+/**
+ * Asserts a visibility scope was CONSCIOUSLY resolved, then converts it to a
+ * Drizzle WHERE fragment. The whole point is to tell two states apart that
+ * `?? undefined` silently collapses together:
+ *   `null`      = the resolver ran and DELIBERATELY chose allow-all (omni /
+ *                 system) → undefined, so and()/where() drops it (unrestricted).
+ *   `undefined` = the scope was NEVER resolved — a ctx that skipped scope
+ *                 resolution, an untyped JS path, a forgotten wiring → THROW.
+ *                 An unresolved scope must DENY loudly, never silently allow-all.
+ * The name is the guard: a query may only run once its scope has been REQUIRED
+ * to exist. This is the engine's core false-ALLOW guard, centralized.
+ * see docs/plans/2026-08-10-casl-scope-compiler-epic.md (Actor-seam conventions §5)
+ */
+export function requireResolvedScope(scope: SQL | null | undefined): SQL | undefined {
+  if (scope === undefined) {
+    throw new Error(
+      '[scope] visibility scope was never resolved (undefined) — refusing to run an unscoped query (deny-safe)',
+    )
+  }
+  return scope ?? undefined
 }
 
 // ── DalReturn Narrowing Helpers ─────────────────────────────────────────

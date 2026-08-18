@@ -16,7 +16,7 @@ import z from 'zod'
 
 import { proposalKinds, proposalStatuses } from '@/shared/constants/enums'
 import { pipelines } from '@/shared/constants/enums/pipelines'
-import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { dalDbOperation, dalVerifySuccess, requireResolvedScope } from '@/shared/dal/server/lib/helpers'
 import { buildFilterWhere } from '@/shared/dal/server/lib/query/filters'
 import { paginate } from '@/shared/dal/server/lib/query/output'
 import { dateRangeSchema, numberRangeSchema, paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
@@ -119,7 +119,7 @@ export async function getFullView(
       .from(proposals)
       .leftJoin(meetings, eq(meetings.id, proposals.meetingId))
       .leftJoin(customers, eq(customers.id, meetings.customerId))
-      .where(and(eq(proposals.id, input.id), ctx.scope ?? undefined))
+      .where(and(eq(proposals.id, input.id), requireResolvedScope(ctx.scope)))
 
     if (!row) {
       return undefined
@@ -223,7 +223,7 @@ export async function listProposals(
           : undefined,
     })
 
-    const where = and(ctx.scope ?? undefined, searchWhere, filterWhere)
+    const where = and(requireResolvedScope(ctx.scope), searchWhere, filterWhere)
 
     const orderBy = buildOrderBy(input.sort, {
       createdAt: proposals.createdAt,
@@ -320,7 +320,7 @@ export async function getByContractEnvelopeId(
       .from(proposals)
       .where(and(
         eq(proposals.contractEnvelopeId, input.contractEnvelopeId),
-        ctx.scope ?? undefined,
+        requireResolvedScope(ctx.scope),
       ))
       .limit(1)
     return row

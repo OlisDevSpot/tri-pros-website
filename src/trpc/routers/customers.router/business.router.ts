@@ -7,6 +7,7 @@ import z from 'zod'
 import env from '@/shared/config/server-env'
 import { intakeModes } from '@/shared/constants/enums'
 import { pipelines } from '@/shared/constants/enums/pipelines'
+import { requireResolvedScope } from '@/shared/dal/server/lib/helpers'
 import { buildFilterWhere } from '@/shared/dal/server/lib/query/filters'
 import { paginate } from '@/shared/dal/server/lib/query/output'
 import { dateRangeSchema, paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
@@ -60,7 +61,7 @@ export const businessRouter = createTRPCRouter({
           v.to ? lte(customers.createdAt, v.to) : undefined,
         ),
       })
-      const where = and(ctx.scope ?? undefined, searchWhere, filterWhere)
+      const where = and(requireResolvedScope(ctx.scope), searchWhere, filterWhere)
 
       // Pipeline is intentionally not sortable — the registry omits the
       // header click affordance because the visible value is derived,
@@ -125,7 +126,7 @@ export const businessRouter = createTRPCRouter({
           address: customers.address,
         })
         .from(customers)
-        .where(and(textWhere, ctx.scope ?? undefined))
+        .where(and(textWhere, requireResolvedScope(ctx.scope)))
         .limit(10)
     }),
 

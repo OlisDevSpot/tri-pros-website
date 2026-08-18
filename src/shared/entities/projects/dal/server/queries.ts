@@ -5,7 +5,7 @@ import type { MediaFile, Project } from '@/shared/db/schema'
 import type { PortfolioProject, PortfolioProjectDetail } from '@/shared/entities/projects/types'
 import { and, asc, count, desc, eq, getTableColumns, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm'
 import { stagesForBuckets } from '@/shared/constants/enums'
-import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
+import { dalDbOperation, requireResolvedScope } from '@/shared/dal/server/lib/helpers'
 import { buildFilterWhere } from '@/shared/dal/server/lib/query/filters'
 import { buildOrderBy } from '@/shared/dal/server/lib/query/sort'
 import { db } from '@/shared/db'
@@ -199,7 +199,7 @@ export async function listProjects(
   input: ProjectListInput,
 ): Promise<DalReturn<{ rows: ProjectWithScopeIds[], total: number }>> {
   return dalDbOperation(async () => {
-    const scopeWhere = ctx.scope ?? undefined
+    const scopeWhere = requireResolvedScope(ctx.scope)
 
     const searchTerm = input.search?.trim()
     const searchWhere = searchTerm

@@ -7,7 +7,7 @@ import type { ProfileKey } from '@/shared/entities/customers/schemas'
 
 import { and, asc, eq, getTableColumns, isNotNull, isNull } from 'drizzle-orm'
 
-import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
+import { dalDbOperation, requireResolvedScope } from '@/shared/dal/server/lib/helpers'
 import { db } from '@/shared/db'
 import { customerEnrichment } from '@/shared/db/schema/customer-enrichment'
 import { customerLeadAttribution } from '@/shared/db/schema/customer-lead-attribution'
@@ -78,7 +78,7 @@ export async function getCustomer(
       .from(customers)
       .leftJoin(customerProfiles, eq(customerProfiles.customerId, customers.id))
       .leftJoin(customerLeadAttribution, eq(customerLeadAttribution.customerId, customers.id))
-      .where(and(eq(customers.id, input.id), ctx.scope ?? undefined))
+      .where(and(eq(customers.id, input.id), requireResolvedScope(ctx.scope)))
 
     if (!row) {
       return undefined
@@ -184,7 +184,7 @@ export async function listCustomers(
     const rows = await db
       .select(customerSelectWithGate(ctx))
       .from(customers)
-      .where(ctx.scope ?? undefined)
+      .where(requireResolvedScope(ctx.scope))
     return rows as CustomerWithPhoneGate[]
   })
 }
