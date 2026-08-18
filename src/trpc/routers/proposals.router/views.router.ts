@@ -2,8 +2,10 @@
 // proposal_views child rows. `recordView` is the public homeowner-open path
 // (token IS the authorization — no session); `getProposalViews` is the
 // agent-facing stats read. Moved out of delivery.router (S3a) into the child's
-// own leaf. Until S3b's subEntitySpec lands, this reuses the parent proposal
-// procedures + a manual token check, exactly as delivery did.
+// own leaf. Until S3b's subEntitySpec lands, `getProposalViews` reuses the
+// parent proposal procedures; `recordView` is authorized via the canonical
+// share-token → tokenActor path (`resolveShareTokenActor`, engine-scoped
+// read), not a manual token compare.
 //
 // Plain leaf: imports pre-scoped procedures from ./procedures.
 

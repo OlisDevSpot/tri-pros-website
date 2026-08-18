@@ -12,6 +12,10 @@ import { tokenActor } from '@/shared/domains/permissions/scope/actor'
  * row (row-boundary is the scope; the verb-boundary is which endpoint accepts
  * the token — a tokenActor carries no ability). Replaces the hand-rolled
  * `proposal.token !== token` compares scattered across the view routes.
+ * Note: a valid token whose resolved proposal id doesn't match the
+ * requested proposalId now surfaces as NOT_FOUND (404) at call sites, not
+ * UNAUTHORIZED (401), since the read is scoped to the token's proposal and
+ * filtered by the requested id — intentional, to avoid leaking existence.
  * see docs/plans/2026-08-10-casl-scope-compiler-epic.md (Actor-seam conventions §3)
  */
 export async function resolveShareTokenActor(
