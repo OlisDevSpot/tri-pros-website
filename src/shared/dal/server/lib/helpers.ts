@@ -21,6 +21,7 @@ import type { DalReturn, EntityServerSpec, ScopedContext } from '../types'
 
 import type { UserRole } from '@/shared/constants/enums'
 
+import { db } from '@/shared/db'
 import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
 
 import { dalError, dalSuccess, ThrowableDalError } from '../types'
@@ -45,6 +46,34 @@ export async function dalDbOperation<T>(
     }
     return dalError({ type: 'db-error', cause: e })
   }
+}
+
+// ── withTx ────────────────────────────────────────────────────────────────
+
+/**
+ * Run `fn` inside a transaction. If `ctx` already carries an ambient tx, REUSE
+ * it (no nesting, no savepoint) — the callback runs on the same tx so the whole
+ * composed operation is one atomic unit. Otherwise open a fresh tx and hand the
+ * callback a tx-bound ctx.
+ *
+ * Ownership (epic §5.6): the OUTERMOST caller (tRPC procedure / service / job)
+ * owns the transaction; nested `withTx` calls flatten onto it. Compose failing
+ * `crud.*` calls with `dalVerifySuccess` so a failure aborts the tx — a bare
+ * `await crud.*` swallows its DalError (dalDbOperation catches it) and the tx
+ * would commit partial state on the business-precondition (not-found) case.
+ *
+ * ⚠️ INTERIM(C): until `afterCommit` lands (sub-plan C), do NOT thread this tx
+ * into a `crud.*` whose `after` hook dispatches a QStash/Ably job — the dispatch
+ * would run PRE-COMMIT. C relocates those dispatches to `afterCommit`. See the
+ * Cross-Phase Ledger in the sub-plan B design spec.
+ */
+export async function withTx<T>(
+  ctx: ScopedContext,
+  fn: (ctx: ScopedContext) => Promise<T>,
+): Promise<T> {
+  if (ctx.tx)
+    return fn(ctx)
+  return db.transaction(tx => fn({ ...ctx, tx }))
 }
 
 // ── Context Builders ────────────────────────────────────────────────────
