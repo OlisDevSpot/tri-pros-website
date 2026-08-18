@@ -1,6 +1,9 @@
 import { companyInfo } from '@/shared/constants/company'
+import { resolveActorScope } from '@/shared/dal/server/lib/resolve-actor-scope'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { resolveShareTokenActor } from '@/shared/domains/permissions/lib/share-token-actor'
 import { getFullView } from '@/shared/entities/proposals/dal/server/queries'
+import { proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
 import { sanitizeFilename } from '@/shared/lib/sanitize-filename'
 import { pdfService } from '@/shared/services/pdf.service'
 
@@ -15,15 +18,19 @@ export async function GET(
     return Response.json({ error: 'Missing token' }, { status: 401 })
   }
 
-  const result = await getFullView(SYSTEM_CONTEXT, { id: proposalId })
+  const actor = await resolveShareTokenActor(token, 'proposal')
+  if (!actor) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const result = await getFullView(
+    { session: null, ability: null, scope: resolveActorScope(proposalServerSpec, actor) },
+    { id: proposalId },
+  )
   if (!result.success || !result.data) {
     return Response.json({ error: 'Not found' }, { status: 404 })
   }
   const proposal = result.data
-
-  if (proposal.token !== token) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 })
-  }
 
   try {
     const buffer = await pdfService.generateProposalPdf(SYSTEM_CONTEXT, { proposalId })

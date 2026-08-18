@@ -10,10 +10,12 @@
 import { TRPCError } from '@trpc/server'
 import z from 'zod'
 
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { resolveActorScope } from '@/shared/dal/server/lib/resolve-actor-scope'
+import { resolveShareTokenActor } from '@/shared/domains/permissions/lib/share-token-actor'
 import { recordProposalView } from '@/shared/entities/proposal-views/dal/server/mutations'
 import { getProposalViews } from '@/shared/entities/proposal-views/dal/server/queries'
 import { getFullView } from '@/shared/entities/proposals/dal/server/queries'
+import { proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
 import { sendViewNotificationJob } from '@/shared/services/providers/upstash/jobs/send-view-notification'
 
 import { createTRPCRouter, systemProcedure } from '../../init'
@@ -32,17 +34,22 @@ export const viewsRouter = createTRPCRouter({
   recordView: systemProcedure
     .input(recordViewSchema)
     .mutation(async ({ input }) => {
-      // 1. Fetch proposal with customer join — SYSTEM_CONTEXT because publicProcedure
-      // has no session. Uses getFullView (not handlers.getById) because we need
-      // customer.name for the notification job payload.
-      const proposal = dalToTrpc(await getFullView(SYSTEM_CONTEXT, { id: input.proposalId }))
-      if (!proposal) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' })
+      // 1. Validate the share token → engine-scoped actor. Token IS the
+      // authorization on this path (systemProcedure has no session).
+      const actor = await resolveShareTokenActor(input.token, 'proposal')
+      if (!actor) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid token' })
       }
 
-      // 2. Manual token validation — token IS the authorization on this path
-      if (proposal.token !== input.token) {
-        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid token' })
+      // 2. Fetch proposal with customer join, scoped to exactly the token's
+      // row. Uses getFullView (not handlers.getById) because we need
+      // customer.name for the notification job payload.
+      const proposal = dalToTrpc(await getFullView(
+        { session: null, ability: null, scope: resolveActorScope(proposalServerSpec, actor) },
+        { id: input.proposalId },
+      ))
+      if (!proposal) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' })
       }
 
       // 3. Record the view via the proposal-views DAL

@@ -1,7 +1,9 @@
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { resolveActorScope } from '@/shared/dal/server/lib/resolve-actor-scope'
+import { resolveShareTokenActor } from '@/shared/domains/permissions/lib/share-token-actor'
 import { getFullView } from '@/shared/entities/proposals/dal/server/queries'
 import { buildPricingBreakdown } from '@/shared/entities/proposals/lib/financials'
 import { toFundingInputs } from '@/shared/entities/proposals/lib/funding-columns'
+import { proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
 import { formatAsDollars } from '@/shared/lib/formatters'
 
 function stripHtml(html: string): string {
@@ -19,8 +21,16 @@ export async function GET(
     return Response.json({ error: 'Missing token' }, { status: 401 })
   }
 
+  const actor = await resolveShareTokenActor(token, 'proposal')
+  if (!actor) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   // TODO: Rebuild as procedure → QStash job → ai.service → DAL update (see spec)
-  const result = await getFullView(SYSTEM_CONTEXT, { id: proposalId })
+  const result = await getFullView(
+    { session: null, ability: null, scope: resolveActorScope(proposalServerSpec, actor) },
+    { id: proposalId },
+  )
   if (!result.success) {
     return Response.json({ error: 'Not found' }, { status: 404 })
   }
@@ -28,10 +38,6 @@ export async function GET(
 
   if (!proposal) {
     return Response.json({ error: 'Not found' }, { status: 404 })
-  }
-
-  if (proposal.token !== token) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const customer = proposal.customer
