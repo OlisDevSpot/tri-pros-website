@@ -1,246 +1,284 @@
-# CRUD DAL Mutation-Interface Extension — Brainstorm & Requirements
+# CRUD DAL Mutation-Interface Extension — Epic Index
 
-> **Status:** Requirements-in-progress from a `/grill-with-docs` session (2026-08-12). **NOT design-complete.** Open questions remain (§8). This is the deliverable of **Projects Standardization Epic — Phase 2** (the "case study" that drives the interface extension), widened by user directive to a **cross-entity** analysis.
-> **This is an epic-within-an-epic.** Parent line: `memory/project-crud-mutation-standardization.md` → `docs/plans/2026-08-11-projects-standardization-epic.md` (Phase 2) → this doc.
-> **Coordinates with:** `docs/plans/2026-08-10-casl-scope-compiler-epic.md` (#285 — owns permissions/scope; see §9). ADR-0002 (Entity Server System), ADR-0003 (backend layers) — this refines both (§10).
-> **How a fresh session resumes:** read this doc top-to-bottom, then §8 (open questions) and §9 (what's still missing). The layering model in §2 is load-bearing for every decision below.
-
----
-
-## 1. What this is
-
-The generic entity toolkit — `createCrudDal(spec)` (5 single-row slots: `getById`, `create`, `update`, `delete`, `duplicate`; `list` is deliberately NOT CRUD), `createCrudRouter`, and `EntityServerSpec` — is deliberately minimal. As entities grew richer, mutations kept going **off** the toolkit (inline `db`, bespoke feature-DAL, services writing entity tables raw), which means **`EntityServerSpec.hooks` never fire → the entity's invariants, derived fields, and side-effects are silently skipped.**
-
-Phase 2's job: **catalog what structurally blocks the generic interface from being used in more mutation contexts**, across ALL core entities (not just projects), and turn each blocker into an interface requirement. The design of the extension is the *next* session; this is the requirements + the architectural model we converged on.
-
-**User's framing directives (verbatim intent):**
-- Do **not** preserve backwards compatibility at the expense of a better generic interface.
-- Do **not** resort to thin ad-hoc constants/functions; find what blocks the **generic** crud/trpc/entities interface and fix *that*.
-- Analyze the real business requirements in each core entity/router/crud flow.
+> **What this is:** the epic index for extending `createCrudDal` so the generic entity toolkit becomes the real, hook-guarded, transactional write-chokepoint for every core entity. The cross-cutting **architecture is locked** (§3 model, §5 decisions). The work is split into **four sub-plans** (§6): three **infrastructure** sub-plans (A/B/C) that each get their **own dedicated grill/brainstorm** before building, and one **adoption** sub-plan (D) that wires everything we built into the entities.
+> **Parent line:** `memory/project-crud-mutation-standardization.md` → `docs/plans/2026-08-11-projects-standardization-epic.md` (Phase 2) → this doc. This is **Projects Standardization Epic — Phase 2**, widened by user directive from projects-only to **cross-entity**.
+> **Coordinates with:** `docs/plans/2026-08-10-casl-scope-compiler-epic.md` (#285 — owns permissions/scope). Refines **ADR-0002** (Entity Server System) + **ADR-0003** (backend layers) — ADRs written when each infra sub-plan firms (§7).
+> **How to use this doc:** §1–§5 are the shared, settled foundation every sub-plan inherits — read them once. §6 is the four sub-plans. Each infra sub-plan (A/B/C) opens its own grill using §3/§5 as given, and produces its own spec + plan. D is mechanical and produces one plan.
+> **⚠️ Doc staleness to respect during implementation:** `src/trpc/DOCS.md` "Lifecycle Hooks" still documents hooks living on `EntityServerSpec.hooks` (`DOCS.md:185`). Sub-plan A inverts that. The DOCS rewrite is deliberately deferred until code matches — so the current DOCS describe the **pre-extension** hook model. Don't trust it mid-build.
 
 ---
 
-## 2. The layering model — THE core insight (user's)
+## 1. What this is & where it sits
 
-This is the spine. Everything else is a consequence.
+**The problem in one line:** today `createCrudDal(spec)` gives a new entity 5 autocommit slots with hooks bolted to the *spec* — a shape that structurally *forces* entities to write around it, so `EntityServerSpec.hooks` silently never fire. This epic makes the CRUD DAL the universal write door so a new entity gets correct, hook-guarded, transactional mutations out of the box.
 
-- **DAL (CRUD) = the universal resource chokepoint.** *Every* write to a resource, regardless of origin — tRPC procedure, service, background job, webhook — goes through the DAL, so behavior is predictable and invariants always fire. **"Any actor, any origin, same resource, same way."** The DAL interface must reflect that.
-- **Service = reusable pre-orchestration.** Common actions that must happen together, pre-composed, origin-agnostic (server contexts AND tRPC), composes DAL calls.
-- **tRPC procedure = client-origin, 1-off orchestration.** Routes by actor; composes DAL + services; where feature-specific one-off executions live.
+**Where it sits in the nested epic sequence:**
 
-**The decisive consequence:** the target is **not** "kill business routers." It is **"nothing writes a resource except through the DAL."** Cross-entity orchestration (composing multiple DAL calls, each of which fires its own hooks) legitimately lives *above* CRUD, in a service or a tRPC procedure — that is **not** a bypass and must **not** be absorbed into CRUD (that path rots the toolkit into a god-object).
-
-- **True bypass (eliminate):** a write to an entity's own table *outside* its DAL (inline `db` in a router/service; bespoke feature-DAL). Examples: `accounting.service.ts:120` `db.update(projects)`; projects' bespoke `createProject`/`updateProject`/`deleteProject`; `providers/ai/client.ts:107` raw `proposals.projectJSON`; `compliance.service.ts:68,83` raw `customers`.
-- **Legitimate composition (keep):** a business router/service composing multiple DAL calls. Example: meetings `setOutcomeWithReason` → `meetingCrud.update()` + `customerNoteCrud.create()` (`meetings.router/business.router.ts:27-76`).
-
-**Permissions are an orchestrator concern, not a DAL concern.** The DAL stays **actor-agnostic** — it *consumes* a resolved permission context (scope + ability) passed in by whatever orchestrator called it; it never resolves or checks permissions itself. Gating happens at the orchestrator (service **or** tRPC procedure — either can be an entry point). The robust machinery for this is **#285's CASL scope-compiler** (`resolveScope`/`canAccess`, replacing `resolveVisibilityScope`/`resolveEffectiveScope`). We coordinate; we do not redesign permissions here.
-
----
-
-## 3. The extended CRUD DAL interface — decisions
-
-### 3.1 Hooks move OFF the spec, onto the factory invocation (the root-cause fix)
-
-**Problem (confirmed in code):** `EntityServerSpec` carries `hooks`, so hooks are defined **inside the spec** — a config file. But hooks contain imperative DB logic, and `meetings/lib/server-spec.ts:177-186` runs a **raw `db.select`** on its own table. A file that `satisfies EntityServerSpec` imports `db`, `ably`, five QStash jobs. It is a behavior module wearing config's clothes.
-
-**Root cause = a circular barrier.** `meetingCrud = createCrudDal(meetingServerSpec)` (`crud.ts:5`): the spec is the *input* that produces the handlers, so a hook defined inside the spec **cannot reference `meetingCrud`** — it doesn't exist yet. That is *why* `delete.before` reaches for raw `db` instead of `crud.getById`. The layer forces the bypass.
-
-**Decision:** hooks are defined at the **factory invocation** (in `dal/server/crud.ts`), via a **builder that receives the produced handlers + a transaction context** (option **iii**):
-
-```ts
-// server-spec.ts — PURE declarative identity. No db, no jobs, no ably, no hooks, no duplicate-overrides.
-export const meetingServerSpec = {
-  entityName, caslSubject, visibility, table, schemas, primaryKey?, shareable?, parent?
-} satisfies EntityServerSpec<typeof meetings>
-
-// dal/server/crud.ts — behavior lives where its dependencies live
-export const meetingCrud = createCrudDal(meetingServerSpec, (crud, tx) => ({
-  hooks: { /* ... can call crud.*, other entities' handlers, and use tx ... */ },
-  duplicate: { /* overrides is behavior → also moves here */ },
-}))
+```
+tRPC Standardization Epic ─────────────── S1–S7 ✅ shipped
+  │  (createEntityRouter / EntityToolkit / entity-registry DELETED in S7)
+  └─ S8 ─┬─ Projects Standardization Epic
+         │    ├─ Phase 1  ✅ structure migration (projects DAL consolidated; still bypasses CRUD)
+         │    ├─ Phase 2  ◀── THIS DOC (architecture locked; sub-plans A/B/C/D below)
+         │    ├─ Phase 3  ⬚ route all projects mutations through CRUD  (consumes sub-plan D)
+         │    └─ Follow-up ⬚ Proposal Financials Consolidation  (gated on JSONB Wave 4 — §8)
+         └─ Lead-sources half — paused (consumes sub-plan D after projects)
+  ⟂ coordinates with #285 CASL Scope-Compiler (Phase 0 only) — owns permissions (§7)
 ```
 
-This single move lands four things:
-1. **Kills the circular barrier** — hooks call `crud.*` (own + other entities) instead of raw `db`. The db-in-config bypass *cannot recur* (the spec has no `db` import).
-2. **Purifies `EntityServerSpec`** — `hooks` and `duplicate.overrides` (behavior) leave the type; the spec becomes declarative identity only.
-3. **Threads the transaction (G1)** — the factory owns the write boundary, opens one `tx`, hands `tx`-bound handlers to hooks → before→write→after + child + cross-entity writes are atomic. Lands **G3** (child-replace in-tx) and **G4** (delete reads its row via `crud.getById` in-tx).
-4. **Trade-off (banked):** typing lift — the builder must stay generic over the table so hooks receive `Insert<T>`/`Row<T>` and `crud` is fully typed. Solvable via a late-bound closure (hooks run at call-time; capturing `crud`, assigned just after, is fine).
+This work builds on the **post-S7 toolkit** (`createCrudRouter` inline-scoped + `createCrudDal(spec)` + `EntityServerSpec`) — no conflict; the old toolkit is already deleted. It **does** change `EntityServerSpec` itself (sub-plan A).
 
-### 3.2 Two-layer additive hooks (user's design)
+**User's framing directives (still governing):** don't preserve back-compat at the expense of a better generic interface; don't paper over with thin ad-hoc constants/functions — find what blocks the *generic* interface and fix that; analyze the real business requirements per entity.
 
-Hooks are supplied **twice**, same interface, different lifetime:
+---
 
-| Layer | Where | Semantics |
+## 2. Problem statements
+
+The distinct problems this epic exists to solve (each grounded in code):
+
+1. **Mutations bypass CRUD → spec hooks never fire.** The central problem: invariants, derived fields, and side-effects are silently skipped. Projects & lead-sources bypass CRUD entirely; ~20 bespoke write sites exist.
+2. **The spec-carries-hooks circular barrier.** `meetingCrud = createCrudDal(meetingServerSpec)` — a hook defined *inside* the spec can't reference `meetingCrud` (doesn't exist yet), so it reaches for raw `db` ([meetings/lib/server-spec.ts](src/shared/entities/meetings/lib/server-spec.ts) `delete.before` raw `db.select`). The layer forces the bypass.
+3. **No transaction threading (G1).** Module-level `db` singleton ([create-crud-dal.ts:27](src/shared/dal/server/lib/create-crud-dal.ts#L27)); `ScopedContext` has no `tx`; only 6 isolated `db.transaction` islands, none composable. Every cross-entity write / cascade / delete-then-insert is non-atomic.
+4. **Side-channel non-column input (G2).** Strict `ZodObject` schemas reject payload fields that aren't columns — `scopeIds` alone is why projects never adopted `createCrudRouter`.
+5. **Multi-row / child-table replace has no slot (G3).** `duplicate` copies only the parent; no "replace child set."
+6. **Delete hooks receive only `id`, not the row (G4).** Forces manual re-reads for delete side-effects (`gcalEventId`, R2 media cleanup).
+7. **empty-`.set()` throws in `updateImpl` (G7).** Drizzle's `mapUpdateSet` throws "No values to set" *before* `$onUpdate` cols are force-included ([create-crud-dal.ts:127](src/shared/dal/server/lib/create-crud-dal.ts#L127)); reachable via side-channel-only partial updates. Only [updateProject](src/shared/entities/projects/dal/server/mutations.ts#L65) hand-guards it today.
+8. **Server-only / derived columns can't persist through CRUD (G8).** `updateImpl` parses through a schema that omits them to stop client writes → a legitimate server write is stripped; and scalar-only `.set()` can't express a SQL-expression convergence write.
+
+Explicitly **not** problems for this epic (do not absorb into CRUD): per-call permission/actor variance (G5 → orchestrator + #285) and cross-entity writes (G6 → legitimate orchestration above CRUD).
+
+---
+
+## 3. The architectural model (locked — inherited by all sub-plans)
+
+This is the spine. Every sub-plan grill takes it as given.
+
+**3.1 Layering.** DAL (CRUD) = the **universal resource chokepoint**: every write to a resource, any origin (tRPC / service / job / webhook), goes through the DAL. **"Any actor, any origin, same resource, same way."** Service = reusable pre-orchestration (origin-agnostic). tRPC procedure = client-origin, one-off orchestration. The target is **not** "kill business routers" — it is **"nothing writes a resource except through the DAL."** Cross-entity orchestration (composing DAL calls) legitimately lives *above* CRUD and must not be absorbed into it (that rots the toolkit into a god-object).
+
+**3.2 Permissions are an orchestrator concern.** The DAL stays **actor-agnostic** — it consumes a resolved permission context (scope + ability) passed in; it never resolves or checks permissions. The machinery is **#285's CASL scope-compiler**. We coordinate; we do not redesign permissions here.
+
+**3.3 Hooks move OFF the spec, onto the factory invocation.** The root-cause fix. Hooks are defined at `createCrudDal(spec, configFactory)` where `configFactory = (crudHandlers) => ({ hooks, duplicate })` — a **config factory** receiving the produced handlers (late-bound; see 5.12). `tx` is **not** a config-factory arg — it rides on `ctx` (5.6). The spec becomes **pure declarative identity** (`entityName, caslSubject, visibility, table, schemas, primaryKey?, shareable?, parent?`); `hooks` and `duplicate.overrides` leave the type. This kills the circular barrier (hooks call `crud.*`, not raw `db`) and purifies the spec.
+
+**3.4 Two-layer additive hooks.** Factory hooks = **invariant** (always run, every origin). Call-site hooks (`crud.create(ctx, input, { before, after })`) = **additive-only** (add behavior, never remove). Default (no options) = every invariant fires. No named-hook maps, no skip flags, no skip taxonomy.
+
+**3.5 Onion ordering + payload threading.** `factory.before → callsite.before → [validate → write] → callsite.after → factory.after`. Factory is outer. The threaded value passes hook-to-hook — never the original input. **`after` hooks receive and return the threaded result** (no longer `void`) — this natively fixes the proposals duplicate-with-incentives manual `finalTcpCents` merge.
+
+**3.6 Prohibit-by-inversion.** You never disable a hook — you relocate it. If a hook could ever be "off" in some context, it was never an invariant → it belongs as a call-site hook at the sites that want it. Corollary: a behavior that must apply to *every* invocation of a slot is a factory invariant by definition.
+
+**3.7 CRUD-based abstractions.** Context-specific reusable behavior = a **named DAL function wrapping a CRUD handler with a call-site hook** (`updateProposalFinancials = (ctx,id,data) => proposalCrud.update(ctx,{id,data},{after: recomputeHook})`). The sanctioned replacement for scattered raw `db.update` and one-off feature-DALs. "Based ON our CRUD DAL while abstracted."
+
+**3.8 Where multi-write composition lives — aggregate-internal vs cross-entity.** A mutation that touches more than one table is *not* automatically "orchestration above CRUD." Split by whether the extra table is a **child of the same aggregate** or a **separate entity**:
+
+| Write shape | Example | Home |
 |---|---|---|
-| **Factory hooks** | `createCrudDal(spec, (crud, tx) => ({ hooks }))` | **Invariant** — always run, every origin, no exceptions. *This is what "factory hook" means, by convention.* |
-| **Call-site hooks** | `meetingCrud.create(ctx, input, { before, after })` | **Additive** — context-specific, per-call. Can only **add** behavior, never remove. |
+| Single owning-table row | project columns | `crud.*` — pure single-table door |
+| **Aggregate-internal child set** (join/child rows the entity owns; may reference read-only catalogs) | `x_projectScopes` (project↔scope links), `proposal_incentives` | **§3.7 DAL abstraction** (`setProjectWithScopes`, `replaceProposalIncentives`) — composes `crud.*` + a plain-`db` child-replace fn (5.9) in one tx |
+| **Cross-entity** (≥2 independent resources) | project **+** meeting; proposal-gate then project create | **tRPC / service** orchestration above CRUD (G6) |
 
-Default (no options) = every invariant fires (the any-origin guarantee holds). Anonymous `before/after` come **back** at the factory — no named-hook maps, no skip flags, no skip taxonomy. That is the complexity the user wanted removed.
+**Test:** does the second table have independent entity identity, or is it meaningless without its parent? Aggregate-internal → DAL abstraction. Independent → orchestrator. The god-object hazard (§3.1) is about pulling *cross-entity* writes into the **generic toolkit** — it does **not** apply to a *separate, entity-specific* abstraction that composes its own aggregate.
 
-### 3.3 Onion ordering + payload threading (user's ruling)
+**tx ownership is orthogonal to placement.** The orchestrator (tRPC/service) owns `db.transaction()` and passes a tx-bound `ctx` (5.6); the DAL abstraction merely *participates* via `withTx(ctx)` — reusing `ctx.tx` when present, opening its own only for a standalone call. So "needs a tx across two writes" does **not** force the composition up to tRPC. **Reusability decides:** the same aggregate op is needed from ≥2 origins — project scopes from both the edit form ([crud.router.ts:57](src/trpc/routers/projects.router/crud.router.ts#L57)) and create-from-meeting ([business.router.ts:78](src/trpc/routers/projects.router/business.router.ts#L78)) — so it lives once, below the origin layer, callable from tRPC/services/jobs alike. A `projects.router/scopes.router` owning the composition was considered and rejected: the create-from-meeting origin could not reuse it without duplication.
+
+---
+
+## 4. Gap catalog (G1–G8) — mapped to problem & closing sub-plan
+
+| Gap | What | Evidence | Closed by |
+|---|---|---|---|
+| **G1** | No transaction threading | customers `delete.before` cascade "no transaction" ([customers/lib/server-spec.ts:114](src/shared/entities/customers/lib/server-spec.ts#L114)); proposals `duplicate` non-atomic | **B** |
+| **G2** | Side-channel non-column input | `scopeIds` blocked projects' `createCrudRouter` adoption | **A** (builder) + **D** (modeling per entity) |
+| **G3** | Multi-row / child-table replace | `setProjectScopes` del+ins; `replaceProposalIncentives` | **B** (tx) + **D** (abstractions) |
+| **G4** | delete hook gets only `id`, not row | meetings `gcalEventId`; projects R2 cleanup | **A** (row via `crud.getById` in-tx) |
+| **G7** | empty-`.set()` throws | [create-crud-dal.ts:127](src/shared/dal/server/lib/create-crud-dal.ts#L127); [updateProject guard](src/shared/entities/projects/dal/server/mutations.ts#L65) | **A** (update-impl hardening) |
+| **G8(i)** | Server-only cols stripped by write schema | `finalTcpCents` omitted → server write stripped ([create-crud-dal.ts:125](src/shared/dal/server/lib/create-crud-dal.ts#L125)) | **D** (two-schema split) → **#285** (field-CASL end-state) |
+| **G8(ii)** | Scalar-only `.set()` can't express SQL convergence | `recomputeProposalFinancials` `SET x = (SELECT…)` | **D** (stays plain `db`; §5.1) |
+| **G5** | Per-call permission/actor variance | **NOT a DAL gap** → orchestrator + #285 | — |
+| **G6** | Cross-entity write as one op | **NOT a gap** → legitimate orchestration above CRUD | — |
+
+---
+
+## 5. Final decisions (settled — inherited by all sub-plans)
+
+- **5.1 · No `crud.raw` door (Q10.1).** The "one raw primitive, two uses" charter is dropped — it conflated bulk (skip-hooks-for-volume) with convergence (SQL-expression to a protected column). Convergence + bulk stay **plain `db.*` writes for now**; `recomputeProposalFinancials` stays exactly as-is. A future `crud.bulk` primitive is **deferred** (no bulk paths exist yet).
+- **5.2 · Two-schema split for server-only columns (Q10.3).** Per entity: un-omit server-only cols (e.g. `finalTcpCents`) from a permissive base schema; derive a **less-permissive** schema for normal CRUD (`crudUpdateProposalSchema = insertProposalSchema.omit({finalTcpCents:true}).partial()`) which `createCrudDal` parses → plain-CRUD/client writes are stripped. Marked **`@deprecated … RETIRING(#285)`**. When #285 lands field-level CASL (`assertCanUpdateFields`), the two schemas collapse to one permissive schema + field-authz.
+- **5.3 · Recompute is a §3.7 abstraction, not a factory invariant (Q10.2).** It fires from **4 call sites** (create.after, guarded update.after, incentives-replace on a *different* entity, duplicate) — specific mutations, not every write. Belongs at call-sites as `updateProposalFinancials`. Drops the fragile `'startingTcpCents' in input` guard.
+- **5.4 · Enforcement by convergence (5.1 × 5.2 × 5.3).** The two-schema split + plain-`db` recompute make the abstraction the **sole write door** for financial inputs: plain `proposalCrud.update` (less-permissive schema) physically cannot write `finalTcpCents`; only the recompute path can. **`finalTcpCents` staleness becomes structurally impossible.** (Child-table incentives enforced by "the incentives mutation always recomputes" — same guarantee, different mechanism.)
+- **5.5 · `afterCommit` phase (§9.1).** Explicit third hook phase alongside `before`/`after`, on both layers, onion-ordered like `after`. Order: `before → write → after (in-tx) → COMMIT → afterCommit`. **Side-effect-only**: receives the committed row read-only, returns `void` (outside threading), a throw is **logged, not propagated**. Durability = best-effort after-commit (transactional-outbox rejected as over-machinery). QStash/Ably dispatches move here.
+- **5.6 · `tx` rides on `ctx` (§9.2).** Optional `ctx.tx`; every impl executes on `(ctx.tx ?? db)`. **The orchestrator (tRPC procedure / API route / service) owns `db.transaction()`** and passes the tx-bound `ctx` down; the factory/abstraction opens its own tx (via `withTx`) **only** when `ctx.tx` is absent (standalone single-entity call). Cross-entity atomicity = the orchestrator passes one tx-bound ctx into each entity's handler. (Rejected: trailing `tx` param — forgettable; handler registry — needs a global registry. Refines the earlier "factory opens the transaction" wording — ownership is the caller's; B finalizes.)
+- **5.7 · `createCrudRouter` stays hook-agnostic (§9.3).** Generated procedures call bare handlers → only factory invariants fire. A procedure needing call-site behavior is a bespoke slot-override calling a §3.7 abstraction or `crud.update(ctx, input, {before, after, afterCommit})` inline. No new machinery.
+- **5.8 · `duplicate` slot (§9.5).** `duplicate.overrides` moves onto the factory builder; runs as one tx (create hooks fire); call-site hooks additive like any slot.
+- **5.9 · Upserts stay bespoke DAL fns (§9.9).** `INSERT…ON CONFLICT` (customers) stay bespoke DAL functions — not client-facing, not the anti-pattern, no 6th slot — but must live in the entity DAL, never inline in a router/service.
+- **5.10 · Aggregate-internal child sets = DAL abstraction, not tRPC (§3.8).** Join/child-row replacement owned by one entity (`x_projectScopes`, `proposal_incentives`) is a §3.7 DAL abstraction composing `crud.*` + a plain-`db` child-replace fn in one tx — **NOT** a tRPC procedure and **NOT** absorbed into the generic factory. Only genuinely cross-entity writes (≥2 independent resources) orchestrate above CRUD. The deciding factor is reusability across origins, not "it's two writes" (which tx-on-ctx handles regardless of layer). Rejected mid-grill: a `projects.router/scopes.router` owning the composition — the create-from-meeting origin can't reuse it without duplication.
+- **5.11 · CRUD input stays strictly typed; no side-channel widening.** `crud.*` accepts only `Insert<T>`/`Update<T>` — never non-column keys (`scopeIds`). Side-channels are captured by the abstraction's **closure** (5.10), never by crud's typed input — so the generic builder needs **no** per-entity "extra input" generic and **no** before→after carry object. (Rejected: widening the door + a threaded carry — pulls child-table knowledge into the single-table handler, the god-object hazard.)
+- **5.12 · Config factory is single-arg `configFactory = (crudHandlers) => ({ hooks, duplicate })`.** Named `configFactory` (the 2nd arg to `createCrudDal`; "builder" rejected as vague); its parameter is `crudHandlers`. `tx` is **not** a config-factory parameter — at construction time (module load) no tx exists; at call time it arrives via `ctx` (5.6). `crudHandlers` is **late-bound**: the factory builds the handlers object, runs `configFactory` with a reference to it, then the hook closures resolve `crudHandlers.*` when invoked (never at build time). Refines §3.3's earlier `(crud, tx)` sketch.
+- **5.17 · Typing story (A's capstone).** `configFactory: CrudConfigFactory<TTable, TId> = (crudHandlers) => CrudConfig<TTable, TId>`; hooks + the whole `duplicate` config live in `CrudConfig`, with the threaded signatures (`create`/`update.after` return `Row<T>`; `delete.before`/`after` take the row). Exactly **one** new cast — the `{} as CrudHandlers<TTable, TId>` bootstrap for the late-bound self-reference, populated by `Object.assign` immediately after `configFactory` runs. Call-site options are **exported** types (`CreateCallsiteHooks<TTable>` / `UpdateCallsiteHooks<TTable>` / `DeleteCallsiteHooks<TTable>`, each carrying an `afterCommit?` field — A-stubbed, C-wired) so §3.7 abstractions can name them. The pure spec still `satisfies EntityServerSpec<typeof table>` (slimmer interface). **Bivariance cleanup (verify in A's plan, bonus-not-AC):** the `ts/method-signature-style` bivariant-method eslint-disables ([types.ts:120](src/shared/dal/server/types.ts#L120)) exist because hooks ride the spec that erases to `EntityServerSpec<PgTable>` at the `createCrudRouter` boundary; relocating hooks into `configFactory` (consumed at the concrete table type, never erased) should let strict `(fn) => U` signatures return and the disables be deleted. Zod↔Drizzle boundary cast unchanged; server-col-survives-parse is D's two-schema split (5.2).
+- **5.15 · Delete hooks receive the row snapshot (G4).** Prefetch the target row **once** (loud-abort like update's `previousRow`; in-tx once B lands), and pass the **same pre-delete snapshot** to both `delete.before(row, ctx)` and `delete.after(row, ctx)`. Delete hooks stay **`void`** (the handler returns `DalReturn<void>` — nothing to thread); the row *is* the payload (no carry object, per 5.11). `before` runs **before** the `DELETE`, so R2-before-cascade (projects media cleanup) and `gcalEventId` capture (meetings) land before the DB cascade wipes related rows. Signature change `(id, ctx) → (row, ctx)` breaks the 2 specs using delete hooks (meetings, customers) — relocated in D. Prefetch only when a delete hook exists on either layer.
+- **5.14 · Hook execution model (both layers, concrete — the §3.5 mechanics).**
+  - **`before`:** factory (outer) → callsite (inner), each `Insert/Update → Insert/Update`; the **threaded** value is what gets `schema.parse`'d and written — never the original input.
+  - **write:** per 5.13 (empty-data force-includes `$onUpdate`).
+  - **`after`:** callsite (inner) → factory (outer), each `Row<T> → Row<T>`, a **return-value transform only** — enrichment fills *fresher column values* into the returned row (e.g. proposals' recompute writes `finalTcpCents` via its own statement per 5.1/5.3, then the hook merges `{ finalTcpCents }` into the returned row so the caller sees it fresh with no re-read). It is **not** a second `UPDATE` of the main row, and it **must stay `Row<T>`** (cannot widen — preserves the `CrudHandlers` return contract). This makes the duplicate-with-incentives merge free.
+  - **`previousRow` prefetch** fires if **either** layer has an `after` (today gated on the spec hook only), keeping the loud-abort-before-write ([create-crud-dal.ts:110-123](src/shared/dal/server/lib/create-crud-dal.ts#L110)).
+  - **`meta`** is identical across both layers: `{ previousRow, input }`, where `input` is the **original** `input.data` (a hook can compare what the caller asked vs. what enrichment produced).
+  - **Default** (no call-site options) = only factory invariants fire (§3.4).
+- **5.13 · `crud.update(ctx, { id, data: {} })` = real write of auto-managed columns (G7).** A column-less update is **first-class**, not a throw and not a no-op read: it emits a genuine `UPDATE` that force-includes `$onUpdate` columns (`SET updated_at = now()`) even with zero business columns, returns the fresh row, and fires `update.after`. Rule: *"you called `update` → `updatedAt` moves; you just set no business columns."* Semantics = **aggregate-touch** (consistent with §3.8 — a child-set change *is* an aggregate mutation). **⚠️ Business-rule change:** projects' current scopes-only edit deliberately does **not** bump `projects.updatedAt` ([updateProject `hasFields` guard](src/shared/entities/projects/dal/server/mutations.ts#L65)); this **flips** that — scopes-only edits now bump `updatedAt`. Deemed a correctness improvement (the old "don't bump" was an artifact of the join-write being a bolted-on side-channel). The hand-guard is deleted when projects route through CRUD (D). **Implementation note for A's plan:** Drizzle's `mapUpdateSet` throws before `$onUpdate` is consulted ([create-crud-dal.ts:127](src/shared/dal/server/lib/create-crud-dal.ts#L127)) — forcing the bump likely means the generic handler explicitly injects `updatedAt` on the empty-data path, a **localized, centralized** exception to `feedback-no-manual-updated-at` (never manually set `updatedAt` per-entity) that must be verified against Drizzle's actual `$onUpdate` behavior before adopting.
+
+---
+
+## 6. The four sub-plans
+
+**Dependency spine:** `A → {B, C} → D`, with the **#285 gate** on D's permission-dependent slices and the **Financials Consolidation** follow-up downstream of the whole epic (§8).
 
 ```
-factory.before → callsite.before → [validate → write] → callsite.after → factory.after
+A (factory builder) ──┬── B (tx threading) ──┐
+                      └── C (afterCommit) ───┴── D (adoption) ──▶ projects Phase 3 / lead-sources
+                                                    ⟂ #285 field-CASL gate
 ```
 
-Factory is the **outer** layer (first to open, last to close); call-site is **inner**. **The threaded value passes hook-to-hook — never the original input:**
-
-- **before phase** (threaded value = the write payload): `p1 = factory.before(input)` → `p2 = callsite.before(p1)` → `validate(p2)` → write → `row`.
-- **after phase** (threaded value = the result, seeded from `row`): `r1 = callsite.after(row)` → `r2 = factory.after(r1)` → **return `r2`**.
-
-**Interface change (bank it):** `after` hooks stop being `void` — they **receive and return** the threaded result. This *fixes* a real current limitation: the proposals `duplicate`-with-incentives override manually merges `finalTcpCents` because an after-hook couldn't shape the returned row (`duplicate.ts:40-47`); threaded after-hooks make that native.
-
-### 3.4 "Prohibit a hook" is solved by INVERSION, not by disabling (user's epiphany)
-
-The original ask was "disable a certain hook for a business context." Rejected. The model instead says: **you never disable — you relocate.** If you'd ever want a hook *off* in some context, it was never an invariant, so it doesn't belong at the factory; it belongs as a **call-site hook at the specific call sites that want it.** The design *forces* correct placement of effects.
-
-**Worked example — the crammed `meetings` create.after (`server-spec.ts:69-97`, one anon fn doing 4 things) splits:**
-- **Factory (invariant, every origin):** `addOwnerParticipant`, `syncGcal`, `graduateFromCampaign`.
-- **Call-site (only the booking tRPC procedure):** `metaCapi` "Schedule" event — a job/backfill writing a meeting must *not* fire a conversion event, so it was never invariant. This dissolves the "should a job fire Meta CAPI?" ambiguity **by placement**, not a flag.
-
-### 3.5 CRUD-based abstractions — the anti-ad-hoc pattern (user's insight)
-
-Context-specific behavior is **neither** a factory invariant **nor** an ad-hoc raw-`db` function. It is a **named, reusable DAL function that wraps a CRUD handler with a call-site hook** — "DAL functions BASED ON our CRUD DAL while still being abstracted":
-
-```ts
-// entities/proposals/dal/server/mutations.ts — based ON crud, not around it
-export const updateProposalFinancials = (ctx, id, data) =>
-  proposalCrud.update(ctx, { id, data }, { after: recomputeFinancialsHook })
-```
-
-Every context that needs that behavior calls the abstraction; nobody writes the table raw. This is the sanctioned replacement for the scattered raw `db.update(proposals)` and for one-off feature-DALs. (Note: recompute *specifically* turns out to be a factory invariant, not this pattern — see §6 — but the pattern stands as the general tool for genuinely non-invariant reusable behaviors, e.g. `setCashInDeal`.)
-
-### 3.6 Low-level raw primitive — narrow, honest charter (user accepted)
-
-A single, documented, **no-hook** write primitive exposed by the factory (e.g. `meetingCrud.raw.create`), **never reachable from a client-facing procedure.** Its legitimate domain is exactly two things, both non-client, system-level:
-1. **Infra bulk ops** — seeds, migrations, backfills (a backfill must not fire 10k GCal syncs).
-2. **In-DB computed-convergence writes** — SQL-expression rollups like `finalTcpCents` that aren't expressible as scalar `column = value` (§6).
-
-It is the **sole** skip door; business call-sites stay additive-only (§3.2).
-
-### 3.7 Transactions (G1) — the mechanism
-
-The factory owns the write boundary and opens one `tx` per mutation; hooks receive `tx`-bound handlers. **DAL handlers must accept and propagate an optional `tx`** so an orchestrator (service or tRPC) or a parent hook can thread **one** transaction through **many** DAL calls (cross-entity atomicity). This is "predictable from any origin" made concrete: atomicity is a DAL-boundary capability, not something each caller reinvents.
-
-**Missing/undecided (see §9):** external side-effects dispatched from hooks (QStash jobs, Ably publish) must **not** run inside the tx (a job could execute before commit). The model needs an explicit **after-commit** phase distinct from in-tx `after`. Not yet grilled.
+A/B/C are **infrastructure** — each opens its **own grill/brainstorm** (own spec in `docs/superpowers/specs/`, own plan). They inherit §3/§5 as settled and only design their concrete mechanics. D is **mechanical adoption** — one plan, no grill.
 
 ---
 
-## 4. The gap catalog (G1–G8) — cross-entity evidence
+### Sub-plan A · Factory-builder hook relocation *(INFRA — needs its own grill)*
 
-Each is a structural reason a mutation goes off-toolkit. Evidence spans all core entities.
+**Purpose:** invert hooks off the spec onto the `(crud, tx)` factory builder, and harden the update impl. The enabling change everything else builds on.
 
-- **G1 — No transaction threading.** No hook receives a `tx`; the toolkit never opens `db.transaction`. Every cross-entity write, cascade, and delete-then-insert is non-atomic. Evidence: customers `delete.before` cascade "No transaction wraps the cascade" (`customers/lib/server-spec.ts:108-142`); proposals `duplicate` override still non-transactional (`duplicate.ts:30-49`). **→ solved by §3.1/§3.7.**
-- **G2 — Side-channel non-column input.** Insert/update schemas are strict `ZodObject`; a payload field that isn't a column can't ride through. `scopeIds` alone is why projects never adopted `createCrudRouter` (`projects/lib/server-spec.ts:12-15`). **→ modeling call: is the child-set part of the parent resource (DAL owns parent+child write, in-tx) or its own resource (own DAL, orchestrator composes)? Either way, never inline `db`.**
-- **G3 — Multi-row / child-table replace.** `duplicate` copies only the parent; no "replace child set" slot. `setProjectScopes` del+ins (`projects/dal/server/mutations.ts:15-28`); `replaceProposalIncentives` (tx del+ins + recompute). **→ in-tx via §3.7.**
-- **G4 — delete hooks receive only `id`, not the row.** Forces a manual re-read for any delete side-effect needing row data: meetings `gcalEventId` (`meetings/lib/server-spec.ts:177-187`); projects R2 media cleanup reads `media_files` (`deleteProject`). **→ solved: delete hook gets the row via `crud.getById` in-tx (§3.1).**
-- **G5 — Per-call permission/actor variance.** Fixed `SLOT_ACTIONS` map; no per-call action/subject override; no branch on caller *channel*. Evidence: customers `search` uses `manage all` as a non-visibility signal + gates the phone output column (`customers.router/business.router.ts:100-130`); proposals `applyEnvelopeContext` channel-branched field auth (`contracts.router.ts:192-197`). **→ NOT a DAL gap. Orchestrator + #285 (§2, §9). DAL stays actor-agnostic.**
-- **G6 — Cross-entity write as one operation.** Pervasive. **→ NOT a gap to absorb. Legitimate orchestration above CRUD (§2).**
-- **G7 — empty-`.set()` throws in `updateImpl`.** Drizzle's `mapUpdateSet` filters `Object.entries(data)` and throws "No values to set" **before** `$onUpdate` columns are force-included (`create-crud-dal.ts:95-145`). Reachable via a side-channel-only/partial update. projects' bespoke `updateProject` had to add an `Object.keys(data).length` guard. **→ the extended update impl must treat empty/side-channel-only partial updates as first-class.**
-- **G8 — Server-only / derived columns can't be persisted through CRUD.** Surfaced from the recompute investigation (§6). Two sub-problems:
-  - **G8(i) Permission-via-schema.** Derived columns (e.g. `finalTcpCents`) are omitted from the writable schema *to stop clients writing them* (`schema/proposals.ts:129`, inherited `server-spec.ts:21`); `updateImpl` parses through that schema (`create-crud-dal.ts:125`) so a legit server write is stripped. But "who may write this column" is **authorization** — it belongs at **orchestrator + field-level CASL (#285's `assertCanUpdateFields`)**, not baked into the DAL write schema. **→ proposed: make the DAL write schema complete; enforce client-prohibition via CASL field-authz; hooks/`SYSTEM_CONTEXT` write derived columns through CRUD; unifies with G5/#285.** (Open — Q10.3.)
-  - **G8(ii) Scalar-only writes.** CRUD `.set({ col: value })` can't express a SQL-expression convergence write (`SET x = (SELECT …)`). **→ legitimate low-level-primitive domain (§3.6).**
+**Builds:**
+- `createCrudDal(spec, (crud) => ({ hooks, duplicate }))` — the builder receiving produced handlers (late-bound; `tx` rides on `ctx` per 5.12, not a builder arg).
+- Purified `EntityServerSpec` — `hooks` + `duplicate.overrides` leave the type ([types.ts:71-153](src/shared/dal/server/types.ts#L71-L153)).
+- Two-layer additive hooks (§3.4) + onion ordering + payload-threaded `after` (§3.5).
+- **Update-impl hardening (G7):** empty / side-channel-only partial updates first-class — guard the empty `.set()` at [create-crud-dal.ts:127](src/shared/dal/server/lib/create-crud-dal.ts#L127) so `$onUpdate` cols still apply.
+- **G4:** delete hook receives the row (via `crud.getById`, in-tx once B lands).
 
----
+**Closes:** problem 2 (circular barrier), G7, G4, unblocks G2's builder side.
 
-## 5. Per-entity business invariants — the placement map
+**Lands on:** [create-crud-dal.ts](src/shared/dal/server/lib/create-crud-dal.ts) (5 slots, hook execution, updateImpl), [types.ts](src/shared/dal/server/types.ts) (`EntityServerSpec`, `CrudHandlers`), and the 4 specs that carry hooks (proposals, meetings, customers, customer-notes) at signature level only (full relocation is D).
 
-The behavior each entity carries, sorted by where the model says it belongs. This is the raw material for the migration (every item currently in a spec-hook, feature-DAL, service, or router must be re-placed).
+**Depends on:** nothing. First.
 
-**proposals**
-- create.before: derive `kind` from linked meeting, generate share `token`, snapshot SOW (`snapSowFromMeeting`) → **factory invariant (before)**.
-- financial rollup `recomputeProposalFinancials` → **guarded factory invariant (after)** — fires iff `startingTcpCents`/`projectJSON` in input (§6). Write-back of the derived `finalTcpCents` → **low-level primitive** (server-only + SQL-expression).
-- lock ladder (`touchesFrozenLockedFields` → throw `precondition-failed`) → **factory invariant (before, precondition gate)**.
-- incentives replace (`replaceProposalIncentives`) → **child multi-row, in-tx (G3)**; triggers recompute.
-- `setCashInDeal` narrow scalar → **candidate to route through CRUD** (`cashInDealCents` IS writable; raw today only by the narrow-scalar seam ruling).
-- `ai/client.ts:106-114` projectJSON write → **true bypass to fix** (writes a financial-input column raw, skipping recompute; safe today only because it writes `summary`/`energyBenefits`, not financial terms).
+**Grill — ✅ COMPLETE (2026-08-12→13). Full design → [`docs/superpowers/specs/2026-08-13-crud-dal-sub-plan-a-factory-config-hooks-design.md`](docs/superpowers/specs/2026-08-13-crud-dal-sub-plan-a-factory-config-hooks-design.md).** Resolved:
+- ✅ **Config-factory shape** — 2nd arg `configFactory = (crudHandlers) => ({hooks, duplicate})`, single-arg, `tx` on `ctx`, late-bound (5.12; "builder" → `configFactory`).
+- ✅ **Side-channels** — CRUD input strictly `Insert`/`Update`; handled by abstractions above CRUD (5.11).
+- ✅ **Aggregate-internal vs cross-entity placement** — join/child-set = DAL abstraction, not tRPC (§3.8 / 5.10).
+- ✅ **Empty-update (G7)** — `crud.update({})` real write of auto-managed cols; flips projects' scopes-only `updatedAt` (5.13).
+- ✅ **Hook execution model** — two-layer onion, threaded `before`, `after` = `Row<T>→Row<T>` return-transform, either-layer prefetch, shared `meta` (5.14).
+- ✅ **Delete gets the row (G4)** — one pre-delete snapshot to both `before`/`after`, `void`, `before` pre-`DELETE` (5.15).
+- ✅ **One instance per entity; router consumes it (was 5.7/5.8)** — `crud.ts` builds `xCrud`; `createCrudRouter` takes required `crud`, drops its internal rebuild; whole `duplicate` config on the factory (5.16).
+- ✅ **Typing story** — one bootstrap cast, `CrudConfig<TTable,TId>` threaded sigs, exported `*CallsiteHooks<TTable>`, bivariance-disable-drop attempt (5.17).
 
-**meetings**
-- create.before: server-force `ownerId` (CASL-branched, `resolveMeetingOwnerId`) → **factory invariant (before)**.
-- update.before: derive `pipeline` from `meetingOutcome` (`OUTCOME_PIPELINE_MAP`) → **factory invariant (before)**.
-- create.after: `addOwnerParticipant`, `syncGcal`, `graduateFromCampaign` → **factory invariants (after)**; `metaCapi` Schedule → **call-site (booking procedure only)**.
-- update.after: `syncGcal` (guarded on GCal-affecting fields) → **factory invariant**; `notifyMeetingTimeChanged`, Ably publish → **after-commit / orchestration** (see §9 after-commit gap).
-- delete.before: capture `gcalEventId` + dispatch delete → **factory invariant (delete, needs row via G4)**.
-
-**customers**
-- update.before: geocode-cache invalidation (null lat/lng/geocodedAt on address change) → **factory invariant (before)**.
-- delete-cascade (proposals + meetings; FKs `set null` not cascade) → **referential integrity → write impl/tx, non-skippable** (not a skippable hook).
-- update.after: `propagateCustomerChangeJob` → **after-commit / orchestration**.
-- `createFromIntake` (side-channel `notes`/`mode`/`leadSourceSlug`/`leadMetaJSON` + multi-entity orchestration) → **service** (`customerIntakeService.ingestLead`).
-
-**projects** (the case study)
-- `scopeIds` side-channel (G2) + `setProjectScopes` child-replace (G3) → **DAL parent+child write, in-tx**.
-- R2 media cleanup on delete (reads `media_files` before cascade) → **delete invariant needing the row (G4)**; ordering: delete R2 objects before DB cascade wipes `media_files`.
-- `business.create`: proposal-gate (≥1 proposal on meeting) + customer read + derived `slug`/`accessor` + cross-write meeting (`meetingCrud.update` outcome=converted) + scope link → **tRPC orchestration composing DAL calls** (the two `BYPASS(crud)` reads are cross-entity reads, fine as orchestration).
-- `accounting.service.ensureProjectSubCustomer` `db.update(projects, { qbSubCustomerId })` → **true bypass to fix** (route through projects DAL).
-
-**customer-notes**
-- create.before: stamp `authorId` + cross-scope visibility probe (rebuilds ctx) → **factory invariant (before)**.
-- update/delete.before: author-or-admin gate → **factory invariant (before, precondition)**.
-
-**Cross-cutting scope realization:** this refactor is **not only** "extend the interface." It is **also a large migration** — relocating hooks off *every* entity's spec into its `crud.ts` factory invocation, and re-placing each behavior per the map above. Sizing/sequencing must account for that (§9).
+**Done-when:** one entity (proposals or meetings) fully runs on the builder with green tsc/lint, invariants firing, no raw `db` in its hooks.
 
 ---
 
-## 6. Recompute case study — the worked example (agent-verified facts)
+### Sub-plan B · Transaction threading *(INFRA — needs its own grill)*
 
-The user suspected the proposal financial recompute was mis-implemented ("there should never be a hook loop"). A parallel investigation confirmed the instinct and reframed it:
+**Purpose:** make atomicity a DAL-boundary capability. `tx` rides on `ctx` (5.6).
 
-- **No hook loop exists, and none is possible.** update.after recompute is **already guarded on input columns** (`proposals/lib/server-spec.ts:89-93`): fires only if `startingTcpCents` or `projectJSON` is in the write. A write-back sets only `finalTcpCents` → trips neither → wouldn't re-fire. **Recompute is already a guarded factory invariant** firing from any origin exactly when a financial *input* changes — which IS the §3.2 model, already working.
-- **The raw `db.update` is legitimate, not a bypass to eliminate:** (i) `finalTcpCents` is deliberately off the writable schema (server-only derived; `schema/proposals.ts:129`) → `proposalCrud.update` would strip it; (ii) the write is a single in-DB SQL expression over child `proposal_incentives` rows (`mutations.ts:31-40`), idempotent ("verify = repair") — not a scalar `column=value`. This is the textbook **low-level-primitive** case (§3.6).
-- **Financial input-set vs output-set:** INPUTS = `startingTcpCents`, `proposal_incentives` discount rows, `projectJSON.sow[].financials.incentives` (dying in JSONB Wave 4). OUTPUT = `finalTcpCents` only. `cashInDealCents`/`depositAmountCents`/`miscPriceCents` are funding columns but **NOT** finalTcp inputs — which is why `setCashInDeal` correctly does not recompute.
-- **Take-away:** recompute stays a **guarded factory invariant**; the abstraction pattern (§3.5) is for non-invariant behaviors. The generalizable gap this exposed is **G8**, not re-entrancy.
+**Builds:**
+- Optional `ctx.tx` on `ScopedContext`; every impl executes on `(ctx.tx ?? db)` ([create-crud-dal.ts:27,56,77,127,161](src/shared/dal/server/lib/create-crud-dal.ts#L27), incl. the `getByIdImpl` prefetch inside `updateImpl`).
+- Factory opens `db.transaction`, builds the tx-bound ctx once, threads it before→write→after.
+- Cross-entity atomicity: pass the tx-bound ctx to another entity's handler.
 
----
+**Closes:** G1; the mechanics for G3 (child-replace in-tx) and G4 (delete reads its row in-tx). Makes the customers delete-cascade and proposal duplicate+incentive-clone atomic.
 
-## 7. Decisions locked (this session)
+**Lands on:** [create-crud-dal.ts](src/shared/dal/server/lib/create-crud-dal.ts), `ScopedContext` in [types.ts](src/shared/dal/server/types.ts). Reconciles the 7 existing `db.transaction` islands (verified 2026-08-18: media-files/media-ops, projects.router/media, applications/mutations, voip-dids/mutations ×2, push-subscriptions/queries, proposal-incentives/mutations).
 
-1. Phase 2 deliverable = **cross-entity interface-gap requirements** (not projects-only, not full design). Update the epic's Phase 2 AC from "projects-only" to "cross-entity."
-2. **Layering model** (§2) is the governing architecture. DAL = universal chokepoint; service = reusable pre-orchestration; tRPC = 1-off client orchestration. Target = "nothing writes a resource except through the DAL." Cross-entity orchestration stays above CRUD.
-3. Permissions/actor variance = **orchestrator + #285**, DAL actor-agnostic (§2, G5). Not redesigned here.
-4. **Hooks move off `EntityServerSpec` onto the `createCrudDal` factory invocation** via a **builder over `(crud, tx)`** (option iii). Spec becomes pure declarative identity; `hooks` and `duplicate.overrides` leave the type (§3.1).
-5. **Two-layer additive hooks** — factory (invariant) + call-site (additive-only) (§3.2).
-6. **Onion ordering + payload threading**; `after` hooks return the threaded result (§3.3).
-7. **Prohibit-by-inversion** — never disable, relocate to call-sites (§3.4).
-8. **CRUD-based abstractions** are the anti-ad-hoc pattern (§3.5).
-9. **Low-level raw primitive** — two-part charter (infra bulk + in-DB convergence), sole skip door, never client-facing (§3.6).
-10. **Recompute** stays a guarded factory invariant; its raw derived-write is sanctioned, not a bypass (§6).
+**Depends on:** A (the `tx` the builder exposes is the tx-bound ctx).
 
----
+**Grill — ✅ COMPLETE (2026-08-18). Full design → [`docs/superpowers/specs/2026-08-18-crud-dal-sub-plan-b-transaction-threading-design.md`](docs/superpowers/specs/2026-08-18-crud-dal-sub-plan-b-transaction-threading-design.md).** Resolved:
+- ✅ **tx-bound-ctx shape** — `ScopedContext.tx?: Tx` (optional; `Tx = Parameters<Parameters<DB['transaction']>[0]>[0]`); every impl runs on `const exec = ctx.tx ?? db`, including internal prefetches (2.1).
+- ✅ **Threading one tx through many DAL calls** — the orchestrator passes the same tx-bound `ctx` into each `crud.*` call; `withTx(ctx, fn)` reuses `ctx.tx` when present, else opens a fresh `db.transaction` (2.3). Raw-executor / inline-`db` hook writes don't auto-join — they need explicit `ctx.tx ?? db` (2.4; applying this per-entity is D).
+- ✅ **`dalDbOperation` interaction / rollback boundary** — Approach A: reuse `dalVerifySuccess` inside `withTx` to re-throw a swallowed `ThrowableDalError` so the tx aborts; `dalDbOperation`'s catch/swallow logic is unchanged (2.2). Accepted cost: caller discipline (every composed `crud.*` must be unwrapped with `dalVerifySuccess`).
+- ✅ **Nested-tx / savepoint policy** — reuse-or-open, never `tx.transaction()`; no savepoints (YAGNI) (2.3).
 
-## 8. Open questions (unresolved — start here)
+**Plan — ✅ SHIPPED (2026-08-18).** [`docs/superpowers/plans/2026-08-18-crud-dal-sub-plan-b-transaction-threading.md`](docs/superpowers/plans/2026-08-18-crud-dal-sub-plan-b-transaction-threading.md). Commits: `a8c63c10` (`Tx` type + `ScopedContext.tx?`), `95a7a393` (`withTx` helper), `3a17e4d6` (`exec = ctx.tx ?? db` across impls + prefetches), `f1fe7d6e` (meetings `INTERIM(C):` markers). Proof (throwaway script, disposed): rollback under forced not-found, happy-path reuse + flat nesting, standalone autocommit — all passed against the dev DB.
 
-- **Q10.1** — Confirm: low-level primitive charter = infra bulk **+** in-DB computed-convergence writes (the two-part scope). *(Leaning yes.)*
-- **Q10.2** — Confirm: recompute stays a guarded **factory invariant** (not the abstraction pattern). *(Agent findings support yes.)*
-- **Q10.3 (the live fork)** — G8(i): protect derived/server-only columns via **field-level CASL (#285)** with a **complete DAL write schema** (recommended — unifies with G5/#285) — **vs.** keep a **separate server-authoritative write schema** per entity (two schemas). *Not yet decided.*
-- **Q9 (resolved by §6):** "financial consistency by convention vs factory-invariant guard" — resolved: recompute is already a guarded factory invariant; keep it.
+**Cross-Phase Ledger mirror (spec §5 — full table there):** `INTERIM(C):` × 2 (`helpers.ts` `withTx` JSDoc; meetings `dal/server/crud.ts` job-dispatch sites) → retired by **C** (dispatches move to `afterCommit`; `grep -rn "INTERIM(C)"` empty); `withTx` first *live* caller + raw-executor/inline-`db` hook writes threading `ctx.tx ?? db` (e.g. meetings `create.after` `addParticipant` + Ably) → retired by **D**'s adoption.
+
+**Done-when:** a cross-entity write (e.g. customers delete-cascade) is provably atomic under a forced mid-cascade failure.
 
 ---
 
-## 9. What's still missing / not yet grilled
+### Sub-plan C · afterCommit phase *(INFRA — needs its own grill)*
 
-1. **After-commit phase for external side-effects.** Hooks dispatch QStash jobs + Ably publishes; these must run **after** the tx commits, not inside it. The model currently has in-tx `after` only. Needs an explicit `afterCommit` phase (or a post-commit dispatch queue). **Not designed.**
-2. **Cross-entity transaction propagation — concrete mechanism.** Handlers accept optional `tx`; but how a proposal hook writing a meeting threads the *same* tx (and how the builder exposes `tx`-bound other-entity handlers) needs a concrete shape.
-3. **`createCrudRouter` interaction with call-site hooks.** Generated router procedures call bare handlers (invariants only). A procedure needing a call-site hook uses an **abstraction DAL fn** (§3.5) or a slot override. This path isn't fully specified.
-4. **Typing story.** Generic builder over the table; typed threaded hooks; typed call-site `{ before, after }` options; keeping `satisfies EntityServerSpec` inference on the now-pure spec. Real work, unspecified.
-5. **`duplicate` slot.** `duplicate.overrides` (behavior) moves to the factory builder; interaction with two-layer hooks + tx not detailed.
-6. **Reads are out of scope** (bespoke, `ctx.scope`-driven, `list` not CRUD) — confirmed, but note the boundary so the fresh session doesn't re-open it.
-7. **Migration scope + sequencing.** This touches every core entity (hook relocation) + depends on #285 for the permission pieces (G5, G8(i)). Order: likely projects (case study) → proposals/meetings/customers hook-relocation, with #285 landing the CASL field-authz before G8(i)/G5. Needs a real phase plan.
-8. **`setCashInDeal` and `ai/client.ts:106` cleanups** — catalogued (§5); decide whether they route through CRUD/abstraction in this line or defer.
-9. **The complete "true bypass" register** to eliminate: `accounting.service.ts:120`, `providers/ai/client.ts:107`, `compliance.service.ts:68,83`, `voip-link-tokens.service.ts:186`, projects feature-DAL, and the `INSERT…ON CONFLICT` upserts (`customers/dal/server/mutations.ts:88,117`) — the last aren't a CRUD slot and may need an `upsert` capability decision.
+**Purpose:** a structural boundary between in-tx work and post-commit side-effects (5.5).
 
----
+**Builds:**
+- Third hook phase `afterCommit` on both layers, onion-ordered like `after`, side-effect-only, best-effort, logged-not-propagated.
+- Relocate QStash/Ably dispatches from `after` → `afterCommit` (meetings: `syncMeetingToGcal`/`notifyMeetingTimeChanged`/`metaCapiEvent`/`graduateFromCampaign`/`deleteMeetingEvent` + Ably; customers: `propagateCustomerChange` + future Ably).
+- Rewrite the "strict dispatch — a missed enqueue fails the mutation" comments → "best-effort after-commit; logged on failure."
 
-## 10. Coordination + ADR candidates
+**Closes:** the correctness hole where jobs could fire before commit (once B opens a tx).
 
-- **#285 (CASL scope-compiler)** owns G5 and the G8(i) field-authz. Sequence this line so the permission pieces land after #285's relevant phases. Do not build on the retiring visibility seams (see `memory/project-projects-standardization-epic.md`).
-- **ADR candidates** (offer once the design firms — not yet, design is incomplete):
-  - "Hooks belong to the CRUD factory invocation, not the entity server-spec" — refines **ADR-0002**. Hard to reverse (touches every entity), surprising without context, a real trade-off (typing cost vs layering correctness).
-  - "DAL is the universal resource chokepoint; orchestration lives in services + tRPC" — refines/clarifies **ADR-0003**.
-  - "Server-only/derived columns are protected by field-level CASL, not schema omission" (if Q10.3 lands that way).
+**Lands on:** [meetings/lib/server-spec.ts](src/shared/entities/meetings/lib/server-spec.ts), [customers/lib/server-spec.ts](src/shared/entities/customers/lib/server-spec.ts) (hook bodies), factory phase runner.
+
+**Depends on:** B (the commit boundary must exist).
+
+**Grill agenda:** failure logging/observability contract; whether `afterCommit` sees the threaded `after` result or only the committed row; ordering guarantees across factory+call-site `afterCommit`; idempotency expectations for the relocated jobs.
+
+**Done-when:** the meetings/customers jobs fire only post-commit; a thrown dispatch is logged and does not fail the committed mutation.
 
 ---
 
-## 11. Session provenance
+### Sub-plan D · Adopt the new factory *(mechanical — one plan, no grill)*
 
-Grill session 2026-08-12, model made judgment errors near the end (prompting this clean handoff). All decisions above are the user's rulings or agent-verified facts. The recompute investigation was a dispatched sub-agent (findings in §6). A fresh session should treat §7 as settled, §8 as the immediate agenda, and §9 as the backlog.
+**Purpose:** wire everything A/B/C built into the entities. "Finding opportunities to use our new factory builder and everything else we built."
+
+**Work items:**
+1. **Two-schema split (5.2)** per entity carrying server-only columns — permissive base + less-permissive CRUD schema, `@deprecated RETIRING(#285)`. First: proposals `finalTcpCents`.
+2. **CRUD-based abstractions (§3.7)** — build the named DAL fns: `updateProposalFinancials` (recompute), `setProjectScopes` (parent+child in-tx), `replaceProposalIncentives`, `setCashInDeal` candidate. Realizes enforcement-by-convergence (5.4).
+3. **Per-entity hook migration** — relocate every entity's spec-hooks into its `crud.ts` factory invocation, per the placement map below.
+4. **Bypass elimination (5.9 register)** — route through the owning entity DAL/abstraction: [accounting.service.ts:120](src/shared/services/accounting.service.ts#L120), [providers/ai/client.ts:107](src/shared/services/providers/ai/client.ts#L107), `compliance.service.ts:68,83`, `voip-link-tokens.service.ts:186`, projects feature-DAL. Move upserts into entity DAL (customers).
+5. **Route projects & lead-sources through CRUD** — projects first (the case study; its router currently skips `ctx.scope`), then lead-sources (which has no server-spec / no `createCrudDal` at all). Feeds projects **Phase 3**.
+
+**Placement map (raw material — the behavior each entity carries, sorted by where the model puts it):**
+
+- **proposals** — `create.before` (derive `kind`, gen `token`, snapshot SOW) → factory invariant; recompute → abstraction (5.3); lock ladder → factory invariant (precondition); incentives replace → child multi-row in-tx (G3); `setCashInDeal` → abstraction candidate; [ai/client.ts:106](src/shared/services/providers/ai/client.ts#L106) projectJSON write → true bypass to fix.
+- **meetings** — `create.before` force `ownerId` → invariant; `update.before` derive `pipeline` → invariant; `create.after` `addOwnerParticipant`/`syncGcal`/`graduateFromCampaign` → invariants, `metaCapi` Schedule → call-site (booking procedure only); `update.after` `syncGcal` → invariant, `notifyMeetingTimeChanged`/Ably → **afterCommit** (C); `delete.before` capture `gcalEventId` → invariant needing the row (G4).
+- **customers** — `update.before` geocode-cache invalidation → invariant; delete-cascade → referential integrity in write-impl/tx (non-skippable); `update.after` `propagateCustomerChange` → **afterCommit** (C); `createFromIntake` → service (`customerIntakeService.ingestLead`).
+- **projects** — `scopeIds` (G2) + `setProjectScopes` (G3) → DAL parent+child in-tx; R2 media cleanup on delete → delete invariant needing the row (G4), R2 before DB cascade; `business.create` proposal-gate + cross-write meeting → tRPC orchestration; `accounting.ensureProjectSubCustomer` → true bypass to fix.
+- **customer-notes** — `create.before` stamp `authorId` + cross-scope visibility probe → invariant; update/delete `before` author-or-admin gate → invariant (precondition).
+
+**Depends on:** A, B, C. Permission-dependent slices (G8(i) field-authz, G5) gated on **#285** (§7) — until then the two-schema split is the interim.
+
+**Done-when:** the true-bypass register is empty; projects & lead-sources mutations route through CRUD; every relocated hook fires from its factory invocation with green tsc/lint.
+
+---
+
+## 7. Dependencies & retiring seams
+
+**#285 (CASL scope-compiler) — hard coupling on D's permission slices.** G5 and G8(i) field-authz are #285's. The two-schema split (5.2) is deliberately temporary scaffolding: when #285 ships field-level `assertCanUpdateFields`, the two schemas collapse to one permissive schema + field-authz, and ADR candidate (c) is written. Field-level CASL on update **partially exists already** — `createCrudRouter.update` iterates fields calling `ability.can('update', subject, field)` — #285 generalizes/owns it.
+
+**Status (verified 2026-08-13 via `.worktrees/issue-285`):** #285 has **Phase 1 shipped in its worktree** — row-visibility compiled from CASL for customers/meetings/proposals/projects; `resolveActorScope` (DAL) + `resolveTrpcActorScope` (tRPC middleware) + `canAccess` landed — **not yet merged to main** (main is still pre-#285; the `memory` index saying "#285 Phase 0" is stale). **Shared surface with this epic is narrow but real:** both epics rewrite `EntityServerSpec` in [types.ts](src/shared/dal/server/types.ts) from **disjoint directions** — A strips `hooks` + `duplicate.overrides`, #285 strips `visibility`. No semantic conflict, but a **mechanical merge conflict on that one interface** — whichever lands second rebases over the other's edit. Research confirmed #285 never touches `hooks` / `createCrudDal` / the factory config — the hook-relocation is **exclusively** this epic's.
+
+**JSONB Wave 4 (SOW normalization) — drives the downstream follow-up** (§8), not this epic.
+
+**Do-not-build-on register (retiring seams — from #285 + tRPC epic):**
+- `projectVisibility` / `projectParticipationScope` ([projects/lib/visibility.ts](src/shared/entities/projects/lib/visibility.ts)) — DELETED by #285.
+- `resolveVisibilityScope` / `resolveEffectiveScope` (+ orphaned `scopeMiddleware`) — **replaced by #285's shipped `resolveTrpcActorScope` (tRPC middleware) / `resolveActorScope` (DAL) / `canAccess` (point-probe)**, NOT `resolveScope` (a stale name in #285's own design spec — the committed code uses `resolveActorScope`). A *consumes* these resolved-scope helpers (§3.2); it never resolves scope itself. Verified in `.worktrees/issue-285` 2026-08-13.
+- `EntityServerSpec.visibility` field on `projectServerSpec` — removed by #285 (spec purified from two directions — A strips hooks, #285 strips visibility).
+- `crud.router.ts:list` hand-rolled omni check; `get-customer-pipeline-items.ts:367` `ownerId=me OR isPublic` drift — #285 Phase 2 owns these; don't re-author project row-security.
+- project-media parent-bridge scope flip — #285-coordinated.
+- `createEntityRouter` / `EntityToolkit` / `entity-registry` — deleted S7; do not reintroduce.
+- `crud.raw` (dropped, 5.1), "recompute-as-invariant" (overturned, 5.3), `jsonbMergeColumns` (deleted Wave 2) — do not build on.
+
+---
+
+## 8. Deferred / out of scope
+
+- **Typing story** — folded into **sub-plan A's grill** (was §9.4).
+- **Per-entity migration sequencing** — produced by **sub-plan D's plan** (was §9.7).
+- **`crud.bulk`** — future primitive; deferred, no bulk paths exist yet (5.1).
+- **Proposal Financials Consolidation** — its **own brainstorm at the epic's end** (business logic, not architecture). Resolves that `finalTcp` is implemented twice (SQL persisted `recomputeProposalFinancials` vs TS live-editor `computeProposalFinancials` — [compute-totals.ts:49-81](src/shared/entities/proposals/lib/financials/compute-totals.ts#L49-L81)) and can drift. Directional (verify to 100% in that brainstorm): eliminate `startingTcp`; derive price from per-SOW section prices; `finalTcp = Σ(SOWᵢ price − SOWᵢ discounts) − Σ(global incentives)` with `max(0,…)` floor; `pricingDisplayMode` = the single display lever. **Driver:** JSONB Wave 4 (SOW normalization) makes per-SOW price/incentives/costs first-class, collapsing SQL rollup + TS façade onto one calculation.
+
+---
+
+## Appendix — provenance & superseded rulings
+
+This doc was re-cut (2026-08-12) from a two-session chronological brainstorm into this forward-only epic index. **The approach was not rethought** — only reorganized. The full original chronology is in git history (pre-restructure revision of this file).
+
+**Session history:** Grill session 1 (2026-08-12) produced the layering model + interface decisions (§3/§5 here) and left open questions. Grill session 2 (same day) resolved them, overturning two session-1 conclusions. The recompute investigation was a dispatched sub-agent.
+
+**Superseded rulings (recorded so they aren't re-proposed):**
+- **`crud.raw` primitive charter — DROPPED.** Session 1 proposed a no-hook raw write primitive with a "two uses" charter (infra bulk + in-DB convergence). Session 2 dropped it: convergence + bulk stay plain `db.*`; future `crud.bulk` deferred (now 5.1).
+- **"Recompute stays a guarded factory invariant" — OVERTURNED.** Session 1 concluded recompute was an already-working guarded factory invariant. Session 2 re-read the code (4 call sites, one cross-entity) and reclassified it as a §3.7 abstraction enforced sole-door via the two-schema split (now 5.3/5.4). The session-1 *facts* (no re-entrancy; the input-set; the SQL-expression nature of the write) still hold; only the classification changed.
+- **"Design-complete, go build" — REFRAMED.** Session 2 declared the interface design complete. Per user direction (2026-08-12), the cross-cutting **architecture** is locked (§3/§5), but each **infrastructure** piece (A/B/C) gets its own dedicated grill before building; only **adoption** (D) is mechanical.
