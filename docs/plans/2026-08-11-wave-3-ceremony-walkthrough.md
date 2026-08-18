@@ -1,4 +1,4 @@
-# Wave 3 Ceremony — Execution-Day Walkthrough (2026-08-11, v2)
+# Wave 3 Ceremony — Execution-Day Walkthrough (2026-08-11, v3 re-verified 2026-08-18)
 
 > **What this is:** the paste-ready, top-to-bottom execution script for the Wave 3
 > prod cutover, in the style of the W1/W2 runbooks. Every command is run **by
@@ -14,25 +14,58 @@
 > drift semantics: the backfill **must** be re-run live right before the DDL
 > (blob→column sync), and only becomes forbidden *after* the deploy.
 
-## Current state (verified 2026-08-11: read-only DB inspection + git ancestry)
+> **v3 re-verification (2026-08-18, read-only):** ceremony not yet run; prod
+> gained **18 customers + 2 meetings, 0 proposals** since 8/11 (22 customers
+> edited, 0 proposals edited). Findings, all SELECT-only against prod:
+> - `backfill-wave3-scalars --dry-run`: **98 scanned, 0 drift** (no proposal
+>   touched since the 8/11 backfill — every `updated_at` is the 8/11 run).
+> - `recompute-final-tcp --dry-run`: zero drift.
+> - Appendix A: all **0** except `unpromoted_profile_fields = 4` (exactly the 4
+>   legacy-`householdType` rows of 3.3b — by design, PR #260) and the
+>   annotated `blobs_with_enrichment = 28` sanity probe. **v2 said "every
+>   count 0" — that was stale; 4/28 is the correct expected reading.**
+> - W1/W2 blobs: **zero** new rows carry blob data (writers flipped in July;
+>   counts unchanged at 62/48/48/418, 1, 3). Drops remain loss-free.
+> - Schema: `git diff 187df9e2..HEAD -- src/shared/db/schema` empty and
+>   `pnpm db:push:dev` → `No changes detected` ⇒ the DDL set is **still the
+>   exact 7 statements** you saw on 8/11. Vercel build is plain `next build`
+>   (no migration step). No new env vars since `origin/main`.
+> - `pnpm tsc` 0 errors, `pnpm lint` exit 0 (warnings only) on the tree.
+> - **Neon backstop:** PITR retention on this project is **6 h**
+>   (`history_retention_seconds: 21600`) and the plan allows **1 manual
+>   snapshot**. Stale `pre-wave3-backfill-2026-08-11` was replaced by
+>   `pre-wave3-ceremony-2026-08-18` (`snap-orange-bonus-af2ytmho`). Re-take
+>   it at ceremony time — Step 3.0.
+> - ⚠️ **Live hazard, do this soon:** prod (`8c0ce467`) already *reads* money
+>   from the scalar columns (`toFundingInputs` → PDF/heading/Zoho) but still
+>   *writes* the blobs with no column sync. It is coherent today only because
+>   nothing edited a proposal since 8/11. Any proposal create/edit before the
+>   ceremony shows stale/zero money until 3.2 runs.
+
+## Current state (verified 2026-08-11, re-verified 2026-08-18: read-only DB inspection + git ancestry)
 
 | | Dev DB | Prod DB |
 |---|---|---|
 | 6 scalar columns present | ✅ | ✅ |
-| Scalar backfill | ✅ complete | ⚠️ ran 2026-08-11, but **stale for rows edited since** (pre-flip prod code still writes blobs) — re-run in Step 3 |
+| Scalar backfill | ✅ complete | ✅ **zero drift as of 2026-08-18** — but pre-flip prod code still writes blobs, so re-run in 3.2 anyway (idempotent; catches any edit between now and then) |
 | Blobs `funding_JSON`/`form_meta_JSON` nullable | ✅ | ✅ (§3a-fix, 2026-08-11) |
 | Rename `signing_request_id` → `contract_envelope_id` | ✅ | ⬜ **this ceremony** |
 | 6 W1/W2 blob columns dropped | ✅ | ⬜ **this ceremony** |
 | Writer-flip + drop-ceremony code deployed | n/a | ⬜ **this ceremony** (`git push` deploys all of it at once) |
 
-**The ceremony in one sentence:** re-run the backfill (blob→column sync),
-`git push` and wait for the deploy to go live, then immediately run
-`pnpm db:push:prod` (answering the rename prompt with **renamed**) — one
-sitting.
+**The ceremony in one sentence:** re-take the Neon snapshot, re-run the
+backfill (blob→column sync), `git push` and wait for the deploy to go live,
+then immediately run `pnpm db:push:prod` (answering the rename prompt with
+**renamed**) — one sitting.
 
-**What the push deploys:** everything on local `main` past `8c0ce467` — all 20
-Wave-3 commits **plus your S6b tRPC-standardization commits** (`84d60b88` etc.).
-Be deliberate: this deploy is not Wave-3-only. Your uncommitted WIP stays local.
+**What the push deploys:** everything on local `main` past `8c0ce467` — as of
+2026-08-18 that is **70 commits**: the Wave-3 chain, S6a/S6b/**S7** tRPC
+standardization (createEntityRouter deleted), projects standardization
+phase 1, CRUD-DAL sub-plan A (config-factory), data-table refresh/pull-to-
+refresh, dialog fix, and runbook docs. Be deliberate: this deploy is not
+Wave-3-only — Step 4.3 smokes the extra surface. Your uncommitted WIP stays
+local. A Vercel **build failure** is data-safe (deploy-first: the DDL hasn't
+run yet; prod stays on old code) — fix forward, don't touch the DB.
 
 **Commit-pin check (already done via git, no dashboard needed):**
 `a9f5539b` ∉ `origin/main`, `6d5b705c` ∉ `origin/main` → prod is pre-flip;
@@ -57,16 +90,23 @@ Work from the **main checkout** (worktree `.env.local` files can hijack
 - [ ] `pnpm tsc && pnpm lint` — expect: tsc 0 errors; lint no NEW errors
       (known baseline: `src/trpc/server.ts:6` trailing spaces).
 - [ ] Confirm nothing unexpected rides the push: `git log --oneline
-      origin/main..HEAD` — should be the Wave-3 chain + runbook docs + your S6b
-      commits, nothing surprising.
+      origin/main..HEAD` — 70 commits as of 2026-08-18 (Wave-3 chain, S6/S7
+      tRPC, projects phase 1, crud-dal sub-plan A, data-table, docs); nothing
+      surprising. `git status` must show your WIP as unstaged/untracked only.
+- [ ] Confirm the DDL set is unchanged: `git diff --stat 187df9e2..HEAD --
+      src/shared/db/schema` → empty; `pnpm db:push:dev` → `No changes
+      detected`. (Both true 2026-08-18.)
 - [ ] Glance at Vercel: latest production deployment corresponds to
       `origin/main` (`8c0ce467`) and is healthy — i.e., pushing main is the
       only deploy lever in play.
 
-## Step 2 — Neon rehearsal (recommended, ~15 min)
+## Step 2 — Neon rehearsal (optional as of 2026-08-18, ~15 min)
 
 A disposable branch of real prod data proves the full sequence — including the
-live backfill re-run, which is part of the real ceremony this time.
+live backfill re-run, which is part of the real ceremony this time. You
+already saw the real prod prompt on 8/11 (7 statements, rename rendered
+correctly) and the DDL set is provably unchanged, so this is now optional;
+still the cheapest way to warm up the keystrokes if you want it.
 
 - [ ] 1. Neon console → create a branch off **production**, current state.
 - [ ] 2. `export DATABASE_URL='<rehearsal branch connection string>'` —
@@ -90,8 +130,9 @@ live backfill re-run, which is part of the real ceremony this time.
   Then `--dry-run` again → expect **zero drift**.
 
 - [ ] 5. Parity proof: paste **Appendix A** (canonical runbook) into the
-      branch's SQL console → every count **0** (the enrichment sanity probe is
-      annotated as possibly > 0).
+      branch's SQL console → every count **0** except
+      `unpromoted_profile_fields = 4` (the 3.3b legacy rows) and
+      `blobs_with_enrichment = 28` (sanity probe).
 - [ ] 6. The DDL via drizzle (dry-run of Step 3.5 — same command, branch
       target thanks to the exported `DATABASE_URL`):
 
@@ -130,12 +171,13 @@ live backfill re-run, which is part of the real ceremony this time.
 - [ ] 10. **`unset DATABASE_URL`** — a lingering export silently redirects the
       next `DRIZZLE_TARGET=prod` command.
 
-**Only a clean rehearsal authorizes Step 3.**
+**If you rehearse, only a clean rehearsal authorizes Step 3.** If you skip
+it, Step 1's two checks (tsc/lint green, DDL set unchanged) are the gate.
 
 ## Step 3 — Prod ceremony (one sitting, low-traffic window)
 
-Sequence: backfill sync → parity proof → snapshot → **push → deploy live →
-DDL** (deploy-first, decided 2026-08-11: new code tolerates the old DB except
+Sequence: Neon snapshot → backfill sync → parity proof → legacy snapshot →
+**push → deploy live → DDL** (deploy-first, decided 2026-08-11: new code tolerates the old DB except
 for the rename — extra blob columns are invisible to Drizzle — so pushing
 first shrinks the broken window from "four tables for the whole Vercel
 build" to "proposals reads only, for the seconds between deploy-live and the
@@ -148,14 +190,35 @@ will 500 with Postgres `42703` (`contract_envelope_id` doesn't exist yet) —
 **expected, closes the moment the DDL runs, not a rollback signal**. Sit
 ready and keep that gap to seconds.
 
+- [ ] **3.0 Neon snapshot — the real backstop** (PITR here is only 6 h and the
+      plan holds ONE manual snapshot, so replace, don't add). From the repo
+      root, `neon` CLI 3.x is installed and `NEON_API_KEY`/`NEON_PROJECT_ID`
+      live in `.env`:
+
+  ```bash
+  export $(grep -E "^NEON_(API_KEY|PROJECT_ID)=" .env | xargs)
+  neon snapshots list --project-id "$NEON_PROJECT_ID"                       # see the current one
+  neon snapshots delete <old-snapshot-id> --project-id "$NEON_PROJECT_ID"   # e.g. snap-orange-bonus-af2ytmho
+  neon snapshots create --project-id "$NEON_PROJECT_ID" --branch production \
+    --name "pre-wave3-ceremony-$(date -u +%Y-%m-%dT%H%MZ)"
+  neon snapshots list --project-id "$NEON_PROJECT_ID"                       # exactly one, Created At = now
+  ```
+
+  Restore path if it ever comes to that (creates a `production (old)` copy
+  first, so it is itself reversible):
+  `neon snapshots restore <id> --project-id "$NEON_PROJECT_ID" --target-branch production`
+  → inspect → `neon snapshots finalize production`.
+
 - [ ] **3.1 Drift preview** (banner must show real prod host):
 
   ```bash
   DRIZZLE_TARGET=prod pnpm tsx scripts/backfill-wave3-scalars.ts --dry-run
   ```
 
-  Drift on rows edited since 2026-08-11 is expected (blob fresh, column
-  stale). Note how many rows it reports — 3.2 should write exactly those.
+  Expect **0 drift** unless a proposal was created/edited since 2026-08-18
+  (blob fresh, column stale — those rows are what 3.2 syncs). Note how many
+  rows it reports — 3.2 writes exactly those, then re-reads and field-diffs
+  each one (built-in parity; non-zero failures = STOP).
 
 - [ ] **3.2 Live backfill re-run** — the blob→column sync. Correct and safe
       **because prod code is pre-flip** (blobs are still the written truth):
@@ -170,8 +233,14 @@ ready and keep that gap to seconds.
   from then on, `--dry-run` only, permanently.
 
 - [ ] **3.3 Parity proof on real prod** — paste Appendix A (canonical runbook)
-      into the Neon **prod** SQL console. Every count **0**. Any non-zero →
-      **STOP**, ping Claude with the output.
+      into the Neon **prod** SQL console (or
+      `APPENDIX_DB_URL=<prod url> APPENDIX_SQL_FILE=<appendix-a.sql> pnpm tsx
+      scripts/tmp-run-appendix-a.ts`, SELECT-only). Expected, verified
+      2026-08-18: every count **0** except `unpromoted_profile_fields = 4`
+      (the four legacy-`householdType` rows captured in 3.3b — 'Senior(s)'
+      ×3, 'Empty nester(s)' ×1) and `blobs_with_enrichment = 28`. Any other
+      non-zero, or a 5th unpromoted row → **STOP**, ping Claude with the
+      output.
 
 - [ ] **3.3b Legacy-value snapshot** — the 2026-08-11 four-agent audit proved
       the drops lose exactly 7 values on 5 customers: legacy enum strings
@@ -258,19 +327,28 @@ ready and keep that gap to seconds.
 
   Any failure = live-prod incident: stop, escalate, don't continue the list.
 
-- [ ] **4.3** Also smoke the S6b surface riding the same deploy (customers /
-      meetings / applications routers) — one list-and-open per entity is
-      enough to catch a wiring break.
+- [ ] **4.3** Also smoke the non-Wave-3 surface riding the same deploy: S6/S7
+      tRPC (customers / meetings / applications list-and-open, one each),
+      **projects** (list + open + one edit — phase 1 rewired its DAL), a
+      **records data-table** (sort default + pull-to-refresh on mobile), and
+      one **meetings** create/edit (crud-dal sub-plan A moved its hooks).
+      One action per surface is enough to catch a wiring break.
 
 - [ ] **4.4** Optional: `pnpm tsx scripts/tmp-db-state-compare.ts` — dev and
       prod should now be structurally identical on every watched column.
+      `pnpm tsx scripts/tmp-audit-prod-since-0811.ts` re-prints the row
+      counts / blob-state tables (SELECT-only) if you want a last look.
 
 ## Step 5 — Aftercare
 
 - [ ] `git stash drop stash@{0}` (`task11-review-temp-stash`) once satisfied.
 - [ ] T6 open item: `pnpm tsx scripts/verify-assemble-envelope.ts <email>` +
       delete the Zoho draft it creates.
-- [ ] Delete `scripts/tmp-db-state-compare.ts` (untracked) whenever.
+- [ ] Delete the untracked read-only helpers whenever:
+      `scripts/tmp-db-state-compare.ts`, `scripts/tmp-audit-*.ts`,
+      `scripts/tmp-run-appendix-a.ts`.
+- [ ] Neon: the ceremony snapshot can stay (it's the only one and costs
+      ~$0.004/mo); replace it at the next ceremony the same way (3.0).
 - [ ] Tell Claude to delete the SDD workspace
       (`.superpowers/sdd/2026-07-26-wave-3-scalar-decomposition/`).
 - [ ] Completion comment on #279 / #256 (W1's comment on #256 is the format
