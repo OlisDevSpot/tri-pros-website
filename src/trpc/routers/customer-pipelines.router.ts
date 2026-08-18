@@ -15,6 +15,7 @@ import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
 import { userActor } from '@/shared/domains/permissions/scope/actor'
 import { canSeeUngatedPhone } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 import { projectServerSpec } from '@/shared/entities/projects/lib/server-spec'
@@ -75,7 +76,12 @@ export const customerPipelinesRouter = createTRPCRouter({
     .input(z.object({
       customerId: z.string().uuid(),
     }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      const actor = userActor(ctx.session.user.id, ctx.ability)
+      if (!(await canAccess(customerServerSpec, actor, input.customerId, 'read'))) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Customer not found' })
+      }
+
       const [row] = await db
         .select({ captureJSON: customerLeadAttribution.captureJSON })
         .from(customers)
