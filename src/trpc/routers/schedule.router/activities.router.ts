@@ -91,7 +91,7 @@ export const activitiesRouter = createTRPCRouter({
 
   getById: agentProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const [row] = await db
         .select({
           ...getTableColumns(activities),
@@ -102,7 +102,17 @@ export const activitiesRouter = createTRPCRouter({
         .leftJoin(user, eq(user.id, activities.ownerId))
         .where(eq(activities.id, input.id))
 
-      return row ?? null
+      if (!row) {
+        return null
+      }
+
+      const isOmni = ctx.ability.can('manage', 'all')
+
+      if (!isOmni && row.ownerId !== ctx.session.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to view this activity' })
+      }
+
+      return row
     }),
 
   create: agentProcedure
@@ -190,7 +200,24 @@ export const activitiesRouter = createTRPCRouter({
 
   complete: agentProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const isOmni = ctx.ability.can('manage', 'all')
+
+      if (!isOmni) {
+        const [existing] = await db
+          .select({ ownerId: activities.ownerId })
+          .from(activities)
+          .where(eq(activities.id, input.id))
+
+        if (!existing) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Activity not found' })
+        }
+
+        if (existing.ownerId !== ctx.session.user.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to complete this activity' })
+        }
+      }
+
       const [updated] = await db
         .update(activities)
         .set({ completedAt: new Date().toISOString() })
