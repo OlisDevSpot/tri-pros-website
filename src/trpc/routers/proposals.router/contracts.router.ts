@@ -15,7 +15,7 @@ import { TRPCError } from '@trpc/server'
 import z from 'zod'
 
 import { envelopeDocumentIds } from '@/shared/constants/enums'
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { systemContext } from '@/shared/dal/server/types'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { CUSTOMER_AGE_MAX, CUSTOMER_AGE_MIN } from '@/shared/entities/customers/lib/constants'
 import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
@@ -214,11 +214,16 @@ export const contractsRouter = createTRPCRouter({
       // established by getFullView above; the homeowner share-token has no
       // customer-side scope to use here). `age` is a plain column (epic
       // #256/#259) — no read-modify-merge needed.
+      //
+      // Transitive write: `proposal.customer.id` is SERVER-DERIVED from the
+      // scope-enforced getFullView above (never client input) — the read IS
+      // the authorization. Named systemContext makes the bypass auditable.
+      // Invariant: this id must come from the authorized read, not `input`.
       if (input.age !== undefined) {
-        dalToTrpc(await customerCrud.update(SYSTEM_CONTEXT, {
-          id: proposal.customer.id,
-          data: { age: input.age },
-        }))
+        dalToTrpc(await customerCrud.update(
+          systemContext('derived:contract-age-from-token-proposal'),
+          { id: proposal.customer.id, data: { age: input.age } },
+        ))
       }
 
       // 2. Evaluate docs against the final age (single eval, reused for
