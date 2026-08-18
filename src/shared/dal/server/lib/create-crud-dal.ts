@@ -114,8 +114,9 @@ async function getByIdImpl<TTable extends PgTable>(
   input: { id: string | number },
 ): Promise<DalReturn<Row<TTable> | undefined>> {
   return dalDbOperation(async () => {
+    const exec = ctx.tx ?? db
     const where = and(eq(pkColumn, input.id), ctx.scope ?? undefined)
-    const [row] = await db
+    const [row] = await exec
       .select()
       .from(spec.table as PgTable)
       .where(where)
@@ -134,6 +135,7 @@ async function createImpl<TTable extends PgTable, TId extends string | number>(
   callsite?: CrudCallsiteHooks<TTable, TId, 'create'>,
 ): Promise<DalReturn<Row<TTable>>> {
   return dalDbOperation(async () => {
+    const exec = ctx.tx ?? db
     let data = input
     if (cfg.hooks?.create?.before)
       data = await cfg.hooks.create.before(data, ctx)
@@ -141,7 +143,7 @@ async function createImpl<TTable extends PgTable, TId extends string | number>(
       data = await callsite.before(data, ctx)
     const validated = spec.schemas.insert.parse(data) as Insert<TTable>
 
-    const [inserted] = await db.insert(spec.table as PgTable).values(validated).returning()
+    const [inserted] = await exec.insert(spec.table as PgTable).values(validated).returning()
     if (!inserted) {
       throw new ThrowableDalError({ type: 'create-failed' })
     }
@@ -167,6 +169,7 @@ async function updateImpl<TTable extends PgTable, TId extends string | number>(
   callsite?: CrudCallsiteHooks<TTable, TId, 'update'>,
 ): Promise<DalReturn<Row<TTable>>> {
   return dalDbOperation(async () => {
+    const exec = ctx.tx ?? db
     // before: factory (outer) → callsite (inner), THREADED
     let data = input.data
     if (cfg.hooks?.update?.before)
@@ -211,7 +214,7 @@ async function updateImpl<TTable extends PgTable, TId extends string | number>(
     // Real write. `.set(validated)` — Drizzle filters undefined and auto-appends
     // $onUpdate columns (updatedAt bumps here, on a genuine change).
     const where = and(eq(pkColumn, input.id), ctx.scope ?? undefined)
-    const [updated] = await db.update(spec.table as PgTable).set(validated as Record<string, unknown>).where(where).returning()
+    const [updated] = await exec.update(spec.table as PgTable).set(validated as Record<string, unknown>).where(where).returning()
     if (!updated) {
       throw new ThrowableDalError({ type: 'not-found' })
     }
@@ -238,6 +241,7 @@ async function deleteImpl<TTable extends PgTable, TId extends string | number>(
   callsite?: CrudCallsiteHooks<TTable, TId, 'delete'>,
 ): Promise<DalReturn<void>> {
   return dalDbOperation(async () => {
+    const exec = ctx.tx ?? db
     const needsRow = Boolean(
       cfg.hooks?.delete?.before || cfg.hooks?.delete?.after || callsite?.before || callsite?.after,
     )
@@ -262,7 +266,7 @@ async function deleteImpl<TTable extends PgTable, TId extends string | number>(
       await callsite.before(row!, ctx)
 
     const where = and(eq(pkColumn, input.id), ctx.scope ?? undefined)
-    const deleted = await db.delete(spec.table as PgTable).where(where).returning({ id: pkColumn })
+    const deleted = await exec.delete(spec.table as PgTable).where(where).returning({ id: pkColumn })
     if (deleted.length === 0) {
       throw new ThrowableDalError({ type: 'not-found' })
     }
