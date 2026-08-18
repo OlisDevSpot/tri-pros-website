@@ -9,7 +9,7 @@ import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { Meeting } from '@/shared/db/schema/meetings'
 import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 
-import { and, count, desc, eq, getTableColumns, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm'
+import { and, count, eq, getTableColumns, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm'
 import z from 'zod'
 
 import { meetingOutcomes } from '@/shared/constants/enums'
@@ -155,7 +155,7 @@ export async function listMeetings(
       scheduledFor: meetings.scheduledFor,
       meetingOutcome: meetings.meetingOutcome,
       createdAt: meetings.createdAt,
-    }, desc(meetings.createdAt))
+    })
 
     const result = await paginate({
       query: () => db

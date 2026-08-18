@@ -15,6 +15,7 @@ export function LeadsFilterBar({ pagination }: LeadsFilterBarProps) {
       <QueryToolbar.Bar>
         <QueryToolbar.Search placeholder="Search name or phone…" />
         <QueryToolbar.FilterTrigger />
+        <QueryToolbar.RefreshButton />
         <QueryToolbar.PageSize />
       </QueryToolbar.Bar>
       <QueryToolbar.ChipRail />

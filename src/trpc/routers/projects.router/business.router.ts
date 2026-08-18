@@ -3,11 +3,11 @@ import { eq } from 'drizzle-orm'
 import { buildUserContext, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
-import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
-import { x_projectScopes } from '@/shared/db/schema/x-project-scopes'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
+import { createProject, setProjectScopes } from '@/shared/entities/projects/dal/server/mutations'
+import { extractScopeIdsFromProposals } from '@/shared/entities/projects/lib/derive-scope-ids'
 import { createProjectFormSchema } from '@/shared/entities/projects/schemas'
 import { agentProcedure, createTRPCRouter } from '../../init'
 
@@ -16,6 +16,7 @@ export const businessRouter = createTRPCRouter({
     .input(createProjectFormSchema)
     .mutation(async ({ ctx, input }) => {
       // 1. Validate meeting has at least one proposal
+      // BYPASS(crud): cross-entity read for operational create — de-inline + route through createCrudDal in Phase 3
       const meetingProposals = await db
         .select({ id: proposals.id, projectJSON: proposals.projectJSON })
         .from(proposals)
@@ -29,6 +30,7 @@ export const businessRouter = createTRPCRouter({
       }
 
       // 2. Fetch customer address data
+      // BYPASS(crud): cross-entity read for operational create — de-inline + route through createCrudDal in Phase 3
       const [customer] = await db
         .select({ address: customers.address, city: customers.city, state: customers.state, zip: customers.zip })
         .from(customers)
@@ -43,23 +45,20 @@ export const businessRouter = createTRPCRouter({
       const accessor = `${slug}-${Math.random().toString(36).slice(2, 8)}`
 
       // 4. Create the project (address from customer)
-      const [project] = await db
-        .insert(projects)
-        .values({
-          title: input.title,
-          accessor,
-          customerId: input.customerId,
-          ownerId: ctx.session.user.id,
-          address: customer.address,
-          city: customer.city,
-          state: customer.state ?? 'CA',
-          zip: customer.zip,
-          description: input.description,
-          projectDuration: input.projectDuration,
-          pipelineStage: 'signed',
-          isPublic: false,
-        })
-        .returning()
+      const project = await createProject({
+        title: input.title,
+        accessor,
+        customerId: input.customerId,
+        ownerId: ctx.session.user.id,
+        address: customer.address,
+        city: customer.city,
+        state: customer.state ?? 'CA',
+        zip: customer.zip,
+        description: input.description,
+        projectDuration: input.projectDuration,
+        pipelineStage: 'signed',
+        isPublic: false,
+      }, [])
 
       // 5. Link meeting to project and set outcome — through meetingCrud so the
       //    entity update hook fires (sync to GCal with the new project prefix
@@ -76,30 +75,7 @@ export const businessRouter = createTRPCRouter({
       }))
 
       // 6. Extract scope IDs from proposals' SOWs and link to project
-      const scopeIds = new Set<string>()
-      for (const p of meetingProposals) {
-        const sow = (p.projectJSON as Record<string, any>)?.data?.sow
-        if (Array.isArray(sow)) {
-          for (const entry of sow) {
-            if (Array.isArray(entry.scopes)) {
-              for (const scope of entry.scopes) {
-                if (scope.id) {
-                  scopeIds.add(scope.id)
-                }
-              }
-            }
-          }
-        }
-      }
-
-      if (scopeIds.size > 0) {
-        await db.insert(x_projectScopes).values(
-          Array.from(scopeIds).map(scopeId => ({
-            projectId: project.id,
-            scopeId,
-          })),
-        )
-      }
+      await setProjectScopes(project.id, extractScopeIdsFromProposals(meetingProposals))
 
       return project
     }),

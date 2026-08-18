@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server'
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
-import { and, desc, eq, gte, ilike, lte, or } from 'drizzle-orm'
+import { and, eq, gte, ilike, lte, or } from 'drizzle-orm'
 import z from 'zod'
 
 import env from '@/shared/config/server-env'
@@ -70,7 +70,7 @@ export const businessRouter = createTRPCRouter({
         email: customers.email,
         createdAt: customers.createdAt,
         leadSourceName: leadSourcesTable.name,
-      }, desc(customers.createdAt))
+      })
 
       return paginate({
         query: () => db

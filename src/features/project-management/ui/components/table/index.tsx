@@ -91,7 +91,7 @@ export function PortfolioProjectsTable() {
             rowDataAttribute="data-project-row"
             onRowClick={handleRowClick}
             serverPagination={toDataTablePagination(pagination)}
-            serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
+            serverSorting={toDataTableSorting(pagination)}
             columnVisibility={visibility.columnVisibility}
           />
         )}

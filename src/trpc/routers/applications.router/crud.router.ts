@@ -5,6 +5,7 @@
 
 import z from 'zod'
 
+import { applicationCrud } from '@/shared/entities/applications/dal/server/crud'
 import { applicationSchemas, applicationServerSpec } from '@/shared/entities/applications/lib/server-spec'
 
 import { createCrudRouter } from '../../lib/create-crud-router'
@@ -12,4 +13,5 @@ import { createCrudRouter } from '../../lib/create-crud-router'
 export const crudRouter = createCrudRouter({
   spec: applicationServerSpec,
   schemas: { ...applicationSchemas, id: z.string().uuid() },
+  crud: applicationCrud,
 })

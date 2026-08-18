@@ -11,10 +11,11 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { PinIcon } from 'lucide-react'
+import { PinIcon, RefreshCw } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { SKELETON_CELL_WIDTHS, SKELETON_ROW_HEIGHT_CLASS } from '@/shared/components/data-table/constants/skeleton-widths'
+import { usePullToRefresh } from '@/shared/components/data-table/hooks/use-pull-to-refresh'
 import { createDateRangeFilterFn } from '@/shared/components/data-table/lib/filter-fns'
 import { DataTableFilterBar } from '@/shared/components/data-table/ui/data-table-filter-bar'
 import { DataTablePagination } from '@/shared/components/data-table/ui/data-table-pagination'
@@ -139,6 +140,11 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const [containerWidth, setContainerWidth] = useState(0)
+
+  // -- Pull-to-refresh (touch) ----------------------------------------------
+  // Distance is driven by a CSS var on the scroll container (see the hook) —
+  // `isRefreshing` is the only React state, toggled once per refresh.
+  const { isRefreshing } = usePullToRefresh(scrollRef, serverPagination?.onRefresh)
 
   useEffect(() => {
     const el = scrollRef.current
@@ -468,6 +474,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                         {/* Resize handle — centred on the column's right edge */}
                         {header.column.getCanResize() && !isLastCol && (
                           <div
+                            data-resize-handle
                             onMouseDown={header.getResizeHandler()}
                             onTouchStart={header.getResizeHandler()}
                             onDoubleClick={() => header.column.resetSize()}
@@ -488,6 +495,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                         {/* Last column: resize handle on the RIGHT edge (inside the cell) */}
                         {header.column.getCanResize() && isLastCol && (
                           <div
+                            data-resize-handle
                             onMouseDown={header.getResizeHandler()}
                             onTouchStart={header.getResizeHandler()}
                             onDoubleClick={() => header.column.resetSize()}
@@ -512,6 +520,38 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
             </TableHeader>
 
             <TableBody>
+              {/* Pull-to-refresh spacer — reflows the rows down (no transform,
+                  so the frozen first column's sticky-left survives). Height and
+                  spinner opacity are driven by the `--dt-pull` CSS var the hook
+                  writes on the scroll container — no React render on the drag
+                  hot path. `--dt-pull-ms` is 0 while dragging (1:1 follow) and
+                  ~220ms on release (smooth retract). The spinner is bottom-
+                  anchored so it sits directly above row 1 and reads fully as the
+                  strip opens. `--dt-pull` is unitless; opacity divisor mirrors
+                  PULL_TO_REFRESH_THRESHOLD (64). */}
+              {serverPagination?.onRefresh && (
+                <tr aria-hidden>
+                  <td colSpan={table.getVisibleFlatColumns().length} className="border-0 p-0">
+                    <div
+                      className="overflow-hidden"
+                      style={{ height: 'calc(var(--dt-pull, 0) * 1px)', transition: 'height var(--dt-pull-ms, 0ms) ease-out' }}
+                    >
+                      {/* Center on the VIEWPORT, not the full (scrollable) table
+                          width — constrain the centering region to the measured
+                          container width so justify-center lands on screen for
+                          horizontally-overflowing tables. */}
+                      <div className="flex h-16 items-end justify-center pb-2" style={{ width: containerWidth || undefined }}>
+                        <div
+                          className="rounded-full border border-border/50 bg-background p-1.5 shadow-sm"
+                          style={{ opacity: 'calc(var(--dt-pull, 0) / 64)', transition: 'opacity var(--dt-pull-ms, 0ms) ease-out' }}
+                        >
+                          <RefreshCw className={cn('size-4 text-muted-foreground', isRefreshing && 'motion-safe:animate-spin')} />
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
               {(() => {
                 const dataRows = table.getRowModel().rows
                 if (dataRows.length > 0) {

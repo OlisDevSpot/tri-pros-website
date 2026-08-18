@@ -1,9 +1,9 @@
-import { and, count, desc, eq, inArray } from 'drizzle-orm'
+import { and, desc, eq, inArray } from 'drizzle-orm'
 
 import { db } from '@/shared/db'
 import { mediaFiles } from '@/shared/db/schema/media-files'
 import { projects } from '@/shared/db/schema/projects'
-import { x_projectScopes } from '@/shared/db/schema/x-project-scopes'
+import { getProjectScopeCountsByScopeIds } from '@/shared/entities/projects/dal/server/queries'
 
 /**
  * Given an array of Notion scope IDs belonging to a trade,
@@ -17,24 +17,15 @@ export async function getTradeImages(scopeNotionIds: string[]): Promise<string[]
     return []
   }
 
-  // 1. Find project IDs linked to any of the given scope IDs, with matching scope count
-  const matchingRows = await db
-    .select({ projectId: x_projectScopes.projectId, matchCount: count() })
-    .from(x_projectScopes)
-    .where(inArray(x_projectScopes.scopeId, scopeNotionIds))
-    .groupBy(x_projectScopes.projectId)
+  // 1. Find project IDs linked to any of the given scope IDs, with matching
+  // scope count; 2. Count total scopes per project to identify single-trade
+  // vs multi-trade projects.
+  const { matchingRows, totalRows } = await getProjectScopeCountsByScopeIds(scopeNotionIds)
 
   const projectIds = matchingRows.map(r => r.projectId)
   if (projectIds.length === 0) {
     return []
   }
-
-  // 2. Count total scopes per project to identify single-trade vs multi-trade projects
-  const totalRows = await db
-    .select({ projectId: x_projectScopes.projectId, totalCount: count() })
-    .from(x_projectScopes)
-    .where(inArray(x_projectScopes.projectId, projectIds))
-    .groupBy(x_projectScopes.projectId)
 
   const totalMap = new Map(totalRows.map(r => [r.projectId, r.totalCount]))
   const matchMap = new Map(matchingRows.map(r => [r.projectId, r.matchCount]))
@@ -42,6 +33,7 @@ export async function getTradeImages(scopeNotionIds: string[]): Promise<string[]
   const multiTradeIds = projectIds.filter(id => matchMap.get(id) !== totalMap.get(id))
 
   // 3. Fetch images — single-trade projects first (run in parallel)
+  // TODO(1f): media read — de-inline via media.service / media-files DAL (media.service slice)
   const fetchImages = (ids: string[]) =>
     ids.length === 0
       ? Promise.resolve([])

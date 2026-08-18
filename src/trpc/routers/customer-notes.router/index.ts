@@ -1,5 +1,6 @@
 import z from 'zod'
 
+import { customerNoteCrud } from '@/shared/entities/customer-notes/dal/server/crud'
 import { customerNoteSchemas, customerNoteServerSpec } from '@/shared/entities/customer-notes/lib/server-spec'
 
 import { createTRPCRouter } from '../../init'
@@ -9,5 +10,6 @@ export const customerNotesRouter = createTRPCRouter({
   crud: createCrudRouter({
     spec: customerNoteServerSpec,
     schemas: { ...customerNoteSchemas, id: z.string().uuid() },
+    crud: customerNoteCrud,
   }),
 })

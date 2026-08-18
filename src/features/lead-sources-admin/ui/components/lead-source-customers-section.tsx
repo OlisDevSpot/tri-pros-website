@@ -101,6 +101,7 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
             <QueryToolbar.Search placeholder="Filter by name or email…" />
             <QueryToolbar.FilterTrigger />
             <QueryToolbar.ColumnsTrigger visibility={visibility} />
+            <QueryToolbar.RefreshButton />
             <QueryToolbar.PageSize />
           </QueryToolbar.Bar>
           <QueryToolbar.ChipRail />
@@ -123,7 +124,7 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
           entityName="customer"
           onRowClick={row => handleViewProfile(row.id)}
           serverPagination={toDataTablePagination(pagination)}
-          serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
+          serverSorting={toDataTableSorting(pagination)}
           columnVisibility={visibility.columnVisibility}
         />
       </div>

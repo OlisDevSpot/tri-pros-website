@@ -11,6 +11,7 @@
 
 import z from 'zod'
 
+import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
 import { duplicateProposalWithIncentives } from '@/shared/entities/proposals/dal/server/duplicate'
 import { proposalSchemas, proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
 
@@ -19,5 +20,6 @@ import { createCrudRouter } from '../../lib/create-crud-router'
 export const crudRouter = createCrudRouter({
   spec: proposalServerSpec,
   schemas: { ...proposalSchemas, id: z.string().uuid() },
+  crud: proposalCrud,
   handlers: { duplicate: duplicateProposalWithIncentives },
 })

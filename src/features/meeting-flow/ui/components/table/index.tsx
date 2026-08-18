@@ -112,7 +112,7 @@ export function PastMeetingsTable() {
               }
             }}
             serverPagination={toDataTablePagination(pagination)}
-            serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
+            serverSorting={toDataTableSorting(pagination)}
             columnVisibility={visibility.columnVisibility}
           />
         )}

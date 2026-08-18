@@ -11,7 +11,7 @@ import type { Row } from '@/shared/db/types'
 import type { ProposalMediaView } from '@/shared/entities/proposal-media-files/dal/server/queries'
 import type { ProposalLockSignals } from '@/shared/entities/proposals/lib/proposal-lock'
 
-import { and, count, desc, eq, getTableColumns, gte, inArray, isNotNull, isNull, lte, max, or, sql } from 'drizzle-orm'
+import { and, count, eq, getTableColumns, gte, inArray, isNotNull, isNull, lte, max, or, sql } from 'drizzle-orm'
 import z from 'zod'
 
 import { proposalKinds, proposalStatuses } from '@/shared/constants/enums'
@@ -239,7 +239,7 @@ export async function listProposals(
       label: proposals.label,
       customerName: customers.name,
       price: proposals.finalTcpCents,
-    }, desc(proposals.createdAt))
+    })
 
     return await paginate({
       query: () => db

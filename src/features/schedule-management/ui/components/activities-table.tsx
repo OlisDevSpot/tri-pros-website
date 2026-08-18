@@ -33,6 +33,7 @@ export function ActivitiesTable() {
           <QueryToolbar.Bar>
             <QueryToolbar.Search placeholder="Search by title or description…" />
             <QueryToolbar.FilterTrigger />
+            <QueryToolbar.RefreshButton />
             <QueryToolbar.PageSize />
           </QueryToolbar.Bar>
           <QueryToolbar.ChipRail />
@@ -46,7 +47,7 @@ export function ActivitiesTable() {
           columns={columns}
           entityName="activity"
           serverPagination={toDataTablePagination(pagination)}
-          serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
+          serverSorting={toDataTableSorting(pagination)}
         />
       )}
     />

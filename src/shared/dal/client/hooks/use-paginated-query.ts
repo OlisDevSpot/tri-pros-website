@@ -133,6 +133,21 @@ export function usePaginatedQuery<TExtra extends object, TRow>(
 
   const baseOptions = queryOptionsFactory(queryInput)
 
+  // -- Refresh (procedure-level invalidation) ------------------------------
+  // The first query-key element is the tRPC procedure path — identical across
+  // every page/filter/sort input — so invalidating by it matches ALL cached
+  // pages of this table (incl. the prefetched next page). Relies on the repo's
+  // no-`keyPrefix` invariant (asserted in trpc/lib/prefetch.ts). See design §4.
+  const procedureKey = baseOptions.queryKey[0] as readonly string[]
+  const procedureKeyString = JSON.stringify(procedureKey)
+  const refresh = useCallback(
+    async () => {
+      await qc.invalidateQueries({ queryKey: [procedureKey] })
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- procedureKey deep-keyed via procedureKeyString (its value is stable across renders)
+    [qc, procedureKeyString],
+  )
+
   // Dev-only: detect server-prefetch key drift (wasted hydration).
   const baseQueryKey = baseOptions.queryKey as readonly unknown[]
   useEffect(() => {
@@ -272,5 +287,6 @@ export function usePaginatedQuery<TExtra extends object, TRow>(
     isPlaceholderData,
     isError,
     error,
+    refresh,
   }
 }

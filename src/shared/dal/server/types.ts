@@ -52,6 +52,86 @@ export interface VisibilityScope {
   ability: AppAbility
 }
 
+// ── Hook plumbing (Sub-plan A) ──────────────────────────────────────────
+
+/** A hook may be sync or async. No existing repo util covers this. */
+export type MaybePromise<T> = T | Promise<T>
+
+/** Meta for a create `after` hook. `input` is the ORIGINAL insert payload. */
+export interface CreateAfterMeta<TTable extends PgTable> {
+  input: Insert<TTable>
+}
+
+/** Meta for an update `after` hook. `previousRow` is the pre-update snapshot; `input` is the ORIGINAL update payload. */
+export interface UpdateAfterMeta<TTable extends PgTable> {
+  previousRow: Row<TTable>
+  input: Update<TTable>
+}
+
+/**
+ * SINGLE source of truth for per-slot hook signatures. Add a slot or change a
+ * signature here and every hook type below follows. `create`/`update` `before`
+ * threads (transforms) the payload; `delete` `before`/`after` take the pre-delete
+ * row and return void.
+ */
+export interface CrudSlotHookMap<TTable extends PgTable, TId extends string | number> {
+  create: {
+    before?: (input: Insert<TTable>, ctx: ScopedContext) => MaybePromise<Insert<TTable>>
+    after?: (row: Row<TTable>, ctx: ScopedContext, meta: CreateAfterMeta<TTable>) => MaybePromise<Row<TTable> | void>
+  }
+  update: {
+    before?: (data: Update<TTable>, ctx: ScopedContext, meta: { id: TId }) => MaybePromise<Update<TTable>>
+    after?: (row: Row<TTable>, ctx: ScopedContext, meta: UpdateAfterMeta<TTable>) => MaybePromise<Row<TTable> | void>
+  }
+  delete: {
+    before?: (row: Row<TTable>, ctx: ScopedContext) => MaybePromise<void>
+    after?: (row: Row<TTable>, ctx: ScopedContext) => MaybePromise<void>
+  }
+}
+
+/** The three hook-bearing mutation slots, derived from the map (stays in sync). */
+export type CrudMutationSlot = keyof CrudSlotHookMap<PgTable, string>
+
+/** Factory-invariant hooks — each slot optional. Fire every call, every origin. */
+export type CrudHooks<TTable extends PgTable, TId extends string | number = string> = {
+  [S in CrudMutationSlot]?: CrudSlotHookMap<TTable, TId>[S]
+}
+
+/**
+ * Call-site hooks for ONE slot: that slot's before/after (looked up) PLUS a
+ * commit-boundary hook. `afterCommit` is declared for a stable option surface
+ * but WIRED by Sub-plan C — never invoked in A.
+ */
+export type CrudCallsiteHooks<
+  TTable extends PgTable,
+  TId extends string | number,
+  S extends CrudMutationSlot,
+> = CrudSlotHookMap<TTable, TId>[S] & {
+  afterCommit?: (row: Row<TTable>, ctx: ScopedContext) => void
+}
+
+/**
+ * Factory-invariant hook + duplicate config for an entity. Returned by a
+ * `CrudConfigFactory`, or synthesized from `EntityServerSpec` (deprecated path)
+ * by `synthesizeFromSpec` in create-crud-dal.ts.
+ */
+export interface CrudConfig<TTable extends PgTable, TId extends string | number = string> {
+  hooks?: CrudHooks<TTable, TId>
+  duplicate?: {
+    exclude?: readonly string[]
+    overrides?: (source: Row<TTable>, ctx: ScopedContext) => Partial<Insert<TTable>>
+  }
+}
+
+/**
+ * Late-bound config factory. Receives the crud handlers the factory itself
+ * produces, so a hook can call `crudHandlers.getById(...)` for a same-entity
+ * read — resolved at call time, long after construction. This kills the
+ * circular barrier (spec §1.1, §2.3).
+ */
+export type CrudConfigFactory<TTable extends PgTable, TId extends string | number = string>
+  = (crudHandlers: CrudHandlers<TTable, TId>) => CrudConfig<TTable, TId>
+
 // ── Entity Server Spec ──────────────────────────────────────────────────
 
 /**
@@ -103,6 +183,10 @@ export interface EntityServerSpec<
   primaryKey?: string
   shareable?: { tokenColumn: string }
   /**
+   * @deprecated Sub-plan A relocates hooks onto `createCrudDal(spec, configFactory)`.
+   * Still read via `synthesizeFromSpec` for entities not yet migrated; REMOVED in
+   * Sub-plan D — see docs/superpowers/plans/2026-08-16-crud-dal-sub-plan-a-factory-config-hooks.md.
+   *
    * Entity lifecycle hooks. Executed by createCrudDal — both before and after.
    *
    * - `before` hooks: async, data transformation. Can read DB via DAL functions
@@ -139,6 +223,10 @@ export interface EntityServerSpec<
     }
   }
   /**
+   * @deprecated Sub-plan A relocates duplicate config into the config factory;
+   * REMOVED in Sub-plan D — see
+   * docs/superpowers/plans/2026-08-16-crud-dal-sub-plan-a-factory-config-hooks.md.
+   *
    * Declarative duplicate config. Default behavior: copy full row minus PK.
    * Duplicate routes through createImpl — create hooks fire automatically.
    * This is NOT a hook. It's declarative configuration for field selection.
@@ -164,10 +252,10 @@ export type SlotName = 'getById' | 'create' | 'update' | 'delete' | 'duplicate'
 
 export interface CrudHandlers<TTable extends PgTable, TId extends string | number = string> {
   getById: (ctx: ScopedContext, input: { id: TId }) => Promise<DalReturn<Row<TTable> | undefined>>
-  create: (ctx: ScopedContext, input: Insert<TTable>) => Promise<DalReturn<Row<TTable>>>
-  update: (ctx: ScopedContext, input: { id: TId, data: Update<TTable> }) => Promise<DalReturn<Row<TTable>>>
-  delete: (ctx: ScopedContext, input: { id: TId }) => Promise<DalReturn<void>>
-  duplicate: (ctx: ScopedContext, input: { id: TId }) => Promise<DalReturn<Row<TTable>>>
+  create: (ctx: ScopedContext, input: Insert<TTable>, options?: CrudCallsiteHooks<TTable, TId, 'create'>) => Promise<DalReturn<Row<TTable>>>
+  update: (ctx: ScopedContext, input: { id: TId, data: Update<TTable> }, options?: CrudCallsiteHooks<TTable, TId, 'update'>) => Promise<DalReturn<Row<TTable>>>
+  delete: (ctx: ScopedContext, input: { id: TId }, options?: CrudCallsiteHooks<TTable, TId, 'delete'>) => Promise<DalReturn<void>>
+  duplicate: (ctx: ScopedContext, input: { id: TId }, options?: CrudCallsiteHooks<TTable, TId, 'create'>) => Promise<DalReturn<Row<TTable>>>
 }
 
 // ── DalReturn Result Type ───────────────────────────────────────────────

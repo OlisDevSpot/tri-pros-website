@@ -139,4 +139,13 @@ export interface PaginatedQueryResult<TRow> {
   isPlaceholderData: boolean
   isError: boolean
   error: unknown
+
+  // -- Refresh --
+  /**
+   * Invalidate every cached page of this table's tRPC procedure and refetch
+   * the active page(s). Resolves when the refetches settle — pull-to-refresh
+   * awaits this; the toolbar button spins on `isFetching`. See
+   * `docs/superpowers/specs/2026-08-11-records-table-refresh-design.md` §4.
+   */
+  refresh: () => Promise<void>
 }

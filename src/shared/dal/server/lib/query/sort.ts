@@ -12,29 +12,42 @@ type SortTarget = AnyColumn | SQL
  * a column or SQL expression — this is the boundary that prevents a malicious
  * `sortBy: 'password'` from reaching SQL.
  *
- * Falls back to `fallback` (typically the table's natural order) when:
- *   - `sort` is undefined
- *   - `sort.sortBy` is undefined
- *   - `sort.sortBy` is not in the whitelist (treated as no-op, never an error)
+ * Order is resolved by precedence:
+ *   1. Explicit `sort.sortBy` when whitelisted in `columnMap`.
+ *   2. Explicit `fallback` (escape hatch for a non-`createdAt` natural order).
+ *   3. `createdAt` convention — `desc(columnMap.createdAt)` when the map has a
+ *      `createdAt` key. This is the default for every record table.
+ *   4. No ordering (natural order) — housekeeping entities with neither a
+ *      `createdAt` column nor an explicit `fallback`.
  *
  * Spread the result into `.orderBy(...)`:
  *
  * @example
+ *   // Record table — createdAt convention supplies the default, no 3rd arg:
  *   .orderBy(...buildOrderBy(input.sort, {
  *     name: customers.name,
- *     email: customers.email,
  *     createdAt: customers.createdAt,
- *   }, desc(customers.createdAt)))
+ *   }))
+ *
+ * @example
+ *   // Override the default natural order explicitly:
+ *   .orderBy(...buildOrderBy(input.sort, { name: customers.name }, asc(customers.name)))
  */
 export function buildOrderBy<TKey extends string>(
   sort: SortFields | undefined,
   columnMap: Record<TKey, SortTarget>,
-  fallback: SQL,
+  fallback?: SQL,
 ): SQL[] {
   const sortBy = sort?.sortBy
-  if (!sortBy || !(sortBy in columnMap)) {
+  if (sortBy && sortBy in columnMap) {
+    const column = columnMap[sortBy as TKey]
+    return [sort.sortDir === 'asc' ? asc(column) : desc(column)]
+  }
+  if (fallback) {
     return [fallback]
   }
-  const column = columnMap[sortBy as TKey]
-  return [sort.sortDir === 'asc' ? asc(column) : desc(column)]
+  if ('createdAt' in columnMap) {
+    return [desc((columnMap as Record<string, SortTarget>).createdAt)]
+  }
+  return []
 }

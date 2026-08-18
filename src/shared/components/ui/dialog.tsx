@@ -6,6 +6,25 @@ import * as React from 'react'
 
 import { cn } from '@/shared/lib/utils'
 
+// Stop React's SYNTHETIC event propagation without stopping NATIVE DOM
+// propagation. React's SyntheticEvent.stopPropagation() also calls the
+// underlying nativeEvent.stopPropagation(); here we neutralize just that for the
+// duration of the call. Result: `isPropagationStopped` is still set — so a click
+// inside a portaled dialog does NOT leak up the FIBER tree to a clickable React
+// ancestor (e.g. a pipeline kanban card whose onClick opened the modal) — while
+// the native click keeps bubbling to `document`, where Radix's popover/menu
+// dismiss listener lives. That native reach is required for touch "tap-away to
+// close": on touch, Radix DismissableLayer defers dismissal to a document-level
+// `click` listener, so a plain stopPropagation() (which also kills native
+// bubbling) silently breaks tap-away for every Radix layer opened in a dialog.
+function stopReactPropagationOnly(e: React.SyntheticEvent) {
+  const nativeEvent = e.nativeEvent
+  const nativeStopPropagation = nativeEvent.stopPropagation.bind(nativeEvent)
+  nativeEvent.stopPropagation = () => {}
+  e.stopPropagation()
+  nativeEvent.stopPropagation = nativeStopPropagation
+}
+
 function Dialog({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Root>) {
@@ -45,10 +64,11 @@ function DialogOverlay({
       {...props}
       // Contain backdrop clicks for the same reason as DialogContent below: the
       // overlay is a portal sibling of the content, so a click on it would also
-      // bubble (fiber tree) to a clickable ancestor. Dismiss is native-handled,
-      // so stopping the synthetic bubble only prevents the ancestor leak.
+      // bubble the FIBER tree to a clickable ancestor. Stop the synthetic bubble
+      // only (see stopReactPropagationOnly) so native document-level dismiss
+      // still fires.
       onClick={(e) => {
-        e.stopPropagation()
+        stopReactPropagationOnly(e)
         onClick?.(e)
       }}
     />
@@ -80,12 +100,12 @@ function DialogContent({
         // not the DOM tree — so a click inside a dialog rendered by a clickable
         // ancestor (e.g. a pipeline kanban card that opens the customer profile
         // on click) would propagate to that ancestor's onClick and fire it.
-        // Stopping click propagation here contains every modal's clicks at its
-        // own boundary, for every consumer, without each card having to guard.
-        // (Consumer onClick, if any, still runs.) This does NOT affect Radix's
-        // focus/dismiss handling, which uses native document-level listeners.
+        // stopReactPropagationOnly contains every modal's clicks at its own
+        // boundary, for every consumer, WITHOUT killing native DOM propagation —
+        // Radix's touch tap-away dismiss needs the native click to reach
+        // `document`. (Consumer onClick, if any, still runs.)
         onClick={(e) => {
-          e.stopPropagation()
+          stopReactPropagationOnly(e)
           onClick?.(e)
         }}
         // Same reasoning for keyboard: without this, a keystroke inside the

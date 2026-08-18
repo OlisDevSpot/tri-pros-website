@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { getPortfolioProjectDetail } from '@/features/project-management/dal/server/get-portfolio-project-detail'
-import { getPortfolioProjects } from '@/features/project-management/dal/server/get-portfolio-projects'
 import { ProjectStoryView } from '@/features/project-management/ui/views/project-story-view'
+import { getPortfolioProjectDetail, getPortfolioProjects } from '@/shared/entities/projects/dal/server/queries'
 
 interface Props {
   params: Promise<{ projectAccessor: string }>
