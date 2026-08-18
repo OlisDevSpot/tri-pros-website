@@ -19,6 +19,15 @@ import { ably } from '@/shared/services/providers/upstash/realtime'
  */
 export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
   hooks: {
+    // ── INTERIM(C): pre-commit side-effects to relocate to `afterCommit` ──────
+    // These `after`-hook dispatches currently run inline (fine today: no crud.*
+    // call threads a tx into meetings). When D adopts a tx-carrying ctx here,
+    // they would fire PRE-COMMIT. Sub-plan C moves them to `afterCommit`; D then
+    // threads `ctx.tx ?? db` into the off-tx writes below. Sites:
+    //   • create.after: syncMeetingToGcalJob, graduateFromCampaignJob, metaCapiEventJob
+    //   • create.after: addParticipant(...) — writes OFF-tx (needs executor in D)
+    //   • update.after: syncMeetingToGcalJob, notifyMeetingTimeChangedJob, ably.publish
+    // Retired by C (dispatches) + D (addParticipant executor). See sub-plan B ledger.
     create: {
       // see ../../DOCS.md#meeting-owner-is-creator
       // Authenticated callers: ownerId is ALWAYS server-resolved — prevents wire
