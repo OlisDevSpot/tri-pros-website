@@ -7,14 +7,17 @@ import { moveCustomerPipelineItem } from '@/features/customer-pipelines/dal/serv
 import { moveCustomerToPipeline } from '@/features/customer-pipelines/dal/server/move-customer-to-pipeline'
 import { deriveProjectStatusBucket, meetingPipelines, pipelines } from '@/shared/constants/enums/pipelines'
 import { buildUserContext } from '@/shared/dal/server/lib/helpers'
+import { canAccess, resolveActorScope } from '@/shared/dal/server/lib/resolve-actor-scope'
 import { db } from '@/shared/db'
 import { customerLeadAttribution } from '@/shared/db/schema/customer-lead-attribution'
 import { customers } from '@/shared/db/schema/customers'
 import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
+import { userActor } from '@/shared/domains/permissions/scope/actor'
 import { canSeeUngatedPhone } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
+import { projectServerSpec } from '@/shared/entities/projects/lib/server-spec'
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { R2_BUCKETS } from '@/shared/services/providers/r2/types'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
@@ -127,8 +130,15 @@ export const customerPipelinesRouter = createTRPCRouter({
       if (ctx.ability.cannot('update', 'Meeting')) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to update meetings' })
       }
+      const actor = userActor(ctx.session.user.id, ctx.ability)
+      if (!(await canAccess(meetingServerSpec, actor, input.meetingId, 'read'))) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Meeting not found' })
+      }
+      if (!(await canAccess(projectServerSpec, actor, input.projectId, 'read'))) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Project not found' })
+      }
       return dalToTrpc(await meetingCrud.update(
-        { session: ctx.session, ability: ctx.ability, scope: null },
+        { session: ctx.session, ability: ctx.ability, scope: resolveActorScope(meetingServerSpec, actor) },
         {
           id: input.meetingId,
           data: { projectId: input.projectId, meetingOutcome: 'converted_to_project' },
