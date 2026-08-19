@@ -1,12 +1,20 @@
+import type { SQL } from 'drizzle-orm'
+
 import type { CustomerPipelineItem, CustomerPipelineRawData, PipelineItemProposal, PipelineItemRep } from '@/features/customer-pipelines/types'
 
 import type { Pipeline } from '@/shared/constants/enums/pipelines'
 
-import { and, count, desc, eq, inArray, isNotNull, isNull, max, sql } from 'drizzle-orm'
+import type { ScopedContext } from '@/shared/dal/server/types'
+
+import type { Actor } from '@/shared/domains/permissions/scope/actor'
+
+import { and, count, desc, eq, inArray, isNotNull, max, notInArray, sql } from 'drizzle-orm'
 
 import { computeCustomerStage } from '@/features/customer-pipelines/lib/compute-customer-stage'
-import { DECIDED_OUTCOMES } from '@/shared/constants/enums/meetings'
+import { DECIDED_OUTCOMES, RECALLABLE_OUTCOMES, TERMINAL_OUTCOMES } from '@/shared/constants/enums/meetings'
 import { deriveProjectStatusBucket } from '@/shared/constants/enums/pipelines'
+import { requireResolvedScope } from '@/shared/dal/server/lib/helpers'
+import { resolveActorScope } from '@/shared/dal/server/lib/resolve-actor-scope'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { customers } from '@/shared/db/schema/customers'
@@ -14,25 +22,44 @@ import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
 import { computePipelineValue, computeProjectValue } from '@/shared/domains/pipelines/lib/compute-pipeline-value'
-import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
-import { userParticipatesInMeeting } from '@/shared/entities/meetings/dal/server/participants'
+import { derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
+import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
+import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
+import { projectServerSpec } from '@/shared/entities/projects/lib/server-spec'
 
-export async function getCustomerPipelineItems(userId: string, pipeline: Pipeline = 'fresh', isOmni = false, canSeeUngated = false): Promise<CustomerPipelineItem[]> {
+/**
+ * Meetings whose outcome keeps the customer in the "fresh" phase — i.e. NOT a
+ * negative (recallable/terminal) outcome. Derived from the outcome SoT, so the
+ * fresh card's aggregates match the derived 'fresh' bucket without reading the
+ * materialized `meetings.pipeline` column.
+ */
+const NON_NEGATIVE_MEETING = notInArray(meetings.meetingOutcome, [...RECALLABLE_OUTCOMES, ...TERMINAL_OUTCOMES])
+
+export async function getCustomerPipelineItems(ctx: ScopedContext, pipeline: Pipeline = 'fresh'): Promise<CustomerPipelineItem[]> {
+  const { actor } = ctx
+  const canSeeUngated = canSeeUngatedPhone(ctx.ability) // Task 4 flips to (actor)
+  // Two-level scope: WHICH customers (their visibility) AND which bucket (single,
+  // total, mutually exclusive). Enrichment is scoped per-entity inside each builder.
+  const customerScope = requireResolvedScope(resolveActorScope(customerServerSpec, actor))
+  const inBucket = derivedPipelineWhere([pipeline])
+
   if (pipeline === 'leads') {
-    return getLeadsPipelineItems(canSeeUngated)
+    return getLeadsPipelineItems(customerScope, inBucket, canSeeUngated)
   }
 
   if (pipeline === 'projects') {
-    return getProjectsPipelineItems(userId, isOmni, canSeeUngated)
+    // Project visibility (owner OR participation) subsumes "customer in projects
+    // bucket + visible", so this builder gates on the project scope directly.
+    return getProjectsPipelineItems(actor, canSeeUngated)
   }
 
-  // Rehash / dead pipelines: find customers with meetings in this pipeline (non-project meetings)
   if (pipeline !== 'fresh') {
-    return getRehashOrDeadPipelineItems(userId, pipeline, isOmni, canSeeUngated)
+    return getRehashOrDeadPipelineItems(pipeline, customerScope, inBucket, canSeeUngated)
   }
 
   // Fresh pipeline: full query with computed stages
-  return getFreshPipelineItems(userId, isOmni, canSeeUngated)
+  return getFreshPipelineItems(actor, customerScope, inBucket, canSeeUngated)
 }
 
 /**
@@ -41,7 +68,7 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Pipelin
  * been scheduled for an in-home consultation yet.
  * Stage comes from customers.pipelineStage (repurposed for leads).
  */
-async function getLeadsPipelineItems(canSeeUngated: boolean): Promise<CustomerPipelineItem[]> {
+async function getLeadsPipelineItems(customerScope: SQL | undefined, inBucket: SQL | undefined, canSeeUngated: boolean): Promise<CustomerPipelineItem[]> {
   const rows = await db
     .select({
       id: customers.id,
@@ -57,9 +84,7 @@ async function getLeadsPipelineItems(canSeeUngated: boolean): Promise<CustomerPi
       createdAt: customers.createdAt,
     })
     .from(customers)
-    .where(
-      sql`NOT EXISTS (SELECT 1 FROM meetings m WHERE m.customer_id = ${customers.id})`,
-    )
+    .where(and(customerScope, inBucket))
     .orderBy(desc(customers.createdAt))
 
   return rows.map((row): CustomerPipelineItem => ({
@@ -92,9 +117,9 @@ async function getLeadsPipelineItems(canSeeUngated: boolean): Promise<CustomerPi
  * Finds distinct customers who have at least one meeting with the given pipeline value
  * and no projectId (non-project meetings only).
  */
-async function getRehashOrDeadPipelineItems(userId: string, pipeline: Pipeline, isOmni: boolean, canSeeUngated: boolean): Promise<CustomerPipelineItem[]> {
+async function getRehashOrDeadPipelineItems(pipeline: Pipeline, customerScope: SQL | undefined, inBucket: SQL | undefined, canSeeUngated: boolean): Promise<CustomerPipelineItem[]> {
   const rows = await db
-    .selectDistinctOn([customers.id], {
+    .select({
       id: customers.id,
       name: customers.name,
       phone: gatedPhoneSql(canSeeUngated),
@@ -106,13 +131,8 @@ async function getRehashOrDeadPipelineItems(userId: string, pipeline: Pipeline, 
       zip: customers.zip,
     })
     .from(customers)
-    .innerJoin(meetings, and(
-      eq(meetings.customerId, customers.id),
-      eq(meetings.pipeline, pipeline as 'fresh' | 'rehash' | 'dead'),
-      isNull(meetings.projectId),
-      isOmni ? undefined : userParticipatesInMeeting(userId, meetings.id),
-    ))
-    .orderBy(customers.id, desc(customers.updatedAt))
+    .where(and(customerScope, inBucket))
+    .orderBy(desc(customers.updatedAt))
 
   const defaultStage = pipeline === 'rehash' ? 'schedule_manager_meeting' : 'mostly_dead'
 
@@ -145,7 +165,7 @@ async function getRehashOrDeadPipelineItems(userId: string, pipeline: Pipeline, 
  * Fresh pipeline items — full query with computed stages, proposals, reps.
  * Filters meetings by pipeline = 'fresh' AND projectId IS NULL.
  */
-async function getFreshPipelineItems(userId: string, isOmni: boolean, canSeeUngated: boolean): Promise<CustomerPipelineItem[]> {
+async function getFreshPipelineItems(actor: Actor, customerScope: SQL | undefined, inBucket: SQL | undefined, canSeeUngated: boolean): Promise<CustomerPipelineItem[]> {
   const rows = await db
     .select({
       customerId: customers.id,
@@ -168,10 +188,10 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean, canSeeUnga
     .from(customers)
     .innerJoin(meetings, and(
       eq(meetings.customerId, customers.id),
-      eq(meetings.pipeline, 'fresh'),
-      isNull(meetings.projectId),
-      isOmni ? undefined : userParticipatesInMeeting(userId, meetings.id),
+      NON_NEGATIVE_MEETING,
+      requireResolvedScope(resolveActorScope(meetingServerSpec, actor)),
     ))
+    .where(and(customerScope, inBucket))
     .groupBy(customers.id)
     .orderBy(desc(customers.updatedAt))
 
@@ -195,7 +215,7 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean, canSeeUnga
     .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
     .innerJoin(customers, eq(customers.id, meetings.customerId))
     .where(and(
-      isOmni ? undefined : userParticipatesInMeeting(userId, proposals.meetingId),
+      requireResolvedScope(resolveActorScope(meetingServerSpec, actor)),
       inArray(customers.id, customerIds),
     ))
     .groupBy(customers.id)
@@ -217,7 +237,7 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean, canSeeUnga
     .innerJoin(user, eq(user.id, meetings.ownerId))
     .where(and(
       inArray(meetings.customerId, customerIds),
-      isOmni ? undefined : userParticipatesInMeeting(userId, meetings.id),
+      requireResolvedScope(resolveActorScope(meetingServerSpec, actor)),
     ))
     .orderBy(meetings.customerId, desc(meetings.scheduledFor))
 
@@ -246,7 +266,7 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean, canSeeUnga
     .from(proposals)
     .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
     .where(and(
-      isOmni ? undefined : userParticipatesInMeeting(userId, proposals.meetingId),
+      requireResolvedScope(resolveActorScope(meetingServerSpec, actor)),
       inArray(meetings.customerId, customerIds),
     ))
     .orderBy(desc(proposals.createdAt))
@@ -338,7 +358,7 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean, canSeeUnga
  * with their most recently created project's data attached.
  * Stage comes from projects.pipelineStage.
  */
-async function getProjectsPipelineItems(userId: string, isOmni: boolean, canSeeUngated: boolean): Promise<CustomerPipelineItem[]> {
+async function getProjectsPipelineItems(actor: Actor, canSeeUngated: boolean): Promise<CustomerPipelineItem[]> {
   // Get projects with customer data
   const projectRows = await db
     .select({
@@ -362,12 +382,10 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean, canSeeU
     .innerJoin(customers, eq(customers.id, projects.customerId))
     .where(and(
       isNotNull(projects.customerId),
-      // Row-security = participation OR ownerId=me (abilities.ts agent Project
-      // rules). `isPublic` is intentionally NOT part of authz — a non-participating
-      // agent on a public-but-unowned project must not see it in their pipeline.
-      isOmni
-        ? undefined
-        : sql`(${projects.ownerId} = ${userId} OR EXISTS (SELECT 1 FROM meetings m INNER JOIN meeting_participants mp ON mp.meeting_id = m.id WHERE m.project_id = ${projects.id} AND mp.user_id = ${userId}))`,
+      // Row-security = the project's CASL scope (owner OR meeting participation);
+      // `isPublic` is intentionally NOT authz. A visible project ⇒ its customer is
+      // in the projects bucket + visible, so no separate customer gate is needed.
+      requireResolvedScope(resolveActorScope(projectServerSpec, actor)),
     ))
     .orderBy(desc(projects.createdAt))
 
@@ -400,7 +418,7 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean, canSeeU
     .where(and(
       inArray(meetings.customerId, customerIds),
       isNotNull(meetings.projectId),
-      isOmni ? undefined : userParticipatesInMeeting(userId, meetings.id),
+      requireResolvedScope(resolveActorScope(meetingServerSpec, actor)),
     ))
     .orderBy(desc(meetings.createdAt))
 

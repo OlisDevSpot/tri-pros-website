@@ -12,7 +12,7 @@ import { customerLeadAttribution } from '@/shared/db/schema/customer-lead-attrib
 import { customers } from '@/shared/db/schema/customers'
 import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
-import { canSeeUngatedPhone } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { getAccessiblePipelines } from '@/shared/domains/pipelines/lib/get-accessible-pipelines'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
@@ -29,9 +29,13 @@ export const customerPipelinesRouter = createTRPCRouter({
       pipeline: z.enum(pipelines).default('fresh'),
     }).optional())
     .query(async ({ ctx, input }) => {
-      const userId = ctx.session.user.id
-      const isOmni = ctx.ability.can('manage', 'all')
-      return getCustomerPipelineItems(userId, input?.pipeline ?? 'fresh', isOmni, canSeeUngatedPhone(ctx.ability))
+      const pipeline = input?.pipeline ?? 'fresh'
+      // Close the "any agent can request pipeline:'leads' directly" gap — a tab
+      // outside the actor's accessible set is FORBIDDEN, not silently empty.
+      if (!getAccessiblePipelines(ctx.ability).includes(pipeline)) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have access to this pipeline' })
+      }
+      return getCustomerPipelineItems(ctx, pipeline)
     }),
 
   moveCustomerPipelineItem: agentProcedure
