@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 import { projectStatusBuckets, projectVisibilities } from '@/shared/constants/enums'
 import { dateRangeSchema, paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
-import { createProject, deleteProject, updateProject } from '@/shared/entities/projects/dal/server/mutations'
+import { createProjectWithScopes, projectCrud, updateProjectWithScopes } from '@/shared/entities/projects/dal/server/crud'
 import { getAllProjects, getProjectForEdit, listProjects } from '@/shared/entities/projects/dal/server/queries'
 import { projectFormSchema } from '@/shared/entities/projects/schemas'
 
@@ -40,11 +40,15 @@ export const crudRouter = createTRPCRouter({
       return getProjectForEdit(input.id)
     }),
 
+  // Routes through projectCrud via createProjectWithScopes (scopeIds as a
+  // call-site closure). scope:null — bare agentProcedure carries no scope, so
+  // the crud runs unscoped, identical to the pre-D feature-DAL path (scope
+  // tightening is the #285 tail).
   create: agentProcedure
     .input(projectFormSchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { scopeIds, ...projectData } = input
-      return createProject(projectData, scopeIds ?? [])
+      return dalToTrpc(await createProjectWithScopes({ ...ctx, scope: null }, projectData, scopeIds ?? []))
     }),
 
   update: agentProcedure
@@ -52,15 +56,15 @@ export const crudRouter = createTRPCRouter({
       id: z.string().uuid(),
       data: projectFormSchema.partial(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { scopeIds, ...projectData } = input.data
-      return updateProject(input.id, projectData, scopeIds)
+      return dalToTrpc(await updateProjectWithScopes({ ...ctx, scope: null }, input.id, projectData, scopeIds))
     }),
 
   delete: agentProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .mutation(async ({ input }) => {
-      await deleteProject(input.id)
+    .mutation(async ({ ctx, input }) => {
+      dalToTrpc(await projectCrud.delete({ ...ctx, scope: null }, { id: input.id }))
       return { success: true }
     }),
 })

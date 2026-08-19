@@ -6,7 +6,8 @@ import { customers } from '@/shared/db/schema/customers'
 import { proposals } from '@/shared/db/schema/proposals'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
-import { createProject, setProjectScopes } from '@/shared/entities/projects/dal/server/mutations'
+import { projectCrud } from '@/shared/entities/projects/dal/server/crud'
+import { setProjectScopes } from '@/shared/entities/projects/dal/server/mutations'
 import { extractScopeIdsFromProposals } from '@/shared/entities/projects/lib/derive-scope-ids'
 import { createProjectFormSchema } from '@/shared/entities/projects/schemas'
 import { agentProcedure, createTRPCRouter } from '../../init'
@@ -44,8 +45,10 @@ export const businessRouter = createTRPCRouter({
       const slug = input.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
       const accessor = `${slug}-${Math.random().toString(36).slice(2, 8)}`
 
-      // 4. Create the project (address from customer)
-      const project = await createProject({
+      // 4. Create the project (address from customer). Routes through
+      //    projectCrud (scope:null — unscoped, matching the pre-D feature-DAL
+      //    path); scopes are linked in step 6 from the proposals' SOWs.
+      const project = dalVerifySuccess(await projectCrud.create({ ...ctx, scope: null }, {
         title: input.title,
         accessor,
         customerId: input.customerId,
@@ -58,7 +61,7 @@ export const businessRouter = createTRPCRouter({
         projectDuration: input.projectDuration,
         pipelineStage: 'signed',
         isPublic: false,
-      }, [])
+      }))
 
       // 5. Link meeting to project and set outcome — through meetingCrud so the
       //    entity update hook fires (sync to GCal with the new project prefix
