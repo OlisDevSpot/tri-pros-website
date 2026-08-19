@@ -1,6 +1,8 @@
+import type { Insert } from '@/shared/db/types'
+
 import { TRPCError } from '@trpc/server'
 import { differenceInCalendarDays, eachDayOfInterval, eachMonthOfInterval, eachWeekOfInterval, max as maxDate, startOfDay, startOfMonth, startOfWeek } from 'date-fns'
-import { and, asc, desc, eq, gte, inArray, isNull, lte, ne, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm'
 import z from 'zod'
 
 import { pipelines } from '@/shared/constants/enums/pipelines'
@@ -18,30 +20,15 @@ import { proposals } from '@/shared/db/schema/proposals'
 import { derivedPipelineSql, derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
 import { isSignedCustomerSql } from '@/shared/entities/customers/lib/signed-customer-sql'
 import { customerSegments } from '@/shared/entities/lead-sources/constants/customer-segments'
+import { leadSourceCrud } from '@/shared/entities/lead-sources/dal/server/crud'
 import { buildSegmentWhere } from '@/shared/entities/lead-sources/lib/segment-sql'
 import { leadSourceFormConfigSchema } from '@/shared/entities/lead-sources/schemas'
 import { generateToken } from '@/shared/lib/generate-token'
-import { slugify } from '@/shared/lib/slugify'
+import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 
 import { createTRPCRouter, superAdminProcedure } from '../init'
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
-
-async function generateUniqueSlug(base: string): Promise<string> {
-  const root = slugify(base, { maxLen: 64 }) || 'source'
-  for (let i = 0; i < 50; i++) {
-    const candidate = i === 0 ? root : `${root}-${i + 1}`
-    const [existing] = await db
-      .select({ id: leadSourcesTable.id })
-      .from(leadSourcesTable)
-      .where(eq(leadSourcesTable.slug, candidate))
-      .limit(1)
-    if (!existing) {
-      return candidate
-    }
-  }
-  throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Could not generate unique slug.' })
-}
 
 // Match customers to a lead source by FK. Callers pass the lead_sources.id.
 function customersMatchingSource(leadSourceId: string) {
@@ -705,75 +692,24 @@ export const leadSourcesRouter = createTRPCRouter({
       }
     }),
 
+  // Routes through leadSourceCrud — create.before generates the unique slug +
+  // token. Cast bridges the Zod input (name + formConfigJSON only) to the
+  // Drizzle Insert type the hook completes (same gap as create-crud-router.ts:117).
+  // scope:null — superAdminProcedure callers are omni, so the crud runs unscoped.
   create: superAdminProcedure
     .input(createInput)
-    .mutation(async ({ input }) => {
-      const slug = await generateUniqueSlug(input.name)
-      const token = generateToken()
-      const [created] = await db
-        .insert(leadSourcesTable)
-        .values({ name: input.name, slug, token, formConfigJSON: input.formConfigJSON, isActive: true })
-        .returning()
-      if (!created) {
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create lead source.' })
-      }
-      return created
-    }),
+    .mutation(async ({ ctx, input }) =>
+      dalToTrpc(await leadSourceCrud.create(
+        { ...ctx, scope: null },
+        input as unknown as Insert<typeof leadSourcesTable>,
+      ))),
 
+  // Slug validation + rotation + duplicate-rejection now live in update.before.
   update: superAdminProcedure
     .input(updateInput)
-    .mutation(async ({ input }) => {
-      const { id, slug, ...rest } = input
-
-      const patch: Partial<typeof leadSourcesTable.$inferInsert> = { ...rest }
-
-      if (slug !== undefined) {
-        // Reject malformed input — only canonical kebab-case is accepted.
-        if (slugify(slug, { maxLen: 64 }) !== slug) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Use lowercase letters, numbers, and hyphens only.',
-          })
-        }
-
-        // Read current slug so a no-op save (UI echoes the existing slug)
-        // does not silently rotate the token and break live intake URLs.
-        const [current] = await db
-          .select({ slug: leadSourcesTable.slug })
-          .from(leadSourcesTable)
-          .where(eq(leadSourcesTable.id, id))
-          .limit(1)
-        if (!current) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Lead source not found.' })
-        }
-
-        if (slug !== current.slug) {
-          // Reject duplicates against any other source.
-          const [existing] = await db
-            .select({ id: leadSourcesTable.id })
-            .from(leadSourcesTable)
-            .where(and(eq(leadSourcesTable.slug, slug), ne(leadSourcesTable.id, id)))
-            .limit(1)
-          if (existing) {
-            throw new TRPCError({
-              code: 'CONFLICT',
-              message: 'That slug is already in use.',
-            })
-          }
-          patch.slug = slug
-          patch.token = generateToken()
-        }
-      }
-
-      const [updated] = await db
-        .update(leadSourcesTable)
-        .set(patch)
-        .where(eq(leadSourcesTable.id, id))
-        .returning()
-      if (!updated) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Lead source not found.' })
-      }
-      return updated
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input
+      return dalToTrpc(await leadSourceCrud.update({ ...ctx, scope: null }, { id, data }))
     }),
 
   rotateToken: superAdminProcedure
@@ -804,46 +740,19 @@ export const leadSourcesRouter = createTRPCRouter({
       return updated
     }),
 
+  // Routes through leadSourceCrud.duplicate → createImpl: the duplicate config
+  // (exclude + overrides) resets slug/token/isActive/voip config; create.before
+  // regenerates the unique slug + token from the "(copy)" name.
   duplicate: superAdminProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .mutation(async ({ input }) => {
-      const [source] = await db
-        .select()
-        .from(leadSourcesTable)
-        .where(eq(leadSourcesTable.id, input.id))
-        .limit(1)
-      if (!source) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Lead source not found.' })
-      }
-      const newName = `${source.name} (copy)`
-      const newSlug = await generateUniqueSlug(newName)
-      const [created] = await db
-        .insert(leadSourcesTable)
-        .values({
-          name: newName,
-          slug: newSlug,
-          token: generateToken(),
-          formConfigJSON: source.formConfigJSON,
-          isActive: false,
-        })
-        .returning()
-      if (!created) {
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to duplicate.' })
-      }
-      return created
-    }),
+    .mutation(async ({ ctx, input }) =>
+      dalToTrpc(await leadSourceCrud.duplicate({ ...ctx, scope: null }, { id: input.id }))),
 
+  // Attached-customer precondition now lives in delete.before (G4).
   delete: superAdminProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .mutation(async ({ input }) => {
-      const attachedCount = await db.$count(customers, customersMatchingSource(input.id))
-      if (attachedCount > 0) {
-        throw new TRPCError({
-          code: 'PRECONDITION_FAILED',
-          message: `${attachedCount} ${attachedCount === 1 ? 'customer is' : 'customers are'} still attached. Reassign or archive instead.`,
-        })
-      }
-      await db.delete(leadSourcesTable).where(eq(leadSourcesTable.id, input.id))
+    .mutation(async ({ ctx, input }) => {
+      dalToTrpc(await leadSourceCrud.delete({ ...ctx, scope: null }, { id: input.id }))
       return { success: true as const }
     }),
 })
