@@ -2,6 +2,7 @@ import type { ContractEvent } from '@/shared/constants/enums'
 import { and, eq, inArray, ne } from 'drizzle-orm'
 import { ROOTS } from '@/shared/config/roots'
 import { NEW_LEAD_NOTIFICATION_EMAILS } from '@/shared/constants/company/new-lead-notifications'
+import { SYSTEM_OWNER_EMAIL } from '@/shared/constants/system-users'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { customers } from '@/shared/db/schema/customers'
@@ -140,25 +141,42 @@ function createNotificationService() {
           .where(eq(user.id, params.proposalOwnerId))
       }
       if (recipients.length === 0) {
-        console.warn(`[notificationService] notifyHomeownerMoveForwardRequest: no recipients for proposal ${params.proposalId}`)
-        return
+        console.warn(`[notificationService] notifyHomeownerMoveForwardRequest: no internal recipients for proposal ${params.proposalId} — emailing ${SYSTEM_OWNER_EMAIL} only`)
       }
 
-      const pushResult = await webPushClient.sendToUsers(
-        recipients.map(r => r.userId),
-        {
-          title: `Ready to Move Forward | ${params.customerName}`,
-          body: 'Homeowner requested their agreement — prepare the signing draft',
-          navigate: ROOTS.dashboard.proposals.byId(params.proposalId),
-          urgency: 'high',
-        },
-      )
-      if (pushResult.failed > 0 || pushResult.errors.length > 0) {
-        console.warn(`[notificationService] notifyHomeownerMoveForwardRequest push partial failure:`, pushResult)
+      // Push targets internal users only — info@ is a shared mailbox with no
+      // push subscription, so it never enters the userId list. Skip entirely
+      // when no internal user resolved (info@ still gets the email below).
+      if (recipients.length > 0) {
+        const pushResult = await webPushClient.sendToUsers(
+          recipients.map(r => r.userId),
+          {
+            title: `Ready to Move Forward | ${params.customerName}`,
+            body: 'Homeowner requested their agreement — prepare the signing draft',
+            navigate: ROOTS.dashboard.proposals.byId(params.proposalId),
+            urgency: 'high',
+          },
+        )
+        if (pushResult.failed > 0 || pushResult.errors.length > 0) {
+          console.warn(`[notificationService] notifyHomeownerMoveForwardRequest push partial failure:`, pushResult)
+        }
+      }
+
+      // Blast the whole team: every meeting participant PLUS the company inbox
+      // (info@). Dedupe case-insensitively so the owner-is-info@ case doesn't
+      // send twice.
+      const seen = new Set<string>()
+      const emailRecipients: string[] = []
+      for (const email of [...recipients.map(r => r.email), SYSTEM_OWNER_EMAIL]) {
+        const key = email.toLowerCase()
+        if (!seen.has(key)) {
+          seen.add(key)
+          emailRecipients.push(email)
+        }
       }
 
       await emailService.sendMoveForwardRequestEmail({
-        recipients: recipients.map(r => r.email),
+        recipients: emailRecipients,
         customerName: params.customerName,
         proposalLabel: params.proposalLabel,
         proposalId: params.proposalId,

@@ -68,7 +68,13 @@ function createEmailService() {
         from: buildSenderFrom(params.repName),
         to: params.email,
         replyTo: params.replyTo,
-        subject: `🏠 ${firstName}, your Tri Pros proposal is ready`,
+        subject: `${firstName}, your Tri Pros proposal is ready`,
+        // Gmail/Yahoo expect List-Unsubscribe even on transactional mail; its
+        // absence raises spam score. mailto: form needs no endpoint — replies
+        // land in the monitored inbox. One-click (RFC 8058) is a later follow-up.
+        headers: {
+          'List-Unsubscribe': `<mailto:${RESEND_LEAD_INBOX}?subject=unsubscribe>`,
+        },
         react: renderProposalEmail({
           proposalUrl,
           customerName: params.customerName,
@@ -98,7 +104,10 @@ function createEmailService() {
       const { data, error } = await resendClient.emails.send({
         from: RESEND_FROM.default,
         to: params.recipients,
-        subject: `🚀 ${params.customerName} is ready to move forward`,
+        // Replies to "customer is ready" route to the monitored inbox rather
+        // than the notifications@ sender. see RESEND_LEAD_INBOX.
+        replyTo: RESEND_LEAD_INBOX,
+        subject: `${params.customerName} is ready to move forward`,
         react: renderMoveForwardRequestEmail({
           customerName: params.customerName,
           proposalLabel: params.proposalLabel,
@@ -165,6 +174,10 @@ function createEmailService() {
         from: RESEND_FROM.default,
         replyTo: RESEND_LEAD_INBOX,
         subject: `Thanks, ${firstName} — we'll be in touch within 24 hours`,
+        // see List-Unsubscribe rationale on sendProposalEmail
+        headers: {
+          'List-Unsubscribe': `<mailto:${RESEND_LEAD_INBOX}?subject=unsubscribe>`,
+        },
         react: renderCustomerConfirmationEmail({
           firstName,
           smsConsent: formData.smsConsent,
