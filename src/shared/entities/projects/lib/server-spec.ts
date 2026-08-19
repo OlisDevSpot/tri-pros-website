@@ -28,18 +28,14 @@ export const projectSchemas = {
  * bearing for the media work, gives project-media a real parent to bridge to
  * (`parent: { spec: projectServerSpec, fk: mediaFiles.projectId }`).
  *
- * SCOPE (S5a): this ships the spec + `projectCrud` (`dal/server/crud.ts`) as the
- * foundation. It deliberately carries NO `hooks`/`duplicate` yet — the existing
- * lifecycle side-effects (x_projectScopes insert/replace, R2 media cleanup on
- * delete) live in `dal/server/mutations.ts` (`createProject`/`updateProject`/
- * `deleteProject`/`setProjectScopes`), which remains the lifecycle authority
- * until those mutations are routed through `createCrudDal` (projects-
- * standardization Phase 3).
- * Migrating the router also TIGHTENS behavior (create/update/delete gain
- * `ctx.scope`; `delete` gates on `can('delete','Project')`, which agents lack
- * today) — hence deferred to its own reviewed slice. Until then `projectCrud` is
- * a row-level foundation; do not route full project lifecycle through it without
- * porting those hooks.
+ * SCOPE (S5a): this ships the spec + `projectCrud` (`dal/server/crud.ts`). Sub-plan D
+ * (2026-08-19) routes the full project lifecycle through `projectCrud` via the
+ * `create/updateProjectWithScopes` abstractions (scopeIds as a call-site closure)
+ * and a `delete.before` R2-cleanup hook. Routing is **behavior-preserving**: the
+ * router keeps bare `agentProcedure`, so `ctx.scope` stays `undefined` (unscoped —
+ * identical to the pre-D feature-DAL path). Security tightening (route onto
+ * `projectProcedure` for `ctx.scope`; gate `delete` on `can('delete','Project')`)
+ * is the SEPARATE #285 tail — routing through crud does NOT tighten scope.
  */
 export const projectServerSpec = {
   entityName: PROJECT,

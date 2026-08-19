@@ -182,7 +182,7 @@ Handler code receives `ctx.scope` either way and applies it identically. The han
 
 ## Lifecycle Hooks
 
-Entity lifecycle hooks execute at the DAL layer — both before and after database writes. All hooks live on `EntityServerSpec.hooks`, organized by operation (`create`, `update`, `delete`).
+Entity lifecycle hooks execute at the DAL layer — both before and after database writes. Hooks live in the entity's `dal/server/crud.ts` config factory, passed as `createCrudDal(spec, configFactory)` and organized by operation (`create`, `update`, `delete`). `EntityServerSpec` no longer carries `hooks`/`duplicate` (Sub-plan D).
 
 ### Hook Contract
 
@@ -200,7 +200,7 @@ Entity lifecycle hooks execute at the DAL layer — both before and after databa
 - **Hooks are thin orchestrators.** Pure business logic in `entities/<entity>/lib/`. Service orchestration via existing services.
 - **Never use naked `db` in hooks.** All DB access through DAL functions.
 - **`ScopedContext` always.** `ctx.session` may be null when called from jobs/services.
-- **`duplicate` is declarative config, not a hook.** Lives on `spec.duplicate` with `exclude` + `overrides`. Routes through `createImpl` so create hooks fire automatically.
+- **`duplicate` is declarative config, not a hook.** Lives in the config factory alongside `hooks`, with `exclude` + `overrides`. Routes through `createImpl` so create hooks fire automatically.
 - **`handlers` overrides bypass hooks entirely.** Use only when the full operation must be replaced.
 
 ### Framework Precedent
