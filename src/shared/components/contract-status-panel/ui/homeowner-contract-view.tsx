@@ -4,6 +4,7 @@ import type { ZohoContractStatus } from '@/shared/services/providers/zoho-sign/t
 import { useMutation } from '@tanstack/react-query'
 import { ArrowRight, Loader2, Mail, PartyPopper, TriangleAlert } from 'lucide-react'
 import { motion } from 'motion/react'
+import { toast } from 'sonner'
 import { Button } from '@/shared/components/ui/button'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { useTRPC } from '@/trpc/helpers'
@@ -32,6 +33,9 @@ export function HomeownerContractView({ proposalId, token, contractStatus, custo
       onSuccess: () => {
         startCooldown()
         invalidateProposal()
+      },
+      onError: () => {
+        toast.error('We couldn’t send your request. Please try again in a moment.')
       },
     }),
   )
