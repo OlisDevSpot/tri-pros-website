@@ -69,8 +69,8 @@ defineScopeOperator({
 
 /**
  * "This customer has no meeting yet" — the unclaimed-leads-pool predicate
- * (spec §4.3; mirrors `leadsPoolVisibility()` at
- * customers/dal/server/visibility.ts:22). Correlates on `ctx.pk` = customers.id.
+ * (spec §4.3; the 'leads' bucket of `derivedPipelineSql()` in
+ * customers/lib/derived-pipeline-sql.ts). Correlates on `ctx.pk` = customers.id.
  */
 defineScopeOperator({
   name: 'hasNoMeeting',
