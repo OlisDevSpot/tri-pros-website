@@ -49,7 +49,7 @@ export const meetingFlowRouter = createTRPCRouter({
       }
 
       const updated = dalToTrpc(await upsertCustomerProfile(
-        { session: ctx.session, ability: ctx.ability, scope: resolveActorScope(customerServerSpec, actor) },
+        { session: ctx.session, ability: ctx.ability, scope: resolveActorScope(customerServerSpec, actor), actor },
         { customerId, patch },
       ))
       // Inline await — ephemeral realtime fan-out is the explicit exception

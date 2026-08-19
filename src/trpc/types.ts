@@ -9,6 +9,7 @@
 import type { SQL } from 'drizzle-orm'
 
 import type { BetterAuthSession } from '@/shared/domains/auth/server'
+import type { Actor } from '@/shared/domains/permissions/scope/actor'
 import type { AppAbility } from '@/shared/domains/permissions/types'
 
 // ── Re-exports from DAL types (canonical source) ────────────────────────
@@ -44,13 +45,15 @@ export interface BaseTRPCContext {
   session: BetterAuthSession | null
   ability: AppAbility | null
   scope: SQL | null
+  actor: Actor | null
 }
 
-/** Context after protectedProcedure/agentProcedure — session + ability guaranteed non-null. */
+/** Context after protectedProcedure/agentProcedure — session + ability + actor guaranteed non-null. */
 export type AuthedContext = BaseTRPCContext & {
   session: BetterAuthSession
   ability: AppAbility
   scope: SQL | null
+  actor: Actor
 }
 
 /** HTTP adapter context — extends base with request/response headers. */

@@ -24,7 +24,7 @@ export async function GET(
   }
 
   const result = await getFullView(
-    { session: null, ability: null, scope: resolveActorScope(proposalServerSpec, actor) },
+    { session: null, ability: null, scope: resolveActorScope(proposalServerSpec, actor), actor },
     { id: proposalId },
   )
   if (!result.success || !result.data) {

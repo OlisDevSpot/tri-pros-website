@@ -144,7 +144,7 @@ export const customerPipelinesRouter = createTRPCRouter({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Project not found' })
       }
       return dalToTrpc(await meetingCrud.update(
-        { session: ctx.session, ability: ctx.ability, scope: resolveActorScope(meetingServerSpec, actor) },
+        { session: ctx.session, ability: ctx.ability, scope: resolveActorScope(meetingServerSpec, actor), actor },
         {
           id: input.meetingId,
           data: { projectId: input.projectId, meetingOutcome: 'converted_to_project' },

@@ -28,7 +28,7 @@ export async function GET(
 
   // TODO: Rebuild as procedure → QStash job → ai.service → DAL update (see spec)
   const result = await getFullView(
-    { session: null, ability: null, scope: resolveActorScope(proposalServerSpec, actor) },
+    { session: null, ability: null, scope: resolveActorScope(proposalServerSpec, actor), actor },
     { id: proposalId },
   )
   if (!result.success) {

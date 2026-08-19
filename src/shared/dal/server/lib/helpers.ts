@@ -24,6 +24,7 @@ import type { DalReturn, EntityServerSpec, ScopedContext } from '../types'
 import type { UserRole } from '@/shared/constants/enums'
 
 import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
+import { userActor } from '@/shared/domains/permissions/scope/actor'
 
 import { dalError, dalSuccess, ThrowableDalError } from '../types'
 import { resolveEffectiveScope } from './scope'
@@ -72,6 +73,7 @@ export function buildUserContext(
     session: { user: { id: userId, role: userRole } } as ScopedContext['session'],
     ability,
     scope: isOmni ? null : resolveEffectiveScope(spec, { userId, ability }),
+    actor: userActor(userId, ability),
   }
 }
 

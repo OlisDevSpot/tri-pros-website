@@ -8,3 +8,8 @@
 export type SystemReason
   // A server-derived id from an already scope-authorized read (transitive write).
   = | 'derived:contract-age-from-token-proposal'
+    // The bare SYSTEM_CONTEXT default — unclassified legacy privileged access.
+    // Every NEW privileged call site should use systemContext(<specific reason>);
+    // this variant exists only so SYSTEM_CONTEXT carries a real systemActor.
+    // Retired in Phase 8 (see epic Retiring-Seams Register).
+    | 'legacy:system-context'

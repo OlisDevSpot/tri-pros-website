@@ -20,6 +20,7 @@ export const createHTTPTRPCContext = cache(async (ctx: { req?: Request, resHeade
     session,
     ability: null,
     scope: null,
+    actor: null,
     req: ctx.req,
     resHeaders: ctx.resHeaders,
   }

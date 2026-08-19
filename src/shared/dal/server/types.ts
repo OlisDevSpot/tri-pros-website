@@ -12,8 +12,11 @@ import type z from 'zod'
 import type { Insert, Row, Update } from '@/shared/db/types'
 import type { BetterAuthSession } from '@/shared/domains/auth/server'
 import type { EntityName } from '@/shared/domains/permissions/abilities'
+import type { Actor } from '@/shared/domains/permissions/scope/actor'
 import type { SystemReason } from '@/shared/domains/permissions/scope/system-reasons'
 import type { AppAbility, AppSubject } from '@/shared/domains/permissions/types'
+
+import { systemActor } from '@/shared/domains/permissions/scope/actor'
 
 // ── Context ─────────────────────────────────────────────────────────────
 
@@ -33,6 +36,14 @@ export interface ScopedContext {
   session: BetterAuthSession | null
   ability: AppAbility | null
   scope: SQL | null
+  /**
+   * WHO is invoking this — the source of truth from which `scope` is derived
+   * (spec §3). Always non-null at a DAL entry: every construction site stamps a
+   * real actor (userActor / tokenActor / systemActor). `scope` remains the
+   * pre-resolved cache the permission-agnostic CRUD factory consumes; bespoke
+   * DALs may read `actor` directly (resolveActorScope / canAccess / phone gate).
+   */
+  actor: Actor
 }
 
 /**
@@ -43,6 +54,7 @@ export const SYSTEM_CONTEXT: ScopedContext = {
   session: null,
   ability: null,
   scope: null,
+  actor: systemActor('legacy:system-context'),
 }
 
 /**
@@ -54,8 +66,7 @@ export const SYSTEM_CONTEXT: ScopedContext = {
  * see ../../../plans/2026-08-10-casl-scope-compiler-epic.md (Retiring-Seams Register)
  */
 export function systemContext(reason: SystemReason): ScopedContext {
-  void reason // reason is documentation-at-call-site; captured for greppability
-  return { session: null, ability: null, scope: null }
+  return { session: null, ability: null, scope: null, actor: systemActor(reason) }
 }
 
 // ── Visibility Scope ────────────────────────────────────────────────────

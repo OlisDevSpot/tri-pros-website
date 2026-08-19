@@ -5,6 +5,7 @@ import superjson from 'superjson'
 import { ZodError } from 'zod'
 
 import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
+import { userActor } from '@/shared/domains/permissions/scope/actor'
 
 export { createHTTPTRPCContext } from '@/trpc/lib/create-http-context'
 
@@ -56,7 +57,7 @@ export const protectedProcedure = baseProcedure.use(async ({ ctx, next }) => {
   })
 
   return await next({
-    ctx: { ...ctx, session: ctx.session, ability, scope: null },
+    ctx: { ...ctx, session: ctx.session, ability, scope: null, actor: userActor(ctx.session.user.id, ability) },
   })
 })
 

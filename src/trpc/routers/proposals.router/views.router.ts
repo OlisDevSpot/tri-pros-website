@@ -47,7 +47,7 @@ export const viewsRouter = createTRPCRouter({
       // row. Uses getFullView (not handlers.getById) because we need
       // customer.name for the notification job payload.
       const proposal = dalToTrpc(await getFullView(
-        { session: null, ability: null, scope: resolveActorScope(proposalServerSpec, actor) },
+        { session: null, ability: null, scope: resolveActorScope(proposalServerSpec, actor), actor },
         { id: input.proposalId },
       ))
       if (!proposal) {

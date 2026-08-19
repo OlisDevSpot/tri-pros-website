@@ -9,6 +9,7 @@ import { eq } from 'drizzle-orm'
 
 import { resolveEffectiveScope } from '@/shared/dal/server/lib/scope'
 import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
+import { tokenActor, userActor } from '@/shared/domains/permissions/scope/actor'
 import { createMiddleware } from '@/trpc/init'
 
 /** Token path → eq(tokenColumn, token) + ability null. Session path → normal scope resolution. */
@@ -37,12 +38,16 @@ export function shareableMiddleware(spec: EntityServerSpec) {
     // ── Token path ───────────────────────────────────────────────────────
     // Token IS authorization. No session/ability needed.
     if (token && tokenColumn) {
+      // Token IS the authorization → the honest actor is a tokenActor whose
+      // reach is exactly the token-matched row(s). This is the token seam.
+      const scope = eq(tokenColumn, token)
       return next({
         ctx: {
           ...ctx,
           session: ctx.session,
           ability: null,
-          scope: eq(tokenColumn, token),
+          scope,
+          actor: tokenActor(scope, spec.caslSubject),
         },
       })
     }
@@ -70,6 +75,7 @@ export function shareableMiddleware(spec: EntityServerSpec) {
         session: ctx.session,
         ability,
         scope,
+        actor: userActor(ctx.session.user.id, ability),
       },
     })
   })
