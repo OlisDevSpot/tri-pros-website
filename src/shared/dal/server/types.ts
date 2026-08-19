@@ -115,8 +115,7 @@ export type CrudCallsiteHooks<
 
 /**
  * Factory-invariant hook + duplicate config for an entity. Returned by a
- * `CrudConfigFactory`, or synthesized from `EntityServerSpec` (deprecated path)
- * by `synthesizeFromSpec` in create-crud-dal.ts.
+ * `CrudConfigFactory`. Entities with no hooks pass no factory and get `{}`.
  */
 export interface CrudConfig<TTable extends PgTable, TId extends string | number = string> {
   hooks?: CrudHooks<TTable, TId>
@@ -185,62 +184,6 @@ export interface EntityServerSpec<
   /** Defaults to 'id'. Override for serial PKs or custom column names. */
   primaryKey?: string
   shareable?: { tokenColumn: string }
-  /**
-   * @deprecated Sub-plan A relocates hooks onto `createCrudDal(spec, configFactory)`.
-   * Still read via `synthesizeFromSpec` for entities not yet migrated; REMOVED in
-   * Sub-plan D — see docs/superpowers/plans/2026-08-16-crud-dal-sub-plan-a-factory-config-hooks.md.
-   *
-   * Entity lifecycle hooks. Executed by createCrudDal — both before and after.
-   *
-   * - `before` hooks: async, data transformation. Can read DB via DAL functions
-   *   (never naked `db`). Return the (possibly enriched) data.
-   * - `after` hooks: async, side effects (services, notifications, realtime).
-   *   The hook implementation decides what to `await` (critical) vs
-   *   `void .catch()` (best-effort).
-   *
-   * All hooks receive ScopedContext. Hooks should be thin orchestrators —
-   * pure business logic belongs in `entities/<entity>/lib/`, service
-   * orchestration uses existing services.
-   */
-  hooks?: {
-    create?: {
-      // eslint-disable-next-line ts/method-signature-style -- bivariant method signatures required for EntityServerSpec<Table> → EntityServerSpec<PgTable> assignability
-      before?(input: Insert<TTable>, ctx: ScopedContext): Promise<Insert<TTable>> | Insert<TTable>
-      // eslint-disable-next-line ts/method-signature-style
-      after?(row: Row<TTable>, ctx: ScopedContext): Promise<void>
-    }
-    update?: {
-      // eslint-disable-next-line ts/method-signature-style
-      before?(data: Update<TTable>, ctx: ScopedContext, meta: { id: string | number }): Promise<Update<TTable>> | Update<TTable>
-      // eslint-disable-next-line ts/method-signature-style
-      after?(row: Row<TTable>, ctx: ScopedContext, meta: {
-        previousRow: Row<TTable>
-        input: Update<TTable>
-      }): Promise<void>
-    }
-    delete?: {
-      // eslint-disable-next-line ts/method-signature-style
-      before?(id: string | number, ctx: ScopedContext): Promise<void>
-      // eslint-disable-next-line ts/method-signature-style
-      after?(id: string | number, ctx: ScopedContext): Promise<void>
-    }
-  }
-  /**
-   * @deprecated Sub-plan A relocates duplicate config into the config factory;
-   * REMOVED in Sub-plan D — see
-   * docs/superpowers/plans/2026-08-16-crud-dal-sub-plan-a-factory-config-hooks.md.
-   *
-   * Declarative duplicate config. Default behavior: copy full row minus PK.
-   * Duplicate routes through createImpl — create hooks fire automatically.
-   * This is NOT a hook. It's declarative configuration for field selection.
-   */
-  duplicate?: {
-    /** Fields to drop beyond PK (which is always dropped). */
-    exclude?: readonly string[]
-    /** Override/transform specific field values on the copy. */
-    // eslint-disable-next-line ts/method-signature-style
-    overrides?(source: Row<TTable>, ctx: ScopedContext): Partial<Insert<TTable>>
-  }
 }
 
 // ── CRUD Slot Names ─────────────────────────────────────────────────────

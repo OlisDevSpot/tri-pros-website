@@ -9,9 +9,9 @@
 // Optionally accepts a `CrudConfigFactory` — a late-bound function that
 // receives the crud handlers themselves (so hooks can call
 // `crudHandlers.getById(...)` for same-entity reads) and returns a
-// `CrudConfig` (factory-invariant hooks + duplicate config). Entities not
-// yet migrated pass no factory; their `CrudConfig` is synthesized from the
-// deprecated `spec.hooks`/`spec.duplicate` — see `synthesizeFromSpec` below.
+// `CrudConfig` (factory-invariant hooks + duplicate config). Entities with no
+// hooks pass no factory and get an empty `CrudConfig` ({}) — the plain
+// row-level CRUD path with no side-effects.
 //
 // Two-layer hook onion per mutation: factory hooks (outer, entity-invariant)
 // wrap call-site hooks (inner, invocation-specific) —
@@ -56,7 +56,7 @@ export function createCrudDal<TTable extends PgTable, TId extends string | numbe
   const crudHandlers = {} as CrudHandlers<TTable, TId> // ← bootstrap cast (spec §2.3)
   const cfg: CrudConfig<TTable, TId> = configFactory
     ? configFactory(crudHandlers)
-    : synthesizeFromSpec(spec)
+    : {}
 
   Object.assign(crudHandlers, {
     getById: (ctx: ScopedContext, input: { id: TId }) => getByIdImpl(spec, pkColumn, ctx, input),
@@ -70,39 +70,6 @@ export function createCrudDal<TTable extends PgTable, TId extends string | numbe
       duplicateImpl(spec, cfg, pkColumn, ctx, input, options),
   })
   return crudHandlers
-}
-
-/**
- * @deprecated Sub-plan A shim. Rebuilds a `CrudConfig` from the deprecated
- * `spec.hooks`/`spec.duplicate` for entities not yet on a config factory.
- * REMOVED in Sub-plan D once `spec.hooks` is deleted — see
- * docs/superpowers/plans/2026-08-16-crud-dal-sub-plan-a-factory-config-hooks.md.
- *
- * create/update hooks pass through (their `void` afters are assignable to
- * `Row | void`); only `delete` needs bridging — the legacy hook takes `id`,
- * the new one takes the row, so we forward `row[pk]`.
- */
-function synthesizeFromSpec<TTable extends PgTable, TId extends string | number>(
-  spec: EntityServerSpec<TTable, TId>,
-): CrudConfig<TTable, TId> {
-  const h = spec.hooks
-  const pkName = spec.primaryKey ?? 'id'
-  const legacyDelete = h?.delete
-  return {
-    hooks: h && {
-      create: h.create,
-      update: h.update,
-      delete: legacyDelete && {
-        before: legacyDelete.before
-          ? (row, ctx) => legacyDelete.before!((row as Record<string, unknown>)[pkName] as TId, ctx)
-          : undefined,
-        after: legacyDelete.after
-          ? (row, ctx) => legacyDelete.after!((row as Record<string, unknown>)[pkName] as TId, ctx)
-          : undefined,
-      },
-    },
-    duplicate: spec.duplicate,
-  }
 }
 
 // ── getById ──────────────────────────────────────────────────────────────
