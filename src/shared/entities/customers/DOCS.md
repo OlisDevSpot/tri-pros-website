@@ -36,21 +36,24 @@ UI surfaces also receive `hasSentProposal: boolean` so they can distinguish "pho
 
 ### derived-5-bucket-pipeline
 
-UI surfaces classify customers against a 5-bucket pipeline (`projects | fresh | leads | rehash | dead`). The underlying column `customers.pipeline` is 3-bucket (`active | rehash | dead`); `derivedPipelineSql()` explodes `active` based on downstream records:
+UI surfaces classify customers against a 5-bucket pipeline (`projects | fresh | leads | rehash | dead`), derived PURELY from `meetings.meeting_outcome` + project existence — no stored `.pipeline` column is read. `derivedPipelineSql()` is a priority-ordered, first-match, total CASE:
 
 ```
-rehash | dead     → passthrough (stored on customers.pipeline)
-active + project  → 'projects'   (signed customer)
-active + meeting  → 'fresh'      (meeting-stage)
-active otherwise  → 'leads'      (pre-meeting)
+projects — has a project OR ≥1 positive outcome (converted_to_project | additional_work)
+leads    — no meetings
+fresh    — ≥1 non-negative meeting (unset/neutral; no positive/project by prior arms)
+rehash   — all meetings negative, ≥1 RECALLABLE (cancelled|no_show|pns|npns|nra)
+dead     — all meetings negative, ALL TERMINAL (lost_to_competitor|not_good|ftd)
 ```
 
-**Why**: `rehash` and `dead` need to live on the customer (a dead customer may have no meetings; the dead state outlives the meeting). `active` is too coarse for the UI — the 5-bucket view distinguishes leads / fresh / signed by what records the customer has.
+Any non-negative meeting pulls a customer out of rehash/dead into fresh; among all-negative customers, ANY recallable ⇒ rehash (mixed recallable+terminal → rehash; hope dominates). The recallable/terminal distinction — and sentiment, and `OUTCOME_PIPELINE_MAP` — all DERIVE from the single outcome classifier `MEETING_OUTCOME_CLASS` in `constants/enums/meetings.ts` (the finest-grain SoT: `unset | neutral | positive | negative-recallable | negative-terminal`).
+
+**Why**: pipeline is a perfectly-derived in-code fact, not a persisted column (ADR-0005 JIT-derivation). This removed a real drift bug — the old CASE read `customers.pipeline`, which is **write-orphaned** (always `'active'`), so its rehash/dead arms never fired and those customers mis-read as fresh/leads.
 
 **Reference impl**: `lib/derived-pipeline-sql.ts` (`derivedPipelineSql`, `derivedPipelineWhere`)
-**Enforced by**: convention — every list query that surfaces `pipeline` to a customer-table consumer must use this helper, not raw `customers.pipeline`.
+**Enforced by**: convention — every list query that surfaces `pipeline` to a customer-table consumer must use this helper, never a raw `.pipeline` column read.
 
-**⚠️ Stale comment on schema**: `customers.pipeline` is marked `@deprecated` in `src/shared/db/schema/customers.ts` ("will be removed after backfill migration"), but it's still the source of truth for `rehash` and `dead`. The deprecation comment is misleading and should be removed or rephrased — those values can't move to `meetings.pipeline` (a dead customer may have no meetings).
+**Retired columns (deferred physical drop)**: `customers.pipeline` (write-orphaned) and the customer-grain read of `meetings.pipeline` are no longer consulted here. `meetings.pipeline` still exists as a *materialized* meeting-grain projection of `meeting_outcome` (maintained by the meetings CRUD update hook via `OUTCOME_PIPELINE_MAP`), read only by the meeting-list filter — see `../meetings/DOCS.md#meeting-pipeline-storage-vs-derived`. Both columns are slated for a dedicated drop ceremony; see `docs/plans/2026-08-10-casl-scope-compiler-epic.md` and the deferred `domains/pipelines` engine/UI rethink.
 
 ### signed-customer-eq-has-project
 

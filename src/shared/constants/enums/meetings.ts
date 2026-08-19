@@ -66,40 +66,74 @@ export const meetingOutcomes = [
 ] as const
 export type MeetingOutcome = (typeof meetingOutcomes)[number]
 
-export type MeetingOutcomeSentiment = 'positive' | 'neutral' | 'negative' | 'unset'
-
 /**
- * THE canonical classifier for a meeting outcome's sentiment. Every color map,
- * stat bucket, and negative/positive branch in the app derives from this — do
- * not re-encode outcome sentiment anywhere else.
+ * THE single source of truth for what a meeting outcome MEANS. Each outcome is
+ * classified exactly once, at the finest grain the domain needs — the common
+ * refinement of the two axes every consumer cares about:
+ *   • sentiment (color / stats / reason-gating): unset · neutral · positive · negative
+ *   • pipeline consequence of a negative: recallable (→ rehash) vs terminal (→ dead)
  *
- * - unset:    no decision recorded yet (not_set). Never colored like a neutral
- *             result; never requires a reason.
- * - neutral:  a real, in-progress / non-terminal result (follow-up, proposal
- *             created/sent). Each keeps its own distinct hue.
- * - positive: revenue outcome (new project or additional work).
- * - negative: lost / failed meeting.
+ * Everything else — `MEETING_OUTCOME_SENTIMENT`, the recallable/terminal/positive
+ * sets, `OUTCOME_PIPELINE_MAP` — DERIVES from this map, so they can never drift
+ * and no runtime partition guard is needed. Because it's `Record<MeetingOutcome, …>`,
+ * adding an outcome is a compile error until it is classified here, once.
+ * Abbrev meanings: memory/reference-meeting-outcome-abbreviations.md.
  */
-export const MEETING_OUTCOME_SENTIMENT: Record<MeetingOutcome, MeetingOutcomeSentiment> = {
+export type MeetingOutcomeClass = 'unset' | 'neutral' | 'positive' | 'negative-recallable' | 'negative-terminal'
+
+export const MEETING_OUTCOME_CLASS: Record<MeetingOutcome, MeetingOutcomeClass> = {
   not_set: 'unset',
   follow_up_needed: 'neutral',
   proposal_created: 'neutral',
   proposal_sent: 'neutral',
   converted_to_project: 'positive',
   additional_work: 'positive',
-  not_good: 'negative',
-  pns: 'negative',
-  npns: 'negative',
-  ftd: 'negative',
-  no_show: 'negative',
-  lost_to_competitor: 'negative',
-  cancelled: 'negative',
-  nra: 'negative',
+  cancelled: 'negative-recallable',
+  no_show: 'negative-recallable',
+  pns: 'negative-recallable',
+  npns: 'negative-recallable',
+  nra: 'negative-recallable',
+  lost_to_competitor: 'negative-terminal',
+  not_good: 'negative-terminal',
+  ftd: 'negative-terminal',
 }
+
+/** The outcomes whose class is one of the given classes. The one way to slice the SoT. */
+function outcomesOfClass(...classes: readonly MeetingOutcomeClass[]): MeetingOutcome[] {
+  return meetingOutcomes.filter(o => classes.includes(MEETING_OUTCOME_CLASS[o]))
+}
+
+// ── Derived views of the outcome taxonomy (never hand-authored) ──────────────
+
+export type MeetingOutcomeSentiment = 'positive' | 'neutral' | 'negative' | 'unset'
+
+/** Coarsen the class to the 4-value sentiment axis (both negative kinds → negative). */
+function classToSentiment(c: MeetingOutcomeClass): MeetingOutcomeSentiment {
+  return c === 'negative-recallable' || c === 'negative-terminal' ? 'negative' : c
+}
+
+/**
+ * Outcome → sentiment (color maps, stat buckets, reason-gating). Derived from
+ * `MEETING_OUTCOME_CLASS`; same shape/values as before. (`Object.fromEntries`
+ * widens the key type, so re-assert the `Record` — the values are exhaustive by
+ * construction over `meetingOutcomes`.)
+ */
+export const MEETING_OUTCOME_SENTIMENT = Object.fromEntries(
+  meetingOutcomes.map(o => [o, classToSentiment(MEETING_OUTCOME_CLASS[o])]),
+) as Record<MeetingOutcome, MeetingOutcomeSentiment>
 
 export function isNegativeOutcome(outcome: MeetingOutcome): boolean {
   return MEETING_OUTCOME_SENTIMENT[outcome] === 'negative'
 }
+
+/**
+ * Pipeline-relevant outcome sets, sliced from the SoT. `negative-recallable` →
+ * a customer's `rehash` bucket; `negative-terminal` → `dead`; `positive` →
+ * `projects`. Consumed by `derived-pipeline-sql.ts` and `outcome-pipeline-map.ts`.
+ */
+export const RECALLABLE_OUTCOMES: MeetingOutcome[] = outcomesOfClass('negative-recallable')
+export const TERMINAL_OUTCOMES: MeetingOutcome[] = outcomesOfClass('negative-terminal')
+export const POSITIVE_OUTCOMES: MeetingOutcome[] = outcomesOfClass('positive')
 
 /**
  * An agent must document a reason (stored as a customer note) whenever they set

@@ -98,10 +98,12 @@ Only `Fresh` and `Project` are creatable (`creatableMeetingTypes`); `Follow-up` 
 
 ### meeting-pipeline-storage-vs-derived
 
-The `meetings.pipeline` column stores 3 values (`fresh | rehash | dead`). A meeting's display pipeline includes `projects` — derived from `projectId IS NOT NULL`. The customer-pipeline `derivedPipelineSql` mirrors this (see `../customers/DOCS.md#derived-5-bucket-pipeline`).
+The `meetings.pipeline` column stores 3 values (`fresh | rehash | dead`) and is now a **materialized meeting-grain projection of `meeting_outcome`** — the meetings CRUD update hook writes it via `OUTCOME_PIPELINE_MAP` (recallable→rehash, terminal→dead, else unchanged). A meeting's display pipeline includes `projects` — derived from `projectId IS NOT NULL`.
 
-**Why**: a meeting with a project IS a project-pipeline meeting; the projectId link is the source of truth, not a separate enum value.
-**Reference impl**: schema; consumers branch on `meetings.projectId IS NOT NULL`
+Customer-grain classification NO LONGER reads this column — `../customers/DOCS.md#derived-5-bucket-pipeline` derives the 5 buckets directly from `meeting_outcome` + project existence. The only remaining reader of `meetings.pipeline` is the meeting-list filter (`dal/server/queries.ts`). The column is a materialized-only convenience slated for a deferred physical drop once that filter derives from outcome too.
+
+**Why**: pipeline is a derived fact, not an independently-authored column (ADR-0005). Keeping the meeting-grain column purely materialized-from-outcome (never hand-authored except the deferred `moveCustomerToPipeline` override) keeps it consistent with the customer-grain derivation.
+**Reference impl**: `entities/meetings/dal/server/crud.ts` (update.before materializes it); `domains/pipelines/lib/outcome-pipeline-map.ts`
 **Enforced by**: convention
 
 ### outcome-selectable-vs-derived
