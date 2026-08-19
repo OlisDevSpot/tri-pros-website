@@ -1,4 +1,4 @@
-import type { AppAbility } from '@/shared/domains/permissions/types'
+import type { Actor } from '@/shared/domains/permissions/scope/actor'
 import { sql } from 'drizzle-orm'
 import { customers } from '@/shared/db/schema/customers'
 
@@ -9,7 +9,7 @@ import { customers } from '@/shared/db/schema/customers'
  * see ../DOCS.md (when written: #phone-visibility-threshold)
  *
  * Agent-facing queries that expose `customers.phone` MUST swap the column for
- * `gatedPhoneSql(canSeeUngatedPhone(ctx.ability))` and include
+ * `gatedPhoneSql(canSeeUngatedPhone(ctx.actor))` and include
  * `hasSentProposalSql()` so the client can distinguish "locked" from "empty"
  * in the unlock-notice render.
  * Server-side raw-phone consumers (GCal push, proposal delivery, email jobs)
@@ -34,14 +34,15 @@ export function hasSentProposalSql() {
 }
 
 /**
- * Ungated-phone policy. Omni callers (super-admin), leads-pool workers
- * (dispatchers, who dial leads), and trusted server/token paths (ability === null)
- * see raw phone. Everyone else is gated behind a sent proposal.
+ * Ungated-phone policy on the ACTOR (spec §9). Trusted non-user actors — system
+ * jobs and homeowner tokens — see raw phone; a `user` actor sees it only when
+ * omni (super-admin) or a leads-pool worker (dispatcher, who dials leads).
+ * Everyone else is gated behind a sent proposal.
  */
-export function canSeeUngatedPhone(ability: AppAbility | null): boolean {
-  if (!ability)
-    return true // SYSTEM_CONTEXT / token path — already trusted upstream
-  return ability.can('manage', 'all') || ability.can('read', 'LeadsPool')
+export function canSeeUngatedPhone(actor: Actor): boolean {
+  if (actor.kind !== 'user')
+    return true // system / token — already trusted upstream
+  return actor.ability.can('manage', 'all') || actor.ability.can('read', 'LeadsPool')
 }
 
 export function gatedPhoneSql(canSeeUngated: boolean) {

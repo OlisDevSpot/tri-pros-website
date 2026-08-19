@@ -28,7 +28,7 @@ import { projectServerSpec } from '@/shared/entities/projects/lib/server-spec'
 
 export async function getCustomerProfile(ctx: ScopedContext, customerId: string): Promise<CustomerProfileData> {
   const { actor } = ctx
-  const canSeeUngated = canSeeUngatedPhone(ctx.ability) // Task 4 flips to (actor)
+  const canSeeUngated = canSeeUngatedPhone(actor)
   const { phone: _phone, ...customerCols } = getTableColumns(customers)
 
   const [customerRow] = await db

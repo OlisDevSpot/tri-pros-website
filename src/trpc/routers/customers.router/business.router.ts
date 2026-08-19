@@ -121,7 +121,7 @@ export const businessRouter = createTRPCRouter({
         .select({
           id: customers.id,
           name: customers.name,
-          phone: gatedPhoneSql(canSeeUngatedPhone(ctx.ability)),
+          phone: gatedPhoneSql(canSeeUngatedPhone(ctx.actor)),
           hasSentProposal: hasSentProposalSql(),
           address: customers.address,
         })

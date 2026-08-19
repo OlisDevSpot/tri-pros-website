@@ -279,7 +279,7 @@ export async function listLeadsPaginated(
     // Phone is gated at the DAL (customers DOCS#phone-visibility-threshold) so a
     // leaked query can't expose it. Today the only caller is superAdminProcedure
     // (canSeeUngatedPhone → raw phone), but the gate makes a future scoped caller leak-proof.
-    const canSeeUngated = canSeeUngatedPhone(ctx.ability)
+    const canSeeUngated = canSeeUngatedPhone(ctx.actor)
 
     const statusPredicate
       = args.status === 'all'

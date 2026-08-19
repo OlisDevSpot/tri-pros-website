@@ -162,7 +162,7 @@ export async function listMeetings(
         .select({
           ...getTableColumns(meetings),
           customerName: customers.name,
-          customerPhone: gatedPhoneSql(canSeeUngatedPhone(ctx.ability)),
+          customerPhone: gatedPhoneSql(canSeeUngatedPhone(ctx.actor)),
           customerHasSentProposal: hasSentProposalSql(),
           customerAddress: customers.address,
           customerCity: customers.city,
@@ -276,7 +276,7 @@ export async function getByIdWithJoins(
         customer: {
           ...customerCols,
           ...profileCols(),
-          phone: gatedPhoneSql(canSeeUngatedPhone(ctx.ability)),
+          phone: gatedPhoneSql(canSeeUngatedPhone(ctx.actor)),
           hasSentProposal: hasSentProposalSql(),
         },
         ownerName: user.name,

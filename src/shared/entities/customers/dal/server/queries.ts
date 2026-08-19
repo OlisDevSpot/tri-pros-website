@@ -48,7 +48,7 @@ function customerSelectWithGate(ctx: ScopedContext) {
   const { phone: _phone, ...rest } = getTableColumns(customers)
   return {
     ...rest,
-    phone: gatedPhoneSql(canSeeUngatedPhone(ctx.ability)),
+    phone: gatedPhoneSql(canSeeUngatedPhone(ctx.actor)),
     hasSentProposal: hasSentProposalSql(),
   }
 }

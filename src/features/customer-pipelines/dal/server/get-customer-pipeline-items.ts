@@ -38,7 +38,7 @@ const NON_NEGATIVE_MEETING = notInArray(meetings.meetingOutcome, [...RECALLABLE_
 
 export async function getCustomerPipelineItems(ctx: ScopedContext, pipeline: Pipeline = 'fresh'): Promise<CustomerPipelineItem[]> {
   const { actor } = ctx
-  const canSeeUngated = canSeeUngatedPhone(ctx.ability) // Task 4 flips to (actor)
+  const canSeeUngated = canSeeUngatedPhone(actor)
   // Two-level scope: WHICH customers (their visibility) AND which bucket (single,
   // total, mutually exclusive). Enrichment is scoped per-entity inside each builder.
   const customerScope = requireResolvedScope(resolveActorScope(customerServerSpec, actor))
