@@ -1,13 +1,14 @@
-import type { UserRole } from '@/shared/constants/enums'
-
 import type { Pipeline } from '@/shared/constants/enums/pipelines'
+
+import type { EntityServerSpec, ScopedContext } from '@/shared/dal/server/types'
 
 import type { FreshPipelineStage } from '@/shared/domains/pipelines/constants/fresh-pipeline'
 
 import { TRPCError } from '@trpc/server'
 import { and, eq } from 'drizzle-orm'
 
-import { buildUserContext, dalVerifySuccess, requireResolvedScope } from '@/shared/dal/server/lib/helpers'
+import { dalVerifySuccess, requireResolvedScope } from '@/shared/dal/server/lib/helpers'
+import { resolveActorScope } from '@/shared/dal/server/lib/resolve-actor-scope'
 import { db } from '@/shared/db'
 import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
@@ -25,25 +26,21 @@ interface MoveParams {
   fromStage: string
   toStage: string
   pipeline: Pipeline
-  userId: string
-  userRole: UserRole
 }
 
-export async function moveCustomerPipelineItem({
-  customerId,
-  fromStage,
-  toStage,
-  pipeline,
-  userId,
-  userRole,
-}: MoveParams): Promise<void> {
+export async function moveCustomerPipelineItem(
+  ctx: ScopedContext,
+  { customerId, fromStage, toStage, pipeline }: MoveParams,
+): Promise<void> {
+  // Re-scope the actor's context to a specific entity for a scoped CRUD write —
+  // the actor is the source, `scope` the per-entity derived predicate the DAL reads.
+  const scopedFor = (spec: EntityServerSpec): ScopedContext => ({ ...ctx, scope: resolveActorScope(spec, ctx.actor) })
+
   // Leads pipeline: update customers.pipelineStage through customerCrud so any
-  // future spec.hooks.update.* fires consistently. The user must be able to see
-  // the customer (meeting-participation visibility) for the write to land.
+  // spec.hooks.update.* fires. The actor must be able to see the customer.
   if (pipeline === 'leads') {
-    const ctx = buildUserContext(userId, userRole, customerServerSpec)
     dalVerifySuccess(
-      await customerCrud.update(ctx, {
+      await customerCrud.update(scopedFor(customerServerSpec), {
         id: customerId,
         data: { pipelineStage: toStage },
       }),
@@ -61,7 +58,6 @@ export async function moveCustomerPipelineItem({
 
   // Projects pipeline: update projects.pipelineStage directly
   if (pipeline === 'projects') {
-    // Find the project for this customer and update its pipelineStage
     const [project] = await db
       .select({ id: projects.id })
       .from(projects)
@@ -69,21 +65,14 @@ export async function moveCustomerPipelineItem({
       .limit(1)
 
     if (!project) {
-      throw new TRPCError({
-        code: 'NOT_FOUND',
-        message: 'No project found for this customer',
-      })
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'No project found for this customer' })
     }
 
-    await db
-      .update(projects)
-      .set({ pipelineStage: toStage })
-      .where(eq(projects.id, project.id))
-
+    await db.update(projects).set({ pipelineStage: toStage }).where(eq(projects.id, project.id))
     return
   }
 
-  // Fresh pipeline: same logic as before
+  // Fresh pipeline
   const freshFromStage = fromStage as FreshPipelineStage
   const freshToStage = toStage as FreshPipelineStage
   const allowed = FRESH_ALLOWED_DRAG_TRANSITIONS[freshFromStage]
@@ -100,38 +89,34 @@ export async function moveCustomerPipelineItem({
     || (fromStage === 'follow_up_scheduled' && toStage === 'meeting_completed')
   ) {
     const targetOutcome = toStage === 'meeting_completed' ? 'follow_up_needed' : 'not_set'
-    const ctx = buildUserContext(userId, userRole, meetingServerSpec)
+    const meetingCtx = scopedFor(meetingServerSpec)
 
     const customerMeetings = await db
       .select({ id: meetings.id })
       .from(meetings)
       .where(and(
         eq(meetings.customerId, customerId),
-        requireResolvedScope(ctx.scope),
+        requireResolvedScope(meetingCtx.scope),
         eq(meetings.meetingOutcome, 'not_set'),
       ))
       .orderBy(meetings.createdAt)
       .limit(1)
 
     if (customerMeetings.length === 0) {
-      throw new TRPCError({
-        code: 'NOT_FOUND',
-        message: 'No in-progress meeting found for this customer',
-      })
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'No in-progress meeting found for this customer' })
     }
 
     dalVerifySuccess(
-      await meetingCrud.update(ctx, {
+      await meetingCrud.update(meetingCtx, {
         id: customerMeetings[0].id,
         data: { meetingOutcome: targetOutcome },
       }),
     )
-
     return
   }
 
   if (fromStage === 'proposal_sent' && toStage === 'declined') {
-    const ctx = buildUserContext(userId, userRole, proposalServerSpec)
+    const proposalCtx = scopedFor(proposalServerSpec)
 
     const sentProposals = await db
       .select({ id: proposals.id })
@@ -139,31 +124,19 @@ export async function moveCustomerPipelineItem({
       .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
       .where(and(
         eq(meetings.customerId, customerId),
-        requireResolvedScope(ctx.scope),
+        requireResolvedScope(proposalCtx.scope),
         eq(proposals.status, 'sent'),
       ))
 
     if (sentProposals.length === 0) {
-      throw new TRPCError({
-        code: 'NOT_FOUND',
-        message: 'No sent proposals found for this customer',
-      })
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'No sent proposals found for this customer' })
     }
 
     for (const p of sentProposals) {
-      dalVerifySuccess(
-        await proposalCrud.update(ctx, {
-          id: p.id,
-          data: { status: 'declined' },
-        }),
-      )
+      dalVerifySuccess(await proposalCrud.update(proposalCtx, { id: p.id, data: { status: 'declined' } }))
     }
-
     return
   }
 
-  throw new TRPCError({
-    code: 'BAD_REQUEST',
-    message: 'Unhandled transition',
-  })
+  throw new TRPCError({ code: 'BAD_REQUEST', message: 'Unhandled transition' })
 }

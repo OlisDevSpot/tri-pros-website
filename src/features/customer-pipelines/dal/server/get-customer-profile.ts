@@ -1,11 +1,14 @@
 import type { CustomerProfileData, CustomerProfileMeeting, CustomerProfileProject, CustomerProfileProposal, CustomerProfileProposalView } from '@/features/customer-pipelines/types'
 
+import type { ScopedContext } from '@/shared/dal/server/types'
 import type { CustomerLeadAttributionRow } from '@/shared/db/schema/customer-lead-attribution'
 
 import { TRPCError } from '@trpc/server'
 import { and, asc, count, desc, eq, getTableColumns, sql } from 'drizzle-orm'
 
 import { deriveProjectStatusBucket } from '@/shared/constants/enums'
+import { requireResolvedScope } from '@/shared/dal/server/lib/helpers'
+import { resolveActorScope } from '@/shared/dal/server/lib/resolve-actor-scope'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { customerEnrichment } from '@/shared/db/schema/customer-enrichment'
@@ -17,29 +20,22 @@ import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
-import { userCanSeeCustomer } from '@/shared/entities/customers/dal/server/visibility'
-import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { profileCols } from '@/shared/entities/customers/lib/profile-select'
+import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
+import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
+import { projectServerSpec } from '@/shared/entities/projects/lib/server-spec'
 
-// Local viewer shape for this DAL. The customers entity used to export a
-// shared `CustomersViewer` interface; that was removed when queries.ts
-// adopted the canonical (ctx: ScopedContext, input) signature. This file is
-// next on the migration list — until then, keep the shape inline so the
-// customer-pipelines router caller stays unchanged.
-interface CustomerProfileViewer {
-  userId: string
-  isSuperAdmin: boolean
-  canSeeUngated: boolean
-}
-
-export async function getCustomerProfile(customerId: string, viewer: CustomerProfileViewer): Promise<CustomerProfileData> {
+export async function getCustomerProfile(ctx: ScopedContext, customerId: string): Promise<CustomerProfileData> {
+  const { actor } = ctx
+  const canSeeUngated = canSeeUngatedPhone(ctx.ability) // Task 4 flips to (actor)
   const { phone: _phone, ...customerCols } = getTableColumns(customers)
 
   const [customerRow] = await db
     .select({
       ...customerCols,
       ...profileCols(),
-      phone: gatedPhoneSql(viewer.canSeeUngated),
+      phone: gatedPhoneSql(canSeeUngated),
       hasSentProposal: hasSentProposalSql(),
       attribution: getTableColumns(customerLeadAttribution),
     })
@@ -48,7 +44,9 @@ export async function getCustomerProfile(customerId: string, viewer: CustomerPro
     .leftJoin(customerLeadAttribution, eq(customerLeadAttribution.customerId, customers.id))
     .where(and(
       eq(customers.id, customerId),
-      viewer.isSuperAdmin ? undefined : userCanSeeCustomer(viewer.userId, customers.id),
+      // Point-probe folded into the by-id read: a row-miss under the actor's
+      // customer scope IS the NOT_FOUND. null scope (omni) → undefined → unrestricted.
+      requireResolvedScope(resolveActorScope(customerServerSpec, actor)),
     ))
 
   if (!customerRow) {
@@ -83,7 +81,10 @@ export async function getCustomerProfile(customerId: string, viewer: CustomerPro
       updatedAt: meetings.updatedAt,
     })
     .from(meetings)
-    .where(eq(meetings.customerId, customerId))
+    .where(and(
+      eq(meetings.customerId, customerId),
+      requireResolvedScope(resolveActorScope(meetingServerSpec, actor)),
+    ))
     .orderBy(desc(meetings.createdAt))
 
   const proposalRows = await db
@@ -217,7 +218,10 @@ export async function getCustomerProfile(customerId: string, viewer: CustomerPro
       createdAt: projects.createdAt,
     })
     .from(projects)
-    .where(eq(projects.customerId, customerId))
+    .where(and(
+      eq(projects.customerId, customerId),
+      requireResolvedScope(resolveActorScope(projectServerSpec, actor)),
+    ))
     .orderBy(desc(projects.createdAt))
 
   // Group meetings by projectId for project cards
