@@ -1,6 +1,7 @@
 # CASL Scope Compiler Epic
 
 > **Status:** Phases 0–5 DONE (0–3 2026-08-11/12; 4 2026-08-18; 5 2026-08-19). Next: **Phase 6** (owned sub-entity cutovers + homeowner invariant). Tail **resequenced 2026-08-18** (Phase-4 grill) from Phase P/4/5 into **Phase 4→8** — see "Phase 4–8 resequence" below. Whole epic ships in ONE worktree (`.worktrees/issue-285`); merge to main is a single integration pass after the overhaul — NOT phase-by-phase.
+> **⚠️ 2026-08-20 audit finding:** three read-only audits surfaced a load-bearing structural gap — **reads are on CASL, mutations are still on the legacy engine** — plus a new financial-read leak class and an auth-in-hooks inventory. Two grilled work-units (financial chokepoint · action-aware mutations) + a dead-code pull-forward were added; see **"## Structural finding (2026-08-20)"** below. This **corrects the "Phase 7 = mechanical sweep" premise.**
 > **Canonical design:** `docs/superpowers/specs/2026-08-10-casl-scope-compiler-design.md` (v2). This tracker does NOT restate the design — read the spec for the *why* and the module interfaces. This doc is the **roadmap + status**: which phase is where, what blocks what, and where each phase's detailed executable plan lives.
 > **Builds on:** the shipped scope engine from [[project-trpc-standardization-epic]] "Increment A" (`resolveEffectiveScope` / `bridgeToParent` / `isVisible` in `src/shared/dal/server/lib/scope.ts`). This epic **replaces** that hand-written-`visibility(scope)` engine with a CASL-compiled predicate; the two coexist until **Phase 8** deletes the old one.
 > **Related:** ADR-0002 (Entity Server System), `docs/permissions/visibility-rules-catalog.md`, `memory/project-permissions-casl-compiler.md`, [[project-dispatcher-role]].
@@ -108,6 +109,49 @@ Census from the requirements agents, triaged by **structural churn** (is Project
 
 Plus `canSeeUngatedPhone(Actor)` signature cutover (spec §9, signature-only) rides Phase 4.
 
+## Structural finding (2026-08-20 audit — reads on CASL, mutations on legacy)
+
+Three read-only audits (auth-outside-CASL · legacy/dead visibility · financial-read blast radius) converged on **one root cause the phases above under-state**: the migration cut **reads** onto CASL but left **mutations** on the legacy engine.
+
+**Mechanism.** Every entity's mutations — migrated or not — resolve their scope through `resolveVisibilityScope` (`create-crud-router.ts:85`) → `resolveEffectiveScope` → `spec.visibility`; and `resolveActorScope` compiles **`read` only** (hardcoded action, `resolve-actor-scope.ts`). So a mutation's WHERE is the *read* scope. **Per-action / own-record authorization is therefore inexpressible in CASL today** → it lives in imperative entity hooks (`assertNoteAuthorOrAdmin`) and is hand-**triplicated** to the client (server hook + client mirror + conditionless CASL). This is the epic's split, surfacing on the write side.
+
+**Correction to the roadmap:** **Phase 7 is NOT a purely mechanical sweep.** The mutation-path cutover (`resolveVisibilityScope → resolveActorScope`) carries a real design — **action-aware scope resolution** (compile `update`/`delete`/`create` scope, not just `read`), moving own-record rules into CASL conditions, retiring the hooks, and the client reading conditions off the ability. That design is **Grill C** below and is a prerequisite for Phase 8's engine deletion.
+
+### Two grilled work-units to insert (each gets its own grill + JIT plan — NOT designed here)
+
+- **Financial read chokepoint (Grill B) — ~Phase 5.5 · structural (user ruling 2026-08-20).** A NEW leak class the phases never tracked: proposal/project *financial* reads gated by the wrong subject's scope. Make it structurally impossible for a query to select `finalTcpCents`/`projectJSON` without `resolveActorScope(proposal|projectServerSpec, actor)` — a scoped read chokepoint (DAL method / read primitive), not per-site patches. **Blocks the dispatcher fresh-wide widening (Task 2).** blocked-by: Phase 5.
+- **Action-aware mutation scope + retire auth-in-hooks (Grill C) — Phase-7 precursor.** Move mutations onto action-aware CASL scope so own-record rules become declarative conditions the CRUD factory's `ctx.scope` WHERE already enforces (`create-crud-dal.ts:213` update / `:264` delete); retire the imperative gates; client affordance reads the same rule. Upgrades "mechanical Phase 7" into a designed phase. blocked-by: Phase 5. **Overlaps** the CRUD-DAL mutation-interface epic's sub-plan D adoption — coordinate, don't collide.
+
+### Dispatcher corrections (the trigger) re-homed
+The #285 dispatcher work that surfaced all this now rides the foundation, not duct-tape. **Task 2** (dispatcher fresh-wide + all-meetings) lands *after* Grill B — else it activates the financial leak (the fresh-builder sites go live "the moment a role with divergent scopes reaches fresh"). **Task 3** (dispatcher notes + full sales-discovery profile): the note grant becomes a CASL `{authorId}` condition under Grill C, not a hook; the `CustomerProfile` read/update + `age` grants are independent and can ride either. The dispatcher **rehash+dead widening** (`$inDerivedPipeline:['leads','rehash','dead']` + `getAccessiblePipelines`) is done + smoke-verified on-branch (commit pending). Plan: `docs/superpowers/plans/2026-08-20-dispatcher-visibility-corrections.md` (Task 1 deferred→Grill B; Task 3 reworked→Grill C).
+
+### Ledger 1 — Financial-read leak sites (Grill B scope)
+| Site | Financial cols | Gated by | Verdict |
+|---|---|---|---|
+| `get-customer-profile.ts:90-116` (proposalRows) | `finalTcpCents`→value, SOW | meeting scope only | **CONFIRMED** — dispatcher-reachable (rehash/dead customers w/ proposals) |
+| `get-customer-pipeline-items.ts:256-272` (proposalDetailRows) | `finalTcpCents`→value | meeting scope | POTENTIAL — live once dispatcher gets fresh |
+| `get-customer-pipeline-items.ts:206-221` (proposalRows aggregate) | status/count/contract flag | meeting scope | POTENTIAL |
+| `get-customer-pipeline-items.ts:428-442` (getProjectsPipelineItems) | `finalTcpCents`→value | `meetingIds` only (no proposal scope) | POTENTIAL — weakest gating |
+| `get-action-queue.ts:120-142` (sentProposals) | SOW trade label | participation | POTENTIAL-LOW |
+| `customer-pipelines.router.ts:118-123` (getCustomerProjects) | status/label (no $) | meeting-scoped read | POTENTIAL-LOW |
+
+Correct pattern already in-repo: `move-customer-pipeline-item.ts:127`, `proposal-incentives/mutations.ts:47`. Super-admin financial reads (lead-sources) are role-gated with no scope — acceptable (omni). System/QStash reads (accounting, AI summary) run `SYSTEM_CONTEXT` — not user-reachable.
+
+### Ledger 2 — Auth-in-hooks retirement inventory (Grill C scope)
+| Rule | Where (imperative) | Should be | Notes |
+|---|---|---|---|
+| Activity own-record (read/mutate) | `schedule.router/activities.router.ts` (5 procs) | CASL `{ownerId}` condition | worst: also bypasses DAL (raw `db.*`); mixes silent-scope (`list`) + `FORBIDDEN` (others) → the bad-UX case |
+| CustomerNote author-or-admin | `assert-note-author.ts` + note spec update/delete hooks | CASL `can(['update','delete'],'CustomerNote',{authorId})` | triplicated: hook + client mirror (`use-customer-note-action-configs.ts`) + conditionless CASL |
+| Meeting participation gate | `meetings.router/participants.router.ts:37-44` | reuse `$participatesViaMeeting` operator | redundant hand-copy of an existing operator |
+| Envelope-field agent-only | `proposals.router/contracts.router.ts:189-196` | CASL field rule | uses `ctx.ability==null` as a role proxy |
+
+Enabler required first: `resolveActorScope` action-aware (today hardcodes `read`); the CRUD factory already applies `ctx.scope` to update/delete, so the condition enforces once the *right* scope is resolved.
+
+### Ledger 3 — Dead-code pull-forward (verified 2026-08-20 — zero callers, deletable now as "Phase A")
+9 orphaned `*Visibility` fns + their spec `visibility:` field — none reach `resolveEffectiveScope` (the sole reader of `spec.visibility`; the 4 entry points `resolveVisibilityScope`/`shareableMiddleware`/`buildUserContext`/`isVisible` never receive these specs, and none of these entities use `createCrudRouter`):
+`projectVisibility`, `appSettingVisibility`, `voip{Call,Did,Message,LinkToken,Campaign,CampaignContact,ContactAttribute}Visibility`.
+Plus `scopeMiddleware` (`scope-middleware.ts:31`, zero `.use()` callers — **function-level** delete; keep the live `resolveVisibilityScope` in the same file). A clean subset of Phase 8, safe to pull forward. (`app-settings` entity may be *fully* orphaned — confirm before deleting beyond the fn.)
+
 ## Phase breakdown (the roadmap)
 
 Each phase ships **green** (`pnpm tsc && pnpm lint`) and is independently reviewable. Phases are **sequential** (later phases consume earlier modules), but each is planned and executed as its own unit. A phase's detailed executable plan is written **just-in-time** when it unblocks (matching the tRPC epic's per-slice plan cadence) — so a plan reflects the real code state at execution, not a speculative guess made now.
@@ -185,6 +229,7 @@ Legend: `AFK` = mergeable without live user decisions · `HITL` = needs a user r
   - **AC:** child bridge live on ≥2 real children; homeowner-always-token asserted; dead child-probe code gone; tsc+lint green.
 
 - [ ] **Phase 7 · AFK · blocked-by: Phase 6 — Mechanical propagation sweep.**
+  **⚠️ NOT purely mechanical — see "## Structural finding (2026-08-20)".** The mutation-path cutover (`resolveVisibilityScope→resolveActorScope`) carries the **action-aware scope + retire-auth-in-hooks** design (Grill C, a Phase-7 precursor); only the `staffProcedure` rename + already-proven read-side propagation are truly mechanical here.
   Apply the proven engine across remaining entities with **no new actor shapes**. Rename **`agentProcedure`→`staffProcedure`** (+ `superAdminProcedure` re-parent) across all 23 files in one inert commit. Fix the deferred projects-domain IDORs (#2 `crud.router`, #3 `business.router`, remaining #1) on the restructured code; roll `getProjectsPipelineItems` onto `resolveActorScope` (the accepted Phase-2 mirror). Resolve #5 (pipeline drift) *if* the rehash `domains/pipelines` ruling has landed.
   - **Rebase seam:** adopt main's `projectProcedure`; merge `types.ts` (`visibility` vs `hooks/duplicate`).
   - **Plan:** _(JIT)_
