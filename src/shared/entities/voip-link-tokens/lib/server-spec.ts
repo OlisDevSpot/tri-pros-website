@@ -1,7 +1,6 @@
 import type { EntityServerSpec } from '@/shared/dal/server/types'
 import { insertVoipLinkTokenSchema, selectVoipLinkTokenSchema, voipLinkTokens } from '@/shared/db/schema'
 import { VOIP_LINK_TOKEN } from './constants'
-import { voipLinkTokenVisibility } from './visibility'
 
 const updateVoipLinkTokenSchema = insertVoipLinkTokenSchema.partial()
 
@@ -13,7 +12,6 @@ export const voipLinkTokenSchemas = {
 export const voipLinkTokenServerSpec = {
   entityName: VOIP_LINK_TOKEN,
   caslSubject: VOIP_LINK_TOKEN,
-  visibility: voipLinkTokenVisibility,
   table: voipLinkTokens,
   schemas: {
     insert: insertVoipLinkTokenSchema,

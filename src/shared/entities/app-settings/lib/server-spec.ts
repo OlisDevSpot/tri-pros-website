@@ -1,7 +1,6 @@
 import type { EntityServerSpec } from '@/shared/dal/server/types'
 import { appSettings, insertAppSettingSchema, selectAppSettingSchema } from '@/shared/db/schema'
 import { APP_SETTING } from './constants'
-import { appSettingVisibility } from './visibility'
 
 const updateAppSettingSchema = insertAppSettingSchema.partial()
 
@@ -13,7 +12,6 @@ export const appSettingSchemas = {
 export const appSettingServerSpec = {
   entityName: APP_SETTING,
   caslSubject: APP_SETTING,
-  visibility: appSettingVisibility,
   table: appSettings,
   schemas: {
     insert: insertAppSettingSchema,

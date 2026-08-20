@@ -1,7 +1,6 @@
 import type { EntityServerSpec } from '@/shared/dal/server/types'
 import { insertVoipCampaignSchema, selectVoipCampaignSchema, voipCampaigns } from '@/shared/db/schema'
 import { VOIP_CAMPAIGN } from './constants'
-import { voipCampaignVisibility } from './visibility'
 
 const updateVoipCampaignSchema = insertVoipCampaignSchema.partial()
 
@@ -14,7 +13,6 @@ export const voipCampaignSchemas = {
 export const voipCampaignServerSpec = {
   entityName: VOIP_CAMPAIGN,
   caslSubject: VOIP_CAMPAIGN,
-  visibility: voipCampaignVisibility,
   table: voipCampaigns,
   schemas: {
     insert: insertVoipCampaignSchema,

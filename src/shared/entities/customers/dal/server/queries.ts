@@ -61,7 +61,7 @@ function customerSelectWithGate(ctx: ScopedContext) {
  * reads straight off the composed row — plus the NESTED `customer_lead_attribution`
  * child (leftJoin) and a second query for `customer_enrichment` rows (ordered
  * by `order` ascending — house batch-fetch idiom, no join). Scope applied via
- * ctx.scope (set by scopeMiddleware on the customers entity router, or by
+ * ctx.scope (set by the customers entity router's inline scope step, or by
  * buildUserContext for service/job callers).
  */
 export async function getCustomer(

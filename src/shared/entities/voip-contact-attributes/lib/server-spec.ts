@@ -1,7 +1,6 @@
 import type { EntityServerSpec } from '@/shared/dal/server/types'
 import { insertVoipContactAttributeSchema, selectVoipContactAttributeSchema, voipContactAttributes } from '@/shared/db/schema'
 import { VOIP_CONTACT_ATTRIBUTE } from './constants'
-import { voipContactAttributeVisibility } from './visibility'
 
 const updateVoipContactAttributeSchema = insertVoipContactAttributeSchema.partial()
 
@@ -14,7 +13,6 @@ export const voipContactAttributeSchemas = {
 export const voipContactAttributeServerSpec = {
   entityName: VOIP_CONTACT_ATTRIBUTE,
   caslSubject: VOIP_CONTACT_ATTRIBUTE,
-  visibility: voipContactAttributeVisibility,
   table: voipContactAttributes,
   schemas: {
     insert: insertVoipContactAttributeSchema,

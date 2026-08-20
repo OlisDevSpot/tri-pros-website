@@ -6,7 +6,6 @@ import {
   selectProjectSchema,
 } from '@/shared/db/schema'
 import { PROJECT } from '@/shared/entities/projects/lib/constants'
-import { projectVisibility } from '@/shared/entities/projects/lib/visibility'
 
 // No server-derived fields on the row itself, so update simply partials the
 // insert schema (mirrors applications). `scopeIds` — the x_projectScopes
@@ -44,7 +43,6 @@ export const projectSchemas = {
 export const projectServerSpec = {
   entityName: PROJECT,
   caslSubject: PROJECT,
-  visibility: projectVisibility,
   table: projects,
   schemas: {
     insert: insertProjectSchema,

@@ -7,7 +7,7 @@
 // server-spec.ts stays a PURE data object (imported by the DAL); the tRPC
 // runtime is pulled in HERE, router-side, never into the entity/DAL layer.
 //
-// The agent scope step is inlined (not `.use(scopeMiddleware(spec))`) so
+// The agent scope step is inlined (not a standalone scope middleware) so
 // `ctx` is inferred from `agentProcedure` — the non-null session/ability
 // narrowing flows through and no `as typeof agentProcedure` cast is needed.
 

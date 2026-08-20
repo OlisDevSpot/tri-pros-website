@@ -8,8 +8,8 @@
 // server-spec.ts stays a PURE data object (imported by the DAL); the tRPC
 // runtime is pulled in HERE, router-side, never into the entity/DAL layer.
 //
-// Why the agent scope step is inlined (not `.use(scopeMiddleware(spec))`):
-// the standalone `scopeMiddleware` is typed against the ROOT context, where
+// Why the agent scope step is inlined (not a standalone scope middleware):
+// a shared middleware is typed against the ROOT context, where
 // `session` is nullable — chaining it would widen `ctx.session` back to null
 // and force an `as typeof agentProcedure` cast (the old factory's crutch).
 // An inline `.use()` infers `ctx` from `agentProcedure`, so the non-null
