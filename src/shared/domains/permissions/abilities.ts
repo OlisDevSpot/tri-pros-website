@@ -226,7 +226,10 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       can('access', 'Dashboard')
       can('read', 'LeadsPool') // sees the shared leads pool (drives visibility + phone + pipeline access)
 
-      can('read', 'Customer', { $inDerivedPipeline: ['leads'] })
+      // Dispatcher works the whole cold-lead pool: unworked leads AND the
+      // negative-outcome buckets they re-engage — recallable (rehash) and
+      // terminal (dead). NOT fresh/projects (that's the sales agent's book).
+      can('read', 'Customer', { $inDerivedPipeline: ['leads', 'rehash', 'dead'] })
       // Lead-contact fields only — NOT the sales-discovery JSON profiles.
       can('update', 'Customer', ['name', 'phone', 'email', 'address', 'city', 'state', 'zip', 'pipelineStage'])
 
