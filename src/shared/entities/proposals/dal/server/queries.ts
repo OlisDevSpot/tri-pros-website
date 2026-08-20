@@ -306,6 +306,53 @@ export async function getProposalLockSignals(
   })
 }
 
+/** Full rows for a set of proposal ids (scoped). Empty input → []. Used by accounting invoice build. */
+export async function getProposalsByIds(
+  ctx: ScopedContext,
+  ids: string[],
+): Promise<DalReturn<Row<typeof proposals>[]>> {
+  return dalDbOperation(async () => {
+    if (ids.length === 0) {
+      return []
+    }
+    return db
+      .select()
+      .from(proposals)
+      .where(and(inArray(proposals.id, ids), ctx.scope ?? undefined)) as Promise<Row<typeof proposals>[]>
+  })
+}
+
+/** Full rows for a set of QB invoice ids (non-PK, scoped). Empty input → []. Used by QB payment-status sync. */
+export async function getProposalsByInvoiceIds(
+  ctx: ScopedContext,
+  invoiceIds: string[],
+): Promise<DalReturn<Row<typeof proposals>[]>> {
+  return dalDbOperation(async () => {
+    if (invoiceIds.length === 0) {
+      return []
+    }
+    return db
+      .select()
+      .from(proposals)
+      .where(and(inArray(proposals.qbInvoiceId, invoiceIds), ctx.scope ?? undefined)) as Promise<Row<typeof proposals>[]>
+  })
+}
+
+/** Single proposal by QB invoice id (non-PK, scoped). Used by QB invoice-status sync. */
+export async function getProposalByInvoiceId(
+  ctx: ScopedContext,
+  invoiceId: string,
+): Promise<DalReturn<Row<typeof proposals> | undefined>> {
+  return dalDbOperation(async () => {
+    const [row] = await db
+      .select()
+      .from(proposals)
+      .where(and(eq(proposals.qbInvoiceId, invoiceId), ctx.scope ?? undefined))
+      .limit(1)
+    return row
+  })
+}
+
 /**
  * Lookup by Zoho `contractEnvelopeId` (non-PK). Used by contracts service
  * webhook handler to find the proposal for an inbound event.
