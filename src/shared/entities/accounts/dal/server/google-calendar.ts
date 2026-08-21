@@ -29,6 +29,14 @@ export async function getAccountsWithGCalEnabled(): Promise<{ userId: string }[]
 
 // ── Mutations ────────────────────────────────────────────────────────────────
 
+/** Persist a refreshed OAuth access token (provider-neutral — used by google-drive + gcal). */
+export async function updateAccountTokens(
+  accountId: string,
+  fields: Pick<AccountRow, 'accessToken' | 'accessTokenExpiresAt'>,
+): Promise<void> {
+  await db.update(accountTable).set(fields).where(eq(accountTable.id, accountId))
+}
+
 export async function updateAccountGCalFields(
   accountId: string,
   fields: Partial<Pick<AccountRow, 'accessToken' | 'accessTokenExpiresAt' | 'gcalCalendarId' | 'gcalChannelExpiry' | 'gcalChannelId' | 'gcalSyncToken'>>,

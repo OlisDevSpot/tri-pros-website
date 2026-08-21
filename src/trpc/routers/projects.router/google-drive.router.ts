@@ -1,15 +1,10 @@
-// TODO(1f): inline db — de-inline via media.service + account DAL (media.service brainstorm slice)
-
 import { Buffer } from 'node:buffer'
 import { TRPCError } from '@trpc/server'
-import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { mediaPhases } from '@/shared/constants/enums/media'
-import { db } from '@/shared/db'
-import { account } from '@/shared/db/schema'
 import { mediaService } from '@/shared/services/media/media.service'
 import { projectMediaStore } from '@/shared/services/media/stores'
-import { googleDriveClient } from '@/shared/services/providers/google-drive/client'
+import { googleDriveTokenService } from '@/shared/services/providers/google-drive/token.service'
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
@@ -18,33 +13,7 @@ import { agentProcedure, createTRPCRouter } from '../../init'
 export const googleDriveRouter = createTRPCRouter({
   getAccessToken: agentProcedure
     .query(async ({ ctx }) => {
-      const googleAccount = await db.query.account.findFirst({
-        where: and(
-          eq(account.userId, ctx.session.user.id),
-          eq(account.providerId, 'google'),
-        ),
-      })
-
-      if (!googleAccount) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'No Google account linked' })
-      }
-
-      if (!googleAccount.refreshToken) {
-        throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Google Drive connection expired — please sign out and sign in again' })
-      }
-
-      const fiveMinutesFromNow = new Date(Date.now() + 5 * 60 * 1000)
-      if (googleAccount.accessTokenExpiresAt && googleAccount.accessTokenExpiresAt > fiveMinutesFromNow) {
-        return { accessToken: googleAccount.accessToken! }
-      }
-
-      const { accessToken, expiresAt } = await googleDriveClient.refreshAccessToken({ refreshToken: googleAccount.refreshToken })
-      await db
-        .update(account)
-        .set({ accessToken, accessTokenExpiresAt: expiresAt })
-        .where(eq(account.id, googleAccount.id))
-
-      return { accessToken }
+      return { accessToken: await googleDriveTokenService.getValidAccessToken(ctx.session.user.id) }
     }),
 
   uploadFromFile: agentProcedure
@@ -56,27 +25,7 @@ export const googleDriveRouter = createTRPCRouter({
       phase: z.enum(mediaPhases),
     }))
     .mutation(async ({ ctx, input }) => {
-      const googleAccount = await db.query.account.findFirst({
-        where: and(
-          eq(account.userId, ctx.session.user.id),
-          eq(account.providerId, 'google'),
-        ),
-      })
-
-      if (!googleAccount?.refreshToken) {
-        throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'No Google Drive connection — please sign out and sign in again' })
-      }
-
-      const fiveMinutesFromNow = new Date(Date.now() + 5 * 60 * 1000)
-      let accessToken = googleAccount.accessToken
-      if (!googleAccount.accessTokenExpiresAt || googleAccount.accessTokenExpiresAt <= fiveMinutesFromNow) {
-        const refreshed = await googleDriveClient.refreshAccessToken({ refreshToken: googleAccount.refreshToken })
-        await db
-          .update(account)
-          .set({ accessToken: refreshed.accessToken, accessTokenExpiresAt: refreshed.expiresAt })
-          .where(eq(account.id, googleAccount.id))
-        accessToken = refreshed.accessToken
-      }
+      const accessToken = await googleDriveTokenService.getValidAccessToken(ctx.session.user.id)
 
       const driveResponse = await fetch(
         `https://www.googleapis.com/drive/v3/files/${input.driveFileId}?alt=media&supportsAllDrives=true`,
