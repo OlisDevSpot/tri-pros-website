@@ -1,27 +1,21 @@
 import { TRPCError } from '@trpc/server'
-import { eq } from 'drizzle-orm'
 import { buildUserContext, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
-import { db } from '@/shared/db'
-import { customers } from '@/shared/db/schema/customers'
-import { proposals } from '@/shared/db/schema/proposals'
+import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 import { projectCrud } from '@/shared/entities/projects/dal/server/crud'
 import { setProjectScopes } from '@/shared/entities/projects/dal/server/mutations'
 import { extractScopeIdsFromProposals } from '@/shared/entities/projects/lib/derive-scope-ids'
 import { createProjectFormSchema } from '@/shared/entities/projects/schemas'
+import { getProposalsByMeetingId } from '@/shared/entities/proposals/dal/server/queries'
 import { agentProcedure, createTRPCRouter } from '../../init'
 
 export const businessRouter = createTRPCRouter({
   create: agentProcedure
     .input(createProjectFormSchema)
     .mutation(async ({ ctx, input }) => {
-      // 1. Validate meeting has at least one proposal
-      // BYPASS(crud): cross-entity read for operational create — de-inline + route through createCrudDal in Phase 3
-      const meetingProposals = await db
-        .select({ id: proposals.id, projectJSON: proposals.projectJSON })
-        .from(proposals)
-        .where(eq(proposals.meetingId, input.meetingId))
+      // 1. Validate meeting has at least one proposal (unscoped read — operational create)
+      const meetingProposals = dalVerifySuccess(await getProposalsByMeetingId({ ...ctx, scope: null }, input.meetingId))
 
       if (meetingProposals.length === 0) {
         throw new TRPCError({
@@ -30,12 +24,8 @@ export const businessRouter = createTRPCRouter({
         })
       }
 
-      // 2. Fetch customer address data
-      // BYPASS(crud): cross-entity read for operational create — de-inline + route through createCrudDal in Phase 3
-      const [customer] = await db
-        .select({ address: customers.address, city: customers.city, state: customers.state, zip: customers.zip })
-        .from(customers)
-        .where(eq(customers.id, input.customerId))
+      // 2. Fetch customer address data (unscoped read — operational create)
+      const customer = dalVerifySuccess(await customerCrud.getById({ ...ctx, scope: null }, { id: input.customerId }))
 
       if (!customer) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Customer not found' })

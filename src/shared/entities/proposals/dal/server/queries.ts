@@ -10,6 +10,7 @@ import type { Proposal } from '@/shared/db/schema/proposals'
 import type { Row } from '@/shared/db/types'
 import type { ProposalMediaView } from '@/shared/entities/proposal-media-files/dal/server/queries'
 import type { ProposalLockSignals } from '@/shared/entities/proposals/lib/proposal-lock'
+import type { ProjectSection } from '@/shared/entities/proposals/types'
 
 import { and, count, eq, getTableColumns, gte, inArray, isNotNull, isNull, lte, max, or, sql } from 'drizzle-orm'
 import z from 'zod'
@@ -320,6 +321,19 @@ export async function getProposalsByIds(
       .from(proposals)
       .where(and(inArray(proposals.id, ids), ctx.scope ?? undefined)) as Promise<Row<typeof proposals>[]>
   })
+}
+
+/** Minimal proposal projection for a meeting — id + projectJSON — feeds the project-create gate + scope derivation. */
+export async function getProposalsByMeetingId(
+  ctx: ScopedContext,
+  meetingId: string,
+): Promise<DalReturn<{ id: string, projectJSON: ProjectSection }[]>> {
+  return dalDbOperation(async () =>
+    db
+      .select({ id: proposals.id, projectJSON: proposals.projectJSON })
+      .from(proposals)
+      .where(and(eq(proposals.meetingId, meetingId), ctx.scope ?? undefined)),
+  )
 }
 
 /** Full rows for a set of QB invoice ids (non-PK, scoped). Empty input → []. Used by QB payment-status sync. */
