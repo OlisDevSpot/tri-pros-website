@@ -1,12 +1,9 @@
-// TODO(1f): inline db — de-inline via media.service + account DAL (media.service brainstorm slice)
-
 import type { R2BucketName } from '@/shared/services/providers/r2/types'
-import { TRPCError } from '@trpc/server'
-import { and, eq, inArray, like } from 'drizzle-orm'
 import { z } from 'zod'
 import { mediaPhases } from '@/shared/constants/enums/media'
-import { db } from '@/shared/db'
-import { insertMediaFilesSchema, mediaFiles, meetings, proposalMediaFiles, proposals } from '@/shared/db/schema'
+import { insertMediaFilesSchema } from '@/shared/db/schema'
+import { moveMediaPhase, setHeroImage } from '@/shared/entities/media-files/dal/server/mutations'
+import { listImportableProjectMedia } from '@/shared/entities/proposal-media-files/dal/server/queries'
 import { deriveOriginalMediaUrl, getOptimizedSrc } from '@/shared/lib/get-optimized-urls'
 import { mediaService } from '@/shared/services/media/media.service'
 import { projectMediaStore } from '@/shared/services/media/stores'
@@ -68,15 +65,8 @@ export const mediaRouter = createTRPCRouter({
       ids: z.array(z.number()).min(1),
       phase: z.enum(mediaPhases),
     }))
-    .mutation(async ({ input }) => {
-      await db.transaction(async (tx) => {
-        for (const id of input.ids) {
-          await tx
-            .update(mediaFiles)
-            .set({ phase: input.phase })
-            .where(eq(mediaFiles.id, id))
-        }
-      })
+    .mutation(async ({ ctx, input }) => {
+      dalToTrpc(await moveMediaPhase(ctx, input.ids, input.phase))
     }),
 
   bulkDelete: agentProcedure
@@ -100,48 +90,14 @@ export const mediaRouter = createTRPCRouter({
       id: z.number(),
       isHeroImage: z.boolean(),
     }))
-    .mutation(async ({ input }) => {
-      if (input.isHeroImage) {
-        const [file] = await db
-          .select({ projectId: mediaFiles.projectId })
-          .from(mediaFiles)
-          .where(eq(mediaFiles.id, input.id))
-
-        if (!file) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Media file not found' })
-        }
-
-        await db
-          .update(mediaFiles)
-          .set({ isHeroImage: false })
-          .where(eq(mediaFiles.projectId, file.projectId))
-      }
-
-      await db
-        .update(mediaFiles)
-        .set({ isHeroImage: input.isHeroImage })
-        .where(eq(mediaFiles.id, input.id))
+    .mutation(async ({ ctx, input }) => {
+      dalToTrpc(await setHeroImage(ctx, input.id, input.isHeroImage))
     }),
 
   listImportableProposalMedia: agentProcedure
     .input(z.object({ projectId: z.string().uuid() }))
     .query(async ({ input }) => {
-      const rows = await db
-        .select({
-          id: proposalMediaFiles.id,
-          proposalId: proposalMediaFiles.proposalId,
-          proposalLabel: proposals.label,
-          name: proposalMediaFiles.name,
-          mimeType: proposalMediaFiles.mimeType,
-          pathKey: proposalMediaFiles.pathKey,
-          bucket: proposalMediaFiles.bucket,
-          optimizationStatus: proposalMediaFiles.optimizationStatus,
-          optimizationVariants: proposalMediaFiles.optimizationVariants,
-        })
-        .from(proposalMediaFiles)
-        .innerJoin(proposals, eq(proposals.id, proposalMediaFiles.proposalId))
-        .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
-        .where(and(eq(meetings.projectId, input.projectId), like(proposalMediaFiles.mimeType, 'image/%')))
+      const rows = await listImportableProjectMedia(input.projectId)
 
       // Public bucket — derive the best display URL (variant or original) for
       // the picker preview. No presigning.
@@ -175,19 +131,7 @@ export const mediaRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       // Authorization: only copy media that actually belongs to a proposal on
       // THIS project's meetings (prevents importing arbitrary proposal media by id).
-      const sources = await db
-        .select({
-          id: proposalMediaFiles.id,
-          name: proposalMediaFiles.name,
-          mimeType: proposalMediaFiles.mimeType,
-          fileExtension: proposalMediaFiles.fileExtension,
-          pathKey: proposalMediaFiles.pathKey,
-          bucket: proposalMediaFiles.bucket,
-        })
-        .from(proposalMediaFiles)
-        .innerJoin(proposals, eq(proposals.id, proposalMediaFiles.proposalId))
-        .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
-        .where(and(eq(meetings.projectId, input.projectId), inArray(proposalMediaFiles.id, input.proposalMediaFileIds), like(proposalMediaFiles.mimeType, 'image/%')))
+      const sources = await listImportableProjectMedia(input.projectId, input.proposalMediaFileIds)
 
       let imported = 0
       for (const src of sources) {
