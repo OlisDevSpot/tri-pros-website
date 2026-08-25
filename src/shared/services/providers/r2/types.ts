@@ -4,7 +4,7 @@
  * client components (building public image URLs) AND the server `client.ts`.
  *
  * Second public surface of the r2 provider alongside `client.ts`; mirrors the
- * `types.ts` of the reference-clean providers (cloudtalk, twilio). External
+ * `types.ts` of the reference-clean providers (justcall, twilio). External
  * consumers import bucket constants/types from here — never from loose files.
  */
 

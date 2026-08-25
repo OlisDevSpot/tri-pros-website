@@ -11,7 +11,7 @@ import { getR2Config } from './lib/config'
 
 // ---------------------------------------------------------------------------
 // r2Client — the single, uniform entry point for every Cloudflare R2 (S3-
-// compatible) interaction. Pattern matches `twilioClient`/`cloudtalkClient`:
+// compatible) interaction. Pattern matches `twilioClient`/`justcallClient`:
 // ONE factory → ONE singleton → ALL methods hanging off it. Callers do:
 //
 //   import { r2Client } from '@/shared/services/providers/r2/client'

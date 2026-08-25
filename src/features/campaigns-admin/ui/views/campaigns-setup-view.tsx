@@ -1,6 +1,6 @@
 'use client'
 
-import { ContactAttributesReadout } from '@/features/campaigns-admin/ui/components/setup/contact-attributes-readout'
+import { ContactFieldsReadout } from '@/features/campaigns-admin/ui/components/setup/contact-fields-readout'
 import { SourcePolicyCard } from '@/features/campaigns-admin/ui/components/setup/source-policy-card'
 import { SyncedCampaignsCard } from '@/features/campaigns-admin/ui/components/setup/synced-campaigns-card'
 
@@ -15,7 +15,7 @@ export function CampaignsSetupView() {
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain pr-1">
       <div className="grid gap-4 md:grid-cols-2">
         <SyncedCampaignsCard />
-        <ContactAttributesReadout />
+        <ContactFieldsReadout />
       </div>
       <SourcePolicyCard />
     </div>

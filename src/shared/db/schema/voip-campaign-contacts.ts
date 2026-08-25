@@ -53,7 +53,7 @@ export const voipCampaignContacts = pgTable(
     // for the provider_campaign_id to enroll/unenroll against. Nullable: null before
     // first enroll.
     voipCampaignId: uuid('voip_campaign_id').references(() => voipCampaigns.id, { onDelete: 'set null' }),
-    // Enrollment membership (we own this; CloudTalk owns lifecycle).
+    // Enrollment membership (we own this; JustCall owns lifecycle).
     enrolledAt: timestamp('enrolled_at', { mode: 'string', withTimezone: true }),
     unenrolledAt: timestamp('unenrolled_at', { mode: 'string', withTimezone: true }),
     // WHY we unenrolled — 'graduated' | 'opted_out' | 'disqualified' (typed via

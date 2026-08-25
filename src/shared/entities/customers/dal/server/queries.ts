@@ -120,7 +120,7 @@ export async function getCustomerAttribution(
  * Resolve a customer by exact phone (E.164). SYSTEM-level read — ungated,
  * returns the raw row (no phone-gating; callers are webhooks/jobs, never UI).
  * Phones can be shared across household members; returns the first match.
- * Used by the CloudTalk webhook to resolve an inbound STOP's customer.
+ * Used by the JustCall webhook to resolve an inbound STOP's customer.
  */
 export async function findCustomerByPhone(phone: string): Promise<DalReturn<Customer | null>> {
   return dalDbOperation(async () => {

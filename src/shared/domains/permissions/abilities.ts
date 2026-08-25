@@ -175,7 +175,7 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       can('read', 'VoipLinkToken')
       can('create', 'VoipLinkToken') // mint L-DOC links
 
-      // voip-campaigns (CloudTalk) — agents can read campaign config + their
+      // voip-campaigns (JustCall) — agents can read campaign config + their
       // customers' participation, and disqualify a lead from the campaign
       // ("stop calling / bad lead"). Resync + source-binding + bulk enroll-all
       // are super-admin-only (via 'manage' on 'all'); no agent rule for those.

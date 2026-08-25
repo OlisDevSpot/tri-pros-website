@@ -69,7 +69,7 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
         }
 
         // Graduation handoff (voip-campaigns decision #12): a booked meeting
-        // means CloudTalk's conversion job is done — stop dialing by unenrolling
+        // means JustCall's conversion job is done — stop dialing by unenrolling
         // the customer from any active campaign. Idempotent + no-op if never
         // enrolled. dispatchOrThrow: stopping a live dial is not cosmetic.
         if (row.customerId) {

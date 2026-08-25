@@ -209,7 +209,7 @@ if (env.VERCEL_ENV === 'production' && env.META_TEST_EVENT_CODE) {
 // Each provider / domain-shared config exports a `<x>ConfigMeta` object from
 // its `lib/config.ts`. server-env aggregates them here, queries each
 // `listMissing()`, and prints one line per service. Surfaces "twilio is up
-// but cloudtalk isn't" at boot rather than hidden behind a runtime error
+// but justcall isn't" at boot rather than hidden behind a runtime error
 // the first time a feature is exercised.
 //
 // Production omits the banner (clean logs); the typed runtime checks from

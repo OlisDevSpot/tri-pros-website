@@ -17,9 +17,9 @@ import { NotConfiguredError } from '@/shared/config/not-configured-error'
  *     → (back to) provider/lib/config.ts for its `xEnvFragment`
  *
  * ESM hoists imports, so when the graph is entered through a provider config
- * (e.g. the CloudTalk webhook route → cloudtalk/client → cloudtalk/lib/config),
+ * (e.g. the JustCall webhook route → justcall/client → justcall/lib/config),
  * server-env would evaluate `...xEnvFragment.shape` while that fragment is still
- * in the temporal dead zone → "Cannot access 'cloudtalkEnvFragment' before
+ * in the temporal dead zone → "Cannot access 'justcallEnvFragment' before
  * initialization".
  *
  * The factory doesn't need the aggregated singleton — it already receives the
@@ -27,7 +27,7 @@ import { NotConfiguredError } from '@/shared/config/not-configured-error'
  * which makes the fragment the per-provider safety gate it was designed to be:
  * a misconfigured provider throws at ITS call site (NotConfiguredError for a
  * missing required key; a scoped ZodError for a present-but-invalid value like
- * cloudtalk's `.min(32)` secret) rather than crashing app boot. server-env keeps
+ * justcall's `.min(32)` secret) rather than crashing app boot. server-env keeps
  * every fragment `.optional()` in the central schema, so boot still never fails
  * on an unconfigured provider; this re-parse simply scopes validation to the
  * one provider being used.
@@ -38,7 +38,7 @@ import { NotConfiguredError } from '@/shared/config/not-configured-error'
  * produces. server-env iterates the set of registered metas after parse
  * and prints one line per provider.
  *
- * `provider` is the canonical provider identifier (twilio, cloudtalk,
+ * `provider` is the canonical provider identifier (twilio, justcall,
  * resend, etc.) — distinct from internal "services" (services/voip/*),
  * which are app code, not third-party integrations.
  *

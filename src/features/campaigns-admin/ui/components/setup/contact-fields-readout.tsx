@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader } from '@/shared/compone
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { useTRPC } from '@/trpc/helpers'
 
-export function ContactAttributesReadout() {
+export function ContactFieldsReadout() {
   const trpc = useTRPC()
   const { data, isLoading } = useQuery(trpc.voipCampaignsRouter.listContactFields.queryOptions())
   const fields = data ?? []

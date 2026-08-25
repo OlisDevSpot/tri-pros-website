@@ -13,7 +13,7 @@ import { jcSmsResponseSchema } from './schemas/sms'
 
 // ---------------------------------------------------------------------------
 // justcallClient — the single, uniform entry point for every JustCall Sales
-// Dialer interaction. Same pattern as `cloudtalkClient` and every other
+// Dialer interaction. Same pattern as `twilioClient` and every other
 // provider: ONE factory → ONE singleton → ALL methods hanging off it.
 //
 //   import { justcallClient } from '@/shared/services/providers/justcall/client'

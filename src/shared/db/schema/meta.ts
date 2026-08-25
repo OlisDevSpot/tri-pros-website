@@ -49,9 +49,10 @@ export const voipDirectionEnum = pgEnum('voip_direction', voipDirections)
 export const voipMessageStatusEnum = pgEnum('voip_message_status', voipMessageStatuses)
 export const voipLinkTokenTypeEnum = pgEnum('voip_link_token_type', voipLinkTokenTypes)
 
-// VOIP CAMPAIGNS (CloudTalk): no local status pgEnum — CloudTalk is the sole
-// source of truth for lead lifecycle (perfect separation, confirmed 2026-06-04).
-// voip_campaign_status enum deleted 2026-06-04; see constants/enums/voip.ts.
+// VOIP CAMPAIGNS (JustCall): no status pgEnum — the campaign run-state lives on
+// voip_campaigns.status as a typed text column (voipCampaignStatuses); see
+// constants/enums/voip.ts. (The former voip_campaign_status pgEnum was deleted
+// 2026-06-04 under the earlier CloudTalk perfect-separation model.)
 
 // WAVE-1 DECOMPOSITION (epic #256/#259): the customer_profiles vocabularies
 // are `text(..., { enum })` columns, NOT pgEnums — per the Closed Vocabulary

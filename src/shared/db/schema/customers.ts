@@ -42,7 +42,7 @@ export const customers = pgTable('customers', {
   // see src/shared/services/measurement.service.ts (trackAppointmentSet).
   metaScheduleSentAt: timestamp('meta_schedule_sent_at', { mode: 'string', withTimezone: true }),
   // DNC (Do-Not-Call) — shared canonical registry decorating the customer row.
-  // Both voip-in-house (Twilio) and voip-campaigns (CloudTalk) INSERT into it
+  // Both voip-in-house (Twilio) and voip-campaigns (JustCall) INSERT into it
   // and gate outbound against it. Owning service: src/shared/services/voip/compliance.service.ts.
   // see docs/plans/voip-in-house/phase-1-mvp.md GRILL RESULTS (2026-05-30)
   // see docs/plans/voip/INTEGRATION-SEAM.md §5 (DNC propagation)
@@ -52,8 +52,8 @@ export const customers = pgTable('customers', {
   dncReason: text('dnc_reason'),
   // FK to user.id which is `text` (better-auth string IDs), not uuid.
   dncAddedByUserId: text('dnc_added_by_user_id').references(() => user.id, { onDelete: 'set null' }),
-  // NOTE: voip-campaigns adds NO fields here. All per-customer CloudTalk state
-  // (enrollment membership, dial attempts, CT identity, sync) lives in
+  // NOTE: voip-campaigns adds NO fields here. All per-customer JustCall state
+  // (enrollment membership, dial attempts, provider identity, sync) lives in
   // `voip_campaign_contacts` (1:1, customer_id PK). The DNC fields above are the
   // exception — they are SHARED compliance, written by both EPICs.
   // see docs/plans/voip-campaigns/EPIC.md decisions log 2026-06-04

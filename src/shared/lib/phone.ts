@@ -13,7 +13,7 @@ import { z } from 'zod'
 //     (createCrudDal parses every write), so no caller can persist anything else.
 //
 //   • E.164 (external)     — "+18186511445". Produced ONLY at external-API
-//     boundaries that require it (Twilio, CloudTalk) via `toE164`.
+//     boundaries that require it (Twilio, JustCall) via `toE164`.
 //
 // Display always goes through `formatPhone` → "(818) 651-1445".
 //
@@ -43,7 +43,7 @@ export function toNationalDigits(input: string | null | undefined): string | nul
 }
 
 /**
- * E.164 for external APIs that require it (Twilio, CloudTalk). Returns `null`
+ * E.164 for external APIs that require it (Twilio, JustCall). Returns `null`
  * when the input isn't a valid US number — callers should treat that as
  * "not dialable" rather than sending a malformed value.
  */

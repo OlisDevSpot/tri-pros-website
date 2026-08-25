@@ -39,25 +39,24 @@ export type VoipMessageStatus = (typeof voipMessageStatuses)[number]
 export const voipLinkTokenTypes = ['l_doc'] as const
 export type VoipLinkTokenType = (typeof voipLinkTokenTypes)[number]
 
-// ── voip-campaigns (CloudTalk) ──────────────────────────────────────────────
-// NO local campaign-status enum. Under the perfect-separation decision
-// (voip-in-house EPIC.md "2026-05-30 total separation" + confirmed 2026-06-04),
-// CloudTalk is the sole source of truth for the lead-to-appointment lifecycle,
-// INCLUDING its own pipeline tags. We never compute, store, or push a campaign
-// status — on a `meeting_booked` disposition CT hands the lead off to the normal
-// app flow (meeting creation → existing derived customer pipeline). The only
-// voip-campaigns persistence is the CT identity bridges (voip_campaigns,
-// voip_contact_attributes), the per-customer participation record
-// (voip_campaign_contacts — enrollment + dial attempts + CT identity + sync),
-// and the shared DNC fields on customers. NO voipCampaign* fields on customers.
-// (Former `voipCampaignStatuses` enum + `voipCampaignStatusEnum` pgEnum +
-// lifecycle-mapper.ts deleted 2026-06-04.)
+// ── voip-campaigns (JustCall dialer) ────────────────────────────────────────
+// The JustCall auto-dialer owns the lead-to-appointment lifecycle (dialing + its
+// own dispositions). On a `meeting_booked` disposition the lead hands off to the
+// normal app flow (meeting creation → existing derived customer pipeline).
+// voip-campaigns persistence: the provider identity bridges (voip_campaigns,
+// voip_contact_fields), the per-customer participation record
+// (voip_campaign_contacts — enrollment + dial attempts + provider identity +
+// sync), and the shared DNC fields on customers. NO voipCampaign* fields on
+// customers. A truthful campaign run-state lives on voip_campaigns.status
+// (voipCampaignStatuses below — reinstated for the JustCall migration; the
+// former enum + pgEnum + lifecycle-mapper.ts were deleted 2026-06-04 under the
+// earlier CloudTalk perfect-separation model).
 
 // WHY a contact left a campaign — recorded on voip_campaign_contacts.unenroll_reason
 // when we unenroll. Attribution of OUR action (not a CT lifecycle status):
-//   - graduated:    meeting booked (positive exit). app meeting-create OR CT meeting_booked.
+//   - graduated:    meeting booked (positive exit). app meeting-create OR JustCall meeting_booked.
 //   - opted_out:    STOP/opt-out (compliance). Also writes DNC.
-//   - disqualified: manual "stop calling / bad lead, no meeting". UI button OR CT
+//   - disqualified: manual "stop calling / bad lead, no meeting". UI button OR JustCall
 //                   not_interested/wrong_number disposition.
 //   - removed:      neutral manual unenroll — pulled from the campaign with the
 //                   intent to re-enroll later / into a different campaign. NOT a

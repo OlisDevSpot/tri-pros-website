@@ -8,7 +8,7 @@
  * never fails on a provider that isn't in use. Required-ness is enforced
  * here, at the call site that actually needs the keys.
  *
- * `provider` is the canonical provider identifier (twilio, cloudtalk,
+ * `provider` is the canonical provider identifier (twilio, justcall,
  * resend, etc.) — same string used in the boot banner and the
  * `xConfigMeta.provider` field. Distinct from internal "services"
  * (services/voip/*.service.ts) — those are app code, not third-party

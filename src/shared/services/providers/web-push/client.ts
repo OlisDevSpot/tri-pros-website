@@ -20,7 +20,7 @@ import 'server-only'
 // ---------------------------------------------------------------------------
 // webPushClient — the single, uniform entry point for Web Push (VAPID).
 //
-// Pattern (matches `cloudtalkClient`, `twilioClient`): ONE singleton → ALL
+// Pattern (matches `twilioClient`, `justcallClient`): ONE singleton → ALL
 // methods. Callers do:
 //
 //   import { webPushClient } from '@/shared/services/providers/web-push/client'
