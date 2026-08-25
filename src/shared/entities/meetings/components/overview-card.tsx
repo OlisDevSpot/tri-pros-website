@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react'
 
+import type { MeetingOutcome } from '@/shared/constants/enums'
 import type { Meeting } from '@/shared/db/schema/meetings'
 import type { Proposal } from '@/shared/db/schema/proposals'
 import type { SowTradeScope } from '@/shared/entities/proposals/types'
@@ -12,11 +13,13 @@ import React, { createContext, useCallback, useMemo } from 'react'
 
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
+import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { EntityList } from '@/shared/components/entity-list/ui/entity-list'
 import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
 import { Badge } from '@/shared/components/ui/badge'
+import { selectableMeetingOutcomes } from '@/shared/constants/enums'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import {
   MEETING_LIST_STATUS_COLORS,
@@ -60,7 +63,7 @@ export type MeetingOverviewCardData
     }
 
 export type MeetingFieldConfig
-  = | { field: 'outcome', variant?: 'badge' | 'dot' }
+  = | { field: 'outcome', variant?: 'badge' | 'dot' | 'editable' }
     | { field: 'scheduledDate', format?: 'full' | 'date-only' | 'time-only' | 'relative' | 'short-stamp', onChange?: (date: Date) => void }
     | { field: 'type' }
     | { field: 'proposalCount' }
@@ -71,6 +74,8 @@ interface MeetingOverviewCardContextValue {
   meeting: MeetingOverviewCardData
   customerId: string
   actions: ReturnType<typeof useMeetingActionConfigs>['actions']
+  /** Shared with the ⋯ menu's "Set Outcome" — same reason-dialog flow. */
+  changeOutcome: (meetingId: string, outcome: MeetingOutcome) => Promise<void>
 }
 
 const MeetingOverviewCardContext = createContext<MeetingOverviewCardContextValue | null>(null)
@@ -113,7 +118,7 @@ function MeetingOverviewCardRoot({
     openModal()
   }, [customerId, meeting.id, setModal, openModal])
 
-  const { actions, DeleteConfirmDialog, AssignOwnerDialog, OutcomeReasonDialog } = useMeetingActionConfigs({
+  const { actions, DeleteConfirmDialog, AssignOwnerDialog, OutcomeReasonDialog, changeOutcome } = useMeetingActionConfigs({
     onView: () => openProfile(),
     onAssignOwner: onAssignOwner
       ? () => onAssignOwner(meeting)
@@ -124,8 +129,8 @@ function MeetingOverviewCardRoot({
   })
 
   const value = useMemo<MeetingOverviewCardContextValue>(
-    () => ({ meeting, customerId, actions }),
-    [meeting, customerId, actions],
+    () => ({ meeting, customerId, actions, changeOutcome }),
+    [meeting, customerId, actions, changeOutcome],
   )
 
   const handleClick = useCallback((e: React.MouseEvent) => {
@@ -291,8 +296,8 @@ function Address({ children, className }: { children?: ReactNode, className?: st
 
 // ── Fields sub-component ───────────────────────────────────────────────────────
 
-function OutcomeField({ variant = 'badge' }: { variant?: 'badge' | 'dot' }) {
-  const { meeting } = useMeetingOverviewCard()
+function OutcomeField({ variant = 'badge' }: { variant?: 'badge' | 'dot' | 'editable' }) {
+  const { meeting, changeOutcome } = useMeetingOverviewCard()
   const outcome = meeting.meetingOutcome ?? 'not_set'
 
   if (variant === 'dot') {
@@ -303,6 +308,28 @@ function OutcomeField({ variant = 'badge' }: { variant?: 'badge' | 'dot' }) {
           MEETING_OUTCOME_DOT_COLORS[outcome],
         )}
       />
+    )
+  }
+
+  // Inline-editable badge: clicking opens the same outcome picker (and reason
+  // dialog) as the ⋯ menu's "Set Outcome". stopPropagation keeps the card's
+  // profile-modal click from firing, exactly like ScheduledDateField.
+  if (variant === 'editable') {
+    return (
+      <div onClick={e => e.stopPropagation()}>
+        <StatusDropdownCell<MeetingOutcome>
+          currentStatus={outcome}
+          statuses={selectableMeetingOutcomes}
+          colorMap={MEETING_LIST_STATUS_COLORS}
+          onChange={value => void changeOutcome(meeting.id, value)}
+          formatLabel={value => MEETING_OUTCOME_LABELS[value] ?? value.replace(/_/g, ' ')}
+          triggerClassName="gap-1 px-1.5 py-0.5 text-[11px] font-normal"
+          triggerAriaLabel="Change meeting outcome"
+          showCaret
+          optionStyle="dot"
+          dotColorMap={MEETING_OUTCOME_DOT_COLORS}
+        />
+      </div>
     )
   }
 

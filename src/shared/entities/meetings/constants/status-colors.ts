@@ -20,20 +20,24 @@ function buildOutcomeColorMap(scheme: OutcomeColorScheme): Record<MeetingOutcome
   ) as Record<MeetingOutcome, string>
 }
 
-// Profile modal badge colors (used with Badge variant="outline")
+// Outcome badge colors — built on the app's SEMANTIC status tokens
+// (destructive/success/warning), which are theme-aware by construction, so the
+// label clears contrast in BOTH light and dark with no per-mode variants. (The
+// old raw red-600/-400 was a light-only palette that washed out on the dark card.)
 export const MEETING_LIST_STATUS_COLORS: Record<MeetingOutcome, string> = buildOutcomeColorMap({
-  negative: 'bg-red-500/10 text-red-600',
-  positive: 'bg-green-500/10 text-green-600',
-  neutral: 'bg-amber-500/10 text-amber-600',
-  unset: 'bg-zinc-500/10 text-zinc-600',
+  negative: 'border-destructive/30 bg-destructive/10 text-destructive',
+  positive: 'border-success/30 bg-success/10 text-success',
+  neutral: 'border-warning/30 bg-warning/10 text-warning',
+  unset: 'border-border bg-muted text-muted-foreground',
 })
 
-// Table badge colors (used with StatusDropdownCell default Badge)
+// Table badge colors (used with StatusDropdownCell default Badge) — same
+// semantic-token treatment so table badges read in dark mode too.
 export const MEETING_OUTCOME_COLORS: Record<MeetingOutcome, string> = buildOutcomeColorMap({
-  negative: 'border-red-500/30 bg-red-500/10 text-red-400',
-  positive: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400',
-  neutral: 'border-amber-500/30 bg-amber-500/10 text-amber-400',
-  unset: 'border-zinc-500/30 bg-zinc-500/10 text-zinc-400',
+  negative: 'border-destructive/30 bg-destructive/10 text-destructive',
+  positive: 'border-success/30 bg-success/10 text-success',
+  neutral: 'border-warning/30 bg-warning/10 text-warning',
+  unset: 'border-border bg-muted text-muted-foreground',
 })
 
 // Dot colors for status indicators and sub-menu option indicators

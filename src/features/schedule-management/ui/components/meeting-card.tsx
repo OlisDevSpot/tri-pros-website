@@ -7,7 +7,7 @@ import type { MeetingOverviewCardData } from '@/shared/entities/meetings/compone
 import { ChevronDownIcon, MapPinIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 
-import { STATUS_BG_TINTS } from '@/features/schedule-management/constants/schedule-calendar-config'
+import { STATUS_ACCENT_COLORS } from '@/features/schedule-management/constants/schedule-calendar-config'
 import { MeetingOverviewCard } from '@/shared/entities/meetings/components/overview-card'
 import { ParticipantsSlot } from '@/shared/entities/meetings/components/participants-slot'
 import { cn } from '@/shared/lib/utils'
@@ -50,26 +50,35 @@ export function MeetingCard({ event, onAssignOwner, onUpdateScheduledFor, isHigh
       customerId={event.customerId ?? ''}
       onAssignOwner={handleAssignOwner}
       className={cn(
-        'group relative flex h-full flex-col gap-1 overflow-hidden rounded-md border p-2.5 text-xs cursor-pointer transition-colors hover:border-foreground/20',
-        STATUS_BG_TINTS[event.meetingOutcome],
+        'group relative flex h-full flex-col gap-1.5 overflow-hidden rounded-md border bg-card p-3 pl-3.5 text-xs cursor-pointer shadow-sm transition-shadow hover:shadow-md',
       )}
     >
+      {/* Sentiment accent bar — solid left edge that signals the outcome and
+          makes the card read as a categorized surface in both themes. */}
+      <span
+        aria-hidden
+        className={cn('pointer-events-none absolute inset-y-0 left-0 w-1', STATUS_ACCENT_COLORS[event.meetingOutcome])}
+      />
+
       {/* Row 1: Status dot + customer name + actions */}
-      <MeetingOverviewCard.Header className="gap-1.5 min-w-0">
+      <MeetingOverviewCard.Header className="gap-2 min-w-0">
         <MeetingOverviewCard.Fields fields={[{ field: 'outcome', variant: 'dot' }]} className="flex-none" />
-        <MeetingOverviewCard.CustomerName className="font-medium truncate flex-1 min-w-0 leading-tight" />
+        <MeetingOverviewCard.CustomerName className="text-sm font-semibold truncate flex-1 min-w-0 leading-tight" />
         <MeetingOverviewCard.Actions
           mode="compact"
           className="shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
         />
       </MeetingOverviewCard.Header>
 
-      {/* Row 2: Scheduled time (editable badge) */}
-      <MeetingOverviewCard.Fields fields={[{
-        field: 'scheduledDate',
-        format: 'time-only',
-        onChange: (date: Date) => onUpdateScheduledFor(event.meetingId, date),
-      }]}
+      {/* Row 2: Editable scheduled-time + outcome badges (peer inline editors) */}
+      <MeetingOverviewCard.Fields fields={[
+        {
+          field: 'scheduledDate',
+          format: 'time-only',
+          onChange: (date: Date) => onUpdateScheduledFor(event.meetingId, date),
+        },
+        { field: 'outcome', variant: 'editable' },
+      ]}
       />
 
       {/* Row 3: Participants — overlapping avatars with stable per-rep color +

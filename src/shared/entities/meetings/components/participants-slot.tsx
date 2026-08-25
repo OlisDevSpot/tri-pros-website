@@ -330,7 +330,7 @@ function CompactVariant({ meetingId, initialParticipants, className }: CompactVa
           <button
             type="button"
             className={cn(
-              'inline-flex items-center gap-2 rounded-md px-1 py-0.5 -mx-1 hover:bg-accent/50 transition-colors min-w-0',
+              'inline-flex w-fit max-w-full items-center gap-2 self-start rounded-md px-1 py-0.5 -mx-1 hover:bg-accent/50 transition-colors min-w-0',
               className,
             )}
             aria-label={`Participants: ${thumbnail.map(p => p.name ?? 'Unknown').join(', ')}`}

@@ -1,6 +1,16 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
+/* Outcome/status classes live in *.ts color-map constants that Tailwind's
+   content scan does not pick up (the CSS file sits under a (frontend) route
+   group, which breaks relative @source globbing). Safelist the semantic status
+   utilities used by the meeting-card + table badges so they always generate.
+   These tokens are theme-aware by construction, so no dark: variants needed. */
+@source inline("{text,bg,border,border-l}-{destructive,success,warning}");
+@source inline("bg-{destructive,success,warning}/10");
+@source inline("border-{destructive,success,warning}/30");
+@source inline("bg-muted bg-muted-foreground/40 text-muted-foreground border-border");
+
 @custom-variant dark (&:is(.dark *));
 
 :root,

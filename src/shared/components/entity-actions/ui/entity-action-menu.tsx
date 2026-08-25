@@ -35,16 +35,19 @@ export function EntityActionMenu<TEntity>({
     return null
   }
 
-  // Compact mode: single dropdown trigger, always visible
+  // Compact mode: single dropdown trigger. The passed className (layout + any
+  // hover/group-hover reveal) goes straight onto the Radix trigger — NOT a
+  // wrapper — so `data-[state=open]:opacity-100` keeps the icon visible while
+  // its menu is open (the pointer leaves the card, dropping group-hover). The
+  // trigger already stops click propagation, so no wrapper is needed.
   if (mode === 'compact') {
     return (
-      <div className={cn('shrink-0', className)} onClick={e => e.stopPropagation()}>
-        <EntityActionDropdown
-          entity={entity}
-          actions={permitted}
-          orientation="horizontal"
-        />
-      </div>
+      <EntityActionDropdown
+        entity={entity}
+        actions={permitted}
+        orientation="horizontal"
+        triggerClassName={cn('shrink-0 data-[state=open]:opacity-100', className)}
+      />
     )
   }
 
