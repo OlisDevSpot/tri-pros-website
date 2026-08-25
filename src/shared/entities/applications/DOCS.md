@@ -107,12 +107,18 @@ re-typed as a string literal.
 
 ### visibility-via-meeting-participation
 
-Applications have no `ownerId` column. Visibility is
-`userParticipatesInMeeting(userId, applications.meetingId)`
-(`lib/visibility.ts:applicationVisibility`), resolved by `scopeMiddleware`
-into `ctx.scope` for every entity procedure. Non-omni agents see an
-application only if they participate in its meeting (any role) — mirroring
-proposals' "meeting participation is the gate" rule.
+Applications have no `ownerId` column and declare no standalone visibility fn.
+They are a structural CHILD of `Meeting`:
+`applicationServerSpec.parent = { spec: meetingServerSpec, fk: applications.meetingId }`.
+The scope engine derives visibility from that link as the parent bridge
+`applications.meetingId IN (SELECT meetings.id WHERE <meeting scope>)` — the
+legacy engine via `resolveEffectiveScope`→`bridgeToParent` (folding the parent's
+`meetingVisibility`), the CASL engine via `resolveActorScope` (folding
+`resolveActorScope(meetingServerSpec)`) once the shared factory flips in Phase 7.
+Non-omni agents see an application only if they participate in its meeting (any
+role) — mirroring proposals' "meeting participation is the gate" rule. (Phase 6,
+2026-08-20: replaced the former `lib/visibility.ts:applicationVisibility` +
+`scopeMiddleware` wiring, both now deleted.)
 
 Child rows (`application_answers`, `x_application_trades`) carry no
 independent visibility of their own. They are always reached through the
@@ -126,11 +132,11 @@ scoped parent row before touching `application_answers` / `x_application_trades`
 independent owner concept to hang visibility off of. Reusing the meeting
 scope instead of inventing an `ownerId` keeps applications consistent with
 how proposals already do it.
-**Reference impl**: `lib/visibility.ts:applicationVisibility` →
-`@/shared/entities/meetings/dal/server/participants:userParticipatesInMeeting`.
-**Enforced by**: `applicationServerSpec.visibility` (wired into
-`scopeMiddleware`); the scope-probe in every business DAL function that reads
-or mutates a child row.
+**Reference impl**: `applicationServerSpec.parent` → `meetingServerSpec`
+(whose scope folds `@/shared/entities/meetings/dal/server/participants:userParticipatesInMeeting`).
+**Enforced by**: `applicationServerSpec.parent` (read by the scope engine to
+emit the parent bridge); the scope-probe in every business DAL function that
+reads or mutates a child row.
 
 ## Anti-patterns
 
