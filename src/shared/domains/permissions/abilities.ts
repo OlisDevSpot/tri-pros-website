@@ -236,6 +236,14 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       // 1:1 attribution child (Addendum B) — read-only, SYSTEM-written at capture.
       can('read', 'CustomerLeadAttribution')
 
+      // Notes: dispatchers work the leads pool and author/read notes on those
+      // leads, exactly like an agent (user-ratified 2026-08-20). Row scope flows
+      // from the Customer parent bridge (dispatcher's leads-pool Customer scope).
+      // update/delete stay author-or-admin on the imperative hook until Grill C
+      // moves "own note" to a CASL {authorId} condition — no update/delete here.
+      can('read', 'CustomerNote')
+      can('create', 'CustomerNote')
+
       can('read', 'Meeting', { $participatesViaMeeting: { via: 'self' } })
       can('create', 'Meeting') // books appointments (lands unassigned — see resolve-owner.ts)
       can('update', 'Meeting')

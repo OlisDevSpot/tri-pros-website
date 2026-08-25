@@ -13,7 +13,6 @@ import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { assertNoteAuthorOrAdmin } from './assert-note-author'
 import { CUSTOMER_NOTE } from './constants'
-import { customerNoteVisibility } from './visibility'
 
 // `createInsertSchema` derives bounds from the Drizzle column (text — no
 // length limit), so `content` needs an explicit bound here. Restores the
@@ -33,7 +32,7 @@ export const customerNoteSchemas = {
 export const customerNoteServerSpec = {
   entityName: CUSTOMER_NOTE,
   caslSubject: CUSTOMER_NOTE,
-  visibility: customerNoteVisibility,
+  parent: { spec: customerServerSpec, fk: customerNotes.customerId },
   table: customerNotes,
   schemas: {
     insert: insertCustomerNoteSchemaBounded,
@@ -46,7 +45,8 @@ export const customerNoteServerSpec = {
       // session (closes the addNote scope gap — see issue #280).
       //
       // MUST probe with the CUSTOMER's own visibility, not `ctx.scope` (which
-      // here is `customerNoteVisibility` — an EXISTS correlated on
+      // here is the customer-notes PARENT BRIDGE — `customer_notes.customer_id
+      // IN (SELECT customers.id WHERE <customer scope>)`, correlated on
       // `customer_notes.customer_id`). Reusing `ctx` as-is against
       // `customerCrud.getById` (`SELECT ... FROM customers WHERE ... AND
       // <scope>`) would reference `customer_notes` in a query that never
