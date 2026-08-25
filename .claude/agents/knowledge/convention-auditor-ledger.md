@@ -216,3 +216,11 @@ Entries older than the doc's last git edit must be re-verified before citing.
 - `sanitizeFilename` collapses whitespace to `_` and does not strip `"` — callers embedding it in a quoted `Content-Disposition` header should strip quotes (header-injection edge). Candidate note wherever the helper lands.
 - Money-as-integer-cents at the DAL boundary (dollars in domain/form shapes, `_cents` bigint columns, Math.round at the mapper) is enforced by precedent (proposal_incentives, final_tcp_cents) but has NO codebase-conventions doc — candidate `money.md` or a database-schema.md rule; W3 mints several new money columns, good promotion moment.
 - environment.md "Key integrations" (:96,:101) predates the 2026-07-09 legacy-services scrub: still lists DocuSign as present-legacy and Notion as "temporary CRM (contacts)" though DocuSign is deleted and the CRM migration completed. Candidate doc touch-up (out of W3 scope).
+
+## crud-dal sub-plan A audit (verified 2026-08-17)
+- Scope: plan `docs/superpowers/plans/2026-08-16-crud-dal-sub-plan-a-factory-config-hooks.md` vs code `src/shared/dal/server/{types.ts,lib/create-crud-dal.ts}`, `src/trpc/lib/create-crud-router.ts`, meetings entity.
+- FACT: 13 entities already export `*Crud = createCrudDal(spec)` in `dal/server/crud.ts`; only 5 real `createCrudRouter(` call sites (meetings/applications/customers/proposals/customer-notes). → making router `crud` REQUIRED in A is ~5 one-line edits, no behavior change; the optional-`crud` fallback is avoidable dead weight.
+- FACT: no existing `MaybePromise`/`Awaitable`/`Promisable` util in src — the plan's `MaybePromise` is net-new but a legit DRY of `T | Promise<T>` (acquitted).
+- DRY breach: hook before/after signatures written 2× (Task1 Step3 `CrudConfig.hooks.*` + Step4 `*CallsiteHooks`); 3rd frozen copy on deprecated `EntityServerSpec.hooks`. Recommend single per-slot `Create/Update/DeleteHooks` interface + `AfterCommitHook` mixin.
+- @deprecated gaps: `synthesizeFromSpec` (create-crud-dal.ts) + router `crud ?? createCrudDal(spec)` fallback are transitional (removed in D) but plan tags neither.
+- Conventions cited: reuse-existing-api-surface (memory/feedback-reuse-existing-api-surface.md), no-manual-updatedAt (compliant — buildUpdateSetValues calls col.onUpdateFn), Rule 19 DAL/db boundary (meetings crud.ts imports jobs/ably — sanctioned by epic, not new).
