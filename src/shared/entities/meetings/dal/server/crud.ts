@@ -19,15 +19,18 @@ import { ably } from '@/shared/services/providers/upstash/realtime'
  */
 export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
   hooks: {
-    // ── INTERIM(C): pre-commit side-effects to relocate to `afterCommit` ──────
-    // These `after`-hook dispatches currently run inline (fine today: no crud.*
-    // call threads a tx into meetings). When D adopts a tx-carrying ctx here,
-    // they would fire PRE-COMMIT. Sub-plan C moves them to `afterCommit`; D then
-    // threads `ctx.tx ?? db` into the off-tx writes below. Sites:
-    //   • create.after: syncMeetingToGcalJob, graduateFromCampaignJob, metaCapiEventJob
-    //   • create.after: addParticipant(...) — writes OFF-tx (needs executor in D)
-    //   • update.after: syncMeetingToGcalJob, notifyMeetingTimeChangedJob, ably.publish
-    // Retired by C (dispatches) + D (addParticipant executor). See sub-plan B ledger.
+    // ── HOOK CAVEAT (afterCommit / sub-plan C DEFERRED) ──────────────────────
+    // These `after`-hook side-effects run INLINE, which is safe on the naked path
+    // (no tx threaded → the write autocommits before the hook fires). There is no
+    // post-commit phase: sub-plan C (`afterCommit`) is deferred, and this inline
+    // model is the accepted contract, not an interim state.
+    //   • create.after: syncMeetingToGcalJob, graduateFromCampaignJob, metaCapiEventJob (dispatches)
+    //   • create.after: addParticipant(...) — DB write on raw `db` (off any ambient tx)
+    //   • update.after: syncMeetingToGcalJob, notifyMeetingTimeChangedJob (dispatches) + ably.publish
+    // ⚠️ If a future orchestrator threads a tx into meetingCrud.* (via `withTx`),
+    // the dispatches above fire PRE-COMMIT and won't roll back, and addParticipant
+    // writes outside that tx. That call site must handle it (see `withTx` in
+    // helpers.ts). Revisit C only if cross-entity atomicity here becomes a real need.
     create: {
       // see ../../DOCS.md#meeting-owner-is-creator
       // Authenticated callers: ownerId is ALWAYS server-resolved — prevents wire

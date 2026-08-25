@@ -62,10 +62,17 @@ export async function dalDbOperation<T>(
  * `await crud.*` swallows its DalError (dalDbOperation catches it) and the tx
  * would commit partial state on the business-precondition (not-found) case.
  *
- * ⚠️ INTERIM(C): until `afterCommit` lands (sub-plan C), do NOT thread this tx
- * into a `crud.*` whose `after` hook dispatches a QStash/Ably job — the dispatch
- * would run PRE-COMMIT. C relocates those dispatches to `afterCommit`. See the
- * Cross-Phase Ledger in the sub-plan B design spec.
+ * ⚠️ HOOK CAVEAT (sub-plan C — `afterCommit` — is DEFERRED; this is the accepted
+ * contract for the minimal-tx approach, not a temporary state): the engine has NO
+ * post-commit hook phase. A `crud.*` mutation's side-effecting hooks (QStash/Ably
+ * dispatches, any external-system write) run INSIDE the `after` phase. When you
+ * thread this tx into such a mutation, those side-effects fire PRE-COMMIT and are
+ * NOT rolled back if the tx later aborts — the external system ends up with data
+ * for a write that never committed. So when you wrap a hooked mutation in a tx,
+ * deal with its hooks at THIS call site (don't wrap it, or hoist the dispatch out
+ * of the tx and fire it after `withTx` resolves). The default naked path — no tx
+ * threaded — is always safe: the single write autocommits before the hook runs.
+ * See the deferred design: docs/superpowers/specs/2026-08-18-crud-dal-sub-plan-c-aftercommit-design.md
  */
 export async function withTx<T>(
   ctx: ScopedContext,
