@@ -71,7 +71,7 @@ A small UI pattern — entity-action buttons gated by CASL (ADR-0001, Mar 2026) 
 Executed inline via `docs/superpowers/plans/2026-08-20-projects-phase-3-residuals.md`. All four files are now `db`-free:
 - **accounting write (full R13)** ✅ — all six `db` sites (incl. the QB payment/invoice sync reads the plan first missed) route through `customerCrud`/`projectCrud` + new `getProposalsByIds`/`getProposalsByInvoiceIds`/`getProposalByInvoiceId`.
 - **`media.router`** ✅ — `movePhase`/`toggleHero` → new `media-files/dal/server/mutations.ts` (`moveMediaPhase`/`setHeroImage`); importable reads → `listImportableProjectMedia`. Hero-exclusivity + phase-move proven by dev-DB smoke.
-- **`google-drive.router`** ✅ — token refresh → new `googleDriveTokenService.getValidAccessToken` + `updateAccountTokens`. One accepted nuance: upload no-account error `PRECONDITION_FAILED → NOT_FOUND` (matches `getAccessToken`).
+- **`google-drive.router`** ✅ — token refresh → new `googleDriveTokenService.getValidAccessToken` + `updateAccountTokens`. One accepted nuance: upload no-account error `PRECONDITION_FAILED → NOT_FOUND` (matches `getAccessToken`). **⚠️ Known debt:** the token service is a convention break (an orchestrator living in the `providers/` leaf dir) — deliberately parked; the proper fix is §⑥ below.
 - **`business.create` reads** ✅ — proposal-gate + customer-address via `getProposalsByMeetingId` + `customerCrud.getById`.
 - *(voip compliance / link-token D-c sites fold into the VOIP overhaul, not here; `ai/client` projectJSON write is paused-by-design.)*
 - **Remaining projects work = the #285 scope-tightening tail only** (§② below): swap bare `agentProcedure` → `projectProcedure`, gate `delete` on CASL. NOT part of T5.
@@ -93,6 +93,15 @@ Collapse the two `finalTcp` implementations — SQL `recomputeProposalFinancials
 ### ⑤ Deferred prod-application backlog *(gated on Decision 1 — do NOT run yet)*
 - **JSONB Wave 3 PROD cutover** — backfill → DDL → deploy per the Wave-3 cutover runbook (drops W1/W2 columns on prod, freezes `fundingJSON`/`formMetaJSON`). Prod currently runs pre-Wave-3 blob code; this is the standing exposure, held intentionally.
 - Any accumulated `db:push:prod` for enum/schema pushes noted across memory (meeting-outcome enum, media bucket, etc.).
+
+### ⑥ Google OAuth service consolidation *(cleanup — epic tail; unblocked, low-risk)*
+**Debt introduced by ① (accepted deliberately):** `src/shared/services/providers/google-drive/token.service.ts` is a convention break — an internal-service orchestrator (reads the accounts DAL, throws `TRPCError`) physically living inside the `providers/` leaf directory (ADR-0003: providers are app-unaware leaves, no DAL, no TRPCError). It could NOT go on `client.ts` (a provider) for the same reason, and `token.service.ts` invented a pattern with zero precedent.
+**The real problem it exposes:** Google OAuth account+token handling is duplicated and mis-homed. `scheduling.service.ts` ALSO does `getGoogleAccountForUser` → `googleDriveClient.refreshAccessToken` → `updateAccountGCalFields` inline (lines ~46–62) — a scheduling service concerning itself with auth/account retrieval.
+**The fix:** extract a centralized **`src/shared/services/google-oauth.service.ts`** (internal service) that owns ALL Google OAuth account + token concerns for BOTH google-drive AND google-calendar — account lookup, refresh-if-expiring, persist, and a single `getValidAccessToken(userId)` (+ any account-resolution helpers). Then:
+- delete `providers/google-drive/token.service.ts`; the gdrive router consumes the oauth service.
+- `scheduling.service.ts` STOPS retrieving google accounts / touching auth — it only SCHEDULES, consuming the oauth service for a valid token.
+- the accounts DAL (`getGoogleAccountForUser`/`updateAccountTokens`/`updateAccountGCalFields`) stays as the persistence layer the oauth service orchestrates.
+Behavior-preserving; no DB schema change; verify with `tsc`+`lint` + the existing gcal sync path. Owner call (2026-08-20): park now, do this at the epic tail.
 
 ---
 
