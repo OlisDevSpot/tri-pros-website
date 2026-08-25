@@ -6,9 +6,10 @@
 // itself. Mutations return `DalReturn` so tRPC routers unwrap with `dalToTrpc`
 // and services/jobs inspect the union directly. see docs/codebase-conventions/service-architecture.md
 import type { MediaStore } from './stores'
+import type { MediaPhase } from '@/shared/constants/enums/media'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import { dalSuccess } from '@/shared/dal/server/types'
-import { listMediaByOwner, reorderMedia } from '@/shared/entities/media-files/dal/server/media-ops'
+import { listMediaByOwner, moveMediaPhase, reorderMedia, setHeroImage } from '@/shared/entities/media-files/dal/server/media-ops'
 import { resetMediaOptimizationStatus } from '@/shared/entities/media-files/dal/server/optimization'
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { optimizeMediaJob } from '@/shared/services/providers/upstash/jobs/optimize-media'
@@ -61,6 +62,16 @@ export const mediaService = {
   /** One scoped transaction — no per-row authz probe (the reorder N+1 kill). */
   async reorder(store: MediaStore, ctx: ScopedContext, updates: { id: number, sortOrder: number }[]): Promise<DalReturn<void>> {
     return reorderMedia(store.table, ctx, updates)
+  },
+
+  /** Scoped phase move — out-of-scope ids match nothing (no probe). */
+  async movePhase(store: MediaStore, ctx: ScopedContext, ids: number[], phase: MediaPhase): Promise<DalReturn<void>> {
+    return moveMediaPhase(store.table, ctx, ids, phase)
+  },
+
+  /** Scoped hero toggle — getById authorizes; project-wide unset bounded to the owner. */
+  async setHero(store: MediaStore, ctx: ScopedContext, id: number, isHero: boolean): Promise<DalReturn<void>> {
+    return setHeroImage(store.table, store.ownerColumn, ctx, id, isHero)
   },
 
   async rename(store: MediaStore, ctx: ScopedContext, id: number, name: string): Promise<DalReturn<any>> {
