@@ -1,5 +1,12 @@
 # voip-campaigns
 
+> **⚠️ Migrated CloudTalk → JustCall (2026-08-19).** Columns renamed `ct_*` →
+> `provider_*`; `ct_membership_tag`/`ct_tag_id` **dropped** (JustCall has no tags
+> — enrollment is an explicit campaign push); added `status` + `dialer_mode`
+> (`autodial | dynamic | predictive`). Sync is `resyncDialer` /
+> `upsertCampaignByProviderId`. CloudTalk-specific prose below (membership tags)
+> is historical — trust the code + [migration spec](../../../../docs/superpowers/specs/2026-08-19-justcall-dialer-migration-design.md).
+
 CT-identity bridge: mirrors each CloudTalk Campaign's id + membership tag +
 cadence config into our DB so enrollment can resolve "which tag puts a contact
 into which campaign" without hardcoding CT-assigned ids as env vars.

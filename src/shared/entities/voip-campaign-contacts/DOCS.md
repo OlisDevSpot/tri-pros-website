@@ -1,6 +1,12 @@
 # voip-campaign-contacts
 
-Per-customer CloudTalk participation record — ONE row per customer ever pushed
+> **⚠️ Migrated CloudTalk → JustCall (2026-08-19).** `cloudtalk_contact_id` →
+> `provider_contact_id`; unenroll is `dialerProvider.unenroll(campaignId,
+> providerContactId)` (not tag removal); the enrollment service reads the
+> campaign's `provider_campaign_id`. "CloudTalk"/tag language below is historical
+> — trust the code + [migration spec](../../../../docs/superpowers/specs/2026-08-19-justcall-dialer-migration-design.md).
+
+Per-customer dialer participation record — ONE row per customer ever pushed
 to CloudTalk. The single home for all voip-campaigns per-customer state (CT
 contact id, enrollment membership, the enrolled campaign FK, dial attempts,
 sync). `customers` carries NO `voipCampaign*` fields (only the shared DNC

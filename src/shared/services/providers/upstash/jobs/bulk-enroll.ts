@@ -15,7 +15,7 @@ import { createJob } from '../lib/create-job'
  * continues — one bad lead never aborts the run.
  *
  * Ring-1 note: one-customer-at-a-time (each does its own upsertContact +
- * addTags). // @migration: chunk via cloudtalkClient.bulkContacts (≤10 ops/req).
+ * dialer enroll). // @migration: chunk via the dialer bulk import (JUSTCALL_BULK_MAX_CONTACTS = 250/req).
  */
 export const bulkEnrollJob = createJob(
   'bulk-enroll',

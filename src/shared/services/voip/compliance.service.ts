@@ -4,7 +4,7 @@ import { customers } from '@/shared/db/schema/customers'
 import { toNationalDigits } from '@/shared/lib/phone'
 
 // Compliance service — owner of the shared canonical DNC registry decorating
-// the `customers` row. Both voip-in-house (Twilio) and voip-campaigns (CloudTalk)
+// the `customers` row. Both voip-in-house (Twilio) and voip-campaigns (the dialer)
 // gate outbound through `canOutboundTo` and INSERT through `addToDnc`.
 //
 // see docs/plans/voip-in-house/phase-1-mvp.md GRILL RESULTS (2026-05-30)
@@ -13,7 +13,7 @@ import { toNationalDigits } from '@/shared/lib/phone'
 
 export type DncReason
   = | 'customer_request' // live ask on a call
-    | 'stop_keyword' // SMS STOP/UNSUB (Twilio or CloudTalk)
+    | 'stop_keyword' // SMS STOP/UNSUB (Twilio or the dialer)
     | 'admin' // admin clicks "Add to DNC" in UI
     | 'ftc' // FTC DNC list scrub (Phase 2+ cron)
 
@@ -60,7 +60,7 @@ function createComplianceService() {
      * Mark a customer as opted-out. Idempotent — re-calling on an already-DNC'd
      * customer is a no-op (we don't overwrite the original opt-out timestamp).
      *
-     * Cross-system propagation to CloudTalk (push contact to CT do-not-call list)
+     * Cross-system propagation to the dialer (push contact to its do-not-call list)
      * is voip-campaigns Phase 1 work — wired via INTEGRATION-SEAM.md §5.
      */
     addToDnc: async (input: AddToDncInput): Promise<void> => {

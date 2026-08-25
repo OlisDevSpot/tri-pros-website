@@ -1,0 +1,16 @@
+import type { SQL } from 'drizzle-orm'
+import type { VisibilityScope } from '@/shared/dal/server/types'
+
+import { sql } from 'drizzle-orm'
+
+/**
+ * Admin-only entity. `voip_contact_fields` is dialer-identity config (the
+ * provider-field-id ↔ app-key bridge) managed via Resync — no per-agent ownership.
+ * Super-admin bypasses scoping via the omni-path; this strict-default predicate
+ * means only omni queries succeed via the scope path.
+ *
+ * see ../DOCS.md#admin-only-visibility
+ */
+export function voipContactFieldVisibility(_scope: VisibilityScope): SQL {
+  return sql`FALSE`
+}

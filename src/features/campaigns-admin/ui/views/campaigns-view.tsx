@@ -20,7 +20,7 @@ export function CampaignsView() {
       <header className="flex flex-col gap-1">
         <h1 className="text-xl font-semibold text-foreground">Campaigns</h1>
         <p className="text-xs text-muted-foreground">
-          CloudTalk lead-conversion campaigns — enroll, curate, and inspect leads.
+          Dialer lead-conversion campaigns — enroll, curate, and inspect leads.
         </p>
       </header>
 

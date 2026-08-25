@@ -1,20 +1,22 @@
-import type { CloudtalkCallEndedEvent } from '@/shared/services/providers/cloudtalk/webhooks/events'
+import type { CanonicalDialerEvent } from '@/shared/services/voip/dialer/types'
 import {
   claimAndIncrementDialAttempt,
   recordAutoSmsSent,
 } from '@/shared/entities/voip-campaign-contacts/dal/server/mutations'
 import {
-  findSmsCadenceContextByCtContactId,
+  findSmsCadenceContextByProviderContactId,
 } from '@/shared/entities/voip-campaign-contacts/dal/server/queries'
 import { toE164 } from '@/shared/lib/phone'
-import { cloudtalkClient } from '@/shared/services/providers/cloudtalk/client'
+import { dialerProvider } from '@/shared/services/voip/dialer'
 import { decideCadenceSms } from './lib/decide-cadence-sms'
 import { renderSmsTemplate } from './lib/render-sms-template'
 
 // Orchestrates the per-lead automated SMS cadence off call.ended events.
-// CloudTalk delivers; this service decides + sends. All cadence state lives in
+// The dialer delivers; this service decides + sends. All cadence state lives in
 // voip_campaign_contacts; per-campaign config in voip_campaigns.sms_cadence.
 // see docs/superpowers/specs/2026-06-17-voip-campaigns-sms-cadence-design.md
+
+type CallEndedEvent = Extract<CanonicalDialerEvent, { type: 'call.ended' }>
 
 function createSmsCadenceService() {
   return {
@@ -23,17 +25,17 @@ function createSmsCadenceService() {
      * the next due cadence SMS if the gates pass. Throws nothing the caller must
      * handle — the webhook route is 200-on-error; failures are logged.
      */
-    async handleCallEnded(event: CloudtalkCallEndedEvent): Promise<void> {
+    async handleCallEnded(event: CallEndedEvent): Promise<void> {
       // Only outbound dials drive the cadence (inbound callbacks don't count).
       if (event.direction && event.direction !== 'outbound') {
         return
       }
-      const ctContactId = event.contact_id
-      if (!ctContactId) {
+      const providerContactId = event.providerContactId
+      if (!providerContactId) {
         return // unresolvable contact → safe no-op
       }
 
-      const ctxResult = await findSmsCadenceContextByCtContactId(ctContactId)
+      const ctxResult = await findSmsCadenceContextByProviderContactId(providerContactId)
       if (!ctxResult.success || !ctxResult.data) {
         return
       }
@@ -45,7 +47,7 @@ function createSmsCadenceService() {
       }
 
       // Exactly-once attempt counting (dedup folded into the increment).
-      const claim = await claimAndIncrementDialAttempt(ctx.customerId, event.call_uuid)
+      const claim = await claimAndIncrementDialAttempt(ctx.customerId, event.callUuid)
       if (!claim.success || claim.data === null) {
         return // redelivery already counted → stop
       }
@@ -70,16 +72,16 @@ function createSmsCadenceService() {
         interestedTradesRaw: ctx.interestedTradesRaw,
       })
 
-      // from = the DID CloudTalk dialed from (so the SMS matches the call number).
-      const fromE164 = event.internal_number_e164
+      // from = the DID the dialer called from (so the SMS matches the call number).
+      const fromE164 = event.fromNumberE164
       if (!fromE164) {
-        console.warn('[sms-cadence] no internal_number_e164 on call.ended — skipping send', {
-          callUuid: event.call_uuid,
+        console.warn('[sms-cadence] no fromNumberE164 on call.ended — skipping send', {
+          callUuid: event.callUuid,
         })
         return
       }
 
-      // Customer phone is stored canonical 10-digit; CloudTalk needs E.164.
+      // Customer phone is stored canonical 10-digit; the dialer needs E.164.
       const toE164Number = toE164(ctx.customerPhone)
       if (!toE164Number) {
         console.warn('[sms-cadence] customer phone not a valid US number — skipping send', {
@@ -88,18 +90,18 @@ function createSmsCadenceService() {
         return
       }
 
-      const sent = await cloudtalkClient.sendSms({
-        fromE164,
+      const sent = await dialerProvider.sendSms({
+        fromNumberE164: fromE164,
         toE164: toE164Number,
-        text,
+        body: text,
       })
       // Advance the ladder only on a successful send — a failed send leaves the
       // slot due, retried by the next (non-deduped) call.ended.
-      if (sent.success) {
+      if (sent.providerMessageId) {
         await recordAutoSmsSent(ctx.customerId)
       }
       else {
-        console.error('[sms-cadence] sendSms reported failure', { callUuid: event.call_uuid })
+        console.error('[sms-cadence] sendSms returned no message id', { callUuid: event.callUuid })
       }
     },
   }

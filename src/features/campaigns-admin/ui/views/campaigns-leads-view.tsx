@@ -40,7 +40,7 @@ export function CampaignsLeadsView() {
     () =>
       buildLeadsFilterConfig({
         campaigns: campaigns.map(c => ({
-          label: c.ctCampaignName,
+          label: c.providerCampaignName,
           value: c.id,
         })),
         sources: (summariesQuery.data ?? []).map(s => ({

@@ -1,6 +1,19 @@
-# voip-campaigns EPIC — CloudTalk-managed lead-to-meeting conversion
+# voip-campaigns EPIC — managed lead-to-meeting conversion
 
-> **Status:** Architectural design complete (2026-05-23 grilling session); Phase 0 (CloudTalk procurement + dashboard configuration) not started.
+> **⚠️ PROVIDER MIGRATED 2026-08-19 — CloudTalk → JustCall.** This EPIC's
+> architecture (managed dialer owns lifecycle; we persist only identity bridges +
+> per-customer participation + shared DNC) is unchanged, but the provider is now
+> **JustCall**, reached through a neutral `DialerProvider` seam. CloudTalk is
+> fully retired (`providers/cloudtalk/*` deleted). CloudTalk-specific details
+> below (membership tags, `ct_*` columns, `?secret=` webhook, mid-call routing
+> mocks, the `source='cloudtalk'` discriminator — the last already superseded
+> 2026-06-04) are **historical**. Canonical now:
+> [migration spec](../../superpowers/specs/2026-08-19-justcall-dialer-migration-design.md) ·
+> [API research](./justcall-api-research.md) · [setup runbook](./justcall-setup-runbook.md) ·
+> [provider DOCS](../../../src/shared/services/providers/justcall/DOCS.md). Trust the
+> code + these docs over the CloudTalk-era prose below.
+
+> **Status:** Migrated to JustCall (2026-08-19); go-live pending a live JustCall Pro account.
 > **Sibling EPIC:** [voip-in-house](../voip-in-house/EPIC.md) — ships first; provides the in-house DIDs that CloudTalk transfers calls to.
 > **Cross-system contract:** [INTEGRATION-SEAM.md](../voip/INTEGRATION-SEAM.md) — required reading before touching anything that crosses systems.
 > **API research foundation:** [cloudtalk-api-research.md](./cloudtalk-api-research.md) — CloudTalk API patterns, auth, rate limits, quirks. Foundational for `providers/cloudtalk/client.ts`.

@@ -65,3 +65,21 @@ export type VoipLinkTokenType = (typeof voipLinkTokenTypes)[number]
 // Not a pgEnum (kept lightweight as a typed text column); add a pgEnum only if it grows.
 export const voipUnenrollReasons = ['graduated', 'opted_out', 'disqualified', 'removed'] as const
 export type VoipUnenrollReason = (typeof voipUnenrollReasons)[number]
+
+// Per-campaign dialer mode (JustCall migration 2026-08-19). Mirrors the dialer
+// provider's campaign `type`:
+//   - autodial:   single-agent power dialer (JustCall Pro). Default.
+//   - dynamic:    multi-agent shared lead pool (SalesPro-gated; Bina's source).
+//   - predictive: multi-agent predictive (SalesPro-gated).
+// The neutral DialerProvider contract declares a structurally-identical
+// `DialerMode`; this is the canonical DB/enum home. Not a pgEnum (typed text
+// column) — add a pgEnum only if it grows.
+export const dialerModes = ['autodial', 'dynamic', 'predictive'] as const
+export type DialerMode = (typeof dialerModes)[number]
+
+// Provider-mirrored campaign run state on voip_campaigns.status. Reinstated for
+// the JustCall migration (the former `voipCampaignStatuses` enum was deleted
+// 2026-06-04 under perfect-separation; the reshape re-adds a truthful `status`
+// column). Not a pgEnum (typed text column).
+export const voipCampaignStatuses = ['active', 'inactive'] as const
+export type VoipCampaignStatus = (typeof voipCampaignStatuses)[number]

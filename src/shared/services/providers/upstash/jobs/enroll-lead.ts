@@ -18,7 +18,7 @@ import { createJob } from '../lib/create-job'
  * Retry policy: deterministic precondition rejects (dnc_match / invalid_phone /
  * already_enrolled / no_dialable_campaign / not_a_lead) won't change on retry →
  * swallow + log. Throw on ct_api_failure or any non-precondition error so QStash
- * retries a transient CloudTalk / DB outage. Contrast graduate-from-campaign,
+ * retries a transient dialer / DB outage. Contrast graduate-from-campaign,
  * which uses dispatchOrThrow because a dropped dial-stop is a safety bug; a
  * dropped auto-enroll just means the lead isn't auto-dialed (admin can Enroll-all).
  */

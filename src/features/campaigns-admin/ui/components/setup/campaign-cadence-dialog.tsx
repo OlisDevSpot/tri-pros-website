@@ -141,7 +141,7 @@ export function CampaignCadenceDialog({
           <DialogTitle>
             SMS cadence
             {' — '}
-            {campaign?.ctCampaignName ?? ''}
+            {campaign?.providerCampaignName ?? ''}
           </DialogTitle>
           <DialogDescription>
             Configure the automated SMS ladder. Messages send in order as call attempts accumulate.

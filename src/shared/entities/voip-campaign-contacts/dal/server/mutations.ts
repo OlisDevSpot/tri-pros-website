@@ -5,7 +5,7 @@
 //
 // State model (see ../../DOCS.md):
 //   - Enrolled now = row exists AND unenrolled_at IS NULL.
-//   - Re-enroll reuses the same row + cloudtalk_contact_id (clears unenrolled_at
+//   - Re-enroll reuses the same row + provider_contact_id (clears unenrolled_at
 //     + reason, resets dial_attempts, sets a fresh enrolled_at + campaign).
 //
 // see docs/codebase-conventions/dal-conventions.md
@@ -23,7 +23,7 @@ import { voipCampaignContacts } from '@/shared/db/schema/voip-campaign-contacts'
 
 interface UpsertEnrolledInput {
   customerId: string
-  cloudtalkContactId: string
+  providerContactId: string
   voipCampaignId: string
   attributeHash: string
 }
@@ -45,7 +45,7 @@ export async function upsertEnrolled(
       .insert(voipCampaignContacts)
       .values({
         customerId: input.customerId,
-        cloudtalkContactId: input.cloudtalkContactId,
+        providerContactId: input.providerContactId,
         voipCampaignId: input.voipCampaignId,
         enrolledAt: now,
         unenrolledAt: null,
@@ -58,7 +58,7 @@ export async function upsertEnrolled(
       .onConflictDoUpdate({
         target: voipCampaignContacts.customerId,
         set: {
-          cloudtalkContactId: input.cloudtalkContactId,
+          providerContactId: input.providerContactId,
           voipCampaignId: input.voipCampaignId,
           enrolledAt: now,
           unenrolledAt: null,
@@ -79,7 +79,7 @@ export async function upsertEnrolled(
  * Idempotent unenroll patch — sets `unenrolled_at = now` + `unenroll_reason`
  * ONLY on a currently-active row (`unenrolled_at IS NULL`). Returns
  * `rowsAffected` so the caller can detect the no-op case (already unenrolled,
- * or never enrolled). The row + cloudtalk_contact_id persist for re-enroll.
+ * or never enrolled). The row + provider_contact_id persist for re-enroll.
  */
 export async function markUnenrolled(
   customerId: string,
@@ -104,7 +104,7 @@ export async function markUnenrolled(
  * Atomically re-point an active enrollment to a different campaign. Updates
  * ONLY the `voip_campaign_id` FK on the currently-active row
  * (`unenrolled_at IS NULL`). Caller must have already swapped the membership
- * tags on CloudTalk (removeTags old → addTags new) before calling this.
+ * provider campaign (dialerProvider.switchCampaign) before calling this.
  * Returns `void`; the service detects the no-op case upstream.
  *
  * `updatedAt` auto-bumps via the schema-helper `$onUpdate` — do not set it.
@@ -173,7 +173,7 @@ export async function claimAndIncrementDialAttempt(
 
 /**
  * Record a successful auto-SMS: advance the ladder index + stamp the day for
- * the ≤1/day gate. Called only after cloudtalkClient.sendSms succeeds.
+ * the ≤1/day gate. Called only after dialerProvider.sendSms succeeds.
  */
 export async function recordAutoSmsSent(customerId: string): Promise<DalReturn<void>> {
   return dalDbOperation(async () => {

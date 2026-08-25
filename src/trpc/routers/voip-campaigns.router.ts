@@ -9,7 +9,7 @@ import { countLeadsByStatusPerSource, listActiveCustomerIdsBySource, listEnrolle
 import { voipCampaignCrud } from '@/shared/entities/voip-campaigns/dal/server/crud'
 import { getVoipCampaignById, listVoipCampaigns } from '@/shared/entities/voip-campaigns/dal/server/queries'
 import { smsCadenceSchema } from '@/shared/entities/voip-campaigns/schemas/sms-cadence'
-import { listVoipContactAttributes } from '@/shared/entities/voip-contact-attributes/dal/server/queries'
+import { listVoipContactFields } from '@/shared/entities/voip-contact-fields/dal/server/queries'
 import { bulkDncJob } from '@/shared/services/providers/upstash/jobs/bulk-dnc'
 import { bulkEnrollJob } from '@/shared/services/providers/upstash/jobs/bulk-enroll'
 import { bulkUnenrollJob } from '@/shared/services/providers/upstash/jobs/bulk-unenroll'
@@ -27,7 +27,7 @@ async function assertCampaignDialable(campaignId: string) {
   if (!result.success || !isCampaignDialable(result.data)) {
     throw new TRPCError({
       code: 'PRECONDITION_FAILED',
-      message: 'That campaign is not active in CloudTalk — resync or pick another.',
+      message: 'That campaign is not active — resync or pick another.',
     })
   }
 }
@@ -49,8 +49,8 @@ export const voipCampaignsRouter = createTRPCRouter({
     return dalToTrpc(await listVoipCampaigns())
   }),
 
-  listAttributes: agentProcedure.query(async () => {
-    return dalToTrpc(await listVoipContactAttributes())
+  listContactFields: agentProcedure.query(async () => {
+    return dalToTrpc(await listVoipContactFields())
   }),
 
   /**
@@ -107,8 +107,8 @@ export const voipCampaignsRouter = createTRPCRouter({
     }),
 
   // ── Resync + binding (super-admin) ─────────────────────────────────────────
-  resyncFromCloudtalk: superAdminProcedure.mutation(async ({ ctx }) => {
-    return dalToTrpc(await campaignSyncService.resyncFromCloudtalk(ctx))
+  resyncDialer: superAdminProcedure.mutation(async ({ ctx }) => {
+    return dalToTrpc(await campaignSyncService.resyncDialer(ctx))
   }),
 
   /** Patch a source's campaigns policy (default campaign + enabled + autoEnroll). */
@@ -130,7 +130,7 @@ export const voipCampaignsRouter = createTRPCRouter({
    * `sms_cadence` JSONB — the `update` handler always plain-replaces a column
    * now (the `jsonbMergeColumns` opt-in mechanism was deleted in Wave 2, epic
    * #256), so the messages array is replaced, not merged, by construction.
-   * Resync-safe — upsertCampaignByCtId never writes this column.
+   * Resync-safe — upsertCampaignByProviderId never writes this column.
    * see src/shared/entities/voip-campaigns/DOCS.md#sms-cadence
    */
   setCampaignSmsCadence: superAdminProcedure
@@ -203,7 +203,7 @@ export const voipCampaignsRouter = createTRPCRouter({
 
   /**
    * Bulk disqualify selected leads (super-admin). Dispatches a background job —
-   * each enroll/unenroll is ~3-4 CloudTalk calls, so a large selection would
+   * each enroll/unenroll is a few dialer API calls, so a large selection would
    * blow the request timeout if run inline. Returns immediately; the leads list
    * refetches on a short delay (see use-campaign-mutations).
    */

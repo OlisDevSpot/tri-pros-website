@@ -5,7 +5,7 @@ import { expand } from 'dotenv-expand'
 
 import z from 'zod'
 
-import { cloudtalkConfigMeta, cloudtalkEnvFragment } from '@/shared/services/providers/cloudtalk/lib/config'
+import { justcallConfigMeta, justcallEnvFragment } from '@/shared/services/providers/justcall/lib/config'
 import { metaConfigMeta, metaEnvFragment } from '@/shared/services/providers/meta/lib/config'
 import { notionConfigMeta, notionEnvFragment } from '@/shared/services/providers/notion/lib/config'
 import { quickbooksConfigMeta, quickbooksEnvFragment } from '@/shared/services/providers/quickbooks/lib/config'
@@ -102,12 +102,12 @@ const envSchema = z.object({
   // META (Pixel + Conversions API) — fragment lives at providers/meta/lib/config.ts
   ...metaEnvFragment.shape,
 
-  // VOIP — shared between voip-in-house (Twilio) and voip-campaigns (CloudTalk).
+  // VOIP — shared between voip-in-house (Twilio) and voip-campaigns (JustCall).
   // See docs/plans/voip/INTEGRATION-SEAM.md + .env.voip.example.
   //
-  // All VoIP env vars in this section (VOIP_*, TWILIO_*, CLOUDTALK_*) are
+  // All VoIP env vars in this section (VOIP_*, TWILIO_*, JUSTCALL_*) are
   // OPTIONAL during schema validation — same precedent as the VAPID block below.
-  // The consuming code (Twilio client factories, CloudTalk webhook receivers)
+  // The consuming code (Twilio client factories, the JustCall dialer client)
   // asserts non-null at the point of use. Build environments without VoIP
   // credentials (CI, prod-before-VoIP-launches, fresh dev clones) parse the
   // schema cleanly; only environments actively using VoIP features need them.
@@ -136,12 +136,14 @@ const envSchema = z.object({
   FTC_DNC_USERNAME: z.string().optional(),
   FTC_DNC_PASSWORD: z.string().optional(),
 
-  // CLOUDTALK (voip-campaigns) — schema fragment lives at
-  // `src/shared/services/providers/cloudtalk/lib/config.ts` and is spread
-  // in here. Runtime narrowing happens via `getCloudtalkConfig()`, imported
-  // by consumers directly from the provider's lib/config.
+  // JUSTCALL (voip-campaigns auto-dialer) — schema fragment lives at
+  // `src/shared/services/providers/justcall/lib/config.ts` and is spread in here.
+  // Runtime narrowing happens via `getJustcallConfig()`, imported by consumers
+  // directly from the provider's lib/config. Optional at schema level — the
+  // client asserts non-null at the point of use, so builds without JustCall
+  // creds parse cleanly.
   // see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
-  ...cloudtalkEnvFragment.shape,
+  ...justcallEnvFragment.shape,
 
   // WEB PUSH (VAPID)
   // Generate with `node scripts/generate-vapid-keys.mjs`. The public key is
@@ -219,7 +221,7 @@ if (env.VERCEL_ENV === 'production' && env.META_TEST_EVENT_CODE) {
 
 const PROVIDER_METAS = [
   twilioConfigMeta,
-  cloudtalkConfigMeta,
+  justcallConfigMeta,
   metaConfigMeta,
   resendConfigMeta,
   notionConfigMeta,

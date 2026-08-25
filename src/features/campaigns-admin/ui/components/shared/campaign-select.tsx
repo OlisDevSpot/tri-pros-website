@@ -41,7 +41,7 @@ export function CampaignSelect({ campaigns, value, onChange, onRemove, excludeId
       </SelectTrigger>
       <SelectContent>
         {options.map(c => (
-          <SelectItem key={c.id} value={c.id}>{c.ctCampaignName}</SelectItem>
+          <SelectItem key={c.id} value={c.id}>{c.providerCampaignName}</SelectItem>
         ))}
         {onRemove && (
           <SelectItem value={REMOVE_VALUE}>Remove from campaign</SelectItem>

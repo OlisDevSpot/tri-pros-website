@@ -19,8 +19,8 @@ import { createJob } from '../lib/create-job'
  * aborts the run.
  *
  * Ring-1 note: enrollment goes one-customer-at-a-time through the service (each
- * does its own upsertContact + addTags). CT's bulk contacts API (≤10 ops/req)
- * is a ring-2 throughput optimization — // @migration: chunk via cloudtalkClient.bulkContacts.
+ * does its own dialer enroll). The dialer bulk import (JUSTCALL_BULK_MAX_CONTACTS = 250/req)
+ * is a ring-2 throughput optimization — // @migration: chunk via the dialer bulk import.
  */
 export const enrollSourceBatchJob = createJob(
   'enroll-source-batch',

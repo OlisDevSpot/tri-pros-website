@@ -8,15 +8,15 @@ import { useTRPC } from '@/trpc/helpers'
 
 export function ContactAttributesReadout() {
   const trpc = useTRPC()
-  const { data, isLoading } = useQuery(trpc.voipCampaignsRouter.listAttributes.queryOptions())
-  const attributes = data ?? []
+  const { data, isLoading } = useQuery(trpc.voipCampaignsRouter.listContactFields.queryOptions())
+  const fields = data ?? []
 
   return (
     <Card className="h-full">
       <CardHeader>
-        <h2 className="text-base font-semibold text-foreground">Contact attributes</h2>
+        <h2 className="text-base font-semibold text-foreground">Contact fields</h2>
         <CardDescription>
-          CloudTalk merge-field bridge — verify lead_source / primary_trade / trades_interested are wired.
+          Dialer merge-field bridge — verify lead_source / primary_trade / trades_interested are wired.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -29,18 +29,18 @@ export function ContactAttributesReadout() {
                 ))}
               </div>
             )
-          : attributes.length === 0
+          : fields.length === 0
             ? (
                 <p className="text-sm text-muted-foreground">
-                  No attributes synced yet. Run a resync above.
+                  No fields synced yet. Run a resync above.
                 </p>
               )
             : (
                 <ul className="flex flex-col divide-y divide-border/60">
-                  {attributes.map(attr => (
-                    <li key={attr.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-                      <span className="font-medium text-foreground">{attr.ctTitle}</span>
-                      <code translate="no" className="font-mono text-xs text-muted-foreground">{attr.appKey}</code>
+                  {fields.map(field => (
+                    <li key={field.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                      <span className="font-medium text-foreground">{field.providerFieldLabel}</span>
+                      <code translate="no" className="font-mono text-xs text-muted-foreground">{field.appKey}</code>
                     </li>
                   ))}
                 </ul>

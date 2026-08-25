@@ -3,7 +3,7 @@ import { sql } from 'drizzle-orm'
 import { derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
 
 // ── Canonical campaign-lead status (single source of truth) ─────────────────
-// A customer's relationship to CloudTalk campaigns resolves to exactly ONE
+// A customer's relationship to dialer campaigns resolves to exactly ONE
 // status. Priority: enrolled > dnc > removed > eligible. Every count, list, and
 // filter MUST derive from these fragments — never hand-copy a WHERE clause.
 //

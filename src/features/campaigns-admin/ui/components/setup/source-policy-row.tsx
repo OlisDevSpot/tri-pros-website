@@ -69,7 +69,7 @@ export function SourcePolicyRow({ source, campaigns, busy, onPatch }: SourcePoli
             <SelectItem value={NO_DEFAULT}>— none —</SelectItem>
             {campaigns.map(campaign => (
               <SelectItem key={campaign.id} value={campaign.id}>
-                {campaign.ctCampaignName}
+                {campaign.providerCampaignName}
               </SelectItem>
             ))}
           </SelectContent>

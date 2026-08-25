@@ -20,18 +20,18 @@ import { toDigits } from '@/shared/lib/phone'
 
 export interface ActiveEnrollment {
   customerId: string
-  cloudtalkContactId: string
+  providerContactId: string
   voipCampaignId: string | null
-  // The membership tag to remove on unenroll — read from the linked campaign.
+  // The provider campaign id to unenroll against — read from the linked campaign.
   // null when the customer's campaign FK is null/dangling (defensive).
-  ctMembershipTag: string | null
+  providerCampaignId: string | null
 }
 
 /**
  * Resolve a customer's CURRENTLY-ACTIVE enrollment (row exists AND
  * `unenrolled_at IS NULL`), joined to its campaign so the caller has the
- * membership tag to `removeTags`. Returns null when there's no active row —
- * the unenroll op treats that as a no-op (idempotency).
+ * provider campaign id to `dialerProvider.unenroll`. Returns null when there's
+ * no active row — the unenroll op treats that as a no-op (idempotency).
  */
 export async function findActiveEnrollment(
   customerId: string,
@@ -40,9 +40,9 @@ export async function findActiveEnrollment(
     const [row] = await db
       .select({
         customerId: voipCampaignContacts.customerId,
-        cloudtalkContactId: voipCampaignContacts.cloudtalkContactId,
+        providerContactId: voipCampaignContacts.providerContactId,
         voipCampaignId: voipCampaignContacts.voipCampaignId,
-        ctMembershipTag: voipCampaigns.ctMembershipTag,
+        providerCampaignId: voipCampaigns.providerCampaignId,
       })
       .from(voipCampaignContacts)
       .leftJoin(voipCampaigns, eq(voipCampaignContacts.voipCampaignId, voipCampaigns.id))
@@ -57,18 +57,18 @@ export async function findActiveEnrollment(
 }
 
 /**
- * Map a CloudTalk contact id → our customer id (via the participation row).
- * Used by the webhook to resolve the customer a CT disposition refers to.
- * Returns null when no row carries that CT contact id.
+ * Map a dialer provider contact id → our customer id (via the participation row).
+ * Used by the webhook to resolve the customer a dialer disposition refers to.
+ * Returns null when no row carries that provider contact id.
  */
-export async function findCustomerIdByCtContactId(
-  cloudtalkContactId: string,
+export async function findCustomerIdByProviderContactId(
+  providerContactId: string,
 ): Promise<DalReturn<{ customerId: string } | null>> {
   return dalDbOperation(async () => {
     const [row] = await db
       .select({ customerId: voipCampaignContacts.customerId })
       .from(voipCampaignContacts)
-      .where(eq(voipCampaignContacts.cloudtalkContactId, cloudtalkContactId))
+      .where(eq(voipCampaignContacts.providerContactId, providerContactId))
       .limit(1)
 
     return row ?? null
@@ -94,11 +94,11 @@ export interface SmsCadenceContext {
 
 /**
  * One-shot read of everything the SMS-cadence orchestrator needs, keyed on the
- * CloudTalk contact id carried by a call.ended event. Returns null when no
- * participation row carries that CT contact id.
+ * provider contact id carried by a call.ended event. Returns null when no
+ * participation row carries that provider contact id.
  */
-export async function findSmsCadenceContextByCtContactId(
-  ctContactId: string,
+export async function findSmsCadenceContextByProviderContactId(
+  providerContactId: string,
 ): Promise<DalReturn<SmsCadenceContext | null>> {
   return dalDbOperation(async () => {
     const [row] = await db
@@ -120,7 +120,7 @@ export async function findSmsCadenceContextByCtContactId(
       .innerJoin(customers, eq(voipCampaignContacts.customerId, customers.id))
       .leftJoin(customerLeadAttribution, eq(customerLeadAttribution.customerId, customers.id))
       .leftJoin(voipCampaigns, eq(voipCampaignContacts.voipCampaignId, voipCampaigns.id))
-      .where(eq(voipCampaignContacts.cloudtalkContactId, ctContactId))
+      .where(eq(voipCampaignContacts.providerContactId, providerContactId))
       .limit(1)
 
     if (!row) {
@@ -184,7 +184,7 @@ export async function listEnrolledLeadsBySource(
         customers.id AS "customerId",
         customers.name AS name,
         vcc.enrolled_at AS "enrolledAt",
-        vc.ct_campaign_name AS "campaignName"
+        vc.provider_campaign_name AS "campaignName"
       FROM customers
       JOIN lead_sources ls ON ls.id = customers.lead_source_id
       JOIN voip_campaign_contacts vcc ON vcc.customer_id = customers.id AND vcc.unenrolled_at IS NULL
@@ -337,7 +337,7 @@ export async function listLeadsPaginated(
             customers.name AS name,
             ${leadStatusCaseSql()} AS status,
             part.voip_campaign_id AS "campaignId",
-            vc.ct_campaign_name AS "campaignName",
+            vc.provider_campaign_name AS "campaignName",
             part.enrolled_at AS "enrolledAt",
             customers.lead_source_id AS "leadSourceId",
             ${gatedPhoneSql(canSeeUngated)} AS phone,

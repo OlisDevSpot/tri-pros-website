@@ -1,38 +1,38 @@
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 
 // ---------------------------------------------------------------------------
-// campaignSyncService — mirrors CloudTalk's campaign + attribute identity into
-// our DB so enrollment can resolve membership tags + attribute ids without
-// hardcoding CT-assigned ids (EPIC decisions #8 + 2026-05-31).
+// campaignSyncService — mirrors the dialer's (JustCall) campaigns + custom-field
+// definitions into our DB so enrollment can resolve campaign ids + field ids
+// without hardcoding provider-assigned ids (EPIC decisions #8 + 2026-05-31).
 //
 // PURE ORCHESTRATION. Composes:
-//   - cloudtalkClient (provider: listCampaigns + listContactAttributes)
-//   - voip-campaigns DAL mutation (upsertCampaignByCtId)
-//   - voip-contact-attributes DAL mutation (upsertAttributeByAppKey)
-//   - lib/ pure mapper (attribute title → app_key)
+//   - dialerProvider (neutral seam: listCampaigns + listContactFields)
+//   - voip-campaigns DAL mutation (upsertCampaignByProviderId)
+//   - voip-contact-fields DAL mutation (upsertContactFieldByAppKey)
+//   - lib/ pure mapper (field label → app_key)
 //
-// No raw db. Campaigns sync UNBOUND (source_slug NULL) — an admin binds each to
-// a lead source via the Resync UI afterwards (decision #8). We never parse CT
+// No raw db. Campaigns sync with their dialer_mode + status; an admin binds each
+// to a lead source via the Resync UI afterwards (decision #8). We never parse
 // campaign names to infer the source.
 //
 // see docs/codebase-conventions/service-architecture.md
-// see docs/plans/voip-campaigns/EPIC.md decisions log 2026-06-04
+// see docs/superpowers/specs/2026-08-19-justcall-dialer-migration-design.md
 // ---------------------------------------------------------------------------
 
 import { dalSuccess } from '@/shared/dal/server/types'
-import { upsertCampaignByCtId } from '@/shared/entities/voip-campaigns/dal/server/mutations'
-import { upsertAttributeByAppKey } from '@/shared/entities/voip-contact-attributes/dal/server/mutations'
-import { cloudtalkClient } from '@/shared/services/providers/cloudtalk/client'
+import { upsertCampaignByProviderId } from '@/shared/entities/voip-campaigns/dal/server/mutations'
+import { upsertContactFieldByAppKey } from '@/shared/entities/voip-contact-fields/dal/server/mutations'
+import { dialerProvider } from '@/shared/services/voip/dialer'
 
-import { mapAttributeTitleToAppKey } from './lib/attribute-title-map'
+import { mapFieldLabelToAppKey } from './lib/field-label-map'
 
-// Why a CT campaign didn't make it into voip_campaigns. 'no_membership_tag' is
-// the actionable one — the admin must configure a contact-list tag on the
-// campaign in CloudTalk before our tag-driven enrollment can target it.
-export type SkippedCampaignReason = 'no_membership_tag' | 'upsert_failed'
+// Why a dialer campaign didn't make it into voip_campaigns. JustCall has no
+// membership-tag requirement (enrollment is an explicit campaign push), so the
+// only skip reason left is an upsert failure.
+export type SkippedCampaignReason = 'upsert_failed'
 
 export interface SkippedCampaign {
-  ctCampaignId: string
+  providerCampaignId: string
   name: string
   reason: SkippedCampaignReason
 }
@@ -43,83 +43,69 @@ export interface ResyncResult {
   // Named + reasoned so the admin UI can explain "synced 2 of 3" instead of
   // silently dropping the third. Surfaced in the resync toast.
   skippedCampaigns: SkippedCampaign[]
-  attributesSynced: number
-  attributesSkipped: number // title not one of our 3 app keys
+  fieldsSynced: number
+  fieldsSkipped: number // label not one of our 4 app keys
 }
 
 function createCampaignSyncService() {
   return {
     /**
-     * Pull CT campaigns + attribute definitions and upsert the identity bridges.
-     * Idempotent. Preserves admin source bindings (upsert omits source_slug).
-     * Returns counts for the admin toast.
+     * Pull dialer campaigns + custom-field definitions and upsert the identity
+     * bridges. Idempotent. Preserves admin source bindings (upsert omits
+     * source_slug). Returns counts for the admin toast.
      */
-    async resyncFromCloudtalk(_ctx: ScopedContext): Promise<DalReturn<ResyncResult>> {
+    async resyncDialer(_ctx: ScopedContext): Promise<DalReturn<ResyncResult>> {
       let campaignsSynced = 0
       const skippedCampaigns: SkippedCampaign[] = []
-      let attributesSynced = 0
-      let attributesSkipped = 0
+      let fieldsSynced = 0
+      let fieldsSkipped = 0
 
       // ── Campaigns ──────────────────────────────────────────────────────
-      const campaigns = await cloudtalkClient.listCampaigns()
-      for (const row of campaigns) {
-        const membershipTag = row.membershipTagName
-        if (!membershipTag) {
-          // No tag configured in CT → can't be an enrollment target. Skip, but
-          // record it so the admin sees WHY it didn't sync (and how to fix it).
-          skippedCampaigns.push({
-            ctCampaignId: row.campaign.id,
-            name: row.campaign.name,
-            reason: 'no_membership_tag',
-          })
-          console.warn('[campaign-sync] campaign has no membership tag — skipped', {
-            ctCampaignId: row.campaign.id,
-            ctCampaignName: row.campaign.name,
-          })
-          continue
-        }
-        const result = await upsertCampaignByCtId({
-          ctCampaignId: row.campaign.id,
-          ctCampaignName: row.campaign.name,
-          ctMembershipTag: membershipTag,
-          ctStatus: row.campaign.status ?? 'inactive',
+      const campaigns = await dialerProvider.listCampaigns()
+      for (const c of campaigns) {
+        const result = await upsertCampaignByProviderId({
+          providerCampaignId: c.providerCampaignId,
+          providerCampaignName: c.name,
+          status: c.status,
+          dialerMode: c.dialerMode,
         })
         if (result.success) {
           campaignsSynced++
         }
         else {
           skippedCampaigns.push({
-            ctCampaignId: row.campaign.id,
-            name: row.campaign.name,
+            providerCampaignId: c.providerCampaignId,
+            name: c.name,
             reason: 'upsert_failed',
           })
           console.error('[campaign-sync] campaign upsert failed', {
-            ctCampaignId: row.campaign.id,
+            providerCampaignId: c.providerCampaignId,
             error: result.error,
           })
         }
       }
 
-      // ── Contact attributes ─────────────────────────────────────────────
-      const attributes = await cloudtalkClient.listContactAttributes()
-      for (const def of attributes) {
-        const appKey = mapAttributeTitleToAppKey(def.title)
-        if (!appKey) {
-          attributesSkipped++
+      // ── Custom fields ──────────────────────────────────────────────────
+      const fields = await dialerProvider.listContactFields()
+      for (const f of fields) {
+        const label = f.label ?? f.appKey
+        const appKey = mapFieldLabelToAppKey(label)
+        if (!appKey || !f.providerFieldId) {
+          fieldsSkipped++
           continue
         }
-        const result = await upsertAttributeByAppKey({
+        const result = await upsertContactFieldByAppKey({
           appKey,
-          ctAttributeId: def.id,
-          ctTitle: def.title,
+          providerFieldId: f.providerFieldId,
+          providerFieldLabel: label,
         })
         if (result.success) {
-          attributesSynced++
+          fieldsSynced++
         }
         else {
-          attributesSkipped++
-          console.error('[campaign-sync] attribute upsert failed', {
-            ctAttributeId: def.id,
+          fieldsSkipped++
+          console.error('[campaign-sync] field upsert failed', {
+            providerFieldId: f.providerFieldId,
             error: result.error,
           })
         }
@@ -129,8 +115,8 @@ function createCampaignSyncService() {
         campaignsSynced,
         campaignsSkipped: skippedCampaigns.length,
         skippedCampaigns,
-        attributesSynced,
-        attributesSkipped,
+        fieldsSynced,
+        fieldsSkipped,
       })
     },
   }

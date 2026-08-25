@@ -1,6 +1,29 @@
 # VoIP Integration Seam — Contract Between voip-in-house and voip-campaigns
 
-> **Read this when touching anything that crosses between the in-house Twilio VoIP system and the CloudTalk Campaigns system.** Changes here affect both EPICs. If you change a contract field below, update both sides simultaneously.
+> **Read this when touching anything that crosses between the in-house Twilio VoIP system and the Campaigns dialer system.** Changes here affect both EPICs. If you change a contract field below, update both sides simultaneously.
+
+> **⚠️ CAMPAIGNS PROVIDER MIGRATED 2026-08-19 — CloudTalk → JustCall.** The
+> voip-campaigns side now uses **JustCall** through a neutral `DialerProvider`
+> seam (`services/voip/dialer/`), implemented by `providers/justcall/*`. CloudTalk
+> is fully retired. What changed vs. the CloudTalk-era prose below:
+> - **Enroll/unenroll** = explicit `dialerProvider.enroll/unenroll` (campaign-id
+>   push), NOT tag add/remove. `ct_membership_tag`/`ct_tag_id` columns dropped.
+> - **Webhook** = `POST /api/webhooks/justcall`, HMAC-SHA256 signed (keyed with
+>   the API secret), normalized by a `WebhookAdapter` → the app's canonical
+>   events. NOT the `?secret=` query-param scheme.
+> - **Disposition→unenroll-reason** mapping now lives in
+>   `providers/justcall/constants` (`justcallDispositionToUnenrollReason`); the old
+>   `lib/unenroll-reason.ts` is removed.
+> - **Tables**: `voip_contact_attributes` → `voip_contact_fields`; `ct_*` columns
+>   → `provider_*`; added `dialer_mode` + `status`.
+> - **Mid-call routing endpoints** (`/api/voip/routing/*`, §1 below) were Phase-0
+>   CloudTalk Call Flow mocks — **removed**, not part of the JustCall integration.
+> - The `source='cloudtalk'` discriminator was already superseded 2026-06-04.
+>
+> Canonical now: [migration spec](../../superpowers/specs/2026-08-19-justcall-dialer-migration-design.md),
+> [JustCall API research](../voip-campaigns/justcall-api-research.md), and the code.
+> The CloudTalk-specific sections below are **historical** — trust the code + the
+> migration docs over them.
 
 ## What this doc is
 

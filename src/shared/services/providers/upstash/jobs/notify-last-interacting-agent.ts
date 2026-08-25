@@ -4,7 +4,7 @@ import { createJob } from '../lib/create-job'
 
 /**
  * Cosmetic courtesy notification (EPIC W3): an inbound NON-STOP SMS arrived on a
- * CloudTalk campaign number. We do NOT persist the SMS (CT keeps the record —
+ * dialer campaign number. We do NOT persist the SMS (the dialer keeps the record —
  * INTEGRATION-SEAM §8); ring-1 just surfaces it. Dispatched best-effort
  * (`void job.dispatch`) from the webhook — silent loss is acceptable, so this is
  * a QStash job, NOT `after()`.

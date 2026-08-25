@@ -18,7 +18,7 @@ interface LeadsBulkActionBarProps {
 export function LeadsBulkActionBar({ campaigns, onClear, selectedIds }: LeadsBulkActionBarProps) {
   const { disqualifyBulk, markDnc, removeBulk } = useCampaignMutations()
   const [ConfirmDialog, confirm] = useConfirm({
-    message: 'This affects every selected lead and stops/curates their CloudTalk calls.',
+    message: 'This affects every selected lead and stops/curates their dialer calls.',
     title: 'Apply to selected leads?',
   })
 

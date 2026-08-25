@@ -39,7 +39,7 @@ import { PROPOSAL } from '@/shared/entities/proposals/lib/constants'
 import { VOIP_CALL } from '@/shared/entities/voip-calls/lib/constants'
 import { VOIP_CAMPAIGN_CONTACT } from '@/shared/entities/voip-campaign-contacts/lib/constants'
 import { VOIP_CAMPAIGN } from '@/shared/entities/voip-campaigns/lib/constants'
-import { VOIP_CONTACT_ATTRIBUTE } from '@/shared/entities/voip-contact-attributes/lib/constants'
+import { VOIP_CONTACT_FIELD } from '@/shared/entities/voip-contact-fields/lib/constants'
 import { VOIP_DID } from '@/shared/entities/voip-dids/lib/constants'
 import { VOIP_LINK_TOKEN } from '@/shared/entities/voip-link-tokens/lib/constants'
 import { VOIP_MESSAGE } from '@/shared/entities/voip-messages/lib/constants'
@@ -64,7 +64,7 @@ export const ENTITY_NAMES = [
   VOIP_LINK_TOKEN,
   APP_SETTING,
   VOIP_CAMPAIGN,
-  VOIP_CONTACT_ATTRIBUTE,
+  VOIP_CONTACT_FIELD,
   VOIP_CAMPAIGN_CONTACT,
   APPLICATION,
 ] as const
@@ -180,7 +180,7 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       // ("stop calling / bad lead"). Resync + source-binding + bulk enroll-all
       // are super-admin-only (via 'manage' on 'all'); no agent rule for those.
       can('read', 'VoipCampaign')
-      can('read', 'VoipContactAttribute')
+      can('read', 'VoipContactField')
       can('read', 'VoipCampaignContact')
       can('update', 'VoipCampaignContact') // disqualify (unenroll) a lead
 

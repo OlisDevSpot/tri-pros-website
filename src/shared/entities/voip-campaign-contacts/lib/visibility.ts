@@ -4,7 +4,7 @@ import type { VisibilityScope } from '@/shared/dal/server/types'
 import { sql } from 'drizzle-orm'
 
 /**
- * Admin-only entity (ring 1). Per-customer CloudTalk participation records are
+ * Admin-only entity (ring 1). Per-customer dialer participation records are
  * an ops surface — enrolled-count badges + the disqualify action read through
  * the tRPC router under admin gating, not via scoped CRUD. Super-admin bypasses
  * scoping via the omni-path; this strict-default predicate means only omni

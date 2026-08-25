@@ -2,7 +2,7 @@ import type { LeadMeta } from '@/shared/entities/customers/schemas'
 
 // Pure: build a coherent, agent-readable lead note from the source-agnostic
 // leadMeta envelope. Single source of truth for the note shown in customer_notes
-// AND (Part 2) pushed to CloudTalk as a contact Activity. No I/O.
+// (the funnel/lead-detail summary). No I/O.
 //
 // Energy leads → trades + appointment. Kitchen/bath leads → the kitchen*/bathroom*
 // detail, one field per line. The derived "Kitchen Renovation"/"Bathroom

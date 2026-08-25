@@ -48,9 +48,9 @@ export * from './voip-messages'
 export * from './voip-link-tokens'
 export * from './app-settings'
 
-// voip-campaigns (CloudTalk)
+// voip-campaigns (JustCall dialer)
 export * from './voip-campaigns'
-export * from './voip-contact-attributes'
+export * from './voip-contact-fields'
 export * from './voip-campaign-contacts'
 
 // applications

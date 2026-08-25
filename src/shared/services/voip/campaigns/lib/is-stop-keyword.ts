@@ -1,7 +1,7 @@
 // Pure rule (EPIC decision #16): does an inbound SMS body opt the sender out?
-// Composed by the cloudtalk webhook handler. No I/O.
+// Composed by the dialer webhook handler. No I/O.
 //
-// CloudTalk auto-honors STOP on its own side; we mirror to our shared DNC
+// The dialer auto-honors STOP on its own side; we mirror to our shared DNC
 // registry + unenroll so the rest of the app respects it too. Match the
 // standard CTIA/A2P stop keywords, case-insensitive, trimmed, whole-word-ish.
 
