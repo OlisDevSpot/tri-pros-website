@@ -1,13 +1,12 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { IncentiveType } from '@/shared/entities/proposals/schemas'
 import { PlusIcon } from 'lucide-react'
-import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useState } from 'react'
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import { getProposalAggregates } from '@/features/proposal-flow/lib/get-proposal-aggregates'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { Button } from '@/shared/components/ui/button'
-import { Collapsible, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
+import { AnimatedCollapsibleContent, Collapsible, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
@@ -15,8 +14,6 @@ import { Textarea } from '@/shared/components/ui/textarea'
 import { incentiveTypes } from '@/shared/entities/proposals/schemas'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { IncentiveCollapsibleHeader } from './incentive-collapsible-header'
-
-const TRANSITION = { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] } as const
 
 interface Props {
   pricingMode: 'total' | 'breakdown'
@@ -211,141 +208,131 @@ export function FundingFields({ pricingMode }: Props) {
                               />
                             </div>
                           </CollapsibleTrigger>
-                          <AnimatePresence initial={false}>
-                            {isOpen && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={TRANSITION}
-                                className="overflow-hidden"
-                              >
-                                <div className="space-y-3 px-3 pb-3 lg:space-y-4 lg:px-4 lg:pb-4">
-                                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4">
-                                    <FormField
-                                      name={`funding.incentives.${index}.type`}
-                                      control={form.control}
-                                      render={({ field }) => (
-                                        <FormItem>
-                                          <FormLabel>Incentive Type</FormLabel>
-                                          <FormControl>
-                                            <Select
-                                              defaultValue="discount"
-                                              onValueChange={(val: IncentiveType) => {
-                                                field.onChange(val)
-                                              }}
-                                            >
-                                              <SelectTrigger {...field} className="w-full">
-                                                <SelectValue placeholder="Select an incentive type" />
-                                              </SelectTrigger>
-                                              <SelectContent {...field}>
-                                                {incentiveTypes.map(t => (
-                                                  <SelectItem key={t} value={t}>
-                                                    {t.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                                                  </SelectItem>
-                                                ))}
-                                              </SelectContent>
-                                            </Select>
-                                          </FormControl>
-                                          <FormMessage />
-                                        </FormItem>
-                                      )}
-                                    />
-                                    {incentives[index]?.type === 'discount' && (
-                                      <FormField
-                                        name={`funding.incentives.${index}.amount`}
-                                        control={form.control}
-                                        render={({ field }) => (
-                                          <FormItem>
-                                            <FormLabel>Amount</FormLabel>
-                                            <FormControl>
+                          <AnimatedCollapsibleContent open={isOpen}>
+                            <div className="space-y-3 px-3 pb-3 lg:space-y-4 lg:px-4 lg:pb-4">
+                              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4">
+                                <FormField
+                                  name={`funding.incentives.${index}.type`}
+                                  control={form.control}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Incentive Type</FormLabel>
+                                      <FormControl>
+                                        <Select
+                                          defaultValue="discount"
+                                          onValueChange={(val: IncentiveType) => {
+                                            field.onChange(val)
+                                          }}
+                                        >
+                                          <SelectTrigger {...field} className="w-full">
+                                            <SelectValue placeholder="Select an incentive type" />
+                                          </SelectTrigger>
+                                          <SelectContent {...field}>
+                                            {incentiveTypes.map(t => (
+                                              <SelectItem key={t} value={t}>
+                                                {t.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                {incentives[index]?.type === 'discount' && (
+                                  <FormField
+                                    name={`funding.incentives.${index}.amount`}
+                                    control={form.control}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Amount</FormLabel>
+                                        <FormControl>
+                                          <Input
+                                            {...field}
+                                            placeholder="$1,000"
+                                            onChange={(value) => {
+                                              const numericValue = Number(value.target.value.replace(/\D/g, ''))
+                                              field.onChange(numericValue)
+                                            }}
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                )}
+                                {incentives[index]?.type === 'exclusive-offer' && (
+                                  <FormField
+                                    name={`funding.incentives.${index}.offer`}
+                                    control={form.control}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Offer</FormLabel>
+                                        <FormControl>
+                                          <Input {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                )}
+                              </div>
+                              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4">
+                                <FormField
+                                  name={`funding.incentives.${index}.notes`}
+                                  control={form.control}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Notes</FormLabel>
+                                      <FormControl>
+                                        {incentives[index]?.type === 'discount'
+                                          ? (
                                               <Input
                                                 {...field}
-                                                placeholder="$1,000"
-                                                onChange={(value) => {
-                                                  const numericValue = Number(value.target.value.replace(/\D/g, ''))
-                                                  field.onChange(numericValue)
+                                                placeholder="Friends & Family Discount"
+                                                onChange={(e) => {
+                                                  field.onChange(e.target.value || '')
                                                 }}
                                               />
-                                            </FormControl>
-                                            <FormMessage />
-                                          </FormItem>
-                                        )}
-                                      />
-                                    )}
-                                    {incentives[index]?.type === 'exclusive-offer' && (
-                                      <FormField
-                                        name={`funding.incentives.${index}.offer`}
-                                        control={form.control}
-                                        render={({ field }) => (
-                                          <FormItem>
-                                            <FormLabel>Offer</FormLabel>
-                                            <FormControl>
-                                              <Input {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                          </FormItem>
-                                        )}
-                                      />
-                                    )}
-                                  </div>
-                                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4">
-                                    <FormField
-                                      name={`funding.incentives.${index}.notes`}
-                                      control={form.control}
-                                      render={({ field }) => (
-                                        <FormItem>
-                                          <FormLabel>Notes</FormLabel>
-                                          <FormControl>
-                                            {incentives[index]?.type === 'discount'
-                                              ? (
-                                                  <Input
-                                                    {...field}
-                                                    placeholder="Friends & Family Discount"
-                                                    onChange={(e) => {
-                                                      field.onChange(e.target.value || '')
-                                                    }}
-                                                  />
-                                                )
-                                              : (
-                                                  <Textarea
-                                                    {...field}
-                                                    placeholder="Complementary 10 ft gutters"
-                                                    onChange={(e) => {
-                                                      field.onChange(e.target.value || '')
-                                                    }}
-                                                  />
-                                                )}
-                                          </FormControl>
-                                          <FormMessage />
-                                        </FormItem>
-                                      )}
-                                    />
-                                    <FormField
-                                      name={`funding.incentives.${index}.expiresAt`}
-                                      control={form.control}
-                                      render={({ field }) => (
-                                        <FormItem>
-                                          <FormLabel>Expiration</FormLabel>
-                                          <FormControl>
-                                            <DateTimePicker
-                                              className="h-9 w-full justify-start rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
-                                              placeholder="Set expiration"
-                                              value={field.value ? new Date(field.value) : undefined}
-                                              onChange={(date) => {
-                                                field.onChange(date ? date.toISOString() : undefined)
-                                              }}
-                                            />
-                                          </FormControl>
-                                          <FormMessage />
-                                        </FormItem>
-                                      )}
-                                    />
-                                  </div>
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
+                                            )
+                                          : (
+                                              <Textarea
+                                                {...field}
+                                                placeholder="Complementary 10 ft gutters"
+                                                onChange={(e) => {
+                                                  field.onChange(e.target.value || '')
+                                                }}
+                                              />
+                                            )}
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  name={`funding.incentives.${index}.expiresAt`}
+                                  control={form.control}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Expiration</FormLabel>
+                                      <FormControl>
+                                        <DateTimePicker
+                                          className="h-9 w-full justify-start rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
+                                          placeholder="Set expiration"
+                                          value={field.value ? new Date(field.value) : undefined}
+                                          onChange={(date) => {
+                                            field.onChange(date ? date.toISOString() : undefined)
+                                          }}
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+                            </div>
+                          </AnimatedCollapsibleContent>
                         </div>
                       </Collapsible>
                     )

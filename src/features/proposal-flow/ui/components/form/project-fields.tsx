@@ -1,19 +1,16 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { PriceDisplayMode } from '@/shared/constants/enums'
 import { PlusIcon } from 'lucide-react'
-import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import { Button } from '@/shared/components/ui/button'
-import { Collapsible, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
+import { AnimatedCollapsibleContent, Collapsible, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { createEmptySowSection } from '@/shared/entities/proposals/lib/create-empty-sow-section'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { SOWCollapsibleHeader } from './sow-collapsible-header'
 import { SOWSection } from './sow-field'
-
-const TRANSITION = { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] } as const
 
 interface Props {
   priceDisplayMode: PriceDisplayMode
@@ -128,23 +125,13 @@ export function ProjectFields({ priceDisplayMode }: Props) {
                         />
                       </div>
                     </CollapsibleTrigger>
-                    <AnimatePresence initial={false}>
-                      {isOpen && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={TRANSITION}
-                          className="overflow-hidden"
-                        >
-                          <SOWSection
-                            index={index}
-                            priceDisplayMode={priceDisplayMode}
-                            sowSnapshot={fieldOfArray}
-                          />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                    <AnimatedCollapsibleContent open={isOpen}>
+                      <SOWSection
+                        index={index}
+                        priceDisplayMode={priceDisplayMode}
+                        sowSnapshot={fieldOfArray}
+                      />
+                    </AnimatedCollapsibleContent>
                   </div>
                 </Collapsible>
               )

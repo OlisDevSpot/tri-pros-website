@@ -4,13 +4,12 @@ import type { PriceDisplayMode } from '@/shared/constants/enums'
 import type { ScopeOrAddon } from '@/shared/services/providers/notion/lib/scopes/schema'
 import { useQueryClient } from '@tanstack/react-query'
 import { ChevronDownIcon } from 'lucide-react'
-import { AnimatePresence, motion } from 'motion/react'
 import { useRef, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { TemplatesModal } from '@/shared/components/dialogs/modals/templates-modal'
 import { Tiptap } from '@/shared/components/tiptap/tiptap'
 import { Button } from '@/shared/components/ui/button'
-import { Collapsible, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
+import { AnimatedCollapsibleContent, Collapsible, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
 import { FormControl, FormField, FormItem, FormMessage } from '@/shared/components/ui/form'
 import { MultiSelect, MultiSelectContent, MultiSelectGroup, MultiSelectItem, MultiSelectTrigger, MultiSelectValue } from '@/shared/components/ui/multi-select'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
@@ -21,8 +20,6 @@ import { useGetScopes } from '@/shared/services/providers/notion/dal/scopes/hook
 import { useGetAllTrades } from '@/shared/services/providers/notion/dal/trades/hooks/queries/use-get-trades'
 import { useTRPC } from '@/trpc/helpers'
 import { SOWFinancialsFields } from './sow-financials-fields'
-
-const TRANSITION = { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] } as const
 
 const INTERACTIVE_SELECTOR = 'input, button, select, textarea, a, [role="button"], [role="option"], [contenteditable="true"], [data-interactive]'
 
@@ -202,86 +199,79 @@ export function SOWSection({
                 <ChevronDownIcon className={cn('size-4 transition-transform', !scopeOpen && '-rotate-90')} />
               </button>
             </CollapsibleTrigger>
-            <AnimatePresence initial={false}>
-              {scopeOpen && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={TRANSITION}
-                  className={cn(
-                    'overflow-hidden rounded-b-lg transition-colors cursor-pointer',
-                    scopeDeadHover && 'bg-muted/50',
-                  )}
-                  onMouseOver={(e) => {
-                    e.stopPropagation()
-                    setScopeDeadHover(!isInteractive(e.target))
-                  }}
-                  onMouseOut={() => setScopeDeadHover(false)}
-                  onClick={(e) => {
-                    if (!isInteractive(e.target)) {
-                      setScopeOpen(false)
-                    }
-                  }}
-                >
-                  <div className="px-3 pb-3 lg:px-4 lg:pb-4">
-                    <FormField
-                      name={`project.data.sow.${index}.contentJSON`}
-                      control={form.control}
-                      render={({ field }) => (
-                        <FormItem>
-                          <div className="flex gap-2 items-center">
-                            <Button
-                              variant="outline"
-                              type="button"
-                              className="text-xs text-muted-foreground hover:underline"
-                              size="sm"
-                              onClick={() => {
-                                setModal({
-                                  accessor: 'Templates',
-                                  Component: TemplatesModal,
-                                  props: {
-                                    trade: allTrades.data?.find(trade => trade.id === tradeId),
-                                    scopes: form.getValues(`project.data.sow.${index}.scopes`).map(scope => scopesOfTrade.data?.find(scopeOfTrade => scopeOfTrade.id === scope.id)).filter(Boolean) as ScopeOrAddon[],
-                                    onSelect: async (sowId) => {
-                                      closeModal()
-                                      setIsLoadingTemplate(true)
-                                      try {
-                                        const json = await queryClient.fetchQuery(trpc.notionRouter.scopes.getSOWContent.queryOptions({ sowId }))
-                                        tiptapRef.current?.insertContent(JSON.parse(json) || '')
-                                      }
-                                      finally {
-                                        setIsLoadingTemplate(false)
-                                      }
-                                    },
-                                  },
-                                })
-                                openModal()
-                              }}
-                            >
-                              Templates
-                            </Button>
-                          </div>
-                          <FormControl>
-                            <Tiptap
-                              ref={tiptapRef}
-                              isLoading={isLoadingTemplate}
-                              loadingMessage="Loading template from Notion..."
-                              onChange={({ html, json }) => {
-                                field.onChange(JSON.stringify(json))
-                                form.setValue(`project.data.sow.${index}.html`, html)
-                              }}
-                              initialValues={field.value ? JSON.parse(field.value) : undefined}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </motion.div>
+            <AnimatedCollapsibleContent
+              open={scopeOpen}
+              className={cn(
+                'rounded-b-lg transition-colors cursor-pointer',
+                scopeDeadHover && 'bg-muted/50',
               )}
-            </AnimatePresence>
+              onMouseOver={(e) => {
+                e.stopPropagation()
+                setScopeDeadHover(!isInteractive(e.target))
+              }}
+              onMouseOut={() => setScopeDeadHover(false)}
+              onClick={(e) => {
+                if (!isInteractive(e.target)) {
+                  setScopeOpen(false)
+                }
+              }}
+            >
+              <div className="px-3 pb-3 lg:px-4 lg:pb-4">
+                <FormField
+                  name={`project.data.sow.${index}.contentJSON`}
+                  control={form.control}
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex gap-2 items-center">
+                        <Button
+                          variant="outline"
+                          type="button"
+                          className="text-xs text-muted-foreground hover:underline"
+                          size="sm"
+                          onClick={() => {
+                            setModal({
+                              accessor: 'Templates',
+                              Component: TemplatesModal,
+                              props: {
+                                trade: allTrades.data?.find(trade => trade.id === tradeId),
+                                scopes: form.getValues(`project.data.sow.${index}.scopes`).map(scope => scopesOfTrade.data?.find(scopeOfTrade => scopeOfTrade.id === scope.id)).filter(Boolean) as ScopeOrAddon[],
+                                onSelect: async (sowId) => {
+                                  closeModal()
+                                  setIsLoadingTemplate(true)
+                                  try {
+                                    const json = await queryClient.fetchQuery(trpc.notionRouter.scopes.getSOWContent.queryOptions({ sowId }))
+                                    tiptapRef.current?.insertContent(JSON.parse(json) || '')
+                                  }
+                                  finally {
+                                    setIsLoadingTemplate(false)
+                                  }
+                                },
+                              },
+                            })
+                            openModal()
+                          }}
+                        >
+                          Templates
+                        </Button>
+                      </div>
+                      <FormControl>
+                        <Tiptap
+                          ref={tiptapRef}
+                          isLoading={isLoadingTemplate}
+                          loadingMessage="Loading template from Notion..."
+                          onChange={({ html, json }) => {
+                            field.onChange(JSON.stringify(json))
+                            form.setValue(`project.data.sow.${index}.html`, html)
+                          }}
+                          initialValues={field.value ? JSON.parse(field.value) : undefined}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </AnimatedCollapsibleContent>
           </Collapsible>
         </div>
 
@@ -297,32 +287,25 @@ export function SOWSection({
                 <ChevronDownIcon className={cn('size-4 transition-transform', !financialsOpen && '-rotate-90')} />
               </button>
             </CollapsibleTrigger>
-            <AnimatePresence initial={false}>
-              {financialsOpen && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={TRANSITION}
-                  className={cn(
-                    'overflow-hidden rounded-b-lg transition-colors cursor-pointer',
-                    finDeadHover && 'bg-muted/50',
-                  )}
-                  onMouseOver={(e) => {
-                    e.stopPropagation()
-                    setFinDeadHover(!isInteractive(e.target))
-                  }}
-                  onMouseOut={() => setFinDeadHover(false)}
-                  onClick={(e) => {
-                    if (!isInteractive(e.target)) {
-                      setFinancialsOpen(false)
-                    }
-                  }}
-                >
-                  <SOWFinancialsFields index={index} pricingMode={priceDisplayMode} />
-                </motion.div>
+            <AnimatedCollapsibleContent
+              open={financialsOpen}
+              className={cn(
+                'rounded-b-lg transition-colors cursor-pointer',
+                finDeadHover && 'bg-muted/50',
               )}
-            </AnimatePresence>
+              onMouseOver={(e) => {
+                e.stopPropagation()
+                setFinDeadHover(!isInteractive(e.target))
+              }}
+              onMouseOut={() => setFinDeadHover(false)}
+              onClick={(e) => {
+                if (!isInteractive(e.target)) {
+                  setFinancialsOpen(false)
+                }
+              }}
+            >
+              <SOWFinancialsFields index={index} pricingMode={priceDisplayMode} />
+            </AnimatedCollapsibleContent>
           </Collapsible>
         </div>
       </div>

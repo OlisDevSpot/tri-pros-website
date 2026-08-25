@@ -5,11 +5,12 @@ import type { ReactNode } from 'react'
 import type { SidebarNavItem } from '@/features/agent-dashboard/lib/get-sidebar-nav'
 
 import { ChevronRightIcon } from 'lucide-react'
-import { AnimatePresence, motion } from 'motion/react'
+import { motion } from 'motion/react'
 import { useState } from 'react'
 
-import { COLLAPSE_HEIGHT_VARIANTS, SIDEBAR_TRANSITION } from '@/features/agent-dashboard/constants/sidebar-motion'
+import { SIDEBAR_TRANSITION } from '@/features/agent-dashboard/constants/sidebar-motion'
 import {
+  AnimatedCollapsibleContent,
   Collapsible,
   CollapsibleTrigger,
 } from '@/shared/components/ui/collapsible'
@@ -47,24 +48,13 @@ export function SidebarRecordsGroup({ items, renderItem }: SidebarRecordsGroupPr
             </motion.span>
           </CollapsibleTrigger>
         </SidebarGroupLabel>
-        <AnimatePresence initial={false}>
-          {open && (
-            <motion.div
-              key="records-content"
-              initial={COLLAPSE_HEIGHT_VARIANTS.initial}
-              animate={COLLAPSE_HEIGHT_VARIANTS.animate}
-              exit={COLLAPSE_HEIGHT_VARIANTS.exit}
-              transition={SIDEBAR_TRANSITION}
-              className="overflow-hidden"
-            >
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {items.map(renderItem)}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <AnimatedCollapsibleContent open={open}>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {items.map(renderItem)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </AnimatedCollapsibleContent>
       </SidebarGroup>
     </Collapsible>
   )

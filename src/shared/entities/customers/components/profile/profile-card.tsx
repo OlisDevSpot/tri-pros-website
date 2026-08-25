@@ -10,7 +10,7 @@ import { useState } from 'react'
 import { Controller } from 'react-hook-form'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
+import { AnimatedCollapsibleContent, Collapsible, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
 import { Input } from '@/shared/components/ui/input'
 import { NumberField } from '@/shared/components/ui/number-field'
 import {
@@ -244,7 +244,7 @@ function CollapsibleCard({ title, icon: Icon, setCount, defaultOpen, editMode, c
           />
         </span>
       </CollapsibleTrigger>
-      <CollapsibleContent>{children}</CollapsibleContent>
+      <AnimatedCollapsibleContent open={isOpen}>{children}</AnimatedCollapsibleContent>
     </Collapsible>
   )
 }

@@ -5,7 +5,7 @@ import { ChevronDownIcon } from 'lucide-react'
 import { useState } from 'react'
 import { ContextPanelField } from '@/features/meeting-flow/ui/components/context-panel-field'
 import { Badge } from '@/shared/components/ui/badge'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
+import { AnimatedCollapsibleContent, Collapsible, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
 import { cn } from '@/shared/lib/utils'
 
 interface ContextPanelSectionProps {
@@ -55,7 +55,7 @@ export function ContextPanelSection({
         />
       </CollapsibleTrigger>
 
-      <CollapsibleContent className="flex flex-col gap-3 px-2 pb-3 pt-1">
+      <AnimatedCollapsibleContent open={isOpen} className="flex flex-col gap-3 px-2 pb-3 pt-1">
         {fields.map(field => (
           <ContextPanelField
             key={field.id}
@@ -64,7 +64,7 @@ export function ContextPanelSection({
             onChange={onFieldChange}
           />
         ))}
-      </CollapsibleContent>
+      </AnimatedCollapsibleContent>
     </Collapsible>
   )
 }
