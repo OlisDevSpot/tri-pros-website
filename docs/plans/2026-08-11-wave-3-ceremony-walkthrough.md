@@ -267,11 +267,16 @@ ready and keep that gap to seconds.
   Watch the Vercel build. The moment the new deployment is **live**,
   proposals reads start failing with `42703` — go straight to 3.5.
 
-- [ ] **3.5 The DDL — via drizzle**, exactly like the rehearsal
-      (Step 0 sanity holds: no `.env.local`, no lingering `DATABASE_URL`
-      export; banner/host printed by the tool must be prod):
+- [ ] **3.5 The DDL — via drizzle, FROM THE CEREMONY WORKTREE** (2026-08-24:
+      the main checkout's working tree carries the JustCall WIP, which edits
+      `src/shared/db/schema/` — drizzle-kit reads the working tree, so running
+      from the main checkout would push VOIP WIP DDL to prod. The detached
+      worktree is pinned at the deployed commit; `.env` copied in, no
+      `.env.local`, no lingering `DATABASE_URL` export; banner/host must be
+      prod):
 
   ```bash
+  cd /home/olis-solutions/olis-v3/nextjs/tri-pros-website.wave3-ddl
   pnpm db:push:prod
   ```
 
@@ -338,6 +343,26 @@ ready and keep that gap to seconds.
       prod should now be structurally identical on every watched column.
       `pnpm tsx scripts/tmp-audit-prod-since-0811.ts` re-prints the row
       counts / blob-state tables (SELECT-only) if you want a last look.
+
+## Ceremony-day addendum (2026-08-24, push executed)
+
+- Pushed `8c0ce467..2e3e84ac` (96 commits). The tip is a **build fix**: commit
+  `cd234423` had deleted the cloudtalk provider while HEAD still imported it
+  (cleanups lived in the JustCall WIP), and D-d's `LeadSource` subject was
+  missing its `ENTITY_NAMES` entry — HEAD failed `tsc` with 54 errors.
+  `2e3e84ac` restores cloudtalk at HEAD + adds the union entry; tsc/lint
+  verified green at that exact tree in the detached worktree.
+- Consequence for the JustCall migration: its eventual commit must re-delete
+  `src/shared/services/providers/cloudtalk/` **together with** its import
+  sites (`server-env.ts`, voip-contact-attributes). The main tree's `git
+  status` shows cloudtalk as ` D` — that is correct WIP state, keep it.
+- The 3.3b legacy snapshot lives at repo root:
+  `wave3-legacy-blob-snapshot-2026-08-24.json` (untracked, 5 rows verified).
+- Neon snapshot slot: `pre-wave3-ceremony-2026-08-24`
+  (`snap-calm-bird-afia5xgl`).
+- The ceremony worktree `tri-pros-website.wave3-ddl` is removable after
+  Step 4: `git worktree remove --force ../tri-pros-website.wave3-ddl` (it
+  holds a symlinked node_modules + copied `.env`, nothing unique).
 
 ## Step 5 — Aftercare
 
