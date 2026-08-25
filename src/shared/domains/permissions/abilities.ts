@@ -30,6 +30,7 @@ import { APP_SETTING } from '@/shared/entities/app-settings/lib/constants'
 import { APPLICATION } from '@/shared/entities/applications/lib/constants'
 import { CUSTOMER_NOTE } from '@/shared/entities/customer-notes/lib/constants'
 import { CUSTOMER, CUSTOMER_LEAD_ATTRIBUTION, CUSTOMER_PROFILE } from '@/shared/entities/customers/lib/constants'
+import { LEAD_SOURCE } from '@/shared/entities/lead-sources/lib/constants'
 import { MEDIA_FILE } from '@/shared/entities/media-files/lib/constants'
 import { MEETING } from '@/shared/entities/meetings/lib/constants'
 import { PROJECT } from '@/shared/entities/projects/lib/constants'
@@ -53,6 +54,9 @@ export const ENTITY_NAMES = [
   PROPOSAL_MEDIA_FILE,
   PROJECT,
   MEDIA_FILE,
+  // Super-admin-only entity: agents have no lead-source grants by design;
+  // super-admin's `manage all` is the only access path.
+  LEAD_SOURCE,
   ACTIVITY,
   VOIP_CALL,
   VOIP_DID,
