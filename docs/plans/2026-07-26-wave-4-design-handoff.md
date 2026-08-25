@@ -34,9 +34,8 @@ cutover is verified. If it hasn't, stop — this handoff assumes its end-state.
 **CONFIRMED 2026-08-11 (Task 13 truth pass).** This section was written predictively on
 2026-07-26, before Wave 3 implementation started — it has now been verified against the
 actually-shipped code (commits `5c721a83`, `996ba590`, `a9f5539b`, `fb41da12`, `6d5b705c`)
-and matches. Dev DB cutover is complete; prod DDL (the drop/rename ceremony) is still
-pending via `docs/plans/2026-07-26-wave-3-cutover-runbook.md` — treat the schema facts below
-as the code/dev-DB end-state, not yet prod's live state until that runbook's §3b runs.
+and matches. Dev DB cutover complete 2026-08-11; **prod DDL applied 2026-08-24/25** — the schema facts below
+are prod's live state.
 
 - `proposals` columns: `starting_tcp_cents`, `deposit_amount_cents`, `cash_in_deal_cents`,
   `misc_price_cents`, `price_display_mode` (text-enum, renamed per pricing-editor vocabulary),

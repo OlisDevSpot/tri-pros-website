@@ -1,6 +1,6 @@
 # tRPC Layer Standardization Epic
 
-> **Status:** Design agreed (grill session 2026-08-09). Not yet implemented.
+> **Status:** S1–S8 ✅ shipped (S7 `d348fd3d`); deployed to prod 2026-08-24/25. (Design agreed at the 2026-08-09 grill session.)
 > **Canonical exemplar:** `proposals.router`.
 > **Supersedes part of:** ADR-0002 (Entity Server System) — specifically the
 > `createEntityRouter` factory, the `EntityToolkit` param, and the entity
@@ -145,7 +145,7 @@ the separate `subEntitySpec`/`defineSubEntity` abstraction **and** the boolean
   sub-ms); the nested subquery adds one indexed hop that scales with
   participation, not table size.
 
-**Shipped as "Increment A"** (2026-08-10, on main, unpushed): `EntityServerSpec.
+**Shipped as "Increment A"** (2026-08-10 on main; pushed + deployed 2026-08-24/25): `EntityServerSpec.
 parent` + optional `visibility` (`types.ts`); `resolveEffectiveScope` + `isVisible`
 + shared `pkColumn` (`scope.ts`); all three gates (`resolveVisibilityScope`,
 `buildUserContext`, `shareableMiddleware`) route through `resolveEffectiveScope`.

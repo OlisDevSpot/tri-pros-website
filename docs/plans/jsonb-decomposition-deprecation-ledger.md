@@ -64,7 +64,7 @@ per-column investigation. Before ANY `DROP COLUMN` of a data-filled column:
 ## Wave 2 — frozen/scaffolding — kill trigger: the Wave-3 prod push (batched with the W1 drops; drop protocol above)
 
 Reconciled at Task 11: all four rows confirmed still present exactly as described (not
-yet due — kill trigger is the release after prod cutover, which hasn't happened).
+yet due at that time). **Prod cutover happened 2026-08-24/25: columns physically gone from prod.**
 Deleted in Task 11's commit (`6d5b705c`).
 
 | | Item | Where | Notes |
@@ -119,8 +119,8 @@ components took façade-input props directly).
 > **Task 11 status (`6d5b705c`)**: the code side of the rename + batched drop manifest is
 > shipped — schema literal renamed, verify-long/short-path raw SQL updated, `.omit()`/schema
 > deletions done, package.json entries removed. Dev-branch DDL applied + `db:push:dev` verified
-> clean. The PROD DDL itself has NOT run yet — it ships via the Task 12 runbook immediately
-> before deploy, per the deploy-choreography note on Task 11.
+> clean. The PROD DDL ran 2026-08-24/25 (rename + 6 drops via `db:push:prod`; deploy `8c0ce467..2e3e84ac`).
+> Task 11 is fully closed.
 
 - **Column rename `signing_request_id` → `contract_envelope_id`** (naming ratified 2026-07-18:
   `contractEnvelope` is canonical; drizzle property already `contractEnvelopeId` mapping the old

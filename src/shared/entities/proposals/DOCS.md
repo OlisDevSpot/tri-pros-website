@@ -109,13 +109,10 @@ What the code actually does:
 `projectJSON` is a whole-document column: every writer reconstructs and submits the full
 blob, so updates REPLACE the column (plain CRUD path). It is the only one left — as of the
 Wave-3 write-seam flip `formMetaJSON` and `fundingJSON` are FROZEN: nullable and omitted
-from `insertProposalSchema`, so Zod strips them on every create/update. `formMetaJSON` has
-zero writers left. `fundingJSON` has exactly ONE — `setCashInDeal` (`dal/server/mutations.ts`,
-live via the shareable `funding.router.ts` procedure) still read-modify-writes the legacy
-blob on any row whose `fundingJSON` is non-null, i.e. every pre-flip row; it throws
-`precondition-failed: funding_unavailable` on post-flip rows and flips to a
-`cash_in_deal_cents` column write in W3 Task 8. New rows leave both blobs NULL; both are
-renamed `*Deprecated` in the W3 freeze commit and dropped on the W4 push. The rule below
+from `insertProposalSchema`, so Zod strips them on every create/update. As of `a9f5539b` (W3 Task 8) **both blobs have ZERO writers** — `setCashInDeal` writes the
+`cash_in_deal_cents` column; the only remaining raw writer is `scripts/backfill-wave3-scalars.ts`
+(`--dry-run` only since the 2026-08-24/25 prod cutover). New rows leave both blobs NULL; both are
+named `*Deprecated` and are dropped on the W4 push. The rule below
 still governs `projectJSON`.
 They were previously registered in `spec.update.jsonbMergeColumns`, which shallow-merged
 top-level keys and silently prevented field-clearing — deregistered in Wave 1 because no
@@ -210,8 +207,8 @@ a draft (the retired auto-draft stage is why the old gate misfired; see ADR-0004
 | `terminal-locked` | `status = 'approved'` OR `contractSignedAt` OR `contractDeclinedAt` | Approved (project minted), signed, or declined | **None.** Changes happen on a duplicated/new proposal. Declined is permanent by decision — no re-request, no thaw |
 
 The lock is **whole-proposal**, field-scoped: the `update.before` hook in `lib/server-spec.ts`
-rejects updates touching user-authored content (`frozenProposalLockedFields` — label, the
-three JSON blobs, financeOptionId, meetingId — including the share-token path) whenever the
+rejects updates touching user-authored content (`frozenProposalLockedFields` — label, `projectJSON`, the
+six W3 scalar columns, financeOptionId, meetingId — including the share-token path) whenever the
 state isn't `unlocked` (`precondition-failed: proposal_frozen`). Lifecycle fields (status,
 sentAt/approvedAt, signing ids, contract timestamps, QB refs) stay writable — webhooks,
 auto-approve, and contract flows keep flowing on a locked proposal. Because content cannot
@@ -358,7 +355,7 @@ The proposal lifecycle (`status`, `sentAt`, `approvedAt`) and the contract lifec
 - The agent UI exposes this as two cards (`ProposalCard`, `EnvelopeCard`) with their own actions. **As of #264 (2026-07-18), "Send Proposal" sends the email ONLY** — the auto-draft-preparation stage (previously client-orchestrated via `useSendProposalWithDraft`) is retired: envelope creation is a manual decision on the envelope card, because an envelope's existence is the proposal lock signal (`#proposal-lock-ladder`) and must mean the agent chose it. The homeowner-side "Request Agreement" is a pure signal (`delivery.router.ts:requestToMoveForward`) — it notifies the meeting participants and never touches envelope state.
 - Draft creation is **synchronous** — Zoho returns the `request_id` on the create call, so there is no async gap to bridge with QStash or a polling-based "in-flight" signal. The previous `syncContractDraftJob` was removed for this reason.
 
-**Why**: prior implementation dispatched a QStash job from `sendProposalEmail` to auto-create a draft. The async coupling forced the UI to infer "a draft is being created" from `proposal.status === 'sent' && contractStatus == null` — a heuristic that broke immediately after any code path legitimately cleared `signingRequestId` (discard, recall), leaving the UI stuck in an unrecoverable spinner state. The later client-orchestrated auto-draft had a subtler cost: it made every sent proposal carry an envelope nobody asked for, defeating the lock ladder.
+**Why**: prior implementation dispatched a QStash job from `sendProposalEmail` to auto-create a draft. The async coupling forced the UI to infer "a draft is being created" from `proposal.status === 'sent' && contractStatus == null` — a heuristic that broke immediately after any code path legitimately cleared `contractEnvelopeId` (discard, recall), leaving the UI stuck in an unrecoverable spinner state. The later client-orchestrated auto-draft had a subtler cost: it made every sent proposal carry an envelope nobody asked for, defeating the lock ladder.
 
 **Reference impl**: `delivery.router.ts:sendProposalEmail` (proposal-only), `hooks/use-send-proposal.ts` (email-only client hook), `contracts.router.ts:createContractDraft` / `discardDraftContract` / `recallContract` (contract-only), `delivery.router.ts:requestToMoveForward` + `notification.service.ts:notifyHomeownerMoveForwardRequest` (homeowner move-forward signal), `use-contract-status.ts` (polls only for `inprogress` signing-lifecycle events).
 **Enforced by**: architectural discipline — no shared service writes both column sets in one call. ADR-0004 documents the rationale.
@@ -418,7 +415,7 @@ Proposals can carry attached files (photos, videos, PDFs) in `proposal_media_fil
 - `docs/proposal/scope-presentation.md` — SOW UX
 - `docs/proposal/financing-presentation.md` — financing UX
 - `docs/codebase-conventions/dal-conventions.md` — `DalReturn<T>` + `ScopedContext` pattern used in this entity's DAL
-- `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested` — JSONB merge-safety mechanics (mechanism deleted Wave 2); `formMetaJSON`/`projectJSON`/`fundingJSON` are whole-document writers, always plain-replaced (see `#jsonb-merge-on-update`)
+- `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested` — JSONB merge-safety mechanics (mechanism deleted Wave 2); `projectJSON` is a whole-document writer (the frozen funding/formMeta blobs were, historically), always plain-replaced (see `#jsonb-merge-on-update`)
 - ADR-0005 — JSONB vs column vs child table (the storage-shape decision behind `#final-tcp-derived`)
 - [`../../services/media/DOCS.md`](../../services/media/DOCS.md) — the `mediaService`/`MediaStore` seam `#proposal-media` builds on
 - `src/shared/lib/file-optimization/DOCS.md` — the pure optimizer core dispatched by media creation

@@ -20,7 +20,7 @@ A small UI pattern — entity-action buttons gated by CASL (ADR-0001, Mar 2026) 
   │        S8 audit ─┬─ spawns T5 (projects) + lead-sources half
   │
   ├─ T5  Projects Standardization Epic (Aug 11) ── proves the adoption path
-  │        Phase 1 ✅ · Phase 2 = T2 · Phase 3 🟡 · Follow-up ⛔ (blocked on T4 Wave 4)
+  │        Phase 1 ✅ · Phase 2 = T2 · Phase 3 ✅ · Follow-up ⛔ (blocked on T4 Wave 4)
   │
   ├─ T2  CRUD-DAL Mutation-Interface Extension (Aug 12) ── extends the write factory
   │        A ✅ · B ✅ · C ⏸️ deferred · D ✅ (2026-08-19)
@@ -29,7 +29,7 @@ A small UI pattern — entity-action buttons gated by CASL (ADR-0001, Mar 2026) 
   │        Phases 0–5 ✅ but ENTIRELY IN WORKTREE — nothing on main
   │
   └─ T4  JSONB Decomposition #256 (Jul 9) ── cross-cutting: data layer
-           Waves 0–3 ✅ (code+dev-DDL) · W3 prod cutover ⬚ · W4 ⬚
+           Waves 0–3 ✅ (code + **prod DDL 2026-08-24/25**) · W4 ⬚
 ```
 
 **One line:** #207 defined the architecture, **tRPC-standardization** fixed its router shape, **Projects** proved the adoption path, **CRUD-DAL** grew the write factory adoption exposed, and **CASL + JSONB** are the authorization and data concerns every entity migration has to satisfy.
@@ -51,14 +51,14 @@ A small UI pattern — entity-action buttons gated by CASL (ADR-0001, Mar 2026) 
 | **T1** | S1–S7 ✅ (`createEntityRouter` gone) | projects routers still bare `agentProcedure` + inline `db` (media/gdrive/business); lead-sources router shape |
 | **T2** | A, B ✅ · **D ✅ (2026-08-19)** | C deferred · D-c: accounting `db.update(projects)` bypass ✅ closed (2026-08-20); voip/link-token D-c sites fold into VOIP overhaul · crux-2 tx-atomicity deferred |
 | **T3** | Phases 0–5 ✅ **in `.worktrees/issue-285` only** | Phases 6→7→8→9 + **single integration merge to `main`** |
-| **T4** | Waves 0–3 ✅ code+dev-DDL | **W3 prod cutover** · **W4 SOW normalization** |
+| **T4** | Waves 0–3 ✅ code + prod (2026-08-24/25) | **W4 SOW normalization** |
 | **T5** | Phase 1 ✅ · Phase 2 ✅ · Phase 3 ✅ (core D-e + residuals 2026-08-20, `c33adb9c..01144ab1`) | #285 scope-tightening tail (T3) · Follow-up ⛔ (gated on T4 W4) |
 
 ---
 
 ## Load-bearing decisions & constraints (read before touching anything)
 
-1. **🔒 NO prod DB pushes / migrations until the refactor epic + #285 are mostly/fully done** *(user decision, 2026-08-20)*. This gates the entire T4 shipping side: **do NOT run `pnpm db:push:prod`, JSONB Wave-3 prod cutover, or any Wave cutover** until the backend refactor and #285 land. Dev DDL / `db:push:dev` continues as normal. JSONB code work (Wave 4 decomposition) may proceed; only the *prod application* is deferred.
+1. ~~🔒 NO prod DB pushes / migrations until the refactor epic + #285 are mostly/fully done~~ *(user decision 2026-08-20 — **SUPERSEDED 2026-08-24/25**: the W3 prod cutover + 96-commit deploy ran with #285 still in its worktree. Standing rule now: every prod push needs its own explicit user go; W4's prod application is NOT pre-authorized.)* Original text: This gates the entire T4 shipping side: **do NOT run `pnpm db:push:prod`, JSONB Wave-3 prod cutover, or any Wave cutover** until the backend refactor and #285 land. Dev DDL / `db:push:dev` continues as normal. JSONB code work (Wave 4 decomposition) may proceed; only the *prod application* is deferred.
 2. **Sub-plan C (`afterCommit`) is deferred, not cancelled.** The CRUD engine stays **naked + sequential**. Load-bearing caveat: a hooked mutation's external side-effects (QStash/Ably) live in `after` = pre-commit under a threaded tx, **not rolled back on abort** → any orchestrator threading a tx must own its hooks at the call site (canonical: `withTx` JSDoc in `helpers.ts`; markers in `meetings/dal/server/crud.ts`). Revival trigger = a recurring multi-write-atomic invariant.
 3. **#285 integration risk is the biggest strategic hazard.** #285 is ~58 commits ahead / ~17 behind `main`, entirely in a worktree, and this session widened the exact conflict surface (`src/shared/dal/server/types.ts`): `ScopedContext` gained `tx?` (B) on main vs required `actor` (Phase 5) in worktree → must union to `{…, tx?, actor}`; `EntityServerSpec` was purged of `hooks`/`duplicate` (D-b) on main vs still-declared in worktree. **`tsc` cannot catch the dangerous conflicts** (`resolveVisibilityScope ↔ resolveTrpcActorScope` are type-identical, semantically different) → the merge needs a hand audit of every `*Procedure` wiring. Every day `main` moves, this gets harder → either merge #285 soon or freeze the `types.ts`/spec surface on `main`.
 4. **Behavior-preserving default.** Routing-through-CRUD did NOT tighten security; projects stay unscoped (`agentProcedure`). Scope-tightening is the named **#285 tail**, never folded into T1/T2/T5 work.
@@ -90,8 +90,8 @@ Decompose `projectJSON.data.sow[]` → `proposal_sow_items` (per-SOW price/incen
 ### ④ Proposal Financials Consolidation *(T5 follow-up — gated on ③ and ①)*
 Collapse the two `finalTcp` implementations — SQL `recomputeProposalFinancials` (persisted) + TS `computeProposalFinancials` (live editor) — onto one calculation. Eliminate `startingTcp`; `finalTcp = Σ(SOWᵢ price − SOWᵢ discounts) − Σ(global incentives)` floored at 0; `pricingDisplayMode` = the single display lever. Own brainstorm (business logic, not architecture).
 
-### ⑤ Deferred prod-application backlog *(gated on Decision 1 — do NOT run yet)*
-- **JSONB Wave 3 PROD cutover** — backfill → DDL → deploy per the Wave-3 cutover runbook (drops W1/W2 columns on prod, freezes `fundingJSON`/`formMetaJSON`). Prod currently runs pre-Wave-3 blob code; this is the standing exposure, held intentionally.
+### ⑤ Deferred prod-application backlog *(each item needs its own explicit go)*
+- ~~**JSONB Wave 3 PROD cutover**~~ ✅ DONE 2026-08-24/25 (walkthrough addendum). Historical text: backfill → DDL → deploy per the Wave-3 cutover runbook (drops W1/W2 columns on prod, freezes `fundingJSON`/`formMetaJSON`). Prod ran pre-Wave-3 blob code until then; this is the standing exposure, held intentionally.
 - Any accumulated `db:push:prod` for enum/schema pushes noted across memory (meeting-outcome enum, media bucket, etc.).
 
 ### ⑥ Google OAuth service consolidation *(cleanup — epic tail; unblocked, low-risk)*
@@ -107,7 +107,7 @@ Behavior-preserving; no DB schema change; verify with `tsc`+`lint` + the existin
 
 ## Immediate next actions (session handoffs)
 
-- **`abilities.ts`** — the `LEAD_SOURCE` addition (import + `ENTITY_NAMES`) from D-d is uncommitted, entangled with the in-flight `VOIP_CONTACT_ATTRIBUTE→FIELD` rename. Land with the VOIP commit, or extract the LEAD_SOURCE lines into their own commit.
+- **`abilities.ts`** — the `LEAD_SOURCE` addition was committed in `2e3e84ac` (build fix, 2026-08-24); only the `VOIP_CONTACT_ATTRIBUTE→FIELD` swap remains uncommitted. Historical: the `LEAD_SOURCE` addition (import + `ENTITY_NAMES`) from D-d was uncommitted, entangled with the in-flight `VOIP_CONTACT_ATTRIBUTE→FIELD` rename. Land with the VOIP commit, or extract the LEAD_SOURCE lines into their own commit.
 - **Project edit-form scopes-desync bug** — pre-existing (NOT from this epic), documented at the root-cause site (`src/features/project-management/ui/components/form/index.tsx`), left unfixed per owner. Fix = hydrate-once ref guard (or `useForm({ values, resetOptions: { keepDirtyValues: true } })`).
 
 ## Sequencing recommendation

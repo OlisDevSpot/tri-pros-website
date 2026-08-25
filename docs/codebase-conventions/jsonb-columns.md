@@ -8,7 +8,7 @@ JSONB columns in this codebase carry typed domain blobs (`contextJSON`, `flowSta
 `formMetaJSON`, `projectJSON`, `fundingJSON`, `formConfigJSON`, …). Their
 Zod schemas live in `src/shared/entities/<domain>/schemas/index.ts`. (The customer profile
 trio — `customerProfileJSON` / `propertyProfileJSON` / `financialProfileJSON` — was
-decomposed to plain columns in Wave 1 of epic #256; see
+decomposed to the `customer_profiles` 1:1 child table in Wave 1 of epic #256 (Addendum B); see
 `src/shared/entities/customers/DOCS.md#three-jsonb-profiles`. `leadMetaJSON` was frozen and
 split into the `customer_lead_attribution` 1:1 child + `customer_enrichment` dynamic-key rows
 in Wave 2; see `src/shared/entities/customers/DOCS.md#lead-attribution-child`.)

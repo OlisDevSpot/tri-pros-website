@@ -84,7 +84,7 @@ A "senior" customer has two distinct definitions depending on the data path:
 **Decomposed to a 1:1 child table (Addendum B, 2026-07-14 — supersedes the Wave-1
 wide-column build).** The three profile blobs (`customerProfileJSON`,
 `propertyProfileJSON`, `financialProfileJSON`) are frozen — `*Deprecated` columns
-with zero writers, read only by the one-time backfill script, dropped next release.
+with zero writers — **dropped** (dev 2026-08-11; prod 2026-08-24/25).
 Every field they used to hold (except `age`) now lives on `customer_profiles`, a
 1:1 child table keyed `customer_id` PK-as-FK (`ON DELETE CASCADE`, house precedent
 `voip_campaign_contacts`). `age` stays a plain column on `customers` — it's
@@ -140,8 +140,7 @@ A customer's lead origin is captured by three fields:
 
 - `leadSourceId` (FK to `lead_sources`) — which campaign/channel attributed the lead
 - `leadType` (enum) — broad classification (`facebook_ad`, `referral`, etc.)
-- `leadMetaJSONDeprecated` — **frozen (Wave 2, epic #256)**, zero writers, dropped next
-  release. The source-specific payload it used to hold now lives on
+- `leadMetaJSONDeprecated` — **dropped** (Wave 2 freeze, epic #256; dev 2026-08-11; prod 2026-08-24/25). The source-specific payload it used to hold now lives on
   `customer_lead_attribution` + `customer_enrichment` — see `#lead-attribution-child`.
 
 **Why**: separates "which campaign" (FK) from "what kind" (enum) from "campaign-specific payload" (now a child table, was JSONB). Each gets to evolve independently.
@@ -233,9 +232,9 @@ Separately: the customer profile's **activity timeline** (Overview tab) is **der
 - **Hardcoding `status === 'sent'` for phone-unlock UI logic.** Use `hasSentProposal` (the boolean computed by `hasSentProposalSql`) — it already encodes the threshold.
 - **Storing computed `isSigned` on the customer row.** Always derive via `isSignedCustomerSql` (or check projects directly).
 - **Setting `pipelineStage` on a customer that has meetings.** It's meaningless for non-leads.
-- **Writing to `customerProfileJSONDeprecated` / `propertyProfileJSONDeprecated` / `financialProfileJSONDeprecated`.** These no longer exist — dropped at the Wave-3 ceremony (dev 2026-08-11; prod via `docs/plans/2026-07-26-wave-3-cutover-runbook.md`). Patch the real columns via `upsertCustomerProfile` (`age` via `customerCrud.update`) — see `#three-jsonb-profiles`.
+- **Writing to `customerProfileJSONDeprecated` / `propertyProfileJSONDeprecated` / `financialProfileJSONDeprecated`.** These no longer exist — dropped at the Wave-3 ceremony (dev 2026-08-11; prod 2026-08-24/25). Patch the real columns via `upsertCustomerProfile` (`age` via `customerCrud.update`) — see `#three-jsonb-profiles`.
 - **Reading `customer.triggerEvent` (or any profile-trio field) straight off a bare `Customer` row.** Those fields live on the `customer_profiles` child table now — use the composed `CustomerWithProfile` type (flattened-spread joined) or `CustomerProfileRow | null`, never a `Partial` spread off `Customer` that would compile even when the join is missing.
-- **Writing to `leadMetaJSONDeprecated`, or attempting to update `customer_lead_attribution`.** `leadMetaJSONDeprecated` no longer exists — dropped at the Wave-3 ceremony (dev 2026-08-11; prod via `docs/plans/2026-07-26-wave-3-cutover-runbook.md`). Attribution is write-once via `upsertLeadAttribution` at capture; there is no update path by design — see `#lead-attribution-child`.
+- **Writing to `leadMetaJSONDeprecated`, or attempting to update `customer_lead_attribution`.** `leadMetaJSONDeprecated` no longer exists — dropped at the Wave-3 ceremony (dev 2026-08-11; prod 2026-08-24/25). Attribution is write-once via `upsertLeadAttribution` at capture; there is no update path by design — see `#lead-attribution-child`.
 - **Bypassing the senior-age path mismatch.** Customer profile = bucket; contract flow = precise number. Pick the right helper.
 
 ## See also

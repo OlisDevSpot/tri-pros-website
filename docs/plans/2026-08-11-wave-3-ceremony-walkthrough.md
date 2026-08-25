@@ -1,4 +1,4 @@
-# Wave 3 Ceremony — Execution-Day Walkthrough (2026-08-11, v3 re-verified 2026-08-18)
+# Wave 3 Ceremony — Execution-Day Walkthrough (2026-08-11 · ✅ EXECUTED 2026-08-24/25 — see addendum)
 
 > **What this is:** the paste-ready, top-to-bottom execution script for the Wave 3
 > prod cutover, in the style of the W1/W2 runbooks. Every command is run **by
@@ -14,7 +14,7 @@
 > drift semantics: the backfill **must** be re-run live right before the DDL
 > (blob→column sync), and only becomes forbidden *after* the deploy.
 
-> **v3 re-verification (2026-08-18, read-only):** ceremony not yet run; prod
+> **v3 re-verification (2026-08-18, read-only)** *(historical — ceremony executed 2026-08-24/25, see addendum)*: ceremony not yet run at that time; prod
 > gained **18 customers + 2 meetings, 0 proposals** since 8/11 (22 customers
 > edited, 0 proposals edited). Findings, all SELECT-only against prod:
 > - `backfill-wave3-scalars --dry-run`: **98 scanned, 0 drift** (no proposal
@@ -49,9 +49,9 @@
 | 6 scalar columns present | ✅ | ✅ |
 | Scalar backfill | ✅ complete | ✅ **zero drift as of 2026-08-18** — but pre-flip prod code still writes blobs, so re-run in 3.2 anyway (idempotent; catches any edit between now and then) |
 | Blobs `funding_JSON`/`form_meta_JSON` nullable | ✅ | ✅ (§3a-fix, 2026-08-11) |
-| Rename `signing_request_id` → `contract_envelope_id` | ✅ | ⬜ **this ceremony** |
-| 6 W1/W2 blob columns dropped | ✅ | ⬜ **this ceremony** |
-| Writer-flip + drop-ceremony code deployed | n/a | ⬜ **this ceremony** (`git push` deploys all of it at once) |
+| Rename `signing_request_id` → `contract_envelope_id` | ✅ | ✅ 2026-08-24/25 |
+| 6 W1/W2 blob columns dropped | ✅ | ✅ 2026-08-24/25 |
+| Writer-flip + drop-ceremony code deployed | n/a | ✅ 2026-08-24/25 (`8c0ce467..2e3e84ac`, 96 commits) |
 
 **The ceremony in one sentence:** re-take the Neon snapshot, re-run the
 backfill (blob→column sync), `git push` and wait for the deploy to go live,
@@ -356,17 +356,46 @@ ready and keep that gap to seconds.
   `src/shared/services/providers/cloudtalk/` **together with** its import
   sites (`server-env.ts`, voip-contact-attributes). The main tree's `git
   status` shows cloudtalk as ` D` — that is correct WIP state, keep it.
-- The 3.3b legacy snapshot lives at repo root:
-  `wave3-legacy-blob-snapshot-2026-08-24.json` (untracked, 5 rows verified).
+- The 3.3b legacy snapshot lives at `.superpowers/sdd/wave3-legacy-blob-snapshot-2026-08-24.json`
+  (git-ignored, 5 rows verified — W1 precedent location; holds customer profile data, never commit).
 - Neon snapshot slot: `pre-wave3-ceremony-2026-08-24`
   (`snap-calm-bird-afia5xgl`).
 - The ceremony worktree `tri-pros-website.wave3-ddl` is removable after
   Step 4: `git worktree remove --force ../tri-pros-website.wave3-ddl` (it
   holds a symlinked node_modules + copied `.env`, nothing unique).
 
+### What actually ran (2026-08-24/25) — record + lessons
+
+- Deploy live ~3 min after push (asset-fingerprint poller). DDL applied **from the
+  root checkout, not the worktree**: Oliver explicitly approved the JustCall VOIP
+  schema reshape riding along (`voip_campaigns`/`voip_campaign_contacts` new
+  `provider_*` columns, `voip_contact_attributes` → `voip_contact_fields`,
+  `ct_*`/`cloudtalk_contact_id` dropped). Prod voip tables are therefore **ahead of
+  the deployed code** until the JustCall commit lands — campaigns-admin is broken
+  and every meeting create makes `graduateFromCampaignJob` 42703 in QStash
+  (meeting still commits). Ship the JustCall commit promptly.
+- 🚨 **Near-miss:** drizzle's first plan contained `truncate table "voip_campaigns"
+  cascade` (to add NOT NULL columns to a 3-row table). Postgres TRUNCATE CASCADE
+  follows FKs *into* the table recursively: `lead_sources.default_campaign_id →
+  voip_campaigns` and `customers → lead_sources` — it would have emptied the CRM.
+  Aborted; tables pre-emptied by hand (`UPDATE lead_sources SET default_campaign_id
+  = NULL; DELETE FROM voip_campaign_contacts; DELETE FROM voip_campaigns; DELETE
+  FROM voip_contact_attributes;`), re-planned with zero truncates, then approved.
+  **Rule: never approve a drizzle plan containing `truncate … cascade`; pre-empty
+  with DELETE after unhooking FKs.**
+- Final data-loss list was exactly the 6 blob columns (683/683/683/683, 10, 8).
+- Post-DDL verification (all read-only, all PASS): backfill dry-run 98/0 drift;
+  `final_tcp_cents` 0 drift; `db:push:prod` + `db:push:dev` → *No changes detected*;
+  3-auditor sweep (data integrity 11/11 PASS, code write-seams 8/9 PASS — the 1
+  FAIL is the expected JustCall schema-ahead-of-code state, docs truth-pass
+  applied). 42 proposals kept `contract_envelope_id`; 0 orphans/dupes in every
+  W1/W2 child table. Pre-existing gap surfaced (not ceremony-caused): website
+  landing leads bypass `ingestLead` (`landing.router/index.tsx`) so they get no
+  `customer_lead_attribution` row (27 all-time).
+
 ## Step 5 — Aftercare
 
-- [ ] `git stash drop stash@{0}` (`task11-review-temp-stash`) once satisfied.
+- [x] ~~`git stash drop stash@{0}` (`task11-review-temp-stash`)~~ — that stash no longer exists; `stash@{0}` is now `voip-wt-state-pre-rebase-2026-06-03`. **Do not drop it.**
 - [ ] T6 open item: `pnpm tsx scripts/verify-assemble-envelope.ts <email>` +
       delete the Zoho draft it creates.
 - [ ] Delete the untracked read-only helpers whenever:

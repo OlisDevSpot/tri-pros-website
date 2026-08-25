@@ -8,6 +8,11 @@ agent runs any command in the "Prod ceremony" section autonomously. Verification
 throughout this program is `pnpm tsc` + `pnpm lint` only — no full production
 build is run as part of this ceremony.
 
+> ✅ **CEREMONY COMPLETE 2026-08-24/25.** `origin/main` = `2e3e84ac`; §3b DDL (rename +
+> 6 drops) applied to prod via `pnpm db:push:prod`; deploy-first ordering; all
+> post-checks green. Everything below is historical rationale + Appendix A.
+> Execution record: `docs/plans/2026-08-11-wave-3-ceremony-walkthrough.md` addendum.
+
 > ⚠️ **SUPERSEDED IN PART (2026-08-11, git-ancestry check):** this section's
 > claim that prod is "already past the writer flip" is **false** — `a9f5539b`
 > was never pushed; `origin/main` = `8c0ce467` (pre-Wave-3). Prod still writes
@@ -17,7 +22,7 @@ build is run as part of this ceremony.
 > is now owned by `docs/plans/2026-08-11-wave-3-ceremony-walkthrough.md` (v2);
 > this doc remains canonical for rationale, targeting, and Appendix A.
 
-## Where things stand (2026-08-11)
+## Where things stand (2026-08-11 — historical; see banner above)
 
 - Tasks 1–11 of the implementation plan are complete on `main`. Scalars live
   (`starting_tcp_cents`, `deposit_amount_cents`, `cash_in_deal_cents`,
@@ -44,7 +49,7 @@ build is run as part of this ceremony.
   ran on 2026-08-11: `pnpm db:push:prod` (6 `ADD COLUMN` + 2 `DROP NOT NULL`,
   zero drops) and `scripts/backfill-wave3-scalars.ts` (dry-run → real → verified
   clean). **The manual drop/rename DDL has NOT run against prod, and prod has
-  NOT been deployed past `6d5b705c`.** Sections 3–4 below are what's still live.
+  NOT been deployed past `6d5b705c`.** *(As of 2026-08-24/25: both done — see banner.)*
 
 ## 1. Pre-flight
 

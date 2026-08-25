@@ -1,6 +1,6 @@
 # Wave 3 — Funding/Meta Scalar Decomposition + the Drop Ceremony — Design Spec
 
-> **Status**: Approved design, 2026-07-26. Implementation plan: `docs/superpowers/plans/2026-07-26-wave-3-scalar-decomposition.md`.
+> **Status**: SHIPPED — code 2026-08-11, prod cutover 2026-08-24/25. (Approved design 2026-07-26.) Implementation plan: `docs/superpowers/plans/2026-07-26-wave-3-scalar-decomposition.md`.
 > **Amendment (2026-07-26, first-principles audit — Oliver's ruling)**: the form layer is REWRITTEN,
 > not renamed in place. New form shape: `{ priceDisplayMode, project, funding: FundingData }` — no
 > `meta` section, no funding `{data, meta}` envelope, `envelopeDocumentIds` out of form state.
