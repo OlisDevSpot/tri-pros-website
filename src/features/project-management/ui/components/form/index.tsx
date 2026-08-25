@@ -22,6 +22,19 @@ interface Props {
 export function ProjectForm({ isLoading, initialValues, onSubmit, projectId, mediaFiles, onMediaUpdate }: Props) {
   const form = useFormContext<ProjectFormData>()
 
+  // KNOWN ISSUE (pre-existing, NOT from the crud-dal epic — server scopes-persist
+  // path verified correct 2026-08-20): this resets on EVERY change to
+  // `initialValues`, which is a fresh object on every `project.data` refetch —
+  // and the edit view refetches often (media-optimization `refetchInterval` poll
+  // + the query client's default `refetchOnWindowFocus: true`). Each refetch
+  // silently reverts `form` to server state, discarding unsaved edits. It bites
+  // trades/scopes hardest and INVISIBLY: the trade picker keeps its own `rows`
+  // state (guarded by `initializedRef`), so `form.reset` reverts `form.scopeIds`
+  // but not the picker UI — the user sees their new trades, saves, and the form
+  // submits the OLD scopeIds → "scopes didn't persist". Plain text fields snap
+  // back visibly; scopes don't. Fix = hydrate ONCE (ref guard), or move to
+  // `useForm({ values, resetOptions: { keepDirtyValues: true } })`. Left as-is
+  // per owner (out of crud-epic scope).
   useEffect(() => {
     if (initialValues) {
       form.reset(initialValues)

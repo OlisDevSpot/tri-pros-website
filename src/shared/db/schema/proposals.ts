@@ -36,9 +36,11 @@ export const proposals = pgTable('proposals', {
   qbInvoiceId: text('qb_invoice_id'),
   qbPaymentStatus: text('qb_payment_status'),
 
-  /** @deprecated W3 froze this blob (2026-07-26 spec). Scalars live in the
+  /**
+   * @deprecated W3 froze this blob (2026-07-26 spec). Scalars live in the
    * price_display_mode/envelope_document_ids columns. Read only by
-   * scripts/backfill-wave3-scalars.ts. Dropped on the Wave-4 push (ledger). */
+   * scripts/backfill-wave3-scalars.ts. Dropped on the Wave-4 push (ledger).
+   */
   formMetaJSONDeprecated: jsonb('form_meta_JSON').$type<FormMetaSection>(),
   projectJSON: jsonb('project_JSON').$type<ProjectSection>().notNull(),
   /** @deprecated same — scalars in *_cents columns, incentives in proposal_incentives. */

@@ -5,6 +5,7 @@
 
   // Discover worktree repos under .worktrees/ (two levels deep) in Source Control
   "git.repositoryScanMaxDepth": 2,
+  "git.ignoredRepositories": ["video/.whisper"],
   // Disable the default formatter, use eslint instead
   "prettier.enable": false,
   "editor.formatOnSave": false,

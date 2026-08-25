@@ -10,8 +10,10 @@ interface PhotoDetailDialogProps {
   onOpenChange: (open: boolean) => void
   /** Owner-specific preview (project: public-bucket image variant with retry UI; proposal: presigned img/video/pdf). Defaults to a plain <img>. */
   renderPreview?: (item: MediaItem) => ReactNode
-  /** Owner-specific `<dt>`/`<dd>` metadata rows. Fully DI: the owner supplies EVERY row in its
-   *  preferred order (project reproduces the exact source row order). Omit to show only title + preview. */
+  /**
+   * Owner-specific `<dt>`/`<dd>` metadata rows. Fully DI: the owner supplies EVERY row in its
+   *  preferred order (project reproduces the exact source row order). Omit to show only title + preview.
+   */
   renderDetails?: (item: MediaItem) => ReactNode
 }
 
