@@ -1,29 +1,34 @@
-// TODO(1f): inline db — de-inline via media.service + account DAL (media.service brainstorm slice)
-
 import type { R2BucketName } from '@/shared/services/providers/r2/types'
 import { TRPCError } from '@trpc/server'
 import { and, eq, inArray, like } from 'drizzle-orm'
 import { z } from 'zod'
 import { mediaPhases } from '@/shared/constants/enums/media'
+import { canAccess } from '@/shared/dal/server/lib/resolve-actor-scope'
 import { db } from '@/shared/db'
-import { insertMediaFilesSchema, mediaFiles, meetings, proposalMediaFiles, proposals } from '@/shared/db/schema'
+import { insertMediaFilesSchema, meetings, proposalMediaFiles, proposals } from '@/shared/db/schema'
+import { mediaFileServerSpec } from '@/shared/entities/media-files/lib/server-spec'
+import { projectServerSpec } from '@/shared/entities/projects/lib/server-spec'
 import { deriveOriginalMediaUrl, getOptimizedSrc } from '@/shared/lib/get-optimized-urls'
 import { mediaService } from '@/shared/services/media/media.service'
 import { projectMediaStore } from '@/shared/services/media/stores'
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
-import { agentProcedure, createTRPCRouter } from '../../init'
+import { createTRPCRouter } from '../../init'
+import { projectMediaProcedure } from './procedures'
 
 export const mediaRouter = createTRPCRouter({
-  getUploadUrl: agentProcedure
+  getUploadUrl: projectMediaProcedure
     .input(z.object({
       projectId: z.string().uuid(),
       phase: z.enum(mediaPhases),
       filename: z.string(),
       mimeType: z.string(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      if (!(await canAccess(projectServerSpec, ctx.actor, input.projectId))) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Project not found' })
+      }
       const { uploadUrl, pathKey, bucket } = await mediaService.buildUploadTarget(projectMediaStore, {
         ownerId: input.projectId,
         filename: input.filename,
@@ -34,7 +39,7 @@ export const mediaRouter = createTRPCRouter({
       return { uploadUrl, pathKey, publicUrl }
     }),
 
-  create: agentProcedure
+  create: projectMediaProcedure
     .input(insertMediaFilesSchema.omit({ bucket: true }).extend({
       bucket: z.string().optional(),
     }))
@@ -42,20 +47,23 @@ export const mediaRouter = createTRPCRouter({
       dalToTrpc(await mediaService.createRecord(projectMediaStore, ctx, { ...input, bucket: input.bucket ?? projectMediaStore.bucket })),
     ),
 
-  retryOptimization: agentProcedure
+  retryOptimization: projectMediaProcedure
     .input(z.object({ mediaFileId: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      if (!(await canAccess(mediaFileServerSpec, ctx.actor, input.mediaFileId))) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Media file not found' })
+      }
       await mediaService.retryOptimization(projectMediaStore, input.mediaFileId)
       return { success: true }
     }),
 
-  delete: agentProcedure
+  delete: projectMediaProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       dalToTrpc(await mediaService.removeRecord(projectMediaStore, ctx, input.id))
     }),
 
-  reorder: agentProcedure
+  reorder: projectMediaProcedure
     .input(z.object({
       updates: z.array(z.object({ id: z.number(), sortOrder: z.number().int() })),
     }))
@@ -63,30 +71,23 @@ export const mediaRouter = createTRPCRouter({
       dalToTrpc(await mediaService.reorder(projectMediaStore, ctx, input.updates))
     }),
 
-  movePhase: agentProcedure
+  movePhase: projectMediaProcedure
     .input(z.object({
       ids: z.array(z.number()).min(1),
       phase: z.enum(mediaPhases),
     }))
-    .mutation(async ({ input }) => {
-      await db.transaction(async (tx) => {
-        for (const id of input.ids) {
-          await tx
-            .update(mediaFiles)
-            .set({ phase: input.phase })
-            .where(eq(mediaFiles.id, id))
-        }
-      })
+    .mutation(async ({ ctx, input }) => {
+      dalToTrpc(await mediaService.movePhase(projectMediaStore, ctx, input.ids, input.phase))
     }),
 
-  bulkDelete: agentProcedure
+  bulkDelete: projectMediaProcedure
     .input(z.object({ ids: z.array(z.number()).min(1) }))
     .mutation(async ({ ctx, input }) => {
       for (const id of input.ids)
         dalToTrpc(await mediaService.removeRecord(projectMediaStore, ctx, id))
     }),
 
-  rename: agentProcedure
+  rename: projectMediaProcedure
     .input(z.object({
       id: z.number(),
       name: z.string().min(1).max(80),
@@ -95,37 +96,21 @@ export const mediaRouter = createTRPCRouter({
       dalToTrpc(await mediaService.rename(projectMediaStore, ctx, input.id, input.name))
     }),
 
-  toggleHero: agentProcedure
+  toggleHero: projectMediaProcedure
     .input(z.object({
       id: z.number(),
       isHeroImage: z.boolean(),
     }))
-    .mutation(async ({ input }) => {
-      if (input.isHeroImage) {
-        const [file] = await db
-          .select({ projectId: mediaFiles.projectId })
-          .from(mediaFiles)
-          .where(eq(mediaFiles.id, input.id))
-
-        if (!file) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Media file not found' })
-        }
-
-        await db
-          .update(mediaFiles)
-          .set({ isHeroImage: false })
-          .where(eq(mediaFiles.projectId, file.projectId))
-      }
-
-      await db
-        .update(mediaFiles)
-        .set({ isHeroImage: input.isHeroImage })
-        .where(eq(mediaFiles.id, input.id))
+    .mutation(async ({ ctx, input }) => {
+      dalToTrpc(await mediaService.setHero(projectMediaStore, ctx, input.id, input.isHeroImage))
     }),
 
-  listImportableProposalMedia: agentProcedure
+  listImportableProposalMedia: projectMediaProcedure
     .input(z.object({ projectId: z.string().uuid() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      if (!(await canAccess(projectServerSpec, ctx.actor, input.projectId))) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Project not found' })
+      }
       const rows = await db
         .select({
           id: proposalMediaFiles.id,
@@ -170,9 +155,15 @@ export const mediaRouter = createTRPCRouter({
       return [...byProposal.values()]
     }),
 
-  importFromProposal: agentProcedure
+  importFromProposal: projectMediaProcedure
     .input(z.object({ projectId: z.string().uuid(), proposalMediaFileIds: z.array(z.number()).min(1) }))
     .mutation(async ({ ctx, input }) => {
+      // Destination gate: the caller must be able to see the project they're
+      // importing INTO (closes the destination IDOR). The source authz below —
+      // the meetings.projectId join — still bounds WHICH proposal media are copyable.
+      if (!(await canAccess(projectServerSpec, ctx.actor, input.projectId))) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Project not found' })
+      }
       // Authorization: only copy media that actually belongs to a proposal on
       // THIS project's meetings (prevents importing arbitrary proposal media by id).
       const sources = await db
