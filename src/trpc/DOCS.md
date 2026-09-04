@@ -166,11 +166,13 @@ This replaces the `isOmni`-or-predicate dance that previously had to be inlined 
 
 ### shareable-middleware-token-or-session
 
-`shareableMiddleware(spec)` resolves dual-credential access:
+`shareableMiddleware(spec)` resolves dual-credential access, **session-first (agent-first, Phase 6)**:
 
-- **Token present** (e.g., `?token=tpr-xxx`): validates the token column on the entity table, sets `ctx.scope = eq(tokenColumn, token)`, `ctx.ability = null`. **Token IS the authorization** — CASL is null.
-- **Session present, no token**: requires session, builds ability, resolves scope from `spec.visibility({ userId, ability })`.
+- **Session present**: builds ability, resolves scope from `spec.visibility({ userId, ability })`, actor = `userActor`. An authenticated session ALWAYS wins — **a token in the URL is ignored**. This guarantees agent-always-user (a logged-in agent is never dropped to `ability = null`, which would strip agent-only capabilities such as the envelope gate in `contracts.router.ts`).
+- **No session, token present** (e.g., `?token=tpr-xxx`): validates the token column on the entity table, sets `ctx.scope = eq(tokenColumn, token)`, `ctx.ability = null`, actor = `tokenActor`. **Token IS the authorization** — CASL is null. This is the homeowner (unauthenticated) path.
 - **Neither**: throws UNAUTHORIZED.
+
+Precedence is a **tightening**: a token no longer sideways-grants an authenticated agent a row outside their own CASL scope (the token is a homeowner credential, not an agent backdoor). Each branch asserts its resolved `actor.kind` matches the path taken.
 
 Activated by `spec.shareable: { tokenColumn: '...' }` in the entity spec. The middleware peeks at `getRawInput()` for the `token` field before Zod validation — branching has to happen before schema enforcement.
 
