@@ -11,6 +11,7 @@ import type { Actor } from '@/shared/domains/permissions/scope/actor'
 import { and, count, desc, eq, inArray, isNotNull, max, notInArray, sql } from 'drizzle-orm'
 
 import { computeCustomerStage } from '@/features/customer-pipelines/lib/compute-customer-stage'
+import { maskFinancials } from '@/features/customer-pipelines/lib/mask-financials'
 import { DECIDED_OUTCOMES, RECALLABLE_OUTCOMES, TERMINAL_OUTCOMES } from '@/shared/constants/enums/meetings'
 import { deriveProjectStatusBucket } from '@/shared/constants/enums/pipelines'
 import { requireResolvedScope } from '@/shared/dal/server/lib/helpers'
@@ -27,6 +28,7 @@ import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 import { projectServerSpec } from '@/shared/entities/projects/lib/server-spec'
+import { proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
 
 /**
  * Meetings whose outcome keeps the customer in the "fresh" phase — i.e. NOT a
@@ -39,27 +41,32 @@ const NON_NEGATIVE_MEETING = notInArray(meetings.meetingOutcome, [...RECALLABLE_
 export async function getCustomerPipelineItems(ctx: ScopedContext, pipeline: Pipeline = 'fresh'): Promise<CustomerPipelineItem[]> {
   const { actor } = ctx
   const canSeeUngated = canSeeUngatedPhone(actor)
+  // Proposal existence/value is financial: only actors holding `read Proposal`
+  // (agents, omni) see the `hasSentProposal` badge. The SQL proposal-scope gate
+  // in each builder already zeroes count/value/list for a dispatcher;
+  // maskFinancials strips the residual boolean. see ../../lib/mask-financials
+  const canReadProposals = actor.kind !== 'user' || actor.ability.can('read', 'Proposal')
   // Two-level scope: WHICH customers (their visibility) AND which bucket (single,
   // total, mutually exclusive). Enrichment is scoped per-entity inside each builder.
   const customerScope = requireResolvedScope(resolveActorScope(customerServerSpec, actor))
   const inBucket = derivedPipelineWhere([pipeline])
 
   if (pipeline === 'leads') {
-    return getLeadsPipelineItems(customerScope, inBucket, canSeeUngated)
+    return maskFinancials(await getLeadsPipelineItems(customerScope, inBucket, canSeeUngated), canReadProposals)
   }
 
   if (pipeline === 'projects') {
     // Project visibility (owner OR participation) subsumes "customer in projects
     // bucket + visible", so this builder gates on the project scope directly.
-    return getProjectsPipelineItems(actor, canSeeUngated)
+    return maskFinancials(await getProjectsPipelineItems(actor, canSeeUngated), canReadProposals)
   }
 
   if (pipeline !== 'fresh') {
-    return getRehashOrDeadPipelineItems(pipeline, customerScope, inBucket, canSeeUngated)
+    return maskFinancials(await getRehashOrDeadPipelineItems(pipeline, customerScope, inBucket, canSeeUngated), canReadProposals)
   }
 
   // Fresh pipeline: full query with computed stages
-  return getFreshPipelineItems(actor, customerScope, inBucket, canSeeUngated)
+  return maskFinancials(await getFreshPipelineItems(actor, customerScope, inBucket, canSeeUngated), canReadProposals)
 }
 
 /**
@@ -216,6 +223,7 @@ async function getFreshPipelineItems(actor: Actor, customerScope: SQL | undefine
     .innerJoin(customers, eq(customers.id, meetings.customerId))
     .where(and(
       requireResolvedScope(resolveActorScope(meetingServerSpec, actor)),
+      requireResolvedScope(resolveActorScope(proposalServerSpec, actor)),
       inArray(customers.id, customerIds),
     ))
     .groupBy(customers.id)
@@ -267,6 +275,7 @@ async function getFreshPipelineItems(actor: Actor, customerScope: SQL | undefine
     .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
     .where(and(
       requireResolvedScope(resolveActorScope(meetingServerSpec, actor)),
+      requireResolvedScope(resolveActorScope(proposalServerSpec, actor)),
       inArray(meetings.customerId, customerIds),
     ))
     .orderBy(desc(proposals.createdAt))

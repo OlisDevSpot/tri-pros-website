@@ -25,10 +25,15 @@ import { profileCols } from '@/shared/entities/customers/lib/profile-select'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 import { projectServerSpec } from '@/shared/entities/projects/lib/server-spec'
+import { proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
 
 export async function getCustomerProfile(ctx: ScopedContext, customerId: string): Promise<CustomerProfileData> {
   const { actor } = ctx
   const canSeeUngated = canSeeUngatedPhone(actor)
+  // Proposal reads are financial: gate them on the Proposal subject so a
+  // dispatcher (no `read Proposal`) sees zero proposals + no existence badge,
+  // independent of meeting visibility. see docs/plans/2026-08-20-dispatcher-visibility-corrections.md
+  const canReadProposals = actor.kind !== 'user' || actor.ability.can('read', 'Proposal')
   const { phone: _phone, ...customerCols } = getTableColumns(customers)
 
   const [customerRow] = await db
@@ -63,7 +68,13 @@ export async function getCustomerProfile(ctx: ScopedContext, customerId: string)
     .from(customerEnrichment)
     .where(eq(customerEnrichment.customerId, customerId))
     .orderBy(asc(customerEnrichment.order))
-  const customer = { ...customerRow, attribution, enrichment }
+  const customer = {
+    ...customerRow,
+    // Suppress the proposal-existence badge for non-proposal-readers (dispatchers).
+    hasSentProposal: canReadProposals ? customerRow.hasSentProposal : false,
+    attribution,
+    enrichment,
+  }
   // Whether a lead recording exists is a synchronous fact from data we already
   // load — surface it so the UI can decide to render the player BEFORE the
   // separate presigned-URL fetch, instead of flashing a skeleton then removing it.
@@ -104,14 +115,16 @@ export async function getCustomerProfile(ctx: ScopedContext, customerId: string)
     })
     .from(proposals)
     .leftJoin(proposalViews, eq(proposalViews.proposalId, proposals.id))
-    .where(
+    .where(and(
       sql`${proposals.meetingId} IN (${sql.join(
         meetingRows.length > 0
           ? meetingRows.map(m => sql`${m.id}`)
           : [sql`NULL`],
         sql`, `,
       )})`,
-    )
+      // Financial wall: deny-all for any actor lacking `read Proposal`.
+      requireResolvedScope(resolveActorScope(proposalServerSpec, actor)),
+    ))
     .groupBy(proposals.id)
     .orderBy(desc(proposals.createdAt))
 
