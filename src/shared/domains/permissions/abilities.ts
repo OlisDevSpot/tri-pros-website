@@ -226,10 +226,11 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       can('access', 'Dashboard')
       can('read', 'LeadsPool') // sees the shared leads pool (drives visibility + phone + pipeline access)
 
-      // Dispatcher works the whole cold-lead pool: unworked leads AND the
-      // negative-outcome buckets they re-engage — recallable (rehash) and
-      // terminal (dead). NOT fresh/projects (that's the sales agent's book).
-      can('read', 'Customer', { $inDerivedPipeline: ['leads', 'rehash', 'dead'] })
+      // Dispatcher works the whole operational pipeline — the cold pool (leads /
+      // rehash / dead) PLUS fresh, so a lead they just booked (which flips
+      // leads→fresh) stays visible. NOT 'projects' (converted = the agent's book).
+      // Financials stay hidden via the absent Proposal/Project grants, not by bucket.
+      can('read', 'Customer', { $inDerivedPipeline: ['leads', 'rehash', 'dead', 'fresh'] })
       // Lead-contact fields only — NOT the sales-discovery JSON profiles.
       can('update', 'Customer', ['name', 'phone', 'email', 'address', 'city', 'state', 'zip', 'pipelineStage'])
 
@@ -244,7 +245,10 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       can('read', 'CustomerNote')
       can('create', 'CustomerNote')
 
-      can('read', 'Meeting', { $participatesViaMeeting: { via: 'self' } })
+      // Unconditional: a dispatcher's bookings land SYSTEM-owned (unassigned), so a
+      // participation check would hide the meeting they just created. Meetings carry
+      // no financials (proposals are a separate, ungranted subject).
+      can('read', 'Meeting')
       can('create', 'Meeting') // books appointments (lands unassigned — see resolve-owner.ts)
       can('update', 'Meeting')
       // Note: NO can('own','Meeting') — this is what makes their bookings unassigned.

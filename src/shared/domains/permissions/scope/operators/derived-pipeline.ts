@@ -6,8 +6,9 @@ import { defineScopeOperator } from '../operators'
 
 /**
  * "This customer's DERIVED 5-bucket pipeline ∈ the given set." Canonical
- * dispatcher visibility = ['leads','rehash','dead'] (user ruling 2026-08-19) —
- * the whole cold-lead pool the dispatcher works. Emits the
+ * dispatcher visibility = ['leads','rehash','dead','fresh'] (user ruling
+ * 2026-09-04) — the whole operational pipeline the dispatcher works (cold pool
+ * + fresh; NOT converted 'projects'). Emits the
  * convention-enforced `derivedPipelineWhere` (customers/lib/derived-pipeline-sql)
  * — never raw `customers.pipeline`. Correlates on the outer `customers` row, so
  * it only makes sense on the Customer subject (ctx.table === customers).
