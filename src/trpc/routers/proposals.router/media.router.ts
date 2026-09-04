@@ -3,7 +3,7 @@ import type { ScopedContext } from '@/shared/dal/server/types'
 import type { ProposalMediaFile } from '@/shared/db/schema/proposal-media-files'
 import { TRPCError } from '@trpc/server'
 import z from 'zod'
-import { isVisible } from '@/shared/dal/server/lib/scope'
+import { canAccess } from '@/shared/dal/server/lib/resolve-actor-scope'
 import { proposalMediaVisibilities } from '@/shared/db/schema/proposal-media-files'
 import { proposalMediaCrud } from '@/shared/entities/proposal-media-files/dal/server/crud'
 import { toProposalMediaView } from '@/shared/entities/proposal-media-files/dal/server/queries'
@@ -24,7 +24,7 @@ function assertCanUpdate(ctx: ScopedContext) {
 
 /** Throw NOT_FOUND unless the parent proposal is visible in the caller's scope (create/list/upload precursors). */
 async function assertProposalVisible(ctx: ScopedContext, proposalId: string) {
-  if (!(await isVisible(proposalServerSpec, ctx, proposalId))) {
+  if (!(await canAccess(proposalServerSpec, ctx.actor, proposalId))) {
     throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' })
   }
 }
@@ -101,7 +101,7 @@ export const proposalMediaRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       assertCanUpdate(ctx)
       // Point probe on the child spec — replaces the old per-id authz join.
-      if (!(await isVisible(proposalMediaServerSpec, ctx, input.id))) {
+      if (!(await canAccess(proposalMediaServerSpec, ctx.actor, input.id))) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal media file not found' })
       }
       await mediaService.retryOptimization(proposalMediaStore, input.id)
