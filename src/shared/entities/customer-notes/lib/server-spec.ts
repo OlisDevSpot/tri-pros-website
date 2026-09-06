@@ -2,14 +2,14 @@ import type { EntityServerSpec } from '@/shared/dal/server/types'
 
 import { z } from 'zod'
 
-import { buildUserContext, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
-import { SYSTEM_CONTEXT, ThrowableDalError } from '@/shared/dal/server/types'
+import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { canAccess } from '@/shared/dal/server/lib/resolve-actor-scope'
+import { ThrowableDalError } from '@/shared/dal/server/types'
 import {
   customerNotes,
   insertCustomerNoteSchema,
   selectCustomerNoteSchema,
 } from '@/shared/db/schema/customer-notes'
-import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { assertNoteAuthorOrAdmin } from './assert-note-author'
 import { CUSTOMER_NOTE } from './constants'
@@ -44,32 +44,21 @@ export const customerNoteServerSpec = {
       // Probe the target customer is visible, and stamp authorId from the
       // session (closes the addNote scope gap — see issue #280).
       //
-      // MUST probe with the CUSTOMER's own visibility, not `ctx.scope` (which
-      // here is the customer-notes PARENT BRIDGE — `customer_notes.customer_id
-      // IN (SELECT customers.id WHERE <customer scope>)`, correlated on
-      // `customer_notes.customer_id`). Reusing `ctx` as-is against
-      // `customerCrud.getById` (`SELECT ... FROM customers WHERE ... AND
-      // <scope>`) would reference `customer_notes` in a query that never
-      // joins it — "missing FROM-clause entry" for every non-omni agent.
-      // `buildUserContext` (the codebase's blessed idiom for a
-      // differently-scoped probe — see
-      // `features/customer-pipelines/dal/server/move-customer-pipeline-item.ts`)
-      // rebuilds a context whose scope is `customerServerSpec.visibility`
-      // instead. Omni callers and system/public writes (no session — Bina
-      // ingest, intake) skip straight to SYSTEM_CONTEXT (unrestricted), since
-      // there's no per-user visibility to apply.
+      // Single-engine probe via `canAccess`: it compiles the ACTOR's CASL
+      // Customer scope directly (system/omni → allow-all, dispatcher → the
+      // operational pipeline incl. `fresh`, agent → participation) and runs a
+      // point-read `SELECT 1 FROM customers WHERE id = ? AND <scope>`. This
+      // replaces the legacy `buildUserContext` / `customerVisibility` probe,
+      // whose dispatcher branch was hard-coded to `['leads']` and diverged from
+      // the widened CASL role scope — NOT_FOUND'ing dispatchers on every
+      // non-`leads` customer. The legacy read engine (and this whole class of
+      // hand-rolled probes) is retired uniformly in Grill B/C — see
+      // docs/plans/2026-08-10-casl-scope-compiler-epic.md.
       async before(input, ctx) {
-        const userId = ctx.session?.user.id
-        const isOmni = ctx.ability?.can('manage', 'all') ?? false
-        const probeCtx = (!userId || isOmni)
-          ? SYSTEM_CONTEXT
-          : buildUserContext(userId, ctx.session!.user.role, customerServerSpec)
-
-        const customer = dalVerifySuccess(await customerCrud.getById(probeCtx, { id: input.customerId }))
-        if (!customer) {
+        if (!(await canAccess(customerServerSpec, ctx.actor, input.customerId))) {
           throw new ThrowableDalError({ type: 'not-found' })
         }
-
+        const userId = ctx.session?.user.id
         return { ...input, authorId: userId ?? input.authorId ?? null }
       },
     },
