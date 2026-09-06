@@ -231,19 +231,29 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       // leads→fresh) stays visible. NOT 'projects' (converted = the agent's book).
       // Financials stay hidden via the absent Proposal/Project grants, not by bucket.
       can('read', 'Customer', { $inDerivedPipeline: ['leads', 'rehash', 'dead', 'fresh'] })
-      // Lead-contact fields only — NOT the sales-discovery JSON profiles.
-      can('update', 'Customer', ['name', 'phone', 'email', 'address', 'city', 'state', 'zip', 'pipelineStage'])
+      // Lead-contact fields + `age` (the sole Customer-owned sales-discovery
+      // field; the other discovery fields live on CustomerProfile below).
+      can('update', 'Customer', ['name', 'phone', 'email', 'address', 'city', 'state', 'zip', 'pipelineStage', 'age'])
+
+      // Full sales-discovery profile (customer_profiles child, Addendum B) —
+      // dispatchers qualify leads, so they read + edit discovery like agents.
+      // Financials stay separate (no Proposal/Project grant).
+      can('read', 'CustomerProfile')
+      can('update', 'CustomerProfile')
 
       // 1:1 attribution child (Addendum B) — read-only, SYSTEM-written at capture.
       can('read', 'CustomerLeadAttribution')
 
-      // Notes: dispatchers work the leads pool and author/read notes on those
-      // leads, exactly like an agent (user-ratified 2026-08-20). Row scope flows
-      // from the Customer parent bridge (dispatcher's leads-pool Customer scope).
-      // update/delete stay author-or-admin on the imperative hook until Grill C
-      // moves "own note" to a CASL {authorId} condition — no update/delete here.
+      // Notes: dispatchers work notes exactly like an agent (user-ratified
+      // 2026-08-20 / 2026-09-04). Row scope flows from the Customer parent bridge
+      // (dispatcher's operational Customer scope). update/delete are author-or-
+      // admin, enforced by assertNoteAuthorOrAdmin in customerNoteServerSpec's
+      // hooks — identical to the agent grant. Grill C converts BOTH agent and
+      // dispatcher "own note" to a CASL {authorId} condition when it retires the hook.
       can('read', 'CustomerNote')
       can('create', 'CustomerNote')
+      can('update', 'CustomerNote')
+      can('delete', 'CustomerNote')
 
       // Unconditional: a dispatcher's bookings land SYSTEM-owned (unassigned), so a
       // participation check would hide the meeting they just created. Meetings carry
