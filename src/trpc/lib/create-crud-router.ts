@@ -11,9 +11,10 @@
 // builder type crosses the function signature, `createCrudRouter` keeps its
 // original four generics — nothing added for procedure typing.
 
+import type { SQL } from 'drizzle-orm'
 import type { PgTable } from 'drizzle-orm/pg-core'
 import type { Insert } from '@/shared/db/types'
-import type { AppAction, AppSubject } from '@/shared/domains/permissions/types'
+import type { AppAbility, AppAction, AppSubject } from '@/shared/domains/permissions/types'
 
 import type { CrudHandlers, EntityServerSpec, SlotName } from '@/trpc/types'
 
@@ -64,6 +65,19 @@ export interface CreateCrudRouterConfig<
    * operation must be replaced.
    */
   handlers?: Partial<CrudHandlers<TTable, TId>>
+  /**
+   * Row-scope resolver for the authed (non-shareable) slots. Defaults to the
+   * LEGACY `resolveVisibilityScope` (spec.visibility → resolveEffectiveScope).
+   *
+   * Phase-7 engine-migration seam (epic: docs/plans/2026-08-10-casl-scope-compiler-epic.md).
+   * An entity opts its factory leaf onto the CASL compiler by passing
+   * `resolveTrpcActorScope` here — its `ctx.scope` is then compiled from CASL
+   * rules (`resolveActorScope`) instead of the legacy `spec.visibility`. Both
+   * return `SQL | null` (null = allow-all/omni), so the DAL is engine-agnostic.
+   * Phase 7 flips entities one at a time behind their EXPLAIN-parity check;
+   * Phase 8 flips this default to CASL and deletes the legacy read engine.
+   */
+  resolveScope?: (spec: EntityServerSpec<TTable, TId>, auth: { userId: string, ability: AppAbility }) => SQL | null
 }
 
 export function createCrudRouter<
@@ -81,8 +95,9 @@ export function createCrudRouter<
   // Scoped procedures built inline from the spec — the cast-free inline `.use()`
   // pattern (ctx infers from agentProcedure, so no builder-type cast is needed).
   // Equivalent to what createEntityRouter's toolkit built from the same spec.
+  const resolveScope = config.resolveScope ?? resolveVisibilityScope
   const authedProcedure = agentProcedure.use(async ({ ctx, next }) =>
-    next({ ctx: { ...ctx, scope: resolveVisibilityScope(config.spec, { userId: ctx.session.user.id, ability: ctx.ability }) } }))
+    next({ ctx: { ...ctx, scope: resolveScope(config.spec, { userId: ctx.session.user.id, ability: ctx.ability }) } }))
   const shareableProcedure = baseProcedure.use(shareableMiddleware(config.spec))
 
   // Select the right procedure based on shareable config.
