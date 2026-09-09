@@ -60,5 +60,15 @@ export function useMeetingActions() {
     }),
   )
 
-  return { deleteMeeting, duplicateMeeting, updateOutcome, updateScheduledFor, setOutcomeWithReason }
+  const rescheduleMeeting = useMutation(
+    trpc.meetingsRouter.business.rescheduleMeeting.mutationOptions({
+      onSuccess: () => {
+        invalidateMeeting()
+        toast.success('Meeting rescheduled')
+      },
+      onError: err => toast.error(err.message || 'Failed to reschedule meeting'),
+    }),
+  )
+
+  return { deleteMeeting, duplicateMeeting, updateOutcome, updateScheduledFor, setOutcomeWithReason, rescheduleMeeting }
 }
