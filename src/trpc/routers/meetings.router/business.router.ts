@@ -9,6 +9,7 @@ import { meetings } from '@/shared/db/schema'
 import { customerNoteCrud } from '@/shared/entities/customer-notes/dal/server/crud'
 import { MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
+import { formatMeetingDateShort } from '@/shared/entities/meetings/lib/notes'
 
 import { createTRPCRouter } from '../../init'
 import { meetingProcedure } from './procedures'
@@ -57,12 +58,7 @@ export const businessRouter = createTRPCRouter({
       // 2. Append the reason as a customer note (skip if the meeting has no customer).
       if (row.customerId) {
         const label = MEETING_OUTCOME_LABELS[input.outcome]
-        // Meeting date in the business timezone, e.g. "07/08".
-        const meetingDate = new Date(row.scheduledFor).toLocaleDateString('en-US', {
-          month: '2-digit',
-          day: '2-digit',
-          timeZone: 'America/Los_Angeles',
-        })
+        const meetingDate = formatMeetingDateShort(row.scheduledFor)
         const note = await customerNoteCrud.create(ctx, {
           customerId: row.customerId,
           content: `${meetingDate} meeting results:\nOutcome set to ${label}\n${input.reason}`,
