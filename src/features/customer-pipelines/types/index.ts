@@ -91,6 +91,7 @@ export interface CustomerPipelineRawData {
   hasActiveMeeting: boolean
   hasScheduledFutureMeeting: boolean
   hasFollowUpNeeded: boolean
+  hasRescheduleNeeded: boolean
   proposalStatuses: string[]
   hasSentContract: boolean
   latestActivityAt: string | null

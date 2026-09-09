@@ -22,6 +22,7 @@ export const freshMeetingStages = [
   'meeting_in_progress',
   'meeting_completed',
   'follow_up_scheduled',
+  'reschedule',
 ] as const
 export type FreshMeetingStage = (typeof freshMeetingStages)[number]
 
