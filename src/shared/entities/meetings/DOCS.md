@@ -139,6 +139,17 @@ scheduled time — which is also negative/rehash but records a different fact.
 Setting an outcome to `cancelled` removes the meeting's Google Calendar event
 (the meeting row is preserved); see `#gcal-removed-on-cancel`.
 
+### gcal-removed-on-cancel
+When a meeting's `meetingOutcome` transitions to `cancelled`, the `update.after`
+hook dispatches `deleteMeetingEventJob` for its `gcalEventId` and clears the
+`gcalEventId`/`gcalEtag`/`gcalSyncedAt` fields on the row. The row itself is
+preserved. `no_show` is intentionally NOT treated this way (its event is already
+in the past). The one-time transition guard + gcalEventId null-check prevent
+re-dispatch.
+
+**Reference impl**: `dal/server/crud.ts:hooks.update.after`
+**Enforced by**: convention (one-time transition guard in the hook)
+
 ### reschedule-cancels-and-rebooks
 The Reschedule action (`meetingsRouter.business.rescheduleMeeting`) keeps the
 original meeting and sets it to `cancelled`, then books a NEW meeting at the new

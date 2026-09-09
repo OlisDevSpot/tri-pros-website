@@ -1,6 +1,9 @@
 import type { Meeting } from '@/shared/db/schema'
 
+import { eq } from 'drizzle-orm'
 import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
+import { db } from '@/shared/db'
+import { meetings } from '@/shared/db/schema'
 import { OUTCOME_PIPELINE_MAP } from '@/shared/domains/pipelines/lib/outcome-pipeline-map'
 import { addParticipant } from '@/shared/entities/meetings/dal/server/participants'
 import { resolveMeetingOwnerId } from '@/shared/entities/meetings/lib/resolve-owner'
@@ -144,6 +147,21 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
         await ably.channels.get(`meeting:${row.id}`).publish('meeting.updated', {
           fields: Object.keys(data),
         })
+
+        // GCal-removed-on-cancel: a meeting whose outcome BECOMES `cancelled`
+        // (any path — Reschedule action or a direct "Cancelled" selection) is no
+        // longer on the shared calendar; the row is kept. The gcalEventId null
+        // guard + one-time transition check prevent re-dispatch. see ../../DOCS.md#gcal-removed-on-cancel
+        if (
+          previousRow.meetingOutcome !== 'cancelled'
+          && row.meetingOutcome === 'cancelled'
+          && row.gcalEventId
+        ) {
+          await deleteMeetingEventJob.dispatchOrThrow({ gcalEventId: row.gcalEventId })
+          await db.update(meetings)
+            .set({ gcalEventId: null, gcalEtag: null, gcalSyncedAt: null })
+            .where(eq(meetings.id, row.id))
+        }
       },
     },
     delete: {
