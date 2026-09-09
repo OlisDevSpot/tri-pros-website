@@ -63,7 +63,7 @@ export function PastMeetingsTable() {
     setAssignProjectMeetingId(entity.id)
   }, [])
 
-  const { actions: sharedActions, DeleteConfirmDialog, OutcomeReasonDialog, changeOutcome } = useMeetingActionConfigs<MeetingRow>({
+  const { actions: sharedActions, DeleteConfirmDialog, OutcomeReasonDialog, RescheduleDialog, changeOutcome } = useMeetingActionConfigs<MeetingRow>({
     onView: handleView,
     onAssignOwner: handleAssignOwner,
     onAssignProject: handleAssignProject,
@@ -89,6 +89,7 @@ export function PastMeetingsTable() {
     <>
       <DeleteConfirmDialog />
       <OutcomeReasonDialog />
+      <RescheduleDialog />
 
       <RecordsPageShell
         header={<RecordsPageHeader title="Meetings" pagination={pagination} />}

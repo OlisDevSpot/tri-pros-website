@@ -8,6 +8,7 @@ import type { MeetingOutcome } from '@/shared/constants/enums'
 import { useCallback, useMemo, useState } from 'react'
 
 import { ROOTS } from '@/shared/config/roots'
+import { canRescheduleFromOutcome } from '@/shared/constants/enums/meetings'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
 import { MEETING_ACTIONS } from '@/shared/entities/meetings/constants/actions'
 import { MEETING_OUTCOME_OPTIONS } from '@/shared/entities/meetings/constants/outcome-options'
@@ -15,6 +16,7 @@ import { useConfirm } from '@/shared/hooks/use-confirm'
 
 import { useMeetingActions } from './use-meeting-actions'
 import { useOutcomeChange } from './use-outcome-change'
+import { useRescheduleChange } from './use-reschedule-change'
 
 // ── Stable top-level component — never causes unmount/remount ──────────────
 
@@ -58,6 +60,7 @@ interface MeetingActionConfigsResult<T extends MeetingEntity> {
   DeleteConfirmDialog: () => JSX.Element
   AssignOwnerDialog: () => JSX.Element
   OutcomeReasonDialog: () => JSX.Element
+  RescheduleDialog: () => JSX.Element
   changeOutcome: (meetingId: string, outcome: MeetingOutcome) => Promise<void>
 }
 
@@ -78,6 +81,7 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
 ): MeetingActionConfigsResult<T> {
   const { deleteMeeting, duplicateMeeting } = useMeetingActions()
   const { changeOutcome, OutcomeReasonDialog } = useOutcomeChange()
+  const { reschedule, RescheduleDialog } = useRescheduleChange()
   const [DeleteConfirmDialog, confirmDelete] = useConfirm({
     title: 'Delete meeting',
     message: 'This will permanently delete this meeting and its data. This cannot be undone.',
@@ -129,6 +133,14 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
         },
       },
       {
+        action: MEETING_ACTIONS.reschedule,
+        onAction: (entity: T) => void reschedule(entity.id),
+        getDisabledReason: (entity: T) =>
+          canRescheduleFromOutcome((entity.meetingOutcome ?? 'not_set') as MeetingOutcome)
+            ? null
+            : 'This meeting already happened — book a new meeting instead of rescheduling.',
+      },
+      {
         action: MEETING_ACTIONS.createProposal,
         onAction: overrides.onCreateProposal ?? defaultCreateProposal,
       },
@@ -161,7 +173,7 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
     })
 
     return configs
-  }, [overrides, duplicateMeeting, changeOutcome, deleteMeeting, confirmDelete, defaultAssignOwner])
+  }, [overrides, duplicateMeeting, changeOutcome, reschedule, deleteMeeting, confirmDelete, defaultAssignOwner])
 
-  return { actions, DeleteConfirmDialog, AssignOwnerDialog, OutcomeReasonDialog, changeOutcome }
+  return { actions, DeleteConfirmDialog, AssignOwnerDialog, OutcomeReasonDialog, RescheduleDialog, changeOutcome }
 }

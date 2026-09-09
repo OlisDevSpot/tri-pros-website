@@ -118,7 +118,7 @@ function MeetingOverviewCardRoot({
     openModal()
   }, [customerId, meeting.id, setModal, openModal])
 
-  const { actions, DeleteConfirmDialog, AssignOwnerDialog, OutcomeReasonDialog, changeOutcome } = useMeetingActionConfigs({
+  const { actions, DeleteConfirmDialog, AssignOwnerDialog, OutcomeReasonDialog, RescheduleDialog, changeOutcome } = useMeetingActionConfigs({
     onView: () => openProfile(),
     onAssignOwner: onAssignOwner
       ? () => onAssignOwner(meeting)
@@ -159,6 +159,7 @@ function MeetingOverviewCardRoot({
       <DeleteConfirmDialog />
       <AssignOwnerDialog />
       <OutcomeReasonDialog />
+      <RescheduleDialog />
       <div className={className} onClick={handleClick}>
         {children}
       </div>

@@ -6,7 +6,7 @@ import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server
 import type { MeetingContext, MeetingFlowState } from '@/shared/entities/meetings/schemas'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { ChannelProvider } from 'ably/react'
-import { ArrowLeftIcon, ArrowRightIcon } from 'lucide-react'
+import { ArrowLeftIcon, ArrowRightIcon, CalendarClockIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useQueryState } from 'nuqs'
 import { useCallback, useMemo, useState } from 'react'
@@ -34,9 +34,11 @@ import { LoadingState } from '@/shared/components/states/loading-state'
 import { Button } from '@/shared/components/ui/button'
 import { Separator } from '@/shared/components/ui/separator'
 import { ROOTS } from '@/shared/config/roots'
+import { canRescheduleFromOutcome } from '@/shared/constants/enums/meetings'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { hasCustomerProfileData } from '@/shared/entities/customers/lib/customer-predicates'
 import { useOutcomeChange } from '@/shared/entities/meetings/hooks/use-outcome-change'
+import { useRescheduleChange } from '@/shared/entities/meetings/hooks/use-reschedule-change'
 import { useTRPC } from '@/trpc/helpers'
 
 interface MeetingFlowViewProps {
@@ -59,6 +61,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
   const [personaOpen, setPersonaOpen] = useState(false)
   const { status: syncStatus } = useMeetingSync(meetingId)
   const { changeOutcome, OutcomeReasonDialog } = useOutcomeChange()
+  const { reschedule, RescheduleDialog } = useRescheduleChange()
 
   const meetingQuery = useQuery(
     trpc.meetingsRouter.reads.getByIdWithJoins.queryOptions({ id: meetingId }),
@@ -188,6 +191,21 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
         </div>
 
         <div className="ml-auto flex items-center gap-3">
+          <Button
+            className="gap-1.5"
+            disabled={!canRescheduleFromOutcome((meeting.meetingOutcome ?? 'not_set') as MeetingOutcome)}
+            size="sm"
+            title={
+              canRescheduleFromOutcome((meeting.meetingOutcome ?? 'not_set') as MeetingOutcome)
+                ? undefined
+                : 'This meeting already happened — book a new meeting instead of rescheduling.'
+            }
+            variant="outline"
+            onClick={() => void reschedule(meetingId)}
+          >
+            <CalendarClockIcon className="size-4" />
+            <span className="hidden sm:inline">Reschedule</span>
+          </Button>
           <SyncStatusIndicator status={syncStatus} />
           <div className="hidden h-10 w-32 sm:block">
             <Logo variant="right" />
@@ -296,6 +314,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
       />
 
       <OutcomeReasonDialog />
+      <RescheduleDialog />
     </div>
   )
 }

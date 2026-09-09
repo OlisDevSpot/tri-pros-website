@@ -95,7 +95,7 @@ export function ScheduleView() {
     }
   }, [handleViewMeeting])
 
-  const { actions: meetingActions, DeleteConfirmDialog: CalendarDeleteDialog, OutcomeReasonDialog } = useMeetingActionConfigs<ScheduleCalendarEvent>({
+  const { actions: meetingActions, DeleteConfirmDialog: CalendarDeleteDialog, OutcomeReasonDialog, RescheduleDialog } = useMeetingActionConfigs<ScheduleCalendarEvent>({
     onView: handleViewCalendarEvent,
     onAssignOwner: handleAssignOwner,
   })
@@ -158,6 +158,7 @@ export function ScheduleView() {
       />
       <CalendarDeleteDialog />
       <OutcomeReasonDialog />
+      <RescheduleDialog />
 
       {/* New activity form */}
       <ActivityForm open={activityFormOpen} onOpenChange={setActivityFormOpen} />
