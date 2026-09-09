@@ -47,6 +47,13 @@ export interface EntityActionClickConfig<TEntity> {
   isLoading?: boolean
   /** Optional disabled state */
   isDisabled?: boolean
+  /**
+   * Per-entity disabled check with a human reason. Returns the reason string
+   * when the action can't run for THIS entity (item renders disabled with a
+   * tooltip), or null when enabled. Use for row-varying gates (e.g. reschedule
+   * only from did-not-occur outcomes) that a static `isDisabled` can't express.
+   */
+  getDisabledReason?: (entity: TEntity) => string | null
 }
 
 /** Sub-menu (select) action — shows options in a flyout, fires onSelect with entity + value. */
