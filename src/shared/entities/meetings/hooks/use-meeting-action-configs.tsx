@@ -8,7 +8,7 @@ import type { MeetingOutcome } from '@/shared/constants/enums'
 import { useCallback, useMemo, useState } from 'react'
 
 import { ROOTS } from '@/shared/config/roots'
-import { canRescheduleFromOutcome } from '@/shared/constants/enums/meetings'
+import { CANNOT_RESCHEDULE_REASON, canRescheduleFromOutcome } from '@/shared/constants/enums/meetings'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
 import { MEETING_ACTIONS } from '@/shared/entities/meetings/constants/actions'
 import { MEETING_OUTCOME_OPTIONS } from '@/shared/entities/meetings/constants/outcome-options'
@@ -138,7 +138,7 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
         getDisabledReason: (entity: T) =>
           canRescheduleFromOutcome((entity.meetingOutcome ?? 'not_set') as MeetingOutcome)
             ? null
-            : 'This meeting already happened — book a new meeting instead of rescheduling.',
+            : CANNOT_RESCHEDULE_REASON,
       },
       {
         action: MEETING_ACTIONS.createProposal,

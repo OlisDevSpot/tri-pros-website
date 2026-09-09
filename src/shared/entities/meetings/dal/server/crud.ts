@@ -1,10 +1,8 @@
 import type { Meeting } from '@/shared/db/schema'
 
-import { eq } from 'drizzle-orm'
 import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
-import { db } from '@/shared/db'
-import { meetings } from '@/shared/db/schema'
 import { OUTCOME_PIPELINE_MAP } from '@/shared/domains/pipelines/lib/outcome-pipeline-map'
+import { clearMeetingGCalFields } from '@/shared/entities/meetings/dal/server/google-calendar'
 import { addParticipant } from '@/shared/entities/meetings/dal/server/participants'
 import { resolveMeetingOwnerId } from '@/shared/entities/meetings/lib/resolve-owner'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
@@ -158,9 +156,7 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
           && row.gcalEventId
         ) {
           await deleteMeetingEventJob.dispatchOrThrow({ gcalEventId: row.gcalEventId })
-          await db.update(meetings)
-            .set({ gcalEventId: null, gcalEtag: null, gcalSyncedAt: null })
-            .where(eq(meetings.id, row.id))
+          await clearMeetingGCalFields(row.id)
         }
       },
     },

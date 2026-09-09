@@ -34,7 +34,7 @@ import { LoadingState } from '@/shared/components/states/loading-state'
 import { Button } from '@/shared/components/ui/button'
 import { Separator } from '@/shared/components/ui/separator'
 import { ROOTS } from '@/shared/config/roots'
-import { canRescheduleFromOutcome } from '@/shared/constants/enums/meetings'
+import { CANNOT_RESCHEDULE_REASON, canRescheduleFromOutcome } from '@/shared/constants/enums/meetings'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { hasCustomerProfileData } from '@/shared/entities/customers/lib/customer-predicates'
 import { useOutcomeChange } from '@/shared/entities/meetings/hooks/use-outcome-change'
@@ -198,7 +198,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
             title={
               canRescheduleFromOutcome((meeting.meetingOutcome ?? 'not_set') as MeetingOutcome)
                 ? undefined
-                : 'This meeting already happened — book a new meeting instead of rescheduling.'
+                : CANNOT_RESCHEDULE_REASON
             }
             variant="outline"
             onClick={() => void reschedule(meetingId)}

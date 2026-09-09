@@ -18,7 +18,6 @@ import { Textarea } from '@/shared/components/ui/textarea'
 
 export interface RescheduleResult {
   confirmed: boolean
-  meetingId: string
   newScheduledFor: string
   reason: string
 }
@@ -70,7 +69,7 @@ function RescheduleDialogView({
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="reschedule-date">New date & time</Label>
+            <Label>New date & time</Label>
             <DateTimePicker
               value={scheduledFor}
               onChange={onDateChange}
@@ -137,7 +136,7 @@ export function useReschedule(): [
       const { pending: currentPending, reason: currentReason, scheduledFor: currentScheduledFor } = stateRef.current
 
       const handleCancel = () => {
-        stateRef.current.pending?.resolve({ confirmed: false, meetingId: '', newScheduledFor: '', reason: '' })
+        stateRef.current.pending?.resolve({ confirmed: false, newScheduledFor: '', reason: '' })
         setPending(null)
       }
 
@@ -148,7 +147,6 @@ export function useReschedule(): [
         }
         cur.pending.resolve({
           confirmed: true,
-          meetingId: cur.pending.meetingId,
           newScheduledFor: cur.scheduledFor.toISOString(),
           reason: cur.reason.trim(),
         })

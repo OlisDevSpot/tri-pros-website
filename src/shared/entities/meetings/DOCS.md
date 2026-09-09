@@ -131,6 +131,7 @@ When a proposal is sent on a meeting, the meeting's outcome **conditionally** fl
 User-initiated meeting-outcome changes go through `useOutcomeChange` (`hooks/use-outcome-change.tsx`) — the ONE controller that applies the reason gate (`outcomeRequiresReason` → reason modal → `setOutcomeWithReason`; else `updateOutcome`). Server-side derivations (see `#outcome-flips-on-proposal-sent`) bypass this controller by design. `updateOutcome`/`setOutcomeWithReason` are never called for user-initiated outcome changes outside that controller. Config-driven surfaces get it via `useMeetingActionConfigs`, which owns one instance and returns `changeOutcome` + `OutcomeReasonDialog`; consumers render the dialog like they render `DeleteConfirmDialog`. Adding a direct `updateOutcome.mutate` at a call site is the bypass this rule exists to prevent.
 
 ### outcome-cancelled-means-archived
+
 `cancelled` canonically means **archived**: the meeting did not happen and is
 not currently being rescheduled, but the record is kept. It is negative
 sentiment and maps to the `rehash` pipeline (customer returns to the recall
@@ -140,6 +141,7 @@ Setting an outcome to `cancelled` removes the meeting's Google Calendar event
 (the meeting row is preserved); see `#gcal-removed-on-cancel`.
 
 ### gcal-removed-on-cancel
+
 When a meeting's `meetingOutcome` transitions to `cancelled`, the `update.after`
 hook dispatches `deleteMeetingEventJob` for its `gcalEventId` and clears the
 `gcalEventId`/`gcalEtag`/`gcalSyncedAt` fields on the row. The row itself is
@@ -151,6 +153,7 @@ re-dispatch.
 **Enforced by**: convention (one-time transition guard in the hook)
 
 ### reschedule-cancels-and-rebooks
+
 The Reschedule action (`meetingsRouter.business.rescheduleMeeting`) keeps the
 original meeting and sets it to `cancelled`, then books a NEW meeting at the new
 time copying the original's owner + all participants + customer + project +
