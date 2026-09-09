@@ -56,6 +56,7 @@ export const MEETING_OUTCOME_LABELS: Record<MeetingOutcome, string> = {
   proposal_sent: 'Proposal Sent',
   proposal_created: 'Proposal Created',
   follow_up_needed: 'Follow-up Needed',
+  reschedule_needed: 'Reschedule Needed',
   not_good: 'Not Good',
   pns: 'PNS',
   npns: 'NPNS',

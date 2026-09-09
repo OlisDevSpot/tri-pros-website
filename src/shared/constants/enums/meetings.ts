@@ -46,6 +46,7 @@ export const selectableMeetingOutcomes = [
   'cancelled',
   'nra',
   'follow_up_needed',
+  'reschedule_needed',
 ] as const
 export type SelectableMeetingOutcome = (typeof selectableMeetingOutcomes)[number]
 
@@ -83,6 +84,7 @@ export type MeetingOutcomeSentiment = 'positive' | 'neutral' | 'negative' | 'uns
 export const MEETING_OUTCOME_SENTIMENT: Record<MeetingOutcome, MeetingOutcomeSentiment> = {
   not_set: 'unset',
   follow_up_needed: 'neutral',
+  reschedule_needed: 'neutral',
   proposal_created: 'neutral',
   proposal_sent: 'neutral',
   converted_to_project: 'positive',
@@ -107,7 +109,7 @@ export function isNegativeOutcome(outcome: MeetingOutcome): boolean {
  * follow_up_needed. not_set (unset) and the positive outcomes never require one.
  */
 export function outcomeRequiresReason(outcome: MeetingOutcome): boolean {
-  return isNegativeOutcome(outcome) || outcome === 'follow_up_needed'
+  return isNegativeOutcome(outcome) || outcome === 'follow_up_needed' || outcome === 'reschedule_needed'
 }
 
 /** Outcomes that flag a meeting as needing agent attention (action queue). */
@@ -119,6 +121,23 @@ export const DECIDED_OUTCOMES: MeetingOutcome[] = meetingOutcomes.filter(o => o 
 /** Outcomes that keep a meeting "live" — everything except the two that mean it never happened. */
 export const LIVE_MEETING_OUTCOMES: MeetingOutcome[]
   = meetingOutcomes.filter(o => o !== 'cancelled' && o !== 'no_show')
+
+/**
+ * Outcomes where the meeting did NOT physically occur — the only states a
+ * Reschedule (cancel-and-rebook) may start from. Orthogonal to sentiment: it
+ * cuts across unset / neutral / negative, so it cannot derive from the
+ * sentiment map. Single source for the UI action gate AND the server guard.
+ */
+export const DID_NOT_OCCUR_OUTCOMES = [
+  'not_set',
+  'reschedule_needed',
+  'no_show',
+  'cancelled',
+] as const satisfies readonly MeetingOutcome[]
+
+export function canRescheduleFromOutcome(outcome: MeetingOutcome): boolean {
+  return (DID_NOT_OCCUR_OUTCOMES as readonly MeetingOutcome[]).includes(outcome)
+}
 
 // Energy-efficient trade classification (for program qualification)
 export const energyEfficientTradeAccessors = ['insulation', 'hvac', 'windows', 'solar'] as const
