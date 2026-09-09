@@ -18,7 +18,7 @@ Operational rules for the four-tier backend split. Full rationale in [ADR-0003](
 Before creating any new backend file: *Does this code make HTTP calls to an external system?*
 
 - **Yes** → it goes in a **provider** (`services/providers/<name>/`)
-- **No, but it orchestrates business logic** → **internal service** (`services/<x>.service.ts`)
+- **No, but it orchestrates business logic** → **internal service** (`services/<x>.service.ts`) **when it coordinates a provider/external system or cross-cutting infra**. Pure entity-CRUD flows (compose entity CRUD + notes/participants, no external coordination) orchestrate in the **tRPC router** instead — e.g. `meetings.business.setOutcomeWithReason` / `rescheduleMeeting`.
 - **No, it's pure local computation** (PDF gen, formatting, math) → **shared lib** (`shared/lib/<x>/`)
 - **It does BOTH business logic AND raw HTTP** → split it. Extract HTTP into a provider; the orchestrator stays in `services/`.
 

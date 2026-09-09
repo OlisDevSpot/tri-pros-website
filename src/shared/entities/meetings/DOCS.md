@@ -20,8 +20,8 @@ Customer ──► Meeting ──► Proposal
 
 `meetings.ownerId` is a **permission level**, not a meeting role. It answers "who can delete/fully-edit this meeting?" The owner is the user who created the meeting record.
 
-- If info@ (system account) creates → info@ is owner. The meeting has no implicit sales agent.
-- If any other user creates → that user is owner AND implicitly fills all participation roles (sales_agent, etc.) until explicit participants are added.
+- If info@ (system account) creates → info@ is owner. The meeting has no implicit primary rep.
+- If any other user creates → that user is owner AND is implicitly the meeting's primary rep (equivalent to the `owner` participant role) until explicit participants are added.
 - Only the owner OR a super-admin can delete a meeting.
 
 **Why**: ownership controls permissions (delete, full update). Participation roles control meeting-contextual function (who's the sales rep, who's QA). These are orthogonal concerns — see `#participant-roles-are-meeting-contextual`.
@@ -34,7 +34,7 @@ The system account (`info@triprosremodeling.com`, resolved via `getSystemOwnerId
 
 When info@ owns a meeting with no participants: the meeting has **no sales agent**. It's an unassigned meeting waiting for dispatch.
 
-When any other user owns a meeting with no participants: that user **implicitly fills all roles** (sales_agent, etc.) because someone has to do the work.
+When any other user owns a meeting with no participants: that user **implicitly fills the primary rep role** (equivalent to the `owner` participant) because someone has to do the work.
 
 **Why**: info@ is the company identity, not a person. Sean (sean@) is a person who happens to be super-admin. The system must distinguish between "company created this" and "a person created this" for dispatch logic.
 **Reference impl**: `src/shared/constants/system-users.ts` (`SYSTEM_OWNER_EMAIL`); `src/shared/entities/users/dal/server/system.ts` (`getSystemOwnerId`)
@@ -42,32 +42,32 @@ When any other user owns a meeting with no participants: that user **implicitly 
 
 ### participant-roles-are-meeting-contextual
 
-Participant roles describe a user's function **in the context of a specific meeting**, not their system-wide role. Current roles:
+Participant roles describe a user's function **in the context of a specific meeting**, not their system-wide role. Real, current roles (`meetingParticipantRoles`):
 
-- **`sales_agent`**: the rep running this meeting. The primary role for dispatch.
-- Future roles: `qa`, `financing`, `co_agent`, etc. — extensible as departments are added.
+- **`owner`**: the primary rep running this meeting — the dispatch-relevant role. At most one per meeting (Postgres partial unique index). This is a *participant role*, distinct from `meetings.ownerId` (the row-level permission owner, see `#ownership-model`) — the two are often but not always the same user, and the doubled "owner" name is a known naming collision, not two names for the same thing.
+- **`co_owner`**: a second rep with equal functional standing. At most one per meeting (partial unique index).
+- **`helper`**: any number of additional participants. Unconstrained.
 
-The `owner` role is **removed** from participants. Ownership lives on `meetings.ownerId` (the row column), not in the participants table. The participants table only tracks meeting-contextual functional roles.
+**Write capability is separate from participant role.** Whether a user can create/read/update a Meeting at all comes from the CASL `agent` role (`can('read'|'create'|'update'|'own', 'Meeting')` — see `src/shared/domains/permissions/abilities.ts`), not from holding a participant role. A participant row only describes function within a meeting the user is already permitted to act on (dispatch status, visibility bridging) — it is not itself the permission gate.
 
 The `(meetingId, userId)` unique constraint prevents the same user holding multiple roles on one meeting.
 
-**Why**: the old system had redundancy — `ownerId` on the row AND an `owner` participant. Ownership is a permission concern (who can delete?); participation is a functional concern (who's the sales rep?). Separating them makes both systems cleaner.
-**Reference impl**: `src/shared/db/schema/meeting-participants.ts` (indexes, planned refactor); `dal/server/participants.ts` (helpers)
-**Enforced by**: Postgres unique constraint + convention
-**Status**: PLANNED — current code still uses `owner`/`co_owner`/`helper` roles. Migration tracked in GitHub issues.
+**Why**: `meetings.ownerId` is a permission concern (who can delete/fully-edit?); participation is a functional concern (who's the primary rep, who's the co-rep, who's just along). Separating them lets both systems evolve independently — see `#ownership-model` for the ownership half.
+**Reference impl**: `src/shared/constants/enums/meeting-participants.ts` (`meetingParticipantRoles`); `src/shared/db/schema/meeting-participants.ts` (partial unique indexes on `owner`/`co_owner`); `dal/server/participants.ts` (`getOwnerCoOwnerForMeetings`, `getParticipantByRole`); `src/shared/domains/permissions/abilities.ts` (CASL `agent` role grants)
+**Enforced by**: Postgres unique constraint (one `owner`, one `co_owner` per meeting) + CASL ability checks (`can('read'|'create'|'update'|'own', 'Meeting')`) + convention
 
 ### dispatched-derived
 
-A meeting is **dispatched** when it has a sales agent — either explicit or implicit:
+A meeting is **dispatched** when it has a primary rep — either explicit or implicit:
 
-- Owner is system account (info@) + no `sales_agent` participant → **not dispatched**
-- Owner is system account (info@) + has `sales_agent` participant → **dispatched**
-- Owner is any real person + no participants → **dispatched** (owner implicitly fills sales_agent)
-- Owner is any real person + has `sales_agent` participant → **dispatched** (explicit assignment)
+- Row owner is system account (info@) + no `owner` participant → **not dispatched**
+- Row owner is system account (info@) + has `owner` participant → **dispatched**
+- Row owner is any real person + no participants → **dispatched** (that person implicitly fills the `owner` participant role)
+- Row owner is any real person + has `owner` participant → **dispatched** (explicit assignment)
 
 `isDispatched` is a **derived boolean** — computed from ownerId + participants, never stored.
 
-**Why**: dispatch status determines whether a meeting is actionable. A meeting created by info@ with no sales agent is an inbox item waiting for assignment. A meeting created by an agent is immediately actionable.
+**Why**: dispatch status determines whether a meeting is actionable. A meeting created by info@ with no primary rep is an inbox item waiting for assignment. A meeting created by an agent is immediately actionable.
 **Reference impl**: planned — `lib/is-dispatched.ts` helper
 **Enforced by**: convention (derived, never stored)
 
@@ -130,6 +130,23 @@ When a proposal is sent on a meeting, the meeting's outcome **conditionally** fl
 
 User-initiated meeting-outcome changes go through `useOutcomeChange` (`hooks/use-outcome-change.tsx`) — the ONE controller that applies the reason gate (`outcomeRequiresReason` → reason modal → `setOutcomeWithReason`; else `updateOutcome`). Server-side derivations (see `#outcome-flips-on-proposal-sent`) bypass this controller by design. `updateOutcome`/`setOutcomeWithReason` are never called for user-initiated outcome changes outside that controller. Config-driven surfaces get it via `useMeetingActionConfigs`, which owns one instance and returns `changeOutcome` + `OutcomeReasonDialog`; consumers render the dialog like they render `DeleteConfirmDialog`. Adding a direct `updateOutcome.mutate` at a call site is the bypass this rule exists to prevent.
 
+### outcome-cancelled-means-archived
+`cancelled` canonically means **archived**: the meeting did not happen and is
+not currently being rescheduled, but the record is kept. It is negative
+sentiment and maps to the `rehash` pipeline (customer returns to the recall
+pool). Distinguish from `no_show` — the customer failed to appear at the
+scheduled time — which is also negative/rehash but records a different fact.
+Setting an outcome to `cancelled` removes the meeting's Google Calendar event
+(the meeting row is preserved); see `#gcal-removed-on-cancel`.
+
+### reschedule-cancels-and-rebooks
+The Reschedule action (`meetingsRouter.business.rescheduleMeeting`) keeps the
+original meeting and sets it to `cancelled`, then books a NEW meeting at the new
+time copying the original's owner + all participants + customer + project +
+type (outcome resets to `not_set`), and posts one customer note. Available only
+from `DID_NOT_OCCUR_OUTCOMES` (`canRescheduleFromOutcome`) so a meeting that
+already happened can never have its disposition clobbered.
+
 ### trade-selections-snapshot-source
 
 `meetings.flowStateJSON.tradeSelections` is the meeting-time scope picker output. On proposal creation, the create handler snapshots these into the proposal's SOW (`projectJSON.data.sow`). After snapshot, the proposal SOW is independent.
@@ -188,10 +205,10 @@ Meeting `flowStateJSON.dealStructure` carries the agent's in-meeting pricing scr
 - **Storing computed deal values** (`finalTcp`, `monthlyPayment`, `depositPercent`) on the meeting. Always derive.
 - **Joining `meetingParticipants` directly into a meetings list query without `getOwnerCoOwnerForMeetings`.** The raw join cross-products when duplicates exist; the batch helper deduplicates safely.
 - **Re-snapshotting trade selections from meeting on proposal update.** Snapshot is at create only.
-- **Trusting `meetings.ownerId` as the salesperson.** Owner is a permission level, not a functional role. Check participant `sales_agent` role (or implicit owner-fills-roles for non-system owners). See `#ownership-model`.
+- **Trusting `meetings.ownerId` as the salesperson.** `meetings.ownerId` is a permission level, not a functional role. Check the `owner` participant role (or implicit owner-fills-role for non-system row owners). See `#ownership-model`.
 - **Treating the system account (info@) as a person.** It cannot be dispatched, cannot be a sales agent. See `#system-account-not-a-person`.
 - **Storing `isDispatched` as a column.** Always derive from ownerId + participants. See `#dispatched-derived`.
-- **Using `owner` as a participant role.** Ownership lives on `meetings.ownerId`. Participant roles are meeting-contextual functions (`sales_agent`, etc.). See `#participant-roles-are-meeting-contextual`.
+- **Conflating `meetings.ownerId` (row permission owner) with the `owner` participant role (primary rep).** They track different concerns on different tables and are not always the same user. See `#ownership-model` and `#participant-roles-are-meeting-contextual`.
 
 ## See also
 
