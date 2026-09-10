@@ -112,34 +112,40 @@ export const proposalServerSpec = {
 
 ## Step 5: Lifecycle Hooks (optional)
 
-Add hooks to your spec for data enrichment (before) and side effects (after):
+Hooks NEVER live on the spec (`spec.hooks`/`spec.duplicate` were deleted — CRUD-DAL
+sub-plans A/D, 2026-08). They live in the **config factory** passed to
+`createCrudDal` in `dal/server/crud.ts`, and the exported handlers are consumed as
+`<entity>Crud.<handler>`:
 
 ```ts
-hooks: {
-  create: {
-    before(input, ctx) {
-      return { ...input, ownerId: ctx.session!.user.id }
-    },
-    async after(row, ctx) {
-      await someService.onCreated(row, ctx)
+// dal/server/crud.ts
+export const proposalCrud = createCrudDal(proposalServerSpec, () => ({
+  hooks: {
+    create: {
+      before(input, ctx) {
+        return { ...input, ownerId: ctx.session!.user.id }
+      },
+      async after(row, ctx) {
+        await someService.onCreated(row, ctx)
+      },
     },
   },
-},
+  // Declarative duplicate config (if the entity supports duplication):
+  duplicate: {
+    exclude: ['createdAt', 'updatedAt', 'status'],
+    overrides: (source, ctx) => ({
+      label: `Copy of ${source.label}`,
+      ownerId: ctx.session!.user.id,
+    }),
+  },
+}))
 ```
 
-Add declarative duplicate config if the entity supports duplication:
-
-```ts
-duplicate: {
-  exclude: ['createdAt', 'updatedAt', 'status'],
-  overrides: (source, ctx) => ({
-    label: `Copy of ${source.label}`,
-    ownerId: ctx.session!.user.id,
-  }),
-},
-```
-
-Hooks should be thin orchestrators. Extract business logic to `lib/` helpers. Use existing services for orchestration. See `src/trpc/DOCS.md#lifecycle-hooks` for the full hook contract.
+Entities with no hooks pass no factory: `createCrudDal(spec)`. Hooks should be thin
+orchestrators — extract business logic to `lib/` helpers. Reference impls:
+`src/shared/entities/meetings/dal/server/crud.ts`,
+`src/shared/entities/proposals/dal/server/crud.ts`. Full hook contract:
+`src/trpc/DOCS.md`.
 
 ---
 
@@ -157,7 +163,7 @@ import { proposalSchemas, proposalServerSpec } from '@/shared/entities/proposals
 export const proposalsRouter = createEntityRouter(proposalServerSpec, (entity) =>
   createTRPCRouter({
     // CRUD sub-router — 5 single-row operations with full client type inference.
-    // Lifecycle enrichment lives on spec.hooks, not in handler overrides.
+    // Lifecycle enrichment lives in the createCrudDal config factory (dal/server/crud.ts), not in handler overrides.
     crud: createCrudRouter({
       spec: proposalServerSpec,
       schemas: { ...proposalSchemas, id: z.string().uuid() },
@@ -225,7 +231,7 @@ trpc.proposalsRouter.crud.getById.useQuery({ id, token: shareToken })
 
 ## Common variations
 
-- **Enrich or derive data on create/update**: use `spec.hooks.create.before` / `spec.hooks.update.before`. These run at the DAL layer before the DB write and return enriched input. Prefer hooks over handler overrides for data transformation.
+- **Enrich or derive data on create/update**: use `hooks.create.before` / `hooks.update.before` in the entity's `createCrudDal` config factory (`dal/server/crud.ts`). These run at the DAL layer before the DB write and return enriched input. Prefer config-factory hooks over handler overrides for data transformation. Never put hooks on the spec.
 - **Override a CRUD handler** (last resort — bypasses hooks entirely): pass `handlers: { create: customCreateDal }` to `createCrudRouter`. The custom handler must match `CrudHandlers<TTable, TId>` for that slot. Non-overridden slots use the generic DAL defaults from `createCrudDal(spec)`.
 - **Non-`id` primary key** (serial integer, custom column name, etc.): set `primaryKey` on the spec and pass `id: z.number().int()` in the schemas config. Use `EntityServerSpec<typeof table, number>` for the `TId` generic.
 - **Behavior not covered by any spec field**: write it as a business procedure on the business sub-router. If the same pattern appears across 2+ entities, propose adding it as a named typed spec field — that's the promotion bar.

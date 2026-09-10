@@ -257,7 +257,7 @@ Provider functions accept and return provider-native types (`ZohoEnvelope`, `QbI
 
 ### background-side-effects-via-qstash-jobs
 
-Side effects fired from a tRPC mutation, a Route Handler, or an Entity hook (`spec.hooks.{op}.{before,after}`) MUST go through a QStash job declared with `createJob` from `@/shared/services/providers/upstash/lib/create-job`. **Never** raw `void promise.catch(...)`. **Never** `after()` from `next/server` for anything you actually care about landing.
+Side effects fired from a tRPC mutation, a Route Handler, or an entity CRUD hook (the `hooks.{op}.{before,after}` config-factory slots in `dal/server/crud.ts` — never on the spec) MUST go through a QStash job declared with `createJob` from `@/shared/services/providers/upstash/lib/create-job`. **Never** raw `void promise.catch(...)`. **Never** `after()` from `next/server` for anything you actually care about landing.
 
 ```ts
 // 1. Declare the job in src/shared/services/providers/upstash/jobs/

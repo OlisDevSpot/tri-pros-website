@@ -2,7 +2,7 @@
 
 A **Proposal** is a quoted scope-of-work delivered to a customer for review and optional e-signature. Customer (1) → Meeting (many) → Proposal (many). Approval is a precondition for Project creation (a project can't exist without a contract), but is not itself the trigger — see `#conversion-trigger`.
 
-This directory holds: schemas (`schemas/`), types (`types.ts`), enum constants and action configs (`constants/`), computed-value helpers + server spec (`lib/`), CRUD + business DAL (`dal/server/`), action-config hooks (`hooks/`), and reusable components (`components/`). The server spec at `lib/server-spec.ts` is consumed by `src/trpc/routers/proposals.router/`.
+This directory holds: schemas (`schemas/`), types (`types.ts`), enum constants and action configs (`constants/`), computed-value helpers + server spec (`lib/`), CRUD handlers + lifecycle hooks + business DAL (`dal/server/` — hooks live in the `createCrudDal` config factory at `dal/server/crud.ts`, never on the spec), action-config hooks (`hooks/`), and reusable components (`components/`). The server spec at `lib/server-spec.ts` is consumed by `src/trpc/routers/proposals.router/`.
 
 ## Lifecycle
 
@@ -28,7 +28,7 @@ Status transitions are convention-enforced in handlers; no DB CHECK constraint g
 `proposal.kind` is `'initial-sale'` if the meeting has no project at insert time, `'additional-work'` if it does. Server-derived from `meeting.projectId` — never accepted as client input.
 
 **Why**: kind is an aggregate of project linkage; agents can't pick it independently of the meeting's project state without drift.
-**Reference impl**: `lib/derive-proposal-kind.ts`, applied in `lib/server-spec.ts:hooks.create.before`
+**Reference impl**: `lib/derive-proposal-kind.ts`, applied in `dal/server/crud.ts:hooks.create.before` (config factory)
 **Enforced by**: `insertProposalSchema.omit({ kind: true })` + server derivation
 
 ### kind-frozen-after-insert
@@ -44,7 +44,7 @@ Once set at insert, `kind` is never re-derived. If the meeting later acquires a 
 Every proposal gets a unique share token at insert: `tpr-{16 random hex}`. Stored on `proposals.token`. Tokens are permanent — never rotated, never expired.
 
 **Why**: a customer needs to view their proposal without logging in; the token IS the authorization for that read. Permanence means the URL emailed once stays valid.
-**Reference impl**: `lib/server-spec.ts:hooks.create.before` (generation); `lib/server-spec.ts` (`shareable.tokenColumn`)
+**Reference impl**: `dal/server/crud.ts:hooks.create.before` (generation); `lib/server-spec.ts` (`shareable.tokenColumn` — the one spec-level field here)
 **Enforced by**: server-derived; `token` omitted from `insertProposalSchema`
 
 ### sow-snapshot-from-meeting-on-create
@@ -52,7 +52,7 @@ Every proposal gets a unique share token at insert: `tpr-{16 random hex}`. Store
 When creating a proposal, if the meeting has `flowStateJSON.tradeSelections` and the input has no existing SOW, the create handler snapshots trade selections into `projectJSON.data.sow`. After creation, the SOW is independent of the meeting's trade selections.
 
 **Why**: the agent's meeting-time scope picks should flow into the proposal as a starting point — but the proposal is the contract; once authored, it can't be retroactively re-driven by the meeting state.
-**Reference impl**: `lib/server-spec.ts:hooks.create.before` (reads meeting via `meetingCrud.getById`, snapshots tradeSelections)
+**Reference impl**: `dal/server/crud.ts:hooks.create.before` (reads meeting via `meetingCrud.getById`, snapshots tradeSelections)
 **Enforced by**: convention
 
 ### shareable-via-token
@@ -206,7 +206,7 @@ a draft (the retired auto-draft stage is why the old gate misfired; see ADR-0004
 | `inflight-locked` | `contractSentAt` set, not terminal | Contract out for signature | Deliberate: recall the envelope from the review page |
 | `terminal-locked` | `status = 'approved'` OR `contractSignedAt` OR `contractDeclinedAt` | Approved (project minted), signed, or declined | **None.** Changes happen on a duplicated/new proposal. Declined is permanent by decision — no re-request, no thaw |
 
-The lock is **whole-proposal**, field-scoped: the `update.before` hook in `lib/server-spec.ts`
+The lock is **whole-proposal**, field-scoped: the `update.before` hook in `dal/server/crud.ts` (config factory)
 rejects updates touching user-authored content (`frozenProposalLockedFields` — label, `projectJSON`, the
 six W3 scalar columns, financeOptionId, meetingId — including the share-token path) whenever the
 state isn't `unlocked` (`precondition-failed: proposal_frozen`). Lifecycle fields (status,
@@ -222,7 +222,7 @@ the draft lifecycle manually. Known bypass until the tightening pass: `ai/client
 **Why**: a draft is cheap and agent-owned, so its lock should be cheap to undo; a sent
 contract is a customer-facing commitment, so its lock demands a deliberate recall; a signed
 or approved contract is a business fact, so its lock is permanent.
-**Reference impl**: `lib/proposal-lock.ts` (canonical), enforced at `lib/server-spec.ts:hooks.update.before`,
+**Reference impl**: `lib/proposal-lock.ts` (canonical), enforced at `dal/server/crud.ts:hooks.update.before`,
 `dal/server/mutations.ts:replaceProposalIncentives`, `contracts.router.ts:applyEnvelopeContext`,
 surfaced in `features/proposal-flow/ui/views/edit-proposal-view.tsx`.
 **Enforced by**: Zod-free structural predicate + DAL probe (`getProposalLockSignals`); UI is
@@ -365,7 +365,7 @@ The proposal lifecycle (`status`, `sentAt`, `approvedAt`) and the contract lifec
 Duplicating a proposal: status resets to `draft`, ownership reassigns to the current user, token + kind are freshly server-derived via `hooks.create.before` (which fires automatically because duplicate routes through `createImpl`). `duplicateImpl` copies the whole source row minus `spec.duplicate.exclude` + the PK, then applies `spec.duplicate.overrides` and routes the result through `createImpl` — which Zod-parses it against `insertProposalSchema`. So what actually survives is: `projectJSON`, the Wave-3 scalars (`priceDisplayMode`, `startingTcpCents`, `depositAmountCents`, `cashInDealCents`, `miscPriceCents`, `envelopeDocumentIds`), and `financeOptionId` / `meetingId`. The frozen blobs do NOT survive — `insertProposalSchema.omit()` strips `formMetaJSON` and `fundingJSON`, so duplicates are born with both NULL. `finalTcpCents` / `calcVersion` are likewise omitted and re-derived by `create.after`. Global incentive ROWS are not part of the row copy at all; `duplicateProposalWithIncentives` clones them explicitly and re-runs the rollup (see `dal/server/duplicate.ts`).
 
 **Why**: a duplicate is "start a new proposal from this template," not "clone." Server-derivation prevents the duplicate from inheriting stale state (wrong kind if the meeting has changed projects, an existing-but-disclosed share token, etc.).
-**Reference impl**: `lib/server-spec.ts:duplicate` (exclude + overrides config); `lib/server-spec.ts:hooks.create.before` (kind + token derivation fires on every create, including duplicates)
+**Reference impl**: `dal/server/crud.ts:duplicate` (exclude + overrides config); `dal/server/crud.ts:hooks.create.before` (kind + token derivation fires on every create, including duplicates)
 **Enforced by**: declarative duplicate config on the spec
 
 **Global incentive rows ARE copied — via a router-level override, not the spec.** `proposal_incentives` (Wave 2 child table) is invisible to `spec.duplicate` — the generic `duplicateImpl` (`dal-conventions.md`'s "CRUD `duplicate` slot does NOT copy child rows" rule) only ever touches `spec.table`, and `create.after` would recompute `final_tcp_cents` against zero rows, silently dropping discounts/exclusive-offers and overstating the duplicate's price. `dal/server/duplicate.ts:duplicateProposalWithIncentives` wraps `proposalCrud.duplicate`, copies the source proposal's GLOBAL rows (`sow_item_id IS NULL`) onto the new id, and re-runs `recomputeProposalFinancials`. Wired as the `crud.duplicate` handler override in `proposals.router/index.ts` (see `create-crud-router.ts`'s `handlers` escape hatch — same pattern `customers.router` uses for `getById`). This is the override the dal-conventions rule tells you to write.

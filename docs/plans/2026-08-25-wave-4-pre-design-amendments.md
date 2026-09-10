@@ -11,6 +11,7 @@
 > load-bearing findings are reproduced here with file:line.
 >
 > Verdict: **W4's scope holds; its mechanics target a deleted architecture.**
+> **See §R (2026-09-09 rulings) — it overrules A1/A2/B2/B3 details below.**
 > Waves 1–3 artifacts are NOT legacy-shaped (child tables + business-DAL
 > mutations are still what `dal-conventions.md` prescribes) — but three gaps
 > they left would be inherited by W4 unless fixed first.
@@ -40,6 +41,30 @@
 | B8 | **Column design facts:** trade/scopes are **Notion string ids** (never FK `trades.id`; precedent `x_project_scopes.scopeId` text) + `trade_label` snapshot; Tiptap is stored as BOTH `contentJSON` (canonical — PDF/Zoho/copy parse it) and `html` (homeowner page + AI summary) → both columns; money → `*_cents bigint` (dollars floats today); `data.label` already mirrored to `proposals.label`; `meta.enabled` has zero readers (drop). Indexes: `(proposal_id, position)`, `(trade_id)`, `cost_lines(sow_item_id)`, `incentives(proposal_id, sow_item_id)`. |
 | B9 | **Cutover rules learned at W3** (walkthrough addendum): deploy-first ordering; **never approve a plan containing `truncate … cascade`** — pre-empty with DELETE after unhooking FKs; check the FK closure via `pg_constraint`; fresh Neon snapshot (plan = 1 slot, PITR 6 h); every prod push needs its own explicit go (roadmap Decision 1 superseded); run `db:push:prod` from a tree whose `src/shared/db/schema` is exactly the deployed commit. Opportunistic: pgEnum→text on `proposals` per enum-standardization. |
 | B10 | **Consumers unchanged since 07-26**: Zoho/PDF SOW readers untouched (only `fb41da12`); analytics spec has no per-trade metrics yet — W4 should make per-trade revenue / section-price stats / cost-line margins cheap by design (B8 indexes). |
+
+## R. Oliver's rulings (2026-09-09) — these overrule anything above that conflicts
+
+1. **No transactions in the W4 save.** The tx approach was deferred in the CRUD
+   refactor epic; `withTx()` exists as a helper if ever needed, but the SOW save
+   is **sequential writes, no tx threading** — same naked+sequential stance as
+   the CRUD engine. Consequences: A1 keeps ONLY its calc_version-stamping half
+   (drop "tx-aware"); A2 is dropped (leave `replaceProposalIncentives` as-is);
+   B2's `withTx` wrapper is out — the one-abstraction rule stands, its body is
+   sequential.
+2. **Hooks NEVER on the spec — anywhere, including docs.** The hook site is the
+   `createCrudDal` config factory (`dal/server/crud.ts`); handlers consumed as
+   `<entity>Crud.<handler>`. Living docs purged of `spec.hooks` 2026-09-09
+   (add-an-entity Step 5, service-architecture, proposals/meetings DOCS.md,
+   ADR-0002 amendment). Dated plans/specs keep their historical text.
+3. **SOW save = ONE DAL abstraction + ONE tRPC leaf** — confirmed (B2 minus tx).
+4. **Nothing permissions-related in W4.** No `actor`, no visibility work, no
+   CASL changes — all of it is #285's (see the 2026-09-07 CASL re-grounding).
+   B3's "#285 actor" consideration and B4's token-path CASL confirmation are
+   design *inputs to be aware of*, not W4 work items; q4's exclusion mechanism
+   should be the dumbest thing that works (`getFullView({ includeCostLines })`
+   router-decided) and #285 rewires it later.
+5. **Semantics are critical**: names for new functions/constants/tables get
+   Oliver's sign-off before use (asked per design session, not invented).
 
 ## C. Sequencing (no blockers found)
 
