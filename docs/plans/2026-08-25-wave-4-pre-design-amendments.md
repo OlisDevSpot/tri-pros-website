@@ -64,7 +64,14 @@
    should be the dumbest thing that works (`getFullView({ includeCostLines })`
    router-decided) and #285 rewires it later.
 5. **Semantics are critical**: names for new functions/constants/tables get
-   Oliver's sign-off before use (asked per design session, not invented).
+   Oliver's sign-off before use. **Locked 2026-09-09:**
+   - DAL abstraction: `replaceProposalSow` (mirrors `replaceProposalIncentives`)
+   - tRPC leaf: `sow.replace` (small `sow` leaf router on proposals.router →
+     client calls `proposals.sow.replace`)
+   - JIT read helper: `toSowInputs` (mirrors `toFundingInputs`)
+   - Version constant: `CURRENT_CALC_VERSION` (stamped by the recompute
+     chokepoint; 1→2 on W4)
+   - Tables stay per spec: `proposal_sow_items`, `proposal_cost_lines`.
 
 ## C. Sequencing (no blockers found)
 
