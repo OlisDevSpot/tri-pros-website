@@ -1,4 +1,13 @@
-import type { MeetingStepConfig } from '@/features/meeting-flow/types'
+import type { MeetingStepId, MeetingStepLayout } from '@/features/meeting-flow/types'
+
+export interface MeetingStepConfig {
+  id: MeetingStepId
+  stepNumber: number
+  title: string
+  shortLabel: string
+  isCustomerFacing: boolean
+  layout: MeetingStepLayout
+}
 
 export const MEETING_STEPS: MeetingStepConfig[] = [
   {
@@ -7,6 +16,7 @@ export const MEETING_STEPS: MeetingStepConfig[] = [
     title: 'Navigating the Construction Industry',
     shortLabel: 'Who We Are',
     isCustomerFacing: true,
+    layout: 'presentation',
   },
   {
     id: 'specialties',
@@ -14,6 +24,7 @@ export const MEETING_STEPS: MeetingStepConfig[] = [
     title: 'Which Specialties Matter to You',
     shortLabel: 'Specialties',
     isCustomerFacing: true,
+    layout: 'page',
   },
   {
     id: 'portfolio',
@@ -21,6 +32,7 @@ export const MEETING_STEPS: MeetingStepConfig[] = [
     title: 'Past References & Projects',
     shortLabel: 'Portfolio',
     isCustomerFacing: true,
+    layout: 'page',
   },
   {
     id: 'deal-structure',
@@ -28,6 +40,7 @@ export const MEETING_STEPS: MeetingStepConfig[] = [
     title: 'Deal Structure',
     shortLabel: 'Deal',
     isCustomerFacing: false,
+    layout: 'page',
   },
   {
     id: 'program',
@@ -35,6 +48,7 @@ export const MEETING_STEPS: MeetingStepConfig[] = [
     title: 'Picking the Right Path',
     shortLabel: 'Program',
     isCustomerFacing: true,
+    layout: 'page',
   },
   {
     id: 'closing',
@@ -42,6 +56,7 @@ export const MEETING_STEPS: MeetingStepConfig[] = [
     title: 'Closing Summary',
     shortLabel: 'Close',
     isCustomerFacing: true,
+    layout: 'page',
   },
   {
     id: 'create-proposal',
@@ -49,6 +64,7 @@ export const MEETING_STEPS: MeetingStepConfig[] = [
     title: 'Create Proposal',
     shortLabel: 'Proposal',
     isCustomerFacing: false,
+    layout: 'page',
   },
 ]
 

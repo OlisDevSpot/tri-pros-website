@@ -73,13 +73,72 @@ export type MeetingStepId
     | 'closing'
     | 'create-proposal'
 
-export interface MeetingStepConfig {
-  id: MeetingStepId
-  stepNumber: number
+// ── Presentation (scroll-snap step layout) ─────────────────────────────────
+
+/** `page` = padded scrolling document; `presentation` = the step owns a snapping scroller. */
+export type MeetingStepLayout = 'page' | 'presentation'
+
+export type PointMedia
+  = | { type: 'photo', src: string, alt: string }
+    | { type: 'portrait', src: string, alt: string }
+    | { type: 'pair', before: string, after: string, alt: string }
+    | { type: 'placeholder', label: string }
+
+export interface PresentationDocument {
   title: string
-  shortLabel: string
-  isCustomerFacing: boolean
+  src: string
+  alt: string
 }
+
+export interface ProofItem {
+  value: string
+  label: string
+}
+
+/** What the pinned column shows for one section. */
+export interface PinnedSummary {
+  number?: number
+  title: string
+  line: string
+  count?: string
+}
+
+export type WhoWeAreSection
+  = | {
+    kind: 'hook'
+    id: string
+    title: string
+    subtitle: string
+    accent: string
+    image: string
+    imageAlt: string
+  }
+  | {
+    kind: 'credentials'
+    id: string
+    title: string
+    documents: PresentationDocument[]
+    proof: ProofItem[]
+  }
+  | {
+    kind: 'point'
+    id: string
+    number: number
+    title: string
+    line: string
+    proof: string
+    proofLabel: string
+    media: PointMedia
+  }
+  | {
+    kind: 'truth'
+    id: string
+    title: string
+    quote: string
+    ctaLabel: string
+    image: string
+    imageAlt: string
+  }
 
 // ── Flow Context (passed to step components) ────────────────────────────────
 
