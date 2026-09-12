@@ -37,7 +37,7 @@ export function TruthSection({ index, section, onContinue }: TruthSectionProps) 
           </p>
         </Reveal>
         <Reveal order={2}>
-          <Button className="mt-[1cqh]" size="lg" onClick={onContinue}>
+          <Button className="mt-[1cqh] min-h-11" size="lg" onClick={onContinue}>
             {section.ctaLabel}
             <ArrowRightIcon />
           </Button>

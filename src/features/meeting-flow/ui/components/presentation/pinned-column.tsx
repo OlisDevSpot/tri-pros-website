@@ -43,9 +43,9 @@ export function PinnedColumn({ summaries }: PinnedColumnProps) {
           <p className="font-sans text-[5.5cqw] font-semibold leading-[1.08] tracking-tight text-balance lg:text-[3.3cqw]">
             {current.title}
           </p>
-          <p className="text-[max(3cqw,0.875rem)] text-white/70 lg:text-[max(1.5cqw,0.875rem)]">{current.line}</p>
+          <p className="hidden text-[max(3cqw,0.875rem)] text-white/70 sm:block lg:text-[max(1.5cqw,0.875rem)]">{current.line}</p>
           {current.count && (
-            <p className="text-[max(2.4cqw,0.75rem)] text-white/50 tabular-nums lg:text-[max(1.15cqw,0.75rem)]">{current.count}</p>
+            <p className="hidden text-[max(2.4cqw,0.75rem)] text-white/50 tabular-nums sm:block lg:text-[max(1.15cqw,0.75rem)]">{current.count}</p>
           )}
         </motion.div>
       </AnimatePresence>

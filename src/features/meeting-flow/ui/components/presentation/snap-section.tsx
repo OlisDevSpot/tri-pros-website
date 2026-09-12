@@ -20,13 +20,11 @@ interface SnapSectionProps {
  * One snap target. The <section> box is never transformed: snap areas are computed
  * from the transformed border box, so every reveal lives on an inner element.
  *
- * `scrollMarginTop: 0` is load-bearing: globals.css gives every element
- * `scroll-margin-top: 80px` for the marketing site's fixed-header anchors, which
- * shifts every snap position up by 80px, so the scroller never rests on a section
- * boundary. The only band offset is the scroller's `scroll-pt-(--pin-h)`. Set
- * inline rather than as a utility because that file's own header records that
- * `@source` globbing is broken under the `(frontend)` route group, and snapping
- * must not depend on a class surviving content detection.
+ * `scrollMarginTop: 0` is load-bearing: `src/app/(frontend)/globals.css` sets a
+ * global `* { scroll-margin-top: 80px }` rule for the marketing site's fixed-header
+ * anchors, which would otherwise shift every snap position by 80px. This inline
+ * override is deliberate so it can't be lost to Tailwind's class-merge or
+ * clobbered by a caller-supplied `className`.
  */
 export function SnapSection({ index, id, labelledBy, children, className }: SnapSectionProps) {
   const ref = useRef<HTMLElement>(null)

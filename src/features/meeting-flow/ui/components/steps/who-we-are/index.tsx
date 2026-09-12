@@ -30,8 +30,9 @@ export function WhoWeAreStep({ onContinue }: WhoWeAreStepProps) {
             return <PointSection key={section.id} index={index} section={section} />
           case 'truth':
             return <TruthSection key={section.id} index={index} section={section} onContinue={onContinue} />
+          default:
+            throw new Error(`Unknown section kind: ${section satisfies never}`)
         }
-        return null
       })}
     </SnapPresentation>
   )

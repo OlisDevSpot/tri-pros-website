@@ -22,7 +22,7 @@ export function DocumentDialog({ document, onClose }: DocumentDialogProps) {
     <Dialog open={document !== null} onOpenChange={open => !open && onClose()}>
       <DialogContent
         aria-describedby={undefined}
-        className="h-[92dvh] w-[min(96vw,1100px)] max-w-none border-0 bg-[oklch(0.14_0.03_257)] p-2 sm:max-w-none"
+        className="h-[92dvh] w-[min(96vw,1100px)] max-w-none border-0 bg-[oklch(0.14_0.03_257)] p-2 text-white sm:max-w-none"
       >
         {document && (
           <>
