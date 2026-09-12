@@ -26,7 +26,7 @@ import { DealStructureStep } from '@/features/meeting-flow/ui/components/steps/d
 import { PortfolioStep } from '@/features/meeting-flow/ui/components/steps/portfolio-step'
 import { ProgramStep } from '@/features/meeting-flow/ui/components/steps/program-step'
 import { SpecialtiesStep } from '@/features/meeting-flow/ui/components/steps/specialties-step'
-import { WhoWeAreStep } from '@/features/meeting-flow/ui/components/steps/who-we-are-step'
+import { WhoWeAreStep } from '@/features/meeting-flow/ui/components/steps/who-we-are'
 import { SyncStatusIndicator } from '@/features/meeting-flow/ui/components/sync-status-indicator'
 import { Logo } from '@/shared/components/logo'
 import { ErrorState } from '@/shared/components/states/error-state'
@@ -175,7 +175,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
   return (
     <div className="flex h-full flex-col [--prevNextHeight:3.5rem]">
       {/* Header */}
-      <header className="relative flex shrink-0 items-center border-b border-border/40 px-4 py-2.5 md:px-6">
+      <header className="relative flex shrink-0 items-center border-b border-border/40 py-2.5">
         <Link
           className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
           href={ROOTS.dashboard.meetings.root()}
@@ -213,44 +213,45 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
         </div>
       </header>
 
-      {/* Step title bar */}
-      <div className="shrink-0 space-y-0.5 border-b border-border/20 px-4 pb-3 pt-5 text-center md:px-6">
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          {`Step ${currentStep} of ${TOTAL_STEPS}`}
-        </p>
-        <h1 className="text-lg font-bold tracking-tight md:text-xl">{stepConfig.title}</h1>
-      </div>
-
-      {/* Step content */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6 md:px-6">
-        {stepConfig.id === 'who-we-are' && <WhoWeAreStep />}
-        {stepConfig.id === 'specialties' && <SpecialtiesStep flowContext={flowContext} />}
-        {stepConfig.id === 'portfolio' && <PortfolioStep flowContext={flowContext} />}
-        {stepConfig.id === 'program' && (
-          <ProgramStep flowContext={flowContext} meetingType={meeting.meetingType} />
-        )}
-        {stepConfig.id === 'deal-structure' && <DealStructureStep flowContext={flowContext} />}
-        {stepConfig.id === 'closing' && (
-          <ClosingStep
-            flowContext={flowContext}
-            meetingOutcome={meeting.meetingOutcome}
-            onOutcomeChange={handleOutcomeChange}
-            proposalState={{
-              proposalCount: meeting.proposalCount ?? 0,
-              hasSentProposal: meeting.hasSentProposal ?? false,
-              hasApprovedProposal: meeting.hasApprovedProposal ?? false,
-            }}
-          />
-        )}
-        {stepConfig.id === 'create-proposal' && (
-          <CreateProposalStep flowContext={flowContext} meetingId={meetingId} />
-        )}
-      </div>
+      {/* Step content — presentation steps own their scroller; page steps share the padded one */}
+      {stepConfig.layout === 'presentation'
+        ? (
+            <>
+              <h1 className="sr-only">{stepConfig.title}</h1>
+              {stepConfig.id === 'who-we-are' && <WhoWeAreStep onContinue={handleNext} />}
+            </>
+          )
+        : (
+            <div className="min-h-0 flex-1 overflow-y-auto py-6">
+              <h1 className="sr-only">{stepConfig.title}</h1>
+              {stepConfig.id === 'specialties' && <SpecialtiesStep flowContext={flowContext} />}
+              {stepConfig.id === 'portfolio' && <PortfolioStep flowContext={flowContext} />}
+              {stepConfig.id === 'program' && (
+                <ProgramStep flowContext={flowContext} meetingType={meeting.meetingType} />
+              )}
+              {stepConfig.id === 'deal-structure' && <DealStructureStep flowContext={flowContext} />}
+              {stepConfig.id === 'closing' && (
+                <ClosingStep
+                  flowContext={flowContext}
+                  meetingOutcome={meeting.meetingOutcome}
+                  onOutcomeChange={handleOutcomeChange}
+                  proposalState={{
+                    proposalCount: meeting.proposalCount ?? 0,
+                    hasSentProposal: meeting.hasSentProposal ?? false,
+                    hasApprovedProposal: meeting.hasApprovedProposal ?? false,
+                  }}
+                />
+              )}
+              {stepConfig.id === 'create-proposal' && (
+                <CreateProposalStep flowContext={flowContext} meetingId={meetingId} />
+              )}
+            </div>
+          )}
 
       {/* Footer navigation + overlay triggers */}
       <footer className="relative shrink-0">
         {/* Context & Persona triggers — positioned above the nav bar */}
-        <div className="absolute bottom-full left-0 right-0 flex items-end justify-between px-4 pb-3 pointer-events-none md:px-6">
+        <div className="absolute bottom-full left-0 right-0 flex items-end justify-between pb-3 pointer-events-none">
           <div className="pointer-events-auto">
             <ContextPanelTrigger
               filledCount={contextFilledCount}
@@ -267,7 +268,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
         </div>
 
         <Separator />
-        <div className="flex h-(--prevNextHeight) items-center justify-between px-4 md:px-6">
+        <div className="flex h-(--prevNextHeight) items-center justify-between">
           <Button
             className="gap-2"
             disabled={currentStep === 1}

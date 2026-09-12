@@ -9,7 +9,6 @@ import {
 import { companyInfo } from '@/shared/constants/company'
 
 const primaryLicense = companyInfo.licenses[0]
-const generalLiability = companyInfo.insurances.find(i => i.label.includes('General Liability'))
 const numProjects = companyInfo.numProjects
 
 export const DUE_DILIGENCE_ITEMS = [
@@ -67,11 +66,4 @@ export const DUE_DILIGENCE_ITEMS = [
     stat: `${numProjects}+`,
     statLabel: 'Projects Completed',
   },
-] as const
-
-export const CREDENTIAL_ITEMS = [
-  { label: 'Licensed CA Contractor', value: `#${primaryLicense?.licenseNumber ?? '—'}` },
-  { label: 'General Liability', value: generalLiability?.coverage ?? '$1M Coverage' },
-  { label: 'Workmanship Warranty', value: '5 Years' },
-  { label: 'SoCal Projects', value: `${numProjects}+` },
 ] as const
