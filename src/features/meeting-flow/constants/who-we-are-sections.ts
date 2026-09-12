@@ -23,7 +23,7 @@ export const WHO_WE_ARE_SECTIONS: WhoWeAreSection[] = [
   {
     kind: 'hook',
     id: 'hook',
-    title: 'A successful project doesn\'t start on demolition day.',
+    title: 'A successful project doesn’t start on demolition day.',
     subtitle: 'It starts when you do your',
     accent: 'due diligence.',
     image: IMAGES.hook,
@@ -116,7 +116,7 @@ export const WHO_WE_ARE_SECTIONS: WhoWeAreSection[] = [
   {
     kind: 'truth',
     id: 'truth',
-    title: 'Success isn\'t about the finishes.',
+    title: 'Success isn’t about the finishes.',
     quote: 'Many times it boils down to communication, supervision, leadership, and accountability. That is what makes it the real deal.',
     ctaLabel: 'Continue to Specialties',
     image: IMAGES.truth,
@@ -137,6 +137,6 @@ export const WHO_WE_ARE_PINNED: PinnedSummary[] = WHO_WE_ARE_SECTIONS.map((secti
     case 'truth':
       return { title: 'The real deal', line: 'Done once. Done right.' }
     default:
-      throw new Error(`Unknown section kind: ${(section as any).kind}`)
+      throw new Error(`Unknown section kind: ${section satisfies never}`)
   }
 })
