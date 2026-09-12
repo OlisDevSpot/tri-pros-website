@@ -37,7 +37,7 @@ export function CredentialsSection({ index, section }: CredentialsSectionProps) 
       <div className="absolute inset-x-[6cqw] top-[5cqh]">
         <Reveal order={0}>
           <h2
-            className="max-w-[14ch] font-sans text-[6cqw] leading-[1.04] font-semibold tracking-tight text-balance lg:text-[4.8cqw]"
+            className="max-w-[14ch] font-sans text-[6cqw] leading-[1.04] font-semibold tracking-tight text-balance lg:max-w-none lg:text-[3.8cqw]"
             id={headingId}
           >
             {section.title}
@@ -45,7 +45,7 @@ export function CredentialsSection({ index, section }: CredentialsSectionProps) 
         </Reveal>
       </div>
 
-      <div className="absolute inset-x-[6cqw] top-[24cqh] bottom-[30cqh] lg:top-[20cqh] lg:right-[6cqw] lg:bottom-[26cqh] lg:left-auto lg:w-[50cqw]">
+      <div className="absolute inset-x-[6cqw] top-[24cqh] bottom-[30cqh] lg:top-[24cqh] lg:right-[6cqw] lg:bottom-[26cqh] lg:left-auto lg:w-[50cqw]">
         {section.documents.length === 0
           ? <PlaceholderSlot className="inset-0" label="License and certificate of insurance" />
           : section.documents.map((document, position) => (
