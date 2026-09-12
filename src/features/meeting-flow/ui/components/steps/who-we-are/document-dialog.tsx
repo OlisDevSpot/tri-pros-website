@@ -29,7 +29,7 @@ export function DocumentDialog({ document, onClose }: DocumentDialogProps) {
             <DialogTitle className="sr-only">{document.title}</DialogTitle>
             <button
               aria-label={`Close ${document.title}`}
-              className="relative block h-full w-full cursor-zoom-out outline-none"
+              className="relative block h-full w-full cursor-zoom-out outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
               type="button"
               onClick={onClose}
             >

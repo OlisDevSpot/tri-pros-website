@@ -24,7 +24,7 @@ export function PinnedColumn({ summaries }: PinnedColumnProps) {
 
   return (
     <aside
-      className="sticky top-0 z-10 grid h-(--pin-h) content-end gap-[1cqh] self-start border-b border-white/15 bg-(--presentation-ground) px-[6cqw] py-[3cqh] lg:h-[100cqh] lg:border-b-0 lg:px-[5cqw] lg:py-[5cqh]"
+      className="sticky top-0 z-10 grid h-(--pin-h) content-end gap-[1cqh] self-start border-b border-white/15 bg-(--presentation-ground) px-[6cqw] py-[3cqh] lg:h-[100cqh] lg:border-b-0 lg:px-[5cqw] lg:pt-[5cqh] lg:pb-[max(5cqh,var(--pres-chrome-b))]"
     >
       <AnimatePresence initial={false} mode="wait">
         <motion.div
@@ -43,9 +43,9 @@ export function PinnedColumn({ summaries }: PinnedColumnProps) {
           <p className="font-sans text-[5.5cqw] font-semibold leading-[1.08] tracking-tight text-balance lg:text-[3.3cqw]">
             {current.title}
           </p>
-          <p className="text-[3cqw] text-white/70 lg:text-[1.5cqw]">{current.line}</p>
+          <p className="text-[max(3cqw,0.875rem)] text-white/70 lg:text-[max(1.5cqw,0.875rem)]">{current.line}</p>
           {current.count && (
-            <p className="text-[2.4cqw] text-white/50 tabular-nums lg:text-[1.15cqw]">{current.count}</p>
+            <p className="text-[max(2.4cqw,0.75rem)] text-white/50 tabular-nums lg:text-[max(1.15cqw,0.75rem)]">{current.count}</p>
           )}
         </motion.div>
       </AnimatePresence>

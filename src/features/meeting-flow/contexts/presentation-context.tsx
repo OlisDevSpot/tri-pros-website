@@ -1,7 +1,7 @@
 'use client'
 
 import type { RefObject } from 'react'
-import { createContext, useContext } from 'react'
+import { createContext, use } from 'react'
 
 export interface PresentationContextValue {
   /** The snapping scroll container. Pass as `root` to every `useInView` inside. */
@@ -14,7 +14,7 @@ export interface PresentationContextValue {
 export const PresentationContext = createContext<PresentationContextValue | null>(null)
 
 export function usePresentation(): PresentationContextValue {
-  const ctx = useContext(PresentationContext)
+  const ctx = use(PresentationContext)
   if (!ctx) {
     throw new Error('usePresentation must be used inside <SnapPresentation>')
   }
@@ -25,5 +25,5 @@ export function usePresentation(): PresentationContextValue {
 export const SectionInViewContext = createContext(false)
 
 export function useSectionInView(): boolean {
-  return useContext(SectionInViewContext)
+  return use(SectionInViewContext)
 }

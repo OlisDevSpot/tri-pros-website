@@ -32,7 +32,7 @@ export function TruthSection({ index, section, onContinue }: TruthSectionProps) 
           </h2>
         </Reveal>
         <Reveal order={1}>
-          <p className="max-w-[34ch] font-serif text-[3.6cqw] leading-[1.35] text-white/85 italic lg:text-[2.6cqw]">
+          <p className="max-w-[34ch] font-serif text-[max(3.6cqw,0.875rem)] leading-[1.35] text-white/85 italic lg:text-[max(2.6cqw,0.875rem)]">
             {section.quote}
           </p>
         </Reveal>

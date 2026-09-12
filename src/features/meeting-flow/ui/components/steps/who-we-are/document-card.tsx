@@ -18,6 +18,9 @@ export function DocumentCard({ document, onOpen, className }: DocumentCardProps)
       aria-label={`Open ${document.title}`}
       className={cn(
         'block h-full w-full cursor-zoom-in bg-white p-[0.9cqw] shadow-2xl shadow-black/60 outline-none',
+        // Ring colour sits at zero width until hover, so the card answers a pointer
+        // without moving: a transform would shift a snap area's border box.
+        'ring-white/25 hover:ring-4',
         'focus-visible:ring-[3px] focus-visible:ring-ring/50',
         className,
       )}

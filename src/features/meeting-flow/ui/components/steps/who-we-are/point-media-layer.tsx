@@ -51,13 +51,13 @@ export function PointMediaLayer({ media }: PointMediaLayerProps) {
       <>
         <div className="absolute top-0 left-0 h-1/2 w-full overflow-hidden lg:h-full lg:w-1/2">
           <Image alt={`${media.alt}, before`} className="object-cover" draggable={false} fill sizes="(min-width: 1024px) 31vw, 100vw" src={media.before} />
-          <span className="absolute top-[3cqh] left-[3cqw] rounded-[3px] bg-black/55 px-[0.7em] py-[0.3em] font-sans text-[2.2cqw] font-semibold lg:text-[1.4cqw]">
+          <span className="absolute top-[3cqh] left-[3cqw] rounded-[3px] bg-black/55 px-[0.7em] py-[0.3em] font-sans text-[max(2.2cqw,0.75rem)] font-semibold lg:text-[max(1.4cqw,0.75rem)]">
             Before
           </span>
         </div>
         <div className="absolute bottom-0 left-0 h-1/2 w-full overflow-hidden lg:top-0 lg:right-0 lg:left-auto lg:h-full lg:w-1/2">
           <Image alt={`${media.alt}, after`} className="object-cover" draggable={false} fill sizes="(min-width: 1024px) 31vw, 100vw" src={media.after} />
-          <span className="absolute top-[3cqh] left-[3cqw] rounded-[3px] bg-white/90 px-[0.7em] py-[0.3em] font-sans text-[2.2cqw] font-semibold text-(--presentation-ground) lg:text-[1.4cqw]">
+          <span className="absolute top-[3cqh] left-[3cqw] rounded-[3px] bg-white/90 px-[0.7em] py-[0.3em] font-sans text-[max(2.2cqw,0.75rem)] font-semibold text-(--presentation-ground) lg:text-[max(1.4cqw,0.75rem)]">
             After
           </span>
         </div>
