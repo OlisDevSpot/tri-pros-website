@@ -12,13 +12,10 @@ import {
 } from 'lucide-react'
 import { PersonaProfileSection, SeverityBadge } from '@/features/meeting-flow/ui/components/persona-profile-section'
 import { LoadingState } from '@/shared/components/states/loading-state'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/shared/components/ui/sheet'
 import { useTRPC } from '@/trpc/helpers'
 
 interface PersonaProfilePanelProps {
   meetingId: string
-  isOpen: boolean
-  onOpenChange: (open: boolean) => void
 }
 
 function FearsList({ fears }: { fears: CustomerPersonaProfile['fears'] }) {
@@ -196,35 +193,30 @@ function ProfileContent({ profile }: { profile: CustomerPersonaProfile }) {
   )
 }
 
-export function PersonaProfilePanel({ isOpen, meetingId, onOpenChange }: PersonaProfilePanelProps) {
+/**
+ * The persona profile body. Mount it only while the Persona section is open so
+ * the profile query keeps running lazily, exactly as it did behind the old Sheet.
+ */
+export function PersonaProfilePanel({ meetingId }: PersonaProfilePanelProps) {
   const trpc = useTRPC()
 
   const profileQuery = useQuery(
-    trpc.meetingFlowRouter.getPersonaProfile.queryOptions(
-      { meetingId },
-      { enabled: isOpen },
-    ),
+    trpc.meetingFlowRouter.getPersonaProfile.queryOptions({ meetingId }),
   )
 
   return (
-    <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full overflow-y-auto p-0 sm:max-w-md" side="right">
-        <SheetHeader className="border-b border-border/40 px-4 py-3">
-          <SheetTitle className="text-base">Customer Persona Profile</SheetTitle>
-        </SheetHeader>
+    <div className="-mx-4">
+      {profileQuery.isLoading && (
+        <LoadingState description="Analyzing customer data..." title="Building profile" />
+      )}
 
-        {profileQuery.isLoading && (
-          <LoadingState description="Analyzing customer data..." title="Building profile" />
-        )}
+      {profileQuery.data && <ProfileContent profile={profileQuery.data} />}
 
-        {profileQuery.data && <ProfileContent profile={profileQuery.data} />}
-
-        {profileQuery.isError && (
-          <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-            Failed to load persona profile. Try again later.
-          </div>
-        )}
-      </SheetContent>
-    </Sheet>
+      {profileQuery.isError && (
+        <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+          Failed to load persona profile. Try again later.
+        </div>
+      )}
+    </div>
   )
 }
