@@ -23,7 +23,7 @@ export function StepRegion({ labelledBy, children, className }: StepRegionProps)
       aria-labelledby={labelledBy}
       className={cn(
         'absolute inset-0 overflow-y-auto overscroll-contain px-4 pt-6 pb-(--stage-inset-b) md:px-6',
-        'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset',
+        'outline-none',
         className,
       )}
       data-step-root

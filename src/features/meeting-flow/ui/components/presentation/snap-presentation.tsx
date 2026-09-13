@@ -114,7 +114,7 @@ export function SnapPresentation({ label, aside, children, className, ref }: Sna
               'snap-y snap-mandatory motion-safe:scroll-smooth [container-type:size]',
               '[--pin-h:30cqh] lg:[--pin-h:0px] scroll-pt-(--pin-h)',
               'bg-(--presentation-ground) text-white',
-              'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset',
+              'outline-none',
               className,
             )}
             data-step-root

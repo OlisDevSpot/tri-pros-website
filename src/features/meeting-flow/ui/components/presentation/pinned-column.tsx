@@ -24,7 +24,7 @@ export function PinnedColumn({ summaries }: PinnedColumnProps) {
 
   return (
     <aside
-      className="sticky top-0 z-10 grid h-(--pin-h) content-end gap-[1cqh] self-start border-b border-white/15 bg-(--presentation-ground) px-[6cqw] py-[3cqh] lg:h-[100cqh] lg:border-b-0 lg:px-[5cqw] lg:pt-[5cqh] lg:pb-[max(5cqh,var(--stage-inset-b))]"
+      className="sticky top-0 z-10 grid h-(--pin-h) content-center gap-[1cqh] self-start border-b border-white/15 bg-(--presentation-ground) px-[6cqw] py-[3cqh] lg:h-[100cqh] lg:border-b-0 lg:px-[5cqw] lg:pt-[5cqh] lg:pb-[max(5cqh,var(--stage-inset-b))]"
     >
       <AnimatePresence initial={false} mode="wait">
         <motion.div
