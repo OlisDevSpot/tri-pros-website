@@ -55,8 +55,8 @@ export function InspectorRail({ openSection, contextFilledCount, contextTotalCou
             aria-expanded={isOpen}
             className={cn(
               'relative size-11 hover:bg-muted hover:text-foreground motion-safe:transition-colors',
-              isOpen && 'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary',
-              !isOpen && accent && 'text-primary',
+              isOpen && 'bg-muted text-foreground hover:bg-muted hover:text-foreground',
+              !isOpen && accent && 'text-foreground',
             )}
             size="icon"
             title={PANEL_SECTION_LABELS[section]}

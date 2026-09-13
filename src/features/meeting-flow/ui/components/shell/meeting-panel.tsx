@@ -31,6 +31,7 @@ export function MeetingPanel({ openSection, headerRef, onSelect, onClose, childr
   return (
     <aside
       aria-label={SHELL_COPY.panelLabel}
+      role="complementary"
       className={cn(
         'absolute inset-y-0 right-0 z-20 grid w-full max-w-full grid-rows-[auto_minmax(0,1fr)] border-l border-border/40 bg-card shadow-lg sm:w-[380px] lg:right-12',
         'motion-safe:transition-transform motion-safe:duration-300 motion-safe:ease-[cubic-bezier(.32,.72,0,1)]',
@@ -51,7 +52,7 @@ export function MeetingPanel({ openSection, headerRef, onSelect, onClose, childr
                 className={cn(
                   'h-11 flex-1 text-xs font-semibold motion-safe:transition-colors',
                   isCurrent
-                    ? 'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary'
+                    ? 'bg-muted text-foreground hover:bg-muted hover:text-foreground'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                 )}
                 size="sm"
@@ -68,7 +69,10 @@ export function MeetingPanel({ openSection, headerRef, onSelect, onClose, childr
           <span className="sr-only">{SHELL_COPY.closePanel}</span>
         </Button>
       </div>
-      <div className="overflow-y-auto overscroll-contain px-4 py-3">{children}</div>
+      <div className="overflow-y-auto overscroll-contain px-4 py-3">
+        {openSection && <h2 className="sr-only">{PANEL_SECTION_LABELS[openSection]}</h2>}
+        {children}
+      </div>
     </aside>
   )
 }
