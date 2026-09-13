@@ -286,7 +286,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
 
       <div className="relative isolate flex min-h-0 flex-1 overflow-hidden">
         {/* Stage: the step owns its scroller; the capsule floats over it */}
-        <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
+        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           {stepConfig.layout === 'presentation'
             ? (
                 <>
