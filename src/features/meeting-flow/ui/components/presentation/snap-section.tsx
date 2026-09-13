@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 import { useInView } from 'motion/react'
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { SectionInViewContext, usePresentation } from '@/features/meeting-flow/contexts/presentation-context'
 import { cn } from '@/shared/lib/utils'
 
@@ -28,8 +28,13 @@ interface SnapSectionProps {
  */
 export function SnapSection({ index, id, labelledBy, children, className }: SnapSectionProps) {
   const ref = useRef<HTMLElement>(null)
-  const { scrollerRef, reportInView } = usePresentation()
+  const { scrollerRef, reportInView, registerSection } = usePresentation()
   const inView = useInView(ref, { root: scrollerRef, amount: 0.5 })
+
+  const setRef = useCallback((el: HTMLElement | null) => {
+    ref.current = el
+    registerSection(index, el)
+  }, [index, registerSection])
 
   useEffect(() => {
     reportInView(index, inView)
@@ -38,7 +43,7 @@ export function SnapSection({ index, id, labelledBy, children, className }: Snap
   return (
     <SectionInViewContext value={inView}>
       <section
-        ref={ref}
+        ref={setRef}
         aria-labelledby={labelledBy}
         className={cn(
           'relative min-h-[calc(100cqh-var(--pin-h))] snap-start snap-always overflow-hidden',

@@ -65,7 +65,7 @@ export function CredentialsSection({ index, section }: CredentialsSectionProps) 
             ))}
       </div>
 
-      <dl className="absolute inset-x-[6cqw] bottom-[max(5cqh,var(--pres-chrome-b))] flex flex-wrap gap-x-[4cqw] gap-y-[1cqh] border-t border-white/20 pt-[2cqh]">
+      <dl className="absolute inset-x-[6cqw] bottom-[max(5cqh,var(--stage-inset-b))] flex flex-wrap gap-x-[4cqw] gap-y-[1cqh] border-t border-white/20 pt-[2cqh]">
         {section.proof.map((item, position) => (
           <Reveal key={item.label} className="grid" order={position + 3}>
             <dt className="order-last text-[max(2cqw,0.75rem)] text-white/60 lg:text-[max(1.2cqw,0.75rem)]">{item.label}</dt>

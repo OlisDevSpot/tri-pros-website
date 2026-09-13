@@ -18,7 +18,7 @@ export function HookSection({ index, section }: HookSectionProps) {
     <SnapSection id={section.id} index={index} labelledBy={headingId}>
       <SectionImage alt={section.imageAlt} priority src={section.image} />
       <Scrim />
-      <div className="absolute inset-x-[6cqw] bottom-[max(8cqh,var(--pres-chrome-b))] grid gap-[1.5cqh] lg:bottom-[max(6cqh,var(--pres-chrome-b))]">
+      <div className="absolute inset-x-[6cqw] bottom-[max(8cqh,var(--stage-inset-b))] grid gap-[1.5cqh] lg:bottom-[max(6cqh,var(--stage-inset-b))]">
         <Reveal order={0}>
           <h2
             className="max-w-[15ch] font-sans text-[8cqw] leading-[1.04] font-medium tracking-tight text-balance lg:text-[6.2cqw]"

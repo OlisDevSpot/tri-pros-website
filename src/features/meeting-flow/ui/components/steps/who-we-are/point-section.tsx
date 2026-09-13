@@ -23,7 +23,7 @@ export function PointSection({ index, section }: PointSectionProps) {
         </span>
       </Reveal>
 
-      <div className="absolute inset-x-[6cqw] bottom-[max(6cqh,var(--pres-chrome-b))] grid gap-[1.2cqh]">
+      <div className="absolute inset-x-[6cqw] bottom-[max(6cqh,var(--stage-inset-b))] grid gap-[1.2cqh]">
         <Reveal order={1}>
           <h2
             className="max-w-[20ch] font-sans text-[6cqw] leading-[1.04] font-semibold tracking-tight text-balance lg:text-[4.8cqw]"

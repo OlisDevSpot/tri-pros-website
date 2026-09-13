@@ -1,5 +1,7 @@
 'use client'
 
+import type { Ref } from 'react'
+import type { PresentationHandle } from '@/features/meeting-flow/types'
 import { WHO_WE_ARE_PINNED, WHO_WE_ARE_SECTIONS } from '@/features/meeting-flow/constants/who-we-are-sections'
 import { PinnedColumn } from '@/features/meeting-flow/ui/components/presentation/pinned-column'
 import { SnapPresentation } from '@/features/meeting-flow/ui/components/presentation/snap-presentation'
@@ -11,15 +13,17 @@ import { TruthSection } from '@/features/meeting-flow/ui/components/steps/who-we
 interface WhoWeAreStepProps {
   /** Advances the meeting flow to the Specialties step. */
   onContinue: () => void
+  /** Beat navigation for the shell's key map; forwarded to the presentation. */
+  ref?: Ref<PresentationHandle>
 }
 
 /**
  * Step 1 of the meeting flow as a snapping scroll presentation of the
  * due-diligence story (docs/sales/due-diligence-story.md).
  */
-export function WhoWeAreStep({ onContinue }: WhoWeAreStepProps) {
+export function WhoWeAreStep({ onContinue, ref }: WhoWeAreStepProps) {
   return (
-    <SnapPresentation aside={<PinnedColumn summaries={WHO_WE_ARE_PINNED} />} label="Who we are presentation">
+    <SnapPresentation ref={ref} aside={<PinnedColumn summaries={WHO_WE_ARE_PINNED} />} label="Who we are presentation">
       {WHO_WE_ARE_SECTIONS.map((section, index) => {
         switch (section.kind) {
           case 'hook':

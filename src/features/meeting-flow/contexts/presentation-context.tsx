@@ -9,6 +9,8 @@ export interface PresentationContextValue {
   /** Index of the section currently past the in-view threshold. */
   activeIndex: number
   reportInView: (index: number, inView: boolean) => void
+  /** Sections register their element so the scroller can scroll to an index. */
+  registerSection: (index: number, el: HTMLElement | null) => void
 }
 
 export const PresentationContext = createContext<PresentationContextValue | null>(null)
