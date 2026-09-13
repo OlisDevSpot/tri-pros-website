@@ -272,17 +272,15 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
 
   return (
     <StageFrame ref={rootRef}>
-      {!presenting && (
-        <TopBar
-          currentStep={currentStep}
-          customer={customer}
-          meetingId={meetingId}
-          panelOpen={panel !== null}
-          syncStatus={syncStatus}
-          onStepClick={setStep}
-          onTogglePanel={togglePanel}
-        />
-      )}
+      <TopBar
+        currentStep={currentStep}
+        customer={customer}
+        meetingId={meetingId}
+        panelOpen={panel !== null}
+        syncStatus={syncStatus}
+        onStepClick={setStep}
+        onTogglePanel={togglePanel}
+      />
 
       <div className="relative isolate flex min-h-0 flex-1 overflow-hidden">
         {/* Stage: the step owns its scroller; the capsule floats over it */}

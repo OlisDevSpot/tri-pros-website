@@ -1,66 +1,44 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useSidebar } from '@/shared/components/ui/sidebar'
 
 /**
- * Present mode: collapse the app sidebar to icons (the view hides its own top
- * bar), then put the sidebar back the way the agent had it.
+ * Present mode is the browser's own fullscreen (the F11 action) plus the app
+ * sidebar collapsed to icons through the shadcn provider's `setOpen`.
  *
- * Uses the shadcn provider's own `setOpen`, which also writes the
- * `sidebar_state` cookie; a reload while presenting therefore boots with the
- * sidebar collapsed (accepted, spec §2). Below `md` the sidebar is a sheet, so
- * only the top bar changes there.
+ * `presenting` mirrors `document.fullscreenElement`, so leaving fullscreen by
+ * any route (Esc, F11, the capsule toggle, `exit()`) re-opens the sidebar and
+ * the state follows. `setOpen` also writes the `sidebar_state` cookie
+ * (accepted, spec §2). Platforms without the Fullscreen API (iPhone Safari)
+ * cannot present; `toggle` is a no-op there.
  */
 export function usePresentMode() {
-  const { open, setOpen, isMobile } = useSidebar()
+  const { setOpen } = useSidebar()
   const [presenting, setPresenting] = useState(false)
-  const rememberedOpenRef = useRef(open)
-  const latestRef = useRef({ presenting, isMobile, setOpen })
 
   useEffect(() => {
-    latestRef.current = { presenting, isMobile, setOpen }
-  }, [presenting, isMobile, setOpen])
-
-  const enter = useCallback(() => {
-    rememberedOpenRef.current = open
-    if (!isMobile) {
-      setOpen(false)
+    function onFullscreenChange() {
+      const active = document.fullscreenElement !== null
+      setPresenting(active)
+      setOpen(!active)
     }
-    setPresenting(true)
-  }, [open, isMobile, setOpen])
+    document.addEventListener('fullscreenchange', onFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange)
+  }, [setOpen])
 
   const exit = useCallback(() => {
-    if (!isMobile) {
-      setOpen(rememberedOpenRef.current)
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {})
     }
-    setPresenting(false)
-  }, [isMobile, setOpen])
+  }, [])
 
   const toggle = useCallback(() => {
-    if (presenting) {
-      exit()
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {})
     }
-    else {
-      enter()
-    }
-  }, [presenting, enter, exit])
-
-  // ⌘/Ctrl+B or the sidebar's own rail re-opened the sidebar: chrome returns as one unit.
-  useEffect(() => {
-    if (presenting && open && !isMobile) {
-      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect -- the sidebar changed outside this hook; mirrors use-mobile.ts
-      setPresenting(false)
-    }
-  }, [presenting, open, isMobile])
-
-  // Leaving the route while presenting must not leave the sidebar collapsed.
-  useEffect(() => {
-    return () => {
-      const latest = latestRef.current
-      if (latest.presenting && !latest.isMobile) {
-        latest.setOpen(rememberedOpenRef.current)
-      }
+    else if (typeof document.documentElement.requestFullscreen === 'function') {
+      document.documentElement.requestFullscreen().catch(() => {})
     }
   }, [])
 
