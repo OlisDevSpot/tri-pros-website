@@ -110,8 +110,7 @@ export function SnapPresentation({ label, aside, children, className, ref }: Sna
             className={cn(
               'absolute inset-0 overflow-y-auto overscroll-contain',
               'snap-y snap-mandatory motion-safe:scroll-smooth [container-type:size]',
-              '[--pin-h:30cqh] lg:[--pin-h:0px] scroll-pt-(--pin-h) [--stage-inset-b:3.5rem]',
-              '[--presentation-ground:oklch(0.2_0.028_257)] [--presentation-accent:oklch(0.8_0.12_259.8)]',
+              '[--pin-h:30cqh] lg:[--pin-h:0px] scroll-pt-(--pin-h)',
               'bg-(--presentation-ground) text-white',
               'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset',
               className,

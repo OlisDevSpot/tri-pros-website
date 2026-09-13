@@ -1692,3 +1692,11 @@
 [data-slot='sidebar-inset']:has([data-stage]) [data-slot='dashboard-mobile-nav'] {
   display: none;
 }
+
+/* Presentation palette. Defined on the stage so the presentation scroller and the floating
+   step capsule (its sibling) read one source. The values were previously inline on the
+   scroller in snap-presentation.tsx. */
+[data-stage] {
+  --presentation-ground: oklch(0.2 0.028 257);
+  --presentation-accent: oklch(0.8 0.12 259.8);
+}

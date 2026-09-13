@@ -1,25 +1,30 @@
 'use client'
 
-import type { MeetingFlowContext } from '@/features/meeting-flow/types'
+import type { MeetingFlowContext, PanelSection, PresentationHandle } from '@/features/meeting-flow/types'
 import type { MeetingOutcome } from '@/shared/constants/enums'
 import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { MeetingContext, MeetingFlowState } from '@/shared/entities/meetings/schemas'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { ChannelProvider } from 'ably/react'
-import { ArrowLeftIcon, ArrowRightIcon, CalendarClockIcon } from 'lucide-react'
-import Link from 'next/link'
 import { useQueryState } from 'nuqs'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { stepParser } from '@/features/meeting-flow/constants/query-parsers'
+import { DEFAULT_PANEL_SECTION } from '@/features/meeting-flow/constants/shell'
 import { MEETING_STEPS, TOTAL_STEPS } from '@/features/meeting-flow/constants/step-config'
+import { useMeetingFlowKeys } from '@/features/meeting-flow/hooks/use-meeting-flow-keys'
 import { useMeetingSync } from '@/features/meeting-flow/hooks/use-meeting-sync'
+import { usePresentMode } from '@/features/meeting-flow/hooks/use-present-mode'
 import { computeContextFilledCount, CONTEXT_TOTAL_FIELDS } from '@/features/meeting-flow/lib/context-fill-count'
 import { ContextPanel } from '@/features/meeting-flow/ui/components/context-panel'
-import { ContextPanelTrigger } from '@/features/meeting-flow/ui/components/context-panel-trigger'
 import { PersonaProfilePanel } from '@/features/meeting-flow/ui/components/persona-profile-panel'
-import { PersonaProfileTrigger } from '@/features/meeting-flow/ui/components/persona-profile-trigger'
-import { StepNav } from '@/features/meeting-flow/ui/components/step-nav'
+import { InspectorRail } from '@/features/meeting-flow/ui/components/shell/inspector-rail'
+import { MeetingPanel } from '@/features/meeting-flow/ui/components/shell/meeting-panel'
+import { MeetingSection } from '@/features/meeting-flow/ui/components/shell/meeting-section'
+import { StageFrame } from '@/features/meeting-flow/ui/components/shell/stage-frame'
+import { StepCapsule } from '@/features/meeting-flow/ui/components/shell/step-capsule'
+import { StepRegion } from '@/features/meeting-flow/ui/components/shell/step-region'
+import { TopBar } from '@/features/meeting-flow/ui/components/shell/top-bar'
 import { ClosingStep } from '@/features/meeting-flow/ui/components/steps/closing-step'
 import { CreateProposalStep } from '@/features/meeting-flow/ui/components/steps/create-proposal-step'
 import { DealStructureStep } from '@/features/meeting-flow/ui/components/steps/deal-structure-step'
@@ -27,14 +32,8 @@ import { PortfolioStep } from '@/features/meeting-flow/ui/components/steps/portf
 import { ProgramStep } from '@/features/meeting-flow/ui/components/steps/program-step'
 import { SpecialtiesStep } from '@/features/meeting-flow/ui/components/steps/specialties-step'
 import { WhoWeAreStep } from '@/features/meeting-flow/ui/components/steps/who-we-are'
-import { SyncStatusIndicator } from '@/features/meeting-flow/ui/components/sync-status-indicator'
-import { Logo } from '@/shared/components/logo'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
-import { Button } from '@/shared/components/ui/button'
-import { Separator } from '@/shared/components/ui/separator'
-import { ROOTS } from '@/shared/config/roots'
-import { CANNOT_RESCHEDULE_REASON, canRescheduleFromOutcome } from '@/shared/constants/enums/meetings'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { hasCustomerProfileData } from '@/shared/entities/customers/lib/customer-predicates'
 import { useOutcomeChange } from '@/shared/entities/meetings/hooks/use-outcome-change'
@@ -57,11 +56,18 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
   const trpc = useTRPC()
   const { invalidateMeeting } = useInvalidation()
   const [currentStep, setCurrentStep] = useQueryState('step', stepParser)
-  const [contextOpen, setContextOpen] = useState(false)
-  const [personaOpen, setPersonaOpen] = useState(false)
   const { status: syncStatus } = useMeetingSync(meetingId)
   const { changeOutcome, OutcomeReasonDialog } = useOutcomeChange()
   const { reschedule, RescheduleDialog } = useRescheduleChange()
+  const { presenting, toggle: togglePresentMode } = usePresentMode()
+  const stepTitleId = useId()
+
+  const rootRef = useRef<HTMLDivElement>(null)
+  const panelHeaderRef = useRef<HTMLDivElement>(null)
+  const presentationRef = useRef<PresentationHandle>(null)
+  const lastSectionRef = useRef<PanelSection>(DEFAULT_PANEL_SECTION)
+  const previousPanelRef = useRef<PanelSection | null>(null)
+  const [panel, setPanel] = useState<PanelSection | null>(null)
 
   const meetingQuery = useQuery(
     trpc.meetingsRouter.reads.getByIdWithJoins.queryOptions({ id: meetingId }),
@@ -87,6 +93,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
 
   const meeting = meetingQuery.data
   const customer = meeting?.customer?.id ? meeting.customer : null
+  const isReady = Boolean(meeting)
 
   const handleFlowStateChange = useCallback((patch: Partial<MeetingFlowState>) => {
     const current = meeting?.flowStateJSON ?? {}
@@ -147,175 +154,212 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
     [meeting, customer],
   )
 
+  // ── Steps ──────────────────────────────────────────────────────────────────
+
+  const setStep = useCallback((step: number) => {
+    void setCurrentStep(step)
+  }, [setCurrentStep])
+
+  const handleNext = useCallback(() => {
+    if (currentStep < TOTAL_STEPS) {
+      setStep(currentStep + 1)
+    }
+  }, [currentStep, setStep])
+
+  const handlePrev = useCallback(() => {
+    if (currentStep > 1) {
+      setStep(currentStep - 1)
+    }
+  }, [currentStep, setStep])
+
+  // ── Panel ──────────────────────────────────────────────────────────────────
+
+  const openSection = useCallback((section: PanelSection) => {
+    lastSectionRef.current = section
+    setPanel(section)
+  }, [])
+
+  const closePanel = useCallback(() => {
+    setPanel(null)
+  }, [])
+
+  const togglePanel = useCallback(() => {
+    if (panel === null) {
+      openSection(lastSectionRef.current)
+    }
+    else {
+      closePanel()
+    }
+  }, [panel, openSection, closePanel])
+
+  const selectFromRail = useCallback((section: PanelSection) => {
+    if (panel === section) {
+      closePanel()
+    }
+    else {
+      openSection(section)
+    }
+  }, [panel, openSection, closePanel])
+
+  // ── Present mode: entering closes the panel (the screen faces the homeowner) ─
+
+  const togglePresent = useCallback(() => {
+    if (!presenting) {
+      setPanel(null)
+    }
+    togglePresentMode()
+  }, [presenting, togglePresentMode])
+
+  // ── Focus: the step root after every step change, the panel header on open ──
+
+  const focusStepRoot = useCallback(() => {
+    rootRef.current?.querySelector<HTMLElement>('[data-step-root]')?.focus({ preventScroll: true })
+  }, [])
+
+  useEffect(() => {
+    focusStepRoot()
+  }, [currentStep, isReady, focusStepRoot])
+
+  useEffect(() => {
+    const wasOpen = previousPanelRef.current !== null
+    const isOpen = panel !== null
+    previousPanelRef.current = panel
+    if (isOpen && !wasOpen) {
+      panelHeaderRef.current?.focus({ preventScroll: true })
+    }
+    else if (!isOpen && wasOpen) {
+      focusStepRoot()
+    }
+  }, [panel, focusStepRoot])
+
+  useMeetingFlowKeys({
+    rootRef,
+    step: currentStep,
+    setStep,
+    presenting,
+    togglePresent,
+    panelOpen: panel !== null,
+    closePanel,
+    presentationRef,
+  })
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+
   if (meetingQuery.isLoading) {
-    return <LoadingState title="Loading meeting" description="Fetching meeting details..." />
+    return (
+      <StageFrame ref={rootRef}>
+        <LoadingState title="Loading meeting" description="Fetching meeting details..." />
+      </StageFrame>
+    )
   }
 
   if (!meeting || !flowContext) {
-    return <ErrorState title="Meeting not found" description="This meeting could not be loaded." />
+    return (
+      <StageFrame ref={rootRef}>
+        <ErrorState title="Meeting not found" description="This meeting could not be loaded." />
+      </StageFrame>
+    )
   }
 
   const stepConfig = MEETING_STEPS[currentStep - 1]
   if (!stepConfig) {
-    return <ErrorState title="Invalid step" description="This step does not exist." />
-  }
-
-  function handleNext() {
-    if (currentStep < TOTAL_STEPS) {
-      void setCurrentStep(currentStep + 1)
-    }
-  }
-
-  function handlePrev() {
-    if (currentStep > 1) {
-      void setCurrentStep(currentStep - 1)
-    }
+    return (
+      <StageFrame ref={rootRef}>
+        <ErrorState title="Invalid step" description="This step does not exist." />
+      </StageFrame>
+    )
   }
 
   return (
-    <div className="flex h-full flex-col [--prevNextHeight:3.5rem]">
-      {/* Header */}
-      <header className="relative flex shrink-0 items-center border-b border-border/40 py-2.5">
-        <Link
-          className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-          href={ROOTS.dashboard.meetings.root()}
-        >
-          <ArrowLeftIcon className="size-4" />
-          <span className="hidden sm:inline">Meetings</span>
-        </Link>
+    <StageFrame ref={rootRef}>
+      {!presenting && (
+        <TopBar
+          currentStep={currentStep}
+          customer={customer}
+          meetingId={meetingId}
+          panelOpen={panel !== null}
+          syncStatus={syncStatus}
+          onStepClick={setStep}
+          onTogglePanel={togglePanel}
+        />
+      )}
 
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="pointer-events-auto">
-            <StepNav currentStep={currentStep} onStepClick={s => void setCurrentStep(s)} />
-          </div>
+      <div className="relative isolate flex min-h-0 flex-1 overflow-hidden">
+        {/* Stage: the step owns its scroller; the capsule floats over it */}
+        <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
+          {stepConfig.layout === 'presentation'
+            ? (
+                <>
+                  <h1 className="sr-only" id={stepTitleId}>{stepConfig.title}</h1>
+                  {stepConfig.id === 'who-we-are' && <WhoWeAreStep ref={presentationRef} onContinue={handleNext} />}
+                </>
+              )
+            : (
+                <StepRegion labelledBy={stepTitleId}>
+                  <h1 className="sr-only" id={stepTitleId}>{stepConfig.title}</h1>
+                  {stepConfig.id === 'specialties' && <SpecialtiesStep flowContext={flowContext} />}
+                  {stepConfig.id === 'portfolio' && <PortfolioStep flowContext={flowContext} />}
+                  {stepConfig.id === 'program' && (
+                    <ProgramStep flowContext={flowContext} meetingType={meeting.meetingType} />
+                  )}
+                  {stepConfig.id === 'deal-structure' && <DealStructureStep flowContext={flowContext} />}
+                  {stepConfig.id === 'closing' && (
+                    <ClosingStep
+                      flowContext={flowContext}
+                      meetingOutcome={meeting.meetingOutcome}
+                      onOutcomeChange={handleOutcomeChange}
+                      proposalState={{
+                        proposalCount: meeting.proposalCount ?? 0,
+                        hasSentProposal: meeting.hasSentProposal ?? false,
+                        hasApprovedProposal: meeting.hasApprovedProposal ?? false,
+                      }}
+                    />
+                  )}
+                  {stepConfig.id === 'create-proposal' && (
+                    <CreateProposalStep flowContext={flowContext} meetingId={meetingId} />
+                  )}
+                </StepRegion>
+              )}
+
+          <StepCapsule
+            currentStep={currentStep}
+            presenting={presenting}
+            stepTitle={stepConfig.title}
+            tone={stepConfig.layout}
+            onNext={handleNext}
+            onPrev={handlePrev}
+            onTogglePresent={togglePresent}
+          />
         </div>
 
-        <div className="ml-auto flex items-center gap-3">
-          <Button
-            className="gap-1.5"
-            disabled={!canRescheduleFromOutcome((meeting.meetingOutcome ?? 'not_set') as MeetingOutcome)}
-            size="sm"
-            title={
-              canRescheduleFromOutcome((meeting.meetingOutcome ?? 'not_set') as MeetingOutcome)
-                ? undefined
-                : CANNOT_RESCHEDULE_REASON
-            }
-            variant="outline"
-            onClick={() => void reschedule(meetingId)}
-          >
-            <CalendarClockIcon className="size-4" />
-            <span className="hidden sm:inline">Reschedule</span>
-          </Button>
-          <SyncStatusIndicator status={syncStatus} />
-          <div className="hidden h-10 w-32 sm:block">
-            <Logo variant="right" />
-          </div>
-        </div>
-      </header>
-
-      {/* Step content — presentation steps own their scroller; page steps share the padded one */}
-      {stepConfig.layout === 'presentation'
-        ? (
-            <>
-              <h1 className="sr-only">{stepConfig.title}</h1>
-              {stepConfig.id === 'who-we-are' && <WhoWeAreStep onContinue={handleNext} />}
-            </>
-          )
-        : (
-            <div className="min-h-0 flex-1 overflow-y-auto py-6">
-              <h1 className="sr-only">{stepConfig.title}</h1>
-              {stepConfig.id === 'specialties' && <SpecialtiesStep flowContext={flowContext} />}
-              {stepConfig.id === 'portfolio' && <PortfolioStep flowContext={flowContext} />}
-              {stepConfig.id === 'program' && (
-                <ProgramStep flowContext={flowContext} meetingType={meeting.meetingType} />
-              )}
-              {stepConfig.id === 'deal-structure' && <DealStructureStep flowContext={flowContext} />}
-              {stepConfig.id === 'closing' && (
-                <ClosingStep
-                  flowContext={flowContext}
-                  meetingOutcome={meeting.meetingOutcome}
-                  onOutcomeChange={handleOutcomeChange}
-                  proposalState={{
-                    proposalCount: meeting.proposalCount ?? 0,
-                    hasSentProposal: meeting.hasSentProposal ?? false,
-                    hasApprovedProposal: meeting.hasApprovedProposal ?? false,
-                  }}
-                />
-              )}
-              {stepConfig.id === 'create-proposal' && (
-                <CreateProposalStep flowContext={flowContext} meetingId={meetingId} />
-              )}
-            </div>
+        <MeetingPanel headerRef={panelHeaderRef} openSection={panel} onClose={closePanel} onSelect={openSection}>
+          {panel === 'meeting' && (
+            <MeetingSection meeting={meeting} onReschedule={() => void reschedule(meetingId)} />
           )}
-
-      {/* Footer navigation + overlay triggers */}
-      <footer className="relative shrink-0">
-        {/* Context & Persona triggers — positioned above the nav bar */}
-        <div className="absolute bottom-full left-0 right-0 flex items-end justify-between pb-3 pointer-events-none">
-          <div className="pointer-events-auto">
-            <ContextPanelTrigger
-              filledCount={contextFilledCount}
-              totalCount={CONTEXT_TOTAL_FIELDS}
-              onClick={() => setContextOpen(true)}
+          {panel === 'context' && (
+            <ContextPanel
+              customer={customer as CustomerWithProfile | null}
+              meeting={meeting}
+              onAgentNotesChange={handleAgentNotesChange}
+              onContextChange={handleContextChange}
+              onCustomerProfileChange={handleCustomerProfileChange}
+              onOutcomeChange={handleOutcomeChange}
             />
-          </div>
-          <div className="pointer-events-auto">
-            <PersonaProfileTrigger
-              hasData={hasCustomerProfileData(customer)}
-              onClick={() => setPersonaOpen(true)}
-            />
-          </div>
-        </div>
+          )}
+          {panel === 'persona' && <PersonaProfilePanel meetingId={meetingId} />}
+        </MeetingPanel>
 
-        <Separator />
-        <div className="flex h-(--prevNextHeight) items-center justify-between">
-          <Button
-            className="gap-2"
-            disabled={currentStep === 1}
-            size="sm"
-            variant="outline"
-            onClick={handlePrev}
-          >
-            <ArrowLeftIcon className="size-4" />
-            <span className="hidden sm:inline">Previous</span>
-          </Button>
-
-          <span className="text-xs text-muted-foreground">
-            {`${currentStep} / ${TOTAL_STEPS}`}
-          </span>
-
-          <Button
-            className="gap-2"
-            disabled={currentStep === TOTAL_STEPS}
-            size="sm"
-            onClick={handleNext}
-          >
-            <span className="hidden sm:inline">Next</span>
-            <ArrowRightIcon className="size-4" />
-          </Button>
-        </div>
-      </footer>
-
-      {/* Overlay sheets */}
-      <ContextPanel
-        customer={customer as CustomerWithProfile | null}
-        isOpen={contextOpen}
-        meeting={meeting}
-        onAgentNotesChange={handleAgentNotesChange}
-        onContextChange={handleContextChange}
-        onCustomerProfileChange={handleCustomerProfileChange}
-        onOpenChange={setContextOpen}
-        onOutcomeChange={handleOutcomeChange}
-      />
-
-      <PersonaProfilePanel
-        isOpen={personaOpen}
-        meetingId={meetingId}
-        onOpenChange={setPersonaOpen}
-      />
+        <InspectorRail
+          contextFilledCount={contextFilledCount}
+          contextTotalCount={CONTEXT_TOTAL_FIELDS}
+          openSection={panel}
+          personaHasData={hasCustomerProfileData(customer)}
+          onSelect={selectFromRail}
+        />
+      </div>
 
       <OutcomeReasonDialog />
       <RescheduleDialog />
-    </div>
+    </StageFrame>
   )
 }
