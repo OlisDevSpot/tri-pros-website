@@ -4,6 +4,7 @@ import type { ReactNode, Ref } from 'react'
 import type { PresentationHandle } from '@/features/meeting-flow/types'
 import { MotionConfig } from 'motion/react'
 import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
+import { KEY_SHORTCUTS } from '@/features/meeting-flow/constants/keyboard-hints'
 import { PresentationContext } from '@/features/meeting-flow/contexts/presentation-context'
 import { cn } from '@/shared/lib/utils'
 
@@ -106,6 +107,7 @@ export function SnapPresentation({ label, aside, children, className, ref }: Sna
         <div className="relative isolate min-h-0 flex-1 [container-type:size]">
           <div
             ref={scrollerRef}
+            aria-keyshortcuts={KEY_SHORTCUTS.presentation}
             aria-label={label}
             className={cn(
               'absolute inset-0 overflow-y-auto overscroll-contain',

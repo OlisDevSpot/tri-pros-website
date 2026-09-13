@@ -248,7 +248,9 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
   if (meetingQuery.isLoading) {
     return (
       <StageFrame ref={rootRef}>
-        <LoadingState title="Loading meeting" description="Fetching meeting details..." />
+        <div className="h-full p-4 md:p-6">
+          <LoadingState title="Loading meeting" description="Fetching meeting details..." />
+        </div>
       </StageFrame>
     )
   }
@@ -256,7 +258,9 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
   if (!meeting || !flowContext) {
     return (
       <StageFrame ref={rootRef}>
-        <ErrorState title="Meeting not found" description="This meeting could not be loaded." />
+        <div className="h-full p-4 md:p-6">
+          <ErrorState title="Meeting not found" description="This meeting could not be loaded." />
+        </div>
       </StageFrame>
     )
   }
@@ -265,7 +269,9 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
   if (!stepConfig) {
     return (
       <StageFrame ref={rootRef}>
-        <ErrorState title="Invalid step" description="This step does not exist." />
+        <div className="h-full p-4 md:p-6">
+          <ErrorState title="Invalid step" description="This step does not exist." />
+        </div>
       </StageFrame>
     )
   }
@@ -283,7 +289,8 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
       />
 
       <div className="relative isolate flex min-h-0 flex-1 overflow-hidden">
-        {/* Stage: the step owns its scroller; the capsule floats over it */}
+        {/* Stage: a flex column because the presentation root is `min-h-0 flex-1` (it collapses to
+            0px in a block parent). The step owns its scroller; the capsule floats over it. */}
         <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           {stepConfig.layout === 'presentation'
             ? (
