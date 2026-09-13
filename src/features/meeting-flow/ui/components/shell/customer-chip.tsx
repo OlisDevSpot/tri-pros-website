@@ -17,6 +17,8 @@ interface CustomerChipProps {
 /**
  * The customer's identity in the top bar. One click opens the customer profile
  * modal; there are no contact actions here because the screen faces the homeowner.
+ * `shrink` overrides the Button base's `shrink-0`, so a narrow column truncates the
+ * name and address with an ellipsis instead of clipping the chip.
  */
 export function CustomerChip({ customer, meetingId }: CustomerChipProps) {
   const { open, setModal } = useModalStore()
@@ -43,13 +45,13 @@ export function CustomerChip({ customer, meetingId }: CustomerChipProps) {
 
   return (
     <Button
-      className="h-11 min-w-0 max-w-full gap-2 rounded-full pl-1.5 pr-3 hover:bg-muted hover:text-foreground"
+      className="h-11 min-w-0 max-w-full shrink gap-2 rounded-full pl-1.5 pr-3 hover:bg-muted hover:text-foreground"
       size="sm"
       title={SHELL_COPY.viewCustomerProfile}
       variant="ghost"
       onClick={handleClick}
     >
-      <Avatar className="size-7">
+      <Avatar aria-hidden className="size-7">
         <AvatarFallback className="bg-muted text-[11px] font-bold text-foreground">
           {getInitials(customer.name)}
         </AvatarFallback>

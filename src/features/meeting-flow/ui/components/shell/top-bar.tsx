@@ -25,7 +25,11 @@ interface TopBarProps {
 /**
  * Three-column top bar: back link + customer | step tabs | sync + logo + hamburger.
  * The outer columns are `min-w-0 overflow-hidden`, so nothing collides at 1024px;
- * the centre column takes its natural width. `@container/topbar` drives the tab labels.
+ * the centre column takes its natural width. Visibility follows the bar's own width
+ * (`@container/topbar`), not the viewport, because the sidebar takes 256px of it:
+ * the back label and the logo need a bar of at least 56rem, the tabs 42rem, the
+ * tab labels 81.25rem. Below those they are hidden rather than clipped mid-word.
+ * The right column is pinned to track 3 because a hidden tab strip is not a grid item.
  */
 export function TopBar({ customer, meetingId, currentStep, onStepClick, syncStatus, panelOpen, onTogglePanel }: TopBarProps) {
   const panelLabel = panelOpen ? SHELL_COPY.closePanel : SHELL_COPY.openPanel
@@ -35,13 +39,13 @@ export function TopBar({ customer, meetingId, currentStep, onStepClick, syncStat
       <div className="flex min-w-0 items-center gap-1 overflow-hidden">
         <Button
           asChild
-          className="size-11 shrink-0 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground md:w-auto md:px-3"
+          className="size-11 shrink-0 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground @4xl/topbar:w-auto @4xl/topbar:px-3"
           size="icon"
           variant="ghost"
         >
           <Link href={ROOTS.dashboard.meetings.root()} title={SHELL_COPY.backToMeetings}>
             <ArrowLeftIcon className="size-5" />
-            <span className="hidden md:inline">{SHELL_COPY.backToMeetings}</span>
+            <span className="hidden @4xl/topbar:inline">{SHELL_COPY.backToMeetings}</span>
           </Link>
         </Button>
         <CustomerChip customer={customer} meetingId={meetingId} />
@@ -49,9 +53,9 @@ export function TopBar({ customer, meetingId, currentStep, onStepClick, syncStat
 
       <StepTabs currentStep={currentStep} onStepClick={onStepClick} />
 
-      <div className="flex min-w-0 items-center justify-end gap-2 overflow-hidden">
+      <div className="col-start-3 flex min-w-0 items-center justify-end gap-2 overflow-hidden">
         <SyncStatusIndicator status={syncStatus} />
-        <div className="hidden h-8 w-28 shrink-0 sm:block">
+        <div className="hidden h-8 w-28 shrink-0 @4xl/topbar:block">
           <Logo variant="right" />
         </div>
         <Button

@@ -249,7 +249,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
     return (
       <StageFrame ref={rootRef}>
         <div className="h-full p-4 md:p-6">
-          <LoadingState title="Loading meeting" description="Fetching meeting details..." />
+          <LoadingState title="Loading meeting" description="Fetching meeting details…" />
         </div>
       </StageFrame>
     )
