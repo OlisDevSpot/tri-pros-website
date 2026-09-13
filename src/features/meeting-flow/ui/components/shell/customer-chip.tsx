@@ -50,7 +50,7 @@ export function CustomerChip({ customer, meetingId }: CustomerChipProps) {
       onClick={handleClick}
     >
       <Avatar className="size-7">
-        <AvatarFallback className="bg-primary/10 text-[11px] font-bold text-primary">
+        <AvatarFallback className="bg-muted text-[11px] font-bold text-foreground">
           {getInitials(customer.name)}
         </AvatarFallback>
       </Avatar>
