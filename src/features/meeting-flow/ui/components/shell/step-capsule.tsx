@@ -51,10 +51,10 @@ export function StepCapsule({ currentStep, stepTitle, tone, presenting, onPrev, 
       </Button>
 
       <span className="min-w-[3.25rem] text-center text-xs font-semibold tabular-nums">
-        {`${currentStep} / ${TOTAL_STEPS}`}
+        {SHELL_COPY.stepCounter(currentStep, TOTAL_STEPS)}
       </span>
       <span aria-atomic="true" aria-live="polite" className="sr-only">
-        {`Step ${currentStep} of ${TOTAL_STEPS}: ${stepTitle}`}
+        {SHELL_COPY.stepAnnouncement(currentStep, TOTAL_STEPS, stepTitle)}
       </span>
 
       <Button

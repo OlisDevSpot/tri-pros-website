@@ -11,6 +11,8 @@ export const SHELL_COPY = {
   railLabel: 'Inspector',
   prevStep: 'Previous step',
   nextStep: 'Next step',
+  stepCounter: (current: number, total: number) => `${current} / ${total}`,
+  stepAnnouncement: (current: number, total: number, title: string) => `Step ${current} of ${total}: ${title}`,
   present: 'Present',
   exitPresent: 'Exit present mode',
   reschedule: 'Reschedule',
