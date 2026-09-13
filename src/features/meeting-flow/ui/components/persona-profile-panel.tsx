@@ -25,7 +25,7 @@ function FearsList({ fears }: { fears: CustomerPersonaProfile['fears'] }) {
         <div className="rounded-md border border-border/50 bg-muted/30 p-2.5" key={i}>
           <div className="mb-1 flex items-center gap-1.5">
             <SeverityBadge value={fear.severity} />
-            <span className="text-[10px] text-muted-foreground">{fear.emotionalDriver}</span>
+            <span className="text-xs text-muted-foreground">{fear.emotionalDriver}</span>
           </div>
           <p className="text-xs leading-relaxed">{fear.fear}</p>
         </div>
@@ -40,8 +40,8 @@ function BenefitsList({ benefits }: { benefits: CustomerPersonaProfile['benefits
       {benefits.map((benefit, i) => (
         <div className="rounded-md border border-border/50 bg-muted/30 p-2.5" key={i}>
           <div className="mb-1 flex items-center gap-1.5">
-            <span className="text-[10px] font-medium text-primary">{benefit.tradeName}</span>
-            <span className="text-[10px] text-muted-foreground">{benefit.category}</span>
+            <span className="text-xs font-medium text-primary">{benefit.tradeName}</span>
+            <span className="text-xs text-muted-foreground">{benefit.category}</span>
           </div>
           <p className="text-xs font-medium">{benefit.headline}</p>
           <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{benefit.body}</p>
@@ -59,7 +59,7 @@ function DecisionDriversList({ drivers }: { drivers: CustomerPersonaProfile['dec
           <SeverityBadge value={driver.weight} />
           <div className="flex-1">
             <p className="text-xs leading-relaxed">{driver.driver}</p>
-            <p className="mt-0.5 text-[10px] text-muted-foreground">{driver.signal}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{driver.signal}</p>
           </div>
         </div>
       ))}
@@ -75,7 +75,7 @@ function EmotionalLeversList({ levers }: { levers: CustomerPersonaProfile['emoti
           <SeverityBadge value={lever.relevance} />
           <div className="flex-1">
             <p className="text-xs font-medium">{lever.lever}</p>
-            <p className="mt-0.5 text-[10px] text-muted-foreground">{lever.context}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{lever.context}</p>
           </div>
         </div>
       ))}
@@ -91,7 +91,7 @@ function HouseholdResonanceList({ items }: { items: CustomerPersonaProfile['hous
           <p className="text-xs font-medium">{item.factor}</p>
           <ul className="mt-1 space-y-0.5">
             {item.amplifiedConcerns.map((concern, j) => (
-              <li className="text-[10px] leading-relaxed text-muted-foreground" key={j}>
+              <li className="text-xs leading-relaxed text-muted-foreground" key={j}>
                 {concern}
               </li>
             ))}
@@ -111,7 +111,7 @@ function RiskFactorsList({ risks }: { risks: CustomerPersonaProfile['riskFactors
             <SeverityBadge value={risk.severity} />
           </div>
           <p className="text-xs font-medium">{risk.risk}</p>
-          <p className="mt-0.5 text-[10px] leading-relaxed text-muted-foreground">{risk.mitigation}</p>
+          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{risk.mitigation}</p>
         </div>
       ))}
     </>

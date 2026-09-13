@@ -52,14 +52,14 @@ export function CustomerChip({ customer, meetingId }: CustomerChipProps) {
       onClick={handleClick}
     >
       <Avatar aria-hidden className="size-7">
-        <AvatarFallback className="bg-muted text-[11px] font-bold text-foreground">
+        <AvatarFallback className="bg-muted text-xs font-bold text-foreground">
           {getInitials(customer.name)}
         </AvatarFallback>
       </Avatar>
       <span className="hidden min-w-0 text-left leading-tight md:grid">
-        <span className="truncate text-[13px] font-semibold">{customer.name}</span>
+        <span className="truncate text-sm font-semibold">{customer.name}</span>
         {address.hasAddress && (
-          <span className="truncate text-[11px] font-normal text-muted-foreground">{address.singleLine}</span>
+          <span className="truncate text-xs font-normal text-muted-foreground">{address.singleLine}</span>
         )}
       </span>
       <span className="sr-only md:hidden">{customer.name}</span>

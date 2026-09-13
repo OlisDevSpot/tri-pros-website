@@ -67,7 +67,7 @@ export function MeetingSection({ meeting, onReschedule }: MeetingSectionProps) {
                 {hint.keys.map(key => (
                   <kbd
                     key={key}
-                    className="rounded border border-border/70 bg-muted px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground"
+                    className="rounded border border-border/70 bg-muted px-1.5 py-0.5 [font-family:inherit] text-xs font-medium text-muted-foreground"
                   >
                     {key}
                   </kbd>

@@ -30,7 +30,7 @@ export function InspectorRail({ openSection, contextFilledCount, contextTotalCou
       icon: <ClipboardListIcon className="size-5" />,
       badge: (
         <Badge
-          className="absolute -right-1 -top-1 h-4 min-w-4 px-1 text-[9px] tabular-nums"
+          className="absolute top-0 right-0 h-4 min-w-4 px-1 text-xs tabular-nums"
           variant={contextFilledCount > 0 ? 'secondary' : 'outline'}
         >
           {`${contextFilledCount}/${contextTotalCount}`}
