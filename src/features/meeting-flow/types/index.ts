@@ -100,16 +100,12 @@ export type PointMedia
     | { type: 'portrait', src: string, alt: string }
     | { type: 'pair', before: string, after: string, alt: string }
     | { type: 'placeholder', label: string }
+    | { type: 'documents', documents: PresentationDocument[] }
 
 export interface PresentationDocument {
   title: string
   src: string
   alt: string
-}
-
-export interface ProofItem {
-  value: string
-  label: string
 }
 
 /** What the pinned column shows for one section. */
@@ -129,13 +125,6 @@ export type WhoWeAreSection
     accent: string
     image: string
     imageAlt: string
-  }
-  | {
-    kind: 'credentials'
-    id: string
-    title: string
-    documents: PresentationDocument[]
-    proof: ProofItem[]
   }
   | {
     kind: 'point'

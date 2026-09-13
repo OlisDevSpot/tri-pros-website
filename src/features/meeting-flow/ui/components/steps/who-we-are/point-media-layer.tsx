@@ -2,6 +2,7 @@ import type { PointMedia } from '@/features/meeting-flow/types'
 import Image from 'next/image'
 import { Scrim } from '@/features/meeting-flow/ui/components/presentation/scrim'
 import { SectionImage } from '@/features/meeting-flow/ui/components/presentation/section-image'
+import { DocumentMediaLayer } from '@/features/meeting-flow/ui/components/steps/who-we-are/document-media-layer'
 import { PlaceholderSlot } from '@/features/meeting-flow/ui/components/steps/who-we-are/placeholder-slot'
 
 interface PointMediaLayerProps {
@@ -11,7 +12,8 @@ interface PointMediaLayerProps {
 /**
  * Media for a point section, by kind. `photo` is full bleed under the radial scrim;
  * `portrait` takes the right 46% on lg+ (top 62% below) with a fade into the ground;
- * `pair` splits before/after; `placeholder` is the labeled slot.
+ * `pair` splits before/after; `documents` lays credential cards on the right;
+ * `placeholder` is the labeled slot.
  */
 export function PointMediaLayer({ media }: PointMediaLayerProps) {
   if (media.type === 'photo') {
@@ -65,6 +67,10 @@ export function PointMediaLayer({ media }: PointMediaLayerProps) {
         <Scrim />
       </>
     )
+  }
+
+  if (media.type === 'documents') {
+    return <DocumentMediaLayer documents={media.documents} />
   }
 
   return <PlaceholderSlot label={media.label} />

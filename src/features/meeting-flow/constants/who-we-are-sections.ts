@@ -5,13 +5,11 @@ import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/ty
 
 const DOCS_BASE = R2_PUBLIC_DOMAINS[R2_BUCKETS.companyDocs] ?? ''
 const founder = companyInfo.teamInfo.owners[0]
-const generalLiability = companyInfo.insurances.find(i => i.label.includes('General Liability'))
 const [licensing, scope, supervision, communication, office, performance] = DUE_DILIGENCE_ITEMS
 
 /** Stand-in imagery from the public site until the step gets its own shoot. */
 const IMAGES = {
   hook: '/hero-photos/modern-house-5.jpg',
-  licensing: '/process/pre-construction-stage.jpeg',
   scope: '/process/design-stage.jpeg',
   supervision: '/process/construction-stage.jpeg',
   before: '/portfolio-photos/projects/Riviera/hero-before.jpeg',
@@ -30,30 +28,6 @@ export const WHO_WE_ARE_SECTIONS: WhoWeAreSection[] = [
     imageAlt: 'Finished home exterior at dusk',
   },
   {
-    kind: 'credentials',
-    id: 'credentials',
-    title: 'Licensed. Insured. Verifiable.',
-    documents: DOCS_BASE
-      ? [
-          {
-            title: 'Contractor license',
-            src: `${DOCS_BASE}/tpr-license.jpg`,
-            alt: `${companyInfo.name} contractor license`,
-          },
-          {
-            title: 'Certificate of insurance',
-            src: `${DOCS_BASE}/tpr-coi-2026.jpg`,
-            alt: `${companyInfo.name} certificate of liability insurance`,
-          },
-        ]
-      : [],
-    proof: [
-      { value: `#${companyInfo.licenses[0]?.licenseNumber ?? '—'}`, label: 'CA contractor license' },
-      { value: generalLiability?.coverage.replace(' Coverage', '') ?? '—', label: 'General liability coverage' },
-      { value: `${companyInfo.numProjects}+`, label: 'Southern California projects' },
-    ],
-  },
-  {
     kind: 'point',
     id: 'licensing',
     number: 1,
@@ -61,7 +35,23 @@ export const WHO_WE_ARE_SECTIONS: WhoWeAreSection[] = [
     line: licensing.short,
     proof: licensing.stat,
     proofLabel: licensing.statLabel,
-    media: { type: 'photo', src: IMAGES.licensing, alt: 'Contractor and homeowner at a framed house' },
+    media: {
+      type: 'documents',
+      documents: DOCS_BASE
+        ? [
+            {
+              title: 'Contractor license',
+              src: `${DOCS_BASE}/tpr-license.jpg`,
+              alt: `${companyInfo.name} contractor license`,
+            },
+            {
+              title: 'Certificate of insurance',
+              src: `${DOCS_BASE}/tpr-coi-2026.jpg`,
+              alt: `${companyInfo.name} certificate of liability insurance`,
+            },
+          ]
+        : [],
+    },
   },
   {
     kind: 'point',
@@ -130,8 +120,6 @@ export const WHO_WE_ARE_PINNED: PinnedSummary[] = WHO_WE_ARE_SECTIONS.map((secti
   switch (section.kind) {
     case 'hook':
       return { title: 'Navigating the construction industry', line: 'What a legitimate project actually requires.' }
-    case 'credentials':
-      return { title: 'Our credentials', line: 'Licensed, insured, verifiable.' }
     case 'point':
       return { number: section.number, title: section.title, line: section.line, count: `${section.number} of ${POINT_COUNT}` }
     case 'truth':

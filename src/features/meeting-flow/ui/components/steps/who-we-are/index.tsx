@@ -5,7 +5,6 @@ import type { PresentationHandle } from '@/features/meeting-flow/types'
 import { WHO_WE_ARE_PINNED, WHO_WE_ARE_SECTIONS } from '@/features/meeting-flow/constants/who-we-are-sections'
 import { PinnedColumn } from '@/features/meeting-flow/ui/components/presentation/pinned-column'
 import { SnapPresentation } from '@/features/meeting-flow/ui/components/presentation/snap-presentation'
-import { CredentialsSection } from '@/features/meeting-flow/ui/components/steps/who-we-are/credentials-section'
 import { HookSection } from '@/features/meeting-flow/ui/components/steps/who-we-are/hook-section'
 import { PointSection } from '@/features/meeting-flow/ui/components/steps/who-we-are/point-section'
 import { TruthSection } from '@/features/meeting-flow/ui/components/steps/who-we-are/truth-section'
@@ -28,8 +27,6 @@ export function WhoWeAreStep({ onContinue, ref }: WhoWeAreStepProps) {
         switch (section.kind) {
           case 'hook':
             return <HookSection key={section.id} index={index} section={section} />
-          case 'credentials':
-            return <CredentialsSection key={section.id} index={index} section={section} />
           case 'point':
             return <PointSection key={section.id} index={index} section={section} />
           case 'truth':
