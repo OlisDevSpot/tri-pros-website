@@ -78,6 +78,23 @@ export type MeetingStepId
 /** `page` = padded scrolling document; `presentation` = the step owns a snapping scroller. */
 export type MeetingStepLayout = 'page' | 'presentation'
 
+// ── Shell (top bar, inspector panel, keys) ─────────────────────────────────
+
+/** Which inspector-panel section is open; the panel is closed when the view holds `null`. */
+export type PanelSection = 'meeting' | 'context' | 'persona'
+
+/** Imperative surface a presentation-layout step exposes to the shell's key map. */
+export interface PresentationHandle {
+  next: () => void
+  prev: () => void
+}
+
+/** One row of the keyboard help list. */
+export interface KeyHint {
+  keys: string[]
+  label: string
+}
+
 export type PointMedia
   = | { type: 'photo', src: string, alt: string }
     | { type: 'portrait', src: string, alt: string }

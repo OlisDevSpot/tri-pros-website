@@ -102,6 +102,19 @@ The dashboard layout has one canonical shape. Do not refactor without reading th
 **Reference impl**: `src/app/(frontend)/dashboard/layout.tsx`
 **Enforced by**: convention (no enforcement mechanism — guard via review)
 
+### stage-routes-opt-out-with-data-stage
+
+A route that must render edge to edge inside the dashboard (today: the meeting flow, `/dashboard/meetings/[meetingId]`) marks its root element with `data-stage`. Two selectors react to it; `layout.tsx` does not change:
+
+- `src/app/(frontend)/dashboard/template.tsx` — `motion.main` carries `has-data-stage:p-0`, so the template's page padding disappears only while a stage is inside it.
+- `src/app/(frontend)/globals.css` — `[data-slot='sidebar-inset']:has([data-stage]) [data-slot='dashboard-mobile-nav'] { display: none }` hides the mobile bottom nav for that route.
+
+The stage route then supplies its own gutters where it wants them (the meeting flow's page steps do; its presentation does not) and its own safe-area bottom padding.
+
+**Why**: the dashboard layout shape is fixed (rule above). A route group or a nested layout would fork the shell or remount the sidebar; a pathname-aware template couples the template to routes. One attribute plus two `:has()` selectors keeps one layout and one template.
+**Reference impl**: `src/features/meeting-flow/ui/views/meeting-flow.tsx` (root `data-stage`)
+**Enforced by**: convention
+
 ### proposal-flow-layout-shape-fixed
 
 The proposal flow has its own canonical shape — gradient bg, scroll root context, full-height column:

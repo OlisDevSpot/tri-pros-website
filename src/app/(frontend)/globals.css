@@ -1685,3 +1685,10 @@
   font-size: 13px;
   color: var(--muted-foreground);
 }
+
+/* Stage routes (today: the meeting flow) opt out of the dashboard chrome. The
+   template drops its padding via `has-data-stage:p-0`; this hides the mobile nav.
+   Rule: docs/codebase-conventions/app-shell.md#stage-routes-opt-out-with-data-stage */
+[data-slot='sidebar-inset']:has([data-stage]) [data-slot='dashboard-mobile-nav'] {
+  display: none;
+}
