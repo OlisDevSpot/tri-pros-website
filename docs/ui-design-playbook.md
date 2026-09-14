@@ -307,10 +307,12 @@ playbook applies.
 - `memory/feedback-motion-patterns.md` — motion/react conventions.
 - `memory/pattern-entity-overview-card.md` — compound overview card pattern.
 - `memory/project-sidebar-animation.md` — sunken-well reference aesthetic.
+- `docs/how-to/ui-exploration.md` — the exploration-scale companion (options page → spec → plan → subagent build → polish) for surfaces being re-conceived rather than tuned; `/ui-exploration <target>`.
 
 ---
 
 ## Changelog
 
+- **2026-09-13** — Cross-linked the exploration-scale companion `docs/how-to/ui-exploration.md` (Who We Are presentation build).
 - **2026-04-21** — Initial version. Distilled from PR #119 (participants
   redesign) and PR #122 (lead sources admin page).
