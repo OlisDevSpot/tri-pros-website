@@ -99,17 +99,16 @@ CASL abilities live in `src/shared/domains/permissions/abilities.ts`. Every enti
 
 ## Key integrations
 
-- **DocuSign** — legacy contract signing (zoho-sign is the active path)
 - **Zoho Sign** — e-signature; see `src/shared/services/providers/zoho-sign/` + `zoho-sync.service.ts`
 - **Cloudflare R2** — S3-compatible file storage; provider at `services/providers/r2/`
 - **Upstash QStash** — background job queue; handlers at `/api/qstash-jobs`; jobs in `services/providers/upstash/jobs/`
 - **Resend + React Email** — transactional email; provider at `services/providers/resend/`
-- **Notion** — trades/scopes/SOW data source + temporary CRM (contacts). Contacts will migrate to in-house CRM (see `docs/plans/notion-crm-migration-design.md`)
+- **Notion** — content data source only: trades, scopes, SOW templates, pain points; provider at `services/providers/notion/` (see its `DOCS.md`). The contacts CRM was migrated in-house and the bridge removed 2026-07-09 (`docs/plans/notion-crm-migration-design.md`)
 - **Google Maps** — `@vis.gl/react-google-maps`
 - **AI (Vercel AI SDK + OpenAI)** — project summary generation, currently via `services/providers/ai/`
 - **Web Push (Declarative Web Push)** — iOS PWA + desktop push; manifest scope MUST stay `/` for deep links
 
-**Legacy, do not use**: Monday.com. (Pipedrive fully removed 2026-06-17 — provider, package, and env vars deleted.)
+**Legacy, do not use**: Monday.com. (Pipedrive fully removed 2026-06-17 — provider, package, and env vars deleted. DocuSign removed 2026-07-09 — deps and env placeholders deleted; Zoho Sign is the only e-sign path.)
 
 ## See also
 

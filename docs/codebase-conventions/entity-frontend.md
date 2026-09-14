@@ -9,7 +9,7 @@ Every business entity (Customer, Meeting, Proposal, Project, User, LeadSource, f
 | `<EntityList>` | Generic header + count + empty-state + render-prop list wrapper | `shared/components/entity-list/ui/entity-list.tsx` |
 | `<EntityViewButton>` | Inline "View" affordance for cell-level use | `shared/components/entity-actions/entity-view-button.tsx` |
 
-This is the **frontend mirror of the backend Entity Server System** ([ADR-0002](../adr/0002-entity-server-system.md)). Backend: every entity declares an `EntityServerSpec` consumed by `createEntityRouter`. Frontend: every entity exposes a compound `<XOverviewCard>` + an `EntitySpec` ([ADR-0001](../adr/0001-entity-action-system.md)) driving its action menu. The intent is parallel — typed declarations per entity, generic primitives consume them.
+This is the **frontend mirror of the backend Entity Server System** ([ADR-0002](../adr/0002-entity-server-system.md)). Backend: every entity declares an `EntityServerSpec` consumed by `createCrudRouter` and its router's `procedures.ts` (see `src/trpc/DOCS.md`). Frontend: every entity exposes a compound `<XOverviewCard>` + an `EntitySpec` ([ADR-0001](../adr/0001-entity-action-system.md)) driving its action menu. The intent is parallel — typed declarations per entity, generic primitives consume them.
 
 ## Rules
 

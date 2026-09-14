@@ -25,7 +25,7 @@ Customer ──► Meeting ──► Proposal
 - Only the owner OR a super-admin can delete a meeting.
 
 **Why**: ownership controls permissions (delete, full update). Participation roles control meeting-contextual function (who's the sales rep, who's QA). These are orthogonal concerns — see `#participant-roles-are-meeting-contextual`.
-**Reference impl**: schema (`ownerId` column); `hooks.create.before` in `lib/server-spec.ts` (stamps ownerId)
+**Reference impl**: schema (`ownerId` column); `create.before` in `dal/server/crud.ts` (resolves ownerId via `lib/resolve-owner.ts`)
 **Enforced by**: CASL conditions (planned: `can('delete', 'Meeting', { ownerId: user.id })`) + convention
 
 ### system-account-not-a-person
@@ -250,7 +250,7 @@ The Duplicate action (`meetingsRouter.crud.duplicate`) copies the source row min
 - `../customers/DOCS.md#visibility-via-meeting-participation` — meeting participation is the visibility bridge
 - `../proposals/DOCS.md#conversion-trigger` — approval is a precondition for project creation, not the trigger itself; project creation/linking sets `converted_to_project`
 - `../proposals/DOCS.md#sow-snapshot-from-meeting-on-create` — proposal-side of trade-selections snapshot
-- `../projects/DOCS.md` (when written) — projectId link semantics
+- `../projects/DOCS.md#one-project-per-birthing-meeting` — projectId link semantics (a project has one birthing meeting; later meetings on it are typed `Project`)
 - `memory/project-gcal-sync-architecture.md` — GCal sync architecture (planned)
 - `docs/codebase-conventions/dal-conventions.md` — DAL conventions
 - `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested` — `contextJSON`/`flowStateJSON` are whole-document writers; always plain-replaced, never merged (the `jsonbMergeColumns` opt-in mechanism these columns deliberately stayed out of was deleted entirely in Wave 2, epic #256)

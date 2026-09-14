@@ -1,6 +1,6 @@
 # Notion Provider — Business Rules
 
-The Notion provider wraps the official `@notionhq/client` and exposes typed reads from the company's content databases (trades, scopes, SOWs, projects, meetings, contacts, pain-points). Notion is **owned by the marketing/ops side** — they rename select options, add columns, and create draft rows as part of their normal workflow. The provider's job is to absorb that volatility without taking the app down.
+The Notion provider wraps the official `@notionhq/client` and exposes typed reads from the company's content databases (pain points, trades, scopes, SOWs — the `NotionDatabaseName` union in `types.ts`). Notion is **owned by the marketing/ops side** — they rename select options, add columns, and create draft rows as part of their normal workflow. The provider's job is to absorb that volatility without taking the app down.
 
 This directory holds: low-level client (`client.ts`), database registry (`constants/databases.ts`), generic query DAL (`dal/query-notion-database.ts`), per-entity adapters and schemas (`lib/<entity>/`), and shared property extractors (`lib/extractors.ts`).
 
@@ -12,7 +12,7 @@ This directory holds: low-level client (`client.ts`), database registry (`consta
 
 **Why**: a single corrupt row in a Notion database would otherwise propagate as a 500 across every downstream consumer — pickers, landing pages, cached server fetches. We learned this the hard way: one trade with a renamed select option broke `notion.trades.getAll` everywhere it was consumed (8+ surfaces) until the codebase enum caught up. Adapters must absorb per-row failures so the rest of the list still flows.
 **Reference impl**: `lib/trades/adapter.ts:pageToTrade`; service uses `flatMap` in `src/shared/services/construction-data.service.ts:getTrades`
-**Enforced by**: convention. Other entity adapters (`pageToScope`, `pageToSOW`, etc.) still throw — they should be migrated as they're touched.
+**Enforced by**: convention. Other entity adapters (`pageToScope`, `pageToSOW`, `pageToPainPoint`) still throw — they should be migrated as they're touched.
 
 ### disabled-checkbox-is-extraction-time-gate
 
@@ -50,14 +50,18 @@ The helpers in `lib/extractors.ts` (`titleText`, `selectName`, `checkbox`, `rela
 
 ### cache-invalidation-after-notion-edits
 
-`unstable_cache` keys (`notion-trades`, `notion-scopes`, `notion-pain-points`) wrap server-side reads on landing pages with a 180s TTL. Client-side reads go through the tRPC `notionRouter` and are subject to React Query's normal caching.
+`unstable_cache` keys wrap server-side reads, each with its own TTL:
+- `notion-trades`, `notion-scopes` — landing pages (`src/features/landing/lib/notion-trade-helpers.ts`), 180s
+- `notion-pain-points` — meeting-flow (`src/features/meeting-flow/lib/get-cached-pain-points.ts`, read by `meeting-flow.router.ts`), 600s
+
+Client-side trade/scope reads go through the tRPC `notionRouter` and are subject to React Query's normal caching.
 
 After editing Notion (renaming a select option, toggling Disabled, adding a row), either:
 - Call the `notionRouter.revalidateNotionCache` mutation (agent-only), which `revalidateTag`s all three cache keys, **or**
-- Wait the 180s TTL for self-healing.
+- Wait out the key's TTL (180s trades/scopes, 600s pain points) for self-healing.
 
 **Why**: marketing edits are routine and shouldn't require a code deploy or a server restart to surface. The mutation gives ops a manual lever; the TTL is the safety net.
-**Reference impl**: `src/trpc/routers/notion.router/index.ts:revalidateNotionCache`; `src/features/landing/lib/notion-trade-helpers.ts:getCachedTrades`
+**Reference impl**: `src/trpc/routers/notion.router/index.ts:revalidateNotionCache`; `src/features/landing/lib/notion-trade-helpers.ts:getCachedTrades`; `src/features/meeting-flow/lib/get-cached-pain-points.ts:getCachedPainPoints`
 **Enforced by**: convention
 
 ## Anti-patterns

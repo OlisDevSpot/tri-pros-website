@@ -4,13 +4,15 @@ Step-by-step procedure for adding a new business entity to the tRPC layer under 
 
 **Read first**: [`docs/adr/0002-entity-server-system.md`](../adr/0002-entity-server-system.md) for the *why*. This document is the *how*.
 
-Every entity is a top-level `EntityServerSpec` with its own CASL subject and visibility predicate. Entity-internal relations (junction tables, append-only logs) live as business plugin procedures on the parent's L2 router, not as their own entities.
+Every top-level entity is an `EntityServerSpec` with its own CASL subject and visibility predicate. A child table (per-parent rows, append-only logs) is also an `EntityServerSpec`, but declares `parent: { spec, fk }` and omits its own `visibility` — its scope is derived from the parent (ADR-0002 Amendment 2026-08-11; e.g. `src/shared/modules/proposals/incentives/server-spec.ts`).
 
 ---
 
 ## Step 1: Decide where it lives
 
 **If the entity has UI components / hooks / schemas of its own** → `src/shared/entities/<entity>/lib/` (flat Single Unit).
+
+**If it is one of several related entity units served by one root service** → a unit folder under `src/shared/modules/<module>/<unit>/` (same entity layout; `server-spec.ts` sits at the unit root, and the module's root `service.ts` is its server API). Canonical: `src/shared/modules/proposals/{core,incentives,media,views}/`.
 
 See `feedback-entity-organization.md` in agent memory for entity directory conventions.
 
@@ -79,9 +81,10 @@ export function proposalVisibility({ userId }: VisibilityScope): SQL {
 ## Step 4: Write the server-spec
 
 ```ts
-// src/shared/entities/proposals/lib/server-spec.ts
-import { PROPOSAL } from './constants'
-import { proposalVisibility } from './visibility'
+// src/shared/modules/proposals/core/server-spec.ts
+// (a plain entity puts this at src/shared/entities/<entity>/lib/server-spec.ts)
+import { PROPOSAL } from '@/shared/modules/proposals/core/lib/constants'
+import { proposalVisibility } from '@/shared/modules/proposals/core/lib/visibility'
 import { insertProposalSchema, proposals, selectProposalSchema } from '@/shared/db/schema'
 
 const updateProposalSchema = insertProposalSchema.partial()
@@ -144,55 +147,46 @@ export const proposalCrud = createCrudDal(proposalServerSpec, () => ({
 Entities with no hooks pass no factory: `createCrudDal(spec)`. Hooks should be thin
 orchestrators — extract business logic to `lib/` helpers. Reference impls:
 `src/shared/entities/meetings/dal/server/crud.ts`,
-`src/shared/entities/proposals/dal/server/crud.ts`. Full hook contract:
+`src/shared/modules/proposals/core/dal/server/crud.ts`. Full hook contract:
 `src/trpc/DOCS.md`.
 
 ---
 
 ## Step 6: Compose into the entity router
 
-`src/trpc/routers/<entity>.router/index.ts`:
+`src/trpc/routers/<entity>.router/` — procedures defined once, one plain leaf per file, pure `index.ts`. (The old `createEntityRouter` factory + `EntityToolkit` were removed in the tRPC Standardization Epic; rules: `src/trpc/DOCS.md#procedures-defined-once`, `#one-leaf-shape`, `#pure-composition-index`.)
 
 ```ts
-import z from 'zod'
-import { createEntityRouter } from '@/trpc/lib/create-entity-router'
-import { createCrudRouter } from '@/trpc/lib/create-crud-router'
-import { createTRPCRouter } from '@/trpc/init'
-import { proposalSchemas, proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
+// procedures.ts — pre-scoped procedures, defined ONCE, imported by every leaf
+export const proposalProcedure = agentProcedure.use(async ({ ctx, next }) => {
+  const scope = resolveVisibilityScope(proposalServerSpec, { userId: ctx.session.user.id, ability: ctx.ability })
+  return next({ ctx: { ...ctx, scope } })
+})
+export const proposalShareableProcedure = baseProcedure.use(shareableMiddleware(proposalServerSpec))
+export const proposalPublicProcedure = baseProcedure
 
-export const proposalsRouter = createEntityRouter(proposalServerSpec, (entity) =>
-  createTRPCRouter({
-    // CRUD sub-router — 5 single-row operations with full client type inference.
-    // Lifecycle enrichment lives in the createCrudDal config factory (dal/server/crud.ts), not in handler overrides.
-    crud: createCrudRouter({
-      spec: proposalServerSpec,
-      schemas: { ...proposalSchemas, id: z.string().uuid() },
-      authedProcedure: entity.authedProcedure,
-      shareableProcedure: entity.shareableProcedure,
-    }),
+// crud.router.ts — 5 single-row operations; builds its scoped procedures inline from the spec
+export const crudRouter = createCrudRouter({
+  spec: proposalServerSpec,
+  schemas: { ...proposalSchemas, id: z.string().uuid() },
+  crud: proposalService, // REQUIRED: plain entity passes its `<entity>Crud`; the proposal module service spreads `proposalCrud`
+})
 
-    // Business sub-router — entity-specific queries (list, enriched views, etc.)
-    business: createTRPCRouter({
-      list: entity.authedProcedure.input(listSchema).query(listHandler),
-      getFullView: entity.shareableProcedure.input(viewSchema).query(viewHandler),
-    }),
+// business.router.ts — entity-specific queries (list, enriched views, etc.)
+export const businessRouter = createTRPCRouter({
+  list: proposalProcedure.input(listSchema).query(listHandler),
+  getFullView: proposalShareableProcedure.input(viewSchema).query(viewHandler),
+})
 
-    // Service-layer sub-router — receives entity toolkit via factory.
-    delivery: createDeliveryRouter(entity),
-  })
-)
+// index.ts — pure composition (key order IS the tRPC path)
+export const proposalsRouter = createTRPCRouter({
+  crud: crudRouter,
+  business: businessRouter,
+  delivery: deliveryRouter, // service-layer leaf, same shape
+})
 ```
 
-The factory function receives an **entity toolkit** with pre-configured tRPC procedures:
-
-| Member | What it is | Middleware chain |
-|--------|-----------|-----------------|
-| `entity.authedProcedure` | Agent-only, scope resolved | `agentProcedure.use(scopeMiddleware(spec))` |
-| `entity.shareableProcedure` | Token-or-session, auto-resolves scope | `baseProcedure.use(shareableMiddleware(spec))` |
-| `entity.publicProcedure` | No auth required | `baseProcedure` (pass-through) |
-| `entity.spec` | The spec itself | For sub-routers that need it |
-
-CRUD is NOT on the toolkit — call `createCrudRouter()` directly in the factory for full type inference. These are NOT custom abstractions — `entity.authedProcedure` IS a real tRPC procedure with full type inference and middleware composability.
+Declare only the procedure variants the entity uses (meetings/applications need only the agent one). These are NOT custom abstractions — `proposalProcedure` IS a real tRPC procedure with full type inference and middleware composability.
 
 ---
 
@@ -216,9 +210,9 @@ export const appRouter = createTRPCRouter({
 // app.ts), not the bare entity name — `proposalsRouter`, not `proposals`.
 // Agent caller — session has CASL read permission
 trpc.proposalsRouter.crud.getById.useQuery({ id })
-trpc.proposalsRouter.crud.list.useQuery({ pagination, search })
+trpc.proposalsRouter.business.list.useQuery({ pagination, search })
 trpc.proposalsRouter.crud.update.useMutation()
-trpc.proposalsRouter.business.duplicateWithSnapshot.useMutation()
+trpc.proposalsRouter.crud.duplicate.useMutation()
 
 // Homeowner caller — shareable entity, no session
 trpc.proposalsRouter.crud.getById.useQuery({ id, token: shareToken })
@@ -235,7 +229,7 @@ trpc.proposalsRouter.crud.getById.useQuery({ id, token: shareToken })
 - **Override a CRUD handler** (last resort — bypasses hooks entirely): pass `handlers: { create: customCreateDal }` to `createCrudRouter`. The custom handler must match `CrudHandlers<TTable, TId>` for that slot. Non-overridden slots use the generic DAL defaults from `createCrudDal(spec)`.
 - **Non-`id` primary key** (serial integer, custom column name, etc.): set `primaryKey` on the spec and pass `id: z.number().int()` in the schemas config. Use `EntityServerSpec<typeof table, number>` for the `TId` generic.
 - **Behavior not covered by any spec field**: write it as a business procedure on the business sub-router. If the same pattern appears across 2+ entities, propose adding it as a named typed spec field — that's the promotion bar.
-- **Service-layer sub-router** (email, contracts, etc.): declare as a factory function `createDeliveryRouter(entity: EntityToolkit<TTable>)` that receives the entity toolkit and returns a tRPC router. Sub-routers get DAL handlers via `createCrudDal(spec)` directly. See `delivery.router.ts` as the reference implementation.
+- **Service-layer sub-router** (email, contracts, etc.): a plain leaf — `export const deliveryRouter = createTRPCRouter({...})` importing procedures from `./procedures`, calling services and the entity's `<entity>Crud` handlers. See `proposals.router/delivery.router.ts` as the reference implementation.
 
 ---
 
@@ -245,7 +239,7 @@ trpc.proposalsRouter.crud.getById.useQuery({ id, token: shareToken })
 - ❌ **Don't write a new `userCanSeeX` predicate in `dal/server/`.** Visibility colocates with the entity at `entities/<entity>/lib/visibility.ts`.
 - ❌ **Don't hand-roll CRUD procedures.** Use `createCrudRouter()`. If the factory's output isn't sufficient, you almost certainly want a business procedure, not a custom CRUD slot.
 - ❌ **Don't write `if (ctx.ability.can('manage', 'all')) ...` inline.** The CRUD factory applies CASL and visibility uniformly. Reaching for the omni check inline is a smell.
-- ❌ **Don't put `crud()` on the entity toolkit.** Call `createCrudRouter()` directly in the factory function — this is how type inference flows through. Toolkit is for pre-scoped procedures only.
+- ❌ **Don't generate procedures or sub-routers from a factory** (`createXxxRouter(entity)`, toolkit params). Define procedures once in `procedures.ts`; CRUD is its own `crud.router.ts` leaf via `createCrudRouter()`.
 - ❌ **Don't define entity-name strings in `domains/permissions/`.** Identity lives in `entities/<entity>/lib/constants.ts` and is *imported* by `permissions/abilities.ts`. Inverting this creates circular logic and breaks the "entity owns its identity" rule.
 
 ---
@@ -254,4 +248,4 @@ trpc.proposalsRouter.crud.getById.useQuery({ id, token: shareToken })
 
 - [ADR-0002](../adr/0002-entity-server-system.md) — the architecture decision record this how-to implements.
 - [ADR-0001](../adr/0001-entity-action-system.md) — the UI-side counterpart (Entity Action System). Naming and forcing-function patterns are intentionally mirrored.
-- [`docs/domain/ubiquitous-language.md`](../domain/ubiquitous-language.md) — canonical entity vocabulary; every entity name added here should reflect the glossary.
+- [`docs/ubiquitous-language.md`](../ubiquitous-language.md) — canonical entity vocabulary; every entity name added here should reflect the glossary.

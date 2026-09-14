@@ -34,8 +34,8 @@ src/trpc/
     meetings.router/         MIGRATED — crud + reads + participants + business leaves
     customer-notes.router/   MIGRATED — pure CRUD
     applications.router/     MIGRATED — crud + business + draft leaves
-    projects.router/         NOT MIGRATED (uses agentProcedure directly; spec/DAL exist, router pending S8)
-    lead-sources.router.ts   NOT MIGRATED
+    projects.router/         PARTIAL — procedures.ts + leaf files + pure index.ts; crud.router.ts is hand-written (not createCrudRouter)
+    lead-sources.router.ts   NOT MIGRATED — single file on superAdminProcedure
     ... other routers ...
     app.ts                   root router; mounts everything
 ```
@@ -119,7 +119,7 @@ export const businessRouter = createTRPCRouter({
 })
 ```
 
-CRUD is its own leaf, `crud.router.ts`, built by `createCrudRouter({ spec, schemas, handlers? })` — which builds its own scoped procedures **inline from `config.spec`** (same inline pattern, no cast, no procedure params).
+CRUD is its own leaf, `crud.router.ts`, built by `createCrudRouter({ spec, schemas, crud, handlers? })` (`crud` = the entity's single hooked `createCrudDal` instance from `dal/server/crud.ts`, required) — which builds its own scoped procedures **inline from `config.spec`** (same inline pattern, no cast, no procedure params).
 
 **Reference impl**: `src/trpc/routers/proposals.router/crud.router.ts`, `.../business.router.ts`
 **Enforced by**: convention
@@ -221,7 +221,7 @@ Follows better-auth (`databaseHooks`), Payload CMS (collection `beforeChange`/`a
 
 **List is NOT CRUD** — it's always a business sub-router procedure with custom return shape (multi-table joins, derived columns, aggregates).
 
-Per-slot handler override is supported: pass `handlers: { create: customCreateDal, ... }`. Unspecified slots fall back to `createCrudDal(spec)` defaults.
+Per-slot handler override is supported: pass `handlers: { create: customCreateDal, ... }`. Unspecified slots fall back to the required `crud` instance (the entity's hooked `createCrudDal` result); the router never rebuilds handlers itself.
 
 **Why**: 5 single-row operations are mechanical and benefit from a factory. List queries are inherently entity-specific; forcing them into a generic factory produces worse code (see ADR-0002 "Considered alternatives").
 **Reference impl**: `src/trpc/lib/create-crud-router.ts`; `src/shared/dal/server/lib/create-crud-dal.ts`
@@ -253,7 +253,7 @@ call automatically without any per-entity router code.
 DAL functions return `DalReturn<T>` (never throw on domain errors). tRPC procedures unwrap with `dalToTrpc()`:
 
 ```ts
-list: entity.authedProcedure
+list: proposalProcedure
   .input(proposalListInputSchema)
   .query(async ({ ctx, input }) => dalToTrpc(await listProposals(ctx, input))),
 ```
@@ -337,7 +337,7 @@ proposals.router/
 **Reference impl**: `src/trpc/routers/proposals.router/`, `src/trpc/routers/notion.router/`
 **Enforced by**: convention
 
-## Migration status (as of 2026-08-11)
+## Migration status (as of 2026-09-14)
 
 Adoption is broad now, not limited to the original canonical example — most agent-facing entities run through `EntityServerSpec` + the definition-once router shape (`procedures.ts` + `createCrudRouter` + pure `index.ts`). The `createEntityRouter` factory is gone (S6/S7); every migrated router below is factory-free.
 
@@ -350,10 +350,10 @@ Adoption is broad now, not limited to the original canonical example — most ag
 | Customer Note | ✅ Migrated | pure CRUD; author-or-admin hooks, see `../shared/entities/customers/DOCS.md#note-authorship` |
 | Voip (calls, campaigns, DIDs, contacts, messages, link-tokens, contact-attributes) | ✅ Migrated | `entities/voip-*/` |
 | App Settings | ✅ Migrated | `entities/app-settings/` |
-| Project | ⚠️ Partial | `projectServerSpec` + `projectCrud` exist (S5a); `projects.router` still hand-written on `agentProcedure` directly — router migration is S8 |
-| Lead Source | ❌ Not migrated | Single-file router; audited + scheduled in S8 |
+| Project | ⚠️ Partial | `projectServerSpec` + `projectCrud` + `procedures.ts` (`projectProcedure`) exist; `crud.router.ts` is still hand-written (`agentProcedure` / `projectProcedure`), not `createCrudRouter` |
+| Lead Source | ❌ Not migrated | Single-file router on `superAdminProcedure` |
 
-Project (router) and Lead Source are the known gaps — the tRPC Standardization Epic slice **S8** audits both against R1–R13 and migrates `projects.router` onto `createCrudRouter`.
+Project (CRUD leaf) and Lead Source are the known gaps. The epic's S8 audit (2026-08-11) spun both out: projects → `docs/plans/2026-08-11-projects-standardization-epic.md`; lead-sources deferred until after projects.
 
 ## Anti-patterns
 

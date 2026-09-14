@@ -2,8 +2,7 @@
 // here as top-level consts (tRPC-idiomatic `const + typeof`), imported directly
 // by every proposal sub-router. This replaces the old `createEntityRouter`
 // factory + `EntityToolkit` argument: the middleware is baked on at definition
-// time, not generated per call. see ../../DOCS.md#entity-router-via-factory
-// (being rewritten — epic S7)
+// time, not generated per call. see ../../DOCS.md#procedures-defined-once
 //
 // server-spec.ts stays a PURE data object (imported by the DAL); the tRPC
 // runtime is pulled in HERE, router-side, never into the entity/DAL layer.

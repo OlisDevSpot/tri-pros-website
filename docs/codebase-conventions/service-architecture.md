@@ -82,9 +82,9 @@ spawning a new import path. Pattern-matching across providers becomes trivial.
 
 **Reference impl**: `src/shared/services/providers/twilio/` (canonical post-2026-06-02), `src/shared/services/providers/zoho-sign/` (older example, same pattern but pre-dating the formal codification).
 
-**Enforced by**: convention + PR review. Slug E of voip-in-house adds an
-ESLint `no-restricted-imports` rule preventing direct `import twilio from 'twilio'`
-outside the provider directory; the rule pattern generalizes to other SDKs.
+**Enforced by**: convention + PR review. Not currently lint-enforced: no
+`no-restricted-imports` rule for provider SDKs (e.g. direct `import twilio from 'twilio'`
+outside the provider directory) exists in `eslint.config.js` (verified 2026-09-14).
 
 ### provider-directory-shape
 
@@ -229,7 +229,7 @@ if (env.NODE_ENV !== 'production') {
 
 **Reference impl**: [`src/shared/services/providers/twilio/lib/config.ts`](../../src/shared/services/providers/twilio/lib/config.ts) (canonical post-2026-06-05). [Migration matrix](../plans/voip-in-house/EPIC.md) tracks remaining providers to retrofit.
 
-**Enforced by**: convention + PR review. ESLint `no-restricted-imports` (per `client-is-the-superset-entry-point`) already prevents consumers from importing raw `serverEnv.X_FOO` inside provider directories; this rule extends the discipline to require lazy reads only.
+**Enforced by**: convention + PR review. Not lint-enforced — `eslint.config.js` has no `no-restricted-imports` rule for raw `serverEnv.X_FOO` reads inside provider directories (verified 2026-09-14); this rule extends the `client-is-the-superset-entry-point` discipline to require lazy reads only.
 
 ### sync-service-when-2-plus-ops
 

@@ -86,5 +86,7 @@ JustCall is committed + pushed (`26c54190`, `22974394`; zero W4 overlap). #285 i
 ## D. Stale docs to fix in the W4 PR (not before)
 `docs/how-to/add-an-entity.md` (teaches deleted factory), `docs/codebase-conventions/trpc-procedures.md#entity-procedures-from-factory`, `dal-conventions.md` (no child-bridge / tx rules yet), `src/trpc/DOCS.md` migration table, dead `#entity-router-via-factory` anchors, handoff `business.router.ts:~82` → `entities/projects/lib/derive-scope-ids.ts:6`, `SYSTEM_CONTEXT` → `systemContext(reason)` on #285. No ADR has been written since 2026-07-26 — the child/hook/tx models live only in `src/trpc/DOCS.md`, epic docs and code; consider an ADR for the child-entity standard (B1) as part of W4.
 
+> **Update 2026-09-14 (stale-ref sweep, done early at owner request):** fixed — `trpc-procedures.md` factory section (now `#entity-procedures-defined-once`), dead `#entity-router-via-factory` anchors in the applications/customers/meetings/proposals routers, `src/trpc/DOCS.md` migration table + `createCrudRouter` signature. Still open for W4: `dal-conventions.md` child-bridge / tx rules, the `business.router.ts` handoff pointer, `SYSTEM_CONTEXT` on #285, the child-entity ADR.
+
 ## E. Leave alone
 Users carve-out (no DOCS), inline `db.select` reads in `agent-settings`/`lead-sources` routers, `user.role` pgEnum, inline `ability.cannot` in child leaves (pending S5), W1–W3 declarations (conformant), `setVoipCampaignsPolicy` (owned by the VOIP epic).

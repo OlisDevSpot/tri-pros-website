@@ -40,8 +40,8 @@ shared/modules/proposals/            ← Module: aggregate of entity units under
 shared/domains/pipelines/            ← Single Unit (domain system)
 ├── constants/, hooks/, lib/, types/, ui/
 
-shared/auth/                         ← Single Unit (domain system)
-├── hooks/, lib/, schemas/
+shared/domains/auth/                 ← Single Unit (domain system)
+├── forms/, hooks/, lib/, schemas/
 
 features/meeting-flow/               ← Single Unit (feature)
 ├── constants/, hooks/, lib/, types/, ui/
@@ -70,20 +70,22 @@ A directory is a **Single Unit** (domain/entity/feature) when it has 2+ of these
 
 ```
 Trade (discipline)
-  └─ Scope (work package)
-       ├─ Material (product)
-       ├─ Variable (configurable param)
-       ├─ Addon (optional upgrade)
-       └─ SOW (scope of work — narrative document)
+  ├─ Scope (work package)
+  │    ├─ SOW template (narrative document)
+  │    ├─ Material (product)            ← seeded Postgres catalog only
+  │    └─ Variable (configurable param) ← seeded Postgres catalog only
+  └─ Addon (optional upsell, sibling of scopes)
 ```
+
+Runtime source of truth for trades, scopes/add-ons, SOW templates, and pain points is Notion (`src/shared/services/providers/notion/`, via `construction-data.service.ts`). The Postgres catalog tables (`trades`, `scopes`, `addons`, materials, variables, benefits) are seeded but not read at runtime. Planned home: `docs/plans/2026-09-14-construction-catalog-centralization-design.md`.
 
 | Term | Definition | Example |
 |------|-----------|---------|
-| **Trade** | A construction specialty. Has `location` (exterior/interior/lot). | Roofing, HVAC, Solar, Windows |
+| **Trade** | A construction specialty. Has a category (`type`: Energy Efficiency / General Construction / Structural / Rough) and a site area (`homeOrLot`: Home / Lot). The seeded Postgres table uses `location` (exterior/interior/lot) instead. | Roofing, HVAC, Solar, Windows |
 | **Scope** | A defined unit of work within a trade. Atomic proposal building block. | "Full Roof Replacement", "Attic Insulation" |
-| **SOW** (Scope of Work) | Detailed narrative describing work included in a scope: materials, labor, timeline, exclusions. | Stored as TipTap JSON + HTML |
+| **SOW** (Scope of Work) | Detailed narrative describing work included in a scope: materials, labor, timeline, exclusions. Notion SOW templates link to scopes; proposals copy the content into each SOW section. | Stored as TipTap JSON + HTML |
 | **Material** | A specific product used in a scope. Has lifespan + warranty. | Tesla Solar Roof, GAF Timberline |
-| **Addon** | Optional upgrade to a scope. Incremental upsell. | Premium paint, extended warranty |
+| **Addon** | Optional upsell related to a trade. In Notion it is a scopes-database row with `entryType = 'Addon'`; in the seeded Postgres catalog it is the `addons` table with a trade FK. | Premium paint, extended warranty |
 | **Variable** | Configurable field that affects SOW content. Types: text, select, number, boolean. | Roof pitch, HVAC capacity |
 | **Benefit** | A value proposition tied to a trade/scope/material. Grouped by category. | Energy savings, durability |
 
@@ -107,13 +109,13 @@ Trade (discipline)
 
 | Term | Definition | Stored On |
 |------|-----------|-----------|
-| **Pain Point** | Customer's problem/frustration. Has `accessor` + `urgencyRating` (1-10). | `customers.customerProfileJSON` |
-| **Trigger Event** | Recent catalyst that prompted contact (leak, high bill, neighbor's project). | `customers.customerProfileJSON` |
-| **Outcome Priority** | What matters most: Price, Quality, or Speed. | `customers.customerProfileJSON` |
+| **Pain Point** | Customer's problem/frustration. Has `accessor` + `urgencyRating` (1-10). The pain-point catalog itself lives in Notion. | `customer_profiles.main_pain_accessor` + `main_pain_urgency`; others in `customer_profiles.additional_pain_points` |
+| **Trigger Event** | Recent catalyst that prompted contact (leak, high bill, neighbor's project). | `customer_profiles.trigger_event` |
+| **Outcome Priority** | What matters most: Price, Quality, or Speed. | `customer_profiles.outcome_priority` |
 | **Customer Persona Profile** | Synthesized sales intelligence object. Joins customer/meeting JSONB data with Notion pain points to produce fears, benefits, decision drivers, emotional levers, household resonance, and risk factors — all contextualized to selected trades. | Generated at runtime (not stored) |
-| **Decision Timeline** | When they want to act: ASAP, 1-3mo, 3-6mo, 6+mo, Not sure. | `customers.customerProfileJSON` |
-| **Decision Urgency** | How urgent the need feels (1-10 scale). Distinct from timeline. | `customers.customerProfileJSON` |
-| **Credit Score Range** | Self-reported bracket. Predicts financing approval. | `customers.financialProfileJSON` |
+| **Decision Timeline** | When they want to act: ASAP, 1-3mo, 3-6mo, 6+mo, Not sure. | `customer_profiles.decision_timeline` |
+| **Decision Urgency** | How urgent the need feels (1-10 scale). Distinct from timeline. | No dedicated column today |
+| **Credit Score Range** | Self-reported bracket. Predicts financing approval. | `customer_profiles.credit_score` |
 | **DMs Present** | Who attended the meeting. All, Only husband, Only wife, Partial, None. | `meetings.situationProfileJSON` |
 
 ## Pipeline & Lifecycle
@@ -219,14 +221,12 @@ Use slash-separated paths to reference any view context unambiguously. Format: `
 
 | Entity | Column | Zod Schema | Contains |
 |--------|--------|------------|----------|
-| Customer | `customerProfileJSON` | `customerProfileSchema` | Age, trigger, pain points, priority, timeline, urgency |
-| Customer | `propertyProfileJSON` | `propertyProfileSchema` | HOA, year built |
-| Customer | `financialProfileJSON` | `financialProfileSchema` | Credit score, quotes received |
-| Meeting | `situationProfileJSON` | `situationProfileSchema` | DMs present, meeting type |
-| Meeting | `programDataJSON` | `programDataSchema` | Scopes, utility, timeline, years in home |
-| Proposal | `formMetaJSON` | `formMetaSectionSchema` | Pricing display mode |
+| Meeting | `contextJSON` | `meetingContextSchema` | DMs present, observed urgency, budget comfort, spouse dynamic, demeanor |
+| Meeting | `flowStateJSON` | `meetingFlowStateSchema` | Current step, trade selections, selected program, deal structure, closing adjustments |
 | Proposal | `projectJSON` | `projectSectionSchema` | Scopes, trades, SOWs, objectives |
-| Proposal | `fundingJSON` | `fundingSectionSchema` | TCP, cash, deposit, incentives |
+| Proposal | `formMetaJSONDeprecated` / `fundingJSONDeprecated` | `formMetaSectionSchema` / `fundingSectionSchema` | Frozen legacy blobs (Wave 3); scalars now live in columns and `proposal_incentives`; dropped at the Wave-4 push |
+
+The former customer `customerProfileJSON` / `propertyProfileJSON` / `financialProfileJSON` blobs are gone: `age` is a `customers` column and the other fields are columns on the 1:1 `customer_profiles` table.
 
 ## Migration & Contract-Change Vocabulary
 
@@ -234,11 +234,11 @@ Terms for communicating about codebase alterations — retiring a pattern, migra
 
 | Term | Definition |
 |------|-----------|
-| **API surface** | The total externally-consumable contract of a unit of code: its exported functions/types, the parameter shapes it accepts (usually Zod schemas), the shapes it returns, and its side-effect contract. The surface can be **generic** (`shared/dal/server/lib/create-crud-dal.ts` — its surface is inherited by every entity that registers a spec) or **concrete** (`replaceProposalIncentives` — one function, one contract). "Tightening the surface" means narrowing what it accepts/returns to exactly the current contract and nothing else. |
+| **API surface** | The total externally-consumable contract of a unit of code: its exported functions/types, the parameter shapes it accepts (usually Zod schemas), the shapes it returns, and its side-effect contract. The surface can be **generic** (`shared/dal/server/lib/create-crud-dal.ts` — its surface is inherited by every entity that registers a spec) or **concrete** (`proposalService.incentives.replace` — one function, one contract). "Tightening the surface" means narrowing what it accepts/returns to exactly the current contract and nothing else. |
 | **Blast radius** | The complete set of code affected by changing a contract: every consumer, implementer, schema, script, doc, and test that touches the changed shape. Discovered up front via project-wide sweep so the full extent is KNOWN — but not necessarily rewritten up front (see the tightening tally below). Example: retiring `fundingJSON.data.incentives` puts the blank-writers (`edit-proposal-view`, `create-new-proposal-view`, the pipelines popover), the `getFullView` hydration bridge, the PDF/AI-summary/Zoho consumers, the backfill script, and the entity DOCS.md all inside the blast radius. **Rule: the radius must be fully mapped, and every site inside it must end up either rewritten or tallied — a site that is neither is a silent gap.** |
 | **Dual-shape tolerance** | **Anti-pattern.** An API surface that accepts BOTH the old shape and the new shape so neither breaks, introduced by a defensive/additive session — and left **untallied**. The additive move itself is often fine during a transition (see the tightening tally below); what makes it tolerance is that nobody recorded it, so it never gets tightened. It hides an incomplete migration: the blast radius looks smaller than it is, and the old shape survives silently until it resurfaces as corrupt data or a dead branch. Live specimen: `shared/domains/funnels/lib/build-funnel-lead-note.ts:28-31` — the `typeof raw === 'string'` legacy-flat branch alongside the new `{label,value,order}` entries (registered for deletion in the seam-tightening register; its sibling `FunnelIntakePanel.toRows()` was already killed in `215790be`). |
 | **Sanctioned bridge** | The legitimate counterpart to dual-shape tolerance: a DELIBERATE, temporary dual-shape seam kept alive during a migration window, **registered in the deprecation ledger with a named kill trigger**. Example: `getFullView` re-hydrating `proposal_incentives` rows back into `fundingJSON.data.incentives` shape until W3 kills `fundingJSON` itself. The register entry is what makes it a bridge instead of tolerance — unregistered dual-shape is a defect by definition. |
-| **Escape hatch** | A write (or read) path that bypasses the sanctioned boundary for an operation, letting the old shape or unvalidated data around the gate. Example: `updateProposalSchema.partial()` flowing into the generic `updateImpl` whole-column `.set()` lets any authed caller write blob incentives verbatim — bypassing `replaceProposalIncentives`, its freeze gate, and row creation. Another: `upsertOneToOne` accepting `Record<string, unknown>` with no Zod parse. Escape hatches are what dual-shape tolerance leaves behind at the persistence layer: the front door was migrated, the side door still speaks the old contract. |
+| **Escape hatch** | A write (or read) path that bypasses the sanctioned boundary for an operation, letting the old shape or unvalidated data around the gate. Example: `updateProposalSchema.partial()` flowing into the generic `updateImpl` whole-column `.set()` lets any authed caller write blob incentives verbatim — bypassing `proposalService.incentives.replace`, its freeze gate, and row creation. Another: `upsertOneToOne` accepting `Record<string, unknown>` with no Zod parse. Escape hatches are what dual-shape tolerance leaves behind at the persistence layer: the front door was migrated, the side door still speaks the old contract. |
 | **Tightening tally** | The running list a session keeps WHILE implementing a change, recording every site where it went additive instead of rewriting — **specifically where the additive choice was made because of the transition itself, not because the new implementation needs it**. That distinction is the entry test: "would this branch/param/bridge exist if we were writing this fresh today?" No → tally it. The tally is worked through AFTER the migration is validated, one site at a time, tightening each surface to the new contract. Concrete instance: the per-wave **seam-tightening register** in `docs/plans/jsonb-decomposition-deprecation-ledger.md`. |
 
 **How they compose — the additive-first workflow:** during active implementation, thinking additively is the norm, not a failure — rewriting the whole blast radius mid-flight is often the riskier move. The discipline is: (1) map the full blast radius up front so nothing is invisible; (2) implement, going additive where the transition makes that easier; (3) every additive-because-of-the-transition site goes on the tightening tally the moment it's written; (4) once the migration is validated, sweep the tally and tighten the API surface site by site. Dual-shape tolerance and escape hatches are what an **untallied** additive site becomes — the same code, minus the accountability. The end-of-wave seam audit is the backstop that catches what sessions forgot to tally.
