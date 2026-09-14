@@ -2,6 +2,8 @@ import type { CalendarEvent } from '@/shared/components/calendar/types'
 import type { MeetingOutcome, MeetingType } from '@/shared/constants/enums'
 import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { MeetingFlowState, TradeSelection } from '@/shared/entities/meetings/schemas'
+import type { ScopeOrAddon } from '@/shared/services/providers/notion/lib/scopes/schema'
+import type { Trade } from '@/shared/services/providers/notion/lib/trades/schema'
 import type { JsonbSection } from '@/shared/types/jsonb'
 
 // ── Intake Collection Field (used by intake step components) ────────────────
@@ -174,4 +176,61 @@ export interface MeetingCalendarEvent extends CalendarEvent {
   customerState: string | null
   customerZip: string | null
   createdAt: string
+}
+
+// ── Specialties (trade selection) ───────────────────────────────────────────
+
+/** A trade's catalog entries, split by Notion `entryType`. */
+export interface TradeScopeGroup {
+  scopes: ScopeOrAddon[]
+  addons: ScopeOrAddon[]
+}
+
+export interface TradeCatalog {
+  trades: Trade[]
+  tradesById: ReadonlyMap<string, Trade>
+  tradesBySlug: ReadonlyMap<string, Trade>
+  scopesByTrade: ReadonlyMap<string, TradeScopeGroup>
+  isLoading: boolean
+  error: Error | null
+  refetch: () => void
+}
+
+/** One chosen scope or add-on, as persisted in `TradeSelection.selectedScopes`. */
+export type SelectionItem = TradeSelection['selectedScopes'][number]
+
+export interface TradeSelectionActions {
+  /** Adds the item when absent, removes it when present. Creates the trade entry on first add. */
+  toggleItem: (tradeId: string, item: SelectionItem) => void
+  toggleReason: (tradeId: string, reason: string) => void
+  setNote: (tradeId: string, note: string) => void
+  /** Drops the trade entry entirely: items, reasons, and note. */
+  clearTrade: (tradeId: string) => void
+}
+
+export interface TradeSelectionContextValue extends TradeSelectionActions {
+  selections: TradeSelection[]
+  catalog: TradeCatalog
+}
+
+export interface OpenTradeOptions {
+  /** Scope to scroll into view and focus once the sheet opens. */
+  focusScopeId?: string
+}
+
+export interface TradeSheetState {
+  openTradeId: string | null
+  focusScopeId: string | null
+  openTrade: (tradeId: string, options?: OpenTradeOptions) => void
+  closeTrade: () => void
+}
+
+export interface TradePhoto {
+  src: string
+  alt: string
+}
+
+export interface TradePairing {
+  pairedSlug: string
+  reason: string
 }
