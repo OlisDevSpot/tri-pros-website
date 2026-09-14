@@ -1,9 +1,19 @@
 // src/shared/lib/file-optimization/optimize-file.ts
 import type { Buffer } from 'node:buffer'
-import type { FileOptimizationResult } from './types'
+import type { FileKind, FileOptimizationResult } from './types'
 import { processImageVariants } from '@/shared/entities/media-files/lib/process-image-variants'
 import { readPdfPageCount } from './strategies/pdf'
-import { classifyFileKind } from './types'
+
+/** Map a MIME type to its optimization strategy bucket. */
+export function classifyFileKind(mimeType: string): FileKind {
+  if (mimeType.startsWith('image/'))
+    return 'image'
+  if (mimeType.startsWith('video/'))
+    return 'video'
+  if (mimeType === 'application/pdf')
+    return 'pdf'
+  return 'other'
+}
 
 /** A skipped result — nothing to persist beyond the original object. */
 function skipped(kind: FileOptimizationResult['kind']): FileOptimizationResult {

@@ -1,7 +1,7 @@
 'use client'
 
-import type { ColumnFiltersState, ColumnSizingState, FilterFnOption, SortingState, VisibilityState } from '@tanstack/react-table'
-import type { DataTableProps, DataTableTimePresetFilter } from '@/shared/components/data-table/types'
+import type { ColumnDef, ColumnFiltersState, ColumnSizingState, FilterFnOption, SortingState, VisibilityState } from '@tanstack/react-table'
+import type { DataTableFilterConfig, DataTableServerPagination, DataTableServerSorting, DataTableTimePresetFilter } from '@/shared/components/data-table/types'
 
 import {
   flexRender,
@@ -24,6 +24,44 @@ import { Skeleton } from '@/shared/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/lib/utils'
+
+export interface DataTableProps<TData, TMeta = unknown> {
+  data: TData[]
+  columns: ColumnDef<TData>[]
+  meta?: TMeta
+  /** Unique ID used to persist column widths to localStorage. Omit to disable persistence. */
+  tableId?: string
+  filterConfig?: DataTableFilterConfig[]
+  defaultSort?: SortingState
+  /** Client-side page size. Ignored when `serverPagination` is provided. */
+  pageSize?: number
+  entityName?: string
+  rowDataAttribute?: string
+  getRowClassName?: (row: TData) => string | undefined
+  onRowClick?: (row: TData) => void
+  onFilteredCountChange?: (count: number) => void
+  onFilteredDataChange?: (data: TData[]) => void
+  /**
+   * Opt into server-side pagination. When set, the caller owns page state and
+   * passes only the current page's rows via `data`. `rowCount` reports the
+   * global total so page-count math stays correct.
+   */
+  serverPagination?: DataTableServerPagination
+  /**
+   * Opt into server-side sorting. When set, DataTable runs in `manualSorting`
+   * mode — column-header clicks emit `onSortChange` events instead of doing
+   * client-side sort. Pair with `serverPagination` for fully server-controlled
+   * tables.
+   */
+  serverSorting?: DataTableServerSorting
+  /**
+   * Controlled column visibility. When set, this map drives TanStack Table's
+   * visibility state — pair with `useColumnVisibility(tableId, columns)` to
+   * persist user toggles to localStorage. When omitted, DataTable falls back
+   * to static `meta.hidden` only.
+   */
+  columnVisibility?: VisibilityState
+}
 
 // ---------------------------------------------------------------------------
 // localStorage helpers

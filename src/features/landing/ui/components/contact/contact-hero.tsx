@@ -1,8 +1,8 @@
 'use client'
 
 import { motion } from 'motion/react'
-import { GeneralInquiryForm } from '@/features/landing/ui/components/contact/general-inquiry-form'
-import { ScheduleConsultationForm } from '@/features/landing/ui/components/contact/schedule-consultation-form'
+import { GeneralInquiryForm } from '@/features/landing/ui/components/forms/general-inquiry-form'
+import { ScheduleConsultationForm } from '@/features/landing/ui/components/forms/schedule-consultation-form'
 import { TopSpacer } from '@/shared/components/top-spacer'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 import { ViewportHero } from '@/shared/components/viewport-hero'

@@ -4,7 +4,6 @@ import type { Pipeline } from '@/shared/constants/enums/pipelines'
 
 import { and, count, desc, eq, inArray, isNotNull, isNull, max, sql } from 'drizzle-orm'
 
-import { computeCustomerStage } from '@/features/customer-pipelines/lib/compute-customer-stage'
 import { DECIDED_OUTCOMES } from '@/shared/constants/enums/meetings'
 import { deriveProjectStatusBucket } from '@/shared/constants/enums/pipelines'
 import { db } from '@/shared/db'
@@ -13,6 +12,7 @@ import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
+import { computeFreshStage } from '@/shared/domains/pipelines/lib/compute-fresh-stage'
 import { computePipelineValue, computeProjectValue } from '@/shared/domains/pipelines/lib/compute-pipeline-value'
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { userParticipatesInMeeting } from '@/shared/entities/meetings/dal/server/participants'
@@ -299,7 +299,7 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean, canSeeUnga
       latestActivityAt: pData?.latestProposalAt ?? row.latestMeetingAt ?? null,
     }
 
-    const stage = computeCustomerStage({
+    const stage = computeFreshStage({
       hasPastMeeting: rawData.hasPastMeeting,
       hasActiveMeeting: rawData.hasActiveMeeting,
       hasScheduledFutureMeeting: rawData.hasScheduledFutureMeeting,

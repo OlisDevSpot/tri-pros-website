@@ -1,8 +1,15 @@
 'use client'
 
-import type { KanbanColumnFilterConfig, KanbanStageConfig } from '@/shared/components/kanban/types'
+import type { KanbanStageConfig } from '@/shared/components/kanban/types'
 
 import { useEffect, useMemo, useState } from 'react'
+
+export interface KanbanColumnFilterConfig {
+  /** Stage keys that are visible by default. If omitted, all stages are visible. */
+  defaultVisible?: string[]
+  /** Stage keys that cannot be hidden (checkbox disabled). */
+  alwaysVisible?: string[]
+}
 
 export function useKanbanColumnFilter(
   stageConfig: readonly KanbanStageConfig[],

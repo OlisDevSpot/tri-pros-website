@@ -1,11 +1,33 @@
 'use client'
 
-import type { ChangeEvent } from 'react'
-import type { MediaManagerProps } from './types'
+import type { ChangeEvent, ReactNode } from 'react'
+import type { MediaGroup, MediaItem } from './types'
 import { useRef, useState } from 'react'
 import { MediaCard } from './media-card'
 import { MediaReorderGrid } from './media-reorder-grid'
 import { MediaUploadButton } from './media-upload-button'
+
+export interface MediaManagerProps {
+  groups: MediaGroup[]
+  /** file-input accept string, e.g. 'image/*' or 'image/*,video/*,application/pdf'. */
+  accept: string
+  isUploading: boolean
+  onUpload: (groupKey: string, files: File[]) => void
+  onReorder: (groupKey: string, updates: { id: number, sortOrder: number }[]) => void
+  onDelete: (id: number) => void
+  onRename: (id: number, name: string) => void
+  /** Render an item's thumbnail/preview (project: derives public-bucket image variants + retry UI; proposal: OptimizedImage / public video+pdf). */
+  renderThumbnail: (item: MediaItem) => ReactNode
+  /** Owner-specific per-item controls overlaid on the card (proposal: a visibility Switch). Receives the card's internal `menuOpen` so a control can stay visible while the more-menu is open. */
+  renderControls?: (item: MediaItem, state: { menuOpen: boolean }) => ReactNode
+  /** Owner-specific large preview for the detail dialog (project: public-bucket image variant with retry UI; proposal: OptimizedImage / public video+pdf). Defaults to a plain <img>. */
+  renderPreview?: (item: MediaItem) => ReactNode
+  /** Owner-specific extra rows in the detail dialog. */
+  renderDetails?: (item: MediaItem) => ReactNode
+  /** Owner-specific menu items injected into each card's more-menu between "View Details" and "Delete" (project: Move-to-phase submenu). */
+  renderMenuItems?: (item: MediaItem) => ReactNode
+  emptyLabel?: string
+}
 
 /**
  * Simple stacked DI orchestrator — one header + upload button + reorder grid per group.

@@ -1,18 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
-import type { ComponentProps, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 
-import type { Button } from '@/shared/components/ui/button'
 import type { AppAction, AppSubject } from '@/shared/domains/permissions/types'
-
-// ── Legacy standalone button props (kept for backward compat) ────────────────
-
-export interface EntityActionButtonProps extends Omit<ComponentProps<typeof Button>, 'children' | 'asChild'> {
-  icon?: LucideIcon
-  label?: string
-  showLabel?: boolean
-  href?: string
-  external?: boolean
-}
 
 // ── Standardized entity action system ────────────────────────────────────────
 

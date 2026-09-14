@@ -1,5 +1,3 @@
-import type { ReactNode } from 'react'
-
 /** Owner-agnostic media item. Owner-specific fields (phase/hero/visibility) live behind DI slots, not here. */
 export interface MediaItem {
   id: number
@@ -17,26 +15,4 @@ export interface MediaGroup {
   key: string
   label: string
   items: MediaItem[]
-}
-
-export interface MediaManagerProps {
-  groups: MediaGroup[]
-  /** file-input accept string, e.g. 'image/*' or 'image/*,video/*,application/pdf'. */
-  accept: string
-  isUploading: boolean
-  onUpload: (groupKey: string, files: File[]) => void
-  onReorder: (groupKey: string, updates: { id: number, sortOrder: number }[]) => void
-  onDelete: (id: number) => void
-  onRename: (id: number, name: string) => void
-  /** Render an item's thumbnail/preview (project: derives public-bucket image variants + retry UI; proposal: OptimizedImage / public video+pdf). */
-  renderThumbnail: (item: MediaItem) => ReactNode
-  /** Owner-specific per-item controls overlaid on the card (proposal: a visibility Switch). Receives the card's internal `menuOpen` so a control can stay visible while the more-menu is open. */
-  renderControls?: (item: MediaItem, state: { menuOpen: boolean }) => ReactNode
-  /** Owner-specific large preview for the detail dialog (project: public-bucket image variant with retry UI; proposal: OptimizedImage / public video+pdf). Defaults to a plain <img>. */
-  renderPreview?: (item: MediaItem) => ReactNode
-  /** Owner-specific extra rows in the detail dialog. */
-  renderDetails?: (item: MediaItem) => ReactNode
-  /** Owner-specific menu items injected into each card's more-menu between "View Details" and "Delete" (project: Move-to-phase submenu). */
-  renderMenuItems?: (item: MediaItem) => ReactNode
-  emptyLabel?: string
 }

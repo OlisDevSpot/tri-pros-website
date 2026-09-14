@@ -1,10 +1,19 @@
-import type { EntityActionButtonProps } from '@/shared/components/entity-actions/types'
+import type { LucideIcon } from 'lucide-react'
+import type { ComponentProps } from 'react'
 
 import { EyeIcon } from 'lucide-react'
 import Link from 'next/link'
 
 import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/lib/utils'
+
+export interface EntityActionButtonProps extends Omit<ComponentProps<typeof Button>, 'children' | 'asChild'> {
+  icon?: LucideIcon
+  label?: string
+  showLabel?: boolean
+  href?: string
+  external?: boolean
+}
 
 export function EntityViewButton({
   icon: Icon = EyeIcon,

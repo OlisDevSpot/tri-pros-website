@@ -1,5 +1,3 @@
-import type { ColumnDef, SortingState, VisibilityState } from '@tanstack/react-table'
-
 // -- Date range shape used by time-preset filter --
 
 export interface DateRange {
@@ -103,44 +101,4 @@ export interface DataTableServerSorting {
   onSortChange: (sortBy: string | undefined, sortDir?: 'asc' | 'desc') => void
   /** Visual default when `sortBy` is undefined; matches the server fallback. */
   fallbackVisual?: { id: string, desc: boolean }
-}
-
-// -- DataTable props --
-
-export interface DataTableProps<TData, TMeta = unknown> {
-  data: TData[]
-  columns: ColumnDef<TData>[]
-  meta?: TMeta
-  /** Unique ID used to persist column widths to localStorage. Omit to disable persistence. */
-  tableId?: string
-  filterConfig?: DataTableFilterConfig[]
-  defaultSort?: SortingState
-  /** Client-side page size. Ignored when `serverPagination` is provided. */
-  pageSize?: number
-  entityName?: string
-  rowDataAttribute?: string
-  getRowClassName?: (row: TData) => string | undefined
-  onRowClick?: (row: TData) => void
-  onFilteredCountChange?: (count: number) => void
-  onFilteredDataChange?: (data: TData[]) => void
-  /**
-   * Opt into server-side pagination. When set, the caller owns page state and
-   * passes only the current page's rows via `data`. `rowCount` reports the
-   * global total so page-count math stays correct.
-   */
-  serverPagination?: DataTableServerPagination
-  /**
-   * Opt into server-side sorting. When set, DataTable runs in `manualSorting`
-   * mode — column-header clicks emit `onSortChange` events instead of doing
-   * client-side sort. Pair with `serverPagination` for fully server-controlled
-   * tables.
-   */
-  serverSorting?: DataTableServerSorting
-  /**
-   * Controlled column visibility. When set, this map drives TanStack Table's
-   * visibility state — pair with `useColumnVisibility(tableId, columns)` to
-   * persist user toggles to localStorage. When omitted, DataTable falls back
-   * to static `meta.hidden` only.
-   */
-  columnVisibility?: VisibilityState
 }
