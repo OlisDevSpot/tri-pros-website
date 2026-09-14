@@ -14,7 +14,11 @@ export function useTradeSelection(): TradeSelectionContextValue {
   return ctx
 }
 
-/** Which trade sheet is open. Split from the selection context so openers do not re-render on toggles and tiles do not re-render on open. */
+/**
+ * Which trade sheet is open. Split from the selection context so opening or closing a sheet does not re-render
+ * components that read only selection state (the sheet body's groups, chips, and note). Components that read both
+ * (tiles, the project strip, the sheet host, footer, and pairing card) re-render on toggles and on open.
+ */
 export const TradeSheetContext = createContext<TradeSheetState | null>(null)
 
 export function useTradeSheet(): TradeSheetState {

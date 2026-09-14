@@ -10,14 +10,15 @@ interface TradePhotoProps {
 
 /**
  * 16:10 frame, capped in height below `lg` so the full-width Drawer keeps the work in view. A size container so the placeholder's `cq*` units resolve against it. No shadow here, so the clip is allowed.
- * `PlaceholderSlot` is drawn for the dark presentation ground; the class override recolors it for the app surface.
+ * `PlaceholderSlot` is drawn for the dark presentation ground. The frame recolors every descendant `div` (`[&_div]:`), not the slot's root,
+ * because the slot's border and label color sit on its root in one version and on an inner div in another; the descendant selector outranks both.
  */
 export function TradePhoto({ label, photo }: TradePhotoProps) {
   return (
-    <div className="relative aspect-[16/10] max-h-64 w-full overflow-hidden lg:max-h-none rounded-lg bg-muted [container-type:size]">
+    <div className="relative aspect-[16/10] max-h-64 w-full overflow-hidden rounded-lg bg-muted [container-type:size] lg:max-h-none [&_div]:border-muted-foreground/30 [&_div]:text-muted-foreground">
       {photo
         ? <Image alt={photo.alt} className="object-cover" fill sizes="(min-width: 1024px) 36rem, 100vw" src={photo.src} />
-        : <PlaceholderSlot className="absolute inset-0 rounded-lg border-muted-foreground/30 text-muted-foreground" label={label} />}
+        : <PlaceholderSlot className="absolute inset-0 rounded-lg" label={label} />}
     </div>
   )
 }

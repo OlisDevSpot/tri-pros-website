@@ -5,11 +5,12 @@ import { useTradeSelection, useTradeSheet } from '@/features/meeting-flow/contex
 import { itemCount, selectedTradeSelections } from '@/features/meeting-flow/lib/trade-selection'
 import { Button } from '@/shared/components/ui/button'
 
-/** Selected trades as pressed chips. A chip opens that trade's sheet. Reads the model; never edits it. */
+/** Selected trades as pressed chips. A chip opens that trade's sheet. Reads the model; never edits it. A trade the loaded catalog no longer lists says so on its chip. */
 export function ProjectStrip() {
-  const { selections } = useTradeSelection()
+  const { selections, catalog } = useTradeSelection()
   const { openTrade } = useTradeSheet()
   const selected = selectedTradeSelections(selections)
+  const catalogReady = !catalog.isLoading && !catalog.error
 
   return (
     <section aria-labelledby="project-strip-heading" className="flex flex-wrap items-center gap-2 rounded-lg border bg-card px-3 py-2.5">
@@ -28,6 +29,9 @@ export function ProjectStrip() {
               onClick={() => openTrade(selection.tradeId)}
             >
               {selection.tradeName}
+              {catalogReady && !catalog.tradesById.has(selection.tradeId) && (
+                <span className="text-xs font-normal text-muted-foreground">{SPECIALTIES_COPY.sheet.notInCatalog}</span>
+              )}
               <span className="min-w-5 rounded-full bg-primary px-1.5 text-center text-xs leading-5 font-semibold text-primary-foreground tabular-nums">
                 {itemCount(selection)}
               </span>

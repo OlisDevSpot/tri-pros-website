@@ -52,7 +52,7 @@ export function TradeSheetBody({ tradeId, focusScopeId }: TradeSheetBodyProps) {
       <TradePhoto label={tradeName} photo={slug ? TRADE_PHOTOS[slug] : undefined} />
       <OutcomeLine text={slug ? TRADE_OUTCOMES[slug] : undefined} />
       <ScopeTileGroup
-        emptyText={group && group.addons.length > 0 ? SPECIALTIES_COPY.sheet.noScopesAddonsOnly : SPECIALTIES_COPY.sheet.noScopes}
+        emptyText={SPECIALTIES_COPY.sheet.noScopes}
         focusScopeId={focusScopeId}
         scopes={group?.scopes ?? []}
         selectedIds={selectedItemIds(selection)}

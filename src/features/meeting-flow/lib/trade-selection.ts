@@ -33,9 +33,26 @@ export function selectedTradeSelections(selections: TradeSelection[]): TradeSele
   return selections.filter(s => itemCount(s) > 0)
 }
 
-/** The only shape ever persisted: zero-item trades are dropped. */
-export function normalizeForWrite(selections: TradeSelection[]): TradeSelection[] {
-  return selectedTradeSelections(selections)
+/** An entry exists for this trade, whether or not it has items. Reasons or a note alone still make an entry. */
+export function hasStoredEntry(selections: TradeSelection[], tradeId: string): boolean {
+  return findTradeSelection(selections, tradeId) !== undefined
+}
+
+function hasContent(selection: TradeSelection): boolean {
+  return itemCount(selection) > 0 || selection.painPoints.length > 0 || (selection.notes ?? '').trim().length > 0
+}
+
+/**
+ * The shape written to `flowStateJSON`. An entry is kept when it has one or more items,
+ * one or more reasons, or a note with non-whitespace text, or when `server` already
+ * holds an entry for the same trade (meeting creation and the old step saved zero-item
+ * trades; an edit elsewhere must not delete them). Only an entry that is completely
+ * empty and absent from `server` is dropped. Removing a trade takes the entry out of
+ * the model (`withoutTrade`), so the next write deletes it.
+ */
+export function normalizeForWrite(selections: TradeSelection[], server: TradeSelection[]): TradeSelection[] {
+  const onServer = new Set(server.map(s => s.tradeId))
+  return selections.filter(s => hasContent(s) || onServer.has(s.tradeId))
 }
 
 /**

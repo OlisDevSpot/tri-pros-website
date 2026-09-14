@@ -3,7 +3,6 @@
 import { SPECIALTIES_COPY } from '@/features/meeting-flow/constants/specialties-copy'
 import { useTradeSelection } from '@/features/meeting-flow/contexts/trade-selection-context'
 import { ProjectStrip } from '@/features/meeting-flow/ui/components/steps/specialties/project-strip'
-import { StartHint } from '@/features/meeting-flow/ui/components/steps/specialties/start-hint'
 import { StepIntro } from '@/features/meeting-flow/ui/components/steps/specialties/step-intro'
 import { TradeCatalog } from '@/features/meeting-flow/ui/components/steps/specialties/trade-catalog'
 import { ErrorState } from '@/shared/components/states/error-state'
@@ -13,6 +12,8 @@ import { Button } from '@/shared/components/ui/button'
 /**
  * Step 2 of the meeting flow. Composition only: the model and the open trade
  * live in `TradeSelectionProvider`; the sheet is mounted by the view.
+ * `StartHint` is not rendered until lead panels exist (Task 9): without lead data it
+ * would claim "Nothing requested on this lead." on every meeting.
  */
 export function SpecialtiesStep() {
   const { catalog } = useTradeSelection()
@@ -34,7 +35,6 @@ export function SpecialtiesStep() {
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
       <StepIntro hasLead={false} />
       <ProjectStrip />
-      <StartHint />
       <TradeCatalog hasLead={false} />
     </div>
   )

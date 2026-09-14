@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 import type { MeetingFlowContext, OpenTradeOptions, SelectionItem, TradeSelectionContextValue, TradeSheetState } from '@/features/meeting-flow/types'
 import type { TradeSelection } from '@/shared/entities/meetings/schemas'
 import { useQueryState } from 'nuqs'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { tradeSheetParser } from '@/features/meeting-flow/constants/query-parsers'
 import { SELECTION_WRITE_DEBOUNCE_MS } from '@/features/meeting-flow/constants/trade-selection'
 import { TradeSelectionContext, TradeSheetContext } from '@/features/meeting-flow/contexts/trade-selection-context'
@@ -32,10 +32,18 @@ interface TradeSelectionProviderProps {
  * when the server value changes to anything this provider did not write itself
  * (compared through `canonicalSelectionsJson`, since jsonb reorders keys), so a
  * stale refetch that lands after a newer write cannot roll the shadow back.
- * Write path: the debounced shadow, normalized (zero-item trades dropped), is
- * written once per distinct value after the first user action. Opening or
- * closing the sheet never writes. A write still pending when the view unmounts
- * is lost, as it was in the old step.
+ *
+ * Write path: after the first user action, the debounced shadow is normalized
+ * (`normalizeForWrite`: empty entries the server does not hold are dropped) and
+ * written when it differs from the server. A write is in flight from the moment
+ * it is sent until the server echoes it; while in flight the same value is never
+ * sent again. Once the echo has been seen, a later server value that is one of
+ * this provider's own older writes (another step merged a stale cached
+ * `flowStateJSON`) is a rollback: the shadow keeps the newer value and it is
+ * written again. A foreign server value re-seeds the shadow instead and is never
+ * overwritten by the not-yet-debounced previous value. Opening or closing the
+ * sheet never writes. A write still inside the debounce window when the provider
+ * unmounts is sent from the unmount cleanup.
  */
 export function TradeSelectionProvider({ flowContext, children }: TradeSelectionProviderProps) {
   const { onFlowStateChange } = flowContext
@@ -62,20 +70,54 @@ export function TradeSelectionProvider({ flowContext, children }: TradeSelection
     }
   }
 
+  /** False from sending a write until the server echoes it. */
+  const confirmedRef = useRef(true)
+  /** Latest render's values, for the unmount cleanup. */
+  const latestRef = useRef({ selections, serverSelections, serverJson, dirty, onFlowStateChange })
+  useLayoutEffect(() => {
+    latestRef.current = { selections, serverSelections, serverJson, dirty, onFlowStateChange }
+  })
+
   const debounced = useDebounce(selections, SELECTION_WRITE_DEBOUNCE_MS)
   useEffect(() => {
+    if (serverJson === lastWrittenRef.current) {
+      confirmedRef.current = true
+    }
     if (!dirty) {
       return
     }
-    const normalized = normalizeForWrite(debounced)
+    const normalized = normalizeForWrite(debounced, serverSelections)
     const json = canonicalSelectionsJson(normalized)
-    if (json === lastWrittenRef.current || json === serverJson) {
+    if (json === serverJson) {
+      return
+    }
+    // Same value as the last write: re-send only for a confirmed write rolled back to
+    // an own older value. A foreign server value re-seeded the shadow, and `debounced`
+    // still holds the previous value for one debounce window; writing it would clobber.
+    if (json === lastWrittenRef.current && (!confirmedRef.current || !writtenRef.current.has(serverJson))) {
       return
     }
     lastWrittenRef.current = json
+    confirmedRef.current = false
     writtenRef.current.add(json)
     onFlowStateChange({ tradeSelections: normalized })
-  }, [debounced, dirty, onFlowStateChange, serverJson])
+  }, [debounced, dirty, onFlowStateChange, serverJson, serverSelections])
+
+  useEffect(() => {
+    const latest = latestRef
+    const lastWritten = lastWrittenRef
+    return () => {
+      const { selections: pending, serverSelections: server, serverJson: currentServerJson, dirty: isDirty, onFlowStateChange: write } = latest.current
+      if (!isDirty) {
+        return
+      }
+      const normalized = normalizeForWrite(pending, server)
+      const json = canonicalSelectionsJson(normalized)
+      if (json !== lastWritten.current && json !== currentServerJson) {
+        write({ tradeSelections: normalized })
+      }
+    }
+  }, [])
 
   const tradesById = catalog.tradesById
   const resolveTrade = useCallback((tradeId: string, current: TradeSelection[]) => ({
