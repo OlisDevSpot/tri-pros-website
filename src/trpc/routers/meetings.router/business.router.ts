@@ -77,7 +77,10 @@ export const businessRouter = createTRPCRouter({
   /**
    * Reschedule: keep the original meeting (set it to `cancelled` — the archived
    * disposition) and book a NEW meeting at the new time, copying the original's
-   * owner + participants + customer/project/type. Composes DAL blocks in the
+   * owner + participants + customer/project/type + flowStateJSON (same sit, new
+   * slot — trade selections etc. continue; this is the ONLY path that carries
+   * flow state, duplicate deliberately does not — see
+   * meetings/DOCS.md#duplicate-copies-setup-only). Composes DAL blocks in the
    * router (no service). Order = create-new → then cancel-original so a failure
    * never leaves a cancelled meeting with no replacement. see meetings/DOCS.md#reschedule-cancels-and-rebooks
    */
@@ -121,6 +124,11 @@ export const businessRouter = createTRPCRouter({
         projectId: original.projectId,
         meetingType: original.meetingType,
         scheduledFor: input.newScheduledFor,
+        // Same sit, new slot: the in-meeting working state (trade selections,
+        // program, deal structure, closing adjustments) continues in the
+        // replacement. null → undefined because the insert schema is
+        // `.optional()`, not `.nullable()`. see meetings/DOCS.md#reschedule-cancels-and-rebooks
+        flowStateJSON: original.flowStateJSON ?? undefined,
       }))
 
       // 2. Copy the non-owner participants (owner already added by create.after).

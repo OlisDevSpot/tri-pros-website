@@ -187,8 +187,10 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
       },
     },
   },
-  // see ../../DOCS.md#duplicate-cherry-picks-setup-fields
-  // Default: copy full row minus PK. Exclude derived/outcome/calendar fields.
+  // see ../../DOCS.md#duplicate-copies-setup-only
+  // Copy full row minus PK. Exclude derived/outcome/calendar fields AND the
+  // sit-specific state (flowStateJSON, projectId): a duplicate is a fresh sit,
+  // not a continuation — only reschedule carries flow state forward.
   // Routed through createImpl — `overrides` stamps ownerId, create.after adds participant.
   duplicate: {
     exclude: [

@@ -157,9 +157,12 @@ re-dispatch.
 The Reschedule action (`meetingsRouter.business.rescheduleMeeting`) keeps the
 original meeting and sets it to `cancelled`, then books a NEW meeting at the new
 time copying the original's owner + all participants + customer + project +
-type (outcome resets to `not_set`), and posts one customer note. Available only
-from `DID_NOT_OCCUR_OUTCOMES` (`canRescheduleFromOutcome`) so a meeting that
-already happened can never have its disposition clobbered.
+type + `flowStateJSON` (outcome resets to `not_set`), and posts one customer
+note. Available only from `DID_NOT_OCCUR_OUTCOMES` (`canRescheduleFromOutcome`)
+so a meeting that already happened can never have its disposition clobbered.
+
+**Why the flow state carries**: a reschedule is the same sit moved to a new slot. Trade selections, program, deal structure and closing adjustments entered before the customer no-showed or had to stop are still the opportunity's working state, and nothing in that blob is bound to the calendar date — so the replacement resumes where the original left off instead of making the agent re-enter it. This is the ONLY path that carries `flowStateJSON`; duplicate deliberately drops it (`#duplicate-copies-setup-only`). The cancelled original keeps its own copy as the archived record.
+**Reference impl**: `src/trpc/routers/meetings.router/business.router.ts:rescheduleMeeting`
 
 ### trade-selections-snapshot-source
 
@@ -208,11 +211,29 @@ Meeting `flowStateJSON.dealStructure` carries the agent's in-meeting pricing scr
 
 `meetings.ownerId` is the user who created the meeting record. It controls **permissions** (delete, full update), not meeting function. See `#ownership-model` for the full ownership rules and `#participant-roles-are-meeting-contextual` for the distinction between ownership and participation.
 
-**Reference impl**: schema (`ownerId` column); `hooks.create.before` in `lib/server-spec.ts`
-**Enforced by**: lifecycle hooks (stamps ownerId from ctx.session)
+**Reference impl**: schema (`ownerId` column); `create.before` in `dal/server/crud.ts` (resolves ownerId via `lib/resolve-owner.ts`)
+**Enforced by**: `create.before` in `dal/server/crud.ts` (server-resolves ownerId for authed callers; `SYSTEM_CONTEXT` passes its explicit ownerId through)
+
+### duplicate-copies-setup-only
+
+The Duplicate action (`meetingsRouter.crud.duplicate`) copies the source row minus the PK and the `duplicate.exclude` list in `dal/server/crud.ts`, then routes through `create` — so `create.before` re-resolves the owner and `create.after` adds the owner participant and enqueues a fresh GCal push. Anything not in the exclude list is copied; the list is the single source of truth.
+
+| Survives | Starts fresh |
+|---|---|
+| `customerId`, `meetingType`, `scheduledFor` | `meetingOutcome` → `not_set`, `pipeline` → `fresh` (column defaults) |
+| `contextJSON` | `flowStateJSON` — the sit's working state (trade selections, program, deal structure, closing adjustments) |
+| | `projectId` — the copy is not a project meeting |
+| | `agentNotes` |
+| | `gcalEventId` / `gcalEtag` / `gcalSyncedAt` — the copy is pushed as a new calendar event |
+| | `ownerId` → the duplicating user (`duplicate.overrides`; falls back to the source owner under `SYSTEM_CONTEXT`) |
+
+**Why**: a duplicate is a fresh sit that shares the customer and setup — not a continuation of the source. Working state, project link, outcome, notes and calendar identity all describe the source sit and must not leak into a new one. The ONE path that carries `flowStateJSON` forward is reschedule (`#reschedule-cancels-and-rebooks`), because a reschedule is the same sit moved to a new slot.
+**Reference impl**: `dal/server/crud.ts` (`duplicate.exclude` + `duplicate.overrides`); engine `src/shared/dal/server/lib/create-crud-dal.ts` (`duplicateImpl`)
+**Enforced by**: config — `duplicate.exclude` in `dal/server/crud.ts`
 
 ## Anti-patterns
 
+- **Carrying `flowStateJSON` (or `projectId`) on duplicate.** A duplicate is a fresh sit; only reschedule continues one — see `#duplicate-copies-setup-only` / `#reschedule-cancels-and-rebooks`.
 - **Adding `'projects'` to `meetings.pipeline` enum.** Use `projectId IS NOT NULL` — see `#meeting-pipeline-storage-vs-derived`.
 - **Selecting `meetingOutcome = 'converted_to_project'` from the outcome dropdown without actually creating/linking a project.** The dropdown option is enabled once the meeting has an approved proposal, and selecting it writes the enum directly (`useOutcomeChange` → plain `updateOutcome`) — it does NOT create a project. This desyncs the outcome from reality; always drive the outcome via project creation (`projects.router/business.router.ts` `create`) or `customerPipelinesRouter.assignToProject` instead. See `../proposals/DOCS.md#conversion-trigger`.
 - **Unconditionally setting `meetingOutcome = 'proposal_sent'` when sending a proposal.** Use `deriveOutcomeOnProposalSent` — see `#outcome-flips-on-proposal-sent`.
