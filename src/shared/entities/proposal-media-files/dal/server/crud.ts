@@ -8,4 +8,4 @@ import { proposalMediaServerSpec } from '@/shared/entities/proposal-media-files/
  * authz probe. Rung by `mediaService` (which wraps R2 + optimize around these);
  * `setVisibility`/`rename` route straight through `update`. Serial int PK.
  */
-export const proposalMediaCrud = createCrudDal<typeof proposalMediaServerSpec.table, number>(proposalMediaServerSpec)
+export const proposalMediaCrud = createCrudDal(proposalMediaServerSpec)

@@ -1,8 +1,9 @@
 // Snapshot trade selections from meeting flow state into proposal projectJSON.
 // see ../DOCS.md#sow-snapshot-from-meeting-on-create
 
-import type { proposals } from '@/shared/db/schema/proposals'
-import type { Insert } from '@/shared/db/types'
+import type z from 'zod'
+
+import type { insertProposalSchema } from '@/shared/db/schema/proposals'
 
 import { createEmptySowSection } from './create-empty-sow-section'
 
@@ -18,10 +19,13 @@ interface MeetingFlowState {
  * If the meeting has trade selections and the proposal doesn't already
  * have a SOW, snapshot the selections into empty SOW sections.
  */
+/** The create payload as the engine types it: the insert schema's INPUT (hook-derived columns optional). */
+type ProposalCreateInput = z.input<typeof insertProposalSchema>
+
 export function snapSowFromMeeting(
-  input: Insert<typeof proposals>,
+  input: ProposalCreateInput,
   flowState: MeetingFlowState | null,
-): Insert<typeof proposals> {
+): ProposalCreateInput {
   const tradeSelections = flowState?.tradeSelections
   if (!tradeSelections?.length) {
     return input

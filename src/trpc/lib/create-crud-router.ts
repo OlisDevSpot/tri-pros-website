@@ -12,7 +12,6 @@
 // original four generics — nothing added for procedure typing.
 
 import type { PgTable } from 'drizzle-orm/pg-core'
-import type { Insert } from '@/shared/db/types'
 import type { AppAction, AppSubject } from '@/shared/domains/permissions/types'
 
 import type { CrudHandlers, EntityServerSpec, SlotName } from '@/trpc/types'
@@ -55,7 +54,7 @@ export interface CreateCrudRouterConfig<
    * REQUIRED — the router never rebuilds handlers, so no code path can produce
    * un-hooked ones (the hookless-rebuild failure mode is eliminated by construction).
    */
-  crud: CrudHandlers<TTable, TId>
+  crud: CrudHandlers<TTable, TId, z.input<TInsert>, z.input<TUpdate>>
   /**
    * Override individual CRUD handlers. Merged with createCrudDal defaults.
    * ⚠️ Overrides BYPASS spec.hooks entirely — the override replaces the
@@ -63,7 +62,7 @@ export interface CreateCrudRouterConfig<
    * Prefer spec.hooks for data enrichment; use this only when the entire
    * operation must be replaced.
    */
-  handlers?: Partial<CrudHandlers<TTable, TId>>
+  handlers?: Partial<CrudHandlers<TTable, TId, z.input<TInsert>, z.input<TUpdate>>>
 }
 
 export function createCrudRouter<
@@ -76,7 +75,7 @@ export function createCrudRouter<
   // reasserts the full interface: spreading the Partial `handlers` overrides widens
   // the property types to include `undefined`, so TS needs the assertion to treat
   // the merge as a complete `CrudHandlers`.
-  const handlers = { ...config.crud, ...config.handlers } as CrudHandlers<TTable, TId>
+  const handlers = { ...config.crud, ...config.handlers } as CrudHandlers<TTable, TId, z.input<TInsert>, z.input<TUpdate>>
 
   // Scoped procedures built inline from the spec — the cast-free inline `.use()`
   // pattern (ctx infers from agentProcedure, so no builder-type cast is needed).
@@ -114,11 +113,10 @@ export function createCrudRouter<
       .input(config.schemas.insert)
       .mutation(async ({ ctx, input }) => {
         assertCan(ctx.ability, 'create', config.spec)
-        // Cast: Zod schema output ≠ Drizzle Insert type because the API schema
-        // intentionally .omit()s server-derived fields (e.g. kind, token). The
-        // custom create handler adds them before inserting. Two independent type
-        // systems (Zod + Drizzle) — can't be bridged without coupling DAL to Zod.
-        const row = dalToTrpc(await handlers.create(ctx, input as Insert<TTable>))
+        // tRPC hands us the schema's OUTPUT; the DAL contract is its INPUT (it
+        // re-parses after the hooks). Identical for our insert schemas (no
+        // transforms), which TS cannot prove for a generic TInsert — hence the cast.
+        const row = dalToTrpc(await handlers.create(ctx, input as z.input<TInsert>))
         return row
       }),
 
@@ -127,7 +125,7 @@ export function createCrudRouter<
       .mutation(async ({ ctx, input }) => {
         // Cast: Zod 4 can't resolve generic TUpdate output type in z.object({ data: TUpdate }).
         // The schema validates at runtime; this tells TS the shape matches CrudHandlers.
-        const { id, data } = input as { id: TId, data: z.output<TUpdate>, token?: string }
+        const { id, data } = input as { id: TId, data: z.input<TUpdate>, token?: string }
 
         if (ctx.ability) {
           assertCanUpdateFields(ctx.ability, config.spec, data as Record<string, unknown>)

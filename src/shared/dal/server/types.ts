@@ -61,14 +61,14 @@ export interface VisibilityScope {
 export type MaybePromise<T> = T | Promise<T>
 
 /** Meta for a create `after` hook. `input` is the ORIGINAL insert payload. */
-export interface CreateAfterMeta<TTable extends PgTable> {
-  input: Insert<TTable>
+export interface CreateAfterMeta<TTable extends PgTable, TInsert = Insert<TTable>> {
+  input: TInsert
 }
 
 /** Meta for an update `after` hook. `previousRow` is the pre-update snapshot; `input` is the ORIGINAL update payload. */
-export interface UpdateAfterMeta<TTable extends PgTable> {
+export interface UpdateAfterMeta<TTable extends PgTable, TUpdate = Update<TTable>> {
   previousRow: Row<TTable>
-  input: Update<TTable>
+  input: TUpdate
 }
 
 /**
@@ -77,14 +77,14 @@ export interface UpdateAfterMeta<TTable extends PgTable> {
  * threads (transforms) the payload; `delete` `before`/`after` take the pre-delete
  * row and return void.
  */
-export interface CrudSlotHookMap<TTable extends PgTable, TId extends string | number> {
+export interface CrudSlotHookMap<TTable extends PgTable, TId extends string | number, TInsert = Insert<TTable>, TUpdate = Update<TTable>> {
   create: {
-    before?: (input: Insert<TTable>, ctx: ScopedContext) => MaybePromise<Insert<TTable>>
-    after?: (row: Row<TTable>, ctx: ScopedContext, meta: CreateAfterMeta<TTable>) => MaybePromise<Row<TTable> | void>
+    before?: (input: TInsert, ctx: ScopedContext) => MaybePromise<TInsert>
+    after?: (row: Row<TTable>, ctx: ScopedContext, meta: CreateAfterMeta<TTable, TInsert>) => MaybePromise<Row<TTable> | void>
   }
   update: {
-    before?: (data: Update<TTable>, ctx: ScopedContext, meta: { id: TId }) => MaybePromise<Update<TTable>>
-    after?: (row: Row<TTable>, ctx: ScopedContext, meta: UpdateAfterMeta<TTable>) => MaybePromise<Row<TTable> | void>
+    before?: (data: TUpdate, ctx: ScopedContext, meta: { id: TId }) => MaybePromise<TUpdate>
+    after?: (row: Row<TTable>, ctx: ScopedContext, meta: UpdateAfterMeta<TTable, TUpdate>) => MaybePromise<Row<TTable> | void>
   }
   delete: {
     before?: (row: Row<TTable>, ctx: ScopedContext) => MaybePromise<void>
@@ -93,11 +93,11 @@ export interface CrudSlotHookMap<TTable extends PgTable, TId extends string | nu
 }
 
 /** The three hook-bearing mutation slots, derived from the map (stays in sync). */
-export type CrudMutationSlot = keyof CrudSlotHookMap<PgTable, string>
+export type CrudMutationSlot = keyof CrudSlotHookMap<PgTable, string> & string
 
 /** Factory-invariant hooks — each slot optional. Fire every call, every origin. */
-export type CrudHooks<TTable extends PgTable, TId extends string | number = string> = {
-  [S in CrudMutationSlot]?: CrudSlotHookMap<TTable, TId>[S]
+export type CrudHooks<TTable extends PgTable, TId extends string | number = string, TInsert = Insert<TTable>, TUpdate = Update<TTable>> = {
+  [S in CrudMutationSlot]?: CrudSlotHookMap<TTable, TId, TInsert, TUpdate>[S]
 }
 
 /**
@@ -109,7 +109,9 @@ export type CrudCallsiteHooks<
   TTable extends PgTable,
   TId extends string | number,
   S extends CrudMutationSlot,
-> = CrudSlotHookMap<TTable, TId>[S] & {
+  TInsert = Insert<TTable>,
+  TUpdate = Update<TTable>,
+> = CrudSlotHookMap<TTable, TId, TInsert, TUpdate>[S] & {
   afterCommit?: (row: Row<TTable>, ctx: ScopedContext) => void
 }
 
@@ -117,11 +119,11 @@ export type CrudCallsiteHooks<
  * Factory-invariant hook + duplicate config for an entity. Returned by a
  * `CrudConfigFactory`. Entities with no hooks pass no factory and get `{}`.
  */
-export interface CrudConfig<TTable extends PgTable, TId extends string | number = string> {
-  hooks?: CrudHooks<TTable, TId>
+export interface CrudConfig<TTable extends PgTable, TId extends string | number = string, TInsert = Insert<TTable>, TUpdate = Update<TTable>> {
+  hooks?: CrudHooks<TTable, TId, TInsert, TUpdate>
   duplicate?: {
     exclude?: readonly string[]
-    overrides?: (source: Row<TTable>, ctx: ScopedContext) => Partial<Insert<TTable>>
+    overrides?: (source: Row<TTable>, ctx: ScopedContext) => Partial<TInsert>
   }
 }
 
@@ -131,8 +133,29 @@ export interface CrudConfig<TTable extends PgTable, TId extends string | number 
  * read — resolved at call time, long after construction. This kills the
  * circular barrier (spec §1.1, §2.3).
  */
-export type CrudConfigFactory<TTable extends PgTable, TId extends string | number = string>
-  = (crudHandlers: CrudHandlers<TTable, TId>) => CrudConfig<TTable, TId>
+export type CrudConfigFactory<TTable extends PgTable, TId extends string | number = string, TInsert = Insert<TTable>, TUpdate = Update<TTable>>
+  = (crudHandlers: CrudHandlers<TTable, TId, TInsert, TUpdate>) => CrudConfig<TTable, TId, TInsert, TUpdate>
+
+// ── Spec-derived contracts ──────────────────────────────────────────────
+//
+// The engine VALIDATES a create/update payload with the spec's Zod schemas
+// (`createImpl`: hooks → `schemas.insert.parse` → insert). So the payload an
+// orchestrator may hand to `create`/`update` is the INPUT of those schemas —
+// server-derived columns the hooks fill in (`token`, `ownerId`, `kind`) are
+// optional there — not Drizzle's insert model, where every NOT NULL column
+// without a default is required. `createCrudDal` derives its handler types
+// from the spec through these, so the TS contract and the runtime contract
+// are the same object. `Insert<TTable>` stays the default for the generic
+// interfaces above (nothing outside the factory needs to change).
+
+/** What `create` accepts: the spec's insert schema INPUT (hook-derived columns optional). */
+export type SpecInsert<TSpec extends EntityServerSpec<any, any>> = z.input<TSpec['schemas']['insert']>
+/** What `update.data` accepts: the spec's update schema INPUT. */
+export type SpecUpdate<TSpec extends EntityServerSpec<any, any>> = z.input<TSpec['schemas']['update']>
+/** PK value type, read off the table's `id` column (serial → number, uuid → string). Tables keyed by another column (`primaryKey` override) fall back to string. */
+export type SpecId<TSpec extends EntityServerSpec<any, any>> = Row<TSpec['table']> extends { id: infer I extends string | number } ? I : string
+/** The precise handler set `createCrudDal(spec)` returns — use for `satisfies` on a service that spreads a crud. */
+export type SpecCrudHandlers<TSpec extends EntityServerSpec<any, any>> = CrudHandlers<TSpec['table'], SpecId<TSpec>, SpecInsert<TSpec>, SpecUpdate<TSpec>>
 
 // ── Entity Server Spec ──────────────────────────────────────────────────
 
@@ -196,12 +219,12 @@ export type SlotName = 'getById' | 'create' | 'update' | 'delete' | 'duplicate'
 
 // ── CRUD Handler Interface ──────────────────────────────────────────────
 
-export interface CrudHandlers<TTable extends PgTable, TId extends string | number = string> {
+export interface CrudHandlers<TTable extends PgTable, TId extends string | number = string, TInsert = Insert<TTable>, TUpdate = Update<TTable>> {
   getById: (ctx: ScopedContext, input: { id: TId }) => Promise<DalReturn<Row<TTable> | undefined>>
-  create: (ctx: ScopedContext, input: Insert<TTable>, options?: CrudCallsiteHooks<TTable, TId, 'create'>) => Promise<DalReturn<Row<TTable>>>
-  update: (ctx: ScopedContext, input: { id: TId, data: Update<TTable> }, options?: CrudCallsiteHooks<TTable, TId, 'update'>) => Promise<DalReturn<Row<TTable>>>
-  delete: (ctx: ScopedContext, input: { id: TId }, options?: CrudCallsiteHooks<TTable, TId, 'delete'>) => Promise<DalReturn<void>>
-  duplicate: (ctx: ScopedContext, input: { id: TId }, options?: CrudCallsiteHooks<TTable, TId, 'create'>) => Promise<DalReturn<Row<TTable>>>
+  create: (ctx: ScopedContext, input: TInsert, options?: CrudCallsiteHooks<TTable, TId, 'create', TInsert, TUpdate>) => Promise<DalReturn<Row<TTable>>>
+  update: (ctx: ScopedContext, input: { id: TId, data: TUpdate }, options?: CrudCallsiteHooks<TTable, TId, 'update', TInsert, TUpdate>) => Promise<DalReturn<Row<TTable>>>
+  delete: (ctx: ScopedContext, input: { id: TId }, options?: CrudCallsiteHooks<TTable, TId, 'delete', TInsert, TUpdate>) => Promise<DalReturn<void>>
+  duplicate: (ctx: ScopedContext, input: { id: TId }, options?: CrudCallsiteHooks<TTable, TId, 'create', TInsert, TUpdate>) => Promise<DalReturn<Row<TTable>>>
 }
 
 // ── DalReturn Result Type ───────────────────────────────────────────────

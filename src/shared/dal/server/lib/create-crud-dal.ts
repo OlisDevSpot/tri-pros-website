@@ -37,6 +37,10 @@ import type {
   DalReturn,
   EntityServerSpec,
   ScopedContext,
+  SpecCrudHandlers,
+  SpecId,
+  SpecInsert,
+  SpecUpdate,
   UpdateAfterMeta,
 } from '../types'
 import type { Insert, Row, Update } from '@/shared/db/types'
@@ -48,26 +52,34 @@ import { db } from '@/shared/db'
 import { ThrowableDalError } from '../types'
 import { dalDbOperation } from './helpers'
 
-export function createCrudDal<TTable extends PgTable, TId extends string | number = string>(
-  spec: EntityServerSpec<TTable, TId>,
-  configFactory?: CrudConfigFactory<TTable, TId>,
-): CrudHandlers<TTable, TId> {
+// Generic over the SPEC (not the table): the handlers' create/update payload
+// types are the spec's Zod schema INPUTS (`SpecInsert`/`SpecUpdate`) — the same
+// schemas `createImpl`/`updateImpl` parse — and the id type is read off the
+// table's `id` column (`SpecId`). No explicit generics at call sites.
+export function createCrudDal<TSpec extends EntityServerSpec<any, any>>(
+  spec: TSpec,
+  configFactory?: CrudConfigFactory<TSpec['table'], SpecId<TSpec>, SpecInsert<TSpec>, SpecUpdate<TSpec>>,
+): SpecCrudHandlers<TSpec> {
+  type TTable = TSpec['table']
+  type TId = SpecId<TSpec>
+  type TInsert = SpecInsert<TSpec>
+  type TUpdate = SpecUpdate<TSpec>
   const pkColumn = getPkColumn(spec)
-  const crudHandlers = {} as CrudHandlers<TTable, TId> // ← bootstrap cast (spec §2.3)
-  const cfg: CrudConfig<TTable, TId> = configFactory
+  const crudHandlers = {} as CrudHandlers<TTable, TId, TInsert, TUpdate> // ← bootstrap cast (spec §2.3)
+  const cfg: CrudConfig<TTable, TId, TInsert, TUpdate> = configFactory
     ? configFactory(crudHandlers)
     : {}
 
   Object.assign(crudHandlers, {
-    getById: (ctx: ScopedContext, input: { id: TId }) => getByIdImpl(spec, pkColumn, ctx, input),
-    create: (ctx: ScopedContext, input: Insert<TTable>, options?: CrudCallsiteHooks<TTable, TId, 'create'>) =>
-      createImpl(spec, cfg, ctx, input, options),
-    update: (ctx: ScopedContext, input: { id: TId, data: Update<TTable> }, options?: CrudCallsiteHooks<TTable, TId, 'update'>) =>
-      updateImpl(spec, cfg, pkColumn, ctx, input, options),
-    delete: (ctx: ScopedContext, input: { id: TId }, options?: CrudCallsiteHooks<TTable, TId, 'delete'>) =>
-      deleteImpl(spec, cfg, pkColumn, ctx, input, options),
-    duplicate: (ctx: ScopedContext, input: { id: TId }, options?: CrudCallsiteHooks<TTable, TId, 'create'>) =>
-      duplicateImpl(spec, cfg, pkColumn, ctx, input, options),
+    getById: (ctx: ScopedContext, input: { id: TId }) => getByIdImpl<TTable>(spec, pkColumn, ctx, input),
+    create: (ctx: ScopedContext, input: TInsert, options?: CrudCallsiteHooks<TTable, TId, 'create', TInsert, TUpdate>) =>
+      createImpl<TTable, TId, TInsert, TUpdate>(spec, cfg, ctx, input, options),
+    update: (ctx: ScopedContext, input: { id: TId, data: TUpdate }, options?: CrudCallsiteHooks<TTable, TId, 'update', TInsert, TUpdate>) =>
+      updateImpl<TTable, TId, TInsert, TUpdate>(spec, cfg, pkColumn, ctx, input, options),
+    delete: (ctx: ScopedContext, input: { id: TId }, options?: CrudCallsiteHooks<TTable, TId, 'delete', TInsert, TUpdate>) =>
+      deleteImpl<TTable, TId, TInsert, TUpdate>(spec, cfg, pkColumn, ctx, input, options),
+    duplicate: (ctx: ScopedContext, input: { id: TId }, options?: CrudCallsiteHooks<TTable, TId, 'create', TInsert, TUpdate>) =>
+      duplicateImpl<TTable, TId, TInsert, TUpdate>(spec, cfg, pkColumn, ctx, input, options),
   })
   return crudHandlers
 }
@@ -94,12 +106,12 @@ async function getByIdImpl<TTable extends PgTable>(
 
 // ── create ───────────────────────────────────────────────────────────────
 
-async function createImpl<TTable extends PgTable, TId extends string | number>(
+async function createImpl<TTable extends PgTable, TId extends string | number, TInsert, TUpdate>(
   spec: EntityServerSpec<TTable, TId>,
-  cfg: CrudConfig<TTable, TId>,
+  cfg: CrudConfig<TTable, TId, TInsert, TUpdate>,
   ctx: ScopedContext,
-  input: Insert<TTable>,
-  callsite?: CrudCallsiteHooks<TTable, TId, 'create'>,
+  input: TInsert,
+  callsite?: CrudCallsiteHooks<TTable, TId, 'create', TInsert, TUpdate>,
 ): Promise<DalReturn<Row<TTable>>> {
   return dalDbOperation(async () => {
     const exec = ctx.tx ?? db
@@ -116,7 +128,7 @@ async function createImpl<TTable extends PgTable, TId extends string | number>(
     }
 
     let result = inserted as Row<TTable>
-    const meta: CreateAfterMeta<TTable> = { input }
+    const meta: CreateAfterMeta<TTable, TInsert> = { input }
     if (callsite?.after)
       result = (await callsite.after(result, ctx, meta)) ?? result
     if (cfg.hooks?.create?.after)
@@ -127,13 +139,13 @@ async function createImpl<TTable extends PgTable, TId extends string | number>(
 
 // ── update ───────────────────────────────────────────────────────────────
 
-async function updateImpl<TTable extends PgTable, TId extends string | number>(
+async function updateImpl<TTable extends PgTable, TId extends string | number, TInsert, TUpdate>(
   spec: EntityServerSpec<TTable, TId>,
-  cfg: CrudConfig<TTable, TId>,
+  cfg: CrudConfig<TTable, TId, TInsert, TUpdate>,
   pkColumn: PgColumn,
   ctx: ScopedContext,
-  input: { id: TId, data: Update<TTable> },
-  callsite?: CrudCallsiteHooks<TTable, TId, 'update'>,
+  input: { id: TId, data: TUpdate },
+  callsite?: CrudCallsiteHooks<TTable, TId, 'update', TInsert, TUpdate>,
 ): Promise<DalReturn<Row<TTable>>> {
   return dalDbOperation(async () => {
     const exec = ctx.tx ?? db
@@ -188,7 +200,7 @@ async function updateImpl<TTable extends PgTable, TId extends string | number>(
 
     // after: callsite (inner) → factory (outer), THREADED via `?? result`
     let result = updated as Row<TTable>
-    const meta: UpdateAfterMeta<TTable> = { previousRow: previousRow!, input: input.data }
+    const meta: UpdateAfterMeta<TTable, TUpdate> = { previousRow: previousRow!, input: input.data }
     if (callsite?.after)
       result = (await callsite.after(result, ctx, meta)) ?? result
     if (cfg.hooks?.update?.after)
@@ -199,13 +211,13 @@ async function updateImpl<TTable extends PgTable, TId extends string | number>(
 
 // ── delete ───────────────────────────────────────────────────────────────
 
-async function deleteImpl<TTable extends PgTable, TId extends string | number>(
+async function deleteImpl<TTable extends PgTable, TId extends string | number, TInsert, TUpdate>(
   spec: EntityServerSpec<TTable, TId>,
-  cfg: CrudConfig<TTable, TId>,
+  cfg: CrudConfig<TTable, TId, TInsert, TUpdate>,
   pkColumn: PgColumn,
   ctx: ScopedContext,
   input: { id: TId },
-  callsite?: CrudCallsiteHooks<TTable, TId, 'delete'>,
+  callsite?: CrudCallsiteHooks<TTable, TId, 'delete', TInsert, TUpdate>,
 ): Promise<DalReturn<void>> {
   return dalDbOperation(async () => {
     const exec = ctx.tx ?? db
@@ -247,13 +259,13 @@ async function deleteImpl<TTable extends PgTable, TId extends string | number>(
 
 // ── duplicate ────────────────────────────────────────────────────────────
 
-async function duplicateImpl<TTable extends PgTable, TId extends string | number>(
+async function duplicateImpl<TTable extends PgTable, TId extends string | number, TInsert, TUpdate>(
   spec: EntityServerSpec<TTable, TId>,
-  cfg: CrudConfig<TTable, TId>,
+  cfg: CrudConfig<TTable, TId, TInsert, TUpdate>,
   pkColumn: PgColumn,
   ctx: ScopedContext,
   input: { id: TId },
-  callsite?: CrudCallsiteHooks<TTable, TId, 'create'>,
+  callsite?: CrudCallsiteHooks<TTable, TId, 'create', TInsert, TUpdate>,
 ): Promise<DalReturn<Row<TTable>>> {
   // 1. Fetch source row
   const srcResult = await getByIdImpl(spec, pkColumn, ctx, input)
@@ -278,10 +290,10 @@ async function duplicateImpl<TTable extends PgTable, TId extends string | number
 
   // 3. Apply overrides
   const overrides = cfg.duplicate?.overrides?.(source, ctx) ?? {}
-  const insertData = { ...base, ...overrides } as Insert<TTable>
+  const insertData = { ...base, ...overrides } as unknown as TInsert
 
   // 4. Route through createImpl — create.before + create.after fire automatically
-  return createImpl(spec, cfg, ctx, insertData, callsite)
+  return createImpl<TTable, TId, TInsert, TUpdate>(spec, cfg, ctx, insertData, callsite)
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────

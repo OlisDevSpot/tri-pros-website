@@ -8,4 +8,4 @@ import { mediaFileServerSpec } from '@/shared/entities/media-files/lib/server-sp
  * passes an unscoped `ctx` today, so these run unscoped until the bridge is
  * turned on in the deferred scoping slice. Serial int PK.
  */
-export const mediaFileCrud = createCrudDal<typeof mediaFileServerSpec.table, number>(mediaFileServerSpec)
+export const mediaFileCrud = createCrudDal(mediaFileServerSpec)
