@@ -6,12 +6,14 @@ import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server
 import type { MeetingContext, MeetingFlowState } from '@/shared/entities/meetings/schemas'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { ChannelProvider } from 'ably/react'
+import { MotionConfig } from 'motion/react'
 import { useQueryState } from 'nuqs'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { stepParser } from '@/features/meeting-flow/constants/query-parsers'
 import { DEFAULT_PANEL_SECTION } from '@/features/meeting-flow/constants/shell'
 import { MEETING_STEPS, TOTAL_STEPS } from '@/features/meeting-flow/constants/step-config'
+import { TradeSelectionProvider } from '@/features/meeting-flow/contexts/trade-selection-provider'
 import { useMeetingFlowKeys } from '@/features/meeting-flow/hooks/use-meeting-flow-keys'
 import { useMeetingSync } from '@/features/meeting-flow/hooks/use-meeting-sync'
 import { usePresentMode } from '@/features/meeting-flow/hooks/use-present-mode'
@@ -30,7 +32,7 @@ import { CreateProposalStep } from '@/features/meeting-flow/ui/components/steps/
 import { DealStructureStep } from '@/features/meeting-flow/ui/components/steps/deal-structure-step'
 import { PortfolioStep } from '@/features/meeting-flow/ui/components/steps/portfolio-step'
 import { ProgramStep } from '@/features/meeting-flow/ui/components/steps/program-step'
-import { SpecialtiesStep } from '@/features/meeting-flow/ui/components/steps/specialties-step'
+import { SpecialtiesStep } from '@/features/meeting-flow/ui/components/steps/specialties'
 import { WhoWeAreStep } from '@/features/meeting-flow/ui/components/steps/who-we-are'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
@@ -277,94 +279,98 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
   }
 
   return (
-    <StageFrame ref={rootRef}>
-      <TopBar
-        currentStep={currentStep}
-        customer={customer}
-        meetingId={meetingId}
-        panelOpen={panel !== null}
-        syncStatus={syncStatus}
-        onStepClick={setStep}
-        onTogglePanel={togglePanel}
-      />
-
-      <div className="relative isolate flex min-h-0 flex-1 overflow-hidden">
-        {/* Stage: a flex column because the presentation root is `min-h-0 flex-1` (it collapses to
-            0px in a block parent). The step owns its scroller; the capsule floats over it. */}
-        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          {stepConfig.layout === 'presentation'
-            ? (
-                <>
-                  <h1 className="sr-only" id={stepTitleId}>{stepConfig.title}</h1>
-                  {stepConfig.id === 'who-we-are' && <WhoWeAreStep ref={presentationRef} onContinue={handleNext} />}
-                </>
-              )
-            : (
-                <StepRegion labelledBy={stepTitleId}>
-                  <h1 className="sr-only" id={stepTitleId}>{stepConfig.title}</h1>
-                  {stepConfig.id === 'specialties' && <SpecialtiesStep flowContext={flowContext} />}
-                  {stepConfig.id === 'portfolio' && <PortfolioStep flowContext={flowContext} />}
-                  {stepConfig.id === 'program' && (
-                    <ProgramStep flowContext={flowContext} meetingType={meeting.meetingType} />
-                  )}
-                  {stepConfig.id === 'deal-structure' && <DealStructureStep flowContext={flowContext} />}
-                  {stepConfig.id === 'closing' && (
-                    <ClosingStep
-                      flowContext={flowContext}
-                      meetingOutcome={meeting.meetingOutcome}
-                      onOutcomeChange={handleOutcomeChange}
-                      proposalState={{
-                        proposalCount: meeting.proposalCount ?? 0,
-                        hasSentProposal: meeting.hasSentProposal ?? false,
-                        hasApprovedProposal: meeting.hasApprovedProposal ?? false,
-                      }}
-                    />
-                  )}
-                  {stepConfig.id === 'create-proposal' && (
-                    <CreateProposalStep flowContext={flowContext} meetingId={meetingId} />
-                  )}
-                </StepRegion>
-              )}
-
-          <StepCapsule
+    <TradeSelectionProvider flowContext={flowContext}>
+      <MotionConfig reducedMotion="user">
+        <StageFrame ref={rootRef}>
+          <TopBar
             currentStep={currentStep}
-            presenting={presenting}
-            stepTitle={stepConfig.title}
-            tone={stepConfig.layout}
-            onNext={handleNext}
-            onPrev={handlePrev}
-            onTogglePresent={togglePresent}
+            customer={customer}
+            meetingId={meetingId}
+            panelOpen={panel !== null}
+            syncStatus={syncStatus}
+            onStepClick={setStep}
+            onTogglePanel={togglePanel}
           />
-        </div>
 
-        <MeetingPanel headerRef={panelHeaderRef} openSection={panel} onClose={closePanel} onSelect={openSection}>
-          {panel === 'meeting' && (
-            <MeetingSection meeting={meeting} onReschedule={() => void reschedule(meetingId)} />
-          )}
-          {panel === 'context' && (
-            <ContextPanel
-              customer={customer as CustomerWithProfile | null}
-              meeting={meeting}
-              onAgentNotesChange={handleAgentNotesChange}
-              onContextChange={handleContextChange}
-              onCustomerProfileChange={handleCustomerProfileChange}
-              onOutcomeChange={handleOutcomeChange}
+          <div className="relative isolate flex min-h-0 flex-1 overflow-hidden">
+            {/* Stage: a flex column because the presentation root is `min-h-0 flex-1` (it collapses to
+                0px in a block parent). The step owns its scroller; the capsule floats over it. */}
+            <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+              {stepConfig.layout === 'presentation'
+                ? (
+                    <>
+                      <h1 className="sr-only" id={stepTitleId}>{stepConfig.title}</h1>
+                      {stepConfig.id === 'who-we-are' && <WhoWeAreStep ref={presentationRef} onContinue={handleNext} />}
+                    </>
+                  )
+                : (
+                    <StepRegion labelledBy={stepTitleId}>
+                      <h1 className="sr-only" id={stepTitleId}>{stepConfig.title}</h1>
+                      {stepConfig.id === 'specialties' && <SpecialtiesStep />}
+                      {stepConfig.id === 'portfolio' && <PortfolioStep flowContext={flowContext} />}
+                      {stepConfig.id === 'program' && (
+                        <ProgramStep flowContext={flowContext} meetingType={meeting.meetingType} />
+                      )}
+                      {stepConfig.id === 'deal-structure' && <DealStructureStep flowContext={flowContext} />}
+                      {stepConfig.id === 'closing' && (
+                        <ClosingStep
+                          flowContext={flowContext}
+                          meetingOutcome={meeting.meetingOutcome}
+                          onOutcomeChange={handleOutcomeChange}
+                          proposalState={{
+                            proposalCount: meeting.proposalCount ?? 0,
+                            hasSentProposal: meeting.hasSentProposal ?? false,
+                            hasApprovedProposal: meeting.hasApprovedProposal ?? false,
+                          }}
+                        />
+                      )}
+                      {stepConfig.id === 'create-proposal' && (
+                        <CreateProposalStep flowContext={flowContext} meetingId={meetingId} />
+                      )}
+                    </StepRegion>
+                  )}
+
+              <StepCapsule
+                currentStep={currentStep}
+                presenting={presenting}
+                stepTitle={stepConfig.title}
+                tone={stepConfig.layout}
+                onNext={handleNext}
+                onPrev={handlePrev}
+                onTogglePresent={togglePresent}
+              />
+            </div>
+
+            <MeetingPanel headerRef={panelHeaderRef} openSection={panel} onClose={closePanel} onSelect={openSection}>
+              {panel === 'meeting' && (
+                <MeetingSection meeting={meeting} onReschedule={() => void reschedule(meetingId)} />
+              )}
+              {panel === 'context' && (
+                <ContextPanel
+                  customer={customer as CustomerWithProfile | null}
+                  meeting={meeting}
+                  onAgentNotesChange={handleAgentNotesChange}
+                  onContextChange={handleContextChange}
+                  onCustomerProfileChange={handleCustomerProfileChange}
+                  onOutcomeChange={handleOutcomeChange}
+                />
+              )}
+              {panel === 'persona' && <PersonaProfilePanel meetingId={meetingId} />}
+            </MeetingPanel>
+
+            <InspectorRail
+              contextFilledCount={contextFilledCount}
+              contextTotalCount={CONTEXT_TOTAL_FIELDS}
+              openSection={panel}
+              personaHasData={hasCustomerProfileData(customer)}
+              onSelect={selectFromRail}
             />
-          )}
-          {panel === 'persona' && <PersonaProfilePanel meetingId={meetingId} />}
-        </MeetingPanel>
+          </div>
 
-        <InspectorRail
-          contextFilledCount={contextFilledCount}
-          contextTotalCount={CONTEXT_TOTAL_FIELDS}
-          openSection={panel}
-          personaHasData={hasCustomerProfileData(customer)}
-          onSelect={selectFromRail}
-        />
-      </div>
-
-      <OutcomeReasonDialog />
-      <RescheduleDialog />
-    </StageFrame>
+          <OutcomeReasonDialog />
+          <RescheduleDialog />
+        </StageFrame>
+      </MotionConfig>
+    </TradeSelectionProvider>
   )
 }

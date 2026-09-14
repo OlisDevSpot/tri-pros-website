@@ -1,0 +1,41 @@
+'use client'
+
+import { SPECIALTIES_COPY } from '@/features/meeting-flow/constants/specialties-copy'
+import { useTradeSelection } from '@/features/meeting-flow/contexts/trade-selection-context'
+import { ProjectStrip } from '@/features/meeting-flow/ui/components/steps/specialties/project-strip'
+import { StartHint } from '@/features/meeting-flow/ui/components/steps/specialties/start-hint'
+import { StepIntro } from '@/features/meeting-flow/ui/components/steps/specialties/step-intro'
+import { TradeCatalog } from '@/features/meeting-flow/ui/components/steps/specialties/trade-catalog'
+import { ErrorState } from '@/shared/components/states/error-state'
+import { LoadingState } from '@/shared/components/states/loading-state'
+import { Button } from '@/shared/components/ui/button'
+
+/**
+ * Step 2 of the meeting flow. Composition only: the model and the open trade
+ * live in `TradeSelectionProvider`; the sheet is mounted by the view.
+ */
+export function SpecialtiesStep() {
+  const { catalog } = useTradeSelection()
+
+  if (catalog.isLoading) {
+    return <LoadingState description={SPECIALTIES_COPY.catalogLoading.description} title={SPECIALTIES_COPY.catalogLoading.title} />
+  }
+
+  if (catalog.error) {
+    return (
+      <div className="flex flex-col items-center gap-3">
+        <ErrorState description={SPECIALTIES_COPY.catalogError.description} title={SPECIALTIES_COPY.catalogError.title} />
+        <Button size="sm" variant="outline" onClick={catalog.refetch}>{SPECIALTIES_COPY.retry}</Button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
+      <StepIntro hasLead={false} />
+      <ProjectStrip />
+      <StartHint />
+      <TradeCatalog hasLead={false} />
+    </div>
+  )
+}
