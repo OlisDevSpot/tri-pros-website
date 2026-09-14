@@ -98,6 +98,7 @@ docs/
     meta-ads-compound-intelligence.md
     notion-crm-migration-design.md
     notion-crm-migration-plan.md
+    realtime-sync/                  realtime PRD (Electric SQL vs Ably kernel) + primary-source research
 
   domain/
     ubiquitous-language.md          canonical business terms
