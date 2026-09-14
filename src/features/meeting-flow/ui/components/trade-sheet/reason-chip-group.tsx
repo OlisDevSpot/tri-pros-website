@@ -24,15 +24,15 @@ export function ReasonChipGroup({ tradeId, selectedReasons }: ReasonChipGroupPro
   }
 
   return (
-    <section aria-labelledby={`reasons-${tradeId}`} className="flex flex-col gap-2">
+    <section className="flex flex-col gap-2">
       <h3 id={`reasons-${tradeId}`} className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
         {SPECIALTIES_COPY.sheet.reasons}
       </h3>
-      <ToggleGroup className="flex w-full flex-wrap gap-2" type="multiple" value={selectedReasons} onValueChange={handleValueChange}>
+      <ToggleGroup aria-labelledby={`reasons-${tradeId}`} className="flex w-full flex-wrap gap-2" type="multiple" value={selectedReasons} onValueChange={handleValueChange}>
         {meetingPainTypes.map(reason => (
           <ToggleGroupItem
             key={reason}
-            className="group h-auto min-h-11 flex-none rounded-full border border-input px-3.5 py-2 text-base whitespace-normal first:rounded-full last:rounded-full data-[state=on]:border-primary data-[state=on]:bg-primary/10 data-[state=on]:text-foreground"
+            className="group h-auto min-h-11 flex-none rounded-full border border-border/70 px-3.5 py-2 text-base whitespace-normal transition-none first:rounded-full last:rounded-full data-[state=on]:border-primary data-[state=on]:bg-primary/10 data-[state=on]:text-foreground"
             value={reason}
           >
             <CheckIcon aria-hidden className="hidden size-4 shrink-0 group-data-[state=on]:block" />

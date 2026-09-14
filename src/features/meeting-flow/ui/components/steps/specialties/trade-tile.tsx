@@ -20,7 +20,7 @@ export function TradeTile({ trade }: TradeTileProps) {
   return (
     <Button
       aria-pressed={count > 0}
-      className="h-auto min-h-14 w-full justify-between gap-3 px-3.5 py-3 text-left whitespace-normal aria-pressed:border-primary aria-pressed:bg-primary/5"
+      className="h-auto min-h-14 w-full justify-between gap-3 px-3.5 py-3 text-left whitespace-normal aria-pressed:border-primary aria-pressed:bg-primary/5 dark:aria-pressed:border-primary"
       variant="outline"
       onClick={() => openTrade(trade.id)}
     >
@@ -30,7 +30,7 @@ export function TradeTile({ trade }: TradeTileProps) {
       </span>
       {count > 0
         ? (
-            <span className="shrink-0 rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground tabular-nums">
+            <span className="min-w-5 shrink-0 rounded-full bg-primary px-1.5 text-center text-xs leading-5 font-semibold text-primary-foreground tabular-nums">
               {count}
             </span>
           )

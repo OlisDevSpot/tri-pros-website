@@ -32,10 +32,10 @@ type ScopeTileProps = ScopeTileToggleProps | ScopeTileOpenProps
 function ScopeTileImpl(props: ScopeTileProps) {
   const { id, name, unit, photo, focused = false } = props
   const className = cn(
-    'group h-auto min-h-11 w-full flex-col items-stretch justify-start gap-2 rounded-lg border border-input bg-card p-2 text-left whitespace-normal',
+    'group h-auto min-h-11 w-full flex-col items-stretch justify-start gap-2 rounded-lg border border-border/70 bg-card p-2 text-left whitespace-normal transition-none',
     'first:rounded-lg last:rounded-lg',
     'data-[state=on]:border-primary data-[state=on]:bg-primary/5 data-[state=on]:text-foreground',
-    'aria-pressed:border-primary aria-pressed:bg-primary/5',
+    'aria-pressed:border-primary aria-pressed:bg-primary/5 dark:aria-pressed:border-primary',
     focused && 'outline-2 outline-primary -outline-offset-2',
   )
 
@@ -43,7 +43,7 @@ function ScopeTileImpl(props: ScopeTileProps) {
     <>
       <span className="relative block aspect-[4/3] w-full overflow-hidden rounded-md bg-muted">
         {photo
-          ? <Image alt={photo.alt} className="object-cover" fill sizes="(min-width: 640px) 12rem, 45vw" src={photo.src} />
+          ? <Image alt={photo.alt} className="object-cover" fill sizes="(min-width: 1024px) 12rem, (min-width: 640px) 33vw, 50vw" src={photo.src} />
           : (
               <span className="absolute inset-0 grid place-items-center text-sm font-medium tracking-wide text-muted-foreground uppercase">
                 {unit}
@@ -51,7 +51,7 @@ function ScopeTileImpl(props: ScopeTileProps) {
             )}
         <span
           aria-hidden
-          className="absolute top-1.5 right-1.5 grid size-5 place-items-center rounded-full border bg-background/90 text-primary opacity-0 transition-opacity group-aria-pressed:opacity-100 group-data-[state=on]:opacity-100"
+          className="absolute top-1.5 right-1.5 grid size-5 place-items-center rounded-full border bg-background/90 text-primary opacity-0 group-aria-pressed:opacity-100 group-data-[state=on]:opacity-100"
         >
           <CheckIcon className="size-3" strokeWidth={3} />
         </span>

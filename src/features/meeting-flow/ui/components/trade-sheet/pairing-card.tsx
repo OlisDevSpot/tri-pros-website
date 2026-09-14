@@ -55,7 +55,7 @@ export function PairingCard({ slug, selected }: PairingCardProps) {
                     </>
                   )}
             </p>
-            <Button size="sm" variant={pairedSelected ? 'ghost' : 'default'} onClick={() => openTrade(visible.paired.id)}>
+            <Button className="h-11" size="sm" variant={pairedSelected ? 'ghost' : 'default'} onClick={() => openTrade(visible.paired.id)}>
               {pairedSelected ? SPECIALTIES_COPY.sheet.open : `${SPECIALTIES_COPY.sheet.open} ${visible.paired.name}`}
             </Button>
           </div>

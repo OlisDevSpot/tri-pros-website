@@ -1,7 +1,7 @@
 'use client'
 
 import type { TradeCategory } from '@/features/meeting-flow/constants/trade-categories'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { TRADE_CATEGORY_LABELS } from '@/features/meeting-flow/constants/trade-categories'
 import { useTradeSelection, useTradeSheet } from '@/features/meeting-flow/contexts/trade-selection-context'
 import { findTradeSelection } from '@/features/meeting-flow/lib/trade-selection'
@@ -30,6 +30,20 @@ export function TradeSheetHost() {
   const title = trade?.name ?? stored?.tradeName ?? ''
   const description = trade?.type ? TRADE_CATEGORY_LABELS[trade.type as TradeCategory] : undefined
 
+  // An id in the URL that neither the loaded catalog nor the stored selections know
+  // has nothing to show and no title; close it instead of opening an empty dialog.
+  const isUnknownTrade = openTradeId !== null
+    && !catalog.isLoading
+    && !catalog.error
+    && !catalog.tradesById.has(openTradeId)
+    && findTradeSelection(selections, openTradeId) === undefined
+
+  useEffect(() => {
+    if (isUnknownTrade) {
+      closeTrade()
+    }
+  }, [isUnknownTrade, closeTrade])
+
   const handleOpenChange = useCallback((open: boolean) => {
     if (!open) {
       closeTrade()
@@ -44,10 +58,10 @@ export function TradeSheetHost() {
 
   return (
     <ResponsiveSheet
-      contentClassName="sm:max-w-xl"
+      contentClassName="lg:max-w-xl"
       description={description}
       footer={shownTradeId && !catalog.isLoading && !catalog.error ? <TradeSheetFooter tradeId={shownTradeId} /> : undefined}
-      open={openTradeId !== null}
+      open={openTradeId !== null && !isUnknownTrade}
       title={title}
       onOpenAutoFocus={handleOpenAutoFocus}
       onOpenChange={handleOpenChange}

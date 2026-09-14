@@ -28,7 +28,7 @@ interface ResponsiveSheetProps {
   description?: string
   /** Pinned below the scrolling body. */
   footer?: ReactNode
-  /** Width above `lg` (for example `sm:max-w-xl`), height below it. */
+  /** Applied to both branches, so prefix width classes with `lg:` (for example `lg:max-w-xl`) or they also narrow the bottom Drawer. */
   contentClassName?: string
   /** Radix `onOpenAutoFocus`. Call `event.preventDefault()` to place focus yourself. */
   onOpenAutoFocus?: (event: Event) => void
@@ -83,11 +83,11 @@ export function ResponsiveSheet({
     return (
       <Drawer direction="bottom" open={open} onOpenChange={onOpenChange}>
         <DrawerContent className={contentClassName} onCloseAutoFocus={handleCloseAutoFocus} onOpenAutoFocus={onOpenAutoFocus}>
-          <DrawerHeader className="text-left">
+          <DrawerHeader className="group-data-[vaul-drawer-direction=bottom]/drawer-content:text-left">
             <DrawerTitle>{title}</DrawerTitle>
             {description !== undefined && <DrawerDescription>{description}</DrawerDescription>}
           </DrawerHeader>
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">{children}</div>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">{children}</div>
           {footer !== undefined && (
             <DrawerFooter className="border-t pb-[max(1rem,env(safe-area-inset-bottom))]">{footer}</DrawerFooter>
           )}
@@ -103,7 +103,7 @@ export function ResponsiveSheet({
           <SheetTitle>{title}</SheetTitle>
           {description !== undefined && <SheetDescription>{description}</SheetDescription>}
         </SheetHeader>
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">{children}</div>
         {footer !== undefined && <SheetFooter className="border-t">{footer}</SheetFooter>}
       </SheetContent>
     </Sheet>

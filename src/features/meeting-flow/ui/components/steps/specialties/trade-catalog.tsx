@@ -37,6 +37,7 @@ export function TradeCatalog({ hasLead }: TradeCatalogProps) {
           <SearchIcon aria-hidden className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             aria-label={SPECIALTIES_COPY.catalog.searchLabel}
+            autoComplete="off"
             className="h-11 pl-8 text-base"
             placeholder={SPECIALTIES_COPY.catalog.searchPlaceholder}
             type="search"

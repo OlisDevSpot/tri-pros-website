@@ -22,13 +22,13 @@ export function ProjectStrip() {
             <Button
               key={selection.tradeId}
               aria-pressed
-              className="h-11 gap-2 aria-pressed:border-primary aria-pressed:bg-primary/5"
+              className="h-11 gap-2 aria-pressed:border-primary aria-pressed:bg-primary/5 dark:aria-pressed:border-primary"
               size="sm"
               variant="outline"
               onClick={() => openTrade(selection.tradeId)}
             >
               {selection.tradeName}
-              <span className="rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground tabular-nums">
+              <span className="min-w-5 rounded-full bg-primary px-1.5 text-center text-xs leading-5 font-semibold text-primary-foreground tabular-nums">
                 {itemCount(selection)}
               </span>
             </Button>

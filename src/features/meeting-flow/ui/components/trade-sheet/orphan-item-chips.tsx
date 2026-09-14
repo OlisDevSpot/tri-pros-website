@@ -25,7 +25,7 @@ export function OrphanItemChips({ tradeId, items }: OrphanItemChipsProps) {
       <ul className="flex flex-wrap gap-2">
         {items.map(item => (
           <li key={item.id}>
-            <Button className="h-11" size="sm" variant="outline" onClick={() => toggleItem(tradeId, item)}>
+            <Button aria-label={SPECIALTIES_COPY.sheet.removeItem(item.label)} className="h-11" size="sm" variant="outline" onClick={() => toggleItem(tradeId, item)}>
               {item.label}
               <XIcon aria-hidden className="size-3.5" />
             </Button>

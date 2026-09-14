@@ -48,7 +48,7 @@ export function ScopeTileGroup({ tradeId, scopes, selectedIds, focusScopeId, emp
   }
 
   return (
-    <section aria-labelledby={`scopes-${tradeId}`} className="flex flex-col gap-2">
+    <section className="flex flex-col gap-2">
       <h3 id={`scopes-${tradeId}`} className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
         {SPECIALTIES_COPY.sheet.work}
       </h3>
@@ -57,7 +57,8 @@ export function ScopeTileGroup({ tradeId, scopes, selectedIds, focusScopeId, emp
         : (
             <ToggleGroup
               ref={groupRef}
-              className="grid w-full grid-cols-2 gap-2 sm:grid-cols-3"
+              aria-labelledby={`scopes-${tradeId}`}
+              className="grid w-full grid-cols-2 items-stretch gap-2 sm:grid-cols-3"
               type="multiple"
               value={selectedIds}
               onValueChange={handleValueChange}
