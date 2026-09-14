@@ -36,7 +36,7 @@ const base = publicUrl()
  * their proposal review page. This is a SIGNAL, not a lifecycle event — the
  * homeowner never touches the contract lifecycle; the agent prepares and
  * sends the signing draft manually.
- * see `src/shared/entities/proposals/DOCS.md#proposal-lock-ladder`
+ * see `src/shared/modules/proposals/core/DOCS.md#proposal-lock-ladder`
  */
 export default function MoveForwardRequestEmail({ customerName, proposalLabel, proposalId }: Props) {
   const dashboardUrl = `${base}/proposal-flow/proposal/${proposalId}`

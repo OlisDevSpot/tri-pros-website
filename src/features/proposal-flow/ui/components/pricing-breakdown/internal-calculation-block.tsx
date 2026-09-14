@@ -1,17 +1,17 @@
 'use client'
 
 import type { PriceDisplayMode } from '@/shared/constants/enums'
-import type { FundingData } from '@/shared/entities/proposals/schemas'
-import type { SOW } from '@/shared/entities/proposals/types'
+import type { FundingData } from '@/shared/modules/proposals/core/schemas'
+import type { SOW } from '@/shared/modules/proposals/core/types'
 import { ChevronsUpDownIcon, LockIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/shared/components/ui/button'
 import { Separator } from '@/shared/components/ui/separator'
-import { SectionFinancialsSummary } from '@/shared/entities/proposals/components/section-financials-summary'
-import { MULTIPLIER_STYLES } from '@/shared/entities/proposals/constants/multiplier-styles'
-import { computeProposalFinancials, formatMultiplier } from '@/shared/entities/proposals/lib/financials'
 import { formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
+import { SectionFinancialsSummary } from '@/shared/modules/proposals/core/components/section-financials-summary'
+import { MULTIPLIER_STYLES } from '@/shared/modules/proposals/core/constants/multiplier-styles'
+import { computeProposalFinancials, formatMultiplier } from '@/shared/modules/proposals/core/lib/financials'
 
 interface Props {
   funding: FundingData

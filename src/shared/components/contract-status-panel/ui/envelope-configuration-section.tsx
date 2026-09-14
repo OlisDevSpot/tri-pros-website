@@ -43,7 +43,7 @@ function parseAge(input: string): number | null {
  * Single mutation surface: `applyEnvelopeContext` accepts either or both
  * inputs and the server reconciles the doc selection against the new age.
  *
- * see `src/shared/entities/proposals/DOCS.md#agreement-context-as-coherent-unit`
+ * see `src/shared/modules/proposals/core/DOCS.md#agreement-context-as-coherent-unit`
  */
 export function EnvelopeConfigurationSection({
   proposalId,

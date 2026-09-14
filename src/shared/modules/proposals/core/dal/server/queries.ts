@@ -1,0 +1,389 @@
+// Business queries for the proposals entity. Multi-table joins, derived
+// columns, and entity-specific filters. see ../../DOCS.md for business rules.
+// All DAL conventions: see docs/codebase-conventions/dal-conventions.md
+
+import type { MeetingPipeline } from '@/shared/constants/enums'
+import type { PaginatedResult } from '@/shared/dal/server/lib/query/output'
+import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
+import type { ProposalIncentiveRow } from '@/shared/db/schema/proposal-incentives'
+import type { Proposal } from '@/shared/db/schema/proposals'
+import type { Row } from '@/shared/db/types'
+import type { ProposalLockSignals } from '@/shared/modules/proposals/core/lib/proposal-lock'
+import type { ProjectSection } from '@/shared/modules/proposals/core/types'
+import type { ProposalMediaView } from '@/shared/modules/proposals/media/dal/server/queries'
+
+import { and, count, eq, getTableColumns, gte, inArray, isNotNull, isNull, lte, max, or, sql } from 'drizzle-orm'
+import z from 'zod'
+
+import { proposalKinds, proposalStatuses } from '@/shared/constants/enums'
+import { pipelines } from '@/shared/constants/enums/pipelines'
+import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { buildFilterWhere } from '@/shared/dal/server/lib/query/filters'
+import { paginate } from '@/shared/dal/server/lib/query/output'
+import { dateRangeSchema, numberRangeSchema, paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
+import { buildOrderBy } from '@/shared/dal/server/lib/query/sort'
+import { ThrowableDalError } from '@/shared/dal/server/types'
+import { db } from '@/shared/db'
+import { customers } from '@/shared/db/schema/customers'
+import { meetings } from '@/shared/db/schema/meetings'
+import { proposalViews } from '@/shared/db/schema/proposal-views'
+import { proposals } from '@/shared/db/schema/proposals'
+import { listProposalIncentives } from '@/shared/modules/proposals/incentives/dal/server/queries'
+import { listHomeownerProposalMedia, toProposalMediaView } from '@/shared/modules/proposals/media/dal/server/queries'
+
+// ── Types ───────────────────────────────────────────────────────────────
+
+export interface ProposalCustomer {
+  id: string
+  name: string
+  phone: string | null
+  email: string | null
+  address: string | null
+  city: string
+  state: string | null
+  zip: string
+  customerAge: number | null
+}
+
+export type ProposalWithCustomer = Proposal & {
+  customer: ProposalCustomer | null
+  meetingProjectId: string | null
+  projectFirstContractSentAt: string | null
+  incentives: ProposalIncentiveRow[]
+  media: ProposalMediaView[]
+}
+
+/** Enriched row returned by `listProposals` — base columns + view stats + meeting/customer context. */
+export type ProposalListRow = Proposal & {
+  viewCount: number
+  lastViewedAt: string | null
+  customerId: string | null
+  customerName: string | null
+  meetingPipeline: MeetingPipeline | null
+  meetingProjectId: string | null
+}
+
+// Filter schema — exported so the router can reference the same shape in its `.input()`.
+export const proposalListFiltersSchema = {
+  status: z.array(z.enum(proposalStatuses)).optional(),
+  kind: z.array(z.enum(proposalKinds)).optional(),
+  createdAt: dateRangeSchema.optional(),
+  sentAt: dateRangeSchema.optional(),
+  pipeline: z.enum(pipelines).optional(),
+  price: numberRangeSchema.optional(),
+  customerId: z.string().uuid().optional(),
+  meetingId: z.string().uuid().optional(),
+  awaitingSignature: z.boolean().optional(),
+  sentNoContract: z.boolean().optional(),
+}
+
+export const proposalListInputSchema = paginatedQueryInput(proposalListFiltersSchema)
+export type ProposalListInput = z.infer<typeof proposalListInputSchema>
+
+/**
+ * Enriched single-proposal read: proposal + customer + meeting.projectId +
+ * earliest contract-sent date across the project. Used by proposal page,
+ * delivery, contracts. Scope is set by middleware (authed: visibility predicate;
+ * shareable: eq(token)). see ../../DOCS.md#shareable-via-token
+ */
+export async function getFullView(
+  ctx: ScopedContext,
+  input: { id: string },
+): Promise<DalReturn<ProposalWithCustomer | undefined>> {
+  return dalDbOperation(async () => {
+    const [row] = await db
+      .select({
+        ...getTableColumns(proposals),
+        customer: {
+          id: customers.id,
+          name: customers.name,
+          phone: customers.phone,
+          email: customers.email,
+          address: customers.address,
+          city: customers.city,
+          state: customers.state,
+          zip: customers.zip,
+          age: customers.age,
+        },
+        // Meeting's *current* projectId — distinct from frozen proposal.kind.
+        meetingProjectId: meetings.projectId,
+        // Original contract date for AWD envelopes. COALESCE chain order matters:
+        // project exists before original contract is sent (conversion on approval,
+        // contract after), so contract_sent_at may be null while approved_at exists.
+        projectFirstContractSentAt: sql<string | null>`(
+        SELECT COALESCE(MIN(p2.contract_sent_at), MIN(p2.approved_at), MIN(p2.created_at))
+        FROM ${proposals} p2
+        JOIN ${meetings} m2 ON m2.id = p2.meeting_id
+        WHERE m2.project_id = ${meetings.projectId}
+      )`,
+      })
+      .from(proposals)
+      .leftJoin(meetings, eq(meetings.id, proposals.meetingId))
+      .leftJoin(customers, eq(customers.id, meetings.customerId))
+      .where(and(eq(proposals.id, input.id), ctx.scope ?? undefined))
+
+    if (!row) {
+      return undefined
+    }
+
+    const customer: ProposalCustomer | null = row.customer?.id
+      ? {
+          id: row.customer.id,
+          name: row.customer.name,
+          phone: row.customer.phone,
+          email: row.customer.email,
+          address: row.customer.address,
+          city: row.customer.city,
+          state: row.customer.state,
+          zip: row.customer.zip,
+          customerAge: row.customer.age ?? null,
+        }
+      : null
+
+    // Incentive ROWS are the source of truth (W2). The W3 write-seam flip
+    // retired the funding-blob hydration bridge: every consumer now reads the
+    // cents columns + these rows through `toFundingInputs` (Option 3 ruling —
+    // the row NEVER gains a materialized `funding` property).
+    const incentives = dalVerifySuccess(await listProposalIncentives(row.id))
+
+    // Homeowner-visible media, derived at this read choke point (public bucket)
+    // so the customer-facing gallery renders with zero per-site fetching.
+    const mediaRows = await listHomeownerProposalMedia(row.id)
+    const media = mediaRows.map(toProposalMediaView)
+
+    return { ...row, customer, incentives, media } as ProposalWithCustomer
+  })
+}
+
+/**
+ * Server-paginated proposals list. Drives Past Proposals table + dashboard
+ * recent-proposals strip. Search: ilike on proposals.label OR customers.name.
+ * Sort whitelist below. Default: createdAt DESC.
+ * `price` filter/sort read the stored `final_tcp_cents` rollup (Wave 2). see ../../DOCS.md#final-tcp-derived
+ */
+export async function listProposals(
+  ctx: ScopedContext,
+  input: ProposalListInput,
+): Promise<DalReturn<PaginatedResult<ProposalListRow>>> {
+  return dalDbOperation(async () => {
+    const searchTerm = input.search?.trim()
+    const searchWhere = searchTerm
+      ? or(
+          sql`${proposals.label} ILIKE ${`%${searchTerm}%`}`,
+          sql`${customers.name} ILIKE ${`%${searchTerm}%`}`,
+        )
+      : undefined
+
+    const filterWhere = buildFilterWhere(input.filters, {
+      status: v => (v.length > 0 ? inArray(proposals.status, v) : undefined),
+      kind: v => (v.length > 0 ? inArray(proposals.kind, v) : undefined),
+      createdAt: v => and(
+        v.from ? gte(proposals.createdAt, v.from) : undefined,
+        v.to ? lte(proposals.createdAt, v.to) : undefined,
+      ),
+      sentAt: v => and(
+        v.from ? gte(proposals.sentAt, v.from) : undefined,
+        v.to ? lte(proposals.sentAt, v.to) : undefined,
+      ),
+      pipeline: (v) => {
+        if (v === 'projects') {
+          return sql`${meetings.projectId} IS NOT NULL`
+        }
+        if (v === 'leads') {
+          return sql`FALSE`
+        }
+        return and(
+          sql`${meetings.projectId} IS NULL`,
+          eq(meetings.pipeline, v),
+        )
+      },
+      price: v => and(
+        typeof v.min === 'number' ? sql`${proposals.finalTcpCents} >= ${Math.round(v.min * 100)}` : undefined,
+        typeof v.max === 'number' ? sql`${proposals.finalTcpCents} <= ${Math.round(v.max * 100)}` : undefined,
+      ),
+      customerId: v => eq(customers.id, v),
+      meetingId: v => eq(proposals.meetingId, v),
+      awaitingSignature: (v: boolean) =>
+        v
+          ? and(
+              isNotNull(proposals.contractSentAt),
+              isNull(proposals.contractSignedAt),
+              isNull(proposals.contractDeclinedAt),
+            )
+          : undefined,
+      // Proposal sent (status='sent') with no contract envelope yet — the
+      // `proposal_sent` pipeline stage; user-facing "Sent — awaiting response".
+      // Distinct from `awaitingSignature` (contract out): the two partition the
+      // active proposals with no overlap.
+      sentNoContract: (v: boolean) =>
+        v
+          ? and(
+              eq(proposals.status, 'sent'),
+              isNull(proposals.contractSentAt),
+            )
+          : undefined,
+    })
+
+    const where = and(ctx.scope ?? undefined, searchWhere, filterWhere)
+
+    const orderBy = buildOrderBy(input.sort, {
+      createdAt: proposals.createdAt,
+      sentAt: proposals.sentAt,
+      // Recency of the proposal-sent event, coalesced to createdAt so rows with
+      // a null sentAt (sent before sentAt was captured) sort by their creation
+      // date instead of floating to the top under Postgres' DESC NULLS FIRST.
+      // Matches the "time since" the Sent — awaiting response card displays
+      // (`sentAt ?? createdAt`), so the roster reads strictly newest-first.
+      sentRecency: sql`coalesce(${proposals.sentAt}, ${proposals.createdAt})`,
+      contractSentAt: proposals.contractSentAt,
+      status: proposals.status,
+      label: proposals.label,
+      customerName: customers.name,
+      price: proposals.finalTcpCents,
+    })
+
+    return await paginate({
+      query: () => db
+        .select({
+          ...getTableColumns(proposals),
+          viewCount: count(proposalViews.id),
+          lastViewedAt: max(proposalViews.viewedAt),
+          customerId: customers.id,
+          customerName: customers.name,
+          meetingPipeline: meetings.pipeline,
+          meetingProjectId: meetings.projectId,
+        })
+        .from(proposals)
+        .leftJoin(proposalViews, eq(proposalViews.proposalId, proposals.id))
+        .leftJoin(meetings, eq(meetings.id, proposals.meetingId))
+        .leftJoin(customers, eq(customers.id, meetings.customerId))
+        .where(where)
+        .groupBy(proposals.id, customers.id, customers.name, meetings.pipeline, meetings.projectId)
+        .orderBy(...orderBy)
+        .limit(input.pagination.limit)
+        .offset(input.pagination.offset),
+      // Count proposals matching where — joins to meetings/customers are
+      // 1:1 (FK), so count(proposals.id) is distinct without DISTINCT.
+      count: async () => {
+        const [row] = await db
+          .select({ c: count(proposals.id) })
+          .from(proposals)
+          .leftJoin(meetings, eq(meetings.id, proposals.meetingId))
+          .leftJoin(customers, eq(customers.id, meetings.customerId))
+          .where(where)
+        return row?.c ?? 0
+      },
+    }) as unknown as PaginatedResult<ProposalListRow>
+  })
+}
+
+// getProposalViews + ProposalViewStats moved to
+// ../../../views/dal/server/queries.ts (S3a).
+
+/**
+ * Light lock probe for the whole-proposal freeze gate (`update.before` hook +
+ * `getProposalLockState`). Deliberately unscoped — it exposes nothing beyond
+ * lock signals, and the update itself re-applies `ctx.scope` in its WHERE.
+ * see ../../DOCS.md#proposal-lock-ladder
+ */
+export async function getProposalLockSignals(
+  proposalId: string,
+): Promise<DalReturn<ProposalLockSignals>> {
+  return dalDbOperation(async () => {
+    const [row] = await db
+      .select({
+        status: proposals.status,
+        contractEnvelopeId: proposals.contractEnvelopeId,
+        contractSentAt: proposals.contractSentAt,
+        contractSignedAt: proposals.contractSignedAt,
+        contractDeclinedAt: proposals.contractDeclinedAt,
+      })
+      .from(proposals)
+      .where(eq(proposals.id, proposalId))
+    if (!row) {
+      throw new ThrowableDalError({ type: 'not-found' })
+    }
+    return row
+  })
+}
+
+/** Full rows for a set of proposal ids (scoped). Empty input → []. Used by accounting invoice build. */
+export async function getProposalsByIds(
+  ctx: ScopedContext,
+  ids: string[],
+): Promise<DalReturn<Row<typeof proposals>[]>> {
+  return dalDbOperation(async () => {
+    if (ids.length === 0) {
+      return []
+    }
+    return db
+      .select()
+      .from(proposals)
+      .where(and(inArray(proposals.id, ids), ctx.scope ?? undefined)) as Promise<Row<typeof proposals>[]>
+  })
+}
+
+/** Minimal proposal projection for a meeting — id + projectJSON — feeds the project-create gate + scope derivation. */
+export async function getProposalsByMeetingId(
+  ctx: ScopedContext,
+  meetingId: string,
+): Promise<DalReturn<{ id: string, projectJSON: ProjectSection }[]>> {
+  return dalDbOperation(async () =>
+    db
+      .select({ id: proposals.id, projectJSON: proposals.projectJSON })
+      .from(proposals)
+      .where(and(eq(proposals.meetingId, meetingId), ctx.scope ?? undefined)),
+  )
+}
+
+/** Full rows for a set of QB invoice ids (non-PK, scoped). Empty input → []. Used by QB payment-status sync. */
+export async function getProposalsByInvoiceIds(
+  ctx: ScopedContext,
+  invoiceIds: string[],
+): Promise<DalReturn<Row<typeof proposals>[]>> {
+  return dalDbOperation(async () => {
+    if (invoiceIds.length === 0) {
+      return []
+    }
+    return db
+      .select()
+      .from(proposals)
+      .where(and(inArray(proposals.qbInvoiceId, invoiceIds), ctx.scope ?? undefined)) as Promise<Row<typeof proposals>[]>
+  })
+}
+
+/** Single proposal by QB invoice id (non-PK, scoped). Used by QB invoice-status sync. */
+export async function getProposalByInvoiceId(
+  ctx: ScopedContext,
+  invoiceId: string,
+): Promise<DalReturn<Row<typeof proposals> | undefined>> {
+  return dalDbOperation(async () => {
+    const [row] = await db
+      .select()
+      .from(proposals)
+      .where(and(eq(proposals.qbInvoiceId, invoiceId), ctx.scope ?? undefined))
+      .limit(1)
+    return row
+  })
+}
+
+/**
+ * Lookup by Zoho `contractEnvelopeId` (non-PK). Used by contracts service
+ * webhook handler to find the proposal for an inbound event.
+ */
+export async function getByContractEnvelopeId(
+  ctx: ScopedContext,
+  input: { contractEnvelopeId: string },
+): Promise<DalReturn<Row<typeof proposals> | undefined>> {
+  return dalDbOperation(async () => {
+    const [row] = await db
+      .select()
+      .from(proposals)
+      .where(and(
+        eq(proposals.contractEnvelopeId, input.contractEnvelopeId),
+        ctx.scope ?? undefined,
+      ))
+      .limit(1)
+    return row
+  })
+}

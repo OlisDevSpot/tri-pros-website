@@ -22,10 +22,10 @@ import { Button } from '@/shared/components/ui/button'
 import { Form } from '@/shared/components/ui/form'
 import { ROOTS } from '@/shared/config/roots'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
-import { computeFinalTcp } from '@/shared/entities/proposals/lib/financials'
-import { fundingDomainToColumns, toFundingInputs } from '@/shared/entities/proposals/lib/funding-columns'
-import { getProposalLockState } from '@/shared/entities/proposals/lib/proposal-lock'
 import { useConfirm } from '@/shared/hooks/use-confirm'
+import { computeFinalTcp } from '@/shared/modules/proposals/core/lib/financials'
+import { fundingDomainToColumns, toFundingInputs } from '@/shared/modules/proposals/core/lib/funding-columns'
+import { getProposalLockState } from '@/shared/modules/proposals/core/lib/proposal-lock'
 import { useTRPC } from '@/trpc/helpers'
 import { CustomerInfoHeader } from '../components/customer-info-header'
 
@@ -42,7 +42,7 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
   const updateProposal = useUpdateProposal()
   const replaceIncentives = useReplaceIncentives()
 
-  // see src/shared/entities/proposals/DOCS.md#proposal-lock-ladder
+  // see src/shared/modules/proposals/core/DOCS.md#proposal-lock-ladder
   const lockState = proposal.data != null ? getProposalLockState(proposal.data) : 'unlocked'
   const proposalLocked = lockState !== 'unlocked'
 

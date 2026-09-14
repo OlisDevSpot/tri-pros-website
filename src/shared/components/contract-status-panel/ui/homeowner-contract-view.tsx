@@ -27,7 +27,7 @@ export function HomeownerContractView({ proposalId, token, contractStatus, custo
 
   // A pure signal to the agents — never touches the contract lifecycle.
   // The agent manually prepares/sends the signing draft (#264).
-  // see `src/shared/entities/proposals/DOCS.md#proposal-lock-ladder`
+  // see `src/shared/modules/proposals/core/DOCS.md#proposal-lock-ladder`
   const requestMoveForward = useMutation(
     trpc.proposalsRouter.delivery.requestToMoveForward.mutationOptions({
       onSuccess: () => {
@@ -122,7 +122,7 @@ function ActionArea(props: {
   }
   // Terminal: declined / recalled / expired. Declined is PERMANENT — a
   // declined contract is renegotiated on a new proposal, never re-requested
-  // (see entities/proposals/lib/proposal-lock.ts), so no request button.
+  // (see modules/proposals/core/lib/proposal-lock.ts), so no request button.
   if (props.isTerminal) {
     const isDeclined = props.requestStatus === 'declined'
     return (

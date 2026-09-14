@@ -35,7 +35,7 @@ This directory must be **standardized** (every rule has a predictable home) and 
 1. **Is it about *why* we chose this approach** (with considered alternatives, trade-offs that warrant rationale)?
    → Write an [ADR](../adr/). Increment the next number. The topic file below references it with one sentence.
 2. **Is it about *what business meaning* a field / entity / status carries** (invariants, derivations, gates, who-can-do-what)?
-   → Write to the entity's `src/shared/entities/<entity>/DOCS.md` as a new slug-anchored H3.
+   → Write to the entity's `src/shared/entities/<entity>/DOCS.md` (or, for a module unit, `src/shared/modules/<module>/<unit>/DOCS.md` — e.g. `src/shared/modules/proposals/core/DOCS.md`) as a new slug-anchored H3.
 3. **Is it about *how a subsystem operates internally*** (middleware contracts, factory rules, hook lifecycles)?
    → Write to that subsystem's `DOCS.md` (e.g., `src/trpc/DOCS.md`).
 4. **Is it about *how to write code* that cuts across features / entities / subsystems** (signatures, conventions, file placement, anti-patterns)?

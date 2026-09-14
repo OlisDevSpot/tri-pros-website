@@ -11,9 +11,9 @@ import { TRPCError } from '@trpc/server'
 import z from 'zod'
 
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
-import { recordProposalView } from '@/shared/entities/proposal-views/dal/server/mutations'
-import { getProposalViews } from '@/shared/entities/proposal-views/dal/server/queries'
-import { getFullView } from '@/shared/entities/proposals/dal/server/queries'
+import { getFullView } from '@/shared/modules/proposals/core/dal/server/queries'
+import { recordProposalView } from '@/shared/modules/proposals/views/dal/server/mutations'
+import { getProposalViews } from '@/shared/modules/proposals/views/dal/server/queries'
 import { sendViewNotificationJob } from '@/shared/services/providers/upstash/jobs/send-view-notification'
 
 import { createTRPCRouter, systemProcedure } from '../../init'

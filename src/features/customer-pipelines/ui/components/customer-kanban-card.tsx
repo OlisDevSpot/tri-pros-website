@@ -25,11 +25,11 @@ import { useCustomerActionConfigs } from '@/shared/entities/customers/hooks/use-
 import { getMeetingTimeLabel } from '@/shared/entities/customers/lib/get-meeting-time-label'
 import { MeetingOverviewCard } from '@/shared/entities/meetings/components/overview-card'
 import { useProjectActionConfigs } from '@/shared/entities/projects/hooks/use-project-action-configs'
-import { ProposalOverviewCard } from '@/shared/entities/proposals/components/overview-card'
-import { PROPOSAL_ROW_STYLES } from '@/shared/entities/proposals/constants/proposal-row-styles'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { formatAddress, formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
+import { ProposalOverviewCard } from '@/shared/modules/proposals/core/components/overview-card'
+import { PROPOSAL_ROW_STYLES } from '@/shared/modules/proposals/core/constants/proposal-row-styles'
 
 interface Props {
   item: CustomerPipelineItem

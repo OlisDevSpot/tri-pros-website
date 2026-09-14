@@ -141,7 +141,7 @@ export async function getCustomerProfile(customerId: string, viewer: CustomerPro
       token: p.token,
       trade: p.trade,
       // Stored rollup (Wave 2) — maintained by recomputeProposalFinancials; null
-      // only pre-backfill. see entities/proposals/DOCS.md#final-tcp-derived
+      // only pre-backfill. see modules/proposals/core/DOCS.md#final-tcp-derived
       value: (p.finalTcpCents ?? 0) / 100,
       sentAt: p.sentAt,
       contractSentAt: p.contractSentAt,

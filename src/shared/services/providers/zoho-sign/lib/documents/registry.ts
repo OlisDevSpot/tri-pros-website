@@ -1,9 +1,9 @@
 import type { EnvelopeDocument, FieldSource } from './types'
 import { format } from 'date-fns'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
-import { cslbEarliestStartDate } from '@/shared/entities/proposals/lib/cslb-start-date'
-import { computeFinalTcp } from '@/shared/entities/proposals/lib/financials'
 import { formatPhone } from '@/shared/lib/phone'
+import { cslbEarliestStartDate } from '@/shared/modules/proposals/core/lib/cslb-start-date'
+import { computeFinalTcp } from '@/shared/modules/proposals/core/lib/financials'
 import { pdfService } from '@/shared/services/pdf.service'
 import { ZOHO_SIGN_TEMPLATES } from '../../constants'
 

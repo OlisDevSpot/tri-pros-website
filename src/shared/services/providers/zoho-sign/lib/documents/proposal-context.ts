@@ -1,9 +1,9 @@
 import type { ProposalContext } from './types'
-import type { ProposalWithCustomer } from '@/shared/entities/proposals/dal/server/queries'
+import type { ProposalWithCustomer } from '@/shared/modules/proposals/core/dal/server/queries'
 import { isSeniorByAge } from '@/shared/entities/customers/lib/customer-predicates'
-import { computeFinalTcp } from '@/shared/entities/proposals/lib/financials'
-import { toFundingInputs } from '@/shared/entities/proposals/lib/funding-columns'
 import { sowToPlaintext } from '@/shared/lib/tiptap-to-text'
+import { computeFinalTcp } from '@/shared/modules/proposals/core/lib/financials'
+import { toFundingInputs } from '@/shared/modules/proposals/core/lib/funding-columns'
 import { isLongSow } from '../is-long-sow'
 
 /**

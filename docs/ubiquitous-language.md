@@ -34,7 +34,10 @@ shared/entities/customers/           ← Single Unit (entity)
 shared/entities/meetings/            ← Single Unit (entity)
 ├── constants/, hooks/, components/, schemas/
 
-shared/pipelines/                    ← Single Unit (domain system)
+shared/modules/proposals/            ← Module: aggregate of entity units under one root service.ts
+├── service.ts, core/, incentives/, media/, views/   (each unit keeps the entity layout)
+
+shared/domains/pipelines/            ← Single Unit (domain system)
 ├── constants/, hooks/, lib/, types/, ui/
 
 shared/auth/                         ← Single Unit (domain system)
@@ -88,7 +91,7 @@ Trade (discipline)
 
 | Term | Definition |
 |------|-----------|
-| **Price** | Front-facing financial value — what the customer pays. Examples: `Section Price` (per SOW section), `startingTcp` / `finalTcp` (whole proposal). Visible to homeowner. Stored at `proposal.projectJSON.sow[].financials.sectionPrice` (per section) and `proposal.fundingJSON.data.startingTcp` (proposal level). |
+| **Price** | Front-facing financial value — what the customer pays. Examples: `Section Price` (per SOW section), `startingTcp` / `finalTcp` (whole proposal). Visible to homeowner. Stored at `proposal.projectJSON.sow[].financials.sectionPrice` (per section) and `proposals.starting_tcp_cents` / `final_tcp_cents` (proposal level, integer cents; `finalTcp` is derived — see `src/shared/modules/proposals/core/DOCS.md#final-tcp-derived`). |
 | **Cost** | Back-facing financial value — what the work costs Tri Pros (materials, labor, fees, overhead). Internal/agent-only. Multi-line per SOW section: each line has `{label, amount, relatedScopeId, notes?}` and ties to a specific selected scope. Stored at `proposal.projectJSON.sow[].financials.costLines`. **Never visible to homeowner.** |
 | **Cost Line** | One internal line of cost. Has `label`, `amount`, `relatedScopeId`, optional `notes`. Lives in `sow[].financials.costLines[]`. |
 | **Margin** | Derived: `Price − Cost`. Margin % = `(Margin / Price) × 100`. Computed at SOW-section level and at proposal level (aggregate) via `computeSectionMargin` / `computeProposalCostTotals`. Never persisted. Internal/agent-only. Sections missing cost data are excluded from aggregate margin and surfaced as a "missing cost data" warning. |
@@ -242,7 +245,7 @@ Terms for communicating about codebase alterations — retiring a pattern, migra
 
 ## Derived-Value Vocabulary
 
-Terms for talking about values computable from other stored data. Canonical rule + disciplines: `docs/codebase-conventions/derived-values.md` (ratified 2026-07-17; supersedes the old blanket "never persist derived values"). Proposal-specific case: `src/shared/entities/proposals/DOCS.md#final-tcp-derived`.
+Terms for talking about values computable from other stored data. Canonical rule + disciplines: `docs/codebase-conventions/derived-values.md` (ratified 2026-07-17; supersedes the old blanket "never persist derived values"). Proposal-specific case: `src/shared/modules/proposals/core/DOCS.md#final-tcp-derived`.
 
 | Term | Definition |
 |------|-----------|

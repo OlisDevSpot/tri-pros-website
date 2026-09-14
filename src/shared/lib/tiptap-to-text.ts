@@ -1,4 +1,4 @@
-import type { SOW } from '@/shared/entities/proposals/types'
+import type { SOW } from '@/shared/modules/proposals/core/types'
 
 interface TiptapMark { type: string, attrs?: Record<string, any> }
 

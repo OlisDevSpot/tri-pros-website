@@ -5,7 +5,7 @@
 //
 // Detection is a read-only SELECT using the SAME expression as
 // recomputeProposalFinancials (keep in sync — see
-// src/shared/entities/proposals/dal/server/mutations.ts). Writes go ONLY
+// src/shared/modules/proposals/core/dal/server/mutations.ts). Writes go ONLY
 // through recomputeProposalFinancials itself, so the chokepoint stays the
 // single writer. Idempotent: re-run = verify/repair, always converges.
 //
@@ -17,7 +17,7 @@ import process from 'node:process'
 import { sql } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
-import { recomputeProposalFinancials } from '@/shared/entities/proposals/dal/server/mutations'
+import { recomputeProposalFinancials } from '@/shared/modules/proposals/core/dal/server/mutations'
 import { describeTargetDb } from './lib/describe-target-db'
 
 const DRY_RUN = process.argv.includes('--dry-run')

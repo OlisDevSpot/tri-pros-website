@@ -2,7 +2,7 @@ import type z from 'zod'
 import { sql } from 'drizzle-orm'
 import { bigint, check, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
-import { incentiveTypes } from '@/shared/entities/proposals/schemas'
+import { incentiveTypes } from '@/shared/modules/proposals/core/schemas'
 import { createdAt, id, updatedAt } from '../lib/schema-helpers'
 import { proposals } from './proposals'
 

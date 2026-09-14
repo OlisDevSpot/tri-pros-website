@@ -7,7 +7,7 @@ import { projectCrud } from '@/shared/entities/projects/dal/server/crud'
 import { setProjectScopes } from '@/shared/entities/projects/dal/server/mutations'
 import { extractScopeIdsFromProposals } from '@/shared/entities/projects/lib/derive-scope-ids'
 import { createProjectFormSchema } from '@/shared/entities/projects/schemas'
-import { getProposalsByMeetingId } from '@/shared/entities/proposals/dal/server/queries'
+import { getProposalsByMeetingId } from '@/shared/modules/proposals/core/dal/server/queries'
 import { agentProcedure, createTRPCRouter } from '../../init'
 
 export const businessRouter = createTRPCRouter({

@@ -5,7 +5,7 @@ import type { R2BucketName } from '@/shared/services/providers/r2/types'
 import { mediaFiles } from '@/shared/db/schema/media-files'
 import { proposalMediaFiles } from '@/shared/db/schema/proposal-media-files'
 import { mediaFileCrud } from '@/shared/entities/media-files/dal/server/crud'
-import { proposalMediaCrud } from '@/shared/entities/proposal-media-files/dal/server/crud'
+import { proposalMediaCrud } from '@/shared/modules/proposals/media/dal/server/crud'
 import { R2_BUCKETS } from '@/shared/services/providers/r2/types'
 
 export type MediaOwnerKind = 'project' | 'proposal'

@@ -20,7 +20,7 @@ route (auth + HTTP headers)
 - **Builders** live in `src/shared/lib/pdf/`, one file per document type, named `<type>-doc-definition.ts`, exporting `buildXxxDocDefinition`. They take an entity view (e.g. `ProposalWithCustomer`) and return a doc definition — no DB access, no HTTP.
 - **`pdfService`** fetches via the DAL and calls builder + `renderPdf`. Services orchestrate; they contain zero pdfmake content.
 - **Rich text** converts through [`tiptap-to-pdfmake.ts`](../../src/shared/lib/pdf/tiptap-to-pdfmake.ts) — never hand-parse tiptap JSON in a builder. Legacy rows may carry `undefined`/unparseable `contentJSON`; parse with a try/catch helper and render without body text rather than throwing.
-- **Token-gated delivery**: customer-facing PDF routes follow the proposal pattern — token match *is* the authorization. Canonical: [`proposals/DOCS.md#pdf-export-token-gated`](../../src/shared/entities/proposals/DOCS.md).
+- **Token-gated delivery**: customer-facing PDF routes follow the proposal pattern — token match *is* the authorization. Canonical: [`proposals/core/DOCS.md#pdf-export-token-gated`](../../src/shared/modules/proposals/core/DOCS.md).
 
 ## fonts-and-winansi-text
 
@@ -34,7 +34,7 @@ We use the **standard 14 PDF fonts** (logical name `Roboto` → Helvetica) — n
 
 Customer-facing builders are read-only consumers of homeowner-visible fields:
 
-- **Never** read `sow[].financials.costLines` or any margin data. The PDF builder renders from `buildPricingBreakdown` (the price-side-only view-model in `entities/proposals/lib/financials`, which internally uses `computeFinalTcp`) — the final price is **never** a stored total. Canonical: `proposals/DOCS.md#final-tcp-derived`, `proposals/DOCS.md#price-side-vs-cost-side`.
+- **Never** read `sow[].financials.costLines` or any margin data. The PDF builder renders from `buildPricingBreakdown` (the price-side-only view-model in `modules/proposals/core/lib/financials`, which internally uses `computeFinalTcp`) — the final price is **never** a stored total. Canonical: `proposals/core/DOCS.md#final-tcp-derived`, `proposals/core/DOCS.md#price-side-vs-cost-side`.
 - Company identity (name, address, licenses, contact) comes from `src/shared/constants/company/` — never hardcoded. See [phone-numbers.md](./phone-numbers.md) for phone display (`formatPhone`).
 - Dates render with an explicit `timeZone: 'America/Los_Angeles'` — the server runs UTC, so an evening-PT `createdAt` otherwise prints as the next day.
 - Logo: fs-read from `public/company/logo/` as a base64 data URL, with a text-only fallback when the read fails (never crash the document over branding). Note the counterintuitive naming: `logo-light-right` = dark lettering *for light backgrounds* — the right choice on a white page.

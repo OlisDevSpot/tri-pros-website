@@ -259,7 +259,7 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean, canSeeUnga
       continue
     }
     // Stored rollup (Wave 2) — maintained by recomputeProposalFinancials; null
-    // only pre-backfill. see entities/proposals/DOCS.md#final-tcp-derived
+    // only pre-backfill. see modules/proposals/core/DOCS.md#final-tcp-derived
     const value = (r.finalTcpCents ?? 0) / 100
     const arr = proposalDetailMap.get(r.customerId) ?? []
     arr.push({ id: r.proposalId, token: r.token, value, status: r.status, createdAt: r.createdAt })
@@ -431,7 +431,7 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean, canSeeU
       continue
     }
     // Stored rollup (Wave 2) — maintained by recomputeProposalFinancials; null
-    // only pre-backfill. see entities/proposals/DOCS.md#final-tcp-derived
+    // only pre-backfill. see modules/proposals/core/DOCS.md#final-tcp-derived
     const value = (p.finalTcpCents ?? 0) / 100
     const arr = proposalsByMeeting.get(p.meetingId) ?? []
     arr.push({ id: p.proposalId, token: p.token, value, status: p.status, createdAt: p.createdAt })

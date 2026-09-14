@@ -1,4 +1,4 @@
-import type { ProposalFormSchema } from '@/shared/entities/proposals/schemas'
+import type { ProposalFormSchema } from '@/shared/modules/proposals/core/schemas'
 import { aiService } from '@/shared/services/ai.service'
 import { createJob } from '../lib/create-job'
 

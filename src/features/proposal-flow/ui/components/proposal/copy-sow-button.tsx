@@ -1,6 +1,6 @@
 'use client'
 
-import type { SOW } from '@/shared/entities/proposals/types'
+import type { SOW } from '@/shared/modules/proposals/core/types'
 
 import { CheckIcon, CopyIcon } from 'lucide-react'
 import { useCallback, useState } from 'react'

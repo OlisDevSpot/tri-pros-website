@@ -2,7 +2,7 @@
 
 import type { ProposalStatus } from '@/shared/constants/enums'
 
-import type { ProposalRow, ProposalTableMeta } from '@/shared/entities/proposals/lib/columns-registry'
+import type { ProposalRow, ProposalTableMeta } from '@/shared/modules/proposals/core/lib/columns-registry'
 import { useCallback, useMemo, useState } from 'react'
 
 import { toast } from 'sonner'
@@ -20,10 +20,10 @@ import { RecordsPageShell } from '@/shared/components/records-page-shell'
 import { ROOTS } from '@/shared/config/roots'
 import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
 
-import { useProposalActionConfigs } from '@/shared/entities/proposals/hooks/use-proposal-action-configs'
-import { useProposalActions } from '@/shared/entities/proposals/hooks/use-proposal-actions'
-import { PROPOSAL_COLUMNS } from '@/shared/entities/proposals/lib/columns-registry'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
+import { useProposalActionConfigs } from '@/shared/modules/proposals/core/hooks/use-proposal-action-configs'
+import { useProposalActions } from '@/shared/modules/proposals/core/hooks/use-proposal-actions'
+import { PROPOSAL_COLUMNS } from '@/shared/modules/proposals/core/lib/columns-registry'
 import { useTRPC } from '@/trpc/helpers'
 
 const SHOW_COLUMNS = ['label', 'price', 'status', 'createdAt', 'sentAt', 'viewCount'] as const

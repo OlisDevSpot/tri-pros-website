@@ -122,6 +122,8 @@ The handler/DAL receives `ctx.scope` either way. It never branches on which cred
 
 Each entity's identity string lives in `entities/<entity>/lib/constants.ts`; `domains/permissions/abilities.ts` imports them and derives `ENTITY_NAMES` const array + `EntityName` union + `AppSubject` type. Visibility predicate colocated at `entities/<entity>/lib/visibility.ts`. Server-spec at `entities/<entity>/lib/server-spec.ts`. The server-side `entityRegistry: Record<EntityName, EntityServerSpec>` mirrors ADR-0001's client-side registry.
 
+> **Amendment note (2026-09-14):** entities under `src/shared/modules/<module>/<unit>/` (today: `modules/proposals/{core,incentives,media,views}/`) place `server-spec.ts` at the unit ROOT, not in `lib/` (e.g. `src/shared/modules/proposals/core/server-spec.ts`); `constants.ts` (and `visibility.ts`, where the unit has its own — child units derive scope from `parent`) stay in the unit's `lib/`. Top-level `src/shared/entities/<entity>/` still uses `lib/server-spec.ts`.
+
 ## Considered alternatives
 
 - **L0/L1/L2 layer nomenclature with fixed handler creation** (Phase 1a design). L1 internally created L0 handlers with no override path. Replaced: handler creation decoupled into DAL; L1 wraps whatever DAL it receives. The numbered-layer naming created a false sense of architectural depth when the real product is simpler: DAL + thin tRPC skin.
@@ -171,6 +173,8 @@ Each entity's identity string lives in `entities/<entity>/lib/constants.ts`; `do
 - **Field-level CASL helper deferred.** Customer's per-field loop is the only adopter. Promote to `requireFieldAccess(...)` when 2+ adopters land.
 
 - **DAL is the ONLY path to the database.** No file outside `shared/dal/` and `shared/entities/*/dal/` may import `db` from `@/shared/db`. This is a hard rule, not a guideline. DAL functions return `DalReturn<T>` (discriminated union — never throw, never redirect). Callers decide what to do with errors: tRPC maps to `TRPCError` via `dalToTrpc()`, services inspect the error type and log/retry/propagate, server components can redirect. The DAL pattern follows WebDevSimplified's `DalReturn<T>` + `dalDbOperation()` composition adapted for our two-mode system (tRPC context vs direct server-side).
+
+  > **Amendment note (2026-09-14):** module unit DALs also import `db` — `src/shared/modules/proposals/{core,incentives,media,views}/dal/server/*.ts`. The operational allowlist is `shared/dal/`, `shared/entities/*/dal/`, `shared/modules/*/*/dal/` (`docs/codebase-conventions/dal-conventions.md#only-dal-imports-db`).
 
 - **Direct DB access violations (must migrate to DAL).** Audit found these files importing `db` outside DAL — each is a follow-up migration:
   - `shared/services/accounting.service.ts` — reads `proposals.fundingJSON`, writes `proposals.qbPaymentStatus`

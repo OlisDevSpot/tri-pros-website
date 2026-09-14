@@ -1,7 +1,7 @@
 import { companyInfo } from '@/shared/constants/company'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
-import { getFullView } from '@/shared/entities/proposals/dal/server/queries'
 import { sanitizeFilename } from '@/shared/lib/sanitize-filename'
+import { getFullView } from '@/shared/modules/proposals/core/dal/server/queries'
 import { pdfService } from '@/shared/services/pdf.service'
 
 export async function GET(

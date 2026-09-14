@@ -93,7 +93,7 @@ function createEmailService() {
      * Agent-facing: the homeowner requested to move forward. A pure signal —
      * never touches contract lifecycle. Recipients = meeting participants
      * (fallback: proposal owner), resolved by the caller.
-     * see `src/shared/entities/proposals/DOCS.md#proposal-lock-ladder`
+     * see `src/shared/modules/proposals/core/DOCS.md#proposal-lock-ladder`
      */
     sendMoveForwardRequestEmail: async (params: {
       recipients: string[]

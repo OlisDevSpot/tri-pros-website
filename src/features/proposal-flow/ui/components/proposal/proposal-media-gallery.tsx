@@ -1,4 +1,4 @@
-import type { ProposalMediaView } from '@/shared/entities/proposal-media-files/dal/server/queries'
+import type { ProposalMediaView } from '@/shared/modules/proposals/media/dal/server/queries'
 import { FileText } from 'lucide-react'
 import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'

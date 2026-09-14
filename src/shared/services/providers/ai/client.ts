@@ -1,4 +1,4 @@
-import type { ProposalFormSchema } from '@/shared/entities/proposals/schemas'
+import type { ProposalFormSchema } from '@/shared/modules/proposals/core/schemas'
 
 import { openai } from '@ai-sdk/openai'
 import { generateText, Output } from 'ai'

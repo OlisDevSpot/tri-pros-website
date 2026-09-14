@@ -1,7 +1,7 @@
 // ─── Incentives Router ──────────────────────────────────────────────────────
 // proposal_incentives child rows (Wave 2). Replace-all upsert from the funding
 // form. Freeze gate (contractEnvelopeId) enforced in the DAL.
-// see ../../../shared/entities/proposals/DOCS.md#final-tcp-derived
+// see ../../../shared/modules/proposals/core/DOCS.md#final-tcp-derived
 //
 // Plain leaf: imports pre-scoped procedures from ./procedures. The inline CASL
 // check is consolidated into a shared `assertCanUpdateProposal` in S5. When
@@ -11,8 +11,8 @@
 import { TRPCError } from '@trpc/server'
 import z from 'zod'
 
-import { replaceProposalIncentives } from '@/shared/entities/proposal-incentives/dal/server/mutations'
-import { incentiveSchema } from '@/shared/entities/proposals/schemas'
+import { incentiveSchema } from '@/shared/modules/proposals/core/schemas'
+import { replaceProposalIncentives } from '@/shared/modules/proposals/incentives/dal/server/mutations'
 
 import { createTRPCRouter } from '../../init'
 import { dalToTrpc } from '../../lib/dal-to-trpc'

@@ -9,7 +9,7 @@ shared UI unchanged.
 This directory holds the owner-agnostic file-operation core (`media.service.ts`), the owner
 seam (`stores.ts`), and the optimize dispatch glue (`optimize-media.ts`,
 `optimization-target.ts`). See `src/shared/lib/file-optimization/DOCS.md` for the pure
-optimizer core this dispatches into, and `src/shared/entities/proposals/DOCS.md#proposal-media`
+optimizer core this dispatches into, and `src/shared/modules/proposals/core/DOCS.md#proposal-media`
 + `src/shared/entities/projects/DOCS.md` for the two current consumers' entity-level rules.
 
 ## Rules
@@ -188,7 +188,7 @@ import here would create a cross-feature dependency through the back door.
 ## See also
 
 - `src/shared/lib/file-optimization/DOCS.md` — the pure optimizer core dispatched by `optimizeMediaFile`
-- [`../../entities/proposals/DOCS.md#proposal-media`](../../entities/proposals/DOCS.md) — proposal-side consumer rules (visibility, lock-exemption, copy-to-project)
+- [`../../modules/proposals/core/DOCS.md#proposal-media`](../../modules/proposals/core/DOCS.md) — proposal-side consumer rules (visibility, lock-exemption, copy-to-project)
 - `../../entities/projects/DOCS.md` — project-side consumer (public gallery, phases)
 - `docs/codebase-conventions/dal-conventions.md` — `DalReturn<T>` + `ScopedContext` pattern used by the owner DALs this service is invoked from
 

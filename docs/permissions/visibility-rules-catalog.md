@@ -107,7 +107,7 @@ row-visibility are all this atom viewed through a different FK — which is why 
 
 | Rule | Today (`file:line`) | Axis | Target CASL expression |
 |------|---------------------|------|------------------------|
-| Agent sees proposals for meetings they're in | `proposalVisibility` → `userParticipatesInMeeting(userId, proposals.meetingId)` — `entities/proposals/lib/visibility.ts:9` | 2 | `can('read','Proposal',{ $participatesViaMeetingPath:{ through:'meetingId' } })` |
+| Agent sees proposals for meetings they're in | `proposalVisibility` → `userParticipatesInMeeting(userId, proposals.meetingId)` — `modules/proposals/core/lib/visibility.ts:9` | 2 | `can('read','Proposal',{ $participatesViaMeetingPath:{ through:'meetingId' } })` |
 | Homeowner reads their proposal | **token path** — `shareable` middleware, `proposal.token === input.token`, `ability=null` — `shareable-middleware.ts`; `spec.shareable.tokenColumn='token'` | **7** | stays a **bearer principal** (not CASL) |
 | Homeowner read-only vs agent edit (view-mode) | `can('update','Proposal') ? 'agent':'homeowner'` — `use-view-mode.ts:15`, `proposal/index.tsx:74` | 1 | unchanged verb check (client + server) |
 | Proposal-media manage (upload/list/reorder/setVisibility/delete) | `update Proposal` verb + parent-scope probe on **every** op — `proposals.router/media.router.ts:18`; `assertProposalInScope`/`assertProposalMediaInScope` — `proposal-media-files/dal/server/authz.ts:12` | 1 + 6 | verb (axis 1) + parent point-probe (axis 6). Declare `parent:{spec:proposalSpec, fk:'proposalId'}`; engine supplies the bridge. |

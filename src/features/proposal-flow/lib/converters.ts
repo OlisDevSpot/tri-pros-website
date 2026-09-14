@@ -1,7 +1,7 @@
 import type { ProposalFormSchema } from '../schemas/form-schema'
-import type { ProposalWithCustomer } from '@/shared/entities/proposals/dal/server/queries'
+import type { ProposalWithCustomer } from '@/shared/modules/proposals/core/dal/server/queries'
 
-import { toFundingInputs } from '@/shared/entities/proposals/lib/funding-columns'
+import { toFundingInputs } from '@/shared/modules/proposals/core/lib/funding-columns'
 
 /**
  * Server row → RHF form state. Funding comes from the cents columns +

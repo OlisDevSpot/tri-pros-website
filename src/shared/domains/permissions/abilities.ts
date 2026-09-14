@@ -34,8 +34,6 @@ import { LEAD_SOURCE } from '@/shared/entities/lead-sources/lib/constants'
 import { MEDIA_FILE } from '@/shared/entities/media-files/lib/constants'
 import { MEETING } from '@/shared/entities/meetings/lib/constants'
 import { PROJECT } from '@/shared/entities/projects/lib/constants'
-import { PROPOSAL_MEDIA_FILE } from '@/shared/entities/proposal-media-files/lib/constants'
-import { PROPOSAL } from '@/shared/entities/proposals/lib/constants'
 import { VOIP_CALL } from '@/shared/entities/voip-calls/lib/constants'
 import { VOIP_CAMPAIGN_CONTACT } from '@/shared/entities/voip-campaign-contacts/lib/constants'
 import { VOIP_CAMPAIGN } from '@/shared/entities/voip-campaigns/lib/constants'
@@ -43,6 +41,8 @@ import { VOIP_CONTACT_FIELD } from '@/shared/entities/voip-contact-fields/lib/co
 import { VOIP_DID } from '@/shared/entities/voip-dids/lib/constants'
 import { VOIP_LINK_TOKEN } from '@/shared/entities/voip-link-tokens/lib/constants'
 import { VOIP_MESSAGE } from '@/shared/entities/voip-messages/lib/constants'
+import { PROPOSAL } from '@/shared/modules/proposals/core/lib/constants'
+import { PROPOSAL_MEDIA_FILE } from '@/shared/modules/proposals/media/lib/constants'
 
 export const ENTITY_NAMES = [
   CUSTOMER,

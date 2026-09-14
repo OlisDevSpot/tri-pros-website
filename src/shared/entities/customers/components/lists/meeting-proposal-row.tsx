@@ -5,9 +5,9 @@ import type { CustomerProfileProposal } from '@/shared/entities/customers/types'
 import { useCallback } from 'react'
 
 import { ROOTS } from '@/shared/config/roots'
-import { ProposalOverviewCard } from '@/shared/entities/proposals/components/overview-card'
-import { PROPOSAL_ROW_STYLES } from '@/shared/entities/proposals/constants/proposal-row-styles'
 import { cn } from '@/shared/lib/utils'
+import { ProposalOverviewCard } from '@/shared/modules/proposals/core/components/overview-card'
+import { PROPOSAL_ROW_STYLES } from '@/shared/modules/proposals/core/constants/proposal-row-styles'
 
 interface Props {
   proposal: CustomerProfileProposal

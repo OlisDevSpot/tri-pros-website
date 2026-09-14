@@ -3,9 +3,9 @@ import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { projectCrud } from '@/shared/entities/projects/dal/server/crud'
-import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
-import { getProposalByInvoiceId, getProposalsByIds, getProposalsByInvoiceIds } from '@/shared/entities/proposals/dal/server/queries'
 import { formatPhone } from '@/shared/lib/phone'
+import { proposalCrud } from '@/shared/modules/proposals/core/dal/server/crud'
+import { getProposalByInvoiceId, getProposalsByIds, getProposalsByInvoiceIds } from '@/shared/modules/proposals/core/dal/server/queries'
 import { qbRequest } from '@/shared/services/providers/quickbooks/client'
 
 function createAccountingService() {
@@ -131,7 +131,7 @@ function createAccountingService() {
         .filter(Boolean)
         .map((proposal) => {
           // Stored rollup (Wave 2) — maintained by recomputeProposalFinancials; null
-          // only pre-backfill. see entities/proposals/DOCS.md#final-tcp-derived
+          // only pre-backfill. see modules/proposals/core/DOCS.md#final-tcp-derived
           const amount = (proposal.finalTcpCents ?? 0) / 100
           return {
             Amount: amount,

@@ -9,7 +9,7 @@
 // router. It writes to BOTH `customer.age` (plain column, epic #256/#259)
 // AND `proposal.envelopeDocumentIds` because they're two faces of
 // the same business concept — see DOCS.md anchor below.
-// see `src/shared/entities/proposals/DOCS.md#agreement-context-as-coherent-unit`
+// see `src/shared/modules/proposals/core/DOCS.md#agreement-context-as-coherent-unit`
 
 import { TRPCError } from '@trpc/server'
 import z from 'zod'
@@ -18,9 +18,9 @@ import { envelopeDocumentIds } from '@/shared/constants/enums'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { CUSTOMER_AGE_MAX, CUSTOMER_AGE_MIN } from '@/shared/entities/customers/lib/constants'
-import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
-import { getFullView } from '@/shared/entities/proposals/dal/server/queries'
-import { isProposalFrozen } from '@/shared/entities/proposals/lib/proposal-lock'
+import { proposalCrud } from '@/shared/modules/proposals/core/dal/server/crud'
+import { getFullView } from '@/shared/modules/proposals/core/dal/server/queries'
+import { isProposalFrozen } from '@/shared/modules/proposals/core/lib/proposal-lock'
 import { contractService } from '@/shared/services/contracts.service'
 import { EnvelopeSelectionError, evaluateDocuments, projectAgreementDocs, reconcileEnvelopeSelection, validateEnvelopeSelection } from '@/shared/services/providers/zoho-sign/lib/documents/evaluate'
 import { buildProposalContext } from '@/shared/services/providers/zoho-sign/lib/documents/proposal-context'
@@ -168,7 +168,7 @@ export const contractsRouter = createTRPCRouter({
    * in flight, or terminal). The envelope was assembled from this
    * context; editing one without killing the other would let them
    * drift. To edit, discard the draft / recall the envelope (#264).
-   * see `src/shared/entities/proposals/DOCS.md#proposal-lock-ladder`
+   * see `src/shared/modules/proposals/core/DOCS.md#proposal-lock-ladder`
    *
    * **Atomicity**: customer + proposal writes happen sequentially without
    * a shared transaction — matches the existing cross-entity pattern in

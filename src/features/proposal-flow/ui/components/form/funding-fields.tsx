@@ -1,5 +1,5 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
-import type { IncentiveType } from '@/shared/entities/proposals/schemas'
+import type { IncentiveType } from '@/shared/modules/proposals/core/schemas'
 import { PlusIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
@@ -11,8 +11,8 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shar
 import { Input } from '@/shared/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Textarea } from '@/shared/components/ui/textarea'
-import { incentiveTypes } from '@/shared/entities/proposals/schemas'
 import { useConfirm } from '@/shared/hooks/use-confirm'
+import { incentiveTypes } from '@/shared/modules/proposals/core/schemas'
 import { IncentiveCollapsibleHeader } from './incentive-collapsible-header'
 
 interface Props {

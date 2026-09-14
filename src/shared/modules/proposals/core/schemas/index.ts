@@ -1,0 +1,244 @@
+import z from 'zod'
+import { envelopeDocumentIds, priceDisplayModes, projectTypes, validThroughTimeframes } from '@/shared/constants/enums'
+import { homeAreas } from '@/shared/domains/construction/constants/enums'
+import { createEmptySowSection } from '../lib/create-empty-sow-section'
+
+// SUB-SCHEMAS
+const homeAreaSchema = z.enum(homeAreas)
+export const constructionItemSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+})
+
+export const costLineSchema = z.object({
+  id: z.string().uuid(),
+  label: z.string().min(1, 'Label is required'),
+  amount: z.number().positive('Amount must be greater than 0'),
+  relatedScopeId: z.string().min(1, 'Related scope is required'),
+  notes: z.string().optional(),
+})
+export type CostLine = z.infer<typeof costLineSchema>
+
+export const sectionIncentiveSchema = z.object({
+  id: z.string().uuid(),
+  label: z.string().min(1, 'Label is required'),
+  amount: z.number().positive('Amount must be greater than 0'),
+  notes: z.string().optional(),
+})
+export type SectionIncentive = z.infer<typeof sectionIncentiveSchema>
+
+export const sowFinancialsSchema = z.object({
+  sectionPrice: z.number().nullable(),
+  costLines: z.array(costLineSchema),
+  incentives: z.array(sectionIncentiveSchema),
+})
+export type SowFinancials = z.infer<typeof sowFinancialsSchema>
+
+export const sowSchema = z.object({
+  contentJSON: z.string(),
+  html: z.string(),
+  scopes: z.array(constructionItemSchema),
+  title: z.string(),
+  trade: constructionItemSchema,
+  financials: sowFinancialsSchema,
+})
+
+const discountIncentiveSchema = z.object({
+  type: z.literal('discount'),
+  amount: z.number(),
+  notes: z.string().optional(),
+  expiresAt: z.iso.datetime().optional(),
+})
+
+const exclusiveOfferIncentiveSchema = z.object({
+  type: z.literal('exclusive-offer'),
+  offer: z.string(),
+  notes: z.string().optional(),
+  expiresAt: z.iso.datetime().optional(),
+})
+
+// Closed vocabulary for proposal_incentives.type (text({ enum }), never pgEnum).
+export const incentiveTypes = ['discount', 'exclusive-offer'] as const
+export type IncentiveType = (typeof incentiveTypes)[number]
+
+export const incentiveSchema = z.discriminatedUnion('type', [discountIncentiveSchema, exclusiveOfferIncentiveSchema])
+export type Incentive = z.infer<typeof incentiveSchema>
+
+// MAIN SCHEMA BUILDING BLOCKS
+
+const projectDataSchema = z.object({
+  label: z.string(),
+  summary: z.string().optional(),
+  type: z.enum(projectTypes),
+  timeAllocated: z.string(),
+  validThroughTimeframe: z.enum(validThroughTimeframes),
+  energyBenefits: z.string().optional(),
+  projectObjectives: z.array(z.string()),
+  homeAreasUpgrades: z.array(homeAreaSchema),
+  agreementNotes: z.string().optional(),
+  sow: z.array(sowSchema).min(1, { message: 'At least one scope is required' }),
+})
+
+// `finalTcp` is NOT part of this domain shape — it is derived via
+// `computeFinalTcp({ funding, sow })` in `modules/proposals/core/lib/financials`.
+// Three-stage lifecycle standard (DOCS.md#final-tcp-derived, Addendum A.2):
+// drafting computes on read (this schema, never persisted); lists/reports
+// cache a rollup in `proposals.final_tcp_cents`, recomputed at the single
+// `recomputeProposalFinancials` choke point; frozen proposals snapshot via
+// the lock ladder. The rollup is a cache with one writer, not a second
+// source of truth — always derive from `startingTcp` − global discounts −
+// section incentives at the drafting stage.
+/**
+ * Canonical funding domain shape (flat dollars). Two legitimate sources, and
+ * only two: `toFundingInputs(row)` — the W3 cents columns + incentive rows,
+ * derived JIT at each call site (never materialized on the row) — and the
+ * live RHF funding form state. One shape for the financials façade. The
+ * legacy blob envelope (`fundingSectionSchema`) derives from this, not vice
+ * versa. Tally marker: re-examine the JIT-assembly seam post-waves (ledger).
+ */
+export const fundingDataSchema = z.object({
+  cashInDeal: z.number(),
+  depositAmount: z.number(),
+  incentives: z.array(incentiveSchema),
+  miscPrice: z.number().optional(),
+  startingTcp: z.number(),
+})
+
+export type FundingData = z.infer<typeof fundingDataSchema>
+
+/**
+ * Legacy blob-envelope `meta` block. `enabled` is written-always-true and
+ * read-never — it survives ONLY inside `projectSectionSchema`, which is
+ * blob-backed until W4. Dies W4 with the project envelope (ledger tally).
+ */
+const sectionMetaSchema = z.object({
+  enabled: z.boolean(),
+})
+
+// MAIN SCHEMAS
+/**
+ * @deprecated Legacy blob-envelope parse schema. W3 (2026-07-26) moved these
+ * scalars to the `price_display_mode` / `envelope_document_ids` columns. Only
+ * legitimate importers: the Drizzle `$type` on the frozen column and
+ * `scripts/backfill-wave3-scalars.ts` (verified by grep — keep it that way).
+ * Parses HISTORICAL stored JSON — the stored key is `pricingMode` and must
+ * NEVER be renamed. Dies on the W4 push (deprecation ledger).
+ */
+export const formMetaSectionSchema = z.object({
+  pricingMode: z.enum(['total', 'breakdown']),
+  /**
+   * Ordered list of Zoho Sign documents the agent picked for this
+   * proposal's envelope. Captured at draft-config time, consumed by the
+   * envelope assembler. Optional + nullable so existing proposals (created
+   * before this field shipped) fall through to the legacy two-template
+   * path until manually re-saved.
+   */
+  envelopeDocumentIds: z.array(z.enum(envelopeDocumentIds)).nullish(),
+})
+
+export const projectSectionSchema = z.object({
+  data: projectDataSchema,
+  meta: sectionMetaSchema,
+})
+
+/**
+ * @deprecated Legacy blob-envelope parse schema — same rules as
+ * `formMetaSectionSchema` above. Canonical flat shape: `fundingDataSchema`;
+ * the money-math façade types against THAT, never against this envelope.
+ * Legitimate importers, exhaustively (verified by grep — keep it that way):
+ * this schema is parsed by `scripts/backfill-wave3-scalars.ts` and
+ * `scripts/backfill-wave2-children.ts`; its derived `FundingSection` type is
+ * used by the Drizzle `$type` on the frozen column and by
+ * `lib/scrub-blob-incentives.ts` (which dies in Task 9).
+ */
+export const fundingSectionSchema = z.object({
+  data: fundingDataSchema,
+  meta: sectionMetaSchema,
+})
+
+// --- Proposal Form Schema (composite) ---
+
+/**
+ * Raw object shape — exported so consumers that need ZodObject methods
+ * (`.partial()`, `.pick()`, `.extend()`) can derive from it. The refined
+ * `proposalFormSchema` below is a ZodEffects (because of `superRefine`)
+ * and Zod blocks those derivations on refined schemas. Use `*Shape` for
+ * derivation, `*Schema` for validation.
+ */
+export const proposalFormShape = z.object({
+  // Display preference — a proposal scalar, not a "meta section". Ratified
+  // vocabulary (2026-07-24 pricing-editor ruling). Until that editor lands it
+  // still gates breakdown-mode validation + the client-side startingTcp sync.
+  priceDisplayMode: z.enum(priceDisplayModes),
+  // projectJSON is blob-backed until W4 — its {data, meta} envelope survives
+  // in form state until then (ledger tally; dies W4).
+  project: projectSectionSchema,
+  // Canonical flat shape — no {data, meta} envelope.
+  funding: fundingDataSchema,
+})
+
+/**
+ * Validated form schema — feeds `zodResolver`. Cross-field rules:
+ * - Breakdown mode: every section's `sectionPrice` must be a positive number.
+ * - Every cost line's `relatedScopeId` must reference a scope selected in its section.
+ * Defense-in-depth — the form UI cascade keeps these in sync; the schema
+ * is the safety net at submit time.
+ */
+export const proposalFormSchema = proposalFormShape.superRefine((proposal, ctx) => {
+  const isBreakdown = proposal.priceDisplayMode === 'breakdown'
+
+  proposal.project.data.sow.forEach((section, sectionIndex) => {
+    // 1. Section price required + positive in breakdown mode
+    if (isBreakdown) {
+      const sp = section.financials.sectionPrice
+      if (sp === null || sp <= 0) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['project', 'data', 'sow', sectionIndex, 'financials', 'sectionPrice'],
+          message: 'Section price is required in breakdown pricing mode',
+        })
+      }
+    }
+
+    // 2. Every cost line's relatedScopeId must match a selected scope
+    const selectedScopeIds = new Set(section.scopes.map(s => s.id))
+    section.financials.costLines.forEach((line, lineIndex) => {
+      if (!selectedScopeIds.has(line.relatedScopeId)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['project', 'data', 'sow', sectionIndex, 'financials', 'costLines', lineIndex, 'relatedScopeId'],
+          message: 'Related scope must be one of this section\'s selected scopes',
+        })
+      }
+    })
+  })
+})
+
+export type ProposalFormSchema = z.infer<typeof proposalFormSchema>
+
+export const proposalFormBaseDefaultValues: ProposalFormSchema = {
+  priceDisplayMode: 'total',
+  project: {
+    data: {
+      type: 'general-remodeling',
+      label: '',
+      sow: [createEmptySowSection()],
+      summary: '',
+      homeAreasUpgrades: [],
+      projectObjectives: [],
+      timeAllocated: '',
+      validThroughTimeframe: '60 days',
+      agreementNotes: '',
+    },
+    meta: {
+      enabled: true,
+    },
+  },
+  funding: {
+    cashInDeal: 0,
+    depositAmount: 1000,
+    incentives: [],
+    miscPrice: 0,
+    startingTcp: 0,
+  },
+}

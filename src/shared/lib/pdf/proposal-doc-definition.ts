@@ -1,16 +1,16 @@
 import type { Content, TableCell, TDocumentDefinitions } from 'pdfmake/interfaces'
 import type { TiptapNode } from './tiptap-to-pdfmake'
 import type { PriceDisplayMode } from '@/shared/constants/enums'
-import type { ProposalWithCustomer } from '@/shared/entities/proposals/dal/server/queries'
-import type { FundingData } from '@/shared/entities/proposals/schemas'
+import type { ProposalWithCustomer } from '@/shared/modules/proposals/core/dal/server/queries'
+import type { FundingData } from '@/shared/modules/proposals/core/schemas'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { companyInfo, licenses } from '@/shared/constants/company'
-import { buildPricingBreakdown } from '@/shared/entities/proposals/lib/financials'
-import { toFundingInputs } from '@/shared/entities/proposals/lib/funding-columns'
 import { formatAsDollars } from '@/shared/lib/formatters'
 import { formatPhone } from '@/shared/lib/phone'
+import { buildPricingBreakdown } from '@/shared/modules/proposals/core/lib/financials'
+import { toFundingInputs } from '@/shared/modules/proposals/core/lib/funding-columns'
 import { tiptapToPdfmake } from './tiptap-to-pdfmake'
 
 /**
@@ -20,7 +20,7 @@ import { tiptapToPdfmake } from './tiptap-to-pdfmake'
  * — never reads cost lines or margin data; pricing renders exclusively from
  * buildPricingBreakdown, the shared view-model also used by the React
  * PricingBreakdown component and the AI summary route.
- * see @/shared/entities/proposals/DOCS.md#final-tcp-derived
+ * see @/shared/modules/proposals/core/DOCS.md#final-tcp-derived
  * see docs/codebase-conventions/pdf-documents.md#layout-geometry
  */
 export async function buildProposalDocDefinition(proposal: ProposalWithCustomer): Promise<TDocumentDefinitions> {

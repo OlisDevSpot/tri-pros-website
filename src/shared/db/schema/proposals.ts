@@ -1,5 +1,5 @@
 import type { ProposalStatus } from '@/shared/constants/enums'
-import type { FormMetaSection, FundingSection, ProjectSection } from '@/shared/entities/proposals/types'
+import type { FormMetaSection, FundingSection, ProjectSection } from '@/shared/modules/proposals/core/types'
 
 import { relations, sql } from 'drizzle-orm'
 import { bigint, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
@@ -7,7 +7,7 @@ import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import z from 'zod'
 
 import { envelopeDocumentIds, priceDisplayModes, proposalKinds, proposalStatuses } from '@/shared/constants/enums'
-import { projectSectionSchema } from '@/shared/entities/proposals/schemas'
+import { projectSectionSchema } from '@/shared/modules/proposals/core/schemas'
 import { createdAt, id, label, updatedAt } from '../lib/schema-helpers'
 import { user } from './auth'
 import { financeOptions } from './finance-options'
@@ -59,7 +59,7 @@ export const proposals = pgTable('proposals', {
   // 2026-07-24 ruling). Until the pricing editor lands it still gates authoring
   // behavior (breakdown-mode validation + client-side startingTcp sync).
   priceDisplayMode: text('price_display_mode', { enum: priceDisplayModes }).notNull().default('total'),
-  // see ../entities/proposals/DOCS.md#agreement-context-as-coherent-unit
+  // see ../../modules/proposals/core/DOCS.md#agreement-context-as-coherent-unit
   envelopeDocumentIds: text('envelope_document_ids', { enum: envelopeDocumentIds }).array(),
 
   // Stage-2 rollup cache (Addendum A.2): recomputed by the SINGLE choke point
@@ -68,7 +68,7 @@ export const proposals = pgTable('proposals', {
   // the backfill window — treat null as "not yet computed", never as $0-truth.
   finalTcpCents: bigint('final_tcp_cents', { mode: 'number' }),
   // Bumped when the TCP formula or rounding policy changes; changelog in
-  // ../entities/proposals/DOCS.md#final-tcp-derived. v1 = 2026-07-09 ruling.
+  // ../../modules/proposals/core/DOCS.md#final-tcp-derived. v1 = 2026-07-09 ruling.
   calcVersion: integer('calc_version').notNull().default(1),
 
   meetingId: uuid('meeting_id')
@@ -138,8 +138,8 @@ export const insertProposalSchema = createInsertSchema(proposals, {
 }).extend({
   // Server-derived fields: hooks.create.before sets these. Optional so
   // clients don't send them (hook fills in), but Zod doesn't strip them.
-  // see ../entities/proposals/DOCS.md#kind-derived-from-meeting-project
-  // see ../entities/proposals/DOCS.md#share-token-generated-at-insert
+  // see ../../modules/proposals/core/DOCS.md#kind-derived-from-meeting-project
+  // see ../../modules/proposals/core/DOCS.md#share-token-generated-at-insert
   kind: z.enum(['initial-sale', 'additional-work']).optional(),
   token: z.string().optional(),
 })

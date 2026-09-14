@@ -1,8 +1,8 @@
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
-import { getFullView } from '@/shared/entities/proposals/dal/server/queries'
-import { buildPricingBreakdown } from '@/shared/entities/proposals/lib/financials'
-import { toFundingInputs } from '@/shared/entities/proposals/lib/funding-columns'
 import { formatAsDollars } from '@/shared/lib/formatters'
+import { getFullView } from '@/shared/modules/proposals/core/dal/server/queries'
+import { buildPricingBreakdown } from '@/shared/modules/proposals/core/lib/financials'
+import { toFundingInputs } from '@/shared/modules/proposals/core/lib/funding-columns'
 
 function stripHtml(html: string): string {
   return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()

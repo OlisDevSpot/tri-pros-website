@@ -10,8 +10,8 @@ import z from 'zod'
 
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { deriveOutcomeOnProposalSent } from '@/shared/entities/meetings/dal/server/mutations'
-import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
-import { getFullView } from '@/shared/entities/proposals/dal/server/queries'
+import { proposalCrud } from '@/shared/modules/proposals/core/dal/server/crud'
+import { getFullView } from '@/shared/modules/proposals/core/dal/server/queries'
 import { emailService } from '@/shared/services/email.service'
 import { notificationService } from '@/shared/services/notification.service'
 
@@ -33,7 +33,7 @@ export const deliveryRouter = createTRPCRouter({
    * touch envelope state — see ADR-0004 (amendment 2026-07-18: envelope
    * creation is a manual agent decision on the envelope card; nothing
    * auto-creates a draft anymore).
-   * see `src/shared/entities/proposals/DOCS.md#proposal-contract-independence`
+   * see `src/shared/modules/proposals/core/DOCS.md#proposal-contract-independence`
    */
   sendProposalEmail: proposalProcedure
     .input(sendEmailSchema)
@@ -72,7 +72,7 @@ export const deliveryRouter = createTRPCRouter({
    * proposal's meeting participants (email + push) that the homeowner is
    * ready to move forward, and the agent manually drives the draft
    * lifecycle from there (#264).
-   * see `src/shared/entities/proposals/DOCS.md#proposal-lock-ladder`
+   * see `src/shared/modules/proposals/core/DOCS.md#proposal-lock-ladder`
    */
   requestToMoveForward: proposalShareableProcedure
     .input(z.object({ id: z.string(), token: z.string() }))

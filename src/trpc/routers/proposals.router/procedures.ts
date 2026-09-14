@@ -16,8 +16,8 @@
 // session/ability narrowing flows through and no cast is needed. The scope
 // math stays DRY via the shared `resolveVisibilityScope`.
 
-import { proposalMediaServerSpec } from '@/shared/entities/proposal-media-files/lib/server-spec'
-import { proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
+import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
+import { proposalMediaServerSpec } from '@/shared/modules/proposals/media/server-spec'
 
 import { agentProcedure, baseProcedure } from '../../init'
 import { resolveVisibilityScope } from '../../lib/middleware/scope-middleware'

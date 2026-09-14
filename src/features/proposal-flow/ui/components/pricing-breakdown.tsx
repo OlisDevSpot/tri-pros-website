@@ -1,13 +1,13 @@
 'use client'
 
 import type { PriceDisplayMode } from '@/shared/constants/enums'
-import type { FundingData } from '@/shared/entities/proposals/schemas'
-import type { SOW } from '@/shared/entities/proposals/types'
+import type { FundingData } from '@/shared/modules/proposals/core/schemas'
+import type { SOW } from '@/shared/modules/proposals/core/types'
 import { CheckIcon } from 'lucide-react'
 import { ExpandableLineItems } from '@/shared/components/expandable-line-items'
-import { buildPricingBreakdown } from '@/shared/entities/proposals/lib/financials'
 import { formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
+import { buildPricingBreakdown } from '@/shared/modules/proposals/core/lib/financials'
 import { ExpirationBadge } from './expiration-badge'
 
 interface Props {

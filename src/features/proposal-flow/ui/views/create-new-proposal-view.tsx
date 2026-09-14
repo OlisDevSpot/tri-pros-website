@@ -2,7 +2,7 @@
 
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
-import type { SOW } from '@/shared/entities/proposals/types'
+import type { SOW } from '@/shared/modules/proposals/core/types'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'motion/react'
@@ -22,7 +22,7 @@ import { Form } from '@/shared/components/ui/form'
 import { ROOTS } from '@/shared/config/roots'
 
 import { useSession } from '@/shared/domains/auth/client'
-import { fundingDomainToColumns } from '@/shared/entities/proposals/lib/funding-columns'
+import { fundingDomainToColumns } from '@/shared/modules/proposals/core/lib/funding-columns'
 import { useTRPC } from '@/trpc/helpers'
 import { getProposalAggregates } from '../../lib/get-proposal-aggregates'
 import { CustomerInfoHeader } from '../components/customer-info-header'

@@ -10,7 +10,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shar
 import { Input } from '@/shared/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Textarea } from '@/shared/components/ui/textarea'
-import { SectionFinancialsSummary } from '@/shared/entities/proposals/components/section-financials-summary'
+import { SectionFinancialsSummary } from '@/shared/modules/proposals/core/components/section-financials-summary'
 
 interface Props {
   index: number

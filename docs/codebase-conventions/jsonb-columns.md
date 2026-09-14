@@ -6,7 +6,8 @@ placement rule + promotion ladder) is ADR-0005** — this file is the operationa
 
 JSONB columns in this codebase carry typed domain blobs (`contextJSON`, `flowStateJSON`,
 `formMetaJSON`, `projectJSON`, `fundingJSON`, `formConfigJSON`, …). Their
-Zod schemas live in `src/shared/entities/<domain>/schemas/index.ts`. (The customer profile
+Zod schemas live in `src/shared/entities/<domain>/schemas/index.ts` (module units:
+`src/shared/modules/<module>/<unit>/schemas/index.ts`). (The customer profile
 trio — `customerProfileJSON` / `propertyProfileJSON` / `financialProfileJSON` — was
 decomposed to the `customer_profiles` 1:1 child table in Wave 1 of epic #256 (Addendum B); see
 `src/shared/entities/customers/DOCS.md#three-jsonb-profiles`. `leadMetaJSON` was frozen and
@@ -28,7 +29,7 @@ a collection with its own lifecycle or you aggregate across rows.
 
 **Why**: JSONB was drifting into a dumping ground for hot fields it can't index or
 constrain (ADR-0005 context).
-**Reference impl**: `#final-tcp-derived` in `src/shared/entities/proposals/DOCS.md`.
+**Reference impl**: `#final-tcp-derived` in `src/shared/modules/proposals/core/DOCS.md`.
 **Enforced by**: the pre-change checklist below + PR review.
 
 ### sub-entity-decision-tree
@@ -143,7 +144,7 @@ insert/update schema parse). For bespoke `db.insert/update` paths, add an explic
 `.parse()`. Where cheap, back a discriminator/shape with a Postgres `CHECK` as a
 second line the DB enforces regardless of write path.
 
-**Reference impl**: JSONB Zod schemas in `src/shared/entities/<domain>/schemas/index.ts`.
+**Reference impl**: JSONB Zod schemas in `src/shared/entities/<domain>/schemas/index.ts` (e.g. `projectSectionSchema` in `src/shared/modules/proposals/core/schemas/index.ts`).
 **Enforced by**: DAL/service write path (Zod parse) + optional Postgres CHECK.
 
 ### never-shallow-merge-nested

@@ -17,8 +17,8 @@ import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
-import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
-import { proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
+import { proposalCrud } from '@/shared/modules/proposals/core/dal/server/crud'
+import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 
 interface MoveParams {
   customerId: string

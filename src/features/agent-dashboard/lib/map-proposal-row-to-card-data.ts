@@ -1,5 +1,5 @@
-import type { ProposalOverviewCardData } from '@/shared/entities/proposals/components/overview-card'
-import type { ProposalListRow } from '@/shared/entities/proposals/dal/server/queries'
+import type { ProposalOverviewCardData } from '@/shared/modules/proposals/core/components/overview-card'
+import type { ProposalListRow } from '@/shared/modules/proposals/core/dal/server/queries'
 
 /**
  * Maps a `ProposalListRow` (raw proposal columns + view/customer joins) to
@@ -33,7 +33,7 @@ export function mapProposalRowToCardData(
     // measures since the *contract envelope* went out (`contractSentAt`), while
     // the Sent — awaiting response roster measures since the *proposal* was sent
     // (`sentAt`). The two lifecycles are independent
-    // (see entities/proposals/DOCS.md#proposal-contract-independence).
+    // (see modules/proposals/core/DOCS.md#proposal-contract-independence).
     createdAt: (timeSince === 'sentAt' ? row.sentAt : row.contractSentAt) ?? row.createdAt,
     sentAt: row.sentAt,
     trade: sow[0]?.trade.label ?? null,

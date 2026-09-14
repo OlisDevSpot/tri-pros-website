@@ -11,7 +11,7 @@
 import type { inferRouterInputs } from '@trpc/server'
 import type { MeetingWindowKind } from '../lib/meeting-windows'
 import type { MeetingListInput } from '@/shared/entities/meetings/dal/server/queries'
-import type { ProposalListInput } from '@/shared/entities/proposals/dal/server/queries'
+import type { ProposalListInput } from '@/shared/modules/proposals/core/dal/server/queries'
 import type { AppRouter } from '@/trpc/routers/app'
 
 import { LIVE_MEETING_OUTCOMES } from '@/shared/constants/enums'

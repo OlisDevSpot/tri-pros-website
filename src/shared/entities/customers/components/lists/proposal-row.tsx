@@ -8,8 +8,8 @@ import { useCallback } from 'react'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
 import { ROOTS } from '@/shared/config/roots'
-import { PROPOSAL_STATUS_COLORS } from '@/shared/entities/proposals/constants/proposal-status-colors'
-import { useProposalActionConfigs } from '@/shared/entities/proposals/hooks/use-proposal-action-configs'
+import { PROPOSAL_STATUS_COLORS } from '@/shared/modules/proposals/core/constants/proposal-status-colors'
+import { useProposalActionConfigs } from '@/shared/modules/proposals/core/hooks/use-proposal-action-configs'
 
 interface Props {
   proposal: CustomerProfileProposal

@@ -2,7 +2,7 @@ import type { Customer, Meeting, Proposal } from '@/shared/db/schema'
 import type { CustomerNote } from '@/shared/db/schema/customer-notes'
 import type { CustomerFullView, CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { ProfileKey } from '@/shared/entities/customers/schemas'
-import type { SowTradeScope } from '@/shared/entities/proposals/types'
+import type { SowTradeScope } from '@/shared/modules/proposals/core/types'
 
 export type CustomerProfileMeeting
   = Pick<Meeting, 'id' | 'ownerId' | 'meetingType' | 'meetingOutcome' | 'scheduledFor' | 'createdAt' | 'updatedAt' | 'projectId'>

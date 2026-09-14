@@ -1,10 +1,10 @@
 import type { Meeting } from '@/shared/db/schema'
 import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
-import type { ProposalFormSchema } from '@/shared/entities/proposals/schemas'
+import type { ProposalFormSchema } from '@/shared/modules/proposals/core/schemas'
 import { getProgramByAccessor } from '@/features/meeting-flow/constants/programs'
 import { computeDealFinalTcp } from '@/shared/entities/meetings/lib/compute-deal-derived'
-import { createEmptySowSection } from '@/shared/entities/proposals/lib/create-empty-sow-section'
-import { proposalFormBaseDefaultValues } from '@/shared/entities/proposals/schemas'
+import { createEmptySowSection } from '@/shared/modules/proposals/core/lib/create-empty-sow-section'
+import { proposalFormBaseDefaultValues } from '@/shared/modules/proposals/core/schemas'
 
 export function buildProposalDefaults(
   meeting: Meeting,

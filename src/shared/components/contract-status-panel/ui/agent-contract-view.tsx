@@ -33,7 +33,7 @@ interface AgentContractViewProps {
  *
  * Sending the proposal email never touches the envelope; preparing a
  * signing draft is a manual decision on the envelope card (#264). See
- * `src/shared/entities/proposals/DOCS.md#proposal-contract-independence`.
+ * `src/shared/modules/proposals/core/DOCS.md#proposal-contract-independence`.
  *
  * Layout: cards stack on mobile, sit side-by-side on desktop (lg+).
  */

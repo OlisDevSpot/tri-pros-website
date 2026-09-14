@@ -15,10 +15,10 @@ This is the **frontend mirror of the backend Entity Server System** ([ADR-0002](
 
 ### one-overview-card-per-entity
 
-Every entity that appears in 3+ view contexts (kanban + calendar + profile + list) has exactly one compound component at `entities/<x>/components/overview-card.tsx`. Consumers compose the slots they need at each call site — never import a family of standalone primitives (`UserAvatar`, `UserRow`, `UserAvatarStack`, etc.).
+Every entity that appears in 3+ view contexts (kanban + calendar + profile + list) has exactly one compound component at `entities/<x>/components/overview-card.tsx` (module unit: `modules/<module>/<unit>/components/overview-card.tsx`). Consumers compose the slots they need at each call site — never import a family of standalone primitives (`UserAvatar`, `UserRow`, `UserAvatarStack`, etc.).
 
 **Why**: mixing styles (some entities as compounds, others as primitive families) fragments the mental model. Compound + context lets sub-components share derived state (avatar URL, gated fields, action menu) without prop-drilling, and gives one ergonomic import per view.
-**Reference impl**: `src/shared/entities/meetings/components/overview-card.tsx`, `src/shared/entities/proposals/components/overview-card.tsx`
+**Reference impl**: `src/shared/entities/meetings/components/overview-card.tsx`, `src/shared/modules/proposals/core/components/overview-card.tsx`
 **Enforced by**: convention
 
 ### data-type-derives-from-drizzle-schema
@@ -65,7 +65,7 @@ function useMeetingOverviewCard() {
 Consumers **never** call `useXActionConfigs` directly — the Root does it internally and threads actions through context.
 
 **Why**: every sub-component reads from one place; the consumer wires one provider and forgets. Eliminates prop drilling for shared state. Throw-on-no-context turns misuse into a compile-level mistake.
-**Reference impl**: `src/shared/entities/proposals/components/overview-card.tsx:useProposalOverviewCard`
+**Reference impl**: `src/shared/modules/proposals/core/components/overview-card.tsx:useProposalOverviewCard`
 **Enforced by**: runtime throw + convention
 
 ### root-owns-default-click-and-confirm-dialogs
@@ -83,7 +83,7 @@ The Root also renders shared dialogs (e.g., `<DeleteConfirmDialog />`) once at t
 Sub-components like `<Phone>`, `<Address>`, `<Owner>` read from context and return `null` when their field is missing. No `showX` boolean props. Consumers compose the slots they want; missing data disappears gracefully.
 
 **Why**: every `showX` prop creates a combinatorial explosion of consumer configs. Null-on-missing-data is automatic and consistent.
-**Reference impl**: `src/shared/entities/proposals/components/overview-card.tsx:Status` / `Trade` / `Value`
+**Reference impl**: `src/shared/modules/proposals/core/components/overview-card.tsx:StatusBadge` / `Trade` / `Value`
 **Enforced by**: convention
 
 ### fields-slot-is-discriminated-union-config

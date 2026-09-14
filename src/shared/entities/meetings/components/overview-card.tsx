@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 import type { MeetingOutcome } from '@/shared/constants/enums'
 import type { Meeting } from '@/shared/db/schema/meetings'
 import type { Proposal } from '@/shared/db/schema/proposals'
-import type { SowTradeScope } from '@/shared/entities/proposals/types'
+import type { SowTradeScope } from '@/shared/modules/proposals/core/types'
 
 import { format, formatDistanceToNow } from 'date-fns'
 import { CalendarIcon, FileTextIcon } from 'lucide-react'
@@ -27,11 +27,11 @@ import {
   MEETING_OUTCOME_LABELS,
 } from '@/shared/entities/meetings/constants/status-colors'
 import { useMeetingActionConfigs } from '@/shared/entities/meetings/hooks/use-meeting-action-configs'
-import { ProposalOverviewCard } from '@/shared/entities/proposals/components/overview-card'
 import { UserOverviewCard } from '@/shared/entities/users/components/overview-card'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { formatMeetingShortStamp } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
+import { ProposalOverviewCard } from '@/shared/modules/proposals/core/components/overview-card'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 

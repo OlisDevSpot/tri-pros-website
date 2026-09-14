@@ -3,11 +3,11 @@ import type { Buffer } from 'node:buffer'
 import type { ScopedContext } from '@/shared/dal/server/types'
 
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
-import { getFullView } from '@/shared/entities/proposals/dal/server/queries'
-
 import { buildProposalDocDefinition } from '@/shared/lib/pdf/proposal-doc-definition'
+
 import { renderPdf } from '@/shared/lib/pdf/render-pdf'
 import { buildSowDocDefinition } from '@/shared/lib/pdf/sow-doc-definition'
+import { getFullView } from '@/shared/modules/proposals/core/dal/server/queries'
 
 /**
  * Proposal PDFs, finance forms, printable documents.

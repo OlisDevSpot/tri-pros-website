@@ -32,7 +32,7 @@ export type EnvelopeDocumentId = (typeof envelopeDocumentIds)[number]
  * actual payloads diverge (e.g. docs say `RequestCompleted`, payloads
  * send `RequestSigningSuccess`). We list all observed values here but
  * the Zod schema accepts any string — unknown types are tolerated (200)
- * and filtered by the mapping table in entities/proposals/lib/.
+ * and filtered by the mapping table in modules/proposals/core/lib/contract-events.ts.
  */
 export const webhookOperationTypes = [
   'RequestSubmitted',

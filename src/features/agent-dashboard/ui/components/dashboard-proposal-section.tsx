@@ -1,6 +1,6 @@
 'use client'
 
-import type { ProposalListInput } from '@/shared/entities/proposals/dal/server/queries'
+import type { ProposalListInput } from '@/shared/modules/proposals/core/dal/server/queries'
 
 import { useQuery } from '@tanstack/react-query'
 

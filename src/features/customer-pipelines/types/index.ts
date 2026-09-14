@@ -15,7 +15,7 @@ export type {
   CustomerProfileProposalView,
 } from '@/shared/entities/customers/types'
 
-export type { SowTradeScope } from '@/shared/entities/proposals/types'
+export type { SowTradeScope } from '@/shared/modules/proposals/core/types'
 
 export interface PipelineItemRep {
   id: string

@@ -37,7 +37,7 @@ Package manager: **pnpm**. Path alias: `@/` → `src/`.
 - `docs/design-system/` — design tokens, anti-slop DESIGN.md + checklist
 
 **Business rules — what the code means**
-- `src/shared/entities/<entity>/DOCS.md` — per-entity invariants, derivations, gates (proposals/ is the canonical example)
+- `src/shared/entities/<entity>/DOCS.md` or `src/shared/modules/<module>/<unit>/DOCS.md` — per-entity invariants, derivations, gates (`src/shared/modules/proposals/core/DOCS.md` is the canonical example)
 - `src/features/<feature>/DOCS.md` — feature-level UX/flow rules
 - `src/trpc/DOCS.md` — Entity Server System operational rules (server-side)
 - `docs/ubiquitous-language.md` — canonical business terms

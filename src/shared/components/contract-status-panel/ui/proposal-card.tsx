@@ -7,9 +7,9 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 
 import { Textarea } from '@/shared/components/ui/textarea'
-import { useSendProposal } from '@/shared/entities/proposals/hooks/use-send-proposal'
 import { formatDate } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
+import { useSendProposal } from '@/shared/modules/proposals/core/hooks/use-send-proposal'
 
 import { getProposalStatusBadge } from '../lib/get-status-badge'
 import { ActionButtonWithImpact } from './action-button-with-impact'
@@ -35,8 +35,8 @@ type ConfirmAction = 'resend'
  *
  * "Send Proposal Email" sends the email only — it never touches the
  * signing envelope. Envelope creation is a manual agent decision on
- * Card 2 (#264; see `entities/proposals/lib/proposal-lock.ts`).
- * see `../../entities/proposals/DOCS.md#proposal-contract-independence`.
+ * Card 2 (#264; see `modules/proposals/core/lib/proposal-lock.ts`).
+ * see `../../../modules/proposals/core/DOCS.md#proposal-contract-independence`.
  */
 export function ProposalCard({
   proposalId,
