@@ -63,6 +63,9 @@ A proposal can be read AND updated by an unauthenticated client via `?token=<sha
 **Reference impl**: `server-spec.ts:shareable`
 **Enforced by**: `shareableMiddleware` (entity toolkit); see ADR-0002 §4 and [`../../trpc/DOCS.md`](../../trpc/DOCS.md) (when written)
 
+**Homeowner-open push ("Proposal Viewed")**: every open through the share link records a `proposal_views` row and pushes to the proposal's **meeting participants — all of them — plus the info@ system user, always**. A proposal has no owner: it is reached through its meeting, and the people responsible for it are whoever is on that meeting (`#visibility-via-meeting-participation`); `ownerId` is the author and never a recipient (2026-09-10 ruling). No meeting ⇒ the view is still recorded and info@ alone is pushed. Recipients are resolved by the dispatcher, not the notification service. The homeowner's "Request Agreement" signal (`#proposal-lock-ladder`) uses the same recipient rule.
+**Reference impl**: `src/trpc/routers/proposals.router/views.router.ts:recordView` → `sendViewNotificationJob` → `notification.service.ts:notifyProposalViewed`
+
 ### pdf-export-token-gated
 
 `GET /api/proposals/[proposalId]/pdf?token=` renders the full proposal PDF on demand via `pdfService.generateProposalPdf` (pdfmake). Auth mirrors the summary route: exact `proposal.token` match, no CASL — the token is the authorization (see [shareable-via-token](#shareable-via-token)). The document is ALWAYS the homeowner view: pricing respects `priceDisplayMode`, the final price is derived via `computeFinalTcp`, and the generator never reads `sow[].financials.costLines`. There is no agent variant.
@@ -215,7 +218,8 @@ auto-approve, and contract flows keep flowing on a locked proposal. Because cont
 change while an envelope exists, `sendContractEnvelope` submits the draft as-is (fresh by
 construction — no rebuild needed). The homeowner NEVER touches the contract lifecycle: their
 "Request Agreement" (`delivery.router.ts:requestToMoveForward`) only notifies the meeting
-participants (email + push) that the homeowner is ready to move forward — the agent drives
+participants plus info@ (email + push — the `#shareable-via-token` recipient rule) that the
+homeowner is ready to move forward — the agent drives
 the draft lifecycle manually. Known bypass until the tightening pass: `ai/client.ts` writes
 `projectJSON` via raw `db.update` (ledgered escape hatch).
 
@@ -352,7 +356,7 @@ The proposal lifecycle (`status`, `sentAt`, `approvedAt`) and the contract lifec
 
 - **Sending the proposal email** updates only proposal-side columns. It does NOT create, refresh, or touch the Zoho Sign envelope.
 - **Creating / discarding / recalling an envelope** updates only contract-side columns. It does NOT change `proposal.status` or `sentAt`.
-- The agent UI exposes this as two cards (`ProposalCard`, `EnvelopeCard`) with their own actions. **As of #264 (2026-07-18), "Send Proposal" sends the email ONLY** — the auto-draft-preparation stage (previously client-orchestrated via `useSendProposalWithDraft`) is retired: envelope creation is a manual decision on the envelope card, because an envelope's existence is the proposal lock signal (`#proposal-lock-ladder`) and must mean the agent chose it. The homeowner-side "Request Agreement" is a pure signal (`delivery.router.ts:requestToMoveForward`) — it notifies the meeting participants and never touches envelope state.
+- The agent UI exposes this as two cards (`ProposalCard`, `EnvelopeCard`) with their own actions. **As of #264 (2026-07-18), "Send Proposal" sends the email ONLY** — the auto-draft-preparation stage (previously client-orchestrated via `useSendProposalWithDraft`) is retired: envelope creation is a manual decision on the envelope card, because an envelope's existence is the proposal lock signal (`#proposal-lock-ladder`) and must mean the agent chose it. The homeowner-side "Request Agreement" is a pure signal (`delivery.router.ts:requestToMoveForward`) — it notifies the meeting participants plus info@ (`#shareable-via-token` recipient rule) and never touches envelope state.
 - Draft creation is **synchronous** — Zoho returns the `request_id` on the create call, so there is no async gap to bridge with QStash or a polling-based "in-flight" signal. The previous `syncContractDraftJob` was removed for this reason.
 
 **Why**: prior implementation dispatched a QStash job from `sendProposalEmail` to auto-create a draft. The async coupling forced the UI to infer "a draft is being created" from `proposal.status === 'sent' && contractStatus == null` — a heuristic that broke immediately after any code path legitimately cleared `contractEnvelopeId` (discard, recall), leaving the UI stuck in an unrecoverable spinner state. The later client-orchestrated auto-draft had a subtler cost: it made every sent proposal carry an envelope nobody asked for, defeating the lock ladder.

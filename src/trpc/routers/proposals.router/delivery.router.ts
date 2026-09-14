@@ -89,7 +89,6 @@ export const deliveryRouter = createTRPCRouter({
         proposalId: proposal.id,
         proposalLabel: proposal.label ?? '',
         meetingId: proposal.meetingId,
-        proposalOwnerId: proposal.ownerId,
         customerName: proposal.customer?.name ?? 'A homeowner',
       })
 

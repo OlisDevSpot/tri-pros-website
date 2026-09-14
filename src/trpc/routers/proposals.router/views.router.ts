@@ -11,6 +11,8 @@ import { TRPCError } from '@trpc/server'
 import z from 'zod'
 
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { getParticipantsForMeeting } from '@/shared/entities/meetings/dal/server/participants'
+import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
 import { getFullView } from '@/shared/modules/proposals/core/dal/server/queries'
 import { recordProposalView } from '@/shared/modules/proposals/views/dal/server/mutations'
 import { getProposalViews } from '@/shared/modules/proposals/views/dal/server/queries'
@@ -53,9 +55,16 @@ export const viewsRouter = createTRPCRouter({
         userAgent: input.userAgent,
       }))
 
-      // 4. Dispatch notification job (fire-and-forget) with pre-assembled params
+      // 4. Recipients: every participant of the proposal's meeting PLUS the
+      // info@ system user, always — a proposal has no owner to notify.
+      // see src/shared/modules/proposals/core/DOCS.md#shareable-via-token
+      const participantIds = proposal.meetingId
+        ? (await getParticipantsForMeeting(proposal.meetingId)).map(p => p.userId)
+        : []
+      const recipientUserIds = [...new Set([...participantIds, await getSystemOwnerId()])]
+      // 5. Dispatch notification job (fire-and-forget) with pre-assembled params
       void sendViewNotificationJob.dispatch({
-        proposalOwnerId: proposal.ownerId,
+        recipientUserIds,
         proposalLabel: proposal.label,
         proposalId: input.proposalId,
         customerName: proposal.customer?.name ?? 'Customer',

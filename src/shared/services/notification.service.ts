@@ -8,6 +8,8 @@ import { user } from '@/shared/db/schema/auth'
 import { customers } from '@/shared/db/schema/customers'
 import { meetingParticipants } from '@/shared/db/schema/meeting-participants'
 import { meetings } from '@/shared/db/schema/meetings'
+import { getParticipantsForMeeting } from '@/shared/entities/meetings/dal/server/participants'
+import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
 import { emailService } from '@/shared/services/email.service'
 import { webPushClient } from '@/shared/services/providers/web-push/client'
 
@@ -111,55 +113,42 @@ function createNotificationService() {
      * The homeowner clicked "Request Agreement" on their proposal review
      * page. A pure SIGNAL to the agents — the homeowner never touches the
      * contract lifecycle; the agent prepares/sends the signing draft
-     * manually. Recipients: the proposal's meeting participants, falling
-     * back to the proposal owner when there is no meeting.
-     * see `src/shared/entities/proposals/DOCS.md#proposal-lock-ladder`
+     * manually. Recipients: the proposal's meeting participants (all of
+     * them) PLUS the info@ system user — always. A proposal has no owner
+     * (2026-09-10 ruling; `ownerId` is the author, never a recipient).
+     * see `src/shared/modules/proposals/core/DOCS.md#proposal-lock-ladder`
+     * see `src/shared/modules/proposals/core/DOCS.md#shareable-via-token`
      *
      * @migration(meetings-entity-router)
-     * Same deal as the meeting methods below — recipient resolution queries
-     * `db` directly until meetings migrates; then callers pass recipients.
+     * Same deal as the meeting methods below — recipients are resolved here
+     * (DAL reads) until meetings migrates; then callers pass recipients.
      */
     notifyHomeownerMoveForwardRequest: async (params: {
       proposalId: string
       proposalLabel: string
       meetingId: string | null
-      proposalOwnerId: string
       customerName: string
     }) => {
-      let recipients: { userId: string, email: string }[] = []
-      if (params.meetingId) {
-        recipients = await db
-          .select({ userId: meetingParticipants.userId, email: user.email })
-          .from(meetingParticipants)
-          .innerJoin(user, eq(user.id, meetingParticipants.userId))
-          .where(eq(meetingParticipants.meetingId, params.meetingId))
-      }
-      if (recipients.length === 0) {
-        recipients = await db
-          .select({ userId: user.id, email: user.email })
-          .from(user)
-          .where(eq(user.id, params.proposalOwnerId))
-      }
-      if (recipients.length === 0) {
-        console.warn(`[notificationService] notifyHomeownerMoveForwardRequest: no internal recipients for proposal ${params.proposalId} — emailing ${SYSTEM_OWNER_EMAIL} only`)
+      const recipients: { userId: string, email: string }[] = params.meetingId
+        ? (await getParticipantsForMeeting(params.meetingId)).map(p => ({ userId: p.userId, email: p.userEmail }))
+        : []
+      const systemOwnerId = await getSystemOwnerId()
+      if (!recipients.some(r => r.userId === systemOwnerId)) {
+        recipients.push({ userId: systemOwnerId, email: SYSTEM_OWNER_EMAIL })
       }
 
-      // Push targets internal users only — info@ is a shared mailbox with no
-      // push subscription, so it never enters the userId list. Skip entirely
-      // when no internal user resolved (info@ still gets the email below).
-      if (recipients.length > 0) {
-        const pushResult = await webPushClient.sendToUsers(
-          recipients.map(r => r.userId),
-          {
-            title: `Ready to Move Forward | ${params.customerName}`,
-            body: 'Homeowner requested their agreement — prepare the signing draft',
-            navigate: ROOTS.dashboard.proposals.byId(params.proposalId),
-            urgency: 'high',
-          },
-        )
-        if (pushResult.failed > 0 || pushResult.errors.length > 0) {
-          console.warn(`[notificationService] notifyHomeownerMoveForwardRequest push partial failure:`, pushResult)
-        }
+      // Push to every recipient's active subscriptions (participants + info@).
+      const pushResult = await webPushClient.sendToUsers(
+        recipients.map(r => r.userId),
+        {
+          title: `Ready to Move Forward | ${params.customerName}`,
+          body: 'Homeowner requested their agreement — prepare the signing draft',
+          navigate: ROOTS.dashboard.proposals.byId(params.proposalId),
+          urgency: 'high',
+        },
+      )
+      if (pushResult.failed > 0 || pushResult.errors.length > 0) {
+        console.warn(`[notificationService] notifyHomeownerMoveForwardRequest push partial failure:`, pushResult)
       }
 
       // Blast the whole team: every meeting participant PLUS the company inbox
@@ -183,8 +172,14 @@ function createNotificationService() {
       })
     },
 
+    /**
+     * The homeowner opened their proposal. Recipients are the proposal's
+     * meeting participants — ALL of them — resolved by the caller
+     * (`views.router.ts:recordView`); a proposal has no owner to notify.
+     * see `src/shared/modules/proposals/core/DOCS.md#shareable-via-token`
+     */
     notifyProposalViewed: async (params: {
-      proposalOwnerId: string
+      recipientUserIds: string[]
       proposalLabel: string
       proposalId: string
       customerName: string
@@ -199,8 +194,8 @@ function createNotificationService() {
       }
       const sourceLabel = sourceLabels[params.source] ?? 'Opened directly'
 
-      // Push (always sent when owner has an active subscription).
-      const pushResult = await webPushClient.sendToUser(params.proposalOwnerId, {
+      // Push to every recipient's active subscriptions (no-op for an empty list).
+      const pushResult = await webPushClient.sendToUsers(params.recipientUserIds, {
         title: `Proposal Viewed | ${params.customerName}`,
         body: `${sourceLabel} • ${formatScheduledTime(params.viewedAt)}`,
         navigate: ROOTS.dashboard.proposals.byId(params.proposalId),
@@ -213,9 +208,10 @@ function createNotificationService() {
       // @migration(user-email-preferences)
       // Email notification for proposal views was disabled pending user
       // preference system (issue #188). When that ships:
-      // 1. Caller passes `ownerEmail` in params (already available on session)
-      // 2. Check user preference via DAL query or params
-      // 3. Send email using ownerEmail — no db lookup needed here
+      // 1. Caller passes the recipients' emails in params (the meetings DAL
+      //    read that resolves `recipientUserIds` already joins `user`)
+      // 2. Check each user's preference via DAL query or params
+      // 3. Send email to the opted-in recipients — no db lookup needed here
     },
 
     // Fires when an internal user is added/promoted as a participant on a
