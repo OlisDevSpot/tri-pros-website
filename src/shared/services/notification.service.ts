@@ -1,25 +1,26 @@
 import type { ContractEvent } from '@/shared/constants/enums'
-import { and, eq, inArray, ne } from 'drizzle-orm'
 import { ROOTS } from '@/shared/config/roots'
 import { NEW_LEAD_NOTIFICATION_EMAILS } from '@/shared/constants/company/new-lead-notifications'
 import { SYSTEM_OWNER_EMAIL } from '@/shared/constants/system-users'
-import { db } from '@/shared/db'
-import { user } from '@/shared/db/schema/auth'
-import { customers } from '@/shared/db/schema/customers'
-import { meetingParticipants } from '@/shared/db/schema/meeting-participants'
-import { meetings } from '@/shared/db/schema/meetings'
+import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { getParticipantsForMeeting } from '@/shared/entities/meetings/dal/server/participants'
+import { getByIdWithJoins } from '@/shared/entities/meetings/dal/server/queries'
+import { getUserIdsByEmails } from '@/shared/entities/users/dal/server/queries'
 import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
 import { emailService } from '@/shared/services/email.service'
 import { webPushClient } from '@/shared/services/providers/web-push/client'
 
+// Layering: this service never touches `db` — every lookup it still performs
+// (customer for a new lead, meeting + customer for the meeting pushes, meeting
+// participants, user ids for a recipient email list) rings a DAL read under
+// SYSTEM_CONTEXT. see docs/codebase-conventions/service-architecture.md
+//
 // @migration(meetings-entity-router)
-// This service still imports `db` for the meeting notification methods
-// (notifyMeetingParticipantAdded, notifyMeetingScheduledTimeChanged).
-// Once the meetings router migrates to entity toolkit:
-// - Callers pass pre-assembled params (customer name, address, recipients)
-// - The `db` import and all direct queries are removed
-// - This service becomes a pure formatter + push/email dispatcher
+// Direction of travel: callers pass pre-assembled params (customer name,
+// address, recipients) and the lookups below disappear, leaving a pure
+// formatter + push/email dispatcher.
 
 // iOS lock-screen titles truncate around 30-40 chars. Front-load the event
 // type + customer identity so the truncated form still tells the user what
@@ -66,28 +67,21 @@ function createNotificationService() {
      * webhooks/manual intake tomorrow. Recipients: NEW_LEAD_NOTIFICATION_EMAILS.
      */
     notifyNewLead: async (params: { customerId: string, source: string }) => {
-      const [customer] = await db
-        .select({ id: customers.id, name: customers.name, phone: customers.phone, city: customers.city, zip: customers.zip })
-        .from(customers)
-        .where(eq(customers.id, params.customerId))
-        .limit(1)
+      const customer = dalVerifySuccess(await customerCrud.getById(SYSTEM_CONTEXT, { id: params.customerId }))
       if (!customer) {
         console.warn(`[notificationService] notifyNewLead: customer ${params.customerId} not found`)
         return
       }
 
       const emails = [...NEW_LEAD_NOTIFICATION_EMAILS]
-      const recipients = await db
-        .select({ userId: user.id })
-        .from(user)
-        .where(inArray(user.email, emails))
+      const recipientUserIds = dalVerifySuccess(await getUserIdsByEmails(emails))
 
       const name = customer.name ?? 'Unknown'
       const locationLabel = [customer.city, customer.zip].filter(Boolean).join(' ')
       const body = locationLabel ? `${params.source} · ${locationLabel}` : params.source
 
       const pushResult = await webPushClient.sendToUsers(
-        recipients.map(r => r.userId),
+        recipientUserIds,
         {
           title: `New Lead | ${name}`,
           body,
@@ -175,7 +169,7 @@ function createNotificationService() {
     /**
      * The homeowner opened their proposal. Recipients are the proposal's
      * meeting participants — ALL of them — resolved by the caller
-     * (`views.router.ts:recordView`); a proposal has no owner to notify.
+     * (`proposalService.views.record`); a proposal has no owner to notify.
      * see `src/shared/modules/proposals/core/DOCS.md#shareable-via-token`
      */
     notifyProposalViewed: async (params: {
@@ -226,30 +220,19 @@ function createNotificationService() {
     //
     // @migration(meetings-entity-router)
     // Once meetings migrates: caller passes { customerName, customerAddress,
-    // scheduledFor } in params. Remove the db query below.
+    // scheduledFor } in params. Remove the DAL read below.
     notifyMeetingParticipantAdded: async (params: {
       meetingId: string
       participantUserId: string
     }) => {
-      const [meeting] = await db
-        .select({
-          id: meetings.id,
-          scheduledFor: meetings.scheduledFor,
-          customerName: customers.name,
-          customerAddress: customers.address,
-        })
-        .from(meetings)
-        .leftJoin(customers, eq(customers.id, meetings.customerId))
-        .where(eq(meetings.id, params.meetingId))
-        .limit(1)
-
+      const meeting = dalVerifySuccess(await getByIdWithJoins(SYSTEM_CONTEXT, { id: params.meetingId }))
       if (!meeting) {
         console.warn(`[notificationService] notifyMeetingParticipantAdded: meeting ${params.meetingId} not found`)
         return
       }
 
       const navigate = ROOTS.dashboard.scheduleWithMeetingHighlight(meeting.id, meeting.scheduledFor)
-      const title = `New Meeting | ${buildCustomerLabel({ name: meeting.customerName, address: meeting.customerAddress })}`
+      const title = `New Meeting | ${buildCustomerLabel({ name: meeting.customer?.name ?? null, address: meeting.customer?.address ?? null })}`
       const body = meeting.scheduledFor ? formatScheduledTime(meeting.scheduledFor) : 'Tap to view'
 
       const result = await webPushClient.sendToUser(params.participantUserId, {
@@ -274,7 +257,7 @@ function createNotificationService() {
     //
     // @migration(meetings-entity-router)
     // Once meetings migrates: caller passes { recipientUserIds, customerName,
-    // customerAddress } in params. Remove both db queries below.
+    // customerAddress } in params. Remove both DAL reads below.
     notifyMeetingScheduledTimeChanged: async (params: {
       meetingId: string
       newScheduledFor: string | null
@@ -286,36 +269,22 @@ function createNotificationService() {
        */
       excludeUserId?: string
     }) => {
-      const [meeting] = await db
-        .select({
-          id: meetings.id,
-          customerName: customers.name,
-          customerAddress: customers.address,
-        })
-        .from(meetings)
-        .leftJoin(customers, eq(customers.id, meetings.customerId))
-        .where(eq(meetings.id, params.meetingId))
-        .limit(1)
-
+      const meeting = dalVerifySuccess(await getByIdWithJoins(SYSTEM_CONTEXT, { id: params.meetingId }))
       if (!meeting) {
         console.warn(`[notificationService] notifyMeetingScheduledTimeChanged: meeting ${params.meetingId} not found`)
         return
       }
 
-      const recipients = await db
-        .select({ userId: meetingParticipants.userId })
-        .from(meetingParticipants)
-        .where(and(
-          eq(meetingParticipants.meetingId, params.meetingId),
-          params.excludeUserId ? ne(meetingParticipants.userId, params.excludeUserId) : undefined,
-        ))
+      // Every participant except the actor (no actor ⇒ everyone).
+      const recipients = (await getParticipantsForMeeting(params.meetingId))
+        .filter(p => p.userId !== params.excludeUserId)
 
       if (recipients.length === 0) {
         return
       }
 
       const navigate = ROOTS.dashboard.scheduleWithMeetingHighlight(meeting.id, params.newScheduledFor)
-      const customerLabel = buildCustomerLabel({ name: meeting.customerName, address: meeting.customerAddress })
+      const customerLabel = buildCustomerLabel({ name: meeting.customer?.name ?? null, address: meeting.customer?.address ?? null })
 
       // Body shape depends on the kind of change:
       //   set → set : "Mon May 12 2:30 PM → Tue May 13 3:00 PM"
