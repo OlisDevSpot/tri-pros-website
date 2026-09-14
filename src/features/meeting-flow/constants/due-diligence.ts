@@ -42,7 +42,7 @@ export const DUE_DILIGENCE_ITEMS = [
   {
     icon: MessageSquareIcon,
     title: 'Communication',
-    short: 'Know your point of contact and what to expect.',
+    short: 'Your point of contact, from today to the final walkthrough.',
     description:
       'Make sure you know how communication will work on this project. Know who your point of contact is and what to expect.',
     stat: '1',
@@ -50,11 +50,11 @@ export const DUE_DILIGENCE_ITEMS = [
   },
   {
     icon: HeadphonesIcon,
-    title: 'Office Support',
-    short: 'A full team behind every project.',
+    title: 'Team & Support Staff',
+    short: 'A senior partner and a full office behind every project.',
     description:
       'Make sure you have enough office support. Know what your contractor is offering you and at what quality.',
-    stat: `${companyInfo.teamInfo.numEmployees}+`,
+    stat: `${companyInfo.teamInfo.numSupportStaff}+`,
     statLabel: 'Support Staff',
   },
   {

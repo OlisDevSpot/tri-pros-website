@@ -100,7 +100,7 @@ The layout grid is standard Tailwind — no custom primitives. Sections use `con
 
 **Specific beats generic.** "We've completed 520 projects across 8 cities" is specific. "We're the best choice for your home" is generic. Specific copy is always preferred.
 
-**Credential guardrail:** Tri Pros was founded in 2021. The team has a combined 40+ years of experience. The correct phrasing is always **"40+ years combined experience"** — never "40 years in business," never "decades of experience since [year]," never any phrasing that implies the company existed before 2021.
+**Credential guardrail:** Tri Pros was founded in 2021. The team has a combined 45+ years of experience. The correct phrasing is always **"45+ years combined experience"** — never "45 years in business," never "decades of experience since [year]," never any phrasing that implies the company existed before 2021.
 
 All credential data must come from `src/shared/constants/company/` — licenses, insurance, BBB rating, project counts, dollar volume, satisfaction rate. Never hardcode numbers in a component.
 

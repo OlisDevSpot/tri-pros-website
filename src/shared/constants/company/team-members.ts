@@ -1,8 +1,8 @@
 export const teamMembers = [
   {
     name: 'Sean Phil',
-    position: 'Founder',
-    bio: 'Founder of Tri Pros Remodeling. Sean brings discipline from his service in the Israeli Special Forces and decades of construction leadership to deliver projects that are honest, dependable, and built to last.',
+    position: 'Senior Partner',
+    bio: 'Senior Partner at Tri Pros Remodeling. Sean brings discipline from his service in the Israeli Special Forces and decades of construction leadership to deliver projects that are honest, dependable, and built to last.',
     specializations: [
       'Luxury Construction',
       'Project Leadership',

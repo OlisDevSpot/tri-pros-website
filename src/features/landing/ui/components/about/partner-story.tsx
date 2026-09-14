@@ -7,8 +7,9 @@ import { TextWithLine } from '@/shared/components/text-with-line'
 import { cn } from '@/shared/lib/utils'
 
 interface Props {
-  founderName: string
-  founderImgSrc: string
+  partnerName: string
+  partnerTitle: string
+  partnerImgSrc: string
   children: React.ReactNode
   flipOrder?: boolean
   /** When true, text column renders before portrait on all breakpoints (mobile included). */
@@ -17,12 +18,13 @@ interface Props {
   Quote?: () => React.ReactNode
 }
 
-export function FounderStory({
-  founderName,
+export function PartnerStory({
+  partnerName,
+  partnerTitle,
   flipOrder = false,
   mobileTextFirst = false,
   children,
-  founderImgSrc,
+  partnerImgSrc,
   isInView,
   Quote,
 }: Props) {
@@ -44,8 +46,8 @@ export function FounderStory({
           portraits and tomorrow's square / wider headshots without code changes.
         */}
         <Image
-          src={founderImgSrc}
-          alt={`${founderName} — founder portrait`}
+          src={partnerImgSrc}
+          alt={`${partnerName}, ${partnerTitle}`}
           fill
           sizes="(min-width: 1024px) 50vw, 100vw"
           className="object-cover object-top grayscale-35 motion-safe:transition-all motion-safe:duration-700 group-hover:grayscale-0 motion-safe:group-hover:scale-[1.02]"
@@ -65,10 +67,10 @@ export function FounderStory({
         {/* Name plate */}
         <div className="absolute bottom-0 inset-x-0 p-5 sm:p-6">
           <p className="text-[11px] uppercase tracking-[0.22em] text-secondary font-semibold mb-1">
-            Founder
+            {partnerTitle}
           </p>
           <h3 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight whitespace-pre-line">
-            {founderName}
+            {partnerName}
           </h3>
         </div>
       </motion.div>
@@ -81,7 +83,7 @@ export function FounderStory({
         className={cn('flex flex-col justify-center gap-6', mobileTextFirst ? 'order-1' : flipOrder && 'lg:order-1')}
       >
         <div className="space-y-4 text-foreground/85 leading-relaxed">
-          <TextWithLine text="The Founder&apos;s Vision" />
+          <TextWithLine text="The Vision Behind Tri Pros" />
           {children}
         </div>
 

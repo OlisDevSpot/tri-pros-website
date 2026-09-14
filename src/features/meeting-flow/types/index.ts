@@ -97,17 +97,44 @@ export interface KeyHint {
   label: string
 }
 
+/** Full-bleed media behind a point's copy. */
 export type PointMedia
   = | { type: 'photo', src: string, alt: string }
-    | { type: 'portrait', src: string, alt: string }
     | { type: 'pair', before: string, after: string, alt: string }
-    | { type: 'placeholder', label: string }
-    | { type: 'documents', documents: PresentationDocument[] }
 
+/** A paper document shown on the stage; every page shares one pixel size. */
 export interface PresentationDocument {
   title: string
-  src: string
   alt: string
+  pages: string[]
+  width: number
+  height: number
+}
+
+/** A figure with what it means, e.g. `$2M` / `Insurance per project`. */
+export interface ProofFigure {
+  value: string
+  label: string
+}
+
+/** One mark in the licensing beat's reputation line. */
+export type ReputationMark
+  = | { kind: 'fact', value: string, label: string }
+    | { kind: 'rating', platform: 'Google' | 'Yelp', rating: string, count: number }
+
+/** The meeting owner, introduced in the Communication beat. */
+export interface PresentationAgent {
+  name: string
+  image: string | null
+  email: string
+  phone: string | null
+  yearsOfExperience: number | null
+}
+
+export interface ComparisonRow {
+  label: string
+  triPros: string
+  others: string
 }
 
 /** What the pinned column shows for one section. */
@@ -129,23 +156,67 @@ export type WhoWeAreSection
     imageAlt: string
   }
   | {
+    kind: 'credentials'
+    id: string
+    number: number
+    title: string
+    line: string
+    documents: PresentationDocument[]
+    protection: ProofFigure[]
+    reputation: ReputationMark[]
+  }
+  | {
+    kind: 'sample'
+    id: string
+    number: number
+    title: string
+    line: string
+    proof: ProofFigure
+    document: PresentationDocument
+    openLabel: string
+  }
+  | {
     kind: 'point'
     id: string
     number: number
     title: string
     line: string
-    proof: string
-    proofLabel: string
+    proof: ProofFigure
     media: PointMedia
+  }
+  | {
+    kind: 'agent'
+    id: string
+    number: number
+    title: string
+    line: string
+    cardRole: string
+    commitments: string[]
+  }
+  | {
+    kind: 'team'
+    id: string
+    number: number
+    title: string
+    line: string
+    proof: ProofFigure
+    partner: { name: string, title: string, image: string, points: string[] }
+    teamPhotoLabel: string
+  }
+  | {
+    kind: 'comparison'
+    id: string
+    title: string
+    rows: ComparisonRow[]
   }
   | {
     kind: 'truth'
     id: string
+    tableTitle: string
+    rows: ComparisonRow[]
     title: string
     quote: string
     ctaLabel: string
-    image: string
-    imageAlt: string
   }
 
 // ── Flow Context (passed to step components) ────────────────────────────────

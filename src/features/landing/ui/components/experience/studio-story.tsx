@@ -5,7 +5,7 @@ import { motion, useInView } from 'motion/react'
 import Link from 'next/link'
 import { useRef } from 'react'
 import { STAGGER_CHILD, STAGGER_CONTAINER, VIEWPORT_MARGIN } from '@/features/landing/constants/experience-motion'
-import { FounderStory } from '@/features/landing/ui/components/about/founder-story'
+import { PartnerStory } from '@/features/landing/ui/components/about/partner-story'
 import { ROOTS } from '@/shared/config/roots'
 import { teamInfo } from '@/shared/constants/company/team-info'
 import { DrawnUnderline } from './drawn-underline'
@@ -14,7 +14,7 @@ import { EditorialEyebrow } from './editorial-eyebrow'
 export function StudioStory() {
   const ref = useRef<HTMLElement>(null)
   const isInView = useInView(ref, { once: true, margin: VIEWPORT_MARGIN })
-  const founder = teamInfo.owners[0]
+  const partner = teamInfo.owners[0]
 
   return (
     <section ref={ref} className="py-20 lg:py-32">
@@ -40,9 +40,10 @@ export function StudioStory() {
           </motion.h2>
         </motion.div>
 
-        <FounderStory
-          founderName={founder.name}
-          founderImgSrc={`/${founder.image}`}
+        <PartnerStory
+          partnerName={partner.name}
+          partnerTitle={partner.title}
+          partnerImgSrc={`/${partner.image}`}
           isInView={isInView}
           mobileTextFirst
           Quote={() => (
@@ -54,24 +55,29 @@ export function StudioStory() {
               <figcaption className="text-sm text-muted-foreground mt-3">
                 —
                 {' '}
-                {founder.name}
-                , Founder
+                {partner.name}
+                ,
+                {' '}
+                {partner.title}
               </figcaption>
             </figure>
           )}
         >
           <p>
-            {founder.name}
+            {partner.name}
             {' '}
-            founded Tri Pros Remodeling with a simple conviction: homeowners deserve a contractor who communicates clearly, delivers on promises, and treats every project like it&apos;s their own home.
+            built Tri Pros Remodeling on a simple conviction: homeowners deserve a contractor who communicates clearly, delivers on promises, and treats every project like it&apos;s their own home.
           </p>
           <p>
-            Today our
+            Today he stays hands-on as our
             {' '}
-            {teamInfo.numEmployees}
-            -person team carries that same standard into every project: NARI-certified craftsmanship, BPI-trained efficiency, and a level of communication you&apos;d expect from a concierge — not a contractor.
+            {partner.title.toLowerCase()}
+            , and our
+            {' '}
+            {teamInfo.numSupportStaff}
+            + support staff carry that same standard into every project: NARI-certified craftsmanship, BPI-trained efficiency, and a level of communication you&apos;d expect from a concierge — not a contractor.
           </p>
-        </FounderStory>
+        </PartnerStory>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}

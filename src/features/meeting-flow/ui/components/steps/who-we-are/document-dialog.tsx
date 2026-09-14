@@ -16,32 +16,41 @@ interface DocumentDialogProps {
   onClose: () => void
 }
 
-/** Full-size, contained view of a credential document on the dark ground. */
+/**
+ * Every page of a document on the dark ground. A one-page document is sized to fit
+ * the dialog whole; a multi-page one scrolls at reading width.
+ */
 export function DocumentDialog({ document, onClose }: DocumentDialogProps) {
   return (
     <Dialog open={document !== null} onOpenChange={open => !open && onClose()}>
       <DialogContent
         aria-describedby={undefined}
-        className="h-[92dvh] w-[min(96vw,1100px)] max-w-none border-0 bg-[oklch(0.14_0.03_257)] p-2 text-white sm:max-w-none"
+        className="h-[92dvh] w-[min(96vw,1100px)] max-w-none grid-rows-[minmax(0,1fr)] border-0 bg-[oklch(0.14_0.03_257)] p-2 text-white sm:max-w-none *:data-[slot=dialog-close]:bg-black/60 *:data-[slot=dialog-close]:p-1.5 *:data-[slot=dialog-close]:opacity-100"
       >
         {document && (
           <>
             <DialogTitle className="sr-only">{document.title}</DialogTitle>
-            <button
-              aria-label={`Close ${document.title}`}
-              className="relative block h-full w-full cursor-zoom-out outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-              type="button"
-              onClick={onClose}
-            >
-              <Image
-                alt={document.alt}
-                className="object-contain"
-                draggable={false}
-                fill
-                sizes="96vw"
-                src={document.src}
-              />
-            </button>
+            <div className="grid min-h-0 content-start justify-items-center gap-3 overflow-y-auto overscroll-contain">
+              {document.pages.map((page, position) => (
+                <Image
+                  // Placeholder documents reuse one image for every page, so the position is the identity.
+                  // eslint-disable-next-line react/no-array-index-key
+                  key={position}
+                  alt={`${document.alt}, page ${position + 1} of ${document.pages.length}`}
+                  className="h-auto bg-white"
+                  draggable={false}
+                  height={document.height}
+                  sizes="96vw"
+                  src={page}
+                  style={{
+                    width: document.pages.length === 1
+                      ? `min(100%, calc((92dvh - 1rem) * ${document.width} / ${document.height}))`
+                      : 'min(100%, 56rem)',
+                  }}
+                  width={document.width}
+                />
+              ))}
+            </div>
           </>
         )}
       </DialogContent>

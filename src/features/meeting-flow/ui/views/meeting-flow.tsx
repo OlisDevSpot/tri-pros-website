@@ -18,6 +18,7 @@ import { useMeetingFlowKeys } from '@/features/meeting-flow/hooks/use-meeting-fl
 import { useMeetingSync } from '@/features/meeting-flow/hooks/use-meeting-sync'
 import { usePresentMode } from '@/features/meeting-flow/hooks/use-present-mode'
 import { computeContextFilledCount, CONTEXT_TOTAL_FIELDS } from '@/features/meeting-flow/lib/context-fill-count'
+import { toPresentationAgent } from '@/features/meeting-flow/lib/to-presentation-agent'
 import { ContextPanel } from '@/features/meeting-flow/ui/components/context-panel'
 import { PersonaProfilePanel } from '@/features/meeting-flow/ui/components/persona-profile-panel'
 import { InspectorRail } from '@/features/meeting-flow/ui/components/shell/inspector-rail'
@@ -301,7 +302,9 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
                 ? (
                     <>
                       <h1 className="sr-only" id={stepTitleId}>{stepConfig.title}</h1>
-                      {stepConfig.id === 'who-we-are' && <WhoWeAreStep ref={presentationRef} onContinue={handleNext} />}
+                      {stepConfig.id === 'who-we-are' && (
+                        <WhoWeAreStep ref={presentationRef} agent={toPresentationAgent(meeting)} onContinue={handleNext} />
+                      )}
                     </>
                   )
                 : (

@@ -82,8 +82,12 @@ export type MeetingListInput = z.infer<typeof meetingListInputSchema>
 /** Enriched single-meeting type for getById — meeting + full customer + owner + proposal subqueries. */
 export type MeetingWithCustomer = Meeting & {
   customer: MeetingCustomer | null
-  ownerName: string | null
+  ownerName: string
   ownerImage: string | null
+  ownerHeadshotUrl: string | null
+  ownerEmail: string
+  ownerPhone: string | null
+  ownerYearsOfExperience: number | null
   proposalCount: number
   hasSentProposal: boolean
   hasApprovedProposal: boolean
@@ -281,6 +285,10 @@ export async function getByIdWithJoins(
         },
         ownerName: user.name,
         ownerImage: user.image,
+        ownerHeadshotUrl: user.headshotUrl,
+        ownerEmail: user.email,
+        ownerPhone: user.phone,
+        ownerYearsOfExperience: user.yearsOfExperience,
         proposalCount: sql<number>`(SELECT count(*) FROM proposals p WHERE p.meeting_id = ${meetings.id})`.as('proposal_count'),
         hasSentProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'sent')`.as('has_sent_proposal'),
         hasApprovedProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'approved')`.as('has_approved_proposal'),
@@ -288,7 +296,8 @@ export async function getByIdWithJoins(
       .from(meetings)
       .leftJoin(customers, eq(customers.id, meetings.customerId))
       .leftJoin(customerProfiles, eq(customerProfiles.customerId, customers.id))
-      .leftJoin(user, eq(user.id, meetings.ownerId))
+      // `meetings.owner_id` is NOT NULL with an FK, so every meeting has its owner.
+      .innerJoin(user, eq(user.id, meetings.ownerId))
       .where(and(
         eq(meetings.id, input.id),
         ctx.scope ?? undefined,

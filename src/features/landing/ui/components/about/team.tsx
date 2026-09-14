@@ -150,10 +150,10 @@ export function TeamSection() {
           <div className="flex flex-col lg:flex-row w-full gap-8 [&>div]:flex-1">
             <div>
               <p className="text-3xl lg:text-4xl font-bold">
-                {companyInfo.teamInfo.numEmployees}
+                {companyInfo.teamInfo.numSupportStaff}
                 +
               </p>
-              <div className="text-sm">Team Members</div>
+              <div className="text-sm">Support Staff</div>
             </div>
             <div>
               <p className="text-3xl lg:text-4xl font-bold">

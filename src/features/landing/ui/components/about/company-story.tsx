@@ -3,7 +3,8 @@
 import { Compass, Gem, Target } from 'lucide-react'
 import { motion, useInView } from 'motion/react'
 import { useRef } from 'react'
-import { FounderStory } from './founder-story'
+import { teamInfo } from '@/shared/constants/company'
+import { PartnerStory } from './partner-story'
 
 const FADE_UP_VISIBLE = { opacity: 1, y: 0 }
 const FADE_UP_HIDDEN = { opacity: 0, y: 30 }
@@ -56,9 +57,10 @@ export function CompanyStory() {
           </h2>
         </motion.div>
 
-        <FounderStory
-          founderName="Sean Phil"
-          founderImgSrc="/company/employees/sean-headshot.jpeg"
+        <PartnerStory
+          partnerName={teamInfo.owners[0].name}
+          partnerTitle={teamInfo.owners[0].title}
+          partnerImgSrc={`/${teamInfo.owners[0].image}`}
           isInView={isInView}
           Quote={() => (
             <figure className="relative pl-6 border-l-2 border-secondary/60">
@@ -67,7 +69,12 @@ export function CompanyStory() {
                 that families will cherish for generations.&rdquo;
               </blockquote>
               <figcaption className="text-sm text-muted-foreground mt-3">
-                — Sean Phil, Founder
+                —
+                {' '}
+                {teamInfo.owners[0].name}
+                ,
+                {' '}
+                {teamInfo.owners[0].title}
               </figcaption>
             </figure>
           )}
@@ -84,7 +91,7 @@ export function CompanyStory() {
           <p>
             That&apos;s the foundation behind Tri Pros Remodeling. Different uniform, different mission — but the same commitment to showing up, doing the job right, and taking care of people every step of the way.
           </p>
-        </FounderStory>
+        </PartnerStory>
 
         {/* Mission Statement — architectural strip, no nested cards or emoji */}
         <motion.div
