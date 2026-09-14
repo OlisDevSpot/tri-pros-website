@@ -1,6 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import { useCallback, useLayoutEffect, useRef } from 'react'
 import {
   Drawer,
   DrawerContent,
@@ -37,10 +38,17 @@ interface ResponsiveSheetProps {
 /**
  * One host for "work on one thing" panels: a right-side Sheet (Radix Dialog) at
  * `lg` and up, a bottom Drawer (vaul) below it. Overlay, focus trap, Escape,
- * scroll lock, drag-to-close, and return-focus come from the primitives.
- * Header and footer stay put; the body scrolls. The breakpoint hook reports
- * `false` on the first client render, so a sheet open on page load below `lg`
- * renders as a Sheet for one frame before becoming a Drawer.
+ * scroll lock, and drag-to-close come from the primitives. Return-focus is
+ * handled here, not by the primitives: Radix's own `onCloseAutoFocus` default
+ * only restores focus to a `Dialog.Trigger`/`Drawer.Trigger`, and every opener
+ * across this app is a plain button, never a `Trigger`, so that default would
+ * drop focus to `document.body`. A layout effect (it runs before FocusScope's
+ * own autofocus effect, so it still sees the opener) records whichever element
+ * was focused right before `open` became true; on close, that element is
+ * refocused directly. Header and footer stay put; the body scrolls. The
+ * breakpoint hook reports `false` on the first client render, so a sheet open
+ * on page load below `lg` renders as a Sheet for one frame before becoming a
+ * Drawer.
  */
 export function ResponsiveSheet({
   open,
@@ -53,11 +61,28 @@ export function ResponsiveSheet({
   children,
 }: ResponsiveSheetProps) {
   const isBelowLg = useIsBelowLg()
+  const openerRef = useRef<HTMLElement | null>(null)
+
+  useLayoutEffect(() => {
+    if (open) {
+      const active = document.activeElement
+      openerRef.current = active instanceof HTMLElement && active !== document.body ? active : null
+    }
+  }, [open])
+
+  const handleCloseAutoFocus = useCallback((event: Event) => {
+    event.preventDefault()
+    const opener = openerRef.current
+    openerRef.current = null
+    if (opener?.isConnected) {
+      opener.focus()
+    }
+  }, [])
 
   if (isBelowLg) {
     return (
       <Drawer direction="bottom" open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className={contentClassName} onOpenAutoFocus={onOpenAutoFocus}>
+        <DrawerContent className={contentClassName} onCloseAutoFocus={handleCloseAutoFocus} onOpenAutoFocus={onOpenAutoFocus}>
           <DrawerHeader className="text-left">
             <DrawerTitle>{title}</DrawerTitle>
             {description !== undefined && <DrawerDescription>{description}</DrawerDescription>}
@@ -73,7 +98,7 @@ export function ResponsiveSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className={cn('gap-0', contentClassName)} side="right" onOpenAutoFocus={onOpenAutoFocus}>
+      <SheetContent className={cn('gap-0', contentClassName)} side="right" onCloseAutoFocus={handleCloseAutoFocus} onOpenAutoFocus={onOpenAutoFocus}>
         <SheetHeader className="pr-12">
           <SheetTitle>{title}</SheetTitle>
           {description !== undefined && <SheetDescription>{description}</SheetDescription>}

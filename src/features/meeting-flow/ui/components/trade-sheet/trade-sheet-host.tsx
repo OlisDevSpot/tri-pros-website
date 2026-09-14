@@ -46,7 +46,7 @@ export function TradeSheetHost() {
     <ResponsiveSheet
       contentClassName="sm:max-w-xl"
       description={description}
-      footer={shownTradeId ? <TradeSheetFooter tradeId={shownTradeId} /> : undefined}
+      footer={shownTradeId && !catalog.isLoading && !catalog.error ? <TradeSheetFooter tradeId={shownTradeId} /> : undefined}
       open={openTradeId !== null}
       title={title}
       onOpenAutoFocus={handleOpenAutoFocus}

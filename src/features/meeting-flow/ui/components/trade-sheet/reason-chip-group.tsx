@@ -1,5 +1,6 @@
 'use client'
 
+import { CheckIcon } from 'lucide-react'
 import { SPECIALTIES_COPY } from '@/features/meeting-flow/constants/specialties-copy'
 import { useTradeSelection } from '@/features/meeting-flow/contexts/trade-selection-context'
 import { diffIds } from '@/features/meeting-flow/lib/trade-selection'
@@ -31,9 +32,10 @@ export function ReasonChipGroup({ tradeId, selectedReasons }: ReasonChipGroupPro
         {meetingPainTypes.map(reason => (
           <ToggleGroupItem
             key={reason}
-            className="h-auto min-h-11 flex-none rounded-full border border-input px-3.5 py-2 text-base whitespace-normal first:rounded-full last:rounded-full data-[state=on]:border-primary data-[state=on]:bg-primary/10 data-[state=on]:text-foreground"
+            className="group h-auto min-h-11 flex-none rounded-full border border-input px-3.5 py-2 text-base whitespace-normal first:rounded-full last:rounded-full data-[state=on]:border-primary data-[state=on]:bg-primary/10 data-[state=on]:text-foreground"
             value={reason}
           >
+            <CheckIcon aria-hidden className="hidden size-4 shrink-0 group-data-[state=on]:block" />
             {reason}
           </ToggleGroupItem>
         ))}
