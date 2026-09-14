@@ -34,6 +34,7 @@ import { PortfolioStep } from '@/features/meeting-flow/ui/components/steps/portf
 import { ProgramStep } from '@/features/meeting-flow/ui/components/steps/program-step'
 import { SpecialtiesStep } from '@/features/meeting-flow/ui/components/steps/specialties'
 import { WhoWeAreStep } from '@/features/meeting-flow/ui/components/steps/who-we-are'
+import { TradeSheetHost } from '@/features/meeting-flow/ui/components/trade-sheet/trade-sheet-host'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
@@ -369,6 +370,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
 
           <OutcomeReasonDialog />
           <RescheduleDialog />
+          <TradeSheetHost />
         </StageFrame>
       </MotionConfig>
     </TradeSelectionProvider>
