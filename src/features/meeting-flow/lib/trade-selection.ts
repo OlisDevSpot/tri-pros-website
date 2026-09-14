@@ -1,0 +1,121 @@
+import type { SelectionItem, TradeScopeGroup } from '@/features/meeting-flow/types'
+import type { TradeSelection } from '@/shared/entities/meetings/schemas'
+
+interface TradeRef {
+  id: string
+  name: string
+}
+
+export interface SelectionCounts {
+  scopes: number
+  addons: number
+  reasons: number
+}
+
+export function findTradeSelection(selections: TradeSelection[], tradeId: string): TradeSelection | undefined {
+  return selections.find(s => s.tradeId === tradeId)
+}
+
+export function itemCount(selection: TradeSelection | undefined): number {
+  return selection?.selectedScopes.length ?? 0
+}
+
+/** Selected means one or more scopes or add-ons chosen. Reasons and notes alone do not count. */
+export function isTradeSelected(selections: TradeSelection[], tradeId: string): boolean {
+  return itemCount(findTradeSelection(selections, tradeId)) > 0
+}
+
+export function selectedItemIds(selection: TradeSelection | undefined): string[] {
+  return selection?.selectedScopes.map(item => item.id) ?? []
+}
+
+export function selectedTradeSelections(selections: TradeSelection[]): TradeSelection[] {
+  return selections.filter(s => itemCount(s) > 0)
+}
+
+/** The only shape ever persisted: zero-item trades are dropped. */
+export function normalizeForWrite(selections: TradeSelection[]): TradeSelection[] {
+  return selectedTradeSelections(selections)
+}
+
+/**
+ * Fixed key order and a normalized `notes`, so two equal models serialize the same.
+ * Postgres jsonb reorders object keys, so raw `JSON.stringify` cannot compare a write with its echo.
+ */
+export function canonicalSelectionsJson(selections: TradeSelection[]): string {
+  return JSON.stringify(selections.map(s => ({
+    tradeId: s.tradeId,
+    tradeName: s.tradeName,
+    selectedScopes: s.selectedScopes.map(item => ({ id: item.id, label: item.label })),
+    painPoints: [...s.painPoints],
+    notes: s.notes ?? '',
+  })))
+}
+
+function upsert(
+  selections: TradeSelection[],
+  trade: TradeRef,
+  update: (current: TradeSelection) => TradeSelection,
+): TradeSelection[] {
+  const existing = findTradeSelection(selections, trade.id)
+  if (!existing) {
+    const created: TradeSelection = { tradeId: trade.id, tradeName: trade.name, selectedScopes: [], painPoints: [] }
+    return [...selections, update(created)]
+  }
+  return selections.map(s => (s.tradeId === trade.id ? update(s) : s))
+}
+
+export function withItemToggled(selections: TradeSelection[], trade: TradeRef, item: SelectionItem): TradeSelection[] {
+  return upsert(selections, trade, current => ({
+    ...current,
+    selectedScopes: current.selectedScopes.some(i => i.id === item.id)
+      ? current.selectedScopes.filter(i => i.id !== item.id)
+      : [...current.selectedScopes, { id: item.id, label: item.label }],
+  }))
+}
+
+export function withReasonToggled(selections: TradeSelection[], trade: TradeRef, reason: string): TradeSelection[] {
+  return upsert(selections, trade, current => ({
+    ...current,
+    painPoints: current.painPoints.includes(reason)
+      ? current.painPoints.filter(r => r !== reason)
+      : [...current.painPoints, reason],
+  }))
+}
+
+export function withNote(selections: TradeSelection[], trade: TradeRef, note: string): TradeSelection[] {
+  return upsert(selections, trade, current => ({ ...current, notes: note }))
+}
+
+export function withoutTrade(selections: TradeSelection[], tradeId: string): TradeSelection[] {
+  return selections.filter(s => s.tradeId !== tradeId)
+}
+
+/** What changed between two ToggleGroup value arrays. */
+export function diffIds(previous: readonly string[], next: readonly string[]): { added: string[], removed: string[] } {
+  const before = new Set(previous)
+  const after = new Set(next)
+  return {
+    added: next.filter(id => !before.has(id)),
+    removed: previous.filter(id => !after.has(id)),
+  }
+}
+
+/** Scopes versus add-ons are told apart by the catalog group; items the catalog no longer has count as scopes. */
+export function countSelection(selection: TradeSelection | undefined, group: TradeScopeGroup | undefined): SelectionCounts {
+  if (!selection) {
+    return { scopes: 0, addons: 0, reasons: 0 }
+  }
+  const addonIds = new Set(group?.addons.map(a => a.id) ?? [])
+  const addons = selection.selectedScopes.filter(i => addonIds.has(i.id)).length
+  return { scopes: selection.selectedScopes.length - addons, addons, reasons: selection.painPoints.length }
+}
+
+/** Stored items that the current catalog does not list for this trade. Shown, never dropped silently. */
+export function orphanItems(selection: TradeSelection | undefined, group: TradeScopeGroup | undefined): SelectionItem[] {
+  if (!selection) {
+    return []
+  }
+  const known = new Set([...(group?.scopes ?? []), ...(group?.addons ?? [])].map(entry => entry.id))
+  return selection.selectedScopes.filter(item => !known.has(item.id))
+}
