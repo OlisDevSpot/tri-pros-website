@@ -6,7 +6,7 @@ Operational rules for the four-tier backend split. Full rationale in [ADR-0003](
 
 | Tier | What it is | Lives at | Receives |
 |---|---|---|---|
-| **Internal service** | Business orchestrator. Calls DAL + other services + providers. | `src/shared/services/<x>.service.ts` | `ScopedContext` |
+| **Internal service** | Business orchestrator. Calls DAL + other services + providers. | `src/shared/services/<x>.service.ts`, or a module's root `src/shared/modules/<module>/service.ts` + its units' `<unit>/service.ts` (e.g. `modules/proposals/service.ts`, `modules/proposals/{incentives,media,views}/service.ts`) | `ScopedContext` |
 | **Sync service** | ACL facade. Wraps one provider in domain operations. | `src/shared/services/<x>-sync.service.ts` | provider client + native types |
 | **Provider** | External API client. Auth + HTTP + translation. | `src/shared/services/providers/<x>/` | nothing app-aware |
 | **Shared lib** | Local utility, no external HTTP. | `src/shared/lib/<x>/` | varies |
@@ -313,7 +313,7 @@ Use `dispatchOrThrow` and `await` it for critical work. Use `dispatch` and `void
 
 ## Current classification
 
-**Internal services:** `contracts`, `scheduling`, `email`, `notification`, `media`, `accounting`, `construction-data`, `pdf`, `ai`, `analytics`, `webhook`.
+**Internal services:** `contracts`, `scheduling`, `email`, `notification`, `media`, `accounting`, `construction-data`, `pdf`, `ai`, `analytics`, `webhook`; module services: `proposals` (`modules/proposals/service.ts`, children `incentives` / `media` / `views`).
 
 **Sync services:** `zoho-sync`. Future: `qb-sync` when accounting is decomposed.
 

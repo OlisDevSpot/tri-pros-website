@@ -12,7 +12,7 @@ import { TRPCError } from '@trpc/server'
 import z from 'zod'
 
 import { incentiveSchema } from '@/shared/modules/proposals/core/schemas'
-import { replaceProposalIncentives } from '@/shared/modules/proposals/incentives/dal/server/mutations'
+import { proposalService } from '@/shared/modules/proposals/service'
 
 import { createTRPCRouter } from '../../init'
 import { dalToTrpc } from '../../lib/dal-to-trpc'
@@ -31,6 +31,6 @@ export const incentivesRouter = createTRPCRouter({
           message: 'You do not have permission to update this proposal.',
         })
       }
-      return dalToTrpc(await replaceProposalIncentives(ctx, input))
+      return dalToTrpc(await proposalService.incentives.replace(ctx, input))
     }),
 })

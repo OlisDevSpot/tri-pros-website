@@ -5,7 +5,7 @@ import { createJob } from '../lib/create-job'
 export const sendViewNotificationJob = createJob(
   'send-view-notification',
   async (params: {
-    /** The proposal's meeting participants — resolved by the dispatcher (`views.router.ts:recordView`). */
+    /** The proposal's meeting participants — resolved by the dispatcher (`proposalService.views.record`). */
     recipientUserIds: string[]
     proposalLabel: string
     proposalId: string

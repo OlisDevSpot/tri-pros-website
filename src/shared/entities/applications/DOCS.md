@@ -66,7 +66,7 @@ doesn't. Multi-select trades are aggregatable (e.g. "how many applications
 selected Kitchen?"), so they need a real junction table, never a JSON array
 buried in an answer value.
 **Reference impl**: `dal/server/mutations.ts:submitApplication` (modeled on
-proposals' `replaceProposalIncentives` — read-current → transactional
+proposals' `proposalService.incentives.replace` (`src/shared/modules/proposals/incentives/service.ts`) — read-current → transactional
 upsert-and-flip).
 **Enforced by**: `applications_submitted_at_ck` CHECK (`applications.ts`); the
 `status === 'draft'` guards in `saveDraft` and `submitApplication`.

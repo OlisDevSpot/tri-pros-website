@@ -3,23 +3,23 @@
 // procedures inline from the spec (no createEntityRouter, no cast — epic S6a).
 // see ../../DOCS.md#crud-five-slots-fixed
 //
-// crud.duplicate is overridden — the generic duplicateImpl only copies the
-// parent row, never `proposal_incentives` (a Wave-2 child table), which would
-// silently drop discounts/exclusive-offers on the copy. Create enrichment and
-// duplicate config live on proposalServerSpec.hooks and .duplicate.
+// `crud` is the proposal module service itself: it carries the engine's five
+// slots on its top level (spread from proposalCrud) plus the proposal-COMPLETE
+// `duplicate` override (incentive rows cloned, rollup re-driven), so no per-slot
+// handler override lives here any more. Create enrichment (kind/token/SOW-snapshot)
+// and the duplicate exclude/override config live in the createCrudDal config
+// factory (modules/proposals/core/dal/server/crud.ts).
 // see ../../../shared/modules/proposals/core/DOCS.md#duplicate-resets-and-redrives
 
 import z from 'zod'
 
-import { proposalCrud } from '@/shared/modules/proposals/core/dal/server/crud'
-import { duplicateProposalWithIncentives } from '@/shared/modules/proposals/core/dal/server/duplicate'
 import { proposalSchemas, proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
+import { proposalService } from '@/shared/modules/proposals/service'
 
 import { createCrudRouter } from '../../lib/create-crud-router'
 
 export const crudRouter = createCrudRouter({
   spec: proposalServerSpec,
   schemas: { ...proposalSchemas, id: z.string().uuid() },
-  crud: proposalCrud,
-  handlers: { duplicate: duplicateProposalWithIncentives },
+  crud: proposalService,
 })

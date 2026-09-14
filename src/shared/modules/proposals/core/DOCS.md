@@ -64,7 +64,7 @@ A proposal can be read AND updated by an unauthenticated client via `?token=<sha
 **Enforced by**: `shareableMiddleware` (entity toolkit); see ADR-0002 §4 and [`../../trpc/DOCS.md`](../../trpc/DOCS.md) (when written)
 
 **Homeowner-open push ("Proposal Viewed")**: every open through the share link records a `proposal_views` row and pushes to the proposal's **meeting participants — all of them — plus the info@ system user, always**. A proposal has no owner: it is reached through its meeting, and the people responsible for it are whoever is on that meeting (`#visibility-via-meeting-participation`); `ownerId` is the author and never a recipient (2026-09-10 ruling). No meeting ⇒ the view is still recorded and info@ alone is pushed. Recipients are resolved by the dispatcher, not the notification service. The homeowner's "Request Agreement" signal (`#proposal-lock-ladder`) uses the same recipient rule.
-**Reference impl**: `src/trpc/routers/proposals.router/views.router.ts:recordView` → `sendViewNotificationJob` → `notification.service.ts:notifyProposalViewed`
+**Reference impl**: `views/service.ts:record` → `sendViewNotificationJob` → `notification.service.ts:notifyProposalViewed`
 
 ### pdf-export-token-gated
 

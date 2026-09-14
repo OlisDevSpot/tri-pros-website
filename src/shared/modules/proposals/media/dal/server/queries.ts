@@ -94,12 +94,6 @@ export async function listImportableProjectMedia(
     ))
 }
 
-/** Fetch one row by id (used by authz + write paths). No scope applied here. */
-export async function getProposalMediaFileById(id: number): Promise<ProposalMediaFile | undefined> {
-  const [row] = await db.select().from(proposalMediaFiles).where(eq(proposalMediaFiles.id, id))
-  return row
-}
-
 /** Homeowner-visible rows for a proposal, ordered — feeds the customer-facing gallery. */
 export async function listHomeownerProposalMedia(proposalId: string): Promise<ProposalMediaFile[]> {
   return db

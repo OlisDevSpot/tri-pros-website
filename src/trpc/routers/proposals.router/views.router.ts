@@ -2,21 +2,17 @@
 // proposal_views child rows. `recordView` is the public homeowner-open path
 // (token IS the authorization — no session); `getProposalViews` is the
 // agent-facing stats read. Moved out of delivery.router (S3a) into the child's
-// own leaf. Until S3b's subEntitySpec lands, this reuses the parent proposal
-// procedures + a manual token check, exactly as delivery did.
+// own leaf.
 //
-// Plain leaf: imports pre-scoped procedures from ./procedures.
+// Plain leaf: imports pre-scoped procedures from ./procedures. `recordView` is
+// an adapter — validate, one service call, map — the read + token gate + insert
+// + notification dispatch live in `proposalService.views.record`.
 
-import { TRPCError } from '@trpc/server'
 import z from 'zod'
 
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
-import { getParticipantsForMeeting } from '@/shared/entities/meetings/dal/server/participants'
-import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
-import { getFullView } from '@/shared/modules/proposals/core/dal/server/queries'
-import { recordProposalView } from '@/shared/modules/proposals/views/dal/server/mutations'
+import { proposalService } from '@/shared/modules/proposals/service'
 import { getProposalViews } from '@/shared/modules/proposals/views/dal/server/queries'
-import { sendViewNotificationJob } from '@/shared/services/providers/upstash/jobs/send-view-notification'
 
 import { createTRPCRouter, systemProcedure } from '../../init'
 import { dalToTrpc } from '../../lib/dal-to-trpc'
@@ -34,43 +30,9 @@ export const viewsRouter = createTRPCRouter({
   recordView: systemProcedure
     .input(recordViewSchema)
     .mutation(async ({ input }) => {
-      // 1. Fetch proposal with customer join — SYSTEM_CONTEXT because publicProcedure
-      // has no session. Uses getFullView (not handlers.getById) because we need
-      // customer.name for the notification job payload.
-      const proposal = dalToTrpc(await getFullView(SYSTEM_CONTEXT, { id: input.proposalId }))
-      if (!proposal) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' })
-      }
-
-      // 2. Manual token validation — token IS the authorization on this path
-      if (proposal.token !== input.token) {
-        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid token' })
-      }
-
-      // 3. Record the view via the proposal-views DAL
-      const view = dalToTrpc(await recordProposalView({
-        proposalId: input.proposalId,
-        source: input.source,
-        referer: input.referer,
-        userAgent: input.userAgent,
-      }))
-
-      // 4. Recipients: every participant of the proposal's meeting PLUS the
-      // info@ system user, always — a proposal has no owner to notify.
-      // see src/shared/modules/proposals/core/DOCS.md#shareable-via-token
-      const participantIds = proposal.meetingId
-        ? (await getParticipantsForMeeting(proposal.meetingId)).map(p => p.userId)
-        : []
-      const recipientUserIds = [...new Set([...participantIds, await getSystemOwnerId()])]
-      // 5. Dispatch notification job (fire-and-forget) with pre-assembled params
-      void sendViewNotificationJob.dispatch({
-        recipientUserIds,
-        proposalLabel: proposal.label,
-        proposalId: input.proposalId,
-        customerName: proposal.customer?.name ?? 'Customer',
-        viewedAt: view.viewedAt,
-        source: input.source,
-      }).catch(() => {})
+      // SYSTEM_CONTEXT: systemProcedure has no session — the share token proves
+      // the caller, and the service performs that check. (#285: bearer actor.)
+      dalToTrpc(await proposalService.views.record(SYSTEM_CONTEXT, input))
     }),
 
   getProposalViews: proposalProcedure

@@ -78,7 +78,7 @@ export function CreateNewProposalView() {
         meta: data.project.meta,
       },
       // finalTcp is derived — never written. See `computeFinalTcp`. Incentives
-      // are rows, written by replaceProposalIncentives after the insert lands.
+      // are rows, written by proposalService.incentives.replace after the insert lands.
       ...fundingDomainToColumns({ ...data.funding, cashInDeal: finalTcp }),
     }
   }

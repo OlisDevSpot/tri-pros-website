@@ -38,7 +38,7 @@ export function toFundingInputs(row: FundingSourceRow): FundingData {
 
 /**
  * Form dollars → column cents. Incentives are NOT here — they are rows
- *  (replaceProposalIncentives).
+ *  (proposalService.incentives.replace).
  */
 export function fundingDomainToColumns(
   data: Pick<FundingData, 'startingTcp' | 'depositAmount' | 'cashInDeal' | 'miscPrice'>,
