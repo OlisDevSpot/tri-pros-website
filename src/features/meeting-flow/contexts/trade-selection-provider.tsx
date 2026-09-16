@@ -1,13 +1,17 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import type { MeetingFlowContext, OpenTradeOptions, SelectionItem, TradeSelectionContextValue, TradeSheetState } from '@/features/meeting-flow/types'
+import type { MeetingFlowContext, SelectionItem, TradeActions, TradeCatalogContextValue, TradeStageState } from '@/features/meeting-flow/types'
 import type { TradeSelection } from '@/shared/entities/meetings/schemas'
 import { useQueryState } from 'nuqs'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { tradeSheetParser } from '@/features/meeting-flow/constants/query-parsers'
+import { tradeStageParser } from '@/features/meeting-flow/constants/query-parsers'
 import { SELECTION_WRITE_DEBOUNCE_MS } from '@/features/meeting-flow/constants/trade-selection'
-import { TradeSelectionContext, TradeSheetContext } from '@/features/meeting-flow/contexts/trade-selection-context'
+import { TradeActionsContext } from '@/features/meeting-flow/contexts/trade-actions-context'
+import { TradeCatalogContext } from '@/features/meeting-flow/contexts/trade-catalog-context'
+import { TradeSelectionsContext } from '@/features/meeting-flow/contexts/trade-selections-context'
+import { TradeStageContext } from '@/features/meeting-flow/contexts/trade-stage-context'
+import { useShowcaseProjects } from '@/features/meeting-flow/hooks/use-showcase-projects'
 import { useTradeCatalog } from '@/features/meeting-flow/hooks/use-trade-catalog'
 import {
   canonicalSelectionsJson,
@@ -17,6 +21,7 @@ import {
   withNote,
   withoutTrade,
   withReasonToggled,
+  withTradeRestored,
 } from '@/features/meeting-flow/lib/trade-selection'
 import { useDebounce } from '@/shared/hooks/use-debounce'
 
@@ -26,7 +31,7 @@ interface TradeSelectionProviderProps {
 }
 
 /**
- * One source of truth for step 2 and any later step that opens a trade.
+ * One source of truth for step 2 and the meeting panel's Project section.
  *
  * Shadow: local `selections` seeded from `flowState.tradeSelections`. Re-seeded
  * when the server value changes to anything this provider did not write itself
@@ -38,16 +43,19 @@ interface TradeSelectionProviderProps {
  * written when it differs from the server. A write is in flight from the moment
  * it is sent until the server echoes it; while in flight the same value is never
  * sent again. Once the echo has been seen, a later server value that is one of
- * this provider's own older writes (another step merged a stale cached
- * `flowStateJSON`) is a rollback: the shadow keeps the newer value and it is
- * written again. A foreign server value re-seeds the shadow instead and is never
- * overwritten by the not-yet-debounced previous value. Opening or closing the
- * sheet never writes. A write still inside the debounce window when the provider
- * unmounts is sent from the unmount cleanup.
+ * this provider's own older writes is a rollback: the shadow keeps the newer value
+ * and it is written again. A foreign server value re-seeds the shadow instead. A
+ * write still inside the debounce window when the provider unmounts is sent from
+ * the unmount cleanup.
+ *
+ * Four contexts, so each consumer re-renders only for what it reads: catalog +
+ * portfolio projects (settles once), actions (stable), selections (every edit),
+ * stage (when the rep shows another trade or photo).
  */
 export function TradeSelectionProvider({ flowContext, children }: TradeSelectionProviderProps) {
   const { onFlowStateChange } = flowContext
   const catalog = useTradeCatalog()
+  const projects = useShowcaseProjects(catalog.scopesByTrade)
 
   const serverSelections = useMemo(
     () => flowContext.flowState?.tradeSelections ?? [],
@@ -140,39 +148,49 @@ export function TradeSelectionProvider({ flowContext, children }: TradeSelection
     setSelections(current => withNote(current, resolveTrade(tradeId, current), note))
   }, [resolveTrade])
 
-  const clearTrade = useCallback((tradeId: string) => {
+  const removeTrade = useCallback((tradeId: string) => {
     setDirty(true)
     setSelections(current => withoutTrade(current, tradeId))
   }, [])
 
-  const [openTradeId, setOpenTradeId] = useQueryState('trade', tradeSheetParser)
-  const [focusScopeId, setFocusScopeId] = useState<string | null>(null)
+  const restoreTrade = useCallback((entry: TradeSelection) => {
+    setDirty(true)
+    setSelections(current => withTradeRestored(current, entry))
+  }, [])
 
-  const openTrade = useCallback((tradeId: string, options?: OpenTradeOptions) => {
-    setFocusScopeId(options?.focusScopeId ?? null)
-    void setOpenTradeId(tradeId)
-  }, [setOpenTradeId])
+  const [stageTradeId, setStageTradeId] = useQueryState('trade', tradeStageParser)
+  const [stageMediaKey, setStageMediaKey] = useState<string | null>(null)
 
-  const closeTrade = useCallback(() => {
-    setFocusScopeId(null)
-    void setOpenTradeId(null)
-  }, [setOpenTradeId])
+  const showTrade = useCallback((tradeId: string | null) => {
+    setStageMediaKey(null)
+    void setStageTradeId(tradeId)
+  }, [setStageTradeId])
 
-  const selectionValue = useMemo<TradeSelectionContextValue>(
-    () => ({ selections, catalog, toggleItem, toggleReason, setNote, clearTrade }),
-    [selections, catalog, toggleItem, toggleReason, setNote, clearTrade],
+  const showMedia = useCallback((key: string | null) => {
+    setStageMediaKey(key)
+  }, [])
+
+  const catalogValue = useMemo<TradeCatalogContextValue>(() => ({ catalog, projects }), [catalog, projects])
+
+  const actionsValue = useMemo<TradeActions>(
+    () => ({ toggleItem, toggleReason, setNote, removeTrade, restoreTrade }),
+    [toggleItem, toggleReason, setNote, removeTrade, restoreTrade],
   )
 
-  const sheetValue = useMemo<TradeSheetState>(
-    () => ({ openTradeId, focusScopeId, openTrade, closeTrade }),
-    [openTradeId, focusScopeId, openTrade, closeTrade],
+  const stageValue = useMemo<TradeStageState>(
+    () => ({ stageTradeId, stageMediaKey, showTrade, showMedia }),
+    [stageTradeId, stageMediaKey, showTrade, showMedia],
   )
 
   return (
-    <TradeSelectionContext value={selectionValue}>
-      <TradeSheetContext value={sheetValue}>
-        {children}
-      </TradeSheetContext>
-    </TradeSelectionContext>
+    <TradeCatalogContext value={catalogValue}>
+      <TradeActionsContext value={actionsValue}>
+        <TradeSelectionsContext value={selections}>
+          <TradeStageContext value={stageValue}>
+            {children}
+          </TradeStageContext>
+        </TradeSelectionsContext>
+      </TradeActionsContext>
+    </TradeCatalogContext>
   )
 }

@@ -1,14 +1,17 @@
 'use client'
 
 import { SPECIALTIES_COPY } from '@/features/meeting-flow/constants/specialties-copy'
-import { useTradeSelection, useTradeSheet } from '@/features/meeting-flow/contexts/trade-selection-context'
+import { useTradeCatalogContext } from '@/features/meeting-flow/contexts/trade-catalog-context'
+import { useTradeSelections } from '@/features/meeting-flow/contexts/trade-selections-context'
+import { useTradeStage } from '@/features/meeting-flow/contexts/trade-stage-context'
 import { itemCount, selectedTradeSelections } from '@/features/meeting-flow/lib/trade-selection'
 import { Button } from '@/shared/components/ui/button'
 
 /** Selected trades as pressed chips. A chip opens that trade's sheet. Reads the model; never edits it. A trade the loaded catalog no longer lists says so on its chip. */
 export function ProjectStrip() {
-  const { selections, catalog } = useTradeSelection()
-  const { openTrade } = useTradeSheet()
+  const selections = useTradeSelections()
+  const { catalog } = useTradeCatalogContext()
+  const { showTrade } = useTradeStage()
   const selected = selectedTradeSelections(selections)
   const catalogReady = !catalog.isLoading && !catalog.error
 
@@ -26,7 +29,7 @@ export function ProjectStrip() {
               className="h-11 gap-2 aria-pressed:border-primary aria-pressed:bg-primary/5 dark:aria-pressed:border-primary"
               size="sm"
               variant="outline"
-              onClick={() => openTrade(selection.tradeId)}
+              onClick={() => showTrade(selection.tradeId)}
             >
               {selection.tradeName}
               {catalogReady && !catalog.tradesById.has(selection.tradeId) && (

@@ -2,7 +2,7 @@
 
 import { memo } from 'react'
 import { SPECIALTIES_COPY } from '@/features/meeting-flow/constants/specialties-copy'
-import { useTradeSelection } from '@/features/meeting-flow/contexts/trade-selection-context'
+import { useTradeCatalogContext } from '@/features/meeting-flow/contexts/trade-catalog-context'
 import { ProjectStrip } from '@/features/meeting-flow/ui/components/steps/specialties/project-strip'
 import { StepIntro } from '@/features/meeting-flow/ui/components/steps/specialties/step-intro'
 import { TradeCatalog } from '@/features/meeting-flow/ui/components/steps/specialties/trade-catalog'
@@ -17,7 +17,7 @@ import { Button } from '@/shared/components/ui/button'
  * would claim "Nothing requested on this lead." on every meeting.
  */
 function SpecialtiesStepImpl() {
-  const { catalog } = useTradeSelection()
+  const { catalog } = useTradeCatalogContext()
 
   if (catalog.isLoading) {
     return <LoadingState description={SPECIALTIES_COPY.catalogLoading.description} title={SPECIALTIES_COPY.catalogLoading.title} />

@@ -3,7 +3,9 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { SPECIALTIES_COPY } from '@/features/meeting-flow/constants/specialties-copy'
 import { TRADE_PAIRINGS } from '@/features/meeting-flow/constants/trade-pairings'
-import { useTradeSelection, useTradeSheet } from '@/features/meeting-flow/contexts/trade-selection-context'
+import { useTradeCatalogContext } from '@/features/meeting-flow/contexts/trade-catalog-context'
+import { useTradeSelections } from '@/features/meeting-flow/contexts/trade-selections-context'
+import { useTradeStage } from '@/features/meeting-flow/contexts/trade-stage-context'
 import { isTradeSelected } from '@/features/meeting-flow/lib/trade-selection'
 import { Button } from '@/shared/components/ui/button'
 import { COLLAPSE_HEIGHT_VARIANTS, COLLAPSE_TRANSITION } from '@/shared/constants/motion'
@@ -15,8 +17,9 @@ interface PairingCardProps {
 
 /** The playbook pairing for this trade. Appears once the trade is selected; `initial={false}` so it never replays on unrelated updates. */
 export function PairingCard({ slug, selected }: PairingCardProps) {
-  const { selections, catalog } = useTradeSelection()
-  const { openTrade } = useTradeSheet()
+  const selections = useTradeSelections()
+  const { catalog } = useTradeCatalogContext()
+  const { showTrade } = useTradeStage()
   const pairing = TRADE_PAIRINGS[slug]
   const paired = pairing ? catalog.tradesBySlug.get(pairing.pairedSlug) : undefined
   const visible = selected && pairing && paired ? { pairing, paired } : null
@@ -55,7 +58,7 @@ export function PairingCard({ slug, selected }: PairingCardProps) {
                     </>
                   )}
             </p>
-            <Button className="h-11" size="sm" variant={pairedSelected ? 'ghost' : 'default'} onClick={() => openTrade(visible.paired.id)}>
+            <Button className="h-11" size="sm" variant={pairedSelected ? 'ghost' : 'default'} onClick={() => showTrade(visible.paired.id)}>
               {pairedSelected ? SPECIALTIES_COPY.sheet.open : `${SPECIALTIES_COPY.sheet.open} ${visible.paired.name}`}
             </Button>
           </div>

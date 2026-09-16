@@ -2,7 +2,9 @@
 
 import { useRef } from 'react'
 import { SPECIALTIES_COPY } from '@/features/meeting-flow/constants/specialties-copy'
-import { useTradeSelection, useTradeSheet } from '@/features/meeting-flow/contexts/trade-selection-context'
+import { useTradeActions } from '@/features/meeting-flow/contexts/trade-actions-context'
+import { useTradeSelections } from '@/features/meeting-flow/contexts/trade-selections-context'
+import { useTradeStage } from '@/features/meeting-flow/contexts/trade-stage-context'
 import { hasStoredEntry } from '@/features/meeting-flow/lib/trade-selection'
 import { Button } from '@/shared/components/ui/button'
 
@@ -18,14 +20,15 @@ interface TradeSheetFooterProps {
  * instead of falling to the dialog container.
  */
 export function TradeSheetFooter({ tradeId }: TradeSheetFooterProps) {
-  const { selections, clearTrade } = useTradeSelection()
-  const { closeTrade } = useTradeSheet()
+  const selections = useTradeSelections()
+  const { removeTrade } = useTradeActions()
+  const { showTrade } = useTradeStage()
   const doneRef = useRef<HTMLButtonElement>(null)
   const stored = hasStoredEntry(selections, tradeId)
 
   function handleRemove() {
     doneRef.current?.focus()
-    clearTrade(tradeId)
+    removeTrade(tradeId)
   }
 
   return (
@@ -33,7 +36,7 @@ export function TradeSheetFooter({ tradeId }: TradeSheetFooterProps) {
       {stored
         ? <Button className="h-11" variant="ghost" onClick={handleRemove}>{SPECIALTIES_COPY.sheet.remove}</Button>
         : <span aria-hidden />}
-      <Button ref={doneRef} className="h-11" onClick={closeTrade}>{SPECIALTIES_COPY.sheet.done}</Button>
+      <Button ref={doneRef} className="h-11" onClick={() => showTrade(null)}>{SPECIALTIES_COPY.sheet.done}</Button>
     </div>
   )
 }

@@ -271,32 +271,6 @@ export interface TradeCatalog {
 /** One chosen scope or add-on, as persisted in `TradeSelection.selectedScopes`. */
 export type SelectionItem = TradeSelection['selectedScopes'][number]
 
-export interface TradeSelectionActions {
-  /** Adds the item when absent, removes it when present. Creates the trade entry on first add. */
-  toggleItem: (tradeId: string, item: SelectionItem) => void
-  toggleReason: (tradeId: string, reason: string) => void
-  setNote: (tradeId: string, note: string) => void
-  /** Drops the trade entry entirely: items, reasons, and note. */
-  clearTrade: (tradeId: string) => void
-}
-
-export interface TradeSelectionContextValue extends TradeSelectionActions {
-  selections: TradeSelection[]
-  catalog: TradeCatalog
-}
-
-export interface OpenTradeOptions {
-  /** Scope to scroll into view and focus once the sheet opens. */
-  focusScopeId?: string
-}
-
-export interface TradeSheetState {
-  openTradeId: string | null
-  focusScopeId: string | null
-  openTrade: (tradeId: string, options?: OpenTradeOptions) => void
-  closeTrade: () => void
-}
-
 export interface TradePhoto {
   src: string
   alt: string

@@ -3,7 +3,8 @@
 import { SPECIALTIES_COPY } from '@/features/meeting-flow/constants/specialties-copy'
 import { TRADE_OUTCOMES } from '@/features/meeting-flow/constants/trade-outcomes'
 import { TRADE_PHOTOS } from '@/features/meeting-flow/constants/trade-photos'
-import { useTradeSelection } from '@/features/meeting-flow/contexts/trade-selection-context'
+import { useTradeCatalogContext } from '@/features/meeting-flow/contexts/trade-catalog-context'
+import { useTradeSelections } from '@/features/meeting-flow/contexts/trade-selections-context'
 import { formatSelectionSummary } from '@/features/meeting-flow/lib/format-selection-summary'
 import { countSelection, findTradeSelection, itemCount, orphanItems, selectedItemIds } from '@/features/meeting-flow/lib/trade-selection'
 import { OrphanItemChips } from '@/features/meeting-flow/ui/components/trade-sheet/orphan-item-chips'
@@ -20,12 +21,12 @@ import { Button } from '@/shared/components/ui/button'
 
 interface TradeSheetBodyProps {
   tradeId: string
-  focusScopeId: string | null
 }
 
 /** Everything the agent edits for one trade. Re-renders on toggles; children take primitive props and reconcile in place. */
-export function TradeSheetBody({ tradeId, focusScopeId }: TradeSheetBodyProps) {
-  const { selections, catalog } = useTradeSelection()
+export function TradeSheetBody({ tradeId }: TradeSheetBodyProps) {
+  const selections = useTradeSelections()
+  const { catalog } = useTradeCatalogContext()
 
   if (catalog.isLoading) {
     return <LoadingState description={SPECIALTIES_COPY.catalogLoading.description} title={SPECIALTIES_COPY.catalogLoading.title} />
@@ -53,7 +54,6 @@ export function TradeSheetBody({ tradeId, focusScopeId }: TradeSheetBodyProps) {
       <OutcomeLine text={slug ? TRADE_OUTCOMES[slug] : undefined} />
       <ScopeTileGroup
         emptyText={SPECIALTIES_COPY.sheet.noScopes}
-        focusScopeId={focusScopeId}
         scopes={group?.scopes ?? []}
         selectedIds={selectedItemIds(selection)}
         tradeId={tradeId}

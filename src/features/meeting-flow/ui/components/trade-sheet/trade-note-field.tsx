@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { SPECIALTIES_COPY } from '@/features/meeting-flow/constants/specialties-copy'
-import { useTradeSelection } from '@/features/meeting-flow/contexts/trade-selection-context'
+import { useTradeActions } from '@/features/meeting-flow/contexts/trade-actions-context'
 import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
 
@@ -19,7 +19,7 @@ interface TradeNoteFieldProps {
  * A note changed outside the field (a server re-seed) replaces the draft.
  */
 export function TradeNoteField({ tradeId, tradeName, note }: TradeNoteFieldProps) {
-  const { setNote } = useTradeSelection()
+  const { setNote } = useTradeActions()
   const id = `trade-note-${tradeId}`
   const [draft, setDraft] = useState(note)
   const [adoptedNote, setAdoptedNote] = useState(note)

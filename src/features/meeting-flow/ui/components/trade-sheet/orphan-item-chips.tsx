@@ -3,7 +3,7 @@
 import type { SelectionItem } from '@/features/meeting-flow/types'
 import { XIcon } from 'lucide-react'
 import { SPECIALTIES_COPY } from '@/features/meeting-flow/constants/specialties-copy'
-import { useTradeSelection } from '@/features/meeting-flow/contexts/trade-selection-context'
+import { useTradeActions } from '@/features/meeting-flow/contexts/trade-actions-context'
 import { Button } from '@/shared/components/ui/button'
 
 interface OrphanItemChipsProps {
@@ -13,7 +13,7 @@ interface OrphanItemChipsProps {
 
 /** Stored items the current catalog no longer lists for this trade. Shown by stored label, removable, never dropped silently. */
 export function OrphanItemChips({ tradeId, items }: OrphanItemChipsProps) {
-  const { toggleItem } = useTradeSelection()
+  const { toggleItem } = useTradeActions()
 
   if (items.length === 0) {
     return null

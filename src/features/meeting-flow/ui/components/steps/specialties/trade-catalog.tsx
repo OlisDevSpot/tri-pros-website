@@ -5,7 +5,7 @@ import { SearchIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { SPECIALTIES_COPY } from '@/features/meeting-flow/constants/specialties-copy'
 import { TRADE_CATEGORY_LABELS } from '@/features/meeting-flow/constants/trade-categories'
-import { useTradeSelection } from '@/features/meeting-flow/contexts/trade-selection-context'
+import { useTradeCatalogContext } from '@/features/meeting-flow/contexts/trade-catalog-context'
 import { filterTradesByQuery } from '@/features/meeting-flow/lib/filter-trades-by-query'
 import { groupTradesByCategory } from '@/features/meeting-flow/lib/group-trades-by-category'
 import { TradeTile } from '@/features/meeting-flow/ui/components/steps/specialties/trade-tile'
@@ -17,7 +17,7 @@ interface TradeCatalogProps {
 
 /** Every trade, in three category grids that wrap. No horizontal scrolling. */
 export function TradeCatalog({ hasLead }: TradeCatalogProps) {
-  const { catalog } = useTradeSelection()
+  const { catalog } = useTradeCatalogContext()
   const [query, setQuery] = useState('')
   const groups = useMemo(
     () => groupTradesByCategory(filterTradesByQuery(catalog.trades, query)),

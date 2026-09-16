@@ -2,7 +2,7 @@
 
 import { CheckIcon } from 'lucide-react'
 import { SPECIALTIES_COPY } from '@/features/meeting-flow/constants/specialties-copy'
-import { useTradeSelection } from '@/features/meeting-flow/contexts/trade-selection-context'
+import { useTradeActions } from '@/features/meeting-flow/contexts/trade-actions-context'
 import { diffIds } from '@/features/meeting-flow/lib/trade-selection'
 import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-group'
 import { meetingPainTypes } from '@/shared/constants/enums'
@@ -14,7 +14,7 @@ interface ReasonChipGroupProps {
 
 /** The eleven `meetingPainTypes`, per trade, written to that trade's `painPoints`. */
 export function ReasonChipGroup({ tradeId, selectedReasons }: ReasonChipGroupProps) {
-  const { toggleReason } = useTradeSelection()
+  const { toggleReason } = useTradeActions()
 
   function handleValueChange(next: string[]) {
     const { added, removed } = diffIds(selectedReasons, next)
