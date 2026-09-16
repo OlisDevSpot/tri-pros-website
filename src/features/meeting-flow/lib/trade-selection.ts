@@ -19,8 +19,8 @@ export function isTradeSelected(selections: TradeSelection[], tradeId: string): 
   return itemCount(findTradeSelection(selections, tradeId)) > 0
 }
 
-export function selectedItemIds(selection: TradeSelection | undefined): string[] {
-  return selection?.selectedScopes.map(item => item.id) ?? []
+export function selectedItemIds(items: SelectionItem[] | undefined): string[] {
+  return items?.map(item => item.id) ?? []
 }
 
 export function selectedTradeSelections(selections: TradeSelection[]): TradeSelection[] {

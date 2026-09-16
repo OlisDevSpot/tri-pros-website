@@ -21,7 +21,8 @@ interface WorkOptionListProps {
 export function WorkOptionList({ entry, label, scopes }: WorkOptionListProps) {
   const { toggleWork } = useTradeEdits()
   const labelId = useId()
-  const selectedIds = useMemo(() => selectedItemIds(entry), [entry])
+  const selectedScopes = entry?.selectedScopes
+  const selectedIds = useMemo(() => selectedItemIds(selectedScopes), [selectedScopes])
 
   function handleValueChange(next: string[]) {
     const { added, removed } = diffIds(selectedIds, next)

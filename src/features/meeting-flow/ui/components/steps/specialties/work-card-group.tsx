@@ -30,7 +30,8 @@ export function WorkCardGroup({ trade }: WorkCardGroupProps) {
 
   const scopes = catalog.scopesByTrade.get(trade.id)?.scopes
   const entry = findTradeSelection(selections, trade.id)
-  const selectedIds = useMemo(() => selectedItemIds(entry), [entry])
+  const selectedScopes = entry?.selectedScopes
+  const selectedIds = useMemo(() => selectedItemIds(selectedScopes), [selectedScopes])
   const mediaByScope = useMemo(
     () => selectWorkCardMedia(trade, scopes ?? [], projects),
     [trade, scopes, projects],
