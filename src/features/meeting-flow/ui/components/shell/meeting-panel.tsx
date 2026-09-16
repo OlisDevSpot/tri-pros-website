@@ -30,6 +30,7 @@ export function MeetingPanel({ openSection, headerRef, onSelect, onClose, childr
   if (isBelowLg) {
     return (
       <ResponsiveSheet
+        contentId={PANEL_ID}
         drawerClassName="h-[60dvh] max-h-[60dvh]"
         hideTitle
         open={isOpen}

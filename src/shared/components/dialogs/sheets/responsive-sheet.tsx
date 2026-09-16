@@ -34,6 +34,8 @@ interface ResponsiveSheetProps {
   drawerClassName?: string
   /** The title stays for assistive tech but is visually hidden, for content that brings its own header. */
   hideTitle?: boolean
+  /** Applied to both the `SheetContent` and the `DrawerContent`, for example so an external `aria-controls` resolves on either side of the breakpoint. */
+  contentId?: string
   /** Radix `onOpenAutoFocus`. Call `event.preventDefault()` to place focus yourself. */
   onOpenAutoFocus?: (event: Event) => void
   children: ReactNode
@@ -63,6 +65,7 @@ export function ResponsiveSheet({
   sheetClassName,
   drawerClassName,
   hideTitle,
+  contentId,
   onOpenAutoFocus,
   children,
 }: ResponsiveSheetProps) {
@@ -90,7 +93,7 @@ export function ResponsiveSheet({
   if (isBelowLg) {
     return (
       <Drawer direction="bottom" open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className={drawerClassName} {...describedBy} onCloseAutoFocus={handleCloseAutoFocus} onOpenAutoFocus={onOpenAutoFocus}>
+        <DrawerContent className={drawerClassName} id={contentId} {...describedBy} onCloseAutoFocus={handleCloseAutoFocus} onOpenAutoFocus={onOpenAutoFocus}>
           <DrawerHeader className={cn('group-data-[vaul-drawer-direction=bottom]/drawer-content:text-left', hideTitle && 'sr-only')}>
             <DrawerTitle>{title}</DrawerTitle>
             {description !== undefined && <DrawerDescription>{description}</DrawerDescription>}
@@ -106,7 +109,7 @@ export function ResponsiveSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className={cn('gap-0', sheetClassName)} side="right" {...describedBy} onCloseAutoFocus={handleCloseAutoFocus} onOpenAutoFocus={onOpenAutoFocus}>
+      <SheetContent className={cn('gap-0', sheetClassName)} id={contentId} side="right" {...describedBy} onCloseAutoFocus={handleCloseAutoFocus} onOpenAutoFocus={onOpenAutoFocus}>
         <SheetHeader className={cn('pr-12', hideTitle && 'sr-only')}>
           <SheetTitle>{title}</SheetTitle>
           {description !== undefined && <SheetDescription>{description}</SheetDescription>}
