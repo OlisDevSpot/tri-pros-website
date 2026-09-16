@@ -4,13 +4,13 @@ import type { TradeSelection } from '@/shared/entities/meetings/schemas'
 import type { ScopeOrAddon } from '@/shared/services/providers/notion/lib/scopes/schema'
 import { CheckIcon } from 'lucide-react'
 import { useId, useMemo } from 'react'
-import { SPECIALTIES_COPY } from '@/features/meeting-flow/constants/specialties-copy'
 import { useTradeEdits } from '@/features/meeting-flow/hooks/use-trade-edits'
 import { diffIds, selectedItemIds } from '@/features/meeting-flow/lib/trade-selection'
 import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-group'
 
 interface WorkOptionListProps {
   entry: TradeSelection
+  label: string
   scopes: ScopeOrAddon[]
 }
 
@@ -18,7 +18,7 @@ interface WorkOptionListProps {
  * The "Mirror" option rows the owner picked (spec D8): full-width 44px rows, label left, checkbox square right,
  * pressed fill. A vertical `ToggleGroup`, so Radix owns pressed state, roving focus and `aria-pressed`. Never moves the stage.
  */
-export function WorkOptionList({ entry, scopes }: WorkOptionListProps) {
+export function WorkOptionList({ entry, label, scopes }: WorkOptionListProps) {
   const { toggleWork } = useTradeEdits()
   const labelId = useId()
   const selectedIds = useMemo(() => selectedItemIds(entry), [entry])
@@ -35,7 +35,7 @@ export function WorkOptionList({ entry, scopes }: WorkOptionListProps) {
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="font-sans text-xs font-semibold tracking-[0.06em] text-muted-foreground uppercase" id={labelId}>{SPECIALTIES_COPY.panel.work}</p>
+      <p className="font-sans text-xs font-semibold tracking-[0.06em] text-muted-foreground uppercase" id={labelId}>{label}</p>
       <ToggleGroup aria-labelledby={labelId} className="flex w-full flex-col gap-1" orientation="vertical" type="multiple" value={selectedIds} onValueChange={handleValueChange}>
         {scopes.map(scope => (
           <ToggleGroupItem

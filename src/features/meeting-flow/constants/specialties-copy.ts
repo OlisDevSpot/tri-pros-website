@@ -35,6 +35,7 @@ export const SPECIALTIES_COPY = {
     workSummary: (first: string, more: number) => `${first} +${more}`,
     onStage: 'On stage',
     work: 'Work',
+    addons: 'Add-ons',
     reasons: 'Reasons',
     editReasons: 'Edit reasons',
     doneEditing: 'Done',

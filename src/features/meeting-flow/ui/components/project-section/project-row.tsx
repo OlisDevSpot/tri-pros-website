@@ -72,7 +72,8 @@ function ProjectRowImpl({ entry, expanded, onStage, pairedOnProject, onExpandedC
         </Button>
       </CollapsibleTrigger>
       <AnimatedCollapsibleContent className="flex flex-col gap-4 border-t px-3 pt-3 pb-1" open={expanded}>
-        {group && group.scopes.length > 0 && <WorkOptionList entry={entry} scopes={group.scopes} />}
+        {group && group.scopes.length > 0 && <WorkOptionList entry={entry} label={SPECIALTIES_COPY.panel.work} scopes={group.scopes} />}
+        {group && group.addons.length > 0 && <WorkOptionList entry={entry} label={SPECIALTIES_COPY.panel.addons} scopes={group.addons} />}
         <OrphanItemChips entry={entry} items={orphanItems(entry, group)} />
         <ReasonPicker reasons={entry.painPoints} tradeId={entry.tradeId} />
         <TradeNoteField note={entry.notes ?? ''} tradeId={entry.tradeId} tradeName={tradeName} />

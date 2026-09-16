@@ -9,6 +9,9 @@ import { useTradeStage } from '@/features/meeting-flow/contexts/trade-stage-cont
 import { formatCount } from '@/features/meeting-flow/lib/format-count'
 import { itemCount, selectedTradeSelections } from '@/features/meeting-flow/lib/trade-selection'
 import { ProjectRow } from '@/features/meeting-flow/ui/components/project-section/project-row'
+import { ErrorState } from '@/shared/components/states/error-state'
+import { LoadingState } from '@/shared/components/states/loading-state'
+import { Button } from '@/shared/components/ui/button'
 
 /**
  * The panel's Project section (spec D3, D8). The row whose trade is on stage opens by itself; opening or
@@ -40,6 +43,19 @@ function ProjectSectionImpl() {
     const target = triggers[index + 1] ?? triggers[index - 1] ?? headingRef.current
     target?.focus()
   }, [])
+
+  if (catalog.isLoading) {
+    return <LoadingState description={SPECIALTIES_COPY.catalogLoading.description} title={SPECIALTIES_COPY.catalogLoading.title} />
+  }
+
+  if (catalog.error) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3">
+        <ErrorState description={SPECIALTIES_COPY.catalogError.description} title={SPECIALTIES_COPY.catalogError.title} />
+        <Button className="h-11" variant="outline" onClick={catalog.refetch}>{SPECIALTIES_COPY.retry}</Button>
+      </div>
+    )
+  }
 
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-4">
