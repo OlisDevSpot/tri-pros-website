@@ -1,7 +1,7 @@
 'use client'
 
 import type { TradeCategory } from '@/features/meeting-flow/constants/trade-categories'
-import { useCallback, useEffect, useState } from 'react'
+import { memo, useCallback, useEffect, useState } from 'react'
 import { TRADE_CATEGORY_LABELS } from '@/features/meeting-flow/constants/trade-categories'
 import { useTradeSelection, useTradeSheet } from '@/features/meeting-flow/contexts/trade-selection-context'
 import { findTradeSelection } from '@/features/meeting-flow/lib/trade-selection'
@@ -16,7 +16,7 @@ import { ResponsiveSheet } from '@/shared/components/dialogs/sheets/responsive-s
  * never remounts it. The last trade stays rendered while the primitive
  * animates closed, so the panel does not blank mid-exit.
  */
-export function TradeSheetHost() {
+function TradeSheetHostImpl() {
   const { openTradeId, focusScopeId, closeTrade } = useTradeSheet()
   const { selections, catalog } = useTradeSelection()
 
@@ -70,3 +70,5 @@ export function TradeSheetHost() {
     </ResponsiveSheet>
   )
 }
+
+export const TradeSheetHost = memo(TradeSheetHostImpl)

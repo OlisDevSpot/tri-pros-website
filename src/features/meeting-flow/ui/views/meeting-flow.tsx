@@ -4,11 +4,11 @@ import type { MeetingFlowContext, PanelSection, PresentationHandle } from '@/fea
 import type { MeetingOutcome } from '@/shared/constants/enums'
 import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { MeetingContext, MeetingFlowState } from '@/shared/entities/meetings/schemas'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { MutationObserver as QueryMutationObserver, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ChannelProvider } from 'ably/react'
 import { MotionConfig } from 'motion/react'
 import { useQueryState } from 'nuqs'
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { stepParser } from '@/features/meeting-flow/constants/query-parsers'
 import { DEFAULT_PANEL_SECTION } from '@/features/meeting-flow/constants/shell'
@@ -77,67 +77,64 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
     trpc.meetingsRouter.reads.getByIdWithJoins.queryOptions({ id: meetingId }),
   )
 
-  const invalidateMeetingQueries = useCallback(() => {
-    invalidateMeeting()
-  }, [invalidateMeeting])
+  const queryClient = useQueryClient()
 
-  const updateMeeting = useMutation(
-    trpc.meetingsRouter.crud.update.mutationOptions({
-      onSuccess: invalidateMeetingQueries,
-      onError: () => toast.error('Failed to save'),
-    }),
-  )
+  // Writes go through observers the view never subscribes to, so a save's pending and success
+  // states do not re-render the view or change `flowContext` (spec §4.4 step 2). The latest
+  // invalidation function is read through a ref so the observers are created once.
+  const invalidateRef = useRef(invalidateMeeting)
+  useLayoutEffect(() => {
+    invalidateRef.current = invalidateMeeting
+  })
 
-  const updateCustomerProfile = useMutation(
-    trpc.meetingFlowRouter.updateCustomerProfile.mutationOptions({
-      onSuccess: invalidateMeetingQueries,
-      onError: () => toast.error('Failed to save customer data'),
-    }),
-  )
+  const [meetingWriter] = useState(() => new QueryMutationObserver(queryClient, trpc.meetingsRouter.crud.update.mutationOptions({
+    onSuccess: () => invalidateRef.current(),
+    onError: () => toast.error('Failed to save'),
+  })))
+
+  const [customerProfileWriter] = useState(() => new QueryMutationObserver(queryClient, trpc.meetingFlowRouter.updateCustomerProfile.mutationOptions({
+    onSuccess: () => invalidateRef.current(),
+    onError: () => toast.error('Failed to save customer data'),
+  })))
 
   const meeting = meetingQuery.data
   const customer = meeting?.customer?.id ? meeting.customer : null
   const isReady = Boolean(meeting)
 
-  const handleFlowStateChange = useCallback((patch: Partial<MeetingFlowState>) => {
-    const current = meeting?.flowStateJSON ?? {}
-    updateMeeting.mutate({
-      id: meetingId,
-      data: { flowStateJSON: { ...current, ...patch } },
-    })
-  }, [meeting?.flowStateJSON, meetingId, updateMeeting])
+  // The cached meeting at call time, not the value from the last render: two writes close together
+  // merge onto the newest cached blob instead of a stale closure (follow-up 9, partly).
+  const readCachedMeeting = useCallback(
+    () => queryClient.getQueryData(trpc.meetingsRouter.reads.getByIdWithJoins.queryKey({ id: meetingId })),
+    [queryClient, trpc, meetingId],
+  )
 
+  const handleFlowStateChange = useCallback((patch: Partial<MeetingFlowState>) => {
+    const current = readCachedMeeting()?.flowStateJSON ?? {}
+    meetingWriter.mutate({ id: meetingId, data: { flowStateJSON: { ...current, ...patch } } }).catch(() => undefined)
+  }, [readCachedMeeting, meetingId, meetingWriter])
+
+  const customerId = customer?.id
   const handleCustomerProfileChange = useCallback((patch: Record<string, unknown>) => {
-    if (!customer?.id) {
+    if (!customerId) {
       return
     }
     // Flat column patch (epic #256/#259) — send only the changed field(s),
     // no read-modify-merge needed since each column IS the field.
-    updateCustomerProfile.mutate({
-      meetingId,
-      customerId: customer.id,
-      patch,
-    })
-  }, [customer, meetingId, updateCustomerProfile])
+    customerProfileWriter.mutate({ meetingId, customerId, patch }).catch(() => undefined)
+  }, [customerId, meetingId, customerProfileWriter])
 
   const handleContextChange = useCallback((patch: Record<string, unknown>) => {
-    const current = (meeting?.contextJSON ?? {}) as MeetingContext
-    updateMeeting.mutate({
-      id: meetingId,
-      data: { contextJSON: { ...current, ...patch } as MeetingContext },
-    })
-  }, [meeting?.contextJSON, meetingId, updateMeeting])
+    const current = (readCachedMeeting()?.contextJSON ?? {}) as MeetingContext
+    meetingWriter.mutate({ id: meetingId, data: { contextJSON: { ...current, ...patch } as MeetingContext } }).catch(() => undefined)
+  }, [readCachedMeeting, meetingId, meetingWriter])
 
   const handleOutcomeChange = useCallback((outcome: string) => {
     void changeOutcome(meetingId, outcome as MeetingOutcome)
   }, [changeOutcome, meetingId])
 
   const handleAgentNotesChange = useCallback((notes: string) => {
-    updateMeeting.mutate({
-      id: meetingId,
-      data: { agentNotes: notes },
-    })
-  }, [meetingId, updateMeeting])
+    meetingWriter.mutate({ id: meetingId, data: { agentNotes: notes } }).catch(() => undefined)
+  }, [meetingId, meetingWriter])
 
   const flowContext = useMemo<MeetingFlowContext | null>(() => {
     if (!meeting) {

@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import { SPECIALTIES_COPY } from '@/features/meeting-flow/constants/specialties-copy'
 import { useTradeSelection } from '@/features/meeting-flow/contexts/trade-selection-context'
 import { ProjectStrip } from '@/features/meeting-flow/ui/components/steps/specialties/project-strip'
@@ -15,7 +16,7 @@ import { Button } from '@/shared/components/ui/button'
  * `StartHint` is not rendered until lead panels exist (Task 9): without lead data it
  * would claim "Nothing requested on this lead." on every meeting.
  */
-export function SpecialtiesStep() {
+function SpecialtiesStepImpl() {
   const { catalog } = useTradeSelection()
 
   if (catalog.isLoading) {
@@ -39,3 +40,6 @@ export function SpecialtiesStep() {
     </div>
   )
 }
+
+/** No props: view re-renders (a save, the realtime echo) never reach the step; only its contexts do. */
+export const SpecialtiesStep = memo(SpecialtiesStepImpl)
