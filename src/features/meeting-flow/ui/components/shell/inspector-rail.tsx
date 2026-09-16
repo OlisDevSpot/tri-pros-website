@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 import type { PanelSection } from '@/features/meeting-flow/types'
-import { BrainIcon, CalendarClockIcon, ClipboardListIcon } from 'lucide-react'
+import { BrainIcon, CalendarClockIcon, ClipboardCheckIcon, ClipboardListIcon } from 'lucide-react'
 import { PANEL_ID } from '@/features/meeting-flow/constants/shell'
 import { PANEL_SECTION_LABELS, SHELL_COPY } from '@/features/meeting-flow/constants/shell-copy'
 import { Badge } from '@/shared/components/ui/badge'
@@ -11,6 +11,7 @@ import { cn } from '@/shared/lib/utils'
 
 interface InspectorRailProps {
   openSection: PanelSection | null
+  projectBadge: ReactNode
   contextFilledCount: number
   contextTotalCount: number
   personaHasData: boolean
@@ -22,9 +23,10 @@ interface InspectorRailProps {
  * above the panel (`z-30` over `z-20`) so the panel slides out from behind it.
  * Stays visible in present mode; the internal material is one click away.
  */
-export function InspectorRail({ openSection, contextFilledCount, contextTotalCount, personaHasData, onSelect }: InspectorRailProps) {
+export function InspectorRail({ openSection, projectBadge, contextFilledCount, contextTotalCount, personaHasData, onSelect }: InspectorRailProps) {
   const items: { section: PanelSection, icon: ReactNode, badge?: ReactNode, accent?: boolean }[] = [
     { section: 'meeting', icon: <CalendarClockIcon className="size-5" /> },
+    { section: 'project', icon: <ClipboardCheckIcon className="size-5" />, badge: projectBadge },
     {
       section: 'context',
       icon: <ClipboardListIcon className="size-5" />,
@@ -43,7 +45,7 @@ export function InspectorRail({ openSection, contextFilledCount, contextTotalCou
   return (
     <aside
       aria-label={SHELL_COPY.railLabel}
-      className="z-30 hidden w-12 shrink-0 flex-col items-center gap-1 border-l border-border/40 bg-card py-2 lg:flex"
+      className="z-30 hidden w-12 shrink-0 flex-col items-center gap-2 border-l border-border/40 bg-card py-2 lg:flex"
     >
       {items.map(({ section, icon, badge, accent }) => {
         const isOpen = openSection === section

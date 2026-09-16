@@ -1,19 +1,20 @@
 'use client'
 
 import type { SelectionItem } from '@/features/meeting-flow/types'
+import type { TradeSelection } from '@/shared/entities/meetings/schemas'
 import { XIcon } from 'lucide-react'
 import { SPECIALTIES_COPY } from '@/features/meeting-flow/constants/specialties-copy'
-import { useTradeActions } from '@/features/meeting-flow/contexts/trade-actions-context'
+import { useTradeEdits } from '@/features/meeting-flow/hooks/use-trade-edits'
 import { Button } from '@/shared/components/ui/button'
 
 interface OrphanItemChipsProps {
-  tradeId: string
+  entry: TradeSelection
   items: SelectionItem[]
 }
 
 /** Stored items the current catalog no longer lists for this trade. Shown by stored label, removable, never dropped silently. */
-export function OrphanItemChips({ tradeId, items }: OrphanItemChipsProps) {
-  const { toggleItem } = useTradeActions()
+export function OrphanItemChips({ entry, items }: OrphanItemChipsProps) {
+  const { toggleWork } = useTradeEdits()
 
   if (items.length === 0) {
     return null
@@ -21,11 +22,11 @@ export function OrphanItemChips({ tradeId, items }: OrphanItemChipsProps) {
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-sm text-muted-foreground">{SPECIALTIES_COPY.sheet.orphanHint}</p>
+      <p className="text-[13px] text-muted-foreground">{SPECIALTIES_COPY.panel.orphanHint}</p>
       <ul className="flex flex-wrap gap-2">
         {items.map(item => (
           <li key={item.id}>
-            <Button aria-label={SPECIALTIES_COPY.sheet.removeItem(item.label)} className="h-11" size="sm" variant="outline" onClick={() => toggleItem(tradeId, item)}>
+            <Button aria-label={SPECIALTIES_COPY.panel.removeItem(item.label)} className="h-11 font-normal" variant="outline" onClick={() => toggleWork(entry.tradeId, entry, item)}>
               {item.label}
               <XIcon aria-hidden className="size-3.5" />
             </Button>

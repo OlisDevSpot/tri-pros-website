@@ -84,7 +84,7 @@ export type MeetingStepLayout = 'page' | 'presentation' | 'split'
 // ── Shell (top bar, inspector panel, keys) ─────────────────────────────────
 
 /** Which inspector-panel section is open; the panel is closed when the view holds `null`. */
-export type PanelSection = 'meeting' | 'context' | 'persona'
+export type PanelSection = 'meeting' | 'project' | 'context' | 'persona'
 
 /** Imperative surface a presentation-layout step exposes to the shell's key map. */
 export interface PresentationHandle {

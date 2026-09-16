@@ -25,6 +25,7 @@ export const SHELL_COPY = {
 
 export const PANEL_SECTION_LABELS: Record<PanelSection, string> = {
   meeting: 'Meeting',
+  project: 'Project',
   context: 'Context',
   persona: 'Persona',
 }

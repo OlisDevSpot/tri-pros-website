@@ -15,7 +15,7 @@ interface TradeNoteFieldProps {
 /**
  * Typing edits a local draft only; the model (and so the meeting write) sees the note on
  * blur or when the field unmounts, and only when the draft differs from the stored note.
- * The provider outlives the sheet, so the unmount commit survives Escape and switching trades.
+ * The provider outlives the panel, so the unmount commit survives closing the row or the panel.
  * A note changed outside the field (a server re-seed) replaces the draft.
  */
 export function TradeNoteField({ tradeId, tradeName, note }: TradeNoteFieldProps) {
@@ -52,15 +52,15 @@ export function TradeNoteField({ tradeId, tradeName, note }: TradeNoteFieldProps
   }
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <Label className="text-xs font-semibold tracking-wide text-muted-foreground uppercase" htmlFor={id}>
-        {SPECIALTIES_COPY.sheet.note}
+    <div className="flex flex-col gap-2">
+      <Label className="font-sans text-xs font-semibold tracking-[0.06em] text-muted-foreground uppercase" htmlFor={id}>
+        {SPECIALTIES_COPY.panel.note}
       </Label>
       <Textarea
+        className="min-h-11 resize-none text-base motion-safe:transition-[min-height] motion-safe:duration-200 focus-visible:min-h-26"
         id={id}
-        className="min-h-20 resize-none text-base"
-        placeholder={SPECIALTIES_COPY.sheet.notePlaceholder(tradeName)}
-        rows={2}
+        placeholder={SPECIALTIES_COPY.panel.notePlaceholder(tradeName)}
+        rows={1}
         value={draft}
         onBlur={handleBlur}
         onChange={event => setDraft(event.target.value)}

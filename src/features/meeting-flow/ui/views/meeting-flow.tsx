@@ -21,6 +21,8 @@ import { computeContextFilledCount, CONTEXT_TOTAL_FIELDS } from '@/features/meet
 import { toPresentationAgent } from '@/features/meeting-flow/lib/to-presentation-agent'
 import { ContextPanel } from '@/features/meeting-flow/ui/components/context-panel'
 import { PersonaProfilePanel } from '@/features/meeting-flow/ui/components/persona-profile-panel'
+import { ProjectCountBadge } from '@/features/meeting-flow/ui/components/project-section/project-count-badge'
+import { ProjectSection } from '@/features/meeting-flow/ui/components/project-section/project-section'
 import { InspectorRail } from '@/features/meeting-flow/ui/components/shell/inspector-rail'
 import { MeetingPanel } from '@/features/meeting-flow/ui/components/shell/meeting-panel'
 import { MeetingSection } from '@/features/meeting-flow/ui/components/shell/meeting-section'
@@ -345,6 +347,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
               {panel === 'meeting' && (
                 <MeetingSection meeting={meeting} onReschedule={() => void reschedule(meetingId)} />
               )}
+              {panel === 'project' && <ProjectSection />}
               {panel === 'context' && (
                 <ContextPanel
                   customer={customer as CustomerWithProfile | null}
@@ -363,6 +366,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
               contextTotalCount={CONTEXT_TOTAL_FIELDS}
               openSection={panel}
               personaHasData={hasCustomerProfileData(customer)}
+              projectBadge={<ProjectCountBadge />}
               onSelect={selectFromRail}
             />
           </div>

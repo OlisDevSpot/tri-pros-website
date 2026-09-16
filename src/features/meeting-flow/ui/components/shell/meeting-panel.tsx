@@ -41,7 +41,7 @@ export function MeetingPanel({ openSection, headerRef, onSelect, onClose, childr
       inert={!isOpen}
     >
       <div ref={headerRef} className="flex items-center gap-1 border-b border-border/40 px-2 py-2 outline-none" tabIndex={-1}>
-        <div className="flex min-w-0 flex-1 items-center gap-0.5">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
           {PANEL_SECTIONS.map((section) => {
             const isCurrent = openSection === section
 
