@@ -3,18 +3,16 @@
 import { memo } from 'react'
 import { SPECIALTIES_COPY } from '@/features/meeting-flow/constants/specialties-copy'
 import { useTradeCatalogContext } from '@/features/meeting-flow/contexts/trade-catalog-context'
-import { ProjectStrip } from '@/features/meeting-flow/ui/components/steps/specialties/project-strip'
-import { StepIntro } from '@/features/meeting-flow/ui/components/steps/specialties/step-intro'
-import { TradeCatalog } from '@/features/meeting-flow/ui/components/steps/specialties/trade-catalog'
+import { Showcase } from '@/features/meeting-flow/ui/components/steps/specialties/showcase'
+import { WorkColumn } from '@/features/meeting-flow/ui/components/steps/specialties/work-column'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { Button } from '@/shared/components/ui/button'
 
 /**
- * Step 2 of the meeting flow. Composition only: the model and the open trade
- * live in `TradeSelectionProvider`; the sheet is mounted by the view.
- * `StartHint` is not rendered until lead panels exist (Task 9): without lead data it
- * would claim "Nothing requested on this lead." on every meeting.
+ * Step 2, `split` layout: the step owns two scrollers inside `StepRegion`. A container query on the stage's
+ * own width (not the viewport, so the CRM sidebar counts): two columns at 896px (`@4xl`) and wider, a pinned
+ * photo band above the work column below. No props, so view re-renders never reach it.
  */
 function SpecialtiesStepImpl() {
   const { catalog } = useTradeCatalogContext()
@@ -25,21 +23,21 @@ function SpecialtiesStepImpl() {
 
   if (catalog.error) {
     return (
-      <div className="flex flex-col items-center gap-3">
+      <div className="flex h-full flex-col items-center justify-center gap-3">
         <ErrorState description={SPECIALTIES_COPY.catalogError.description} title={SPECIALTIES_COPY.catalogError.title} />
-        <Button size="sm" variant="outline" onClick={catalog.refetch}>{SPECIALTIES_COPY.retry}</Button>
+        <Button className="h-11" variant="outline" onClick={catalog.refetch}>{SPECIALTIES_COPY.retry}</Button>
       </div>
     )
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
-      <StepIntro hasLead={false} />
-      <ProjectStrip />
-      <TradeCatalog hasLead={false} />
+    <div className="@container/specialties h-full">
+      <div className="grid h-full grid-rows-[42%_minmax(0,1fr)] @4xl/specialties:grid-cols-[minmax(0,1.45fr)_minmax(420px,1fr)] @4xl/specialties:grid-rows-1">
+        <Showcase />
+        <WorkColumn />
+      </div>
     </div>
   )
 }
 
-/** No props: view re-renders (a save, the realtime echo) never reach the step; only its contexts do. */
 export const SpecialtiesStep = memo(SpecialtiesStepImpl)

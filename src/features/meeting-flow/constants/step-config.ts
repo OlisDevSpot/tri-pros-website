@@ -24,7 +24,7 @@ export const MEETING_STEPS: MeetingStepConfig[] = [
     title: 'Which Specialties Matter to You',
     shortLabel: 'Specialties',
     isCustomerFacing: true,
-    layout: 'page',
+    layout: 'split',
   },
   {
     id: 'portfolio',

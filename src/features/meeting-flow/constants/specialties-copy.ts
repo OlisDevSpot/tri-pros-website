@@ -1,7 +1,5 @@
 export const SPECIALTIES_COPY = {
   heading: 'What areas of your home matter most?',
-  introWithLead: 'Start with what they called about. Add anything the walk-through turned up.',
-  introNoLead: 'Start with what made them call. Every trade opens its own sheet.',
   catalogLoading: { title: 'Loading trades…', description: 'Fetching the catalog…' },
   catalogError: { title: 'The catalog could not be loaded', description: 'Your selections are kept. Try again.' },
   retry: 'Retry',
@@ -54,10 +52,6 @@ export const SPECIALTIES_COPY = {
     tradeRemoved: (tradeName: string) => `${tradeName} is off the project`,
     action: 'Undo',
   },
-  project: {
-    eyebrow: 'Project',
-    empty: 'Nothing picked yet. Open a trade to start.',
-  },
   start: {
     title: 'Nothing requested on this lead.',
     body: 'Pick the trade that made them call. Each one opens its sheet.',
@@ -65,15 +59,6 @@ export const SPECIALTIES_COPY = {
   lead: {
     eyebrow: 'You called about',
     customize: 'Customize',
-  },
-  catalog: {
-    headingWithLead: 'Anything else while we’re here?',
-    headingNoLead: 'Every trade',
-    hint: 'Tap a trade to open its sheet.',
-    searchLabel: 'Filter trades',
-    searchPlaceholder: 'Type to filter…',
-    noMatches: 'No trades match.',
-    scopesToDefine: 'Scopes to define',
   },
   sheet: {
     notOnProject: 'Not on the project yet',

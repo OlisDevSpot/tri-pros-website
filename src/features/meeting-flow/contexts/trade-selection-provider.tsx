@@ -13,6 +13,7 @@ import { TradeSelectionsContext } from '@/features/meeting-flow/contexts/trade-s
 import { TradeStageContext } from '@/features/meeting-flow/contexts/trade-stage-context'
 import { useShowcaseProjects } from '@/features/meeting-flow/hooks/use-showcase-projects'
 import { useTradeCatalog } from '@/features/meeting-flow/hooks/use-trade-catalog'
+import { resolveStageTradeId } from '@/features/meeting-flow/lib/resolve-stage-trade'
 import {
   canonicalSelectionsJson,
   findTradeSelection,
@@ -158,13 +159,15 @@ export function TradeSelectionProvider({ flowContext, children }: TradeSelection
     setSelections(current => withTradeRestored(current, entry))
   }, [])
 
-  const [stageTradeId, setStageTradeId] = useQueryState('trade', tradeStageParser)
+  const [urlTradeId, setUrlTradeId] = useQueryState('trade', tradeStageParser)
   const [stageMediaKey, setStageMediaKey] = useState<string | null>(null)
+  // A string: the memoized stage value below keeps its identity across toggles unless the resolved trade changes.
+  const stageTradeId = resolveStageTradeId(urlTradeId, selections, catalog)
 
   const showTrade = useCallback((tradeId: string | null) => {
     setStageMediaKey(null)
-    void setStageTradeId(tradeId)
-  }, [setStageTradeId])
+    void setUrlTradeId(tradeId)
+  }, [setUrlTradeId])
 
   const showMedia = useCallback((key: string | null) => {
     setStageMediaKey(key)

@@ -6,12 +6,6 @@ interface TradeRef {
   name: string
 }
 
-export interface SelectionCounts {
-  scopes: number
-  addons: number
-  reasons: number
-}
-
 export function findTradeSelection(selections: TradeSelection[], tradeId: string): TradeSelection | undefined {
   return selections.find(s => s.tradeId === tradeId)
 }
@@ -31,11 +25,6 @@ export function selectedItemIds(selection: TradeSelection | undefined): string[]
 
 export function selectedTradeSelections(selections: TradeSelection[]): TradeSelection[] {
   return selections.filter(s => itemCount(s) > 0)
-}
-
-/** An entry exists for this trade, whether or not it has items. Reasons or a note alone still make an entry. */
-export function hasStoredEntry(selections: TradeSelection[], tradeId: string): boolean {
-  return findTradeSelection(selections, tradeId) !== undefined
 }
 
 function hasContent(selection: TradeSelection): boolean {
@@ -116,16 +105,6 @@ export function diffIds(previous: readonly string[], next: readonly string[]): {
     added: next.filter(id => !before.has(id)),
     removed: previous.filter(id => !after.has(id)),
   }
-}
-
-/** Scopes versus add-ons are told apart by the catalog group; items the catalog no longer has count as scopes. */
-export function countSelection(selection: TradeSelection | undefined, group: TradeScopeGroup | undefined): SelectionCounts {
-  if (!selection) {
-    return { scopes: 0, addons: 0, reasons: 0 }
-  }
-  const addonIds = new Set(group?.addons.map(a => a.id) ?? [])
-  const addons = selection.selectedScopes.filter(i => addonIds.has(i.id)).length
-  return { scopes: selection.selectedScopes.length - addons, addons, reasons: selection.painPoints.length }
 }
 
 /** Stored items that the current catalog does not list for this trade. Shown, never dropped silently. */

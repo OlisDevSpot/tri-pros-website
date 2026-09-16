@@ -78,8 +78,8 @@ export type MeetingStepId
 
 // ── Presentation (scroll-snap step layout) ─────────────────────────────────
 
-/** `page` = padded scrolling document; `presentation` = the step owns a snapping scroller. */
-export type MeetingStepLayout = 'page' | 'presentation'
+/** `page` = padded scrolling document; `presentation` = the step owns a snapping scroller; `split` = the step owns two independent scrollers (showcase + work column). */
+export type MeetingStepLayout = 'page' | 'presentation' | 'split'
 
 // ── Shell (top bar, inspector panel, keys) ─────────────────────────────────
 
