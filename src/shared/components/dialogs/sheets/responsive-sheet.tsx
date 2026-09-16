@@ -28,8 +28,12 @@ interface ResponsiveSheetProps {
   description?: string
   /** Pinned below the scrolling body. */
   footer?: ReactNode
-  /** Applied to both branches, so prefix width classes with `lg:` (for example `lg:max-w-xl`) or they also narrow the bottom Drawer. */
-  contentClassName?: string
+  /** Classes for the right-side Sheet (lg and up). */
+  sheetClassName?: string
+  /** Classes for the bottom Drawer (below lg), for example a height cap. */
+  drawerClassName?: string
+  /** The title stays for assistive tech but is visually hidden, for content that brings its own header. */
+  hideTitle?: boolean
   /** Radix `onOpenAutoFocus`. Call `event.preventDefault()` to place focus yourself. */
   onOpenAutoFocus?: (event: Event) => void
   children: ReactNode
@@ -56,7 +60,9 @@ export function ResponsiveSheet({
   title,
   description,
   footer,
-  contentClassName,
+  sheetClassName,
+  drawerClassName,
+  hideTitle,
   onOpenAutoFocus,
   children,
 }: ResponsiveSheetProps) {
@@ -84,8 +90,8 @@ export function ResponsiveSheet({
   if (isBelowLg) {
     return (
       <Drawer direction="bottom" open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className={contentClassName} {...describedBy} onCloseAutoFocus={handleCloseAutoFocus} onOpenAutoFocus={onOpenAutoFocus}>
-          <DrawerHeader className="group-data-[vaul-drawer-direction=bottom]/drawer-content:text-left">
+        <DrawerContent className={drawerClassName} {...describedBy} onCloseAutoFocus={handleCloseAutoFocus} onOpenAutoFocus={onOpenAutoFocus}>
+          <DrawerHeader className={cn('group-data-[vaul-drawer-direction=bottom]/drawer-content:text-left', hideTitle && 'sr-only')}>
             <DrawerTitle>{title}</DrawerTitle>
             {description !== undefined && <DrawerDescription>{description}</DrawerDescription>}
           </DrawerHeader>
@@ -100,8 +106,8 @@ export function ResponsiveSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className={cn('gap-0', contentClassName)} side="right" {...describedBy} onCloseAutoFocus={handleCloseAutoFocus} onOpenAutoFocus={onOpenAutoFocus}>
-        <SheetHeader className="pr-12">
+      <SheetContent className={cn('gap-0', sheetClassName)} side="right" {...describedBy} onCloseAutoFocus={handleCloseAutoFocus} onOpenAutoFocus={onOpenAutoFocus}>
+        <SheetHeader className={cn('pr-12', hideTitle && 'sr-only')}>
           <SheetTitle>{title}</SheetTitle>
           {description !== undefined && <SheetDescription>{description}</SheetDescription>}
         </SheetHeader>

@@ -2,10 +2,11 @@
 
 import type { ReactNode, RefObject } from 'react'
 import type { PanelSection } from '@/features/meeting-flow/types'
-import { XIcon } from 'lucide-react'
-import { PANEL_ID, PANEL_SECTIONS } from '@/features/meeting-flow/constants/shell'
+import { PANEL_ID } from '@/features/meeting-flow/constants/shell'
 import { PANEL_SECTION_LABELS, SHELL_COPY } from '@/features/meeting-flow/constants/shell-copy'
-import { Button } from '@/shared/components/ui/button'
+import { MeetingPanelHeader } from '@/features/meeting-flow/ui/components/shell/meeting-panel-header'
+import { ResponsiveSheet } from '@/shared/components/dialogs/sheets/responsive-sheet'
+import { useIsBelowLg } from '@/shared/hooks/use-is-below-lg'
 import { cn } from '@/shared/lib/utils'
 
 interface MeetingPanelProps {
@@ -18,15 +19,35 @@ interface MeetingPanelProps {
 }
 
 /**
- * The shell-owned inspector panel: fixed to the stage's right edge, slides in
- * over the stage, never a Sheet. Non-modal on purpose (no focus trap, no scroll
- * lock): the stage stays usable while it is open. Closed, it is translated out,
- * clipped by the stage row, and `inert`, so nothing inside is focusable or announced.
- * On lg+ it sits under the rail (`right-12`, `z-20` under `z-30`) and slides out
- * from behind it.
+ * lg+: the shell-owned overlay (unchanged). Below lg: the same header and
+ * sections inside `ResponsiveSheet` (bottom drawer, 60% height) so the stage
+ * band stays visible (spec D5, §4.1).
  */
 export function MeetingPanel({ openSection, headerRef, onSelect, onClose, children }: MeetingPanelProps) {
   const isOpen = openSection !== null
+  const isBelowLg = useIsBelowLg()
+
+  if (isBelowLg) {
+    return (
+      <ResponsiveSheet
+        drawerClassName="h-[60dvh] max-h-[60dvh]"
+        hideTitle
+        open={isOpen}
+        title={SHELL_COPY.panelLabel}
+        onOpenChange={(open) => {
+          if (!open) {
+            onClose()
+          }
+        }}
+      >
+        <MeetingPanelHeader className="sticky top-0 z-10 -mx-4 bg-background px-3" headerRef={headerRef} openSection={openSection} onSelect={onSelect} />
+        <div className="py-3">
+          {openSection && <h2 className="sr-only">{PANEL_SECTION_LABELS[openSection]}</h2>}
+          {children}
+        </div>
+      </ResponsiveSheet>
+    )
+  }
 
   return (
     <aside
@@ -40,35 +61,7 @@ export function MeetingPanel({ openSection, headerRef, onSelect, onClose, childr
       id={PANEL_ID}
       inert={!isOpen}
     >
-      <div ref={headerRef} className="flex items-center gap-1 border-b border-border/40 px-2 py-2 outline-none" tabIndex={-1}>
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          {PANEL_SECTIONS.map((section) => {
-            const isCurrent = openSection === section
-
-            return (
-              <Button
-                key={section}
-                aria-pressed={isCurrent}
-                className={cn(
-                  'h-11 flex-1 text-xs font-semibold motion-safe:transition-colors',
-                  isCurrent
-                    ? 'bg-muted text-foreground hover:bg-muted hover:text-foreground'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                )}
-                size="sm"
-                variant="ghost"
-                onClick={() => onSelect(section)}
-              >
-                {PANEL_SECTION_LABELS[section]}
-              </Button>
-            )
-          })}
-        </div>
-        <Button className="size-11 shrink-0" size="icon" title={SHELL_COPY.closePanel} variant="ghost" onClick={onClose}>
-          <XIcon className="size-5" />
-          <span className="sr-only">{SHELL_COPY.closePanel}</span>
-        </Button>
-      </div>
+      <MeetingPanelHeader headerRef={headerRef} openSection={openSection} onClose={onClose} onSelect={onSelect} />
       <div className="overflow-y-auto overscroll-contain px-4 py-3">
         {openSection && <h2 className="sr-only">{PANEL_SECTION_LABELS[openSection]}</h2>}
         {children}
