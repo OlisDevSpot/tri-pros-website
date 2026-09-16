@@ -26,7 +26,7 @@ export function OnProjectTrades() {
                 <li key={entry.tradeId} className="shrink-0">
                   <Button
                     aria-current={entry.tradeId === stageTradeId ? 'true' : undefined}
-                    className="h-12 gap-2 pr-3 pl-1 aria-[current=true]:border-primary aria-[current=true]:outline-2 aria-[current=true]:-outline-offset-2 aria-[current=true]:outline-primary"
+                    className="h-12 gap-2 pr-3 pl-1 aria-[current=true]:border-primary aria-[current=true]:outline-2 aria-[current=true]:outline-solid aria-[current=true]:-outline-offset-2 aria-[current=true]:outline-primary"
                     variant="outline"
                     onClick={() => showTrade(entry.tradeId)}
                   >

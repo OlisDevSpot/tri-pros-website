@@ -60,7 +60,7 @@ export function WorkCardGroup({ trade }: WorkCardGroupProps) {
       <p className="text-[13px] text-muted-foreground">{`${formatCount(scopes.length, SPECIALTIES_COPY.units.kind)} · ${SPECIALTIES_COPY.work.tapToAdd}`}</p>
       <ToggleGroup
         aria-label={SPECIALTIES_COPY.work.groupLabel(trade.name)}
-        className="grid w-full grid-cols-2 gap-3 @min-[40rem]/specialties:grid-cols-3 @4xl/specialties:grid-cols-2"
+        className="grid w-full grid-cols-2 items-stretch gap-3 @min-[40rem]/specialties:grid-cols-3 @4xl/specialties:grid-cols-2"
         type="multiple"
         value={selectedIds}
         onValueChange={handleValueChange}

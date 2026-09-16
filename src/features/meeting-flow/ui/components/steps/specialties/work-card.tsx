@@ -23,7 +23,7 @@ interface WorkCardProps {
 function WorkCardImpl({ scopeId, name, media }: WorkCardProps) {
   return (
     <ToggleGroupItem
-      className="group relative h-auto w-full flex-none flex-col items-stretch justify-start gap-0 overflow-hidden rounded-md border border-border bg-card p-0 text-left whitespace-normal transition-[border-color,outline-color] duration-200 first:rounded-md last:rounded-md hover:bg-card hover:text-foreground data-[state=on]:border-primary data-[state=on]:bg-card data-[state=on]:outline-2 data-[state=on]:-outline-offset-2 data-[state=on]:outline-primary"
+      className="group relative h-auto w-full flex-none flex-col items-stretch justify-start gap-0 overflow-hidden rounded-md border border-border bg-card p-0 text-left whitespace-normal transition-[border-color,outline-color] duration-200 first:rounded-md last:rounded-md hover:bg-card hover:text-foreground data-[state=on]:border-primary data-[state=on]:bg-card data-[state=on]:outline-2 data-[state=on]:outline-solid data-[state=on]:-outline-offset-2 data-[state=on]:outline-primary"
       data-scope-id={scopeId}
       value={scopeId}
     >
