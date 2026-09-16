@@ -16,11 +16,11 @@ export function ShowcaseFallback({ scopeNames }: ShowcaseFallbackProps) {
       <Decor className="z-0" rings={9} shape="arc" />
       <div className="relative z-10 hidden max-w-[56ch] flex-col gap-2 @4xl/specialties:flex">
         <p className="font-sans text-xs font-semibold tracking-[0.06em] text-(--presentation-accent) uppercase">{SPECIALTIES_COPY.showcase.included}</p>
-        <ul className="flex flex-wrap gap-x-5 gap-y-1 text-base font-semibold text-white">
-          {scopeNames.length > 0
-            ? scopeNames.map(name => <li key={name}>{name}</li>)
-            : <li>{SPECIALTIES_COPY.showcase.scopesToDefine}</li>}
-        </ul>
+        {scopeNames.length > 0 && (
+          <ul className="flex flex-wrap gap-x-5 gap-y-1 text-base font-semibold text-white">
+            {scopeNames.map(name => <li key={name}>{name}</li>)}
+          </ul>
+        )}
       </div>
     </div>
   )

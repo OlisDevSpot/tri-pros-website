@@ -8,7 +8,6 @@ export const SPECIALTIES_COPY = {
     projectCaptionLead: 'Tri Pros project',
     ourProjects: 'Our projects',
     included: 'What\'s included',
-    scopesToDefine: 'Scopes to define',
   },
   work: {
     regionLabel: 'Choose the work',

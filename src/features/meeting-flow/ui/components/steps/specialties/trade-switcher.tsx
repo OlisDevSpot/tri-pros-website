@@ -60,13 +60,13 @@ export function TradeSwitcher({ trade }: TradeSwitcherProps) {
                   const kinds = catalog.scopesByTrade.get(option.id)?.scopes.length ?? 0
                   const meta = isTradeSelected(selections, option.id)
                     ? SPECIALTIES_COPY.work.onYourProject
-                    : kinds > 0 ? formatCount(kinds, SPECIALTIES_COPY.units.kind) : SPECIALTIES_COPY.showcase.scopesToDefine
+                    : kinds > 0 ? formatCount(kinds, SPECIALTIES_COPY.units.kind) : null
                   return (
                     <CommandItem key={option.id} className="min-h-13 gap-3" value={`${option.name} ${option.id}`} onSelect={() => handleSelect(option.id)}>
                       <TradeThumb trade={option} />
                       <span className="flex min-w-0 flex-1 flex-col">
                         <span className="text-sm font-semibold">{option.name}</span>
-                        <span className="text-[13px] text-muted-foreground">{meta}</span>
+                        {meta && <span className="text-[13px] text-muted-foreground">{meta}</span>}
                       </span>
                       {option.id === trade.id && <CheckIcon aria-hidden className="size-4" />}
                     </CommandItem>

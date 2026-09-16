@@ -8,7 +8,7 @@ import { useTradeSelections } from '@/features/meeting-flow/contexts/trade-selec
 import { useTradeStage } from '@/features/meeting-flow/contexts/trade-stage-context'
 import { useTradeEdits } from '@/features/meeting-flow/hooks/use-trade-edits'
 import { formatCount } from '@/features/meeting-flow/lib/format-count'
-import { selectScopeMedia } from '@/features/meeting-flow/lib/select-scope-media'
+import { selectWorkCardMedia } from '@/features/meeting-flow/lib/select-work-card-media'
 import { diffIds, findTradeSelection, selectedItemIds } from '@/features/meeting-flow/lib/trade-selection'
 import { WorkCard } from '@/features/meeting-flow/ui/components/steps/specialties/work-card'
 import { ToggleGroup } from '@/shared/components/ui/toggle-group'
@@ -32,8 +32,8 @@ export function WorkCardGroup({ trade }: WorkCardGroupProps) {
   const entry = findTradeSelection(selections, trade.id)
   const selectedIds = useMemo(() => selectedItemIds(entry), [entry])
   const mediaByScope = useMemo(
-    () => new Map((scopes ?? []).map(scope => [scope.id, selectScopeMedia(scope, projects)])),
-    [scopes, projects],
+    () => selectWorkCardMedia(trade, scopes ?? [], projects),
+    [trade, scopes, projects],
   )
 
   if (!scopes || scopes.length === 0) {
