@@ -1,6 +1,6 @@
 'use client'
 
-import { useChannel, useConnectionStateListener } from 'ably/react'
+import { useAbly, useChannel, useConnectionStateListener } from 'ably/react'
 import { useCallback, useState } from 'react'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 
@@ -10,7 +10,8 @@ interface MeetingSyncStatus {
 
 export function useMeetingSync(meetingId: string): MeetingSyncStatus {
   const { invalidateMeeting } = useInvalidation()
-  const [connectionStatus, setConnectionStatus] = useState('connecting')
+  const ably = useAbly()
+  const [connectionStatus, setConnectionStatus] = useState<string>(() => ably.connection.state)
 
   useConnectionStateListener((stateChange) => {
     setConnectionStatus(stateChange.current)
