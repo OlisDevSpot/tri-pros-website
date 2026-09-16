@@ -1,5 +1,6 @@
 import type { CalendarEvent } from '@/shared/components/calendar/types'
 import type { MeetingOutcome, MeetingType } from '@/shared/constants/enums'
+import type { MediaFile } from '@/shared/db/schema'
 import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { MeetingFlowState, TradeSelection } from '@/shared/entities/meetings/schemas'
 import type { ScopeOrAddon } from '@/shared/services/providers/notion/lib/scopes/schema'
@@ -304,4 +305,65 @@ export interface TradePhoto {
 export interface TradePairing {
   pairedSlug: string
   reason: string
+}
+
+/** A portfolio project reduced to what the showcase shows. */
+export interface ShowcaseProject {
+  id: string
+  city: string | null
+  state: string | null
+  duration: string | null
+  heroImage: MediaFile
+  scopeIds: string[]
+}
+
+export interface ShowcaseProjectIndex {
+  /** Projects tagged with any of the trade's scopes, most matching scopes first. */
+  byTrade: ReadonlyMap<string, ShowcaseProject[]>
+  /** Projects tagged with the scope, in portfolio order. */
+  byScope: ReadonlyMap<string, ShowcaseProject[]>
+}
+
+/** One photo the showcase can put on stage. `key` is stable: a curated photo's `src`, or `project:<id>`. */
+export type ShowcaseMedia
+  = | { key: string, kind: 'project', file: MediaFile, caption: string }
+    | { key: string, kind: 'curated', photo: TradePhoto, caption: string }
+
+export interface TradeBenefit {
+  headline: string
+  body: string
+}
+
+/** Stable once both reads have loaded. */
+export interface TradeCatalogContextValue {
+  catalog: TradeCatalog
+  projects: ShowcaseProjectIndex
+}
+
+/** Stable callbacks; they never change on a toggle. */
+export interface TradeActions {
+  /** Adds the item when absent, removes it when present. Creates the trade entry on first add. */
+  toggleItem: (tradeId: string, item: SelectionItem) => void
+  toggleReason: (tradeId: string, reason: string) => void
+  setNote: (tradeId: string, note: string) => void
+  /** Drops the trade entry entirely: items, reasons, and note. */
+  removeTrade: (tradeId: string) => void
+  /** Puts a removed entry back (Undo), replacing any entry for the same trade. */
+  restoreTrade: (entry: TradeSelection) => void
+}
+
+export interface TradeStageState {
+  /** The trade on stage, resolved: `?trade=` when it names a catalog trade, else the first on-project trade, else the first catalog trade. */
+  stageTradeId: string | null
+  /** The photo on stage; null means the stage trade's first photo. Reset whenever the stage trade changes. */
+  stageMediaKey: string | null
+  /** `null` clears the explicit choice so the stage falls back to the default. */
+  showTrade: (tradeId: string | null) => void
+  showMedia: (key: string | null) => void
+}
+
+export interface SwitcherGroup {
+  key: string
+  label: string
+  trades: Trade[]
 }

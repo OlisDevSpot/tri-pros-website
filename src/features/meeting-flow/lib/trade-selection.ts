@@ -136,3 +136,13 @@ export function orphanItems(selection: TradeSelection | undefined, group: TradeS
   const known = new Set([...(group?.scopes ?? []), ...(group?.addons ?? [])].map(entry => entry.id))
   return selection.selectedScopes.filter(item => !known.has(item.id))
 }
+
+/** Puts an entry back (Undo), replacing any entry for the same trade, at the end of the list. */
+export function withTradeRestored(selections: TradeSelection[], entry: TradeSelection): TradeSelection[] {
+  return [...withoutTrade(selections, entry.tradeId), entry]
+}
+
+/** True when `itemId` is the entry's only item, so removing it empties the trade (spec §4.2.3). */
+export function isOnlyItem(entry: TradeSelection | undefined, itemId: string): boolean {
+  return entry?.selectedScopes.length === 1 && entry.selectedScopes[0]?.id === itemId
+}
