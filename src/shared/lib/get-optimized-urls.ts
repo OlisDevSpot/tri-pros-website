@@ -1,4 +1,4 @@
-import { VARIANT_REGISTRY, VARIANT_WIDTH } from '@/shared/modules/media/core/lib/image-variants'
+import { FALLBACK_VARIANTS, VARIANT_WIDTH } from '@/shared/modules/media/core/lib/image-variants'
 import { R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
 
 const DEFAULT_R2_DOMAIN = R2_PUBLIC_DOMAINS['tpr-media'] ?? ''
@@ -30,7 +30,7 @@ function resolveVariants(file: MediaFileInput): string[] {
   // null/undefined = a row that predates variant tracking → assume the frozen
   // fallback set. [] = explicitly no variants (blur-only / tiny image).
   if (file.optimizationVariants == null) {
-    return [...VARIANT_REGISTRY.fallback]
+    return [...FALLBACK_VARIANTS]
   }
   return file.optimizationVariants
 }

@@ -1,15 +1,14 @@
-// src/shared/services/media/optimize-media.ts
-import type { MediaOwnerKind } from './stores'
+// src/shared/modules/media/core/lib/optimize-media.ts
+import type { MediaStore } from '@/shared/modules/media/core/types'
 import type { R2BucketName } from '@/shared/services/providers/r2/types'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { optimizeFile } from '@/shared/lib/file-optimization/optimize-file'
 import {
   setMediaOptimizationComplete,
   setMediaOptimizationFailed,
   setMediaOptimizationProcessing,
 } from '@/shared/modules/media/core/dal/server/optimization'
-import { VARIANT_REGISTRY } from '@/shared/modules/media/core/lib/image-variants'
 import { r2Client } from '@/shared/services/providers/r2/client'
-import { getOptimizationTarget } from './optimization-target'
 
 /**
  * Owner-agnostic media optimization. Idempotent (skips already-optimized rows).
@@ -22,13 +21,21 @@ import { getOptimizationTarget } from './optimization-target'
  * MISSING/undefined provider as 'r2' (proceed) and skip ONLY an explicit 'stream'.
  */
 export async function optimizeMediaFile(
-  { ownerKind, mediaId }: { ownerKind: MediaOwnerKind, mediaId: number },
+  { store, mediaId }: { store: MediaStore, mediaId: number },
 ): Promise<void> {
-  const { table, getFile } = getOptimizationTarget(ownerKind)
-  const file = await getFile(mediaId)
+  const table = store.table
+  // The row is read through the owner's own scoped CRUD — SYSTEM_CONTEXT because a
+  // background job has no session and must see every row. This is what removes the
+  // last raw `db` import from the media layer (MD2).
+  const found = await store.crud.getById(SYSTEM_CONTEXT, { id: mediaId })
+  if (!found.success) {
+    console.error(`[optimizeMediaFile] ${store.ownerKind} media ${mediaId} read failed`, found.error)
+    return
+  }
+  const file = found.data as any
 
   if (!file) {
-    console.error(`[optimizeMediaFile] ${ownerKind} media ${mediaId} not found`)
+    console.error(`[optimizeMediaFile] ${store.ownerKind} media ${mediaId} not found`)
     return
   }
   if (file.optimizationStatus === 'optimized')
@@ -42,7 +49,7 @@ export async function optimizeMediaFile(
   try {
     const bucket = file.bucket as R2BucketName
     const originalBuffer = await r2Client.getObject(bucket, file.pathKey)
-    const result = await optimizeFile(originalBuffer, file.mimeType, VARIANT_REGISTRY[ownerKind])
+    const result = await optimizeFile(originalBuffer, file.mimeType, store.variants)
 
     if (result.variants.length > 0) {
       const basePath = file.pathKey.replace(/\.[^.]+$/, '')
@@ -60,7 +67,7 @@ export async function optimizeMediaFile(
     })
   }
   catch (error) {
-    console.error(`[optimizeMediaFile] failed for ${ownerKind} ${mediaId}:`, error)
+    console.error(`[optimizeMediaFile] failed for ${store.ownerKind} ${mediaId}:`, error)
     await setMediaOptimizationFailed(table, mediaId)
   }
 }

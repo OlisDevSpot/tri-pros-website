@@ -29,21 +29,14 @@ export const VARIANT_OPTIONS = [
 export type VariantSuffix = (typeof VARIANT_OPTIONS)[number]['suffix']
 
 /**
- * REGISTRY — which subset of the master each use-case gets. Extensible: a new
- * use-case is one line. `as const satisfies` makes the compiler reject a suffix
- * that isn't in VARIANT_OPTIONS, so the two can never drift.
+ * Variants assumed for a row whose `optimizationVariants` was never recorded
+ * (predates variant tracking). FROZEN — must stay a subset of what those old
+ * objects physically have on R2; NEVER add a newer suffix (e.g. `xs`) here or
+ * legacy images would request a `-xs.webp` that doesn't exist (404).
  *
- * - `project`  / `proposal`: the owner the optimizer runs for (write-time selection).
- * - `fallback`: assumed for a row whose `optimizationVariants` was never recorded
- *   (predates variant tracking). FROZEN — must stay a subset of what those old
- *   objects physically have on R2; NEVER add a newer suffix (e.g. `xs`) here or
- *   legacy images would request a `-xs.webp` that doesn't exist (404).
+ * Per-owner write-time lists live on each owner's store (`MediaStore.variants`).
  */
-export const VARIANT_REGISTRY = {
-  project: ['sm', 'md', 'lg'],
-  proposal: ['xs', 'sm', 'md', 'lg'],
-  fallback: ['sm', 'md', 'lg'],
-} as const satisfies Record<string, readonly VariantSuffix[]>
+export const FALLBACK_VARIANTS = ['sm', 'md', 'lg'] as const satisfies readonly VariantSuffix[]
 
 /** Derived suffix → width lookup. Nobody ever re-declares a width. */
 export const VARIANT_WIDTH: Record<string, number>

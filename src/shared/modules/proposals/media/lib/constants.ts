@@ -4,3 +4,9 @@
 // grants are defined against `ProposalMediaFile`); the distinct entityName
 // exists only for precise error messages and greppability.
 export const PROPOSAL_MEDIA_FILE = 'ProposalMediaFile' as const
+
+/** Leaf identity for the proposal media unit. See the project twin for why this is separate from the store. */
+export const PROPOSAL_MEDIA = {
+  ownerKind: 'proposal',
+  variants: ['xs', 'sm', 'md', 'lg'],
+} as const

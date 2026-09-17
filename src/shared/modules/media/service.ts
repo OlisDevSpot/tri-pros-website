@@ -1,18 +1,18 @@
-// src/shared/services/media/media.service.ts
+// src/shared/modules/media/service.ts
 //
 // Media orchestrator. Owns the R2 object lifecycle (presign, delete) and the
 // optimize dispatch, and RINGS each media child's scoped CRUD DAL (via
 // `store.crud`) + the shared scoped `list`/`reorder` ops — it never touches `db`
 // itself. Mutations return `DalReturn` so tRPC routers unwrap with `dalToTrpc`
 // and services/jobs inspect the union directly. see docs/codebase-conventions/service-architecture.md
-import type { MediaStore } from './stores'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
+import type { MediaStore } from '@/shared/modules/media/core/types'
 import { dalSuccess } from '@/shared/dal/server/types'
 import { listMediaByOwner, reorderMedia } from '@/shared/modules/media/core/dal/server/media-ops'
 import { resetMediaOptimizationStatus } from '@/shared/modules/media/core/dal/server/optimization'
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { optimizeMediaJob } from '@/shared/services/providers/upstash/jobs/optimize-media'
-import { optimizeMediaFile } from './optimize-media'
+import { optimizeMediaFile } from './core/lib/optimize-media'
 
 function extOf(filename: string): string {
   const dot = filename.lastIndexOf('.')
@@ -79,6 +79,6 @@ export const mediaService = {
 
   // synchronous, in-process optimize — no QStash (backfill scripts / dev)
   async optimizeNow(store: MediaStore, mediaId: number) {
-    return optimizeMediaFile({ ownerKind: store.ownerKind, mediaId })
+    return optimizeMediaFile({ store, mediaId })
   },
 }

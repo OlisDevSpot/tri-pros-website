@@ -33,10 +33,10 @@ import type { ProposalMediaFile } from '@/shared/db/schema/proposal-media-files'
 import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { isVisible } from '@/shared/dal/server/lib/scope'
 import { ThrowableDalError } from '@/shared/dal/server/types'
+import { mediaService } from '@/shared/modules/media/service'
 import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 import { proposalMediaCrud } from '@/shared/modules/proposals/media/dal/server/crud'
-import { mediaService } from '@/shared/services/media/media.service'
-import { proposalMediaStore } from '@/shared/services/media/stores'
+import { proposalMediaStore } from '@/shared/modules/proposals/media/store'
 
 type CreateProposalMediaInput = Parameters<typeof proposalMediaCrud.create>[1]
 

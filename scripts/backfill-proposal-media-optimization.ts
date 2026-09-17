@@ -19,8 +19,8 @@ import process from 'node:process'
 import { and, eq, isNotNull, like, ne, or } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { proposalMediaFiles } from '@/shared/db/schema'
-import { mediaService } from '@/shared/services/media/media.service'
-import { proposalMediaStore } from '@/shared/services/media/stores'
+import { mediaService } from '@/shared/modules/media/service'
+import { proposalMediaStore } from '@/shared/modules/proposals/media/store'
 import { describeTargetDb } from './lib/describe-target-db'
 
 const DRY_RUN = process.argv.includes('--dry-run')
