@@ -34,7 +34,11 @@ export const projectCrud = createCrudDal(projectServerSpec, () => ({
           row.id,
         )
         if (!files.success) {
-          return
+          // Fail loud: deleting the project without purging its media would orphan
+          // every R2 object it owns, with no DB row left to find them by. Throwing
+          // here surfaces through deleteImpl's dalDbOperation as a visible dalError.
+          console.error(`[projectCrud.delete] media read failed for project ${row.id}; aborting delete`, files.error)
+          throw new Error(`Failed to read project media for purge (project ${row.id})`)
         }
         await Promise.all(
           files.data.map(f => purgeMediaObject(f as { bucket: string | null, pathKey: string | null, optimizationVariants?: string[] | null }, PROJECT_MEDIA.variants)),
