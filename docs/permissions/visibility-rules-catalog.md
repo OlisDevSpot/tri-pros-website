@@ -118,15 +118,14 @@ row-visibility are all this atom viewed through a different FK — which is why 
 
 | Rule | Today (`file:line`) | Axis | Target CASL expression |
 |------|---------------------|------|------------------------|
-| Agent sees projects for meetings they're in | `projectParticipationScope` = `meetings ⋈ mp` on `projectId` — `entities/projects/lib/visibility.ts:11`, `projectVisibility:31` | 2 | `can('read','Project',{ $participatesViaMeetingPath:{ through:'projectId' } })` |
+| Agent sees projects for meetings they're in | `projectParticipationScope` = `meetings ⋈ mp` on `projectId` — `modules/projects/core/lib/visibility.ts:11`, `projectVisibility:31` | 2 | `can('read','Project',{ $participatesViaMeetingPath:{ through:'projectId' } })` |
 | ⚠️ **Pipeline query ALSO grants `ownerId=me OR isPublic=true`** | hand-rolled SQL **wider than canonical** — `features/customer-pipelines/dal/server/get-customer-pipeline-items.ts:367`. Canonical `projectVisibility` uses **only** participation; ignores `projects.ownerId` & `projects.isPublic` (both exist on the table). | 2 | **UNRESOLVED — see Fork/Open Q.** Reconcile before authoring the rule. |
 | Pure-portfolio projects filtered even for omni | `hasAssociatedMeeting()` = `EXISTS(meetings WHERE projectId=projects.id)` — `visibility.ts:44` | *business filter* | **not authorization** — a "real vs portfolio" filter; keep beside the scope, not inside it. |
-| Project-media | anticipated `mediaFiles.projectId` bridge, **never wired** (no spec) | 6 | declare `parent` on a project-media spec; engine bridges. |
+| Project-media | `projectMediaServerSpec` declares `parent: { spec: projectServerSpec, fk: projectMediaFiles.projectId }` (`modules/projects/media/server-spec.ts:40`), but `projects.router/media.router.ts` still runs on a bare `agentProcedure` → **bridge not yet enforced** (unscoped) | 6 | swap the router to a child-scoped procedure; the engine already bridges. |
 
 ### Sub-entities (owned tables) — how each is scoped today
 
-None declare `parent` in a spec; none has its own `visibility` fragment (except customer_notes).
-All rely on point-probing the parent, riding the parent gate, or are unscoped.
+Proposal media, proposal views, proposal incentives and project media now declare `parent` in an `EntityServerSpec` (`modules/proposals/{media,views,incentives}/server-spec.ts`, `modules/projects/media/server-spec.ts`); the customer sub-entities still have no spec. None has its own `visibility` fragment (except customer_notes).
 
 | Sub-entity | Parent | FK | Today |
 |------------|--------|----|-------|
@@ -134,9 +133,9 @@ All rely on point-probing the parent, riding the parent gate, or are unscoped.
 | `customer_enrichment` | customer | `customerId` | No spec. Bare `eq(customerId)` after parent passed scope. |
 | `customer_lead_attribution` | customer | `customerId` | No spec. leftJoin on scoped customer. |
 | `customer_notes` | customer | `customerId` | **Own fragment** `userCanSeeCustomer(userId, customerNotes.customerId)` — `customer-notes/lib/visibility.ts:16`. Re-derives customer visibility inline vs bridging. |
-| `proposal_views` | proposal | `proposalId` | No spec. Read gated by `isInScope(proposalSpec)`. **Writes fully unscoped** (`recordProposalView` bare insert). |
-| `proposal_media_files` | proposal | `proposalId` | No spec. Parent probe joins `proposals`, filters `ctx.scope ?? undefined` (**leaks on null scope**). |
-| `media-files` / project media | project | `projectId` | **No spec at all.** Bridge anticipated, never wired. |
+| `proposal_views` | proposal | `proposalId` | `proposalViewServerSpec` with `parent` (`modules/proposals/views/server-spec.ts:33`). Agent reads gated by `isInScope(proposalSpec)`; homeowner `recordView` is token-gated on `systemProcedure` (see the Proposal-views row above). |
+| `proposal_media_files` | proposal | `proposalId` | `proposalMediaServerSpec` with `parent` (`modules/proposals/media/server-spec.ts:41`); scope bridged into `ctx.scope` by `proposalMediaProcedure` (`proposals.router/procedures.ts:37`). |
+| `media_files` / project media | project | `projectId` | `projectMediaServerSpec` with `parent` (`modules/projects/media/server-spec.ts:40`); the router still uses bare `agentProcedure`, so it runs **unscoped** until the child-scoped procedure swap. |
 
 ---
 

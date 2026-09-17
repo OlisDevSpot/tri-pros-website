@@ -166,3 +166,18 @@ rebase:
    `src/shared/modules/proposals/media/dal/server/queries.ts`.
 4. #285 `CLAUDE.local.md` instructs `pnpm build`; repo rule is `pnpm tsc` + `pnpm lint` only (already flagged in
    report 16 §6).
+
+## 9. Projects/media modules restructure landed on main (2026-09-17) — resolve #285's edits at their new paths
+
+Between this plan being written and the merge happening, main landed the **projects and media modules restructure** (tracker `docs/plans/2026-09-14-upgrading-meeting-flow-epic.md`, spec A) as its own commit sequence, ahead of the sync (C20, as planned in §5 point 4 / M7). It renamed four files #285 also edits — the sync must resolve #285's hunks at the paths below, not at the old ones §1–§8 above still name:
+
+| #285 edits (old path, still current on the #285 branch) | New path on `main` |
+|---|---|
+| `entities/media-files/dal/server/media-ops.ts` | `src/shared/modules/media/core/dal/server/media-ops.ts` |
+| `entities/projects/dal/server/queries.ts` | `src/shared/modules/projects/core/dal/server/queries.ts` |
+| `entities/media-files/lib/server-spec.ts` (`mediaFileServerSpec`) | `src/shared/modules/projects/media/server-spec.ts` (renamed to `projectMediaServerSpec` — MD9; #285 references the old name by string, so any #285 code/doc that does `mediaFileServerSpec` needs the rename ported, not just the path) |
+| `entities/projects/lib/visibility.ts` | `src/shared/modules/projects/core/lib/visibility.ts` |
+
+**Conflict #10, updated ruling** (was "Human ruling" in §6/Phase 3 above — **no longer open**, C24 already decided it): #285 adds table-generic `movePhase`/`setHero` to `media-ops.ts` and to the media service — a design C24 rules out (the media module stays generic over the owner's table; project-only mutations live on the project media unit, not the shared module). The sync takes **main's shape** — `moveMediaPhase`/`setHeroImage` staying on the project media unit's own DAL, now at `src/shared/modules/projects/media/dal/server/mutations.ts` — and **ports #285's scoping onto it**: `requireResolvedScope(ctx.scope)`, the `inArray` bulk update, and the bounded unset (whichever of #285's guards `59676416` added to its `media-ops.ts` copy) move into `modules/projects/media/dal/server/mutations.ts` and `crud.ts`. Delete #285's `movePhase`/`setHero` additions to the shared media module and its service — main's project-only versions are the ones that survive the merge.
+
+One more thing #285 will not expect: the project media unit's `create`/`delete` used to be service-level overrides on the router-facing service; they are now `createCrudDal` hooks on `modules/projects/media/dal/server/crud.ts` (`create.after` dispatches the optimize job, `delete.before` purges R2) — C32, landed after this plan was written. If #285's own changes assumed a `create`/`delete` override to patch on the project media service, there is nothing there to patch anymore; the equivalent point to extend (e.g. to add #285's authorization) is the hook or the DAL, not a service override.

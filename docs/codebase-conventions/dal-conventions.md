@@ -16,12 +16,12 @@ Only files under `src/shared/dal/`, `src/shared/entities/*/dal/`, or `src/shared
 
 ### dal-lives-under-entities-never-features
 
-DAL modules live under `src/shared/entities/<entity>/dal/` (per-entity), `src/shared/modules/<module>/<unit>/dal/` (per-entity unit inside a module), or `src/shared/dal/` (shared machinery) — **never** under `src/features/*/dal/`. `features/*/dal/` is a **deprecated pattern**: DAL acts on *entities*, and orchestration (composing multiple DAL calls, cross-entity workflows, business gating) is the job of tRPC procedures and services, not a feature-scoped data layer. A feature that needs project data imports `entities/projects/dal/server/…`; it does not host its own DAL.
+DAL modules live under `src/shared/entities/<entity>/dal/` (per-entity), `src/shared/modules/<module>/<unit>/dal/` (per-entity unit inside a module), or `src/shared/dal/` (shared machinery) — **never** under `src/features/*/dal/`. `features/*/dal/` is a **deprecated pattern**: DAL acts on *entities*, and orchestration (composing multiple DAL calls, cross-entity workflows, business gating) is the job of tRPC procedures and services, not a feature-scoped data layer. A feature that needs project data imports `modules/projects/core/dal/server/…`; it does not host its own DAL.
 
 When you find a `features/*/dal/`, migrate it: pure entity reads/writes move into the owning entity's `dal/server/`; any orchestration logic that was tangled in moves up to the procedure or service layer. Feature folders keep their client concerns (`ui/`, `hooks/`, `lib/`, `constants/`) — they just don't own persistence.
 
 **Why**: a feature is a UI/flow grouping, not an ownership boundary for data. Splitting an entity's persistence between `entities/<e>/dal/` and `features/<f>/dal/` creates split-brain DAL (two homes for the same table, one of them invisible to the entity server system) — exactly the drift the projects entity accumulated before its S8 migration.
-**Reference impl**: `src/shared/entities/projects/dal/server/` (post-migration home; `features/project-management/dal/` was retired here)
+**Reference impl**: `src/shared/modules/projects/core/dal/server/` (post-migration home; `features/project-management/dal/` was retired here, and the projects entity itself later moved from its old top-level entity location into this module unit — `docs/codebase-conventions/service-architecture.md#entities-vs-modules`)
 **Enforced by**: convention
 
 ### dal-returns-dalreturn
