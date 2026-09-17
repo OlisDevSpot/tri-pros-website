@@ -1,7 +1,7 @@
 // src/shared/lib/file-optimization/optimize-file.ts
 import type { Buffer } from 'node:buffer'
 import type { FileKind, FileOptimizationResult } from './types'
-import { processImageVariants } from '@/shared/entities/media-files/lib/process-image-variants'
+import { processImageVariants } from '@/shared/modules/media/core/lib/process-image-variants'
 import { readPdfPageCount } from './strategies/pdf'
 
 /** Map a MIME type to its optimization strategy bucket. */

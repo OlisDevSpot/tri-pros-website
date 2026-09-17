@@ -1,4 +1,4 @@
-import { VARIANT_REGISTRY, VARIANT_WIDTH } from '@/shared/entities/media-files/lib/image-variants'
+import { VARIANT_REGISTRY, VARIANT_WIDTH } from '@/shared/modules/media/core/lib/image-variants'
 import { R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
 
 const DEFAULT_R2_DOMAIN = R2_PUBLIC_DOMAINS['tpr-media'] ?? ''

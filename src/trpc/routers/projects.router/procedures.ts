@@ -1,4 +1,4 @@
-import { projectServerSpec } from '@/shared/entities/projects/lib/server-spec'
+import { projectServerSpec } from '@/shared/modules/projects/core/server-spec'
 
 import { agentProcedure } from '../../init'
 import { resolveVisibilityScope } from '../../lib/middleware/scope-middleware'

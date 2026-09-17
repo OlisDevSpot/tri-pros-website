@@ -14,8 +14,8 @@ import { ROOTS } from '@/shared/config/roots'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { MeetingOverviewCard } from '@/shared/entities/meetings/components/overview-card'
 import { ParticipantsSlot } from '@/shared/entities/meetings/components/participants-slot'
-import { useProjectActionConfigs } from '@/shared/entities/projects/hooks/use-project-action-configs'
 import { cn } from '@/shared/lib/utils'
+import { useProjectActionConfigs } from '@/shared/modules/projects/core/hooks/use-project-action-configs'
 import { MeetingProposalRow } from './meeting-proposal-row'
 
 interface Props {

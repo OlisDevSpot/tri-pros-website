@@ -1,6 +1,6 @@
 'use client'
 
-import type { ProjectMediaGroups } from '@/shared/entities/projects/types'
+import type { ProjectMediaGroups } from '@/shared/modules/projects/core/types'
 import { motion, useInView } from 'motion/react'
 import dynamic from 'next/dynamic'
 import { useRef } from 'react'

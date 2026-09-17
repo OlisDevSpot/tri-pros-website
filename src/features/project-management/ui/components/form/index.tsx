@@ -1,7 +1,7 @@
 'use client'
 
 import type { MediaFile } from '@/shared/db/schema'
-import type { ProjectFormData } from '@/shared/entities/projects/schemas'
+import type { ProjectFormData } from '@/shared/modules/projects/core/schemas'
 import { ImageIcon, Loader2, Settings2Icon } from 'lucide-react'
 import { useEffect } from 'react'
 import { useFormContext } from 'react-hook-form'

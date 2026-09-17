@@ -1,6 +1,6 @@
 'use client'
 
-import type { PortfolioProject } from '@/shared/entities/projects/types'
+import type { PortfolioProject } from '@/shared/modules/projects/core/types'
 import type { ScopeOrAddon } from '@/shared/services/providers/notion/lib/scopes/schema'
 import type { Trade } from '@/shared/services/providers/notion/lib/trades/schema'
 import { parseAsArrayOf, parseAsInteger, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'

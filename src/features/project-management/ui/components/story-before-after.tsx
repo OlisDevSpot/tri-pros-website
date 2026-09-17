@@ -1,8 +1,8 @@
 'use client'
 
 import type { MediaFile, Project } from '@/shared/db/schema'
-import type { BeforeAfterPairs } from '@/shared/entities/projects/schemas'
-import type { ProjectMediaGroups } from '@/shared/entities/projects/types'
+import type { BeforeAfterPairs } from '@/shared/modules/projects/core/schemas'
+import type { ProjectMediaGroups } from '@/shared/modules/projects/core/types'
 import { AnimatePresence, motion, useInView } from 'motion/react'
 import dynamic from 'next/dynamic'
 import { useCallback, useMemo, useRef, useState } from 'react'

@@ -5,8 +5,8 @@ import {
   mediaFiles,
   selectMediaFilesSchema,
 } from '@/shared/db/schema/media-files'
-import { MEDIA_FILE } from '@/shared/entities/media-files/lib/constants'
-import { projectServerSpec } from '@/shared/entities/projects/lib/server-spec'
+import { projectServerSpec } from '@/shared/modules/projects/core/server-spec'
+import { MEDIA_FILE } from '@/shared/modules/projects/media/lib/constants'
 
 // The insert schema already `.partial()`s the server-derived/defaulted columns;
 // update partials the rest so any subset is patchable (e.g. `{ name }`, `{ phase }`).

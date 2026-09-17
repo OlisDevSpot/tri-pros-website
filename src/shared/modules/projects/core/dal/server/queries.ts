@@ -2,7 +2,7 @@ import type { ProjectStatusBucket, ProjectVisibility } from '@/shared/constants/
 import type { DateRange, PaginationFields, SortFields } from '@/shared/dal/server/lib/query/schemas'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { MediaFile, Project } from '@/shared/db/schema'
-import type { PortfolioProject, PortfolioProjectDetail } from '@/shared/entities/projects/types'
+import type { PortfolioProject, PortfolioProjectDetail } from '@/shared/modules/projects/core/types'
 import { and, asc, count, desc, eq, getTableColumns, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm'
 import { stagesForBuckets } from '@/shared/constants/enums'
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
@@ -10,7 +10,7 @@ import { buildFilterWhere } from '@/shared/dal/server/lib/query/filters'
 import { buildOrderBy } from '@/shared/dal/server/lib/query/sort'
 import { db } from '@/shared/db'
 import { mediaFiles, projects, x_projectScopes } from '@/shared/db/schema'
-import { hasAssociatedMeeting } from '@/shared/entities/projects/lib/visibility'
+import { hasAssociatedMeeting } from '@/shared/modules/projects/core/lib/visibility'
 
 export async function getPortfolioProjects(): Promise<PortfolioProject[]> {
   const rows = await db

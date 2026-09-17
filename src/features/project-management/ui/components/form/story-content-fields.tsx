@@ -1,6 +1,6 @@
 'use client'
 
-import type { ProjectFormData } from '@/shared/entities/projects/schemas'
+import type { ProjectFormData } from '@/shared/modules/projects/core/schemas'
 import { useFormContext } from 'react-hook-form'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Textarea } from '@/shared/components/ui/textarea'

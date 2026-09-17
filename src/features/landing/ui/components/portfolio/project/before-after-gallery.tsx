@@ -1,6 +1,6 @@
 'use client'
 
-import type { ProjectDetail } from '@/shared/entities/projects/types'
+import type { ProjectDetail } from '@/shared/modules/projects/core/types'
 import { motion, useInView } from 'motion/react'
 import { useRef } from 'react'
 import { ReactCompareSlider } from 'react-compare-slider'

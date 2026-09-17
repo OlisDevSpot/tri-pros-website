@@ -3,7 +3,7 @@ import { and, desc, eq, inArray } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { mediaFiles } from '@/shared/db/schema/media-files'
 import { projects } from '@/shared/db/schema/projects'
-import { getProjectScopeCountsByScopeIds } from '@/shared/entities/projects/dal/server/queries'
+import { getProjectScopeCountsByScopeIds } from '@/shared/modules/projects/core/dal/server/queries'
 
 /**
  * Given an array of Notion scope IDs belonging to a trade,

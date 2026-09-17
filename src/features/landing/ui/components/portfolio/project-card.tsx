@@ -1,6 +1,6 @@
 'use client'
 
-import type { PublicProject } from '@/shared/entities/projects/types'
+import type { PublicProject } from '@/shared/modules/projects/core/types'
 import { AnimatePresence, motion, useInView } from 'motion/react'
 import Link from 'next/link'
 import { useRef, useState } from 'react'

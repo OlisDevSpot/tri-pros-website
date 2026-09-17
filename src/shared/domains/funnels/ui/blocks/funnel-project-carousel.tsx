@@ -2,7 +2,7 @@
 
 import type { CarouselApi } from '@/shared/components/ui/carousel'
 import type { FunnelSlug } from '@/shared/domains/funnels/constants/slugs'
-import type { PortfolioProject } from '@/shared/entities/projects/types'
+import type { PortfolioProject } from '@/shared/modules/projects/core/types'
 import { useQuery } from '@tanstack/react-query'
 import Image from 'next/image'
 import { useCallback, useMemo, useState } from 'react'

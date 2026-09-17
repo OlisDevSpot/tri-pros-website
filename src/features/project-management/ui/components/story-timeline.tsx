@@ -1,7 +1,7 @@
 'use client'
 
 import type { MediaFile, Project } from '@/shared/db/schema'
-import type { ProjectMediaGroups } from '@/shared/entities/projects/types'
+import type { ProjectMediaGroups } from '@/shared/modules/projects/core/types'
 import { motion, useInView } from 'motion/react'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { PHASE_CONFIG } from '@/features/project-management/constants/phase-config'

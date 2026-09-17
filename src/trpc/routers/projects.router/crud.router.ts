@@ -2,9 +2,9 @@ import { z } from 'zod'
 
 import { projectStatusBuckets, projectVisibilities } from '@/shared/constants/enums'
 import { dateRangeSchema, paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
-import { createProjectWithScopes, projectCrud, updateProjectWithScopes } from '@/shared/entities/projects/dal/server/crud'
-import { getAllProjects, getProjectForEdit, listProjects } from '@/shared/entities/projects/dal/server/queries'
-import { projectFormSchema } from '@/shared/entities/projects/schemas'
+import { createProjectWithScopes, projectCrud, updateProjectWithScopes } from '@/shared/modules/projects/core/dal/server/crud'
+import { getAllProjects, getProjectForEdit, listProjects } from '@/shared/modules/projects/core/dal/server/queries'
+import { projectFormSchema } from '@/shared/modules/projects/core/schemas'
 
 import { agentProcedure, createTRPCRouter } from '../../init'
 import { dalToTrpc } from '../../lib/dal-to-trpc'

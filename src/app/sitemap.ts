@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next'
 import process from 'node:process'
 import { getTradesByPillar } from '@/features/landing/lib/notion-trade-helpers'
-import { getPortfolioProjects } from '@/shared/entities/projects/dal/server/queries'
+import { getPortfolioProjects } from '@/shared/modules/projects/core/dal/server/queries'
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://triprosremodeling.com'
 

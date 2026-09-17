@@ -7,8 +7,8 @@ import { eq } from 'drizzle-orm'
 import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
 import { db } from '@/shared/db'
 import { mediaFiles } from '@/shared/db/schema'
-import { setProjectScopes } from '@/shared/entities/projects/dal/server/mutations'
-import { projectServerSpec } from '@/shared/entities/projects/lib/server-spec'
+import { setProjectScopes } from '@/shared/modules/projects/core/dal/server/mutations'
+import { projectServerSpec } from '@/shared/modules/projects/core/server-spec'
 import { r2Client } from '@/shared/services/providers/r2/client'
 
 /**

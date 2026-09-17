@@ -1,6 +1,6 @@
 'use client'
 
-import type { ProjectFormData } from '@/shared/entities/projects/schemas'
+import type { ProjectFormData } from '@/shared/modules/projects/core/schemas'
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
@@ -13,7 +13,7 @@ import { ProjectForm } from '@/features/project-management/ui/components/form'
 import { Button } from '@/shared/components/ui/button'
 import { Form } from '@/shared/components/ui/form'
 import { ROOTS } from '@/shared/config/roots'
-import { projectFormDefaults, projectFormSchema } from '@/shared/entities/projects/schemas'
+import { projectFormDefaults, projectFormSchema } from '@/shared/modules/projects/core/schemas'
 import { useTRPC } from '@/trpc/helpers'
 
 export function CreateProjectView() {

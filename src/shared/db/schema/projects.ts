@@ -1,5 +1,5 @@
 import type z from 'zod'
-import type { BeforeAfterPairs } from '@/shared/entities/projects/schemas'
+import type { BeforeAfterPairs } from '@/shared/modules/projects/core/schemas'
 import { relations } from 'drizzle-orm'
 import { boolean, jsonb, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'

@@ -1,4 +1,4 @@
-// src/shared/entities/media-files/lib/image-variants.ts
+// src/shared/modules/media/core/lib/image-variants.ts
 
 /**
  * Single source of truth for responsive image variants. Dependency-free leaf ON

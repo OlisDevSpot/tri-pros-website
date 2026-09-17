@@ -1,7 +1,7 @@
 'use client'
 
 import type { MeetingFlowContext } from '@/features/meeting-flow/types'
-import type { PortfolioProject } from '@/shared/entities/projects/types'
+import type { PortfolioProject } from '@/shared/modules/projects/core/types'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { TradeProjectGrid } from '@/features/meeting-flow/ui/components/steps/trade-project-grid'

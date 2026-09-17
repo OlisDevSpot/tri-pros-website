@@ -1,6 +1,6 @@
 'use client'
 
-import type { PortfolioProject } from '@/shared/entities/projects/types'
+import type { PortfolioProject } from '@/shared/modules/projects/core/types'
 import { motion, useInView } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { OptimizedImage } from '@/shared/components/optimized-image'

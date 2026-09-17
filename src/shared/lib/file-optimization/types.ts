@@ -1,5 +1,5 @@
 // src/shared/lib/file-optimization/types.ts
-import type { ImageVariant } from '@/shared/entities/media-files/lib/process-image-variants'
+import type { ImageVariant } from '@/shared/modules/media/core/lib/process-image-variants'
 
 /** Coarse file classification that selects an optimization strategy. */
 export type FileKind = 'image' | 'video' | 'pdf' | 'other'

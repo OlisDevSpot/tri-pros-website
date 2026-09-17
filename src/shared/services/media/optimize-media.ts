@@ -5,8 +5,8 @@ import {
   setMediaOptimizationComplete,
   setMediaOptimizationFailed,
   setMediaOptimizationProcessing,
-} from '@/shared/entities/media-files/dal/server/optimization'
-import { VARIANT_REGISTRY } from '@/shared/entities/media-files/lib/image-variants'
+} from '@/shared/modules/media/core/dal/server/optimization'
+import { VARIANT_REGISTRY } from '@/shared/modules/media/core/lib/image-variants'
 import { optimizeFile } from '@/shared/lib/file-optimization/optimize-file'
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { getOptimizationTarget } from './optimization-target'

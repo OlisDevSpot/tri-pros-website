@@ -1,7 +1,7 @@
 'use client'
 
 import type { TradeRow } from '@/features/project-management/lib/group-scopes-by-trade'
-import type { ProjectFormData } from '@/shared/entities/projects/schemas'
+import type { ProjectFormData } from '@/shared/modules/projects/core/schemas'
 import { useQuery } from '@tanstack/react-query'
 import { PlusIcon } from 'lucide-react'
 import { useCallback, useEffect, useReducer, useRef } from 'react'

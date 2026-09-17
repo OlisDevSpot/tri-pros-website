@@ -1,4 +1,4 @@
-import type { ProjectMediaGroups } from '@/shared/entities/projects/types'
+import type { ProjectMediaGroups } from '@/shared/modules/projects/core/types'
 
 export const PHASE_CONFIG: { key: keyof ProjectMediaGroups, label: string, fallbackDescription: string }[] = [
   { key: 'before', label: 'Before', fallbackDescription: 'Where the project began' },

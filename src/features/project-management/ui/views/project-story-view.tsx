@@ -1,6 +1,6 @@
 'use client'
 
-import type { PortfolioProjectDetail } from '@/shared/entities/projects/types'
+import type { PortfolioProjectDetail } from '@/shared/modules/projects/core/types'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { StoryBeforeAfter } from '@/features/project-management/ui/components/story-before-after'

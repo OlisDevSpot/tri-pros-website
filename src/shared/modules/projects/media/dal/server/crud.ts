@@ -1,5 +1,5 @@
 import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
-import { mediaFileServerSpec } from '@/shared/entities/media-files/lib/server-spec'
+import { mediaFileServerSpec } from '@/shared/modules/projects/media/server-spec'
 
 /**
  * Scoped CRUD handlers for project media files. Composes `ctx.scope` into

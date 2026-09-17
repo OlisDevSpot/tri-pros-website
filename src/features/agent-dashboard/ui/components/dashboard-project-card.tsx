@@ -1,13 +1,13 @@
 'use client'
 
-import type { ProjectRow } from '@/shared/entities/projects/lib/columns-registry'
+import type { ProjectRow } from '@/shared/modules/projects/core/lib/columns-registry'
 
 import { FolderOpenIcon, MapPinIcon } from 'lucide-react'
 
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
-import { useProjectActionConfigs } from '@/shared/entities/projects/hooks/use-project-action-configs'
 import { cn } from '@/shared/lib/utils'
+import { useProjectActionConfigs } from '@/shared/modules/projects/core/hooks/use-project-action-configs'
 
 interface DashboardProjectCardProps {
   row: ProjectRow

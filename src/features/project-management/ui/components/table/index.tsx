@@ -1,6 +1,6 @@
 'use client'
 
-import type { ProjectRow, ProjectTableMeta } from '@/shared/entities/projects/lib/columns-registry'
+import type { ProjectRow, ProjectTableMeta } from '@/shared/modules/projects/core/lib/columns-registry'
 import { PlusIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
@@ -18,10 +18,10 @@ import { RecordsPageShell } from '@/shared/components/records-page-shell'
 import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
 import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
-import { useProjectActionConfigs } from '@/shared/entities/projects/hooks/use-project-action-configs'
-import { useProjectActions } from '@/shared/entities/projects/hooks/use-project-actions'
+import { useProjectActionConfigs } from '@/shared/modules/projects/core/hooks/use-project-action-configs'
+import { useProjectActions } from '@/shared/modules/projects/core/hooks/use-project-actions'
 
-import { PROJECT_COLUMNS } from '@/shared/entities/projects/lib/columns-registry'
+import { PROJECT_COLUMNS } from '@/shared/modules/projects/core/lib/columns-registry'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { useTRPC } from '@/trpc/helpers'
 

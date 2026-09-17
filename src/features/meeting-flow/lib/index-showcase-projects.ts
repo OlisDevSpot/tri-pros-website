@@ -1,5 +1,5 @@
 import type { ShowcaseProject, ShowcaseProjectIndex, TradeScopeGroup } from '@/features/meeting-flow/types'
-import type { PortfolioProject } from '@/shared/entities/projects/types'
+import type { PortfolioProject } from '@/shared/modules/projects/core/types'
 
 /** Portfolio rows to lookups by trade and scope. Rows without a hero image are skipped: the showcase has nothing to show for them. */
 export function indexShowcaseProjects(projects: PortfolioProject[], scopesByTrade: ReadonlyMap<string, TradeScopeGroup>): ShowcaseProjectIndex {

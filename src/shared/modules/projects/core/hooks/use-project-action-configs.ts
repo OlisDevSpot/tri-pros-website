@@ -4,8 +4,8 @@ import type { EntityActionConfig } from '@/shared/components/entity-actions/type
 import { useMemo } from 'react'
 
 import { ROOTS } from '@/shared/config/roots'
-import { PROJECT_ACTIONS } from '@/shared/entities/projects/constants/actions'
 import { useConfirm } from '@/shared/hooks/use-confirm'
+import { PROJECT_ACTIONS } from '@/shared/modules/projects/core/constants/actions'
 
 import { useProjectActions } from './use-project-actions'
 

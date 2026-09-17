@@ -1,7 +1,7 @@
 'use client'
 
 import type { FunnelContext, PortfolioBlockContent } from '@/shared/domains/funnels/types'
-import type { PortfolioProject } from '@/shared/entities/projects/types'
+import type { PortfolioProject } from '@/shared/modules/projects/core/types'
 import { useQuery } from '@tanstack/react-query'
 import Image from 'next/image'
 import { useMemo } from 'react'

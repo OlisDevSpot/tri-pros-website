@@ -1,7 +1,7 @@
 'use client'
 
 import type { MediaFile } from '@/shared/db/schema'
-import type { ProjectDetail } from '@/shared/entities/projects/types'
+import type { ProjectDetail } from '@/shared/modules/projects/core/types'
 
 import { motion } from 'motion/react'
 

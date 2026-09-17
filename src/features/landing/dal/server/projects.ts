@@ -1,4 +1,4 @@
-import type { ProjectDetail, PublicProject } from '@/shared/entities/projects/types'
+import type { ProjectDetail, PublicProject } from '@/shared/modules/projects/core/types'
 import { and, asc, desc, eq } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { mediaFiles, projects } from '@/shared/db/schema'
