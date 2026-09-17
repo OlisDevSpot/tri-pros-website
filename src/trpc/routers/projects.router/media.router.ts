@@ -3,11 +3,9 @@ import { z } from 'zod'
 import { mediaPhases } from '@/shared/constants/enums/media'
 import { insertProjectMediaFilesSchema } from '@/shared/db/schema'
 import { deriveOriginalMediaUrl, getOptimizedSrc } from '@/shared/lib/get-optimized-urls'
-import { mediaService } from '@/shared/modules/media/service'
-import { moveMediaPhase, setHeroImage } from '@/shared/modules/projects/media/dal/server/mutations'
 import { projectMediaStore } from '@/shared/modules/projects/media/store'
+import { projectsService } from '@/shared/modules/projects/service'
 import { listImportableProjectMedia } from '@/shared/modules/proposals/media/dal/server/queries'
-import { r2Client } from '@/shared/services/providers/r2/client'
 import { R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 import { agentProcedure, createTRPCRouter } from '../../init'
@@ -20,15 +18,9 @@ export const mediaRouter = createTRPCRouter({
       filename: z.string(),
       mimeType: z.string(),
     }))
-    .mutation(async ({ input }) => {
-      const { uploadUrl, pathKey, bucket } = await mediaService.buildUploadTarget(projectMediaStore, {
-        ownerId: input.projectId,
-        filename: input.filename,
-        mimeType: input.mimeType,
-        extra: { phase: input.phase },
-      })
-      const publicUrl = `${R2_PUBLIC_DOMAINS[bucket] ?? ''}/${pathKey}`
-      return { uploadUrl, pathKey, publicUrl }
+    .mutation(async ({ ctx, input }) => {
+      const { uploadUrl, pathKey, bucket } = dalToTrpc(await projectsService.media.buildUploadTarget(ctx, input))
+      return { uploadUrl, pathKey, publicUrl: `${R2_PUBLIC_DOMAINS[bucket as R2BucketName] ?? ''}/${pathKey}` }
     }),
 
   create: agentProcedure
@@ -36,20 +28,20 @@ export const mediaRouter = createTRPCRouter({
       bucket: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) =>
-      dalToTrpc(await mediaService.createRecord(projectMediaStore, ctx, { ...input, bucket: input.bucket ?? projectMediaStore.bucket })),
+      dalToTrpc(await projectsService.media.create(ctx, { ...input, bucket: input.bucket ?? projectMediaStore.bucket })),
     ),
 
   retryOptimization: agentProcedure
     .input(z.object({ mediaFileId: z.number() }))
-    .mutation(async ({ input }) => {
-      await mediaService.retryOptimization(projectMediaStore, input.mediaFileId)
+    .mutation(async ({ ctx, input }) => {
+      dalToTrpc(await projectsService.media.retryOptimization(ctx, { id: input.mediaFileId }))
       return { success: true }
     }),
 
   delete: agentProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      dalToTrpc(await mediaService.removeRecord(projectMediaStore, ctx, input.id))
+      dalToTrpc(await projectsService.media.delete(ctx, { id: input.id }))
     }),
 
   reorder: agentProcedure
@@ -57,7 +49,7 @@ export const mediaRouter = createTRPCRouter({
       updates: z.array(z.object({ id: z.number(), sortOrder: z.number().int() })),
     }))
     .mutation(async ({ ctx, input }) => {
-      dalToTrpc(await mediaService.reorder(projectMediaStore, ctx, input.updates))
+      dalToTrpc(await projectsService.media.reorder(ctx, input))
     }),
 
   movePhase: agentProcedure
@@ -66,14 +58,20 @@ export const mediaRouter = createTRPCRouter({
       phase: z.enum(mediaPhases),
     }))
     .mutation(async ({ ctx, input }) => {
-      dalToTrpc(await moveMediaPhase(ctx, input.ids, input.phase))
+      dalToTrpc(await projectsService.media.movePhase(ctx, input))
     }),
 
   bulkDelete: agentProcedure
     .input(z.object({ ids: z.array(z.number()).min(1) }))
     .mutation(async ({ ctx, input }) => {
-      for (const id of input.ids)
-        dalToTrpc(await mediaService.removeRecord(projectMediaStore, ctx, id))
+      // A row that is already gone is not an error for a bulk selection (the user
+      // may be acting on a stale list) — but any other failure still surfaces.
+      for (const id of input.ids) {
+        const result = await projectsService.media.delete(ctx, { id })
+        if (!result.success && result.error.type !== 'not-found') {
+          dalToTrpc(result)
+        }
+      }
     }),
 
   rename: agentProcedure
@@ -82,7 +80,7 @@ export const mediaRouter = createTRPCRouter({
       name: z.string().min(1).max(80),
     }))
     .mutation(async ({ ctx, input }) => {
-      dalToTrpc(await mediaService.rename(projectMediaStore, ctx, input.id, input.name))
+      dalToTrpc(await projectsService.media.update(ctx, { id: input.id, data: { name: input.name } }))
     }),
 
   toggleHero: agentProcedure
@@ -91,7 +89,7 @@ export const mediaRouter = createTRPCRouter({
       isHeroImage: z.boolean(),
     }))
     .mutation(async ({ ctx, input }) => {
-      dalToTrpc(await setHeroImage(ctx, input.id, input.isHeroImage))
+      dalToTrpc(await projectsService.media.setHero(ctx, input))
     }),
 
   listImportableProposalMedia: agentProcedure
@@ -129,35 +127,6 @@ export const mediaRouter = createTRPCRouter({
   importFromProposal: agentProcedure
     .input(z.object({ projectId: z.string().uuid(), proposalMediaFileIds: z.array(z.number()).min(1) }))
     .mutation(async ({ ctx, input }) => {
-      // Authorization: only copy media that actually belongs to a proposal on
-      // THIS project's meetings (prevents importing arbitrary proposal media by id).
-      const sources = await listImportableProjectMedia(input.projectId, input.proposalMediaFileIds)
-
-      let imported = 0
-      for (const src of sources) {
-        if (!src.pathKey || !src.bucket)
-          continue
-        const ext = src.fileExtension || (src.pathKey.includes('.') ? `.${src.pathKey.split('.').pop()}` : '')
-        const destKey = projectMediaStore.buildPathKey(input.projectId, crypto.randomUUID(), ext)
-        await r2Client.copyObject({
-          sourceBucket: src.bucket as R2BucketName,
-          sourceKey: src.pathKey,
-          destBucket: projectMediaStore.bucket,
-          destKey,
-        })
-        const publicUrl = `${R2_PUBLIC_DOMAINS[projectMediaStore.bucket] ?? ''}/${destKey}`
-        dalToTrpc(await mediaService.createRecord(projectMediaStore, ctx, {
-          projectId: input.projectId,
-          name: src.name,
-          mimeType: src.mimeType,
-          fileExtension: ext,
-          pathKey: destKey,
-          bucket: projectMediaStore.bucket,
-          url: publicUrl,
-          phase: 'uncategorized',
-        }))
-        imported++
-      }
-      return { imported }
+      return dalToTrpc(await projectsService.media.importFromProposal(ctx, input))
     }),
 })

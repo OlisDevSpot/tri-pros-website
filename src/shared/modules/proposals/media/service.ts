@@ -1,17 +1,17 @@
 // Proposal media service — the `proposal_media_files` child: the agent-side
-// gallery behind the proposal. The R2 object lifecycle and optimize dispatch
-// belong to the shared `mediaService` (one implementation for every media child);
-// this service BINDS that peer to `proposalMediaStore` and puts the proposal-side
-// gates in front of it, so every origin gets the same behaviour.
+// gallery behind the proposal. The ROW LIFECYCLE (optimize dispatch, R2 purge)
+// belongs to this unit's CRUD hooks (dal/server/crud.ts, C32), so the spread
+// `create`/`delete` below already carry it on every origin. What lives here is
+// the proposal-side AUTHORIZATION the DAL cannot express, plus the store binding
+// for the shared media verbs.
 //
 //   ...proposalMediaCrud   the engine's five slots on the service itself (serial int PK)
-//   create   (override)    parent-visibility probe → engine create → optimize dispatch
-//                          for image/pdf rows. The engine's bare `create` has no
+//   create   (override)    parent-visibility probe → engine create (the create hook
+//                          dispatches optimize). The engine's bare `create` has no
 //                          WHERE to scope an insert, so the probe IS the create-side
 //                          authorization for this child.
-//   delete   (override)    R2 objects + variants purged, then scoped delete. Missing
-//                          or invisible row ⇒ idempotent no-op. The engine's bare
-//                          `delete` would orphan the objects.
+//   delete                 engine slot — the delete hook purges R2 first. An already
+//                          deleted or out-of-scope row is `not-found`, not a no-op.
 //   update                 engine slot as-is (visibility, name — media is lock-exempt
 //                          by design, see ../core/DOCS.md#proposal-media)
 //   buildUploadTarget      parent-visibility probe → presigned R2 PUT
@@ -52,12 +52,8 @@ export const proposalMediaService = {
   async create(ctx: ScopedContext, input: CreateProposalMediaInput): Promise<DalReturn<ProposalMediaFile>> {
     return dalDbOperation(async () => {
       await assertParentVisible(ctx, input.proposalId)
-      return dalVerifySuccess(await mediaService.createRecord(proposalMediaStore, ctx, input)) as ProposalMediaFile
+      return dalVerifySuccess(await proposalMediaCrud.create(ctx, input)) as ProposalMediaFile
     })
-  },
-
-  async delete(ctx: ScopedContext, input: { id: number }): Promise<DalReturn<void>> {
-    return mediaService.removeRecord(proposalMediaStore, ctx, input.id)
   },
 
   async buildUploadTarget(

@@ -2,8 +2,8 @@ import { Buffer } from 'node:buffer'
 import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
 import { mediaPhases } from '@/shared/constants/enums/media'
-import { mediaService } from '@/shared/modules/media/service'
 import { projectMediaStore } from '@/shared/modules/projects/media/store'
+import { projectsService } from '@/shared/modules/projects/service'
 import { googleDriveTokenService } from '@/shared/services/providers/google-drive/token.service'
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
@@ -58,9 +58,10 @@ export const googleDriveRouter = createTRPCRouter({
       const buffer = Buffer.from(await driveResponse.arrayBuffer())
       await r2Client.putObject(projectMediaStore.bucket, pathKey, buffer, input.mimeType)
 
-      // Persist + dispatch optimization through the media facade — same path as a
-      // regular project-media upload (see projects.router/media.router.ts create).
-      return dalToTrpc(await mediaService.createRecord(projectMediaStore, ctx, {
+      // Persist through the project media service — same path as a regular
+      // project-media upload (see projects.router/media.router.ts create). The
+      // optimize dispatch rides the CRUD create hook (C32).
+      return dalToTrpc(await projectsService.media.create(ctx, {
         name: input.name.replace(/\.[^/.]+$/, ''),
         url: publicUrl,
         pathKey,
