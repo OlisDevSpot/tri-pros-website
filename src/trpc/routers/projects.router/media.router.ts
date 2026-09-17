@@ -138,7 +138,7 @@ export const mediaRouter = createTRPCRouter({
         if (!src.pathKey || !src.bucket)
           continue
         const ext = src.fileExtension || (src.pathKey.includes('.') ? `.${src.pathKey.split('.').pop()}` : '')
-        const destKey = `projects/${input.projectId}/uncategorized/${crypto.randomUUID()}${ext}`
+        const destKey = projectMediaStore.buildPathKey(input.projectId, crypto.randomUUID(), ext)
         await r2Client.copyObject({
           sourceBucket: src.bucket as R2BucketName,
           sourceKey: src.pathKey,

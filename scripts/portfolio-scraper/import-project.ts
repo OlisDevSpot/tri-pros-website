@@ -5,9 +5,12 @@ import path from 'node:path'
 import process from 'node:process'
 import readline from 'node:readline'
 import { eq } from 'drizzle-orm'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
-import { projectMediaFiles, projects, x_projectScopes } from '@/shared/db/schema'
+import { projects, x_projectScopes } from '@/shared/db/schema'
 import { projectFormSchema } from '@/shared/modules/projects/core/schemas'
+import { projectMediaCrud } from '@/shared/modules/projects/media/dal/server/crud'
+import { projectMediaStore } from '@/shared/modules/projects/media/store'
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
 import { OUTPUT_BASE_DIR } from './constants'
@@ -307,7 +310,7 @@ async function importProject(folderPath: string): Promise<ImportResult> {
       const mimeType = MIME_TYPES[ext] || 'image/jpeg'
       const phase = detectPhase(filename, phasesMap)
       const fileId = crypto.randomUUID()
-      const pathKey = `projects/${project.id}/${phase}/${fileId}${ext}`
+      const pathKey = projectMediaStore.buildPathKey(project.id, fileId, ext, { phase })
       const publicUrl = `${R2_PUBLIC_BASE}/${pathKey}`
 
       const isHero = !heroSet && (isHeroFromPhases(filename, phasesMap) || i === 0)
@@ -316,7 +319,7 @@ async function importProject(folderPath: string): Promise<ImportResult> {
 
       await uploadToR2(filePath, pathKey, mimeType)
 
-      await db.insert(projectMediaFiles).values({
+      const created = await projectMediaCrud.create(SYSTEM_CONTEXT, {
         name: filename,
         pathKey,
         bucket: BUCKET,
@@ -328,6 +331,9 @@ async function importProject(folderPath: string): Promise<ImportResult> {
         sortOrder: i,
         projectId: project.id,
       })
+      if (!created.success) {
+        console.error(`  ! insert failed for ${filename}:`, created.error)
+      }
     }
 
     console.log(`  Uploaded ${imageFiles.length} images`)

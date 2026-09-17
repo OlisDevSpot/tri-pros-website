@@ -1,15 +1,13 @@
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { InsertProject, Project } from '@/shared/db/schema'
-import type { R2BucketName } from '@/shared/services/providers/r2/types'
-
-import { eq } from 'drizzle-orm'
 
 import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
-import { db } from '@/shared/db'
-import { projectMediaFiles } from '@/shared/db/schema'
+import { projectMediaFiles } from '@/shared/db/schema/project-media-files'
+import { listMediaByOwner } from '@/shared/modules/media/core/dal/server/media-ops'
+import { purgeMediaObject } from '@/shared/modules/media/core/lib/purge'
 import { setProjectScopes } from '@/shared/modules/projects/core/dal/server/mutations'
 import { projectServerSpec } from '@/shared/modules/projects/core/server-spec'
-import { r2Client } from '@/shared/services/providers/r2/client'
+import { PROJECT_MEDIA } from '@/shared/modules/projects/media/lib/constants'
 
 /**
  * Stable CRUD handlers for the projects entity. Sub-plan D routes the full
@@ -20,18 +18,26 @@ export const projectCrud = createCrudDal(projectServerSpec, () => ({
   hooks: {
     delete: {
       // G4: the engine hands us the row. R2 media cleanup runs BEFORE the DB
-      // cascade removes the media_files rows (moved verbatim from the old
-      // deleteProject). Non-atomic + partial-tolerant, matching the pre-D order.
-      async before(row: Project) {
-        const files = await db
-          .select({ pathKey: projectMediaFiles.pathKey, bucket: projectMediaFiles.bucket })
-          .from(projectMediaFiles)
-          .where(eq(projectMediaFiles.projectId, row.id))
-
+      // cascade removes the project media rows. Non-atomic + partial-tolerant,
+      // matching the pre-D order.
+      //
+      // scope: null is deliberate — the purge must be exhaustive. `ctx.scope` here
+      // is the PROJECTS predicate; applying it to the media table would either
+      // filter rows we must delete objects for, or produce a column mismatch.
+      // A DAL may not import a service, so this reads through the media module's
+      // table-generic DAL and purges through the leaf helper (C31, D1).
+      async before(row: Project, ctx: ScopedContext) {
+        const files = await listMediaByOwner(
+          projectMediaFiles,
+          projectMediaFiles.projectId,
+          { ...ctx, scope: null },
+          row.id,
+        )
+        if (!files.success) {
+          return
+        }
         await Promise.all(
-          files
-            .filter((f): f is { pathKey: string, bucket: string } => f.pathKey !== null && f.bucket !== null)
-            .map(f => r2Client.deleteMediaWithVariants(f.bucket as R2BucketName, f.pathKey)),
+          files.data.map(f => purgeMediaObject(f as { bucket: string | null, pathKey: string | null, optimizationVariants?: string[] | null }, PROJECT_MEDIA.variants)),
         )
       },
     },

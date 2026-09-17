@@ -10,6 +10,7 @@ import type { MediaStore } from '@/shared/modules/media/core/types'
 import { dalSuccess } from '@/shared/dal/server/types'
 import { listMediaByOwner, reorderMedia } from '@/shared/modules/media/core/dal/server/media-ops'
 import { resetMediaOptimizationStatus } from '@/shared/modules/media/core/dal/server/optimization'
+import { purgeMediaObject } from '@/shared/modules/media/core/lib/purge'
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { optimizeMediaJob } from '@/shared/services/providers/upstash/jobs/optimize-media'
 import { optimizeMediaFile } from './core/lib/optimize-media'
@@ -51,10 +52,9 @@ export const mediaService = {
       return dalSuccess(undefined)
     }
     // Only R2-backed rows have an object to delete. A Stream row (Plan 1b) or a
-    // malformed row has null coordinates — skip R2 cleanup, still remove the DB row.
-    if (row.bucket && row.pathKey) {
-      await r2Client.deleteMediaWithVariants(row.bucket, row.pathKey)
-    }
+    // malformed row has null coordinates — purgeMediaObject skips cleanly, still
+    // remove the DB row.
+    await purgeMediaObject(row, store.variants)
     return store.crud.delete(ctx, { id })
   },
 

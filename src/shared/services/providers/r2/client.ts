@@ -21,7 +21,7 @@ import { getR2Config } from './lib/config'
 // Never `import { putObject } from '.../r2/put-object'`. The provider is a
 // leaf: methods accept primitives + the `R2BucketName` union and return
 // primitives — NO domain types, NO DB writes, NO app logic. Image-variant
-// generation is app logic and lives in `entities/media-files/lib`, not here.
+// generation is app logic and lives in `@/shared/modules/media/core/lib/image-variants`, not here.
 // ---------------------------------------------------------------------------
 
 /**
@@ -56,11 +56,6 @@ interface PresignedDownloadInput {
   pathKey: string
   expiresIn?: number
 }
-
-// Variant suffixes written alongside an original by the media-optimization
-// pipeline. Kept here (not in app logic) because `deleteMediaWithVariants`
-// must know every key the storage layer may hold for a given media file.
-const VARIANT_SUFFIXES = ['sm', 'md', 'lg'] as const
 
 export const r2Client = {
   /** Upload a buffer to `bucket/pathKey` with the given content type. */
@@ -108,14 +103,16 @@ export const r2Client = {
   },
 
   /**
-   * Delete a media file's original + all optimized variants. Variant
+   * Delete a media file's original + the given optimized variants. Variant
    * deletions are best-effort — they won't throw if a variant doesn't exist.
+   * The suffix list is supplied by the caller: this provider is a leaf and must
+   * not import an app-level variant registry (MD8).
    */
-  deleteMediaWithVariants: async (bucket: R2BucketName, pathKey: string): Promise<void> => {
+  deleteMediaWithVariants: async (bucket: R2BucketName, pathKey: string, suffixes: readonly string[]): Promise<void> => {
     const basePath = pathKey.replace(/\.[^.]+$/, '')
     await Promise.all([
       r2Client.deleteObject(bucket, pathKey),
-      ...VARIANT_SUFFIXES.map(suffix =>
+      ...suffixes.map(suffix =>
         r2Client.deleteObject(bucket, `${basePath}-${suffix}.webp`).catch(() => {}),
       ),
     ])

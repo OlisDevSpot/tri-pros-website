@@ -26,7 +26,8 @@ export async function optimizeMediaFile(
   const table = store.table
   // The row is read through the owner's own scoped CRUD — SYSTEM_CONTEXT because a
   // background job has no session and must see every row. This is what removes the
-  // last raw `db` import from the media layer (MD2).
+  // last raw `db` read on the media service/optimizer path (MD2) — the table-generic
+  // DAL ops (media-ops.ts, optimization.ts) still import `db` legitimately.
   const found = await store.crud.getById(SYSTEM_CONTEXT, { id: mediaId })
   if (!found.success) {
     console.error(`[optimizeMediaFile] ${store.ownerKind} media ${mediaId} read failed`, found.error)

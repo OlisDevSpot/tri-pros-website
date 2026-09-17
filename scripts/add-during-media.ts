@@ -15,8 +15,11 @@ import process from 'node:process'
 import './lib/load-env'
 import { desc, eq } from 'drizzle-orm'
 import sharp from 'sharp'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { projectMediaFiles, projects } from '@/shared/db/schema'
+import { projectMediaCrud } from '@/shared/modules/projects/media/dal/server/crud'
+import { projectMediaStore } from '@/shared/modules/projects/media/store'
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
 
@@ -55,11 +58,11 @@ async function main() {
 
     const webp = await sharp(file).webp({ quality: 82 }).toBuffer()
     const fileId = crypto.randomUUID()
-    const pathKey = `projects/${project.id}/during/${fileId}.webp`
+    const pathKey = projectMediaStore.buildPathKey(project.id, fileId, '.webp', { phase: 'during' })
 
     await r2Client.putObject(BUCKET, pathKey, webp, 'image/webp')
 
-    await db.insert(projectMediaFiles).values({
+    const created = await projectMediaCrud.create(SYSTEM_CONTEXT, {
       name: path.basename(file),
       pathKey,
       bucket: BUCKET,
@@ -71,6 +74,9 @@ async function main() {
       sortOrder: sortOrder++,
       projectId: project.id,
     })
+    if (!created.success) {
+      console.error(`  ! insert failed for ${path.basename(file)}:`, created.error)
+    }
 
     console.log(`  + during/${fileId}.webp  (${path.basename(file)})`)
   }
