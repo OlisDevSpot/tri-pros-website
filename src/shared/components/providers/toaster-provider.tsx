@@ -9,6 +9,7 @@ export function ToasterProvider() {
     <Toaster
       position="top-center"
       theme={theme as 'light' | 'dark'}
+      className="[&_[data-sonner-toast][data-visible=true]]:pointer-events-auto"
     />
   )
 }

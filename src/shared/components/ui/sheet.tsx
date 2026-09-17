@@ -4,6 +4,7 @@ import * as SheetPrimitive from '@radix-ui/react-dialog'
 import { XIcon } from 'lucide-react'
 import * as React from 'react'
 
+import { isToastTarget } from '@/shared/lib/is-toast-target'
 import { cn } from '@/shared/lib/utils'
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
@@ -48,6 +49,7 @@ function SheetContent({
   className,
   children,
   side = 'right',
+  onInteractOutside,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: 'top' | 'right' | 'bottom' | 'left'
@@ -70,6 +72,12 @@ function SheetContent({
           className,
         )}
         {...props}
+        onInteractOutside={(event) => {
+          if (isToastTarget(event.target)) {
+            event.preventDefault()
+          }
+          onInteractOutside?.(event)
+        }}
       >
         {children}
         {/*

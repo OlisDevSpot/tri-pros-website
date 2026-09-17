@@ -3,6 +3,7 @@
 import * as React from 'react'
 import { Drawer as DrawerPrimitive } from 'vaul'
 
+import { isToastTarget } from '@/shared/lib/is-toast-target'
 import { cn } from '@/shared/lib/utils'
 
 function Drawer({
@@ -48,6 +49,7 @@ function DrawerOverlay({
 function DrawerContent({
   className,
   children,
+  onInteractOutside,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Content>) {
   return (
@@ -64,6 +66,12 @@ function DrawerContent({
           className,
         )}
         {...props}
+        onInteractOutside={(event) => {
+          if (isToastTarget(event.target)) {
+            event.preventDefault()
+          }
+          onInteractOutside?.(event)
+        }}
       >
         <div className="bg-muted mx-auto mt-4 hidden h-2 w-25 shrink-0 rounded-full group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
         {children}

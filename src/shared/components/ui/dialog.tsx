@@ -4,6 +4,7 @@ import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { XIcon } from 'lucide-react'
 import * as React from 'react'
 
+import { isToastTarget } from '@/shared/lib/is-toast-target'
 import { cn } from '@/shared/lib/utils'
 
 // Stop React's SYNTHETIC event propagation without stopping NATIVE DOM
@@ -81,6 +82,7 @@ function DialogContent({
   showCloseButton = true,
   onClick,
   onKeyDown,
+  onInteractOutside,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
@@ -95,6 +97,12 @@ function DialogContent({
           className,
         )}
         {...props}
+        onInteractOutside={(event) => {
+          if (isToastTarget(event.target)) {
+            event.preventDefault()
+          }
+          onInteractOutside?.(event)
+        }}
         // A modal is an interaction boundary. Radix portals this content to
         // <body>, but React synthetic events still bubble along the FIBER tree,
         // not the DOM tree — so a click inside a dialog rendered by a clickable
