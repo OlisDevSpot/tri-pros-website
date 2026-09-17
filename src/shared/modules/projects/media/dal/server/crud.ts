@@ -21,6 +21,22 @@ import { optimizeMediaJob } from '@/shared/services/providers/upstash/jobs/optim
  * store imports this file, and going the other way would add a second edge to the
  * cycle D6 already has to defuse.
  *
+ * ORDERING, considered and kept: `delete.before` purges R2 BEFORE the engine runs
+ * the DELETE, so a failed DELETE leaves the row pointing at objects that are gone.
+ * That is exactly the old `mediaService.removeRecord` ordering, so it is not a
+ * regression, and it is the safer of the two failure modes — the reverse order
+ * orphans R2 objects with no DB row left to find them by, which is unrecoverable,
+ * whereas a dangling row is visible and re-deletable. Revisit only with afterCommit
+ * (sub-plan C).
+ *
+ * ⚠️ `duplicate` ALSO fires `create.after`: `duplicateImpl` routes through
+ * `createImpl`. A duplicated media row copies `pathKey`/`bucket`/`url` verbatim, so
+ * the dispatch would re-optimize the SOURCE object and either copy's `delete.before`
+ * would purge the object both rows point at. Not reachable today (no `duplicate`
+ * procedure on the media routers) but the service spread exposes
+ * `projectsService.media.duplicate` — give media a real copy-the-object path before
+ * anyone calls it.
+ *
  * See ../../server-spec.ts: the project-media router still passes an unscoped ctx,
  * so these run unscoped there until #285 turns the parent bridge on. Serial int PK.
  */
