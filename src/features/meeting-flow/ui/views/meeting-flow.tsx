@@ -88,19 +88,8 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
     invalidateRef.current = invalidateMeeting
   })
 
-  const syncStatusRef = useRef(syncStatus)
-  useLayoutEffect(() => {
-    syncStatusRef.current = syncStatus
-  })
-
   const [meetingWriter] = useState(() => new QueryMutationObserver(queryClient, trpc.meetingsRouter.crud.update.mutationOptions({
-    // The server publishes `meeting:<id>` before it responds and `useMeetingSync` invalidates on it, so a second
-    // invalidation here only duplicates the refetch. Without a live connection there is no echo: invalidate.
-    onSuccess: () => {
-      if (syncStatusRef.current !== 'connected') {
-        invalidateRef.current()
-      }
-    },
+    onSuccess: () => invalidateRef.current(),
     onError: () => toast.error('Failed to save'),
   })))
 
