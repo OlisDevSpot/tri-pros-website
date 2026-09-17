@@ -6,8 +6,8 @@ import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { accessor, createdAt, description, id, updatedAt } from '../lib/schema-helpers'
 import { user } from './auth'
 import { customers } from './customers'
-import { mediaFiles } from './media-files'
 import { meetings } from './meetings'
+import { projectMediaFiles } from './project-media-files'
 import { x_projectScopes } from './x-project-scopes'
 
 export const projects = pgTable('projects', {
@@ -53,7 +53,7 @@ export const projectsRelations = relations(projects, ({ many, one }) => ({
     references: [user.id],
   }),
   meetings: many(meetings),
-  mediaFiles: many(mediaFiles),
+  projectMediaFiles: many(projectMediaFiles),
   projectScopes: many(x_projectScopes),
 }))
 

@@ -4,7 +4,7 @@ import { and, count, eq, inArray, sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
 import { z } from 'zod'
-import { mediaFiles, projects } from '@/shared/db/schema'
+import { projectMediaFiles, projects } from '@/shared/db/schema'
 /**
  * Before/After Photo Matching Script
  *
@@ -275,20 +275,20 @@ async function main() {
   // Step 1: Find qualifying projects
   const phaseRows = await db
     .select({
-      projectId: mediaFiles.projectId,
+      projectId: projectMediaFiles.projectId,
       projectTitle: projects.title,
-      phase: mediaFiles.phase,
-      photoCount: count(mediaFiles.id),
+      phase: projectMediaFiles.phase,
+      photoCount: count(projectMediaFiles.id),
     })
-    .from(mediaFiles)
-    .innerJoin(projects, eq(mediaFiles.projectId, projects.id))
+    .from(projectMediaFiles)
+    .innerJoin(projects, eq(projectMediaFiles.projectId, projects.id))
     .where(
       and(
-        inArray(mediaFiles.phase, ['before', 'after']),
-        sql`${mediaFiles.mimeType} LIKE 'image/%'`,
+        inArray(projectMediaFiles.phase, ['before', 'after']),
+        sql`${projectMediaFiles.mimeType} LIKE 'image/%'`,
       ),
     )
-    .groupBy(mediaFiles.projectId, projects.title, mediaFiles.phase)
+    .groupBy(projectMediaFiles.projectId, projects.title, projectMediaFiles.phase)
 
   const projectMap = new Map<string, { title: string, before: number, after: number }>()
   for (const row of phaseRows) {
@@ -320,22 +320,22 @@ async function main() {
     // Fetch all before + after photos for this project
     const photos = await db
       .select({
-        id: mediaFiles.id,
-        url: mediaFiles.url,
-        phase: mediaFiles.phase,
-        name: mediaFiles.name,
-        sortOrder: mediaFiles.sortOrder,
-        createdAt: mediaFiles.createdAt,
+        id: projectMediaFiles.id,
+        url: projectMediaFiles.url,
+        phase: projectMediaFiles.phase,
+        name: projectMediaFiles.name,
+        sortOrder: projectMediaFiles.sortOrder,
+        createdAt: projectMediaFiles.createdAt,
       })
-      .from(mediaFiles)
+      .from(projectMediaFiles)
       .where(
         and(
-          eq(mediaFiles.projectId, projectId),
-          inArray(mediaFiles.phase, ['before', 'after']),
-          sql`${mediaFiles.mimeType} LIKE 'image/%'`,
+          eq(projectMediaFiles.projectId, projectId),
+          inArray(projectMediaFiles.phase, ['before', 'after']),
+          sql`${projectMediaFiles.mimeType} LIKE 'image/%'`,
         ),
       )
-      .orderBy(mediaFiles.sortOrder, mediaFiles.createdAt)
+      .orderBy(projectMediaFiles.sortOrder, projectMediaFiles.createdAt)
 
     const beforePhotos = photos.filter(p => p.phase === 'before') as PhotoRow[]
     const afterPhotos = photos.filter(p => p.phase === 'after') as PhotoRow[]

@@ -1,6 +1,6 @@
 'use client'
 
-import type { MediaFile, Project } from '@/shared/db/schema'
+import type { Project, ProjectMediaFile } from '@/shared/db/schema'
 import type { BeforeAfterPairs } from '@/shared/modules/projects/core/schemas'
 import type { ProjectMediaGroups } from '@/shared/modules/projects/core/types'
 import { AnimatePresence, motion, useInView } from 'motion/react'
@@ -19,8 +19,8 @@ const ReactCompareSlider = dynamic(
 )
 
 interface ResolvedPair {
-  before: MediaFile
-  after: MediaFile
+  before: ProjectMediaFile
+  after: ProjectMediaFile
   label: string
   confidence: number
 }

@@ -1,6 +1,6 @@
 import type { CalendarEvent } from '@/shared/components/calendar/types'
 import type { MeetingOutcome, MeetingType } from '@/shared/constants/enums'
-import type { MediaFile } from '@/shared/db/schema'
+import type { ProjectMediaFile } from '@/shared/db/schema'
 import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { MeetingFlowState, TradeSelection } from '@/shared/entities/meetings/schemas'
 import type { ScopeOrAddon } from '@/shared/services/providers/notion/lib/scopes/schema'
@@ -287,7 +287,7 @@ export interface ShowcaseProject {
   city: string | null
   state: string | null
   duration: string | null
-  heroImage: MediaFile
+  heroImage: ProjectMediaFile
   scopeIds: string[]
 }
 
@@ -300,7 +300,7 @@ export interface ShowcaseProjectIndex {
 
 /** One photo the showcase can put on stage. `key` is stable: a curated photo's `src`, or `project:<id>`. */
 export type ShowcaseMedia
-  = | { key: string, kind: 'project', file: MediaFile, caption: string }
+  = | { key: string, kind: 'project', file: ProjectMediaFile, caption: string }
     | { key: string, kind: 'curated', photo: TradePhoto, caption: string }
 
 export interface TradeBenefit {

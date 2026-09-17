@@ -1,6 +1,6 @@
 'use client'
 
-import type { MediaFile } from '@/shared/db/schema'
+import type { ProjectMediaFile } from '@/shared/db/schema'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useRef } from 'react'
@@ -8,7 +8,7 @@ import { OptimizedImage } from '@/shared/components/optimized-image'
 import { cn } from '@/shared/lib/utils'
 
 interface Props {
-  photos: MediaFile[]
+  photos: ProjectMediaFile[]
   currentIndex: number
   onClose: () => void
   onNavigate: (index: number) => void

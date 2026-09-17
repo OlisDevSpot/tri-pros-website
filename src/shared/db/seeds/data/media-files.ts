@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { db } from '@/shared/db'
 import { projects } from '@/shared/db/schema'
-import { mediaFiles } from '@/shared/db/schema/media-files'
+import { projectMediaFiles } from '@/shared/db/schema/project-media-files'
 import { projectsData } from './projects'
 
 async function createProject(data: Omit<InsertProject, 'address' | 'state'>) {
@@ -19,7 +19,7 @@ async function createProject(data: Omit<InsertProject, 'address' | 'state'>) {
   return newProject
 }
 
-async function seedMediaFilesInDrizzle() {
+async function seedProjectMediaFilesInDrizzle() {
   for (const project of projectsData) {
     const newProject = await createProject({
       title: project.title,
@@ -35,7 +35,7 @@ async function seedMediaFilesInDrizzle() {
       // const filePath = path.join(folder, file)
       // const fileData = fs.readFileSync(filePath)
 
-      await db.insert(mediaFiles).values({
+      await db.insert(projectMediaFiles).values({
         name: file,
         pathKey: `projects/${newProject.title}/${file}`,
         bucket: 'portfolio-photos',
@@ -50,4 +50,4 @@ async function seedMediaFilesInDrizzle() {
   }
 }
 
-seedMediaFilesInDrizzle()
+seedProjectMediaFilesInDrizzle()

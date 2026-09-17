@@ -1,7 +1,7 @@
 import type { R2BucketName } from '@/shared/services/providers/r2/types'
 import { z } from 'zod'
 import { mediaPhases } from '@/shared/constants/enums/media'
-import { insertMediaFilesSchema } from '@/shared/db/schema'
+import { insertProjectMediaFilesSchema } from '@/shared/db/schema'
 import { deriveOriginalMediaUrl, getOptimizedSrc } from '@/shared/lib/get-optimized-urls'
 import { moveMediaPhase, setHeroImage } from '@/shared/modules/projects/media/dal/server/mutations'
 import { listImportableProjectMedia } from '@/shared/modules/proposals/media/dal/server/queries'
@@ -32,7 +32,7 @@ export const mediaRouter = createTRPCRouter({
     }),
 
   create: agentProcedure
-    .input(insertMediaFilesSchema.omit({ bucket: true }).extend({
+    .input(insertProjectMediaFilesSchema.omit({ bucket: true }).extend({
       bucket: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) =>

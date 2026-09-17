@@ -6,7 +6,7 @@
  * docs/superpowers/plans/2026-08-05-proposal-media-CLEANUP.md. Do not build on this.
  */
 
-import type { MediaFile } from '@/shared/db/schema'
+import type { ProjectMediaFile } from '@/shared/db/schema'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useMutation } from '@tanstack/react-query'
@@ -24,7 +24,7 @@ import { useTRPC } from '@/trpc/helpers'
 import { PhotoDetailDialog } from './photo-detail-dialog'
 
 interface Props {
-  file: MediaFile
+  file: ProjectMediaFile
   onDelete: (id: number) => void
   onToggleHero: (id: number, currentIsHero: boolean) => void
   onMovePhase: (id: number, phase: string) => void

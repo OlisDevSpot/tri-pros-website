@@ -1,6 +1,6 @@
 'use client'
 
-import type { MediaFile } from '@/shared/db/schema'
+import type { ProjectMediaFile } from '@/shared/db/schema'
 import type { ProjectFormData } from '@/shared/modules/projects/core/schemas'
 import { ImageIcon, Loader2, Settings2Icon } from 'lucide-react'
 import { useEffect } from 'react'
@@ -15,7 +15,7 @@ interface Props {
   initialValues?: Partial<ProjectFormData>
   onSubmit: (data: ProjectFormData) => void
   projectId?: string
-  mediaFiles?: MediaFile[]
+  mediaFiles?: ProjectMediaFile[]
   onMediaUpdate?: () => void
 }
 

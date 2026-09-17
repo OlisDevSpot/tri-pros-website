@@ -6,7 +6,7 @@ import process from 'node:process'
 import readline from 'node:readline'
 import { eq } from 'drizzle-orm'
 import { db } from '@/shared/db'
-import { mediaFiles, projects, x_projectScopes } from '@/shared/db/schema'
+import { projectMediaFiles, projects, x_projectScopes } from '@/shared/db/schema'
 import { projectFormSchema } from '@/shared/modules/projects/core/schemas'
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
@@ -316,7 +316,7 @@ async function importProject(folderPath: string): Promise<ImportResult> {
 
       await uploadToR2(filePath, pathKey, mimeType)
 
-      await db.insert(mediaFiles).values({
+      await db.insert(projectMediaFiles).values({
         name: filename,
         pathKey,
         bucket: BUCKET,

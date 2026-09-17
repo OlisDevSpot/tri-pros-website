@@ -1,20 +1,20 @@
 import type { ProjectDetail, PublicProject } from '@/shared/modules/projects/core/types'
 import { and, asc, desc, eq } from 'drizzle-orm'
 import { db } from '@/shared/db'
-import { mediaFiles, projects } from '@/shared/db/schema'
+import { projectMediaFiles, projects } from '@/shared/db/schema'
 
 export async function getPublicProjects(): Promise<PublicProject[]> {
   const rows = await db
     .select({
       project: projects,
-      heroImage: mediaFiles,
+      heroImage: projectMediaFiles,
     })
     .from(projects)
     .leftJoin(
-      mediaFiles,
+      projectMediaFiles,
       and(
-        eq(mediaFiles.projectId, projects.id),
-        eq(mediaFiles.isHeroImage, true),
+        eq(projectMediaFiles.projectId, projects.id),
+        eq(projectMediaFiles.isHeroImage, true),
       ),
     )
     .where(eq(projects.isPublic, true))
@@ -43,9 +43,9 @@ export async function getProjectByAccessor(accessor: string): Promise<ProjectDet
 
   const media = await db
     .select()
-    .from(mediaFiles)
-    .where(eq(mediaFiles.projectId, project.id))
-    .orderBy(asc(mediaFiles.sortOrder), desc(mediaFiles.createdAt))
+    .from(projectMediaFiles)
+    .where(eq(projectMediaFiles.projectId, project.id))
+    .orderBy(asc(projectMediaFiles.sortOrder), desc(projectMediaFiles.createdAt))
 
   return {
     project,

@@ -1,7 +1,7 @@
 import type { ProjectStatusBucket, ProjectVisibility } from '@/shared/constants/enums'
 import type { DateRange, PaginationFields, SortFields } from '@/shared/dal/server/lib/query/schemas'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
-import type { MediaFile, Project } from '@/shared/db/schema'
+import type { Project, ProjectMediaFile } from '@/shared/db/schema'
 import type { PortfolioProject, PortfolioProjectDetail } from '@/shared/modules/projects/core/types'
 import { and, asc, count, desc, eq, getTableColumns, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm'
 import { stagesForBuckets } from '@/shared/constants/enums'
@@ -9,21 +9,21 @@ import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { buildFilterWhere } from '@/shared/dal/server/lib/query/filters'
 import { buildOrderBy } from '@/shared/dal/server/lib/query/sort'
 import { db } from '@/shared/db'
-import { mediaFiles, projects, x_projectScopes } from '@/shared/db/schema'
+import { projectMediaFiles, projects, x_projectScopes } from '@/shared/db/schema'
 import { hasAssociatedMeeting } from '@/shared/modules/projects/core/lib/visibility'
 
 export async function getPortfolioProjects(): Promise<PortfolioProject[]> {
   const rows = await db
     .select({
       project: projects,
-      heroImage: mediaFiles,
+      heroImage: projectMediaFiles,
     })
     .from(projects)
     .leftJoin(
-      mediaFiles,
+      projectMediaFiles,
       and(
-        eq(mediaFiles.projectId, projects.id),
-        eq(mediaFiles.isHeroImage, true),
+        eq(projectMediaFiles.projectId, projects.id),
+        eq(projectMediaFiles.isHeroImage, true),
       ),
     )
     .where(eq(projects.isPublic, true))
@@ -80,9 +80,9 @@ export async function getPortfolioProjectDetail(accessor: string): Promise<Portf
   const [media, scopeRows] = await Promise.all([
     db
       .select()
-      .from(mediaFiles)
-      .where(eq(mediaFiles.projectId, project.id))
-      .orderBy(asc(mediaFiles.sortOrder), desc(mediaFiles.createdAt)),
+      .from(projectMediaFiles)
+      .where(eq(projectMediaFiles.projectId, project.id))
+      .orderBy(asc(projectMediaFiles.sortOrder), desc(projectMediaFiles.createdAt)),
 
     db
       .select({ scopeId: x_projectScopes.scopeId })
@@ -108,7 +108,7 @@ export async function getPortfolioProjectDetail(accessor: string): Promise<Portf
 export interface ProjectForEdit {
   project: Project
   scopeIds: string[]
-  media: MediaFile[]
+  media: ProjectMediaFile[]
 }
 
 export async function getProjectForEdit(projectId: string): Promise<ProjectForEdit | null> {
@@ -128,9 +128,9 @@ export async function getProjectForEdit(projectId: string): Promise<ProjectForEd
       .where(eq(x_projectScopes.projectId, projectId)),
     db
       .select()
-      .from(mediaFiles)
-      .where(eq(mediaFiles.projectId, projectId))
-      .orderBy(mediaFiles.sortOrder, mediaFiles.createdAt),
+      .from(projectMediaFiles)
+      .where(eq(projectMediaFiles.projectId, projectId))
+      .orderBy(projectMediaFiles.sortOrder, projectMediaFiles.createdAt),
   ])
 
   return {

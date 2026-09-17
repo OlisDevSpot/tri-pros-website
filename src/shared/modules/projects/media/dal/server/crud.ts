@@ -1,5 +1,5 @@
 import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
-import { mediaFileServerSpec } from '@/shared/modules/projects/media/server-spec'
+import { projectMediaServerSpec } from '@/shared/modules/projects/media/server-spec'
 
 /**
  * Scoped CRUD handlers for project media files. Composes `ctx.scope` into
@@ -8,4 +8,4 @@ import { mediaFileServerSpec } from '@/shared/modules/projects/media/server-spec
  * passes an unscoped `ctx` today, so these run unscoped until the bridge is
  * turned on in the deferred scoping slice. Serial int PK.
  */
-export const mediaFileCrud = createCrudDal(mediaFileServerSpec)
+export const projectMediaCrud = createCrudDal(projectMediaServerSpec)

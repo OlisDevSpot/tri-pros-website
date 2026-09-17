@@ -1,6 +1,6 @@
 'use client'
 
-import type { MediaFile } from '@/shared/db/schema'
+import type { ProjectMediaFile } from '@/shared/db/schema'
 import type { ProjectDetail } from '@/shared/modules/projects/core/types'
 
 import { motion } from 'motion/react'
@@ -10,7 +10,7 @@ import { Badge } from '@/shared/components/ui/badge'
 
 interface Props {
   project: NonNullable<ProjectDetail>['project']
-  heroImage?: MediaFile
+  heroImage?: ProjectMediaFile
 }
 
 export function ProjectHero({ project, heroImage }: Props) {

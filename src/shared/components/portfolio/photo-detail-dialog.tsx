@@ -6,12 +6,12 @@
  * docs/superpowers/plans/2026-08-05-proposal-media-CLEANUP.md. Do not build on this.
  */
 
-import type { MediaFile } from '@/shared/db/schema'
+import type { ProjectMediaFile } from '@/shared/db/schema'
 import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog'
 
 interface Props {
-  file: MediaFile
+  file: ProjectMediaFile
   open: boolean
   onOpenChange: (open: boolean) => void
 }

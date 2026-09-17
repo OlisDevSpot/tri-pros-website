@@ -2,7 +2,7 @@
 
 import type { MediaItem } from '@/shared/components/media/types'
 import type { MediaPhase } from '@/shared/constants/enums/media'
-import type { MediaFile } from '@/shared/db/schema'
+import type { ProjectMediaFile } from '@/shared/db/schema'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowRightIcon, Star, Trash2, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
@@ -36,7 +36,7 @@ import { ImportFromProposalDialog } from './import-from-proposal-dialog'
 
 interface Props {
   projectId: string
-  mediaFiles: MediaFile[]
+  mediaFiles: ProjectMediaFile[]
   onUpdate: () => void
 }
 
@@ -215,12 +215,12 @@ export function ProjectMediaManager({ projectId, mediaFiles, onUpdate }: Props) 
 
   const fileById = new Map(mediaFiles.map(f => [f.id, f]))
 
-  const mediaByPhase = (phase: string): MediaFile[] =>
+  const mediaByPhase = (phase: string): ProjectMediaFile[] =>
     mediaFiles
       .filter(f => f.phase === phase && !f.mimeType.startsWith('video/'))
       .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
 
-  const toMediaItem = (f: MediaFile): MediaItem => ({
+  const toMediaItem = (f: ProjectMediaFile): MediaItem => ({
     id: f.id,
     name: f.name,
     mimeType: f.mimeType,

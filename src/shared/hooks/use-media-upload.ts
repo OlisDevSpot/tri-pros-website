@@ -7,12 +7,12 @@
  */
 
 import type { MediaPhase } from '@/shared/constants/enums/media'
-import type { InsertMediaFilesSchema } from '@/shared/db/schema'
+import type { InsertProjectMediaFilesSchema } from '@/shared/db/schema'
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTRPC } from '@/trpc/helpers'
 
-type UploadMeta = Omit<InsertMediaFilesSchema, 'bucket' | 'pathKey' | 'url'>
+type UploadMeta = Omit<InsertProjectMediaFilesSchema, 'bucket' | 'pathKey' | 'url'>
 
 interface UploadInput {
   file: File

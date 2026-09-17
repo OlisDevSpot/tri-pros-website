@@ -1,6 +1,6 @@
 'use client'
 
-import type { MediaFile, Project } from '@/shared/db/schema'
+import type { Project, ProjectMediaFile } from '@/shared/db/schema'
 import type { ProjectMediaGroups } from '@/shared/modules/projects/core/types'
 import { motion, useInView } from 'motion/react'
 import { useCallback, useMemo, useRef, useState } from 'react'
@@ -12,7 +12,7 @@ interface TimelinePhase {
   key: string
   label: string
   description: string | null
-  photos: MediaFile[]
+  photos: ProjectMediaFile[]
 }
 
 interface Props {

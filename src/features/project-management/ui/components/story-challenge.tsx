@@ -1,13 +1,13 @@
 'use client'
 
-import type { MediaFile, Project } from '@/shared/db/schema'
+import type { Project, ProjectMediaFile } from '@/shared/db/schema'
 import { motion, useInView } from 'motion/react'
 import { useRef } from 'react'
 import { OptimizedImage } from '@/shared/components/optimized-image'
 
 interface Props {
   project: Project
-  mainImage: MediaFile | undefined
+  mainImage: ProjectMediaFile | undefined
 }
 
 export function StoryChallenge({ project, mainImage }: Props) {

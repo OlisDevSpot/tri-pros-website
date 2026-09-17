@@ -1,11 +1,11 @@
 'use client'
 
-import type { MediaFile } from '@/shared/db/schema'
+import type { ProjectMediaFile } from '@/shared/db/schema'
 import { ProjectMediaManager } from './project-media-manager'
 
 interface Props {
   projectId: string
-  mediaFiles: MediaFile[]
+  mediaFiles: ProjectMediaFile[]
   onUpdate: () => void
 }
 

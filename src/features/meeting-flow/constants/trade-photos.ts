@@ -6,7 +6,7 @@ const TRADES = '/meeting-flow/trades'
  * Curated project photos by trade slug. Optimized webp copies (1600px wide at most) of
  * portfolio shots, committed under `public/meeting-flow/trades/` because
  * `public/portfolio-photos/projects/` is gitignored and never deploys.
- * Replaced by `mediaFiles` when the R2 cover-image migration lands (#243, #244).
+ * Replaced by `projectMediaFiles` when the R2 cover-image migration lands (#243, #244).
  */
 export const TRADE_PHOTOS: Record<string, TradePhoto> = {
   'kitchen-remodel': { src: `${TRADES}/kitchen-monique.webp`, alt: 'Remodeled kitchen, Monique project' },

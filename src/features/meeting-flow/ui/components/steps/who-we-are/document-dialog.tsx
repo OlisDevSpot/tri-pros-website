@@ -2,7 +2,7 @@
 
 // LAZY: first-pass stopgap. The shared `PhotoLightbox`
 // (src/features/project-management/ui/components/photo-lightbox.tsx) is bound to
-// `MediaFile` records, so this ships a minimal dialog instead of extending it.
+// `ProjectMediaFile` records, so this ships a minimal dialog instead of extending it.
 // Migrate onto the lightbox and delete this file when that container is
 // generalized. See docs/superpowers/specs/2026-09-12-who-we-are-scroll-presentation-design.md §4.3.
 

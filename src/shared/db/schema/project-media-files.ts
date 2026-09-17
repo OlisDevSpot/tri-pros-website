@@ -8,7 +8,7 @@ import { baseMediaColumns } from './lib/media-columns'
 import { mediaPhaseEnum } from './meta'
 import { projects } from './projects'
 
-export const mediaFiles = pgTable('media_files', {
+export const projectMediaFiles = pgTable('media_files', {
   id: unsafeId,
   ...baseMediaColumns(),
   url: varchar('url', { length: 255 }).notNull(),
@@ -21,17 +21,17 @@ export const mediaFiles = pgTable('media_files', {
     .references(() => projects.id, { onDelete: 'cascade' }),
 })
 
-export const mediaFilesRelations = relations(mediaFiles, ({ one }) => ({
+export const projectMediaFilesRelations = relations(projectMediaFiles, ({ one }) => ({
   project: one(projects, {
-    fields: [mediaFiles.projectId],
+    fields: [projectMediaFiles.projectId],
     references: [projects.id],
   }),
 }))
 
-export const selectMediaFilesSchema = createSelectSchema(mediaFiles)
-export type MediaFile = z.infer<typeof selectMediaFilesSchema>
+export const selectProjectMediaFilesSchema = createSelectSchema(projectMediaFiles)
+export type ProjectMediaFile = z.infer<typeof selectProjectMediaFilesSchema>
 
-export const insertMediaFilesSchema = selectMediaFilesSchema.omit({
+export const insertProjectMediaFilesSchema = selectProjectMediaFilesSchema.omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -48,4 +48,4 @@ export const insertMediaFilesSchema = selectMediaFilesSchema.omit({
   provider: true,
   externalId: true,
 })
-export type InsertMediaFilesSchema = z.infer<typeof insertMediaFilesSchema>
+export type InsertProjectMediaFilesSchema = z.infer<typeof insertProjectMediaFilesSchema>

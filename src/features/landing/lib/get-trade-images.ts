@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray } from 'drizzle-orm'
 
 import { db } from '@/shared/db'
-import { mediaFiles } from '@/shared/db/schema/media-files'
+import { projectMediaFiles } from '@/shared/db/schema/project-media-files'
 import { projects } from '@/shared/db/schema/projects'
 import { getProjectScopeCountsByScopeIds } from '@/shared/modules/projects/core/dal/server/queries'
 
@@ -10,7 +10,7 @@ import { getProjectScopeCountsByScopeIds } from '@/shared/modules/projects/core/
  * finds matching public projects and returns their hero image URLs.
  * Single-trade projects are prioritized to avoid cross-trade image bleed.
  *
- * Flow: scopeIds -> x_projectScopes -> projects (isPublic) -> mediaFiles (prefer hero)
+ * Flow: scopeIds -> x_projectScopes -> projects (isPublic) -> projectMediaFiles (prefer hero)
  */
 export async function getTradeImages(scopeNotionIds: string[]): Promise<string[]> {
   if (scopeNotionIds.length === 0) {
@@ -38,14 +38,14 @@ export async function getTradeImages(scopeNotionIds: string[]): Promise<string[]
     ids.length === 0
       ? Promise.resolve([])
       : db
-          .select({ url: mediaFiles.url })
-          .from(mediaFiles)
-          .innerJoin(projects, eq(mediaFiles.projectId, projects.id))
+          .select({ url: projectMediaFiles.url })
+          .from(projectMediaFiles)
+          .innerJoin(projects, eq(projectMediaFiles.projectId, projects.id))
           .where(and(
-            inArray(mediaFiles.projectId, ids),
+            inArray(projectMediaFiles.projectId, ids),
             eq(projects.isPublic, true),
           ))
-          .orderBy(desc(mediaFiles.isHeroImage), mediaFiles.sortOrder)
+          .orderBy(desc(projectMediaFiles.isHeroImage), projectMediaFiles.sortOrder)
 
   const [singleTradeImages, multiTradeImages] = await Promise.all([
     fetchImages(singleTradeIds),

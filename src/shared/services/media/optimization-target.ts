@@ -2,7 +2,7 @@
 import type { MediaOwnerKind } from './stores'
 import { eq } from 'drizzle-orm'
 import { db } from '@/shared/db'
-import { mediaFiles } from '@/shared/db/schema/media-files'
+import { projectMediaFiles } from '@/shared/db/schema/project-media-files'
 import { proposalMediaFiles } from '@/shared/db/schema/proposal-media-files'
 
 export interface OptimizationTarget {
@@ -12,8 +12,8 @@ export interface OptimizationTarget {
 
 const targets: Record<MediaOwnerKind, OptimizationTarget> = {
   project: {
-    table: mediaFiles,
-    getFile: async id => (await db.select().from(mediaFiles).where(eq(mediaFiles.id, id)))[0],
+    table: projectMediaFiles,
+    getFile: async id => (await db.select().from(projectMediaFiles).where(eq(projectMediaFiles.id, id)))[0],
   },
   proposal: {
     table: proposalMediaFiles,

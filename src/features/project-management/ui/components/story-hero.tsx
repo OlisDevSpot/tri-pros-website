@@ -1,6 +1,6 @@
 'use client'
 
-import type { MediaFile, Project } from '@/shared/db/schema'
+import type { Project, ProjectMediaFile } from '@/shared/db/schema'
 
 import { motion } from 'motion/react'
 
@@ -22,7 +22,7 @@ interface TradeWithScopes {
 
 interface Props {
   project: Project
-  heroImage: MediaFile | undefined
+  heroImage: ProjectMediaFile | undefined
   tradesWithScopes: TradeWithScopes[]
 }
 

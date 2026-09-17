@@ -1,7 +1,7 @@
 'use client'
 
 import type { CarouselApi } from '@/shared/components/ui/carousel'
-import type { MediaFile } from '@/shared/db/schema'
+import type { ProjectMediaFile } from '@/shared/db/schema'
 import { useCallback, useState } from 'react'
 import { OptimizedImage } from '@/shared/components/optimized-image'
 import {
@@ -14,7 +14,7 @@ import {
 import { cn } from '@/shared/lib/utils'
 
 interface PhaseCarouselProps {
-  photos: MediaFile[]
+  photos: ProjectMediaFile[]
   phaseLabel: string
   onPhotoClick?: (index: number) => void
 }

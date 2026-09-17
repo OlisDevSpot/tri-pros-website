@@ -134,7 +134,7 @@ const TABLES = [
   // `customers` truncation already wipes it on --fresh.
   def({ table: schema.customerProfiles }),
   def({ table: schema.projects, tagColumns: ['title', 'homeownerName', 'city'] }),
-  def({ table: schema.mediaFiles, hasSequence: true }),
+  def({ table: schema.projectMediaFiles, hasSequence: true }),
   def({ table: schema.x_projectScopes }),
   def({ table: schema.x_projectMediaFiles }),
 

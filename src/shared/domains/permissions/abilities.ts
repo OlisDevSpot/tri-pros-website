@@ -40,7 +40,7 @@ import { VOIP_DID } from '@/shared/entities/voip-dids/lib/constants'
 import { VOIP_LINK_TOKEN } from '@/shared/entities/voip-link-tokens/lib/constants'
 import { VOIP_MESSAGE } from '@/shared/entities/voip-messages/lib/constants'
 import { PROJECT } from '@/shared/modules/projects/core/lib/constants'
-import { MEDIA_FILE } from '@/shared/modules/projects/media/lib/constants'
+import { PROJECT_MEDIA_FILE } from '@/shared/modules/projects/media/lib/constants'
 import { PROPOSAL } from '@/shared/modules/proposals/core/lib/constants'
 import { PROPOSAL_INCENTIVE } from '@/shared/modules/proposals/incentives/lib/constants'
 import { PROPOSAL_MEDIA_FILE } from '@/shared/modules/proposals/media/lib/constants'
@@ -57,7 +57,7 @@ export const ENTITY_NAMES = [
   PROPOSAL_VIEW,
   PROPOSAL_INCENTIVE,
   PROJECT,
-  MEDIA_FILE,
+  PROJECT_MEDIA_FILE,
   // Super-admin-only entity: agents have no lead-source grants by design;
   // super-admin's `manage all` is the only access path.
   LEAD_SOURCE,

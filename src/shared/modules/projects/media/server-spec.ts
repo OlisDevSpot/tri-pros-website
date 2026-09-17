@@ -1,21 +1,21 @@
 import type { EntityServerSpec } from '@/shared/dal/server/types'
 
 import {
-  insertMediaFilesSchema,
-  mediaFiles,
-  selectMediaFilesSchema,
-} from '@/shared/db/schema/media-files'
+  insertProjectMediaFilesSchema,
+  projectMediaFiles,
+  selectProjectMediaFilesSchema,
+} from '@/shared/db/schema/project-media-files'
 import { projectServerSpec } from '@/shared/modules/projects/core/server-spec'
-import { MEDIA_FILE } from '@/shared/modules/projects/media/lib/constants'
+import { PROJECT_MEDIA_FILE } from '@/shared/modules/projects/media/lib/constants'
 
 // The insert schema already `.partial()`s the server-derived/defaulted columns;
 // update partials the rest so any subset is patchable (e.g. `{ name }`, `{ phase }`).
-const updateMediaFileSchema = insertMediaFilesSchema.partial()
+const updateProjectMediaFileSchema = insertProjectMediaFilesSchema.partial()
 
 /** Concrete schemas for tRPC input inference (spec carries type-erased copies). */
-export const mediaFileSchemas = {
-  insert: insertMediaFilesSchema,
-  update: updateMediaFileSchema,
+export const projectMediaSchemas = {
+  insert: insertProjectMediaFilesSchema,
+  update: updateProjectMediaFileSchema,
 }
 
 /**
@@ -34,14 +34,14 @@ export const mediaFileSchemas = {
  * number`. No `hooks`: R2 cleanup + optimize dispatch are orchestration in
  * `mediaService`, which rings this DAL.
  */
-export const mediaFileServerSpec = {
-  entityName: MEDIA_FILE,
+export const projectMediaServerSpec = {
+  entityName: PROJECT_MEDIA_FILE,
   caslSubject: projectServerSpec.caslSubject,
-  parent: { spec: projectServerSpec, fk: mediaFiles.projectId },
-  table: mediaFiles,
+  parent: { spec: projectServerSpec, fk: projectMediaFiles.projectId },
+  table: projectMediaFiles,
   schemas: {
-    insert: insertMediaFilesSchema,
-    update: updateMediaFileSchema,
-    select: selectMediaFilesSchema,
+    insert: insertProjectMediaFilesSchema,
+    update: updateProjectMediaFileSchema,
+    select: selectProjectMediaFilesSchema,
   },
-} satisfies EntityServerSpec<typeof mediaFiles, number>
+} satisfies EntityServerSpec<typeof projectMediaFiles, number>

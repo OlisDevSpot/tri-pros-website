@@ -1,5 +1,5 @@
 import type { InsertProject } from '@/shared/db/schema'
-import type { InsertMediaFilesSchema } from '@/shared/db/schema/media-files'
+import type { InsertProjectMediaFilesSchema } from '@/shared/db/schema/project-media-files'
 
 export const projectsData = [
   {
@@ -8,50 +8,50 @@ export const projectsData = [
     description: 'Letting your frontyard do the talking',
     city: 'Lancaster',
     hoRequirements: ['Make parking space wider', 'open up space', 'increase curb appeal', 'reduce maintenance'],
-    mediaFiles: [],
+    projectMediaFiles: [],
   },
   {
     title: 'Atlas',
     accessor: 'atlas',
     description: 'Bold and modern design for a long-lasting covered patio',
     city: 'Beverly Hills',
-    mediaFiles: [],
+    projectMediaFiles: [],
   },
   {
     title: 'Bliss',
     accessor: 'bliss',
     description: '',
     city: 'Laguna Hills',
-    mediaFiles: [],
+    projectMediaFiles: [],
   },
   {
     title: 'Oasis',
     accessor: 'oasis',
     description: '',
     city: 'Los Angeles',
-    mediaFiles: [],
+    projectMediaFiles: [],
   },
   {
     title: 'Olympia',
     accessor: 'olympia',
     description: 'A stunning and functional finish inpsired by Inoko-Sato Architecture principles',
     city: 'Sherman Oaks',
-    mediaFiles: [],
+    projectMediaFiles: [],
   },
   {
     title: 'Riviera',
     accessor: 'riviera',
     description: 'Mini-pebble, Baja, and spa for finish for the modern pool experience- Indio, CA',
     city: 'Indio',
-    mediaFiles: [],
+    projectMediaFiles: [],
   },
   {
     title: 'Verona',
     accessor: 'verona',
     description: 'A luxurious finish for a modern kitchen',
     city: 'Arcadia',
-    mediaFiles: [],
+    projectMediaFiles: [],
   },
 ] as const satisfies (InsertProject & {
-  mediaFiles?: InsertMediaFilesSchema[]
+  projectMediaFiles?: InsertProjectMediaFilesSchema[]
 })[]

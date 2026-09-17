@@ -24,7 +24,7 @@ export function projectParticipationScope(userId: string): SQL {
 /**
  * `projectServerSpec.visibility` — the `VisibilityScope`-shaped fragment over
  * `projectParticipationScope`. Correlates on `projects.id`, so it doubles as the
- * parent bridge for project-media (`mediaFiles.projectId`) via
+ * parent bridge for project-media (`projectMediaFiles.projectId`) via
  * `resolveEffectiveScope`. `ability` is unused (participation is purely
  * ownership-based); omni is handled upstream in the scope gates.
  */

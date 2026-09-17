@@ -29,7 +29,7 @@ export async function resetDb() {
   await deleteTable(schema.benefitCategories)
   await deleteTable(schema.tags)
   await deleteTable(schema.projects)
-  await deleteTable(schema.mediaFiles)
+  await deleteTable(schema.projectMediaFiles)
   await deleteTable(schema.x_scopeMaterials)
   await deleteTable(schema.x_materialBenefits)
   await deleteTable(schema.x_projectMediaFiles)

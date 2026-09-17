@@ -1,13 +1,13 @@
 'use client'
 
-import type { MediaFile } from '@/shared/db/schema'
+import type { ProjectMediaFile } from '@/shared/db/schema'
 import { motion, useInView } from 'motion/react'
 import { useRef } from 'react'
 import { JOURNEY_STEPS } from '@/features/project-management/constants/journey-steps'
 import { OptimizedImage } from '@/shared/components/optimized-image'
 
 interface Props {
-  duringPhotos: MediaFile[]
+  duringPhotos: ProjectMediaFile[]
 }
 
 export function StoryJourney({ duringPhotos }: Props) {

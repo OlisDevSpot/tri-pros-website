@@ -26,7 +26,7 @@ export const projectSchemas = {
  * hand-written (feature DAL + bare-`agentProcedure` router); this makes it
  * spec-driven so it sits on equal footing with the other entities — and, load-
  * bearing for the media work, gives project-media a real parent to bridge to
- * (`parent: { spec: projectServerSpec, fk: mediaFiles.projectId }`).
+ * (`parent: { spec: projectServerSpec, fk: projectMediaFiles.projectId }`).
  *
  * SCOPE (S5a): this ships the spec + `projectCrud` (`dal/server/crud.ts`). Sub-plan D
  * (2026-08-19) routes the full project lifecycle through `projectCrud` via the

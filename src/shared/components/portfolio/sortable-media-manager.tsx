@@ -9,7 +9,7 @@
 
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
 import type { MediaPhase } from '@/shared/constants/enums/media'
-import type { MediaFile } from '@/shared/db/schema'
+import type { ProjectMediaFile } from '@/shared/db/schema'
 import {
   AutoScrollActivator,
   closestCenter,
@@ -49,7 +49,7 @@ const AUTO_SCROLL_CONFIG = {
 
 interface Props {
   projectId: string
-  mediaFiles: MediaFile[]
+  mediaFiles: ProjectMediaFile[]
   onUpdate: () => void
 }
 
@@ -205,7 +205,7 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
     },
   })
 
-  const mediaByPhase = (phase: string): MediaFile[] =>
+  const mediaByPhase = (phase: string): ProjectMediaFile[] =>
     mediaFiles
       .filter(f => f.phase === phase && !f.mimeType.startsWith('video/'))
       .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
