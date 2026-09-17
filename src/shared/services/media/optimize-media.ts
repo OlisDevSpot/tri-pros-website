@@ -1,13 +1,13 @@
 // src/shared/services/media/optimize-media.ts
 import type { MediaOwnerKind } from './stores'
 import type { R2BucketName } from '@/shared/services/providers/r2/types'
+import { optimizeFile } from '@/shared/lib/file-optimization/optimize-file'
 import {
   setMediaOptimizationComplete,
   setMediaOptimizationFailed,
   setMediaOptimizationProcessing,
 } from '@/shared/modules/media/core/dal/server/optimization'
 import { VARIANT_REGISTRY } from '@/shared/modules/media/core/lib/image-variants'
-import { optimizeFile } from '@/shared/lib/file-optimization/optimize-file'
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { getOptimizationTarget } from './optimization-target'
 

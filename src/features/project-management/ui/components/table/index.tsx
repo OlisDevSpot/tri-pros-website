@@ -18,11 +18,11 @@ import { RecordsPageShell } from '@/shared/components/records-page-shell'
 import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
 import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
-import { useProjectActionConfigs } from '@/shared/modules/projects/core/hooks/use-project-action-configs'
-import { useProjectActions } from '@/shared/modules/projects/core/hooks/use-project-actions'
-
-import { PROJECT_COLUMNS } from '@/shared/modules/projects/core/lib/columns-registry'
 import { useConfirm } from '@/shared/hooks/use-confirm'
+import { useProjectActionConfigs } from '@/shared/modules/projects/core/hooks/use-project-action-configs'
+
+import { useProjectActions } from '@/shared/modules/projects/core/hooks/use-project-actions'
+import { PROJECT_COLUMNS } from '@/shared/modules/projects/core/lib/columns-registry'
 import { useTRPC } from '@/trpc/helpers'
 
 const SHOW_COLUMNS = ['title', 'city', 'isPublic', 'completedAt', 'createdAt'] as const
