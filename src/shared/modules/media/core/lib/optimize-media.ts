@@ -30,12 +30,18 @@ export async function optimizeMediaFile(
   // DAL ops (media-ops.ts, optimization.ts) still import `db` legitimately.
   const found = await store.crud.getById(SYSTEM_CONTEXT, { id: mediaId })
   if (!found.success) {
+    // Transient DB error (cold start, connection reset) — throw so the QStash
+    // route handler's promise rejects and QStash sees a 500 and retries. Returning
+    // here would leave the row `pending` forever with only this log as a trace.
     console.error(`[optimizeMediaFile] ${store.ownerKind} media ${mediaId} read failed`, found.error)
-    return
+    throw new Error(`optimizeMediaFile: ${store.ownerKind} media ${mediaId} read failed: ${found.error.type}`)
   }
   const file = found.data as any
 
   if (!file) {
+    // Genuinely missing row (bad id, already deleted) — retrying can never help,
+    // so log and return instead of throwing. Do not "harmonise" this with the
+    // read-failure branch above; they differ on purpose.
     console.error(`[optimizeMediaFile] ${store.ownerKind} media ${mediaId} not found`)
     return
   }

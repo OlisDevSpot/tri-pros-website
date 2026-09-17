@@ -75,13 +75,20 @@ async function main() {
       projectId: project.id,
     })
     if (!created.success) {
-      console.error(`  ! insert failed for ${path.basename(file)}:`, created.error)
+      // R2 upload already happened — an orphaned object with no DB row is worse
+      // than stopping here, so abort the run instead of logging and continuing
+      // (matches the pre-hook behavior, when a raw `db.insert` threw on failure).
+      throw new Error(`insert failed for ${path.basename(file)}: ${created.error.type}`)
     }
 
     console.log(`  + during/${fileId}.webp  (${path.basename(file)})`)
   }
 
-  process.exit(0)
+  // No `process.exit(0)` here: the create hook's `void optimizeMediaJob.dispatch(...)`
+  // (fire-and-forget QStash publish) would race a forced exit and can lose the
+  // last iteration's dispatch. Close the pool explicitly instead so the process
+  // still exits on its own once that dispatch settles.
+  await db.$client.end()
 }
 
 main()

@@ -31,9 +31,10 @@ export const proposalMediaSchemas = {
  * `ProposalMediaFile`, and "may I touch this proposal's media?" IS "may I update
  * this proposal?" — enforced by the router's capability gate + this row scope.
  *
- * Serial int PK → `TId = number`. No lifecycle `hooks` here: R2 object cleanup
- * and optimize dispatch are ORCHESTRATION and live in `mediaService`, which
- * rings this CRUD DAL (see services/media/media.service.ts).
+ * Serial int PK → `TId = number`. The spec itself carries no `hooks` — those
+ * live on `createCrudDal`'s config factory in `dal/server/crud.ts`, where
+ * `create.after`/`delete.before` fire optimize dispatch and R2 cleanup on every
+ * origin (C32, D5), same as the project twin.
  */
 export const proposalMediaServerSpec = {
   entityName: PROPOSAL_MEDIA_FILE,

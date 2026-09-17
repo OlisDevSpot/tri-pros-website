@@ -31,8 +31,9 @@ export const projectMediaSchemas = {
  * slice. The spec/DAL are ready for that flip; nothing else needs to change.
  *
  * `caslSubject` reuses the parent `Project` subject. Serial int PK → `TId =
- * number`. No `hooks`: R2 cleanup + optimize dispatch are orchestration in
- * `mediaService`, which rings this DAL.
+ * number`. The spec itself carries no `hooks` — those live on `createCrudDal`'s
+ * config factory in `dal/server/crud.ts`, where `create.after`/`delete.before`
+ * fire optimize dispatch and R2 cleanup on every origin (C32, D5).
  */
 export const projectMediaServerSpec = {
   entityName: PROJECT_MEDIA_FILE,

@@ -1,6 +1,6 @@
 # Media Module — Business Rules
 
-`src/shared/modules/media/` is a **capability module** (`docs/codebase-conventions/service-architecture.md#modules`): it owns no table of its own and is generic over whichever table an owner hands it. `project`s and `proposal`s are the two owners today; a third owner is a store + a small DAL away, not a rewrite of this module.
+`src/shared/modules/media/` is a **capability module** (`docs/codebase-conventions/service-architecture.md#modules`): it owns no table of its own and is generic over whichever table an owner hands it. `project`s and `proposal`s are the two owners today; a third owner is the fixed recipe in `#adding-a-new-media-owner` below (a store, a constants module, two CRUD hooks, one `STORES` map line) away, not a rewrite of this module.
 
 This directory holds the owner-agnostic orchestrator (`service.ts`), the open owner contract (`core/types.ts`), the table-generic DAL (`core/dal/server/{media-ops,optimization}.ts`), the pure optimizer pieces (`core/lib/{image-variants,process-image-variants,optimize-media,purge}.ts`) and this file.
 
@@ -50,13 +50,13 @@ Two stores exist today, each on the owning unit, not in this module:
 Adding a new owner is exactly:
 
 1. A `store.ts` on the new unit implementing `MediaStore` (table, `ownerColumn`, bucket, `buildPathKey`, `variants`, and a `get crud()` getter).
-2. A leaf constants module (the `PROJECT_MEDIA`-style shape: `{ ownerKind, variants }` as `const`) — read by BOTH the store and the unit's CRUD hooks, so neither has to import the other.
+2. A leaf constants module: the entity-name identity constant (the source of truth for `EntityServerSpec.entityName`, typed `EntityName` — `src/shared/dal/server/types.ts:181`), registered in `ENTITY_NAMES` (`src/shared/domains/permissions/abilities.ts`) so CASL knows the subject; plus the `PROJECT_MEDIA`-style shape (`{ ownerKind, variants }` as `const`) read by BOTH the store and the unit's CRUD hooks, so neither has to import the other. Skipping the `ENTITY_NAMES` registration fails `tsc` at the unit's `server-spec.ts` (`entityName` won't satisfy `EntityName`), not silently.
 3. The two CRUD hooks on the unit's `createCrudDal` call: `create.after` dispatches the optimize job when the row is optimizable; `delete.before` purges the R2 object (+ variants) before the row is deleted.
 4. One line in the optimize job's `STORES` map (`services/providers/upstash/jobs/optimize-media.ts`) — `newOwner: () => newOwnerStore`.
 
 No DAL change, no service change, no owner-kind union to extend. (An earlier version of this doc said "store + DAL" — that undercounted: the hooks and the job-map line are part of the recipe too, and skipping either one means optimize dispatch or R2 cleanup silently doesn't happen for the new owner's rows.)
 
-**Reference impl**: `modules/projects/media/{store,lib/constants,dal/server/crud}.ts` + the `project` line in `optimize-media.ts`'s `STORES`
+**Reference impl**: `modules/projects/media/{store,lib/constants,dal/server/crud}.ts` + the `PROJECT_MEDIA_FILE` entry in `ENTITY_NAMES` (`domains/permissions/abilities.ts`) + the `project` line in `optimize-media.ts`'s `STORES`
 
 ### media-service-surface
 

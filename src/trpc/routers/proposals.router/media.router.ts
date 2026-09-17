@@ -1,9 +1,11 @@
 // src/trpc/routers/proposals.router/media.router.ts
 //
 // Plain leaf over `proposalService.media`: each procedure is an adapter —
-// capability gate, one service call, map. Parent/own-row visibility probes, the
-// R2 lifecycle and optimize dispatch all live on the service, so route handlers
-// and jobs get the same behaviour through the same methods.
+// capability gate, one service call, map. Parent/own-row visibility probes still
+// live on the service (`create`'s parent check, `retryOptimization`'s own-row
+// check); the R2 lifecycle and optimize dispatch are `createCrudDal` hooks on
+// the media unit's CRUD (C32, D5), so they fire for every origin, not just
+// callers that go through this router.
 import type { ScopedContext } from '@/shared/dal/server/types'
 import { TRPCError } from '@trpc/server'
 import z from 'zod'
