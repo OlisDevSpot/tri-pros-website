@@ -38,24 +38,22 @@ export async function queryNotionDatabase<T extends NotionDatabaseName>(
   const propertyToSortBy = opts.sortBy && propertiesMap[opts.sortBy.property as keyof typeof propertiesMap] as unknown as NotionPropDef
 
   if (opts.id) {
-    const contactPage = await notionClient.pages.retrieve({
-      page_id: opts.id,
-    })
+    const page = await notionClient.pages.retrieve({ page_id: opts.id })
 
-    return [contactPage] as PageObjectResponse[]
+    // pages.retrieve can return a PartialPageObjectResponse (no `properties`).
+    // Adapters require the full shape, so drop a partial rather than cast it.
+    return 'properties' in page ? [page as PageObjectResponse] : []
   }
-  else if (!opts.filterProperty) {
-    const response = await notionClient.dataSources.query({
-      data_source_id: meta.id,
-      sorts: opts.sortBy && [
-        {
-          property: propertyToSortBy?.label as string,
-          direction: opts.sortBy?.direction || 'ascending',
-        },
-      ],
-    })
 
-    return response.results as PageObjectResponse[]
+  const sorts = opts.sortBy && [
+    {
+      property: propertyToSortBy?.label as string,
+      direction: opts.sortBy.direction || 'ascending',
+    },
+  ]
+
+  if (!opts.filterProperty) {
+    return queryAllPages(meta.id, { sorts })
   }
 
   const propertyToFilterBy = propertiesMap[opts.filterProperty as keyof typeof propertiesMap] as unknown as NotionPropDef
@@ -63,15 +61,39 @@ export async function queryNotionDatabase<T extends NotionDatabaseName>(
   const propertyFilterObject = buildPropertyFilter(propertyToFilterBy.label, propertyToFilterBy.type, opts.query || '')
 
   try {
-    const response = await notionClient.dataSources.query({
-      data_source_id: meta.id,
-      filter: propertyFilterObject,
-    })
-
-    return response.results as PageObjectResponse[]
+    // `sorts` was silently dropped on this path before.
+    return await queryAllPages(meta.id, { filter: propertyFilterObject, sorts })
   }
   catch (e) {
-    console.error(e)
-    throw new Error('ERROR QUERYING FOR DATA!')
+    throw new Error(`Failed to query Notion data source "${databaseName}"`, { cause: e })
   }
+}
+
+type QueryArgs = Parameters<typeof notionClient.dataSources.query>[0]
+
+/**
+ * Notion caps `page_size` at 100 and returns `has_more` + `next_cursor`.
+ * Nothing in this codebase read them, so every list read silently truncated.
+ * see ../DOCS.md#reads-paginate
+ */
+async function queryAllPages(
+  dataSourceId: string,
+  args: Pick<QueryArgs, 'filter' | 'sorts'>,
+): Promise<PageObjectResponse[]> {
+  const pages: PageObjectResponse[] = []
+  let cursor: string | undefined
+
+  do {
+    const response = await notionClient.dataSources.query({
+      data_source_id: dataSourceId,
+      page_size: 100,
+      start_cursor: cursor,
+      ...args,
+    })
+
+    pages.push(...(response.results as PageObjectResponse[]))
+    cursor = response.has_more ? (response.next_cursor ?? undefined) : undefined
+  } while (cursor)
+
+  return pages
 }
