@@ -1,6 +1,7 @@
 import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
 import type { ScopeOrAddon } from './schema'
 import { relationIds, selectName, titleText } from '../extractors'
+import { normalizeNotionId } from '../normalize-notion-id'
 import { SCOPE_OR_ADDON_PROPERTIES_MAP } from './properties-map'
 import { scopeOrAddonSchema } from './schema'
 
@@ -24,13 +25,13 @@ export function pageToScope(page: PageObjectResponse): ScopeOrAddon | null {
     const p = page.properties
 
     const raw: Partial<ScopeOrAddon> = {
-      id: page.id,
+      id: normalizeNotionId(page.id),
       name: titleText(p, SCOPE_OR_ADDON_PROPERTIES_MAP.name.label),
       entryType: selectName<'Scope' | 'Addon'>(p, SCOPE_OR_ADDON_PROPERTIES_MAP.entryType.label) ?? undefined,
       unitOfPricing: selectName<'sqft' | 'linear ft' | 'space' | 'unit'>(p, SCOPE_OR_ADDON_PROPERTIES_MAP.unitOfPricing.label) ?? undefined,
       coverImageUrl: extractCoverImageUrl(page),
-      relatedTrade: relationIds(p, SCOPE_OR_ADDON_PROPERTIES_MAP.relatedTrade.label)[0],
-      relatedScopesOfWork: relationIds(p, SCOPE_OR_ADDON_PROPERTIES_MAP.relatedScopesOfWork.label),
+      relatedTrade: relationIds(p, SCOPE_OR_ADDON_PROPERTIES_MAP.relatedTrade.label).map(normalizeNotionId)[0],
+      relatedScopesOfWork: relationIds(p, SCOPE_OR_ADDON_PROPERTIES_MAP.relatedScopesOfWork.label).map(normalizeNotionId),
     }
 
     const valid = scopeOrAddonSchema.safeParse(raw)

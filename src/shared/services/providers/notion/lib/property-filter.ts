@@ -1,4 +1,5 @@
 import type { PropertyFilter } from '../types'
+import { normalizeNotionId } from './normalize-notion-id'
 
 export function buildPropertyFilter(
   propertyName: string,
@@ -19,7 +20,8 @@ export function buildPropertyFilter(
     case 'people':
       return { property: propertyName, people: { contains: query } } // check Notion docs: people filter shape differs
     case 'relation':
-      return { property: propertyName, relation: { contains: query } } // likewise: relation filter differs
+      // An undashed caller id makes Notion return an empty set with no error.
+      return { property: propertyName, relation: { contains: normalizeNotionId(query) } }
     default:
       // If your schema includes other types, either add cases or throw.
       throw new Error(`Unsupported filter type: ${notionType}`)

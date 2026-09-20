@@ -1,6 +1,7 @@
 import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
 import type { NotionPainPoint } from './schema'
 import { multiSelectNames, relationIds, richText, selectName, titleText } from '../extractors'
+import { normalizeNotionId } from '../normalize-notion-id'
 import { PAIN_POINT_PROPERTIES_MAP } from './properties-map'
 import { notionPainPointSchema } from './schema'
 
@@ -11,14 +12,14 @@ export function pageToPainPoint(page: PageObjectResponse): NotionPainPoint | nul
     const map = PAIN_POINT_PROPERTIES_MAP
 
     const raw = {
-      id: page.id,
+      id: normalizeNotionId(page.id),
       name: titleText(p, map.name.label),
       accessor: richText(p, map.accessor.label),
       category: selectName(p, map.category.label) ?? undefined,
       severity: selectName(p, map.severity.label) ?? undefined,
       urgency: selectName(p, map.urgency.label) ?? undefined,
       emotionalDrivers: multiSelectNames(p, map.emotionalDrivers.label),
-      trades: relationIds(p, map.trades.label),
+      trades: relationIds(p, map.trades.label).map(normalizeNotionId),
       householdResonance: multiSelectNames(p, map.householdResonance.label),
       programFit: multiSelectNames(p, map.programFit.label),
       tags: multiSelectNames(p, map.tags.label),
