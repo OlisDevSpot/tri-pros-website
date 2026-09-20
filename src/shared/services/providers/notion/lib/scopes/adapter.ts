@@ -18,23 +18,36 @@ function extractCoverImageUrl(page: PageObjectResponse): string | null {
   return null
 }
 
-export function pageToScope(page: PageObjectResponse): ScopeOrAddon {
-  const p = page.properties
+// see ../../DOCS.md#adapter-returns-entity-or-null
+export function pageToScope(page: PageObjectResponse): ScopeOrAddon | null {
+  try {
+    const p = page.properties
 
-  const raw: Partial<ScopeOrAddon> = {
-    id: page.id,
-    name: titleText(p, SCOPE_OR_ADDON_PROPERTIES_MAP.name.label),
-    entryType: selectName<'Scope' | 'Addon'>(p, SCOPE_OR_ADDON_PROPERTIES_MAP.entryType.label) ?? undefined,
-    unitOfPricing: selectName<'sqft' | 'linear ft' | 'space' | 'unit'>(p, SCOPE_OR_ADDON_PROPERTIES_MAP.unitOfPricing.label) ?? undefined,
-    coverImageUrl: extractCoverImageUrl(page),
-    relatedTrade: relationIds(p, SCOPE_OR_ADDON_PROPERTIES_MAP.relatedTrade.label)[0],
-    relatedScopesOfWork: relationIds(p, SCOPE_OR_ADDON_PROPERTIES_MAP.relatedScopesOfWork.label),
+    const raw: Partial<ScopeOrAddon> = {
+      id: page.id,
+      name: titleText(p, SCOPE_OR_ADDON_PROPERTIES_MAP.name.label),
+      entryType: selectName<'Scope' | 'Addon'>(p, SCOPE_OR_ADDON_PROPERTIES_MAP.entryType.label) ?? undefined,
+      unitOfPricing: selectName<'sqft' | 'linear ft' | 'space' | 'unit'>(p, SCOPE_OR_ADDON_PROPERTIES_MAP.unitOfPricing.label) ?? undefined,
+      coverImageUrl: extractCoverImageUrl(page),
+      relatedTrade: relationIds(p, SCOPE_OR_ADDON_PROPERTIES_MAP.relatedTrade.label)[0],
+      relatedScopesOfWork: relationIds(p, SCOPE_OR_ADDON_PROPERTIES_MAP.relatedScopesOfWork.label),
+    }
+
+    const valid = scopeOrAddonSchema.safeParse(raw)
+
+    if (valid.success) {
+      return valid.data
+    }
+
+    console.warn('[pageToScope] Skipping invalid scope', {
+      id: page.id,
+      name: raw.name,
+      issues: valid.error.issues,
+    })
+    return null
   }
-
-  const valid = scopeOrAddonSchema.safeParse(raw)
-
-  if (valid.success)
-    return valid.data
-
-  throw new Error(valid.error.message)
+  catch (err) {
+    console.warn('[pageToScope] Failed to extract scope', { id: page.id, error: err })
+    return null
+  }
 }

@@ -4,29 +4,41 @@ import { multiSelectNames, relationIds, richText, selectName, titleText } from '
 import { PAIN_POINT_PROPERTIES_MAP } from './properties-map'
 import { notionPainPointSchema } from './schema'
 
-export function pageToPainPoint(page: PageObjectResponse): NotionPainPoint {
-  const p = page.properties
-  const map = PAIN_POINT_PROPERTIES_MAP
+// see ../../DOCS.md#adapter-returns-entity-or-null
+export function pageToPainPoint(page: PageObjectResponse): NotionPainPoint | null {
+  try {
+    const p = page.properties
+    const map = PAIN_POINT_PROPERTIES_MAP
 
-  const raw = {
-    id: page.id,
-    name: titleText(p, map.name.label),
-    accessor: richText(p, map.accessor.label),
-    category: selectName(p, map.category.label) ?? undefined,
-    severity: selectName(p, map.severity.label) ?? undefined,
-    urgency: selectName(p, map.urgency.label) ?? undefined,
-    emotionalDrivers: multiSelectNames(p, map.emotionalDrivers.label),
-    trades: relationIds(p, map.trades.label),
-    householdResonance: multiSelectNames(p, map.householdResonance.label),
-    programFit: multiSelectNames(p, map.programFit.label),
-    tags: multiSelectNames(p, map.tags.label),
+    const raw = {
+      id: page.id,
+      name: titleText(p, map.name.label),
+      accessor: richText(p, map.accessor.label),
+      category: selectName(p, map.category.label) ?? undefined,
+      severity: selectName(p, map.severity.label) ?? undefined,
+      urgency: selectName(p, map.urgency.label) ?? undefined,
+      emotionalDrivers: multiSelectNames(p, map.emotionalDrivers.label),
+      trades: relationIds(p, map.trades.label),
+      householdResonance: multiSelectNames(p, map.householdResonance.label),
+      programFit: multiSelectNames(p, map.programFit.label),
+      tags: multiSelectNames(p, map.tags.label),
+    }
+
+    const valid = notionPainPointSchema.safeParse(raw)
+
+    if (valid.success) {
+      return valid.data
+    }
+
+    console.warn('[pageToPainPoint] Skipping invalid pain point', {
+      id: page.id,
+      name: raw.name,
+      issues: valid.error.issues,
+    })
+    return null
   }
-
-  const valid = notionPainPointSchema.safeParse(raw)
-
-  if (valid.success) {
-    return valid.data
+  catch (err) {
+    console.warn('[pageToPainPoint] Failed to extract pain point', { id: page.id, error: err })
+    return null
   }
-
-  throw new Error(valid.error.message)
 }

@@ -40,7 +40,7 @@ function createConstructionDataService() {
 
     getAllScopes: async (): Promise<ScopeOrAddon[]> => {
       const raw = await queryNotionDatabase('scopes')
-      return raw ? raw.map(pageToScope) : []
+      return raw ? raw.flatMap(page => pageToScope(page) ?? []) : []
     },
 
     getScopesByQuery: async (params: {
@@ -49,7 +49,7 @@ function createConstructionDataService() {
       sortBy?: { property: string, direction: 'ascending' | 'descending' }
     }): Promise<ScopeOrAddon[]> => {
       const raw = await queryNotionDatabase('scopes', params as Parameters<typeof queryNotionDatabase<'scopes'>>[1])
-      return raw ? raw.map(pageToScope) : []
+      return raw ? raw.flatMap(page => pageToScope(page) ?? []) : []
     },
 
     getScopesByTrade: async (params: { tradeId: string }): Promise<ScopeOrAddon[]> => {
@@ -57,7 +57,7 @@ function createConstructionDataService() {
         query: params.tradeId,
         filterProperty: 'relatedTrade',
       })
-      return raw ? raw.map(pageToScope) : []
+      return raw ? raw.flatMap(page => pageToScope(page) ?? []) : []
     },
 
     getSOWsByScope: async (params: { scopeId: string }): Promise<SOW[]> => {
@@ -65,7 +65,7 @@ function createConstructionDataService() {
         filterProperty: 'relatedScope',
         query: params.scopeId,
       })
-      return raw ? raw.map(pageToSOW) : []
+      return raw ? raw.flatMap(page => pageToSOW(page) ?? []) : []
     },
 
     getSOWContent: async (params: { sowId: string }): Promise<string> => {

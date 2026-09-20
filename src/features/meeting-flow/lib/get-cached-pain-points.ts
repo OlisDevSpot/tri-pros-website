@@ -5,7 +5,7 @@ import { pageToPainPoint } from '@/shared/services/providers/notion/lib/pain-poi
 export const getCachedPainPoints = unstable_cache(
   async () => {
     const raw = await queryNotionDatabase('painPoints')
-    return raw ? raw.map(pageToPainPoint) : []
+    return raw ? raw.flatMap(page => pageToPainPoint(page) ?? []) : []
   },
   ['notion-pain-points'],
   { tags: ['notion-pain-points'], revalidate: 600 },

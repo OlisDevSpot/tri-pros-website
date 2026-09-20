@@ -4,19 +4,32 @@ import { relationIds, titleText } from '../extractors'
 import { SOW_PROPERTIES_MAP } from './properties-map'
 import { sowSchema } from './schema'
 
-export function pageToSOW(page: PageObjectResponse): SOW {
-  const p = page.properties
+// see ../../DOCS.md#adapter-returns-entity-or-null
+export function pageToSOW(page: PageObjectResponse): SOW | null {
+  try {
+    const p = page.properties
 
-  const raw: Partial<SOW> = {
-    id: page.id,
-    name: titleText(p, SOW_PROPERTIES_MAP.name.label),
-    relatedScope: relationIds(p, SOW_PROPERTIES_MAP.relatedScope.label),
+    const raw: Partial<SOW> = {
+      id: page.id,
+      name: titleText(p, SOW_PROPERTIES_MAP.name.label),
+      relatedScope: relationIds(p, SOW_PROPERTIES_MAP.relatedScope.label),
+    }
+
+    const valid = sowSchema.safeParse(raw)
+
+    if (valid.success) {
+      return valid.data
+    }
+
+    console.warn('[pageToSOW] Skipping invalid SOW', {
+      id: page.id,
+      name: raw.name,
+      issues: valid.error.issues,
+    })
+    return null
   }
-
-  const valid = sowSchema.safeParse(raw)
-
-  if (valid.success)
-    return valid.data
-
-  throw new Error(valid.error.message)
+  catch (err) {
+    console.warn('[pageToSOW] Failed to extract SOW', { id: page.id, error: err })
+    return null
+  }
 }
