@@ -22,6 +22,7 @@ These apply to **every** task. They are repo rules, not suggestions.
 - **Commit message attribution** — end every commit message body with:
   `Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>`
 - **Do not run `git push`.** This plan produces local commits only.
+- **Never delete a working tool to satisfy a refactor.** Only the files in each task's explicit *Delete* list may be removed. `scripts/portfolio-scraper/` in particular keeps every capability it has today — see Task 8's banner. If a rule in this plan seems to require deleting something not on a Delete list, the plan is wrong: stop and report it.
 - **Scripts load env via `import './lib/load-env'`** — never `import 'dotenv/config'`. (`memory/feedback-scripts-load-env.md`)
 - **Do not change behaviour or copy.** Every UI edit in this plan is an import path, a field name, or a hook name. Two P0 escalations (`programs.ts` IRA 25C claims, `program-step.tsx`'s missing loading gate) stay open and owner-owned — do not "fix" them here.
 
@@ -1650,15 +1651,44 @@ MSG
 
 ### Task 8: Scripts — one Notion client, and a new seam verifier
 
-`scripts/portfolio-scraper/fetch-scopes.ts:30` constructs a **second** `new Client({ auth: notionApiKey })` with its own hardcoded database UUID and its own `{ id, name, entryType }` shape. It also never paginates (`:32-34` is a single `dataSources.query`), so it silently caps at 100 scopes — the exact P0 bug, still live in the scraper. Pointing it at `catalogSource` fixes both. That is the whole of F16.
+> ## ⛔ The portfolio scraper is NOT deleted
+>
+> `scripts/portfolio-scraper/` is a working, actively-used tool (`pnpm scrape-project`)
+> and **every one of its capabilities survives P1 intact**. Do not delete any file in
+> that directory. Do not remove a command, a flag, a prompt, a site-scraper or a
+> matcher. If any step below appears to reduce what the scraper can do, **stop and
+> report it** — you have misread the step.
+>
+> Exactly one thing is removed, and it is replaced in the same commit:
+> `fetch-scopes.ts`'s Notion-fetching half (`extractScope`, `fetchAllScopes`, the
+> second `new Client(...)`, the hardcoded `SCOPES_DATABASE_ID`) gives way to
+> `catalogSource.getScopes()`. The file's matcher half is kept and the file is
+> renamed to say what it now does.
+>
+> The scraper **gains** a bug fix in the trade: `fetchAllScopes` issued a single
+> un-paginated `dataSources.query`, so it silently capped at 100 scopes — the exact
+> P0 bug, still live there. Reading through `catalogSource` paginates.
+
+`scripts/portfolio-scraper/fetch-scopes.ts:30` constructs a **second** `new Client({ auth: notionApiKey })` with its own hardcoded database UUID and its own `{ id, name, entryType }` shape. Pointing it at `catalogSource` retires that duplicate client and its duplicate scope shape. That is the whole of F16.
 
 **Scripts import `catalogSource` from `sources/`, never `service.ts`** — `unstable_cache` requires a Next request context.
 
+**Why no env plumbing is needed — verified, do not add any.** Three facts make the swap safe, and an implementer who does not know them may be tempted to add defensive env loading:
+
+1. `providers/notion/lib/config.ts` does **not** import `shared/config/server-env.ts`. `createProviderConfig().get()` calls `opts.fragment.parse(process.env)` (`create-provider-config.ts:141`) — it validates only the `{ NOTION_API_KEY }` slice, never the app's full env schema. A script pulling in `catalogSource` therefore never triggers whole-env validation.
+2. `notionClient` is `lazyProxy(() => new Client({ auth: getNotionConfig().apiKey }))`, so the key is read on first *use*, not on import.
+3. `NOTION_API_KEY` lives in `.env`, which `index.ts:11` already loads, and the `catalogSource` import at `:549` is **dynamic** (`await import(...)`) — it resolves long after that `config()` call.
+
+`index.ts:5`'s `import { config } from 'dotenv'` is a pre-existing deviation from `memory/feedback-scripts-load-env.md`. It is **out of brief — leave it alone.** It loads `.env` explicitly by absolute path, which is all `NOTION_API_KEY` needs.
+
 **Files:**
 - Create: `scripts/verify-catalog-seam.ts`
-- Rename: `scripts/portfolio-scraper/fetch-scopes.ts` → `scripts/portfolio-scraper/fuzzy-match-scopes.ts`, keeping only the matcher
+- Rename: `scripts/portfolio-scraper/fetch-scopes.ts` → `scripts/portfolio-scraper/fuzzy-match-scopes.ts`, keeping the matcher
 - Modify: `scripts/portfolio-scraper/{types,prompts,index}.ts`
 - Modify: `package.json` (add the verify script)
+- **Delete: nothing.** No file is removed in this task. The rename above is the only path that changes, and `git mv` preserves history.
+
+Untouched, and must stay that way: `scripts/portfolio-scraper/{classify-images,constants,download-images,generate-content,import-project,scrape-images}.ts` and `scripts/portfolio-scraper/site-scrapers/`.
 
 **Interfaces:**
 - Consumes: `catalogSource` from Task 4, `Scope` from Task 3.
@@ -1780,12 +1810,67 @@ pnpm verify:catalog
 ```
 Expected: the three pure scripts pass; `verify:catalog` prints a count above 100 and exits 0.
 
-- [ ] **Step 5: Smoke the scraper's scope fetch**
+- [ ] **Step 5: Prove the scraper still works, end to end on the changed path**
 
+`--help` alone is not enough — it exits at `index.ts:79` before any scope code runs. Exercise the *actual* path that changed, without writing anything:
+
+The script must live **inside `scripts/`**, not `/tmp` — `tsx` resolves the `@/` path alias from `tsconfig.json`, which only covers files in the project tree. `scripts/tmp-*.ts` is the repo's existing convention for throwaway probes and is gitignored-by-habit; delete it when done.
+
+```bash
+cd /home/olis-solutions/olis-v3/nextjs/tri-pros-website
+cat > scripts/tmp-smoke-scraper-scopes.ts <<'EOF'
+/* eslint-disable no-console */
+import './lib/load-env'
+
+const { catalogSource } = await import('@/shared/modules/construction/sources')
+const { fuzzyMatchScopes } = await import('./portfolio-scraper/fuzzy-match-scopes')
+
+const allScopes = await catalogSource.getScopes()
+console.log(`fetched ${allScopes.length} scopes`)
+if (allScopes.length <= 100) {
+  throw new Error(`expected >100 scopes (P0 lifted the cap); got ${allScopes.length}`)
+}
+
+const matched = fuzzyMatchScopes(allScopes, 'kitchen remodel, flooring')
+console.log(`matched ${matched.length}:`, matched.slice(0, 5).map(m => `${m.name} (${m.kind})`))
+if (matched.length === 0) {
+  throw new Error('fuzzyMatchScopes returned nothing — the matcher regressed')
+}
+for (const m of matched) {
+  if (m.kind !== 'scope' && m.kind !== 'addon') {
+    throw new Error(`MatchedScope.kind is not neutral: ${JSON.stringify(m)}`)
+  }
+}
+console.log('✓ scraper scope path OK')
+EOF
+npx tsx scripts/tmp-smoke-scraper-scopes.ts
+rm scripts/tmp-smoke-scraper-scopes.ts
+```
+
+Make sure the `rm` runs — `scripts/tmp-smoke-scraper-scopes.ts` must not appear in the commit.
+
+Expected: more than 100 scopes (the old `fetchAllScopes` capped at 100 — this is the regression fix made visible), a non-empty match list, and every `kind` neutral.
+
+Then confirm the CLI itself still boots:
 ```bash
 pnpm scrape-project --help 2>&1 | head -20
 ```
-Expected: it starts and prints usage without a module-resolution or Notion-client error. Do **not** run a full scrape — it writes data.
+Expected: usage prints with no module-resolution error.
+
+Do **not** run a full scrape — it writes files and calls paid APIs.
+
+- [ ] **Step 5b: Confirm nothing else in the scraper was lost**
+
+```bash
+cd /home/olis-solutions/olis-v3/nextjs/tri-pros-website
+ls scripts/portfolio-scraper/ scripts/portfolio-scraper/site-scrapers/
+git diff --cached --stat scripts/portfolio-scraper/
+git diff --cached --diff-filter=D --name-only scripts/portfolio-scraper/
+```
+
+The directory listing must still contain `classify-images.ts`, `constants.ts`, `download-images.ts`, `generate-content.ts`, `import-project.ts`, `index.ts`, `prompts.ts`, `scrape-images.ts`, `types.ts`, `site-scrapers/`, and `fuzzy-match-scopes.ts` in place of `fetch-scopes.ts`.
+
+The last command lists deletions. It must print **either nothing** (git recorded the rename) **or** exactly `scripts/portfolio-scraper/fetch-scopes.ts` alongside the new `fuzzy-match-scopes.ts`. Any other deleted path is a mistake — restore it.
 
 - [ ] **Step 6: Final grep gates (V2)**
 
@@ -1819,9 +1904,10 @@ its own hardcoded database UUID, its own {id,name,entryType} shape, and
 no pagination — so it silently capped at 100 scopes, the same P0 bug.
 It reads catalogSource.getScopes() now.
 
-fetch-scopes.ts is reduced to fuzzy-match-scopes.ts rather than deleted:
-it also owned fuzzyMatchScopes and the Levenshtein helpers, which
-index.ts:549 still needs.
+The scraper keeps every capability. fetch-scopes.ts is reduced to
+fuzzy-match-scopes.ts rather than deleted: it also owned fuzzyMatchScopes
+and the Levenshtein helpers, which index.ts:549,556 still need. No other
+file in portfolio-scraper/ is removed.
 
 Scripts import catalogSource from sources/, never service.ts —
 unstable_cache needs a Next request context.
@@ -1970,3 +2056,4 @@ Each is a spec non-goal. Do not drift into them.
 6. **`CatalogRef` / `ScopeRef`** — zero call sites; they describe persisted references, which is **P4**.
 7. **The two open P0 escalations** — IRA 25C claims accuracy in `programs.ts`, and `program-step.tsx`'s missing loading gate. Both are owner calls. Task 3 repoints `program-step.tsx`'s import and changes nothing else about it.
 8. **Any visual or copy change.** Every UI edit here is an import path, a field name, or a hook name.
+9. **Remove or reduce any tool's capability.** `pnpm scrape-project` does exactly what it does today, minus a duplicated Notion client and a 100-row cap. `index.ts:5`'s non-standard `dotenv` import is a pre-existing deviation and stays — out of brief.

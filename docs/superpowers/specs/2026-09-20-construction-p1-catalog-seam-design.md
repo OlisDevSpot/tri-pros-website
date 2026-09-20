@@ -5,6 +5,18 @@
 > **Owns:** C1, C6 · F1, F2, F6, F7, F8, F16 · A1, A2, A3, A4, A7 · B18 · K3, K4.
 > **Baseline:** `main` at `7aadc735`.
 > **Date:** 2026-09-20.
+>
+> **⚠️ The implementation plan supersedes this spec on five points.**
+> `docs/superpowers/plans/2026-09-20-construction-p1-catalog-seam.md` is the
+> operative document — build from it, not from this file. Where they differ:
+>
+> | This spec says | The plan does | Why |
+> |---|---|---|
+> | flat `modules/construction/*` | a **`core/` unit** | `service-architecture.md#modules` — a module owns units |
+> | `source/` (singular) | **`sources/`** | `provider-boundaries.md` names `sources/notion/` in two ratified places |
+> | `construction.service.ts` | **`service.ts`** | all seven module services in the repo are `service.ts` |
+> | delete `portfolio-scraper/fetch-scopes.ts` | **reduce** it — see §5 | it also owns `fuzzyMatchScopes`; deleting breaks `pnpm scrape-project` |
+> | (silent) | module owns `tradeCategories`; the duplicate in `trade-categories.ts` is deleted | owner directive, 2026-09-20 |
 
 ---
 
@@ -391,8 +403,21 @@ src/features/meeting-flow/hooks/use-trade-catalog.ts
 src/features/meeting-flow/lib/group-scopes-by-trade.ts
 src/features/meeting-flow/lib/get-cached-pain-points.ts
 src/shared/services/providers/notion/dal/**/hooks/**    (F16 — both hook files)
-scripts/portfolio-scraper/fetch-scopes.ts
 ```
+
+**Reduced, NOT deleted**
+
+`scripts/portfolio-scraper/` is a working, actively-used tool (`pnpm scrape-project`)
+and P1 keeps every one of its capabilities. An earlier draft of this section listed
+`fetch-scopes.ts` as deleted outright — that was wrong. The file also exports
+`fuzzyMatchScopes` and two Levenshtein helpers, which `index.ts:549,556` depend on,
+so deleting it would break the scraper.
+
+Only its Notion-fetching half goes — `extractScope`, `fetchAllScopes`, the second
+`new Client({ auth: notionApiKey })` and the hardcoded `SCOPES_DATABASE_ID`. The
+matcher stays, and the file is renamed `fuzzy-match-scopes.ts` to say what it now
+does. The scraper gains the P0 pagination fix in the trade: `fetchAllScopes` issued
+a single un-paginated `dataSources.query`, so it silently capped at 100 scopes.
 
 **Renamed**
 
