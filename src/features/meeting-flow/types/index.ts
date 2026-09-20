@@ -45,6 +45,8 @@ export interface QualificationContext {
   tradeSelections: TradeSelection[]
   customer: CustomerWithProfile | null
   meetingType: MeetingType
+  /** The live trade catalog, so qualifiers can classify by category rather than by id. */
+  tradesById: ReadonlyMap<string, Trade>
 }
 
 export interface QualificationResult {

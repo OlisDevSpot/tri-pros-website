@@ -6,6 +6,7 @@ import { ArrowRightIcon, SparklesIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { BENEFIT_CATEGORY_CONFIG } from '@/features/meeting-flow/constants/benefit-categories'
 import { getProgramByAccessor, MEETING_PROGRAMS } from '@/features/meeting-flow/constants/programs'
+import { useTradeCatalog } from '@/features/meeting-flow/hooks/use-trade-catalog'
 import { getProfileBenefits } from '@/features/meeting-flow/lib/profile-benefits'
 import { qualifyAllPrograms } from '@/features/meeting-flow/lib/qualify-programs'
 import { ProgramCard, StandardPricingCard } from '@/features/meeting-flow/ui/components/steps/program-card'
@@ -32,12 +33,14 @@ export function ProgramStep({ flowContext, meetingType }: ProgramStepProps) {
     [flowContext.flowState?.tradeSelections],
   )
   const customer = flowContext.customer
+  const { tradesById } = useTradeCatalog()
 
   const qualCtx: QualificationContext = useMemo(() => ({
     tradeSelections,
     customer,
     meetingType,
-  }), [tradeSelections, customer, meetingType])
+    tradesById,
+  }), [tradeSelections, customer, meetingType, tradesById])
 
   const qualifications = useMemo(() => qualifyAllPrograms(qualCtx), [qualCtx])
 

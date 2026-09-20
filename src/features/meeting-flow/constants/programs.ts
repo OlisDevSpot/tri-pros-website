@@ -12,7 +12,10 @@ function qualifyMonthlySpecial(): QualificationResult {
 }
 
 function qualifyEnergySaver(ctx: QualificationContext): QualificationResult {
-  const energyTrades = ctx.tradeSelections.filter(t => isEnergyEfficientTrade(t.tradeId))
+  const energyTrades = ctx.tradeSelections.flatMap((selection) => {
+    const trade = ctx.tradesById.get(selection.tradeId)
+    return trade && isEnergyEfficientTrade(trade) ? [trade] : []
+  })
   if (energyTrades.length === 0) {
     return {
       qualified: false,
@@ -24,7 +27,7 @@ function qualifyEnergySaver(ctx: QualificationContext): QualificationResult {
   return {
     qualified: true,
     reason: `Qualified — ${energyTrades.length} energy-efficient trade${energyTrades.length > 1 ? 's' : ''} selected.`,
-    matchedCriteria: energyTrades.map(t => t.tradeName),
+    matchedCriteria: energyTrades.map(t => t.name),
     missedCriteria: [],
   }
 }

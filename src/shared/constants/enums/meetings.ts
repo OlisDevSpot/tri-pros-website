@@ -141,7 +141,3 @@ export function canRescheduleFromOutcome(outcome: MeetingOutcome): boolean {
 
 /** UI reason shown when a meeting can't be rescheduled because it already happened. */
 export const CANNOT_RESCHEDULE_REASON = 'This meeting already happened — book a new meeting instead of rescheduling.'
-
-// Energy-efficient trade classification (for program qualification)
-export const energyEfficientTradeAccessors = ['insulation', 'hvac', 'windows', 'solar'] as const
-export type EnergyEfficientTrade = (typeof energyEfficientTradeAccessors)[number]
