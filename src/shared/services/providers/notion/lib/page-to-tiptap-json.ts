@@ -2,6 +2,19 @@ import type { NotionBlock } from '@notion-utils/html'
 import { notionClient } from '../client'
 import { notionBlocksToTiptapDoc } from './blocks-to-tiptap-json'
 
+// 100 pages at page_size: 100 is 10,000 rows — a sane cap. If Notion ever
+// returned the same cursor twice, this stops the loop from spinning forever;
+// resolveChildren recurses and fans out, so this is the more exposed of the
+// two pagination loops.
+const MAX_PAGINATION_PAGES = 100
+
+class NotionBlockPaginationOverflowError extends Error {
+  constructor(blockId: string) {
+    super(`listAllBlockChildren exceeded ${MAX_PAGINATION_PAGES} pages for block "${blockId}" — the cursor may be stuck`)
+    this.name = 'NotionBlockPaginationOverflowError'
+  }
+}
+
 /**
  * blocks.children.list caps page_size at 100 and returns has_more + next_cursor.
  * Both read sites ignored them, truncating long SOW documents and long lists.
@@ -10,8 +23,14 @@ import { notionBlocksToTiptapDoc } from './blocks-to-tiptap-json'
 async function listAllBlockChildren(blockId: string): Promise<NotionBlock[]> {
   const blocks: NotionBlock[] = []
   let cursor: string | undefined
+  let page = 0
 
   do {
+    page++
+    if (page > MAX_PAGINATION_PAGES) {
+      throw new NotionBlockPaginationOverflowError(blockId)
+    }
+
     const response = await notionClient.blocks.children.list({
       block_id: blockId,
       page_size: 100,

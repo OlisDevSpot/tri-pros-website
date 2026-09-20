@@ -71,6 +71,18 @@ export async function queryNotionDatabase<T extends NotionDatabaseName>(
 
 type QueryArgs = Parameters<typeof notionClient.dataSources.query>[0]
 
+// 100 pages at page_size: 100 is 10,000 rows — a sane cap. If Notion ever
+// returned the same cursor twice, this stops the loop from spinning forever
+// holding the request open and accumulating rows in memory.
+const MAX_PAGINATION_PAGES = 100
+
+class NotionPaginationOverflowError extends Error {
+  constructor(dataSourceId: string) {
+    super(`queryAllPages exceeded ${MAX_PAGINATION_PAGES} pages for data source "${dataSourceId}" — the cursor may be stuck`)
+    this.name = 'NotionPaginationOverflowError'
+  }
+}
+
 /**
  * Notion caps `page_size` at 100 and returns `has_more` + `next_cursor`.
  * Nothing in this codebase read them, so every list read silently truncated.
@@ -82,8 +94,14 @@ async function queryAllPages(
 ): Promise<PageObjectResponse[]> {
   const pages: PageObjectResponse[] = []
   let cursor: string | undefined
+  let page = 0
 
   do {
+    page++
+    if (page > MAX_PAGINATION_PAGES) {
+      throw new NotionPaginationOverflowError(dataSourceId)
+    }
+
     const response = await notionClient.dataSources.query({
       data_source_id: dataSourceId,
       page_size: 100,

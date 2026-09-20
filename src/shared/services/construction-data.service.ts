@@ -17,15 +17,26 @@ function createConstructionDataService() {
       if (!raw) {
         return []
       }
-      return raw.flatMap((page) => {
+      const trades = raw.flatMap((page) => {
         const trade = pageToTrade(page)
         return trade ? [trade] : []
       })
+      if (trades.length < raw.length) {
+        console.warn(`[constructionDataService.getTrades] dropped ${raw.length - trades.length} of ${raw.length} trades`)
+      }
+      return trades
     },
 
     getAllScopes: async (): Promise<ScopeOrAddon[]> => {
       const raw = await queryNotionDatabase('scopes')
-      return raw ? raw.flatMap(page => pageToScope(page) ?? []) : []
+      if (!raw) {
+        return []
+      }
+      const scopes = raw.flatMap(page => pageToScope(page) ?? [])
+      if (scopes.length < raw.length) {
+        console.warn(`[constructionDataService.getAllScopes] dropped ${raw.length - scopes.length} of ${raw.length} scopes`)
+      }
+      return scopes
     },
 
     getScopesByQuery: async (params: {
@@ -34,7 +45,14 @@ function createConstructionDataService() {
       sortBy?: { property: string, direction: 'ascending' | 'descending' }
     }): Promise<ScopeOrAddon[]> => {
       const raw = await queryNotionDatabase('scopes', params as Parameters<typeof queryNotionDatabase<'scopes'>>[1])
-      return raw ? raw.flatMap(page => pageToScope(page) ?? []) : []
+      if (!raw) {
+        return []
+      }
+      const scopes = raw.flatMap(page => pageToScope(page) ?? [])
+      if (scopes.length < raw.length) {
+        console.warn(`[constructionDataService.getScopesByQuery] dropped ${raw.length - scopes.length} of ${raw.length} scopes`)
+      }
+      return scopes
     },
 
     getSOWsByScope: async (params: { scopeId: string }): Promise<SOW[]> => {
@@ -42,7 +60,14 @@ function createConstructionDataService() {
         filterProperty: 'relatedScope',
         query: params.scopeId,
       })
-      return raw ? raw.flatMap(page => pageToSOW(page) ?? []) : []
+      if (!raw) {
+        return []
+      }
+      const sows = raw.flatMap(page => pageToSOW(page) ?? [])
+      if (sows.length < raw.length) {
+        console.warn(`[constructionDataService.getSOWsByScope] dropped ${raw.length - sows.length} of ${raw.length} sows`)
+      }
+      return sows
     },
 
     getSOWContent: async (params: { sowId: string }): Promise<string> => {

@@ -14,7 +14,7 @@ function selection(tradeId: string, tradeName: string): TradeSelection {
 }
 
 const SOLAR = trade('6240ca1b-548b-837d-a9c0-01acc1fb530a', 'Solar', 'Energy Efficiency')
-const KITCHEN = trade('7351db2c-659c-948e-b0d1-12bdd2gc641b', 'Kitchen', 'General Construction')
+const KITCHEN = trade('7351db2c-659c-948e-b0d1-12bdd2ac641b', 'Kitchen', 'General Construction')
 
 assert.equal(isEnergyEfficientTrade(SOLAR), true, 'an Energy Efficiency trade qualifies')
 assert.equal(isEnergyEfficientTrade(KITCHEN), false, 'a General Construction trade does not')
