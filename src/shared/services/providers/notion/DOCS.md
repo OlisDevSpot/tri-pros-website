@@ -12,7 +12,32 @@ This directory holds: low-level client (`client.ts`), database registry (`consta
 
 **Why**: a single corrupt row in a Notion database would otherwise propagate as a 500 across every downstream consumer — pickers, landing pages, cached server fetches. We learned this the hard way: one trade with a renamed select option broke `notion.trades.getAll` everywhere it was consumed (8+ surfaces) until the codebase enum caught up. Adapters must absorb per-row failures so the rest of the list still flows.
 **Reference impl**: `lib/trades/adapter.ts:pageToTrade`; service uses `flatMap` in `src/shared/services/construction-data.service.ts:getTrades`
-**Enforced by**: convention. Other entity adapters (`pageToScope`, `pageToSOW`, `pageToPainPoint`) still throw — they should be migrated as they're touched.
+**Enforced by**: convention. All four entity adapters (`pageToTrade`, `pageToScope`, `pageToSOW`, `pageToPainPoint`) return `Entity | null` and never throw on a single row.
+
+### reads-paginate
+
+Every list read loops on `has_more` / `next_cursor` at `page_size: 100`. Notion's
+default page size is 100 and that is also its maximum, so a single request
+silently truncates — `dataSources.query` in `dal/query-notion-database.ts`
+(via `queryAllPages`) and `blocks.children.list` in `lib/page-to-tiptap-json.ts`
+(via `listAllBlockChildren`).
+
+**Why**: reads used to stop at 100 rows with no error. `getAllScopes` feeds 8+
+surfaces, so missing scopes showed up as missing UI, not as a failure.
+**Enforced by**: convention — never call `dataSources.query` or
+`blocks.children.list` directly; go through the two helpers.
+
+### ids-are-normalized-at-the-adapter
+
+Adapters return dashed lowercase UUIDs for their own `id` and for every relation
+id, via `lib/normalize-notion-id.ts`. `buildPropertyFilter` normalizes the
+`relation` branch's input for the same reason — and **only** that branch; text
+filters must not be normalized.
+
+**Why**: every id comparison in the app is string equality or a Map key, so a
+dashed/undashed mismatch returns nothing instead of erroring. An undashed id in
+a relation filter makes Notion return an empty set with no error.
+**Enforced by**: convention
 
 ### disabled-checkbox-is-extraction-time-gate
 
@@ -69,13 +94,13 @@ After editing Notion (renaming a select option, toggling Disabled, adding a row)
 - **Throwing from an adapter.** One bad row must not 500 the whole list. Wrap extraction in `try/catch`, warn, return `null`.
 - **Defaulting inside extractors.** Extractors are pure shape-converters. Semantic defaults belong in the adapter (and ideally on the Zod schema via `.default(...)`).
 - **Renaming a Notion select option without updating mirroring Zod enums.** Grep the old string across `src/` before merging the rename — there is no automated check.
-- **Filtering disabled rows at the service layer instead of the adapter.** Filtering at the adapter is one source of truth: pickers, landing pages, and cached fetches all get the same treatment automatically.
+- **Filtering disabled rows at the service layer instead of the adapter.** Filtering at the adapter is one source of truth: pickers, landing pages, and cached fetches all get the same treatment automatically. Note that `disabled` exists only on **trades** — scopes, SOWs and pain points have no such property. `features/meeting-flow/hooks/use-trade-catalog.ts:16` still re-filters it client-side; that goes at P1 with the hook move.
 - **Adding business logic to `lib/extractors.ts`.** Keep them dumb. Per-entity rules live in `lib/<entity>/adapter.ts`.
 
 ## See also
 
 - `lib/trades/adapter.ts` — canonical example of the resilient-adapter + disabled-gate pattern
-- `dal/query-notion-database.ts` — the generic query layer; one filter property at a time, no compound filter support yet
+- `dal/query-notion-database.ts` — the generic query layer; one filter property at a time, no compound filter support yet, and it paginates — see `#reads-paginate`.
 - `constants/databases.ts` — database id registry + propertiesMap wiring
 - `src/shared/services/construction-data.service.ts` — service-layer wrapper that consumes the adapters and drops nulls
 - `src/trpc/routers/notion.router/` — public read surface + cache-invalidation mutation
