@@ -23,21 +23,6 @@ function createConstructionDataService() {
       })
     },
 
-    getTradesByQuery: async (params: { query: string }): Promise<Trade[]> => {
-      const raw = await queryNotionDatabase('trades', {
-        query: params.query,
-        filterProperty: 'name',
-        sortBy: { property: 'name', direction: 'ascending' },
-      })
-      if (!raw) {
-        return []
-      }
-      return raw.flatMap((page) => {
-        const trade = pageToTrade(page)
-        return trade ? [trade] : []
-      })
-    },
-
     getAllScopes: async (): Promise<ScopeOrAddon[]> => {
       const raw = await queryNotionDatabase('scopes')
       return raw ? raw.flatMap(page => pageToScope(page) ?? []) : []
@@ -49,14 +34,6 @@ function createConstructionDataService() {
       sortBy?: { property: string, direction: 'ascending' | 'descending' }
     }): Promise<ScopeOrAddon[]> => {
       const raw = await queryNotionDatabase('scopes', params as Parameters<typeof queryNotionDatabase<'scopes'>>[1])
-      return raw ? raw.flatMap(page => pageToScope(page) ?? []) : []
-    },
-
-    getScopesByTrade: async (params: { tradeId: string }): Promise<ScopeOrAddon[]> => {
-      const raw = await queryNotionDatabase('scopes', {
-        query: params.tradeId,
-        filterProperty: 'relatedTrade',
-      })
       return raw ? raw.flatMap(page => pageToScope(page) ?? []) : []
     },
 

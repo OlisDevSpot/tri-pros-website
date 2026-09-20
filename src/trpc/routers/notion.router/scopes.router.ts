@@ -22,11 +22,6 @@ export const scopesRouter = createTRPCRouter({
     .query(async ({ input }) => {
       return constructionDataService.getScopesByQuery(input)
     }),
-  getScopesByTrade: baseProcedure
-    .input(z.object({ tradeId: z.string() }))
-    .query(async ({ input }) => {
-      return constructionDataService.getScopesByTrade({ tradeId: input.tradeId })
-    }),
   getAllSOW: baseProcedure
     .input(z.object({ scopeId: z.string() }))
     .query(async ({ input }) => {
