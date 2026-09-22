@@ -1,8 +1,7 @@
 import type { Scope, Trade, TradeCategory } from '@/shared/modules/construction/core/schemas'
-import { unstable_cache } from 'next/cache'
 
 import { getTradeImages } from '@/features/landing/lib/get-trade-images'
-import { constructionDataService } from '@/shared/services/construction-data.service'
+import { constructionService } from '@/shared/modules/construction/service'
 
 export type PillarSlug = 'energy-efficient-construction' | 'luxury-renovations'
 
@@ -16,24 +15,8 @@ const PILLAR_CATEGORY_MAP: Record<PillarSlug, TradeCategory[]> = {
   'luxury-renovations': ['General Construction', 'Structural / Rough'],
 }
 
-export const getCachedTrades = unstable_cache(
-  async () => {
-    return constructionDataService.getTrades()
-  },
-  ['notion-trades'],
-  { tags: ['notion-trades'], revalidate: 180 },
-)
-
-export const getCachedScopes = unstable_cache(
-  async () => {
-    return constructionDataService.getAllScopes()
-  },
-  ['notion-scopes'],
-  { tags: ['notion-scopes'], revalidate: 180 },
-)
-
 export async function getTradesByPillar(pillarSlug: PillarSlug): Promise<TradeWithScopes[]> {
-  const [allTrades, allScopes] = await Promise.all([getCachedTrades(), getCachedScopes()])
+  const { trades: allTrades, scopes: allScopes } = await constructionService.getCatalog()
 
   const allowedTypes = PILLAR_CATEGORY_MAP[pillarSlug]
   const pillarTrades = allTrades.filter(t => t.category && allowedTypes.includes(t.category))

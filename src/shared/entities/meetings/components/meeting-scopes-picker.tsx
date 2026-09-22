@@ -34,8 +34,8 @@ interface ScopeRowProps {
 
 function ScopeRow({ entry, index, allTrades, usedTradeIds, onUpdate, onRemove }: ScopeRowProps) {
   const trpc = useTRPC()
-  const scopesQuery = useQuery(trpc.notionRouter.scopes.getScopesByQuery.queryOptions(
-    { query: entry.tradeId, filterProperty: 'tradeId' },
+  const scopesQuery = useQuery(trpc.notionRouter.scopes.byTrade.queryOptions(
+    { tradeId: entry.tradeId },
     { enabled: !!entry.tradeId },
   ))
 

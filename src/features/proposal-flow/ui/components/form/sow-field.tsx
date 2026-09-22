@@ -48,8 +48,8 @@ export function SOWSection({
   const tiptapRef = useRef<TiptapHandle | null>(null)
 
   const allTrades = useQuery(trpc.notionRouter.trades.getAll.queryOptions())
-  const scopesOfTrade = useQuery(trpc.notionRouter.scopes.getScopesByQuery.queryOptions(
-    { query: tradeId, filterProperty: 'tradeId' },
+  const scopesOfTrade = useQuery(trpc.notionRouter.scopes.byTrade.queryOptions(
+    { tradeId: tradeId ?? '' },
     { enabled: !!tradeId },
   ))
 

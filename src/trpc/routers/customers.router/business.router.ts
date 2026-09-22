@@ -21,7 +21,7 @@ import { derivedPipelineSql, derivedPipelineWhere } from '@/shared/entities/cust
 import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { leadMetaSchema } from '@/shared/entities/customers/schemas'
 import { toDigits } from '@/shared/lib/phone'
-import { constructionDataService } from '@/shared/services/construction-data.service'
+import { constructionService } from '@/shared/modules/construction/service'
 import { customerIntakeService } from '@/shared/services/customer-intake.service'
 import { validatePhoneLine } from '@/shared/services/providers/twilio/lib/validate-phone-line'
 
@@ -185,7 +185,7 @@ export const businessRouter = createTRPCRouter({
       const pickedTradeIds = customerData.leadMetaJSON?.requestedTrades?.map(t => t.tradeId) ?? []
       let interestedTradesRaw: string[] | undefined
       if (pickedTradeIds.length > 0) {
-        const allTrades = await constructionDataService.getTrades()
+        const { trades: allTrades } = await constructionService.getCatalog()
         const nameById = new Map(allTrades.map(t => [t.id, t.name]))
         interestedTradesRaw = pickedTradeIds.map(id => nameById.get(id)).filter((n): n is string => Boolean(n))
       }

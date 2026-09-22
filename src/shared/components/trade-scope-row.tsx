@@ -32,8 +32,8 @@ export function TradeScopeRow({
   const shouldAutoOpenScopes = useRef(false)
 
   const trpc = useTRPC()
-  const scopesQuery = useQuery(trpc.notionRouter.scopes.getScopesByQuery.queryOptions(
-    { query: tradeId, filterProperty: 'tradeId' },
+  const scopesQuery = useQuery(trpc.notionRouter.scopes.byTrade.queryOptions(
+    { tradeId },
     { enabled: !!tradeId },
   ))
 

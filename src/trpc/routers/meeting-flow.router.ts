@@ -7,13 +7,13 @@ import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
 
 import { buildPersonaProfile } from '@/features/meeting-flow/lib/build-persona-profile'
-import { getCachedPainPoints } from '@/features/meeting-flow/lib/get-cached-pain-points'
 import { buildUserContext } from '@/shared/dal/server/lib/helpers'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { customerProfilePatchSchema } from '@/shared/db/schema'
 import { upsertCustomerProfile } from '@/shared/entities/customers/dal/server/mutations'
 import { getByIdWithJoins } from '@/shared/entities/meetings/dal/server/queries'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
+import { constructionService } from '@/shared/modules/construction/service'
 import { ably } from '@/shared/services/providers/upstash/realtime'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 
@@ -63,7 +63,7 @@ export const meetingFlowRouter = createTRPCRouter({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Meeting not found' })
       }
       const customer = row.customer?.id ? row.customer : null
-      const painPointsDb = await getCachedPainPoints()
+      const painPointsDb = await constructionService.getPainPoints()
       return buildPersonaProfile({
         customer,
         meetingContext: row.contextJSON ?? null,
