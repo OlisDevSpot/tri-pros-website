@@ -38,7 +38,6 @@ These apply to **every** task. They are repo rules, not suggestions.
     | awk '/^\+\+\+ /{f=substr($0,5)} /^--- a\//{d=substr($0,7)} /^\+\+\+ \/dev\/null/{f=d} /^[+-][^+-]/{print f"\t"$0}' \
     | grep -vP "\t[+-]\s*(import |\} from ')" | cut -f1 | sort | uniq -c
   ```
-- **Live Notion from Node needs `NODE_OPTIONS=--network-family-autoselection-attempt-timeout=3000`** on this host (found 2026-09-22): the TCP connect takes ~316ms and Node 24 abandons each attempt at 250ms, so every `fetch` fails `ETIMEDOUT` while `curl` works. Prefix every `npx tsx` smoke test that reads Notion (Task 8 Steps 5/5b, `verify:catalog`) and any `next dev` used for a proof. See `memory/reference-node-fetch-connect-timeout.md`.
 - **Never `git add -N`** (or any index write) to make untracked files diffable — it marks every foreign untracked file intent-to-add.
 - **Every commit must leave `pnpm tsc` and `pnpm lint` green.** No task ends red.
 - **Non-defensive migration.** Move consumers and delete the old code in the *same* commit. No aliases, no re-export shims, no dual paths, no deprecated wrappers, no back-compat field names. If you find yourself adding a second way to do something, you have gone wrong.
