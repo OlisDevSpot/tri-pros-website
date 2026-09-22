@@ -6,7 +6,7 @@ interface ScrimProps {
   className?: string
 }
 
-/** Legibility over photography per DESIGN.md's scrim-not-blur rule. */
+/** Legibility over photography: a gradient scrim keeps the photo sharp where a backdrop blur would soften it. */
 export function Scrim({ variant = 'radial', className }: ScrimProps) {
   return (
     <div
