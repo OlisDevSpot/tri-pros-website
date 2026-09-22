@@ -157,7 +157,7 @@ export type WhoWeAreContent
     | { kind: 'sample', proof: ProofFigure, document: PresentationDocument, openLabel: string }
     | { kind: 'point', proof: ProofFigure, media?: BeforeAfterMedia }
     | { kind: 'agent', cardRole: string, commitments: string[] }
-    | { kind: 'team', proof: ProofFigure, partner: PresentationPartner }
+    | { kind: 'team', proof: ProofFigure, partner: PresentationPartner, teamPhotoLabel: string }
     | { kind: 'comparison', rows: ComparisonRow[] }
     | { kind: 'closing', quote: string, cta: { label: string } }
 

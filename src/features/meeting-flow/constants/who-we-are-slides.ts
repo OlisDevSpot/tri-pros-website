@@ -134,6 +134,7 @@ export const WHO_WE_ARE_SLIDES: WhoWeAreSlide[] = [
           `${partnerFirstName} puts a licensed contractor’s eyes on your project`,
         ],
       },
+      teamPhotoLabel: 'Team photo, to be shot',
     },
   },
   {
