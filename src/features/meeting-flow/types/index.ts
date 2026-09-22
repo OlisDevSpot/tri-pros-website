@@ -3,7 +3,8 @@ import type { MeetingOutcome, MeetingType } from '@/shared/constants/enums'
 import type { ProjectMediaFile } from '@/shared/db/schema'
 import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { MeetingFlowState, TradeSelection } from '@/shared/entities/meetings/schemas'
-import type { Scope, Trade } from '@/shared/modules/construction/core/schemas'
+import type { ConstructionCatalog } from '@/shared/modules/construction/core/hooks/use-construction-catalog'
+import type { Trade } from '@/shared/modules/construction/core/schemas'
 import type { JsonbSection } from '@/shared/types/jsonb'
 
 // ── Intake Collection Field (used by intake step components) ────────────────
@@ -253,22 +254,6 @@ export interface MeetingCalendarEvent extends CalendarEvent {
 
 // ── Specialties (trade selection) ───────────────────────────────────────────
 
-/** A trade's catalog entries, split by `Scope.kind`. */
-export interface TradeScopeGroup {
-  scopes: Scope[]
-  addons: Scope[]
-}
-
-export interface TradeCatalog {
-  trades: Trade[]
-  tradesById: ReadonlyMap<string, Trade>
-  tradesBySlug: ReadonlyMap<string, Trade>
-  scopesByTrade: ReadonlyMap<string, TradeScopeGroup>
-  isLoading: boolean
-  error: Error | null
-  refetch: () => void
-}
-
 /** One chosen scope or add-on, as persisted in `TradeSelection.selectedScopes`. */
 export type SelectionItem = TradeSelection['selectedScopes'][number]
 
@@ -311,7 +296,7 @@ export interface TradeBenefit {
 
 /** Stable once both reads have loaded. */
 export interface TradeCatalogContextValue {
-  catalog: TradeCatalog
+  catalog: ConstructionCatalog
   projects: ShowcaseProjectIndex
 }
 

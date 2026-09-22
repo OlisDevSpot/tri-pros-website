@@ -12,7 +12,6 @@ import { TradeCatalogContext } from '@/features/meeting-flow/contexts/trade-cata
 import { TradeSelectionsContext } from '@/features/meeting-flow/contexts/trade-selections-context'
 import { TradeStageContext } from '@/features/meeting-flow/contexts/trade-stage-context'
 import { useShowcaseProjects } from '@/features/meeting-flow/hooks/use-showcase-projects'
-import { useTradeCatalog } from '@/features/meeting-flow/hooks/use-trade-catalog'
 import { resolveStageTradeId } from '@/features/meeting-flow/lib/resolve-stage-trade'
 import {
   canonicalSelectionsJson,
@@ -25,6 +24,7 @@ import {
   withTradeRestored,
 } from '@/features/meeting-flow/lib/trade-selection'
 import { useDebounce } from '@/shared/hooks/use-debounce'
+import { useConstructionCatalog } from '@/shared/modules/construction/core/hooks/use-construction-catalog'
 
 interface TradeSelectionProviderProps {
   flowContext: MeetingFlowContext
@@ -55,7 +55,7 @@ interface TradeSelectionProviderProps {
  */
 export function TradeSelectionProvider({ flowContext, children }: TradeSelectionProviderProps) {
   const { onFlowStateChange } = flowContext
-  const catalog = useTradeCatalog()
+  const catalog = useConstructionCatalog()
   const projects = useShowcaseProjects(catalog.scopesByTrade)
 
   const serverSelections = useMemo(

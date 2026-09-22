@@ -1,5 +1,6 @@
-import type { SelectionItem, TradeScopeGroup } from '@/features/meeting-flow/types'
+import type { SelectionItem } from '@/features/meeting-flow/types'
 import type { TradeSelection } from '@/shared/entities/meetings/schemas'
+import type { TradeScopeGroup } from '@/shared/modules/construction/core/lib/build-catalog-index'
 
 interface TradeRef {
   id: string

@@ -1,4 +1,5 @@
-import type { ShowcaseProject, ShowcaseProjectIndex, TradeScopeGroup } from '@/features/meeting-flow/types'
+import type { ShowcaseProject, ShowcaseProjectIndex } from '@/features/meeting-flow/types'
+import type { TradeScopeGroup } from '@/shared/modules/construction/core/lib/build-catalog-index'
 import type { PortfolioProject } from '@/shared/modules/projects/core/types'
 
 /** Portfolio rows to lookups by trade and scope. Rows without a hero image are skipped: the showcase has nothing to show for them. */

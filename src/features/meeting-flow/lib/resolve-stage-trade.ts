@@ -1,9 +1,9 @@
-import type { TradeCatalog } from '@/features/meeting-flow/types'
 import type { TradeSelection } from '@/shared/entities/meetings/schemas'
+import type { CatalogIndex } from '@/shared/modules/construction/core/lib/build-catalog-index'
 import { selectedTradeSelections } from '@/features/meeting-flow/lib/trade-selection'
 
 /** Only catalog trades can be on stage: the showcase needs the trade's slug, category and scopes. */
-export function resolveStageTradeId(urlTradeId: string | null, selections: TradeSelection[], catalog: Pick<TradeCatalog, 'trades' | 'tradesById'>): string | null {
+export function resolveStageTradeId(urlTradeId: string | null, selections: TradeSelection[], catalog: Pick<CatalogIndex, 'trades' | 'tradesById'>): string | null {
   if (urlTradeId && catalog.tradesById.has(urlTradeId)) {
     return urlTradeId
   }

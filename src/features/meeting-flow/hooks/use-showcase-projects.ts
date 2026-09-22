@@ -4,7 +4,8 @@
 // (docs/plans/2026-09-14-upgrading-meeting-flow-epic.md R3 `scopeIds` filter, R10 public projection, S1).
 // Swap the query in this file (Task 9); `ShowcaseProjectIndex` stays the contract for every consumer.
 
-import type { ShowcaseProjectIndex, TradeScopeGroup } from '@/features/meeting-flow/types'
+import type { ShowcaseProjectIndex } from '@/features/meeting-flow/types'
+import type { TradeScopeGroup } from '@/shared/modules/construction/core/lib/build-catalog-index'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { SHOWCASE_PROJECTS_STALE_MS } from '@/features/meeting-flow/constants/showcase'
@@ -16,7 +17,7 @@ import { useTRPC } from '@/trpc/helpers'
  * error: the showcase falls back, silently.
  *
  * `scopesByTrade` must keep a stable identity across renders — memoize it at the source, as
- * `useTradeCatalog` does. A map rebuilt inline on every render rebuilds the whole index with it.
+ * `useConstructionCatalog` does. A map rebuilt inline on every render rebuilds the whole index with it.
  */
 export function useShowcaseProjects(scopesByTrade: ReadonlyMap<string, TradeScopeGroup>): ShowcaseProjectIndex {
   const trpc = useTRPC()

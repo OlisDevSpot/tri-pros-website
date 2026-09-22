@@ -1,6 +1,7 @@
 import type { Scope, Trade, TradeCategory } from '@/shared/modules/construction/core/schemas'
 
 import { getTradeImages } from '@/features/landing/lib/get-trade-images'
+import { buildCatalogIndex } from '@/shared/modules/construction/core/lib/build-catalog-index'
 import { constructionService } from '@/shared/modules/construction/service'
 
 export type PillarSlug = 'energy-efficient-construction' | 'luxury-renovations'
@@ -17,16 +18,10 @@ const PILLAR_CATEGORY_MAP: Record<PillarSlug, TradeCategory[]> = {
 
 export async function getTradesByPillar(pillarSlug: PillarSlug): Promise<TradeWithScopes[]> {
   const { trades: allTrades, scopes: allScopes } = await constructionService.getCatalog()
+  const { scopesByTrade } = buildCatalogIndex(allTrades, allScopes)
 
   const allowedTypes = PILLAR_CATEGORY_MAP[pillarSlug]
   const pillarTrades = allTrades.filter(t => t.category && allowedTypes.includes(t.category))
-
-  const scopesByTrade = new Map<string, Scope[]>()
-  for (const scope of allScopes) {
-    const existing = scopesByTrade.get(scope.tradeId) ?? []
-    existing.push(scope)
-    scopesByTrade.set(scope.tradeId, existing)
-  }
 
   // Fetch images per trade in parallel — each trade's scope IDs map to different projects
   const imagesByTradeId = new Map<string, string[]>()
@@ -41,7 +36,7 @@ export async function getTradesByPillar(pillarSlug: PillarSlug): Promise<TradeWi
 
   return pillarTrades.map(trade => ({
     ...trade,
-    scopes: scopesByTrade.get(trade.id) ?? [],
+    scopes: [...(scopesByTrade.get(trade.id)?.scopes ?? []), ...(scopesByTrade.get(trade.id)?.addons ?? [])],
     images: imagesByTradeId.get(trade.id) ?? [],
   }))
 }
