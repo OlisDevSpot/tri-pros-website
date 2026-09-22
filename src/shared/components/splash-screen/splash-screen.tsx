@@ -30,9 +30,10 @@ interface SplashScreenProps {
  * The branded splash over the whole window: the mark, optionally a caption, dismissed either
  * on a timer or by a press (spec C §12 S14). In press mode the whole overlay is one `<button>`
  * whose accessible name is the action and whose caption is its description (review N3); it
- * takes focus on open, and a capture-phase `window` listener consumes presses before any
- * host key map can see them, without preventing Tab, modifiers, Escape or function keys (E4,
- * review F5). Reduced motion is gated here with `useReducedMotion()`: a host's
+ * takes focus on open, and a capture-phase `window` listener marks presses as handled before
+ * any host key map acts on them (hosts honour `defaultPrevented`), without preventing Tab,
+ * modifiers, Escape or function keys (E4, review F5). Reduced motion is gated here with
+ * `useReducedMotion()`: a host's
  * `MotionConfig reducedMotion="user"` would keep opacity fades and their delays (review F4),
  * and this component mounts wherever the host puts it. Visibility is the caller's policy.
  */
@@ -91,7 +92,7 @@ export function SplashScreen({ open, onDismiss, dismiss, title, subheading, ease
                   ref={pressRef}
                   aria-describedby={title ? captionId : undefined}
                   aria-label={dismiss.label}
-                  className="flex size-full cursor-pointer flex-col items-center justify-center gap-8 p-10 outline-none focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-(--presentation-accent)"
+                  className="flex size-full cursor-pointer flex-col items-center justify-center gap-8 p-10 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-(--presentation-accent)"
                   type="button"
                   onClick={onDismiss}
                 >
