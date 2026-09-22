@@ -38,6 +38,8 @@ These apply to **every** task. They are repo rules, not suggestions.
     | awk '/^\+\+\+ /{f=substr($0,5)} /^--- a\//{d=substr($0,7)} /^\+\+\+ \/dev\/null/{f=d} /^[+-][^+-]/{print f"\t"$0}' \
     | grep -vP "\t[+-]\s*(import |\} from ')" | cut -f1 | sort | uniq -c
   ```
+- **The snapshot does not cover files a live session starts editing mid-task.** In Task 6 four meeting-flow files modified by another session at 07:53 — after the Step-0 snapshot — showed up as candidates and were staged; the index check caught them. So: keep an **explicit list of the files this task edited** (every sed/xargs target list, every Write/Edit), stage only that list, and treat any other candidate as foreign until proven otherwise (mtime after your last edit, content unrelated to the task). Also confirm none of *your* files changed after your verification run.
+- **Preserve line endings.** 67 tracked `.ts/.tsx` files use CRLF (e.g. `src/trpc/routers/app.ts`). Python text-mode read/write silently converts them to LF — a whole-file diff. Use `open(p, newline='')` or `sed`, and check `git diff --stat` matches the intended line count.
 - **Never `git add -N`** (or any index write) to make untracked files diffable — it marks every foreign untracked file intent-to-add.
 - **Every commit must leave `pnpm tsc` and `pnpm lint` green.** No task ends red.
 - **Non-defensive migration.** Move consumers and delete the old code in the *same* commit. No aliases, no re-export shims, no dual paths, no deprecated wrappers, no back-compat field names. If you find yourself adding a second way to do something, you have gone wrong.
