@@ -1,4 +1,5 @@
 import type { MediaPhase } from '@/shared/constants/enums/media'
+import type { ScopeKind } from '@/shared/modules/construction/core/schemas'
 
 export interface ScrapedImage {
   url: string
@@ -32,7 +33,7 @@ export interface ProjectContentOutput {
 export interface MatchedScope {
   id: string
   name: string
-  entryType: string
+  kind: ScopeKind
 }
 
 export interface ProjectPromptAnswers {

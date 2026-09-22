@@ -1,51 +1,8 @@
-import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
 import type { MatchedScope } from './types'
-import { Client } from '@notionhq/client'
-
-const SCOPES_DATABASE_ID = 'ef70ca1b-548b-8226-b680-07fe8f00a91f'
-
-interface NotionScope {
-  id: string
-  name: string
-  entryType: string
-}
-
-function extractScope(page: PageObjectResponse): NotionScope | null {
-  const props = page.properties
-
-  const nameProperty = props['Scope or Addon']
-  if (!nameProperty || nameProperty.type !== 'title')
-    return null
-  const name = nameProperty.title.map(t => t.plain_text).join('')
-
-  const entryTypeProperty = props['Entry Type']
-  const entryType = entryTypeProperty?.type === 'select'
-    ? entryTypeProperty.select?.name ?? 'Scope'
-    : 'Scope'
-
-  return { id: page.id, name, entryType }
-}
-
-export async function fetchAllScopes(notionApiKey: string): Promise<NotionScope[]> {
-  const client = new Client({ auth: notionApiKey })
-
-  const response = await client.dataSources.query({
-    data_source_id: SCOPES_DATABASE_ID,
-  })
-
-  const scopes: NotionScope[] = []
-  for (const page of response.results) {
-    const scope = extractScope(page as PageObjectResponse)
-    if (scope && scope.name) {
-      scopes.push(scope)
-    }
-  }
-
-  return scopes
-}
+import type { Scope } from '@/shared/modules/construction/core/schemas'
 
 export function fuzzyMatchScopes(
-  allScopes: NotionScope[],
+  allScopes: Scope[],
   description: string,
 ): MatchedScope[] {
   const terms = description
@@ -67,7 +24,7 @@ export function fuzzyMatchScopes(
         matched.set(scope.id, {
           id: scope.id,
           name: scope.name,
-          entryType: scope.entryType,
+          kind: scope.kind,
         })
       }
     }

@@ -1,4 +1,5 @@
 import type { CliFlags, ImagePhase, PagesConfig, ProjectContentOutput } from './types'
+import type { Scope } from '@/shared/modules/construction/core/schemas'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -352,7 +353,7 @@ function writePhasesJson(
  * Used in multi-project mode where each group needs its own scope input.
  */
 async function promptForScopes(
-  allScopes: { id: string, name: string, entryType: string }[],
+  allScopes: Scope[],
   fuzzyMatchScopes: (scopes: typeof allScopes, description: string) => import('./types').MatchedScope[],
   groupHeading: string,
 ): Promise<import('./types').MatchedScope[]> {
@@ -372,7 +373,7 @@ async function promptForScopes(
   if (matched.length > 0) {
     console.log(`  Matched ${matched.length} scopes:`)
     for (const s of matched) {
-      console.log(`    - ${s.name} (${s.entryType})`)
+      console.log(`    - ${s.name} (${s.kind})`)
     }
   }
   else {
@@ -401,8 +402,8 @@ async function processSingleProject(opts: {
   sourceUrl?: string
   /** When set, prompts for scopes per group instead of using matchedScopes */
   perGroupScopes?: {
-    allScopes: { id: string, name: string, entryType: string }[]
-    fuzzyMatchScopes: (scopes: { id: string, name: string, entryType: string }[], description: string) => import('./types').MatchedScope[]
+    allScopes: Scope[]
+    fuzzyMatchScopes: (scopes: Scope[], description: string) => import('./types').MatchedScope[]
     groupHeading: string
   }
 }): Promise<void> {
@@ -504,8 +505,6 @@ async function main(): Promise<void> {
   const flags = parseArgs()
   validateEnv()
 
-  const notionApiKey = process.env.NOTION_API_KEY!
-
   // ---- SITE-SPECIFIC SCRAPER DETECTION ----
   const { findScraperByName, findScraperByUrl } = await import('./site-scrapers/registry')
 
@@ -546,8 +545,9 @@ async function main(): Promise<void> {
 
   // Step 1: Fetch scopes from Notion
   console.log('[1] Fetching scopes from Notion...')
-  const { fetchAllScopes, fuzzyMatchScopes } = await import('./fetch-scopes')
-  const allScopes = await fetchAllScopes(notionApiKey)
+  const { catalogSource } = await import('@/shared/modules/construction/sources')
+  const { fuzzyMatchScopes } = await import('./fuzzy-match-scopes')
+  const allScopes = await catalogSource.getScopes()
   console.log(`  Loaded ${allScopes.length} scopes from Notion`)
 
   // In multi-project mode or site scraper mode, scopes may be prompted later
@@ -556,7 +556,7 @@ async function main(): Promise<void> {
     matchedScopes = fuzzyMatchScopes(allScopes, flags.scopesDescription)
     console.log(`  Matched ${matchedScopes.length} scopes for "${flags.scopesDescription}"`)
     for (const s of matchedScopes) {
-      console.log(`    - ${s.name} (${s.entryType})`)
+      console.log(`    - ${s.name} (${s.kind})`)
     }
   }
 
@@ -627,7 +627,7 @@ async function main(): Promise<void> {
           matchedScopes = fuzzyMatchScopes(allScopes, scopeInput)
           console.log(`  Matched ${matchedScopes.length} scopes`)
           for (const s of matchedScopes) {
-            console.log(`    - ${s.name} (${s.entryType})`)
+            console.log(`    - ${s.name} (${s.kind})`)
           }
         }
       }
