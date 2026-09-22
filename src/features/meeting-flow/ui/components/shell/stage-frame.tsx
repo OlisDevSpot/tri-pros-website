@@ -4,6 +4,8 @@ import type { ReactNode, Ref } from 'react'
 
 interface StageFrameProps {
   ref?: Ref<HTMLDivElement>
+  /** Set while the meeting splash covers the flow, so neither focus nor a click reaches behind it (E4, review F5). */
+  inert?: boolean
   children: ReactNode
 }
 
@@ -17,12 +19,13 @@ interface StageFrameProps {
  * A presentation step hands it to the engine as `clearBottom`; the engine itself
  * never reads a `--stage-*` variable.
  */
-export function StageFrame({ ref, children }: StageFrameProps) {
+export function StageFrame({ ref, inert, children }: StageFrameProps) {
   return (
     <div
       ref={ref}
       className="relative flex h-full min-w-0 flex-col [--stage-clear-b:calc(max(1rem,env(safe-area-inset-bottom))_+_5.5rem)] [--stage-inset-b:5rem]"
       data-stage
+      inert={inert}
     >
       {children}
     </div>

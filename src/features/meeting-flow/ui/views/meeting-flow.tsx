@@ -16,11 +16,13 @@ import { DEFAULT_PANEL_SECTION } from '@/features/meeting-flow/constants/shell'
 import { MEETING_STEPS, TOTAL_STEPS } from '@/features/meeting-flow/constants/step-config'
 import { TradeSelectionProvider } from '@/features/meeting-flow/contexts/trade-selection-provider'
 import { useMeetingFlowKeys } from '@/features/meeting-flow/hooks/use-meeting-flow-keys'
+import { useMeetingSplash } from '@/features/meeting-flow/hooks/use-meeting-splash'
 import { useMeetingSync } from '@/features/meeting-flow/hooks/use-meeting-sync'
 import { usePresentMode } from '@/features/meeting-flow/hooks/use-present-mode'
 import { computeContextFilledCount, CONTEXT_TOTAL_FIELDS } from '@/features/meeting-flow/lib/context-fill-count'
 import { toPresentationAgent } from '@/features/meeting-flow/lib/to-presentation-agent'
 import { ContextPanel } from '@/features/meeting-flow/ui/components/context-panel'
+import { MeetingSplashScreen } from '@/features/meeting-flow/ui/components/meeting-splash-screen'
 import { PersonaProfilePanel } from '@/features/meeting-flow/ui/components/persona-profile-panel'
 import { ProjectCountBadge } from '@/features/meeting-flow/ui/components/project-section/project-count-badge'
 import { ProjectSection } from '@/features/meeting-flow/ui/components/project-section/project-section'
@@ -50,15 +52,28 @@ interface MeetingFlowViewProps {
   meetingId: string
 }
 
+interface MeetingFlowViewInnerProps extends MeetingFlowViewProps {
+  /** The meeting splash covers the flow; the stage is inert until it is pressed. */
+  splashOpen: boolean
+}
+
 export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
+  const [currentStep] = useQueryState('step', stepParser)
+  const splash = useMeetingSplash({ meetingId, currentStep })
   return (
     <ChannelProvider channelName={`meeting:${meetingId}`}>
-      <MeetingFlowViewInner meetingId={meetingId} />
+      <MeetingFlowViewInner meetingId={meetingId} splashOpen={splash.open} />
+      {/* Beside the inner view, not inside it: the inner view swaps its loading tree for the
+          ready tree, which would remount the splash and replay the mark; and outside the
+          stage's `isolate` wrappers, which would trap `z-9999` under the capsule (review F11).
+          It is also outside the inner view's `MotionConfig`: the primitive gates reduced
+          motion itself. */}
+      <MeetingSplashScreen open={splash.open} onDismiss={splash.dismiss} />
     </ChannelProvider>
   )
 }
 
-function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
+function MeetingFlowViewInner({ meetingId, splashOpen }: MeetingFlowViewInnerProps) {
   const trpc = useTRPC()
   const { invalidateMeeting } = useInvalidation()
   const [currentStep, setCurrentStep] = useQueryState('step', stepParser)
@@ -223,6 +238,15 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
     focusStepRoot()
   }, [currentStep, isReady, focusStepRoot])
 
+  // The splash held the stage inert; when it closes, focus returns to the step (E4), driven by
+  // state, not by a timer or `onExitComplete`: the splash sits outside this tree. An inert
+  // element cannot take focus, so the step-change focus above cannot steal it from the splash.
+  useEffect(() => {
+    if (!splashOpen) {
+      focusStepRoot()
+    }
+  }, [splashOpen, focusStepRoot])
+
   useEffect(() => {
     const wasOpen = previousPanelRef.current !== null
     const isOpen = panel !== null
@@ -250,7 +274,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
 
   if (meetingQuery.isLoading) {
     return (
-      <StageFrame ref={rootRef}>
+      <StageFrame ref={rootRef} inert={splashOpen}>
         <div className="h-full p-4 md:p-6">
           <LoadingState title="Loading meeting" description="Fetching meeting details…" />
         </div>
@@ -260,7 +284,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
 
   if (!meeting || !flowContext) {
     return (
-      <StageFrame ref={rootRef}>
+      <StageFrame ref={rootRef} inert={splashOpen}>
         <div className="h-full p-4 md:p-6">
           <ErrorState title="Meeting not found" description="This meeting could not be loaded." />
         </div>
@@ -271,7 +295,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
   const stepConfig = MEETING_STEPS[currentStep - 1]
   if (!stepConfig) {
     return (
-      <StageFrame ref={rootRef}>
+      <StageFrame ref={rootRef} inert={splashOpen}>
         <div className="h-full p-4 md:p-6">
           <ErrorState title="Invalid step" description="This step does not exist." />
         </div>
@@ -282,7 +306,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
   return (
     <TradeSelectionProvider flowContext={flowContext}>
       <MotionConfig reducedMotion="user">
-        <StageFrame ref={rootRef}>
+        <StageFrame ref={rootRef} inert={splashOpen}>
           <TopBar
             currentStep={currentStep}
             customer={customer}

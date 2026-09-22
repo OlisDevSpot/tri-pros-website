@@ -4,6 +4,8 @@ export interface MeetingStepConfig {
   id: MeetingStepId
   stepNumber: number
   title: string
+  /** One line under the title where the step is introduced: the meeting splash's caption (E6, S18). */
+  subheading?: string
   shortLabel: string
   isCustomerFacing: boolean
   layout: MeetingStepLayout
@@ -14,6 +16,7 @@ export const MEETING_STEPS: MeetingStepConfig[] = [
     id: 'who-we-are',
     stepNumber: 1,
     title: 'Navigating the Construction Industry',
+    subheading: 'What a legitimate project actually requires.',
     shortLabel: 'Who We Are',
     isCustomerFacing: true,
     layout: 'presentation',
