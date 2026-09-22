@@ -4,9 +4,9 @@ import { Suspense } from 'react'
 import { ScrollRootProvider } from '@/features/proposal-flow/contexts/scroll-context'
 import { ProposalPageNavbar } from '@/features/proposal-flow/ui/components/navbar/navbar'
 import { ProposalFlowShell } from '@/features/proposal-flow/ui/components/proposal-flow-shell'
+import { ProposalSplashScreen } from '@/features/proposal-flow/ui/components/proposal-splash-screen'
 import { ProposalFlowLoadingState } from '@/features/proposal-flow/ui/components/states/loading'
 import { GlobalDialogs } from '@/shared/components/dialogs/modals/global-dialogs'
-import { ProposalSplashScreen } from '@/shared/components/splash-screen/proposal-splash-screen'
 import { auth } from '@/shared/domains/auth/server'
 
 export default async function ProposalFlowLayout({

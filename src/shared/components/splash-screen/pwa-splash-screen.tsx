@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { SplashOverlay } from '@/shared/components/splash-screen/splash-overlay'
-import { useSplashVisibility } from '@/shared/components/splash-screen/use-splash-visibility'
+import { SplashScreen } from '@/shared/components/splash-screen/splash-screen'
+import { sessionStorageKey } from '@/shared/constants/storage-keys'
+import { useSessionOnce } from '@/shared/hooks/use-session-once'
 
 export function PwaSplashScreen() {
   const [isStandalone, setIsStandalone] = useState(false)
@@ -11,6 +12,6 @@ export function PwaSplashScreen() {
     setIsStandalone(window.matchMedia('(display-mode: standalone)').matches)
   }, [])
 
-  const visible = useSplashVisibility(isStandalone)
-  return <SplashOverlay visible={visible} motionKey="pwa-splash" />
+  const [open, onDismiss] = useSessionOnce(sessionStorageKey('app-splash-shown'), isStandalone)
+  return <SplashScreen dismiss={{ mode: 'timed' }} motionKey="pwa-splash" open={open} onDismiss={onDismiss} />
 }
