@@ -20,6 +20,11 @@ interface SnapSectionProps {
  * One snap target. The <section> box is never transformed: snap areas are computed
  * from the transformed border box, so every reveal lives on an inner element.
  *
+ * In view means crossing the presentation's centre line, not showing half its height.
+ * Slides are contiguous, so exactly one crosses at a time, and a slide that never left
+ * the view never needs to report again; a slide under a band, or taller than two
+ * screens, still reports (spec C §4.5, review F2).
+ *
  * `scrollMarginTop: 0` is load-bearing: `src/app/(frontend)/globals.css` sets a
  * global `* { scroll-margin-top: 80px }` rule for the marketing site's fixed-header
  * anchors, which would otherwise shift every snap position by 80px. This inline
@@ -29,7 +34,7 @@ interface SnapSectionProps {
 export function SnapSection({ index, id, labelledBy, children, className }: SnapSectionProps) {
   const ref = useRef<HTMLElement>(null)
   const { scrollerRef, reportInView, registerSection } = usePresentation()
-  const inView = useInView(ref, { root: scrollerRef, amount: 0.5 })
+  const inView = useInView(ref, { root: scrollerRef, margin: '-50% 0px -50% 0px' })
 
   const setRef = useCallback((el: HTMLElement | null) => {
     ref.current = el
