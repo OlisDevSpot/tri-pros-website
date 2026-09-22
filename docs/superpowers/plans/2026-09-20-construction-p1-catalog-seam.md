@@ -1016,6 +1016,8 @@ MSG
 
 ### Task 5: The cached module service
 
+> **Foreign file, decided 2026-09-22 (user):** `scripts/tmp-trade-photo-density.ts` is another session's untracked probe that imports `constructionDataService`, which this task deletes. Update it **in place** (`constructionService.getTrades()` or equivalent) so `tsc` stays green, and **never stage it**. Task 3 already renamed its `trade.relatedScopes` → `trade.scopeIds` the same way.
+
 One cache tag covers every catalog read, so the existing refresh button keeps its single-click behaviour. This is also the fix for **P0 escalation #1**: `scopes.getAll` is a public `baseProcedure` with no server cache, called by `portfolio-block.tsx:17` and `funnel-project-carousel.tsx:37` on paid-traffic funnel pages, so today every visitor triggers a live Notion request — two serial ones since P0 added pagination.
 
 **Files:**
@@ -1999,7 +2001,7 @@ The last commit. Nothing here changes behaviour; it stops the docs describing a 
 
 `src/shared/services/providers/notion/DOCS.md` currently documents adapters, property maps, the database registry and the cache — none of which live there any more. Reduce it to what the leaf actually is: the lazily-constructed client, the env fragment, and the four generic types. Every construction rule moves to the module's DOCS.md; leave a one-line pointer to it. Delete the stale `notionRouter` references at `:82,85` and the `NotionDatabaseName` reference at `:3`.
 
-Keep `#reads-paginate` — `sources/notion/query.ts:89` and `page-to-tiptap.ts:21` still cite it by slug. **Move that anchor into the module's DOCS.md and update both `// see` comments** to `see ../../DOCS.md#reads-paginate`, since pagination is now the source's behaviour, not the provider's. Same for `#adapter-returns-entity-or-null` and `#disabled-checkbox-is-extraction-time-gate`, cited by all four adapters.
+Keep `#reads-paginate` — `sources/notion/query.ts:89` and `page-to-tiptap.ts:21` still cite it by slug. **Move that anchor into the module's DOCS.md and update both `// see` comments** to `see ../../DOCS.md#reads-paginate`, since pagination is now the source's behaviour, not the provider's. Same for `#adapter-returns-entity-or-null` and `#disabled-checkbox-is-extraction-time-gate`, cited by all four adapters — but the adapters sit one level deeper (`sources/notion/<entity>/`), so theirs become **`../../../DOCS.md#…`**. (Since Task 2 these links resolve to a nonexistent `sources/DOCS.md`.)
 
 ```bash
 grep -rn "DOCS.md#" src/shared/modules/construction src/shared/services/providers/notion
