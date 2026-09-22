@@ -86,7 +86,7 @@ class NotionPaginationOverflowError extends Error {
 /**
  * Notion caps `page_size` at 100 and returns `has_more` + `next_cursor`.
  * Nothing in this codebase read them, so every list read silently truncated.
- * see ../DOCS.md#reads-paginate
+ * see ../../DOCS.md#reads-paginate
  */
 async function queryAllPages(
   dataSourceId: string,

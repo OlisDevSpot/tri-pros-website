@@ -18,7 +18,7 @@ class NotionBlockPaginationOverflowError extends Error {
 /**
  * blocks.children.list caps page_size at 100 and returns has_more + next_cursor.
  * Both read sites ignored them, truncating long SOW documents and long lists.
- * see ../DOCS.md#reads-paginate
+ * see ../../DOCS.md#reads-paginate
  */
 async function listAllBlockChildren(blockId: string): Promise<NotionBlock[]> {
   const blocks: NotionBlock[] = []

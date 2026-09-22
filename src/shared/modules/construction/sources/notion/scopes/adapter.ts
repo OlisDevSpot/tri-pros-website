@@ -19,7 +19,7 @@ function extractCoverImageUrl(page: PageObjectResponse): string | null {
   return null
 }
 
-// see ../../DOCS.md#adapter-returns-entity-or-null
+// see ../../../DOCS.md#adapter-returns-entity-or-null
 export function pageToScope(page: PageObjectResponse): Scope | null {
   try {
     const p = page.properties

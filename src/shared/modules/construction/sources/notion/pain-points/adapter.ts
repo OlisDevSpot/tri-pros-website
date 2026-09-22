@@ -5,7 +5,7 @@ import { multiSelectNames, relationIds, richText, selectName, titleText } from '
 import { normalizeNotionId } from '../normalize-id'
 import { PAIN_POINT_PROPERTIES_MAP } from './properties-map'
 
-// see ../../DOCS.md#adapter-returns-entity-or-null
+// see ../../../DOCS.md#adapter-returns-entity-or-null
 export function pageToPainPoint(page: PageObjectResponse): PainPoint | null {
   try {
     const p = page.properties

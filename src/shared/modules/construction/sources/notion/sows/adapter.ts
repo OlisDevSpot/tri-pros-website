@@ -5,7 +5,7 @@ import { relationIds, titleText } from '../extractors'
 import { normalizeNotionId } from '../normalize-id'
 import { SOW_TEMPLATE_PROPERTIES_MAP } from './properties-map'
 
-// see ../../DOCS.md#adapter-returns-entity-or-null
+// see ../../../DOCS.md#adapter-returns-entity-or-null
 export function pageToSowTemplate(page: PageObjectResponse): SowTemplate | null {
   try {
     const p = page.properties
