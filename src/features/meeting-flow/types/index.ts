@@ -1,4 +1,5 @@
 import type { CalendarEvent } from '@/shared/components/calendar/types'
+import type { PresentationSlide } from '@/shared/components/presentation/types'
 import type { MeetingOutcome, MeetingType } from '@/shared/constants/enums'
 import type { ProjectMediaFile } from '@/shared/db/schema'
 import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
@@ -139,6 +140,42 @@ export interface ComparisonRow {
   triPros: string
   others: string
 }
+
+/** A before/after pair shown side by side at the photos' own proportions. */
+export interface BeforeAfterMedia {
+  before: string
+  after: string
+  alt: string
+  width: number
+  height: number
+}
+
+/** The senior partner introduced on the Team slide. */
+export interface PresentationPartner {
+  name: string
+  title: string
+  image: string
+  points: string[]
+}
+
+/**
+ * The feature-specific content of each Who We Are slide, by kind. `hero` is empty: the hook is
+ * its heading and photo alone (owner, 2026-09-20). Deck rules: see ../DOCS.md#who-we-are-deck
+ */
+export type WhoWeAreContent
+  = | { kind: 'hero' }
+    | { kind: 'credentials', documents: PresentationDocument[], protection: ProofFigure[], reputation: ReputationMark[], openLabel: string }
+    | { kind: 'sample', proof: ProofFigure, document: PresentationDocument, openLabel: string }
+    | { kind: 'point', proof: ProofFigure, media?: BeforeAfterMedia }
+    | { kind: 'agent', cardRole: string, commitments: string[] }
+    | { kind: 'team', proof: ProofFigure, partner: PresentationPartner }
+    | { kind: 'comparison', rows: ComparisonRow[] }
+    | { kind: 'closing', quote: string, cta: { label: string } }
+
+/** One arm of `WhoWeAreContent`, e.g. `WhoWeAreContentOf<'point'>`. */
+export type WhoWeAreContentOf<K extends WhoWeAreContent['kind']> = Extract<WhoWeAreContent, { kind: K }>
+
+export type WhoWeAreSlide = PresentationSlide<WhoWeAreContent>
 
 /** What the pinned column shows for one section. */
 export interface PinnedSummary {
