@@ -18,14 +18,15 @@ interface DocumentDialogProps {
 
 /**
  * Every page of a document on the dark ground. A one-page document is sized to fit
- * the dialog whole; a multi-page one scrolls at reading width.
+ * the dialog whole; a multi-page one scrolls at reading width. The close control is a 44px
+ * round target (U11); the dialog portals out of the stage, so the palette comes from `:root`.
  */
 export function DocumentDialog({ document, onClose }: DocumentDialogProps) {
   return (
     <Dialog open={document !== null} onOpenChange={open => !open && onClose()}>
       <DialogContent
         aria-describedby={undefined}
-        className="h-[92dvh] w-[min(96vw,1100px)] max-w-none grid-rows-[minmax(0,1fr)] border-0 bg-[oklch(0.14_0.03_257)] p-2 text-white sm:max-w-none *:data-[slot=dialog-close]:bg-black/60 *:data-[slot=dialog-close]:p-1.5 *:data-[slot=dialog-close]:opacity-100"
+        className="h-[92dvh] w-[min(96vw,1100px)] max-w-none grid-rows-[minmax(0,1fr)] border-0 bg-[oklch(var(--presentation-scrim))] p-2 text-white sm:max-w-none *:data-[slot=dialog-close]:inline-flex *:data-[slot=dialog-close]:size-11 *:data-[slot=dialog-close]:items-center *:data-[slot=dialog-close]:justify-center *:data-[slot=dialog-close]:rounded-full *:data-[slot=dialog-close]:bg-black/60 *:data-[slot=dialog-close]:opacity-100"
       >
         {document && (
           <>

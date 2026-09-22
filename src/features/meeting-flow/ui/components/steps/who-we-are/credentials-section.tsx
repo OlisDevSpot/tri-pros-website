@@ -13,12 +13,13 @@ type CredentialsSectionProps = SlideProps<WhoWeAreContentOf<'credentials'>>
 /**
  * Point 1: the license and certificate of insurance on the desk, then two tiers of
  * proof. Protection figures lead (what covers the homeowner); reputation follows,
- * smaller, under a hairline. The heading is the run's column's; the content carries none (U1).
+ * smaller, under a hairline in two columns so no mark sits alone (U13). The heading is the
+ * run's column's; the content carries none (U1).
  */
 export function CredentialsSection({ content, ...slide }: CredentialsSectionProps) {
   return (
     <Slide {...slide}>
-      <PointLayout media={<CredentialDocuments documents={content.documents} />}>
+      <PointLayout media={<CredentialDocuments documents={content.documents} openLabel={content.openLabel} />}>
         <Reveal order={0}>
           <dl className="flex flex-wrap gap-x-[4cqw] gap-y-presentation-tight">
             {content.protection.map(figure => (
@@ -32,7 +33,7 @@ export function CredentialsSection({ content, ...slide }: CredentialsSectionProp
           </dl>
         </Reveal>
         <Reveal order={1}>
-          <ul className="flex flex-wrap items-center gap-x-[3cqw] gap-y-presentation-tight border-t border-white/15 pt-presentation-tight text-presentation-body">
+          <ul className="grid grid-cols-2 items-center gap-x-[3cqw] gap-y-presentation-tight border-t border-white/15 pt-presentation-tight text-presentation-body">
             {content.reputation.map(mark => (
               <ReputationMark key={mark.kind === 'fact' ? mark.value : mark.platform} mark={mark} />
             ))}

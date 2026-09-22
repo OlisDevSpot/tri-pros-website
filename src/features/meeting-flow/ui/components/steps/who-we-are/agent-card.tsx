@@ -1,4 +1,5 @@
 import type { PresentationAgent } from '@/features/meeting-flow/types'
+import LogoDarkIcon from '@public/company/logo/logo-dark.svg'
 import { HardHatIcon, MailIcon, PhoneIcon } from 'lucide-react'
 import Image from 'next/image'
 import { ContactLine } from '@/features/meeting-flow/ui/components/steps/who-we-are/contact-line'
@@ -12,30 +13,28 @@ interface AgentCardProps {
 }
 
 /**
- * The agent's business card laid on the desk: photo, name, role, and the contact
- * lines the agent's profile has filled in. Unset lines are left off the card.
+ * The agent's business card on the desk: headshot, or the brand mark when there is none;
+ * name, role and the contact lines the agent's profile has filled in. The card sizes to its
+ * content (U10) and sits square: tilted type blurs on low-DPI screens (U13).
  */
 export function AgentCard({ agent, role }: AgentCardProps) {
   return (
-    <div
-      className="flex max-h-full w-full max-w-[80cqw] -rotate-1 overflow-hidden bg-white text-(--presentation-ground) shadow-2xl shadow-black/60 lg:max-w-[48cqw]"
-      style={{ aspectRatio: '7 / 4' }}
-    >
-      {agent.image && (
-        <div className="relative aspect-[3/4] h-full shrink-0">
-          <Image alt={agent.name} className="object-cover object-top" draggable={false} fill sizes="(min-width: 1024px) 16vw, 30vw" src={agent.image} />
-        </div>
-      )}
-      <div className="flex min-w-0 flex-1 flex-col justify-between gap-[1.5cqh] p-[3cqw] lg:p-[1.8cqw]">
-        <div className="grid gap-[0.4cqh]">
-          <p className="font-sans text-[4.4cqw] leading-tight font-semibold tracking-tight text-balance lg:text-[2.4cqw]">{agent.name}</p>
-          <p className="text-[max(2.2cqw,0.75rem)] text-(--presentation-ground)/65 lg:text-[max(1.2cqw,0.75rem)]">
+    <div className="flex w-fit max-w-full overflow-hidden bg-white text-(--presentation-ground) shadow-2xl shadow-black/60">
+      <div className="relative w-[clamp(6rem,11cqw,10rem)] shrink-0 bg-(--presentation-ground)">
+        {agent.image
+          ? <Image alt={agent.name} className="object-cover object-top" draggable={false} fill sizes="10rem" src={agent.image} />
+          : <Image alt="" className="object-contain p-[18%]" draggable={false} fill src={LogoDarkIcon} />}
+      </div>
+      <div className="grid min-w-0 content-between gap-presentation-group p-presentation-group">
+        <div className="grid gap-1">
+          <p className="font-sans text-presentation-lead leading-tight font-semibold tracking-tight text-balance">{agent.name}</p>
+          <p className="text-presentation-label text-(--presentation-ground)/70">
             {role}
             {' · '}
             {companyInfo.name}
           </p>
         </div>
-        <dl className="grid gap-[0.8cqh] text-[max(2.3cqw,0.8125rem)] lg:text-[max(1.25cqw,0.8125rem)]">
+        <dl className="grid gap-presentation-tight text-presentation-body">
           {agent.phone && <ContactLine icon={PhoneIcon} label="Phone" value={formatPhone(agent.phone)} />}
           <ContactLine icon={MailIcon} label="Email" value={agent.email} />
           {agent.yearsOfExperience !== null && (
