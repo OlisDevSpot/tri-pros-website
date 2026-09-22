@@ -20,7 +20,7 @@ import {
   homeAreas,
   tradeLocations,
   variableDataTypes,
-} from '@/shared/domains/construction/constants/enums'
+} from '@/shared/modules/construction/core/constants/enums'
 
 export const activityTypeEnum = pgEnum('activity_type', activityTypes)
 export const activityEntityTypeEnum = pgEnum('activity_entity_type', activityEntityTypes)

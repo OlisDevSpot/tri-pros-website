@@ -14,6 +14,7 @@ import {
   yearBuiltRanges,
   yearsInHomeRanges,
 } from '@/shared/constants/enums/customers'
+import { painSchema } from '@/shared/entities/customers/schemas'
 import {
   foundationTypes,
   hvacComponents,
@@ -21,8 +22,7 @@ import {
   insulationLevels,
   roofTypes,
   windowsTypes,
-} from '@/shared/domains/construction/constants/enums'
-import { painSchema } from '@/shared/entities/customers/schemas'
+} from '@/shared/modules/construction/core/constants/enums'
 import { createdAt, updatedAt } from '../lib/schema-helpers'
 import { customers } from './customers'
 

@@ -1,6 +1,6 @@
 import z from 'zod'
 import { envelopeDocumentIds, priceDisplayModes, projectTypes, validThroughTimeframes } from '@/shared/constants/enums'
-import { homeAreas } from '@/shared/domains/construction/constants/enums'
+import { homeAreas } from '@/shared/modules/construction/core/constants/enums'
 import { createEmptySowSection } from '../lib/create-empty-sow-section'
 
 // SUB-SCHEMAS
