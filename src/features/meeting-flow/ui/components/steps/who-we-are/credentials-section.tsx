@@ -13,7 +13,8 @@ type CredentialsSectionProps = SlideProps<WhoWeAreContentOf<'credentials'>>
 /**
  * Point 1: the license and certificate of insurance on the desk, then two tiers of
  * proof. Protection figures lead (what covers the homeowner); reputation follows,
- * smaller, under a hairline in two columns so no mark sits alone (U13). The heading is the
+ * smaller, under a hairline in two columns: four marks make two full rows, so none sits alone
+ * (U13). The heading is the
  * run's column's; the content carries none (U1).
  */
 export function CredentialsSection({ content, ...slide }: CredentialsSectionProps) {
