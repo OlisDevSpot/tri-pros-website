@@ -4,8 +4,8 @@ import type { PresentationDocument } from '@/features/meeting-flow/types'
 import { BookOpenIcon } from 'lucide-react'
 import Image from 'next/image'
 import { useState } from 'react'
-import { Reveal } from '@/features/meeting-flow/ui/components/presentation/reveal'
 import { DocumentDialog } from '@/features/meeting-flow/ui/components/steps/who-we-are/document-dialog'
+import { Reveal } from '@/shared/components/presentation/reveal'
 import { cn } from '@/shared/lib/utils'
 
 interface DocumentStackProps {

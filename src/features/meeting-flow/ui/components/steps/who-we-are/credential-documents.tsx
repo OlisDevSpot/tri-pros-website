@@ -2,9 +2,9 @@
 
 import type { PresentationDocument } from '@/features/meeting-flow/types'
 import { useState } from 'react'
-import { Reveal } from '@/features/meeting-flow/ui/components/presentation/reveal'
 import { DocumentCard } from '@/features/meeting-flow/ui/components/steps/who-we-are/document-card'
 import { DocumentDialog } from '@/features/meeting-flow/ui/components/steps/who-we-are/document-dialog'
+import { Reveal } from '@/shared/components/presentation/reveal'
 
 interface CredentialDocumentsProps {
   /** The contractor license, then the certificate of insurance. */
@@ -13,7 +13,7 @@ interface CredentialDocumentsProps {
 
 /**
  * The license and the certificate of insurance laid like paper on the desk, filling
- * the media row of the licensing beat. Both cards size from the row's height at
+ * the media row of the licensing slide. Both cards size from the row's height at
  * their true proportions; the license overlaps the certificate when the row is narrow.
  */
 export function CredentialDocuments({ documents }: CredentialDocumentsProps) {

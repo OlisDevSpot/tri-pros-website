@@ -1,7 +1,7 @@
 import type { Transition, Variants } from 'motion/react'
 import { BRAND_EASE } from '@/shared/constants/motion'
 
-/** Every presentation reveal rides the brand curve (C29). */
+/** Every presentation reveal rides the brand curve (spec C U14). */
 export const REVEAL_TRANSITION: Transition = { duration: 0.5, ease: BRAND_EASE }
 
 /**
@@ -22,5 +22,8 @@ export const IMAGE_SETTLE_VARIANTS: Variants = {
   visible: { scale: 1, transition: { duration: 1.8, ease: BRAND_EASE } },
 }
 
-/** The heading column's swap between slides: a plain ease-out, as approved in the prototype. */
-export const PIN_SWAP_TRANSITION: Transition = { duration: 0.18, ease: 'easeOut' }
+/**
+ * The heading column's swap between slides: a plain ease-out, as approved in the prototype.
+ * It keeps its opacity fade under reduced motion, as `MotionConfig reducedMotion="user"` does (C46).
+ */
+export const HEADING_SWAP_TRANSITION: Transition = { duration: 0.18, ease: 'easeOut' }

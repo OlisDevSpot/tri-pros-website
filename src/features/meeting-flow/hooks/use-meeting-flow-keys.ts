@@ -1,7 +1,7 @@
 'use client'
 
 import type { RefObject } from 'react'
-import type { PresentationHandle } from '@/features/meeting-flow/types'
+import type { PresentationHandle } from '@/shared/components/presentation/types'
 import { useEffect } from 'react'
 import { ARROW_KEYS, REPEATABLE_KEYS, TYPING_TARGET_SELECTOR } from '@/features/meeting-flow/constants/keyboard-hints'
 import { TOTAL_STEPS } from '@/features/meeting-flow/constants/step-config'

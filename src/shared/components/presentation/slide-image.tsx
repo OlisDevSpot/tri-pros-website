@@ -2,14 +2,16 @@
 
 import { motion } from 'motion/react'
 import Image from 'next/image'
-import { IMAGE_SETTLE_VARIANTS } from '@/features/meeting-flow/constants/presentation-motion'
-import { useSectionInView } from '@/features/meeting-flow/contexts/presentation-context'
+import { useSlideInView } from '@/shared/components/presentation/context'
+import { IMAGE_SETTLE_VARIANTS } from '@/shared/components/presentation/motion'
 import { cn } from '@/shared/lib/utils'
 
-interface SectionImageProps {
+interface SlideImageProps {
   src: string
   alt: string
-  /** Set on the first section so its image is fetched eagerly. */
+  /** The `sizes` hint: a `full` slide's photo spans the whole presentation, a `column` slide's only its own box (L7). */
+  sizes: string
+  /** Set on the first slide so its image is fetched eagerly. */
   priority?: boolean
   /** Position/size overrides for the wrapper (defaults to full bleed). */
   className?: string
@@ -17,9 +19,9 @@ interface SectionImageProps {
   imageClassName?: string
 }
 
-/** Full-bleed photo that settles from a slight zoom when its section comes into view. */
-export function SectionImage({ src, alt, priority = false, className, imageClassName }: SectionImageProps) {
-  const inView = useSectionInView()
+/** Full-bleed photo that settles from a slight zoom when its slide comes into view. */
+export function SlideImage({ src, alt, sizes, priority = false, className, imageClassName }: SlideImageProps) {
+  const inView = useSlideInView()
   return (
     <motion.div
       animate={inView ? 'visible' : 'hidden'}
@@ -33,7 +35,7 @@ export function SectionImage({ src, alt, priority = false, className, imageClass
         draggable={false}
         fill
         priority={priority}
-        sizes="(min-width: 1024px) 62vw, 100vw"
+        sizes={sizes}
         src={src}
       />
     </motion.div>

@@ -1,6 +1,7 @@
 'use client'
 
-import type { MeetingFlowContext, PanelSection, PresentationHandle } from '@/features/meeting-flow/types'
+import type { MeetingFlowContext, PanelSection } from '@/features/meeting-flow/types'
+import type { PresentationHandle } from '@/shared/components/presentation/types'
 import type { MeetingOutcome } from '@/shared/constants/enums'
 import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { MeetingContext, MeetingFlowState } from '@/shared/entities/meetings/schemas'

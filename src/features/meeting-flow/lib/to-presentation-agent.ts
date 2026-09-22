@@ -4,7 +4,7 @@ import type { AppRouter } from '@/trpc/routers/app'
 
 type MeetingWithJoins = NonNullable<inferRouterOutputs<AppRouter>['meetingsRouter']['reads']['getByIdWithJoins']>
 
-/** The meeting owner as the Communication beat introduces them; the cropped headshot wins over the account photo. */
+/** The meeting owner as the Communication slide introduces them; the cropped headshot wins over the account photo. */
 export function toPresentationAgent(meeting: MeetingWithJoins): PresentationAgent {
   return {
     name: meeting.ownerName,

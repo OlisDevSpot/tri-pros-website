@@ -1,27 +1,21 @@
 'use client'
 
-import type { WhoWeAreSection } from '@/features/meeting-flow/types'
-import { SnapSection } from '@/features/meeting-flow/ui/components/presentation/snap-section'
-import { PointHeading } from '@/features/meeting-flow/ui/components/steps/who-we-are/point-heading'
+import type { WhoWeAreContentOf } from '@/features/meeting-flow/types'
+import type { SlideProps } from '@/shared/components/presentation/types'
+import { BeforeAfterPair } from '@/features/meeting-flow/ui/components/steps/who-we-are/before-after-pair'
 import { PointLayout } from '@/features/meeting-flow/ui/components/steps/who-we-are/point-layout'
-import { PointMediaLayer } from '@/features/meeting-flow/ui/components/steps/who-we-are/point-media-layer'
 import { ProofFigure } from '@/features/meeting-flow/ui/components/steps/who-we-are/proof-figure'
+import { Slide } from '@/shared/components/presentation/slide'
 
-interface PointSectionProps {
-  index: number
-  section: Extract<WhoWeAreSection, { kind: 'point' }>
-}
+type PointSectionProps = SlideProps<WhoWeAreContentOf<'point'>>
 
-/** A due-diligence point told over a full-bleed photo: title, line, proof figure. */
-export function PointSection({ index, section }: PointSectionProps) {
-  const headingId = `${section.id}-title`
+/** A due-diligence point: its figure, over the slide's photo or under a before/after pair. */
+export function PointSection({ content, ...slide }: PointSectionProps) {
   return (
-    <SnapSection id={section.id} index={index} labelledBy={headingId}>
-      <PointMediaLayer media={section.media} />
-      <PointLayout media={null}>
-        <PointHeading id={headingId} line={section.line} title={section.title} />
-        <ProofFigure order={2} proof={section.proof} />
+    <Slide {...slide}>
+      <PointLayout media={content.media ? <BeforeAfterPair media={content.media} /> : null}>
+        <ProofFigure order={0} proof={content.proof} />
       </PointLayout>
-    </SnapSection>
+    </Slide>
   )
 }

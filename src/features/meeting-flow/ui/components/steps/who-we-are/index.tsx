@@ -1,57 +1,79 @@
 'use client'
 
 import type { Ref } from 'react'
-import type { PresentationAgent, PresentationHandle } from '@/features/meeting-flow/types'
-import { WHO_WE_ARE_PINNED, WHO_WE_ARE_SECTIONS } from '@/features/meeting-flow/constants/who-we-are-sections'
-import { PinnedColumn } from '@/features/meeting-flow/ui/components/presentation/pinned-column'
-import { SnapPresentation } from '@/features/meeting-flow/ui/components/presentation/snap-presentation'
+import type { PresentationAgent, WhoWeAreContent } from '@/features/meeting-flow/types'
+import type { IndexedSlide, PresentationHandle } from '@/shared/components/presentation/types'
+import { KEY_SHORTCUTS } from '@/features/meeting-flow/constants/keyboard-hints'
+import { PROOF_POINT_COUNT, WHO_WE_ARE_GROUPS } from '@/features/meeting-flow/constants/who-we-are-slides'
 import { AgentSection } from '@/features/meeting-flow/ui/components/steps/who-we-are/agent-section'
+import { ClosingSection } from '@/features/meeting-flow/ui/components/steps/who-we-are/closing-section'
 import { ComparisonSection } from '@/features/meeting-flow/ui/components/steps/who-we-are/comparison-section'
 import { CredentialsSection } from '@/features/meeting-flow/ui/components/steps/who-we-are/credentials-section'
-import { HookSection } from '@/features/meeting-flow/ui/components/steps/who-we-are/hook-section'
 import { PointSection } from '@/features/meeting-flow/ui/components/steps/who-we-are/point-section'
 import { SampleSection } from '@/features/meeting-flow/ui/components/steps/who-we-are/sample-section'
 import { TeamSection } from '@/features/meeting-flow/ui/components/steps/who-we-are/team-section'
-import { TruthSection } from '@/features/meeting-flow/ui/components/steps/who-we-are/truth-section'
+import { Presentation } from '@/shared/components/presentation/presentation'
+import { Slide } from '@/shared/components/presentation/slide'
+import { SlideRun } from '@/shared/components/presentation/slide-run'
 
 interface WhoWeAreStepProps {
   /** The meeting owner, introduced as the homeowner's point of contact. */
   agent: PresentationAgent
   /** Advances the meeting flow to the Specialties step. */
   onContinue: () => void
-  /** Beat navigation for the shell's key map; forwarded to the presentation. */
+  /** Slide navigation for the shell's key map; forwarded to the presentation. */
   ref?: Ref<PresentationHandle>
 }
 
 /**
- * Step 1 of the meeting flow as a snapping scroll presentation of the
- * due-diligence story (docs/sales/due-diligence-story.md).
+ * Step 1 of the meeting flow: the due-diligence story (docs/sales/due-diligence-story.md)
+ * as a presentation. The hook, one run of eight column slides sharing a heading column, and
+ * the closing. The kind switch is exhaustive (L1); the `hero` slide is its heading and photo
+ * alone. The shell reaches the engine only through its named props: the step-root marker
+ * for focus, the key shortcuts, and the capsule clearance (spec C S9).
+ * Deck rules: see src/features/meeting-flow/DOCS.md#who-we-are-deck
  */
 export function WhoWeAreStep({ agent, onContinue, ref }: WhoWeAreStepProps) {
+  const renderSlide = ({ slide, index, frame }: IndexedSlide<WhoWeAreContent>) => {
+    const { content } = slide
+    const props = { index, frame, id: slide.id, heading: slide.heading, background: slide.background }
+    switch (content.kind) {
+      case 'hero':
+        return <Slide key={slide.id} {...props} />
+      case 'credentials':
+        return <CredentialsSection key={slide.id} {...props} content={content} />
+      case 'sample':
+        return <SampleSection key={slide.id} {...props} content={content} />
+      case 'point':
+        return <PointSection key={slide.id} {...props} content={content} />
+      case 'agent':
+        return <AgentSection key={slide.id} {...props} agent={agent} content={content} />
+      case 'team':
+        return <TeamSection key={slide.id} {...props} content={content} />
+      case 'comparison':
+        return <ComparisonSection key={slide.id} {...props} content={content} />
+      case 'closing':
+        return <ClosingSection key={slide.id} {...props} content={content} onContinue={onContinue} />
+      default:
+        throw new Error(`Unknown slide kind: ${content satisfies never}`)
+    }
+  }
+
   return (
-    <SnapPresentation ref={ref} aside={<PinnedColumn summaries={WHO_WE_ARE_PINNED} />} label="Who we are presentation">
-      {WHO_WE_ARE_SECTIONS.map((section, index) => {
-        switch (section.kind) {
-          case 'hook':
-            return <HookSection key={section.id} index={index} section={section} />
-          case 'credentials':
-            return <CredentialsSection key={section.id} index={index} section={section} />
-          case 'sample':
-            return <SampleSection key={section.id} index={index} section={section} />
-          case 'point':
-            return <PointSection key={section.id} index={index} section={section} />
-          case 'agent':
-            return <AgentSection key={section.id} agent={agent} index={index} section={section} />
-          case 'team':
-            return <TeamSection key={section.id} index={index} section={section} />
-          case 'comparison':
-            return <ComparisonSection key={section.id} index={index} section={section} />
-          case 'truth':
-            return <TruthSection key={section.id} index={index} section={section} onContinue={onContinue} />
-          default:
-            throw new Error(`Unknown section kind: ${section satisfies never}`)
-        }
-      })}
-    </SnapPresentation>
+    <Presentation
+      ref={ref}
+      clearBottom="var(--stage-clear-b)"
+      keyShortcuts={KEY_SHORTCUTS.presentation}
+      label="Who we are presentation"
+      rootAttributes={{ 'data-step-root': true }}
+    >
+      {WHO_WE_ARE_GROUPS.map(group => group.kind === 'full'
+        ? renderSlide(group.item)
+        : (
+            <SlideRun key={`run-${group.items[0].index}`} items={group.items} numberedTotal={PROOF_POINT_COUNT}>
+              {group.items.map(renderSlide)}
+            </SlideRun>
+          ))}
+    </Presentation>
   )
 }

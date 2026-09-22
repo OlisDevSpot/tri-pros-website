@@ -3,7 +3,7 @@ import type { KeyHint } from '@/features/meeting-flow/types'
 /** Rendered as `<kbd>` badges in the panel's Meeting section. */
 export const MEETING_FLOW_KEY_HINTS: KeyHint[] = [
   { keys: ['←', '→'], label: 'Previous / next step' },
-  { keys: ['↑', '↓', 'A', 'Z'], label: 'Previous / next beat in the presentation' },
+  { keys: ['↑', '↓', 'A', 'Z'], label: 'Previous / next slide in the presentation' },
   { keys: ['1–7'], label: 'Jump to a step' },
   { keys: ['P'], label: 'Present mode on / off' },
   { keys: ['Esc'], label: 'Close the panel, then exit present mode' },

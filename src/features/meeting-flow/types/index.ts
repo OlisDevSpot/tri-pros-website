@@ -89,22 +89,11 @@ export type MeetingStepLayout = 'page' | 'presentation' | 'split'
 /** Which inspector-panel section is open; the panel is closed when the view holds `null`. */
 export type PanelSection = 'meeting' | 'project' | 'context' | 'persona'
 
-/** Imperative surface a presentation-layout step exposes to the shell's key map. */
-export interface PresentationHandle {
-  next: () => void
-  prev: () => void
-}
-
 /** One row of the keyboard help list. */
 export interface KeyHint {
   keys: string[]
   label: string
 }
-
-/** Full-bleed media behind a point's copy. */
-export type PointMedia
-  = | { type: 'photo', src: string, alt: string }
-    | { type: 'pair', before: string, after: string, alt: string }
 
 /** A paper document shown on the stage; every page shares one pixel size. */
 export interface PresentationDocument {
@@ -121,12 +110,12 @@ export interface ProofFigure {
   label: string
 }
 
-/** One mark in the licensing beat's reputation line. */
+/** One mark in the licensing slide's reputation line. */
 export type ReputationMark
   = | { kind: 'fact', value: string, label: string }
     | { kind: 'rating', platform: 'Google' | 'Yelp', rating: string, count: number }
 
-/** The meeting owner, introduced in the Communication beat. */
+/** The meeting owner, introduced on the Communication slide. */
 export interface PresentationAgent {
   name: string
   image: string | null
@@ -176,88 +165,6 @@ export type WhoWeAreContent
 export type WhoWeAreContentOf<K extends WhoWeAreContent['kind']> = Extract<WhoWeAreContent, { kind: K }>
 
 export type WhoWeAreSlide = PresentationSlide<WhoWeAreContent>
-
-/** What the pinned column shows for one section. */
-export interface PinnedSummary {
-  number?: number
-  title: string
-  line: string
-  count?: string
-}
-
-export type WhoWeAreSection
-  = | {
-    kind: 'hook'
-    id: string
-    title: string
-    subtitle: string
-    accent: string
-    image: string
-    imageAlt: string
-  }
-  | {
-    kind: 'credentials'
-    id: string
-    number: number
-    title: string
-    line: string
-    documents: PresentationDocument[]
-    protection: ProofFigure[]
-    reputation: ReputationMark[]
-  }
-  | {
-    kind: 'sample'
-    id: string
-    number: number
-    title: string
-    line: string
-    proof: ProofFigure
-    document: PresentationDocument
-    openLabel: string
-  }
-  | {
-    kind: 'point'
-    id: string
-    number: number
-    title: string
-    line: string
-    proof: ProofFigure
-    media: PointMedia
-  }
-  | {
-    kind: 'agent'
-    id: string
-    number: number
-    title: string
-    line: string
-    cardRole: string
-    commitments: string[]
-  }
-  | {
-    kind: 'team'
-    id: string
-    number: number
-    title: string
-    line: string
-    proof: ProofFigure
-    partner: { name: string, title: string, image: string, points: string[] }
-    teamPhotoLabel: string
-  }
-  | {
-    kind: 'comparison'
-    id: string
-    title: string
-    rows: ComparisonRow[]
-  }
-  | {
-    kind: 'truth'
-    id: string
-    tableTitle: string
-    rows: ComparisonRow[]
-    title: string
-    quote: string
-    ctaLabel: string
-  }
 
 // ── Flow Context (passed to step components) ────────────────────────────────
 

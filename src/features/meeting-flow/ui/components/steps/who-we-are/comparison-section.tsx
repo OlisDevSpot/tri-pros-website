@@ -1,36 +1,26 @@
 'use client'
 
-import type { WhoWeAreSection } from '@/features/meeting-flow/types'
-import { Reveal } from '@/features/meeting-flow/ui/components/presentation/reveal'
-import { SnapSection } from '@/features/meeting-flow/ui/components/presentation/snap-section'
+import type { WhoWeAreContentOf } from '@/features/meeting-flow/types'
+import type { SlideProps } from '@/shared/components/presentation/types'
 import { ComparisonTable } from '@/features/meeting-flow/ui/components/steps/who-we-are/comparison-table'
+import { Reveal } from '@/shared/components/presentation/reveal'
+import { Slide } from '@/shared/components/presentation/slide'
 
-interface ComparisonSectionProps {
-  index: number
-  section: Extract<WhoWeAreSection, { kind: 'comparison' }>
-}
+type ComparisonSectionProps = SlideProps<WhoWeAreContentOf<'comparison'>>
 
 /**
- * The six points recapped side by side: Tri Pros against other contractors. The content is
- * in flow with a one-screen minimum, so a cramped stage grows the beat instead of clipping it.
+ * Tri Pros against other contractors: the six points, and the extras. A growth slide: the
+ * content stays in flow with a one-screen minimum, so a comparison taller than the screen
+ * makes the slide taller instead of being clipped (spec C §4.4, review F6).
  */
-export function ComparisonSection({ index, section }: ComparisonSectionProps) {
-  const headingId = `${section.id}-title`
+export function ComparisonSection({ content, ...slide }: ComparisonSectionProps) {
   return (
-    <SnapSection id={section.id} index={index} labelledBy={headingId}>
-      <div className="grid min-h-[calc(100cqh-var(--pin-h))] content-center gap-[3cqh] px-[6cqw] pt-[5cqh] pb-[max(6cqh,var(--stage-inset-b))]">
+    <Slide {...slide}>
+      <div className="grid min-h-[calc(100cqh-var(--band-h,0px))] content-center px-[6cqw] pt-presentation-zone pb-[max(6cqh,var(--presentation-clear-b,0px))]">
         <Reveal order={0}>
-          <h2
-            className="max-w-[22ch] font-sans text-[5.2cqw] leading-[1.06] font-semibold tracking-tight text-balance lg:text-[3.4cqw]"
-            id={headingId}
-          >
-            {section.title}
-          </h2>
-        </Reveal>
-        <Reveal order={1}>
-          <ComparisonTable density="regular" rows={section.rows} />
+          <ComparisonTable rows={content.rows} />
         </Reveal>
       </div>
-    </SnapSection>
+    </Slide>
   )
 }
