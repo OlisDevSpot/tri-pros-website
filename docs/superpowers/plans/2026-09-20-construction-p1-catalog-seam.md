@@ -15,7 +15,22 @@
 These apply to **every** task. They are repo rules, not suggestions.
 
 - **Verification is `pnpm tsc` and `pnpm lint` only. NEVER run `pnpm build`.** (`CLAUDE.md`)
-- **Work on `main`. Stage by path — never `git add -A`.** Every commit in this plan lists its exact paths.
+- **Work on `main`. Stage explicit file paths only — never `git add -A`, never a directory.** ~57 files in this tree carry other sessions' uncommitted WIP (`src/features/`, `src/shared/entities/`, `src/shared/domains/`, `docs/` …). A directory `git add` sweeps them into your commit — Task 1's plan-as-written did exactly that and had to be amended out. Every task runs the **commit gate**:
+
+  ```bash
+  S=/tmp/claude-1000/-home-olis-solutions-olis-v3-nextjs-tri-pros-website/b561a36a-bcab-41eb-8ac9-810207705807/scratchpad
+  # Step 0, BEFORE the task's first edit — snapshot foreign WIP (paths + content hashes)
+  git diff --cached --quiet || { echo "index not empty — STOP"; }
+  git status --porcelain > $S/wip-before.txt
+  git status --porcelain | awk '{print $NF}' | xargs -r sha1sum > $S/wip-hashes.txt 2>/dev/null
+  # If any file on the task's Files list is already in wip-before.txt: STOP and ask the user.
+
+  # At commit time
+  sha1sum -c --quiet $S/wip-hashes.txt 2>/dev/null   # prints a foreign-WIP file you modified → STOP and ask
+  git status --porcelain | grep -vxFf $S/wip-before.txt  # = this task's files; stage each by explicit path
+  git diff --cached --name-status                        # must list only this task's files, or `git restore --staged <path>`
+  ```
+- **Import order is lint-enforced** (`perfectionist/sort-imports`). After rewriting import paths, run `pnpm exec eslint --fix <this task's files>` — **never repo-wide**, which would rewrite the foreign-WIP files above.
 - **Every commit must leave `pnpm tsc` and `pnpm lint` green.** No task ends red.
 - **Non-defensive migration.** Move consumers and delete the old code in the *same* commit. No aliases, no re-export shims, no dual paths, no deprecated wrappers, no back-compat field names. If you find yourself adding a second way to do something, you have gone wrong.
 - **No speculative types.** Do not create a type, constant, or helper that has zero call sites after this task. If the spec names one and it has no consumer, it belongs to a later phase.
@@ -130,8 +145,9 @@ Expected: both clean. This is a pure path change, so any failure means an import
 - [ ] **Step 5: Commit**
 
 ```bash
+# The rename is already staged by `git mv`. Do NOT add `src/shared/domains` — it sweeps in
+# foreign WIP (src/shared/domains/funnels/types.ts). Executed as commit 616465a7.
 git add src/shared/modules/construction/core/constants/enums.ts \
-        src/shared/domains \
         src/shared/db/schema/customer-profiles.ts \
         src/shared/db/schema/meta.ts \
         src/shared/db/schema/scopes.ts \
@@ -374,14 +390,11 @@ Expected: all three pass. They are pure (no network), so they prove the adapters
 - [ ] **Step 9: Commit**
 
 ```bash
-git add src/shared/modules/construction/sources \
-        src/shared/services/providers/notion \
-        src/shared/services/construction-data.service.ts \
-        src/features src/shared/components src/shared/entities \
-        src/trpc/routers/notion.router \
-        scripts/verify-normalize-notion-id.ts \
-        scripts/verify-notion-adapters.ts \
-        scripts/verify-energy-trade-qualification.ts
+# Commit gate (Global Constraints): stage THIS task's files by explicit path — never a directory.
+git status --porcelain | grep -vxFf $S/wip-before.txt   # the candidate list
+sha1sum -c --quiet $S/wip-hashes.txt 2>/dev/null        # must print nothing
+git add -- <each candidate path>   # expected: sources/notion/**, providers/notion/**, construction-data.service.ts,
+                                   # the 5 inlined hook call sites, notion.router/*, the 3 verify scripts
 git commit -m "$(cat <<'MSG'
 refactor(construction-p1): move Notion internals into modules/construction/sources
 
@@ -805,10 +818,11 @@ Expected: all clean and all three scripts pass.
 - [ ] **Step 12: Commit**
 
 ```bash
-git add src/shared/modules/construction src/shared/services/construction-data.service.ts \
-        src/trpc/routers/notion.router src/features src/shared/components \
-        src/shared/entities src/shared/domains \
-        scripts/verify-notion-adapters.ts scripts/verify-energy-trade-qualification.ts
+# Commit gate (Global Constraints): stage THIS task's files by explicit path — never a directory.
+git status --porcelain | grep -vxFf $S/wip-before.txt   # the candidate list
+sha1sum -c --quiet $S/wip-hashes.txt 2>/dev/null        # must print nothing
+git add -- <each candidate path>   # expected: core/schemas, sources/notion/**, the rename-table call sites,
+                                   # trade-categories.ts, the 2 verify scripts
 git commit -m "$(cat <<'MSG'
 refactor(construction-p1): neutral catalog schemas, no Notion names above the seam
 
@@ -971,6 +985,9 @@ Expected: clean. Nothing consumes the seam yet — Task 5 does. The old service 
 - [ ] **Step 5: Commit**
 
 ```bash
+# Commit gate (Global Constraints): stage THIS task's files by explicit path — never a directory.
+git status --porcelain | grep -vxFf $S/wip-before.txt   # the candidate list
+sha1sum -c --quiet $S/wip-hashes.txt 2>/dev/null        # must print nothing
 git add src/shared/modules/construction/sources/types.ts \
         src/shared/modules/construction/sources/index.ts \
         src/shared/modules/construction/sources/notion/index.ts
@@ -1203,11 +1220,15 @@ Start the dev server (`pnpm dev`), open a landing pillar page, and confirm in th
 - [ ] **Step 9: Commit**
 
 ```bash
+# Commit gate (Global Constraints): stage THIS task's files by explicit path — never a directory.
+git status --porcelain | grep -vxFf $S/wip-before.txt   # the candidate list
+sha1sum -c --quiet $S/wip-hashes.txt 2>/dev/null        # must print nothing
 git add src/shared/modules/construction/service.ts \
         src/shared/services/construction-data.service.ts \
         src/features/meeting-flow/lib/get-cached-pain-points.ts \
         src/features/landing/lib/notion-trade-helpers.ts \
-        src/trpc/routers/notion.router src/trpc/routers/meeting-flow.router.ts
+        src/trpc/routers/notion.router/<each changed file> \
+        src/trpc/routers/meeting-flow.router.ts
 git commit -m "$(cat <<'MSG'
 feat(construction-p1): one cached catalog service on one revalidation tag
 
@@ -1422,7 +1443,11 @@ Expected: clean.
 - [ ] **Step 8: Commit**
 
 ```bash
-git add src/trpc/routers src/features src/shared
+# Commit gate (Global Constraints): stage THIS task's files by explicit path — never a directory.
+git status --porcelain | grep -vxFf $S/wip-before.txt   # the candidate list
+sha1sum -c --quiet $S/wip-hashes.txt 2>/dev/null        # must print nothing
+git add -- <each candidate path>   # expected: construction.router/**, notion.router/** (deleted), trpc/routers/index,
+                                   # every trpc.notionRouter call site, catalog-refresh-button.tsx
 git commit -m "$(cat <<'MSG'
 refactor(construction-p1): constructionRouter replaces notionRouter
 
@@ -1624,7 +1649,11 @@ Any visual difference is a bug in this task, not an improvement. Report it rathe
 - [ ] **Step 8: Commit**
 
 ```bash
-git add src/shared/modules/construction/core src/features src/shared
+# Commit gate (Global Constraints): stage THIS task's files by explicit path — never a directory.
+git status --porcelain | grep -vxFf $S/wip-before.txt   # the candidate list
+sha1sum -c --quiet $S/wip-hashes.txt 2>/dev/null        # must print nothing
+git add -- <each candidate path>   # expected: core/lib/build-catalog-index.ts, core/hooks/use-construction-catalog.ts,
+                                   # the useTradeCatalog call sites, the 2 deleted meeting-flow files
 git commit -m "$(cat <<'MSG'
 feat(construction-p1): one catalog index and one hook for the client
 
@@ -1895,7 +1924,16 @@ Expected: clean.
 - [ ] **Step 8: Commit**
 
 ```bash
-git add scripts/ package.json
+# Commit gate (Global Constraints): stage THIS task's files by explicit path — never a directory.
+git status --porcelain | grep -vxFf $S/wip-before.txt   # the candidate list
+sha1sum -c --quiet $S/wip-hashes.txt 2>/dev/null        # must print nothing
+# NEVER `git add scripts/` — ~21 untracked foreign scripts/tmp-*.ts live there.
+git add -- package.json \
+           scripts/verify-catalog-seam.ts \
+           scripts/portfolio-scraper/fuzzy-match-scopes.ts \
+           scripts/portfolio-scraper/fetch-scopes.ts \
+           scripts/portfolio-scraper/index.ts \
+           <any other candidate path this task changed>
 git commit -m "$(cat <<'MSG'
 refactor(construction-p1): scripts read the catalog through the seam (F16)
 
@@ -1933,6 +1971,7 @@ The last commit. Nothing here changes behaviour; it stops the docs describing a 
 - Modify: `docs/plans/2026-09-15-construction-data-standardization-epic.md` (the 7 amendments)
 - Modify: `docs/codebase-conventions/provider-boundaries.md` (the `providers/notion/**` row)
 - Modify: `src/shared/entities/applications/DOCS.md:90`
+- Modify: `docs/codebase-conventions/enum-standardization.md:11` · `.claude/agents/knowledge/convention-auditor-ledger.md:279,300` · `memory/coding-conventions.md:690` (stale `domains/construction/` path — found at Task 1)
 - Modify: `memory/project-construction-catalog-centralization.md` and `memory/MEMORY.md`
 
 - [ ] **Step 1: Write the module's DOCS.md**
@@ -1976,9 +2015,16 @@ Add an eighth line recording the three post-spec decisions D-a/D-b/D-c from this
 
 The `providers/notion/**` row in `## Known non-compliance` is now resolved — remove it from that table. The `#translators-live-in-domain-land` **Target shape** line becomes a statement of fact rather than a plan: `modules/construction/sources/notion/` **is** where the data-source ids, property maps, translators and extractors live, with `providers/notion` reduced to `client.ts` + `types.ts` + `lib/config.ts`. Cite this plan's date.
 
-- [ ] **Step 5: Fix the one stale entity DOCS reference**
+- [ ] **Step 5: Fix the stale references**
 
 `src/shared/entities/applications/DOCS.md:90` says `notionRouter.trades.getAll` → `constructionDataService.getTrades()`. Both names are gone. It now reads `constructionRouter.trades.getAll` → `constructionService.getCatalog()`.
+
+Found at Task 1 — each still names `src/shared/domains/construction/constants/enums.ts`, now `src/shared/modules/construction/core/constants/enums.ts`:
+- `docs/codebase-conventions/enum-standardization.md:11` — the co-location "live example".
+- `.claude/agents/knowledge/convention-auditor-ledger.md:279` ("`domains/construction/` holds only `constants/enums.ts`") and `:300`.
+- `memory/coding-conventions.md:690` ("actually lives at `src/shared/domains/construction/...` (verified 2026-09-14)").
+
+⚠️ The first two carried **foreign uncommitted WIP** at plan time (`enum-standardization.md:11` is itself inside that WIP). Check `wip-before.txt`; if either is still foreign-modified, ask the user before editing or staging it.
 
 - [ ] **Step 6: Update memory**
 
@@ -1998,13 +2044,15 @@ Then re-run **all seven grep gates from Task 8 Step 6**. Every one must still be
 - [ ] **Step 8: Commit**
 
 ```bash
-git add src/shared/modules/construction/DOCS.md \
-        src/shared/services/providers/notion/DOCS.md \
-        src/shared/services/providers/notion \
-        src/shared/modules/construction/sources \
-        src/shared/entities/applications/DOCS.md \
-        docs/plans/2026-09-15-construction-data-standardization-epic.md \
-        docs/codebase-conventions/provider-boundaries.md
+# Commit gate (Global Constraints): stage THIS task's files by explicit path — never a directory.
+git status --porcelain | grep -vxFf $S/wip-before.txt   # the candidate list
+sha1sum -c --quiet $S/wip-hashes.txt 2>/dev/null        # must print nothing
+# ⚠️ Two files below carried FOREIGN WIP at plan time — check wip-before.txt and ask before staging:
+#    src/shared/entities/applications/DOCS.md (modified by another session)
+#    docs/codebase-conventions/provider-boundaries.md (UNTRACKED — staging it commits the whole file)
+git add -- src/shared/modules/construction/DOCS.md \
+           src/shared/services/providers/notion/DOCS.md \
+           <each other candidate path>
 git commit -m "$(cat <<'MSG'
 docs(construction-p1): module DOCS, provider DOCS, tracker amendments
 
