@@ -20,3 +20,9 @@ export const COLLAPSE_HEIGHT_VARIANTS = {
   animate: { height: 'auto', opacity: 1 },
   exit: { height: 0, opacity: 0 },
 } as const
+
+/**
+ * The brand curve (DESIGN.md, `--ease-brand`). The CSS variable is declared only inside
+ * `.funnel-light` in `globals.css`, so motion outside the funnels takes it from here.
+ */
+export const BRAND_EASE: [number, number, number, number] = [0.32, 0.72, 0, 1]

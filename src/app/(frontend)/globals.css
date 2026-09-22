@@ -434,6 +434,23 @@
   --font-mono: var(--font-mono);
   --font-serif: var(--font-serif);
 
+  /* Presentation engine tokens. Owner: src/shared/components/presentation/ (spec C U5, U6, S11).
+     Role scale: one clamp per role serves the heading column, the band and the comparison
+     sheets, so nothing jumps at a threshold. The rem bounds give a floor and let browser zoom
+     scale the text (max = 2 × min). `cqw` resolves at the element, against its nearest
+     container: the presentation scroller, or the table inside `@container/comparison`. */
+  --text-presentation-display: clamp(2.5rem, 4.3cqw, 5rem);
+  --text-presentation-title: clamp(1.75rem, 3.05cqw, 3.5rem);
+  --text-presentation-figure: clamp(1.5rem, 2.45cqw, 3rem);
+  --text-presentation-lead: clamp(1.25rem, 1.6cqw, 2.5rem);
+  --text-presentation-body: clamp(1.0625rem, 1.25cqw, 2.125rem);
+  --text-presentation-label: clamp(0.8125rem, 0.975cqw, 1.625rem);
+
+  /* Presentation spacing: tight ≈8, group ≈30, zone ≈51 px on a 900px-tall presentation. */
+  --spacing-presentation-tight: 0.5rem;
+  --spacing-presentation-group: clamp(1.25rem, 3.3cqh, 2.5rem);
+  --spacing-presentation-zone: clamp(2rem, 5.7cqh, 4rem);
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -1693,10 +1710,16 @@
   display: none;
 }
 
-/* Presentation palette. Defined on the stage so the presentation scroller and the floating
-   step capsule (its sibling) read one source. The values were previously inline on the
-   scroller in snap-presentation.tsx. */
-[data-stage] {
+/* Presentation palette. Owner: src/shared/components/presentation/ (spec C U8, S11). One source
+   for the presentation scroller, the floating step capsule and the document dialog. Declared at
+   the root, not on the stage, because the dialog portals out of the stage and reads the scrim.
+   The values were previously inline on the scroller in snap-presentation.tsx.
+   `--presentation-accent` is brand blue on dark: the marketing dark theme's `--accent-ink`,
+   which is scoped to `.theme-marketing.theme-dark` and not readable here.
+   `--presentation-scrim` holds oklch channels, not a colour, so each caller adds its own
+   alpha: `oklch(var(--presentation-scrim) / 0.9)`. */
+:root {
   --presentation-ground: oklch(0.2 0.028 257);
-  --presentation-accent: oklch(0.8 0.12 259.8);
+  --presentation-accent: #5cc6f2;
+  --presentation-scrim: 0.14 0.03 257;
 }

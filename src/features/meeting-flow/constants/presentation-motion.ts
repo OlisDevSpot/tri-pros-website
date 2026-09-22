@@ -1,9 +1,8 @@
 import type { Transition, Variants } from 'motion/react'
+import { BRAND_EASE } from '@/shared/constants/motion'
 
-/** Exponential ease-out shared by every presentation reveal. */
-export const PRESENTATION_EASE: [number, number, number, number] = [0.16, 1, 0.3, 1]
-
-export const REVEAL_TRANSITION: Transition = { duration: 0.5, ease: PRESENTATION_EASE }
+/** Every presentation reveal rides the brand curve (C29). */
+export const REVEAL_TRANSITION: Transition = { duration: 0.5, ease: BRAND_EASE }
 
 /**
  * Text groups rise into place. Transitions are set on the <Reveal> component, not
@@ -14,13 +13,14 @@ export const REVEAL_VARIANTS: Variants = {
   visible: { opacity: 1, y: 0 },
 }
 
-/** Delay between sibling reveals inside one section, in seconds. */
+/** Delay between sibling reveals inside one slide, in seconds. */
 export const REVEAL_STAGGER_S = 0.09
 
 /** Images settle from a slight zoom on first reveal. Applied to an inner wrapper only. */
 export const IMAGE_SETTLE_VARIANTS: Variants = {
   hidden: { scale: 1.06 },
-  visible: { scale: 1, transition: { duration: 1.8, ease: PRESENTATION_EASE } },
+  visible: { scale: 1, transition: { duration: 1.8, ease: BRAND_EASE } },
 }
 
+/** The heading column's swap between slides: a plain ease-out, as approved in the prototype. */
 export const PIN_SWAP_TRANSITION: Transition = { duration: 0.18, ease: 'easeOut' }
