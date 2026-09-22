@@ -12,13 +12,14 @@ interface WorkOptionListProps {
   entry: TradeSelection
   label: string
   scopes: Scope[]
+  onBeforeRemove: () => void
 }
 
 /**
  * The "Mirror" option rows the owner picked (spec D8): full-width 44px rows, label left, checkbox square right,
  * pressed fill. A vertical `ToggleGroup`, so Radix owns pressed state, roving focus and `aria-pressed`. Never moves the stage.
  */
-export function WorkOptionList({ entry, label, scopes }: WorkOptionListProps) {
+export function WorkOptionList({ entry, label, scopes, onBeforeRemove }: WorkOptionListProps) {
   const { toggleWork } = useTradeEdits()
   const labelId = useId()
   const selectedScopes = entry?.selectedScopes
@@ -29,7 +30,7 @@ export function WorkOptionList({ entry, label, scopes }: WorkOptionListProps) {
     for (const id of [...added, ...removed]) {
       const scope = scopes.find(entryScope => entryScope.id === id)
       if (scope) {
-        toggleWork(entry.tradeId, entry, { id: scope.id, label: scope.name })
+        toggleWork(entry.tradeId, entry, { id: scope.id, label: scope.name }, onBeforeRemove)
       }
     }
   }

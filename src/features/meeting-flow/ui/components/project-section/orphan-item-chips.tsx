@@ -10,10 +10,11 @@ import { Button } from '@/shared/components/ui/button'
 interface OrphanItemChipsProps {
   entry: TradeSelection
   items: SelectionItem[]
+  onBeforeRemove: () => void
 }
 
 /** Stored items the current catalog no longer lists for this trade. Shown by stored label, removable, never dropped silently. */
-export function OrphanItemChips({ entry, items }: OrphanItemChipsProps) {
+export function OrphanItemChips({ entry, items, onBeforeRemove }: OrphanItemChipsProps) {
   const { toggleWork } = useTradeEdits()
 
   if (items.length === 0) {
@@ -26,7 +27,7 @@ export function OrphanItemChips({ entry, items }: OrphanItemChipsProps) {
       <ul className="flex flex-wrap gap-2">
         {items.map(item => (
           <li key={item.id}>
-            <Button aria-label={SPECIALTIES_COPY.panel.removeItem(item.label)} className="h-11 font-normal" variant="outline" onClick={() => toggleWork(entry.tradeId, entry, item)}>
+            <Button aria-label={SPECIALTIES_COPY.panel.removeItem(item.label)} className="h-11 font-normal" variant="outline" onClick={() => toggleWork(entry.tradeId, entry, item, onBeforeRemove)}>
               {item.label}
               <XIcon aria-hidden className="size-3.5" />
             </Button>

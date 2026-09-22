@@ -12,7 +12,8 @@ import { isOnlyItem } from '@/features/meeting-flow/lib/trade-selection'
 /**
  * Edits with the step's removal rules (spec §4.2.3): unticking a trade's only item removes the
  * trade (items, reasons and note) and offers Undo, which restores the whole entry. Callers pass the
- * current entry, so the callbacks stay stable and read no selections.
+ * current entry, so the callbacks stay stable and read no selections. `beforeRemove` runs just before
+ * such a removal, so a panel row can move focus off a control that is about to unmount (spec §4.8).
  */
 export function useTradeEdits() {
   const { toggleItem, removeTrade, restoreTrade } = useTradeActions()
@@ -25,8 +26,9 @@ export function useTradeEdits() {
     })
   }, [removeTrade, restoreTrade])
 
-  const toggleWork = useCallback((tradeId: string, entry: TradeSelection | undefined, item: SelectionItem) => {
+  const toggleWork = useCallback((tradeId: string, entry: TradeSelection | undefined, item: SelectionItem, beforeRemove?: () => void) => {
     if (entry && isOnlyItem(entry, item.id)) {
+      beforeRemove?.()
       removeWithUndo(entry)
       return
     }
