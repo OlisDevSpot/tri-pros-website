@@ -15,6 +15,7 @@
 These apply to **every** task. They are repo rules, not suggestions.
 
 - **Verification is `pnpm tsc` and `pnpm lint` only. NEVER run `pnpm build`.** (`CLAUDE.md`)
+  Always run lint as **`CI=1 pnpm lint`**: under VS Code env vars `@antfu/eslint-config` prints "Detected running in editor, some rules are disabled" and softens rules. `tsc` checks every `**/*.ts` — including `tests/` — so every code grep in this plan covers `src/ scripts/ tests/`.
 - **Work on `main`. Stage explicit file paths only — never `git add -A`, never a directory.** ~57 files in this tree carry other sessions' uncommitted WIP (`src/features/`, `src/shared/entities/`, `src/shared/domains/`, `docs/` …). A directory `git add` sweeps them into your commit — Task 1's plan-as-written did exactly that and had to be amended out. Every task runs the **commit gate**:
 
   ```bash
@@ -30,7 +31,14 @@ These apply to **every** task. They are repo rules, not suggestions.
   git status --porcelain | grep -vxFf $S/wip-before.txt  # = this task's files; stage each by explicit path
   git diff --cached --name-status                        # must list only this task's files, or `git restore --staged <path>`
   ```
-- **Import order is lint-enforced** (`perfectionist/sort-imports`). After rewriting import paths, run `pnpm exec eslint --fix <this task's files>` — **never repo-wide**, which would rewrite the foreign-WIP files above.
+- **Import order is lint-enforced** (`perfectionist/sort-imports`). After rewriting import paths, run `CI=1 pnpm exec eslint --fix <this task's files>` — **never repo-wide**, which would rewrite the foreign-WIP files above. `--fix` also strips pre-existing "unused" `/* eslint-disable no-console */` headers in `scripts/` — restore them; they are out of scope.
+- **Before staging, list every changed non-import line per file** and confirm each belongs to the task (a live session may be editing the same files):
+  ```bash
+  git diff -M HEAD -U0 -- <task paths, BOTH sides of each rename> \
+    | awk '/^\+\+\+ /{f=substr($0,5)} /^--- a\//{d=substr($0,7)} /^\+\+\+ \/dev\/null/{f=d} /^[+-][^+-]/{print f"\t"$0}' \
+    | grep -vP "\t[+-]\s*(import |\} from ')" | cut -f1 | sort | uniq -c
+  ```
+- **Never `git add -N`** (or any index write) to make untracked files diffable — it marks every foreign untracked file intent-to-add.
 - **Every commit must leave `pnpm tsc` and `pnpm lint` green.** No task ends red.
 - **Non-defensive migration.** Move consumers and delete the old code in the *same* commit. No aliases, no re-export shims, no dual paths, no deprecated wrappers, no back-compat field names. If you find yourself adding a second way to do something, you have gone wrong.
 - **No speculative types.** Do not create a type, constant, or helper that has zero call sites after this task. If the spec names one and it has no consumer, it belongs to a later phase.
@@ -131,7 +139,7 @@ grep -rl "@/shared/domains/construction/constants/enums" src/ \
 - [ ] **Step 3: Verify nothing references the old path and the tree is gone**
 
 ```bash
-grep -rn "domains/construction" src/ scripts/ docs/ ; echo "--- exit $? (1 = clean) ---"
+grep -rn "domains/construction" src/ scripts/ tests/ docs/ ; echo "--- exit $? (1 = clean) ---"
 test ! -d src/shared/domains/construction && echo "domains/construction removed"
 ```
 
@@ -139,7 +147,7 @@ Expected: the only remaining hits are in `docs/plans/` and `docs/superpowers/` p
 
 - [ ] **Step 4: Type-check and lint**
 
-Run: `pnpm tsc && pnpm lint`
+Run: `pnpm tsc && CI=1 pnpm lint`
 Expected: both clean. This is a pure path change, so any failure means an import was missed.
 
 - [ ] **Step 5: Commit**
@@ -235,7 +243,8 @@ for e in trades scopes sows pain-points; do
   done
 done
 
-git rm -r --quiet $P/dal $P/constants
+git rm -r --quiet $P/dal      # NOT `$P/constants` too: it is already empty after the move, and git rm fails atomically
+rmdir $P/constants
 rmdir $P/lib/trades $P/lib/scopes $P/lib/sows $P/lib/pain-points 2>/dev/null
 ```
 
@@ -309,7 +318,7 @@ In each of the four `sources/notion/<entity>/properties-map.ts`: the `RawPropert
 cd /home/olis-solutions/olis-v3/nextjs/tri-pros-website
 OLD='@/shared/services/providers/notion'
 NEW='@/shared/modules/construction/sources/notion'
-FILES=$(grep -rl "providers/notion/\(lib\|dal\|constants\)" src/ scripts/)
+FILES=$(grep -rl "providers/notion/\(lib\|dal\|constants\)" src/ scripts/ tests/)
 echo "$FILES" | xargs sed -i \
   -e "s#$OLD/lib/trades/#$NEW/trades/#g" \
   -e "s#$OLD/lib/scopes/#$NEW/scopes/#g" \
@@ -362,7 +371,7 @@ In `src/shared/entities/meetings/components/meeting-scopes-picker.tsx` — drop 
 
 ```bash
 # No file outside sources/notion/ may import provider internals any more.
-grep -rn "providers/notion/\(lib/\|dal/\|constants/\)" src/ scripts/ ; echo "--- exit $? (1 = clean) ---"
+grep -rn "providers/notion/\(lib/\|dal/\|constants/\)" src/ scripts/ tests/ ; echo "--- exit $? (1 = clean) ---"
 # lib/config.ts is the one survivor, and only server-env may import it.
 grep -rn "providers/notion/lib/config" src/ | grep -v "shared/config/server-env"; echo "--- exit $? (1 = clean) ---"
 # The provider is now a leaf: client.ts, types.ts, lib/config.ts, DOCS.md.
@@ -375,7 +384,7 @@ The last command's output must show only *moved* lines (identical text appearing
 
 - [ ] **Step 7: Type-check and lint**
 
-Run: `pnpm tsc && pnpm lint`
+Run: `pnpm tsc && CI=1 pnpm lint`
 Expected: both clean.
 
 - [ ] **Step 8: Run the three existing verify scripts**
@@ -687,7 +696,7 @@ Run the mechanical renames, then hand-check the four that are not pure identifie
 ```bash
 cd /home/olis-solutions/olis-v3/nextjs/tri-pros-website
 # Type names and the unambiguous field names.
-grep -rl "ScopeOrAddon\|scopeOrAddonSchema\|relatedTrade\|relatedScopesOfWork\|relatedScopesOfWork\|NotionPainPoint\|notionPainPointSchema" src/ scripts/ \
+grep -rl "ScopeOrAddon\|scopeOrAddonSchema\|relatedTrade\|relatedScopesOfWork\|relatedScopesOfWork\|NotionPainPoint\|notionPainPointSchema" src/ scripts/ tests/ \
   | xargs sed -i \
     -e 's/\bScopeOrAddon\b/Scope/g' \
     -e 's/\bscopeOrAddonSchema\b/scopeSchema/g' \
@@ -696,13 +705,13 @@ grep -rl "ScopeOrAddon\|scopeOrAddonSchema\|relatedTrade\|relatedScopesOfWork\|r
     -e 's/\bNotionPainPoint\b/PainPoint/g' \
     -e 's/\bnotionPainPointSchema\b/painPointSchema/g'
 # Trade.relatedScopes -> Trade.scopeIds (distinct from the scope's own sowIds).
-grep -rl "relatedScopes\b" src/ scripts/ | xargs sed -i 's/\brelatedScopes\b/scopeIds/g'
+grep -rl "relatedScopes\b" src/ scripts/ tests/ | xargs sed -i 's/\brelatedScopes\b/scopeIds/g'
 ```
 
 Then repoint every `core/schemas` type import. All 29 files currently import from `sources/notion/{trades,scopes,sows,pain-points}/schema`; those files no longer exist:
 
 ```bash
-grep -rl "sources/notion/\(trades\|scopes\|sows\|pain-points\)/schema" src/ scripts/ \
+grep -rl "sources/notion/\(trades\|scopes\|sows\|pain-points\)/schema" src/ scripts/ tests/ \
   | xargs sed -i -E "s#@/shared/modules/construction/sources/notion/(trades\|scopes\|sows\|pain-points)/schema#@/shared/modules/construction/core/schemas#g"
 ```
 
@@ -808,7 +817,7 @@ Expected: **zero hits in `src/`**. `scripts/portfolio-scraper/` still has its ow
 - [ ] **Step 11: Type-check, lint, and run the pure verify scripts**
 
 ```bash
-pnpm tsc && pnpm lint
+pnpm tsc && CI=1 pnpm lint
 npx tsx scripts/verify-normalize-notion-id.ts
 npx tsx scripts/verify-notion-adapters.ts
 npx tsx scripts/verify-energy-trade-qualification.ts
@@ -979,7 +988,7 @@ export * from './types'
 
 - [ ] **Step 4: Type-check and lint**
 
-Run: `pnpm tsc && pnpm lint`
+Run: `pnpm tsc && CI=1 pnpm lint`
 Expected: clean. Nothing consumes the seam yet — Task 5 does. The old service still runs every read, so behaviour is unchanged.
 
 - [ ] **Step 5: Commit**
@@ -1195,7 +1204,7 @@ The 180s TTL becomes the uniform 600s. Catalog edits are manual and followed by 
 
 ```bash
 git rm src/shared/services/construction-data.service.ts
-grep -rn "construction-data.service\|constructionDataService" src/ scripts/ ; echo "--- exit $? (1 = clean) ---"
+grep -rn "construction-data.service\|constructionDataService" src/ scripts/ tests/ ; echo "--- exit $? (1 = clean) ---"
 ```
 Expected: zero hits.
 
@@ -1208,7 +1217,7 @@ Expected: one remaining hit — `notion.router/index.ts`'s `revalidateNotionCach
 
 - [ ] **Step 7: Type-check and lint**
 
-Run: `pnpm tsc && pnpm lint`
+Run: `pnpm tsc && CI=1 pnpm lint`
 Expected: clean.
 
 - [ ] **Step 8: Prove the cache is live**
@@ -1437,7 +1446,7 @@ Expected: zero hits in `src/`. `src/shared/entities/applications/DOCS.md:90` and
 
 - [ ] **Step 7: Type-check and lint**
 
-Run: `pnpm tsc && pnpm lint`
+Run: `pnpm tsc && CI=1 pnpm lint`
 Expected: clean.
 
 - [ ] **Step 8: Commit**
@@ -1634,7 +1643,7 @@ Add `import { buildCatalogIndex } from '@/shared/modules/construction/core/lib/b
 
 - [ ] **Step 6: Type-check and lint**
 
-Run: `pnpm tsc && pnpm lint`
+Run: `pnpm tsc && CI=1 pnpm lint`
 Expected: clean.
 
 - [ ] **Step 7: Browser check — no visual change**
@@ -1905,12 +1914,12 @@ The last command lists deletions. It must print **either nothing** (git recorded
 
 ```bash
 cd /home/olis-solutions/olis-v3/nextjs/tri-pros-website
-echo "--- notionRouter ---";        grep -rn "notionRouter" src/ scripts/
-echo "--- domains/construction ---"; grep -rn "domains/construction" src/ scripts/
-echo "--- provider internals ---";   grep -rn "providers/notion/\(lib/\|dal/\|constants/\)" src/ scripts/ | grep -v "lib/config"
-echo "--- Notion property names ---"; grep -rn "\brelatedTrade\b\|\bentryType\b\|\bhomeOrLot\b\|\brelatedScopesOfWork\b\|\brelatedScopes\b\|\bScopeOrAddon\b\|\bNotionPainPoint\b" src/ scripts/
-echo "--- old cache tags ---";       grep -rn "notion-trades\|notion-scopes\|notion-pain-points" src/ scripts/
-echo "--- second Notion client ---"; grep -rn "new Client(" src/ scripts/ | grep -v "providers/notion/client.ts"
+echo "--- notionRouter ---";        grep -rn "notionRouter" src/ scripts/ tests/
+echo "--- domains/construction ---"; grep -rn "domains/construction" src/ scripts/ tests/
+echo "--- provider internals ---";   grep -rn "providers/notion/\(lib/\|dal/\|constants/\)" src/ scripts/ tests/ | grep -v "lib/config"
+echo "--- Notion property names ---"; grep -rn "\brelatedTrade\b\|\bentryType\b\|\bhomeOrLot\b\|\brelatedScopesOfWork\b\|\brelatedScopes\b\|\bScopeOrAddon\b\|\bNotionPainPoint\b" src/ scripts/ tests/
+echo "--- old cache tags ---";       grep -rn "notion-trades\|notion-scopes\|notion-pain-points" src/ scripts/ tests/
+echo "--- second Notion client ---"; grep -rn "new Client(" src/ scripts/ tests/ | grep -v "providers/notion/client.ts"
 echo "--- provider file list ---";   find src/shared/services/providers/notion -type f | sort
 ```
 
@@ -1918,7 +1927,7 @@ Every one of the first six must print nothing. The last must print exactly four 
 
 - [ ] **Step 7: Type-check and lint**
 
-Run: `pnpm tsc && pnpm lint`
+Run: `pnpm tsc && CI=1 pnpm lint`
 Expected: clean.
 
 - [ ] **Step 8: Commit**
@@ -2033,7 +2042,7 @@ In `memory/project-construction-catalog-centralization.md`: mark **P1 SHIPPED 20
 - [ ] **Step 7: Final full verification**
 
 ```bash
-pnpm tsc && pnpm lint
+pnpm tsc && CI=1 pnpm lint
 npx tsx scripts/verify-normalize-notion-id.ts
 npx tsx scripts/verify-notion-adapters.ts
 npx tsx scripts/verify-energy-trade-qualification.ts
