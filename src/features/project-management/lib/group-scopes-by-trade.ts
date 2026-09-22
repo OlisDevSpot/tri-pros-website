@@ -1,4 +1,4 @@
-import type { ScopeOrAddon } from '@/shared/modules/construction/sources/notion/scopes/schema'
+import type { Scope } from '@/shared/modules/construction/core/schemas'
 
 export interface TradeRow {
   tradeId: string
@@ -7,7 +7,7 @@ export interface TradeRow {
 
 export function groupScopesByTrade(
   selectedScopeIds: string[],
-  allScopes: ScopeOrAddon[],
+  allScopes: Scope[],
 ): TradeRow[] {
   if (selectedScopeIds.length === 0 || allScopes.length === 0) {
     return []
@@ -21,7 +21,7 @@ export function groupScopesByTrade(
       continue
     }
 
-    const tradeId = scope.relatedTrade
+    const tradeId = scope.tradeId
     if (!byTrade.has(tradeId)) {
       byTrade.set(tradeId, [])
     }

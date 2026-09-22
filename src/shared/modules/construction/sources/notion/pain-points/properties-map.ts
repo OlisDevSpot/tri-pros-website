@@ -1,4 +1,4 @@
-import type { NotionPainPoint } from './schema'
+import type { PainPoint } from '@/shared/modules/construction/core/schemas'
 import type { RawPropertyMap } from '@/shared/services/providers/notion/types'
 
 export const PAIN_POINT_PROPERTIES_MAP = {
@@ -12,4 +12,4 @@ export const PAIN_POINT_PROPERTIES_MAP = {
   householdResonance: { label: 'Household Resonance', type: 'multi_select' },
   programFit: { label: 'Program Fit', type: 'multi_select' },
   tags: { label: 'Tags', type: 'multi_select' },
-} as const satisfies RawPropertyMap<Omit<NotionPainPoint, 'id'>>
+} as const satisfies RawPropertyMap<Omit<PainPoint, 'id'>>

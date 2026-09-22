@@ -1,4 +1,4 @@
-import type { ScopeOrAddon } from '@/shared/modules/construction/sources/notion/scopes/schema'
+import type { Scope } from '@/shared/modules/construction/core/schemas'
 
 import { Check, Plus } from 'lucide-react'
 
@@ -13,7 +13,7 @@ const UNIT_LABELS: Record<string, string> = {
 }
 
 interface ScopesGridProps {
-  scopes: ScopeOrAddon[]
+  scopes: Scope[]
 }
 
 export function ScopesGrid({ scopes }: ScopesGridProps) {
@@ -21,8 +21,8 @@ export function ScopesGrid({ scopes }: ScopesGridProps) {
     return null
   }
 
-  const primaryScopes = scopes.filter(s => s.entryType === 'Scope')
-  const addons = scopes.filter(s => s.entryType === 'Addon')
+  const primaryScopes = scopes.filter(s => s.kind === 'scope')
+  const addons = scopes.filter(s => s.kind === 'addon')
 
   return (
     <section className="bg-muted/40 py-16 lg:py-24">

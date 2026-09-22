@@ -1,12 +1,12 @@
 import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
-import type { NotionPainPoint } from './schema'
+import type { PainPoint } from '@/shared/modules/construction/core/schemas'
+import { painPointSchema } from '@/shared/modules/construction/core/schemas'
 import { multiSelectNames, relationIds, richText, selectName, titleText } from '../extractors'
 import { normalizeNotionId } from '../normalize-id'
 import { PAIN_POINT_PROPERTIES_MAP } from './properties-map'
-import { notionPainPointSchema } from './schema'
 
 // see ../../DOCS.md#adapter-returns-entity-or-null
-export function pageToPainPoint(page: PageObjectResponse): NotionPainPoint | null {
+export function pageToPainPoint(page: PageObjectResponse): PainPoint | null {
   try {
     const p = page.properties
     const map = PAIN_POINT_PROPERTIES_MAP
@@ -25,7 +25,7 @@ export function pageToPainPoint(page: PageObjectResponse): NotionPainPoint | nul
       tags: multiSelectNames(p, map.tags.label),
     }
 
-    const valid = notionPainPointSchema.safeParse(raw)
+    const valid = painPointSchema.safeParse(raw)
 
     if (valid.success) {
       return valid.data

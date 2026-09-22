@@ -1,6 +1,5 @@
 import type { ShowcaseMedia, ShowcaseProjectIndex } from '@/features/meeting-flow/types'
-import type { ScopeOrAddon } from '@/shared/modules/construction/sources/notion/scopes/schema'
-import type { Trade } from '@/shared/modules/construction/sources/notion/trades/schema'
+import type { Scope, Trade } from '@/shared/modules/construction/core/schemas'
 import { selectScopeMedia } from '@/features/meeting-flow/lib/select-scope-media'
 import { selectStageMedia } from '@/features/meeting-flow/lib/select-stage-media'
 
@@ -10,7 +9,7 @@ import { selectStageMedia } from '@/features/meeting-flow/lib/select-stage-media
  * first and cycling only when the trade has fewer photos than empty cards. Borrowed keys come from
  * `selectStageMedia`, so putting a card's photo on stage always finds it. Null only when the trade has no photos.
  */
-export function selectWorkCardMedia(trade: Trade, scopes: ScopeOrAddon[], index: ShowcaseProjectIndex): ReadonlyMap<string, ShowcaseMedia | null> {
+export function selectWorkCardMedia(trade: Trade, scopes: Scope[], index: ShowcaseProjectIndex): ReadonlyMap<string, ShowcaseMedia | null> {
   const own = scopes.map(scope => selectScopeMedia(scope, index))
   const shown = new Set(own.flatMap(media => (media ? [media.key] : [])))
   const pool = selectStageMedia(trade, scopes, index)

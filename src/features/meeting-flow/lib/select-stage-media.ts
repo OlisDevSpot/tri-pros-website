@@ -1,11 +1,10 @@
 import type { ShowcaseMedia, ShowcaseProjectIndex } from '@/features/meeting-flow/types'
-import type { ScopeOrAddon } from '@/shared/modules/construction/sources/notion/scopes/schema'
-import type { Trade } from '@/shared/modules/construction/sources/notion/trades/schema'
+import type { Scope, Trade } from '@/shared/modules/construction/core/schemas'
 import { SCOPE_PHOTOS, TRADE_PHOTOS } from '@/features/meeting-flow/constants/trade-photos'
 import { curatedMedia, projectMedia } from '@/features/meeting-flow/lib/to-showcase-media'
 
 /** Every photo the stage can show for a trade: the curated trade photo, curated scope photos, then portfolio projects. Deduped by key. */
-export function selectStageMedia(trade: Trade, scopes: ScopeOrAddon[], index: ShowcaseProjectIndex): ShowcaseMedia[] {
+export function selectStageMedia(trade: Trade, scopes: Scope[], index: ShowcaseProjectIndex): ShowcaseMedia[] {
   const list: ShowcaseMedia[] = []
   const seen = new Set<string>()
   const add = (media: ShowcaseMedia) => {

@@ -1,12 +1,12 @@
-import type { ScopeOrAddon } from './schema'
+import type { Scope } from '@/shared/modules/construction/core/schemas'
 import type { RawPropertyMap } from '@/shared/services/providers/notion/types'
 
-export const SCOPE_OR_ADDON_PROPERTIES_MAP = {
+export const SCOPE_PROPERTIES_MAP = {
   name: {
     label: 'Scope or Addon',
     type: 'title',
   },
-  entryType: {
+  kind: {
     label: 'Entry Type',
     type: 'select',
   },
@@ -14,12 +14,12 @@ export const SCOPE_OR_ADDON_PROPERTIES_MAP = {
     label: 'Unit of Pricing',
     type: 'select',
   },
-  relatedTrade: {
+  tradeId: {
     label: 'Trade',
     type: 'relation',
   },
-  relatedScopesOfWork: {
+  sowIds: {
     label: 'Scopes of Work',
     type: 'relation',
   },
-} as const satisfies RawPropertyMap<Omit<ScopeOrAddon, 'coverImageUrl'>>
+} as const satisfies RawPropertyMap<Omit<Scope, 'coverImageUrl'>>

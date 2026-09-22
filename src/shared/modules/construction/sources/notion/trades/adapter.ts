@@ -1,10 +1,10 @@
 import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
-import type { Trade } from './schema'
+import type { Trade } from '@/shared/modules/construction/core/schemas'
 import { slugifyTradeName } from '@/shared/lib/slugify-trade-name'
+import { tradeSchema } from '@/shared/modules/construction/core/schemas'
 import { checkbox, relationIds, selectName, titleText } from '../extractors'
 import { normalizeNotionId } from '../normalize-id'
 import { TRADE_PROPERTIES_MAP } from './properties-map'
-import { tradeSchema } from './schema'
 
 function extractCoverImageUrl(page: PageObjectResponse): string | null {
   const cover = page.cover
@@ -40,10 +40,8 @@ export function pageToTrade(page: PageObjectResponse): Trade | null {
       name,
       slug: slugifyTradeName(name),
       coverImageUrl: extractCoverImageUrl(page),
-      homeOrLot: selectName<'Home' | 'Lot'>(p, TRADE_PROPERTIES_MAP.homeOrLot.label) ?? undefined,
-      type: selectName(p, TRADE_PROPERTIES_MAP.type.label) ?? undefined,
-      relatedScopes: relationIds(p, TRADE_PROPERTIES_MAP.relatedScopes.label).map(normalizeNotionId),
-      disabled: false,
+      category: selectName(p, TRADE_PROPERTIES_MAP.category.label) ?? undefined,
+      scopeIds: relationIds(p, TRADE_PROPERTIES_MAP.scopeIds.label).map(normalizeNotionId),
     }
 
     const valid = tradeSchema.safeParse(raw)

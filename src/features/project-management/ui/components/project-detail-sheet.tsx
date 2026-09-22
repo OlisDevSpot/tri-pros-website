@@ -38,7 +38,7 @@ export function ProjectDetailSheet({ project, isOpen, close, onDelete }: Project
     }
     const scopeToTrade = new Map<string, string>()
     for (const scope of allScopes) {
-      scopeToTrade.set(scope.id, scope.relatedTrade)
+      scopeToTrade.set(scope.id, scope.tradeId)
     }
     const tradeNameMap = new Map<string, string>()
     for (const trade of allTrades) {

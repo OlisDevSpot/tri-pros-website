@@ -1,7 +1,6 @@
 'use client'
 
-import type { ScopeOrAddon } from '@/shared/modules/construction/sources/notion/scopes/schema'
-import type { Trade } from '@/shared/modules/construction/sources/notion/trades/schema'
+import type { Scope, Trade } from '@/shared/modules/construction/core/schemas'
 import type { PortfolioProject } from '@/shared/modules/projects/core/types'
 import { useMemo, useState } from 'react'
 import { PortfolioGrid } from '@/features/project-management/ui/components/portfolio-grid'
@@ -11,7 +10,7 @@ import { useIsMobile } from '@/shared/hooks/use-mobile'
 interface TradeProjectGridProps {
   tradeName: string
   projects: PortfolioProject[]
-  allScopes: ScopeOrAddon[]
+  allScopes: Scope[]
   allTrades: Trade[]
 }
 

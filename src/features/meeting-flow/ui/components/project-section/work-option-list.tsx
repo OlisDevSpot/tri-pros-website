@@ -1,7 +1,7 @@
 'use client'
 
 import type { TradeSelection } from '@/shared/entities/meetings/schemas'
-import type { ScopeOrAddon } from '@/shared/modules/construction/sources/notion/scopes/schema'
+import type { Scope } from '@/shared/modules/construction/core/schemas'
 import { CheckIcon } from 'lucide-react'
 import { useId, useMemo } from 'react'
 import { useTradeEdits } from '@/features/meeting-flow/hooks/use-trade-edits'
@@ -11,7 +11,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-grou
 interface WorkOptionListProps {
   entry: TradeSelection
   label: string
-  scopes: ScopeOrAddon[]
+  scopes: Scope[]
 }
 
 /**

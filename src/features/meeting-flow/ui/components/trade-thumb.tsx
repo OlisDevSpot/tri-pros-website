@@ -1,6 +1,6 @@
 'use client'
 
-import type { Trade } from '@/shared/modules/construction/sources/notion/trades/schema'
+import type { Trade } from '@/shared/modules/construction/core/schemas'
 import Image from 'next/image'
 import { useTradeCatalogContext } from '@/features/meeting-flow/contexts/trade-catalog-context'
 import { selectStageMedia } from '@/features/meeting-flow/lib/select-stage-media'

@@ -1,11 +1,9 @@
-import type { NotionPainPoint } from './pain-points/schema'
-import type { ScopeOrAddon } from './scopes/schema'
-import type { SOW } from './sows/schema'
-import type { Trade } from './trades/schema'
+import type { TradePropertySource } from './trades/properties-map'
+import type { PainPoint, Scope, SowTemplate } from '@/shared/modules/construction/core/schemas'
 import type { RawPropertyMap } from '@/shared/services/providers/notion/types'
 import { PAIN_POINT_PROPERTIES_MAP } from './pain-points/properties-map'
-import { SCOPE_OR_ADDON_PROPERTIES_MAP } from './scopes/properties-map'
-import { SOW_PROPERTIES_MAP } from './sows/properties-map'
+import { SCOPE_PROPERTIES_MAP } from './scopes/properties-map'
+import { SOW_TEMPLATE_PROPERTIES_MAP } from './sows/properties-map'
 import { TRADE_PROPERTIES_MAP } from './trades/properties-map'
 
 export type NotionDatabaseName = 'painPoints' | 'trades' | 'scopes' | 'sows'
@@ -15,10 +13,10 @@ type RawDatbaseMap = {
     id: string
     name: K
     propertiesMap:
-      | RawPropertyMap<Omit<NotionPainPoint, 'id'>>
-      | RawPropertyMap<Omit<Trade, 'slug' | 'coverImageUrl'>>
-      | RawPropertyMap<Omit<ScopeOrAddon, 'coverImageUrl'>>
-      | RawPropertyMap<SOW>
+      | RawPropertyMap<Omit<PainPoint, 'id'>>
+      | RawPropertyMap<TradePropertySource>
+      | RawPropertyMap<Omit<Scope, 'coverImageUrl'>>
+      | RawPropertyMap<SowTemplate>
   }
 }
 
@@ -36,12 +34,12 @@ export const notionDatabasesMeta = {
   scopes: {
     id: 'ef70ca1b-548b-8226-b680-07fe8f00a91f',
     name: 'scopes',
-    propertiesMap: SCOPE_OR_ADDON_PROPERTIES_MAP,
+    propertiesMap: SCOPE_PROPERTIES_MAP,
   },
   sows: {
     id: '53e0ca1b-548b-83e3-8cd9-87067f43457a',
     name: 'sows',
-    propertiesMap: SOW_PROPERTIES_MAP,
+    propertiesMap: SOW_TEMPLATE_PROPERTIES_MAP,
   },
 } as const satisfies RawDatbaseMap
 

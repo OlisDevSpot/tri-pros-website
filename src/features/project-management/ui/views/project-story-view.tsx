@@ -32,10 +32,10 @@ export function ProjectStoryView({ detail }: Props) {
     // Group scopes by their related trade
     const tradeMap = new Map<string, { id: string, name: string }[]>()
     for (const scope of matchedScopes) {
-      if (!tradeMap.has(scope.relatedTrade)) {
-        tradeMap.set(scope.relatedTrade, [])
+      if (!tradeMap.has(scope.tradeId)) {
+        tradeMap.set(scope.tradeId, [])
       }
-      tradeMap.get(scope.relatedTrade)!.push({ id: scope.id, name: scope.name })
+      tradeMap.get(scope.tradeId)!.push({ id: scope.id, name: scope.name })
     }
 
     // Resolve trade names and build grouped structure

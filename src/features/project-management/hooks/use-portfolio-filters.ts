@@ -1,7 +1,6 @@
 'use client'
 
-import type { ScopeOrAddon } from '@/shared/modules/construction/sources/notion/scopes/schema'
-import type { Trade } from '@/shared/modules/construction/sources/notion/trades/schema'
+import type { Scope, Trade } from '@/shared/modules/construction/core/schemas'
 import type { PortfolioProject } from '@/shared/modules/projects/core/types'
 import { parseAsArrayOf, parseAsInteger, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
@@ -9,7 +8,7 @@ import { filterPortfolioProjects } from '@/features/project-management/lib/filte
 
 interface UsePortfolioFiltersOptions {
   projects: PortfolioProject[]
-  allScopes: ScopeOrAddon[]
+  allScopes: Scope[]
   allTrades: Trade[]
 }
 
@@ -39,7 +38,7 @@ export function usePortfolioFilters({ projects, allScopes, allTrades }: UsePortf
   const scopeToTradeMap = useMemo(() => {
     const map = new Map<string, string>()
     for (const scope of allScopes) {
-      map.set(scope.id, scope.relatedTrade)
+      map.set(scope.id, scope.tradeId)
     }
     return map
   }, [allScopes])
@@ -55,10 +54,10 @@ export function usePortfolioFilters({ projects, allScopes, allTrades }: UsePortf
       if (!usedScopeIds.has(scope.id)) {
         continue
       }
-      usedTradeIds.add(scope.relatedTrade)
+      usedTradeIds.add(scope.tradeId)
 
-      if (selectedTradeIds.length === 0 || selectedTradeIds.includes(scope.relatedTrade)) {
-        scopeItems.push({ id: scope.id, name: scope.name, tradeId: scope.relatedTrade })
+      if (selectedTradeIds.length === 0 || selectedTradeIds.includes(scope.tradeId)) {
+        scopeItems.push({ id: scope.id, name: scope.name, tradeId: scope.tradeId })
       }
     }
 

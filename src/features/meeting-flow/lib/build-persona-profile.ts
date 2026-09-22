@@ -10,7 +10,7 @@ import type {
   PersonaRiskFactor,
 } from '@/shared/entities/customers/schemas/persona-profile-schema'
 import type { MeetingContext, MeetingFlowState } from '@/shared/entities/meetings/schemas'
-import type { NotionPainPoint } from '@/shared/modules/construction/sources/notion/pain-points/schema'
+import type { PainPoint } from '@/shared/modules/construction/core/schemas'
 import {
   BENEFIT_TEMPLATES,
   EMOTIONAL_LEVER_DESCRIPTIONS,
@@ -29,21 +29,21 @@ export interface BuildPersonaProfileInput {
   customer: PersonaProfileCustomer | null | undefined
   meetingContext: MeetingContext | null | undefined
   flowState: MeetingFlowState | null | undefined
-  painPointsDb: NotionPainPoint[]
+  painPointsDb: PainPoint[]
 }
 
 // ---- Helpers ----------------------------------------------------------------
 
 function resolveCustomerPainPoints(
   customer: PersonaProfileCustomer | null | undefined,
-  painPointsDb: NotionPainPoint[],
-): NotionPainPoint[] {
+  painPointsDb: PainPoint[],
+): PainPoint[] {
   if (!customer) {
     return []
   }
 
   const accessorMap = new Map(painPointsDb.map(pp => [pp.accessor, pp]))
-  const matched: NotionPainPoint[] = []
+  const matched: PainPoint[] = []
 
   if (customer.mainPainAccessor) {
     const found = accessorMap.get(customer.mainPainAccessor)
@@ -77,14 +77,14 @@ function getTradeNameById(flowState: MeetingFlowState | null | undefined, tradeI
 }
 
 function filterPainPointsByTrade(
-  painPoints: NotionPainPoint[],
+  painPoints: PainPoint[],
   selectedTradeIds: Set<string>,
-): Array<{ painPoint: NotionPainPoint, matchedTradeIds: string[] }> {
+): Array<{ painPoint: PainPoint, matchedTradeIds: string[] }> {
   if (selectedTradeIds.size === 0) {
     return painPoints.map(pp => ({ painPoint: pp, matchedTradeIds: [] }))
   }
 
-  const results: Array<{ painPoint: NotionPainPoint, matchedTradeIds: string[] }> = []
+  const results: Array<{ painPoint: PainPoint, matchedTradeIds: string[] }> = []
 
   for (const pp of painPoints) {
     const matchedTradeIds = pp.trades.filter(t => selectedTradeIds.has(t))
@@ -100,7 +100,7 @@ function filterPainPointsByTrade(
 // ---- Builders ---------------------------------------------------------------
 
 function buildFears(
-  tradeFilteredPainPoints: Array<{ painPoint: NotionPainPoint, matchedTradeIds: string[] }>,
+  tradeFilteredPainPoints: Array<{ painPoint: PainPoint, matchedTradeIds: string[] }>,
   flowState: MeetingFlowState | null | undefined,
 ): PersonaFear[] {
   const fears: PersonaFear[] = []
@@ -144,7 +144,7 @@ function buildFears(
 }
 
 function buildBenefits(
-  tradeFilteredPainPoints: Array<{ painPoint: NotionPainPoint, matchedTradeIds: string[] }>,
+  tradeFilteredPainPoints: Array<{ painPoint: PainPoint, matchedTradeIds: string[] }>,
   flowState: MeetingFlowState | null | undefined,
 ): PersonaBenefit[] {
   const benefits: PersonaBenefit[] = []
@@ -252,7 +252,7 @@ function buildDecisionDrivers(
 }
 
 function buildEmotionalLevers(
-  tradeFilteredPainPoints: Array<{ painPoint: NotionPainPoint, matchedTradeIds: string[] }>,
+  tradeFilteredPainPoints: Array<{ painPoint: PainPoint, matchedTradeIds: string[] }>,
 ): PersonaEmotionalLever[] {
   // Count frequency of each emotional driver across all matched pain points
   const driverCounts = new Map<string, number>()
@@ -278,7 +278,7 @@ function buildEmotionalLevers(
 
 function buildHouseholdResonance(
   customer: PersonaProfileCustomer | null | undefined,
-  tradeFilteredPainPoints: Array<{ painPoint: NotionPainPoint, matchedTradeIds: string[] }>,
+  tradeFilteredPainPoints: Array<{ painPoint: PainPoint, matchedTradeIds: string[] }>,
 ): PersonaHouseholdResonance[] {
   const results: PersonaHouseholdResonance[] = []
 

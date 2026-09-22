@@ -1,13 +1,13 @@
-import type { SOW } from './schema'
+import type { SowTemplate } from '@/shared/modules/construction/core/schemas'
 import type { RawPropertyMap } from '@/shared/services/providers/notion/types'
 
-export const SOW_PROPERTIES_MAP = {
+export const SOW_TEMPLATE_PROPERTIES_MAP = {
   name: {
     label: 'SOW',
     type: 'title',
   },
-  relatedScope: {
+  scopeIds: {
     label: 'Scope',
     type: 'relation',
   },
-} as const satisfies RawPropertyMap<SOW>
+} as const satisfies RawPropertyMap<SowTemplate>

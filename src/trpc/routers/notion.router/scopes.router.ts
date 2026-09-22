@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server'
 import z from 'zod'
 import { getTypedKeys } from '@/shared/lib/utils'
-import { scopeOrAddonSchema } from '@/shared/modules/construction/sources/notion/scopes/schema'
+import { scopeSchema } from '@/shared/modules/construction/core/schemas'
 import { constructionDataService } from '@/shared/services/construction-data.service'
 import { baseProcedure, createTRPCRouter } from '../../init'
 
@@ -13,9 +13,9 @@ export const scopesRouter = createTRPCRouter({
   getScopesByQuery: baseProcedure
     .input(z.object({
       query: z.string().optional(),
-      filterProperty: z.enum(getTypedKeys(scopeOrAddonSchema.omit({ id: true, coverImageUrl: true }).shape)).optional(),
+      filterProperty: z.enum(getTypedKeys(scopeSchema.omit({ id: true, coverImageUrl: true }).shape)).optional(),
       sortBy: z.object({
-        property: z.enum(getTypedKeys(scopeOrAddonSchema.omit({ id: true, coverImageUrl: true }).shape)),
+        property: z.enum(getTypedKeys(scopeSchema.omit({ id: true, coverImageUrl: true }).shape)),
         direction: z.enum(['ascending', 'descending']).optional().default('ascending'),
       }).optional(),
     }))

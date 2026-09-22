@@ -1,6 +1,6 @@
 'use client'
 
-import type { Trade } from '@/shared/modules/construction/sources/notion/trades/schema'
+import type { Trade } from '@/shared/modules/construction/core/schemas'
 import { useQuery } from '@tanstack/react-query'
 import { TrashIcon } from 'lucide-react'
 import { useEffect, useRef } from 'react'
@@ -33,7 +33,7 @@ export function TradeScopeRow({
 
   const trpc = useTRPC()
   const scopesQuery = useQuery(trpc.notionRouter.scopes.getScopesByQuery.queryOptions(
-    { query: tradeId, filterProperty: 'relatedTrade' },
+    { query: tradeId, filterProperty: 'tradeId' },
     { enabled: !!tradeId },
   ))
 

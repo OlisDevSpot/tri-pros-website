@@ -1,13 +1,13 @@
 /* eslint-disable no-console */
 import type { QualificationContext } from '@/features/meeting-flow/types'
 import type { TradeSelection } from '@/shared/entities/meetings/schemas'
-import type { Trade } from '@/shared/modules/construction/sources/notion/trades/schema'
+import type { Trade } from '@/shared/modules/construction/core/schemas'
 import assert from 'node:assert/strict'
 import { isEnergyEfficientTrade } from '@/features/meeting-flow/constants/energy-trades'
 import { MEETING_PROGRAMS } from '@/features/meeting-flow/constants/programs'
 
-function trade(id: string, name: string, type: Trade['type']): Trade {
-  return { id, name, slug: name.toLowerCase(), coverImageUrl: null, type, relatedScopes: [], disabled: false }
+function trade(id: string, name: string, category: Trade['category']): Trade {
+  return { id, name, slug: name.toLowerCase(), coverImageUrl: null, category, scopeIds: [] }
 }
 function selection(tradeId: string, tradeName: string): TradeSelection {
   return { tradeId, tradeName, selectedScopes: [], painPoints: [] }

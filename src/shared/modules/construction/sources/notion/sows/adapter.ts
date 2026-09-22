@@ -1,28 +1,28 @@
 import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
-import type { SOW } from './schema'
+import type { SowTemplate } from '@/shared/modules/construction/core/schemas'
+import { sowTemplateSchema } from '@/shared/modules/construction/core/schemas'
 import { relationIds, titleText } from '../extractors'
 import { normalizeNotionId } from '../normalize-id'
-import { SOW_PROPERTIES_MAP } from './properties-map'
-import { sowSchema } from './schema'
+import { SOW_TEMPLATE_PROPERTIES_MAP } from './properties-map'
 
 // see ../../DOCS.md#adapter-returns-entity-or-null
-export function pageToSOW(page: PageObjectResponse): SOW | null {
+export function pageToSowTemplate(page: PageObjectResponse): SowTemplate | null {
   try {
     const p = page.properties
 
-    const raw: Partial<SOW> = {
+    const raw: Partial<SowTemplate> = {
       id: normalizeNotionId(page.id),
-      name: titleText(p, SOW_PROPERTIES_MAP.name.label),
-      relatedScope: relationIds(p, SOW_PROPERTIES_MAP.relatedScope.label).map(normalizeNotionId),
+      name: titleText(p, SOW_TEMPLATE_PROPERTIES_MAP.name.label),
+      scopeIds: relationIds(p, SOW_TEMPLATE_PROPERTIES_MAP.scopeIds.label).map(normalizeNotionId),
     }
 
-    const valid = sowSchema.safeParse(raw)
+    const valid = sowTemplateSchema.safeParse(raw)
 
     if (valid.success) {
       return valid.data
     }
 
-    console.warn('[pageToSOW] Skipping invalid SOW', {
+    console.warn('[pageToSowTemplate] Skipping invalid SOW', {
       id: page.id,
       name: raw.name,
       issues: valid.error.issues,
@@ -30,7 +30,7 @@ export function pageToSOW(page: PageObjectResponse): SOW | null {
     return null
   }
   catch (err) {
-    console.warn('[pageToSOW] Failed to extract SOW', { id: page.id, error: err })
+    console.warn('[pageToSowTemplate] Failed to extract SOW', { id: page.id, error: err })
     return null
   }
 }

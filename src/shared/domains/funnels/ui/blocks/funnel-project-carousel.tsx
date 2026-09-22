@@ -54,7 +54,7 @@ export function FunnelProjectCarousel({ slug }: { slug: string }) {
     if (!scopes || !projects) {
       return null
     }
-    const scopeToTrade = new Map(scopes.map(s => [s.id, s.relatedTrade]))
+    const scopeToTrade = new Map(scopes.map(s => [s.id, s.tradeId]))
     const real: Slide[] = projects
       .filter((p): p is PortfolioProject & { heroImage: NonNullable<PortfolioProject['heroImage']> } =>
         p.heroImage !== null && p.scopeIds.some(id => scopeToTrade.get(id) === tradeId),

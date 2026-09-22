@@ -12,7 +12,7 @@ export function useTradeCatalog(): TradeCatalog {
   const tradesQuery = useQuery(trpc.notionRouter.trades.getAll.queryOptions())
   const scopesQuery = useQuery(trpc.notionRouter.scopes.getAll.queryOptions())
 
-  const trades = useMemo(() => (tradesQuery.data ?? []).filter(trade => !trade.disabled), [tradesQuery.data])
+  const trades = useMemo(() => tradesQuery.data ?? [], [tradesQuery.data])
   const tradesById = useMemo(() => new Map(trades.map(trade => [trade.id, trade])), [trades])
   const tradesBySlug = useMemo(() => new Map(trades.map(trade => [trade.slug, trade])), [trades])
   const scopesByTrade = useMemo(() => groupScopesByTrade(scopesQuery.data ?? []), [scopesQuery.data])

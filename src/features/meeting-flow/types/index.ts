@@ -3,8 +3,7 @@ import type { MeetingOutcome, MeetingType } from '@/shared/constants/enums'
 import type { ProjectMediaFile } from '@/shared/db/schema'
 import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { MeetingFlowState, TradeSelection } from '@/shared/entities/meetings/schemas'
-import type { ScopeOrAddon } from '@/shared/modules/construction/sources/notion/scopes/schema'
-import type { Trade } from '@/shared/modules/construction/sources/notion/trades/schema'
+import type { Scope, Trade } from '@/shared/modules/construction/core/schemas'
 import type { JsonbSection } from '@/shared/types/jsonb'
 
 // ── Intake Collection Field (used by intake step components) ────────────────
@@ -254,10 +253,10 @@ export interface MeetingCalendarEvent extends CalendarEvent {
 
 // ── Specialties (trade selection) ───────────────────────────────────────────
 
-/** A trade's catalog entries, split by Notion `entryType`. */
+/** A trade's catalog entries, split by `Scope.kind`. */
 export interface TradeScopeGroup {
-  scopes: ScopeOrAddon[]
-  addons: ScopeOrAddon[]
+  scopes: Scope[]
+  addons: Scope[]
 }
 
 export interface TradeCatalog {

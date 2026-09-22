@@ -1,7 +1,7 @@
 'use client'
 
 import type { TradeSelection } from '@/shared/entities/meetings/schemas'
-import type { Trade } from '@/shared/modules/construction/sources/notion/trades/schema'
+import type { Trade } from '@/shared/modules/construction/core/schemas'
 import { useQuery } from '@tanstack/react-query'
 import { PlusIcon, Trash2Icon } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
@@ -35,7 +35,7 @@ interface ScopeRowProps {
 function ScopeRow({ entry, index, allTrades, usedTradeIds, onUpdate, onRemove }: ScopeRowProps) {
   const trpc = useTRPC()
   const scopesQuery = useQuery(trpc.notionRouter.scopes.getScopesByQuery.queryOptions(
-    { query: entry.tradeId, filterProperty: 'relatedTrade' },
+    { query: entry.tradeId, filterProperty: 'tradeId' },
     { enabled: !!entry.tradeId },
   ))
 

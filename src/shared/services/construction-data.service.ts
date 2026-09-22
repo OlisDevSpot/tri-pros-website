@@ -1,10 +1,8 @@
-import type { ScopeOrAddon } from '@/shared/modules/construction/sources/notion/scopes/schema'
-import type { SOW } from '@/shared/modules/construction/sources/notion/sows/schema'
-import type { Trade } from '@/shared/modules/construction/sources/notion/trades/schema'
+import type { Scope, SowTemplate, Trade } from '@/shared/modules/construction/core/schemas'
 import { pageToTiptapJson } from '@/shared/modules/construction/sources/notion/page-to-tiptap'
 import { queryNotionDatabase } from '@/shared/modules/construction/sources/notion/query'
 import { pageToScope } from '@/shared/modules/construction/sources/notion/scopes/adapter'
-import { pageToSOW } from '@/shared/modules/construction/sources/notion/sows/adapter'
+import { pageToSowTemplate } from '@/shared/modules/construction/sources/notion/sows/adapter'
 import { pageToTrade } from '@/shared/modules/construction/sources/notion/trades/adapter'
 
 /** Trades/scopes/SOW from Notion — stable interface over existing Notion DAL */
@@ -27,7 +25,7 @@ function createConstructionDataService() {
       return trades
     },
 
-    getAllScopes: async (): Promise<ScopeOrAddon[]> => {
+    getAllScopes: async (): Promise<Scope[]> => {
       const raw = await queryNotionDatabase('scopes')
       if (!raw) {
         return []
@@ -43,7 +41,7 @@ function createConstructionDataService() {
       query?: string
       filterProperty?: string
       sortBy?: { property: string, direction: 'ascending' | 'descending' }
-    }): Promise<ScopeOrAddon[]> => {
+    }): Promise<Scope[]> => {
       const raw = await queryNotionDatabase('scopes', params as Parameters<typeof queryNotionDatabase<'scopes'>>[1])
       if (!raw) {
         return []
@@ -55,15 +53,15 @@ function createConstructionDataService() {
       return scopes
     },
 
-    getSOWsByScope: async (params: { scopeId: string }): Promise<SOW[]> => {
+    getSOWsByScope: async (params: { scopeId: string }): Promise<SowTemplate[]> => {
       const raw = await queryNotionDatabase('sows', {
-        filterProperty: 'relatedScope',
+        filterProperty: 'scopeIds',
         query: params.scopeId,
       })
       if (!raw) {
         return []
       }
-      const sows = raw.flatMap(page => pageToSOW(page) ?? [])
+      const sows = raw.flatMap(page => pageToSowTemplate(page) ?? [])
       if (sows.length < raw.length) {
         console.warn(`[constructionDataService.getSOWsByScope] dropped ${raw.length - sows.length} of ${raw.length} sows`)
       }

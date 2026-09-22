@@ -1,5 +1,4 @@
-import type { ScopeOrAddon } from '@/shared/modules/construction/sources/notion/scopes/schema'
-import type { Trade } from '@/shared/modules/construction/sources/notion/trades/schema'
+import type { Scope, Trade, TradeCategory } from '@/shared/modules/construction/core/schemas'
 import { unstable_cache } from 'next/cache'
 
 import { getTradeImages } from '@/features/landing/lib/get-trade-images'
@@ -8,11 +7,11 @@ import { constructionDataService } from '@/shared/services/construction-data.ser
 export type PillarSlug = 'energy-efficient-construction' | 'luxury-renovations'
 
 export type TradeWithScopes = Trade & {
-  scopes: ScopeOrAddon[]
+  scopes: Scope[]
   images: string[]
 }
 
-const PILLAR_TYPE_MAP: Record<PillarSlug, string[]> = {
+const PILLAR_CATEGORY_MAP: Record<PillarSlug, TradeCategory[]> = {
   'energy-efficient-construction': ['Energy Efficiency'],
   'luxury-renovations': ['General Construction', 'Structural / Rough'],
 }
@@ -36,22 +35,22 @@ export const getCachedScopes = unstable_cache(
 export async function getTradesByPillar(pillarSlug: PillarSlug): Promise<TradeWithScopes[]> {
   const [allTrades, allScopes] = await Promise.all([getCachedTrades(), getCachedScopes()])
 
-  const allowedTypes = PILLAR_TYPE_MAP[pillarSlug]
-  const pillarTrades = allTrades.filter(t => t.type && allowedTypes.includes(t.type))
+  const allowedTypes = PILLAR_CATEGORY_MAP[pillarSlug]
+  const pillarTrades = allTrades.filter(t => t.category && allowedTypes.includes(t.category))
 
-  const scopesByTrade = new Map<string, ScopeOrAddon[]>()
+  const scopesByTrade = new Map<string, Scope[]>()
   for (const scope of allScopes) {
-    const existing = scopesByTrade.get(scope.relatedTrade) ?? []
+    const existing = scopesByTrade.get(scope.tradeId) ?? []
     existing.push(scope)
-    scopesByTrade.set(scope.relatedTrade, existing)
+    scopesByTrade.set(scope.tradeId, existing)
   }
 
   // Fetch images per trade in parallel — each trade's scope IDs map to different projects
   const imagesByTradeId = new Map<string, string[]>()
   await Promise.all(
     pillarTrades.map(async (trade) => {
-      const images = trade.relatedScopes.length > 0
-        ? await getTradeImages(trade.relatedScopes)
+      const images = trade.scopeIds.length > 0
+        ? await getTradeImages(trade.scopeIds)
         : []
       imagesByTradeId.set(trade.id, images)
     }),

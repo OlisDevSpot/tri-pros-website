@@ -1,7 +1,7 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { TiptapHandle } from '@/shared/components/tiptap/tiptap'
 import type { PriceDisplayMode } from '@/shared/constants/enums'
-import type { ScopeOrAddon } from '@/shared/modules/construction/sources/notion/scopes/schema'
+import type { Scope } from '@/shared/modules/construction/core/schemas'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ChevronDownIcon } from 'lucide-react'
 import { useRef, useState } from 'react'
@@ -49,7 +49,7 @@ export function SOWSection({
 
   const allTrades = useQuery(trpc.notionRouter.trades.getAll.queryOptions())
   const scopesOfTrade = useQuery(trpc.notionRouter.scopes.getScopesByQuery.queryOptions(
-    { query: tradeId, filterProperty: 'relatedTrade' },
+    { query: tradeId, filterProperty: 'tradeId' },
     { enabled: !!tradeId },
   ))
 
@@ -235,7 +235,7 @@ export function SOWSection({
                               Component: TemplatesModal,
                               props: {
                                 trade: allTrades.data?.find(trade => trade.id === tradeId),
-                                scopes: form.getValues(`project.data.sow.${index}.scopes`).map(scope => scopesOfTrade.data?.find(scopeOfTrade => scopeOfTrade.id === scope.id)).filter(Boolean) as ScopeOrAddon[],
+                                scopes: form.getValues(`project.data.sow.${index}.scopes`).map(scope => scopesOfTrade.data?.find(scopeOfTrade => scopeOfTrade.id === scope.id)).filter(Boolean) as Scope[],
                                 onSelect: async (sowId) => {
                                   closeModal()
                                   setIsLoadingTemplate(true)

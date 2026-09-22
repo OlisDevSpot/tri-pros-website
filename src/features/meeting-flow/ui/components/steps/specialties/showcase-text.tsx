@@ -1,7 +1,6 @@
 'use client'
 
-import type { TradeCategory } from '@/features/meeting-flow/constants/trade-categories'
-import type { Trade } from '@/shared/modules/construction/sources/notion/trades/schema'
+import type { Trade } from '@/shared/modules/construction/core/schemas'
 import { CheckIcon } from 'lucide-react'
 import { SHOWCASE_BENEFIT_LIMIT } from '@/features/meeting-flow/constants/showcase'
 import { SPECIALTIES_COPY } from '@/features/meeting-flow/constants/specialties-copy'
@@ -26,7 +25,7 @@ export function ShowcaseText({ trade, titleId }: ShowcaseTextProps) {
   const count = itemCount(findTradeSelection(selections, trade.id))
   const outcome = TRADE_OUTCOMES[trade.slug]
   const benefits = selectTradeBenefits(trade.name, SHOWCASE_BENEFIT_LIMIT)
-  const category = trade.type ? TRADE_CATEGORY_LABELS[trade.type as TradeCategory] : undefined
+  const category = trade.category ? TRADE_CATEGORY_LABELS[trade.category] : undefined
 
   return (
     <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-3 p-6 @4xl/specialties:static @4xl/specialties:px-10 @4xl/specialties:pt-6 @4xl/specialties:pb-(--stage-inset-b)">
