@@ -1654,6 +1654,8 @@ Expected: clean.
 
 - [ ] **Step 7: Browser check — no visual change**
 
+> **Deferred 2026-09-22 (user):** Node on this host cannot reach Notion, so no dev server can render these surfaces. Data equivalence was proven offline instead (120 live scopes via curl through the real adapters: meeting-flow groups identical; landing counts + `ScopesGrid` split identical). **The browser pass over all three surfaces runs once, at Task 9 Step 7 (final verification).**
+
 With `pnpm dev` running, confirm three surfaces render exactly as before:
 1. a landing pillar page (`/energy-efficient-construction`) — trade cards with their scopes and add-ons,
 2. a meeting flow's specialties step — the trade switcher's category groups and each trade's scope/add-on split,
@@ -2046,6 +2048,8 @@ Found at Task 1 — each still names `src/shared/domains/construction/constants/
 In `memory/project-construction-catalog-centralization.md`: mark **P1 SHIPPED 2026-09-20** with its commit range; replace the `sources/notion/` plan wording with what landed; record that escalations 1 and 4 are closed and 2 and 3 stay open; note `service.ts` / `core/` / plural `sources/` as the settled shape; add the `tradeCategories` dedup. Update the one-line hook in `memory/MEMORY.md` to match.
 
 - [ ] **Step 7: Final full verification**
+
+> **Includes the browser pass deferred from Task 7 Step 7** — landing pillar page, meeting-flow specialties step, a funnel page with a portfolio block. Needs Node→Notion reachability; ask the user how to run it (no workaround without explicit OK).
 
 ```bash
 pnpm tsc && CI=1 pnpm lint
