@@ -1731,7 +1731,6 @@ MSG
 - Create: `scripts/verify-catalog-seam.ts`
 - Rename: `scripts/portfolio-scraper/fetch-scopes.ts` → `scripts/portfolio-scraper/fuzzy-match-scopes.ts`, keeping the matcher
 - Modify: `scripts/portfolio-scraper/{types,prompts,index}.ts`
-- Modify: `package.json` (add the verify script)
 - **Delete: nothing.** No file is removed in this task. The rename above is the only path that changes, and `git mv` preserves history.
 
 Untouched, and must stay that way: `scripts/portfolio-scraper/{classify-images,constants,download-images,generate-content,import-project,scrape-images}.ts` and `scripts/portfolio-scraper/site-scrapers/`.
@@ -1841,20 +1840,15 @@ assert.ok(orphans < scopes.length * 0.2, `${orphans} of ${scopes.length} scopes 
 console.log(`✓ catalog seam verified (${orphans} orphan scope(s), all ids normalized, all kinds valid)`)
 ```
 
-Add to `package.json` beside `verify:ct-note`:
-```json
-    "verify:catalog": "tsx scripts/verify-catalog-seam.ts",
-```
-
 - [ ] **Step 4: Run every verifier**
 
 ```bash
 npx tsx scripts/verify-normalize-notion-id.ts
 npx tsx scripts/verify-notion-adapters.ts
 npx tsx scripts/verify-energy-trade-qualification.ts
-pnpm verify:catalog
+npx tsx scripts/verify-catalog-seam.ts
 ```
-Expected: the three pure scripts pass; `verify:catalog` prints a count above 100 and exits 0.
+Expected: the three pure scripts pass; `verify-catalog-seam.ts` prints a count above 100 and exits 0.
 
 - [ ] **Step 5: Prove the scraper still works, end to end on the changed path**
 
@@ -1945,8 +1939,7 @@ Expected: clean.
 git status --porcelain | grep -vxFf $S/wip-before.txt   # the candidate list
 sha1sum -c --quiet $S/wip-hashes.txt 2>/dev/null        # must print nothing
 # NEVER `git add scripts/` — ~21 untracked foreign scripts/tmp-*.ts live there.
-git add -- package.json \
-           scripts/verify-catalog-seam.ts \
+git add -- scripts/verify-catalog-seam.ts \
            scripts/portfolio-scraper/fuzzy-match-scopes.ts \
            scripts/portfolio-scraper/fetch-scopes.ts \
            scripts/portfolio-scraper/index.ts \
@@ -1967,7 +1960,7 @@ file in portfolio-scraper/ is removed.
 Scripts import catalogSource from sources/, never service.ts —
 unstable_cache needs a Next request context.
 
-New: scripts/verify-catalog-seam.ts (pnpm verify:catalog) asserts against
+New: scripts/verify-catalog-seam.ts asserts against
 production Notion that ids are normalized UUIDs, every kind is
 scope|addon, and the read still clears P0's 100-row cap.
 
@@ -2056,7 +2049,7 @@ pnpm tsc && CI=1 pnpm lint
 npx tsx scripts/verify-normalize-notion-id.ts
 npx tsx scripts/verify-notion-adapters.ts
 npx tsx scripts/verify-energy-trade-qualification.ts
-pnpm verify:catalog
+npx tsx scripts/verify-catalog-seam.ts
 ```
 Then re-run **all seven grep gates from Task 8 Step 6**. Every one must still be clean.
 
@@ -2103,8 +2096,8 @@ Commit `memory/` separately — it is outside the repo.
 |---|---|---|
 | **V1** | `pnpm tsc` + `pnpm lint` clean. **Never `pnpm build`.** | every task |
 | **V2** | Seven grep gates: no `notionRouter`, no `domains/construction`, no provider internals imported outside the source, no Notion property names in `src/` **or** `scripts/`, no old cache tags, no second `new Client(`, provider is exactly 4 files | Task 8 Step 6, re-run at Task 9 Step 7 |
-| **V5** | `getCatalog()` returns **more than 100 scopes** against production Notion. P0 measured 120 scopes / 27 trades — expected magnitude, not an exact assertion; the owner edits Notion. | `pnpm verify:catalog` |
-| **New** | Every `Scope.kind` is `scope`\|`addon`; every id is a dashed lowercase UUID; orphan `tradeId`s stay under 20% | `pnpm verify:catalog` |
+| **V5** | `getCatalog()` returns **more than 100 scopes** against production Notion. P0 measured 120 scopes / 27 trades — expected magnitude, not an exact assertion; the owner edits Notion. | `npx tsx scripts/verify-catalog-seam.ts` |
+| **New** | Every `Scope.kind` is `scope`\|`addon`; every id is a dashed lowercase UUID; orphan `tradeId`s stay under 20% | `npx tsx scripts/verify-catalog-seam.ts` |
 | **Regression** | The three existing pure verify scripts still pass | Tasks 2, 3, 8, 9 |
 | **Cache** | Two loads inside 600s issue one set of Notion requests; the refresh button forces a new one | Task 5 Step 8 |
 | **Browser** | Landing pillar page, specialties step, and a funnel portfolio block render unchanged | Task 7 Step 7 |
