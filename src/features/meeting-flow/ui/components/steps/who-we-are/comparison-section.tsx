@@ -2,7 +2,7 @@
 
 import type { WhoWeAreContentOf } from '@/features/meeting-flow/types'
 import type { SlideProps } from '@/shared/components/presentation/types'
-import { ComparisonSheets } from '@/features/meeting-flow/ui/components/steps/who-we-are/comparison-sheets'
+import { ComparisonTable } from '@/features/meeting-flow/ui/components/steps/who-we-are/comparison-table'
 import { Reveal } from '@/shared/components/presentation/reveal'
 import { Slide } from '@/shared/components/presentation/slide'
 
@@ -18,7 +18,7 @@ export function ComparisonSection({ content, ...slide }: ComparisonSectionProps)
     <Slide {...slide}>
       <div className="grid min-h-[calc(100cqh-var(--band-h,0px))] content-center px-[6cqw] pt-presentation-zone pb-[max(6cqh,var(--presentation-clear-b,0px))]">
         <Reveal order={0}>
-          <ComparisonSheets rows={content.rows} />
+          <ComparisonTable rows={content.rows} />
         </Reveal>
       </div>
     </Slide>
