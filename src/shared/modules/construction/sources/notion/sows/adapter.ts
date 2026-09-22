@@ -1,7 +1,7 @@
 import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
 import type { SOW } from './schema'
 import { relationIds, titleText } from '../extractors'
-import { normalizeNotionId } from '../normalize-notion-id'
+import { normalizeNotionId } from '../normalize-id'
 import { SOW_PROPERTIES_MAP } from './properties-map'
 import { sowSchema } from './schema'
 

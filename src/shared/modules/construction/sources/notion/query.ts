@@ -1,9 +1,9 @@
 import type { PageObjectResponse } from '@notionhq/client'
-import type { NotionDatabaseMap } from '../constants/databases'
-import type { NotionDatabaseName, NotionPropDef } from '../types'
-import { notionClient } from '../client'
-import { notionDatabasesMeta } from '../constants/databases'
-import { buildPropertyFilter } from '../lib/property-filter'
+import type { NotionDatabaseMap, NotionDatabaseName } from './databases'
+import type { NotionPropDef } from '@/shared/services/providers/notion/types'
+import { notionClient } from '@/shared/services/providers/notion/client'
+import { notionDatabasesMeta } from './databases'
+import { buildPropertyFilter } from './property-filter'
 
 type PropertyKey<T extends NotionDatabaseName> = keyof NotionDatabaseMap[T]['propertiesMap']
 type SortDirection = 'ascending' | 'descending'

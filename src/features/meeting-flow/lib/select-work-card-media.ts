@@ -1,6 +1,6 @@
 import type { ShowcaseMedia, ShowcaseProjectIndex } from '@/features/meeting-flow/types'
-import type { ScopeOrAddon } from '@/shared/services/providers/notion/lib/scopes/schema'
-import type { Trade } from '@/shared/services/providers/notion/lib/trades/schema'
+import type { ScopeOrAddon } from '@/shared/modules/construction/sources/notion/scopes/schema'
+import type { Trade } from '@/shared/modules/construction/sources/notion/trades/schema'
 import { selectScopeMedia } from '@/features/meeting-flow/lib/select-scope-media'
 import { selectStageMedia } from '@/features/meeting-flow/lib/select-stage-media'
 

@@ -1,5 +1,5 @@
-import type { ScopeOrAddon } from '@/shared/services/providers/notion/lib/scopes/schema'
-import type { Trade } from '@/shared/services/providers/notion/lib/trades/schema'
+import type { ScopeOrAddon } from '@/shared/modules/construction/sources/notion/scopes/schema'
+import type { Trade } from '@/shared/modules/construction/sources/notion/trades/schema'
 import { useQueries } from '@tanstack/react-query'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'

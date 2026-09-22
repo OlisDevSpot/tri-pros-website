@@ -1,4 +1,4 @@
-import type { Trade } from '@/shared/services/providers/notion/lib/trades/schema'
+import type { Trade } from '@/shared/modules/construction/sources/notion/trades/schema'
 
 /** Requested trade ids from the lead, in order, deduplicated, limited to trades the catalog has. */
 export function deriveLeadTrades(

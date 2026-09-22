@@ -1,8 +1,8 @@
 'use client'
 
+import type { ScopeOrAddon } from '@/shared/modules/construction/sources/notion/scopes/schema'
+import type { Trade } from '@/shared/modules/construction/sources/notion/trades/schema'
 import type { PortfolioProject } from '@/shared/modules/projects/core/types'
-import type { ScopeOrAddon } from '@/shared/services/providers/notion/lib/scopes/schema'
-import type { Trade } from '@/shared/services/providers/notion/lib/trades/schema'
 import { parseAsArrayOf, parseAsInteger, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
 import { filterPortfolioProjects } from '@/features/project-management/lib/filter-projects'

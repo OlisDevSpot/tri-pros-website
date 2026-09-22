@@ -1,5 +1,5 @@
-import type { PropertyFilter } from '../types'
-import { normalizeNotionId } from './normalize-notion-id'
+import type { PropertyFilter } from '@/shared/services/providers/notion/types'
+import { normalizeNotionId } from './normalize-id'
 
 export function buildPropertyFilter(
   propertyName: string,

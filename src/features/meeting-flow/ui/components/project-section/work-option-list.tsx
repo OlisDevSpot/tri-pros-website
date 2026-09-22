@@ -1,7 +1,7 @@
 'use client'
 
 import type { TradeSelection } from '@/shared/entities/meetings/schemas'
-import type { ScopeOrAddon } from '@/shared/services/providers/notion/lib/scopes/schema'
+import type { ScopeOrAddon } from '@/shared/modules/construction/sources/notion/scopes/schema'
 import { CheckIcon } from 'lucide-react'
 import { useId, useMemo } from 'react'
 import { useTradeEdits } from '@/features/meeting-flow/hooks/use-trade-edits'

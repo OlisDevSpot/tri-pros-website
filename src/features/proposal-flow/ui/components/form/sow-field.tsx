@@ -1,8 +1,8 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { TiptapHandle } from '@/shared/components/tiptap/tiptap'
 import type { PriceDisplayMode } from '@/shared/constants/enums'
-import type { ScopeOrAddon } from '@/shared/services/providers/notion/lib/scopes/schema'
-import { useQueryClient } from '@tanstack/react-query'
+import type { ScopeOrAddon } from '@/shared/modules/construction/sources/notion/scopes/schema'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ChevronDownIcon } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
@@ -16,8 +16,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { cn } from '@/shared/lib/utils'
-import { useGetScopes } from '@/shared/services/providers/notion/dal/scopes/hooks/queries/use-get-scopes'
-import { useGetAllTrades } from '@/shared/services/providers/notion/dal/trades/hooks/queries/use-get-trades'
 import { useTRPC } from '@/trpc/helpers'
 import { SOWFinancialsFields } from './sow-financials-fields'
 
@@ -49,8 +47,11 @@ export function SOWSection({
   const [finDeadHover, setFinDeadHover] = useState(false)
   const tiptapRef = useRef<TiptapHandle | null>(null)
 
-  const allTrades = useGetAllTrades()
-  const scopesOfTrade = useGetScopes({ query: tradeId, filterProperty: 'relatedTrade' }, { enabled: !!tradeId })
+  const allTrades = useQuery(trpc.notionRouter.trades.getAll.queryOptions())
+  const scopesOfTrade = useQuery(trpc.notionRouter.scopes.getScopesByQuery.queryOptions(
+    { query: tradeId, filterProperty: 'relatedTrade' },
+    { enabled: !!tradeId },
+  ))
 
   const [ScopeRemovalDialog, confirmScopeRemoval] = useConfirm({
     title: 'Remove cost lines?',

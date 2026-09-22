@@ -4,13 +4,12 @@ import type { TradeCatalog } from '@/features/meeting-flow/types'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
 import { groupScopesByTrade } from '@/features/meeting-flow/lib/group-scopes-by-trade'
-import { useGetAllTrades } from '@/shared/services/providers/notion/dal/trades/hooks/queries/use-get-trades'
 import { useTRPC } from '@/trpc/helpers'
 
 /** The whole trade and scope catalog, fetched once and grouped once. No per-trade or hover-time queries. */
 export function useTradeCatalog(): TradeCatalog {
   const trpc = useTRPC()
-  const tradesQuery = useGetAllTrades()
+  const tradesQuery = useQuery(trpc.notionRouter.trades.getAll.queryOptions())
   const scopesQuery = useQuery(trpc.notionRouter.scopes.getAll.queryOptions())
 
   const trades = useMemo(() => (tradesQuery.data ?? []).filter(trade => !trade.disabled), [tradesQuery.data])

@@ -1,12 +1,13 @@
 'use client'
 
-import type { Trade } from '@/shared/services/providers/notion/lib/trades/schema'
+import type { Trade } from '@/shared/modules/construction/sources/notion/trades/schema'
+import { useQuery } from '@tanstack/react-query'
 import { TrashIcon } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { Button } from '@/shared/components/ui/button'
 import { MultiSelect, MultiSelectContent, MultiSelectGroup, MultiSelectItem, MultiSelectTrigger, MultiSelectValue } from '@/shared/components/ui/multi-select'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
-import { useGetScopes } from '@/shared/services/providers/notion/dal/scopes/hooks/queries/use-get-scopes'
+import { useTRPC } from '@/trpc/helpers'
 
 interface Props {
   tradeId: string
@@ -30,10 +31,11 @@ export function TradeScopeRow({
   const scopeTriggerRef = useRef<HTMLButtonElement>(null)
   const shouldAutoOpenScopes = useRef(false)
 
-  const scopesQuery = useGetScopes(
+  const trpc = useTRPC()
+  const scopesQuery = useQuery(trpc.notionRouter.scopes.getScopesByQuery.queryOptions(
     { query: tradeId, filterProperty: 'relatedTrade' },
     { enabled: !!tradeId },
-  )
+  ))
 
   useEffect(() => {
     if (shouldAutoOpenScopes.current && scopesQuery.isSuccess && scopesQuery.data?.length) {

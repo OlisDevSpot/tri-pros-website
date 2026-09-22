@@ -1,6 +1,6 @@
 import type { NotionBlock } from '@notion-utils/html'
-import { notionClient } from '../client'
-import { notionBlocksToTiptapDoc } from './blocks-to-tiptap-json'
+import { notionClient } from '@/shared/services/providers/notion/client'
+import { notionBlocksToTiptapDoc } from './blocks-to-tiptap'
 
 // 100 pages at page_size: 100 is 10,000 rows — a sane cap. If Notion ever
 // returned the same cursor twice, this stops the loop from spinning forever;

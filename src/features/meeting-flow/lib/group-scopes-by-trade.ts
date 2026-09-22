@@ -1,5 +1,5 @@
 import type { TradeScopeGroup } from '@/features/meeting-flow/types'
-import type { ScopeOrAddon } from '@/shared/services/providers/notion/lib/scopes/schema'
+import type { ScopeOrAddon } from '@/shared/modules/construction/sources/notion/scopes/schema'
 
 export function groupScopesByTrade(items: ScopeOrAddon[]): Map<string, TradeScopeGroup> {
   const groups = new Map<string, TradeScopeGroup>()

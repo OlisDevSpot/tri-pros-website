@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import type { NotionBlock } from '@notion-utils/html'
+import { notionBlocksToTiptapDoc } from '@/shared/modules/construction/sources/notion/blocks-to-tiptap'
 import { notionClient } from '@/shared/services/providers/notion/client'
-import { notionBlocksToTiptapDoc } from '@/shared/services/providers/notion/lib/blocks-to-tiptap-json'
 
 (async () => {
   const response = await notionClient.blocks.children.list({

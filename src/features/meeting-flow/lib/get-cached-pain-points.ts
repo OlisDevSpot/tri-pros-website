@@ -1,6 +1,6 @@
 import { unstable_cache } from 'next/cache'
-import { queryNotionDatabase } from '@/shared/services/providers/notion/dal/query-notion-database'
-import { pageToPainPoint } from '@/shared/services/providers/notion/lib/pain-points/adapter'
+import { pageToPainPoint } from '@/shared/modules/construction/sources/notion/pain-points/adapter'
+import { queryNotionDatabase } from '@/shared/modules/construction/sources/notion/query'
 
 export const getCachedPainPoints = unstable_cache(
   async () => {

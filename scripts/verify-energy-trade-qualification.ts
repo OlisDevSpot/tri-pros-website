@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import type { QualificationContext } from '@/features/meeting-flow/types'
 import type { TradeSelection } from '@/shared/entities/meetings/schemas'
-import type { Trade } from '@/shared/services/providers/notion/lib/trades/schema'
+import type { Trade } from '@/shared/modules/construction/sources/notion/trades/schema'
 import assert from 'node:assert/strict'
 import { isEnergyEfficientTrade } from '@/features/meeting-flow/constants/energy-trades'
 import { MEETING_PROGRAMS } from '@/features/meeting-flow/constants/programs'

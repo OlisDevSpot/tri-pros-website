@@ -1,6 +1,6 @@
 'use client'
 
-import type { Trade } from '@/shared/services/providers/notion/lib/trades/schema'
+import type { Trade } from '@/shared/modules/construction/sources/notion/trades/schema'
 import { useTradeCatalogContext } from '@/features/meeting-flow/contexts/trade-catalog-context'
 import { useTradeStage } from '@/features/meeting-flow/contexts/trade-stage-context'
 

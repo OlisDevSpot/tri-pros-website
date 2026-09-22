@@ -1,7 +1,7 @@
 import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
 import type { NotionPainPoint } from './schema'
 import { multiSelectNames, relationIds, richText, selectName, titleText } from '../extractors'
-import { normalizeNotionId } from '../normalize-notion-id'
+import { normalizeNotionId } from '../normalize-id'
 import { PAIN_POINT_PROPERTIES_MAP } from './properties-map'
 import { notionPainPointSchema } from './schema'
 

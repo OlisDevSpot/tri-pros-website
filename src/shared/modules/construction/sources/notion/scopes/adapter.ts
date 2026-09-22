@@ -1,7 +1,7 @@
 import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
 import type { ScopeOrAddon } from './schema'
 import { relationIds, selectName, titleText } from '../extractors'
-import { normalizeNotionId } from '../normalize-notion-id'
+import { normalizeNotionId } from '../normalize-id'
 import { SCOPE_OR_ADDON_PROPERTIES_MAP } from './properties-map'
 import { scopeOrAddonSchema } from './schema'
 

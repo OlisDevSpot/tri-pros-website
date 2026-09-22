@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 import assert from 'node:assert/strict'
-import { normalizeNotionId } from '@/shared/services/providers/notion/lib/normalize-notion-id'
+import { normalizeNotionId } from '@/shared/modules/construction/sources/notion/normalize-id'
 
 const DASHED = '6240ca1b-548b-837d-a9c0-01acc1fb530a'
 const UNDASHED = '6240ca1b548b837da9c001acc1fb530a'

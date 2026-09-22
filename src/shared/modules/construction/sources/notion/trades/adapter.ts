@@ -2,7 +2,7 @@ import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoint
 import type { Trade } from './schema'
 import { slugifyTradeName } from '@/shared/lib/slugify-trade-name'
 import { checkbox, relationIds, selectName, titleText } from '../extractors'
-import { normalizeNotionId } from '../normalize-notion-id'
+import { normalizeNotionId } from '../normalize-id'
 import { TRADE_PROPERTIES_MAP } from './properties-map'
 import { tradeSchema } from './schema'
 

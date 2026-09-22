@@ -1,8 +1,8 @@
 import { TRPCError } from '@trpc/server'
 import z from 'zod'
 import { getTypedKeys } from '@/shared/lib/utils'
+import { scopeOrAddonSchema } from '@/shared/modules/construction/sources/notion/scopes/schema'
 import { constructionDataService } from '@/shared/services/construction-data.service'
-import { scopeOrAddonSchema } from '@/shared/services/providers/notion/lib/scopes/schema'
 import { baseProcedure, createTRPCRouter } from '../../init'
 
 export const scopesRouter = createTRPCRouter({

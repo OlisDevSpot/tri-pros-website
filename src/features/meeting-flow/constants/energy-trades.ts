@@ -1,4 +1,4 @@
-import type { Trade } from '@/shared/services/providers/notion/lib/trades/schema'
+import type { Trade } from '@/shared/modules/construction/sources/notion/trades/schema'
 
 /**
  * Energy-efficient trades are classified by their Notion category, not by a

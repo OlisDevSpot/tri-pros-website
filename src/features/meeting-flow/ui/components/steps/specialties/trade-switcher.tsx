@@ -1,6 +1,6 @@
 'use client'
 
-import type { Trade } from '@/shared/services/providers/notion/lib/trades/schema'
+import type { Trade } from '@/shared/modules/construction/sources/notion/trades/schema'
 import { CheckIcon, ChevronDownIcon } from 'lucide-react'
 import { useState } from 'react'
 import { SPECIALTIES_COPY } from '@/features/meeting-flow/constants/specialties-copy'

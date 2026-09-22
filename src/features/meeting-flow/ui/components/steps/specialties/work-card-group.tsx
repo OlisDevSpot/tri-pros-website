@@ -1,6 +1,6 @@
 'use client'
 
-import type { Trade } from '@/shared/services/providers/notion/lib/trades/schema'
+import type { Trade } from '@/shared/modules/construction/sources/notion/trades/schema'
 import { useMemo } from 'react'
 import { SPECIALTIES_COPY } from '@/features/meeting-flow/constants/specialties-copy'
 import { useTradeCatalogContext } from '@/features/meeting-flow/contexts/trade-catalog-context'

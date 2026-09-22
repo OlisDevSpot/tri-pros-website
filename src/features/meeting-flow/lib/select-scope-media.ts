@@ -1,5 +1,5 @@
 import type { ShowcaseMedia, ShowcaseProjectIndex } from '@/features/meeting-flow/types'
-import type { ScopeOrAddon } from '@/shared/services/providers/notion/lib/scopes/schema'
+import type { ScopeOrAddon } from '@/shared/modules/construction/sources/notion/scopes/schema'
 import { SCOPE_PHOTOS } from '@/features/meeting-flow/constants/trade-photos'
 import { curatedMedia, projectMedia } from '@/features/meeting-flow/lib/to-showcase-media'
 

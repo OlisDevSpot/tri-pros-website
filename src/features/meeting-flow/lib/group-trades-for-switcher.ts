@@ -1,7 +1,7 @@
 import type { TradeCategory } from '@/features/meeting-flow/constants/trade-categories'
 import type { SwitcherGroup } from '@/features/meeting-flow/types'
 import type { TradeSelection } from '@/shared/entities/meetings/schemas'
-import type { Trade } from '@/shared/services/providers/notion/lib/trades/schema'
+import type { Trade } from '@/shared/modules/construction/sources/notion/trades/schema'
 import { SPECIALTIES_COPY } from '@/features/meeting-flow/constants/specialties-copy'
 import { TRADE_CATEGORY_LABELS, TRADE_CATEGORY_ORDER } from '@/features/meeting-flow/constants/trade-categories'
 import { isTradeSelected } from '@/features/meeting-flow/lib/trade-selection'

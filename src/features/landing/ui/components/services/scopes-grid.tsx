@@ -1,4 +1,4 @@
-import type { ScopeOrAddon } from '@/shared/services/providers/notion/lib/scopes/schema'
+import type { ScopeOrAddon } from '@/shared/modules/construction/sources/notion/scopes/schema'
 
 import { Check, Plus } from 'lucide-react'
 

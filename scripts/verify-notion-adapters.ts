@@ -1,11 +1,11 @@
 /* eslint-disable no-console */
 import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
 import assert from 'node:assert/strict'
-import { pageToPainPoint } from '@/shared/services/providers/notion/lib/pain-points/adapter'
-import { pageToScope } from '@/shared/services/providers/notion/lib/scopes/adapter'
-import { SCOPE_OR_ADDON_PROPERTIES_MAP } from '@/shared/services/providers/notion/lib/scopes/properties-map'
-import { pageToSOW } from '@/shared/services/providers/notion/lib/sows/adapter'
-import { SOW_PROPERTIES_MAP } from '@/shared/services/providers/notion/lib/sows/properties-map'
+import { pageToPainPoint } from '@/shared/modules/construction/sources/notion/pain-points/adapter'
+import { pageToScope } from '@/shared/modules/construction/sources/notion/scopes/adapter'
+import { SCOPE_OR_ADDON_PROPERTIES_MAP } from '@/shared/modules/construction/sources/notion/scopes/properties-map'
+import { pageToSOW } from '@/shared/modules/construction/sources/notion/sows/adapter'
+import { SOW_PROPERTIES_MAP } from '@/shared/modules/construction/sources/notion/sows/properties-map'
 
 const TRADE_ID = '6240ca1b-548b-837d-a9c0-01acc1fb530a'
 const SCOPE_ID = '7351db2c-659c-948e-b0d1-12bdd2ac641b'

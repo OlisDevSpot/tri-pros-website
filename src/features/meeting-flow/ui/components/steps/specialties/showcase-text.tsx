@@ -1,7 +1,7 @@
 'use client'
 
 import type { TradeCategory } from '@/features/meeting-flow/constants/trade-categories'
-import type { Trade } from '@/shared/services/providers/notion/lib/trades/schema'
+import type { Trade } from '@/shared/modules/construction/sources/notion/trades/schema'
 import { CheckIcon } from 'lucide-react'
 import { SHOWCASE_BENEFIT_LIMIT } from '@/features/meeting-flow/constants/showcase'
 import { SPECIALTIES_COPY } from '@/features/meeting-flow/constants/specialties-copy'
