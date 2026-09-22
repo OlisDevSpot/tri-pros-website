@@ -22,7 +22,7 @@ interface StepTabsProps {
  */
 export function StepTabs({ currentStep, onStepClick }: StepTabsProps) {
   return (
-    <nav aria-label={SHELL_COPY.stepsNavLabel} className="flex items-center gap-0.5">
+    <nav aria-label={SHELL_COPY.stepsNavLabel} className="hidden items-center gap-0.5 @2xl/topbar:flex">
       {MEETING_STEPS.map((step) => {
         const isActive = step.stepNumber === currentStep
         const isDone = step.stepNumber < currentStep
