@@ -31,7 +31,6 @@
     "backfill:phones:dev": "tsx scripts/normalize-customer-phones.ts",
     "backfill:proposal-media": "DRIZZLE_TARGET=prod NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/backfill-proposal-media-optimization.ts",
     "backfill:proposal-media:dev": "NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/backfill-proposal-media-optimization.ts",
-    "verify:ct-note": "tsx scripts/verify-ct-note.ts",
     "rebuild:gcal": "DRIZZLE_TARGET=prod NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/rebuild-gcal-descriptions.ts",
     "rebuild:gcal:dev": "NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/rebuild-gcal-descriptions.ts",
     "gcal:cron:setup": "DRIZZLE_TARGET=prod NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/setup-gcal-cron.ts",
