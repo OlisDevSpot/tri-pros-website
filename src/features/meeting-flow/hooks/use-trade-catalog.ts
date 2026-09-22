@@ -9,8 +9,8 @@ import { useTRPC } from '@/trpc/helpers'
 /** The whole trade and scope catalog, fetched once and grouped once. No per-trade or hover-time queries. */
 export function useTradeCatalog(): TradeCatalog {
   const trpc = useTRPC()
-  const tradesQuery = useQuery(trpc.notionRouter.trades.getAll.queryOptions())
-  const scopesQuery = useQuery(trpc.notionRouter.scopes.getAll.queryOptions())
+  const tradesQuery = useQuery(trpc.constructionRouter.trades.getAll.queryOptions())
+  const scopesQuery = useQuery(trpc.constructionRouter.scopes.getAll.queryOptions())
 
   const trades = useMemo(() => tradesQuery.data ?? [], [tradesQuery.data])
   const tradesById = useMemo(() => new Map(trades.map(trade => [trade.id, trade])), [trades])

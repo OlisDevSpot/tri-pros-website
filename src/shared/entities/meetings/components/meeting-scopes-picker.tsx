@@ -34,7 +34,7 @@ interface ScopeRowProps {
 
 function ScopeRow({ entry, index, allTrades, usedTradeIds, onUpdate, onRemove }: ScopeRowProps) {
   const trpc = useTRPC()
-  const scopesQuery = useQuery(trpc.notionRouter.scopes.byTrade.queryOptions(
+  const scopesQuery = useQuery(trpc.constructionRouter.scopes.byTrade.queryOptions(
     { tradeId: entry.tradeId },
     { enabled: !!entry.tradeId },
   ))
@@ -120,7 +120,7 @@ interface MeetingScopePickerProps {
 
 export function MeetingScopesPicker({ value, onChange }: MeetingScopePickerProps) {
   const trpc = useTRPC()
-  const tradesQuery = useQuery(trpc.notionRouter.trades.getAll.queryOptions())
+  const tradesQuery = useQuery(trpc.constructionRouter.trades.getAll.queryOptions())
   const allTrades = tradesQuery.data ?? []
 
   const usedTradeIds = new Set(value.map(e => e.tradeId).filter(Boolean))

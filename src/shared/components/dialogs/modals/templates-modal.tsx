@@ -15,7 +15,7 @@ export function TemplatesModal({ trade, scopes, onSelect }: Props) {
 
   const trpc = useTRPC()
   const SOWs = useQueries({
-    queries: scopes.map(scope => trpc.notionRouter.scopes.getAllSOW.queryOptions({ scopeId: scope.id })),
+    queries: scopes.map(scope => trpc.constructionRouter.sow.byScope.queryOptions({ scopeId: scope.id })),
   })
 
   return (

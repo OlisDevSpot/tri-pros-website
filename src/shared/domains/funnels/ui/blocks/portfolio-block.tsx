@@ -14,7 +14,7 @@ import { useTRPC } from '@/trpc/helpers'
 
 export function PortfolioBlock({ content, ctx }: { content: PortfolioBlockContent, ctx: FunnelContext }) {
   const trpc = useTRPC()
-  const scopesQ = useQuery(trpc.notionRouter.scopes.getAll.queryOptions())
+  const scopesQ = useQuery(trpc.constructionRouter.scopes.getAll.queryOptions())
   const projectsQ = useQuery(trpc.projectsRouter.showroomDisplay.getAll.queryOptions())
   const tradeId = getTradeFacts(ctx.slug).notionTradeId
 

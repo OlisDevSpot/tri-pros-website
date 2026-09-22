@@ -12,9 +12,9 @@ import { TopSpacer } from '@/shared/components/top-spacer'
 import { Button } from '@/shared/components/ui/button'
 import { ViewportHero } from '@/shared/components/viewport-hero'
 import { ROOTS } from '@/shared/config/roots'
+import { CatalogRefreshButton } from '../components/services/catalog-refresh-button'
 import { ComparisonTable } from '../components/services/comparison-table'
 import { NaturalPairings } from '../components/services/natural-pairings'
-import { NotionRefreshButton } from '../components/services/notion-refresh-button'
 import { ProgramsTeaser } from '../components/services/programs-teaser'
 import { ProjectApproach } from '../components/services/project-approach'
 import { SwceSection } from '../components/services/swce-section'
@@ -135,7 +135,7 @@ export function PillarView({ pillarSlug, trades }: PillarViewProps) {
         </TopSpacer>
       </ViewportHero>
 
-      <NotionRefreshButton />
+      <CatalogRefreshButton />
       <TradesGrid trades={trades} pillarSlug={pillarSlug} />
       <SwceSection variant="full" />
       <ProjectApproach steps={config.projectApproach} />

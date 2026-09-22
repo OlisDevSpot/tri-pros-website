@@ -47,8 +47,8 @@ export function SOWSection({
   const [finDeadHover, setFinDeadHover] = useState(false)
   const tiptapRef = useRef<TiptapHandle | null>(null)
 
-  const allTrades = useQuery(trpc.notionRouter.trades.getAll.queryOptions())
-  const scopesOfTrade = useQuery(trpc.notionRouter.scopes.byTrade.queryOptions(
+  const allTrades = useQuery(trpc.constructionRouter.trades.getAll.queryOptions())
+  const scopesOfTrade = useQuery(trpc.constructionRouter.scopes.byTrade.queryOptions(
     { tradeId: tradeId ?? '' },
     { enabled: !!tradeId },
   ))
@@ -240,7 +240,7 @@ export function SOWSection({
                                   closeModal()
                                   setIsLoadingTemplate(true)
                                   try {
-                                    const json = await queryClient.fetchQuery(trpc.notionRouter.scopes.getSOWContent.queryOptions({ sowId }))
+                                    const json = await queryClient.fetchQuery(trpc.constructionRouter.sow.content.queryOptions({ sowId }))
                                     tiptapRef.current?.insertContent(JSON.parse(json) || '')
                                   }
                                   finally {

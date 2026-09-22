@@ -3,6 +3,7 @@ import { baseProcedure, createTRPCRouter } from '../init'
 import { agentSettingsRouter } from './agent-settings.router'
 import { aiRouter } from './ai.router'
 import { applicationsRouter } from './applications.router'
+import { constructionRouter } from './construction.router'
 import { customerNotesRouter } from './customer-notes.router'
 import { customerPipelinesRouter } from './customer-pipelines.router'
 import { customersRouter } from './customers.router'
@@ -13,7 +14,6 @@ import { landingRouter } from './landing.router'
 import { leadSourcesRouter } from './lead-sources.router'
 import { meetingFlowRouter } from './meeting-flow.router'
 import { meetingsRouter } from './meetings.router'
-import { notionRouter } from './notion.router'
 import { projectsRouter } from './projects.router'
 import { proposalsRouter } from './proposals.router'
 import { pushRouter } from './push.router'
@@ -25,6 +25,7 @@ export const appRouter = createTRPCRouter({
   agentSettingsRouter,
   aiRouter,
   applicationsRouter,
+  constructionRouter,
   customerNotesRouter,
   customersRouter,
   dashboardRouter,
@@ -34,7 +35,6 @@ export const appRouter = createTRPCRouter({
   leadSourcesRouter,
   meetingFlowRouter,
   meetingsRouter,
-  notionRouter,
   customerPipelinesRouter,
   proposalsRouter,
   projectsRouter,

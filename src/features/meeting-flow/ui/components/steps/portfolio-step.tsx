@@ -27,8 +27,8 @@ export function PortfolioStep({ flowContext }: PortfolioStepProps) {
   const { data: allProjects = [], isLoading: projectsLoading } = useQuery(
     trpc.projectsRouter.showroomDisplay.getAll.queryOptions(),
   )
-  const { data: allTrades = [] } = useQuery(trpc.notionRouter.trades.getAll.queryOptions())
-  const { data: allScopes = [] } = useQuery(trpc.notionRouter.scopes.getAll.queryOptions())
+  const { data: allTrades = [] } = useQuery(trpc.constructionRouter.trades.getAll.queryOptions())
+  const { data: allScopes = [] } = useQuery(trpc.constructionRouter.scopes.getAll.queryOptions())
 
   // Group projects by selected trade — only trades with matching projects
   const tradeProjectGroups = useMemo(() => {

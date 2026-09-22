@@ -15,8 +15,8 @@ export function PortfolioGridView() {
     trpc.projectsRouter.showroomDisplay.getAll.queryOptions(),
   )
 
-  const { data: allTrades = [] } = useQuery(trpc.notionRouter.trades.getAll.queryOptions())
-  const { data: allScopes = [] } = useQuery(trpc.notionRouter.scopes.getAll.queryOptions())
+  const { data: allTrades = [] } = useQuery(trpc.constructionRouter.trades.getAll.queryOptions())
+  const { data: allScopes = [] } = useQuery(trpc.constructionRouter.scopes.getAll.queryOptions())
 
   const {
     selectedTradeIds,

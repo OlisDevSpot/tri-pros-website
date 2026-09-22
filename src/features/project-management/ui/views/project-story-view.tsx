@@ -22,8 +22,8 @@ export function ProjectStoryView({ detail }: Props) {
   const { project, media, scopeIds } = detail
   const heroImage = media.hero[0] ?? media.after[0] ?? media.during[0] ?? media.uncategorized[0]
 
-  const { data: allScopes = [] } = useQuery(trpc.notionRouter.scopes.getAll.queryOptions())
-  const { data: allTrades = [] } = useQuery(trpc.notionRouter.trades.getAll.queryOptions())
+  const { data: allScopes = [] } = useQuery(trpc.constructionRouter.scopes.getAll.queryOptions())
+  const { data: allTrades = [] } = useQuery(trpc.constructionRouter.trades.getAll.queryOptions())
 
   const tradesWithScopes = useMemo(() => {
     const scopeIdSet = new Set(scopeIds)

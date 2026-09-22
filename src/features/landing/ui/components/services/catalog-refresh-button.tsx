@@ -9,12 +9,12 @@ import { useAbility } from '@/shared/domains/permissions/hooks'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
 
-export function NotionRefreshButton() {
+export function CatalogRefreshButton() {
   const trpc = useTRPC()
   const ability = useAbility()
 
   const revalidate = useMutation(
-    trpc.notionRouter.revalidateNotionCache.mutationOptions({
+    trpc.constructionRouter.revalidateCatalog.mutationOptions({
       onSuccess: () => {
         toast.success('Cache refreshed')
       },
@@ -35,7 +35,7 @@ export function NotionRefreshButton() {
       onClick={() => revalidate.mutate()}
       disabled={revalidate.isPending}
       className="fixed top-4 right-4 z-50 opacity-50 hover:opacity-100 transition-opacity"
-      aria-label="Refresh Notion cache"
+      aria-label="Refresh catalog cache"
     >
       <RefreshCw
         className={cn('size-4', revalidate.isPending && 'animate-spin')}

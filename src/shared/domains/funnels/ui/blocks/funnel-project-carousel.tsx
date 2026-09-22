@@ -34,7 +34,7 @@ interface Slide {
  */
 export function FunnelProjectCarousel({ slug }: { slug: string }) {
   const trpc = useTRPC()
-  const scopesQ = useQuery(trpc.notionRouter.scopes.getAll.queryOptions())
+  const scopesQ = useQuery(trpc.constructionRouter.scopes.getAll.queryOptions())
   const projectsQ = useQuery(trpc.projectsRouter.showroomDisplay.getAll.queryOptions())
   const tradeId = getTradeFacts(slug as FunnelSlug).notionTradeId
 

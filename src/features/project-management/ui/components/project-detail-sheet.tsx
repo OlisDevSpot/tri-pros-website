@@ -24,11 +24,11 @@ export function ProjectDetailSheet({ project, isOpen, close, onDelete }: Project
   const trpc = useTRPC()
 
   const { data: allTrades = [] } = useQuery({
-    ...trpc.notionRouter.trades.getAll.queryOptions(),
+    ...trpc.constructionRouter.trades.getAll.queryOptions(),
     enabled: isOpen && !!project,
   })
   const { data: allScopes = [] } = useQuery({
-    ...trpc.notionRouter.scopes.getAll.queryOptions(),
+    ...trpc.constructionRouter.scopes.getAll.queryOptions(),
     enabled: isOpen && !!project,
   })
 
