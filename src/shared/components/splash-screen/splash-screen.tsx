@@ -39,11 +39,12 @@ interface SplashScreenProps {
  * the closed state and its fade are the overlay's own inline style and the unmount runs on the
  * primitive's own timer, so neither a stylesheet nor a browser event can keep it in the tree,
  * and no frame between the fade's end and React's removal can show it again. In press mode the
- * cue under the caption is the `<button>` — it takes focus once the caller is ready, so the
- * accent ring frames a control, not the window — and a click anywhere on the overlay is also a
- * press (E4); until then the cue is disabled and nothing dismisses (E10). The capture-phase
- * `window` listener marks presses as handled before any host key map sees them (hosts honour
- * `defaultPrevented`), without preventing Tab, modifiers, Escape or function keys (review F5).
+ * cue under the caption is the `<button>` — it takes focus on open, so the accent ring frames a
+ * control, not the window — and a click anywhere on the overlay is also a press (E4); until the
+ * caller is ready the cue is `aria-disabled`, reads the pending label, and nothing dismisses
+ * (E10). The capture-phase `window` listener marks presses as handled before any host key map
+ * sees them (hosts honour `defaultPrevented`), without preventing Tab, modifiers, Escape or
+ * function keys (review F5).
  * Reduced motion is gated here with `useReducedMotion()`: a host's
  * `MotionConfig reducedMotion="user"` would keep opacity fades and their delays (review F4), and
  * this component mounts wherever the host puts it. Visibility is the caller's policy.
@@ -55,7 +56,7 @@ export function SplashScreen({ open, onDismiss, dismiss, title, subheading, ease
   const press = dismiss.mode === 'press'
   // A press counts only once the caller is ready; the cue is disabled until then (E10).
   const armed = press && (dismiss.ready ?? true)
-  const pressRef = useAutoFocus<HTMLButtonElement>({ enabled: open && armed })
+  const pressRef = useAutoFocus<HTMLButtonElement>({ enabled: open && press })
 
   // Stays mounted while fading out, then leaves on its own clock: the unmount is scheduled from
   // SPLASH_FADE_S, never from a transition event, so a missing stylesheet rule or a cancelled
@@ -127,8 +128,8 @@ export function SplashScreen({ open, onDismiss, dismiss, title, subheading, ease
           animate={{ opacity: 1 }}
           aria-busy={armed ? undefined : true}
           aria-describedby={title ? captionId : undefined}
-          className="rounded-full px-5 py-2.5 font-sans text-xs tracking-[0.18em] text-white/60 uppercase enabled:cursor-pointer enabled:hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--presentation-accent)"
-          disabled={!armed}
+          aria-disabled={armed ? undefined : true}
+          className="cursor-pointer rounded-full px-5 py-2.5 font-sans text-xs tracking-[0.18em] text-white/60 uppercase hover:text-white aria-disabled:cursor-default aria-disabled:hover:text-white/60 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--presentation-accent)"
           initial={animate ? { opacity: 0 } : false}
           transition={{ duration: SPLASH_CUE_DURATION_S, delay: SPLASH_CUE_DELAY_S, ease: 'easeOut' }}
           type="button"
