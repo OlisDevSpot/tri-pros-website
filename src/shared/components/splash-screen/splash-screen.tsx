@@ -54,7 +54,7 @@ export function SplashScreen({ open, onDismiss, dismiss, title, subheading, ease
   const reduced = useReducedMotion() ?? false
   const animate = !reduced
   const press = dismiss.mode === 'press'
-  // A press counts only once the caller is ready; the cue is disabled until then (E10).
+  // A press counts only once the caller is ready; the cue is aria-disabled until then (E10).
   const armed = press && (dismiss.ready ?? true)
   const pressRef = useAutoFocus<HTMLButtonElement>({ enabled: open && press })
 
