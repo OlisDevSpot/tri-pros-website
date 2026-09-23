@@ -4,6 +4,7 @@ import { Suspense } from 'react'
 import { AppSidebar } from '@/features/agent-dashboard/ui/components/app-sidebar'
 import { DashboardMobileNav } from '@/features/agent-dashboard/ui/components/dashboard-mobile-nav'
 import { DashboardSignIn } from '@/features/agent-dashboard/ui/components/dashboard-sign-in'
+import { MeetingSplashMount } from '@/features/meeting-flow/ui/components/meeting-splash-mount'
 import { GlobalDialogs } from '@/shared/components/dialogs/modals/global-dialogs'
 import { PushSubscriptionBanner } from '@/shared/components/push-subscription-banner'
 import { PwaInstallPrompt } from '@/shared/components/pwa-install-prompt'
@@ -18,6 +19,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <>
+      {/* Above the sidebar and the template so it is the first paint of a meeting (E9). */}
+      {session && <MeetingSplashMount />}
       <GlobalDialogs />
       <PwaInstallPrompt />
       <SidebarProvider defaultOpen={defaultOpen} data-no-gutter-stable>

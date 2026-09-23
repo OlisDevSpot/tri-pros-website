@@ -22,7 +22,6 @@ import { usePresentMode } from '@/features/meeting-flow/hooks/use-present-mode'
 import { computeContextFilledCount, CONTEXT_TOTAL_FIELDS } from '@/features/meeting-flow/lib/context-fill-count'
 import { toPresentationAgent } from '@/features/meeting-flow/lib/to-presentation-agent'
 import { ContextPanel } from '@/features/meeting-flow/ui/components/context-panel'
-import { MeetingSplashScreen } from '@/features/meeting-flow/ui/components/meeting-splash-screen'
 import { PersonaProfilePanel } from '@/features/meeting-flow/ui/components/persona-profile-panel'
 import { ProjectCountBadge } from '@/features/meeting-flow/ui/components/project-section/project-count-badge'
 import { ProjectSection } from '@/features/meeting-flow/ui/components/project-section/project-section'
@@ -58,17 +57,12 @@ interface MeetingFlowViewInnerProps extends MeetingFlowViewProps {
 }
 
 export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
-  const [currentStep] = useQueryState('step', stepParser)
-  const splash = useMeetingSplash({ meetingId, currentStep })
+  // The splash itself mounts from the dashboard layout (`MeetingSplashMount`, E9); the view only
+  // reads the shared store to go inert under it and to take focus back when it closes (E4).
+  const { open: splashOpen } = useMeetingSplash(meetingId)
   return (
     <ChannelProvider channelName={`meeting:${meetingId}`}>
-      <MeetingFlowViewInner meetingId={meetingId} splashOpen={splash.open} />
-      {/* Beside the inner view, not inside it: the inner view swaps its loading tree for the
-          ready tree, which would remount the splash and replay the mark; and outside the
-          stage's `isolate` wrappers, which would trap `z-9999` under the capsule (review F11).
-          It is also outside the inner view's `MotionConfig`: the primitive gates reduced
-          motion itself. */}
-      <MeetingSplashScreen open={splash.open} onDismiss={splash.dismiss} />
+      <MeetingFlowViewInner meetingId={meetingId} splashOpen={splashOpen} />
     </ChannelProvider>
   )
 }

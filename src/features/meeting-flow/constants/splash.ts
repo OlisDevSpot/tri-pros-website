@@ -1,11 +1,13 @@
 import { sessionStorageKey } from '@/shared/constants/storage-keys'
 
 export const MEETING_SPLASH_COPY = {
-  /** The press button's accessible name: its action. The caption is its description (review N3). */
+  /** The cue button's text and accessible name once the meeting has loaded: its action (review N3). */
   pressLabel: 'Begin the presentation',
+  /** The cue's text while the meeting is still loading behind the splash (E10). */
+  pendingLabel: 'Loading the presentation…',
 } as const
 
-/** Once per meeting per browser session (E5): `tri-pros:meeting-splash:<meetingId>`, written on the press. */
+/** Once per meeting per browser tab (E5), written on the press: `tri-pros:meeting-splash:<meetingId>`. */
 export function meetingSplashKey(meetingId: string): string {
   return sessionStorageKey('meeting-splash', meetingId)
 }
