@@ -13,5 +13,5 @@ export function PwaSplashScreen() {
   }, [])
 
   const [open, onDismiss] = useSessionOnce(sessionStorageKey('app-splash-shown'), isStandalone)
-  return <SplashScreen dismiss={{ mode: 'timed' }} motionKey="pwa-splash" open={open} onDismiss={onDismiss} />
+  return <SplashScreen dismiss={{ mode: 'timed' }} open={open} onDismiss={onDismiss} />
 }

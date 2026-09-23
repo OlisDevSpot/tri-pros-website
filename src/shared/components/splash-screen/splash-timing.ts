@@ -23,5 +23,8 @@ export const SPLASH_CAPTION_DURATION_S = 0.42
 export const SPLASH_CUE_DELAY_S = SPLASH_CAPTION_DELAY_S + SPLASH_CAPTION_DURATION_S + 0.18
 export const SPLASH_CUE_DURATION_S = 0.5
 
+/** The overlay's fade out, press and timed mode alike. */
+export const SPLASH_FADE_S = 0.3
+
 /** How long a timed splash holds: until the mark has landed, plus 100 ms of rest (C40). */
 export const SPLASH_VISIBLE_MS = Math.round(SPLASH_MARK_LANDS_S * 1000) + 100

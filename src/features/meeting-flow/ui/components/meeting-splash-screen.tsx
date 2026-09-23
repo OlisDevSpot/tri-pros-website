@@ -20,7 +20,6 @@ export function MeetingSplashScreen({ open, onDismiss }: MeetingSplashScreenProp
   return (
     <SplashScreen
       dismiss={{ mode: 'press', label: MEETING_SPLASH_COPY.pressLabel }}
-      motionKey="meeting-splash"
       open={open}
       subheading={opening.subheading}
       title={opening.title}

@@ -11,5 +11,5 @@ interface ProposalSplashScreenProps {
 /** The timed brand splash a homeowner sees once per session when opening a proposal link; a signed-in agent never does. */
 export function ProposalSplashScreen({ isAuthenticated }: ProposalSplashScreenProps) {
   const [open, onDismiss] = useSessionOnce(PROPOSAL_SPLASH_KEY, !isAuthenticated)
-  return <SplashScreen dismiss={{ mode: 'timed' }} motionKey="proposal-splash" open={open} onDismiss={onDismiss} />
+  return <SplashScreen dismiss={{ mode: 'timed' }} open={open} onDismiss={onDismiss} />
 }
