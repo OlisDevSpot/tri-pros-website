@@ -56,7 +56,7 @@ interface TradeSelectionProviderProps {
 export function TradeSelectionProvider({ flowContext, children }: TradeSelectionProviderProps) {
   const { onFlowStateChange } = flowContext
   const catalog = useConstructionCatalog()
-  const projects = useShowcaseProjects(catalog.scopesByTrade)
+  const projects = useShowcaseProjects(catalog.scopesById)
 
   const serverSelections = useMemo(
     () => flowContext.flowState?.tradeSelections ?? [],

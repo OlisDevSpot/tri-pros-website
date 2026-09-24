@@ -11,6 +11,8 @@ export interface CatalogIndex {
   tradesById: ReadonlyMap<string, Trade>
   tradesBySlug: ReadonlyMap<string, Trade>
   scopesByTrade: ReadonlyMap<string, TradeScopeGroup>
+  /** Scopes and add-ons by id: the one scope → trade lookup (`scopesById.get(id)?.tradeId`). */
+  scopesById: ReadonlyMap<string, Scope>
 }
 
 /**
@@ -19,6 +21,7 @@ export interface CatalogIndex {
  */
 export function buildCatalogIndex(trades: Trade[], scopes: Scope[]): CatalogIndex {
   const scopesByTrade = new Map<string, TradeScopeGroup>()
+  const scopesById = new Map<string, Scope>()
   for (const scope of scopes) {
     const group = scopesByTrade.get(scope.tradeId) ?? { scopes: [], addons: [] }
     if (scope.kind === 'addon') {
@@ -28,6 +31,7 @@ export function buildCatalogIndex(trades: Trade[], scopes: Scope[]): CatalogInde
       group.scopes.push(scope)
     }
     scopesByTrade.set(scope.tradeId, group)
+    scopesById.set(scope.id, scope)
   }
 
   return {
@@ -35,5 +39,6 @@ export function buildCatalogIndex(trades: Trade[], scopes: Scope[]): CatalogInde
     tradesById: new Map(trades.map(trade => [trade.id, trade])),
     tradesBySlug: new Map(trades.map(trade => [trade.slug, trade])),
     scopesByTrade,
+    scopesById,
   }
 }

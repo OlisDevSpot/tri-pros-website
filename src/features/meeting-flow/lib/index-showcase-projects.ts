@@ -1,21 +1,15 @@
 import type { ShowcaseProject, ShowcaseProjectIndex } from '@/features/meeting-flow/types'
-import type { TradeScopeGroup } from '@/shared/modules/construction/core/lib/build-catalog-index'
+import type { Scope } from '@/shared/modules/construction/core/schemas'
 import type { PortfolioProject } from '@/shared/modules/projects/core/types'
+import { hasHeroImage } from '@/shared/modules/projects/core/lib/has-hero-image'
 
 /** Portfolio rows to lookups by trade and scope. Rows without a hero image are skipped: the showcase has nothing to show for them. */
-export function indexShowcaseProjects(projects: PortfolioProject[], scopesByTrade: ReadonlyMap<string, TradeScopeGroup>): ShowcaseProjectIndex {
-  const tradeOfScope = new Map<string, string>()
-  for (const [tradeId, group] of scopesByTrade) {
-    for (const entry of [...group.scopes, ...group.addons]) {
-      tradeOfScope.set(entry.id, tradeId)
-    }
-  }
-
+export function indexShowcaseProjects(projects: PortfolioProject[], scopesById: ReadonlyMap<string, Scope>): ShowcaseProjectIndex {
   const byScope = new Map<string, ShowcaseProject[]>()
   const tradeHits = new Map<string, { project: ShowcaseProject, hits: number }[]>()
 
   for (const row of projects) {
-    if (!row.heroImage) {
+    if (!hasHeroImage(row)) {
       continue
     }
     const item: ShowcaseProject = {
@@ -29,7 +23,7 @@ export function indexShowcaseProjects(projects: PortfolioProject[], scopesByTrad
     const hitsPerTrade = new Map<string, number>()
     for (const scopeId of row.scopeIds) {
       byScope.set(scopeId, [...(byScope.get(scopeId) ?? []), item])
-      const tradeId = tradeOfScope.get(scopeId)
+      const tradeId = scopesById.get(scopeId)?.tradeId
       if (tradeId) {
         hitsPerTrade.set(tradeId, (hitsPerTrade.get(tradeId) ?? 0) + 1)
       }
