@@ -72,9 +72,21 @@ export function pickHomeownerQuotes(rows: PortfolioProject[], options: PickHomeo
     .map(candidate => candidate.quote)
 }
 
-/** Some stored quotes carry their own quotation marks; the slide draws its own. */
+/**
+ * Some stored quotes carry their own quotation marks; the slide draws its own. Only a matched
+ * wrapping pair comes off — a quote mark inside the text, like `…our "dream kitchen"`, stays.
+ */
 function unquote(text: string): string {
-  return text.trim().replace(/^[“"”]+|[“"”]+$/g, '').trim()
+  const trimmed = text.trim()
+  const curly = /^\u201C([\s\S]*)\u201D$/.exec(trimmed)
+  if (curly) {
+    return curly[1].trim()
+  }
+  const straight = /^"([\s\S]*)"$/.exec(trimmed)
+  if (straight) {
+    return straight[1].trim()
+  }
+  return trimmed
 }
 
 /** First name and last initial. Words without a letter (a marker, an emoji) are not names. */
@@ -85,5 +97,10 @@ function shortName(name: string | null): string | null {
     return null
   }
   const last = rest.at(-1)
-  return last ? `${first} ${Array.from(last)[0].toUpperCase()}.` : first
+  if (!last) {
+    return first
+  }
+  // The last word can carry a non-letter marker before the name, e.g. "(Smith)".
+  const initial = /\p{L}/u.exec(last)?.[0]
+  return initial ? `${first} ${initial.toUpperCase()}.` : first
 }

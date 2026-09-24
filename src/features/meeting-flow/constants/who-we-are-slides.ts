@@ -50,9 +50,9 @@ const REPUTATION: ReputationMark[] = [
   { kind: 'fact', value: reviews.bbb.rating, label: `${reviews.bbb.platform} rating` },
   { kind: 'fact', value: companyInfo.ownership, label: `${companyInfo.generations} generations` },
 ]
-// e.g. 9_000_000 -> '$9M'
-const valueDelivered = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 0 }).format(companyInfo.valueOfProjectsInDollars)
-const clientSatisfaction = `${Math.round(companyInfo.clientSatisfaction * 100)}%`
+// e.g. 9_000_000 -> '$9M'; truncated, not rounded, so $9.5M never reads as the unearned '$10M'.
+const valueDelivered = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 0, roundingMode: 'trunc' }).format(companyInfo.valueOfProjectsInDollars)
+const clientSatisfaction = `${Math.floor(companyInfo.clientSatisfaction * 100)}%`
 
 /**
  * The Who We Are slides (spec C §3). The hook and the closing are `full`; the eight slides
