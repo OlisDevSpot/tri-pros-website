@@ -13,7 +13,8 @@
 ## Global Constraints
 
 - **No database writes, in any environment, dev included.** Read-only queries only. Dev fixtures already cover every chapter shape (spec §5).
-- **No test runner.** No vitest/jest, no `package.json` change. Pure-function checks are throwaway `tsx` scripts in the session scratchpad (`$SCRATCH` below = the session's scratchpad directory), never committed.
+- **No test runner.** No vitest/jest, no `package.json` change. Pure-function checks are throwaway `tsx` scripts in the session scratchpad, never committed. `$SCRATCH` = `/tmp/claude-1000/-home-olis-solutions-olis-v3-nextjs-tri-pros-website/b2219856-9a14-407a-ab52-f91e3f5d57d6/scratchpad` (or the executing session's own scratchpad); run them from the repo root so `tsx` resolves `@/` inside project files (verified 2026-09-23).
+- A `// path/to/file.ts` first line in a code block only labels the file — do not copy it into the source (no file banners).
 - Verification per task: `pnpm tsc` and `pnpm lint` clean (`pnpm lint:fix` may fix import order). **Never `pnpm build`.**
 - **Commits:** work on `main`; `git add <explicit paths>` then `git commit -m "…" -- <same paths>`. The index already holds unrelated staged deletions (docs prune) — a bare `git commit` would sweep them in. Never `git add -A`, never stash/checkout/reset.
 - Every commit message ends with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
@@ -1569,7 +1570,7 @@ export function RankedQueue({ queue, activeIndex, showNoMatchNote, variant, onSe
 - [ ] **Step 9: `walkthrough-stage.tsx` (layout only)**
 
 ```tsx
-import type { ReactNode, Ref } from 'react'
+import type { ReactNode } from 'react'
 import { KEY_SHORTCUTS } from '@/features/meeting-flow/constants/keyboard-hints'
 
 interface WalkthroughStageProps {
@@ -1581,17 +1582,15 @@ interface WalkthroughStageProps {
   story: ReactNode
   /** Read by screen readers when the project or chapter changes. */
   announcement: string
-  ref?: Ref<HTMLDivElement>
 }
 
 /**
  * The step root. `data-step-root` + `tabIndex={-1}` let the view focus it after a step change, as a
  * page step's region is focused. Overlays pass pointer events through to the photo except on controls.
  */
-export function WalkthroughStage({ labelledBy, photo, heading, queueColumn, queueRow, story, announcement, ref }: WalkthroughStageProps) {
+export function WalkthroughStage({ labelledBy, photo, heading, queueColumn, queueRow, story, announcement }: WalkthroughStageProps) {
   return (
     <div
-      ref={ref}
       aria-keyshortcuts={KEY_SHORTCUTS.portfolio}
       aria-labelledby={labelledBy}
       className="@container/portfolio relative isolate min-h-0 flex-1 overflow-hidden bg-(--presentation-ground) text-white outline-none"
