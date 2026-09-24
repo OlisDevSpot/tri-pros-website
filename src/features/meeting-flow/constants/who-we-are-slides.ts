@@ -45,9 +45,9 @@ const TAP_TO_VIEW = 'Tap to view'
 
 /** The public review standing. It proves performance, so it sits on the Performance slide. */
 const REPUTATION: ReputationMark[] = [
-  { kind: 'rating', platform: reviews.google.platform, rating: reviews.google.rating.toFixed(1), count: reviews.google.count },
-  { kind: 'rating', platform: reviews.yelp.platform, rating: reviews.yelp.rating.toFixed(1), count: reviews.yelp.count },
-  { kind: 'fact', value: reviews.bbb.rating, label: `${reviews.bbb.platform} rating` },
+  { kind: 'rating', platform: reviews.google.platform, rating: reviews.google.rating.toFixed(1), count: reviews.google.count, href: reviews.google.url },
+  { kind: 'rating', platform: reviews.yelp.platform, rating: reviews.yelp.rating.toFixed(1), count: reviews.yelp.count, href: reviews.yelp.url },
+  { kind: 'fact', value: reviews.bbb.rating, label: `${reviews.bbb.platform} rating`, href: reviews.bbb.url },
   { kind: 'fact', value: companyInfo.ownership, label: `${companyInfo.generations} generations` },
 ]
 // e.g. 9_000_000 -> '$9M'; truncated, not rounded, so $9.5M never reads as the unearned '$10M'.

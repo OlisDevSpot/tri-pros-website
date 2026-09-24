@@ -111,10 +111,10 @@ export interface ProofFigure {
   label: string
 }
 
-/** One mark in the licensing slide's reputation line. */
+/** One mark in the Performance slide's reputation line; `href` opens where the mark can be checked. */
 export type ReputationMark
-  = | { kind: 'fact', value: string, label: string }
-    | { kind: 'rating', platform: 'Google' | 'Yelp', rating: string, count: number }
+  = | { kind: 'fact', value: string, label: string, href?: string }
+    | { kind: 'rating', platform: 'Google' | 'Yelp', rating: string, count: number, href: string }
 
 /** The meeting owner, introduced on the Communication slide. */
 export interface PresentationAgent {
@@ -146,18 +146,6 @@ export interface PresentationPartner {
   title: string
   image: string
   points: string[]
-}
-
-/** A portfolio homeowner's words, reduced to what the Performance slide shows. */
-export interface HomeownerQuote {
-  id: string
-  text: string
-  /** First name and last initial, e.g. "Sarah T."; `null` when the project has no usable name. */
-  shortName: string | null
-  city: string
-  trade: string | null
-  /** The project's hero image URL. */
-  image: string
 }
 
 /** A spot on a document's scan: fractions of its width and height. */

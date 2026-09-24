@@ -10,18 +10,19 @@ interface BeforeAfterCompareProps {
 }
 
 /**
- * The same room before and after under one divider the homeowner can drag. The slider's root
- * keeps `touch-action: pan-y`, so a vertical swipe on the photo still moves the presentation
- * and only a sideways drag moves the divider. The knob is solid: a backdrop blur over the photo
- * collapses once an ancestor animates. Its width is capped by the screen's height, so on a tall
- * screen the pair never crowds out the record.
+ * The same room before and after under one divider the homeowner can drag. It spans its
+ * parent's width; its height is the photo's own proportion, or the parent's height when that is
+ * shorter, in which case both photos crop top and bottom alike and stay aligned.
+ * The slider's root keeps `touch-action: pan-y`, so a vertical swipe on the photo still moves
+ * the presentation and only a sideways drag moves the divider. The knob is solid: a backdrop
+ * blur over the photo collapses once an ancestor animates.
  */
 export function BeforeAfterCompare({ media }: BeforeAfterCompareProps) {
   return (
     <div
-      className="relative mx-auto overflow-hidden rounded-md"
+      className="relative max-h-full w-full overflow-hidden rounded-md"
       data-compare
-      style={{ aspectRatio: `${media.width} / ${media.height}`, width: `min(100%, calc(42cqh * ${media.width} / ${media.height}))` }}
+      style={{ aspectRatio: `${media.width} / ${media.height}` }}
       onClick={(event) => {
         // react-compare-slider focuses the handle root on click, which then swallows the deck's
         // arrow keys; a pointer tap shouldn't keep that focus, only Tab should.

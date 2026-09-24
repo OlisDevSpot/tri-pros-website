@@ -1,5 +1,6 @@
 import { FaFacebook, FaGoogle, FaInstagram, FaLinkedin, FaYelp } from 'react-icons/fa'
 import { FaXTwitter } from 'react-icons/fa6'
+import { reviews } from './reviews'
 
 export const socials = [
   {
@@ -16,13 +17,13 @@ export const socials = [
   },
   {
     name: 'google',
-    href: 'https://www.google.com/search?q=Tri%20Pros%20Remodeling',
+    href: reviews.google.url,
     Icon: FaGoogle,
     className: 'hover:text-yellow-800 dark:hover:text-yellow-300',
   },
   {
     name: 'yelp',
-    href: 'https://www.yelp.com/biz/tri-pros-remodeling-los-angeles?osq=Tri+Pros+Remodeling',
+    href: reviews.yelp.url,
     Icon: FaYelp,
     className: 'hover:text-red-800 dark:hover:text-red-300',
   },
