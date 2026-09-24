@@ -35,6 +35,19 @@ A **shared canonical registry** of phone numbers that must NOT be contacted. TCP
 ## Funnel terms
 
 - **Funnel** — a marketing landing-page + multi-step lead-capture flow for one remodeling vertical (kitchens, bathrooms, complete-interior, …). Identified by a `FunnelSlug` that doubles as subdomain label, route segment, and registry key. Authored as a `FunnelSpec` (hero + landing marketing blocks + ordered steps).
-- **Trade** — the construction vertical a funnel sells (the Notion "All Construction Trades" entity). **1:1 with a funnel** (a funnel's slug is its trade key); A/B variation happens *within* a funnel via `spec.variants`, not by mapping two funnels to one trade. The component-free **trade-facts** module is the single source of a trade's facts: display name (`"Kitchen Renovation"`), Notion trade UUID, and SEO/OG meta. (`pixel.contentCategory` is measurement config and stays on the `FunnelSpec`, not a trade fact.)
+- **Trade** — the construction vertical a funnel sells (the Notion "All Construction Trades" entity). **1:1 with a funnel** (a funnel's slug is its trade key); A/B variation happens *within* a funnel via `spec.variants`, not by mapping two funnels to one trade. The component-free **trade-facts** module is the single source of a trade's facts: display name, Notion trade UUID, and SEO/OG meta. (⚠️ The hardcoded display names have drifted from Notion — `"Kitchen Renovation"` here vs `"Kitchen Remodel"` there; P2 of the construction epic resolves names from the catalog.) (`pixel.contentCategory` is measurement config and stays on the `FunnelSpec`, not a trade fact.)
 - **Step / Dimension** — one screen of a funnel flow. A `card-select` step is a **dimension** (layout, age, scope, timeline, …); its **options** are the tappable answers. A step's answer can **enrich** the lead (a self-describing label/value captured into `leadMetaJSON`).
 - **Marketing block** — a composable trust section on the funnel landing (reviews, portfolio, guarantee, process, faq, …), rendered via the `MarketingRegistry`.
+
+## Presentation terms
+
+Meeting-flow step 1 (Who We Are) is a presentation; Program and Portfolio will be too. The engine is a shared primitive; each feature authors its own slides.
+
+- **Presentation** — a full-height scroll surface that shows one slide per screen, built from an ordered list of slides. _Avoid_: deck, snap presentation.
+- **Slide** — one screen of a presentation: a heading, an optional background photo, and feature-specific content. Typed `PresentationSlide`. _Avoid_: beat (the story word in `docs/sales/`, never in code), section.
+- **Frame** — where a slide's heading sits. `column`: in a heading column beside the slide (the default). `full`: centred over the whole slide. _Avoid_: layout (that word belongs to the meeting *step*), split.
+- **Run** — consecutive `column` slides that share one heading column. Derived from the slides' frames, never declared. _Avoid_: group, section, chapter.
+- **Heading column** — the sticky column that names a run's active slide and fades between headings. _Avoid_: pinned column, sidebar.
+- **Content** — what a feature puts on a slide, shown beside the heading column (`column`) or under the centred heading (`full`). _Avoid_: body, stage, canvas.
+- **Subheading** — the second line under a title, on a slide heading or a splash caption. On a slide it may end in an accent-coloured tail. _Avoid_: line, subtitle.
+- **Splash screen** — the branded full-window mark shown at an entrance. It dismisses either **timed** (fades on its own) or **on press** (held until the viewer presses). Whether to show it at all (once per session, once per meeting) is the caller's policy, never the primitive's. _Avoid_: splash overlay.

@@ -1,8 +1,7 @@
 'use client'
 
-// LAZY: reads `projectsRouter.showroomDisplay.getAll` until the Who We Are round 2 projects read model lands
-// (docs/plans/2026-09-14-upgrading-meeting-flow-epic.md R3 `scopeIds` filter, R10 public projection, S1).
-// Swap the query in this file (Task 9); `ShowcaseProjectIndex` stays the contract for every consumer.
+// LAZY: reads `projectsRouter.showroomDisplay.getAll` until the Who We Are round 2 projects read model lands.
+// Swap the query in this file; `ShowcaseProjectIndex` stays the contract for every consumer.
 
 import type { ShowcaseProjectIndex } from '@/features/meeting-flow/types'
 import type { TradeScopeGroup } from '@/shared/modules/construction/core/lib/build-catalog-index'

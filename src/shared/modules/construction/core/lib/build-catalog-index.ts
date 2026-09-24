@@ -16,7 +16,6 @@ export interface CatalogIndex {
 /**
  * The whole catalog, indexed once. Pure — used by both the client hook and
  * any RSC path, so neither re-derives these maps.
- * see ../../DOCS.md#one-read-model
  */
 export function buildCatalogIndex(trades: Trade[], scopes: Scope[]): CatalogIndex {
   const scopesByTrade = new Map<string, TradeScopeGroup>()

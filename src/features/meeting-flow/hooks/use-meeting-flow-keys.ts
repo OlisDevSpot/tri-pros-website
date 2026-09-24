@@ -28,7 +28,6 @@ interface UseMeetingFlowKeysArgs {
  * `event.defaultPrevented` means "a Radix layer, the carousel or a slider consumed
  * this key". Single printable characters are never prevented by Radix typeahead,
  * hence the target guards.
- * Sources: docs/plans/2026-09-13-meeting-flow-keyboard-focus-research.md §1–2.
  */
 export function useMeetingFlowKeys({
   rootRef,
