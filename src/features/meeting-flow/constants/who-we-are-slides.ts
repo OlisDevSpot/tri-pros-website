@@ -24,8 +24,7 @@ const IMAGES = {
 
 /**
  * Placeholder until the real sample scope is uploaded to R2 at
- * `sample-scope-of-work/page-N.jpg`; the steps are in
- * docs/superpowers/specs/2026-09-13-who-we-are-corrections-design.md §4.
+ * `sample-scope-of-work/page-N.jpg`.
  */
 const SAMPLE_SCOPE: PresentationDocument = {
   title: 'Sample scope of work',
@@ -46,7 +45,6 @@ const TAP_TO_VIEW = 'Tap to view'
 /**
  * The Who We Are slides (spec C §3). The hook and the closing are `full`; the eight slides
  * between them are `column` and so form one run with one heading column.
- * Deck rules: see src/features/meeting-flow/DOCS.md#who-we-are-deck
  */
 export const WHO_WE_ARE_SLIDES: WhoWeAreSlide[] = [
   {

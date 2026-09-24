@@ -31,7 +31,6 @@ interface WhoWeAreStepProps {
  * the closing. The kind switch is exhaustive (L1); the `hero` slide is its heading and photo
  * alone. The shell reaches the engine only through its named props: the step-root marker
  * for focus, the key shortcuts, and the capsule clearance (spec C S9).
- * Deck rules: see src/features/meeting-flow/DOCS.md#who-we-are-deck
  */
 export function WhoWeAreStep({ agent, onContinue, ref }: WhoWeAreStepProps) {
   const renderSlide = ({ slide, index, frame }: IndexedSlide<WhoWeAreContent>) => {

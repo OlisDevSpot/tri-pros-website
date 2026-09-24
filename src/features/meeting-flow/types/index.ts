@@ -149,7 +149,7 @@ export interface PresentationPartner {
 
 /**
  * The feature-specific content of each Who We Are slide, by kind. `hero` is empty: the hook is
- * its heading and photo alone (owner, 2026-09-20). Deck rules: see ../DOCS.md#who-we-are-deck
+ * its heading and photo alone (owner, 2026-09-20).
  */
 export type WhoWeAreContent
   = | { kind: 'hero' }
