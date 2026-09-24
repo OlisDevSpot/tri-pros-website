@@ -30,7 +30,7 @@ export function AgentSection({ content, agent, ...slide }: AgentSectionProps) {
             <AgentCard agent={agent} role={content.cardRole} />
           </Reveal>
           <Reveal className="w-full" order={1}>
-            <ContactTimeline firstName={firstName} label={content.timelineLabel} stages={content.timeline} />
+            <ContactTimeline firstName={firstName} label={content.timelineLabel} timeline={content.timeline} />
           </Reveal>
         </div>
         <Reveal order={2}>
