@@ -34,7 +34,7 @@ import { TopBar } from '@/features/meeting-flow/ui/components/shell/top-bar'
 import { ClosingStep } from '@/features/meeting-flow/ui/components/steps/closing-step'
 import { CreateProposalStep } from '@/features/meeting-flow/ui/components/steps/create-proposal-step'
 import { DealStructureStep } from '@/features/meeting-flow/ui/components/steps/deal-structure-step'
-import { PortfolioStep } from '@/features/meeting-flow/ui/components/steps/portfolio-step'
+import { PortfolioStep } from '@/features/meeting-flow/ui/components/steps/portfolio'
 import { ProgramStep } from '@/features/meeting-flow/ui/components/steps/program-step'
 import { SpecialtiesStep } from '@/features/meeting-flow/ui/components/steps/specialties'
 import { WhoWeAreStep } from '@/features/meeting-flow/ui/components/steps/who-we-are'
@@ -321,13 +321,13 @@ function MeetingFlowViewInner({ meetingId, splashOpen }: MeetingFlowViewInnerPro
                       {stepConfig.id === 'who-we-are' && (
                         <WhoWeAreStep ref={presentationRef} agent={toPresentationAgent(meeting)} onContinue={handleNext} />
                       )}
+                      {stepConfig.id === 'portfolio' && <PortfolioStep ref={presentationRef} labelledBy={stepTitleId} />}
                     </>
                   )
                 : (
                     <StepRegion className={stepConfig.layout === 'split' ? 'overflow-hidden p-0 md:p-0' : undefined} labelledBy={stepTitleId}>
                       <h1 className="sr-only" id={stepTitleId}>{stepConfig.title}</h1>
                       {stepConfig.id === 'specialties' && <SpecialtiesStep />}
-                      {stepConfig.id === 'portfolio' && <PortfolioStep flowContext={flowContext} />}
                       {stepConfig.id === 'program' && (
                         <ProgramStep flowContext={flowContext} meetingType={meeting.meetingType} />
                       )}

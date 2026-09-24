@@ -35,7 +35,7 @@ export const MEETING_STEPS: MeetingStepConfig[] = [
     title: 'Past References & Projects',
     shortLabel: 'Portfolio',
     isCustomerFacing: true,
-    layout: 'page',
+    layout: 'presentation',
   },
   {
     id: 'deal-structure',
