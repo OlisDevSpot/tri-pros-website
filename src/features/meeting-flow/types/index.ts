@@ -147,6 +147,18 @@ export interface PresentationPartner {
   points: string[]
 }
 
+/** A portfolio homeowner's words, reduced to what the Performance slide shows. */
+export interface HomeownerQuote {
+  id: string
+  text: string
+  /** First name and last initial, e.g. "Sarah T."; `null` when the project has no usable name. */
+  shortName: string | null
+  city: string
+  trade: string | null
+  /** The project's hero image URL. */
+  image: string
+}
+
 /**
  * The feature-specific content of each Who We Are slide, by kind. `hero` is empty: the hook is
  * its heading and photo alone (owner, 2026-09-20).
