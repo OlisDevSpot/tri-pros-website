@@ -11,6 +11,7 @@ import { generateShareToken } from '@/shared/modules/proposals/core/lib/generate
 import { isProposalFrozen, touchesFrozenLockedFields } from '@/shared/modules/proposals/core/lib/proposal-lock'
 import { snapSowFromMeeting } from '@/shared/modules/proposals/core/lib/snap-sow-from-meeting'
 import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
+import { cloneGlobalIncentiveRows } from '@/shared/modules/proposals/incentives/dal/server/mutations'
 
 /**
  * Stable CRUD handlers for the proposals entity. Hooks + duplicate config live
@@ -100,5 +101,18 @@ export const proposalCrud = createCrudDal(proposalServerSpec, () => ({
       ownerId: ctx.session!.user.id,
       status: 'draft' as const,
     }),
+    // Proposal-COMPLETE duplicate for EVERY caller (router, meeting flow,
+    // scripts): the engine copies `spec.table` only, so the source's GLOBAL
+    // incentive rows are cloned here and the rollup re-driven once, merged into
+    // the returned row. Sequential, no transaction (W4 ruling R.1). W4 adds the
+    // SOW child rows' clone beside this call.
+    async after(row, _ctx, { source }) {
+      const cloned = dalVerifySuccess(await cloneGlobalIncentiveRows(source.id, row.id))
+      if (cloned === 0) {
+        return
+      }
+      const { finalTcpCents } = dalVerifySuccess(await recomputeProposalFinancials(row.id))
+      return { ...row, finalTcpCents }
+    },
   },
 }))

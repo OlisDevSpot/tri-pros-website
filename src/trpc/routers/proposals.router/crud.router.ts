@@ -1,15 +1,13 @@
 // ─── Proposals CRUD Router ──────────────────────────────────────────────────
 // The 5 single-row operations. Plain leaf: createCrudRouter builds its scoped
 // procedures inline from the spec (no createEntityRouter, no cast — epic S6a).
-// see ../../DOCS.md#crud-five-slots-fixed
 //
 // `crud` is the proposal module service itself: it carries the engine's five
-// slots on its top level (spread from proposalCrud) plus the proposal-COMPLETE
-// `duplicate` override (incentive rows cloned, rollup re-driven), so no per-slot
-// handler override lives here any more. Create enrichment (kind/token/SOW-snapshot)
-// and the duplicate exclude/override config live in the createCrudDal config
-// factory (modules/proposals/core/dal/server/crud.ts).
-// see ../../../shared/modules/proposals/core/DOCS.md#duplicate-resets-and-redrives
+// slots on its top level (spread from proposalCrud) plus the module's verbs, so
+// the router and every other caller share ONE server API. Create enrichment,
+// the lock ladder and the proposal-COMPLETE duplicate (incentive rows cloned +
+// rollup re-driven in `duplicate.after`) all live in the createCrudDal config
+// factory (modules/proposals/core/dal/server/crud.ts) — never here.
 
 import z from 'zod'
 

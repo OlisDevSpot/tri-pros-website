@@ -9,9 +9,10 @@
 //                              the proposal is on the lock ladder, atomically swap the GLOBAL
 //                              rows via the one engine-inexpressible DAL write, re-drive the
 //                              rollup, read back.
-//   clone                      orchestration: read the source's GLOBAL rows, write them onto
-//                              the target in ONE multi-row write (the same DAL swap `replace`
-//                              uses); the caller re-drives the rollup once.
+//   (no clone verb)            the source→target row copy is the DAL function
+//                              `cloneGlobalIncentiveRows` (dal/server/mutations.ts),
+//                              called from the proposals `duplicate.after` hook —
+//                              a DAL module never imports a service.
 //
 // Cross-service references (own service, parent/root, siblings) are resolved AT
 // CALL TIME inside method bodies — never at module top level. That is what makes
@@ -56,36 +57,6 @@ export const proposalIncentivesService = {
     })
   },
 
-  /**
-   * Clone the source proposal's GLOBAL incentive rows (sow_item_id IS NULL)
-   * onto the target, preserving type/position/label/amount/offer/notes/expiresAt.
-   * One read + one multi-row write (the same atomic swap `replace` uses — on a
-   * fresh copy the delete half is a no-op). No per-row rollup: the caller
-   * (the root's `duplicate`) re-drives `final_tcp_cents` once, using the
-   * returned count to skip the re-drive when nothing was copied.
-   */
-  async clone(_ctx: ScopedContext, input: { sourceId: string, targetId: string }): Promise<DalReturn<number>> {
-    return dalDbOperation(async () => {
-      const source = dalVerifySuccess(await listProposalIncentives(input.sourceId))
-      if (source.length === 0) {
-        return 0
-      }
-      return dalVerifySuccess(await replaceGlobalIncentiveRows(
-        input.targetId,
-        source.map(row => ({
-          proposalId: input.targetId,
-          sowItemId: null,
-          type: row.type,
-          position: row.position,
-          label: row.label,
-          amountCents: row.amountCents,
-          offer: row.offer,
-          notes: row.notes,
-          expiresAt: row.expiresAt,
-        })),
-      ))
-    })
-  },
 } as const
 
 export type ProposalIncentivesService = typeof proposalIncentivesService
