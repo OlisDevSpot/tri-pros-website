@@ -21,13 +21,7 @@ export function ProjectPhoto({ file, alt, upcoming, canAdvance, onAdvance }: Pro
   const reduceMotion = useReducedMotion()
 
   return (
-    <button
-      aria-label={PORTFOLIO_COPY.nextPhoto}
-      className="absolute inset-0 cursor-pointer outline-none disabled:cursor-default"
-      disabled={!canAdvance}
-      type="button"
-      onClick={onAdvance}
-    >
+    <>
       <AnimatePresence initial={false}>
         <motion.div
           key={file.id}
@@ -40,6 +34,14 @@ export function ProjectPhoto({ file, alt, upcoming, canAdvance, onAdvance }: Pro
           <OptimizedImage alt={alt} className="object-cover" fill file={file} priority sizes="100vw" />
         </motion.div>
       </AnimatePresence>
-    </button>
+      {/* Empty overlay: a labelled button whose children are presentational would swallow the photo's own alt text from screen readers. */}
+      <button
+        aria-label={PORTFOLIO_COPY.nextPhoto}
+        className="absolute inset-0 cursor-pointer outline-none focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-white disabled:cursor-default"
+        disabled={!canAdvance}
+        type="button"
+        onClick={onAdvance}
+      />
+    </>
   )
 }

@@ -31,10 +31,12 @@ export function StoryPhaseBar({ storyPhases, phaseIndex, photoIndex, onSelect }:
               active && 'text-white ring-1 ring-white/50',
             )}
             type="button"
+            // Keeps focus off the segment after a pointer click, so a following Space advances the photo instead of re-clicking (and resetting) this one.
+            onMouseDown={event => event.preventDefault()}
             onClick={() => onSelect(index)}
           >
-            <span aria-hidden className="absolute inset-0 origin-left bg-(--presentation-accent) transition-transform duration-300 motion-reduce:transition-none" style={{ transform: `scaleX(${fill})` }} />
-            <span className={cn('relative', fill === 1 && 'text-(--presentation-ground)')}>{storyPhase.label}</span>
+            <span aria-hidden className="absolute inset-x-0 bottom-0 h-1 origin-left bg-(--presentation-accent) transition-transform duration-300 motion-reduce:transition-none" style={{ transform: `scaleX(${fill})` }} />
+            <span className="relative">{storyPhase.label}</span>
             <span className="relative ml-1.5 font-semibold tracking-normal normal-case opacity-80">{count}</span>
           </button>
         )

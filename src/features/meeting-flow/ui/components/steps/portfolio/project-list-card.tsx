@@ -23,6 +23,8 @@ export function ProjectListCard({ match, number, active, compact = false, onSele
         active && 'border-(--presentation-accent) bg-[oklch(var(--presentation-scrim)/0.85)]',
       )}
       type="button"
+      // Keeps focus off the card after a pointer click, so a following Space advances the photo instead of re-clicking it.
+      onMouseDown={event => event.preventDefault()}
       onClick={onSelect}
     >
       {!compact && (

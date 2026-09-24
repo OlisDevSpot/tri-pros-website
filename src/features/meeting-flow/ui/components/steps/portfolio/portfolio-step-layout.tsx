@@ -36,7 +36,8 @@ export function PortfolioStepLayout({ labelledBy, photo, heading, listColumn, li
           <div className="pointer-events-auto min-w-0 flex-1">{heading}</div>
           <div className="pointer-events-auto hidden max-h-[calc(100cqh-var(--stage-clear-b)-2rem)] w-75 shrink-0 overflow-y-auto overscroll-contain pr-1 @5xl/portfolio:block">{listColumn}</div>
         </div>
-        <div className="mt-auto grid gap-presentation-group">
+        {/* Right padding matches the list column's width + gap, so the story block never sits under it on the narrower wide widths. */}
+        <div className="mt-auto grid gap-presentation-group @5xl/portfolio:pr-[calc(18.75rem+var(--spacing-presentation-group))]">
           <div className="pointer-events-auto @5xl/portfolio:hidden">{listRow}</div>
           <div className="pointer-events-auto grid max-w-190 gap-presentation-tight">{story}</div>
         </div>

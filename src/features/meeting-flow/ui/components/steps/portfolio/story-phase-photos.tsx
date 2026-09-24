@@ -36,6 +36,8 @@ export function StoryPhasePhotos({ photos, photoIndex, phaseLabel, onSelect }: S
             index === photoIndex && 'border-white',
           )}
           type="button"
+          // Keeps focus off the thumbnail after a pointer click, so a following Space advances the photo instead of re-clicking it.
+          onMouseDown={event => event.preventDefault()}
           onClick={() => onSelect(index)}
         >
           <OptimizedImage alt="" className="object-cover" fill file={photo} sizes="80px" />
