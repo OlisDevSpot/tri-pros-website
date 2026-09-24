@@ -1,7 +1,6 @@
 'use client'
 
-import type { MeetingFlowContext, PanelSection } from '@/features/meeting-flow/types'
-import type { PresentationHandle } from '@/shared/components/presentation/types'
+import type { MeetingFlowContext, MeetingStepHandle, PanelSection } from '@/features/meeting-flow/types'
 import type { MeetingOutcome } from '@/shared/constants/enums'
 import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { MeetingContext, MeetingFlowState } from '@/shared/entities/meetings/schemas'
@@ -79,7 +78,7 @@ function MeetingFlowViewInner({ meetingId, splashOpen }: MeetingFlowViewInnerPro
 
   const rootRef = useRef<HTMLDivElement>(null)
   const panelHeaderRef = useRef<HTMLDivElement>(null)
-  const presentationRef = useRef<PresentationHandle>(null)
+  const presentationRef = useRef<MeetingStepHandle>(null)
   const lastSectionRef = useRef<PanelSection>(DEFAULT_PANEL_SECTION)
   const previousPanelRef = useRef<PanelSection | null>(null)
   const [panel, setPanel] = useState<PanelSection | null>(null)

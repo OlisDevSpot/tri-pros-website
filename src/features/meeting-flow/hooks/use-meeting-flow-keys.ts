@@ -1,9 +1,9 @@
 'use client'
 
 import type { RefObject } from 'react'
-import type { PresentationHandle } from '@/shared/components/presentation/types'
+import type { MeetingStepHandle } from '@/features/meeting-flow/types'
 import { useEffect } from 'react'
-import { ARROW_KEYS, REPEATABLE_KEYS, TYPING_TARGET_SELECTOR } from '@/features/meeting-flow/constants/keyboard-hints'
+import { ACTIVATABLE_TARGET_SELECTOR, ARROW_KEYS, REPEATABLE_KEYS, TYPING_TARGET_SELECTOR } from '@/features/meeting-flow/constants/keyboard-hints'
 import { TOTAL_STEPS } from '@/features/meeting-flow/constants/step-config'
 
 interface UseMeetingFlowKeysArgs {
@@ -15,8 +15,8 @@ interface UseMeetingFlowKeysArgs {
   togglePresent: () => void
   panelOpen: boolean
   closePanel: () => void
-  /** `current` is null on page steps; arrows then fall through to the browser. */
-  presentationRef: RefObject<PresentationHandle | null>
+  /** `current` is null on page steps; arrows then fall through to the browser. `advance` exists only on steps where Space means something. */
+  presentationRef: RefObject<MeetingStepHandle | null>
 }
 
 /**
@@ -126,6 +126,16 @@ export function useMeetingFlowKeys({
           else {
             handle.prev()
           }
+          return
+        }
+        case ' ': {
+          const advance = presentationRef.current?.advance
+          // A focused button already clicks on Space; acting here too would move twice.
+          if (!advance || target.closest(ACTIVATABLE_TARGET_SELECTOR)) {
+            return
+          }
+          event.preventDefault()
+          advance()
           return
         }
         case 'p':
