@@ -1,5 +1,6 @@
 import type { Scope, Trade, TradeCategory } from '@/shared/modules/construction/core/schemas'
 
+import { hiddenTradeSlugs } from '@/features/landing/constants/hidden-trades'
 import { getTradeImages } from '@/features/landing/lib/get-trade-images'
 import { buildCatalogIndex } from '@/shared/modules/construction/core/lib/build-catalog-index'
 import { constructionService } from '@/shared/modules/construction/service'
@@ -21,7 +22,7 @@ export async function getTradesByPillar(pillarSlug: PillarSlug): Promise<TradeWi
   const { scopesByTrade } = buildCatalogIndex(allTrades, allScopes)
 
   const allowedTypes = PILLAR_CATEGORY_MAP[pillarSlug]
-  const pillarTrades = allTrades.filter(t => t.category && allowedTypes.includes(t.category))
+  const pillarTrades = allTrades.filter(t => t.category && allowedTypes.includes(t.category) && !hiddenTradeSlugs.includes(t.slug))
 
   // Fetch images per trade in parallel — each trade's scope IDs map to different projects
   const imagesByTradeId = new Map<string, string[]>()

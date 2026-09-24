@@ -75,7 +75,7 @@ export const pillarConfigs: Record<PillarSlug, PillarConfig> = {
     pairings: [
       { trade1Name: 'Bathroom', trade1Slug: 'bathroom-remodel', trade2Name: 'Flooring', trade2Slug: 'flooring', story: 'Updating the bathroom? The transition to new flooring in the hallway is natural and seamless.' },
       { trade1Name: 'Kitchen', trade1Slug: 'kitchen-remodel', trade2Name: 'Interior Paint', trade2Slug: 'patch-and-interior-paint', story: 'A remodeled kitchen paired with fresh paint transforms how the whole home feels.' },
-      { trade1Name: 'ADU', trade1Slug: 'adu', trade2Name: 'Engineering & Plans', trade2Slug: 'engineering-plans-and-blueprints', story: 'From blueprints to finished unit — one team, one process.' },
+      { trade1Name: 'Kitchen', trade1Slug: 'kitchen-remodel', trade2Name: 'Flooring', trade2Slug: 'flooring', story: 'New kitchen floors flow naturally into the rest of your home.' },
     ],
   },
 }
