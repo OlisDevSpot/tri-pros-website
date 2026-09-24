@@ -15,7 +15,7 @@ D turns that sentence into the interface: one project at a time, the photo filli
 
 ## 2. Scope
 
-**In:** D as mocked, with the owner's rulings (§6): the walkthrough stage, the chapter model, the three-tier ranking with fallback, the queue (column / row + sheet), the Space key, `phaseCounts` on portfolio rows, `tradeIdByScope` on the catalog index, a dev-only phased-media seed for verification.
+**In:** D as mocked, with the owner's rulings (§6): the walkthrough stage, the chapter model, the three-tier ranking with fallback, the queue (column / row + sheet), the Space key, `phaseCounts` on portfolio rows, `tradeIdByScope` on the catalog index. No data writes in any environment (W12).
 
 **Out (named so nobody builds them by accident):** distance ("4 mi from you") — no coordinates exist (0 of 788 customers geocoded; 8 of 43 public projects have a zip); profile echoes ("single-pane windows, like yours") — projects carry no property attributes; E's before/after slider; a Shift+Space back key; persisting the walkthrough position to flow state; testimonials (no field); any link to the marketing site.
 
@@ -176,7 +176,7 @@ interface WalkthroughChapter {
 
 - **Pure functions:** `rankPortfolioProjects` — scope beats trade; a zero-scope trade selection still yields trade-tier rows; no scope/trade hits → exactly 3 `featured` then `other`; no selections → `featured` first; hero-less rows excluded; tie-break order. `buildWalkthroughChapters` — all four phases; hero-only; Before + After + More; empty story fields; hero moved first; null detail. The repo has no test runner (`package.json` has none, no `*.test.ts`), so the plan either adds one with owner approval or checks these cases with a scratch script; decided at plan review.
 - `pnpm tsc && pnpm lint` clean at every commit.
-- **Dev seed (dev DB only):** assign `before` / `during` / `after` phases to the uncategorized photos of a handful of dev projects, covering: all three phases, During + After only, none. Needed because dev has zero phased media. Never run against prod.
+- **No data writes, dev included.** Dev has zero phased media, so the first visual pass covers the no-phase path (More photos only, story stacked) and everything else. The owner then assigns phases to a few dev projects by hand, and the phased chapters are re-tested after that.
 - **Playwright on dev**, 1440×900 and 820×1180, light and dark shell: 0 / 1 / 2 selected trades; selections with scope matches, trade-only matches, and no matches (featured fallback); Space through a full project into the next; ↓/↑; chapter and thumbnail taps; "All N" sheet at 820; bottom block clear of the capsule; reduced motion.
 
 ## 6. Decisions taken in this session (owner, 2026-09-23)
@@ -194,6 +194,7 @@ interface WalkthroughChapter {
 | W9 | Relevance falls back scope → trade → first `FALLBACK_LEAD_COUNT` projects; the ranking rules live in the feature, on shared primitives (`CatalogIndex.tradeIdByScope`, `countMediaPhases`, `PortfolioProject.phaseCounts`). |
 | W10 | `indexShowcaseProjects` moves onto `tradeIdByScope` in the same change. |
 | W11 | Story text: `before/during/afterDescription` when present, else challenge / solution / result. |
+| W12 | No database writes, dev included — dev projects are the owner's visual fixtures. The owner assigns phases by hand for the phased-chapter re-test. |
 
 ## 7. Follow-ups — not in this spec
 
