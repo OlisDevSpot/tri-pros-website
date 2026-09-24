@@ -2,6 +2,7 @@ import type { ScopeOrAddon } from '@/shared/services/providers/notion/lib/scopes
 import type { Trade } from '@/shared/services/providers/notion/lib/trades/schema'
 import { unstable_cache } from 'next/cache'
 
+import { hiddenTradeSlugs } from '@/features/landing/constants/hidden-trades'
 import { getTradeImages } from '@/features/landing/lib/get-trade-images'
 import { constructionDataService } from '@/shared/services/construction-data.service'
 
@@ -37,7 +38,7 @@ export async function getTradesByPillar(pillarSlug: PillarSlug): Promise<TradeWi
   const [allTrades, allScopes] = await Promise.all([getCachedTrades(), getCachedScopes()])
 
   const allowedTypes = PILLAR_TYPE_MAP[pillarSlug]
-  const pillarTrades = allTrades.filter(t => t.type && allowedTypes.includes(t.type))
+  const pillarTrades = allTrades.filter(t => t.type && allowedTypes.includes(t.type) && !hiddenTradeSlugs.includes(t.slug))
 
   const scopesByTrade = new Map<string, ScopeOrAddon[]>()
   for (const scope of allScopes) {
