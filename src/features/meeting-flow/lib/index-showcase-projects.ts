@@ -22,7 +22,7 @@ export function indexShowcaseProjects(projects: PortfolioProject[], scopesByTrad
       id: row.project.id,
       city: row.project.city,
       state: row.project.state,
-      duration: row.project.projectDuration,
+      projectDuration: row.project.projectDuration,
       heroImage: row.heroImage,
       scopeIds: row.scopeIds,
     }

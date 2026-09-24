@@ -2,7 +2,7 @@ import type { LucideIcon } from 'lucide-react'
 import type { CalendarEvent } from '@/shared/components/calendar/types'
 import type { PresentationSlide } from '@/shared/components/presentation/types'
 import type { MeetingOutcome, MeetingType } from '@/shared/constants/enums'
-import type { ProjectMediaFile } from '@/shared/db/schema'
+import type { Project, ProjectMediaFile } from '@/shared/db/schema'
 import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { MeetingFlowState, TradeSelection } from '@/shared/entities/meetings/schemas'
 import type { ConstructionCatalog } from '@/shared/modules/construction/core/hooks/use-construction-catalog'
@@ -244,14 +244,7 @@ export interface TradePairing {
 }
 
 /** A portfolio project reduced to what the showcase shows. */
-export interface ShowcaseProject {
-  id: string
-  city: string | null
-  state: string | null
-  duration: string | null
-  heroImage: ProjectMediaFile
-  scopeIds: string[]
-}
+export type ShowcaseProject = Pick<Project, 'id' | 'city' | 'state' | 'projectDuration'> & { heroImage: ProjectMediaFile, scopeIds: string[] }
 
 export interface ShowcaseProjectIndex {
   /** Projects tagged with any of the trade's scopes, most matching scopes first. */

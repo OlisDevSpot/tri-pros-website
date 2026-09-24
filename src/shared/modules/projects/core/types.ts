@@ -24,6 +24,8 @@ export interface PortfolioProject {
   phaseCounts: MediaPhaseCounts
 }
 
+export type PortfolioProjectWithHero = PortfolioProject & { heroImage: ProjectMediaFile }
+
 export interface PortfolioProjectDetail {
   project: Project
   media: ProjectMediaGroups
