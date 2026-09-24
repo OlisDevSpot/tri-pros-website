@@ -33,7 +33,6 @@
 //
 // Reads stay in the sub-module DALs (`<sub>/dal/server/queries.ts`); a service
 // reads only when it must cross into a peer service or a provider.
-// see ./core/DOCS.md#duplicate-resets-and-redrives
 
 import type { DalReturn, ScopedContext, SpecCrudHandlers } from '@/shared/dal/server/types'
 import type { Proposal } from '@/shared/db/schema/proposals'

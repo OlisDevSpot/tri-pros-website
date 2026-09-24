@@ -20,9 +20,6 @@ import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 export const proposalCrud = createCrudDal(proposalServerSpec, () => ({
   hooks: {
     create: {
-      // see ../DOCS.md#kind-derived-from-meeting-project
-      // see ../DOCS.md#share-token-generated-at-insert
-      // see ../DOCS.md#sow-snapshot-from-meeting-on-create
       // No blob scrub: `insertProposalSchema` omits the frozen blob columns
       // (fundingJSONDeprecated/formMetaJSONDeprecated) since the W3
       // write-seam flip, so nothing can arrive here to scrub.
@@ -53,7 +50,6 @@ export const proposalCrud = createCrudDal(proposalServerSpec, () => ({
       // edit path kills the envelope first (discard/recall). Field-scoped so
       // lifecycle writes (status, signing ids, contract timestamps — webhooks,
       // auto-approve, send flows) keep flowing on a locked proposal.
-      // see ../DOCS.md#proposal-lock-ladder
       async before(input, _ctx, meta) {
         if (!touchesFrozenLockedFields(input)) {
           return input
@@ -73,9 +69,13 @@ export const proposalCrud = createCrudDal(proposalServerSpec, () => ({
         }
       },
     },
+    // No `delete` hook: deleting a proposal cascades its proposal_media_files
+    // rows but leaves their R2 objects behind (project delete purges its media
+    // in entities/projects/dal/server/crud.ts). This was a rushed call to keep
+    // Who We Are round 2 small (2026-09-14, tracker Q15 → C30) and may not
+    // reflect the rule we actually want. Revisit before relying on it.
   },
 
-  // see ../DOCS.md#duplicate-resets-and-redrives
   // Default: copy full row minus PK. Exclude derived/status/timeline fields.
   // Routed through createImpl — create.before re-derives kind + generates fresh token.
   duplicate: {

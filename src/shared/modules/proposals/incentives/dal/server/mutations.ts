@@ -6,7 +6,6 @@
 // proposal service's `core.getById` (scoped), applies the lock ladder, calls
 // this, and re-drives `final_tcp_cents`. Single-row writes go through
 // `proposalIncentiveCrud` (crud.ts).
-// see ../../../core/DOCS.md#final-tcp-derived
 
 import type { DalReturn } from '@/shared/dal/server/types'
 import type { InsertProposalIncentive } from '@/shared/db/schema/proposal-incentives'

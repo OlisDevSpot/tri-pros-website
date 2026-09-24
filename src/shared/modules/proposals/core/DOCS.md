@@ -29,14 +29,14 @@ Status transitions are convention-enforced in handlers; no DB CHECK constraint g
 
 **Why**: kind is an aggregate of project linkage; agents can't pick it independently of the meeting's project state without drift.
 **Reference impl**: `lib/derive-proposal-kind.ts`, applied in `dal/server/crud.ts:hooks.create.before` (config factory)
-**Enforced by**: `insertProposalSchema.omit({ kind: true })` + server derivation
+**Enforced by**: `create.before` always overwrites `kind`, so a client-sent value never survives an insert. The insert schema carries `kind` as **optional** (not omitted) so Zod does not strip the hook's value.
 
 ### kind-frozen-after-insert
 
 Once set at insert, `kind` is never re-derived. If the meeting later acquires a `projectId` (because an initial-sale on the same meeting was approved and minted a project), existing proposals keep their original `kind`.
 
 **Why**: every project is anchored by the proposal that minted it (one `initial-sale`) plus N `additional-work` proposals; re-deriving would silently reclassify history.
-**Reference impl**: `lib/derive-proposal-kind.ts`; the spec excludes `kind` from update path
+**Reference impl**: `lib/derive-proposal-kind.ts`. The update schema is `insertProposalSchema.partial()` and does **not** exclude `kind` — no caller sends it, but nothing strips it either (field gating on the update path is owned by permissions epic #285).
 **Enforced by**: convention (no update handler touches `kind`)
 
 ### share-token-generated-at-insert
@@ -45,7 +45,7 @@ Every proposal gets a unique share token at insert: `tpr-{16 random hex}`. Store
 
 **Why**: a customer needs to view their proposal without logging in; the token IS the authorization for that read. Permanence means the URL emailed once stays valid.
 **Reference impl**: `dal/server/crud.ts:hooks.create.before` (generation); `server-spec.ts` (`shareable.tokenColumn` — the one spec-level field here)
-**Enforced by**: server-derived; `token` omitted from `insertProposalSchema`
+**Enforced by**: `create.before` always generates the token. The insert schema carries `token` as **optional** (not omitted), and the update schema does not exclude it (same note as `#kind-frozen-after-insert`; #285). The column has no unique constraint — uniqueness rests on the 64 random bits.
 
 ### sow-snapshot-from-meeting-on-create
 
@@ -61,7 +61,7 @@ A proposal can be read AND updated by an unauthenticated client via `?token=<sha
 
 **Why**: customer e-signature flow + finance-option selection both require unauthenticated read/update. Treating token as scope means the DAL is unchanged from the authed path.
 **Reference impl**: `server-spec.ts:shareable`
-**Enforced by**: `shareableMiddleware` (entity toolkit); see ADR-0002 §4 and [`../../trpc/DOCS.md`](../../trpc/DOCS.md) (when written)
+**Enforced by**: `shareableMiddleware` (entity toolkit); see ADR-0002 §4 and [`../../../../trpc/DOCS.md`](../../../../trpc/DOCS.md)
 
 **Homeowner-open push ("Proposal Viewed")**: every open through the share link records a `proposal_views` row and pushes to the proposal's **meeting participants — all of them — plus the info@ system user, always**. A proposal has no owner: it is reached through its meeting, and the people responsible for it are whoever is on that meeting (`#visibility-via-meeting-participation`); `ownerId` is the author and never a recipient (2026-09-10 ruling). No meeting ⇒ the view is still recorded and info@ alone is pushed. Recipients are resolved by the dispatcher, not the notification service. The homeowner's "Request Agreement" signal (`#proposal-lock-ladder`) uses the same recipient rule.
 **Reference impl**: `views/service.ts:record` → `sendViewNotificationJob` → `notification.service.ts:notifyProposalViewed`
@@ -337,7 +337,7 @@ Cost helpers return `null` (not 0) when cost data is incomplete — distinguishe
 
 ### agreement-context-as-coherent-unit
 
-Customer age (`customer.age` — plain column, epic #256/#259; see `../customers/DOCS.md#three-jsonb-profiles`) and the envelope-document selection (`proposal.envelopeDocumentIds` — plain array column since Wave 3; it previously lived at `formMetaJSON.envelopeDocumentIds`, now frozen) together form *the agreement context* — the set of inputs that determine what the Zoho Sign envelope will contain. Age is the source of truth; the document registry classifies every doc as required, optional, or forbidden for a given age + proposal kind. The selection is reconciled against age automatically on every change.
+Customer age (`customer.age` — plain column, epic #256/#259; see `../../../entities/customers/DOCS.md#three-jsonb-profiles`) and the envelope-document selection (`proposal.envelopeDocumentIds` — plain array column since Wave 3; it previously lived at `formMetaJSON.envelopeDocumentIds`, now frozen) together form *the agreement context* — the set of inputs that determine what the Zoho Sign envelope will contain. Age is the source of truth; the document registry classifies every doc as required, optional, or forbidden for a given age + proposal kind. The selection is reconciled against age automatically on every change.
 
 - **Single procedure**: `proposalsRouter.contracts.applyEnvelopeContext({ id, token?, age?, envelopeDocumentIds? })` is the only writer for these two fields. Either input is optional; at least one must be present. Server reconciles the saved selection against the (possibly just-applied) age before persisting.
 - **Tightening is now SCHEMA-level, not just conventional.** `envelopeDocumentIds` left form state entirely at the W3 form rewrite — `ProposalFormSchema` is `{ priceDisplayMode, project: projectSectionSchema, funding: fundingDataSchema }` (flat `funding`, no `meta` section; `project`'s `{data, meta}` envelope survives blob-backed until W4). There is no field in that shape for envelope documents, so `applyEnvelopeContext` isn't merely convention-designated as the sole writer — no other write path can touch the column at all, form or otherwise.
@@ -366,15 +366,15 @@ The proposal lifecycle (`status`, `sentAt`, `approvedAt`) and the contract lifec
 
 ### duplicate-resets-and-redrives
 
-Duplicating a proposal: status resets to `draft`, ownership reassigns to the current user, token + kind are freshly server-derived via `hooks.create.before` (which fires automatically because duplicate routes through `createImpl`). `duplicateImpl` copies the whole source row minus `spec.duplicate.exclude` + the PK, then applies `spec.duplicate.overrides` and routes the result through `createImpl` — which Zod-parses it against `insertProposalSchema`. So what actually survives is: `projectJSON`, the Wave-3 scalars (`priceDisplayMode`, `startingTcpCents`, `depositAmountCents`, `cashInDealCents`, `miscPriceCents`, `envelopeDocumentIds`), and `financeOptionId` / `meetingId`. The frozen blobs do NOT survive — `insertProposalSchema.omit()` strips `formMetaJSON` and `fundingJSON`, so duplicates are born with both NULL. `finalTcpCents` / `calcVersion` are likewise omitted and re-derived by `create.after`. Global incentive ROWS are not part of the row copy at all; `duplicateProposalWithIncentives` clones them explicitly and re-runs the rollup (see `dal/server/duplicate.ts`).
+Duplicating a proposal: status resets to `draft`, ownership reassigns to the current user, token + kind are freshly server-derived via `hooks.create.before` (which fires automatically because duplicate routes through `createImpl`). `duplicateImpl` copies the whole source row minus `spec.duplicate.exclude` + the PK, then applies `spec.duplicate.overrides` and routes the result through `createImpl` — which Zod-parses it against `insertProposalSchema`. So what actually survives is: `projectJSON`, the Wave-3 scalars (`priceDisplayMode`, `startingTcpCents`, `depositAmountCents`, `cashInDealCents`, `miscPriceCents`, `envelopeDocumentIds`), and `financeOptionId` / `meetingId`. The frozen blobs do NOT survive — `insertProposalSchema.omit()` strips `formMetaJSON` and `fundingJSON`, so duplicates are born with both NULL. `finalTcpCents` / `calcVersion` are likewise omitted and re-derived by `create.after`. Global incentive ROWS are not part of the row copy at all; `proposalService.duplicate` clones them explicitly and re-runs the rollup (see `../service.ts`).
 
 **Why**: a duplicate is "start a new proposal from this template," not "clone." Server-derivation prevents the duplicate from inheriting stale state (wrong kind if the meeting has changed projects, an existing-but-disclosed share token, etc.).
 **Reference impl**: `dal/server/crud.ts:duplicate` (exclude + overrides config); `dal/server/crud.ts:hooks.create.before` (kind + token derivation fires on every create, including duplicates)
 **Enforced by**: declarative duplicate config on the spec
 
-**Global incentive rows ARE copied — via a router-level override, not the spec.** `proposal_incentives` (Wave 2 child table) is invisible to `spec.duplicate` — the generic `duplicateImpl` (`dal-conventions.md`'s "CRUD `duplicate` slot does NOT copy child rows" rule) only ever touches `spec.table`, and `create.after` would recompute `final_tcp_cents` against zero rows, silently dropping discounts/exclusive-offers and overstating the duplicate's price. `dal/server/duplicate.ts:duplicateProposalWithIncentives` wraps `proposalCrud.duplicate`, copies the source proposal's GLOBAL rows (`sow_item_id IS NULL`) onto the new id, and re-runs `recomputeProposalFinancials`. Wired as the `crud.duplicate` handler override in `proposals.router/index.ts` (see `create-crud-router.ts`'s `handlers` escape hatch — same pattern `customers.router` uses for `getById`). This is the override the dal-conventions rule tells you to write.
-**Reference impl**: `dal/server/duplicate.ts:duplicateProposalWithIncentives`; wired in `src/trpc/routers/proposals.router/index.ts`
-**Enforced by**: router-level handler override (bypasses the generic DAL duplicate, not spec-declarative)
+**Global incentive rows ARE copied — via a service-level slot override, not the spec.** `proposal_incentives` (Wave 2 child table) is invisible to `spec.duplicate` — the generic `duplicateImpl` (`dal-conventions.md`'s "CRUD `duplicate` slot does NOT copy child rows" rule) only ever touches `spec.table`, and `create.after` would recompute `final_tcp_cents` against zero rows, silently dropping discounts/exclusive-offers and overstating the duplicate's price. `proposalService.duplicate` (`../service.ts`) wraps `proposalCrud.duplicate`, clones the source proposal's GLOBAL rows (`sow_item_id IS NULL`) onto the new id via `proposalService.incentives.clone`, and re-runs `recomputeProposalFinancials`. It takes effect because the crud router is constructed over the service (`createCrudRouter({ crud: proposalService })` in `proposals.router/crud.router.ts`) — constructing it over plain `proposalCrud` silently drops the incentive clone. **Planned** (multi-proposal epic, `docs/plans/2026-09-20-multi-proposal-meeting-flow-epic.md` C18/P10): the clone moves into a `createCrudDal` `duplicate.after` hook and this override is deleted, so duplicate behaves identically from every caller.
+**Reference impl**: `../service.ts:proposalService.duplicate`; wired in `src/trpc/routers/proposals.router/crud.router.ts`
+**Enforced by**: the service slot override (the generic DAL duplicate alone is not proposal-complete)
 
 ### proposal-media
 
@@ -396,7 +396,7 @@ Proposals can carry attached files (photos, videos, PDFs) in `proposal_media_fil
 - **Re-introducing server-side side-effects on `sendProposalEmail` that touch envelope state.** The QStash auto-dispatch was deleted for cause. Any future "auto-prepare envelope" feature must be client-orchestrated or a separate explicit mutation.
 - **Branching envelope content on a single dimension (age alone).** The retired `buildSigningRequest` picked tpr-HI base/senior purely from `customer.customerAge >= 65`, which silently shipped tpr-HI envelopes for additional-work proposals (which should ship AWD). All envelope-content decisions must flow through the registry's `applicableKinds` + `perKindRules` (multi-dimensional: kind × age × isLongSow). See ADR-0004 amendment 2026-05-28.
 - **Storing `finalTcp`.** Always derive via `computeFinalTcp` — see `#final-tcp-derived`.
-- **Setting `kind` from client input.** Server-derived; omitted from insert/update schemas.
+- **Setting `kind` from client input.** Server-derived; `create.before` overwrites whatever arrives. (The schemas carry it as optional — they do not omit it.)
 - **Hand-writing a `||` merge against `formMetaJSON` / `projectJSON` / `fundingJSON`.** The `jsonbMergeColumns` mechanism these were once registered in (Retired Wave 1) was deleted entirely in Wave 2 — every writer sends the whole document; a `||` merge would resurrect deliberately-cleared fields the same way the old mechanism did. See `#jsonb-merge-on-update`.
 - **Adding a CASL check on the share-token path.** Token IS authorization; CASL is `null`.
 - **Assuming proposal approval creates a project or sets `converted_to_project`.** It does neither — see `#conversion-trigger`. Project creation (`projects.router/business.router.ts` `create`) or `customerPipelinesRouter.assignToProject` are the only writers of that outcome.
@@ -411,10 +411,10 @@ Proposals can carry attached files (photos, videos, PDFs) in `proposal_media_fil
 
 - ADR-0002 — Entity Server System (server spec, scope/shareable middleware)
 - ADR-0004 — Proposal/Contract Independence + Synchronous Draft Creation
-- [`../../trpc/DOCS.md`](../../trpc/DOCS.md) — tRPC procedures, `shareableMiddleware`, `createCrudRouter` (when written)
-- [`../customers/DOCS.md`](../customers/DOCS.md) — phone-visibility threshold gates on the `sent`-or-later proposal lifecycle (when written)
-- [`../meetings/DOCS.md`](../meetings/DOCS.md) — meeting outcome `converted_to_project` is set by project creation/linking, not proposal approval (see `#conversion-trigger`)
-- [`../projects/DOCS.md`](../projects/DOCS.md) — project creation is a separate agent action gated by (not automated from) approval; one project per birthing meeting (when written)
+- [`../../../../trpc/DOCS.md`](../../../../trpc/DOCS.md) — tRPC procedures, `shareableMiddleware`, `createCrudRouter`
+- [`../../../entities/customers/DOCS.md`](../../../entities/customers/DOCS.md) — phone-visibility threshold gates on the `sent`-or-later proposal lifecycle
+- [`../../../entities/meetings/DOCS.md`](../../../entities/meetings/DOCS.md) — meeting outcome `converted_to_project` is set by project creation/linking, not proposal approval (see `#conversion-trigger`)
+- [`../../projects/core/DOCS.md`](../../projects/core/DOCS.md) — project creation is a separate agent action gated by (not automated from) approval; one project per birthing meeting
 - `docs/proposal/creation-guide.md` — sales-side proposal authoring playbook
 - `docs/proposal/scope-presentation.md` — SOW UX
 - `docs/proposal/financing-presentation.md` — financing UX

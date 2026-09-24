@@ -16,9 +16,6 @@
 // Cross-service references (own service, parent/root, siblings) are resolved AT
 // CALL TIME inside method bodies — never at module top level. That is what makes
 // the import cycle root → incentives → root safe (see ../service.ts).
-// see ../core/DOCS.md#final-tcp-derived
-// see ../core/DOCS.md#proposal-lock-ladder
-// see ../core/DOCS.md#duplicate-resets-and-redrives
 
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { ProposalIncentiveRow } from '@/shared/db/schema/proposal-incentives'
