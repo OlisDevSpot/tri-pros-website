@@ -1,8 +1,9 @@
 'use client'
 
+import type { CSSProperties } from 'react'
 import type { BeforeAfterMedia } from '@/features/meeting-flow/types'
 import Image from 'next/image'
-import { ReactCompareSlider, ReactCompareSliderHandle } from 'react-compare-slider'
+import { ReactCompareSlider, ReactCompareSliderCssVars, ReactCompareSliderHandle } from 'react-compare-slider'
 
 interface BeforeAfterCompareProps {
   media: BeforeAfterMedia
@@ -21,12 +22,25 @@ export function BeforeAfterCompare({ media }: BeforeAfterCompareProps) {
       className="relative mx-auto overflow-hidden rounded-md"
       data-compare
       style={{ aspectRatio: `${media.width} / ${media.height}`, width: `min(100%, calc(42cqh * ${media.width} / ${media.height}))` }}
+      onClick={(event) => {
+        // react-compare-slider focuses the handle root on click, which then swallows the deck's
+        // arrow keys; a pointer tap shouldn't keep that focus, only Tab should.
+        if (event.detail > 0 && document.activeElement instanceof HTMLElement && event.currentTarget.contains(document.activeElement)) {
+          document.activeElement.blur()
+        }
+      }}
     >
       <ReactCompareSlider
         className="size-full"
         handle={(
           <ReactCompareSliderHandle
-            buttonStyle={{ backdropFilter: 'none', WebkitBackdropFilter: 'none', backgroundColor: 'white', color: 'var(--presentation-ground)', border: 0 }}
+            buttonStyle={{
+              backdropFilter: 'none',
+              WebkitBackdropFilter: 'none',
+              backgroundColor: 'white',
+              border: 0,
+              [ReactCompareSliderCssVars.handleColor]: 'var(--presentation-ground)',
+            } as CSSProperties}
           />
         )}
         itemOne={(
