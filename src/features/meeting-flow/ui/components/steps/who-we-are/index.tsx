@@ -9,6 +9,7 @@ import { AgentSection } from '@/features/meeting-flow/ui/components/steps/who-we
 import { ClosingSection } from '@/features/meeting-flow/ui/components/steps/who-we-are/closing-section'
 import { ComparisonSection } from '@/features/meeting-flow/ui/components/steps/who-we-are/comparison-section'
 import { CredentialsSection } from '@/features/meeting-flow/ui/components/steps/who-we-are/credentials-section'
+import { PerformanceSection } from '@/features/meeting-flow/ui/components/steps/who-we-are/performance-section'
 import { PointSection } from '@/features/meeting-flow/ui/components/steps/who-we-are/point-section'
 import { SampleSection } from '@/features/meeting-flow/ui/components/steps/who-we-are/sample-section'
 import { TeamSection } from '@/features/meeting-flow/ui/components/steps/who-we-are/team-section'
@@ -45,6 +46,8 @@ export function WhoWeAreStep({ agent, onContinue, ref }: WhoWeAreStepProps) {
         return <SampleSection key={slide.id} {...props} content={content} />
       case 'point':
         return <PointSection key={slide.id} {...props} content={content} />
+      case 'performance':
+        return <PerformanceSection key={slide.id} {...props} content={content} />
       case 'agent':
         return <AgentSection key={slide.id} {...props} agent={agent} content={content} />
       case 'team':

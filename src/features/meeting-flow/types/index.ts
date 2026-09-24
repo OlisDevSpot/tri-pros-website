@@ -1,3 +1,4 @@
+import type { LucideIcon } from 'lucide-react'
 import type { CalendarEvent } from '@/shared/components/calendar/types'
 import type { PresentationSlide } from '@/shared/components/presentation/types'
 import type { MeetingOutcome, MeetingType } from '@/shared/constants/enums'
@@ -159,6 +160,27 @@ export interface HomeownerQuote {
   image: string
 }
 
+/** A spot on a document's scan: fractions of its width and height. */
+export interface FocusPoint {
+  x: number
+  y: number
+}
+
+/** One proof in a rail. `opens` names one of the slide's documents and the spot the tile cites. */
+export interface ProofTile {
+  kicker: string
+  icon: LucideIcon
+  value: string
+  label: string
+  opens?: { document: number, focus: FocusPoint }
+}
+
+/** The proofs under a slide's centrepiece. Always three: a fourth turns the rail into a stat wall. */
+export interface ProofRail {
+  eyebrow: string
+  tiles: readonly [ProofTile, ProofTile, ProofTile]
+}
+
 /**
  * The feature-specific content of each Who We Are slide, by kind. `hero` is empty: the hook is
  * its heading and photo alone (owner, 2026-09-20).
@@ -167,9 +189,10 @@ export type WhoWeAreContent
   = | { kind: 'hero' }
     | { kind: 'credentials', documents: PresentationDocument[], protection: ProofFigure[], reputation: ReputationMark[], openLabel: string }
     | { kind: 'sample', proof: ProofFigure, document: PresentationDocument, openLabel: string }
-    | { kind: 'point', proof: ProofFigure, media?: BeforeAfterMedia }
+    | { kind: 'point', proof: ProofFigure }
     | { kind: 'agent', cardRole: string, commitments: string[] }
     | { kind: 'team', proof: ProofFigure, partner: PresentationPartner, teamPhotoLabel: string }
+    | { kind: 'performance', media: BeforeAfterMedia, rail: ProofRail, reputation: ReputationMark[] }
     | { kind: 'comparison', rows: ComparisonRow[] }
     | { kind: 'closing', quote: string, cta: { label: string } }
 

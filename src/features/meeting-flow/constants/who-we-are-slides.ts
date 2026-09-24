@@ -1,4 +1,5 @@
-import type { PresentationDocument, WhoWeAreSlide } from '@/features/meeting-flow/types'
+import type { PresentationDocument, ReputationMark, WhoWeAreSlide } from '@/features/meeting-flow/types'
+import { FileTextIcon, HeartIcon, HomeIcon } from 'lucide-react'
 import { DUE_DILIGENCE_ITEMS } from '@/features/meeting-flow/constants/due-diligence'
 import { groupSlides } from '@/shared/components/presentation/group-slides'
 import { companyInfo, insurances, reviews } from '@/shared/constants/company'
@@ -42,6 +43,17 @@ export const COMPARISON_COLUMNS = {
 /** The visible cue on documents the homeowner can open (U11). */
 const TAP_TO_VIEW = 'Tap to view'
 
+/** The public review standing. It proves performance, so it sits on the Performance slide. */
+const REPUTATION: ReputationMark[] = [
+  { kind: 'rating', platform: reviews.google.platform, rating: reviews.google.rating.toFixed(1), count: reviews.google.count },
+  { kind: 'rating', platform: reviews.yelp.platform, rating: reviews.yelp.rating.toFixed(1), count: reviews.yelp.count },
+  { kind: 'fact', value: reviews.bbb.rating, label: `${reviews.bbb.platform} rating` },
+  { kind: 'fact', value: companyInfo.ownership, label: `${companyInfo.generations} generations` },
+]
+// e.g. 9_000_000 -> '$9M'
+const valueDelivered = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 0 }).format(companyInfo.valueOfProjectsInDollars)
+const clientSatisfaction = `${Math.round(companyInfo.clientSatisfaction * 100)}%`
+
 /**
  * The Who We Are slides (spec C §3). The hook and the closing are `full`; the eight slides
  * between them are `column` and so form one run with one heading column.
@@ -83,12 +95,7 @@ export const WHO_WE_ARE_SLIDES: WhoWeAreSlide[] = [
         { value: liabilityCoverage, label: 'Insurance per project' },
         { value: 'Bonded', label: 'Most contractors aren’t' },
       ],
-      reputation: [
-        { kind: 'fact', value: companyInfo.ownership, label: `${companyInfo.generations} generations` },
-        { kind: 'rating', platform: reviews.google.platform, rating: reviews.google.rating.toFixed(1), count: reviews.google.count },
-        { kind: 'rating', platform: reviews.yelp.platform, rating: reviews.yelp.rating.toFixed(1), count: reviews.yelp.count },
-        { kind: 'fact', value: reviews.bbb.rating, label: `${reviews.bbb.platform} rating` },
-      ],
+      reputation: REPUTATION,
       openLabel: TAP_TO_VIEW,
     },
   },
@@ -139,9 +146,17 @@ export const WHO_WE_ARE_SLIDES: WhoWeAreSlide[] = [
     id: 'performance',
     heading: { number: 6, title: 'Proof of performance', subheading: { text: performance.short } },
     content: {
-      kind: 'point',
-      proof: { value: performance.stat, label: performance.statLabel },
+      kind: 'performance',
       media: { before: IMAGES.bathroomBefore, after: IMAGES.bathroomAfter, alt: 'Bathroom remodel', width: 1280, height: 714 },
+      rail: {
+        eyebrow: 'The record',
+        tiles: [
+          { kicker: 'Projects', icon: HomeIcon, value: performance.stat, label: performance.statLabel },
+          { kicker: 'Delivered', icon: FileTextIcon, value: valueDelivered, label: 'In projects delivered' },
+          { kicker: 'Satisfaction', icon: HeartIcon, value: clientSatisfaction, label: 'Client satisfaction' },
+        ],
+      },
+      reputation: REPUTATION,
     },
   },
   {
