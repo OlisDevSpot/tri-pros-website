@@ -88,10 +88,6 @@ export function EditProjectView({ projectId }: Props) {
       challengeDescription: p.challengeDescription ?? null,
       solutionDescription: p.solutionDescription ?? null,
       resultDescription: p.resultDescription ?? null,
-      beforeDescription: p.beforeDescription ?? null,
-      duringDescription: p.duringDescription ?? null,
-      afterDescription: p.afterDescription ?? null,
-      mainDescription: p.mainDescription ?? null,
       scopeIds,
     } satisfies ProjectFormData
   }, [project.data])

@@ -1,7 +1,7 @@
-import type { ProjectMediaGroups } from '@/shared/modules/projects/core/types'
+import type { MediaPhase } from '@/shared/constants/enums/media'
 
-export const PHASE_CONFIG: { key: keyof ProjectMediaGroups, label: string, fallbackDescription: string }[] = [
-  { key: 'before', label: 'Before', fallbackDescription: 'Where the project began' },
-  { key: 'during', label: 'During', fallbackDescription: 'The transformation in progress' },
-  { key: 'after', label: 'After', fallbackDescription: 'The finished result' },
+export const PHASE_CONFIG: { key: MediaPhase, fallbackDescription: string }[] = [
+  { key: 'before', fallbackDescription: 'Where the project began' },
+  { key: 'during', fallbackDescription: 'The transformation in progress' },
+  { key: 'after', fallbackDescription: 'The finished result' },
 ]

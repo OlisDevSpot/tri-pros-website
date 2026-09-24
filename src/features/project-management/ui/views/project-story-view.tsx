@@ -54,7 +54,7 @@ export function ProjectStoryView({ detail }: Props) {
       <StoryHero project={project} heroImage={heroImage} tradesWithScopes={tradesWithScopes} />
       <StoryChallenge project={project} mainImage={media.uncategorized[0]} />
       <StoryBeforeAfter project={project} media={media} />
-      {hasTimelinePhotos && <StoryTimeline project={project} media={media} />}
+      {hasTimelinePhotos && <StoryTimeline media={media} />}
       <StorySolution project={project} tradesWithScopes={tradesWithScopes} />
       <StoryGallery media={media} />
       <StoryTestimonial project={project} />
