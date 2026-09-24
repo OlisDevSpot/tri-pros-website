@@ -21,6 +21,11 @@ export const SHELL_COPY = {
   type: 'Type',
   outcome: 'Outcome',
   keyboardHeading: 'Keyboard',
+  sync: {
+    live: { label: 'Live', detail: 'Changes from other devices appear here as they happen.' },
+    reconnecting: { label: 'Reconnecting', detail: 'Changes from other devices will appear once reconnected.' },
+    offline: { label: 'Offline', detail: 'Changes from other devices won\'t appear here.' },
+  },
 } as const
 
 export const PANEL_SECTION_LABELS: Record<PanelSection, string> = {

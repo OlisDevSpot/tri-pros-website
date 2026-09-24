@@ -5,6 +5,7 @@ import type { PanelSection } from '@/features/meeting-flow/types'
 import { BrainIcon, CalendarClockIcon, ClipboardCheckIcon, ClipboardListIcon } from 'lucide-react'
 import { PANEL_ID } from '@/features/meeting-flow/constants/shell'
 import { PANEL_SECTION_LABELS, SHELL_COPY } from '@/features/meeting-flow/constants/shell-copy'
+import { SyncStatusIndicator } from '@/features/meeting-flow/ui/components/sync-status-indicator'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/lib/utils'
@@ -15,6 +16,7 @@ interface InspectorRailProps {
   contextFilledCount: number
   contextTotalCount: number
   personaHasData: boolean
+  syncStatus: string
   onSelect: (section: PanelSection) => void
 }
 
@@ -22,8 +24,9 @@ interface InspectorRailProps {
  * The lg+ strip on the stage's right edge: one button per panel section. Sits
  * above the panel (`z-30` over `z-20`) so the panel slides out from behind it.
  * Stays visible in present mode; the internal material is one click away.
+ * The sync dot is pinned to the rail's foot, away from the section buttons.
  */
-export function InspectorRail({ openSection, projectBadge, contextFilledCount, contextTotalCount, personaHasData, onSelect }: InspectorRailProps) {
+export function InspectorRail({ openSection, projectBadge, contextFilledCount, contextTotalCount, personaHasData, syncStatus, onSelect }: InspectorRailProps) {
   const items: { section: PanelSection, icon: ReactNode, badge?: ReactNode, accent?: boolean }[] = [
     { section: 'meeting', icon: <CalendarClockIcon className="size-5" /> },
     { section: 'project', icon: <ClipboardCheckIcon className="size-5" />, badge: projectBadge },
@@ -71,6 +74,7 @@ export function InspectorRail({ openSection, projectBadge, contextFilledCount, c
           </Button>
         )
       })}
+      <SyncStatusIndicator className="mt-auto" side="left" status={syncStatus} />
     </aside>
   )
 }

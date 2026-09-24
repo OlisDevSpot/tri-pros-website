@@ -386,6 +386,7 @@ function MeetingFlowViewInner({ meetingId, splashOpen }: MeetingFlowViewInnerPro
               openSection={panel}
               personaHasData={hasCustomerProfileData(customer)}
               projectBadge={<ProjectCountBadge />}
+              syncStatus={syncStatus}
               onSelect={selectFromRail}
             />
           </div>
