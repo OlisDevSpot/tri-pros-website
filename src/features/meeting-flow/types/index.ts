@@ -181,6 +181,12 @@ export interface ProofRail {
   tiles: readonly [ProofTile, ProofTile, ProofTile]
 }
 
+/** One stage of the homeowner's line to their contact. The caption names the meeting owner by first name. */
+export interface TimelineStage {
+  when: string
+  caption: (firstName: string) => string
+}
+
 /**
  * The feature-specific content of each Who We Are slide, by kind. `hero` is empty: the hook is
  * its heading and photo alone (owner, 2026-09-20).
@@ -190,7 +196,7 @@ export type WhoWeAreContent
     | { kind: 'credentials', documents: PresentationDocument[], rail: ProofRail, openLabel: string }
     | { kind: 'sample', proof: ProofFigure, document: PresentationDocument, openLabel: string }
     | { kind: 'point', proof: ProofFigure }
-    | { kind: 'agent', cardRole: string, commitments: string[] }
+    | { kind: 'agent', cardRole: string, timelineLabel: string, timeline: TimelineStage[], rail: ProofRail }
     | { kind: 'team', proof: ProofFigure, partner: PresentationPartner, teamPhotoLabel: string }
     | { kind: 'performance', media: BeforeAfterMedia, rail: ProofRail, reputation: ReputationMark[] }
     | { kind: 'comparison', rows: ComparisonRow[] }

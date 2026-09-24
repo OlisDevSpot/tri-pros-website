@@ -1,5 +1,5 @@
 import type { PresentationDocument, ReputationMark, WhoWeAreSlide } from '@/features/meeting-flow/types'
-import { BadgeCheckIcon, FileTextIcon, HeartIcon, HomeIcon, ShieldCheckIcon } from 'lucide-react'
+import { BadgeCheckIcon, CameraIcon, ClockIcon, FileTextIcon, HeartIcon, HomeIcon, ShieldCheckIcon, UserIcon } from 'lucide-react'
 import { DUE_DILIGENCE_ITEMS } from '@/features/meeting-flow/constants/due-diligence'
 import { groupSlides } from '@/shared/components/presentation/group-slides'
 import { companyInfo, insurances, reviews } from '@/shared/constants/company'
@@ -119,11 +119,21 @@ export const WHO_WE_ARE_SLIDES: WhoWeAreSlide[] = [
     content: {
       kind: 'agent',
       cardRole: 'Your point of contact',
-      commitments: [
-        'Calls and texts answered the same business day',
-        'A progress update with photos, every week of the job',
-        'A walk through the job with you before work starts',
+      timelineLabel: 'From today to the final walkthrough',
+      timeline: [
+        { when: 'Today', caption: firstName => `You meet ${firstName}` },
+        { when: 'Before work starts', caption: () => 'Walk the job together' },
+        { when: 'During the job', caption: firstName => `${firstName} keeps you posted` },
+        { when: 'Final walkthrough', caption: firstName => `Still ${firstName}` },
       ],
+      rail: {
+        eyebrow: 'What you can count on',
+        tiles: [
+          { kicker: 'Contact', icon: UserIcon, value: communication.stat, label: 'Dedicated contact, start to finish' },
+          { kicker: 'Replies', icon: ClockIcon, value: 'Same day', label: 'Calls and texts answered' },
+          { kicker: 'Updates', icon: CameraIcon, value: 'Weekly', label: 'Progress update with photos' },
+        ],
+      },
     },
   },
   {
