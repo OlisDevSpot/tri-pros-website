@@ -43,6 +43,11 @@ export interface UpdateAfterMeta<TTable extends PgTable, TUpdate = Update<TTable
   input: TUpdate
 }
 
+/** Meta for a duplicate `after` hook. `source` is the row that was copied. */
+export interface DuplicateAfterMeta<TTable extends PgTable> {
+  source: Row<TTable>
+}
+
 export interface CrudSlotHookMap<TTable extends PgTable, TId extends string | number, TInsert = Insert<TTable>, TUpdate = Update<TTable>> {
   create: {
     before?: (input: TInsert, ctx: ScopedContext) => MaybePromise<TInsert>
@@ -81,6 +86,15 @@ export interface CrudConfig<TTable extends PgTable, TId extends string | number 
   duplicate?: {
     exclude?: readonly string[]
     overrides?: (source: Row<TTable>, ctx: ScopedContext) => Partial<TInsert>
+    /**
+     * Fires once the copy exists — after `createImpl` (and therefore after the
+     * create before/after hooks) returned success — with the created row and
+     * the SOURCE row. The place for child-row cloning the engine cannot express
+     * (`duplicateImpl` copies `spec.table` only). Return a replacement row to
+     * thread it back to the caller, or void. There is no `duplicate.before`:
+     * `overrides` is the before-shaping seam. Fires for every origin.
+     */
+    after?: (row: Row<TTable>, ctx: ScopedContext, meta: DuplicateAfterMeta<TTable>) => MaybePromise<Row<TTable> | void>
   }
 }
 

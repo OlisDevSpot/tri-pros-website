@@ -241,7 +241,16 @@ async function duplicateImpl<TTable extends PgTable, TId extends string | number
   const overrides = cfg.duplicate?.overrides?.(source, ctx) ?? {}
   const insertData = { ...base, ...overrides } as unknown as TInsert
 
-  return createImpl<TTable, TId, TInsert, TUpdate>(spec, cfg, ctx, insertData, callsite)
+  const created = await createImpl<TTable, TId, TInsert, TUpdate>(spec, cfg, ctx, insertData, callsite)
+  if (!created.success || !cfg.duplicate?.after) {
+    return created
+  }
+
+  // duplicate.after — the seam for cloning child rows the row copy cannot see.
+  // Runs inside dalDbOperation so a ThrowableDalError from the hook becomes a
+  // structured DalError instead of escaping as a throw.
+  const after = cfg.duplicate.after
+  return dalDbOperation(async () => (await after(created.data, ctx, { source })) ?? created.data)
 }
 
 function getPkColumn<TTable extends PgTable>(
