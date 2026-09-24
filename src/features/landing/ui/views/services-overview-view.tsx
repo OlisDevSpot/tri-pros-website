@@ -27,7 +27,7 @@ export function ServicesOverviewView() {
           <PillarCard
             title="Luxury Renovations"
             description="The home you've always wanted — built by people who'll still be here when you need us. Kitchens, bathrooms, flooring, additions, and more."
-            tradePreview={['Kitchen', 'Bathroom', 'Flooring', 'ADU']}
+            tradePreview={['Kitchen', 'Bathroom', 'Flooring']}
             href={ROOTS.landing.servicesPillar('luxury-renovations')}
             pillarType="luxury"
           />
