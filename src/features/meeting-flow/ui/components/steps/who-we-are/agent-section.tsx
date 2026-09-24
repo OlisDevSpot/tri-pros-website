@@ -25,7 +25,7 @@ export function AgentSection({ content, agent, ...slide }: AgentSectionProps) {
   return (
     <Slide {...slide}>
       <GrowthLayout className="grid-rows-[1fr_auto] gap-presentation-zone @max-[40rem]/presentation:gap-presentation-group">
-        <div className="grid content-center justify-items-center gap-presentation-zone @max-[40rem]/presentation:gap-presentation-group">
+        <div className="grid content-center justify-items-center gap-presentation-zone @max-[40rem]/presentation:gap-presentation-tight">
           <Reveal data-agent-card order={0}>
             <AgentCard agent={agent} role={content.cardRole} />
           </Reveal>
