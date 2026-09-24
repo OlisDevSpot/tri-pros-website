@@ -23,6 +23,16 @@ export function usePortfolioNavigation(matches: PortfolioMatch[]) {
   const found = state.projectId === null ? -1 : matches.findIndex(match => match.row.project.id === state.projectId)
   const projectIndex = Math.max(found, 0)
   const current = matches[projectIndex]
+
+  // Nothing shown yet, or a re-match dropped the project on screen: adopt the fallback (matches[0])
+  // as the project on screen now, so state names what is actually shown — not a stale id — before a
+  // later re-match asks "is it still listed?". Guarded by `found === -1`, which this update clears,
+  // so it converges after one extra render (React's documented "adjust state during render" pattern;
+  // an effect would show the wrong project for one extra frame first).
+  if (current && found === -1) {
+    setState({ projectId: current.row.project.id, phaseIndex: 0, photoIndex: 0 })
+  }
+
   const detailQuery = usePortfolioProjectDetail(matches, projectIndex)
 
   // An errored detail is not pending, so it falls through to the hero story phase instead of loading forever.
