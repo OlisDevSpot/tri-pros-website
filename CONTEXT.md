@@ -41,7 +41,7 @@ A **shared canonical registry** of phone numbers that must NOT be contacted. TCP
 
 ## Presentation terms
 
-Meeting-flow step 1 (Who We Are) is a presentation; Program and Portfolio will be too. The engine is a shared primitive; each feature authors its own slides.
+Meeting-flow step 1 (Who We Are) is a presentation, and Program will be too. Portfolio (step 3) shares the presentation layout and ground but shows one project at a time through its story phases, not slides. The engine is a shared primitive; each feature authors its own slides.
 
 - **Presentation** — a full-height scroll surface that shows one slide per screen, built from an ordered list of slides. _Avoid_: deck, snap presentation.
 - **Slide** — one screen of a presentation: a heading, an optional background photo, and feature-specific content. Typed `PresentationSlide`. _Avoid_: beat (the story word in `docs/sales/`, never in code), section.
@@ -51,3 +51,14 @@ Meeting-flow step 1 (Who We Are) is a presentation; Program and Portfolio will b
 - **Content** — what a feature puts on a slide, shown beside the heading column (`column`) or under the centred heading (`full`). _Avoid_: body, stage, canvas.
 - **Subheading** — the second line under a title, on a slide heading or a splash caption. On a slide it may end in an accent-coloured tail. _Avoid_: line, subtitle.
 - **Splash screen** — the branded full-window mark shown at an entrance. It dismisses either **timed** (fades on its own) or **on press** (held until the viewer presses). Whether to show it at all (once per session, once per meeting) is the caller's policy, never the primitive's. _Avoid_: splash overlay.
+
+## Project story terms
+
+How a project is told, on every surface (portfolio page, meeting-flow Portfolio step).
+
+- **Project story** — challenge → solution → result (`challengeDescription`, `solutionDescription`, `resultDescription`). The one standard for telling a project. _Avoid_: phase text, caption, timeline description; also not the landing page's homeowner-quote carousel (`features/landing/lib/experience-project-stories.ts`, `ProjectStorySlide`), which is a different thing despite its name.
+- **Media phase** — before · during · after · uncategorized (labelled "Gallery"), on each project photo (`MediaPhase`, `PHASE_LABELS`).
+- **Story phase** — a media phase that has photos, with the story told against it: challenge → Before, solution → During, result → After. A part whose phase has no photos joins the next story phase, else the last. With no media loaded, the hero stands in (`ProjectStoryPhase`, `buildProjectStoryPhases`). _Avoid_: chapter, step.
+- **Story strength** — how fully a project's photos tell its story: how many of Before · During · After have photos, then how many photos those phases hold (`compareStoryStrength`).
+- **Portfolio match** — why a portfolio project is shown in a meeting: `scope` (shares a selected scope), `trade` (in a selected trade), `fallback` (the strongest few when nothing matches), `none` (`PortfolioMatch`, `matchPortfolioProjects`). _Avoid_: tier, rank, featured.
+- **Match labels** — the pills naming a match: scope names, or the trade name.
