@@ -4,9 +4,11 @@ import type { CSSProperties } from 'react'
 import type { BeforeAfterMedia } from '@/features/meeting-flow/types'
 import Image from 'next/image'
 import { ReactCompareSlider, ReactCompareSliderCssVars, ReactCompareSliderHandle } from 'react-compare-slider'
+import { cn } from '@/shared/lib/utils'
 
 interface BeforeAfterCompareProps {
   media: BeforeAfterMedia
+  className?: string
 }
 
 /**
@@ -17,10 +19,10 @@ interface BeforeAfterCompareProps {
  * the presentation and only a sideways drag moves the divider. The knob is solid: a backdrop
  * blur over the photo collapses once an ancestor animates.
  */
-export function BeforeAfterCompare({ media }: BeforeAfterCompareProps) {
+export function BeforeAfterCompare({ media, className }: BeforeAfterCompareProps) {
   return (
     <div
-      className="relative max-h-full w-full overflow-hidden rounded-md"
+      className={cn('relative max-h-full w-full overflow-hidden rounded-md', className)}
       data-compare
       style={{ aspectRatio: `${media.width} / ${media.height}` }}
       onClick={(event) => {

@@ -1,5 +1,5 @@
 import type { PresentationDocument, ReputationMark, WhoWeAreSlide } from '@/features/meeting-flow/types'
-import { BadgeCheckIcon, CameraIcon, ClockIcon, FileTextIcon, HeartIcon, HomeIcon, ShieldCheckIcon, UserIcon } from 'lucide-react'
+import { BadgeCheckIcon, CameraIcon, ClockIcon, FileTextIcon, HeartIcon, HomeIcon, ShieldCheckIcon, UserIcon, UsersIcon } from 'lucide-react'
 import { DUE_DILIGENCE_ITEMS } from '@/features/meeting-flow/constants/due-diligence'
 import { groupSlides } from '@/shared/components/presentation/group-slides'
 import { companyInfo, insurances, reviews } from '@/shared/constants/company'
@@ -45,14 +45,15 @@ const TAP_TO_VIEW = 'Tap to view'
 
 /** The public review standing. It proves performance, so it sits on the Performance slide. */
 const REPUTATION: ReputationMark[] = [
-  { kind: 'rating', platform: reviews.google.platform, rating: reviews.google.rating.toFixed(1), count: reviews.google.count, href: reviews.google.url },
-  { kind: 'rating', platform: reviews.yelp.platform, rating: reviews.yelp.rating.toFixed(1), count: reviews.yelp.count, href: reviews.yelp.url },
-  { kind: 'fact', value: reviews.bbb.rating, label: `${reviews.bbb.platform} rating`, href: reviews.bbb.url },
-  { kind: 'fact', value: companyInfo.ownership, label: `${companyInfo.generations} generations` },
+  { kind: 'stars', platform: reviews.google.platform, rating: reviews.google.rating.toFixed(1), count: reviews.google.count, href: reviews.google.url },
+  { kind: 'stars', platform: reviews.yelp.platform, rating: reviews.yelp.rating.toFixed(1), count: reviews.yelp.count, href: reviews.yelp.url },
+  { kind: 'grade', platform: reviews.bbb.platform, grade: reviews.bbb.rating, href: reviews.bbb.url },
 ]
 // e.g. 9_000_000 -> '$9M'; truncated, not rounded, so $9.5M never reads as the unearned '$10M'.
 const valueDelivered = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 0, roundingMode: 'trunc' }).format(companyInfo.valueOfProjectsInDollars)
 const clientSatisfaction = `${Math.floor(companyInfo.clientSatisfaction * 100)}%`
+// A non-breaking hyphen: a narrow record tile must not split 'family-owned' across lines.
+const ownershipLabel = `Generations, ${companyInfo.ownership.toLowerCase().replaceAll('-', '\u2011')}`
 
 /**
  * The Who We Are slides (spec C §3). The hook and the closing are `full`; the eight slides
@@ -166,6 +167,7 @@ export const WHO_WE_ARE_SLIDES: WhoWeAreSlide[] = [
         tiles: [
           { kicker: 'Projects', icon: HomeIcon, value: performance.stat, label: performance.statLabel },
           { kicker: 'Delivered', icon: FileTextIcon, value: valueDelivered, label: 'In projects delivered' },
+          { kicker: 'Ownership', icon: UsersIcon, value: String(companyInfo.generations), label: ownershipLabel },
           { kicker: 'Satisfaction', icon: HeartIcon, value: clientSatisfaction, label: 'Client satisfaction' },
         ],
       },

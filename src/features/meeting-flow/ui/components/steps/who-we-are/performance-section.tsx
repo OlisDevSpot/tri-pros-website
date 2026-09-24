@@ -14,18 +14,17 @@ type PerformanceSectionProps = SlideProps<WhoWeAreContentOf<'performance'>>
 /**
  * Point 6: a room the homeowner can drag from before to after, then the record and the public
  * standing, each rating one tap from the reviews behind it. One screen like every other point:
- * the compare spans the column and gives up height before the record does.
+ * the compare spans the column and gives up height before the record does. A phone-width
+ * presentation has no height left for it, so there the slide is the record and the reviews.
  */
 export function PerformanceSection({ content, ...slide }: PerformanceSectionProps) {
   return (
     <Slide {...slide}>
-      <PointLayout media={<BeforeAfterCompare media={content.media} />} mediaHeight="own">
-        <Reveal className="grid gap-presentation-tight" order={0}>
+      <PointLayout media={<BeforeAfterCompare className="@max-[30rem]/presentation:hidden" media={content.media} />} mediaHeight="own">
+        <Reveal className="grid gap-presentation-group" order={0}>
           <ProofRail rail={content.rail} />
-          <ul className="flex flex-wrap items-center gap-x-[2.4cqw] gap-y-2 border-t border-white/10 pt-presentation-tight text-presentation-body">
-            {content.reputation.map(mark => (
-              <ReputationMark key={mark.kind === 'fact' ? mark.value : mark.platform} mark={mark} />
-            ))}
+          <ul aria-label="Public reviews" className="grid grid-cols-3 gap-presentation-tight">
+            {content.reputation.map(mark => <ReputationMark key={mark.platform} mark={mark} />)}
           </ul>
         </Reveal>
       </PointLayout>

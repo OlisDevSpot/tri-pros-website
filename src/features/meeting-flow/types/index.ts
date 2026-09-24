@@ -111,10 +111,10 @@ export interface ProofFigure {
   label: string
 }
 
-/** One mark in the Performance slide's reputation line; `href` opens where the mark can be checked. */
+/** A public rating on the Performance slide; `href` opens where the homeowner can check it. */
 export type ReputationMark
-  = | { kind: 'fact', value: string, label: string, href?: string }
-    | { kind: 'rating', platform: 'Google' | 'Yelp', rating: string, count: number, href: string }
+  = | { kind: 'stars', platform: 'Google' | 'Yelp', rating: string, count: number, href: string }
+    | { kind: 'grade', platform: 'BBB', grade: string, href: string }
 
 /** The meeting owner, introduced on the Communication slide. */
 export interface PresentationAgent {
@@ -163,10 +163,13 @@ export interface ProofTile {
   opens?: { document: number, focus: FocusPoint }
 }
 
-/** The proofs under a slide's centrepiece. Always three: a fourth turns the rail into a stat wall. */
+/**
+ * The proofs under a slide's centrepiece: three, or four on Performance, whose record is four
+ * figures of one kind (owner, 2026-09-24). More turns the rail into a stat wall.
+ */
 export interface ProofRail {
   eyebrow: string
-  tiles: readonly [ProofTile, ProofTile, ProofTile]
+  tiles: readonly [ProofTile, ProofTile, ProofTile] | readonly [ProofTile, ProofTile, ProofTile, ProofTile]
 }
 
 /** One stage of the homeowner's line to their contact. The caption names the meeting owner by first name. */
