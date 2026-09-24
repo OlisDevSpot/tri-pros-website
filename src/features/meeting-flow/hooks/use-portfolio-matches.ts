@@ -12,13 +12,14 @@ export function usePortfolioMatches() {
   const { catalog } = useTradeCatalogContext()
   const query = usePortfolioProjects({ staleTime: SHOWCASE_PROJECTS_STALE_MS })
 
+  const isPending = query.isPending || catalog.isLoading
+  // Navigation adopts matches[0] as the opening project, so it must not see a pre-catalog order.
   const matches = useMemo(
-    () => matchPortfolioProjects(query.data ?? [], selections, catalog),
-    [query.data, selections, catalog],
+    () => (isPending ? [] : matchPortfolioProjects(query.data ?? [], selections, catalog)),
+    [isPending, query.data, selections, catalog],
   )
   const showNoMatchNote = selections.length > 0 && !matches.some(match => match.kind === 'scope' || match.kind === 'trade')
 
-  // Before the catalog loads, `scopesById` is empty, so trade matches would first classify as
-  // fallback and then re-sort once it arrives; waiting on it too keeps the opening project stable.
-  return { matches, showNoMatchNote, isPending: query.isPending || catalog.isLoading, isError: query.isError, refetch: query.refetch }
+  // A failed background refetch keeps the cached list on screen; only a list that never loaded shows the error.
+  return { matches, showNoMatchNote, isPending, isError: query.isError && query.data === undefined, refetch: query.refetch }
 }

@@ -42,7 +42,7 @@ export function PortfolioStep({ labelledBy, ref }: PortfolioStepProps) {
   if (isPending) {
     return (
       <PortfolioStepLayout
-        announcement=""
+        announcement={PORTFOLIO_COPY.loading}
         heading={<Skeleton className="h-12 w-2/3 bg-white/10" />}
         labelledBy={labelledBy}
         listColumn={null}
@@ -59,7 +59,7 @@ export function PortfolioStep({ labelledBy, ref }: PortfolioStepProps) {
         announcement={PORTFOLIO_COPY.errorTitle}
         heading={(
           <ErrorState className="h-auto border-white/15 text-white" title={PORTFOLIO_COPY.errorTitle}>
-            <Button className="min-h-11 border-white/35 font-semibold text-white hover:bg-white/10" variant="outline" onClick={() => void refetch()}>
+            <Button className="min-h-11 border-white/35 font-semibold text-white hover:bg-white/10 hover:text-white" variant="outline" onClick={() => void refetch()}>
               {PORTFOLIO_COPY.retry}
             </Button>
           </ErrorState>

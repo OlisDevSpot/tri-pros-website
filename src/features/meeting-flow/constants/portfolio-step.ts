@@ -12,6 +12,7 @@ export const PORTFOLIO_COPY = {
   empty: 'No portfolio projects to show yet',
   errorTitle: 'The portfolio did not load',
   retry: 'Try again',
+  loading: 'Loading portfolio',
   startCue: 'Tap or press Space',
   nextCue: 'Next:',
   nextPhoto: 'Next photo',

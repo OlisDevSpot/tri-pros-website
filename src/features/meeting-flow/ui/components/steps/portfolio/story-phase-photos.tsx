@@ -1,7 +1,7 @@
 'use client'
 
 import type { ProjectMediaFile } from '@/shared/db/schema'
-import { useEffect, useRef } from 'react'
+import { useScrollStripToActive } from '@/features/meeting-flow/hooks/use-scroll-strip-to-active'
 import { OptimizedImage } from '@/shared/components/optimized-image'
 import { cn } from '@/shared/lib/utils'
 
@@ -13,17 +13,13 @@ interface StoryPhasePhotosProps {
 }
 
 export function StoryPhasePhotos({ photos, photoIndex, phaseLabel, onSelect }: StoryPhasePhotosProps) {
-  const activeRef = useRef<HTMLButtonElement>(null)
-
-  useEffect(() => {
-    activeRef.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-  }, [photoIndex, photos])
+  const { stripRef, activeRef } = useScrollStripToActive<HTMLDivElement, HTMLButtonElement>(photoIndex, photos)
 
   if (photos.length < 2) {
     return null
   }
   return (
-    <div className="flex gap-1.5 overflow-x-auto overscroll-contain pb-1">
+    <div ref={stripRef} className="relative flex gap-1.5 overflow-x-auto overscroll-contain pb-1">
       {photos.map((photo, index) => (
         <button
           key={photo.id}
