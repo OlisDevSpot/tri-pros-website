@@ -74,7 +74,7 @@ export function pickHomeownerQuotes(rows: PortfolioProject[], options: PickHomeo
 
 /** Some stored quotes carry their own quotation marks; the slide draws its own. */
 function unquote(text: string): string {
-  return text.trim().replace(/^"+|"+$/g, '').trim()
+  return text.trim().replace(/^[“"”]+|[“"”]+$/g, '').trim()
 }
 
 /** First name and last initial. Words without a letter (a marker, an emoji) are not names. */
