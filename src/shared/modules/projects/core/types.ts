@@ -1,4 +1,5 @@
 import type { Project, ProjectMediaFile } from '@/shared/db/schema'
+import type { MediaPhaseCounts } from '@/shared/modules/projects/media/types'
 
 export interface PublicProject { project: Project, heroImage: ProjectMediaFile | null }
 
@@ -18,6 +19,7 @@ export interface PortfolioProject {
   project: Project
   heroImage: ProjectMediaFile | null
   scopeIds: string[]
+  phaseCounts: MediaPhaseCounts
 }
 
 export interface PortfolioProjectDetail {

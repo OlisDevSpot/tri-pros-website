@@ -11,6 +11,7 @@ import { buildOrderBy } from '@/shared/dal/server/lib/query/sort'
 import { db } from '@/shared/db'
 import { projectMediaFiles, projects, x_projectScopes } from '@/shared/db/schema'
 import { hasAssociatedMeeting } from '@/shared/modules/projects/core/lib/visibility'
+import { getMediaPhaseCountsByProjectIds } from '@/shared/modules/projects/media/dal/server/queries'
 
 export async function getPortfolioProjects(): Promise<PortfolioProject[]> {
   const rows = await db
@@ -43,15 +44,18 @@ export async function getPortfolioProjects(): Promise<PortfolioProject[]> {
     return []
   }
 
-  // Fetch scope IDs (Notion UUIDs) for all projects
-  const scopeRows = await db
-    .select({
-      projectId: x_projectScopes.projectId,
-      scopeId: x_projectScopes.scopeId,
-    })
-    .from(x_projectScopes)
+  const projectIds = uniqueRows.map(row => row.project.id)
+  const [scopeRows, phaseCounts] = await Promise.all([
+    db
+      .select({
+        projectId: x_projectScopes.projectId,
+        scopeId: x_projectScopes.scopeId,
+      })
+      .from(x_projectScopes)
+      .where(inArray(x_projectScopes.projectId, projectIds)),
+    getMediaPhaseCountsByProjectIds(projectIds),
+  ])
 
-  // Group scope IDs by project
   const scopesByProject = new Map<string, string[]>()
   for (const row of scopeRows) {
     if (!scopesByProject.has(row.projectId)) {
@@ -64,6 +68,7 @@ export async function getPortfolioProjects(): Promise<PortfolioProject[]> {
     project: row.project,
     heroImage: row.heroImage,
     scopeIds: scopesByProject.get(row.project.id) ?? [],
+    phaseCounts: phaseCounts.get(row.project.id)!,
   }))
 }
 
