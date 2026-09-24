@@ -187,7 +187,7 @@ export interface ProofRail {
  */
 export type WhoWeAreContent
   = | { kind: 'hero' }
-    | { kind: 'credentials', documents: PresentationDocument[], protection: ProofFigure[], reputation: ReputationMark[], openLabel: string }
+    | { kind: 'credentials', documents: PresentationDocument[], rail: ProofRail, openLabel: string }
     | { kind: 'sample', proof: ProofFigure, document: PresentationDocument, openLabel: string }
     | { kind: 'point', proof: ProofFigure }
     | { kind: 'agent', cardRole: string, commitments: string[] }

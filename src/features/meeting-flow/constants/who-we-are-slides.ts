@@ -1,5 +1,5 @@
 import type { PresentationDocument, ReputationMark, WhoWeAreSlide } from '@/features/meeting-flow/types'
-import { FileTextIcon, HeartIcon, HomeIcon } from 'lucide-react'
+import { BadgeCheckIcon, FileTextIcon, HeartIcon, HomeIcon, ShieldCheckIcon } from 'lucide-react'
 import { DUE_DILIGENCE_ITEMS } from '@/features/meeting-flow/constants/due-diligence'
 import { groupSlides } from '@/shared/components/presentation/group-slides'
 import { companyInfo, insurances, reviews } from '@/shared/constants/company'
@@ -90,12 +90,15 @@ export const WHO_WE_ARE_SLIDES: WhoWeAreSlide[] = [
           height: 3300,
         },
       ],
-      protection: [
-        { value: `#${license.licenseNumber}`, label: 'CA contractor license' },
-        { value: liabilityCoverage, label: 'Insurance per project' },
-        { value: 'Bonded', label: 'Most contractors aren’t' },
-      ],
-      reputation: REPUTATION,
+      rail: {
+        eyebrow: 'What protects you',
+        tiles: [
+          // Focus points are fractions of the current scans: re-measure them when a document is replaced.
+          { kicker: 'License', icon: ShieldCheckIcon, value: `#${license.licenseNumber}`, label: 'CA contractor license', opens: { document: 0, focus: { x: 0.29, y: 0.35 } } },
+          { kicker: 'Insurance', icon: FileTextIcon, value: liabilityCoverage, label: 'Insurance per project', opens: { document: 1, focus: { x: 0.62, y: 0.45 } } },
+          { kicker: 'Bond', icon: BadgeCheckIcon, value: 'Bonded', label: 'Most contractors aren’t' },
+        ],
+      },
       openLabel: TAP_TO_VIEW,
     },
   },
