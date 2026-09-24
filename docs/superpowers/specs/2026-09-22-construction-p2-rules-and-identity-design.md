@@ -66,8 +66,8 @@ Everything lands under `core/`, following `modules/proposals/core/`. Types are c
 | `core/constants/energy-efficient-categories.ts` | `ENERGY_EFFICIENT_CATEGORIES: readonly TradeCategory[] = ['Energy Efficiency']`. | F11 |
 | `core/constants/enums.ts` | `constructionTypes` and `ConstructionType` deleted. Nothing else changes. | A5 |
 | `core/schemas/index.ts` | `pricingUnits = ['unit', 'sqft', 'space', 'linear ft', 'bsq'] as const`, `PricingUnit`; `scopeSchema.unitOfPricing: z.enum(pricingUnits)` with **no default** — today's `.default('unit')` can mask a blank select, so plan 1 step 5 first reports scopes with a blank `Unit of Pricing` and the owner fills them in Notion before the enum lands; after that a blank row is skipped and warned, like `kind`. | A5 |
-| `core/lib/build-catalog-index.ts` | `CatalogIndex` gains `scopesById: ReadonlyMap<string, Scope>`. | F9 |
-| `core/lib/resolve-catalog-ids.ts` | `resolveTrades(ids, index)` and `resolveScopes(ids, index)` → `{ found: T[]; orphans: string[] }`, stored order preserved. | F9 |
+| `core/lib/build-catalog-index.ts` | `CatalogIndex` gains `scopesById: ReadonlyMap<string, Scope>`. **Delivered early** by the portfolio step plan (`b17f7ae3`, `docs/superpowers/plans/2026-09-23-portfolio-step-project-story.md` Task 5). | F9 |
+| `core/lib/resolve-catalog-ids.ts` | `resolveTrades(ids, index)` and `resolveScopes(ids, index)` → `{ found: T[]; orphans: string[] }`, stored order preserved. **Delivered early** by the portfolio step plan (`b17f7ae3`, `docs/superpowers/plans/2026-09-23-portfolio-step-project-story.md` Task 5). The result type is exported as `ResolvedCatalogIds<T>`. | F9 |
 | `core/lib/is-energy-efficient-trade.ts` | `isEnergyEfficientTrade(trade): boolean` — `trade.category` ∈ `ENERGY_EFFICIENT_CATEGORIES`. | F11 |
 | `core/lib/pick-primary-trade.ts` | `pickPrimaryTrade(ids, index): Trade \| undefined` — first id present in the catalog, stored order. | F11 |
 | `core/lib/primary-pairing.ts` | `primaryPairing(slug): TradePairing \| undefined` — `TRADE_PAIRINGS[slug]?.[0]`. | D4 |
@@ -157,7 +157,7 @@ Meeting-flow:
 - `programs.ts:2` → module import. Nothing else in the file.
 - `resolve-stage-trade.ts` keeps the URL override and the `catalog.trades[0]` fallback; the middle step becomes `pickPrimaryTrade(selectedTradeSelections(selections).map(s => s.tradeId), catalog)?.id`.
 - `persona-profile-maps.ts` `byTrade` maps → `Partial<Record<TradeSlug, string>>`, same bodies. `select-trade-benefits.ts` takes a slug. `build-persona-profile.ts` input gains `tradesById: ReadonlyMap<string, Trade>`; `meeting-flow.router.ts:67` reads `constructionService.getCatalog()` and passes it. `trade-benefit-exclusions.ts` re-cites D8/P4 instead of D4.
-- `trade-photos.ts`: `TRADE_PHOTOS: Partial<Record<TradeSlug, TradePhoto>>`; `SCOPE_PHOTOS` keyed by **scope id** with the scope name in a trailing comment. `select-stage-media.ts:21` and `select-scope-media.ts:8` index by `scope.id`. `index-showcase-projects.ts` and `use-showcase-projects.ts` take `scopesById` instead of rebuilding the inverse map.
+- `trade-photos.ts`: `TRADE_PHOTOS: Partial<Record<TradeSlug, TradePhoto>>`; `SCOPE_PHOTOS` keyed by **scope id** with the scope name in a trailing comment. `select-stage-media.ts:21` and `select-scope-media.ts:8` index by `scope.id`. `index-showcase-projects.ts` and `use-showcase-projects.ts` take `scopesById` instead of rebuilding the inverse map (**Delivered early** by the portfolio step plan (`b17f7ae3`, `docs/superpowers/plans/2026-09-23-portfolio-step-project-story.md` Task 5).)
 
 Landing:
 - `trade-card.tsx:52` → `registerCopy(TRADE_OUTCOMES[trade.slug], 'landing') ?? <existing fallback sentence>`. The fallback stays: it is landing's own wording for a trade with no entry.
@@ -172,7 +172,7 @@ Landing:
 |---|---|
 | `meeting-flow/lib/build-persona-profile.ts` + `trpc/routers/meeting-flow.router.ts:67` | input gains `tradesById`; router passes it |
 | `meeting-flow/lib/select-trade-benefits.ts` | keyed by slug |
-| `meeting-flow/lib/index-showcase-projects.ts` + `hooks/use-showcase-projects.ts` | take `scopesById` |
+| `meeting-flow/lib/index-showcase-projects.ts` + `hooks/use-showcase-projects.ts` | take `scopesById` — **Delivered early** by the portfolio step plan (`b17f7ae3`, `docs/superpowers/plans/2026-09-23-portfolio-step-project-story.md` Task 5). |
 | `project-management/hooks/use-portfolio-filters.ts` + `lib/filter-projects.ts` | `FilterCriteria.scopeToTradeMap` → `scopesById: ReadonlyMap<string, Scope>` |
 | `project-management/lib/group-scopes-by-trade.ts` | `resolveScopes` then group by `tradeId`; `TradeRow` output unchanged |
 | `trpc/routers/customers.router/business.router.ts:186` | moves into `ingestLead` (D) |
@@ -212,6 +212,8 @@ Code first, then push: remove `constructionTypeEnum` from `src/shared/db/schema/
 
 ## 6. Files
 
+> `core/lib/resolve-catalog-ids.ts` (created), `scopesById` in `core/lib/build-catalog-index.ts`, and the meeting-flow `index-showcase-projects.ts` / `use-showcase-projects.ts` edits below are already done — **Delivered early** by the portfolio step plan (`b17f7ae3`, `docs/superpowers/plans/2026-09-23-portfolio-step-project-story.md` Task 5).
+
 **Created**
 - Module: `core/constants/{trade-slugs.generated,trade-pairings,trade-outcomes,energy-efficient-categories}.ts`; `core/lib/{resolve-catalog-ids,is-energy-efficient-trade,pick-primary-trade,primary-pairing,register-copy}.ts`.
 - Scripts: `scripts/backfill-trade-slugs.ts`, `scripts/generate-trade-slugs.ts`, `scripts/verify-catalog-keys.ts`, `scripts/lib/slugify-trade-name.ts` (moved).
@@ -238,7 +240,7 @@ Code first, then push: remove `constructionTypeEnum` from `src/shared/db/schema/
 
 **Plan 2 — pure code.** Starts after plan 1 step 4 (every registry is typed by the snapshot). Step 6 may trail.
 
-1. Module registries (from Appendix A), constants, lib functions, `scopesById`.
+1. Module registries (from Appendix A), constants, lib functions. `scopesById` and `core/lib/resolve-catalog-ids.ts` already exist — **Delivered early** by the portfolio step plan (`b17f7ae3`, `docs/superpowers/plans/2026-09-23-portfolio-step-project-story.md` Task 5). Build on them; do not rebuild.
 2. DOCS anchors.
 3. Meeting-flow repoints and deletions.
 4. Landing repoints and deletions.

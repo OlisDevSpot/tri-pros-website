@@ -2,7 +2,7 @@
 
 `src/shared/modules/construction/` owns the **construction catalog**: trades, scopes and add-ons, SOW templates, and pain points. It owns no table. The rows live in a vendor system today (Notion, edited daily by the marketing/ops side) and are expected to move to Postgres at P5, so everything above this module depends on one neutral interface rather than on whoever supplies the rows.
 
-This directory holds the cached read surface (`service.ts`), the neutral shapes (`core/schemas/index.ts`), the property-profile enums (`core/constants/enums.ts`), the pure read model (`core/lib/build-catalog-index.ts`), the client hook (`core/hooks/use-construction-catalog.ts`), the source contract and its single binding (`sources/{types,index}.ts`), the Notion implementation (`sources/notion/**`) and this file.
+This directory holds the cached read surface (`service.ts`), the neutral shapes (`core/schemas/index.ts`), the property-profile enums (`core/constants/enums.ts`), the pure read model (`core/lib/build-catalog-index.ts`) and the resolver (`core/lib/resolve-catalog-ids.ts`), the client hook (`core/hooks/use-construction-catalog.ts`), the source contract and its single binding (`sources/{types,index}.ts`), the Notion implementation (`sources/notion/**`) and this file.
 
 ```
 consumer → trpc/routers/construction.router  →  service.ts (unstable_cache)
@@ -83,10 +83,10 @@ Scripts import `catalogSource` from `sources/`, **never** `service.ts`. `unstabl
 
 ### one-read-model
 
-`buildCatalogIndex(trades, scopes)` (`core/lib/build-catalog-index.ts`) is pure and returns `{ trades, tradesById, tradesBySlug, scopesByTrade }`, where `scopesByTrade` splits each trade's entries into `{ scopes, addons }` by `Scope.kind`. The client hook `useConstructionCatalog()` fetches both lists once and calls it; an RSC path calls it on service data. Neither re-derives the maps.
+`buildCatalogIndex(trades, scopes)` (`core/lib/build-catalog-index.ts`) is pure and returns `{ trades, tradesById, tradesBySlug, scopesByTrade, scopesById }`, where `scopesByTrade` splits each trade's entries into `{ scopes, addons }` by `Scope.kind` and `scopesById` is scopes and add-ons by id — the one scope → trade lookup. The client hook `useConstructionCatalog()` fetches both lists once and calls it; an RSC path calls it on service data. Neither re-derives the maps. `resolveTrades` / `resolveScopes` (`core/lib/resolve-catalog-ids.ts`) turn stored ids into catalog entries in stored order, returning ids the catalog no longer has as `orphans` for the caller to judge.
 
 **Why**: nine call sites each grouped scopes by trade their own way, and the picker issued a query per trade row on hover. One index, built once, is also what makes `kind` a data question rather than a per-surface string test.
-**Reference impl**: `core/lib/build-catalog-index.ts`; `core/hooks/use-construction-catalog.ts`
+**Reference impl**: `core/lib/build-catalog-index.ts`; `core/lib/resolve-catalog-ids.ts`; `core/hooks/use-construction-catalog.ts`
 **Enforced by**: convention. Collapsing the remaining duplicated consumers is **P3** (C4).
 
 ### reads-paginate
