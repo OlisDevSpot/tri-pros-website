@@ -11,13 +11,10 @@ interface ProofTileProps {
 }
 
 /**
- * One proof: what it is, the figure, what the figure means. A tile that cites a document is a
- * button that opens the document at the cited line; its accent rule rises on hover and focus,
- * and nothing moves, so the snap area's box never shifts. Below a 30rem container the tile
- * becomes one row instead of three: the kicker and label stay stacked at the left, the value
- * moves beside them at the right, baseline-aligned with the kicker. DOM order (kicker, value,
- * label) never changes, so a screen reader still reads kicker, then value, then label — only the
- * grid placement moves the value, never the element itself.
+ * One proof: what it is, the figure, what the figure means. Nothing here moves on hover or
+ * focus, so the snap area's box never shifts. Below a 30rem container the value moves beside the
+ * kicker instead of under it, but the DOM order (kicker, value, label) stays put — only the grid
+ * placement changes, so reading order is unaffected.
  */
 export function ProofTile({ tile, onOpen }: ProofTileProps) {
   const Icon = tile.icon
