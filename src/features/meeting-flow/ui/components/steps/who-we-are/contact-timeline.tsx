@@ -26,24 +26,29 @@ export function ContactTimeline({ timeline, firstName, label }: ContactTimelineP
   const inView = useSlideInView()
 
   return (
-    <div className="relative @max-[40rem]/presentation:mx-auto @max-[40rem]/presentation:w-fit" style={{ '--entries': timeline.length } as CSSProperties}>
+    <div
+      className="relative @max-[40rem]/presentation:mx-auto @max-[40rem]/presentation:w-fit"
+      // Down the slide the rows are equal, so the line can stop at the last dot's centre: one
+      // row's height, less the dot's centre, above the bottom.
+      style={{ '--entries': timeline.length, '--line-end': `calc((100% - ${timeline.length - 1} * var(--spacing-presentation-tight)) / ${timeline.length} - 0.625rem)` } as CSSProperties}
+    >
       <motion.span
         animate={{ scale: inView ? 1 : 0 }}
         aria-hidden
-        className="absolute inset-x-[calc(50%/var(--entries))] top-[7px] h-0.5 origin-left bg-linear-to-r from-(--presentation-accent) to-(--presentation-accent)/30 @max-[40rem]/presentation:inset-x-auto @max-[40rem]/presentation:top-2 @max-[40rem]/presentation:bottom-2 @max-[40rem]/presentation:left-[7px] @max-[40rem]/presentation:h-auto @max-[40rem]/presentation:w-0.5 @max-[40rem]/presentation:origin-top @max-[40rem]/presentation:bg-linear-to-b"
+        className="absolute inset-x-[calc(50%/var(--entries))] top-[7px] h-0.5 origin-left bg-linear-to-r from-(--presentation-accent) to-(--presentation-accent)/30 @max-[40rem]/presentation:inset-x-auto @max-[40rem]/presentation:top-2.5 @max-[40rem]/presentation:bottom-(--line-end) @max-[40rem]/presentation:left-[7px] @max-[40rem]/presentation:h-auto @max-[40rem]/presentation:w-0.5 @max-[40rem]/presentation:origin-top @max-[40rem]/presentation:bg-linear-to-b"
         data-timeline-line
         initial={false}
         transition={{ duration: 1.1, delay: 0.25, ease: BRAND_EASE }}
       />
       <ol
         aria-label={label}
-        className="grid auto-cols-fr grid-flow-col @max-[40rem]/presentation:grid-flow-row @max-[40rem]/presentation:gap-presentation-tight"
+        className="grid auto-cols-fr grid-flow-col grid-rows-[auto_auto_auto] gap-y-presentation-tight @max-[40rem]/presentation:grid-flow-row @max-[40rem]/presentation:grid-rows-none @max-[40rem]/presentation:auto-rows-fr"
         data-timeline
       >
         {timeline.map((entry, position) => (
           <li
             key={entry.when}
-            className="grid justify-items-center gap-presentation-tight px-[0.6cqw] text-center @max-[40rem]/presentation:grid-cols-[1rem_minmax(0,1fr)] @max-[40rem]/presentation:justify-items-start @max-[40rem]/presentation:gap-x-presentation-tight @max-[40rem]/presentation:gap-y-0.5 @max-[40rem]/presentation:px-0 @max-[40rem]/presentation:text-left"
+            className="row-span-3 grid grid-rows-subgrid justify-items-center gap-presentation-tight px-[0.6cqw] text-center @max-[40rem]/presentation:row-span-1 @max-[40rem]/presentation:grid-cols-[1rem_minmax(0,1fr)] @max-[40rem]/presentation:grid-rows-[auto_auto] @max-[40rem]/presentation:content-start @max-[40rem]/presentation:justify-items-start @max-[40rem]/presentation:gap-x-presentation-tight @max-[40rem]/presentation:gap-y-0.5 @max-[40rem]/presentation:px-0 @max-[40rem]/presentation:text-left"
           >
             <span
               aria-hidden

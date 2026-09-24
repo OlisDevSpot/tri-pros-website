@@ -39,7 +39,7 @@ export function HomeownerQuote({ quotes }: HomeownerQuoteProps) {
             </blockquote>
           ))}
         </div>
-        <figcaption className="flex items-start justify-between gap-x-presentation-tight text-presentation-label text-white/60">
+        <figcaption className="flex items-center justify-between gap-x-presentation-tight text-presentation-label text-white/60">
           <span className="grid min-w-0 flex-1">
             {quotes.map((item, index) => (
               <span key={item.id} className={cn('[grid-area:1/1]', index !== current && 'invisible')}>
