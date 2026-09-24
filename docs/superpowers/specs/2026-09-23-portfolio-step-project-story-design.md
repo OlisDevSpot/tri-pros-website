@@ -2,7 +2,7 @@
 
 > **Source:** the `/ui-warmup` artifact https://claude.ai/artifact/Bqp9UCTg2Gf5n13zXbx6wM, **Option D** (owner's pick, 2026-09-23). "D · Walkthrough" was that artifact's option label; it is not a domain or code term. The artifact's baseline captures and findings F1–F9 are the "why"; this spec is the "what".
 > **Baseline:** `main` at `c8ce1956` (2026-09-23).
-> **Status:** brainstormed with the owner 2026-09-23; every ruling is in §7. Vocabulary agreed 2026-09-23 (§2) and recorded in `CONTEXT.md` as part of the build.
+> **Status:** brainstormed with the owner 2026-09-23; every ruling is in §7. Vocabulary agreed 2026-09-23 (§2) and recorded in `CONTEXT.md` as part of the build. Placement critique 2026-09-24 (W17–W19): generic primitives moved into `modules/projects` (core and the project-media unit) and `modules/construction`.
 > **Constraint:** no data writes in any environment. One schema change: four empty `projects` columns are dropped (§5.3); dev gets `pnpm db:push:dev`, prod is the owner's push.
 
 ---
@@ -21,6 +21,7 @@ The same work settles how every surface tells a project: **challenge → solutio
 |---|---|---|
 | **Project story** | challenge → solution → result — the one way a project is told, on every surface. | `challengeDescription`, `solutionDescription`, `resultDescription`; parts typed `ProjectStoryPart` |
 | **Media phase** (existing) | before · during · after · uncategorized. Uncategorized is labelled "Gallery". | `MediaPhase`, `PHASE_LABELS` |
+| **Story strength** | How fully a project's photos tell its story: how many of Before · During · After have photos, then how many photos those phases hold, then title. Orders the fallback and breaks ties. | `compareStoryStrength()` |
 | **Story phase** | A media phase that has photos, with the story told against it: challenge → Before, solution → During, result → After. A part whose phase has no photos joins the next phase that has photos, else the last one. With no media loaded, the hero stands in as the only story phase. | `ProjectStoryPhase`, `buildProjectStoryPhases()` |
 | **Portfolio match** | Why a project is shown for this meeting: `scope` (shares a selected scope), `trade` (in a selected trade), `fallback` (the strongest few when nothing matches), `none`. | `PortfolioMatch`, `PortfolioMatchKind`, `matchPortfolioProjects()` |
 | **Match labels** | The pills: matched scope names, or the trade name. | `PortfolioMatch.matchLabels` |
@@ -30,7 +31,7 @@ Words not used: walkthrough, chapter (CONTEXT.md avoids it), stage (CONTEXT.md a
 
 ## 3. Scope
 
-**In:** the portfolio step (D) with the owner's rulings (§7); the project story standard and its helper in `modules/projects`; `PHASE_LABELS` moved into `modules/projects`; retirement of `before/during/after/mainDescription`; `phaseCounts` on portfolio list rows; `tradeIdByScope` on the catalog index; `CONTEXT.md` entries.
+**In:** the portfolio step (D) with the owner's rulings (§7); the project story standard and its helper in `modules/projects/core`; media-phase code in the project-media unit (`PHASE_LABELS` moved there, `MediaPhaseCounts`, the grouped count read); retirement of `before/during/after/mainDescription`; `phaseCounts` on portfolio list rows; the construction module's id resolver (`scopesById`, `resolveTrades`, `resolveScopes` — construction P2's F9 primitives, built here first, exactly as P2 specifies); shared portfolio primitives in `modules/projects/core` (hero predicate, story strength, project caption, the portfolio list hook); `CONTEXT.md` entries.
 
 **Out:** distance (no coordinates: 0 of 788 customers geocoded; 8 of 43 public projects have a zip); profile echoes (projects carry no property attributes); a before/after slider; a Shift+Space back key; persisting the step's position to flow state; testimonials; any link to the marketing site; **the public project page adopting `buildProjectStoryPhases`** (owner: later — this work only removes the retired fields from its timeline).
 
@@ -41,39 +42,52 @@ Words not used: walkthrough, chapter (CONTEXT.md avoids it), stage (CONTEXT.md a
 ## 4. Target structure
 
 ```
-src/shared/modules/projects/core/
-  types.ts                         MediaPhaseCounts; PortfolioProject.phaseCounts;
-                                   ProjectStoryPart, ProjectStoryLine, ProjectStoryPhase
+src/shared/modules/projects/media/          the project-media unit
+  types.ts                         NEW: MediaPhaseCounts
   constants/phase-labels.ts        MOVED from features/project-management/constants/phase-labels.ts
+  dal/server/queries.ts            NEW: getMediaPhaseCountsByProjectIds
+
+src/shared/modules/projects/core/
+  types.ts                         PortfolioProject.phaseCounts; PortfolioProjectWithHero;
+                                   ProjectStoryPart, ProjectStoryLine, ProjectStoryPhase
   constants/project-story.ts       NEW: STORY_PHASE_ORDER, STORY_PART_PHASE, STORY_LABELS, HERO_STORY_PHASE_LABEL
   lib/build-project-story-phases.ts NEW
-  lib/count-media-phases.ts        NEW
-  dal/server/queries.ts            getPortfolioProjects adds phaseCounts
+  lib/compare-story-strength.ts    NEW
+  lib/has-hero-image.ts            NEW
+  lib/format-project-caption.ts    NEW: "Long Beach, CA · 6 weeks" (replaces the meeting-flow copy)
+  hooks/use-portfolio-projects.ts  NEW: the one client read of the portfolio list
+  dal/server/queries.ts            getPortfolioProjects: phaseCounts from the media unit; scope rows limited to the listed projects
   schemas/index.ts                 phase-text fields removed from the form schema + defaults
 
+src/shared/modules/construction/core/lib/   construction P2 §4.1, built early
+  build-catalog-index.ts           CatalogIndex.scopesById
+  resolve-catalog-ids.ts           NEW: resolveTrades, resolveScopes
+
 src/shared/db/schema/projects.ts   before/during/after/mainDescription columns dropped
-src/shared/modules/construction/core/lib/build-catalog-index.ts   CatalogIndex.tradeIdByScope
 
 src/features/project-management/
   constants/phase-labels.ts        DELETED (moved)
-  ui/components/story-gallery.tsx  imports PHASE_LABELS from modules/projects
-  ui/components/story-timeline.tsx reads no phase text; PHASE_CONFIG's generic lines only
-  ui/components/form/story-content-fields.tsx  "Timeline Phase Descriptions" section removed
+  constants/phase-config.ts        label field dropped (PHASE_LABELS gives it); key typed MediaPhase
+  ui/components/story-gallery.tsx  imports PHASE_LABELS from the project-media unit
+  ui/components/story-timeline.tsx reads no phase text; labels from PHASE_LABELS
+  ui/components/form/story-content-fields.tsx  "Timeline Phase Descriptions" removed; labels from STORY_LABELS
   ui/views/edit-project-view.tsx   four fields removed from the form values
 
 src/features/meeting-flow/
-  types/index.ts                   MeetingStepHandle, PortfolioRowWithHero, PortfolioMatchKind, PortfolioMatch,
-                                   PortfolioMatchSection, PortfolioPosition
+  types/index.ts                   MeetingStepHandle, PortfolioMatchKind, PortfolioMatch, PortfolioMatchSection,
+                                   PortfolioPosition; ShowcaseProject.duration renamed projectDuration
   constants/portfolio-step.ts      NEW: section labels, copy, FALLBACK_MATCH_COUNT, PREFETCH_AHEAD, PROJECT_LIST_ROW_COUNT
   constants/step-config.ts         portfolio: layout 'page' → 'presentation'
   constants/keyboard-hints.ts      Space hint, KEY_SHORTCUTS.portfolio, ACTIVATABLE_TARGET_SELECTOR
   lib/match-portfolio-projects.ts  NEW
   lib/group-portfolio-matches.ts   NEW: matches → labelled list sections
-  lib/format-portfolio-meta.ts     NEW: "City, ST · 6 weeks"
   lib/portfolio-position.ts        NEW: nextPhotoPosition, isLastPhoto
-  lib/index-showcase-projects.ts   takes tradeIdByScope
-  hooks/use-showcase-projects.ts   passes tradeIdByScope
-  contexts/trade-selection-provider.tsx  useShowcaseProjects(catalog.tradeIdByScope)
+  lib/format-project-caption.ts    DELETED (the module's formatProjectCaption)
+  lib/to-showcase-media.ts         caption = the specialties lead + the module caption
+  lib/index-showcase-projects.ts   takes scopesById; hasHeroImage
+  hooks/use-showcase-projects.ts   reads through usePortfolioProjects; takes scopesById
+  contexts/trade-selection-provider.tsx  useShowcaseProjects(catalog.scopesById)
+  hooks/use-portfolio-matches.ts   NEW: portfolio list + selections + catalog → matches
   hooks/use-meeting-flow-keys.ts   Space → handle.advance
   hooks/use-portfolio-project-detail.ts  NEW: current project's detail + prefetch ahead
   hooks/use-portfolio-navigation.ts      NEW: position state + actions
@@ -81,10 +95,10 @@ src/features/meeting-flow/
   ui/components/steps/portfolio-step.tsx       DELETED
   ui/components/steps/trade-project-grid.tsx   DELETED
   ui/components/steps/portfolio/   NEW, one component per file:
-    index.tsx               PortfolioStep
+    index.tsx               PortfolioStep (renders only; data from usePortfolioMatches)
     portfolio-step-layout.tsx  the step root; container-query layout
     project-photo.tsx       full-bleed photo, crossfade, tap = advance
-    project-heading.tsx     title · city/duration · match pills
+    project-heading.tsx     title · caption · match pills
     match-pills.tsx
     story-lines.tsx         the story phase's lines
     story-phase-bar.tsx     one segment per story phase, fill per photo, tap = jump
@@ -96,17 +110,19 @@ src/features/meeting-flow/
     project-list-sheet.tsx  the full list in a bottom Sheet
 
 CONTEXT.md                         "Project story" section; Presentation terms line updated (§5.9)
+docs/superpowers/specs/2026-09-22-construction-p2-rules-and-identity-design.md,
+docs/plans/2026-09-15-construction-data-standardization-epic.md   record the resolver as delivered (§8)
 ```
 
 `PortfolioGrid`, `PortfolioPagination`, `usePortfolioFilters` stay in `features/project-management` (the portfolio page uses them).
 
 ## 5. Contracts
 
-### 5.1 `phaseCounts` on portfolio list rows
+### 5.1 `phaseCounts` on portfolio list rows (project-media unit)
 
-- `PortfolioProject` gains `phaseCounts: MediaPhaseCounts` (`= Record<MediaPhase, number>`).
-- `getPortfolioProjects` adds one grouped query shaped like `getProjectScopeCountsByScopeIds` in the same file: `projectId`, `phase`, `count()` from `projectMediaFiles`, `inArray(projectId, ids)`, videos excluded (`mimeType not like 'video/%'`, as `getPortfolioProjectDetail` does), grouped by project and phase. Missing phases are 0.
-- `countMediaPhases(phaseCounts)` — how many of before / during / after have photos (0–3); uncategorized never counts.
+- `MediaPhaseCounts = Record<MediaPhase, number>` lives in `modules/projects/media/types.ts`: the phase is a column of project media only.
+- `getMediaPhaseCountsByProjectIds(projectIds): Promise<Map<string, MediaPhaseCounts>>` in `modules/projects/media/dal/server/queries.ts`: one grouped `count()` of `projectMediaFiles` by project and phase, `inArray(projectId, ids)`, videos excluded (`mimeType not like 'video/%'`, as `getPortfolioProjectDetail` does). Every requested id is in the map; missing phases are 0. Plain promise, like its only caller; spec B's service moves both onto `DalReturn`.
+- `getPortfolioProjects` calls it alongside the scope read (`Promise.all`) — the core unit composing a child unit's DAL, as `modules/proposals/core/dal/server/queries.ts` does with its media unit. `PortfolioProject` gains `phaseCounts: MediaPhaseCounts`. The scope read, rewritten in the same block, is limited to the listed projects (today it reads every `x_project_scopes` row).
 - Router unchanged; other consumers ignore the field.
 
 ### 5.2 The project story (`modules/projects`)
@@ -124,7 +140,7 @@ buildProjectStoryPhases(input: {
 ```
 
 - Constants (`constants/project-story.ts`): `STORY_PHASE_ORDER = ['before', 'during', 'after', 'uncategorized']`; `STORY_PART_PHASE = { challenge: 'before', solution: 'during', result: 'after' }`; `STORY_LABELS = { challenge: 'Challenge', solution: 'Solution', result: 'Result' }` (the editor's labels); `HERO_STORY_PHASE_LABEL = 'The project'`.
-- Phase labels come from `PHASE_LABELS` (moved to `modules/projects/core/constants/phase-labels.ts`; Before, During, After, Gallery).
+- Phase labels come from `PHASE_LABELS` (moved to `modules/projects/media/constants/phase-labels.ts`; Before, During, After, Gallery). The editor's field labels and the public timeline read the same constants (`STORY_LABELS`, `PHASE_LABELS`).
 - A story phase exists for each media phase with ≥1 photo, in `STORY_PHASE_ORDER`. Photos keep the DAL order; the hero, when in that phase, moves first.
 - Story parts with blank text (null or whitespace) are skipped. Each remaining part goes to its phase (`STORY_PART_PHASE`); if that phase has no story phase, to the next story phase in order, else the last one.
 - `media === null`, or no story phase at all: one story phase `{ phase: 'hero', label: HERO_STORY_PHASE_LABEL, photos: [heroImage], story: all parts }`.
@@ -133,34 +149,48 @@ buildProjectStoryPhases(input: {
 
 `beforeDescription`, `duringDescription`, `afterDescription`, `mainDescription` are removed in one non-defensive change: the Drizzle columns (`db/schema/projects.ts`), the form schema and defaults (`modules/projects/core/schemas`), `edit-project-view.tsx`, the editor's "Timeline Phase Descriptions" section (`story-content-fields.tsx`), and `StoryTimeline`'s description map (it shows `PHASE_CONFIG.fallbackDescription` only). Empty on both branches, so nothing is lost. Dev: `pnpm db:push:dev` (schema only). Prod: `pnpm db:push:prod`, run by the owner. The untracked owner script `scripts/tmp-smoke-scopes-persist.ts` reads these fields and is type-checked; the build stops and asks the owner what to do with it.
 
-### 5.4 `tradeIdByScope` on the catalog index
+### 5.4 The construction resolver (construction P2 F9, built early)
 
-`CatalogIndex` gains `tradeIdByScope: ReadonlyMap<string, string>` (scope and add-on id → trade id), built in `buildCatalogIndex`'s existing loop. `indexShowcaseProjects` used `scopesByTrade` only to rebuild this map inline; it now takes `tradeIdByScope`, and `useShowcaseProjects(catalog.tradeIdByScope)` follows.
+Built exactly as `docs/superpowers/specs/2026-09-22-construction-p2-rules-and-identity-design.md` §4.1 and §4.5 specify, because this step is its first consumer:
+
+- `CatalogIndex.scopesById: ReadonlyMap<string, Scope>` (scopes and add-ons), built in `buildCatalogIndex`'s existing loop. The one scope → trade lookup: `scopesById.get(id)?.tradeId`.
+- `core/lib/resolve-catalog-ids.ts`: `resolveTrades(ids, index)` and `resolveScopes(ids, index)` → `{ found, orphans }`, stored order preserved. Orphans are returned, never dropped; the caller decides what one means.
+- `indexShowcaseProjects(projects, scopesById)` and `useShowcaseProjects(scopesById)` — P2 §4.7-C's row for these two files, done here. The other F9 sites stay P2 plan 2's.
+- When the code lands, the P2 spec (§4.1, §4.7-C, §6, §7) and the construction tracker's F9 record it as delivered, with the commit.
+
+### 5.4b Shared portfolio primitives (`modules/projects/core`)
+
+- `PortfolioProjectWithHero = PortfolioProject & { heroImage: ProjectMediaFile }` and `hasHeroImage(row): row is PortfolioProjectWithHero` (`lib/has-hero-image.ts`). The match and `indexShowcaseProjects` use it; the two funnel blocks' identical inline guards are follow-ups.
+- `compareStoryStrength(a, b)` over `{ project: { title }, phaseCounts }` (`lib/compare-story-strength.ts`): more of the story's phases (`STORY_PART_PHASE`'s values: before, during, after) with photos ↓ → more photos across them ↓ → title.
+- `formatProjectCaption({ city, state, projectDuration })` → "Long Beach, CA · 6 weeks", blank parts dropped (`lib/format-project-caption.ts`). The meeting-flow copy of the same join is deleted: the specialties caption becomes its lead + this, and `ShowcaseProject.duration` is renamed `projectDuration` so it passes structurally.
+- `usePortfolioProjects(options?: { staleTime?: number })` (`hooks/use-portfolio-projects.ts`, like `useConstructionCatalog`) — the one client read of the portfolio list; `staleTime` is spread only when passed, so the query client's default holds otherwise. Meeting-flow's two reads go through it; funnels and project-management are follow-ups.
 
 ### 5.5 Portfolio matches (`features/meeting-flow`)
 
 ```ts
 type PortfolioMatchKind = 'scope' | 'trade' | 'fallback' | 'none'
 interface PortfolioMatch {
-  row: PortfolioRowWithHero        // PortfolioProject with a non-null heroImage
+  row: PortfolioProjectWithHero    // modules/projects/core
   kind: PortfolioMatchKind
   matchedScopeIds: string[]
   matchedTradeIds: string[]
   matchLabels: string[]
 }
-matchPortfolioProjects(projects: PortfolioProject[], selections: TradeSelection[], catalog: Pick<CatalogIndex, 'tradeIdByScope'>): PortfolioMatch[]
+matchPortfolioProjects(projects: PortfolioProject[], selections: TradeSelection[], catalog: Pick<CatalogIndex, 'scopesById'>): PortfolioMatch[]
 ```
 
-Rows without a hero are left out. Each row gets one kind; the result is ordered `scope`, `trade`, `fallback`, `none`:
+Rows without a hero are left out (`hasHeroImage`). Each row gets one kind; the result is ordered `scope`, `trade`, `fallback`, `none`:
 
 | Kind | Membership | Order | Match labels |
 |---|---|---|---|
 | `scope` | shares ≥1 selected scope id | matched-scope count ↓, then story strength | matched scope labels (from `selectedScopes[].label`) |
-| `trade` | not `scope`; ≥1 scope maps via `tradeIdByScope` to a selected trade (a trade selected with no scopes counts) | scopes in selected trades ↓, then story strength | trade names (from `tradeName`) |
+| `trade` | not `scope`; ≥1 of its scopes, resolved with `resolveScopes`, is in a selected trade (a trade selected with no scopes counts); orphan scope ids cannot place it in a trade | scopes in selected trades ↓, then story strength | trade names (from `tradeName`) |
 | `fallback` | only when `scope` and `trade` are both empty: the first `FALLBACK_MATCH_COUNT` (3) by story strength | story strength | none |
 | `none` | the rest | story strength | none |
 
-Story strength = `countMediaPhases` ↓ → before + during + after photo count ↓ → title.
+Story strength = `compareStoryStrength` (§5.4b).
+
+`usePortfolioMatches()` (feature hook) reads the list through `usePortfolioProjects({ staleTime: SHOWCASE_PROJECTS_STALE_MS })`, the selections and the catalog, and returns `{ matches, showNoMatchNote, isPending, isError, refetch }`. `PortfolioStep` renders from it and fetches nothing itself.
 
 List section labels: `scope` and `trade` → "For your project"; `fallback` → "From our portfolio"; `none` → "Other projects". When selections exist but `scope` and `trade` are empty, one line above the list: "No finished projects match these scopes yet." The step opens on the first match whenever any project has a hero.
 
@@ -200,11 +230,12 @@ List section labels: `scope` and `trade` → "For your project"; `fallback` → 
 
 ### 5.9 `CONTEXT.md`
 
-A "Project story" section with the §2 terms (project story, story phase, portfolio match, match labels; media phase noted as existing). The Presentation-terms intro line ("Program and Portfolio will be too") changes to say Portfolio uses the presentation layout and ground but shows one project at a time with its story phases, not slides.
+A "Project story" section with the §2 terms (project story, story phase, story strength, portfolio match, match labels; media phase noted as existing). The Presentation-terms intro line ("Program and Portfolio will be too") changes to say Portfolio uses the presentation layout and ground but shows one project at a time with its story phases, not slides.
 
 ## 6. Verification
 
-- Pure functions (no test runner — throwaway `tsx` scripts in the session scratchpad, never committed): `countMediaPhases`; `buildCatalogIndex().tradeIdByScope`; `buildProjectStoryPhases` (all phases; Before + After + Gallery; Gallery only; Before only; blank parts; hero first; `media === null`); `matchPortfolioProjects` + `groupPortfolioMatches` (scope over trade; trade with no scopes; no matches → exactly 3 fallback; no selections; hero-less excluded; tie-break); `nextPhotoPosition` / `isLastPhoto`.
+- Pure functions (no test runner — throwaway `tsx` scripts in the session scratchpad, never committed): `compareStoryStrength`, `formatProjectCaption`, `hasHeroImage`; `buildCatalogIndex().scopesById`, `resolveTrades` / `resolveScopes` (order, orphans); `buildProjectStoryPhases` (all phases; Before + After + Gallery; Gallery only; Before only; blank parts; hero first; `media === null`); `matchPortfolioProjects` + `groupPortfolioMatches` (scope over trade; trade with no scopes; no matches → exactly 3 fallback; no selections; hero-less excluded; tie-break); `nextPhotoPosition` / `isLastPhoto`.
+- Read-only on dev: `getPortfolioProjects()` rows carry `phaseCounts` matching §3's fixture shapes.
 - `pnpm tsc && pnpm lint` clean at every commit.
 - Browser on dev (read-only), 1440×900 and 820×1180, light and dark shell, using the fixtures in §3: every story-phase shape; scope / trade / fallback lists; Space, ↓/↑, taps; Space on a focused control acts once; long story at 820; end of the list; reduced motion; the project editor without the phase-text section; the public project page's timeline still rendering.
 
@@ -221,19 +252,29 @@ A "Project story" section with the §2 terms (project story, story phase, portfo
 | W7 | A `presentation`-layout step exposing a step handle through the flow's single key owner. |
 | W8 | `phaseCounts` on `getPortfolioProjects`, following the DAL's grouped-count pattern. |
 | W9 | Matching falls back scope → trade → first `FALLBACK_MATCH_COUNT`; rules in the feature, on shared primitives. |
-| W10 | `indexShowcaseProjects` moves onto `tradeIdByScope`. |
+| W10 | `indexShowcaseProjects` moves onto the catalog's scope lookup (`scopesById` since W19). |
 | W11 | **Challenge → solution → result is the standard project story** on every surface. |
 | W12 | No data writes, dev included; dev fixtures cover every story-phase shape. |
 | W13 | Vocabulary per §2; the story helper and `PHASE_LABELS` live in `modules/projects` (part of epic R13). |
 | W14 | `before/during/after/mainDescription` retired fully, columns dropped. |
 | W15 | The public project page adopts `buildProjectStoryPhases` later; now it only stops reading the retired fields. |
 | W16 | No test runner; scratch `tsx` checks. |
+| W17 | (2026-09-24) Generic portfolio primitives live in `modules/projects/core`: hero predicate, story strength, project caption, the portfolio list hook. The feature keeps the meeting's rules (fallback count, sections, match labels) and composes them in `usePortfolioMatches`; components fetch nothing. |
+| W18 | (2026-09-24) Media-phase code lives in the project-media unit: `PHASE_LABELS`, `MediaPhaseCounts`, the grouped count read. |
+| W19 | (2026-09-24) The construction resolver is built here, exactly as construction P2 §4.1/§4.5 specify (`scopesById`, `resolveTrades`, `resolveScopes`); `tradeIdByScope` is dropped. The P2 spec and the construction tracker record it as delivered once it lands. |
 
-## 8. Coordination with the upgrading-meeting-flow epic
+## 8. Coordination
 
-`docs/plans/2026-09-14-upgrading-meeting-flow-epic.md` (spec B, not written) plans to retire `getPortfolioProjects` / `getPortfolioProjectDetail` behind a projects service (R9), one trade-matching rule for project reads (R12), and moving the project story primitives into `modules/projects` (R13). This work: extends `getPortfolioProjects` with `phaseCounts` — spec B carries the field into the service's list read; moves `PHASE_LABELS` and adds `buildProjectStoryPhases` in `modules/projects` — a first slice of R13; keeps `matchPortfolioProjects` in the meeting-flow feature on `tradeIdByScope` — R12 decides later whether it becomes the shared rule.
+**Upgrading-meeting-flow epic** (`docs/plans/2026-09-14-upgrading-meeting-flow-epic.md`, spec B not written) plans to retire `getPortfolioProjects` / `getPortfolioProjectDetail` behind a projects service (R9), put media reads for many projects in the project-media DAL (R6) and one media-by-phase grouping in the module (R7), one trade-matching rule for project reads (R12), and the project story primitives in `modules/projects` (R13). This work: extends `getPortfolioProjects` with `phaseCounts` read from the project-media unit's DAL — R6's direction, and spec B carries the field into the service's list read; moves `PHASE_LABELS` to the project-media unit and adds the story, hero, story-strength and caption primitives to `modules/projects/core` — a first slice of R13; keeps `matchPortfolioProjects` in the feature on the construction resolver — R12 decides later whether it becomes the shared rule. `ProjectMediaGroups` and the detail read's inline phase grouping stay where they are (R7's).
+
+**Construction P2** (`docs/superpowers/specs/2026-09-22-construction-p2-rules-and-identity-design.md`): its F9 resolver (`scopesById`, `resolveTrades`, `resolveScopes`) and its `index-showcase-projects` / `use-showcase-projects` row are built here, to P2's contracts. When they land, the P2 spec and `docs/plans/2026-09-15-construction-data-standardization-epic.md` (F9) record them as delivered so P2 plan 2 does not build them again. P2 plan 1 is in progress in another session (untracked backfill scripts; the trades property map); this work does not touch those files.
+
+**Working tree (2026-09-24).** Uncommitted work from other sessions sits in five files this build edits: `CONTEXT.md` (the Presentation terms section), `build-catalog-index.ts`, `use-showcase-projects.ts`, `use-meeting-flow-keys.ts`, `meeting-flow.tsx` (mostly the docs prune's comment trims; `meeting-flow.tsx` also carries a `syncStatus` prop). `git commit -- <path>` commits the whole file, so the build checks each before editing it and stops for the owner while foreign hunks remain.
 
 ## 9. Follow-ups
 
 - Public project page on `buildProjectStoryPhases` (W15), resolving the duplicate challenge/solution text between its timeline and its Challenge / Solution sections.
 - Distance; profile echoes; a before/after reveal inside the After phase.
+- The funnel blocks and `portfolio-grid-view.tsx` onto `usePortfolioProjects` / `hasHeroImage` (P2 already moves their scope → trade lookups onto `scopesById`); the five other location/caption joins onto `formatProjectCaption`.
+- A row + SQL "is a video" pair in `modules/media/core/lib` for the six `startsWith('video/')` checks and the new `not like 'video/%'`.
+- The photo crossfade in `project-photo.tsx` repeats `showcase-media.tsx`'s — the feature-layering epic's display-media seam (L1) now has four sites.
