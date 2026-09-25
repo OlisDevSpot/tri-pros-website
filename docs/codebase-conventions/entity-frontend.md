@@ -147,16 +147,15 @@ A card slot that renders nested entities (e.g., `<MeetingOverviewCard.Proposals>
 
 ### actions-slot-plugs-in-entity-action-menu
 
-The Card's `<Actions>` slot renders `<EntityActionMenu>` (or `<EntityViewButton>` for cell-level surfaces). Per [ADR-0001](../adr/0001-entity-action-system.md), `<EntityActionMenu>` reads from the `entityRegistry` and applies CASL via `useAbility()`. Consumers stop mounting their own `<DeleteConfirmDialog />` / `<AssignOwnerDialog />` — `<EntityActionMenu>` owns those internally via Radix Portal.
+The Card's `<Actions>` slot renders `<EntityActionMenu>` (or `<EntityViewButton>` for cell-level surfaces). As built (see the status note at the top of [ADR-0001](../adr/0001-entity-action-system.md) — the `entityRegistry` / `EntitySpec` design was **not** built), the menu takes an `entity` object plus a pre-built `actions` array and applies CASL via `useAbility()` to each action's `permission` tuple.
 
-**Three flat consumer props** on `<EntityActionMenu>` (no nested config object):
-- `disableActions={[...]}` — suppress specific actions
-- `actionOverrides={{ key: handler }}` — swap a handler for any keyed action
-- `customActions={{ ... }}` — append entity-unique actions at the call site
+**Per entity, three files** produce that array: `constants/actions.ts` (plain `EntityAction` metadata — label, icon, CASL verb), `hooks/use-<entity>-actions.ts` (mutation wrappers over the entity's CRUD router), and `hooks/use-<entity>-action-configs.{ts,tsx}` (binds handlers + confirm dialogs and returns `{ actions, DeleteConfirmDialog, … }`). The **consumer renders the returned dialogs** next to the menu — the menu does not own them.
 
-**Why**: action menus are the most-divergent compound surface — strict types in the registry are the only mechanism preventing re-drift.
-**Reference impl**: `src/shared/components/entity-actions/ui/entity-action-menu.tsx`; per-entity hook still at `entities/<x>/hooks/use-<x>-action-configs.{ts,tsx}` (being migrated to spec under ADR-0001 issues #171–#175)
-**Enforced by**: ADR-0001 + `EntitySpec<E>` types
+**Props** on `<EntityActionMenu>`: `entity`, `actions`, `mode` (`'bar'` = primary button + overflow dropdown, `'compact'` = dropdown only), `className`. There are no `disableActions` / `actionOverrides` / `customActions` props — a call site shapes the menu by building a different `actions` array.
+
+**Why**: action menus are the most-divergent compound surface; one render surface plus one hook per entity keeps them uniform without a registry.
+**Reference impl**: `src/shared/components/entity-actions/ui/entity-action-menu.tsx`; `src/shared/entities/meetings/hooks/use-meeting-action-configs.tsx`; `src/shared/entities/customer-notes/hooks/use-customer-note-action-configs.ts`
+**Enforced by**: convention (ADR-0001 as-built status note)
 
 ### list-rendering-uses-entitylist
 

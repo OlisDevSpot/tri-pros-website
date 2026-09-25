@@ -60,7 +60,9 @@ Do not use `box-shadow: 0 4px 10px 0 rgb(0 0 0 / 0.05)` as a card shadow. That v
 
 ### Motion
 
-**High-impact entrance + `useReducedMotion` gate.** Every meaningful entrance animation must be wrapped in a `useReducedMotion()` check — if reduced motion is preferred, render the final (non-animated) state immediately with no movement.
+**High-impact entrance + reduced-motion gate.** Every meaningful entrance animation must be gated on reduced motion — if reduced motion is preferred, render the final state with no movement. Two sanctioned gates:
+- `useReducedMotion()` in the component, for a standalone animation.
+- `<MotionConfig reducedMotion="user">` at a subtree root, which gates every `motion` element beneath it (motion drops transform and layout animation; opacity may still fade). Used by the meeting flow (`meeting-flow.tsx`, `snap-presentation.tsx`). A shared component that can render outside such a root must gate itself with `useReducedMotion()`.
 
 The decor draw-in animation (`--dur-draw: 1.4s`, staggered stroke-dashoffset) is the most distinctive motion in the system. It should animate on first render; after that, only the gentle sweep (`18s infinite alternate`) and breathe (`7s infinite`) continue.
 

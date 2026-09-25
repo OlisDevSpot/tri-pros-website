@@ -208,7 +208,7 @@ The user verifies by hand on the device the surface is for. That check is the on
 
 ## Worked example
 
-Who We Are, 2026-09-11 → 09-13. Spec: `docs/superpowers/specs/2026-09-12-who-we-are-scroll-presentation-design.md`. Plan: `docs/superpowers/plans/2026-09-12-who-we-are-scroll-presentation.md`. Research: `docs/plans/2026-09-11-meeting-flow-scroll-snap-research.md`. Memory: `project-who-we-are-presentation`.
+Who We Are, 2026-09-11 → 09-13. Spec: `docs/superpowers/specs/2026-09-12-who-we-are-scroll-presentation-design.md`. Plan: deleted once executed (git history before 2026-09-23). Research: `docs/plans/2026-09-11-meeting-flow-scroll-snap-research.md`. Memory: `project-who-we-are-presentation`.
 
 What the phases produced there: a baseline table (2992 px desktop page, hook slab and proof bar visible on open, unreadable insurance certificate on mobile); three directions (deck of scenes, choreographed scroll, hybrid chapters) as working mocks in laptop and tablet frames; the user picked B with four corrections; a research note that set the scroll-snap recipe and found two real defects later (a global `scroll-margin-top` rule and container units on the scroller itself); a spec with nine beats and a data-and-types section; seven tasks built by subagents with per-task review and pathspec commits; a polish pass whose three reported symptoms had one cause, a stale generated stylesheet.
 

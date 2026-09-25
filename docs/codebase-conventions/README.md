@@ -15,6 +15,7 @@ If you can't find a rule here, check the most-recent ADR first — newer archite
 | [trpc-procedures.md](./trpc-procedures.md) | Procedure types, router structure, app-router registration |
 | [dal-conventions.md](./dal-conventions.md) | DalReturn pattern, ScopedContext, return types, CRUD vs business |
 | [service-architecture.md](./service-architecture.md) | Four-tier service/provider split (operational rules; ADR-0003 has the why) |
+| [provider-boundaries.md](./provider-boundaries.md) | What may cross a provider's edge; translators live in domain-land (#248) |
 | [query-toolkit.md](./query-toolkit.md) | Pagination + sort + search + filters + page-size toolkit |
 | [frontend-stack.md](./frontend-stack.md) | Tailwind/shadcn/motion, `'use client'`, views vs components, lint, file rules |
 | [app-shell.md](./app-shell.md) | PWA, safe-area, layout chain, scroll ownership, web-push manifest |

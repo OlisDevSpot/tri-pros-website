@@ -14,7 +14,7 @@ Run this before any marketing block ships. Adapted from the 16-point slop finger
 - [ ] **Radius + elevation** — Radius values are from the scale (`3px` / `6px` / `999px`), not uniform `8px`. Shadows are warm and intentional (`--shadow-card`), not flat `0.05` opacity.
 - [ ] **Layout consistency** — One layout primitive repeated. Card content is left-aligned.
 - [ ] **Atmosphere** — Decor (`<Decor>`) is present on hero surfaces. Anchored top-right. Parent has `overflow:hidden; isolation:isolate`.
-- [ ] **Motion** — Entrance animation present. `useReducedMotion()` gate implemented (final state shown, no movement, for reduced-motion users).
+- [ ] **Motion** — Entrance animation present. Reduced-motion gate implemented — `useReducedMotion()` or a `<MotionConfig reducedMotion="user">` subtree root (final state shown, no movement, for reduced-motion users).
 - [ ] **Trust / data** — All credential data sourced from `src/shared/constants/company/`. No hardcoded numbers. No false claims. Experience phrased as "45+ years **combined**" (never implies founded before 2021).
 - [ ] **Contrast** — WCAG AA met for all text. Small text on light backgrounds uses `--accent-ink: #0784b3`, not `#03AFED`. Check dark mode if `.theme-marketing.theme-dark` is used.
 - [ ] **Mobile** — Checked at 375px. Credential strip wraps gracefully. Decor does not overflow or crowd content. Touch targets ≥44px.

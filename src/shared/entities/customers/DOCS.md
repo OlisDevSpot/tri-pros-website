@@ -56,7 +56,7 @@ active otherwise  → 'leads'      (pre-meeting)
 
 A customer is "signed" when they have at least one project. Projects are the business symbol of a converted customer — this rule is the single definition; every router, job, and aggregate counts signed customers the same way.
 
-**Why**: a project = signed contract = revenue commitment. An approved proposal is the precondition an agent checks before creating the project — creation itself is a separate agent action, not an automatic effect of approval (see `../proposals/DOCS.md#conversion-trigger`); after a project exists, "signed" means "has the project."
+**Why**: a project = signed contract = revenue commitment. An approved proposal is the precondition an agent checks before creating the project — creation itself is a separate agent action, not an automatic effect of approval (see `../../modules/proposals/core/DOCS.md#conversion-trigger`); after a project exists, "signed" means "has the project."
 **Reference impl**: `lib/signed-customer-sql.ts:isSignedCustomerSql`
 **Enforced by**: convention (single helper; all consumers go through it)
 
@@ -75,7 +75,7 @@ A "senior" customer has two distinct definitions depending on the data path:
 - **From customer profile (bucket)**: `ageGroup ∈ {'65-75', '75-or-older'}` → `isSenior(ageGroup)` returns boolean (or null when ageGroup unset).
 - **From numeric age (precise)**: `age ≥ 65` → `isSeniorByAge(age)` returns boolean. Used by the contract flow where the agent enters a precise age for CSLB compliance.
 
-**Why**: the customer profile collects bucketed age for sales psychology; the contract flow needs the precise numeric for CSLB 5-day rescission window legal compliance (see `../proposals/DOCS.md#cslb-start-date`).
+**Why**: the customer profile collects bucketed age for sales psychology; the contract flow needs the precise numeric for CSLB 5-day rescission window legal compliance (see `../../modules/proposals/core/DOCS.md#cslb-start-date`).
 **Reference impl**: `lib/customer-predicates.ts`
 **Enforced by**: tsc + convention (two distinct functions; pick the right one for the data path)
 
@@ -239,9 +239,9 @@ Separately: the customer profile's **activity timeline** (Overview tab) is **der
 
 ## See also
 
-- [`../proposals/DOCS.md`](../proposals/DOCS.md) — proposal lifecycle, phone-gating trigger (`sent` status), CSLB senior threshold
+- [`../../modules/proposals/core/DOCS.md`](../../modules/proposals/core/DOCS.md) — proposal lifecycle, phone-gating trigger (`sent` status), CSLB senior threshold
 - [`../meetings/DOCS.md`](../meetings/DOCS.md) (when written) — meeting participation is the visibility bridge
-- [`../projects/DOCS.md`](../projects/DOCS.md) (when written) — projects = signed customer
+- [`../../modules/projects/core/DOCS.md`](../../modules/projects/core/DOCS.md) (when written) — projects = signed customer
 - [`../lead-sources/DOCS.md`](../lead-sources/DOCS.md) (when written) — attribution + segment classification (shares `customers.pipeline` semantics)
 - `memory/feedback-phone-visibility-threshold.md` — recent threshold-vs-equality fix
 - `docs/codebase-conventions/dal-conventions.md` — DAL conventions

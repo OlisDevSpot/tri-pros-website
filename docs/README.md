@@ -1,46 +1,33 @@
 # Tri Pros Remodeling — Docs
 
-Master index for all repository documentation. Two distinct surfaces:
+Two surfaces:
 
-- **Sales / company / customer** — how Tri Pros operates as a business. Authoritative source of truth for sales narrative, frameworks, customer journey, programs.
-- **Engineering** — how the codebase is structured. ADRs (decisions), how-tos (recipes), codebase-conventions (cross-cutting rules), per-directory `DOCS.md` (business rules co-located with code).
+- **Sales / company / customer** — how Tri Pros operates as a business. Authoritative for sales narrative, frameworks, customer journey, programs, offers.
+- **Engineering** — only what the code cannot say: ADRs (why), two conventions that are decision rules, the design system, and live plans. **The code is the source of truth**; executed plans are deleted once shipped and live on in git history.
 
-Each file is independently retrievable. If you need a rule, look it up — don't memorize it.
-
----
-
-## Company Summary
+## Company summary
 
 Tri Pros Remodeling is a Southern California residential construction and remodeling company. We generate leads through telemarketing and social media, convert them via in-home sales meetings, and deliver projects across energy-efficient and general remodeling trades. Our edge is licensed, insured craftsmanship paired with a customer experience that cheap contractors cannot match.
 
----
+## Engineering
 
-## Engineering — Quick Reference
+The code is the source of truth. Engineering docs survive only where code cannot carry the content (decisions, terms, design intent) or where pending work still cites them. Executed plans and specs were deleted on 2026-09-23 after a per-file audit; git history keeps them.
 
-| If you need to know... | Read this |
+| Need | Read |
 |---|---|
-| **Where to put a new file** | `codebase-conventions/README.md` (topic index) |
-| Architectural decisions ("why we chose X") | `adr/` (latest: `0003-service-provider-architecture.md`) |
-| How to add a new entity to the tRPC layer | `how-to/add-an-entity.md` |
-| pgEnum / schema rules | `codebase-conventions/database-schema.md` |
-| Enum standardization (const array → type → pgEnum) | `codebase-conventions/enum-standardization.md` |
-| tRPC procedure types + router structure | `codebase-conventions/trpc-procedures.md` |
-| DAL signatures + `DalReturn<T>` + `ScopedContext` | `codebase-conventions/dal-conventions.md` |
-| Service / provider 4-tier architecture | `codebase-conventions/service-architecture.md` (+ ADR-0003) |
-| Pagination / sort / search / filters toolkit | `codebase-conventions/query-toolkit.md` |
-| Tailwind / shadcn / motion / 'use client' / lint | `codebase-conventions/frontend-stack.md` |
-| PWA shell, safe-area, layout chain, scroll ownership | `codebase-conventions/app-shell.md` |
-| Compound entity cards, `<EntityActionMenu>`, `<EntityList>` | `codebase-conventions/entity-frontend.md` |
-| Env vars, public URLs, VAPID, integrations inventory | `codebase-conventions/environment.md` |
-| **Business rules per entity** | `src/shared/entities/<entity>/DOCS.md` (proposals/ is canonical) |
-| **tRPC entity-server-system operational rules** | `src/trpc/DOCS.md` |
-| **Where does a new rule go?** | `codebase-conventions/README.md` (decision tree) |
+| Why a structural decision was made | `adr/` (0001 entity actions · 0002 entity server system · 0003 service/provider tiers · 0004 proposal/contract independence · 0005 JSONB vs column vs child table) |
+| Cross-cutting rules that pending plans still cite | `codebase-conventions/` (verify against code; delete a file when its citing plan ships) |
+| Business-rule notes that pending work still cites | `src/**/DOCS.md` (same rule; never add one) |
+| Domain terms | `ubiquitous-language.md`, `../CONTEXT.md` |
+| Design tokens, anti-slop rules, audiences | `design-system/`, `../DESIGN.md`, `../PRODUCT.md` |
+| UI process (`/ui-exploration`) | `ui-design-playbook.md`, `how-to/ui-exploration.md` |
+| Live epic trackers, contracts, ledgers, cited research, VoIP epics | `plans/` |
+| Pending, partial, or in-progress specs and plans | `superpowers/specs/`, `superpowers/plans/` (delete on ship) |
+| Permissions target state for #285 | `permissions/visibility-rules-catalog.md` |
 
----
+## Sales / company
 
-## Sales / Company — Quick Reference
-
-| If you need to know... | Read this |
+| Need | Read |
 |---|---|
 | Who TPR is, brand story, team | `company/overview.md` |
 | What trades and services we offer | `company/services-catalog.md` |
@@ -63,102 +50,15 @@ Tri Pros Remodeling is a Southern California residential construction and remode
 | The full customer lifecycle | `customer/journey-map.md` |
 | How homeowners make decisions | `customer/decision-psychology.md` |
 | Programs (Energy-Saver+, Monthly Special, etc.) | `programs/README.md` |
-| Canonical business term glossary | `domain/ubiquitous-language.md` |
-
----
-
-## Directory Structure
-
-```
-docs/
-  README.md                         <- this file (master index)
-
-  adr/                              architectural decision records (immutable)
-    0001-entity-action-system.md
-    0002-entity-server-system.md
-    0003-service-provider-architecture.md
-
-  how-to/                           step-by-step recipes
-    add-an-entity.md
-
-  codebase-conventions/             cross-cutting engineering rules
-    README.md                       topic index + "where does a new rule go?" decision tree
-    database-schema.md
-    enum-standardization.md
-    trpc-procedures.md
-    dal-conventions.md
-    service-architecture.md
-    query-toolkit.md
-    frontend-stack.md
-    app-shell.md                    PWA + safe-area + layout + scroll ownership
-    entity-frontend.md              compound entity cards + EntityActionMenu + EntityList
-    environment.md
-
-  plans/                            large unimplemented designs
-    meta-ads-compound-intelligence.md
-    notion-crm-migration-design.md
-    notion-crm-migration-plan.md
-    realtime-sync/                  realtime PRD (Electric SQL vs Ably kernel) + primary-source research
-
-  domain/
-    ubiquitous-language.md          canonical business terms
-
-  company/                          sales-side: brand, services, advantages, warranties
-    overview.md
-    services-catalog.md
-    competitive-advantage.md
-    warranties-and-trust.md
-
-  sales/                            sales-side: frameworks + playbooks
-    sales-frameworks.md             CORE: CLOSER, Value Equation, A.R.A.C., Grand Slam
-    revenue-model.md
-    in-home-meeting-playbook.md
-    due-diligence-story.md
-    objection-handlers.md
-    closing-strategies.md
-    follow-up-cadence.md
-    post-signing-sequence.md
-    story-bank.md
-    lead-magnets.md
-    customer-intelligence.md
-
-  proposal/                         sales-side: proposal authoring & presentation
-    creation-guide.md
-    financing-presentation.md
-    scope-presentation.md
-
-  customer/                         sales-side: customer lifecycle + psychology
-    journey-map.md
-    decision-psychology.md
-
-  programs/                         active campaign programs (Energy-Saver+, etc.)
-    README.md
-    energy-saver-incentive.md
-    existing-customer-savings-plus.md
-    tpr-monthly-special.md
-
-  tasks/                            two active task summaries (rest migrated to GitHub Issues)
-    meta-ads-integration.md
-    notion-crm-migration.md
-```
-
-Plus engineering business-rules co-located with code:
-
-```
-src/
-  trpc/DOCS.md                              Entity Server System rules
-  shared/entities/<entity>/DOCS.md          per-entity invariants, derivations, gates
-  features/<feature>/DOCS.md                feature-level UX/flow rules (where earned)
-```
-
----
+| THE Showcase offer (all funnels + ads) | `marketing/showcase-offer.md` |
+| Ad editing patterns, variation axes, stills | `marketing/editing/`, `marketing/stills/` |
+| SEO playbook, keyword map, LLM citation | `seo/` |
+| Call scripts and per-source content for telemarketing | `plans/voip-campaigns/` |
 
 ## Key business context
 
-- **Sales methodology**: docs are grounded in Hormozi's CLOSER, Value Equation, and Grand Slam Offer frameworks — adapted for home improvement. See `sales/sales-frameworks.md`.
-- **Primary bottlenecks to address**: sticker shock, spouse objection, cold proposals, scope confusion, price competition.
-- **Close mechanism**: e-signature via Zoho Sign (active path; DocuSign provider is legacy).
-- **Proposal tool**: multi-step flow in `src/features/proposal-flow/` — seven agent-facing steps.
-- **CRM**: Notion (temporary; in-house CRM migration designed at `plans/notion-crm-migration-design.md`).
+- **Sales methodology**: grounded in Hormozi's CLOSER, Value Equation, and Grand Slam Offer frameworks — adapted for home improvement. See `sales/sales-frameworks.md`.
+- **Primary bottlenecks**: sticker shock, spouse objection, cold proposals, scope confusion, price competition.
+- **Close mechanism**: e-signature via Zoho Sign.
+- **CRM**: this app. Notion supplies construction data (trades, scopes, SOWs, pain points) only.
 - **Financing framing**: always bridge total price to monthly payment — see `proposal/financing-presentation.md`. Loan math at `src/shared/lib/loan-calculations.ts`.
-- **Enum reference**: `src/shared/constants/enums/` (per-domain split) — trade types, home areas, scope identifiers, etc.

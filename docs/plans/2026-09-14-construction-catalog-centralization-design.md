@@ -1,10 +1,11 @@
-# Construction Catalog — Centralization Design (PRELIMINARY)
+# Construction Catalog — Centralization Design (rationale & evidence)
 
-> **Status:** preliminary design, NOT scheduled. Produced 2026-09-14 from four parallel read-only research passes (server/data inventory, client consumer inventory, conventions compile, meeting-flow specialties placement review).
-> **Owner decisions (2026-09-14):** D1 ✅ module home, provider-only for now · D2 ✅ stored slug · D5 ✅ zero-scope trades are valid data in general; meeting-flow's specialties write path drops them (callsite rule, not a catalog/entity rule) · D6 ✅ let the specialties build finish, then migrate non-defensively · D4 ⏸ deferred to a grill session · D3, D7, D8 open. See §11.
-> **Artifacts:** this design + requirements (§12) exist. **No spec and no implementation plan yet** — next: resolve D3 → spec (`docs/superpowers/specs/`) → plan (`docs/superpowers/plans/`), per phase.
-> **Not part of** the in-flight specialties UI task (`docs/superpowers/plans/2026-09-13-specialties-trade-sheet.md`). That task ships on the current structure; this design migrates it afterwards (D6).
-> **Relationship to EPIC #195** (construction data in-house): this design is the missing **Phase 0 seam** that turns #195's cutover into a one-line source binding swap. #195 predates ADR-0003, the shipped tRPC standardization, and `modules/`; §9 lists the amendments it needs.
+> 📍 **This is the design record, not the live status.** The epic tracker — `docs/plans/2026-09-15-construction-data-standardization-epic.md` — owns decisions, the requirements checklist, phase/spec status and pointers. **Update the tracker, not this file.** Read this one for *why*: §1 problem, §2 principles, §3–§9 design detail, Appendix A bugs, Appendix B stale refs, Appendix C inventory.
+> **Produced** 2026-09-14 from four parallel read-only research passes (server/data inventory, client consumer inventory, conventions compile, meeting-flow specialties placement review).
+> **Owner decisions (2026-09-14):** D1 ✅ module home, provider-only for now · D2 ✅ stored slug · D3 ✅ Notion translators live in the module (translator-home spec) · D5 ✅ zero-scope trades are valid data in general; meeting-flow's write path drops only entries that are completely empty AND absent from the server (callsite rule, not a catalog/entity rule) · D6 ✅ let the specialties build finish, then migrate non-defensively · D4 ⏸ deferred to a grill session · D7, D8 open. See §11, and the tracker §1–§2 for the live version.
+> **§12 requirements are mirrored into the tracker §3** with the same IDs (C/F/A/V). The tracker's copy is the one with checkboxes.
+> **Not part of** the in-flight specialties UI task. That task ships on the current structure; this design migrates it afterwards (D6).
+> **Relationship to EPIC #195** (construction data in-house): this design is the missing **Phase 0 seam** that turns #195's cutover into a one-line source binding swap. #195 predates ADR-0003, the shipped tRPC standardization, and `modules/`; §9 lists the amendments it needs (tracker §7).
 
 ---
 
@@ -30,7 +31,7 @@ Full evidence: Appendix A–C.
 3. **Identity is data, not derivation.** A catalog item's `id` never changes across the migration; its `slug` is stored, not computed from the name.
 4. **Read the whole catalog once, index it, share it.** ~27 trades / low-hundreds of scopes: one cached whole-catalog read beats per-trade-row queries everywhere.
 5. **Rules defined once, documented in `DOCS.md`, keyed by stable slug, validated against the live catalog.**
-6. **Entities own their columns; callsites own their write policies.** The shape and validity of `tradeSelections` is a *meetings* concern; the catalog module supplies reconciliation helpers, not selection policy. A policy that applies to one writer (e.g. meeting-flow dropping zero-scope trades) stays with that writer and is never promoted into an entity or catalog invariant.
+6. **Entities own their columns; callsites own their write policies.** The shape and validity of `tradeSelections` is a *meetings* concern; the catalog module supplies reconciliation helpers, not selection policy. A policy that applies to one writer (e.g. meeting-flow dropping completely-empty selection entries) stays with that writer and is never promoted into an entity or catalog invariant.
 7. **Incremental, each phase shippable.** No big-bang JSONB rewrite.
 
 ---
@@ -48,6 +49,11 @@ src/shared/modules/construction/
 ├── DOCS.md                          # business rules, slug-anchored (§6)
 ├── service.ts                       # THE server API (catalog reads, SOW content, resolvers, revalidate)
 ├── source.ts                        # ConstructionCatalogSource interface + single binding (§4)
+├── sources/
+│   └── notion/                      # the ONLY Notion-aware code (D3); implements ConstructionCatalogSource; deleted at P5
+│       ├── notion-catalog-source.ts
+│       ├── constants/               # data-source ids, property maps (Notion property name ↔ domain field)
+│       └── lib/                     # page→Trade/Scope/SowTemplate/PainPoint translators, property extractors, blocks→TipTap
 ├── trades/
 │   ├── schemas/index.ts             # tradeSchema (neutral), tradeRefSchema
 │   ├── constants/                   # trade-categories.ts, trade-pairings.ts, trade-outcomes.ts, energy-categories.ts
@@ -125,7 +131,11 @@ export interface ConstructionCatalogSource {
 export const catalogSource: ConstructionCatalogSource = notionCatalogSource   // ← the ONE line #195 swaps
 ```
 
-- **Notion implementation** maps pages → domain types, normalizes id format (dashed UUID), drops disabled rows, **returns null per bad row** (never throws), and **paginates** (`start_cursor` loop) for both `dataSources.query` and block children.
+- **Where Notion knowledge lives (D3 ✅, per `docs/superpowers/specs/2026-08-20-provider-boundary-translator-home-design.md`).** The module owns the common business logic, requirements, configs, and rules for working with and querying construction data. Today it reaches the data through the Notion provider; later through its own entities. So:
+  - **`modules/construction/sources/notion/`** holds everything construction-specific about Notion: data-source ids, property maps, page→domain translators, property extractors, blocks→TipTap conversion, and the `ConstructionCatalogSource` implementation. Translators import Notion SDK shapes **type-only** from `providers/notion/types.ts`.
+  - **`providers/notion/`** becomes a generic leaf: `client.ts` (actions: paginated data-source query, retrieve page, paginated block children), `types.ts` (Notion-native types), and provider-internal `lib/` (config only). No `dal/`, no domain schemas, no adapters, no hooks, no construction data-source registry. Consumers import only `client.ts` + `types.ts`.
+  - At P5 the binding swaps to the module's own entities/DAL; `sources/notion/` is deleted, and `providers/notion/` too if nothing else uses Notion.
+- **Notion implementation** maps pages → domain types, normalizes id format (dashed UUID), drops disabled rows, **returns null per bad row** (never throws), and **paginates** (`start_cursor` loop) for both data-source queries and block children.
 - **Service signatures** are shaped for the DB future now — `(ctx, input) => DalReturn<T>`-compatible at the service boundary — so call sites don't change at swap time.
 - React Query hooks leave `providers/notion/dal/**/hooks` entirely (→ `catalog/hooks`). The provider becomes a leaf again (`service-architecture.md:12,250-256`).
 - `get-cached-pain-points.ts` (feature calling provider DAL directly) and `scripts/portfolio-scraper/fetch-scopes.ts` (second Notion client) route through the service.
@@ -135,7 +145,7 @@ export const catalogSource: ConstructionCatalogSource = notionCatalogSource   //
 - `constructionService.getCatalog()` — whole catalog, server-cached (`unstable_cache`, domain tags `construction:catalog`, `construction:sow-templates`, `construction:pain-points` — no vendor names). One TTL policy for all reads.
 - `constructionService.resolveTradeNames(ids)` / `resolveCatalogRefs(...)` — the ONE id→label resolver (replaces 9).
 - `constructionService.revalidate()` — replaces `revalidateNotionCache`; at DB cutover, invalidation fires on write.
-- **tRPC:** rename `notionRouter` → `constructionRouter` (tRPC epic R4: routers attach to real entities, not vendors), built on the shipped `procedures.ts` pattern: `catalog.get`, `sowTemplates.list({scopeId})`, `sowTemplates.getContent({id})`, `revalidate`. Reads stay public (funnels need them) but are now server-cached. Delete dead `getTradesByQuery`, `getScopesByTrade`, `getScopesByQuery` (the per-row picker query disappears with the shared index).
+- **tRPC:** rename `notionRouter` → `constructionRouter` (tRPC epic R4: routers attach to real entities, not vendors), built on the shipped `procedures.ts` pattern: `catalog.get`, `sowTemplates.list({scopeId})`, `sowTemplates.getContent({id})`, `revalidate`. Reads stay public (funnels need them) but are now server-cached. Delete `getTradesByQuery` (dead) and `getScopesByTrade` (one scratch-page consumer). ⚠️ **`getScopesByQuery` is LIVE** — `useGetScopes` feeds `sow-field`, `trade-scope-row` and `meeting-scopes-picker`; it goes at **P3**, when the shared index replaces per-row picker queries (corrected 2026-09-15).
 - **Client:** `useConstructionCatalog()` → one `catalog.get` query, `select: buildCatalogIndex`, long `staleTime`. RSC consumers (landing, sitemap) call `constructionService` directly; views needing it on first paint use server prefetch.
 
 ---
@@ -179,7 +189,9 @@ No big-bang rewrite of prod JSONB. Instead:
 2. **Shared selection reducers move to `entities/meetings/lib/`** (`find/upsert/toggle/withNote/withoutTrade` from `meeting-flow/lib/trade-selection.ts`), documented in `entities/meetings/DOCS.md#trade-selections-shape`. Both writers (specialties step and `MeetingScopesPicker`) use them.
    **D5 ✅ — two levels, deliberately different:**
    - **Entity / construction data (general):** a trade selection with zero scopes/add-ons is **valid data**. The meetings schema and every reader must tolerate it; the catalog module has no "at least one scope" invariant. (Recommendation, not yet decided: reject an empty `tradeId` at the schema — `MeetingScopesPicker` can write one today.)
-   - **meeting-flow specialties callsite (specific):** the write path **normalizes** — a trade must have ≥1 scope or add-on to be saved; `normalizeForWrite` drops the rest. This is correct as specced (`docs/superpowers/specs/2026-09-13-specialties-trade-sheet-design.md:23,51,146`). It is a policy of that writer, so `normalizeForWrite` / `isTradeSelected` **stay in meeting-flow** and are NOT moved to the entity or the module.
+   - **meeting-flow specialties callsite (specific)** — verified against the shipped code 2026-09-15 (`meeting-flow/lib/trade-selection.ts:41-56`): `normalizeForWrite(selections, server)` keeps an entry when it has **any content** — ≥1 scope/add-on, ≥1 reason, **or** a non-whitespace note — **or** when `server` already holds an entry for that trade (meeting creation and the old step wrote zero-item trades; an edit elsewhere must not delete them). Only an entry that is *completely empty and absent from the server* is dropped. Round 2 adds a UI rule on top (`2026-09-14-specialties-stage-and-rail-design.md` §4.2.3): unticking a trade's last item calls `removeTrade`, taking the entry out of the model so the next write deletes it. Net: **emptied by the rep → removed; zero-item entries that arrived from the server → kept.**
+   - `isTradeSelected` (`:24`) is a **display** predicate — "has ≥1 item" — not the write gate. `hasStoredEntry` (`:37`) is the "an entry exists at all" predicate.
+   - These are policies of that writer, so `normalizeForWrite` / `isTradeSelected` / `hasStoredEntry` **stay in meeting-flow** and are NOT moved to the entity or the module.
    - Other writers (`MeetingScopesPicker`, future callsites) choose their own policy; none inherits meeting-flow's.
 3. **Selection ↔ catalog reconciliation** (`countSelection`, `orphanItems`) → module `scopes/lib/reconcile-selected-items.ts`; used by closing, proposal defaults, PM. Orphans are shown, never silently dropped (today `sow-field.tsx` drops them).
 4. **Meeting → SOW mapping** exists twice (`modules/proposals/core/lib/snap-sow-from-meeting.ts` server, `meeting-flow/lib/build-proposal-defaults.ts` client) → one, owned by proposals; carries `kind` so add-ons stop landing in SOW `scopes`.
@@ -219,7 +231,7 @@ No big-bang rewrite of prod JSONB. Instead:
 | Phase | Content | Depends on | Risk |
 |---|---|---|---|
 | **P0 — Provider hardening** (bug fixes, no moves) | Pagination for `dataSources.query` + block children; scope/SOW/pain-point adapters return null; id normalization; delete dead code (`page-to-html`, `blocks-to-html`, empty `page-to-blocks`, `useGetTrades`); fix energy-trade classification | nothing | low — ship anytime |
-| **P1 — Seam + read model** | Domain schemas, `ConstructionCatalogSource` + Notion impl, `constructionService` (cached, domain tags), `constructionRouter` (rename, codemod all `trpc.notionRouter` call sites in one PR), `buildCatalogIndex`, `useConstructionCatalog`; hooks out of provider; pain points + scraper through service | D3 | medium — wide rename, mechanical |
+| **P1 — Seam + read model** | Domain schemas, `ConstructionCatalogSource` + `sources/notion/` (translators, property maps, data-source ids, extractors, blocks→TipTap moved out of the provider), `providers/notion` reduced to `client.ts` + `types.ts` + config; `constructionService` (cached, domain tags), `constructionRouter` (rename, codemod all `trpc.notionRouter` call sites in one PR), `buildCatalogIndex`, `useConstructionCatalog`; hooks out of provider; pain points + scraper through service | P0 | medium — wide rename, mechanical |
 | **P2 — Rules** | Taxonomy/energy/primary-trade consolidated + `DOCS.md`; Notion `Slug` property + backfill + required-slug adapter; slug-key validation check; funnel `TRADE_FACTS` name drift fix. Pairings + outcomes consolidate structurally now; canonical copy waits on D4 | P1 | medium — Notion backfill write |
 | **P3 — Consumers** | After the specialties build completes: meeting-flow first, then PM/portfolio, intake, funnels, proposal-flow, landing; shared `TradeScopeRow`/`TradeBadges`/`TemplatesModal`; delete all duplicates | P1–P2 | medium — UI regressions; verify per surface |
 | **P4 — Stored references** | Ref schemas composed into entity schemas; shared selection reducers → meetings entity + DOCS (zero-scope trades valid at entity level; meeting-flow keeps its normalizing write policy); single meeting→SOW mapper carrying `kind`; lead-trade derivation → customers; pain-point vocabularies → one | P3 | medium — prod JSONB compatibility (`kind` optional) |
@@ -233,9 +245,9 @@ No big-bang rewrite of prod JSONB. Instead:
 |---|---|---|
 | **D1** | Home: `modules/construction` vs `entities/{trades,scopes,sow-templates}` | ✅ **`modules/construction`**, provider-only (no DAL/entities) until #195 |
 | **D2** | Trade slug: stored + rename-stable vs derived from name | ✅ **Stored** — Notion `Slug` property, backfilled from current slugs, then required |
-| **D3** | Notion→domain translator location: inside `providers/notion` (JustCall dialer precedent, 2026-08-19) vs domain layer (translator-home spec, owner-approved 2026-08-20, not landed) | Open — recommend the newer translator-home spec, decided once for all providers |
+| **D3** | Notion→domain translator location: inside `providers/notion` (JustCall dialer precedent, 2026-08-19) vs domain layer (translator-home spec, owner-approved 2026-08-20, not landed) | ✅ **Domain layer** — `modules/construction/sources/notion/`; the module is the right home for construction-data logic, configs, and rules, reached through Notion today and its own entities later (§4) |
 | **D4** | Canonical pairing + outcome copy (playbook vs landing vs `docs/proposal/scope-presentation.md` disagree on roof/HVAC; Bathroom→Flooring and Solar missing in meeting-flow) | ⏸ **Deferred** to a dedicated grill session. Structural recommendation stands: one registry with `reason` (spoken) + `story` (web) |
-| **D5** | Meeting `tradeSelections`: persist trades with reasons/notes but zero scopes? | ✅ **Split by level** (§7.2): valid data at the entity/construction level; the meeting-flow specialties write path normalizes to ≥1 scope/add-on (its spec is correct). Callsite rule only — never generalized |
+| **D5** | Meeting `tradeSelections`: persist trades with reasons/notes but zero scopes? | ✅ **Split by level** (§7.2): valid data at the entity/construction level. The meeting-flow write path keeps any entry with content (item, reason **or** note) or already on the server, and drops only completely-empty server-absent entries; round 2 removes a trade when the rep unticks its last item. Callsite rule only — never generalized |
 | **D6** | Timing vs in-flight specialties build | ✅ **Let it finish everything**; standardize the catalog, then migrate its code **non-defensively** (§10) |
 | **D7** | Postgres catalog PK = Notion UUID (amend #195) | Open — recommend yes |
 | **D8** | Pain points in the module now (P4) or with #195's deferred follow-up | Open — recommend P4 |
@@ -249,10 +261,10 @@ The checklist the spec, plan, and every phase PR are held to. IDs are stable —
 ### 12.1 Owner constraints (decided)
 - **C1** Home is `src/shared/modules/construction/`. No tables, DAL, `server-spec.ts`, or CRUD router until P5 (D1).
 - **C2** Trade slug is stored data: Notion `Slug` property, backfilled once from the current derived slug (no live URL changes), then required by the adapter with no name-derived fallback (D2).
-- **C3** Zero-scope trade selections are valid at the entity/catalog level. The meeting-flow specialties write path keeps its normalization (≥1 scope/add-on to save); `normalizeForWrite` + `isTradeSelected` stay in meeting-flow and are never generalized (D5).
+- **C3** Zero-scope trade selections are valid at the entity/catalog level. The meeting-flow specialties write path keeps its own normalization — an entry survives if it has any content (item, reason or note) or is already on the server; only completely-empty server-absent entries are dropped, and round 2 removes a trade when the rep unticks its last item. `normalizeForWrite` / `isTradeSelected` / `hasStoredEntry` stay in meeting-flow and are never generalized (D5).
 - **C4** The specialties build finishes on the current structure first. Migration is non-defensive: each change moves consumers and deletes the superseded code; no aliases, re-export shims, compat wrappers, dual paths, or flags. Only persisted data gets compatibility handling (D6).
 - **C5** Canonical pairing/outcome copy is out of scope until the D4 grill; the registry structure may consolidate earlier.
-- **C6** D3 (translator location) is decided before P1 starts; D7 (PK = Notion UUID) and D8 (pain points) before P4/P5.
+- **C6** Notion→domain translation, property maps, data-source ids, and extractors live in `modules/construction/sources/notion/`; `providers/notion` exposes only `client.ts` + `types.ts` (D3, translator-home spec). D7 (PK = Notion UUID) and D8 (pain points) are decided before P4/P5.
 
 ### 12.2 Functional
 - **F1** Neutral domain types (`Trade`, `Scope` with `kind`, `SowTemplate`, `CatalogRef`, `ScopeRef`) live in the module's `schemas/`; nothing above the seam imports Notion types or uses Notion property names (`entryType`, `relatedTrade`, `homeOrLot`, `type`).
@@ -261,7 +273,7 @@ The checklist the spec, plan, and every phase PR are held to. IDs are stable —
 - **F4** Adapters return the entity or `null` per row (never throw on a row), drop disabled rows at extraction; no consumer re-filters `disabled`.
 - **F5** Ids are normalized (dashed, lowercase) at the adapter.
 - **F6** One server-cached whole-catalog read with domain-named tags (no `notion-*` tags) and one `revalidate`; public reads never hit Notion per request.
-- **F7** `constructionRouter` replaces `notionRouter` in one change; every call site repointed; dead procedures (`getTradesByQuery`, `getScopesByQuery`, `getScopesByTrade`) deleted.
+- **F7** `constructionRouter` replaces `notionRouter` in one change; every call site repointed; `getTradesByQuery` and `getScopesByTrade` deleted. `getScopesByQuery` is live and goes at P3 (corrected 2026-09-15 — see tracker F7).
 - **F8** `useConstructionCatalog()` + `buildCatalogIndex` is the only client read of the catalog; no per-trade-row scope queries; RSC consumers call the service.
 - **F9** One trade/scope id→label resolver; unknown ids surface as orphans, never silently dropped.
 - **F10** One scope-vs-add-on classifier: `kind` set at the adapter.
@@ -275,7 +287,7 @@ The checklist the spec, plan, and every phase PR are held to. IDs are stable —
 - **F18** Funnel `TRADE_FACTS` stops hardcoding trade names; names resolve from the catalog.
 
 ### 12.3 Architecture & conventions
-- **A1** Providers are leaves with no domain types or business logic — `service-architecture.md#dependency-direction-is-one-way`, `#providers-have-no-domain-types-in-signatures`, `#provider-directory-shape`.
+- **A1** Providers are leaves with no domain types or business logic — `service-architecture.md#dependency-direction-is-one-way`, `#providers-have-no-domain-types-in-signatures`, `#provider-directory-shape`, **as amended by** `docs/superpowers/specs/2026-08-20-provider-boundary-translator-home-design.md` §2 (translators live in domain-land; external consumers import only a provider's `client.ts` + `types.ts`). ⚠️ `service-architecture.md:32,252` still carry the superseded "translators in provider `lib/`" clauses — the amendment (spec §5) must land no later than P1.
 - **A2** Services orchestrate and never import `db` — `service-architecture.md#services-never-import-db`.
 - **A3** Adapter behavior — `providers/notion/DOCS.md#adapter-returns-entity-or-null`, `#disabled-checkbox-is-extraction-time-gate`, `#notion-select-is-source-of-truth-for-zod-enums`, `#cache-invalidation-after-notion-edits` (update this DOCS with F3–F6).
 - **A4** tRPC: routers named for a real entity/domain, not a vendor; `src/trpc/DOCS.md#procedures-defined-once`, `#one-leaf-shape`, `#pure-composition-index`, `#dal-to-trpc-bridge`.
@@ -297,7 +309,7 @@ The checklist the spec, plan, and every phase PR are held to. IDs are stable —
 - **V3** Slug backfill: the sitemap URL set is identical before and after.
 - **V4** Energy Saver qualifies for a selection containing an energy-efficient trade (test).
 - **V5** Pagination: a catalog read returns more than 100 rows when the source has them (test against a fake client or a verified count).
-- **V6** P3 surfaces verified in a browser (Playwright): meeting-flow specialties (incl. C3 normalization still dropping zero-item trades), PM project form, intake picker, proposal SOW picker + templates, landing trade/pillar pages, funnel portfolio blocks.
+- **V6** P3 surfaces verified in a browser (Playwright): meeting-flow specialties (incl. C3: a rep-emptied trade is removed, a server-held zero-item entry is preserved), PM project form, intake picker, proposal SOW picker + templates, landing trade/pillar pages, funnel portfolio blocks.
 - **V7** Every doc touched by a phase (module DOCS, notion DOCS, UL, conventions) updated in the same change; no stale refs left.
 
 ### 12.5 Out of scope

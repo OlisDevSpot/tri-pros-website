@@ -39,17 +39,17 @@ When a provider's env vars must be `.optional()` (feature ships before it's conf
 **Reference impl**: `src/shared/config/server-env.ts` + `src/shared/services/providers/twilio/lib/config.ts`
 **Enforced by**: Zod (startup throws on missing required var) + convention (provider-optional pattern)
 
-### use-getpublicbaseurl-for-external-urls
+### use-publicurl-for-external-urls
 
-Any external-facing absolute URL (push notification `navigate`, webhook callbacks, qstash callback URLs, GCal watch URL, email links) uses `getPublicBaseUrl()` from `src/shared/config/public-url.ts`. Never hand-roll `env.NGROK_URL ?? env.NEXT_PUBLIC_BASE_URL`.
+Any external-facing absolute URL (push notification `navigate`, webhook callbacks, qstash callback URLs, GCal watch URL, email links) uses `publicUrl()` from `src/shared/config/public-url.ts` (server-only). Never hand-roll `env.NGROK_URL ?? env.NEXT_PUBLIC_BASE_URL`. Client code uses `mainSiteUrl()`; the full origin rules are canonical in [urls-and-origins.md](./urls-and-origins.md).
 
 ```ts
-import { getPublicBaseUrl } from '@/shared/config/public-url'
-const url = `${getPublicBaseUrl()}/dashboard/meetings/${id}`
+import { publicUrl } from '@/shared/config/public-url'
+const url = publicUrl(ROOTS.dashboard.customers.root())
 ```
 
 **Why**: ngrok holding rules differ per worktree; centralizing the fallback prevents one site from baking in the wrong base.
-**Reference impl**: `src/shared/config/public-url.ts`
+**Reference impl**: `src/shared/config/public-url.ts`; `src/shared/services/providers/web-push/lib/build-payload.ts` (`resolveNavigateUrl`)
 **Enforced by**: convention
 
 ### apphosts-is-source-of-truth-for-hosts

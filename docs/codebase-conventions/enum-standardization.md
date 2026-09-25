@@ -8,6 +8,8 @@ Every fixed-set string value in the app — meeting outcomes, user roles, propos
 
 Every option set is declared once as a `readonly` tuple in `src/shared/constants/enums/<domain>.ts`.
 
+**Exception — an entity's or module's own option set may be co-located** in its `constants/`, when the set is part of that unit's domain vocabulary rather than a cross-cutting app enum. Live example: `src/shared/domains/construction/constants/enums.ts` (`tradeLocations`, `constructionTypes`, `variableDataTypes`, `homeAreas`), imported by `modules/proposals/core/schemas`, `db/schema/{customer-profiles,meta,scopes}.ts` and `entities/customers/constants/property-profile-fields.ts`. The pipeline below (const → type → Zod → Drizzle) applies identically wherever the tuple lives; only the *location* differs. That file folds into `modules/construction` at P1 of the construction epic (`docs/plans/2026-09-15-construction-data-standardization-epic.md`, A5).
+
 ```ts
 // src/shared/constants/enums/proposals.ts
 export const proposalStatuses = ['draft', 'sent', 'approved', 'declined'] as const

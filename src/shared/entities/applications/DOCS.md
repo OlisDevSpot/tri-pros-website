@@ -2,7 +2,7 @@
 
 An **Application** is an agent-run, in-home promotion application (`type`: `tpr_assistance`; `showcase` is stubbed for a future phase) that persists to the DB and links to a meeting. Meeting (1) → Applications (many). This entity is the **persistence substrate** only: the multi-step form engine and UI are sub-project #2, and the review/approval + decision email are sub-project #3.
 
-This directory holds: the draft-state schema (`schemas/index.ts`), enum re-exports and reserved keys (`lib/constants.ts`), the visibility predicate + server spec (`lib/`), CRUD + business DAL (`dal/server/`). Backend module layout mirrors `proposals/`. The server spec at `lib/server-spec.ts` is consumed by `createEntityRouter` in `src/trpc/routers/applications.router/index.ts`, which is already wired (CRUD + business reads + draft lifecycle).
+This directory holds: the draft-state schema (`schemas/index.ts`), enum re-exports and reserved keys (`lib/constants.ts`), the visibility predicate + server spec (`lib/`), CRUD + business DAL (`dal/server/`). Backend module layout mirrors `proposals/`. The server spec at `lib/server-spec.ts` is consumed by `createCrudRouter` in `src/trpc/routers/applications.router/crud.router.ts`; `applications.router/index.ts` composes it with the `business` and `draft` sub-routers (CRUD + business reads + draft lifecycle, all wired).
 
 ## Lifecycle
 
@@ -87,7 +87,7 @@ Notion id with **no FK** to the Postgres `trades` table (mirroring
 `x_project_scopes.scopeId`), and `tradeName` snapshots the label at submit
 because marketing renames trades in Notion freely. Sub-project #2's
 multi-select-trades step reads the Notion-backed picker
-(`notionRouter.trades.getAll` → `constructionDataService.getTrades()`) and
+(`constructionRouter.trades.getAll` → `constructionService.getCatalog()`) and
 **must** write `{ tradeId, tradeName }` objects under
 `draftAnswersJSON.answers['trades']` — any other key name silently falls
 through to the generic answer path and never reaches the trades junction.
@@ -164,6 +164,6 @@ or mutates a child row.
 - ADR-0005 — JSONB vs column vs child table (the storage-shape decision behind [`#draft-commit-split`](#draft-commit-split))
 - `docs/codebase-conventions/dal-conventions.md` — `DalReturn<T>` + `ScopedContext` pattern used in this entity's DAL
 - [`../meetings/DOCS.md`](../meetings/DOCS.md) — `userParticipatesInMeeting`, the shared visibility primitive this entity reuses
-- [`../proposals/DOCS.md`](../proposals/DOCS.md) — structural precedent this entity's backend module layout and visibility rule mirror
+- [`../../modules/proposals/core/DOCS.md`](../../modules/proposals/core/DOCS.md) — structural precedent this entity's backend module layout and visibility rule mirror
 
 **Last updated:** 2026-07-30 — initial (sub-project #1: data model + backend).

@@ -75,7 +75,7 @@ A meeting is **dispatched** when it has a primary rep — either explicit or imp
 
 A non-omni agent sees a meeting only if they are a participant (any of `owner | co_owner | helper`). Super-admins (`ability.can('manage', 'all')`) bypass scoping.
 
-This predicate cascades upward to customers (`../customers/DOCS.md#visibility-via-meeting-participation`) and downward to proposals (`../proposals/DOCS.md#visibility-via-meeting-participation`).
+This predicate cascades upward to customers (`../customers/DOCS.md#visibility-via-meeting-participation`) and downward to proposals (`../../modules/proposals/core/DOCS.md#visibility-via-meeting-participation`).
 
 **Why**: meeting participation is the single source of "did this agent work with this customer." Every visibility predicate in the entity graph derives from here.
 **Reference impl**: `dal/server/participants.ts:userParticipatesInMeeting`
@@ -108,11 +108,18 @@ The `meetings.pipeline` column stores 3 values (`fresh | rehash | dead`). A meet
 
 `meetingOutcomes` is a composite of:
 
-- **Selectable** (`selectableMeetingOutcomes`) — `not_set | not_good | pns | npns | ftd | no_show | lost_to_competitor | follow_up_needed`. These appear in the outcome dropdown.
-- **Derived** (`derivedMeetingOutcomes`) — `proposal_created | proposal_sent | converted_to_project`. These appear in the dropdown but are **disabled** — set automatically by upstream events.
+- **Selectable** (`selectableMeetingOutcomes`) — `not_set | not_good | pns | npns | ftd | no_show | lost_to_competitor | cancelled | nra | follow_up_needed | reschedule_needed`. Always available in the outcome dropdown.
+- **Derived** (`derivedMeetingOutcomes`) — `proposal_created | proposal_sent | converted_to_project | additional_work`. They track proposal/project state. In the dropdown each is **disabled until its condition holds** (`getOutcomeDisabledChecker`), after which it can be hand-selected:
 
-**Why**: derived outcomes encode pipeline progression and must not be hand-set. `converted_to_project` is set when a project is created or linked (`projects.router/business.router.ts` `create`, or `customerPipelinesRouter.assignToProject`) — proposal approval only unlocks the dropdown option, it does not itself write the outcome (see `../proposals/DOCS.md#conversion-trigger`); `proposal_sent` is set by sending a proposal (see `#outcome-flips-on-proposal-sent`).
-**Reference impl**: `src/shared/constants/enums/meetings.ts`
+| Outcome | Dropdown enabled when | Written automatically by |
+|---|---|---|
+| `proposal_created` | the meeting has ≥ 1 proposal | **nothing** — no server code writes it; it is only ever hand-selected |
+| `proposal_sent` | a proposal on the meeting has `status = 'sent'` (equality — an approved proposal no longer counts) | `deriveOutcomeOnProposalSent` (`#outcome-flips-on-proposal-sent`) |
+| `converted_to_project` | a proposal on the meeting is `approved` | project creation / `assignToProject` |
+| `additional_work` | never — always disabled | `deriveOutcomeOnAdditionalWorkApproved` |
+
+**Why**: derived outcomes encode pipeline progression, so the dropdown offers one only once the underlying state exists. `converted_to_project` is set when a project is created or linked (`projects.router/business.router.ts` `create`, or `customerPipelinesRouter.assignToProject`) — proposal approval only unlocks the dropdown option, it does not itself write the outcome (see `../../modules/proposals/core/DOCS.md#conversion-trigger`); `proposal_sent` is set by sending a proposal (see `#outcome-flips-on-proposal-sent`).
+**Reference impl**: `src/shared/constants/enums/meetings.ts`; `src/shared/domains/pipelines/lib/get-disabled-outcomes.ts`
 **Enforced by**: convention + disabled UI options in outcome picker
 
 ### outcome-flips-on-proposal-sent
@@ -169,7 +176,7 @@ so a meeting that already happened can never have its disposition clobbered.
 `meetings.flowStateJSON.tradeSelections` is the meeting-time scope picker output. On proposal creation, the create handler snapshots these into the proposal's SOW (`projectJSON.data.sow`). After snapshot, the proposal SOW is independent.
 
 **Why**: the agent picks trades during the meeting; that picks-list flows into the first proposal as a starting point. Once the proposal exists, the agent edits the SOW independently — re-pulling from meeting state would erase their work.
-**Reference impl**: `../proposals/dal/server/crud.ts:hooks.create.before` (the snapshot step, reads meeting via `meetingCrud.getById`); `dal/server/google-calendar.ts:getMeetingForGCal` (also reads tradeSelections for the GCal event description)
+**Reference impl**: `../../modules/proposals/core/dal/server/crud.ts:hooks.create.before` (the snapshot step, reads meeting via `meetingCrud.getById`); `dal/server/google-calendar.ts:getMeetingForGCal` (also reads tradeSelections for the GCal event description)
 **Enforced by**: convention
 
 ### gcal-sync-state-fields
@@ -195,7 +202,7 @@ Meeting `flowStateJSON.dealStructure` carries the agent's in-meeting pricing scr
 - `computeDealMonthlyPayment(deal)` → amortized monthly when `mode === 'finance'`. Zero-interest falls back to `P / n`.
 - `computeDealDepositPercent(deal)` → `round(depositAmount / finalTcp * 100)` when `mode === 'cash'`.
 
-**Why**: derived = single source of truth (see `../proposals/DOCS.md#final-tcp-derived` for the same pattern). The meeting scratchpad mirrors what eventually flows into the proposal's `fundingJSON`.
+**Why**: derived = single source of truth (see `../../modules/proposals/core/DOCS.md#final-tcp-derived` for the same pattern). The meeting scratchpad mirrors what eventually flows into the proposal's `fundingJSON`.
 **Reference impl**: `lib/compute-deal-derived.ts`
 **Enforced by**: convention (no persisted columns; helpers exported from `lib/`)
 
@@ -235,7 +242,7 @@ The Duplicate action (`meetingsRouter.crud.duplicate`) copies the source row min
 
 - **Carrying `flowStateJSON` (or `projectId`) on duplicate.** A duplicate is a fresh sit; only reschedule continues one — see `#duplicate-copies-setup-only` / `#reschedule-cancels-and-rebooks`.
 - **Adding `'projects'` to `meetings.pipeline` enum.** Use `projectId IS NOT NULL` — see `#meeting-pipeline-storage-vs-derived`.
-- **Selecting `meetingOutcome = 'converted_to_project'` from the outcome dropdown without actually creating/linking a project.** The dropdown option is enabled once the meeting has an approved proposal, and selecting it writes the enum directly (`useOutcomeChange` → plain `updateOutcome`) — it does NOT create a project. This desyncs the outcome from reality; always drive the outcome via project creation (`projects.router/business.router.ts` `create`) or `customerPipelinesRouter.assignToProject` instead. See `../proposals/DOCS.md#conversion-trigger`.
+- **Selecting `meetingOutcome = 'converted_to_project'` from the outcome dropdown without actually creating/linking a project.** The dropdown option is enabled once the meeting has an approved proposal, and selecting it writes the enum directly (`useOutcomeChange` → plain `updateOutcome`) — it does NOT create a project. This desyncs the outcome from reality; always drive the outcome via project creation (`projects.router/business.router.ts` `create`) or `customerPipelinesRouter.assignToProject` instead. See `../../modules/proposals/core/DOCS.md#conversion-trigger`.
 - **Unconditionally setting `meetingOutcome = 'proposal_sent'` when sending a proposal.** Use `deriveOutcomeOnProposalSent` — see `#outcome-flips-on-proposal-sent`.
 - **Storing computed deal values** (`finalTcp`, `monthlyPayment`, `depositPercent`) on the meeting. Always derive.
 - **Joining `meetingParticipants` directly into a meetings list query without `getOwnerCoOwnerForMeetings`.** The raw join cross-products when duplicates exist; the batch helper deduplicates safely.
@@ -248,9 +255,9 @@ The Duplicate action (`meetingsRouter.crud.duplicate`) copies the source row min
 ## See also
 
 - `../customers/DOCS.md#visibility-via-meeting-participation` — meeting participation is the visibility bridge
-- `../proposals/DOCS.md#conversion-trigger` — approval is a precondition for project creation, not the trigger itself; project creation/linking sets `converted_to_project`
-- `../proposals/DOCS.md#sow-snapshot-from-meeting-on-create` — proposal-side of trade-selections snapshot
-- `../projects/DOCS.md#one-project-per-birthing-meeting` — projectId link semantics (a project has one birthing meeting; later meetings on it are typed `Project`)
+- `../../modules/proposals/core/DOCS.md#conversion-trigger` — approval is a precondition for project creation, not the trigger itself; project creation/linking sets `converted_to_project`
+- `../../modules/proposals/core/DOCS.md#sow-snapshot-from-meeting-on-create` — proposal-side of trade-selections snapshot
+- `../../modules/projects/core/DOCS.md#one-project-per-birthing-meeting` — projectId link semantics (a project has one birthing meeting; later meetings on it are typed `Project`)
 - `memory/project-gcal-sync-architecture.md` — GCal sync architecture (planned)
 - `docs/codebase-conventions/dal-conventions.md` — DAL conventions
 - `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested` — `contextJSON`/`flowStateJSON` are whole-document writers; always plain-replaced, never merged (the `jsonbMergeColumns` opt-in mechanism these columns deliberately stayed out of was deleted entirely in Wave 2, epic #256)

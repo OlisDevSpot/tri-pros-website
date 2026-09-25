@@ -20,7 +20,7 @@ drift in site dimensions and proportions and are BANNED for portfolio use. The
 model gets exactly one job: insert workers into an unmodified real photo.
 If you catch yourself passing a before+after pair to nano_banana_2 to "create
 a mid-construction scene" — stop; that is the superseded v1 approach
-(history: `docs/superpowers/specs/2026-07-13-portfolio-during-photos-design.md`).
+(history: the 2026-07-13 portfolio-during-photos spec, in git before 2026-09-23).
 
 ## API surface (the contract every run fulfills)
 
