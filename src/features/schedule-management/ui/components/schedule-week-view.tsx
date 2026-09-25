@@ -123,7 +123,7 @@ export function ScheduleWeekView({
                 key={day.toISOString()}
                 ref={colRef}
                 className={cn(
-                  'flex flex-col gap-1.5 overflow-y-auto border-r p-1.5 last:border-r-0',
+                  'flex flex-col gap-1.5 overflow-y-auto scrollbar-gutter-stable border-r p-1.5 last:border-r-0',
                   isToday(day) && 'bg-primary/5',
                 )}
               >

@@ -96,7 +96,7 @@ export function StepShell<Step extends BaseStep<string>, Ctx>({
             {header}
             <StepProgress currentIndex={currentIndex} total={config.steps.length} />
 
-            <div className="min-h-0 flex-1 overflow-y-auto py-6">
+            <div className="min-h-0 flex-1 overflow-y-auto scrollbar-gutter-both py-6">
               <div className={cn('mx-auto w-full', QUESTION_MAX_W)}>
                 <AnimatePresence initial={false} mode="wait">
                   <motion.div

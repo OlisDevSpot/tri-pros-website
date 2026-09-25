@@ -17,7 +17,7 @@ import { cn } from '@/shared/lib/utils'
  * parent's overflow. One DNA (thin strokes + gradient band + falloff), varied
  * by `shape`. The parent MUST set `overflow-hidden` + `isolate`; content sits
  * on a higher z-index. Motion (draw-in) via motion/react; sweep/breathe via the
- * .decor-sweep/.decor-breathe CSS classes. Reduced motion → static final state.
+ * animate-decor-* theme animations. Reduced motion → static final state.
  */
 export function Decor({ shape = 'arc', rings, placement = 'corner', className }: { shape?: DecorShape, rings?: number, placement?: 'corner' | 'cover' | 'free', className?: string }) {
   const reduce = useReducedMotion()
@@ -53,9 +53,9 @@ export function Decor({ shape = 'arc', rings, placement = 'corner', className }:
           </radialGradient>
         </defs>
 
-        <circle className="decor-breathe" cx={x} cy={y} r={420} fill="url(#decor-grad)" />
+        <circle className="origin-top-right animate-decor-breathe motion-reduce:animate-none" cx={x} cy={y} r={420} fill="url(#decor-grad)" />
 
-        <g className="decor-sweep" stroke="var(--decor-stroke)" fill="none" strokeLinecap="round">
+        <g className="origin-top-right animate-decor-sweep motion-reduce:animate-none" stroke="var(--decor-stroke)" fill="none" strokeLinecap="round">
           {geometry.map((ring, i) => {
             const common = {
               strokeWidth: ring.strokeWidth,

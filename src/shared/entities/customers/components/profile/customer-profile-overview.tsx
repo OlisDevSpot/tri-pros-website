@@ -21,10 +21,10 @@ export function CustomerProfileOverview({ data, editForm, onOpenMeeting }: Props
     <div className="flex flex-col gap-4 md:min-h-0 md:flex-1">
       {data.hasRecording && <CustomerRecordingPlayer customerId={data.customer.id} />}
       <div className="flex flex-col gap-4 md:min-h-0 md:flex-1 md:flex-row">
-        <div className="md:min-h-0 md:w-3/5 md:overflow-y-auto md:pr-1 md:[scrollbar-gutter:stable]">
+        <div className="md:min-h-0 md:w-3/5 md:overflow-y-auto md:pr-1 md:scrollbar-gutter-stable">
           <CustomerTimeline data={data} onOpenMeeting={onOpenMeeting} />
         </div>
-        <div className="space-y-4 md:min-h-0 md:w-2/5 md:overflow-y-auto md:pr-1 md:[scrollbar-gutter:stable]">
+        <div className="space-y-4 md:min-h-0 md:w-2/5 md:overflow-y-auto md:pr-1 md:scrollbar-gutter-stable">
           <CustomerProfileDetails
             customer={data.customer}
             editForm={editForm}

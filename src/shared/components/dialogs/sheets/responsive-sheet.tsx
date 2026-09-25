@@ -98,7 +98,7 @@ export function ResponsiveSheet({
             <DrawerTitle>{title}</DrawerTitle>
             {description !== undefined && <DrawerDescription>{description}</DrawerDescription>}
           </DrawerHeader>
-          <div className={cn('min-h-0 flex-1 overflow-y-auto overscroll-contain px-4', footer === undefined ? 'pb-[max(1rem,env(safe-area-inset-bottom))]' : 'pb-4')}>{children}</div>
+          <div className={cn('min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-gutter-stable px-4', footer === undefined ? 'pb-[max(1rem,env(safe-area-inset-bottom))]' : 'pb-4')}>{children}</div>
           {footer !== undefined && (
             <DrawerFooter className="border-t pb-[max(1rem,env(safe-area-inset-bottom))]">{footer}</DrawerFooter>
           )}
@@ -114,7 +114,7 @@ export function ResponsiveSheet({
           <SheetTitle>{title}</SheetTitle>
           {description !== undefined && <SheetDescription>{description}</SheetDescription>}
         </SheetHeader>
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-gutter-stable px-4 pb-4">{children}</div>
         {footer !== undefined && <SheetFooter className="border-t">{footer}</SheetFooter>}
       </SheetContent>
     </Sheet>

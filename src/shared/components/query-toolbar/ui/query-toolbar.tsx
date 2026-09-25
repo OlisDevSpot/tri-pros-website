@@ -26,15 +26,9 @@ import { useIsBelowLg } from '@/shared/hooks/use-is-below-lg'
 import { formatTotalCount } from '@/shared/lib/pagination-format'
 import { cn } from '@/shared/lib/utils'
 
-// ── Root ───────────────────────────────────────────────────────────────────────
-
 interface RootProps {
   pagination: PaginatedQueryResult<unknown>
-  /**
-   * Singular noun for the records this toolbar filters (e.g. "proposal",
-   * "meeting"). Drives `aria-label` on Search and the live-status
-   * announcement. Defaults to "results".
-   */
+  /** Singular noun for the records this toolbar filters (e.g. "proposal"). */
   entityName?: string
   className?: string
   children: ReactNode
@@ -81,17 +75,11 @@ function Root({ pagination, entityName = 'results', className, children }: RootP
   )
 }
 
-// ── Bar ────────────────────────────────────────────────────────────────────────
-
 interface BarProps {
   className?: string
   children: ReactNode
 }
 
-/**
- * Single-row toolbar container. Hosts Search + FilterTrigger + (desktop)
- * PageSize. Owns the bottom border and the loading-shimmer overlay.
- */
 function Bar({ className, children }: BarProps) {
   const { isFetching, isPlaceholderData } = useQueryToolbarContext()
   const showShimmer = isFetching || isPlaceholderData
@@ -109,8 +97,6 @@ function Bar({ className, children }: BarProps) {
     </div>
   )
 }
-
-// ── Search ─────────────────────────────────────────────────────────────────────
 
 interface SearchProps {
   placeholder?: string
@@ -136,16 +122,7 @@ function Search({ placeholder, className }: SearchProps) {
   )
 }
 
-// ── FilterTrigger ──────────────────────────────────────────────────────────────
-
-/**
- * Filter affordance. Opens a bottom Sheet on mobile and a Popover at `lg`+.
- * Mobile is a square 44×44 icon-only button (label is `sr-only`); desktop
- * shows the visible label `Filters` (with `· N` suffix when a filter is
- * active) alongside the sliders icon. Active state shifts the border color
- * so mobile users can still tell at a glance that filters are on — the
- * chip rail below also reflects active filters explicitly.
- */
+// Active state shifts the border so icon-only mobile users can still tell filters are on.
 function FilterTrigger() {
   const { activeFilterCount, filterDefinitions } = useQueryToolbarContext()
   const { filterOpen, setFilterOpen } = useToolbarInternal()
@@ -209,18 +186,10 @@ function FilterTrigger() {
   )
 }
 
-// ── ColumnsTrigger ─────────────────────────────────────────────────────────────
-
 interface ColumnsTriggerProps {
   visibility: UseColumnVisibilityResult
 }
 
-/**
- * Visible-columns affordance. Mirrors `<FilterTrigger>` exactly: 44×44 Sheet
- * trigger on `<lg`, text+icon Popover on `lg+`, with active state when any
- * column is hidden. Pair with `useColumnVisibility(tableId, columns)` so
- * choices persist across browser sessions.
- */
 function ColumnsTrigger({ visibility }: ColumnsTriggerProps) {
   const { toggleableColumns, hiddenCount, setColumnVisible, resetVisibility } = visibility
   const [open, setOpen] = useState(false)
@@ -339,15 +308,6 @@ function ColumnsBody({ toggleableColumns, hiddenCount, onToggle, onReset }: Colu
   )
 }
 
-// ── RefreshButton ────────────────────────────────────────────────────────────
-
-/**
- * Manual refresh affordance. Mirrors `<FilterTrigger>` / `<ColumnsTrigger>`
- * sizing (44×44 on `<lg`, `h-9 w-9` icon button at `lg+`) so it reads as part
- * of the same control cluster. Spins the icon while any fetch is in flight and
- * disables itself mid-fetch to avoid hammering. Calls `pagination.refresh()`
- * (procedure-level invalidation — see the records-table-refresh design §4/§5).
- */
 function RefreshButton() {
   const { refresh, isFetching } = useQueryToolbarContext()
   return (
@@ -371,8 +331,6 @@ function RefreshButton() {
   )
 }
 
-// ── Sheet helpers (mobile filter surface) ──────────────────────────────────────
-
 function SheetDragHandle() {
   return (
     <div aria-hidden className="mx-auto mt-2 h-1 w-9 shrink-0 rounded-full bg-foreground/20" />
@@ -389,7 +347,7 @@ function SheetBody({ onClose }: SheetBodyProps) {
   const showPageSize = !!ctx.pageSizeOptions && ctx.pageSizeOptions.length > 1
   return (
     <>
-      <div className="flex-1 space-y-6 overflow-y-auto overscroll-contain px-4 py-4 [scrollbar-gutter:stable]">
+      <div className="flex-1 space-y-6 overflow-y-auto overscroll-contain px-4 py-4 scrollbar-gutter-stable">
         {ctx.filterDefinitions.length > 0 && (
           <SheetSection title="Filters" sectionId="qt-section-filters">
             <div className="space-y-3">
@@ -444,8 +402,6 @@ function SheetSection({ title, sectionId, children }: SheetSectionProps) {
   )
 }
 
-// ── Popover body (desktop filter surface) ──────────────────────────────────────
-
 function PopoverBody() {
   const ctx = useQueryToolbarContext()
   const hasResetableState = ctx.activeFilterCount > 0 || !!ctx.searchInput || !!ctx.sortBy
@@ -480,8 +436,6 @@ function PopoverBody() {
     </div>
   )
 }
-
-// ── FilterControlField — label + control wrapper used in Sheet and Popover ────
 
 interface FilterControlFieldProps {
   definition: FilterDefinition
@@ -567,8 +521,6 @@ function SingleFilterControl({ definition, value, onChange }: SingleFilterContro
   }
 }
 
-// ── PageSizeSegmented — segmented control used inside Sheet ───────────────────
-
 interface PageSizeSegmentedProps {
   options: readonly number[]
   value: number
@@ -603,27 +555,17 @@ function PageSizeSegmented({ options, value, onChange }: PageSizeSegmentedProps)
   )
 }
 
-// ── PageSize (desktop inline) ──────────────────────────────────────────────────
-
 interface PageSizeProps {
   className?: string
 }
 
-/**
- * Inline rows-per-page selector for desktop. Renders nothing on `<lg` —
- * mobile gets the segmented control inside the Filter Sheet instead.
- *
- * Default placement assumes the parent `<Bar>` flex layout — the `ml-auto`
- * pushes this slot to the right edge. Override `className` to reposition.
- */
 function PageSize({ className }: PageSizeProps) {
   const { pageSize, pageSizeOptions, setPageSize } = useQueryToolbarContext()
   if (!pageSizeOptions || pageSizeOptions.length <= 1) {
     return null
   }
   return (
-    // `lg:order-last` keeps PageSize at the right edge regardless of where
-    // the auto-injected inline ChipRail sits in source order.
+    // `lg:order-last` keeps this at the right edge regardless of where the auto-injected ChipRail sits in source order.
     <div className={cn('hidden lg:flex items-center gap-1.5 ml-auto lg:order-last', className)}>
       <span className="text-xs text-muted-foreground">Rows</span>
       <Select value={String(pageSize)} onValueChange={v => setPageSize(Number(v))}>
@@ -642,27 +584,13 @@ function PageSize({ className }: PageSizeProps) {
   )
 }
 
-// ── ChipRail ───────────────────────────────────────────────────────────────────
-
 interface ActiveChip {
   definition: FilterDefinition
   value: NonNullable<FilterValue>
 }
 
 interface ChipRailProps {
-  /**
-   * Where this rail renders. Consumers don't normally pass this — `<Bar>`
-   * auto-injects the `inline` placement; the standalone `<ChipRail />`
-   * defaults to `block` for the mobile-only row beneath the bar.
-   *
-   *   - 'inline': inside the Bar, `lg+` only. Empty state = keyboard hint
-   *     so the bar never grows a second row.
-   *   - 'block' (default): standalone below the Bar, `<lg` only. Collapses
-   *     to null when empty.
-   *
-   * Both scroll horizontally rather than wrapping; a soft right-edge mask
-   * hints at overflow without a loud scrollbar.
-   */
+  /** `inline` is auto-injected by `<Bar>`; its empty state shows the keyboard hint so the bar never grows a second row. */
   placement?: 'inline' | 'block'
 }
 
@@ -746,8 +674,7 @@ function Chip({ definition, value, onClear }: ChipProps) {
       title={fullText}
       className={cn(
         'group/chip inline-flex h-9 max-w-55 items-center gap-1.5 pl-2.5 pr-1',
-        // Outline silhouette mirrors FilterTrigger so chips read as part of
-        // the same control group rather than louder filled siblings.
+        // Outline (not filled) so chips read as part of the FilterTrigger control group.
         'rounded-md border border-border/70 bg-transparent',
         'transition-colors hover:border-border hover:bg-foreground/3',
         'focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/40',
@@ -774,8 +701,6 @@ function Chip({ definition, value, onClear }: ChipProps) {
   )
 }
 
-// ── LiveStatus — sr-only aria-live announcer ──────────────────────────────────
-
 function LiveStatus() {
   const { total, isLoading, isFetching } = useQueryToolbarContext()
   const { entityName } = useToolbarInternal()
@@ -800,20 +725,11 @@ function LiveStatus() {
   )
 }
 
-// ── Standard preset ────────────────────────────────────────────────────────────
-
 interface StandardProps {
   searchPlaceholder?: string
-  /** When provided, `<ColumnsTrigger>` is auto-injected next to filters. */
   visibility?: UseColumnVisibilityResult
 }
 
-/**
- * Canonical records-page composition: Bar with Search + FilterTrigger +
- * (optional) ColumnsTrigger + PageSize, followed by ChipRail and LiveStatus.
- * Use this for any records-style table; reach for the atomic slots only when
- * a layout deviates (split bar, extra slot, custom slot order).
- */
 function Standard({ searchPlaceholder, visibility }: StandardProps) {
   return (
     <>
@@ -829,8 +745,6 @@ function Standard({ searchPlaceholder, visibility }: StandardProps) {
     </>
   )
 }
-
-// ── Compound export ────────────────────────────────────────────────────────────
 
 export const QueryToolbar = Object.assign(Root, {
   Bar,

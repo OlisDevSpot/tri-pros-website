@@ -37,7 +37,7 @@ export function CampaignsOverviewView() {
   const { actionable, idle } = partitionSourceSummaries(summaries)
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overscroll-contain pr-1">
+    <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overscroll-contain scrollbar-gutter-stable pr-1">
       <OverviewSummaryBar
         dnc={totals.dnc}
         eligible={totals.eligible}

@@ -294,7 +294,7 @@ credential pills. Pills and progress bars use full `999px` rounding where a
 capsule is intentional (eyebrows, scarcity pills, meters).
 
 Borders are hairlines (1px, world-appropriate neutral). Textures are geometric and
-technical: the **blueprint grid** (`.funnel-grid-bg` — a fine 32px minor grid + a
+technical: the **blueprint grid** (in `funnel-engine.tsx` — a fine 32px minor grid + a
 heavier 160px major line in Blueprint Blue at ~5% opacity) appears behind funnel
 question steps only, and the "coming soon" state renders a full drafting-paper
 construction scene from pure CSS.
@@ -339,7 +339,7 @@ responsive depth.
   not a glow. `aria-invalid` swaps the ring to destructive.
 
 ### Navigation (app sidebar)
-- **Style:** icon + label rows (`data-nav-item`). Rest is transparent; **hover** is a
+- **Style:** icon + label rows (`SIDEBAR_NAV_ITEM_CLASS`). Rest is transparent; **hover** is a
   soft `primary @ 6%` wash with the icon tinting to primary (no border, no shadow —
   it hints interactivity without mimicking the active state). Active state is the
   fuller treatment.

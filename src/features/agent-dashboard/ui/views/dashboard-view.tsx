@@ -23,10 +23,10 @@ export function DashboardView({ name }: { name?: string | null }) {
       <div className="flex w-full flex-col gap-6 pb-16 lg:min-h-0 lg:flex-1 lg:pb-0">
         <DashboardHero name={name} />
         <div className="grid grid-cols-1 gap-6 lg:min-h-0 lg:flex-1 lg:grid-cols-12">
-          <section id="meetings" className="lg:col-span-8 lg:min-h-0 lg:overflow-y-auto lg:pr-1 lg:pb-6">
+          <section id="meetings" className="lg:col-span-8 lg:min-h-0 lg:overflow-y-auto lg:scrollbar-gutter-stable lg:pr-1 lg:pb-6">
             <DashboardMeetingsHub />
           </section>
-          <div className="flex flex-col gap-6 lg:col-span-4 lg:min-h-0 lg:overflow-y-auto lg:pr-1 lg:pb-6">
+          <div className="flex flex-col gap-6 lg:col-span-4 lg:min-h-0 lg:overflow-y-auto lg:scrollbar-gutter-stable lg:pr-1 lg:pb-6">
             <section id="proposals">
               <DashboardProposals />
             </section>

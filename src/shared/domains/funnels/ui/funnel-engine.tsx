@@ -133,8 +133,10 @@ export function FunnelEngine({ slug, variant }: { slug: FunnelSlug, variant?: st
             on top. The sticky header stays `position: fixed` (no transform
             ancestor here, so its viewport anchoring is intact). The grid layer is
             clipped to the document height by the relative parent, so the footer
-            below it shows on a clean page. see globals.css `.funnel-grid-bg`. */}
-        <div aria-hidden className="funnel-grid-bg pointer-events-none fixed inset-0 z-0" />
+            below it shows on a clean page. Drafting-paper rhythm: a 32px minor grid
+            plus a 160px major line, uniform with no radial mask (a masked ellipse read
+            as a stray oval colliding with the hero scrim). */}
+        <div aria-hidden className="pointer-events-none fixed inset-0 z-0 bg-[linear-gradient(rgb(3_175_237/0.05)_1px,transparent_1px),linear-gradient(90deg,rgb(3_175_237/0.05)_1px,transparent_1px),linear-gradient(rgb(7_132_179/0.1)_1.5px,transparent_1.5px),linear-gradient(90deg,rgb(7_132_179/0.1)_1.5px,transparent_1.5px)] bg-size-[32px_32px,32px_32px,160px_160px,160px_160px]" />
         <div className="relative z-10">
           <FunnelStickyHeader opacity={stickyOpacity} widthClass={contentWidth} />
           <div className={`mx-auto flex w-full flex-col px-5 pb-10 pt-16 ${contentWidth}`}>

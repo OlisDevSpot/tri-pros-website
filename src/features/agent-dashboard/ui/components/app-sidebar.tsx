@@ -12,7 +12,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 
 import { SIDEBAR_LABEL_ANIMATE, SIDEBAR_TRANSITION } from '@/features/agent-dashboard/constants/sidebar-motion'
-import { SIDEBAR_NAV_ACTIVE_STYLE } from '@/features/agent-dashboard/constants/sidebar-styles'
+import { SIDEBAR_NAV_ACTIVE_STYLE, SIDEBAR_NAV_ITEM_CLASS } from '@/features/agent-dashboard/constants/sidebar-styles'
 import { getSidebarNav } from '@/features/agent-dashboard/lib/get-sidebar-nav'
 import { ActionCenterSheet } from '@/features/agent-dashboard/ui/components/action-center-sheet'
 import { SidebarPipelineItem } from '@/features/agent-dashboard/ui/components/sidebar-pipeline-item'
@@ -40,6 +40,7 @@ import { signOut } from '@/shared/domains/auth/client'
 import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
 import { getStoredPipeline } from '@/shared/domains/pipelines/hooks/pipeline-context'
 import { usePipelineChange } from '@/shared/domains/pipelines/hooks/use-pipeline-change'
+import { cn } from '@/shared/lib/utils'
 
 interface AppSidebarProps {
   user: BetterAuthUser
@@ -93,10 +94,9 @@ export function AppSidebar({ user }: AppSidebarProps) {
       <SidebarMenuItem key={item.href}>
         <SidebarMenuButton
           asChild
-          data-nav-item
           tooltip={item.label}
           isActive={isActive}
-          className="gap-4 transition-all duration-200 hover:bg-transparent data-[active=true]:bg-transparent"
+          className={cn('gap-4 hover:bg-transparent data-[active=true]:bg-transparent', SIDEBAR_NAV_ITEM_CLASS)}
           style={isActive ? SIDEBAR_NAV_ACTIVE_STYLE : undefined}
         >
           <Link
@@ -270,10 +270,9 @@ export function AppSidebar({ user }: AppSidebarProps) {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
-                data-nav-item
                 tooltip="Action Center"
                 onClick={() => setIsActionCenterOpen(true)}
-                className="gap-4 transition-all duration-200 hover:bg-transparent"
+                className={cn('gap-4 hover:bg-transparent', SIDEBAR_NAV_ITEM_CLASS)}
               >
                 <ZapIcon className="size-4 shrink-0" />
                 <span>Action Center</span>

@@ -89,7 +89,7 @@ export function KanbanColumn<T extends KanbanItem>({
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-2">
+      <div className="flex-1 overflow-y-auto scrollbar-gutter-stable px-2 pb-2 space-y-2">
         {items.length === 0
           ? <KanbanEmptyColumn label={stage.label} />
           : items.map(item => (

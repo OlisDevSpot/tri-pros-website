@@ -110,7 +110,7 @@ export function CustomerProfileModalContent({ data, defaultTab, heroAddress, her
             onOpenMeeting={handleOpenMeeting}
           />
         </TabsContent>
-        <TabsContent className="mt-0 min-h-0 overflow-y-auto p-4 sm:p-6" value="meetings">
+        <TabsContent className="mt-0 min-h-0 overflow-y-auto scrollbar-gutter-stable p-4 sm:p-6" value="meetings">
           <CustomerMeetingsList
             customerId={data.customer.id}
             customerName={data.customer.name}
@@ -119,7 +119,7 @@ export function CustomerProfileModalContent({ data, defaultTab, heroAddress, her
             onMutationSuccess={onMutationSuccess}
           />
         </TabsContent>
-        <TabsContent className="mt-0 min-h-0 overflow-y-auto p-4 sm:p-6" value="projects">
+        <TabsContent className="mt-0 min-h-0 overflow-y-auto scrollbar-gutter-stable p-4 sm:p-6" value="projects">
           <CustomerProjectsList
             data={data}
             highlightMeetingId={activeHighlightId ?? highlightMeetingId}

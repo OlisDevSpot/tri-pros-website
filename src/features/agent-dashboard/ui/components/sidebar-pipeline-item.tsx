@@ -9,7 +9,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 
 import { SIDEBAR_LABEL_ANIMATE, SIDEBAR_TRANSITION } from '@/features/agent-dashboard/constants/sidebar-motion'
-import { SIDEBAR_NAV_ACTIVE_STYLE } from '@/features/agent-dashboard/constants/sidebar-styles'
+import { SIDEBAR_NAV_ACTIVE_STYLE, SIDEBAR_NAV_ITEM_CLASS } from '@/features/agent-dashboard/constants/sidebar-styles'
 import {
   Popover,
   PopoverContent,
@@ -22,6 +22,7 @@ import {
 } from '@/shared/components/ui/sidebar'
 import { ROOTS } from '@/shared/config/roots'
 import { PIPELINE_LABELS } from '@/shared/domains/pipelines/constants/pipeline-registry'
+import { cn } from '@/shared/lib/utils'
 
 interface SidebarPipelineItemProps {
   item: SidebarNavItem
@@ -48,10 +49,9 @@ export function SidebarPipelineItem({
     <SidebarMenuItem>
       <SidebarMenuButton
         asChild
-        data-nav-item
         tooltip={item.label}
         isActive={isActive}
-        className="gap-4 transition-all duration-200 hover:bg-transparent data-[active=true]:bg-transparent"
+        className={cn('gap-4 hover:bg-transparent data-[active=true]:bg-transparent', SIDEBAR_NAV_ITEM_CLASS)}
         style={isActive ? SIDEBAR_NAV_ACTIVE_STYLE : undefined}
       >
         <Link

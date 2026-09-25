@@ -56,14 +56,14 @@ export function ComingSoonState({
 }: ComingSoonStateProps) {
   if (size === 'inline') {
     return (
-      <div className={cn('cs-inline-root', className)} id={id}>
-        <div className="cs-inline-body">
-          <span className="cs-inline-icon">
+      <div className={cn('flex w-full items-center justify-center rounded-lg border border-dashed border-border bg-card/60 px-8 py-6', className)} id={id}>
+        <div className="flex max-w-fit items-center gap-3">
+          <span className="grid size-8 flex-none place-items-center rounded-[8px] border border-primary/35 bg-primary/14 text-primary">
             <HardHat className="size-4" />
           </span>
-          <div className="cs-inline-text">
-            <p className="cs-inline-title">{title.replace(/\n/g, ' ')}</p>
-            {description && <p className="cs-inline-desc">{description}</p>}
+          <div className="flex flex-col gap-0.5 text-left">
+            <p className="font-semibold">{title.replace(/\n/g, ' ')}</p>
+            {description && <p className="text-[13px] text-muted-foreground">{description}</p>}
           </div>
         </div>
       </div>
@@ -75,31 +75,35 @@ export function ComingSoonState({
       <motion.div
         id={id}
         className={cn(
-          'coming-soon-state',
-          size === 'page' ? 'cs-full' : 'cs-section',
+          'relative w-full overflow-hidden bg-background bg-[linear-gradient(var(--color-cs-grid)_1px,transparent_1px),linear-gradient(90deg,var(--color-cs-grid)_1px,transparent_1px)] bg-size-[32px_32px,32px_32px] text-foreground',
+          // Arbitrary pseudo variants, not before:/after:, which would inject `content` and give every descendant a pseudo box.
+          'motion-reduce:**:paused! motion-reduce:**:[transition:none]! motion-reduce:[&_*::before]:paused! motion-reduce:[&_*::before]:[transition:none]! motion-reduce:[&_*::after]:paused! motion-reduce:[&_*::after]:[transition:none]!',
+          size === 'page'
+            ? 'grid min-h-dvh px-4 pt-[calc(var(--navbar-bottom,var(--navbar-height,80px))+0.75rem)] pb-3 sm:px-8 lg:h-dvh lg:max-h-dvh lg:px-14 lg:pt-[calc(var(--navbar-bottom,var(--navbar-height,80px))+1rem)] lg:pb-4'
+            : 'rounded-[22px] border border-border p-6',
           className,
         )}
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: ENTER_EASE }}
       >
-        <div className="cs-wrap">
+        <div className="relative z-2 flex size-full flex-col items-center justify-center gap-[18px] rounded-[6px] border-[1.5px] border-dashed border-[oklch(from_var(--primary)_l_c_h/0.5)] bg-[linear-gradient(180deg,oklch(from_var(--primary)_l_c_h/0.09)_0%,oklch(from_var(--primary)_l_c_h/0.02)_55%,oklch(from_var(--card)_l_c_h/0.06)_100%)] px-6 py-7 text-center [backdrop-filter:blur(2px)] lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:grid-rows-[1fr_auto_auto_1fr] lg:items-center lg:gap-x-8 lg:gap-y-5 lg:px-12 lg:py-10 lg:[grid-template-areas:'._scene'_'top_scene'_'bottom_scene'_'._scene']">
           <motion.div
-            className="cs-top-group"
+            className="flex w-full flex-col items-center gap-3.5 text-center lg:[align-self:end] lg:[grid-area:top]"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.05, ease: ENTER_EASE }}
           >
-            <span className="cs-eyebrow">
-              <span className="cs-cone" aria-hidden="true" />
+            <span className="inline-flex items-center gap-[9px] self-center rounded-[999px] border border-[oklch(from_var(--primary)_l_c_h/0.35)] bg-cs-accent-soft px-[13px] py-[7px] text-[12px] font-bold whitespace-nowrap text-primary uppercase tracking-[0.24em]">
+              <span className="size-0 border-x-[5px] border-b-[10px] border-x-transparent border-b-primary filter-[drop-shadow(0_1px_0_var(--color-cs-accent-d))]" aria-hidden="true" />
               {eyebrow}
             </span>
             <Headline title={title} />
-            <p className="cs-sub">{description}</p>
+            <p className="max-w-[56ch] text-[clamp(14px,1.4vw,17px)] leading-[1.55] text-pretty text-muted-foreground">{description}</p>
           </motion.div>
 
           <motion.div
-            className="cs-scene-wrap"
+            className="w-full lg:self-center lg:justify-self-center lg:[grid-area:scene]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.15, ease: ENTER_EASE }}
@@ -108,7 +112,7 @@ export function ComingSoonState({
           </motion.div>
 
           <motion.div
-            className="cs-bottom-group"
+            className="flex w-full flex-col items-center gap-3.5 text-center lg:[align-self:start] lg:[grid-area:bottom]"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2, ease: ENTER_EASE }}
@@ -116,8 +120,8 @@ export function ComingSoonState({
             {showProgress && <ProgressBar value={progress} label={progressLabel} />}
             {showForm && <NotifyForm ctaLabel={ctaLabel} />}
             {homeHref && (
-              <div className="cs-secondary">
-                <a href={homeHref}>{homeLabel}</a>
+              <div className="text-[12px] font-semibold uppercase tracking-widest">
+                <a href={homeHref} className="border-b-2 border-b-primary pb-0.5 text-foreground no-underline [transition:color_0.15s] [&:hover]:text-primary">{homeLabel}</a>
               </div>
             )}
           </motion.div>
@@ -130,12 +134,12 @@ export function ComingSoonState({
 function Headline({ title }: { title: string }) {
   const lines = title.split('\n')
   return (
-    <h1 className="cs-title">
+    <h1 className="mt-1 [font-family:var(--font-sans),system-ui,sans-serif] text-[clamp(35px,4.85vw,60px)] leading-[0.96] font-bold tracking-[-0.008em] text-balance uppercase">
       {lines.map((line, i) => {
         const isLast = i === lines.length - 1
         return (
           <span key={line}>
-            {isLast ? <span className="cs-title-hl">{line}</span> : line}
+            {isLast ? <span className="text-primary">{line}</span> : line}
             {!isLast && <br />}
           </span>
         )
@@ -148,16 +152,16 @@ function ProgressBar({ value, label }: { value: number, label: string }) {
   const safe = Math.max(0, Math.min(100, value))
   return (
     <div
-      className="cs-progress"
+      className="w-[min(420px,100%)] text-left"
       role="progressbar"
       aria-valuenow={safe}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label="Site progress"
     >
-      <div className="cs-progress-head">
+      <div className="mb-1.5 flex items-baseline justify-between text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
         <span>Site progress</span>
-        <b>
+        <b className="font-bold text-foreground">
           {safe}
           %
           {' '}
@@ -166,9 +170,9 @@ function ProgressBar({ value, label }: { value: number, label: string }) {
           {label}
         </b>
       </div>
-      <div className="cs-bar">
+      <div className="h-3 overflow-hidden rounded-[999px] border border-border bg-cs-card-bar p-0.5">
         <motion.div
-          className="cs-bar-fill"
+          className="h-full animate-cs-barber rounded-[999px] bg-[repeating-linear-gradient(-45deg,var(--primary)_0,var(--primary)_9px,var(--color-cs-accent-d)_9px,var(--color-cs-accent-d)_18px)] bg-size-[25.5px_25.5px] [transition:width_1.1s_cubic-bezier(0.4,0,0.2,1)]"
           initial={{ width: 0 }}
           animate={{ width: `${safe}%` }}
           transition={{ duration: 1.1, delay: 0.4, ease: [0.4, 0, 0.2, 1] }}
@@ -198,7 +202,7 @@ function NotifyForm({ ctaLabel }: { ctaLabel: string }) {
         ? (
             <motion.div
               key="success"
-              className="cs-success"
+              className="flex w-[min(420px,100%)] items-center gap-2.5 rounded-[12px] border border-primary bg-card px-4 py-3 text-left text-[14px] text-foreground"
               initial={{ opacity: 0, scale: 0.94 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.96 }}
@@ -206,7 +210,7 @@ function NotifyForm({ ctaLabel }: { ctaLabel: string }) {
               role="status"
               aria-live="polite"
             >
-              <span className="cs-check" aria-hidden="true">
+              <span className="grid size-[22px] flex-none place-items-center rounded-[50%] bg-primary text-primary-foreground [&_svg]:size-[14px]" aria-hidden="true">
                 <Check strokeWidth={3} />
               </span>
               You're on the list — we'll send a hard-hat heads-up the moment it's live.
@@ -215,13 +219,13 @@ function NotifyForm({ ctaLabel }: { ctaLabel: string }) {
         : (
             <motion.div
               key="form"
-              className="cs-form-block"
+              className="flex w-[min(420px,100%)] flex-col items-center gap-1.5"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
             >
-              <form className="cs-form" onSubmit={submit} noValidate>
+              <form className="flex w-full gap-2 *:first:flex-1" onSubmit={submit} noValidate>
                 <Input
                   type="email"
                   placeholder="you@email.com"
@@ -238,7 +242,7 @@ function NotifyForm({ ctaLabel }: { ctaLabel: string }) {
                 <Button type="submit">{ctaLabel}</Button>
               </form>
               <div
-                className={cn('cs-hint', state === 'error' && 'cs-hint-err')}
+                className={cn('min-h-4 w-[min(420px,100%)] text-left text-[12px]', state === 'error' ? 'text-destructive' : 'text-muted-foreground')}
                 role={state === 'error' ? 'alert' : undefined}
               >
                 {state === 'error'
@@ -251,77 +255,79 @@ function NotifyForm({ ctaLabel }: { ctaLabel: string }) {
   )
 }
 
+// Drawn on a fixed 900×480 stage scaled to the container width (container query), so
+// first paint matches final paint. Coordinates are stage pixels, hence the px values.
 function ConstructionScene() {
   return (
     <div
-      className="cs-scaler"
+      className="@container relative mx-auto aspect-900/480 w-full max-w-[832px] lg:max-w-[780px]"
       role="img"
       aria-label="A small construction scene: a tower crane lowering a content block onto a webpage card while an excavator digs at the base."
     >
-      <div className="cs-stage">
-        <div className="cs-ground" />
-        <div className="cs-mound" />
+      <div className="absolute top-0 left-0 h-[480px] w-[900px] origin-top-left transform-[scale(min(1,calc(100cqi/900px)))]">
+        <div className="absolute inset-x-0 bottom-0 h-[70px] bg-cs-dirt before:absolute before:inset-x-0 before:-top-[6px] before:h-[6px] before:bg-[repeating-linear-gradient(-45deg,var(--color-cs-steel-l)_0_10px,var(--color-cs-shadow)_10px_20px)] before:opacity-55" />
+        <div className="absolute bottom-[56px] left-[150px] h-[46px] w-[150px] rounded-[80px_70px_0_0/60px_50px_0_0] bg-cs-dirt-d after:absolute after:inset-[10px_26px_auto] after:h-[10px] after:rounded-[40px] after:bg-cs-dirt after:opacity-50" />
 
-        <div className="cs-page">
-          <div className="cs-page-bar">
-            <span className="cs-dot cs-dot-r" />
-            <span className="cs-dot cs-dot-y" />
-            <span className="cs-dot cs-dot-g" />
-            <span className="cs-page-url" />
+        <div className="absolute top-[150px] left-[318px] h-[280px] w-[348px] overflow-hidden rounded-[10px] border border-border bg-card [box-shadow:0_18px_40px_oklch(0_0_0/0.45)]">
+          <div className="flex h-[34px] items-center gap-[7px] border-b border-border bg-cs-card-bar px-3.5">
+            <span className="size-[11px] rounded-[50%] bg-[oklch(0.65_0.16_28)] opacity-70" />
+            <span className="size-[11px] rounded-[50%] bg-[oklch(0.78_0.13_80)] opacity-70" />
+            <span className="size-[11px] rounded-[50%] bg-[oklch(0.7_0.16_145)] opacity-70" />
+            <span className="ml-2.5 h-3 max-w-[180px] flex-1 rounded-[6px] bg-border" />
           </div>
-          <div className="cs-page-body">
-            <div className="cs-blk cs-blk-solid cs-h-hero" />
-            <div className="cs-row">
-              <div className="cs-blk cs-blk-solid cs-thumb" />
-              <div className="cs-col">
-                <div className="cs-blk cs-blk-solid cs-h-line cs-w-90" />
-                <div className="cs-blk cs-blk-solid cs-h-line cs-w-70" />
+          <div className="flex flex-col gap-3.5 p-[18px]">
+            <div className="h-14 rounded-[7px] bg-cs-solid-block" />
+            <div className="flex gap-3.5">
+              <div className="h-16 w-[84px] flex-none rounded-[7px] bg-cs-solid-block" />
+              <div className="flex flex-1 flex-col justify-center gap-2.5">
+                <div className="h-3.5 w-[90%] rounded-[7px] bg-cs-solid-block" />
+                <div className="h-3.5 w-[70%] rounded-[7px] bg-cs-solid-block" />
               </div>
             </div>
-            <div className="cs-blk cs-blk-ghost cs-h-line cs-w-90 cs-landing">
-              <span className="cs-drop-target" />
+            <div className="relative h-3.5 w-[90%] overflow-hidden rounded-[7px] border border-dashed border-cs-ghost-line bg-transparent after:absolute after:inset-0 after:animate-cs-shimmer after:bg-[linear-gradient(100deg,transparent_35%,var(--color-cs-ghost-line)_50%,transparent_65%)] after:opacity-28 after:transform-[translateX(-100%)]">
+              <span className="absolute inset-0 animate-cs-pulse-target rounded-[7px] border border-dashed border-primary opacity-65" />
             </div>
-            <div className="cs-blk cs-blk-ghost cs-h-line cs-w-70" />
+            <div className="relative h-3.5 w-[70%] overflow-hidden rounded-[7px] border border-dashed border-cs-ghost-line bg-transparent after:absolute after:inset-0 after:animate-cs-shimmer after:bg-[linear-gradient(100deg,transparent_35%,var(--color-cs-ghost-line)_50%,transparent_65%)] after:opacity-28 after:transform-[translateX(-100%)]" />
           </div>
         </div>
 
-        <div className="cs-dust cs-dust-land1" />
-        <div className="cs-dust cs-dust-land2" />
-        <div className="cs-dust cs-dust-land3" />
+        <div className="absolute top-[196px] left-[360px] size-4 animate-cs-landpuff rounded-[50%] bg-cs-ghost-line opacity-0" />
+        <div className="absolute top-[198px] left-[392px] size-[22px] animate-cs-landpuff rounded-[50%] bg-cs-ghost-line opacity-0" />
+        <div className="absolute top-[196px] left-[420px] size-[14px] animate-cs-landpuff rounded-[50%] bg-cs-ghost-line opacity-0" />
 
-        <div className="cs-crane">
-          <div className="cs-mast" />
-          <div className="cs-apex" />
-          <div className="cs-counter-jib" />
-          <div className="cs-counterweight" />
-          <div className="cs-jib" />
-          <div className="cs-cab" />
-          <div className="cs-rig">
-            <div className="cs-trolley" />
-            <div className="cs-cable" />
-            <div className="cs-hook" />
-            <div className="cs-load" />
+        <div className="absolute top-0 left-0 h-[480px] w-[900px] origin-[703px_410px] animate-cs-sway">
+          <div className="absolute top-[58px] left-[690px] h-[352px] w-[26px] rounded-[2px] [background:repeating-linear-gradient(45deg,transparent_0_7px,var(--color-cs-steel-l)_7px_8px),repeating-linear-gradient(-45deg,transparent_0_7px,var(--color-cs-steel-l)_7px_8px),var(--color-cs-steel)]" />
+          <div className="absolute top-[18px] left-[690px] size-0 border-x-[13px] border-b-[42px] border-x-transparent border-b-cs-steel" />
+          <div className="absolute top-[46px] left-[716px] h-[13px] w-[120px] rounded-[3px] bg-primary" />
+          <div className="absolute top-[34px] left-[800px] h-[34px] w-[40px] rounded-[3px] bg-cs-steel" />
+          <div className="absolute top-[46px] left-[360px] h-[13px] w-[356px] rounded-[3px] bg-primary before:absolute before:right-[4px] before:-top-[9px] before:left-[40px] before:h-[9px] before:bg-[repeating-linear-gradient(60deg,transparent_0_10px,var(--color-cs-accent-d)_10px_12px)]" />
+          <div className="absolute top-[24px] left-[678px] size-[22px] rounded-[3px] bg-cs-accent-l" />
+          <div className="absolute top-[59px] left-[430px] h-[18px] w-[3px] animate-cs-rigdrop">
+            <div className="absolute -top-[6px] -left-[10px] h-[12px] w-[24px] rounded-[2px] bg-cs-steel" />
+            <div className="absolute top-0 left-0 h-full w-[3px] bg-cs-shadow opacity-55" />
+            <div className="absolute -bottom-[7px] -left-[2.5px] size-[8px] rounded-[0_0_6px_6px] border-2 border-cs-steel [border-top:none]" />
+            <div className="absolute top-full -left-[56px] h-[34px] w-[112px] animate-cs-loadfade rounded-[6px] bg-primary [box-shadow:inset_0_0_0_3px_oklch(1_0_0/0.2)] after:absolute after:inset-x-0 after:-top-[12px] after:h-[12px] after:opacity-45 after:[background:linear-gradient(var(--color-cs-shadow),var(--color-cs-shadow))_28%_0/2px_12px_no-repeat,linear-gradient(var(--color-cs-shadow),var(--color-cs-shadow))_72%_0/2px_12px_no-repeat]" />
           </div>
         </div>
 
-        <div className="cs-dozer">
-          <div className="cs-tracks" />
-          <div className="cs-cabin" />
-          <div className="cs-boom-pivot">
-            <div className="cs-boom">
-              <div className="cs-stick">
-                <div className="cs-bucket" />
+        <div className="absolute bottom-[60px] left-[60px] h-[120px] w-[190px]">
+          <div className="absolute bottom-0 left-2 h-9 w-[150px] rounded-[20px] bg-cs-steel before:absolute before:top-[7px] before:left-3 before:size-[22px] before:rounded-[50%] before:bg-cs-shadow before:opacity-40 after:absolute after:top-[7px] after:right-3 after:size-[22px] after:rounded-[50%] after:bg-cs-shadow after:opacity-40" />
+          <div className="absolute bottom-[30px] left-[70px] h-[58px] w-[86px] rounded-[9px_9px_4px_4px] bg-primary before:absolute before:top-[9px] before:left-[11px] before:h-[28px] before:w-[36px] before:rounded-[5px] before:bg-card before:opacity-85 after:absolute after:-top-[10px] after:right-3 after:h-3 after:w-[7px] after:rounded-[3px] after:bg-cs-steel" />
+          <div className="absolute bottom-[56px] left-[78px] size-1 origin-center animate-cs-dig">
+            <div className="absolute -top-[7px] left-0 h-[13px] w-[92px] origin-left rounded-[6px] bg-cs-accent-d transform-[rotate(-26deg)]">
+              <div className="absolute -top-[46px] left-[82px] h-[54px] w-3 origin-top rounded-[6px] bg-primary transform-[rotate(40deg)]">
+                <div className="absolute top-[47px] -left-[9px] h-6 w-7 bg-cs-steel [clip-path:polygon(0_0,100%_0,78%_100%,18%_100%)]" />
               </div>
             </div>
           </div>
         </div>
 
-        <div className="cs-dust cs-dust-d1" />
-        <div className="cs-dust cs-dust-d2" />
-        <div className="cs-dust cs-dust-d3" />
-        <div className="cs-mote cs-mote-m1" />
-        <div className="cs-mote cs-mote-m2" />
-        <div className="cs-mote cs-mote-m3" />
+        <div className="absolute bottom-[92px] left-[168px] size-[22px] animate-cs-puff rounded-[50%] bg-cs-dirt-d opacity-0" />
+        <div className="absolute bottom-[96px] left-[188px] size-[30px] animate-[cs-puff_3.2s_ease-out_infinite_0.15s] rounded-[50%] bg-cs-dirt-d opacity-0" />
+        <div className="absolute bottom-[90px] left-[210px] size-[18px] animate-[cs-puff_3.2s_ease-out_infinite_0.3s] rounded-[50%] bg-cs-dirt-d opacity-0" />
+        <div className="absolute bottom-[120px] left-[300px] size-[5px] animate-cs-drift rounded-[50%] bg-foreground opacity-12" />
+        <div className="absolute bottom-[90px] left-[520px] size-[5px] animate-[cs-drift_9s_linear_infinite_1.5s] rounded-[50%] bg-foreground opacity-12" />
+        <div className="absolute bottom-[150px] left-[640px] size-[5px] animate-[cs-drift_8s_linear_infinite_3s] rounded-[50%] bg-foreground opacity-12" />
       </div>
     </div>
   )

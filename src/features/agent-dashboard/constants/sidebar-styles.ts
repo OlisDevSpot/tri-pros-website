@@ -6,7 +6,8 @@
  * gradient language — active is just more saturated.
  *
  * Active: inline style with gradient + shadow + border (10-15% primary)
- * Hover: CSS rule in globals.css targeting [data-nav-item] (5-8% primary)
+ * Hover: SIDEBAR_NAV_ITEM_CLASS (6% primary). Important because it must beat the
+ * shadcn menu-button hover and transition utilities.
  */
 
 export const SIDEBAR_NAV_ACTIVE_STYLE = {
@@ -15,3 +16,5 @@ export const SIDEBAR_NAV_ACTIVE_STYLE = {
   outline: `1px solid color-mix(in oklch, var(--primary) 15%, transparent)`,
   outlineOffset: '-1px',
 } as const satisfies React.CSSProperties
+
+export const SIDEBAR_NAV_ITEM_CLASS = '[transition:background_200ms_ease,color_200ms_ease]! [&:not([data-active=true]):hover]:bg-[color-mix(in_oklch,var(--primary)_6%,transparent)]! [&:not([data-active=true]):hover_svg]:text-primary [&:not([data-active=true]):hover_svg]:[transition:color_200ms_ease]'
