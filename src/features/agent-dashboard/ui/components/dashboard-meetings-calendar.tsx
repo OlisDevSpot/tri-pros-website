@@ -59,7 +59,10 @@ export function DashboardMeetingsCalendar({ month, onMonthChange, selectedDay, o
         modifiers={{ hasMeeting: date => daysWithMeetings.has(businessDayKey(date)) }}
         components={{ DayButton: CalendarMeetingDayButton }}
         className="w-full p-0 md:w-fit md:shrink-0 md:p-3"
-        classNames={{ root: 'w-full md:w-fit' }}
+        // WebKit (every iOS browser) sizes this flex column from the grid's pre-stretch
+        // width, where the aspect-square cells are smaller, so the grid then overflows
+        // onto the agenda. An explicit width makes it measure at its real size.
+        classNames={{ root: 'w-full md:w-fit', month_grid: 'w-full md:w-auto' }}
       />
       <div className="min-w-0 flex-1">
         {isLoading
