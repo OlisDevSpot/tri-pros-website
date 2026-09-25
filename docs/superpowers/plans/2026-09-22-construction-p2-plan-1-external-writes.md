@@ -116,9 +116,9 @@ The Notion Trades data source gets a `Slug` rich_text property (owner, UI). This
 - Consumes: `queryNotionDatabase('trades')` (`sources/notion/query.ts`, paginates, returns raw pages incl. disabled), extractors `titleText` / `richText` / `checkbox`, `notionDatabasesMeta.trades.id`, `notionClient` (`providers/notion/client.ts`), `slugifyTradeName` (still at `src/shared/lib/slugify-trade-name.ts` until Task 2).
 - Produces: `TRADE_PROPERTIES_MAP.slug = { label: 'Slug', type: 'rich_text' }` and `TradePropertySource = Omit<Trade, 'coverImageUrl'> & { disabled: boolean }` (Task 2's adapter reads the label); `planSlugBackfill(rows: SlugBackfillRow[]): SlugBackfillPlan` and `slugPropertyProblem(prop): string | null` in `scripts/lib/plan-slug-backfill.ts`.
 
-- [ ] **Step 0: Commit-gate snapshot** (Global Constraints). Confirm none of this task's files appear in `$S/wip-before.txt`.
+- [x] **Step 0: Commit-gate snapshot** (Global Constraints). Confirm none of this task's files appear in `$S/wip-before.txt`.
 
-- [ ] **Step 1: Add `slug` to the trades property map**
+- [x] **Step 1: Add `slug` to the trades property map**
 
 Replace the whole of `src/shared/modules/construction/sources/notion/trades/properties-map.ts` with:
 
@@ -155,7 +155,7 @@ export const TRADE_PROPERTIES_MAP = {
 
 `RawPropertyMap<T>` is `Omit<Record<keyof T, NotionPropDef>, 'id'>`, so removing `'slug'` from the `Omit` is what *requires* the new entry — `satisfies` fails without it. Run `pnpm tsc`: expected clean (the adapter does not read `slug` from the map yet, and `databases.ts` types the map through the same `TradePropertySource`).
 
-- [ ] **Step 2: Write the failing planner test**
+- [x] **Step 2: Write the failing planner test**
 
 Create `scripts/verify-slug-backfill-plan.ts`:
 
@@ -199,12 +199,12 @@ assert.equal(slugPropertyProblem({ type: 'rich_text' }), null)
 console.log('✅ slug backfill plan: write/same/conflict, duplicates, unslugifiable, idempotent, property check')
 ```
 
-- [ ] **Step 3: Run it to verify it fails**
+- [x] **Step 3: Run it to verify it fails**
 
 Run: `npx tsx scripts/verify-slug-backfill-plan.ts`
 Expected: FAIL — `Cannot find module './lib/plan-slug-backfill'`.
 
-- [ ] **Step 4: Write the planner**
+- [x] **Step 4: Write the planner**
 
 Create `scripts/lib/plan-slug-backfill.ts`:
 
@@ -280,12 +280,12 @@ export function slugPropertyProblem(prop: { type: string } | undefined): string 
 }
 ```
 
-- [ ] **Step 5: Run the test to verify it passes**
+- [x] **Step 5: Run the test to verify it passes**
 
 Run: `npx tsx scripts/verify-slug-backfill-plan.ts`
 Expected: `✅ slug backfill plan: write/same/conflict, duplicates, unslugifiable, idempotent, property check`
 
-- [ ] **Step 6: Write the backfill script**
+- [x] **Step 6: Write the backfill script**
 
 Create `scripts/backfill-trade-slugs.ts`:
 
@@ -392,19 +392,19 @@ main().catch((err) => {
 })
 ```
 
-- [ ] **Step 7: Type-check and lint**
+- [x] **Step 7: Type-check and lint**
 
 Run: `pnpm tsc && CI=1 pnpm exec eslint --fix scripts/backfill-trade-slugs.ts scripts/lib/plan-slug-backfill.ts scripts/verify-slug-backfill-plan.ts src/shared/modules/construction/sources/notion/trades/properties-map.ts && CI=1 pnpm lint`
 Expected: clean. If `--fix` reorders imports, keep its order. If it removed a `/* eslint-disable no-console */` header, restore it.
 
-- [ ] **Step 8: 🚧 GATE 1 — the owner creates the property**
+- [x] **Step 8: 🚧 GATE 1 — the owner creates the property**
 
 Stop and ask the owner to add a property named exactly **`Slug`**, type **Text**, to the Notion **Trades** data source (the one `notionDatabasesMeta.trades.id` names, `6f00ca1b-548b-8279-9f2d-87f649413084`). Do not proceed until they confirm. Then prove it:
 
 Run: `npx tsx scripts/backfill-trade-slugs.ts`
 Expected (dry run): a table of **28 rows** (27 live + 1 disabled — the P2 spec Appendix B read), every `action` = `write`, `0 conflict`, no duplicates, no unslugifiable titles, ending `dry run — re-run with --apply to write 28 slug(s)`. The derived column must match Appendix B slug-for-slug (e.g. `Windows & doors` → `windows-and-doors`, `Electricals (finish)` → `electricals-finish`). If the property is missing or the wrong type the script exits 2 with the message from Step 4 — that is Review Focus 2 working, not a bug.
 
-- [ ] **Step 9: 🚧 GATE 2 — the owner applies**
+- [x] **Step 9: 🚧 GATE 2 — the owner applies**
 
 Ask the owner to run, themselves:
 
@@ -417,7 +417,7 @@ Expected: 28 `wrote <slug> ← <title>` lines, then `✓ wrote 28 slug(s)`. Then
 Run: `npx tsx scripts/backfill-trade-slugs.ts`
 Expected: every `action` = `same`, `nothing to write`. Paste that summary line into the checkpoint.
 
-- [ ] **Step 10: Commit** (run the commit gate first)
+- [x] **Step 10: Commit** (run the commit gate first)
 
 ```bash
 git add scripts/backfill-trade-slugs.ts scripts/lib/plan-slug-backfill.ts scripts/verify-slug-backfill-plan.ts src/shared/modules/construction/sources/notion/trades/properties-map.ts
