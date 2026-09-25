@@ -7,6 +7,8 @@ interface Props {
   params: Promise<{ projectAccessor: string }>
 }
 
+export const revalidate = 60
+
 export async function generateStaticParams() {
   try {
     const projects = await getPortfolioProjects()

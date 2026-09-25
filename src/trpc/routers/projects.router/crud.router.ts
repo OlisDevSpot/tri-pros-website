@@ -1,3 +1,4 @@
+import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
 import { projectStatusBuckets, projectVisibilities } from '@/shared/constants/enums'
@@ -58,7 +59,10 @@ export const crudRouter = createTRPCRouter({
     }))
     .mutation(async ({ ctx, input }) => {
       const { scopeIds, ...projectData } = input.data
-      return dalToTrpc(await updateProjectWithScopes({ ...ctx, scope: null }, input.id, projectData, scopeIds))
+      const project = dalToTrpc(await updateProjectWithScopes({ ...ctx, scope: null }, input.id, projectData, scopeIds))
+      // The public story page is prerendered; without this, edits only appear after the next deploy.
+      revalidatePath(`/portfolio/projects/${project.accessor}`)
+      return project
     }),
 
   delete: agentProcedure
