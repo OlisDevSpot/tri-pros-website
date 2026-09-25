@@ -102,7 +102,6 @@ export const businessRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       // isOmni drives the phone-column gating and the agent-vs-super-admin
       // text WHERE clause — legitimate non-visibility use of ability.can.
-      // see ../../../shared/entities/customers/DOCS.md#phone-visibility-threshold
       const isOmni = ctx.ability.can('manage', 'all')
       const q = `%${input.query}%`
       // Phone is stored canonical 10-digit — strip the query to digits so a

@@ -11,7 +11,6 @@
 // crud.getById is overridden to return the phone-gated row shape — the default
 // handler from createCrudDal does a plain SELECT * which would include the
 // ungated phone column, violating phone-visibility-threshold.
-// see ../../../shared/entities/customers/DOCS.md#phone-visibility-threshold
 //
 // crud.update uses the framework's field-level CASL enforcement (in
 // create-crud-router.ts). The agent CASL grant on 'Customer' is field-

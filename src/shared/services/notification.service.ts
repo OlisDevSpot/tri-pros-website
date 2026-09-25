@@ -12,23 +12,9 @@ import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
 import { emailService } from '@/shared/services/email.service'
 import { webPushClient } from '@/shared/services/providers/web-push/client'
 
-// Layering: this service never touches `db` — every lookup it still performs
-// (customer for a new lead, meeting + customer for the meeting pushes, meeting
-// participants, user ids for a recipient email list) rings a DAL read under
-// SYSTEM_CONTEXT. see docs/codebase-conventions/service-architecture.md
-//
-// @migration(meetings-entity-router)
-// Direction of travel: callers pass pre-assembled params (customer name,
-// address, recipients) and the lookups below disappear, leaving a pure
-// formatter + push/email dispatcher.
+// @migration(meetings-entity-router): callers will pass pre-assembled params and the DAL reads below disappear.
 
-// iOS lock-screen titles truncate around 30-40 chars. Front-load the event
-// type + customer identity so the truncated form still tells the user what
-// the notification is about. Format: "<EventType> | <Customer>".
-//
-// Customer label includes the street address when available because two
-// agents may have multiple meetings with similarly-named customers — the
-// address disambiguates without forcing the user to open the notification.
+// iOS lock-screen titles truncate around 30-40 chars, so titles front-load "<EventType> | <Customer>"; the address disambiguates similarly-named customers.
 function buildCustomerLabel(customer: { name: string | null, address: string | null }): string {
   const name = customer.name ?? 'Unknown customer'
   return customer.address ? `${name}, ${customer.address}` : name
@@ -49,10 +35,7 @@ function formatScheduledTime(iso: string): string {
 
 function createNotificationService() {
   return {
-    /**
-     * Stub. Wired from the Zoho Sign webhook job; logs the event so we can
-     * confirm wiring. Real dispatch lands with the notifications overhaul.
-     */
+    /** Stub — real dispatch lands with the notifications overhaul. */
     notifyContractStatusChange: async (params: {
       event: ContractEvent
       proposalOwnerId: string
@@ -62,10 +45,6 @@ function createNotificationService() {
       console.warn(`[notificationService] notifyContractStatusChange:${params.event} (stub)`, params)
     },
 
-    /**
-     * Generic new-lead alert (push + email) — source-agnostic: funnels today,
-     * webhooks/manual intake tomorrow. Recipients: NEW_LEAD_NOTIFICATION_EMAILS.
-     */
     notifyNewLead: async (params: { customerId: string, source: string }) => {
       const customer = dalVerifySuccess(await customerCrud.getById(SYSTEM_CONTEXT, { id: params.customerId }))
       if (!customer) {
@@ -103,20 +82,7 @@ function createNotificationService() {
       })
     },
 
-    /**
-     * The homeowner clicked "Request Agreement" on their proposal review
-     * page. A pure SIGNAL to the agents — the homeowner never touches the
-     * contract lifecycle; the agent prepares/sends the signing draft
-     * manually. Recipients: the proposal's meeting participants (all of
-     * them) PLUS the info@ system user — always. A proposal has no owner
-     * (2026-09-10 ruling; `ownerId` is the author, never a recipient).
-     * see `src/shared/modules/proposals/core/DOCS.md#proposal-lock-ladder`
-     * see `src/shared/modules/proposals/core/DOCS.md#shareable-via-token`
-     *
-     * @migration(meetings-entity-router)
-     * Same deal as the meeting methods below — recipients are resolved here
-     * (DAL reads) until meetings migrates; then callers pass recipients.
-     */
+    /** Recipients are every meeting participant plus info@ — never `ownerId`, which is the author, not an owner. */
     notifyHomeownerMoveForwardRequest: async (params: {
       proposalId: string
       proposalLabel: string
@@ -131,7 +97,6 @@ function createNotificationService() {
         recipients.push({ userId: systemOwnerId, email: SYSTEM_OWNER_EMAIL })
       }
 
-      // Push to every recipient's active subscriptions (participants + info@).
       const pushResult = await webPushClient.sendToUsers(
         recipients.map(r => r.userId),
         {
@@ -145,9 +110,6 @@ function createNotificationService() {
         console.warn(`[notificationService] notifyHomeownerMoveForwardRequest push partial failure:`, pushResult)
       }
 
-      // Blast the whole team: every meeting participant PLUS the company inbox
-      // (info@). Dedupe case-insensitively so the owner-is-info@ case doesn't
-      // send twice.
       const seen = new Set<string>()
       const emailRecipients: string[] = []
       for (const email of [...recipients.map(r => r.email), SYSTEM_OWNER_EMAIL]) {
@@ -166,12 +128,6 @@ function createNotificationService() {
       })
     },
 
-    /**
-     * The homeowner opened their proposal. Recipients are the proposal's
-     * meeting participants — ALL of them — resolved by the caller
-     * (`proposalService.views.record`); a proposal has no owner to notify.
-     * see `src/shared/modules/proposals/core/DOCS.md#shareable-via-token`
-     */
     notifyProposalViewed: async (params: {
       recipientUserIds: string[]
       proposalLabel: string
@@ -188,7 +144,6 @@ function createNotificationService() {
       }
       const sourceLabel = sourceLabels[params.source] ?? 'Opened directly'
 
-      // Push to every recipient's active subscriptions (no-op for an empty list).
       const pushResult = await webPushClient.sendToUsers(params.recipientUserIds, {
         title: `Proposal Viewed | ${params.customerName}`,
         body: `${sourceLabel} • ${formatScheduledTime(params.viewedAt)}`,
@@ -199,28 +154,10 @@ function createNotificationService() {
         console.warn(`[notificationService] notifyProposalViewed push partial failure:`, pushResult)
       }
 
-      // @migration(user-email-preferences)
-      // Email notification for proposal views was disabled pending user
-      // preference system (issue #188). When that ships:
-      // 1. Caller passes the recipients' emails in params (the meetings DAL
-      //    read that resolves `recipientUserIds` already joins `user`)
-      // 2. Check each user's preference via DAL query or params
-      // 3. Send email to the opted-in recipients — no db lookup needed here
+      // @migration(user-email-preferences): email for proposal views is disabled until the user preference system ships (#188).
     },
 
-    // Fires when an internal user is added/promoted as a participant on a
-    // meeting they didn't create. Push deep-links to the same URL as the
-    // "View in Schedule" entity action so tapping the notification lands
-    // them at the meeting on the schedule page with the row highlighted.
-    //
-    // Caller is responsible for skipping self-additions. We don't have the
-    // actor on this signature on purpose — the call site already knows
-    // whether `participantUserId === ctx.session.user.id` and can short-
-    // circuit before calling us.
-    //
-    // @migration(meetings-entity-router)
-    // Once meetings migrates: caller passes { customerName, customerAddress,
-    // scheduledFor } in params. Remove the DAL read below.
+    // The caller skips self-additions — the actor is deliberately not on this signature.
     notifyMeetingParticipantAdded: async (params: {
       meetingId: string
       participantUserId: string
@@ -247,26 +184,12 @@ function createNotificationService() {
       }
     },
 
-    // Fires when a meeting's scheduledFor is changed (rescheduled, newly
-    // scheduled, or unscheduled). Sent to every participant EXCEPT the
-    // actor — so if the owner moves their own meeting, the co-owner gets
-    // pinged but the owner does not. Skip is enforced inside this function
-    // (vs at the call site like the participant-added path) because the
-    // recipients are derived here and the actor is the only signal the
-    // caller has to suppress.
-    //
-    // @migration(meetings-entity-router)
-    // Once meetings migrates: caller passes { recipientUserIds, customerName,
-    // customerAddress } in params. Remove both DAL reads below.
+    // Unlike participant-added, the actor skip lives here because the recipients are derived here.
     notifyMeetingScheduledTimeChanged: async (params: {
       meetingId: string
       newScheduledFor: string | null
       oldScheduledFor: string | null
-      /**
-       * Skip notifying this user. Optional so SYSTEM_CONTEXT callers
-       * (e.g., inbound GCal sync) can notify every participant — there
-       * is no "actor" to exclude in those flows.
-       */
+      /** Optional so SYSTEM_CONTEXT callers (inbound GCal sync) notify everyone — there is no actor to exclude. */
       excludeUserId?: string
     }) => {
       const meeting = dalVerifySuccess(await getByIdWithJoins(SYSTEM_CONTEXT, { id: params.meetingId }))
@@ -275,7 +198,6 @@ function createNotificationService() {
         return
       }
 
-      // Every participant except the actor (no actor ⇒ everyone).
       const recipients = (await getParticipantsForMeeting(params.meetingId))
         .filter(p => p.userId !== params.excludeUserId)
 
@@ -286,10 +208,6 @@ function createNotificationService() {
       const navigate = ROOTS.dashboard.scheduleWithMeetingHighlight(meeting.id, params.newScheduledFor)
       const customerLabel = buildCustomerLabel({ name: meeting.customer?.name ?? null, address: meeting.customer?.address ?? null })
 
-      // Body shape depends on the kind of change:
-      //   set → set : "Mon May 12 2:30 PM → Tue May 13 3:00 PM"
-      //   null → set: "Now Tue May 13 3:00 PM"
-      //   set → null: "No longer scheduled"
       let body: string
       if (params.newScheduledFor && params.oldScheduledFor) {
         body = `${formatScheduledTime(params.oldScheduledFor)} → ${formatScheduledTime(params.newScheduledFor)}`

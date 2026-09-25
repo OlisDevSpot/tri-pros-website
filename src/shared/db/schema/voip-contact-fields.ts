@@ -15,8 +15,6 @@ import { createdAt, id, updatedAt } from '../lib/schema-helpers'
 // (one set for all campaigns), whereas campaign IDs are per-campaign — two
 // concerns, two tables.
 //
-// see docs/plans/voip-campaigns/EPIC.md
-// see docs/superpowers/specs/2026-08-19-justcall-dialer-migration-design.md
 
 export const voipContactFields = pgTable('voip_contact_fields', {
   id,

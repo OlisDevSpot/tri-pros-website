@@ -4,7 +4,7 @@ import { hashKey } from '@tanstack/react-query'
 // key; client hooks check on first mount whether a recorded key shares their
 // tRPC path but hashes differently — the signature of a server/client input
 // mismatch (drifted table config, mismatched `extra`, client-only input).
-// All functions are no-ops in production. see docs/superpowers/plans/2026-07-26-prefetch-hydration-fault-audit.md
+// All functions are no-ops in production.
 
 interface HydrationDriftGlobals {
   __hydratedQueryKeys?: unknown[][]

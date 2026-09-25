@@ -8,7 +8,9 @@ import {
 import { PROPOSAL } from '@/shared/modules/proposals/core/lib/constants'
 import { proposalVisibility } from '@/shared/modules/proposals/core/lib/visibility'
 
-// `kind` is server-derived (omitted from insert schema), so update inherits the exclusion.
+// `kind`/`token` are server-derived: `create.before` always overwrites them. The insert schema
+// carries both as OPTIONAL (not omitted), so this partial() does NOT exclude them from updates —
+// update-path field gating is owned by permissions epic #285.
 const updateProposalSchema = insertProposalSchema.partial()
 
 /** Concrete schemas for `createCrudRouter` type inference (spec carries type-erased copies). */

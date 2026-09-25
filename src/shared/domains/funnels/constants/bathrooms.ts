@@ -10,8 +10,7 @@ import { ZIP_STEP } from '@/shared/domains/funnels/lib/steps/zip-step'
 // @migration: the option-tile images (whichBathroom/age/scope/accessibility/
 // timeline) and the before/after pairs currently resolve to PLACEHOLDER webps in
 // `public/funnels/bathrooms/**` (a generic "BATHROOM placeholder art" tile).
-// To ship real art, generate the 17 images per
-// `docs/superpowers/specs/2026-06-23-bathrooms-funnel-asset-prompts.md`, run
+// To ship real art, generate the 17 images, run
 // them through the optimize-image-assets skill, and overwrite the files at
 // these exact paths — no code change here is needed (paths are already the
 // final contract). The hero, callout, problem, and process images are real.

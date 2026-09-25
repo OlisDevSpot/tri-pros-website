@@ -1,4 +1,4 @@
-// Share token for homeowner proposal access. see ../DOCS.md#share-token-generated-at-insert
+// Share token for homeowner proposal access.
 
 import { randomBytes } from 'node:crypto'
 

@@ -19,7 +19,7 @@ interface SlideRunProps {
  * presentation it becomes a band above the slides: the run switches to `block` (a grid
  * would leave the band alone in a row that bounds its stickiness, review F12) and publishes
  * `--band-h`, which the slides subtract and snap below. No `overflow` here or on the stack:
- * `hidden` would re-scope sticky to that box. See ./DOCS.md#runs
+ * `hidden` would re-scope sticky to that box.
  */
 export function SlideRun({ items, numberedTotal, children }: SlideRunProps) {
   return (

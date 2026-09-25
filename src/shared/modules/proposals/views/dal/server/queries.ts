@@ -1,5 +1,4 @@
 // proposal_views DAL — queries. View stats for a proposal.
-// DAL conventions: docs/codebase-conventions/dal-conventions.md
 
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { ProposalView } from '@/shared/db/schema/proposal-views'

@@ -1,6 +1,4 @@
 // Business queries for the voip-campaigns entity. Custom lookups beyond CRUD.
-// see ../../DOCS.md for business rules.
-// All DAL conventions: see docs/codebase-conventions/dal-conventions.md
 
 import type { DalReturn } from '@/shared/dal/server/types'
 import type { VoipCampaign } from '@/shared/db/schema/voip-campaigns'

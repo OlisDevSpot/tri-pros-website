@@ -11,24 +11,7 @@ import { jcCampaignListResponseSchema } from './schemas/campaign-list'
 import { jcContactFieldsResponseSchema } from './schemas/fields'
 import { jcSmsResponseSchema } from './schemas/sms'
 
-// ---------------------------------------------------------------------------
-// justcallClient — the single, uniform entry point for every JustCall Sales
-// Dialer interaction. Same pattern as `twilioClient` and every other
-// provider: ONE factory → ONE singleton → ALL methods hanging off it.
-//
-//   import { justcallClient } from '@/shared/services/providers/justcall/client'
-//   await justcallClient.addContactToCampaign({ campaignId, phoneE164, customFields })
-//
-// The provider is a leaf — methods accept primitives + scalar shapes and return
-// primitives. NO app-domain types in signatures. JustCall-specific shapes never
-// cross the DialerProvider line; the mapping to neutral shapes lives in
-// `dialer-provider.ts`. See `DOCS.md`.
-//
-// Auth: `Authorization: api_key:api_secret` — raw colon-joined, NOT base64 Basic.
-// Verified against developer.justcall.io/reference/authentication (2026-08-19).
-// JustCall has no envelope-unwrap step (unlike CloudTalk's `responseData`);
-// responses are `{ status, data }` shaped directly.
-// ---------------------------------------------------------------------------
+// Leaf provider: primitives in and out — JustCall shapes never cross the DialerProvider line.
 
 export class JustcallApiError extends Error {
   constructor(
@@ -53,7 +36,7 @@ export class JustcallResponseValidationError extends Error {
 
 function buildAuthHeader(): string {
   const { apiKey, apiSecret } = getJustcallConfig()
-  // Raw colon-joined, per the official v2.1 auth docs (verified 2026-08-19).
+  // Raw colon-joined, NOT base64 Basic — per JustCall's v2.1 auth docs.
   return `${apiKey}:${apiSecret}`
 }
 
@@ -122,8 +105,6 @@ async function request<TResponse>(
   }
 }
 
-// ── Method input interfaces ─────────────────────────────────────────────────
-
 interface AddContactToCampaignInput {
   campaignId: string
   phoneE164: string
@@ -145,15 +126,7 @@ interface SendSmsInput {
 
 function createJustcallClient() {
   return {
-    /**
-     * Upsert a contact into a Sales Dialer campaign (keyed on phone). This IS
-     * the enrollment mechanism — replaces CloudTalk's tag idiom. Returns the
-     * JustCall contact id (stringified).
-     *
-     * NEVER call from a route handler directly — go through the neutral
-     * `dialerProvider` binding + `enrollment.service` so the compliance +
-     * per-source gates fire first.
-     */
+    /** NEVER call from a route handler — go through `dialerProvider` + `enrollment.service` so the compliance and per-source gates fire first. */
     async addContactToCampaign(input: AddContactToCampaignInput): Promise<{ contactId: string }> {
       const res = await request<JcAddContactToCampaignResponse>('POST', '/sales_dialer/campaigns/contact', {
         body: {
@@ -168,23 +141,14 @@ function createJustcallClient() {
       return { contactId: String(res.data.id) }
     },
 
-    /**
-     * Remove a contact from a campaign (unenroll). Verified against
-     * developer.justcall.io: `DELETE /v2.1/sales_dialer/campaigns/contact` with
-     * `campaign_id` + `contact_id` as QUERY params (not a JSON body). Returns
-     * `{ status: 'success' }`; we ignore the body.
-     */
+    /** JustCall takes `campaign_id` + `contact_id` as QUERY params here, not a JSON body. */
     async removeContactFromCampaign(input: RemoveContactFromCampaignInput): Promise<void> {
       await request('DELETE', '/sales_dialer/campaigns/contact', {
         query: { campaign_id: Number(input.campaignId), contact_id: Number(input.contactId) },
       })
     },
 
-    /**
-     * Send an outbound SMS. Wire fields: justcall_number = from, contact_number
-     * = to, body = message. NEVER call from a route handler directly — go
-     * through the cadence service so the STOP/compliance gates fire first.
-     */
+    /** NEVER call from a route handler — the cadence service runs the STOP/compliance gates first. */
     async sendSms(input: SendSmsInput): Promise<{ messageId: string }> {
       const res = await request<JcSmsResponse>('POST', '/texts/new', {
         body: { justcall_number: input.fromE164, contact_number: input.toE164, body: input.body },
@@ -193,10 +157,6 @@ function createJustcallClient() {
       return { messageId: String(res.data.id) }
     },
 
-    /**
-     * List Sales Dialer campaigns. Used by the admin Resync mutation to populate
-     * `voip_campaigns`. Paginates — advances `page` until a short page returns.
-     */
     async listCampaigns(): Promise<{ id: string, name: string, type: string, status?: string }[]> {
       const out: { id: string, name: string, type: string, status?: string }[] = []
       let page = 0
@@ -216,13 +176,7 @@ function createJustcallClient() {
       return out
     },
 
-    /**
-     * List Sales Dialer custom-field definitions. Verified path:
-     * `GET /v2.1/sales_dialer/contacts/custom-fields`, returning
-     * `data:[{ key, label, type }]`. We normalize `key`→`id` (the numeric id
-     * enroll needs in `custom_fields:[{id,value}]`) and `label`→`name` so the
-     * resync service's label→app_key mapping stays provider-agnostic.
-     */
+    /** JustCall's `key` is the numeric id `custom_fields:[{id,value}]` expects on enroll; `label` becomes `name` so the resync mapping stays provider-agnostic. */
     async listContactFields(): Promise<{ id: number, name: string }[]> {
       const res = await request<JcContactFieldsResponse>('GET', '/sales_dialer/contacts/custom-fields', {
         schema: jcContactFieldsResponseSchema,
@@ -234,8 +188,4 @@ function createJustcallClient() {
 
 export type JustcallClient = ReturnType<typeof createJustcallClient>
 
-/**
- * The single JustCall entry point. Import this — and only this — to interact
- * with JustCall from the provider layer. See file header + `DOCS.md`.
- */
 export const justcallClient = createJustcallClient()

@@ -27,7 +27,6 @@ export function HomeownerContractView({ proposalId, token, contractStatus, custo
 
   // A pure signal to the agents — never touches the contract lifecycle.
   // The agent manually prepares/sends the signing draft (#264).
-  // see `src/shared/modules/proposals/core/DOCS.md#proposal-lock-ladder`
   const requestMoveForward = useMutation(
     trpc.proposalsRouter.delivery.requestToMoveForward.mutationOptions({
       onSuccess: () => {

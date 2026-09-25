@@ -11,7 +11,6 @@ import { voipDids } from './voip-dids'
 // staff and already-known customers). Lead-conversion calls live in
 // voip-campaigns tables, not here.
 //
-// see docs/plans/voip-in-house/phase-1-mvp.md GRILL RESULTS — voip_calls
 export const voipCalls = pgTable('voip_calls', {
   id,
   // UNIQUE for webhook idempotency (ON CONFLICT DO UPDATE for lifecycle patches).

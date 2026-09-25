@@ -1,8 +1,6 @@
 // Voip-messages business mutations — operations that don't fit through generic
 // CRUD (idempotent upsert + status patches keyed by provider id).
 //
-// see ../../DOCS.md for invariants (composite thread key, STOP-routing path)
-// see docs/codebase-conventions/dal-conventions.md
 // see memory/feedback-services-orchestrate-dal-implements.md
 
 import type { DalReturn } from '@/shared/dal/server/types'

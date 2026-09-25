@@ -79,10 +79,9 @@ export const businessRouter = createTRPCRouter({
    * disposition) and book a NEW meeting at the new time, copying the original's
    * owner + participants + customer/project/type + flowStateJSON (same sit, new
    * slot — trade selections etc. continue; this is the ONLY path that carries
-   * flow state, duplicate deliberately does not — see
-   * meetings/DOCS.md#duplicate-copies-setup-only). Composes DAL blocks in the
+   * flow state, duplicate deliberately does not). Composes DAL blocks in the
    * router (no service). Order = create-new → then cancel-original so a failure
-   * never leaves a cancelled meeting with no replacement. see meetings/DOCS.md#reschedule-cancels-and-rebooks
+   * never leaves a cancelled meeting with no replacement.
    */
   rescheduleMeeting: meetingProcedure
     .input(z.object({
@@ -127,7 +126,7 @@ export const businessRouter = createTRPCRouter({
         // Same sit, new slot: the in-meeting working state (trade selections,
         // program, deal structure, closing adjustments) continues in the
         // replacement. null → undefined because the insert schema is
-        // `.optional()`, not `.nullable()`. see meetings/DOCS.md#reschedule-cancels-and-rebooks
+        // `.optional()`, not `.nullable()`.
         flowStateJSON: original.flowStateJSON ?? undefined,
       }))
 

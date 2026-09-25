@@ -11,7 +11,6 @@ import { proposals } from './proposals'
 // NULL = global incentive); W3 adds the proposal_sow_items FK and migrates
 // section incentives in (Addendum A.3). label is NULL for global rows today —
 // W3 section rows use it. Money = integer cents at the DAL boundary.
-// see docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md §2
 export const proposalIncentives = pgTable('proposal_incentives', {
   id,
   proposalId: uuid('proposal_id').notNull().references(() => proposals.id, { onDelete: 'cascade' }),

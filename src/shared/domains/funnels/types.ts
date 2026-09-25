@@ -247,10 +247,15 @@ export interface TradeMeta {
  * single source for a trade's display name, its Notion trade UUID, and its
  * share/SEO metadata. Read by server metadata code, the lead-input builder, and
  * the portfolio block — none of which may pull the client step tree, so this
- * stays component-free. see constants/trade-facts.ts + ../DOCS.md#funnel-metadata
+ * stays component-free.
  */
 export interface TradeFacts {
-  /** Canonical Notion trade name, e.g. "Kitchen Renovation" (CT/SMS uniformity). */
+  /**
+   * Display name written into `interestedTradesRaw` for CT/SMS uniformity.
+   * ⚠️ NOT the Notion name — these drifted (here "Kitchen Renovation", Notion "Kitchen Remodel"),
+   * so funnel/Bina leads and intake leads disagree. Resolve from the catalog instead; this field
+   * goes away at P2 of the construction epic.
+   */
   name: string
   /** Notion trade-page UUID — portfolio filtering. */
   notionTradeId: string

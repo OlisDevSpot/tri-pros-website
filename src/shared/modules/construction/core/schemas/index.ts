@@ -5,10 +5,9 @@ import { painPointCategories, painPointEmotionalDrivers, painPointSeverities, pa
 /**
  * Neutral construction-catalog schemas. Nothing here names a vendor: these are
  * the shapes the app reasons about, whoever supplies the rows.
- * see ../../DOCS.md#neutral-schemas
  */
 
-/** Live Notion `Type` select values, verbatim. Reconciling these with `constants/enums.ts`'s `constructionTypes` is P2 — see ../../DOCS.md#category-taxonomy */
+/** Live Notion `Type` select values, verbatim. Reconciling these with `constants/enums.ts`'s `constructionTypes` is P2. */
 export const tradeCategories = [
   'Energy Efficiency',
   'General Construction',

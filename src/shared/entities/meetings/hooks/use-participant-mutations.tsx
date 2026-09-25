@@ -16,17 +16,8 @@ type ManageParticipantsInput = inferRouterInputs<AppRouter>['meetingsRouter']['p
 type ParticipantRole = 'co_owner' | 'helper' | 'owner'
 
 interface UseParticipantMutationsArgs {
-  /**
-   * Optional default meetingId for callers that always operate on a single meeting
-   * (e.g. the inline picker). Bulk callers (e.g. the modal) can omit this and pass
-   * `meetingId` per-mutation instead.
-   */
   meetingId?: string
-  /**
-   * Suppress the per-mutation error toast. Set this when the caller aggregates
-   * results across multiple meetings (e.g. the modal's bulk apply) and emits its
-   * own summary toast. Defaults to false — the picker relies on the per-mutation toast.
-   */
+  /** Suppress the per-mutation error toast — for bulk callers that emit their own summary toast. */
   silent?: boolean
 }
 
@@ -35,21 +26,6 @@ interface MutationContext {
   meetingId: string
 }
 
-/**
- * Generalized participant mutations hook used by both the inline ParticipantPicker
- * and the ManageParticipantsModal. Handles optimistic updates for the per-meeting
- * `getParticipants` cache so the UI updates instantly while the server call runs.
- *
- * The optimistic update for `changeRoleMutation` mirrors the server semantics in
- * `meetingsRouter.participants.manageParticipants` (see src/trpc/routers/meetings.router.ts):
- *  - to 'owner': demote current owner → co_owner, UNLESS a different co_owner
- *    already exists, in which case the outgoing owner is removed entirely.
- *  - to 'co_owner': just update (server will reject with CONFLICT if a different
- *    user already holds the slot — the rollback handles the failure).
- *  - to 'helper': just update.
- *
- * Tracks per-user pending state so the affected row can render a spinner.
- */
 export function useParticipantMutations({ meetingId: defaultMeetingId, silent = false }: UseParticipantMutationsArgs = {}) {
   const trpc = useTRPC()
   const qc = useQueryClient()
@@ -60,10 +36,6 @@ export function useParticipantMutations({ meetingId: defaultMeetingId, silent = 
     return trpc.meetingsRouter.participants.getParticipants.queryOptions({ meetingId })
   }
 
-  // Shared cache lifecycle. `mutateCache` runs after snapshotting; it should
-  // perform the optimistic mutation (insert / remove / role swap) on a fresh
-  // cache value. `extraInvalidate` runs in addition to the per-meeting
-  // participants invalidation when the mutation settles.
   function makeOptions(opts: {
     mutateCache: (input: ManageParticipantsInput, old: ParticipantsCache) => ParticipantsCache
     extraInvalidate?: () => void
@@ -109,23 +81,19 @@ export function useParticipantMutations({ meetingId: defaultMeetingId, silent = 
     }
   }
 
-  // addMutation triggers full meeting invalidation: new participants reshape
-  // swimlane combos, participant-avatar stacks, and any list surface that
-  // embeds meeting participants (schedule getAll, customer pipeline, dashboard).
+  // Full meeting invalidation: participants reshape swimlanes, avatar stacks, and list rows that embed them.
   const addMutation = useMutation(
     trpc.meetingsRouter.participants.manageParticipants.mutationOptions(
       makeOptions({
         extraInvalidate: invalidateMeeting,
         mutateCache: (input, old) => {
-          // Guard: role is required for add. If absent, skip the optimistic
-          // insert — the server will reject with BAD_REQUEST and rollback runs.
+          // No role → skip the optimistic insert; the server rejects and rollback runs.
           if (!input.role) {
             return old
           }
           return [
             ...old,
-            // Placeholder: userName/userEmail are '' until the server responds.
-            // Satisfies the non-nullable inferred type from the inner-join query.
+            // '' placeholders satisfy the non-nullable inner-join type until the refetch.
             {
               id: `optimistic-${input.userId}`,
               userId: input.userId,
@@ -140,17 +108,13 @@ export function useParticipantMutations({ meetingId: defaultMeetingId, silent = 
     ),
   )
 
-  // removeMutation triggers full meeting invalidation: when removing the owner,
-  // the co-owner is promoted (or the system user takes over), which cascades to
-  // ownerId-dependent displays (meeting list rows, meeting header, etc.)
+  // Full meeting invalidation: removing the owner reassigns ownerId, which list rows and the header depend on.
   const removeMutation = useMutation(
     trpc.meetingsRouter.participants.manageParticipants.mutationOptions(
       makeOptions({
         extraInvalidate: invalidateMeeting,
         mutateCache: (input, old) => {
-          // Mirror server: removing the owner with a co-owner present promotes
-          // the co-owner. Without a co-owner, the server backfills with the
-          // system user — we don't have its profile, so let the refetch fill it in.
+          // Mirrors the server. With no co-owner the server backfills the system user, whose profile we lack — the refetch fills it.
           const owner = old.find(p => p.role === 'owner')
           const coOwner = old.find(p => p.role === 'co_owner')
           const removingOwner = owner?.userId === input.userId
@@ -167,8 +131,7 @@ export function useParticipantMutations({ meetingId: defaultMeetingId, silent = 
     ),
   )
 
-  // changeRole triggers full meeting invalidation: owner changes cascade to
-  // ownerId-dependent displays (meeting list rows, meeting header, etc.)
+  // Full meeting invalidation: owner changes cascade to ownerId-dependent list rows and the header.
   const changeRoleMutation = useMutation(
     trpc.meetingsRouter.participants.manageParticipants.mutationOptions(
       makeOptions({
@@ -180,9 +143,7 @@ export function useParticipantMutations({ meetingId: defaultMeetingId, silent = 
           const newRole = input.role
 
           if (newRole === 'owner') {
-            // Mirror server: if a different co_owner exists who isn't the user
-            // being promoted, the outgoing owner is REMOVED. Otherwise the
-            // outgoing owner is demoted to co_owner.
+            // Must mirror manageParticipants: a distinct existing co_owner means the outgoing owner is removed, not demoted.
             const currentOwner = old.find(p => p.role === 'owner')
             const existingCoOwner = old.find(p => p.role === 'co_owner')
             const dropOutgoingOwner
@@ -204,9 +165,7 @@ export function useParticipantMutations({ meetingId: defaultMeetingId, silent = 
               })
           }
 
-          // 'co_owner' or 'helper': straight role update on the targeted user.
-          // Server enforces the co_owner uniqueness constraint; if it rejects,
-          // rollback restores the cache.
+          // co_owner uniqueness is left to the server; a CONFLICT rolls the cache back.
           return old.map(p => p.userId === input.userId ? { ...p, role: newRole } : p)
         },
       }),
@@ -226,19 +185,15 @@ export function useParticipantMutations({ meetingId: defaultMeetingId, silent = 
     addMutation,
     removeMutation,
     changeRoleMutation,
-    /** Convenience wrapper — uses the hook's default meetingId if not provided. */
     add: (userId: string, role: ParticipantRole, meetingId?: string) => {
       addMutation.mutate({ meetingId: resolveMeetingId(meetingId), userId, role, action: 'add' })
     },
-    /** Convenience wrapper — uses the hook's default meetingId if not provided. */
     remove: (userId: string, meetingId?: string) => {
       removeMutation.mutate({ meetingId: resolveMeetingId(meetingId), userId, action: 'remove' })
     },
-    /** Convenience wrapper — uses the hook's default meetingId if not provided. */
     changeRole: (userId: string, newRole: ParticipantRole, meetingId?: string) => {
       changeRoleMutation.mutate({ meetingId: resolveMeetingId(meetingId), userId, role: newRole, action: 'change_role' })
     },
-    /** Specific case of changeRole — picker's promote-to-owner crown button. */
     promoteToOwner: (userId: string, meetingId?: string) => {
       changeRoleMutation.mutate({ meetingId: resolveMeetingId(meetingId), userId, role: 'owner', action: 'change_role' })
     },

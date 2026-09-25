@@ -10,7 +10,6 @@ import { applications } from './applications'
 // Notion id with NO FK to `trades` (mirrors x_project_scopes.scopeId), and
 // `tradeName` snapshots the label at submit for display (Notion names drift).
 // Committed from the reserved trades answer key on submit.
-// see src/shared/entities/applications/DOCS.md#trades-question-key-seam
 export const x_applicationTrades = pgTable('x_application_trades', {
   id: unsafeId,
   applicationId: uuid('application_id')

@@ -7,8 +7,6 @@ import { toNationalDigits } from '@/shared/lib/phone'
 // the `customers` row. Both voip-in-house (Twilio) and voip-campaigns (the dialer)
 // gate outbound through `canOutboundTo` and INSERT through `addToDnc`.
 //
-// see docs/plans/voip-in-house/phase-1-mvp.md GRILL RESULTS (2026-05-30)
-// see docs/plans/voip/INTEGRATION-SEAM.md §5 (DNC propagation)
 // see CONTEXT.md (DNC section)
 
 export type DncReason
@@ -92,7 +90,7 @@ function createComplianceService() {
     /**
      * Phase 2+ cron — fetch FTC DNC list and mark matching customers.
      * Stub for now; real implementation lands when the FTC SAN is issued and
-     * the scrub provider is wired (see docs/plans/voip-in-house/phase-1-mvp.md
+     * the scrub provider is wired
      * Task 14 — gated, not blocking Phase 1).
      */
     ftcScrubBatch: async (): Promise<{ scrubbedCount: number }> => {

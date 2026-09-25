@@ -29,19 +29,16 @@ import { customers } from './customers'
 // 1:1 sales-discovery profile. Row-exists = discovery data has been collected
 // (lazy upsert; ~12% of customers). `age` deliberately lives on customers —
 // written by anonymous homeowners (contracts flow), read by envelope rules.
-// see docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md §10
 //
 // Closed vocabularies are `text(..., { enum })`, NOT pgEnum — the const array
 // is the single source of truth; validation happens at the DAL boundary (Zod).
-// see docs/codebase-conventions/enum-standardization.md#text-with-enum
 export const customerProfiles = pgTable('customer_profiles', {
   customerId: uuid('customer_id').primaryKey().references(() => customers.id, { onDelete: 'cascade' }),
   // ── customer-profile section ──
   triggerEvent: text('trigger_event', { enum: triggerEvents }),
   mainPainAccessor: text('main_pain_accessor'),
   mainPainUrgency: integer('main_pain_urgency'),
-  // identity-free value array, replaced whole, never SQL-queried (sanctioned
-  // JSONB, promotion trigger documented in customers/DOCS.md)
+  // identity-free value array, replaced whole, never SQL-queried (sanctioned JSONB)
   additionalPainPoints: jsonb('additional_pain_points').$type<Pain[]>(),
   outcomePriority: text('outcome_priority', { enum: outcomePriorities }),
   timeInHome: text('time_in_home', { enum: yearsInHomeRanges }),

@@ -1,7 +1,6 @@
 // ─── Incentives Router ──────────────────────────────────────────────────────
 // proposal_incentives child rows (Wave 2). Replace-all upsert from the funding
 // form. Freeze gate (contractEnvelopeId) enforced in the DAL.
-// see ../../../shared/modules/proposals/core/DOCS.md#final-tcp-derived
 //
 // Plain leaf: imports pre-scoped procedures from ./procedures. The inline CASL
 // check is consolidated into a shared `assertCanUpdateProposal` in S5. When

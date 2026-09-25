@@ -1,8 +1,6 @@
 // Voip-messages business queries — composite-key thread fetch + other
 // custom reads that don't fit through generic getById/listAll.
 //
-// see ../../DOCS.md for invariants (composite thread key)
-// see docs/codebase-conventions/dal-conventions.md
 
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { VoipMessage } from '@/shared/db/schema/voip-messages'

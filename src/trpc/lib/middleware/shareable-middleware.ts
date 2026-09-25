@@ -1,4 +1,4 @@
-// Token-or-session dual-credential middleware. see ../../DOCS.md#shareable-middleware-token-or-session
+// Token-or-session dual-credential middleware.
 
 import type { PgColumn } from 'drizzle-orm/pg-core'
 

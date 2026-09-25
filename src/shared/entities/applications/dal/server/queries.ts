@@ -1,4 +1,4 @@
-// Application entity DAL reads. see docs/codebase-conventions/dal-conventions.md
+// Application entity DAL reads.
 
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { ApplicationAnswer } from '@/shared/db/schema/application-answers'

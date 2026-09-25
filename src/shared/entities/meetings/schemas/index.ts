@@ -68,10 +68,10 @@ export const meetingFlowStateSchema = z.object({
   currentStep: z.number().int().min(1).max(7),
   // Step 2: Trade & Pain selections
   tradeSelections: z.array(tradeSelectionSchema),
-  // Step 4: Program
+  // Step 5: Program
   selectedProgram: z.string().nullable(),
   programQualified: z.boolean(),
-  // Step 5: Deal Structure
+  // Step 4: Deal Structure
   dealStructure: dealStructureSchema,
   // Step 6: Closing adjustments
   closingAdjustments: closingAdjustmentsSchema,

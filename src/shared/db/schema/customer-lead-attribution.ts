@@ -13,7 +13,6 @@ import { customers } from './customers'
 // source.enrichment, which lives in customer_enrichment rows (the one mutable
 // part). Promoted fields also remain inside capture_json by design: the
 // snapshot never changes after capture, so the duplication cannot drift.
-// see docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md §10
 export const customerLeadAttribution = pgTable('customer_lead_attribution', {
   customerId: uuid('customer_id').primaryKey().references(() => customers.id, { onDelete: 'cascade' }),
   kind: text('kind', { enum: leadSourceKinds }).notNull(),

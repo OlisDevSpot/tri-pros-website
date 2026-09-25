@@ -21,7 +21,6 @@ export type LeadSourceFormConfig = z.infer<typeof leadSourceFormConfigSchema>
 // ── voipConfigJSON — per-source VoIP policy ─────────────────────────────────
 // Shared field; each EPIC owns a sub-object. APP-side policy only — CT-runtime
 // identity lives in the voip_campaigns + voip_contact_attributes tables.
-// see docs/plans/voip/INTEGRATION-SEAM.md §9
 
 /**
  * @deprecated Wave-1 frozen (epic #256/#259). The campaigns policy now lives

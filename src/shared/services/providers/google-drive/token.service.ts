@@ -6,8 +6,7 @@
 // ALL Google OAuth account+token concerns for BOTH google-drive AND google-calendar
 // (getGoogleAccountForUser + refresh + persist). `scheduling.service.ts` should then
 // STOP retrieving google accounts / touching auth and only SCHEDULE — it consumes the
-// oauth service for a valid token. Tracked in docs/plans/2026-08-20-backend-refactor-roadmap.md
-// §⑥ (Google OAuth service consolidation) + memory project-backend-refactor-roadmap.
+// oauth service for a valid token.
 
 import { TRPCError } from '@trpc/server'
 

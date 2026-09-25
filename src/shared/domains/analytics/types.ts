@@ -1,5 +1,4 @@
 // Analytics framework — core contracts + builders. Pure: no DB/network/React imports.
-// See docs/superpowers/specs/2026-07-28-analytics-feature-marketing-sales-design.md#5-architecture
 
 export interface DateRange {
   start: Date

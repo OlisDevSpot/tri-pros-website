@@ -23,8 +23,6 @@ function extractCoverImageUrl(page: PageObjectResponse): string | null {
   return null
 }
 
-// see ../../../DOCS.md#adapter-returns-entity-or-null
-// see ../../../DOCS.md#disabled-checkbox-is-extraction-time-gate
 export function pageToTrade(page: PageObjectResponse): Trade | null {
   try {
     const p = page.properties

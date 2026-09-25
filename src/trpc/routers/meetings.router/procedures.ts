@@ -2,7 +2,6 @@
 // as top-level consts, imported directly by every meeting sub-router. Replaces
 // the old `createEntityRouter` factory + `EntityToolkit` argument: middleware is
 // baked on at definition time, not generated per call.
-// see ../../DOCS.md#procedures-defined-once
 //
 // server-spec.ts stays a PURE data object (imported by the DAL); the tRPC
 // runtime is pulled in HERE, router-side, never into the entity/DAL layer.

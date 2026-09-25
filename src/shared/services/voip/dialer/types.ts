@@ -4,7 +4,6 @@ import type { VoipUnenrollReason } from '@/shared/constants/enums/voip'
 // any vendor's endpoints. JustCall (or a future provider) implements this;
 // consumers in services/voip/campaigns/* depend ONLY on this interface (via the
 // `../dialer` barrel binding), never on providers/justcall/* directly.
-// see docs/superpowers/specs/2026-08-19-justcall-dialer-migration-design.md
 
 export type DialerMode = 'autodial' | 'dynamic' | 'predictive'
 

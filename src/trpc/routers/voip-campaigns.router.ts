@@ -32,19 +32,7 @@ async function assertCampaignDialable(campaignId: string) {
   }
 }
 
-// voip-campaigns admin/ops router (ring 1). Resync + campaign binding + bulk
-// enroll-all + the three-reason unenroll (decision #18). Service verbs
-// (enroll/unenroll) live in services/voip/campaigns — this router is glue.
-//
-// Privileged ops use `superAdminProcedure` (procedure-level gating, not inline
-// role checks) and DalReturn results are normalized via the shared `dalToTrpc`
-// bridge — never a local re-implementation. see src/trpc/DOCS.md.
-//
-// see docs/plans/voip-campaigns/phase-1-implementation.md#w8
-// see docs/plans/voip-campaigns/EPIC.md decisions log 2026-06-04
-
 export const voipCampaignsRouter = createTRPCRouter({
-  // ── Reads ────────────────────────────────────────────────────────────────
   listCampaigns: agentProcedure.query(async () => {
     return dalToTrpc(await listVoipCampaigns())
   }),
@@ -53,11 +41,6 @@ export const voipCampaignsRouter = createTRPCRouter({
     return dalToTrpc(await listVoipContactFields())
   }),
 
-  /**
-   * Per-source summary rows for the control-center left rail: source identity +
-   * its default campaign + eligible (canonical pool, enrolled excluded) + enrolled
-   * + DNC counts. Single DAL pass via countLeadsByStatusPerSource.
-   */
   getSourceCampaignSummaries: agentProcedure.query(async () => {
     const sources = dalToTrpc(await listLeadSources())
     const counts = dalToTrpc(await countLeadsByStatusPerSource())
@@ -75,20 +58,12 @@ export const voipCampaignsRouter = createTRPCRouter({
     }))
   }),
 
-  /** Active enrolled leads for a source → the disqualify list. */
   listEnrolledLeads: agentProcedure
     .input(z.object({ sourceSlug: z.string() }))
     .query(async ({ input }) => {
       return dalToTrpc(await listEnrolledLeadsBySource(input.sourceSlug))
     }),
 
-  /**
-   * Unified paginated leads list for the Campaigns Control Center Leads tab.
-   * 'all' (the default when the status filter is cleared) returns every relevant
-   * customer with a derived status; the other four return one bucket each.
-   * Filters: status, sourceSlug, campaignId. Free-text search on name/phone.
-   * see docs/plans/voip-campaigns/EPIC.md + docs/superpowers/specs/2026-06-04-campaigns-control-center-design.md
-   */
   listLeads: superAdminProcedure
     .input(paginatedQueryInput({
       status: z.enum(['all', 'eligible', 'enrolled', 'removed', 'dnc']),
@@ -106,12 +81,10 @@ export const voipCampaignsRouter = createTRPCRouter({
       }))
     }),
 
-  // ── Resync + binding (super-admin) ─────────────────────────────────────────
   resyncDialer: superAdminProcedure.mutation(async ({ ctx }) => {
     return dalToTrpc(await campaignSyncService.resyncDialer(ctx))
   }),
 
-  /** Patch a source's campaigns policy (default campaign + enabled + autoEnroll). */
   setSourcePolicy: superAdminProcedure
     .input(z.object({
       sourceSlug: z.string(),
@@ -125,14 +98,7 @@ export const voipCampaignsRouter = createTRPCRouter({
       return dalToTrpc(await setVoipCampaignsPolicy(input.sourceSlug, input.patch))
     }),
 
-  /**
-   * Set a campaign's automated SMS cadence config. Full-replace of the
-   * `sms_cadence` JSONB — the `update` handler always plain-replaces a column
-   * now (the `jsonbMergeColumns` opt-in mechanism was deleted in Wave 2, epic
-   * #256), so the messages array is replaced, not merged, by construction.
-   * Resync-safe — upsertCampaignByProviderId never writes this column.
-   * see src/shared/entities/voip-campaigns/DOCS.md#sms-cadence
-   */
+  /** Resync-safe: upsertCampaignByProviderId never writes `smsCadence`. */
   setCampaignSmsCadence: superAdminProcedure
     .input(z.object({
       campaignId: z.string().uuid(),
@@ -145,8 +111,7 @@ export const voipCampaignsRouter = createTRPCRouter({
       }))
     }),
 
-  // ── Enrollment ─────────────────────────────────────────────────────────────
-  /** Manual single-lead enroll (admin). campaignId optional → source default. */
+  /** campaignId omitted → the source's default campaign. */
   enroll: superAdminProcedure
     .input(z.object({ customerId: z.string().uuid(), campaignId: z.string().uuid().optional() }))
     .mutation(async ({ input }) => {
@@ -157,7 +122,6 @@ export const voipCampaignsRouter = createTRPCRouter({
       }))
     }),
 
-  /** Bulk "enroll all per source" into an admin-picked campaign (decision #11). */
   enrollAll: superAdminProcedure
     .input(z.object({ sourceSlug: z.string(), campaignId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
@@ -170,13 +134,7 @@ export const voipCampaignsRouter = createTRPCRouter({
       return { ok: true }
     }),
 
-  // ── Unenroll (the one op, three reasons — decision #18) ─────────────────────
-  /**
-   * Disqualify a single lead ("stop calling / bad lead"). Super-admin only —
-   * uses SYSTEM_CONTEXT, so it must not be reachable by scoped agents (would be
-   * IDOR: disqualifying a customer the agent can't see). superAdminProcedure
-   * enforces that gate; super-admins are omni, so SYSTEM_CONTEXT is legitimate.
-   */
+  /** Runs under SYSTEM_CONTEXT, so this must stay super-admin-only — a scoped agent could otherwise disqualify a customer it can't see. */
   disqualify: superAdminProcedure
     .input(z.object({ customerId: z.string().uuid() }))
     .mutation(async ({ input }) => {
@@ -186,12 +144,6 @@ export const voipCampaignsRouter = createTRPCRouter({
       }))
     }),
 
-  /**
-   * Neutral per-contact unenroll — pulls the contact from its campaign with the
-   * intent to re-enroll later (reason 'removed', no DNC). Distinct from
-   * `disqualify` (bad lead). Re-enroll via the existing `enroll` mutation; the
-   * contact returns to the eligible pool. Super-admin only (SYSTEM_CONTEXT).
-   */
   removeFromCampaign: superAdminProcedure
     .input(z.object({ customerId: z.string().uuid() }))
     .mutation(async ({ input }) => {
@@ -201,12 +153,7 @@ export const voipCampaignsRouter = createTRPCRouter({
       }))
     }),
 
-  /**
-   * Bulk disqualify selected leads (super-admin). Dispatches a background job —
-   * each enroll/unenroll is a few dialer API calls, so a large selection would
-   * blow the request timeout if run inline. Returns immediately; the leads list
-   * refetches on a short delay (see use-campaign-mutations).
-   */
+  /** Background job: each unenroll is several dialer API calls, so a large selection would blow the request timeout inline. */
   disqualifyBulk: superAdminProcedure
     .input(z.object({ customerIds: z.array(z.string().uuid()).min(1).max(1000) }))
     .mutation(async ({ ctx, input }) => {
@@ -218,7 +165,6 @@ export const voipCampaignsRouter = createTRPCRouter({
       return { queued: input.customerIds.length }
     }),
 
-  /** Enroll an explicit set of customers into one campaign (cherry-pick bulk). */
   enrollSelected: superAdminProcedure
     .input(z.object({ customerIds: z.array(z.string().uuid()).min(1).max(1000), campaignId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
@@ -231,7 +177,6 @@ export const voipCampaignsRouter = createTRPCRouter({
       return { queued: input.customerIds.length }
     }),
 
-  /** Bulk neutral remove (reason 'removed' — re-enrollable). */
   removeBulk: superAdminProcedure
     .input(z.object({ customerIds: z.array(z.string().uuid()).min(1).max(1000) }))
     .mutation(async ({ ctx, input }) => {
@@ -243,14 +188,12 @@ export const voipCampaignsRouter = createTRPCRouter({
       return { queued: input.customerIds.length }
     }),
 
-  /** Move a customer to a different campaign (drawer/bulk). */
   switchCampaign: superAdminProcedure
     .input(z.object({ customerId: z.string().uuid(), toCampaignId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       return dalToTrpc(await campaignEnrollmentService.switchCampaign(ctx, input))
     }),
 
-  /** Mark customer(s) DNC (reason 'admin') + unenroll. Dispatches a background job. */
   markDnc: superAdminProcedure
     .input(z.object({ customerIds: z.array(z.string().uuid()).min(1).max(1000) }))
     .mutation(async ({ ctx, input }) => {
@@ -261,7 +204,6 @@ export const voipCampaignsRouter = createTRPCRouter({
       return { queued: input.customerIds.length }
     }),
 
-  /** Clear DNC (admin opt-back-in). */
   removeDnc: superAdminProcedure
     .input(z.object({ customerId: z.string().uuid() }))
     .mutation(async ({ input }) => {
@@ -269,11 +211,6 @@ export const voipCampaignsRouter = createTRPCRouter({
       return { ok: true }
     }),
 
-  /**
-   * Per-source "Unenroll all" (admin). Reason = disqualified (manual stop).
-   * Resolves the active set, then dispatches the same background unenroll job
-   * the bulk action bar uses.
-   */
   unenrollAll: superAdminProcedure
     .input(z.object({ sourceSlug: z.string() }))
     .mutation(async ({ ctx, input }) => {

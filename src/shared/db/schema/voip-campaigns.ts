@@ -17,9 +17,6 @@ import { createdAt, id, updatedAt } from '../lib/schema-helpers'
 // identity lives here. Campaign-to-lead-source join is via
 // `lead_sources.default_campaign_id` (a real FK to this table's `id`).
 //
-// see docs/plans/voip-campaigns/EPIC.md
-// see docs/plans/voip/INTEGRATION-SEAM.md
-// see docs/superpowers/specs/2026-08-19-justcall-dialer-migration-design.md
 
 export const voipCampaigns = pgTable(
   'voip_campaigns',

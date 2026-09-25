@@ -6,7 +6,6 @@ import { customers } from '@/shared/db/schema/customers'
  * SQL helpers for phone-number gating. Server-only.
  * Rule: agents see phone once a proposal is sent OR later (sent | approved).
  * Omni/leads-pool/trusted callers see it ungated (see `canSeeUngatedPhone`).
- * see ../DOCS.md (when written: #phone-visibility-threshold)
  *
  * Agent-facing queries that expose `customers.phone` MUST swap the column for
  * `gatedPhoneSql(canSeeUngatedPhone(ctx.ability))` and include

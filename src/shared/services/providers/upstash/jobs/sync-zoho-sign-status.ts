@@ -30,7 +30,6 @@ export const syncZohoSignStatusJob = createJob<SyncZohoSignStatusPayload>(
     // contract signed while the homeowner is still pending. A non-terminal
     // signing is a no-op here; `contractSignedAt` stays null so the read path
     // keeps showing live per-signer progress until everyone has signed.
-    // see modules/proposals/core/DOCS.md#contract-events-from-zoho
     if (event === 'completed') {
       const status = await contractService.getContractEnvelopeStatus(contractEnvelopeId)
       if (!isEnvelopeFullySigned(status)) {

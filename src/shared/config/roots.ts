@@ -1,4 +1,3 @@
-// see ../../../docs/codebase-conventions/urls-and-origins.md
 // MUST stay type-only. roots.ts is loaded by next.config.ts in a CommonJS
 // transpile that does NOT resolve `@/` path aliases for runtime (value)
 // imports — a value import here breaks `next dev`/`next build`. (services.ts

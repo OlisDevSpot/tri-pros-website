@@ -6,7 +6,7 @@ import { createContext, use } from 'react'
 export interface PresentationContextValue {
   /** The snapping scroll container. Pass as `root` to every `useInView` inside. */
   scrollerRef: RefObject<HTMLDivElement | null>
-  /** Index of the slide crossing the presentation's centre line. See ./DOCS.md#active-slide */
+  /** Index of the slide crossing the presentation's centre line. */
   activeIndex: number
   reportInView: (index: number, inView: boolean) => void
   /** Slides register their element so the scroller can scroll to an index. */

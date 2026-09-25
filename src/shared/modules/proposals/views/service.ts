@@ -17,7 +17,6 @@
 // the caller passes SYSTEM_CONTEXT and the token compare lives HERE, not in the
 // router. #285 replaces the compare with a bearer actor on `ctx` (D-11); the
 // method signature does not change when that lands.
-// see ../core/DOCS.md#shareable-via-token
 //
 // Recipients: a proposal has NO owner — it is reached through its meeting, and
 // the people responsible for it are that meeting's participants (all of them),
@@ -25,7 +24,6 @@
 // never a recipient. Recipients are resolved HERE (peer reads into the meetings
 // and users DALs) and passed to the job, so the notification service stays free
 // of recipient lookups. No meeting ⇒ info@ alone.
-// see ../core/DOCS.md#visibility-via-meeting-participation
 
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { InsertProposalView, ProposalView } from '@/shared/db/schema/proposal-views'

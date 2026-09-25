@@ -6,7 +6,7 @@ import type { ProjectSection } from '@/shared/modules/proposals/core/types'
  *   finalTcp = max(0, startingTcp − Σ global 'discount' incentives − Σ ALL section incentives)
  * Incentives and discounts reduce the PRICE; they are never a cost we absorb.
  * Never persisted (Stage-1 draft math per ADR-0005 Addendum A); the Stage-2
- * rollup lives in `proposals.final_tcp_cents`. see ../../DOCS.md#final-tcp-derived
+ * rollup lives in `proposals.final_tcp_cents`.
  */
 export function computeTotalDiscounts(data: FundingData): number {
   return data.incentives.reduce((sum, inc) => {

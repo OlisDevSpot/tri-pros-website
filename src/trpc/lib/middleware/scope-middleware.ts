@@ -1,4 +1,4 @@
-// Scope-resolving middleware. see ../../DOCS.md#scope-middleware-is-the-core-superpower
+// Scope-resolving middleware.
 // Chain after agentProcedure (which guarantees session + ability non-null).
 
 import type { SQL } from 'drizzle-orm'
@@ -17,7 +17,7 @@ import { createMiddleware } from '@/trpc/init'
  * sub-entities). Omni lives here — a procedure/context concern — never inside
  * the entity's `visibility` fragment. Shared by both `scopeMiddleware` (used by
  * the legacy factory) and the per-entity `procedures.ts` inline chains so the
- * two can never drift. see ../../DOCS.md#scope-middleware-is-the-core-superpower
+ * two can never drift.
  */
 export function resolveVisibilityScope(
   spec: EntityServerSpec,

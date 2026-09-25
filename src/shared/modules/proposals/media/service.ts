@@ -13,7 +13,7 @@
 //   delete                 engine slot — the delete hook purges R2 first. An already
 //                          deleted or out-of-scope row is `not-found`, not a no-op.
 //   update                 engine slot as-is (visibility, name — media is lock-exempt
-//                          by design, see ../core/DOCS.md#proposal-media)
+//                          by design
 //   buildUploadTarget      parent-visibility probe → presigned R2 PUT
 //   list                   parent-visibility probe → scoped rows by owner (ALL visibilities;
 //                          the homeowner-only projection lives on the parent's getFullView)
@@ -25,7 +25,6 @@
 // `isVisible(proposalServerSpec, …)`, which re-resolves the parent's scope from
 // its spec. #285 D-16 makes every slot self-scope off `ctx.actor.ability` and both
 // probes collapse into the engine.
-// see ../core/DOCS.md#proposal-media
 
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { ProposalMediaFile } from '@/shared/db/schema/proposal-media-files'

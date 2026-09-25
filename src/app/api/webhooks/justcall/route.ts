@@ -9,7 +9,7 @@ import { smsCadenceService } from '@/shared/services/voip/campaigns/sms-cadence.
 import { complianceService } from '@/shared/services/voip/compliance.service'
 
 // JustCall webhook receiver — single endpoint, route handler IS the orchestrator.
-// Per docs/codebase-conventions/webhook-routes.md: verify signature, normalize
+// Verify signature, normalize
 // the body to a canonical event via the provider WebhookAdapter, switch on the
 // canonical type, compose existing services directly. No wrapper service — and
 // nothing here knows the provider is JustCall (the adapter is the only seam).
@@ -29,7 +29,6 @@ import { complianceService } from '@/shared/services/voip/compliance.service'
 // (→ canonical `call.disposition_set`) rather than `sd.call_completed` (→ `call.ended`),
 // so the adapter emits `call.disposition_set` only when a disposition is present.
 //
-// see docs/superpowers/specs/2026-08-19-justcall-dialer-migration-design.md
 
 export async function POST(req: Request): Promise<Response> {
   // 1. Signature (HMAC-SHA256, keyed with the API secret). 401 on mismatch.

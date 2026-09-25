@@ -1,8 +1,3 @@
-// Business queries for the meetings entity. Multi-table joins, derived
-// columns, participant batching, and entity-specific filters.
-// see ../../DOCS.md for business rules.
-// All DAL conventions: see docs/codebase-conventions/dal-conventions.md
-
 import type { MeetingParticipantRole } from '@/shared/constants/enums'
 import type { PaginatedResult } from '@/shared/dal/server/lib/query/output'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
@@ -28,9 +23,6 @@ import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/
 import { profileCols } from '@/shared/entities/customers/lib/profile-select'
 import { getAllParticipantsForMeetings } from '@/shared/entities/meetings/dal/server/participants'
 
-// ── Types ───────────────────────────────────────────────────────────────
-
-/** Participant summary attached to each list row. */
 export interface MeetingListParticipant {
   id: string
   name: string
@@ -38,7 +30,6 @@ export interface MeetingListParticipant {
   role: MeetingParticipantRole
 }
 
-/** Owner/co-owner detail attached to each list row. */
 export interface MeetingListOwnerSlot {
   id: string
   userId: string
@@ -48,7 +39,6 @@ export interface MeetingListOwnerSlot {
   userImage: string | null
 }
 
-/** Enriched row returned by `listMeetings` — base columns + customer fields + owner fields + proposal subqueries + participants. */
 export type MeetingListRow = Meeting & {
   customerName: string | null
   customerPhone: string | null
@@ -67,7 +57,6 @@ export type MeetingListRow = Meeting & {
   coOwner: MeetingListOwnerSlot | null
 }
 
-// Filter schema — exported so the router can reference the same shape in its `.input()`.
 export const meetingListFiltersSchema = {
   outcome: z.array(z.enum(meetingOutcomes)).optional(),
   scheduledFor: dateRangeSchema.optional(),
@@ -79,7 +68,6 @@ export const meetingListFiltersSchema = {
 export const meetingListInputSchema = paginatedQueryInput(meetingListFiltersSchema)
 export type MeetingListInput = z.infer<typeof meetingListInputSchema>
 
-/** Enriched single-meeting type for getById — meeting + full customer + owner + proposal subqueries. */
 export type MeetingWithCustomer = Meeting & {
   customer: MeetingCustomer | null
   ownerName: string
@@ -93,29 +81,9 @@ export type MeetingWithCustomer = Meeting & {
   hasApprovedProposal: boolean
 }
 
-/**
- * Customer shape embedded in a single-meeting read — every customer column
- * (plus the three frozen `*Deprecated` blobs) flattened-spread joined
- * against `customer_profiles` (Addendum B 1:1 child table) plus the derived
- * `hasSentProposal` flag.
- */
 export type MeetingCustomer = CustomerWithProfile
 
-// ── listMeetings ────────────────────────────────────────────────────────
-
-/**
- * Server-paginated meetings list. Drives every meetings consumer (calendar,
- * schedule, past-meetings table, customer profile lists). Scope is set by
- * middleware (omni: no filter; agent: participation predicate).
- *
- * Search: ilike against customers.name OR meetings.meetingType.
- * Sort whitelist: customerName, scheduledFor, meetingOutcome, createdAt.
- * Default order: createdAt DESC.
- *
- * Participants are batched in a separate query (rather than role-filtered
- * LEFT JOINs) so a defensive duplicate row can never multiply via
- * cross-product.
- */
+/** Participants are batched in a separate query rather than role-filtered LEFT JOINs, so a duplicate row can never multiply via cross-product. */
 export async function listMeetings(
   ctx: ScopedContext,
   input: MeetingListInput,
@@ -172,8 +140,7 @@ export async function listMeetings(
           customerCity: customers.city,
           customerState: customers.state,
           customerZip: customers.zip,
-          // Legacy fields — still derived from meetings.ownerId for backward
-          // compatibility with consumers that read ownerName/ownerImage directly.
+          // Still derived from meetings.ownerId for consumers that read ownerName/ownerImage directly.
           ownerName: user.name,
           ownerImage: user.image,
           proposalCount: sql<number>`(SELECT count(*) FROM proposals p WHERE p.meeting_id = ${meetings.id})`.as('proposal_count'),
@@ -197,7 +164,6 @@ export async function listMeetings(
       },
     })
 
-    // Batch-fetch participants — prevents N+1 from per-row LEFT JOINs.
     const meetingIds = result.rows.map(r => r.id)
     const participantRows = meetingIds.length > 0
       ? await getAllParticipantsForMeetings(meetingIds)
@@ -255,23 +221,13 @@ export async function listMeetings(
   })
 }
 
-// ── getByIdWithJoins ────────────────────────────────────────────────────
-
-/**
- * Enriched single-meeting read: meeting + full customer + owner + proposal
- * subqueries. Scope is set by middleware (omni: no visibility filter;
- * agent: participation predicate).
- *
- * Phone gating applies — agents see phone only after a proposal is sent.
- * see src/shared/entities/customers/DOCS.md#phone-visibility-threshold
- */
+/** Phone-gated: agents see the phone only after a proposal is sent. */
 export async function getByIdWithJoins(
   ctx: ScopedContext,
   input: { id: string },
 ): Promise<DalReturn<MeetingWithCustomer | undefined>> {
   return dalDbOperation(async () => {
-    // Swap the raw phone column out of the customer projection so
-    // destructuring `row.customer` can't accidentally leak the ungated value.
+    // The raw phone column is swapped out of the projection so destructuring `row.customer` can't leak the ungated value.
     const { phone: _customerPhone, ...customerCols } = getTableColumns(customers)
 
     const [row] = await db
@@ -307,7 +263,7 @@ export async function getByIdWithJoins(
       return undefined
     }
 
-    // Normalize null customer (leftJoin returns null for all fields when no match)
+    // leftJoin miss yields an all-null customer object rather than null.
     const customer = row.customer?.id ? row.customer : null
 
     return { ...row, customer } as MeetingWithCustomer

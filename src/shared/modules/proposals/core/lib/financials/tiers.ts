@@ -1,4 +1,3 @@
-// see ../../DOCS.md#margin-multiplier-tiers
 export type MultiplierTier = 'danger' | 'healthy' | 'excellent' | 'unknown'
 
 export function getMultiplierTier(value: number | null): MultiplierTier {

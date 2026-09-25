@@ -41,7 +41,6 @@ import { googleDriveClient } from '@/shared/services/providers/google-drive/clie
 const isDev = env.NODE_ENV === 'development'
 const TRI_PROS_CALENDAR_NAME = isDev ? 'Tri Pros Schedule (DEV)' : 'Tri Pros Schedule'
 
-/** Get a fresh access token for a user's Google account, returning the full account row */
 async function getAccessTokenForUser(userId: string): Promise<{ accessToken: string, account: AccountRow } | null> {
   const row = await getGoogleAccountForUser(userId)
 
@@ -113,9 +112,7 @@ async function performInboundSync(userId: string): Promise<void> {
       const winner = resolveConflict(linkedMeeting.updatedAt, gcalEvent.updated)
       if (winner === 'remote') {
         const local = gcalEventToLocal(gcalEvent)
-        // meetings.scheduled_for is NOT NULL — if the remote event lacks
-        // dateTime/date (rare, e.g. malformed event), preserve the existing
-        // local scheduledFor rather than blanking it.
+        // meetings.scheduled_for is NOT NULL — a remote event without a date keeps the local value.
         if (local.scheduledFor) {
           await updateMeetingScheduledFor(linkedMeeting.id, local.scheduledFor)
         }
@@ -184,13 +181,7 @@ async function performInboundSync(userId: string): Promise<void> {
   }
 }
 
-/**
- * Resolve the system-owner's Google Calendar credentials + target calendar
- * for any meeting-side outbound write. Returns null (with a console.error)
- * when the system owner hasn't connected their calendar yet — callers
- * treat that as a no-op rather than a thrown error so a missing setup
- * doesn't break unrelated mutations.
- */
+/** Returns null (not a throw) when the system owner's calendar isn't connected, so a missing setup never breaks unrelated mutations. */
 async function resolveSystemCalendarAuth(): Promise<{
   auth: { accessToken: string, account: AccountRow }
   calendarId: string
@@ -208,17 +199,7 @@ async function resolveSystemCalendarAuth(): Promise<{
   return { auth, calendarId: auth.account.gcalCalendarId }
 }
 
-/**
- * Shared meeting-event push logic. Three branches:
- * - payload null + existing event → delete (event becomes stale)
- * - existing event → patch with etag (optimistic concurrency)
- * - no event → create + persist new gcal_event_id + etag
- *
- * The "payload null" branch covers a legacy case (meeting without
- * scheduledFor) that is unreachable today because the column is NOT NULL —
- * kept for defense and so the `deleteMeetingEvent` exit on stale linkage
- * can compose with this without a separate code path.
- */
+/** The null-payload branch is unreachable today (scheduled_for is NOT NULL); kept so a stale linkage still deletes without a separate path. */
 async function pushMeetingEventToCalendar(
   auth: { accessToken: string },
   calendarId: string,
@@ -275,7 +256,6 @@ function createSchedulingService() {
 
       await updateAccountGCalFields(acct.id, { gcalSyncToken: eventList.nextSyncToken ?? null })
 
-      // Push ALL scheduled meetings to the centralized calendar (only meaningful when info@ connects)
       const systemUserId = await getSystemOwnerId()
       if (userId === systemUserId) {
         const allMeetingIds = await getAllMeetingsWithSchedule()
@@ -315,7 +295,6 @@ function createSchedulingService() {
         }
       }
 
-      // Register webhook for real-time push notifications
       const webhookUrl = publicUrl('/api/google-calendar/webhook')
       const channelId = crypto.randomUUID()
       const watchResponse = await googleCalendarClient.watchEvents(
@@ -346,10 +325,7 @@ function createSchedulingService() {
       }
 
       await clearAccountGCalFields(acct.id)
-      // Meetings live on the centralized info@ calendar, so only clear meeting
-      // fields when the system owner disconnects (clears every meeting's GCal
-      // linkage since they all pointed at that calendar). Per-agent disconnects
-      // only affect activities.
+      // Meetings live on the centralized info@ calendar; a per-agent disconnect only touches activities.
       const systemUserId = await getSystemOwnerId()
       if (userId === systemUserId) {
         await clearAllMeetingGCalFields()
@@ -357,13 +333,7 @@ function createSchedulingService() {
       await clearAllActivityGCalFieldsForUser(userId)
     },
 
-    /**
-     * Sync a single meeting to the centralized info@ calendar.
-     * Creates the event if `gcal_event_id` is null, updates it otherwise.
-     * Caller passes meetingId only — the owner-of-the-calendar is always
-     * the system owner (info@), not the meeting's row.ownerId. No-ops if
-     * the system owner's Google account isn't linked yet.
-     */
+    /** Meetings always sync to the system owner's (info@) calendar, never the row's ownerId. */
     syncMeeting: async (meetingId: string): Promise<void> => {
       const ctx = await resolveSystemCalendarAuth()
       if (!ctx) {
@@ -376,13 +346,7 @@ function createSchedulingService() {
       await pushMeetingEventToCalendar(ctx.auth, ctx.calendarId, meetingId, meeting)
     },
 
-    /**
-     * One-way delete of a GCal event when its meeting row is being deleted.
-     * Takes the event identifier directly (not a meetingId) because the
-     * row may no longer exist when this fires. Idempotent against 404s
-     * (event already gone in GCal) — Google returns 410 GONE for those;
-     * we swallow it.
-     */
+    /** Takes the event id, not a meetingId — the row may already be gone; Google's 410 GONE for an already-deleted event is swallowed. */
     deleteMeetingEvent: async (input: { gcalEventId: string }): Promise<void> => {
       const ctx = await resolveSystemCalendarAuth()
       if (!ctx) {
@@ -395,23 +359,9 @@ function createSchedulingService() {
         })
     },
 
-    /**
-     * Re-sync every meeting of a customer that already has a GCal event,
-     * so customer-derived fields embedded in the event (name, phone,
-     * email, address) reflect the latest customer row. Called from
-     * `customerServerSpec.hooks.update.after`. Per-meeting failures are
-     * logged and the loop continues — one Google API hiccup shouldn't
-     * abort the rest of the customer's projections.
-     *
-     * @migration(ably-realtime-kernel) — when the Ably kernel lands, this
-     * service (or the customer update hook calling it) should also publish
-     * a `customer:<id>` channel event so open meeting cards refresh their
-     * rendered customer fields without a full refetch.
-     */
+    /** @migration(ably-realtime-kernel): also publish a `customer:<id>` channel event so open meeting cards refresh without a refetch. */
     propagateCustomerChange: async (customerId: string): Promise<void> => {
-      // Short-circuit if no synced events exist for this customer — avoids
-      // the system-calendar-auth resolve (and its console.error noise when
-      // the system owner isn't connected in dev) on every customer update.
+      // Checked before resolving auth so an unconnected dev setup doesn't log an error on every customer update.
       const customerMeetings = await getMeetingsForCustomerWithGCalEvent(customerId)
       if (customerMeetings.length === 0) {
         return
@@ -434,12 +384,7 @@ function createSchedulingService() {
       }
     },
 
-    /**
-     * Sync a single activity to its OWNER's per-user calendar. Activities
-     * are not centralized like meetings — each agent's tasks/events live
-     * on their own connected calendar. No-ops if the user isn't connected
-     * or the activity type isn't in `gcalSyncableActivityTypes`.
-     */
+    /** Activities sync to the owner's own calendar, not the centralized info@ one. */
     syncActivity: async (userId: string, activityId: string): Promise<void> => {
       const auth = await getAccessTokenForUser(userId)
       if (!auth) {

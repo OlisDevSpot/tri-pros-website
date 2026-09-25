@@ -3,7 +3,7 @@ import type { PresentationGroup, PresentationSlide } from '@/shared/components/p
 /**
  * Groups slides for layout. A `full` slide stands alone; consecutive `column` slides form one
  * run that shares a sticky heading column (C37). `frame` defaults to `'column'` here and
- * nowhere else (L2): every item carries the resolved frame. See ./DOCS.md#runs
+ * nowhere else (L2): every item carries the resolved frame.
  */
 export function groupSlides<TContent>(slides: PresentationSlide<TContent>[]): PresentationGroup<TContent>[] {
   const groups: PresentationGroup<TContent>[] = []

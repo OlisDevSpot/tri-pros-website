@@ -19,7 +19,6 @@ interface HeadingColumnProps {
  * clamped to the run, so the column already shows the run's first heading while the run
  * scrolls in, and keeps its last as the run leaves (review F1). Centred content per shell
  * correction C2. `aria-hidden`: every slide labels itself with its own heading (review F10).
- * See ./DOCS.md#heading-column
  */
 export function HeadingColumn({ items, numberedTotal }: HeadingColumnProps) {
   const { activeIndex } = usePresentation()

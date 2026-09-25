@@ -1,5 +1,4 @@
-// Meetings business mutations. see ../../DOCS.md for business rules.
-// DAL conventions: docs/codebase-conventions/dal-conventions.md
+// Meetings business mutations.
 
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 
@@ -21,7 +20,6 @@ const OVERWRITABLE_OUTCOMES = ['not_set', 'proposal_created'] as const
  * that pre-check stays a raw SELECT here rather than relying on hooks,
  * since the entity API doesn't have a "compare-and-set" primitive.
  *
- * see ../../DOCS.md#outcome-flips-on-proposal-sent
  */
 export async function deriveOutcomeOnProposalSent(
   ctx: ScopedContext,

@@ -33,7 +33,6 @@ export const deliveryRouter = createTRPCRouter({
    * touch envelope state — see ADR-0004 (amendment 2026-07-18: envelope
    * creation is a manual agent decision on the envelope card; nothing
    * auto-creates a draft anymore).
-   * see `src/shared/modules/proposals/core/DOCS.md#proposal-contract-independence`
    */
   sendProposalEmail: proposalProcedure
     .input(sendEmailSchema)
@@ -72,7 +71,6 @@ export const deliveryRouter = createTRPCRouter({
    * proposal's meeting participants (email + push) that the homeowner is
    * ready to move forward, and the agent manually drives the draft
    * lifecycle from there (#264).
-   * see `src/shared/modules/proposals/core/DOCS.md#proposal-lock-ladder`
    */
   requestToMoveForward: proposalShareableProcedure
     .input(z.object({ id: z.string(), token: z.string() }))

@@ -11,7 +11,6 @@
  * carry their meetings, e.g. `CustomerProfileProject`); the server-side twin for
  * list/aggregation queries is `hasAssociatedMeeting()` in `./visibility.ts`.
  *
- * See ../DOCS.md#pure-portfolio-projects-are-not-real-projects
  */
 export function isPurePortfolioProject(project: { meetings?: readonly unknown[] | null }): boolean {
   return (project.meetings?.length ?? 0) === 0

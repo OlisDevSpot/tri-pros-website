@@ -10,7 +10,7 @@ import { PixelLoader } from '@/shared/domains/funnels/lib/tracking/pixel-loader'
 // but ONLY on the production host: dev/preview/ngrok funnel testing must never
 // fire the live pixel (the browser pixel has no test_event_code escape hatch the
 // way CAPI does). Gate = host, not NODE_ENV (which is 'production' on Vercel
-// previews too). see isProductionHost + providers/meta/DOCS.md.
+// previews too).
 export default async function FunnelLayout({ children }: { children: ReactNode }) {
   const pixelEnabled = isProductionHost((await headers()).get('host'))
   // `text-foreground` is REQUIRED here, not cosmetic: `body` sets

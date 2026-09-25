@@ -13,7 +13,6 @@ import { sql } from 'drizzle-orm'
  * (Ring 2+ may relax this to let agents see participation of their own
  * customers — that's a join through `customers` and out of ring-1 scope.)
  *
- * see ../DOCS.md#admin-only-visibility
  */
 export function voipCampaignContactVisibility(_scope: VisibilityScope): SQL {
   return sql`FALSE`

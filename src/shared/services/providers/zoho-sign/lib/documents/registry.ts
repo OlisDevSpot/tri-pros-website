@@ -7,12 +7,7 @@ import { computeFinalTcp } from '@/shared/modules/proposals/core/lib/financials'
 import { pdfService } from '@/shared/services/pdf.service'
 import { ZOHO_SIGN_TEMPLATES } from '../../constants'
 
-// --- Field source helpers -------------------------------------------------
-//
-// One pure-function resolver per Zoho field. Same instance reused across
-// every template that has that field — Zoho merges field data globally
-// per envelope (flat field_text_data), so identical labels across
-// templates fill once.
+// Zoho merges field data per envelope (flat field_text_data), so identical labels across templates fill once.
 
 const customerNameSrc: FieldSource = ctx => ctx.proposal.customer?.name ?? ''
 const customerEmailSrc: FieldSource = ctx => ctx.proposal.customer?.email ?? ''
@@ -30,16 +25,8 @@ const customerAgeSrc: FieldSource = ctx => String(ctx.proposal.customer?.custome
 const tcpSrc: FieldSource = ctx => String(ctx.finalTcp)
 const depositSrc: FieldSource = ctx => String((ctx.proposal.depositAmountCents ?? 0) / 100)
 
-// Zoho per-template date format quirk: AWD's start-date / completion-date /
-// original-contract-date are CustomDate fields with `MMM dd yyyy` validation;
-// every template's sent-date is `MM/dd/yyyy`; base/senior start/completion
-// are plain Textfield (accept any printable string). Use *ZohoSrc variants
-// when targeting AWD CustomDate fields.
-//
-// Start date = earliest LEGAL start under CSLB, factoring the buyer's
-// 3- or 5-business-day right of rescission per Cal. Civil Code §1689.6/.7.
-// `cslbEarliestStartDate` is the canonical helper; do not replace with a
-// naive "today + N calendar days" calculation.
+// AWD's start/completion/original-contract dates are Zoho CustomDate fields validated as `MMM dd yyyy`; base/senior dates are plain text — use the *ZohoSrc variants for AWD.
+// Start date = earliest legal start under CSLB (3- or 5-business-day rescission, Cal. Civil Code §1689.6/.7) — never a naive today + N days.
 const startDateTextSrc: FieldSource = (ctx) => {
   return format(cslbEarliestStartDate(new Date(), ctx.isSenior), 'M/d/yyyy')
 }
@@ -64,12 +51,6 @@ const completionDateZohoSrc: FieldSource = (ctx) => {
 
 const sentDateSrc: FieldSource = () => format(new Date(), 'M/d/yyyy')
 
-// AWD-only field. The DAL's projectFirstContractSentAt subquery falls
-// through contract_sent_at → approved_at → created_at, so a non-null
-// value is the norm for additional-work proposals. The today-fallback
-// covers the pathological case where the project has zero proposals
-// (data integrity bug) — log it so we notice in production rather than
-// silently shipping today's date as the original contract date.
 const originalContractDateSrc: FieldSource = (ctx) => {
   if (!ctx.originalContractDate) {
     console.warn('originalContractDate is null on additional-work envelope — falling back to today; project likely has zero proposals')
@@ -86,25 +67,8 @@ const baseHomeownerFieldMappings: Record<string, FieldSource> = {
   'ho-city-state-zip': customerCityStateZipSrc,
 }
 
-// --- Registry -------------------------------------------------------------
-//
-// Source of truth for which documents exist, when they apply, and how
-// their fields are filled. Order in this array drives envelope assembly
-// order: documents render in the merged Zoho envelope in the order
-// listed below.
-//
-// ZOHO_SIGN_TEMPLATES lives in zoho-sign/constants — template IDs and
-// per-template signer action IDs are versioned alongside the rest of
-// the integration's constants.
-//
-// AWD (Additional Work Description) is additional-work-only. Future
-// docs (credit-card-auth, finance-doc, finance-ack) appear in the enum
-// but not yet in this registry — they're placeholders for incremental
-// rollout.
-//
-// Fill `dateFieldMappings` for `sent-date` (CustomDate type — Zoho
-// requires fields of type Date to fill via field_date_data, not
-// field_text_data).
+// Array order = document order in the merged Zoho envelope.
+// Zoho fills Date-type fields via field_date_data, not field_text_data — those belong in `dateFieldMappings`.
 
 export const ENVELOPE_DOCUMENTS: readonly EnvelopeDocument[] = [
   {
@@ -122,9 +86,6 @@ export const ENVELOPE_DOCUMENTS: readonly EnvelopeDocument[] = [
       'completion-date': completionDateTextSrc,
       'tcp': tcpSrc,
       'deposit': depositSrc,
-      // sow-1 / sow-2 trimmed in Zoho UI 2026-04-28 — base / senior templates
-      // no longer have those fields. SOW content lives in the attached
-      // sow-pdf doc, not here.
     },
     signerActions: ZOHO_SIGN_TEMPLATES.base.actions,
   },
@@ -155,9 +116,7 @@ export const ENVELOPE_DOCUMENTS: readonly EnvelopeDocument[] = [
     },
     applicableKinds: ['initial-sale', 'additional-work'],
     perKindRules: {
-      // Initial-sale: always generate the PDF (drops the short/long branch).
       'initial-sale': { kind: 'required' },
-      // Additional-work: only when SOW is too long to fit inline in AWD's sow field.
       'additional-work': { kind: 'required-when', predicate: ctx => ctx.isLongSow },
     },
   },
@@ -171,16 +130,9 @@ export const ENVELOPE_DOCUMENTS: readonly EnvelopeDocument[] = [
     },
     fieldMappings: {
       ...baseHomeownerFieldMappings,
-      // `sow` is a single textfield meant for short-form additional-work
-      // SOW only. When isLongSow is true, sow-pdf is also required
-      // (separate doc in the envelope) — leave AWD's sow blank so the
-      // page renders cleanly.
+      // A long SOW ships as the sow-pdf doc instead; AWD's single `sow` field stays blank so the page renders cleanly.
       'sow': ctx => ctx.isLongSow ? '' : ctx.sowText,
-      // Signed dollar adjustment — positive when the addendum adds scope,
-      // negative for credits/discounts. Today: maps to the additional-
-      // work proposal's finalTcp (which is the addendum's full amount).
-      // If future requirements need explicit credits, add an override
-      // field on the proposal entity and source from there.
+      // Zoho's price-adjustment is a signed amount (negative = credit); today it is always the addendum's full finalTcp.
       'price-adjustment': tcpSrc,
     },
     dateFieldMappings: {
@@ -235,9 +187,7 @@ export const ENVELOPE_DOCUMENTS: readonly EnvelopeDocument[] = [
     },
     fieldMappings: {
       ...baseHomeownerFieldMappings,
-      // order-id, product-label, product-quantity not yet mapped — single-line-item
-      // template today; agent fills via UI when toggling material-order on, OR we
-      // mirror the customer's material list once that data model exists.
+      // order-id / product-label / product-quantity are not mapped yet — the agent fills them in the Zoho UI.
     },
     dateFieldMappings: {
       'sent-date': sentDateSrc,

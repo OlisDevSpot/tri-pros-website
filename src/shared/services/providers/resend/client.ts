@@ -10,6 +10,5 @@ import { getResendConfig } from './lib/config'
  * the first call to `resendClient.emails.send(...)` (or any other method)
  * throws `NotConfiguredError` if the env var isn't set.
  *
- * see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
  */
 export const resendClient = lazyProxy(() => new Resend(getResendConfig().apiKey))

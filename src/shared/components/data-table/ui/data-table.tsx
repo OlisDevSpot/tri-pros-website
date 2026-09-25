@@ -41,31 +41,11 @@ export interface DataTableProps<TData, TMeta = unknown> {
   onRowClick?: (row: TData) => void
   onFilteredCountChange?: (count: number) => void
   onFilteredDataChange?: (data: TData[]) => void
-  /**
-   * Opt into server-side pagination. When set, the caller owns page state and
-   * passes only the current page's rows via `data`. `rowCount` reports the
-   * global total so page-count math stays correct.
-   */
+  /** When set, the caller owns page state and `data` holds only the current page's rows. */
   serverPagination?: DataTableServerPagination
-  /**
-   * Opt into server-side sorting. When set, DataTable runs in `manualSorting`
-   * mode — column-header clicks emit `onSortChange` events instead of doing
-   * client-side sort. Pair with `serverPagination` for fully server-controlled
-   * tables.
-   */
   serverSorting?: DataTableServerSorting
-  /**
-   * Controlled column visibility. When set, this map drives TanStack Table's
-   * visibility state — pair with `useColumnVisibility(tableId, columns)` to
-   * persist user toggles to localStorage. When omitted, DataTable falls back
-   * to static `meta.hidden` only.
-   */
   columnVisibility?: VisibilityState
 }
-
-// ---------------------------------------------------------------------------
-// localStorage helpers
-// ---------------------------------------------------------------------------
 
 const COL_SIZE_KEY = 'dt-col-sizes'
 const FROZEN_KEY = 'dt-frozen'
@@ -89,15 +69,7 @@ function loadFrozen(tableId: string): boolean {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Shared class constants
-// ---------------------------------------------------------------------------
-
 const CELL_BORDER = 'border-b border-border/50'
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
 
 interface Props<TData, TMeta = unknown> extends DataTableProps<TData, TMeta> {
   onActiveRowChange?: (id: string | null) => void
@@ -127,12 +99,6 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   const [internalSorting, setInternalSorting] = useState<SortingState>(defaultSort ?? [])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
 
-  // -- Server sort bridge ---------------------------------------------------
-  // When `serverSorting` is set, present its sort state to TanStack Table
-  // (with fallbackVisual filling in when sortBy is undefined). Column-header
-  // clicks dispatch through `serverSorting.onSortChange` instead of mutating
-  // local state.
-
   const sorting: SortingState = useMemo(() => {
     if (!serverSorting) {
       return internalSorting
@@ -145,21 +111,13 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
     }
     return []
   }, [serverSorting, internalSorting])
-  // Default state matches SSR. Hydration from localStorage happens in the
-  // effect below — reading during `useState` init renders server-side with
-  // defaults but tries to apply saved values during hydration, and React 18
-  // refuses to patch layout-affecting attribute mismatches like column
-  // widths ("This won't be patched up"). Saved values then never reach the
-  // DOM. `isFrozen` uses a `null` sentinel for the pre-hydration value so
-  // the persist effect can tell "not yet loaded" from "user chose true".
+  // Not read from localStorage in the useState init: React refuses to patch layout-affecting
+  // hydration mismatches (column widths), so saved values would never reach the DOM.
+  // `null` on isFrozen means "not yet hydrated", so the persist effect can skip it.
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({})
   const [isFrozen, setIsFrozen] = useState<boolean | null>(null)
   const [isScrolled, setIsScrolled] = useState(false)
 
-  // Hydrate from localStorage after mount. The setState calls below are
-  // the intentional double-render — server and client both first render
-  // with defaults so hydration matches, then this effect updates state to
-  // saved values for the next render.
   useEffect(() => {
     if (!tableId) {
       // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect -- hydration sentinel
@@ -174,14 +132,9 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
 
   const isFrozenEffective = isFrozen ?? true
 
-  // -- Container width + scroll tracking ------------------------------------
-
   const scrollRef = useRef<HTMLDivElement>(null)
   const [containerWidth, setContainerWidth] = useState(0)
 
-  // -- Pull-to-refresh (touch) ----------------------------------------------
-  // Distance is driven by a CSS var on the scroll container (see the hook) —
-  // `isRefreshing` is the only React state, toggled once per refresh.
   const { isRefreshing } = usePullToRefresh(scrollRef, serverPagination?.onRefresh)
 
   useEffect(() => {
@@ -205,18 +158,12 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
     }
   }, [])
 
-  // -- Persist column sizes (debounced) -------------------------------------
-  // 300ms debounce keeps localStorage off the drag hot-path. The unmount
-  // flush below catches the case where the timer is cancelled before it
-  // fires — typically when the user reloads or navigates within 300ms of
-  // the last drag tick, which used to silently lose the resize.
+  // Debounced to keep localStorage off the drag hot path; the unmount flush below
+  // covers a reload or navigation inside the debounce window.
   const latestColumnSizing = useRef(columnSizing)
   latestColumnSizing.current = columnSizing
 
-  // Skip the empty state — that covers both the pre-hydration default and
-  // the "user reset all columns" case. Both should NOT overwrite saved
-  // widths (the first would wipe them on mount; users who genuinely want a
-  // clean slate can clear localStorage).
+  // Empty sizing is both the pre-hydration default and "reset all columns" — neither may overwrite saved widths.
   useEffect(() => {
     if (!tableId || Object.keys(columnSizing).length === 0) {
       return
@@ -230,9 +177,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
     return () => clearTimeout(timer)
   }, [tableId, columnSizing])
 
-  // Synchronous flush on unmount. Reads via ref so we capture the latest
-  // sizing — the value closed over by the debounced effect would be stale
-  // by the time this cleanup runs. Same empty-state guard.
+  // Unmount flush reads the ref: the sizing closed over by the debounced effect would be stale here.
   useEffect(() => () => {
     if (!tableId) {
       return
@@ -247,9 +192,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
     catch { /* localStorage unavailable */ }
   }, [tableId])
 
-  // -- Persist frozen state -------------------------------------------------
-  // Skip the `null` sentinel — that's the pre-hydration value and writing
-  // it would clobber the user's saved choice with the default `true`.
+  // Persisting the pre-hydration `null` would clobber the saved choice with the default.
   useEffect(() => {
     if (!tableId || isFrozen === null) {
       return
@@ -264,8 +207,6 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
     setIsFrozen(prev => !(prev ?? true))
   }, [])
 
-  // -- Column visibility ----------------------------------------------------
-
   const fallbackColumnVisibility = useMemo<VisibilityState>(() => {
     const visibility: VisibilityState = {}
     for (const col of columns) {
@@ -278,8 +219,6 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   }, [columns])
 
   const columnVisibility = controlledColumnVisibility ?? fallbackColumnVisibility
-
-  // -- Time-preset filter machinery -----------------------------------------
 
   const timePresetFilters = useMemo(
     () => (filterConfig?.filter((f): f is DataTableTimePresetFilter => f.type === 'time-preset') ?? []),
@@ -308,8 +247,6 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
     })
   }, [columns, timePresetFilters])
 
-  // -- Active-row management ------------------------------------------------
-
   useEffect(() => {
     onActiveRowChange?.(activeRowId)
   }, [activeRowId, onActiveRowChange])
@@ -334,8 +271,6 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
     }
   }, [activeRowId, rowDataAttribute])
 
-  // -- TanStack Table instance ----------------------------------------------
-
   const table = useReactTable({
     data,
     columns: patchedColumns,
@@ -358,8 +293,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
             serverSorting.onSortChange(undefined)
             return
           }
-          // Don't dispatch when the click matches the fallback visual — that
-          // would write a redundant URL key for the server's natural order.
+          // Matching the fallback visual would write a redundant URL key for the server's natural order.
           const fallback = serverSorting.fallbackVisual
           if (fallback && head.id === fallback.id && head.desc === fallback.desc && !serverSorting.sortBy) {
             return
@@ -399,8 +333,6 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
 
   const isAnyColumnResizing = !!table.getState().columnSizingInfo.isResizingColumn
 
-  // -- Exact table & column sizing ------------------------------------------
-
   const flatHeaders = table.getFlatHeaders()
   const totalDeclaredWidth = flatHeaders.reduce((sum, h) => sum + h.getSize(), 0)
   const effectiveContainer = containerWidth || totalDeclaredWidth
@@ -408,10 +340,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   const tableWidth = needsOverflow ? totalDeclaredWidth : effectiveContainer
   const lastColExtra = needsOverflow ? 0 : effectiveContainer - totalDeclaredWidth
 
-  // Frozen column shows shadow only when scrolled horizontally
   const showFrozenShadow = isFrozenEffective && isScrolled
-
-  // -- Filtered-data callbacks ----------------------------------------------
 
   const filteredRows = table.getFilteredRowModel().rows
   const filteredCount = filteredRows.length
@@ -423,8 +352,6 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   useEffect(() => {
     onFilteredDataChange?.(filteredRows.map(r => r.original))
   }, [filteredRows, onFilteredDataChange])
-
-  // -- Render ---------------------------------------------------------------
 
   return (
     <div className="flex flex-col h-full gap-4">
@@ -475,7 +402,6 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                           ...(isFirstCol && isFrozenEffective ? { borderRightStyle: 'dashed' as const } : undefined),
                         }}
                       >
-                        {/* Header content — first col gets a pin toggle */}
                         {isFirstCol
                           ? (
                               <div className="flex items-center gap-1">
@@ -509,7 +435,6 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                               : flexRender(header.column.columnDef.header, header.getContext())
                             )}
 
-                        {/* Resize handle — centred on the column's right edge */}
                         {header.column.getCanResize() && !isLastCol && (
                           <div
                             data-resize-handle
@@ -530,7 +455,6 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                           </div>
                         )}
 
-                        {/* Last column: resize handle on the RIGHT edge (inside the cell) */}
                         {header.column.getCanResize() && isLastCol && (
                           <div
                             data-resize-handle
@@ -558,15 +482,9 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
             </TableHeader>
 
             <TableBody>
-              {/* Pull-to-refresh spacer — reflows the rows down (no transform,
-                  so the frozen first column's sticky-left survives). Height and
-                  spinner opacity are driven by the `--dt-pull` CSS var the hook
-                  writes on the scroll container — no React render on the drag
-                  hot path. `--dt-pull-ms` is 0 while dragging (1:1 follow) and
-                  ~220ms on release (smooth retract). The spinner is bottom-
-                  anchored so it sits directly above row 1 and reads fully as the
-                  strip opens. `--dt-pull` is unitless; opacity divisor mirrors
-                  PULL_TO_REFRESH_THRESHOLD (64). */}
+              {/* Spacer reflows the rows (a transform would break the frozen column's sticky-left).
+                  Sized by the `--dt-pull` var the hook writes, so no React render on the drag;
+                  the opacity divisor must match PULL_TO_REFRESH_THRESHOLD (64). */}
               {serverPagination?.onRefresh && (
                 <tr aria-hidden>
                   <td colSpan={table.getVisibleFlatColumns().length} className="border-0 p-0">
@@ -574,10 +492,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                       className="overflow-hidden"
                       style={{ height: 'calc(var(--dt-pull, 0) * 1px)', transition: 'height var(--dt-pull-ms, 0ms) ease-out' }}
                     >
-                      {/* Center on the VIEWPORT, not the full (scrollable) table
-                          width — constrain the centering region to the measured
-                          container width so justify-center lands on screen for
-                          horizontally-overflowing tables. */}
+                      {/* Width = measured container so the spinner centers on the viewport, not the overflowing table. */}
                       <div className="flex h-16 items-end justify-center pb-2" style={{ width: containerWidth || undefined }}>
                         <div
                           className="rounded-full border border-border/50 bg-background p-1.5 shadow-sm"

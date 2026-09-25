@@ -12,7 +12,7 @@ import { pageToTrade } from './trades/adapter'
  * implementation; nothing outside `sources/` imports `sources/notion/*`.
  *
  * Every list read drops invalid rows rather than throwing, and warns with a
- * count — see ../../DOCS.md#adapter-returns-entity-or-null (P0).
+ * count
  */
 function readAll<T>(
   label: string,

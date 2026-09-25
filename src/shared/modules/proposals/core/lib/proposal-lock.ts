@@ -1,7 +1,5 @@
 import type { ProposalStatus } from '@/shared/constants/enums'
 
-// see ../DOCS.md#proposal-lock-ladder
-
 /**
  * THE canonical lock ladder for proposals. Business logic defined ONCE here;
  * every call site (DAL gates, tRPC locks, UI disabling/affordances) derives

@@ -1,7 +1,3 @@
-// Business queries for the voip-campaign-contacts entity.
-// see ../../DOCS.md for business rules + the membership state model.
-// All DAL conventions: see docs/codebase-conventions/dal-conventions.md
-
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { SmsCadence } from '@/shared/entities/voip-campaigns/schemas/sms-cadence'
 
@@ -22,17 +18,10 @@ export interface ActiveEnrollment {
   customerId: string
   providerContactId: string
   voipCampaignId: string | null
-  // The provider campaign id to unenroll against — read from the linked campaign.
-  // null when the customer's campaign FK is null/dangling (defensive).
+  // null when the campaign FK is null or dangling.
   providerCampaignId: string | null
 }
 
-/**
- * Resolve a customer's CURRENTLY-ACTIVE enrollment (row exists AND
- * `unenrolled_at IS NULL`), joined to its campaign so the caller has the
- * provider campaign id to `dialerProvider.unenroll`. Returns null when there's
- * no active row — the unenroll op treats that as a no-op (idempotency).
- */
 export async function findActiveEnrollment(
   customerId: string,
 ): Promise<DalReturn<ActiveEnrollment | null>> {
@@ -56,11 +45,6 @@ export async function findActiveEnrollment(
   })
 }
 
-/**
- * Map a dialer provider contact id → our customer id (via the participation row).
- * Used by the webhook to resolve the customer a dialer disposition refers to.
- * Returns null when no row carries that provider contact id.
- */
 export async function findCustomerIdByProviderContactId(
   providerContactId: string,
 ): Promise<DalReturn<{ customerId: string } | null>> {
@@ -81,22 +65,16 @@ export interface SmsCadenceContext {
   dialAttempts: number
   autoSmsSentCount: number
   lastAutoSmsAt: string | null
-  // Customer fields for merge-field rendering + the SMS recipient.
   customerName: string
   customerPhone: string | null
   customerCity: string
   customerState: string
   customerZip: string
   interestedTradesRaw: string[]
-  // Campaign cadence config (null when no campaign / unconfigured).
+  // null when no campaign or unconfigured.
   smsCadence: SmsCadence | null
 }
 
-/**
- * One-shot read of everything the SMS-cadence orchestrator needs, keyed on the
- * provider contact id carried by a call.ended event. Returns null when no
- * participation row carries that provider contact id.
- */
 export async function findSmsCadenceContextByProviderContactId(
   providerContactId: string,
 ): Promise<DalReturn<SmsCadenceContext | null>> {
@@ -143,11 +121,7 @@ export async function findSmsCadenceContextByProviderContactId(
   })
 }
 
-/**
- * Active-enrollment customer ids for a given lead source (anchored to the
- * customer's lead source, not the campaign's sourceSlug). Drives the per-source
- * "Unenroll all" admin action.
- */
+/** Anchored to the customer's lead source, not the campaign's sourceSlug. */
 export async function listActiveCustomerIdsBySource(
   sourceSlug: string,
 ): Promise<DalReturn<string[]>> {
@@ -169,12 +143,7 @@ export interface EnrolledLeadRow {
   campaignName: string | null
 }
 
-/**
- * Active enrolled leads for a lead source (anchored to the customer's lead
- * source, not the campaign's sourceSlug), joined to the customer name +
- * campaign name. Powers the Campaigns Control Center enrolled-leads list.
- * `name` is non-PII (no phone) — safe to surface.
- */
+/** Anchored to the customer's lead source, not the campaign's sourceSlug. Returns no phone, so safe to surface. */
 export async function listEnrolledLeadsBySource(
   sourceSlug: string,
 ): Promise<DalReturn<EnrolledLeadRow[]>> {
@@ -203,11 +172,7 @@ export interface LeadStatusCounts {
   dnc: number
 }
 
-/**
- * Per-source, per-status counts in ONE pass — the single source of truth for
- * every rollup badge. Keyed by lead_source_id (uuid). Uses the canonical status
- * CASE so the four numbers always partition that source's campaign-leads.
- */
+/** Keyed by lead_source_id. The canonical status CASE guarantees the four counts partition the source's campaign leads. */
 export async function countLeadsByStatusPerSource(): Promise<DalReturn<Record<string, LeadStatusCounts>>> {
   return dalDbOperation(async () => {
     const rows = (await db.execute(sql`
@@ -229,8 +194,6 @@ export async function countLeadsByStatusPerSource(): Promise<DalReturn<Record<st
   })
 }
 
-// ── Unified leads list (Campaigns Control Center) ─────────────────────────────
-
 export type LeadStatus = 'eligible' | 'enrolled' | 'removed' | 'dnc'
 
 export interface CampaignLeadRow {
@@ -241,7 +204,6 @@ export interface CampaignLeadRow {
   campaignName: string | null
   enrolledAt: string | null
   leadSourceId: string | null
-  // ── Enrichment (Q4) ──
   phone: string | null
   leadSourceName: string | null
   dialAttempts: number
@@ -259,26 +221,12 @@ export interface ListLeadsArgs {
   offset: number
 }
 
-/**
- * Unified paginated query powering the Leads tab in the Campaigns Control Center.
- * Returns one status bucket at a time (eligible | enrolled | removed | dnc).
- *
- * - enrolled: active participation rows (unenrolledAt IS NULL), joined to campaign.
- * - removed:  unenrolled rows with reason = 'removed' (neutral pull, re-enrollable).
- * - eligible: customers in the `leads` pipeline, not DNC'd, with a phone + leadSourceId,
- *             with NO active participation row. Canonical gate reused verbatim.
- * - dnc:      customers with dncOptedOutAt IS NOT NULL.
- *
- * see ../../DOCS.md and docs/plans/voip-campaigns/EPIC.md
- */
 export async function listLeadsPaginated(
   ctx: ScopedContext,
   args: ListLeadsArgs,
 ): Promise<DalReturn<{ rows: CampaignLeadRow[], total: number }>> {
   return dalDbOperation(async () => {
-    // Phone is gated at the DAL (customers DOCS#phone-visibility-threshold) so a
-    // leaked query can't expose it. Today the only caller is superAdminProcedure
-    // (canSeeUngatedPhone → raw phone), but the gate makes a future scoped caller leak-proof.
+    // Phone is gated here, not at the router, so a future scoped caller is leak-proof by construction.
     const canSeeUngated = canSeeUngatedPhone(ctx.ability)
 
     const statusPredicate
@@ -298,19 +246,14 @@ export async function listLeadsPaginated(
     const campaignFilter = args.campaignId
       ? sql`AND part.voip_campaign_id = ${args.campaignId}`
       : sql``
-    // Super-admin-only surface, so raw-phone search is acceptable; if a scoped
-    // caller is ever added, gate this ILIKE too (or it leaks phone existence).
-    // Phone is stored canonical 10-digit — strip the term to digits so a
-    // formatted/E.164 search still matches (see @/shared/lib/phone).
+    // Raw-phone search is acceptable only because callers are super-admin; a scoped caller would need this ILIKE gated too.
+    // Phone is stored as bare 10 digits, so the term is stripped to digits for formatted/E.164 input to match.
     const searchDigits = args.search ? toDigits(args.search) : ''
     const searchFilter = args.search
       ? sql`AND (customers.name ILIKE ${`%${args.search}%`} OR customers.phone ILIKE ${`%${searchDigits || args.search}%`})`
       : sql``
 
-    // `customers` is UNALIASED on purpose — the status predicates embed
-    // derivedPipelineWhere's literal "customers"."…" refs, which an alias hides.
-    // `part` LATERAL provides the display fields (campaign, attempts, etc.) for
-    // the customer's most-relevant participation row.
+    // `customers` is UNALIASED on purpose — the status predicates embed literal "customers"."…" refs that an alias would hide.
     const fromAndWhere = sql`
       FROM customers
       LEFT JOIN lead_sources ls ON ls.id = customers.lead_source_id

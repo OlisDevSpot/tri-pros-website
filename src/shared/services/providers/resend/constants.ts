@@ -5,7 +5,7 @@ export const RESEND_BRAND_NAME = 'Tri Pros Remodeling'
  * the root domain — NOT `info@` — so internal team notifications stop being
  * self-sends (From == To == info@), the aggravating factor in Gmail's own-domain
  * spoofing quarantine. Internal-mailbox delivery is unblocked by the Google
- * Workspace bypass — see docs/superpowers/plans/2026-08-11-email-deliverability-hardening.md
+ * Workspace bypass.
  */
 export const RESEND_SENDER_MAILBOX = 'notifications@triprosremodeling.com'
 

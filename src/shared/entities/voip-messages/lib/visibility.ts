@@ -12,7 +12,6 @@ import { voipMessages } from '@/shared/db/schema'
  * are written by webhook handlers under SYSTEM_CONTEXT — visible only to admin.
  *
  * Super-admin queries bypass this via the omni-scope path.
- * see ../DOCS.md#visibility-via-agent-ownership
  */
 export function voipMessageVisibility({ userId }: VisibilityScope): SQL {
   return eq(voipMessages.agentUserId, userId)

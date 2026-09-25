@@ -10,8 +10,7 @@ import { useTRPC } from '@/trpc/helpers'
  * meetings today · out for signature · open projects. Counts are read
  * from the same query inputs the modules below use (dedupes against the
  * server prefetch in `dashboard/page.tsx`), so this never fires its own
- * count query. See the spec at
- * docs/superpowers/specs/2026-08-06-adaptive-agent-dashboard-design.md#11.
+ * count query.
  */
 export function DashboardSnapshotStrip() {
   const trpc = useTRPC()

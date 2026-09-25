@@ -24,7 +24,6 @@ expand(config({ path: '.env' }))
 // shape + runtime-config builder in its `lib/config.ts`; this file spreads
 // those fragments into the central schema and re-exports cached getters so
 // consumers always import config from one place.
-// see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
 
 const envSchema = z.object({
   // General
@@ -33,12 +32,10 @@ const envSchema = z.object({
   // (production | preview | development). Never exists on a local machine, so
   // it answers "am I the deployed prod site?" in a way a laptop can't fake by
   // accident. NODE_ENV answers only "optimized build or dev build?".
-  // see docs/codebase-conventions/environment.md#environment-axes
   VERCEL_ENV: z.enum(['development', 'preview', 'production']).optional(),
   // Dev-only: gates /api/dev/playwright-session (OAuth-bypass login for the
   // Playwright MCP browser). Optional so production builds never require it;
-  // the route refuses unless this is set AND matches. see
-  // docs/codebase-conventions/dev-auth-route.md
+  // the route refuses unless this is set AND matches.
   DEV_LOGIN_SECRET: z.string().min(1).optional(),
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
   PORT: z.coerce.number().default(3000),
@@ -103,7 +100,6 @@ const envSchema = z.object({
   ...metaEnvFragment.shape,
 
   // VOIP — shared between voip-in-house (Twilio) and voip-campaigns (JustCall).
-  // See docs/plans/voip/INTEGRATION-SEAM.md + .env.voip.example.
   //
   // All VoIP env vars in this section (VOIP_*, TWILIO_*, JUSTCALL_*) are
   // OPTIONAL during schema validation — same precedent as the VAPID block below.
@@ -123,7 +119,6 @@ const envSchema = z.object({
   // imported by consumers DIRECTLY from the provider's lib/config — NOT
   // re-exported from this file. server-env's role is bootstrap orchestration
   // (schema spread + parse + boot banner + production gates).
-  // see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
   ...twilioEnvFragment.shape,
 
   // Pilot DID env vars removed 2026-06-04 — DID source of truth is now the
@@ -142,7 +137,6 @@ const envSchema = z.object({
   // directly from the provider's lib/config. Optional at schema level — the
   // client asserts non-null at the point of use, so builds without JustCall
   // creds parse cleanly.
-  // see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
   ...justcallEnvFragment.shape,
 
   // WEB PUSH (VAPID)
@@ -188,7 +182,6 @@ export default env
 // no matter which DB it targets (DRIZZLE_TARGET=prod). If a forbidden var is
 // ever added to the Vercel prod env config, the gate fails the production
 // build/boot — exactly when we want to hear about it.
-// see docs/codebase-conventions/environment.md#environment-axes
 
 // VOIP_DEV_OVERRIDE_NUMBER reroutes all outbound voice/SMS to a single test
 // number — invaluable in dev/preview, catastrophic in production.
@@ -217,7 +210,6 @@ if (env.VERCEL_ENV === 'production' && env.META_TEST_EVENT_CODE) {
 //
 // To register a newly-migrated provider: add its `<x>ConfigMeta` import at
 // the top of this file and append to `PROVIDER_METAS` below.
-// see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
 
 const PROVIDER_METAS = [
   twilioConfigMeta,

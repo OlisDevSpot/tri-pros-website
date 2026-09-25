@@ -81,7 +81,7 @@ export const PROPOSAL_COLUMNS = {
     sortable: true,
     format: 'currency',
     // Stored rollup (Wave 2) — maintained by recomputeProposalFinancials; null
-    // only pre-backfill. see ../DOCS.md#final-tcp-derived
+    // only pre-backfill.
     accessorFn: row => (row.finalTcpCents ?? 0) / 100,
   },
   status: {

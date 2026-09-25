@@ -14,7 +14,6 @@
  * (services/voip/*.service.ts) — those are app code, not third-party
  * integrations.
  *
- * see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
  */
 export class NotConfiguredError extends Error {
   readonly provider: string

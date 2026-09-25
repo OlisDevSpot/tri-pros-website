@@ -23,7 +23,6 @@
  * (`const { something } = xClient`) eager-trigger the proxy but are otherwise
  * fine. Typical `xClient.method(...)` usage is transparent.
  *
- * see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
  */
 export function lazyProxy<T extends object>(factory: () => T): T {
   let cached: T | undefined

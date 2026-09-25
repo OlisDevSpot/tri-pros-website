@@ -22,6 +22,5 @@ import { getAblyConfig } from './lib/config'
 // Lazy-constructed via `lazyProxy` so missing ABLY_API_KEY doesn't crash app boot —
 // first call to `ably.channels.get(...).publish(...)` throws `NotConfiguredError`.
 //
-// see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
 
 export const ably = lazyProxy(() => new Ably.Rest({ key: getAblyConfig().apiKey }))

@@ -1,5 +1,4 @@
 // Snapshot trade selections from meeting flow state into proposal projectJSON.
-// see ../DOCS.md#sow-snapshot-from-meeting-on-create
 
 import type z from 'zod'
 

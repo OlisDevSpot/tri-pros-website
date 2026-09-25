@@ -1,4 +1,3 @@
-// Zoho webhook payload quirks & HMAC notes: docs/zoho-sign/webhook-notes.md
 import env from '@/shared/config/server-env'
 import { syncZohoSignStatusJob } from '@/shared/services/providers/upstash/jobs/sync-zoho-sign-status'
 import { WEBHOOK_SIGNATURE_HEADER } from '@/shared/services/providers/zoho-sign/constants'

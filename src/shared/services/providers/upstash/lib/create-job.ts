@@ -32,7 +32,6 @@ export function createJob<T>(key: string, handler: JobHandler<T>) {
      *
      * For critical work (data-integrity, calendar sync, time-changed pushes
      * — anything where silent loss is a bug), use `dispatchOrThrow` instead.
-     * see docs/codebase-conventions/service-architecture.md#background-side-effects-via-qstash-jobs
      */
     dispatch: async (payload: T, options?: DispatchOptions<T>) => {
       // eslint-disable-next-line no-console
@@ -53,7 +52,6 @@ export function createJob<T>(key: string, handler: JobHandler<T>) {
      *
      * Handlers MUST be idempotent — QStash retries automatically on
      * downstream failure.
-     * see docs/codebase-conventions/service-architecture.md#background-side-effects-via-qstash-jobs
      */
     dispatchOrThrow: async (payload: T, options?: DispatchOptions<T>) => {
       // eslint-disable-next-line no-console

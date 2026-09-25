@@ -6,7 +6,6 @@ import { customers } from '@/shared/db/schema/customers'
 
 /**
  * Server-only SQL helpers for the 5-bucket derived pipeline.
- * see ../DOCS.md#derived-5-bucket-pipeline
  *
  * Same `"customers"."id"` literal pattern as phone-gating-sql.ts to avoid
  * drizzle's ambiguous emission of the outer column inside the subquery.

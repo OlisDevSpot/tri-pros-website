@@ -22,28 +22,16 @@ export type { Customer }
 
 export type CustomerWithPhoneGate = Customer & { hasSentProposal: boolean }
 
-// Composed read type for the flattened-spread leftJoin against
-// `customer_profiles` (Addendum B, 2026-07-14). `| null` covers the ~82% of
-// customers with no discovery data collected yet (lazy upsert — no child row).
-// see docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md §10
+// `| null`: the profile child row is lazily upserted, so most customers have none yet.
 export type CustomerWithProfile = CustomerWithPhoneGate & { [K in ProfileKey]: CustomerProfileRow[K] | null }
 
-// Composed read type adding the 1:1 `customer_lead_attribution` child (NESTED,
-// not flattened-spread like customer_profiles — attribution's generic column
-// names like `kind`/`offer` would be ambiguous spread directly onto the
-// customer) and the dynamic-key `customer_enrichment` rows. `attribution` is
-// `null` for the pre-Wave-2 backfill gap / non-upserted rows (leftJoin miss);
-// `enrichment` is `[]` when no funnel steps were captured.
+// `attribution` is nested, not spread: its generic column names (`kind`, `offer`) would be ambiguous on the customer.
 export type CustomerFullView = CustomerWithProfile & {
   attribution: CustomerLeadAttributionRow | null
   enrichment: CustomerEnrichmentRow[]
 }
 
-// Phone-gating column selection. `canSeeUngatedPhone` tells us whether the
-// caller is omni/leads-pool (sees real phone) or agent (sees gated null).
-// When ability is null (SYSTEM_CONTEXT — jobs, webhooks), we ungate fully
-// because SYSTEM-level callers never surface phone to a user.
-// see ../../DOCS.md#phone-visibility-threshold
+// A null ability (SYSTEM_CONTEXT) is ungated: system callers never surface the phone to a user.
 function customerSelectWithGate(ctx: ScopedContext) {
   const { phone: _phone, ...rest } = getTableColumns(customers)
   return {
@@ -53,17 +41,6 @@ function customerSelectWithGate(ctx: ScopedContext) {
   }
 }
 
-// ── Reads ─────────────────────────────────────────────────────────────────────
-
-/**
- * Phone-gated single-customer read, flattened-spread joined against
- * `customer_profiles` (1:1 child, Addendum B) — every profile-trio field
- * reads straight off the composed row — plus the NESTED `customer_lead_attribution`
- * child (leftJoin) and a second query for `customer_enrichment` rows (ordered
- * by `order` ascending — house batch-fetch idiom, no join). Scope applied via
- * ctx.scope (set by scopeMiddleware on the customers entity router, or by
- * buildUserContext for service/job callers).
- */
 export async function getCustomer(
   ctx: ScopedContext,
   input: { id: string },
@@ -98,12 +75,7 @@ export async function getCustomer(
   })
 }
 
-/**
- * Raw single-row read of the `customer_lead_attribution` 1:1 child. SYSTEM-level
- * (no phone-gating concern — attribution has no PII beyond what's already on
- * `customers`). Used wherever only the attribution snapshot is needed without
- * the full customer join (e.g. ads-reporting queries).
- */
+/** Ungated: attribution carries no PII beyond what is already on `customers`. */
 export async function getCustomerAttribution(
   customerId: string,
 ): Promise<DalReturn<CustomerLeadAttributionRow | undefined>> {
@@ -116,16 +88,10 @@ export async function getCustomerAttribution(
   })
 }
 
-/**
- * Resolve a customer by exact phone (E.164). SYSTEM-level read — ungated,
- * returns the raw row (no phone-gating; callers are webhooks/jobs, never UI).
- * Phones can be shared across household members; returns the first match.
- * Used by the JustCall webhook to resolve an inbound STOP's customer.
- */
+/** Ungated (webhook/job callers, never UI). Phones can be shared across a household — first match wins. */
 export async function findCustomerByPhone(phone: string): Promise<DalReturn<Customer | null>> {
   return dalDbOperation(async () => {
-    // Normalize the lookup to the canonical storage shape (bare 10-digit) so an
-    // E.164 / formatted input still matches — see @/shared/lib/phone.
+    // Phone is stored as bare 10 digits, so E.164/formatted input is normalized first.
     const national = toNationalDigits(phone)
     if (!national) {
       return null
@@ -139,10 +105,6 @@ export async function findCustomerByPhone(phone: string): Promise<DalReturn<Cust
   })
 }
 
-/**
- * Is this customer in the derived `leads` pipeline (pre-meeting: active, no
- * project, no meeting)? Used by the enrollment gate chain. SYSTEM-level read.
- */
 export async function isCustomerInLeads(customerId: string): Promise<DalReturn<boolean>> {
   return dalDbOperation(async () => {
     const [row] = await db
@@ -154,12 +116,7 @@ export async function isCustomerInLeads(customerId: string): Promise<DalReturn<b
   })
 }
 
-/**
- * Enrollment-eligible leads for a lead source (bulk "enroll all"): in the
- * `leads` pipeline, not DNC'd, with a phone. The per-customer "already
- * enrolled?" gate is applied downstream by the enroll op (idempotent skip).
- * SYSTEM-level read — returns raw rows (no phone-gating; job-only).
- */
+/** Ungated (job-only). The "already enrolled?" gate is applied downstream by the enroll op. */
 export async function listEnrollableLeadsBySource(
   leadSourceId: string,
 ): Promise<DalReturn<Customer[]>> {
@@ -176,7 +133,6 @@ export async function listEnrollableLeadsBySource(
   })
 }
 
-/** Phone-gated list of all customers visible to ctx. */
 export async function listCustomers(
   ctx: ScopedContext,
 ): Promise<DalReturn<CustomerWithPhoneGate[]>> {
@@ -189,11 +145,7 @@ export async function listCustomers(
   })
 }
 
-// ── System-level upserts ──────────────────────────────────────────────────────
-// Runs under SYSTEM_CONTEXT (funnel/webhook ingestion). Writes the customers
-// table directly because it predates the entity-server pattern and is
-// scheduled for migration to customerCrud.create in a follow-up.
-
+// TODO: migrate to customerCrud.create — writes `customers` directly because it predates the entity-server pattern.
 interface HomeownerData {
   name: string
   email: string

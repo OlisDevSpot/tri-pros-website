@@ -1,7 +1,3 @@
-// Business queries for the proposals entity. Multi-table joins, derived
-// columns, and entity-specific filters. see ../../DOCS.md for business rules.
-// All DAL conventions: see docs/codebase-conventions/dal-conventions.md
-
 import type { MeetingPipeline } from '@/shared/constants/enums'
 import type { PaginatedResult } from '@/shared/dal/server/lib/query/output'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
@@ -31,8 +27,6 @@ import { proposals } from '@/shared/db/schema/proposals'
 import { listProposalIncentives } from '@/shared/modules/proposals/incentives/dal/server/queries'
 import { listHomeownerProposalMedia, toProposalMediaView } from '@/shared/modules/proposals/media/dal/server/queries'
 
-// ── Types ───────────────────────────────────────────────────────────────
-
 export interface ProposalCustomer {
   id: string
   name: string
@@ -53,7 +47,6 @@ export type ProposalWithCustomer = Proposal & {
   media: ProposalMediaView[]
 }
 
-/** Enriched row returned by `listProposals` — base columns + view stats + meeting/customer context. */
 export type ProposalListRow = Proposal & {
   viewCount: number
   lastViewedAt: string | null
@@ -63,7 +56,6 @@ export type ProposalListRow = Proposal & {
   meetingProjectId: string | null
 }
 
-// Filter schema — exported so the router can reference the same shape in its `.input()`.
 export const proposalListFiltersSchema = {
   status: z.array(z.enum(proposalStatuses)).optional(),
   kind: z.array(z.enum(proposalKinds)).optional(),
@@ -80,12 +72,6 @@ export const proposalListFiltersSchema = {
 export const proposalListInputSchema = paginatedQueryInput(proposalListFiltersSchema)
 export type ProposalListInput = z.infer<typeof proposalListInputSchema>
 
-/**
- * Enriched single-proposal read: proposal + customer + meeting.projectId +
- * earliest contract-sent date across the project. Used by proposal page,
- * delivery, contracts. Scope is set by middleware (authed: visibility predicate;
- * shareable: eq(token)). see ../../DOCS.md#shareable-via-token
- */
 export async function getFullView(
   ctx: ScopedContext,
   input: { id: string },
@@ -105,11 +91,10 @@ export async function getFullView(
           zip: customers.zip,
           age: customers.age,
         },
-        // Meeting's *current* projectId — distinct from frozen proposal.kind.
+        // The meeting's *current* projectId — distinct from the frozen proposal.kind.
         meetingProjectId: meetings.projectId,
-        // Original contract date for AWD envelopes. COALESCE chain order matters:
-        // project exists before original contract is sent (conversion on approval,
-        // contract after), so contract_sent_at may be null while approved_at exists.
+        // COALESCE order matters: the project exists (conversion on approval) before the original
+        // contract is sent, so contract_sent_at can be null while approved_at is set.
         projectFirstContractSentAt: sql<string | null>`(
         SELECT COALESCE(MIN(p2.contract_sent_at), MIN(p2.approved_at), MIN(p2.created_at))
         FROM ${proposals} p2
@@ -140,14 +125,10 @@ export async function getFullView(
         }
       : null
 
-    // Incentive ROWS are the source of truth (W2). The W3 write-seam flip
-    // retired the funding-blob hydration bridge: every consumer now reads the
-    // cents columns + these rows through `toFundingInputs` (Option 3 ruling —
-    // the row NEVER gains a materialized `funding` property).
+    // Incentive rows are the source of truth; the row never gains a materialized `funding` property.
     const incentives = dalVerifySuccess(await listProposalIncentives(row.id))
 
-    // Homeowner-visible media, derived at this read choke point (public bucket)
-    // so the customer-facing gallery renders with zero per-site fetching.
+    // Derived at this read choke point so the customer-facing gallery renders with zero per-site fetching.
     const mediaRows = await listHomeownerProposalMedia(row.id)
     const media = mediaRows.map(toProposalMediaView)
 
@@ -155,12 +136,6 @@ export async function getFullView(
   })
 }
 
-/**
- * Server-paginated proposals list. Drives Past Proposals table + dashboard
- * recent-proposals strip. Search: ilike on proposals.label OR customers.name.
- * Sort whitelist below. Default: createdAt DESC.
- * `price` filter/sort read the stored `final_tcp_cents` rollup (Wave 2). see ../../DOCS.md#final-tcp-derived
- */
 export async function listProposals(
   ctx: ScopedContext,
   input: ProposalListInput,
@@ -211,10 +186,7 @@ export async function listProposals(
               isNull(proposals.contractDeclinedAt),
             )
           : undefined,
-      // Proposal sent (status='sent') with no contract envelope yet — the
-      // `proposal_sent` pipeline stage; user-facing "Sent — awaiting response".
-      // Distinct from `awaitingSignature` (contract out): the two partition the
-      // active proposals with no overlap.
+      // Partitions the active proposals with `awaitingSignature` — no overlap.
       sentNoContract: (v: boolean) =>
         v
           ? and(
@@ -229,11 +201,8 @@ export async function listProposals(
     const orderBy = buildOrderBy(input.sort, {
       createdAt: proposals.createdAt,
       sentAt: proposals.sentAt,
-      // Recency of the proposal-sent event, coalesced to createdAt so rows with
-      // a null sentAt (sent before sentAt was captured) sort by their creation
-      // date instead of floating to the top under Postgres' DESC NULLS FIRST.
-      // Matches the "time since" the Sent — awaiting response card displays
-      // (`sentAt ?? createdAt`), so the roster reads strictly newest-first.
+      // Coalesced to createdAt so a null sentAt (sent before it was captured) doesn't float to the
+      // top under Postgres' DESC NULLS FIRST; matches the card's `sentAt ?? createdAt`.
       sentRecency: sql`coalesce(${proposals.sentAt}, ${proposals.createdAt})`,
       contractSentAt: proposals.contractSentAt,
       status: proposals.status,
@@ -262,8 +231,7 @@ export async function listProposals(
         .orderBy(...orderBy)
         .limit(input.pagination.limit)
         .offset(input.pagination.offset),
-      // Count proposals matching where — joins to meetings/customers are
-      // 1:1 (FK), so count(proposals.id) is distinct without DISTINCT.
+      // The meetings/customers joins are 1:1, so count(proposals.id) needs no DISTINCT.
       count: async () => {
         const [row] = await db
           .select({ c: count(proposals.id) })
@@ -277,15 +245,7 @@ export async function listProposals(
   })
 }
 
-// getProposalViews + ProposalViewStats moved to
-// ../../../views/dal/server/queries.ts (S3a).
-
-/**
- * Light lock probe for the whole-proposal freeze gate (`update.before` hook +
- * `getProposalLockState`). Deliberately unscoped — it exposes nothing beyond
- * lock signals, and the update itself re-applies `ctx.scope` in its WHERE.
- * see ../../DOCS.md#proposal-lock-ladder
- */
+/** Deliberately unscoped: it exposes nothing beyond lock signals, and the update re-applies `ctx.scope` in its WHERE. */
 export async function getProposalLockSignals(
   proposalId: string,
 ): Promise<DalReturn<ProposalLockSignals>> {
@@ -307,7 +267,6 @@ export async function getProposalLockSignals(
   })
 }
 
-/** Full rows for a set of proposal ids (scoped). Empty input → []. Used by accounting invoice build. */
 export async function getProposalsByIds(
   ctx: ScopedContext,
   ids: string[],
@@ -323,7 +282,6 @@ export async function getProposalsByIds(
   })
 }
 
-/** Minimal proposal projection for a meeting — id + projectJSON — feeds the project-create gate + scope derivation. */
 export async function getProposalsByMeetingId(
   ctx: ScopedContext,
   meetingId: string,
@@ -336,7 +294,6 @@ export async function getProposalsByMeetingId(
   )
 }
 
-/** Full rows for a set of QB invoice ids (non-PK, scoped). Empty input → []. Used by QB payment-status sync. */
 export async function getProposalsByInvoiceIds(
   ctx: ScopedContext,
   invoiceIds: string[],
@@ -352,7 +309,6 @@ export async function getProposalsByInvoiceIds(
   })
 }
 
-/** Single proposal by QB invoice id (non-PK, scoped). Used by QB invoice-status sync. */
 export async function getProposalByInvoiceId(
   ctx: ScopedContext,
   invoiceId: string,
@@ -367,10 +323,6 @@ export async function getProposalByInvoiceId(
   })
 }
 
-/**
- * Lookup by Zoho `contractEnvelopeId` (non-PK). Used by contracts service
- * webhook handler to find the proposal for an inbound event.
- */
 export async function getByContractEnvelopeId(
   ctx: ScopedContext,
   input: { contractEnvelopeId: string },

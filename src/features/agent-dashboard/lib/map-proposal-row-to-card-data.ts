@@ -33,7 +33,6 @@ export function mapProposalRowToCardData(
     // measures since the *contract envelope* went out (`contractSentAt`), while
     // the Sent — awaiting response roster measures since the *proposal* was sent
     // (`sentAt`). The two lifecycles are independent
-    // (see modules/proposals/core/DOCS.md#proposal-contract-independence).
     createdAt: (timeSince === 'sentAt' ? row.sentAt : row.contractSentAt) ?? row.createdAt,
     sentAt: row.sentAt,
     trade: sow[0]?.trade.label ?? null,

@@ -2,7 +2,6 @@ import { sql } from 'drizzle-orm'
 
 /**
  * Server-only SQL helper for the "signed customer" status.
- * see ../DOCS.md#signed-customer-eq-has-project
  *
  * Same `"customers"."id"` literal pattern as phone-gating-sql.ts.
  */

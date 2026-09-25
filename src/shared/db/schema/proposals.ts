@@ -59,7 +59,6 @@ export const proposals = pgTable('proposals', {
   // 2026-07-24 ruling). Until the pricing editor lands it still gates authoring
   // behavior (breakdown-mode validation + client-side startingTcp sync).
   priceDisplayMode: text('price_display_mode', { enum: priceDisplayModes }).notNull().default('total'),
-  // see ../../modules/proposals/core/DOCS.md#agreement-context-as-coherent-unit
   envelopeDocumentIds: text('envelope_document_ids', { enum: envelopeDocumentIds }).array(),
 
   // Stage-2 rollup cache (Addendum A.2): recomputed by the SINGLE choke point
@@ -67,8 +66,7 @@ export const proposals = pgTable('proposals', {
   // self-healing (re-running always converges from rows). Nullable only for
   // the backfill window — treat null as "not yet computed", never as $0-truth.
   finalTcpCents: bigint('final_tcp_cents', { mode: 'number' }),
-  // Bumped when the TCP formula or rounding policy changes; changelog in
-  // ../../modules/proposals/core/DOCS.md#final-tcp-derived. v1 = 2026-07-09 ruling.
+  // Bumped when the TCP formula or rounding policy changes. v1 = 2026-07-09 ruling.
   calcVersion: integer('calc_version').notNull().default(1),
 
   meetingId: uuid('meeting_id')
@@ -138,8 +136,6 @@ export const insertProposalSchema = createInsertSchema(proposals, {
 }).extend({
   // Server-derived fields: hooks.create.before sets these. Optional so
   // clients don't send them (hook fills in), but Zod doesn't strip them.
-  // see ../../modules/proposals/core/DOCS.md#kind-derived-from-meeting-project
-  // see ../../modules/proposals/core/DOCS.md#share-token-generated-at-insert
   kind: z.enum(['initial-sale', 'additional-work']).optional(),
   token: z.string().optional(),
 })

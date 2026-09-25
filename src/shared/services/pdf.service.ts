@@ -11,7 +11,6 @@ import { getFullView } from '@/shared/modules/proposals/core/dal/server/queries'
 
 /**
  * Proposal PDFs, finance forms, printable documents.
- * see docs/codebase-conventions/pdf-documents.md#the-pipeline
  */
 function createPDFService() {
   return {

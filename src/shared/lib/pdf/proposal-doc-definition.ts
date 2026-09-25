@@ -13,16 +13,7 @@ import { buildPricingBreakdown } from '@/shared/modules/proposals/core/lib/finan
 import { toFundingInputs } from '@/shared/modules/proposals/core/lib/funding-columns'
 import { tiptapToPdfmake } from './tiptap-to-pdfmake'
 
-/**
- * Builds the full customer-facing proposal PDF: a bordered cover page
- * (company + customer identity), scope-of-work sections from page 2, and
- * the investment breakdown on its own closing page. Always homeowner-safe
- * — never reads cost lines or margin data; pricing renders exclusively from
- * buildPricingBreakdown, the shared view-model also used by the React
- * PricingBreakdown component and the AI summary route.
- * see @/shared/modules/proposals/core/DOCS.md#final-tcp-derived
- * see docs/codebase-conventions/pdf-documents.md#layout-geometry
- */
+/** Homeowner-facing: never reads cost lines or margin data — pricing comes only from buildPricingBreakdown. */
 export async function buildProposalDocDefinition(proposal: ProposalWithCustomer): Promise<TDocumentDefinitions> {
   const project = proposal.projectJSON.data
   const funding = toFundingInputs(proposal)
@@ -43,8 +34,7 @@ export async function buildProposalDocDefinition(proposal: ProposalWithCustomer)
 
   return {
     content,
-    // Double-rule frame on the cover page only — drawn on the background
-    // layer at absolute coordinates so it never interacts with content flow.
+    // Cover frame lives on the background layer so it never interacts with content flow.
     background: (currentPage, pageSize) => currentPage === 1
       ? {
           canvas: [
@@ -53,8 +43,7 @@ export async function buildProposalDocDefinition(proposal: ProposalWithCustomer)
           ],
         }
       : undefined,
-    // No footer on the cover — it carries the company block itself, and a
-    // page-number line would sit inside the decorative frame.
+    // No footer on the cover — a page-number line would sit inside the decorative frame.
     footer: (currentPage, pageCount) => currentPage === 1
       ? null
       : {
@@ -82,14 +71,6 @@ export async function buildProposalDocDefinition(proposal: ProposalWithCustomer)
   }
 }
 
-/**
- * Ceremonial first page inside the decorative frame: centered company
- * block (logo, contact, license), proposal title + date, and the
- * prepared-for customer block. Project-overview fields (summary,
- * objectives, areas, efficiency benefits) render here too when present —
- * in practice they are usually empty, keeping the cover minimal. Ends
- * with a page break so the first SOW section always opens page 2.
- */
 function buildCoverPage(proposal: ProposalWithCustomer, logoDataUrl: string | null): Content[] {
   const project = proposal.projectJSON.data
   const customer = proposal.customer
@@ -143,10 +124,8 @@ function buildCoverPage(proposal: ProposalWithCustomer, logoDataUrl: string | nu
   return parts
 }
 
-/** Short centered divider line used to separate cover-page blocks. */
 function buildCoverOrnament(verticalGap: number): Content {
-  // Content width is 500 (letter 612 minus 56pt margins); a 96pt rule
-  // centered on it runs from x=202 to x=298.
+  // 96pt rule centered on the 500pt content width (letter 612 minus 2×56 margins).
   return {
     canvas: [{ type: 'line', x1: 202, y1: 0, x2: 298, y2: 0, lineWidth: 0.75, lineColor: '#334155' }],
     margin: [0, verticalGap, 0, verticalGap],
@@ -164,15 +143,7 @@ function buildScopeOfWork(
   return parts
 }
 
-/**
- * Each SOW section opens with a header "card" — a borderless single-row
- * table whose first cell is a slim brand-accent bar and whose second cell
- * holds the section metadata (number + title, trade/scopes, price) and the
- * leading description prose on a light fill. Every section opens its own
- * page (the first lands on page 2 via the cover's trailing break), so the
- * header card is never trimmed by a page split; the line items (phase
- * headings, bullet lists) flow below it as regular full-width content.
- */
+/** Every section opens its own page so the header card is never split by a page break. */
 function buildSowSection(
   section: ProposalWithCustomer['projectJSON']['data']['sow'][number],
   index: number,
@@ -198,8 +169,7 @@ function buildSowSection(
   }
 
   const parts: Content[] = [{
-    // Section 1 already opens page 2 (cover breaks after itself); an
-    // unconditional break here would insert a blank page before it.
+    // Section 1 already opens page 2 via the cover's trailing break; an unconditional break here would insert a blank page.
     ...(index > 0 ? { pageBreak: 'before' as const } : {}),
     table: {
       widths: [4, '*'],
@@ -224,14 +194,7 @@ function buildSowSection(
   return parts
 }
 
-/**
- * Splits a SOW body into its opening prose (the "Description: …" block our
- * SOW editor template puts first, plus any immediately following
- * paragraphs) and the line items after it. The lead goes inside the header
- * card; the rest flows full-width below. Stops at the first list,
- * horizontal rule, or second heading — those are line-item structure, not
- * description.
- */
+/** The opening "Description" prose goes inside the header card; the first list, rule, or second heading starts the line items. */
 function splitLeadingProse(blocks: TiptapNode[]): { lead: TiptapNode[], rest: TiptapNode[] } {
   let cut = 0
   for (const [i, node] of blocks.entries()) {
@@ -286,7 +249,6 @@ function buildInvestment(
   rows.push([{ text: 'Deposit due at signing' }, { text: formatAsDollars(breakdown.deposit), alignment: 'right' }])
 
   return [
-    // The investment breakdown always opens its own closing page.
     { text: 'Investment', style: 'sectionTitle', pageBreak: 'before' },
     { table: { widths: ['*', 'auto'], body: rows }, layout: 'lightHorizontalLines', margin: [0, 0, 0, 12] },
   ]

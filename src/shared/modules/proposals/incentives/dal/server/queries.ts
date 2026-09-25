@@ -1,6 +1,6 @@
 // GLOBAL incentive rows (sow_item_id IS NULL) for a proposal, position-ordered.
 // The read half of the replace-all upsert; also the W2→W3 hydration source
-// consumed by the proposals `getFullView`. see ../../../core/DOCS.md#final-tcp-derived
+// consumed by the proposals `getFullView`.
 
 import type { DalReturn } from '@/shared/dal/server/types'
 import type { ProposalIncentiveRow } from '@/shared/db/schema/proposal-incentives'

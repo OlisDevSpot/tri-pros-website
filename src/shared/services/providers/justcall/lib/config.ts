@@ -5,7 +5,6 @@ import { createProviderConfig } from '@/shared/config/create-provider-config'
 /**
  * JustCall env var schema fragment + runtime-config builder + accessor.
  *
- * see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
  *
  * Auth: JustCall v2.1 uses `Authorization: api_key:api_secret` (encoding
  * empirically confirmed in the migration plan's Task 1 auth spike — swap the

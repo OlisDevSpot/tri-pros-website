@@ -14,7 +14,6 @@
 //
 // Mutations return `DalReturn` so tRPC routers unwrap with `dalToTrpc` and
 // services/jobs inspect the union directly.
-// see docs/codebase-conventions/service-architecture.md
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { MediaStore } from '@/shared/modules/media/core/types'
 import { listMediaByOwner, reorderMedia } from '@/shared/modules/media/core/dal/server/media-ops'

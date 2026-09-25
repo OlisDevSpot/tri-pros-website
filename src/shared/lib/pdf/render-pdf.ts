@@ -28,7 +28,6 @@ function ensureFontsConfigured() {
 
 /**
  * Renders a pdfmake doc definition to a Buffer.
- * see docs/codebase-conventions/pdf-documents.md#fonts-and-winansi-text
  */
 export async function renderPdf(def: TDocumentDefinitions): Promise<Buffer> {
   ensureFontsConfigured()

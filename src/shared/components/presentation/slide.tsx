@@ -17,12 +17,12 @@ interface SlideOwnProps extends Omit<SlideProps<unknown>, 'content'> {
 /**
  * One slide: the snap target, the in-view report and the heading in its frame. The
  * <section> box is never transformed: snap areas are computed from the transformed border
- * box, so every reveal lives on an inner element. Rules: see ./DOCS.md#frames
+ * box, so every reveal lives on an inner element.
  *
  * In view means crossing the presentation's centre line, not showing half its height.
  * Slides are contiguous, so exactly one crosses at a time, and a slide that never left the
  * view never needs to report again; a slide under a band, or taller than two screens, still
- * reports (spec C §4.5, review F2). See ./DOCS.md#active-slide
+ * reports (spec C §4.5, review F2).
  *
  * Height and snap offset both read `--band-h`, which a run publishes only while its heading
  * column is a band; everywhere else, and on every `full` slide, it falls back to 0 (spec C

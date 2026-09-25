@@ -12,7 +12,7 @@ import type { TradeFacts } from '@/shared/domains/funnels/types'
  *
  * `Record<FunnelSlug, …>` is the completeness guard: omit a slug and tsc errors
  * here. `pixel.contentCategory` is measurement config and stays on the
- * FunnelSpec — it is NOT a trade fact. see ../DOCS.md#funnel-metadata
+ * FunnelSpec — it is NOT a trade fact.
  *
  * Notion trade UUIDs verified 2026-06-18 against "All Construction Trades DB".
  */

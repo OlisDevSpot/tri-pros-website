@@ -29,7 +29,7 @@ export interface SectionFinancials {
 /**
  * Section-level financials. Same ruling as the proposal level: incentives
  * reduce the section's price, never its cost. Null (not 0) means "no
- * signal" — see ../../DOCS.md#margin-multiplier-tiers
+ * signal"
  */
 export function computeSectionFinancials({ title, financials }: SectionFinancialsInput): SectionFinancials {
   const costLines = financials.costLines ?? []

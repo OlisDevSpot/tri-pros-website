@@ -2,7 +2,6 @@
 // need for recipient resolution. Unscoped by design: user identity is not a
 // visibility-gated resource (there is no `user` entity spec yet — see
 // memory/project-users-entity-migration).
-// DAL conventions: docs/codebase-conventions/dal-conventions.md
 
 import type { DalReturn } from '@/shared/dal/server/types'
 

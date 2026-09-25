@@ -19,7 +19,6 @@ import { complianceService } from '@/shared/services/voip/compliance.service'
 // THIS FILE IS PURE ORCHESTRATION. Composes DAL + provider + compliance.
 //
 // see memory/feedback-services-orchestrate-dal-implements.md
-// see src/shared/entities/voip-messages/DOCS.md (thread key + STOP path)
 // ---------------------------------------------------------------------------
 
 const STATUS_CALLBACK_URL = `${env.VOIP_WEBHOOK_BASE_URL}/api/webhooks/twilio`

@@ -3,7 +3,7 @@ import { amortizedMonthlyPayment } from '@/shared/lib/loan-calculations'
 
 /**
  * Derived-value helpers for a meeting's `dealStructure` scratchpad.
- * Pure functions; never persisted. see ../DOCS.md#dealStructure-derived-helpers
+ * Pure functions; never persisted.
  */
 
 /** Final TCP: max(0, startingTcp − Σ incentive.amount). All incentives are discounts at the meeting stage. */

@@ -4,7 +4,7 @@ import type { LeadMeta } from '@/shared/entities/customers/schemas'
 // record ({ label, value, order }). No I/O. The legacy flat-shape tolerance
 // (Record<string, string>) was deleted in the post-W2 tightening pass — its
 // sibling `toRows()` died in 215790be; `EnrichmentRecord` is the only wire
-// shape (see docs/plans/jsonb-decomposition-deprecation-ledger.md).
+// shape
 
 export function buildFunnelLeadNote(leadMeta: LeadMeta | null | undefined): string | null {
   if (leadMeta?.source?.kind !== 'funnel') {

@@ -10,7 +10,6 @@ import { voipDids } from '@/shared/db/schema'
  * (assigned_user_id = NULL) are invisible to agents — admin manages those.
  *
  * Super-admin queries bypass this via the omni-scope path.
- * see ../DOCS.md#visibility-via-assignment
  */
 export function voipDidVisibility({ userId }: VisibilityScope): SQL {
   return eq(voipDids.assignedUserId, userId)

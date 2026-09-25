@@ -1,8 +1,6 @@
 // Voip-dids business mutations — assignment lifecycle (assignment / promotion /
 // unassignment) and provider-reconciliation.
 //
-// see ../../DOCS.md for invariants (one primary per agent, partial unique index)
-// see docs/codebase-conventions/dal-conventions.md
 // see memory/feedback-services-orchestrate-dal-implements.md
 
 import type { DalReturn } from '@/shared/dal/server/types'

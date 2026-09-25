@@ -10,7 +10,6 @@ import { getQstashConfig } from './lib/config'
  * `qstashClient.publishJSON(...)` (or any other method) throws
  * `NotConfiguredError` if the env var isn't set.
  *
- * see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
  */
 export const qstashClient = lazyProxy(() => new Client({
   baseUrl: 'https://qstash-us-east-1.upstash.io',

@@ -15,19 +15,8 @@ import { assertNoReservedFilterIds, makeQueryParsers } from '@/shared/dal/lib/qu
 import { useDebounce } from '@/shared/hooks/use-debounce'
 import { checkHydrationParity } from '@/shared/lib/hydration-drift'
 
-/**
- * Factory signature matching tRPC's overloaded `queryOptions(input, opts?)`.
- * Return type is left as `any` (the resulting blob is just spread into
- * `useQuery`); the explicit `TRow` generic gives callers type-safety on
- * `result.rows`. The `...rest: any[]` tail absorbs tRPC's optional second arg
- * so callers can pass `trpc.x.y.queryOptions` directly without wrapping.
- *
- * The `_TRow` phantom type carries the row shape through to
- * `PaginatedQueryResult<TRow>` even though the factory body doesn't reference it.
- */
-// `any` is required to satisfy contravariance against tRPC's overloaded
-// queryOptions signature (first overload requires `opts: DefinedTRPCQueryOptionsIn<...>`).
-// `_TRow` is a phantom type that flows through to PaginatedQueryResult<TRow>.
+// `any` satisfies contravariance against tRPC's overloaded `queryOptions` signature so callers
+// can pass `trpc.x.y.queryOptions` directly; `_TRow` is a phantom that flows to `PaginatedQueryResult<TRow>`.
 type PaginatedQueryFactory<TInput, _TRow> = (input: TInput, ...rest: any[]) => any
 
 export type { PaginatedQueryInput }
@@ -42,21 +31,8 @@ interface UsePaginatedQueryOptions extends PaginatedQueryConfig {
 }
 
 /**
- * Generic discrete (offset/limit) paginated query primitive — the source of
- * truth for any data view that hits a paginated tRPC procedure.
- *
- * Bundles page state, page-size, debounced search, sort, AND filters into a
- * single hook so the "reset page on filter/sort/search/size change" coupling
- * is enforced. UI containers (DataTable, Kanban, etc.) consume the returned
- * `PaginatedQueryResult` via thin adapters; the `<QueryToolbar>` compound
- * renders search/filter/sort/page-size UI from this same state.
- *
- * @param queryOptionsFactory  Function turning a paginated input into tRPC
- *   `queryOptions(...)` output (or any TanStack-compatible options object).
- *   Must be the tRPC proxy's `queryOptions` reference, which is stable.
- * @param extra  Procedure-specific top-level inputs merged with the
- *   paginated query input (e.g. `{ id: leadSourceId }`).
- * @param options  Hook-level configuration.
+ * One hook for page, size, search, sort AND filters so "reset page on any change" is enforced in one place.
+ * `queryOptionsFactory` must be the tRPC proxy's `queryOptions` reference (stable identity).
  */
 export function usePaginatedQuery<TExtra extends object, TRow>(
   queryOptionsFactory: PaginatedQueryFactory<PaginatedQueryInput & TExtra, TRow>,
@@ -77,14 +53,11 @@ export function usePaginatedQuery<TExtra extends object, TRow>(
   const qc = useQueryClient()
   const keys = useMemo(() => makeQueryParsers(paramPrefix), [paramPrefix])
 
-  // -- Reserved-key guard (dev only) ---------------------------------------
   useEffect(() => {
     assertNoReservedFilterIds(filterDefinitions.map(f => f.id))
   }, [filterDefinitions])
 
-  // Deep-key array/object options so consumers passing inline literals don't
-  // churn config identity every render (queryInput stability feeds the
-  // next-page prefetch effect — same robustness the old primitive deps had).
+  // Deep-keyed so inline-literal options don't churn config identity every render.
   const pageSizeOptionsKey = JSON.stringify(pageSizeOptions ?? null)
   const config = useMemo<PaginatedQueryConfig>(() => ({
     paramPrefix,
@@ -97,9 +70,7 @@ export function usePaginatedQuery<TExtra extends object, TRow>(
 
   const parsers = useMemo(() => makePaginatedParsers(config), [config])
 
-  // Cast required: useQueryStates infers a precise generic from the parsers
-  // map but our dynamic shape can't express that statically. We narrow at
-  // the boundary by reading values via known key names.
+  // useQueryStates' inferred generic can't express our dynamic parser map; narrowed by known key names.
   const [urlState, setUrlState] = useQueryStates(parsers as never, { clearOnDefault: true })
   const stateAny = urlState as Record<string, unknown>
 
@@ -121,8 +92,7 @@ export function usePaginatedQuery<TExtra extends object, TRow>(
     [filterValues],
   )
 
-  // Stable-stringify `extra` so a fresh-ref-each-render `extra` doesn't
-  // re-trigger the prefetch effect or invalidate downstream memos.
+  // Deep-keyed so a fresh-ref-each-render `extra` doesn't re-trigger the prefetch effect.
   const extraKey = JSON.stringify(extra)
 
   const queryInput = useMemo<PaginatedQueryInput & TExtra>(
@@ -133,11 +103,8 @@ export function usePaginatedQuery<TExtra extends object, TRow>(
 
   const baseOptions = queryOptionsFactory(queryInput)
 
-  // -- Refresh (procedure-level invalidation) ------------------------------
-  // The first query-key element is the tRPC procedure path — identical across
-  // every page/filter/sort input — so invalidating by it matches ALL cached
-  // pages of this table (incl. the prefetched next page). Relies on the repo's
-  // no-`keyPrefix` invariant (asserted in trpc/lib/prefetch.ts). See design §4.
+  // queryKey[0] is the procedure path, so invalidating by it hits every cached page/filter/sort
+  // of this table (incl. the prefetched next page); relies on the repo's no-`keyPrefix` invariant.
   const procedureKey = baseOptions.queryKey[0] as readonly string[]
   const procedureKeyString = JSON.stringify(procedureKey)
   const refresh = useCallback(
@@ -167,10 +134,7 @@ export function usePaginatedQuery<TExtra extends object, TRow>(
   const rows = data?.rows ?? []
   const pageCount = total > 0 ? Math.ceil(total / effectivePageSize) : 0
 
-  // -- Page-beyond-total clamp ---------------------------------------------
-  // After data lands, if the URL says we're past the last page (e.g. user
-  // deleted records or applied a filter that shrunk total), redirect to the
-  // last available page. Skip when total=0 (no data state has its own UX).
+  // Page-beyond-total clamp; skipped at total=0 because the empty state has its own UX.
   useEffect(() => {
     if (data && pageCount > 0 && page > pageCount) {
       void setUrlState(
@@ -180,7 +144,6 @@ export function usePaginatedQuery<TExtra extends object, TRow>(
     }
   }, [data, page, pageCount, keys.pageKey, setUrlState])
 
-  // -- Prefetch next page --------------------------------------------------
   useEffect(() => {
     if (!prefetchNextPage || !data) {
       return
@@ -196,7 +159,6 @@ export function usePaginatedQuery<TExtra extends object, TRow>(
     void qc.prefetchQuery(nextOptions)
   }, [prefetchNextPage, data, offset, effectivePageSize, queryInput, queryOptionsFactory, qc])
 
-  // -- Setters --------------------------------------------------------------
   const setPage = useCallback((next: number) => {
     void setUrlState(
       { [keys.pageKey]: Math.max(next, 1) } as never,

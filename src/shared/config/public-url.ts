@@ -1,4 +1,3 @@
-// see ../../../docs/codebase-conventions/urls-and-origins.md
 import env from '@/shared/config/server-env'
 
 import 'server-only'

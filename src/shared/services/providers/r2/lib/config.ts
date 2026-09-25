@@ -5,7 +5,6 @@ import { createProviderConfig } from '@/shared/config/create-provider-config'
 /**
  * Cloudflare R2 env var schema fragment + runtime-config builder + accessor.
  *
- * see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
  *
  * Note: R2_TOKEN and R2_JURISDICTION were previously in server-env but had
  * zero consumers — removed during the Phase 2 migration. R2 uses AWS S3-

@@ -42,7 +42,6 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
   const updateProposal = useUpdateProposal()
   const replaceIncentives = useReplaceIncentives()
 
-  // see src/shared/modules/proposals/core/DOCS.md#proposal-lock-ladder
   const lockState = proposal.data != null ? getProposalLockState(proposal.data) : 'unlocked'
   const proposalLocked = lockState !== 'unlocked'
 

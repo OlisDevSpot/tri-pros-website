@@ -1,5 +1,4 @@
 // Business queries for the lead-sources entity.
-// All DAL conventions: see docs/codebase-conventions/dal-conventions.md
 
 import type { DalReturn } from '@/shared/dal/server/types'
 import type { LeadSourceRecord } from '@/shared/db/schema/lead-sources'

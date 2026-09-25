@@ -8,7 +8,6 @@ import { createProviderConfig } from '@/shared/config/create-provider-config'
  *   1. QStash (Upstash's task queue / scheduled jobs) — publisher + receiver
  *   2. Ably (realtime pub/sub) — NOT an Upstash product
  *
- * see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
  *
  * Note: QSTASH_URL was previously in server-env but had zero consumers
  * (the qstash client hardcodes its baseUrl) — removed during Phase 2.

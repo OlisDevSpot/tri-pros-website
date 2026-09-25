@@ -25,7 +25,6 @@ import { complianceService } from '@/shared/services/voip/compliance.service'
 // `entities/voip-calls/dal/server/mutations.ts` (or queries.ts).
 //
 // see memory/feedback-services-orchestrate-dal-implements.md
-// see docs/codebase-conventions/service-architecture.md
 // ---------------------------------------------------------------------------
 
 // Twilio status-callback events we subscribe to. Surfaces enough lifecycle

@@ -1,19 +1,4 @@
-// ─── CASL Ability Definitions ───────────────────────────────────────────────
-// This is THE single source of truth for permissions in the app.
-// Both server (tRPC procedures) and client (React components) import this
-// same function, so permissions are always in sync.
-//
-// HOW TO READ THIS:
-// - Each role gets a block of `can(action, subject)` calls
-// - `can('manage', 'all')` = can do everything (super-admin shorthand)
-// - Conditions like `{ id: user.id }` restrict to "own" resources
-//
-// HOW TO EXTEND:
-// - New entity? Add its identity constant at `entities/<entity>/lib/constants.ts`,
-//   import it below, and add it to ENTITY_NAMES.
-// - New non-entity subject (feature/route gate)? Add it to AppSubject in types.ts.
-// - New role? Add a new case block below.
-// - New action on existing subject? Add a `can()` line to the role.
+// Imported by both server (tRPC) and client (React) so permissions can never drift between them.
 
 import type { AppAbility } from './types'
 
@@ -21,10 +6,6 @@ import type { UserRole } from '@/shared/constants/enums'
 
 import { AbilityBuilder, createMongoAbility } from '@casl/ability'
 
-// Per-entity identity constants colocated with the entity. The derived
-// `EntityName` union is the entity portion of `AppSubject` — every entity
-// here is automatically permittable. Adding a new entity is one import +
-// one line in ENTITY_NAMES.
 import { ACTIVITY } from '@/shared/entities/activities/lib/constants'
 import { APP_SETTING } from '@/shared/entities/app-settings/lib/constants'
 import { APPLICATION } from '@/shared/entities/applications/lib/constants'
@@ -58,8 +39,7 @@ export const ENTITY_NAMES = [
   PROPOSAL_INCENTIVE,
   PROJECT,
   PROJECT_MEDIA_FILE,
-  // Super-admin-only entity: agents have no lead-source grants by design;
-  // super-admin's `manage all` is the only access path.
+  // Agents have no lead-source grants by design — super-admin's `manage all` is the only access path.
   LEAD_SOURCE,
   ACTIVITY,
   VOIP_CALL,
@@ -74,60 +54,38 @@ export const ENTITY_NAMES = [
 ] as const
 export type EntityName = (typeof ENTITY_NAMES)[number]
 
-// The user shape we need for permission decisions.
-// Intentionally minimal — only id and role. If you need more fields
-// for conditions (e.g., departmentId), add them here.
 interface PermissionUser {
   id: string
   role: UserRole
 }
 
 export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
-  // AbilityBuilder provides `can` and `cannot` helpers for defining rules.
-  // The generic parameter tells CASL our action/subject types.
   const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility)
 
   if (!user) {
-    // No user = no permissions. The returned ability will answer
-    // `can(anything)` with false. This is used for unauthenticated visitors.
     return build()
   }
 
   switch (user.role) {
-    // ── super-admin ───────────────────────────────────────────────────────
-    // One line grants ALL actions on ALL resources — current and future.
-    // When you add a new resource, super-admin automatically has access.
     case 'super-admin':
       can('manage', 'all')
       break
 
-    // ── agent ─────────────────────────────────────────────────────────────
-    // Explicit per-resource permissions. Delete is narrow: Activity and
-    // CustomerNote grant the verb here, but per-row ownership (author-or-
-    // admin for notes) is enforced in the DAL, not by CASL — see the
-    // CustomerNote block below. Everything else has no delete grant.
-    // Cannot create customers (that's office/super-admin responsibility).
     case 'agent':
       can('access', 'Dashboard')
 
       can('read', 'Customer')
-      // `age` is the only Customer-owned field an agent may write directly —
-      // the other 23 sales-discovery fields moved to the customer_profiles
-      // child table (Addendum B, 2026-07-14) and are gated below on the
-      // CustomerProfile subject instead.
+      // `age` is the only Customer-owned field an agent writes directly; the discovery fields are gated on CustomerProfile.
       can('update', 'Customer', ['age'])
-      // Note: no can('create', 'Customer') — intentional
+      // No create — customer creation is office/super-admin work.
 
       can('read', 'CustomerProfile')
       can('update', 'CustomerProfile')
 
-      // 1:1 attribution child (Addendum B) — SYSTEM-written at capture, immutable
-      // afterward. Agents can read for context; no update grant.
+      // SYSTEM-written at capture and immutable afterward — no update grant.
       can('read', 'CustomerLeadAttribution')
 
-      // Notes: any agent can read/create; update/delete are author-or-admin,
-      // enforced in customerNoteServerSpec hooks (assertNoteAuthorOrAdmin) —
-      // CASL can't express "own record" on plain-string subjects (see note above).
+      // update/delete are author-or-admin, enforced in the DAL — CASL can't express "own record" on plain-string subjects.
       can('read', 'CustomerNote')
       can('create', 'CustomerNote')
       can('update', 'CustomerNote')
@@ -142,7 +100,6 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       can('create', 'Proposal')
       can('update', 'Proposal')
 
-      // Agents run applications. No delete; decisions come in #3.
       can('read', 'Application')
       can('create', 'Application')
       can('update', 'Application')
@@ -151,23 +108,18 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       can('create', 'Project')
       can('update', 'Project')
 
-      // Activities
       can('read', 'Activity')
       can('create', 'Activity')
       can('update', 'Activity')
       can('delete', 'Activity')
-      // Calendar sync
       can('manage', 'Calendar')
 
-      // Agents can only navigate fresh + projects pipelines.
-      // Leads, rehash, dead are super-admin only (managed via 'manage' on 'CustomerPipeline').
+      // Read only: leads, rehash and dead pipelines are super-admin-managed.
       can('read', 'CustomerPipeline')
 
       can('read', 'User')
 
-      // voip-in-house — agent ↔ already-known-customer comms (Phase 1).
-      // Scoping (only see own rows) is enforced by entity visibility predicates;
-      // CASL grants the action verbs the agent can use across them.
+      // Row scoping (own rows only) is enforced by entity visibility predicates; CASL grants only the verbs.
       can('read', 'VoipCall')
       can('create', 'VoipCall') // placeAgentCall via softphone
 
@@ -179,10 +131,7 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       can('read', 'VoipLinkToken')
       can('create', 'VoipLinkToken') // mint L-DOC links
 
-      // voip-campaigns (JustCall) — agents can read campaign config + their
-      // customers' participation, and disqualify a lead from the campaign
-      // ("stop calling / bad lead"). Resync + source-binding + bulk enroll-all
-      // are super-admin-only (via 'manage' on 'all'); no agent rule for those.
+      // Resync, source binding and bulk enroll-all are super-admin-only — no agent rule for those.
       can('read', 'VoipCampaign')
       can('read', 'VoipContactField')
       can('read', 'VoipCampaignContact')
@@ -191,46 +140,28 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       // No agent rule for AppSetting — super-admin only via the 'manage' on 'all'.
       break
 
-    // ── homeowner ─────────────────────────────────────────────────────────
-    // Future-proofing for customer portal. Most homeowners today are
-    // unauthenticated and use token-based access (see validate-share-token.ts).
-    // These rules are for authenticated homeowners only.
-    //
-    // Note: Proposal read has no condition yet because proposals link through
-    // Meeting → Customer, not directly to user. The token gate handles the
-    // current use case. When we build the customer portal, we'll either add
-    // a condition here or use a join-based check.
-    //
-    // Note on "own record" enforcement: CASL field conditions require subject
-    // type objects (not plain strings). Since AppSubject uses plain strings,
-    // the { id } restriction is enforced at the DAL layer, not here.
+    // Authenticated homeowners only — most use token-based access instead. Proposal read has no
+    // "own" condition because proposals link through Meeting → Customer; the token gate covers it today.
     case 'homeowner':
       can('read', 'Proposal')
       can('read', 'User')
       break
 
-    // ── user (default role) ───────────────────────────────────────────────
-    // Minimal permissions — can only read their own user record.
-    // "Own record" enforcement happens at the DAL layer (see note above).
+    // "Own record" is enforced at the DAL layer.
     case 'user':
       can('read', 'User')
       break
 
-    // ── dispatcher ────────────────────────────────────────────────────────
-    // Internal lead-qualifier (e.g. a virtual assistant). Works the shared
-    // leads pool: qualifies leads and books appointments that land UNASSIGNED
-    // (system-owned) for the dispatch/assignment flow. NOT a sales agent —
-    // deliberately WITHOUT can('own','Meeting'), so meetings they create are
-    // owned by the system account, not by them. No proposal/project/calendar.
+    // Internal lead-qualifier, NOT a sales agent: deliberately without can('own','Meeting'),
+    // so the appointments they book land unassigned (system-owned) for the dispatch flow.
     case 'dispatcher':
       can('access', 'Dashboard')
       can('read', 'LeadsPool') // sees the shared leads pool (drives visibility + phone + pipeline access)
 
       can('read', 'Customer')
-      // Lead-contact fields only — NOT the sales-discovery JSON profiles.
+      // Lead-contact fields only — not the sales-discovery profile.
       can('update', 'Customer', ['name', 'phone', 'email', 'address', 'city', 'state', 'zip', 'pipelineStage'])
 
-      // 1:1 attribution child (Addendum B) — read-only, SYSTEM-written at capture.
       can('read', 'CustomerLeadAttribution')
 
       can('read', 'Meeting')
@@ -240,7 +171,6 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
 
       can('read', 'User')
 
-      // Dial + text leads (voip-in-house verbs; row-scoping via visibility predicates).
       can('read', 'VoipCall')
       can('create', 'VoipCall')
       can('read', 'VoipMessage')

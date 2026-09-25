@@ -33,9 +33,7 @@ interface PresentationProps {
 /**
  * Full-height, slide-snapping scroller: the presentation engine's root. Snap is the
  * browser's (CSS scroll-snap); the JS is in-view tracking plus an absolute `scrollTo` for
- * keyboard slide navigation. Rules: see ./DOCS.md#presentation
- * Recipes and citations: docs/plans/2026-09-11-meeting-flow-scroll-snap-research.md,
- * docs/plans/2026-09-13-meeting-flow-keyboard-focus-research.md §4.3.
+ * keyboard slide navigation.
  *
  * The scroller is the `presentation` size container. Descendants size with `cqw`/`cqh` and
  * switch layout with `@max-[56rem]/presentation:`; the name keeps a query bound to the

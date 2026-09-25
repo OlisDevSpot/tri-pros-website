@@ -23,7 +23,6 @@ export const meetingParticipants = pgTable('meeting_participants', {
 }, table => [
   unique('meeting_id_user_id_unique').on(table.meetingId, table.userId),
   // Partial unique indexes — one owner + one co_owner per meeting, helpers unconstrained.
-  // see src/shared/entities/meetings/DOCS.md#participant-roles-three
   uniqueIndex('meeting_one_owner_idx')
     .on(table.meetingId)
     .where(sql`role = 'owner'`),

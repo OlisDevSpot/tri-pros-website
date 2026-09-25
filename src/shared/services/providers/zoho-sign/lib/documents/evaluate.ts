@@ -11,21 +11,11 @@ export interface AgreementDocProjection {
 }
 
 export interface DocumentEvaluation {
-  /** Forced on. Render with check icon, no Switch. */
   required: EnvelopeDocumentId[]
-  /** Agent toggles via Switch. Default off. */
   optional: EnvelopeDocumentId[]
-  /** Not applicable for this kind. UI hides. Server rejects if submitted. */
   forbidden: EnvelopeDocumentId[]
 }
 
-/**
- * Walks the registry and partitions every known document into
- * required / optional / forbidden for the given context.
- *
- * Drives both the agent UI (which checkboxes are forced on / available
- * / hidden) and the server-side validation guard.
- */
 export function evaluateDocuments(ctx: ProposalContext): DocumentEvaluation {
   const required: EnvelopeDocumentId[] = []
   const optional: EnvelopeDocumentId[] = []
@@ -87,14 +77,7 @@ export class EnvelopeSelectionError extends Error {
   }
 }
 
-/**
- * Throws if the agent-submitted selection violates the per-kind rules
- * (missing a required doc, or includes a forbidden doc). Optional docs
- * may be present or absent freely.
- *
- * Called both client-side (UX feedback) and server-side (defense in
- * depth — never trust the client's selection without re-validating).
- */
+/** Runs client-side for UX and again server-side — never trust the client's selection. */
 export function validateEnvelopeSelection(
   ctx: ProposalContext,
   selection: readonly EnvelopeDocumentId[],
@@ -107,34 +90,13 @@ export function validateEnvelopeSelection(
   }
 }
 
-/**
- * Brings a previously-saved selection back into validity after the
- * source-of-truth (e.g., customer age) has changed. Pure function — does
- * no I/O, mutates nothing.
- *
- * Reconciliation is deliberately silent: no notification is surfaced to
- * the agent (per the design decision in ADR-0004 amendment — when the
- * agreement context changes, the system maintains internal consistency
- * automatically). Required-set additions and forbidden-set removals
- * happen without the agent having to acknowledge each one.
- *
- * Algorithm:
- *   1. Drop any saved doc that the new evaluation marks `forbidden`.
- *   2. Add any doc the new evaluation marks `required` that isn't
- *      already present.
- *   3. Leave optional choices untouched (whether previously checked or
- *      unchecked).
- *
- * The result is guaranteed to pass `validateEnvelopeSelection` against
- * the same evaluation — required ⊆ result, result ∩ forbidden = ∅.
- */
+/** Deliberately silent — the agent is not notified when a context change adds or drops documents. */
 export function reconcileEnvelopeSelection(
   currentSelection: readonly EnvelopeDocumentId[],
   evaluation: DocumentEvaluation,
 ): EnvelopeDocumentId[] {
   const forbiddenSet = new Set(evaluation.forbidden)
   const requiredSet = new Set(evaluation.required)
-  // Drop forbidden first, then ensure required.
   const kept = currentSelection.filter(id => !forbiddenSet.has(id))
   const keptSet = new Set(kept)
   for (const id of requiredSet) {
@@ -145,12 +107,6 @@ export function reconcileEnvelopeSelection(
   return kept
 }
 
-/**
- * Shapes the registry-driven evaluation into the agreement-context UI's
- * docs list — `{ id, label, status }` per (required ∪ optional) document,
- * preserving registry order. Forbidden docs are filtered out (the UI
- * hides them entirely).
- */
 export function projectAgreementDocs(evaluation: DocumentEvaluation): AgreementDocProjection[] {
   const requiredSet = new Set(evaluation.required)
   const optionalSet = new Set(evaluation.optional)

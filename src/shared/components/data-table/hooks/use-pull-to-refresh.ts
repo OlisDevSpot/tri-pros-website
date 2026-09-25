@@ -31,7 +31,6 @@ interface PullToRefreshState {
  * predominantly vertical, and the gesture did not start on a column-resize
  * handle (`[data-resize-handle]`). No-op when `onRefresh` is undefined.
  *
- * See `docs/superpowers/specs/2026-08-11-records-table-refresh-design.md` §6.1.
  */
 export function usePullToRefresh(
   scrollRef: RefObject<HTMLElement | null>,

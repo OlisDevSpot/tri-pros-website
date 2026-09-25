@@ -29,7 +29,6 @@ import { getR2Config } from './lib/config'
  * don't crash app boot — the first object op throws `NotConfiguredError` if
  * any of R2_ACCOUNT_ID / R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY is unset.
  *
- * see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
  */
 const s3 = lazyProxy(() => {
   const config = getR2Config()

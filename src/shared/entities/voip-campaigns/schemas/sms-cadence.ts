@@ -4,7 +4,6 @@ import { z } from 'zod'
 // voip_campaigns (app-authored; never CT-mirrored). Each message is armed by a
 // dial-attempt threshold; the orchestrator advances the ladder one step at a
 // time, gated by maxMessages + oneSmsPerDay.
-// see docs/superpowers/specs/2026-06-17-voip-campaigns-sms-cadence-design.md
 
 export const smsCadenceMessageSchema = z.object({
   // Dial-attempt count at/after which this message is eligible. Minimum 1 — the

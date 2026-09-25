@@ -15,8 +15,6 @@ import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 // to a lead source via the Resync UI afterwards (decision #8). We never parse
 // campaign names to infer the source.
 //
-// see docs/codebase-conventions/service-architecture.md
-// see docs/superpowers/specs/2026-08-19-justcall-dialer-migration-design.md
 // ---------------------------------------------------------------------------
 
 import { dalSuccess } from '@/shared/dal/server/types'

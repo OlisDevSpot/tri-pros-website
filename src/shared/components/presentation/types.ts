@@ -1,6 +1,5 @@
 /**
  * The presentation engine's public types. Vocabulary: CONTEXT.md#presentation-terms.
- * Rules: see ./DOCS.md#frames and ./DOCS.md#runs
  */
 
 /** Where a slide's heading sits: in its run's heading column (the default) or centred over the slide. */

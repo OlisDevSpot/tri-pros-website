@@ -21,6 +21,5 @@ export const appSettingServerSpec = {
     select: selectAppSettingSchema,
   },
   // Natural string PK — feature key (e.g., 'voip-in-house', 'voip-campaigns', 'compliance').
-  // see ../DOCS.md#natural-pk-feature
   primaryKey: 'feature',
 } satisfies EntityServerSpec<typeof appSettings>

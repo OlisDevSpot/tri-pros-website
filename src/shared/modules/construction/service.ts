@@ -8,7 +8,6 @@ import { catalogSource } from './sources'
  *
  * Scripts must NOT import this — `unstable_cache` needs a Next request
  * context. They import `catalogSource` from `./sources` directly.
- * see ./DOCS.md#one-cache-tag
  */
 export const CONSTRUCTION_CATALOG_TAG = 'construction-catalog'
 

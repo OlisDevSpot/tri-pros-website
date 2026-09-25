@@ -14,7 +14,6 @@ import { renderSmsTemplate } from './lib/render-sms-template'
 // Orchestrates the per-lead automated SMS cadence off call.ended events.
 // The dialer delivers; this service decides + sends. All cadence state lives in
 // voip_campaign_contacts; per-campaign config in voip_campaigns.sms_cadence.
-// see docs/superpowers/specs/2026-06-17-voip-campaigns-sms-cadence-design.md
 
 type CallEndedEvent = Extract<CanonicalDialerEvent, { type: 'call.ended' }>
 

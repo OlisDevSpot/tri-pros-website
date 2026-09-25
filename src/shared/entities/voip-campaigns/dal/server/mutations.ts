@@ -2,8 +2,6 @@
 // doesn't fit generic CRUD. The campaign-sync service calls this; never reach
 // for `db.insert/update` from a service layer.
 //
-// see ../../DOCS.md for invariants
-// see docs/codebase-conventions/dal-conventions.md
 // see memory/feedback-services-orchestrate-dal-implements.md
 
 import type { DialerMode } from '@/shared/constants/enums/voip'
@@ -28,7 +26,7 @@ interface UpsertCampaignByProviderIdInput {
  * Idempotent upsert keyed on the unique `provider_campaign_id`. Called per-row by
  * `campaignSyncService.resyncDialer`. Refreshes dialer identity (name / status /
  * mode / cadence) only — campaigns are pools, not source-owned (the `source_slug`
- * ownership column was removed 2026-06-11; see ../../DOCS.md#admin-binding).
+ * ownership column was removed 2026-06-11
  *
  * `updatedAt` auto-bumps via the schema-helper `$onUpdate` — do not set it.
  */

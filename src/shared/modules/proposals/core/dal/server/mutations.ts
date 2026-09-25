@@ -1,5 +1,4 @@
 // Proposal entity DAL mutations. Business-specific operations beyond CRUD.
-// DAL conventions: docs/codebase-conventions/dal-conventions.md
 
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 
@@ -21,7 +20,6 @@ import { isProposalFrozen } from '@/shared/modules/proposals/core/lib/proposal-l
  * startingTcp base is the `starting_tcp_cents` column; discounts SUM over
  * proposal_incentives rows. The `sow_item_id IS NULL` predicate is a no-op
  * today (every row is global) and pre-lands the W4 double-count guard.
- * see ../../DOCS.md#final-tcp-derived
  */
 export async function recomputeProposalFinancials(
   proposalId: string,
@@ -50,7 +48,6 @@ export async function recomputeProposalFinancials(
 /**
  * Narrow column write for the funding form's cash-down field (`cash_in_deal_cents`).
  * Dollars→cents via Math.round(x * 100) at this seam. Same lock gate as every content write.
- * see ../../DOCS.md#proposal-lock-ladder
  */
 export async function setCashInDeal(
   ctx: ScopedContext,

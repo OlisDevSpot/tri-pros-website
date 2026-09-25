@@ -72,8 +72,7 @@ export async function assembleEnvelope(ctx: ProposalContext): Promise<AssembleRe
 
   // Step 1: mergesend creates a multi-template envelope and returns one
   // request_id. POST /api/v1/templates/mergesend (form-urlencoded):
-  // template_ids=[...]&data={...}&is_quicksend=false. See
-  // docs/zoho-sign/research-notes.md for the full API shape.
+  // template_ids=[...]&data={...}&is_quicksend=false.
   const mergeBody = buildMergeSendBody(ctx, templateDocs)
   // Pre-flight diagnostics: prints field lengths + threshold so a stale
   // dev server (or unexpected text field bloat) is immediately visible

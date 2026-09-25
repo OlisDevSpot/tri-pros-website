@@ -81,7 +81,7 @@ const projectDataSchema = z.object({
 
 // `finalTcp` is NOT part of this domain shape — it is derived via
 // `computeFinalTcp({ funding, sow })` in `modules/proposals/core/lib/financials`.
-// Three-stage lifecycle standard (DOCS.md#final-tcp-derived, Addendum A.2):
+// Three-stage lifecycle standard:
 // drafting computes on read (this schema, never persisted); lists/reports
 // cache a rollup in `proposals.final_tcp_cents`, recomputed at the single
 // `recomputeProposalFinancials` choke point; frozen proposals snapshot via

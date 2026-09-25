@@ -10,7 +10,6 @@ import type { PainPoint, Scope, SowTemplate, Trade } from '@/shared/modules/cons
  * belong to `modules/construction/service.ts`, so a future binding is a
  * method-for-method implementation rather than a re-derivation.
  *
- * see ../DOCS.md#the-seam
  */
 export interface ConstructionCatalogSource {
   getTrades: () => Promise<Trade[]>

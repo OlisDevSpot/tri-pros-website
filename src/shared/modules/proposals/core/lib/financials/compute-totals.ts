@@ -33,7 +33,7 @@ export interface ProposalFinancials {
   /** finalTcp ÷ totalJobCosts; null when totalJobCosts is 0 */
   multiplier: number | null
   tier: MultiplierTier
-  /** True only when SOME sections have cost lines and some don't. see ../../DOCS.md#cost-data-asymmetric-incomplete */
+  /** True only when SOME sections have cost lines and some don't. */
   hasMissingCostData: boolean
   /** Per-section financials, titles fallback-resolved ("Section N"). */
   sections: SectionFinancials[]
@@ -44,7 +44,6 @@ export interface ProposalFinancials {
 /**
  * The one big call — every derived proposal financial value, computed at
  * once from the hydrated domain shape. Pure, cheap, never persisted.
- * see ../../DOCS.md#price-side-vs-cost-side
  */
 export function computeProposalFinancials(input: ProposalFinancialsInput): ProposalFinancials {
   const { funding, sow } = input

@@ -131,7 +131,7 @@ function createAccountingService() {
         .filter(Boolean)
         .map((proposal) => {
           // Stored rollup (Wave 2) — maintained by recomputeProposalFinancials; null
-          // only pre-backfill. see modules/proposals/core/DOCS.md#final-tcp-derived
+          // only pre-backfill.
           const amount = (proposal.finalTcpCents ?? 0) / 100
           return {
             Amount: amount,

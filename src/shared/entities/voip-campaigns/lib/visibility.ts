@@ -9,7 +9,6 @@ import { sql } from 'drizzle-orm'
  * it via the scope path; super-admin bypasses scoping via the omni-path, so
  * this strict-default predicate means only omni queries succeed.
  *
- * see ../DOCS.md#admin-only-visibility
  */
 export function voipCampaignVisibility(_scope: VisibilityScope): SQL {
   return sql`FALSE`

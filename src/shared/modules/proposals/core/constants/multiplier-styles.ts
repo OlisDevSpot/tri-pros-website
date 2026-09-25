@@ -1,6 +1,6 @@
 import type { MultiplierTier } from '@/shared/modules/proposals/core/lib/financials'
 
-/** Tier → className map used everywhere a multiplier is rendered. see ../DOCS.md#margin-multiplier-tiers */
+/** Tier → className map used everywhere a multiplier is rendered. */
 export const MULTIPLIER_STYLES: Record<MultiplierTier, string> = {
   danger: 'text-red-600 dark:text-red-400',
   healthy: 'text-emerald-600 dark:text-emerald-400',

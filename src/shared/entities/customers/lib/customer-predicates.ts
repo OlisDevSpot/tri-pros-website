@@ -15,7 +15,7 @@ export function isSenior(ageGroup: CustomerAgeGroup | null | undefined): boolean
 
 /**
  * Senior check from raw numeric age (CSLB 5-day rescission threshold).
- * Distinct from `isSenior(ageGroup)` — see ../DOCS.md#senior-age-thresholds-two-paths
+ * Distinct from `isSenior(ageGroup)`
  */
 export function isSeniorByAge(age: number | null | undefined): boolean {
   if (age == null) {

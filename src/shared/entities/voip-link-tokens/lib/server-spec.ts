@@ -20,7 +20,6 @@ export const voipLinkTokenServerSpec = {
     update: updateVoipLinkTokenSchema,
     select: selectVoipLinkTokenSchema,
   },
-  // see ../DOCS.md#shareable-via-token-column
   // Customer consume route hits `/api/voip/links/[token]` (Task 29) without a
   // session — shareable middleware looks up the row via this column and
   // attaches a synthetic context so the existing getById/update slots Just Work.

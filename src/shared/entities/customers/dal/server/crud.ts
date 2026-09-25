@@ -13,13 +13,11 @@ import { propagateCustomerChangeJob } from '@/shared/services/providers/upstash/
 
 /**
  * Stable CRUD handlers for the customers entity. Hooks live here (config
- * factory), not on the spec — see ../../../meetings/dal/server/crud.ts for the
- * canonical shape and ../../DOCS.md for the sanctioned service-orchestration note.
+ * factory), not on the spec — see ../../../meetings/dal/server/crud.ts for the canonical shape.
  */
 export const customerCrud = createCrudDal(customerServerSpec, () => ({
   hooks: {
     update: {
-      // see ../DOCS.md#geocoding-stored-on-customer — when any address
       // component changes, invalidate the cached lat/lng/geocodedAt so the
       // map surfaces re-geocode on next read. Guard: skip if the caller is
       // explicitly setting latitude or longitude in the same update (e.g.,
@@ -66,7 +64,6 @@ export const customerCrud = createCrudDal(customerServerSpec, () => ({
       //   await ably.channels.get(`customer:${row.id}`).publish(
       //     'customer.updated', { fields: Object.keys(meta.input) })
       //
-      // see docs/codebase-conventions/service-architecture.md#background-side-effects-via-qstash-jobs
       async after(row: Customer, _ctx, _meta) {
         await propagateCustomerChangeJob.dispatchOrThrow({ customerId: row.id })
       },

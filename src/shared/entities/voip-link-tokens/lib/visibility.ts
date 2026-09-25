@@ -12,7 +12,6 @@ import { voipLinkTokens } from '@/shared/db/schema'
  * shareable middleware (`spec.shareable.tokenColumn = 'token'`), bypassing
  * this session-based predicate entirely.
  *
- * see ../DOCS.md#visibility-via-creator
  */
 export function voipLinkTokenVisibility({ userId }: VisibilityScope): SQL {
   return eq(voipLinkTokens.createdByUserId, userId)

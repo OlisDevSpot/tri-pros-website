@@ -3,7 +3,7 @@ import type { ZohoContractStatus } from '@/shared/services/providers/zoho-sign/t
 
 /**
  * Zoho Sign webhook payload mapping + idempotency/notification/auto-approve
- * policies for contract events. see ../DOCS.md#contract-events-from-zoho
+ * policies for contract events.
  */
 
 // Zoho's actual payloads diverge from docs (docs: RequestCompleted; observed:
@@ -12,7 +12,7 @@ import type { ZohoContractStatus } from '@/shared/services/providers/zoho-sign/t
 // when the contractor signs while the homeowner is still pending. So mapping it
 // to `completed` only expresses "a signing happened"; real completion is
 // DERIVED from live signer statuses via `isEnvelopeFullySigned` before any
-// terminal write. see ../DOCS.md#contract-events-from-zoho
+// terminal write.
 const ZOHO_OP_TO_CONTRACT_EVENT: Record<string, ContractEvent> = {
   RequestViewed: 'viewed',
   RequestSigningSuccess: 'completed',
@@ -34,7 +34,6 @@ export function mapZohoOperationToContractEvent(op: string): ContractEvent | nul
  * required set (Contractor + Homeowner, or Homeowner only), so we don't
  * hardcode roles — we require all present signers to be `SIGNED`. An empty
  * signer list (draft / no recipients) is never complete.
- * see ../DOCS.md#contract-events-from-zoho
  */
 export function isEnvelopeFullySigned(status: ZohoContractStatus): boolean {
   const signers = status.signerStatuses
@@ -51,7 +50,6 @@ export const contractEventColumn = {
   declined: 'contractDeclinedAt',
 } as const satisfies Record<ContractEvent, string>
 
-/** see ../DOCS.md#contract-event-idempotency */
 export const contractEventIdempotencyPolicy = {
   viewed: 'earliest-wins',
   completed: 'write-once',
@@ -62,7 +60,6 @@ export function shouldNotifyOnContractEvent(event: ContractEvent): boolean {
   return event === 'completed' || event === 'declined'
 }
 
-/** see ../DOCS.md#completed-auto-approves */
 export function shouldAutoApproveOnContractEvent(event: ContractEvent): boolean {
   return event === 'completed'
 }

@@ -19,7 +19,6 @@ import { cn } from '@/shared/lib/utils'
  * selection also advances — tap = confirm + proceed). The shell's Next still
  * shows once answered, as the no-re-tap path for a Back-revisiting user keeping
  * their answer.
- * see ../../../../../docs/superpowers/specs/2026-06-26-funnel-card-select-layout-system-design.md
  */
 export function CardSelectStepView({ content, value, setValue, advance }: StepProps<CardSelectStep>) {
   const reduceMotion = useReducedMotion()

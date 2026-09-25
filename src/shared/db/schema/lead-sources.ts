@@ -16,7 +16,6 @@ export const leadSourcesTable = pgTable('lead_sources', {
   // ── Wave-1 decomposition: former voip_config_json blob's campaigns sub-object → columns (epic #256 / #259) ──
   // Ownership semantics unchanged: policy is SOURCE-owned; campaigns stay pools.
   // Unset defaultCampaignId ⇒ auto-enroll inert (no guessing).
-  // see src/shared/entities/lead-sources/DOCS.md
   voipCampaignsEnabled: boolean('voip_campaigns_enabled').notNull().default(true),
   voipAutoEnroll: boolean('voip_auto_enroll').notNull().default(false),
   defaultCampaignId: uuid('default_campaign_id').references((): AnyPgColumn => voipCampaigns.id, { onDelete: 'set null' }),

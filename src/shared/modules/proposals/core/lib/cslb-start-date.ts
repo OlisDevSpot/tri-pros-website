@@ -1,6 +1,6 @@
 /**
  * Earliest legal project start date under Cal. Civil Code §1689.6/§1689.7
- * rescission window. see ../DOCS.md#cslb-start-date for the full rule.
+ * rescission window.
  */
 
 const NON_SENIOR_BUSINESS_DAYS = 3

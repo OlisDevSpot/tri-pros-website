@@ -1,16 +1,3 @@
-// CRUD sub-router factory — 5 single-row operations. see ../DOCS.md#crud-five-slots-fixed
-// Each slot wires: CASL action gate + Zod input + DAL handler + dalToTrpc bridge.
-// spec.shareable controls whether getById/update use shareable vs authed procedure.
-
-// The scoped procedures are built INLINE from `config.spec` at the top of
-// `createCrudRouter`'s body — never accepted as config params. This mirrors
-// the per-entity `procedures.ts` pattern (see proposals.router/procedures.ts):
-// an inline `.use()` chained directly off `agentProcedure`/`baseProcedure`
-// infers `ctx` concretely, so no cast and no "procedure builder of any
-// middleware depth" type is ever needed at a param boundary. Because no
-// builder type crosses the function signature, `createCrudRouter` keeps its
-// original four generics — nothing added for procedure typing.
-
 import type { PgTable } from 'drizzle-orm/pg-core'
 import type { AppAction, AppSubject } from '@/shared/domains/permissions/types'
 
@@ -24,7 +11,6 @@ import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 import { resolveVisibilityScope } from '@/trpc/lib/middleware/scope-middleware'
 import { shareableMiddleware } from '@/trpc/lib/middleware/shareable-middleware'
 
-// Action mapping per slot — fixed (not entity-configurable).
 const SLOT_ACTIONS: Record<SlotName, AppAction> = {
   getById: 'read',
   create: 'create',
@@ -39,29 +25,11 @@ export interface CreateCrudRouterConfig<
   TInsert extends z.ZodObject<z.ZodRawShape>,
   TUpdate extends z.ZodObject<z.ZodRawShape>,
 > {
-  /** Entity spec — runtime config (table, visibility, casl, shareable). */
   spec: EntityServerSpec<TTable, TId>
-  /**
-   * Concrete Zod schemas for tRPC input validation + type inference.
-   * `id`: Zod validator matching TId (z.string().uuid() or z.number().int())
-   * `insert`: Entity's insert schema (concrete, not type-erased)
-   * `update`: Entity's update schema (concrete, not type-erased)
-   */
   schemas: { id: z.ZodType<TId>, insert: TInsert, update: TUpdate }
-  /**
-   * The entity's single CRUD instance, built once via
-   * `createCrudDal(spec, configFactory)` in the entity's `dal/server/crud.ts`.
-   * REQUIRED — the router never rebuilds handlers, so no code path can produce
-   * un-hooked ones (the hookless-rebuild failure mode is eliminated by construction).
-   */
+  /** The entity's single hooked crud instance — the router never rebuilds handlers, so un-hooked ones cannot exist. */
   crud: CrudHandlers<TTable, TId, z.input<TInsert>, z.input<TUpdate>>
-  /**
-   * Override individual CRUD handlers. Merged with createCrudDal defaults.
-   * ⚠️ Overrides BYPASS spec.hooks entirely — the override replaces the
-   * full DAL function including its before/after hook invocations.
-   * Prefer spec.hooks for data enrichment; use this only when the entire
-   * operation must be replaced.
-   */
+  /** Slot overrides BYPASS the crud's hooks entirely — the override replaces the whole DAL function. */
   handlers?: Partial<CrudHandlers<TTable, TId, z.input<TInsert>, z.input<TUpdate>>>
 }
 
@@ -71,30 +39,23 @@ export function createCrudRouter<
   TInsert extends z.ZodObject<z.ZodRawShape>,
   TUpdate extends z.ZodObject<z.ZodRawShape>,
 >(config: CreateCrudRouterConfig<TTable, TId, TInsert, TUpdate>) {
-  // Merge the entity's hooked instance with any bespoke slot overrides. The cast
-  // reasserts the full interface: spreading the Partial `handlers` overrides widens
-  // the property types to include `undefined`, so TS needs the assertion to treat
-  // the merge as a complete `CrudHandlers`.
+  // Spreading the Partial `handlers` widens property types to include `undefined`, hence the cast.
   const handlers = { ...config.crud, ...config.handlers } as CrudHandlers<TTable, TId, z.input<TInsert>, z.input<TUpdate>>
 
-  // Scoped procedures built inline from the spec — the cast-free inline `.use()`
-  // pattern (ctx infers from agentProcedure, so no builder-type cast is needed).
-  // Equivalent to what createEntityRouter's toolkit built from the same spec.
+  // Built inline off agentProcedure so `ctx` infers concretely — no builder-type cast at a param boundary.
   const authedProcedure = agentProcedure.use(async ({ ctx, next }) =>
     next({ ctx: { ...ctx, scope: resolveVisibilityScope(config.spec, { userId: ctx.session.user.id, ability: ctx.ability }) } }))
   const shareableProcedure = baseProcedure.use(shareableMiddleware(config.spec))
 
-  // Select the right procedure based on shareable config.
   const readProcedure = config.spec.shareable ? shareableProcedure : authedProcedure
   const updateProcedure = config.spec.shareable ? shareableProcedure : authedProcedure
 
-  // Input schemas — token always optional (harmless on non-shareable entities).
+  // `token` is always optional — harmless on non-shareable entities.
   const { id: idZod } = config.schemas
   const idInput = z.object({ id: idZod, token: z.string().optional() })
   const updateInput = z.object({ id: idZod, data: config.schemas.update, token: z.string().optional() })
   const idOnlyInput = z.object({ id: idZod })
 
-  // Static object literal — TypeScript infers the full router shape.
   return createTRPCRouter({
     getById: readProcedure
       .input(idInput)
@@ -113,9 +74,8 @@ export function createCrudRouter<
       .input(config.schemas.insert)
       .mutation(async ({ ctx, input }) => {
         assertCan(ctx.ability, 'create', config.spec)
-        // tRPC hands us the schema's OUTPUT; the DAL contract is its INPUT (it
-        // re-parses after the hooks). Identical for our insert schemas (no
-        // transforms), which TS cannot prove for a generic TInsert — hence the cast.
+        // tRPC hands us the schema OUTPUT; the DAL contract is its INPUT. Identical for our
+        // transform-free insert schemas, which TS cannot prove for a generic TInsert — hence the cast.
         const row = dalToTrpc(await handlers.create(ctx, input as z.input<TInsert>))
         return row
       }),
@@ -123,8 +83,7 @@ export function createCrudRouter<
     update: updateProcedure
       .input(updateInput)
       .mutation(async ({ ctx, input }) => {
-        // Cast: Zod 4 can't resolve generic TUpdate output type in z.object({ data: TUpdate }).
-        // The schema validates at runtime; this tells TS the shape matches CrudHandlers.
+        // Zod 4 can't resolve the generic TUpdate output inside z.object({ data: TUpdate }); runtime validation already ran.
         const { id, data } = input as { id: TId, data: z.input<TUpdate>, token?: string }
 
         if (ctx.ability) {
@@ -152,18 +111,9 @@ export function createCrudRouter<
   })
 }
 
-// ── helpers ──────────────────────────────────────────────────────────────
-
 /**
- * Slot-level CASL gate. Checks the slot's action against the entity subject
- * with no field arg — appropriate for `getById`, `create`, `delete`, `duplicate`
- * (row-granular operations). For the `update` slot, use `assertCanUpdateFields`
- * instead — slot-level checks let field-restricted grants bypass per-field
- * intent (see `assertCanUpdateFields` JSDoc).
- *
- * Accepts ability directly (not ctx) so callers can pass `ctx.ability` after
- * narrowing — avoids TS not narrowing the full ctx object through a function
- * boundary.
+ * Not for `update`: a slot-level check would let a field-restricted grant bypass per-field intent.
+ * Takes `ability` rather than `ctx` because TS won't narrow the full ctx through a function boundary.
  */
 function assertCan(
   ability: { can: (action: AppAction, subject: AppSubject, field?: string) => boolean },
@@ -180,19 +130,9 @@ function assertCan(
 }
 
 /**
- * Field-level CASL gate for the update slot. For every key in `data` whose
- * value is defined, requires `ability.can('update', subject, field)` to return
- * true. Throws FORBIDDEN naming the first field that fails.
- *
- * CASL semantics:
- * - Unrestricted grant (`can('update', 'X')` with no `fields`): every field passes.
- * - Field-restricted grant (`can('update', 'X', ['a', 'b'])`): only 'a' and 'b' pass.
- * - No grant: every field fails.
- * - `manage all`: every field passes.
- *
- * Undefined values are skipped (Drizzle ignores them anyway). Callers that
- * pass `data: { phone: undefined }` are treated as "not attempting to write
- * phone" — same semantics as the input shape itself.
+ * CASL field semantics: an unrestricted grant passes every field; a field-restricted grant
+ * (`can('update', 'X', ['a', 'b'])`) passes only those; `manage all` passes every field.
+ * Undefined values are skipped — "not attempting to write this field", same as the input shape.
  */
 function assertCanUpdateFields(
   ability: { can: (action: AppAction, subject: AppSubject, field?: string) => boolean },

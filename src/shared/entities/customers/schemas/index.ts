@@ -1,22 +1,13 @@
 import z from 'zod'
 
-// HELPER SCHEMA
 export const painSchema = z.object({
   accessor: z.string(),
   urgencyRating: z.number().int().min(1).max(10),
 })
 export type Pain = z.infer<typeof painSchema>
 
-// ── Addendum B (2026-07-14): the 23 columns that live on the `customer_profiles`
-// 1:1 child table (PK-as-FK on customers.id) — replaced the three JSONB
-// profile blobs (epic #256 / #259). Property names are identical to the old
-// blob field names (mainPainPoint split into mainPainAccessor/mainPainUrgency).
-// `age` is NOT here — it stays a plain column on `customers` (identity-adjacent,
-// written by anonymous homeowners via the contracts share-token flow; see
-// customers.ts and the Addendum B.2 superseded-verdicts table).
-// Grouped so callers can iterate/display per-section while still having the
-// flat union for CASL + patch validation.
-// see ../DOCS.md#three-jsonb-profiles
+// `age` is deliberately NOT here — it stays on `customers` because anonymous homeowners write it via the share-token flow.
+// Grouped per section for display; the flat union below serves CASL + patch validation.
 export const CUSTOMER_PROFILE_COLUMN_KEYS = [
   'triggerEvent',
   'mainPainAccessor',
@@ -48,60 +39,41 @@ export const PROFILE_COLUMN_KEYS = [
   ...PROPERTY_PROFILE_COLUMN_KEYS,
   ...FINANCIAL_PROFILE_COLUMN_KEYS,
 ] as const
-/** TS-side property-key union for the `customer_profiles` child table. */
 export type ProfileKey = (typeof PROFILE_COLUMN_KEYS)[number]
 
-// Generic, self-describing funnel enrichment keyed by step id. `value` is the
-// resolved option label so no server-side label mirror is needed; `order` drives
-// display. The canonical server-side shape — the DAL mutation and the intake
-// service reference this type rather than re-declaring it.
+// `value` is the resolved option label so no server-side label mirror is needed; `order` drives display.
 export const enrichmentRecordSchema = z.record(
   z.string(),
   z.object({ label: z.string(), value: z.string(), order: z.number().int() }),
 )
 export type EnrichmentRecord = z.infer<typeof enrichmentRecordSchema>
 
-// Closed vocabulary for customer_lead_attribution.kind — mirrors the
-// leadMetaSchema source discriminated-union literals below. text({ enum }),
-// never pgEnum. see docs/codebase-conventions/enum-standardization.md#text-with-enum
+// Must mirror the `source` discriminated-union literals below.
 export const leadSourceKinds = ['bina', 'generic', 'funnel'] as const
 export type LeadSourceKind = (typeof leadSourceKinds)[number]
 
 export const leadMetaSchema = z.object({
-  // ── operational (unchanged) ──
   mp3RecordingKey: z.string().optional(),
   closedBy: z.string().optional(),
   scheduledFor: z.string().optional(), // also receives Bina selfBookingDateTime
 
-  // ── normalized envelope (source-AGNOSTIC; identical keys for every source) ──
-  // Raw, human-readable interested-trade strings. Bina → split campaign trades;
-  // in-app form → resolved picked-trade NAMES. Downstream (CT attributes, SMS
-  // merge) reads ONLY the envelope — never branches on `source.kind`.
+  // Source-agnostic envelope: downstream (dialer attributes, SMS merge) reads ONLY these keys, never `source.kind`.
   interestedTradesRaw: z.array(z.string()).optional(),
-  // Origin-campaign ATTRIBUTION — free string off the lead-source origin + intake
-  // form. Descriptive/immutable; distinct from the OPERATIONAL enrolled campaign
-  // (voip_campaign_contacts.voip_campaign_id). Does NOT drive routing.
+  // Attribution only — distinct from the operational enrolled campaign; does NOT drive routing.
   originCampaign: z.string().optional(),
-  // Phone verification result from Twilio Lookup v2. Optional — only set when
-  // the funnel phone gate ran. status 'verified' = valid real number;
-  // 'unverified' = gate was indeterminate (Twilio outage, errorCode set) or
-  // the lookup was skipped entirely.
+  // Twilio Lookup v2 result. 'unverified' also covers an indeterminate gate (outage) or a skipped lookup.
   phoneVerification: z.object({
     status: z.enum(['verified', 'unverified']),
     lineType: z.string().nullable(),
     carrierName: z.string().nullable(),
   }).optional(),
-  // OPTIONAL human-confirmed app-trade link, filled later by an agent. The
-  // envelope's interestedTradesRaw is the cross-source truth; this is the
-  // structured link to real app trades/scopes once a human confirms it.
+  // Human-confirmed link to app trades, filled later by an agent; `interestedTradesRaw` stays the cross-source truth.
   requestedTrades: z.array(z.object({
     tradeId: z.string(),
     scopeIds: z.array(z.string()),
   })).optional(),
 
-  // ── typed source capture (discriminated union; kind = payload SHAPE, decoupled
-  //    from the dynamic lead-source slug). Raw provider fields verbatim, for
-  //    human/agent context. NEVER read by the generic dial/SMS path. ──
+  // `kind` is the payload SHAPE, decoupled from the lead-source slug. Raw provider fields for human context — never read by the generic dial/SMS path.
   source: z.discriminatedUnion('kind', [
     z.object({
       kind: z.literal('bina'),
@@ -132,17 +104,9 @@ export const leadMetaSchema = z.object({
         fbp: z.string().nullable(),
         fbc: z.string().nullable(),
       }).partial().optional(),
-      // Capture/transport shape only. At intake this map is split out of the blob
-      // and persisted as `customer_enrichment` rows via upsertFunnelEnrichment
-      // (INSERT … ON CONFLICT (customer_id, step_id) — atomic, monotonic, hook-free);
-      // the leadMetaJSON blob it once lived in is frozen (Wave-2, epic #256). Shape:
-      // see enrichmentRecordSchema above.
+      // Transport shape only — split into `customer_enrichment` rows at intake, never persisted here.
       enrichment: enrichmentRecordSchema.optional(),
-      // Implied TCPA consent captured at funnel submit (submission = agreement;
-      // the PII step shows the proximate disclaimer + the footer legal block).
-      // Boolean + ISO timestamp for now — a third-party consent-capture service
-      // may later replace this with richer evidence. Audit-only: the generic
-      // dial/SMS path never reads it.
+      // Implied TCPA consent at funnel submit (the PII step shows the disclaimer). Audit-only — the dial/SMS path never reads it.
       consent: z.object({ agreed: z.literal(true), at: z.string() }).optional(),
     }),
   ]).optional(),

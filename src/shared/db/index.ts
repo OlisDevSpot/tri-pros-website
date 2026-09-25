@@ -10,7 +10,6 @@ import * as schema from '@/shared/db/schema'
 //   2. Unset → the deployment environment decides: the deployed prod site
 //      (VERCEL_ENV === 'production') gets DATABASE_URL; everywhere else gets
 //      the dev URL. Local scripts reach prod ONLY via explicit DRIZZLE_TARGET=prod.
-// see docs/codebase-conventions/environment.md#environment-axes
 // eslint-disable-next-line node/prefer-global/process
 const target = process.env.DRIZZLE_TARGET
 const dbUrl = target === 'prod'

@@ -5,7 +5,6 @@ import { createProviderConfig } from '@/shared/config/create-provider-config'
 /**
  * QuickBooks env var schema fragment + runtime-config builder + accessor.
  *
- * see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
  *
  * QB is all-or-nothing: the OAuth callback needs CLIENT_ID/SECRET/REDIRECT_URI,
  * token refresh needs CLIENT_ID/SECRET, and webhook verification needs

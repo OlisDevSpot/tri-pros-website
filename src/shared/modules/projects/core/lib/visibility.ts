@@ -6,7 +6,6 @@ import { meetingParticipants, meetings, projects } from '@/shared/db/schema'
 
 /**
  * A project is "owned" by a user when they participate in ≥1 of its meetings.
- * See docs/superpowers/specs/2026-08-06-adaptive-agent-dashboard-design.md §6.
  */
 export function projectParticipationScope(userId: string): SQL {
   return exists(
@@ -39,7 +38,7 @@ export function projectVisibility({ userId }: VisibilityScope): SQL {
  * proposal) and must be disregarded in operational lists, analytics, and
  * aggregations. This is the server-side twin of `isPurePortfolioProject`
  * (negated). Applies even for omni users, whose visibility scope is otherwise
- * unbounded. See ../DOCS.md#pure-portfolio-projects-are-not-real-projects
+ * unbounded.
  */
 export function hasAssociatedMeeting(): SQL {
   return exists(

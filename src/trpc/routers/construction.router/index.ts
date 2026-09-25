@@ -11,7 +11,7 @@ export const constructionRouter = createTRPCRouter({
   scopes: scopesRouter,
   sow: sowRouter,
 
-  /** One tag covers every cached catalog read — see modules/construction/DOCS.md#one-cache-tag */
+  /** One tag covers every cached catalog read. */
   revalidateCatalog: agentProcedure.mutation(async () => {
     revalidateTag(CONSTRUCTION_CATALOG_TAG)
     return { success: true, revalidatedAt: new Date().toISOString() }

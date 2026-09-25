@@ -28,15 +28,10 @@ import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 
 import { createTRPCRouter, superAdminProcedure } from '../init'
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
-
-// Match customers to a lead source by FK. Callers pass the lead_sources.id.
 function customersMatchingSource(leadSourceId: string) {
   return eq(customers.leadSourceId, leadSourceId)
 }
 
-// Build the optional [gte(from), lte(to)] predicate pair against customers.createdAt.
-// Returned array is spread-friendly: `and(baseMatch, ...customerCreatedAtInRange(…))`.
 function customerCreatedAtInRange(from?: string, to?: string) {
   return [
     from ? gte(customers.createdAt, from) : undefined,
@@ -46,8 +41,6 @@ function customerCreatedAtInRange(from?: string, to?: string) {
 
 type Bucket = 'day' | 'week' | 'month'
 
-// Pick the trend-chart bucket size from the resolved date range.
-// Matches the spec's "≤14 day, ≤95 week, else month" thresholds.
 function selectBucket(from?: string, to?: string): Bucket {
   if (!from || !to) {
     return 'month'
@@ -62,7 +55,7 @@ function selectBucket(from?: string, to?: string): Bucket {
   return 'month'
 }
 
-// Truncate a JS Date to the start of its bucket (matches Postgres date_trunc).
+// Must match Postgres date_trunc so JS-side bucket keys line up with the SQL series.
 function truncateToBucket(d: Date, bucket: Bucket): Date {
   switch (bucket) {
     case 'day':
@@ -75,8 +68,6 @@ function truncateToBucket(d: Date, bucket: Bucket): Date {
   }
 }
 
-// Enumerate every bucket between `from` and `to` (inclusive) so the trend
-// series can be backfilled with zeros for empty buckets.
 function enumerateBuckets(from: Date, to: Date, bucket: Bucket): Date[] {
   const start = truncateToBucket(from, bucket)
   const end = truncateToBucket(to, bucket)
@@ -92,8 +83,6 @@ function enumerateBuckets(from: Date, to: Date, bucket: Bucket): Date[] {
       return eachMonthOfInterval({ start, end })
   }
 }
-
-// ── Schemas ─────────────────────────────────────────────────────────────────
 
 const timeRangeInput = z.object({
   from: z.string().datetime().optional(),
@@ -113,13 +102,7 @@ const updateInput = z.object({
   isActive: z.boolean().optional(),
 })
 
-// ── Router ──────────────────────────────────────────────────────────────────
-
 export const leadSourcesRouter = createTRPCRouter({
-  // List of all lead sources with compact stats for the left-pane picker.
-  // The optional time range scopes `leadsInRange` so the list reacts to the
-  // global time picker in the page header. When absent, `leadsInRange`
-  // degrades to `totalLeads`.
   list: superAdminProcedure
     .input(z.object({
       includeInactive: z.boolean().default(true),
@@ -173,9 +156,6 @@ export const leadSourcesRouter = createTRPCRouter({
       return row
     }),
 
-  // Performance stats for a single lead source over a time range.
-  // Stats: total leads (all-time), leads within range, signed customers (all-time).
-  // "Signed" is defined by `isSignedCustomerSql` (customer has ≥1 project).
   getStats: superAdminProcedure
     .input(z.object({ id: z.string().uuid() }).merge(timeRangeInput))
     .query(async ({ input }) => {
@@ -198,8 +178,6 @@ export const leadSourcesRouter = createTRPCRouter({
         db.$count(customers, baseMatch),
         db.$count(customers, rangeWhere),
         db.$count(customers, and(baseMatch, isSignedCustomerSql())),
-        // Approved proposals belonging to customers from this lead source.
-        // Sum the stored final_tcp_cents rollup (Wave 2) across approved proposals.
         db
           .select({ finalTcpCents: proposals.finalTcpCents })
           .from(proposals)
@@ -214,16 +192,10 @@ export const leadSourcesRouter = createTRPCRouter({
       }
       totalSales = Math.round(totalSales)
 
-      // totalSales is lifetime by design (Phase 1) — the time-range filter
-      // scopes `range` only. Range-scoped revenue can land in Phase 2.
+      // totalSales is lifetime by design; the time range scopes `range` only.
       return { total, range, signedCustomers, totalSales }
     }),
 
-  // Aggregate performance across every lead source. Mirrors getStats shape so
-  // the PerformanceStrip renders identically for the "All" pane and per-source
-  // panes. `total` counts every customer (including legacy NULL-source rows);
-  // `range` applies the time window; `signedCustomers` counts customers with
-  // at least one project (see `isSignedCustomerSql`).
   getAggregateStats: superAdminProcedure
     .input(timeRangeInput)
     .query(async ({ input }) => {
@@ -239,8 +211,6 @@ export const leadSourcesRouter = createTRPCRouter({
       return { total, range, signedCustomers }
     }),
 
-  // Dynamic list of years with at least one customer for any lead source.
-  // Used to build time-range chips (2026, 2025, …).
   getYearsWithActivity: superAdminProcedure
     .query(async () => {
       const rows = await db
@@ -253,11 +223,7 @@ export const leadSourcesRouter = createTRPCRouter({
       return rows.map(r => r.year)
     }),
 
-  // Customers sourced from a given lead source. Paginated via shared schema.
-  // Filters: `pipeline` (multi-select against the derived 5-bucket
-  // `pipelines` enum), `createdAt` (date range). Top-level `segment` narrows
-  // results to 'all' | 'active' | 'signed' | 'dead' without exposing the
-  // control in the QueryToolbar filter row.
+  // `segment` is a top-level input rather than a filter so the QueryToolbar renders no control for it.
   getCustomers: superAdminProcedure
     .input(paginatedQueryInput({
       pipeline: z.array(z.enum(pipelines)).optional(),
@@ -288,9 +254,7 @@ export const leadSourcesRouter = createTRPCRouter({
       const segmentWhere = buildSegmentWhere(input.segment)
       const where = and(match, searchWhere, filterWhere, segmentWhere)
 
-      // Pipeline omitted from the sort whitelist for the same reason as
-      // `customersRouter.list`: the visible value is derived, sorting on
-      // the underlying 3-bucket DB column would surprise.
+      // Pipeline is not sortable: the visible value is derived, so sorting on the underlying DB column would surprise.
       const orderBy = buildOrderBy(input.sort, {
         name: customers.name,
         email: customers.email,
@@ -298,10 +262,7 @@ export const leadSourcesRouter = createTRPCRouter({
       })
 
       return paginate({
-        // Source fields are joined so the row carries the same shape as
-        // `customersRouter.list` — the shared `LeadSourceCell` then renders
-        // an editable picker. Reassigning here removes the row from the
-        // list (it no longer matches `match`), which is the desired UX.
+        // Source fields are joined so the shared `LeadSourceCell` renders its editable picker; reassigning drops the row from this list by design.
         query: () => db
           .select({
             id: customers.id,
@@ -346,9 +307,7 @@ export const leadSourcesRouter = createTRPCRouter({
       return { all, active, signed, dead }
     }),
 
-  // Funnel + trend for the Analytics tab. One round-trip — both visualizations
-  // share the same (lead-source, range) scope. Trend buckets are picked
-  // server-side so axis labels and tooltips stay consistent across renders.
+  // Trend buckets are picked server-side so axis labels and tooltips stay consistent across renders.
   getAnalytics: superAdminProcedure
     .input(z.object({
       id: z.string().uuid(),
@@ -367,9 +326,7 @@ export const leadSourcesRouter = createTRPCRouter({
 
       const baseMatch = customersMatchingSource(src.id)
 
-      // Resolve the trend's lower bound up front. When the chip is "all" we
-      // need a concrete window so bucket selection + backfill have something
-      // to work with — the lower bound becomes the source's first lead.
+      // With no `from`, the window starts at the source's first lead so bucket selection + backfill have a bound.
       let resolvedFrom = input.from
       const resolvedTo = input.to ?? new Date().toISOString()
       if (!resolvedFrom) {
@@ -382,14 +339,10 @@ export const leadSourcesRouter = createTRPCRouter({
 
       const bucket = selectBucket(resolvedFrom, resolvedTo)
 
-      // Customer-creation range predicates (both funnel + trend leads use this).
       const customerRange = customerCreatedAtInRange(input.from, input.to)
       const leadsWhere = and(baseMatch, ...customerRange)
 
-      // Range predicates for the event-side filters (meetings.scheduledFor,
-      // proposals.createdAt, projects.createdAt). Each is filtered to the
-      // chip's window so a customer who booked a meeting outside the range
-      // does not contribute to that step.
+      // Event-side filters are windowed too, so a customer who booked outside the range doesn't count toward that step.
       const meetingRangeWhere = and(
         input.from ? gte(meetings.scheduledFor, input.from) : undefined,
         input.to ? lte(meetings.scheduledFor, input.to) : undefined,
@@ -403,11 +356,7 @@ export const leadSourcesRouter = createTRPCRouter({
         input.to ? lte(projects.createdAt, input.to) : undefined,
       )
 
-      // ── Funnel ────────────────────────────────────────────────────────────
-      // Each step narrows `leadsWhere` with an EXISTS-style `inArray`
-      // subquery against the relevant event table. Drizzle has no `exists`
-      // helper today, so subquery + inArray is the idiomatic alternative
-      // (compiles to `WHERE … AND customers.id IN (SELECT … FROM …)`).
+      // Drizzle has no `exists` helper, so subquery + inArray stands in for EXISTS.
       const [leadsCount, meetingsBookedCount, proposalsSentCount, signedCount] = await Promise.all([
         db.$count(customers, leadsWhere),
         db.$count(
@@ -455,10 +404,8 @@ export const leadSourcesRouter = createTRPCRouter({
         ),
       ])
 
-      // ── Trend (3 parallel queries → JS union) ─────────────────────────────
-      // date_trunc requires the bucket name as a literal, not a bind parameter:
-      // a bound $1 in SELECT and $3 in GROUP BY are not equated by the planner.
-      // `bucket` is whitelisted to 'day' | 'week' | 'month' so sql.raw is safe.
+      // date_trunc needs the bucket name as a literal: a bound $1 in SELECT and $3 in GROUP BY
+      // are not equated by the planner. `bucket` is whitelisted to day|week|month, so sql.raw is safe.
       const bucketLiteral = sql.raw(`'${bucket}'`)
       const bucketLeads = sql<string>`date_trunc(${bucketLiteral}, ${customers.createdAt})`
       const bucketMeetings = sql<string>`date_trunc(${bucketLiteral}, ${meetings.scheduledFor})`
@@ -493,8 +440,7 @@ export const leadSourcesRouter = createTRPCRouter({
           .groupBy(bucketProjects),
       ])
 
-      // Union the three series by bucket-start. Backfill missing buckets with
-      // zeros so the trend chart renders a continuous x-axis.
+      // Backfill empty buckets with zeros so the chart's x-axis is continuous.
       interface TrendRow {
         bucketStart: string
         leads: number
@@ -503,8 +449,6 @@ export const leadSourcesRouter = createTRPCRouter({
       }
       const trendMap = new Map<string, TrendRow>()
 
-      // Determine the actual span of buckets to render. Use the resolved
-      // window if available, otherwise widen to cover any observed data.
       const observedDates: Date[] = []
       for (const r of [...leadsByBucket, ...meetingsByBucket, ...signedByBucket]) {
         if (r.bucketStart) {
@@ -550,8 +494,6 @@ export const leadSourcesRouter = createTRPCRouter({
       }
     }),
 
-  // Aggregate analytics across ALL customers (no lead-source filter). Mirrors
-  // getAnalytics shape so the same client AnalyticsContent can render either.
   getAggregateAnalytics: superAdminProcedure
     .input(timeRangeInput)
     .query(async ({ input }) => {
@@ -692,10 +634,7 @@ export const leadSourcesRouter = createTRPCRouter({
       }
     }),
 
-  // Routes through leadSourceCrud — create.before generates the unique slug +
-  // token. Cast bridges the Zod input (name + formConfigJSON only) to the
-  // Drizzle Insert type the hook completes (same gap as create-crud-router.ts:117).
-  // scope:null — superAdminProcedure callers are omni, so the crud runs unscoped.
+  // Cast: the Zod input lacks the slug + token that create.before fills in. scope: null — super-admin callers are omni.
   create: superAdminProcedure
     .input(createInput)
     .mutation(async ({ ctx, input }) =>
@@ -704,7 +643,6 @@ export const leadSourcesRouter = createTRPCRouter({
         input as unknown as Insert<typeof leadSourcesTable>,
       ))),
 
-  // Slug validation + rotation + duplicate-rejection now live in update.before.
   update: superAdminProcedure
     .input(updateInput)
     .mutation(async ({ ctx, input }) => {
@@ -740,15 +678,11 @@ export const leadSourcesRouter = createTRPCRouter({
       return updated
     }),
 
-  // Routes through leadSourceCrud.duplicate → createImpl: the duplicate config
-  // (exclude + overrides) resets slug/token/isActive/voip config; create.before
-  // regenerates the unique slug + token from the "(copy)" name.
   duplicate: superAdminProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) =>
       dalToTrpc(await leadSourceCrud.duplicate({ ...ctx, scope: null }, { id: input.id }))),
 
-  // Attached-customer precondition now lives in delete.before (G4).
   delete: superAdminProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {

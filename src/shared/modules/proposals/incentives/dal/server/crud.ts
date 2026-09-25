@@ -15,7 +15,6 @@ import { proposalIncentiveServerSpec } from '@/shared/modules/proposals/incentiv
  * Not gated here: the proposal lock ladder for single-row writes. Today the only
  * single-row origin is the duplicate-clone onto a fresh (unlocked) draft; the
  * gate lands with the first user-facing single-row leaf (W4 owns that surface).
- * see ../../../core/DOCS.md#final-tcp-derived
  */
 export const proposalIncentiveCrud = createCrudDal(proposalIncentiveServerSpec, () => ({
   hooks: {

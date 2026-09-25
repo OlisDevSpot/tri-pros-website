@@ -2,8 +2,6 @@
 // The campaign-sync service calls this; never reach for `db.insert/update`
 // from a service layer.
 //
-// see ../../DOCS.md for invariants
-// see docs/codebase-conventions/dal-conventions.md
 
 import type { DalReturn } from '@/shared/dal/server/types'
 import type { VoipContactField } from '@/shared/db/schema/voip-contact-fields'

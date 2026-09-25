@@ -13,7 +13,7 @@ import { ROOTS } from '@/shared/config/roots'
  * sent, no contract yet). Each section header names the state, so the rows carry
  * no status badge. Each section reuses the exact query keys the dashboard route
  * prefetches (`awaitingProposalsInput` / `sentProposalsInput`), so both hydrate
- * instantly. See docs/superpowers/specs/2026-08-08-dashboard-proposals-sections-design.md.
+ * instantly.
  */
 export function DashboardProposals() {
   return (

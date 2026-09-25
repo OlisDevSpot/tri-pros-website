@@ -1,5 +1,5 @@
 // Façade for ALL proposal money math. This is the ONLY module consumers
-// import from. see ../../DOCS.md#price-side-vs-cost-side
+// import from.
 export * from './compute-breakdown'
 export * from './compute-price-side'
 export * from './compute-section'

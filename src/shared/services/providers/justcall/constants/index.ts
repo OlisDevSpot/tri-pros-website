@@ -1,7 +1,6 @@
 import type { VoipUnenrollReason } from '@/shared/constants/enums/voip'
 
 // JustCall provider constants — HTTP wiring + domain vocabulary.
-// see ../DOCS.md · see docs/plans/voip-campaigns/justcall-api-research.md
 export const JUSTCALL_BASE_URL = 'https://api.justcall.io/v2.1' as const
 
 // Retry attempts on HTTP 429. Ceiling confirmed against live headers during

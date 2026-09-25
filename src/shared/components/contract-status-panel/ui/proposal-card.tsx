@@ -36,7 +36,6 @@ type ConfirmAction = 'resend'
  * "Send Proposal Email" sends the email only — it never touches the
  * signing envelope. Envelope creation is a manual agent decision on
  * Card 2 (#264; see `modules/proposals/core/lib/proposal-lock.ts`).
- * see `../../../modules/proposals/core/DOCS.md#proposal-contract-independence`.
  */
 export function ProposalCard({
   proposalId,
