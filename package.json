@@ -37,6 +37,7 @@
     "gcal:cron:setup:dev": "NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/setup-gcal-cron.ts",
     "meta": "tsx scripts/meta/index.ts",
     "dispatch": "bash scripts/dispatch.sh",
+    "hotfix": "bash scripts/hotfix.sh",
     "tunnel": "node scripts/tunnel.mjs",
     "push:test": "NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/send-push.ts"
   },
