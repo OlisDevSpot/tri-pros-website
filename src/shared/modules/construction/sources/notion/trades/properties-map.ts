@@ -2,12 +2,16 @@ import type { Trade } from '@/shared/modules/construction/core/schemas'
 import type { RawPropertyMap } from '@/shared/services/providers/notion/types'
 
 /** `disabled` is an extraction-time gate, not a domain field — see ./adapter.ts. */
-export type TradePropertySource = Omit<Trade, 'slug' | 'coverImageUrl'> & { disabled: boolean }
+export type TradePropertySource = Omit<Trade, 'coverImageUrl'> & { disabled: boolean }
 
 export const TRADE_PROPERTIES_MAP = {
   name: {
     label: 'Trade',
     type: 'title',
+  },
+  slug: {
+    label: 'Slug',
+    type: 'rich_text',
   },
   category: {
     label: 'Type',
