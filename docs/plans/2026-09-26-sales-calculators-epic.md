@@ -22,9 +22,9 @@ Each phase gets its own spec, then plan, then build. A phase closes when every r
 
 | Phase | Scope | Owns | Blocked by | Spec | Status |
 |---|---|---|---|---|---|
-| **C0** | **Port.** Build both calculators in a new, temporary `src/features/calculators/`, standalone at `/dashboard/calculators`, homeowner-facing, with nothing persisted. Remodel-x logic ports faithfully; only the defects §6 marks as fixed are fixed. Every interim choice carries a why-comment and an I-row. | O1–O8 · SP* · PR* · UI* · V* · I1–I10 | §2 decisions marked C0 | not written | [ ] |
+| **C0** | **Port.** Build both calculators in a new, temporary `src/features/calculators/`, standalone at `/dashboard/calculators`, homeowner-facing, with nothing persisted. Remodel-x logic ports faithfully; only the defects §6 marks as fixed are fixed. Every interim choice carries a why-comment and an I-row. | O1–O8 · SP* · PR* · UI* · V* · CF1–CF5 · I1–I10 | §2 decisions marked C0 | not written | [ ] |
 | **C1** | **Scope identity.** A stored `Slug` on Notion scopes and a generated `ScopeSlug` type. The mapping from remodel-x pricing keys to Notion scopes is confirmed by the owner row by row. Formulas are keyed by `ScopeSlug`. | K1–K4 | C0; construction P2 plan 1 (the trade `Slug` pattern) | not written | [ ] |
-| **C2** | **Permanent engine home and pricing configuration.** The engines move out of the feature. The owner decides whether costs, multipliers and tax stay in code or become configurable. | E1–E3 | C1, D9 | not written | [ ] |
+| **C2** | **Permanent engine home and pricing configuration.** The engines move out of the feature. Admin-configured values move from code to `app_settings` plus an admin UI (R9). | E1–E3 · CF6 | C1, D9 | not written | [ ] |
 | **C3** | **Customer- and proposal-specific calculators.** Inputs prefill from the customer (`customer_profiles`: roof type, HVAC type, windows, insulation, year built), and results are kept against a meeting or proposal. | S1–S3 | C2 | not written | [ ] |
 | **C4** | **Proposal pricing.** A SOW item stores its Variable values (W4 G8), and its `section_price_cents` comes from the scope's formula. Manual price remains the fallback. | P1–P4 | the single-pricing-mode follow-up; the W4 build; C1; C2 | not written | [ ] |
 
@@ -44,6 +44,7 @@ Each phase gets its own spec, then plan, then build. A phase closes when every r
 | **R6** | **Reconcile the two catalogs.** Remodel-x keys formulas by Neon scope accessors, while the tri-pros runtime catalog is Notion (C1). | 2026-09-25 |
 | **R7** | **Decomposition:** this epic covers the engines and the calculators (C0–C3). Proposal integration (C4) is its own spec, and it amends Wave 4. | 2026-09-25 |
 | **R8** | **Port first, and mark what is not final.** Porting is the key deliverable. When the port knowingly keeps a non-final approach, the code says so in a why-comment (house rule: no plan or spec citations in code), and §5 records it. | 2026-09-26 |
+| **R9** | **Four configuration tiers.** Every calculator value belongs to exactly one tier. Refer to the tiers by these names in specs, plans, code and conversation. §3.6 places each value and holds the requirements. **On-screen:** the rep edits it live, and the homeowner sees it. **Agent-only:** the rep edits or reads it live, inside the agent panel. **Admin-configured:** a super-admin sets it occasionally in an admin UI. **System default:** it lives in code and changes only through a deploy. Values resolve as *System default → overridden by Admin-configured → overridden by On-screen / Agent-only for the session*, which follows the house "defaults with override" reflex. Owner confirmations: the multiplier has an Admin-configured **floor** the rep cannot go below. Tax rate is Admin-configured and not editable by the rep. Savings assumptions are On-screen. The rep sees Unit Costs read-only in the agent panel. | 2026-09-26 |
 
 ## 2. Open decisions
 
@@ -53,7 +54,7 @@ Each phase gets its own spec, then plan, then build. A phase closes when every r
 |---|---|---|---|
 | **D1** | **Names.** "Snapshot" is a reserved house term: a fact frozen at an event and never recomputed (`docs/ubiquitous-language.md:254,283`). Proposed new terms: **Savings Projection** (the now-vs-future calculator), **Scope Pricing** (the per-scope calculator), **Formula** (per-scope code that turns Variables into Cost), **Unit Cost** (a Cost constant such as $/BSQ). Existing terms are reused as they are: Scope, Trade, Variable, Cost, Price, Multiplier, TCP. | C0 | Accept all four. |
 | **D2** | **Tax rule.** Remodel-x keeps the tax inside the price: `tax = round(price × 7.5%)`, and it shows "Base" as `price − tax`. Alternatives: tax added on top of the price, or tax computed on the materials portion of Cost only. The rate is also open: 7.5% in the source, while California's base rate plus local district rates vary by city. | C0 | **Port the source rule (tax inside the price, 7.5%) as interim I5** and show the tax as a breakdown line only in the agent panel. Confirm the rule with your accountant before C4. |
-| **D3** | **Multiplier default.** One global default (source ×2.8, which is "healthy" under `getMultiplierTier`) or one default per trade? | C0 | **One global default of 2.8** that the rep can override live (R3). Per-trade defaults wait for C2. |
+| **D3** | **Multiplier default.** One global default (source ×2.8, which is "healthy" under `getMultiplierTier`) or one default per trade? | C0 | **One global default of 2.8** that the rep can override live (R3), bounded by the Admin-configured floor (R9, CF4). Per-trade defaults wait for C2. |
 | **D4** | **Savings default rates.** The source defaults have no citation: electric 9.4, water 10.3, gas 13.1, home appreciation 4, gardening 5 (%/yr), with a 5-year horizon. The education pages in the same source say 13.2–14.2% for electric and cite CPUC rate-change alerts. | C0 (port as-is), C2 (sourced) | **Port the defaults verbatim as interim I4.** Every rate stays visible and editable on screen (SP-O4). The owner supplies sourced defaults before C3. |
 | **D5** | **Roof types beyond shingle and tile.** The tear-off formula prices anything that isn't `shingle` at the tile rate ($750/BSQ), so metal, flat and woodshake are mispriced. | C0 | **Limit the tear-off roof-type Variable to `shingle` or `tile`** until the owner supplies rates for the other types (interim I9). |
 | **D6** | **Unused or conflicting constants.** `mainPanelTrade` ($2,800) is seeded but the formula hardcodes $3,200 or $4,000. `permitFee_roof` and `permitFee_hvac` ($250 each) are seeded but never added. | C0 | **Port what the formulas actually do:** MPU at $3,200 / $4,000 as named Unit Costs, and drop `mainPanelTrade`. Carry the permit fees as named constants that are off until the owner says to add them. |
@@ -69,7 +70,7 @@ Each phase gets its own spec, then plan, then build. A phase closes when every r
 ### 3.1 Owner constraints (from §1)
 
 - [ ] **O1** The homeowner-visible render shows no Cost, Unit Cost, multiplier, margin or formula internals (R1).
-- [ ] **O2** An agent-only panel is **closed by default** and opens from an unobtrusive control. It shows Cost, Multiplier, Margin, multiplier tier (via `formatMultiplier` / `getMultiplierTier` in `src/shared/modules/proposals/core/lib/financials/tiers.ts`, reused, not copied) and tax, and it offers the live multiplier control (R3).
+- [ ] **O2** An agent-only panel is **closed by default** and opens from an unobtrusive control. It holds the Agent-only tier (§3.6): Cost, Multiplier, Margin, multiplier tier (via `formatMultiplier` / `getMultiplierTier` in `src/shared/modules/proposals/core/lib/financials/tiers.ts`, reused, not copied) and tax, Unit Costs read-only, and the live multiplier control and target price, bounded by the floor (R3, CF4).
 - [ ] **O3** Tax is included per D2 (R4).
 - [ ] **O4** Nothing is persisted in C0: no DB, no tRPC mutation, no localStorage. Form values live in memory (R2).
 - [ ] **O5** Both engines are pure TypeScript with no React, tRPC, DB or `next/*` imports, so they can run on the server or the client. This keeps C2–C4 a move, not a rewrite (R5).
@@ -141,10 +142,41 @@ Each phase gets its own spec, then plan, then build. A phase closes when every r
 - [ ] **V5** Folder layout follows `features/proposal-flow` and `features/meeting-flow`: `constants/ · lib/ · schemas/ · hooks/ · types/ · ui/components/ · ui/views/`. One component per file, named exports, `lib/` pure, `schemas/` a sibling of `lib/`, hooks only in `hooks/`, and no module-level constants inside components (`memory/coding-conventions.md`).
 - [ ] **V6** A Playwright check (auth via `/api/dev/playwright-session`) that the default render of each calculator contains none of: Cost, Multiplier, Margin, or any Unit Cost figure.
 
-### 3.6 Later phases (placeholders, refined at their spec)
+### 3.6 Configuration tiers (R9)
+
+**Placement.** Each value belongs to exactly one tier. "Default from X" means the value starts from X and the named tier can override it for the session.
+
+| Value | Tier | Notes |
+|---|---|---|
+| Measurements (BSQ, panels, tonnage, window counts, sqft…) and choices (paint type, battery size) | **On-screen** | |
+| Project context (stories, current roof type) | **On-screen** | Prefilled from the customer in C3 (I6) |
+| Bills now and after, home value, liabilities, project price, incentives, down payment, APR, term | **On-screen** | |
+| Savings assumptions (escalation %, appreciation %, horizon) | **On-screen**, default from **Admin-configured** | Visible on purpose (SP-O4) |
+| Home-value uplift | **On-screen**, default 0 as a **System default** | Never a built-in promise (O8) |
+| Manual price line (scope without a Formula) | **On-screen**: the rep types the **Price** | No Cost, so the agent panel flags "no cost data" and leaves the line out of margin, matching the proposals Margin rule in `docs/ubiquitous-language.md:99` |
+| Multiplier override and target price | **Agent-only** | Bounded below by the multiplier floor |
+| Cost, margin and multiplier-tier readouts; Unit Costs (read-only) | **Agent-only** | |
+| Unit Costs, including the per-ton HVAC step and MPU prices | **Admin-configured** | Seeded from §7.2 |
+| Default multiplier and **multiplier floor** | **Admin-configured** | Default 2.8 (D3). The floor defaults to 2.0, the existing "danger" boundary |
+| Tax rate | **Admin-configured** | Not editable by the rep. The rule's mechanics are a System default (D2) |
+| Exterior-paint size thresholds (1,500 / 3,000 sqft) | **Admin-configured** | Pricing tiers, not formula structure |
+| Permit fees and whether each is on | **Admin-configured** | Off by default (D6) |
+| Default savings rates and horizon | **Admin-configured** | Seeded from D4 |
+| Formulas; Variable definitions (types, units, options, bounds); allowed roof types; rounding; how tax is applied; BSQ = 100 sqft | **System default** | |
+| Multiplier tier thresholds (under 2.0 danger, 3.0 and up excellent) | **System default** | Already in `tiers.ts`; reused, not a second copy |
+
+**Requirements**
+- [ ] **CF1** Every configurable value is declared in **one** typed calculators config schema (Zod) together with its System default. Admin-configured values are validated by that schema. A value with no tier assignment is a spec error.
+- [ ] **CF2** The engines receive **resolved config as a plain argument** and never read storage. In C0, one resolver function returns the System defaults (I3). In C2, only that resolver changes, reading `app_settings` (feature key per C2 spec).
+- [ ] **CF3** Session overrides (On-screen, Agent-only) live in form state and are never persisted in C0 (O4).
+- [ ] **CF4** The rep cannot set a multiplier below the floor, whether directly or through target price (PR11). A target that would require going below the floor shows the floor price and says the target cannot be reached.
+- [ ] **CF5** Agent-only values render only inside the agent panel (O1, O2, V6).
+- [ ] **CF6** *(C2)* An admin UI edits the Admin-configured values, visible to super-admins only. Before that, `app_settings` needs an agent-safe read path: today it has no router or UI, and its visibility is `FALSE` for everyone except super-admin (`src/shared/entities/app-settings/lib/visibility.ts`).
+
+### 3.7 Later phases (placeholders, refined at their spec)
 
 - **K1–K4 (C1):** K1 a stored `Slug` on Notion scopes, backfilled, then required. K2 a generated `ScopeSlug` type. K3 the owner-confirmed map from remodel-x key to Notion scope (1 → 1..N). K4 Formulas keyed as `Partial<Record<ScopeSlug, Formula>>`, where a missing entry means a manual price.
-- **E1–E3 (C2):** E1 the engine's permanent home (D9). E2 where Unit Costs, multipliers and tax live: code constants or owner-editable config. E3 the home for Variables (the seeded-only `variables` / `x_scope_variables` tables in `src/shared/db/schema/` versus code), decided together with construction P5.
+- **E1–E3 (C2):** E1 the engine's permanent home (D9). E2 the Admin-configured storage shape in `app_settings` and its admin UI (settled by R9; C2 designs the mechanics, see CF6). E3 the home for Variables (the seeded-only `variables` / `x_scope_variables` tables in `src/shared/db/schema/` versus code), decided together with construction P5.
 - **S1–S3 (C3):** S1 prefill from `customer_profiles`. S2 results persisted against a meeting or proposal. S3 an entry point from the meeting flow (a step, an inspector panel, or inside deal-structure; slots are listed in the 2026-09-25 research).
 - **P1–P4 (C4):** P1 SOW item Variable values (W4 G8). P2 `section_price_cents` taken from the formula, with a manual override. P3 the proposal-side Cost lines taken from formula Cost, so the proposal's multiplier KPI and the calculator agree. P4 the single pricing mode (follow-up doc).
 
@@ -174,7 +206,7 @@ Each row has a why-comment at its code site. The comment gives the reason, never
 |---|---|---|---|
 | **I1** | Engines live in `src/features/calculators/lib/` | A module home (D9) | C2 |
 | **I2** | Pricing keys are the remodel-x accessors (`tearOff`, `installPanels`, …) | `ScopeSlug` from the Notion catalog | C1 |
-| **I3** | Unit Costs, multiplier default and tax rate are code constants | Owner-editable or confirmed-in-code (E2) | C2 |
+| **I3** | Admin-configured values (Unit Costs, multiplier default and floor, tax rate, paint thresholds, permit fees, default savings rates) are served from System defaults by the one config resolver | The resolver reads `app_settings`, and an admin UI edits the values (CF2, CF6) | C2 |
 | **I4** | Savings default rates are the unsourced source values | Sourced defaults (D4) | C2/C3 |
 | **I5** | Tax is inside the price at 7.5% | The rule confirmed in D2 | C2 |
 | **I6** | Project context (stories, roof type) is entered by the rep | Prefilled from the customer | C3 |
