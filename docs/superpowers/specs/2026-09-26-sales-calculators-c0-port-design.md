@@ -50,12 +50,13 @@ src/features/calculators/
 
   scope-pricing-calculator/
     constants/config-defaults.ts                       System defaults for every Admin-configured pricing value (I3)
-    constants/variables.ts                             Variable definitions by trade, `as const`
+    constants/variables.ts                             Variable definitions by trade, `as const` (seed labels verbatim)
+    constants/unit-cost-labels.ts                      the seed's Unit Cost labels, verbatim (System default; shown read-only in the agent panel)
     schemas/config.ts                                  scopePricingConfigSchema (CF1)
     schemas/form.ts                                    scopePricingFormSchema
     lib/resolve-config.ts                              resolveScopePricingConfig(): ScopePricingConfig (CF2)
     lib/define-formula.ts                              defineFormula(...)
-    lib/formulas/{roof,solar,hvac,windows,insulation,hardscape,electrical,exterior-paint}.ts
+    lib/formulas/{roof,solar,hvac,windows-and-doors,attic-basement,dryscaping-hardscaping,electricals,exterior-paint-siding}.ts
     lib/formula-registry.ts                            FORMULAS satisfies Record<PricingKey, Formula>
     lib/price-quote.ts                                 priceQuote(...)
     lib/solve-multiplier.ts                            solveMultiplier(...)
@@ -105,11 +106,11 @@ The engines take the resolved config as a plain argument. Session overrides (On-
                    BSQTileReset: 580, BSQOverlayPitched: 420, BSQOverlayFlat: 420, dollarPerAdditionalStory: 25, dollarPerAdditionalLayer: 25 },
     solar:       { dollarPerWatt: 3.5, dollarPerPanelRnr: 225, battery5kWh: 6000, battery10kWh: 11000 },
     hvac:        { threeTonRnr: 8500, furnace36kBTURnr: 7000, miniSplits: 3000, perTonStep: 800 },
-    windows:     { windowSmall: 550, windowLarge: 650, slidingDoorStandard: 2500, slidingDoorSpecial: 3000, frenchDoor: 5000 },
-    insulation:  { dollarPerSqFtTopOff: 1.3, dollarPerSqFtRnr: 2.5, dollarPerSqFtCrawlSpace: 2.3 },
-    hardscape:   { dollarPerSqFtArtificial: 7, dollarPerSqFtGravel: 6, dollarPerSqFtMulch: 5, dollarPerSqFtConcrete: 11, dollarPerSqFtPavers: 11, dollarPerSqFtDg: 5 },
-    electrical:  { mpuBase: 3200, mpuWithRelocation: 4000 },
-    exteriorPaint: { coolLifePaintSm: 6000, coolLifePaintAvg: 7000, coolLifePaintLarge: 8500, waterPaintSm: 4000, waterPaintAvg: 5000, waterPaintLarge: 6500 },
+    windowsAndDoors: { windowSmall: 550, windowLarge: 650, slidingDoorStandard: 2500, slidingDoorSpecial: 3000, frenchDoor: 5000 },
+    atticBasement: { dollarPerSqFtTopOff: 1.3, dollarPerSqFtRnr: 2.5, dollarPerSqFtCrawlSpace: 2.3 },
+    dryscapingHardscaping: { dollarPerSqFtArtificial: 7, dollarPerSqFtGravel: 6, dollarPerSqFtMulch: 5, dollarPerSqFtConcrete: 11, dollarPerSqFtPavers: 11, dollarPerSqFtDg: 5 },
+    electricals: { mpuBase: 3200, mpuWithRelocation: 4000 },
+    exteriorPaintSiding: { coolLifePaintSm: 6000, coolLifePaintAvg: 7000, coolLifePaintLarge: 8500, waterPaintSm: 4000, waterPaintAvg: 5000, waterPaintLarge: 6500 },
   },
   exteriorPaintTiers: { smallBelowSqFt: 1500, largeAboveSqFt: 3000 },
   permitFees: { roof: { amount: 250, enabled: false }, hvac: { amount: 250, enabled: false } },
@@ -119,8 +120,9 @@ The engines take the resolved config as a plain argument. Session overrides (On-
 ```
 
 - Schema bounds: every Unit Cost ≥ 0; `floor` > 0; `default` ≥ `floor`; `taxRatePercent` from 0 to 20; `smallBelowSqFt` < `largeAboveSqFt`.
-- `mainPanelTrade` ($2,800) is not carried over (D6).
-- Trade groups use tri-pros words (`insulation`, `hardscape`, `electrical`, `exteriorPaint`). The comment on `config-defaults.ts` names the remodel-x trade each one came from.
+- **MPU (owner ruling, 2026-09-26):** $3,200 base, or $4,000 with relocation, which is what the formula has always charged. The seed's `mainPanelTrade` ($2,800) is **retired**. It was originally `mainPanelUpgrade` ("Main Panel Upgrade") and was renamed by the codebase-wide rename of Upgrade to Trade. No formula has ever read it, going back at least to `1stopsales-2.0`.
+- **Trade group keys are tri-pros's seed trade accessors** (`src/shared/db/seeds/data/trades.ts`): `roof`, `solar`, `hvac`, `windowsAndDoors`, `atticBasement`, `dryscapingHardscaping`, `electricals`, `exteriorPaintSiding`. No new group names are invented. They match the ported data one-to-one, and they are what construction P5 grows from.
+- **Labels:** each Unit Cost's label is the seed label verbatim (e.g. "Tear-Off (Flat) per BSQ"), kept in `constants/unit-cost-labels.ts`. The three code-sourced Unit Costs get new labels: "Per additional ton (HVAC)", "Main panel upgrade", "Main panel upgrade (with relocation)".
 
 ### 4.2 `SavingsProjectionConfig` (Admin-configured, System defaults from D4)
 
@@ -138,7 +140,7 @@ The engines take the resolved config as a plain argument. Session overrides (On-
 
 ### 5.1 Variables (PR1, PR7, D5)
 
-`constants/variables.ts` declares each Variable once, `as const`. Each Variable has a `key`, `label`, `kind` (`number | select | boolean`), `unit` (`BSQ | count | W | kWh | tons | sqft | null`), `min`/`max` for numbers, `options` for selects, and an optional `default`.
+`constants/variables.ts` declares each Variable once, `as const`. Each Variable has a `key`, a `label` (the seed label verbatim, e.g. "Number of pitched BSQ"), a `kind` (`number | select | boolean`), `unit` (`BSQ | count | W | kWh | tons | sqft | null`), `min`/`max` for numbers, `options` for selects, and an optional `default`.
 
 - **Default:** a Variable has a default exactly when the source destructured one.
 - **Required:** a Variable without a default is required. A line missing a required value is *incomplete* (§5.4).
@@ -155,15 +157,15 @@ The engines take the resolved config as a plain argument. Session overrides (On-
 | solar | kWhPerBattery | select, kWh | 5, 10 | 5 |
 | hvac | systemTonnage | select, tons | 1–5 in 0.5 steps | 3 |
 | hvac | numMiniSplits | select, count | 1–8 | 1 |
-| windows | numSmallWindows, numLargeWindows, numStandardSliders, numSpecialSliders, numFrenchDoors | number, count | 0–100 | 0 |
-| insulation | sqft | number, sqft | 0–10,000 | required |
-| hardscape | installSqFt | number, sqft | 0–20,000 | required |
-| electrical | relocationRequired | boolean | — | false |
-| exteriorPaint | paintType | select | `coolLife`, `water` | required |
-| exteriorPaint | homeSqFt, garageSqFt | number, sqft | 0–20,000 | required |
+| windowsAndDoors | numSmallWindows, numLargeWindows, numStandardSliders, numSpecialSliders, numFrenchDoors | number, count | 0–100 | 0 |
+| atticBasement | sqft | number, sqft | 0–10,000 | required |
+| dryscapingHardscaping | installSqFt | number, sqft | 0–20,000 | required |
+| electricals | relocationRequired | boolean | — | false |
+| exteriorPaintSiding | paintType | select | `coolLife`, `water` | required |
+| exteriorPaintSiding | homeSqFt, garageSqFt | number, sqft | 0–20,000 | required |
 
 **Project context** is one set of values per quote, On-screen:
-- `stories`: select 1–4, default 1. The source used `numStories || 1`.
+- `numStories`: select 1–4, default 1. The source used `numStories || 1`.
 - `currentRoofType`: select `shingle | tile`, default `shingle`. The source used `roofType || "shingle"`. D5 limits the choice to these two (I9).
 
 **Not collected (I10):** desiredRoofType, percentFreeDeckReplacement, inverterType, currentRoofType as a line Variable, the insulation types, demoSqFt, and replaceDucts.
@@ -174,7 +176,8 @@ The engines take the resolved config as a plain argument. Session overrides (On-
 defineFormula({
   key,                    // PricingKey (I2)
   trade,                  // one of the §4.1 trade groups
-  label,                  // homeowner-facing scope name, e.g. 'Roof tear-off'
+  label,                  // the tri-pros scope seed's label, verbatim (e.g. 'Roof Tear-off')
+  outcome,                // the seed's outcomeStatement, verbatim; shown as the line's one-line subtitle
   variables: [...keys],   // the Variables this Formula reads: the only source for its form fields and its argument type (PR4)
   defaults?: {...},       // per-Formula default overrides (e.g. numPanels = 0 for rnrPanels)
   compute: (vars, context, unitCosts) => number,  // Cost in dollars
@@ -316,8 +319,8 @@ The flow, as approved in the brainstorm:
 
 - **Focal point:** the grand total, labeled "Your price" with an "includes tax" note.
 - **Layout:**
-  - Project context (stories, roof type) sits once at the top.
-  - The quote is a list of lines. Each line shows the scope name, its few Variable fields (rendered from the Formula's declaration, UI5), and its Price, or "needs …" when it is incomplete.
+  - Project context (number of stories, roof type) sits once at the top.
+  - The quote is a list of lines. Each line shows the scope name with its outcome subtitle, its few Variable fields (rendered from the Formula's declaration, UI5), and its Price, or "needs …" when it is incomplete.
 - **Adding scopes:**
   - "Add scope" opens a searchable picker grouped by trade.
   - "Manual price line" is the last option in the picker.
@@ -397,7 +400,17 @@ Steps 1–4 land before any UI decision. Step 5 is the one owner pause.
 9. The three-skill audit (ui-ux-pro-max → web-design-guidelines → impeccable), then the V6 Playwright check.
 10. Glossary entries in `docs/ubiquitous-language.md` for the §2 names, and tracker updates: ticks, the §3 amendments, and an I-row audit (M6).
 
-## 10. Interim markers (R8, O6)
+## 10. Source provenance (cross-referenced 2026-09-26)
+
+The port reads from the remodel-x seeds (`packages/db/src/seeds/remodel-x/data/{pricing,variables,x-scope-variables}.ts`) and from tri-pros's copy of the scope seed (`src/shared/db/seeds/data/scopes.ts`). Both were checked against every other version on disk:
+
+- **Newest and most complete.** Remodel-x is the newest of seven copies of this calculator, the oldest being `next-1stopsales` from Dec 2024. Compared to its immediate predecessor `nextjs/1stopsales-2.0`, it has **the same values**, and it adds the DG unit cost plus the `installDg` and `replaceFrenchDoors` formulas. No pricing value has changed since the seed first appeared on 2025-10-21 (`seeds/one-stop-sales`).
+- **Unit Costs.** The 37 seed-sourced values in §4.1 match the seed exactly (checked by script). The three code-sourced values (`perTonStep`, `mpuBase`, `mpuWithRelocation`) come from the formula literals. The seed's `permitFee_roof` / `permitFee_hvac` become the `permitFees` config (D6), and `mainPanelTrade` is retired (§4.1).
+- **Variables and links.** All 31 seeded Variables and all 37 scope-to-Variable links are accounted for. The only differences are the tracker §6 fixes and the inputs deferred to C4 (I10). Tri-pros's seed copies are identical apart from the `windows` → `windowsAndDoors` rename.
+- **Scopes.** All 24 Pricing Keys exist in the tri-pros scope seed, each with a label and an `outcomeStatement` (§5.2).
+- **Not from any seed.** The Variable units, bounds and defaults beyond the source's destructuring defaults (§5.1) are new System defaults.
+
+## 11. Interim markers (R8, O6)
 
 Each of these sites carries a one-line why-comment giving the reason, with no citation:
 

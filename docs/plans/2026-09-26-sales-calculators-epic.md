@@ -50,10 +50,11 @@ Each phase gets its own spec, then plan, then build. A phase closes when every r
 | **D3** | **Multiplier default.** One global default (source ×2.8, which is "healthy" under `getMultiplierTier`) or one default per trade? **Ruled:** **One global default of 2.8** that the rep can override live (R3), bounded by the Admin-configured floor (R9, CF4). Per-trade defaults wait for C2. | 2026-09-26 |
 | **D4** | **Savings default rates.** The source defaults have no citation: electric 9.4, water 10.3, gas 13.1, home appreciation 4, gardening 5 (%/yr), with a 5-year horizon. The education pages in the same source say 13.2–14.2% for electric and cite CPUC rate-change alerts. **Ruled:** **Port the defaults verbatim as interim I4.** Every rate stays visible and editable on screen (SP-O4). The owner supplies sourced defaults before C3. | 2026-09-26 |
 | **D5** | **Roof types beyond shingle and tile.** The tear-off formula prices anything that isn't `shingle` at the tile rate ($750/BSQ), so metal, flat and woodshake are mispriced. **Ruled:** **Limit the tear-off roof-type Variable to `shingle` or `tile`** until the owner supplies rates for the other types (interim I9). | 2026-09-26 |
-| **D6** | **Unused or conflicting constants.** `mainPanelTrade` ($2,800) is seeded but the formula hardcodes $3,200 or $4,000. `permitFee_roof` and `permitFee_hvac` ($250 each) are seeded but never added. **Ruled:** **Port what the formulas actually do:** MPU at $3,200 / $4,000 as named Unit Costs, and drop `mainPanelTrade`. Carry the permit fees as named constants that are off until the owner says to add them. | 2026-09-26 |
+| **D6** | **Unused or conflicting constants.** `mainPanelTrade` ($2,800) is seeded but the formula hardcodes $3,200 or $4,000. `permitFee_roof` and `permitFee_hvac` ($250 each) are seeded but never added. **Ruled:** **Port what the formulas actually do:** MPU at $3,200 / $4,000 as named Unit Costs, and drop `mainPanelTrade`. Carry the permit fees as named constants that are off until the owner says to add them. **Re-ruled 2026-09-26 after the seed cross-reference:** MPU = $3,200 / $4,000 (option A). `mainPanelTrade` was originally `mainPanelUpgrade` ("Main Panel Upgrade", $2,800) and was renamed by the Upgrade→Trade refactor. No formula has ever read it, back to `1stopsales-2.0`. **Retired.** | 2026-09-26 |
 | **D7** | **Liabilities over the horizon.** The source records balance and payment but no interest rate, so it cannot pay debt down over time. **Ruled:** **Add an optional APR per liability.** With an APR, amortize. Without one, carry the balance unchanged and label the projection that way (interim I7). | 2026-09-26 |
 | **D8** | **How the after-upgrade bills are entered.** The source schema had `afterPayment` per category (never wired up). The alternative is a percentage reduction per upgrade. **Ruled:** **Manual after-bill per category** (the source shape). Percentage reductions per upgrade wait for C2/C3, because they need sourced reduction data. | 2026-09-26 |
 | **D10** | **Unit Cost refresh.** The costs date from Nov 2025. **Ruled:** the §7.2 values ship in C0 exactly as ported. The owner re-checks them before C2 makes them Admin-configured. | 2026-09-26 |
+| **R10** | **Seed cross-reference (2026-09-26).** Remodel-x's seeds are the newest and most complete of the seven copies of this calculator on disk, and no pricing value has changed since 2025-10-21. The port therefore **uses tri-pros's seed trade accessors** (`roof`, `solar`, `hvac`, `windowsAndDoors`, `atticBasement`, `dryscapingHardscaping`, `electricals`, `exteriorPaintSiding`) and invents no group names. It **copies these verbatim from the seeds:** Unit Cost labels, Variable labels, scope labels and `outcomeStatement` subtitles. The context field is `numStories`. Details: C0 spec §10. | 2026-09-26 |
 
 ## 2. Open decisions
 
@@ -274,6 +275,8 @@ Source: `apps/remodel-x/src/features/project-creator/lib/cost-formulas/*.ts`. BS
 
 ### 7.2 Unit Costs (verbatim from `packages/db/src/seeds/remodel-x/data/pricing.ts`; owner review is D10)
 
+The trade column shows display names. In code, the groups are the tri-pros seed trade accessors (R10). Values were checked by script against the seed on 2026-09-26: all 37 seed-sourced values match. Earlier copies (`1stopsales-2.0`, `seeds/one-stop-sales`) carry the same values.
+
 | Trade | Key | $ |
 |---|---|---|
 | Solar | dollarPerWatt | 3.5 |
@@ -312,7 +315,7 @@ Source: `apps/remodel-x/src/features/project-creator/lib/cost-formulas/*.ts`. BS
 | HVAC | permitFee_hvac | 250 (unused, D6) |
 | Electrical | MPU base | 3,200 (a literal in the source) |
 | Electrical | MPU with relocation | 4,000 (a literal in the source) |
-| Electrical | mainPanelTrade | 2,800 (seeded but unused, D6) |
+| Electrical | mainPanelTrade | 2,800: **retired** (originally "Main Panel Upgrade"; never read by a formula; D6) |
 | Exterior paint | coolLifePaint Sm / Avg / Large | 6,000 / 7,000 / 8,500 |
 | Exterior paint | waterPaint Sm / Avg / Large | 4,000 / 5,000 / 6,500 |
 
