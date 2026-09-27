@@ -1,6 +1,6 @@
 import type { RemodelRoiProjection } from '@/features/calculators/remodel-roi-calculator/types'
 
-import { formatMoney } from '@/features/calculators/remodel-roi-calculator/lib/format-money'
+import { roundMoney } from '@/features/calculators/remodel-roi-calculator/lib/format-money'
 
 interface Props {
   projection: RemodelRoiProjection
@@ -15,7 +15,7 @@ export function LoansNote({ projection }: Props) {
     <p className="text-[15px]">
       You also pay
       {' '}
-      <b className="tabular-nums">{formatMoney(projection.liabilitiesMonthly)}</b>
+      <b className="tabular-nums">{roundMoney(projection.liabilitiesMonthly)}</b>
       {' '}
       a month on
       {' '}
