@@ -1,4 +1,4 @@
-import type { AnalyticsRateKey } from '@/features/analytics/lib/analytics-rules'
+import type { AnalyticsRateKey, AnalyticsStage } from '@/features/analytics/lib/analytics-rules'
 import type { MeetingOutcome, MeetingSit } from '@/shared/constants/enums/meetings'
 import type { CustomerFact } from '@/shared/entities/customers/dal/server/analytics-facts'
 import type { MeetingFact } from '@/shared/entities/meetings/dal/server/analytics-facts'
@@ -100,6 +100,7 @@ export interface AnalyticsCounts {
 
 export interface AnalyticsResult {
   rows: AnalyticsCounts[]
+  notApplicable: AnalyticsStage[]
   undatedSales: number | null
   orphans: number
 }

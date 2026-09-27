@@ -131,7 +131,7 @@ console.log('5. Booked lead ✓')
 // ── 6. Meeting order ────────────────────────────────────────────────────────
 {
   const { leads } = buildLeadRecords({
-    customers: [customer('a', '2026-06-01T17:00:00.000Z'), customer('b', '2026-06-01T17:00:00.000Z'), customer('c', '2026-06-01T17:00:00.000Z'), customer('d', '2026-06-01T17:00:00.000Z')],
+    customers: [customer('a', '2026-06-01T17:00:00.000Z'), customer('b', '2026-06-01T17:00:00.000Z'), customer('c', '2026-06-01T17:00:00.000Z'), customer('d', '2026-06-01T17:00:00.000Z'), customer('e', '2026-06-01T17:00:00.000Z')],
     meetings: [
       meeting('a2', 'a', '2026-06-10T17:00:00.000Z', 'pns'),
       meeting('a1', 'a', '2026-06-03T17:00:00.000Z', 'cancelled'),
@@ -143,6 +143,9 @@ console.log('5. Booked lead ✓')
       meeting('c2', 'c', '2026-06-10T17:00:00.000Z', 'cancelled'),
       meeting('d-y', 'd', '2026-06-03T17:00:00.000Z', 'pns'),
       meeting('d-x', 'd', '2026-06-03T17:00:00.000Z', 'npns'),
+      meeting('e1', 'e', '2026-06-03T17:00:00.000Z', 'additional_work', { meetingType: 'Project' }),
+      meeting('e2', 'e', '2026-06-10T17:00:00.000Z', 'cancelled'),
+      meeting('e3', 'e', '2026-06-17T17:00:00.000Z', 'pns'),
     ],
     sales: [],
   }, NOW)
@@ -151,6 +154,7 @@ console.log('5. Booked lead ✓')
   assert.deepEqual(orders('b'), ['b1:first', 'b2:repeat', 'b3:repeat', 'b4:project'], 'after the first sit every non-project meeting is repeat')
   assert.deepEqual(orders('c'), ['c1:not_sat', 'c2:not_sat'], 'a person who never sat has only not_sat meetings')
   assert.deepEqual(orders('d'), ['d-x:first', 'd-y:repeat'], 'same instant: ties break by id, deterministically')
+  assert.deepEqual(orders('e'), ['e1:project', 'e2:not_sat', 'e3:first'], 'a sat project meeting never counts as the first sit')
 }
 console.log('6. Meeting order ✓')
 
@@ -219,6 +223,11 @@ console.log('8. Sales (classification) ✓')
   assert.equal(allTime.newSales, 2, 'all-time totals include the undated sale')
   assert.equal(allTime.hygiene.salesWithoutValue, 1, 'a sale with no value counts as a sale, not revenue')
   assert.equal(allTime.revenueNewCents, 1_000_000, 'no value adds no revenue')
+  assert.equal(allTime.hygiene.newSalesWithoutProject, 1, 'the undated new sale on m3 has no project')
+  assert.deepEqual(aggregateLeadRecords(records, { range: july }, 'city').rows.map(r => [r.groupKey, r.totalLeads]), [['Irvine', 2], [null, 1]], 'grouping by city puts unknown last')
+  assert.deepEqual(aggregateLeadRecords(records, { range: july }, 'total').notApplicable, [], 'nothing is not-applicable without event dimensions')
+  assert.deepEqual(aggregateLeadRecords(records, { range: july }, 'closer').notApplicable, ['leads'], 'grouping by closer: leads not applicable')
+  assert.deepEqual(aggregateLeadRecords(records, { range: july, outcomes: ['cancelled'] }, 'total').notApplicable, ['leads', 'sales'], 'an outcome filter: leads and sales not applicable')
   const undatedBucket = aggregateLeadRecords(records, {}, 'month').rows.find(r => r.groupKey === null)!
   assert.equal(undatedBucket.newSales, 1, 'undated sales land in the null month bucket')
 
@@ -312,6 +321,30 @@ console.log('8. Sales (classification) ✓')
   assert.equal(augustRow.newSales, 1, 'the sale is counted in the month it was signed')
   assert.equal(augustRow.revenueNewCents, 500_000, 'its revenue lands in August')
   assert.equal(augustRow.rates.bookingRate, 1, 'same-period booking rate: 1 booked / 1 lead')
+  assert.equal(augustRow.hygiene.newSalesWithoutProject, 1, 'x1\'s sale has no project')
+}
+{
+  const own = buildLeadRecords({
+    customers: [customer('o1', '2026-07-02T17:00:00.000Z', { city: 'Tustin', zip: '92780' })],
+    meetings: [
+      meeting('o1a', 'o1', '2026-07-05T17:00:00.000Z', 'pns', { closerIds: ['u5'] }),
+      meeting('o1b', 'o1', '2026-07-12T17:00:00.000Z', 'follow_up_needed', { closerIds: ['u6'] }),
+      meeting('o1c', 'o1', '2026-07-20T17:00:00.000Z', 'not_set'),
+    ],
+    sales: [],
+  }, NOW)
+  const julyWindow = businessMonthWindow('2026-07')
+  const byU6 = aggregateLeadRecords(own, { range: julyWindow, closerIds: ['u6'] }, 'total').rows[0]
+  assert.equal(byU6.bookedLeads, 0, 'a closer filter tests the booked lead\'s own meeting, not any of the lead\'s meetings')
+  assert.equal(byU6.meetings, 1, 'u6 was only on the follow-up')
+  const byFollowUp = aggregateLeadRecords(own, { range: julyWindow, outcomes: ['follow_up_needed'] }, 'total').rows[0]
+  assert.equal(byFollowUp.bookedLeads, 0, 'an outcome filter tests the booked lead\'s own meeting')
+  assert.equal(byFollowUp.meetings, 1, 'one follow-up meeting')
+  const ownTotal = aggregateLeadRecords(own, { range: julyWindow }, 'total').rows[0]
+  assert.equal(ownTotal.meetings, 3, 'three meeting rows')
+  assert.equal(ownTotal.hygiene.unresolvedMeetings, 1, 'the past not_set meeting is unresolved')
+  assert.equal(aggregateLeadRecords(own, { range: julyWindow, zips: ['92780'] }, 'total').rows[0].totalLeads, 1, 'a zip filter keeps that zip')
+  assert.equal(aggregateLeadRecords(own, { range: julyWindow, zips: ['92618'] }, 'total').rows[0].totalLeads, 0, 'and drops the others')
 }
 console.log('9. Aggregation ✓')
 

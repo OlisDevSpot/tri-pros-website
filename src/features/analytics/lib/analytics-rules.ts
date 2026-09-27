@@ -1,4 +1,4 @@
-import type { BookedLead, LeadAnchor, MeetingOrder } from '@/features/analytics/types'
+import type { AnalyticsFilters, AnalyticsGroupBy, BookedLead, LeadAnchor, MeetingOrder } from '@/features/analytics/types'
 import type { MeetingSit } from '@/shared/constants/enums/meetings'
 import type { CustomerFact } from '@/shared/entities/customers/dal/server/analytics-facts'
 
@@ -57,6 +57,26 @@ export function isUnresolvedMeeting(meeting: { sit: MeetingSit, at: string }, no
   return meeting.sit === 'unknown' && Date.parse(meeting.at) < now.getTime()
 }
 
+export type AnalyticsStage = 'leads' | 'sales'
+
+/**
+ * A lead has no closer, outcome or meeting order, and a sale has no outcome or
+ * meeting order, so filtering or grouping by those makes the stage not applicable —
+ * shown as such, never as an unfiltered number.
+ */
+export function inapplicableStages(filters: AnalyticsFilters, groupBy: AnalyticsGroupBy): AnalyticsStage[] {
+  const byMeeting = !!(filters.outcomes?.length || filters.meetingOrder?.length) || groupBy === 'outcome' || groupBy === 'meetingOrder'
+  const byCloser = !!filters.closerIds?.length || groupBy === 'closer'
+  const stages: AnalyticsStage[] = []
+  if (byMeeting || byCloser) {
+    stages.push('leads')
+  }
+  if (byMeeting) {
+    stages.push('sales')
+  }
+  return stages
+}
+
 /**
  * Stage-to-stage rates over the same period. Close rate uses new sales only:
  * an upsell never came through a new-lead sit.
@@ -69,6 +89,7 @@ export const ANALYTICS_RATES = {
 
 export type AnalyticsRateKey = keyof typeof ANALYTICS_RATES
 
+/** A rate over nothing is unknown, not 0% — an empty month must not read as a failure. */
 export function computeRate(numerator: number | null, denominator: number | null): number | null {
   if (numerator === null || denominator === null || denominator === 0) {
     return null

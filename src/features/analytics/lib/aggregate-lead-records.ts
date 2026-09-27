@@ -2,7 +2,7 @@ import type { AnalyticsRateKey } from '@/features/analytics/lib/analytics-rules'
 import type { AnalyticsCounts, AnalyticsFilters, AnalyticsGroupBy, AnalyticsResult, LeadMeeting, LeadRecord, LeadRecordSet, LeadSale, MeetingOrder } from '@/features/analytics/types'
 import type { MeetingOutcome } from '@/shared/constants/enums/meetings'
 
-import { ANALYTICS_RATES, computeRate } from '@/features/analytics/lib/analytics-rules'
+import { ANALYTICS_RATES, computeRate, inapplicableStages } from '@/features/analytics/lib/analytics-rules'
 import { businessMonthKey } from '@/shared/lib/business-time'
 
 interface EventDimensions {
@@ -58,10 +58,9 @@ function groupKeys(groupBy: AnalyticsGroupBy, person: LeadRecord, event: EventDi
 }
 
 export function aggregateLeadRecords(records: LeadRecordSet, filters: AnalyticsFilters, groupBy: AnalyticsGroupBy): AnalyticsResult {
-  const meetingFiltered = !!(filters.outcomes?.length || filters.meetingOrder?.length)
-  const eventFiltered = meetingFiltered || !!filters.closerIds?.length
-  const leadsApplicable = !eventFiltered && groupBy !== 'closer' && groupBy !== 'outcome' && groupBy !== 'meetingOrder'
-  const salesApplicable = !meetingFiltered && groupBy !== 'outcome' && groupBy !== 'meetingOrder'
+  const notApplicable = inapplicableStages(filters, groupBy)
+  const leadsApplicable = !notApplicable.includes('leads')
+  const salesApplicable = !notApplicable.includes('sales')
 
   const fromMs = filters.range ? Date.parse(filters.range.from) : null
   const toMs = filters.range ? Date.parse(filters.range.to) : null
@@ -215,5 +214,5 @@ export function aggregateLeadRecords(records: LeadRecordSet, filters: AnalyticsF
     return a.groupKey < b.groupKey ? -1 : 1
   })
 
-  return { rows, undatedSales: salesApplicable ? undatedSales : null, orphans: records.orphans }
+  return { rows, notApplicable, undatedSales: salesApplicable ? undatedSales : null, orphans: records.orphans }
 }
