@@ -100,6 +100,7 @@ const APP_ROOTS = {
     campaigns: () => '/dashboard/campaigns',
     team: () => '/dashboard/team',
     analytics: () => '/dashboard/analytics',
+    calculators: () => '/dashboard/calculators',
   },
   public: {
     intake: () => '/intake',
