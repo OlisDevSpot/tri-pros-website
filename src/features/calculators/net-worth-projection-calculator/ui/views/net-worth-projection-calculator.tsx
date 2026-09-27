@@ -1,33 +1,33 @@
 'use client'
 
-import type { SavingsProjectionFormValues } from '@/features/calculators/savings-projection-calculator/schemas/form'
+import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 
-import { createSavingsProjectionDefaults } from '@/features/calculators/savings-projection-calculator/constants/form-defaults'
-import { useSavingsProjection } from '@/features/calculators/savings-projection-calculator/hooks/use-savings-projection'
-import { formatYears } from '@/features/calculators/savings-projection-calculator/lib/format-years'
-import { resolveSavingsProjectionConfig } from '@/features/calculators/savings-projection-calculator/lib/resolve-config'
-import { savingsProjectionFormSchema } from '@/features/calculators/savings-projection-calculator/schemas/form'
-import { AssumptionsStep } from '@/features/calculators/savings-projection-calculator/ui/components/assumptions-step'
-import { BillsStep } from '@/features/calculators/savings-projection-calculator/ui/components/bills-step'
-import { ComparisonCard } from '@/features/calculators/savings-projection-calculator/ui/components/comparison-card'
-import { HomeAndLoansStep } from '@/features/calculators/savings-projection-calculator/ui/components/home-and-loans-step'
-import { ProjectStep } from '@/features/calculators/savings-projection-calculator/ui/components/project-step'
-import { SavingsHeadline } from '@/features/calculators/savings-projection-calculator/ui/components/savings-headline'
-import { TotalPaidChart } from '@/features/calculators/savings-projection-calculator/ui/components/total-paid-chart'
+import { createNetWorthProjectionDefaults } from '@/features/calculators/net-worth-projection-calculator/constants/form-defaults'
+import { useNetWorthProjection } from '@/features/calculators/net-worth-projection-calculator/hooks/use-net-worth-projection'
+import { formatYears } from '@/features/calculators/net-worth-projection-calculator/lib/format-years'
+import { resolveNetWorthProjectionConfig } from '@/features/calculators/net-worth-projection-calculator/lib/resolve-config'
+import { netWorthProjectionFormSchema } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
+import { AssumptionsStep } from '@/features/calculators/net-worth-projection-calculator/ui/components/assumptions-step'
+import { BillsStep } from '@/features/calculators/net-worth-projection-calculator/ui/components/bills-step'
+import { ComparisonCard } from '@/features/calculators/net-worth-projection-calculator/ui/components/comparison-card'
+import { HomeAndLoansStep } from '@/features/calculators/net-worth-projection-calculator/ui/components/home-and-loans-step'
+import { ProjectStep } from '@/features/calculators/net-worth-projection-calculator/ui/components/project-step'
+import { SavingsHeadline } from '@/features/calculators/net-worth-projection-calculator/ui/components/savings-headline'
+import { TotalPaidChart } from '@/features/calculators/net-worth-projection-calculator/ui/components/total-paid-chart'
 import { Form } from '@/shared/components/ui/form'
 
-export function SavingsProjectionCalculator() {
-  const [config] = useState(resolveSavingsProjectionConfig)
-  const form = useForm<SavingsProjectionFormValues>({
-    resolver: zodResolver(savingsProjectionFormSchema),
+export function NetWorthProjectionCalculator() {
+  const [config] = useState(resolveNetWorthProjectionConfig)
+  const form = useForm<NetWorthProjectionFormValues>({
+    resolver: zodResolver(netWorthProjectionFormSchema),
     mode: 'onChange',
-    defaultValues: createSavingsProjectionDefaults(config),
+    defaultValues: createNetWorthProjectionDefaults(config),
   })
-  const { years, summary } = useSavingsProjection(form.control, config)
+  const { years, summary } = useNetWorthProjection(form.control, config)
   const today = years[0]
   const later = years[years.length - 1]
   const inYears = `In ${formatYears(summary.horizonYears)}`

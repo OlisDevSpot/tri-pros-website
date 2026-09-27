@@ -5,7 +5,7 @@ import type { CalculatorTab } from '@/features/calculators/constants/query-parse
 import { useQueryState } from 'nuqs'
 
 import { calculatorTabParser } from '@/features/calculators/constants/query-parsers'
-import { SavingsProjectionCalculator } from '@/features/calculators/savings-projection-calculator/ui/views/savings-projection-calculator'
+import { NetWorthProjectionCalculator } from '@/features/calculators/net-worth-projection-calculator/ui/views/net-worth-projection-calculator'
 import { ScopePricingCalculator } from '@/features/calculators/scope-pricing-calculator/ui/views/scope-pricing-calculator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 
@@ -21,15 +21,15 @@ export function CalculatorsView() {
 
       <Tabs className="flex min-h-0 flex-1 flex-col" onValueChange={value => setTab(value as CalculatorTab)} value={tab}>
         <TabsList>
+          <TabsTrigger className="min-h-11" value="net-worth-projection">Net-worth Projection</TabsTrigger>
           <TabsTrigger className="min-h-11" value="scope-pricing">Scope Pricing</TabsTrigger>
-          <TabsTrigger className="min-h-11" value="savings-projection">Savings Projection</TabsTrigger>
         </TabsList>
 
+        <TabsContent className="min-h-0 flex-1 overflow-y-auto data-[state=inactive]:hidden" forceMount value="net-worth-projection">
+          <NetWorthProjectionCalculator />
+        </TabsContent>
         <TabsContent className="min-h-0 flex-1 overflow-y-auto data-[state=inactive]:hidden" forceMount value="scope-pricing">
           <ScopePricingCalculator />
-        </TabsContent>
-        <TabsContent className="min-h-0 flex-1 overflow-y-auto data-[state=inactive]:hidden" forceMount value="savings-projection">
-          <SavingsProjectionCalculator />
         </TabsContent>
       </Tabs>
     </div>

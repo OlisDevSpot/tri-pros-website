@@ -1,7 +1,7 @@
 'use client'
 
 import type { FieldPathByValue } from 'react-hook-form'
-import type { SavingsProjectionFormValues } from '@/features/calculators/savings-projection-calculator/schemas/form'
+import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
 
 import { useFormContext } from 'react-hook-form'
 
@@ -9,7 +9,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shar
 import { NumberField } from '@/shared/components/ui/number-field'
 
 interface Props {
-  name: FieldPathByValue<SavingsProjectionFormValues, number | null>
+  name: FieldPathByValue<NetWorthProjectionFormValues, number | null>
   label: string
   suffix?: string
   min?: number
@@ -18,7 +18,7 @@ interface Props {
 }
 
 export function ProjectionNumberField({ name, label, suffix, min = 0, max, step }: Props) {
-  const { control } = useFormContext<SavingsProjectionFormValues>()
+  const { control } = useFormContext<NetWorthProjectionFormValues>()
 
   return (
     <FormField

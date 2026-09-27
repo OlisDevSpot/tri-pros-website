@@ -1,4 +1,4 @@
-export interface SavingsYear {
+export interface ProjectionYear {
   t: number
   homeValueBefore: number
   homeValueAfter: number
@@ -9,7 +9,7 @@ export interface SavingsYear {
   netBenefit: number
 }
 
-export interface SavingsSummary {
+export interface ProjectionSummary {
   monthlyBefore: number
   monthlyAfter: number
   monthlyDifference: number
@@ -22,7 +22,7 @@ export interface SavingsSummary {
   heldFlatLiabilities: number[]
 }
 
-export interface SavingsProjection {
-  years: SavingsYear[]
-  summary: SavingsSummary
+export interface NetWorthProjection {
+  years: ProjectionYear[]
+  summary: ProjectionSummary
 }

@@ -1,13 +1,13 @@
 'use client'
 
-import type { SavingsYear } from '@/features/calculators/savings-projection-calculator/types'
+import type { ProjectionYear } from '@/features/calculators/net-worth-projection-calculator/types'
 
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
 import { formatAsDollars } from '@/shared/lib/formatters'
 
 interface Props {
-  years: SavingsYear[]
+  years: ProjectionYear[]
 }
 
 export function TotalPaidChart({ years }: Props) {

@@ -1,18 +1,18 @@
 'use client'
 
-import type { UpliftMode } from '@/features/calculators/savings-projection-calculator/constants/uplift-modes'
-import type { SavingsProjectionFormValues } from '@/features/calculators/savings-projection-calculator/schemas/form'
+import type { UpliftMode } from '@/features/calculators/net-worth-projection-calculator/constants/uplift-modes'
+import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
 
 import { useFormContext, useWatch } from 'react-hook-form'
 
-import { UPLIFT_MODE_LABELS, UPLIFT_MODES } from '@/features/calculators/savings-projection-calculator/constants/uplift-modes'
-import { ProjectionNumberField } from '@/features/calculators/savings-projection-calculator/ui/components/projection-number-field'
-import { StepSection } from '@/features/calculators/savings-projection-calculator/ui/components/step-section'
+import { UPLIFT_MODE_LABELS, UPLIFT_MODES } from '@/features/calculators/net-worth-projection-calculator/constants/uplift-modes'
+import { ProjectionNumberField } from '@/features/calculators/net-worth-projection-calculator/ui/components/projection-number-field'
+import { StepSection } from '@/features/calculators/net-worth-projection-calculator/ui/components/step-section'
 import { FormControl, FormField, FormItem, FormLabel } from '@/shared/components/ui/form'
 import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-group'
 
 export function ProjectStep() {
-  const { control } = useFormContext<SavingsProjectionFormValues>()
+  const { control } = useFormContext<NetWorthProjectionFormValues>()
   const upliftMode = useWatch({ control, name: 'project.uplift.mode' })
 
   return (

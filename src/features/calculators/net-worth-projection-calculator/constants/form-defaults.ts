@@ -1,8 +1,8 @@
-import type { SavingsProjectionConfig } from '@/features/calculators/savings-projection-calculator/schemas/config'
-import type { SavingsProjectionFormValues } from '@/features/calculators/savings-projection-calculator/schemas/form'
+import type { NetWorthProjectionConfig } from '@/features/calculators/net-worth-projection-calculator/schemas/config'
+import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
 
-type Bills = SavingsProjectionFormValues['billsNow']
-type Liability = SavingsProjectionFormValues['liabilities'][number]
+type Bills = NetWorthProjectionFormValues['billsNow']
+type Liability = NetWorthProjectionFormValues['liabilities'][number]
 
 export const EMPTY_LIABILITY: Liability = { label: '', balance: null, monthlyPayment: null, aprPercent: null }
 
@@ -10,7 +10,7 @@ function emptyBills(): Bills {
   return { electric: null, gas: null, water: null, gardening: null, misc: null }
 }
 
-export function createSavingsProjectionDefaults(config: SavingsProjectionConfig): SavingsProjectionFormValues {
+export function createNetWorthProjectionDefaults(config: NetWorthProjectionConfig): NetWorthProjectionFormValues {
   return {
     homeValue: null,
     liabilities: [],

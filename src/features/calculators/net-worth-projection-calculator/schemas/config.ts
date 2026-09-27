@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 export const ratePercentSchema = z.number().min(-20).max(50)
 
-export const savingsProjectionConfigSchema = z.object({
+export const netWorthProjectionConfigSchema = z.object({
   defaultHorizonYears: z.number().int().min(1).max(30),
   defaultRatesPercent: z.object({
     homeAppreciation: ratePercentSchema,
@@ -14,5 +14,5 @@ export const savingsProjectionConfigSchema = z.object({
   }),
 })
 
-export type SavingsProjectionConfig = z.infer<typeof savingsProjectionConfigSchema>
-export type RateKey = keyof SavingsProjectionConfig['defaultRatesPercent']
+export type NetWorthProjectionConfig = z.infer<typeof netWorthProjectionConfigSchema>
+export type RateKey = keyof NetWorthProjectionConfig['defaultRatesPercent']

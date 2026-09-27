@@ -1,8 +1,8 @@
-import type { RateKey, SavingsProjectionConfig } from '@/features/calculators/savings-projection-calculator/schemas/config'
-import type { SavingsProjectionFormValues } from '@/features/calculators/savings-projection-calculator/schemas/form'
-import type { SavingsProjection, SavingsYear } from '@/features/calculators/savings-projection-calculator/types'
+import type { NetWorthProjectionConfig, RateKey } from '@/features/calculators/net-worth-projection-calculator/schemas/config'
+import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
+import type { NetWorthProjection, ProjectionYear } from '@/features/calculators/net-worth-projection-calculator/types'
 
-import { BILL_CATEGORIES } from '@/features/calculators/savings-projection-calculator/constants/bill-categories'
+import { BILL_CATEGORIES } from '@/features/calculators/net-worth-projection-calculator/constants/bill-categories'
 import { amortizedMonthlyPayment, remainingBalance } from '@/shared/lib/loan-calculations'
 
 function amountOf(value: number | null | undefined): number {
@@ -37,12 +37,12 @@ function monthsToPayOff(balance: number, aprPercent: number, payment: number): n
   return -Math.log(1 - (monthlyRate * balance) / payment) / Math.log(1 + monthlyRate)
 }
 
-function sumBills(bills: SavingsProjectionFormValues['billsNow']): number {
+function sumBills(bills: NetWorthProjectionFormValues['billsNow']): number {
   return BILL_CATEGORIES.reduce((sum, category) => sum + amountOf(bills[category]), 0)
 }
 
 // Kept free of React and I/O so the engine can move to a shared module once its permanent home is decided.
-export function projectSavings(input: SavingsProjectionFormValues, config: SavingsProjectionConfig): SavingsProjection {
+export function projectNetWorth(input: NetWorthProjectionFormValues, config: NetWorthProjectionConfig): NetWorthProjection {
   const horizonYears = Math.min(30, Math.max(1, Math.round(input.assumptions.horizonYears ?? config.defaultHorizonYears)))
   const rate = (key: RateKey) => toFraction(input.assumptions.ratesPercent[key] ?? config.defaultRatesPercent[key])
 
@@ -80,11 +80,11 @@ export function projectSavings(input: SavingsProjectionFormValues, config: Savin
     }, 0)
   }
 
-  function billsPaid(bills: SavingsProjectionFormValues['billsNow'], t: number): number {
+  function billsPaid(bills: NetWorthProjectionFormValues['billsNow'], t: number): number {
     return BILL_CATEGORIES.reduce((sum, category) => sum + cumulativeBills(amountOf(bills[category]), rate(category), t), 0)
   }
 
-  const years: SavingsYear[] = []
+  const years: ProjectionYear[] = []
   for (let t = 0; t <= horizonYears; t++) {
     const growth = (1 + appreciation) ** t
     const monthsPaid = Math.min(12 * t, termMonths)

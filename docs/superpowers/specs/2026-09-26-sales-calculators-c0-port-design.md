@@ -1,6 +1,6 @@
 # Sales Calculators C0: port design
 
-> **Status:** brainstormed with the owner section by section on 2026-09-25 and 26 (all parts approved). Written 2026-09-26. **Owner-approved 2026-09-26, including "Pricing Key".** Implementation plan: `docs/superpowers/plans/2026-09-26-sales-calculators-c0-port.md`.
+> **Status:** brainstormed with the owner section by section on 2026-09-25 and 26 (all parts approved). Written 2026-09-26. **Owner-approved 2026-09-26, including "Pricing Key".** Amended 2026-09-26 by tracker R11: "Savings Projection" is renamed **Net-worth Projection** and is the first, default tab. Implementation plan: `docs/superpowers/plans/2026-09-26-sales-calculators-c0-port.md`.
 > **Epic tracker (requirements, decisions, metrics, interim register):** `docs/plans/2026-09-26-sales-calculators-epic.md`. This spec cites the tracker's stable IDs (R*, D*, O*, SP-*, PR*, UI*, V*, CF*, I*, B-*) and does not restate them.
 > **Source:** the remodel-x app in `/home/olis-solutions/olis-v3/monorepo/turborepos-repos/olissolutions.com` (tracker §7 and §8).
 
@@ -9,7 +9,7 @@
 C0 ports remodel-x's per-scope pricing formulas and the idea behind its unfinished "now vs future" calculator into tri-pros. The result is two standalone, homeowner-facing calculators at `/dashboard/calculators`:
 
 - **Scope Pricing** prices a quote of one or more scopes from the rep's measurements.
-- **Savings Projection** shows what the homeowner saves, and how their home value and net worth change, over a horizon of years.
+- **Net-worth Projection** shows what the homeowner saves, and how their home value and net worth change, over a horizon of years.
 
 Porting is the deliverable (R8). Remodel-x's formulas and Unit Costs carry over exactly. Only the defects listed in tracker §6 are fixed. Every choice we already know is temporary is marked in the code and listed in the tracker's interim register (§5).
 
@@ -33,7 +33,7 @@ Porting is the deliverable (R8). Remodel-x's formulas and Unit Costs carry over 
 
 ## 2. Names (D1, owner 2026-09-26)
 
-**Savings Projection**, **Scope Pricing**, **Formula**, **Unit Cost** and **Pricing Key** are the one name each concept has in UI copy, code, docs and conversation. "Snapshot" is not used (it is a reserved term). Existing terms are reused as they are: Scope, Trade, Variable, Cost, Price, Multiplier, TCP. The four configuration tiers are **On-screen**, **Agent-only**, **Admin-configured** and **System default** (R9).
+**Net-worth Projection**, **Scope Pricing**, **Formula**, **Unit Cost** and **Pricing Key** are the one name each concept has in UI copy, code, docs and conversation. "Snapshot" is not used (it is a reserved term). Existing terms are reused as they are: Scope, Trade, Variable, Cost, Price, Multiplier, TCP. The four configuration tiers are **On-screen**, **Agent-only**, **Admin-configured** and **System default** (R9).
 
 **Pricing Key** names the remodel-x accessor that keys a Formula in C0 (I2). Signed off with the spec on 2026-09-26.
 
@@ -45,7 +45,7 @@ The owner's direction (2026-09-26): each calculator is its own directory under t
 src/app/(frontend)/dashboard/calculators/page.tsx      await protectDashboardPage() → <CalculatorsView/>
 
 src/features/calculators/
-  constants/query-parsers.ts                           CALCULATOR_TABS = ['scope-pricing', 'savings-projection'] as const; calculatorTabParser (nuqs, default 'scope-pricing')
+  constants/query-parsers.ts                           CALCULATOR_TABS = ['scope-pricing', 'net-worth-projection'] as const; calculatorTabParser (nuqs, default 'scope-pricing')
   ui/views/calculators-view.tsx                        tabs shell; renders the two sub-feature views
 
   scope-pricing-calculator/
@@ -65,19 +65,19 @@ src/features/calculators/
     ui/components/…                                    one component per file; agent panel under ui/components/agent-panel/
     ui/views/scope-pricing-calculator.tsx
 
-  savings-projection-calculator/
+  net-worth-projection-calculator/
     constants/config-defaults.ts                       System defaults for the Admin-configured savings values (I3, I4)
-    schemas/config.ts                                  savingsProjectionConfigSchema (CF1)
-    schemas/form.ts                                    savingsProjectionFormSchema
-    lib/resolve-config.ts                              resolveSavingsProjectionConfig(): SavingsProjectionConfig (CF2)
-    lib/project-savings.ts                             projectSavings(...)
-    hooks/use-savings-projection.ts
+    schemas/config.ts                                  netWorthProjectionConfigSchema (CF1)
+    schemas/form.ts                                    netWorthProjectionFormSchema
+    lib/resolve-config.ts                              resolveNetWorthProjectionConfig(): NetWorthProjectionConfig (CF2)
+    lib/project-net-worth.ts                             projectNetWorth(...)
+    hooks/use-net-worth-projection.ts
     types/index.ts
     ui/components/…
-    ui/views/savings-projection-calculator.tsx
+    ui/views/net-worth-projection-calculator.tsx
 
 src/shared/lib/loan-calculations.ts                    + remainingBalance(...)   (owner-approved shared-file edit)
-scripts/verify-scope-pricing.ts, scripts/verify-savings-projection.ts
+scripts/verify-scope-pricing.ts, scripts/verify-net-worth-projection.ts
 ```
 
 **Rules** (tracker V5, O5):
@@ -124,7 +124,7 @@ The engines take the resolved config as a plain argument. Session overrides (On-
 - **Trade group keys are tri-pros's seed trade accessors** (`src/shared/db/seeds/data/trades.ts`): `roof`, `solar`, `hvac`, `windowsAndDoors`, `atticBasement`, `dryscapingHardscaping`, `electricals`, `exteriorPaintSiding`. No new group names are invented. They match the ported data one-to-one, and they are what construction P5 grows from.
 - **Labels:** each Unit Cost's label is the seed label verbatim (e.g. "Tear-Off (Flat) per BSQ"), kept in `constants/unit-cost-labels.ts`. The three code-sourced Unit Costs get new labels: "Per additional ton (HVAC)", "Main panel upgrade", "Main panel upgrade (with relocation)".
 
-### 4.2 `SavingsProjectionConfig` (Admin-configured, System defaults from D4)
+### 4.2 `NetWorthProjectionConfig` (Admin-configured, System defaults from D4)
 
 ```ts
 {
@@ -240,9 +240,9 @@ priceQuote({ lines, context, config, overrides }): QuoteResult
 - A formula line whose variables fail its Formula's Zod schema (built from the declared Variables and their bounds) comes back as `status: 'incomplete'` with the missing or invalid keys. It is left out of totals and is **never** priced (B-P1, PR12).
 - The result carries every line in its input order, followed by the derived permit lines.
 
-## 6. Savings Projection engine
+## 6. Net-worth Projection engine
 
-`projectSavings(input, config): SavingsProjection` is pure. Rates arrive as whole percents, and the function divides by 100 in exactly one place.
+`projectNetWorth(input, config): NetWorthProjection` is pure. Rates arrive as whole percents, and the function divides by 100 in exactly one place.
 
 ### 6.1 Input (SP-I1…I8)
 
@@ -339,7 +339,7 @@ The flow, as approved in the brainstorm:
   - the "no cost data" note when manual lines exist
 - **Containment:** nothing Agent-only appears anywhere else, or in the URL.
 
-### 7.3 Savings Projection
+### 7.3 Net-worth Projection
 
 - **Focal point:** cumulative savings over N years, plus the break-even year.
 - **Below that:**
@@ -373,7 +373,7 @@ The flow, as approved in the brainstorm:
   - `solveMultiplier`'s three outcomes
   - manual lines left out of margin
   - a permit line only when enabled
-- **V4:** `scripts/verify-savings-projection.ts`. It covers:
+- **V4:** `scripts/verify-net-worth-projection.ts`. It covers:
   - $1,000,000 at 4% over 5 years → $1,216,653
   - cumulative bills at g = 0 and g > 0
   - `m` matching `amortizedMonthlyPayment`
@@ -389,14 +389,14 @@ The flow, as approved in the brainstorm:
 
 Steps 1–4 land before any UI decision. Step 5 is the one owner pause.
 
-1. `remainingBalance` in `loan-calculations.ts`, with cases added to `verify-savings-projection.ts`.
+1. `remainingBalance` in `loan-calculations.ts`, with cases added to `verify-net-worth-projection.ts`.
 2. Scope Pricing engine: config schema and defaults, resolver, Variables, `defineFormula`, the 24 Formulas, registry, `priceQuote`, `solveMultiplier`, and `verify-scope-pricing.ts`.
-3. Savings Projection engine: config, resolver, `projectSavings`, and `verify-savings-projection.ts`.
+3. Net-worth Projection engine: config, resolver, `projectNetWorth`, and `verify-net-worth-projection.ts`.
 4. The route, `APP_ROOTS.dashboard.calculators`, the sidebar entry (`get-sidebar-nav.ts`, gated on `access Dashboard`), the tab parser and the tabs shell, with placeholder views.
 5. `/ui-warmup` for both calculators → **the owner picks a direction.**
 6. Scope Pricing UI.
 7. Agent panel.
-8. Savings Projection UI.
+8. Net-worth Projection UI.
 9. The three-skill audit (ui-ux-pro-max → web-design-guidelines → impeccable), then the V6 Playwright check.
 10. Glossary entries in `docs/ubiquitous-language.md` for the §2 names, and tracker updates: ticks, the §3 amendments, and an I-row audit (M6).
 
@@ -417,7 +417,7 @@ Each of these sites carries a one-line why-comment giving the reason, with no ci
 | Site | Marker |
 |---|---|
 | each `resolve-config.ts` | I3 |
-| `savings-projection-calculator/constants/config-defaults.ts` | I4 (unsourced rates) |
+| `net-worth-projection-calculator/constants/config-defaults.ts` | I4 (unsourced rates) |
 | `price-quote.ts` tax line | I5 |
 | the context fields' schema | I6 |
 | the liability remaining-balance branch | I7 |

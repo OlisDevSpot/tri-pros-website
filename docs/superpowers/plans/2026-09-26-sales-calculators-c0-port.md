@@ -2,13 +2,15 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship two standalone, homeowner-facing calculators at `/dashboard/calculators`: **Scope Pricing** (remodel-x's 24 per-scope Formulas, ported exactly) and **Savings Projection** (the now-vs-future idea, rebuilt with correct math). Nothing is persisted.
+**Goal:** Ship two standalone, homeowner-facing calculators at `/dashboard/calculators`: **Scope Pricing** (remodel-x's 24 per-scope Formulas, ported exactly) and **Net-worth Projection** (the now-vs-future idea, rebuilt with correct math). Nothing is persisted.
 
-**Architecture:** A new feature `src/features/calculators/` holds a tabs shell and two independent sub-features, `scope-pricing-calculator/` and `savings-projection-calculator/`. Each sub-feature has a pure engine in `lib/` that takes a resolved config as a plain argument, a Zod config schema with System defaults, react-hook-form UI that derives results through a hook, and a `scripts/verify-*.ts` self-check. The only shared-file edits are `remainingBalance` in `src/shared/lib/loan-calculations.ts`, one root in `src/shared/config/roots.ts`, and one sidebar entry.
+**Architecture:** A new feature `src/features/calculators/` holds a tabs shell and two independent sub-features, `scope-pricing-calculator/` and `net-worth-projection-calculator/`. Each sub-feature has a pure engine in `lib/` that takes a resolved config as a plain argument, a Zod config schema with System defaults, react-hook-form UI that derives results through a hook, and a `scripts/verify-*.ts` self-check. The only shared-file edits are `remainingBalance` in `src/shared/lib/loan-calculations.ts`, one root in `src/shared/config/roots.ts`, and one sidebar entry.
 
 **Tech Stack:** Next.js 15, React, TypeScript (strict), Zod 4 (`import { z } from 'zod'`), react-hook-form 7 + `@hookform/resolvers/zod`, nuqs 2, recharts 2.15, shadcn/ui, lucide-react, `tsx` for verify scripts.
 
 **Spec:** `docs/superpowers/specs/2026-09-26-sales-calculators-c0-port-design.md` (owner-approved 2026-09-26). **Tracker:** `docs/plans/2026-09-26-sales-calculators-epic.md` (IDs R*, D*, O*, SP-*, PR*, UI*, V*, CF*, I*, B-*). Read both before starting.
+
+**Amended 2026-09-26 (tracker R11), after Task 8:** the calculator is renamed Net-worth Projection (names below are updated), and it is the first, default tab. Task 5's tab code below predates that; `src/features/calculators/constants/query-parsers.ts` and `ui/views/calculators-view.tsx` are authoritative.
 
 ## Global Constraints
 
@@ -21,7 +23,7 @@
 - **Layout rules (V5):** one component per file, named exports only, no module-level constants in component files (they go in `constants/`), `hooks/` holds only `use-*`, `schemas/` is a sibling of `lib/`, and prop interfaces stay in the component file.
 - **Imports:** absolute `@/…` paths, type imports first, as in the surrounding code.
 - **Comments say why, never what.** No file banners, and never cite a plan, spec, tracker ID or doc in code. Each interim site in spec §11 gets a one-line why-comment. This plan gives the exact wording.
-- **Names (spec §2):** Savings Projection, Scope Pricing, Formula, Unit Cost, Pricing Key. Never "Snapshot". Tiers: On-screen, Agent-only, Admin-configured, System default.
+- **Names (spec §2):** Net-worth Projection, Scope Pricing, Formula, Unit Cost, Pricing Key. Never "Snapshot". Tiers: On-screen, Agent-only, Admin-configured, System default.
 - **Homeowner copy (O1, O7, O8):** outside the agent panel, the visible text never contains the words "Cost", "Multiplier" or "Margin" (case-sensitive), never shows a Unit Cost, and never makes an uncited claim. "Price" is the only money word on the Scope Pricing screen.
 - **Values come verbatim from the seeds.** Unit Costs, Variable labels, scope labels, `outcomeStatement` subtitles and trade labels are copied exactly as this plan gives them (spec §4.1, §10). Do not "tidy" their capitalization.
 - **Numbers:** numeric inputs use `NumberField` (`src/shared/components/ui/number-field.tsx`: `null` means empty). Never use `convertToNumber` (UI4). Whole-dollar display uses `formatAsDollars` (`src/shared/lib/formatters.ts`). Multipliers use `formatMultiplier`, and tiers use `getMultiplierTier` (`src/shared/modules/proposals/core/lib/financials/tiers.ts`) and `MULTIPLIER_STYLES` (`src/shared/modules/proposals/core/constants/multiplier-styles.ts`), all reused and never copied.
@@ -31,7 +33,7 @@
 
 These are the inputs and conditions the spec implies but does not spell out. Each one has a test in the task that owns it.
 
-1. **Switching tabs keeps the rep's entries.** Radix `Tabs` unmounts inactive panels by default, which would wipe a half-built quote when the rep flips to Savings Projection and back. Both panels are force-mounted and hidden when inactive. Test: Task 10's Playwright step fills a line, switches tabs twice, and checks the value is still there.
+1. **Switching tabs keeps the rep's entries.** Radix `Tabs` unmounts inactive panels by default, which would wipe a half-built quote when the rep flips to Net-worth Projection and back. Both panels are force-mounted and hidden when inactive. Test: Task 10's Playwright step fills a line, switches tabs twice, and checks the value is still there.
 2. **A cleared field falls back sensibly.** Clearing a Variable that has a default (e.g. flat BSQ) prices at the default. Clearing a required one (e.g. watts per panel) makes the line `incomplete` and never priced. An out-of-range entry (900 BSQ) or an unknown option (7 tons) is also `incomplete`, and the field shows its allowed range. Tests: Task 2's verify cases.
 3. **Paying cash, or a down payment above the price, counts the project exactly once.** With no loan term, the whole net price is paid at t = 0. A down payment larger than the net price is clamped, so the loan principal is never negative. Tests: Task 4's verify cases.
 4. **The word "Cost" never reaches the homeowner.** This includes the Savings chart title and legend (they say "Total paid", "Without the project" and "With the project"). The HVAC outcome line contains a lowercase "costs", so the check is a case-sensitive whole-word match. Test: Task 10's Playwright step on both tabs.
@@ -39,12 +41,12 @@ These are the inputs and conditions the spec implies but does not spell out. Eac
 
 ## File map
 
-`SP` = `src/features/calculators/scope-pricing-calculator`, `SV` = `src/features/calculators/savings-projection-calculator`.
+`SP` = `src/features/calculators/scope-pricing-calculator`, `SV` = `src/features/calculators/net-worth-projection-calculator`.
 
 | File | Responsibility | Task |
 |---|---|---|
 | `src/shared/lib/loan-calculations.ts` (modify) | `+ remainingBalance` | 1 |
-| `scripts/verify-savings-projection.ts` | V4 self-check | 1, 4 |
+| `scripts/verify-net-worth-projection.ts` | V4 self-check | 1, 4 |
 | `SP/schemas/config.ts` | `scopePricingConfigSchema`, `ScopePricingConfig`, `PricingTrade`, `UnitCostsOf`, `PermitTrade` | 2 |
 | `SP/constants/config-defaults.ts` | `SCOPE_PRICING_CONFIG_DEFAULTS` | 2 |
 | `SP/lib/resolve-config.ts` | `resolveScopePricingConfig()` (I3) | 2 |
@@ -66,20 +68,20 @@ These are the inputs and conditions the spec implies but does not spell out. Eac
 | `SP/lib/solve-multiplier.ts` | `solveMultiplier` | 3 |
 | `SV/schemas/config.ts`, `SV/constants/config-defaults.ts` (I4), `SV/lib/resolve-config.ts` (I3) | savings config | 4 |
 | `SV/constants/bill-categories.ts`, `SV/constants/rates.ts`, `SV/constants/uplift-modes.ts`, `SV/constants/form-defaults.ts` | savings constants | 4 |
-| `SV/schemas/form.ts` | `savingsProjectionFormSchema` | 4 |
-| `SV/types/index.ts` | `SavingsYear`, `SavingsSummary`, `SavingsProjection` | 4 |
-| `SV/lib/project-savings.ts` | `projectSavings` (I1, I7) | 4 |
+| `SV/schemas/form.ts` | `netWorthProjectionFormSchema` | 4 |
+| `SV/types/index.ts` | `ProjectionYear`, `ProjectionSummary`, `NetWorthProjection` | 4 |
+| `SV/lib/project-net-worth.ts` | `projectNetWorth` (I1, I7) | 4 |
 | `src/shared/config/roots.ts` (modify) | `+ dashboard.calculators` | 5 |
 | `src/features/agent-dashboard/lib/get-sidebar-nav.ts` (modify) | `+ Calculators` entry | 5 |
 | `src/app/(frontend)/dashboard/calculators/page.tsx` | thin page | 5 |
 | `src/features/calculators/constants/query-parsers.ts` | `CALCULATOR_TABS`, `calculatorTabParser` | 5 |
 | `src/features/calculators/ui/views/calculators-view.tsx` | tabs shell (I8) | 5 |
-| `SP/ui/views/scope-pricing-calculator.tsx`, `SV/ui/views/savings-projection-calculator.tsx` | placeholders (5), real (6, 8) | 5, 6, 8 |
+| `SP/ui/views/scope-pricing-calculator.tsx`, `SV/ui/views/net-worth-projection-calculator.tsx` | placeholders (5), real (6, 8) | 5, 6, 8 |
 | `SP/constants/form-defaults.ts`, `SP/lib/create-quote-line.ts`, `SP/lib/format-variable-option.ts`, `SP/lib/describe-variable-issue.ts`, `SP/hooks/use-scope-pricing-quote.ts` | Scope Pricing UI support | 6 |
 | `SP/ui/components/{project-context-fields,variable-field,formula-line-card,manual-line-card,line-price,line-actions,permit-lines,add-scope-picker,quote-total}.tsx` | Scope Pricing UI | 6 |
 | `SP/constants/agent-panel.ts`, `SP/lib/{step-multiplier,describe-target-result,format-unit-cost,unit-cost-entries,trades-in-quote}.ts` | agent panel support | 7 |
 | `SP/ui/components/agent-panel/{index,agent-readouts,multiplier-control,target-price-control,unit-costs-list}.tsx` | agent panel (Agent-only) | 7 |
-| `SV/lib/format-years.ts`, `SV/hooks/use-savings-projection.ts` | Savings UI support | 8 |
+| `SV/lib/format-years.ts`, `SV/hooks/use-net-worth-projection.ts` | Savings UI support | 8 |
 | `SV/ui/components/{step-section,projection-number-field,home-and-loans-step,liability-row,bills-step,project-step,assumptions-step,savings-headline,comparison-card,total-paid-chart}.tsx` | Savings UI | 8 |
 | `docs/ubiquitous-language.md`, `docs/plans/2026-09-26-sales-calculators-epic.md` (modify) | glossary + tracker | 11 |
 
@@ -93,7 +95,7 @@ Spec §9 put `/ui-warmup` (step 5) before the UI build. The `ui-warmup` skill on
 
 **Files:**
 - Modify: `src/shared/lib/loan-calculations.ts` (append after `amortizedMonthlyPayment`, before `getLoanValues`)
-- Create: `scripts/verify-savings-projection.ts`
+- Create: `scripts/verify-net-worth-projection.ts`
 
 **Interfaces:**
 - Consumes: `amortizedMonthlyPayment(principal, annualRatePercent, termMonths): number` (existing).
@@ -101,7 +103,7 @@ Spec §9 put `/ui-warmup` (step 5) before the UI build. The `ui-warmup` skill on
 
 - [ ] **Step 1: Write the failing test**
 
-Create `scripts/verify-savings-projection.ts`:
+Create `scripts/verify-net-worth-projection.ts`:
 
 ```ts
 /* eslint-disable no-console */
@@ -126,12 +128,12 @@ assert.equal(remainingBalance(5000, 6, 0, 0), 0, 'no term → 0')
 assert.equal(remainingBalance(10000, 6, 20.5, 21), 0, 'fractional term: past it → 0')
 assert.ok(remainingBalance(10000, 6, 20.5, 12) > 0 && remainingBalance(10000, 6, 20.5, 12) < 10000, 'fractional term: mid-way balance in range')
 
-console.log('✅ verify-savings-projection passed')
+console.log('✅ verify-net-worth-projection passed')
 ```
 
 - [ ] **Step 2: Run it to verify it fails**
 
-Run: `pnpm tsx scripts/verify-savings-projection.ts`
+Run: `pnpm tsx scripts/verify-net-worth-projection.ts`
 Expected: FAIL. Either `remainingBalance is not a function` or a missing-export error.
 
 - [ ] **Step 3: Implement**
@@ -166,18 +168,18 @@ export function remainingBalance(
 
 - [ ] **Step 4: Run it to verify it passes**
 
-Run: `pnpm tsx scripts/verify-savings-projection.ts`
-Expected: `✅ verify-savings-projection passed`
+Run: `pnpm tsx scripts/verify-net-worth-projection.ts`
+Expected: `✅ verify-net-worth-projection passed`
 
 - [ ] **Step 5: Gates**
 
-Run: `pnpm exec eslint --fix src/shared/lib/loan-calculations.ts scripts/verify-savings-projection.ts && pnpm tsc && pnpm lint`
+Run: `pnpm exec eslint --fix src/shared/lib/loan-calculations.ts scripts/verify-net-worth-projection.ts && pnpm tsc && pnpm lint`
 Expected: no errors.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add src/shared/lib/loan-calculations.ts scripts/verify-savings-projection.ts
+git add src/shared/lib/loan-calculations.ts scripts/verify-net-worth-projection.ts
 git commit -m "feat(calculators): remainingBalance loan helper
 
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
@@ -1606,68 +1608,68 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 
 ---
 
-### Task 4: Savings Projection engine
+### Task 4: Net-worth Projection engine
 
 This covers SP-I1–I8, SP-M1–M9, D4, D7 and D8.
 
 **Files:**
 - Create: `SV/schemas/config.ts`, `SV/constants/config-defaults.ts`, `SV/lib/resolve-config.ts`
 - Create: `SV/constants/bill-categories.ts`, `SV/constants/rates.ts`, `SV/constants/uplift-modes.ts`, `SV/constants/form-defaults.ts`
-- Create: `SV/schemas/form.ts`, `SV/types/index.ts`, `SV/lib/project-savings.ts`
-- Modify: `scripts/verify-savings-projection.ts`
+- Create: `SV/schemas/form.ts`, `SV/types/index.ts`, `SV/lib/project-net-worth.ts`
+- Modify: `scripts/verify-net-worth-projection.ts`
 
 **Interfaces:**
 - Consumes: `amortizedMonthlyPayment` and `remainingBalance` (Task 1).
 - Produces:
-  - `savingsProjectionConfigSchema`; the types `SavingsProjectionConfig` and `RateKey`.
-  - `SAVINGS_PROJECTION_CONFIG_DEFAULTS` and `resolveSavingsProjectionConfig()`.
+  - `netWorthProjectionConfigSchema`; the types `NetWorthProjectionConfig` and `RateKey`.
+  - `NET_WORTH_PROJECTION_CONFIG_DEFAULTS` and `resolveNetWorthProjectionConfig()`.
   - `BILL_CATEGORIES`, `BillCategory` and `BILL_CATEGORY_LABELS`.
   - `RATE_KEYS` and `RATE_LABELS`.
   - `UPLIFT_MODES` and `UPLIFT_MODE_LABELS`.
-  - `EMPTY_LIABILITY` and `createSavingsProjectionDefaults(config)`.
-  - `savingsProjectionFormSchema` and `SavingsProjectionFormValues`.
-  - The types `SavingsYear`, `SavingsSummary` and `SavingsProjection`.
-  - `projectSavings(input: SavingsProjectionFormValues, config: SavingsProjectionConfig): SavingsProjection`.
-- **Null means absent (SP-M9).** A null amount counts as 0, a null rate uses its config default, and a null horizon uses `config.defaultHorizonYears`. This is what `config` is for in `projectSavings(input, config)`.
+  - `EMPTY_LIABILITY` and `createNetWorthProjectionDefaults(config)`.
+  - `netWorthProjectionFormSchema` and `NetWorthProjectionFormValues`.
+  - The types `ProjectionYear`, `ProjectionSummary` and `NetWorthProjection`.
+  - `projectNetWorth(input: NetWorthProjectionFormValues, config: NetWorthProjectionConfig): NetWorthProjection`.
+- **Null means absent (SP-M9).** A null amount counts as 0, a null rate uses its config default, and a null horizon uses `config.defaultHorizonYears`. This is what `config` is for in `projectNetWorth(input, config)`.
 - **Cash purchase.** A `termMonths` that is null or 0 means the project is paid in cash: the whole net price (price − incentives) is paid at t = 0. The down payment is clamped to the net price, so the loan principal is never negative.
 - Two fields are added to `summary` beyond spec §6.2 for the UI: `horizonYears`, and `heldFlatLiabilities` (the indexes of liabilities held at today's balance). Spec §6.2 requires that "held at today's balance" label, and this is how the UI learns which rows get it.
 
 - [ ] **Step 1: Write the failing test**
 
-Add these imports to `scripts/verify-savings-projection.ts`:
+Add these imports to `scripts/verify-net-worth-projection.ts`:
 
 ```ts
-import type { SavingsProjectionFormValues } from '@/features/calculators/savings-projection-calculator/schemas/form'
+import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
 
-import { createSavingsProjectionDefaults } from '@/features/calculators/savings-projection-calculator/constants/form-defaults'
-import { RATE_KEYS } from '@/features/calculators/savings-projection-calculator/constants/rates'
-import { projectSavings } from '@/features/calculators/savings-projection-calculator/lib/project-savings'
-import { resolveSavingsProjectionConfig } from '@/features/calculators/savings-projection-calculator/lib/resolve-config'
-import { savingsProjectionConfigSchema } from '@/features/calculators/savings-projection-calculator/schemas/config'
+import { createNetWorthProjectionDefaults } from '@/features/calculators/net-worth-projection-calculator/constants/form-defaults'
+import { RATE_KEYS } from '@/features/calculators/net-worth-projection-calculator/constants/rates'
+import { projectNetWorth } from '@/features/calculators/net-worth-projection-calculator/lib/project-net-worth'
+import { resolveNetWorthProjectionConfig } from '@/features/calculators/net-worth-projection-calculator/lib/resolve-config'
+import { netWorthProjectionConfigSchema } from '@/features/calculators/net-worth-projection-calculator/schemas/config'
 ```
 
-Insert this block immediately before `console.log('✅ verify-savings-projection passed')`:
+Insert this block immediately before `console.log('✅ verify-net-worth-projection passed')`:
 
 ```ts
-// ── Savings Projection ──────────────────────────────────────────────────────
-const config = resolveSavingsProjectionConfig()
+// ── Net-worth Projection ──────────────────────────────────────────────────────
+const config = resolveNetWorthProjectionConfig()
 assert.equal(config.defaultHorizonYears, 5, 'default horizon')
 assert.equal(config.defaultRatesPercent.electric, 9.4, 'default electric escalation')
 assert.equal(config.defaultRatesPercent.misc, 0, 'misc held flat by default')
-assert.equal(savingsProjectionConfigSchema.safeParse({ ...config, defaultHorizonYears: 0 }).success, false, 'horizon 0 rejected')
+assert.equal(netWorthProjectionConfigSchema.safeParse({ ...config, defaultHorizonYears: 0 }).success, false, 'horizon 0 rejected')
 
-function scenario(edit: (values: SavingsProjectionFormValues) => void): SavingsProjectionFormValues {
-  const values = createSavingsProjectionDefaults(config)
+function scenario(edit: (values: NetWorthProjectionFormValues) => void): NetWorthProjectionFormValues {
+  const values = createNetWorthProjectionDefaults(config)
   edit(values)
   return values
 }
-function zeroRates(values: SavingsProjectionFormValues) {
+function zeroRates(values: NetWorthProjectionFormValues) {
   for (const key of RATE_KEYS) {
     values.assumptions.ratesPercent[key] = 0
   }
 }
-function lastYear(input: SavingsProjectionFormValues) {
-  const projection = projectSavings(input, config)
+function lastYear(input: NetWorthProjectionFormValues) {
+  const projection = projectNetWorth(input, config)
   return { projection, last: projection.years[projection.years.length - 1] }
 }
 
@@ -1698,7 +1700,7 @@ function lastYear(input: SavingsProjectionFormValues) {
 }
 
 // SP-M4: loan payment parity
-function financed(v: SavingsProjectionFormValues) {
+function financed(v: NetWorthProjectionFormValues) {
   v.project.price = 30000
   v.project.incentives = 5000
   v.project.downPayment = 5000
@@ -1801,8 +1803,8 @@ function breakEvenScenario(horizon: number) {
     v.billsAfter.electric = 100
   })
 }
-assert.equal(projectSavings(breakEvenScenario(10), config).summary.breakEvenYear, 5, '4,800/yr against 20,000 → year 5')
-assert.equal(projectSavings(breakEvenScenario(4), config).summary.breakEvenYear, null, 'not within 4 years')
+assert.equal(projectNetWorth(breakEvenScenario(10), config).summary.breakEvenYear, 5, '4,800/yr against 20,000 → year 5')
+assert.equal(projectNetWorth(breakEvenScenario(4), config).summary.breakEvenYear, null, 'not within 4 years')
 
 // SP-I8 uplift as a percent of price
 {
@@ -1816,8 +1818,8 @@ assert.equal(projectSavings(breakEvenScenario(4), config).summary.breakEvenYear,
 }
 
 // SP-M9 no NaN for any valid input, including the untouched defaults
-for (const input of [createSavingsProjectionDefaults(config), scenario(financed), breakEvenScenario(30)]) {
-  const projection = projectSavings(input, config)
+for (const input of [createNetWorthProjectionDefaults(config), scenario(financed), breakEvenScenario(30)]) {
+  const projection = projectNetWorth(input, config)
   for (const year of projection.years) {
     for (const [field, value] of Object.entries(year)) {
       assert.ok(Number.isFinite(value), `year ${year.t} ${field} is ${value}`)
@@ -1833,8 +1835,8 @@ for (const input of [createSavingsProjectionDefaults(config), scenario(financed)
 
 - [ ] **Step 2: Run it to verify it fails**
 
-Run: `pnpm tsx scripts/verify-savings-projection.ts`
-Expected: FAIL with module not found for `savings-projection-calculator/...`.
+Run: `pnpm tsx scripts/verify-net-worth-projection.ts`
+Expected: FAIL with module not found for `net-worth-projection-calculator/...`.
 
 - [ ] **Step 3: Config**
 
@@ -1845,7 +1847,7 @@ import { z } from 'zod'
 
 const ratePercent = z.number().min(-20).max(50)
 
-export const savingsProjectionConfigSchema = z.object({
+export const netWorthProjectionConfigSchema = z.object({
   defaultHorizonYears: z.number().int().min(1).max(30),
   defaultRatesPercent: z.object({
     homeAppreciation: ratePercent,
@@ -1857,33 +1859,33 @@ export const savingsProjectionConfigSchema = z.object({
   }),
 })
 
-export type SavingsProjectionConfig = z.infer<typeof savingsProjectionConfigSchema>
-export type RateKey = keyof SavingsProjectionConfig['defaultRatesPercent']
+export type NetWorthProjectionConfig = z.infer<typeof netWorthProjectionConfigSchema>
+export type RateKey = keyof NetWorthProjectionConfig['defaultRatesPercent']
 ```
 
 `SV/constants/config-defaults.ts`:
 
 ```ts
-import type { SavingsProjectionConfig } from '@/features/calculators/savings-projection-calculator/schemas/config'
+import type { NetWorthProjectionConfig } from '@/features/calculators/net-worth-projection-calculator/schemas/config'
 
-export const SAVINGS_PROJECTION_CONFIG_DEFAULTS = {
+export const NET_WORTH_PROJECTION_CONFIG_DEFAULTS = {
   defaultHorizonYears: 5,
   // Carried over from the old calculator, which cited no source for these rates; they stay visible and editable on screen.
   defaultRatesPercent: { homeAppreciation: 4, electric: 9.4, gas: 13.1, water: 10.3, gardening: 5, misc: 0 },
-} satisfies SavingsProjectionConfig
+} satisfies NetWorthProjectionConfig
 ```
 
 `SV/lib/resolve-config.ts`:
 
 ```ts
-import type { SavingsProjectionConfig } from '@/features/calculators/savings-projection-calculator/schemas/config'
+import type { NetWorthProjectionConfig } from '@/features/calculators/net-worth-projection-calculator/schemas/config'
 
-import { SAVINGS_PROJECTION_CONFIG_DEFAULTS } from '@/features/calculators/savings-projection-calculator/constants/config-defaults'
-import { savingsProjectionConfigSchema } from '@/features/calculators/savings-projection-calculator/schemas/config'
+import { NET_WORTH_PROJECTION_CONFIG_DEFAULTS } from '@/features/calculators/net-worth-projection-calculator/constants/config-defaults'
+import { netWorthProjectionConfigSchema } from '@/features/calculators/net-worth-projection-calculator/schemas/config'
 
 // Admin-configured savings defaults have no storage or admin screen yet, so the System defaults are the whole answer for now.
-export function resolveSavingsProjectionConfig(): SavingsProjectionConfig {
-  return savingsProjectionConfigSchema.parse(SAVINGS_PROJECTION_CONFIG_DEFAULTS)
+export function resolveNetWorthProjectionConfig(): NetWorthProjectionConfig {
+  return netWorthProjectionConfigSchema.parse(NET_WORTH_PROJECTION_CONFIG_DEFAULTS)
 }
 ```
 
@@ -1908,7 +1910,7 @@ export const BILL_CATEGORY_LABELS = {
 `SV/constants/rates.ts`:
 
 ```ts
-import type { RateKey } from '@/features/calculators/savings-projection-calculator/schemas/config'
+import type { RateKey } from '@/features/calculators/net-worth-projection-calculator/schemas/config'
 
 export const RATE_KEYS = ['homeAppreciation', 'electric', 'gas', 'water', 'gardening', 'misc'] as const satisfies readonly RateKey[]
 
@@ -1940,14 +1942,14 @@ export const UPLIFT_MODE_LABELS = {
 ```ts
 import { z } from 'zod'
 
-import { UPLIFT_MODES } from '@/features/calculators/savings-projection-calculator/constants/uplift-modes'
+import { UPLIFT_MODES } from '@/features/calculators/net-worth-projection-calculator/constants/uplift-modes'
 
 const amount = z.number().min(0).nullable()
 const aprPercent = z.number().min(0).max(40).nullable()
 const ratePercent = z.number().min(-20).max(50).nullable()
 const bills = z.object({ electric: amount, gas: amount, water: amount, gardening: amount, misc: amount })
 
-export const savingsProjectionFormSchema = z.object({
+export const netWorthProjectionFormSchema = z.object({
   homeValue: amount,
   liabilities: z.array(z.object({
     label: z.string().max(60),
@@ -1978,17 +1980,17 @@ export const savingsProjectionFormSchema = z.object({
   }),
 })
 
-export type SavingsProjectionFormValues = z.infer<typeof savingsProjectionFormSchema>
+export type NetWorthProjectionFormValues = z.infer<typeof netWorthProjectionFormSchema>
 ```
 
 `SV/constants/form-defaults.ts`:
 
 ```ts
-import type { SavingsProjectionConfig } from '@/features/calculators/savings-projection-calculator/schemas/config'
-import type { SavingsProjectionFormValues } from '@/features/calculators/savings-projection-calculator/schemas/form'
+import type { NetWorthProjectionConfig } from '@/features/calculators/net-worth-projection-calculator/schemas/config'
+import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
 
-type Bills = SavingsProjectionFormValues['billsNow']
-type Liability = SavingsProjectionFormValues['liabilities'][number]
+type Bills = NetWorthProjectionFormValues['billsNow']
+type Liability = NetWorthProjectionFormValues['liabilities'][number]
 
 export const EMPTY_LIABILITY: Liability = { label: '', balance: null, monthlyPayment: null, aprPercent: null }
 
@@ -1996,7 +1998,7 @@ function emptyBills(): Bills {
   return { electric: null, gas: null, water: null, gardening: null, misc: null }
 }
 
-export function createSavingsProjectionDefaults(config: SavingsProjectionConfig): SavingsProjectionFormValues {
+export function createNetWorthProjectionDefaults(config: NetWorthProjectionConfig): NetWorthProjectionFormValues {
   return {
     homeValue: null,
     liabilities: [],
@@ -2021,7 +2023,7 @@ export function createSavingsProjectionDefaults(config: SavingsProjectionConfig)
 `SV/types/index.ts`:
 
 ```ts
-export interface SavingsYear {
+export interface ProjectionYear {
   t: number
   homeValueBefore: number
   homeValueAfter: number
@@ -2032,7 +2034,7 @@ export interface SavingsYear {
   netBenefit: number
 }
 
-export interface SavingsSummary {
+export interface ProjectionSummary {
   monthlyBefore: number
   monthlyAfter: number
   monthlyDifference: number
@@ -2045,22 +2047,22 @@ export interface SavingsSummary {
   heldFlatLiabilities: number[]
 }
 
-export interface SavingsProjection {
-  years: SavingsYear[]
-  summary: SavingsSummary
+export interface NetWorthProjection {
+  years: ProjectionYear[]
+  summary: ProjectionSummary
 }
 ```
 
-- [ ] **Step 5: `projectSavings`**
+- [ ] **Step 5: `projectNetWorth`**
 
-`SV/lib/project-savings.ts`:
+`SV/lib/project-net-worth.ts`:
 
 ```ts
-import type { RateKey, SavingsProjectionConfig } from '@/features/calculators/savings-projection-calculator/schemas/config'
-import type { SavingsProjectionFormValues } from '@/features/calculators/savings-projection-calculator/schemas/form'
-import type { SavingsProjection, SavingsYear } from '@/features/calculators/savings-projection-calculator/types'
+import type { RateKey, NetWorthProjectionConfig } from '@/features/calculators/net-worth-projection-calculator/schemas/config'
+import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
+import type { NetWorthProjection, ProjectionYear } from '@/features/calculators/net-worth-projection-calculator/types'
 
-import { BILL_CATEGORIES } from '@/features/calculators/savings-projection-calculator/constants/bill-categories'
+import { BILL_CATEGORIES } from '@/features/calculators/net-worth-projection-calculator/constants/bill-categories'
 import { amortizedMonthlyPayment, remainingBalance } from '@/shared/lib/loan-calculations'
 
 function amountOf(value: number | null | undefined): number {
@@ -2095,12 +2097,12 @@ function monthsToPayOff(balance: number, aprPercent: number, payment: number): n
   return -Math.log(1 - (monthlyRate * balance) / payment) / Math.log(1 + monthlyRate)
 }
 
-function sumBills(bills: SavingsProjectionFormValues['billsNow']): number {
+function sumBills(bills: NetWorthProjectionFormValues['billsNow']): number {
   return BILL_CATEGORIES.reduce((sum, category) => sum + amountOf(bills[category]), 0)
 }
 
 // Kept free of React and I/O so the engine can move to a shared module once its permanent home is decided.
-export function projectSavings(input: SavingsProjectionFormValues, config: SavingsProjectionConfig): SavingsProjection {
+export function projectNetWorth(input: NetWorthProjectionFormValues, config: NetWorthProjectionConfig): NetWorthProjection {
   const horizonYears = Math.min(30, Math.max(1, Math.round(input.assumptions.horizonYears ?? config.defaultHorizonYears)))
   const rate = (key: RateKey) => toFraction(input.assumptions.ratesPercent[key] ?? config.defaultRatesPercent[key])
 
@@ -2138,11 +2140,11 @@ export function projectSavings(input: SavingsProjectionFormValues, config: Savin
     }, 0)
   }
 
-  function billsPaid(bills: SavingsProjectionFormValues['billsNow'], t: number): number {
+  function billsPaid(bills: NetWorthProjectionFormValues['billsNow'], t: number): number {
     return BILL_CATEGORIES.reduce((sum, category) => sum + cumulativeBills(amountOf(bills[category]), rate(category), t), 0)
   }
 
-  const years: SavingsYear[] = []
+  const years: ProjectionYear[] = []
   for (let t = 0; t <= horizonYears; t++) {
     const growth = (1 + appreciation) ** t
     const monthsPaid = Math.min(12 * t, termMonths)
@@ -2191,19 +2193,19 @@ export function projectSavings(input: SavingsProjectionFormValues, config: Savin
 
 - [ ] **Step 6: Run the test to verify it passes**
 
-Run: `pnpm tsx scripts/verify-savings-projection.ts`
-Expected: `✅ verify-savings-projection passed`
+Run: `pnpm tsx scripts/verify-net-worth-projection.ts`
+Expected: `✅ verify-net-worth-projection passed`
 
 - [ ] **Step 7: Gates**
 
-Run: `pnpm exec eslint --fix src/features/calculators scripts/verify-savings-projection.ts && pnpm tsc && pnpm lint`
+Run: `pnpm exec eslint --fix src/features/calculators scripts/verify-net-worth-projection.ts && pnpm tsc && pnpm lint`
 Expected: no errors. (`tsconfig` does not enable `noUncheckedIndexedAccess`, so indexing `years` needs no non-null assertion.)
 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add src/features/calculators/savings-projection-calculator scripts/verify-savings-projection.ts
-git commit -m "feat(calculators): Savings Projection engine
+git add src/features/calculators/net-worth-projection-calculator scripts/verify-net-worth-projection.ts
+git commit -m "feat(calculators): Net-worth Projection engine
 
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 ```
@@ -2220,13 +2222,13 @@ This covers UI1, UI2 and I8.
 - Create: `src/app/(frontend)/dashboard/calculators/page.tsx`
 - Create: `src/features/calculators/constants/query-parsers.ts`
 - Create: `src/features/calculators/ui/views/calculators-view.tsx`
-- Create (placeholders, replaced in Tasks 6 and 8): `SP/ui/views/scope-pricing-calculator.tsx`, `SV/ui/views/savings-projection-calculator.tsx`
+- Create (placeholders, replaced in Tasks 6 and 8): `SP/ui/views/scope-pricing-calculator.tsx`, `SV/ui/views/net-worth-projection-calculator.tsx`
 
 **Interfaces:**
 - Produces:
   - `ROOTS.dashboard.calculators(): '/dashboard/calculators'`.
   - `CALCULATOR_TABS`, `CalculatorTab` and `calculatorTabParser`.
-  - `CalculatorsView`, `ScopePricingCalculator` and `SavingsProjectionCalculator` (both views take no props).
+  - `CalculatorsView`, `ScopePricingCalculator` and `NetWorthProjectionCalculator` (both views take no props).
 
 - [ ] **Step 1: Root and sidebar**
 
@@ -2254,7 +2256,7 @@ In `src/features/agent-dashboard/lib/get-sidebar-nav.ts`, add `CalculatorIcon` t
 ```ts
 import { parseAsStringLiteral } from 'nuqs'
 
-export const CALCULATOR_TABS = ['scope-pricing', 'savings-projection'] as const
+export const CALCULATOR_TABS = ['scope-pricing', 'net-worth-projection'] as const
 
 export type CalculatorTab = typeof CALCULATOR_TABS[number]
 
@@ -2275,15 +2277,15 @@ export function ScopePricingCalculator() {
 }
 ```
 
-`SV/ui/views/savings-projection-calculator.tsx`:
+`SV/ui/views/net-worth-projection-calculator.tsx`:
 
 ```tsx
 'use client'
 
 import { EmptyState } from '@/shared/components/states/empty-state'
 
-export function SavingsProjectionCalculator() {
-  return <EmptyState title="Savings Projection" description="Being built." />
+export function NetWorthProjectionCalculator() {
+  return <EmptyState title="Net-worth Projection" description="Being built." />
 }
 ```
 
@@ -2299,7 +2301,7 @@ import type { CalculatorTab } from '@/features/calculators/constants/query-parse
 import { useQueryState } from 'nuqs'
 
 import { calculatorTabParser } from '@/features/calculators/constants/query-parsers'
-import { SavingsProjectionCalculator } from '@/features/calculators/savings-projection-calculator/ui/views/savings-projection-calculator'
+import { NetWorthProjectionCalculator } from '@/features/calculators/net-worth-projection-calculator/ui/views/net-worth-projection-calculator'
 import { ScopePricingCalculator } from '@/features/calculators/scope-pricing-calculator/ui/views/scope-pricing-calculator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 
@@ -2316,14 +2318,14 @@ export function CalculatorsView() {
       <Tabs className="flex min-h-0 flex-1 flex-col" onValueChange={value => setTab(value as CalculatorTab)} value={tab}>
         <TabsList>
           <TabsTrigger className="min-h-11" value="scope-pricing">Scope Pricing</TabsTrigger>
-          <TabsTrigger className="min-h-11" value="savings-projection">Savings Projection</TabsTrigger>
+          <TabsTrigger className="min-h-11" value="net-worth-projection">Net-worth Projection</TabsTrigger>
         </TabsList>
 
         <TabsContent className="min-h-0 flex-1 overflow-y-auto data-[state=inactive]:hidden" forceMount value="scope-pricing">
           <ScopePricingCalculator />
         </TabsContent>
-        <TabsContent className="min-h-0 flex-1 overflow-y-auto data-[state=inactive]:hidden" forceMount value="savings-projection">
-          <SavingsProjectionCalculator />
+        <TabsContent className="min-h-0 flex-1 overflow-y-auto data-[state=inactive]:hidden" forceMount value="net-worth-projection">
+          <NetWorthProjectionCalculator />
         </TabsContent>
       </Tabs>
     </div>
@@ -2352,12 +2354,12 @@ export default async function CalculatorsPage() {
 Run: `pnpm exec eslint --fix src/features/calculators "src/app/(frontend)/dashboard/calculators" src/features/agent-dashboard/lib/get-sidebar-nav.ts src/shared/config/roots.ts && pnpm tsc && pnpm lint`
 Expected: no errors.
 
-Before starting a dev server, run `ss -ltnp | grep -E ':300[0-9]'` and reuse a running one if there is one. Open `/dashboard/calculators`. Expected: the sidebar shows "Calculators", both tab placeholders render, and `?tab=savings-projection` selects the second tab.
+Before starting a dev server, run `ss -ltnp | grep -E ':300[0-9]'` and reuse a running one if there is one. Open `/dashboard/calculators`. Expected: the sidebar shows "Calculators", both tab placeholders render, and `?tab=net-worth-projection` selects the second tab.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/shared/config/roots.ts src/features/agent-dashboard/lib/get-sidebar-nav.ts "src/app/(frontend)/dashboard/calculators/page.tsx" src/features/calculators/constants/query-parsers.ts src/features/calculators/ui/views/calculators-view.tsx src/features/calculators/scope-pricing-calculator/ui/views/scope-pricing-calculator.tsx src/features/calculators/savings-projection-calculator/ui/views/savings-projection-calculator.tsx
+git add src/shared/config/roots.ts src/features/agent-dashboard/lib/get-sidebar-nav.ts "src/app/(frontend)/dashboard/calculators/page.tsx" src/features/calculators/constants/query-parsers.ts src/features/calculators/ui/views/calculators-view.tsx src/features/calculators/scope-pricing-calculator/ui/views/scope-pricing-calculator.tsx src/features/calculators/net-worth-projection-calculator/ui/views/net-worth-projection-calculator.tsx
 git commit -m "feat(calculators): /dashboard/calculators route, sidebar entry, tabs shell
 
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
@@ -3498,31 +3500,31 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 
 ---
 
-### Task 8: Savings Projection UI
+### Task 8: Net-worth Projection UI
 
 This covers SP-O1–O4, O8, UI4, UI6 and I7's label. The layout is a plain baseline that Task 9 restyles.
 
 **Files:**
-- Create: `SV/lib/format-years.ts`, `SV/hooks/use-savings-projection.ts`
+- Create: `SV/lib/format-years.ts`, `SV/hooks/use-net-worth-projection.ts`
 - Create: `SV/ui/components/{step-section,projection-number-field,liability-row,home-and-loans-step,bills-step,project-step,assumptions-step,savings-headline,comparison-card,total-paid-chart}.tsx`
-- Replace: `SV/ui/views/savings-projection-calculator.tsx`
-- Modify: `scripts/verify-savings-projection.ts` (`formatYears` check)
+- Replace: `SV/ui/views/net-worth-projection-calculator.tsx`
+- Modify: `scripts/verify-net-worth-projection.ts` (`formatYears` check)
 
 **Interfaces:**
-- Consumes: `projectSavings`, `resolveSavingsProjectionConfig`, `createSavingsProjectionDefaults`, `EMPTY_LIABILITY`, `savingsProjectionFormSchema`, the savings types, `BILL_CATEGORIES` / `BILL_CATEGORY_LABELS`, `RATE_KEYS` / `RATE_LABELS` and `UPLIFT_MODES` / `UPLIFT_MODE_LABELS` (Task 4).
-- Produces: `useSavingsProjection(control, config): SavingsProjection` and `formatYears(n): string`.
+- Consumes: `projectNetWorth`, `resolveNetWorthProjectionConfig`, `createNetWorthProjectionDefaults`, `EMPTY_LIABILITY`, `netWorthProjectionFormSchema`, the savings types, `BILL_CATEGORIES` / `BILL_CATEGORY_LABELS`, `RATE_KEYS` / `RATE_LABELS` and `UPLIFT_MODES` / `UPLIFT_MODE_LABELS` (Task 4).
+- Produces: `useNetWorthProjection(control, config): NetWorthProjection` and `formatYears(n): string`.
 - **Homeowner copy:** never the word "Cost". The chart is "Total paid over time", with the series "Without the project" and "With the project".
 
 - [ ] **Step 1: Write the failing test**
 
-Add `import { formatYears } from '@/features/calculators/savings-projection-calculator/lib/format-years'` to `scripts/verify-savings-projection.ts`. Then insert before the final `console.log`:
+Add `import { formatYears } from '@/features/calculators/net-worth-projection-calculator/lib/format-years'` to `scripts/verify-net-worth-projection.ts`. Then insert before the final `console.log`:
 
 ```ts
 assert.equal(formatYears(1), '1 year', 'singular')
 assert.equal(formatYears(5), '5 years', 'plural')
 ```
 
-Run: `pnpm tsx scripts/verify-savings-projection.ts`
+Run: `pnpm tsx scripts/verify-net-worth-projection.ts`
 Expected: FAIL with module not found.
 
 - [ ] **Step 2: Helper and hook**
@@ -3535,29 +3537,29 @@ export function formatYears(years: number): string {
 }
 ```
 
-Run: `pnpm tsx scripts/verify-savings-projection.ts`. Expected: `✅`.
+Run: `pnpm tsx scripts/verify-net-worth-projection.ts`. Expected: `✅`.
 
-`SV/hooks/use-savings-projection.ts`:
+`SV/hooks/use-net-worth-projection.ts`:
 
 ```ts
 import type { Control } from 'react-hook-form'
-import type { SavingsProjectionConfig } from '@/features/calculators/savings-projection-calculator/schemas/config'
-import type { SavingsProjectionFormValues } from '@/features/calculators/savings-projection-calculator/schemas/form'
-import type { SavingsProjection } from '@/features/calculators/savings-projection-calculator/types'
+import type { NetWorthProjectionConfig } from '@/features/calculators/net-worth-projection-calculator/schemas/config'
+import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
+import type { NetWorthProjection } from '@/features/calculators/net-worth-projection-calculator/types'
 
 import { useMemo } from 'react'
 import { useWatch } from 'react-hook-form'
 
-import { projectSavings } from '@/features/calculators/savings-projection-calculator/lib/project-savings'
+import { projectNetWorth } from '@/features/calculators/net-worth-projection-calculator/lib/project-net-worth'
 
-export function useSavingsProjection(control: Control<SavingsProjectionFormValues>, config: SavingsProjectionConfig): SavingsProjection {
+export function useNetWorthProjection(control: Control<NetWorthProjectionFormValues>, config: NetWorthProjectionConfig): NetWorthProjection {
   const [homeValue, liabilities, billsNow, billsAfter, project, assumptions] = useWatch({
     control,
     name: ['homeValue', 'liabilities', 'billsNow', 'billsAfter', 'project', 'assumptions'],
   })
 
   return useMemo(
-    () => projectSavings({ homeValue, liabilities, billsNow, billsAfter, project, assumptions }, config),
+    () => projectNetWorth({ homeValue, liabilities, billsNow, billsAfter, project, assumptions }, config),
     [homeValue, liabilities, billsNow, billsAfter, project, assumptions, config],
   )
 }
@@ -3593,7 +3595,7 @@ export function StepSection({ step, title, children }: Props) {
 'use client'
 
 import type { FieldPathByValue } from 'react-hook-form'
-import type { SavingsProjectionFormValues } from '@/features/calculators/savings-projection-calculator/schemas/form'
+import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
 
 import { useFormContext } from 'react-hook-form'
 
@@ -3601,7 +3603,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shar
 import { NumberField } from '@/shared/components/ui/number-field'
 
 interface Props {
-  name: FieldPathByValue<SavingsProjectionFormValues, number | null>
+  name: FieldPathByValue<NetWorthProjectionFormValues, number | null>
   label: string
   suffix?: string
   min?: number
@@ -3610,7 +3612,7 @@ interface Props {
 }
 
 export function ProjectionNumberField({ name, label, suffix, min = 0, max, step }: Props) {
-  const { control } = useFormContext<SavingsProjectionFormValues>()
+  const { control } = useFormContext<NetWorthProjectionFormValues>()
 
   return (
     <FormField
@@ -3635,12 +3637,12 @@ export function ProjectionNumberField({ name, label, suffix, min = 0, max, step 
 ```tsx
 'use client'
 
-import type { SavingsProjectionFormValues } from '@/features/calculators/savings-projection-calculator/schemas/form'
+import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
 
 import { Trash2Icon } from 'lucide-react'
 import { useFormContext } from 'react-hook-form'
 
-import { ProjectionNumberField } from '@/features/calculators/savings-projection-calculator/ui/components/projection-number-field'
+import { ProjectionNumberField } from '@/features/calculators/net-worth-projection-calculator/ui/components/projection-number-field'
 import { Button } from '@/shared/components/ui/button'
 import { FormControl, FormField, FormItem, FormLabel } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
@@ -3652,7 +3654,7 @@ interface Props {
 }
 
 export function LiabilityRow({ index, heldFlat, onRemove }: Props) {
-  const { control } = useFormContext<SavingsProjectionFormValues>()
+  const { control } = useFormContext<NetWorthProjectionFormValues>()
 
   return (
     <div className="flex flex-col gap-2 rounded-lg bg-muted/40 p-3">
@@ -3689,15 +3691,15 @@ export function LiabilityRow({ index, heldFlat, onRemove }: Props) {
 ```tsx
 'use client'
 
-import type { SavingsProjectionFormValues } from '@/features/calculators/savings-projection-calculator/schemas/form'
+import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
 
 import { PlusIcon } from 'lucide-react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 
-import { EMPTY_LIABILITY } from '@/features/calculators/savings-projection-calculator/constants/form-defaults'
-import { LiabilityRow } from '@/features/calculators/savings-projection-calculator/ui/components/liability-row'
-import { ProjectionNumberField } from '@/features/calculators/savings-projection-calculator/ui/components/projection-number-field'
-import { StepSection } from '@/features/calculators/savings-projection-calculator/ui/components/step-section'
+import { EMPTY_LIABILITY } from '@/features/calculators/net-worth-projection-calculator/constants/form-defaults'
+import { LiabilityRow } from '@/features/calculators/net-worth-projection-calculator/ui/components/liability-row'
+import { ProjectionNumberField } from '@/features/calculators/net-worth-projection-calculator/ui/components/projection-number-field'
+import { StepSection } from '@/features/calculators/net-worth-projection-calculator/ui/components/step-section'
 import { Button } from '@/shared/components/ui/button'
 
 interface Props {
@@ -3705,7 +3707,7 @@ interface Props {
 }
 
 export function HomeAndLoansStep({ heldFlatLiabilities }: Props) {
-  const { control } = useFormContext<SavingsProjectionFormValues>()
+  const { control } = useFormContext<NetWorthProjectionFormValues>()
   const liabilities = useFieldArray({ control, name: 'liabilities' })
 
   return (
@@ -3728,9 +3730,9 @@ export function HomeAndLoansStep({ heldFlatLiabilities }: Props) {
 ```tsx
 'use client'
 
-import { BILL_CATEGORIES, BILL_CATEGORY_LABELS } from '@/features/calculators/savings-projection-calculator/constants/bill-categories'
-import { ProjectionNumberField } from '@/features/calculators/savings-projection-calculator/ui/components/projection-number-field'
-import { StepSection } from '@/features/calculators/savings-projection-calculator/ui/components/step-section'
+import { BILL_CATEGORIES, BILL_CATEGORY_LABELS } from '@/features/calculators/net-worth-projection-calculator/constants/bill-categories'
+import { ProjectionNumberField } from '@/features/calculators/net-worth-projection-calculator/ui/components/projection-number-field'
+import { StepSection } from '@/features/calculators/net-worth-projection-calculator/ui/components/step-section'
 
 interface Props {
   group: 'billsNow' | 'billsAfter'
@@ -3756,19 +3758,19 @@ export function BillsStep({ group, step, title }: Props) {
 ```tsx
 'use client'
 
-import type { UpliftMode } from '@/features/calculators/savings-projection-calculator/constants/uplift-modes'
-import type { SavingsProjectionFormValues } from '@/features/calculators/savings-projection-calculator/schemas/form'
+import type { UpliftMode } from '@/features/calculators/net-worth-projection-calculator/constants/uplift-modes'
+import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
 
 import { useFormContext, useWatch } from 'react-hook-form'
 
-import { UPLIFT_MODE_LABELS, UPLIFT_MODES } from '@/features/calculators/savings-projection-calculator/constants/uplift-modes'
-import { ProjectionNumberField } from '@/features/calculators/savings-projection-calculator/ui/components/projection-number-field'
-import { StepSection } from '@/features/calculators/savings-projection-calculator/ui/components/step-section'
+import { UPLIFT_MODE_LABELS, UPLIFT_MODES } from '@/features/calculators/net-worth-projection-calculator/constants/uplift-modes'
+import { ProjectionNumberField } from '@/features/calculators/net-worth-projection-calculator/ui/components/projection-number-field'
+import { StepSection } from '@/features/calculators/net-worth-projection-calculator/ui/components/step-section'
 import { FormControl, FormField, FormItem, FormLabel } from '@/shared/components/ui/form'
 import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-group'
 
 export function ProjectStep() {
-  const { control } = useFormContext<SavingsProjectionFormValues>()
+  const { control } = useFormContext<NetWorthProjectionFormValues>()
   const upliftMode = useWatch({ control, name: 'project.uplift.mode' })
 
   return (
@@ -3824,9 +3826,9 @@ export function ProjectStep() {
 ```tsx
 'use client'
 
-import { RATE_KEYS, RATE_LABELS } from '@/features/calculators/savings-projection-calculator/constants/rates'
-import { ProjectionNumberField } from '@/features/calculators/savings-projection-calculator/ui/components/projection-number-field'
-import { StepSection } from '@/features/calculators/savings-projection-calculator/ui/components/step-section'
+import { RATE_KEYS, RATE_LABELS } from '@/features/calculators/net-worth-projection-calculator/constants/rates'
+import { ProjectionNumberField } from '@/features/calculators/net-worth-projection-calculator/ui/components/projection-number-field'
+import { StepSection } from '@/features/calculators/net-worth-projection-calculator/ui/components/step-section'
 
 export function AssumptionsStep() {
   return (
@@ -3855,13 +3857,13 @@ export function AssumptionsStep() {
 `SV/ui/components/savings-headline.tsx`:
 
 ```tsx
-import type { SavingsSummary } from '@/features/calculators/savings-projection-calculator/types'
+import type { ProjectionSummary } from '@/features/calculators/net-worth-projection-calculator/types'
 
-import { formatYears } from '@/features/calculators/savings-projection-calculator/lib/format-years'
+import { formatYears } from '@/features/calculators/net-worth-projection-calculator/lib/format-years'
 import { formatAsDollars } from '@/shared/lib/formatters'
 
 interface Props {
-  summary: SavingsSummary
+  summary: ProjectionSummary
 }
 
 export function SavingsHeadline({ summary }: Props) {
@@ -3921,14 +3923,14 @@ export function ComparisonCard({ title, moneyLabel, money, homeValue, netWorth }
 ```tsx
 'use client'
 
-import type { SavingsYear } from '@/features/calculators/savings-projection-calculator/types'
+import type { ProjectionYear } from '@/features/calculators/net-worth-projection-calculator/types'
 
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
 import { formatAsDollars } from '@/shared/lib/formatters'
 
 interface Props {
-  years: SavingsYear[]
+  years: ProjectionYear[]
 }
 
 export function TotalPaidChart({ years }: Props) {
@@ -3955,39 +3957,39 @@ export function TotalPaidChart({ years }: Props) {
 
 - [ ] **Step 5: The view**
 
-Replace `SV/ui/views/savings-projection-calculator.tsx`:
+Replace `SV/ui/views/net-worth-projection-calculator.tsx`:
 
 ```tsx
 'use client'
 
-import type { SavingsProjectionFormValues } from '@/features/calculators/savings-projection-calculator/schemas/form'
+import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 
-import { createSavingsProjectionDefaults } from '@/features/calculators/savings-projection-calculator/constants/form-defaults'
-import { useSavingsProjection } from '@/features/calculators/savings-projection-calculator/hooks/use-savings-projection'
-import { formatYears } from '@/features/calculators/savings-projection-calculator/lib/format-years'
-import { resolveSavingsProjectionConfig } from '@/features/calculators/savings-projection-calculator/lib/resolve-config'
-import { savingsProjectionFormSchema } from '@/features/calculators/savings-projection-calculator/schemas/form'
-import { AssumptionsStep } from '@/features/calculators/savings-projection-calculator/ui/components/assumptions-step'
-import { BillsStep } from '@/features/calculators/savings-projection-calculator/ui/components/bills-step'
-import { ComparisonCard } from '@/features/calculators/savings-projection-calculator/ui/components/comparison-card'
-import { HomeAndLoansStep } from '@/features/calculators/savings-projection-calculator/ui/components/home-and-loans-step'
-import { ProjectStep } from '@/features/calculators/savings-projection-calculator/ui/components/project-step'
-import { SavingsHeadline } from '@/features/calculators/savings-projection-calculator/ui/components/savings-headline'
-import { TotalPaidChart } from '@/features/calculators/savings-projection-calculator/ui/components/total-paid-chart'
+import { createNetWorthProjectionDefaults } from '@/features/calculators/net-worth-projection-calculator/constants/form-defaults'
+import { useNetWorthProjection } from '@/features/calculators/net-worth-projection-calculator/hooks/use-net-worth-projection'
+import { formatYears } from '@/features/calculators/net-worth-projection-calculator/lib/format-years'
+import { resolveNetWorthProjectionConfig } from '@/features/calculators/net-worth-projection-calculator/lib/resolve-config'
+import { netWorthProjectionFormSchema } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
+import { AssumptionsStep } from '@/features/calculators/net-worth-projection-calculator/ui/components/assumptions-step'
+import { BillsStep } from '@/features/calculators/net-worth-projection-calculator/ui/components/bills-step'
+import { ComparisonCard } from '@/features/calculators/net-worth-projection-calculator/ui/components/comparison-card'
+import { HomeAndLoansStep } from '@/features/calculators/net-worth-projection-calculator/ui/components/home-and-loans-step'
+import { ProjectStep } from '@/features/calculators/net-worth-projection-calculator/ui/components/project-step'
+import { SavingsHeadline } from '@/features/calculators/net-worth-projection-calculator/ui/components/savings-headline'
+import { TotalPaidChart } from '@/features/calculators/net-worth-projection-calculator/ui/components/total-paid-chart'
 import { Form } from '@/shared/components/ui/form'
 
-export function SavingsProjectionCalculator() {
-  const [config] = useState(resolveSavingsProjectionConfig)
-  const form = useForm<SavingsProjectionFormValues>({
-    resolver: zodResolver(savingsProjectionFormSchema),
+export function NetWorthProjectionCalculator() {
+  const [config] = useState(resolveNetWorthProjectionConfig)
+  const form = useForm<NetWorthProjectionFormValues>({
+    resolver: zodResolver(netWorthProjectionFormSchema),
     mode: 'onChange',
-    defaultValues: createSavingsProjectionDefaults(config),
+    defaultValues: createNetWorthProjectionDefaults(config),
   })
-  const { years, summary } = useSavingsProjection(form.control, config)
+  const { years, summary } = useNetWorthProjection(form.control, config)
   const today = years[0]
   const later = years[years.length - 1]
   const inYears = `In ${formatYears(summary.horizonYears)}`
@@ -4020,10 +4022,10 @@ export function SavingsProjectionCalculator() {
 
 - [ ] **Step 6: Gates and smoke**
 
-Run: `pnpm exec eslint --fix src/features/calculators scripts/verify-savings-projection.ts && pnpm tsc && pnpm lint && pnpm tsx scripts/verify-savings-projection.ts`
+Run: `pnpm exec eslint --fix src/features/calculators scripts/verify-net-worth-projection.ts && pnpm tsc && pnpm lint && pnpm tsx scripts/verify-net-worth-projection.ts`
 Expected: no errors, then `✅`.
 
-Smoke on the Savings Projection tab:
+Smoke on the Net-worth Projection tab:
 1. Enter a home value of $800,000, electric $400/mo now and $80/mo after, and a project price of $30,000 at 8% APR for 120 months.
 2. The headline, the four cards and the chart update live, and the break-even year shows.
 3. Clear a rate field; the projection keeps working on the default rate.
@@ -4032,8 +4034,8 @@ Smoke on the Savings Projection tab:
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/features/calculators/savings-projection-calculator scripts/verify-savings-projection.ts
-git commit -m "feat(calculators): Savings Projection screen
+git add src/features/calculators/net-worth-projection-calculator scripts/verify-net-worth-projection.ts
+git commit -m "feat(calculators): Net-worth Projection screen
 
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 ```
@@ -4046,7 +4048,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 
 - [ ] **Step 1: Warm up.** Invoke `/ui-warmup src/features/calculators tablet`. It publishes at least 3 working layout options for both calculators on one private page. Brief it with the spec §7 focal points:
   - Scope Pricing: "Your price" plus "includes tax", and the agent panel stays a closed side sheet.
-  - Savings Projection: cumulative savings plus the break-even year.
+  - Net-worth Projection: cumulative savings plus the break-even year.
   - The context: a rep in the living room, on a tablet turned toward the homeowner.
 - [ ] **Step 2: STOP.** Send the owner the artifact link and wait for their pick. Record it in the tracker's C0 row, e.g. "Direction: option B (owner 2026-09-xx)".
 - [ ] **Step 3: Apply the pick.** Apply the handoff brief to the components. After each calculator, re-run the Task 6/7/8 smokes.
@@ -4071,7 +4073,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 - [ ] **Step 3: Leak check on both tabs.** On `?tab=scope-pricing`:
   1. Run the check below with `browser_evaluate`.
   2. Add "Roof Tear-off" and "Install Panels" (with values), then run it again.
-  3. Switch to `?tab=savings-projection` and run it again.
+  3. Switch to `?tab=net-worth-projection` and run it again.
 
   The check:
 
@@ -4089,7 +4091,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 
   Expected every time: `words: null`, `unitCostLabels: null`, `agentOnlyNodes: 0`.
 - [ ] **Step 4: Panel check.** Open the agent panel with the icon button. Expected: `document.querySelectorAll('[data-agent-only]').length === 1`, and its text contains "Cost" and "Multiplier". Close it with an outside click; the count returns to 0.
-- [ ] **Step 5: Tab persistence (Review Focus 1).** With the tear-off line filled in, switch to Savings Projection, type a home value, and switch back. The tear-off line and its price are still there. Switch again; the home value is still there.
+- [ ] **Step 5: Tab persistence (Review Focus 1).** With the tear-off line filled in, switch to Net-worth Projection, type a home value, and switch back. The tear-off line and its price are still there. Switch again; the home value is still there.
 - [ ] **Step 6: Gates.** Run `pnpm tsc && pnpm lint`, then both verify scripts.
 - [ ] **Step 7: Commit.** If the audit changed files:
 
@@ -4115,7 +4117,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 
 ```markdown
 | **Scope Pricing** | The per-scope sales calculator at `/dashboard/calculators`: a quote of Formula lines and manual lines, priced as `Price = round(Cost × Multiplier)`, tax inside the Price. Homeowner-facing; Cost and Multiplier live only in its agent panel. Code: `src/features/calculators/scope-pricing-calculator/`. | Roof tear-off + solar quote |
-| **Savings Projection** | The now-vs-future sales calculator: bills, loans, home value and net worth before and after a project over N years, with break-even. Every assumption is on screen. Never called a "snapshot" (reserved term). Code: `src/features/calculators/savings-projection-calculator/`. | "Comes out ahead in year 5" |
+| **Net-worth Projection** | The now-vs-future sales calculator: bills, loans, home value and net worth before and after a project over N years, with break-even. Every assumption is on screen. Never called a "snapshot" (reserved term). Code: `src/features/calculators/net-worth-projection-calculator/`. | "Comes out ahead in year 5" |
 | **Formula** | Per-scope code that turns Variables (and project context) into a **Cost**. Declares the Variables it reads; that declaration drives both its form fields and its argument type. | `tearOff`, `installPanels` |
 | **Unit Cost** | A named Cost constant a Formula multiplies by, e.g. $/BSQ or $/W. Admin-configured (System defaults in code until an admin screen exists). Agent-only on screen. | Tear-Off (Shingles) per BSQ = $480 |
 | **Pricing Key** | The key a Formula is registered under. Today it is the old remodel-x scope accessor; it becomes the Notion scope slug once scopes store one. | `installBattery` |
@@ -4149,7 +4151,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 | §2 names | 5 (tab labels), 6–8 (copy), 11 (glossary) |
 | §3 layout and rules | all; the Global Constraints section |
 | §4.1 `ScopePricingConfig` and MPU, trade keys, labels | 2 |
-| §4.2 `SavingsProjectionConfig` | 4 |
+| §4.2 `NetWorthProjectionConfig` | 4 |
 | §5.1 Variables and project context | 2 |
 | §5.2 Formulas and registry | 2 |
 | §5.3 pricing math, permits, floor, target | 3 |
@@ -4158,7 +4160,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 | §6.3 `remainingBalance` | 1 |
 | §7.1 Scope Pricing UI | 6 |
 | §7.2 agent panel | 7 |
-| §7.3 Savings Projection UI | 8 |
+| §7.3 Net-worth Projection UI | 8 |
 | §7.4 both calculators (RHF, `type="button"`, `NumberField`, 44 px, tablet-first) | 6–8, 10 |
 | §8 V1–V4 | 1–4 (plus the gates in every task) |
 | §8 V6 and M4 | 10 |

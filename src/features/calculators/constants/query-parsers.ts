@@ -1,7 +1,7 @@
 import { parseAsStringLiteral } from 'nuqs'
 
-export const CALCULATOR_TABS = ['scope-pricing', 'savings-projection'] as const
+export const CALCULATOR_TABS = ['net-worth-projection', 'scope-pricing'] as const
 
 export type CalculatorTab = typeof CALCULATOR_TABS[number]
 
-export const calculatorTabParser = parseAsStringLiteral(CALCULATOR_TABS).withDefault('scope-pricing')
+export const calculatorTabParser = parseAsStringLiteral(CALCULATOR_TABS).withDefault('net-worth-projection')

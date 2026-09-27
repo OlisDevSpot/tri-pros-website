@@ -1,14 +1,14 @@
 import { z } from 'zod'
 
-import { UPLIFT_MODES } from '@/features/calculators/savings-projection-calculator/constants/uplift-modes'
-import { ratePercentSchema } from '@/features/calculators/savings-projection-calculator/schemas/config'
+import { UPLIFT_MODES } from '@/features/calculators/net-worth-projection-calculator/constants/uplift-modes'
+import { ratePercentSchema } from '@/features/calculators/net-worth-projection-calculator/schemas/config'
 
 const amount = z.number().min(0).nullable()
 const aprPercent = z.number().min(0).max(40).nullable()
 const ratePercent = ratePercentSchema.nullable()
 const bills = z.object({ electric: amount, gas: amount, water: amount, gardening: amount, misc: amount })
 
-export const savingsProjectionFormSchema = z.object({
+export const netWorthProjectionFormSchema = z.object({
   homeValue: amount,
   liabilities: z.array(z.object({
     label: z.string().max(60),
@@ -39,4 +39,4 @@ export const savingsProjectionFormSchema = z.object({
   }),
 })
 
-export type SavingsProjectionFormValues = z.infer<typeof savingsProjectionFormSchema>
+export type NetWorthProjectionFormValues = z.infer<typeof netWorthProjectionFormSchema>
