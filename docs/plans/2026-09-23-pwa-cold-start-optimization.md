@@ -537,7 +537,21 @@ Reported effect of this pattern elsewhere: TTFB ~700 ms → 60–80 ms; ours dro
 
 ## 7. Phase 4 — bundle and server startup
 
-- **Session double-read (cheap, real):** the tRPC RSC context (`src/trpc/lib/create-http-context.ts`) resolves the session with its own `cache()`, separate from `getCachedSession()`, so every prefetching dashboard page runs `getSession` twice per request. Consolidating them (the follow-up already noted in `get-cached-session.ts`) removes one DB query from every cold open.
+- **Session double-read — a sequential waterfall, not just a duplicate (cheap, real; verified 2026-09-27):** `dashboard/page.tsx:12` awaits `protectDashboardPage()` (session read #1, memoized with the layout via `getCachedSession()`), and only *then* fires the `prefetch()`es. Each prefetch builds its context through `createRSCTRPCContext` → `createHTTPTRPCContext`, which calls `auth.api.getSession` again at `src/trpc/lib/create-http-context.ts:15` under its **own** `cache()` (session read #2). On the cold path (better-auth cookie cache older than 5 min) that is two back-to-back DB round-trips before the first data query starts. Every prefetching dashboard page pays it. Proposed fix — make the RSC context reuse the request memo (the HTTP adapter context for `/api/trpc` stays as is):
+  ```ts
+  // src/trpc/lib/create-http-context.ts
+  import { getCachedSession } from '@/shared/domains/auth/lib/get-cached-session'
+
+  export const createRSCTRPCContext = cache(async (): Promise<HTTPTRPCContext> => ({
+    session: await getCachedSession(),
+    ability: null,
+    scope: null,
+    req: undefined,
+    resHeaders: new Headers(),
+  }))
+  ```
+  Also update the "consolidating the two is a possible follow-up" note in `get-cached-session.ts` and the `src/trpc/DOCS.md#rsc-prefetch-uses-rsc-context` rule in the same PR.
+- **Other top-level session awaits (same pattern as §2.5, not PWA-critical):** `src/app/(frontend)/proposal-flow/layout.tsx:18` (customer-facing proposal links) and `src/app/(frontend)/intake/page.tsx:23` call `auth.api.getSession` directly before rendering. Same Suspense-slot treatment applies if proposal-link cold opens matter.
 - **Client:** run `@next/bundle-analyzer` on the dashboard route. Candidates: Ably (`src/shared/services/providers/upstash/realtime-client.ts` connects at module load on *every* page; only `meeting-flow` uses it → `autoConnect: false` + connect from `RealtimeProvider` in an effect, or mount the provider in `meeting-flow` only), `motion/react` (sidebar + template), `recharts` (analytics only — confirm it isn't in the dashboard chunk), tiptap (editor surfaces only).
 - **Server:** every dashboard page function bundles the full `appRouter` (`src/trpc/server.ts` → `createTRPCOptionsProxy`), dragging every provider SDK in at module scope. Cheapest first: lazy `await import()` of heavy SDKs inside the procedures that use them (Twilio, AWS S3, Notion, pdfmake, AI SDK, web-push, Resend); `serverExternalPackages` for the biggest (reduces bundle size, not parse time — the import graph must also be lazy). Measure with Vercel's function-size + startup metrics before/after.
 - Keep the start route free of third-party scripts; fonts already go through `next/font`.
@@ -566,5 +580,6 @@ Still open (not fixed here):
 | §5 settings (region, Fluid, pooled URL) | ⬜ owner action in Vercel/Neon consoles |
 | §5 paid tiers | ⬜ decide after §4 (Hobby terms already point at Pro) |
 | §6 Next 16 + `cacheComponents` | ⬜ separate branch; CI build validates |
-| §7 session double-read + bundle | ⬜ after analyzer run |
+| §7 session double-read (sequential waterfall) | ⬜ proposed fix in §7; one-file change |
+| §7 bundle | ⬜ after analyzer run |
 | §8 remaining doc drift | ⬜ |
