@@ -4,9 +4,9 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
 
 import { meetingsMonthInput } from '@/features/agent-dashboard/constants/dashboard-queries'
-import { businessDayKey } from '@/features/agent-dashboard/lib/meeting-windows'
 import { Calendar } from '@/shared/components/ui/calendar'
 import { Skeleton } from '@/shared/components/ui/skeleton'
+import { businessDayKey } from '@/shared/lib/business-time'
 import { useTRPC } from '@/trpc/helpers'
 
 import { CalendarMeetingDayButton } from './calendar-meeting-day-button'

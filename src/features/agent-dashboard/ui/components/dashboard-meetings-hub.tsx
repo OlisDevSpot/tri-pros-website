@@ -5,9 +5,9 @@ import { CalendarCheckIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 
-import { businessDayKey, businessToday } from '@/features/agent-dashboard/lib/meeting-windows'
 import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
+import { businessDayKey, businessToday } from '@/shared/lib/business-time'
 
 import { DashboardMeetingsCalendar } from './dashboard-meetings-calendar'
 import { DashboardModule } from './dashboard-module'

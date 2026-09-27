@@ -1,7 +1,7 @@
 import { activeProjectsInput, awaitingProposalsInput, meetingsMonthInput, meetingsWindowInput, onHoldProjectsInput, sentProposalsInput } from '@/features/agent-dashboard/constants/dashboard-queries'
-import { businessToday } from '@/features/agent-dashboard/lib/meeting-windows'
 import { DashboardView } from '@/features/agent-dashboard/ui/views/dashboard-view'
 import { protectDashboardPage } from '@/shared/domains/permissions/lib/protect-dashboard-page'
+import { businessToday } from '@/shared/lib/business-time'
 import { HydrateClient } from '@/trpc/components/hydrate-client'
 import { prefetch } from '@/trpc/lib/prefetch'
 import { trpc } from '@/trpc/server'
