@@ -19,13 +19,13 @@
  */
 import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
 import process from 'node:process'
-import { slugifyTradeName } from '@/shared/lib/slugify-trade-name'
 import { notionDatabasesMeta } from '@/shared/modules/construction/sources/notion/databases'
 import { checkbox, richText, titleText } from '@/shared/modules/construction/sources/notion/extractors'
 import { queryNotionDatabase } from '@/shared/modules/construction/sources/notion/query'
 import { TRADE_PROPERTIES_MAP } from '@/shared/modules/construction/sources/notion/trades/properties-map'
 import { notionClient } from '@/shared/services/providers/notion/client'
 import { planSlugBackfill, slugPropertyProblem } from './lib/plan-slug-backfill'
+import { slugifyTradeName } from './lib/slugify-trade-name'
 import './lib/load-env'
 
 const SLUG = TRADE_PROPERTIES_MAP.slug.label

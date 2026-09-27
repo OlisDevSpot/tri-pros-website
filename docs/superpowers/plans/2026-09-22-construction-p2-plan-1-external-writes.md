@@ -437,6 +437,8 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 ### Task 2: The adapter reads the stored slug; the helper leaves `src/`
 
+> **Done 2026-09-26.** Deviations under the 2026-09-23 CLAUDE.md rules: no DOCS.md citations or file banner in code (Steps 4, 6, 7); Step 9's two new DOCS sections were not written, only the existing lines Task 1 made false were corrected; the seam check dropped the `slug.length > 0` assert (the schema regex covers it). V3 identical, 27 unique slugs live.
+
 After this task `Trade.slug` comes from Notion and nothing in `src/` can derive one. The shared helper moves to `scripts/lib/` because the backfill is its only remaining consumer.
 
 **Files:**
@@ -452,9 +454,9 @@ After this task `Trade.slug` comes from Notion and nothing in `src/` can derive 
 - Consumes: `TRADE_PROPERTIES_MAP.slug.label` (Task 1), `richText` extractor.
 - Produces: `tradeSchema.slug` rejects anything but `^[a-z0-9]+(?:-[a-z0-9]+)*$`; `pageToTrade` returns `null` for a blank, malformed or missing slug; DOCS anchors `#catalog-identity`, `#slug-is-stored` for code to cite.
 
-- [ ] **Step 0: Commit-gate snapshot.**
+- [x] **Step 0: Commit-gate snapshot.**
 
-- [ ] **Step 1: V3 baseline — dump every live `id → slug` before touching the adapter**
+- [x] **Step 1: V3 baseline — dump every live `id → slug` before touching the adapter**
 
 Create `$S/dump-trade-slugs.ts` (scratchpad, not committed):
 
@@ -472,7 +474,7 @@ main()
 Run: `npx tsx --tsconfig tsconfig.json $S/dump-trade-slugs.ts 2>/dev/null > $S/slugs-before.txt && wc -l $S/slugs-before.txt`
 Expected: `27`. (The `dropped 1 of 28 rows` warn is the disabled row, on stderr.)
 
-- [ ] **Step 2: Write the failing adapter fixtures**
+- [x] **Step 2: Write the failing adapter fixtures**
 
 In `scripts/verify-notion-adapters.ts`, add two imports after the existing sows import:
 
@@ -517,12 +519,12 @@ assert.equal(pageToTrade(disabledTrade), null, 'the disabled gate still runs bef
 
 Update the final line to `console.log('✅ notion adapters return entity-or-null and never throw; trade slugs are stored')`.
 
-- [ ] **Step 3: Run it to verify it fails**
+- [x] **Step 3: Run it to verify it fails**
 
 Run: `npx tsx scripts/verify-notion-adapters.ts`
 Expected: FAIL on the first trade assertion — the adapter still derives `roof-and-gutters` from the title, so `'roof-and-gutters' !== 'roofing-custom'`.
 
-- [ ] **Step 4: Tighten the schema and switch the adapter**
+- [x] **Step 4: Tighten the schema and switch the adapter**
 
 In `src/shared/modules/construction/core/schemas/index.ts`, replace
 
@@ -546,12 +548,12 @@ In `src/shared/modules/construction/sources/notion/trades/adapter.ts`:
 
 Nothing else in the file changes: a missing `Slug` property makes `richText` throw, the existing `catch` returns `null` with the `[pageToTrade] Failed to extract trade` warn, and a blank or malformed slug fails `safeParse` with the `Skipping invalid trade` warn. Both are `#adapter-returns-entity-or-null` working.
 
-- [ ] **Step 5: Run the fixtures to verify they pass**
+- [x] **Step 5: Run the fixtures to verify they pass**
 
 Run: `npx tsx scripts/verify-notion-adapters.ts`
 Expected: `✅ notion adapters return entity-or-null and never throw; trade slugs are stored` (with three `[pageToTrade]` warn lines above it — those are the null-returning fixtures).
 
-- [ ] **Step 6: Move the helper out of `src/`**
+- [x] **Step 6: Move the helper out of `src/`**
 
 ```bash
 git mv src/shared/lib/slugify-trade-name.ts scripts/lib/slugify-trade-name.ts
@@ -569,7 +571,7 @@ In `scripts/backfill-trade-slugs.ts` change `import { slugifyTradeName } from '@
 
 Grep gate: `grep -rn "slugifyTradeName\|slugify-trade-name" src/` → expected **no output**.
 
-- [ ] **Step 7: Extend the seam check — slugs are unique**
+- [x] **Step 7: Extend the seam check — slugs are unique**
 
 In `scripts/verify-catalog-seam.ts`, replace the trades loop
 
@@ -599,12 +601,12 @@ and change the final log to `console.log(\`✓ catalog seam verified (${orphans}
 Run: `npx tsx scripts/verify-catalog-seam.ts`
 Expected: `trades: 27  scopes: 120` … `✓ catalog seam verified (… 27 unique slugs)`. If it prints `trades: 0`, the adapter is reading a property that is not there — go back to Task 1 gate 1; do not commit.
 
-- [ ] **Step 8: V3 — the slug set is byte-identical**
+- [x] **Step 8: V3 — the slug set is byte-identical**
 
 Run: `npx tsx --tsconfig tsconfig.json $S/dump-trade-slugs.ts 2>/dev/null > $S/slugs-after.txt && diff $S/slugs-before.txt $S/slugs-after.txt && echo "V3 OK: identical"`
 Expected: `V3 OK: identical`. The sitemap is built from these slugs (`src/app/sitemap.ts:75-86` via `getTradesByPillar`), so an identical set is an identical sitemap.
 
-- [ ] **Step 9: Write the two anchors**
+- [x] **Step 9: Write the two anchors**
 
 In `src/shared/modules/construction/DOCS.md`, insert before `### category-taxonomy`:
 
@@ -638,12 +640,12 @@ That makes `scripts/backfill-trade-slugs.ts` the tool for a new or re-enabled tr
 - `scripts/backfill-trade-slugs.ts` — fills blank `Slug` rows from the title (dry-run by default, `--apply` owner-run); the tool for a new or re-enabled trade
 ```
 
-- [ ] **Step 10: Type-check, lint, and the non-import-line audit**
+- [x] **Step 10: Type-check, lint, and the non-import-line audit**
 
 Run: `pnpm tsc && CI=1 pnpm exec eslint --fix scripts/verify-notion-adapters.ts scripts/verify-catalog-seam.ts scripts/backfill-trade-slugs.ts scripts/lib/slugify-trade-name.ts src/shared/modules/construction/sources/notion/trades/adapter.ts src/shared/modules/construction/core/schemas/index.ts && CI=1 pnpm lint`
 Expected: clean. `tsc` also proves no other `src/` file imported the moved helper.
 
-- [ ] **Step 11: Commit** (commit gate first)
+- [x] **Step 11: Commit** (commit gate first)
 
 ```bash
 git add src/shared/modules/construction/core/schemas/index.ts src/shared/modules/construction/sources/notion/trades/adapter.ts src/shared/lib/slugify-trade-name.ts scripts/lib/slugify-trade-name.ts scripts/backfill-trade-slugs.ts scripts/verify-notion-adapters.ts scripts/verify-catalog-seam.ts src/shared/modules/construction/DOCS.md

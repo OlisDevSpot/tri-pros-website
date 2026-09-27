@@ -21,7 +21,7 @@ export type ScopeKind = (typeof scopeKinds)[number]
 export const tradeSchema = z.object({
   id: z.string(),
   name: z.string(),
-  slug: z.string(),
+  slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'slug must be a lowercase hyphenated URL segment'),
   coverImageUrl: z.string().nullable().default(null),
   category: z.enum(tradeCategories).optional(),
   scopeIds: z.array(z.string()).default([]),

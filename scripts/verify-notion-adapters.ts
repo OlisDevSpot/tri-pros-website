@@ -6,6 +6,8 @@ import { pageToScope } from '@/shared/modules/construction/sources/notion/scopes
 import { SCOPE_PROPERTIES_MAP } from '@/shared/modules/construction/sources/notion/scopes/properties-map'
 import { pageToSowTemplate } from '@/shared/modules/construction/sources/notion/sows/adapter'
 import { SOW_TEMPLATE_PROPERTIES_MAP } from '@/shared/modules/construction/sources/notion/sows/properties-map'
+import { pageToTrade } from '@/shared/modules/construction/sources/notion/trades/adapter'
+import { TRADE_PROPERTIES_MAP } from '@/shared/modules/construction/sources/notion/trades/properties-map'
 
 const TRADE_ID = '6240ca1b-548b-837d-a9c0-01acc1fb530a'
 const SCOPE_ID = '7351db2c-659c-948e-b0d1-12bdd2ac641b'
@@ -18,6 +20,12 @@ function select(name: string) {
 }
 function relation(ids: string[]) {
   return { type: 'relation', relation: ids.map(id => ({ id })) }
+}
+function richText(text: string) {
+  return { type: 'rich_text', rich_text: [{ plain_text: text }] }
+}
+function checkbox(checked: boolean) {
+  return { type: 'checkbox', checkbox: checked }
 }
 function page(properties: Record<string, unknown>, id = SCOPE_ID): PageObjectResponse {
   return { id, cover: null, properties } as unknown as PageObjectResponse
@@ -58,6 +66,25 @@ assert.equal(pageToScope(orphanScope), null, 'a scope with no trade relation ret
 // A missing required property used to throw out of the extractor.
 assert.equal(pageToScope(page({})), null, 'a page missing every property returns null')
 
+// --- trades ---
+function tradePage(slug: unknown) {
+  return page({
+    [TRADE_PROPERTIES_MAP.name.label]: title('Roof & Gutters'),
+    [TRADE_PROPERTIES_MAP.slug.label]: slug,
+    [TRADE_PROPERTIES_MAP.category.label]: select('Energy Efficiency'),
+    [TRADE_PROPERTIES_MAP.scopeIds.label]: relation([SCOPE_ID]),
+    [TRADE_PROPERTIES_MAP.disabled.label]: checkbox(false),
+  }, TRADE_ID)
+}
+assert.equal(pageToTrade(tradePage(richText('roofing-custom')))?.slug, 'roofing-custom', 'the slug comes from the Slug property, not from the title')
+assert.equal(pageToTrade(tradePage(richText(''))), null, 'a blank Slug fails schema: the trade is not in the catalog')
+// A human can type anything into the Slug cell; a slug that is not a URL segment must not reach a URL.
+assert.equal(pageToTrade(tradePage(richText('Roof Gutters'))), null, 'spaces or capitals in a stored slug fail schema')
+const noSlugProperty = page({ [TRADE_PROPERTIES_MAP.name.label]: title('Roof & Gutters') }, TRADE_ID)
+assert.equal(pageToTrade(noSlugProperty), null, 'a page without the Slug property returns null, never throws')
+const disabledTrade = page({ ...tradePage(richText('roofing-custom')).properties, [TRADE_PROPERTIES_MAP.disabled.label]: checkbox(true) }, TRADE_ID)
+assert.equal(pageToTrade(disabledTrade), null, 'the disabled gate still runs before the slug is read')
+
 // --- sows ---
 const validSow = page({
   [SOW_TEMPLATE_PROPERTIES_MAP.name.label]: title('Demo & Haul'),
@@ -70,4 +97,4 @@ assert.equal(pageToSowTemplate(page({})), null, 'a malformed SOW page returns nu
 // --- pain points ---
 assert.equal(pageToPainPoint(page({})), null, 'a malformed pain-point page returns null')
 
-console.log('✅ notion adapters return entity-or-null and never throw')
+console.log('✅ notion adapters return entity-or-null and never throw; trade slugs are stored')

@@ -1,8 +1,7 @@
 import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
 import type { Trade } from '@/shared/modules/construction/core/schemas'
-import { slugifyTradeName } from '@/shared/lib/slugify-trade-name'
 import { tradeSchema } from '@/shared/modules/construction/core/schemas'
-import { checkbox, relationIds, selectName, titleText } from '../extractors'
+import { checkbox, relationIds, richText, selectName, titleText } from '../extractors'
 import { normalizeNotionId } from '../normalize-id'
 import { TRADE_PROPERTIES_MAP } from './properties-map'
 
@@ -36,7 +35,7 @@ export function pageToTrade(page: PageObjectResponse): Trade | null {
     const raw: Partial<Trade> = {
       id: normalizeNotionId(page.id),
       name,
-      slug: slugifyTradeName(name),
+      slug: richText(p, TRADE_PROPERTIES_MAP.slug.label).trim(),
       coverImageUrl: extractCoverImageUrl(page),
       category: selectName(p, TRADE_PROPERTIES_MAP.category.label) ?? undefined,
       scopeIds: relationIds(p, TRADE_PROPERTIES_MAP.scopeIds.label).map(normalizeNotionId),

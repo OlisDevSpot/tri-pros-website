@@ -21,6 +21,7 @@ consumer → trpc/routers/construction.router  →  service.ts (unstable_cache)
 | Notion column | App field | Note |
 |---|---|---|
 | `Trade` (title) | `Trade.name` | |
+| `Slug` (text) | `Trade.slug` | stored, never derived |
 | `Type` (select) | `Trade.category` | values in `tradeCategories` |
 | `Scopes` (relation) | `Trade.scopeIds` | |
 | `Disabled` (checkbox) | — | extraction gate, never a field — see `#disabled-checkbox-is-extraction-time-gate` |
@@ -34,7 +35,7 @@ consumer → trpc/routers/construction.router  →  service.ts (unstable_cache)
 
 `SowTemplate` is not called `SOW`: `modules/proposals/core/types.ts` already owns `SOW`, a proposal's own written scope. A catalog SOW is a reusable template.
 
-`Trade.slug` and `coverImageUrl` are derived at the adapter (`slugifyTradeName`, the page cover), so they have no column and the property maps `Omit` them.
+`Trade.slug` is stored in the Notion `Slug` property and never derived from the name, so a rename in Notion never moves a URL. A blank or malformed slug drops the row; `scripts/backfill-trade-slugs.ts` fills blank ones. `coverImageUrl` is derived at the adapter from the page cover, so it has no column and the property maps `Omit` it.
 
 **Why**: the app's vocabulary must survive the vendor. Renaming `Entry Type` in Notion is a one-line change in one property map, not a sweep through features.
 **Reference impl**: `core/schemas/index.ts`; `sources/notion/scopes/properties-map.ts`
@@ -108,7 +109,7 @@ Every list read loops on `has_more` / `next_cursor` at `page_size: 100`. Notion'
 
 The trades database has a `Disabled` checkbox. `pageToTrade` checks it **first** — before extracting anything else — and returns `null` when it is `true`. The row is skipped silently (no warn) because skipping is intentional, not exceptional.
 
-`Trade` has **no `disabled` field**. The checkbox appears only in `TRADE_PROPERTIES_MAP`, typed through `TradePropertySource = Omit<Trade, 'slug' | 'coverImageUrl'> & { disabled: boolean }`. Nothing downstream can filter on it because nothing downstream ever receives a disabled row.
+`Trade` has **no `disabled` field**. The checkbox appears only in `TRADE_PROPERTIES_MAP`, typed through `TradePropertySource = Omit<Trade, 'coverImageUrl'> & { disabled: boolean }`. Nothing downstream can filter on it because nothing downstream ever receives a disabled row.
 
 **Why**: marketing uses the checkbox to hide rows that are mid-edit — incomplete name, experimental `Type` value not yet in the enum. Gating before validation lets those drafts hold any data without polluting `console.warn`. Before P1 the filter also ran again in a client hook and in the router, so "is this trade visible?" had three answers; now it has one.
 **Reference impl**: `sources/notion/trades/adapter.ts` (the `if (checkbox(...)) return null` at the top)

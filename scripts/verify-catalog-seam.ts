@@ -30,9 +30,13 @@ async function main() {
 
   const tradeIds = new Set(trades.map(t => t.id))
 
+  // The adapter already drops blank or malformed slugs, so the live risk left
+  // is two trades sharing one: they would collide in URLs and slug-keyed maps.
+  const slugs = new Map<string, string>()
   for (const trade of trades) {
     assert.ok(UUID.test(trade.id), `trade id is not a dashed lowercase UUID: ${trade.id}`)
-    assert.ok(trade.slug.length > 0, `trade has no slug: ${trade.name}`)
+    assert.ok(!slugs.has(trade.slug), `duplicate slug "${trade.slug}": "${slugs.get(trade.slug)}" and "${trade.name}"`)
+    slugs.set(trade.slug, trade.name)
   }
 
   let orphans = 0
@@ -50,7 +54,7 @@ async function main() {
   // the disabled gate has regressed.
   assert.ok(orphans < scopes.length * 0.2, `${orphans} of ${scopes.length} scopes point at a trade that is not in the catalog`)
 
-  console.log(`✓ catalog seam verified (${orphans} orphan scope(s), all ids normalized, all kinds valid)`)
+  console.log(`✓ catalog seam verified (${orphans} orphan scope(s), all ids normalized, all kinds valid, ${slugs.size} unique slugs)`)
 }
 
 main().catch((err) => {
