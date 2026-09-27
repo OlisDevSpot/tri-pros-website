@@ -2,7 +2,32 @@ import assert from 'node:assert/strict'
 
 import { meetingMonthWindow } from '@/features/agent-dashboard/lib/meeting-windows'
 import { isProjectMeeting, isSit, MEETING_OUTCOME_SIT, meetingOutcomes } from '@/shared/constants/enums/meetings'
+import { groupDuplicatePeople } from '@/shared/entities/customers/lib/group-duplicate-people'
 import { businessMonthKey, businessMonthWindow } from '@/shared/lib/business-time'
+import { normalizeEmail } from '@/shared/lib/email'
+
+// ── 1. Grouping ─────────────────────────────────────────────────────────────
+assert.equal(normalizeEmail('  Bob@X.com '), 'bob@x.com', 'email trimmed and lower-cased')
+assert.equal(normalizeEmail('   '), null, 'blank email is no email')
+{
+  const people = groupDuplicatePeople([
+    { id: 'b', phone: '(555) 123-4567', email: 'Bob@X.com ', createdAt: '2026-06-02T17:00:00.000Z' },
+    { id: 'a', phone: '5551234567', email: null, createdAt: '2026-06-01T17:00:00.000Z' },
+    { id: 'c', phone: null, email: 'bob@x.com', createdAt: '2026-06-03T17:00:00.000Z' },
+    { id: 'd', phone: '15559876543', email: null, createdAt: '2026-06-04T17:00:00.000Z' },
+    { id: 'e', phone: '5559876543', email: null, createdAt: '2026-06-04T17:00:00.000Z' },
+    { id: 'f', phone: null, email: null, createdAt: '2026-06-05T17:00:00.000Z' },
+    { id: 'g', phone: '', email: '  ', createdAt: '2026-06-06T17:00:00.000Z' },
+  ])
+  assert.equal(people.get('a'), 'a', 'a~b by phone, b~c by email: the earliest record names the person')
+  assert.equal(people.get('b'), 'a', 'formatted phone matches its 10-digit form')
+  assert.equal(people.get('c'), 'a', 'matches chain through email case/whitespace variants')
+  assert.equal(people.get('d'), 'd', '1-prefixed phone matches; same createdAt ties break by id')
+  assert.equal(people.get('e'), 'd', 'household phone is one person')
+  assert.equal(people.get('f'), 'f', 'no phone, no email: alone')
+  assert.equal(people.get('g'), 'g', 'empty phone and blank email never match each other')
+}
+console.log('1. Grouping ✓')
 
 // ── 3. Sit map ──────────────────────────────────────────────────────────────
 for (const outcome of meetingOutcomes) {
