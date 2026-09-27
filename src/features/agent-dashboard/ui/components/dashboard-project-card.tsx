@@ -4,7 +4,7 @@ import type { ProjectRow } from '@/shared/modules/projects/core/lib/columns-regi
 
 import { FolderOpenIcon, MapPinIcon } from 'lucide-react'
 
-import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
+import { EntityActionMenu } from '@/shared/components/entities/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
 import { cn } from '@/shared/lib/utils'
 import { useProjectActionConfigs } from '@/shared/modules/projects/core/hooks/use-project-action-configs'

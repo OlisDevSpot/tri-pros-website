@@ -1,4 +1,4 @@
-import type { EntityActionOption } from '@/shared/components/entity-actions/types'
+import type { EntityActionOption } from '@/shared/components/entities/entity-actions/types'
 
 import { selectableMeetingOutcomes } from '@/shared/constants/enums'
 import { MEETING_OUTCOME_DOT_COLORS, MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'

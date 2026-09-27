@@ -1,9 +1,9 @@
 'use client'
 
-import type { EntityActionClickConfig, EntityActionConfig } from '@/shared/components/entity-actions/types'
+import type { EntityActionClickConfig, EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
 
-import { isCustomAction, isSelectAction } from '@/shared/components/entity-actions/types'
-import { EntityActionDropdown } from '@/shared/components/entity-actions/ui/entity-action-dropdown'
+import { isCustomAction, isSelectAction } from '@/shared/components/entities/entity-actions/types'
+import { EntityActionDropdown } from '@/shared/components/entities/entity-actions/ui/entity-action-dropdown'
 import { Button } from '@/shared/components/ui/button'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { cn } from '@/shared/lib/utils'

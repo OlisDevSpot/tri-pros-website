@@ -1,9 +1,9 @@
 'use client'
 
 import type { ScheduleCalendarEvent } from '@/features/schedule-management/types'
-import type { EntityActionClickConfig, EntityActionConfig } from '@/shared/components/entity-actions/types'
+import type { EntityActionClickConfig, EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
 
-import { isSelectAction } from '@/shared/components/entity-actions/types'
+import { isSelectAction } from '@/shared/components/entities/entity-actions/types'
 import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/lib/utils'
 

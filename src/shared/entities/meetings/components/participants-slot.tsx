@@ -7,7 +7,7 @@ import { useQuery } from '@tanstack/react-query'
 import { CrownIcon, MailIcon, MessageSquareIcon, MoreHorizontalIcon, PhoneIcon, UserMinusIcon, UsersIcon } from 'lucide-react'
 import { useState } from 'react'
 
-import { EntityList } from '@/shared/components/entity-list/ui/entity-list'
+import { EntityList } from '@/shared/components/entities/entity-list/ui/entity-list'
 import { Button } from '@/shared/components/ui/button'
 import {
   DropdownMenu,

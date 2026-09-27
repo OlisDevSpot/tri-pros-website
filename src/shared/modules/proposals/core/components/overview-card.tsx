@@ -10,7 +10,7 @@ import { format, formatDistanceToNow } from 'date-fns'
 import { DollarSignIcon, EyeIcon } from 'lucide-react'
 import React, { createContext, useCallback, useMemo } from 'react'
 
-import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
+import { EntityActionMenu } from '@/shared/components/entities/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
 import { ROOTS } from '@/shared/config/roots'
 import { formatAsDollars } from '@/shared/lib/formatters'

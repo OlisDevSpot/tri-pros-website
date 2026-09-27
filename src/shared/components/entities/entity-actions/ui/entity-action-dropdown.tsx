@@ -1,11 +1,11 @@
 'use client'
 
-import type { EntityActionConfig, EntityActionCustomConfig, EntityActionSelectConfig } from '@/shared/components/entity-actions/types'
+import type { EntityActionConfig, EntityActionCustomConfig, EntityActionSelectConfig } from '@/shared/components/entities/entity-actions/types'
 
 import { CheckIcon, MoreHorizontalIcon, MoreVerticalIcon } from 'lucide-react'
 import { useCallback, useState } from 'react'
 
-import { isCustomAction, isSelectAction } from '@/shared/components/entity-actions/types'
+import { isCustomAction, isSelectAction } from '@/shared/components/entities/entity-actions/types'
 
 import { Button } from '@/shared/components/ui/button'
 import {

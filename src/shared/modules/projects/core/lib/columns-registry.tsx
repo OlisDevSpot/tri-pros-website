@@ -1,7 +1,7 @@
 'use client'
 
 import type { ColumnRegistry } from '@/shared/components/data-table/lib/use-entity-columns'
-import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
+import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
 import type { AppRouterOutputs } from '@/trpc/routers/app'
 
 import { PrimaryCell } from '@/shared/components/data-table/ui/primary-cell'

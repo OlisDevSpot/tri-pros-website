@@ -5,7 +5,7 @@ import type { ProposalListInput } from '@/shared/modules/proposals/core/dal/serv
 import { useQuery } from '@tanstack/react-query'
 
 import { DashboardProposalCard } from '@/features/agent-dashboard/ui/components/dashboard-proposal-card'
-import { EntityList } from '@/shared/components/entity-list/ui/entity-list'
+import { EntityList } from '@/shared/components/entities/entity-list/ui/entity-list'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { useTRPC } from '@/trpc/helpers'
 

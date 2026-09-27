@@ -6,7 +6,7 @@ import { PlusIcon, RadioTowerIcon, SearchIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { ALL_PSEUDO_ID } from '@/features/lead-sources-admin/constants/pseudo-ids'
-import { EntityActionDropdown } from '@/shared/components/entity-actions/ui/entity-action-dropdown'
+import { EntityActionDropdown } from '@/shared/components/entities/entity-actions/ui/entity-action-dropdown'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Skeleton } from '@/shared/components/ui/skeleton'

@@ -6,7 +6,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { FolderOpenIcon, MapPinIcon, PlusIcon } from 'lucide-react'
 import { useCallback } from 'react'
 
-import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
+import { EntityActionMenu } from '@/shared/components/entities/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'

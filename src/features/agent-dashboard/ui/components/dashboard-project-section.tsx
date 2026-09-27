@@ -5,7 +5,7 @@ import type { ProjectsListInput } from '@/features/agent-dashboard/constants/das
 import { useQuery } from '@tanstack/react-query'
 
 import { DashboardProjectCard } from '@/features/agent-dashboard/ui/components/dashboard-project-card'
-import { EntityList } from '@/shared/components/entity-list/ui/entity-list'
+import { EntityList } from '@/shared/components/entities/entity-list/ui/entity-list'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { useTRPC } from '@/trpc/helpers'
 

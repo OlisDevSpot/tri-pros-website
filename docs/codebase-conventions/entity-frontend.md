@@ -5,9 +5,9 @@ Every business entity (Customer, Meeting, Proposal, Project, User, LeadSource, f
 | Primitive | What it is | Lives at |
 |---|---|---|
 | `<XOverviewCard>` | Compound component — root + context + slotted sub-components | `entities/<x>/components/overview-card.tsx` |
-| `<EntityActionMenu>` | Shared action dropdown driven by per-entity `EntitySpec` registry | `shared/components/entity-actions/ui/entity-action-menu.tsx` |
-| `<EntityList>` | Generic header + count + empty-state + render-prop list wrapper | `shared/components/entity-list/ui/entity-list.tsx` |
-| `<EntityViewButton>` | Inline "View" affordance for cell-level use | `shared/components/entity-actions/entity-view-button.tsx` |
+| `<EntityActionMenu>` | Shared action dropdown driven by per-entity `EntitySpec` registry | `shared/components/entities/entity-actions/ui/entity-action-menu.tsx` |
+| `<EntityList>` | Generic header + count + empty-state + render-prop list wrapper | `shared/components/entities/entity-list/ui/entity-list.tsx` |
+| `<EntityViewButton>` | Inline "View" affordance for cell-level use | `shared/components/entities/entity-actions/entity-view-button.tsx` |
 
 This is the **frontend mirror of the backend Entity Server System** ([ADR-0002](../adr/0002-entity-server-system.md)). Backend: every entity declares an `EntityServerSpec` consumed by `createCrudRouter` and its router's `procedures.ts` (see `src/trpc/DOCS.md`). Frontend: every entity exposes a compound `<XOverviewCard>` + an `EntitySpec` ([ADR-0001](../adr/0001-entity-action-system.md)) driving its action menu. The intent is parallel — typed declarations per entity, generic primitives consume them.
 
@@ -154,7 +154,7 @@ The Card's `<Actions>` slot renders `<EntityActionMenu>` (or `<EntityViewButton>
 **Props** on `<EntityActionMenu>`: `entity`, `actions`, `mode` (`'bar'` = primary button + overflow dropdown, `'compact'` = dropdown only), `className`. There are no `disableActions` / `actionOverrides` / `customActions` props — a call site shapes the menu by building a different `actions` array.
 
 **Why**: action menus are the most-divergent compound surface; one render surface plus one hook per entity keeps them uniform without a registry.
-**Reference impl**: `src/shared/components/entity-actions/ui/entity-action-menu.tsx`; `src/shared/entities/meetings/hooks/use-meeting-action-configs.tsx`; `src/shared/entities/customer-notes/hooks/use-customer-note-action-configs.ts`
+**Reference impl**: `src/shared/components/entities/entity-actions/ui/entity-action-menu.tsx`; `src/shared/entities/meetings/hooks/use-meeting-action-configs.tsx`; `src/shared/entities/customer-notes/hooks/use-customer-note-action-configs.ts`
 **Enforced by**: convention (ADR-0001 as-built status note)
 
 ### list-rendering-uses-entitylist
@@ -181,7 +181,7 @@ When rendering multiple entities inside a parent view (participants under a meet
 **Variants**: `variant="card"` (default — rounded border + bg + padding; standalone) vs `variant="flush"` (no border, no padding, transparent; for sibling lists under one outer card).
 
 **Why**: list chrome is universal; per-entity content varies. Generic + render prop is the right split.
-**Reference impl**: `src/shared/components/entity-list/ui/entity-list.tsx`
+**Reference impl**: `src/shared/components/entities/entity-list/ui/entity-list.tsx`
 **Enforced by**: convention
 
 ### parent-enriched-meta-flows-via-context-not-cross-entity-imports

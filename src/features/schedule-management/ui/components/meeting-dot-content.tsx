@@ -1,7 +1,7 @@
 'use client'
 
 import type { ScheduleCalendarEvent, ScheduleMeetingEvent } from '@/features/schedule-management/types'
-import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
+import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
 
 import { format } from 'date-fns'
 

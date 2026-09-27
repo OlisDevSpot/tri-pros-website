@@ -5,7 +5,7 @@ import type { CustomerProfileProposal } from '@/shared/entities/customers/types'
 import { EyeIcon, FlameIcon } from 'lucide-react'
 import { useCallback } from 'react'
 
-import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
+import { EntityActionMenu } from '@/shared/components/entities/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
 import { ROOTS } from '@/shared/config/roots'
 import { PROPOSAL_STATUS_COLORS } from '@/shared/modules/proposals/core/constants/proposal-status-colors'

@@ -1,7 +1,7 @@
 'use client'
 
 import type { JSX } from 'react'
-import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
+import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
 import type { CustomerNoteWithAuthor } from '@/shared/entities/customers/types'
 
 import { useMemo } from 'react'
