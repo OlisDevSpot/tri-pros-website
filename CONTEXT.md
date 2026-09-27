@@ -59,7 +59,7 @@ Each business rule behind an analytics number is one named export; change the ru
 | **Not applicable** | Filtering or grouping by closer, outcome or meeting order makes leads not applicable; by outcome or meeting order, sales too — shown as such, never as an unfiltered number | `inapplicableStages` · `src/features/analytics/lib/analytics-rules.ts` |
 | **Unknown city / zip** | Website-intake placeholders count as unknown | `UNKNOWN_PLACE_VALUES` · `src/features/analytics/lib/analytics-rules.ts` |
 | **Bankable** | A project's money is net, at risk (on hold) or cancelled | `projectBankability` · `src/shared/modules/projects/core/lib/bankability.ts` |
-| **Closer** | Any participant of the meeting; per-closer totals overlap by design | `MeetingFact.closerIds` · `src/shared/entities/meetings/dal/server/analytics-facts.ts` |
+| **Closer** | Any participant of the meeting; per-closer totals overlap by design; a meeting (and its sale) with no closer groups under an unassigned row | `MeetingFact.closerIds` · `src/shared/entities/meetings/dal/server/analytics-facts.ts` |
 | **Business month** | Calendar month in Pacific time, never UTC | `businessMonthKey`, `businessMonthWindow` · `src/shared/lib/business-time.ts` |
 | **Funnel** | The marketing funnels only (see Funnel terms) — the analytics chain is the lead chain | — |
 

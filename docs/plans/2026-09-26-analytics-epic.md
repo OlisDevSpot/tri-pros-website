@@ -81,6 +81,8 @@ Legend: `[ ]` open · `[x]` done · `[~]` in progress · ⚠️ blocked on a §2
 | **C41** | **Under an event-level filter, booked leads and sits are tested against the booked lead's own meeting**; outcome and meeting-order filters make sales "not applicable" (a closer filter still applies to the sale meeting). | 2026-09-26 |
 | **C42** | **"Funnel" means the marketing funnels only** — never the analytics chain. The per-person record is a **`LeadRecord`** (a lead is one person, C2); the meeting split is project meeting vs not (C43); its opposite is a project meeting); the chain lead → booked lead → sit → sale is "the lead chain"; feature-level types and files take the `Analytics` prefix (`AnalyticsFacts`, `AnalyticsFilters`, `AnalyticsCounts`, `ANALYTICS_RATES`, `analytics-rules.ts`). Spec A renamed to "Lead rules". | 2026-09-26 |
 | **C43** | **No invented meeting term (amends C4, C42):** `additional_work` only ever happens on `Project` meetings, so the split is the stored type — a **project meeting** (`isProjectMeeting`) vs every other meeting, which works a lead toward its sale. Only non-project meetings book a lead or count as its sit; sits count once per lead (a lead who cancels, then sits on a follow-up, then buys = 1 sit). | 2026-09-26 |
+| **C44** | **Grouping by closer keeps an unassigned row:** a meeting with no closer, and any sale on it, groups under a null key (the page labels it "Unassigned") instead of dropping out of the closer view. | 2026-09-27 |
+| **C45** | **Placeholder phones are not screened for now.** A shared junk number (e.g. `0000000000`) can chain unrelated people into one lead (C3); gating phone keys on `isPlausibleUsPhone` is deferred until the tally shows it matters. | 2026-09-27 |
 
 ---
 

@@ -247,6 +247,17 @@ console.log('8. Sales (classification) ✓')
   assert.equal(u1.totalCloses, 2, 'u1 closed the new sale and the upsell')
   assert.ok(byCloser.every(r => r.overlapsTotal), 'per-closer rows are flagged as overlapping')
 
+  const noCloser = buildLeadRecords({
+    customers: [customer('n1', '2026-07-01T17:00:00.000Z')],
+    meetings: [meeting('n1m', 'n1', '2026-07-10T17:00:00.000Z', 'converted_to_project', { projectId: 'p9' })],
+    sales: [sale('n1s', 'n1m', '2026-07-12T17:00:00.000Z')],
+  }, NOW)
+  const unassignedRows = aggregateLeadRecords(noCloser, { range: july }, 'closer').rows
+  assert.deepEqual(unassignedRows.map(r => r.groupKey), [null], 'a meeting with no closer lands in the unassigned (null) row')
+  assert.equal(unassignedRows[0].bookedLeads, 1, 'unassigned: its booked lead')
+  assert.equal(unassignedRows[0].meetings, 1, 'unassigned: its meeting')
+  assert.equal(unassignedRows[0].newSales, 1, 'unassigned: the sale on that meeting')
+
   const cancelled = aggregateLeadRecords(records, { range: july, outcomes: ['cancelled'] }, 'total').rows[0]
   assert.equal(cancelled.totalLeads, null, 'event-level filter: leads not applicable')
   assert.equal(cancelled.bookedLeads, 1, 'an outcome filter tests the booked lead\'s own meeting')

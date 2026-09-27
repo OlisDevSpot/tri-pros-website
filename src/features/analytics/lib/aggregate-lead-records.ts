@@ -49,7 +49,11 @@ function groupKeys(groupBy: AnalyticsGroupBy, person: LeadRecord, event: EventDi
     case 'month':
       return [event.at === null ? null : businessMonthKey(event.at)]
     case 'closer':
-      return event.closerIds ?? []
+      if (!event.closerIds) {
+        return []
+      }
+      // A meeting booked without a closer still happened; it keeps a row (null = unassigned) instead of vanishing.
+      return event.closerIds.length ? event.closerIds : [null]
     case 'outcome':
       return event.outcome ? [event.outcome] : []
     case 'meetingOrder':
