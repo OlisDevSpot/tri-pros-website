@@ -62,3 +62,7 @@ How a project is told, on every surface (portfolio page, meeting-flow Portfolio 
 - **Story strength** — how fully a project's photos tell its story: how many of Before · During · After have photos, then how many photos those phases hold, then title (`compareStoryStrength`).
 - **Portfolio match** — why a portfolio project is shown in a meeting: `scope` (shares a selected scope), `trade` (in a selected trade), `fallback` (the strongest few when nothing matches), `none` (`PortfolioMatch`, `matchPortfolioProjects`). _Avoid_: tier, rank, featured.
 - **Match labels** — the pills naming a match: scope names, or the trade name.
+
+## Records terms
+
+- **Scope coverage** — for one proposal of a meeting: which of the scopes captured in the meeting it includes, which it leaves out (struck through), and which it adds that the meeting didn't capture (dashed "+"). Matched by scope id (`computeScopeCoverage`, `ProposalOverviewCard.ScopeCoverage`). _Avoid_: scope match, scope diff.

@@ -4,12 +4,15 @@ import type { CustomerProfileProposal } from '@/shared/entities/customers/types'
 import type { MeetingRow } from '@/shared/entities/meetings/lib/columns-registry'
 
 import { PlusIcon } from 'lucide-react'
+import { useMemo } from 'react'
 
+import { computeScopeCoverage } from '@/features/records-management/lib/compute-scope-coverage'
 import { ExpandedRowPanel } from '@/shared/components/data-table/ui/expanded-row-panel'
 import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { MeetingProposalRow } from '@/shared/entities/meetings/components/meeting-proposal-row'
+import { ProposalOverviewCard } from '@/shared/modules/proposals/core/components/overview-card'
 
 interface MeetingProposalsPaneProps {
   meeting: MeetingRow
@@ -21,6 +24,12 @@ interface MeetingProposalsPaneProps {
 
 export function MeetingProposalsPane({ meeting, proposals, isLoading, onMutationSuccess, className }: MeetingProposalsPaneProps) {
   const ability = useAbility()
+
+  const tradeSelections = meeting.flowStateJSON?.tradeSelections
+  const coverageByProposal = useMemo(
+    () => new Map(proposals.map(proposal => [proposal.id, computeScopeCoverage(tradeSelections ?? [], proposal.sowSummary)])),
+    [proposals, tradeSelections],
+  )
 
   return (
     <ExpandedRowPanel.Pane title="Proposals" isLoading={isLoading} className={className}>
@@ -40,11 +49,20 @@ export function MeetingProposalsPane({ meeting, proposals, isLoading, onMutation
           )
         : (
             <ul className="flex flex-col gap-2">
-              {proposals.map(proposal => (
-                <li key={proposal.id}>
-                  <MeetingProposalRow proposal={proposal} onMutationSuccess={onMutationSuccess} showSentDate />
-                </li>
-              ))}
+              {proposals.map((proposal) => {
+                const coverage = coverageByProposal.get(proposal.id)
+                return (
+                  <li key={proposal.id}>
+                    <MeetingProposalRow
+                      proposal={proposal}
+                      onMutationSuccess={onMutationSuccess}
+                      showSentDate
+                      meta={coverage ? { scopeCoverage: coverage } : undefined}
+                      footer={coverage ? <ProposalOverviewCard.ScopeCoverage className="pt-1" /> : undefined}
+                    />
+                  </li>
+                )
+              })}
             </ul>
           )}
     </ExpandedRowPanel.Pane>
