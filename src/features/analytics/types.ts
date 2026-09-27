@@ -1,9 +1,61 @@
+import type { MeetingOutcome, MeetingSit } from '@/shared/constants/enums/meetings'
 import type { CustomerFact } from '@/shared/entities/customers/dal/server/analytics-facts'
 import type { MeetingFact } from '@/shared/entities/meetings/dal/server/analytics-facts'
 import type { SaleFact } from '@/shared/modules/proposals/core/dal/server/analytics-facts'
+import type { SaleKind } from '@/shared/modules/proposals/core/lib/sale'
 
 export interface AnalyticsFacts {
   customers: CustomerFact[]
   meetings: MeetingFact[]
   sales: SaleFact[]
+}
+
+export type MeetingOrder = 'first' | 'repeat' | 'not_sat' | 'project'
+
+export interface LeadMeeting {
+  id: string
+  at: string
+  outcome: MeetingOutcome
+  sit: MeetingSit
+  project: boolean
+  order: MeetingOrder
+  unresolved: boolean
+  closerIds: string[]
+}
+
+export interface LeadSale {
+  proposalId: string
+  meetingId: string
+  kind: SaleKind
+  at: string | null
+  valueCents: number | null
+  closerIds: string[]
+  hasProject: boolean
+}
+
+export interface BookedLead {
+  at: string
+  meetingId: string
+  sat: boolean
+}
+
+export interface LeadAnchor {
+  leadAt: string
+  leadSourceId: string | null
+  city: string | null
+  zip: string | null
+}
+
+export interface LeadRecord extends LeadAnchor {
+  personId: string
+  customerIds: string[]
+  quality: 'unknown'
+  meetings: LeadMeeting[]
+  bookedLead: BookedLead | null
+  sales: LeadSale[]
+}
+
+export interface LeadRecordSet {
+  leads: LeadRecord[]
+  orphans: number
 }

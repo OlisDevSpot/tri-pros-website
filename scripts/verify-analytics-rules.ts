@@ -1,6 +1,11 @@
+import type { CustomerFact } from '@/shared/entities/customers/dal/server/analytics-facts'
+import type { MeetingFact } from '@/shared/entities/meetings/dal/server/analytics-facts'
+import type { SaleFact } from '@/shared/modules/proposals/core/dal/server/analytics-facts'
+
 import assert from 'node:assert/strict'
 
 import { meetingMonthWindow } from '@/features/agent-dashboard/lib/meeting-windows'
+import { buildLeadRecords } from '@/features/analytics/lib/build-lead-records'
 import { isProjectMeeting, isSit, MEETING_OUTCOME_SIT, meetingOutcomes } from '@/shared/constants/enums/meetings'
 import { projectPipelineStages } from '@/shared/constants/enums/pipelines'
 import { groupDuplicatePeople } from '@/shared/entities/customers/lib/group-duplicate-people'
@@ -8,6 +13,17 @@ import { businessMonthKey, businessMonthWindow } from '@/shared/lib/business-tim
 import { normalizeEmail } from '@/shared/lib/email'
 import { projectBankability } from '@/shared/modules/projects/core/lib/bankability'
 import { classifySale, SALE_STATUS } from '@/shared/modules/proposals/core/lib/sale'
+
+function customer(id: string, createdAt: string, over: Partial<CustomerFact> = {}): CustomerFact {
+  return { id, phone: null, email: null, createdAt, leadSourceId: 'src-a', city: 'Irvine', zip: '92618', ...over }
+}
+function meeting(id: string, customerId: string | null, scheduledFor: string, meetingOutcome: MeetingFact['meetingOutcome'], over: Partial<MeetingFact> = {}): MeetingFact {
+  return { id, customerId, meetingType: 'Fresh', meetingOutcome, scheduledFor, projectId: null, closerIds: [], ...over }
+}
+function sale(id: string, meetingId: string | null, approvedAt: string | null, over: Partial<SaleFact> = {}): SaleFact {
+  return { id, meetingId, kind: 'initial-sale', approvedAt, finalTcpCents: 1_000_000, ...over }
+}
+const NOW = new Date('2026-09-26T19:00:00.000Z')
 
 // ── 1. Grouping ─────────────────────────────────────────────────────────────
 assert.equal(normalizeEmail('  Bob@X.com '), 'bob@x.com', 'email trimmed and lower-cased')
@@ -32,6 +48,27 @@ assert.equal(normalizeEmail('   '), null, 'blank email is no email')
 }
 console.log('1. Grouping ✓')
 
+// ── 2. Anchor ───────────────────────────────────────────────────────────────
+{
+  const { leads } = buildLeadRecords({
+    customers: [
+      customer('late', '2026-06-02T17:00:00.000Z', { phone: '5551112222', leadSourceId: 'src-b', city: 'Irvine', zip: '92618' }),
+      customer('early', '2026-06-01T17:00:00.000Z', { phone: '5551112222', leadSourceId: null, city: 'Unknown', zip: '' }),
+    ],
+    meetings: [],
+    sales: [],
+  }, NOW)
+  assert.equal(leads.length, 1, 'duplicates are one lead')
+  const [person] = leads
+  assert.equal(person.personId, 'early', 'the earliest record names the person')
+  assert.deepEqual(person.customerIds.sort(), ['early', 'late'], 'both records belong to the person')
+  assert.equal(person.leadAt, '2026-06-01T17:00:00.000Z', 'lead date is the earliest record\'s')
+  assert.equal(person.leadSourceId, null, 'the earliest record\'s source wins, even when unknown')
+  assert.equal(person.city, null, '\'Unknown\' city is unknown')
+  assert.equal(person.zip, null, 'empty zip is unknown')
+}
+console.log('2. Anchor ✓')
+
 // ── 3. Sit map ──────────────────────────────────────────────────────────────
 for (const outcome of meetingOutcomes) {
   assert.ok(['sat', 'not_sat', 'unknown'].includes(MEETING_OUTCOME_SIT[outcome]), `${outcome} is classified`)
@@ -55,6 +92,65 @@ for (const meetingType of ['Fresh', 'Follow-up', 'Rehash'] as const) {
   assert.equal(isProjectMeeting({ meetingType }), false, `${meetingType} works a lead`)
 }
 console.log('4. Project meeting ✓')
+
+// ── 5. Booked lead ──────────────────────────────────────────────────────────
+{
+  const { leads, orphans } = buildLeadRecords({
+    customers: [
+      customer('p1', '2026-06-01T17:00:00.000Z', { phone: '5550000001' }),
+      customer('p1-dup', '2026-06-02T17:00:00.000Z', { phone: '5550000001' }),
+      customer('p2', '2026-06-01T17:00:00.000Z'),
+      customer('p3', '2026-06-01T17:00:00.000Z'),
+      customer('p4', '2026-06-01T17:00:00.000Z'),
+    ],
+    meetings: [
+      meeting('m1', 'p1-dup', '2026-06-05T17:00:00.000Z', 'cancelled'),
+      meeting('m2', 'p1-dup', '2026-06-12T17:00:00.000Z', 'cancelled'),
+      meeting('m3', 'p1-dup', '2026-07-03T17:00:00.000Z', 'pns'),
+      meeting('m4', 'p2', '2026-06-05T17:00:00.000Z', 'cancelled'),
+      meeting('m5', 'p3', '2026-06-05T17:00:00.000Z', 'not_set', { meetingType: 'Project' }),
+      meeting('m6', 'p3', '2026-06-06T17:00:00.000Z', 'additional_work', { meetingType: 'Project' }),
+      meeting('m7', 'p4', '2026-07-01T17:00:00.000Z', 'not_set'),
+      meeting('m8', 'p4', '2026-10-01T17:00:00.000Z', 'not_set'),
+      meeting('m9', null, '2026-06-05T17:00:00.000Z', 'pns'),
+    ],
+    sales: [sale('s1', 'm3', '2026-07-20T17:00:00.000Z'), sale('s2', 'm9', '2026-07-20T17:00:00.000Z'), sale('s3', null, '2026-07-20T17:00:00.000Z')],
+  }, NOW)
+  const byId = new Map(leads.map(p => [p.personId, p]))
+  assert.deepEqual(byId.get('p1')!.bookedLead, { at: '2026-07-03T17:00:00.000Z', meetingId: 'm3', sat: true }, 'cancel, cancel, sit = 1 booked lead dated at the sit — meetings on the duplicate record count')
+  assert.equal(byId.get('p1')!.sales.length, 1, 'a sale on the duplicate record rolls up to the person')
+  assert.deepEqual(byId.get('p2')!.bookedLead, { at: '2026-06-05T17:00:00.000Z', meetingId: 'm4', sat: false }, 'a single cancelled meeting = 1 non-sit booked lead')
+  assert.equal(byId.get('p3')!.bookedLead, null, 'project meetings, upsells included, never book a lead')
+  assert.deepEqual(byId.get('p4')!.meetings.map(m => m.unresolved), [true, false], 'a past not_set is unresolved; a future one is not')
+  assert.equal(orphans, 3, 'a meeting with no customer, a sale on it, and a sale with no meeting are orphans')
+}
+console.log('5. Booked lead ✓')
+
+// ── 6. Meeting order ────────────────────────────────────────────────────────
+{
+  const { leads } = buildLeadRecords({
+    customers: [customer('a', '2026-06-01T17:00:00.000Z'), customer('b', '2026-06-01T17:00:00.000Z'), customer('c', '2026-06-01T17:00:00.000Z'), customer('d', '2026-06-01T17:00:00.000Z')],
+    meetings: [
+      meeting('a2', 'a', '2026-06-10T17:00:00.000Z', 'pns'),
+      meeting('a1', 'a', '2026-06-03T17:00:00.000Z', 'cancelled'),
+      meeting('b1', 'b', '2026-06-03T17:00:00.000Z', 'pns'),
+      meeting('b2', 'b', '2026-06-10T17:00:00.000Z', 'follow_up_needed'),
+      meeting('b3', 'b', '2026-06-17T17:00:00.000Z', 'cancelled'),
+      meeting('b4', 'b', '2026-06-20T17:00:00.000Z', 'not_set', { meetingType: 'Project' }),
+      meeting('c1', 'c', '2026-06-03T17:00:00.000Z', 'no_show'),
+      meeting('c2', 'c', '2026-06-10T17:00:00.000Z', 'cancelled'),
+      meeting('d-y', 'd', '2026-06-03T17:00:00.000Z', 'pns'),
+      meeting('d-x', 'd', '2026-06-03T17:00:00.000Z', 'npns'),
+    ],
+    sales: [],
+  }, NOW)
+  const orders = (id: string) => leads.find(p => p.personId === id)!.meetings.map(m => `${m.id}:${m.order}`)
+  assert.deepEqual(orders('a'), ['a1:not_sat', 'a2:first'], 'cancelled then pns: the pns is first')
+  assert.deepEqual(orders('b'), ['b1:first', 'b2:repeat', 'b3:repeat', 'b4:project'], 'after the first sit every non-project meeting is repeat')
+  assert.deepEqual(orders('c'), ['c1:not_sat', 'c2:not_sat'], 'a person who never sat has only not_sat meetings')
+  assert.deepEqual(orders('d'), ['d-x:first', 'd-y:repeat'], 'same instant: ties break by id, deterministically')
+}
+console.log('6. Meeting order ✓')
 
 // ── 7. Pacific months ───────────────────────────────────────────────────────
 assert.equal(businessMonthKey('2026-08-01T05:30:00.000Z'), '2026-07', 'July 31 22:30 PDT is July')
