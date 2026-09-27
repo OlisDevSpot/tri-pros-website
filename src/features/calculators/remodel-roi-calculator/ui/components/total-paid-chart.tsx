@@ -1,6 +1,6 @@
 'use client'
 
-import type { ProjectionYear } from '@/features/calculators/net-worth-projection-calculator/types'
+import type { ProjectionYear } from '@/features/calculators/remodel-roi-calculator/types'
 
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 

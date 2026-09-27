@@ -1,8 +1,8 @@
-import type { NetWorthProjectionConfig } from '@/features/calculators/net-worth-projection-calculator/schemas/config'
-import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
+import type { RemodelRoiConfig } from '@/features/calculators/remodel-roi-calculator/schemas/config'
+import type { RemodelRoiFormValues } from '@/features/calculators/remodel-roi-calculator/schemas/form'
 
-type Bills = NetWorthProjectionFormValues['billsNow']
-type Liability = NetWorthProjectionFormValues['liabilities'][number]
+type Bills = RemodelRoiFormValues['billsNow']
+type Liability = RemodelRoiFormValues['liabilities'][number]
 
 export const EMPTY_LIABILITY: Liability = { label: '', balance: null, monthlyPayment: null, aprPercent: null }
 
@@ -10,7 +10,7 @@ function emptyBills(): Bills {
   return { electric: null, gas: null, water: null, gardening: null, misc: null }
 }
 
-export function createNetWorthProjectionDefaults(config: NetWorthProjectionConfig): NetWorthProjectionFormValues {
+export function createRemodelRoiDefaults(config: RemodelRoiConfig): RemodelRoiFormValues {
   return {
     homeValue: null,
     liabilities: [],

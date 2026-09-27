@@ -1,8 +1,8 @@
 'use client'
 
-import { RATE_KEYS, RATE_LABELS } from '@/features/calculators/net-worth-projection-calculator/constants/rates'
-import { ProjectionNumberField } from '@/features/calculators/net-worth-projection-calculator/ui/components/projection-number-field'
-import { StepSection } from '@/features/calculators/net-worth-projection-calculator/ui/components/step-section'
+import { RATE_KEYS, RATE_LABELS } from '@/features/calculators/remodel-roi-calculator/constants/rates'
+import { ProjectionNumberField } from '@/features/calculators/remodel-roi-calculator/ui/components/projection-number-field'
+import { StepSection } from '@/features/calculators/remodel-roi-calculator/ui/components/step-section'
 
 export function AssumptionsStep() {
   return (

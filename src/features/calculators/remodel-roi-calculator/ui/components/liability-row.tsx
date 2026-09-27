@@ -1,11 +1,11 @@
 'use client'
 
-import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
+import type { RemodelRoiFormValues } from '@/features/calculators/remodel-roi-calculator/schemas/form'
 
 import { Trash2Icon } from 'lucide-react'
 import { useFormContext } from 'react-hook-form'
 
-import { ProjectionNumberField } from '@/features/calculators/net-worth-projection-calculator/ui/components/projection-number-field'
+import { ProjectionNumberField } from '@/features/calculators/remodel-roi-calculator/ui/components/projection-number-field'
 import { Button } from '@/shared/components/ui/button'
 import { FormControl, FormField, FormItem, FormLabel } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
@@ -17,7 +17,7 @@ interface Props {
 }
 
 export function LiabilityRow({ index, heldFlat, onRemove }: Props) {
-  const { control } = useFormContext<NetWorthProjectionFormValues>()
+  const { control } = useFormContext<RemodelRoiFormValues>()
 
   return (
     <div className="flex flex-col gap-2 rounded-lg bg-muted/40 p-3">

@@ -22,7 +22,7 @@ export interface ProjectionSummary {
   heldFlatLiabilities: number[]
 }
 
-export interface NetWorthProjection {
+export interface RemodelRoiProjection {
   years: ProjectionYear[]
   summary: ProjectionSummary
 }

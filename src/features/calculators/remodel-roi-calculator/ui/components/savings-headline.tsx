@@ -1,6 +1,6 @@
-import type { ProjectionSummary } from '@/features/calculators/net-worth-projection-calculator/types'
+import type { ProjectionSummary } from '@/features/calculators/remodel-roi-calculator/types'
 
-import { formatYears } from '@/features/calculators/net-worth-projection-calculator/lib/format-years'
+import { formatYears } from '@/features/calculators/remodel-roi-calculator/lib/format-years'
 import { formatAsDollars } from '@/shared/lib/formatters'
 
 interface Props {

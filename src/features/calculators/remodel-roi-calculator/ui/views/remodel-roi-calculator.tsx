@@ -1,33 +1,33 @@
 'use client'
 
-import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
+import type { RemodelRoiFormValues } from '@/features/calculators/remodel-roi-calculator/schemas/form'
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 
-import { createNetWorthProjectionDefaults } from '@/features/calculators/net-worth-projection-calculator/constants/form-defaults'
-import { useNetWorthProjection } from '@/features/calculators/net-worth-projection-calculator/hooks/use-net-worth-projection'
-import { formatYears } from '@/features/calculators/net-worth-projection-calculator/lib/format-years'
-import { resolveNetWorthProjectionConfig } from '@/features/calculators/net-worth-projection-calculator/lib/resolve-config'
-import { netWorthProjectionFormSchema } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
-import { AssumptionsStep } from '@/features/calculators/net-worth-projection-calculator/ui/components/assumptions-step'
-import { BillsStep } from '@/features/calculators/net-worth-projection-calculator/ui/components/bills-step'
-import { ComparisonCard } from '@/features/calculators/net-worth-projection-calculator/ui/components/comparison-card'
-import { HomeAndLoansStep } from '@/features/calculators/net-worth-projection-calculator/ui/components/home-and-loans-step'
-import { ProjectStep } from '@/features/calculators/net-worth-projection-calculator/ui/components/project-step'
-import { SavingsHeadline } from '@/features/calculators/net-worth-projection-calculator/ui/components/savings-headline'
-import { TotalPaidChart } from '@/features/calculators/net-worth-projection-calculator/ui/components/total-paid-chart'
+import { createRemodelRoiDefaults } from '@/features/calculators/remodel-roi-calculator/constants/form-defaults'
+import { useRemodelRoi } from '@/features/calculators/remodel-roi-calculator/hooks/use-remodel-roi'
+import { formatYears } from '@/features/calculators/remodel-roi-calculator/lib/format-years'
+import { resolveRemodelRoiConfig } from '@/features/calculators/remodel-roi-calculator/lib/resolve-config'
+import { remodelRoiFormSchema } from '@/features/calculators/remodel-roi-calculator/schemas/form'
+import { AssumptionsStep } from '@/features/calculators/remodel-roi-calculator/ui/components/assumptions-step'
+import { BillsStep } from '@/features/calculators/remodel-roi-calculator/ui/components/bills-step'
+import { ComparisonCard } from '@/features/calculators/remodel-roi-calculator/ui/components/comparison-card'
+import { HomeAndLoansStep } from '@/features/calculators/remodel-roi-calculator/ui/components/home-and-loans-step'
+import { ProjectStep } from '@/features/calculators/remodel-roi-calculator/ui/components/project-step'
+import { SavingsHeadline } from '@/features/calculators/remodel-roi-calculator/ui/components/savings-headline'
+import { TotalPaidChart } from '@/features/calculators/remodel-roi-calculator/ui/components/total-paid-chart'
 import { Form } from '@/shared/components/ui/form'
 
-export function NetWorthProjectionCalculator() {
-  const [config] = useState(resolveNetWorthProjectionConfig)
-  const form = useForm<NetWorthProjectionFormValues>({
-    resolver: zodResolver(netWorthProjectionFormSchema),
+export function RemodelRoiCalculator() {
+  const [config] = useState(resolveRemodelRoiConfig)
+  const form = useForm<RemodelRoiFormValues>({
+    resolver: zodResolver(remodelRoiFormSchema),
     mode: 'onChange',
-    defaultValues: createNetWorthProjectionDefaults(config),
+    defaultValues: createRemodelRoiDefaults(config),
   })
-  const { years, summary } = useNetWorthProjection(form.control, config)
+  const { years, summary } = useRemodelRoi(form.control, config)
   const today = years[0]
   const later = years[years.length - 1]
   const inYears = `In ${formatYears(summary.horizonYears)}`

@@ -1,13 +1,13 @@
-import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
+import type { RemodelRoiFormValues } from '@/features/calculators/remodel-roi-calculator/schemas/form'
 
 import assert from 'node:assert/strict'
 
-import { createNetWorthProjectionDefaults } from '@/features/calculators/net-worth-projection-calculator/constants/form-defaults'
-import { RATE_KEYS } from '@/features/calculators/net-worth-projection-calculator/constants/rates'
-import { formatYears } from '@/features/calculators/net-worth-projection-calculator/lib/format-years'
-import { projectNetWorth } from '@/features/calculators/net-worth-projection-calculator/lib/project-net-worth'
-import { resolveNetWorthProjectionConfig } from '@/features/calculators/net-worth-projection-calculator/lib/resolve-config'
-import { netWorthProjectionConfigSchema } from '@/features/calculators/net-worth-projection-calculator/schemas/config'
+import { createRemodelRoiDefaults } from '@/features/calculators/remodel-roi-calculator/constants/form-defaults'
+import { RATE_KEYS } from '@/features/calculators/remodel-roi-calculator/constants/rates'
+import { formatYears } from '@/features/calculators/remodel-roi-calculator/lib/format-years'
+import { projectRemodelRoi } from '@/features/calculators/remodel-roi-calculator/lib/project-remodel-roi'
+import { resolveRemodelRoiConfig } from '@/features/calculators/remodel-roi-calculator/lib/resolve-config'
+import { remodelRoiConfigSchema } from '@/features/calculators/remodel-roi-calculator/schemas/config'
 import { amortizedMonthlyPayment, remainingBalance } from '@/shared/lib/loan-calculations'
 
 function near(actual: number, expected: number, message: string, tolerance = 1e-6) {
@@ -27,25 +27,25 @@ assert.equal(remainingBalance(5000, 6, 0, 0), 0, 'no term → 0')
 assert.equal(remainingBalance(10000, 6, 20.5, 21), 0, 'fractional term: past it → 0')
 assert.ok(remainingBalance(10000, 6, 20.5, 12) > 0 && remainingBalance(10000, 6, 20.5, 12) < 10000, 'fractional term: mid-way balance in range')
 
-// ── Net-worth Projection ──────────────────────────────────────────────────────
-const config = resolveNetWorthProjectionConfig()
+// ── Remodel ROI Calculator ──────────────────────────────────────────────────────
+const config = resolveRemodelRoiConfig()
 assert.equal(config.defaultHorizonYears, 5, 'default horizon')
 assert.equal(config.defaultRatesPercent.electric, 9.4, 'default electric escalation')
 assert.equal(config.defaultRatesPercent.misc, 0, 'misc held flat by default')
-assert.equal(netWorthProjectionConfigSchema.safeParse({ ...config, defaultHorizonYears: 0 }).success, false, 'horizon 0 rejected')
+assert.equal(remodelRoiConfigSchema.safeParse({ ...config, defaultHorizonYears: 0 }).success, false, 'horizon 0 rejected')
 
-function scenario(edit: (values: NetWorthProjectionFormValues) => void): NetWorthProjectionFormValues {
-  const values = createNetWorthProjectionDefaults(config)
+function scenario(edit: (values: RemodelRoiFormValues) => void): RemodelRoiFormValues {
+  const values = createRemodelRoiDefaults(config)
   edit(values)
   return values
 }
-function zeroRates(values: NetWorthProjectionFormValues) {
+function zeroRates(values: RemodelRoiFormValues) {
   for (const key of RATE_KEYS) {
     values.assumptions.ratesPercent[key] = 0
   }
 }
-function lastYear(input: NetWorthProjectionFormValues) {
-  const projection = projectNetWorth(input, config)
+function lastYear(input: RemodelRoiFormValues) {
+  const projection = projectRemodelRoi(input, config)
   return { projection, last: projection.years[projection.years.length - 1] }
 }
 
@@ -76,7 +76,7 @@ function lastYear(input: NetWorthProjectionFormValues) {
 }
 
 // Loan payment parity
-function financed(v: NetWorthProjectionFormValues) {
+function financed(v: RemodelRoiFormValues) {
   v.project.price = 30000
   v.project.incentives = 5000
   v.project.downPayment = 5000
@@ -179,8 +179,8 @@ function breakEvenScenario(horizon: number) {
     v.billsAfter.electric = 100
   })
 }
-assert.equal(projectNetWorth(breakEvenScenario(10), config).summary.breakEvenYear, 5, '4,800/yr against 20,000 → year 5')
-assert.equal(projectNetWorth(breakEvenScenario(4), config).summary.breakEvenYear, null, 'not within 4 years')
+assert.equal(projectRemodelRoi(breakEvenScenario(10), config).summary.breakEvenYear, 5, '4,800/yr against 20,000 → year 5')
+assert.equal(projectRemodelRoi(breakEvenScenario(4), config).summary.breakEvenYear, null, 'not within 4 years')
 
 // Uplift as a percent of price
 {
@@ -194,8 +194,8 @@ assert.equal(projectNetWorth(breakEvenScenario(4), config).summary.breakEvenYear
 }
 
 // No NaN for any valid input, including the untouched defaults
-for (const input of [createNetWorthProjectionDefaults(config), scenario(financed), breakEvenScenario(30)]) {
-  const projection = projectNetWorth(input, config)
+for (const input of [createRemodelRoiDefaults(config), scenario(financed), breakEvenScenario(30)]) {
+  const projection = projectRemodelRoi(input, config)
   for (const year of projection.years) {
     for (const [field, value] of Object.entries(year)) {
       assert.ok(Number.isFinite(value), `year ${year.t} ${field} is ${value}`)
@@ -211,4 +211,4 @@ for (const input of [createNetWorthProjectionDefaults(config), scenario(financed
 assert.equal(formatYears(1), '1 year', 'singular')
 assert.equal(formatYears(5), '5 years', 'plural')
 
-console.log('✅ verify-net-worth-projection passed')
+console.log('✅ verify-remodel-roi passed')

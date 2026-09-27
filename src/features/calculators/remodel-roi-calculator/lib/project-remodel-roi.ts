@@ -1,8 +1,8 @@
-import type { NetWorthProjectionConfig, RateKey } from '@/features/calculators/net-worth-projection-calculator/schemas/config'
-import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
-import type { NetWorthProjection, ProjectionYear } from '@/features/calculators/net-worth-projection-calculator/types'
+import type { RateKey, RemodelRoiConfig } from '@/features/calculators/remodel-roi-calculator/schemas/config'
+import type { RemodelRoiFormValues } from '@/features/calculators/remodel-roi-calculator/schemas/form'
+import type { ProjectionYear, RemodelRoiProjection } from '@/features/calculators/remodel-roi-calculator/types'
 
-import { BILL_CATEGORIES } from '@/features/calculators/net-worth-projection-calculator/constants/bill-categories'
+import { BILL_CATEGORIES } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
 import { amortizedMonthlyPayment, remainingBalance } from '@/shared/lib/loan-calculations'
 
 function amountOf(value: number | null | undefined): number {
@@ -37,12 +37,12 @@ function monthsToPayOff(balance: number, aprPercent: number, payment: number): n
   return -Math.log(1 - (monthlyRate * balance) / payment) / Math.log(1 + monthlyRate)
 }
 
-function sumBills(bills: NetWorthProjectionFormValues['billsNow']): number {
+function sumBills(bills: RemodelRoiFormValues['billsNow']): number {
   return BILL_CATEGORIES.reduce((sum, category) => sum + amountOf(bills[category]), 0)
 }
 
 // Kept free of React and I/O so the engine can move to a shared module once its permanent home is decided.
-export function projectNetWorth(input: NetWorthProjectionFormValues, config: NetWorthProjectionConfig): NetWorthProjection {
+export function projectRemodelRoi(input: RemodelRoiFormValues, config: RemodelRoiConfig): RemodelRoiProjection {
   const horizonYears = Math.min(30, Math.max(1, Math.round(input.assumptions.horizonYears ?? config.defaultHorizonYears)))
   const rate = (key: RateKey) => toFraction(input.assumptions.ratesPercent[key] ?? config.defaultRatesPercent[key])
 
@@ -80,7 +80,7 @@ export function projectNetWorth(input: NetWorthProjectionFormValues, config: Net
     }, 0)
   }
 
-  function billsPaid(bills: NetWorthProjectionFormValues['billsNow'], t: number): number {
+  function billsPaid(bills: RemodelRoiFormValues['billsNow'], t: number): number {
     return BILL_CATEGORIES.reduce((sum, category) => sum + cumulativeBills(amountOf(bills[category]), rate(category), t), 0)
   }
 

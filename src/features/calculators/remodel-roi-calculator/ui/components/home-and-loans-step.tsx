@@ -1,14 +1,14 @@
 'use client'
 
-import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
+import type { RemodelRoiFormValues } from '@/features/calculators/remodel-roi-calculator/schemas/form'
 
 import { PlusIcon } from 'lucide-react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 
-import { EMPTY_LIABILITY } from '@/features/calculators/net-worth-projection-calculator/constants/form-defaults'
-import { LiabilityRow } from '@/features/calculators/net-worth-projection-calculator/ui/components/liability-row'
-import { ProjectionNumberField } from '@/features/calculators/net-worth-projection-calculator/ui/components/projection-number-field'
-import { StepSection } from '@/features/calculators/net-worth-projection-calculator/ui/components/step-section'
+import { EMPTY_LIABILITY } from '@/features/calculators/remodel-roi-calculator/constants/form-defaults'
+import { LiabilityRow } from '@/features/calculators/remodel-roi-calculator/ui/components/liability-row'
+import { ProjectionNumberField } from '@/features/calculators/remodel-roi-calculator/ui/components/projection-number-field'
+import { StepSection } from '@/features/calculators/remodel-roi-calculator/ui/components/step-section'
 import { Button } from '@/shared/components/ui/button'
 
 interface Props {
@@ -16,7 +16,7 @@ interface Props {
 }
 
 export function HomeAndLoansStep({ heldFlatLiabilities }: Props) {
-  const { control } = useFormContext<NetWorthProjectionFormValues>()
+  const { control } = useFormContext<RemodelRoiFormValues>()
   const liabilities = useFieldArray({ control, name: 'liabilities' })
 
   return (

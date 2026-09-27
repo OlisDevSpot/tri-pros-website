@@ -2,15 +2,15 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship two standalone, homeowner-facing calculators at `/dashboard/calculators`: **Scope Pricing** (remodel-x's 24 per-scope Formulas, ported exactly) and **Net-worth Projection** (the now-vs-future idea, rebuilt with correct math). Nothing is persisted.
+**Goal:** Ship two standalone, homeowner-facing calculators at `/dashboard/calculators`: **Scope Pricing** (remodel-x's 24 per-scope Formulas, ported exactly) and **Remodel ROI Calculator** (the now-vs-future idea, rebuilt with correct math). Nothing is persisted.
 
-**Architecture:** A new feature `src/features/calculators/` holds a tabs shell and two independent sub-features, `scope-pricing-calculator/` and `net-worth-projection-calculator/`. Each sub-feature has a pure engine in `lib/` that takes a resolved config as a plain argument, a Zod config schema with System defaults, react-hook-form UI that derives results through a hook, and a `scripts/verify-*.ts` self-check. The only shared-file edits are `remainingBalance` in `src/shared/lib/loan-calculations.ts`, one root in `src/shared/config/roots.ts`, and one sidebar entry.
+**Architecture:** A new feature `src/features/calculators/` holds a tabs shell and two independent sub-features, `scope-pricing-calculator/` and `remodel-roi-calculator/`. Each sub-feature has a pure engine in `lib/` that takes a resolved config as a plain argument, a Zod config schema with System defaults, react-hook-form UI that derives results through a hook, and a `scripts/verify-*.ts` self-check. The only shared-file edits are `remainingBalance` in `src/shared/lib/loan-calculations.ts`, one root in `src/shared/config/roots.ts`, and one sidebar entry.
 
 **Tech Stack:** Next.js 15, React, TypeScript (strict), Zod 4 (`import { z } from 'zod'`), react-hook-form 7 + `@hookform/resolvers/zod`, nuqs 2, recharts 2.15, shadcn/ui, lucide-react, `tsx` for verify scripts.
 
 **Spec:** `docs/superpowers/specs/2026-09-26-sales-calculators-c0-port-design.md` (owner-approved 2026-09-26). **Tracker:** `docs/plans/2026-09-26-sales-calculators-epic.md` (IDs R*, D*, O*, SP-*, PR*, UI*, V*, CF*, I*, B-*). Read both before starting.
 
-**Amended 2026-09-26 (tracker R11), after Task 8:** the calculator is renamed Net-worth Projection (names below are updated), and it is the first, default tab. Task 5's tab code below predates that; `src/features/calculators/constants/query-parsers.ts` and `ui/views/calculators-view.tsx` are authoritative.
+**Amended 2026-09-26 (tracker R11), after Task 8:** the calculator is renamed Remodel ROI Calculator (tracker R12; names below are updated), and it is the first, default tab. Its fields and data are being redefined in a separate session (`docs/plans/2026-09-26-remodel-roi-calculator-fields-handoff.md`), so its Task 9 layout follows that. Task 5's tab code below predates that; `src/features/calculators/constants/query-parsers.ts` and `ui/views/calculators-view.tsx` are authoritative.
 
 ## Global Constraints
 
@@ -23,7 +23,7 @@
 - **Layout rules (V5):** one component per file, named exports only, no module-level constants in component files (they go in `constants/`), `hooks/` holds only `use-*`, `schemas/` is a sibling of `lib/`, and prop interfaces stay in the component file.
 - **Imports:** absolute `@/…` paths, type imports first, as in the surrounding code.
 - **Comments say why, never what.** No file banners, and never cite a plan, spec, tracker ID or doc in code. Each interim site in spec §11 gets a one-line why-comment. This plan gives the exact wording.
-- **Names (spec §2):** Net-worth Projection, Scope Pricing, Formula, Unit Cost, Pricing Key. Never "Snapshot". Tiers: On-screen, Agent-only, Admin-configured, System default.
+- **Names (spec §2):** Remodel ROI Calculator, Scope Pricing, Formula, Unit Cost, Pricing Key. Never "Snapshot". Tiers: On-screen, Agent-only, Admin-configured, System default.
 - **Homeowner copy (O1, O7, O8):** outside the agent panel, the visible text never contains the words "Cost", "Multiplier" or "Margin" (case-sensitive), never shows a Unit Cost, and never makes an uncited claim. "Price" is the only money word on the Scope Pricing screen.
 - **Values come verbatim from the seeds.** Unit Costs, Variable labels, scope labels, `outcomeStatement` subtitles and trade labels are copied exactly as this plan gives them (spec §4.1, §10). Do not "tidy" their capitalization.
 - **Numbers:** numeric inputs use `NumberField` (`src/shared/components/ui/number-field.tsx`: `null` means empty). Never use `convertToNumber` (UI4). Whole-dollar display uses `formatAsDollars` (`src/shared/lib/formatters.ts`). Multipliers use `formatMultiplier`, and tiers use `getMultiplierTier` (`src/shared/modules/proposals/core/lib/financials/tiers.ts`) and `MULTIPLIER_STYLES` (`src/shared/modules/proposals/core/constants/multiplier-styles.ts`), all reused and never copied.
@@ -33,7 +33,7 @@
 
 These are the inputs and conditions the spec implies but does not spell out. Each one has a test in the task that owns it.
 
-1. **Switching tabs keeps the rep's entries.** Radix `Tabs` unmounts inactive panels by default, which would wipe a half-built quote when the rep flips to Net-worth Projection and back. Both panels are force-mounted and hidden when inactive. Test: Task 10's Playwright step fills a line, switches tabs twice, and checks the value is still there.
+1. **Switching tabs keeps the rep's entries.** Radix `Tabs` unmounts inactive panels by default, which would wipe a half-built quote when the rep flips to Remodel ROI Calculator and back. Both panels are force-mounted and hidden when inactive. Test: Task 10's Playwright step fills a line, switches tabs twice, and checks the value is still there.
 2. **A cleared field falls back sensibly.** Clearing a Variable that has a default (e.g. flat BSQ) prices at the default. Clearing a required one (e.g. watts per panel) makes the line `incomplete` and never priced. An out-of-range entry (900 BSQ) or an unknown option (7 tons) is also `incomplete`, and the field shows its allowed range. Tests: Task 2's verify cases.
 3. **Paying cash, or a down payment above the price, counts the project exactly once.** With no loan term, the whole net price is paid at t = 0. A down payment larger than the net price is clamped, so the loan principal is never negative. Tests: Task 4's verify cases.
 4. **The word "Cost" never reaches the homeowner.** This includes the Savings chart title and legend (they say "Total paid", "Without the project" and "With the project"). The HVAC outcome line contains a lowercase "costs", so the check is a case-sensitive whole-word match. Test: Task 10's Playwright step on both tabs.
@@ -41,12 +41,12 @@ These are the inputs and conditions the spec implies but does not spell out. Eac
 
 ## File map
 
-`SP` = `src/features/calculators/scope-pricing-calculator`, `SV` = `src/features/calculators/net-worth-projection-calculator`.
+`SP` = `src/features/calculators/scope-pricing-calculator`, `SV` = `src/features/calculators/remodel-roi-calculator`.
 
 | File | Responsibility | Task |
 |---|---|---|
 | `src/shared/lib/loan-calculations.ts` (modify) | `+ remainingBalance` | 1 |
-| `scripts/verify-net-worth-projection.ts` | V4 self-check | 1, 4 |
+| `scripts/verify-remodel-roi.ts` | V4 self-check | 1, 4 |
 | `SP/schemas/config.ts` | `scopePricingConfigSchema`, `ScopePricingConfig`, `PricingTrade`, `UnitCostsOf`, `PermitTrade` | 2 |
 | `SP/constants/config-defaults.ts` | `SCOPE_PRICING_CONFIG_DEFAULTS` | 2 |
 | `SP/lib/resolve-config.ts` | `resolveScopePricingConfig()` (I3) | 2 |
@@ -68,20 +68,20 @@ These are the inputs and conditions the spec implies but does not spell out. Eac
 | `SP/lib/solve-multiplier.ts` | `solveMultiplier` | 3 |
 | `SV/schemas/config.ts`, `SV/constants/config-defaults.ts` (I4), `SV/lib/resolve-config.ts` (I3) | savings config | 4 |
 | `SV/constants/bill-categories.ts`, `SV/constants/rates.ts`, `SV/constants/uplift-modes.ts`, `SV/constants/form-defaults.ts` | savings constants | 4 |
-| `SV/schemas/form.ts` | `netWorthProjectionFormSchema` | 4 |
-| `SV/types/index.ts` | `ProjectionYear`, `ProjectionSummary`, `NetWorthProjection` | 4 |
-| `SV/lib/project-net-worth.ts` | `projectNetWorth` (I1, I7) | 4 |
+| `SV/schemas/form.ts` | `remodelRoiFormSchema` | 4 |
+| `SV/types/index.ts` | `ProjectionYear`, `ProjectionSummary`, `RemodelRoiProjection` | 4 |
+| `SV/lib/project-remodel-roi.ts` | `projectRemodelRoi` (I1, I7) | 4 |
 | `src/shared/config/roots.ts` (modify) | `+ dashboard.calculators` | 5 |
 | `src/features/agent-dashboard/lib/get-sidebar-nav.ts` (modify) | `+ Calculators` entry | 5 |
 | `src/app/(frontend)/dashboard/calculators/page.tsx` | thin page | 5 |
 | `src/features/calculators/constants/query-parsers.ts` | `CALCULATOR_TABS`, `calculatorTabParser` | 5 |
 | `src/features/calculators/ui/views/calculators-view.tsx` | tabs shell (I8) | 5 |
-| `SP/ui/views/scope-pricing-calculator.tsx`, `SV/ui/views/net-worth-projection-calculator.tsx` | placeholders (5), real (6, 8) | 5, 6, 8 |
+| `SP/ui/views/scope-pricing-calculator.tsx`, `SV/ui/views/remodel-roi-calculator.tsx` | placeholders (5), real (6, 8) | 5, 6, 8 |
 | `SP/constants/form-defaults.ts`, `SP/lib/create-quote-line.ts`, `SP/lib/format-variable-option.ts`, `SP/lib/describe-variable-issue.ts`, `SP/hooks/use-scope-pricing-quote.ts` | Scope Pricing UI support | 6 |
 | `SP/ui/components/{project-context-fields,variable-field,formula-line-card,manual-line-card,line-price,line-actions,permit-lines,add-scope-picker,quote-total}.tsx` | Scope Pricing UI | 6 |
 | `SP/constants/agent-panel.ts`, `SP/lib/{step-multiplier,describe-target-result,format-unit-cost,unit-cost-entries,trades-in-quote}.ts` | agent panel support | 7 |
 | `SP/ui/components/agent-panel/{index,agent-readouts,multiplier-control,target-price-control,unit-costs-list}.tsx` | agent panel (Agent-only) | 7 |
-| `SV/lib/format-years.ts`, `SV/hooks/use-net-worth-projection.ts` | Savings UI support | 8 |
+| `SV/lib/format-years.ts`, `SV/hooks/use-remodel-roi.ts` | Savings UI support | 8 |
 | `SV/ui/components/{step-section,projection-number-field,home-and-loans-step,liability-row,bills-step,project-step,assumptions-step,savings-headline,comparison-card,total-paid-chart}.tsx` | Savings UI | 8 |
 | `docs/ubiquitous-language.md`, `docs/plans/2026-09-26-sales-calculators-epic.md` (modify) | glossary + tracker | 11 |
 
@@ -95,7 +95,7 @@ Spec §9 put `/ui-warmup` (step 5) before the UI build. The `ui-warmup` skill on
 
 **Files:**
 - Modify: `src/shared/lib/loan-calculations.ts` (append after `amortizedMonthlyPayment`, before `getLoanValues`)
-- Create: `scripts/verify-net-worth-projection.ts`
+- Create: `scripts/verify-remodel-roi.ts`
 
 **Interfaces:**
 - Consumes: `amortizedMonthlyPayment(principal, annualRatePercent, termMonths): number` (existing).
@@ -103,7 +103,7 @@ Spec §9 put `/ui-warmup` (step 5) before the UI build. The `ui-warmup` skill on
 
 - [ ] **Step 1: Write the failing test**
 
-Create `scripts/verify-net-worth-projection.ts`:
+Create `scripts/verify-remodel-roi.ts`:
 
 ```ts
 /* eslint-disable no-console */
@@ -128,12 +128,12 @@ assert.equal(remainingBalance(5000, 6, 0, 0), 0, 'no term → 0')
 assert.equal(remainingBalance(10000, 6, 20.5, 21), 0, 'fractional term: past it → 0')
 assert.ok(remainingBalance(10000, 6, 20.5, 12) > 0 && remainingBalance(10000, 6, 20.5, 12) < 10000, 'fractional term: mid-way balance in range')
 
-console.log('✅ verify-net-worth-projection passed')
+console.log('✅ verify-remodel-roi passed')
 ```
 
 - [ ] **Step 2: Run it to verify it fails**
 
-Run: `pnpm tsx scripts/verify-net-worth-projection.ts`
+Run: `pnpm tsx scripts/verify-remodel-roi.ts`
 Expected: FAIL. Either `remainingBalance is not a function` or a missing-export error.
 
 - [ ] **Step 3: Implement**
@@ -168,18 +168,18 @@ export function remainingBalance(
 
 - [ ] **Step 4: Run it to verify it passes**
 
-Run: `pnpm tsx scripts/verify-net-worth-projection.ts`
-Expected: `✅ verify-net-worth-projection passed`
+Run: `pnpm tsx scripts/verify-remodel-roi.ts`
+Expected: `✅ verify-remodel-roi passed`
 
 - [ ] **Step 5: Gates**
 
-Run: `pnpm exec eslint --fix src/shared/lib/loan-calculations.ts scripts/verify-net-worth-projection.ts && pnpm tsc && pnpm lint`
+Run: `pnpm exec eslint --fix src/shared/lib/loan-calculations.ts scripts/verify-remodel-roi.ts && pnpm tsc && pnpm lint`
 Expected: no errors.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add src/shared/lib/loan-calculations.ts scripts/verify-net-worth-projection.ts
+git add src/shared/lib/loan-calculations.ts scripts/verify-remodel-roi.ts
 git commit -m "feat(calculators): remainingBalance loan helper
 
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
@@ -1608,68 +1608,68 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 
 ---
 
-### Task 4: Net-worth Projection engine
+### Task 4: Remodel ROI Calculator engine
 
 This covers SP-I1–I8, SP-M1–M9, D4, D7 and D8.
 
 **Files:**
 - Create: `SV/schemas/config.ts`, `SV/constants/config-defaults.ts`, `SV/lib/resolve-config.ts`
 - Create: `SV/constants/bill-categories.ts`, `SV/constants/rates.ts`, `SV/constants/uplift-modes.ts`, `SV/constants/form-defaults.ts`
-- Create: `SV/schemas/form.ts`, `SV/types/index.ts`, `SV/lib/project-net-worth.ts`
-- Modify: `scripts/verify-net-worth-projection.ts`
+- Create: `SV/schemas/form.ts`, `SV/types/index.ts`, `SV/lib/project-remodel-roi.ts`
+- Modify: `scripts/verify-remodel-roi.ts`
 
 **Interfaces:**
 - Consumes: `amortizedMonthlyPayment` and `remainingBalance` (Task 1).
 - Produces:
-  - `netWorthProjectionConfigSchema`; the types `NetWorthProjectionConfig` and `RateKey`.
-  - `NET_WORTH_PROJECTION_CONFIG_DEFAULTS` and `resolveNetWorthProjectionConfig()`.
+  - `remodelRoiConfigSchema`; the types `RemodelRoiConfig` and `RateKey`.
+  - `REMODEL_ROI_CONFIG_DEFAULTS` and `resolveRemodelRoiConfig()`.
   - `BILL_CATEGORIES`, `BillCategory` and `BILL_CATEGORY_LABELS`.
   - `RATE_KEYS` and `RATE_LABELS`.
   - `UPLIFT_MODES` and `UPLIFT_MODE_LABELS`.
-  - `EMPTY_LIABILITY` and `createNetWorthProjectionDefaults(config)`.
-  - `netWorthProjectionFormSchema` and `NetWorthProjectionFormValues`.
-  - The types `ProjectionYear`, `ProjectionSummary` and `NetWorthProjection`.
-  - `projectNetWorth(input: NetWorthProjectionFormValues, config: NetWorthProjectionConfig): NetWorthProjection`.
-- **Null means absent (SP-M9).** A null amount counts as 0, a null rate uses its config default, and a null horizon uses `config.defaultHorizonYears`. This is what `config` is for in `projectNetWorth(input, config)`.
+  - `EMPTY_LIABILITY` and `createRemodelRoiDefaults(config)`.
+  - `remodelRoiFormSchema` and `RemodelRoiFormValues`.
+  - The types `ProjectionYear`, `ProjectionSummary` and `RemodelRoiProjection`.
+  - `projectRemodelRoi(input: RemodelRoiFormValues, config: RemodelRoiConfig): RemodelRoiProjection`.
+- **Null means absent (SP-M9).** A null amount counts as 0, a null rate uses its config default, and a null horizon uses `config.defaultHorizonYears`. This is what `config` is for in `projectRemodelRoi(input, config)`.
 - **Cash purchase.** A `termMonths` that is null or 0 means the project is paid in cash: the whole net price (price − incentives) is paid at t = 0. The down payment is clamped to the net price, so the loan principal is never negative.
 - Two fields are added to `summary` beyond spec §6.2 for the UI: `horizonYears`, and `heldFlatLiabilities` (the indexes of liabilities held at today's balance). Spec §6.2 requires that "held at today's balance" label, and this is how the UI learns which rows get it.
 
 - [ ] **Step 1: Write the failing test**
 
-Add these imports to `scripts/verify-net-worth-projection.ts`:
+Add these imports to `scripts/verify-remodel-roi.ts`:
 
 ```ts
-import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
+import type { RemodelRoiFormValues } from '@/features/calculators/remodel-roi-calculator/schemas/form'
 
-import { createNetWorthProjectionDefaults } from '@/features/calculators/net-worth-projection-calculator/constants/form-defaults'
-import { RATE_KEYS } from '@/features/calculators/net-worth-projection-calculator/constants/rates'
-import { projectNetWorth } from '@/features/calculators/net-worth-projection-calculator/lib/project-net-worth'
-import { resolveNetWorthProjectionConfig } from '@/features/calculators/net-worth-projection-calculator/lib/resolve-config'
-import { netWorthProjectionConfigSchema } from '@/features/calculators/net-worth-projection-calculator/schemas/config'
+import { createRemodelRoiDefaults } from '@/features/calculators/remodel-roi-calculator/constants/form-defaults'
+import { RATE_KEYS } from '@/features/calculators/remodel-roi-calculator/constants/rates'
+import { projectRemodelRoi } from '@/features/calculators/remodel-roi-calculator/lib/project-remodel-roi'
+import { resolveRemodelRoiConfig } from '@/features/calculators/remodel-roi-calculator/lib/resolve-config'
+import { remodelRoiConfigSchema } from '@/features/calculators/remodel-roi-calculator/schemas/config'
 ```
 
-Insert this block immediately before `console.log('✅ verify-net-worth-projection passed')`:
+Insert this block immediately before `console.log('✅ verify-remodel-roi passed')`:
 
 ```ts
-// ── Net-worth Projection ──────────────────────────────────────────────────────
-const config = resolveNetWorthProjectionConfig()
+// ── Remodel ROI Calculator ──────────────────────────────────────────────────────
+const config = resolveRemodelRoiConfig()
 assert.equal(config.defaultHorizonYears, 5, 'default horizon')
 assert.equal(config.defaultRatesPercent.electric, 9.4, 'default electric escalation')
 assert.equal(config.defaultRatesPercent.misc, 0, 'misc held flat by default')
-assert.equal(netWorthProjectionConfigSchema.safeParse({ ...config, defaultHorizonYears: 0 }).success, false, 'horizon 0 rejected')
+assert.equal(remodelRoiConfigSchema.safeParse({ ...config, defaultHorizonYears: 0 }).success, false, 'horizon 0 rejected')
 
-function scenario(edit: (values: NetWorthProjectionFormValues) => void): NetWorthProjectionFormValues {
-  const values = createNetWorthProjectionDefaults(config)
+function scenario(edit: (values: RemodelRoiFormValues) => void): RemodelRoiFormValues {
+  const values = createRemodelRoiDefaults(config)
   edit(values)
   return values
 }
-function zeroRates(values: NetWorthProjectionFormValues) {
+function zeroRates(values: RemodelRoiFormValues) {
   for (const key of RATE_KEYS) {
     values.assumptions.ratesPercent[key] = 0
   }
 }
-function lastYear(input: NetWorthProjectionFormValues) {
-  const projection = projectNetWorth(input, config)
+function lastYear(input: RemodelRoiFormValues) {
+  const projection = projectRemodelRoi(input, config)
   return { projection, last: projection.years[projection.years.length - 1] }
 }
 
@@ -1700,7 +1700,7 @@ function lastYear(input: NetWorthProjectionFormValues) {
 }
 
 // SP-M4: loan payment parity
-function financed(v: NetWorthProjectionFormValues) {
+function financed(v: RemodelRoiFormValues) {
   v.project.price = 30000
   v.project.incentives = 5000
   v.project.downPayment = 5000
@@ -1803,8 +1803,8 @@ function breakEvenScenario(horizon: number) {
     v.billsAfter.electric = 100
   })
 }
-assert.equal(projectNetWorth(breakEvenScenario(10), config).summary.breakEvenYear, 5, '4,800/yr against 20,000 → year 5')
-assert.equal(projectNetWorth(breakEvenScenario(4), config).summary.breakEvenYear, null, 'not within 4 years')
+assert.equal(projectRemodelRoi(breakEvenScenario(10), config).summary.breakEvenYear, 5, '4,800/yr against 20,000 → year 5')
+assert.equal(projectRemodelRoi(breakEvenScenario(4), config).summary.breakEvenYear, null, 'not within 4 years')
 
 // SP-I8 uplift as a percent of price
 {
@@ -1818,8 +1818,8 @@ assert.equal(projectNetWorth(breakEvenScenario(4), config).summary.breakEvenYear
 }
 
 // SP-M9 no NaN for any valid input, including the untouched defaults
-for (const input of [createNetWorthProjectionDefaults(config), scenario(financed), breakEvenScenario(30)]) {
-  const projection = projectNetWorth(input, config)
+for (const input of [createRemodelRoiDefaults(config), scenario(financed), breakEvenScenario(30)]) {
+  const projection = projectRemodelRoi(input, config)
   for (const year of projection.years) {
     for (const [field, value] of Object.entries(year)) {
       assert.ok(Number.isFinite(value), `year ${year.t} ${field} is ${value}`)
@@ -1835,8 +1835,8 @@ for (const input of [createNetWorthProjectionDefaults(config), scenario(financed
 
 - [ ] **Step 2: Run it to verify it fails**
 
-Run: `pnpm tsx scripts/verify-net-worth-projection.ts`
-Expected: FAIL with module not found for `net-worth-projection-calculator/...`.
+Run: `pnpm tsx scripts/verify-remodel-roi.ts`
+Expected: FAIL with module not found for `remodel-roi-calculator/...`.
 
 - [ ] **Step 3: Config**
 
@@ -1847,7 +1847,7 @@ import { z } from 'zod'
 
 const ratePercent = z.number().min(-20).max(50)
 
-export const netWorthProjectionConfigSchema = z.object({
+export const remodelRoiConfigSchema = z.object({
   defaultHorizonYears: z.number().int().min(1).max(30),
   defaultRatesPercent: z.object({
     homeAppreciation: ratePercent,
@@ -1859,33 +1859,33 @@ export const netWorthProjectionConfigSchema = z.object({
   }),
 })
 
-export type NetWorthProjectionConfig = z.infer<typeof netWorthProjectionConfigSchema>
-export type RateKey = keyof NetWorthProjectionConfig['defaultRatesPercent']
+export type RemodelRoiConfig = z.infer<typeof remodelRoiConfigSchema>
+export type RateKey = keyof RemodelRoiConfig['defaultRatesPercent']
 ```
 
 `SV/constants/config-defaults.ts`:
 
 ```ts
-import type { NetWorthProjectionConfig } from '@/features/calculators/net-worth-projection-calculator/schemas/config'
+import type { RemodelRoiConfig } from '@/features/calculators/remodel-roi-calculator/schemas/config'
 
-export const NET_WORTH_PROJECTION_CONFIG_DEFAULTS = {
+export const REMODEL_ROI_CONFIG_DEFAULTS = {
   defaultHorizonYears: 5,
   // Carried over from the old calculator, which cited no source for these rates; they stay visible and editable on screen.
   defaultRatesPercent: { homeAppreciation: 4, electric: 9.4, gas: 13.1, water: 10.3, gardening: 5, misc: 0 },
-} satisfies NetWorthProjectionConfig
+} satisfies RemodelRoiConfig
 ```
 
 `SV/lib/resolve-config.ts`:
 
 ```ts
-import type { NetWorthProjectionConfig } from '@/features/calculators/net-worth-projection-calculator/schemas/config'
+import type { RemodelRoiConfig } from '@/features/calculators/remodel-roi-calculator/schemas/config'
 
-import { NET_WORTH_PROJECTION_CONFIG_DEFAULTS } from '@/features/calculators/net-worth-projection-calculator/constants/config-defaults'
-import { netWorthProjectionConfigSchema } from '@/features/calculators/net-worth-projection-calculator/schemas/config'
+import { REMODEL_ROI_CONFIG_DEFAULTS } from '@/features/calculators/remodel-roi-calculator/constants/config-defaults'
+import { remodelRoiConfigSchema } from '@/features/calculators/remodel-roi-calculator/schemas/config'
 
 // Admin-configured savings defaults have no storage or admin screen yet, so the System defaults are the whole answer for now.
-export function resolveNetWorthProjectionConfig(): NetWorthProjectionConfig {
-  return netWorthProjectionConfigSchema.parse(NET_WORTH_PROJECTION_CONFIG_DEFAULTS)
+export function resolveRemodelRoiConfig(): RemodelRoiConfig {
+  return remodelRoiConfigSchema.parse(REMODEL_ROI_CONFIG_DEFAULTS)
 }
 ```
 
@@ -1910,7 +1910,7 @@ export const BILL_CATEGORY_LABELS = {
 `SV/constants/rates.ts`:
 
 ```ts
-import type { RateKey } from '@/features/calculators/net-worth-projection-calculator/schemas/config'
+import type { RateKey } from '@/features/calculators/remodel-roi-calculator/schemas/config'
 
 export const RATE_KEYS = ['homeAppreciation', 'electric', 'gas', 'water', 'gardening', 'misc'] as const satisfies readonly RateKey[]
 
@@ -1942,14 +1942,14 @@ export const UPLIFT_MODE_LABELS = {
 ```ts
 import { z } from 'zod'
 
-import { UPLIFT_MODES } from '@/features/calculators/net-worth-projection-calculator/constants/uplift-modes'
+import { UPLIFT_MODES } from '@/features/calculators/remodel-roi-calculator/constants/uplift-modes'
 
 const amount = z.number().min(0).nullable()
 const aprPercent = z.number().min(0).max(40).nullable()
 const ratePercent = z.number().min(-20).max(50).nullable()
 const bills = z.object({ electric: amount, gas: amount, water: amount, gardening: amount, misc: amount })
 
-export const netWorthProjectionFormSchema = z.object({
+export const remodelRoiFormSchema = z.object({
   homeValue: amount,
   liabilities: z.array(z.object({
     label: z.string().max(60),
@@ -1980,17 +1980,17 @@ export const netWorthProjectionFormSchema = z.object({
   }),
 })
 
-export type NetWorthProjectionFormValues = z.infer<typeof netWorthProjectionFormSchema>
+export type RemodelRoiFormValues = z.infer<typeof remodelRoiFormSchema>
 ```
 
 `SV/constants/form-defaults.ts`:
 
 ```ts
-import type { NetWorthProjectionConfig } from '@/features/calculators/net-worth-projection-calculator/schemas/config'
-import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
+import type { RemodelRoiConfig } from '@/features/calculators/remodel-roi-calculator/schemas/config'
+import type { RemodelRoiFormValues } from '@/features/calculators/remodel-roi-calculator/schemas/form'
 
-type Bills = NetWorthProjectionFormValues['billsNow']
-type Liability = NetWorthProjectionFormValues['liabilities'][number]
+type Bills = RemodelRoiFormValues['billsNow']
+type Liability = RemodelRoiFormValues['liabilities'][number]
 
 export const EMPTY_LIABILITY: Liability = { label: '', balance: null, monthlyPayment: null, aprPercent: null }
 
@@ -1998,7 +1998,7 @@ function emptyBills(): Bills {
   return { electric: null, gas: null, water: null, gardening: null, misc: null }
 }
 
-export function createNetWorthProjectionDefaults(config: NetWorthProjectionConfig): NetWorthProjectionFormValues {
+export function createRemodelRoiDefaults(config: RemodelRoiConfig): RemodelRoiFormValues {
   return {
     homeValue: null,
     liabilities: [],
@@ -2047,22 +2047,22 @@ export interface ProjectionSummary {
   heldFlatLiabilities: number[]
 }
 
-export interface NetWorthProjection {
+export interface RemodelRoiProjection {
   years: ProjectionYear[]
   summary: ProjectionSummary
 }
 ```
 
-- [ ] **Step 5: `projectNetWorth`**
+- [ ] **Step 5: `projectRemodelRoi`**
 
-`SV/lib/project-net-worth.ts`:
+`SV/lib/project-remodel-roi.ts`:
 
 ```ts
-import type { RateKey, NetWorthProjectionConfig } from '@/features/calculators/net-worth-projection-calculator/schemas/config'
-import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
-import type { NetWorthProjection, ProjectionYear } from '@/features/calculators/net-worth-projection-calculator/types'
+import type { RateKey, RemodelRoiConfig } from '@/features/calculators/remodel-roi-calculator/schemas/config'
+import type { RemodelRoiFormValues } from '@/features/calculators/remodel-roi-calculator/schemas/form'
+import type { RemodelRoiProjection, ProjectionYear } from '@/features/calculators/remodel-roi-calculator/types'
 
-import { BILL_CATEGORIES } from '@/features/calculators/net-worth-projection-calculator/constants/bill-categories'
+import { BILL_CATEGORIES } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
 import { amortizedMonthlyPayment, remainingBalance } from '@/shared/lib/loan-calculations'
 
 function amountOf(value: number | null | undefined): number {
@@ -2097,12 +2097,12 @@ function monthsToPayOff(balance: number, aprPercent: number, payment: number): n
   return -Math.log(1 - (monthlyRate * balance) / payment) / Math.log(1 + monthlyRate)
 }
 
-function sumBills(bills: NetWorthProjectionFormValues['billsNow']): number {
+function sumBills(bills: RemodelRoiFormValues['billsNow']): number {
   return BILL_CATEGORIES.reduce((sum, category) => sum + amountOf(bills[category]), 0)
 }
 
 // Kept free of React and I/O so the engine can move to a shared module once its permanent home is decided.
-export function projectNetWorth(input: NetWorthProjectionFormValues, config: NetWorthProjectionConfig): NetWorthProjection {
+export function projectRemodelRoi(input: RemodelRoiFormValues, config: RemodelRoiConfig): RemodelRoiProjection {
   const horizonYears = Math.min(30, Math.max(1, Math.round(input.assumptions.horizonYears ?? config.defaultHorizonYears)))
   const rate = (key: RateKey) => toFraction(input.assumptions.ratesPercent[key] ?? config.defaultRatesPercent[key])
 
@@ -2140,7 +2140,7 @@ export function projectNetWorth(input: NetWorthProjectionFormValues, config: Net
     }, 0)
   }
 
-  function billsPaid(bills: NetWorthProjectionFormValues['billsNow'], t: number): number {
+  function billsPaid(bills: RemodelRoiFormValues['billsNow'], t: number): number {
     return BILL_CATEGORIES.reduce((sum, category) => sum + cumulativeBills(amountOf(bills[category]), rate(category), t), 0)
   }
 
@@ -2193,19 +2193,19 @@ export function projectNetWorth(input: NetWorthProjectionFormValues, config: Net
 
 - [ ] **Step 6: Run the test to verify it passes**
 
-Run: `pnpm tsx scripts/verify-net-worth-projection.ts`
-Expected: `✅ verify-net-worth-projection passed`
+Run: `pnpm tsx scripts/verify-remodel-roi.ts`
+Expected: `✅ verify-remodel-roi passed`
 
 - [ ] **Step 7: Gates**
 
-Run: `pnpm exec eslint --fix src/features/calculators scripts/verify-net-worth-projection.ts && pnpm tsc && pnpm lint`
+Run: `pnpm exec eslint --fix src/features/calculators scripts/verify-remodel-roi.ts && pnpm tsc && pnpm lint`
 Expected: no errors. (`tsconfig` does not enable `noUncheckedIndexedAccess`, so indexing `years` needs no non-null assertion.)
 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add src/features/calculators/net-worth-projection-calculator scripts/verify-net-worth-projection.ts
-git commit -m "feat(calculators): Net-worth Projection engine
+git add src/features/calculators/remodel-roi-calculator scripts/verify-remodel-roi.ts
+git commit -m "feat(calculators): Remodel ROI Calculator engine
 
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 ```
@@ -2222,13 +2222,13 @@ This covers UI1, UI2 and I8.
 - Create: `src/app/(frontend)/dashboard/calculators/page.tsx`
 - Create: `src/features/calculators/constants/query-parsers.ts`
 - Create: `src/features/calculators/ui/views/calculators-view.tsx`
-- Create (placeholders, replaced in Tasks 6 and 8): `SP/ui/views/scope-pricing-calculator.tsx`, `SV/ui/views/net-worth-projection-calculator.tsx`
+- Create (placeholders, replaced in Tasks 6 and 8): `SP/ui/views/scope-pricing-calculator.tsx`, `SV/ui/views/remodel-roi-calculator.tsx`
 
 **Interfaces:**
 - Produces:
   - `ROOTS.dashboard.calculators(): '/dashboard/calculators'`.
   - `CALCULATOR_TABS`, `CalculatorTab` and `calculatorTabParser`.
-  - `CalculatorsView`, `ScopePricingCalculator` and `NetWorthProjectionCalculator` (both views take no props).
+  - `CalculatorsView`, `ScopePricingCalculator` and `RemodelRoiCalculator` (both views take no props).
 
 - [ ] **Step 1: Root and sidebar**
 
@@ -2256,7 +2256,7 @@ In `src/features/agent-dashboard/lib/get-sidebar-nav.ts`, add `CalculatorIcon` t
 ```ts
 import { parseAsStringLiteral } from 'nuqs'
 
-export const CALCULATOR_TABS = ['scope-pricing', 'net-worth-projection'] as const
+export const CALCULATOR_TABS = ['scope-pricing', 'remodel-roi'] as const
 
 export type CalculatorTab = typeof CALCULATOR_TABS[number]
 
@@ -2277,15 +2277,15 @@ export function ScopePricingCalculator() {
 }
 ```
 
-`SV/ui/views/net-worth-projection-calculator.tsx`:
+`SV/ui/views/remodel-roi-calculator.tsx`:
 
 ```tsx
 'use client'
 
 import { EmptyState } from '@/shared/components/states/empty-state'
 
-export function NetWorthProjectionCalculator() {
-  return <EmptyState title="Net-worth Projection" description="Being built." />
+export function RemodelRoiCalculator() {
+  return <EmptyState title="Remodel ROI Calculator" description="Being built." />
 }
 ```
 
@@ -2301,7 +2301,7 @@ import type { CalculatorTab } from '@/features/calculators/constants/query-parse
 import { useQueryState } from 'nuqs'
 
 import { calculatorTabParser } from '@/features/calculators/constants/query-parsers'
-import { NetWorthProjectionCalculator } from '@/features/calculators/net-worth-projection-calculator/ui/views/net-worth-projection-calculator'
+import { RemodelRoiCalculator } from '@/features/calculators/remodel-roi-calculator/ui/views/remodel-roi-calculator'
 import { ScopePricingCalculator } from '@/features/calculators/scope-pricing-calculator/ui/views/scope-pricing-calculator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 
@@ -2318,14 +2318,14 @@ export function CalculatorsView() {
       <Tabs className="flex min-h-0 flex-1 flex-col" onValueChange={value => setTab(value as CalculatorTab)} value={tab}>
         <TabsList>
           <TabsTrigger className="min-h-11" value="scope-pricing">Scope Pricing</TabsTrigger>
-          <TabsTrigger className="min-h-11" value="net-worth-projection">Net-worth Projection</TabsTrigger>
+          <TabsTrigger className="min-h-11" value="remodel-roi">Remodel ROI Calculator</TabsTrigger>
         </TabsList>
 
         <TabsContent className="min-h-0 flex-1 overflow-y-auto data-[state=inactive]:hidden" forceMount value="scope-pricing">
           <ScopePricingCalculator />
         </TabsContent>
-        <TabsContent className="min-h-0 flex-1 overflow-y-auto data-[state=inactive]:hidden" forceMount value="net-worth-projection">
-          <NetWorthProjectionCalculator />
+        <TabsContent className="min-h-0 flex-1 overflow-y-auto data-[state=inactive]:hidden" forceMount value="remodel-roi">
+          <RemodelRoiCalculator />
         </TabsContent>
       </Tabs>
     </div>
@@ -2354,12 +2354,12 @@ export default async function CalculatorsPage() {
 Run: `pnpm exec eslint --fix src/features/calculators "src/app/(frontend)/dashboard/calculators" src/features/agent-dashboard/lib/get-sidebar-nav.ts src/shared/config/roots.ts && pnpm tsc && pnpm lint`
 Expected: no errors.
 
-Before starting a dev server, run `ss -ltnp | grep -E ':300[0-9]'` and reuse a running one if there is one. Open `/dashboard/calculators`. Expected: the sidebar shows "Calculators", both tab placeholders render, and `?tab=net-worth-projection` selects the second tab.
+Before starting a dev server, run `ss -ltnp | grep -E ':300[0-9]'` and reuse a running one if there is one. Open `/dashboard/calculators`. Expected: the sidebar shows "Calculators", both tab placeholders render, and `?tab=remodel-roi` selects the second tab.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/shared/config/roots.ts src/features/agent-dashboard/lib/get-sidebar-nav.ts "src/app/(frontend)/dashboard/calculators/page.tsx" src/features/calculators/constants/query-parsers.ts src/features/calculators/ui/views/calculators-view.tsx src/features/calculators/scope-pricing-calculator/ui/views/scope-pricing-calculator.tsx src/features/calculators/net-worth-projection-calculator/ui/views/net-worth-projection-calculator.tsx
+git add src/shared/config/roots.ts src/features/agent-dashboard/lib/get-sidebar-nav.ts "src/app/(frontend)/dashboard/calculators/page.tsx" src/features/calculators/constants/query-parsers.ts src/features/calculators/ui/views/calculators-view.tsx src/features/calculators/scope-pricing-calculator/ui/views/scope-pricing-calculator.tsx src/features/calculators/remodel-roi-calculator/ui/views/remodel-roi-calculator.tsx
 git commit -m "feat(calculators): /dashboard/calculators route, sidebar entry, tabs shell
 
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
@@ -3500,31 +3500,31 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 
 ---
 
-### Task 8: Net-worth Projection UI
+### Task 8: Remodel ROI Calculator UI
 
 This covers SP-O1–O4, O8, UI4, UI6 and I7's label. The layout is a plain baseline that Task 9 restyles.
 
 **Files:**
-- Create: `SV/lib/format-years.ts`, `SV/hooks/use-net-worth-projection.ts`
+- Create: `SV/lib/format-years.ts`, `SV/hooks/use-remodel-roi.ts`
 - Create: `SV/ui/components/{step-section,projection-number-field,liability-row,home-and-loans-step,bills-step,project-step,assumptions-step,savings-headline,comparison-card,total-paid-chart}.tsx`
-- Replace: `SV/ui/views/net-worth-projection-calculator.tsx`
-- Modify: `scripts/verify-net-worth-projection.ts` (`formatYears` check)
+- Replace: `SV/ui/views/remodel-roi-calculator.tsx`
+- Modify: `scripts/verify-remodel-roi.ts` (`formatYears` check)
 
 **Interfaces:**
-- Consumes: `projectNetWorth`, `resolveNetWorthProjectionConfig`, `createNetWorthProjectionDefaults`, `EMPTY_LIABILITY`, `netWorthProjectionFormSchema`, the savings types, `BILL_CATEGORIES` / `BILL_CATEGORY_LABELS`, `RATE_KEYS` / `RATE_LABELS` and `UPLIFT_MODES` / `UPLIFT_MODE_LABELS` (Task 4).
-- Produces: `useNetWorthProjection(control, config): NetWorthProjection` and `formatYears(n): string`.
+- Consumes: `projectRemodelRoi`, `resolveRemodelRoiConfig`, `createRemodelRoiDefaults`, `EMPTY_LIABILITY`, `remodelRoiFormSchema`, the savings types, `BILL_CATEGORIES` / `BILL_CATEGORY_LABELS`, `RATE_KEYS` / `RATE_LABELS` and `UPLIFT_MODES` / `UPLIFT_MODE_LABELS` (Task 4).
+- Produces: `useRemodelRoi(control, config): RemodelRoiProjection` and `formatYears(n): string`.
 - **Homeowner copy:** never the word "Cost". The chart is "Total paid over time", with the series "Without the project" and "With the project".
 
 - [ ] **Step 1: Write the failing test**
 
-Add `import { formatYears } from '@/features/calculators/net-worth-projection-calculator/lib/format-years'` to `scripts/verify-net-worth-projection.ts`. Then insert before the final `console.log`:
+Add `import { formatYears } from '@/features/calculators/remodel-roi-calculator/lib/format-years'` to `scripts/verify-remodel-roi.ts`. Then insert before the final `console.log`:
 
 ```ts
 assert.equal(formatYears(1), '1 year', 'singular')
 assert.equal(formatYears(5), '5 years', 'plural')
 ```
 
-Run: `pnpm tsx scripts/verify-net-worth-projection.ts`
+Run: `pnpm tsx scripts/verify-remodel-roi.ts`
 Expected: FAIL with module not found.
 
 - [ ] **Step 2: Helper and hook**
@@ -3537,29 +3537,29 @@ export function formatYears(years: number): string {
 }
 ```
 
-Run: `pnpm tsx scripts/verify-net-worth-projection.ts`. Expected: `✅`.
+Run: `pnpm tsx scripts/verify-remodel-roi.ts`. Expected: `✅`.
 
-`SV/hooks/use-net-worth-projection.ts`:
+`SV/hooks/use-remodel-roi.ts`:
 
 ```ts
 import type { Control } from 'react-hook-form'
-import type { NetWorthProjectionConfig } from '@/features/calculators/net-worth-projection-calculator/schemas/config'
-import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
-import type { NetWorthProjection } from '@/features/calculators/net-worth-projection-calculator/types'
+import type { RemodelRoiConfig } from '@/features/calculators/remodel-roi-calculator/schemas/config'
+import type { RemodelRoiFormValues } from '@/features/calculators/remodel-roi-calculator/schemas/form'
+import type { RemodelRoiProjection } from '@/features/calculators/remodel-roi-calculator/types'
 
 import { useMemo } from 'react'
 import { useWatch } from 'react-hook-form'
 
-import { projectNetWorth } from '@/features/calculators/net-worth-projection-calculator/lib/project-net-worth'
+import { projectRemodelRoi } from '@/features/calculators/remodel-roi-calculator/lib/project-remodel-roi'
 
-export function useNetWorthProjection(control: Control<NetWorthProjectionFormValues>, config: NetWorthProjectionConfig): NetWorthProjection {
+export function useRemodelRoi(control: Control<RemodelRoiFormValues>, config: RemodelRoiConfig): RemodelRoiProjection {
   const [homeValue, liabilities, billsNow, billsAfter, project, assumptions] = useWatch({
     control,
     name: ['homeValue', 'liabilities', 'billsNow', 'billsAfter', 'project', 'assumptions'],
   })
 
   return useMemo(
-    () => projectNetWorth({ homeValue, liabilities, billsNow, billsAfter, project, assumptions }, config),
+    () => projectRemodelRoi({ homeValue, liabilities, billsNow, billsAfter, project, assumptions }, config),
     [homeValue, liabilities, billsNow, billsAfter, project, assumptions, config],
   )
 }
@@ -3595,7 +3595,7 @@ export function StepSection({ step, title, children }: Props) {
 'use client'
 
 import type { FieldPathByValue } from 'react-hook-form'
-import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
+import type { RemodelRoiFormValues } from '@/features/calculators/remodel-roi-calculator/schemas/form'
 
 import { useFormContext } from 'react-hook-form'
 
@@ -3603,7 +3603,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shar
 import { NumberField } from '@/shared/components/ui/number-field'
 
 interface Props {
-  name: FieldPathByValue<NetWorthProjectionFormValues, number | null>
+  name: FieldPathByValue<RemodelRoiFormValues, number | null>
   label: string
   suffix?: string
   min?: number
@@ -3612,7 +3612,7 @@ interface Props {
 }
 
 export function ProjectionNumberField({ name, label, suffix, min = 0, max, step }: Props) {
-  const { control } = useFormContext<NetWorthProjectionFormValues>()
+  const { control } = useFormContext<RemodelRoiFormValues>()
 
   return (
     <FormField
@@ -3637,12 +3637,12 @@ export function ProjectionNumberField({ name, label, suffix, min = 0, max, step 
 ```tsx
 'use client'
 
-import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
+import type { RemodelRoiFormValues } from '@/features/calculators/remodel-roi-calculator/schemas/form'
 
 import { Trash2Icon } from 'lucide-react'
 import { useFormContext } from 'react-hook-form'
 
-import { ProjectionNumberField } from '@/features/calculators/net-worth-projection-calculator/ui/components/projection-number-field'
+import { ProjectionNumberField } from '@/features/calculators/remodel-roi-calculator/ui/components/projection-number-field'
 import { Button } from '@/shared/components/ui/button'
 import { FormControl, FormField, FormItem, FormLabel } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
@@ -3654,7 +3654,7 @@ interface Props {
 }
 
 export function LiabilityRow({ index, heldFlat, onRemove }: Props) {
-  const { control } = useFormContext<NetWorthProjectionFormValues>()
+  const { control } = useFormContext<RemodelRoiFormValues>()
 
   return (
     <div className="flex flex-col gap-2 rounded-lg bg-muted/40 p-3">
@@ -3691,15 +3691,15 @@ export function LiabilityRow({ index, heldFlat, onRemove }: Props) {
 ```tsx
 'use client'
 
-import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
+import type { RemodelRoiFormValues } from '@/features/calculators/remodel-roi-calculator/schemas/form'
 
 import { PlusIcon } from 'lucide-react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 
-import { EMPTY_LIABILITY } from '@/features/calculators/net-worth-projection-calculator/constants/form-defaults'
-import { LiabilityRow } from '@/features/calculators/net-worth-projection-calculator/ui/components/liability-row'
-import { ProjectionNumberField } from '@/features/calculators/net-worth-projection-calculator/ui/components/projection-number-field'
-import { StepSection } from '@/features/calculators/net-worth-projection-calculator/ui/components/step-section'
+import { EMPTY_LIABILITY } from '@/features/calculators/remodel-roi-calculator/constants/form-defaults'
+import { LiabilityRow } from '@/features/calculators/remodel-roi-calculator/ui/components/liability-row'
+import { ProjectionNumberField } from '@/features/calculators/remodel-roi-calculator/ui/components/projection-number-field'
+import { StepSection } from '@/features/calculators/remodel-roi-calculator/ui/components/step-section'
 import { Button } from '@/shared/components/ui/button'
 
 interface Props {
@@ -3707,7 +3707,7 @@ interface Props {
 }
 
 export function HomeAndLoansStep({ heldFlatLiabilities }: Props) {
-  const { control } = useFormContext<NetWorthProjectionFormValues>()
+  const { control } = useFormContext<RemodelRoiFormValues>()
   const liabilities = useFieldArray({ control, name: 'liabilities' })
 
   return (
@@ -3730,9 +3730,9 @@ export function HomeAndLoansStep({ heldFlatLiabilities }: Props) {
 ```tsx
 'use client'
 
-import { BILL_CATEGORIES, BILL_CATEGORY_LABELS } from '@/features/calculators/net-worth-projection-calculator/constants/bill-categories'
-import { ProjectionNumberField } from '@/features/calculators/net-worth-projection-calculator/ui/components/projection-number-field'
-import { StepSection } from '@/features/calculators/net-worth-projection-calculator/ui/components/step-section'
+import { BILL_CATEGORIES, BILL_CATEGORY_LABELS } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
+import { ProjectionNumberField } from '@/features/calculators/remodel-roi-calculator/ui/components/projection-number-field'
+import { StepSection } from '@/features/calculators/remodel-roi-calculator/ui/components/step-section'
 
 interface Props {
   group: 'billsNow' | 'billsAfter'
@@ -3758,19 +3758,19 @@ export function BillsStep({ group, step, title }: Props) {
 ```tsx
 'use client'
 
-import type { UpliftMode } from '@/features/calculators/net-worth-projection-calculator/constants/uplift-modes'
-import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
+import type { UpliftMode } from '@/features/calculators/remodel-roi-calculator/constants/uplift-modes'
+import type { RemodelRoiFormValues } from '@/features/calculators/remodel-roi-calculator/schemas/form'
 
 import { useFormContext, useWatch } from 'react-hook-form'
 
-import { UPLIFT_MODE_LABELS, UPLIFT_MODES } from '@/features/calculators/net-worth-projection-calculator/constants/uplift-modes'
-import { ProjectionNumberField } from '@/features/calculators/net-worth-projection-calculator/ui/components/projection-number-field'
-import { StepSection } from '@/features/calculators/net-worth-projection-calculator/ui/components/step-section'
+import { UPLIFT_MODE_LABELS, UPLIFT_MODES } from '@/features/calculators/remodel-roi-calculator/constants/uplift-modes'
+import { ProjectionNumberField } from '@/features/calculators/remodel-roi-calculator/ui/components/projection-number-field'
+import { StepSection } from '@/features/calculators/remodel-roi-calculator/ui/components/step-section'
 import { FormControl, FormField, FormItem, FormLabel } from '@/shared/components/ui/form'
 import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-group'
 
 export function ProjectStep() {
-  const { control } = useFormContext<NetWorthProjectionFormValues>()
+  const { control } = useFormContext<RemodelRoiFormValues>()
   const upliftMode = useWatch({ control, name: 'project.uplift.mode' })
 
   return (
@@ -3826,9 +3826,9 @@ export function ProjectStep() {
 ```tsx
 'use client'
 
-import { RATE_KEYS, RATE_LABELS } from '@/features/calculators/net-worth-projection-calculator/constants/rates'
-import { ProjectionNumberField } from '@/features/calculators/net-worth-projection-calculator/ui/components/projection-number-field'
-import { StepSection } from '@/features/calculators/net-worth-projection-calculator/ui/components/step-section'
+import { RATE_KEYS, RATE_LABELS } from '@/features/calculators/remodel-roi-calculator/constants/rates'
+import { ProjectionNumberField } from '@/features/calculators/remodel-roi-calculator/ui/components/projection-number-field'
+import { StepSection } from '@/features/calculators/remodel-roi-calculator/ui/components/step-section'
 
 export function AssumptionsStep() {
   return (
@@ -3857,9 +3857,9 @@ export function AssumptionsStep() {
 `SV/ui/components/savings-headline.tsx`:
 
 ```tsx
-import type { ProjectionSummary } from '@/features/calculators/net-worth-projection-calculator/types'
+import type { ProjectionSummary } from '@/features/calculators/remodel-roi-calculator/types'
 
-import { formatYears } from '@/features/calculators/net-worth-projection-calculator/lib/format-years'
+import { formatYears } from '@/features/calculators/remodel-roi-calculator/lib/format-years'
 import { formatAsDollars } from '@/shared/lib/formatters'
 
 interface Props {
@@ -3923,7 +3923,7 @@ export function ComparisonCard({ title, moneyLabel, money, homeValue, netWorth }
 ```tsx
 'use client'
 
-import type { ProjectionYear } from '@/features/calculators/net-worth-projection-calculator/types'
+import type { ProjectionYear } from '@/features/calculators/remodel-roi-calculator/types'
 
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
@@ -3957,39 +3957,39 @@ export function TotalPaidChart({ years }: Props) {
 
 - [ ] **Step 5: The view**
 
-Replace `SV/ui/views/net-worth-projection-calculator.tsx`:
+Replace `SV/ui/views/remodel-roi-calculator.tsx`:
 
 ```tsx
 'use client'
 
-import type { NetWorthProjectionFormValues } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
+import type { RemodelRoiFormValues } from '@/features/calculators/remodel-roi-calculator/schemas/form'
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 
-import { createNetWorthProjectionDefaults } from '@/features/calculators/net-worth-projection-calculator/constants/form-defaults'
-import { useNetWorthProjection } from '@/features/calculators/net-worth-projection-calculator/hooks/use-net-worth-projection'
-import { formatYears } from '@/features/calculators/net-worth-projection-calculator/lib/format-years'
-import { resolveNetWorthProjectionConfig } from '@/features/calculators/net-worth-projection-calculator/lib/resolve-config'
-import { netWorthProjectionFormSchema } from '@/features/calculators/net-worth-projection-calculator/schemas/form'
-import { AssumptionsStep } from '@/features/calculators/net-worth-projection-calculator/ui/components/assumptions-step'
-import { BillsStep } from '@/features/calculators/net-worth-projection-calculator/ui/components/bills-step'
-import { ComparisonCard } from '@/features/calculators/net-worth-projection-calculator/ui/components/comparison-card'
-import { HomeAndLoansStep } from '@/features/calculators/net-worth-projection-calculator/ui/components/home-and-loans-step'
-import { ProjectStep } from '@/features/calculators/net-worth-projection-calculator/ui/components/project-step'
-import { SavingsHeadline } from '@/features/calculators/net-worth-projection-calculator/ui/components/savings-headline'
-import { TotalPaidChart } from '@/features/calculators/net-worth-projection-calculator/ui/components/total-paid-chart'
+import { createRemodelRoiDefaults } from '@/features/calculators/remodel-roi-calculator/constants/form-defaults'
+import { useRemodelRoi } from '@/features/calculators/remodel-roi-calculator/hooks/use-remodel-roi'
+import { formatYears } from '@/features/calculators/remodel-roi-calculator/lib/format-years'
+import { resolveRemodelRoiConfig } from '@/features/calculators/remodel-roi-calculator/lib/resolve-config'
+import { remodelRoiFormSchema } from '@/features/calculators/remodel-roi-calculator/schemas/form'
+import { AssumptionsStep } from '@/features/calculators/remodel-roi-calculator/ui/components/assumptions-step'
+import { BillsStep } from '@/features/calculators/remodel-roi-calculator/ui/components/bills-step'
+import { ComparisonCard } from '@/features/calculators/remodel-roi-calculator/ui/components/comparison-card'
+import { HomeAndLoansStep } from '@/features/calculators/remodel-roi-calculator/ui/components/home-and-loans-step'
+import { ProjectStep } from '@/features/calculators/remodel-roi-calculator/ui/components/project-step'
+import { SavingsHeadline } from '@/features/calculators/remodel-roi-calculator/ui/components/savings-headline'
+import { TotalPaidChart } from '@/features/calculators/remodel-roi-calculator/ui/components/total-paid-chart'
 import { Form } from '@/shared/components/ui/form'
 
-export function NetWorthProjectionCalculator() {
-  const [config] = useState(resolveNetWorthProjectionConfig)
-  const form = useForm<NetWorthProjectionFormValues>({
-    resolver: zodResolver(netWorthProjectionFormSchema),
+export function RemodelRoiCalculator() {
+  const [config] = useState(resolveRemodelRoiConfig)
+  const form = useForm<RemodelRoiFormValues>({
+    resolver: zodResolver(remodelRoiFormSchema),
     mode: 'onChange',
-    defaultValues: createNetWorthProjectionDefaults(config),
+    defaultValues: createRemodelRoiDefaults(config),
   })
-  const { years, summary } = useNetWorthProjection(form.control, config)
+  const { years, summary } = useRemodelRoi(form.control, config)
   const today = years[0]
   const later = years[years.length - 1]
   const inYears = `In ${formatYears(summary.horizonYears)}`
@@ -4022,10 +4022,10 @@ export function NetWorthProjectionCalculator() {
 
 - [ ] **Step 6: Gates and smoke**
 
-Run: `pnpm exec eslint --fix src/features/calculators scripts/verify-net-worth-projection.ts && pnpm tsc && pnpm lint && pnpm tsx scripts/verify-net-worth-projection.ts`
+Run: `pnpm exec eslint --fix src/features/calculators scripts/verify-remodel-roi.ts && pnpm tsc && pnpm lint && pnpm tsx scripts/verify-remodel-roi.ts`
 Expected: no errors, then `✅`.
 
-Smoke on the Net-worth Projection tab:
+Smoke on the Remodel ROI Calculator tab:
 1. Enter a home value of $800,000, electric $400/mo now and $80/mo after, and a project price of $30,000 at 8% APR for 120 months.
 2. The headline, the four cards and the chart update live, and the break-even year shows.
 3. Clear a rate field; the projection keeps working on the default rate.
@@ -4034,8 +4034,8 @@ Smoke on the Net-worth Projection tab:
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/features/calculators/net-worth-projection-calculator scripts/verify-net-worth-projection.ts
-git commit -m "feat(calculators): Net-worth Projection screen
+git add src/features/calculators/remodel-roi-calculator scripts/verify-remodel-roi.ts
+git commit -m "feat(calculators): Remodel ROI Calculator screen
 
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 ```
@@ -4048,7 +4048,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 
 - [ ] **Step 1: Warm up.** Invoke `/ui-warmup src/features/calculators tablet`. It publishes at least 3 working layout options for both calculators on one private page. Brief it with the spec §7 focal points:
   - Scope Pricing: "Your price" plus "includes tax", and the agent panel stays a closed side sheet.
-  - Net-worth Projection: cumulative savings plus the break-even year.
+  - Remodel ROI Calculator: cumulative savings plus the break-even year.
   - The context: a rep in the living room, on a tablet turned toward the homeowner.
 - [ ] **Step 2: STOP.** Send the owner the artifact link and wait for their pick. Record it in the tracker's C0 row, e.g. "Direction: option B (owner 2026-09-xx)".
 - [ ] **Step 3: Apply the pick.** Apply the handoff brief to the components. After each calculator, re-run the Task 6/7/8 smokes.
@@ -4073,7 +4073,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 - [ ] **Step 3: Leak check on both tabs.** On `?tab=scope-pricing`:
   1. Run the check below with `browser_evaluate`.
   2. Add "Roof Tear-off" and "Install Panels" (with values), then run it again.
-  3. Switch to `?tab=net-worth-projection` and run it again.
+  3. Switch to `?tab=remodel-roi` and run it again.
 
   The check:
 
@@ -4091,7 +4091,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 
   Expected every time: `words: null`, `unitCostLabels: null`, `agentOnlyNodes: 0`.
 - [ ] **Step 4: Panel check.** Open the agent panel with the icon button. Expected: `document.querySelectorAll('[data-agent-only]').length === 1`, and its text contains "Cost" and "Multiplier". Close it with an outside click; the count returns to 0.
-- [ ] **Step 5: Tab persistence (Review Focus 1).** With the tear-off line filled in, switch to Net-worth Projection, type a home value, and switch back. The tear-off line and its price are still there. Switch again; the home value is still there.
+- [ ] **Step 5: Tab persistence (Review Focus 1).** With the tear-off line filled in, switch to Remodel ROI Calculator, type a home value, and switch back. The tear-off line and its price are still there. Switch again; the home value is still there.
 - [ ] **Step 6: Gates.** Run `pnpm tsc && pnpm lint`, then both verify scripts.
 - [ ] **Step 7: Commit.** If the audit changed files:
 
@@ -4117,7 +4117,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 
 ```markdown
 | **Scope Pricing** | The per-scope sales calculator at `/dashboard/calculators`: a quote of Formula lines and manual lines, priced as `Price = round(Cost × Multiplier)`, tax inside the Price. Homeowner-facing; Cost and Multiplier live only in its agent panel. Code: `src/features/calculators/scope-pricing-calculator/`. | Roof tear-off + solar quote |
-| **Net-worth Projection** | The now-vs-future sales calculator: bills, loans, home value and net worth before and after a project over N years, with break-even. Every assumption is on screen. Never called a "snapshot" (reserved term). Code: `src/features/calculators/net-worth-projection-calculator/`. | "Comes out ahead in year 5" |
+| **Remodel ROI Calculator** | The sales calculator that estimates the return on the money a homeowner puts into a remodel: utility savings that grow as rates rise, home appreciation and loan paydown, shown as bills, loans, home value and net worth before and after the project over N years. Every assumption is on screen. Never called a "snapshot" (reserved term). Code: `src/features/calculators/remodel-roi-calculator/`. | "Comes out ahead in year 5" |
 | **Formula** | Per-scope code that turns Variables (and project context) into a **Cost**. Declares the Variables it reads; that declaration drives both its form fields and its argument type. | `tearOff`, `installPanels` |
 | **Unit Cost** | A named Cost constant a Formula multiplies by, e.g. $/BSQ or $/W. Admin-configured (System defaults in code until an admin screen exists). Agent-only on screen. | Tear-Off (Shingles) per BSQ = $480 |
 | **Pricing Key** | The key a Formula is registered under. Today it is the old remodel-x scope accessor; it becomes the Notion scope slug once scopes store one. | `installBattery` |
@@ -4151,7 +4151,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 | §2 names | 5 (tab labels), 6–8 (copy), 11 (glossary) |
 | §3 layout and rules | all; the Global Constraints section |
 | §4.1 `ScopePricingConfig` and MPU, trade keys, labels | 2 |
-| §4.2 `NetWorthProjectionConfig` | 4 |
+| §4.2 `RemodelRoiConfig` | 4 |
 | §5.1 Variables and project context | 2 |
 | §5.2 Formulas and registry | 2 |
 | §5.3 pricing math, permits, floor, target | 3 |
@@ -4160,7 +4160,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 | §6.3 `remainingBalance` | 1 |
 | §7.1 Scope Pricing UI | 6 |
 | §7.2 agent panel | 7 |
-| §7.3 Net-worth Projection UI | 8 |
+| §7.3 Remodel ROI Calculator UI | 8 |
 | §7.4 both calculators (RHF, `type="button"`, `NumberField`, 44 px, tablet-first) | 6–8, 10 |
 | §8 V1–V4 | 1–4 (plus the gates in every task) |
 | §8 V6 and M4 | 10 |

@@ -1,4 +1,4 @@
-import type { RateKey } from '@/features/calculators/net-worth-projection-calculator/schemas/config'
+import type { RateKey } from '@/features/calculators/remodel-roi-calculator/schemas/config'
 
 export const RATE_KEYS = ['homeAppreciation', 'electric', 'gas', 'water', 'gardening', 'misc'] as const satisfies readonly RateKey[]
 

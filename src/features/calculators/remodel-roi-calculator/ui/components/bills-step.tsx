@@ -1,8 +1,8 @@
 'use client'
 
-import { BILL_CATEGORIES, BILL_CATEGORY_LABELS } from '@/features/calculators/net-worth-projection-calculator/constants/bill-categories'
-import { ProjectionNumberField } from '@/features/calculators/net-worth-projection-calculator/ui/components/projection-number-field'
-import { StepSection } from '@/features/calculators/net-worth-projection-calculator/ui/components/step-section'
+import { BILL_CATEGORIES, BILL_CATEGORY_LABELS } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
+import { ProjectionNumberField } from '@/features/calculators/remodel-roi-calculator/ui/components/projection-number-field'
+import { StepSection } from '@/features/calculators/remodel-roi-calculator/ui/components/step-section'
 
 interface Props {
   group: 'billsNow' | 'billsAfter'
