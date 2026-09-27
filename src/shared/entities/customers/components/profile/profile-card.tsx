@@ -38,6 +38,8 @@ interface Props {
   // Defaults to open only when the card has at least one populated field, so
   // empty sections stay tucked away until they hold something.
   defaultOpen?: boolean
+  // Inline drops the card chrome and title for use inside another surface; with nothing populated it renders nothing.
+  variant?: 'card' | 'inline'
 }
 
 function renderEditField(
@@ -143,6 +145,7 @@ export function ProfileCard({
   control,
   collapsible = true,
   defaultOpen,
+  variant = 'card',
 }: Props) {
   const values = (data ?? {}) as Record<string, unknown>
   const setCount = fields.filter(field => hasValue(values[field.id])).length
@@ -151,35 +154,41 @@ export function ProfileCard({
   // un-fillable.
   const visibleFields = editMode ? fields : fields.filter(field => hasValue(values[field.id]))
 
+  const fieldList = (
+    <dl aria-label={variant === 'inline' ? title : undefined} className="grid grid-cols-2 gap-x-6 gap-y-2">
+      {visibleFields.map((field) => {
+        const value = values[field.id]
+        const shouldEdit = editMode && canEditField?.(field.id) && control
+
+        return (
+          <div key={field.id}>
+            <dt className="text-xs text-muted-foreground">{field.label}</dt>
+            <dd className="mt-0.5">
+              {shouldEdit
+                ? renderEditField(field, field.id, control)
+                : (
+                    <span className="text-sm font-medium">
+                      {hasValue(value) ? formatProfileValue(value) : '-'}
+                    </span>
+                  )}
+            </dd>
+          </div>
+        )
+      })}
+    </dl>
+  )
+
+  if (variant === 'inline') {
+    return visibleFields.length === 0 ? null : fieldList
+  }
+
   const grid = (
     <CardContent className="px-4 pb-3">
       {visibleFields.length === 0
         ? (
             <p className="text-xs text-muted-foreground">Not captured yet</p>
           )
-        : (
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-2">
-              {visibleFields.map((field) => {
-                const value = values[field.id]
-                const shouldEdit = editMode && canEditField?.(field.id) && control
-
-                return (
-                  <div key={field.id}>
-                    <dt className="text-xs text-muted-foreground">{field.label}</dt>
-                    <dd className="mt-0.5">
-                      {shouldEdit
-                        ? renderEditField(field, field.id, control)
-                        : (
-                            <span className="text-sm font-medium">
-                              {hasValue(value) ? formatProfileValue(value) : '-'}
-                            </span>
-                          )}
-                    </dd>
-                  </div>
-                )
-              })}
-            </dl>
-          )}
+        : fieldList}
     </CardContent>
   )
 
