@@ -473,6 +473,131 @@ Dead since it was never in `next.config.ts`; webpack-only and unmaintained, so a
 
 Estimates, not measurements — §4 turns them into numbers. First paint is where the "90 %" lands; time-to-content improves by roughly a third to a half from §2 alone and needs §5 for the rest.
 
+## 2b. Suspense + TanStack prefetch audit (2026-09-27)
+
+Question asked: are we taking full advantage of Suspense for first paint? Short answer: **no**, for two reasons that sit *above* the prefetch plumbing, which is itself correct. Verified against the installed `@tanstack/query-core` 5.90.20 and by rendering `motion/react` server-side. Nothing below has been applied.
+
+### What is already right
+
+- **Prefetch plumbing.** `prefetch()` is fire-and-forget, `makeQueryClient` dehydrates *pending* queries, and `hydrate()` adopts the streamed promise via `initialPromise` (query-core `hydration.js:128-133`), so the client never re-requests a prefetched query. No `loading.tsx` anywhere.
+- **Key parity on the home page.** All six prefetches in `dashboard/page.tsx:18-23` are consumed (snapshot strip, calendar, proposal and project sections), and the inputs are quantized to the LA business day (`meeting-windows.ts`), so server and client build identical keys.
+- **Reference-quality pages.** Campaigns (tab-conditional prefetch → `useSuspenseQuery` → layout-matched `CampaignsOverviewSkeleton` in `campaigns-view.tsx:35`) and Schedule (`useSuspenseQueries`, plural, no waterfall) follow the Tier 1 rule exactly. The four records tables (customers, meetings, projects, proposals) correctly stay Tier 2 `useQuery` + `keepPreviousData`.
+
+### Finding 1 — every dashboard page's content is invisible in the server HTML (biggest first-paint issue)
+
+`src/app/(frontend)/dashboard/template.tsx:10` wraps every page in `<motion.main initial={{ opacity: 0, y: 4 }}>`. Motion writes the initial state into the SSR markup — rendering it with `react-dom/server` produces:
+
+```html
+<main style="opacity:0;transform:translateY(4px)"><p>dashboard content</p></main>
+```
+
+So the whole main area, skeletons included, stays at opacity 0 until the JS bundle downloads, parses and hydrates, however early the HTML streamed. Suspense and streaming cannot improve first paint while this wrapper exists. On the mobile PWA the user sees an empty gradient plus the bottom nav until hydration. Records pages add a second hidden layer (`src/shared/components/records-page-motion-shell.tsx:16`, `opacity: 0, y: 30`), and `schedule-view.tsx` has a third.
+
+**Proposed fix:** keep the fade, drop the JS dependency. `tw-animate-css` is already imported in `globals.css`, and a CSS keyframe runs at first paint with no hydration. The template also stops being a client component. It remounts on every navigation, so the fade still replays per page.
+
+```tsx
+// src/app/(frontend)/dashboard/template.tsx — server component, no motion runtime
+export function DashboardTemplate({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex h-full min-w-0 flex-col">
+      <main className="relative min-h-0 min-w-0 flex-1 overflow-hidden px-4 pb-20 pt-4 md:px-6 md:py-6 md:pb-6 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1 motion-safe:duration-200">
+        {children}
+      </main>
+    </div>
+  )
+}
+
+export default DashboardTemplate
+```
+
+Apply the same swap to `RecordsPageMotionShell` (`slide-in-from-bottom-8` ≈ the current `y: 30`) and the schedule view's page-level wrapper. Staggered or in-view motion *inside* components is unaffected; the rule is only "no `initial={{ opacity: 0 }}` on an element that wraps SSR content." Candidate convention: `frontend-stack.md#motion-not-framer` gains "page-level entrance fades use CSS `animate-in`, never motion `initial` opacity."
+
+### Finding 2 — nothing on the dashboard home suspends, so data waits for JavaScript
+
+Every read on the home page is plain `useQuery`:
+
+| Call site | Query | SSR output today |
+|---|---|---|
+| `dashboard-snapshot-strip.tsx:19-21` | today's meetings, awaiting proposals, active projects (counts) | `—` placeholders |
+| `dashboard-proposal-section.tsx:31` | awaiting / sent proposals | `isLoading` skeleton |
+| `dashboard-project-section.tsx:32` | active / on-hold projects | `isLoading` skeleton |
+| `dashboard-meetings-calendar.tsx:42` | month of meetings (`keepPreviousData`) | `isLoading` skeleton |
+
+`useQuery` never suspends (react-query `useBaseQuery.js:71` only throws when `suspense` is set), so `HydrateClient`'s `<Suspense>` boundary is inert on this page and the server always renders the loading state. The prefetched rows reach the screen only after hydration, when the client-side observer picks up the streamed promise. With `useSuspenseQuery`, the server would instead hold each boundary, stream its real HTML the moment its query resolves, and reveal it through React's tiny inline streaming script, before the app bundle has downloaded or hydrated.
+
+This also drifts from the repo's own rules: static-input dashboard queries are Tier 1 (`frontend-stack.md#server-prefetch-two-tiers`: `useSuspenseQuery` / `useSuspenseQueries`, no `isLoading` branches), and `#views-own-data-fetching` says components never call tRPC (these four components do).
+
+**Proposed fix (Tier 1 conversion of the home page):**
+
+- Snapshot strip → one `useSuspenseQueries` call for the three counts (plural, per the convention), with a three-chip skeleton fallback.
+- Proposal and project sections → `useSuspenseQuery`; delete the `isLoading` branches. The data is always defined, so the header count renders in the first HTML.
+- One `<Suspense>` per module, placed *inside* `DashboardModule` so the card chrome, title and "See all →" render immediately and only the list area waits. Move the local `DashboardProposalSectionSkeleton` / `DashboardProjectSectionSkeleton` into their own files first (`#one-react-component-per-file`), then use them as the fallbacks.
+- Wrap each module boundary in `HydrationErrorBoundary` with a small inline error fallback, so one failing query cannot blank the whole page (today `HydrateClient` has a single page-wide error boundary).
+- **Keep the meetings calendar on `useQuery`.** Month paging relies on `keepPreviousData`, which suspense does not support; switching would flash the skeleton on every month change unless the month setter moved into `startTransition`. The calendar's first month is still prefetched, so only its first paint waits for hydration.
+
+Sketch:
+
+```tsx
+// dashboard-proposal-section.tsx (Tier 1)
+const { data } = useSuspenseQuery(trpc.proposalsRouter.business.list.queryOptions(input))
+// …render header count + EntityList directly; no isLoading branch
+
+// dashboard-proposals.tsx
+<DashboardModule title="Proposals" action={seeAllLink}>
+  <HydrationErrorBoundary fallback={<InlineModuleError />}>
+    <Suspense fallback={<DashboardSectionSkeleton rows={2} />}>
+      <div className="flex flex-col gap-4">
+        <DashboardProposalSection … />
+        <DashboardProposalSection … />
+      </div>
+    </Suspense>
+  </HydrationErrorBoundary>
+</DashboardModule>
+```
+
+Warm soft navigations do not regress: `useSuspenseQuery` only suspends when the cache has no data. Cached rows render immediately and refetch in the background once stale. Finding 2 only pays off after Finding 1; otherwise the streamed HTML is still invisible.
+
+### Finding 3 — the prefetches start late
+
+`dashboard/page.tsx:12` awaits `protectDashboardPage()` before firing any prefetch, and each prefetch then resolves the session *again* through the tRPC RSC context (`create-http-context.ts:15`, recorded in §7). On a cold open the six queries therefore start after **two** sequential session round-trips. The §7 one-file fix brings that to one. The queries cannot start before the session because they need its auth context.
+
+### Finding 4 — route-mounted pages that prefetch nothing
+
+These pages render primary content whose input derives only from the route, so the convention's "When to prefetch" rule says they qualify. Today each one is a client waterfall: server HTML → JS → hydrate → fetch → render.
+
+| Page | View call site | Input | Note |
+|---|---|---|---|
+| `dashboard/pipeline/[pipeline]` | `customer-pipeline-view.tsx:46` | `{ pipeline }` from the route param, validated against `pipelines`, fallback `'fresh'` (`pipeline-context.tsx`) | Likely the most-used page after home. Stays `useQuery` + `keepPreviousData`, which still adopts the streamed promise. |
+| `dashboard/projects/[projectId]` | `edit-project-view.tsx:36` | `{ id: projectId }` | Stays `useQuery` (media-processing `refetchInterval`). |
+| `dashboard/meetings/[meetingId]` | `meeting-flow.tsx:63` | `{ id: meetingId }` | This page also skips `protectDashboardPage()`; add it to gate the prefetch. |
+| `dashboard/proposals/[proposalId]` | `useGetProposal` in `edit-proposal-view.tsx` | proposal id | Shows the full-page `LoadingState` until the client fetch lands. |
+| `dashboard/settings` | `settings-view.tsx:17` | none | |
+
+Pipeline sketch (mirror `PipelineProvider`'s validation so the keys match):
+
+```tsx
+export default async function PipelinePage({ params }: { params: Promise<{ pipeline: string }> }) {
+  const [authState, { pipeline: raw }] = await Promise.all([protectDashboardPage(), params])
+  const pipeline: Pipeline = (pipelines as readonly string[]).includes(raw) ? raw as Pipeline : 'fresh'
+  if (authState.status === 'authenticated') {
+    prefetch(trpc.customerPipelinesRouter.getCustomerPipelineItems.queryOptions({ pipeline }))
+  }
+  return <HydrateClient><CustomerPipelineView /></HydrateClient>
+}
+```
+
+Lead-sources (a years query feeding a second query) is a dependent pair. Leave it client-side unless the default year is derivable on the server.
+
+### Suggested order
+
+1. Finding 1 (template + records shell + schedule wrapper → CSS fade). Small, and it unblocks everything else for first paint.
+2. §7 session double-read fix (one file).
+3. Finding 2 (home page Tier 1 conversion).
+4. Finding 4, pipeline first, then the detail pages.
+5. Then §2's streaming layout and service-worker shell.
+
+Verify each step on a Vercel Preview with DevTools "Slow 4G" + 4× CPU throttle. The decisive test: in DevTools → Network, block the request pattern `*/_next/static/chunks/*` and reload. Do **not** disable JavaScript entirely: React reveals streamed Suspense content with small inline scripts, which must still run. With Findings 1 + 2 applied, the home page's real proposal and project rows should appear even though the app bundle never loads. Today that test shows an empty main area.
+
 ## 3. Checked and rejected (with evidence)
 
 | Suggestion | Decision | Reason (verified in code / node_modules) |
@@ -575,6 +700,9 @@ Still open (not fixed here):
 
 | Item | Status |
 |---|---|
+| §2b Finding 1 — CSS entrance fade (template, records shell, schedule) | ⬜ proposed |
+| §2b Finding 2 — home page Tier 1 (`useSuspenseQuery` + per-module boundaries) | ⬜ proposed |
+| §2b Finding 4 — prefetch pipeline + detail pages | ⬜ proposed |
 | §2 validated recipe (SW shell, streaming layout, `next-pwa` removal) | ⬜ not applied — validated 2026-09-23 (tsc + lint clean); needs a follow-up branch, CI build, device test, PWA re-add on phones |
 | §4 measurement | ⬜ run on prod/preview; record numbers here |
 | §5 settings (region, Fluid, pooled URL) | ⬜ owner action in Vercel/Neon consoles |
