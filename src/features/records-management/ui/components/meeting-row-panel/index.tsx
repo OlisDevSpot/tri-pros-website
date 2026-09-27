@@ -37,7 +37,7 @@ export function MeetingRowPanel({ meeting, actions }: MeetingRowPanelProps) {
           )
         : (
             <ExpandedRowPanel.Panes className="@min-[600px]:grid-cols-2 @min-[900px]:grid-cols-[250px_minmax(0,1fr)_minmax(0,1.15fr)]">
-              <MeetingCustomerPane customer={customer} hasCustomer={!!meeting.customerId} isLoading={profile.isLoading} />
+              <MeetingCustomerPane customer={customer} hasCustomer={!!meeting.customerId} isLoading={profile.isLoading} leadSource={meeting.leadSource} />
               <MeetingTradesPane meeting={meeting} actions={actions} />
               <MeetingProposalsPane
                 meeting={meeting}

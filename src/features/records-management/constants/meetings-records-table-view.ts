@@ -14,5 +14,5 @@ export const MEETINGS_RECORDS_TABLE_VIEW = {
     defaultSort: { sortBy: 'scheduledFor', sortDir: 'desc' },
     filters: MEETING_FILTER_CONFIG,
   },
-  columns: ['customerName', 'meetingOutcome', 'ownerName', 'scheduledFor', 'tradeSelections'],
+  columns: ['customerName', 'meetingOutcome', 'ownerName', 'scheduledFor', 'tradeSelections', 'leadSource', 'proposalStatuses'],
 } as const satisfies EntityTableView<MeetingColumnKey>
