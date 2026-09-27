@@ -2,9 +2,12 @@ import assert from 'node:assert/strict'
 
 import { meetingMonthWindow } from '@/features/agent-dashboard/lib/meeting-windows'
 import { isProjectMeeting, isSit, MEETING_OUTCOME_SIT, meetingOutcomes } from '@/shared/constants/enums/meetings'
+import { projectPipelineStages } from '@/shared/constants/enums/pipelines'
 import { groupDuplicatePeople } from '@/shared/entities/customers/lib/group-duplicate-people'
 import { businessMonthKey, businessMonthWindow } from '@/shared/lib/business-time'
 import { normalizeEmail } from '@/shared/lib/email'
+import { projectBankability } from '@/shared/modules/projects/core/lib/bankability'
+import { classifySale, SALE_STATUS } from '@/shared/modules/proposals/core/lib/sale'
 
 // ── 1. Grouping ─────────────────────────────────────────────────────────────
 assert.equal(normalizeEmail('  Bob@X.com '), 'bob@x.com', 'email trimmed and lower-cased')
@@ -61,5 +64,28 @@ assert.deepEqual(businessMonthWindow('2026-11'), { from: '2026-11-01T07:00:00.00
 assert.deepEqual(businessMonthWindow('2026-12'), { from: '2026-12-01T08:00:00.000Z', to: '2027-01-01T08:00:00.000Z' }, 'December rolls the year')
 assert.deepEqual(meetingMonthWindow('2026-03-15'), businessMonthWindow('2026-03'), 'dashboard month window is the business month window')
 console.log('7. Pacific months ✓')
+
+// ── 8. Sales (classification) ───────────────────────────────────────────────
+assert.equal(SALE_STATUS, 'approved', 'a sale is an approved proposal')
+assert.deepEqual(
+  classifySale({ kind: 'initial-sale', approvedAt: '2026-07-20T17:00:00.000Z', finalTcpCents: 1_000_000 }),
+  { kind: 'new', at: '2026-07-20T17:00:00.000Z', valueCents: 1_000_000 },
+  'initial sale is a new sale dated at approval',
+)
+assert.deepEqual(
+  classifySale({ kind: 'additional-work', approvedAt: null, finalTcpCents: null }),
+  { kind: 'upsell', at: null, valueCents: null },
+  'additional work is an upsell; no fallback date, no fallback value',
+)
+console.log('8. Sales (classification) ✓')
+
+// ── 10. Bankability ─────────────────────────────────────────────────────────
+for (const stage of projectPipelineStages) {
+  assert.ok(['net', 'at_risk', 'cancelled'].includes(projectBankability(stage)), `${stage} maps`)
+}
+assert.equal(projectBankability('on_hold'), 'at_risk', 'on hold is still potential money')
+assert.equal(projectBankability('cancelled'), 'cancelled', 'cancelled leaves net')
+assert.equal(projectBankability('signed'), 'net', 'a live project is net')
+console.log('10. Bankability ✓')
 
 console.log('✅ verify-analytics-rules passed')
