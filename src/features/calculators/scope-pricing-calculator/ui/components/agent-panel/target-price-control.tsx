@@ -31,7 +31,7 @@ export function TargetPriceControl({ solved, floor }: Props) {
           <FormDescription>{describeTargetResult(solved, floor)}</FormDescription>
           <FormMessage />
           {field.value != null && (
-            <Button className="self-start px-0" onClick={() => field.onChange(null)} type="button" variant="link">
+            <Button className="min-h-11 self-start px-0" onClick={() => field.onChange(null)} type="button" variant="link">
               Clear the target
             </Button>
           )}

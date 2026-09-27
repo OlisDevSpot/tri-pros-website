@@ -74,7 +74,7 @@ export function MultiplierControl({ config, appliedMultiplier, targetActive }: P
             </FormDescription>
             <FormMessage />
             {field.value != null && !targetActive && (
-              <Button className="self-start px-0" onClick={() => field.onChange(null)} type="button" variant="link">
+              <Button className="min-h-11 self-start px-0" onClick={() => field.onChange(null)} type="button" variant="link">
                 Back to the default
               </Button>
             )}
