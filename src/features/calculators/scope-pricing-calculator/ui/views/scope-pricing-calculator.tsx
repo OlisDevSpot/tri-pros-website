@@ -12,6 +12,7 @@ import { createFormulaLine, createManualLine, duplicateLine } from '@/features/c
 import { resolveScopePricingConfig } from '@/features/calculators/scope-pricing-calculator/lib/resolve-config'
 import { createScopePricingFormSchema } from '@/features/calculators/scope-pricing-calculator/schemas/form'
 import { AddScopePicker } from '@/features/calculators/scope-pricing-calculator/ui/components/add-scope-picker'
+import { AgentPanel } from '@/features/calculators/scope-pricing-calculator/ui/components/agent-panel'
 import { FormulaLineCard } from '@/features/calculators/scope-pricing-calculator/ui/components/formula-line-card'
 import { ManualLineCard } from '@/features/calculators/scope-pricing-calculator/ui/components/manual-line-card'
 import { PermitLines } from '@/features/calculators/scope-pricing-calculator/ui/components/permit-lines'
@@ -28,13 +29,14 @@ export function ScopePricingCalculator() {
     defaultValues: SCOPE_PRICING_FORM_DEFAULTS,
   })
   const lines = useFieldArray({ control: form.control, name: 'lines', keyName: 'fieldKey' })
-  const { quote } = useScopePricingQuote(form.control, config)
+  const { quote, solved } = useScopePricingQuote(form.control, config)
 
   return (
     <Form {...form}>
       <form className="mx-auto flex w-full max-w-3xl flex-col gap-6 pb-8" noValidate onSubmit={event => event.preventDefault()}>
         <div className="flex items-end gap-3">
           <ProjectContextFields />
+          <AgentPanel config={config} quote={quote} solved={solved} />
         </div>
 
         <section aria-label="Quote" className="flex flex-col gap-3">

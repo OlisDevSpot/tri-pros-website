@@ -9,11 +9,16 @@ import { CURRENT_ROOF_TYPES, NUM_STORIES_OPTIONS } from '@/features/calculators/
 import { PRICING_TRADES } from '@/features/calculators/scope-pricing-calculator/constants/trade-labels'
 import { UNIT_COST_LABELS } from '@/features/calculators/scope-pricing-calculator/constants/unit-cost-labels'
 import { VARIABLES } from '@/features/calculators/scope-pricing-calculator/constants/variables'
+import { describeTargetResult } from '@/features/calculators/scope-pricing-calculator/lib/describe-target-result'
+import { formatUnitCost } from '@/features/calculators/scope-pricing-calculator/lib/format-unit-cost'
 import { FORMULAS } from '@/features/calculators/scope-pricing-calculator/lib/formula-registry'
 import { priceQuote } from '@/features/calculators/scope-pricing-calculator/lib/price-quote'
 import { resolveScopePricingConfig } from '@/features/calculators/scope-pricing-calculator/lib/resolve-config'
 import { resolveFormulaVariables } from '@/features/calculators/scope-pricing-calculator/lib/resolve-formula-variables'
 import { solveMultiplier } from '@/features/calculators/scope-pricing-calculator/lib/solve-multiplier'
+import { stepMultiplier } from '@/features/calculators/scope-pricing-calculator/lib/step-multiplier'
+import { tradesInQuote } from '@/features/calculators/scope-pricing-calculator/lib/trades-in-quote'
+import { unitCostEntries } from '@/features/calculators/scope-pricing-calculator/lib/unit-cost-entries'
 import { scopePricingConfigSchema } from '@/features/calculators/scope-pricing-calculator/schemas/config'
 
 const config = resolveScopePricingConfig()
@@ -216,5 +221,18 @@ const tooLow = solveMultiplier(40000, panelsInput)
 assert.deepEqual(tooLow, { status: 'below-floor', multiplier: 2, achievedTotal: 56000 }, 'target under the floor → floor price')
 assert.equal(solveMultiplier(1000, { lines: [panels, manual], context: oneStory, config }).status, 'below-floor', 'target under the manual lines → below floor')
 assert.deepEqual(solveMultiplier(100000, { lines: [manual], context: oneStory, config }), { status: 'no-cost' }, 'no Cost to solve against')
+
+// ── Agent panel helpers ─────────────────────────────────────────────────────
+assert.equal(stepMultiplier(2.8, 0.05, 2), 2.85, 'step up rounds to 2 decimals')
+assert.equal(stepMultiplier(2.03, -0.05, 2), 2, 'step down stops at the floor')
+assert.equal(formatUnitCost(3.5), '$3.50', 'fractional Unit Cost keeps cents')
+assert.equal(formatUnitCost(8500), '$8,500', 'whole Unit Cost has no cents')
+assert.deepEqual(unitCostEntries(config, 'electricals'), [
+  { key: 'mpuBase', label: 'Main panel upgrade', value: 3200 },
+  { key: 'mpuWithRelocation', label: 'Main panel upgrade (with relocation)', value: 4000 },
+], 'Unit Cost entries carry the seed labels')
+assert.deepEqual(tradesInQuote(mixed), ['solar'], 'trades from formula lines only')
+assert.match(describeTargetResult(tooLow, 2), /2\.00x floor/, 'below-floor copy names the floor')
+assert.match(describeTargetResult({ status: 'no-cost' }, 2), /formula/, 'no-cost copy')
 
 console.log('✅ verify-scope-pricing passed')
