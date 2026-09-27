@@ -4,7 +4,7 @@
 
 **Goal:** Ship the super-admin Analytics page at `/dashboard/analytics`: one global filter bar, the tabs Overview · Leads · Appointments · Sales · Projects (placeholder) · Spend, per-source monthly spend with cost per stage, and "Data to fix" counts that link out to pre-filtered records tables.
 
-**Architecture:** The server builds one report per filter state. `analyticsRouter.report` → `getAnalyticsReport` (feature DAL: loads facts, sources and spend) → the pure `buildAnalyticsReport`, which runs Spec A's `aggregateLeadRecords` for the headline, the breakdown and a 12-month trend and adds spend and cost from new rules in `analytics-rules.ts`. The browser never counts. It maps URL state to the report input with one shared function (so the page's prefetch and the view ask for the same query key) and renders what comes back.
+**Architecture:** The server builds one report per filter state. `analyticsRouter.report` → `getAnalyticsReport` (feature DAL: loads facts, sources and spend) → the pure `buildAnalyticsReport`, which runs Spec A's `aggregateLeadRecords` for the headline, the breakdown and a 12-month trend and adds spend and cost from new rules in `analytics-rules.ts`. The browser never counts. It maps URL state to the report input with one shared function (so the page's prefetch and the view ask for the same query key) and renders what comes back. Spend is lead-source data: its table, DAL, procedures (`leadSourcesRouter.spend.grid` / `.set`) and client mutations (`useLeadSourceActions`) belong to the lead-source entity; the analytics feature only reads it.
 
 **Tech Stack:** Next.js 15 App Router, tRPC v11 + TanStack Query (`useTRPC`, `queryOptions`), nuqs v2 URL state, Drizzle (Postgres/Neon), Zod 4, recharts 2, shadcn/ui, `tsx` + `node:assert/strict` for the verify script.
 
@@ -23,7 +23,10 @@
 - **Enums:** the value tuple lives in `src/shared/constants/enums/<domain>.ts`; the type derives via `(typeof x)[number]`; storage is `text(..., { enum })`, never a new pgEnum (`docs/codebase-conventions/enum-standardization.md#text-with-enum`).
 - **`updatedAt` is never set by hand**; the schema helper's `$onUpdate` bumps it (also on `onConflictDoUpdate`).
 - **Comments say why, never what.** No file banners. Never cite a plan, spec, tracker ID (C*, E*, F*) or doc in code.
-- **Imports:** absolute `@/…`, type imports first, named exports only, one exported component per file (a small private helper component in the same file is fine; the codebase already does this).
+- **Imports:** absolute `@/…`, type imports first, named exports only.
+- **One React component per file**, and no file-level helper functions, constants or interfaces in component files other than the component's own `Props` (`docs/codebase-conventions/frontend-stack.md#one-react-component-per-file`). Helpers go to `lib/`, label maps and configs to `constants/`, shared shapes to `types/`.
+- **No casts** (`as X`) to make values fit a type; narrow them (`.find(t => t === value)`, `.flatMap`). The only existing exceptions are the ones the repo's own helpers already carry.
+- **Reuse before building:** `MultiSelectFilterControl` for multi-selects, `ChartTooltipCard` for chart tooltips, `useLeadSourceActions` for lead-source mutations, `useInvalidation` for cache refreshes.
 - **Design system (DESIGN.md "Command Desk"):** tokens only (`bg-background`, `text-muted-foreground`, `border-border`, `text-primary`, `bg-warning`, …), no hex. Cobalt (`primary`) is reserved for action and selection. Headings use the default heading font (Syne); body text is Nunito by default. No KPI-card grid: the headline is one hairline strip. `tabular-nums` wherever digits line up.
 - **Verify script:** `scripts/verify-analytics-rules.ts`, one numbered section per rule group, each ending `console.log('N. <name> ✓')`. New sections 11–15 go in order after section 10; the final `console.log('✅ verify-analytics-rules passed')` stays the last line.
 - **Commits** end with `Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>`.
@@ -33,10 +36,15 @@
 Inputs the spec implies but does not spell out. Each has a test in the task that owns the code.
 
 1. **The current month is half over.** Spend for "this month" must count only the days through today (26 of 30 days on Sep 26), never the whole month, or cost per lead reads 15% high mid-month, which is the owner's main moment. Test: Task 3 (`spendInRange`) and Task 4 (report headline).
-2. **A stale or hand-edited URL.** `?period=custom` with no dates, `?from=2026-13-45`, `?source=not-a-uuid`, or a `groupBy` the tab does not offer must fall back to a valid report, never a BAD_REQUEST or a blank page. Test: Task 7 (`toReportInput`).
-3. **Money typed the way people type it.** `$1,200.50`, `1200`, `$0`, a blank (not entered, not $0), and junk (`-5`, `abc`, `12.345`) in a spend cell. Test: Task 7 (`parseDollarsToCents`).
+2. **A stale or hand-edited URL.** `?period=custom` with no dates, `?from=2026-13-45`, `?source=not-a-uuid`, or a `groupBy` the tab does not offer must fall back to a valid report, never a BAD_REQUEST or a blank page. Test: Task 7a (`toReportInput`).
+3. **Money typed the way people type it.** `$1,200.50`, `1200`, `$0`, a blank (not entered, not $0), and junk (`-5`, `abc`, `12.345`) in a spend cell. Test: Task 7a (`parseDollarsToCents`).
 4. **Sources that should never be flagged.** A free (`none`) source, a lead with no source, and a manual source with no leads that month must never show "spend missing"; a manual source with a lead at 11:30 pm Pacific on the last day of a month is missing for *that* month. Test: Task 3 (`findMissingSpend`).
 5. **A period that runs into the future.** A custom range or quarter ending after today: future months show zero leads and a cost of "—" (nothing to divide), never "missing" and never negative. Test: Task 4.
+6. **Leads with no source.** Filtering to "Unknown source" (alone or beside a real source) must make cost "n/a", never "$0" or a diluted cost per lead: unknown-source leads have no spend to divide. Test: Task 3 (`notApplicableReasons`).
+7. **Missing spend that has no cell.** An archived paid source that still owes spend, or a missing month outside the 12-month trend (a long custom period), must still have a cell in the Spend grid, or the warning can never be cleared. Test: Task 4 (`spendGridMonths`); the archived rows are in Task 9.
+8. **Server and browser render the same page.** Anything time-dependent in the markup (the "past meetings" link) comes from the report's `generatedAt`, never a `new Date()` in a component, or hydration mismatches. Test: Task 7a (`hygieneHref`).
+
+Spend is not backfilled in this work: until the owner enters it (a later session), paid sources show "Spend missing". That is correct behavior, not a bug to work around.
 
 ---
 
@@ -46,37 +54,41 @@ Inputs the spec implies but does not spell out. Each has a test in the task that
 |---|---|---|
 | `src/shared/constants/enums/lead-sources.ts` (new) · `index.ts` (modify) | `leadSourceSpendModes`, `LeadSourceSpendMode` | 1 |
 | `src/shared/db/schema/lead-sources.ts` (modify) | `spend_mode` column | 1 |
-| `src/shared/db/schema/lead-source-monthly-spend.ts` (new) · `schema/index.ts` (modify) | spend table | 1 |
+| `src/shared/db/schema/lead-source-monthly-spend.ts` (new) · `schema/index.ts` (modify) | spend table, select/insert schemas and types | 1 |
+| `src/shared/entities/lead-sources/schemas.ts` (modify) | `leadSourceSpendMonthSchema` | 1 |
 | `src/shared/entities/lead-sources/dal/server/spend.ts` (new) | `LeadSourceSpendEntry`, `listLeadSourceSpend`, `setLeadSourceSpend` | 1 |
-| `src/trpc/routers/lead-sources.router.ts` (modify) | `update` accepts `spendMode` | 1 |
-| `src/features/analytics/constants/dimensions.ts` (new) | `MEETING_ORDERS`, `ANALYTICS_GROUP_BYS`, `ANALYTICS_PERIODS` | 2 |
-| `src/features/analytics/types.ts` (modify) | derived unions; `mergedRecords`; report types | 2, 3, 4 |
+| `src/shared/entities/lead-sources/dal/server/crud.ts` (modify) | duplicate comment names `spendMode` | 1 |
+| `src/trpc/routers/lead-sources.router.ts` (modify) | `update` accepts `spendMode`; `spend` sub-router (`grid`, `set`) | 1 |
+| `src/features/analytics/types.ts` → `types/index.ts` (move, modify) | re-exported unions; `mergedRecords`; report types | 2, 4 |
+| `src/features/analytics/constants/dimensions.ts` (new) | `MEETING_ORDERS`, `ANALYTICS_GROUP_BYS`, `ANALYTICS_PERIODS` and their types | 2 |
 | `src/features/analytics/lib/analytics-periods.ts` (new) | month arithmetic, `resolveAnalyticsPeriod` | 2 |
 | `src/features/analytics/lib/analytics-rules.ts` (modify) | `mergedRecordCount` (2); spend, cost and applicability rules (3) | 2, 3 |
 | `src/features/analytics/lib/aggregate-lead-records.ts` (modify) | `mergedRecords` tally | 2 |
-| `src/features/analytics/schemas/report-input.ts` (new) | `analyticsReportInputSchema`, day/month schemas | 4 |
+| `src/features/analytics/schemas/report-input-schema.ts` (new) | `analyticsReportInputSchema`, day schema | 4 |
 | `src/features/analytics/lib/build-analytics-report.ts` (new) | `analyticsReportWindow`, `buildAnalyticsReport` | 4 |
 | `src/features/analytics/lib/list-lead-places.ts` (new) | `listLeadPlaces` | 4 |
 | `src/features/analytics/dal/server/get-analytics-report.ts` (new) | `getAnalyticsReport` | 5 |
 | `src/features/analytics/dal/server/get-analytics-filter-options.ts` (new) | `getAnalyticsFilterOptions` | 5 |
-| `src/features/analytics/dal/server/get-analytics-spend-grid.ts` (new) | `getAnalyticsSpendGrid` | 5 |
-| `src/trpc/routers/analytics.router.ts` (new) · `app.ts` (modify) | `report`, `filterOptions`, `spend.grid`, `spend.set` | 5 |
+| `src/trpc/routers/analytics.router.ts` (new) · `app.ts` (modify) | `report`, `filterOptions` | 5 |
 | `src/shared/modules/proposals/core/dal/server/queries.ts` · `src/features/proposal-flow/constants/proposal-table-filter-config.ts` (modify) | `missingApprovedAt`, `noProject` filters | 6 |
-| `src/features/analytics/constants/{tabs,metrics,labels,search-params}.ts` (new) | tab config, metric catalog, labels, URL parsers | 7 |
-| `src/features/analytics/lib/{to-report-input,read-metric,format-analytics,hygiene-links,parse-dollars}.ts` (new) | page-state mapping, metric display, formatting, links, money input | 7 |
-| `src/features/analytics/hooks/{use-analytics-url-state,use-analytics-labels}.ts` (new) | URL state, names for ids | 7 |
-| `src/app/(frontend)/dashboard/analytics/page.tsx` (modify) | guard + prefetch | 7 |
-| `src/features/agent-dashboard/lib/get-sidebar-nav.ts` (modify) | Analytics enabled | 7 |
-| `src/features/analytics/ui/views/analytics-view.tsx` + `ui/components/{analytics-tabs,analytics-filter-bar,period-picker,analytics-filters-control,analytics-filters-form,active-filter-chips,report-skeleton,projects-placeholder}.tsx` (new) | view shell, filter bar, tabs | 7 |
-| `src/features/analytics/ui/components/{report-tab-content,headline-strip,headline-figure,metric-text,focus-trend-chart,data-to-fix-panel,breakdown-table,breakdown-row}.tsx` (new) | report tabs | 8 |
-| `src/features/analytics/ui/components/{spend-grid,spend-cell}.tsx` (new) | spend entry grid | 9 |
+| `src/features/analytics/constants/{tabs,metrics,labels,query-parsers}.ts` (new) | tab config, metric catalog, labels, URL parsers | 7a |
+| `src/features/analytics/lib/{to-report-input,read-metric,breakdown-columns,trend-points,format-analytics,hygiene-links,filter-update,parse-dollars}.ts` (new) | page-state mapping, metric display, columns, chart points, formatting, links, URL filter updates, money input | 7a |
+| `src/features/analytics/hooks/{use-analytics-url-state,use-analytics-labels}.ts` (new) | URL state, names for ids | 7b |
+| `src/app/(frontend)/dashboard/analytics/page.tsx` (modify) | guard + prefetch | 7b |
+| `src/features/agent-dashboard/lib/get-sidebar-nav.ts` (modify) | Analytics enabled | 7b |
+| `src/features/analytics/ui/views/analytics-view.tsx` + `ui/components/filter-bar/{analytics-filter-bar,period-picker,analytics-filters-control,analytics-filters-form,active-filter-chips}.tsx` + `ui/components/{analytics-tabs-list,report-skeleton,projects-placeholder}.tsx` (new) | view shell, filter bar, tabs | 7b |
+| `src/features/analytics/ui/components/report/{report-tab-content,headline-strip,headline-figure,metric-text,focus-trend-chart,data-to-fix-panel,breakdown-table,breakdown-row}.tsx` (new) | report tabs | 8 |
+| `src/shared/dal/client/hooks/use-invalidation.ts` · `src/shared/entities/lead-sources/hooks/use-lead-source-actions.ts` (modify) | lead-source changes refresh the analytics report; `setSpend` | 9 |
+| `src/features/analytics/ui/components/spend/{spend-grid,spend-cell}.tsx` (new) | spend entry grid | 9 |
 | `src/features/lead-sources-admin/ui/components/lead-source-detail-header.tsx` (modify) | "View in Analytics" menu item | 10 |
 | `CONTEXT.md`, `docs/plans/2026-09-26-analytics-epic.md` (modify) | glossary + tracker | 10 |
-| `scripts/verify-analytics-rules.ts` (modify) | sections 11–15 | 2, 3, 4, 7 |
+| `scripts/verify-analytics-rules.ts` (modify) | sections 11–15 | 2, 3, 4, 7a |
+
+Components sit in subfolders by area (`filter-bar/`, `report/`, `spend/`) with no barrel `index.tsx`, like `src/features/campaigns-admin/ui/components/{leads,overview,setup}/`.
 
 ---
 
-### Task 1: Spend storage
+### Task 1: Spend storage (the lead-source entity's child table, DAL and procedures)
 
 **Files:**
 - Create: `src/shared/constants/enums/lead-sources.ts`
@@ -84,11 +96,23 @@ Inputs the spec implies but does not spell out. Each has a test in the task that
 - Modify: `src/shared/db/schema/lead-sources.ts`
 - Create: `src/shared/db/schema/lead-source-monthly-spend.ts`
 - Modify: `src/shared/db/schema/index.ts`
+- Modify: `src/shared/entities/lead-sources/schemas.ts`
 - Create: `src/shared/entities/lead-sources/dal/server/spend.ts`
-- Modify: `src/trpc/routers/lead-sources.router.ts:97-103` (the `updateInput` object)
+- Modify: `src/shared/entities/lead-sources/dal/server/crud.ts` (the duplicate comment)
+- Modify: `src/trpc/routers/lead-sources.router.ts` (the `updateInput` object at :97-103; a new `spend` sub-router)
 
 **Interfaces:**
-- Produces: `leadSourceSpendModes`, `type LeadSourceSpendMode = 'manual' | 'none'`; `leadSourceMonthlySpendTable`; `interface LeadSourceSpendEntry { leadSourceId: string, month: string, amountCents: number }`; `listLeadSourceSpend(months: readonly string[]): Promise<DalReturn<LeadSourceSpendEntry[]>>`; `setLeadSourceSpend(entry: { leadSourceId: string, month: string, amountCents: number | null }): Promise<DalReturn<void>>`; `LeadSourceRecord.spendMode`; `leadSourcesRouter.update` input gains `spendMode?: LeadSourceSpendMode`.
+- Produces:
+  - `leadSourceSpendModes`, `type LeadSourceSpendMode = 'manual' | 'none'`
+  - `leadSourceMonthlySpendTable`, `selectLeadSourceMonthlySpendSchema`, `type LeadSourceMonthlySpend`, `insertLeadSourceMonthlySpendSchema`, `type InsertLeadSourceMonthlySpend`
+  - `leadSourceSpendMonthSchema` (`'YYYY-MM'`)
+  - `type LeadSourceSpendEntry = Pick<LeadSourceMonthlySpend, 'leadSourceId' | 'month' | 'amountCents'>`
+  - `listLeadSourceSpend(months: readonly string[]): Promise<DalReturn<LeadSourceSpendEntry[]>>`
+  - `setLeadSourceSpend(ctx: ScopedContext, entry: { leadSourceId: string, month: string, amountCents: number | null }): Promise<DalReturn<void>>`
+  - `LeadSourceRecord.spendMode`; `leadSourcesRouter.update` input gains `spendMode?: LeadSourceSpendMode`
+  - `leadSourcesRouter.spend.grid` (query, `{ months: string[] }` → `{ sources: { id, name, spendMode, archived }[], entries: LeadSourceSpendEntry[] }`), `leadSourcesRouter.spend.set` (mutation, `{ leadSourceId, month, amountCents: number | null }` → `{ success: true }`). Both `superAdminProcedure`.
+
+Spend is lead-source data, so the entity owns its storage, reads, writes and procedures; analytics only reads it. A child table's procedures live as a named sub-router of the owning entity's router (exemplar: `src/trpc/routers/proposals.router/index.ts:17`, `incentives: incentivesRouter`); one sub-router stays in the flat file (`docs/codebase-conventions/trpc-procedures.md#sub-router-when-2-plus`).
 
 No automated test exists for schema or DAL code in this repo; `pnpm tsc` is the gate, and Task 5's smoke step reads the new table after the owner's push.
 
@@ -106,7 +130,7 @@ In `src/shared/constants/enums/index.ts`, add `export * from './lead-sources'` d
 
 - [ ] **Step 2: Add the column**
 
-In `src/shared/db/schema/lead-sources.ts`, add the import beside the other value imports:
+In `src/shared/db/schema/lead-sources.ts`, add the import beside the other value imports (this file keeps its imports in one block, no blank lines):
 
 ```ts
 import { leadSourceSpendModes } from '@/shared/constants/enums/lead-sources'
@@ -120,10 +144,13 @@ and add this column directly above `isActive`:
 
 - [ ] **Step 3: Add the spend table**
 
-Create `src/shared/db/schema/lead-source-monthly-spend.ts`:
+Create `src/shared/db/schema/lead-source-monthly-spend.ts` (money is `bigint` cents in `mode: 'number'`, like every other `*_cents` column, e.g. `proposal-incentives.ts:21`; the checks follow `proposal-incentives.ts:27-30`):
 
 ```ts
-import { integer, pgTable, text, unique, uuid } from 'drizzle-orm/pg-core'
+import type z from 'zod'
+import { sql } from 'drizzle-orm'
+import { bigint, check, pgTable, text, unique, uuid } from 'drizzle-orm/pg-core'
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { createdAt, id, updatedAt } from '../lib/schema-helpers'
 import { leadSourcesTable } from './lead-sources'
 
@@ -133,34 +160,54 @@ export const leadSourceMonthlySpendTable = pgTable('lead_source_monthly_spend', 
   id,
   leadSourceId: uuid('lead_source_id').notNull().references(() => leadSourcesTable.id, { onDelete: 'cascade' }),
   month: text('month').notNull(),
-  amountCents: integer('amount_cents').notNull(),
+  amountCents: bigint('amount_cents', { mode: 'number' }).notNull(),
   createdAt,
   updatedAt,
 }, table => [
   unique('lead_source_monthly_spend_source_month_unique').on(table.leadSourceId, table.month),
+  check('lead_source_monthly_spend_amount_ck', sql`${table.amountCents} >= 0`),
+  check('lead_source_monthly_spend_month_ck', sql`${table.month} ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'`),
 ])
+
+export const selectLeadSourceMonthlySpendSchema = createSelectSchema(leadSourceMonthlySpendTable)
+export type LeadSourceMonthlySpend = z.infer<typeof selectLeadSourceMonthlySpendSchema>
+
+export const insertLeadSourceMonthlySpendSchema = createInsertSchema(leadSourceMonthlySpendTable).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+})
+export type InsertLeadSourceMonthlySpend = z.infer<typeof insertLeadSourceMonthlySpendSchema>
 ```
 
 In `src/shared/db/schema/index.ts`, add `export * from './lead-source-monthly-spend'` on the line after `export * from './lead-sources'` (drizzle-kit reads the schema from this index).
 
-- [ ] **Step 4: Add the spend DAL**
+- [ ] **Step 4: Add the month schema**
+
+In `src/shared/entities/lead-sources/schemas.ts`, append:
+
+```ts
+/** A Pacific business month, the unit spend is entered in. */
+export const leadSourceSpendMonthSchema = z.string().regex(/^\d{4}-(?:0[1-9]|1[0-2])$/, 'A month, as YYYY-MM.')
+```
+
+- [ ] **Step 5: Add the spend DAL**
 
 Create `src/shared/entities/lead-sources/dal/server/spend.ts`:
 
 ```ts
-import type { DalReturn } from '@/shared/dal/server/types'
+import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
+import type { LeadSourceMonthlySpend } from '@/shared/db/schema/lead-source-monthly-spend'
 
 import { and, eq, inArray } from 'drizzle-orm'
 
-import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
+import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { ThrowableDalError } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { leadSourceMonthlySpendTable } from '@/shared/db/schema/lead-source-monthly-spend'
+import { leadSourceCrud } from '@/shared/entities/lead-sources/dal/server/crud'
 
-export interface LeadSourceSpendEntry {
-  leadSourceId: string
-  month: string
-  amountCents: number
-}
+export type LeadSourceSpendEntry = Pick<LeadSourceMonthlySpend, 'leadSourceId' | 'month' | 'amountCents'>
 
 // System-level read: every source's spend, unscoped — callers are super-admin gated at the router.
 export async function listLeadSourceSpend(months: readonly string[]): Promise<DalReturn<LeadSourceSpendEntry[]>> {
@@ -180,8 +227,16 @@ export async function listLeadSourceSpend(months: readonly string[]): Promise<Da
 }
 
 /** Clearing a cell deletes its row: blank means "not entered", never $0. */
-export async function setLeadSourceSpend(entry: { leadSourceId: string, month: string, amountCents: number | null }): Promise<DalReturn<void>> {
+export async function setLeadSourceSpend(
+  ctx: ScopedContext,
+  entry: { leadSourceId: string, month: string, amountCents: number | null },
+): Promise<DalReturn<void>> {
   return dalDbOperation(async () => {
+    // The parent read runs under the caller's scope, so an unknown or out-of-scope source is a not-found, never a foreign-key failure.
+    const source = dalVerifySuccess(await leadSourceCrud.getById(ctx, { id: entry.leadSourceId }))
+    if (!source) {
+      throw new ThrowableDalError({ type: 'not-found' })
+    }
     if (entry.amountCents === null) {
       await db
         .delete(leadSourceMonthlySpendTable)
@@ -202,40 +257,85 @@ export async function setLeadSourceSpend(entry: { leadSourceId: string, month: s
 }
 ```
 
-- [ ] **Step 5: Let the existing lead-source update set the spend mode**
+(`crud.ts` already reads its own entity through `crudHandlers.getById(SYSTEM_CONTEXT, { id })` and checks for `null`; this is the same call on the exported `leadSourceCrud`.)
 
-In `src/trpc/routers/lead-sources.router.ts`, add the import:
+- [ ] **Step 6: Keep the duplicate comment true**
+
+In `src/shared/entities/lead-sources/dal/server/crud.ts`, the comment above `duplicate` says it "copies ONLY name (via override) + formConfigJSON". After Step 2 it also copies `spendMode`, which is right (a copy of a paid source is paid). Change that line to: `// Duplicate copies ONLY name (via override), formConfigJSON and spendMode; slug/token are`, keeping the rest of the comment as is.
+
+- [ ] **Step 7: The router — spend mode on `update`, and the `spend` sub-router**
+
+In `src/trpc/routers/lead-sources.router.ts`, add these imports in their sorted places:
 
 ```ts
 import { leadSourceSpendModes } from '@/shared/constants/enums/lead-sources'
+import { listLeadSources } from '@/shared/entities/lead-sources/dal/server/queries'
+import { listLeadSourceSpend, setLeadSourceSpend } from '@/shared/entities/lead-sources/dal/server/spend'
 ```
 
-and add this field to the `updateInput` object, after `isActive`:
+and extend the existing `@/shared/entities/lead-sources/schemas` import to `import { leadSourceFormConfigSchema, leadSourceSpendMonthSchema } from '@/shared/entities/lead-sources/schemas'`.
+
+Add this field to the `updateInput` object, after `isActive`:
 
 ```ts
   spendMode: z.enum(leadSourceSpendModes).optional(),
 ```
 
-(`update` already passes `...data` to `leadSourceCrud.update`, so nothing else changes. The duplicate path copies `spendMode` from the source, which is right: a copy of a paid source is paid.)
+(`update` already passes `...data` to `leadSourceCrud.update`, so nothing else changes there.)
 
-- [ ] **Step 6: Gates**
+Add this block directly above `export const leadSourcesRouter = createTRPCRouter({`:
 
-Run: `pnpm exec eslint --fix src/shared/constants/enums/lead-sources.ts src/shared/constants/enums/index.ts src/shared/db/schema/lead-sources.ts src/shared/db/schema/lead-source-monthly-spend.ts src/shared/db/schema/index.ts src/shared/entities/lead-sources/dal/server/spend.ts src/trpc/routers/lead-sources.router.ts && pnpm tsc && pnpm lint && pnpm tsx scripts/verify-analytics-rules.ts`
-Expected: all clean. If `pnpm tsc` flags an object literal typed `LeadSourceRecord` (a fixture or a mapper) missing `spendMode`, add `spendMode: 'manual'` there.
+```ts
+// $10M a month is far past any real spend; the cap only stops a typo from landing.
+const MAX_MONTHLY_SPEND_CENTS = 1_000_000_000
 
-- [ ] **Step 7: Commit**
+// Ten years of columns: the grid shows twelve months plus any older month still owed spend.
+const MAX_SPEND_GRID_MONTHS = 120
+
+const spendRouter = createTRPCRouter({
+  grid: superAdminProcedure
+    .input(z.object({ months: z.array(leadSourceSpendMonthSchema).min(1).max(MAX_SPEND_GRID_MONTHS) }))
+    .query(async ({ input }) => {
+      const [sources, entries] = await Promise.all([listLeadSources(), listLeadSourceSpend(input.months)])
+      return {
+        sources: dalToTrpc(sources).map(s => ({ id: s.id, name: s.name, spendMode: s.spendMode, archived: s.archivedAt !== null })),
+        entries: dalToTrpc(entries),
+      }
+    }),
+
+  set: superAdminProcedure
+    .input(z.object({
+      leadSourceId: z.string().uuid(),
+      month: leadSourceSpendMonthSchema,
+      amountCents: z.number().int().min(0).max(MAX_MONTHLY_SPEND_CENTS).nullable(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      dalToTrpc(await setLeadSourceSpend({ ...ctx, scope: null }, input))
+      return { success: true as const }
+    }),
+})
+```
+
+and add `spend: spendRouter,` as the last entry of the `createTRPCRouter({...})` object passed to `leadSourcesRouter`.
+
+- [ ] **Step 8: Gates**
+
+Run: `pnpm exec eslint --fix src/shared/constants/enums/lead-sources.ts src/shared/constants/enums/index.ts src/shared/db/schema/lead-sources.ts src/shared/db/schema/lead-source-monthly-spend.ts src/shared/db/schema/index.ts src/shared/entities/lead-sources/schemas.ts src/shared/entities/lead-sources/dal/server/spend.ts src/shared/entities/lead-sources/dal/server/crud.ts src/trpc/routers/lead-sources.router.ts && pnpm tsc && pnpm lint && pnpm tsx scripts/verify-analytics-rules.ts`
+Expected: all clean. If `pnpm tsc` flags an object literal typed `LeadSourceRecord` (a fixture or a mapper) missing `spendMode`, add `spendMode: 'manual'` there. If `spend.ts` importing `crud.ts` creates an import cycle lint reports, read the parent with `getLeadSourceById` from `queries.ts` instead and report the change.
+
+- [ ] **Step 9: Commit**
 
 ```bash
-git add src/shared/constants/enums/lead-sources.ts src/shared/constants/enums/index.ts src/shared/db/schema/lead-sources.ts src/shared/db/schema/lead-source-monthly-spend.ts src/shared/db/schema/index.ts src/shared/entities/lead-sources/dal/server/spend.ts src/trpc/routers/lead-sources.router.ts
+git add src/shared/constants/enums/lead-sources.ts src/shared/constants/enums/index.ts src/shared/db/schema/lead-sources.ts src/shared/db/schema/lead-source-monthly-spend.ts src/shared/db/schema/index.ts src/shared/entities/lead-sources/schemas.ts src/shared/entities/lead-sources/dal/server/spend.ts src/shared/entities/lead-sources/dal/server/crud.ts src/trpc/routers/lead-sources.router.ts
 git commit -m "$(cat <<'EOF'
-feat(lead-sources): monthly spend table and a per-source spend mode
+feat(lead-sources): monthly spend table, per-source spend mode, spend procedures
 
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>
 EOF
 )"
 ```
 
-- [ ] **Step 8: Owner action (report, do not run)**
+- [ ] **Step 10: Owner action (report, do not run)**
 
 Report to the controller: "Schema changed. The owner needs to run `pnpm db:push:dev` (adds `lead_sources.spend_mode` and `lead_source_monthly_spend`). Until then the Lead Sources page fails on the dev database."
 
@@ -244,8 +344,9 @@ Report to the controller: "Schema changed. The owner needs to run `pnpm db:push:
 ### Task 2: Periods and merged duplicates
 
 **Files:**
+- Move: `src/features/analytics/types.ts` → `src/features/analytics/types/index.ts` (the feature convention; 5 of 6 features use `types/`)
 - Create: `src/features/analytics/constants/dimensions.ts`
-- Modify: `src/features/analytics/types.ts`
+- Modify: `src/features/analytics/types/index.ts`
 - Create: `src/features/analytics/lib/analytics-periods.ts`
 - Modify: `src/features/analytics/lib/analytics-rules.ts`
 - Modify: `src/features/analytics/lib/aggregate-lead-records.ts`
@@ -253,7 +354,12 @@ Report to the controller: "Schema changed. The owner needs to run `pnpm db:push:
 
 **Interfaces:**
 - Consumes: `addCalendarDays`, `BUSINESS_TIMEZONE`, `businessDayKey`, `startOfDayInTimeZone` from `@/shared/lib/business-time`.
-- Produces: `MEETING_ORDERS`, `ANALYTICS_GROUP_BYS`, `ANALYTICS_PERIODS` (const tuples); `type AnalyticsPeriod`; `addMonths(monthKey: string, months: number): string`; `lastDayOfMonth(monthKey: string): string`; `monthsBetween(first: string, last: string): string[]`; `interface ResolvedPeriod { firstDay: string, lastDay: string, range: { from: string, to: string } }`; `resolveAnalyticsPeriod(input: { period: AnalyticsPeriod, from?: string, to?: string }, now: Date): ResolvedPeriod`; `mergedRecordCount(person: { customerIds: readonly string[] }): number`; `AnalyticsCounts.mergedRecords: number | null`.
+- Produces: `MEETING_ORDERS`, `ANALYTICS_GROUP_BYS`, `ANALYTICS_PERIODS` (const tuples, each with its type right under it: `MeetingOrder`, `AnalyticsGroupBy`, `AnalyticsPeriod`, re-exported from `@/features/analytics/types`); `addMonths(monthKey: string, months: number): string`; `lastDayOfMonth(monthKey: string): string`; `monthsBetween(first: string, last: string): string[]`; `interface ResolvedPeriod { firstDay: string, lastDay: string, range: { from: string, to: string } }`; `resolveAnalyticsPeriod(input: { period: AnalyticsPeriod, from?: string, to?: string }, now: Date): ResolvedPeriod`; `mergedRecordCount(person: { customerIds: readonly string[] }): number`; `AnalyticsCounts.mergedRecords: number | null`.
+
+- [ ] **Step 0: Move the types file into `types/`**
+
+Run: `mkdir -p src/features/analytics/types && git mv src/features/analytics/types.ts src/features/analytics/types/index.ts`
+The import path `@/features/analytics/types` resolves to the new file, so no importer changes.
 
 - [ ] **Step 1: Write the failing checks**
 
@@ -325,33 +431,22 @@ Create `src/features/analytics/constants/dimensions.ts`:
 
 ```ts
 export const MEETING_ORDERS = ['first', 'repeat', 'not_sat', 'project'] as const
-
-export const ANALYTICS_GROUP_BYS = ['total', 'leadSource', 'month', 'closer', 'outcome', 'meetingOrder', 'city', 'zip'] as const
-
-export const ANALYTICS_PERIODS = ['this-month', 'last-month', 'this-quarter', 'last-quarter', 'ytd', 'last-12', 'custom'] as const
-```
-
-In `src/features/analytics/types.ts`, add at the top:
-
-```ts
-import type { ANALYTICS_GROUP_BYS, ANALYTICS_PERIODS, MEETING_ORDERS } from '@/features/analytics/constants/dimensions'
-```
-
-replace `export type MeetingOrder = 'first' | 'repeat' | 'not_sat' | 'project'` with:
-
-```ts
 export type MeetingOrder = (typeof MEETING_ORDERS)[number]
 
+export const ANALYTICS_GROUP_BYS = ['total', 'leadSource', 'month', 'closer', 'outcome', 'meetingOrder', 'city', 'zip'] as const
+export type AnalyticsGroupBy = (typeof ANALYTICS_GROUP_BYS)[number]
+
+export const ANALYTICS_PERIODS = ['this-month', 'last-month', 'this-quarter', 'last-quarter', 'ytd', 'last-12', 'custom'] as const
 export type AnalyticsPeriod = (typeof ANALYTICS_PERIODS)[number]
 ```
 
-replace `export type AnalyticsGroupBy = 'total' | 'leadSource' | 'month' | 'closer' | 'outcome' | 'meetingOrder' | 'city' | 'zip'` with:
+(Each type sits under its tuple: `docs/codebase-conventions/enum-standardization.md#type-derived-from-const`; exemplar `src/features/calculators/constants/query-parsers.ts:3-5`.)
 
-```ts
-export type AnalyticsGroupBy = (typeof ANALYTICS_GROUP_BYS)[number]
-```
-
-and add `mergedRecords: number | null` to `AnalyticsCounts`, directly after `totalLeads: number | null`.
+In `src/features/analytics/types/index.ts`:
+- delete `export type MeetingOrder = 'first' | 'repeat' | 'not_sat' | 'project'` and `export type AnalyticsGroupBy = 'total' | 'leadSource' | 'month' | 'closer' | 'outcome' | 'meetingOrder' | 'city' | 'zip'`;
+- add to the top imports `import type { AnalyticsGroupBy, MeetingOrder } from '@/features/analytics/constants/dimensions'` (the file still uses both);
+- add directly under the imports `export type { AnalyticsGroupBy, AnalyticsPeriod, MeetingOrder } from '@/features/analytics/constants/dimensions'`, so every existing `@/features/analytics/types` importer keeps working;
+- add `mergedRecords: number | null` to `AnalyticsCounts`, directly after `totalLeads: number | null`.
 
 - [ ] **Step 4: Write the period rules**
 
@@ -467,7 +562,7 @@ Run: `pnpm exec eslint --fix src/features/analytics scripts/verify-analytics-rul
 Expected: clean.
 
 ```bash
-git add src/features/analytics/constants/dimensions.ts src/features/analytics/types.ts src/features/analytics/lib/analytics-periods.ts src/features/analytics/lib/analytics-rules.ts src/features/analytics/lib/aggregate-lead-records.ts scripts/verify-analytics-rules.ts
+git add src/features/analytics/constants/dimensions.ts src/features/analytics/types/index.ts src/features/analytics/lib/analytics-periods.ts src/features/analytics/lib/analytics-rules.ts src/features/analytics/lib/aggregate-lead-records.ts scripts/verify-analytics-rules.ts
 git commit -m "$(cat <<'EOF'
 feat(analytics): Pacific report periods and a merged-duplicates count
 
@@ -497,6 +592,7 @@ EOF
   - `computeCosts(spendCents: number, counts: { totalLeads: number | null, bookedLeads: number, sits: number, newSales: number | null }, revenueCents: number | null): { costs: Record<AnalyticsCostKey, number | null>, returnOnSpend: number | null }`
   - `type NotApplicableReasons = Partial<Record<AnalyticsStage | 'cost', string>>`
   - `notApplicableReasons(filters: AnalyticsFilters, groupBy: AnalyticsGroupBy): NotApplicableReasons`
+  - `sourceRowCostReason(leadSourceId: string | null): string | undefined` (the per-row rule for a source breakdown)
 
 - [ ] **Step 1: Write the failing checks**
 
@@ -506,7 +602,7 @@ In `scripts/verify-analytics-rules.ts`, add to the imports:
 import type { SpendSource } from '@/features/analytics/lib/analytics-rules'
 import type { LeadSourceSpendEntry } from '@/shared/entities/lead-sources/dal/server/spend'
 
-import { computeCosts, findMissingSpend, notApplicableReasons, spendInRange, totalRevenueCents } from '@/features/analytics/lib/analytics-rules'
+import { computeCosts, findMissingSpend, notApplicableReasons, sourceRowCostReason, spendInRange, totalRevenueCents } from '@/features/analytics/lib/analytics-rules'
 ```
 
 and add after section 12:
@@ -563,6 +659,10 @@ and add after section 12:
   assert.deepEqual(keys(notApplicableReasons({ cities: ['Irvine'] }, 'total')), ['cost'], 'a city filter: spend is not per city')
   assert.deepEqual(keys(notApplicableReasons({}, 'closer')), ['cost', 'leads'], 'grouping by closer: no leads, no cost')
   assert.deepEqual(keys(notApplicableReasons({ outcomes: ['pns'] }, 'total')), ['cost', 'leads', 'sales'], 'an outcome filter: no leads, sales or cost')
+  assert.deepEqual(keys(notApplicableReasons({ leadSourceIds: [null] }, 'total')), ['cost'], 'unknown-source leads have no spend: cost is n/a, never $0')
+  assert.deepEqual(keys(notApplicableReasons({ leadSourceIds: ['src-a', null] }, 'leadSource')), ['cost'], 'mixing in unknown-source leads would dilute cost per lead')
+  assert.equal(sourceRowCostReason(null), notApplicableReasons({ leadSourceIds: [null] }, 'total').cost, 'the unknown-source row says the same thing as the filter')
+  assert.equal(sourceRowCostReason('src-a'), undefined, 'a real source row has cost')
 }
 console.log('13. Spend and cost ✓')
 ```
@@ -684,27 +784,42 @@ export function totalRevenueCents(counts: Pick<AnalyticsCounts, 'revenueNewCents
   return counts.revenueNewCents + counts.revenueUpsellCents
 }
 
-/** A cost over zero of anything is unknown, not free or infinite; revenue ÷ spend says what each dollar brought back. */
+/**
+ * A cost over zero of anything is unknown, not free or infinite; revenue ÷ spend says what each dollar brought back.
+ * Each key is written out so adding one to `ANALYTICS_COSTS` fails here until it is computed.
+ */
 export function computeCosts(
   spendCents: number,
   counts: Pick<AnalyticsCounts, (typeof ANALYTICS_COSTS)[AnalyticsCostKey]>,
   revenueCents: number | null,
 ): { costs: Record<AnalyticsCostKey, number | null>, returnOnSpend: number | null } {
-  const costs = {} as Record<AnalyticsCostKey, number | null>
-  for (const key of Object.keys(ANALYTICS_COSTS) as AnalyticsCostKey[]) {
-    costs[key] = computeRate(spendCents, counts[ANALYTICS_COSTS[key]])
+  return {
+    costs: {
+      costPerLead: computeRate(spendCents, counts[ANALYTICS_COSTS.costPerLead]),
+      costPerBookedLead: computeRate(spendCents, counts[ANALYTICS_COSTS.costPerBookedLead]),
+      costPerSit: computeRate(spendCents, counts[ANALYTICS_COSTS.costPerSit]),
+      costPerNewSale: computeRate(spendCents, counts[ANALYTICS_COSTS.costPerNewSale]),
+    },
+    returnOnSpend: computeRate(revenueCents, spendCents),
   }
-  return { costs, returnOnSpend: computeRate(revenueCents, spendCents) }
 }
 
 export type NotApplicableReasons = Partial<Record<AnalyticsStage | 'cost', string>>
 
 const COST_GROUPINGS: readonly AnalyticsGroupBy[] = ['total', 'leadSource', 'month']
 
+const UNKNOWN_SOURCE_COST_REASON = 'A lead with no source has no spend, so its cost is unknown.'
+
+/** A source breakdown's unknown-source row has leads but no spend to divide. */
+export function sourceRowCostReason(leadSourceId: string | null): string | undefined {
+  return leadSourceId === null ? UNKNOWN_SOURCE_COST_REASON : undefined
+}
+
 /**
  * Spend is entered per source and month, so cost exists only for a total,
  * source or month view narrowed by nothing but source; anything else would
- * divide one slice's count by the whole spend.
+ * divide one slice's count by the whole spend. Unknown-source leads carry no
+ * spend, so including them would show $0 or dilute cost per lead.
  */
 export function notApplicableReasons(filters: AnalyticsFilters, groupBy: AnalyticsGroupBy): NotApplicableReasons {
   const reasons: NotApplicableReasons = {}
@@ -718,6 +833,9 @@ export function notApplicableReasons(filters: AnalyticsFilters, groupBy: Analyti
   const narrowed = !!(filters.cities?.length || filters.zips?.length || filters.closerIds?.length || filters.outcomes?.length || filters.meetingOrder?.length)
   if (narrowed || !COST_GROUPINGS.includes(groupBy)) {
     reasons.cost = 'Spend is entered per source and month, so cost shows only for totals, sources or months filtered by source alone.'
+  }
+  else if (filters.leadSourceIds?.includes(null)) {
+    reasons.cost = UNKNOWN_SOURCE_COST_REASON
   }
   return reasons
 }
@@ -747,8 +865,8 @@ EOF
 ### Task 4: The report builder
 
 **Files:**
-- Create: `src/features/analytics/schemas/report-input.ts`
-- Modify: `src/features/analytics/types.ts`
+- Create: `src/features/analytics/schemas/report-input-schema.ts`
+- Modify: `src/features/analytics/types/index.ts`
 - Create: `src/features/analytics/lib/build-analytics-report.ts`
 - Create: `src/features/analytics/lib/list-lead-places.ts`
 - Test: `scripts/verify-analytics-rules.ts` (section 14)
@@ -756,8 +874,8 @@ EOF
 **Interfaces:**
 - Consumes: Tasks 2–3; `buildLeadRecords`, `aggregateLeadRecords`; `businessMonthWindow`, `businessDayKey`.
 - Produces:
-  - `businessDaySchema`, `businessMonthSchema`, `analyticsFiltersSchema`, `analyticsReportInputSchema`, `type AnalyticsReportInput = { period: AnalyticsPeriod, from?: string, to?: string, filters: AnalyticsFilters, groupBy: AnalyticsGroupBy }` (from `schemas/report-input.ts`)
-  - Types in `types.ts`: `RowCost`, `AnalyticsReportRow`, `AnalyticsTrendMonth`, `AnalyticsHygiene`, `AnalyticsReport` (exact shapes in Step 3)
+  - `businessDaySchema`, `analyticsFiltersSchema`, `analyticsReportInputSchema`, `type AnalyticsReportInput = { period: AnalyticsPeriod, from?: string, to?: string, filters: AnalyticsFilters, groupBy: AnalyticsGroupBy }` (from `schemas/report-input-schema.ts`)
+  - Types in `types/index.ts`: `RowCost`, `AnalyticsReportRow`, `AnalyticsTrendMonth`, `AnalyticsHygiene`, `AnalyticsReport` (exact shapes in Step 3; the report carries `generatedAt` and `spendGridMonths`)
   - `interface AnalyticsReportData { facts: AnalyticsFacts, sources: SpendSource[], spend: LeadSourceSpendEntry[] }`
   - `analyticsReportWindow(input: Pick<AnalyticsReportInput, 'period' | 'from' | 'to'>, now: Date): { period: ResolvedPeriod, trendMonths: string[], spendMonths: string[] }`
   - `buildAnalyticsReport(data: AnalyticsReportData, input: AnalyticsReportInput, now: Date): AnalyticsReport`
@@ -770,7 +888,7 @@ In `scripts/verify-analytics-rules.ts`, add to the imports:
 ```ts
 import { analyticsReportWindow, buildAnalyticsReport } from '@/features/analytics/lib/build-analytics-report'
 import { listLeadPlaces } from '@/features/analytics/lib/list-lead-places'
-import { analyticsReportInputSchema } from '@/features/analytics/schemas/report-input'
+import { analyticsReportInputSchema } from '@/features/analytics/schemas/report-input-schema'
 ```
 
 and add after section 13:
@@ -806,6 +924,7 @@ and add after section 13:
 
   const report = buildAnalyticsReport(data, { period: 'this-month', filters: {}, groupBy: 'leadSource' }, NOW)
   assert.deepEqual([report.firstDay, report.lastDay], ['2026-09-01', '2026-09-30'], 'the report names its days')
+  assert.equal(report.generatedAt, NOW.toISOString(), 'the report carries the instant it was built, for time-dependent links')
   assert.equal(report.headline.totalLeads, 2, 'r2 and r3 (r3-dup merged) lead in September')
   assert.equal(report.headline.mergedRecords, 1, 'r3-dup is a merged duplicate')
   assert.equal(report.headline.revenueCents, 800_000, 'revenue on the headline')
@@ -821,7 +940,8 @@ and add after section 13:
   const august = report.trend.find(t => t.month === '2026-08')!.row
   assert.equal(august.totalLeads, 1, 'r1 led in August')
   assert.equal(august.cost.status === 'ok' && august.cost.spendCents, 310_000, 'a past month counts in full; src-b had no August lead so nothing is missing')
-  assert.deepEqual(report.spendMissing, [{ leadSourceId: 'src-b', month: '2026-09' }], 'the Spend tab\'s warning lists every missing source-month in the trend window')
+  assert.deepEqual(report.spendMissing, [{ leadSourceId: 'src-b', month: '2026-09' }], 'the Spend tab\'s warning lists every missing source-month in the period and the trend window')
+  assert.deepEqual(report.spendGridMonths, report.trend.map(t => t.month), 'nothing is owed outside the trend, so the grid shows the trend\'s twelve months')
   assert.deepEqual(report.hygiene, { meetingsWithoutOutcome: 1, undatedSales: 1, newSalesWithoutProject: 1, unknownCityZip: 1 }, 'hygiene counts all records: r3m unresolved, r1s undated and without a project, r3 has no city')
 
   const srcAYear = buildAnalyticsReport(data, { period: 'last-12', filters: { leadSourceIds: ['src-a'] }, groupBy: 'month' }, NOW)
@@ -834,6 +954,11 @@ and add after section 13:
   assert.equal(byCloser.headline.cost.status, 'missing', 'but the headline total still has cost')
   assert.ok(byCloser.notApplicable.breakdown.leads && !byCloser.notApplicable.headline.leads, 'leads are n/a in the closer breakdown, not in the headline')
   assert.equal(buildAnalyticsReport(data, { period: 'this-month', filters: { cities: ['Tustin'] }, groupBy: 'leadSource' }, NOW).headline.cost.status, 'not_applicable', 'a city filter: no cost')
+  assert.equal(buildAnalyticsReport(data, { period: 'this-month', filters: { leadSourceIds: [null] }, groupBy: 'leadSource' }, NOW).headline.cost.status, 'not_applicable', 'the unknown source: no cost, never $0')
+
+  const longAgo = buildAnalyticsReport({ ...data, facts: { ...facts, customers: [...facts.customers, customer('old', '2024-02-10T18:00:00.000Z', { leadSourceId: 'src-b', phone: '5550002099' })] } }, { period: 'custom', from: '2024-01-01', to: '2026-09-30', filters: {}, groupBy: 'leadSource' }, NOW)
+  assert.ok(longAgo.spendMissing.some(m => m.month === '2024-02'), 'a missing month the long period touches is listed, though it is older than the trend')
+  assert.ok(longAgo.spendGridMonths.includes('2024-02') && longAgo.spendGridMonths.length === 13, 'the grid adds that month to the trend\'s twelve, so the warning can be cleared')
   assert.equal(buildAnalyticsReport(data, { period: 'last-12', filters: {}, groupBy: 'leadSource' }, NOW).breakdown.every(r => r.groupKey !== null), true, 'every fixture lead has a source')
 
   const future = buildAnalyticsReport(data, { period: 'custom', from: '2026-09-01', to: '2026-11-30', filters: { leadSourceIds: ['src-a'] }, groupBy: 'month' }, NOW)
@@ -867,7 +992,7 @@ Expected: FAIL — cannot resolve `@/features/analytics/lib/build-analytics-repo
 
 - [ ] **Step 3: Add the report types**
 
-In `src/features/analytics/types.ts`, extend the `analytics-rules` type import to `import type { AnalyticsCostKey, AnalyticsRateKey, AnalyticsStage, MissingSpend, NotApplicableReasons } from '@/features/analytics/lib/analytics-rules'` and append:
+In `src/features/analytics/types/index.ts`, extend the `analytics-rules` type import to `import type { AnalyticsCostKey, AnalyticsRateKey, AnalyticsStage, MissingSpend, NotApplicableReasons } from '@/features/analytics/lib/analytics-rules'` and append:
 
 ```ts
 export type RowCost
@@ -894,6 +1019,8 @@ export interface AnalyticsHygiene {
 }
 
 export interface AnalyticsReport {
+  /** The instant the report was built; anything time-dependent on the page derives from it, so server and browser render the same markup. */
+  generatedAt: string
   firstDay: string
   lastDay: string
   headline: AnalyticsReportRow
@@ -901,19 +1028,23 @@ export interface AnalyticsReport {
   trend: AnalyticsTrendMonth[]
   notApplicable: { headline: NotApplicableReasons, breakdown: NotApplicableReasons }
   spendMissing: MissingSpend[]
+  /** The Spend grid's columns: the trend's months plus any older month still owed spend. */
+  spendGridMonths: string[]
   undatedSales: number | null
   orphans: number
   hygiene: AnalyticsHygiene
 }
 ```
 
-(`AnalyticsStage` may become unused in `types.ts`; drop it from the import if lint says so.)
+(`AnalyticsStage` may become unused in `types/index.ts`; drop it from the import if lint says so.)
 
 - [ ] **Step 4: Write the input schema**
 
-Create `src/features/analytics/schemas/report-input.ts`:
+Create `src/features/analytics/schemas/report-input-schema.ts`:
 
 ```ts
+import type { AnalyticsFilters } from '@/features/analytics/types'
+
 import z from 'zod'
 
 import { ANALYTICS_GROUP_BYS, ANALYTICS_PERIODS, MEETING_ORDERS } from '@/features/analytics/constants/dimensions'
@@ -925,8 +1056,7 @@ export const businessDaySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(
   return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(day)
 }, 'Not a calendar day.')
 
-export const businessMonthSchema = z.string().regex(/^\d{4}-(?:0[1-9]|1[0-2])$/)
-
+// Ties the wire shape to the aggregator's filters: a field added to one and not the other fails tsc.
 export const analyticsFiltersSchema = z.object({
   leadSourceIds: z.array(z.string().uuid().nullable()).optional(),
   cities: z.array(z.string().nullable()).optional(),
@@ -934,7 +1064,7 @@ export const analyticsFiltersSchema = z.object({
   closerIds: z.array(z.string()).optional(),
   outcomes: z.array(z.enum(meetingOutcomes)).optional(),
   meetingOrder: z.array(z.enum(MEETING_ORDERS)).optional(),
-})
+}) satisfies z.ZodType<Omit<AnalyticsFilters, 'range'>>
 
 export const analyticsReportInputSchema = z.object({
   period: z.enum(ANALYTICS_PERIODS),
@@ -957,13 +1087,13 @@ Create `src/features/analytics/lib/build-analytics-report.ts`:
 ```ts
 import type { ResolvedPeriod } from '@/features/analytics/lib/analytics-periods'
 import type { DayRange, SpendSource } from '@/features/analytics/lib/analytics-rules'
-import type { AnalyticsReportInput } from '@/features/analytics/schemas/report-input'
+import type { AnalyticsReportInput } from '@/features/analytics/schemas/report-input-schema'
 import type { AnalyticsCounts, AnalyticsFacts, AnalyticsReport, AnalyticsReportRow, RowCost } from '@/features/analytics/types'
 import type { LeadSourceSpendEntry } from '@/shared/entities/lead-sources/dal/server/spend'
 
 import { aggregateLeadRecords } from '@/features/analytics/lib/aggregate-lead-records'
 import { addMonths, lastDayOfMonth, monthsBetween, resolveAnalyticsPeriod } from '@/features/analytics/lib/analytics-periods'
-import { computeCosts, findMissingSpend, notApplicableReasons, spendInRange, totalRevenueCents } from '@/features/analytics/lib/analytics-rules'
+import { computeCosts, findMissingSpend, notApplicableReasons, sourceRowCostReason, spendInRange, totalRevenueCents } from '@/features/analytics/lib/analytics-rules'
 import { buildLeadRecords } from '@/features/analytics/lib/build-lead-records'
 import { businessDayKey, businessMonthWindow } from '@/shared/lib/business-time'
 
@@ -974,8 +1104,6 @@ export interface AnalyticsReportData {
 }
 
 const TREND_MONTHS = 12
-
-const UNKNOWN_SOURCE_REASON = 'A lead with no source has no spend.'
 
 /** The months a report reads spend for: the trend's twelve plus every month the period touches (a custom period can reach further back). */
 export function analyticsReportWindow(input: Pick<AnalyticsReportInput, 'period' | 'from' | 'to'>, now: Date): { period: ResolvedPeriod, trendMonths: string[], spendMonths: string[] } {
@@ -995,7 +1123,7 @@ function intersectDays(a: DayRange, b: DayRange): DayRange {
 }
 
 export function buildAnalyticsReport(data: AnalyticsReportData, input: AnalyticsReportInput, now: Date): AnalyticsReport {
-  const { period, trendMonths } = analyticsReportWindow(input, now)
+  const { period, trendMonths, spendMonths } = analyticsReportWindow(input, now)
   const today = businessDayKey(now)
   const records = buildLeadRecords(data.facts, now)
   const leads = records.leads.map(p => ({ leadSourceId: p.leadSourceId, leadAt: p.leadAt }))
@@ -1026,7 +1154,7 @@ export function buildAnalyticsReport(data: AnalyticsReportData, input: Analytics
   const breakdownReasons = notApplicableReasons(input.filters, input.groupBy)
   const breakdown = aggregateLeadRecords(records, { ...input.filters, range: period.range }, input.groupBy).rows.map((row) => {
     if (input.groupBy === 'leadSource') {
-      const reason = breakdownReasons.cost ?? (row.groupKey === null ? UNKNOWN_SOURCE_REASON : undefined)
+      const reason = breakdownReasons.cost ?? sourceRowCostReason(row.groupKey)
       return withCost(row, scopedSources.filter(s => s.id === row.groupKey), periodDays, reason)
     }
     if (input.groupBy === 'month' && row.groupKey !== null) {
@@ -1042,14 +1170,17 @@ export function buildAnalyticsReport(data: AnalyticsReportData, input: Analytics
     return { month, selected: month >= firstMonth && month <= lastMonth, row: withCost(row, scopedSources, monthDays(month), headlineReasons.cost) }
   })
 
-  // Data entry is owed for every source, whatever the filters narrow to.
-  const spendMissing = findMissingSpend(data.sources, data.spend, leads, { first: `${trendMonths[0]}-01`, last: lastDayOfMonth(lastMonth) })
+  // Data entry is owed for every source, whatever the filters narrow to, over every month the page shows.
+  const spendMissing = findMissingSpend(data.sources, data.spend, leads, { first: `${spendMonths[0]}-01`, last: lastDayOfMonth(spendMonths[spendMonths.length - 1]) })
+  // A month owed outside the trend (a long custom period) still needs a cell, or its warning could never be cleared.
+  const spendGridMonths = [...new Set([...trendMonths, ...spendMissing.map(m => m.month)])].sort()
 
   // Hygiene counts every record so each count matches the records table it links to.
   const everything = aggregateLeadRecords(records, {}, 'total')
   const all = everything.rows[0]
 
   return {
+    generatedAt: now.toISOString(),
     firstDay: period.firstDay,
     lastDay: period.lastDay,
     headline,
@@ -1057,6 +1188,7 @@ export function buildAnalyticsReport(data: AnalyticsReportData, input: Analytics
     trend,
     notApplicable: { headline: headlineReasons, breakdown: breakdownReasons },
     spendMissing,
+    spendGridMonths,
     undatedSales: headlineResult.undatedSales,
     orphans: records.orphans,
     hygiene: {
@@ -1100,7 +1232,7 @@ Expected: sections 1–14 ✓, then `✅ verify-analytics-rules passed`. A faili
 Run: `pnpm exec eslint --fix src/features/analytics scripts/verify-analytics-rules.ts && pnpm tsc && pnpm lint`
 
 ```bash
-git add src/features/analytics/schemas/report-input.ts src/features/analytics/types.ts src/features/analytics/lib/build-analytics-report.ts src/features/analytics/lib/list-lead-places.ts scripts/verify-analytics-rules.ts
+git add src/features/analytics/schemas/report-input-schema.ts src/features/analytics/types/index.ts src/features/analytics/lib/build-analytics-report.ts src/features/analytics/lib/list-lead-places.ts scripts/verify-analytics-rules.ts
 git commit -m "$(cat <<'EOF'
 feat(analytics): one pure report per filter state (headline, breakdown, 12-month trend, spend, hygiene)
 
@@ -1116,24 +1248,24 @@ EOF
 **Files:**
 - Create: `src/features/analytics/dal/server/get-analytics-report.ts`
 - Create: `src/features/analytics/dal/server/get-analytics-filter-options.ts`
-- Create: `src/features/analytics/dal/server/get-analytics-spend-grid.ts`
 - Create: `src/trpc/routers/analytics.router.ts`
 - Modify: `src/trpc/routers/app.ts`
 
 **Interfaces:**
-- Consumes: `loadAnalyticsFacts`; `listLeadSources` (`src/shared/entities/lead-sources/dal/server/queries.ts`, returns every source incl. archived, ordered by name); Task 1's spend DAL; Task 4's builder and schemas.
+- Consumes: `loadAnalyticsFacts`; `listLeadSources` (`src/shared/entities/lead-sources/dal/server/queries.ts`, returns every source incl. archived, ordered by name); Task 1's `listLeadSourceSpend`; Task 4's builder and schemas.
 - Produces:
   - `getAnalyticsReport(input: AnalyticsReportInput, now: Date): Promise<DalReturn<AnalyticsReport>>`
   - `interface AnalyticsFilterOptions { leadSources: { id: string, name: string, archived: boolean }[], cities: string[], zips: string[] }`; `getAnalyticsFilterOptions(now: Date): Promise<DalReturn<AnalyticsFilterOptions>>`
-  - `interface AnalyticsSpendGrid { sources: { id: string, name: string, spendMode: LeadSourceSpendMode, archived: boolean }[], entries: LeadSourceSpendEntry[] }`; `getAnalyticsSpendGrid(months: readonly string[]): Promise<DalReturn<AnalyticsSpendGrid>>`
-  - tRPC: `analyticsRouter.report` (query, input `analyticsReportInputSchema`), `analyticsRouter.filterOptions` (query, no input), `analyticsRouter.spend.grid` (query, `{ months: string[] }`), `analyticsRouter.spend.set` (mutation, `{ leadSourceId, month, amountCents: number | null }` → `{ success: true }`). All `superAdminProcedure`.
+  - tRPC: `analyticsRouter.report` (query, input `analyticsReportInputSchema`), `analyticsRouter.filterOptions` (query, no input). Both `superAdminProcedure`. The spend procedures are the lead-source entity's (Task 1), not this router's.
+
+These two files are feature-owned read models: they import no `db`, only entity DAL reads and the feature's pure builder, like Spec A's `load-analytics-facts.ts` beside them. (`docs/codebase-conventions/dal-conventions.md:19-21` still says features never hold a `dal/`; that doc is stale against Spec A's shipped code and is flagged for a separate doc fix. Do not edit it here.)
 
 - [ ] **Step 1: Write the report loader**
 
 Create `src/features/analytics/dal/server/get-analytics-report.ts`:
 
 ```ts
-import type { AnalyticsReportInput } from '@/features/analytics/schemas/report-input'
+import type { AnalyticsReportInput } from '@/features/analytics/schemas/report-input-schema'
 import type { AnalyticsReport } from '@/features/analytics/types'
 import type { DalReturn } from '@/shared/dal/server/types'
 
@@ -1187,53 +1319,17 @@ export async function getAnalyticsFilterOptions(now: Date): Promise<DalReturn<An
 }
 ```
 
-- [ ] **Step 3: Write the spend-grid loader**
-
-Create `src/features/analytics/dal/server/get-analytics-spend-grid.ts`:
-
-```ts
-import type { LeadSourceSpendMode } from '@/shared/constants/enums/lead-sources'
-import type { DalReturn } from '@/shared/dal/server/types'
-import type { LeadSourceSpendEntry } from '@/shared/entities/lead-sources/dal/server/spend'
-
-import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
-import { listLeadSources } from '@/shared/entities/lead-sources/dal/server/queries'
-import { listLeadSourceSpend } from '@/shared/entities/lead-sources/dal/server/spend'
-
-export interface AnalyticsSpendGrid {
-  sources: { id: string, name: string, spendMode: LeadSourceSpendMode, archived: boolean }[]
-  entries: LeadSourceSpendEntry[]
-}
-
-export async function getAnalyticsSpendGrid(months: readonly string[]): Promise<DalReturn<AnalyticsSpendGrid>> {
-  return dalDbOperation(async () => {
-    const [sources, entries] = await Promise.all([listLeadSources(), listLeadSourceSpend(months)])
-    return {
-      sources: dalVerifySuccess(sources).map(s => ({ id: s.id, name: s.name, spendMode: s.spendMode, archived: s.archivedAt !== null })),
-      entries: dalVerifySuccess(entries),
-    }
-  })
-}
-```
-
-- [ ] **Step 4: Write the router and register it**
+- [ ] **Step 3: Write the router and register it**
 
 Create `src/trpc/routers/analytics.router.ts`:
 
 ```ts
-import z from 'zod'
-
 import { getAnalyticsFilterOptions } from '@/features/analytics/dal/server/get-analytics-filter-options'
 import { getAnalyticsReport } from '@/features/analytics/dal/server/get-analytics-report'
-import { getAnalyticsSpendGrid } from '@/features/analytics/dal/server/get-analytics-spend-grid'
-import { analyticsReportInputSchema, businessMonthSchema } from '@/features/analytics/schemas/report-input'
-import { setLeadSourceSpend } from '@/shared/entities/lead-sources/dal/server/spend'
+import { analyticsReportInputSchema } from '@/features/analytics/schemas/report-input-schema'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 
 import { createTRPCRouter, superAdminProcedure } from '../init'
-
-// $10M a month is far past any real spend; the cap only stops a typo from landing.
-const MAX_MONTHLY_SPEND_CENTS = 1_000_000_000
 
 export const analyticsRouter = createTRPCRouter({
   report: superAdminProcedure
@@ -1242,34 +1338,17 @@ export const analyticsRouter = createTRPCRouter({
 
   filterOptions: superAdminProcedure
     .query(async () => dalToTrpc(await getAnalyticsFilterOptions(new Date()))),
-
-  spend: createTRPCRouter({
-    grid: superAdminProcedure
-      .input(z.object({ months: z.array(businessMonthSchema).min(1).max(24) }))
-      .query(async ({ input }) => dalToTrpc(await getAnalyticsSpendGrid(input.months))),
-
-    set: superAdminProcedure
-      .input(z.object({
-        leadSourceId: z.string().uuid(),
-        month: businessMonthSchema,
-        amountCents: z.number().int().min(0).max(MAX_MONTHLY_SPEND_CENTS).nullable(),
-      }))
-      .mutation(async ({ input }) => {
-        dalToTrpc(await setLeadSourceSpend(input))
-        return { success: true as const }
-      }),
-  }),
 })
 ```
 
 In `src/trpc/routers/app.ts`, add `import { analyticsRouter } from './analytics.router'` (alphabetically, after `aiRouter`'s import) and `analyticsRouter,` in the `createTRPCRouter({...})` object after `aiRouter,`.
 
-- [ ] **Step 5: Gates**
+- [ ] **Step 4: Gates**
 
 Run: `pnpm exec eslint --fix src/features/analytics src/trpc/routers/analytics.router.ts src/trpc/routers/app.ts && pnpm tsc && pnpm lint && pnpm tsx scripts/verify-analytics-rules.ts`
 Expected: clean.
 
-- [ ] **Step 6: Read-only smoke against the dev DB (throwaway, not committed)**
+- [ ] **Step 5: Read-only smoke against the dev DB (throwaway, not committed)**
 
 Needs the owner's `pnpm db:push:dev` from Task 1. If it has not run, stop and ask for it.
 
@@ -1281,20 +1360,19 @@ import assert from 'node:assert/strict'
 
 import { getAnalyticsFilterOptions } from '@/features/analytics/dal/server/get-analytics-filter-options'
 import { getAnalyticsReport } from '@/features/analytics/dal/server/get-analytics-report'
-import { getAnalyticsSpendGrid } from '@/features/analytics/dal/server/get-analytics-spend-grid'
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { listLeadSourceSpend } from '@/shared/entities/lead-sources/dal/server/spend'
 
 async function main() {
   const now = new Date()
   for (const period of ['this-month', 'last-month', 'ytd'] as const) {
     const report = dalVerifySuccess(await getAnalyticsReport({ period, filters: {}, groupBy: 'leadSource' }, now))
     assert.equal(report.trend.length, 12, 'twelve trend months')
-    console.log(period, report.firstDay, report.lastDay, { leads: report.headline.totalLeads, sits: report.headline.sits, newSales: report.headline.newSales, cost: report.headline.cost.status, rows: report.breakdown.length, missing: report.spendMissing.length })
+    console.log(period, report.firstDay, report.lastDay, { leads: report.headline.totalLeads, sits: report.headline.sits, newSales: report.headline.newSales, cost: report.headline.cost.status, rows: report.breakdown.length, missing: report.spendMissing.length, gridMonths: report.spendGridMonths.length })
   }
   const options = dalVerifySuccess(await getAnalyticsFilterOptions(now))
   console.log({ sources: options.leadSources.length, cities: options.cities.length, zips: options.zips.length })
-  const grid = dalVerifySuccess(await getAnalyticsSpendGrid(['2026-09']))
-  console.log({ gridSources: grid.sources.length, entries: grid.entries.length })
+  console.log({ spendRows: dalVerifySuccess(await listLeadSourceSpend(['2026-09'])).length })
   process.exit(0)
 }
 
@@ -1302,14 +1380,14 @@ main()
 ```
 
 Run: `pnpm tsx scripts/zz-analytics-report-smoke.ts` (add `--conditions=react-server` after `tsx` if it fails on a `server-only` import).
-Expected: three period lines with non-zero leads, `cost: 'missing'` (no spend is entered yet), and non-zero source/city counts. Then `rm scripts/zz-analytics-report-smoke.ts`. Never commit it.
+Expected: three period lines with non-zero leads, `cost: 'missing'` (no spend is entered yet, and none is backfilled in this work), non-zero source/city counts, and `spendRows: 0`. Then `rm scripts/zz-analytics-report-smoke.ts`. Never commit it.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add src/features/analytics/dal/server/get-analytics-report.ts src/features/analytics/dal/server/get-analytics-filter-options.ts src/features/analytics/dal/server/get-analytics-spend-grid.ts src/trpc/routers/analytics.router.ts src/trpc/routers/app.ts
+git add src/features/analytics/dal/server/get-analytics-report.ts src/features/analytics/dal/server/get-analytics-filter-options.ts src/trpc/routers/analytics.router.ts src/trpc/routers/app.ts
 git commit -m "$(cat <<'EOF'
-feat(analytics): analytics router — report, filter options, spend grid and spend entry
+feat(analytics): analytics router — report and filter options
 
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>
 EOF
@@ -1392,46 +1470,52 @@ EOF
 
 ---
 
-### Task 7: Page state, guard, nav and the view shell
+### Task 7a: Page state — constants and pure page libs
 
 **Files:**
-- Create: `src/features/analytics/constants/tabs.ts`, `metrics.ts`, `labels.ts`, `search-params.ts`
-- Create: `src/features/analytics/lib/to-report-input.ts`, `read-metric.ts`, `format-analytics.ts`, `hygiene-links.ts`, `parse-dollars.ts`
-- Create: `src/features/analytics/hooks/use-analytics-url-state.ts`, `use-analytics-labels.ts`
-- Create: `src/features/analytics/ui/views/analytics-view.tsx`
-- Create: `src/features/analytics/ui/components/analytics-tabs.tsx`, `analytics-filter-bar.tsx`, `period-picker.tsx`, `analytics-filters-control.tsx`, `analytics-filters-form.tsx`, `active-filter-chips.tsx`, `report-skeleton.tsx`, `projects-placeholder.tsx`
-- Modify: `src/app/(frontend)/dashboard/analytics/page.tsx`
-- Modify: `src/features/agent-dashboard/lib/get-sidebar-nav.ts:113`
+- Create: `src/features/analytics/constants/tabs.ts`, `metrics.ts`, `labels.ts`, `query-parsers.ts`
+- Create: `src/features/analytics/lib/to-report-input.ts`, `read-metric.ts`, `breakdown-columns.ts`, `trend-points.ts`, `format-analytics.ts`, `hygiene-links.ts`, `filter-update.ts`, `filter-fields.ts`, `spend-grid-rows.ts`, `parse-dollars.ts`
 - Test: `scripts/verify-analytics-rules.ts` (section 15)
 
 **Interfaces:**
-- Consumes: Tasks 4–5 (`AnalyticsReport`, `AnalyticsReportRow`, `AnalyticsHygiene`, `NotApplicableReasons`, `AnalyticsReportInput`, the router).
-- Produces (used by Tasks 8–9):
-  - `ANALYTICS_TABS`, `type AnalyticsTab`, `type ReportTab = 'overview' | 'leads' | 'appointments' | 'sales'`, `interface HeadlineFigure { metric: MetricKey, sub?: MetricKey }`, `interface ReportTabConfig { figures, defaultFocus, groupBys, hygiene }`, `REPORT_TABS`, `TAB_LABELS`, `isReportTab(tab): tab is ReportTab`
+- Consumes: Tasks 4–5 (`AnalyticsReport`, `AnalyticsReportRow`, `AnalyticsHygiene`, `NotApplicableReasons`, `AnalyticsReportInput`, `MissingSpend`, `AnalyticsFilterOptions`).
+- Produces (used by Tasks 7b–9):
+  - `REPORT_TAB_KEYS`, `type ReportTab`, `ANALYTICS_TABS`, `type AnalyticsTab`, `interface HeadlineFigure { metric: MetricKey, sub?: MetricKey }`, `interface ReportTabConfig { figures, columns?, defaultFocus, groupBys, hygiene }`, `REPORT_TABS`, `TAB_LABELS`, `isReportTab(tab): tab is ReportTab`
   - `METRICS`, `type MetricKey`, `type MetricFormat`, `type MetricDefinition`
-  - `MEETING_ORDER_LABELS`, `GROUP_BY_LABELS`, `PERIOD_LABELS`
-  - `analyticsSearchParams`, `loadAnalyticsSearchParams`, `FILTER_KEYS`, `type FilterKey`, `UNKNOWN_FILTER_VALUE`, `type AnalyticsUrlState`
+  - `MEETING_ORDER_LABELS`, `GROUP_BY_LABELS`, `PERIOD_LABELS`, `HYGIENE_LABELS`
+  - `analyticsSearchParams`, `loadAnalyticsSearchParams`, `FILTER_KEYS`, `type FilterKey`, `UNKNOWN_FILTER_VALUE`, `CLEARED_FILTERS`, `type AnalyticsUrlState`
   - `toReportInput(state: AnalyticsUrlState): AnalyticsReportInput`, `resolveGroupBy(state): Exclude<AnalyticsGroupBy, 'total'>`, `resolveFocus(tab: ReportTab, focus: string | null): MetricKey`
-  - `type MetricDisplay`, `readMetric(key, row, reasons): MetricDisplay`, `formatMetricValue(value, format): string`, `sortRowsByMetric(rows, key, reasons): AnalyticsReportRow[]`
+  - `type MetricDisplay`, `readMetric(key, row, reasons): MetricDisplay`, `metricDisplayText(display): string`, `formatMetricValue(value, format): string`, `sortRowsByMetric(rows, key, reasons): AnalyticsReportRow[]`
+  - `breakdownColumns(config: ReportTabConfig): MetricKey[]`
+  - `interface TrendPoint`, `buildTrendPoints(report: AnalyticsReport, metric: MetricKey): TrendPoint[]`
   - `formatMonthLabel(month, style?)`, `formatDayRange(first, last)`, `groupLabel(groupBy, key, names)`, `filterValueLabel(key, value, names)`, `interface AnalyticsNames { sourceName(id): string, closerName(id): string }`
-  - `HYGIENE_LABELS`, `hygieneHref(key, now): string | null`
+  - `hygieneHref(key, asOf: string): string | null`
+  - `filterUpdate(key: FilterKey, values: readonly string[]): Partial<AnalyticsUrlState>`
+  - `interface FilterField`, `buildFilterFields(options: AnalyticsFilterOptions | undefined, closers: { id: string, name: string }[]): FilterField[]`
+  - `interface SpendGridSource`, `spendGridRows(sources, entries, missing): { tracked: SpendGridSource[], free: SpendGridSource[] }`
   - `parseDollarsToCents(text): number | null | 'invalid'`, `formatCentsForInput(cents): string`
-  - `useAnalyticsUrlState()` (nuqs `useQueryStates` over `analyticsSearchParams`), `useAnalyticsLabels()` → `AnalyticsNames & { options: AnalyticsFilterOptions | undefined, closers: { id: string, name: string }[] }`
-  - `<ReportSkeleton />`, `<AnalyticsView />`
+
+Everything here is pure (no React, DB or tRPC at runtime), so the verify script tests it. `constants/query-parsers.ts` imports `nuqs/server`, which is safe outside Next (checked: it loads under `tsx`) and is where two other features keep their parsers (`src/features/{calculators,campaigns-admin}/constants/query-parsers.ts`).
 
 - [ ] **Step 1: Write the failing checks**
 
 In `scripts/verify-analytics-rules.ts`, add to the imports:
 
 ```ts
-import type { AnalyticsUrlState } from '@/features/analytics/constants/search-params'
+import type { AnalyticsUrlState } from '@/features/analytics/constants/query-parsers'
 import type { AnalyticsReportRow } from '@/features/analytics/types'
 
+import { REPORT_TABS } from '@/features/analytics/constants/tabs'
+import { breakdownColumns } from '@/features/analytics/lib/breakdown-columns'
+import { buildFilterFields } from '@/features/analytics/lib/filter-fields'
+import { filterUpdate } from '@/features/analytics/lib/filter-update'
 import { formatDayRange } from '@/features/analytics/lib/format-analytics'
 import { hygieneHref } from '@/features/analytics/lib/hygiene-links'
 import { formatCentsForInput, parseDollarsToCents } from '@/features/analytics/lib/parse-dollars'
-import { readMetric, sortRowsByMetric } from '@/features/analytics/lib/read-metric'
+import { metricDisplayText, readMetric, sortRowsByMetric } from '@/features/analytics/lib/read-metric'
+import { spendGridRows } from '@/features/analytics/lib/spend-grid-rows'
 import { resolveFocus, toReportInput } from '@/features/analytics/lib/to-report-input'
+import { buildTrendPoints } from '@/features/analytics/lib/trend-points'
 ```
 
 and add after section 14:
@@ -1454,6 +1538,18 @@ and add after section 14:
   assert.equal(resolveFocus('sales', 'revenueNew'), 'revenueNew', 'a figure on the tab can be focused')
   assert.equal(resolveFocus('leads', 'validLeads'), 'totalLeads', 'a figure that is not available yet cannot be focused')
   assert.equal(resolveFocus('leads', 'sits'), 'totalLeads', 'a figure from another tab falls back')
+
+  assert.deepEqual(filterUpdate('outcome', ['pns', 'bogus']), { outcome: ['pns'] }, 'an outcome the parser does not know is dropped')
+  assert.deepEqual(filterUpdate('order', ['first', 'x']), { order: ['first'] }, 'so is a meeting order')
+  assert.deepEqual(filterUpdate('city', ['Irvine']), { city: ['Irvine'] }, 'free-text keys pass through')
+
+  const fields = buildFilterFields({ leadSources: [{ id: SOURCE, name: 'Angi', archived: true }], cities: ['Irvine'], zips: [] }, [])
+  assert.deepEqual(fields.map(f => f.key), ['source', 'city', 'zip', 'closer', 'outcome', 'order'], 'one field per filter key, in order')
+  assert.deepEqual(fields[0].definition.options.map(o => o.label), ['Angi (archived)', 'Unknown source'], 'archived sources are named as such; unknown is always a choice')
+
+  assert.ok(breakdownColumns(REPORT_TABS.overview).includes('costPerSit'), 'the overview breakdown shows cost at every stage')
+  assert.ok(breakdownColumns(REPORT_TABS.overview).includes('returnOnSpend'), 'and revenue per $1')
+  assert.ok(!breakdownColumns(REPORT_TABS.leads).includes('validLeads'), 'figures not available yet have no column')
 
   assert.equal(parseDollarsToCents('$1,200.50'), 120_050, 'dollars with a sign and commas')
   assert.equal(parseDollarsToCents('1200'), 120_000, 'whole dollars')
@@ -1497,6 +1593,13 @@ and add after section 14:
   assert.deepEqual(readMetric('spend', row({ cost: { status: 'missing', missing: [] } }), {}), { kind: 'missing' }, 'missing spend')
   assert.deepEqual(readMetric('costPerLead', row({ cost: { status: 'not_applicable', reason: 'no source' } }), {}), { kind: 'not_applicable', reason: 'no source' }, 'a row-level cost reason')
   assert.equal(readMetric('validLeads', row({}), {}).kind, 'not_yet', 'valid leads wait for lead quality')
+  assert.deepEqual(['$500', '—', 'n/a', 'missing', 'not available yet'], [
+    metricDisplayText(readMetric('costPerLead', row({}), {})),
+    metricDisplayText({ kind: 'empty' }),
+    metricDisplayText({ kind: 'not_applicable', reason: 'why' }),
+    metricDisplayText({ kind: 'missing' }),
+    metricDisplayText({ kind: 'not_yet', source: 'lead quality' }),
+  ], 'every display reads as one short string (chart tooltips)')
   assert.deepEqual(
     sortRowsByMetric([row({ groupKey: 'a', sits: 1 }), row({ groupKey: 'b', sits: 3 }), row({ groupKey: 'c', cost: { status: 'missing', missing: [] } }), row({ groupKey: 'd', sits: 3 })], 'sits', {}).map(r => r.groupKey),
     ['b', 'd', 'a', 'c'],
@@ -1508,10 +1611,28 @@ and add after section 14:
     'rows without a value sort last',
   )
 
-  assert.equal(hygieneHref('meetingsWithoutOutcome', NOW), '/dashboard/meetings?pm_outcome=not_set&pm_scheduledFor=%7B%22to%22%3A%222026-09-26T19%3A00%3A00.000Z%22%7D', 'past meetings with no outcome')
-  assert.equal(hygieneHref('undatedSales', NOW), '/dashboard/proposals?pp_status=approved&pp_missingApprovedAt=true', 'undated sales')
-  assert.equal(hygieneHref('newSalesWithoutProject', NOW), '/dashboard/proposals?pp_kind=initial-sale&pp_status=approved&pp_noProject=true', 'new sales without a project')
-  assert.equal(hygieneHref('unknownCityZip', NOW), null, 'no customers filter for unknown places yet')
+  const emptyReport = buildAnalyticsReport({ facts: { customers: [], meetings: [], sales: [] }, sources: [], spend: [] }, { period: 'this-month', filters: {}, groupBy: 'leadSource' }, NOW)
+  const points = buildTrendPoints(emptyReport, 'sits')
+  assert.deepEqual([points.length, points[11].label, points[11].selected, points[11].value], [12, 'Sep', true, 0], 'twelve points, the period\'s month selected, a zero is a value')
+
+  const grid = spendGridRows(
+    [
+      { id: 'paid', name: 'Angi', spendMode: 'manual', archived: false },
+      { id: 'old-owed', name: 'Old vendor', spendMode: 'manual', archived: true },
+      { id: 'old-done', name: 'Gone vendor', spendMode: 'manual', archived: true },
+      { id: 'free', name: 'Referral', spendMode: 'none', archived: false },
+      { id: 'free-old', name: 'Walk-in', spendMode: 'none', archived: true },
+    ],
+    [],
+    [{ leadSourceId: 'old-owed', month: '2026-08' }],
+  )
+  assert.deepEqual(grid.tracked.map(s => s.id), ['paid', 'old-owed'], 'an archived source still owed spend keeps its row, or its warning could never clear')
+  assert.deepEqual(grid.free.map(s => s.id), ['free'], 'archived free sources are not listed')
+
+  assert.equal(hygieneHref('meetingsWithoutOutcome', NOW.toISOString()), '/dashboard/meetings?pm_outcome=not_set&pm_scheduledFor=%7B%22to%22%3A%222026-09-26T19%3A00%3A00.000Z%22%7D', 'past meetings with no outcome, cut off at the report\'s instant')
+  assert.equal(hygieneHref('undatedSales', NOW.toISOString()), '/dashboard/proposals?pp_status=approved&pp_missingApprovedAt=true', 'undated sales')
+  assert.equal(hygieneHref('newSalesWithoutProject', NOW.toISOString()), '/dashboard/proposals?pp_kind=initial-sale&pp_status=approved&pp_noProject=true', 'new sales without a project')
+  assert.equal(hygieneHref('unknownCityZip', NOW.toISOString()), null, 'no customers filter for unknown places yet')
 }
 console.log('15. Page state ✓')
 ```
@@ -1519,7 +1640,7 @@ console.log('15. Page state ✓')
 - [ ] **Step 2: Run to verify it fails**
 
 Run: `pnpm tsx scripts/verify-analytics-rules.ts`
-Expected: FAIL — cannot resolve `@/features/analytics/constants/search-params`.
+Expected: FAIL — cannot resolve `@/features/analytics/constants/query-parsers`.
 
 - [ ] **Step 3: Write the constants**
 
@@ -1581,9 +1702,11 @@ Create `src/features/analytics/constants/tabs.ts`:
 import type { MetricKey } from '@/features/analytics/constants/metrics'
 import type { AnalyticsGroupBy, AnalyticsHygiene } from '@/features/analytics/types'
 
-export const ANALYTICS_TABS = ['overview', 'leads', 'appointments', 'sales', 'projects', 'spend'] as const
+export const REPORT_TAB_KEYS = ['overview', 'leads', 'appointments', 'sales'] as const
+export type ReportTab = (typeof REPORT_TAB_KEYS)[number]
+
+export const ANALYTICS_TABS = [...REPORT_TAB_KEYS, 'projects', 'spend'] as const
 export type AnalyticsTab = (typeof ANALYTICS_TABS)[number]
-export type ReportTab = Exclude<AnalyticsTab, 'projects' | 'spend'>
 
 export const TAB_LABELS: Record<AnalyticsTab, string> = {
   overview: 'Overview',
@@ -1602,6 +1725,8 @@ export interface HeadlineFigure {
 
 export interface ReportTabConfig {
   figures: readonly HeadlineFigure[]
+  /** The breakdown's columns when they differ from the headline's figures. */
+  columns?: readonly MetricKey[]
   defaultFocus: MetricKey
   /** The first is the default. */
   groupBys: readonly Exclude<AnalyticsGroupBy, 'total'>[]
@@ -1618,6 +1743,8 @@ export const REPORT_TABS: Record<ReportTab, ReportTabConfig> = {
       { metric: 'revenue' },
       { metric: 'spend', sub: 'costPerNewSale' },
     ],
+    // The strip stays short; the per-source table carries cost at every stage.
+    columns: ['totalLeads', 'bookedLeads', 'bookingRate', 'sits', 'sitRate', 'newSales', 'closeRate', 'revenue', 'spend', 'costPerLead', 'costPerBookedLead', 'costPerSit', 'costPerNewSale', 'returnOnSpend'],
     defaultFocus: 'sits',
     groupBys: ['leadSource', 'month', 'closer', 'city', 'zip'],
     hygiene: ['meetingsWithoutOutcome', 'undatedSales', 'newSalesWithoutProject', 'unknownCityZip'],
@@ -1650,7 +1777,7 @@ export function isReportTab(tab: AnalyticsTab): tab is ReportTab {
 Create `src/features/analytics/constants/labels.ts`:
 
 ```ts
-import type { AnalyticsGroupBy, AnalyticsPeriod, MeetingOrder } from '@/features/analytics/types'
+import type { AnalyticsGroupBy, AnalyticsHygiene, AnalyticsPeriod, MeetingOrder } from '@/features/analytics/types'
 
 export const MEETING_ORDER_LABELS: Record<MeetingOrder, string> = {
   first: 'First sit',
@@ -1679,9 +1806,16 @@ export const PERIOD_LABELS: Record<AnalyticsPeriod, string> = {
   'last-12': 'Last 12 months',
   'custom': 'Custom',
 }
+
+export const HYGIENE_LABELS: Record<keyof AnalyticsHygiene, string> = {
+  meetingsWithoutOutcome: 'Past meetings with no outcome',
+  undatedSales: 'Sales with no approval date',
+  newSalesWithoutProject: 'New sales without a project',
+  unknownCityZip: 'Leads with unknown city or zip',
+}
 ```
 
-Create `src/features/analytics/constants/search-params.ts`:
+Create `src/features/analytics/constants/query-parsers.ts`:
 
 ```ts
 import type { inferParserType } from 'nuqs/server'
@@ -1715,6 +1849,8 @@ export const loadAnalyticsSearchParams = createLoader(analyticsSearchParams)
 export const FILTER_KEYS = ['source', 'city', 'zip', 'closer', 'outcome', 'order'] as const
 export type FilterKey = (typeof FILTER_KEYS)[number]
 
+export const CLEARED_FILTERS = { source: null, city: null, zip: null, closer: null, outcome: null, order: null } as const satisfies Record<FilterKey, null>
+
 // Stands for "no value" (unknown source, city or zip). Source ids are uuids and
 // intake's "Unknown" placeholder is already folded to null, so nothing collides.
 export const UNKNOWN_FILTER_VALUE = 'unknown'
@@ -1725,18 +1861,18 @@ export const UNKNOWN_FILTER_VALUE = 'unknown'
 Create `src/features/analytics/lib/to-report-input.ts`:
 
 ```ts
-import type { AnalyticsUrlState } from '@/features/analytics/constants/search-params'
 import type { MetricKey } from '@/features/analytics/constants/metrics'
+import type { AnalyticsUrlState } from '@/features/analytics/constants/query-parsers'
 import type { ReportTab } from '@/features/analytics/constants/tabs'
-import type { AnalyticsReportInput } from '@/features/analytics/schemas/report-input'
+import type { AnalyticsReportInput } from '@/features/analytics/schemas/report-input-schema'
 import type { AnalyticsFilters, AnalyticsGroupBy } from '@/features/analytics/types'
 
 import z from 'zod'
 
 import { METRICS } from '@/features/analytics/constants/metrics'
-import { UNKNOWN_FILTER_VALUE } from '@/features/analytics/constants/search-params'
+import { UNKNOWN_FILTER_VALUE } from '@/features/analytics/constants/query-parsers'
 import { isReportTab, REPORT_TABS } from '@/features/analytics/constants/tabs'
-import { businessDaySchema } from '@/features/analytics/schemas/report-input'
+import { businessDaySchema } from '@/features/analytics/schemas/report-input-schema'
 
 // The router's own check, so a source id that passes here never fails the request.
 const sourceIdSchema = z.string().uuid()
@@ -1850,6 +1986,22 @@ export function readMetric(key: MetricKey, row: AnalyticsReportRow, reasons: Not
   return value === null ? { kind: 'empty' } : { kind: 'value', value, text: formatMetricValue(value, definition.format) }
 }
 
+/** The one-string form of a display, for places that cannot style it (chart tooltips). */
+export function metricDisplayText(display: MetricDisplay): string {
+  switch (display.kind) {
+    case 'value':
+      return display.text
+    case 'empty':
+      return '—'
+    case 'not_applicable':
+      return 'n/a'
+    case 'missing':
+      return 'missing'
+    case 'not_yet':
+      return 'not available yet'
+  }
+}
+
 /** Highest first; rows with no value sink to the bottom; ties keep the report's order. */
 export function sortRowsByMetric(rows: readonly AnalyticsReportRow[], key: MetricKey, reasons: NotApplicableReasons): AnalyticsReportRow[] {
   const valueOf = (row: AnalyticsReportRow) => {
@@ -1865,15 +2017,58 @@ export function sortRowsByMetric(rows: readonly AnalyticsReportRow[], key: Metri
 
 Note: two `-Infinity` values subtract to `NaN`; `NaN || (a.index - b.index)` falls through to the index, which is the tie-break we want.
 
+Create `src/features/analytics/lib/breakdown-columns.ts`:
+
+```ts
+import type { MetricKey } from '@/features/analytics/constants/metrics'
+import type { ReportTabConfig } from '@/features/analytics/constants/tabs'
+
+import { METRICS } from '@/features/analytics/constants/metrics'
+
+/** A tab's own column list, or its headline figures with their sub-figures; a figure not available yet has no column. */
+export function breakdownColumns(config: ReportTabConfig): MetricKey[] {
+  const keys = config.columns ?? config.figures.flatMap(f => (f.sub ? [f.metric, f.sub] : [f.metric]))
+  return keys.filter(key => !('notYet' in METRICS[key]))
+}
+```
+
+Create `src/features/analytics/lib/trend-points.ts`:
+
+```ts
+import type { MetricKey } from '@/features/analytics/constants/metrics'
+import type { MetricDisplay } from '@/features/analytics/lib/read-metric'
+import type { AnalyticsReport } from '@/features/analytics/types'
+
+import { formatMonthLabel } from '@/features/analytics/lib/format-analytics'
+import { readMetric } from '@/features/analytics/lib/read-metric'
+
+export interface TrendPoint {
+  month: string
+  label: string
+  /** Null draws no bar; the tooltip still says why. */
+  value: number | null
+  display: MetricDisplay
+  selected: boolean
+}
+
+export function buildTrendPoints(report: AnalyticsReport, metric: MetricKey): TrendPoint[] {
+  return report.trend.map((t) => {
+    const display = readMetric(metric, t.row, report.notApplicable.headline)
+    return { month: t.month, label: formatMonthLabel(t.month, 'short'), value: display.kind === 'value' ? display.value : null, display, selected: t.selected }
+  })
+}
+```
+
 Create `src/features/analytics/lib/format-analytics.ts`:
 
 ```ts
-import type { FilterKey } from '@/features/analytics/constants/search-params'
-import type { AnalyticsGroupBy, MeetingOrder } from '@/features/analytics/types'
-import type { MeetingOutcome } from '@/shared/constants/enums/meetings'
+import type { FilterKey } from '@/features/analytics/constants/query-parsers'
+import type { AnalyticsGroupBy } from '@/features/analytics/types'
 
+import { MEETING_ORDERS } from '@/features/analytics/constants/dimensions'
 import { MEETING_ORDER_LABELS } from '@/features/analytics/constants/labels'
-import { UNKNOWN_FILTER_VALUE } from '@/features/analytics/constants/search-params'
+import { UNKNOWN_FILTER_VALUE } from '@/features/analytics/constants/query-parsers'
+import { meetingOutcomes } from '@/shared/constants/enums/meetings'
 import { MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
 
 export interface AnalyticsNames {
@@ -1901,6 +2096,16 @@ export function formatDayRange(first: string, last: string): string {
   return `${formatDay(first, withYear)} – ${formatDay(last, withYear)}`
 }
 
+function outcomeLabel(value: string): string {
+  const outcome = meetingOutcomes.find(o => o === value)
+  return outcome ? MEETING_OUTCOME_LABELS[outcome] : value
+}
+
+function meetingOrderLabel(value: string): string {
+  const order = MEETING_ORDERS.find(o => o === value)
+  return order ? MEETING_ORDER_LABELS[order] : value
+}
+
 export function groupLabel(groupBy: AnalyticsGroupBy, key: string | null, names: AnalyticsNames): string {
   switch (groupBy) {
     case 'total':
@@ -1912,9 +2117,9 @@ export function groupLabel(groupBy: AnalyticsGroupBy, key: string | null, names:
     case 'closer':
       return key === null ? 'Unassigned' : names.closerName(key)
     case 'outcome':
-      return key === null ? 'Unknown' : MEETING_OUTCOME_LABELS[key as MeetingOutcome] ?? key
+      return key === null ? 'Unknown' : outcomeLabel(key)
     case 'meetingOrder':
-      return key === null ? 'Unknown' : MEETING_ORDER_LABELS[key as MeetingOrder] ?? key
+      return key === null ? 'Unknown' : meetingOrderLabel(key)
     case 'city':
       return key ?? 'Unknown city'
     case 'zip':
@@ -1934,38 +2139,135 @@ export function filterValueLabel(key: FilterKey, value: string, names: Analytics
     case 'closer':
       return names.closerName(value)
     case 'outcome':
-      return MEETING_OUTCOME_LABELS[value as MeetingOutcome] ?? value
+      return outcomeLabel(value)
     case 'order':
-      return MEETING_ORDER_LABELS[value as MeetingOrder] ?? value
+      return meetingOrderLabel(value)
   }
 }
 ```
+
+(Finding the key in its tuple replaces `as MeetingOutcome` casts: a group key is a plain string, so it is narrowed, not asserted.)
 
 Create `src/features/analytics/lib/hygiene-links.ts`:
 
 ```ts
 import type { AnalyticsHygiene } from '@/features/analytics/types'
+import type { ProposalKind } from '@/shared/constants/enums/proposals'
 
 import { ROOTS } from '@/shared/config/roots'
+import { SALE_STATUS } from '@/shared/modules/proposals/core/lib/sale'
 
-export const HYGIENE_LABELS: Record<keyof AnalyticsHygiene, string> = {
-  meetingsWithoutOutcome: 'Past meetings with no outcome',
-  undatedSales: 'Sales with no approval date',
-  newSalesWithoutProject: 'New sales without a project',
-  unknownCityZip: 'Leads with unknown city or zip',
-}
-
-/** Each count opens its records table already filtered to the rows to fix; unknown city/zip has no customers filter yet. */
-export function hygieneHref(key: keyof AnalyticsHygiene, now: Date): string | null {
+/**
+ * Each count opens its records table already filtered to the rows to fix;
+ * unknown city/zip has no customers filter yet. `asOf` is the report's own
+ * instant, so the link is identical on the server and in the browser.
+ */
+export function hygieneHref(key: keyof AnalyticsHygiene, asOf: string): string | null {
   switch (key) {
     case 'meetingsWithoutOutcome':
-      return `${ROOTS.dashboard.meetings.root()}?${new URLSearchParams({ pm_outcome: 'not_set', pm_scheduledFor: JSON.stringify({ to: now.toISOString() }) })}`
+      return `${ROOTS.dashboard.meetings.root()}?${new URLSearchParams({ pm_outcome: 'not_set', pm_scheduledFor: JSON.stringify({ to: asOf }) })}`
     case 'undatedSales':
-      return `${ROOTS.dashboard.proposals.root()}?${new URLSearchParams({ pp_status: 'approved', pp_missingApprovedAt: 'true' })}`
+      return `${ROOTS.dashboard.proposals.root()}?${new URLSearchParams({ pp_status: SALE_STATUS, pp_missingApprovedAt: 'true' })}`
     case 'newSalesWithoutProject':
-      return `${ROOTS.dashboard.proposals.root()}?${new URLSearchParams({ pp_kind: 'initial-sale', pp_status: 'approved', pp_noProject: 'true' })}`
+      return `${ROOTS.dashboard.proposals.root()}?${new URLSearchParams({ pp_kind: 'initial-sale' satisfies ProposalKind, pp_status: SALE_STATUS, pp_noProject: 'true' })}`
     case 'unknownCityZip':
       return null
+  }
+}
+```
+
+Create `src/features/analytics/lib/filter-update.ts`:
+
+```ts
+import type { AnalyticsUrlState, FilterKey } from '@/features/analytics/constants/query-parsers'
+
+import { MEETING_ORDERS } from '@/features/analytics/constants/dimensions'
+import { meetingOutcomes } from '@/shared/constants/enums/meetings'
+
+/** A multi-select hands back plain strings; outcome and meeting-order keys keep only the values their parsers accept. */
+export function filterUpdate(key: FilterKey, values: readonly string[]): Partial<AnalyticsUrlState> {
+  switch (key) {
+    case 'source':
+      return { source: [...values] }
+    case 'city':
+      return { city: [...values] }
+    case 'zip':
+      return { zip: [...values] }
+    case 'closer':
+      return { closer: [...values] }
+    case 'outcome':
+      return { outcome: meetingOutcomes.filter(o => values.includes(o)) }
+    case 'order':
+      return { order: MEETING_ORDERS.filter(o => values.includes(o)) }
+  }
+}
+```
+
+Create `src/features/analytics/lib/filter-fields.ts`:
+
+```ts
+import type { FilterKey } from '@/features/analytics/constants/query-parsers'
+import type { AnalyticsFilterOptions } from '@/features/analytics/dal/server/get-analytics-filter-options'
+import type { FilterDefinition } from '@/shared/dal/client/lib/types'
+
+import { MEETING_ORDERS } from '@/features/analytics/constants/dimensions'
+import { MEETING_ORDER_LABELS } from '@/features/analytics/constants/labels'
+import { UNKNOWN_FILTER_VALUE } from '@/features/analytics/constants/query-parsers'
+import { meetingOutcomes } from '@/shared/constants/enums/meetings'
+import { MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
+
+export interface FilterField {
+  key: FilterKey
+  definition: Extract<FilterDefinition, { type: 'multi-select' }>
+}
+
+/** One multi-select per filter key, shaped for the shared `MultiSelectFilterControl`; "unknown" is always a choice for place and source. */
+export function buildFilterFields(options: AnalyticsFilterOptions | undefined, closers: readonly { id: string, name: string }[]): FilterField[] {
+  const field = (key: FilterKey, label: string, choices: { value: string, label: string }[]): FilterField => ({ key, definition: { id: key, type: 'multi-select', label, options: choices } })
+  return [
+    field('source', 'Lead source', [
+      ...(options?.leadSources ?? []).map(s => ({ value: s.id, label: s.archived ? `${s.name} (archived)` : s.name })),
+      { value: UNKNOWN_FILTER_VALUE, label: 'Unknown source' },
+    ]),
+    field('city', 'City', [...(options?.cities ?? []).map(c => ({ value: c, label: c })), { value: UNKNOWN_FILTER_VALUE, label: 'Unknown city' }]),
+    field('zip', 'Zip', [...(options?.zips ?? []).map(z => ({ value: z, label: z })), { value: UNKNOWN_FILTER_VALUE, label: 'Unknown zip' }]),
+    field('closer', 'Closer', closers.map(u => ({ value: u.id, label: u.name }))),
+    field('outcome', 'Meeting outcome', meetingOutcomes.map(o => ({ value: o, label: MEETING_OUTCOME_LABELS[o] }))),
+    field('order', 'Meeting order', MEETING_ORDERS.map(o => ({ value: o, label: MEETING_ORDER_LABELS[o] }))),
+  ]
+}
+```
+
+(`import type` from a `dal/server` file is type-only and is the house norm; Spec A's `types/index.ts` does the same.)
+
+Create `src/features/analytics/lib/spend-grid-rows.ts`:
+
+```ts
+import type { MissingSpend } from '@/features/analytics/lib/analytics-rules'
+import type { LeadSourceSpendMode } from '@/shared/constants/enums/lead-sources'
+import type { LeadSourceSpendEntry } from '@/shared/entities/lead-sources/dal/server/spend'
+
+export interface SpendGridSource {
+  id: string
+  name: string
+  spendMode: LeadSourceSpendMode
+  archived: boolean
+}
+
+/**
+ * Paid sources get a row. An archived paid source keeps its row while it still
+ * owes spend or has spend entered in these months, or its warning could never
+ * be cleared. Free sources are listed apart; archived free ones are hidden.
+ */
+export function spendGridRows(
+  sources: readonly SpendGridSource[],
+  entries: readonly LeadSourceSpendEntry[],
+  missing: readonly MissingSpend[],
+): { tracked: SpendGridSource[], free: SpendGridSource[] } {
+  const stillRelevant = new Set([...missing.map(m => m.leadSourceId), ...entries.map(e => e.leadSourceId)])
+  return {
+    tracked: sources.filter(s => s.spendMode === 'manual' && (!s.archived || stillRelevant.has(s.id))),
+    free: sources.filter(s => s.spendMode === 'none' && !s.archived),
   }
 }
 ```
@@ -1995,7 +2297,40 @@ export function formatCentsForInput(cents: number): string {
 Run: `pnpm tsx scripts/verify-analytics-rules.ts`
 Expected: sections 1–15 ✓, then `✅ verify-analytics-rules passed`.
 
-- [ ] **Step 6: Write the hooks**
+- [ ] **Step 6: Gates and commit**
+
+Run: `pnpm exec eslint --fix src/features/analytics scripts/verify-analytics-rules.ts && pnpm tsc && pnpm lint && pnpm tsx scripts/verify-analytics-rules.ts`
+Expected: clean. If nuqs's `inferParserType` is not exported from `nuqs/server` in the installed version, import it from `nuqs` (type-only).
+
+```bash
+git add src/features/analytics/constants/tabs.ts src/features/analytics/constants/metrics.ts src/features/analytics/constants/labels.ts src/features/analytics/constants/query-parsers.ts src/features/analytics/lib/to-report-input.ts src/features/analytics/lib/read-metric.ts src/features/analytics/lib/breakdown-columns.ts src/features/analytics/lib/trend-points.ts src/features/analytics/lib/format-analytics.ts src/features/analytics/lib/hygiene-links.ts src/features/analytics/lib/filter-update.ts src/features/analytics/lib/filter-fields.ts src/features/analytics/lib/spend-grid-rows.ts src/features/analytics/lib/parse-dollars.ts scripts/verify-analytics-rules.ts
+git commit -m "$(cat <<'EOF'
+feat(analytics): page state — URL parsers, tab and metric catalogs, pure display and link helpers
+
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>
+EOF
+)"
+```
+
+---
+
+### Task 7b: Hooks, guard, nav and the view shell
+
+**Files:**
+- Create: `src/features/analytics/hooks/use-analytics-url-state.ts`, `use-analytics-labels.ts`
+- Create: `src/features/analytics/ui/views/analytics-view.tsx`
+- Create: `src/features/analytics/ui/components/filter-bar/analytics-filter-bar.tsx`, `period-picker.tsx`, `analytics-filters-control.tsx`, `analytics-filters-form.tsx`, `active-filter-chips.tsx`
+- Create: `src/features/analytics/ui/components/analytics-tabs-list.tsx`, `report-skeleton.tsx`, `projects-placeholder.tsx`
+- Modify: `src/app/(frontend)/dashboard/analytics/page.tsx`
+- Modify: `src/features/agent-dashboard/lib/get-sidebar-nav.ts:113`
+
+**Interfaces:**
+- Consumes: Task 7a; the router (Task 5).
+- Produces: `useAnalyticsUrlState()`, `useAnalyticsLabels()` → `AnalyticsNames & { options: AnalyticsFilterOptions | undefined, closers: { id: string, name: string }[] }`; `<ReportSkeleton />`; `<AnalyticsView />` rendering shadcn `Tabs` with one `TabsContent` per tab (Tasks 8 and 9 fill the report and spend panels).
+
+UI components have no unit tests in this repo; the gates plus Step 7's browser look are the check. The logic they rely on is tested in section 15.
+
+- [ ] **Step 1: Write the hooks**
 
 Create `src/features/analytics/hooks/use-analytics-url-state.ts`:
 
@@ -2004,7 +2339,7 @@ Create `src/features/analytics/hooks/use-analytics-url-state.ts`:
 
 import { useQueryStates } from 'nuqs'
 
-import { analyticsSearchParams } from '@/features/analytics/constants/search-params'
+import { analyticsSearchParams } from '@/features/analytics/constants/query-parsers'
 
 export function useAnalyticsUrlState() {
   return useQueryStates(analyticsSearchParams)
@@ -2043,9 +2378,7 @@ export function useAnalyticsLabels(): AnalyticsNames & { options: AnalyticsFilte
 }
 ```
 
-(`import type` from a `dal/server` file is type-only and never bundles server code; if lint forbids it, move `AnalyticsFilterOptions` to `src/features/analytics/types.ts` and import it from there in both places.)
-
-- [ ] **Step 7: Write the view shell components**
+- [ ] **Step 2: The shell components**
 
 Create `src/features/analytics/ui/components/report-skeleton.tsx`:
 
@@ -2076,53 +2409,41 @@ export function ProjectsPlaceholder() {
 }
 ```
 
-Create `src/features/analytics/ui/components/analytics-tabs.tsx`:
+Create `src/features/analytics/ui/components/analytics-tabs-list.tsx` (rendered inside the view's `Tabs`, so the triggers point at real `TabsContent` panels):
 
 ```tsx
 'use client'
 
 import { ANALYTICS_TABS, TAB_LABELS } from '@/features/analytics/constants/tabs'
-import { useAnalyticsUrlState } from '@/features/analytics/hooks/use-analytics-url-state'
-import { Tabs, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
+import { TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 
 interface Props {
   spendMissing: boolean
 }
 
-export function AnalyticsTabs({ spendMissing }: Props) {
-  const [{ tab }, setUrlState] = useAnalyticsUrlState()
+export function AnalyticsTabsList({ spendMissing }: Props) {
   return (
-    <Tabs
-      value={tab}
-      onValueChange={(value) => {
-        const next = ANALYTICS_TABS.find(t => t === value)
-        if (next) {
-          void setUrlState({ tab: next, groupBy: null, focus: null })
-        }
-      }}
-    >
-      <div className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
-        <TabsList className="w-full min-w-max justify-start">
-          {ANALYTICS_TABS.filter(t => t !== 'spend').map(t => (
-            <TabsTrigger key={t} value={t}>{TAB_LABELS[t]}</TabsTrigger>
-          ))}
-          <TabsTrigger value="spend" className="ml-auto gap-1.5">
-            {TAB_LABELS.spend}
-            {spendMissing && <span role="img" aria-label="Spend missing for some months" className="size-2 rounded-full bg-warning" />}
-          </TabsTrigger>
-        </TabsList>
-      </div>
-    </Tabs>
+    <div className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
+      <TabsList className="w-full min-w-max justify-start">
+        {ANALYTICS_TABS.filter(t => t !== 'spend').map(t => (
+          <TabsTrigger key={t} value={t} className="min-h-11">{TAB_LABELS[t]}</TabsTrigger>
+        ))}
+        <TabsTrigger value="spend" className="ml-auto min-h-11 gap-1.5">
+          {TAB_LABELS.spend}
+          {spendMissing && <span role="img" aria-label="Spend missing for some months" className="size-2 rounded-full bg-warning" />}
+        </TabsTrigger>
+      </TabsList>
+    </div>
   )
 }
 ```
 
-Create `src/features/analytics/ui/components/period-picker.tsx`:
+- [ ] **Step 3: The filter bar (`ui/components/filter-bar/`)**
+
+Create `src/features/analytics/ui/components/filter-bar/period-picker.tsx`:
 
 ```tsx
 'use client'
-
-import type { AnalyticsPeriod } from '@/features/analytics/types'
 
 import { ANALYTICS_PERIODS } from '@/features/analytics/constants/dimensions'
 import { PERIOD_LABELS } from '@/features/analytics/constants/labels'
@@ -2140,7 +2461,7 @@ export function PeriodPicker({ firstDay, lastDay }: Props) {
   const [{ period }, setUrlState] = useAnalyticsUrlState()
   const isMobile = useIsMobile()
   const choose = (value: string) => {
-    const next = ANALYTICS_PERIODS.find((p): p is AnalyticsPeriod => p === value)
+    const next = ANALYTICS_PERIODS.find(p => p === value)
     if (!next) {
       return
     }
@@ -2168,64 +2489,31 @@ export function PeriodPicker({ firstDay, lastDay }: Props) {
 }
 ```
 
-Create `src/features/analytics/ui/components/analytics-filters-form.tsx`:
+Create `src/features/analytics/ui/components/filter-bar/analytics-filters-form.tsx` (reuses the records toolbar's `MultiSelectFilterControl`):
 
 ```tsx
 'use client'
 
-import type { AnalyticsUrlState, FilterKey } from '@/features/analytics/constants/search-params'
-
-import { MEETING_ORDERS } from '@/features/analytics/constants/dimensions'
-import { MEETING_ORDER_LABELS } from '@/features/analytics/constants/labels'
-import { UNKNOWN_FILTER_VALUE } from '@/features/analytics/constants/search-params'
 import { useAnalyticsLabels } from '@/features/analytics/hooks/use-analytics-labels'
 import { useAnalyticsUrlState } from '@/features/analytics/hooks/use-analytics-url-state'
+import { buildFilterFields } from '@/features/analytics/lib/filter-fields'
+import { filterUpdate } from '@/features/analytics/lib/filter-update'
+import { MultiSelectFilterControl } from '@/shared/components/query-toolbar/ui/filter-controls/multi-select-filter-control'
 import { Label } from '@/shared/components/ui/label'
-import { MultiSelect, MultiSelectContent, MultiSelectItem, MultiSelectTrigger, MultiSelectValue } from '@/shared/components/ui/multi-select'
-import { meetingOutcomes } from '@/shared/constants/enums/meetings'
-import { MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
-
-interface FilterField {
-  key: FilterKey
-  label: string
-  options: { value: string, label: string }[]
-}
 
 export function AnalyticsFiltersForm() {
   const [state, setUrlState] = useAnalyticsUrlState()
   const labels = useAnalyticsLabels()
-  const fields: FilterField[] = [
-    {
-      key: 'source',
-      label: 'Lead source',
-      options: [
-        ...(labels.options?.leadSources ?? []).map(s => ({ value: s.id, label: s.archived ? `${s.name} (archived)` : s.name })),
-        { value: UNKNOWN_FILTER_VALUE, label: 'Unknown source' },
-      ],
-    },
-    { key: 'city', label: 'City', options: [...(labels.options?.cities ?? []).map(c => ({ value: c, label: c })), { value: UNKNOWN_FILTER_VALUE, label: 'Unknown city' }] },
-    { key: 'zip', label: 'Zip', options: [...(labels.options?.zips ?? []).map(z => ({ value: z, label: z })), { value: UNKNOWN_FILTER_VALUE, label: 'Unknown zip' }] },
-    { key: 'closer', label: 'Closer', options: labels.closers.map(u => ({ value: u.id, label: u.name })) },
-    { key: 'outcome', label: 'Meeting outcome', options: meetingOutcomes.map(o => ({ value: o, label: MEETING_OUTCOME_LABELS[o] })) },
-    { key: 'order', label: 'Meeting order', options: MEETING_ORDERS.map(o => ({ value: o, label: MEETING_ORDER_LABELS[o] })) },
-  ]
   return (
     <div className="flex flex-col gap-4">
-      {fields.map(field => (
-        <div key={field.key} className="flex flex-col gap-1.5">
-          <Label>{field.label}</Label>
-          <MultiSelect
-            values={state[field.key]}
-            // Values come from the field's own options, so they fit its parser.
-            onValuesChange={values => void setUrlState({ [field.key]: values } as Partial<AnalyticsUrlState>)}
-          >
-            <MultiSelectTrigger className="w-full">
-              <MultiSelectValue placeholder="Any" />
-            </MultiSelectTrigger>
-            <MultiSelectContent search>
-              {field.options.map(option => <MultiSelectItem key={option.value} value={option.value}>{option.label}</MultiSelectItem>)}
-            </MultiSelectContent>
-          </MultiSelect>
+      {buildFilterFields(labels.options, labels.closers).map(({ key, definition }) => (
+        <div key={key} className="flex flex-col gap-1.5">
+          <Label>{definition.label}</Label>
+          <MultiSelectFilterControl
+            definition={definition}
+            value={state[key]}
+            onChange={values => void setUrlState(filterUpdate(key, values ?? []))}
+          />
         </div>
       ))}
     </div>
@@ -2233,25 +2521,25 @@ export function AnalyticsFiltersForm() {
 }
 ```
 
-Create `src/features/analytics/ui/components/analytics-filters-control.tsx`:
+Create `src/features/analytics/ui/components/filter-bar/analytics-filters-control.tsx` (sheet below `lg`, like the records filter panel in `query-toolbar.tsx`):
 
 ```tsx
 'use client'
 
 import { FilterIcon } from 'lucide-react'
 
-import { AnalyticsFiltersForm } from '@/features/analytics/ui/components/analytics-filters-form'
+import { AnalyticsFiltersForm } from '@/features/analytics/ui/components/filter-bar/analytics-filters-form'
 import { Button } from '@/shared/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/shared/components/ui/sheet'
-import { useIsMobile } from '@/shared/hooks/use-mobile'
+import { useIsBelowLg } from '@/shared/hooks/use-is-below-lg'
 
 interface Props {
   activeCount: number
 }
 
 export function AnalyticsFiltersControl({ activeCount }: Props) {
-  const isMobile = useIsMobile()
+  const isBelowLg = useIsBelowLg()
   const trigger = (
     <Button variant="outline" size="sm" className="gap-1.5">
       <FilterIcon className="size-4" aria-hidden="true" />
@@ -2259,7 +2547,7 @@ export function AnalyticsFiltersControl({ activeCount }: Props) {
       {activeCount > 0 && <span className="tabular-nums text-primary">{activeCount}</span>}
     </Button>
   )
-  if (isMobile) {
+  if (isBelowLg) {
     return (
       <Sheet>
         <SheetTrigger asChild>{trigger}</SheetTrigger>
@@ -2285,25 +2573,29 @@ export function AnalyticsFiltersControl({ activeCount }: Props) {
 }
 ```
 
-Create `src/features/analytics/ui/components/active-filter-chips.tsx`:
+(`PopoverContent` already carries the frosted glass surface, `GLASS_SURFACE_STYLE`.)
+
+Create `src/features/analytics/ui/components/filter-bar/active-filter-chips.tsx`:
 
 ```tsx
 'use client'
 
-import type { AnalyticsUrlState } from '@/features/analytics/constants/search-params'
-
 import { XIcon } from 'lucide-react'
 
-import { FILTER_KEYS } from '@/features/analytics/constants/search-params'
+import { CLEARED_FILTERS, FILTER_KEYS } from '@/features/analytics/constants/query-parsers'
 import { useAnalyticsLabels } from '@/features/analytics/hooks/use-analytics-labels'
 import { useAnalyticsUrlState } from '@/features/analytics/hooks/use-analytics-url-state'
+import { filterUpdate } from '@/features/analytics/lib/filter-update'
 import { filterValueLabel } from '@/features/analytics/lib/format-analytics'
 import { Button } from '@/shared/components/ui/button'
 
 export function ActiveFilterChips() {
   const [state, setUrlState] = useAnalyticsUrlState()
   const labels = useAnalyticsLabels()
-  const chips = FILTER_KEYS.flatMap(key => state[key].map(value => ({ key, value, label: filterValueLabel(key, value, labels) })))
+  const chips = FILTER_KEYS.flatMap((key) => {
+    const values: readonly string[] = state[key]
+    return values.map(value => ({ key, value, rest: values.filter(v => v !== value), label: filterValueLabel(key, value, labels) }))
+  })
   if (chips.length === 0) {
     return null
   }
@@ -2316,7 +2608,7 @@ export function ActiveFilterChips() {
             size="sm"
             className="h-7 gap-1 rounded-full"
             aria-label={`Remove ${chip.label}`}
-            onClick={() => void setUrlState({ [chip.key]: state[chip.key].filter(v => v !== chip.value) } as Partial<AnalyticsUrlState>)}
+            onClick={() => void setUrlState(filterUpdate(chip.key, chip.rest))}
           >
             {chip.label}
             <XIcon className="size-3" aria-hidden="true" />
@@ -2324,7 +2616,7 @@ export function ActiveFilterChips() {
         </li>
       ))}
       <li>
-        <Button variant="ghost" size="sm" className="h-7" onClick={() => void setUrlState(Object.fromEntries(FILTER_KEYS.map(key => [key, null])))}>
+        <Button variant="ghost" size="sm" className="h-7" onClick={() => void setUrlState(CLEARED_FILTERS)}>
           Clear all
         </Button>
       </li>
@@ -2333,17 +2625,17 @@ export function ActiveFilterChips() {
 }
 ```
 
-Create `src/features/analytics/ui/components/analytics-filter-bar.tsx`:
+Create `src/features/analytics/ui/components/filter-bar/analytics-filter-bar.tsx`:
 
 ```tsx
 'use client'
 
-import { FILTER_KEYS } from '@/features/analytics/constants/search-params'
+import { FILTER_KEYS } from '@/features/analytics/constants/query-parsers'
 import { useAnalyticsUrlState } from '@/features/analytics/hooks/use-analytics-url-state'
 import { formatDayRange } from '@/features/analytics/lib/format-analytics'
-import { ActiveFilterChips } from '@/features/analytics/ui/components/active-filter-chips'
-import { AnalyticsFiltersControl } from '@/features/analytics/ui/components/analytics-filters-control'
-import { PeriodPicker } from '@/features/analytics/ui/components/period-picker'
+import { ActiveFilterChips } from '@/features/analytics/ui/components/filter-bar/active-filter-chips'
+import { AnalyticsFiltersControl } from '@/features/analytics/ui/components/filter-bar/analytics-filters-control'
+import { PeriodPicker } from '@/features/analytics/ui/components/filter-bar/period-picker'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 
@@ -2382,53 +2674,78 @@ export function AnalyticsFilterBar({ firstDay, lastDay }: Props) {
 }
 ```
 
-Create `src/features/analytics/ui/views/analytics-view.tsx`. Task 8 adds `ReportTabContent` and Task 9 adds `SpendGrid`; until then the report tabs render the skeleton and the Spend tab a placeholder line, so this task ships a working shell:
+- [ ] **Step 4: The view**
+
+Create `src/features/analytics/ui/views/analytics-view.tsx`. Each tab body sits in its own `TabsContent` (like `campaigns-view.tsx` and `calculators-view.tsx`). Task 8 replaces the report panels' skeleton and Task 9 the Spend placeholder, so this task ships a working shell:
 
 ```tsx
 'use client'
 
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 
-import { isReportTab } from '@/features/analytics/constants/tabs'
+import { ANALYTICS_TABS, REPORT_TAB_KEYS } from '@/features/analytics/constants/tabs'
 import { useAnalyticsUrlState } from '@/features/analytics/hooks/use-analytics-url-state'
 import { toReportInput } from '@/features/analytics/lib/to-report-input'
-import { AnalyticsFilterBar } from '@/features/analytics/ui/components/analytics-filter-bar'
-import { AnalyticsTabs } from '@/features/analytics/ui/components/analytics-tabs'
+import { AnalyticsTabsList } from '@/features/analytics/ui/components/analytics-tabs-list'
+import { AnalyticsFilterBar } from '@/features/analytics/ui/components/filter-bar/analytics-filter-bar'
 import { ProjectsPlaceholder } from '@/features/analytics/ui/components/projects-placeholder'
 import { ReportSkeleton } from '@/features/analytics/ui/components/report-skeleton'
+import { Tabs, TabsContent } from '@/shared/components/ui/tabs'
+import { useHydrationParityCheck } from '@/shared/dal/client/hooks/use-hydration-parity-check'
 import { useTRPC } from '@/trpc/helpers'
 
 export function AnalyticsView() {
   const trpc = useTRPC()
-  const [urlState] = useAnalyticsUrlState()
-  const report = useQuery({ ...trpc.analyticsRouter.report.queryOptions(toReportInput(urlState)), placeholderData: keepPreviousData })
+  const [urlState, setUrlState] = useAnalyticsUrlState()
+  const reportOptions = trpc.analyticsRouter.report.queryOptions(toReportInput(urlState))
+  useHydrationParityCheck(reportOptions.queryKey)
+  const report = useQuery({ ...reportOptions, placeholderData: keepPreviousData })
+
+  const changeTab = (value: string) => {
+    const next = ANALYTICS_TABS.find(t => t === value)
+    if (next) {
+      void setUrlState({ tab: next, groupBy: null, focus: null })
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-medium">Analytics</h1>
+        <h1 className="text-xl font-semibold text-foreground">Analytics</h1>
         <p className="text-sm text-muted-foreground">How the lead chain is doing, from lead to sale, per source and in total.</p>
       </header>
       <AnalyticsFilterBar firstDay={report.data?.firstDay} lastDay={report.data?.lastDay} />
-      <AnalyticsTabs spendMissing={(report.data?.spendMissing.length ?? 0) > 0} />
-      {urlState.tab === 'projects' && <ProjectsPlaceholder />}
-      {urlState.tab === 'spend' && <p className="text-sm text-muted-foreground">Spend entry arrives in the next task.</p>}
-      {isReportTab(urlState.tab) && <ReportSkeleton />}
+      <Tabs value={urlState.tab} onValueChange={changeTab} className="flex flex-col gap-6">
+        <AnalyticsTabsList spendMissing={(report.data?.spendMissing.length ?? 0) > 0} />
+        {REPORT_TAB_KEYS.map(tab => (
+          <TabsContent key={tab} value={tab}>
+            <ReportSkeleton />
+          </TabsContent>
+        ))}
+        <TabsContent value="projects">
+          <ProjectsPlaceholder />
+        </TabsContent>
+        <TabsContent value="spend">
+          <p className="text-sm text-muted-foreground">Spend entry arrives in Task 9.</p>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
 ```
 
-- [ ] **Step 8: Guard the page, prefetch, and enable the nav item**
+(`useHydrationParityCheck` is the dev-only detector that proves the page's prefetch and this query share one key: `src/features/campaigns-admin/ui/views/campaigns-overview-view.tsx:18`.)
 
-Replace `src/app/(frontend)/dashboard/analytics/page.tsx` with:
+- [ ] **Step 5: Guard the page, prefetch, and enable the nav item**
+
+Replace `src/app/(frontend)/dashboard/analytics/page.tsx` with (the shape of `src/app/(frontend)/dashboard/campaigns/page.tsx`):
 
 ```tsx
 import type { SearchParams } from 'nuqs/server'
 
 import { redirect } from 'next/navigation'
 
-import { loadAnalyticsSearchParams } from '@/features/analytics/constants/search-params'
+import { loadAnalyticsSearchParams } from '@/features/analytics/constants/query-parsers'
 import { toReportInput } from '@/features/analytics/lib/to-report-input'
 import { AnalyticsView } from '@/features/analytics/ui/views/analytics-view'
 import { ROOTS } from '@/shared/config/roots'
@@ -2465,19 +2782,19 @@ export default async function AnalyticsPage({ searchParams }: Props) {
 
 In `src/features/agent-dashboard/lib/get-sidebar-nav.ts`, change the Analytics item's `enabled: false` to `enabled: true`.
 
-- [ ] **Step 9: Gates**
+- [ ] **Step 6: Gates**
 
-Run: `pnpm exec eslint --fix src/features/analytics "src/app/(frontend)/dashboard/analytics/page.tsx" src/features/agent-dashboard/lib/get-sidebar-nav.ts scripts/verify-analytics-rules.ts && pnpm tsc && pnpm lint && pnpm tsx scripts/verify-analytics-rules.ts`
-Expected: clean. If nuqs's `inferParserType` is not exported from `nuqs/server` in the installed version, import it from `nuqs` (type-only).
+Run: `pnpm exec eslint --fix src/features/analytics "src/app/(frontend)/dashboard/analytics/page.tsx" src/features/agent-dashboard/lib/get-sidebar-nav.ts && pnpm tsc && pnpm lint && pnpm tsx scripts/verify-analytics-rules.ts`
+Expected: clean.
 
-- [ ] **Step 10: Look at it (read-only)**
+- [ ] **Step 7: Look at it (read-only)**
 
-Needs the owner's dev push. With `pnpm dev` running (check `ss -ltnp` first), open `/dashboard/analytics` as the Playwright super-admin session. Expected: the Analytics sidebar item is live; the header, period chips with the range text, the Filters popover (source, city, zip, closer, outcome, order all populated), removable chips, and the tabs with Spend at the right. Changing the period or a filter changes the URL, and reloading keeps the state. As an agent session (`&role=agent`), the page redirects to `/dashboard`.
+Needs the owner's dev push. With `pnpm dev` running (check `ss -ltnp` first), open `/dashboard/analytics` as the Playwright super-admin session. Expected: the Analytics sidebar item is live; the header, period chips with the range text, the Filters popover (source, city, zip, closer, outcome, order all populated), removable chips, and the tabs with Spend at the right. Changing the period or a filter changes the URL, and reloading keeps the state. No hydration-drift warning in the dev console. As an agent session (`&role=agent`), the page redirects to `/dashboard`.
 
-- [ ] **Step 11: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
-git add src/features/analytics/constants/tabs.ts src/features/analytics/constants/metrics.ts src/features/analytics/constants/labels.ts src/features/analytics/constants/search-params.ts src/features/analytics/lib/to-report-input.ts src/features/analytics/lib/read-metric.ts src/features/analytics/lib/format-analytics.ts src/features/analytics/lib/hygiene-links.ts src/features/analytics/lib/parse-dollars.ts src/features/analytics/hooks/use-analytics-url-state.ts src/features/analytics/hooks/use-analytics-labels.ts src/features/analytics/ui/views/analytics-view.tsx src/features/analytics/ui/components/analytics-tabs.tsx src/features/analytics/ui/components/analytics-filter-bar.tsx src/features/analytics/ui/components/period-picker.tsx src/features/analytics/ui/components/analytics-filters-control.tsx src/features/analytics/ui/components/analytics-filters-form.tsx src/features/analytics/ui/components/active-filter-chips.tsx src/features/analytics/ui/components/report-skeleton.tsx src/features/analytics/ui/components/projects-placeholder.tsx "src/app/(frontend)/dashboard/analytics/page.tsx" src/features/agent-dashboard/lib/get-sidebar-nav.ts scripts/verify-analytics-rules.ts
+git add src/features/analytics/hooks/use-analytics-url-state.ts src/features/analytics/hooks/use-analytics-labels.ts src/features/analytics/ui/views/analytics-view.tsx src/features/analytics/ui/components/analytics-tabs-list.tsx src/features/analytics/ui/components/report-skeleton.tsx src/features/analytics/ui/components/projects-placeholder.tsx src/features/analytics/ui/components/filter-bar/analytics-filter-bar.tsx src/features/analytics/ui/components/filter-bar/period-picker.tsx src/features/analytics/ui/components/filter-bar/analytics-filters-control.tsx src/features/analytics/ui/components/filter-bar/analytics-filters-form.tsx src/features/analytics/ui/components/filter-bar/active-filter-chips.tsx "src/app/(frontend)/dashboard/analytics/page.tsx" src/features/agent-dashboard/lib/get-sidebar-nav.ts
 git commit -m "$(cat <<'EOF'
 feat(analytics): super-admin analytics page shell — URL state, filter bar, tabs, nav
 
@@ -2491,18 +2808,18 @@ EOF
 ### Task 8: Report tabs — headline, focus chart, Data to fix, breakdown
 
 **Files:**
-- Create: `src/features/analytics/ui/components/metric-text.tsx`, `headline-figure.tsx`, `headline-strip.tsx`, `focus-trend-chart.tsx`, `data-to-fix-panel.tsx`, `breakdown-row.tsx`, `breakdown-table.tsx`, `report-tab-content.tsx`
+- Create: `src/features/analytics/ui/components/report/metric-text.tsx`, `headline-figure.tsx`, `headline-strip.tsx`, `focus-trend-chart.tsx`, `data-to-fix-panel.tsx`, `breakdown-row.tsx`, `breakdown-table.tsx`, `report-tab-content.tsx`
 - Modify: `src/features/analytics/ui/views/analytics-view.tsx`
 
 **Interfaces:**
-- Consumes: everything Task 7 produces; `AnalyticsReport`.
-- Produces: `<ReportTabContent tab report isPending isError onRetry />`.
+- Consumes: everything Task 7a produces (`readMetric`, `metricDisplayText`, `sortRowsByMetric`, `breakdownColumns`, `buildTrendPoints`, `hygieneHref`, `HYGIENE_LABELS`, …); `AnalyticsReport`; the shared `ChartTooltipCard`.
+- Produces: `<ReportTabContent tab report isError onRetry />`.
 
-UI components have no unit tests in this repo; the gates plus Step 10's browser pass are the check. The logic they rely on (`readMetric`, `sortRowsByMetric`, `resolveFocus`, `hygieneHref`) is already tested in section 15.
+UI components have no unit tests in this repo; the gates plus Step 10's browser pass are the check. The logic they rely on is tested in section 15.
 
 - [ ] **Step 1: Metric text**
 
-Create `src/features/analytics/ui/components/metric-text.tsx`:
+Create `src/features/analytics/ui/components/report/metric-text.tsx`:
 
 ```tsx
 import type { MetricDisplay } from '@/features/analytics/lib/read-metric'
@@ -2532,16 +2849,16 @@ export function MetricText({ display, className }: Props) {
 
 - [ ] **Step 2: Headline figure and strip**
 
-Create `src/features/analytics/ui/components/headline-figure.tsx`:
+Create `src/features/analytics/ui/components/report/headline-figure.tsx` (a raw `button` with `aria-pressed`, like the shared `stat-tile.tsx`; the label is a `span` because a `<p>` such as `BlockEyebrow` is not valid inside a button):
 
 ```tsx
-import type { NotApplicableReasons } from '@/features/analytics/lib/analytics-rules'
 import type { HeadlineFigure as HeadlineFigureConfig } from '@/features/analytics/constants/tabs'
+import type { NotApplicableReasons } from '@/features/analytics/lib/analytics-rules'
 import type { AnalyticsReportRow } from '@/features/analytics/types'
 
 import { METRICS } from '@/features/analytics/constants/metrics'
 import { readMetric } from '@/features/analytics/lib/read-metric'
-import { MetricText } from '@/features/analytics/ui/components/metric-text'
+import { MetricText } from '@/features/analytics/ui/components/report/metric-text'
 import { cn } from '@/shared/lib/utils'
 
 interface Props {
@@ -2584,7 +2901,7 @@ export function HeadlineFigure({ figure, row, reasons, selected, onSelect }: Pro
 }
 ```
 
-Create `src/features/analytics/ui/components/headline-strip.tsx`:
+Create `src/features/analytics/ui/components/report/headline-strip.tsx`:
 
 ```tsx
 'use client'
@@ -2598,7 +2915,7 @@ import { AlertTriangleIcon } from 'lucide-react'
 import { useAnalyticsLabels } from '@/features/analytics/hooks/use-analytics-labels'
 import { formatMonthLabel } from '@/features/analytics/lib/format-analytics'
 import { readMetric } from '@/features/analytics/lib/read-metric'
-import { HeadlineFigure } from '@/features/analytics/ui/components/headline-figure'
+import { HeadlineFigure } from '@/features/analytics/ui/components/report/headline-figure'
 import { Button } from '@/shared/components/ui/button'
 
 interface Props {
@@ -2651,41 +2968,31 @@ export function HeadlineStrip({ config, report, focus, onFocus, onOpenSpend }: P
 
 - [ ] **Step 3: Focus trend chart**
 
-Create `src/features/analytics/ui/components/focus-trend-chart.tsx`:
+Create `src/features/analytics/ui/components/report/focus-trend-chart.tsx`. The points come from `buildTrendPoints` (Task 7a) and the tooltip is the shared `ChartTooltipCard`, rendered inline so the file holds one component:
 
 ```tsx
 'use client'
 
 import type { MetricKey } from '@/features/analytics/constants/metrics'
-import type { MetricDisplay } from '@/features/analytics/lib/read-metric'
+import type { TrendPoint } from '@/features/analytics/lib/trend-points'
 import type { AnalyticsReport } from '@/features/analytics/types'
 
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
 import { METRICS } from '@/features/analytics/constants/metrics'
 import { formatMonthLabel } from '@/features/analytics/lib/format-analytics'
-import { formatMetricValue, readMetric } from '@/features/analytics/lib/read-metric'
-import { MetricText } from '@/features/analytics/ui/components/metric-text'
+import { formatMetricValue, metricDisplayText } from '@/features/analytics/lib/read-metric'
+import { buildTrendPoints } from '@/features/analytics/lib/trend-points'
+import { ChartTooltipCard } from '@/shared/components/charts/chart-tooltip-card'
 
 interface Props {
   metric: MetricKey
   report: AnalyticsReport
 }
 
-interface Point {
-  month: string
-  label: string
-  value: number | null
-  display: MetricDisplay
-  selected: boolean
-}
-
 export function FocusTrendChart({ metric, report }: Props) {
   const definition = METRICS[metric]
-  const points: Point[] = report.trend.map((t) => {
-    const display = readMetric(metric, t.row, report.notApplicable.headline)
-    return { month: t.month, label: formatMonthLabel(t.month, 'short'), value: display.kind === 'value' ? display.value : null, display, selected: t.selected }
-  })
+  const points = buildTrendPoints(report, metric)
   const format = 'format' in definition ? definition.format : 'count'
   return (
     <section aria-label={`${definition.label} by month`} className="flex min-w-0 flex-col gap-3 rounded-lg border border-border p-4">
@@ -2702,7 +3009,16 @@ export function FocusTrendChart({ metric, report }: Props) {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
                   <XAxis dataKey="label" tickLine={false} stroke="var(--muted-foreground)" className="text-xs" />
                   <YAxis width={64} tickFormatter={(v: number) => formatMetricValue(v, format)} stroke="var(--muted-foreground)" className="text-xs" />
-                  <Tooltip cursor={{ fill: 'var(--muted)' }} content={<TrendTooltip />} />
+                  <Tooltip
+                    cursor={{ fill: 'var(--muted)' }}
+                    content={({ active, payload }) => {
+                      const point: TrendPoint | undefined = payload?.[0]?.payload
+                      if (!active || !point) {
+                        return null
+                      }
+                      return <ChartTooltipCard title={formatMonthLabel(point.month)} rows={[{ label: definition.label, value: metricDisplayText(point.display) }]} />
+                    }}
+                  />
                   <Bar dataKey="value" radius={[3, 3, 0, 0]}>
                     {points.map(p => (
                       <Cell key={p.month} fill={p.selected ? 'var(--primary)' : 'var(--muted-foreground)'} fillOpacity={p.selected ? 1 : 0.35} />
@@ -2715,49 +3031,28 @@ export function FocusTrendChart({ metric, report }: Props) {
     </section>
   )
 }
-
-interface TooltipProps {
-  active?: boolean
-  payload?: { payload: Point }[]
-}
-
-function TrendTooltip({ active, payload }: TooltipProps) {
-  const point = payload?.[0]?.payload
-  if (!active || !point) {
-    return null
-  }
-  return (
-    <div className="rounded-md border border-border bg-popover px-3 py-2 text-xs shadow-sm">
-      <div className="font-semibold">{formatMonthLabel(point.month)}</div>
-      <MetricText display={point.display} />
-    </div>
-  )
-}
 ```
 
 - [ ] **Step 4: Data to fix**
 
-Create `src/features/analytics/ui/components/data-to-fix-panel.tsx`:
+Create `src/features/analytics/ui/components/report/data-to-fix-panel.tsx`. The link cut-off is the report's `generatedAt`, never a `new Date()` here: the panel renders on the server (the report is prefetched) and again in the browser, and both must produce the same `href`:
 
 ```tsx
-'use client'
-
 import type { AnalyticsHygiene } from '@/features/analytics/types'
 
 import Link from 'next/link'
-import { useState } from 'react'
 
-import { HYGIENE_LABELS, hygieneHref } from '@/features/analytics/lib/hygiene-links'
+import { HYGIENE_LABELS } from '@/features/analytics/constants/labels'
+import { hygieneHref } from '@/features/analytics/lib/hygiene-links'
 import { formatAsCount } from '@/shared/lib/formatters'
 
 interface Props {
   keys: readonly (keyof AnalyticsHygiene)[]
   hygiene: AnalyticsHygiene
+  asOf: string
 }
 
-export function DataToFixPanel({ keys, hygiene }: Props) {
-  // Fixed at mount so a link's "past meetings" cut-off does not shift on every render.
-  const [now] = useState(() => new Date())
+export function DataToFixPanel({ keys, hygiene, asOf }: Props) {
   return (
     <section aria-labelledby="data-to-fix" className="flex flex-col gap-3 rounded-lg border border-border p-4">
       <div className="flex flex-col gap-0.5">
@@ -2767,7 +3062,7 @@ export function DataToFixPanel({ keys, hygiene }: Props) {
       <ul className="flex flex-col divide-y divide-border">
         {keys.map((key) => {
           const count = hygiene[key]
-          const href = hygieneHref(key, now)
+          const href = hygieneHref(key, asOf)
           let value = <span className="tabular-nums text-muted-foreground">0</span>
           if (count > 0) {
             value = href
@@ -2789,7 +3084,7 @@ export function DataToFixPanel({ keys, hygiene }: Props) {
 
 - [ ] **Step 5: Breakdown**
 
-Create `src/features/analytics/ui/components/breakdown-row.tsx`:
+Create `src/features/analytics/ui/components/report/breakdown-row.tsx`:
 
 ```tsx
 import type { MetricKey } from '@/features/analytics/constants/metrics'
@@ -2797,7 +3092,7 @@ import type { NotApplicableReasons } from '@/features/analytics/lib/analytics-ru
 import type { AnalyticsReportRow } from '@/features/analytics/types'
 
 import { readMetric } from '@/features/analytics/lib/read-metric'
-import { MetricText } from '@/features/analytics/ui/components/metric-text'
+import { MetricText } from '@/features/analytics/ui/components/report/metric-text'
 import { TableCell, TableRow } from '@/shared/components/ui/table'
 import { cn } from '@/shared/lib/utils'
 
@@ -2824,7 +3119,7 @@ export function BreakdownRow({ label, row, reasons, columns, focus, total = fals
 }
 ```
 
-Create `src/features/analytics/ui/components/breakdown-table.tsx`:
+Create `src/features/analytics/ui/components/report/breakdown-table.tsx`:
 
 ```tsx
 'use client'
@@ -2836,9 +3131,10 @@ import type { AnalyticsGroupBy, AnalyticsReport } from '@/features/analytics/typ
 import { GROUP_BY_LABELS } from '@/features/analytics/constants/labels'
 import { METRICS } from '@/features/analytics/constants/metrics'
 import { useAnalyticsLabels } from '@/features/analytics/hooks/use-analytics-labels'
+import { breakdownColumns } from '@/features/analytics/lib/breakdown-columns'
 import { groupLabel } from '@/features/analytics/lib/format-analytics'
 import { sortRowsByMetric } from '@/features/analytics/lib/read-metric'
-import { BreakdownRow } from '@/features/analytics/ui/components/breakdown-row'
+import { BreakdownRow } from '@/features/analytics/ui/components/report/breakdown-row'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
 import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-group'
 import { cn } from '@/shared/lib/utils'
@@ -2853,9 +3149,7 @@ interface Props {
 
 export function BreakdownTable({ config, report, focus, groupBy, onGroupBy }: Props) {
   const labels = useAnalyticsLabels()
-  const columns = config.figures
-    .flatMap(f => (f.sub ? [f.metric, f.sub] : [f.metric]))
-    .filter(key => !('notYet' in METRICS[key]))
+  const columns = breakdownColumns(config)
   const rows = sortRowsByMetric(report.breakdown, focus, report.notApplicable.breakdown)
   return (
     <section aria-labelledby="breakdown" className="flex flex-col gap-3">
@@ -2910,7 +3204,7 @@ export function BreakdownTable({ config, report, focus, groupBy, onGroupBy }: Pr
 
 - [ ] **Step 6: Tab content**
 
-Create `src/features/analytics/ui/components/report-tab-content.tsx`:
+Create `src/features/analytics/ui/components/report/report-tab-content.tsx`:
 
 ```tsx
 'use client'
@@ -2921,10 +3215,10 @@ import type { AnalyticsReport } from '@/features/analytics/types'
 import { REPORT_TABS } from '@/features/analytics/constants/tabs'
 import { useAnalyticsUrlState } from '@/features/analytics/hooks/use-analytics-url-state'
 import { resolveFocus, resolveGroupBy } from '@/features/analytics/lib/to-report-input'
-import { BreakdownTable } from '@/features/analytics/ui/components/breakdown-table'
-import { DataToFixPanel } from '@/features/analytics/ui/components/data-to-fix-panel'
-import { FocusTrendChart } from '@/features/analytics/ui/components/focus-trend-chart'
-import { HeadlineStrip } from '@/features/analytics/ui/components/headline-strip'
+import { BreakdownTable } from '@/features/analytics/ui/components/report/breakdown-table'
+import { DataToFixPanel } from '@/features/analytics/ui/components/report/data-to-fix-panel'
+import { FocusTrendChart } from '@/features/analytics/ui/components/report/focus-trend-chart'
+import { HeadlineStrip } from '@/features/analytics/ui/components/report/headline-strip'
 import { ReportSkeleton } from '@/features/analytics/ui/components/report-skeleton'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { Button } from '@/shared/components/ui/button'
@@ -2961,7 +3255,7 @@ export function ReportTabContent({ tab, report, isError, onRetry }: Props) {
       />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <FocusTrendChart metric={focus} report={report} />
-        <DataToFixPanel keys={config.hygiene} hygiene={report.hygiene} />
+        <DataToFixPanel keys={config.hygiene} hygiene={report.hygiene} asOf={report.generatedAt} />
       </div>
       <BreakdownTable config={config} report={report} focus={focus} groupBy={resolveGroupBy(state)} onGroupBy={groupBy => void setUrlState({ groupBy })} />
     </div>
@@ -2971,29 +3265,31 @@ export function ReportTabContent({ tab, report, isError, onRetry }: Props) {
 
 - [ ] **Step 7: Wire it into the view**
 
-In `src/features/analytics/ui/views/analytics-view.tsx`, replace the `ReportSkeleton` import with `import { ReportTabContent } from '@/features/analytics/ui/components/report-tab-content'` and replace
+In `src/features/analytics/ui/views/analytics-view.tsx`, replace the `ReportSkeleton` import with `import { ReportTabContent } from '@/features/analytics/ui/components/report/report-tab-content'` and replace
 
 ```tsx
-      {isReportTab(urlState.tab) && <ReportSkeleton />}
+          <TabsContent key={tab} value={tab}>
+            <ReportSkeleton />
+          </TabsContent>
 ```
 
 with
 
 ```tsx
-      {isReportTab(urlState.tab) && (
-        <ReportTabContent tab={urlState.tab} report={report.data} isError={report.isError} onRetry={() => void report.refetch()} />
-      )}
+          <TabsContent key={tab} value={tab}>
+            <ReportTabContent tab={tab} report={report.data} isError={report.isError} onRetry={() => void report.refetch()} />
+          </TabsContent>
 ```
 
 - [ ] **Step 8: Gates**
 
 Run: `pnpm exec eslint --fix src/features/analytics && pnpm tsc && pnpm lint && pnpm tsx scripts/verify-analytics-rules.ts`
-Expected: clean. If recharts' `Tooltip content` typing rejects `<TrendTooltip />`, type the props as `TooltipProps<number, string>` from `recharts` and read `payload?.[0]?.payload as Point`.
+Expected: clean. If recharts types `payload?.[0]?.payload` as something other than `any` so the `TrendPoint` annotation fails, find the point by label instead (`points.find(p => p.label === label)` from the render function's `label` argument); do not cast.
 
 - [ ] **Step 9: Commit**
 
 ```bash
-git add src/features/analytics/ui/components/metric-text.tsx src/features/analytics/ui/components/headline-figure.tsx src/features/analytics/ui/components/headline-strip.tsx src/features/analytics/ui/components/focus-trend-chart.tsx src/features/analytics/ui/components/data-to-fix-panel.tsx src/features/analytics/ui/components/breakdown-row.tsx src/features/analytics/ui/components/breakdown-table.tsx src/features/analytics/ui/components/report-tab-content.tsx src/features/analytics/ui/views/analytics-view.tsx
+git add src/features/analytics/ui/components/report/metric-text.tsx src/features/analytics/ui/components/report/headline-figure.tsx src/features/analytics/ui/components/report/headline-strip.tsx src/features/analytics/ui/components/report/focus-trend-chart.tsx src/features/analytics/ui/components/report/data-to-fix-panel.tsx src/features/analytics/ui/components/report/breakdown-row.tsx src/features/analytics/ui/components/report/breakdown-table.tsx src/features/analytics/ui/components/report/report-tab-content.tsx src/features/analytics/ui/views/analytics-view.tsx
 git commit -m "$(cat <<'EOF'
 feat(analytics): report tabs — selectable headline, 12-month focus chart, data to fix, breakdown
 
@@ -3004,54 +3300,78 @@ EOF
 
 - [ ] **Step 10: Look at it (read-only)**
 
-On the dev server as the super-admin session, at 1440 wide: every report tab renders; clicking a headline figure moves the cobalt highlight, the chart's metric and the breakdown's sort; "not available yet" figures cannot be clicked; group-by "Closer" shows the overlap note and cost "n/a" in every row; a city filter shows "n/a" for cost with its reason under the strip; each Data to fix count opens its records table already filtered. At 390 wide: the headline is two-up, the period is a select, Filters opens a bottom sheet, Data to fix sits under the chart, the breakdown scrolls sideways with the first column pinned, and the page itself never scrolls sideways.
+On the dev server as the super-admin session, at 1440 wide: every report tab renders; clicking a headline figure moves the cobalt highlight, the chart's metric and the breakdown's sort; "not available yet" figures cannot be clicked; the Overview breakdown by source shows cost per lead, per booked lead, per sit, per sale and revenue per $1; group-by "Closer" shows the overlap note and cost "n/a" in every row; a city filter, or the "Unknown source" filter, shows "n/a" for cost with its reason under the strip; each Data to fix count opens its records table already filtered; the dev console shows no hydration mismatch. At 390 wide: the headline is two-up, the period is a select, Filters opens a bottom sheet, Data to fix sits under the chart, the breakdown scrolls sideways with the first column pinned, and the page itself never scrolls sideways.
 
 ---
 
 ### Task 9: Spend grid
 
 **Files:**
-- Create: `src/features/analytics/ui/components/spend-cell.tsx`, `spend-grid.tsx`
+- Modify: `src/shared/dal/client/hooks/use-invalidation.ts` (`invalidateLeadSource`)
+- Modify: `src/shared/entities/lead-sources/hooks/use-lead-source-actions.ts` (`setSpend`)
+- Create: `src/features/analytics/ui/components/spend/spend-cell.tsx`, `spend-grid.tsx`
 - Modify: `src/features/analytics/ui/views/analytics-view.tsx`
 
 **Interfaces:**
-- Consumes: `analyticsRouter.spend.grid`, `analyticsRouter.spend.set`, `leadSourcesRouter.update({ id, spendMode })`; `parseDollarsToCents`, `formatCentsForInput`, `formatMonthLabel`; `MissingSpend`.
-- Produces: `<SpendGrid months missing />`.
+- Consumes: `leadSourcesRouter.spend.grid` / `.spend.set` (Task 1), `leadSourcesRouter.update({ id, spendMode })`; `spendGridRows`, `parseDollarsToCents`, `formatCentsForInput`, `formatMonthLabel` (Task 7a); the report's `spendGridMonths` and `spendMissing` (Task 4).
+- Produces: `useLeadSourceActions().setSpend`; `invalidateLeadSource()` also refreshes the analytics report; `<SpendGrid months missing />`.
 
-- [ ] **Step 1: The cell**
+Lead-source mutations go through the entity's own hook (`useLeadSourceActions`), which refreshes through the central `useInvalidation`; the grid never builds its own `useMutation` or invalidates ad hoc.
 
-Create `src/features/analytics/ui/components/spend-cell.tsx`:
+- [ ] **Step 1: Lead-source changes refresh the analytics report**
+
+In `src/shared/dal/client/hooks/use-invalidation.ts`, change `invalidateLeadSource` to:
+
+```ts
+  function invalidateLeadSource() {
+    void qc.invalidateQueries(trpc.leadSourcesRouter.pathFilter())
+    // Spend and spend modes feed every cost on the analytics report; its filter options (the whole fact set) do not depend on them.
+    void qc.invalidateQueries(trpc.analyticsRouter.report.queryFilter())
+  }
+```
+
+- [ ] **Step 2: The entity's spend mutation**
+
+In `src/shared/entities/lead-sources/hooks/use-lead-source-actions.ts`, add after `deleteLeadSource`:
+
+```ts
+  // Cells save on blur, so a success toast per cell would be noise; only failures speak up.
+  const setSpend = useMutation(
+    trpc.leadSourcesRouter.spend.set.mutationOptions({
+      onSuccess: () => invalidateLeadSource(),
+      onError: err => toast.error(err.message || 'Failed to save spend'),
+    }),
+  )
+```
+
+and add `setSpend,` to the returned object.
+
+- [ ] **Step 3: The cell**
+
+Create `src/features/analytics/ui/components/spend/spend-cell.tsx`. It holds only its draft text: the grid owns the mutation and tells the cell when a save settles.
 
 ```tsx
 'use client'
 
-import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { formatMonthLabel } from '@/features/analytics/lib/format-analytics'
 import { formatCentsForInput, parseDollarsToCents } from '@/features/analytics/lib/parse-dollars'
 import { Input } from '@/shared/components/ui/input'
 import { cn } from '@/shared/lib/utils'
-import { useTRPC } from '@/trpc/helpers'
 
 interface Props {
-  leadSourceId: string
   sourceName: string
   month: string
   amountCents: number | null
   missing: boolean
-  onSaved: () => void
+  onSave: (amountCents: number | null, done: () => void) => void
 }
 
-export function SpendCell({ leadSourceId, sourceName, month, amountCents, missing, onSaved }: Props) {
-  const trpc = useTRPC()
+export function SpendCell({ sourceName, month, amountCents, missing, onSave }: Props) {
   const [text, setText] = useState(amountCents === null ? '' : formatCentsForInput(amountCents))
   const [invalid, setInvalid] = useState(false)
-  const save = useMutation(trpc.analyticsRouter.spend.set.mutationOptions({
-    onSuccess: onSaved,
-    onError: error => toast.error(error.message),
-  }))
+  const [saving, setSaving] = useState(false)
   const onBlur = () => {
     const parsed = parseDollarsToCents(text)
     if (parsed === 'invalid') {
@@ -3060,7 +3380,8 @@ export function SpendCell({ leadSourceId, sourceName, month, amountCents, missin
     }
     setInvalid(false)
     if (parsed !== amountCents) {
-      save.mutate({ leadSourceId, month, amountCents: parsed })
+      setSaving(true)
+      onSave(parsed, () => setSaving(false))
     }
   }
   return (
@@ -3071,7 +3392,7 @@ export function SpendCell({ leadSourceId, sourceName, month, amountCents, missin
       inputMode="decimal"
       placeholder="—"
       value={text}
-      disabled={save.isPending}
+      disabled={saving}
       onChange={e => setText(e.target.value)}
       onBlur={onBlur}
       className={cn('h-8 w-24 text-right tabular-nums', missing && text === '' && 'border-warning bg-warning/10')}
@@ -3080,26 +3401,27 @@ export function SpendCell({ leadSourceId, sourceName, month, amountCents, missin
 }
 ```
 
-- [ ] **Step 2: The grid**
+- [ ] **Step 4: The grid**
 
-Create `src/features/analytics/ui/components/spend-grid.tsx`:
+Create `src/features/analytics/ui/components/spend/spend-grid.tsx`:
 
 ```tsx
 'use client'
 
 import type { MissingSpend } from '@/features/analytics/lib/analytics-rules'
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { MoreHorizontalIcon } from 'lucide-react'
-import { toast } from 'sonner'
 
 import { formatMonthLabel } from '@/features/analytics/lib/format-analytics'
+import { spendGridRows } from '@/features/analytics/lib/spend-grid-rows'
 import { ReportSkeleton } from '@/features/analytics/ui/components/report-skeleton'
-import { SpendCell } from '@/features/analytics/ui/components/spend-cell'
+import { SpendCell } from '@/features/analytics/ui/components/spend/spend-cell'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { Button } from '@/shared/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shared/components/ui/dropdown-menu'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
+import { useLeadSourceActions } from '@/shared/entities/lead-sources/hooks/use-lead-source-actions'
 import { useTRPC } from '@/trpc/helpers'
 
 interface Props {
@@ -3109,14 +3431,8 @@ interface Props {
 
 export function SpendGrid({ months, missing }: Props) {
   const trpc = useTRPC()
-  const queryClient = useQueryClient()
-  const grid = useQuery({ ...trpc.analyticsRouter.spend.grid.queryOptions({ months: months ?? [] }), enabled: !!months?.length })
-  // Spend feeds every cost and the missing-spend warnings, so the whole analytics cache refreshes.
-  const invalidate = () => void queryClient.invalidateQueries(trpc.analyticsRouter.pathFilter())
-  const setMode = useMutation(trpc.leadSourcesRouter.update.mutationOptions({
-    onSuccess: invalidate,
-    onError: error => toast.error(error.message),
-  }))
+  const grid = useQuery({ ...trpc.leadSourcesRouter.spend.grid.queryOptions({ months: months ?? [] }), enabled: !!months?.length })
+  const { setSpend, updateLeadSource } = useLeadSourceActions()
 
   if (!months?.length || grid.isPending) {
     return <ReportSkeleton />
@@ -3131,8 +3447,7 @@ export function SpendGrid({ months, missing }: Props) {
 
   const missingKeys = new Set(missing.map(m => `${m.leadSourceId}|${m.month}`))
   const amounts = new Map(grid.data.entries.map(e => [`${e.leadSourceId}|${e.month}`, e.amountCents]))
-  const manual = grid.data.sources.filter(s => s.spendMode === 'manual' && !s.archived)
-  const free = grid.data.sources.filter(s => s.spendMode === 'none' && !s.archived)
+  const { tracked, free } = spendGridRows(grid.data.sources, grid.data.entries, missing)
 
   return (
     <section aria-labelledby="spend" className="flex flex-col gap-4">
@@ -3150,9 +3465,12 @@ export function SpendGrid({ months, missing }: Props) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {manual.map(source => (
+            {tracked.map(source => (
               <TableRow key={source.id}>
-                <TableCell className="sticky left-0 z-10 max-w-48 truncate bg-background font-medium">{source.name}</TableCell>
+                <TableCell className="sticky left-0 z-10 max-w-48 truncate bg-background font-medium">
+                  {source.name}
+                  {source.archived && <span className="font-normal text-muted-foreground"> (archived)</span>}
+                </TableCell>
                 {months.map((month) => {
                   const key = `${source.id}|${month}`
                   const amount = amounts.get(key) ?? null
@@ -3161,12 +3479,11 @@ export function SpendGrid({ months, missing }: Props) {
                       {/* Keyed on the saved amount so a refetch resets the field to what the server holds. */}
                       <SpendCell
                         key={`${key}|${amount ?? ''}`}
-                        leadSourceId={source.id}
                         sourceName={source.name}
                         month={month}
                         amountCents={amount}
                         missing={missingKeys.has(key)}
-                        onSaved={invalidate}
+                        onSave={(amountCents, done) => setSpend.mutate({ leadSourceId: source.id, month, amountCents }, { onSettled: done })}
                       />
                     </TableCell>
                   )
@@ -3179,7 +3496,7 @@ export function SpendGrid({ months, missing }: Props) {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onSelect={() => setMode.mutate({ id: source.id, spendMode: 'none' })}>Mark as free (no spend)</DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => updateLeadSource.mutate({ id: source.id, spendMode: 'none' })}>Mark as free (no spend)</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -3197,7 +3514,7 @@ export function SpendGrid({ months, missing }: Props) {
           <ul className="flex flex-wrap gap-2">
             {free.map(source => (
               <li key={source.id}>
-                <Button variant="outline" size="sm" onClick={() => setMode.mutate({ id: source.id, spendMode: 'manual' })}>
+                <Button variant="outline" size="sm" onClick={() => updateLeadSource.mutate({ id: source.id, spendMode: 'manual' })}>
                   {source.name}
                   <span className="text-muted-foreground"> · Track spend</span>
                 </Button>
@@ -3211,29 +3528,29 @@ export function SpendGrid({ months, missing }: Props) {
 }
 ```
 
-- [ ] **Step 3: Wire it into the view**
+- [ ] **Step 5: Wire it into the view**
 
-In `src/features/analytics/ui/views/analytics-view.tsx`, add `import { SpendGrid } from '@/features/analytics/ui/components/spend-grid'` and replace
+In `src/features/analytics/ui/views/analytics-view.tsx`, add `import { SpendGrid } from '@/features/analytics/ui/components/spend/spend-grid'` and replace
 
 ```tsx
-      {urlState.tab === 'spend' && <p className="text-sm text-muted-foreground">Spend entry arrives in the next task.</p>}
+          <p className="text-sm text-muted-foreground">Spend entry arrives in Task 9.</p>
 ```
 
 with
 
 ```tsx
-      {urlState.tab === 'spend' && <SpendGrid months={report.data?.trend.map(t => t.month)} missing={report.data?.spendMissing ?? []} />}
+          <SpendGrid months={report.data?.spendGridMonths} missing={report.data?.spendMissing ?? []} />
 ```
 
-- [ ] **Step 4: Gates**
+- [ ] **Step 6: Gates**
 
-Run: `pnpm exec eslint --fix src/features/analytics && pnpm tsc && pnpm lint && pnpm tsx scripts/verify-analytics-rules.ts`
+Run: `pnpm exec eslint --fix src/features/analytics src/shared/dal/client/hooks/use-invalidation.ts src/shared/entities/lead-sources/hooks/use-lead-source-actions.ts && pnpm tsc && pnpm lint && pnpm tsx scripts/verify-analytics-rules.ts`
 Expected: clean.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add src/features/analytics/ui/components/spend-cell.tsx src/features/analytics/ui/components/spend-grid.tsx src/features/analytics/ui/views/analytics-view.tsx
+git add src/shared/dal/client/hooks/use-invalidation.ts src/shared/entities/lead-sources/hooks/use-lead-source-actions.ts src/features/analytics/ui/components/spend/spend-cell.tsx src/features/analytics/ui/components/spend/spend-grid.tsx src/features/analytics/ui/views/analytics-view.tsx
 git commit -m "$(cat <<'EOF'
 feat(analytics): spend grid — monthly spend per source, saves on blur, free-source toggle
 
@@ -3242,9 +3559,9 @@ EOF
 )"
 ```
 
-- [ ] **Step 6: Look at it (read-only — do not type into cells)**
+- [ ] **Step 8: Look at it (read-only — do not type into cells)**
 
-Open the Spend tab: manual sources × 12 months, blank cells highlighted where that source had leads, the Spend tab's warning dot, the row menu, free sources below. **Do not type a value or change a mode** (no test writes). The owner checks saving by hand (Task 10).
+Open the Spend tab: paid sources × the report's grid months, blank cells highlighted where that source had leads, the Spend tab's warning dot, the row menu, free sources below, and an archived paid source listed "(archived)" only while it owes spend. **Do not type a value or change a mode** (no test writes). The owner checks saving by hand (Task 10).
 
 ---
 
@@ -3274,7 +3591,7 @@ In `CONTEXT.md`, in the analytics terms table (the one with **Business month**, 
 | **Spend** | Dollars a lead source cost in one business month, typed in on the Analytics Spend tab; a blank month is "not entered", never $0 | `leadSourceMonthlySpendTable` · `src/shared/db/schema/lead-source-monthly-spend.ts` |
 | **Spend mode** | `manual` (spend is typed in) or `none` (a free source, never "missing") | `leadSourceSpendModes` · `src/shared/constants/enums/lead-sources.ts` |
 | **Spend missing** | A manual source brought a lead in a month with no spend entered, so every cost over that month is unknown | `findMissingSpend` · `src/features/analytics/lib/analytics-rules.ts` |
-| **Cost per stage** | Spend ÷ leads, booked leads, sits or new sales; revenue ÷ spend is "revenue per $1". Only for totals, sources or months filtered by source alone | `ANALYTICS_COSTS`, `notApplicableReasons` · `src/features/analytics/lib/analytics-rules.ts` |
+| **Cost per stage** | Spend ÷ leads, booked leads, sits or new sales; revenue ÷ spend is "revenue per $1". Only for totals, sources or months filtered by source alone, and never over leads with no source | `ANALYTICS_COSTS`, `notApplicableReasons` · `src/features/analytics/lib/analytics-rules.ts` |
 | **Merged duplicates** | Extra customer records folded into one person's lead | `mergedRecordCount` · `src/features/analytics/lib/analytics-rules.ts` |
 ```
 
@@ -3282,7 +3599,7 @@ If the table's columns differ from this three-column shape, match the table's ow
 
 - [ ] **Step 3: Read-only sanity run against prod (throwaway, not committed)**
 
-Only if the owner has already pushed the schema to prod; otherwise skip this step and say so in your report (the report's `listLeadSources` reads `spend_mode`). Recreate Task 5 Step 6's smoke file as `scripts/zz-analytics-report-smoke.ts`, run `DRIZZLE_TARGET=prod pnpm tsx scripts/zz-analytics-report-smoke.ts` (it is `SELECT`-only), and compare by hand with the tracker's §7 tally: all-time hygiene counts ≈ §7's H1–H4, `ytd` leads plausible against ≈ 767 customers. Paste the printed numbers into §7's "Last read" note. Any mismatch beyond duplicate-merging: stop and report it; never adjust a rule to fit. Then `rm scripts/zz-analytics-report-smoke.ts`.
+Only if the owner has already pushed the schema to prod; otherwise skip this step and say so in your report (the report's `listLeadSources` reads `spend_mode`). Recreate Task 5 Step 5's smoke file as `scripts/zz-analytics-report-smoke.ts`, run `DRIZZLE_TARGET=prod pnpm tsx scripts/zz-analytics-report-smoke.ts` (it is `SELECT`-only), and compare by hand with the tracker's §7 tally: all-time hygiene counts ≈ §7's H1–H4, `ytd` leads plausible against ≈ 767 customers. Paste the printed numbers into §7's "Last read" note. Any mismatch beyond duplicate-merging: stop and report it; never adjust a rule to fit. Then `rm scripts/zz-analytics-report-smoke.ts`.
 
 - [ ] **Step 4: Browser pass (read-only)**
 
@@ -3313,4 +3630,11 @@ EOF
 
 1. `pnpm db:push:prod` must land **before** these commits reach origin/main (the Lead Sources page selects `spend_mode`).
 2. Hand-check the spend grid on dev: type a value, tab away, reload; clear it, tab away, reload (blank again); mark a source free and back.
-3. Next: the thorough `/impeccable` pass on the page, then the end-of-epic F10 cleanup spec.
+3. Spend is not backfilled: every paid source shows "Spend missing" until the owner enters it, planned for a later session. Free sources (referrals, walk-ins) can be marked free from the grid's row menu at the same time.
+4. Next: the thorough `/impeccable` pass on the page, then the end-of-epic F10 cleanup spec.
+5. Stale convention docs found while planning (the code disagrees; each needs a separate doc fix, never a code change to match):
+   - `docs/codebase-conventions/dal-conventions.md:19-21` says features never hold a `dal/`, but `src/features/analytics/dal/server/` (Spec A, and now F) does; `:44-50` says ctx is always the first argument, but `src/shared/entities/lead-sources/dal/server/queries.ts` takes none.
+   - `docs/codebase-conventions/enum-standardization.md:11` points to `src/shared/domains/construction/constants/enums.ts`, which moved to `src/shared/modules/construction/core/constants/enums.ts`; `:94` bans option arrays in features, but `CALCULATOR_TABS` / `CAMPAIGN_TABS` (and now the analytics tuples) live there.
+   - `docs/codebase-conventions/frontend-stack.md:17` says components never call tRPC; 42 feature components do.
+   - `docs/codebase-conventions/trpc-procedures.md:64,68` cites a `notion.router/` directory that does not exist (today's example is `construction.router/`).
+   - `docs/codebase-conventions/database-schema.md:65` says schema imports always go through the barrel; most imports are direct.

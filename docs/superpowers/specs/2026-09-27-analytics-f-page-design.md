@@ -1,6 +1,6 @@
 # Spec F — Analytics page v1 (with lead-source spend)
 
-**Status:** owner-approved 2026-09-27 (selectable headline figures confirmed). Amended at planning to match the code: `spend_mode` is a `text` enum column (Closed Vocabulary Standard), the spend mode is set through the existing `leadSourcesRouter.update`, the report input has no `tab`, and "not applicable" reasons are reported separately for the headline and the breakdown.
+**Status:** owner-approved 2026-09-27 (selectable headline figures confirmed). Amended at planning to match the code: `spend_mode` is a `text` enum column (Closed Vocabulary Standard), the spend mode is set through the existing `leadSourcesRouter.update`, the report input has no `tab`, and "not applicable" reasons are reported separately for the headline and the breakdown. Amended at plan review (2026-09-27, owner): spend procedures and mutations belong to the lead-source entity (`leadSourcesRouter.spend`); the Overview breakdown shows cost at every stage; leads with no source never carry a cost; the Spend grid keeps a row or column for anything still owed; spend is not backfilled in this work.
 **Tracker:** `docs/plans/2026-09-26-analytics-epic.md` (rules are cited by ID there, never restated here).
 **Owns:** F1–F9, F11, F12 and, folded in by C46, E1–E3. **F10 is not in this spec** (C46): the old lead-sources analytics stays until a cleanup spec at the end of the epic.
 **Builds on:** Spec A's rule layer (`src/features/analytics/lib/`, `dal/server/load-analytics-facts.ts`), shipped d9347269..c5a82908.
@@ -31,7 +31,7 @@ page.tsx (server; super-admin guard; prefetch)
        └─ trpc.analyticsRouter.report(input)                      superAdminProcedure
             └─ getAnalyticsReport(input, now)                     features/analytics/dal/server
                  ├─ loadAnalyticsFacts()                          Spec A
-                 ├─ listLeadSourceSpend(monthKeys)                entities/lead-sources/dal/server
+                 ├─ listLeadSources() + listLeadSourceSpend(monthKeys)   entities/lead-sources/dal/server
                  └─ buildAnalyticsReport(facts, spend, input, now)  features/analytics/lib (pure)
                       ├─ buildLeadRecords(facts, now)             Spec A
                       ├─ aggregateLeadRecords(...)  × headline, breakdown, 12-month trend
@@ -52,6 +52,7 @@ page.tsx (server; super-admin guard; prefetch)
 | Free sources | `spendMode = 'none'` | Spend is always 0 and never missing. |
 | Cost per stage | `ANALYTICS_COSTS` | spend ÷ leads, ÷ booked leads, ÷ sits, ÷ new sales; revenue (new + upsell) ÷ spend. Any zero denominator ⇒ `null`. |
 | Cost applicability | `notApplicableReasons(filters, groupBy)`, built on `inapplicableStages` | Cost is not applicable unless the grouping is `total`, `leadSource` or `month` and the only person/event filter is lead source. Otherwise "not applicable" with a reason. |
+| Unknown source has no cost | `notApplicableReasons`, `sourceRowCostReason` | A source filter that includes "Unknown source", and the unknown-source row of a source breakdown, are "not applicable": those leads carry no spend, so cost would read $0 or be diluted. |
 
 The aggregator stays free of inline rule logic (C38). Rates keep Σ÷Σ (C36).
 
@@ -59,22 +60,26 @@ The aggregator stays free of inline rule logic (C38). Rates keep Σ÷Σ (C36).
 
 - **Table `lead_source_monthly_spend`:** `id`, `leadSourceId` (FK → `lead_sources.id`, cascade on delete), `month` (`'YYYY-MM'`, a Pacific business month), `amountCents` (integer ≥ 0), `createdAt`, `updatedAt`. Unique `(leadSourceId, month)`. A child table, not JSONB (ADR-0005).
 - **Column `lead_sources.spend_mode`:** `text('spend_mode', { enum: leadSourceSpendModes })`, values `manual | none`, default `manual`. The values live in `src/shared/constants/enums/lead-sources.ts`; no pgEnum (Closed Vocabulary Standard, `docs/codebase-conventions/enum-standardization.md#text-with-enum`).
-- **DAL** in `src/shared/entities/lead-sources/dal/server/spend.ts`: list spend for a set of months; set one cell (upsert, or delete when cleared: a cleared cell = not entered). `dalDbOperation` shape. The spend mode is written through the entity's existing CRUD update (`leadSourcesRouter.update` gains an optional `spendMode`).
+- **Money column:** `amount_cents` is `bigint` cents (`mode: 'number'`) like every other money column, with CHECKs for `>= 0` and the `YYYY-MM` month shape.
+- **DAL** in `src/shared/entities/lead-sources/dal/server/spend.ts`: list spend for a set of months; set one cell (upsert, or delete when cleared: a cleared cell = not entered), which first reads the parent source under the caller's scope. `dalDbOperation` shape. The spend mode is written through the entity's existing CRUD update (`leadSourcesRouter.update` gains an optional `spendMode`).
+- **Procedures and client mutations are the entity's:** `leadSourcesRouter.spend.grid` / `.spend.set` (a sub-router, like `proposalsRouter.incentives`), and `useLeadSourceActions().setSpend`. Every lead-source change also refreshes the analytics report through `useInvalidation().invalidateLeadSource`.
 - **Schema push:** owner runs `pnpm db:push:dev`, then prod only when asked. **The prod push must land before this code deploys:** the lead-sources queries select every column, so code that knows `spend_mode` breaks the Lead Sources page on a database that lacks it.
 
-## 6. API (`src/trpc/routers/analytics.router.ts`, registered in `app.ts`; every procedure `superAdminProcedure`)
+## 6. API (`src/trpc/routers/analytics.router.ts`, registered in `app.ts`; every procedure `superAdminProcedure`; spend procedures are on `leadSourcesRouter`, §5)
 
 - `report({ period, from?, to?, filters, groupBy })` returns (the tab only picks what to show, so it stays client-side):
   - `headline`: the total row plus costs;
   - `breakdown`: rows plus costs;
   - `trend`: 12 monthly total rows ending with the period's last month;
   - `notApplicable`: `{ headline, breakdown }`, each naming the not-applicable stages and cost with a reason (grouping by closer makes the breakdown's leads and cost n/a but not the headline's);
-  - `spendMissing`: the source-months that are missing;
+  - `generatedAt`: the instant the report was built; time-dependent links on the page derive from it, so server and browser render the same markup;
+  - `spendMissing`: the source-months that are missing, over the period and the trend window;
+  - `spendGridMonths`: the Spend grid's columns, the trend's twelve months plus any older month still owed spend;
   - `undatedSales`, `orphans`;
   - `hygiene`: meetings with no outcome, undated sales, new sales without a project, leads with unknown city or zip.
 - **Periods:** `this-month | last-month | this-quarter | last-quarter | ytd | last-12 | custom{from,to}`, resolved in Pacific time with `business-time.ts` (C7). "This month" is the full calendar month; its data naturally stops today.
 - `filterOptions()` — every lead source (archived included, so old rows keep their names) plus the known cities and zips from the lead records. Closer names come from `meetingsRouter.reads.getInternalUsers`.
-- `spend.grid({ months })` (sources with their spend mode + entries), `spend.set({ leadSourceId, month, amountCents | null })` — call the entity DAL. Spend mode: `leadSourcesRouter.update({ id, spendMode })`.
+- Spend: `leadSourcesRouter.spend.grid({ months })` (sources with their spend mode + entries), `leadSourcesRouter.spend.set({ leadSourceId, month, amountCents | null })`. Spend mode: `leadSourcesRouter.update({ id, spendMode })`.
 
 ## 7. Page (layout = warm-up A + C's bar chart and Data to fix)
 
@@ -104,14 +109,14 @@ The aggregator stays free of inline rule logic (C38). Rates keep Σ÷Σ (C36).
 
 | Tab | Headline figures | Default focus | Group by | Data to fix |
 |---|---|---|---|---|
-| Overview | Leads, booked leads, sits, new sales, revenue, spend (+ booking / sit / close rates, cost per sale) | Sits | source, month, closer, city, zip | all four counts |
+| Overview | Leads, booked leads, sits, new sales, revenue, spend (+ booking / sit / close rates, cost per sale). The breakdown adds cost per lead, per booked lead, per sit and revenue per $1 | Sits | source, month, closer, city, zip | all four counts |
 | Leads | Total leads, merged duplicates, cost per lead; valid leads and junk rate "not available yet" | Leads | source, city, zip, month | unknown city / zip |
 | Appointments | Booked leads, sits, sit rate, meetings, meetings with no outcome; setter "not available yet" | Sits | closer, outcome, meeting order, source | meetings with no outcome |
 | Sales | New sales, total closes, revenue (new vs upsell), average ticket, close rate; cancelled / net "not available yet" | New sales | closer, source, month | undated sales, sales without a project |
 | Projects | Placeholder (C25) | — | — | — |
 
 - **Spend view (F9):**
-  - A grid of `manual` sources × the 12 months ending with the selected period.
+  - A grid of `manual` sources × the 12 months ending with the selected period, plus any older month still owed spend. An archived paid source keeps its row while it owes spend or has spend entered in those months.
   - Each cell is a dollar input that saves on blur. A blank cell is "not entered"; clearing a cell deletes its row.
   - Missing cells are marked in the warning color.
   - A row menu sets a source's spend mode. Free sources are listed below the grid.
@@ -153,3 +158,4 @@ The aggregator stays free of inline rule logic (C38). Rates keep Σ÷Σ (C36).
 - **Pages:** Playwright on the dev server as the synthetic super-admin. Every tab renders at 1440 and 390, in light and dark; the closer filter shows "n/a"; the missing-spend chip opens the grid.
 - **Real data:** a read-only prod run of `report` (`DRIZZLE_TARGET=prod`), checked against the tracker's §7 tally.
 - **Spend grid saving:** checked by the owner by hand. No test writes to the database.
+- **Spend backfill:** not part of this work; the owner enters past spend in a later session, and until then paid sources show "Spend missing".
