@@ -1,6 +1,6 @@
 # Sales Calculators C0: port design
 
-> **Status:** brainstormed with the owner section by section on 2026-09-25 and 26 (all parts approved). Written 2026-09-26. **Awaiting owner review of this document**; the implementation plan follows that review.
+> **Status:** brainstormed with the owner section by section on 2026-09-25 and 26 (all parts approved). Written 2026-09-26. **Owner-approved 2026-09-26, including "Pricing Key".** Implementation plan: `docs/superpowers/plans/2026-09-26-sales-calculators-c0-port.md`.
 > **Epic tracker (requirements, decisions, metrics, interim register):** `docs/plans/2026-09-26-sales-calculators-epic.md`. This spec cites the tracker's stable IDs (R*, D*, O*, SP-*, PR*, UI*, V*, CF*, I*, B-*) and does not restate them.
 > **Source:** the remodel-x app in `/home/olis-solutions/olis-v3/monorepo/turborepos-repos/olissolutions.com` (tracker §7 and §8).
 
@@ -35,7 +35,7 @@ Porting is the deliverable (R8). Remodel-x's formulas and Unit Costs carry over 
 
 **Savings Projection**, **Scope Pricing**, **Formula**, **Unit Cost** and **Pricing Key** are the one name each concept has in UI copy, code, docs and conversation. "Snapshot" is not used (it is a reserved term). Existing terms are reused as they are: Scope, Trade, Variable, Cost, Price, Multiplier, TCP. The four configuration tiers are **On-screen**, **Agent-only**, **Admin-configured** and **System default** (R9).
 
-**Pricing Key** names the remodel-x accessor that keys a Formula in C0 (I2). It is proposed here and needs the owner's sign-off.
+**Pricing Key** names the remodel-x accessor that keys a Formula in C0 (I2). Signed off with the spec on 2026-09-26.
 
 ## 3. Layout: two sub-features
 
