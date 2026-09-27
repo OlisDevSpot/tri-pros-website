@@ -8,6 +8,7 @@ import { diffIds } from '@/features/meeting-flow/lib/trade-selection'
 import { Button } from '@/shared/components/ui/button'
 import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-group'
 import { meetingPainTypes } from '@/shared/constants/enums'
+import { TRADE_SELECTION_COPY } from '@/shared/entities/meetings/constants/trade-selection-copy'
 
 interface ReasonPickerProps {
   tradeId: string
@@ -37,7 +38,7 @@ export function ReasonPicker({ tradeId, reasons }: ReasonPickerProps) {
         </Button>
       </div>
       {visible.length === 0
-        ? <p className="text-[13px] text-muted-foreground">{SPECIALTIES_COPY.panel.noReason}</p>
+        ? <p className="text-[13px] text-muted-foreground">{TRADE_SELECTION_COPY.noReason}</p>
         : (
             <ToggleGroup aria-labelledby={labelId} className="flex w-full flex-wrap gap-2" type="multiple" value={reasons} onValueChange={handleValueChange}>
               {visible.map(reason => (

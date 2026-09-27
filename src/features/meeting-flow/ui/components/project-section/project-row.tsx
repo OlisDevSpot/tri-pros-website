@@ -8,7 +8,6 @@ import { TRADE_PAIRINGS } from '@/features/meeting-flow/constants/trade-pairings
 import { useTradeCatalogContext } from '@/features/meeting-flow/contexts/trade-catalog-context'
 import { useTradeStage } from '@/features/meeting-flow/contexts/trade-stage-context'
 import { useTradeEdits } from '@/features/meeting-flow/hooks/use-trade-edits'
-import { formatWorkSummary } from '@/features/meeting-flow/lib/format-work-summary'
 import { orphanItems } from '@/features/meeting-flow/lib/trade-selection'
 import { OrphanItemChips } from '@/features/meeting-flow/ui/components/project-section/orphan-item-chips'
 import { ReasonPicker } from '@/features/meeting-flow/ui/components/project-section/reason-picker'
@@ -18,6 +17,7 @@ import { TradeThumb } from '@/features/meeting-flow/ui/components/trade-thumb'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { AnimatedCollapsibleContent, Collapsible, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
+import { TradeSelectionSummary } from '@/shared/entities/meetings/components/trade-selection-summary'
 import { cn } from '@/shared/lib/utils'
 
 interface ProjectRowProps {
@@ -57,21 +57,23 @@ function ProjectRowImpl({ entry, expanded, onStage, pairedOnProject, onExpandedC
     <Collapsible className={cn('rounded-md border bg-card', onStage && 'border-primary/50')} open={expanded} onOpenChange={open => onExpandedChange(entry.tradeId, open)}>
       <CollapsibleTrigger asChild>
         <Button className="h-auto w-full justify-start gap-3 rounded-md px-3 py-2.5 text-left font-normal whitespace-normal hover:bg-muted/60" data-project-row-trigger data-trade-id={entry.tradeId} variant="ghost">
-          <TradeThumb className="size-11" trade={trade} />
-          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="flex flex-wrap items-center gap-2 text-[15px] font-semibold">
-              {tradeName}
-              {onStage && (
-                <Badge className="gap-1" variant="secondary">
-                  <EyeIcon aria-hidden className="size-3" />
-                  {SPECIALTIES_COPY.panel.onStage}
-                </Badge>
-              )}
-              {!trade && <Badge variant="outline">{SPECIALTIES_COPY.panel.notInCatalog}</Badge>}
-            </span>
-            <span className="text-[13px]">{formatWorkSummary(entry)}</span>
-            <span className="truncate text-[13px] text-muted-foreground">{entry.painPoints.length > 0 ? entry.painPoints.join(' · ') : SPECIALTIES_COPY.panel.noReason}</span>
-          </span>
+          <TradeSelectionSummary
+            entry={entry}
+            work="summary"
+            name={tradeName}
+            thumb={<TradeThumb className="size-11" trade={trade} />}
+            badges={(
+              <>
+                {onStage && (
+                  <Badge className="gap-1" variant="secondary">
+                    <EyeIcon aria-hidden className="size-3" />
+                    {SPECIALTIES_COPY.panel.onStage}
+                  </Badge>
+                )}
+                {!trade && <Badge variant="outline">{SPECIALTIES_COPY.panel.notInCatalog}</Badge>}
+              </>
+            )}
+          />
           <ChevronDownIcon aria-hidden className={cn('size-4 shrink-0 text-muted-foreground motion-safe:transition-transform', expanded && 'rotate-180')} />
         </Button>
       </CollapsibleTrigger>

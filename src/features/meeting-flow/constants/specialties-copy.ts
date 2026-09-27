@@ -29,9 +29,6 @@ export const SPECIALTIES_COPY = {
   panel: {
     heading: 'On the project',
     empty: 'Nothing on the project yet. Add work from the stage.',
-    noReason: 'No reason yet',
-    noWork: 'No work yet',
-    workSummary: (first: string, more: number) => `${first} +${more}`,
     onStage: 'On stage',
     work: 'Work',
     addons: 'Add-ons',
