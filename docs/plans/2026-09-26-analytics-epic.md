@@ -1,6 +1,6 @@
 # Analytics (Business Health) — Epic Tracker
 
-> **Status:** 📐 **DESIGN.** Business-rules brainstorm **complete 2026-09-26** (C1–C27). **Split confirmed by the owner 2026-09-26 — this file is the master tracker for specs A–F.** Spec A **approved 2026-09-26** (C28–C43 added; revised after a code re-verification); plan written (`docs/superpowers/plans/2026-09-26-analytics-a-lead-rules.md`), owner review pending; nothing built.
+> **Status:** 📐 **DESIGN.** Business-rules brainstorm **complete 2026-09-26** (C1–C27). **Split confirmed by the owner 2026-09-26 — this file is the master tracker for specs A–F.** Spec A **shipped 2026-09-27** (C28–C43 added; revised after a code re-verification; plan `docs/superpowers/plans/2026-09-26-analytics-a-lead-rules.md`) — **Spec F unblocked.**
 > **Goal in one line:** one Analytics page that shows, per lead source and in total, what each source yields downstream — leads → appointments → seats → sales → projects — on deduplicated, noise-free numbers whose counting rules live in exactly one place.
 > **Baseline:** `main` at `e8c5d97a` (2026-09-26). Re-baseline at each spec.
 > **Evidence:** read-only code sweep 2026-09-24 (lead-sources dashboard, analytics engine, schema, intake, dedup) spot-checked by hand; `#285` worktree at `b40403b6` and issues #217 / #220 read 2026-09-26. Findings with file:line in §4, present-day defects in §5.
@@ -23,7 +23,7 @@ Legend: `[ ]` open · `[x]` done · `[~]` in progress · ⚠️ blocked on a §2
 
 | Spec | Scope | Owns | Blocked by | Spec file | Plan | Status |
 |---|---|---|---|---|---|---|
-| **A** | **Lead rules + person identity** — the one place every counting rule is defined; building blocks in the customers / meetings / proposals / projects modules, composed by the analytics feature; person identity (phone OR email, chained); glossary terms. No UI. | A1–A9 | — | `docs/superpowers/specs/2026-09-26-analytics-a-lead-rules-design.md` | `docs/superpowers/plans/2026-09-26-analytics-a-lead-rules.md` | [~] plan review |
+| **A** | **Lead rules + person identity** — the one place every counting rule is defined; building blocks in the customers / meetings / proposals / projects modules, composed by the analytics feature; person identity (phone OR email, chained); glossary terms. No UI. | A1–A9 | — | `docs/superpowers/specs/2026-09-26-analytics-a-lead-rules-design.md` | `docs/superpowers/plans/2026-09-26-analytics-a-lead-rules.md` | [x] shipped d9347269..e057fc8d (interleaved with other sessions' commits) |
 | **B** | **Sales money rules** — "Total Signed / Total Opened" standardized into modules; per-project (not per-customer) classification; dated cancellations; `on_hold` before `cancelled`; projects pipeline stat bar consumes the shared rule. | B1–B6 | — | not written | — | [ ] |
 | **C** | **Lead quality flags** — junk / test marking (super-admin + dispatcher), auto-internal, gross vs valid leads. | N1–N4 | permission rows from #285 (does not block the data half) | not written | — | [ ] |
 | **D** | **Setter = `meetings.createdBy`** — `ownerId` rethought as `createdBy` (super-admin editable); participants = assigned reps + visibility; setter backfill by date ranges. | D1–D5 | ⚠️ Q2 (#285 / #217 alignment) | not written | — | [ ] |
@@ -102,15 +102,15 @@ Legend: `[ ]` open · `[x]` done · `[~]` in progress · ⚠️ blocked on a §2
 
 ### A — Lead rules + person identity (no UI)
 
-- [ ] **A1** One definitions module per rule, consumed by analytics and any other screen that shows these numbers (C27): lead, appointment, seat, new sale, total closes, revenue, cancelled, net, junk / valid / test.
-- [ ] **A2** Person identity per C3: normalized phone OR email, chained; the person's lead date = the earliest record's `createdAt`; the person's source = the earliest record's source (C2, C14). Storage per Q4.
-- [ ] **A3** Every meeting / sale of any record in a cluster rolls up to the one person (no lead with zero appointments on one record and an appointment without a lead on another).
-- [ ] **A4** Seat classification per C4 as a named outcome set next to the existing sets in `src/shared/constants/enums/meetings.ts` (it is **not** `DID_NOT_OCCUR_OUTCOMES`, which would count `nra` as a sit).
-- [ ] **A5** Appointment per C8 and its month per C9.
-- [ ] **A6** Sale per C6, dated at signing; `kind` splits initial vs upsell (C11).
-- [ ] **A7** Event-month bucketing in **America/Los_Angeles**, never UTC (C7, C21).
-- [ ] **A8** Pure-portfolio projects (no meetings) never count (`hasAssociatedMeeting`, `src/shared/modules/projects/core/lib/visibility.ts:43`).
-- [ ] **A9** Glossary terms per Q1 in CONTEXT.md.
+- [x] **A1** One definitions module per rule, consumed by analytics and any other screen that shows these numbers (C27): lead, appointment, seat, new sale, total closes, revenue, cancelled, net, junk / valid / test. Cancelled / net are wired by B through `projectBankability`; junk / test by C through `LeadRecord.quality`.
+- [x] **A2** Person identity per C3: normalized phone OR email, chained; the person's lead date = the earliest record's `createdAt`; the person's source = the earliest record's source (C2, C14). Storage per Q4.
+- [x] **A3** Every meeting / sale of any record in a cluster rolls up to the one person (no lead with zero appointments on one record and an appointment without a lead on another).
+- [x] **A4** Seat classification per C4 as a named outcome set next to the existing sets in `src/shared/constants/enums/meetings.ts` (it is **not** `DID_NOT_OCCUR_OUTCOMES`, which would count `nra` as a sit).
+- [x] **A5** Appointment per C8 and its month per C9.
+- [x] **A6** Sale per C6, dated at signing; `kind` splits initial vs upsell (C11).
+- [x] **A7** Event-month bucketing in **America/Los_Angeles**, never UTC (C7, C21).
+- [x] **A8** Pure-portfolio projects (no meetings) never count (`hasAssociatedMeeting`, `src/shared/modules/projects/core/lib/visibility.ts:43`).
+- [x] **A9** Glossary terms per Q1 in CONTEXT.md.
 
 ### B — Sales money rules
 
@@ -219,7 +219,7 @@ Legend: `[ ]` open · `[x]` done · `[~]` in progress · ⚠️ blocked on a §2
 
 ## 7. Manual data hygiene tally (owner fixes by hand; code never writes these)
 
-Re-run the criteria read-only before each spec; update counts and date. Last read: **prod, 2026-09-26**.
+Re-run the criteria read-only before each spec; update counts and date. Last read: **prod, 2026-09-27**, via Spec A's loaders (`loadAnalyticsFacts` → `buildLeadRecords` → `aggregateLeadRecords`): `{ customers: 767, leads: 754, orphans: 0 }`; all-time `totalCloses: 39` (`newSales: 24` + upsells), `hygiene.unresolvedMeetings: 27`, `hygiene.newSalesWithoutProject: 0`, `hygiene.unknownCityZip: 31` (per-person after dedup, so lower than H3's raw per-customer 39 — expected); `undatedSales: 5` both all-time and for the current business month (2026-09). All figures match the hand tally within what dedup explains; no rule changed.
 
 | ID | Item | Count | Criteria | Why it matters |
 |---|---|---|---|---|

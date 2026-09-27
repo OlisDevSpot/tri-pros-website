@@ -39,6 +39,29 @@ A **shared canonical registry** of phone numbers that must NOT be contacted. TCP
 - **Step / Dimension** — one screen of a funnel flow. A `card-select` step is a **dimension** (layout, age, scope, timeline, …); its **options** are the tappable answers. A step's answer can **enrich** the lead (a self-describing label/value captured into `leadMetaJSON`).
 - **Marketing block** — a composable trust section on the funnel landing (reviews, portfolio, guarantee, process, faq, …), rendered via the `MarketingRegistry`.
 
+## Analytics terms
+
+Each business rule behind an analytics number is one named export; change the rule there, then run `pnpm tsx scripts/verify-analytics-rules.ts`. "Meeting" stays the row; "appointment" stays avoided.
+
+| Term | Rule | Defined in |
+|---|---|---|
+| **Lead** | One person, for life. Dated by, and credited to the source of, the person's earliest record | `pickLeadAnchor` · `src/features/analytics/lib/analytics-rules.ts` |
+| **Same person** | Same normalized phone OR email, matches chained | `groupDuplicatePeople` · `src/shared/entities/customers/lib/group-duplicate-people.ts` |
+| **Total leads / valid leads** | All leads / leads minus junk. Test leads are in neither | `aggregateLeadRecords` · `src/features/analytics/lib/aggregate-lead-records.ts` |
+| **Junk lead / test lead** | Lead quality flags (not built yet) | `LeadRecord.quality` |
+| **Sit** | The rep physically met the homeowner | `MEETING_OUTCOME_SIT`, `isSit` · `src/shared/constants/enums/meetings.ts` |
+| **Project meeting** | The stored `Project` meeting type: serves an existing project (visits, upsells). Every other meeting works a lead toward its sale | `isProjectMeeting` · `src/shared/constants/enums/meetings.ts` |
+| **Booked lead** | A lead with at least one non-project meeting, counted once; dated at the first sit, else the first non-project meeting | `pickBookedLead` · `src/features/analytics/lib/analytics-rules.ts` |
+| **Meeting order** | `first` = first sat non-project meeting · `repeat` = after it · `not_sat` = before it, or never sat · `project` = a project meeting | `deriveMeetingOrder` · `src/features/analytics/lib/analytics-rules.ts` |
+| **Unresolved meeting** | A past meeting with no outcome recorded (`not_set`) — unknown, never a sit, surfaced for fixing | `isUnresolvedMeeting` · `src/features/analytics/lib/analytics-rules.ts` |
+| **New sale / total closes / revenue** | An approved proposal, dated at `approvedAt` (no fallback); initial sale = new, additional work = upsell | `classifySale`, `SALE_STATUS` · `src/shared/modules/proposals/core/lib/sale.ts` |
+| **Rates** | Booking, sit and close rate over the same period; a total is Σ÷Σ | `ANALYTICS_RATES` · `src/features/analytics/lib/analytics-rules.ts` |
+| **Unknown city / zip** | Website-intake placeholders count as unknown | `UNKNOWN_PLACE_VALUES` · `src/features/analytics/lib/analytics-rules.ts` |
+| **Bankable** | A project's money is net, at risk (on hold) or cancelled | `projectBankability` · `src/shared/modules/projects/core/lib/bankability.ts` |
+| **Closer** | Any participant of the meeting; per-closer totals overlap by design | `MeetingFact.closerIds` · `src/shared/entities/meetings/dal/server/analytics-facts.ts` |
+| **Business month** | Calendar month in Pacific time, never UTC | `businessMonthKey`, `businessMonthWindow` · `src/shared/lib/business-time.ts` |
+| **Funnel** | The marketing funnels only (see Funnel terms) — the analytics chain is the lead chain | — |
+
 ## Presentation terms
 
 Meeting-flow step 1 (Who We Are) is a presentation, and Program will be too. Portfolio (step 3) shares the presentation layout and ground but shows one project at a time through its story phases, not slides. The engine is a shared primitive; each feature authors its own slides.
