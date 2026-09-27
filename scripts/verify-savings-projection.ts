@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 
 import { createSavingsProjectionDefaults } from '@/features/calculators/savings-projection-calculator/constants/form-defaults'
 import { RATE_KEYS } from '@/features/calculators/savings-projection-calculator/constants/rates'
+import { formatYears } from '@/features/calculators/savings-projection-calculator/lib/format-years'
 import { projectSavings } from '@/features/calculators/savings-projection-calculator/lib/project-savings'
 import { resolveSavingsProjectionConfig } from '@/features/calculators/savings-projection-calculator/lib/resolve-config'
 import { savingsProjectionConfigSchema } from '@/features/calculators/savings-projection-calculator/schemas/config'
@@ -206,5 +207,8 @@ for (const input of [createSavingsProjectionDefaults(config), scenario(financed)
     }
   }
 }
+
+assert.equal(formatYears(1), '1 year', 'singular')
+assert.equal(formatYears(5), '5 years', 'plural')
 
 console.log('✅ verify-savings-projection passed')
