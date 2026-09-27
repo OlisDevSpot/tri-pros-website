@@ -1,16 +1,16 @@
 import { z } from 'zod'
 
-const ratePercent = z.number().min(-20).max(50)
+export const ratePercentSchema = z.number().min(-20).max(50)
 
 export const savingsProjectionConfigSchema = z.object({
   defaultHorizonYears: z.number().int().min(1).max(30),
   defaultRatesPercent: z.object({
-    homeAppreciation: ratePercent,
-    electric: ratePercent,
-    gas: ratePercent,
-    water: ratePercent,
-    gardening: ratePercent,
-    misc: ratePercent,
+    homeAppreciation: ratePercentSchema,
+    electric: ratePercentSchema,
+    gas: ratePercentSchema,
+    water: ratePercentSchema,
+    gardening: ratePercentSchema,
+    misc: ratePercentSchema,
   }),
 })
 

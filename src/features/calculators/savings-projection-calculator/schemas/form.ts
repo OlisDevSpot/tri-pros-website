@@ -1,10 +1,11 @@
 import { z } from 'zod'
 
 import { UPLIFT_MODES } from '@/features/calculators/savings-projection-calculator/constants/uplift-modes'
+import { ratePercentSchema } from '@/features/calculators/savings-projection-calculator/schemas/config'
 
 const amount = z.number().min(0).nullable()
 const aprPercent = z.number().min(0).max(40).nullable()
-const ratePercent = z.number().min(-20).max(50).nullable()
+const ratePercent = ratePercentSchema.nullable()
 const bills = z.object({ electric: amount, gas: amount, water: amount, gardening: amount, misc: amount })
 
 export const savingsProjectionFormSchema = z.object({
