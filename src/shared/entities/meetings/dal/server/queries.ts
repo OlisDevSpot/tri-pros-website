@@ -158,7 +158,6 @@ export async function listMeetings(
             slug: leadSourcesTable.slug,
             isActive: leadSourcesTable.isActive,
           },
-          // json_agg because node-postgres returns enum arrays as an unparsed string.
           proposalStatuses: sql<ProposalStatus[]>`COALESCE((SELECT json_agg(p.status ORDER BY p.created_at) FROM proposals p WHERE p.meeting_id = ${meetings.id}), '[]'::json)`.as('proposal_statuses'),
         })
         .from(meetings)
