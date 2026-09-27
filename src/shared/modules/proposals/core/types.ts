@@ -10,5 +10,5 @@ export interface FundingSection extends z.infer<typeof fundingSectionSchema> {}
 /** Aggregated trade + scopes summary (computed from SOW data in queries). */
 export interface SowTradeScope {
   trade: string
-  scopes: string[]
+  scopes: { id: string, label: string }[]
 }

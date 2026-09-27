@@ -1,4 +1,5 @@
 import type { MeetingParticipantRole } from '@/shared/constants/enums'
+import type { ProposalStatus } from '@/shared/constants/enums/proposals'
 import type { PaginatedResult } from '@/shared/dal/server/lib/query/output'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { Meeting } from '@/shared/db/schema/meetings'
@@ -18,6 +19,7 @@ import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { customerProfiles } from '@/shared/db/schema/customer-profiles'
 import { customers } from '@/shared/db/schema/customers'
+import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { meetings } from '@/shared/db/schema/meetings'
 import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { profileCols } from '@/shared/entities/customers/lib/profile-select'
@@ -52,6 +54,9 @@ export type MeetingListRow = Meeting & {
   proposalCount: number
   hasSentProposal: boolean
   hasApprovedProposal: boolean
+  leadSource: { id: string, name: string, slug: string, isActive: boolean } | null
+  /** One entry per proposal, oldest first. */
+  proposalStatuses: ProposalStatus[]
   participants: MeetingListParticipant[]
   owner: MeetingListOwnerSlot | null
   coOwner: MeetingListOwnerSlot | null
@@ -146,10 +151,20 @@ export async function listMeetings(
           proposalCount: sql<number>`(SELECT count(*) FROM proposals p WHERE p.meeting_id = ${meetings.id})`.as('proposal_count'),
           hasSentProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'sent')`.as('has_sent_proposal'),
           hasApprovedProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'approved')`.as('has_approved_proposal'),
+          // Agents can't call leadSourcesRouter (super-admin only), so the row carries the name.
+          leadSource: {
+            id: leadSourcesTable.id,
+            name: leadSourcesTable.name,
+            slug: leadSourcesTable.slug,
+            isActive: leadSourcesTable.isActive,
+          },
+          // json_agg because node-postgres returns enum arrays as an unparsed string.
+          proposalStatuses: sql<ProposalStatus[]>`COALESCE((SELECT json_agg(p.status ORDER BY p.created_at) FROM proposals p WHERE p.meeting_id = ${meetings.id}), '[]'::json)`.as('proposal_statuses'),
         })
         .from(meetings)
         .leftJoin(customers, eq(customers.id, meetings.customerId))
         .leftJoin(user, eq(user.id, meetings.ownerId))
+        .leftJoin(leadSourcesTable, eq(leadSourcesTable.id, customers.leadSourceId))
         .where(where)
         .orderBy(...orderBy)
         .limit(input.pagination.limit)
@@ -188,6 +203,8 @@ export async function listMeetings(
 
         return {
           ...row,
+          // leftJoin miss yields an all-null leadSource object rather than null.
+          leadSource: row.leadSource?.id ? row.leadSource : null,
           participants: rowParticipants.map(p => ({
             id: p.userId,
             name: p.userName,

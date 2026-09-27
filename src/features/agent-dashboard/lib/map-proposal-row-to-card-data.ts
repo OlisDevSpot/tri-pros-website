@@ -21,7 +21,7 @@ export function mapProposalRowToCardData(
     .filter(section => Boolean(section.trade.label))
     .map(section => ({
       trade: section.trade.label,
-      scopes: section.scopes.map(scope => scope.label).filter(Boolean),
+      scopes: section.scopes.filter(scope => Boolean(scope.label)).map(scope => ({ id: scope.id, label: scope.label })),
     }))
 
   return {

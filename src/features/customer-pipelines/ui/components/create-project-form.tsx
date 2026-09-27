@@ -51,7 +51,7 @@ interface CreateProjectFormProps {
 function buildDescriptionFromProposal(proposal: CustomerProfileProposal): string {
   const scopes: string[] = []
   for (const ts of proposal.sowSummary) {
-    scopes.push(...ts.scopes)
+    scopes.push(...ts.scopes.map(scope => scope.label))
   }
   return [...new Set(scopes)].join(', ')
 }
@@ -260,8 +260,8 @@ export function CreateProjectForm({
                           {ts.scopes.length > 0 && (
                             <div className="flex flex-wrap gap-1 pl-4">
                               {ts.scopes.map(scope => (
-                                <Badge key={scope} variant="outline" className="text-[10px] font-normal">
-                                  {scope}
+                                <Badge key={scope.id} variant="outline" className="text-[10px] font-normal">
+                                  {scope.label}
                                 </Badge>
                               ))}
                             </div>
