@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript (strict), Drizzle ORM (Postgres/Neon), `tsx` for the verify script, `node:assert/strict`.
 
-**Spec:** `docs/superpowers/specs/2026-09-26-analytics-a-lead-rules-design.md` (owner-approved 2026-09-26). **Tracker:** `docs/plans/2026-09-26-analytics-epic.md` (IDs A*, C*; naming per C42). Read both before starting.
+**Spec:** `docs/superpowers/specs/2026-09-26-analytics-a-lead-rules-design.md` (owner-approved 2026-09-26). **Tracker:** `docs/plans/2026-09-26-analytics-epic.md` (IDs A*, C*; naming per C42–C43). Read both before starting.
 
 ## Global Constraints
 
@@ -44,7 +44,7 @@ Inputs the spec implies but no rule states outright. Each has a test in the task
 | `src/features/agent-dashboard/lib/meeting-windows.ts` (modify) | dashboard windows, rebuilt on `business-time` | 1 |
 | `src/features/agent-dashboard/ui/components/dashboard-meetings-calendar.tsx`, `dashboard-meetings-hub.tsx`, `src/app/(frontend)/dashboard/page.tsx` (modify) | import day helpers from `shared/lib/business-time` | 1 |
 | `scripts/verify-analytics-rules.ts` (new) | rule checks, one section per rule | 1–4, 6, 7 |
-| `src/shared/constants/enums/meetings.ts` (modify) | `MeetingSit`, `MEETING_OUTCOME_SIT`, `isSit`, `isNewSaleMeeting` | 2 |
+| `src/shared/constants/enums/meetings.ts` (modify) | `MeetingSit`, `MEETING_OUTCOME_SIT`, `isSit`, `isProjectMeeting` | 2 |
 | `src/shared/lib/email.ts` (new) | `normalizeEmail` | 3 |
 | `src/shared/entities/customers/lib/group-duplicate-people.ts` (new) | `compareRecordAge`, `groupDuplicatePeople` | 3 |
 | `src/shared/modules/proposals/core/lib/sale.ts` (new) | `SALE_STATUS`, `SaleKind`, `classifySale` | 4 |
@@ -244,21 +244,21 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 
 ---
 
-### Task 2: Sit map and new-sale meeting rule
+### Task 2: Sit map and project-meeting rule
 
 **Files:**
 - Modify: `src/shared/constants/enums/meetings.ts` (append after `MEETING_OUTCOME_SENTIMENT` / `isNegativeOutcome`, around line 107)
 - Modify: `scripts/verify-analytics-rules.ts`
 
 **Interfaces:**
-- Produces: `type MeetingSit = 'sat' | 'not_sat' | 'unknown'`; `MEETING_OUTCOME_SIT: Record<MeetingOutcome, MeetingSit>`; `isSit(outcome: MeetingOutcome): boolean`; `isNewSaleMeeting(meeting: { meetingType: MeetingType, meetingOutcome: MeetingOutcome }): boolean`.
+- Produces: `type MeetingSit = 'sat' | 'not_sat' | 'unknown'`; `MEETING_OUTCOME_SIT: Record<MeetingOutcome, MeetingSit>`; `isSit(outcome: MeetingOutcome): boolean`; `isProjectMeeting(meeting: { meetingType: MeetingType }): boolean`.
 
 - [ ] **Step 1: Add the failing checks**
 
 Add to the script's imports:
 
 ```ts
-import { isNewSaleMeeting, isSit, MEETING_OUTCOME_SIT, meetingOutcomes } from '@/shared/constants/enums/meetings'
+import { isProjectMeeting, isSit, MEETING_OUTCOME_SIT, meetingOutcomes } from '@/shared/constants/enums/meetings'
 ```
 
 Insert before the `7. Pacific months` section:
@@ -281,17 +281,18 @@ assert.deepEqual(
 assert.equal(MEETING_OUTCOME_SIT.not_set, 'unknown', 'not_set is unknown, never a sit')
 console.log('3. Sit map ✓')
 
-// ── 4. New-sale meeting ───────────────────────────────────────────────────────
-assert.equal(isNewSaleMeeting({ meetingType: 'Fresh', meetingOutcome: 'pns' }), true, 'a Fresh meeting is a new-sale meeting')
-assert.equal(isNewSaleMeeting({ meetingType: 'Project', meetingOutcome: 'not_set' }), false, 'a Project meeting is not')
-assert.equal(isNewSaleMeeting({ meetingType: 'Fresh', meetingOutcome: 'additional_work' }), false, 'an upsell meeting is not')
-console.log('4. New-sale meeting ✓')
+// ── 4. Project meeting ──────────────────────────────────────────────────────
+assert.equal(isProjectMeeting({ meetingType: 'Project' }), true, 'the Project type is a project meeting')
+for (const meetingType of ['Fresh', 'Follow-up', 'Rehash'] as const) {
+  assert.equal(isProjectMeeting({ meetingType }), false, `${meetingType} works a lead`)
+}
+console.log('4. Project meeting ✓')
 ```
 
 - [ ] **Step 2: Run it to verify it fails**
 
 Run: `pnpm tsx scripts/verify-analytics-rules.ts`
-Expected: FAIL — `MEETING_OUTCOME_SIT` / `isSit` / `isNewSaleMeeting` are not exported.
+Expected: FAIL — `MEETING_OUTCOME_SIT` / `isSit` / `isProjectMeeting` are not exported.
 
 - [ ] **Step 3: Add the rules to `src/shared/constants/enums/meetings.ts`** (after `isNegativeOutcome`)
 
@@ -324,22 +325,26 @@ export function isSit(outcome: MeetingOutcome): boolean {
   return MEETING_OUTCOME_SIT[outcome] === 'sat'
 }
 
-/** Project visits and upsell meetings sell to an existing customer, so they can never produce a new sale. */
-export function isNewSaleMeeting(meeting: { meetingType: MeetingType, meetingOutcome: MeetingOutcome }): boolean {
-  return meeting.meetingType !== 'Project' && meeting.meetingOutcome !== 'additional_work'
+/**
+ * A project meeting serves an existing project (visits, upsells — additional_work
+ * only ever happens here); every other meeting works a lead toward its sale, so
+ * only those can book the lead or count as its sit.
+ */
+export function isProjectMeeting(meeting: { meetingType: MeetingType }): boolean {
+  return meeting.meetingType === 'Project'
 }
 ```
 
 - [ ] **Step 4: Run the check and gates**
 
 Run: `pnpm tsx scripts/verify-analytics-rules.ts && pnpm tsc && pnpm lint`
-Expected: `3. Sit map ✓`, `4. New-sale meeting ✓`, `7. Pacific months ✓`, `✅ …`; tsc and lint clean.
+Expected: `3. Sit map ✓`, `4. Project meeting ✓`, `7. Pacific months ✓`, `✅ …`; tsc and lint clean.
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git add src/shared/constants/enums/meetings.ts scripts/verify-analytics-rules.ts
-git commit -m "feat(meetings): sit classification and new-sale meeting rule
+git commit -m "feat(meetings): sit classification and project-meeting rule
 
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 ```
@@ -888,18 +893,18 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 - Modify: `scripts/verify-analytics-rules.ts`
 
 **Interfaces:**
-- Consumes: `AnalyticsFacts`, `CustomerFact`, `MeetingFact`, `SaleFact` (Task 5); `MEETING_OUTCOME_SIT`, `isNewSaleMeeting`, `MeetingSit` (Task 2); `groupDuplicatePeople`, `compareRecordAge` (Task 3); `classifySale`, `SaleKind` (Task 4).
+- Consumes: `AnalyticsFacts`, `CustomerFact`, `MeetingFact`, `SaleFact` (Task 5); `MEETING_OUTCOME_SIT`, `isProjectMeeting`, `MeetingSit` (Task 2); `groupDuplicatePeople`, `compareRecordAge` (Task 3); `classifySale`, `SaleKind` (Task 4).
 - Produces (types, in `types.ts`):
   ```ts
   type MeetingOrder = 'first' | 'repeat' | 'not_sat' | 'project'
-  interface LeadMeeting { id: string, at: string, outcome: MeetingOutcome, sit: MeetingSit, forNewSale: boolean, order: MeetingOrder, unresolved: boolean, closerIds: string[] }
+  interface LeadMeeting { id: string, at: string, outcome: MeetingOutcome, sit: MeetingSit, project: boolean, order: MeetingOrder, unresolved: boolean, closerIds: string[] }
   interface LeadSale { proposalId: string, meetingId: string, kind: SaleKind, at: string | null, valueCents: number | null, closerIds: string[], hasProject: boolean }
   interface BookedLead { at: string, meetingId: string, sat: boolean }
   interface LeadAnchor { leadAt: string, leadSourceId: string | null, city: string | null, zip: string | null }
   interface LeadRecord extends LeadAnchor { personId: string, customerIds: string[], quality: 'unknown', meetings: LeadMeeting[], bookedLead: BookedLead | null, sales: LeadSale[] }
   interface LeadRecordSet { leads: LeadRecord[], orphans: number }
   ```
-- Produces (functions): `UNKNOWN_PLACE_VALUES: readonly string[]`; `toKnownPlace(value: string): string | null`; `pickLeadAnchor(records: readonly CustomerFact[]): LeadAnchor`; `deriveMeetingOrder(chronological: readonly { forNewSale: boolean, sit: MeetingSit }[]): MeetingOrder[]`; `pickBookedLead(chronological: readonly { id: string, at: string, forNewSale: boolean, sit: MeetingSit }[]): BookedLead | null`; `buildLeadRecords(facts: AnalyticsFacts, now: Date): LeadRecordSet`.
+- Produces (functions): `UNKNOWN_PLACE_VALUES: readonly string[]`; `toKnownPlace(value: string): string | null`; `pickLeadAnchor(records: readonly CustomerFact[]): LeadAnchor`; `deriveMeetingOrder(chronological: readonly { project: boolean, sit: MeetingSit }[]): MeetingOrder[]`; `pickBookedLead(chronological: readonly { id: string, at: string, project: boolean, sit: MeetingSit }[]): BookedLead | null`; `buildLeadRecords(facts: AnalyticsFacts, now: Date): LeadRecordSet`.
 
 - [ ] **Step 1: Add the failing checks**
 
@@ -953,7 +958,7 @@ Insert after `1. Grouping`:
 console.log('2. Anchor ✓')
 ```
 
-Insert after `4. New-sale meeting`:
+Insert after `4. Project meeting`:
 
 ```ts
 // ── 5. Booked lead ──────────────────────────────────────────────────────────
@@ -972,7 +977,7 @@ Insert after `4. New-sale meeting`:
       meeting('m3', 'p1-dup', '2026-07-03T17:00:00.000Z', 'pns'),
       meeting('m4', 'p2', '2026-06-05T17:00:00.000Z', 'cancelled'),
       meeting('m5', 'p3', '2026-06-05T17:00:00.000Z', 'not_set', { meetingType: 'Project' }),
-      meeting('m6', 'p3', '2026-06-06T17:00:00.000Z', 'additional_work'),
+      meeting('m6', 'p3', '2026-06-06T17:00:00.000Z', 'additional_work', { meetingType: 'Project' }),
       meeting('m7', 'p4', '2026-07-01T17:00:00.000Z', 'not_set'),
       meeting('m8', 'p4', '2026-10-01T17:00:00.000Z', 'not_set'),
       meeting('m9', null, '2026-06-05T17:00:00.000Z', 'pns'),
@@ -983,7 +988,7 @@ Insert after `4. New-sale meeting`:
   assert.deepEqual(byId.get('p1')!.bookedLead, { at: '2026-07-03T17:00:00.000Z', meetingId: 'm3', sat: true }, 'cancel, cancel, sit = 1 booked lead dated at the sit — meetings on the duplicate record count')
   assert.equal(byId.get('p1')!.sales.length, 1, 'a sale on the duplicate record rolls up to the person')
   assert.deepEqual(byId.get('p2')!.bookedLead, { at: '2026-06-05T17:00:00.000Z', meetingId: 'm4', sat: false }, 'a single cancelled meeting = 1 non-sit booked lead')
-  assert.equal(byId.get('p3')!.bookedLead, null, 'project and upsell meetings never book a lead')
+  assert.equal(byId.get('p3')!.bookedLead, null, 'project meetings, upsells included, never book a lead')
   assert.deepEqual(byId.get('p4')!.meetings.map(m => m.unresolved), [true, false], 'a past not_set is unresolved; a future one is not')
   assert.equal(orphans, 3, 'a meeting with no customer, a sale on it, and a sale with no meeting are orphans')
 }
@@ -1009,7 +1014,7 @@ console.log('5. Booked lead ✓')
   }, NOW)
   const orders = (id: string) => leads.find(p => p.personId === id)!.meetings.map(m => `${m.id}:${m.order}`)
   assert.deepEqual(orders('a'), ['a1:not_sat', 'a2:first'], 'cancelled then pns: the pns is first')
-  assert.deepEqual(orders('b'), ['b1:first', 'b2:repeat', 'b3:repeat', 'b4:project'], 'after the first sit every new-sale meeting is repeat')
+  assert.deepEqual(orders('b'), ['b1:first', 'b2:repeat', 'b3:repeat', 'b4:project'], 'after the first sit every non-project meeting is repeat')
   assert.deepEqual(orders('c'), ['c1:not_sat', 'c2:not_sat'], 'a person who never sat has only not_sat meetings')
   assert.deepEqual(orders('d'), ['d-x:first', 'd-y:repeat'], 'same instant: ties break by id, deterministically')
 }
@@ -1040,7 +1045,7 @@ export interface LeadMeeting {
   at: string
   outcome: MeetingOutcome
   sit: MeetingSit
-  forNewSale: boolean
+  project: boolean
   order: MeetingOrder
   unresolved: boolean
   closerIds: string[]
@@ -1116,10 +1121,10 @@ export function pickLeadAnchor(records: readonly CustomerFact[]): LeadAnchor {
  * `first` is the first real sit: a cancelled or no-show meeting before it (a
  * reschedule's original) is noise, not the first visit. Expects oldest first.
  */
-export function deriveMeetingOrder(chronological: readonly { forNewSale: boolean, sit: MeetingSit }[]): MeetingOrder[] {
-  const firstSitIndex = chronological.findIndex(m => m.forNewSale && m.sit === 'sat')
+export function deriveMeetingOrder(chronological: readonly { project: boolean, sit: MeetingSit }[]): MeetingOrder[] {
+  const firstSitIndex = chronological.findIndex(m => !m.project && m.sit === 'sat')
   return chronological.map((m, index) => {
-    if (!m.forNewSale) {
+    if (m.project) {
       return 'project'
     }
     if (index === firstSitIndex) {
@@ -1134,10 +1139,10 @@ export function deriveMeetingOrder(chronological: readonly { forNewSale: boolean
  * lands on the sit when there was one, so sits can never exceed booked leads.
  * Expects oldest first.
  */
-export function pickBookedLead(chronological: readonly { id: string, at: string, forNewSale: boolean, sit: MeetingSit }[]): BookedLead | null {
-  const newSaleMeetings = chronological.filter(m => m.forNewSale)
-  const firstSit = newSaleMeetings.find(m => m.sit === 'sat')
-  const picked = firstSit ?? newSaleMeetings[0]
+export function pickBookedLead(chronological: readonly { id: string, at: string, project: boolean, sit: MeetingSit }[]): BookedLead | null {
+  const leadMeetings = chronological.filter(m => !m.project)
+  const firstSit = leadMeetings.find(m => m.sit === 'sat')
+  const picked = firstSit ?? leadMeetings[0]
   return picked ? { at: picked.at, meetingId: picked.id, sat: picked === firstSit } : null
 }
 ```
@@ -1150,7 +1155,7 @@ import type { CustomerFact } from '@/shared/entities/customers/dal/server/analyt
 import type { MeetingFact } from '@/shared/entities/meetings/dal/server/analytics-facts'
 
 import { deriveMeetingOrder, pickBookedLead, pickLeadAnchor } from '@/features/analytics/lib/analytics-rules'
-import { isNewSaleMeeting, MEETING_OUTCOME_SIT } from '@/shared/constants/enums/meetings'
+import { isProjectMeeting, MEETING_OUTCOME_SIT } from '@/shared/constants/enums/meetings'
 import { compareRecordAge, groupDuplicatePeople } from '@/shared/entities/customers/lib/group-duplicate-people'
 import { classifySale } from '@/shared/modules/proposals/core/lib/sale'
 
@@ -1205,7 +1210,7 @@ export function buildLeadRecords(facts: AnalyticsFacts, now: Date): LeadRecordSe
         at: m.scheduledFor,
         outcome: m.meetingOutcome,
         sit: MEETING_OUTCOME_SIT[m.meetingOutcome],
-        forNewSale: isNewSaleMeeting(m),
+        project: isProjectMeeting(m),
         closerIds: m.closerIds,
       }))
       .sort((a, b) => compareRecordAge({ id: a.id, createdAt: a.at }, { id: b.id, createdAt: b.at }))
@@ -1273,7 +1278,7 @@ Semantics this task implements (spec §5, C36, C40, C41):
 - `range` absent = all time; present = `[from, to)` on each stage's own date (leads `leadAt`, booked leads and sits `bookedLead.at`, meeting rows `at`, sales `at`). With a range, undated sales count only in `undatedSales`; without one they count everywhere and sit in the `null` month bucket.
 - Person-level filters (`leadSourceIds`, `cities`, `zips`, `null` = unknown) drop people for every stage.
 - Leads are **not applicable** (`null`) when any event-level filter is set or `groupBy` is `closer` / `outcome` / `meetingOrder`. Sales (and their hygiene) are **not applicable** when `outcomes` or `meetingOrder` is filtered or `groupBy` is `outcome` / `meetingOrder`; a closer filter or grouping applies to the sale meeting's closers.
-- Booked leads and sits are tested against the booked lead's own meeting. `meetings` counts every meeting row, new-sale and project.
+- Booked leads and sits are tested against the booked lead's own meeting. `meetings` counts every meeting row, project or not.
 - `groupBy: 'total'` always returns exactly one row (`groupKey: 'total'`), even with no data.
 - Rows are sorted by `groupKey`, `null` last.
 
@@ -1314,7 +1319,7 @@ Insert after `8. Sales (classification)`:
   assert.equal(total.totalLeads, 3, 'three leads in July')
   assert.equal(total.bookedLeads, 3, 'three booked leads')
   assert.equal(total.sits, 2, 'm1 and m3 sat — m3 at 23:30 PDT on July 31 is July')
-  assert.equal(total.meetings, 4, 'meetings count every row, new-sale and project')
+  assert.equal(total.meetings, 4, 'meetings count every row, project or not')
   assert.equal(total.newSales, 1, 'one dated new sale')
   assert.equal(total.totalCloses, 2, 'new sale + upsell')
   assert.equal(total.revenueNewCents, 1_000_000, 'new revenue')
@@ -1711,9 +1716,9 @@ Each business rule behind an analytics number is one named export; change the ru
 | **Total leads / valid leads** | All leads / leads minus junk. Test leads are in neither | `aggregateLeadRecords` · `src/features/analytics/lib/aggregate-lead-records.ts` |
 | **Junk lead / test lead** | Lead quality flags (not built yet) | `LeadRecord.quality` |
 | **Sit** | The rep physically met the homeowner | `MEETING_OUTCOME_SIT`, `isSit` · `src/shared/constants/enums/meetings.ts` |
-| **New-sale meeting** | Not a `Project` meeting, not `additional_work` | `isNewSaleMeeting` · `src/shared/constants/enums/meetings.ts` |
-| **Booked lead** | A lead with at least one new-sale meeting, counted once; dated at the first sit, else the first new-sale meeting | `pickBookedLead` · `src/features/analytics/lib/analytics-rules.ts` |
-| **Meeting order** | `first` = first sat new-sale meeting · `repeat` = after it · `not_sat` = before it, or never sat · `project` = not a new-sale meeting | `deriveMeetingOrder` · `src/features/analytics/lib/analytics-rules.ts` |
+| **Project meeting** | The stored `Project` meeting type: serves an existing project (visits, upsells). Every other meeting works a lead toward its sale | `isProjectMeeting` · `src/shared/constants/enums/meetings.ts` |
+| **Booked lead** | A lead with at least one non-project meeting, counted once; dated at the first sit, else the first non-project meeting | `pickBookedLead` · `src/features/analytics/lib/analytics-rules.ts` |
+| **Meeting order** | `first` = first sat non-project meeting · `repeat` = after it · `not_sat` = before it, or never sat · `project` = a project meeting | `deriveMeetingOrder` · `src/features/analytics/lib/analytics-rules.ts` |
 | **New sale / total closes / revenue** | An approved proposal, dated at `approvedAt` (no fallback); initial sale = new, additional work = upsell | `classifySale`, `SALE_STATUS` · `src/shared/modules/proposals/core/lib/sale.ts` |
 | **Rates** | Booking, sit and close rate over the same period; a total is Σ÷Σ | `ANALYTICS_RATES` · `src/features/analytics/lib/analytics-rules.ts` |
 | **Unknown city / zip** | Website-intake placeholders count as unknown | `UNKNOWN_PLACE_VALUES` · `src/features/analytics/lib/analytics-rules.ts` |
