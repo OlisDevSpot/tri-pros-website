@@ -1,7 +1,11 @@
 'use client'
 
-import type { CustomerProfileProposal } from '@/shared/entities/customers/types'
+import type { ReactNode } from 'react'
 
+import type { CustomerProfileProposal } from '@/shared/entities/customers/types'
+import type { ProposalOverviewCardMeta } from '@/shared/modules/proposals/core/components/overview-card'
+
+import { format } from 'date-fns'
 import { useCallback } from 'react'
 
 import { ROOTS } from '@/shared/config/roots'
@@ -13,9 +17,14 @@ interface Props {
   proposal: CustomerProfileProposal
   onMutationSuccess: () => void
   onNavigate?: () => void
+  /** Shows "Sent <date>", or "Not sent", under the label. */
+  showSentDate?: boolean
+  meta?: ProposalOverviewCardMeta
+  /** Rendered inside the card, below the row, so it can use the card's slots. */
+  footer?: ReactNode
 }
 
-export function MeetingProposalRow({ proposal, onMutationSuccess: _onMutationSuccess, onNavigate }: Props) {
+export function MeetingProposalRow({ proposal, onMutationSuccess: _onMutationSuccess, onNavigate, showSentDate = false, meta, footer }: Props) {
   const handleView = useCallback(() => {
     window.open(ROOTS.public.proposalReview(proposal.id), '_blank')
   }, [proposal.id])
@@ -32,6 +41,7 @@ export function MeetingProposalRow({ proposal, onMutationSuccess: _onMutationSuc
       proposal={proposal}
       onView={handleView}
       onEdit={handleEdit}
+      meta={meta}
       className={cn(
         // Grid (not flex) so the leading StatusIconTile can use `h-full
         // aspect-square` and resolve to a true square — flex doesn't derive
@@ -52,12 +62,18 @@ export function MeetingProposalRow({ proposal, onMutationSuccess: _onMutationSuc
           <ProposalOverviewCard.StatusBadge className="shrink-0" />
         </div>
         <ProposalOverviewCard.Trade />
+        {showSentDate && (
+          <span className="text-xs text-muted-foreground">
+            {proposal.sentAt ? `Sent ${format(new Date(proposal.sentAt), 'MMM d')}` : 'Not sent'}
+          </span>
+        )}
       </div>
       <div className="flex items-center gap-2 self-center">
         <ProposalOverviewCard.Value className="text-sm" />
         <ProposalOverviewCard.ViewCount />
         <ProposalOverviewCard.Actions mode="compact" className="opacity-60 hover:opacity-100 transition-opacity" />
       </div>
+      {footer && <div className="col-span-full">{footer}</div>}
     </ProposalOverviewCard>
   )
 }

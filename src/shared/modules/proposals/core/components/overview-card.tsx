@@ -16,6 +16,7 @@ import { ROOTS } from '@/shared/config/roots'
 import { formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 import { PROPOSAL_ROW_STYLES } from '@/shared/modules/proposals/core/constants/proposal-row-styles'
+import { PROPOSAL_STATUS_DOT_COLORS } from '@/shared/modules/proposals/core/constants/proposal-status-colors'
 import { useProposalActionConfigs } from '@/shared/modules/proposals/core/hooks/use-proposal-action-configs'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -42,12 +43,32 @@ export type ProposalFieldConfig
     | { field: 'viewCount' }
     | { field: 'createdAt', format?: 'full' | 'date-only' | 'relative' }
 
+export interface ScopeRef {
+  id: string
+  label: string
+}
+
+export interface ProposalScopeCoverage {
+  /** Captured in the meeting and included in this proposal. */
+  covered: ScopeRef[]
+  /** Captured in the meeting but left out of this proposal. */
+  missing: ScopeRef[]
+  /** In this proposal but not captured in the meeting. */
+  extra: ScopeRef[]
+}
+
+/** Supplied by the parent, so the card never compares itself against another entity. */
+export interface ProposalOverviewCardMeta {
+  scopeCoverage?: ProposalScopeCoverage
+}
+
 // ── Context ────────────────────────────────────────────────────────────────────
 
 interface ProposalOverviewCardContextValue {
   proposal: ProposalOverviewCardData
   actions: ReturnType<typeof useProposalActionConfigs>['actions']
   style: ProposalRowStyle
+  meta: ProposalOverviewCardMeta
 }
 
 const ProposalOverviewCardContext = createContext<ProposalOverviewCardContextValue | null>(null)
@@ -69,6 +90,7 @@ interface ProposalOverviewCardProps {
   onView?: (entity: ProposalOverviewCardData) => void
   onEdit?: (entity: ProposalOverviewCardData) => void
   onAssignOwner?: (entity: ProposalOverviewCardData) => void
+  meta?: ProposalOverviewCardMeta
 }
 
 function ProposalOverviewCardRoot({
@@ -78,6 +100,7 @@ function ProposalOverviewCardRoot({
   onView,
   onEdit,
   onAssignOwner,
+  meta,
 }: ProposalOverviewCardProps) {
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
@@ -98,8 +121,8 @@ function ProposalOverviewCardRoot({
   const style = PROPOSAL_ROW_STYLES[proposal.status ?? 'draft'] ?? PROPOSAL_ROW_STYLES.draft
 
   const value = useMemo<ProposalOverviewCardContextValue>(
-    () => ({ proposal, actions, style }),
-    [proposal, actions, style],
+    () => ({ proposal, actions, style, meta: meta ?? {} }),
+    [proposal, actions, style, meta],
   )
 
   return (
@@ -200,13 +223,8 @@ function StatusBadge({ className }: { className?: string }) {
 
 function StatusDot({ className }: { className?: string }) {
   const { proposal } = useProposalOverviewCard()
-  const dotColors: Record<string, string> = {
-    draft: 'bg-slate-400',
-    sent: 'bg-amber-500',
-    approved: 'bg-green-500',
-    declined: 'bg-red-500',
-  }
-  const dotColor = dotColors[proposal.status ?? 'draft'] ?? 'bg-slate-400'
+  const dotColors: Record<string, string> = PROPOSAL_STATUS_DOT_COLORS
+  const dotColor = dotColors[proposal.status ?? 'draft'] ?? PROPOSAL_STATUS_DOT_COLORS.draft
   return <span className={cn('h-2 w-2 shrink-0 rounded-full', dotColor, className)} />
 }
 
@@ -370,6 +388,42 @@ function Trades({ max, className }: { max?: number, className?: string }) {
   )
 }
 
+// ── Scope coverage sub-component ───────────────────────────────────────────────
+
+function ScopeCoverage({ className }: { className?: string }) {
+  const { meta } = useProposalOverviewCard()
+  const coverage = meta.scopeCoverage
+  if (!coverage || coverage.covered.length + coverage.missing.length + coverage.extra.length === 0) {
+    return null
+  }
+  return (
+    <ul aria-label="Scope coverage" className={cn('flex flex-wrap gap-1', className)}>
+      {coverage.covered.map(scope => (
+        <li key={`covered-${scope.id}`}>
+          <Badge variant="outline" className="text-[10px] font-normal">{scope.label}</Badge>
+        </li>
+      ))}
+      {coverage.missing.map(scope => (
+        <li key={`missing-${scope.id}`}>
+          <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground line-through">
+            <span className="sr-only">Not included: </span>
+            {scope.label}
+          </Badge>
+        </li>
+      ))}
+      {coverage.extra.map(scope => (
+        <li key={`extra-${scope.id}`}>
+          <Badge variant="outline" className="border-dashed text-[10px] font-normal">
+            <span aria-hidden="true">+ </span>
+            <span className="sr-only">Added: </span>
+            {scope.label}
+          </Badge>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 // ── Actions sub-component ──────────────────────────────────────────────────────
 
 function Actions({
@@ -406,5 +460,6 @@ export const ProposalOverviewCard = Object.assign(ProposalOverviewCardRoot, {
   CreatedAt,
   Fields,
   Trades,
+  ScopeCoverage,
   Actions,
 })
