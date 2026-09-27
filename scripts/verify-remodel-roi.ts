@@ -9,6 +9,7 @@ import { combineCuts } from '@/features/calculators/remodel-roi-calculator/lib/c
 import { formatMoney, roundMoney } from '@/features/calculators/remodel-roi-calculator/lib/format-money'
 import { formatYears } from '@/features/calculators/remodel-roi-calculator/lib/format-years'
 import { joinWords } from '@/features/calculators/remodel-roi-calculator/lib/join-words'
+import { panelDone, panelSummaries } from '@/features/calculators/remodel-roi-calculator/lib/panel-summaries'
 import { projectRemodelRoi } from '@/features/calculators/remodel-roi-calculator/lib/project-remodel-roi'
 import { resolveRemodelRoiConfig } from '@/features/calculators/remodel-roi-calculator/lib/resolve-config'
 import { buildStory } from '@/features/calculators/remodel-roi-calculator/lib/story/build-story'
@@ -315,6 +316,19 @@ for (const values of [createRemodelRoiDefaults(config), JOB_A, cash(JOB_D), { ..
     assert.ok(!banned.test(all), 'no Cost / Multiplier / Margin in homeowner copy')
     assert.ok(!/\bhvac\b/.test(all), 'HVAC never lowercased')
   }
+}
+
+// ── Panel summaries ────────────────────────────────────────────────────
+{
+  const p = run(JOB_A)
+  assert.deepEqual(panelSummaries(p), {
+    trades: 'HVAC (~3 years left) and Attic & Basement',
+    project: '$32,000 · 15 yrs at 8.99%',
+    bills: '$470/mo today → $302/mo after',
+    home: 'Optional · adds net worth',
+  }, 'section summaries')
+  assert.deepEqual(panelDone(p), { trades: true, project: true, bills: true, home: false }, 'done marks')
+  assert.equal(panelSummaries(run(createRemodelRoiDefaults(config))).trades, 'Pick the trades in the project', 'empty trades summary')
 }
 
 assert.equal(formatYears(1), '1 year', 'singular')

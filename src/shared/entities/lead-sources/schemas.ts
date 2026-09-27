@@ -56,6 +56,3 @@ export const voipInHousePolicySchema = z.object({
   }).optional(),
 })
 export type VoipInHousePolicy = z.infer<typeof voipInHousePolicySchema>
-
-/** A Pacific business month, the unit spend is entered in. */
-export const leadSourceSpendMonthSchema = z.string().regex(/^\d{4}-(?:0[1-9]|1[0-2])$/, 'A month, as YYYY-MM.')

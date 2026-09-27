@@ -3,7 +3,6 @@ import type z from 'zod'
 import type { LeadSourceFormConfig, VoipInHousePolicy } from '@/shared/entities/lead-sources/schemas'
 import { boolean, integer, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
-import { leadSourceSpendModes } from '@/shared/constants/enums/lead-sources'
 import { leadSourceFormConfigSchema } from '@/shared/entities/lead-sources/schemas'
 import { createdAt, id, updatedAt } from '../lib/schema-helpers'
 import { voipCampaigns } from './voip-campaigns'
@@ -25,7 +24,6 @@ export const leadSourcesTable = pgTable('lead_sources', {
   // voip-in-house sub-object — dynamic template maps, correctly JSONB. Own column
   // so the two EPICs' writers never contend on one blob.
   voipInHouseConfigJSON: jsonb('voip_inhouse_config_json').$type<VoipInHousePolicy>(),
-  spendMode: text('spend_mode', { enum: leadSourceSpendModes }).notNull().default('manual'),
   isActive: boolean('is_active').notNull().default(true),
   archivedAt: timestamp('archived_at', { mode: 'string', withTimezone: true }),
   createdAt,
