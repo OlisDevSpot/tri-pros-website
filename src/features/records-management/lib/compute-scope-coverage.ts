@@ -4,8 +4,8 @@ import type { SowTradeScope } from '@/shared/modules/proposals/core/types'
 
 /**
  * Compares the scopes a meeting captured with one proposal's SOW. Matched by scope id, so a label edited
- * on the proposal still counts. Null for a proposal saved without SOW scopes, which would otherwise read
- * as covering nothing.
+ * on the proposal still counts. Null when either side has no scopes: a proposal saved without SOW scopes
+ * would read as covering nothing, and a meeting that captured none would mark every scope as added.
  */
 export function computeScopeCoverage(
   tradeSelections: TradeSelection[],
@@ -26,6 +26,10 @@ export function computeScopeCoverage(
     for (const scope of selection.selectedScopes) {
       captured.set(scope.id, scope.label)
     }
+  }
+
+  if (captured.size === 0) {
+    return null
   }
 
   const covered: ScopeRef[] = []

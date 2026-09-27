@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 import type { CustomerProfileProposal } from '@/shared/entities/customers/types'
 import type { ProposalOverviewCardMeta } from '@/shared/modules/proposals/core/components/overview-card'
 
-import { format } from 'date-fns'
+import { format, isThisYear } from 'date-fns'
 import { useCallback } from 'react'
 
 import { ROOTS } from '@/shared/config/roots'
@@ -64,7 +64,9 @@ export function MeetingProposalRow({ proposal, onMutationSuccess: _onMutationSuc
         <ProposalOverviewCard.Trade />
         {showSentDate && (
           <span className="text-xs text-muted-foreground">
-            {proposal.sentAt ? `Sent ${format(new Date(proposal.sentAt), 'MMM d')}` : 'Not sent'}
+            {proposal.sentAt
+              ? `Sent ${format(new Date(proposal.sentAt), isThisYear(new Date(proposal.sentAt)) ? 'MMM d' : 'MMM d, yyyy')}`
+              : 'Not sent'}
           </span>
         )}
       </div>
@@ -73,7 +75,8 @@ export function MeetingProposalRow({ proposal, onMutationSuccess: _onMutationSuc
         <ProposalOverviewCard.ViewCount />
         <ProposalOverviewCard.Actions mode="compact" className="opacity-60 hover:opacity-100 transition-opacity" />
       </div>
-      {footer && <div className="col-span-full">{footer}</div>}
+      {/* The card's own click opens the proposal; the footer is informational, so clicks stop here. */}
+      {footer && <div className="col-span-full" onClick={e => e.stopPropagation()}>{footer}</div>}
     </ProposalOverviewCard>
   )
 }

@@ -27,27 +27,29 @@ export function MeetingRowPanel({ meeting, actions }: MeetingRowPanelProps) {
       <ExpandedRowPanel.Details>
         <MeetingRowDetails meeting={meeting} />
       </ExpandedRowPanel.Details>
-      {profile.isError
-        ? (
-            <ExpandedRowPanel.Error
-              title="Couldn't load this meeting's customer"
-              description="The row still works; retry to load its details."
-              onRetry={() => void profile.refetch()}
-            />
-          )
-        : (
-            <ExpandedRowPanel.Panes className="@min-[600px]:grid-cols-2 @min-[900px]:grid-cols-[250px_minmax(0,1fr)_minmax(0,1.15fr)]">
-              <MeetingCustomerPane customer={customer} hasCustomer={!!meeting.customerId} isLoading={profile.isLoading} leadSource={meeting.leadSource} />
-              <MeetingTradesPane meeting={meeting} actions={actions} />
-              <MeetingProposalsPane
-                meeting={meeting}
-                proposals={proposals}
-                isLoading={profile.isLoading}
-                onMutationSuccess={() => void profile.refetch()}
-                className="@min-[600px]:col-span-2 @min-[900px]:col-span-1"
-              />
-            </ExpandedRowPanel.Panes>
-          )}
+      {profile.isError && (
+        <ExpandedRowPanel.Error
+          title="Couldn't load this meeting's customer"
+          description="Trades still show; retry to load the customer and proposals."
+          onRetry={() => void profile.refetch()}
+        />
+      )}
+      {/* Trades come from the row itself, so a failed profile read hides only the panes that need it. */}
+      <ExpandedRowPanel.Panes className={profile.isError ? undefined : '@min-[600px]:grid-cols-2 @min-[900px]:grid-cols-[250px_minmax(0,1fr)_minmax(0,1.15fr)]'}>
+        {!profile.isError && (
+          <MeetingCustomerPane customer={customer} hasCustomer={!!meeting.customerId} isLoading={profile.isLoading} leadSource={meeting.leadSource} />
+        )}
+        <MeetingTradesPane meeting={meeting} actions={actions} />
+        {!profile.isError && (
+          <MeetingProposalsPane
+            meeting={meeting}
+            proposals={proposals}
+            isLoading={profile.isLoading}
+            onMutationSuccess={() => void profile.refetch()}
+            className="@min-[600px]:col-span-2 @min-[900px]:col-span-1"
+          />
+        )}
+      </ExpandedRowPanel.Panes>
     </ExpandedRowPanel>
   )
 }

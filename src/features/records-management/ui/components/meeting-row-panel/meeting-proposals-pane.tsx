@@ -31,40 +31,48 @@ export function MeetingProposalsPane({ meeting, proposals, isLoading, onMutation
     [proposals, tradeSelections],
   )
 
+  // Proposals are listed through the customer's profile, so a meeting without a customer can have
+  // proposals (the row's dots) that this pane can't list.
+  const unlistedCount = meeting.customerId ? 0 : meeting.proposalStatuses.length
+
   return (
     <ExpandedRowPanel.Pane title="Proposals" isLoading={isLoading} className={className}>
-      {proposals.length === 0
-        ? (
-            <div className="flex flex-col items-start gap-2">
-              <p className="text-sm text-muted-foreground">No proposals yet</p>
-              {ability.can('create', 'Proposal') && (
-                <Button type="button" variant="outline" size="sm" className="h-7 gap-1 text-xs" asChild>
-                  <a href={`${ROOTS.dashboard.proposals.new()}?meetingId=${meeting.id}`}>
-                    <PlusIcon className="size-3" />
-                    Create Proposal
-                  </a>
-                </Button>
-              )}
-            </div>
-          )
-        : (
-            <ul className="flex flex-col gap-2">
-              {proposals.map((proposal) => {
-                const coverage = coverageByProposal.get(proposal.id)
-                return (
-                  <li key={proposal.id}>
-                    <MeetingProposalRow
-                      proposal={proposal}
-                      onMutationSuccess={onMutationSuccess}
-                      showSentDate
-                      meta={coverage ? { scopeCoverage: coverage } : undefined}
-                      footer={coverage ? <ProposalOverviewCard.ScopeCoverage className="pt-1" /> : undefined}
-                    />
-                  </li>
-                )
-              })}
-            </ul>
+      {unlistedCount > 0 && (
+        <p className="text-sm text-muted-foreground">
+          {`${unlistedCount} ${unlistedCount === 1 ? 'proposal' : 'proposals'} · link a customer to see ${unlistedCount === 1 ? 'it' : 'them'} here`}
+        </p>
+      )}
+      {unlistedCount === 0 && proposals.length === 0 && (
+        <div className="flex flex-col items-start gap-2">
+          <p className="text-sm text-muted-foreground">No proposals yet</p>
+          {ability.can('create', 'Proposal') && (
+            <Button type="button" variant="outline" size="sm" className="h-7 gap-1 text-xs" asChild>
+              <a href={`${ROOTS.dashboard.proposals.new()}?meetingId=${meeting.id}`}>
+                <PlusIcon className="size-3" />
+                Create Proposal
+              </a>
+            </Button>
           )}
+        </div>
+      )}
+      {proposals.length > 0 && (
+        <ul className="flex flex-col gap-2">
+          {proposals.map((proposal) => {
+            const coverage = coverageByProposal.get(proposal.id)
+            return (
+              <li key={proposal.id}>
+                <MeetingProposalRow
+                  proposal={proposal}
+                  onMutationSuccess={onMutationSuccess}
+                  showSentDate
+                  meta={coverage ? { scopeCoverage: coverage } : undefined}
+                  footer={coverage ? <ProposalOverviewCard.ScopeCoverage className="pt-1" /> : undefined}
+                />
+              </li>
+            )
+          })}
+        </ul>
+      )}
     </ExpandedRowPanel.Pane>
   )
 }
