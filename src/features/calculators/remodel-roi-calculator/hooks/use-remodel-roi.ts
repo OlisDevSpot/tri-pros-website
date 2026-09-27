@@ -3,19 +3,21 @@ import type { RemodelRoiConfig } from '@/features/calculators/remodel-roi-calcul
 import type { RemodelRoiFormValues } from '@/features/calculators/remodel-roi-calculator/schemas/form'
 import type { RemodelRoiProjection } from '@/features/calculators/remodel-roi-calculator/types'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useWatch } from 'react-hook-form'
 
 import { projectRemodelRoi } from '@/features/calculators/remodel-roi-calculator/lib/project-remodel-roi'
+import { remodelRoiFormSchema } from '@/features/calculators/remodel-roi-calculator/schemas/form'
 
 export function useRemodelRoi(control: Control<RemodelRoiFormValues>, config: RemodelRoiConfig): RemodelRoiProjection {
-  const [homeValue, liabilities, billsNow, billsAfter, project, assumptions] = useWatch({
-    control,
-    name: ['homeValue', 'liabilities', 'billsNow', 'billsAfter', 'project', 'assumptions'],
-  })
+  const values = useWatch({ control })
+  const parsed = useMemo(() => remodelRoiFormSchema.safeParse(values), [values])
+  const [valid, setValid] = useState(() => remodelRoiFormSchema.parse(values))
 
-  return useMemo(
-    () => projectRemodelRoi({ homeValue, liabilities, billsNow, billsAfter, project, assumptions }, config),
-    [homeValue, liabilities, billsNow, billsAfter, project, assumptions, config],
-  )
+  // A field mid-edit can be out of range; the story keeps the last valid numbers until it is fixed.
+  if (parsed.success && parsed.data !== valid) {
+    setValid(parsed.data)
+  }
+
+  return useMemo(() => projectRemodelRoi(valid, config), [valid, config])
 }
