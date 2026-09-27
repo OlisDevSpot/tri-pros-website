@@ -9,7 +9,6 @@ import { mpu } from '@/features/calculators/scope-pricing-calculator/lib/formula
 import { installExteriorPaint } from '@/features/calculators/scope-pricing-calculator/lib/formulas/exterior-paint-siding'
 import { installMiniSplit, replaceFurnace, replaceSplitSystem } from '@/features/calculators/scope-pricing-calculator/lib/formulas/hvac'
 import { overlay, redeck, tearOff, tileReset } from '@/features/calculators/scope-pricing-calculator/lib/formulas/roof'
-import { installBattery, installPanels, rnrPanels } from '@/features/calculators/scope-pricing-calculator/lib/formulas/solar'
 import { replaceFrenchDoors, replaceSlidingDoor, replaceWindows } from '@/features/calculators/scope-pricing-calculator/lib/formulas/windows-and-doors'
 
 // Keyed by the old app's scope accessors because Notion scopes don't store a slug yet; the keys become scope slugs once they do.
@@ -18,9 +17,6 @@ export const FORMULAS: Record<PricingKey, Formula> = {
   tearOff,
   redeck,
   tileReset,
-  installPanels,
-  rnrPanels,
-  installBattery,
   replaceSplitSystem,
   replaceFurnace,
   installMiniSplit,

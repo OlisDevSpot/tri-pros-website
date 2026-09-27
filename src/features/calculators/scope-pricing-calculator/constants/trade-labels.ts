@@ -2,7 +2,6 @@ import type { PermitTrade, PricingTrade } from '@/features/calculators/scope-pri
 
 export const PRICING_TRADES = [
   'roof',
-  'solar',
   'hvac',
   'windowsAndDoors',
   'atticBasement',
@@ -13,7 +12,6 @@ export const PRICING_TRADES = [
 
 export const TRADE_LABELS = {
   roof: 'Roof',
-  solar: 'Solar',
   hvac: 'HVAC',
   windowsAndDoors: 'Windows & Doors',
   atticBasement: 'Attic & Basement',

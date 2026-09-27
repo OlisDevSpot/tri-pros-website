@@ -4,7 +4,7 @@ import type { PricingTrade, ScopePricingConfig, UnitCostsOf } from '@/features/c
 import type { ProjectContext } from '@/features/calculators/scope-pricing-calculator/schemas/form'
 import type { MultiplierTier } from '@/shared/modules/proposals/core/lib/financials/tiers'
 
-export type VariableUnit = 'BSQ' | 'count' | 'W' | 'kWh' | 'tons' | 'sqft' | null
+export type VariableUnit = 'BSQ' | 'count' | 'tons' | 'sqft' | null
 export type SelectOption = number | string
 
 interface VariableDefBase {

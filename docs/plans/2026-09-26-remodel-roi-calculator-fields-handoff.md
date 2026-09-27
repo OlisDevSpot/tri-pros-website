@@ -3,7 +3,7 @@
 > **Status:** open, 2026-09-26. Owner handoff to a new session.
 > **The job:** turn the v1 model in §5 into a spec with the owner (fields, data, engine outputs, the "show the work" breakdown and the charts), then plan and build it.
 > **Delete this file** once that work lands in a spec, and move its decisions into the tracker.
-> **Live index:** `docs/plans/2026-09-26-sales-calculators-epic.md`. Read §1 (rulings R9, R12–R14), §3.2 (requirements SP-*) and §5 (list of interim code). This file doesn't repeat them.
+> **Live index:** `docs/plans/2026-09-26-sales-calculators-epic.md`. Read §1 (rulings R9, R12–R15), §3.2 (requirements SP-*) and §5 (list of interim code). This file doesn't repeat them.
 > **No solar.** Tri Pros no longer sells solar (owner, 2026-09-26). Solar is not an upgrade, scenario or example anywhere in this calculator.
 
 ## 1. The name
@@ -45,6 +45,8 @@
 | R14.5 | **The thesis is "the remodel pays for itself, even if eventually".** |
 | R14.6 | **v1 needs no sources.** Defaults are the team's working numbers, marked as interim in code (why-comment plus a tracker I-row) and visible on screen. |
 | R14.7 | **More charts and data models** will show the benefit in Southern California's extreme heat (§5.4). |
+| R15.1 | **Value added defaults to 80% of the project price** (v1, interim). |
+| R15.2 | **Headline = a combination:** the break-even year, the year the monthly cost flips, and the benefit at the chosen horizon. |
 
 ## 4. Why the model has to change (engine runs, 2026-09-26)
 
@@ -66,7 +68,7 @@ At a 10-year horizon that reads as a loss, which contradicts R14.5.
 
 This is the prototype in §5. The "wait" side replaces each aging system when it fails, like-for-like, at the future price.
 
-Assumptions: construction costs rise 5%/yr, the value added is 50% of the price, and 15-year financing at 8.99%.
+Assumptions: construction costs rise 5%/yr, the value added is 50% of the price (before R15 set 80%; see §4.3), and 15-year financing at 8.99%.
 
 | Job | Bills only | + value added | + avoided replacement & repairs | All three (wait pays cash) | All three (wait finances the same way) |
 |---|---|---|---|---|---|
@@ -87,6 +89,19 @@ Assumptions: construction costs rise 5%/yr, the value added is 50% of the price,
 **What this shows:**
 - The honest "wait" comparison, plus value added and construction inflation, delivers R14.5 for any job that replaces an aging system.
 - Pure-efficiency jobs (C and D) still pay for themselves, only later. There the long-horizon view and value added carry the case.
+
+### 4.3 At the R15 default (80% value added, wait side financed)
+
+| Job | Break-even | Monthly flips | 5 yrs | 10 yrs | 20 yrs |
+|---|---|---|---|---|---|
+| A. HVAC + attic + ducts, $32k (aging HVAC) | **year 3** | year 4 | +$5k | +$24k | +$112k |
+| B. Cool roof + HVAC + attic, $65k (aging roof and HVAC) | **year 4** | year 5 | +$4k | +$28k | +$131k |
+| C. Windows + attic, $30k (nothing failing) | year 10 | year 14 | −$7k | +$2k | +$60k |
+| D. Dryscaping, $25k (nothing failing) | year 9 | year 12 | −$4k | +$4k | +$62k |
+
+Every sample job is ahead by year 10.
+
+**For the headline (R15.2):** the monthly flip trails break-even on pure-efficiency jobs. The fixed loan payment is large there, and value added counts toward net worth, not toward monthly cash. The copy has to say which is which.
 
 The prototype scripts are scratch files from this session and aren't in the repo. The spec should specify the math afresh and pin it in `scripts/verify-remodel-roi.ts`.
 
@@ -120,7 +135,7 @@ Every one of these assumptions appears in "show the work", including "like-for-l
 | **Bill cut** per category | % (default mode) or $/mo, switchable per category; switching keeps the meaning (40% of $380 ⇄ $152) | from the chips | R13.2 |
 | **Aging systems** (the wait side) | rows of `{system, age or years until it fails, today's like-for-like replacement cost, repairs $/yr}` | lifespan per system (e.g. HVAC 18 yrs, asphalt roof 25), so years left = lifespan − age; repairs e.g. $600/yr for HVAC | R14.3, the largest lever |
 | **The project** | price (manual, with a "Price it in Scope Pricing" hint that switches tabs), incentives, down payment, APR, term | none; default financing terms are the owner's call | R13.4 |
-| **Value added** | % of price (or $) | e.g. 50% of price | R14.4 |
+| **Value added** | % of price (or $) | **80% of price** (R15.1) | R14.4 |
 | **Assumptions** (on screen, editable) | horizon (chips 10 · 15 · 20 · 30), utility escalation per category, **construction inflation** (new), home appreciation | 10 yrs; source rates 9.4 / 13.1 / 10.3; construction 5%/yr; home 4%/yr | R13.1, R14.3 |
 | **Home value and existing loans** | optional, collapsed ("add these to see your total net worth") | — | They cancel out of every now-vs-wait difference (checked: a mortgage changed no difference). They only change the absolute net worth. |
 
@@ -167,9 +182,9 @@ Every one of these assumptions appears in "show the work", including "like-for-l
    - the % cut per upgrade chip and per bill category;
    - lifespan and repairs per system;
    - construction inflation 5%/yr?
-   - value added 50% of price, or per trade?
+   - value added: 80% of price is set (R15.1); a per-trade default is optional later.
    - default financing terms.
-3. **Headline:** the break-even year ("pays for itself in year 6"), the benefit at the chosen horizon, the monthly flip year, or a combination?
+3. **Headline wording:** R15.2 settles the content (break-even year, monthly flip year, benefit at the horizon). The owner picks the order and the words, e.g. "Pays for itself in year 3 · ahead every month from year 4 · +$24k by year 10".
 4. **Electric bills:** one average, or summer and mild-month bills (needed for the seasonal chart, §5.4 #5)?
 5. **A climate preset** (coastal, inland, desert) that tunes the default cuts and the seasonal profile?
 6. **Bill categories:** keep gardening and misc, or electric, gas and water only?
@@ -208,7 +223,7 @@ Every one of these assumptions appears in "show the work", including "like-for-l
   - The layout warm-up is at https://claude.ai/artifact/MLp6sq5Dr7vLMvKTCe8W5k. It still shows the old name.
   - Scope Pricing's layout pick can go ahead now.
   - This calculator's layout follows the spec from this session, because §5 adds whole input groups and a chart-led results surface.
-- **Scope Pricing still carries the ported solar Formulas.** It's an owner call whether to remove them: tracker §7.1, and `src/features/calculators/scope-pricing-calculator/lib/formulas/solar.ts` with its Pricing Keys.
+- **Solar is removed from Scope Pricing** (R15): 21 Formulas remain. The warm-up page's Scope Pricing mocks still show an Install Panels line, which is stale.
 - **The build log** is `.superpowers/sdd/2026-09-26-sales-calculators-c0-port/progress.md` (gitignored). Tasks 1–8 are complete; Tasks 9–11 remain.
 - **The glossary row** for Remodel ROI Calculator is in C0 plan Task 11. Update its wording to the now-vs-wait framing if the owner confirms it.
 - **Shared tree:**

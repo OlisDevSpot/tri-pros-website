@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-26-sales-calculators-c0-port-design.md` (owner-approved 2026-09-26). **Tracker:** `docs/plans/2026-09-26-sales-calculators-epic.md` (IDs R*, D*, O*, SP-*, PR*, UI*, V*, CF*, I*, B-*). Read both before starting.
 
-**Amended 2026-09-26 (tracker R11), after Task 8:** the calculator is renamed Remodel ROI Calculator (tracker R12; names below are updated), and it is the first, default tab. Its fields and data are being redefined in a separate session (`docs/plans/2026-09-26-remodel-roi-calculator-fields-handoff.md`), so its Task 9 layout follows that. Task 5's tab code below predates that; `src/features/calculators/constants/query-parsers.ts` and `ui/views/calculators-view.tsx` are authoritative.
+**Amended 2026-09-26 (tracker R11), after Task 8:** the calculator is renamed Remodel ROI Calculator (tracker R12; names below are updated), and it is the first, default tab. Its fields and data are being redefined in a separate session (`docs/plans/2026-09-26-remodel-roi-calculator-fields-handoff.md`), so its Task 9 layout follows that. **Amended again (R15):** solar is removed from Scope Pricing (21 Formulas); the solar code and golden values in earlier tasks below are history, and the code is authoritative. Task 5's tab code below predates that; `src/features/calculators/constants/query-parsers.ts` and `ui/views/calculators-view.tsx` are authoritative.
 
 ## Global Constraints
 
@@ -4118,9 +4118,9 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 ```markdown
 | **Scope Pricing** | The per-scope sales calculator at `/dashboard/calculators`: a quote of Formula lines and manual lines, priced as `Price = round(Cost × Multiplier)`, tax inside the Price. Homeowner-facing; Cost and Multiplier live only in its agent panel. Code: `src/features/calculators/scope-pricing-calculator/`. | Roof tear-off + solar quote |
 | **Remodel ROI Calculator** | The sales calculator that estimates the return on the money a homeowner puts into a remodel: utility savings that grow as rates rise, home appreciation and loan paydown, shown as bills, loans, home value and net worth before and after the project over N years. Every assumption is on screen. Never called a "snapshot" (reserved term). Code: `src/features/calculators/remodel-roi-calculator/`. | "Comes out ahead in year 5" |
-| **Formula** | Per-scope code that turns Variables (and project context) into a **Cost**. Declares the Variables it reads; that declaration drives both its form fields and its argument type. | `tearOff`, `installPanels` |
+| **Formula** | Per-scope code that turns Variables (and project context) into a **Cost**. Declares the Variables it reads; that declaration drives both its form fields and its argument type. | `tearOff`, `rnrAttic` |
 | **Unit Cost** | A named Cost constant a Formula multiplies by, e.g. $/BSQ or $/W. Admin-configured (System defaults in code until an admin screen exists). Agent-only on screen. | Tear-Off (Shingles) per BSQ = $480 |
-| **Pricing Key** | The key a Formula is registered under. Today it is the old remodel-x scope accessor; it becomes the Notion scope slug once scopes store one. | `installBattery` |
+| **Pricing Key** | The key a Formula is registered under. Today it is the old remodel-x scope accessor; it becomes the Notion scope slug once scopes store one. | `replaceSplitSystem` |
 | **Configuration tiers** | Where a calculator value is set: **On-screen** (rep edits live, homeowner sees), **Agent-only** (rep edits/reads in the agent panel), **Admin-configured** (super-admin sets occasionally), **System default** (code). Resolve System default → Admin-configured → the session's On-screen / Agent-only value. | Multiplier floor = Admin-configured |
 ```
 

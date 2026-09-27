@@ -15,12 +15,6 @@ export const UNIT_COST_LABELS = {
     dollarPerAdditionalStory: 'Dollar per Additional Story',
     dollarPerAdditionalLayer: 'Dollar per Additional Layer',
   },
-  solar: {
-    dollarPerWatt: 'Dollar per Watt',
-    dollarPerPanelRnr: 'Dollar per Panel (Remove & Reinstall)',
-    battery5kWh: 'Battery (5 kWh)',
-    battery10kWh: 'Battery (10 kWh)',
-  },
   hvac: {
     threeTonRnr: '3 Ton HVAC Replace & Install',
     furnace36kBTURnr: '36k BTU Furnace Replace & Install',

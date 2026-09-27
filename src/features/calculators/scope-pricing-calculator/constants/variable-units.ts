@@ -3,8 +3,6 @@ import type { VariableUnit } from '@/features/calculators/scope-pricing-calculat
 export const UNIT_SUFFIXES = {
   BSQ: 'BSQ',
   count: '',
-  W: 'W',
-  kWh: 'kWh',
   tons: 'tons',
   sqft: 'sq ft',
 } as const satisfies Record<Exclude<VariableUnit, null>, string>

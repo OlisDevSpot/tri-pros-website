@@ -59,6 +59,7 @@ Each phase gets its own spec, then plan, then build. A phase closes when every r
 | **R12** | **Canonical name: Remodel ROI Calculator (owner, 2026-09-26).** One name for everything about this calculator (UI copy, code, docs, conversation), superseding R11's name. Tab label **Remodel ROI** beside "Scope Pricing"; it stays the first and default tab (R11). Code: `features/calculators/remodel-roi-calculator/`, tab value `remodel-roi`, `scripts/verify-remodel-roi.ts`, identifiers `RemodelRoi*`. The form's copy carries the owner's Remodel ROI idea (§3.2, quoted verbatim in the handoff). Field and data structure is handed to its own session: `docs/plans/2026-09-26-remodel-roi-calculator-fields-handoff.md`. | 2026-09-26 |
 | **R13** | **Remodel ROI Calculator, second pass (owner, 2026-09-26).** (1) Default horizon **10 years** (replaces D4's 5). (2) After-bills are a **% reduction or an absolute $/mo, default %** (reopens D8). (3) **Show the work:** the with-project results show the assumptions and the path from the data entered to each number. (4) **Project price is manual**, with a hint to use the Scope Pricing tab; no value is carried over, even from Scope Pricing, in C0. (5) Goal: quick, effective calculators that make the homeowner think "this is absolutely worth it, especially if I stay long-term". Analysis (current math at 10 years shows a loss for typical financed projects; break-even is years 12–17) and open questions: `docs/plans/2026-09-26-remodel-roi-calculator-fields-handoff.md` §4–§7. | 2026-09-26 |
 | **R14** | **Remodel ROI Calculator, third pass (owner, 2026-09-26).** (1) **No solar**: Tri Pros no longer sells it, so it is never an upgrade, scenario or example here. (2) The **monthly story** is the showcase: a fixed loan payment against utility bills that keep rising. (3) **Avoided costs are crucial**: aging systems get replaced later at a higher price, because construction costs keep rising. (4) **Property value** should pull break-even in substantially. (5) Thesis: **the remodel pays for itself, even if eventually**. (6) **v1 needs no sources**; defaults are interim and visible. (7) More charts and data models for Southern California heat. Proposed v1 model ("Do it now" vs "Wait until it breaks"; engine runs put typical aging-system jobs at break-even in years 6–7) and open questions: `docs/plans/2026-09-26-remodel-roi-calculator-fields-handoff.md` §4–§6. Open for Scope Pricing: whether to remove the ported solar Formulas. | 2026-09-26 |
+| **R15** | **Owner answers, 2026-09-26.** (1) Remodel ROI Calculator **value added defaults to 80% of the project price** (v1, unsourced, interim). (2) **Headline = a combination:** the break-even year, the year the monthly cost flips, and the benefit at the chosen horizon. (3) **Solar removed from Scope Pricing** (R14.1): `installPanels`, `rnrPanels` and `installBattery`, their Unit Costs (`dollarPerWatt`, `dollarPerPanelRnr`, `battery5kWh`, `battery10kWh`), their Variables (`numPanels`, `wattsPerPanel`, `numBatteries`, `kWhPerBattery`) and the `W`/`kWh` units. **21 Formulas remain.** Removing & reinstalling existing panels for a re-roof is now a manual line. The main panel upgrade's outcome text drops ", solar" (a deliberate departure from R10's verbatim seed copy). | 2026-09-26 |
 
 ## 2. Open decisions
 
@@ -123,7 +124,7 @@ Each phase gets its own spec, then plan, then build. A phase closes when every r
 - [ ] **PR4** *fix* **Each Formula declares the Variables it reads.** That declaration is the single source for both the form and the formula's argument type. This fixes B-P3 through B-P5 at the root: in the source, formula inputs came from the trade while the form came from a separate link table, and the two drifted.
 - [ ] **PR5** *port* Compile-time exhaustiveness: every pricing key has exactly one Formula (the source's `build<Record<ScopeAccessorOfTrade, …>>`). In C0 the key is the remodel-x accessor (I2). In C1 it becomes `ScopeSlug`.
 - [ ] **PR6** *port + fix* **Project context** is number of stories and current roof type, entered by the rep in C0 (the source read them from the job site). The tear-off roof type follows D5.
-- [ ] **PR7** *fix* Inputs that don't affect price are **not** collected in C0: `desiredRoofType`, `percentFreeDeckReplacement`, `inverterType`, and `systemTonnage` for mini-splits. They are recorded for C4, where they may matter to the SOW text (I10).
+- [ ] **PR7** *fix* Inputs that don't affect price are **not** collected in C0: `desiredRoofType`, `percentFreeDeckReplacement`, `inverterType` (moot since R15), and `systemTonnage` for mini-splits. They are recorded for C4, where they may matter to the SOW text (I10).
 - [ ] **PR8** Price math: `price = round(cost × multiplier)`, with the multiplier defaulting per D3 and adjusted live by the rep. Tax per D2.
 - [ ] **PR9** A **quote with several lines**: the rep adds several scopes, including the same scope twice, and sees each line's Price plus the total Price and tax.
 - [ ] **PR10** A **manual price line** for any scope without a Formula (the source crashed, B-P2). It covers the source's stubs (§7.1, not ported) and every Notion scope in C1+.
@@ -143,7 +144,7 @@ Each phase gets its own spec, then plan, then build. A phase closes when every r
 ### 3.5 Conventions and verification (V)
 
 - [ ] **V1** `pnpm tsc` and `pnpm lint` pass. Never `pnpm build`.
-- [ ] **V2** `scripts/verify-scope-pricing.ts` (`node:assert/strict`, run with `npx tsx`, following the `scripts/verify-*.ts` pattern) holds golden values reproduced from the source: for example, 20 panels × 400 W × $3.50/W gives Cost $28,000, then ×2.8 gives Price $78,400, and 7.5% inside that gives tax $5,880. It covers one case per ported formula, plus the §6 fixes.
+- [ ] **V2** `scripts/verify-scope-pricing.ts` (`node:assert/strict`, run with `npx tsx`, following the `scripts/verify-*.ts` pattern) holds golden values reproduced from the source: *(solar golden values removed by R15; the worked quote example is now `rnrAttic` at 4,000 sq ft)* for example, 20 panels × 400 W × $3.50/W gives Cost $28,000, then ×2.8 gives Price $78,400, and 7.5% inside that gives tax $5,880. It covers one case per ported formula, plus the §6 fixes.
 - [ ] **V3** The same script checks exhaustively over every select option and boundary number that no output is NaN, negative or undefined.
 - [ ] **V4** `scripts/verify-remodel-roi.ts` holds golden values: $1,000,000 at 4% for 5 years gives $1,216,653. It also covers escalation at g = 0 and g > 0, parity with `amortizedMonthlyPayment`, remaining balance at k = 0 and k = n, and break-even.
 - [ ] **V5** Folder layout follows `features/proposal-flow` and `features/meeting-flow`: `constants/ · lib/ · schemas/ · hooks/ · types/ · ui/components/ · ui/views/`. One component per file, named exports, `lib/` pure, `schemas/` a sibling of `lib/`, hooks only in `hooks/`, and no module-level constants inside components (`memory/coding-conventions.md`).
@@ -155,7 +156,7 @@ Each phase gets its own spec, then plan, then build. A phase closes when every r
 
 | Value | Tier | Notes |
 |---|---|---|
-| Measurements (BSQ, panels, tonnage, window counts, sqft…) and choices (paint type, battery size) | **On-screen** | |
+| Measurements (BSQ, tonnage, window counts, sqft…) and choices (paint type) | **On-screen** | |
 | Project context (stories, current roof type) | **On-screen** | Prefilled from the customer in C3 (I6) |
 | Bills now and after, home value, liabilities, project price, incentives, down payment, APR, term | **On-screen** | |
 | Savings assumptions (escalation %, appreciation %, horizon) | **On-screen**, default from **Admin-configured** | Visible on purpose (SP-O4) |
@@ -193,10 +194,10 @@ Each phase gets its own spec, then plan, then build. A phase closes when every r
 
 | ID | Metric | Target | How measured |
 |---|---|---|---|
-| **M1** | Faithful port | 100% of the 24 ported formulas reproduce the source's Cost for the golden inputs, except the documented §6 fixes | V2 |
+| **M1** | Faithful port | 100% of the ported formulas (24 ported; 21 after R15 removed solar) reproduce the source's Cost for the golden inputs, except the documented §6 fixes | V2 |
 | **M2** | Robust math | 0 NaN, negative or undefined outputs across the exhaustive input sweep | V3, V4 |
 | **M3** | No homeowner leak | 0 Cost, multiplier, margin or Unit Cost strings in either calculator's default render | V6 |
-| **M4** | Rep speed | A rep prices a roof tear-off + solar + windows quote in **under 2 minutes** on a tablet, including one multiplier adjustment | owner-run smoke |
+| **M4** | Rep speed | A rep prices a roof tear-off + HVAC + windows quote in **under 2 minutes** on a tablet, including one multiplier adjustment | owner-run smoke |
 | **M5** | Transparency | Every Remodel ROI Calculator output traces to inputs and assumptions visible on screen | spec review and smoke |
 | **M6** | Interim debt visible | Every interim choice has a code why-comment and an I-row. Each phase closes its own I-rows | §5 audit per phase |
 | **M7** | Clean gates | `pnpm tsc` and `pnpm lint` green on every C0 commit | V1 |
@@ -212,7 +213,7 @@ Each row has a why-comment at its code site. The comment gives the reason, never
 | ID | Interim choice in C0 | Final shape | Closes in |
 |---|---|---|---|
 | **I1** | Engines live in `src/features/calculators/{scope-pricing-calculator,remodel-roi-calculator}/lib/` | A module home (D9) | C2 |
-| **I2** | Pricing keys are the remodel-x accessors (`tearOff`, `installPanels`, …) | `ScopeSlug` from the Notion catalog | C1 |
+| **I2** | Pricing keys are the remodel-x accessors (`tearOff`, `replaceSplitSystem`, …) | `ScopeSlug` from the Notion catalog | C1 |
 | **I3** | Admin-configured values (Unit Costs, multiplier default and floor, tax rate, paint thresholds, permit fees, default savings rates) are served from System defaults by the one config resolver | The resolver reads `app_settings`, and an admin UI edits the values (CF2, CF6) | C2 |
 | **I4** | Savings default rates are the unsourced source values | Sourced defaults (D4) | C2/C3 |
 | **I5** | Tax is inside the price at 7.5% | The rule confirmed in D2 | C2 |
@@ -253,7 +254,7 @@ Each row has a why-comment at its code site. The comment gives the reason, never
 
 ## 7. Port inventory
 
-### 7.1 Formulas: 24 ported, 8 not ported
+### 7.1 Formulas: 24 ported, 8 not ported (3 solar Formulas removed by R15; 21 remain)
 
 Source: `apps/remodel-x/src/features/project-creator/lib/cost-formulas/*.ts`. BSQ = 100 sqft; S = number of stories; L = number of layers.
 
@@ -263,9 +264,9 @@ Source: `apps/remodel-x/src/features/project-creator/lib/cost-formulas/*.ts`. BS
 | Roof | `tearOff` | numFlatBSQ, numPitchedBSQ, numLayers | pitched·(roofType=shingle ? BSQTearOffShingles : BSQTearOffTile) + flat·BSQTearOffFlat + (L−1)·dollarPerAdditionalLayer·pitched + (S−1)·dollarPerAdditionalStory·(flat+pitched) |
 | Roof | `redeck` | numFlatBSQ, numPitchedBSQ, numLayers | flat·BSQRedeckFlat + pitched·BSQRedeckPitched + layers and stories as for tearOff |
 | Roof | `tileReset` | numPitchedBSQ | pitched·(BSQTileReset + (S−1)·dollarPerAdditionalStory) |
-| Solar | `installPanels` | numPanels, wattsPerPanel | panels·watts·dollarPerWatt |
-| Solar | `rnrPanels` | numPanels | panels·dollarPerPanelRnr |
-| Solar | `installBattery` | numBatteries, kWhPerBattery | n·(kWh=5 ? battery5kWh : battery10kWh) |
+| Solar | `installPanels` | numPanels, wattsPerPanel | panels·watts·dollarPerWatt | *removed (R15)*
+| Solar | `rnrPanels` | numPanels | panels·dollarPerPanelRnr | *removed (R15)*
+| Solar | `installBattery` | numBatteries, kWhPerBattery | n·(kWh=5 ? battery5kWh : battery10kWh) | *removed (R15)*
 | HVAC | `replaceSplitSystem` | systemTonnage | threeTonRnr + (tons−3)·perTonStep |
 | HVAC | `replaceFurnace` | systemTonnage | furnace36kBTURnr + (tons−3)·perTonStep |
 | HVAC | `installMiniSplit` | numMiniSplits | miniSplits·n |
@@ -285,10 +286,10 @@ The trade column shows display names. In code, the groups are the tri-pros seed 
 
 | Trade | Key | $ |
 |---|---|---|
-| Solar | dollarPerWatt | 3.5 |
-| Solar | dollarPerPanelRnr | 225 |
-| Solar | battery5kWh | 6,000 |
-| Solar | battery10kWh | 11,000 |
+| Solar | dollarPerWatt | 3.5 | *removed (R15)*
+| Solar | dollarPerPanelRnr | 225 | *removed (R15)*
+| Solar | battery5kWh | 6,000 | *removed (R15)*
+| Solar | battery10kWh | 11,000 | *removed (R15)*
 | Roof | BSQTearOffFlat | 530 |
 | Roof | BSQTearOffShingles | 480 |
 | Roof | BSQTearOffTile | 750 |
@@ -331,7 +332,7 @@ Price rule in the source: `price = round(cost × 2.8)`, `tax = round(price × 0.
 
 The same definitions already sit, unread, in tri-pros `src/shared/db/seeds/data/variables.ts`.
 - **Roof:** numFlatBSQ, numPitchedBSQ (number, BSQ), numLayers (1 | 2 | 3). Also currentRoofType and desiredRoofType, and percentFreeDeckReplacement (15 | 20 | 25), which are I10.
-- **Solar:** numPanels (number), wattsPerPanel (number, W), numBatteries (0–3), kWhPerBattery (5 | 10). inverterType (microinverter | solar-edge) is I10.
+- **Solar:** *removed (R15).* Was: numPanels (number), wattsPerPanel (number, W), numBatteries (0–3), kWhPerBattery (5 | 10); inverterType (microinverter | solar-edge) was I10.
 - **HVAC:** systemTonnage (1–5 in steps of 0.5), numMiniSplits (1–8). replaceDucts (boolean) is unused.
 - **Windows:** numLargeWindows, numSmallWindows, numStandardSliders, numSpecialSliders, numFrenchDoors (all counts).
 - **Insulation:** sqft. existing/desiredInsulationType are unused.

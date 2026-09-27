@@ -25,7 +25,6 @@ const config = resolveScopePricingConfig()
 
 // ── Config ──────────────────────────────────────────────────────────────────
 assert.equal(config.unitCosts.roof.BSQTearOffShingles, 480, 'roof tear-off shingles unit cost')
-assert.equal(config.unitCosts.solar.dollarPerWatt, 3.5, 'solar $/W')
 assert.equal(config.unitCosts.hvac.perTonStep, 800, 'HVAC per-ton step')
 assert.equal(config.unitCosts.electricals.mpuBase, 3200, 'MPU base')
 assert.equal(config.unitCosts.electricals.mpuWithRelocation, 4000, 'MPU with relocation')
@@ -42,7 +41,7 @@ for (const trade of PRICING_TRADES) {
 }
 
 // ── Registry ────────────────────────────────────────────────────────────────
-assert.equal(Object.keys(FORMULAS).length, 24, '24 Formulas')
+assert.equal(Object.keys(FORMULAS).length, 21, '21 Formulas')
 for (const key of PRICING_KEYS) {
   const formula = FORMULAS[key]
   assert.equal(formula.key, key, `${key}: registry key matches the Formula's key`)
@@ -73,11 +72,6 @@ const golden: [PricingKey, VariableInputs, ProjectContext, number][] = [
   ['tearOff', roofInputs, twoStoryTile, 18775],
   ['redeck', roofInputs, twoStory, 18375],
   ['tileReset', { numPitchedBSQ: 20 }, twoStory, 12100],
-  ['installPanels', { numPanels: 20, wattsPerPanel: 400 }, oneStory, 28000],
-  ['rnrPanels', { numPanels: 20 }, oneStory, 4500],
-  ['rnrPanels', {}, oneStory, 0],
-  ['installBattery', { numBatteries: 1, kWhPerBattery: 5 }, oneStory, 6000],
-  ['installBattery', { numBatteries: 2, kWhPerBattery: 10 }, oneStory, 22000], // 10 kWh uses battery10kWh
   ['replaceSplitSystem', { systemTonnage: 4 }, oneStory, 9300],
   ['replaceSplitSystem', { systemTonnage: 2 }, oneStory, 7700],
   ['replaceSplitSystem', { systemTonnage: null }, oneStory, 8500], // an unselected tonnage uses the default 3, not $6,100
@@ -114,7 +108,7 @@ function needsOf(key: PricingKey, inputs: VariableInputs): VariableKey[] {
   assert.equal(resolved.ok, false, `${key} ${JSON.stringify(inputs)} should be incomplete`)
   return resolved.ok ? [] : resolved.needs
 }
-assert.deepEqual(needsOf('installPanels', { numPanels: 20, wattsPerPanel: null }), ['wattsPerPanel'], 'required Variable cleared')
+assert.deepEqual(needsOf('rnrAttic', { sqft: null }), ['sqft'], 'required Variable cleared')
 assert.deepEqual(needsOf('installExteriorPaint', { homeSqFt: 1200, garageSqFt: 200 }), ['paintType'], 'missing paint type')
 assert.deepEqual(needsOf('overlay', { numFlatBSQ: 5, numPitchedBSQ: 900 }), ['numPitchedBSQ'], 'out of range')
 assert.deepEqual(needsOf('replaceSplitSystem', { systemTonnage: 7 }), ['systemTonnage'], 'not one of the options')
@@ -153,23 +147,23 @@ for (const key of PRICING_KEYS) {
 console.log(`swept ${swept} Formula inputs`)
 
 // ── Quote pricing ─────────────────────────────────────────────────────────
-const panels: QuoteLineInput = { id: 'a', kind: 'formula', pricingKey: 'installPanels', variables: { numPanels: 20, wattsPerPanel: 400 } }
-const panelsQuote = priceQuote({ lines: [panels], context: oneStory, config })
-const panelLine = panelsQuote.lines[0]
-assert.ok(panelLine?.status === 'priced', 'panels line priced')
+const attic: QuoteLineInput = { id: 'a', kind: 'formula', pricingKey: 'rnrAttic', variables: { sqft: 4000 } }
+const atticQuote = priceQuote({ lines: [attic], context: oneStory, config })
+const atticLine = atticQuote.lines[0]
+assert.ok(atticLine?.status === 'priced', 'attic line priced')
 assert.deepEqual(
-  { cost: panelLine.cost, price: panelLine.price, tax: panelLine.tax, base: panelLine.base },
-  { cost: 28000, price: 78400, tax: 5880, base: 72520 },
-  'golden: 20 × 400 W → Cost 28,000 → Price 78,400 → tax 5,880 → base 72,520',
+  { cost: atticLine.cost, price: atticLine.price, tax: atticLine.tax, base: atticLine.base },
+  { cost: 10000, price: 28000, tax: 2100, base: 25900 },
+  'golden: 4,000 sq ft → Cost 10,000 → Price 28,000 → tax 2,100 → base 25,900',
 )
-assert.equal(panelsQuote.totalPrice, 78400, 'total price')
-assert.equal(panelsQuote.multiplier, 2.8, 'default multiplier applied')
-assert.equal(panelsQuote.tier, 'healthy', '2.8 is healthy')
-assert.equal(panelsQuote.margin, 50400, 'margin')
+assert.equal(atticQuote.totalPrice, 28000, 'total price')
+assert.equal(atticQuote.multiplier, 2.8, 'default multiplier applied')
+assert.equal(atticQuote.tier, 'healthy', '2.8 is healthy')
+assert.equal(atticQuote.margin, 18000, 'margin')
 
-assert.equal(priceQuote({ lines: [panels], context: oneStory, config, overrides: { multiplier: 1.5 } }).multiplier, 2, 'override below the floor is clamped')
-assert.equal(priceQuote({ lines: [panels], context: oneStory, config, overrides: { multiplier: Number.NaN } }).multiplier, 2.8, 'NaN override is ignored')
-assert.equal(priceQuote({ lines: [panels], context: oneStory, config, overrides: { multiplier: 3.25 } }).totalPrice, 91000, 'override above the floor applies')
+assert.equal(priceQuote({ lines: [attic], context: oneStory, config, overrides: { multiplier: 1.5 } }).multiplier, 2, 'override below the floor is clamped')
+assert.equal(priceQuote({ lines: [attic], context: oneStory, config, overrides: { multiplier: Number.NaN } }).multiplier, 2.8, 'NaN override is ignored')
+assert.equal(priceQuote({ lines: [attic], context: oneStory, config, overrides: { multiplier: 3.25 } }).totalPrice, 32500, 'override above the floor applies')
 
 const tearOffLine = (id: string): QuoteLineInput => ({ id, kind: 'formula', pricingKey: 'tearOff', variables: { numFlatBSQ: 5, numPitchedBSQ: 20, numLayers: 2 } })
 const twice = priceQuote({ lines: [tearOffLine('r1'), tearOffLine('r2')], context: twoStory, config })
@@ -177,29 +171,29 @@ assert.equal(twice.lines.filter(line => line.status === 'priced').length, 2, 'th
 assert.equal(twice.totalCost, 26750, 'both tear-offs counted')
 
 const manual: QuoteLineInput = { id: 'm', kind: 'manual', label: 'Gutters', price: 5000 }
-const mixed = priceQuote({ lines: [panels, manual], context: oneStory, config })
+const mixed = priceQuote({ lines: [attic, manual], context: oneStory, config })
 const manualResult = mixed.lines[1]
 assert.ok(manualResult?.status === 'priced', 'manual line priced')
 assert.deepEqual({ cost: manualResult.cost, tax: manualResult.tax, base: manualResult.base }, { cost: null, tax: 375, base: 4625 }, 'manual line: no cost, tax inside the price')
-assert.equal(mixed.totalPrice, 83400, 'manual price counts toward the total')
-assert.equal(mixed.margin, 50400, 'manual line left out of margin')
+assert.equal(mixed.totalPrice, 33000, 'manual price counts toward the total')
+assert.equal(mixed.margin, 18000, 'manual line left out of margin')
 assert.equal(mixed.effectiveMultiplier, 2.8, 'manual line left out of the multiplier')
 assert.equal(mixed.hasUncostedLines, true, 'flags uncosted lines')
 
 const unpriced = priceQuote({
-  lines: [panels, { id: 'x', kind: 'manual', label: '', price: null }, { id: 'y', kind: 'formula', pricingKey: 'installPanels', variables: { numPanels: 10, wattsPerPanel: null } }],
+  lines: [attic, { id: 'x', kind: 'manual', label: '', price: null }, { id: 'y', kind: 'formula', pricingKey: 'rnrAttic', variables: { sqft: null } }],
   context: oneStory,
   config,
 })
-assert.equal(unpriced.totalPrice, 78400, 'incomplete lines are left out of the total')
+assert.equal(unpriced.totalPrice, 28000, 'incomplete lines are left out of the total')
 assert.deepEqual(unpriced.lines.map(line => line.status), ['priced', 'incomplete', 'incomplete'], 'order kept, incomplete marked')
-const incompletePanels = unpriced.lines[2]
-assert.ok(incompletePanels?.status === 'incomplete', 'narrow')
-assert.deepEqual(incompletePanels.needs, ['wattsPerPanel'], 'incomplete line names what it needs')
+const incompleteAttic = unpriced.lines[2]
+assert.ok(incompleteAttic?.status === 'incomplete', 'narrow')
+assert.deepEqual(incompleteAttic.needs, ['sqft'], 'incomplete line names what it needs')
 
 assert.equal(priceQuote({ lines: [tearOffLine('r1')], context: twoStory, config }).lines.length, 1, 'permits are off by default')
 const withPermit = { ...config, permitFees: { ...config.permitFees, roof: { amount: 250, enabled: true } } }
-const permitted = priceQuote({ lines: [tearOffLine('r1'), tearOffLine('r2'), panels], context: twoStory, config: withPermit })
+const permitted = priceQuote({ lines: [tearOffLine('r1'), tearOffLine('r2'), attic], context: twoStory, config: withPermit })
 const permitLines = permitted.lines.filter(line => line.kind === 'permit')
 assert.equal(permitLines.length, 1, 'one permit per trade, however many roof lines')
 assert.deepEqual(
@@ -208,18 +202,18 @@ assert.deepEqual(
   'permit priced like a formula line',
 )
 assert.equal(permitted.lines[permitted.lines.length - 1]?.kind, 'permit', 'permit lines come last')
-assert.equal(priceQuote({ lines: [panels], context: oneStory, config: withPermit }).lines.length, 1, 'no roof line → no roof permit')
+assert.equal(priceQuote({ lines: [attic], context: oneStory, config: withPermit }).lines.length, 1, 'no roof line → no roof permit')
 
 // ── Target price ──────────────────────────────────────────────────────────
-const panelsInput: PriceQuoteInput = { lines: [panels], context: oneStory, config }
-const reached = solveMultiplier(100000, panelsInput)
+const atticInput: PriceQuoteInput = { lines: [attic], context: oneStory, config }
+const reached = solveMultiplier(35000, atticInput)
 assert.equal(reached.status, 'reached', 'target above the floor is reached')
-assert.ok(Math.abs(reached.achievedTotal - 100000) <= 1, 'achieved total is within rounding of the target')
-const withManual = solveMultiplier(100000, { lines: [panels, manual], context: oneStory, config })
-assert.ok(withManual.status === 'reached' && Math.abs(withManual.multiplier - 95000 / 28000) < 1e-9, 'manual price is subtracted before solving')
-const tooLow = solveMultiplier(40000, panelsInput)
-assert.deepEqual(tooLow, { status: 'below-floor', multiplier: 2, achievedTotal: 56000 }, 'target under the floor → floor price')
-assert.equal(solveMultiplier(1000, { lines: [panels, manual], context: oneStory, config }).status, 'below-floor', 'target under the manual lines → below floor')
+assert.ok(Math.abs(reached.achievedTotal - 35000) <= 1, 'achieved total is within rounding of the target')
+const withManual = solveMultiplier(35000, { lines: [attic, manual], context: oneStory, config })
+assert.ok(withManual.status === 'reached' && Math.abs(withManual.multiplier - 30000 / 10000) < 1e-9, 'manual price is subtracted before solving')
+const tooLow = solveMultiplier(15000, atticInput)
+assert.deepEqual(tooLow, { status: 'below-floor', multiplier: 2, achievedTotal: 20000 }, 'target under the floor → floor price')
+assert.equal(solveMultiplier(1000, { lines: [attic, manual], context: oneStory, config }).status, 'below-floor', 'target under the manual lines → below floor')
 assert.deepEqual(solveMultiplier(100000, { lines: [manual], context: oneStory, config }), { status: 'no-cost' }, 'no Cost to solve against')
 
 // ── Agent panel helpers ─────────────────────────────────────────────────────
@@ -231,7 +225,7 @@ assert.deepEqual(unitCostEntries(config, 'electricals'), [
   { key: 'mpuBase', label: 'Main panel upgrade', value: 3200 },
   { key: 'mpuWithRelocation', label: 'Main panel upgrade (with relocation)', value: 4000 },
 ], 'Unit Cost entries carry the seed labels')
-assert.deepEqual(tradesInQuote(mixed), ['solar'], 'trades from formula lines only')
+assert.deepEqual(tradesInQuote(mixed), ['atticBasement'], 'trades from formula lines only')
 assert.match(describeTargetResult(tooLow, 2), /2\.00x floor/, 'below-floor copy names the floor')
 assert.match(describeTargetResult({ status: 'no-cost' }, 2), /formula/, 'no-cost copy')
 

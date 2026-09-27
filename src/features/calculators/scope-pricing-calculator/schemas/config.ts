@@ -17,12 +17,6 @@ export const scopePricingConfigSchema = z.object({
       dollarPerAdditionalStory: unitCost,
       dollarPerAdditionalLayer: unitCost,
     }),
-    solar: z.object({
-      dollarPerWatt: unitCost,
-      dollarPerPanelRnr: unitCost,
-      battery5kWh: unitCost,
-      battery10kWh: unitCost,
-    }),
     hvac: z.object({
       threeTonRnr: unitCost,
       furnace36kBTURnr: unitCost,
