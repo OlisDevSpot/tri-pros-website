@@ -22,7 +22,6 @@ export function MeetingCustomerPane({ customer, hasCustomer, isLoading, leadSour
             <CustomerOverviewCard customer={customer} leadSource={leadSource}>
               <CustomerOverviewCard.ContactActions />
               <CustomerOverviewCard.LeadSource />
-              <CustomerOverviewCard.Campaign />
               <CustomerOverviewCard.Insights />
               <CustomerOverviewCard.ProfileFields />
             </CustomerOverviewCard>

@@ -77,23 +77,8 @@ function LeadSource({ className }: { className?: string }) {
       source={leadSource}
       className={cn('min-h-0 w-auto gap-2 rounded-none p-0 hover:bg-transparent focus-visible:bg-transparent sm:min-h-0', className)}
     >
-      <LeadSourceOverviewCard.Indicator />
       <LeadSourceOverviewCard.Name className="font-normal" />
     </LeadSourceOverviewCard>
-  )
-}
-
-function Campaign({ className }: { className?: string }) {
-  const { customer } = useCard()
-  const campaign = customer.attribution?.utmCampaign
-  if (!campaign) {
-    return null
-  }
-  return (
-    <dl className={cn('text-sm', className)}>
-      <dt className="text-xs text-muted-foreground">UTM campaign</dt>
-      <dd className="wrap-break-word font-medium">{campaign}</dd>
-    </dl>
   )
 }
 
@@ -110,7 +95,6 @@ function ProfileFields() {
 export const CustomerOverviewCard = Object.assign(Root, {
   ContactActions,
   LeadSource,
-  Campaign,
   Insights,
   ProfileFields,
 })

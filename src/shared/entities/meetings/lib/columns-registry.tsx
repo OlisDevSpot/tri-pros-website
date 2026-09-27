@@ -193,7 +193,6 @@ export const MEETING_COLUMNS = {
           source={source}
           className="min-h-0 w-auto gap-2 rounded-none p-0 hover:bg-transparent focus-visible:bg-transparent sm:min-h-0"
         >
-          <LeadSourceOverviewCard.Indicator />
           <LeadSourceOverviewCard.Name className="font-normal" />
         </LeadSourceOverviewCard>
       )
