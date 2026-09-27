@@ -4,7 +4,8 @@ import { formatAsDollars } from '@/shared/lib/formatters'
 const MINUS = '−'
 
 export function formatMoney(value: number): string {
-  const rounded = Math.round(value)
+  // Math.round can land on -0 (straight from -0, or from any small negative like -0.3); treat it as +0 so it never prints as "-$0".
+  const rounded = Math.round(value) || 0
   return rounded < 0 ? `${MINUS}${formatAsDollars(-rounded)}` : formatAsDollars(rounded)
 }
 

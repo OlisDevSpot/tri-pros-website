@@ -273,6 +273,9 @@ for (const values of [createRemodelRoiDefaults(config), JOB_A, cash(JOB_D), { ..
   assert.equal(roundMoney(26733.45), '$27,000', 'nearest $1,000 at 10k+')
   assert.equal(roundMoney(4413.5), '$4,400', 'nearest $100 at 1k+')
   assert.equal(roundMoney(-6307.59), '−$6,300', 'negative money keeps its sign')
+  assert.equal(formatMoney(-0), '$0', 'negative zero never prints as "-$0"')
+  assert.equal(formatMoney(-0.3), '$0', 'a value that rounds to negative zero never prints as "-$0"')
+  assert.equal(roundMoney(-0), '$0', 'roundMoney: negative zero never prints as "-$0"')
   assert.equal(joinWords(['roof', 'HVAC']), 'roof and HVAC', 'two words')
 
   const tags = (content: typeof a.monthly) => Object.fromEntries(content.uses.map(row => [row.label, row.tag]))
@@ -298,6 +301,13 @@ for (const values of [createRemodelRoiDefaults(config), JOB_A, cash(JOB_D), { ..
     v.project.price = 30000
   }))
   assert.match(windows.intro.body, /Your windows and doors are near the end of their life\./, 'plural reads as plural')
+
+  // Job E: incentives cover the whole price, so "paid" (project price + interest, negated) is -0 on both payment modes.
+  for (const values of [JOB_E, cash(JOB_E)]) {
+    const total = story(values).total
+    assert.ok(!total.equation.includes('-$0') && !total.equation.includes('−$0'), 'the total equation never prints negative zero')
+    assert.ok(total.receipt.every(row => row.kind !== 'line' || (!row.value.includes('-$0') && !row.value.includes('−$0'))), 'the total receipt never prints negative zero')
+  }
 
   const banned = /\b(?:Cost|Multiplier|Margin)\b/
   for (const content of [a, paid, c, d]) {

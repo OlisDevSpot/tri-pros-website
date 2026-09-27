@@ -25,7 +25,7 @@ export function buildTotal({ projection, lookAhead }: StoryInputs): ChapterConte
     guide: later != null && later > benefit
       ? `The longer you stay, the more it pays: about ${roundMoney(later)} ahead by year ${PROJECTION_YEARS}.`
       : 'Counting lower bills, skipped repairs and replacements, and your home\'s added value, minus what you pay for the project.',
-    equation: `${roundMoney(parts.billsSaved)} bills + ${roundMoney(skipped)} skipped + ${roundMoney(parts.valueGain)} value − ${roundMoney(paid)} project and interest = ${roundMoney(benefit)}`,
+    equation: `${formatMoney(parts.billsSaved)} bills + ${formatMoney(skipped)} skipped + ${formatMoney(parts.valueGain)} value − ${formatMoney(paid)} project and interest = ${formatMoney(benefit)}`,
     receipt: [
       { kind: 'line', op: '+', label: `Lower bills over ${formatYears(lookAhead)}`, value: formatMoney(parts.billsSaved), tag: 'calc' },
       ...(parts.repairsSkipped ? [{ kind: 'line' as const, op: '+' as const, label: 'Repairs you skip', value: formatMoney(parts.repairsSkipped), tag: 'calc' as const }] : []),
