@@ -3,7 +3,7 @@
 import type { HTMLMotionProps } from 'motion/react'
 
 import * as CollapsiblePrimitive from '@radix-ui/react-collapsible'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 
 import { COLLAPSE_HEIGHT_VARIANTS, COLLAPSE_TRANSITION } from '@/shared/constants/motion'
 import { cn } from '@/shared/lib/utils'
@@ -60,6 +60,9 @@ function AnimatedCollapsibleContent({
   children,
   ...props
 }: AnimatedCollapsibleContentProps) {
+  // MotionConfig reducedMotion="user" leaves height tweens running, so this opts out itself.
+  const reduceMotion = useReducedMotion()
+
   return (
     <AnimatePresence initial={false}>
       {open && (
@@ -68,7 +71,7 @@ function AnimatedCollapsibleContent({
           initial={COLLAPSE_HEIGHT_VARIANTS.initial}
           animate={COLLAPSE_HEIGHT_VARIANTS.animate}
           exit={COLLAPSE_HEIGHT_VARIANTS.exit}
-          transition={COLLAPSE_TRANSITION}
+          transition={reduceMotion ? { duration: 0 } : COLLAPSE_TRANSITION}
           className={cn('overflow-hidden', className)}
           {...props}
         >
