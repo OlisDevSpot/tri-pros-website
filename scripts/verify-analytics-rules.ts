@@ -257,6 +257,61 @@ console.log('8. Sales (classification) ✓')
   assert.deepEqual(nobody.rows[0].rates, { bookingRate: null, sitRate: null, closeRate: null }, 'rates are null on a zero base')
   const empty = aggregateLeadRecords(buildLeadRecords({ customers: [], meetings: [], sales: [] }, NOW), {}, 'total')
   assert.equal(empty.rows[0].bookedLeads, 0, 'no data: one all-zero total row')
+
+  assert.equal(allTime.averageTicketCents, 1_000_000, 'average ticket divides by new sales that have a value, not all new sales')
+
+  assert.equal(projectOnly.totalLeads, null, 'a meeting-order filter: leads not applicable')
+  assert.equal(projectOnly.newSales, null, 'a meeting-order filter makes sales not applicable')
+  const byOutcome = aggregateLeadRecords(records, { range: july }, 'outcome').rows
+  assert.ok(byOutcome.every(r => r.totalLeads === null && r.newSales === null), 'grouping by outcome: leads and sales not applicable')
+  const byOrder = aggregateLeadRecords(records, { range: july }, 'meetingOrder').rows
+  assert.ok(byOrder.every(r => r.totalLeads === null && r.newSales === null), 'grouping by meeting order: leads and sales not applicable')
+  const firstRow = byOrder.find(r => r.groupKey === 'first')!
+  assert.equal(firstRow.bookedLeads, 2, 'booked leads group by their own meeting\'s order (m1, m3)')
+  assert.equal(firstRow.sits, 2, 'both first meetings sat')
+
+  const u2Only = aggregateLeadRecords(records, { range: july, closerIds: ['u2'] }, 'total')
+  assert.equal(u2Only.rows[0].totalLeads, null, 'a closer filter: leads not applicable')
+  assert.equal(u2Only.rows[0].bookedLeads, 2, 'closer filter tests the booked lead\'s own meeting (m1, m3)')
+  assert.equal(u2Only.rows[0].meetings, 2, 'u2 sat in m1 and m3 only')
+  assert.equal(u2Only.rows[0].newSales, 1, 'a closer filter keeps sales applicable (s1 on m1)')
+  assert.equal(u2Only.rows[0].totalCloses, 1, 'the upsell on m4 had no u2')
+  assert.equal(u2Only.undatedSales, 1, 'the undated sale is on m3, where u2 is a closer')
+  const u1Only = aggregateLeadRecords(records, { range: july, closerIds: ['u1'] }, 'total')
+  assert.equal(u1Only.rows[0].totalCloses, 2, 'u1 closed s1 and the upsell')
+  assert.equal(u1Only.undatedSales, 0, 'u1 was not on the undated sale\'s meeting')
+
+  const srcBOnly = aggregateLeadRecords(records, { range: july, leadSourceIds: ['src-b'] }, 'total').rows[0]
+  assert.equal(srcBOnly.totalLeads, 1, 'a source filter keeps only that source\'s leads')
+  assert.equal(srcBOnly.newSales, 0, 'a person-level filter drops other leads\' sales too')
+  const unknownCity = aggregateLeadRecords(records, { range: july, cities: [null] }, 'total')
+  assert.equal(unknownCity.rows[0].totalLeads, 1, 'null matches an unknown city (c3)')
+  assert.equal(unknownCity.rows[0].sits, 1, 'c3 sat')
+  assert.equal(unknownCity.undatedSales, 1, 'c3\'s undated sale')
+}
+{
+  const crossMonth = buildLeadRecords({
+    customers: [
+      customer('x1', '2026-07-15T17:00:00.000Z'),
+      customer('x2', '2026-08-01T07:00:00.000Z'),
+      customer('x3', '2026-07-01T07:00:00.000Z'),
+    ],
+    meetings: [meeting('x1m', 'x1', '2026-08-05T17:00:00.000Z', 'pns', { closerIds: ['u3'] })],
+    sales: [sale('x1s', 'x1m', '2026-08-20T17:00:00.000Z', { finalTcpCents: 500_000 })],
+  }, NOW)
+  const julyRow = aggregateLeadRecords(crossMonth, { range: businessMonthWindow('2026-07') }, 'total').rows[0]
+  const augustRow = aggregateLeadRecords(crossMonth, { range: businessMonthWindow('2026-08') }, 'total').rows[0]
+  assert.equal(julyRow.totalLeads, 2, 'July has x1 and x3 (at July\'s first instant); x2 at August\'s first instant is excluded')
+  assert.equal(julyRow.bookedLeads, 0, 'a July lead who sits in August is not a July booked lead')
+  assert.equal(julyRow.newSales, 0, 'nor a July sale')
+  assert.equal(julyRow.rates.bookingRate, 0, 'booking rate is 0, not null, when there are leads')
+  assert.equal(augustRow.totalLeads, 1, 'x2 lands in August')
+  assert.equal(augustRow.bookedLeads, 1, 'the sit is counted in the month it happened')
+  assert.equal(augustRow.sits, 1, 'x1 sat in August')
+  assert.equal(augustRow.meetings, 1, 'the meeting row lands in August')
+  assert.equal(augustRow.newSales, 1, 'the sale is counted in the month it was signed')
+  assert.equal(augustRow.revenueNewCents, 500_000, 'its revenue lands in August')
+  assert.equal(augustRow.rates.bookingRate, 1, 'same-period booking rate: 1 booked / 1 lead')
 }
 console.log('9. Aggregation ✓')
 
