@@ -11,7 +11,7 @@ import { customers } from '@/shared/db/schema/customers'
  * drizzle's ambiguous emission of the outer column inside the subquery.
  */
 
-const EXISTS_PROJECT = sql`EXISTS (
+export const EXISTS_PROJECT = sql`EXISTS (
   SELECT 1 FROM projects p
   WHERE p.customer_id = "customers"."id"
 )`
