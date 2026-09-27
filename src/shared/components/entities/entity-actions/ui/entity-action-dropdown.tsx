@@ -29,6 +29,8 @@ interface EntityActionDropdownProps<TEntity> {
   orientation?: 'horizontal' | 'vertical'
   /** Additional classes on the trigger button */
   triggerClassName?: string
+  /** Renders a labeled outline trigger instead of the icon-only one; always visible, so it works on touch. */
+  triggerLabel?: string
 }
 
 export function EntityActionDropdown<TEntity>({
@@ -36,6 +38,7 @@ export function EntityActionDropdown<TEntity>({
   actions,
   orientation = 'vertical',
   triggerClassName,
+  triggerLabel,
 }: EntityActionDropdownProps<TEntity>) {
   const ability = useAbility()
   const [open, setOpen] = useState(false)
@@ -57,15 +60,29 @@ export function EntityActionDropdown<TEntity>({
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn('h-6 w-6 shrink-0', triggerClassName)}
-          onClick={e => e.stopPropagation()}
-        >
-          <TriggerIcon className="h-3.5 w-3.5" />
-          <span className="sr-only">Actions</span>
-        </Button>
+        {triggerLabel
+          ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn('gap-1', triggerClassName)}
+                onClick={e => e.stopPropagation()}
+              >
+                <TriggerIcon className="h-3.5 w-3.5" />
+                {triggerLabel}
+              </Button>
+            )
+          : (
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn('h-6 w-6 shrink-0', triggerClassName)}
+                onClick={e => e.stopPropagation()}
+              >
+                <TriggerIcon className="h-3.5 w-3.5" />
+                <span className="sr-only">Actions</span>
+              </Button>
+            )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" onClick={e => e.stopPropagation()}>
         {permitted.map((config) => {

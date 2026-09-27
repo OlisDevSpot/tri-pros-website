@@ -14,8 +14,10 @@ export interface EntityAction {
   permission?: [AppAction, AppSubject]
   /** If true, render with destructive (red) styling */
   destructive?: boolean
-  /** If true, this is the primary action shown as a button in bar mode */
+  /** If true, this is the primary action shown as a button in bar and toolbar mode */
   primary?: boolean
+  /** If true, rendered as an outline button beside the primary in toolbar mode */
+  promoted?: boolean
   /** If true, show a separator before this action in the dropdown */
   separatorBefore?: boolean
 }
@@ -90,4 +92,9 @@ export function isSelectAction<TEntity>(config: EntityActionConfig<TEntity>): co
 /** Type guard: is this a custom (sub-menu) action? */
 export function isCustomAction<TEntity>(config: EntityActionConfig<TEntity>): config is EntityActionCustomConfig<TEntity> {
   return 'type' in config && config.type === 'custom'
+}
+
+/** Type guard: is this a plain click action? Only these can render as buttons. */
+export function isClickAction<TEntity>(config: EntityActionConfig<TEntity>): config is EntityActionClickConfig<TEntity> {
+  return !isSelectAction(config) && !isCustomAction(config)
 }
