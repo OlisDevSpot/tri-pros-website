@@ -1,6 +1,8 @@
-import type { CustomerProfileData, CustomerProfileMeeting, CustomerProfileProject, CustomerProfileProposal, CustomerProfileProposalView } from '@/features/customer-pipelines/types'
+// LAZY: customers is still a plain entity; this read moves to modules/customers/core/dal/server when customers is promoted to a module.
 
 import type { CustomerLeadAttributionRow } from '@/shared/db/schema/customer-lead-attribution'
+
+import type { CustomerProfileData, CustomerProfileMeeting, CustomerProfileProject, CustomerProfileProposal, CustomerProfileProposalView } from '@/shared/entities/customers/types'
 
 import { TRPCError } from '@trpc/server'
 import { and, asc, count, desc, eq, getTableColumns, sql } from 'drizzle-orm'

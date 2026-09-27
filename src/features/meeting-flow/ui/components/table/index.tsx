@@ -6,9 +6,7 @@ import type { MeetingRow, MeetingTableMeta } from '@/shared/entities/meetings/li
 
 import { useCallback, useMemo, useState } from 'react'
 import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components'
-import { AssignProjectDialog } from '@/features/customer-pipelines/ui/components/assign-project-dialog'
 import { MEETINGS_TABLE_QUERY_CONFIG } from '@/features/meeting-flow/constants/meetings-table-query-config'
-import { getMeetingRowClassName } from '@/features/meeting-flow/lib/meeting-row-class'
 import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
 import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
 import { useColumnVisibility } from '@/shared/components/data-table/lib/use-column-visibility'
@@ -19,11 +17,13 @@ import { RecordsPageHeader } from '@/shared/components/records-page-header'
 import { RecordsPageShell } from '@/shared/components/records-page-shell'
 import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
 import { useAbility } from '@/shared/domains/permissions/hooks'
+import { AssignProjectDialog } from '@/shared/entities/meetings/components/assign-project-dialog'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
 import { useMeetingActionConfigs } from '@/shared/entities/meetings/hooks/use-meeting-action-configs'
 import { useMeetingActions } from '@/shared/entities/meetings/hooks/use-meeting-actions'
-
 import { MEETING_COLUMNS } from '@/shared/entities/meetings/lib/columns-registry'
+
+import { getMeetingRowClassName } from '@/shared/entities/meetings/lib/meeting-row-class'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'
 

@@ -1,7 +1,7 @@
 import type { PaginatedQueryConfig } from '@/shared/dal/lib/query/derive-paginated-query-state'
 
-import { MEETING_FILTER_CONFIG } from '@/features/meeting-flow/constants/meeting-table-filter-config'
 import { DEFAULT_RECORDS_PAGE_SIZE_OPTIONS } from '@/shared/dal/client/lib/constants'
+import { MEETING_FILTER_CONFIG } from '@/shared/entities/meetings/constants/meeting-filter-config'
 
 /**
  * Shared paginated-query config for the meetings records table. Imported by

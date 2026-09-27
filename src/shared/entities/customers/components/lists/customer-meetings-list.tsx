@@ -12,10 +12,10 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/
 import { ROOTS } from '@/shared/config/roots'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { CreateMeetingForm } from '@/shared/entities/meetings/components/create-meeting-form'
+import { MeetingProposalRow } from '@/shared/entities/meetings/components/meeting-proposal-row'
 import { MeetingOverviewCard } from '@/shared/entities/meetings/components/overview-card'
 import { ParticipantsSlot } from '@/shared/entities/meetings/components/participants-slot'
 import { cn } from '@/shared/lib/utils'
-import { MeetingProposalRow } from './meeting-proposal-row'
 
 interface Props {
   meetings: CustomerProfileMeeting[]

@@ -12,11 +12,11 @@ import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { ROOTS } from '@/shared/config/roots'
 import { useAbility } from '@/shared/domains/permissions/hooks'
+import { MeetingProposalRow } from '@/shared/entities/meetings/components/meeting-proposal-row'
 import { MeetingOverviewCard } from '@/shared/entities/meetings/components/overview-card'
 import { ParticipantsSlot } from '@/shared/entities/meetings/components/participants-slot'
 import { cn } from '@/shared/lib/utils'
 import { useProjectActionConfigs } from '@/shared/modules/projects/core/hooks/use-project-action-configs'
-import { MeetingProposalRow } from './meeting-proposal-row'
 
 interface Props {
   customerId: string

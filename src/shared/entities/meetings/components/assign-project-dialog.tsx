@@ -1,5 +1,7 @@
 'use client'
 
+// LAZY: moves to modules/meetings/core when meetings is promoted to a module (units core + participants).
+
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { CheckIcon, FileTextIcon, FolderOpenIcon, PlusIcon } from 'lucide-react'
 import { useState } from 'react'

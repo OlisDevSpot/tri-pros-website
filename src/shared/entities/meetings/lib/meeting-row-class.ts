@@ -1,4 +1,4 @@
-import { MEETING_ESTIMATED_DURATION_MS } from '@/features/meeting-flow/constants/scheduling'
+import { MEETING_ESTIMATED_DURATION_MS } from '@/shared/entities/meetings/constants/scheduling'
 
 /**
  * Returns a background class for a meeting row based on its temporal status:
