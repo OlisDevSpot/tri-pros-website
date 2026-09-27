@@ -60,7 +60,7 @@ function AnimatedCollapsibleContent({
   children,
   ...props
 }: AnimatedCollapsibleContentProps) {
-  // MotionConfig reducedMotion="user" leaves height tweens running, so this opts out itself.
+  // Several callers have no MotionConfig reducedMotion="user" ancestor, so the reveal honors the OS setting itself.
   const reduceMotion = useReducedMotion()
 
   return (
