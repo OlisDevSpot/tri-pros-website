@@ -1,6 +1,6 @@
 # Spec F — Analytics page v1 (with lead-source spend)
 
-**Status:** draft for owner review, 2026-09-27.
+**Status:** owner-approved 2026-09-27 (selectable headline figures confirmed). Amended at planning to match the code: `spend_mode` is a `text` enum column (Closed Vocabulary Standard), the spend mode is set through the existing `leadSourcesRouter.update`, the report input has no `tab`, and "not applicable" reasons are reported separately for the headline and the breakdown.
 **Tracker:** `docs/plans/2026-09-26-analytics-epic.md` (rules are cited by ID there, never restated here).
 **Owns:** F1–F9, F11, F12 and, folded in by C46, E1–E3. **F10 is not in this spec** (C46): the old lead-sources analytics stays until a cleanup spec at the end of the epic.
 **Builds on:** Spec A's rule layer (`src/features/analytics/lib/`, `dal/server/load-analytics-facts.ts`), shipped d9347269..c5a82908.
@@ -47,34 +47,34 @@ page.tsx (server; super-admin guard; prefetch)
 | Rule | Export | Behavior |
 |---|---|---|
 | Merged duplicates | aggregator field `mergedRecords` | For each lead counted in a row, `customerIds.length − 1`; follows lead applicability. Shown on the Leads tab. |
-| Spend in a period | `spendInRange(entries, range, today)` | Each `(source, month)` amount counts × (days of that month inside the range ÷ days in the month); the current business month counts only days elapsed through today (Pacific). |
+| Spend in a period | `spendInRange(sources, entries, days, today)` | Each `(source, month)` amount counts × (days of that month inside the range ÷ days in the month); the current business month counts only days elapsed through today (Pacific). |
 | Spend missing | part of the report's cost block | A `manual` source with ≥1 lead in a month of the range and no spend row for that month ⇒ that row's costs are "missing" and name the source-months. The total row inherits any missing month. |
 | Free sources | `spendMode = 'none'` | Spend is always 0 and never missing. |
 | Cost per stage | `ANALYTICS_COSTS` | spend ÷ leads, ÷ booked leads, ÷ sits, ÷ new sales; revenue (new + upsell) ÷ spend. Any zero denominator ⇒ `null`. |
-| Cost applicability | extends `inapplicableStages` | Cost is not applicable unless the grouping is `total`, `leadSource` or `month` and the only person/event filter is lead source. Otherwise "not applicable" with a reason. |
+| Cost applicability | `notApplicableReasons(filters, groupBy)`, built on `inapplicableStages` | Cost is not applicable unless the grouping is `total`, `leadSource` or `month` and the only person/event filter is lead source. Otherwise "not applicable" with a reason. |
 
 The aggregator stays free of inline rule logic (C38). Rates keep Σ÷Σ (C36).
 
 ## 5. Spend storage (E1–E3; data owned by the lead-source entity, C26)
 
 - **Table `lead_source_monthly_spend`:** `id`, `leadSourceId` (FK → `lead_sources.id`, cascade on delete), `month` (`'YYYY-MM'`, a Pacific business month), `amountCents` (integer ≥ 0), `createdAt`, `updatedAt`. Unique `(leadSourceId, month)`. A child table, not JSONB (ADR-0005).
-- **Column `lead_sources.spend_mode`:** pgEnum `lead_source_spend_mode` = `manual | none`, default `manual`. Values in `src/shared/constants/enums/`, pgEnum beside the others, per the repo pattern.
-- **DAL** in `src/shared/entities/lead-sources/dal/server/`: list spend for a set of months; upsert one cell; delete one cell (a cleared cell = not entered); set a source's spend mode. `dalDbOperation` shape.
-- **Schema push:** owner runs `pnpm db:push:dev`, then prod only when asked.
+- **Column `lead_sources.spend_mode`:** `text('spend_mode', { enum: leadSourceSpendModes })`, values `manual | none`, default `manual`. The values live in `src/shared/constants/enums/lead-sources.ts`; no pgEnum (Closed Vocabulary Standard, `docs/codebase-conventions/enum-standardization.md#text-with-enum`).
+- **DAL** in `src/shared/entities/lead-sources/dal/server/spend.ts`: list spend for a set of months; set one cell (upsert, or delete when cleared: a cleared cell = not entered). `dalDbOperation` shape. The spend mode is written through the entity's existing CRUD update (`leadSourcesRouter.update` gains an optional `spendMode`).
+- **Schema push:** owner runs `pnpm db:push:dev`, then prod only when asked. **The prod push must land before this code deploys:** the lead-sources queries select every column, so code that knows `spend_mode` breaks the Lead Sources page on a database that lacks it.
 
 ## 6. API (`src/trpc/routers/analytics.router.ts`, registered in `app.ts`; every procedure `superAdminProcedure`)
 
-- `report({ period, filters, groupBy, tab })` returns:
+- `report({ period, from?, to?, filters, groupBy })` returns (the tab only picks what to show, so it stays client-side):
   - `headline`: the total row plus costs;
   - `breakdown`: rows plus costs;
   - `trend`: 12 monthly total rows ending with the period's last month;
-  - `notApplicable`: stages and cost, each with a reason;
+  - `notApplicable`: `{ headline, breakdown }`, each naming the not-applicable stages and cost with a reason (grouping by closer makes the breakdown's leads and cost n/a but not the headline's);
   - `spendMissing`: the source-months that are missing;
   - `undatedSales`, `orphans`;
   - `hygiene`: meetings with no outcome, undated sales, new sales without a project, leads with unknown city or zip.
 - **Periods:** `this-month | last-month | this-quarter | last-quarter | ytd | last-12 | custom{from,to}`, resolved in Pacific time with `business-time.ts` (C7). "This month" is the full calendar month; its data naturally stops today.
-- `filterOptions()` — known cities and zips from the lead records. Sources come from `leadSourcesRouter.list`; closer names from `meetingsRouter.reads.getInternalUsers`.
-- `spend.list({ months })`, `spend.set({ leadSourceId, month, amountCents | null })`, `spend.setMode({ leadSourceId, mode })` — call the entity DAL.
+- `filterOptions()` — every lead source (archived included, so old rows keep their names) plus the known cities and zips from the lead records. Closer names come from `meetingsRouter.reads.getInternalUsers`.
+- `spend.grid({ months })` (sources with their spend mode + entries), `spend.set({ leadSourceId, month, amountCents | null })` — call the entity DAL. Spend mode: `leadSourcesRouter.update({ id, spendMode })`.
 
 ## 7. Page (layout = warm-up A + C's bar chart and Data to fix)
 
@@ -90,7 +90,7 @@ The aggregator stays free of inline rule logic (C38). Rates keep Σ÷Σ (C36).
      - A Filters popover (frosted glass) for source, city, zip, closer, outcome and meeting order, with active filters shown as removable chips.
   3. **Tabs:** Overview · Leads · Appointments · Sales · Projects, with **Spend** at the far right. Spend carries a warning dot when any month in the trend window is missing spend.
   4. **Headline strip:** the tab's figures in one hairline row, rates under each.
-     - The figures are **selectable**; the selected one is the focus metric. This is my merge of A's strip with C's stage selection; the owner confirms it at spec review.
+     - The figures are **selectable**; the selected one is the focus metric (A's strip merged with C's stage selection; owner-confirmed 2026-09-27).
      - A figure that doesn't apply shows "n/a", and a single line under the strip gives the reason. Spend missing shows a "Spend missing" chip that opens the Spend grid.
   5. **Focus trend + Data to fix, side by side:**
      - **Left:** 12 monthly bars for the focus metric, with the selected months in cobalt.
