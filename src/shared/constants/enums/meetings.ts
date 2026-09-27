@@ -103,6 +103,43 @@ export function isNegativeOutcome(outcome: MeetingOutcome): boolean {
   return MEETING_OUTCOME_SENTIMENT[outcome] === 'negative'
 }
 
+export type MeetingSit = 'sat' | 'not_sat' | 'unknown'
+
+/**
+ * Whether the rep physically met the homeowner. Orthogonal to sentiment: a lost
+ * or pending deal still sat. not_set is unknown and never counts as a sit.
+ */
+export const MEETING_OUTCOME_SIT: Record<MeetingOutcome, MeetingSit> = {
+  not_set: 'unknown',
+  not_good: 'sat',
+  pns: 'sat',
+  npns: 'sat',
+  ftd: 'sat',
+  lost_to_competitor: 'sat',
+  follow_up_needed: 'sat',
+  proposal_created: 'sat',
+  proposal_sent: 'sat',
+  converted_to_project: 'sat',
+  additional_work: 'sat',
+  no_show: 'not_sat',
+  cancelled: 'not_sat',
+  reschedule_needed: 'not_sat',
+  nra: 'not_sat',
+}
+
+export function isSit(outcome: MeetingOutcome): boolean {
+  return MEETING_OUTCOME_SIT[outcome] === 'sat'
+}
+
+/**
+ * A project meeting serves an existing project (visits, upsells — additional_work
+ * only ever happens here); every other meeting works a lead toward its sale, so
+ * only those can book the lead or count as its sit.
+ */
+export function isProjectMeeting(meeting: { meetingType: MeetingType }): boolean {
+  return meeting.meetingType === 'Project'
+}
+
 /**
  * An agent must document a reason (stored as a customer note) whenever they set
  * a non-positive, decided outcome. That is every negative outcome plus

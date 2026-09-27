@@ -1,7 +1,32 @@
 import assert from 'node:assert/strict'
 
 import { meetingMonthWindow } from '@/features/agent-dashboard/lib/meeting-windows'
+import { isProjectMeeting, isSit, MEETING_OUTCOME_SIT, meetingOutcomes } from '@/shared/constants/enums/meetings'
 import { businessMonthKey, businessMonthWindow } from '@/shared/lib/business-time'
+
+// ── 3. Sit map ──────────────────────────────────────────────────────────────
+for (const outcome of meetingOutcomes) {
+  assert.ok(['sat', 'not_sat', 'unknown'].includes(MEETING_OUTCOME_SIT[outcome]), `${outcome} is classified`)
+}
+assert.deepEqual(
+  meetingOutcomes.filter(isSit).sort(),
+  ['additional_work', 'converted_to_project', 'follow_up_needed', 'ftd', 'lost_to_competitor', 'not_good', 'npns', 'pns', 'proposal_created', 'proposal_sent'],
+  'sat outcomes',
+)
+assert.deepEqual(
+  meetingOutcomes.filter(o => MEETING_OUTCOME_SIT[o] === 'not_sat').sort(),
+  ['cancelled', 'no_show', 'nra', 'reschedule_needed'],
+  'not-sat outcomes',
+)
+assert.equal(MEETING_OUTCOME_SIT.not_set, 'unknown', 'not_set is unknown, never a sit')
+console.log('3. Sit map ✓')
+
+// ── 4. Project meeting ──────────────────────────────────────────────────────
+assert.equal(isProjectMeeting({ meetingType: 'Project' }), true, 'the Project type is a project meeting')
+for (const meetingType of ['Fresh', 'Follow-up', 'Rehash'] as const) {
+  assert.equal(isProjectMeeting({ meetingType }), false, `${meetingType} works a lead`)
+}
+console.log('4. Project meeting ✓')
 
 // ── 7. Pacific months ───────────────────────────────────────────────────────
 assert.equal(businessMonthKey('2026-08-01T05:30:00.000Z'), '2026-07', 'July 31 22:30 PDT is July')
