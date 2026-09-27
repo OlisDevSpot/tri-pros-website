@@ -14,7 +14,6 @@ export const tradePairings: Record<string, TradePairing[]> = {
   ],
   'roof-and-gutters': [
     { pairedTradeSlug: 'attic-and-basement', pairedTradeName: 'Insulation', pillarSlug: 'energy-efficient-construction', story: 'While the attic is open, we can upgrade insulation — one crew visit, compounding energy savings.' },
-    { pairedTradeSlug: 'solar', pairedTradeName: 'Solar', pillarSlug: 'energy-efficient-construction', story: 'A new roof is the ideal foundation for solar — one installation sequence, better ROI.' },
   ],
   'attic-and-basement': [
     { pairedTradeSlug: 'hvac', pairedTradeName: 'HVAC', pillarSlug: 'energy-efficient-construction', story: 'Seal the envelope, upgrade the system. Your bills drop from both sides.' },

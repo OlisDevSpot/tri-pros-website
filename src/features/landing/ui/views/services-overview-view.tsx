@@ -19,8 +19,8 @@ export function ServicesOverviewView() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <PillarCard
             title="Energy-Efficient Construction"
-            description="Stop paying your utility company for your home's inefficiency. Compounding savings from insulation, HVAC, windows, solar, and roofing upgrades."
-            tradePreview={['HVAC', 'Solar', 'Windows', 'Insulation']}
+            description="Stop paying your utility company for your home's inefficiency. Compounding savings from insulation, HVAC, windows, and roofing upgrades."
+            tradePreview={['HVAC', 'Windows', 'Insulation', 'Roofing']}
             href={ROOTS.landing.servicesPillar('energy-efficient-construction')}
             pillarType="energy"
           />

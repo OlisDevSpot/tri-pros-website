@@ -35,7 +35,7 @@ export const pillarConfigs: Record<PillarSlug, PillarConfig> = {
   'energy-efficient-construction': {
     title: 'Energy-Efficient Construction',
     heroHeadline: 'Your Home Is Costing You More Than It Should',
-    heroSubheadline: 'A complete energy envelope upgrade — insulation, HVAC, windows, solar, roofing — delivered by one contractor, in one mobilization, with compounding savings.',
+    heroSubheadline: 'A complete energy envelope upgrade — insulation, HVAC, windows, roofing — delivered by one contractor, in one mobilization, with compounding savings.',
     stats: [
       { value: '30–55%', label: 'Average Bill Reduction' },
       { value: '$3,200', label: 'In Federal Tax Credits' },
@@ -51,7 +51,7 @@ export const pillarConfigs: Record<PillarSlug, PillarConfig> = {
     ],
     pairings: [
       { trade1Name: 'Insulation', trade1Slug: 'attic-and-basement', trade2Name: 'HVAC', trade2Slug: 'hvac', story: 'Seal the envelope, upgrade the system. Your bills drop from both sides.' },
-      { trade1Name: 'Roofing', trade1Slug: 'roof-and-gutters', trade2Name: 'Solar', trade2Slug: 'solar', story: 'A new roof is the ideal foundation for solar — one install, better ROI.' },
+      { trade1Name: 'Roofing', trade1Slug: 'roof-and-gutters', trade2Name: 'Insulation', trade2Slug: 'attic-and-basement', story: 'While the attic is open, we can upgrade insulation — one crew visit, compounding energy savings.' },
       { trade1Name: 'Windows', trade1Slug: 'windows-and-doors', trade2Name: 'Insulation', trade2Slug: 'attic-and-basement', story: 'Complete envelope sealing — the most cost-effective energy upgrade.' },
     ],
   },
