@@ -122,6 +122,7 @@ console.log('4. Project meeting ✓')
   assert.deepEqual(byId.get('p2')!.bookedLead, { at: '2026-06-05T17:00:00.000Z', meetingId: 'm4', sat: false }, 'a single cancelled meeting = 1 non-sit booked lead')
   assert.equal(byId.get('p3')!.bookedLead, null, 'project meetings, upsells included, never book a lead')
   assert.deepEqual(byId.get('p4')!.meetings.map(m => m.unresolved), [true, false], 'a past not_set is unresolved; a future one is not')
+  assert.deepEqual(byId.get('p1')!.meetings.map(m => m.unresolved), [false, false, false], 'a past meeting with an outcome is never unresolved')
   assert.equal(orphans, 3, 'a meeting with no customer, a sale on it, and a sale with no meeting are orphans')
 }
 console.log('5. Booked lead ✓')

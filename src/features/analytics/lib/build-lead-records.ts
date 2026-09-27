@@ -2,7 +2,7 @@ import type { AnalyticsFacts, LeadMeeting, LeadRecord, LeadRecordSet, LeadSale }
 import type { CustomerFact } from '@/shared/entities/customers/dal/server/analytics-facts'
 import type { MeetingFact } from '@/shared/entities/meetings/dal/server/analytics-facts'
 
-import { deriveMeetingOrder, pickBookedLead, pickLeadAnchor } from '@/features/analytics/lib/analytics-rules'
+import { deriveMeetingOrder, isUnresolvedMeeting, pickBookedLead, pickLeadAnchor } from '@/features/analytics/lib/analytics-rules'
 import { isProjectMeeting, MEETING_OUTCOME_SIT } from '@/shared/constants/enums/meetings'
 import { compareRecordAge, groupDuplicatePeople } from '@/shared/entities/customers/lib/group-duplicate-people'
 import { classifySale } from '@/shared/modules/proposals/core/lib/sale'
@@ -50,7 +50,6 @@ export function buildLeadRecords(facts: AnalyticsFacts, now: Date): LeadRecordSe
     })
   }
 
-  const nowMs = now.getTime()
   const leads: LeadRecord[] = [...recordsByPerson].map(([personId, records]) => {
     const chronological = (meetingsByPerson.get(personId) ?? [])
       .map(m => ({
@@ -66,7 +65,7 @@ export function buildLeadRecords(facts: AnalyticsFacts, now: Date): LeadRecordSe
     const meetings: LeadMeeting[] = chronological.map((m, index) => ({
       ...m,
       order: orders[index],
-      unresolved: m.sit === 'unknown' && Date.parse(m.at) < nowMs,
+      unresolved: isUnresolvedMeeting(m, now),
     }))
     return {
       personId,

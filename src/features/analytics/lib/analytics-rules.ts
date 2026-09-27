@@ -51,3 +51,8 @@ export function pickBookedLead(chronological: readonly { id: string, at: string,
   const picked = firstSit ?? leadMeetings[0]
   return picked ? { at: picked.at, meetingId: picked.id, sat: picked === firstSit } : null
 }
+
+/** A past meeting nobody has given an outcome yet is unknown, not a no-show — surfaced so it gets fixed. */
+export function isUnresolvedMeeting(meeting: { sit: MeetingSit, at: string }, now: Date): boolean {
+  return meeting.sit === 'unknown' && Date.parse(meeting.at) < now.getTime()
+}
