@@ -1,6 +1,6 @@
 import type { PricingKey } from '@/features/calculators/scope-pricing-calculator/constants/pricing-keys'
 import type { ProjectContext } from '@/features/calculators/scope-pricing-calculator/schemas/form'
-import type { VariableDef, VariableInputs, VariableKey } from '@/features/calculators/scope-pricing-calculator/types'
+import type { PriceQuoteInput, QuoteLineInput, VariableDef, VariableInputs, VariableKey } from '@/features/calculators/scope-pricing-calculator/types'
 
 import assert from 'node:assert/strict'
 
@@ -10,8 +10,10 @@ import { PRICING_TRADES } from '@/features/calculators/scope-pricing-calculator/
 import { UNIT_COST_LABELS } from '@/features/calculators/scope-pricing-calculator/constants/unit-cost-labels'
 import { VARIABLES } from '@/features/calculators/scope-pricing-calculator/constants/variables'
 import { FORMULAS } from '@/features/calculators/scope-pricing-calculator/lib/formula-registry'
+import { priceQuote } from '@/features/calculators/scope-pricing-calculator/lib/price-quote'
 import { resolveScopePricingConfig } from '@/features/calculators/scope-pricing-calculator/lib/resolve-config'
 import { resolveFormulaVariables } from '@/features/calculators/scope-pricing-calculator/lib/resolve-formula-variables'
+import { solveMultiplier } from '@/features/calculators/scope-pricing-calculator/lib/solve-multiplier'
 import { scopePricingConfigSchema } from '@/features/calculators/scope-pricing-calculator/schemas/config'
 
 const config = resolveScopePricingConfig()
@@ -144,5 +146,75 @@ for (const key of PRICING_KEYS) {
   }
 }
 console.log(`swept ${swept} Formula inputs`)
+
+// ── Quote pricing ─────────────────────────────────────────────────────────
+const panels: QuoteLineInput = { id: 'a', kind: 'formula', pricingKey: 'installPanels', variables: { numPanels: 20, wattsPerPanel: 400 } }
+const panelsQuote = priceQuote({ lines: [panels], context: oneStory, config })
+const panelLine = panelsQuote.lines[0]
+assert.ok(panelLine?.status === 'priced', 'panels line priced')
+assert.deepEqual(
+  { cost: panelLine.cost, price: panelLine.price, tax: panelLine.tax, base: panelLine.base },
+  { cost: 28000, price: 78400, tax: 5880, base: 72520 },
+  'golden: 20 × 400 W → Cost 28,000 → Price 78,400 → tax 5,880 → base 72,520',
+)
+assert.equal(panelsQuote.totalPrice, 78400, 'total price')
+assert.equal(panelsQuote.multiplier, 2.8, 'default multiplier applied')
+assert.equal(panelsQuote.tier, 'healthy', '2.8 is healthy')
+assert.equal(panelsQuote.margin, 50400, 'margin')
+
+assert.equal(priceQuote({ lines: [panels], context: oneStory, config, overrides: { multiplier: 1.5 } }).multiplier, 2, 'override below the floor is clamped')
+assert.equal(priceQuote({ lines: [panels], context: oneStory, config, overrides: { multiplier: Number.NaN } }).multiplier, 2.8, 'NaN override is ignored')
+assert.equal(priceQuote({ lines: [panels], context: oneStory, config, overrides: { multiplier: 3.25 } }).totalPrice, 91000, 'override above the floor applies')
+
+const tearOffLine = (id: string): QuoteLineInput => ({ id, kind: 'formula', pricingKey: 'tearOff', variables: { numFlatBSQ: 5, numPitchedBSQ: 20, numLayers: 2 } })
+const twice = priceQuote({ lines: [tearOffLine('r1'), tearOffLine('r2')], context: twoStory, config })
+assert.equal(twice.lines.filter(line => line.status === 'priced').length, 2, 'the same scope twice prices twice')
+assert.equal(twice.totalCost, 26750, 'both tear-offs counted')
+
+const manual: QuoteLineInput = { id: 'm', kind: 'manual', label: 'Gutters', price: 5000 }
+const mixed = priceQuote({ lines: [panels, manual], context: oneStory, config })
+const manualResult = mixed.lines[1]
+assert.ok(manualResult?.status === 'priced', 'manual line priced')
+assert.deepEqual({ cost: manualResult.cost, tax: manualResult.tax, base: manualResult.base }, { cost: null, tax: 375, base: 4625 }, 'manual line: no cost, tax inside the price')
+assert.equal(mixed.totalPrice, 83400, 'manual price counts toward the total')
+assert.equal(mixed.margin, 50400, 'manual line left out of margin')
+assert.equal(mixed.effectiveMultiplier, 2.8, 'manual line left out of the multiplier')
+assert.equal(mixed.hasUncostedLines, true, 'flags uncosted lines')
+
+const unpriced = priceQuote({
+  lines: [panels, { id: 'x', kind: 'manual', label: '', price: null }, { id: 'y', kind: 'formula', pricingKey: 'installPanels', variables: { numPanels: 10, wattsPerPanel: null } }],
+  context: oneStory,
+  config,
+})
+assert.equal(unpriced.totalPrice, 78400, 'incomplete lines are left out of the total')
+assert.deepEqual(unpriced.lines.map(line => line.status), ['priced', 'incomplete', 'incomplete'], 'order kept, incomplete marked')
+const incompletePanels = unpriced.lines[2]
+assert.ok(incompletePanels?.status === 'incomplete', 'narrow')
+assert.deepEqual(incompletePanels.needs, ['wattsPerPanel'], 'incomplete line names what it needs')
+
+assert.equal(priceQuote({ lines: [tearOffLine('r1')], context: twoStory, config }).lines.length, 1, 'permits are off by default')
+const withPermit = { ...config, permitFees: { ...config.permitFees, roof: { amount: 250, enabled: true } } }
+const permitted = priceQuote({ lines: [tearOffLine('r1'), tearOffLine('r2'), panels], context: twoStory, config: withPermit })
+const permitLines = permitted.lines.filter(line => line.kind === 'permit')
+assert.equal(permitLines.length, 1, 'one permit per trade, however many roof lines')
+assert.deepEqual(
+  permitLines.map(line => line.status === 'priced' && { id: line.id, label: line.label, cost: line.cost, price: line.price }),
+  [{ id: 'permit-roof', label: 'Permit (Roof)', cost: 250, price: 700 }],
+  'permit priced like a formula line',
+)
+assert.equal(permitted.lines[permitted.lines.length - 1]?.kind, 'permit', 'permit lines come last')
+assert.equal(priceQuote({ lines: [panels], context: oneStory, config: withPermit }).lines.length, 1, 'no roof line → no roof permit')
+
+// ── Target price ──────────────────────────────────────────────────────────
+const panelsInput: PriceQuoteInput = { lines: [panels], context: oneStory, config }
+const reached = solveMultiplier(100000, panelsInput)
+assert.equal(reached.status, 'reached', 'target above the floor is reached')
+assert.ok(Math.abs(reached.achievedTotal - 100000) <= 1, 'achieved total is within rounding of the target')
+const withManual = solveMultiplier(100000, { lines: [panels, manual], context: oneStory, config })
+assert.ok(withManual.status === 'reached' && Math.abs(withManual.multiplier - 95000 / 28000) < 1e-9, 'manual price is subtracted before solving')
+const tooLow = solveMultiplier(40000, panelsInput)
+assert.deepEqual(tooLow, { status: 'below-floor', multiplier: 2, achievedTotal: 56000 }, 'target under the floor → floor price')
+assert.equal(solveMultiplier(1000, { lines: [panels, manual], context: oneStory, config }).status, 'below-floor', 'target under the manual lines → below floor')
+assert.deepEqual(solveMultiplier(100000, { lines: [manual], context: oneStory, config }), { status: 'no-cost' }, 'no Cost to solve against')
 
 console.log('✅ verify-scope-pricing passed')

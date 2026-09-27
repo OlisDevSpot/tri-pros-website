@@ -2,6 +2,7 @@ import type { PricingKey } from '@/features/calculators/scope-pricing-calculator
 import type { VARIABLES } from '@/features/calculators/scope-pricing-calculator/constants/variables'
 import type { PricingTrade, ScopePricingConfig, UnitCostsOf } from '@/features/calculators/scope-pricing-calculator/schemas/config'
 import type { ProjectContext } from '@/features/calculators/scope-pricing-calculator/schemas/form'
+import type { MultiplierTier } from '@/shared/modules/proposals/core/lib/financials/tiers'
 
 export type VariableUnit = 'BSQ' | 'count' | 'W' | 'kWh' | 'tons' | 'sqft' | null
 export type SelectOption = number | string
@@ -69,3 +70,60 @@ export interface FormulaDef<T extends PricingTrade, Keys extends readonly Variab
 }
 
 export type Formula = FormulaDef<PricingTrade, readonly VariableKey[]>
+
+export type QuoteLineInput
+  = | { id: string, kind: 'formula', pricingKey: PricingKey, variables: VariableInputs }
+    | { id: string, kind: 'manual', label: string, price: number | null }
+
+export interface QuoteOverrides {
+  multiplier?: number | null
+}
+
+export interface PriceQuoteInput {
+  lines: readonly QuoteLineInput[]
+  context: ProjectContext
+  config: ScopePricingConfig
+  overrides?: QuoteOverrides
+}
+
+export interface PricedLine {
+  id: string
+  kind: 'formula' | 'manual' | 'permit'
+  status: 'priced'
+  label: string
+  trade: PricingTrade | null
+  cost: number | null
+  price: number
+  tax: number
+  base: number
+}
+
+export interface IncompleteLine {
+  id: string
+  kind: 'formula' | 'manual'
+  status: 'incomplete'
+  label: string
+  trade: PricingTrade | null
+  needs: VariableKey[]
+}
+
+export type QuoteLineResult = PricedLine | IncompleteLine
+
+export interface QuoteResult {
+  lines: QuoteLineResult[]
+  multiplier: number
+  totalPrice: number
+  totalTax: number
+  totalBase: number
+  totalCost: number
+  costedPrice: number
+  uncostedPrice: number
+  margin: number
+  effectiveMultiplier: number | null
+  tier: MultiplierTier
+  hasUncostedLines: boolean
+}
+
+export type SolveMultiplierResult
+  = | { status: 'reached' | 'below-floor', multiplier: number, achievedTotal: number }
+    | { status: 'no-cost' }
