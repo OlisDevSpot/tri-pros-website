@@ -158,7 +158,7 @@ export async function listMeetings(
             slug: leadSourcesTable.slug,
             isActive: leadSourcesTable.isActive,
           },
-          proposalStatuses: sql<ProposalStatus[]>`COALESCE((SELECT json_agg(p.status ORDER BY p.created_at) FROM proposals p WHERE p.meeting_id = ${meetings.id}), '[]'::json)`.as('proposal_statuses'),
+          proposalStatuses: sql<ProposalStatus[]>`COALESCE((SELECT json_agg(p.status ORDER BY p.created_at, p.id) FROM proposals p WHERE p.meeting_id = ${meetings.id}), '[]'::json)`.as('proposal_statuses'),
         })
         .from(meetings)
         .leftJoin(customers, eq(customers.id, meetings.customerId))
@@ -202,8 +202,7 @@ export async function listMeetings(
 
         return {
           ...row,
-          // leftJoin miss yields an all-null leadSource object rather than null.
-          leadSource: row.leadSource?.id ? row.leadSource : null,
+          leadSource: row.leadSource,
           participants: rowParticipants.map(p => ({
             id: p.userId,
             name: p.userName,

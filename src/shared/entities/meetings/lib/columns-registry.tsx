@@ -77,8 +77,7 @@ export const MEETING_COLUMNS = {
       const initialCoOwner = row.original.coOwner
 
       if (!meta?.canAssignMeeting) {
-        // Read-only fallback: no popover means no need for stopPropagation —
-        // row click should still navigate as normal.
+        // Read-only fallback: no popover, so the click is left to the row.
         return (
           <ReadOnlyParticipantSummary
             meetingId={row.original.id}

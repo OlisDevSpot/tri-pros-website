@@ -127,7 +127,7 @@ export async function getCustomerProfile(customerId: string, viewer: CustomerPro
           .map((entry: any) => ({
             trade: entry.trade.label as string,
             scopes: Array.isArray(entry.scopes)
-              ? entry.scopes.filter((s: any) => s?.label).map((s: any) => ({ id: s.id as string, label: s.label as string }))
+              ? entry.scopes.filter((s: any) => s?.label && typeof s?.id === 'string').map((s: any) => ({ id: s.id as string, label: s.label as string }))
               : [],
           }))
       }
