@@ -8,6 +8,7 @@ import type { AppRouterOutputs } from '@/trpc/routers/app'
 import { PrimaryCell } from '@/shared/components/data-table/ui/primary-cell'
 import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
+import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
 import { meetingOutcomes } from '@/shared/constants/enums'
 import { getOutcomeDisabledChecker } from '@/shared/domains/pipelines/lib/get-disabled-outcomes'
 import { ParticipantPicker, ReadOnlyParticipantSummary } from '@/shared/entities/meetings/components/participant-picker'
@@ -30,15 +31,13 @@ export const MEETING_COLUMNS = {
     sortable: true,
     cell: ({ row, table }) => {
       const meta = table.options.meta as MeetingTableMeta | undefined
-      const selectedProgram = row.original.flowStateJSON?.selectedProgram ?? null
-      const meetingLabel = selectedProgram ?? row.original.meetingType
       return (
         <PrimaryCell
           entity={row.original}
           actions={meta?.meetingActions?.(row.original)}
           title={row.original.customerName ?? '—'}
-          subtitle={meetingLabel}
-          tooltipContent={`${row.original.customerName ?? 'No customer'} — ${meetingLabel}`}
+          subtitle={row.original.meetingType}
+          tooltipContent={`${row.original.customerName ?? 'No customer'} — ${row.original.meetingType}`}
         />
       )
     },
@@ -141,4 +140,44 @@ export const MEETING_COLUMNS = {
       )
     },
   },
+  tradeSelections: {
+    label: 'Trades',
+    accessorFn: row => row.flowStateJSON?.tradeSelections?.length ?? 0,
+    cell: ({ row }) => {
+      const selections = row.original.flowStateJSON?.tradeSelections ?? []
+      const [first, ...rest] = selections
+      if (!first) {
+        return <span className="text-muted-foreground">—</span>
+      }
+      return (
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className="truncate text-sm">{first.tradeName}</span>
+          {rest.length > 0 && (
+            <HybridPopoverTooltip
+              content={(
+                <ul className="flex flex-col gap-1.5">
+                  {selections.map(selection => (
+                    <li key={selection.tradeId}>
+                      <span className="font-medium">{selection.tradeName}</span>
+                      {selection.selectedScopes.length > 0 && (
+                        <span className="block text-xs opacity-80">
+                          {selection.selectedScopes.map(scope => scope.label).join(', ')}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            >
+              <span tabIndex={0} className="shrink-0 rounded-full bg-muted px-1.5 text-xs tabular-nums text-muted-foreground">
+                {`+${rest.length}`}
+              </span>
+            </HybridPopoverTooltip>
+          )}
+        </div>
+      )
+    },
+  },
 } as const satisfies ColumnRegistry<MeetingRow>
+
+export type MeetingColumnKey = keyof typeof MEETING_COLUMNS
