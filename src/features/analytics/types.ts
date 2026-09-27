@@ -1,3 +1,4 @@
+import type { AnalyticsRateKey } from '@/features/analytics/lib/analytics-rules'
 import type { MeetingOutcome, MeetingSit } from '@/shared/constants/enums/meetings'
 import type { CustomerFact } from '@/shared/entities/customers/dal/server/analytics-facts'
 import type { MeetingFact } from '@/shared/entities/meetings/dal/server/analytics-facts'
@@ -57,5 +58,48 @@ export interface LeadRecord extends LeadAnchor {
 
 export interface LeadRecordSet {
   leads: LeadRecord[]
+  orphans: number
+}
+
+export interface AnalyticsFilters {
+  range?: { from: string, to: string }
+  leadSourceIds?: (string | null)[]
+  cities?: (string | null)[]
+  zips?: (string | null)[]
+  closerIds?: string[]
+  outcomes?: MeetingOutcome[]
+  meetingOrder?: MeetingOrder[]
+}
+
+export type AnalyticsGroupBy = 'total' | 'leadSource' | 'month' | 'closer' | 'outcome' | 'meetingOrder' | 'city' | 'zip'
+
+export interface AnalyticsRowHygiene {
+  unresolvedMeetings: number
+  salesWithoutValue: number | null
+  newSalesWithoutProject: number | null
+  unknownCityZip: number | null
+}
+
+export interface AnalyticsCounts {
+  groupKey: string | null
+  overlapsTotal: boolean
+  totalLeads: number | null
+  validLeads: number | null
+  junkLeads: null
+  bookedLeads: number
+  sits: number
+  meetings: number
+  newSales: number | null
+  totalCloses: number | null
+  revenueNewCents: number | null
+  revenueUpsellCents: number | null
+  averageTicketCents: number | null
+  rates: Record<AnalyticsRateKey, number | null>
+  hygiene: AnalyticsRowHygiene
+}
+
+export interface AnalyticsResult {
+  rows: AnalyticsCounts[]
+  undatedSales: number | null
   orphans: number
 }

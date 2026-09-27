@@ -5,6 +5,7 @@ import type { SaleFact } from '@/shared/modules/proposals/core/dal/server/analyt
 import assert from 'node:assert/strict'
 
 import { meetingMonthWindow } from '@/features/agent-dashboard/lib/meeting-windows'
+import { aggregateLeadRecords } from '@/features/analytics/lib/aggregate-lead-records'
 import { buildLeadRecords } from '@/features/analytics/lib/build-lead-records'
 import { isProjectMeeting, isSit, MEETING_OUTCOME_SIT, meetingOutcomes } from '@/shared/constants/enums/meetings'
 import { projectPipelineStages } from '@/shared/constants/enums/pipelines'
@@ -175,6 +176,89 @@ assert.deepEqual(
   'additional work is an upsell; no fallback date, no fallback value',
 )
 console.log('8. Sales (classification) ✓')
+
+// ── 9. Aggregation ──────────────────────────────────────────────────────────
+{
+  const records = buildLeadRecords({
+    customers: [
+      customer('c1', '2026-07-01T17:00:00.000Z', { leadSourceId: 'src-a' }),
+      customer('c2', '2026-07-02T17:00:00.000Z', { leadSourceId: 'src-b' }),
+      customer('c3', '2026-07-03T17:00:00.000Z', { leadSourceId: 'src-a', city: 'Unknown' }),
+    ],
+    meetings: [
+      meeting('m1', 'c1', '2026-07-10T17:00:00.000Z', 'converted_to_project', { closerIds: ['u1', 'u2'], projectId: 'p1' }),
+      meeting('m2', 'c2', '2026-07-11T17:00:00.000Z', 'cancelled', { closerIds: ['u1'] }),
+      meeting('m3', 'c3', '2026-08-01T06:30:00.000Z', 'not_good', { closerIds: ['u2'] }),
+      meeting('m4', 'c1', '2026-07-25T17:00:00.000Z', 'additional_work', { meetingType: 'Project', closerIds: ['u1'], projectId: 'p1' }),
+    ],
+    sales: [
+      sale('s1', 'm1', '2026-07-20T17:00:00.000Z', { finalTcpCents: 1_000_000 }),
+      sale('s2', 'm3', null, { finalTcpCents: null }),
+      sale('s3', 'm4', '2026-07-26T17:00:00.000Z', { kind: 'additional-work', finalTcpCents: 200_000 }),
+    ],
+  }, NOW)
+  const july = businessMonthWindow('2026-07')
+
+  const [total] = aggregateLeadRecords(records, { range: july }, 'total').rows
+  assert.equal(total.totalLeads, 3, 'three leads in July')
+  assert.equal(total.bookedLeads, 3, 'three booked leads')
+  assert.equal(total.sits, 2, 'm1 and m3 sat — m3 at 23:30 PDT on July 31 is July')
+  assert.equal(total.meetings, 4, 'meetings count every row, project or not')
+  assert.equal(total.newSales, 1, 'one dated new sale')
+  assert.equal(total.totalCloses, 2, 'new sale + upsell')
+  assert.equal(total.revenueNewCents, 1_000_000, 'new revenue')
+  assert.equal(total.revenueUpsellCents, 200_000, 'upsell revenue')
+  assert.equal(total.averageTicketCents, 1_000_000, 'average ticket over new sales with a value')
+  assert.equal(total.rates.sitRate, 2 / 3, 'sit rate = sits / booked leads')
+  assert.equal(total.rates.closeRate, 1 / 2, 'close rate = new sales / sits')
+  assert.equal(total.hygiene.unknownCityZip, 1, 'c3 has an unknown city')
+  assert.equal(total.hygiene.newSalesWithoutProject, 0, 'the new sale\'s meeting has a project')
+  assert.equal(aggregateLeadRecords(records, { range: july }, 'total').undatedSales, 1, 'the undated sale is reported, not placed in July')
+
+  const allTime = aggregateLeadRecords(records, {}, 'total').rows[0]
+  assert.equal(allTime.newSales, 2, 'all-time totals include the undated sale')
+  assert.equal(allTime.hygiene.salesWithoutValue, 1, 'a sale with no value counts as a sale, not revenue')
+  assert.equal(allTime.revenueNewCents, 1_000_000, 'no value adds no revenue')
+  const undatedBucket = aggregateLeadRecords(records, {}, 'month').rows.find(r => r.groupKey === null)!
+  assert.equal(undatedBucket.newSales, 1, 'undated sales land in the null month bucket')
+
+  const bySource = aggregateLeadRecords(records, { range: july }, 'leadSource').rows
+  const srcA = bySource.find(r => r.groupKey === 'src-a')!
+  const srcB = bySource.find(r => r.groupKey === 'src-b')!
+  assert.equal(srcA.rates.sitRate, 1, 'src-a sit rate')
+  assert.equal(srcB.rates.sitRate, 0, 'src-b sit rate')
+  assert.equal(srcB.rates.closeRate, null, 'zero sits: close rate is null, not NaN')
+  assert.notEqual(total.rates.sitRate, (srcA.rates.sitRate! + srcB.rates.sitRate!) / 2, 'the total rate is Σ÷Σ, not an average of group rates')
+
+  const byCloser = aggregateLeadRecords(records, { range: july }, 'closer').rows
+  const u1 = byCloser.find(r => r.groupKey === 'u1')!
+  const u2 = byCloser.find(r => r.groupKey === 'u2')!
+  assert.equal(u1.totalLeads, null, 'leads are not applicable per closer')
+  assert.equal(u1.bookedLeads + u2.bookedLeads, 4, 'per-closer booked leads (2 + 2) exceed the total (3)')
+  assert.equal(u1.totalCloses, 2, 'u1 closed the new sale and the upsell')
+  assert.ok(byCloser.every(r => r.overlapsTotal), 'per-closer rows are flagged as overlapping')
+
+  const cancelled = aggregateLeadRecords(records, { range: july, outcomes: ['cancelled'] }, 'total').rows[0]
+  assert.equal(cancelled.totalLeads, null, 'event-level filter: leads not applicable')
+  assert.equal(cancelled.bookedLeads, 1, 'an outcome filter tests the booked lead\'s own meeting')
+  assert.equal(cancelled.sits, 0, 'the cancelled booked lead did not sit')
+  assert.equal(cancelled.newSales, null, 'an outcome filter makes sales not applicable')
+
+  const projectOnly = aggregateLeadRecords(records, { range: july, meetingOrder: ['project'] }, 'total').rows[0]
+  assert.equal(projectOnly.meetings, 1, 'meeting order narrows the meeting count')
+  assert.equal(projectOnly.bookedLeads, 0, 'no booked lead is a project meeting')
+
+  const byMonth = aggregateLeadRecords(records, {}, 'month').rows
+  assert.ok(byMonth.every(r => r.sits <= r.bookedLeads), 'sits ≤ booked leads in every month')
+
+  const nobody = aggregateLeadRecords(records, { range: july, leadSourceIds: ['src-none'] }, 'total')
+  assert.equal(nobody.rows.length, 1, 'total always has one row')
+  assert.equal(nobody.rows[0].totalLeads, 0, 'zero leads')
+  assert.deepEqual(nobody.rows[0].rates, { bookingRate: null, sitRate: null, closeRate: null }, 'rates are null on a zero base')
+  const empty = aggregateLeadRecords(buildLeadRecords({ customers: [], meetings: [], sales: [] }, NOW), {}, 'total')
+  assert.equal(empty.rows[0].bookedLeads, 0, 'no data: one all-zero total row')
+}
+console.log('9. Aggregation ✓')
 
 // ── 10. Bankability ─────────────────────────────────────────────────────────
 for (const stage of projectPipelineStages) {

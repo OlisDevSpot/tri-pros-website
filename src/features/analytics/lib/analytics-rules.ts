@@ -56,3 +56,22 @@ export function pickBookedLead(chronological: readonly { id: string, at: string,
 export function isUnresolvedMeeting(meeting: { sit: MeetingSit, at: string }, now: Date): boolean {
   return meeting.sit === 'unknown' && Date.parse(meeting.at) < now.getTime()
 }
+
+/**
+ * Stage-to-stage rates over the same period. Close rate uses new sales only:
+ * an upsell never came through a new-lead sit.
+ */
+export const ANALYTICS_RATES = {
+  bookingRate: { numerator: 'bookedLeads', denominator: 'validLeads' },
+  sitRate: { numerator: 'sits', denominator: 'bookedLeads' },
+  closeRate: { numerator: 'newSales', denominator: 'sits' },
+} as const
+
+export type AnalyticsRateKey = keyof typeof ANALYTICS_RATES
+
+export function computeRate(numerator: number | null, denominator: number | null): number | null {
+  if (numerator === null || denominator === null || denominator === 0) {
+    return null
+  }
+  return numerator / denominator
+}
