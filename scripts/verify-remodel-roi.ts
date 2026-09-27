@@ -6,9 +6,12 @@ import assert from 'node:assert/strict'
 import { BILL_CATEGORIES } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
 import { createRemodelRoiDefaults, createTradePicks } from '@/features/calculators/remodel-roi-calculator/constants/form-defaults'
 import { combineCuts } from '@/features/calculators/remodel-roi-calculator/lib/combine-cuts'
+import { formatMoney, roundMoney } from '@/features/calculators/remodel-roi-calculator/lib/format-money'
 import { formatYears } from '@/features/calculators/remodel-roi-calculator/lib/format-years'
+import { joinWords } from '@/features/calculators/remodel-roi-calculator/lib/join-words'
 import { projectRemodelRoi } from '@/features/calculators/remodel-roi-calculator/lib/project-remodel-roi'
 import { resolveRemodelRoiConfig } from '@/features/calculators/remodel-roi-calculator/lib/resolve-config'
+import { buildStory } from '@/features/calculators/remodel-roi-calculator/lib/story/build-story'
 import { remodelRoiConfigSchema } from '@/features/calculators/remodel-roi-calculator/schemas/config'
 import { remodelRoiFormSchema } from '@/features/calculators/remodel-roi-calculator/schemas/form'
 import { amortizedMonthlyPayment, monthsToPayOff, remainingBalance } from '@/shared/lib/loan-calculations'
@@ -252,6 +255,55 @@ for (const values of [createRemodelRoiDefaults(config), JOB_A, cash(JOB_D), { ..
     for (const category of BILL_CATEGORIES) {
       assert.ok(year.billsAfterByCategory[category] >= 0, `year ${year.t} ${category} after is never negative`)
     }
+  }
+}
+
+// ── Story copy ─────────────────────────────────────────────────────────
+{
+  const story = (values: RemodelRoiFormValues, lookAhead: 10 | 15 | 20 = 10) => buildStory({ projection: run(values), config, lookAhead })
+  const text = (parts: { text: string }[]) => parts.map(part => part.text).join('')
+  const a = story(JOB_A)
+  assert.deepEqual(a.answer.stats.map(stat => stat.value), ['Year 3', 'Year 4', '+$27,000'], 'A headline figures')
+  assert.deepEqual(story(JOB_A, 20).answer.stats.map(stat => stat.value), ['Year 3', 'Year 4', '+$123,000'], 'the look-ahead moves only the amount')
+  assert.ok(a.answer.note, 'pays for itself before it costs less monthly → the note explains why')
+  assert.equal(text(a.monthly.answer), 'For the first 3 years, upgrading costs up to about $106 more a month. From year 4, it costs less every month: $266 less by year 10.', 'A monthly answer')
+  assert.equal(text(a.waiting.answer), 'Waiting doesn\'t skip the HVAC. It moves it to about year 3 and makes it $4,400 more expensive.', 'A waiting answer keeps HVAC uppercase and rounds')
+  assert.match(a.intro.body, /Your HVAC is near the end of its life\./, 'intro names the trade')
+  assert.equal(formatMoney(1891.5), '$1,892', 'exact dollars in receipts')
+  assert.equal(roundMoney(26733.45), '$27,000', 'nearest $1,000 at 10k+')
+  assert.equal(roundMoney(4413.5), '$4,400', 'nearest $100 at 1k+')
+  assert.equal(roundMoney(-6307.59), '−$6,300', 'negative money keeps its sign')
+  assert.equal(joinWords(['roof', 'HVAC']), 'roof and HVAC', 'two words')
+
+  const tags = (content: typeof a.monthly) => Object.fromEntries(content.uses.map(row => [row.label, row.tag]))
+  assert.equal(tags(a.monthly).Financing, 'assumption', 'a blank APR is tagged as a working number')
+  assert.equal(tags(a.waiting)['HVAC price today'], 'assumption', 'a blank like-for-like price is a working number')
+  assert.equal(tags(a.waiting)['HVAC age'], 'yours', 'the age is the homeowner\'s')
+  const typed = story({ ...JOB_A, project: { ...JOB_A.project, aprPercent: 6.5 } })
+  assert.equal(tags(typed.monthly).Financing, 'yours', 'a typed APR is tagged "You told us"')
+
+  const d = story(JOB_D)
+  assert.match(text(d.waiting.answer), /The same kind of exterior paint needs doing again in year 12\./, 'a renewal inside the look-ahead is named')
+  assert.match(d.intro.wait, /about year 2, and again in year 12/, 'the intro names both installs')
+
+  const paid = story(cash(JOB_A))
+  assert.ok(!paid.monthly.receipt.some(row => row.kind === 'line' && row.label === 'Loan payment'), 'cash → no loan line in the math')
+  assert.equal(text(paid.monthly.answer), 'Upgrading costs $218 less a month from the very first month.', 'cash is cheaper from year 1')
+
+  const c = story(JOB_C)
+  assert.match(text(c.waiting.answer), /Nothing in this project is about to give out/, 'no aging current one → said plainly')
+
+  const windows = story(job((v) => {
+    v.trades.windowsAndDoors = { current: { ...picks.windowsAndDoors.current, ageYears: 22 } }
+    v.project.price = 30000
+  }))
+  assert.match(windows.intro.body, /Your windows and doors are near the end of their life\./, 'plural reads as plural')
+
+  const banned = /\b(?:Cost|Multiplier|Margin)\b/
+  for (const content of [a, paid, c, d]) {
+    const all = JSON.stringify(content)
+    assert.ok(!banned.test(all), 'no Cost / Multiplier / Margin in homeowner copy')
+    assert.ok(!/\bhvac\b/.test(all), 'HVAC never lowercased')
   }
 }
 
