@@ -20,7 +20,7 @@ Tri Pros Remodeling is a Southern California residential remodeling company with
 
 ### Typography
 
-- **Display font:** Syne — used for all headings, eyebrows, and display copy.
+- **Display font:** Syne — used for all headings and display copy. Eyebrows are Nunito 700 uppercase (`BlockEyebrow`).
 - **Text font:** Nunito — used for body copy, labels, credentials, and UI text.
 - **No monospace, ever.** This is a remodeling business, not software. Monospace as decoration is a slop fingerprint. There is no mono token in this system.
 - **Use weight and size extremes.** The difference between `font-weight: 400` and `font-weight: 600` is mush. Use `800` or `900` for display text; `600` for credentials; `400` for body. Jump sizes aggressively: a headline at `clamp(2.5rem, 5vw, 4rem)` next to body at `1rem` has impact; splitting the difference does not.

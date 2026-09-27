@@ -21,6 +21,7 @@
 import * as TooltipPrimitive from '@radix-ui/react-tooltip'
 import * as React from 'react'
 
+import { GLASS_SURFACE_STYLE } from '@/shared/constants/glass-surface'
 import { cn } from '@/shared/lib/utils'
 
 function TooltipProvider({
@@ -70,13 +71,7 @@ function TooltipContent({
           'data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
           className,
         )}
-        style={{
-          backgroundColor: 'var(--popover-glass)',
-          backgroundImage: 'var(--popover-glass-overlay)',
-          backdropFilter: 'blur(32px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(32px) saturate(180%)',
-          boxShadow: 'var(--popover-glass-shadow)',
-        }}
+        style={GLASS_SURFACE_STYLE}
         {...props}
       >
         {children}

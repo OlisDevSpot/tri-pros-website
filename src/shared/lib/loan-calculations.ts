@@ -43,6 +43,28 @@ export function remainingBalance(
 }
 
 /**
+ * Months until a balance is paid off at a fixed payment. Same PERCENT
+ * convention. `null` when it never pays off: no payment, or a payment that
+ * doesn't cover the interest. Fractional months are kept.
+ */
+export function monthsToPayOff(balance: number, annualRatePercent: number, payment: number): number | null {
+  if (balance <= 0) {
+    return 0
+  }
+  if (payment <= 0) {
+    return null
+  }
+  if (annualRatePercent === 0) {
+    return balance / payment
+  }
+  const monthlyRate = annualRatePercent / 100 / 12
+  if (payment <= balance * monthlyRate) {
+    return null
+  }
+  return -Math.log(1 - (monthlyRate * balance) / payment) / Math.log(1 + monthlyRate)
+}
+
+/**
  * Loan display values for finance options.
  * NOTE: `annualRateFraction` is a DECIMAL FRACTION (0.0999 means 9.99% APR) —
  * that is how `finance_options.interestRate` is stored. Converted here, once.

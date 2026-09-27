@@ -3,7 +3,7 @@ import type { RemodelRoiFormValues } from '@/features/calculators/remodel-roi-ca
 import type { ProjectionYear, RemodelRoiProjection } from '@/features/calculators/remodel-roi-calculator/types'
 
 import { BILL_CATEGORIES } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
-import { amortizedMonthlyPayment, remainingBalance } from '@/shared/lib/loan-calculations'
+import { amortizedMonthlyPayment, monthsToPayOff, remainingBalance } from '@/shared/lib/loan-calculations'
 
 function amountOf(value: number | null | undefined): number {
   return value != null && Number.isFinite(value) && value > 0 ? value : 0
@@ -18,23 +18,6 @@ function cumulativeBills(monthly: number, growth: number, years: number): number
     return 12 * monthly * years
   }
   return (12 * monthly * ((1 + growth) ** years - 1)) / growth
-}
-
-function monthsToPayOff(balance: number, aprPercent: number, payment: number): number | null {
-  if (balance <= 0) {
-    return 0
-  }
-  if (payment <= 0) {
-    return null
-  }
-  if (aprPercent === 0) {
-    return balance / payment
-  }
-  const monthlyRate = toFraction(aprPercent) / 12
-  if (payment <= balance * monthlyRate) {
-    return null
-  }
-  return -Math.log(1 - (monthlyRate * balance) / payment) / Math.log(1 + monthlyRate)
 }
 
 function sumBills(bills: RemodelRoiFormValues['billsNow']): number {

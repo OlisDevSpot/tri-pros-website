@@ -8,7 +8,7 @@ import { formatYears } from '@/features/calculators/remodel-roi-calculator/lib/f
 import { projectRemodelRoi } from '@/features/calculators/remodel-roi-calculator/lib/project-remodel-roi'
 import { resolveRemodelRoiConfig } from '@/features/calculators/remodel-roi-calculator/lib/resolve-config'
 import { remodelRoiConfigSchema } from '@/features/calculators/remodel-roi-calculator/schemas/config'
-import { amortizedMonthlyPayment, remainingBalance } from '@/shared/lib/loan-calculations'
+import { amortizedMonthlyPayment, monthsToPayOff, remainingBalance } from '@/shared/lib/loan-calculations'
 
 function near(actual: number, expected: number, message: string, tolerance = 1e-6) {
   assert.ok(Math.abs(actual - expected) <= tolerance, `${message}: expected ${expected}, got ${actual}`)
@@ -26,6 +26,11 @@ assert.equal(remainingBalance(0, 6, 60, 10), 0, 'no principal → 0')
 assert.equal(remainingBalance(5000, 6, 0, 0), 0, 'no term → 0')
 assert.equal(remainingBalance(10000, 6, 20.5, 21), 0, 'fractional term: past it → 0')
 assert.ok(remainingBalance(10000, 6, 20.5, 12) > 0 && remainingBalance(10000, 6, 20.5, 12) < 10000, 'fractional term: mid-way balance in range')
+near(monthsToPayOff(100000, 6, amortizedMonthlyPayment(100000, 6, 360))!, 360, 'a scheduled payment pays off at term', 1e-6)
+near(monthsToPayOff(12000, 0, 1000)!, 12, '0% APR: balance over payment')
+assert.equal(monthsToPayOff(0, 6, 100), 0, 'nothing owed → 0 months')
+assert.equal(monthsToPayOff(5000, 24, 0), null, 'no payment → never')
+assert.equal(monthsToPayOff(5000, 24, 100), null, 'payment at or under the interest → never')
 
 // ── Remodel ROI Calculator ──────────────────────────────────────────────────────
 const config = resolveRemodelRoiConfig()

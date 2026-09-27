@@ -51,7 +51,7 @@ typography:
     fontWeight: 500
     lineHeight: 1.1
   eyebrow:
-    fontFamily: "Space Mono, ui-monospace, monospace"
+    fontFamily: "Nunito, system-ui, sans-serif"
     fontSize: "0.72rem"
     fontWeight: 700
     letterSpacing: "0.2em"
@@ -199,15 +199,15 @@ and every `h1`–`h6`.
 on `body`.
 **Serif Accent:** Playfair Display (with Georgia, serif) — `--font-serif`, reserved
 for cinematic/editorial moments.
-**Mono / Eyebrow:** Space Mono (with ui-monospace) — `--font-mono`, for labels and
-blueprint eyebrows.
+**Mono:** Space Mono (with ui-monospace) — `--font-mono`. Not for eyebrows: eyebrows
+are Nunito 700 (`BlockEyebrow`).
 **Script:** Dancing Script — `--font-script`, a rare signature flourish only.
 
 **Character:** Syne is a geometric, slightly architectural sans — confident and a
 little engineered, which is exactly the brand. Pairing it with Nunito's rounded
 warmth keeps long body copy friendly and legible for a homeowner audience, while
 Syne carries the authority in headings. Playfair supplies the occasional cinematic
-serif accent; Space Mono supplies the drafting-eyebrow voice.
+serif accent.
 
 ### Hierarchy
 - **Display** (Syne 500, `clamp(2.25rem, 5vw, 3.75rem)` — the `h1` `text-4xl → 6xl`
@@ -216,7 +216,7 @@ serif accent; Space Mono supplies the drafting-eyebrow voice.
 - **Title** (Syne 600, `~1.125rem`): card titles, list headers, sub-sections.
 - **Body** (Nunito 400, `1rem`, `line-height` 1.6): all reading copy. Cap prose at
   the marketing `--measure-prose` of **60ch**.
-- **Eyebrow / Label** (Space Mono 700, `0.72rem`, `letter-spacing` 0.2em, uppercase):
+- **Eyebrow / Label** (Nunito 700, `--fs-eyebrow`, `--tracking-eyebrow`, uppercase; `BlockEyebrow`):
   kickers, credential labels, the funnel `--fs-eyebrow` voice.
 
 ### Named Rules
@@ -226,7 +226,7 @@ Nunito (it drops the architectural authority). Playfair and Dancing Script are
 accents, never a paragraph face.
 
 **The Eyebrow-Only Uppercase Rule.** All-caps + wide tracking is reserved for short
-eyebrows and labels (Space Mono). Never uppercase a sentence of body copy.
+eyebrows and labels (`BlockEyebrow`). Never uppercase a sentence of body copy.
 
 ## Layout
 
@@ -351,7 +351,7 @@ responsive depth.
   makes the app feel premium rather than templated.
 
 ### Credential Strip / Blueprint Eyebrow (signature, marketing)
-- Space Mono uppercase eyebrow (`--fs-eyebrow`, `0.2em` tracking) in Blueprint Ink,
+- `BlockEyebrow` (Nunito uppercase, `--fs-eyebrow`, `--tracking-eyebrow`) in Blueprint Ink,
   often paired with a capsule pill (3px/999px) and `<Decor>` strokes — the drafting-
   label voice that signals licensed authority.
 
