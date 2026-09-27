@@ -33,6 +33,8 @@ export function useInvalidation() {
       trpc.customerPipelinesRouter.getCustomerProjects.queryFilter(),
     landingProjects: () =>
       trpc.landingRouter.projectsRouter.getProjects.queryFilter(),
+    meetingsList: () =>
+      trpc.meetingsRouter.reads.list.queryFilter(),
   }
 
   // ── Entity Invalidators ────────────────────────────────────────
@@ -57,6 +59,8 @@ export function useInvalidation() {
     void qc.invalidateQueries(trpc.proposalsRouter.pathFilter())
     void qc.invalidateQueries(cross.customerPipeline())
     void qc.invalidateQueries(cross.customerProfile(opts?.customerId))
+    // Meeting rows show their proposals' status dots and count.
+    void qc.invalidateQueries(cross.meetingsList())
     void qc.invalidateQueries(trpc.dashboardRouter.pathFilter())
     // Proposal approval creates a project, which flips the customer's "signed"
     // status — lead-source signed counts must refresh alongside.
