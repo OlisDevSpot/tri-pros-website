@@ -195,7 +195,8 @@ export function projectRemodelRoi(input: RemodelRoiFormValues, config: RemodelRo
         replacementsSkipped: replaced,
         interestSkipped: financed ? replacementPaid + debtWait - replaced : 0,
         valueGain: valueNow - valueWait,
-        projectPrice: -netPrice,
+        // 0 - netPrice, never -netPrice: a fully-covered price must stay +0, not print as "-$0".
+        projectPrice: 0 - netPrice,
         projectInterest: principal - projectPaid - debtNow,
       },
       netWorth: homeValue > 0 ? { now: home + valueNow - owed - debtNow, wait: home + valueWait - owed - debtWait, home, owed } : null,

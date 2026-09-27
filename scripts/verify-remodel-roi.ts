@@ -83,6 +83,12 @@ const JOB_D = job((v) => {
   v.trades.exteriorPaintSiding = { current: { ...picks.exteriorPaintSiding.current, ageYears: 8 } }
   v.project.price = 12000
 })
+// Incentives cover the whole price: net price is exactly 0, not a tiny negative or positive residue.
+const JOB_E = job((v) => {
+  v.trades.atticBasement = picks.atticBasement
+  v.project.price = 20000
+  v.project.incentives = 20000
+})
 
 // Cuts combine multiplicatively, so they never pass 100%; ducts count only with HVAC.
 near(combineCuts({ trades: ['hvac', 'atticBasement'], ducts: true }, 'electric', config.trades).combined, 0.35875, 'HVAC 25%, attic 10%, ducts 5% → 35.875%', 1e-9)
@@ -125,8 +131,18 @@ assert.equal(combineCuts({ trades: [], ducts: false }, 'electric', config.trades
   near(c.years[10].benefit, 2155.61, 'C +10 yrs')
 }
 
+// Job E. Incentives cover the whole price, so netPrice is 0 and the job is still ready — the project-price
+// return part must print as $0, never "-$0" (the negative-zero trap: 0 - 0 is +0, but -0 is not).
+{
+  const p = run(JOB_E)
+  assert.equal(p.ready, true, 'a fully-incentivized project is still ready')
+  assert.equal(p.project.netPrice, 0, 'net price is 0 when incentives cover the price')
+  assert.equal(p.years[10].returnParts.projectPrice, 0, 'projectPrice is +0, never -0')
+  assert.ok(!Object.is(p.years[10].returnParts.projectPrice, -0), 'never negative zero')
+}
+
 // The return parts sum to the benefit every year, financed and cash, for every job.
-for (const values of [JOB_A, JOB_B, JOB_C, JOB_D].flatMap(values => [values, cash(values)])) {
+for (const values of [JOB_A, JOB_B, JOB_C, JOB_D, JOB_E].flatMap(values => [values, cash(values)])) {
   for (const year of run(values).years) {
     const sum = Object.values(year.returnParts).reduce((total, part) => total + part, 0)
     near(sum, year.benefit, `parts sum to benefit, year ${year.t}`, 1e-6)
