@@ -9,6 +9,7 @@ import { AnalyticsTabsList } from '@/features/analytics/ui/components/analytics-
 import { AnalyticsFilterBar } from '@/features/analytics/ui/components/filter-bar/analytics-filter-bar'
 import { ProjectsPlaceholder } from '@/features/analytics/ui/components/projects-placeholder'
 import { ReportTabContent } from '@/features/analytics/ui/components/report/report-tab-content'
+import { SpendGrid } from '@/features/analytics/ui/components/spend/spend-grid'
 import { Tabs, TabsContent } from '@/shared/components/ui/tabs'
 import { useHydrationParityCheck } from '@/shared/dal/client/hooks/use-hydration-parity-check'
 import { useTRPC } from '@/trpc/helpers'
@@ -45,7 +46,7 @@ export function AnalyticsView() {
           <ProjectsPlaceholder />
         </TabsContent>
         <TabsContent value="spend">
-          <p className="text-sm text-muted-foreground">Spend entry arrives in Task 9.</p>
+          <SpendGrid months={report.data?.spendGridMonths} missing={report.data?.spendMissing ?? []} />
         </TabsContent>
       </Tabs>
     </div>
