@@ -9,6 +9,7 @@ import { Area, AreaChart, CartesianGrid, ReferenceDot, ReferenceLine, Responsive
 
 import { formatMoney, signedMoney } from '@/features/calculators/remodel-roi-calculator/lib/format-money'
 import { ChartTooltipCard } from '@/shared/components/charts/chart-tooltip-card'
+import { usePinnedChartTooltip } from '@/shared/hooks/use-pinned-chart-tooltip'
 
 interface Props {
   projection: RemodelRoiProjection
@@ -17,6 +18,7 @@ interface Props {
 
 export function PayForItselfChart({ projection, lookAhead }: Props) {
   const reduceMotion = useReducedMotion()
+  const tooltip = usePinnedChartTooltip()
   const gradientId = useId()
   const data = projection.years.slice(0, lookAhead + 1)
   const values = data.map(year => year.benefit)
@@ -26,7 +28,7 @@ export function PayForItselfChart({ projection, lookAhead }: Props) {
   const offset = max <= 0 ? 0 : min >= 0 ? 1 : max / (max - min)
   const payback = projection.milestones.paysForItselfYear
   return (
-    <div aria-label={`Where upgrading leaves you compared with waiting: ${signedMoney(values[lookAhead])} by year ${lookAhead}.${payback ? ` It pays for itself in year ${payback}.` : ''}`} className="h-60 w-full" role="img">
+    <div aria-label={`Where upgrading leaves you compared with waiting: ${signedMoney(values[lookAhead])} by year ${lookAhead}.${payback ? ` It pays for itself in year ${payback}.` : ''}`} className="h-60 w-full" role="img" {...tooltip.containerProps}>
       <ResponsiveContainer debounce={150} height="100%" width="100%">
         <AreaChart data={data} margin={{ top: 16, right: 16, left: 0, bottom: 0 }}>
           <defs>
@@ -39,12 +41,14 @@ export function PayForItselfChart({ projection, lookAhead }: Props) {
           <XAxis axisLine={false} dataKey="t" stroke="var(--muted-foreground)" tickFormatter={t => (t === 0 ? 'Now' : `Yr ${t}`)} tickLine={false} />
           <YAxis axisLine={false} stroke="var(--muted-foreground)" tickFormatter={value => signedMoney(Number(value))} tickLine={false} width={92} />
           <ReferenceLine stroke="var(--muted-foreground)" y={0} />
-          <Tooltip content={({ active, label }) => {
-            const year = projection.years[Number(label)]
-            return active && year
-              ? <ChartTooltipCard rows={[{ label: year.benefit >= 0 ? 'Ahead by' : 'Behind by', value: formatMoney(Math.abs(year.benefit)), swatch: year.benefit >= 0 ? 'bg-primary' : 'bg-warning' }]} title={`Year ${label}`} />
-              : null
-          }}
+          <Tooltip
+            active={tooltip.tooltipActive}
+            content={({ active, label }) => {
+              const year = projection.years[Number(label)]
+              return active && year
+                ? <ChartTooltipCard rows={[{ label: year.benefit >= 0 ? 'Ahead by' : 'Behind by', value: formatMoney(Math.abs(year.benefit)), swatch: year.benefit >= 0 ? 'bg-primary' : 'bg-warning' }]} title={`Year ${label}`} />
+                : null
+            }}
           />
           <Area dataKey="benefit" fill={`url(#${gradientId})`} isAnimationActive={!reduceMotion} stroke="var(--primary)" strokeWidth={2.5} type="monotone" />
           {payback != null && payback <= lookAhead && <ReferenceDot fill="var(--card)" label={{ value: `Pays for itself · year ${payback}`, position: 'right', className: 'fill-foreground stroke-card stroke-3 text-xs font-extrabold [paint-order:stroke] [stroke-linejoin:round]' }} r={5} stroke="var(--primary)" strokeWidth={2.5} x={payback} y={projection.years[payback].benefit} />}

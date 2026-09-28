@@ -7,6 +7,7 @@ import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, X
 
 import { formatBucketLabel, formatBucketRange } from '@/features/lead-sources-admin/lib/format-bucket-label'
 import { formatTimeRangeClause } from '@/features/lead-sources-admin/lib/format-time-range-clause'
+import { usePinnedChartTooltip } from '@/shared/hooks/use-pinned-chart-tooltip'
 import { formatAsCount } from '@/shared/lib/formatters'
 
 interface TrendPoint {
@@ -23,12 +24,13 @@ interface Props {
 }
 
 export function LeadSourceTrendChart({ trend, bucket, chip }: Props) {
+  const tooltip = usePinnedChartTooltip()
   return (
     <section aria-label="Activity over time" className="space-y-2">
       <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
         {`Activity over time · ${formatTimeRangeClause(chip)}`}
       </h3>
-      <div className="h-56 w-full">
+      <div className="h-56 w-full" {...tooltip.containerProps}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={trend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
@@ -44,7 +46,7 @@ export function LeadSourceTrendChart({ trend, bucket, chip }: Props) {
               className="text-xs"
               stroke="var(--muted-foreground)"
             />
-            <Tooltip content={<TrendTooltip bucket={bucket} />} />
+            <Tooltip active={tooltip.tooltipActive} content={<TrendTooltip bucket={bucket} />} />
             <Legend wrapperStyle={{ fontSize: 12 }} iconType="line" />
             <Line type="monotone" dataKey="leads" stroke="var(--foreground)" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name="Leads" />
             <Line type="monotone" dataKey="meetings" stroke="var(--muted-foreground)" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name="Meetings" />

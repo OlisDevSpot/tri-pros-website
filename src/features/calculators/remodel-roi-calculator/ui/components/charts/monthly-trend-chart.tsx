@@ -10,6 +10,7 @@ import { STORY_COPY } from '@/features/calculators/remodel-roi-calculator/consta
 import { CURRENT_LABELS } from '@/features/calculators/remodel-roi-calculator/constants/trades'
 import { formatMoney } from '@/features/calculators/remodel-roi-calculator/lib/format-money'
 import { ChartTooltipCard } from '@/shared/components/charts/chart-tooltip-card'
+import { usePinnedChartTooltip } from '@/shared/hooks/use-pinned-chart-tooltip'
 
 interface Props {
   projection: RemodelRoiProjection
@@ -18,6 +19,7 @@ interface Props {
 
 export function MonthlyTrendChart({ projection, lookAhead }: Props) {
   const reduceMotion = useReducedMotion()
+  const tooltip = usePinnedChartTooltip()
   const { milestones, replacements, years } = projection
   const data = years.slice(1, lookAhead + 1)
   const from = milestones.costsLessMonthlyYear != null && milestones.costsLessMonthlyYear <= lookAhead ? milestones.costsLessMonthlyYear : null
@@ -26,7 +28,7 @@ export function MonthlyTrendChart({ projection, lookAhead }: Props) {
   const fromLabel = from === 1 ? { position: 'right' as const, dy: 16 } : { position: 'bottom' as const }
   const marks = replacements.flatMap(replacement => replacement.installs.filter(install => install.year < lookAhead).map(install => ({ key: `${replacement.trade}-${install.year}`, label: `${CURRENT_LABELS[replacement.trade]} replaced`, t: install.year + 1 })))
   return (
-    <div aria-label={`Monthly cost each year. ${STORY_COPY.paths.now} ${formatMoney(data[0].monthlyNow)} in year 1, ${STORY_COPY.paths.wait} ${formatMoney(data[0].monthlyWait)}.${from ? ` Upgrading costs less from year ${from}.` : ''}`} className="h-72 w-full" role="img">
+    <div aria-label={`Monthly cost each year. ${STORY_COPY.paths.now} ${formatMoney(data[0].monthlyNow)} in year 1, ${STORY_COPY.paths.wait} ${formatMoney(data[0].monthlyWait)}.${from ? ` Upgrading costs less from year ${from}.` : ''}`} className="h-72 w-full" role="img" {...tooltip.containerProps}>
       <ResponsiveContainer debounce={150} height="100%" width="100%">
         <LineChart data={data} margin={{ top: 20, right: 16, left: 0, bottom: 0 }}>
           <CartesianGrid stroke="var(--border)" vertical={false} />
@@ -34,6 +36,7 @@ export function MonthlyTrendChart({ projection, lookAhead }: Props) {
           <YAxis axisLine={false} domain={[0, 'auto']} stroke="var(--muted-foreground)" tickFormatter={value => formatMoney(Number(value))} tickLine={false} width={72} />
           {from != null && from > 1 && <ReferenceArea fill="var(--warning)" fillOpacity={0.08} ifOverflow="hidden" x1={1} x2={from} />}
           <Tooltip
+            active={tooltip.tooltipActive}
             content={({ active, label }) => {
               const year = years[Number(label)]
               if (!active || !year) {

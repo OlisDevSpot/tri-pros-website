@@ -13,6 +13,7 @@ import { STORY_COPY } from '@/features/calculators/remodel-roi-calculator/consta
 import { formatMoney } from '@/features/calculators/remodel-roi-calculator/lib/format-money'
 import { SegmentRect } from '@/features/calculators/remodel-roi-calculator/ui/components/charts/segment-rect'
 import { ChartTooltipCard } from '@/shared/components/charts/chart-tooltip-card'
+import { usePinnedChartTooltip } from '@/shared/hooks/use-pinned-chart-tooltip'
 
 interface Props {
   projection: RemodelRoiProjection
@@ -25,6 +26,8 @@ export function MonthlyBreakdownChart({ projection, lookAhead }: Props) {
   const reduceMotion = useReducedMotion()
   const hatchId = useId()
   const [active, setActive] = useState<{ key: SegmentKey, index: number } | null>(null)
+  // A tapped segment stays highlighted while its tooltip is pinned; releasing the pin clears it.
+  const tooltip = usePinnedChartTooltip({ onUnpin: () => setActive(null) })
   const used = BILL_CATEGORIES.filter(category => projection.cuts[category].bill > 0)
   const data = projection.years.slice(1, lookAhead + 1).map(year => ({
     t: year.t,
@@ -43,7 +46,7 @@ export function MonthlyBreakdownChart({ projection, lookAhead }: Props) {
   ]
 
   return (
-    <div aria-label="Monthly cost by year and what makes it up, upgrade now next to wait and replace" className="h-72 w-full" role="img">
+    <div aria-label="Monthly cost by year and what makes it up, upgrade now next to wait and replace" className="h-72 w-full" role="img" {...tooltip.containerProps}>
       <ResponsiveContainer debounce={150} height="100%" width="100%">
         <BarChart barCategoryGap="18%" barGap={3} data={data} margin={{ top: 16, right: 8, left: 0, bottom: 0 }}>
           <defs>
@@ -56,6 +59,7 @@ export function MonthlyBreakdownChart({ projection, lookAhead }: Props) {
           <XAxis axisLine={false} dataKey="t" stroke="var(--muted-foreground)" tickFormatter={t => `Yr ${t}`} tickLine={false} />
           <YAxis axisLine={false} stroke="var(--muted-foreground)" tickFormatter={value => formatMoney(Number(value))} tickLine={false} width={72} />
           <Tooltip
+            active={tooltip.tooltipActive}
             content={({ active: shown, payload }) => {
               const item = payload?.[0]
               if (!shown || !item) {
@@ -81,7 +85,7 @@ export function MonthlyBreakdownChart({ projection, lookAhead }: Props) {
               maxBarSize={30}
               name={segment.label}
               onMouseEnter={(_, index) => setActive({ key: segment.key, index })}
-              onMouseLeave={() => setActive(null)}
+              onMouseLeave={() => !tooltip.pinned && setActive(null)}
               shape={<SegmentRect activeIndex={active?.key === segment.key ? active.index : null} anyActive={active != null} className={segment.className} fill={segment.fill} />}
               stackId={segment.stack}
             />
