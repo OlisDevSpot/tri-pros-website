@@ -15,10 +15,10 @@ interface Props {
 export function AnalyticsFiltersControl({ activeCount }: Props) {
   const isBelowLg = useIsBelowLg()
   const trigger = (
-    <Button variant="outline" size="sm" className="gap-1.5">
+    <Button variant="ghost" size="sm" className="h-7 gap-1.5 px-2.5">
       <FilterIcon className="size-4" aria-hidden="true" />
-      Filters
-      {activeCount > 0 && <span className="tabular-nums text-primary">{activeCount}</span>}
+      <span className="max-sm:sr-only">Filters</span>
+      {activeCount > 0 && <span className="inline-grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1.5 text-xs font-semibold tabular-nums text-primary-foreground">{activeCount}</span>}
     </Button>
   )
   if (isBelowLg) {

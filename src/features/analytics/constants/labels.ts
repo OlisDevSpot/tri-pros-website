@@ -1,4 +1,4 @@
-import type { AnalyticsGroupBy, AnalyticsHygiene, AnalyticsPeriod, MeetingOrder } from '@/features/analytics/types'
+import type { AnalyticsGroupBy, AnalyticsHygiene, AnalyticsInterval, AnalyticsPeriod, MeetingOrder } from '@/features/analytics/types'
 
 export const MEETING_ORDER_LABELS: Record<MeetingOrder, string> = {
   first: 'First sit',
@@ -16,6 +16,12 @@ export const GROUP_BY_LABELS: Record<AnalyticsGroupBy, string> = {
   meetingOrder: 'Meeting order',
   city: 'City',
   zip: 'Zip',
+}
+
+export const INTERVAL_LABELS: Record<AnalyticsInterval, string> = {
+  day: 'Day',
+  week: 'Week',
+  month: 'Month',
 }
 
 export const PERIOD_LABELS: Record<AnalyticsPeriod, string> = {

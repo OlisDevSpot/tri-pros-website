@@ -1,3 +1,4 @@
+import type { ChartSeriesKey } from '@/features/analytics/constants/chart-series'
 import type { MetricKey } from '@/features/analytics/constants/metrics'
 import type { AnalyticsUrlState } from '@/features/analytics/constants/query-parsers'
 import type { ReportTab } from '@/features/analytics/constants/tabs'
@@ -29,6 +30,13 @@ export function resolveFocus(tab: ReportTab, focus: string | null): MetricKey {
   const config = REPORT_TABS[tab]
   const focusable = config.figures.map(f => f.metric).filter(key => !('notYet' in METRICS[key]))
   return focusable.find(key => key === focus) ?? config.defaultFocus
+}
+
+/** The chart's series from the URL, kept to the tab's own; none left falls back to the tab's defaults. */
+export function resolveSeries(tab: ReportTab, series: readonly string[] | null): ChartSeriesKey[] {
+  const { chart } = REPORT_TABS[tab]
+  const chosen = chart.series.filter(key => series?.includes(key))
+  return chosen.length > 0 ? chosen : [...chart.defaultSeries]
 }
 
 /**
@@ -69,5 +77,6 @@ export function toReportInput(state: AnalyticsUrlState): AnalyticsReportInput {
     ...(period === 'custom' ? { from: state.from, to: state.to } : {}),
     filters,
     groupBy: resolveGroupBy(state),
+    ...(state.interval ? { interval: state.interval } : {}),
   }
 }

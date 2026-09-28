@@ -16,6 +16,8 @@ import { computeCosts, findMissingSpend, notApplicableReasons, sourceRowCostReas
 import { breakdownColumns } from '@/features/analytics/lib/breakdown-columns'
 import { analyticsReportWindow, buildAnalyticsReport } from '@/features/analytics/lib/build-analytics-report'
 import { buildLeadRecords } from '@/features/analytics/lib/build-lead-records'
+import { chartBuckets, chartIntervals, resolveChartInterval } from '@/features/analytics/lib/chart-buckets'
+import { buildChartRows, niceTicks } from '@/features/analytics/lib/chart-rows'
 import { buildFilterFields } from '@/features/analytics/lib/filter-fields'
 import { filterUpdate } from '@/features/analytics/lib/filter-update'
 import { formatDayRange } from '@/features/analytics/lib/format-analytics'
@@ -23,9 +25,9 @@ import { hygieneHref } from '@/features/analytics/lib/hygiene-links'
 import { listLeadPlaces } from '@/features/analytics/lib/list-lead-places'
 import { formatCentsForInput, parseDollarsToCents } from '@/features/analytics/lib/parse-dollars'
 import { metricDisplayText, readMetric, sortRowsByMetric } from '@/features/analytics/lib/read-metric'
+import { rowFilter } from '@/features/analytics/lib/row-filter'
 import { spendGridRows } from '@/features/analytics/lib/spend-grid-rows'
-import { resolveFocus, toReportInput } from '@/features/analytics/lib/to-report-input'
-import { buildTrendPoints } from '@/features/analytics/lib/trend-points'
+import { resolveFocus, resolveSeries, toReportInput } from '@/features/analytics/lib/to-report-input'
 import { analyticsReportInputSchema } from '@/features/analytics/schemas/report-input-schema'
 import { isProjectMeeting, isSit, MEETING_OUTCOME_SIT, meetingOutcomes } from '@/shared/constants/enums/meetings'
 import { projectPipelineStages } from '@/shared/constants/enums/pipelines'
@@ -534,14 +536,15 @@ console.log('13. Spend and cost ✓')
   assert.equal(srcARow.cost.status === 'ok' && srcARow.cost.spendCents, 260_000, 'src-a September spend to date (26/30)')
   assert.equal(srcARow.cost.status === 'ok' && srcARow.cost.costs.costPerLead, 260_000, 'one src-a lead so far')
   assert.equal(report.breakdown.find(r => r.groupKey === 'src-b')!.cost.status, 'missing', 'src-b row is missing')
-  assert.equal(report.trend.length, 12, 'twelve trend months')
-  assert.deepEqual([report.trend[0].month, report.trend[11].month], ['2025-10', '2026-09'], 'the trend ends with the period\'s last month')
-  assert.deepEqual(report.trend.filter(t => t.selected).map(t => t.month), ['2026-09'], 'only the period\'s months are selected')
-  const august = report.trend.find(t => t.month === '2026-08')!.row
+  assert.deepEqual([report.chart.interval, report.chart.intervals], ['day', ['day', 'week']], 'a month charts by day by default, and offers weeks; one month is not a month chart')
+  assert.deepEqual([report.chart.buckets.length, report.chart.buckets[0].first, report.chart.buckets[29].last], [30, '2026-09-01', '2026-09-30'], 'the chart covers the period, not a fixed twelve months')
+  assert.equal(report.chart.buckets.reduce((sum, b) => sum + (b.row.totalLeads ?? 0), 0), report.headline.totalLeads, 'the day buckets add up to the headline')
+  const twoMonths = buildAnalyticsReport(data, { period: 'custom', from: '2026-08-01', to: '2026-09-30', filters: {}, groupBy: 'leadSource', interval: 'month' }, NOW)
+  const august = twoMonths.chart.buckets.find(b => b.first === '2026-08-01')!.row
   assert.equal(august.totalLeads, 1, 'r1 led in August')
   assert.equal(august.cost.status === 'ok' && august.cost.spendCents, 310_000, 'a past month counts in full; src-b had no August lead so nothing is missing')
   assert.deepEqual(report.spendMissing, [{ leadSourceId: 'src-b', month: '2026-09' }], 'the Spend tab\'s warning lists every missing source-month in the period and the trend window')
-  assert.deepEqual(report.spendGridMonths, report.trend.map(t => t.month), 'nothing is owed outside the trend, so the grid shows the trend\'s twelve months')
+  assert.deepEqual([report.spendGridMonths.length, report.spendGridMonths[0], report.spendGridMonths[11]], [12, '2025-10', '2026-09'], 'nothing is owed further back, so the grid shows the twelve months ending with the period\'s')
   assert.deepEqual(report.hygiene, { meetingsWithoutOutcome: 1, undatedSales: 1, newSalesWithoutProject: 1, unknownCityZip: 1 }, 'hygiene counts all records: r3m unresolved, r1s undated and without a project, r3 has no city')
 
   const srcAYear = buildAnalyticsReport(data, { period: 'last-12', filters: { leadSourceIds: ['src-a'] }, groupBy: 'month' }, NOW)
@@ -561,9 +564,9 @@ console.log('13. Spend and cost ✓')
   assert.ok(longAgo.spendGridMonths.includes('2024-02') && longAgo.spendGridMonths.length === 13, 'the grid adds that month to the trend\'s twelve, so the warning can be cleared')
   assert.equal(buildAnalyticsReport(data, { period: 'last-12', filters: {}, groupBy: 'leadSource' }, NOW).breakdown.every(r => r.groupKey !== null), true, 'every fixture lead has a source')
 
-  const future = buildAnalyticsReport(data, { period: 'custom', from: '2026-09-01', to: '2026-11-30', filters: { leadSourceIds: ['src-a'] }, groupBy: 'month' }, NOW)
-  const november = future.trend.find(t => t.month === '2026-11')!
-  assert.equal(november.selected, true, 'a future month inside the period is selected')
+  const future = buildAnalyticsReport(data, { period: 'custom', from: '2026-09-01', to: '2026-11-30', filters: { leadSourceIds: ['src-a'] }, groupBy: 'month', interval: 'month' }, NOW)
+  const november = future.chart.buckets.find(b => b.first === '2026-11-01')!
+  assert.equal(future.chart.interval, 'month', 'a requested step the period offers is kept')
   assert.equal(november.row.totalLeads, 0, 'no leads yet')
   assert.deepEqual(november.row.cost.status === 'ok' && [november.row.cost.spendCents, november.row.cost.costs.costPerLead], [0, null], 'a future month: $0 so far and no cost per lead, never missing')
 
@@ -587,7 +590,7 @@ console.log('14. Report ✓')
 // ── 15. Page state ──────────────────────────────────────────────────────────
 {
   const SOURCE = '4b7e1c2a-9d3f-4e5a-8b6c-1d2e3f4a5b6c'
-  const base: AnalyticsUrlState = { period: 'this-month', from: '', to: '', source: [], city: [], zip: [], closer: [], outcome: [], order: [], tab: 'overview', groupBy: null, focus: null }
+  const base: AnalyticsUrlState = { period: 'this-month', from: '', to: '', source: [], city: [], zip: [], closer: [], outcome: [], order: [], tab: 'overview', groupBy: null, focus: null, series: null, interval: null }
   assert.deepEqual(toReportInput(base), { period: 'this-month', filters: {}, groupBy: 'leadSource' }, 'defaults: this month, no filters, the tab\'s first group-by')
   assert.equal(toReportInput({ ...base, period: 'custom' }).period, 'this-month', 'a custom period with no days falls back to this month')
   assert.equal(toReportInput({ ...base, period: 'custom', from: '2026-13-45', to: '2026-09-30' }).period, 'this-month', 'an impossible day falls back')
@@ -598,6 +601,15 @@ console.log('14. Report ✓')
   assert.equal(toReportInput({ ...base, tab: 'sales', groupBy: 'month' }).groupBy, 'month', 'a group-by the tab offers is kept')
   assert.equal(toReportInput({ ...base, tab: 'spend' }).groupBy, 'leadSource', 'non-report tabs ask for the overview\'s report')
   assert.equal(resolveFocus('overview', null), 'sits', 'overview focuses sits')
+  assert.deepEqual(rowFilter('leadSource', SOURCE, base)?.update, { source: [SOURCE] }, 'a source row adds its source to the filter')
+  assert.deepEqual(rowFilter('leadSource', SOURCE, { ...base, source: [SOURCE] }), { active: true, update: { source: [] } }, 'clicking a filtered row removes it')
+  assert.deepEqual(rowFilter('city', null, base)?.update, { city: ['unknown'] }, 'the unknown city row filters to unknown')
+  assert.equal(rowFilter('closer', null, base), null, 'an unassigned closer cannot be filtered to')
+  assert.deepEqual(rowFilter('month', '2026-08', base)?.update, { period: 'custom', from: '2026-08-01', to: '2026-08-31', interval: null }, 'a month row narrows the timeframe to that month')
+  assert.equal(rowFilter('month', '2026-08', { ...base, period: 'custom', from: '2026-08-01', to: '2026-08-31' }), null, 'the month already shown has nothing to narrow')
+  assert.deepEqual(resolveSeries('overview', null), ['totalLeads', 'bookedLeads', 'sits', 'revenue'], 'no series in the URL shows the tab\'s defaults')
+  assert.deepEqual(resolveSeries('overview', ['revenue', 'sits', 'meetings']), ['sits', 'revenue'], 'series keep the tab\'s order and drop ones the tab does not chart')
+  assert.deepEqual(resolveSeries('sales', ['sits']), ['newSales', 'revenueNew'], 'nothing left falls back to the tab\'s defaults')
   assert.equal(resolveFocus('sales', 'revenueNew'), 'revenueNew', 'a figure on the tab can be focused')
   assert.equal(resolveFocus('leads', 'validLeads'), 'totalLeads', 'a figure that is not available yet cannot be focused')
   assert.equal(resolveFocus('leads', 'sits'), 'totalLeads', 'a figure from another tab falls back')
@@ -675,8 +687,23 @@ console.log('14. Report ✓')
   )
 
   const emptyReport = buildAnalyticsReport({ facts: { customers: [], meetings: [], sales: [] }, sources: [], spend: [] }, { period: 'this-month', filters: {}, groupBy: 'leadSource' }, NOW)
-  const points = buildTrendPoints(emptyReport, 'sits')
-  assert.deepEqual([points.length, points[11].label, points[11].selected, points[11].value], [12, 'Sep', true, 0], 'twelve points, the period\'s month selected, a zero is a value')
+  const points = buildChartRows(emptyReport, ['sits', 'revenue'])
+  assert.deepEqual([points.length, points[0].key, points[29].last, points[29].values.sits, points[29].values.revenue], [30, '2026-09-01', '2026-09-30', 0, 0], 'one row per day of the period; a zero is a value for every series')
+  assert.deepEqual(niceTicks(80, true), [0, 20, 40, 60, 80], 'round count steps that reach the max')
+  assert.deepEqual(niceTicks(3, true), [0, 1, 2, 3], 'counts never step in fractions')
+  assert.deepEqual(niceTicks(0, true), [0, 1], 'an empty chart still has a scale')
+
+  const september = { first: '2026-09-01', last: '2026-09-30' }
+  const weeks = chartBuckets(september, 'week')
+  assert.deepEqual([weeks[0].first, weeks[weeks.length - 1].last], ['2026-09-01', '2026-09-30'], 'weeks are clipped to the period')
+  assert.ok(weeks.slice(1).every(w => new Date(`${w.first}T00:00:00Z`).getUTCDay() === 1), 'every week after the first starts on a Monday')
+  assert.ok(weeks.every((w, i) => i === 0 || w.first > weeks[i - 1].last), 'weeks never overlap')
+  const year = { first: '2025-10-01', last: '2026-09-30' }
+  assert.deepEqual(chartIntervals(year), ['week', 'month'], 'a year is too long to chart by day')
+  assert.equal(resolveChartInterval(year, undefined), 'month', 'a year charts by month by default')
+  assert.equal(resolveChartInterval(year, 'day'), 'month', 'a step the period does not offer falls back to its default')
+  assert.equal(resolveChartInterval(year, 'week'), 'week', 'a step it offers is kept')
+  assert.equal(resolveChartInterval({ first: '2026-07-01', last: '2026-09-30' }, undefined), 'week', 'a quarter charts by week')
 
   const grid = spendGridRows(
     [

@@ -1,4 +1,4 @@
-import type { AnalyticsGroupBy, MeetingOrder } from '@/features/analytics/constants/dimensions'
+import type { AnalyticsGroupBy, AnalyticsInterval, MeetingOrder } from '@/features/analytics/constants/dimensions'
 import type { AnalyticsCostKey, AnalyticsRateKey, AnalyticsStage, MissingSpend, NotApplicableReasons } from '@/features/analytics/lib/analytics-rules'
 import type { MeetingOutcome, MeetingSit } from '@/shared/constants/enums/meetings'
 import type { CustomerFact } from '@/shared/entities/customers/dal/server/analytics-facts'
@@ -6,7 +6,7 @@ import type { MeetingFact } from '@/shared/entities/meetings/dal/server/analytic
 import type { SaleFact } from '@/shared/modules/proposals/core/dal/server/analytics-facts'
 import type { SaleKind } from '@/shared/modules/proposals/core/lib/sale'
 
-export type { AnalyticsGroupBy, AnalyticsPeriod, MeetingOrder } from '@/features/analytics/constants/dimensions'
+export type { AnalyticsGroupBy, AnalyticsInterval, AnalyticsPeriod, MeetingOrder } from '@/features/analytics/constants/dimensions'
 
 export interface AnalyticsFacts {
   customers: CustomerFact[]
@@ -115,10 +115,18 @@ export interface AnalyticsReportRow extends AnalyticsCounts {
   cost: RowCost
 }
 
-export interface AnalyticsTrendMonth {
-  month: string
-  selected: boolean
+export interface AnalyticsChartBucket {
+  /** First and last business day, both inclusive, clipped to the period. */
+  first: string
+  last: string
   row: AnalyticsReportRow
+}
+
+export interface AnalyticsChart {
+  interval: AnalyticsInterval
+  /** The steps this period can be charted in. */
+  intervals: AnalyticsInterval[]
+  buckets: AnalyticsChartBucket[]
 }
 
 export interface AnalyticsHygiene {
@@ -137,10 +145,10 @@ export interface AnalyticsReport {
   groupBy: AnalyticsGroupBy
   headline: AnalyticsReportRow
   breakdown: AnalyticsReportRow[]
-  trend: AnalyticsTrendMonth[]
+  chart: AnalyticsChart
   notApplicable: { headline: NotApplicableReasons, breakdown: NotApplicableReasons }
   spendMissing: MissingSpend[]
-  /** The Spend grid's columns: the trend's months plus any older month still owed spend. */
+  /** The Spend grid's columns: the twelve months ending with the period's plus any older month still owed spend. */
   spendGridMonths: string[]
   undatedSales: number | null
   orphans: number

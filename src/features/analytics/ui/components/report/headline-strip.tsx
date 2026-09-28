@@ -25,7 +25,7 @@ export function HeadlineStrip({ config, report, focus, onFocus, onOpenSpend }: P
   const missing = report.headline.cost.status === 'missing' ? report.headline.cost.missing : []
   return (
     <section aria-label="Headline figures" className="flex flex-col gap-2">
-      <div className="grid grid-cols-2 divide-border border-y border-border md:flex md:divide-x">
+      <div className="grid grid-cols-3 border-t border-border md:flex md:divide-x md:divide-border md:border-b">
         {config.figures.map(figure => (
           <HeadlineFigure
             key={figure.metric}

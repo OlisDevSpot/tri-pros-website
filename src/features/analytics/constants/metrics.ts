@@ -7,7 +7,7 @@ export type MetricFormat = 'count' | 'money' | 'rate' | 'multiple'
 export type MetricStage = 'leads' | 'sales' | 'cost'
 
 export type MetricDefinition
-  = | { label: string, format: MetricFormat, stage?: MetricStage, read: (row: AnalyticsReportRow) => number | null }
+  = | { label: string, /** For the phone's narrow headline cells. */ short?: string, format: MetricFormat, stage?: MetricStage, read: (row: AnalyticsReportRow) => number | null }
     | { label: string, notYet: string }
 
 function cost(key: AnalyticsCostKey) {
@@ -21,14 +21,14 @@ export const METRICS = {
   validLeads: { label: 'Valid leads', notYet: 'lead quality' },
   junkRate: { label: 'Junk rate', notYet: 'lead quality' },
   bookedLeads: { label: 'Booked leads', format: 'count', read: r => r.bookedLeads },
-  bookingRate: { label: 'Booking rate', format: 'rate', stage: 'leads', read: r => r.rates.bookingRate },
+  bookingRate: { label: 'Booking rate', short: 'Booked', format: 'rate', stage: 'leads', read: r => r.rates.bookingRate },
   sits: { label: 'Sits', format: 'count', read: r => r.sits },
-  sitRate: { label: 'Sit rate', format: 'rate', read: r => r.rates.sitRate },
+  sitRate: { label: 'Sit rate', short: 'Sat', format: 'rate', read: r => r.rates.sitRate },
   meetings: { label: 'Meetings', format: 'count', read: r => r.meetings },
   meetingsWithoutOutcome: { label: 'No outcome', format: 'count', read: r => r.hygiene.unresolvedMeetings },
   setter: { label: 'Setter', notYet: 'setter tracking' },
   newSales: { label: 'New sales', format: 'count', stage: 'sales', read: r => r.newSales },
-  closeRate: { label: 'Close rate', format: 'rate', stage: 'sales', read: r => r.rates.closeRate },
+  closeRate: { label: 'Close rate', short: 'Closed', format: 'rate', stage: 'sales', read: r => r.rates.closeRate },
   totalCloses: { label: 'Total closes', format: 'count', stage: 'sales', read: r => r.totalCloses },
   revenue: { label: 'Revenue', format: 'money', stage: 'sales', read: r => r.revenueCents },
   revenueNew: { label: 'New revenue', format: 'money', stage: 'sales', read: r => r.revenueNewCents },
@@ -40,7 +40,7 @@ export const METRICS = {
   costPerLead: { label: 'Cost per lead', format: 'money', stage: 'cost', read: cost('costPerLead') },
   costPerBookedLead: { label: 'Cost per booked lead', format: 'money', stage: 'cost', read: cost('costPerBookedLead') },
   costPerSit: { label: 'Cost per sit', format: 'money', stage: 'cost', read: cost('costPerSit') },
-  costPerNewSale: { label: 'Cost per sale', format: 'money', stage: 'cost', read: cost('costPerNewSale') },
+  costPerNewSale: { label: 'Cost per sale', short: 'Per sale', format: 'money', stage: 'cost', read: cost('costPerNewSale') },
   returnOnSpend: { label: 'Revenue per $1', format: 'multiple', stage: 'cost', read: r => (r.cost.status === 'ok' ? r.cost.returnOnSpend : null) },
 } as const satisfies Record<string, MetricDefinition>
 

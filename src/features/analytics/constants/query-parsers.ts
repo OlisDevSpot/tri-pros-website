@@ -2,7 +2,7 @@ import type { inferParserType } from 'nuqs/server'
 
 import { createLoader, parseAsArrayOf, parseAsString, parseAsStringLiteral } from 'nuqs/server'
 
-import { ANALYTICS_GROUP_BYS, ANALYTICS_PERIODS, MEETING_ORDERS } from '@/features/analytics/constants/dimensions'
+import { ANALYTICS_GROUP_BYS, ANALYTICS_INTERVALS, ANALYTICS_PERIODS, MEETING_ORDERS } from '@/features/analytics/constants/dimensions'
 import { ANALYTICS_TABS } from '@/features/analytics/constants/tabs'
 import { meetingOutcomes } from '@/shared/constants/enums/meetings'
 
@@ -20,6 +20,8 @@ export const analyticsSearchParams = {
   tab: parseAsStringLiteral(ANALYTICS_TABS).withDefault('overview'),
   groupBy: parseAsStringLiteral(ANALYTICS_GROUP_BYS),
   focus: parseAsString,
+  series: parseAsArrayOf(parseAsString),
+  interval: parseAsStringLiteral(ANALYTICS_INTERVALS),
 }
 
 export type AnalyticsUrlState = inferParserType<typeof analyticsSearchParams>

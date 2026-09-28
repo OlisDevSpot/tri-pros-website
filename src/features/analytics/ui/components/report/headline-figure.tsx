@@ -19,6 +19,8 @@ export function HeadlineFigure({ figure, row, reasons, selected, onSelect }: Pro
   const main = readMetric(figure.metric, row, reasons)
   const sub = figure.sub ? readMetric(figure.sub, row, reasons) : null
   const focusable = main.kind !== 'not_yet'
+  const subDefinition = figure.sub ? METRICS[figure.sub] : null
+  const subShort = subDefinition && 'short' in subDefinition ? subDefinition.short : undefined
   return (
     <button
       type="button"
@@ -26,20 +28,23 @@ export function HeadlineFigure({ figure, row, reasons, selected, onSelect }: Pro
       aria-pressed={selected}
       onClick={onSelect}
       className={cn(
-        'flex min-w-0 flex-1 flex-col gap-1 px-4 py-3 text-left transition-colors disabled:cursor-default',
+        'flex min-w-0 flex-1 flex-col gap-0.5 px-2.5 py-2.5 text-left md:px-4 md:py-3.5 transition-[background-color,box-shadow] outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset disabled:cursor-default',
+        // Phone: a 3-up hairline grid, to keep the strip short.
+        'max-md:border-b max-md:border-border max-md:[&:not(:nth-child(3n+1))]:border-l',
         focusable && 'hover:bg-muted/60',
-        selected && 'bg-accent shadow-[inset_0_-2px_0_var(--primary)]',
+        selected && 'shadow-[inset_0_-2px_0_var(--primary)]',
       )}
     >
-      <span className={cn('text-xs font-bold uppercase tracking-wider text-muted-foreground', selected && 'text-primary')}>
+      <span className={cn('text-xs text-muted-foreground', selected && 'font-semibold text-foreground')}>
         {METRICS[figure.metric].label}
       </span>
-      <MetricText display={main} className="text-2xl font-semibold" />
+      <MetricText display={main} className="truncate font-sans text-lg leading-tight font-medium md:text-[1.75rem]" />
       {figure.sub && sub && (
-        <span className="text-xs text-muted-foreground">
-          {METRICS[figure.sub].label}
+        <span className="truncate text-xs text-muted-foreground">
+          <span className="max-md:hidden">{METRICS[figure.sub].label}</span>
+          <span className="md:hidden">{subShort ?? METRICS[figure.sub].label}</span>
           {' '}
-          <MetricText display={sub} />
+          <MetricText display={sub} className="font-semibold text-foreground" />
         </span>
       )}
     </button>

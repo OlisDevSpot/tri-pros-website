@@ -19,6 +19,15 @@ export function formatMonthLabel(month: string, style: 'long' | 'short' = 'long'
   return formatDay(`${month}-01`, style === 'long' ? { month: 'short', year: 'numeric' } : { month: 'short' })
 }
 
+/** Axis dollars from cents: "$800", "$4.5k", "$120k". */
+export function compactDollars(cents: number): string {
+  const dollars = cents / 100
+  if (Math.abs(dollars) < 1000) {
+    return `$${Math.round(dollars)}`
+  }
+  return `$${(dollars / 1000).toFixed(Math.abs(dollars) < 10_000 ? 1 : 0)}k`
+}
+
 export function formatDayRange(first: string, last: string): string {
   const year = last.slice(0, 4)
   if (first.slice(0, 7) === last.slice(0, 7)) {

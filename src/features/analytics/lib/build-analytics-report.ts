@@ -8,7 +8,8 @@ import { aggregateLeadRecords } from '@/features/analytics/lib/aggregate-lead-re
 import { addMonths, lastDayOfMonth, monthsBetween, resolveAnalyticsPeriod } from '@/features/analytics/lib/analytics-periods'
 import { computeCosts, findMissingSpend, notApplicableReasons, sourceRowCostReason, spendInRange, totalRevenueCents } from '@/features/analytics/lib/analytics-rules'
 import { buildLeadRecords } from '@/features/analytics/lib/build-lead-records'
-import { businessDayKey, businessMonthWindow } from '@/shared/lib/business-time'
+import { chartBuckets, chartIntervals, resolveChartInterval } from '@/features/analytics/lib/chart-buckets'
+import { addCalendarDays, BUSINESS_TIMEZONE, businessDayKey, startOfDayInTimeZone } from '@/shared/lib/business-time'
 
 export interface AnalyticsReportData {
   facts: AnalyticsFacts
@@ -16,19 +17,26 @@ export interface AnalyticsReportData {
   spend: LeadSourceSpendEntry[]
 }
 
-const TREND_MONTHS = 12
+const GRID_MONTHS = 12
 
-/** The months a report reads spend for: the trend's twelve plus every month the period touches (a custom period can reach further back). */
-export function analyticsReportWindow(input: Pick<AnalyticsReportInput, 'period' | 'from' | 'to'>, now: Date): { period: ResolvedPeriod, trendMonths: string[], spendMonths: string[] } {
+/** The months a report reads spend for: the Spend grid's twelve plus every month the period touches (a custom period can reach further back). */
+export function analyticsReportWindow(input: Pick<AnalyticsReportInput, 'period' | 'from' | 'to'>, now: Date): { period: ResolvedPeriod, gridMonths: string[], spendMonths: string[] } {
   const period = resolveAnalyticsPeriod(input, now)
   const lastMonth = period.lastDay.slice(0, 7)
-  const trendMonths = monthsBetween(addMonths(lastMonth, 1 - TREND_MONTHS), lastMonth)
+  const gridMonths = monthsBetween(addMonths(lastMonth, 1 - GRID_MONTHS), lastMonth)
   const periodMonths = monthsBetween(period.firstDay.slice(0, 7), lastMonth)
-  return { period, trendMonths, spendMonths: [...new Set([...periodMonths, ...trendMonths])].sort() }
+  return { period, gridMonths, spendMonths: [...new Set([...periodMonths, ...gridMonths])].sort() }
 }
 
 function monthDays(month: string): DayRange {
   return { first: `${month}-01`, last: lastDayOfMonth(month) }
+}
+
+function dayWindow(days: DayRange): { from: string, to: string } {
+  return {
+    from: startOfDayInTimeZone(days.first, BUSINESS_TIMEZONE).toISOString(),
+    to: startOfDayInTimeZone(addCalendarDays(days.last, 1), BUSINESS_TIMEZONE).toISOString(),
+  }
 }
 
 function intersectDays(a: DayRange, b: DayRange): DayRange {
@@ -36,7 +44,7 @@ function intersectDays(a: DayRange, b: DayRange): DayRange {
 }
 
 export function buildAnalyticsReport(data: AnalyticsReportData, input: AnalyticsReportInput, now: Date): AnalyticsReport {
-  const { period, trendMonths, spendMonths } = analyticsReportWindow(input, now)
+  const { period, gridMonths, spendMonths } = analyticsReportWindow(input, now)
   const today = businessDayKey(now)
   const records = buildLeadRecords(data.facts, now)
   const leads = records.leads.map(p => ({ leadSourceId: p.leadSourceId, leadAt: p.leadAt }))
@@ -76,17 +84,20 @@ export function buildAnalyticsReport(data: AnalyticsReportData, input: Analytics
     return withCost(row, scopedSources, periodDays, breakdownReasons.cost)
   })
 
-  const firstMonth = period.firstDay.slice(0, 7)
-  const lastMonth = period.lastDay.slice(0, 7)
-  const trend = trendMonths.map((month) => {
-    const row = aggregateLeadRecords(records, { ...input.filters, range: businessMonthWindow(month) }, 'total').rows[0]
-    return { month, selected: month >= firstMonth && month <= lastMonth, row: withCost(row, scopedSources, monthDays(month), headlineReasons.cost) }
-  })
+  const interval = resolveChartInterval(periodDays, input.interval)
+  const chart = {
+    interval,
+    intervals: chartIntervals(periodDays),
+    buckets: chartBuckets(periodDays, interval).map((days) => {
+      const row = aggregateLeadRecords(records, { ...input.filters, range: dayWindow(days) }, 'total').rows[0]
+      return { ...days, row: withCost(row, scopedSources, days, headlineReasons.cost) }
+    }),
+  }
 
   // Data entry is owed for every source, whatever the filters narrow to, over every month the page shows.
   const spendMissing = findMissingSpend(data.sources, data.spend, leads, { first: `${spendMonths[0]}-01`, last: lastDayOfMonth(spendMonths[spendMonths.length - 1]) })
-  // A month owed outside the trend (a long custom period) still needs a cell, or its warning could never be cleared.
-  const spendGridMonths = [...new Set([...trendMonths, ...spendMissing.map(m => m.month)])].sort()
+  // A month owed outside the grid's twelve (a long custom period) still needs a cell, or its warning could never be cleared.
+  const spendGridMonths = [...new Set([...gridMonths, ...spendMissing.map(m => m.month)])].sort()
 
   // Hygiene counts every record so each count matches the records table it links to.
   const everything = aggregateLeadRecords(records, {}, 'total')
@@ -99,7 +110,7 @@ export function buildAnalyticsReport(data: AnalyticsReportData, input: Analytics
     groupBy: input.groupBy,
     headline,
     breakdown,
-    trend,
+    chart,
     notApplicable: { headline: headlineReasons, breakdown: breakdownReasons },
     spendMissing,
     spendGridMonths,

@@ -2,7 +2,7 @@ import type { AnalyticsFilters } from '@/features/analytics/types'
 
 import z from 'zod'
 
-import { ANALYTICS_GROUP_BYS, ANALYTICS_PERIODS, MEETING_ORDERS } from '@/features/analytics/constants/dimensions'
+import { ANALYTICS_GROUP_BYS, ANALYTICS_INTERVALS, ANALYTICS_PERIODS, MEETING_ORDERS } from '@/features/analytics/constants/dimensions'
 import { meetingOutcomes } from '@/shared/constants/enums/meetings'
 
 // A day that round-trips through Date exists; '2026-02-30' rolls over and '2026-13-45' is an invalid Date.
@@ -27,6 +27,8 @@ export const analyticsReportInputSchema = z.object({
   to: businessDaySchema.optional(),
   filters: analyticsFiltersSchema,
   groupBy: z.enum(ANALYTICS_GROUP_BYS),
+  /** The chart's step; the report falls back to the period's default when it does not fit. */
+  interval: z.enum(ANALYTICS_INTERVALS).optional(),
 }).refine(
   input => input.period !== 'custom' || (!!input.from && !!input.to && input.from <= input.to),
   'A custom period needs a first and a last day, in order.',
