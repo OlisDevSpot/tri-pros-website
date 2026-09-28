@@ -6,6 +6,7 @@ import assert from 'node:assert/strict'
 
 import { meetingMonthWindow } from '@/features/agent-dashboard/lib/meeting-windows'
 import { aggregateLeadRecords } from '@/features/analytics/lib/aggregate-lead-records'
+import { addMonths, lastDayOfMonth, monthsBetween, resolveAnalyticsPeriod } from '@/features/analytics/lib/analytics-periods'
 import { buildLeadRecords } from '@/features/analytics/lib/build-lead-records'
 import { isProjectMeeting, isSit, MEETING_OUTCOME_SIT, meetingOutcomes } from '@/shared/constants/enums/meetings'
 import { projectPipelineStages } from '@/shared/constants/enums/pipelines'
@@ -367,5 +368,52 @@ assert.equal(projectBankability('on_hold'), 'at_risk', 'on hold is still potenti
 assert.equal(projectBankability('cancelled'), 'cancelled', 'cancelled leaves net')
 assert.equal(projectBankability('signed'), 'net', 'a live project is net')
 console.log('10. Bankability ✓')
+
+// ── 11. Periods ─────────────────────────────────────────────────────────────
+{
+  const period = (p: Parameters<typeof resolveAnalyticsPeriod>[0], now = NOW) => {
+    const { firstDay, lastDay } = resolveAnalyticsPeriod(p, now)
+    return [firstDay, lastDay]
+  }
+  assert.deepEqual(period({ period: 'this-month' }), ['2026-09-01', '2026-09-30'], 'this month runs to its calendar end')
+  assert.deepEqual(resolveAnalyticsPeriod({ period: 'this-month' }, NOW).range, { from: '2026-09-01T07:00:00.000Z', to: '2026-10-01T07:00:00.000Z' }, 'the range is Pacific midnights, end exclusive')
+  assert.deepEqual(period({ period: 'last-month' }), ['2026-08-01', '2026-08-31'], 'last month')
+  assert.deepEqual(period({ period: 'this-quarter' }), ['2026-07-01', '2026-09-30'], 'this quarter')
+  assert.deepEqual(period({ period: 'last-quarter' }), ['2026-04-01', '2026-06-30'], 'last quarter')
+  assert.deepEqual(period({ period: 'ytd' }), ['2026-01-01', '2026-09-26'], 'year to date stops at today')
+  assert.deepEqual(resolveAnalyticsPeriod({ period: 'ytd' }, NOW).range, { from: '2026-01-01T08:00:00.000Z', to: '2026-09-27T07:00:00.000Z' }, 'January is PST, September PDT')
+  assert.deepEqual(period({ period: 'last-12' }), ['2025-10-01', '2026-09-30'], 'last 12 months include this one')
+  assert.deepEqual(resolveAnalyticsPeriod({ period: 'custom', from: '2026-03-05', to: '2026-03-10' }, NOW).range, { from: '2026-03-05T08:00:00.000Z', to: '2026-03-11T07:00:00.000Z' }, 'a custom range across the spring-forward switch')
+  const january = new Date('2026-01-15T20:00:00.000Z')
+  assert.deepEqual(period({ period: 'last-month' }, january), ['2025-12-01', '2025-12-31'], 'last month rolls back the year')
+  assert.deepEqual(period({ period: 'last-quarter' }, january), ['2025-10-01', '2025-12-31'], 'last quarter rolls back the year')
+  const lateSept30 = new Date('2026-10-01T05:00:00.000Z')
+  assert.deepEqual(period({ period: 'this-month' }, lateSept30), ['2026-09-01', '2026-09-30'], '10 pm Pacific on Sep 30 is still September')
+  assert.throws(() => resolveAnalyticsPeriod({ period: 'custom' }, NOW), 'a custom period with no days is a caller bug')
+  assert.deepEqual(monthsBetween('2025-11', '2026-02'), ['2025-11', '2025-12', '2026-01', '2026-02'], 'months between, inclusive')
+  assert.equal(addMonths('2026-01', -1), '2025-12', 'month arithmetic rolls the year')
+  assert.equal(lastDayOfMonth('2028-02'), '2028-02-29', 'leap February')
+}
+console.log('11. Periods ✓')
+
+// ── 12. Merged duplicates ───────────────────────────────────────────────────
+{
+  const merged = buildLeadRecords({
+    customers: [
+      customer('d1', '2026-07-02T17:00:00.000Z', { phone: '5550001111' }),
+      customer('d1-dup', '2026-07-09T17:00:00.000Z', { phone: '5550001111' }),
+      customer('d1-dup2', '2026-08-09T17:00:00.000Z', { email: 'd1@x.com', phone: '5550001111' }),
+      customer('d2', '2026-07-03T17:00:00.000Z'),
+    ],
+    meetings: [meeting('d1m', 'd1-dup', '2026-07-12T17:00:00.000Z', 'pns', { closerIds: ['u1'] })],
+    sales: [],
+  }, NOW)
+  const julyTotal = aggregateLeadRecords(merged, { range: businessMonthWindow('2026-07') }, 'total').rows[0]
+  assert.equal(julyTotal.totalLeads, 2, 'three records of one person are one lead')
+  assert.equal(julyTotal.mergedRecords, 2, 'its two extra records count as merged duplicates, in the lead\'s month')
+  assert.equal(aggregateLeadRecords(merged, { range: businessMonthWindow('2026-08') }, 'total').rows[0].mergedRecords, 0, 'a later duplicate never re-credits another month')
+  assert.equal(aggregateLeadRecords(merged, { range: businessMonthWindow('2026-07') }, 'closer').rows[0].mergedRecords, null, 'merged duplicates follow lead applicability')
+}
+console.log('12. Merged duplicates ✓')
 
 console.log('✅ verify-analytics-rules passed')

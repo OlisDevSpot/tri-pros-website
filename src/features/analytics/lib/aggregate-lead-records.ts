@@ -2,7 +2,7 @@ import type { AnalyticsRateKey } from '@/features/analytics/lib/analytics-rules'
 import type { AnalyticsCounts, AnalyticsFilters, AnalyticsGroupBy, AnalyticsResult, LeadMeeting, LeadRecord, LeadRecordSet, LeadSale, MeetingOrder } from '@/features/analytics/types'
 import type { MeetingOutcome } from '@/shared/constants/enums/meetings'
 
-import { ANALYTICS_RATES, computeRate, inapplicableStages } from '@/features/analytics/lib/analytics-rules'
+import { ANALYTICS_RATES, computeRate, inapplicableStages, mergedRecordCount } from '@/features/analytics/lib/analytics-rules'
 import { businessMonthKey } from '@/shared/lib/business-time'
 
 interface EventDimensions {
@@ -14,6 +14,7 @@ interface EventDimensions {
 
 interface Tally {
   leads: number
+  mergedRecords: number
   unknownCityZip: number
   bookedLeads: number
   sits: number
@@ -29,7 +30,7 @@ interface Tally {
 }
 
 function emptyTally(): Tally {
-  return { leads: 0, unknownCityZip: 0, bookedLeads: 0, sits: 0, meetings: 0, unresolvedMeetings: 0, newSales: 0, totalCloses: 0, revenueNewCents: 0, revenueUpsellCents: 0, newSalesWithValue: 0, salesWithoutValue: 0, newSalesWithoutProject: 0 }
+  return { leads: 0, mergedRecords: 0, unknownCityZip: 0, bookedLeads: 0, sits: 0, meetings: 0, unresolvedMeetings: 0, newSales: 0, totalCloses: 0, revenueNewCents: 0, revenueUpsellCents: 0, newSalesWithValue: 0, salesWithoutValue: 0, newSalesWithoutProject: 0 }
 }
 
 function matches<T>(allowed: readonly T[] | undefined, value: T): boolean {
@@ -105,6 +106,7 @@ export function aggregateLeadRecords(records: LeadRecordSet, filters: AnalyticsF
       for (const key of groupKeys(groupBy, person, { at: person.leadAt })) {
         const tally = tallyFor(key)
         tally.leads++
+        tally.mergedRecords += mergedRecordCount(person)
         if (person.city === null || person.zip === null) {
           tally.unknownCityZip++
         }
@@ -185,6 +187,7 @@ export function aggregateLeadRecords(records: LeadRecordSet, filters: AnalyticsF
       groupKey,
       overlapsTotal: groupBy === 'closer',
       totalLeads: leads,
+      mergedRecords: leadsApplicable ? t.mergedRecords : null,
       validLeads: leads,
       junkLeads: null,
       bookedLeads: t.bookedLeads,

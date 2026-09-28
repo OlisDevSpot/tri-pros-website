@@ -1,3 +1,4 @@
+import type { MeetingOrder } from '@/features/analytics/constants/dimensions'
 import type { AnalyticsRateKey, AnalyticsStage } from '@/features/analytics/lib/analytics-rules'
 import type { MeetingOutcome, MeetingSit } from '@/shared/constants/enums/meetings'
 import type { CustomerFact } from '@/shared/entities/customers/dal/server/analytics-facts'
@@ -5,13 +6,13 @@ import type { MeetingFact } from '@/shared/entities/meetings/dal/server/analytic
 import type { SaleFact } from '@/shared/modules/proposals/core/dal/server/analytics-facts'
 import type { SaleKind } from '@/shared/modules/proposals/core/lib/sale'
 
+export type { AnalyticsGroupBy, AnalyticsPeriod, MeetingOrder } from '@/features/analytics/constants/dimensions'
+
 export interface AnalyticsFacts {
   customers: CustomerFact[]
   meetings: MeetingFact[]
   sales: SaleFact[]
 }
-
-export type MeetingOrder = 'first' | 'repeat' | 'not_sat' | 'project'
 
 export interface LeadMeeting {
   id: string
@@ -71,8 +72,6 @@ export interface AnalyticsFilters {
   meetingOrder?: MeetingOrder[]
 }
 
-export type AnalyticsGroupBy = 'total' | 'leadSource' | 'month' | 'closer' | 'outcome' | 'meetingOrder' | 'city' | 'zip'
-
 export interface AnalyticsRowHygiene {
   unresolvedMeetings: number
   salesWithoutValue: number | null
@@ -84,6 +83,7 @@ export interface AnalyticsCounts {
   groupKey: string | null
   overlapsTotal: boolean
   totalLeads: number | null
+  mergedRecords: number | null
   validLeads: number | null
   junkLeads: null
   bookedLeads: number

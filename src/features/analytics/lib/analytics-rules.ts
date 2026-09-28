@@ -23,6 +23,11 @@ export function pickLeadAnchor(records: readonly CustomerFact[]): LeadAnchor {
   }
 }
 
+/** Every extra record a person has is a duplicate folded into one lead; the count shows how much record cleanup is due. */
+export function mergedRecordCount(person: { customerIds: readonly string[] }): number {
+  return person.customerIds.length - 1
+}
+
 /**
  * `first` is the first real sit: a cancelled or no-show meeting before it (a
  * reschedule's original) is noise, not the first visit. Expects oldest first.
