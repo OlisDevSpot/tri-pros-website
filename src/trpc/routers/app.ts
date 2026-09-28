@@ -2,6 +2,7 @@ import type { inferRouterOutputs } from '@trpc/server'
 import { baseProcedure, createTRPCRouter } from '../init'
 import { agentSettingsRouter } from './agent-settings.router'
 import { aiRouter } from './ai.router'
+import { analyticsRouter } from './analytics.router'
 import { applicationsRouter } from './applications.router'
 import { constructionRouter } from './construction.router'
 import { customerNotesRouter } from './customer-notes.router'
@@ -24,6 +25,7 @@ export const appRouter = createTRPCRouter({
   healthcheck: baseProcedure.query(() => 'ok'),
   agentSettingsRouter,
   aiRouter,
+  analyticsRouter,
   applicationsRouter,
   constructionRouter,
   customerNotesRouter,
