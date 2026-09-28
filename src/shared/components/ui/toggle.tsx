@@ -15,6 +15,9 @@ const toggleVariants = cva(
         default: 'bg-transparent',
         outline:
           'border border-input bg-transparent shadow-xs hover:bg-accent hover:text-accent-foreground',
+        // Selection is a neutral raised fill, not bg-accent: dark --accent is solid cobalt.
+        segmented:
+          'rounded-md bg-transparent px-2.5 text-muted-foreground hover:bg-transparent hover:text-foreground data-[state=on]:bg-secondary data-[state=on]:text-foreground data-[state=on]:shadow-xs',
       },
       size: {
         default: 'h-9 px-2 min-w-9',
