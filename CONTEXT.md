@@ -93,6 +93,17 @@ How a project is told, on every surface (portfolio page, meeting-flow Portfolio 
 - **Portfolio match** — why a portfolio project is shown in a meeting: `scope` (shares a selected scope), `trade` (in a selected trade), `fallback` (the strongest few when nothing matches), `none` (`PortfolioMatch`, `matchPortfolioProjects`). _Avoid_: tier, rank, featured.
 - **Match labels** — the pills naming a match: scope names, or the trade name.
 
+## Media display terms
+
+How media is fetched and shown on every surface. "Image" names generic shared UI (`OptimizedImage`, `CrossfadeImage`); "photo" stays the word in project-domain feature UI and copy (`ProjectPhoto`, "Next photo").
+
+- **Media file** — one uploaded photo or video (`media_files`, `ProjectMediaFile`).
+- **Hero image** — a project's cover photo (`heroImage`, `isHeroImage`). _Avoid_: cover, thumbnail.
+- **Variant** — a resized WebP copy of a media file: `xs` · `sm` · `md` · `lg` (`optimizationVariants`, `VARIANT_OPTIONS`). _Avoid_: size, rendition.
+- **Blur placeholder** — the tiny blurred copy shown until an image loads (`blurDataUrl`).
+- **Crossfade** — one image fading out while the next fades in, once per change (`CrossfadeImage`).
+- **Preload** — fetch and decode an image before it is shown, so showing it never waits (`usePreloadImages`).
+
 ## Records terms
 
 - **Scope coverage** — for one proposal of a meeting: which of the scopes captured in the meeting it includes, which it leaves out (struck through), and which it adds that the meeting didn't capture (dashed "+"). Matched by scope id (`computeScopeCoverage`, `ProposalOverviewCard.ScopeCoverage`). _Avoid_: scope match, scope diff.
