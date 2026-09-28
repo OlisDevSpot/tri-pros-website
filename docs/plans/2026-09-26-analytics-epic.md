@@ -1,6 +1,6 @@
 # Analytics (Business Health) — Epic Tracker
 
-> **Status:** 📐 **DESIGN.** Business-rules brainstorm **complete 2026-09-26** (C1–C27). **Split confirmed by the owner 2026-09-26 — this file is the master tracker for specs A–F.** Spec A **shipped 2026-09-27** (C28–C43 added; revised after a code re-verification; plan `docs/superpowers/plans/2026-09-26-analytics-a-lead-rules.md`) — **Spec F unblocked.**
+> **Status:** 📐 **DESIGN.** Business-rules brainstorm **complete 2026-09-26** (C1–C27). **Split confirmed by the owner 2026-09-26 — this file is the master tracker for specs A–F.** Spec A **shipped 2026-09-27** (C28–C43 added; revised after a code re-verification) — **Spec F unblocked.**
 > **Goal in one line:** one Analytics page that shows, per lead source and in total, what each source yields downstream — leads → appointments → seats → sales → projects — on deduplicated, noise-free numbers whose counting rules live in exactly one place.
 > **Baseline:** `main` at `e8c5d97a` (2026-09-26). Re-baseline at each spec.
 > **Evidence:** read-only code sweep 2026-09-24 (lead-sources dashboard, analytics engine, schema, intake, dedup) spot-checked by hand; `#285` worktree at `b40403b6` and issues #217 / #220 read 2026-09-26. Findings with file:line in §4, present-day defects in §5.
@@ -23,12 +23,12 @@ Legend: `[ ]` open · `[x]` done · `[~]` in progress · ⚠️ blocked on a §2
 
 | Spec | Scope | Owns | Blocked by | Spec file | Plan | Status |
 |---|---|---|---|---|---|---|
-| **A** | **Lead rules + person identity** — the one place every counting rule is defined; building blocks in the customers / meetings / proposals / projects modules, composed by the analytics feature; person identity (phone OR email, chained); glossary terms. No UI. | A1–A9 | — | `docs/superpowers/specs/2026-09-26-analytics-a-lead-rules-design.md` | `docs/superpowers/plans/2026-09-26-analytics-a-lead-rules.md` | [x] shipped d9347269..25fc22b2 (interleaved with other sessions' commits) |
+| **A** | **Lead rules + person identity** — the one place every counting rule is defined; building blocks in the customers / meetings / proposals / projects modules, composed by the analytics feature; person identity (phone OR email, chained); glossary terms. No UI. | A1–A9 | — | `docs/superpowers/specs/2026-09-26-analytics-a-lead-rules-design.md` | deleted after ship (git history) | [x] shipped d9347269..25fc22b2 (interleaved with other sessions' commits) |
 | **B** | **Sales money rules** — "Total Signed / Total Opened" standardized into modules; per-project (not per-customer) classification; dated cancellations; `on_hold` before `cancelled`; projects pipeline stat bar consumes the shared rule. | B1–B6 | — | not written | — | [ ] |
 | **C** | **Lead quality flags** — junk / test marking (super-admin + dispatcher), auto-internal, gross vs valid leads. | N1–N4 | permission rows from #285 (does not block the data half) | not written | — | [ ] |
-| **D** | **Setter = `meetings.createdBy`** — `ownerId` rethought as `createdBy` (super-admin editable); participants = assigned reps + visibility; setter backfill by date ranges. | D1–D5 | ⚠️ Q2 (#285 / #217 alignment) | not written | — | [ ] |
+| **D** | **Setter = `meetings.setBy`** — `ownerId` rethought as `setBy` (super-admin editable, one meeting or in bulk from the meetings records table); participants = assigned reps + visibility; setter backfill by date ranges. | D1–D5 | ⚠️ Q2 (#285 / #217 alignment) | not written | — | [ ] |
 | **E** | **Lead-source spend** — monthly spend per source on the lead-source entity with a per-source spend mode; the entry grid ships in F. | E1–E3 | — | folded into F (C46) | — | [x] shipped with F |
-| **F** | **Analytics feature v1** — page + nav enabled; global filter bar; tabs Overview / Leads / Appointments / Sales / Projects (stub); absorbs `lead-sources-admin` (F10 moved to an end-of-epic cleanup spec, C46); includes E. | F1–F12 | A (uses B, C, E as they land; setter dimension lights up with D) | `docs/superpowers/specs/2026-09-27-analytics-f-page-design.md` | `docs/superpowers/plans/2026-09-27-analytics-f-page.md` | [x] shipped 470eb0e4..99fabf8d on local main (interleaved with other sessions' commits; SDD, per-task reviews + final review, one fix batch); pending owner: ⚠️ `pnpm db:push:prod` BEFORE any push to origin (lead intake reads every `lead_sources` column), hand-check of the page and spend saving, spend entry, /impeccable pass |
+| **F** | **Analytics feature v1** — page + nav enabled; global filter bar; tabs Overview / Leads / Appointments / Sales / Projects (stub); absorbs `lead-sources-admin` (F10 moved to an end-of-epic cleanup spec, C46); includes E. | F1–F12 | A (uses B, C, E as they land; setter dimension lights up with D) | deleted after ship (git history) | deleted after ship (git history) | [x] shipped 470eb0e4..99fabf8d on local main (interleaved with other sessions' commits; SDD, per-task reviews + final review, one fix batch); pending owner: ⚠️ `pnpm db:push:prod` BEFORE any push to origin (lead intake reads every `lead_sources` column), hand-check of the page and spend saving, spend entry, /impeccable pass |
 
 **Order:** A and B first (parallel); C and E alongside; F after A; D on #285's timeline. A dimension or metric whose data has not landed shows "not available yet" — never a faked number (F11).
 
@@ -57,7 +57,7 @@ Legend: `[ ]` open · `[x]` done · `[~]` in progress · ⚠️ blocked on a §2
 | **C17** | **Spend: v1 = monthly spend entered by hand per source** (super-admin). Ultimate goal = hybrid (Meta automatically, price-per-lead × valid leads, the rest by hand), so each source carries a spend mode. | 2026-09-25 |
 | **C18** | **Setter credit is required.** Past setters worked in strict sequence, so they can be backfilled by date range. | 2026-09-25 |
 | **C19** | **Closer credit:** each meeting counts toward **each** of its participants; per-rep totals exceed the company total by design (labelled). | 2026-09-25 |
-| **C20** | **`meetings.ownerId` is rethought as `createdBy`** — the user who created the meeting = the **setter**; a super-admin can edit it (a super-admin sometimes enters a meeting another dispatcher generated). **Participants are the reps assigned**; meeting visibility comes from participation. Supersedes #217's "ownership lives on `meetings.ownerId`". | 2026-09-26 |
+| **C20** | **`meetings.ownerId` is rethought as `setBy`** (field name ruled 2026-09-27, was `createdBy`) — the user who booked the meeting = the **setter** (appointment setter); a super-admin can edit it (a super-admin sometimes enters a meeting another dispatcher generated). **Participants are the reps assigned**; meeting visibility comes from participation. Supersedes #217's "ownership lives on `meetings.ownerId`". | 2026-09-26 |
 | **C21** | **v1 dimensions:** date range (calendar months in Pacific time + custom), lead source, setter (after D), closer, meeting outcome, meeting type (Fresh = first with the customer vs Project / continuing), city / zip. Deferred: trade (X5), Meta ad drill-down (X4). | 2026-09-26 |
 | **C22** | **`features/lead-sources-admin/` is absorbed into the analytics feature** as starting logic and components (its name collides with the lead-source entity). Source management (list, settings, customers) goes to the records-management feature. | 2026-09-26 |
 | **C23** | **One analytics page, one global filter bar applied to every tab.** Tabs follow the entity lifecycle: **Overview** (one row per source: leads → appointments → seats → sales → revenue, plus spend and cost per stage) → **Leads** → **Appointments** → **Sales** → **Projects**. | 2026-09-26 |
@@ -93,7 +93,7 @@ Legend: `[ ]` open · `[x]` done · `[~]` in progress · ⚠️ blocked on a §2
 |---|---|---|
 | ~~**Q1**~~ | ✅ Resolved → C28. **Vocabulary.** "Seat" vs "sit"; "appointment" as the customer-level analytics term vs `ubiquitous-language.md:261` ("Meeting, not appointment"); "setter", "closer", "junk lead", "valid lead", "total closes", "at risk". Owner agrees the terms once; A writes them to CONTEXT.md. | A |
 | **Q2** | **#285 / #217 alignment for C20.** `#285` (`b40403b6`) keeps `meetings.ownerId` NOT NULL as a permission level (dispatcher-booked meetings are system-owned because the role lacks `own Meeting`; the planned agent `Meeting.delete` condition is `{ ownerId: me }`); #217 removes `owner` from participants because "ownership lives on `meetings.ownerId`". Both need rewriting to the `createdBy` + participants model before D. Who gains delete / full-update rights once `ownerId` is gone is a #285 ruling. | D |
-| **Q3** | **Setter backfill targets.** Do past setters have user accounts? Is the setter a column (`createdBy`) only, or also a participant role? (C20 says column.) What date ranges? | D |
+| **Q3** | **Setter backfill targets.** Do past setters have user accounts? Is the setter a column (`setBy`) only, or also a participant role? (C20 says column.) What date ranges? | D |
 | ~~**Q4**~~ | ✅ Resolved → C30. **Person identity: computed on read or stored?** Chained phone/email matching is a connected-components problem. Options for spec A: recursive CTE on read · a stored person / cluster id maintained at intake + backfill · a derived table refreshed by a job. | A |
 | **Q5** | **Reuse the July engine** (`domains/analytics/` source → metric → resolver) with a different grouping key, or compose directly from module building blocks? | F |
 | **Q6** | **How a cancellation is dated** (B): a `cancelledAt`-style column set on the stage change, or a project stage-change history (which would also unlock project-velocity KPIs later). | B |
@@ -131,13 +131,14 @@ Legend: `[ ]` open · `[x]` done · `[~]` in progress · ⚠️ blocked on a §2
 - [ ] **N3** Test / internal records are excluded from every metric; junk counts in gross leads only.
 - [ ] **N4** Junk rate per source is a reported metric (evidence for vendor refund disputes).
 
-### D — Setter = `meetings.createdBy`
+### D — Setter = `meetings.setBy`
 
-- [ ] **D1** `meetings.ownerId` → `createdBy` semantics (C20); a super-admin can edit it.
+- [ ] **D1** `meetings.ownerId` → `setBy` semantics (C20); a super-admin can edit it, one meeting at a time or in bulk (records-management O8: a bulk "set setter" on the meetings records table).
 - [ ] **D2** Participants are the assigned reps and the basis of meeting visibility (C20) — delivered with #285 (Q2).
 - [ ] **D3** Setter captured at booking on every intake path (funnels, `/intake`, Bina webhook, website forms, dispatcher booking, reschedule rebook).
 - [ ] **D4** Backfill past setters by date range (C18, Q3); system-owned (info@) rows are the targets; the script follows the repo's `--dry-run` + explicit-prod-go shape.
 - [ ] **D5** #217 and #285 docs updated to the new model.
+- [ ] **D6** Retire the `closedBy` name in code (owner, 2026-09-27: **setter** is the one term everywhere). Today it survives in intake: `leadMetaJSON.closedBy` (`src/shared/entities/customers/schemas/index.ts:57`), lead-source `closedByOptions` (`src/shared/entities/lead-sources/schemas.ts:16`), `ClosedByField`, the intake form schema and `add-customer-sheet.tsx`. Both keys are stored JSONB, so the rename needs a data migration; D3's capture work is the natural place.
 
 ### E — Lead-source spend
 

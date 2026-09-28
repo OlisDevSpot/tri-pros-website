@@ -27,7 +27,7 @@ This table becomes CONTEXT.md's `## Analytics terms` section (A9) — the one pl
 | **Unknown city / zip** | Website intake placeholders count as unknown | `UNKNOWN_CITY_VALUES` · `analytics-rules.ts` |
 | **Bankable** | A project's money is net, at risk (`on_hold`) or cancelled (C15, C16) | `projectBankability` · `modules/projects/core/lib/bankability.ts` |
 | **Closer** | Any participant of the meeting (C19, C33) | `MeetingFact.closerIds` |
-| **Setter** | `meetings.createdBy` (Spec D). Not in this spec | — |
+| **Setter** | The appointment setter, `meetings.setBy` (Spec D). Not in this spec | — |
 | **Total Opened** | The projects stat-bar name; kept (C28, B6 closed) | Spec B |
 | **Funnel** | The marketing funnels only — never the analytics chain (C42) | `src/shared/domains/funnels/` |
 

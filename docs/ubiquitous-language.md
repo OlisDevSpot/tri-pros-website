@@ -141,6 +141,7 @@ Runtime source of truth for trades, scopes/add-ons, SOW templates, and pain poin
 | `user` | Basic app access |
 | `homeowner` | Views own proposal via token |
 | `agent` | Full sales + dashboard. Auto-assigned for `@triprosremodeling.com` signups. |
+| `dispatcher` | Internal lead-qualifier: books meetings (they land unassigned), reads the leads pool. Usually the **setter**. |
 | `super-admin` | System admin. Can delete, manage all. |
 
 ## Features (Application Modules)
@@ -259,6 +260,7 @@ Terms for talking about values computable from other stored data. Canonical rule
 
 - **Customer** not "client" or "user" (unless referring to the user role)
 - **Meeting** not "appointment" or "consultation" (those are casual synonyms, not code terms)
+- **Setter** (appointment setter) not "closer", "closed by" or "created by": the user, often a dispatcher, who booked the meeting. Field `meetings.setBy`. **Closer** means the reps who sit the meeting (its participants)
 - **Proposal** not "quote" or "estimate"
 - **Price** vs **Cost** — never use interchangeably. **Price** is what the customer pays (front-facing). **Cost** is what the work costs Tri Pros (back-facing, internal). **Margin** is the difference. Use the precise term in code, comments, UI copy, and PRs.
 - **Scope** not "line item" or "service"
