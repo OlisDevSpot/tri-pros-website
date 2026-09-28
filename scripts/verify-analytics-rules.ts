@@ -1,4 +1,6 @@
+import type { SpendSource } from '@/features/analytics/lib/analytics-rules'
 import type { CustomerFact } from '@/shared/entities/customers/dal/server/analytics-facts'
+import type { LeadSourceSpendEntry } from '@/shared/entities/lead-sources/dal/server/spend'
 import type { MeetingFact } from '@/shared/entities/meetings/dal/server/analytics-facts'
 import type { SaleFact } from '@/shared/modules/proposals/core/dal/server/analytics-facts'
 
@@ -7,6 +9,7 @@ import assert from 'node:assert/strict'
 import { meetingMonthWindow } from '@/features/agent-dashboard/lib/meeting-windows'
 import { aggregateLeadRecords } from '@/features/analytics/lib/aggregate-lead-records'
 import { addMonths, lastDayOfMonth, monthsBetween, resolveAnalyticsPeriod } from '@/features/analytics/lib/analytics-periods'
+import { computeCosts, findMissingSpend, notApplicableReasons, sourceRowCostReason, spendInRange, totalRevenueCents } from '@/features/analytics/lib/analytics-rules'
 import { buildLeadRecords } from '@/features/analytics/lib/build-lead-records'
 import { isProjectMeeting, isSit, MEETING_OUTCOME_SIT, meetingOutcomes } from '@/shared/constants/enums/meetings'
 import { projectPipelineStages } from '@/shared/constants/enums/pipelines'
@@ -415,5 +418,63 @@ console.log('11. Periods ✓')
   assert.equal(aggregateLeadRecords(merged, { range: businessMonthWindow('2026-07') }, 'closer').rows[0].mergedRecords, null, 'merged duplicates follow lead applicability')
 }
 console.log('12. Merged duplicates ✓')
+
+// ── 13. Spend and cost ──────────────────────────────────────────────────────
+{
+  const srcA: SpendSource = { id: 'src-a', spendMode: 'manual' }
+  const srcB: SpendSource = { id: 'src-b', spendMode: 'manual' }
+  const srcF: SpendSource = { id: 'src-f', spendMode: 'none' }
+  const entries: LeadSourceSpendEntry[] = [
+    { leadSourceId: 'src-a', month: '2026-08', amountCents: 300_000 },
+    { leadSourceId: 'src-a', month: '2026-09', amountCents: 300_000 },
+    { leadSourceId: 'src-f', month: '2026-09', amountCents: 50_000 },
+  ]
+  const today = '2026-09-26'
+  assert.equal(spendInRange([srcA], entries, { first: '2026-08-01', last: '2026-08-31' }, today), 300_000, 'a whole past month counts in full')
+  assert.equal(spendInRange([srcA], entries, { first: '2026-09-01', last: '2026-09-30' }, today), 260_000, 'the current month counts only the 26 days lived so far')
+  assert.equal(spendInRange([srcA], entries, { first: '2026-08-17', last: '2026-09-10' }, today), 245_161, 'a range splitting two months takes each month\'s share by days (15/31 + 10/30)')
+  assert.equal(spendInRange([srcF], entries, { first: '2026-09-01', last: '2026-09-30' }, today), 0, 'a free source costs nothing, whatever was typed')
+  assert.equal(spendInRange([srcB], entries, { first: '2026-09-01', last: '2026-09-30' }, today), 0, 'only the given sources count')
+  assert.equal(spendInRange([srcA], entries, { first: '2026-10-01', last: '2026-10-31' }, today), 0, 'days not lived yet carry no spend')
+
+  const leads = [
+    { leadSourceId: 'src-a', leadAt: '2026-09-05T17:00:00.000Z' },
+    { leadSourceId: 'src-b', leadAt: '2026-09-06T17:00:00.000Z' },
+    { leadSourceId: 'src-b', leadAt: '2026-09-07T17:00:00.000Z' },
+    { leadSourceId: 'src-f', leadAt: '2026-09-08T17:00:00.000Z' },
+    { leadSourceId: null, leadAt: '2026-09-09T17:00:00.000Z' },
+    { leadSourceId: 'src-a', leadAt: '2026-07-10T17:00:00.000Z' },
+    { leadSourceId: 'src-b', leadAt: '2026-08-01T06:30:00.000Z' },
+  ]
+  assert.deepEqual(
+    findMissingSpend([srcA, srcB, srcF], entries, leads, { first: '2026-07-01', last: '2026-09-30' }),
+    [{ leadSourceId: 'src-a', month: '2026-07' }, { leadSourceId: 'src-b', month: '2026-07' }, { leadSourceId: 'src-b', month: '2026-09' }],
+    'a manual source with a lead and no spend row is missing for that month (23:30 PDT on Jul 31 is July); free and unknown sources never are',
+  )
+  assert.deepEqual(findMissingSpend([srcA, srcB, srcF], entries, leads, { first: '2026-09-01', last: '2026-09-30' }), [{ leadSourceId: 'src-b', month: '2026-09' }], 'only months inside the days count')
+  assert.deepEqual(findMissingSpend([srcA], entries, leads, { first: '2026-08-01', last: '2026-08-31' }), [], 'a source with no lead that month is not missing')
+
+  assert.deepEqual(
+    computeCosts(100_000, { totalLeads: 4, bookedLeads: 2, sits: 0, newSales: null }, 500_000),
+    { costs: { costPerLead: 25_000, costPerBookedLead: 50_000, costPerSit: null, costPerNewSale: null }, returnOnSpend: 5 },
+    'cost per stage is spend ÷ count; zero or unknown counts give no cost',
+  )
+  assert.equal(computeCosts(0, { totalLeads: 4, bookedLeads: 2, sits: 1, newSales: 1 }, 500_000).returnOnSpend, null, 'revenue over no spend is unknown, not infinite')
+  assert.equal(computeCosts(0, { totalLeads: 4, bookedLeads: 2, sits: 1, newSales: 1 }, 500_000).costs.costPerLead, 0, 'a free lead costs $0')
+  assert.equal(totalRevenueCents({ revenueNewCents: 1_000_000, revenueUpsellCents: 200_000 }), 1_200_000, 'revenue counts upsells')
+  assert.equal(totalRevenueCents({ revenueNewCents: null, revenueUpsellCents: null }), null, 'no sales stage, no revenue')
+
+  const keys = (r: object) => Object.keys(r).sort()
+  assert.deepEqual(keys(notApplicableReasons({}, 'leadSource')), [], 'a source view has cost')
+  assert.deepEqual(keys(notApplicableReasons({ leadSourceIds: ['src-a'] }, 'month')), [], 'a source filter keeps cost')
+  assert.deepEqual(keys(notApplicableReasons({ cities: ['Irvine'] }, 'total')), ['cost'], 'a city filter: spend is not per city')
+  assert.deepEqual(keys(notApplicableReasons({}, 'closer')), ['cost', 'leads'], 'grouping by closer: no leads, no cost')
+  assert.deepEqual(keys(notApplicableReasons({ outcomes: ['pns'] }, 'total')), ['cost', 'leads', 'sales'], 'an outcome filter: no leads, sales or cost')
+  assert.deepEqual(keys(notApplicableReasons({ leadSourceIds: [null] }, 'total')), ['cost'], 'unknown-source leads have no spend: cost is n/a, never $0')
+  assert.deepEqual(keys(notApplicableReasons({ leadSourceIds: ['src-a', null] }, 'leadSource')), ['cost'], 'mixing in unknown-source leads would dilute cost per lead')
+  assert.equal(sourceRowCostReason(null), notApplicableReasons({ leadSourceIds: [null] }, 'total').cost, 'the unknown-source row says the same thing as the filter')
+  assert.equal(sourceRowCostReason('src-a'), undefined, 'a real source row has cost')
+}
+console.log('13. Spend and cost ✓')
 
 console.log('✅ verify-analytics-rules passed')
