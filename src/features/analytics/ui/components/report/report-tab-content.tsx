@@ -13,15 +13,18 @@ import { FocusTrendChart } from '@/features/analytics/ui/components/report/focus
 import { HeadlineStrip } from '@/features/analytics/ui/components/report/headline-strip'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { Button } from '@/shared/components/ui/button'
+import { cn } from '@/shared/lib/utils'
 
 interface Props {
   tab: ReportTab
   report: AnalyticsReport | undefined
   isError: boolean
+  /** The previous report is still on screen while the next one loads. */
+  stale: boolean
   onRetry: () => void
 }
 
-export function ReportTabContent({ tab, report, isError, onRetry }: Props) {
+export function ReportTabContent({ tab, report, isError, stale, onRetry }: Props) {
   const [state, setUrlState] = useAnalyticsUrlState()
   if (!report) {
     if (isError) {
@@ -36,7 +39,7 @@ export function ReportTabContent({ tab, report, isError, onRetry }: Props) {
   const config = REPORT_TABS[tab]
   const focus = resolveFocus(tab, state.focus)
   return (
-    <div className="flex flex-col gap-6">
+    <div aria-busy={stale} className={cn('flex flex-col gap-6 transition-opacity', stale && 'opacity-60')}>
       <HeadlineStrip
         config={config}
         report={report}

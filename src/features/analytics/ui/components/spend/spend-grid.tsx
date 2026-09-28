@@ -19,13 +19,23 @@ import { useTRPC } from '@/trpc/helpers'
 interface Props {
   months: string[] | undefined
   missing: MissingSpend[]
+  /** The report that names the grid's months failed, so there is nothing to wait for. */
+  isError: boolean
+  onRetry: () => void
 }
 
-export function SpendGrid({ months, missing }: Props) {
+export function SpendGrid({ months, missing, isError, onRetry }: Props) {
   const trpc = useTRPC()
   const grid = useQuery({ ...trpc.leadSourcesRouter.spend.grid.queryOptions({ months: months ?? [] }), enabled: !!months?.length })
   const { setSpend, updateLeadSource } = useLeadSourceActions()
 
+  if (isError) {
+    return (
+      <ErrorState title="The report didn't load" description="Nothing was changed. Try again.">
+        <Button onClick={onRetry}>Retry</Button>
+      </ErrorState>
+    )
+  }
   if (!months?.length || grid.isPending) {
     return <ReportSkeleton />
   }
@@ -75,7 +85,7 @@ export function SpendGrid({ months, missing }: Props) {
                         month={month}
                         amountCents={amount}
                         missing={missingKeys.has(key)}
-                        onSave={(amountCents, done) => setSpend.mutate({ leadSourceId: source.id, month, amountCents }, { onSettled: done })}
+                        onSave={(amountCents, done) => setSpend.mutate({ leadSourceId: source.id, month, amountCents }, { onSettled: (_data, error) => done(!error) })}
                       />
                     </TableCell>
                   )

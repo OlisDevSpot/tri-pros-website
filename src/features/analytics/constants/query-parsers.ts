@@ -30,7 +30,3 @@ export const FILTER_KEYS = ['source', 'city', 'zip', 'closer', 'outcome', 'order
 export type FilterKey = (typeof FILTER_KEYS)[number]
 
 export const CLEARED_FILTERS = { source: null, city: null, zip: null, closer: null, outcome: null, order: null } as const satisfies Record<FilterKey, null>
-
-// Stands for "no value" (unknown source, city or zip). Source ids are uuids and
-// intake's "Unknown" placeholder is already folded to null, so nothing collides.
-export const UNKNOWN_FILTER_VALUE = 'unknown'

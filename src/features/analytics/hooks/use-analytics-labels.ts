@@ -19,9 +19,10 @@ export function useAnalyticsLabels(): AnalyticsNames & { options: AnalyticsFilte
     return {
       options: options.data,
       closers,
-      sourceName: id => sources.get(id) ?? 'Unknown source',
+      // Until the names arrive a real label would be a lie: "Unknown source" is also the no-source row's name.
+      sourceName: id => (options.data ? (sources.get(id) ?? 'Unknown source') : '…'),
       // A closer who left, or whose role changed, still owns their old meetings.
-      closerName: id => closerNames.get(id) ?? 'Former user',
+      closerName: id => (users.data ? (closerNames.get(id) ?? 'Former user') : '…'),
     }
   }, [options.data, users.data])
 }

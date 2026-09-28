@@ -2,9 +2,8 @@ import type { FilterKey } from '@/features/analytics/constants/query-parsers'
 import type { AnalyticsFilterOptions } from '@/features/analytics/dal/server/get-analytics-filter-options'
 import type { FilterDefinition } from '@/shared/dal/client/lib/types'
 
-import { MEETING_ORDERS } from '@/features/analytics/constants/dimensions'
+import { MEETING_ORDERS, UNKNOWN_FILTER_VALUE } from '@/features/analytics/constants/dimensions'
 import { MEETING_ORDER_LABELS } from '@/features/analytics/constants/labels'
-import { UNKNOWN_FILTER_VALUE } from '@/features/analytics/constants/query-parsers'
 import { meetingOutcomes } from '@/shared/constants/enums/meetings'
 import { MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
 

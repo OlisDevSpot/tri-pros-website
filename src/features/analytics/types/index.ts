@@ -1,4 +1,4 @@
-import type { MeetingOrder } from '@/features/analytics/constants/dimensions'
+import type { AnalyticsGroupBy, MeetingOrder } from '@/features/analytics/constants/dimensions'
 import type { AnalyticsCostKey, AnalyticsRateKey, AnalyticsStage, MissingSpend, NotApplicableReasons } from '@/features/analytics/lib/analytics-rules'
 import type { MeetingOutcome, MeetingSit } from '@/shared/constants/enums/meetings'
 import type { CustomerFact } from '@/shared/entities/customers/dal/server/analytics-facts'
@@ -133,6 +133,8 @@ export interface AnalyticsReport {
   generatedAt: string
   firstDay: string
   lastDay: string
+  /** Rows are labelled by the grouping they were built with, not the URL's, which runs ahead while the next report loads. */
+  groupBy: AnalyticsGroupBy
   headline: AnalyticsReportRow
   breakdown: AnalyticsReportRow[]
   trend: AnalyticsTrendMonth[]

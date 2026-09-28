@@ -6,3 +6,7 @@ export type AnalyticsGroupBy = (typeof ANALYTICS_GROUP_BYS)[number]
 
 export const ANALYTICS_PERIODS = ['this-month', 'last-month', 'this-quarter', 'last-quarter', 'ytd', 'last-12', 'custom'] as const
 export type AnalyticsPeriod = (typeof ANALYTICS_PERIODS)[number]
+
+// Stands for "no value" (unknown source, city or zip). Source ids are uuids and
+// intake's "Unknown" placeholder is already folded to null, so nothing collides.
+export const UNKNOWN_FILTER_VALUE = 'unknown'

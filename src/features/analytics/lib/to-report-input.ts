@@ -6,8 +6,8 @@ import type { AnalyticsFilters, AnalyticsGroupBy } from '@/features/analytics/ty
 
 import z from 'zod'
 
+import { UNKNOWN_FILTER_VALUE } from '@/features/analytics/constants/dimensions'
 import { METRICS } from '@/features/analytics/constants/metrics'
-import { UNKNOWN_FILTER_VALUE } from '@/features/analytics/constants/query-parsers'
 import { isReportTab, REPORT_TABS } from '@/features/analytics/constants/tabs'
 import { businessDaySchema } from '@/features/analytics/schemas/report-input-schema'
 

@@ -12,13 +12,14 @@ interface Props {
   month: string
   amountCents: number | null
   missing: boolean
-  onSave: (amountCents: number | null, done: () => void) => void
+  onSave: (amountCents: number | null, done: (saved: boolean) => void) => void
 }
 
 export function SpendCell({ sourceName, month, amountCents, missing, onSave }: Props) {
-  const [text, setText] = useState(amountCents === null ? '' : formatCentsForInput(amountCents))
+  const [text, setText] = useState(() => amountCents === null ? '' : formatCentsForInput(amountCents))
   const [invalid, setInvalid] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [failed, setFailed] = useState(false)
   const onBlur = () => {
     const parsed = parseDollarsToCents(text)
     if (parsed === 'invalid') {
@@ -28,21 +29,28 @@ export function SpendCell({ sourceName, month, amountCents, missing, onSave }: P
     setInvalid(false)
     if (parsed !== amountCents) {
       setSaving(true)
-      onSave(parsed, () => setSaving(false))
+      onSave(parsed, (saved) => {
+        setSaving(false)
+        // The typed text stays so it can be retried; without a mark it would read as saved.
+        setFailed(!saved)
+      })
     }
   }
   return (
     <Input
       aria-label={`${sourceName} spend, ${formatMonthLabel(month)}`}
-      aria-invalid={invalid}
-      title={invalid ? 'Dollars only, like 1200 or 1,200.50' : undefined}
+      aria-invalid={invalid || failed}
+      title={invalid ? 'Dollars only, like 1200 or 1,200.50' : failed ? 'Not saved. Edit and leave the cell to try again.' : undefined}
       inputMode="decimal"
       placeholder="—"
       value={text}
       disabled={saving}
-      onChange={e => setText(e.target.value)}
+      onChange={(e) => {
+        setText(e.target.value)
+        setFailed(false)
+      }}
       onBlur={onBlur}
-      className={cn('h-8 w-24 text-right tabular-nums', missing && text === '' && 'border-warning bg-warning/10')}
+      className={cn('h-8 w-24 text-right tabular-nums', ((missing && text === '') || failed) && 'border-warning bg-warning/10')}
     />
   )
 }

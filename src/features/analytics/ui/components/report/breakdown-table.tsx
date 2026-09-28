@@ -9,7 +9,7 @@ import { METRICS } from '@/features/analytics/constants/metrics'
 import { useAnalyticsLabels } from '@/features/analytics/hooks/use-analytics-labels'
 import { breakdownColumns } from '@/features/analytics/lib/breakdown-columns'
 import { groupLabel } from '@/features/analytics/lib/format-analytics'
-import { sortRowsByMetric } from '@/features/analytics/lib/read-metric'
+import { readMetric, sortRowsByMetric } from '@/features/analytics/lib/read-metric'
 import { BreakdownRow } from '@/features/analytics/ui/components/report/breakdown-row'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
 import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-group'
@@ -27,6 +27,12 @@ export function BreakdownTable({ config, report, focus, groupBy, onGroupBy }: Pr
   const labels = useAnalyticsLabels()
   const columns = breakdownColumns(config)
   const rows = sortRowsByMetric(report.breakdown, focus, report.notApplicable.breakdown)
+  const shown = [
+    { row: report.headline, reasons: report.notApplicable.headline },
+    ...rows.map(row => ({ row, reasons: report.notApplicable.breakdown })),
+  ]
+  // Printed, not only in each cell's title, so the reason reaches touch and screen-reader users.
+  const notApplicable = [...new Set(shown.flatMap(({ row, reasons }) => columns.map(key => readMetric(key, row, reasons))).flatMap(d => (d.kind === 'not_applicable' ? [d.reason] : [])))]
   return (
     <section aria-labelledby="breakdown" className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -54,7 +60,7 @@ export function BreakdownTable({ config, report, focus, groupBy, onGroupBy }: Pr
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="sticky left-0 z-10 bg-background">{GROUP_BY_LABELS[groupBy]}</TableHead>
+              <TableHead className="sticky left-0 z-10 bg-background">{GROUP_BY_LABELS[report.groupBy]}</TableHead>
               {columns.map(key => (
                 <TableHead key={key} className={cn('text-right whitespace-nowrap', key === focus && 'text-primary')}>{METRICS[key].label}</TableHead>
               ))}
@@ -63,7 +69,7 @@ export function BreakdownTable({ config, report, focus, groupBy, onGroupBy }: Pr
           <TableBody>
             <BreakdownRow label="Total" row={report.headline} reasons={report.notApplicable.headline} columns={columns} focus={focus} total />
             {rows.map(row => (
-              <BreakdownRow key={row.groupKey ?? 'none'} label={groupLabel(groupBy, row.groupKey, labels)} row={row} reasons={report.notApplicable.breakdown} columns={columns} focus={focus} />
+              <BreakdownRow key={row.groupKey ?? 'none'} label={groupLabel(report.groupBy, row.groupKey, labels)} row={row} reasons={report.notApplicable.breakdown} columns={columns} focus={focus} />
             ))}
             {rows.length === 0 && (
               <TableRow>
@@ -73,6 +79,13 @@ export function BreakdownTable({ config, report, focus, groupBy, onGroupBy }: Pr
           </TableBody>
         </Table>
       </div>
+      {notApplicable.map(reason => (
+        <p key={reason} className="text-xs text-muted-foreground">
+          n/a:
+          {' '}
+          {reason}
+        </p>
+      ))}
     </section>
   )
 }

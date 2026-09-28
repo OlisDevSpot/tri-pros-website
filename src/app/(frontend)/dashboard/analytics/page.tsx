@@ -27,6 +27,9 @@ export default async function AnalyticsPage({ searchParams }: Props) {
 
   if (authState.status === 'authenticated') {
     prefetch(trpc.analyticsRouter.report.queryOptions(toReportInput(await loadAnalyticsSearchParams(searchParams))))
+    // The names that label the report's rows, so the first paint never shows a placeholder for them.
+    prefetch(trpc.analyticsRouter.filterOptions.queryOptions())
+    prefetch(trpc.meetingsRouter.reads.getInternalUsers.queryOptions())
   }
 
   return (

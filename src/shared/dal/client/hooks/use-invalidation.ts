@@ -90,8 +90,8 @@ export function useInvalidation() {
 
   function invalidateLeadSource() {
     void qc.invalidateQueries(trpc.leadSourcesRouter.pathFilter())
-    // Spend and spend modes feed every cost on the analytics report; its filter options (the whole fact set) do not depend on them.
-    void qc.invalidateQueries(trpc.analyticsRouter.report.queryFilter())
+    // Lead-source names, archived flags, spend and spend modes all feed the analytics page.
+    void qc.invalidateQueries(trpc.analyticsRouter.pathFilter())
   }
 
   function invalidateVoipCampaigns() {

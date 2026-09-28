@@ -39,14 +39,19 @@ export function AnalyticsView() {
         <AnalyticsTabsList spendMissing={(report.data?.spendMissing.length ?? 0) > 0} />
         {REPORT_TAB_KEYS.map(tab => (
           <TabsContent key={tab} value={tab}>
-            <ReportTabContent tab={tab} report={report.data} isError={report.isError} onRetry={() => void report.refetch()} />
+            <ReportTabContent tab={tab} report={report.data} isError={report.isError} stale={report.isPlaceholderData} onRetry={() => void report.refetch()} />
           </TabsContent>
         ))}
         <TabsContent value="projects">
           <ProjectsPlaceholder />
         </TabsContent>
         <TabsContent value="spend">
-          <SpendGrid months={report.data?.spendGridMonths} missing={report.data?.spendMissing ?? []} />
+          <SpendGrid
+            months={report.data?.spendGridMonths}
+            missing={report.data?.spendMissing ?? []}
+            isError={report.isError && !report.data}
+            onRetry={() => void report.refetch()}
+          />
         </TabsContent>
       </Tabs>
     </div>

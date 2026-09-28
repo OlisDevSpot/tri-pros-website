@@ -6,8 +6,6 @@ import type { AnalyticsReport } from '@/features/analytics/types'
 
 import { AlertTriangleIcon } from 'lucide-react'
 
-import { useAnalyticsLabels } from '@/features/analytics/hooks/use-analytics-labels'
-import { formatMonthLabel } from '@/features/analytics/lib/format-analytics'
 import { readMetric } from '@/features/analytics/lib/read-metric'
 import { HeadlineFigure } from '@/features/analytics/ui/components/report/headline-figure'
 import { Button } from '@/shared/components/ui/button'
@@ -21,7 +19,6 @@ interface Props {
 }
 
 export function HeadlineStrip({ config, report, focus, onFocus, onOpenSpend }: Props) {
-  const labels = useAnalyticsLabels()
   const reasons = report.notApplicable.headline
   const shown = config.figures.flatMap(f => (f.sub ? [f.metric, f.sub] : [f.metric]))
   const notApplicable = [...new Set(shown.map(key => readMetric(key, report.headline, reasons)).flatMap(d => (d.kind === 'not_applicable' ? [d.reason] : [])))]
@@ -48,11 +45,17 @@ export function HeadlineStrip({ config, report, focus, onFocus, onOpenSpend }: P
         </p>
       ))}
       {missing.length > 0 && (
-        <Button variant="outline" size="sm" className="self-start border-warning text-warning" onClick={onOpenSpend}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-auto self-start border-warning text-left whitespace-normal text-warning"
+          aria-label={`Spend missing for ${missing.length} source-${missing.length === 1 ? 'month' : 'months'} — open the Spend tab`}
+          onClick={onOpenSpend}
+        >
           <AlertTriangleIcon className="size-3.5" aria-hidden="true" />
-          Spend missing:
+          Spend missing ·
           {' '}
-          {missing.map(m => `${labels.sourceName(m.leadSourceId)} ${formatMonthLabel(m.month, 'short')}`).join(', ')}
+          <span className="tabular-nums">{missing.length}</span>
         </Button>
       )}
     </section>

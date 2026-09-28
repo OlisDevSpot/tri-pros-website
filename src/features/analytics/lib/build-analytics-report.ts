@@ -96,6 +96,7 @@ export function buildAnalyticsReport(data: AnalyticsReportData, input: Analytics
     generatedAt: now.toISOString(),
     firstDay: period.firstDay,
     lastDay: period.lastDay,
+    groupBy: input.groupBy,
     headline,
     breakdown,
     trend,
