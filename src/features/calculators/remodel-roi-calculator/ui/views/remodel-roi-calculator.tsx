@@ -1,4 +1,14 @@
-// LAZY: placeholder while the guided story is rebuilt; replaced by the inputs panel + story canvas grid.
+'use client'
+
+import { StoryUiProvider } from '@/features/calculators/remodel-roi-calculator/contexts/story-ui-context'
+import { RemodelRoiWorkspace } from '@/features/calculators/remodel-roi-calculator/ui/components/remodel-roi-workspace'
+import { useIsBelowLg } from '@/shared/hooks/use-is-below-lg'
+
 export function RemodelRoiCalculator() {
-  return <p className="p-6 text-sm text-muted-foreground">The Remodel ROI Calculator is being rebuilt.</p>
+  const isBelowLg = useIsBelowLg() ?? false
+  return (
+    <StoryUiProvider isBelowLg={isBelowLg}>
+      <RemodelRoiWorkspace isBelowLg={isBelowLg} />
+    </StoryUiProvider>
+  )
 }

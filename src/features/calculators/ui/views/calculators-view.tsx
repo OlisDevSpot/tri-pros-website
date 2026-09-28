@@ -25,7 +25,7 @@ export function CalculatorsView() {
           <TabsTrigger className="min-h-11" value="scope-pricing">Scope Pricing</TabsTrigger>
         </TabsList>
 
-        <TabsContent className="min-h-0 flex-1 overflow-y-auto data-[state=inactive]:hidden" forceMount value="remodel-roi">
+        <TabsContent className="min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden" forceMount value="remodel-roi">
           <RemodelRoiCalculator />
         </TabsContent>
         <TabsContent className="min-h-0 flex-1 overflow-y-auto data-[state=inactive]:hidden" forceMount value="scope-pricing">
