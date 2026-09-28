@@ -67,6 +67,8 @@ export const proposalListFiltersSchema = {
   meetingId: z.string().uuid().optional(),
   awaitingSignature: z.boolean().optional(),
   sentNoContract: z.boolean().optional(),
+  missingApprovedAt: z.boolean().optional(),
+  noProject: z.boolean().optional(),
 }
 
 export const proposalListInputSchema = paginatedQueryInput(proposalListFiltersSchema)
@@ -194,6 +196,9 @@ export async function listProposals(
               isNull(proposals.contractSentAt),
             )
           : undefined,
+      // An approved proposal with no approval date can't be placed in any month's sales.
+      missingApprovedAt: (v: boolean) => (v ? isNull(proposals.approvedAt) : undefined),
+      noProject: (v: boolean) => (v ? isNull(meetings.projectId) : undefined),
     })
 
     const where = and(ctx.scope ?? undefined, searchWhere, filterWhere)
