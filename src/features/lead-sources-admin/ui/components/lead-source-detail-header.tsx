@@ -2,7 +2,7 @@
 
 import type { AppRouterOutputs } from '@/trpc/routers/app'
 
-import { ArchiveIcon, MoreHorizontalIcon, PauseIcon, PlayIcon, PlusIcon, SettingsIcon } from 'lucide-react'
+import { ArchiveIcon, BarChart3Icon, MoreHorizontalIcon, PauseIcon, PlayIcon, PlusIcon, SettingsIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useRouter } from 'next/navigation'
 
@@ -95,6 +95,10 @@ export function LeadSourceDetailHeader({ source, onJumpToSettings, onAddCustomer
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onSelect={() => router.push(`${ROOTS.dashboard.analytics()}?source=${source.id}`)}>
+              <BarChart3Icon className="size-4" />
+              View in Analytics
+            </DropdownMenuItem>
             <DropdownMenuItem onSelect={onJumpToSettings}>
               <SettingsIcon className="size-4" />
               Settings
