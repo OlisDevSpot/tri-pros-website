@@ -3,6 +3,7 @@ import type { AnswerContent, StoryInputs } from '@/features/calculators/remodel-
 import { PROJECTION_YEARS } from '@/features/calculators/remodel-roi-calculator/constants/look-ahead'
 import { STORY_COPY } from '@/features/calculators/remodel-roi-calculator/constants/story-copy'
 import { signedMoney } from '@/features/calculators/remodel-roi-calculator/lib/format-money'
+import { waitIsFinanced } from '@/features/calculators/remodel-roi-calculator/lib/story/describe-waits'
 
 export function buildAnswer({ projection, lookAhead }: StoryInputs): AnswerContent {
   const { paysForItselfYear, costsLessMonthlyYear } = projection.milestones
@@ -11,7 +12,7 @@ export function buildAnswer({ projection, lookAhead }: StoryInputs): AnswerConte
   return {
     question: STORY_COPY.questions.answer,
     stats: [
-      { label: 'Pays for itself in', value: paysForItselfYear ? `Year ${paysForItselfYear}` : never, sub: 'counting home value and loans', target: 'total' },
+      { label: 'Pays for itself in', value: paysForItselfYear ? `Year ${paysForItselfYear}` : never, sub: projection.project.hasLoan || waitIsFinanced(projection) ? 'counting home value and loans' : 'counting home value', target: 'total' },
       { label: 'Costs less every month from', value: costsLessMonthlyYear ? `Year ${costsLessMonthlyYear}` : never, sub: 'cash out of pocket', target: 'monthly' },
       { label: benefit >= 0 ? `Ahead by year ${lookAhead}` : `Behind at year ${lookAhead}`, value: signedMoney(benefit), sub: 'compared with waiting', target: 'total' },
     ],

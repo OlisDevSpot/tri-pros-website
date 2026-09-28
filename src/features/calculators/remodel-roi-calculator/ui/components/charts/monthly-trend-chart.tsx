@@ -22,6 +22,8 @@ export function MonthlyTrendChart({ projection, lookAhead }: Props) {
   const data = years.slice(1, lookAhead + 1)
   const from = milestones.costsLessMonthlyYear != null && milestones.costsLessMonthlyYear <= lookAhead ? milestones.costsLessMonthlyYear : null
   const payoff = milestones.payoffYear != null && milestones.payoffYear < lookAhead ? milestones.payoffYear + 1 : null
+  // Centered under a first-year mark, the label would hang off the plot's left edge, so it starts at the mark and drops below the line instead.
+  const fromLabel = from === 1 ? { position: 'right' as const, dy: 16 } : { position: 'bottom' as const }
   const marks = replacements.flatMap(replacement => replacement.installs.filter(install => install.year < lookAhead).map(install => ({ key: `${replacement.trade}-${install.year}`, label: `${CURRENT_LABELS[replacement.trade]} replaced`, t: install.year + 1 })))
   return (
     <div aria-label={`Monthly cost each year. ${STORY_COPY.paths.now} ${formatMoney(data[0].monthlyNow)} in year 1, ${STORY_COPY.paths.wait} ${formatMoney(data[0].monthlyWait)}.${from ? ` Upgrading costs less from year ${from}.` : ''}`} className="h-72 w-full" role="img">
@@ -41,7 +43,7 @@ export function MonthlyTrendChart({ projection, lookAhead }: Props) {
                 <ChartTooltipCard
                   rows={[
                     { label: STORY_COPY.paths.now, value: formatMoney(year.monthlyNow), swatch: 'bg-primary' },
-                    { label: `bills ${formatMoney(year.billsAfter)} + loan ${formatMoney(year.projectPayment)}`, value: '' },
+                    { label: `bills ${formatMoney(year.billsAfter)}${projection.project.hasLoan ? ` + loan ${formatMoney(year.projectPayment)}` : ''}`, value: '' },
                     { label: STORY_COPY.paths.wait, value: formatMoney(year.monthlyWait), swatch: 'bg-warning' },
                     { label: `bills ${formatMoney(year.billsNow)}${year.repairsMonthly ? ` + repairs ${formatMoney(year.repairsMonthly)}` : ''}${year.replacementPayments ? ` + loans ${formatMoney(year.replacementPayments)}` : ''}`, value: '' },
                   ]}
@@ -52,7 +54,7 @@ export function MonthlyTrendChart({ projection, lookAhead }: Props) {
           />
           <Line activeDot={{ r: 4 }} dataKey="monthlyWait" dot={false} isAnimationActive={!reduceMotion} name={STORY_COPY.paths.wait} stroke="var(--warning)" strokeWidth={2.5} type="monotone" />
           <Line activeDot={{ r: 4 }} dataKey="monthlyNow" dot={false} isAnimationActive={!reduceMotion} name={STORY_COPY.paths.now} stroke="var(--primary)" strokeWidth={2.5} type="monotone" />
-          {from != null && <ReferenceDot fill="var(--card)" ifOverflow="extendDomain" label={{ value: `Year ${from}: costs less from here`, position: 'bottom', className: 'fill-foreground stroke-card stroke-3 text-xs font-extrabold [paint-order:stroke] [stroke-linejoin:round]' }} r={5} stroke="var(--primary)" strokeWidth={2.5} x={from} y={years[from].monthlyNow} />}
+          {from != null && <ReferenceDot fill="var(--card)" ifOverflow="extendDomain" label={{ value: `Year ${from}: costs less from here`, ...fromLabel, className: 'fill-foreground stroke-card stroke-3 text-xs font-extrabold [paint-order:stroke] [stroke-linejoin:round]' }} r={5} stroke="var(--primary)" strokeWidth={2.5} x={from} y={years[from].monthlyNow} />}
           {marks.map(mark => <ReferenceDot fill="var(--card)" ifOverflow="extendDomain" key={mark.key} label={{ value: mark.label, position: 'top', className: 'fill-foreground stroke-card stroke-3 text-xs font-extrabold [paint-order:stroke] [stroke-linejoin:round]' }} r={5} stroke="var(--warning)" strokeWidth={2.5} x={mark.t} y={years[mark.t].monthlyWait} />)}
           {payoff != null && <ReferenceLine label={{ value: 'Loan paid off', position: 'insideTop', className: 'fill-foreground stroke-card stroke-3 text-xs font-extrabold [paint-order:stroke] [stroke-linejoin:round]' }} stroke="var(--border)" strokeDasharray="3 3" x={payoff} />}
         </LineChart>

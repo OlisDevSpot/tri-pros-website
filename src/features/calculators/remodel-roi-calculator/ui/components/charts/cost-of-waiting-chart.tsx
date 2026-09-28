@@ -17,7 +17,8 @@ export function CostOfWaitingChart({ projection }: Props) {
   }
   const growth = 1 + assumptions.constructionPercent.value / 100
   const max = Math.max(...replacements.flatMap(replacement => replacement.installs.map((install, index) => install.price + (index === 0 ? replacement.repairsUntil : 0))))
-  const width = (value: number) => ({ width: `${(value / max) * 100}%` })
+  // Every price and repair at $0 would divide by zero and give NaN widths.
+  const width = (value: number) => ({ width: `${(value / (max || 1)) * 100}%` })
   return (
     <div className="grid gap-3">
       <LegendSwatches items={[{ label: 'Price today', swatch: 'bg-muted-foreground/40' }, { label: 'Price when it gives out', swatch: 'bg-warning' }, { label: 'Repairs until then', swatch: 'bg-warning/40' }]} />

@@ -1,4 +1,4 @@
-import type { ReplacementProjection } from '@/features/calculators/remodel-roi-calculator/types'
+import type { RemodelRoiProjection, ReplacementProjection } from '@/features/calculators/remodel-roi-calculator/types'
 
 import { CURRENT_IS_PLURAL, CURRENT_SENTENCE_LABELS } from '@/features/calculators/remodel-roi-calculator/constants/trades'
 import { joinWords } from '@/features/calculators/remodel-roi-calculator/lib/join-words'
@@ -14,4 +14,9 @@ export function waitingArePlural(replacements: readonly ReplacementProjection[])
 export function installYears(replacement: ReplacementProjection): string {
   const [first, ...again] = replacement.installs.map(install => install.year)
   return again.length ? `about year ${first}, and again in year ${joinWords(again.map(String))}` : `about year ${first}`
+}
+
+// Wait-path installs borrow on the project's terms only when the rep picked financing; paid in cash they carry no loan.
+export function waitIsFinanced({ project, replacements }: RemodelRoiProjection): boolean {
+  return project.paymentMode === 'financed' && replacements.length > 0
 }

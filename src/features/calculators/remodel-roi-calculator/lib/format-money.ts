@@ -1,7 +1,7 @@
 import { formatAsDollars } from '@/shared/lib/formatters'
 
 // A true minus sign reads better in large display figures than a hyphen.
-const MINUS = '−'
+export const MINUS = '−'
 
 export function formatMoney(value: number): string {
   // Math.round can land on -0 (straight from -0, or from any small negative like -0.3); treat it as +0 so it never prints as "-$0".

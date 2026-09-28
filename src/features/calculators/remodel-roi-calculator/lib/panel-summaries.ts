@@ -3,7 +3,7 @@ import type { RemodelRoiProjection } from '@/features/calculators/remodel-roi-ca
 
 import { BILL_CATEGORIES } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
 import { TRADE_LABELS } from '@/features/calculators/remodel-roi-calculator/constants/trades'
-import { formatMoney, roundMoney } from '@/features/calculators/remodel-roi-calculator/lib/format-money'
+import { formatMoney } from '@/features/calculators/remodel-roi-calculator/lib/format-money'
 import { formatYears } from '@/features/calculators/remodel-roi-calculator/lib/format-years'
 import { joinWords } from '@/features/calculators/remodel-roi-calculator/lib/join-words'
 
@@ -21,7 +21,7 @@ export function panelSummaries(projection: RemodelRoiProjection): Record<PanelSe
       ? `${formatMoney(project.price)} · ${project.paymentMode === 'financed' ? `${project.termYears} yrs at ${project.aprPercent.value}%` : 'cash'}`
       : 'Add the project price',
     bills: today ? `${formatMoney(today)}/mo today → ${formatMoney(after)}/mo after` : 'Add today\'s bills',
-    home: homeValue ? `Home ${roundMoney(homeValue)} · ${liabilities.length} ${liabilities.length === 1 ? 'loan' : 'loans'} · ${formatMoney(liabilitiesMonthly)}/mo` : 'Optional · adds net worth',
+    home: homeValue ? `Home ${formatMoney(homeValue)} · ${liabilities.length} ${liabilities.length === 1 ? 'loan' : 'loans'} · ${formatMoney(liabilitiesMonthly)}/mo` : 'Optional · adds net worth',
   }
 }
 

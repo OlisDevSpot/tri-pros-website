@@ -1,5 +1,5 @@
 import type { BillCategory } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
-import type { TradeKey } from '@/features/calculators/remodel-roi-calculator/constants/trades'
+import type { AgingTradeKey, TradeKey } from '@/features/calculators/remodel-roi-calculator/constants/trades'
 import type { RemodelRoiConfig } from '@/features/calculators/remodel-roi-calculator/schemas/config'
 import type { RemodelRoiFormValues } from '@/features/calculators/remodel-roi-calculator/schemas/form'
 import type { BillCut, ByCategory, Install, LiabilityProjection, ProjectionYear, RemodelRoiProjection, ReplacementProjection, Resolved, ResolvedAssumptions } from '@/features/calculators/remodel-roi-calculator/types'
@@ -75,12 +75,15 @@ export function projectRemodelRoi(input: RemodelRoiFormValues, config: RemodelRo
   const upfront = financed ? Math.min(amountOf(input.project.downPayment), netPrice) : netPrice
   const principal = netPrice - upfront
   const payment = financed ? amortizedMonthlyPayment(principal, aprPercent.value, termMonths) : 0
+  // Incentives or a down payment can cover the whole net price, leaving nothing to borrow even when financed.
+  const hasLoan = financed && principal > 0
 
   const cuts = Object.fromEntries(BILL_CATEGORIES.map((category) => {
     const { parts, combined } = combineCuts({ trades, ducts }, category, config.trades)
     return [category, cutFor(input, category, parts, combined)]
   })) as Record<BillCategory, BillCut>
 
+  const outlasting: AgingTradeKey[] = []
   const replacements: ReplacementProjection[] = AGING_TRADE_KEYS.flatMap((trade) => {
     const current = input.trades[trade]?.current
     if (current?.ageYears == null) {
@@ -92,6 +95,7 @@ export function projectRemodelRoi(input: RemodelRoiFormValues, config: RemodelRo
     const firstFail = Math.max(1, Math.round(working.standardLifeYears - current.ageYears))
     // One that outlasts the projection has nothing to replace on the wait path.
     if (firstFail > PROJECTION_YEARS) {
+      outlasting.push(trade)
       return []
     }
     const installs: Install[] = []
@@ -212,7 +216,8 @@ export function projectRemodelRoi(input: RemodelRoiFormValues, config: RemodelRo
     years,
     cuts,
     replacements,
-    project: { price, incentives, netPrice, paymentMode: input.project.paymentMode, aprPercent, termYears, upfront, principal, payment },
+    outlasting,
+    project: { price, incentives, netPrice, paymentMode: input.project.paymentMode, aprPercent, termYears, upfront, principal, payment, hasLoan },
     valueAddedToday: valueShare * price,
     homeValue,
     liabilities: liabilities.map(({ projection }) => projection),
@@ -220,7 +225,7 @@ export function projectRemodelRoi(input: RemodelRoiFormValues, config: RemodelRo
     milestones: {
       paysForItselfYear: ready ? holdsFrom(years, year => year.benefit >= 0) : null,
       costsLessMonthlyYear: ready ? holdsFrom(years, year => year.monthlyNow < year.monthlyWait) : null,
-      payoffYear: ready && financed && principal > 0 ? termYears : null,
+      payoffYear: ready && hasLoan ? termYears : null,
     },
     assumptions,
   }

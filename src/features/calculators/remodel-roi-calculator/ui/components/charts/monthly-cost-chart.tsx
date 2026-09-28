@@ -18,9 +18,15 @@ interface Props {
 
 export function MonthlyCostChart({ projection, lookAhead }: Props) {
   const [view, setView] = useState<'trend' | 'breakdown'>('trend')
+  const shown = projection.years.slice(1, lookAhead + 1)
   const legend = view === 'trend'
     ? [{ label: STORY_COPY.paths.now, swatch: 'bg-primary' }, { label: STORY_COPY.paths.wait, swatch: 'bg-warning' }]
-    : [{ label: 'Bills', swatch: 'bg-muted-foreground/35' }, { label: 'Project loan', swatch: 'bg-primary' }, { label: 'Repairs', swatch: 'bg-warning/40' }, { label: 'Replacement loans', swatch: 'bg-warning' }]
+    : [
+        { label: 'Bills', swatch: 'bg-muted-foreground/35' },
+        ...(projection.project.hasLoan ? [{ label: 'Project loan', swatch: 'bg-primary' }] : []),
+        { label: 'Repairs', swatch: 'bg-warning/40' },
+        ...(shown.some(year => year.replacementPayments > 0) ? [{ label: 'Replacement loans', swatch: 'bg-warning' }] : []),
+      ]
   return (
     <div className="grid gap-1">
       <div className="flex flex-wrap items-center justify-between gap-3">

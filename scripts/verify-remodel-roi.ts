@@ -1,5 +1,5 @@
 import type { RemodelRoiFormValues } from '@/features/calculators/remodel-roi-calculator/schemas/form'
-import type { RemodelRoiProjection } from '@/features/calculators/remodel-roi-calculator/types'
+import type { ReceiptLine, RemodelRoiProjection } from '@/features/calculators/remodel-roi-calculator/types'
 
 import assert from 'node:assert/strict'
 
@@ -8,6 +8,7 @@ import { createRemodelRoiDefaults, createTradePicks } from '@/features/calculato
 import { combineCuts } from '@/features/calculators/remodel-roi-calculator/lib/combine-cuts'
 import { formatMoney, roundMoney } from '@/features/calculators/remodel-roi-calculator/lib/format-money'
 import { formatYears } from '@/features/calculators/remodel-roi-calculator/lib/format-years'
+import { glueFigures } from '@/features/calculators/remodel-roi-calculator/lib/glue-figures'
 import { joinWords } from '@/features/calculators/remodel-roi-calculator/lib/join-words'
 import { panelDone, panelSummaries } from '@/features/calculators/remodel-roi-calculator/lib/panel-summaries'
 import { projectRemodelRoi } from '@/features/calculators/remodel-roi-calculator/lib/project-remodel-roi'
@@ -316,7 +317,133 @@ for (const values of [createRemodelRoiDefaults(config), JOB_A, cash(JOB_D), { ..
     assert.ok(!banned.test(all), 'no Cost / Multiplier / Margin in homeowner copy')
     assert.ok(!/\bhvac\b/.test(all), 'HVAC never lowercased')
   }
+
+  const strings = (value: unknown): string[] => typeof value === 'string'
+    ? [value]
+    : value && typeof value === 'object' ? Object.values(value).flatMap(strings) : []
+  const chapters = (content: ReturnType<typeof story>) => [content.today, content.monthly, content.waiting, content.value, content.total, content.basis]
+
+  // The op carries the sign, so a "+" or "−" line never shows a negative value too ("− Project price −$32,000").
+  for (const values of [JOB_A, JOB_B, JOB_C, JOB_D, JOB_E].flatMap(values => [values, cash(values)])) {
+    for (const lookAhead of [10, 15, 20] as const) {
+      for (const chapter of chapters(story(values, lookAhead))) {
+        for (const row of chapter.receipt) {
+          if (row.kind === 'line' && (row.op === '+' || row.op === '−')) {
+            assert.ok(!/^[−-]/.test(row.value), `"${row.op} ${row.label}" shows ${row.value}`)
+          }
+        }
+      }
+    }
+  }
+
+  // A loan that doesn't exist is never mentioned; the homeowner's own other loans may be.
+  const JOB_A_COVERED = job((v) => {
+    v.trades.hvac = { ducts: true, current: { ...picks.hvac.current, ageYears: 15 } }
+    v.project.price = 32000
+    v.project.incentives = 32000
+  })
+  assert.equal(run(JOB_A).project.hasLoan, true, 'a financed price leaves a loan')
+  for (const values of [cash(JOB_A), JOB_E, JOB_A_COVERED, cash(JOB_A_COVERED)]) {
+    assert.equal(run(values).project.hasLoan, false, 'cash or a fully covered price → no project loan')
+  }
+  for (const values of [cash(JOB_A), JOB_E, cash(JOB_E)]) {
+    for (const line of strings(story(values))) {
+      assert.ok(!/loan/i.test(line.replace(/other loans/g, '')), `no loan exists, yet: "${line}"`)
+    }
+  }
+  {
+    const covered = story(JOB_A_COVERED)
+    for (const line of strings(covered)) {
+      // The replacement loans are real here, so the headline may still count loans.
+      assert.ok(!/loan/i.test(line.replace(/other loans|replacement loans?|counting home value and loans/g, '')), `only the replacement is financed, yet: "${line}"`)
+    }
+    assert.ok(!covered.intro.wait.includes('the same way'), 'no project loan → the replacement is not "financed the same way"')
+    assert.ok(a.monthly.receipt.some(row => row.kind === 'line' && row.label === 'Loan payment'), 'a real loan keeps its line')
+  }
+
+  // Each tag says where that value came from.
+  const receiptTag = (content: typeof a.monthly, label: string) => content.receipt.find((row): row is ReceiptLine => row.kind === 'line' && row.label === label)?.tag
+  assert.equal(receiptTag(a.waiting, 'Age today'), 'yours', 'the current one\'s age is the homeowner\'s')
+  assert.equal(receiptTag(a.waiting, 'These usually last'), 'assumption', 'the standard life is a working number')
+  assert.equal(receiptTag(a.total, 'Project price'), 'yours', 'a price without incentives is typed')
+  assert.equal(receiptTag(story(JOB_E).total, 'Project price, after incentives'), 'calc', 'a price after incentives is calculated')
+  assert.equal(tags(a.monthly)['Electric bill'], 'yours', 'today\'s bill is typed')
+  assert.equal(tags(a.monthly)['Electric bill after'], 'calc', 'the bill after the cut is calculated')
+  assert.equal(tags(a.monthly)['HVAC cut on electric'], 'assumption', 'a trade\'s cut is a working number')
+  assert.equal(a.monthly.uses.find(row => row.label === 'HVAC cut on electric')?.value, '−25%', 'the cut shows its percent')
+  const typedCut = story({ ...JOB_A, bills: { ...JOB_A.bills, electric: { now: 380, cut: { mode: 'percent', value: 40 } } } })
+  assert.equal(tags(typedCut.monthly)['Electric cut'], 'yours', 'a typed cut is the homeowner\'s')
+  assert.equal(tags(typedCut.monthly)['HVAC cut on electric'], undefined, 'a typed cut replaces the working cuts')
+  assert.equal(tags(a.total)['Project price'], 'yours', 'the price is typed')
+  assert.equal(tags(a.total).Financing, 'assumption', 'a blank APR is a working number')
+  assert.equal(tags(typed.total).Financing, 'yours', 'a typed APR is the homeowner\'s')
+  assert.equal(tags(paid.total).Financing, 'yours', 'paying cash is the homeowner\'s')
+
+  // Sentences round money.
+  {
+    const big = story(job((v) => {
+      v.bills.electric.now = 780
+      v.bills.gas.now = 467
+      v.trades.atticBasement = picks.atticBasement
+      v.project.price = 30000
+    }))
+    assert.equal(text(big.today.answer), 'You pay about $1,200 a month in household bills today.', 'a bills total over $1,000 rounds in the sentence')
+    assert.ok(big.today.receipt.some(row => row.kind === 'line' && row.value === '$780/mo'), 'the receipt stays exact')
+  }
+
+  // Every aged current one outlasts the projection: say so, never ask for its age.
+  {
+    const young = story(job((v) => {
+      v.trades.roof = { current: { ...picks.roof.current, ageYears: 2 } }
+      v.project.price = 32000
+    }))
+    assert.equal(text(young.waiting.answer), 'Your roof lasts past year 20, so waiting has no replacement bill attached.', 'an outlasting current one is said plainly')
+    assert.ok(!young.waiting.guide.includes('add its age') && !young.waiting.method.includes('None do'), 'no contradiction with the entered age')
+    const blank = story(job((v) => {
+      v.trades.hvac = picks.hvac
+      v.project.price = 32000
+    }))
+    assert.ok(blank.waiting.guide.includes('add its age'), 'no age entered → the guide asks for it')
+  }
+
+  // "Near the end of its life" only when it gives out soon.
+  {
+    const midlife = story(job((v) => {
+      v.trades.hvac = { ducts: false, current: { ...picks.hvac.current, ageYears: 8 } }
+      v.project.price = 32000
+    }))
+    assert.ok(!midlife.intro.body.includes('near the end'), 'ten years left is not near the end')
+    assert.match(midlife.intro.body, /^Your HVAC is 8 years old and usually lasts about 18 years, so it gives out in about year 10\./, 'the plain fact instead')
+  }
+
+  // The early months: "the first year", and no "$0 more".
+  {
+    const early = (extra: number) => {
+      const projection = structuredClone(run(JOB_A))
+      projection.milestones.costsLessMonthlyYear = 2
+      projection.years[1].monthlyNow = projection.years[1].monthlyWait + extra
+      return text(buildStory({ projection, config, lookAhead: 10 }).monthly.answer)
+    }
+    assert.match(early(50), /^For the first year, upgrading costs up to about \$50 more a month\. From year 2,/, 'singular first year')
+    assert.match(early(0.3), /^For the first year, the two paths cost about the same each month\. From year 2,/, 'a rounded $0 is never "costs more"')
+  }
+
+  // A falling construction rate reads as falling, with a true minus sign where one is shown.
+  {
+    const falling = story({ ...JOB_A, assumptions: { ...JOB_A.assumptions, constructionPercent: -20 } })
+    assert.equal(text(falling.waiting.answer), 'Waiting doesn\'t skip the HVAC. It moves it to about year 3 and makes it $6,300 cheaper.', 'cheaper, not "−$6,300 more expensive"')
+    assert.match(falling.waiting.guide, /^Building costs keep falling, about 20% a year\./, 'fall, not "rise -20%"')
+    assert.ok(falling.waiting.receipt.some(row => row.kind === 'line' && row.label === 'Building costs fall 20%/yr for 3 years'), 'the receipt says fall')
+    assert.ok(!strings(falling).some(line => /(?:^|\W)-\$?\d/.test(line)), 'no hyphen-minus before a figure')
+  }
 }
+
+// Figures stay glued to their neighbours without regex lookbehind, which older Safari can't parse.
+assert.equal(glueFigures('year 3'), 'year 3', 'glued before a figure')
+assert.equal(glueFigures('$4,400 more expensive'), '$4,400 more expensive', 'glued after a figure')
+assert.equal(glueFigures('about 3 years'), 'about 3 years', 'glued on both sides')
+assert.equal(glueFigures('no figures here'), 'no figures here', 'text without digits is unchanged')
+assert.ok(!glueFigures.toString().includes('(?<'), 'no lookbehind')
 
 // ── Panel summaries ────────────────────────────────────────────────────
 {
@@ -329,6 +456,7 @@ for (const values of [createRemodelRoiDefaults(config), JOB_A, cash(JOB_D), { ..
   }, 'section summaries')
   assert.deepEqual(panelDone(p), { trades: true, project: true, bills: true, home: false }, 'done marks')
   assert.equal(panelSummaries(run(createRemodelRoiDefaults(config))).trades, 'Pick the trades in the project', 'empty trades summary')
+  assert.equal(panelSummaries(run({ ...JOB_A, homeValue: 850500 })).home, 'Home $850,500 · 0 loans · $0/mo', 'the home value echoes the input exactly')
 }
 
 assert.equal(formatYears(1), '1 year', 'singular')

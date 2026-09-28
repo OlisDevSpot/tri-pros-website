@@ -6,11 +6,13 @@ import type { RemodelRoiProjection } from '@/features/calculators/remodel-roi-ca
 import { SlidersHorizontalIcon } from 'lucide-react'
 
 import { LOOK_AHEAD_YEARS } from '@/features/calculators/remodel-roi-calculator/constants/look-ahead'
+import { TONE_TEXT_CLASSES } from '@/features/calculators/remodel-roi-calculator/constants/story-classes'
 import { STORY_COPY } from '@/features/calculators/remodel-roi-calculator/constants/story-copy'
 import { useStoryUi } from '@/features/calculators/remodel-roi-calculator/contexts/story-ui-context'
 import { signedMoney } from '@/features/calculators/remodel-roi-calculator/lib/format-money'
 import { Button } from '@/shared/components/ui/button'
 import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-group'
+import { cn } from '@/shared/lib/utils'
 
 interface Props {
   projection: RemodelRoiProjection
@@ -43,7 +45,7 @@ export function TopBar({ projection, lookAhead, onLookAheadChange, showInputsBut
                   costs less monthly
                 </span>
                 <span className="whitespace-nowrap">
-                  <b className="mr-1 font-sans text-base font-semibold text-primary tabular-nums">{signedMoney(projection.years[lookAhead].benefit)}</b>
+                  <b className={cn('mr-1 font-sans text-base font-semibold tabular-nums', TONE_TEXT_CLASSES[projection.years[lookAhead].benefit < 0 ? 'wait' : 'now'])}>{signedMoney(projection.years[lookAhead].benefit)}</b>
                   by year
                   {' '}
                   {lookAhead}

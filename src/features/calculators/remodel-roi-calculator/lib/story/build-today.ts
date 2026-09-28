@@ -16,7 +16,7 @@ export function buildToday({ projection, lookAhead }: StoryInputs): ChapterConte
   return {
     id: 'today',
     question: STORY_COPY.questions.today,
-    answer: [plain('You pay about '), emphasis(formatMoney(today)), plain(' a month in household bills today.')],
+    answer: [plain('You pay about '), emphasis(roundMoney(today)), plain(' a month in household bills today.')],
     guide: `If rates keep rising as they have, the same bills cost about ${roundMoney(years[mid].billsNow)} a month in year ${mid} and ${roundMoney(years[lookAhead].billsNow)} in year ${lookAhead}. Hover a bar to see each bill.`,
     equation: used.map(category => `${BILL_CATEGORY_LABELS[category]} ${formatMoney(cuts[category].bill)} +${rate(category).value}%/yr`).join(' · '),
     receipt: [

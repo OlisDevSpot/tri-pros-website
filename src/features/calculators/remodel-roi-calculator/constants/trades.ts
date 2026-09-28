@@ -48,3 +48,6 @@ export const CURRENT_IS_PLURAL = {
 export function isAgingTrade(trade: TradeKey): trade is AgingTradeKey {
   return (AGING_TRADE_KEYS as readonly TradeKey[]).includes(trade)
 }
+
+// "Near the end of its life" is a claim about the current one's age, so it holds only when it gives out within a few years, whatever look-ahead is picked.
+export const NEAR_END_OF_LIFE_YEARS = 5

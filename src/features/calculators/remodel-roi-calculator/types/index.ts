@@ -93,6 +93,7 @@ export interface ProjectTerms {
   upfront: number
   principal: number
   payment: number
+  hasLoan: boolean
 }
 
 export interface LiabilityProjection {
@@ -125,6 +126,7 @@ export interface RemodelRoiProjection {
   years: ProjectionYear[]
   cuts: Record<BillCategory, BillCut>
   replacements: ReplacementProjection[]
+  outlasting: AgingTradeKey[]
   project: ProjectTerms
   valueAddedToday: number
   homeValue: number

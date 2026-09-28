@@ -15,10 +15,15 @@ export function Receipt({ rows }: Props) {
   }
   return (
     <div className="grid border-t">
-      {rows.map(row => row.kind === 'heading'
-        ? <BlockEyebrow className="pt-4 pb-1" key={`h-${row.label}`}>{row.label}</BlockEyebrow>
+      {rows.map((row, index) => row.kind === 'heading'
+        // eslint-disable-next-line react/no-array-index-key -- rows are data and never reorder, and labels repeat once per trade
+        ? <BlockEyebrow className="pt-4 pb-1" key={index}>{row.label}</BlockEyebrow>
         : (
-            <div className={cn('grid grid-cols-[1.25rem_minmax(0,1fr)_auto_7rem] items-baseline gap-2.5 border-b border-dashed py-2 text-sm @max-md/story:grid-cols-[1.25rem_minmax(0,1fr)_auto] @max-md/story:gap-y-1', row.strong && 'border-solid font-bold')} key={`${row.op ?? ''}${row.label}`}>
+            <div
+              className={cn('grid grid-cols-[1.25rem_minmax(0,1fr)_auto_7rem] items-baseline gap-2.5 border-b border-dashed py-2 text-sm @max-md/story:grid-cols-[1.25rem_minmax(0,1fr)_auto] @max-md/story:gap-y-1', row.strong && 'border-solid font-bold')}
+              // eslint-disable-next-line react/no-array-index-key -- rows are data and never reorder, and labels repeat once per trade
+              key={index}
+            >
               <span className="text-center text-muted-foreground">{row.op}</span>
               <span>
                 {row.label}
