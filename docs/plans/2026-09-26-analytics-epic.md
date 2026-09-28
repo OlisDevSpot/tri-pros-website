@@ -27,8 +27,8 @@ Legend: `[ ]` open · `[x]` done · `[~]` in progress · ⚠️ blocked on a §2
 | **B** | **Sales money rules** — "Total Signed / Total Opened" standardized into modules; per-project (not per-customer) classification; dated cancellations; `on_hold` before `cancelled`; projects pipeline stat bar consumes the shared rule. | B1–B6 | — | not written | — | [ ] |
 | **C** | **Lead quality flags** — junk / test marking (super-admin + dispatcher), auto-internal, gross vs valid leads. | N1–N4 | permission rows from #285 (does not block the data half) | not written | — | [ ] |
 | **D** | **Setter = `meetings.createdBy`** — `ownerId` rethought as `createdBy` (super-admin editable); participants = assigned reps + visibility; setter backfill by date ranges. | D1–D5 | ⚠️ Q2 (#285 / #217 alignment) | not written | — | [ ] |
-| **E** | **Lead-source spend** — monthly spend per source on the lead-source entity with a per-source spend mode; the entry grid ships in F. | E1–E3 | — | folded into F (C46) | — | [ ] → ships with F |
-| **F** | **Analytics feature v1** — page + nav enabled; global filter bar; tabs Overview / Leads / Appointments / Sales / Projects (stub); absorbs `lead-sources-admin` (F10 moved to an end-of-epic cleanup spec, C46); includes E. | F1–F12 | A (uses B, C, E as they land; setter dimension lights up with D) | `docs/superpowers/specs/2026-09-27-analytics-f-page-design.md` | `docs/superpowers/plans/2026-09-27-analytics-f-page.md` | [~] spec approved 2026-09-27; plan reviewed and amended 2026-09-27 (spend procedures on the lead-source entity, cost at every stage on Overview, no spend backfill), ready for SDD |
+| **E** | **Lead-source spend** — monthly spend per source on the lead-source entity with a per-source spend mode; the entry grid ships in F. | E1–E3 | — | folded into F (C46) | — | [x] shipped with F |
+| **F** | **Analytics feature v1** — page + nav enabled; global filter bar; tabs Overview / Leads / Appointments / Sales / Projects (stub); absorbs `lead-sources-admin` (F10 moved to an end-of-epic cleanup spec, C46); includes E. | F1–F12 | A (uses B, C, E as they land; setter dimension lights up with D) | `docs/superpowers/specs/2026-09-27-analytics-f-page-design.md` | `docs/superpowers/plans/2026-09-27-analytics-f-page.md` | [x] shipped 470eb0e4..99fabf8d on local main (interleaved with other sessions' commits; SDD, per-task reviews + final review, one fix batch); pending owner: ⚠️ `pnpm db:push:prod` BEFORE any push to origin (lead intake reads every `lead_sources` column), hand-check of the page and spend saving, spend entry, /impeccable pass |
 
 **Order:** A and B first (parallel); C and E alongside; F after A; D on #285's timeline. A dimension or metric whose data has not landed shows "not available yet" — never a faked number (F11).
 
@@ -141,24 +141,24 @@ Legend: `[ ]` open · `[x]` done · `[~]` in progress · ⚠️ blocked on a §2
 
 ### E — Lead-source spend
 
-- [ ] **E1** Monthly spend per lead source stored on the lead-source entity (C17, C26).
-- [ ] **E2** Each source carries a spend mode (`manual` in v1; Meta and price-per-lead later, X3).
-- [ ] **E3** Cost per lead / appointment / seat / sale and revenue ÷ spend are defined in A's rule layer.
+- [x] **E1** Monthly spend per lead source stored on the lead-source entity (C17, C26).
+- [x] **E2** Each source carries a spend mode (`manual` in v1; Meta and price-per-lead later, X3).
+- [x] **E3** Cost per lead / appointment / seat / sale and revenue ÷ spend are defined in A's rule layer.
 
 ### F — Analytics feature v1
 
-- [ ] **F1** Route `src/app/(frontend)/dashboard/analytics/page.tsx` replaces the stub; super-admin only (the stub has no super-admin redirect today).
-- [ ] **F2** Nav item enabled (`src/features/agent-dashboard/lib/get-sidebar-nav.ts:106`).
-- [ ] **F3** One global filter bar (C21) applied to every tab (C23).
-- [ ] **F4** Overview: one row per source + a total row — leads, appointments, seats, sales, revenue, spend, cost per stage; conversion rates between stages.
-- [ ] **F5** Leads tab: gross vs valid, junk rate, duplicate rate, cost per lead, trend.
-- [ ] **F6** Appointments tab: appointments, seats, sit rate, outcome breakdown, unresolved `not_set` on past meetings, by setter.
-- [ ] **F7** Sales tab: new sales, total closes, revenue (initial vs upsell), cancelled, net, close rate, average ticket, by closer, "signed, no project".
-- [ ] **F8** Projects tab: stub (C25) — at most today's status-bucket counts.
-- [ ] **F9** Spend entry grid (month × source) inside Analytics (C26).
-- [ ] **F10** `lead-sources-admin` absorbed (C22): its analytics procedures in `src/trpc/routers/lead-sources.router.ts` and its analytics UI are deleted in the same change (non-defensive migration); no raw `db` in routers (ADR-0002).
-- [ ] **F11** A metric or dimension without data yet is shown as "not available yet", never faked.
-- [ ] **F12** Every number on the page is produced by A's rule layer — no metric logic in the feature's components or router.
+- [x] **F1** Route `src/app/(frontend)/dashboard/analytics/page.tsx` replaces the stub; super-admin only (the stub has no super-admin redirect today).
+- [x] **F2** Nav item enabled (`src/features/agent-dashboard/lib/get-sidebar-nav.ts:106`).
+- [x] **F3** One global filter bar (C21) applied to every tab (C23).
+- [x] **F4** Overview: one row per source + a total row — leads, appointments, seats, sales, revenue, spend, cost per stage; conversion rates between stages.
+- [x] **F5** Leads tab: gross vs valid, junk rate, duplicate rate, cost per lead, trend.
+- [x] **F6** Appointments tab: appointments, seats, sit rate, outcome breakdown, unresolved `not_set` on past meetings, by setter.
+- [x] **F7** Sales tab: new sales, total closes, revenue (initial vs upsell), cancelled, net, close rate, average ticket, by closer, "signed, no project".
+- [x] **F8** Projects tab: stub (C25) — at most today's status-bucket counts.
+- [x] **F9** Spend entry grid (month × source) inside Analytics (C26).
+- [ ] **F10** `lead-sources-admin` absorbed (C22): its analytics procedures in `src/trpc/routers/lead-sources.router.ts` and its analytics UI are deleted in the same change (non-defensive migration); no raw `db` in routers (ADR-0002). Open: end-of-epic cleanup spec (C46).
+- [x] **F11** A metric or dimension without data yet is shown as "not available yet", never faked.
+- [x] **F12** Every number on the page is produced by A's rule layer — no metric logic in the feature's components or router.
 
 ---
 
@@ -199,7 +199,7 @@ Legend: `[ ]` open · `[x]` done · `[~]` in progress · ⚠️ blocked on a §2
 | **I7** | `converted_to_project` can be picked by hand once an approved proposal exists, creating no project (`get-disabled-outcomes.ts`). | X1 |
 | **I8** | Project scopes are extracted from **all** proposals on the meeting, not the signed one (`projects.router/business.router.ts:71`) — wrong once a meeting holds alternatives. | X1 |
 | **I9** | `customers.leadType` is never written by any code path. | (note only) |
-| **I10** | The `/dashboard/analytics` stub has no super-admin redirect. | F1 |
+| **I10** | The `/dashboard/analytics` stub has no super-admin redirect. | F1 ✔ fixed (page redirects non-super-admins) |
 | **I11** | A third meaning of "signed": `entities/customers/lib/signed-customer-sql.ts` = "has a project" (the pipeline bucket), and its `EXISTS_PROJECT` SQL is duplicated in `derived-pipeline-sql.ts`. | A (dedup + comment) |
 | **I12** | No shared Pacific-time helper: `features/agent-dashboard/lib/meeting-windows.ts` owns `BUSINESS_TIMEZONE`; six other files inline `'America/Los_Angeles'`. | A (moves the helper to `shared/lib/business-time.ts`; the six stay) |
 | **I13** | No shared email normalizer; customer email is stored as typed. | A (read-time `normalizeEmail`) |
