@@ -1,4 +1,6 @@
+import type { AnalyticsUrlState } from '@/features/analytics/constants/query-parsers'
 import type { SpendSource } from '@/features/analytics/lib/analytics-rules'
+import type { AnalyticsReportRow } from '@/features/analytics/types'
 import type { CustomerFact } from '@/shared/entities/customers/dal/server/analytics-facts'
 import type { LeadSourceSpendEntry } from '@/shared/entities/lead-sources/dal/server/spend'
 import type { MeetingFact } from '@/shared/entities/meetings/dal/server/analytics-facts'
@@ -7,12 +9,23 @@ import type { SaleFact } from '@/shared/modules/proposals/core/dal/server/analyt
 import assert from 'node:assert/strict'
 
 import { meetingMonthWindow } from '@/features/agent-dashboard/lib/meeting-windows'
+import { REPORT_TABS } from '@/features/analytics/constants/tabs'
 import { aggregateLeadRecords } from '@/features/analytics/lib/aggregate-lead-records'
 import { addMonths, lastDayOfMonth, monthsBetween, resolveAnalyticsPeriod } from '@/features/analytics/lib/analytics-periods'
 import { computeCosts, findMissingSpend, notApplicableReasons, sourceRowCostReason, spendInRange, totalRevenueCents } from '@/features/analytics/lib/analytics-rules'
+import { breakdownColumns } from '@/features/analytics/lib/breakdown-columns'
 import { analyticsReportWindow, buildAnalyticsReport } from '@/features/analytics/lib/build-analytics-report'
 import { buildLeadRecords } from '@/features/analytics/lib/build-lead-records'
+import { buildFilterFields } from '@/features/analytics/lib/filter-fields'
+import { filterUpdate } from '@/features/analytics/lib/filter-update'
+import { formatDayRange } from '@/features/analytics/lib/format-analytics'
+import { hygieneHref } from '@/features/analytics/lib/hygiene-links'
 import { listLeadPlaces } from '@/features/analytics/lib/list-lead-places'
+import { formatCentsForInput, parseDollarsToCents } from '@/features/analytics/lib/parse-dollars'
+import { metricDisplayText, readMetric, sortRowsByMetric } from '@/features/analytics/lib/read-metric'
+import { spendGridRows } from '@/features/analytics/lib/spend-grid-rows'
+import { resolveFocus, toReportInput } from '@/features/analytics/lib/to-report-input'
+import { buildTrendPoints } from '@/features/analytics/lib/trend-points'
 import { analyticsReportInputSchema } from '@/features/analytics/schemas/report-input-schema'
 import { isProjectMeeting, isSit, MEETING_OUTCOME_SIT, meetingOutcomes } from '@/shared/constants/enums/meetings'
 import { projectPipelineStages } from '@/shared/constants/enums/pipelines'
@@ -569,5 +582,120 @@ console.log('13. Spend and cost ✓')
   assert.equal(analyticsReportInputSchema.safeParse({ period: 'ytd', filters: { leadSourceIds: [null] }, groupBy: 'city' }).success, true, 'null picks the unknown source')
 }
 console.log('14. Report ✓')
+
+// ── 15. Page state ──────────────────────────────────────────────────────────
+{
+  const SOURCE = '4b7e1c2a-9d3f-4e5a-8b6c-1d2e3f4a5b6c'
+  const base: AnalyticsUrlState = { period: 'this-month', from: '', to: '', source: [], city: [], zip: [], closer: [], outcome: [], order: [], tab: 'overview', groupBy: null, focus: null }
+  assert.deepEqual(toReportInput(base), { period: 'this-month', filters: {}, groupBy: 'leadSource' }, 'defaults: this month, no filters, the tab\'s first group-by')
+  assert.equal(toReportInput({ ...base, period: 'custom' }).period, 'this-month', 'a custom period with no days falls back to this month')
+  assert.equal(toReportInput({ ...base, period: 'custom', from: '2026-13-45', to: '2026-09-30' }).period, 'this-month', 'an impossible day falls back')
+  assert.equal(toReportInput({ ...base, period: 'custom', from: '2026-09-30', to: '2026-09-01' }).period, 'this-month', 'days out of order fall back')
+  assert.deepEqual(toReportInput({ ...base, period: 'custom', from: '2026-08-17', to: '2026-09-10' }), { period: 'custom', from: '2026-08-17', to: '2026-09-10', filters: {}, groupBy: 'leadSource' }, 'a valid custom period passes its days')
+  assert.deepEqual(toReportInput({ ...base, source: [SOURCE, 'unknown', 'not-a-uuid'], city: ['Irvine', 'unknown'] }).filters, { leadSourceIds: [SOURCE, null], cities: ['Irvine', null] }, '"unknown" means no value; a malformed source id is dropped')
+  assert.equal(toReportInput({ ...base, tab: 'appointments', groupBy: 'city' }).groupBy, 'closer', 'a group-by the tab does not offer falls back to the tab\'s first')
+  assert.equal(toReportInput({ ...base, tab: 'sales', groupBy: 'month' }).groupBy, 'month', 'a group-by the tab offers is kept')
+  assert.equal(toReportInput({ ...base, tab: 'spend' }).groupBy, 'leadSource', 'non-report tabs ask for the overview\'s report')
+  assert.equal(resolveFocus('overview', null), 'sits', 'overview focuses sits')
+  assert.equal(resolveFocus('sales', 'revenueNew'), 'revenueNew', 'a figure on the tab can be focused')
+  assert.equal(resolveFocus('leads', 'validLeads'), 'totalLeads', 'a figure that is not available yet cannot be focused')
+  assert.equal(resolveFocus('leads', 'sits'), 'totalLeads', 'a figure from another tab falls back')
+
+  assert.deepEqual(filterUpdate('outcome', ['pns', 'bogus']), { outcome: ['pns'] }, 'an outcome the parser does not know is dropped')
+  assert.deepEqual(filterUpdate('order', ['first', 'x']), { order: ['first'] }, 'so is a meeting order')
+  assert.deepEqual(filterUpdate('city', ['Irvine']), { city: ['Irvine'] }, 'free-text keys pass through')
+
+  const fields = buildFilterFields({ leadSources: [{ id: SOURCE, name: 'Angi', archived: true }], cities: ['Irvine'], zips: [] }, [])
+  assert.deepEqual(fields.map(f => f.key), ['source', 'city', 'zip', 'closer', 'outcome', 'order'], 'one field per filter key, in order')
+  assert.deepEqual(fields[0].definition.options.map(o => o.label), ['Angi (archived)', 'Unknown source'], 'archived sources are named as such; unknown is always a choice')
+
+  assert.ok(breakdownColumns(REPORT_TABS.overview).includes('costPerSit'), 'the overview breakdown shows cost at every stage')
+  assert.ok(breakdownColumns(REPORT_TABS.overview).includes('returnOnSpend'), 'and revenue per $1')
+  assert.ok(!breakdownColumns(REPORT_TABS.leads).includes('validLeads'), 'figures not available yet have no column')
+
+  assert.equal(parseDollarsToCents('$1,200.50'), 120_050, 'dollars with a sign and commas')
+  assert.equal(parseDollarsToCents('1200'), 120_000, 'whole dollars')
+  assert.equal(parseDollarsToCents('$0'), 0, '$0 is a real amount')
+  assert.equal(parseDollarsToCents('  '), null, 'blank means not entered')
+  for (const junk of ['-5', 'abc', '12.345', '1.2.3']) {
+    assert.equal(parseDollarsToCents(junk), 'invalid', `${junk} is rejected`)
+  }
+  assert.equal(formatCentsForInput(120_050), '1200.50', 'cents shown back with two decimals')
+  assert.equal(formatCentsForInput(120_000), '1200', 'whole dollars shown without decimals')
+
+  assert.equal(formatDayRange('2026-09-01', '2026-09-27'), 'Sep 1 – 27, 2026', 'one month')
+  assert.equal(formatDayRange('2026-08-17', '2026-09-10'), 'Aug 17 – Sep 10, 2026', 'two months')
+  assert.equal(formatDayRange('2025-10-01', '2026-09-30'), 'Oct 1, 2025 – Sep 30, 2026', 'two years')
+
+  const row = (over: Partial<AnalyticsReportRow>): AnalyticsReportRow => ({
+    groupKey: 'g',
+    overlapsTotal: false,
+    totalLeads: 4,
+    mergedRecords: 0,
+    validLeads: 4,
+    junkLeads: null,
+    bookedLeads: 2,
+    sits: 1,
+    meetings: 2,
+    newSales: 1,
+    totalCloses: 1,
+    revenueNewCents: 1_000_000,
+    revenueUpsellCents: 0,
+    averageTicketCents: 1_000_000,
+    rates: { bookingRate: 0.5, sitRate: 0.5, closeRate: 1 },
+    hygiene: { unresolvedMeetings: 0, salesWithoutValue: 0, newSalesWithoutProject: 0, unknownCityZip: 0 },
+    revenueCents: 1_000_000,
+    cost: { status: 'ok', spendCents: 200_000, costs: { costPerLead: 50_000, costPerBookedLead: 100_000, costPerSit: 200_000, costPerNewSale: 200_000 }, returnOnSpend: 5 },
+    ...over,
+  })
+  assert.deepEqual(readMetric('costPerLead', row({}), {}), { kind: 'value', value: 50_000, text: '$500' }, 'cost per lead in dollars')
+  assert.deepEqual(readMetric('sitRate', row({}), {}), { kind: 'value', value: 0.5, text: '50%' }, 'a rate in percent')
+  assert.deepEqual(readMetric('closeRate', row({ rates: { bookingRate: null, sitRate: null, closeRate: null } }), {}), { kind: 'empty' }, 'a rate over nothing is empty, not 0%')
+  assert.deepEqual(readMetric('totalLeads', row({ totalLeads: null }), { leads: 'why' }), { kind: 'not_applicable', reason: 'why' }, 'a not-applicable stage says why')
+  assert.deepEqual(readMetric('spend', row({ cost: { status: 'missing', missing: [] } }), {}), { kind: 'missing' }, 'missing spend')
+  assert.deepEqual(readMetric('costPerLead', row({ cost: { status: 'not_applicable', reason: 'no source' } }), {}), { kind: 'not_applicable', reason: 'no source' }, 'a row-level cost reason')
+  assert.equal(readMetric('validLeads', row({}), {}).kind, 'not_yet', 'valid leads wait for lead quality')
+  assert.deepEqual(['$500', '—', 'n/a', 'missing', 'not available yet'], [
+    metricDisplayText(readMetric('costPerLead', row({}), {})),
+    metricDisplayText({ kind: 'empty' }),
+    metricDisplayText({ kind: 'not_applicable', reason: 'why' }),
+    metricDisplayText({ kind: 'missing' }),
+    metricDisplayText({ kind: 'not_yet', source: 'lead quality' }),
+  ], 'every display reads as one short string (chart tooltips)')
+  assert.deepEqual(
+    sortRowsByMetric([row({ groupKey: 'a', sits: 1 }), row({ groupKey: 'b', sits: 3 }), row({ groupKey: 'c', cost: { status: 'missing', missing: [] } }), row({ groupKey: 'd', sits: 3 })], 'sits', {}).map(r => r.groupKey),
+    ['b', 'd', 'a', 'c'],
+    'highest first, ties keep their order',
+  )
+  assert.deepEqual(
+    sortRowsByMetric([row({ groupKey: 'a', cost: { status: 'missing', missing: [] } }), row({ groupKey: 'b' })], 'costPerLead', {}).map(r => r.groupKey),
+    ['b', 'a'],
+    'rows without a value sort last',
+  )
+
+  const emptyReport = buildAnalyticsReport({ facts: { customers: [], meetings: [], sales: [] }, sources: [], spend: [] }, { period: 'this-month', filters: {}, groupBy: 'leadSource' }, NOW)
+  const points = buildTrendPoints(emptyReport, 'sits')
+  assert.deepEqual([points.length, points[11].label, points[11].selected, points[11].value], [12, 'Sep', true, 0], 'twelve points, the period\'s month selected, a zero is a value')
+
+  const grid = spendGridRows(
+    [
+      { id: 'paid', name: 'Angi', spendMode: 'manual', archived: false },
+      { id: 'old-owed', name: 'Old vendor', spendMode: 'manual', archived: true },
+      { id: 'old-done', name: 'Gone vendor', spendMode: 'manual', archived: true },
+      { id: 'free', name: 'Referral', spendMode: 'none', archived: false },
+      { id: 'free-old', name: 'Walk-in', spendMode: 'none', archived: true },
+    ],
+    [],
+    [{ leadSourceId: 'old-owed', month: '2026-08' }],
+  )
+  assert.deepEqual(grid.tracked.map(s => s.id), ['paid', 'old-owed'], 'an archived source still owed spend keeps its row, or its warning could never clear')
+  assert.deepEqual(grid.free.map(s => s.id), ['free'], 'archived free sources are not listed')
+
+  assert.equal(hygieneHref('meetingsWithoutOutcome', NOW.toISOString()), '/dashboard/meetings?pm_outcome=not_set&pm_scheduledFor=%7B%22to%22%3A%222026-09-26T19%3A00%3A00.000Z%22%7D', 'past meetings with no outcome, cut off at the report\'s instant')
+  assert.equal(hygieneHref('undatedSales', NOW.toISOString()), '/dashboard/proposals?pp_status=approved&pp_missingApprovedAt=true', 'undated sales')
+  assert.equal(hygieneHref('newSalesWithoutProject', NOW.toISOString()), '/dashboard/proposals?pp_kind=initial-sale&pp_status=approved&pp_noProject=true', 'new sales without a project')
+  assert.equal(hygieneHref('unknownCityZip', NOW.toISOString()), null, 'no customers filter for unknown places yet')
+}
+console.log('15. Page state ✓')
 
 console.log('✅ verify-analytics-rules passed')
