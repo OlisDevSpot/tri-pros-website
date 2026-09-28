@@ -184,7 +184,6 @@ How to iterate on design together (used throughout the design session that produ
 
 - [tokens.md](./tokens.md) — three-tier token architecture, every `.theme-marketing` value, consumption patterns
 - [anti-slop-checklist.md](./anti-slop-checklist.md) — the 10-point gate to run before any block ships
-- [Spec: Anti-Slop Design Token System](../superpowers/specs/2026-06-22-anti-slop-design-system-design.md) — the original design session record
 - `src/app/(frontend)/globals.css` — the live token definitions (`.theme-marketing` block)
 - `src/shared/constants/company/` — credential data source (never hardcode these values)
 - `src/shared/components/decor/` — the `<Decor>` component (shared, app-wide)

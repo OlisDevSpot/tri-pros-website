@@ -2,7 +2,7 @@
 
 Run this before any marketing block ships. Adapted from the 16-point slop fingerprint + project-specific additions.
 
-**Source:** [DESIGN.md §3](./DESIGN.md#3-negative-constraints--the-banned-slop-fingerprint) · [Spec §8](../superpowers/specs/2026-06-22-anti-slop-design-system-design.md)
+**Source:** [DESIGN.md §3](./DESIGN.md#3-negative-constraints--the-banned-slop-fingerprint)
 
 ---
 

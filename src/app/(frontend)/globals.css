@@ -91,7 +91,6 @@
    Remaps the shadcn semantic vars so existing components inherit the look, and
    adds new system tokens consumed by <Decor>, <CredentialStrip>, and marketing
    blocks. `.funnel-light` is aliased here so the live funnel re-themes too.
-   See docs/superpowers/specs/2026-06-22-anti-slop-design-system-design.md
    ───────────────────────────────────────────────────────────────────────── */
 .theme-marketing,
 .funnel-light {
