@@ -5,7 +5,7 @@ import { meetingsThisWeekStat, pipelineStatConfig } from '@/features/customer-pi
 
 /**
  * Fresh pipeline metrics — the shared base plus "Meetings This Week", which only
- * applies where stages include meeting_scheduled / meeting_in_progress.
+ * applies where stages include needs_confirmation / meeting_confirmed / meeting_in_progress.
  */
 export const freshStatConfig: StatBarItemConfig<CustomerPipelineItem>[] = [
   ...pipelineStatConfig,

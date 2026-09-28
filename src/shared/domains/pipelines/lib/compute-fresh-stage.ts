@@ -4,6 +4,8 @@ interface StageInput {
   hasPastMeeting: boolean
   hasActiveMeeting: boolean
   hasScheduledFutureMeeting: boolean
+  /** An upcoming meeting on this customer was confirmed with the homeowner. */
+  hasConfirmedFutureMeeting: boolean
   /** A meeting on this customer was dispositioned `follow_up_needed`. */
   hasFollowUpNeeded: boolean
   /** A meeting on this customer was dispositioned `reschedule_needed`. */
@@ -31,12 +33,12 @@ export function computeFreshStage(data: StageInput): FreshPipelineStage {
     return 'declined'
   }
 
-  // Explicit `reschedule_needed` outcome → Reschedule column.
+  // Explicit `reschedule_needed` outcome → Reschedule stage.
   if (data.hasRescheduleNeeded) {
     return 'reschedule'
   }
 
-  // Explicit `follow_up_needed` outcome → Follow-up column, even before any
+  // Explicit `follow_up_needed` outcome → Follow-up stage, even before any
   // follow-up meeting is booked. (A booked follow-up also lands here below.)
   if (data.hasFollowUpNeeded) {
     return 'follow_up_scheduled'
@@ -57,10 +59,12 @@ export function computeFreshStage(data: StageInput): FreshPipelineStage {
     return 'meeting_completed'
   }
 
-  // Future meeting only = scheduled
-  if (data.hasScheduledFutureMeeting) {
-    return 'meeting_scheduled'
+  // Confirmation is soft: a confirmed meeting can still be rescheduled or
+  // cancelled, which the outcome checks above already take precedence over.
+  if (data.hasConfirmedFutureMeeting) {
+    return 'meeting_confirmed'
   }
 
+  // Every booked meeting waits here until someone confirms it.
   return 'needs_confirmation'
 }

@@ -24,7 +24,8 @@ export const pipelineStatConfig: StatBarItemConfig<CustomerPipelineItem>[] = [
 
 /**
  * Meetings booked in the last 7 days. Only meaningful for the fresh pipeline
- * (the board whose stages include meeting_scheduled / meeting_in_progress), so
+ * (the board whose stages include needs_confirmation / meeting_confirmed /
+ * meeting_in_progress), so
  * it's composed into `freshStatConfig` rather than the shared base.
  */
 export const meetingsThisWeekStat: StatBarItemConfig<CustomerPipelineItem> = {
@@ -36,7 +37,7 @@ export const meetingsThisWeekStat: StatBarItemConfig<CustomerPipelineItem> = {
     weekAgo.setDate(weekAgo.getDate() - 7)
     return data.filter(
       item =>
-        (item.stage === 'meeting_scheduled' || item.stage === 'meeting_in_progress')
+        (item.stage === 'needs_confirmation' || item.stage === 'meeting_confirmed' || item.stage === 'meeting_in_progress')
         && item.latestActivityAt !== null
         && new Date(item.latestActivityAt) >= weekAgo,
     ).length

@@ -50,6 +50,16 @@ export function useMeetingActions() {
     }),
   )
 
+  const updateConfirmation = useMutation(
+    trpc.meetingsRouter.crud.update.mutationOptions({
+      onSuccess: () => {
+        invalidateMeeting()
+        toast.success('Confirmation updated')
+      },
+      onError: () => toast.error('Failed to update confirmation'),
+    }),
+  )
+
   const setOutcomeWithReason = useMutation(
     trpc.meetingsRouter.business.setOutcomeWithReason.mutationOptions({
       onSuccess: () => {
@@ -70,5 +80,5 @@ export function useMeetingActions() {
     }),
   )
 
-  return { deleteMeeting, duplicateMeeting, updateOutcome, updateScheduledFor, setOutcomeWithReason, rescheduleMeeting }
+  return { deleteMeeting, duplicateMeeting, updateOutcome, updateScheduledFor, updateConfirmation, setOutcomeWithReason, rescheduleMeeting }
 }

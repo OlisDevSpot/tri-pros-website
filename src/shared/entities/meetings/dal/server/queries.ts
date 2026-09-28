@@ -284,3 +284,13 @@ export async function getByIdWithJoins(
     return { ...row, customer } as MeetingWithCustomer
   })
 }
+
+/** Unscoped — only for entity hooks that already run behind a scope-checked write. */
+export async function getMeetingSchedule(id: string): Promise<Pick<Meeting, 'scheduledFor' | 'confirmedAt'> | undefined> {
+  const [row] = await db
+    .select({ scheduledFor: meetings.scheduledFor, confirmedAt: meetings.confirmedAt })
+    .from(meetings)
+    .where(eq(meetings.id, id))
+    .limit(1)
+  return row
+}

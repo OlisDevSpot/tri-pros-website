@@ -90,3 +90,8 @@ How a project is told, on every surface (portfolio page, meeting-flow Portfolio 
 ## Records terms
 
 - **Scope coverage** — for one proposal of a meeting: which of the scopes captured in the meeting it includes, which it leaves out (struck through), and which it adds that the meeting didn't capture (dashed "+"). Matched by scope id (`computeScopeCoverage`, `ProposalOverviewCard.ScopeCoverage`). _Avoid_: scope match, scope diff.
+
+## Pipeline terms
+
+- **Stage** — one step of a pipeline; a customer sits in exactly one stage per pipeline. On the kanban board each stage shows as a lane, but the domain word is always stage (`PipelineStageConfig`, `KanbanStageFilter`). _Avoid_: column, lane, status.
+- **Confirmed** — a meeting whose homeowner, reached on the day of the meeting, said they will be home (`meetings.confirmedAt`). A soft confirmation: a confirmed meeting can still be rescheduled or cancelled before the rep arrives. It holds for one appointment time — moving `scheduledFor` clears it, and a reschedule books a new, unconfirmed meeting. Fresh pipeline: every booked meeting starts in **Needs Confirmation** and moves to **Confirmed** once confirmed.

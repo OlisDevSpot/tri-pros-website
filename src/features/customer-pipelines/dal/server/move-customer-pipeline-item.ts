@@ -5,7 +5,7 @@ import type { Pipeline } from '@/shared/constants/enums/pipelines'
 import type { FreshPipelineStage } from '@/shared/domains/pipelines/constants/fresh-pipeline'
 
 import { TRPCError } from '@trpc/server'
-import { and, eq } from 'drizzle-orm'
+import { and, asc, eq, gt, isNull, sql } from 'drizzle-orm'
 
 import { buildUserContext, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { db } from '@/shared/db'
@@ -95,11 +95,43 @@ export async function moveCustomerPipelineItem({
   }
 
   if (
-    (fromStage === 'meeting_scheduled' && toStage === 'meeting_in_progress')
-    || (fromStage === 'meeting_in_progress' && toStage === 'meeting_completed')
-    || (fromStage === 'follow_up_scheduled' && toStage === 'meeting_completed')
+    (fromStage === 'needs_confirmation' && toStage === 'meeting_confirmed')
+    || (fromStage === 'meeting_confirmed' && toStage === 'needs_confirmation')
   ) {
-    const targetOutcome = toStage === 'meeting_completed' ? 'follow_up_needed' : 'not_set'
+    const ctx = buildUserContext(userId, userRole, meetingServerSpec)
+
+    const [nextMeeting] = await db
+      .select({ id: meetings.id })
+      .from(meetings)
+      .where(and(
+        eq(meetings.customerId, customerId),
+        ctx.scope ?? undefined,
+        eq(meetings.pipeline, 'fresh'),
+        isNull(meetings.projectId),
+        eq(meetings.meetingOutcome, 'not_set'),
+        gt(meetings.scheduledFor, sql`now()`),
+      ))
+      .orderBy(asc(meetings.scheduledFor))
+      .limit(1)
+
+    if (!nextMeeting) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'No upcoming meeting found for this customer',
+      })
+    }
+
+    dalVerifySuccess(
+      await meetingCrud.update(ctx, {
+        id: nextMeeting.id,
+        data: { confirmedAt: toStage === 'meeting_confirmed' ? new Date().toISOString() : null },
+      }),
+    )
+
+    return
+  }
+
+  if (toStage === 'meeting_completed') {
     const ctx = buildUserContext(userId, userRole, meetingServerSpec)
 
     const customerMeetings = await db
@@ -123,7 +155,7 @@ export async function moveCustomerPipelineItem({
     dalVerifySuccess(
       await meetingCrud.update(ctx, {
         id: customerMeetings[0].id,
-        data: { meetingOutcome: targetOutcome },
+        data: { meetingOutcome: 'follow_up_needed' },
       }),
     )
 

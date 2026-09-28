@@ -14,6 +14,7 @@ export function toCalendarEvent(meeting: MeetingRow): ScheduleMeetingEvent {
     title: meeting.customerName ?? 'Unknown',
     meetingType: meeting.meetingType,
     meetingOutcome: meeting.meetingOutcome,
+    confirmedAt: meeting.confirmedAt,
     customerId: meeting.customerId,
     ownerId: meeting.ownerId,
     ownerName: meeting.ownerName,

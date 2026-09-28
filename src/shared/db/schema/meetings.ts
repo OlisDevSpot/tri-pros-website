@@ -27,6 +27,8 @@ export const meetings = pgTable('meetings', {
   pipeline: meetingPipelineEnum('pipeline').notNull().default('fresh'),
   projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
   scheduledFor: timestamp('scheduled_for', { mode: 'string', withTimezone: true }).notNull(),
+  // Soft, day-of: the homeowner said they'll be home. Cleared whenever scheduledFor moves.
+  confirmedAt: timestamp('confirmed_at', { mode: 'string', withTimezone: true }),
   contextJSON: jsonb('context_json').$type<MeetingContext>(),
   flowStateJSON: jsonb('flow_state_json').$type<MeetingFlowState>(),
   agentNotes: text('agent_notes'),

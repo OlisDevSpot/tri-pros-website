@@ -11,6 +11,7 @@ import { ROOTS } from '@/shared/config/roots'
 import { CANNOT_RESCHEDULE_REASON, canRescheduleFromOutcome } from '@/shared/constants/enums/meetings'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
 import { MEETING_ACTIONS } from '@/shared/entities/meetings/constants/actions'
+import { MEETING_CONFIRMATION_OPTIONS } from '@/shared/entities/meetings/constants/confirmation-options'
 import { MEETING_OUTCOME_OPTIONS } from '@/shared/entities/meetings/constants/outcome-options'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 
@@ -42,6 +43,7 @@ interface MeetingEntity {
   meetingOutcome?: string
   customerId?: string | null
   scheduledFor?: string | null
+  confirmedAt?: string | null
   ownerId?: string | null
 }
 
@@ -79,7 +81,7 @@ function defaultCreateProposal(entity: { id: string }) {
 export function useMeetingActionConfigs<T extends MeetingEntity>(
   overrides: MeetingActionOverrides<T> = {},
 ): MeetingActionConfigsResult<T> {
-  const { deleteMeeting, duplicateMeeting } = useMeetingActions()
+  const { deleteMeeting, duplicateMeeting, updateConfirmation } = useMeetingActions()
   const { changeOutcome, OutcomeReasonDialog } = useOutcomeChange()
   const { reschedule, RescheduleDialog } = useRescheduleChange()
   const [DeleteConfirmDialog, confirmDelete] = useConfirm({
@@ -133,6 +135,19 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
         },
       },
       {
+        action: MEETING_ACTIONS.confirmation,
+        type: 'select' as const,
+        options: MEETING_CONFIRMATION_OPTIONS,
+        getCurrentValue: (entity: T) => entity.confirmedAt ? 'confirmed' : 'unconfirmed',
+        onSelect: (entity: T, value: string) => {
+          updateConfirmation.mutate({
+            id: entity.id,
+            data: { confirmedAt: value === 'confirmed' ? new Date().toISOString() : null },
+          })
+        },
+        isLoading: updateConfirmation.isPending,
+      },
+      {
         action: MEETING_ACTIONS.reschedule,
         onAction: (entity: T) => void reschedule(entity.id),
         getDisabledReason: (entity: T) =>
@@ -173,7 +188,7 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
     })
 
     return configs
-  }, [overrides, duplicateMeeting, changeOutcome, reschedule, deleteMeeting, confirmDelete, defaultAssignOwner])
+  }, [overrides, duplicateMeeting, updateConfirmation, changeOutcome, reschedule, deleteMeeting, confirmDelete, defaultAssignOwner])
 
   return { actions, DeleteConfirmDialog, AssignOwnerDialog, OutcomeReasonDialog, RescheduleDialog, changeOutcome }
 }

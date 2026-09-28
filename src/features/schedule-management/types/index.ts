@@ -14,6 +14,7 @@ export interface ScheduleMeetingEvent extends CalendarEvent {
   meetingId: string
   meetingType: string | null
   meetingOutcome: MeetingOutcome
+  confirmedAt: string | null
   customerId: string | null
   ownerId: string
   ownerName: string | null

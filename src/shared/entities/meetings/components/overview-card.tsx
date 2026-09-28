@@ -47,7 +47,7 @@ export type MeetingOverviewCardProposal
 
 export type MeetingOverviewCardData
   = Pick<Meeting, 'id'>
-    & Partial<Pick<Meeting, 'scheduledFor' | 'createdAt' | 'meetingType' | 'meetingOutcome' | 'ownerId' | 'customerId'>>
+    & Partial<Pick<Meeting, 'scheduledFor' | 'confirmedAt' | 'createdAt' | 'meetingType' | 'meetingOutcome' | 'ownerId' | 'customerId'>>
     & {
       ownerName?: string | null
       ownerImage?: string | null

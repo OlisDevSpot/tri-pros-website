@@ -18,11 +18,11 @@ export type MeetingPipeline = (typeof meetingPipelines)[number]
 /** Fresh pipeline — meeting phase stages */
 export const freshMeetingStages = [
   'needs_confirmation',
-  'meeting_scheduled',
+  'meeting_confirmed',
+  'reschedule',
   'meeting_in_progress',
   'meeting_completed',
   'follow_up_scheduled',
-  'reschedule',
 ] as const
 export type FreshMeetingStage = (typeof freshMeetingStages)[number]
 

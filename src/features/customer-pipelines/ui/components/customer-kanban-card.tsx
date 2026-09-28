@@ -17,7 +17,6 @@ import { AddressAction } from '@/shared/components/contact-actions/ui/address-ac
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
 import { EntityActionMenu } from '@/shared/components/entities/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
-import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { Separator } from '@/shared/components/ui/separator'
 import { ROOTS } from '@/shared/config/roots'
@@ -62,7 +61,7 @@ export function CustomerKanbanCard({
   }
 
   const meetingLabel = getMeetingTimeLabel(item.nextMeetingAt)
-  const isScheduledOrInProgress = item.stage === 'meeting_scheduled' || item.stage === 'meeting_in_progress'
+  const isScheduledOrInProgress = item.stage === 'needs_confirmation' || item.stage === 'meeting_confirmed' || item.stage === 'meeting_in_progress'
   const hasMeetingContext = item.meetingCount > 0
   const fullAddress = item.address
     ? formatAddress(item.address, item.city, item.state ?? 'CA', item.zip)
@@ -214,6 +213,7 @@ export function CustomerKanbanCard({
                 meeting={{
                   id: item.nextMeetingId,
                   scheduledFor: item.meetingScheduledFor ?? undefined,
+                  confirmedAt: item.meetingConfirmedAt,
                   ownerId: item.assignedRep?.id,
                   ownerName: item.assignedRep?.name,
                   ownerImage: item.assignedRep?.image,
@@ -270,19 +270,6 @@ export function CustomerKanbanCard({
             </div>
           )}
 
-          {/* CTA: Schedule Meeting for needs_confirmation */}
-          {item.stage === 'needs_confirmation' && onCreateMeeting && (
-            <Button
-              size="sm"
-              className="w-full"
-              onClick={(e) => {
-                e.stopPropagation()
-                onCreateMeeting(item.id)
-              }}
-            >
-              + Schedule Meeting
-            </Button>
-          )}
         </CardContent>
       </Card>
     </>

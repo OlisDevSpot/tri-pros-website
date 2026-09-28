@@ -10,9 +10,9 @@ import { groupCustomersByStage } from '@/features/customer-pipelines/lib/group-c
 import { CustomerKanbanCard } from '@/features/customer-pipelines/ui/components/customer-kanban-card'
 import { CustomerPipelineMetricsBar } from '@/features/customer-pipelines/ui/components/customer-pipeline-metrics-bar'
 import { PipelineSelect } from '@/features/customer-pipelines/ui/components/pipeline-select'
-import { useKanbanColumnFilter } from '@/shared/components/kanban/hooks/use-kanban-column-filter'
+import { useKanbanStageFilter } from '@/shared/components/kanban/hooks/use-kanban-stage-filter'
 import { KanbanBoard } from '@/shared/components/kanban/ui/kanban-board'
-import { KanbanColumnFilter } from '@/shared/components/kanban/ui/kanban-column-filter'
+import { KanbanStageFilter } from '@/shared/components/kanban/ui/kanban-stage-filter'
 import { EmptyState } from '@/shared/components/states/empty-state'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
@@ -37,11 +37,11 @@ export function CustomerPipelineView() {
 
   const config = pipelineConfigs[pipeline]
 
-  const columnFilterConfig = pipeline === 'fresh'
+  const stageFilterConfig = pipeline === 'fresh'
     ? { defaultVisible: [...config.stages].filter(s => s !== 'declined') }
     : { defaultVisible: [...config.stages] }
 
-  const columnFilter = useKanbanColumnFilter(config.stageConfig, columnFilterConfig)
+  const stageFilter = useKanbanStageFilter(config.stageConfig, stageFilterConfig)
 
   const pipelineQuery = useQuery({
     ...trpc.customerPipelinesRouter.getCustomerPipelineItems.queryOptions({ pipeline }),
@@ -61,15 +61,6 @@ export function CustomerPipelineView() {
   )
 
   function handleMoveItem(itemId: string, fromStage: string, toStage: string) {
-    // Intercept: needs_confirmation → meeting_scheduled opens modal instead
-    if (fromStage === 'needs_confirmation' && toStage === 'meeting_scheduled') {
-      const item = pipelineQuery.data?.find(i => i.id === itemId)
-      if (item) {
-        setCreateMeetingForCustomer({ id: item.id, name: item.name })
-      }
-      return
-    }
-
     // Intercept: any leads stage → meeting_scheduled opens meeting modal
     // Stage only updates AFTER meeting is successfully created (not on drag)
     if (pipeline === 'leads' && toStage === 'meeting_scheduled') {
@@ -167,13 +158,13 @@ export function CustomerPipelineView() {
         <CustomerPipelineMetricsBar items={pipelineQuery.data} pipeline={pipeline} isLoading={isSwitching} />
         <div className="flex w-full items-center justify-between gap-2 lg:w-auto lg:justify-end">
           {canManagePipeline && <PipelineSelect value={pipeline} onChange={setPipeline} />}
-          <KanbanColumnFilter
+          <KanbanStageFilter
             stages={config.stageConfig}
-            visibleStages={columnFilter.visibleStages}
-            alwaysVisible={columnFilter.alwaysVisible}
-            onToggleStage={columnFilter.handleToggleStage}
-            onShowAll={columnFilter.handleShowAll}
-            onHideAll={columnFilter.handleHideAll}
+            visibleStages={stageFilter.visibleStages}
+            alwaysVisible={stageFilter.alwaysVisible}
+            onToggleStage={stageFilter.handleToggleStage}
+            onShowAll={stageFilter.handleShowAll}
+            onHideAll={stageFilter.handleHideAll}
           />
         </div>
       </div>
@@ -191,7 +182,7 @@ export function CustomerPipelineView() {
             )
           : (
               <KanbanBoard<CustomerPipelineItem>
-                stageConfig={columnFilter.filteredStageConfig}
+                stageConfig={stageFilter.filteredStageConfig}
                 groupedItems={groupCustomersByStage(pipelineQuery.data, config.stages)}
                 allowedTransitions={config.allowedTransitions}
                 blockedMessages={config.blockedMessages}

@@ -71,6 +71,7 @@ export interface CustomerPipelineItem {
   nextMeetingId: string | null
   nextMeetingAt: string | null
   meetingScheduledFor: string | null
+  meetingConfirmedAt: string | null
   assignedRep: PipelineItemRep | null
   proposals: PipelineItemProposal[]
   /** Present only in the projects pipeline */
@@ -90,6 +91,7 @@ export interface CustomerPipelineRawData {
   hasPastMeeting: boolean
   hasActiveMeeting: boolean
   hasScheduledFutureMeeting: boolean
+  hasConfirmedFutureMeeting: boolean
   hasFollowUpNeeded: boolean
   hasRescheduleNeeded: boolean
   proposalStatuses: string[]

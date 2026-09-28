@@ -18,7 +18,7 @@ interface Props {
   onHideAll: () => void
 }
 
-export function KanbanColumnFilter({
+export function KanbanStageFilter({
   stages,
   visibleStages,
   alwaysVisible,
@@ -31,7 +31,7 @@ export function KanbanColumnFilter({
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className="gap-1.5">
           <SlidersHorizontalIcon size={14} />
-          Columns
+          Stages
           <Badge variant="secondary" className="text-[10px] px-1.5">
             {visibleStages.size}
             /
@@ -41,7 +41,7 @@ export function KanbanColumnFilter({
       </PopoverTrigger>
       <PopoverContent align="end" className="w-56 p-3">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-medium">Visible Columns</p>
+          <p className="text-sm font-medium">Visible stages</p>
           <div className="flex gap-2">
             <button
               type="button"

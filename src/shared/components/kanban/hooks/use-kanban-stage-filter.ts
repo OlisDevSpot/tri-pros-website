@@ -4,29 +4,29 @@ import type { KanbanStageConfig } from '@/shared/components/kanban/types'
 
 import { useEffect, useMemo, useState } from 'react'
 
-export interface KanbanColumnFilterConfig {
+export interface KanbanStageFilterConfig {
   /** Stage keys that are visible by default. If omitted, all stages are visible. */
   defaultVisible?: string[]
   /** Stage keys that cannot be hidden (checkbox disabled). */
   alwaysVisible?: string[]
 }
 
-export function useKanbanColumnFilter(
+export function useKanbanStageFilter(
   stageConfig: readonly KanbanStageConfig[],
-  columnFilter?: KanbanColumnFilterConfig,
+  stageFilter?: KanbanStageFilterConfig,
 ) {
   const [visibleStages, setVisibleStages] = useState<Set<string>>(() => {
-    if (columnFilter?.defaultVisible) {
-      return new Set(columnFilter.defaultVisible)
+    if (stageFilter?.defaultVisible) {
+      return new Set(stageFilter.defaultVisible)
     }
     return new Set(stageConfig.map(s => s.key))
   })
 
   const stageKeys = stageConfig.map(s => s.key).join(',')
   useEffect(() => {
-    if (columnFilter?.defaultVisible) {
+    if (stageFilter?.defaultVisible) {
       // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
-      setVisibleStages(new Set(columnFilter.defaultVisible))
+      setVisibleStages(new Set(stageFilter.defaultVisible))
     }
     else {
       // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
@@ -36,11 +36,11 @@ export function useKanbanColumnFilter(
   }, [stageKeys])
 
   const alwaysVisible = useMemo(
-    () => new Set(columnFilter?.alwaysVisible ?? []),
-    [columnFilter?.alwaysVisible],
+    () => new Set(stageFilter?.alwaysVisible ?? []),
+    [stageFilter?.alwaysVisible],
   )
 
-  const filteredStageConfig = columnFilter
+  const filteredStageConfig = stageFilter
     ? stageConfig.filter(s => visibleStages.has(s.key))
     : stageConfig
 
@@ -62,7 +62,7 @@ export function useKanbanColumnFilter(
   }
 
   function handleHideAll() {
-    setVisibleStages(new Set(columnFilter?.alwaysVisible ?? []))
+    setVisibleStages(new Set(stageFilter?.alwaysVisible ?? []))
   }
 
   return {

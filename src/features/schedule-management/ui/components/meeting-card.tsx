@@ -26,6 +26,7 @@ export function MeetingCard({ event, onAssignOwner, onUpdateScheduledFor, isHigh
     meetingOutcome: event.meetingOutcome,
     meetingType: event.meetingType as MeetingType,
     scheduledFor: event.startAt,
+    confirmedAt: event.confirmedAt,
     customerId: event.customerId,
     ownerId: event.ownerId,
     createdAt: event.createdAt,

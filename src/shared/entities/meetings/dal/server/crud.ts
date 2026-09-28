@@ -4,6 +4,7 @@ import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
 import { OUTCOME_PIPELINE_MAP } from '@/shared/domains/pipelines/lib/outcome-pipeline-map'
 import { clearMeetingGCalFields } from '@/shared/entities/meetings/dal/server/google-calendar'
 import { addParticipant } from '@/shared/entities/meetings/dal/server/participants'
+import { getMeetingSchedule } from '@/shared/entities/meetings/dal/server/queries'
 import { resolveMeetingOwnerId } from '@/shared/entities/meetings/lib/resolve-owner'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
@@ -56,14 +57,23 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
       },
     },
     update: {
-      before(data) {
+      async before(data, _ctx, { id }) {
+        let next = data
         if (data.meetingOutcome) {
           const pipeline = OUTCOME_PIPELINE_MAP[data.meetingOutcome]
           if (pipeline != null) {
-            return { ...data, pipeline }
+            next = { ...next, pipeline }
           }
         }
-        return data
+        // A confirmation holds for one appointment time; a moved meeting must be confirmed again.
+        // Compared against the stored time so a same-time re-save (e.g. GCal sync) keeps it.
+        if (data.scheduledFor && !('confirmedAt' in data)) {
+          const current = await getMeetingSchedule(id)
+          if (current?.confirmedAt && new Date(current.scheduledFor).getTime() !== new Date(data.scheduledFor).getTime()) {
+            next = { ...next, confirmedAt: null }
+          }
+        }
+        return next
       },
       // excludeUserId is optional: under SYSTEM_CONTEXT there is no actor to exclude.
       // Ably publish stays inline — routing it through QStash would add 100-300ms and defeat the point.
@@ -125,6 +135,7 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
       'createdAt',
       'updatedAt',
       'meetingOutcome',
+      'confirmedAt',
       'pipeline',
       'flowStateJSON',
       'agentNotes',
