@@ -18,6 +18,7 @@ export function MetricText({ display, className }: Props) {
     case 'missing':
       return <span className={cn('text-warning', className)} title="Spend not entered for a month with leads">missing</span>
     case 'not_yet':
-      return <span className={cn('text-sm font-normal text-muted-foreground', className)} title={`Arrives with ${display.source}`}>not available yet</span>
+      // A status, never a figure: it stays quiet even where the caller sizes a headline number.
+      return <span className={cn(className, 'text-sm font-normal text-muted-foreground')} title={`Arrives with ${display.source}`}>not available yet</span>
   }
 }
