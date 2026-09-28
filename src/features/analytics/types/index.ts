@@ -1,5 +1,5 @@
 import type { MeetingOrder } from '@/features/analytics/constants/dimensions'
-import type { AnalyticsRateKey, AnalyticsStage } from '@/features/analytics/lib/analytics-rules'
+import type { AnalyticsCostKey, AnalyticsRateKey, AnalyticsStage, MissingSpend, NotApplicableReasons } from '@/features/analytics/lib/analytics-rules'
 import type { MeetingOutcome, MeetingSit } from '@/shared/constants/enums/meetings'
 import type { CustomerFact } from '@/shared/entities/customers/dal/server/analytics-facts'
 import type { MeetingFact } from '@/shared/entities/meetings/dal/server/analytics-facts'
@@ -103,4 +103,44 @@ export interface AnalyticsResult {
   notApplicable: AnalyticsStage[]
   undatedSales: number | null
   orphans: number
+}
+
+export type RowCost
+  = | { status: 'ok', spendCents: number, costs: Record<AnalyticsCostKey, number | null>, returnOnSpend: number | null }
+    | { status: 'missing', missing: MissingSpend[] }
+    | { status: 'not_applicable', reason: string }
+
+export interface AnalyticsReportRow extends AnalyticsCounts {
+  revenueCents: number | null
+  cost: RowCost
+}
+
+export interface AnalyticsTrendMonth {
+  month: string
+  selected: boolean
+  row: AnalyticsReportRow
+}
+
+export interface AnalyticsHygiene {
+  meetingsWithoutOutcome: number
+  undatedSales: number
+  newSalesWithoutProject: number
+  unknownCityZip: number
+}
+
+export interface AnalyticsReport {
+  /** The instant the report was built; anything time-dependent on the page derives from it, so server and browser render the same markup. */
+  generatedAt: string
+  firstDay: string
+  lastDay: string
+  headline: AnalyticsReportRow
+  breakdown: AnalyticsReportRow[]
+  trend: AnalyticsTrendMonth[]
+  notApplicable: { headline: NotApplicableReasons, breakdown: NotApplicableReasons }
+  spendMissing: MissingSpend[]
+  /** The Spend grid's columns: the trend's months plus any older month still owed spend. */
+  spendGridMonths: string[]
+  undatedSales: number | null
+  orphans: number
+  hygiene: AnalyticsHygiene
 }

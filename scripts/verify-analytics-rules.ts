@@ -10,7 +10,10 @@ import { meetingMonthWindow } from '@/features/agent-dashboard/lib/meeting-windo
 import { aggregateLeadRecords } from '@/features/analytics/lib/aggregate-lead-records'
 import { addMonths, lastDayOfMonth, monthsBetween, resolveAnalyticsPeriod } from '@/features/analytics/lib/analytics-periods'
 import { computeCosts, findMissingSpend, notApplicableReasons, sourceRowCostReason, spendInRange, totalRevenueCents } from '@/features/analytics/lib/analytics-rules'
+import { analyticsReportWindow, buildAnalyticsReport } from '@/features/analytics/lib/build-analytics-report'
 import { buildLeadRecords } from '@/features/analytics/lib/build-lead-records'
+import { listLeadPlaces } from '@/features/analytics/lib/list-lead-places'
+import { analyticsReportInputSchema } from '@/features/analytics/schemas/report-input-schema'
 import { isProjectMeeting, isSit, MEETING_OUTCOME_SIT, meetingOutcomes } from '@/shared/constants/enums/meetings'
 import { projectPipelineStages } from '@/shared/constants/enums/pipelines'
 import { groupDuplicatePeople } from '@/shared/entities/customers/lib/group-duplicate-people'
@@ -476,5 +479,95 @@ console.log('12. Merged duplicates ✓')
   assert.equal(sourceRowCostReason('src-a'), undefined, 'a real source row has cost')
 }
 console.log('13. Spend and cost ✓')
+
+// ── 14. Report ──────────────────────────────────────────────────────────────
+{
+  const facts = {
+    customers: [
+      customer('r1', '2026-08-10T17:00:00.000Z', { leadSourceId: 'src-a', phone: '5550002001' }),
+      customer('r2', '2026-09-05T17:00:00.000Z', { leadSourceId: 'src-b', phone: '5550002002' }),
+      customer('r3', '2026-09-06T17:00:00.000Z', { leadSourceId: 'src-a', phone: '5550002003', city: 'Unknown' }),
+      customer('r3-dup', '2026-09-07T17:00:00.000Z', { leadSourceId: 'src-a', phone: '5550002003', city: 'Tustin', zip: '92780' }),
+    ],
+    meetings: [
+      meeting('r1m', 'r1', '2026-08-12T17:00:00.000Z', 'pns', { closerIds: ['u1'] }),
+      meeting('r2m', 'r2', '2026-09-08T17:00:00.000Z', 'converted_to_project', { closerIds: ['u2'], projectId: 'p1' }),
+      meeting('r3m', 'r3', '2026-09-10T17:00:00.000Z', 'not_set'),
+    ],
+    sales: [
+      sale('r2s', 'r2m', '2026-09-09T17:00:00.000Z', { finalTcpCents: 800_000 }),
+      sale('r1s', 'r1m', null),
+    ],
+  }
+  const data = {
+    facts,
+    sources: [{ id: 'src-a', spendMode: 'manual' as const }, { id: 'src-b', spendMode: 'manual' as const }, { id: 'src-f', spendMode: 'none' as const }],
+    spend: [
+      { leadSourceId: 'src-a', month: '2026-08', amountCents: 310_000 },
+      { leadSourceId: 'src-a', month: '2026-09', amountCents: 300_000 },
+    ],
+  }
+
+  const report = buildAnalyticsReport(data, { period: 'this-month', filters: {}, groupBy: 'leadSource' }, NOW)
+  assert.deepEqual([report.firstDay, report.lastDay], ['2026-09-01', '2026-09-30'], 'the report names its days')
+  assert.equal(report.generatedAt, NOW.toISOString(), 'the report carries the instant it was built, for time-dependent links')
+  assert.equal(report.headline.totalLeads, 2, 'r2 and r3 (r3-dup merged) lead in September')
+  assert.equal(report.headline.mergedRecords, 1, 'r3-dup is a merged duplicate')
+  assert.equal(report.headline.revenueCents, 800_000, 'revenue on the headline')
+  assert.deepEqual(report.headline.cost, { status: 'missing', missing: [{ leadSourceId: 'src-b', month: '2026-09' }] }, 'src-b brought a lead in September with no spend: the total cost is missing')
+  const srcARow = report.breakdown.find(r => r.groupKey === 'src-a')!
+  assert.equal(srcARow.cost.status, 'ok', 'src-a has its spend')
+  assert.equal(srcARow.cost.status === 'ok' && srcARow.cost.spendCents, 260_000, 'src-a September spend to date (26/30)')
+  assert.equal(srcARow.cost.status === 'ok' && srcARow.cost.costs.costPerLead, 260_000, 'one src-a lead so far')
+  assert.equal(report.breakdown.find(r => r.groupKey === 'src-b')!.cost.status, 'missing', 'src-b row is missing')
+  assert.equal(report.trend.length, 12, 'twelve trend months')
+  assert.deepEqual([report.trend[0].month, report.trend[11].month], ['2025-10', '2026-09'], 'the trend ends with the period\'s last month')
+  assert.deepEqual(report.trend.filter(t => t.selected).map(t => t.month), ['2026-09'], 'only the period\'s months are selected')
+  const august = report.trend.find(t => t.month === '2026-08')!.row
+  assert.equal(august.totalLeads, 1, 'r1 led in August')
+  assert.equal(august.cost.status === 'ok' && august.cost.spendCents, 310_000, 'a past month counts in full; src-b had no August lead so nothing is missing')
+  assert.deepEqual(report.spendMissing, [{ leadSourceId: 'src-b', month: '2026-09' }], 'the Spend tab\'s warning lists every missing source-month in the period and the trend window')
+  assert.deepEqual(report.spendGridMonths, report.trend.map(t => t.month), 'nothing is owed outside the trend, so the grid shows the trend\'s twelve months')
+  assert.deepEqual(report.hygiene, { meetingsWithoutOutcome: 1, undatedSales: 1, newSalesWithoutProject: 1, unknownCityZip: 1 }, 'hygiene counts all records: r3m unresolved, r1s undated and without a project, r3 has no city')
+
+  const srcAYear = buildAnalyticsReport(data, { period: 'last-12', filters: { leadSourceIds: ['src-a'] }, groupBy: 'month' }, NOW)
+  assert.equal(srcAYear.headline.cost.status === 'ok' && srcAYear.headline.cost.spendCents, 570_000, 'a source filter scopes spend: August in full plus September to date')
+  assert.equal(srcAYear.headline.cost.status === 'ok' && srcAYear.headline.cost.costs.costPerLead, 285_000, 'two src-a leads over the year')
+  assert.equal(srcAYear.breakdown.find(r => r.groupKey === '2026-09')!.cost.status === 'ok', true, 'a month row carries that month\'s cost')
+
+  const byCloser = buildAnalyticsReport(data, { period: 'this-month', filters: {}, groupBy: 'closer' }, NOW)
+  assert.ok(byCloser.breakdown.every(r => r.cost.status === 'not_applicable'), 'grouping by closer: every row\'s cost is not applicable')
+  assert.equal(byCloser.headline.cost.status, 'missing', 'but the headline total still has cost')
+  assert.ok(byCloser.notApplicable.breakdown.leads && !byCloser.notApplicable.headline.leads, 'leads are n/a in the closer breakdown, not in the headline')
+  assert.equal(buildAnalyticsReport(data, { period: 'this-month', filters: { cities: ['Tustin'] }, groupBy: 'leadSource' }, NOW).headline.cost.status, 'not_applicable', 'a city filter: no cost')
+  assert.equal(buildAnalyticsReport(data, { period: 'this-month', filters: { leadSourceIds: [null] }, groupBy: 'leadSource' }, NOW).headline.cost.status, 'not_applicable', 'the unknown source: no cost, never $0')
+
+  const longAgo = buildAnalyticsReport({ ...data, facts: { ...facts, customers: [...facts.customers, customer('old', '2024-02-10T18:00:00.000Z', { leadSourceId: 'src-b', phone: '5550002099' })] } }, { period: 'custom', from: '2024-01-01', to: '2026-09-30', filters: {}, groupBy: 'leadSource' }, NOW)
+  assert.ok(longAgo.spendMissing.some(m => m.month === '2024-02'), 'a missing month the long period touches is listed, though it is older than the trend')
+  assert.ok(longAgo.spendGridMonths.includes('2024-02') && longAgo.spendGridMonths.length === 13, 'the grid adds that month to the trend\'s twelve, so the warning can be cleared')
+  assert.equal(buildAnalyticsReport(data, { period: 'last-12', filters: {}, groupBy: 'leadSource' }, NOW).breakdown.every(r => r.groupKey !== null), true, 'every fixture lead has a source')
+
+  const future = buildAnalyticsReport(data, { period: 'custom', from: '2026-09-01', to: '2026-11-30', filters: { leadSourceIds: ['src-a'] }, groupBy: 'month' }, NOW)
+  const november = future.trend.find(t => t.month === '2026-11')!
+  assert.equal(november.selected, true, 'a future month inside the period is selected')
+  assert.equal(november.row.totalLeads, 0, 'no leads yet')
+  assert.deepEqual(november.row.cost.status === 'ok' && [november.row.cost.spendCents, november.row.cost.costs.costPerLead], [0, null], 'a future month: $0 so far and no cost per lead, never missing')
+
+  const empty = buildAnalyticsReport({ facts: { customers: [], meetings: [], sales: [] }, sources: [], spend: [] }, { period: 'this-month', filters: {}, groupBy: 'leadSource' }, NOW)
+  assert.equal(empty.headline.totalLeads, 0, 'no data: zero leads')
+  assert.deepEqual(empty.headline.cost.status === 'ok' && [empty.headline.cost.spendCents, empty.headline.cost.costs.costPerLead], [0, null], 'no data: $0 spend and no cost')
+  assert.deepEqual(empty.breakdown, [], 'no data: no breakdown rows')
+
+  assert.equal(analyticsReportWindow({ period: 'custom', from: '2024-01-01', to: '2024-03-31' }, NOW).spendMonths.length, 12, 'the trend already covers a short custom period')
+  assert.equal(analyticsReportWindow({ period: 'custom', from: '2023-01-01', to: '2024-03-31' }, NOW).spendMonths.length, 15, 'a long custom period reads spend for every month it touches')
+
+  assert.deepEqual(listLeadPlaces(buildLeadRecords(facts, NOW)), { cities: ['Irvine'], zips: ['92618'] }, 'filter choices come from lead anchors; the unknown city is not a choice')
+
+  assert.equal(analyticsReportInputSchema.safeParse({ period: 'custom', filters: {}, groupBy: 'total' }).success, false, 'a custom period needs its days')
+  assert.equal(analyticsReportInputSchema.safeParse({ period: 'custom', from: '2026-09-10', to: '2026-09-01', filters: {}, groupBy: 'total' }).success, false, 'days in order')
+  assert.equal(analyticsReportInputSchema.safeParse({ period: 'custom', from: '2026-02-30', to: '2026-03-01', filters: {}, groupBy: 'total' }).success, false, 'a day that does not exist')
+  assert.equal(analyticsReportInputSchema.safeParse({ period: 'ytd', filters: { leadSourceIds: [null] }, groupBy: 'city' }).success, true, 'null picks the unknown source')
+}
+console.log('14. Report ✓')
 
 console.log('✅ verify-analytics-rules passed')
