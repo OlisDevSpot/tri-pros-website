@@ -8,7 +8,7 @@ import { toReportInput } from '@/features/analytics/lib/to-report-input'
 import { AnalyticsTabsList } from '@/features/analytics/ui/components/analytics-tabs-list'
 import { AnalyticsFilterBar } from '@/features/analytics/ui/components/filter-bar/analytics-filter-bar'
 import { ProjectsPlaceholder } from '@/features/analytics/ui/components/projects-placeholder'
-import { ReportSkeleton } from '@/features/analytics/ui/components/report-skeleton'
+import { ReportTabContent } from '@/features/analytics/ui/components/report/report-tab-content'
 import { Tabs, TabsContent } from '@/shared/components/ui/tabs'
 import { useHydrationParityCheck } from '@/shared/dal/client/hooks/use-hydration-parity-check'
 import { useTRPC } from '@/trpc/helpers'
@@ -38,7 +38,7 @@ export function AnalyticsView() {
         <AnalyticsTabsList spendMissing={(report.data?.spendMissing.length ?? 0) > 0} />
         {REPORT_TAB_KEYS.map(tab => (
           <TabsContent key={tab} value={tab}>
-            <ReportSkeleton />
+            <ReportTabContent tab={tab} report={report.data} isError={report.isError} onRetry={() => void report.refetch()} />
           </TabsContent>
         ))}
         <TabsContent value="projects">
