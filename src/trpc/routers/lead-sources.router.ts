@@ -5,6 +5,7 @@ import { differenceInCalendarDays, eachDayOfInterval, eachMonthOfInterval, eachW
 import { and, asc, desc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm'
 import z from 'zod'
 
+import { leadSourceSpendModes } from '@/shared/constants/enums/lead-sources'
 import { pipelines } from '@/shared/constants/enums/pipelines'
 import { buildFilterWhere } from '@/shared/dal/server/lib/query/filters'
 import { paginate } from '@/shared/dal/server/lib/query/output'
@@ -21,8 +22,10 @@ import { derivedPipelineSql, derivedPipelineWhere } from '@/shared/entities/cust
 import { isSignedCustomerSql } from '@/shared/entities/customers/lib/signed-customer-sql'
 import { customerSegments } from '@/shared/entities/lead-sources/constants/customer-segments'
 import { leadSourceCrud } from '@/shared/entities/lead-sources/dal/server/crud'
+import { listLeadSources } from '@/shared/entities/lead-sources/dal/server/queries'
+import { listLeadSourceSpend, setLeadSourceSpend } from '@/shared/entities/lead-sources/dal/server/spend'
 import { buildSegmentWhere } from '@/shared/entities/lead-sources/lib/segment-sql'
-import { leadSourceFormConfigSchema } from '@/shared/entities/lead-sources/schemas'
+import { leadSourceFormConfigSchema, leadSourceSpendMonthSchema } from '@/shared/entities/lead-sources/schemas'
 import { generateToken } from '@/shared/lib/generate-token'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 
@@ -100,6 +103,36 @@ const updateInput = z.object({
   slug: z.string().min(1).max(64).optional(),
   formConfigJSON: leadSourceFormConfigSchema.optional(),
   isActive: z.boolean().optional(),
+  spendMode: z.enum(leadSourceSpendModes).optional(),
+})
+
+// $10M a month is far past any real spend; the cap only stops a typo from landing.
+const MAX_MONTHLY_SPEND_CENTS = 1_000_000_000
+
+// Ten years of columns: the grid shows twelve months plus any older month still owed spend.
+const MAX_SPEND_GRID_MONTHS = 120
+
+const spendRouter = createTRPCRouter({
+  grid: superAdminProcedure
+    .input(z.object({ months: z.array(leadSourceSpendMonthSchema).min(1).max(MAX_SPEND_GRID_MONTHS) }))
+    .query(async ({ input }) => {
+      const [sources, entries] = await Promise.all([listLeadSources(), listLeadSourceSpend(input.months)])
+      return {
+        sources: dalToTrpc(sources).map(s => ({ id: s.id, name: s.name, spendMode: s.spendMode, archived: s.archivedAt !== null })),
+        entries: dalToTrpc(entries),
+      }
+    }),
+
+  set: superAdminProcedure
+    .input(z.object({
+      leadSourceId: z.string().uuid(),
+      month: leadSourceSpendMonthSchema,
+      amountCents: z.number().int().min(0).max(MAX_MONTHLY_SPEND_CENTS).nullable(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      dalToTrpc(await setLeadSourceSpend({ ...ctx, scope: null }, input))
+      return { success: true as const }
+    }),
 })
 
 export const leadSourcesRouter = createTRPCRouter({
@@ -689,4 +722,6 @@ export const leadSourcesRouter = createTRPCRouter({
       dalToTrpc(await leadSourceCrud.delete({ ...ctx, scope: null }, { id: input.id }))
       return { success: true as const }
     }),
+
+  spend: spendRouter,
 })
