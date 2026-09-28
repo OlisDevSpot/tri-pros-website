@@ -13,9 +13,9 @@ function resolveMultiplier(config: ScopePricingConfig, overrides: QuoteOverrides
 }
 
 function splitPrice(cost: number | null, price: number, taxRatePercent: number) {
-  // Tax is carried inside the Price, as the ported calculator did, until the tax rule is confirmed.
-  const tax = Math.round((price * taxRatePercent) / 100)
-  return { cost, price, tax, base: price - tax }
+  // Tax is already inside the Price, so it is backed out of it; `price × rate` would tax the tax.
+  const base = Math.round(price / (1 + taxRatePercent / 100))
+  return { cost, price, tax: price - base, base }
 }
 
 function summarize(lines: QuoteLineResult[], multiplier: number): QuoteResult {

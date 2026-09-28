@@ -153,8 +153,8 @@ const atticLine = atticQuote.lines[0]
 assert.ok(atticLine?.status === 'priced', 'attic line priced')
 assert.deepEqual(
   { cost: atticLine.cost, price: atticLine.price, tax: atticLine.tax, base: atticLine.base },
-  { cost: 10000, price: 28000, tax: 2100, base: 25900 },
-  'golden: 4,000 sq ft → Cost 10,000 → Price 28,000 → tax 2,100 → base 25,900',
+  { cost: 10000, price: 28000, tax: 1953, base: 26047 },
+  'golden: 4,000 sq ft → Cost 10,000 → Price 28,000 → base 26,047 (28,000 / 1.075) → tax 1,953',
 )
 assert.equal(atticQuote.totalPrice, 28000, 'total price')
 assert.equal(atticQuote.multiplier, 2.8, 'default multiplier applied')
@@ -174,7 +174,7 @@ const manual: QuoteLineInput = { id: 'm', kind: 'manual', label: 'Gutters', pric
 const mixed = priceQuote({ lines: [attic, manual], context: oneStory, config })
 const manualResult = mixed.lines[1]
 assert.ok(manualResult?.status === 'priced', 'manual line priced')
-assert.deepEqual({ cost: manualResult.cost, tax: manualResult.tax, base: manualResult.base }, { cost: null, tax: 375, base: 4625 }, 'manual line: no cost, tax inside the price')
+assert.deepEqual({ cost: manualResult.cost, tax: manualResult.tax, base: manualResult.base }, { cost: null, tax: 349, base: 4651 }, 'manual line: no cost, tax inside the price')
 assert.equal(mixed.totalPrice, 33000, 'manual price counts toward the total')
 assert.equal(mixed.margin, 18000, 'manual line left out of margin')
 assert.equal(mixed.effectiveMultiplier, 2.8, 'manual line left out of the multiplier')
