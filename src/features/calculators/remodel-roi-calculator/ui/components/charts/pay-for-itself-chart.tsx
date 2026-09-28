@@ -37,7 +37,7 @@ export function PayForItselfChart({ projection, lookAhead }: Props) {
           </defs>
           <CartesianGrid stroke="var(--border)" vertical={false} />
           <XAxis axisLine={false} dataKey="t" stroke="var(--muted-foreground)" tickFormatter={t => (t === 0 ? 'Now' : `Yr ${t}`)} tickLine={false} />
-          <YAxis axisLine={false} stroke="var(--muted-foreground)" tickFormatter={value => signedMoney(Number(value))} tickLine={false} width={80} />
+          <YAxis axisLine={false} stroke="var(--muted-foreground)" tickFormatter={value => signedMoney(Number(value))} tickLine={false} width={92} />
           <ReferenceLine stroke="var(--muted-foreground)" y={0} />
           <Tooltip content={({ active, label }) => {
             const year = projection.years[Number(label)]
@@ -47,7 +47,7 @@ export function PayForItselfChart({ projection, lookAhead }: Props) {
           }}
           />
           <Area dataKey="benefit" fill={`url(#${gradientId})`} isAnimationActive={!reduceMotion} stroke="var(--primary)" strokeWidth={2.5} type="monotone" />
-          {payback != null && payback <= lookAhead && <ReferenceDot fill="var(--card)" label={{ value: `Pays for itself · year ${payback}`, position: 'right', className: 'fill-foreground text-xs font-extrabold' }} r={5} stroke="var(--primary)" strokeWidth={2.5} x={payback} y={projection.years[payback].benefit} />}
+          {payback != null && payback <= lookAhead && <ReferenceDot fill="var(--card)" label={{ value: `Pays for itself · year ${payback}`, position: 'right', className: 'fill-foreground stroke-card stroke-3 text-xs font-extrabold [paint-order:stroke] [stroke-linejoin:round]' }} r={5} stroke="var(--primary)" strokeWidth={2.5} x={payback} y={projection.years[payback].benefit} />}
         </AreaChart>
       </ResponsiveContainer>
     </div>

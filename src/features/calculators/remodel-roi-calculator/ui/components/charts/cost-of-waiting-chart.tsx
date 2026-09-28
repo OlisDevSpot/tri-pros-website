@@ -30,6 +30,7 @@ export function CostOfWaitingChart({ projection }: Props) {
                 {label}
                 <span className="ml-1.5 text-[12.5px] font-semibold text-muted-foreground">
                   gives out in about
+                  {' '}
                   {formatYears(replacement.installs[0].year)}
                 </span>
               </p>
@@ -44,6 +45,7 @@ export function CostOfWaitingChart({ projection }: Props) {
                 <div className="grid grid-cols-[4rem_minmax(0,1fr)_5.5rem] items-center gap-2.5" key={install.year}>
                   <span className="text-[12.5px] font-bold text-muted-foreground">
                     Year
+                    {' '}
                     {install.year}
                   </span>
                   <span className="flex h-5.5 gap-0.5">

@@ -20,6 +20,7 @@ export function NetWorthSummary({ projection, lookAhead }: Props) {
     <div className="grid gap-2.5 rounded-xl border bg-card p-5">
       <p className="text-[13px] font-extrabold">
         Your net worth in year
+        {' '}
         {lookAhead}
       </p>
       <div className="grid grid-cols-2 gap-3">

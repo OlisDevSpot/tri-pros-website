@@ -33,13 +33,14 @@ export function ReturnBreakdown({ projection, lookAhead }: Props) {
   const at = (value: number) => ((value - low) / (high - low || 1)) * 100
   const zero = at(0)
   return (
-    <div className="grid gap-1">
-      <p className="text-[13px] font-extrabold">
+    <div className="grid grid-cols-[9.5rem_minmax(0,1fr)_auto] gap-x-3 gap-y-1 @max-md/story:grid-cols-[7rem_minmax(0,1fr)_auto]">
+      <p className="col-span-full text-[13px] font-extrabold">
         Where the return comes from, by year
+        {' '}
         {lookAhead}
       </p>
       {spans.map(span => (
-        <div className="grid min-h-8 grid-cols-[9.5rem_minmax(0,1fr)_5.5rem] items-center gap-3" key={span.label}>
+        <div className="col-span-full grid min-h-8 grid-cols-subgrid items-center" key={span.label}>
           <span className="text-[13.5px] font-bold">{span.label}</span>
           <span className="relative h-4.5">
             <TipSegment
@@ -53,9 +54,10 @@ export function ReturnBreakdown({ projection, lookAhead }: Props) {
           <span className="text-right font-sans text-[14.5px] font-semibold tabular-nums">{signedMoney(span.value)}</span>
         </div>
       ))}
-      <div className="mt-1 grid min-h-8 grid-cols-[9.5rem_minmax(0,1fr)_5.5rem] items-center gap-3 border-t pt-2">
+      <div className="col-span-full mt-1 grid min-h-8 grid-cols-subgrid items-center border-t pt-2">
         <span className="text-[13.5px] font-extrabold">
           Where you stand in year
+          {' '}
           {lookAhead}
         </span>
         <span className="relative h-4.5">
