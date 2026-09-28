@@ -171,6 +171,7 @@ export async function getCustomerProfile(customerId: string, viewer: CustomerPro
     meetingType: m.meetingType,
     meetingOutcome: m.meetingOutcome,
     scheduledFor: m.scheduledFor,
+    confirmedAt: m.confirmedAt,
     createdAt: m.createdAt,
     updatedAt: m.updatedAt,
     proposals: proposalsByMeeting.get(m.id) ?? [],
