@@ -1,38 +1,78 @@
-import type { CustomerPipelineItem, CustomerPipelineRawData, PipelineItemProposal, PipelineItemRep } from '@/features/customer-pipelines/types'
+// LAZY: customers is still a plain entity; this read moves to modules/customers/core/dal/server when customers is promoted to a module.
+
+import type { SQL } from 'drizzle-orm'
 
 import type { Pipeline } from '@/shared/constants/enums/pipelines'
+import type { PaginatedResult } from '@/shared/dal/lib/query/paginated-result'
+import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
+import type { CustomerPipelineItem, CustomerPipelineRawData, PipelineItemProposal, PipelineItemRep } from '@/shared/entities/customers/types/pipeline-item'
 
-import { and, count, desc, eq, inArray, isNotNull, isNull, max, sql } from 'drizzle-orm'
+import { and, count, desc, eq, exists, inArray, isNotNull, isNull, max, sql } from 'drizzle-orm'
+import z from 'zod'
 
 import { DECIDED_OUTCOMES } from '@/shared/constants/enums/meetings'
-import { deriveProjectStatusBucket } from '@/shared/constants/enums/pipelines'
+import { deriveProjectStatusBucket, pipelines } from '@/shared/constants/enums/pipelines'
+import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
+import { fieldListInput } from '@/shared/dal/server/lib/query/field-list-input'
+import { buildSearchWhere } from '@/shared/dal/server/lib/query/search'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { customers } from '@/shared/db/schema/customers'
+import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
 import { computeFreshStage } from '@/shared/domains/pipelines/lib/compute-fresh-stage'
 import { computePipelineValue, computeProjectValue } from '@/shared/domains/pipelines/lib/compute-pipeline-value'
-import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { CUSTOMER_FIELDS } from '@/shared/entities/customers/dal/customer-fields'
+import { CUSTOMER_FIELD_SQL } from '@/shared/entities/customers/dal/server/customer-field-sql'
+import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { userParticipatesInMeeting } from '@/shared/entities/meetings/dal/server/participants'
 
-export async function getCustomerPipelineItems(userId: string, pipeline: Pipeline = 'fresh', isOmni = false, canSeeUngated = false): Promise<CustomerPipelineItem[]> {
+export const customerPipelineItemsInputSchema = fieldListInput(CUSTOMER_FIELDS, { pagination: false }).extend({
+  pipeline: z.enum(pipelines),
+})
+export type CustomerPipelineItemsInput = z.infer<typeof customerPipelineItemsInputSchema>
+
+/** Everything a branch needs: who is asking, and the customer filter, search and order the kanban toolbar chose. */
+interface PipelineBranchArgs {
+  userId: string
+  isOmni: boolean
+  canSeeUngated: boolean
+  customerWhere: SQL | undefined
+  /** Undefined keeps the branch's own natural order. */
+  customerOrder: SQL[] | undefined
+}
+
+export async function getCustomerPipelineItems(ctx: ScopedContext, input: CustomerPipelineItemsInput): Promise<DalReturn<PaginatedResult<CustomerPipelineItem>>> {
+  return dalDbOperation(async () => {
+    const args: PipelineBranchArgs = {
+      // Each pipeline reaches customers through a different table, so scoping stays per branch; a scoped caller without a session matches nothing.
+      userId: ctx.session?.user.id ?? '',
+      isOmni: !ctx.ability || ctx.ability.can('manage', 'all'),
+      canSeeUngated: canSeeUngatedPhone(ctx.ability),
+      customerWhere: and(
+        buildSearchWhere(input.search, [customers.name, customers.email]),
+        CUSTOMER_FIELD_SQL.where(input.filters),
+      ),
+      customerOrder: input.sort ? CUSTOMER_FIELD_SQL.orderBy(input.sort) : undefined,
+    }
+    const rows = await pipelineItemsFor(input.pipeline, args)
+    return { rows, total: rows.length }
+  })
+}
+
+function pipelineItemsFor(pipeline: Pipeline, args: PipelineBranchArgs): Promise<CustomerPipelineItem[]> {
   if (pipeline === 'leads') {
-    return getLeadsPipelineItems(canSeeUngated)
+    return getLeadsPipelineItems(args)
   }
-
   if (pipeline === 'projects') {
-    return getProjectsPipelineItems(userId, isOmni, canSeeUngated)
+    return getProjectsPipelineItems(args)
   }
-
-  // Rehash / dead pipelines: find customers with meetings in this pipeline (non-project meetings)
   if (pipeline !== 'fresh') {
-    return getRehashOrDeadPipelineItems(userId, pipeline, isOmni, canSeeUngated)
+    return getRehashOrDeadPipelineItems(pipeline, args)
   }
-
-  // Fresh pipeline: full query with computed stages
-  return getFreshPipelineItems(userId, isOmni, canSeeUngated)
+  return getFreshPipelineItems(args)
 }
 
 /**
@@ -41,12 +81,12 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Pipelin
  * been scheduled for an in-home consultation yet.
  * Stage comes from customers.pipelineStage (repurposed for leads).
  */
-async function getLeadsPipelineItems(canSeeUngated: boolean): Promise<CustomerPipelineItem[]> {
+async function getLeadsPipelineItems(args: PipelineBranchArgs): Promise<CustomerPipelineItem[]> {
   const rows = await db
     .select({
       id: customers.id,
       name: customers.name,
-      phone: gatedPhoneSql(canSeeUngated),
+      phone: gatedPhoneSql(args.canSeeUngated),
       hasSentProposal: hasSentProposalSql(),
       email: customers.email,
       address: customers.address,
@@ -57,10 +97,12 @@ async function getLeadsPipelineItems(canSeeUngated: boolean): Promise<CustomerPi
       createdAt: customers.createdAt,
     })
     .from(customers)
-    .where(
+    .leftJoin(leadSourcesTable, eq(leadSourcesTable.id, customers.leadSourceId))
+    .where(and(
       sql`NOT EXISTS (SELECT 1 FROM meetings m WHERE m.customer_id = ${customers.id})`,
-    )
-    .orderBy(desc(customers.createdAt))
+      args.customerWhere,
+    ))
+    .orderBy(...(args.customerOrder ?? [desc(customers.createdAt)]))
 
   return rows.map((row): CustomerPipelineItem => ({
     id: row.id,
@@ -93,12 +135,12 @@ async function getLeadsPipelineItems(canSeeUngated: boolean): Promise<CustomerPi
  * Finds distinct customers who have at least one meeting with the given pipeline value
  * and no projectId (non-project meetings only).
  */
-async function getRehashOrDeadPipelineItems(userId: string, pipeline: Pipeline, isOmni: boolean, canSeeUngated: boolean): Promise<CustomerPipelineItem[]> {
+async function getRehashOrDeadPipelineItems(pipeline: Pipeline, args: PipelineBranchArgs): Promise<CustomerPipelineItem[]> {
   const rows = await db
-    .selectDistinctOn([customers.id], {
+    .select({
       id: customers.id,
       name: customers.name,
-      phone: gatedPhoneSql(canSeeUngated),
+      phone: gatedPhoneSql(args.canSeeUngated),
       hasSentProposal: hasSentProposalSql(),
       email: customers.email,
       address: customers.address,
@@ -107,13 +149,18 @@ async function getRehashOrDeadPipelineItems(userId: string, pipeline: Pipeline, 
       zip: customers.zip,
     })
     .from(customers)
-    .innerJoin(meetings, and(
-      eq(meetings.customerId, customers.id),
-      eq(meetings.pipeline, pipeline as 'fresh' | 'rehash' | 'dead'),
-      isNull(meetings.projectId),
-      isOmni ? undefined : userParticipatesInMeeting(userId, meetings.id),
+    .leftJoin(leadSourcesTable, eq(leadSourcesTable.id, customers.leadSourceId))
+    // EXISTS rather than join + DISTINCT ON: DISTINCT ON pinned the order to customer id, so no sort could apply.
+    .where(and(
+      exists(db.select({ id: meetings.id }).from(meetings).where(and(
+        eq(meetings.customerId, customers.id),
+        eq(meetings.pipeline, pipeline as 'fresh' | 'rehash' | 'dead'),
+        isNull(meetings.projectId),
+        args.isOmni ? undefined : userParticipatesInMeeting(args.userId, meetings.id),
+      ))),
+      args.customerWhere,
     ))
-    .orderBy(customers.id, desc(customers.updatedAt))
+    .orderBy(...(args.customerOrder ?? [desc(customers.updatedAt)]))
 
   const defaultStage = pipeline === 'rehash' ? 'schedule_manager_meeting' : 'mostly_dead'
 
@@ -147,12 +194,12 @@ async function getRehashOrDeadPipelineItems(userId: string, pipeline: Pipeline, 
  * Fresh pipeline items — full query with computed stages, proposals, reps.
  * Filters meetings by pipeline = 'fresh' AND projectId IS NULL.
  */
-async function getFreshPipelineItems(userId: string, isOmni: boolean, canSeeUngated: boolean): Promise<CustomerPipelineItem[]> {
+async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<CustomerPipelineItem[]> {
   const rows = await db
     .select({
       customerId: customers.id,
       customerName: customers.name,
-      customerPhone: gatedPhoneSql(canSeeUngated),
+      customerPhone: gatedPhoneSql(args.canSeeUngated),
       customerHasSentProposal: hasSentProposalSql(),
       customerEmail: customers.email,
       customerAddress: customers.address,
@@ -174,10 +221,12 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean, canSeeUnga
       eq(meetings.customerId, customers.id),
       eq(meetings.pipeline, 'fresh'),
       isNull(meetings.projectId),
-      isOmni ? undefined : userParticipatesInMeeting(userId, meetings.id),
+      args.isOmni ? undefined : userParticipatesInMeeting(args.userId, meetings.id),
     ))
-    .groupBy(customers.id)
-    .orderBy(desc(customers.updatedAt))
+    .leftJoin(leadSourcesTable, eq(leadSourcesTable.id, customers.leadSourceId))
+    .where(args.customerWhere)
+    .groupBy(customers.id, leadSourcesTable.id)
+    .orderBy(...(args.customerOrder ?? [desc(customers.updatedAt)]))
 
   if (rows.length === 0) {
     return []
@@ -199,7 +248,7 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean, canSeeUnga
     .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
     .innerJoin(customers, eq(customers.id, meetings.customerId))
     .where(and(
-      isOmni ? undefined : userParticipatesInMeeting(userId, proposals.meetingId),
+      args.isOmni ? undefined : userParticipatesInMeeting(args.userId, proposals.meetingId),
       inArray(customers.id, customerIds),
     ))
     .groupBy(customers.id)
@@ -222,7 +271,7 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean, canSeeUnga
     .innerJoin(user, eq(user.id, meetings.ownerId))
     .where(and(
       inArray(meetings.customerId, customerIds),
-      isOmni ? undefined : userParticipatesInMeeting(userId, meetings.id),
+      args.isOmni ? undefined : userParticipatesInMeeting(args.userId, meetings.id),
     ))
     .orderBy(meetings.customerId, desc(meetings.scheduledFor))
 
@@ -252,7 +301,7 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean, canSeeUnga
     .from(proposals)
     .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
     .where(and(
-      isOmni ? undefined : userParticipatesInMeeting(userId, proposals.meetingId),
+      args.isOmni ? undefined : userParticipatesInMeeting(args.userId, proposals.meetingId),
       inArray(meetings.customerId, customerIds),
     ))
     .orderBy(desc(proposals.createdAt))
@@ -349,7 +398,7 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean, canSeeUnga
  * with their most recently created project's data attached.
  * Stage comes from projects.pipelineStage.
  */
-async function getProjectsPipelineItems(userId: string, isOmni: boolean, canSeeUngated: boolean): Promise<CustomerPipelineItem[]> {
+async function getProjectsPipelineItems(args: PipelineBranchArgs): Promise<CustomerPipelineItem[]> {
   // Get projects with customer data
   const projectRows = await db
     .select({
@@ -361,7 +410,7 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean, canSeeU
       projectCreatedAt: projects.createdAt,
       customerId: customers.id,
       customerName: customers.name,
-      customerPhone: gatedPhoneSql(canSeeUngated),
+      customerPhone: gatedPhoneSql(args.canSeeUngated),
       customerHasSentProposal: hasSentProposalSql(),
       customerEmail: customers.email,
       customerAddress: customers.address,
@@ -371,13 +420,16 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean, canSeeU
     })
     .from(projects)
     .innerJoin(customers, eq(customers.id, projects.customerId))
+    .leftJoin(leadSourcesTable, eq(leadSourcesTable.id, customers.leadSourceId))
     .where(and(
       isNotNull(projects.customerId),
-      isOmni
+      args.isOmni
         ? undefined
-        : sql`(${projects.ownerId} = ${userId} OR ${projects.isPublic} = true OR EXISTS (SELECT 1 FROM meetings m INNER JOIN meeting_participants mp ON mp.meeting_id = m.id WHERE m.project_id = ${projects.id} AND mp.user_id = ${userId}))`,
+        : sql`(${projects.ownerId} = ${args.userId} OR ${projects.isPublic} = true OR EXISTS (SELECT 1 FROM meetings m INNER JOIN meeting_participants mp ON mp.meeting_id = m.id WHERE m.project_id = ${projects.id} AND mp.user_id = ${args.userId}))`,
+      args.customerWhere,
     ))
-    .orderBy(desc(projects.createdAt))
+    // Customers take their first row's position below, so the chosen customer order leads and each customer's newest project still wins.
+    .orderBy(...(args.customerOrder ?? []), desc(projects.createdAt))
 
   if (projectRows.length === 0) {
     return []
@@ -408,7 +460,7 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean, canSeeU
     .where(and(
       inArray(meetings.customerId, customerIds),
       isNotNull(meetings.projectId),
-      isOmni ? undefined : userParticipatesInMeeting(userId, meetings.id),
+      args.isOmni ? undefined : userParticipatesInMeeting(args.userId, meetings.id),
     ))
     .orderBy(desc(meetings.createdAt))
 

@@ -1,6 +1,6 @@
 'use client'
 
-import type { CustomerPipelineItem } from '@/features/customer-pipelines/types'
+import type { CustomerPipelineItem } from '@/shared/entities/customers/types/pipeline-item'
 
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { motion } from 'motion/react'
@@ -47,6 +47,7 @@ export function CustomerPipelineView() {
     ...trpc.customerPipelinesRouter.getCustomerPipelineItems.queryOptions({ pipeline }),
     placeholderData: keepPreviousData,
   })
+  const items = pipelineQuery.data?.rows
 
   const moveMutation = useMutation(
     trpc.customerPipelinesRouter.moveCustomerPipelineItem.mutationOptions({
@@ -64,7 +65,7 @@ export function CustomerPipelineView() {
     // Intercept: any leads stage → meeting_scheduled opens meeting modal
     // Stage only updates AFTER meeting is successfully created (not on drag)
     if (pipeline === 'leads' && toStage === 'meeting_scheduled') {
-      const item = pipelineQuery.data?.find(i => i.id === itemId)
+      const item = items?.find(i => i.id === itemId)
       if (item) {
         setCreateMeetingForCustomer({ id: item.id, name: item.name })
       }
@@ -84,11 +85,11 @@ export function CustomerPipelineView() {
   }
 
   const handleCreateMeeting = useCallback((customerId: string) => {
-    const item = pipelineQuery.data?.find(i => i.id === customerId)
+    const item = items?.find(i => i.id === customerId)
     if (item) {
       setCreateMeetingForCustomer({ id: item.id, name: item.name })
     }
-  }, [pipelineQuery.data])
+  }, [items])
 
   const handleViewProfile = useCallback((customerId: string) => {
     setModal({
@@ -123,7 +124,7 @@ export function CustomerPipelineView() {
     [handleViewProfile, handleCreateMeeting, handleAssignRep],
   )
 
-  const isInitialLoad = pipelineQuery.isLoading && !pipelineQuery.data
+  const isInitialLoad = pipelineQuery.isLoading && !items
   const isSwitching = pipelineQuery.isFetching && !pipelineQuery.isLoading
 
   if (isInitialLoad) {
@@ -136,7 +137,7 @@ export function CustomerPipelineView() {
     )
   }
 
-  if (!pipelineQuery.data) {
+  if (!items) {
     return (
       <ErrorState
         title="Error: Could not load pipeline"
@@ -155,7 +156,7 @@ export function CustomerPipelineView() {
       className="w-full h-full flex flex-col gap-4 overflow-hidden"
     >
       <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between shrink-0">
-        <CustomerPipelineMetricsBar items={pipelineQuery.data} pipeline={pipeline} isLoading={isSwitching} />
+        <CustomerPipelineMetricsBar items={items} pipeline={pipeline} isLoading={isSwitching} />
         <div className="flex w-full items-center justify-between gap-2 lg:w-auto lg:justify-end">
           {canManagePipeline && <PipelineSelect value={pipeline} onChange={setPipeline} />}
           <KanbanStageFilter
@@ -170,7 +171,7 @@ export function CustomerPipelineView() {
       </div>
 
       <div className={cn('flex-1 min-h-0 transition-opacity duration-200', isSwitching && 'opacity-50 pointer-events-none')}>
-        {pipelineQuery.data.length === 0
+        {items.length === 0
           ? (
               <div className="w-full h-full flex items-center justify-center">
                 <EmptyState
@@ -183,7 +184,7 @@ export function CustomerPipelineView() {
           : (
               <KanbanBoard<CustomerPipelineItem>
                 stageConfig={stageFilter.filteredStageConfig}
-                groupedItems={groupCustomersByStage(pipelineQuery.data, config.stages)}
+                groupedItems={groupCustomersByStage(items, config.stages)}
                 allowedTransitions={config.allowedTransitions}
                 blockedMessages={config.blockedMessages}
                 onMoveItem={handleMoveItem}

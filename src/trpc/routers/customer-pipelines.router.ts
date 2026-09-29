@@ -1,7 +1,6 @@
 import { TRPCError } from '@trpc/server'
 import { desc, eq } from 'drizzle-orm'
 import { z } from 'zod'
-import { getCustomerPipelineItems } from '@/features/customer-pipelines/dal/server/get-customer-pipeline-items'
 import { moveCustomerPipelineItem } from '@/features/customer-pipelines/dal/server/move-customer-pipeline-item'
 import { moveCustomerToPipeline } from '@/features/customer-pipelines/dal/server/move-customer-to-pipeline'
 import { deriveProjectStatusBucket, meetingPipelines, pipelines } from '@/shared/constants/enums/pipelines'
@@ -12,6 +11,7 @@ import { customers } from '@/shared/db/schema/customers'
 import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
 import { getCustomerProfile } from '@/shared/entities/customers/dal/server/get-customer-profile'
+import { customerPipelineItemsInputSchema, getCustomerPipelineItems } from '@/shared/entities/customers/dal/server/pipeline-items'
 import { canSeeUngatedPhone } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
@@ -23,14 +23,8 @@ import { agentProcedure, createTRPCRouter } from '../init'
 
 export const customerPipelinesRouter = createTRPCRouter({
   getCustomerPipelineItems: agentProcedure
-    .input(z.object({
-      pipeline: z.enum(pipelines).default('fresh'),
-    }).optional())
-    .query(async ({ ctx, input }) => {
-      const userId = ctx.session.user.id
-      const isOmni = ctx.ability.can('manage', 'all')
-      return getCustomerPipelineItems(userId, input?.pipeline ?? 'fresh', isOmni, canSeeUngatedPhone(ctx.ability))
-    }),
+    .input(customerPipelineItemsInputSchema)
+    .query(async ({ ctx, input }) => dalToTrpc(await getCustomerPipelineItems({ ...ctx, scope: null }, input))),
 
   moveCustomerPipelineItem: agentProcedure
     .input(z.object({

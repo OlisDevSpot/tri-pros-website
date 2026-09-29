@@ -1,5 +1,5 @@
-import type { CustomerPipelineItem } from '@/features/customer-pipelines/types'
 import type { StatBarItemConfig } from '@/shared/components/stat-bar/types'
+import type { CustomerPipelineItem } from '@/shared/entities/customers/types/pipeline-item'
 
 import { BanknoteIcon, DollarSignIcon } from 'lucide-react'
 

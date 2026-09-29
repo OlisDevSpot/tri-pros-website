@@ -1,5 +1,5 @@
-import type { CustomerPipelineItem } from '@/features/customer-pipelines/types'
 import type { Pipeline } from '@/shared/constants/enums/pipelines'
+import type { CustomerPipelineItem } from '@/shared/entities/customers/types/pipeline-item'
 
 import { freshStatConfig } from '@/features/customer-pipelines/constants/fresh-stat-config'
 import { pipelineStatConfig } from '@/features/customer-pipelines/constants/pipeline-stat-config'

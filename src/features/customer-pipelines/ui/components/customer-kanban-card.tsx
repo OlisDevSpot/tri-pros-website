@@ -1,6 +1,6 @@
 'use client'
 
-import type { CustomerPipelineItem, PipelineItemProjectMeeting, PipelineItemProposal } from '@/features/customer-pipelines/types'
+import type { CustomerPipelineItem, PipelineItemProjectMeeting, PipelineItemProposal } from '@/shared/entities/customers/types/pipeline-item'
 import type { MeetingOverviewCardProposal } from '@/shared/entities/meetings/components/overview-card'
 
 import { useDraggable } from '@dnd-kit/core'
