@@ -8,6 +8,7 @@ import { createContext, use } from 'react'
 import { pipelines } from '@/shared/constants/enums/pipelines'
 import { STORAGE_KEYS } from '@/shared/constants/storage-keys'
 import { usePipelineChange } from '@/shared/domains/pipelines/hooks/use-pipeline-change'
+import { resolvePipelineParam } from '@/shared/domains/pipelines/lib/resolve-pipeline-param'
 
 interface PipelineContextValue {
   pipeline: Pipeline
@@ -31,7 +32,7 @@ function isValidPipeline(value: unknown): value is Pipeline {
 export function PipelineProvider({ children }: { children: React.ReactNode }) {
   const params = useParams<{ pipeline: string }>()
   const raw = params.pipeline
-  const pipeline: Pipeline = isValidPipeline(raw) ? raw : 'fresh'
+  const pipeline = resolvePipelineParam(raw)
   const changePipeline = usePipelineChange()
 
   return (

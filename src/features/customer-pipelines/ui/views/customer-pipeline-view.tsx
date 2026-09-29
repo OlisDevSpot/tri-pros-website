@@ -2,10 +2,11 @@
 
 import type { CustomerPipelineItem } from '@/shared/entities/customers/types/pipeline-item'
 
-import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { motion } from 'motion/react'
 import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
+import { CUSTOMER_PIPELINE_QUERY } from '@/features/customer-pipelines/constants/customer-pipeline-query'
 import { groupCustomersByStage } from '@/features/customer-pipelines/lib/group-customers-by-stage'
 import { CustomerKanbanCard } from '@/features/customer-pipelines/ui/components/customer-kanban-card'
 import { CustomerPipelineMetricsBar } from '@/features/customer-pipelines/ui/components/customer-pipeline-metrics-bar'
@@ -13,9 +14,11 @@ import { PipelineSelect } from '@/features/customer-pipelines/ui/components/pipe
 import { useKanbanStageFilter } from '@/shared/components/kanban/hooks/use-kanban-stage-filter'
 import { KanbanBoard } from '@/shared/components/kanban/ui/kanban-board'
 import { KanbanStageFilter } from '@/shared/components/kanban/ui/kanban-stage-filter'
+import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 import { EmptyState } from '@/shared/components/states/empty-state'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
+import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { pipelineConfigs } from '@/shared/domains/pipelines/constants/pipeline-registry'
 import { usePipeline } from '@/shared/domains/pipelines/hooks/pipeline-context'
@@ -43,20 +46,17 @@ export function CustomerPipelineView() {
 
   const stageFilter = useKanbanStageFilter(config.stageConfig, stageFilterConfig)
 
-  const pipelineQuery = useQuery({
-    ...trpc.customerPipelinesRouter.getCustomerPipelineItems.queryOptions({ pipeline }),
-    placeholderData: keepPreviousData,
-  })
-  const items = pipelineQuery.data?.rows
+  const query = useDataViewQuery(trpc.customerPipelinesRouter.getCustomerPipelineItems, { pipeline }, CUSTOMER_PIPELINE_QUERY)
+  const items = query.rows
 
   const moveMutation = useMutation(
     trpc.customerPipelinesRouter.moveCustomerPipelineItem.mutationOptions({
       onError: () => {
         toast.error('Failed to move customer. Please try again.')
-        pipelineQuery.refetch()
+        void query.refresh()
       },
       onSettled: () => {
-        pipelineQuery.refetch()
+        void query.refresh()
       },
     }),
   )
@@ -65,7 +65,7 @@ export function CustomerPipelineView() {
     // Intercept: any leads stage → meeting_scheduled opens meeting modal
     // Stage only updates AFTER meeting is successfully created (not on drag)
     if (pipeline === 'leads' && toStage === 'meeting_scheduled') {
-      const item = items?.find(i => i.id === itemId)
+      const item = items.find(i => i.id === itemId)
       if (item) {
         setCreateMeetingForCustomer({ id: item.id, name: item.name })
       }
@@ -85,7 +85,7 @@ export function CustomerPipelineView() {
   }
 
   const handleCreateMeeting = useCallback((customerId: string) => {
-    const item = items?.find(i => i.id === customerId)
+    const item = items.find(i => i.id === customerId)
     if (item) {
       setCreateMeetingForCustomer({ id: item.id, name: item.name })
     }
@@ -124,8 +124,8 @@ export function CustomerPipelineView() {
     [handleViewProfile, handleCreateMeeting, handleAssignRep],
   )
 
-  const isInitialLoad = pipelineQuery.isLoading && !items
-  const isSwitching = pipelineQuery.isFetching && !pipelineQuery.isLoading
+  const isInitialLoad = query.isLoading
+  const isSwitching = query.isFetching && !query.isLoading
 
   if (isInitialLoad) {
     return (
@@ -137,7 +137,7 @@ export function CustomerPipelineView() {
     )
   }
 
-  if (!items) {
+  if (query.isError) {
     return (
       <ErrorState
         title="Error: Could not load pipeline"
@@ -170,13 +170,17 @@ export function CustomerPipelineView() {
         </div>
       </div>
 
+      <QueryToolbar query={query} entityName="customers" className="shrink-0">
+        <QueryToolbar.Standard searchPlaceholder="Search by name or email…" sort />
+      </QueryToolbar>
+
       <div className={cn('flex-1 min-h-0 transition-opacity duration-200', isSwitching && 'opacity-50 pointer-events-none')}>
         {items.length === 0
           ? (
               <div className="w-full h-full flex items-center justify-center">
                 <EmptyState
                   title="No Customers"
-                  description="Start by scheduling meetings with customers"
+                  description={query.filterSort.activeFilterCount > 0 || query.filterSort.searchInput ? 'No customers match these filters' : 'Start by scheduling meetings with customers'}
                   className="bg-card"
                 />
               </div>
@@ -210,7 +214,7 @@ export function CustomerPipelineView() {
                 pipeline: 'leads',
               })
             }
-            pipelineQuery.refetch()
+            void query.refresh()
           }}
           customerId={createMeetingForCustomer.id}
           customerName={createMeetingForCustomer.name}
@@ -221,7 +225,7 @@ export function CustomerPipelineView() {
           meetingIds={assignRepTarget.meetingIds}
           open={!!assignRepTarget}
           onOpenChange={open => !open && setAssignRepTarget(null)}
-          onSuccess={() => pipelineQuery.refetch()}
+          onSuccess={() => void query.refresh()}
         />
       )}
     </motion.div>
