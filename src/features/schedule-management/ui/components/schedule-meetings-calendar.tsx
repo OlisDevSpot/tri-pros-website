@@ -11,8 +11,10 @@ import { SCHEDULE_MEETINGS_QUERY } from '@/features/schedule-management/constant
 import { MeetingCard } from '@/features/schedule-management/ui/components/meeting-card'
 import { ScheduleCalendar } from '@/features/schedule-management/ui/components/schedule-calendar'
 import { ScheduleCalendarDot } from '@/features/schedule-management/ui/components/schedule-calendar-dot'
+import { ScheduleCalendarErrorState } from '@/features/schedule-management/ui/components/schedule-calendar-error-state'
 import { ScheduleControlsBar } from '@/features/schedule-management/ui/components/schedule-controls-bar'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
+import { LoadingState } from '@/shared/components/states/loading-state'
 import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
@@ -94,22 +96,28 @@ export function ScheduleMeetingsCalendar({ showToggle, showSaturday, onToggleSat
         <QueryToolbar.Standard leading={showToggle} searchPlaceholder="Search by customer or type…" />
       </QueryToolbar>
       <div className="min-h-0 flex-1">
-        <ScheduleCalendar
-          events={events}
-          dateWindow={query.window}
-          showSaturday={showSaturday}
-          renderCard={renderCard}
-          renderCompact={renderCompact}
-          controlsRight={(
-            <ScheduleControlsBar
-              calendarView={query.window.view}
-              onCalendarViewChange={query.window.setView}
-              showSaturday={showSaturday}
-              onToggleSaturday={onToggleSaturday}
-              onNewActivity={onNewActivity}
-            />
-          )}
-        />
+        {query.isError && query.rows.length === 0
+          ? <ScheduleCalendarErrorState onRetry={() => void query.refresh()} />
+          : query.isLoading
+            ? <LoadingState title="Loading schedule…" />
+            : (
+                <ScheduleCalendar
+                  events={events}
+                  dateWindow={query.window}
+                  showSaturday={showSaturday}
+                  renderCard={renderCard}
+                  renderCompact={renderCompact}
+                  controlsRight={(
+                    <ScheduleControlsBar
+                      calendarView={query.window.view}
+                      onCalendarViewChange={query.window.setView}
+                      showSaturday={showSaturday}
+                      onToggleSaturday={onToggleSaturday}
+                      onNewActivity={onNewActivity}
+                    />
+                  )}
+                />
+              )}
       </div>
       <ManageParticipantsModal
         meetingIds={assignRepMeetingId ? [assignRepMeetingId] : []}

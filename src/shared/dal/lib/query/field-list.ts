@@ -12,11 +12,11 @@ export interface FilterOption {
   value: string
 }
 
-// Schemas are typed on both sides (`ZodType<Out, In>`): zod's input side defaults to `unknown`, which would let a
-// procedure's input type accept any value and silence every typed caller.
 /** Where a select's choices come from: listed in code, or loaded at runtime from an option source. */
 type FieldOptions = readonly FilterOption[] | { source: OptionSource }
 
+// Schemas are typed on both sides (`ZodType<Out, In>`): zod's input side defaults to `unknown`, which would let a
+// procedure's input type accept any value and silence every typed caller.
 export interface MultiSelectFilter<TValue extends string = string, TOptions extends FieldOptions = FieldOptions> {
   kind: 'multi-select'
   schema: z.ZodType<TValue[], TValue[]>

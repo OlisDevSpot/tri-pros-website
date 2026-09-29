@@ -63,8 +63,9 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
 
   // Lead-source edit is wired by the cell itself (CASL-gated, default
   // mutation + invalidation). Reassigning a row here removes it from the
-  // list (no longer matches `customersMatchingSource`) — that drop is
-  // covered by the default invalidation hitting both customer + lead-source
+  // list — getCustomers pins the source through CUSTOMER_FIELDS' `sourceId`
+  // fixed filter, so a reassigned row no longer matches it — and that drop
+  // is covered by the default invalidation hitting both customer + lead-source
   // query trees, so no override is needed.
   const meta = useMemo<CustomerTableMeta>(
     () => ({

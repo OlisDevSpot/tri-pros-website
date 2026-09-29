@@ -18,6 +18,7 @@ import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar
 import { EmptyState } from '@/shared/components/states/empty-state'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
+import { Button } from '@/shared/components/ui/button'
 import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { pipelineConfigs } from '@/shared/domains/pipelines/constants/pipeline-registry'
@@ -137,16 +138,6 @@ export function CustomerPipelineView() {
     )
   }
 
-  if (query.isError) {
-    return (
-      <ErrorState
-        title="Error: Could not load pipeline"
-        description="Please try again"
-        className="bg-card"
-      />
-    )
-  }
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -175,31 +166,39 @@ export function CustomerPipelineView() {
       </QueryToolbar>
 
       <div className={cn('flex-1 min-h-0 transition-opacity duration-200', isSwitching && 'opacity-50 pointer-events-none')}>
-        {items.length === 0
+        {query.isError && items.length === 0
           ? (
-              <div className="w-full h-full flex items-center justify-center">
-                <EmptyState
-                  title="No Customers"
-                  description={query.filterSort.activeFilterCount > 0 || query.filterSort.searchInput ? 'No customers match these filters' : 'Start by scheduling meetings with customers'}
-                  className="bg-card"
-                />
+              // A failed background refetch also sets isError but keeps prior data — that case falls through to the board below, so a drag/focus refetch failure doesn't hide an already-loaded board.
+              <div className="w-full h-full flex flex-col items-center justify-center gap-3 rounded-lg border bg-card p-8">
+                <ErrorState className="border-none p-0" title="Could not load pipeline" description="Please try again." />
+                <Button variant="outline" onClick={() => void query.refresh()}>Try again</Button>
               </div>
             )
-          : (
-              <KanbanBoard<CustomerPipelineItem>
-                stageConfig={stageFilter.filteredStageConfig}
-                groupedItems={groupCustomersByStage(items, config.stages)}
-                allowedTransitions={config.allowedTransitions}
-                blockedMessages={config.blockedMessages}
-                onMoveItem={handleMoveItem}
-                onBlockedTransition={handleBlockedTransition}
-                collapsedStages={pipeline === 'fresh' ? ['declined'] : []}
-                showColumnValues
-                getItemValue={getItemValue}
-                renderCard={renderCard}
-                className="mobile-bleed-right"
-              />
-            )}
+          : items.length === 0
+            ? (
+                <div className="w-full h-full flex items-center justify-center">
+                  <EmptyState
+                    title="No Customers"
+                    description={query.filterSort.activeFilterCount > 0 || query.filterSort.searchInput ? 'No customers match these filters' : 'Start by scheduling meetings with customers'}
+                    className="bg-card"
+                  />
+                </div>
+              )
+            : (
+                <KanbanBoard<CustomerPipelineItem>
+                  stageConfig={stageFilter.filteredStageConfig}
+                  groupedItems={groupCustomersByStage(items, config.stages)}
+                  allowedTransitions={config.allowedTransitions}
+                  blockedMessages={config.blockedMessages}
+                  onMoveItem={handleMoveItem}
+                  onBlockedTransition={handleBlockedTransition}
+                  collapsedStages={pipeline === 'fresh' ? ['declined'] : []}
+                  showColumnValues
+                  getItemValue={getItemValue}
+                  renderCard={renderCard}
+                  className="mobile-bleed-right"
+                />
+              )}
       </div>
       {createMeetingForCustomer && (
         <CreateMeetingModal
