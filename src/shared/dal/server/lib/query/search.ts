@@ -17,7 +17,7 @@ import { ilike, or } from 'drizzle-orm'
  */
 export function buildSearchWhere(
   search: string | undefined,
-  columns: AnyColumn[],
+  columns: (AnyColumn | SQL)[],
 ): SQL | undefined {
   const term = search?.trim()
   if (!term || columns.length === 0) {

@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 import type { EntityTableView } from '@/shared/components/data-table/types/entity-table-view'
 import type { DataTableProps } from '@/shared/components/data-table/ui/data-table'
 import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
+import type { MEETING_FIELDS } from '@/shared/entities/meetings/dal/meeting-fields'
 import type { MeetingColumnKey, MeetingRow, MeetingTableMeta } from '@/shared/entities/meetings/lib/columns-registry'
 
 import { useCallback, useMemo, useState } from 'react'
@@ -13,8 +14,7 @@ import { toDataTablePagination } from '@/shared/components/data-table/lib/to-dat
 import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
 import { useColumnVisibility } from '@/shared/components/data-table/lib/use-column-visibility'
 import { useEntityColumns } from '@/shared/components/data-table/lib/use-entity-columns'
-import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
-import { fromPaginatedQuery } from '@/shared/dal/client/lib/from-paginated-query'
+import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { AssignProjectDialog } from '@/shared/entities/meetings/components/assign-project-dialog'
@@ -35,7 +35,7 @@ export interface UseMeetingsTableOptions {
 }
 
 export function useMeetingsTable(
-  tableView: EntityTableView<MeetingColumnKey>,
+  tableView: EntityTableView<MeetingColumnKey, typeof MEETING_FIELDS>,
   { renderExpandedRow }: UseMeetingsTableOptions = {},
 ) {
   const trpc = useTRPC()
@@ -46,12 +46,7 @@ export function useMeetingsTable(
   const [participantsMeetingId, setParticipantsMeetingId] = useState<string | null>(null)
   const [assignProjectMeetingId, setAssignProjectMeetingId] = useState<string | null>(null)
 
-  const pagination = usePaginatedQuery<Record<string, never>, MeetingRow>(
-    trpc.meetingsRouter.reads.list.queryOptions,
-    {},
-    tableView.query,
-  )
-  const query = fromPaginatedQuery(pagination)
+  const query = useDataViewQuery(trpc.meetingsRouter.reads.list, {}, tableView.query)
 
   const handleView = useCallback((row: MeetingRow) => {
     if (!row.customerId) {
@@ -96,7 +91,7 @@ export function useMeetingsTable(
 
   const dataTableProps = {
     tableId: tableView.tableId,
-    data: pagination.rows,
+    data: query.rows,
     columns,
     meta,
     getRowClassName: getMeetingRowClassName,
@@ -128,5 +123,7 @@ export function useMeetingsTable(
     </>
   )
 
-  return { pagination, visibility, dataTableProps, dialogs }
+  return { query, visibility, dataTableProps, dialogs }
 }
+
+export type MeetingsTableQuery = ReturnType<typeof useMeetingsTable>['query']

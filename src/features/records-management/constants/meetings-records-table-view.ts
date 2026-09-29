@@ -2,17 +2,17 @@ import type { EntityTableView } from '@/shared/components/data-table/types/entit
 import type { MeetingColumnKey } from '@/shared/entities/meetings/lib/columns-registry'
 
 import { DEFAULT_RECORDS_PAGE_SIZE_OPTIONS } from '@/shared/dal/client/lib/constants'
-import { MEETING_FILTER_CONFIG } from '@/shared/entities/meetings/constants/meeting-filter-config'
+import { MEETING_FIELDS } from '@/shared/entities/meetings/dal/meeting-fields'
 
 export const MEETINGS_RECORDS_TABLE_VIEW = {
   tableId: 'meetings',
   query: {
+    fields: MEETING_FIELDS,
     paramPrefix: 'pm',
-    pageSize: 20,
-    pageSizeOptions: DEFAULT_RECORDS_PAGE_SIZE_OPTIONS,
-    // A meeting's scheduled slot is its natural axis, so this table sorts by it rather than the createdAt default.
+    toolbar: ['meetingType', 'proposalStatus', 'trade', 'rep', 'leadSource', 'outcome', 'scheduledFor', 'createdAt', 'pipeline'],
+    // A meeting's scheduled slot is its natural axis, so this table sorts by it rather than by booking date.
     defaultSort: { sortBy: 'scheduledFor', sortDir: 'desc' },
-    filters: MEETING_FILTER_CONFIG,
+    window: { kind: 'page', pageSize: 20, pageSizeOptions: DEFAULT_RECORDS_PAGE_SIZE_OPTIONS },
   },
-  columns: ['customerName', 'meetingOutcome', 'ownerName', 'scheduledFor', 'tradeSelections', 'leadSource', 'proposalStatuses'],
-} as const satisfies EntityTableView<MeetingColumnKey>
+  columns: ['customerName', 'meetingType', 'meetingOutcome', 'ownerName', 'scheduledFor', 'createdAt', 'tradeSelections', 'leadSource', 'proposalStatuses'],
+} as const satisfies EntityTableView<MeetingColumnKey, typeof MEETING_FIELDS>

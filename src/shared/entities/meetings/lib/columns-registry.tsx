@@ -3,15 +3,17 @@
 import type { ColumnRegistry } from '@/shared/components/data-table/lib/use-entity-columns'
 import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
 import type { MeetingOutcome } from '@/shared/constants/enums'
+import type { SortId } from '@/shared/dal/lib/query/field-list'
+import type { MEETING_FIELDS } from '@/shared/entities/meetings/dal/meeting-fields'
 import type { AppRouterOutputs } from '@/trpc/routers/app'
 
-import { PrimaryCell } from '@/shared/components/data-table/ui/primary-cell'
 import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
 import { meetingOutcomes } from '@/shared/constants/enums'
 import { getOutcomeDisabledChecker } from '@/shared/domains/pipelines/lib/get-disabled-outcomes'
 import { LeadSourceOverviewCard } from '@/shared/entities/lead-sources/components/overview-card'
+import { MeetingCustomerCell } from '@/shared/entities/meetings/components/meeting-customer-cell'
 import { ParticipantPicker, ReadOnlyParticipantSummary } from '@/shared/entities/meetings/components/participant-picker'
 import { MEETING_OUTCOME_COLORS, MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
 import { formatDateCell } from '@/shared/lib/formatters'
@@ -34,19 +36,17 @@ export const MEETING_COLUMNS = {
     sort: 'customerName',
     cell: ({ row, table }) => {
       const meta = table.options.meta as MeetingTableMeta | undefined
-      return (
-        <PrimaryCell
-          entity={row.original}
-          actions={meta?.meetingActions?.(row.original)}
-          title={row.original.customerName ?? '—'}
-          subtitle={row.original.meetingType}
-          tooltipContent={`${row.original.customerName ?? 'No customer'} — ${row.original.meetingType}`}
-        />
-      )
+      return <MeetingCustomerCell meeting={row.original} actions={meta?.meetingActions?.(row.original)} />
     },
+  },
+  meetingType: {
+    label: 'Meeting type',
+    size: 130,
+    sort: 'meetingType',
   },
   meetingOutcome: {
     label: 'Outcome',
+    sort: 'outcome',
     cell: ({ row, table }) => {
       const meta = table.options.meta as MeetingTableMeta | undefined
       return (
@@ -67,6 +67,7 @@ export const MEETING_COLUMNS = {
   },
   ownerName: {
     label: 'Rep',
+    sort: 'rep',
     cell: ({ row, table }) => {
       const meta = table.options.meta as MeetingTableMeta | undefined
       // Owner + co-owner come from the table query (joined via the
@@ -142,6 +143,12 @@ export const MEETING_COLUMNS = {
       )
     },
   },
+  createdAt: {
+    label: 'Booked on',
+    format: 'date',
+    sort: 'createdAt',
+    defaultHidden: true,
+  },
   tradeSelections: {
     label: 'Trades',
     accessorFn: row => row.flowStateJSON?.tradeSelections?.length ?? 0,
@@ -182,6 +189,7 @@ export const MEETING_COLUMNS = {
   },
   leadSource: {
     label: 'Lead source',
+    sort: 'leadSource',
     accessorFn: row => row.leadSource?.name ?? '',
     cell: ({ row }) => {
       const source = row.original.leadSource
@@ -220,6 +228,6 @@ export const MEETING_COLUMNS = {
       )
     },
   },
-} as const satisfies ColumnRegistry<MeetingRow>
+} as const satisfies ColumnRegistry<MeetingRow, SortId<typeof MEETING_FIELDS>>
 
 export type MeetingColumnKey = keyof typeof MEETING_COLUMNS

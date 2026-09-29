@@ -1,21 +1,17 @@
+import type z from 'zod'
 import type { MeetingParticipantRole } from '@/shared/constants/enums'
 import type { ProposalStatus } from '@/shared/constants/enums/proposals'
 import type { PaginatedResult } from '@/shared/dal/lib/query/paginated-result'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { Meeting } from '@/shared/db/schema/meetings'
+
 import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
+import { and, count, eq, getTableColumns, sql } from 'drizzle-orm'
 
-import { and, count, eq, getTableColumns, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm'
-import z from 'zod'
-
-import { meetingOutcomes } from '@/shared/constants/enums'
-import { pipelines } from '@/shared/constants/enums/pipelines'
-import { dateRangeSchema } from '@/shared/dal/lib/query/range-schemas'
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
-import { buildFilterWhere } from '@/shared/dal/server/lib/query/filters'
+import { fieldListInput } from '@/shared/dal/server/lib/query/field-list-input'
 import { paginate } from '@/shared/dal/server/lib/query/output'
-import { paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
-import { buildOrderBy } from '@/shared/dal/server/lib/query/sort'
+import { buildSearchWhere } from '@/shared/dal/server/lib/query/search'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { customerProfiles } from '@/shared/db/schema/customer-profiles'
@@ -24,6 +20,8 @@ import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { meetings } from '@/shared/db/schema/meetings'
 import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { profileCols } from '@/shared/entities/customers/lib/profile-select'
+import { MEETING_FIELDS } from '@/shared/entities/meetings/dal/meeting-fields'
+import { MEETING_FIELD_SQL } from '@/shared/entities/meetings/dal/server/meeting-field-sql'
 import { getAllParticipantsForMeetings } from '@/shared/entities/meetings/dal/server/participants'
 
 export interface MeetingListParticipant {
@@ -63,15 +61,7 @@ export type MeetingListRow = Meeting & {
   coOwner: MeetingListOwnerSlot | null
 }
 
-export const meetingListFiltersSchema = {
-  outcome: z.array(z.enum(meetingOutcomes)).optional(),
-  scheduledFor: dateRangeSchema.optional(),
-  pipeline: z.enum(pipelines).optional(),
-  customerId: z.string().uuid().optional(),
-  projectId: z.string().uuid().optional(),
-}
-
-export const meetingListInputSchema = paginatedQueryInput(meetingListFiltersSchema)
+export const meetingListInputSchema = fieldListInput(MEETING_FIELDS, { pagination: true })
 export type MeetingListInput = z.infer<typeof meetingListInputSchema>
 
 export type MeetingWithCustomer = Meeting & {
@@ -95,45 +85,12 @@ export async function listMeetings(
   input: MeetingListInput,
 ): Promise<DalReturn<PaginatedResult<MeetingListRow>>> {
   return dalDbOperation(async () => {
-    const searchTerm = input.search?.trim()
-    const searchWhere = searchTerm
-      ? or(
-          ilike(customers.name, `%${searchTerm}%`),
-          ilike(sql`${meetings.meetingType}::text`, `%${searchTerm}%`),
-        )
-      : undefined
-
-    const filterWhere = buildFilterWhere(input.filters, {
-      outcome: v => (v.length > 0 ? inArray(meetings.meetingOutcome, v) : undefined),
-      scheduledFor: v => and(
-        v.from ? gte(meetings.scheduledFor, v.from) : undefined,
-        v.to ? lte(meetings.scheduledFor, v.to) : undefined,
-      ),
-      pipeline: (v) => {
-        if (v === 'projects') {
-          return sql`${meetings.projectId} IS NOT NULL`
-        }
-        if (v === 'leads') {
-          // No leads pipeline at meeting level; leads are pre-meeting.
-          return sql`FALSE`
-        }
-        return and(
-          sql`${meetings.projectId} IS NULL`,
-          eq(meetings.pipeline, v),
-        )
-      },
-      customerId: v => eq(meetings.customerId, v),
-      projectId: v => eq(meetings.projectId, v),
-    })
-
-    const where = and(ctx.scope ?? undefined, searchWhere, filterWhere)
-
-    const orderBy = buildOrderBy(input.sort, {
-      customerName: customers.name,
-      scheduledFor: meetings.scheduledFor,
-      meetingOutcome: meetings.meetingOutcome,
-      createdAt: meetings.createdAt,
-    })
+    const where = and(
+      ctx.scope ?? undefined,
+      buildSearchWhere(input.search, [customers.name, sql`${meetings.meetingType}::text`]),
+      MEETING_FIELD_SQL.where(input.filters),
+    )
+    const orderBy = MEETING_FIELD_SQL.orderBy(input.sort)
 
     const result = await paginate({
       query: () => db
