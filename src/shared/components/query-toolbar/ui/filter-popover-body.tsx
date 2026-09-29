@@ -8,7 +8,7 @@ export function FilterPopoverBody() {
   const { query, filters } = useQueryToolbarContext()
   const { filterSort } = query
   const visibleFilters = filters.filter(filter => !filter.hidden)
-  const hasResetableState = filterSort.activeFilterCount > 0 || !!filterSort.searchInput || !!filterSort.sortBy
+  const hasResetableState = filterSort.activeFilterCount > 0 || !!filterSort.search || !!filterSort.sortBy
   if (visibleFilters.length === 0) {
     return null
   }

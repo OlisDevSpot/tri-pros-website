@@ -16,7 +16,7 @@ export function FilterSheetBody({ onClose }: FilterSheetBodyProps) {
   const { query, filters, sortOptions } = useQueryToolbarContext()
   const { filterSort } = query
   const visibleFilters = filters.filter(filter => !filter.hidden)
-  const hasResetableState = filterSort.activeFilterCount > 0 || !!filterSort.searchInput || !!filterSort.sortBy
+  const hasResetableState = filterSort.activeFilterCount > 0 || !!filterSort.search || !!filterSort.sortBy
   const pageWindow = query.window.kind === 'page' ? query.window : undefined
   return (
     <>

@@ -12,20 +12,17 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { ChevronRightIcon, PinIcon, RefreshCw } from 'lucide-react'
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { PinIcon } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { SKELETON_CELL_WIDTHS, SKELETON_ROW_HEIGHT_CLASS } from '@/shared/components/data-table/constants/skeleton-widths'
+import { CELL_BORDER } from '@/shared/components/data-table/constants/cell-border'
 import { usePullToRefresh } from '@/shared/components/data-table/hooks/use-pull-to-refresh'
 import { createDateRangeFilterFn } from '@/shared/components/data-table/lib/filter-fns'
 import { mapColumnSortIds } from '@/shared/components/data-table/lib/map-column-sort-ids'
-import { shouldToggleRow } from '@/shared/components/data-table/lib/should-toggle-row'
+import { DataTableBody } from '@/shared/components/data-table/ui/data-table-body'
 import { DataTableFilterBar } from '@/shared/components/data-table/ui/data-table-filter-bar'
 import { DataTablePagination } from '@/shared/components/data-table/ui/data-table-pagination'
-import { ErrorState } from '@/shared/components/states/error-state'
-import { AnimatedCollapsibleContent } from '@/shared/components/ui/collapsible'
-import { Skeleton } from '@/shared/components/ui/skeleton'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
+import { Table, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/lib/utils'
 
@@ -74,8 +71,6 @@ function loadFrozen(tableId: string): boolean {
     return true
   }
 }
-
-const CELL_BORDER = 'border-b border-border/50'
 
 interface Props<TData, TMeta = unknown> extends DataTableProps<TData, TMeta> {
   onActiveRowChange?: (id: string | null) => void
@@ -141,23 +136,8 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   const isFrozenEffective = isFrozen ?? true
 
   const scrollRef = useRef<HTMLDivElement>(null)
-  const [containerWidth, setContainerWidth] = useState(0)
 
   const { isRefreshing } = usePullToRefresh(scrollRef, serverPagination?.onRefresh)
-
-  useEffect(() => {
-    const el = scrollRef.current
-    if (!el) {
-      return
-    }
-    const ro = new ResizeObserver(([entry]) => {
-      if (entry) {
-        setContainerWidth(entry.contentRect.width)
-      }
-    })
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
 
   const handleScroll = useCallback(() => {
     const el = scrollRef.current
@@ -360,12 +340,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
 
   const isAnyColumnResizing = !!table.getState().columnSizingInfo.isResizingColumn
 
-  const flatHeaders = table.getFlatHeaders()
-  const totalDeclaredWidth = flatHeaders.reduce((sum, h) => sum + h.getSize(), 0)
-  const effectiveContainer = containerWidth || totalDeclaredWidth
-  const needsOverflow = totalDeclaredWidth > effectiveContainer
-  const tableWidth = needsOverflow ? totalDeclaredWidth : effectiveContainer
-  const lastColExtra = needsOverflow ? 0 : effectiveContainer - totalDeclaredWidth
+  const totalDeclaredWidth = table.getFlatHeaders().reduce((sum, h) => sum + h.getSize(), 0)
 
   const showFrozenShadow = isFrozenEffective && isScrolled
 
@@ -393,14 +368,16 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
           ref={scrollRef}
           onScroll={handleScroll}
           className={cn(
-            'grow min-h-0 overflow-auto overscroll-none touch-pan-x touch-pan-y',
+            // A size container: the pull spinner and expanded panels size to it with `cqw`, without measuring it.
+            '@container grow min-h-0 overflow-auto overscroll-none touch-pan-x touch-pan-y',
             '**:data-[slot=table-container]:overflow-visible',
             isAnyColumnResizing && 'cursor-col-resize select-none',
           )}
         >
+          {/* Fills the container or overflows it in CSS alone, so a window resize runs no script and re-renders nothing. */}
           <Table
             className="table-fixed border-separate border-spacing-0"
-            style={{ width: tableWidth }}
+            style={{ width: totalDeclaredWidth, minWidth: '100%' }}
             aria-busy={!!serverPagination?.isFetching}
           >
             <TableHeader className="sticky top-0 z-10 bg-background">
@@ -410,7 +387,8 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                     const isColResizing = header.column.getIsResizing()
                     const isFirstCol = colIdx === 0
                     const isLastCol = colIdx === headerGroup.headers.length - 1
-                    const colWidth = header.getSize() + (isLastCol ? lastColExtra : 0)
+                    // Under table-layout: fixed the one auto-width column takes the slack, so the last column fills a wide container.
+                    const colWidth = isLastCol ? undefined : header.getSize()
 
                     return (
                       <TableHead
@@ -508,167 +486,24 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
               ))}
             </TableHeader>
 
-            <TableBody>
-              {/* Spacer reflows the rows (a transform would break the frozen column's sticky-left).
-                  Sized by the `--dt-pull` var the hook writes, so no React render on the drag;
-                  the opacity divisor must match PULL_TO_REFRESH_THRESHOLD (64). */}
-              {serverPagination?.onRefresh && (
-                <tr aria-hidden>
-                  <td colSpan={table.getVisibleFlatColumns().length} className="border-0 p-0">
-                    <div
-                      className="overflow-hidden"
-                      style={{ height: 'calc(var(--dt-pull, 0) * 1px)', transition: 'height var(--dt-pull-ms, 0ms) ease-out' }}
-                    >
-                      {/* Width = measured container so the spinner centers on the viewport, not the overflowing table. */}
-                      <div className="flex h-16 items-end justify-center pb-2" style={{ width: containerWidth || undefined }}>
-                        <div
-                          className="rounded-full border border-border/50 bg-background p-1.5 shadow-sm"
-                          style={{ opacity: 'calc(var(--dt-pull, 0) / 64)', transition: 'opacity var(--dt-pull-ms, 0ms) ease-out' }}
-                        >
-                          <RefreshCw className={cn('size-4 text-muted-foreground', isRefreshing && 'motion-safe:animate-spin')} />
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              )}
-              {(() => {
-                const dataRows = table.getRowModel().rows
-                if (dataRows.length > 0) {
-                  return null
-                }
-                if (serverPagination?.isFetching) {
-                  const visibleCols = table.getVisibleFlatColumns()
-                  return Array.from({ length: 5 }).map((_, rowIdx) => (
-                    // eslint-disable-next-line react/no-array-index-key -- static skeleton list, no reordering
-                    <TableRow key={`skeleton-row-${rowIdx}`} className={cn('border-border/50 hover:bg-transparent', SKELETON_ROW_HEIGHT_CLASS)}>
-                      {visibleCols.map((col, colIdx) => (
-                        <TableCell key={`skeleton-${rowIdx}-${col.id}`} className={CELL_BORDER}>
-                          <Skeleton className={cn('h-3.5', SKELETON_CELL_WIDTHS[colIdx % SKELETON_CELL_WIDTHS.length])} />
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                }
-                if (serverPagination?.isError) {
-                  return (
-                    <TableRow>
-                      <TableCell colSpan={columns.length} className="h-24 p-0">
-                        <ErrorState title={`Couldn't load ${entityName}s`} description="Please try again." className="border-0" />
-                      </TableCell>
-                    </TableRow>
-                  )
-                }
-                return (
-                  <TableRow>
-                    <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
-                      No
-                      {' '}
-                      {entityName}
-                      s match your filter.
-                    </TableCell>
-                  </TableRow>
-                )
-              })()}
-              {table.getRowModel().rows.map((row) => {
-                const rowProps: Record<string, unknown> = { [rowDataAttribute]: true }
-                const customRowClass = getRowClassName?.(row.original)
-                const isExpanded = row.getIsExpanded()
-                const detailId = `${tableId ?? entityName}-detail-${row.id}`
-                const expandToggle = renderExpandedRow
-                  ? (
-                      <button
-                        type="button"
-                        aria-expanded={isExpanded}
-                        aria-controls={detailId}
-                        aria-label={isExpanded ? 'Collapse row' : 'Expand row'}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          row.toggleExpanded()
-                        }}
-                        className="shrink-0 cursor-pointer rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
-                      >
-                        <ChevronRightIcon className={cn('size-4 motion-safe:transition-transform', isExpanded && 'rotate-90')} />
-                      </button>
-                    )
-                  : null
-
-                return (
-                  <Fragment key={row.id}>
-                    <TableRow
-                      className={`group cursor-pointer border-border/50${customRowClass ? ` ${customRowClass}` : ''}`}
-                      onClick={(e) => {
-                        if (renderExpandedRow) {
-                          if (shouldToggleRow(e, window.getSelection()?.toString() ?? '')) {
-                            row.toggleExpanded()
-                          }
-                          return
-                        }
-                        if (onRowClick) {
-                          onRowClick(row.original)
-                        }
-                        else if (isMobile) {
-                          setActiveRowId(prev => prev === row.original.id ? null : row.original.id)
-                        }
-                      }}
-                      {...rowProps}
-                    >
-                      {row.getVisibleCells().map((cell, colIdx) => {
-                        const content = flexRender(cell.column.columnDef.cell, cell.getContext())
-                        const cellContent = colIdx === 0 && expandToggle
-                          ? (
-                              <div className="flex items-center gap-1">
-                                {expandToggle}
-                                <div className="min-w-0 flex-1">{content}</div>
-                              </div>
-                            )
-                          : content
-
-                        if (colIdx === 0 && isFrozenEffective) {
-                          return (
-                            <TableCell
-                              key={cell.id}
-                              className={cn(
-                                'sticky left-0 z-5 p-0 border-r border-border/50',
-                                CELL_BORDER,
-                                'transition-shadow duration-200',
-                                showFrozenShadow && 'shadow-[4px_0_8px_0_rgba(0,0,0,0.3)]',
-                              )}
-                              style={{ borderRightStyle: 'dashed' }}
-                            >
-                              <div className="absolute inset-0 bg-background group-hover:bg-muted/50 transition-colors" />
-                              {customRowClass && <div className={cn('absolute inset-0', customRowClass)} />}
-                              <div className="relative p-2">
-                                {cellContent}
-                              </div>
-                            </TableCell>
-                          )
-                        }
-
-                        return (
-                          <TableCell key={cell.id} className={CELL_BORDER}>
-                            {cellContent}
-                          </TableCell>
-                        )
-                      })}
-                    </TableRow>
-                    {renderExpandedRow && (
-                      <TableRow data-expanded-row aria-hidden={!isExpanded || undefined} className="hover:bg-transparent">
-                        <TableCell colSpan={row.getVisibleCells().length} className={cn('p-0 whitespace-normal', isExpanded && CELL_BORDER)}>
-                          {/* Pinned to the visible width so the panel stays in view while the columns scroll sideways.
-                              Sticky breaks if this cell or any ancestor up to the scroller gets overflow: hidden. */}
-                          <div id={detailId} className="sticky left-0" style={{ width: containerWidth || undefined }}>
-                            <AnimatedCollapsibleContent open={isExpanded}>
-                              {isExpanded ? renderExpandedRow(row.original) : null}
-                            </AnimatedCollapsibleContent>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </Fragment>
-                )
-              })}
-            </TableBody>
+            <DataTableBody
+              table={table}
+              rows={table.getRowModel().rows}
+              isColumnResizing={isAnyColumnResizing}
+              columnCount={columns.length}
+              entityName={entityName}
+              tableId={tableId}
+              rowDataAttribute={rowDataAttribute}
+              getRowClassName={getRowClassName}
+              renderExpandedRow={renderExpandedRow}
+              onRowClick={onRowClick}
+              isMobile={isMobile}
+              setActiveRowId={setActiveRowId}
+              isFrozen={isFrozenEffective}
+              showFrozenShadow={showFrozenShadow}
+              serverPagination={serverPagination}
+              isRefreshing={isRefreshing}
+            />
           </Table>
         </div>
 

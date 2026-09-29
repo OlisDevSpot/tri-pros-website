@@ -33,6 +33,17 @@ interface Props<T extends KanbanItem = KanbanItem> {
   className?: string
 }
 
+const NO_COLLAPSED_STAGES: string[] = []
+
+// Module constants: useSensor memoizes on the options object, and a new one each render rebuilds dnd-kit's
+// context, which re-renders every card and column on the board.
+const POINTER_SENSOR_OPTIONS = { activationConstraint: { distance: 8 } }
+const TOUCH_SENSOR_OPTIONS = { activationConstraint: { delay: 250, tolerance: 8 } }
+
+function noItemHref() {
+  return '#'
+}
+
 export function KanbanBoard<T extends KanbanItem>({
   stageConfig,
   groupedItems,
@@ -40,8 +51,8 @@ export function KanbanBoard<T extends KanbanItem>({
   blockedMessages,
   onMoveItem,
   onBlockedTransition,
-  collapsedStages = [],
-  getItemHref = () => '#',
+  collapsedStages = NO_COLLAPSED_STAGES,
+  getItemHref = noItemHref,
   showColumnValues,
   getItemValue,
   renderCard,
@@ -49,12 +60,8 @@ export function KanbanBoard<T extends KanbanItem>({
 }: Props<T>) {
   const [activeItem, setActiveItem] = useState<T | null>(null)
 
-  const pointerSensor = useSensor(PointerSensor, {
-    activationConstraint: { distance: 8 },
-  })
-  const touchSensor = useSensor(TouchSensor, {
-    activationConstraint: { delay: 250, tolerance: 8 },
-  })
+  const pointerSensor = useSensor(PointerSensor, POINTER_SENSOR_OPTIONS)
+  const touchSensor = useSensor(TouchSensor, TOUCH_SENSOR_OPTIONS)
   const keyboardSensor = useSensor(KeyboardSensor)
 
   const sensors = useSensors(pointerSensor, touchSensor, keyboardSensor)

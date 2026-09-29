@@ -40,9 +40,11 @@ export function useKanbanStageFilter(
     [stageFilter?.alwaysVisible],
   )
 
-  const filteredStageConfig = stageFilter
-    ? stageConfig.filter(s => visibleStages.has(s.key))
-    : stageConfig
+  const isFiltering = stageFilter !== undefined
+  const filteredStageConfig = useMemo(
+    () => (isFiltering ? stageConfig.filter(s => visibleStages.has(s.key)) : stageConfig),
+    [isFiltering, stageConfig, visibleStages],
+  )
 
   function handleToggleStage(key: string) {
     setVisibleStages((prev) => {

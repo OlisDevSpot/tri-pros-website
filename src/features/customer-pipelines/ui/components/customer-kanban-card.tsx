@@ -11,7 +11,7 @@ import {
   GripVerticalIcon,
   MapPinIcon,
 } from 'lucide-react'
-import { useCallback } from 'react'
+import { memo, useCallback } from 'react'
 
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
@@ -34,11 +34,11 @@ interface Props {
   item: CustomerPipelineItem
   isDragOverlay?: boolean
   onViewProfile: (customerId: string) => void
-  onCreateMeeting?: (customerId: string) => void
+  onCreateMeeting?: (customer: { id: string, name: string }) => void
   onAssignRep?: (meetingId: string, currentRepId: string | null) => void
 }
 
-export function CustomerKanbanCard({
+function CustomerKanbanCardImpl({
   item,
   isDragOverlay,
   onViewProfile,
@@ -73,8 +73,8 @@ export function CustomerKanbanCard({
   }, [item.id, onViewProfile])
 
   const handleScheduleMeeting = useCallback(() => {
-    onCreateMeeting?.(item.id)
-  }, [item.id, onCreateMeeting])
+    onCreateMeeting?.({ id: item.id, name: item.name })
+  }, [item.id, item.name, onCreateMeeting])
 
   const { actions: customerActions, DeleteConfirmDialog: CustomerDeleteDialog } = useCustomerActionConfigs<CustomerPipelineItem>({
     onView: handleViewCustomer,
@@ -347,3 +347,6 @@ function KanbanProposalRow({ proposal }: { proposal: PipelineItemProposal }) {
     </ProposalOverviewCard>
   )
 }
+
+// A column re-render only re-renders cards whose row changed (a same-key refetch keeps unchanged rows by reference).
+export const CustomerKanbanCard = memo(CustomerKanbanCardImpl)

@@ -107,13 +107,11 @@ export interface PaginatedQueryResult<TRow> {
   setPage: (page: number) => void
   setPageSize: (pageSize: number) => void
 
-  // -- Search (debounced internally) --
-  /** Raw input value — bind to a controlled `<input>`. */
-  searchInput: string
-  /** Updates raw input and resets `page` to 1 atomically. */
-  setSearchInput: (value: string) => void
-  /** Debounced value the underlying query actually uses. */
-  searchDebounced: string
+  // -- Search --
+  /** The committed search; the toolbar's search box debounces before it sets it. */
+  search: string
+  /** Commits the search and resets `page` to 1 atomically. */
+  setSearch: (value: string) => void
 
   // -- Sort --
   sortBy: string | undefined
@@ -161,8 +159,10 @@ export interface DataViewFilterSort<F extends FieldList, T extends ToolbarFilter
   setFilter: <K extends T>(id: K, value: FieldFilterValue<F, K> | undefined) => void
   /** Clears toolbar filters, search and sort; leaves the window alone. */
   clearFilters: () => void
-  searchInput: string
-  setSearchInput: (value: string) => void
+  /** The committed search; the toolbar's search box debounces before it sets it. */
+  search: string
+  /** Resets the page to 1; never moves a date window. */
+  setSearch: (value: string) => void
   sortBy: SortId<F> | undefined
   sortDir: SortDir | undefined
   setSort: (sortBy: SortId<F> | undefined, sortDir?: SortDir) => void

@@ -16,10 +16,10 @@ import { useQueryStates } from 'nuqs'
 import { useCallback, useEffect, useMemo } from 'react'
 
 import { OPTION_SOURCE_READS } from '@/shared/dal/client/constants/option-source-reads'
-import { DEFAULT_DEBOUNCE_MS } from '@/shared/dal/client/lib/constants'
+import { usePrefetchQueries } from '@/shared/dal/client/hooks/use-prefetch-queries'
+import { adjacentDataViewWindows } from '@/shared/dal/lib/query/adjacent-windows'
 import { dataViewUrlKeys, deriveDataViewWindow, deriveFilterSortState, makeDataViewParsers, toDataViewInput } from '@/shared/dal/lib/query/derive-data-view-input'
 import { useAbility } from '@/shared/domains/permissions/hooks'
-import { useDebounce } from '@/shared/hooks/use-debounce'
 import { checkHydrationParity } from '@/shared/lib/hydration-drift'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -29,7 +29,6 @@ type AnyQueryProcedure = DecorateQueryProcedure<any>
 type AcceptsDataViewInput<TProcedure extends AnyQueryProcedure, TInput> = TInput extends inferInput<TProcedure> ? unknown : never
 
 interface UseDataViewQueryOptions {
-  searchDebounceMs?: number
   enabled?: boolean
 }
 
@@ -59,7 +58,7 @@ export function useDataViewQuery<
   config: DataViewQueryConfig<F, T, W>,
   options: UseDataViewQueryOptions = {},
 ): DataViewQueryResult<DataViewRowOf<TProcedure>, F, T, W['kind']> {
-  const { searchDebounceMs = DEFAULT_DEBOUNCE_MS, enabled = true } = options
+  const { enabled = true } = options
   const qc = useQueryClient()
   const trpc = useTRPC()
   const ability = useAbility()
@@ -70,12 +69,11 @@ export function useDataViewQuery<
   const [urlState, setUrlState] = useQueryStates(parsers as never, { clearOnDefault: true })
   const state = urlState as Record<string, unknown>
 
-  const searchInput = (state[keys.searchKey] as string | null) ?? ''
-  const searchDebounced = useDebounce(searchInput.trim(), searchDebounceMs)
-  const derivedFrom = useMemo(() => ({ ...state, [keys.searchKey]: searchDebounced }), [state, keys.searchKey, searchDebounced])
+  // The toolbar's search box debounces before it commits, so the URL value is already the settled search.
+  const search = (state[keys.searchKey] as string | null) ?? ''
 
-  const filterSort = useMemo(() => deriveFilterSortState(derivedFrom, config), [derivedFrom, config])
-  const windowState = useMemo(() => deriveDataViewWindow(derivedFrom, config), [derivedFrom, config])
+  const filterSort = useMemo(() => deriveFilterSortState(state, config), [state, config])
+  const windowState = useMemo(() => deriveDataViewWindow(state, config), [state, config])
 
   const extraKey = JSON.stringify(extra)
   const queryInput = useMemo(
@@ -125,7 +123,7 @@ export function useDataViewQuery<
     )
   }, [setUrlState, keys, resetsPage])
 
-  const setSearchInput = useCallback((value: string) => {
+  const setSearch = useCallback((value: string) => {
     void setUrlState(
       { [keys.searchKey]: value || null, ...(resetsPage ? { [keys.pageKey]: null } : {}) } as never,
       { history: 'replace' },
@@ -182,15 +180,11 @@ export function useDataViewQuery<
     }
   }, [windowState, data, pageCount, keys, setUrlState])
 
-  useEffect(() => {
-    if (windowState.kind !== 'page' || !data) {
-      return
-    }
-    const nextOffset = windowState.pagination.offset + windowState.pageSize
-    if (nextOffset < data.total) {
-      void qc.prefetchQuery(anyProcedure.queryOptions({ ...queryInput, pagination: { limit: windowState.pageSize, offset: nextOffset } }))
-    }
-  }, [windowState, data, queryInput, anyProcedure, qc])
+  const adjacentWindows = useMemo(() => adjacentDataViewWindows(state, config), [state, config])
+  const adjacentQueries = adjacentWindows
+    .filter(adjacent => adjacent.kind !== 'page' || adjacent.pagination.offset < total)
+    .map(adjacent => anyProcedure.queryOptions({ ...toDataViewInput(filterSort, adjacent, config), ...extra }))
+  usePrefetchQueries(adjacentQueries, result.isSuccess && !result.isPlaceholderData && !result.isFetching)
 
   const windowControls = useMemo((): DataViewWindowControls => {
     switch (windowState.kind) {
@@ -211,12 +205,12 @@ export function useDataViewQuery<
     activeFilterCount: Object.keys(filterSort.filters).length,
     setFilter: setFilter as DataViewFilterSort<F, T>['setFilter'],
     clearFilters,
-    searchInput,
-    setSearchInput,
+    search,
+    setSearch,
     sortBy: filterSort.sort?.sortBy,
     sortDir: filterSort.sort?.sortDir,
     setSort: setSort as DataViewFilterSort<F, T>['setSort'],
-  }), [config.fields, config.toolbar, filterSort, runtimeOptions, setFilter, clearFilters, searchInput, setSearchInput, setSort])
+  }), [config.fields, config.toolbar, filterSort, runtimeOptions, setFilter, clearFilters, search, setSearch, setSort])
 
   return {
     rows,

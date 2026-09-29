@@ -141,6 +141,11 @@ export function formatMeetingShortStamp(scheduledFor: string | Date | null | und
  * - `relative`: "Today", "Yesterday", "3 days ago", or "Mar 5, 2026"
  * - `dayAtTime`: "Monday at 5:00 PM"
  */
+// Built once: `toLocale*String` with options constructs a formatter per call, which dominated table re-renders.
+const DATE_CELL_DATE = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+const DATE_CELL_WEEKDAY = new Intl.DateTimeFormat('en-US', { weekday: 'long' })
+const DATE_CELL_TIME = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+
 export function formatDateCell(dateInput: string | Date): { relative: string, dayAtTime: string } {
   const d = new Date(dateInput)
   const now = new Date()
@@ -164,11 +169,11 @@ export function formatDateCell(dateInput: string | Date): { relative: string, da
     relative = 'Tomorrow'
   }
   else {
-    relative = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    relative = DATE_CELL_DATE.format(d)
   }
 
-  const dayOfWeek = d.toLocaleDateString('en-US', { weekday: 'long' })
-  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+  const dayOfWeek = DATE_CELL_WEEKDAY.format(d)
+  const time = DATE_CELL_TIME.format(d)
   const dayAtTime = `${dayOfWeek} at ${time}`
 
   return { relative, dayAtTime }

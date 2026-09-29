@@ -4,7 +4,7 @@ import type { KanbanItem, KanbanStageConfig } from '@/shared/components/kanban/t
 
 import { useDroppable } from '@dnd-kit/core'
 import { ChevronDownIcon } from 'lucide-react'
-import { useState } from 'react'
+import { memo, useState } from 'react'
 
 import { badgeColorMap, stageColorMap } from '@/shared/components/kanban/constants/color-maps'
 import { KanbanEmptyColumn } from '@/shared/components/kanban/ui/kanban-empty-column'
@@ -22,7 +22,7 @@ interface Props<T extends KanbanItem = KanbanItem> {
   renderCard: (item: T, href: string, isDragOverlay?: boolean) => React.ReactNode
 }
 
-export function KanbanColumn<T extends KanbanItem>({
+function KanbanColumnImpl<T extends KanbanItem>({
   stage,
   items,
   collapsed: initialCollapsed,
@@ -99,3 +99,6 @@ export function KanbanColumn<T extends KanbanItem>({
     </div>
   )
 }
+
+// A board re-render (search typing, fetch state) skips every column whose items and handlers are unchanged.
+export const KanbanColumn = memo(KanbanColumnImpl) as typeof KanbanColumnImpl

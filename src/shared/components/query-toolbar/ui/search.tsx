@@ -1,5 +1,7 @@
 'use client'
 
+import { SEARCH_COMMIT_DEBOUNCE_MS } from '@/shared/components/query-toolbar/constants/search'
+import { useSearchDraft } from '@/shared/components/query-toolbar/hooks/use-search-draft'
 import { useQueryToolbarContext } from '@/shared/components/query-toolbar/lib/context'
 import { useToolbarInternal } from '@/shared/components/query-toolbar/lib/internal-context'
 import { Input } from '@/shared/components/ui/input'
@@ -12,15 +14,21 @@ interface SearchProps {
 
 export function QueryToolbarSearch({ placeholder, className }: SearchProps) {
   const { query } = useQueryToolbarContext()
-  const { searchInput, setSearchInput } = query.filterSort
+  const { search, setSearch } = query.filterSort
   const { entityName, searchInputRef } = useToolbarInternal()
+  const { draft, setDraft, flush } = useSearchDraft(search, setSearch, SEARCH_COMMIT_DEBOUNCE_MS)
   const effectivePlaceholder = placeholder ?? `Search ${entityName}…`
   return (
     <Input
       ref={searchInputRef}
       type="search"
-      value={searchInput}
-      onChange={e => setSearchInput(e.target.value)}
+      value={draft}
+      onChange={e => setDraft(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          flush()
+        }
+      }}
       placeholder={effectivePlaceholder}
       autoComplete="off"
       spellCheck={false}

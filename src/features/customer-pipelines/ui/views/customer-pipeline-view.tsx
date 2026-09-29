@@ -4,7 +4,7 @@ import type { CustomerPipelineItem } from '@/shared/entities/customers/types/pip
 
 import { useMutation } from '@tanstack/react-query'
 import { motion } from 'motion/react'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { CUSTOMER_PIPELINE_QUERY } from '@/features/customer-pipelines/constants/customer-pipeline-query'
 import { groupCustomersByStage } from '@/features/customer-pipelines/lib/group-customers-by-stage'
@@ -29,6 +29,13 @@ import { ManageParticipantsModal } from '@/shared/entities/meetings/components/m
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
+
+const FRESH_COLLAPSED_STAGES = ['declined']
+const NO_COLLAPSED_STAGES: string[] = []
+
+function getItemValue(item: CustomerPipelineItem): number | null {
+  return item.totalPipelineValue > 0 ? item.totalPipelineValue : null
+}
 
 export function CustomerPipelineView() {
   const { pipeline, setPipeline } = usePipeline()
@@ -85,13 +92,6 @@ export function CustomerPipelineView() {
     toast.info(message)
   }
 
-  const handleCreateMeeting = useCallback((customerId: string) => {
-    const item = items.find(i => i.id === customerId)
-    if (item) {
-      setCreateMeetingForCustomer({ id: item.id, name: item.name })
-    }
-  }, [items])
-
   const handleViewProfile = useCallback((customerId: string) => {
     setModal({
       accessor: 'CustomerProfile',
@@ -100,10 +100,6 @@ export function CustomerPipelineView() {
     })
     openModal()
   }, [setModal, openModal])
-
-  function getItemValue(item: CustomerPipelineItem): number | null {
-    return item.totalPipelineValue > 0 ? item.totalPipelineValue : null
-  }
 
   const handleAssignRep = useCallback((meetingId: string, _currentRepId: string | null) => {
     setAssignRepTarget({ meetingIds: [meetingId] })
@@ -118,12 +114,14 @@ export function CustomerPipelineView() {
         item={item}
         isDragOverlay={isDragOverlay}
         onViewProfile={handleViewProfile}
-        onCreateMeeting={handleCreateMeeting}
+        onCreateMeeting={setCreateMeetingForCustomer}
         onAssignRep={handleAssignRep}
       />
     ),
-    [handleViewProfile, handleCreateMeeting, handleAssignRep],
+    [handleViewProfile, handleAssignRep],
   )
+
+  const groupedItems = useMemo(() => groupCustomersByStage(items, config.stages), [items, config.stages])
 
   const isInitialLoad = query.isLoading
   const isSwitching = query.isFetching && !query.isLoading
@@ -179,7 +177,7 @@ export function CustomerPipelineView() {
                 <div className="w-full h-full flex items-center justify-center">
                   <EmptyState
                     title="No Customers"
-                    description={query.filterSort.activeFilterCount > 0 || query.filterSort.searchInput ? 'No customers match these filters' : 'Start by scheduling meetings with customers'}
+                    description={query.filterSort.activeFilterCount > 0 || query.filterSort.search ? 'No customers match these filters' : 'Start by scheduling meetings with customers'}
                     className="bg-card"
                   />
                 </div>
@@ -187,12 +185,12 @@ export function CustomerPipelineView() {
             : (
                 <KanbanBoard<CustomerPipelineItem>
                   stageConfig={stageFilter.filteredStageConfig}
-                  groupedItems={groupCustomersByStage(items, config.stages)}
+                  groupedItems={groupedItems}
                   allowedTransitions={config.allowedTransitions}
                   blockedMessages={config.blockedMessages}
                   onMoveItem={handleMoveItem}
                   onBlockedTransition={handleBlockedTransition}
-                  collapsedStages={pipeline === 'fresh' ? ['declined'] : []}
+                  collapsedStages={pipeline === 'fresh' ? FRESH_COLLAPSED_STAGES : NO_COLLAPSED_STAGES}
                   showColumnValues
                   getItemValue={getItemValue}
                   renderCard={renderCard}

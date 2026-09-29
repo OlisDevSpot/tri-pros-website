@@ -8,11 +8,9 @@ import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-quer
 import { useQueryStates } from 'nuqs'
 import { useCallback, useEffect, useMemo } from 'react'
 
-import { DEFAULT_DEBOUNCE_MS } from '@/shared/dal/client/lib/constants'
 import { DEFAULT_PAGE_SIZE } from '@/shared/dal/lib/query/constants'
 import { derivePaginatedQueryState, makePaginatedParsers } from '@/shared/dal/lib/query/derive-paginated-query-state'
 import { assertNoReservedFilterIds, makeQueryParsers } from '@/shared/dal/lib/query/url-state'
-import { useDebounce } from '@/shared/hooks/use-debounce'
 import { checkHydrationParity } from '@/shared/lib/hydration-drift'
 
 // `any` satisfies contravariance against tRPC's overloaded `queryOptions` signature so callers
@@ -22,8 +20,6 @@ type PaginatedQueryFactory<TInput, _TRow> = (input: TInput, ...rest: any[]) => a
 export type { PaginatedQueryInput }
 
 interface UsePaginatedQueryOptions extends PaginatedQueryConfig {
-  /** Search debounce in ms. */
-  searchDebounceMs?: number
   /** Disable the query without losing URL state. */
   enabled?: boolean
   /** Prefetch the next page when the current page resolves. */
@@ -43,7 +39,6 @@ export function usePaginatedQuery<TExtra extends object, TRow>(
     paramPrefix,
     pageSize: initialPageSize = DEFAULT_PAGE_SIZE,
     pageSizeOptions,
-    searchDebounceMs = DEFAULT_DEBOUNCE_MS,
     enabled = true,
     prefetchNextPage = true,
     defaultSort,
@@ -74,16 +69,10 @@ export function usePaginatedQuery<TExtra extends object, TRow>(
   const [urlState, setUrlState] = useQueryStates(parsers as never, { clearOnDefault: true })
   const stateAny = urlState as Record<string, unknown>
 
-  const searchInput = (stateAny[keys.searchKey] as string) ?? ''
-  const searchDebounced = useDebounce(searchInput.trim(), searchDebounceMs)
+  // The toolbar's search box debounces before it commits, so the URL value is already the settled search.
+  const search = (stateAny[keys.searchKey] as string) ?? ''
 
-  const derived = useMemo(
-    () => derivePaginatedQueryState(
-      { ...stateAny, [keys.searchKey]: searchDebounced },
-      config,
-    ),
-    [stateAny, keys.searchKey, searchDebounced, config],
-  )
+  const derived = useMemo(() => derivePaginatedQueryState(stateAny, config), [stateAny, config])
   const { page, pageSize: effectivePageSize, sortBy, sortDir, filters: filterValues } = derived
   const offset = derived.input.pagination.offset
 
@@ -179,7 +168,7 @@ export function usePaginatedQuery<TExtra extends object, TRow>(
     )
   }, [setUrlState, keys.pageSizeKey, keys.pageKey, pageSizeOptions])
 
-  const setSearchInput = useCallback((value: string) => {
+  const setSearch = useCallback((value: string) => {
     void setUrlState(
       {
         [keys.searchKey]: value || null,
@@ -233,9 +222,8 @@ export function usePaginatedQuery<TExtra extends object, TRow>(
     pageCount,
     setPage,
     setPageSize,
-    searchInput,
-    setSearchInput,
-    searchDebounced,
+    search,
+    setSearch,
     sortBy,
     sortDir,
     setSort,
