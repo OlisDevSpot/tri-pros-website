@@ -1,4 +1,5 @@
-import type { DateRange, NumberRange } from '@/shared/dal/server/lib/query/schemas'
+import type { FilterOption } from '@/shared/dal/lib/query/field-list'
+import type { DateRange, NumberRange } from '@/shared/dal/lib/query/range-schemas'
 
 /**
  * Time-preset descriptor for `date-range` filter type. Click a preset → fill
@@ -9,14 +10,6 @@ export interface TimePreset {
   label: string
   value: string
   getRange: () => DateRange
-}
-
-/**
- * Single-value option for `select` and `multi-select` filter types.
- */
-export interface FilterOption {
-  label: string
-  value: string
 }
 
 /**

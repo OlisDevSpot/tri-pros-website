@@ -1,5 +1,6 @@
 import type { ProjectStatusBucket, ProjectVisibility } from '@/shared/constants/enums'
-import type { DateRange, PaginationFields, SortFields } from '@/shared/dal/server/lib/query/schemas'
+import type { DateRange } from '@/shared/dal/lib/query/range-schemas'
+import type { PaginationFields, SortFields } from '@/shared/dal/server/lib/query/schemas'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { Project, ProjectMediaFile } from '@/shared/db/schema'
 import type { PortfolioProject, PortfolioProjectDetail } from '@/shared/modules/projects/core/types'

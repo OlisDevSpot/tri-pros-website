@@ -1,9 +1,9 @@
 import type { FilterValue } from '@/shared/dal/client/lib/types'
-import type { DateRange, NumberRange } from '@/shared/dal/server/lib/query/schemas'
+import type { DateRange, NumberRange } from '@/shared/dal/lib/query/range-schemas'
 
 import { parseAsArrayOf, parseAsBoolean, parseAsJson, parseAsString } from 'nuqs/server'
 
-import { dateRangeSchema, numberRangeSchema } from '@/shared/dal/server/lib/query/schemas'
+import { dateRangeSchema, numberRangeSchema } from '@/shared/dal/lib/query/range-schemas'
 
 /**
  * Compile-time registry mapping each `FilterDefinition` type to its URL

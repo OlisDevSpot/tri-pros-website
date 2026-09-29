@@ -3,9 +3,10 @@ import { and, count, eq, getTableColumns, gte, ilike, inArray, lte, or } from 'd
 import z from 'zod'
 
 import { activityEntityTypes, activityTypes, gcalSyncableActivityTypes } from '@/shared/constants/enums'
+import { dateRangeSchema } from '@/shared/dal/lib/query/range-schemas'
 import { buildFilterWhere } from '@/shared/dal/server/lib/query/filters'
 import { paginate } from '@/shared/dal/server/lib/query/output'
-import { dateRangeSchema, paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
+import { paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
 import { buildOrderBy } from '@/shared/dal/server/lib/query/sort'
 import { db } from '@/shared/db'
 import { activities, user } from '@/shared/db/schema'

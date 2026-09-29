@@ -2,7 +2,7 @@
 
 import type { FilterValue, PaginatedQueryResult } from '@/shared/dal/client/lib/types'
 import type { PaginatedQueryConfig, PaginatedQueryInput } from '@/shared/dal/lib/query/derive-paginated-query-state'
-import type { PaginatedResult } from '@/shared/dal/server/lib/query/output'
+import type { PaginatedResult } from '@/shared/dal/lib/query/paginated-result'
 
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useQueryStates } from 'nuqs'

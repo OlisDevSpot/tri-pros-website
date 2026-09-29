@@ -1,11 +1,4 @@
-/**
- * Standardized response shape returned by every paginated tRPC procedure.
- * The client `usePaginatedQuery` hook depends on this contract.
- */
-export interface PaginatedResult<T> {
-  rows: T[]
-  total: number
-}
+import type { PaginatedResult } from '@/shared/dal/lib/query/paginated-result'
 
 /**
  * Ergonomic helper that runs a page query and a count query in parallel and
