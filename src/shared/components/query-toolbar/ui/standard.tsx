@@ -1,5 +1,7 @@
 'use client'
 
+import type { UseColumnVisibilityResult } from '@/shared/components/data-table/lib/use-column-visibility'
+
 import { QueryToolbarBar } from '@/shared/components/query-toolbar/ui/bar'
 import { QueryToolbarChipRail } from '@/shared/components/query-toolbar/ui/chip-rail'
 import { QueryToolbarColumnsTrigger } from '@/shared/components/query-toolbar/ui/columns-trigger'
@@ -7,18 +9,25 @@ import { QueryToolbarFilterTrigger } from '@/shared/components/query-toolbar/ui/
 import { QueryToolbarLiveStatus } from '@/shared/components/query-toolbar/ui/live-status'
 import { QueryToolbarPageSize } from '@/shared/components/query-toolbar/ui/page-size'
 import { QueryToolbarRefreshButton } from '@/shared/components/query-toolbar/ui/refresh-button'
-import { QueryToolbarRoot } from '@/shared/components/query-toolbar/ui/root'
 import { QueryToolbarSearch } from '@/shared/components/query-toolbar/ui/search'
-import { QueryToolbarStandard } from '@/shared/components/query-toolbar/ui/standard'
 
-export const QueryToolbar = Object.assign(QueryToolbarRoot, {
-  Bar: QueryToolbarBar,
-  Search: QueryToolbarSearch,
-  FilterTrigger: QueryToolbarFilterTrigger,
-  ColumnsTrigger: QueryToolbarColumnsTrigger,
-  RefreshButton: QueryToolbarRefreshButton,
-  PageSize: QueryToolbarPageSize,
-  ChipRail: QueryToolbarChipRail,
-  LiveStatus: QueryToolbarLiveStatus,
-  Standard: QueryToolbarStandard,
-})
+interface StandardProps {
+  searchPlaceholder?: string
+  visibility?: UseColumnVisibilityResult
+}
+
+export function QueryToolbarStandard({ searchPlaceholder, visibility }: StandardProps) {
+  return (
+    <>
+      <QueryToolbarBar>
+        <QueryToolbarSearch placeholder={searchPlaceholder} />
+        <QueryToolbarFilterTrigger />
+        {visibility && <QueryToolbarColumnsTrigger visibility={visibility} />}
+        <QueryToolbarRefreshButton />
+        <QueryToolbarPageSize />
+      </QueryToolbarBar>
+      <QueryToolbarChipRail />
+      <QueryToolbarLiveStatus />
+    </>
+  )
+}
