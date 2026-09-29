@@ -7,7 +7,7 @@ import type { PaginatedResult } from '@/shared/dal/lib/query/paginated-result'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { CustomerPipelineItem, CustomerPipelineRawData, PipelineItemProposal, PipelineItemRep } from '@/shared/entities/customers/types/pipeline-item'
 
-import { and, count, desc, eq, exists, inArray, isNotNull, isNull, max, sql } from 'drizzle-orm'
+import { and, asc, count, desc, eq, exists, inArray, isNotNull, isNull, max, sql } from 'drizzle-orm'
 import z from 'zod'
 
 import { DECIDED_OUTCOMES } from '@/shared/constants/enums/meetings'
@@ -47,7 +47,7 @@ interface PipelineBranchArgs {
 export async function getCustomerPipelineItems(ctx: ScopedContext, input: CustomerPipelineItemsInput): Promise<DalReturn<PaginatedResult<CustomerPipelineItem>>> {
   return dalDbOperation(async () => {
     const args: PipelineBranchArgs = {
-      // Each pipeline reaches customers through a different table, so scoping stays per branch; a scoped caller without a session matches nothing.
+      // Each pipeline reaches customers through a different table, so scoping stays per branch; without a session the fallback id '' never matches a participant or owner (leads is unscoped; projects still shows public projects).
       userId: ctx.session?.user.id ?? '',
       isOmni: !ctx.ability || ctx.ability.can('manage', 'all'),
       canSeeUngated: canSeeUngatedPhone(ctx.ability),
@@ -102,7 +102,7 @@ async function getLeadsPipelineItems(args: PipelineBranchArgs): Promise<Customer
       sql`NOT EXISTS (SELECT 1 FROM meetings m WHERE m.customer_id = ${customers.id})`,
       args.customerWhere,
     ))
-    .orderBy(...(args.customerOrder ?? [desc(customers.createdAt)]))
+    .orderBy(...(args.customerOrder ?? [desc(customers.createdAt), asc(customers.id)]))
 
   return rows.map((row): CustomerPipelineItem => ({
     id: row.id,
@@ -160,7 +160,7 @@ async function getRehashOrDeadPipelineItems(pipeline: Pipeline, args: PipelineBr
       ))),
       args.customerWhere,
     ))
-    .orderBy(...(args.customerOrder ?? [desc(customers.updatedAt)]))
+    .orderBy(...(args.customerOrder ?? [desc(customers.updatedAt), asc(customers.id)]))
 
   const defaultStage = pipeline === 'rehash' ? 'schedule_manager_meeting' : 'mostly_dead'
 
@@ -226,7 +226,7 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
     .leftJoin(leadSourcesTable, eq(leadSourcesTable.id, customers.leadSourceId))
     .where(args.customerWhere)
     .groupBy(customers.id, leadSourcesTable.id)
-    .orderBy(...(args.customerOrder ?? [desc(customers.updatedAt)]))
+    .orderBy(...(args.customerOrder ?? [desc(customers.updatedAt), asc(customers.id)]))
 
   if (rows.length === 0) {
     return []
@@ -429,7 +429,7 @@ async function getProjectsPipelineItems(args: PipelineBranchArgs): Promise<Custo
       args.customerWhere,
     ))
     // Customers take their first row's position below, so the chosen customer order leads and each customer's newest project still wins.
-    .orderBy(...(args.customerOrder ?? []), desc(projects.createdAt))
+    .orderBy(...(args.customerOrder ?? []), desc(projects.createdAt), asc(customers.id))
 
   if (projectRows.length === 0) {
     return []
