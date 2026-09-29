@@ -1,19 +1,14 @@
 'use client'
 
-import type { FilterDefinition, FilterValue } from '@/shared/dal/client/lib/types'
+import type { FilterValue } from '@/shared/dal/client/lib/types'
 
 import { AnimatePresence, motion } from 'motion/react'
 import { useMemo } from 'react'
 
-import { KEYBOARD_HINT_TEXT } from '@/shared/components/query-toolbar/constants/keyboard-hints'
+import { KEYBOARD_HINT_TEXT, KEYBOARD_HINT_TEXT_WITHOUT_PAGING } from '@/shared/components/query-toolbar/constants/keyboard-hints'
 import { useQueryToolbarContext } from '@/shared/components/query-toolbar/lib/context'
 import { FilterChip } from '@/shared/components/query-toolbar/ui/filter-chip'
 import { cn } from '@/shared/lib/utils'
-
-interface ActiveChip {
-  definition: FilterDefinition
-  value: NonNullable<FilterValue>
-}
 
 interface ChipRailProps {
   /** `inline` is auto-injected by `<Bar>`; its empty state shows the keyboard hint so the bar never grows a second row. */
@@ -21,18 +16,15 @@ interface ChipRailProps {
 }
 
 export function QueryToolbarChipRail({ placement = 'block' }: ChipRailProps) {
-  const { filterDefinitions, filters, setFilter } = useQueryToolbarContext()
+  const { query, filters } = useQueryToolbarContext()
+  const { filters: values, setFilter } = query.filterSort
+  const hint = query.window.kind === 'page' ? KEYBOARD_HINT_TEXT : KEYBOARD_HINT_TEXT_WITHOUT_PAGING
 
-  const active = useMemo<ActiveChip[]>(() => {
-    const result: ActiveChip[] = []
-    for (const def of filterDefinitions) {
-      const v = filters[def.id]
-      if (v !== undefined) {
-        result.push({ definition: def, value: v })
-      }
-    }
-    return result
-  }, [filterDefinitions, filters])
+  // Hidden filters are included: a URL value still applies on the server, so it keeps a removable chip.
+  const active = useMemo(() => filters.flatMap(({ definition }) => {
+    const value = values[definition.id] as FilterValue
+    return value === undefined ? [] : [{ definition, value }]
+  }), [filters, values])
 
   if (active.length === 0) {
     if (placement === 'block') {
@@ -47,7 +39,7 @@ export function QueryToolbarChipRail({ placement = 'block' }: ChipRailProps) {
           'select-none pointer-events-none',
         )}
       >
-        {KEYBOARD_HINT_TEXT}
+        {hint}
       </span>
     )
   }

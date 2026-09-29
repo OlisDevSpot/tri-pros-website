@@ -8,7 +8,9 @@ import { QueryToolbarLiveStatus } from '@/shared/components/query-toolbar/ui/liv
 import { QueryToolbarPageSize } from '@/shared/components/query-toolbar/ui/page-size'
 import { QueryToolbarRefreshButton } from '@/shared/components/query-toolbar/ui/refresh-button'
 import { QueryToolbarRoot } from '@/shared/components/query-toolbar/ui/root'
+import { QueryToolbarRowCapNotice } from '@/shared/components/query-toolbar/ui/row-cap-notice'
 import { QueryToolbarSearch } from '@/shared/components/query-toolbar/ui/search'
+import { QueryToolbarSort } from '@/shared/components/query-toolbar/ui/sort'
 import { QueryToolbarStandard } from '@/shared/components/query-toolbar/ui/standard'
 
 export const QueryToolbar = Object.assign(QueryToolbarRoot, {
@@ -20,5 +22,7 @@ export const QueryToolbar = Object.assign(QueryToolbarRoot, {
   PageSize: QueryToolbarPageSize,
   ChipRail: QueryToolbarChipRail,
   LiveStatus: QueryToolbarLiveStatus,
+  Sort: QueryToolbarSort,
+  RowCapNotice: QueryToolbarRowCapNotice,
   Standard: QueryToolbarStandard,
 })

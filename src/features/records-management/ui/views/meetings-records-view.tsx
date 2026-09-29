@@ -19,7 +19,7 @@ export function MeetingsRecordsView() {
     <RecordsPageMotionShell>
       <MeetingsTable
         tableView={MEETINGS_RECORDS_TABLE_VIEW}
-        header={pagination => <RecordsPageHeader title="Meetings" pagination={pagination} />}
+        header={query => <RecordsPageHeader title="Meetings" query={query} />}
         renderExpandedRow={renderMeetingRowPanel}
       />
     </RecordsPageMotionShell>

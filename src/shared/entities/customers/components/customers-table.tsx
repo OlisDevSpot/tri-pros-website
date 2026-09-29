@@ -15,6 +15,7 @@ import { RecordsPageHeader } from '@/shared/components/records-page-header'
 import { RecordsPageShell } from '@/shared/components/records-page-shell'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
+import { fromPaginatedQuery } from '@/shared/dal/client/lib/from-paginated-query'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { CUSTOMERS_TABLE_QUERY_CONFIG, CUSTOMERS_TABLE_SHOW_COLUMNS } from '@/shared/entities/customers/constants/customers-table-query-config'
 import { useCustomerActionConfigs } from '@/shared/entities/customers/hooks/use-customer-action-configs'
@@ -33,6 +34,7 @@ export function CustomersTable() {
     {},
     CUSTOMERS_TABLE_QUERY_CONFIG,
   )
+  const query = fromPaginatedQuery(pagination)
 
   const updateCreatedAt = useMutation(
     trpc.customersRouter.crud.update.mutationOptions({
@@ -77,9 +79,9 @@ export function CustomersTable() {
       <DeleteConfirmDialog />
 
       <RecordsPageShell
-        header={<RecordsPageHeader title="Customers" pagination={pagination} />}
+        header={<RecordsPageHeader title="Customers" query={query} />}
         toolbar={(
-          <QueryToolbar pagination={pagination} entityName="customers">
+          <QueryToolbar query={query} entityName="customers">
             <QueryToolbar.Standard searchPlaceholder="Search by name or email…" visibility={visibility} />
           </QueryToolbar>
         )}

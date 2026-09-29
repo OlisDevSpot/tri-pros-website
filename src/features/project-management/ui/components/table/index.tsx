@@ -18,6 +18,7 @@ import { RecordsPageShell } from '@/shared/components/records-page-shell'
 import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
 import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
+import { fromPaginatedQuery } from '@/shared/dal/client/lib/from-paginated-query'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { useProjectActionConfigs } from '@/shared/modules/projects/core/hooks/use-project-action-configs'
 
@@ -43,6 +44,7 @@ export function PortfolioProjectsTable() {
     {},
     PROJECTS_TABLE_QUERY_CONFIG,
   )
+  const query = fromPaginatedQuery(pagination)
 
   const handleRowClick = useCallback((project: ProjectRow) => {
     setSelectedProject(project)
@@ -67,7 +69,7 @@ export function PortfolioProjectsTable() {
         header={(
           <RecordsPageHeader
             title="Projects"
-            pagination={pagination}
+            query={query}
             actions={(
               <Button size="sm" onClick={() => router.push(ROOTS.dashboard.projects.new())}>
                 <PlusIcon className="mr-2 h-4 w-4" />
@@ -77,7 +79,7 @@ export function PortfolioProjectsTable() {
           />
         )}
         toolbar={(
-          <QueryToolbar pagination={pagination} entityName="projects">
+          <QueryToolbar query={query} entityName="projects">
             <QueryToolbar.Standard searchPlaceholder="Search by title or city…" visibility={visibility} />
           </QueryToolbar>
         )}

@@ -19,6 +19,7 @@ import { RecordsPageHeader } from '@/shared/components/records-page-header'
 import { RecordsPageShell } from '@/shared/components/records-page-shell'
 import { ROOTS } from '@/shared/config/roots'
 import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
+import { fromPaginatedQuery } from '@/shared/dal/client/lib/from-paginated-query'
 
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useProposalActionConfigs } from '@/shared/modules/proposals/core/hooks/use-proposal-action-configs'
@@ -46,6 +47,7 @@ export function PastProposalsTable() {
     {},
     PROPOSALS_TABLE_QUERY_CONFIG,
   )
+  const query = fromPaginatedQuery(pagination)
 
   const handleView = useCallback((entity: ProposalRow) => {
     window.open(ROOTS.public.proposalReview(entity.id), '_blank')
@@ -139,9 +141,9 @@ export function PastProposalsTable() {
       <DeleteConfirmDialog />
 
       <RecordsPageShell
-        header={<RecordsPageHeader title="Proposals" pagination={pagination} />}
+        header={<RecordsPageHeader title="Proposals" query={query} />}
         toolbar={(
-          <QueryToolbar pagination={pagination} entityName="proposals">
+          <QueryToolbar query={query} entityName="proposals">
             <QueryToolbar.Standard searchPlaceholder="Search by label or customer…" visibility={visibility} />
           </QueryToolbar>
         )}

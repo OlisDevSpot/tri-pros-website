@@ -7,7 +7,8 @@ import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/lib/utils'
 
 export function QueryToolbarRefreshButton() {
-  const { refresh, isFetching } = useQueryToolbarContext()
+  const { query } = useQueryToolbarContext()
+  const { refresh, isFetching } = query
   return (
     <Button
       type="button"

@@ -14,6 +14,7 @@ import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
+import { fromPaginatedQuery } from '@/shared/dal/client/lib/from-paginated-query'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { useCustomerActionConfigs } from '@/shared/entities/customers/hooks/use-customer-action-configs'
 
@@ -37,6 +38,7 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
     { id: leadSourceId },
     LEAD_SOURCE_CUSTOMERS_TABLE_QUERY_CONFIG,
   )
+  const query = fromPaginatedQuery(pagination)
 
   const updateCreatedAt = useMutation(
     trpc.customersRouter.crud.update.mutationOptions({
@@ -96,7 +98,7 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
           </span>
         </div>
 
-        <QueryToolbar pagination={pagination} entityName="customers">
+        <QueryToolbar query={query} entityName="customers">
           <QueryToolbar.Bar>
             <QueryToolbar.Search placeholder="Filter by name or email…" />
             <QueryToolbar.FilterTrigger />

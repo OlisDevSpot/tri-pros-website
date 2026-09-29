@@ -1,26 +1,23 @@
 'use client'
 
-import type { PaginatedQueryResult } from '@/shared/dal/client/lib/types'
+import type { ToolbarFilter } from '@/shared/components/query-toolbar/lib/to-toolbar-filters'
+import type { DataViewQueryResult } from '@/shared/dal/client/lib/types'
+import type { FieldList, FilterOption } from '@/shared/dal/lib/query/field-list'
 
 import { createContext, use } from 'react'
 
-/**
- * Context that the `<QueryToolbar>` root provides to all slot children. Each
- * slot reads the pagination state it needs (filters, search, sort, page-size)
- * and dispatches via the corresponding setters.
- */
-const QueryToolbarContext = createContext<PaginatedQueryResult<unknown> | null>(null)
+export interface QueryToolbarContextValue {
+  /** Widened once at the root, so every slot reads one non-generic shape. */
+  query: DataViewQueryResult<unknown, FieldList, string>
+  filters: readonly ToolbarFilter[]
+  sortOptions: readonly FilterOption[]
+}
+
+const QueryToolbarContext = createContext<QueryToolbarContextValue | null>(null)
 
 export const QueryToolbarProvider = QueryToolbarContext.Provider
 
-/**
- * Hook for `<QueryToolbar>` slot children. Throws if used outside a
- * `<QueryToolbar>` root, which signals a misuse of the compound API.
- *
- * Generic parameter is unused — slots don't need TRow because they only
- * touch state, not data rows. Cast at the boundary.
- */
-export function useQueryToolbarContext(): PaginatedQueryResult<unknown> {
+export function useQueryToolbarContext(): QueryToolbarContextValue {
   const ctx = use(QueryToolbarContext)
   if (!ctx) {
     throw new Error('QueryToolbar slot used outside of <QueryToolbar> root')

@@ -10,3 +10,6 @@ export const SEARCH_SHORTCUT_KEY = '/'
 
 /** Key that opens the filter trigger when no input is focused. */
 export const FILTER_SHORTCUT_KEY = 'f'
+
+/** Chip-rail hint for data views without pages (calendar, kanban). */
+export const KEYBOARD_HINT_TEXT_WITHOUT_PAGING = 'Press / to search · F to filter'

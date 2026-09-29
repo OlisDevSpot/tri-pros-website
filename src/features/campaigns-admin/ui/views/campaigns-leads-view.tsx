@@ -16,6 +16,7 @@ import { buildLeadsColumns } from '@/features/campaigns-admin/ui/lib/leads-colum
 import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
+import { fromPaginatedQuery } from '@/shared/dal/client/lib/from-paginated-query'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'
@@ -72,8 +73,8 @@ export function CampaignsLeadsView() {
   // swapped for the runtime-merged (populated-options) config so the
   // filter UI can render real campaign/source choices. `usePaginatedQuery`
   // itself never sees this — only `<LeadsFilterBar>` does.
-  const toolbarPagination = useMemo(
-    () => ({ ...pagination, filterDefinitions: filterConfig }),
+  const toolbarQuery = useMemo(
+    () => fromPaginatedQuery({ ...pagination, filterDefinitions: filterConfig }),
     [pagination, filterConfig],
   )
 
@@ -137,7 +138,7 @@ export function CampaignsLeadsView() {
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col gap-3">
-      <LeadsFilterBar pagination={toolbarPagination} />
+      <LeadsFilterBar query={toolbarQuery} />
 
       <div className="min-h-0 flex-1">
         <DataTable

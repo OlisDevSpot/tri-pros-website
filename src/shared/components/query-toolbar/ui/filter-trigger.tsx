@@ -15,11 +15,14 @@ import { cn } from '@/shared/lib/utils'
 
 // Active state shifts the border so icon-only mobile users can still tell filters are on.
 export function QueryToolbarFilterTrigger() {
-  const { activeFilterCount, filterDefinitions } = useQueryToolbarContext()
+  const { query, filters, sortOptions } = useQueryToolbarContext()
+  const { activeFilterCount } = query.filterSort
   const { filterOpen, setFilterOpen } = useToolbarInternal()
   const isBelowLg = useIsBelowLg()
 
-  if (filterDefinitions.length === 0) {
+  const hasControls = filters.some(filter => !filter.hidden)
+  // Below lg the sheet also carries Sort, so it's worth opening even with no filter controls.
+  if (!hasControls && !(isBelowLg && sortOptions.length > 0)) {
     return null
   }
 

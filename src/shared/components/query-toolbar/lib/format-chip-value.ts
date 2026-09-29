@@ -15,12 +15,14 @@ export function formatChipValue(definition: FilterDefinition, value: FilterValue
   switch (definition.type) {
     case 'select': {
       const opt = definition.options.find(o => o.value === value)
-      return opt?.label ?? String(value)
+      return opt?.label ?? '1 selected'
     }
     case 'multi-select': {
       const arr = value as string[]
-      if (arr.length <= 2) {
-        return arr.map(v => definition.options.find(o => o.value === v)?.label ?? v).join(', ')
+      const labels = arr.map(v => definition.options.find(o => o.value === v)?.label)
+      // A value with no loaded label (options still loading, refused, or the option was deleted) shows as a count, never a raw id.
+      if (arr.length <= 2 && labels.every(label => label !== undefined)) {
+        return labels.join(', ')
       }
       return `${arr.length} selected`
     }

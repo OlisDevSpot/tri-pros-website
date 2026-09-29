@@ -11,7 +11,8 @@ interface SearchProps {
 }
 
 export function QueryToolbarSearch({ placeholder, className }: SearchProps) {
-  const { searchInput, setSearchInput } = useQueryToolbarContext()
+  const { query } = useQueryToolbarContext()
+  const { searchInput, setSearchInput } = query.filterSort
   const { entityName, searchInputRef } = useToolbarInternal()
   const effectivePlaceholder = placeholder ?? `Search ${entityName}…`
   return (

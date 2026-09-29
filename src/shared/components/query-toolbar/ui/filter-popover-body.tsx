@@ -5,9 +5,11 @@ import { FilterControlField } from '@/shared/components/query-toolbar/ui/filter-
 import { cn } from '@/shared/lib/utils'
 
 export function FilterPopoverBody() {
-  const ctx = useQueryToolbarContext()
-  const hasResetableState = ctx.activeFilterCount > 0 || !!ctx.searchInput || !!ctx.sortBy
-  if (ctx.filterDefinitions.length === 0) {
+  const { query, filters } = useQueryToolbarContext()
+  const { filterSort } = query
+  const visibleFilters = filters.filter(filter => !filter.hidden)
+  const hasResetableState = filterSort.activeFilterCount > 0 || !!filterSort.searchInput || !!filterSort.sortBy
+  if (visibleFilters.length === 0) {
     return null
   }
   return (
@@ -19,7 +21,7 @@ export function FilterPopoverBody() {
         {hasResetableState && (
           <button
             type="button"
-            onClick={ctx.clearFilters}
+            onClick={filterSort.clearFilters}
             className={cn(
               'rounded text-xs text-muted-foreground transition-colors',
               'hover:text-foreground',
@@ -31,8 +33,8 @@ export function FilterPopoverBody() {
         )}
       </div>
       <div className="space-y-3.5 px-4 py-4">
-        {ctx.filterDefinitions.map(def => (
-          <FilterControlField key={def.id} definition={def} />
+        {visibleFilters.map(filter => (
+          <FilterControlField key={filter.definition.id} definition={filter.definition} />
         ))}
       </div>
     </div>

@@ -13,8 +13,8 @@ interface BarProps {
 }
 
 export function QueryToolbarBar({ className, children }: BarProps) {
-  const { isFetching, isPlaceholderData } = useQueryToolbarContext()
-  const showShimmer = isFetching || isPlaceholderData
+  const { query } = useQueryToolbarContext()
+  const showShimmer = query.isFetching || query.isPlaceholderData
   return (
     <div
       className={cn(

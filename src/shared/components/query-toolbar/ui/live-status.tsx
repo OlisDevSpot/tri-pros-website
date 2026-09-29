@@ -7,7 +7,8 @@ import { useToolbarInternal } from '@/shared/components/query-toolbar/lib/intern
 import { formatTotalCount } from '@/shared/lib/pagination-format'
 
 export function QueryToolbarLiveStatus() {
-  const { total, isLoading, isFetching } = useQueryToolbarContext()
+  const { query } = useQueryToolbarContext()
+  const { total, isLoading, isFetching } = query
   const { entityName } = useToolbarInternal()
 
   const message = useMemo(() => {

@@ -2,7 +2,8 @@
 
 import type { ReactNode } from 'react'
 
-import type { PaginatedQueryResult } from '@/shared/dal/client/lib/types'
+import type { DataViewQueryResult } from '@/shared/dal/client/lib/types'
+import type { FieldList } from '@/shared/dal/lib/query/field-list'
 
 import { formatTotalCount } from '@/shared/lib/pagination-format'
 import { cn } from '@/shared/lib/utils'
@@ -10,11 +11,8 @@ import { cn } from '@/shared/lib/utils'
 interface RecordsPageHeaderProps {
   /** Heading text — the entity name in plural form (e.g. "Proposals"). */
   title: string
-  /**
-   * Pagination result from `usePaginatedQuery`. The header reads `total`
-   *  and `isLoading` from it to render the count badge.
-   */
-  pagination: PaginatedQueryResult<unknown>
+  /** Any data-view result; the header reads only `total` and `isLoading` for the count. */
+  query: Pick<DataViewQueryResult<unknown, FieldList, string>, 'total' | 'isLoading'>
   /** Heading level for semantics; visual size stays the same. Defaults to h2. */
   as?: 'h1' | 'h2' | 'h3'
   /** Right-aligned slot for page-level actions ("New", "Export", etc.). */
@@ -33,15 +31,15 @@ interface RecordsPageHeaderProps {
  */
 export function RecordsPageHeader({
   title,
-  pagination,
+  query,
   as = 'h2',
   actions,
   className,
 }: RecordsPageHeaderProps) {
   const Tag = as
-  const countText = pagination.isLoading
+  const countText = query.isLoading
     ? 'Loading…'
-    : formatTotalCount(pagination.total)
+    : formatTotalCount(query.total)
   return (
     <header className={cn('flex flex-wrap items-baseline gap-x-3 gap-y-1', className)}>
       <div className="flex flex-wrap items-baseline gap-x-2">
