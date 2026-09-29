@@ -1,4 +1,8 @@
-import type { FilterOption } from '@/shared/dal/lib/query/field-list'
+import type { DecorateQueryProcedure, inferOutput } from '@trpc/tanstack-react-query'
+import type { CalendarViewType } from '@/shared/constants/enums'
+import type { DataViewWindowKind } from '@/shared/dal/lib/query/data-view-query-config'
+import type { FilterValue as FieldFilterValue, FieldList, FilterOption, RuntimeOptionId, SortDir, SortId, ToolbarFilterId } from '@/shared/dal/lib/query/field-list'
+import type { PaginatedResult } from '@/shared/dal/lib/query/paginated-result'
 import type { DateRange, NumberRange } from '@/shared/dal/lib/query/range-schemas'
 
 /**
@@ -140,4 +144,73 @@ export interface PaginatedQueryResult<TRow> {
    * awaits this; the toolbar button spins on `isFetching`.
    */
   refresh: () => Promise<void>
+}
+
+/** Every data-view read returns `{ rows, total }`; this reads the row type off the tRPC procedure. */
+export type DataViewRowOf<TProcedure extends DecorateQueryProcedure<any>> = inferOutput<TProcedure> extends PaginatedResult<infer TRow> ? TRow : never
+
+export interface DataViewFilterSort<F extends FieldList, T extends ToolbarFilterId<F> = ToolbarFilterId<F>> {
+  fields: F
+  toolbar: readonly T[]
+  /** Active toolbar values only. */
+  filters: { [K in T]?: FieldFilterValue<F, K> }
+  /** Loaded choices for the toolbar's runtime-option filters; a missing entry (loading, refused, not permitted) hides that filter. */
+  options: { [K in Extract<RuntimeOptionId<F>, T>]?: readonly FilterOption[] }
+  activeFilterCount: number
+  /** Resets the page to 1; never moves a date window. */
+  setFilter: <K extends T>(id: K, value: FieldFilterValue<F, K> | undefined) => void
+  /** Clears toolbar filters, search and sort; leaves the window alone. */
+  clearFilters: () => void
+  searchInput: string
+  setSearchInput: (value: string) => void
+  sortBy: SortId<F> | undefined
+  sortDir: SortDir | undefined
+  setSort: (sortBy: SortId<F> | undefined, sortDir?: SortDir) => void
+}
+
+export interface PageWindowControls {
+  kind: 'page'
+  page: number
+  pageSize: number
+  pageSizeOptions: readonly number[]
+  pageCount: number
+  setPage: (page: number) => void
+  setPageSize: (pageSize: number) => void
+}
+
+export interface DateWindowControls {
+  kind: 'date'
+  /** `YYYY-MM-DD` in the business timezone. */
+  anchor: string
+  view: CalendarViewType
+  range: { from: string, to: string }
+  cap: number
+  /** `undefined` returns to today. */
+  setAnchor: (calendarDay: string | undefined) => void
+  setView: (view: CalendarViewType) => void
+}
+
+export type DataViewWindowControls<K extends DataViewWindowKind = DataViewWindowKind> = Extract<
+  PageWindowControls | DateWindowControls | { kind: 'whole-list' },
+  { kind: K }
+>
+
+/** What `useDataViewQuery` returns: plain data and setters, safe to pass down as props. */
+export interface DataViewQueryResult<
+  TRow,
+  F extends FieldList,
+  T extends ToolbarFilterId<F> = ToolbarFilterId<F>,
+  K extends DataViewWindowKind = DataViewWindowKind,
+> {
+  rows: TRow[]
+  total: number
+  isLoading: boolean
+  isFetching: boolean
+  isPlaceholderData: boolean
+  isError: boolean
+  error: unknown
+  /** Invalidates every cached input of this procedure; resolves when the refetch settles. */
+  refresh: () => Promise<void>
+  filterSort: DataViewFilterSort<F, T>
+  window: DataViewWindowControls<K>
 }
