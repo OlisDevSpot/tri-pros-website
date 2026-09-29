@@ -112,8 +112,8 @@ assert.equal(combineCuts({ trades: [], ducts: false }, 'electric', config.trades
   near(p.replacements[0].installs[0].price, 18522, 'HVAC price in year 3')
   near(p.replacements[0].repairsUntil, 1891.5, 'HVAC repairs until then')
   assert.deepEqual(p.milestones, { paysForItselfYear: 3, costsLessMonthlyYear: 4, payoffYear: 15 }, 'A milestones (pinned)')
-  near(p.years[10].benefit, 26733.45, 'A +10 yrs (pinned)')
-  near(p.years[20].benefit, 123385.65, 'A +20 yrs (pinned)')
+  near(p.years[10].benefit, 23379.77, 'A +10 yrs (pinned)')
+  near(p.years[20].benefit, 95699.35, 'A +20 yrs (pinned)')
 }
 
 // Job D. Hand-checked: paint aged 8 of 10 → year 2 at 8,000 × 1.05² = $8,820, renewed in year 12 at 8,000 × 1.05¹² = $14,366.85.
@@ -121,8 +121,8 @@ assert.equal(combineCuts({ trades: [], ducts: false }, 'electric', config.trades
   const p = run(JOB_D)
   assert.deepEqual(p.replacements[0].installs.map(install => install.year), [2, 12], 'paint renews every 10 years inside the projection')
   near(p.replacements[0].installs[1].price, 14366.85, 'second repaint price')
-  assert.deepEqual(p.milestones, { paysForItselfYear: 8, costsLessMonthlyYear: 10, payoffYear: 15 }, 'D milestones (pinned)')
-  near(p.years[20].benefit, 32606.77, 'D +20 yrs (pinned)')
+  assert.deepEqual(p.milestones, { paysForItselfYear: 8, costsLessMonthlyYear: 12, payoffYear: 15 }, 'D milestones (pinned)')
+  near(p.years[20].benefit, 30805.51, 'D +20 yrs (pinned)')
   near(p.years[13].valueWait, 0.8 * 14366.85 * 1.04, 'the renewal replaces the earlier repaint\'s value')
 }
 
@@ -130,10 +130,10 @@ assert.equal(combineCuts({ trades: [], ducts: false }, 'electric', config.trades
 {
   const b = run(JOB_B)
   assert.deepEqual(b.milestones, { paysForItselfYear: 4, costsLessMonthlyYear: 5, payoffYear: 15 }, 'B milestones')
-  near(b.years[10].benefit, 27492.19, 'B +10 yrs')
+  near(b.years[10].benefit, 24138.33, 'B +10 yrs')
   const c = run(JOB_C)
-  assert.deepEqual(c.milestones, { paysForItselfYear: 10, costsLessMonthlyYear: 14, payoffYear: 15 }, 'C milestones')
-  near(c.years[10].benefit, 2155.61, 'C +10 yrs')
+  assert.deepEqual(c.milestones, { paysForItselfYear: 10, costsLessMonthlyYear: 16, payoffYear: 15 }, 'C milestones')
+  near(c.years[10].benefit, 272.54, 'C +10 yrs')
 }
 
 // Job E. Incentives cover the whole price, so netPrice is 0 and the job is still ready — the project-price
@@ -160,7 +160,7 @@ for (const values of [JOB_A, JOB_B, JOB_C, JOB_D, JOB_E].flatMap(values => [valu
   assert.equal(p.project.payment, 0, 'cash → no payment')
   assert.equal(p.milestones.payoffYear, null, 'cash → no payoff year')
   assert.deepEqual([p.milestones.paysForItselfYear, p.milestones.costsLessMonthlyYear], [2, 1], 'cash A milestones (pinned)')
-  near(p.years[10].benefit, 39218.93, 'cash A +10 yrs (pinned)')
+  near(p.years[10].benefit, 35865.25, 'cash A +10 yrs (pinned)')
   assert.ok(p.years.every(year => year.projectPayment === 0 && year.replacementPayments === 0), 'no loan payments on either path')
   assert.equal(p.years[10].returnParts.projectInterest, 0, 'no project interest')
 }
@@ -172,7 +172,7 @@ for (const values of [JOB_A, JOB_B, JOB_C, JOB_D, JOB_E].flatMap(values => [valu
     v.project.price = 20000
   }))
   assert.ok(p.years[1].monthlyNow < p.years[1].monthlyWait && p.years[3].monthlyNow > p.years[3].monthlyWait, 'the case flips back')
-  assert.equal(p.milestones.costsLessMonthlyYear, 7, 'costs less monthly only from the year it stays cheaper')
+  assert.equal(p.milestones.costsLessMonthlyYear, 9, 'costs less monthly only from the year it stays cheaper')
 }
 
 // Not ready without a trade, a price and a bill.
@@ -189,7 +189,7 @@ for (const values of [JOB_A, JOB_B, JOB_C, JOB_D, JOB_E].flatMap(values => [valu
   const p = run(JOB_A)
   assert.deepEqual(p.project.aprPercent, { value: 8.99, source: 'working' }, 'blank APR → working 8.99%')
   assert.deepEqual(p.replacements[0].likeForLikePrice, { value: 16000, source: 'working' }, 'blank like-for-like price → working')
-  assert.deepEqual(p.assumptions.ratesPercent.electric, { value: 9.4, source: 'working' }, 'blank rate → working')
+  assert.deepEqual(p.assumptions.ratesPercent.electric, { value: 7.57, source: 'working' }, 'blank rate → working')
   const typed = run({ ...JOB_A, project: { ...JOB_A.project, aprPercent: 6.5 }, assumptions: { ...JOB_A.assumptions, constructionPercent: 5 } })
   assert.deepEqual(typed.project.aprPercent, { value: 6.5, source: 'input' }, 'typed APR → input')
   assert.deepEqual(typed.assumptions.constructionPercent, { value: 5, source: 'input' }, 'typing the working value still counts as typed')
@@ -265,10 +265,10 @@ for (const values of [createRemodelRoiDefaults(config), JOB_A, cash(JOB_D), { ..
   const story = (values: RemodelRoiFormValues, lookAhead: 10 | 15 | 20 = 10) => buildStory({ projection: run(values), config, lookAhead })
   const text = (parts: { text: string }[]) => parts.map(part => part.text).join('')
   const a = story(JOB_A)
-  assert.deepEqual(a.answer.stats.map(stat => stat.value), ['Year 3', 'Year 4', '+$27,000'], 'A headline figures')
-  assert.deepEqual(story(JOB_A, 20).answer.stats.map(stat => stat.value), ['Year 3', 'Year 4', '+$123,000'], 'the look-ahead moves only the amount')
+  assert.deepEqual(a.answer.stats.map(stat => stat.value), ['Year 3', 'Year 4', '+$23,000'], 'A headline figures')
+  assert.deepEqual(story(JOB_A, 20).answer.stats.map(stat => stat.value), ['Year 3', 'Year 4', '+$96,000'], 'the look-ahead moves only the amount')
   assert.ok(a.answer.note, 'pays for itself before it costs less monthly → the note explains why')
-  assert.equal(text(a.monthly.answer), 'For the first 3 years, upgrading costs up to about $106 more a month. From year 4, it costs less every month: $266 less by year 10.', 'A monthly answer')
+  assert.equal(text(a.monthly.answer), 'For the first 3 years, upgrading costs up to about $106 more a month. From year 4, it costs less every month: $196 less by year 10.', 'A monthly answer')
   assert.equal(text(a.waiting.answer), 'Waiting doesn\'t skip the HVAC. It moves it to about year 3 and makes it $4,400 more expensive.', 'A waiting answer keeps HVAC uppercase and rounds')
   assert.match(a.intro.body, /Your HVAC is near the end of its life\./, 'intro names the trade')
   assert.equal(formatMoney(1891.5), '$1,892', 'exact dollars in receipts')

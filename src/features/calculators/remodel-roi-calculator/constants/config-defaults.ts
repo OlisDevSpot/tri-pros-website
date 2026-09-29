@@ -2,8 +2,8 @@ import type { RemodelRoiConfig } from '@/features/calculators/remodel-roi-calcul
 
 export const REMODEL_ROI_CONFIG_DEFAULTS = {
   defaultLookAheadYears: 10,
-  // Carried over from the old calculator, which cited no source for these rates; they stay visible and editable on screen.
-  defaultRatesPercent: { electric: 9.4, water: 10.3, gas: 13.1, gardening: 5, misc: 0 },
+  // The team's estimate from thousands of customer bills analysed over the years; they stay visible and editable on screen.
+  defaultRatesPercent: { electric: 7.57, water: 8.9, gas: 9.1, gardening: 5, misc: 0 },
   defaultHomeAppreciationPercent: 4,
   // The team's working estimate until a sourced construction-cost index replaces it.
   defaultConstructionPercent: 5,

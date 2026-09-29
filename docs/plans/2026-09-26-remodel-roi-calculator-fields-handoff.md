@@ -136,7 +136,7 @@ Every one of these assumptions appears in "show the work", including "like-for-l
 | **Aging systems** (the wait side) | rows of `{system, age or years until it fails, today's like-for-like replacement cost, repairs $/yr}` | lifespan per system (e.g. HVAC 18 yrs, asphalt roof 25), so years left = lifespan − age; repairs e.g. $600/yr for HVAC | R14.3, the largest lever |
 | **The project** | price (manual, with a "Price it in Scope Pricing" hint that switches tabs), incentives, down payment, APR, term | none; default financing terms are the owner's call | R13.4 |
 | **Value added** | % of price (or $) | **80% of price** (R15.1) | R14.4 |
-| **Assumptions** (on screen, editable) | horizon (chips 10 · 15 · 20 · 30), utility escalation per category, **construction inflation** (new), home appreciation | 10 yrs; source rates 9.4 / 13.1 / 10.3; construction 5%/yr; home 4%/yr | R13.1, R14.3 |
+| **Assumptions** (on screen, editable) | horizon (chips 10 · 15 · 20 · 30), utility escalation per category, **construction inflation** (new), home appreciation | 10 yrs; rates 7.57 / 9.1 / 8.9 (team bill analysis, R18.8); construction 5%/yr; home 4%/yr | R13.1, R14.3 |
 | **Home value and existing loans** | optional, collapsed ("add these to see your total net worth") | — | They cancel out of every now-vs-wait difference (checked: a mortgage changed no difference). They only change the absolute net worth. |
 
 ### 5.3 Engine outputs (data the UI renders, never math the UI redoes)
@@ -202,7 +202,7 @@ Every one of these assumptions appears in "show the work", including "like-for-l
   - `assumptions` `{horizonYears 1–30, ratesPercent {homeAppreciation, electric, gas, water, gardening, misc}}`
 - **Defaults (`constants/config-defaults.ts`):**
   - horizon **5** (R13.1 → 10);
-  - rates 4 / 9.4 / 13.1 / 10.3 / 5 / 0;
+  - rates 4 / 7.57 / 9.1 / 8.9 / 5 / 0;
   - served by `lib/resolve-config.ts` (Admin-configured from C2, I3).
 - **Engine:** `lib/project-remodel-roi.ts` `projectRemodelRoi(input, config)`. It is pure; the math is in spec §6.2 (`docs/superpowers/specs/2026-09-26-sales-calculators-c0-port-design.md`).
   - It compares with the project against never doing it: no aging systems, no construction inflation, no monthly-flip or payoff milestones, and totals only (no explanation lines).
