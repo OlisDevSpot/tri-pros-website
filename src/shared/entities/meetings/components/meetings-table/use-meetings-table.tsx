@@ -14,6 +14,7 @@ import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-t
 import { useColumnVisibility } from '@/shared/components/data-table/lib/use-column-visibility'
 import { useEntityColumns } from '@/shared/components/data-table/lib/use-entity-columns'
 import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
+import { fromPaginatedQuery } from '@/shared/dal/client/lib/from-paginated-query'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { AssignProjectDialog } from '@/shared/entities/meetings/components/assign-project-dialog'
@@ -50,6 +51,7 @@ export function useMeetingsTable(
     {},
     tableView.query,
   )
+  const query = fromPaginatedQuery(pagination)
 
   const handleView = useCallback((row: MeetingRow) => {
     if (!row.customerId) {
@@ -103,8 +105,8 @@ export function useMeetingsTable(
     renderExpandedRow: expandedRowRenderer,
     // Without an expanded row, a row click opens the customer profile.
     onRowClick: expandedRowRenderer ? undefined : handleView,
-    serverPagination: toDataTablePagination(pagination),
-    serverSorting: toDataTableSorting(pagination),
+    serverPagination: toDataTablePagination(query),
+    serverSorting: toDataTableSorting(query),
     columnVisibility: visibility.columnVisibility,
   } satisfies DataTableProps<MeetingRow, MeetingTableMeta>
 

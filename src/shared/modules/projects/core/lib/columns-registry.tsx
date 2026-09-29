@@ -17,7 +17,7 @@ export interface ProjectTableMeta {
 export const PROJECT_COLUMNS = {
   title: {
     label: 'Project',
-    sortable: true,
+    sort: 'title',
     cell: ({ row, table }) => {
       const meta = table.options.meta as ProjectTableMeta | undefined
       return (
@@ -33,7 +33,7 @@ export const PROJECT_COLUMNS = {
   },
   city: {
     label: 'Location',
-    sortable: true,
+    sort: 'city',
     cell: ({ row }) => (
       <span className="block truncate max-w-40 text-sm text-muted-foreground">
         {row.original.state
@@ -44,7 +44,7 @@ export const PROJECT_COLUMNS = {
   },
   isPublic: {
     label: 'Visibility',
-    sortable: true,
+    sort: 'isPublic',
     cell: ({ row }) => (
       <Badge
         className={cn(
@@ -60,12 +60,12 @@ export const PROJECT_COLUMNS = {
   },
   completedAt: {
     label: 'Completed',
-    sortable: true,
+    sort: 'completedAt',
     format: 'date',
   },
   createdAt: {
     label: 'Created',
-    sortable: true,
+    sort: 'createdAt',
     format: 'date',
   },
 } as const satisfies ColumnRegistry<ProjectRow>

@@ -99,7 +99,7 @@ export const CUSTOMER_COLUMNS = {
   name: {
     label: 'Customer',
     size: 260,
-    sortable: true,
+    sort: 'name',
     cell: ({ row, table }) => {
       const meta = table.options.meta as CustomerTableMeta | undefined
       return (
@@ -115,7 +115,7 @@ export const CUSTOMER_COLUMNS = {
   email: {
     label: 'Email',
     size: 220,
-    sortable: true,
+    sort: 'email',
   },
   pipeline: {
     label: 'Pipeline',
@@ -129,7 +129,7 @@ export const CUSTOMER_COLUMNS = {
   leadSourceName: {
     label: 'Source',
     size: 160,
-    sortable: true,
+    sort: 'leadSourceName',
     cell: ({ row, table }) => {
       const meta = table.options.meta as CustomerTableMeta | undefined
       return (
@@ -144,7 +144,7 @@ export const CUSTOMER_COLUMNS = {
   createdAt: {
     label: 'Created',
     size: 180,
-    sortable: true,
+    sort: 'createdAt',
     cell: ({ row, table }) => {
       const { relative, dayAtTime } = formatDateCell(row.original.createdAt)
       const meta = table.options.meta as CustomerTableMeta | undefined

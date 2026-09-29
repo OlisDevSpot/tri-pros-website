@@ -60,7 +60,8 @@ export type DataTableFilterConfig
  * switches to `manualPagination` — caller passes the current-page slice as
  * `data` and reports the global row count via `rowCount`.
  *
- * Built by `toDataTablePagination(p)` from a `usePaginatedQuery` result.
+ * Built by `toDataTablePagination(query)` from a `useDataViewQuery` (or
+ * `fromPaginatedQuery`) result.
  */
 export interface DataTableServerPagination {
   pageIndex: number
@@ -76,7 +77,7 @@ export interface DataTableServerPagination {
   isError?: boolean
   /**
    * Invalidate + refetch the whole dataset for this table's procedure. Wired to
-   * pull-to-refresh in DataTable. Forwarded from `usePaginatedQuery().refresh`.
+   * pull-to-refresh in DataTable. Forwarded from the query result's `refresh`.
    */
   onRefresh?: () => Promise<unknown> | void
 }
@@ -89,16 +90,21 @@ export interface DataTableServerPagination {
  * clicks emit `onSortChange` events that the caller routes back to its
  * server query.
  *
+ * `sortBy` and `fallbackVisual.id` are sort ids (a column's `sort`), not
+ * column ids — `DataTable` translates between the two via each column's
+ * `meta.sortId`.
+ *
  * `fallbackVisual` is used to populate the visible sort indicator when the
  * server is using its natural fallback order (no explicit `sortBy`); the
  * URL state stays clean while the column header still shows the down-arrow.
  *
- * Built by `toDataTableSorting(p, opts)` from a `usePaginatedQuery` result.
+ * Built by `toDataTableSorting(query, opts)` from a `useDataViewQuery` (or
+ * `fromPaginatedQuery`) result.
  */
 export interface DataTableServerSorting {
   sortBy: string | undefined
   sortDir: 'asc' | 'desc' | undefined
   onSortChange: (sortBy: string | undefined, sortDir?: 'asc' | 'desc') => void
-  /** Visual default when `sortBy` is undefined; matches the server fallback. */
+  /** Visual default when `sortBy` is undefined; matches the server fallback. A sort id, not a column id. */
   fallbackVisual?: { id: string, desc: boolean }
 }

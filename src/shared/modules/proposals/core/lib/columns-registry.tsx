@@ -28,7 +28,7 @@ export interface ProposalTableMeta {
 export const PROPOSAL_COLUMNS = {
   label: {
     label: 'Proposal',
-    sortable: true,
+    sort: 'label',
     cell: ({ row, table }) => {
       const meta = table.options.meta as ProposalTableMeta | undefined
       const { customerName, customerId } = row.original
@@ -78,7 +78,7 @@ export const PROPOSAL_COLUMNS = {
   },
   price: {
     label: 'Price',
-    sortable: true,
+    sort: 'price',
     format: 'currency',
     // Stored rollup (Wave 2) — maintained by recomputeProposalFinancials; null
     // only pre-backfill.
@@ -100,7 +100,7 @@ export const PROPOSAL_COLUMNS = {
   },
   createdAt: {
     label: 'Created',
-    sortable: true,
+    sort: 'createdAt',
     cell: ({ row, table }) => {
       const meta = table.options.meta as ProposalTableMeta | undefined
       const { relative, dayAtTime } = formatDateCell(row.original.createdAt)
@@ -125,12 +125,12 @@ export const PROPOSAL_COLUMNS = {
   },
   sentAt: {
     label: 'Sent',
-    sortable: true,
+    sort: 'sentAt',
     format: 'date',
   },
   viewCount: {
     label: 'Seen',
-    sortable: true,
+    sort: 'viewCount',
     headerIcon: EyeIcon,
     cell: ({ row }) => {
       const views = row.original.viewCount

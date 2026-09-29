@@ -31,7 +31,7 @@ export interface MeetingTableMeta {
 export const MEETING_COLUMNS = {
   customerName: {
     label: 'Meeting',
-    sortable: true,
+    sort: 'customerName',
     cell: ({ row, table }) => {
       const meta = table.options.meta as MeetingTableMeta | undefined
       return (
@@ -103,7 +103,7 @@ export const MEETING_COLUMNS = {
   },
   scheduledFor: {
     label: 'Scheduled For',
-    sortable: true,
+    sort: 'scheduledFor',
     cell: ({ row, table }) => {
       const meta = table.options.meta as MeetingTableMeta | undefined
       const dateStr = row.original.scheduledFor

@@ -155,8 +155,8 @@ export function PastProposalsTable() {
             meta={meta}
             entityName="proposal"
             rowDataAttribute="data-proposal-row"
-            serverPagination={toDataTablePagination(pagination)}
-            serverSorting={toDataTableSorting(pagination)}
+            serverPagination={toDataTablePagination(query)}
+            serverSorting={toDataTableSorting(query)}
             columnVisibility={visibility.columnVisibility}
           />
         )}

@@ -18,6 +18,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { SKELETON_CELL_WIDTHS, SKELETON_ROW_HEIGHT_CLASS } from '@/shared/components/data-table/constants/skeleton-widths'
 import { usePullToRefresh } from '@/shared/components/data-table/hooks/use-pull-to-refresh'
 import { createDateRangeFilterFn } from '@/shared/components/data-table/lib/filter-fns'
+import { mapColumnSortIds } from '@/shared/components/data-table/lib/map-column-sort-ids'
 import { shouldToggleRow } from '@/shared/components/data-table/lib/should-toggle-row'
 import { DataTableFilterBar } from '@/shared/components/data-table/ui/data-table-filter-bar'
 import { DataTablePagination } from '@/shared/components/data-table/ui/data-table-pagination'
@@ -106,18 +107,18 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [expanded, setExpanded] = useState<ExpandedState>({})
 
+  const { sortIdByColumnId, columnIdBySortId } = useMemo(() => mapColumnSortIds(columns), [columns])
+
   const sorting: SortingState = useMemo(() => {
     if (!serverSorting) {
       return internalSorting
     }
-    if (serverSorting.sortBy) {
-      return [{ id: serverSorting.sortBy, desc: serverSorting.sortDir !== 'asc' }]
-    }
-    if (serverSorting.fallbackVisual) {
-      return [serverSorting.fallbackVisual]
-    }
-    return []
-  }, [serverSorting, internalSorting])
+    const shown = serverSorting.sortBy
+      ? { sortId: serverSorting.sortBy, desc: serverSorting.sortDir !== 'asc' }
+      : serverSorting.fallbackVisual && { sortId: serverSorting.fallbackVisual.id, desc: serverSorting.fallbackVisual.desc }
+    const columnId = shown ? columnIdBySortId.get(shown.sortId) : undefined
+    return shown && columnId ? [{ id: columnId, desc: shown.desc }] : []
+  }, [serverSorting, internalSorting, columnIdBySortId])
   // Not read from localStorage in the useState init: React refuses to patch layout-affecting
   // hydration mismatches (column widths), so saved values would never reach the DOM.
   // `null` on isFrozen means "not yet hydrated", so the persist effect can skip it.
@@ -301,12 +302,16 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
             serverSorting.onSortChange(undefined)
             return
           }
-          // Matching the fallback visual would write a redundant URL key for the server's natural order.
-          const fallback = serverSorting.fallbackVisual
-          if (fallback && head.id === fallback.id && head.desc === fallback.desc && !serverSorting.sortBy) {
+          const sortId = sortIdByColumnId.get(head.id)
+          if (!sortId) {
             return
           }
-          serverSorting.onSortChange(head.id, head.desc ? 'desc' : 'asc')
+          // Matching the fallback visual would write a redundant URL key for the server's natural order.
+          const fallback = serverSorting.fallbackVisual
+          if (fallback && sortId === fallback.id && head.desc === fallback.desc && !serverSorting.sortBy) {
+            return
+          }
+          serverSorting.onSortChange(sortId, head.desc ? 'desc' : 'asc')
         }
       : setInternalSorting,
     onColumnFiltersChange: setColumnFilters,

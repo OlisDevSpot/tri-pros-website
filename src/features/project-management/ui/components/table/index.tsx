@@ -92,8 +92,8 @@ export function PortfolioProjectsTable() {
             entityName="project"
             rowDataAttribute="data-project-row"
             onRowClick={handleRowClick}
-            serverPagination={toDataTablePagination(pagination)}
-            serverSorting={toDataTableSorting(pagination)}
+            serverPagination={toDataTablePagination(query)}
+            serverSorting={toDataTableSorting(query)}
             columnVisibility={visibility.columnVisibility}
           />
         )}

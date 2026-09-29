@@ -4,6 +4,8 @@ import type { ColumnDef, VisibilityState } from '@tanstack/react-table'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
+import { getColumnId } from '@/shared/components/data-table/lib/get-column-id'
+
 const COL_VISIBILITY_KEY = 'dt-col-visibility'
 
 export interface ToggleableColumn {
@@ -20,7 +22,7 @@ export interface UseColumnVisibilityResult {
   resetVisibility: () => void
   /** Columns that opted in via `meta.displayName`; drives the toggle UI. */
   toggleableColumns: ToggleableColumn[]
-  /** User-hidden count (excludes `meta.hidden` and `locked` columns). */
+  /** Columns the viewer hid (excludes `meta.hidden`, locked and hidden-by-default columns). */
   hiddenCount: number
 }
 
@@ -28,16 +30,7 @@ interface ColumnMetaShape {
   displayName?: string
   locked?: boolean
   hidden?: boolean
-}
-
-function getColumnId<TData>(col: ColumnDef<TData>): string | undefined {
-  if ('id' in col && typeof col.id === 'string') {
-    return col.id
-  }
-  if ('accessorKey' in col && typeof col.accessorKey === 'string') {
-    return col.accessorKey
-  }
-  return undefined
+  defaultHidden?: boolean
 }
 
 function loadOverrides(tableId: string): Record<string, boolean> {
@@ -73,6 +66,17 @@ export function useColumnVisibility<TData>(
     return () => clearTimeout(timer)
   }, [tableId, overrides])
 
+  const defaultVisibleById = useMemo(() => {
+    const map = new Map<string, boolean>()
+    for (const col of columns) {
+      const id = getColumnId(col)
+      if (id) {
+        map.set(id, !(col.meta as ColumnMetaShape | undefined)?.defaultHidden)
+      }
+    }
+    return map
+  }, [columns])
+
   const columnVisibility = useMemo<VisibilityState>(() => {
     const v: VisibilityState = {}
     for (const col of columns) {
@@ -85,12 +89,10 @@ export function useColumnVisibility<TData>(
         v[id] = false
         continue
       }
-      if (id in overrides) {
-        v[id] = overrides[id]
-      }
+      v[id] = id in overrides ? overrides[id] : (defaultVisibleById.get(id) ?? true)
     }
     return v
-  }, [columns, overrides])
+  }, [columns, overrides, defaultVisibleById])
 
   const toggleableColumns = useMemo<ToggleableColumn[]>(() => {
     const list: ToggleableColumn[] = []
@@ -104,34 +106,34 @@ export function useColumnVisibility<TData>(
         id,
         displayName: meta.displayName,
         locked: meta.locked === true,
-        visible: id in overrides ? overrides[id] : true,
+        visible: id in overrides ? overrides[id] : (defaultVisibleById.get(id) ?? true),
       })
     }
     return list
-  }, [columns, overrides])
+  }, [columns, overrides, defaultVisibleById])
 
+  // Counts only what the viewer hid; a hidden-by-default column isn't "hidden by you".
   const hiddenCount = useMemo(
-    () => toggleableColumns.reduce((n, c) => (!c.visible && !c.locked ? n + 1 : n), 0),
-    [toggleableColumns],
+    () => toggleableColumns.reduce((n, c) => (overrides[c.id] === false && !c.locked ? n + 1 : n), 0),
+    [toggleableColumns, overrides],
   )
 
   const setColumnVisible = useCallback((id: string, visible: boolean) => {
     setOverrides((prev) => {
-      // Default is visible. Toggling back to visible drops the override
-      // entirely so we don't accumulate stale entries in localStorage.
-      if (visible) {
+      // Storing only departures from the column's default keeps localStorage free of stale entries.
+      if (visible === (defaultVisibleById.get(id) ?? true)) {
         if (!(id in prev)) {
           return prev
         }
         const { [id]: _drop, ...rest } = prev
         return rest
       }
-      if (prev[id] === false) {
+      if (prev[id] === visible) {
         return prev
       }
-      return { ...prev, [id]: false }
+      return { ...prev, [id]: visible }
     })
-  }, [])
+  }, [defaultVisibleById])
 
   const resetVisibility = useCallback(() => {
     setOverrides(prev => (Object.keys(prev).length === 0 ? prev : {}))
