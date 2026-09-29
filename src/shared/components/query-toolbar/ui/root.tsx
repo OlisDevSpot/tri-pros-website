@@ -48,7 +48,8 @@ export function QueryToolbarRoot<F extends FieldList, T extends ToolbarFilterId<
 
   const { fields, toolbar, options } = query.filterSort
   const filters = useMemo(() => toToolbarFilters(fields, toolbar, options), [fields, toolbar, options])
-  const sortOptions = useMemo(() => toSortOptions(fields), [fields])
+  // A date window places rows by its date field (fixed order), so there is nothing to sort.
+  const sortOptions = useMemo(() => (query.window.kind === 'date' ? [] : toSortOptions(fields)), [fields, query.window.kind])
   const value = useMemo<QueryToolbarContextValue>(() => ({
     query: query as unknown as QueryToolbarContextValue['query'],
     filters,
