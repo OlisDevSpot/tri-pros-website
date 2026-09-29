@@ -4,10 +4,12 @@ import type { ChartSeriesKey } from '@/features/analytics/constants/chart-series
 import type { AnalyticsInterval } from '@/features/analytics/constants/dimensions'
 import type { ChartRow } from '@/features/analytics/lib/chart-rows'
 
+import { useState } from 'react'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
 import { CHART_MARGIN, CHART_X_AXIS_HEIGHT, SERIES_COLORS } from '@/features/analytics/constants/chart-series'
 import { METRICS } from '@/features/analytics/constants/metrics'
+import { CHART_BAR_GAP, groupedBarSize } from '@/features/analytics/lib/chart-bar-size'
 import { chartBucketTitle, chartTickLabel } from '@/features/analytics/lib/chart-rows'
 import { metricDisplayText } from '@/features/analytics/lib/read-metric'
 import { ChartTooltipCard } from '@/shared/components/charts/chart-tooltip-card'
@@ -26,15 +28,17 @@ interface Props {
 
 /** One grouped-bar panel; panels share a sync id so one hover reads counts and dollars together. */
 export function TrendBars({ rows, interval, series, ticks, height, tooltipActive, onBucket }: Props) {
+  const [plotWidth, setPlotWidth] = useState(0)
   const label = series.map(key => METRICS[key].label).join(', ')
   return (
     <div role="img" aria-label={`${label} by ${interval}`} style={{ height }} className={onBucket ? 'cursor-pointer touch-manipulation select-none' : undefined}>
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" onResize={width => setPlotWidth(width)}>
         <BarChart
           data={rows}
           syncId="analytics-trend"
-          barGap={2}
+          barGap={CHART_BAR_GAP}
           barCategoryGap="20%"
+          barSize={groupedBarSize(plotWidth - CHART_MARGIN.left - CHART_MARGIN.right, rows.length, series.length)}
           margin={CHART_MARGIN}
           onClick={(chart) => {
             const row = chart?.activeTooltipIndex === undefined ? undefined : rows[chart.activeTooltipIndex]
