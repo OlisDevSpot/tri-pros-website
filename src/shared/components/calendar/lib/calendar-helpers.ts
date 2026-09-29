@@ -1,4 +1,5 @@
-import type { CalendarEvent, CalendarViewType } from '@/shared/components/calendar/types'
+import type { CalendarEvent } from '@/shared/components/calendar/types'
+import type { CalendarViewType } from '@/shared/constants/enums'
 
 import {
   addDays,

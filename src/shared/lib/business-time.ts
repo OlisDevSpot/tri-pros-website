@@ -72,3 +72,49 @@ export function businessMonthWindow(monthKey: string): { from: string, to: strin
     to: startOfDayInTimeZone(nextStart, BUSINESS_TIMEZONE).toISOString(),
   }
 }
+
+/** True for a `YYYY-MM-DD` string naming a real date (rejects 2026-02-30). */
+export function isCalendarDay(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false
+  }
+  const [year, month, day] = value.split('-').map(Number)
+  const date = new Date(Date.UTC(year, month - 1, day))
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
+}
+
+/** Weeks start on Sunday, matching the schedule calendar's grids (`date-fns` `startOfWeek` default). */
+function sundayOnOrBefore(calendarDay: string): string {
+  const [year, month, day] = calendarDay.split('-').map(Number)
+  return addCalendarDays(calendarDay, -new Date(Date.UTC(year, month - 1, day)).getUTCDay())
+}
+
+export function businessDayWindow(calendarDay: string): { from: string, to: string } {
+  return {
+    from: startOfDayInTimeZone(calendarDay, BUSINESS_TIMEZONE).toISOString(),
+    to: startOfDayInTimeZone(addCalendarDays(calendarDay, 1), BUSINESS_TIMEZONE).toISOString(),
+  }
+}
+
+export function businessWeekWindow(calendarDay: string): { from: string, to: string } {
+  const weekStart = sundayOnOrBefore(calendarDay)
+  return {
+    from: startOfDayInTimeZone(weekStart, BUSINESS_TIMEZONE).toISOString(),
+    to: startOfDayInTimeZone(addCalendarDays(weekStart, 7), BUSINESS_TIMEZONE).toISOString(),
+  }
+}
+
+/** Every day a month grid shows: the Sunday on or before the 1st through the Saturday after the last day. */
+export function businessMonthGridWindow(calendarDay: string): { from: string, to: string } {
+  const month = businessMonthWindow(calendarDay.slice(0, 7))
+  const lastDay = addCalendarDays(businessDayKey(new Date(month.to)), -1)
+  return {
+    from: startOfDayInTimeZone(sundayOnOrBefore(`${calendarDay.slice(0, 7)}-01`), BUSINESS_TIMEZONE).toISOString(),
+    to: startOfDayInTimeZone(addCalendarDays(sundayOnOrBefore(lastDay), 7), BUSINESS_TIMEZONE).toISOString(),
+  }
+}
+
+/** A `[from, to)` window in the inclusive form `dateRangeSchema` filters use, so a row on the boundary lands in one window only. */
+export function toInclusiveRange(window: { from: string, to: string }): { from: string, to: string } {
+  return { from: window.from, to: new Date(Date.parse(window.to) - 1).toISOString() }
+}

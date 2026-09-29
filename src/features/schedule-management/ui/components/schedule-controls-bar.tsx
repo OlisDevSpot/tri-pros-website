@@ -1,6 +1,6 @@
 'use client'
 
-import type { CalendarViewType } from '@/shared/components/calendar/types'
+import type { CalendarViewType } from '@/shared/constants/enums'
 
 import { PlusIcon, SettingsIcon } from 'lucide-react'
 

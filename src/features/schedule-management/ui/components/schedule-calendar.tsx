@@ -5,8 +5,8 @@ import type { inferRouterOutputs } from '@trpc/server'
 import type { ReactNode } from 'react'
 
 import type { ScheduleCalendarEvent } from '@/features/schedule-management/types'
-import type { CalendarViewType } from '@/shared/components/calendar/types'
 import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
+import type { CalendarViewType } from '@/shared/constants/enums'
 import type { AppRouter } from '@/trpc/routers/app'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'

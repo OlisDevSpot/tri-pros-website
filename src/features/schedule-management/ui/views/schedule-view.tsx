@@ -1,7 +1,7 @@
 'use client'
 
 import type { ScheduleCalendarEvent, ScheduleMeetingEvent } from '@/features/schedule-management/types'
-import type { CalendarViewType } from '@/shared/components/calendar/types'
+import type { CalendarViewType } from '@/shared/constants/enums'
 
 import { useSuspenseQueries } from '@tanstack/react-query'
 import { motion } from 'motion/react'

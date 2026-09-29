@@ -3,29 +3,24 @@
 // would give server and client different query keys near the UTC/PT offset and
 // a hydration mismatch, so every boundary comes from the business timezone.
 
-import { addCalendarDays, BUSINESS_TIMEZONE, businessMonthWindow, businessToday, startOfDayInTimeZone } from '@/shared/lib/business-time'
+import { addCalendarDays, businessDayWindow, businessMonthWindow, businessToday, toInclusiveRange } from '@/shared/lib/business-time'
 
 export type MeetingWindowKind = 'today' | 'upcoming' | 'past'
 
-/** LA-pinned ISO bounds [startOfMonth, startOfNextMonth) for the meetings scheduledFor filter. */
+/** LA-pinned inclusive bounds of the calendar month, for the meetings scheduledFor filter. */
 export function meetingMonthWindow(anchorCalendarDay: string): { from: string, to: string } {
-  return businessMonthWindow(anchorCalendarDay.slice(0, 7))
+  return toInclusiveRange(businessMonthWindow(anchorCalendarDay.slice(0, 7)))
 }
 
-/** ISO bounds for the meetings `scheduledFor` dateRange filter, business-day based. */
+/** Inclusive bounds for the meetings `scheduledFor` dateRange filter, business-day based. */
 export function meetingWindow(kind: MeetingWindowKind): { from?: string, to?: string } {
-  const todayCalendarDay = businessToday()
-  const tomorrowCalendarDay = addCalendarDays(todayCalendarDay, 1)
-
-  const startOfToday = startOfDayInTimeZone(todayCalendarDay, BUSINESS_TIMEZONE)
-  const startOfTomorrow = startOfDayInTimeZone(tomorrowCalendarDay, BUSINESS_TIMEZONE)
-
+  const today = businessToday()
   switch (kind) {
     case 'today':
-      return { from: startOfToday.toISOString(), to: startOfTomorrow.toISOString() }
+      return toInclusiveRange(businessDayWindow(today))
     case 'upcoming':
-      return { from: startOfTomorrow.toISOString() }
+      return { from: businessDayWindow(addCalendarDays(today, 1)).from }
     case 'past':
-      return { to: startOfToday.toISOString() }
+      return { to: toInclusiveRange(businessDayWindow(addCalendarDays(today, -1))).to }
   }
 }

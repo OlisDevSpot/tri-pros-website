@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 
-import type { CalendarViewType } from '@/shared/components/calendar/types'
+import type { CalendarViewType } from '@/shared/constants/enums'
 
 import { formatDate } from 'date-fns'
 import { CalendarDaysIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
