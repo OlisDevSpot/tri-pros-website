@@ -5,13 +5,11 @@ import {
   addDays,
   addMonths,
   addWeeks,
-  endOfDay,
   endOfMonth,
   endOfWeek,
   format,
   isSameDay,
   parseISO,
-  startOfDay,
   startOfMonth,
   startOfWeek,
   subDays,
@@ -58,18 +56,14 @@ export function navigateDate(
   return operations[view](date, 1)
 }
 
-export function getDateRange(
-  date: Date,
-  view: CalendarViewType,
-): { from: Date, to: Date } {
-  switch (view) {
-    case 'today':
-      return { from: startOfDay(date), to: endOfDay(date) }
-    case 'month':
-      return { from: startOfMonth(date), to: endOfMonth(date) }
-    case 'week':
-      return { from: startOfWeek(date), to: endOfWeek(date) }
-  }
+/** Local noon, so date-fns arithmetic and the grid can't slip a day across a DST change. */
+export function calendarDayToLocalDate(calendarDay: string): Date {
+  const [year, month, day] = calendarDay.split('-').map(Number)
+  return new Date(year, month - 1, day, 12)
+}
+
+export function localDateToCalendarDay(date: Date): string {
+  return format(date, 'yyyy-MM-dd')
 }
 
 export function getCalendarCells(selectedDate: Date): CalendarCell[] {

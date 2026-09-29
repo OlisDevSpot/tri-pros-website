@@ -3,7 +3,7 @@
 import { useQueryState } from 'nuqs'
 import { useCallback, useRef, useState } from 'react'
 
-import { highlightDateParser, highlightMeetingParser } from '@/features/schedule-management/constants/query-parsers'
+import { highlightMeetingParser } from '@/features/schedule-management/constants/query-parsers'
 
 const HIGHLIGHT_DURATION_MS = 10_000
 // The ScheduleView root is wrapped in a motion.div with `delay: 0.25s + duration: 0.25s`.
@@ -15,14 +15,12 @@ const SCROLL_DEFER_MS = 600
 
 interface UseScheduleHighlightReturn {
   highlightMeetingId: string
-  highlightDate: string
   isHighlighted: (meetingId: string) => boolean
   highlightRef: (meetingId: string) => React.RefCallback<HTMLDivElement>
 }
 
 export function useScheduleHighlight(): UseScheduleHighlightReturn {
   const [highlightMeeting, setHighlightMeeting] = useQueryState('highlightMeeting', highlightMeetingParser)
-  const [highlightDate, setHighlightDate] = useQueryState('highlightDate', highlightDateParser)
   const [activeHighlight, setActiveHighlight] = useState(highlightMeeting)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -52,16 +50,14 @@ export function useScheduleHighlight(): UseScheduleHighlightReturn {
         timerRef.current = setTimeout(() => {
           setActiveHighlight('')
           void setHighlightMeeting('')
-          void setHighlightDate('')
         }, HIGHLIGHT_DURATION_MS)
       }
     },
-    [activeHighlight, setHighlightMeeting, setHighlightDate],
+    [activeHighlight, setHighlightMeeting],
   )
 
   return {
     highlightMeetingId: highlightMeeting,
-    highlightDate,
     isHighlighted,
     highlightRef,
   }
