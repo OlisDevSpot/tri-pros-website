@@ -2,6 +2,7 @@ import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { VoipMessage } from '@/shared/db/schema/voip-messages'
 import type { MessageInstance, MessageListInstanceCreateOptions } from '@/shared/services/providers/twilio/types'
 
+import { publicUrl } from '@/shared/config/public-url'
 import env from '@/shared/config/server-env'
 import { dalError, dalSuccess } from '@/shared/dal/server/types'
 import { getStickyDidForUser } from '@/shared/entities/voip-dids/dal/server/queries'
@@ -9,7 +10,7 @@ import { voipMessageCrud } from '@/shared/entities/voip-messages/dal/server/crud
 import { patchMessageStatusByProviderId, upsertInboundMessage } from '@/shared/entities/voip-messages/dal/server/mutations'
 import { fetchThread as fetchThreadDal } from '@/shared/entities/voip-messages/dal/server/queries'
 import { RestException, twilioClient } from '@/shared/services/providers/twilio/client'
-import { getVetting, VOIP_DEV_OVERRIDE_NUMBER } from '@/shared/services/providers/twilio/constants'
+import { getMessagingServiceSid, getVetting, VOIP_DEV_OVERRIDE_NUMBER } from '@/shared/services/providers/twilio/constants'
 import { complianceService } from '@/shared/services/voip/compliance.service'
 
 // ---------------------------------------------------------------------------
@@ -21,7 +22,10 @@ import { complianceService } from '@/shared/services/voip/compliance.service'
 // see memory/feedback-services-orchestrate-dal-implements.md
 // ---------------------------------------------------------------------------
 
-const STATUS_CALLBACK_URL = `${env.VOIP_WEBHOOK_BASE_URL}/api/webhooks/twilio`
+// VOIP_WEBHOOK_BASE_URL is the vanity host Twilio is configured with; publicUrl() is the tunnel/base fallback for dev.
+function statusCallbackUrl(): string {
+  return `${env.VOIP_WEBHOOK_BASE_URL ?? publicUrl()}/api/webhooks/twilio`
+}
 
 // STOP-keyword detector. Matches exact carrier-recognized opt-out keywords +
 // common variants. Carriers auto-process these too — we run our own gate so
@@ -36,6 +40,12 @@ interface SendSmsInput {
   customerId: string
   remoteE164: string
   agentUserId: string
+  body: string
+}
+
+interface SendLifecycleSmsInput {
+  customerId: string
+  remoteE164: string
   body: string
 }
 
@@ -77,7 +87,22 @@ function buildTwilioMessageParams(input: {
     from: input.fromE164,
     to: input.toE164,
     body: input.body,
-    statusCallback: STATUS_CALLBACK_URL,
+    statusCallback: statusCallbackUrl(),
+  }
+}
+
+// Sending through the Messaging Service (not a `from` DID) lets Twilio pick the sticky sender
+// for this recipient and run carrier opt-out handling; the 10DLC campaign is attached there.
+function buildLifecycleMessageParams(input: {
+  messagingServiceSid: string
+  toE164: string
+  body: string
+}): MessageListInstanceCreateOptions {
+  return {
+    messagingServiceSid: input.messagingServiceSid,
+    to: input.toE164,
+    body: input.body,
+    statusCallback: statusCallbackUrl(),
   }
 }
 
@@ -173,6 +198,109 @@ function createVoipMessagesService() {
           buildTwilioMessageParams({
             fromE164: stickyDid.e164,
             toE164: dialTarget,
+            body: input.body,
+          }),
+        )
+      }
+      catch (e) {
+        const errorCode = describeTwilioError(e)
+        const patched = await voipMessageCrud.update(ctx, {
+          id: messageRow.id,
+          data: { status: 'failed', failureReason: errorCode },
+        })
+        if (!patched.success) {
+          return patched
+        }
+        return dalSuccess({
+          messageId: messageRow.id,
+          providerMessageId: null,
+          status: 'failed' as const,
+          failureReason: errorCode,
+        })
+      }
+
+      const patched = await voipMessageCrud.update(ctx, {
+        id: messageRow.id,
+        data: {
+          providerMessageId: twilioMessage.sid,
+          status: 'sent',
+          sentAt: new Date().toISOString(),
+        },
+      })
+      if (!patched.success) {
+        return patched
+      }
+      return dalSuccess({
+        messageId: messageRow.id,
+        providerMessageId: twilioMessage.sid,
+        status: 'sent' as const,
+        failureReason: null,
+      })
+    },
+
+    /**
+     * System-originated SMS (booking confirmations, day-before reminders). Same gates as
+     * `sendSms` minus the sticky DID: the Messaging Service chooses the sender, so the row
+     * carries `voipDidId = null` until a status callback tells us which DID Twilio used.
+     */
+    sendLifecycleSms: async (
+      ctx: ScopedContext,
+      input: SendLifecycleSmsInput,
+    ): Promise<DalReturn<SendSmsResult>> => {
+      const messagingServiceSid = getMessagingServiceSid()
+      if (!messagingServiceSid) {
+        return dalError({
+          type: 'precondition-failed',
+          reason: 'TWILIO_MESSAGING_SERVICE_SID unset — lifecycle SMS disabled',
+        })
+      }
+
+      const allowed = await complianceService.canOutboundTo(input.remoteE164)
+      if (!allowed) {
+        const inserted = await voipMessageCrud.create(ctx, {
+          customerId: input.customerId,
+          remoteE164: input.remoteE164,
+          body: input.body,
+          direction: 'outbound',
+          status: 'failed',
+          failureReason: 'dnc',
+        })
+        if (!inserted.success) {
+          return inserted
+        }
+        return dalSuccess({
+          messageId: inserted.data.id,
+          providerMessageId: null,
+          status: 'failed' as const,
+          failureReason: 'dnc',
+        })
+      }
+
+      if (env.NODE_ENV === 'production' && !getVetting().tenDlcCampaignSid) {
+        return dalError({
+          type: 'precondition-failed',
+          reason: '10DLC campaign approval pending — outbound SMS disabled in production',
+        })
+      }
+
+      const created = await voipMessageCrud.create(ctx, {
+        customerId: input.customerId,
+        remoteE164: input.remoteE164,
+        body: input.body,
+        direction: 'outbound',
+        status: 'queued',
+      })
+      if (!created.success) {
+        return created
+      }
+      const messageRow = created.data
+
+      let twilioMessage: MessageInstance
+      try {
+        twilioMessage = await twilioClient.sendMessage(
+          buildLifecycleMessageParams({
+            messagingServiceSid,
+            toE164: VOIP_DEV_OVERRIDE_NUMBER ?? input.remoteE164,
             body: input.body,
           }),
         )

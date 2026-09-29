@@ -2,7 +2,7 @@
 
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 
 import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { db } from '@/shared/db'
@@ -71,5 +71,31 @@ export async function deriveOutcomeOnAdditionalWorkApproved(
       id: input.meetingId,
       data: { meetingOutcome: 'additional_work' },
     }))
+  })
+}
+
+/**
+ * Raw UPDATE on purpose: the reminder marker is bookkeeping, not a meeting edit, so it
+ * must not fire the update hooks (GCal re-sync, Ably broadcast). Conditional on the
+ * marker still being NULL so two overlapping batch runs cannot both claim the row.
+ */
+export async function claimReminderSend(meetingId: string): Promise<DalReturn<boolean>> {
+  return dalDbOperation(async () => {
+    const rows = await db
+      .update(meetings)
+      .set({ reminderSentAt: new Date().toISOString() })
+      .where(and(eq(meetings.id, meetingId), isNull(meetings.reminderSentAt)))
+      .returning({ id: meetings.id })
+    return rows.length === 1
+  })
+}
+
+/** Undo a claim when Twilio rejected the send, so the next batch retries the meeting. */
+export async function releaseReminderClaim(meetingId: string): Promise<DalReturn<void>> {
+  return dalDbOperation(async () => {
+    await db
+      .update(meetings)
+      .set({ reminderSentAt: null })
+      .where(eq(meetings.id, meetingId))
   })
 }

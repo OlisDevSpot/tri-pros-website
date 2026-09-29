@@ -37,6 +37,11 @@ export function getVetting(): { trustProfileSid: string | undefined, tenDlcCampa
   }
 }
 
+// Lazy for the same reason as getVetting(): the field is .optional() on the schema.
+export function getMessagingServiceSid(): string | undefined {
+  return serverEnv.TWILIO_MESSAGING_SERVICE_SID
+}
+
 // Dev-only outbound redirect. When set in dev/preview, services route every
 // outbound call/SMS to this single number. server-env.ts already enforces
 // "must NOT be set in production" via runtime gate.

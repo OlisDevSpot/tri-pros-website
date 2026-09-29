@@ -35,6 +35,8 @@
     "rebuild:gcal:dev": "NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/rebuild-gcal-descriptions.ts",
     "gcal:cron:setup": "DRIZZLE_TARGET=prod NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/setup-gcal-cron.ts",
     "gcal:cron:setup:dev": "NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/setup-gcal-cron.ts",
+    "reminders:cron:setup": "DRIZZLE_TARGET=prod NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/setup-meeting-reminders-cron.ts",
+    "reminders:cron:setup:dev": "NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/setup-meeting-reminders-cron.ts",
     "meta": "tsx scripts/meta/index.ts",
     "dispatch": "bash scripts/dispatch.sh",
     "hotfix": "bash scripts/hotfix.sh",

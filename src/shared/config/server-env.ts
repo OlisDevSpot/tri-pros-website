@@ -89,6 +89,10 @@ const envSchema = z.object({
   UPSTASH_REDIS_REST_URL: z.string(),
   UPSTASH_REDIS_REST_TOKEN: z.string(),
 
+  // Bearer token Vercel Cron sends on scheduled invocations of /api/cron/*.
+  // Optional: the cron routes 401 every request while it is unset.
+  CRON_SECRET: z.string().optional(),
+
   // BINA (GoHighLevel webhook)
   BINA_WEBHOOK_SECRET: z.string().optional(),
 

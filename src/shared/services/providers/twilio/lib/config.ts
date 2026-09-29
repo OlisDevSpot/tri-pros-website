@@ -23,6 +23,10 @@ export const twilioEnvFragment = z.object({
   TWILIO_API_KEY_SID: z.string().optional(),
   TWILIO_API_KEY_SECRET: z.string().optional(),
   TWILIO_TWIML_APP_SID: z.string().optional(),
+  // Messaging Service the 10DLC campaign is attached to. Lifecycle SMS (reminders,
+  // booking confirmations) send through it, never a bare `from`, so Twilio applies
+  // sticky sender + carrier-side opt-out handling. Optional: unset ⇒ lifecycle SMS off.
+  TWILIO_MESSAGING_SERVICE_SID: z.string().optional(),
   TWILIO_TRUST_PROFILE_SID: z.string().optional(), // vetting clock; optional until Trust Hub approves
   TWILIO_10DLC_CAMPAIGN_SID: z.string().optional(), // vetting clock; optional until 10DLC approves
 })

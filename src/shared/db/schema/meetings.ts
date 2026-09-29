@@ -29,6 +29,9 @@ export const meetings = pgTable('meetings', {
   scheduledFor: timestamp('scheduled_for', { mode: 'string', withTimezone: true }).notNull(),
   // Soft, day-of: the homeowner said they'll be home. Cleared whenever scheduledFor moves.
   confirmedAt: timestamp('confirmed_at', { mode: 'string', withTimezone: true }),
+  // Idempotency marker for the day-before SMS: the 6 pm batch skips rows that carry it,
+  // so a QStash retry or a manual re-run never double-texts. Cleared with confirmedAt.
+  reminderSentAt: timestamp('reminder_sent_at', { mode: 'string', withTimezone: true }),
   contextJSON: jsonb('context_json').$type<MeetingContext>(),
   flowStateJSON: jsonb('flow_state_json').$type<MeetingFlowState>(),
   agentNotes: text('agent_notes'),

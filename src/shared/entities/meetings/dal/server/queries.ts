@@ -5,7 +5,7 @@ import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { Meeting } from '@/shared/db/schema/meetings'
 import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 
-import { and, count, eq, getTableColumns, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm'
+import { and, asc, count, eq, getTableColumns, gt, gte, ilike, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm'
 import z from 'zod'
 
 import { meetingOutcomes } from '@/shared/constants/enums'
@@ -24,6 +24,8 @@ import { meetings } from '@/shared/db/schema/meetings'
 import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { profileCols } from '@/shared/entities/customers/lib/profile-select'
 import { getAllParticipantsForMeetings } from '@/shared/entities/meetings/dal/server/participants'
+import { addCalendarDays, BUSINESS_TIMEZONE, startOfDayInTimeZone } from '@/shared/lib/business-time'
+import { toNationalDigits } from '@/shared/lib/phone'
 
 export interface MeetingListParticipant {
   id: string
@@ -293,4 +295,110 @@ export async function getMeetingSchedule(id: string): Promise<Pick<Meeting, 'sch
     .where(eq(meetings.id, id))
     .limit(1)
   return row
+}
+
+export interface ReminderCandidate {
+  meetingId: string
+  scheduledFor: string
+  customerId: string
+  customerName: string
+  // Bare 10-digit national, as stored. Null rows are excluded in SQL.
+  customerPhone: string
+  ownerName: string
+}
+
+/**
+ * Unscoped: only the reminder batch calls this, under SYSTEM_CONTEXT. Selects the
+ * meetings on `dayKey` (a YYYY-MM-DD in the business timezone) that are still live,
+ * unconfirmed, un-reminded, and have a textable customer. DNC is checked by the
+ * compliance service, not here, so there is one DNC gate in the codebase.
+ */
+function reminderTargetQuery() {
+  return db
+    .select({
+      meetingId: meetings.id,
+      scheduledFor: meetings.scheduledFor,
+      customerId: customers.id,
+      customerName: customers.name,
+      customerPhone: sql<string>`${customers.phone}`,
+      ownerName: user.name,
+    })
+    .from(meetings)
+    .innerJoin(customers, eq(customers.id, meetings.customerId))
+    .innerJoin(user, eq(user.id, meetings.ownerId))
+}
+
+/** Unscoped, for the booking-confirmation job. Null when the meeting is gone, cancelled, or has no textable customer. */
+export async function getReminderTargetByMeetingId(meetingId: string): Promise<DalReturn<ReminderCandidate | null>> {
+  return dalDbOperation(async () => {
+    const [row] = await reminderTargetQuery()
+      .where(and(
+        eq(meetings.id, meetingId),
+        sql`${meetings.meetingOutcome} <> 'cancelled'`,
+        sql`${customers.phone} IS NOT NULL`,
+      ))
+      .limit(1)
+    return row ?? null
+  })
+}
+
+export async function listReminderCandidates(dayKey: string): Promise<DalReturn<ReminderCandidate[]>> {
+  return dalDbOperation(async () => {
+    const from = startOfDayInTimeZone(dayKey, BUSINESS_TIMEZONE).toISOString()
+    const to = startOfDayInTimeZone(addCalendarDays(dayKey, 1), BUSINESS_TIMEZONE).toISOString()
+
+    return reminderTargetQuery()
+      .where(and(
+        gte(meetings.scheduledFor, from),
+        lt(meetings.scheduledFor, to),
+        isNull(meetings.confirmedAt),
+        isNull(meetings.reminderSentAt),
+        sql`${meetings.meetingOutcome} <> 'cancelled'`,
+        sql`${customers.phone} IS NOT NULL`,
+      ))
+      .orderBy(asc(meetings.scheduledFor))
+  })
+}
+
+export interface UpcomingMeetingForReply {
+  meetingId: string
+  scheduledFor: string
+  confirmedAt: string | null
+  customerId: string
+  customerName: string
+  ownerName: string
+}
+
+/**
+ * The soonest future meeting for the customer who owns `phone`. A "C" reply is applied to
+ * this row; a customer with two upcoming meetings confirms the nearer one, which is the
+ * one the reminder was about.
+ */
+export async function findNextMeetingByCustomerPhone(phone: string): Promise<DalReturn<UpcomingMeetingForReply | null>> {
+  return dalDbOperation(async () => {
+    const national = toNationalDigits(phone)
+    if (!national) {
+      return null
+    }
+    const [row] = await db
+      .select({
+        meetingId: meetings.id,
+        scheduledFor: meetings.scheduledFor,
+        confirmedAt: meetings.confirmedAt,
+        customerId: customers.id,
+        customerName: customers.name,
+        ownerName: user.name,
+      })
+      .from(meetings)
+      .innerJoin(customers, eq(customers.id, meetings.customerId))
+      .innerJoin(user, eq(user.id, meetings.ownerId))
+      .where(and(
+        eq(customers.phone, national),
+        gt(meetings.scheduledFor, new Date().toISOString()),
+        sql`${meetings.meetingOutcome} <> 'cancelled'`,
+      ))
+      .orderBy(asc(meetings.scheduledFor))
+      .limit(1)
+    return row ?? null
+  })
 }

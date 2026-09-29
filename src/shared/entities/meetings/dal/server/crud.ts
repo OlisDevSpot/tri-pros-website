@@ -8,10 +8,12 @@ import { getMeetingSchedule } from '@/shared/entities/meetings/dal/server/querie
 import { resolveMeetingOwnerId } from '@/shared/entities/meetings/lib/resolve-owner'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
+import { getMessagingServiceSid } from '@/shared/services/providers/twilio/constants'
 import { deleteMeetingEventJob } from '@/shared/services/providers/upstash/jobs/delete-meeting-event'
 import { graduateFromCampaignJob } from '@/shared/services/providers/upstash/jobs/graduate-from-campaign'
 import { metaCapiEventJob } from '@/shared/services/providers/upstash/jobs/meta-capi-event'
 import { notifyMeetingTimeChangedJob } from '@/shared/services/providers/upstash/jobs/notify-meeting-time-changed'
+import { sendBookingConfirmationJob } from '@/shared/services/providers/upstash/jobs/send-booking-confirmation'
 import { syncMeetingToGcalJob } from '@/shared/services/providers/upstash/jobs/sync-meeting-to-gcal'
 import { ably } from '@/shared/services/providers/upstash/realtime'
 
@@ -53,6 +55,11 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
             event: 'Schedule',
             args: { customerId: row.customerId, occurredAtIso: new Date().toISOString() },
           })
+
+          // Gated here, not only in the handler, so an unconfigured environment enqueues nothing.
+          if (getMessagingServiceSid()) {
+            void sendBookingConfirmationJob.dispatch({ meetingId: row.id })
+          }
         }
       },
     },
@@ -69,8 +76,9 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
         // Compared against the stored time so a same-time re-save (e.g. GCal sync) keeps it.
         if (data.scheduledFor && !('confirmedAt' in data)) {
           const current = await getMeetingSchedule(id)
-          if (current?.confirmedAt && new Date(current.scheduledFor).getTime() !== new Date(data.scheduledFor).getTime()) {
-            next = { ...next, confirmedAt: null }
+          if (current && new Date(current.scheduledFor).getTime() !== new Date(data.scheduledFor).getTime()) {
+            // The reminder marker resets too: a moved meeting needs a fresh day-before text.
+            next = { ...next, confirmedAt: null, reminderSentAt: null }
           }
         }
         return next
@@ -136,6 +144,7 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
       'updatedAt',
       'meetingOutcome',
       'confirmedAt',
+      'reminderSentAt',
       'pipeline',
       'flowStateJSON',
       'agentNotes',
