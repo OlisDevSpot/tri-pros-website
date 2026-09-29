@@ -1,30 +1,23 @@
 import { TRPCError } from '@trpc/server'
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
-import { and, eq, gte, ilike, lte, or } from 'drizzle-orm'
+import { and, eq, ilike, or } from 'drizzle-orm'
 import z from 'zod'
 
 import env from '@/shared/config/server-env'
 import { intakeModes } from '@/shared/constants/enums'
-import { pipelines } from '@/shared/constants/enums/pipelines'
-import { dateRangeSchema } from '@/shared/dal/lib/query/range-schemas'
-import { buildFilterWhere } from '@/shared/dal/server/lib/query/filters'
-import { paginate } from '@/shared/dal/server/lib/query/output'
-import { paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
-import { buildSearchWhere } from '@/shared/dal/server/lib/query/search'
-import { buildOrderBy } from '@/shared/dal/server/lib/query/sort'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { customers } from '@/shared/db/schema/customers'
-import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
-import { derivedPipelineSql, derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
+import { customerListInputSchema, listCustomers } from '@/shared/entities/customers/dal/server/queries'
 import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { leadMetaSchema } from '@/shared/entities/customers/schemas'
 import { toDigits } from '@/shared/lib/phone'
 import { constructionService } from '@/shared/modules/construction/service'
 import { customerIntakeService } from '@/shared/services/customer-intake.service'
 import { validatePhoneLine } from '@/shared/services/providers/twilio/lib/validate-phone-line'
+import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 
 import { createTRPCRouter } from '../../init'
 import { clientIp } from '../../lib/client-ip'
@@ -42,58 +35,10 @@ const intakeRatelimit = new Ratelimit({
 })
 
 export const businessRouter = createTRPCRouter({
-  // Server-paginated customers list. Drives /dashboard/customers and the
-  // lead-sources-admin "All customers" pane. Each row carries its joined
-  // leadSource (name + slug); NULL joins mean "unknown legacy import".
-  // The `pipeline` field is the derived 5-bucket classification — the
-  // physical 3-bucket DB column is exploded via `derivedPipelineSql`.
+  // Drives /dashboard/customers and the lead-sources "All customers" pane; `ctx.scope` is customer visibility.
   list: customerProcedure
-    .input(paginatedQueryInput({
-      pipeline: z.array(z.enum(pipelines)).optional(),
-      createdAt: dateRangeSchema.optional(),
-    }))
-    .query(async ({ ctx, input }) => {
-      const searchWhere = buildSearchWhere(input.search, [customers.name, customers.email])
-      const filterWhere = buildFilterWhere(input.filters, {
-        pipeline: v => derivedPipelineWhere(v),
-        createdAt: v => and(
-          v.from ? gte(customers.createdAt, v.from) : undefined,
-          v.to ? lte(customers.createdAt, v.to) : undefined,
-        ),
-      })
-      const where = and(ctx.scope ?? undefined, searchWhere, filterWhere)
-
-      // Pipeline is intentionally not sortable — the registry omits the
-      // header click affordance because the visible value is derived,
-      // and ordering by the underlying 3-bucket column would surprise.
-      const orderBy = buildOrderBy(input.sort, {
-        name: customers.name,
-        email: customers.email,
-        createdAt: customers.createdAt,
-        leadSourceName: leadSourcesTable.name,
-      })
-
-      return paginate({
-        query: () => db
-          .select({
-            id: customers.id,
-            name: customers.name,
-            email: customers.email,
-            createdAt: customers.createdAt,
-            pipeline: derivedPipelineSql(),
-            leadSourceId: customers.leadSourceId,
-            leadSourceName: leadSourcesTable.name,
-            leadSourceSlug: leadSourcesTable.slug,
-          })
-          .from(customers)
-          .leftJoin(leadSourcesTable, eq(leadSourcesTable.id, customers.leadSourceId))
-          .where(where)
-          .orderBy(...orderBy)
-          .limit(input.pagination.limit)
-          .offset(input.pagination.offset),
-        count: () => db.$count(customers, where),
-      })
-    }),
+    .input(customerListInputSchema)
+    .query(async ({ ctx, input }) => dalToTrpc(await listCustomers(ctx, input))),
 
   // Search customers by name (agents) or name + phone (super-admins). Phone
   // is returned gated — agents only see it once a proposal has been sent for

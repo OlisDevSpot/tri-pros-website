@@ -3,6 +3,8 @@
 import type { ColumnRegistry } from '@/shared/components/data-table/lib/use-entity-columns'
 import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
 import type { Pipeline } from '@/shared/constants/enums/pipelines'
+import type { SortId } from '@/shared/dal/lib/query/field-list'
+import type { CUSTOMER_FIELDS } from '@/shared/entities/customers/dal/customer-fields'
 
 import { PrimaryCell } from '@/shared/components/data-table/ui/primary-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
@@ -129,7 +131,7 @@ export const CUSTOMER_COLUMNS = {
   leadSourceName: {
     label: 'Source',
     size: 160,
-    sort: 'leadSourceName',
+    sort: 'leadSource',
     cell: ({ row, table }) => {
       const meta = table.options.meta as CustomerTableMeta | undefined
       return (
@@ -174,4 +176,4 @@ export const CUSTOMER_COLUMNS = {
       )
     },
   },
-} as const satisfies ColumnRegistry<CustomerTableRow>
+} as const satisfies ColumnRegistry<CustomerTableRow, SortId<typeof CUSTOMER_FIELDS>>

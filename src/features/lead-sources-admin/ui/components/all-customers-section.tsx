@@ -12,9 +12,8 @@ import { useColumnVisibility } from '@/shared/components/data-table/lib/use-colu
 import { useEntityColumns } from '@/shared/components/data-table/lib/use-entity-columns'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
+import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
-import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
-import { fromPaginatedQuery } from '@/shared/dal/client/lib/from-paginated-query'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { useCustomerActionConfigs } from '@/shared/entities/customers/hooks/use-customer-action-configs'
 
@@ -29,12 +28,7 @@ export function AllCustomersSection() {
   const { invalidateCustomer, invalidateLeadSource } = useInvalidation()
   const { setModal, open: openModal } = useModalStore()
 
-  const pagination = usePaginatedQuery<Record<string, never>, CustomerTableRow>(
-    trpc.customersRouter.business.list.queryOptions,
-    {},
-    ALL_CUSTOMERS_TABLE_QUERY_CONFIG,
-  )
-  const query = fromPaginatedQuery(pagination)
+  const query = useDataViewQuery(trpc.customersRouter.business.list, {}, ALL_CUSTOMERS_TABLE_QUERY_CONFIG)
 
   const updateCreatedAt = useMutation(
     trpc.customersRouter.crud.update.mutationOptions({
@@ -82,7 +76,7 @@ export function AllCustomersSection() {
             All customers
           </h3>
           <span className="text-xs text-muted-foreground tabular-nums">
-            {pagination.isLoading ? 'Loading…' : `${pagination.total.toLocaleString()} total`}
+            {query.isLoading ? 'Loading…' : `${query.total.toLocaleString()} total`}
           </span>
         </div>
 
@@ -106,7 +100,7 @@ export function AllCustomersSection() {
         <DataTable
           tableId="all-customers"
           columns={columns}
-          data={pagination.rows}
+          data={query.rows}
           meta={meta}
           entityName="customer"
           onRowClick={row => handleViewProfile(row.id)}

@@ -1,3 +1,6 @@
+import type z from 'zod'
+import type { Pipeline } from '@/shared/constants/enums/pipelines'
+import type { PaginatedResult } from '@/shared/dal/lib/query/paginated-result'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { CustomerEnrichmentRow } from '@/shared/db/schema/customer-enrichment'
 import type { CustomerLeadAttributionRow } from '@/shared/db/schema/customer-lead-attribution'
@@ -8,12 +11,18 @@ import type { ProfileKey } from '@/shared/entities/customers/schemas'
 import { and, asc, eq, getTableColumns, isNotNull, isNull } from 'drizzle-orm'
 
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
+import { fieldListInput } from '@/shared/dal/server/lib/query/field-list-input'
+import { paginate } from '@/shared/dal/server/lib/query/output'
+import { buildSearchWhere } from '@/shared/dal/server/lib/query/search'
 import { db } from '@/shared/db'
 import { customerEnrichment } from '@/shared/db/schema/customer-enrichment'
 import { customerLeadAttribution } from '@/shared/db/schema/customer-lead-attribution'
 import { customerProfiles } from '@/shared/db/schema/customer-profiles'
 import { customers } from '@/shared/db/schema/customers'
-import { derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
+import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
+import { CUSTOMER_FIELDS } from '@/shared/entities/customers/dal/customer-fields'
+import { CUSTOMER_FIELD_SQL } from '@/shared/entities/customers/dal/server/customer-field-sql'
+import { derivedPipelineSql, derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
 import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { profileCols } from '@/shared/entities/customers/lib/profile-select'
 import { toNationalDigits } from '@/shared/lib/phone'
@@ -133,15 +142,50 @@ export async function listEnrollableLeadsBySource(
   })
 }
 
-export async function listCustomers(
-  ctx: ScopedContext,
-): Promise<DalReturn<CustomerWithPhoneGate[]>> {
+export const customerListInputSchema = fieldListInput(CUSTOMER_FIELDS, { pagination: true })
+export type CustomerListInput = z.infer<typeof customerListInputSchema>
+
+export interface CustomerListRow {
+  id: string
+  name: string
+  email: string | null
+  createdAt: string
+  /** The derived five-bucket pipeline, not the stored three-bucket column. */
+  pipeline: Pipeline
+  leadSourceId: string | null
+  leadSourceName: string | null
+  leadSourceSlug: string | null
+}
+
+/** One customers list for every table: callers scope through `ctx.scope` and pin a source or segment through fixed filters. */
+export async function listCustomers(ctx: ScopedContext, input: CustomerListInput): Promise<DalReturn<PaginatedResult<CustomerListRow>>> {
   return dalDbOperation(async () => {
-    const rows = await db
-      .select(customerSelectWithGate(ctx))
-      .from(customers)
-      .where(ctx.scope ?? undefined)
-    return rows as CustomerWithPhoneGate[]
+    const where = and(
+      ctx.scope ?? undefined,
+      buildSearchWhere(input.search, [customers.name, customers.email]),
+      CUSTOMER_FIELD_SQL.where(input.filters),
+    )
+
+    return paginate({
+      query: () => db
+        .select({
+          id: customers.id,
+          name: customers.name,
+          email: customers.email,
+          createdAt: customers.createdAt,
+          pipeline: derivedPipelineSql(),
+          leadSourceId: customers.leadSourceId,
+          leadSourceName: leadSourcesTable.name,
+          leadSourceSlug: leadSourcesTable.slug,
+        })
+        .from(customers)
+        .leftJoin(leadSourcesTable, eq(leadSourcesTable.id, customers.leadSourceId))
+        .where(where)
+        .orderBy(...CUSTOMER_FIELD_SQL.orderBy(input.sort))
+        .limit(input.pagination.limit)
+        .offset(input.pagination.offset),
+      count: () => db.$count(customers, where),
+    })
   })
 }
 

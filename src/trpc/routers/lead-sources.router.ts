@@ -6,20 +6,13 @@ import { and, asc, desc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm'
 import z from 'zod'
 
 import { leadSourceSpendModes } from '@/shared/constants/enums/lead-sources'
-import { pipelines } from '@/shared/constants/enums/pipelines'
-import { dateRangeSchema } from '@/shared/dal/lib/query/range-schemas'
-import { buildFilterWhere } from '@/shared/dal/server/lib/query/filters'
-import { paginate } from '@/shared/dal/server/lib/query/output'
-import { paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
-import { buildSearchWhere } from '@/shared/dal/server/lib/query/search'
-import { buildOrderBy } from '@/shared/dal/server/lib/query/sort'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
-import { derivedPipelineSql, derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
+import { customerListInputSchema, listCustomers } from '@/shared/entities/customers/dal/server/queries'
 import { isSignedCustomerSql } from '@/shared/entities/customers/lib/signed-customer-sql'
 import { customerSegments } from '@/shared/entities/lead-sources/constants/customer-segments'
 import { leadSourceCrud } from '@/shared/entities/lead-sources/dal/server/crud'
@@ -257,16 +250,13 @@ export const leadSourcesRouter = createTRPCRouter({
       return rows.map(r => r.year)
     }),
 
-  // `segment` is a top-level input rather than a filter so the QueryToolbar renders no control for it.
+  // `segment` stays a top-level input and becomes a fixed filter here, so no toolbar ever shows it.
   getCustomers: superAdminProcedure
-    .input(paginatedQueryInput({
-      pipeline: z.array(z.enum(pipelines)).optional(),
-      createdAt: dateRangeSchema.optional(),
-    }).extend({
+    .input(customerListInputSchema.extend({
       id: z.string().uuid(),
       segment: z.enum(customerSegments).optional(),
     }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const [src] = await db
         .select({ id: leadSourcesTable.id })
         .from(leadSourcesTable)
@@ -275,47 +265,11 @@ export const leadSourcesRouter = createTRPCRouter({
       if (!src) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Lead source not found.' })
       }
-
-      const match = customersMatchingSource(src.id)
-      const searchWhere = buildSearchWhere(input.search, [customers.name, customers.email])
-      const filterWhere = buildFilterWhere(input.filters, {
-        pipeline: v => derivedPipelineWhere(v),
-        createdAt: v => and(
-          v.from ? gte(customers.createdAt, v.from) : undefined,
-          v.to ? lte(customers.createdAt, v.to) : undefined,
-        ),
-      })
-      const segmentWhere = buildSegmentWhere(input.segment)
-      const where = and(match, searchWhere, filterWhere, segmentWhere)
-
-      // Pipeline is not sortable: the visible value is derived, so sorting on the underlying DB column would surprise.
-      const orderBy = buildOrderBy(input.sort, {
-        name: customers.name,
-        email: customers.email,
-        createdAt: customers.createdAt,
-      })
-
-      return paginate({
-        // Source fields are joined so the shared `LeadSourceCell` renders its editable picker; reassigning drops the row from this list by design.
-        query: () => db
-          .select({
-            id: customers.id,
-            name: customers.name,
-            email: customers.email,
-            createdAt: customers.createdAt,
-            pipeline: derivedPipelineSql(),
-            leadSourceId: customers.leadSourceId,
-            leadSourceName: leadSourcesTable.name,
-            leadSourceSlug: leadSourcesTable.slug,
-          })
-          .from(customers)
-          .leftJoin(leadSourcesTable, eq(leadSourcesTable.id, customers.leadSourceId))
-          .where(where)
-          .orderBy(...orderBy)
-          .limit(input.pagination.limit)
-          .offset(input.pagination.offset),
-        count: () => db.$count(customers, where),
-      })
+      const { id: _id, segment, ...query } = input
+      return dalToTrpc(await listCustomers(
+        { ...ctx, scope: null },
+        { ...query, filters: { ...query.filters, sourceId: src.id, segment } },
+      ))
     }),
 
   getStatusCounts: superAdminProcedure

@@ -13,9 +13,8 @@ import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 import { RecordsPageHeader } from '@/shared/components/records-page-header'
 import { RecordsPageShell } from '@/shared/components/records-page-shell'
+import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
-import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
-import { fromPaginatedQuery } from '@/shared/dal/client/lib/from-paginated-query'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { CUSTOMERS_TABLE_QUERY_CONFIG, CUSTOMERS_TABLE_SHOW_COLUMNS } from '@/shared/entities/customers/constants/customers-table-query-config'
 import { useCustomerActionConfigs } from '@/shared/entities/customers/hooks/use-customer-action-configs'
@@ -29,12 +28,7 @@ export function CustomersTable() {
   const { invalidateCustomer, invalidateLeadSource } = useInvalidation()
   const { setModal, open: openModal } = useModalStore()
 
-  const pagination = usePaginatedQuery<Record<string, never>, CustomerTableRow>(
-    trpc.customersRouter.business.list.queryOptions,
-    {},
-    CUSTOMERS_TABLE_QUERY_CONFIG,
-  )
-  const query = fromPaginatedQuery(pagination)
+  const query = useDataViewQuery(trpc.customersRouter.business.list, {}, CUSTOMERS_TABLE_QUERY_CONFIG)
 
   const updateCreatedAt = useMutation(
     trpc.customersRouter.crud.update.mutationOptions({
@@ -88,7 +82,7 @@ export function CustomersTable() {
         table={(
           <DataTable
             tableId="customers"
-            data={pagination.rows}
+            data={query.rows}
             columns={columns}
             meta={meta}
             entityName="customer"
