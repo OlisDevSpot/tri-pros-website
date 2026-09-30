@@ -6,6 +6,7 @@ import { Suspense } from 'react'
 
 import { DashboardListSectionSkeleton } from '@/features/agent-dashboard/ui/components/dashboard-list-section-skeleton'
 import { DashboardProjectSectionList } from '@/features/agent-dashboard/ui/components/dashboard-project-section-list'
+import { useIsDataViewPending } from '@/shared/dal/client/hooks/use-is-data-view-pending'
 import { HydrationErrorBoundary } from '@/trpc/components/hydration-error-boundary'
 
 interface DashboardProjectSectionProps {
@@ -23,9 +24,15 @@ interface DashboardProjectSectionProps {
  * the section.
  */
 export function DashboardProjectSection({ title, input, emptyMessage }: DashboardProjectSectionProps) {
+  // The layout's loading state draws this page with no reads (see DataViewPendingContext).
+  const isPending = useIsDataViewPending()
+  const skeleton = <DashboardListSectionSkeleton title={title} card="project" />
+  if (isPending) {
+    return skeleton
+  }
   return (
     <HydrationErrorBoundary variant="section">
-      <Suspense fallback={<DashboardListSectionSkeleton title={title} />}>
+      <Suspense fallback={skeleton}>
         <DashboardProjectSectionList title={title} input={input} emptyMessage={emptyMessage} />
       </Suspense>
     </HydrationErrorBoundary>
