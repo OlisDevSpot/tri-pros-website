@@ -15,7 +15,7 @@ const PALETTE_RE
   = '/\\b(bg|text|border(-[xytrblse])?|ring(-offset)?|fill|stroke|outline|divide|from|to|via|shadow|decoration|placeholder|accent|caret)-(slate|gray|zinc|neutral|stone|blue|sky|indigo|cyan|teal|red|rose|pink|green|emerald|lime|amber|yellow|orange|purple|violet|fuchsia)-\\d{2,3}\\b/'
 const PALETTE_MSG = 'Use a theme token (status-*, chart-*, identity-*, destructive, success, warning) chosen by meaning.'
 // The 2px rule: every font size is an even number of pixels, and Tailwind's steps are the ramp.
-const TYPE_RAMP_RE = '/\\btext-\\[\\d/'
+const TYPE_RAMP_RE = '/\\btext-\\[\\d+(\\.\\d+)?(px|rem)\\]/'
 const TYPE_RAMP_MSG = 'Use the type ramp (2px rule: Tailwind steps only, text-xs 12px is the floor).'
 // The marketing world keeps its own palette, third-party brand marks keep theirs, and the meeting-flow
 // program/benefit accents wait on a presentation decision before they move onto tokens.
