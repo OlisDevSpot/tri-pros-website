@@ -11,9 +11,11 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 
+import { MOBILE_DOCK_SHEET_CLASS } from '@/features/agent-dashboard/constants/mobile-dock'
 import { SIDEBAR_LABEL_ANIMATE, SIDEBAR_TRANSITION } from '@/features/agent-dashboard/constants/sidebar-motion'
 import { SIDEBAR_NAV_ITEM_CLASS } from '@/features/agent-dashboard/constants/sidebar-styles'
 import { getSidebarNav } from '@/features/agent-dashboard/lib/get-sidebar-nav'
+import { isNavItemActive } from '@/features/agent-dashboard/lib/is-nav-item-active'
 import { ActionCenterSheet } from '@/features/agent-dashboard/ui/components/action-center-sheet'
 import { SidebarPipelineItem } from '@/features/agent-dashboard/ui/components/sidebar-pipeline-item'
 import { SidebarRecordsGroup } from '@/features/agent-dashboard/ui/components/sidebar-records-group'
@@ -76,19 +78,8 @@ export function AppSidebar({ user }: AppSidebarProps) {
     [user.id, user.role],
   )
 
-  function getIsActive(item: SidebarNavItem): boolean {
-    if (item.href === ROOTS.dashboard.root) {
-      return pathname === item.href
-    }
-    // Pipeline item: match any /dashboard/pipeline/* route
-    if (item.children) {
-      return pathname.startsWith('/dashboard/pipeline')
-    }
-    return pathname.startsWith(item.href)
-  }
-
   function renderNavItem(item: SidebarNavItem) {
-    const isActive = getIsActive(item)
+    const isActive = isNavItemActive(item, pathname)
 
     return (
       <SidebarMenuItem key={item.href}>
@@ -133,7 +124,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
       <SidebarPipelineItem
         key={item.href}
         item={item}
-        isActive={getIsActive(item)}
+        isActive={isNavItemActive(item, pathname)}
         activePipeline={activePipeline}
         hydrated={hydrated}
         onPipelineChange={(p: Pipeline) => {
@@ -154,7 +145,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
 
   return (
     <>
-      <Sidebar collapsible="icon" side="left" variant="floating">
+      <Sidebar collapsible="icon" side="left" variant="floating" mobilePresentation="bottom-sheet" mobileClassName={MOBILE_DOCK_SHEET_CLASS}>
         <SidebarHeader className="relative">
           <motion.div
             whileHover={{ scale: 1.03 }}

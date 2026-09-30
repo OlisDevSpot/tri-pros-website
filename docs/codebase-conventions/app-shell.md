@@ -98,7 +98,7 @@ The dashboard layout has one canonical shape. Do not refactor without reading th
         : <DashboardSignIn />}
     </div>
     {hasSessionCookie && (
-      <Suspense><DashboardSessionMobileNav /></Suspense> {/* → DashboardMobileNav: fixed bottom-4 */}
+      <Suspense><DashboardSessionMobileNav /></Suspense> {/* → DashboardMobileNav: floating dock, bottom max(1rem, safe area) */}
     )}
   </SidebarInset>
 </SidebarProvider>

@@ -16,6 +16,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/shared/components/ui/sheet'
+import { SidebarMobileSheet } from '@/shared/components/ui/sidebar-mobile-sheet'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import {
   Tooltip,
@@ -37,13 +38,17 @@ interface SidebarContextProps {
   state: 'expanded' | 'collapsed'
   open: boolean
   setOpen: (open: boolean) => void
-  openMobile: boolean
   setOpenMobile: (open: boolean) => void
   isMobile: boolean
   toggleSidebar: () => void
 }
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null)
+
+// The phone sheet's open state flips on every tap, while the rest of the context changes only
+// when the rail collapses or the viewport crosses the phone breakpoint. Kept apart, a tap
+// re-renders the sheet and whatever reads this, not every row of the nav.
+const SidebarOpenMobileContext = React.createContext<boolean | null>(null)
 
 function useSidebar() {
   const context = React.use(SidebarContext)
@@ -52,6 +57,15 @@ function useSidebar() {
   }
 
   return context
+}
+
+function useSidebarOpenMobile() {
+  const openMobile = React.use(SidebarOpenMobileContext)
+  if (openMobile === null) {
+    throw new Error('useSidebarOpenMobile must be used within a SidebarProvider.')
+  }
+
+  return openMobile
 }
 
 function SidebarProvider({
@@ -121,34 +135,35 @@ function SidebarProvider({
       open,
       setOpen,
       isMobile,
-      openMobile,
       setOpenMobile,
       toggleSidebar,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar],
+    [state, open, setOpen, isMobile, setOpenMobile, toggleSidebar],
   )
 
   return (
     <SidebarContext value={contextValue}>
-      <TooltipProvider delayDuration={0}>
-        <div
-          data-slot="sidebar-wrapper"
-          style={
-            {
-              '--sidebar-width': SIDEBAR_WIDTH,
-              '--sidebar-width-icon': SIDEBAR_WIDTH_ICON,
-              ...style,
-            } as React.CSSProperties
-          }
-          className={cn(
-            'group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full',
-            className,
-          )}
-          {...props}
-        >
-          {children}
-        </div>
-      </TooltipProvider>
+      <SidebarOpenMobileContext value={openMobile}>
+        <TooltipProvider delayDuration={0}>
+          <div
+            data-slot="sidebar-wrapper"
+            style={
+              {
+                '--sidebar-width': SIDEBAR_WIDTH,
+                '--sidebar-width-icon': SIDEBAR_WIDTH_ICON,
+                ...style,
+              } as React.CSSProperties
+            }
+            className={cn(
+              'group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full',
+              className,
+            )}
+            {...props}
+          >
+            {children}
+          </div>
+        </TooltipProvider>
+      </SidebarOpenMobileContext>
     </SidebarContext>
   )
 }
@@ -157,6 +172,8 @@ function Sidebar({
   side = 'left',
   variant = 'sidebar',
   collapsible = 'offcanvas',
+  mobilePresentation = 'side-sheet',
+  mobileClassName,
   className,
   children,
   ...props
@@ -164,8 +181,12 @@ function Sidebar({
   side?: 'left' | 'right'
   variant?: 'sidebar' | 'floating' | 'inset'
   collapsible?: 'offcanvas' | 'icon' | 'none'
+  mobilePresentation?: 'side-sheet' | 'bottom-sheet'
+  /** Classes for the phone presentation, e.g. where a bottom sheet lands. */
+  mobileClassName?: string
 }) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+  const { isMobile, state, setOpenMobile } = useSidebar()
+  const openMobile = useSidebarOpenMobile()
 
   if (collapsible === 'none') {
     return (
@@ -179,6 +200,14 @@ function Sidebar({
       >
         {children}
       </div>
+    )
+  }
+
+  if (isMobile && mobilePresentation === 'bottom-sheet') {
+    return (
+      <SidebarMobileSheet open={openMobile} onOpenChange={setOpenMobile} className={mobileClassName}>
+        {children}
+      </SidebarMobileSheet>
     )
   }
 
@@ -525,7 +554,9 @@ function SidebarMenuButton({
     />
   )
 
-  if (!tooltip) {
+  // The tooltip names a row when the desktop rail collapses to icons. A phone never shows it, and
+  // each one mounts a Radix popper, so the phone sheet skips them.
+  if (!tooltip || isMobile) {
     return button
   }
 
@@ -726,4 +757,5 @@ export {
   SidebarSeparator,
   SidebarTrigger,
   useSidebar,
+  useSidebarOpenMobile,
 }
