@@ -59,9 +59,9 @@ function createEmailService() {
       replyTo?: string
       repName?: string
     }) => {
+      const templates = await loadEmailTemplates()
       const proposalUrl = publicUrl(`${ROOTS.public.proposalReview(params.proposalId, params.token)}&utm_source=email`)
       const firstName = params.customerName.split(' ')[0] ?? params.customerName
-      const templates = await loadEmailTemplates()
 
       const { data, error } = await resendClient.emails.send({
         from: buildSenderFrom(params.repName),
@@ -164,12 +164,12 @@ function createEmailService() {
       type: 'general' | 'schedule'
       formData: GeneralInquiryFormSchema | ScheduleConsultationFormSchema
     }) => {
+      const templates = await loadEmailTemplates()
       const { type, formData } = params
       const recapItems = type === 'general'
         ? buildGeneralInquiryRecap(formData as GeneralInquiryFormSchema)
         : buildScheduleConsultationRecap(formData as ScheduleConsultationFormSchema)
       const firstName = firstNameOf(formData.name)
-      const templates = await loadEmailTemplates()
 
       const { data, error } = await resendClient.emails.send({
         to: formData.email,
