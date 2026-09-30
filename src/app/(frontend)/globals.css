@@ -6,26 +6,30 @@
 :root,
 .funnel-light {
   color-scheme: light;
+  /* Every app surface is one hue at a lightness step from the page (the :root, .dark block derives them).
+     Tune the look here: page lightness, step size, tint strength. Borders step toward the ink. */
+  --surface-h: 255;
+  --surface-c: 0.012;
+  --canvas-l: 0.945;
+  --lift: 0.055;
+  --edge-dir: -1;
+  /* One band, lighter than the page and darker than the card: every other row. */
+  --band: oklch(calc(var(--canvas-l) + 0.7 * var(--lift)) var(--surface-c) var(--surface-h));
+  /* The floating rail's inset, the page margin and every gap between section cards. */
+  --gutter: 0.5rem;
   /* The raw logo color is identity only (logo, browser theme-color): as text on light it fails contrast. */
   --brand-cyan: #03afed;
   --brand-cyan-bright: oklch(0.8 0.12 228);
   --brand-blue: oklch(0.5 0.15 243);
   --brand-navy: oklch(0.215 0.072 262);
   --brand-navy-deep: oklch(0.13 0.05 262);
-  --background: oklch(0.965 0.009 246);
   --foreground: oklch(0.235 0.045 258);
-  --card: oklch(1 0 0);
   --card-foreground: var(--foreground);
-  --popover: oklch(1 0 0);
   --popover-foreground: var(--foreground);
-  --surface-raised: oklch(0.978 0.006 250);
   --primary: var(--brand-blue);
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.955 0.008 250);
   --secondary-foreground: var(--foreground);
-  --muted: oklch(0.955 0.008 250);
   --muted-foreground: oklch(0.47 0.03 256);
-  --accent: oklch(0.955 0.012 250);
   --accent-foreground: var(--foreground);
   --link: oklch(0.47 0.14 243);
   --destructive: oklch(0.53 0.19 27);
@@ -35,10 +39,7 @@
   --success-foreground: oklch(1 0 0);
   --warning: var(--status-pending-fg);
   --warning-foreground: oklch(1 0 0);
-  --border: oklch(0.905 0.012 252);
-  --border-strong: oklch(0.84 0.015 252);
   --input: oklch(0.62 0.03 255);
-  --input-background: oklch(1 0 0);
   --ring: oklch(0.58 0.15 238);
   --sidebar: var(--brand-navy);
   --sidebar-foreground: oklch(0.93 0.015 250);
@@ -71,7 +72,7 @@
   --status-idle-fg: oklch(0.46 0.02 255);
   --status-idle-bg: oklch(0.94 0.008 255);
   --status-idle-dot: oklch(0.66 0.02 255);
-  --series-leads: oklch(0.66 0.12 228);
+  --series-leads: oklch(0.655 0.12 228);
   --series-booked: oklch(0.56 0.14 236);
   --series-sits: oklch(0.46 0.14 245);
   --series-sales: oklch(0.3 0.075 258);
@@ -106,11 +107,12 @@
   --identity-8-bg: oklch(0.93 0.045 335);
   --identity-8-fg: oklch(0.43 0.11 335);
   --identity-8-ring: oklch(0.66 0.13 335);
-  /* Frosted-glass surface: keeps the popover token's hue/lightness intact and
-     drops alpha so the page beneath bleeds through the backdrop-filter blur.
-     Light mode is mostly white at 78% alpha — enough surface presence to read
+  /* Frosted-glass surface: mixes the popover token toward transparent (in oklab,
+     so premultiplied mixing preserves its hue/lightness) rather than a relative-color
+     function, which iOS/iPadOS Safari below 16.4 can't parse.
+     Light mode is mostly white at 78% mix — enough surface presence to read
      as a panel, enough transparency to see soft motion of content behind. */
-  --popover-glass: oklch(from var(--popover) l c h / 0.78);
+  --popover-glass: color-mix(in oklab, var(--popover) 78%, transparent);
   /* Top-edge sheen — mimics the way real glass catches a hint of light at its
      upper rim. Fades to transparent by 35% down the panel so it never reads
      as a hard band. */
@@ -309,20 +311,19 @@
 
 .dark {
   color-scheme: dark;
-  --background: oklch(0.17 0.045 260);
+  --surface-c: 0.045;
+  --canvas-l: 0.16;
+  --lift: 0.045;
+  --edge-dir: 1;
+  /* Dark bands need a bigger step than light ones to read at the same strength. */
+  --band: oklch(calc(var(--canvas-l) + 1.5 * var(--lift)) var(--surface-c) var(--surface-h));
   --foreground: oklch(0.955 0.008 250);
-  --card: oklch(0.21 0.05 260);
   --card-foreground: var(--foreground);
-  --popover: oklch(0.21 0.05 260);
   --popover-foreground: var(--foreground);
-  --surface-raised: oklch(0.245 0.055 260);
   --primary: oklch(0.76 0.13 230);
   --primary-foreground: oklch(0.19 0.045 258);
-  --secondary: oklch(0.245 0.055 260);
   --secondary-foreground: var(--foreground);
-  --muted: oklch(0.245 0.055 260);
   --muted-foreground: oklch(0.75 0.03 252);
-  --accent: oklch(0.245 0.055 260);
   --accent-foreground: var(--foreground);
   --link: oklch(0.81 0.11 228);
   --destructive: oklch(0.53 0.19 27);
@@ -332,10 +333,7 @@
   --success-foreground: oklch(0.19 0.045 258);
   --warning: var(--status-pending-fg);
   --warning-foreground: oklch(0.19 0.045 258);
-  --border: oklch(0.3 0.04 258);
-  --border-strong: oklch(0.38 0.04 258);
   --input: oklch(0.53 0.04 256);
-  --input-background: oklch(0.195 0.038 258);
   --ring: oklch(0.78 0.12 228);
   --sidebar: var(--brand-navy-deep);
   --sidebar-foreground: oklch(0.92 0.012 250);
@@ -407,7 +405,7 @@
      62% alpha, the card hue beneath bleeds through, so the surface reads as
      "the same color, sharper" — which is what real glass over a dark surface
      looks like. The shadow + sheen carry the lift, not a brighter base. */
-  --popover-glass: oklch(0.245 0.055 260 / 0.62);
+  --popover-glass: color-mix(in oklab, var(--popover) 62%, transparent);
   /* Top-edge sheen — a faint white wash that fades by 40% down the panel.
      This is the single most-recognizable detail in macOS Big Sur menus. */
   --popover-glass-overlay: linear-gradient(180deg, oklch(1 0 0 / 0.075) 0%, transparent 40%);
@@ -426,6 +424,33 @@
   --shadow-lg: 0 18px 40px -12px oklch(0 0 0 / 0.7), inset 0 1px 0 oklch(1 0 0 / 0.06);
   --shadow-xl: 0 18px 40px -12px oklch(0 0 0 / 0.7), inset 0 1px 0 oklch(1 0 0 / 0.06);
   --shadow-2xl: 0 18px 40px -12px oklch(0 0 0 / 0.7), inset 0 1px 0 oklch(1 0 0 / 0.06);
+}
+
+/* Declared on both selectors because var() resolves where a property is declared: a nested .dark
+   wrapper (the customer profile hero) must recompute its surfaces from its own settings, not
+   inherit the page's light values. */
+:root,
+.dark {
+  --surface-card-l: min(1, var(--canvas-l) + var(--lift));
+  --background: oklch(calc(var(--canvas-l)) var(--surface-c) var(--surface-h));
+  --muted: oklch(calc(var(--canvas-l) + 0.5 * var(--lift)) var(--surface-c) var(--surface-h));
+  --secondary: var(--muted);
+  --accent: var(--muted);
+  --card: oklch(calc(var(--surface-card-l)) var(--surface-c) var(--surface-h));
+  --input-background: var(--card);
+  /* Light mode clamps at white, so the step above the card is carried by shadow there. */
+  --surface-raised: oklch(calc(min(1, var(--canvas-l) + 2 * var(--lift))) var(--surface-c) var(--surface-h));
+  --popover: var(--surface-raised);
+  --border: oklch(calc(var(--surface-card-l) + var(--edge-dir) * 2 * var(--lift)) var(--surface-c) var(--surface-h));
+  --border-strong: oklch(
+    calc(var(--surface-card-l) + var(--edge-dir) * 3 * var(--lift)) var(--surface-c) var(--surface-h)
+  );
+  --row-hover: color-mix(in oklab, var(--primary) 8%, var(--card));
+  --row-selected: color-mix(in oklab, var(--primary) 12%, var(--card));
+  --skeleton: var(--border);
+  --skeleton-soft: oklch(
+    calc(var(--surface-card-l) + var(--edge-dir) * 1.5 * var(--lift)) var(--surface-c) var(--surface-h)
+  );
 }
 
 @theme inline {
@@ -466,6 +491,11 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-surface-raised: var(--surface-raised);
+  --color-band: var(--band);
+  --color-row-hover: var(--row-hover);
+  --color-row-selected: var(--row-selected);
+  --color-skeleton: var(--skeleton);
+  --color-skeleton-soft: var(--skeleton-soft);
   --color-link: var(--link);
   --color-border-strong: var(--border-strong);
   --color-input-background: var(--input-background);
