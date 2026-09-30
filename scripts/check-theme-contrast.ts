@@ -255,7 +255,7 @@ const pairs: Pair[] = [
   { label: 'sidebar label on hover', fg: '--sidebar-foreground', bg: '--sidebar-hover', min: 4.5 },
   { label: 'sidebar label on active pill', fg: '--sidebar-foreground', bg: '--sidebar-accent', min: 4.5 },
   { label: 'active icon on pill', fg: '--sidebar-active-icon', bg: '--sidebar-accent', min: 3 },
-  // The spec's own dark values give 1.29:1 for border and skeleton on a card; the dark floor is 1.25 until the iPad check tunes the settings.
+  // Dark borders and skeletons measure 1.29:1 on a card at today's settings; the dark floor sits at 1.25 until the settings are tuned on the iPad.
   { label: 'border vs card', fg: '--border', bg: '--card', min: { light: 1.3, dark: 1.25 } },
   { label: 'skeleton bar vs card', fg: '--skeleton', bg: '--card', min: { light: 1.3, dark: 1.25 } },
   { label: 'skeleton block vs card', fg: '--skeleton-soft', bg: '--card', min: 1.15 },
