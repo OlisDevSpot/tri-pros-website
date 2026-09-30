@@ -86,6 +86,8 @@ Together ≈ 5.7 MB, about half of the route. Checked and not a problem in the d
 
 After Phase 1 server seams (`4313ed27`): `/dashboard` 4.8 MB, cold 1260 / 1170 / 1284 ms; `/api/trpc` 2.5 MB, cold 867 / 940 / 840 ms; `/api/auth` 1.4 MB, cold 490 / 551 / 512 ms. Size target met (≤ 6.0 MB); cold-time target missed (median 1260 ms vs ≤ 600 ms) — Task 9 stopped per plan and reported the miss with a proposed next seam instead of starting Task 10.
 
+A/B under equal load (6 interleaved rounds, 1f1ee4aa vs 4313ed27): `/dashboard` cold median 1,904 → 1,106 ms, `/api/trpc` 1,521 → 725 ms, `/api/auth` 457 → 479 ms (unchanged code); normalized to `/api/auth`, ≈ 0.62 s at the quiet-machine conditions above. The earlier single run above was taken under heavier load. Remaining cold time: V8 compile ≈ 0.47 s, auth + DB schema graph ≈ 0.32 s (drizzle-zod ≈ 90 ms), tRPC app router ≈ 0.25 s; Next's page floor ≈ 0.48 s.
+
 ## 5. Phase 1 — server code
 
 ### 5.1 One session read per request
