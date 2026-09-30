@@ -2,7 +2,7 @@
 
 import type { ComponentProps } from 'react'
 
-import type { ChartTooltipPin } from '@/shared/hooks/use-pinned-chart-tooltip'
+import type { ChartTooltipPin } from '@/shared/lib/create-chart-tooltip-pin'
 
 import { useSyncExternalStore } from 'react'
 

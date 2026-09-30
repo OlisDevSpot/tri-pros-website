@@ -5,7 +5,7 @@ import type { TooltipContentProps } from 'recharts'
 import type { ChartSeriesKey } from '@/features/analytics/constants/chart-series'
 import type { AnalyticsInterval } from '@/features/analytics/constants/dimensions'
 import type { ChartRow } from '@/features/analytics/lib/chart-rows'
-import type { ChartTooltipPin } from '@/shared/hooks/use-pinned-chart-tooltip'
+import type { ChartTooltipPin } from '@/shared/lib/create-chart-tooltip-pin'
 
 import { useLayoutEffect, useRef, useState } from 'react'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
