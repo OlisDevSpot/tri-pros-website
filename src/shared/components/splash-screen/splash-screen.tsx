@@ -112,7 +112,7 @@ export function SplashScreen({ open, onDismiss, dismiss, title, subheading, ease
       data-state={open ? 'open' : 'closed'}
       inert={!open}
       style={{
-        backgroundColor: '#09090b',
+        backgroundColor: '#040f23',
         opacity: open ? 1 : 0,
         transitionProperty: 'opacity',
         transitionDuration: `${animate ? SPLASH_FADE_S : 0}s`,

@@ -134,11 +134,11 @@ export default function RootLayout({
             light `bg-background` on <body> flashes white on cold launch. Scoped
             to standalone so the browser/marketing site is untouched; !important
             so the theme's bg-background can't override it. Pairs with the
-            manifest background_color (#09090b) for the pre-web-view surface. */}
+            manifest background_color (#040f23) for the pre-web-view surface. */}
         <style
           // eslint-disable-next-line react-dom/no-dangerously-set-innerhtml
           dangerouslySetInnerHTML={{
-            __html: '@media (display-mode: standalone){html,body{background-color:#09090b!important}}',
+            __html: '@media (display-mode: standalone){html,body{background-color:#040f23!important}}',
           }}
         />
         <Providers>
