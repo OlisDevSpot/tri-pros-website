@@ -37,7 +37,7 @@ export function DashboardMeetingCard({ row, showScheduledDate = false, className
       meeting={row}
       customerId={row.customerId ?? ''}
       className={cn(
-        'cursor-pointer rounded-lg border border-border bg-card p-2.5 transition-colors duration-200 hover:border-primary/30 hover:bg-accent/30',
+        'cursor-pointer rounded-md px-2 py-1 transition-colors duration-200 hover:bg-row-hover',
         className,
       )}
     >

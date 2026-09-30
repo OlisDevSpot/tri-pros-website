@@ -57,7 +57,7 @@ export function DashboardMeetingsHub() {
           </Button>
           <Link
             href={ROOTS.dashboard.meetings.root()}
-            className="-my-2 -mr-2 inline-flex min-h-11 shrink-0 items-center rounded-md px-2 text-xs font-medium text-muted-foreground transition-colors duration-200 hover:bg-accent/50 hover:text-primary"
+            className="-my-2 -mr-2 inline-flex min-h-11 shrink-0 items-center rounded-md px-2 text-xs font-medium text-muted-foreground transition-colors duration-200 hover:bg-muted hover:text-primary"
           >
             See all →
           </Link>

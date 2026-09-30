@@ -7,6 +7,7 @@ import Link from 'next/link'
 
 import { ROOTS } from '@/shared/config/roots'
 import { formatBusinessTime } from '@/shared/lib/business-time'
+import { cn } from '@/shared/lib/utils'
 
 import { DashboardMeetingCard } from './dashboard-meeting-card'
 
@@ -32,7 +33,7 @@ export function DashboardDayAgenda({ rows, selectedDay }: DashboardDayAgendaProp
         </p>
         <Link
           href={ROOTS.dashboard.schedule()}
-          className="-mx-2 inline-flex min-h-11 items-center rounded-md px-2 text-sm font-medium text-primary transition-colors duration-200 hover:bg-accent/50"
+          className="-mx-2 inline-flex min-h-11 items-center rounded-md px-2 text-sm font-medium text-primary transition-colors duration-200 hover:bg-muted"
         >
           Book one →
         </Link>
@@ -42,17 +43,17 @@ export function DashboardDayAgenda({ rows, selectedDay }: DashboardDayAgendaProp
 
   return (
     <ol className="flex flex-col">
-      {rows.map(row => (
-        <DayAgendaRow key={row.id} row={row} />
+      {rows.map((row, index) => (
+        <DayAgendaRow key={row.id} row={row} odd={index % 2 === 1} />
       ))}
     </ol>
   )
 }
 
 /** One rail row: time badge + hairline/dot + the meeting card, all optically centered to the card. */
-function DayAgendaRow({ row }: { row: MeetingListRow }) {
+function DayAgendaRow({ row, odd }: { row: MeetingListRow, odd: boolean }) {
   return (
-    <li className="flex items-stretch gap-3">
+    <li data-row-band={odd ? 'odd' : 'even'} className={cn('-mx-2 flex items-stretch gap-3 px-2', odd && 'bg-band')}>
       <div className="flex w-18 shrink-0 items-center justify-end">
         <span className="whitespace-nowrap rounded-md border border-primary/20 bg-primary/5 px-1.5 py-1 font-mono text-xs tabular-nums text-foreground">
           {formatBusinessTime(row.scheduledFor, { hour: 'numeric', minute: '2-digit' })}

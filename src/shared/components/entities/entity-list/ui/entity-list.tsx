@@ -19,8 +19,8 @@ interface EntityListProps<T> {
   icon?: LucideIcon
   /** Entities to render. */
   items: readonly T[]
-  /** Render one item. Typically wraps `item` in its entity's OverviewCard compound. */
-  renderItem: (item: T) => ReactNode
+  /** Render one item; `index` is its rendered position, for banding. */
+  renderItem: (item: T, index: number) => ReactNode
   /** Stable key extractor. */
   getItemKey: (item: T) => string
   /** Optional right-aligned header affordance (e.g. inline "Manage" / "+ Add"). */
@@ -107,9 +107,9 @@ export function EntityList<T>({
 
       {!isLoading && items.length > 0 && (
         <div className={cn('space-y-0.5', itemsClassName)}>
-          {items.map(item => (
+          {items.map((item, index) => (
             <div key={getItemKey(item)}>
-              {renderItem(item)}
+              {renderItem(item, index)}
             </div>
           ))}
         </div>

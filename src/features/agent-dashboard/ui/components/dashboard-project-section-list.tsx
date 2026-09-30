@@ -36,9 +36,9 @@ export function DashboardProjectSectionList({ title, input, emptyMessage }: Dash
         hideHeader
         items={data.rows}
         getItemKey={row => row.id}
-        renderItem={row => <DashboardProjectCard row={row} />}
+        renderItem={(row, index) => <DashboardProjectCard row={row} index={index} />}
         emptyState={{ message: emptyMessage }}
-        itemsClassName="space-y-2"
+        itemsClassName="-mx-2.5 space-y-0"
         variant="flush"
       />
     </section>

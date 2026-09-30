@@ -11,6 +11,8 @@ interface DashboardProposalCardProps {
   row: ProposalListRow
   /** Which timestamp the row's "time since" reflects: the contract went out (default) or the proposal was sent. */
   timeSince?: 'contractSentAt' | 'sentAt'
+  /** Rendered position in its list; odd rows take the band. */
+  index: number
   className?: string
 }
 
@@ -18,17 +20,18 @@ interface DashboardProposalCardProps {
  * Dense `ProposalOverviewCard` composition for the dashboard's proposal
  * rosters — the row leads with the label + compact actions up top (no status
  * badge; the section header names the state); the second line leads with the
- * clickable customer, then trade/time-since/value/view-count. Matches
- * `DashboardMeetingCard`'s row treatment (`rounded-lg border bg-card p-2.5`)
- * so the dashboard's list modules read as one visual family.
+ * clickable customer, then trade/time-since/value/view-count. Renders as a
+ * banded row of the module's list, like DashboardMeetingCard and
+ * DashboardProjectCard.
  */
-export function DashboardProposalCard({ row, timeSince = 'contractSentAt', className }: DashboardProposalCardProps) {
+export function DashboardProposalCard({ row, timeSince = 'contractSentAt', index, className }: DashboardProposalCardProps) {
   const proposal = mapProposalRowToCardData(row, timeSince)
 
   return (
     <ProposalOverviewCard
       proposal={proposal}
-      className={cn('rounded-lg border border-border bg-card p-2.5', className)}
+      data-row-band={index % 2 === 1 ? 'odd' : 'even'}
+      className={cn('px-2.5 py-2 transition-colors duration-200 hover:bg-row-hover', index % 2 === 1 && 'bg-band', className)}
     >
       <ProposalOverviewCard.Header className="min-w-0 gap-1.5">
         <ProposalOverviewCard.Label className="min-w-0 flex-1 truncate font-medium" />

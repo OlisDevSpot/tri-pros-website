@@ -85,13 +85,14 @@ export function useProposalOverviewCard() {
 // ── Root ───────────────────────────────────────────────────────────────────────
 
 interface ProposalOverviewCardProps {
-  proposal: ProposalOverviewCardData
-  className?: string
-  children: ReactNode
-  onView?: (entity: ProposalOverviewCardData) => void
-  onEdit?: (entity: ProposalOverviewCardData) => void
-  onAssignOwner?: (entity: ProposalOverviewCardData) => void
-  meta?: ProposalOverviewCardMeta
+  'proposal': ProposalOverviewCardData
+  'className'?: string
+  'children': ReactNode
+  'onView'?: (entity: ProposalOverviewCardData) => void
+  'onEdit'?: (entity: ProposalOverviewCardData) => void
+  'onAssignOwner'?: (entity: ProposalOverviewCardData) => void
+  'meta'?: ProposalOverviewCardMeta
+  'data-row-band'?: 'odd' | 'even'
 }
 
 function ProposalOverviewCardRoot({
@@ -102,6 +103,7 @@ function ProposalOverviewCardRoot({
   onEdit,
   onAssignOwner,
   meta,
+  ...rest
 }: ProposalOverviewCardProps) {
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
@@ -129,7 +131,7 @@ function ProposalOverviewCardRoot({
   return (
     <ProposalOverviewCardContext value={value}>
       <DeleteConfirmDialog />
-      <div className={className} onClick={handleClick}>
+      <div className={className} onClick={handleClick} {...rest}>
         {children}
       </div>
     </ProposalOverviewCardContext>
