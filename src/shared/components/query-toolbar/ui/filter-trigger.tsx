@@ -34,7 +34,7 @@ export function QueryToolbarFilterTrigger() {
     : 'Filters'
   const triggerClassName = cn(
     'h-11 w-11 lg:h-9 lg:w-auto px-0 lg:px-3 font-normal gap-1.5 touch-manipulation',
-    activeFilterCount > 0 && 'border-foreground/60 text-foreground',
+    activeFilterCount > 0 && 'border-border-strong text-foreground',
   )
 
   const triggerInner = (

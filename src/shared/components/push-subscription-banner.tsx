@@ -65,7 +65,7 @@ export function PushSubscriptionBanner() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-          className="mx-3 mt-3 flex items-center gap-3 rounded-lg border border-foreground/10 bg-foreground/2 px-3 py-2.5 sm:mx-4 sm:px-4"
+          className="mx-3 mt-3 flex items-center gap-3 rounded-lg border border-border bg-muted px-3 py-2.5 sm:mx-4 sm:px-4"
         >
           <Bell className="size-4 shrink-0 text-primary" aria-hidden />
           <div className="min-w-0 flex-1">

@@ -18,7 +18,7 @@ export function StatBarItem({ icon: Icon, label, value, displayValue, color, isL
   return (
     <>
       {/* Mobile — shown inside expanded grid only */}
-      <div className="relative flex h-16 w-full flex-col items-center justify-center overflow-hidden rounded-lg border border-border/50 lg:hidden">
+      <div className="relative flex h-16 w-full flex-col items-center justify-center overflow-hidden rounded-lg border border-border lg:hidden">
         <Icon size={48} className={cn('absolute -right-1.5 -top-1.5 opacity-[0.07]', color)} />
         {isLoading
           ? <LoaderIcon size={16} className="animate-spin text-muted-foreground" />

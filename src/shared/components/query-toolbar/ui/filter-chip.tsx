@@ -22,8 +22,8 @@ export function FilterChip({ definition, value, onClear }: ChipProps) {
       className={cn(
         'group/chip inline-flex h-9 max-w-55 items-center gap-1.5 pl-2.5 pr-1',
         // Outline (not filled) so chips read as part of the FilterTrigger control group.
-        'rounded-md border border-border/70 bg-transparent',
-        'transition-colors hover:border-border hover:bg-foreground/3',
+        'rounded-md border border-border bg-transparent',
+        'transition-colors hover:border-border hover:bg-muted',
         'focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/40',
       )}
     >
@@ -38,7 +38,7 @@ export function FilterChip({ definition, value, onClear }: ChipProps) {
         className={cn(
           'shrink-0 inline-flex size-6 items-center justify-center rounded-sm touch-manipulation',
           'text-muted-foreground transition-colors',
-          'hover:bg-foreground/10 hover:text-foreground',
+          'hover:bg-muted hover:text-foreground',
           'focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2',
         )}
       >

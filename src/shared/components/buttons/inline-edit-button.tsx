@@ -29,7 +29,7 @@ interface Props {
 export function InlineEditButton({ onClick, href, size = 'md', ariaLabel = 'Edit', className }: Props) {
   const { btn, icon } = SIZE_MAP[size]
   const classes = cn(
-    'shrink-0 rounded-full text-foreground/60 backdrop-blur-sm hover:bg-foreground/10 hover:text-foreground',
+    'shrink-0 rounded-full text-foreground/60 backdrop-blur-sm hover:bg-muted hover:text-foreground',
     btn,
     className,
   )

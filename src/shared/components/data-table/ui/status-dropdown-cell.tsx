@@ -78,8 +78,8 @@ export function StatusDropdownCell<TStatus extends string>({
                   ? 'cursor-not-allowed opacity-40'
                   : optionStyle === 'dot'
                     ? 'cursor-pointer hover:bg-accent hover:text-accent-foreground'
-                    : 'cursor-pointer hover:bg-muted/50 hover:text-accent-foreground',
-                isCurrent && (optionStyle === 'dot' ? 'bg-accent/60 font-medium' : 'font-medium'),
+                    : 'cursor-pointer hover:bg-row-hover hover:text-accent-foreground',
+                isCurrent && (optionStyle === 'dot' ? 'bg-row-selected font-medium' : 'font-medium'),
               )}
               onClick={() => {
                 if (isDisabled) {

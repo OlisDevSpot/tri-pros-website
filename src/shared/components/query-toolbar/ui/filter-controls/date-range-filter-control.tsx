@@ -79,7 +79,7 @@ export function DateRangeFilterControl({ definition, value, onChange }: Props) {
       </PopoverTrigger>
       <PopoverContent align="start" className="w-auto p-0">
         {hasPresets && (
-          <div className="flex items-center justify-between gap-2 border-b border-border/50 p-2">
+          <div className="flex items-center justify-between gap-2 border-b border-border p-2">
             <Select onValueChange={handlePreset}>
               <SelectTrigger size="sm" className="flex-1">
                 <SelectValue placeholder="Quick range…" />

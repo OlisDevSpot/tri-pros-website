@@ -21,9 +21,9 @@ export function UserButton({ user }: Props) {
           className="w-full flex items-center gap-2 h-fit py-4"
           variant="ghost"
         >
-          <Avatar className="h-10 w-10 rounded-lg bg-foreground/20">
+          <Avatar className="h-10 w-10 rounded-lg bg-muted">
             <AvatarImage src={user?.image || undefined} alt={user?.name} />
-            <AvatarFallback className="rounded-lg bg-foreground/20 p-2">
+            <AvatarFallback className="rounded-lg bg-muted p-2">
               {fallbackInitials}
             </AvatarFallback>
           </Avatar>

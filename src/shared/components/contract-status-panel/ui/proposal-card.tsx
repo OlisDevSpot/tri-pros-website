@@ -80,7 +80,7 @@ export function ProposalCard({
   }
 
   return (
-    <div className="rounded-lg border border-border bg-card/50 p-4 sm:p-5">
+    <div className="rounded-lg border border-border bg-card p-4 sm:p-5">
       {/* Header */}
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>

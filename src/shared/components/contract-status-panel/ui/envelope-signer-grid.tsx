@@ -37,7 +37,7 @@ export function EnvelopeSignerGrid({ signerStatuses }: EnvelopeSignerGridProps) 
             'flex items-center gap-3 rounded-lg border p-3',
             signer.status === 'SIGNED'
               ? 'border-status-success-dot/40 bg-status-success-bg/70'
-              : 'border-border bg-muted/30',
+              : 'border-border bg-muted',
           )}
         >
           <div

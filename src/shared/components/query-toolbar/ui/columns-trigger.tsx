@@ -30,7 +30,7 @@ export function QueryToolbarColumnsTrigger({ visibility }: ColumnsTriggerProps) 
   const ariaLabel = hiddenCount > 0 ? `Columns, ${hiddenCount} hidden` : 'Columns'
   const triggerClassName = cn(
     'h-11 w-11 lg:h-9 lg:w-auto px-0 lg:px-3 font-normal gap-1.5 touch-manipulation',
-    hiddenCount > 0 && 'border-foreground/60 text-foreground',
+    hiddenCount > 0 && 'border-border-strong text-foreground',
   )
 
   const triggerInner = (
