@@ -142,16 +142,16 @@ export const PROPOSAL_COLUMNS = {
               className={cn(
                 'h-3.5 w-3.5 shrink-0',
                 views === 0 && 'text-muted-foreground/40',
-                views > 0 && views < 3 && 'text-amber-500',
-                views >= 3 && 'text-emerald-500',
+                views > 0 && views < 3 && 'text-status-pending-fg',
+                views >= 3 && 'text-status-success-fg',
               )}
             />
             <span
               className={cn(
                 'tabular-nums text-sm font-semibold',
                 views === 0 && 'text-muted-foreground/50',
-                views > 0 && views < 3 && 'text-amber-500',
-                views >= 3 && 'text-emerald-500',
+                views > 0 && views < 3 && 'text-status-pending-fg',
+                views >= 3 && 'text-status-success-fg',
               )}
             >
               {views === 0 ? '—' : views}

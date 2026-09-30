@@ -162,9 +162,9 @@ function ActionArea(props: {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="flex items-start gap-3 rounded-lg border border-green-500/20 bg-green-500/5 p-4"
+        className="flex items-start gap-3 rounded-lg border border-status-success-dot/40 bg-status-success-bg/70 p-4"
       >
-        <PartyPopper className="mt-0.5 size-5 shrink-0 text-green-600 dark:text-green-400" />
+        <PartyPopper className="mt-0.5 size-5 shrink-0 text-status-success-fg" />
         <div>
           <p className="text-sm font-semibold text-foreground">Agreement signed!</p>
           <p className="mt-0.5 text-xs text-muted-foreground">

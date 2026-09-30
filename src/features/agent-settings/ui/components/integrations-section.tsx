@@ -110,8 +110,8 @@ export function IntegrationsSection() {
                   <>
                     {/* Status */}
                     <div className="flex items-center gap-2 text-sm">
-                      <CheckCircle2Icon className="size-4 text-emerald-500" />
-                      <span className="text-emerald-600 font-medium">Connected</span>
+                      <CheckCircle2Icon className="size-4 text-status-success-fg" />
+                      <span className="text-status-success-fg font-medium">Connected</span>
                     </div>
 
                     {/* Calendar details */}

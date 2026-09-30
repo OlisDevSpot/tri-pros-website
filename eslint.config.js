@@ -9,6 +9,25 @@ const NAV_PATH_RE
 const NAV_PATH_MSG
   = 'Build app paths with ROOTS.* (absolute via mainSiteUrl/publicUrl), not string literals. See docs/codebase-conventions/urls-and-origins.md'
 
+// Status, identity and chart colors are theme tokens; a raw palette class is light-only or needs a
+// `dark:` patch, which is how 88 files drifted off-theme before.
+const PALETTE_RE
+  = '/\\b(bg|text|border|ring|fill|stroke|outline|divide|from|to|via)-(slate|gray|zinc|neutral|stone|blue|sky|indigo|cyan|teal|red|rose|pink|green|emerald|lime|amber|yellow|orange|purple|violet|fuchsia)-\\d{2,3}\\b/'
+const PALETTE_MSG = 'Use a theme token (status-*, chart-*, identity-*, destructive, success, warning) chosen by meaning.'
+// The marketing world keeps its own palette, third-party brand marks keep theirs, and the meeting-flow
+// program/benefit accents wait on a presentation decision before they move onto tokens.
+const THEME_TOKEN_IGNORES = [
+  'src/features/landing/**',
+  'src/shared/domains/funnels/**',
+  'src/shared/components/navigation/site-navbar.tsx',
+  'src/shared/components/reviews/**',
+  'src/shared/constants/company/socials.ts',
+  'src/features/meeting-flow/constants/benefit-categories.ts',
+  'src/features/meeting-flow/ui/components/steps/program-card.tsx',
+  'src/features/meeting-flow/ui/components/steps/closing-step.tsx',
+  'src/features/meeting-flow/ui/components/steps/who-we-are/reputation-mark.tsx',
+]
+
 // Packages no page render needs. A static value import puts their code in the
 // server bundle of every route that imports the tRPC app router, and each cold
 // start compiles all of it (twilio alone was 3.4 MB of /dashboard's 11 MB).
@@ -167,5 +186,18 @@ export default antfu({
   files: ['src/shared/services/providers/upstash/realtime-client.ts'],
   rules: {
     'lazy-only/imports': lazyOnlyImports({ except: ['ably'] }),
+  },
+}).append({
+  // Aliased under its own plugin namespace for the same reason as project/no-inline-table-config:
+  // a second `no-restricted-syntax` entry for these files would replace the nav-path one.
+  name: 'project/theme-tokens',
+  files: ['src/features/**/*.{ts,tsx}', 'src/shared/**/*.{ts,tsx}'],
+  ignores: THEME_TOKEN_IGNORES,
+  plugins: { 'theme-tokens': { rules: { palette: builtinRules.get('no-restricted-syntax') } } },
+  rules: {
+    'theme-tokens/palette': ['error',
+      { selector: `Literal[value=${PALETTE_RE}]`, message: PALETTE_MSG },
+      { selector: `TemplateElement[value.raw=${PALETTE_RE}]`, message: PALETTE_MSG },
+    ],
   },
 })

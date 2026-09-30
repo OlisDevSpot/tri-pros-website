@@ -44,7 +44,7 @@ export function DashboardProjectCard({ row, className }: DashboardProjectCardPro
           className,
         )}
       >
-        <FolderOpenIcon className="size-3.5 shrink-0 text-green-600 dark:text-green-400" />
+        <FolderOpenIcon className="size-3.5 shrink-0 text-status-success-fg" />
         <div className="min-w-0 flex-1">
           <span className="block truncate text-sm font-medium text-foreground">{row.title}</span>
           {row.address && (

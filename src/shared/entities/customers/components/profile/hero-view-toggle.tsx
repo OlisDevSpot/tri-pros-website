@@ -18,6 +18,7 @@ interface Props {
   disabled?: boolean
 }
 
+// Sits on the hero photo, so the glass and its white active pill stay the same in both themes.
 export function HeroViewToggle({ value, onChange, disabled }: Props) {
   return (
     <div
@@ -36,7 +37,7 @@ export function HeroViewToggle({ value, onChange, disabled }: Props) {
             className={cn(
               'flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-all',
               isActive
-                ? 'bg-white text-slate-900 shadow-sm'
+                ? 'bg-white text-black shadow-sm'
                 : 'text-white/85 hover:bg-white/10 hover:text-white',
             )}
             key={key}

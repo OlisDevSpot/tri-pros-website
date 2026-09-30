@@ -133,7 +133,7 @@ export function SOWCollapsibleHeader({
             </Badge>
           )}
           {showPrice && (
-            <Badge variant="secondary" className="bg-emerald-500/10 text-xs font-semibold tabular-nums text-emerald-700 dark:text-emerald-400">
+            <Badge variant="secondary" className="bg-status-success-bg text-xs font-semibold tabular-nums text-status-success-fg">
               {formatAsDollars(sectionPrice!)}
             </Badge>
           )}

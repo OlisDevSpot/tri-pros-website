@@ -125,7 +125,7 @@ function ActiveIndicator({ isActive }: { isActive: boolean }) {
         aria-hidden="true"
         className={cn(
           'size-1.5 rounded-full',
-          isActive ? 'bg-emerald-500' : 'bg-muted-foreground/40',
+          isActive ? 'bg-status-success-dot' : 'bg-muted-foreground/40',
         )}
       />
       <span className={cn('hidden text-xs sm:inline', isActive ? 'text-foreground' : 'text-muted-foreground')}>

@@ -58,7 +58,8 @@ export function RelatedProjects() {
                 />
                 <div className="pointer-events-none opacity-100 group-hover:opacity-20 flex flex-col items-center justify-center transition h-full z-20 w-full border-5 border-primary/40 text-wrap relative">
                   <div className="h-fit bg-primary/40 w-full flex flex-col items-center justify-center group-active:opacity-30 transition">
-                    <h2 className="uppercase text-neutral-200">{project.title}</h2>
+                    {/* Over a photo, so light in both themes. */}
+                    <h2 className="uppercase text-white/90">{project.title}</h2>
                   </div>
                   <div className="absolute bottom-2 right-2 opacity-50">
                     <Logo

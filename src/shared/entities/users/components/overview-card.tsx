@@ -170,7 +170,7 @@ function RoleSlot({ className }: { className?: string }) {
       <span
         aria-label={ROLE_LABELS.owner}
         className={cn(
-          'inline-flex items-center justify-center text-amber-400',
+          'inline-flex items-center justify-center text-chart-3',
           className,
         )}
       >

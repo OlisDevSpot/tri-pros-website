@@ -121,7 +121,7 @@ export function DealStructureFields({
                 <span className="text-muted-foreground">{inc.label}</span>
                 <span className={cn(
                   'font-medium tabular-nums',
-                  inc.amount > 0 ? 'text-emerald-600' : 'text-muted-foreground',
+                  inc.amount > 0 ? 'text-status-success-fg' : 'text-muted-foreground',
                 )}
                 >
                   {inc.amount > 0 ? `−${formatCurrency(inc.amount)}` : inc.valueDisplay}
@@ -134,7 +134,7 @@ export function DealStructureFields({
                 <Separator className="my-1" />
                 <div className="flex items-center justify-between text-sm font-semibold">
                   <span>Total Deductions</span>
-                  <span className="tabular-nums text-emerald-600">
+                  <span className="tabular-nums text-status-success-fg">
                     {`−${formatCurrency(totalDeductions)}`}
                   </span>
                 </div>

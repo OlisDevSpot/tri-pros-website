@@ -44,14 +44,14 @@ export function ProposalRow({ proposal }: Props) {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {proposal.value != null && proposal.value > 0 && (
-            <span className="text-green-600 font-medium text-sm tabular-nums">
+            <span className="text-status-success-fg font-medium text-sm tabular-nums">
               $
               {proposal.value.toLocaleString()}
             </span>
           )}
           {proposal.viewCount > 0 && (
             <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
-              {proposal.viewCount >= 3 && <FlameIcon size={11} className="text-orange-500" />}
+              {proposal.viewCount >= 3 && <FlameIcon size={11} className="text-status-attention-fg" />}
               <EyeIcon size={11} />
               {proposal.viewCount}
             </span>

@@ -17,7 +17,7 @@ export function ErrorState({ title, description, children, className, ...props }
       {...props}
     >
       <div className="max-w-fit px-8 py-8 flex items-center justify-center gap-2">
-        {children ?? <AlertCircleIcon className="mr-2 size-5 text-red-500" />}
+        {children ?? <AlertCircleIcon className="mr-2 size-5 text-destructive-text" />}
         <div className="flex flex-col">
           <h3>{title}</h3>
           {description && <p className="text-muted-foreground">{description}</p>}

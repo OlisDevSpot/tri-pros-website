@@ -67,7 +67,7 @@ export function ProjectOverview() {
   }
 
   if (!proposal.data) {
-    return <div className="bg-blue-500">Sorry, nothing to display here</div>
+    return <div className="bg-muted text-muted-foreground">Sorry, nothing to display here</div>
   }
 
   const { summary, energyBenefits } = proposal.data.projectJSON.data

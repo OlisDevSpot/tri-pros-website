@@ -74,7 +74,7 @@ export function ProjectDetailSheet({ project, isOpen, close, onDelete }: Project
               className={cn(
                 'w-fit text-xs',
                 project.isPublic
-                  ? 'bg-emerald-500/15 text-emerald-700'
+                  ? 'bg-status-success-bg text-status-success-fg'
                   : 'bg-muted text-muted-foreground',
               )}
             >

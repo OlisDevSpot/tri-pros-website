@@ -75,7 +75,7 @@ function KanbanColumnImpl<T extends KanbanItem>({
         {showValueTotal && getItemValue && (() => {
           const total = items.reduce((sum, item) => sum + (getItemValue(item) ?? 0), 0)
           return total > 0
-            ? <span className="text-xs font-semibold text-emerald-500 tabular-nums">{formatAsDollars(total)}</span>
+            ? <span className="text-xs font-semibold text-status-success-fg tabular-nums">{formatAsDollars(total)}</span>
             : null
         })()}
         {initialCollapsed && (

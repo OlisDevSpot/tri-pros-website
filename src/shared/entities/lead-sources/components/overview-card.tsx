@@ -94,7 +94,7 @@ function Indicator({ className }: { className?: string }) {
       aria-hidden="true"
       className={cn(
         'inline-block size-2 shrink-0 rounded-full motion-safe:transition-colors motion-safe:duration-200',
-        source.isActive ? 'bg-emerald-500' : 'bg-muted-foreground/30',
+        source.isActive ? 'bg-status-success-dot' : 'bg-muted-foreground/30',
         className,
       )}
     />

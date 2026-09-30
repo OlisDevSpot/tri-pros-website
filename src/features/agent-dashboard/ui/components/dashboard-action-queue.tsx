@@ -98,7 +98,7 @@ function ActionQueueSkeleton() {
 function ActionQueueEmptyState() {
   return (
     <div className="flex flex-col items-center gap-2 py-6 text-center">
-      <CheckCircleIcon size={32} className="text-green-500" />
+      <CheckCircleIcon size={32} className="text-status-success-fg" />
       <p className="text-sm font-medium text-foreground">You&apos;re all caught up</p>
       <p className="text-xs text-muted-foreground">No urgent follow-ups right now</p>
     </div>

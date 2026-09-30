@@ -95,7 +95,7 @@ export function CadenceMessageRow({
       {showThresholdWarning && (
         <div
           aria-live="polite"
-          className="mb-3 flex items-center gap-1.5 text-sm text-amber-600 dark:text-amber-400"
+          className="mb-3 flex items-center gap-1.5 text-sm text-status-pending-fg"
         >
           <TriangleAlertIcon className="size-4 shrink-0" aria-hidden="true" />
           <span>Thresholds usually increase down the ladder.</span>
@@ -132,7 +132,7 @@ export function CadenceMessageRow({
       {/* Segment counter */}
       <span
         aria-live="polite"
-        className={`flex items-center gap-1 text-xs tabular-nums ${overSegmentLimit ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
+        className={`flex items-center gap-1 text-xs tabular-nums ${overSegmentLimit ? 'text-status-pending-fg' : 'text-muted-foreground'}`}
       >
         {overSegmentLimit && (
           <TriangleAlertIcon className="size-3.5 shrink-0" aria-hidden="true" />

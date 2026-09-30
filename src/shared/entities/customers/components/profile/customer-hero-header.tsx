@@ -120,7 +120,7 @@ function EditToggle({ editForm }: { editForm: ReturnType<typeof useCustomerEditF
       <div className="flex items-center gap-0.5">
         <Button
           aria-label="Save changes"
-          className="size-7 shrink-0 rounded-full text-emerald-400 backdrop-blur-sm hover:bg-emerald-500/15 hover:text-emerald-300"
+          className="size-7 shrink-0 rounded-full text-status-success-dot backdrop-blur-sm hover:bg-status-success-dot/15 hover:text-status-success-dot"
           disabled={editForm.isPending}
           onClick={editForm.handleSave}
           size="icon"

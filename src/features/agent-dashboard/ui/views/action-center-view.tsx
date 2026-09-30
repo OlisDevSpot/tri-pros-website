@@ -55,7 +55,7 @@ export function ActionCenterView() {
           description="No actions needed right now"
           className="bg-card"
         >
-          <CheckCircleIcon size={48} className="text-green-500 mb-2" />
+          <CheckCircleIcon size={48} className="text-status-success-fg mb-2" />
         </EmptyState>
       </motion.div>
     )

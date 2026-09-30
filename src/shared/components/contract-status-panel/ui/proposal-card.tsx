@@ -121,14 +121,14 @@ export function ProposalCard({
           </p>
         )}
         {isApproved && (
-          <p className="text-sm text-green-700 dark:text-green-400">
+          <p className="text-sm text-status-success-fg">
             {customerLabel}
             {' '}
             approved this proposal.
           </p>
         )}
         {isDeclined && (
-          <p className="text-sm text-red-700 dark:text-red-400">
+          <p className="text-sm text-status-danger-fg">
             {customerLabel}
             {' '}
             declined this proposal.

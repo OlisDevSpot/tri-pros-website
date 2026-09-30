@@ -170,7 +170,7 @@ export function CreateMeetingForm({
                     {customerProjects.map(p => (
                       <SelectItem key={p.id} value={p.id}>
                         <span className="flex items-center gap-2">
-                          <FolderOpenIcon size={14} className="text-green-600 dark:text-green-400" />
+                          <FolderOpenIcon size={14} className="text-status-success-fg" />
                           {p.title}
                         </span>
                       </SelectItem>

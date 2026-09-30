@@ -36,7 +36,7 @@ export function SectionFinancialsSummary({ financials, priceDisplayMode, compact
         {isBreakdown && section.netPrice != null && (
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground text-xs">Net Price</span>
-            <span className="text-emerald-600 dark:text-emerald-400 tabular-nums font-medium">
+            <span className="text-status-success-fg tabular-nums font-medium">
               {formatAsDollars(section.netPrice)}
             </span>
           </div>
@@ -44,7 +44,7 @@ export function SectionFinancialsSummary({ financials, priceDisplayMode, compact
         {section.hasCostLines && (
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground text-xs">Job Costs</span>
-            <span className="text-red-600/90 dark:text-red-400/90 tabular-nums font-medium">
+            <span className="text-status-danger-fg tabular-nums font-medium">
               -
               {formatAsDollars(section.jobCost)}
             </span>
@@ -64,7 +64,7 @@ export function SectionFinancialsSummary({ financials, priceDisplayMode, compact
         <SummaryRow
           label="Section Price"
           value={formatAsDollars(section.price)}
-          className="text-emerald-600 dark:text-emerald-400"
+          className="text-status-success-fg"
           bold
         />
       )}
@@ -83,7 +83,7 @@ export function SectionFinancialsSummary({ financials, priceDisplayMode, compact
             </span>
           )}
           value={<span className="font-medium">{`-${formatAsDollars(section.incentives)}`}</span>}
-          className="text-emerald-700 dark:text-emerald-400"
+          className="text-status-success-fg"
           items={financials.incentives.map(inc => ({
             id: inc.id,
             label: inc.label || 'Untitled',
@@ -97,7 +97,7 @@ export function SectionFinancialsSummary({ financials, priceDisplayMode, compact
         <SummaryRow
           label="Net Price"
           value={formatAsDollars(section.netPrice)}
-          className="text-emerald-600 dark:text-emerald-400"
+          className="text-status-success-fg"
           bold
         />
       )}
@@ -116,7 +116,7 @@ export function SectionFinancialsSummary({ financials, priceDisplayMode, compact
             </span>
           )}
           value={<span className="font-medium">{`-${formatAsDollars(section.jobCost)}`}</span>}
-          className="text-red-600/90 dark:text-red-400/90"
+          className="text-status-danger-fg"
           items={financials.costLines.map(line => ({
             id: line.id,
             label: line.label || 'Untitled',
@@ -132,7 +132,7 @@ export function SectionFinancialsSummary({ financials, priceDisplayMode, compact
           <SummaryRow
             label="Margin"
             value={section.margin == null ? '—' : formatAsDollars(section.margin)}
-            className="text-emerald-600 dark:text-emerald-400"
+            className="text-status-success-fg"
             bold
           />
           <div className="flex items-center justify-between">

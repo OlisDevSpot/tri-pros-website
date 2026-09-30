@@ -73,9 +73,9 @@ export function StorySolution({ project, tradesWithScopes }: Props) {
                 initial={{ opacity: 0, y: 20 }}
                 animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
-                className="rounded-lg border-l-4 border-green-500/30 bg-green-50/50 p-5 dark:bg-green-950/20"
+                className="rounded-lg border-l-4 border-status-success-dot/40 bg-status-success-bg/70 p-5"
               >
-                <p className="mb-1 text-sm font-medium text-green-700 dark:text-green-400">The Result</p>
+                <p className="mb-1 text-sm font-medium text-status-success-fg">The Result</p>
                 <p className="leading-relaxed text-foreground/80">
                   {project.resultDescription}
                 </p>

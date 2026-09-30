@@ -50,7 +50,7 @@ export const PROJECT_COLUMNS = {
         className={cn(
           'text-xs',
           row.original.isPublic
-            ? 'bg-emerald-500/15 text-emerald-700'
+            ? 'bg-status-success-bg text-status-success-fg'
             : 'bg-muted text-muted-foreground',
         )}
       >

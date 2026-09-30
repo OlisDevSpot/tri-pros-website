@@ -308,7 +308,7 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
         </Card>
 
         {form.formState.errors.root && (
-          <div className="mt-3 text-red-500">
+          <div className="mt-3 text-destructive-text">
             {JSON.stringify(form.formState.errors, null, 2)}
           </div>
         )}

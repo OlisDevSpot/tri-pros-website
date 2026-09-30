@@ -22,7 +22,7 @@ export function ParticipantRoleIcon({ isOwner, className }: ParticipantRoleIconP
       <Crown
         aria-hidden="true"
         strokeWidth={2}
-        className={cn('size-4.5 text-amber-500 dark:text-amber-400', className)}
+        className={cn('size-4.5 text-chart-3', className)}
       />
     )
   }
@@ -33,8 +33,7 @@ export function ParticipantRoleIcon({ isOwner, className }: ParticipantRoleIconP
       strokeWidth={1.5}
       className={cn(
         'size-4.5 text-muted-foreground/40',
-        'group-hover:text-amber-500 group-focus-visible:text-amber-500',
-        'dark:group-hover:text-amber-400 dark:group-focus-visible:text-amber-400',
+        'group-hover:text-chart-3 group-focus-visible:text-chart-3',
         'motion-safe:transition-colors',
         className,
       )}

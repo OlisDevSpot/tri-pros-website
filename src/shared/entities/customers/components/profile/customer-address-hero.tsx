@@ -40,10 +40,11 @@ export function CustomerAddressHero({ address, view }: Props) {
 
   return (
     <>
-      {/* Base fallback — always present so the area never feels "broken". */}
+      {/* Base fallback — always present so the area never feels "broken". Dark in both
+          themes: white text and a photo sit on it. */}
       <div
         aria-hidden
-        className="absolute inset-0 bg-linear-to-br from-slate-900 via-slate-800 to-slate-950"
+        className="absolute inset-0 bg-linear-to-br from-black/85 via-black/75 to-black"
       />
 
       {/* Map image layer */}
@@ -72,14 +73,14 @@ export function CustomerAddressHero({ address, view }: Props) {
       {/* Scrim — always present. Stronger at the bottom where the tabs live. */}
       <div
         aria-hidden
-        className="absolute inset-0 bg-linear-to-b from-slate-950/30 via-slate-950/55 to-slate-950/90"
+        className="absolute inset-0 bg-linear-to-b from-black/30 via-black/55 to-black/90"
       />
 
       {/* Dev-only visual hint when the image fails. Helps surface GCP config
           issues (missing API enablement, referrer restrictions, etc.) without
           requiring a trip to the server logs. */}
       {errorUrl && (
-        <div className="pointer-events-none absolute bottom-3 left-3 z-20 max-w-[60%] rounded-md border border-amber-500/25 bg-amber-500/15 px-2 py-1 text-[10px] font-medium text-amber-100 backdrop-blur-sm">
+        <div className="pointer-events-none absolute bottom-3 left-3 z-20 max-w-[60%] rounded-md border border-status-pending-dot/40 bg-status-pending-bg px-2 py-1 text-[10px] font-medium text-status-pending-fg">
           Map unavailable — check console for diagnostics
         </div>
       )}

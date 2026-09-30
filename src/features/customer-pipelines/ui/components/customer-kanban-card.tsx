@@ -167,10 +167,10 @@ function CustomerKanbanCardImpl({
 
           {/* ── Project context container (projects pipeline) ── */}
           {item.project && (
-            <div className="rounded-md border border-green-500/20 bg-green-500/5 p-2.5 space-y-1.5 shadow-sm dark:border-green-500/15 dark:bg-green-500/8">
+            <div className="rounded-md border border-status-success-dot/40 bg-status-success-bg/70 p-2.5 space-y-1.5 shadow-sm">
               {/* Project header: title + actions */}
               <div className="flex items-center gap-1.5 min-w-0">
-                <FolderOpenIcon size={14} className="shrink-0 text-green-600 dark:text-green-400" />
+                <FolderOpenIcon size={14} className="shrink-0 text-status-success-fg" />
                 <span className="text-xs font-semibold truncate flex-1">{item.project.title}</span>
                 {!isDragOverlay && projectEntity && (
                   <EntityActionMenu
@@ -189,7 +189,7 @@ function CustomerKanbanCardImpl({
                   </span>
                 )}
                 {item.project.totalValue > 0 && (
-                  <span className="font-bold text-green-700 dark:text-green-400">
+                  <span className="font-bold text-status-success-fg">
                     {formatAsDollars(item.project.totalValue)}
                   </span>
                 )}
@@ -240,8 +240,8 @@ function CustomerKanbanCardImpl({
                         variant="outline"
                         className={cn(
                           'gap-1 text-[11px] font-normal w-fit',
-                          meetingLabel.variant === 'active' && 'border-yellow-500/30 bg-yellow-500/10 text-yellow-700 dark:border-yellow-500/20 dark:bg-yellow-500/10 dark:text-yellow-300',
-                          meetingLabel.variant === 'upcoming' && 'border-blue-500/30 bg-blue-500/10 text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300',
+                          meetingLabel.variant === 'active' && 'border-status-pending-dot/40 bg-status-pending-bg text-status-pending-fg',
+                          meetingLabel.variant === 'upcoming' && 'border-status-info-dot/40 bg-status-info-bg text-status-info-fg',
                           meetingLabel.variant === 'past' && 'border-muted-foreground/20 text-muted-foreground',
                         )}
                       >

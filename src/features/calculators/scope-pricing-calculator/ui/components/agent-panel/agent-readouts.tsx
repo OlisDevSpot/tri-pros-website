@@ -27,7 +27,7 @@ export function AgentReadouts({ quote }: Props) {
         <dd className="text-right tabular-nums">{formatAsDollars(quote.totalBase)}</dd>
       </dl>
       {quote.hasUncostedLines && (
-        <p className="text-xs text-amber-600 dark:text-amber-400">
+        <p className="text-xs text-status-pending-fg">
           Manual lines have no cost data, so they are left out of cost, margin and multiplier.
         </p>
       )}

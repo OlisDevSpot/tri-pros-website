@@ -223,7 +223,7 @@ export function CreateProjectForm({
                   </span>
                   <span className="flex shrink-0 items-center gap-2">
                     {proposalValue != null && (
-                      <span className="text-sm font-bold text-green-700 dark:text-green-400">
+                      <span className="text-sm font-bold text-status-success-fg">
                         {formatAsDollars(proposalValue)}
                       </span>
                     )}

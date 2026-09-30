@@ -67,7 +67,7 @@ export function PushSubscriptionManager() {
 
         {status === 'subscribed' && (
           <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400">
+            <div className="inline-flex items-center gap-1.5 text-sm text-status-success-fg">
               <CheckCircle2 className="size-4" aria-hidden />
               Subscribed on this device
             </div>

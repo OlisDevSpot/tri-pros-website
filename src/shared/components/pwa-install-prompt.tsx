@@ -79,7 +79,7 @@ export function PwaInstallPrompt() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed right-4 bottom-6 left-4 z-50 mx-auto max-w-sm rounded-xl border border-foreground/10 bg-zinc-900/95 p-4 shadow-2xl backdrop-blur-sm"
+          className="fixed right-4 bottom-6 left-4 z-50 mx-auto max-w-sm rounded-xl border border-foreground/10 bg-popover/95 p-4 shadow-2xl backdrop-blur-sm"
         >
           <button
             type="button"

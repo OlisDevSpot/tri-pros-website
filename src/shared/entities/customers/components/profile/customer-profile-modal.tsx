@@ -101,7 +101,8 @@ function CustomerProfileLoadingSkeleton() {
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col">
       <div className="relative isolate overflow-hidden">
-        <div className="h-65 animate-pulse bg-linear-to-br from-slate-900 via-slate-800 to-slate-950 sm:h-75" />
+        {/* Stands in for the hero's dark photo ground, which is dark in both themes. */}
+        <div className="h-65 animate-pulse bg-linear-to-br from-black/85 via-black/75 to-black sm:h-75" />
         <div className="absolute inset-x-5 bottom-5 flex flex-col gap-3">
           <div className="h-8 w-56 rounded-md bg-white/10" />
           <div className="h-4 w-72 rounded-md bg-white/10" />

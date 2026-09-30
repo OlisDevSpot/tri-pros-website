@@ -111,7 +111,7 @@ export function ProgramStep({ flowContext, meetingType }: ProgramStepProps) {
   return (
     <div className="space-y-10">
       {/* ── Personalized Story Hero ────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 px-8 py-12 shadow-xl md:px-12 md:py-16">
+      <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-linear-to-br from-card via-muted to-card px-8 py-12 shadow-xl md:px-12 md:py-16">
         <div className="pointer-events-none absolute left-1/2 top-0 h-40 w-80 -translate-x-1/2 rounded-full bg-primary/20 blur-[100px]" />
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.03]"

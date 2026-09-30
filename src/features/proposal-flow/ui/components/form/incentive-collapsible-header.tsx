@@ -33,7 +33,7 @@ export function IncentiveCollapsibleHeader({
             {typeLabel}
           </span>
           {hasAmount && (
-            <Badge variant="secondary" className="bg-emerald-500/10 text-xs font-semibold tabular-nums text-emerald-700 dark:text-emerald-400">
+            <Badge variant="secondary" className="bg-status-success-bg text-xs font-semibold tabular-nums text-status-success-fg">
               -
               {formatAsDollars(incentive.amount)}
             </Badge>
@@ -44,7 +44,7 @@ export function IncentiveCollapsibleHeader({
             </Badge>
           )}
           {hasExpiry && (
-            <Badge variant="secondary" className="bg-amber-500/10 text-xs text-amber-700 dark:text-amber-400">
+            <Badge variant="secondary" className="bg-status-pending-bg text-xs text-status-pending-fg">
               Expires
               {' '}
               {format(new Date(incentive.expiresAt!), 'MMM d')}

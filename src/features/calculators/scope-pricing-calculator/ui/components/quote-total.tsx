@@ -15,7 +15,7 @@ export function QuoteTotal({ quote }: Props) {
       <p className="text-4xl font-semibold tabular-nums">{formatAsDollars(quote.totalPrice)}</p>
       <p className="text-xs text-muted-foreground">Includes tax</p>
       {unfinished > 0 && (
-        <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
+        <p className="mt-2 text-sm text-status-pending-fg">
           {unfinished === 1 ? '1 line needs details and is not in this price yet' : `${unfinished} lines need details and are not in this price yet`}
         </p>
       )}

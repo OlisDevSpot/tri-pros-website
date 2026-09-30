@@ -86,7 +86,7 @@ export function AddressEditDialog({ customerId, isOpen, onClose, defaultAddress 
               {picked
                 ? (
                     <span className="inline-flex items-center gap-1.5">
-                      <CheckCircle2Icon className="size-3.5 text-emerald-500" />
+                      <CheckCircle2Icon className="size-3.5 text-status-success-fg" />
                       Ready to save
                     </span>
                   )

@@ -63,7 +63,7 @@ export function PricingBreakdown({ funding, sow, priceDisplayMode }: Props) {
                               id: inc.id,
                               label: inc.label,
                               value: `-${formatAsDollars(inc.amount)}`,
-                              className: 'text-emerald-700 dark:text-emerald-400',
+                              className: 'text-status-success-fg',
                             })),
                           ]}
                         />
@@ -95,7 +95,7 @@ export function PricingBreakdown({ funding, sow, priceDisplayMode }: Props) {
       {hasAnyIncentives && (
         <>
           <div className="border-t border-border/40" />
-          <div className="px-5 py-4 space-y-2.5 text-emerald-700 dark:text-emerald-400">
+          <div className="px-5 py-4 space-y-2.5 text-status-success-fg">
             {globalLines.map((line) => {
               const isExpired = line.expiresAt ? new Date() >= new Date(line.expiresAt) : false
               const expiresAt = line.expiresAt ? new Date(line.expiresAt) : null

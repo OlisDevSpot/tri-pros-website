@@ -47,9 +47,9 @@ export function ProjectEntityCard({ customerId, project, onMutationSuccess, onNa
         <CardContent className="p-0">
           {/* Project Header — compact */}
           <div className="flex items-center gap-2 px-3 py-2">
-            <FolderOpenIcon className="size-3.5 shrink-0 text-green-600 dark:text-green-400" />
+            <FolderOpenIcon className="size-3.5 shrink-0 text-status-success-fg" />
             <span className="text-sm font-semibold truncate flex-1">{project.title}</span>
-            <Badge variant="outline" className="border-green-500/30 bg-green-500/10 text-xs text-green-700 dark:border-green-500/20 dark:text-green-300">
+            <Badge variant="outline" className="border-status-success-dot/40 bg-status-success-bg text-xs text-status-success-fg">
               {project.status}
             </Badge>
             {project.pipelineStage && (

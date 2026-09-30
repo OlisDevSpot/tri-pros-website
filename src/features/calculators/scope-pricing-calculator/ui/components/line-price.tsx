@@ -17,5 +17,5 @@ export function LinePrice({ result }: Props) {
   const needs = result.needs.length > 0
     ? `Needs ${result.needs.map(key => VARIABLES[key].label.toLowerCase()).join(', ')}`
     : 'Needs a price'
-  return <p className="max-w-48 shrink-0 text-right text-sm text-amber-600 dark:text-amber-400">{needs}</p>
+  return <p className="max-w-48 shrink-0 text-right text-sm text-status-pending-fg">{needs}</p>
 }

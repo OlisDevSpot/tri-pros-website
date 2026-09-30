@@ -56,7 +56,8 @@ export function Modal({
           'has-data-modal-hero:[&>[data-modal-header-row]_[data-slot="dialog-header"]]:sr-only',
           // Style the close button as a glass chip sized to match the
           // adjacent view toggle (same height, same roundness, same material).
-          // h-7 matches the inline height of HeroViewToggle.
+          // h-7 matches the inline height of HeroViewToggle. It sits on the hero photo,
+          // so the glass stays black in both themes.
           'has-data-modal-hero:**:data-modal-close:h-7',
           'has-data-modal-hero:**:data-modal-close:w-7',
           'has-data-modal-hero:**:data-modal-close:rounded-full',

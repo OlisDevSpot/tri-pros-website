@@ -517,7 +517,7 @@ export function ProjectMediaManager({ projectId, mediaFiles, onUpdate }: Props) 
                             return (
                               <>
                                 {f.isHeroImage && (
-                                  <Badge className="bg-yellow-500/90 text-yellow-950 text-[10px] py-0 px-1.5">
+                                  <Badge className="bg-warning/90 text-warning-foreground text-[10px] py-0 px-1.5">
                                     Hero
                                   </Badge>
                                 )}
@@ -527,7 +527,7 @@ export function ProjectMediaManager({ projectId, mediaFiles, onUpdate }: Props) 
                                   size="icon"
                                   className={
                                     f.isHeroImage
-                                      ? 'h-6 w-6 bg-yellow-500 hover:bg-yellow-600 text-yellow-950'
+                                      ? 'h-6 w-6 bg-warning hover:bg-warning/90 text-warning-foreground'
                                       : cn('h-6 w-6 bg-primary hover:bg-primary/80 text-primary-foreground opacity-0 transition-opacity group-hover:opacity-100', menuOpen && 'opacity-100')
                                   }
                                   onClick={() => handleToggleHero(f.id, f.isHeroImage)}
