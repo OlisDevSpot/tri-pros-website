@@ -8,7 +8,9 @@ import { isSameDay, parseISO } from 'date-fns'
 import { motion } from 'motion/react'
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
+import { SKELETON_EVENTS_PER_DAY } from '@/features/schedule-management/constants/schedule-calendar-config'
 import { getEventsForBucket, getUniqueCombos, groupEventsByParticipantCombo } from '@/features/schedule-management/lib/today-view-helpers'
+import { localDateToCalendarDay, seededIntInRange } from '@/shared/components/calendar/lib/calendar-helpers'
 import { ScrollBar } from '@/shared/components/ui/scroll-area'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { TODAY_VIEW_BUCKETS } from '@/shared/constants/today-view-buckets'
@@ -77,6 +79,14 @@ export function ScheduleTodayView({
   const gridCols = makeGridCols(collapsed ? LABEL_COL_COLLAPSED : LABEL_COL_EXPANDED)
   const gridMinWidth = (collapsed ? LABEL_COL_COLLAPSED : LABEL_COL_EXPANDED) + BUCKET_COUNT * BUCKET_COL_MIN_WIDTH
 
+  const dayKey = localDateToCalendarDay(currentDate)
+  const skeletonCardBuckets = isPending
+    ? Array.from(
+        { length: seededIntInRange(dayKey, SKELETON_EVENTS_PER_DAY) },
+        (_, lane) => seededIntInRange(`${dayKey}:${lane}`, { min: 0, max: BUCKET_COUNT - 1 }),
+      )
+    : []
+
   if (!isPending && combos.length === 0) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -124,7 +134,7 @@ export function ScheduleTodayView({
 
           {/* Swimlane rows — one per unique participant combo */}
           {isPending
-            ? Array.from({ length: 2 }).map((_, lane) => (
+            ? skeletonCardBuckets.map((cardBucket, lane) => (
                 <motion.div
                   // eslint-disable-next-line react/no-array-index-key
                   key={lane}
@@ -137,9 +147,15 @@ export function ScheduleTodayView({
                     <Skeleton className="size-6 shrink-0 rounded-full" />
                     <Skeleton className="h-3 w-20" />
                   </div>
-                  {TODAY_VIEW_BUCKETS.map(bucket => (
-                    <div key={bucket.id} className="min-h-24 border-r p-1.5 last:border-r-0">
-                      <ScheduleCardSkeleton />
+                  {TODAY_VIEW_BUCKETS.map((bucket, index) => (
+                    <div
+                      key={bucket.id}
+                      className={cn(
+                        'border-r p-1.5 last:border-r-0 min-h-24',
+                        index !== cardBucket && 'bg-muted/20',
+                      )}
+                    >
+                      {index === cardBucket && <ScheduleCardSkeleton />}
                     </div>
                   ))}
                 </motion.div>

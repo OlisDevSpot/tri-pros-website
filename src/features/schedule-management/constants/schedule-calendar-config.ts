@@ -3,6 +3,9 @@ import { MEETING_OUTCOME_SENTIMENT, meetingOutcomes } from '@/shared/constants/e
 
 export const DEFAULT_HIDDEN_DAYS = [6] // Saturday
 
+// A loading day draws a believable day's load rather than the same block everywhere.
+export const SKELETON_EVENTS_PER_DAY = { min: 1, max: 4 } as const
+
 // One accent color per sentiment, rendered as a solid left bar on a real
 // (bg-card) surface — so the card reads as a distinct, categorized surface in
 // BOTH themes. Built on theme-aware semantic tokens. (The old 5%-opacity full

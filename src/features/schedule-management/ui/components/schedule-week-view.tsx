@@ -5,7 +5,8 @@ import type { ScheduleCalendarEvent } from '@/features/schedule-management/types
 import { format, isToday, parseISO } from 'date-fns'
 import { useEffect, useMemo, useRef } from 'react'
 
-import { getEventsForDay, getWeekDays } from '@/shared/components/calendar/lib/calendar-helpers'
+import { SKELETON_EVENTS_PER_DAY } from '@/features/schedule-management/constants/schedule-calendar-config'
+import { getEventsForDay, getWeekDays, localDateToCalendarDay, seededIntInRange } from '@/shared/components/calendar/lib/calendar-helpers'
 import { cn } from '@/shared/lib/utils'
 
 import { ScheduleCardSkeleton } from './schedule-card-skeleton'
@@ -131,7 +132,7 @@ export function ScheduleWeekView({
                   isToday(day) && 'bg-primary/5',
                 )}
               >
-                {isPending && Array.from({ length: 2 }).map((_, i) => (
+                {isPending && Array.from({ length: seededIntInRange(localDateToCalendarDay(day), SKELETON_EVENTS_PER_DAY) }).map((_, i) => (
                   <ScheduleCardSkeleton
                     // eslint-disable-next-line react/no-array-index-key
                     key={i}

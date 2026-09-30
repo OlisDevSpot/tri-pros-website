@@ -5,7 +5,7 @@ import type { CalendarEvent } from '@/shared/components/calendar/types'
 import { isToday } from 'date-fns'
 import { useMemo } from 'react'
 
-import { getCalendarCells, getEventsForDay } from '@/shared/components/calendar/lib/calendar-helpers'
+import { getCalendarCells, getEventsForDay, localDateToCalendarDay, seededIntInRange } from '@/shared/components/calendar/lib/calendar-helpers'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { cn } from '@/shared/lib/utils'
 
@@ -15,7 +15,7 @@ const MAX_VISIBLE_EVENTS = 3
 interface Props<T extends CalendarEvent> {
   events: T[]
   currentDate: Date
-  /** While a window loads, each cell shows one skeleton line in place of its events. */
+  /** While a window loads, each cell shows 1–`MAX_VISIBLE_EVENTS` skeleton lines, seeded by its date, in place of its events. */
   isPending?: boolean
   renderCompact: (event: T) => React.ReactNode
   onEventClick?: (event: T) => void
@@ -78,7 +78,13 @@ export function CalendarMonthView<T extends CalendarEvent>({
                 )}
               >
                 {isPending
-                  ? <Skeleton className="h-4 w-full" />
+                  ? Array.from({ length: seededIntInRange(localDateToCalendarDay(cell.date), { min: 1, max: MAX_VISIBLE_EVENTS }) }).map((_, i) => (
+                      <Skeleton
+                        // eslint-disable-next-line react/no-array-index-key
+                        key={i}
+                        className="h-4 w-full"
+                      />
+                    ))
                   : (
                       <>
                         {dayEvents.slice(0, MAX_VISIBLE_EVENTS).map(event => (

@@ -53,7 +53,7 @@ export function DashboardMeetingsCalendar({ rows, isPending, isError, onRetry, m
       <div className="min-w-0 flex-1" aria-busy={isPending || undefined}>
         {isError && rows.length === 0
           ? (
-              <div role="alert" className="flex flex-col items-start gap-0.5 py-2">
+              <div role="alert" className="flex flex-col items-start gap-2 py-2">
                 <p className="text-sm text-muted-foreground">Could not load meetings.</p>
                 <Button type="button" variant="outline" size="sm" onClick={onRetry}>
                   Try again

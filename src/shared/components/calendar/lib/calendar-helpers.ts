@@ -114,3 +114,21 @@ export function getEventsForDay<T extends CalendarEvent>(
     return isSameDay(startDate, date)
   })
 }
+
+/**
+ * The same seed always gives the same integer in `[min, max]`, so a placeholder drawn from a
+ * `YYYY-MM-DD` key stays put across re-renders and matches between server and client, where
+ * `Math.random` would flicker and break hydration.
+ */
+export function seededIntInRange(seed: string, range: { min: number, max: number }): number {
+  // FNV-1a, then murmur3's finalizer: consecutive dates usually differ in their last character
+  // alone, and without the finalizer the low bits a modulo reads would just cycle in step with the date.
+  let hash = 0x811C9DC5
+  for (let i = 0; i < seed.length; i++) {
+    hash = Math.imul(hash ^ seed.charCodeAt(i), 0x01000193)
+  }
+  hash = Math.imul(hash ^ (hash >>> 16), 0x85EBCA6B)
+  hash = Math.imul(hash ^ (hash >>> 13), 0xC2B2AE35)
+  hash = (hash ^ (hash >>> 16)) >>> 0
+  return range.min + (hash % (range.max - range.min + 1))
+}
