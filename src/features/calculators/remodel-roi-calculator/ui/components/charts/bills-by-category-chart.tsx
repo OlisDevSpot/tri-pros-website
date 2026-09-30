@@ -16,7 +16,6 @@ import { SegmentRect } from '@/features/calculators/remodel-roi-calculator/ui/co
 import { ChartTooltipCard } from '@/shared/components/charts/chart-tooltip-card'
 import { LegendSwatches } from '@/shared/components/charts/legend-swatches'
 import { ChartContainer, ChartTooltip } from '@/shared/components/ui/chart'
-import { CHART_THROTTLED_EVENTS } from '@/shared/constants/chart-throttled-events'
 import { usePinnedChartTooltip } from '@/shared/hooks/use-pinned-chart-tooltip'
 
 interface Props {
@@ -46,7 +45,7 @@ export function BillsByCategoryChart({ projection, lookAhead }: Props) {
     <div className="grid gap-1.5">
       <LegendSwatches config={BILL_CHART_CONFIG} keys={used} />
       <ChartContainer aria-label={`Monthly bills today and later, by bill: ${data.map(row => `${row.label} ${formatMoney(row.total)}`).join(', ')}`} className="aspect-auto h-64 w-full" config={BILL_CHART_CONFIG} debounce={150} role="img" {...tooltip.containerProps}>
-        <BarChart data={data} margin={{ top: 24, right: 8, left: 0, bottom: 0 }} throttledEvents={CHART_THROTTLED_EVENTS}>
+        <BarChart data={data} margin={{ top: 24, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid stroke="var(--border)" vertical={false} />
           <XAxis axisLine={false} dataKey="label" tickLine={false} />
           <YAxis axisLine={false} tickFormatter={value => formatMoney(Number(value))} tickLine={false} width={72} />

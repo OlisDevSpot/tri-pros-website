@@ -2,25 +2,14 @@ import type { PointerEvent as ReactPointerEvent } from 'react'
 
 import { useEffect, useRef, useState } from 'react'
 
-// A single synthetic touch point reused for every forced re-select; recharts only reads its coordinates.
-const SYNTHETIC_TOUCH_ID = -1
-
-// v3 re-selects its active item/axis index only on a real touchmove, so a tap alone never updates it past
-// the first one; replaying one at the tap's own point makes recharts re-run that same selection itself.
-// Dispatched from `.recharts-wrapper`, not the tap's own target: near an edge that target can be a control
-// overlapping the chart, and an event fired from there would never bubble into recharts' own tree.
+// v3 re-selects its active axis index only on a real mousemove/touchmove, so a tap alone never updates it
+// past the first one; replaying one at the tap's own point makes recharts run that same selection itself.
+// A MouseEvent works in every engine (WebKit rejects the Touch/TouchEvent constructors outright), and reaches
+// every chart sharing this container (a syncId group renders more than one `.recharts-wrapper`).
 function forceReselect(container: Element, clientX: number, clientY: number) {
-  if (typeof Touch === 'undefined' || typeof TouchEvent === 'undefined') {
-    return
-  }
-  const target = container.querySelector('.recharts-wrapper') ?? container
-  try {
-    const touch = new Touch({ identifier: SYNTHETIC_TOUCH_ID, target, clientX, clientY })
-    target.dispatchEvent(new TouchEvent('touchmove', { touches: [touch], targetTouches: [touch], changedTouches: [touch], bubbles: true, cancelable: true }))
-  }
-  catch {
-    // No Touch/TouchEvent constructor (desktop Firefox/Safari); a touch/pen pointer there is unusual.
-  }
+  container.querySelectorAll('.recharts-wrapper').forEach(wrapper =>
+    wrapper.dispatchEvent(new MouseEvent('mousemove', { clientX, clientY, bubbles: true, cancelable: true })),
+  )
 }
 
 /**
@@ -31,7 +20,8 @@ function forceReselect(container: Element, clientX: number, clientY: number) {
  *
  * Once a touch/pen pointer has fired here, `active` is driven explicitly (true while pinned, false once
  * released) rather than `undefined`: v3 can leave its own active state stuck true past release, and only
- * an explicit `false` overrides it.
+ * an explicit `false` overrides it. A real mouse pointer moving in the same container afterward (a
+ * touchscreen laptop, an iPad with a trackpad) hands control back to recharts' own hover.
  */
 export function usePinnedChartTooltip<T extends HTMLElement = HTMLDivElement>() {
   const ref = useRef<T>(null)
@@ -62,6 +52,11 @@ export function usePinnedChartTooltip<T extends HTMLElement = HTMLDivElement>() 
         setPinned(isTouchLike)
         if (isTouchLike && ref.current) {
           forceReselect(ref.current, event.clientX, event.clientY)
+        }
+      },
+      onPointerMove: (event: ReactPointerEvent<T>) => {
+        if (event.pointerType === 'mouse') {
+          setTouchLike(false)
         }
       },
     },

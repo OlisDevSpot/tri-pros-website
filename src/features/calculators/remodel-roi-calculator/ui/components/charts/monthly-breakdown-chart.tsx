@@ -17,7 +17,6 @@ import { formatMoney } from '@/features/calculators/remodel-roi-calculator/lib/f
 import { SegmentRect } from '@/features/calculators/remodel-roi-calculator/ui/components/charts/segment-rect'
 import { ChartTooltipCard } from '@/shared/components/charts/chart-tooltip-card'
 import { ChartContainer, ChartTooltip } from '@/shared/components/ui/chart'
-import { CHART_THROTTLED_EVENTS } from '@/shared/constants/chart-throttled-events'
 import { usePinnedChartTooltip } from '@/shared/hooks/use-pinned-chart-tooltip'
 
 interface Props {
@@ -64,7 +63,7 @@ export function MonthlyBreakdownChart({ projection, lookAhead }: Props) {
 
   return (
     <ChartContainer aria-label="Monthly cost by year and what makes it up, upgrade now next to wait and replace" className="aspect-auto h-72 w-full" config={MONTHLY_BREAKDOWN_CHART_CONFIG} debounce={150} role="img" {...tooltip.containerProps}>
-      <BarChart barCategoryGap="18%" barGap={3} data={data} margin={{ top: 16, right: 8, left: 0, bottom: 0 }} throttledEvents={CHART_THROTTLED_EVENTS}>
+      <BarChart barCategoryGap="18%" barGap={3} data={data} margin={{ top: 16, right: 8, left: 0, bottom: 0 }}>
         <defs>
           <pattern height="6" id={hatchId} patternTransform="rotate(45)" patternUnits="userSpaceOnUse" width="6">
             <rect fill="var(--warning)" fillOpacity={0.22} height="6" width="6" />
