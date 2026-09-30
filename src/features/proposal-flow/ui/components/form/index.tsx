@@ -35,7 +35,7 @@ const TAB_LABELS: Record<FormTab, string> = {
 
 const TOOLBAR_BUTTON_BASE = 'inline-flex size-[calc(100%-1px)] items-center justify-center rounded-md border border-transparent transition-[color,box-shadow]'
 const TOOLBAR_BUTTON_INACTIVE = 'text-muted-foreground hover:text-foreground'
-const TOOLBAR_BUTTON_ACTIVE = 'bg-background shadow-sm dark:border-input dark:bg-input/30'
+const TOOLBAR_BUTTON_ACTIVE = 'bg-background shadow-sm dark:border-border dark:bg-surface-raised'
 
 interface Props {
   onSubmit: (data: ProposalFormSchema) => void
