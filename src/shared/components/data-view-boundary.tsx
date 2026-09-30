@@ -10,8 +10,8 @@ import { HydrationErrorFallback } from '@/trpc/components/hydration-error-fallba
 
 /**
  * Wraps one data view. Its loading state is the view itself with no rows (see `DataViewPendingContext`), so the swap
- * to the real rows moves nothing. A failed first read shows a retry; changing the URL (Back, another filter) also
- * clears it.
+ * to the real rows moves nothing. A failed read shows a retry above that same row-less view, so the toolbar stays live:
+ * a key that keeps failing is escaped by changing a filter, which changes the URL and clears the error.
  */
 export function DataViewBoundary({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams()
@@ -21,7 +21,14 @@ export function DataViewBoundary({ children }: { children: React.ReactNode }) {
         <ErrorBoundary
           onReset={reset}
           resetKeys={[searchParams.toString()]}
-          fallbackRender={({ resetErrorBoundary }) => <HydrationErrorFallback variant="section" onRetry={resetErrorBoundary} />}
+          fallbackRender={({ resetErrorBoundary }) => (
+            <>
+              <HydrationErrorFallback variant="section" onRetry={resetErrorBoundary} />
+              <DataViewPendingContext value={true}>
+                <div className="contents" data-slot="data-view-error">{children}</div>
+              </DataViewPendingContext>
+            </>
+          )}
         >
           <Suspense
             fallback={(
