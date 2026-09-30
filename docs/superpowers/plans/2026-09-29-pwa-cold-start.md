@@ -10,6 +10,18 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-29-pwa-cold-start-design.md`
 
+## Execution amendments (2026-09-30)
+
+Rulings made while executing this plan; the task text below still shows the earlier shape.
+
+- Task 4 kept `resendClient` as an object whose `emails.send` loads the SDK lazily — there is no `getResendClient`.
+- Task 7 replaced the `ably` export with `realtimeClient.publish(channel, event, data)` — there is no `publishRealtime`.
+- Task 8's guard is the core `no-restricted-imports` aliased as `lazy-only/imports`, not `ts/no-restricted-imports`.
+- Task 10 wraps the sidebar slot in `SidebarSessionBoundary` (fixes a phone-width hydration mismatch) and did not add the two app-shell.md "Critical rules" bullets.
+- Phase 1 tasks 1–10 are done (commits `1f1ee4aa`…`4b6c1845`), not yet pushed.
+- Phase 2 amendments already decided: no new frontend-stack.md paragraph in Task 12; section titles stay inline literals in Task 13; Playwright checks select the page's inner `main main` (the sidebar inset is the outer `<main>`).
+- Phase 2 is blocked on four owner decisions: the proposal-card relative-time hydration fix (shared `overview-card.tsx`), a session keep-alive after Task 14 removes the client `useSession()`, whether the snapshot strip may become all-or-nothing, and accepting the extended views-own-data-fetching drift.
+
 ## Global Constraints
 
 - **No paid tiers.** No Vercel or Neon plan change until Phase 3 (spec §7).

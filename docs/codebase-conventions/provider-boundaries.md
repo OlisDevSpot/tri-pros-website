@@ -80,7 +80,3 @@ A provider directory also holds no React hooks. A client-side hook that wraps a 
 | `providers/google-calendar/lib/{map-to-gcal,map-from-gcal,conflict}.ts` | Domain types + sync policy (last-write-wins, TPR-branded descriptions); imported by `scheduling.service.ts` | Spec §4 → `services/scheduling/` |
 | `providers/google-drive/token.service.ts` | A `*.service.ts` inside a provider directory — services live in `services/` | Spec §8 (logged, unscheduled) |
 | `providers/twilio` | `validatePhoneLine` orchestrates Upstash + Twilio + a domain policy gate — a cross-provider service, not a client method | Spec §6 (deferred to its own pass) |
-
-## Referencing from code
-
-`// see docs/codebase-conventions/provider-boundaries.md#translators-live-in-domain-land`

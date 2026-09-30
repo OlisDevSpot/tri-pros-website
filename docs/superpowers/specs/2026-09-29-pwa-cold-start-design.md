@@ -215,8 +215,8 @@ When Phase 3 is recorded, this spec and its plan are deleted (git keeps them) an
 | Phase 0 — §4.2 boot profile | ✅ 2026-09-29 (§4.3) |
 | Phase 1 — §5.1 session single read | ✅ 2026-09-29 |
 | Phase 1 — §5.2 lazy SDKs + lint guard | ✅ 2026-09-29 (§4.3) |
-| Phase 1 — §5.3 layout streams before session | ⬜ |
-| Phase 1 — measured | ⬜ (cold-time target missed, §4.3) |
+| Phase 1 — §5.3 layout streams before session | ✅ 2026-09-30 (4b6c1845) |
+| Phase 1 — measured | ⬜ — local target met within noise (A/B, §4.3); production measurement pending |
 | Phase 2 — §6.1–§6.5 | ⬜ |
 | Phase 2 — measured | ⬜ |
 | Phase 3 — paid decision | ⬜ |
