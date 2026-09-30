@@ -76,8 +76,13 @@ export function useDataViewQuery<
 
   const filterSort = useMemo(() => deriveFilterSortState(state, config), [state, config])
   const windowState = useMemo(() => deriveDataViewWindow(state, config), [state, config])
-  const shownFilterSort = useMemo(() => deriveFilterSortState(shownState, config), [shownState, config])
-  const shownWindowState = useMemo(() => deriveDataViewWindow(shownState, config), [shownState, config])
+  const deferredFilterSort = useMemo(() => deriveFilterSortState(shownState, config), [shownState, config])
+  const deferredWindowState = useMemo(() => deriveDataViewWindow(shownState, config), [shownState, config])
+  // An anchorless URL derives today's window; two derivations of one state either side of business midnight would
+  // differ and leave the view stale for good, so a caught-up state reuses the requested derivations.
+  const isCaughtUp = shownState === state
+  const shownFilterSort = isCaughtUp ? filterSort : deferredFilterSort
+  const shownWindowState = isCaughtUp ? windowState : deferredWindowState
 
   const extraKey = JSON.stringify(extra)
   const requestedInput = useMemo(
