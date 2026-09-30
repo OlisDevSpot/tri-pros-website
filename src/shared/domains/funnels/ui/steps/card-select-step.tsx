@@ -57,7 +57,7 @@ export function CardSelectStepView({ content, value, setValue, advance }: StepPr
                 >
                   {asset
                     ? (
-                        <div className="bg-muted/40 flex aspect-video w-24 shrink-0 items-center justify-center overflow-hidden rounded-md">
+                        <div className="bg-muted flex aspect-video w-24 shrink-0 items-center justify-center overflow-hidden rounded-md">
                           {asset.kind === 'icon' && OPTION_ICONS[asset.name]
                             ? (() => {
                                 const Icon = OPTION_ICONS[asset.name]
@@ -87,7 +87,7 @@ export function CardSelectStepView({ content, value, setValue, advance }: StepPr
                 >
                   {asset
                     ? (
-                        <div className="bg-muted/40 flex aspect-video w-full items-center justify-center">
+                        <div className="bg-muted flex aspect-video w-full items-center justify-center">
                           {asset.kind === 'icon' && OPTION_ICONS[asset.name]
                             ? (() => {
                                 const Icon = OPTION_ICONS[asset.name]

@@ -136,7 +136,7 @@ export function ParticipantPickerContent({
             />
           )}
           {!owner && !coOwner && (
-            <p className="rounded-lg border border-dashed border-border/60 px-3 py-4 text-center text-xs text-muted-foreground">
+            <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
               No one assigned. Search below to pick an owner.
             </p>
           )}
@@ -247,7 +247,7 @@ export function ParticipantPickerContent({
             </section>
           )
         : (
-            <p className="mt-5 rounded-lg border border-dashed border-border/60 px-3 py-4 text-center text-xs text-muted-foreground">
+            <p className="mt-5 rounded-lg border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
               Both slots are filled.
               {' '}
               <button
@@ -265,7 +265,7 @@ export function ParticipantPickerContent({
       {/* Footer — picker variant only. In modal variant the caller provides
           its own chrome. */}
       {!isModal && (
-        <div className="mt-3 flex items-center justify-between border-t border-border/60 px-1 pt-3">
+        <div className="mt-3 flex items-center justify-between border-t border-border px-1 pt-3">
           <span className="text-xs text-muted-foreground tabular-nums">
             {helperCount > 0 ? `+ ${helperCount} helper${helperCount === 1 ? '' : 's'}` : 'No helpers'}
           </span>
@@ -302,7 +302,7 @@ function HelperRow({ user, isPending, onRemove }: HelperRowProps) {
       user={user}
       meta={{ role: 'helper' }}
       className={cn(
-        'group/row flex items-center gap-3 rounded-lg border border-border/60 bg-card/40 px-3 py-2.5 focus-within:ring-1 focus-within:ring-ring/60',
+        'group/row flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 focus-within:ring-1 focus-within:ring-ring/60',
         isPending && 'pointer-events-none opacity-60',
       )}
     >

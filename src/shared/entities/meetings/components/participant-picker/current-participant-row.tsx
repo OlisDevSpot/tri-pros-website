@@ -57,7 +57,7 @@ export function CurrentParticipantRow({
         // a subtle tint + hairline ring so the eye lands here first.
         isOwner
           ? 'bg-primary/5 ring-1 ring-inset ring-primary/15'
-          : 'border border-border/60 bg-card/40',
+          : 'border border-border bg-card',
         isPending && 'pointer-events-none opacity-60',
       )}
     >
@@ -88,7 +88,7 @@ export function CurrentParticipantRow({
               onClick={onPromote}
               disabled={isPending}
               aria-label={`Promote ${name} to owner`}
-              className="group inline-flex size-11 items-center justify-center rounded-md hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors"
+              className="group inline-flex size-11 items-center justify-center rounded-md hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors"
             >
               <ParticipantRoleIcon isOwner={false} />
             </button>

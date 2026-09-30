@@ -136,7 +136,7 @@ function SelectedPreview({ fullAddress }: { fullAddress: string }) {
           src={streetUrl}
         />
       </div>
-      <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
+      <div className="flex items-start gap-2 rounded-md border border-border bg-muted px-3 py-2 text-sm">
         <MapPinIcon className="mt-0.5 size-4 shrink-0 text-primary" />
         <span className="min-w-0 flex-1 wrap-break-word font-medium">{fullAddress}</span>
       </div>
@@ -169,7 +169,7 @@ function PreviewTile({ label, src }: { label: string, src: string | null }) {
 
 function EmptyPreview({ currentAddress }: { currentAddress?: string }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border bg-muted/30 px-6 py-10 text-center">
+    <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border bg-muted px-6 py-10 text-center">
       <div className="grid size-10 place-items-center rounded-full bg-muted text-muted-foreground">
         <MapPinIcon className="size-4" />
       </div>

@@ -41,7 +41,7 @@ export function PortfolioBlock({ content, ctx }: { content: PortfolioBlockConten
   }, [scopesQ.data, projectsQ.data, tradeId, ctx.slug])
 
   if (tiles === null) {
-    return <div className="bg-muted/40 h-64 w-full animate-pulse rounded-md" />
+    return <div className="bg-muted h-64 w-full animate-pulse rounded-md" />
   }
 
   return (

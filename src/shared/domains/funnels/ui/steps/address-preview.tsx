@@ -33,7 +33,7 @@ export function AddressPreview({ fullAddress, showAddressLabel = true }: { fullA
       </div>
       {showAddressLabel
         ? (
-            <div className="border-border bg-muted/40 flex items-start gap-2 rounded-md border px-3 py-2 text-sm">
+            <div className="border-border bg-muted flex items-start gap-2 rounded-md border px-3 py-2 text-sm">
               <MapPin className="text-primary mt-0.5 size-4 shrink-0" aria-hidden="true" />
               <span className="min-w-0 flex-1 wrap-break-word font-medium">{fullAddress}</span>
             </div>

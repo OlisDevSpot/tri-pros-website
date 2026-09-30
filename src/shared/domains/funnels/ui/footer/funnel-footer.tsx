@@ -20,7 +20,7 @@ export function FunnelFooter({ ctx }: { ctx: FunnelContext }) {
   const year = new Date().getFullYear()
 
   return (
-    <footer className="border-border/60 w-full border-t pt-10 pb-12">
+    <footer className="border-border w-full border-t pt-10 pb-12">
       <div className="mx-auto flex w-full max-w-xl flex-col gap-6 px-5">
         <Image src={LogoOnLight} alt="Tri Pros Remodeling" width={180} height={48} className="h-11 w-auto" />
         <p className="text-muted-foreground max-w-md text-sm leading-relaxed">

@@ -46,7 +46,7 @@ export function AddressStepView({ content, value, answers, setValue }: StepProps
           {value
             ? <AddressPreview fullAddress={value.fullAddress} showAddressLabel={false} />
             : (
-                <div className="border-border bg-muted/30 flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed px-6 py-10 text-center">
+                <div className="border-border bg-muted flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed px-6 py-10 text-center">
                   <div className="bg-muted text-muted-foreground grid size-10 place-items-center rounded-full">
                     <MapPin className="size-4" aria-hidden="true" />
                   </div>

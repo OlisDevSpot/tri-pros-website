@@ -37,7 +37,7 @@ export function FaqBlock({ content }: { content: FaqBlockContent, ctx: FunnelCon
                 transition={FUNNEL_TRANSITION}
                 className={cn(
                   'border-border bg-card overflow-hidden rounded-md border shadow-sm transition-colors',
-                  isOpen && 'border-foreground/20',
+                  isOpen && 'border-border-strong',
                 )}
               >
                 <motion.button
