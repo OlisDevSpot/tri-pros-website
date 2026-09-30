@@ -14,7 +14,6 @@ import { resolveSeries } from '@/features/analytics/lib/to-report-input'
 import { SeriesToggle } from '@/features/analytics/ui/components/report/series-toggle'
 import { TrendPlot } from '@/features/analytics/ui/components/report/trend-plot'
 import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-group'
-import { cn } from '@/shared/lib/utils'
 
 interface Props {
   tab: ReportTab
@@ -42,7 +41,7 @@ export function TrendChart({ tab, report }: Props) {
   }
 
   return (
-    <section aria-labelledby="trend-heading" className={cn('flex min-w-0 flex-col gap-3')}>
+    <section aria-labelledby="trend-heading" className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <div className="flex items-center gap-3">
           {/* The step control and the tick labels already say day, week or month. */}

@@ -39,7 +39,7 @@ export function ReportTabContent({ tab, report, isError, stale, onRetry }: Props
   const config = REPORT_TABS[tab]
   const focus = resolveFocus(tab, state.focus)
   return (
-    <div aria-busy={stale} className={cn('flex flex-col gap-5 transition-opacity', stale && 'opacity-60')}>
+    <div aria-busy={stale} className={cn('flex flex-col gap-(--gutter) transition-opacity', stale && 'opacity-60')}>
       <HeadlineStrip
         config={config}
         report={report}

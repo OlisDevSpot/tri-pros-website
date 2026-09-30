@@ -17,20 +17,22 @@ interface Props {
   columns: readonly MetricKey[]
   focus: MetricKey
   total?: boolean
+  /** Odd data rows take the band. */
+  odd?: boolean
   /** Present when a click on the row can narrow the page to it. */
   filter?: RowFilter | null
   onFilter?: (filter: RowFilter) => void
 }
 
-export function BreakdownRow({ label, row, reasons, columns, focus, total = false, filter, onFilter }: Props) {
+export function BreakdownRow({ label, row, reasons, columns, focus, total = false, odd, filter, onFilter }: Props) {
   const apply = filter && onFilter ? () => onFilter(filter) : undefined
   return (
     <TableRow
       data-state={filter?.active ? 'selected' : undefined}
       onClick={apply}
-      className={cn('group/row', total && 'bg-muted font-semibold hover:bg-muted', apply && 'cursor-pointer')}
+      className={cn('group/row', odd && !total && 'bg-band', total && 'bg-muted font-semibold hover:bg-muted', apply && 'cursor-pointer')}
     >
-      <TableCell className={cn('sticky left-0 z-10 max-w-36 md:max-w-56', total ? 'bg-muted' : 'bg-card group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted')}>
+      <TableCell className={cn('sticky left-0 z-10 max-w-36 md:max-w-56', total ? 'bg-muted' : cn(odd ? 'bg-band' : 'bg-card', 'group-hover/row:bg-row-hover group-data-[state=selected]/row:bg-row-selected'))}>
         {apply
           ? (
               // The row takes the mouse click; this button is the keyboard and screen-reader way in.

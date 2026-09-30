@@ -46,7 +46,7 @@ export function AnalyticsView() {
         </div>
         <AnalyticsTabsList spendMissing={(report.data?.spendMissing.length ?? 0) > 0} />
       </header>
-      <div className="-mr-2 min-h-0 flex-1 overflow-y-auto overscroll-contain pt-5 pr-2 pb-6 scrollbar-gutter-stable">
+      <div className="-mr-2 min-h-0 flex-1 overflow-y-auto overscroll-contain pt-5 pr-2 pb-0 scrollbar-gutter-stable">
         {REPORT_TAB_KEYS.map(tab => (
           <TabsContent key={tab} value={tab}>
             <ReportTabContent tab={tab} report={report.data} isError={report.isError} stale={report.isPlaceholderData} onRetry={() => void report.refetch()} />

@@ -24,7 +24,7 @@ export function HeadlineStrip({ config, report, focus, onFocus, onOpenSpend }: P
   const notApplicable = [...new Set(shown.map(key => readMetric(key, report.headline, reasons)).flatMap(d => (d.kind === 'not_applicable' ? [d.reason] : [])))]
   const missing = report.headline.cost.status === 'missing' ? report.headline.cost.missing : []
   return (
-    <section aria-label="Headline figures" className="flex flex-col gap-2">
+    <section aria-label="Headline figures" className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4 shadow-sm">
       <div className="grid grid-cols-3 border-t border-border md:flex md:divide-x md:divide-border md:border-b">
         {config.figures.map(figure => (
           <HeadlineFigure

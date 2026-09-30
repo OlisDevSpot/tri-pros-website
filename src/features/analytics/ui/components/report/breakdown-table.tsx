@@ -37,7 +37,7 @@ export function BreakdownTable({ config, report, focus, groupBy, onGroupBy }: Pr
   // Printed, not only in each cell's title, so the reason reaches touch and screen-reader users.
   const notApplicable = [...new Set(shown.flatMap(({ row, reasons }) => columns.map(key => readMetric(key, row, reasons))).flatMap(d => (d.kind === 'not_applicable' ? [d.reason] : [])))]
   return (
-    <section aria-labelledby="breakdown" className="flex flex-col gap-3 border-t border-border pt-6">
+    <section aria-labelledby="breakdown" className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-baseline gap-x-3">
           <h2 id="breakdown" className="text-base font-medium">Breakdown</h2>
@@ -67,7 +67,7 @@ export function BreakdownTable({ config, report, focus, groupBy, onGroupBy }: Pr
       {report.breakdown.some(r => r.overlapsTotal) && (
         <p className="text-xs text-muted-foreground">A meeting counts for each closer on it, so closer rows add up to more than the total.</p>
       )}
-      <div className="overflow-x-auto rounded-lg border border-border bg-card">
+      <div className="-mx-4 overflow-x-auto border-y border-border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -85,7 +85,7 @@ export function BreakdownTable({ config, report, focus, groupBy, onGroupBy }: Pr
           </TableHeader>
           <TableBody>
             <BreakdownRow label="Total" row={report.headline} reasons={report.notApplicable.headline} columns={columns} focus={focus} total />
-            {rows.map(row => (
+            {rows.map((row, index) => (
               <BreakdownRow
                 key={row.groupKey ?? 'none'}
                 label={groupLabel(report.groupBy, row.groupKey, labels)}
@@ -93,6 +93,7 @@ export function BreakdownTable({ config, report, focus, groupBy, onGroupBy }: Pr
                 reasons={report.notApplicable.breakdown}
                 columns={columns}
                 focus={focus}
+                odd={index % 2 === 1}
                 filter={rowFilter(report.groupBy, row.groupKey, state)}
                 // Pushed, so the browser's Back undoes a click-filter.
                 onFilter={filter => void setUrlState(filter.update, { history: 'push' })}
