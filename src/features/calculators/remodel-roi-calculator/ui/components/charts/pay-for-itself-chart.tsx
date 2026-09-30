@@ -13,7 +13,6 @@ import { PAY_FOR_ITSELF_CHART_CONFIG } from '@/features/calculators/remodel-roi-
 import { formatMoney, signedMoney } from '@/features/calculators/remodel-roi-calculator/lib/format-money'
 import { ChartTooltipCard } from '@/shared/components/charts/chart-tooltip-card'
 import { ChartContainer, ChartTooltip } from '@/shared/components/ui/chart'
-import { CHART_THROTTLED_EVENTS } from '@/shared/constants/chart-throttled-events'
 import { usePinnedChartTooltip } from '@/shared/hooks/use-pinned-chart-tooltip'
 
 interface Props {
@@ -40,7 +39,7 @@ export function PayForItselfChart({ projection, lookAhead }: Props) {
   }
   return (
     <ChartContainer aria-label={`Where upgrading leaves you compared with waiting: ${signedMoney(values[lookAhead])} by year ${lookAhead}.${payback ? ` It pays for itself in year ${payback}.` : ''}`} className="aspect-auto h-60 w-full" config={PAY_FOR_ITSELF_CHART_CONFIG} debounce={150} role="img" {...tooltip.containerProps}>
-      <AreaChart data={data} margin={{ top: 16, right: 16, left: 0, bottom: 0 }} throttledEvents={CHART_THROTTLED_EVENTS}>
+      <AreaChart data={data} margin={{ top: 16, right: 16, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
             <stop offset={offset} stopColor="var(--primary)" stopOpacity={0.18} />

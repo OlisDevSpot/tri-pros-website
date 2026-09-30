@@ -11,7 +11,6 @@ import { formatBucketLabel } from '@/features/lead-sources-admin/lib/format-buck
 import { formatTimeRangeClause } from '@/features/lead-sources-admin/lib/format-time-range-clause'
 import { LeadSourceTrendTooltip } from '@/features/lead-sources-admin/ui/components/lead-source-trend-tooltip'
 import { ChartContainer, ChartTooltip } from '@/shared/components/ui/chart'
-import { CHART_THROTTLED_EVENTS } from '@/shared/constants/chart-throttled-events'
 import { usePinnedChartTooltip } from '@/shared/hooks/use-pinned-chart-tooltip'
 import { formatAsCount } from '@/shared/lib/formatters'
 
@@ -29,7 +28,7 @@ export function LeadSourceTrendChart({ trend, bucket, chip }: Props) {
         {`Activity over time · ${formatTimeRangeClause(chip)}`}
       </h3>
       <ChartContainer className="aspect-auto h-56 w-full" config={LEAD_SOURCE_TREND_CHART_CONFIG} {...tooltip.containerProps}>
-        <LineChart data={trend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} throttledEvents={CHART_THROTTLED_EVENTS}>
+        <LineChart data={trend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
           <XAxis
             dataKey="bucketStart"

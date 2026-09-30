@@ -2,13 +2,25 @@ import type { PointerEvent as ReactPointerEvent } from 'react'
 
 import { useEffect, useRef, useState } from 'react'
 
-// v3 re-selects its active axis index only on a real mousemove/touchmove, so a tap alone never updates it
-// past the first one; replaying one at the tap's own point makes recharts run that same selection itself.
-// A MouseEvent works in every engine (WebKit rejects the Touch/TouchEvent constructors outright), and reaches
-// every chart sharing this container (a syncId group renders more than one `.recharts-wrapper`).
+// Chromium's touch emulation never fires a touchmove for a tap alone, so its active axis index never updates
+// past the first one; replaying a mousemove at the tap's own point makes recharts re-run that selection
+// itself (WebKit taps already re-select through their own compat mouse events). Targets only the wrapper
+// under the tap: recharts throttles this move through one shared scheduler, so dispatching to every wrapper
+// in a syncId group would only let the last one land — the rest follow recharts' own sync instead.
 function forceReselect(container: Element, clientX: number, clientY: number) {
+  const wrapper = Array.from(container.querySelectorAll('.recharts-wrapper')).find((element) => {
+    const rect = element.getBoundingClientRect()
+    return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom
+  })
+  wrapper?.dispatchEvent(new MouseEvent('mousemove', { clientX, clientY, bubbles: true, cancelable: true }))
+}
+
+// WebKit's compat mouseout on an outside tap fires on whatever the tap actually landed on, never on the
+// chart, so recharts' own hover state (and the dimming that reads it) stays stuck active; this mimics a
+// real pointer leaving, which recharts always clears unconditionally on every engine.
+function clearHover(container: Element) {
   container.querySelectorAll('.recharts-wrapper').forEach(wrapper =>
-    wrapper.dispatchEvent(new MouseEvent('mousemove', { clientX, clientY, bubbles: true, cancelable: true })),
+    wrapper.dispatchEvent(new MouseEvent('mouseout', { relatedTarget: document.body, bubbles: true, cancelable: true })),
   )
 }
 
@@ -35,6 +47,9 @@ export function usePinnedChartTooltip<T extends HTMLElement = HTMLDivElement>() 
     const releaseOutside = (event: PointerEvent) => {
       if (!(event.target instanceof Node) || !ref.current?.contains(event.target)) {
         setPinned(false)
+        if (ref.current) {
+          clearHover(ref.current)
+        }
       }
     }
     document.addEventListener('pointerdown', releaseOutside, true)
