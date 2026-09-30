@@ -11,15 +11,15 @@ export function getEnvelopeStatusBadge(requestStatus: ZohoRequestStatus | undefi
     case 'draft':
       return { label: 'Draft', className: 'bg-muted text-muted-foreground' }
     case 'inprogress':
-      return { label: 'Awaiting Signatures', className: 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400' }
+      return { label: 'Awaiting Signatures', className: 'bg-status-pending-bg text-status-pending-fg' }
     case 'completed':
-      return { label: 'Signed', className: 'bg-green-500/10 text-green-700 dark:text-green-400' }
+      return { label: 'Signed', className: 'bg-status-success-bg text-status-success-fg' }
     case 'declined':
-      return { label: 'Declined', className: 'bg-red-500/10 text-red-700 dark:text-red-400' }
+      return { label: 'Declined', className: 'bg-status-danger-bg text-status-danger-fg' }
     case 'recalled':
       return { label: 'Recalled', className: 'bg-muted text-muted-foreground' }
     case 'expired':
-      return { label: 'Expired', className: 'bg-red-500/10 text-red-700 dark:text-red-400' }
+      return { label: 'Expired', className: 'bg-status-danger-bg text-status-danger-fg' }
     default:
       return null
   }
@@ -30,11 +30,11 @@ export function getProposalStatusBadge(proposalStatus: ProposalStatus | undefine
     case 'draft':
       return { label: 'Draft', className: 'bg-muted text-muted-foreground' }
     case 'sent':
-      return { label: 'Sent', className: 'bg-blue-500/10 text-blue-700 dark:text-blue-400' }
+      return { label: 'Sent', className: 'bg-status-attention-bg text-status-attention-fg' }
     case 'approved':
-      return { label: 'Approved', className: 'bg-green-500/10 text-green-700 dark:text-green-400' }
+      return { label: 'Approved', className: 'bg-status-success-bg text-status-success-fg' }
     case 'declined':
-      return { label: 'Declined', className: 'bg-red-500/10 text-red-700 dark:text-red-400' }
+      return { label: 'Declined', className: 'bg-status-danger-bg text-status-danger-fg' }
     default:
       return null
   }

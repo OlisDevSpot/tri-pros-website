@@ -26,8 +26,8 @@ export const STATUS_ACCENT_COLORS: Record<MeetingOutcome, string> = Object.fromE
 ) as Record<MeetingOutcome, string>
 
 export const ACTIVITY_TYPE_BG_TINTS: Record<ActivityType, string> = {
-  note: 'bg-blue-500/5 border-blue-500/20',
-  reminder: 'bg-amber-500/5 border-amber-500/20',
-  task: 'bg-emerald-500/5 border-emerald-500/20',
-  event: 'bg-purple-500/5 border-purple-500/20',
+  note: 'bg-status-info-bg/60 border-status-info-dot/30',
+  reminder: 'bg-status-pending-bg/60 border-status-pending-dot/30',
+  task: 'bg-status-success-bg/60 border-status-success-dot/30',
+  event: 'bg-status-action-bg/60 border-status-action-dot/30',
 }

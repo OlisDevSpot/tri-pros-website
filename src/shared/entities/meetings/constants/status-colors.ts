@@ -20,32 +20,31 @@ function buildOutcomeColorMap(scheme: OutcomeColorScheme): Record<MeetingOutcome
   ) as Record<MeetingOutcome, string>
 }
 
-// Outcome badge colors — built on the app's SEMANTIC status tokens
-// (destructive/success/warning), which are theme-aware by construction, so the
-// label clears contrast in BOTH light and dark with no per-mode variants. (The
-// old raw red-600/-400 was a light-only palette that washed out on the dark card.)
+// Outcome badge colors — read the status tones (Task 5), which are
+// theme-aware by construction, so the label clears contrast in BOTH light
+// and dark with no per-mode variants.
 export const MEETING_LIST_STATUS_COLORS: Record<MeetingOutcome, string> = buildOutcomeColorMap({
-  negative: 'border-destructive/30 bg-destructive/10 text-destructive',
-  positive: 'border-success/30 bg-success/10 text-success',
-  neutral: 'border-warning/30 bg-warning/10 text-warning',
+  negative: 'border-status-danger-dot/40 bg-status-danger-bg text-status-danger-fg',
+  positive: 'border-status-success-dot/40 bg-status-success-bg text-status-success-fg',
+  neutral: 'border-status-pending-dot/40 bg-status-pending-bg text-status-pending-fg',
   unset: 'border-border bg-muted text-muted-foreground',
 })
 
 // Table badge colors (used with StatusDropdownCell default Badge) — same
-// semantic-token treatment so table badges read in dark mode too.
+// status-tone treatment so table badges read in dark mode too.
 export const MEETING_OUTCOME_COLORS: Record<MeetingOutcome, string> = buildOutcomeColorMap({
-  negative: 'border-destructive/30 bg-destructive/10 text-destructive',
-  positive: 'border-success/30 bg-success/10 text-success',
-  neutral: 'border-warning/30 bg-warning/10 text-warning',
+  negative: 'border-status-danger-dot/40 bg-status-danger-bg text-status-danger-fg',
+  positive: 'border-status-success-dot/40 bg-status-success-bg text-status-success-fg',
+  neutral: 'border-status-pending-dot/40 bg-status-pending-bg text-status-pending-fg',
   unset: 'border-border bg-muted text-muted-foreground',
 })
 
 // Dot colors for status indicators and sub-menu option indicators
 export const MEETING_OUTCOME_DOT_COLORS: Record<MeetingOutcome, string> = buildOutcomeColorMap({
-  negative: 'bg-red-500',
-  positive: 'bg-emerald-500',
-  neutral: 'bg-amber-500',
-  unset: 'bg-zinc-500',
+  negative: 'bg-status-danger-dot',
+  positive: 'bg-status-success-dot',
+  neutral: 'bg-status-pending-dot',
+  unset: 'bg-status-idle-dot',
 })
 
 // Human-readable labels for display

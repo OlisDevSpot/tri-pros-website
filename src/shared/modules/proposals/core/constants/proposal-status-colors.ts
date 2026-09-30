@@ -1,15 +1,19 @@
+import type { StatusTone } from '@/shared/constants/status-tones'
 import type { Proposal } from '@/shared/db/schema'
 
-export const PROPOSAL_STATUS_COLORS: Record<Proposal['status'], string> = {
-  draft: 'bg-slate-500/10 text-slate-600',
-  sent: 'bg-orange-500/10 text-orange-600',
-  approved: 'bg-green-500/10 text-green-600',
-  declined: 'bg-red-500/10 text-red-600',
+import { TONE_CLASSES } from '@/shared/constants/status-tones'
+
+const PROPOSAL_STATUS_TONE: Record<Proposal['status'], StatusTone> = {
+  draft: 'idle',
+  sent: 'attention',
+  approved: 'success',
+  declined: 'danger',
 }
 
-export const PROPOSAL_STATUS_DOT_COLORS: Record<Proposal['status'], string> = {
-  draft: 'bg-slate-400',
-  sent: 'bg-amber-500',
-  approved: 'bg-green-500',
-  declined: 'bg-red-500',
-}
+export const PROPOSAL_STATUS_COLORS = Object.fromEntries(
+  Object.entries(PROPOSAL_STATUS_TONE).map(([status, tone]) => [status, TONE_CLASSES[tone].fill]),
+) as Record<Proposal['status'], string>
+
+export const PROPOSAL_STATUS_DOT_COLORS = Object.fromEntries(
+  Object.entries(PROPOSAL_STATUS_TONE).map(([status, tone]) => [status, TONE_CLASSES[tone].dot]),
+) as Record<Proposal['status'], string>

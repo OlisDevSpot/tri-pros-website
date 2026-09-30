@@ -28,8 +28,8 @@ export const ACTION_IMPACT_META: Record<ActionImpact, ImpactMeta> = {
   },
   notifies: {
     icon: Mail,
-    iconClassName: 'text-blue-600 dark:text-blue-400',
-    labelClassName: 'text-blue-700 dark:text-blue-300',
+    iconClassName: 'text-status-info-fg',
+    labelClassName: 'text-status-info-fg',
   },
   destructive: {
     icon: AlertTriangle,

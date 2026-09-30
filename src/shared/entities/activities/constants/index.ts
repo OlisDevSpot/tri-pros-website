@@ -11,10 +11,10 @@ import {
 } from 'lucide-react'
 
 export const ACTIVITY_TYPE_CONFIG = {
-  note: { icon: StickyNoteIcon, label: 'Note', color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
-  reminder: { icon: BellIcon, label: 'Reminder', color: 'text-amber-500', bgColor: 'bg-amber-500/10' },
-  task: { icon: CheckSquareIcon, label: 'Task', color: 'text-emerald-500', bgColor: 'bg-emerald-500/10' },
-  event: { icon: CalendarIcon, label: 'Event', color: 'text-purple-500', bgColor: 'bg-purple-500/10' },
+  note: { icon: StickyNoteIcon, label: 'Note', color: 'text-status-info-fg', bgColor: 'bg-status-info-bg' },
+  reminder: { icon: BellIcon, label: 'Reminder', color: 'text-status-pending-fg', bgColor: 'bg-status-pending-bg' },
+  task: { icon: CheckSquareIcon, label: 'Task', color: 'text-status-success-fg', bgColor: 'bg-status-success-bg' },
+  event: { icon: CalendarIcon, label: 'Event', color: 'text-status-action-fg', bgColor: 'bg-status-action-bg' },
 } as const
 
 export const ACTIVITY_ACTIONS = {
