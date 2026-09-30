@@ -21,7 +21,7 @@ export const SCHEDULE_MEETINGS_QUERY = {
   paramPrefix: 's',
   toolbar: ['meetingType', 'outcome', 'trade', 'rep', 'leadSource', 'proposalStatus'],
   defaultSort: { sortBy: 'scheduledFor', sortDir: 'asc' },
-  window: { kind: 'date', field: 'scheduledFor', cap: SCHEDULE_ROW_CAP },
+  window: { kind: 'date', field: 'scheduledFor', cap: SCHEDULE_ROW_CAP, views: ['week', 'today', 'month'] },
 } as const satisfies DataViewQueryConfig<typeof MEETING_FIELDS>
 
 export const SCHEDULE_ACTIVITIES_QUERY = {
@@ -30,5 +30,5 @@ export const SCHEDULE_ACTIVITIES_QUERY = {
   // Both configs share the `s` prefix so the date window survives the Show toggle; a toolbar id in both would carry one entity's filter into the other.
   toolbar: ['type', 'entityType', 'ownerId'] as const satisfies readonly Exclude<ToolbarFilterId<typeof ACTIVITY_FIELDS>, (typeof SCHEDULE_MEETINGS_QUERY)['toolbar'][number]>[],
   defaultSort: { sortBy: 'scheduledFor', sortDir: 'asc' },
-  window: { kind: 'date', field: 'scheduledFor', cap: SCHEDULE_ROW_CAP },
+  window: { kind: 'date', field: 'scheduledFor', cap: SCHEDULE_ROW_CAP, views: ['week', 'today', 'month'] },
 } as const satisfies DataViewQueryConfig<typeof ACTIVITY_FIELDS>

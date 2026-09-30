@@ -169,8 +169,11 @@ export function useDataViewQuery<
   }, [setUrlState, keys])
 
   const setView = useCallback((view: CalendarViewType) => {
+    if (config.window.kind !== 'date' || !config.window.views.includes(view)) {
+      return
+    }
     void setUrlState({ [keys.viewKey]: view } as never, { history: 'push' })
-  }, [setUrlState, keys])
+  }, [setUrlState, keys, config.window])
 
   const pageCount = windowState.kind === 'page' && total > 0 ? Math.ceil(total / windowState.pageSize) : 0
 

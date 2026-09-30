@@ -4,7 +4,8 @@ import type { DateRangeFilterId, FieldList, FilterValues, SortState, ToolbarFilt
 /** What limits the rows a data view gets: a table page, a calendar's date window, or the whole list (kanban). */
 export type DataViewWindow<F extends FieldList>
   = | { kind: 'page', pageSize: number, pageSizeOptions: readonly number[] }
-    | { kind: 'date', field: DateRangeFilterId<F>, cap: number }
+    // `views`: the calendar views this data view allows; the first is its default.
+    | { kind: 'date', field: DateRangeFilterId<F>, cap: number, views: readonly [CalendarViewType, ...CalendarViewType[]] }
     | { kind: 'whole-list' }
 
 export type DataViewWindowKind = DataViewWindow<FieldList>['kind']

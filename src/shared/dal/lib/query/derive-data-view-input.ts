@@ -4,7 +4,6 @@ import type { FieldList, FilterValues, SortDir, SortId, ToolbarFilterSpec, Toolb
 
 import { parseAsArrayOf, parseAsInteger, parseAsString, parseAsStringLiteral } from 'nuqs/server'
 
-import { calendarViewTypes } from '@/shared/constants/enums'
 import { MAX_PAGE } from '@/shared/dal/lib/query/constants'
 import { filterParserRegistry } from '@/shared/dal/lib/query/filter-parser-registry'
 import { makeQueryParsers } from '@/shared/dal/lib/query/url-state'
@@ -57,7 +56,7 @@ export function makeDataViewParsers<F extends FieldList>(config: DataViewQueryCo
   }
   if (config.window.kind === 'date') {
     parsers[keys.anchorKey] = parseAsString.withDefault('')
-    parsers[keys.viewKey] = parseAsStringLiteral(calendarViewTypes).withDefault('week')
+    parsers[keys.viewKey] = parseAsStringLiteral(config.window.views).withDefault(config.window.views[0])
   }
   return parsers
 }
@@ -115,7 +114,9 @@ export function deriveDataViewWindow<F extends FieldList>(urlState: Record<strin
     case 'date': {
       const requestedAnchor = (urlState[keys.anchorKey] as string | null) ?? ''
       const anchor = isCalendarDay(requestedAnchor) ? requestedAnchor : businessToday()
-      const view = (urlState[keys.viewKey] as CalendarViewType | null) ?? 'week'
+      const allowedViews: readonly CalendarViewType[] = configWindow.views
+      const requestedView = urlState[keys.viewKey] as CalendarViewType | null | undefined
+      const view = requestedView && allowedViews.includes(requestedView) ? requestedView : configWindow.views[0]
       const range = toInclusiveRange(businessWindowOf(anchor, view))
       return { kind: 'date', anchor, view, range, cap: configWindow.cap, pagination: { limit: configWindow.cap, offset: 0 } }
     }
