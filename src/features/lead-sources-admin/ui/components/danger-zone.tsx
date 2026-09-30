@@ -84,7 +84,7 @@ export function DangerZone({ leadSourceId, slug, isActive, customerCount }: Dang
           />
         </DangerZoneRow>
 
-        <div className="border-t border-border/40" aria-hidden="true" />
+        <div className="border-t border-border" aria-hidden="true" />
 
         <DangerZoneRow
           title="Archive"

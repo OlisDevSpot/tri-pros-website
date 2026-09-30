@@ -84,7 +84,7 @@ export function NewLeadSourceSheet({ open, onOpenChange, onCreated }: NewLeadSou
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent side="right" className="flex w-full flex-col gap-0 sm:max-w-md">
-        <SheetHeader className="border-b border-border/40 px-6 py-5">
+        <SheetHeader className="border-b border-border px-6 py-5">
           <SheetTitle>New lead source</SheetTitle>
           <SheetDescription>
             Creates an inactive lead source with a fresh intake URL. Activate once the partner is ready to send leads.
@@ -166,7 +166,7 @@ export function NewLeadSourceSheet({ open, onOpenChange, onCreated }: NewLeadSou
           )}
         </div>
 
-        <div className="flex items-center justify-end gap-2 border-t border-border/40 px-6 py-4">
+        <div className="flex items-center justify-end gap-2 border-t border-border px-6 py-4">
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={createLeadSource.isPending}>
             Cancel
           </Button>

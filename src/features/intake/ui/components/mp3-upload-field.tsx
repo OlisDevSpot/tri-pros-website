@@ -62,7 +62,7 @@ export function Mp3UploadField({ customerName, onUploaded, onClear }: Mp3UploadF
 
   if (fileName) {
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2">
+      <div className="flex items-center gap-2 rounded-lg border border-border bg-muted px-3 py-2">
         <MicIcon className="size-4 shrink-0 text-primary" />
         <span className="flex-1 truncate text-sm">{fileName}</span>
         <Button size="icon" variant="ghost" className="size-6" onClick={handleClear}>

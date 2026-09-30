@@ -30,7 +30,7 @@ export function ActionCard({ item, onSelect }: Props) {
 
   return (
     <Card
-      className="cursor-pointer transition-colors hover:bg-accent/50"
+      className="cursor-pointer transition-colors hover:bg-row-hover"
       onClick={() => onSelect(item)}
     >
       <CardContent className="flex items-center gap-4 py-3">

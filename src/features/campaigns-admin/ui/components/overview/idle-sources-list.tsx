@@ -14,7 +14,7 @@ export function IdleSourcesList({ summaries }: { summaries: SourceSummary[] }) {
       <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
         {`Idle · ${summaries.length} ${summaries.length === 1 ? 'source' : 'sources'}`}
       </h2>
-      <ul className="divide-y divide-border/60 overflow-hidden rounded-lg border border-border" role="list">
+      <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border" role="list">
         {summaries.map(s => (
           <li key={s.sourceSlug}>
             <IdleSourceRow summary={s} />

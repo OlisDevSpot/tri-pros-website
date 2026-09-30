@@ -33,15 +33,15 @@ export function LeadSourceSettingsPanel({ source }: LeadSourceSettingsPanelProps
         initialSlug={source.slug}
       />
 
-      <div className="border-t border-border/40 pt-6">
+      <div className="border-t border-border pt-6">
         <IntakeUrlCard leadSourceId={source.id} slug={source.slug} token={source.token} />
       </div>
 
-      <div className="border-t border-border/40 pt-6">
+      <div className="border-t border-border pt-6">
         <FormConfigEditor leadSourceId={source.id} initial={source.formConfigJSON} />
       </div>
 
-      <div className="border-t border-border/40 pt-6">
+      <div className="border-t border-border pt-6">
         <DangerZone
           leadSourceId={source.id}
           slug={source.slug}

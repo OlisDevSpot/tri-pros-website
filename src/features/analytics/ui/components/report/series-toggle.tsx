@@ -27,7 +27,7 @@ export function SeriesToggle({ series, active, onToggle }: Props) {
             onClick={() => onToggle(key)}
             className={cn(
               'inline-flex h-8 items-center gap-2 rounded-full border px-3 text-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring',
-              on ? 'border-foreground/25 bg-card text-foreground' : 'border-dashed border-border text-muted-foreground hover:text-foreground',
+              on ? 'border-border-strong bg-card text-foreground' : 'border-dashed border-border text-muted-foreground hover:text-foreground',
               last && 'cursor-default',
             )}
           >

@@ -115,7 +115,7 @@ export function IntegrationsSection() {
                     </div>
 
                     {/* Calendar details */}
-                    <div className="rounded-md bg-muted/50 p-3 space-y-1.5 text-xs text-muted-foreground">
+                    <div className="rounded-md bg-muted p-3 space-y-1.5 text-xs text-muted-foreground">
                       <div className="flex justify-between">
                         <span>Calendar ID</span>
                         <span className="font-mono truncate max-w-48">{syncStatus?.calendarId?.split('@')[0]}</span>

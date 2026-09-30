@@ -103,7 +103,7 @@ export function SourceDetail({ leadSourceId, activeChip, range, onAddCustomer, o
           cover the divider precisely. On mobile the row stacks (metric
           on top, tabs below) and the divider is owned by the wrapper.
         */}
-        <div className="flex shrink-0 flex-col items-stretch gap-3 border-b border-border/40 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+        <div className="flex shrink-0 flex-col items-stretch gap-3 border-b border-border sm:flex-row sm:items-end sm:justify-between sm:gap-6">
           <section aria-label="Performance" className="pb-1 sm:pb-0">
             <LeadSourcePerformanceStrip
               stats={statsQuery.data}

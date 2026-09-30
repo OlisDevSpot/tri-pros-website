@@ -67,7 +67,7 @@ function DashboardMeetingsCalendarSkeleton() {
           <div className="flex w-18 shrink-0 items-center justify-end">
             <Skeleton className={cn(SKELETON_BLOCK_TONE_CLASS, 'h-7 w-17')} />
           </div>
-          <div className="w-px shrink-0 bg-border dark:bg-border/40" />
+          <div className="w-px shrink-0 bg-border" />
           <div className="min-w-0 flex-1 py-2">
             <div className={cn('rounded-lg border bg-card p-2.5', SKELETON_FRAME_TONE_CLASS)}>
               <div className="flex h-6 items-center gap-1.5">

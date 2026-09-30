@@ -36,7 +36,7 @@ export function ContactFieldsReadout() {
                 </p>
               )
             : (
-                <ul className="flex flex-col divide-y divide-border/60">
+                <ul className="flex flex-col divide-y divide-border">
                   {fields.map(field => (
                     <li key={field.id} className="flex items-center justify-between gap-3 py-2 text-sm">
                       <span className="font-medium text-foreground">{field.providerFieldLabel}</span>

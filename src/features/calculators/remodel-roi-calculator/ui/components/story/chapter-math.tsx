@@ -23,7 +23,7 @@ export function ChapterMath({ equation, rows }: Props) {
     <div className="grid gap-1">
       <button
         aria-expanded={open}
-        className="flex min-h-12 w-full items-center gap-3.5 rounded-lg border bg-card/60 px-3.5 py-2.5 text-left"
+        className="flex min-h-12 w-full items-center gap-3.5 rounded-lg border bg-card px-3.5 py-2.5 text-left"
         onClick={() => setOpen(value => !value)}
         type="button"
       >

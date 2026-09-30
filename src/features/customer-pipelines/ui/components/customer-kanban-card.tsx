@@ -112,7 +112,7 @@ function CustomerKanbanCardImpl({
       >
         <CardContent className="p-2.5 space-y-2">
           {/* ── Customer info container ── */}
-          <div className="rounded-md border border-border/60 bg-muted/30 p-2.5 space-y-1.5 shadow-sm dark:bg-muted/20">
+          <div className="rounded-md border border-border bg-muted p-2.5 space-y-1.5 shadow-sm">
             {/* Name + created timestamp + more menu */}
             <div className="flex items-start gap-1.5 min-w-0">
               {!isDragOverlay && (
@@ -210,7 +210,7 @@ function CustomerKanbanCardImpl({
 
           {/* ── Meeting context container (fresh pipeline) ── */}
           {!item.project && hasMeetingContext && item.nextMeetingId && (
-            <div className="rounded-md border border-border/50 bg-accent/50 p-2.5 space-y-1.5 shadow-sm dark:bg-accent/30">
+            <div className="rounded-md border border-border bg-muted p-2.5 space-y-1.5 shadow-sm">
               <MeetingOverviewCard
                 meeting={{
                   id: item.nextMeetingId,

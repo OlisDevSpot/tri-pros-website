@@ -25,7 +25,7 @@ export function DashboardSnapshotChips({ counts }: DashboardSnapshotChipsProps) 
             flex min-h-11 flex-col items-start justify-center gap-1 rounded-md
             border border-border bg-card px-3 py-2
             transition-colors duration-200
-            hover:border-primary/40 hover:bg-accent/50
+            hover:border-primary/40 hover:bg-muted
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
           "
         >
