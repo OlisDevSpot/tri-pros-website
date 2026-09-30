@@ -9,7 +9,7 @@ import { ChevronRightIcon, RefreshCw } from 'lucide-react'
 import { Fragment, memo } from 'react'
 
 import { CELL_BORDER } from '@/shared/components/data-table/constants/cell-border'
-import { SKELETON_CELL_WIDTHS, SKELETON_ROW_HEIGHT_CLASS } from '@/shared/components/data-table/constants/skeleton-widths'
+import { SKELETON_CELL_WIDTHS } from '@/shared/components/data-table/constants/skeleton-widths'
 import { shouldToggleRow } from '@/shared/components/data-table/lib/should-toggle-row'
 import { AnimatedCollapsibleContent } from '@/shared/components/ui/collapsible'
 import { Skeleton } from '@/shared/components/ui/skeleton'
@@ -34,6 +34,7 @@ interface DataTableBodyProps<TData extends { id: string }> {
   showFrozenShadow: boolean
   serverPagination?: DataTableServerPagination
   isRefreshing: boolean
+  skeletonRowClassName: string
 }
 
 function DataTableBodyImpl<TData extends { id: string }>({
@@ -52,6 +53,7 @@ function DataTableBodyImpl<TData extends { id: string }>({
   showFrozenShadow,
   serverPagination,
   isRefreshing,
+  skeletonRowClassName,
 }: DataTableBodyProps<TData>) {
   return (
     <TableBody>
@@ -86,7 +88,7 @@ function DataTableBodyImpl<TData extends { id: string }>({
           const visibleCols = table.getVisibleFlatColumns()
           return Array.from({ length: 5 }).map((_, rowIdx) => (
             // eslint-disable-next-line react/no-array-index-key -- static skeleton list, no reordering
-            <TableRow key={`skeleton-row-${rowIdx}`} className={cn('border-border/50 hover:bg-transparent', SKELETON_ROW_HEIGHT_CLASS)}>
+            <TableRow key={`skeleton-row-${rowIdx}`} className={cn('border-border/50 hover:bg-transparent', skeletonRowClassName)}>
               {visibleCols.map((col, colIdx) => (
                 <TableCell key={`skeleton-${rowIdx}-${col.id}`} className={CELL_BORDER}>
                   <Skeleton className={cn('h-3.5', SKELETON_CELL_WIDTHS[colIdx % SKELETON_CELL_WIDTHS.length])} />

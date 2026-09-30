@@ -148,6 +148,7 @@ export function CampaignsLeadsView() {
           meta={meta}
           onRowClick={row => setDrawerRow(row)}
           serverPagination={toDataTablePagination(toolbarQuery)}
+          skeletonRowClassName="h-[53px]"
           tableId="campaign-leads"
         />
       </div>

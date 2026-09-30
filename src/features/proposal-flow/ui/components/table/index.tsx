@@ -155,6 +155,7 @@ export function PastProposalsTable() {
             meta={meta}
             entityName="proposal"
             rowDataAttribute="data-proposal-row"
+            skeletonRowClassName="h-[58.5px]"
             serverPagination={toDataTablePagination(query)}
             serverSorting={toDataTableSorting(query)}
             columnVisibility={visibility.columnVisibility}

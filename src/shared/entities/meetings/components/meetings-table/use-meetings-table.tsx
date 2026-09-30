@@ -97,6 +97,7 @@ export function useMeetingsTable(
     getRowClassName: getMeetingRowClassName,
     entityName: 'meeting',
     rowDataAttribute: 'data-meeting-row',
+    skeletonRowClassName: 'h-[58.5px]',
     renderExpandedRow: expandedRowRenderer,
     // Without an expanded row, a row click opens the customer profile.
     onRowClick: expandedRowRenderer ? undefined : handleView,

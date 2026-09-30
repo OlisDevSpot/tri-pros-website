@@ -1,29 +1,29 @@
-import { Skeleton } from '@/shared/components/ui/skeleton'
+'use client'
 
-// Generic on purpose (every dashboard page shares the layout) and padded like
-// the dashboard template, so the swap to the real page does not jump. Shows
-// when the dashboard layout mounts — a document load, or a navigation in from
-// outside the dashboard; navigation within the dashboard keeps the layout, so
-// it does not show there.
+import { usePathname } from 'next/navigation'
+
+import { DASHBOARD_MAIN_CLASS } from '@/features/agent-dashboard/constants/dashboard-main'
+import { DASHBOARD_ROUTE_PENDING_VIEWS } from '@/features/agent-dashboard/constants/route-pending-views'
+import { DashboardGenericContentSkeleton } from '@/features/agent-dashboard/ui/components/dashboard-generic-content-skeleton'
+import { DataViewPendingContext } from '@/shared/dal/client/lib/data-view-pending-context'
+
+// Shows only on a document load while the session resolves (the layout persists across in-app navigation). On the
+// routes that have one, it is the page itself with no rows, the same as the page's own loading state, so the two
+// hand over without a jump.
 export function DashboardContentSkeleton() {
+  const pathname = usePathname()
+  const PendingView = DASHBOARD_ROUTE_PENDING_VIEWS[pathname]
+  if (!PendingView) {
+    return <DashboardGenericContentSkeleton />
+  }
   return (
-    <div
-      className="flex h-full min-w-0 flex-col px-4 pb-20 pt-4 md:px-6 md:py-6"
-      data-slot="dashboard-content-skeleton"
-      aria-busy="true"
-    >
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <Skeleton className="h-7 w-48" />
-          <Skeleton className="h-4 w-72 max-w-full" />
-        </div>
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-          <Skeleton className="h-64 lg:col-span-8" />
-          <div className="flex flex-col gap-6 lg:col-span-4">
-            <Skeleton className="h-28" />
-            <Skeleton className="h-28" />
+    <div className="flex h-full min-w-0 flex-col" data-slot="dashboard-content-skeleton" aria-busy="true">
+      <div className={DASHBOARD_MAIN_CLASS}>
+        <DataViewPendingContext value={true}>
+          <div className="contents" data-slot="data-view-pending">
+            <PendingView />
           </div>
-        </div>
+        </DataViewPendingContext>
       </div>
     </div>
   )

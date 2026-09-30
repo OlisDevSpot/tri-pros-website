@@ -16,5 +16,9 @@ export const SKELETON_CELL_WIDTHS = [
   'w-2/5',
 ] as const
 
-/** Approximate height of a typical data row (matches `h-12` = 48px). */
-export const SKELETON_ROW_HEIGHT_CLASS = 'h-12'
+/**
+ * A skeleton row's height: the rendered height of a two-line row (the customers tables). Tables whose rows
+ * render at another height pass their own through `DataTable`'s `skeletonRowClassName`, so the swap to rows
+ * moves nothing.
+ */
+export const SKELETON_ROW_HEIGHT_CLASS = 'h-[61px]'

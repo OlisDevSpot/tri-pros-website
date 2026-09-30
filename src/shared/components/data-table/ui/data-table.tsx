@@ -16,6 +16,7 @@ import { PinIcon } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { CELL_BORDER } from '@/shared/components/data-table/constants/cell-border'
+import { SKELETON_ROW_HEIGHT_CLASS } from '@/shared/components/data-table/constants/skeleton-widths'
 import { usePullToRefresh } from '@/shared/components/data-table/hooks/use-pull-to-refresh'
 import { createDateRangeFilterFn } from '@/shared/components/data-table/lib/filter-fns'
 import { mapColumnSortIds } from '@/shared/components/data-table/lib/map-column-sort-ids'
@@ -48,6 +49,8 @@ export interface DataTableProps<TData, TMeta = unknown> {
   serverPagination?: DataTableServerPagination
   serverSorting?: DataTableServerSorting
   columnVisibility?: VisibilityState
+  /** The loading rows' height class, when this table's rows render at a height other than the default's. */
+  skeletonRowClassName?: string
 }
 
 const COL_SIZE_KEY = 'dt-col-sizes'
@@ -95,6 +98,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   serverPagination,
   serverSorting,
   columnVisibility: controlledColumnVisibility,
+  skeletonRowClassName = SKELETON_ROW_HEIGHT_CLASS,
 }: Props<TData, TMeta>) {
   const isMobile = useIsMobile()
   const [activeRowId, setActiveRowId] = useState<string | null>(null)
@@ -504,6 +508,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
               showFrozenShadow={showFrozenShadow}
               serverPagination={serverPagination}
               isRefreshing={isRefreshing}
+              skeletonRowClassName={skeletonRowClassName}
             />
           </Table>
         </div>

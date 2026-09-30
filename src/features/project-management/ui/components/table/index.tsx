@@ -91,6 +91,7 @@ export function PortfolioProjectsTable() {
             meta={meta}
             entityName="project"
             rowDataAttribute="data-project-row"
+            skeletonRowClassName="h-[52.5px]"
             onRowClick={handleRowClick}
             serverPagination={toDataTablePagination(query)}
             serverSorting={toDataTableSorting(query)}
