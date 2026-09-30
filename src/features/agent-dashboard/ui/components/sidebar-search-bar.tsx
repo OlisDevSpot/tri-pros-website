@@ -38,13 +38,13 @@ export function SidebarSearchBar() {
             aria-label="Search"
             className="
               flex h-8 w-full items-center gap-2 overflow-hidden
-              rounded-lg border border-border/70
-              bg-linear-to-b from-background to-muted/50
-              px-2.5 text-sm text-muted-foreground
+              rounded-lg border border-sidebar-border
+              bg-sidebar-hover
+              px-2.5 text-sm text-sidebar-muted
               transition-[width,height,padding,background,border-color,color]
               duration-200 ease-linear
-              hover:border-border hover:text-foreground
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+              hover:border-sidebar-muted hover:text-sidebar-foreground
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring
               group-data-[collapsible=icon]:size-8!
               group-data-[collapsible=icon]:p-2!
             "
@@ -54,8 +54,8 @@ export function SidebarSearchBar() {
             <kbd
               className="
                 pointer-events-none hidden shrink-0 select-none items-center gap-0.5
-                rounded border border-border/70 bg-muted px-1.5 py-0.5
-                font-mono text-[10px] font-medium text-muted-foreground
+                rounded border border-sidebar-border bg-transparent px-1.5 py-0.5
+                font-mono text-[10px] font-medium text-sidebar-muted
                 sm:inline-flex
                 group-data-[collapsible=icon]:hidden
               "

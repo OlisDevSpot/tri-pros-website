@@ -9,7 +9,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 
 import { SIDEBAR_LABEL_ANIMATE, SIDEBAR_TRANSITION } from '@/features/agent-dashboard/constants/sidebar-motion'
-import { SIDEBAR_NAV_ACTIVE_STYLE, SIDEBAR_NAV_ITEM_CLASS } from '@/features/agent-dashboard/constants/sidebar-styles'
+import { SIDEBAR_NAV_ITEM_CLASS } from '@/features/agent-dashboard/constants/sidebar-styles'
 import {
   Popover,
   PopoverContent,
@@ -51,8 +51,7 @@ export function SidebarPipelineItem({
         asChild
         tooltip={item.label}
         isActive={isActive}
-        className={cn('gap-4 hover:bg-transparent data-[active=true]:bg-transparent', SIDEBAR_NAV_ITEM_CLASS)}
-        style={isActive ? SIDEBAR_NAV_ACTIVE_STYLE : undefined}
+        className={cn('gap-4', SIDEBAR_NAV_ITEM_CLASS)}
       >
         <Link
           href={hydrated ? ROOTS.dashboard.pipeline(activePipeline) : item.href}
@@ -65,7 +64,7 @@ export function SidebarPipelineItem({
           }}
           className={item.enabled ? '' : 'pointer-events-none opacity-50'}
         >
-          <item.icon className={`size-4 shrink-0 transition-colors duration-200 ${isActive ? 'text-primary' : ''}`} />
+          <item.icon className="size-4 shrink-0 transition-colors duration-200" />
           <motion.span
             initial={false}
             animate={isIconCollapsed ? SIDEBAR_LABEL_ANIMATE.collapsed : SIDEBAR_LABEL_ANIMATE.expanded}
@@ -86,14 +85,10 @@ export function SidebarPipelineItem({
             onClick={(e) => {
               e.stopPropagation()
             }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider select-none transition-[opacity,transform,background,color,box-shadow] duration-200 ease-linear disabled:cursor-default group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:scale-90 group-data-[collapsible=icon]:opacity-0"
-            style={{
-              background: 'linear-gradient(135deg, color-mix(in oklch, var(--primary) 14%, transparent), color-mix(in oklch, var(--primary) 8%, transparent))',
-              color: 'color-mix(in oklch, var(--primary) 80%, var(--foreground))',
-              backdropFilter: 'blur(8px)',
-              border: '1px solid color-mix(in oklch, var(--primary) 18%, transparent)',
-              boxShadow: '0 1px 3px color-mix(in oklch, var(--primary) 6%, transparent)',
-            }}
+            className={cn(
+              'absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider select-none transition-[opacity,transform,background,color,box-shadow] duration-200 ease-linear disabled:cursor-default group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:scale-90 group-data-[collapsible=icon]:opacity-0',
+              isActive ? 'border-sidebar-primary/30 text-sidebar-primary' : 'border-sidebar-accent/30 text-sidebar-accent',
+            )}
           >
             {hydrated
               ? PIPELINE_LABELS[activePipeline]
@@ -104,36 +99,27 @@ export function SidebarPipelineItem({
           side="right"
           align="start"
           sideOffset={8}
-          className="w-44 rounded-xl border-0 p-1.5 shadow-xl"
-          style={{
-            background: 'linear-gradient(170deg, color-mix(in oklch, var(--popover) 97%, var(--primary)), var(--popover))',
-            backdropFilter: 'blur(20px) saturate(1.4)',
-            border: '1px solid color-mix(in oklch, var(--primary) 12%, var(--border))',
-            boxShadow: '0 8px 32px color-mix(in oklch, var(--primary) 8%, transparent), 0 2px 8px rgba(0,0,0,0.08)',
-          }}
+          className="w-44 rounded-xl p-1.5 shadow-lg"
         >
-          {item.children?.map(child => (
-            <button
-              key={child.key}
-              type="button"
-              onClick={() => {
-                onPipelineChange(child.key as Pipeline)
-                setBadgeOpen(false)
-              }}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150 hover:bg-accent/60"
-              style={activePipeline === child.key
-                ? {
-                    background: 'linear-gradient(135deg, color-mix(in oklch, var(--primary) 12%, transparent), color-mix(in oklch, var(--primary) 6%, transparent))',
-                    color: 'color-mix(in oklch, var(--primary) 85%, var(--foreground))',
-                  }
-                : undefined}
-            >
-              <span className="flex-1 text-left">{child.label}</span>
-              {activePipeline === child.key && (
-                <CheckIcon className="size-3.5 opacity-70" />
-              )}
-            </button>
-          ))}
+          {item.children?.map((child) => {
+            const isCurrent = activePipeline === child.key
+            return (
+              <button
+                key={child.key}
+                type="button"
+                onClick={() => {
+                  onPipelineChange(child.key as Pipeline)
+                  setBadgeOpen(false)
+                }}
+                className={cn('flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150 hover:bg-accent', isCurrent && 'bg-accent font-semibold')}
+              >
+                <span className="flex-1 text-left">{child.label}</span>
+                {isCurrent && (
+                  <CheckIcon className="size-3.5 opacity-70" />
+                )}
+              </button>
+            )
+          })}
         </PopoverContent>
       </Popover>
     </SidebarMenuItem>

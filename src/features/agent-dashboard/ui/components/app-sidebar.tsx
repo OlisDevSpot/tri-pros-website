@@ -12,7 +12,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 
 import { SIDEBAR_LABEL_ANIMATE, SIDEBAR_TRANSITION } from '@/features/agent-dashboard/constants/sidebar-motion'
-import { SIDEBAR_NAV_ACTIVE_STYLE, SIDEBAR_NAV_ITEM_CLASS } from '@/features/agent-dashboard/constants/sidebar-styles'
+import { SIDEBAR_NAV_ITEM_CLASS } from '@/features/agent-dashboard/constants/sidebar-styles'
 import { getSidebarNav } from '@/features/agent-dashboard/lib/get-sidebar-nav'
 import { ActionCenterSheet } from '@/features/agent-dashboard/ui/components/action-center-sheet'
 import { SidebarPipelineItem } from '@/features/agent-dashboard/ui/components/sidebar-pipeline-item'
@@ -96,8 +96,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
           asChild
           tooltip={item.label}
           isActive={isActive}
-          className={cn('gap-4 hover:bg-transparent data-[active=true]:bg-transparent', SIDEBAR_NAV_ITEM_CLASS)}
-          style={isActive ? SIDEBAR_NAV_ACTIVE_STYLE : undefined}
+          className={cn('gap-4', SIDEBAR_NAV_ITEM_CLASS)}
         >
           <Link
             href={item.href}
@@ -114,7 +113,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
             }}
             className={item.enabled ? '' : 'pointer-events-none opacity-50'}
           >
-            <item.icon className={`size-4 shrink-0 transition-colors duration-200 ${isActive ? 'text-primary' : ''}`} />
+            <item.icon className="size-4 shrink-0 transition-colors duration-200" />
             <motion.span
               initial={false}
               animate={isCollapsed && !isMobile ? SIDEBAR_LABEL_ANIMATE.collapsed : SIDEBAR_LABEL_ANIMATE.expanded}
@@ -155,7 +154,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
 
   return (
     <>
-      <Sidebar collapsible="icon" side="left" variant="sidebar">
+      <Sidebar collapsible="icon" side="left" variant="floating">
         <SidebarHeader className="relative">
           <motion.div
             whileHover={{ scale: 1.03 }}
@@ -173,44 +172,26 @@ export function AppSidebar({ user }: AppSidebarProps) {
                       transition={{ duration: 0.5, ease: 'easeInOut' }}
                     >
                       <Image
-                        src="/company/logo/logo-light.svg"
-                        alt="Tri Pros"
-                        width={24}
-                        height={24}
-                        className="dark:hidden"
-                      />
-                      <Image
                         src="/company/logo/logo-dark.svg"
                         alt="Tri Pros"
                         width={24}
                         height={24}
-                        className="hidden dark:block"
                       />
                     </motion.div>
                   )
                 : (
-                    <>
-                      <Image
-                        src="/company/logo/logo-light-right.svg"
-                        alt="Tri Pros Remodeling"
-                        width={140}
-                        height={40}
-                        className="dark:hidden"
-                      />
-                      <Image
-                        src="/company/logo/logo-dark-right.svg"
-                        alt="Tri Pros Remodeling"
-                        width={140}
-                        height={40}
-                        className="hidden dark:block"
-                      />
-                    </>
+                    <Image
+                      src="/company/logo/logo-dark-right.svg"
+                      alt="Tri Pros Remodeling"
+                      width={140}
+                      height={40}
+                    />
                   )}
             </Link>
           </motion.div>
           <Button
             variant="outline"
-            className="absolute -bottom-2.5 -right-2.5 z-20 hidden size-5 rounded-full border bg-background p-0 shadow-sm md:flex items-center justify-center group-data-[collapsible=icon]:-right-3.5"
+            className="absolute -bottom-2.5 -right-2.5 z-20 hidden size-5 rounded-full border bg-card p-0 shadow-sm md:flex items-center justify-center group-data-[collapsible=icon]:-right-3.5"
             onClick={toggleSidebar}
           >
             {isCollapsed
@@ -226,18 +207,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
 
           <SidebarGroup>
             <div
-              className="
-                rounded-xl p-1
-                bg-linear-to-b from-primary/5 to-primary/12
-                ring-1 ring-inset ring-black/5
-                shadow-[0_1px_3px_rgb(0_0_0/0.04),inset_0_1px_0_rgb(255_255_255/0.9),inset_0_2px_5px_rgb(0_0_0/0.08),inset_0_-1px_2px_rgb(0_0_0/0.03),inset_0_-1px_0_rgb(255_255_255/0.5)]
-                dark:from-black/30 dark:to-black/55
-                dark:ring-white/5
-                dark:shadow-[0_1px_3px_rgb(0_0_0/0.35),inset_0_1px_0_rgb(255_255_255/0.06),inset_0_2px_8px_rgb(0_0_0/0.55),inset_0_-1px_3px_rgb(0_0_0/0.25),inset_0_-1px_0_rgb(255_255_255/0.03)]
-                transition-[padding,border-radius] duration-200 ease-linear
-                group-data-[collapsible=icon]:p-0
-                group-data-[collapsible=icon]:rounded-md
-              "
+              className="rounded-xl bg-sidebar-hover p-1 transition-[padding,border-radius] duration-200 ease-linear group-data-[collapsible=icon]:rounded-md group-data-[collapsible=icon]:p-0"
             >
               <SidebarMenu>
                 {renderNavItem(navConfig.dashboardItem)}
@@ -255,7 +225,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
 
           {navConfig.adminItems.length > 0 && (
             <SidebarGroup>
-              <SidebarGroupLabel>Admin</SidebarGroupLabel>
+              <SidebarGroupLabel className="text-sidebar-muted">Admin</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
                   {navConfig.adminItems.map(renderNavItem)}
@@ -272,7 +242,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
               <SidebarMenuButton
                 tooltip="Action Center"
                 onClick={() => setIsActionCenterOpen(true)}
-                className={cn('gap-4 hover:bg-transparent', SIDEBAR_NAV_ITEM_CLASS)}
+                className={cn('gap-4', SIDEBAR_NAV_ITEM_CLASS)}
               >
                 <ZapIcon className="size-4 shrink-0" />
                 <span>Action Center</span>

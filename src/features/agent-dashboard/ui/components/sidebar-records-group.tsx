@@ -37,7 +37,7 @@ export function SidebarRecordsGroup({ items, renderItem }: SidebarRecordsGroupPr
     <Collapsible open={open} onOpenChange={setUserOpen}>
       <SidebarGroup>
         <SidebarGroupLabel asChild>
-          <CollapsibleTrigger className="flex w-full items-center justify-between hover:text-sidebar-foreground">
+          <CollapsibleTrigger className="flex w-full items-center justify-between text-sidebar-muted hover:text-sidebar-foreground">
             <span>Records</span>
             <motion.span
               animate={{ rotate: open ? 90 : 0 }}

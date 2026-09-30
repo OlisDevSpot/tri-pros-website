@@ -15,7 +15,7 @@ import { Skeleton } from '@/shared/components/ui/skeleton'
 // width, which differs between the server and the client render.
 export function AppSidebarSkeleton() {
   return (
-    <Sidebar collapsible="icon" side="left" variant="sidebar">
+    <Sidebar collapsible="icon" side="left" variant="floating">
       <SidebarHeader>
         <div className="flex h-12 items-center px-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
           <Skeleton className="h-6 w-28 group-data-[collapsible=icon]:w-6" />
