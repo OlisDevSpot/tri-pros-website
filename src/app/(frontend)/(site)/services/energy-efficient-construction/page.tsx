@@ -6,7 +6,7 @@ export const revalidate = 180
 
 export const metadata = {
   title: 'Energy-Efficient Construction | Tri Pros Remodeling',
-  description: 'Complete energy envelope upgrades — HVAC, roofing, solar, windows, insulation — delivered by one licensed contractor with compounding savings.',
+  description: 'Complete energy envelope upgrades — HVAC, roofing, windows, insulation — delivered by one licensed contractor with compounding savings.',
 }
 
 export default async function EnergyEfficiencyPillarPage() {
