@@ -76,7 +76,7 @@ export function usePaginatedQuery<TExtra extends object, TRow>(
   const search = (stateAny[keys.searchKey] as string) ?? ''
 
   const derived = useMemo(() => derivePaginatedQueryState(stateAny, config), [stateAny, config])
-  const shownDerived = useMemo(() => derivePaginatedQueryState(shownStateAny, config), [shownStateAny, config])
+  const deferredDerived = useMemo(() => derivePaginatedQueryState(shownStateAny, config), [shownStateAny, config])
   const { page, pageSize: effectivePageSize, sortBy, sortDir, filters: filterValues } = derived
 
   const activeFilterCount = useMemo(
@@ -92,12 +92,15 @@ export function usePaginatedQuery<TExtra extends object, TRow>(
     // eslint-disable-next-line react-hooks/exhaustive-deps -- extra deep-keyed via extraKey
     [derived, extraKey],
   )
+  const requestedOptions = queryOptionsFactory(requestedInput)
+  // The deferred state lags one render behind every change, and rapid steps keep discarding the render that would
+  // catch up; a key whose rows are already cached reads at once, so only a key still loading shows the old rows.
+  const shownDerived = qc.getQueryData(requestedOptions.queryKey) !== undefined ? derived : deferredDerived
   const shownInput = useMemo<PaginatedQueryInput & TExtra>(
     () => ({ ...shownDerived.input, ...extra } as PaginatedQueryInput & TExtra),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- extra deep-keyed via extraKey
     [shownDerived, extraKey],
   )
-  const requestedOptions = queryOptionsFactory(requestedInput)
   const baseOptions = queryOptionsFactory(shownInput)
   const isStale = !isPending && hashKey(requestedOptions.queryKey) !== hashKey(baseOptions.queryKey)
 

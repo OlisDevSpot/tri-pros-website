@@ -7,9 +7,8 @@ import { useEffect } from 'react'
 
 /**
  * Warms the cache for the reads a viewer reaches next (the page or date window either side of the current one),
- * so stepping there renders cached rows instead of an empty window. Waits for `ready` — the current window's own
- * rows in and no fetch running — so the prefetches never compete with it. Entries still inside `staleTime` are
- * skipped by `prefetchQuery` itself.
+ * so stepping there renders cached rows instead of an empty window. Waits for `ready`, which the caller holds false
+ * while a read it needs first is running. Entries still inside `staleTime` are skipped by `prefetchQuery` itself.
  */
 export function usePrefetchQueries(queries: readonly FetchQueryOptions<any, any, any, any>[], ready: boolean) {
   const qc = useQueryClient()

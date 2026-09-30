@@ -78,11 +78,6 @@ export function useDataViewQuery<
   const windowState = useMemo(() => deriveDataViewWindow(state, config), [state, config])
   const deferredFilterSort = useMemo(() => deriveFilterSortState(shownState, config), [shownState, config])
   const deferredWindowState = useMemo(() => deriveDataViewWindow(shownState, config), [shownState, config])
-  // An anchorless URL derives today's window; two derivations of one state either side of business midnight would
-  // differ and leave the view stale for good, so a caught-up state reuses the requested derivations.
-  const isCaughtUp = shownState === state
-  const shownFilterSort = isCaughtUp ? filterSort : deferredFilterSort
-  const shownWindowState = isCaughtUp ? windowState : deferredWindowState
 
   const extraKey = JSON.stringify(extra)
   const requestedInput = useMemo(
@@ -90,14 +85,23 @@ export function useDataViewQuery<
     // eslint-disable-next-line react-hooks/exhaustive-deps -- extra is deep-keyed via extraKey so an inline literal doesn't refetch
     [filterSort, windowState, config, extraKey],
   )
+  const anyProcedure = procedure as AnyQueryProcedure
+  const requestedOptions = anyProcedure.queryOptions(requestedInput)
+
+  // The deferred state lags one render behind every change, and rapid steps keep discarding the render that would
+  // catch up; a key whose rows are already cached reads at once, so only a key still loading shows the old rows.
+  // An anchorless URL derives today's window; two derivations of one state either side of business midnight would
+  // differ and leave the view stale for good, so a caught-up state reuses the requested derivations too.
+  const isCaughtUp = shownState === state || qc.getQueryData(requestedOptions.queryKey) !== undefined
+  const shownFilterSort = isCaughtUp ? filterSort : deferredFilterSort
+  const shownWindowState = isCaughtUp ? windowState : deferredWindowState
+
   const shownInput = useMemo(
     () => ({ ...toDataViewInput(shownFilterSort, shownWindowState, config), ...extra }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- extra is deep-keyed via extraKey so an inline literal doesn't refetch
     [shownFilterSort, shownWindowState, config, extraKey],
   )
 
-  const anyProcedure = procedure as AnyQueryProcedure
-  const requestedOptions = anyProcedure.queryOptions(requestedInput)
   const shownOptions = anyProcedure.queryOptions(shownInput)
   const isStale = !isPending && hashKey(requestedOptions.queryKey) !== hashKey(shownOptions.queryKey)
 
@@ -205,11 +209,13 @@ export function useDataViewQuery<
     }
   }, [isPending, isStale, windowState, pageCount, keys, setUrlState])
 
-  const adjacentWindows = useMemo(() => adjacentDataViewWindows(shownState, config), [shownState, config])
+  // Around the requested window, not the shown one, so stepping faster than rows arrive still lands on cached
+  // windows. Pages wait for the requested key's total, which is what says how many pages exist.
+  const adjacentWindows = useMemo(() => adjacentDataViewWindows(state, config), [state, config])
   const adjacentQueries = adjacentWindows
-    .filter(adjacent => adjacent.kind !== 'page' || adjacent.pagination.offset < total)
-    .map(adjacent => anyProcedure.queryOptions({ ...toDataViewInput(shownFilterSort, adjacent, config), ...extra }))
-  usePrefetchQueries(adjacentQueries, !isPending && !isStale && !isFetching)
+    .filter(adjacent => adjacent.kind !== 'page' || (!isStale && adjacent.pagination.offset < total))
+    .map(adjacent => anyProcedure.queryOptions({ ...toDataViewInput(filterSort, adjacent, config), ...extra }))
+  usePrefetchQueries(adjacentQueries, !isPending && !isFetching)
 
   // Another key's rows would land on the wrong days, so date views draw skeletons until this key's rows arrive.
   const isWindowPending = isPending || isStale
