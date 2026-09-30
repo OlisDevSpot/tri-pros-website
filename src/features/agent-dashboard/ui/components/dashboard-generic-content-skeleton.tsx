@@ -12,14 +12,14 @@ export function DashboardGenericContentSkeleton() {
       data-slot="dashboard-content-skeleton"
       aria-busy="true"
     >
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-(--gutter)">
         <div className="flex flex-col gap-2">
           <Skeleton className="h-7 w-48" />
           <Skeleton className="h-4 w-72 max-w-full" />
         </div>
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <div className="grid grid-cols-1 gap-(--gutter) lg:grid-cols-12">
           <Skeleton className="h-64 lg:col-span-8" />
-          <div className="flex flex-col gap-6 lg:col-span-4">
+          <div className="flex flex-col gap-(--gutter) lg:col-span-4">
             <Skeleton className="h-28" />
             <Skeleton className="h-28" />
           </div>
