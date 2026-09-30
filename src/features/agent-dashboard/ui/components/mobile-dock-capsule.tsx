@@ -65,7 +65,7 @@ export function MobileDockCapsule({ tabs, onActionCenterClick, className }: Mobi
             'transition-[translate,opacity,scale] duration-300 ease-[cubic-bezier(0.3,0.8,0.2,1)] motion-reduce:transition-none',
             'data-hidden:scale-90 data-hidden:opacity-0',
           )}
-          style={{ width: `${100 / tabs.length}%`, translate: `${pillIndex * 100}% 0` }}
+          style={{ width: `${100 / Math.max(tabs.length, 1)}%`, translate: `${pillIndex * 100}% 0` }}
         />
         {tabs.map((tab, index) => {
           const href = tab.item.children ? (pipelineHref ?? tab.item.href) : tab.item.href
