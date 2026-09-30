@@ -78,16 +78,28 @@ All CSS-based safe-area rules live in `globals.css` under the "PWA safe-area ins
 
 ### dashboard-layout-shape-fixed
 
-The dashboard layout has one canonical shape. Do not refactor without reading the "Key lessons learned" anti-pattern list below.
+The dashboard layout has one canonical shape. Do not refactor without reading the Anti-patterns list below.
 
 ```jsx
-<SidebarProvider>                                    {/* height: 100% via CSS */}
-  <AppSidebar />                                     {/* fixed inset-y-0; owns its safe areas */}
+<SidebarProvider>                                        {/* height: 100% via CSS */}
+  {hasSessionCookie && (
+    <SidebarSessionBoundary fallback={<AppSidebarSkeleton />}>  {/* Suspense that re-renders on sidebar context changes */}
+      <DashboardSessionSidebar />                        {/* → AppSidebar: fixed inset-y-0; owns its safe areas */}
+    </SidebarSessionBoundary>
+  )}
   <SidebarInset className="h-full min-w-0 overflow-hidden">
     <div className="flex-1 min-h-0 pt-[env(safe-area-inset-top)]">
-      <Suspense>{children}</Suspense>
+      {hasSessionCookie
+        ? (
+            <Suspense fallback={<DashboardContentSkeleton />}>
+              <DashboardSessionContent>{children}</DashboardSessionContent>
+            </Suspense>
+          )
+        : <DashboardSignIn />}
     </div>
-    <DashboardMobileNav />                           {/* fixed bottom-4 */}
+    {hasSessionCookie && (
+      <Suspense><DashboardSessionMobileNav /></Suspense> {/* → DashboardMobileNav: fixed bottom-4 */}
+    )}
   </SidebarInset>
 </SidebarProvider>
 ```
