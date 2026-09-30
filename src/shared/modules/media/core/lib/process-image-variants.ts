@@ -1,6 +1,5 @@
 import type { Buffer } from 'node:buffer'
 
-import sharp from 'sharp'
 import { VARIANT_OPTIONS } from './image-variants'
 
 export interface ImageVariant {
@@ -58,6 +57,9 @@ async function resizeWithBudget(
   width: number,
   maxBytes: number,
 ): Promise<Buffer> {
+  // sharp is a native addon required from node_modules; loading it here keeps
+  // it out of the boot path of every route that imports the app router.
+  const { default: sharp } = await import('sharp')
   const first = await sharp(input)
     .rotate()
     .resize(width, undefined, RESIZE_OPTS)
@@ -91,6 +93,7 @@ export async function processImageVariants(
   originalBuffer: Buffer,
   suffixes: readonly string[] = VARIANT_OPTIONS.map(v => v.suffix),
 ): Promise<ProcessImageResult> {
+  const { default: sharp } = await import('sharp')
   const metadata = await sharp(originalBuffer).metadata()
   // For images with EXIF Orientation 5..8 the stored width/height are swapped
   // from the visual dimensions. Threshold checks must compare against the

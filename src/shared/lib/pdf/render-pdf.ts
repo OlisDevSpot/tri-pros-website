@@ -1,6 +1,7 @@
 import type { Buffer } from 'node:buffer'
 import type { TDocumentDefinitions } from 'pdfmake/interfaces'
-import pdfMake from 'pdfmake'
+
+import { lazyAsync } from '@/shared/config/lazy-async'
 
 /**
  * pdfmake requires font definitions. We use the 14 standard PDF fonts
@@ -10,11 +11,8 @@ import pdfMake from 'pdfmake'
  * (used in our styles) to Helvetica — visual result is near-identical
  * for the reference SOW doc.
  */
-let fontsConfigured = false
-function ensureFontsConfigured() {
-  if (fontsConfigured) {
-    return
-  }
+const loadPdfMake = lazyAsync(async () => {
+  const { default: pdfMake } = await import('pdfmake')
   pdfMake.setFonts({
     Roboto: {
       normal: 'Helvetica',
@@ -23,14 +21,14 @@ function ensureFontsConfigured() {
       bolditalics: 'Helvetica-BoldOblique',
     },
   })
-  fontsConfigured = true
-}
+  return pdfMake
+})
 
 /**
  * Renders a pdfmake doc definition to a Buffer.
  */
 export async function renderPdf(def: TDocumentDefinitions): Promise<Buffer> {
-  ensureFontsConfigured()
+  const pdfMake = await loadPdfMake()
   const created = pdfMake.createPdf(sanitizeValue(def) as TDocumentDefinitions)
   return created.getBuffer()
 }
