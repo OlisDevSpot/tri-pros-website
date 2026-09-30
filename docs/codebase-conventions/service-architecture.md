@@ -137,9 +137,10 @@ spawning a new import path. Pattern-matching across providers becomes trivial.
 
 **Reference impl**: `src/shared/services/providers/twilio/` (canonical post-2026-06-02), `src/shared/services/providers/zoho-sign/` (older example, same pattern but pre-dating the formal codification).
 
-**Enforced by**: convention + PR review. Not currently lint-enforced: no
-`no-restricted-imports` rule for provider SDKs (e.g. direct `import twilio from 'twilio'`
-outside the provider directory) exists in `eslint.config.js` (verified 2026-09-14).
+**Enforced by**: convention + PR review. Not lint-enforced as a boundary.
+`lazy-only/imports` in `eslint.config.js` bans *static value* imports of the
+heavy SDKs everywhere, provider directories included; it does not enforce the
+`client.ts` boundary (#255).
 
 ### provider-directory-shape
 
