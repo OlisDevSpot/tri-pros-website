@@ -358,7 +358,7 @@ Use `dispatchOrThrow` and `await` it for critical work. Use `dispatch` and `void
 
 **When NOT to enqueue a job**:
 - The user must see the outcome of the side effect in the same response — `await` the operation inline.
-- Pure realtime fan-out (e.g. `ably.channels.get(...).publish(...)`). The whole point of Ably is sub-100ms broadcast; routing through QStash adds 100-300ms of dispatch latency and defeats the use case. Use inline `await ably.publish(...)`. Same goes for any other ephemeral pub/sub.
+- Pure realtime fan-out (e.g. `realtimeClient.publish(channel, event, data)`). The whole point of Ably is sub-100ms broadcast; routing through QStash adds 100-300ms of dispatch latency and defeats the use case. Use inline `await realtimeClient.publish(...)`. Same goes for any other ephemeral pub/sub.
 - The work is so cheap it's not worth the round-trip (a synchronous `db.update` for one row, a single cache invalidation).
 
 **Anti-pattern: `after()` from `next/server`**. Do not use. It looks like background work but is best-effort with no durability. Either the work is critical (use `dispatchOrThrow`) or it's so ephemeral that inline `await` is acceptable. There is no middle ground we trust.

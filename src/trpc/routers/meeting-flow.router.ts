@@ -14,7 +14,7 @@ import { upsertCustomerProfile } from '@/shared/entities/customers/dal/server/mu
 import { getByIdWithJoins } from '@/shared/entities/meetings/dal/server/queries'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 import { constructionService } from '@/shared/modules/construction/service'
-import { ably } from '@/shared/services/providers/upstash/realtime'
+import { realtimeClient } from '@/shared/services/providers/upstash/realtime'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 
 import { agentProcedure, createTRPCRouter } from '../init'
@@ -46,9 +46,7 @@ export const meetingFlowRouter = createTRPCRouter({
       // would defeat sub-100ms broadcast). Failure is logged, not surfaced —
       // an unsubscribed channel or transient Ably 5xx shouldn't fail the
       // profile-save mutation.
-      await ably.channels
-        .get(`meeting:${meetingId}`)
-        .publish('meeting.updated', { fields: Object.keys(patch) })
+      await realtimeClient.publish(`meeting:${meetingId}`, 'meeting.updated', { fields: Object.keys(patch) })
         .catch(err => console.warn('[meeting-flow] ably publish failed:', err))
       return updated
     }),

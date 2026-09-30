@@ -61,8 +61,8 @@ export const customerCrud = createCrudDal(customerServerSpec, () => ({
       // lands, also publish a `customer:<row.id>` channel event inline (NOT
       // via QStash — ephemeral realtime fan-out is the same exception as
       // meeting.updated in meetings/dal/server/crud.ts):
-      //   await ably.channels.get(`customer:${row.id}`).publish(
-      //     'customer.updated', { fields: Object.keys(meta.input) })
+      //   await realtimeClient.publish(`customer:${row.id}`, 'customer.updated',
+      //     { fields: Object.keys(meta.input) })
       //
       async after(row: Customer, _ctx, _meta) {
         await propagateCustomerChangeJob.dispatchOrThrow({ customerId: row.id })
