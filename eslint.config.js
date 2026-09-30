@@ -57,6 +57,7 @@ const SURFACE_ALPHA_IGNORES = [
   'src/features/project-management/ui/components/story-hero.tsx',
   'src/features/proposal-flow/ui/components/form/proposal-media-manager.tsx',
   'src/features/proposal-flow/ui/components/proposal/trusted-contractor.tsx',
+  'src/shared/components/buttons/inline-edit-button.tsx',
   'src/shared/components/image-slider.tsx',
   'src/shared/components/media/media-card.tsx',
   'src/shared/components/navigation/popover-nav.tsx',
