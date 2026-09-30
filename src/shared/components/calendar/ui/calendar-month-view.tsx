@@ -7,6 +7,7 @@ import { useMemo } from 'react'
 
 import { getCalendarCells, getEventsForDay, localDateToCalendarDay, seededIntInRange } from '@/shared/components/calendar/lib/calendar-helpers'
 import { Skeleton } from '@/shared/components/ui/skeleton'
+import { SKELETON_TONE_CLASS } from '@/shared/constants/skeleton-tone'
 import { cn } from '@/shared/lib/utils'
 
 const WEEK_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
@@ -80,11 +81,11 @@ export function CalendarMonthView<T extends CalendarEvent>({
               >
                 {isPending
                   ? Array.from({ length: skeletonCount }).map((_, i) => (
-                      <Skeleton
-                        // eslint-disable-next-line react/no-array-index-key
-                        key={i}
-                        className="h-4 w-full"
-                      />
+                      // A compact event row is 20px of 12px text: a slab the row's full height reads as a block, not a line.
+                      // eslint-disable-next-line react/no-array-index-key
+                      <div key={i} className="flex h-5 items-center px-1">
+                        <Skeleton className={cn(SKELETON_TONE_CLASS, 'h-2.5 w-full')} />
+                      </div>
                     ))
                   : (
                       <>

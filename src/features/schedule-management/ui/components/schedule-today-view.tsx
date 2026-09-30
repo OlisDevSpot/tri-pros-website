@@ -13,6 +13,7 @@ import { getEventsForBucket, getUniqueCombos, groupEventsByParticipantCombo } fr
 import { localDateToCalendarDay, seededIntInRange } from '@/shared/components/calendar/lib/calendar-helpers'
 import { ScrollBar } from '@/shared/components/ui/scroll-area'
 import { Skeleton } from '@/shared/components/ui/skeleton'
+import { SKELETON_BLOCK_TONE_CLASS, SKELETON_TONE_CLASS } from '@/shared/constants/skeleton-tone'
 import { TODAY_VIEW_BUCKETS } from '@/shared/constants/today-view-buckets'
 import { UserOverviewCard } from '@/shared/entities/users/components/overview-card'
 import { cn } from '@/shared/lib/utils'
@@ -145,8 +146,8 @@ export function ScheduleTodayView({
                   transition={TRANSITION}
                 >
                   <div className="sticky left-0 z-10 flex items-center gap-2 overflow-hidden border-r bg-background px-3 py-3">
-                    <Skeleton className="size-6 shrink-0 rounded-full" />
-                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className={cn(SKELETON_BLOCK_TONE_CLASS, 'size-6 shrink-0 rounded-full')} />
+                    <Skeleton className={cn(SKELETON_TONE_CLASS, 'h-2.5 w-20')} />
                   </div>
                   {TODAY_VIEW_BUCKETS.map((bucket, index) => (
                     <div

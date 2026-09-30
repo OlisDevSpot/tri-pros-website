@@ -6,7 +6,9 @@ import { calendarDayToLocalDate, localDateToCalendarDay } from '@/shared/compone
 import { Button } from '@/shared/components/ui/button'
 import { Calendar } from '@/shared/components/ui/calendar'
 import { Skeleton } from '@/shared/components/ui/skeleton'
+import { SKELETON_BLOCK_TONE_CLASS, SKELETON_FRAME_TONE_CLASS, SKELETON_TONE_CLASS } from '@/shared/constants/skeleton-tone'
 import { businessDayKey } from '@/shared/lib/business-time'
+import { cn } from '@/shared/lib/utils'
 
 import { CalendarMeetingDayButton } from './calendar-meeting-day-button'
 import { DashboardDayAgenda } from './dashboard-day-agenda'
@@ -55,7 +57,7 @@ export function DashboardMeetingsCalendar({ rows, isPending, isError, onRetry, m
           ? (
               <div role="alert" className="flex flex-col items-start gap-2 py-2">
                 <p className="text-sm text-muted-foreground">Could not load meetings.</p>
-                <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+                <Button type="button" variant="outline" size="sm" className="pointer-coarse:h-11" onClick={onRetry}>
                   Try again
                 </Button>
               </div>
@@ -68,12 +70,31 @@ export function DashboardMeetingsCalendar({ rows, isPending, isError, onRetry, m
   )
 }
 
-/** Dense card-shaped rows matching the agenda's resting row height while the month's rows load. */
+/** Two of the agenda's rail rows (time badge, hairline, card) at their real 92px, so the swap to the agenda neither jumps nor reflows sideways. */
 function DashboardMeetingsCalendarSkeleton() {
   return (
-    <div className="flex flex-col gap-2 py-2">
-      <Skeleton className="h-16 w-full rounded-lg" />
-      <Skeleton className="h-16 w-full rounded-lg" />
+    <div className="flex flex-col">
+      {[0, 1].map(i => (
+        <div key={i} className="flex items-stretch gap-3">
+          <div className="flex w-18 shrink-0 items-center justify-end">
+            <Skeleton className={cn(SKELETON_BLOCK_TONE_CLASS, 'h-7 w-17')} />
+          </div>
+          <div className="w-px shrink-0 bg-border dark:bg-border/40" />
+          <div className="min-w-0 flex-1 py-2">
+            <div className={cn('rounded-lg border bg-card p-2.5', SKELETON_FRAME_TONE_CLASS)}>
+              <div className="flex h-6 items-center gap-1.5">
+                <Skeleton className={cn(SKELETON_TONE_CLASS, 'size-2 shrink-0 rounded-full')} />
+                <Skeleton className={cn(SKELETON_TONE_CLASS, 'h-3 w-28 max-w-full')} />
+              </div>
+              <div className="mt-1.5 flex h-6 items-center gap-2">
+                <Skeleton className={cn(SKELETON_BLOCK_TONE_CLASS, 'h-5.5 w-12 shrink-0')} />
+                <Skeleton className={cn(SKELETON_BLOCK_TONE_CLASS, 'ml-auto size-5 shrink-0 rounded-full')} />
+                <Skeleton className={cn(SKELETON_TONE_CLASS, 'h-2.5 w-8')} />
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

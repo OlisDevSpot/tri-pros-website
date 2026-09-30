@@ -141,7 +141,7 @@ export function ScheduleWeekView({
                 ))}
                 {!isPending && sorted.length === 0 && (
                   <div className="flex flex-1 items-center justify-center min-h-48">
-                    <span className="text-[10px] text-muted-foreground/50">No events</span>
+                    <span className="text-xs text-muted-foreground">No events</span>
                   </div>
                 )}
                 {!isPending && sorted.map(event => (
