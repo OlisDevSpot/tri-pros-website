@@ -160,7 +160,7 @@ export function CreateProjectForm({
       {/* ── Scrollable body: keeps the footer reachable no matter how tall ── */}
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto">
         {/* ── Context: Customer + Proposal (scope/meeting collapsed) ── */}
-        <div className="space-y-3 rounded-lg border bg-muted p-3">
+        <div className="space-y-3 rounded-lg border bg-band p-3">
           {/* Customer */}
           <div className="space-y-1.5">
             <span className="text-xs font-medium text-muted-foreground">Customer</span>
