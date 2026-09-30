@@ -72,7 +72,7 @@ export function AllCustomersSection() {
 
       <div className="flex shrink-0 flex-col gap-2">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
-          <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             All customers
           </h3>
           <span className="text-xs text-muted-foreground tabular-nums">

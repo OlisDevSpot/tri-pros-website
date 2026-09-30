@@ -117,7 +117,7 @@ export function SourceDetail({ leadSourceId, activeChip, range, onAddCustomer, o
             <SourceTabTrigger value="customers">
               Customers
               {customerCountLabel != null && (
-                <span className="ml-2 rounded-full bg-muted px-1.5 py-0.5 text-[10px] tabular-nums text-muted-foreground">
+                <span className="ml-2 rounded-full bg-muted px-1.5 py-0.5 text-xs tabular-nums text-muted-foreground">
                   {customerCountLabel}
                 </span>
               )}

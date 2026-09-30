@@ -89,7 +89,7 @@ export function AllDetail({ sourceCount, activeChip, range, sources, onAddCustom
         <div className="flex min-w-0 flex-col gap-1">
           <motion.p
             {...entrance(0, 6)}
-            className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground"
+            className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground"
           >
             Lead sources
             <span aria-hidden="true" className="mx-2 opacity-40">·</span>
@@ -157,7 +157,7 @@ export function AllDetail({ sourceCount, activeChip, range, sources, onAddCustom
             <SourceTabTrigger value="customers">
               Customers
               {customerCountLabel != null && (
-                <span className="ml-2 rounded-full bg-muted px-1.5 py-0.5 text-[10px] tabular-nums text-muted-foreground">
+                <span className="ml-2 rounded-full bg-muted px-1.5 py-0.5 text-xs tabular-nums text-muted-foreground">
                   {customerCountLabel}
                 </span>
               )}

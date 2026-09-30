@@ -29,7 +29,7 @@ export function DashboardSnapshotChips({ counts }: DashboardSnapshotChipsProps) 
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
           "
         >
-          <span className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-muted-foreground">
+          <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
             {chip.label}
           </span>
           <span
