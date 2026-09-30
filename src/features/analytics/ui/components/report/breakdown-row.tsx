@@ -30,7 +30,7 @@ export function BreakdownRow({ label, row, reasons, columns, focus, total = fals
     <TableRow
       data-state={filter?.active ? 'selected' : undefined}
       onClick={apply}
-      className={cn('group/row', odd && !total && 'bg-band', total && 'bg-muted font-semibold hover:bg-muted', apply && 'cursor-pointer')}
+      className={cn('group/row border-b-0', odd && !total && 'bg-band', total && 'bg-muted font-semibold hover:bg-muted', apply && 'cursor-pointer')}
     >
       <TableCell className={cn('sticky left-0 z-10 max-w-36 md:max-w-56', total ? 'bg-muted' : cn(odd ? 'bg-band' : 'bg-card', 'group-hover/row:bg-row-hover group-data-[state=selected]/row:bg-row-selected'))}>
         {apply

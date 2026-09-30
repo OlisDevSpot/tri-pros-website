@@ -100,7 +100,7 @@ export function BreakdownTable({ config, report, focus, groupBy, onGroupBy }: Pr
               />
             ))}
             {rows.length === 0 && (
-              <TableRow>
+              <TableRow className="border-b-0">
                 <TableCell colSpan={columns.length + 1} className="text-center text-sm text-muted-foreground">No activity in this period.</TableCell>
               </TableRow>
             )}
