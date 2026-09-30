@@ -12,7 +12,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 
 import { KanbanColumn } from '@/shared/components/kanban/ui/kanban-column'
 import { KanbanDragOverlay } from '@/shared/components/kanban/ui/kanban-drag-overlay'
@@ -58,6 +58,9 @@ export function KanbanBoard<T extends KanbanItem>({
   renderCard,
   className,
 }: Props<T>) {
+  // dnd-kit's default described-by id comes from a module counter that differs between the server and the client,
+  // so a server-rendered board would hydrate with a mismatched aria-describedby.
+  const dndId = useId()
   const [activeItem, setActiveItem] = useState<T | null>(null)
 
   const pointerSensor = useSensor(PointerSensor, POINTER_SENSOR_OPTIONS)
@@ -108,6 +111,7 @@ export function KanbanBoard<T extends KanbanItem>({
 
   return (
     <DndContext
+      id={dndId}
       sensors={sensors}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
