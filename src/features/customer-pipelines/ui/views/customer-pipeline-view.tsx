@@ -151,8 +151,15 @@ export function CustomerPipelineView() {
         <QueryToolbar.Standard searchPlaceholder="Search by name or email…" sort />
       </QueryToolbar>
 
-      <div className={cn('flex-1 min-h-0 transition-opacity duration-200', isSwitching && 'opacity-50 pointer-events-none')}>
-        {items.length === 0 && !query.isPending
+      {/* A filter change dims only after a short delay (quick loads never flash); a background refetch after a drag dims at once. */}
+      <div
+        data-stale={query.isStale || undefined}
+        className={cn(
+          'flex-1 min-h-0 transition-opacity duration-200 data-[stale=true]:pointer-events-none data-[stale=true]:opacity-50 data-[stale=true]:delay-200',
+          query.isFetching && !query.isStale && 'opacity-50 pointer-events-none',
+        )}
+      >
+        {items.length === 0 && !query.isPending && !query.isStale
           ? (
               <div className="w-full h-full flex items-center justify-center">
                 <EmptyState

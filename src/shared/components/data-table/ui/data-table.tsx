@@ -382,7 +382,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
           <Table
             className="table-fixed border-separate border-spacing-0 transition-opacity duration-200 data-[stale=true]:opacity-60 data-[stale=true]:delay-200"
             style={{ width: totalDeclaredWidth, minWidth: '100%' }}
-            aria-busy={!!serverPagination?.isFetching}
+            aria-busy={!!(serverPagination?.isFetching || serverPagination?.isStale)}
             data-stale={serverPagination?.isStale || undefined}
           >
             <TableHeader className="sticky top-0 z-10 bg-background">
