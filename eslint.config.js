@@ -210,4 +210,24 @@ export default antfu({
       { selector: `TemplateElement[value.raw=${TYPE_RAMP_RE}]`, message: TYPE_RAMP_MSG },
     ],
   },
+}).append({
+  // Syne tops out at 800 and turns wide and heavy there; Nunito past 700 reads as a different face beside the rest of the app.
+  // Aliased under its own plugin namespace (not `project`, which project/no-inline-table-config already
+  // owns): two config entries can't redefine the same plugin key with different rule objects — ESLint
+  // throws "Cannot redefine plugin" at load time, it doesn't silently merge them.
+  name: 'project/no-heavy-font-weight',
+  plugins: {
+    'heavy-font-weight': {
+      rules: {
+        'no-heavy-font-weight': builtinRules.get('no-restricted-syntax'),
+      },
+    },
+  },
+  rules: {
+    'heavy-font-weight/no-heavy-font-weight': [
+      'error',
+      { selector: 'Literal[value=/\\bfont-(extrabold|black)\\b/]', message: 'Weights stop at font-bold (700); Syne stops at font-semibold (600).' },
+      { selector: 'TemplateElement[value.raw=/\\bfont-(extrabold|black)\\b/]', message: 'Weights stop at font-bold (700); Syne stops at font-semibold (600).' },
+    ],
+  },
 })

@@ -21,7 +21,7 @@ export function CostOfWaitingChart({ projection }: Props) {
       <div className="grid gap-4.5">
         {trades.map(trade => (
           <div className="grid gap-1.5" key={trade.trade}>
-            <p className="text-sm font-extrabold">
+            <p className="text-sm font-bold">
               {trade.label}
               <span className="ml-1.5 text-xs font-semibold text-muted-foreground">
                 gives out in about

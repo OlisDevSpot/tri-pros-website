@@ -862,6 +862,17 @@
     font-weight: 500;
   }
 
+  /* The UA's `bolder` turns emphasis inside semibold text into 900, past both faces' comfortable range. */
+  b,
+  strong {
+    font-weight: var(--font-weight-bold);
+  }
+
+  /* Emphasis inside Syne stays at the surrounding weight; colour carries it. */
+  :is(h1, h2, h3, h4, h5, h6, .font-sans) :is(b, strong) {
+    font-weight: inherit;
+  }
+
   button:not(:disabled),
   [role='button']:not(:disabled) {
     cursor: pointer;

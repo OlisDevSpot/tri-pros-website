@@ -34,7 +34,7 @@ export function ReturnBreakdown({ projection, lookAhead }: Props) {
   }
   return (
     <div className="grid gap-1">
-      <p className="text-sm font-extrabold">
+      <p className="text-sm font-bold">
         Where the return comes from, by year
         {' '}
         {lookAhead}

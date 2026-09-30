@@ -69,6 +69,7 @@ export function HomeHero() {
                   variants={highlightVariants}
                   initial="initial"
                   animate="highlight"
+                  // eslint-disable-next-line heavy-font-weight/no-heavy-font-weight -- public hero, weight reviewed separately
                   className="bg-linear-to-r from-primary to-[color-mix(in_oklch,var(--primary)_70%,var(--foreground))] bg-clip-text text-transparent font-extrabold"
                 >
                   Masterpieces

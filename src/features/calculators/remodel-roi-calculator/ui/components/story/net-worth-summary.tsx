@@ -18,7 +18,7 @@ export function NetWorthSummary({ projection, lookAhead }: Props) {
   }
   return (
     <div className="grid gap-2.5 rounded-xl border bg-card p-5">
-      <p className="text-sm font-extrabold">
+      <p className="text-sm font-bold">
         Your net worth in year
         {' '}
         {lookAhead}
@@ -28,7 +28,7 @@ export function NetWorthSummary({ projection, lookAhead }: Props) {
           <div className="flex items-center gap-2.5" key={path}>
             <span aria-hidden className={cn('h-9 w-1 rounded-full', PATH_BAR_CLASSES[path])} />
             <div className="grid">
-              <span className="text-xs font-extrabold text-muted-foreground">{STORY_COPY.paths[path]}</span>
+              <span className="text-xs font-bold text-muted-foreground">{STORY_COPY.paths[path]}</span>
               <b className="font-sans text-2xl font-semibold tabular-nums">{roundMoney(path === 'now' ? net.now : net.wait)}</b>
             </div>
           </div>

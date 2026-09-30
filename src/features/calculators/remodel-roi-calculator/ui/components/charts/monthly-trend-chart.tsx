@@ -60,9 +60,9 @@ export function MonthlyTrendChart({ projection, lookAhead }: Props) {
         <PinnedChartTooltip content={content} pin={tooltip.pin} />
         <Line activeDot={{ r: 4 }} dataKey="monthlyWait" dot={false} isAnimationActive={!reduceMotion} name={STORY_COPY.paths.wait} stroke="var(--color-monthlyWait)" strokeWidth={2.5} type="monotone" />
         <Line activeDot={{ r: 4 }} dataKey="monthlyNow" dot={false} isAnimationActive={!reduceMotion} name={STORY_COPY.paths.now} stroke="var(--color-monthlyNow)" strokeWidth={2.5} type="monotone" />
-        {from != null && <ReferenceDot fill="var(--card)" ifOverflow="extendDomain" label={{ value: `Year ${from}: costs less from here`, ...fromLabel, className: 'fill-foreground stroke-card stroke-3 text-xs font-extrabold [paint-order:stroke] [stroke-linejoin:round]' }} r={5} stroke="var(--primary)" strokeWidth={2.5} x={from} y={years[from].monthlyNow} />}
-        {marks.map(mark => <ReferenceDot fill="var(--card)" ifOverflow="extendDomain" key={mark.key} label={{ value: mark.label, position: 'top', className: 'fill-foreground stroke-card stroke-3 text-xs font-extrabold [paint-order:stroke] [stroke-linejoin:round]' }} r={5} stroke="var(--warning)" strokeWidth={2.5} x={mark.t} y={years[mark.t].monthlyWait} />)}
-        {payoff != null && <ReferenceLine label={{ value: 'Loan paid off', position: 'insideTop', className: 'fill-foreground stroke-card stroke-3 text-xs font-extrabold [paint-order:stroke] [stroke-linejoin:round]' }} stroke="var(--border)" strokeDasharray="3 3" x={payoff} />}
+        {from != null && <ReferenceDot fill="var(--card)" ifOverflow="extendDomain" label={{ value: `Year ${from}: costs less from here`, ...fromLabel, className: 'fill-foreground text-xs font-semibold' }} r={5} stroke="var(--primary)" strokeWidth={2.5} x={from} y={years[from].monthlyNow} />}
+        {marks.map(mark => <ReferenceDot fill="var(--card)" ifOverflow="extendDomain" key={mark.key} label={{ value: mark.label, position: 'top', className: 'fill-foreground text-xs font-semibold' }} r={5} stroke="var(--warning)" strokeWidth={2.5} x={mark.t} y={years[mark.t].monthlyWait} />)}
+        {payoff != null && <ReferenceLine label={{ value: 'Loan paid off', position: 'insideTop', className: 'fill-foreground text-xs font-semibold' }} stroke="var(--border)" strokeDasharray="3 3" x={payoff} />}
       </LineChart>
     </ChartContainer>
   )

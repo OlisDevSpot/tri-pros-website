@@ -25,6 +25,7 @@ export function ReputationMark({ mark }: ReputationMarkProps) {
         <span aria-hidden className="grid size-[2.2em] place-items-center rounded-md bg-white">
           {mark.platform === 'Google' && <FcGoogle className="size-[1.25em]" />}
           {mark.platform === 'Yelp' && <FaYelp className="size-[1.2em] text-[#d32323]" />}
+          {/* eslint-disable-next-line heavy-font-weight/no-heavy-font-weight -- copies the BBB logotype */}
           {mark.platform === 'BBB' && <span className="text-[0.72em] font-black text-[#00567a]">BBB</span>}
         </span>
         <span className="grid min-w-0 leading-tight">

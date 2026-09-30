@@ -59,7 +59,7 @@ export function TopBar({ projection, lookAhead, onLookAheadChange, showInputsBut
         <span className="@max-[58rem]/story:hidden">{STORY_COPY.assumptions}</span>
       </Button>
       <div className="flex items-center gap-2">
-        <span className="whitespace-nowrap text-xs font-extrabold text-muted-foreground @max-[58rem]/story:hidden">{STORY_COPY.lookAhead}</span>
+        <span className="whitespace-nowrap text-xs font-bold text-muted-foreground @max-[58rem]/story:hidden">{STORY_COPY.lookAhead}</span>
         <ToggleGroup
           aria-label={STORY_COPY.lookAhead}
           onValueChange={(value) => {
