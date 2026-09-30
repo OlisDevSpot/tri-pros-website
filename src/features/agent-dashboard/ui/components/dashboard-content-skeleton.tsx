@@ -2,7 +2,9 @@ import { Skeleton } from '@/shared/components/ui/skeleton'
 
 // Generic on purpose (every dashboard page shares the layout) and padded like
 // the dashboard template, so the swap to the real page does not jump. Shows
-// only on a document load: the layout persists across in-app navigation.
+// when the dashboard layout mounts — a document load, or a navigation in from
+// outside the dashboard; navigation within the dashboard keeps the layout, so
+// it does not show there.
 export function DashboardContentSkeleton() {
   return (
     <div
