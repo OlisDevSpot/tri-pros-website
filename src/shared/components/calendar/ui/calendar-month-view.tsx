@@ -6,6 +6,7 @@ import { isToday } from 'date-fns'
 import { useMemo } from 'react'
 
 import { getCalendarCells, getEventsForDay } from '@/shared/components/calendar/lib/calendar-helpers'
+import { Skeleton } from '@/shared/components/ui/skeleton'
 import { cn } from '@/shared/lib/utils'
 
 const WEEK_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
@@ -14,6 +15,8 @@ const MAX_VISIBLE_EVENTS = 3
 interface Props<T extends CalendarEvent> {
   events: T[]
   currentDate: Date
+  /** While a window loads, each cell shows one skeleton line in place of its events. */
+  isPending?: boolean
   renderCompact: (event: T) => React.ReactNode
   onEventClick?: (event: T) => void
 }
@@ -21,13 +24,14 @@ interface Props<T extends CalendarEvent> {
 export function CalendarMonthView<T extends CalendarEvent>({
   events,
   currentDate,
+  isPending = false,
   renderCompact,
   onEventClick: _onEventClick,
 }: Props<T>) {
   const cells = useMemo(() => getCalendarCells(currentDate), [currentDate])
 
   return (
-    <div>
+    <div aria-busy={isPending || undefined}>
       {/* Day-of-week header */}
       <div className="grid grid-cols-7">
         {WEEK_DAYS.map(day => (
@@ -73,20 +77,26 @@ export function CalendarMonthView<T extends CalendarEvent>({
                   !cell.currentMonth && 'opacity-50',
                 )}
               >
-                {dayEvents.slice(0, MAX_VISIBLE_EVENTS).map(event => (
-                  <div key={event.id} className="w-full text-left">
-                    {renderCompact(event)}
-                  </div>
-                ))}
+                {isPending
+                  ? <Skeleton className="h-4 w-full" />
+                  : (
+                      <>
+                        {dayEvents.slice(0, MAX_VISIBLE_EVENTS).map(event => (
+                          <div key={event.id} className="w-full text-left">
+                            {renderCompact(event)}
+                          </div>
+                        ))}
 
-                {overflowCount > 0 && cell.currentMonth && (
-                  <span className="px-1 text-xs font-semibold text-muted-foreground">
-                    +
-                    {overflowCount}
-                    {' '}
-                    more
-                  </span>
-                )}
+                        {overflowCount > 0 && cell.currentMonth && (
+                          <span className="px-1 text-xs font-semibold text-muted-foreground">
+                            +
+                            {overflowCount}
+                            {' '}
+                            more
+                          </span>
+                        )}
+                      </>
+                    )}
               </div>
             </div>
           )

@@ -44,7 +44,8 @@ function runtimeOptionFields(fields: FieldList, toolbar: readonly string[]): { i
 
 /**
  * One hook per data view: URL state → the same input the page prefetched → rows, plain setters and
- * the toolbar's runtime options. Call it once in the view (or entity-table hook) and pass the result down.
+ * the toolbar's runtime options. Call it once per data view, in the component or entity-table hook that owns it,
+ * and pass the result down.
  */
 export function useDataViewQuery<
   TProcedure extends AnyQueryProcedure,
@@ -186,16 +187,19 @@ export function useDataViewQuery<
     .map(adjacent => anyProcedure.queryOptions({ ...toDataViewInput(filterSort, adjacent, config), ...extra }))
   usePrefetchQueries(adjacentQueries, result.isSuccess && !result.isPlaceholderData && !result.isFetching)
 
+  // Another key's rows would land on the wrong days, so date views draw skeletons until this key's rows arrive.
+  const isWindowPending = result.isLoading || result.isPlaceholderData
+
   const windowControls = useMemo((): DataViewWindowControls => {
     switch (windowState.kind) {
       case 'page':
         return { kind: 'page', page: windowState.page, pageSize: windowState.pageSize, pageSizeOptions: windowState.pageSizeOptions, pageCount, setPage, setPageSize }
       case 'date':
-        return { kind: 'date', anchor: windowState.anchor, view: windowState.view, range: windowState.range, cap: windowState.cap, setAnchor, setView }
+        return { kind: 'date', anchor: windowState.anchor, view: windowState.view, range: windowState.range, cap: windowState.cap, isPending: isWindowPending, setAnchor, setView }
       case 'whole-list':
         return { kind: 'whole-list' }
     }
-  }, [windowState, pageCount, setPage, setPageSize, setAnchor, setView])
+  }, [windowState, pageCount, setPage, setPageSize, setAnchor, setView, isWindowPending])
 
   const filterSortControls = useMemo((): DataViewFilterSort<F, T> => ({
     fields: config.fields,

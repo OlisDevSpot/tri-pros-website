@@ -28,8 +28,10 @@ interface ScheduleCalendarProps {
 }
 
 export function ScheduleCalendar({ events, dateWindow, showSaturday = false, renderCard, renderCompact, controlsRight }: ScheduleCalendarProps) {
-  const { anchor, view, setAnchor } = dateWindow
+  const { anchor, view, isPending, setAnchor } = dateWindow
   const currentDate = useMemo(() => calendarDayToLocalDate(anchor), [anchor])
+  // Rows from another key would land on the wrong days; the views draw skeletons instead.
+  const visibleEvents = useMemo(() => (isPending ? [] : events), [isPending, events])
   const handleDateChange = useCallback((date: Date) => {
     const calendarDay = localDateToCalendarDay(date)
     // Today is the default window, so it clears `s_d` rather than pinning a date in the URL.
@@ -51,13 +53,13 @@ export function ScheduleCalendar({ events, dateWindow, showSaturday = false, ren
 
       <div className="w-full flex-1 min-h-0 overflow-hidden">
         {view === 'today' && (
-          <ScheduleTodayView events={events} currentDate={currentDate} renderCard={renderCard} />
+          <ScheduleTodayView events={visibleEvents} currentDate={currentDate} isPending={isPending} renderCard={renderCard} />
         )}
         {view === 'week' && (
-          <ScheduleWeekView events={events} currentDate={currentDate} hiddenDays={hiddenDays} renderCard={renderCard} />
+          <ScheduleWeekView events={visibleEvents} currentDate={currentDate} hiddenDays={hiddenDays} isPending={isPending} renderCard={renderCard} />
         )}
         {view === 'month' && (
-          <CalendarMonthView events={events} currentDate={currentDate} renderCompact={renderCompact} />
+          <CalendarMonthView events={visibleEvents} currentDate={currentDate} isPending={isPending} renderCompact={renderCompact} />
         )}
       </div>
     </div>

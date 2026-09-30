@@ -8,12 +8,15 @@ import { useEffect, useMemo, useRef } from 'react'
 import { getEventsForDay, getWeekDays } from '@/shared/components/calendar/lib/calendar-helpers'
 import { cn } from '@/shared/lib/utils'
 
+import { ScheduleCardSkeleton } from './schedule-card-skeleton'
+
 const DAY_MIN_WIDTH_PX = 210
 
 interface ScheduleWeekViewProps {
   events: ScheduleCalendarEvent[]
   currentDate: Date
   hiddenDays: number[]
+  isPending: boolean
   renderCard: (event: ScheduleCalendarEvent) => React.ReactNode
 }
 
@@ -21,6 +24,7 @@ export function ScheduleWeekView({
   events,
   currentDate,
   hiddenDays,
+  isPending,
   renderCard,
 }: ScheduleWeekViewProps) {
   const weekDays = useMemo(
@@ -66,7 +70,7 @@ export function ScheduleWeekView({
   }, [currentDate])
 
   return (
-    <div ref={scrollRef} className="h-full overflow-x-auto">
+    <div ref={scrollRef} className="h-full overflow-x-auto" aria-busy={isPending || undefined}>
       <div className="flex h-full flex-col" style={{ minWidth: `${gridMinWidth}px` }}>
         {/* Day headers */}
         <div
@@ -127,7 +131,13 @@ export function ScheduleWeekView({
                   isToday(day) && 'bg-primary/5',
                 )}
               >
-                {sorted.length === 0 && (
+                {isPending && Array.from({ length: 2 }).map((_, i) => (
+                  <ScheduleCardSkeleton
+                    // eslint-disable-next-line react/no-array-index-key
+                    key={i}
+                  />
+                ))}
+                {!isPending && sorted.length === 0 && (
                   <div className="flex flex-1 items-center justify-center min-h-48">
                     <span className="text-[10px] text-muted-foreground/50">No events</span>
                   </div>

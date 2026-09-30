@@ -11,7 +11,8 @@ interface RowCapNoticeProps {
 /** A date window returns at most `cap` rows; say so instead of dropping the rest silently. */
 export function QueryToolbarRowCapNotice({ className }: RowCapNoticeProps) {
   const { query } = useQueryToolbarContext()
-  if (query.window.kind !== 'date' || query.total <= query.window.cap) {
+  // While pending, `total` still counts the previous key's rows.
+  if (query.window.kind !== 'date' || query.window.isPending || query.total <= query.window.cap) {
     return null
   }
   return (

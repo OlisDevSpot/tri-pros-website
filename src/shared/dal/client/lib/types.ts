@@ -185,6 +185,12 @@ export interface DateWindowControls {
   view: CalendarViewType
   range: { from: string, to: string }
   cap: number
+  /**
+   * True while this window's own rows haven't arrived: the first load, or `keepPreviousData` holding another key's
+   * rows after a window step, a filter or a search. False after an error, so the error state shows. Not TanStack's
+   * query-level `isPending`.
+   */
+  isPending: boolean
   /** `undefined` returns to today. */
   setAnchor: (calendarDay: string | undefined) => void
   setView: (view: CalendarViewType) => void
