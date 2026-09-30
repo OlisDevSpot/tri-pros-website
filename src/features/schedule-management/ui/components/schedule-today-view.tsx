@@ -20,7 +20,6 @@ import { cn } from '@/shared/lib/utils'
 import { ScheduleCardSkeleton } from './schedule-card-skeleton'
 
 const BUCKET_COUNT = TODAY_VIEW_BUCKETS.length
-const SKELETON_CARD_BUCKET_INDEXES = TODAY_VIEW_BUCKETS.flatMap((bucket, index) => bucket.endHour <= SKELETON_BUSINESS_HOURS_END_HOUR ? [index] : [])
 const LABEL_COL_EXPANDED = 140
 const LABEL_COL_COLLAPSED = 48
 const SCROLL_COLLAPSE_THRESHOLD = 40
@@ -81,10 +80,11 @@ export function ScheduleTodayView({
   const gridMinWidth = (collapsed ? LABEL_COL_COLLAPSED : LABEL_COL_EXPANDED) + BUCKET_COUNT * BUCKET_COL_MIN_WIDTH
 
   const dayKey = localDateToCalendarDay(currentDate)
+  const skeletonCardBucketIndexes = TODAY_VIEW_BUCKETS.flatMap((bucket, index) => bucket.endHour <= SKELETON_BUSINESS_HOURS_END_HOUR ? [index] : [])
   const skeletonCardBuckets = isPending
     ? Array.from(
         { length: seededIntInRange(dayKey, SKELETON_EVENTS_PER_DAY) },
-        (_, lane) => SKELETON_CARD_BUCKET_INDEXES[seededIntInRange(`${dayKey}:${lane}`, { min: 0, max: SKELETON_CARD_BUCKET_INDEXES.length - 1 })],
+        (_, lane) => skeletonCardBucketIndexes[seededIntInRange(`${dayKey}:${lane}`, { min: 0, max: skeletonCardBucketIndexes.length - 1 })],
       )
     : []
 

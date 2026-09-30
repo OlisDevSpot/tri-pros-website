@@ -119,6 +119,8 @@ export function getEventsForDay<T extends CalendarEvent>(
  * The same seed always gives the same integer in `[min, max]`, so a placeholder drawn from a
  * `YYYY-MM-DD` key stays put across re-renders and matches between server and client, where
  * `Math.random` would flicker and break hydration.
+ *
+ * Precondition: `range.min <= range.max`. Violating it returns NaN or a value outside `[min, max]`.
  */
 export function seededIntInRange(seed: string, range: { min: number, max: number }): number {
   // FNV-1a, then murmur3's finalizer: consecutive dates usually differ in their last character

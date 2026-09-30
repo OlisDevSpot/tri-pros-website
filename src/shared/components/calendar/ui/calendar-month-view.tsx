@@ -50,6 +50,7 @@ export function CalendarMonthView<T extends CalendarEvent>({
           const dayEvents = getEventsForDay(events, cell.date)
           const overflowCount = dayEvents.length - MAX_VISIBLE_EVENTS
           const isSunday = cell.date.getDay() === 0
+          const skeletonCount = seededIntInRange(localDateToCalendarDay(cell.date), { min: 1, max: MAX_VISIBLE_EVENTS })
 
           return (
             <div
@@ -78,7 +79,7 @@ export function CalendarMonthView<T extends CalendarEvent>({
                 )}
               >
                 {isPending
-                  ? Array.from({ length: seededIntInRange(localDateToCalendarDay(cell.date), { min: 1, max: MAX_VISIBLE_EVENTS }) }).map((_, i) => (
+                  ? Array.from({ length: skeletonCount }).map((_, i) => (
                       <Skeleton
                         // eslint-disable-next-line react/no-array-index-key
                         key={i}

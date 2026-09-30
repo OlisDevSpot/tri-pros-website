@@ -3,9 +3,11 @@
 // through these so they share one query key per concern instead of each
 // module inlining its own pagination/sort/filter shape.
 //
-// Each builder's return type is checked with `satisfies` against the real
-// procedure input type (imported, not hand-mirrored): a wrong filter/sort
-// key here fails `pnpm tsc`, not a runtime 500.
+// Each list-input builder's return type is checked with `satisfies` against
+// the real procedure input type (imported, not hand-mirrored): a wrong
+// filter/sort key here fails `pnpm tsc`, not a runtime 500.
+// `DASHBOARD_MEETINGS_QUERY` is checked instead against `DataViewQueryConfig`;
+// its procedure compatibility is checked where `useDataViewQuery` is called.
 
 import type { inferRouterInputs } from '@trpc/server'
 import type { MeetingWindowKind } from '../lib/meeting-windows'

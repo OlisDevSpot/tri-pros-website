@@ -47,7 +47,9 @@ export function DashboardMeetingsHub() {
             disabled={isViewingToday}
             onClick={() => {
               setPickedDay(todayKey)
-              setAnchor(undefined)
+              if (anchor !== todayKey) {
+                setAnchor(undefined)
+              }
             }}
             className="-my-1 size-8 text-muted-foreground hover:text-primary"
           >

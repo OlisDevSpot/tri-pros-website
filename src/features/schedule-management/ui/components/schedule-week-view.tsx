@@ -113,6 +113,7 @@ export function ScheduleWeekView({
             const sorted = [...dayEvents].sort(
               (a, b) => parseISO(a.startAt).getTime() - parseISO(b.startAt).getTime(),
             )
+            const skeletonCount = seededIntInRange(localDateToCalendarDay(day), SKELETON_EVENTS_PER_DAY)
 
             const dow = day.getDay()
             const colRef = isToday(day)
@@ -132,7 +133,7 @@ export function ScheduleWeekView({
                   isToday(day) && 'bg-primary/5',
                 )}
               >
-                {isPending && Array.from({ length: seededIntInRange(localDateToCalendarDay(day), SKELETON_EVENTS_PER_DAY) }).map((_, i) => (
+                {isPending && Array.from({ length: skeletonCount }).map((_, i) => (
                   <ScheduleCardSkeleton
                     // eslint-disable-next-line react/no-array-index-key
                     key={i}
@@ -143,7 +144,7 @@ export function ScheduleWeekView({
                     <span className="text-[10px] text-muted-foreground/50">No events</span>
                   </div>
                 )}
-                {sorted.map(event => (
+                {!isPending && sorted.map(event => (
                   <div key={event.id}>
                     {renderCard(event)}
                   </div>
