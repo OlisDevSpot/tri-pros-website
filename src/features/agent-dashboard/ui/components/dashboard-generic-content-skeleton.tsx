@@ -8,7 +8,7 @@ import { Skeleton } from '@/shared/components/ui/skeleton'
 export function DashboardGenericContentSkeleton() {
   return (
     <div
-      className="flex h-full min-w-0 flex-col px-4 pb-20 pt-4 md:px-6 md:py-6"
+      className="flex h-full min-w-0 flex-col px-4 pb-[calc(3.5rem+max(1rem,env(safe-area-inset-bottom))+1rem)] pt-4 md:pt-(--gutter) md:pr-(--gutter) md:pb-(--gutter) md:pl-0"
       data-slot="dashboard-content-skeleton"
       aria-busy="true"
     >
