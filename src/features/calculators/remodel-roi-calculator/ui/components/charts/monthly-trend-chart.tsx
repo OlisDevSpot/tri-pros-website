@@ -14,6 +14,7 @@ import { CURRENT_LABELS } from '@/features/calculators/remodel-roi-calculator/co
 import { formatMoney } from '@/features/calculators/remodel-roi-calculator/lib/format-money'
 import { ChartTooltipCard } from '@/shared/components/charts/chart-tooltip-card'
 import { ChartContainer, ChartTooltip } from '@/shared/components/ui/chart'
+import { CHART_THROTTLED_EVENTS } from '@/shared/constants/chart-throttled-events'
 import { usePinnedChartTooltip } from '@/shared/hooks/use-pinned-chart-tooltip'
 
 interface Props {
@@ -51,12 +52,12 @@ export function MonthlyTrendChart({ projection, lookAhead }: Props) {
 
   return (
     <ChartContainer aria-label={`Monthly cost each year. ${STORY_COPY.paths.now} ${formatMoney(data[0].monthlyNow)} in year 1, ${STORY_COPY.paths.wait} ${formatMoney(data[0].monthlyWait)}.${from ? ` Upgrading costs less from year ${from}.` : ''}`} className="aspect-auto h-72 w-full" config={MONTHLY_TREND_CHART_CONFIG} debounce={150} role="img" {...tooltip.containerProps}>
-      <LineChart data={data} margin={{ top: 20, right: 16, left: 0, bottom: 0 }} onClick={tooltip.onChartClick}>
+      <LineChart data={data} margin={{ top: 20, right: 16, left: 0, bottom: 0 }} throttledEvents={CHART_THROTTLED_EVENTS}>
         <CartesianGrid stroke="var(--border)" vertical={false} />
         <XAxis axisLine={false} dataKey="t" tickFormatter={t => `Yr ${t}`} tickLine={false} />
         <YAxis axisLine={false} domain={[0, 'auto']} tickFormatter={value => formatMoney(Number(value))} tickLine={false} width={72} />
         {from != null && from > 1 && <ReferenceArea fill="var(--warning)" fillOpacity={0.08} ifOverflow="hidden" x1={1} x2={from} />}
-        <ChartTooltip active={tooltip.tooltipActive} content={content} defaultIndex={tooltip.tooltipIndex ?? undefined} />
+        <ChartTooltip active={tooltip.tooltipActive} content={content} />
         <Line activeDot={{ r: 4 }} dataKey="monthlyWait" dot={false} isAnimationActive={!reduceMotion} name={STORY_COPY.paths.wait} stroke="var(--color-monthlyWait)" strokeWidth={2.5} type="monotone" />
         <Line activeDot={{ r: 4 }} dataKey="monthlyNow" dot={false} isAnimationActive={!reduceMotion} name={STORY_COPY.paths.now} stroke="var(--color-monthlyNow)" strokeWidth={2.5} type="monotone" />
         {from != null && <ReferenceDot fill="var(--card)" ifOverflow="extendDomain" label={{ value: `Year ${from}: costs less from here`, ...fromLabel, className: 'fill-foreground stroke-card stroke-3 text-xs font-extrabold [paint-order:stroke] [stroke-linejoin:round]' }} r={5} stroke="var(--primary)" strokeWidth={2.5} x={from} y={years[from].monthlyNow} />}

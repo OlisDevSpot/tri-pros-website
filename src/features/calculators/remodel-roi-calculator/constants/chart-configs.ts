@@ -29,7 +29,6 @@ export const MONTHLY_BREAKDOWN_CHART_CONFIG = {
   waitLoan: { label: 'Replacement loans', color: 'var(--warning)' },
 } satisfies ChartConfig
 
-// LegendSwatches' only non-recharts caller today; matches the shape the cost-of-waiting recharts migration will reuse.
 export const COST_OF_WAITING_CHART_CONFIG = {
   today: { label: 'Price today', color: 'color-mix(in oklab, var(--muted-foreground) 40%, transparent)' },
   price: { label: 'Price when it gives out', color: 'var(--warning)' },

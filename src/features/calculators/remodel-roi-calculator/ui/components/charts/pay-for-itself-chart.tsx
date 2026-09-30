@@ -13,6 +13,7 @@ import { PAY_FOR_ITSELF_CHART_CONFIG } from '@/features/calculators/remodel-roi-
 import { formatMoney, signedMoney } from '@/features/calculators/remodel-roi-calculator/lib/format-money'
 import { ChartTooltipCard } from '@/shared/components/charts/chart-tooltip-card'
 import { ChartContainer, ChartTooltip } from '@/shared/components/ui/chart'
+import { CHART_THROTTLED_EVENTS } from '@/shared/constants/chart-throttled-events'
 import { usePinnedChartTooltip } from '@/shared/hooks/use-pinned-chart-tooltip'
 
 interface Props {
@@ -39,7 +40,7 @@ export function PayForItselfChart({ projection, lookAhead }: Props) {
   }
   return (
     <ChartContainer aria-label={`Where upgrading leaves you compared with waiting: ${signedMoney(values[lookAhead])} by year ${lookAhead}.${payback ? ` It pays for itself in year ${payback}.` : ''}`} className="aspect-auto h-60 w-full" config={PAY_FOR_ITSELF_CHART_CONFIG} debounce={150} role="img" {...tooltip.containerProps}>
-      <AreaChart data={data} margin={{ top: 16, right: 16, left: 0, bottom: 0 }} onClick={tooltip.onChartClick}>
+      <AreaChart data={data} margin={{ top: 16, right: 16, left: 0, bottom: 0 }} throttledEvents={CHART_THROTTLED_EVENTS}>
         <defs>
           <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
             <stop offset={offset} stopColor="var(--primary)" stopOpacity={0.18} />
@@ -50,7 +51,7 @@ export function PayForItselfChart({ projection, lookAhead }: Props) {
         <XAxis axisLine={false} dataKey="t" tickFormatter={t => (t === 0 ? 'Now' : `Yr ${t}`)} tickLine={false} />
         <YAxis axisLine={false} tickFormatter={value => signedMoney(Number(value))} tickLine={false} width={92} />
         <ReferenceLine stroke="var(--muted-foreground)" y={0} />
-        <ChartTooltip active={tooltip.tooltipActive} content={content} defaultIndex={tooltip.tooltipIndex ?? undefined} />
+        <ChartTooltip active={tooltip.tooltipActive} content={content} />
         <Area dataKey="benefit" fill={`url(#${gradientId})`} isAnimationActive={!reduceMotion} stroke="var(--primary)" strokeWidth={2.5} type="monotone" />
         {payback != null && payback <= lookAhead && <ReferenceDot fill="var(--card)" label={{ value: `Pays for itself · year ${payback}`, position: 'right', className: 'fill-foreground stroke-card stroke-3 text-xs font-extrabold [paint-order:stroke] [stroke-linejoin:round]' }} r={5} stroke="var(--primary)" strokeWidth={2.5} x={payback} y={projection.years[payback].benefit} />}
       </AreaChart>

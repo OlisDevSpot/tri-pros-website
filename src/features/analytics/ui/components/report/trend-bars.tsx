@@ -16,6 +16,7 @@ import { chartBucketTitle, chartTickLabel } from '@/features/analytics/lib/chart
 import { metricDisplayText } from '@/features/analytics/lib/read-metric'
 import { ChartTooltipCard } from '@/shared/components/charts/chart-tooltip-card'
 import { ChartContainer, ChartTooltip } from '@/shared/components/ui/chart'
+import { CHART_THROTTLED_EVENTS } from '@/shared/constants/chart-throttled-events'
 
 interface Props {
   rows: ChartRow[]
@@ -62,6 +63,7 @@ export function TrendBars({ rows, interval, series, ticks, height, tooltipActive
           barCategoryGap="20%"
           barSize={groupedBarSize(plotWidth - CHART_MARGIN.left - CHART_MARGIN.right, rows.length, series.length)}
           margin={CHART_MARGIN}
+          throttledEvents={CHART_THROTTLED_EVENTS}
           onClick={(chart) => {
             const index = chart?.activeTooltipIndex == null ? undefined : Number(chart.activeTooltipIndex)
             const row = index !== undefined ? rows[index] : undefined

@@ -14,6 +14,7 @@ import { formatMoney, roundMoney } from '@/features/calculators/remodel-roi-calc
 import { ChartTooltipCard } from '@/shared/components/charts/chart-tooltip-card'
 import { LegendSwatches } from '@/shared/components/charts/legend-swatches'
 import { ChartContainer, ChartTooltip } from '@/shared/components/ui/chart'
+import { CHART_THROTTLED_EVENTS } from '@/shared/constants/chart-throttled-events'
 import { usePinnedChartTooltip } from '@/shared/hooks/use-pinned-chart-tooltip'
 
 interface Props {
@@ -36,11 +37,11 @@ export function HomeValueChart({ projection, lookAhead }: Props) {
     <div className="grid gap-1.5">
       <LegendSwatches config={HOME_VALUE_CHART_CONFIG} keys={waits ? ['valueNow', 'valueWait'] : ['valueNow']} />
       <ChartContainer aria-label={`Value added to the home: ${roundMoney(data[lookAhead].valueNow)} by year ${lookAhead} if you upgrade now.`} className="aspect-auto h-56 w-full" config={HOME_VALUE_CHART_CONFIG} debounce={150} role="img" {...tooltip.containerProps}>
-        <LineChart data={data} margin={{ top: 12, right: 16, left: 0, bottom: 0 }} onClick={tooltip.onChartClick}>
+        <LineChart data={data} margin={{ top: 12, right: 16, left: 0, bottom: 0 }} throttledEvents={CHART_THROTTLED_EVENTS}>
           <CartesianGrid stroke="var(--border)" vertical={false} />
           <XAxis axisLine={false} dataKey="t" tickFormatter={t => (t === 0 ? 'Now' : `Yr ${t}`)} tickLine={false} />
           <YAxis axisLine={false} domain={[0, 'auto']} tickFormatter={value => roundMoney(Number(value))} tickLine={false} width={72} />
-          <ChartTooltip active={tooltip.tooltipActive} content={content} defaultIndex={tooltip.tooltipIndex ?? undefined} />
+          <ChartTooltip active={tooltip.tooltipActive} content={content} />
           {waits && <Line dataKey="valueWait" dot={false} isAnimationActive={!reduceMotion} stroke="var(--color-valueWait)" strokeWidth={2.5} type="stepAfter" />}
           <Line dataKey="valueNow" dot={false} isAnimationActive={!reduceMotion} stroke="var(--color-valueNow)" strokeWidth={2.5} type="monotone" />
         </LineChart>
