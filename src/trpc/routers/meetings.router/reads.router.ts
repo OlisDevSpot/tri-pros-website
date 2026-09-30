@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server'
 import { inArray } from 'drizzle-orm'
 import z from 'zod'
 
+import { LIVE_MEETING_OUTCOMES } from '@/shared/constants/enums'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema'
 import { getByIdWithJoins, listMeetings, meetingListInputSchema } from '@/shared/entities/meetings/dal/server/queries'
@@ -11,10 +12,13 @@ import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 import { meetingProcedure } from './procedures'
 
 export const readsRouter = createTRPCRouter({
+  // `liveOnly` stays a top-level input and becomes a fixed filter here, so no toolbar ever shows it.
   list: meetingProcedure
-    .input(meetingListInputSchema)
+    .input(meetingListInputSchema.extend({ liveOnly: z.boolean().optional() }))
     .query(async ({ ctx, input }) => {
-      return dalToTrpc(await listMeetings(ctx, input))
+      const { liveOnly, ...query } = input
+      const filters = liveOnly ? { ...query.filters, outcome: LIVE_MEETING_OUTCOMES } : query.filters
+      return dalToTrpc(await listMeetings(ctx, { ...query, filters }))
     }),
 
   getByIdWithJoins: meetingProcedure
