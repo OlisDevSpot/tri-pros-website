@@ -186,9 +186,11 @@ exactly one accent, and its rarity is the point.
 
 ### Status
 - **Destructive** (`oklch(0.53 0.19 27)`), **Success** (`oklch(0.45 0.11 152)`),
-  **Warning** (`oklch(0.46 0.095 72)`): functional shadcn fills, each paired with a
-  `-foreground` label (white in light, navy in dark). For pipeline and entity UI,
-  use the seven Stage-Color tones below instead — they carry the meaning.
+  **Warning** (`oklch(0.46 0.095 72)`): functional shadcn fills. Destructive's
+  `-foreground` label is white in both modes; Success and Warning flip their
+  `-foreground` label from white in light to navy in dark, matching Primary. For
+  pipeline and entity UI, use the seven Stage-Color tones below instead — they
+  carry the meaning.
 
 ### Named Rules
 **The One Voice Rule.** Each world has exactly one accent (Harbor Blue in the app,
@@ -250,14 +252,15 @@ accents, never a paragraph face.
 eyebrows and labels (`BlockEyebrow`). Never uppercase a sentence of body copy.
 
 **The 2px Rule (app).** Every dashboard font size is an even number of pixels,
-almost always a multiple of 4. The ramp is Tailwind's default steps and nothing
-else — `text-xs` 12px is the floor, up through `text-3xl` 30px and the `text-4xl`+
-steps (36/48/60/72/96/128px). No bespoke `--text-*` step is added for the app
-world. `eslint.config.js`'s `theme-tokens/type-ramp` guard rejects any fixed
-`text-[Npx]` / `text-[Nrem]` literal under `src/features/**` and `src/shared/**`,
-and `pnpm theme:check` proves the ramp's line-heights stay on a 4px grid. (The
-fluid `--text-presentation-*` clamps used by the meeting-flow presentation are
-exempt — the follow-ups doc has the reason.)
+almost always a multiple of 4 — Tailwind's default steps (and their bundled
+line-heights) are the ramp, and nothing else — `text-xs` 12px is the floor, up
+through `text-3xl` 30px and the `text-4xl`+ steps (36/48/60/72/96/128px). No
+bespoke `--text-*` step is added for the app world: `eslint.config.js`'s
+`theme-tokens/type-ramp` guard rejects any fixed `text-[Npx]` / `text-[Nrem]`
+literal under `src/features/**` and `src/shared/**`, and `pnpm theme:check`
+rejects any new fixed `--text-*` step in `globals.css` whose pixel size isn't
+even. (The fluid `--text-presentation-*` clamps used by the meeting-flow
+presentation are exempt from both guards — the follow-ups doc has the reason.)
 
 ## Layout
 

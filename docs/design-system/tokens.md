@@ -133,7 +133,7 @@ The categorical `--chart-1..5` set is a known open item on the dataviz validator
 
 ### Type Ramp — the 2px Rule
 
-Every app font size is an even number of pixels, on Tailwind's default steps only — no bespoke `--text-*` step. `text-xs` (12/16px) is the floor. `eslint.config.js`'s `theme-tokens/type-ramp` rule rejects a fixed `text-[Npx]` / `text-[Nrem]` literal under `src/features/**` and `src/shared/**`; `theme:check` proves every ramp step resolves to an even pixel size at a 16px root. The fluid `--text-presentation-*` clamps (meeting-flow presentation) are outside this guard — see the follow-ups doc.
+Every app font size is an even number of pixels, on Tailwind's default steps only — no bespoke `--text-*` step. `text-xs` (12/16px) is the floor. `globals.css` declares no fixed `--text-*` step today (only the fluid `--text-presentation-*` clamps, which are exempt); `theme:check` guards against one being added: it scans `globals.css` for any `--text-*` custom property with a plain px/rem value and fails if its pixel size (at a 16px root) isn't even. For literals in component code, `eslint.config.js`'s `theme-tokens/type-ramp` rule rejects a fixed `text-[Npx]` / `text-[Nrem]` under `src/features/**` and `src/shared/**` — that guard, not `theme:check`, is what keeps the ramp to Tailwind's steps day to day.
 
 ---
 
