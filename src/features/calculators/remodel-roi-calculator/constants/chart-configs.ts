@@ -34,3 +34,9 @@ export const COST_OF_WAITING_CHART_CONFIG = {
   price: { label: 'Price when it gives out', color: 'var(--warning)' },
   repairs: { label: 'Repairs until then', color: 'color-mix(in oklab, var(--warning) 40%, transparent)' },
 } satisfies ChartConfig
+
+export const RETURN_BREAKDOWN_CHART_CONFIG = {
+  gain: { label: 'Adds to the return', color: 'var(--primary)' },
+  cost: { label: 'Takes from it', color: 'color-mix(in oklab, var(--muted-foreground) 50%, transparent)' },
+  total: { label: 'Where you stand', color: 'var(--foreground)' },
+} satisfies ChartConfig

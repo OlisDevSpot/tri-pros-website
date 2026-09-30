@@ -6,6 +6,7 @@ import assert from 'node:assert/strict'
 import { BILL_CATEGORIES } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
 import { createRemodelRoiDefaults, createTradePicks } from '@/features/calculators/remodel-roi-calculator/constants/form-defaults'
 import { buildCostOfWaiting } from '@/features/calculators/remodel-roi-calculator/lib/build-cost-of-waiting'
+import { buildReturnWaterfall } from '@/features/calculators/remodel-roi-calculator/lib/build-return-waterfall'
 import { combineCuts } from '@/features/calculators/remodel-roi-calculator/lib/combine-cuts'
 import { formatMoney, roundMoney } from '@/features/calculators/remodel-roi-calculator/lib/format-money'
 import { formatYears } from '@/features/calculators/remodel-roi-calculator/lib/format-years'
@@ -116,6 +117,19 @@ assert.equal(combineCuts({ trades: [], ducts: false }, 'electric', config.trades
   near(p.years[10].benefit, 23379.77, 'A +10 yrs (pinned)')
   near(p.years[20].benefit, 95699.35, 'A +20 yrs (pinned)')
 }
+
+// Return waterfall, built from job A's projection.
+{
+  const p = run(JOB_A)
+  const waterfall = buildReturnWaterfall(p, 10)
+  const total = waterfall.rows.at(-1)!
+  assert.equal(total.kind, 'total', 'waterfall ends with where you stand')
+  near(total.value, p.years[10].benefit, 'waterfall total is the year-10 benefit', 1e-6)
+  assert.ok(waterfall.rows.slice(0, -1).every(row => row.kind === (row.value >= 0 ? 'gain' : 'cost')), 'waterfall: gains and costs by sign')
+  assert.ok(waterfall.rows.every(row => row.range[0] <= row.range[1] && row.range[0] >= waterfall.low && row.range[1] <= waterfall.high), 'waterfall: every bar inside the axis')
+  assert.ok(waterfall.low <= 0 && waterfall.high >= 0, 'waterfall: the axis includes zero')
+}
+assert.ok(!buildReturnWaterfall(run(cash(JOB_A)), 10).rows.some(row => row.label === 'Interest on your loan'), 'cash job: no loan-interest row')
 
 // Cost of waiting, built from job A's projection.
 {

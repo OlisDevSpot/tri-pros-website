@@ -250,3 +250,20 @@ export interface CostOfWaiting {
   max: number
   trades: CostOfWaitingTrade[]
 }
+
+export interface ReturnWaterfallRow {
+  label: string
+  detail: string
+  value: number
+  /** The running total after this row. */
+  to: number
+  /** Where the bar starts and ends on the axis, low end first. */
+  range: [number, number]
+  kind: 'gain' | 'cost' | 'total'
+}
+
+export interface ReturnWaterfall {
+  rows: ReturnWaterfallRow[]
+  low: number
+  high: number
+}
