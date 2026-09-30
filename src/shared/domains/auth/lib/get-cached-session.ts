@@ -7,9 +7,8 @@
 // headers → same session, so memoization is always correct.
 //
 // This is the canonical way to read the session inside a dashboard RSC render.
-// (The tRPC HTTP context resolves the session via its own cache() in
-// create-http-context.ts — a separate memo that only fires on prefetching
-// pages; consolidating the two is a possible follow-up.)
+// The tRPC RSC prefetch context (create-http-context.ts) reads through this
+// memo too, so a prefetching page makes one session round-trip in total.
 
 import { headers } from 'next/headers'
 import { cache } from 'react'
