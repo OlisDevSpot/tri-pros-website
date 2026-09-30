@@ -376,9 +376,10 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
         >
           {/* Fills the container or overflows it in CSS alone, so a window resize runs no script and re-renders nothing. */}
           <Table
-            className="table-fixed border-separate border-spacing-0"
+            className="table-fixed border-separate border-spacing-0 transition-opacity duration-200 data-[stale=true]:opacity-60 data-[stale=true]:delay-200"
             style={{ width: totalDeclaredWidth, minWidth: '100%' }}
             aria-busy={!!serverPagination?.isFetching}
+            data-stale={serverPagination?.isStale || undefined}
           >
             <TableHeader className="sticky top-0 z-10 bg-background">
               {table.getHeaderGroups().map(headerGroup => (

@@ -8,21 +8,21 @@ import { formatTotalCount } from '@/shared/lib/pagination-format'
 
 export function QueryToolbarLiveStatus() {
   const { query } = useQueryToolbarContext()
-  const { total, isLoading, isFetching } = query
+  const { total, isPending, isStale, isFetching } = query
   const { entityName } = useToolbarInternal()
 
   const message = useMemo(() => {
-    if (isLoading) {
+    if (isPending) {
       return `Loading ${entityName}…`
     }
-    if (isFetching) {
+    if (isStale || isFetching) {
       return `Updating ${entityName}…`
     }
     if (total === 0) {
       return `No ${entityName} match the current filters.`
     }
     return `Showing ${formatTotalCount(total)} ${entityName}.`
-  }, [total, isLoading, isFetching, entityName])
+  }, [total, isPending, isStale, isFetching, entityName])
 
   return (
     <div role="status" aria-live="polite" className="sr-only">

@@ -11,10 +11,8 @@ import { SCHEDULE_ACTIVITIES_QUERY } from '@/features/schedule-management/consta
 import { activityToCalendarEvent } from '@/features/schedule-management/lib/to-calendar-event'
 import { ActivityDotContent } from '@/features/schedule-management/ui/components/activity-dot-content'
 import { ScheduleCalendar } from '@/features/schedule-management/ui/components/schedule-calendar'
-import { ScheduleCalendarErrorState } from '@/features/schedule-management/ui/components/schedule-calendar-error-state'
 import { ScheduleControlsBar } from '@/features/schedule-management/ui/components/schedule-controls-bar'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
-import { LoadingState } from '@/shared/components/states/loading-state'
 import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { useActivityActionConfigs } from '@/shared/entities/activities/hooks/use-activity-action-configs'
@@ -57,28 +55,22 @@ export function ScheduleActivitiesCalendar({ showToggle, showSaturday, onToggleS
         <QueryToolbar.Standard leading={showToggle} searchPlaceholder="Search by title or notes…" />
       </QueryToolbar>
       <div className="min-h-0 flex-1">
-        {query.isError && query.rows.length === 0
-          ? <ScheduleCalendarErrorState onRetry={() => void query.refresh()} />
-          : query.isLoading
-            ? <LoadingState title="Loading schedule…" />
-            : (
-                <ScheduleCalendar
-                  events={events}
-                  dateWindow={query.window}
-                  showSaturday={showSaturday}
-                  renderCard={renderCard}
-                  renderCompact={renderCompact}
-                  controlsRight={(
-                    <ScheduleControlsBar
-                      calendarView={query.window.view}
-                      onCalendarViewChange={query.window.setView}
-                      showSaturday={showSaturday}
-                      onToggleSaturday={onToggleSaturday}
-                      onNewActivity={onNewActivity}
-                    />
-                  )}
-                />
-              )}
+        <ScheduleCalendar
+          events={events}
+          dateWindow={query.window}
+          showSaturday={showSaturday}
+          renderCard={renderCard}
+          renderCompact={renderCompact}
+          controlsRight={(
+            <ScheduleControlsBar
+              calendarView={query.window.view}
+              onCalendarViewChange={query.window.setView}
+              showSaturday={showSaturday}
+              onToggleSaturday={onToggleSaturday}
+              onNewActivity={onNewActivity}
+            />
+          )}
+        />
       </div>
       <DeleteConfirmDialog />
     </div>

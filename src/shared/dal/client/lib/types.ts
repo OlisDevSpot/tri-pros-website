@@ -186,9 +186,8 @@ export interface DateWindowControls {
   range: { from: string, to: string }
   cap: number
   /**
-   * True while this window's own rows haven't arrived: the first load, or `keepPreviousData` holding another key's
-   * rows after a window step, a filter or a search. False after an error, so the error state shows. Not TanStack's
-   * query-level `isPending`.
+   * True while this window's own rows aren't shown: inside a `DataViewBoundary` fallback, or while a window step, a
+   * filter or a search loads (the shown rows belong to another key). Date views draw skeletons, never those rows.
    */
   isPending: boolean
   /** `undefined` returns to today. */
@@ -210,11 +209,12 @@ export interface DataViewQueryResult<
 > {
   rows: TRow[]
   total: number
-  isLoading: boolean
+  /** True only inside a `DataViewBoundary` fallback: no rows exist yet, and the view draws its loading state. */
+  isPending: boolean
+  /** The rows belong to an older URL state while the requested one loads; tables dim them. */
+  isStale: boolean
+  /** A background refetch (an invalidation or `refresh()`); the rows stay. */
   isFetching: boolean
-  isPlaceholderData: boolean
-  isError: boolean
-  error: unknown
   /** Invalidates every cached input of this procedure; resolves when the refetch settles. */
   refresh: () => Promise<void>
   filterSort: DataViewFilterSort<F, T>

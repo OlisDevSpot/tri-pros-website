@@ -89,7 +89,7 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
             Customers from this source
           </h3>
           <span className="text-xs text-muted-foreground tabular-nums">
-            {query.isLoading ? 'Loading…' : `${query.total.toLocaleString()} total`}
+            {query.isPending ? 'Loading…' : `${query.total.toLocaleString()} total`}
           </span>
         </div>
 

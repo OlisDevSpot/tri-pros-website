@@ -13,6 +13,7 @@ import { AllAnalyticsPanel } from '@/features/lead-sources-admin/ui/components/a
 import { AllCustomersSection } from '@/features/lead-sources-admin/ui/components/all-customers-section'
 import { PerformanceStrip } from '@/features/lead-sources-admin/ui/components/performance-strip'
 import { SourceTabTrigger } from '@/features/lead-sources-admin/ui/components/source-tab-trigger'
+import { DataViewBoundary } from '@/shared/components/data-view-boundary'
 import { Button } from '@/shared/components/ui/button'
 import {
   Command,
@@ -168,7 +169,9 @@ export function AllDetail({ sourceCount, activeChip, range, sources, onAddCustom
         </div>
 
         <TabsContent value="customers" className="flex min-h-0 flex-1 flex-col">
-          <AllCustomersSection />
+          <DataViewBoundary>
+            <AllCustomersSection />
+          </DataViewBoundary>
         </TabsContent>
 
         <TabsContent value="analytics" className="flex min-h-0 flex-1 flex-col">

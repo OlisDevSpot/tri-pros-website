@@ -5,6 +5,7 @@ import type { MeetingRow } from '@/shared/entities/meetings/lib/columns-registry
 
 import { MEETINGS_RECORDS_TABLE_VIEW } from '@/features/records-management/constants/meetings-records-table-view'
 import { MeetingRowPanel } from '@/features/records-management/ui/components/meeting-row-panel'
+import { DataViewBoundary } from '@/shared/components/data-view-boundary'
 import { RecordsPageHeader } from '@/shared/components/records-page-header'
 import { RecordsPageMotionShell } from '@/shared/components/records-page-motion-shell'
 import { MeetingsTable } from '@/shared/entities/meetings/components/meetings-table/meetings-table'
@@ -17,11 +18,13 @@ function renderMeetingRowPanel(row: MeetingRow, { actions }: MeetingsExpandedRow
 export function MeetingsRecordsView() {
   return (
     <RecordsPageMotionShell>
-      <MeetingsTable
-        tableView={MEETINGS_RECORDS_TABLE_VIEW}
-        header={query => <RecordsPageHeader title="Meetings" query={query} />}
-        renderExpandedRow={renderMeetingRowPanel}
-      />
+      <DataViewBoundary>
+        <MeetingsTable
+          tableView={MEETINGS_RECORDS_TABLE_VIEW}
+          header={query => <RecordsPageHeader title="Meetings" query={query} />}
+          renderExpandedRow={renderMeetingRowPanel}
+        />
+      </DataViewBoundary>
     </RecordsPageMotionShell>
   )
 }

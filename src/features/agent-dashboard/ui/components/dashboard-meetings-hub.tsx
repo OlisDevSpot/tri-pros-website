@@ -67,8 +67,6 @@ export function DashboardMeetingsHub() {
       <DashboardMeetingsCalendar
         rows={query.rows}
         isPending={isPending}
-        isError={query.isError}
-        onRetry={() => void query.refresh()}
         month={anchor}
         onMonthChange={setAnchor}
         selectedDay={shownDay}

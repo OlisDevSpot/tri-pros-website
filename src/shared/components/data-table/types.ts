@@ -73,8 +73,8 @@ export interface DataTableServerPagination {
   pageSizeOptions?: readonly number[]
   /** When true, render a muted "Loading…" hint in the pagination bar. */
   isFetching?: boolean
-  /** When true, the empty-state slot renders an error message instead of "no rows". */
-  isError?: boolean
+  /** The rows belong to an older query while the next one loads; the table dims them after a short delay. */
+  isStale?: boolean
   /**
    * Invalidate + refetch the whole dataset for this table's procedure. Wired to
    * pull-to-refresh in DataTable. Forwarded from the query result's `refresh`.

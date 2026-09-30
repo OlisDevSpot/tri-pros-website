@@ -3,7 +3,6 @@
 import type { MeetingListRow } from '@/shared/entities/meetings/dal/server/queries'
 
 import { calendarDayToLocalDate, localDateToCalendarDay } from '@/shared/components/calendar/lib/calendar-helpers'
-import { Button } from '@/shared/components/ui/button'
 import { Calendar } from '@/shared/components/ui/calendar'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { SKELETON_BLOCK_TONE_CLASS, SKELETON_FRAME_TONE_CLASS, SKELETON_TONE_CLASS } from '@/shared/constants/skeleton-tone'
@@ -16,10 +15,8 @@ import { DashboardDayAgenda } from './dashboard-day-agenda'
 interface DashboardMeetingsCalendarProps {
   /** The month grid's live meetings, chronological. */
   rows: MeetingListRow[]
-  /** True while `rows` belong to another month or haven't arrived: no dots, and the agenda shows a skeleton. */
+  /** True while rows belong to another month or haven't arrived (the boundary fallback): no dots, and the agenda shows a skeleton. */
   isPending: boolean
-  isError: boolean
-  onRetry: () => void
   /** Any `YYYY-MM-DD` in the month shown. */
   month: string
   /** Called with the 1st of the month the viewer pages to. */
@@ -30,7 +27,7 @@ interface DashboardMeetingsCalendarProps {
 }
 
 /** The rows cover the whole month grid (live outcomes only), so the outside days the picker shows get their dots too. */
-export function DashboardMeetingsCalendar({ rows, isPending, isError, onRetry, month, onMonthChange, selectedDay, onSelectDay }: DashboardMeetingsCalendarProps) {
+export function DashboardMeetingsCalendar({ rows, isPending, month, onMonthChange, selectedDay, onSelectDay }: DashboardMeetingsCalendarProps) {
   const visibleRows = isPending ? [] : rows
   const daysWithMeetings = new Set(visibleRows.map(row => businessDayKey(new Date(row.scheduledFor))))
   const selectedDayRows = visibleRows.filter(row => businessDayKey(new Date(row.scheduledFor)) === selectedDay)
@@ -53,18 +50,9 @@ export function DashboardMeetingsCalendar({ rows, isPending, isError, onRetry, m
         classNames={{ root: 'w-full md:w-fit', month_grid: 'w-full md:w-auto' }}
       />
       <div className="min-w-0 flex-1" aria-busy={isPending || undefined}>
-        {isError && rows.length === 0
-          ? (
-              <div role="alert" className="flex flex-col items-start gap-2 py-2">
-                <p className="text-sm text-muted-foreground">Could not load meetings.</p>
-                <Button type="button" variant="outline" size="sm" className="pointer-coarse:h-11" onClick={onRetry}>
-                  Try again
-                </Button>
-              </div>
-            )
-          : isPending
-            ? <DashboardMeetingsCalendarSkeleton />
-            : <DashboardDayAgenda rows={selectedDayRows} selectedDay={calendarDayToLocalDate(selectedDay)} />}
+        {isPending
+          ? <DashboardMeetingsCalendarSkeleton />
+          : <DashboardDayAgenda rows={selectedDayRows} selectedDay={calendarDayToLocalDate(selectedDay)} />}
       </div>
     </div>
   )

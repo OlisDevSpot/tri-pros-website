@@ -2,6 +2,7 @@ import type { SearchParams } from 'nuqs/server'
 
 import { CUSTOMER_PIPELINE_QUERY } from '@/features/customer-pipelines/constants/customer-pipeline-query'
 import { CustomerPipelineView } from '@/features/customer-pipelines/ui/views'
+import { DataViewBoundary } from '@/shared/components/data-view-boundary'
 import { loadDataViewQueryInput } from '@/shared/dal/server/lib/query/load-data-view-query-input'
 import { protectDashboardPage } from '@/shared/domains/permissions/lib/protect-dashboard-page'
 import { resolvePipelineParam } from '@/shared/domains/pipelines/lib/resolve-pipeline-param'
@@ -29,7 +30,9 @@ export default async function PipelinePage({ params, searchParams }: Props) {
 
   return (
     <HydrateClient>
-      <CustomerPipelineView />
+      <DataViewBoundary>
+        <CustomerPipelineView />
+      </DataViewBoundary>
     </HydrateClient>
   )
 }

@@ -16,9 +16,6 @@ import { KanbanBoard } from '@/shared/components/kanban/ui/kanban-board'
 import { KanbanStageFilter } from '@/shared/components/kanban/ui/kanban-stage-filter'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 import { EmptyState } from '@/shared/components/states/empty-state'
-import { ErrorState } from '@/shared/components/states/error-state'
-import { LoadingState } from '@/shared/components/states/loading-state'
-import { Button } from '@/shared/components/ui/button'
 import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { pipelineConfigs } from '@/shared/domains/pipelines/constants/pipeline-registry'
@@ -26,6 +23,7 @@ import { usePipeline } from '@/shared/domains/pipelines/hooks/pipeline-context'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { CreateMeetingModal } from '@/shared/entities/meetings/components/create-meeting-modal'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
+import { useIsHydrating } from '@/shared/hooks/use-is-hydrating'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
@@ -44,6 +42,7 @@ export function CustomerPipelineView() {
   const trpc = useTRPC()
   const { open: openModal, setModal } = useModalStore()
   const ability = useAbility()
+  const isHydrating = useIsHydrating()
   const canManagePipeline = ability.can('manage', 'CustomerPipeline')
 
   const config = pipelineConfigs[pipeline]
@@ -123,29 +122,18 @@ export function CustomerPipelineView() {
 
   const groupedItems = useMemo(() => groupCustomersByStage(items, config.stages), [items, config.stages])
 
-  const isInitialLoad = query.isLoading
-  const isSwitching = query.isFetching && !query.isLoading
-
-  if (isInitialLoad) {
-    return (
-      <LoadingState
-        title="Loading Pipeline"
-        description="This might take a few seconds"
-        className="bg-card"
-      />
-    )
-  }
+  const isSwitching = query.isStale || query.isFetching
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
+      initial={isHydrating ? false : { opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 30 }}
       transition={{ delay: 0.25, duration: 0.25 }}
       className="w-full h-full flex flex-col gap-4 overflow-hidden"
     >
       <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between shrink-0">
-        <CustomerPipelineMetricsBar items={items} pipeline={pipeline} isLoading={isSwitching} />
+        <CustomerPipelineMetricsBar items={items} pipeline={pipeline} isLoading={query.isPending || isSwitching} />
         <div className="flex w-full items-center justify-between gap-2 lg:w-auto lg:justify-end">
           {canManagePipeline && <PipelineSelect value={pipeline} onChange={setPipeline} />}
           <KanbanStageFilter
@@ -164,39 +152,31 @@ export function CustomerPipelineView() {
       </QueryToolbar>
 
       <div className={cn('flex-1 min-h-0 transition-opacity duration-200', isSwitching && 'opacity-50 pointer-events-none')}>
-        {query.isError && items.length === 0
+        {items.length === 0 && !query.isPending
           ? (
-              // A failed background refetch also sets isError but keeps prior data — that case falls through to the board below, so a drag/focus refetch failure doesn't hide an already-loaded board.
-              <div className="w-full h-full flex flex-col items-center justify-center gap-3 rounded-lg border bg-card p-8">
-                <ErrorState className="border-none p-0" title="Could not load pipeline" description="Please try again." />
-                <Button variant="outline" onClick={() => void query.refresh()}>Try again</Button>
+              <div className="w-full h-full flex items-center justify-center">
+                <EmptyState
+                  title="No Customers"
+                  description={query.filterSort.activeFilterCount > 0 || query.filterSort.search ? 'No customers match these filters' : 'Start by scheduling meetings with customers'}
+                  className="bg-card"
+                />
               </div>
             )
-          : items.length === 0
-            ? (
-                <div className="w-full h-full flex items-center justify-center">
-                  <EmptyState
-                    title="No Customers"
-                    description={query.filterSort.activeFilterCount > 0 || query.filterSort.search ? 'No customers match these filters' : 'Start by scheduling meetings with customers'}
-                    className="bg-card"
-                  />
-                </div>
-              )
-            : (
-                <KanbanBoard<CustomerPipelineItem>
-                  stageConfig={stageFilter.filteredStageConfig}
-                  groupedItems={groupedItems}
-                  allowedTransitions={config.allowedTransitions}
-                  blockedMessages={config.blockedMessages}
-                  onMoveItem={handleMoveItem}
-                  onBlockedTransition={handleBlockedTransition}
-                  collapsedStages={pipeline === 'fresh' ? FRESH_COLLAPSED_STAGES : NO_COLLAPSED_STAGES}
-                  showColumnValues
-                  getItemValue={getItemValue}
-                  renderCard={renderCard}
-                  className="mobile-bleed-right"
-                />
-              )}
+          : (
+              <KanbanBoard<CustomerPipelineItem>
+                stageConfig={stageFilter.filteredStageConfig}
+                groupedItems={groupedItems}
+                allowedTransitions={config.allowedTransitions}
+                blockedMessages={config.blockedMessages}
+                onMoveItem={handleMoveItem}
+                onBlockedTransition={handleBlockedTransition}
+                collapsedStages={pipeline === 'fresh' ? FRESH_COLLAPSED_STAGES : NO_COLLAPSED_STAGES}
+                showColumnValues
+                getItemValue={getItemValue}
+                renderCard={renderCard}
+                className="mobile-bleed-right"
+              />
+            )}
       </div>
       {createMeetingForCustomer && (
         <CreateMeetingModal

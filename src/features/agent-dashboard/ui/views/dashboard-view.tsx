@@ -16,6 +16,7 @@ import { DashboardHero } from '@/features/agent-dashboard/ui/components/dashboar
 import { DashboardMeetingsHub } from '@/features/agent-dashboard/ui/components/dashboard-meetings-hub'
 import { DashboardProjects } from '@/features/agent-dashboard/ui/components/dashboard-projects'
 import { DashboardProposals } from '@/features/agent-dashboard/ui/components/dashboard-proposals'
+import { DataViewBoundary } from '@/shared/components/data-view-boundary'
 
 export function DashboardView({ name }: { name?: string | null }) {
   return (
@@ -24,7 +25,9 @@ export function DashboardView({ name }: { name?: string | null }) {
         <DashboardHero name={name} />
         <div className="grid grid-cols-1 gap-6 lg:min-h-0 lg:flex-1 lg:grid-cols-12">
           <section id="meetings" className="lg:col-span-8 lg:min-h-0 lg:overflow-y-auto lg:scrollbar-gutter-stable lg:pr-1 lg:pb-6">
-            <DashboardMeetingsHub />
+            <DataViewBoundary>
+              <DashboardMeetingsHub />
+            </DataViewBoundary>
           </section>
           <div className="flex flex-col gap-6 lg:col-span-4 lg:min-h-0 lg:overflow-y-auto lg:scrollbar-gutter-stable lg:pr-1 lg:pb-6">
             <section id="proposals">

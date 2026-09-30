@@ -10,6 +10,7 @@ import { ActivityForm } from '@/features/schedule-management/ui/components/activ
 import { ScheduleActivitiesCalendar } from '@/features/schedule-management/ui/components/schedule-activities-calendar'
 import { ScheduleMeetingsCalendar } from '@/features/schedule-management/ui/components/schedule-meetings-calendar'
 import { ScheduleShowToggle } from '@/features/schedule-management/ui/components/schedule-show-toggle'
+import { DataViewBoundary } from '@/shared/components/data-view-boundary'
 import { useIsHydrating } from '@/shared/hooks/use-is-hydrating'
 
 export function ScheduleView() {
@@ -34,22 +35,26 @@ export function ScheduleView() {
     >
       {show === 'activities'
         ? (
-            <ScheduleActivitiesCalendar
-              showToggle={showToggle}
-              showSaturday={showSaturday}
-              onToggleSaturday={handleToggleSaturday}
-              onNewActivity={handleNewActivity}
-            />
+            <DataViewBoundary>
+              <ScheduleActivitiesCalendar
+                showToggle={showToggle}
+                showSaturday={showSaturday}
+                onToggleSaturday={handleToggleSaturday}
+                onNewActivity={handleNewActivity}
+              />
+            </DataViewBoundary>
           )
         : (
-            <ScheduleMeetingsCalendar
-              showToggle={showToggle}
-              showSaturday={showSaturday}
-              onToggleSaturday={handleToggleSaturday}
-              onNewActivity={handleNewActivity}
-              isHighlighted={isHighlighted}
-              highlightRef={highlightRef}
-            />
+            <DataViewBoundary>
+              <ScheduleMeetingsCalendar
+                showToggle={showToggle}
+                showSaturday={showSaturday}
+                onToggleSaturday={handleToggleSaturday}
+                onNewActivity={handleNewActivity}
+                isHighlighted={isHighlighted}
+                highlightRef={highlightRef}
+              />
+            </DataViewBoundary>
           )}
 
       <ActivityForm open={activityFormOpen} onOpenChange={setActivityFormOpen} />

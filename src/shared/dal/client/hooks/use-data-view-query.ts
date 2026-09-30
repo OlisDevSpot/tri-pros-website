@@ -11,12 +11,15 @@ import type { DataViewInput, DataViewQueryConfig, DataViewWindow } from '@/share
 import type { FieldList, FilterOption, SortDir, ToolbarFilterId, ToolbarFilterSpec } from '@/shared/dal/lib/query/field-list'
 import type { PaginatedResult } from '@/shared/dal/lib/query/paginated-result'
 
-import { keepPreviousData, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
+import { hashKey, useQueries, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useQueryStates } from 'nuqs'
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useDeferredValue, useEffect, useMemo } from 'react'
 
+import { EMPTY_DATA_VIEW_READ } from '@/shared/dal/client/constants/empty-data-view-read'
 import { OPTION_SOURCE_READS } from '@/shared/dal/client/constants/option-source-reads'
+import { useIsDataViewPending } from '@/shared/dal/client/hooks/use-is-data-view-pending'
 import { usePrefetchQueries } from '@/shared/dal/client/hooks/use-prefetch-queries'
+import { useServerPrefetchGuard } from '@/shared/dal/client/hooks/use-server-prefetch-guard'
 import { adjacentDataViewWindows } from '@/shared/dal/lib/query/adjacent-windows'
 import { dataViewUrlKeys, deriveDataViewWindow, deriveFilterSortState, makeDataViewParsers, toDataViewInput } from '@/shared/dal/lib/query/derive-data-view-input'
 import { useAbility } from '@/shared/domains/permissions/hooks'
@@ -27,10 +30,6 @@ type AnyQueryProcedure = DecorateQueryProcedure<any>
 
 // Resolves to `never` (a compile error at the call site) when the procedure can't accept the derived input plus `extra`.
 type AcceptsDataViewInput<TProcedure extends AnyQueryProcedure, TInput> = TInput extends inferInput<TProcedure> ? unknown : never
-
-interface UseDataViewQueryOptions {
-  enabled?: boolean
-}
 
 /** Toolbar fields whose choices load at runtime, with the source each reads. */
 function runtimeOptionFields(fields: FieldList, toolbar: readonly string[]): { id: string, source: OptionSource }[] {
@@ -57,44 +56,61 @@ export function useDataViewQuery<
   procedure: TProcedure & AcceptsDataViewInput<TProcedure, DataViewInput<F> & TExtra>,
   extra: TExtra,
   config: DataViewQueryConfig<F, T, W>,
-  options: UseDataViewQueryOptions = {},
 ): DataViewQueryResult<DataViewRowOf<TProcedure>, F, T, W['kind']> {
-  const { enabled = true } = options
   const qc = useQueryClient()
   const trpc = useTRPC()
   const ability = useAbility()
+  const isPending = useIsDataViewPending()
   const keys = useMemo(() => dataViewUrlKeys(config.paramPrefix), [config.paramPrefix])
   const parsers = useMemo(() => makeDataViewParsers(config), [config])
 
   // useQueryStates' generic can't express a parser map built at runtime; the derivation narrows values.
   const [urlState, setUrlState] = useQueryStates(parsers as never, { clearOnDefault: true })
   const state = urlState as Record<string, unknown>
+  // The rows stay on the last URL state whose data is in while the next one loads, instead of falling back to the
+  // skeleton. Deferring the state (not wrapping the setters) also covers Back/Forward, which nuqs applies from an effect.
+  const shownState = useDeferredValue(state)
 
   // The toolbar's search box debounces before it commits, so the URL value is already the settled search.
   const search = (state[keys.searchKey] as string | null) ?? ''
 
   const filterSort = useMemo(() => deriveFilterSortState(state, config), [state, config])
   const windowState = useMemo(() => deriveDataViewWindow(state, config), [state, config])
+  const shownFilterSort = useMemo(() => deriveFilterSortState(shownState, config), [shownState, config])
+  const shownWindowState = useMemo(() => deriveDataViewWindow(shownState, config), [shownState, config])
 
   const extraKey = JSON.stringify(extra)
-  const queryInput = useMemo(
+  const requestedInput = useMemo(
     () => ({ ...toDataViewInput(filterSort, windowState, config), ...extra }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- extra is deep-keyed via extraKey so an inline literal doesn't refetch
     [filterSort, windowState, config, extraKey],
   )
+  const shownInput = useMemo(
+    () => ({ ...toDataViewInput(shownFilterSort, shownWindowState, config), ...extra }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- extra is deep-keyed via extraKey so an inline literal doesn't refetch
+    [shownFilterSort, shownWindowState, config, extraKey],
+  )
 
   const anyProcedure = procedure as AnyQueryProcedure
-  const baseOptions = anyProcedure.queryOptions(queryInput)
+  const requestedOptions = anyProcedure.queryOptions(requestedInput)
+  const shownOptions = anyProcedure.queryOptions(shownInput)
+  const isStale = !isPending && hashKey(requestedOptions.queryKey) !== hashKey(shownOptions.queryKey)
 
+  useServerPrefetchGuard(shownOptions.queryKey, !isPending)
   useEffect(() => {
-    checkHydrationParity(baseOptions.queryKey as readonly unknown[])
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- first mount only; later keys are client-driven refetches, not hydration targets
+    if (!isPending) {
+      checkHydrationParity(shownOptions.queryKey as readonly unknown[])
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- first mount only; later keys are client-driven, not hydration targets
   }, [])
 
-  const result = useQuery({ ...baseOptions, placeholderData: keepPreviousData, enabled })
-  const data = result.data as PaginatedResult<DataViewRowOf<TProcedure>> | undefined
-  const rows = data?.rows ?? []
-  const total = data?.total ?? 0
+  // Suspends until the shown key's rows are in (streamed from the server prefetch on a document load). Inside a
+  // DataViewBoundary fallback it reads a key that already holds an empty page, so the view draws with no rows.
+  const read = useSuspenseQuery(isPending ? (EMPTY_DATA_VIEW_READ as unknown as typeof shownOptions) : shownOptions)
+  const data = read.data as PaginatedResult<DataViewRowOf<TProcedure>>
+  const rows = data.rows
+  const total = data.total
+  const isFetching = !isPending && read.isFetching
 
   // Only the sources this toolbar shows are read, and only by viewers the read would accept.
   const optionFields = useMemo(() => runtimeOptionFields(config.fields, config.toolbar), [config.fields, config.toolbar])
@@ -179,19 +195,19 @@ export function useDataViewQuery<
 
   // Page past the end (rows deleted, filter narrowed elsewhere): clamp; an empty result keeps its own empty state.
   useEffect(() => {
-    if (windowState.kind === 'page' && data && pageCount > 0 && windowState.page > pageCount) {
+    if (!isPending && !isStale && windowState.kind === 'page' && pageCount > 0 && windowState.page > pageCount) {
       void setUrlState({ [keys.pageKey]: pageCount } as never, { history: 'replace' })
     }
-  }, [windowState, data, pageCount, keys, setUrlState])
+  }, [isPending, isStale, windowState, pageCount, keys, setUrlState])
 
-  const adjacentWindows = useMemo(() => adjacentDataViewWindows(state, config), [state, config])
+  const adjacentWindows = useMemo(() => adjacentDataViewWindows(shownState, config), [shownState, config])
   const adjacentQueries = adjacentWindows
     .filter(adjacent => adjacent.kind !== 'page' || adjacent.pagination.offset < total)
-    .map(adjacent => anyProcedure.queryOptions({ ...toDataViewInput(filterSort, adjacent, config), ...extra }))
-  usePrefetchQueries(adjacentQueries, result.isSuccess && !result.isPlaceholderData && !result.isFetching)
+    .map(adjacent => anyProcedure.queryOptions({ ...toDataViewInput(shownFilterSort, adjacent, config), ...extra }))
+  usePrefetchQueries(adjacentQueries, !isPending && !isStale && !isFetching)
 
   // Another key's rows would land on the wrong days, so date views draw skeletons until this key's rows arrive.
-  const isWindowPending = result.isLoading || result.isPlaceholderData
+  const isWindowPending = isPending || isStale
 
   const windowControls = useMemo((): DataViewWindowControls => {
     switch (windowState.kind) {
@@ -222,11 +238,9 @@ export function useDataViewQuery<
   return {
     rows,
     total,
-    isLoading: result.isLoading,
-    isFetching: result.isFetching,
-    isPlaceholderData: result.isPlaceholderData,
-    isError: result.isError,
-    error: result.error,
+    isPending,
+    isStale,
+    isFetching,
     refresh,
     filterSort: filterSortControls,
     window: windowControls as DataViewWindowControls<W['kind']>,

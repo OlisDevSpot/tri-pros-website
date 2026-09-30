@@ -14,7 +14,7 @@ interface BarProps {
 
 export function QueryToolbarBar({ className, children }: BarProps) {
   const { query } = useQueryToolbarContext()
-  const showShimmer = query.isFetching || query.isPlaceholderData
+  const showShimmer = query.isPending || query.isFetching || query.isStale
   return (
     <div
       className={cn(

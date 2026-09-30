@@ -11,8 +11,8 @@ import { cn } from '@/shared/lib/utils'
 interface RecordsPageHeaderProps {
   /** Heading text — the entity name in plural form (e.g. "Proposals"). */
   title: string
-  /** Any data-view result; the header reads only `total` and `isLoading` for the count. */
-  query: Pick<DataViewQueryResult<unknown, FieldList, string>, 'total' | 'isLoading'>
+  /** Any data-view result; the header reads only `total` and `isPending` for the count. */
+  query: Pick<DataViewQueryResult<unknown, FieldList, string>, 'total' | 'isPending'>
   /** Heading level for semantics; visual size stays the same. Defaults to h2. */
   as?: 'h1' | 'h2' | 'h3'
   /** Right-aligned slot for page-level actions ("New", "Export", etc.). */
@@ -37,9 +37,7 @@ export function RecordsPageHeader({
   className,
 }: RecordsPageHeaderProps) {
   const Tag = as
-  const countText = query.isLoading
-    ? 'Loading…'
-    : formatTotalCount(query.total)
+  const countText = query.isPending ? 'Loading…' : formatTotalCount(query.total)
   return (
     <header className={cn('flex flex-wrap items-baseline gap-x-3 gap-y-1', className)}>
       <div className="flex flex-wrap items-baseline gap-x-2">
