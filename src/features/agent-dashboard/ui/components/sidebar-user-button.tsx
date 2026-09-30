@@ -46,7 +46,7 @@ export function SidebarUserButton({ user, onSettingsClick, onLogoutClick }: Side
             <SidebarMenuButton
               size="lg"
               tooltip={user.name}
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="data-[state=open]:bg-sidebar-hover data-[state=open]:text-sidebar-foreground"
             >
               <Avatar className="size-8 rounded-lg">
                 <AvatarImage src={user.image ?? undefined} alt={user.name} />
