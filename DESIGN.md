@@ -2,18 +2,19 @@
 name: Tri Pros Remodeling
 description: A two-world design system — an operational "Command Desk" for the CRM and "Blueprint Authority" for marketing & funnels.
 colors:
-  # The Command Desk (app / dashboard) — oklch is the normative source
-  cobalt-command: "oklch(0.6231 0.188 259.8145)"
-  app-background: "oklch(0.9846 0.0017 247.8389)"
-  app-foreground: "oklch(0.2781 0.0296 256.848)"
+  # The Command Desk (app / dashboard) — oklch is the normative source. Light
+  # values; dark-mode pairs are in the Colors section below and docs/design-system/tokens.md.
+  harbor-blue: "oklch(0.50 0.15 243)"
+  app-background: "oklch(0.965 0.009 246)"
+  app-foreground: "oklch(0.235 0.045 258)"
   app-card: "oklch(1 0 0)"
-  app-secondary: "oklch(0.967 0.0029 264.5419)"
-  app-muted-foreground: "oklch(0.551 0.0234 264.3637)"
-  app-border: "oklch(0.9276 0.0058 264.5313)"
+  app-secondary: "oklch(0.955 0.008 250)"
+  app-muted-foreground: "oklch(0.47 0.03 256)"
+  app-border: "oklch(0.905 0.012 252)"
   app-input: "oklch(1 0 0)"
-  destructive: "oklch(0.6368 0.2078 25.3313)"
-  success: "oklch(0.55 0.13 150)"
-  warning: "oklch(0.56 0.115 72)"
+  destructive: "oklch(0.53 0.19 27)"
+  success: "oklch(0.45 0.11 152)"
+  warning: "oklch(0.46 0.095 72)"
   # Blueprint Authority (marketing / funnels) — hex is the normative source
   blueprint-blue: "#03afed"
   blueprint-ink: "#0784b3"
@@ -67,7 +68,7 @@ spacing:
   block-pad: "36px"
 components:
   button-primary:
-    backgroundColor: "{colors.cobalt-command}"
+    backgroundColor: "{colors.harbor-blue}"
     textColor: "#ffffff"
     rounded: "{rounded.md}"
     padding: "8px 16px"
@@ -107,7 +108,7 @@ that share a bloodline (blue accent, real depth, no slop) but never blur into a
 single averaged look. **The Command Desk** is the internal CRM — a premium,
 cinematic operating cockpit where a lean sales team moves leads from call to
 signed contract. It is calm, dense-where-it-counts, and quietly luxurious:
-near-white neutrals, a single saturated **Cobalt Command** blue reserved for
+near-white neutrals, a navy rail, a single **Harbor Blue** accent reserved for
 action, and a signature frosted-glass surface for floating UI. **Blueprint
 Authority** is the marketing and funnel world — warm poured-concrete neutrals, a
 bright **Blueprint Blue** drafting-line accent, and drafting-paper textures that
@@ -143,25 +144,36 @@ OKLCH; the marketing world is built on warm concrete neutrals in hex. Each has
 exactly one accent, and its rarity is the point.
 
 ### Primary
-- **Cobalt Command** (`oklch(0.6231 0.188 259.8145)`): the app world's single
-  accent. Primary buttons, active nav, focus rings, selected states, chart series,
-  links on hover. It is the interactive voice of the CRM — if it is cobalt, it does
-  something.
+- **Harbor Blue** (light `oklch(0.50 0.15 243)` / dark `oklch(0.76 0.13 230)`): the
+  app world's single accent. It does one job — "act here": primary buttons, active
+  nav, focus rings, selected states, links on hover. In light mode it is a deep
+  logo-derived blue carrying a white label; in dark mode it brightens to a
+  logo-cyan and its label flips to navy (`--primary-foreground`), because a white
+  label on that bright a fill would fail contrast.
 - **Blueprint Blue** (`#03afed`): the marketing world's single accent — the drafting
   line on warm concrete. CTAs, eyebrows, decor strokes, the blueprint grid, credential
   emphasis. **Blueprint Ink** (`#0784b3`) is the same hue value-darkened for small
   text and hairlines where the bright blue would fail contrast on light.
 
 ### Neutral — The Command Desk (app)
-- **Cool Paper** (`oklch(0.9846 0.0017 247.8389)`): the app page background — a
-  faintly cool near-white.
-- **Slate Ink** (`oklch(0.2781 0.0296 256.848)`): primary text; a soft blue-slate,
-  never pure black.
-- **Card White** (`oklch(1 0 0)`): raised card / popover / input surface, one step
-  brighter than the page.
-- **Quiet Steel** (`oklch(0.551 0.0234 264.3637)`): muted-foreground for secondary
-  text and captions.
-- **Hairline** (`oklch(0.9276 0.0058 264.5313)`): borders and dividers.
+- **Cool Paper** (`oklch(0.965 0.009 246)`): the app page background — a faintly
+  cool near-white.
+- **Slate Ink** (`oklch(0.235 0.045 258)`): primary text; a soft blue-slate, never
+  pure black.
+- **Card White** (`oklch(1 0 0)`): raised card / popover / input-background
+  surface, one step brighter than the page.
+- **Surface Raised** (`oklch(0.978 0.006 250)`): column bodies, table heads and
+  hover rows — a step between the page and Card White.
+- **Quiet Steel** (`oklch(0.47 0.03 256)`): muted-foreground for secondary text
+  and captions.
+- **Hairline** (`oklch(0.905 0.012 252)`): borders and dividers. **Border Strong**
+  (`oklch(0.84 0.015 252)`) is the emphasized variant, for dashed empty states and
+  dividers that need to read as more than a hairline.
+- **Control Border** (`oklch(0.62 0.03 255)`, 3:1 against the card): the border on
+  inputs, textareas and other form controls — deliberately stronger than Hairline,
+  because a control needs a visible edge a divider doesn't.
+- **Navy Rail** (`oklch(0.215 0.072 262)` light / `oklch(0.13 0.05 262)` dark): the
+  sidebar fill — see Sidebar, below.
 
 ### Neutral — Blueprint Authority (marketing)
 - **Warm Concrete** (`#faf7f1` page, `#f4efe6` panel, `#efe7d7` raised): the poured-
@@ -173,18 +185,27 @@ exactly one accent, and its rarity is the point.
 - **Concrete Hairline** (`#ddd4c4`): borders and inputs.
 
 ### Status
-- **Destructive** (`oklch(0.6368 0.2078 25.3313)`), **Success** (`oklch(0.55 0.13 150)`),
-  **Warning** (`oklch(0.56 0.115 72)`): functional only. See the entity stage-color
-  convention below.
+- **Destructive** (`oklch(0.53 0.19 27)`), **Success** (`oklch(0.45 0.11 152)`),
+  **Warning** (`oklch(0.46 0.095 72)`): functional shadcn fills, each paired with a
+  `-foreground` label (white in light, navy in dark). For pipeline and entity UI,
+  use the seven Stage-Color tones below instead — they carry the meaning.
 
 ### Named Rules
-**The One Voice Rule.** Each world has exactly one accent (Cobalt Command in the
-app, Blueprint Blue in marketing). It lands on ≤10% of any screen. Its scarcity is
-what makes it read as "act here." Never introduce a second decorative accent hue.
+**The One Voice Rule.** Each world has exactly one accent (Harbor Blue in the app,
+Blueprint Blue in marketing). It lands on ≤10% of any screen. Its scarcity is what
+makes it read as "act here." Never introduce a second decorative accent hue.
 
 **The Stage-Color Rule.** In pipeline and entity UI, status color is semantic and
-fixed: red = bad, yellow = in-progress, green = converted, purple = action,
-blue = neutral. These are data, not decoration — never restyle them for taste.
+fixed, never restyled for taste. Seven tones carry the meaning — `info`, `pending`,
+`attention`, `action`, `success`, `danger`, `idle` — each with a `fg` (text), `bg`
+(fill) and `dot` (marker) value in both light and dark. They live in
+`src/shared/constants/status-tones.ts`: pipeline stage objects keep their
+`color: '<key>'` field, and `STAGE_COLOR_TONE` in that module maps each key to its
+tone. The rule's original meanings still hold — red = bad (`danger`),
+yellow = in-progress (`pending`), green = converted (`success`),
+purple = action (`action`) — except the **blue** stage, which now renders as a
+muted steel (`info`) instead of a saturated blue, so it stops competing with
+Harbor Blue.
 
 **The Warm-Cool Border Rule.** Never paste an app-world cool neutral into a
 marketing surface or vice versa. Warm concrete belongs to Blueprint Authority; cool
@@ -228,6 +249,16 @@ accents, never a paragraph face.
 **The Eyebrow-Only Uppercase Rule.** All-caps + wide tracking is reserved for short
 eyebrows and labels (`BlockEyebrow`). Never uppercase a sentence of body copy.
 
+**The 2px Rule (app).** Every dashboard font size is an even number of pixels,
+almost always a multiple of 4. The ramp is Tailwind's default steps and nothing
+else — `text-xs` 12px is the floor, up through `text-3xl` 30px and the `text-4xl`+
+steps (36/48/60/72/96/128px). No bespoke `--text-*` step is added for the app
+world. `eslint.config.js`'s `theme-tokens/type-ramp` guard rejects any fixed
+`text-[Npx]` / `text-[Nrem]` literal under `src/features/**` and `src/shared/**`,
+and `pnpm theme:check` proves the ramp's line-heights stay on a 4px grid. (The
+fluid `--text-presentation-*` clamps used by the meeting-flow presentation are
+exempt — the follow-ups doc has the reason.)
+
 ## Layout
 
 The app world uses a shadcn app-shell: a full-height collapsible sidebar
@@ -257,11 +288,17 @@ This is a **layered, brand-tinted** depth system — never flat, never generic g
 Both worlds tint their shadows toward blue so elevation reads as "ours."
 
 - **The Command Desk** carries a signature **frosted-glass** surface for popovers and
-  floating UI: a semi-transparent fill (`--popover-glass`, ~78% alpha in light, ~50%
+  floating UI: a semi-transparent fill (`--popover-glass`, ~78% alpha in light, ~62%
   in dark) over a `backdrop-filter` blur, finished with a four-layer shadow — an inset
   top-edge sheen (the lit glass rim), a 1px hairline, a close proximity drop, and a
   far elevation drop (`--popover-glass-shadow`). This is the most recognizable detail
   in the app; treat it as a brand asset, not a default.
+- **The Command Desk's card/dialog shadow ramp** (`--shadow-xs` … `--shadow-2xl`) is
+  navy-tinted, not flat gray. In light mode every step is a soft
+  `oklch(0.25 0.05 258 / …)` drop that widens and deepens through the ramp; in dark
+  mode the low steps add an inset top highlight (`inset 0 1px 0 white / 0.04–0.06`)
+  before the drop grows to `oklch(0 0 0 / 0.6–0.7)` — dark surfaces need a lit top
+  edge to read as raised rather than sunken. `--radius` stays `0.5rem`.
 - **Blueprint Authority** uses a warm elevation ramp where every shadow pairs a black
   drop for honest depth with a faint **Blueprint-Blue** accent layer underneath
   (`--shadow-card` … `--shadow-xl`), so panels lift with a subtle blue cast rather
@@ -312,8 +349,8 @@ responsive depth.
 ### Buttons
 - **Shape:** `rounded-md` (6px). Sizes run `sm` (h-8) → `default` (h-9) → `lg` (h-10)
   → `xl` (h-12) → `xll` (h-14), padding scaling with height.
-- **Primary / default:** `bg-primary` (Cobalt Command) + white text + `shadow-xs`;
-  hover deepens to `bg-primary/90`.
+- **Primary / default:** `bg-primary` (Harbor Blue) + `text-primary-foreground`
+  (white in light, navy in dark) + `shadow-xs`; hover deepens to `bg-primary/90`.
 - **CTA (`cta`):** the marketing hero button — a deepened Blueprint-Blue gradient
   (`--cta-from` → `--cta-to`) sized for AA+ white text, with `--cta-ring` for edge
   definition. Never a glow.
@@ -338,11 +375,22 @@ responsive depth.
 - **Focus:** a 3px `ring-ring/50` in the world's accent plus a border shift — crisp,
   not a glow. `aria-invalid` swaps the ring to destructive.
 
-### Navigation (app sidebar)
-- **Style:** icon + label rows (`SIDEBAR_NAV_ITEM_CLASS`). Rest is transparent; **hover** is a
-  soft `primary @ 6%` wash with the icon tinting to primary (no border, no shadow —
-  it hints interactivity without mimicking the active state). Active state is the
-  fuller treatment.
+### Navigation (app sidebar) — the Navy Rail
+- **Shell:** a floating panel (`<Sidebar variant="floating">`), not a flush-edge
+  bar — 18px corner radius, `--shadow-lg`, and a `--sidebar-border` hairline. It
+  sits inset from the viewport edge on iPad and desktop, in both modes.
+- **Fill:** `--sidebar` — a navy anchor, `oklch(0.215 0.072 262)` in light,
+  `oklch(0.13 0.05 262)` in dark (one step deeper, so dark mode's rail still reads
+  darker than its own cards). Labels sit in `--sidebar-foreground`; group labels
+  and at-rest icons use the dimmer `--sidebar-muted`.
+- **Active state:** a solid cyan pill, `--sidebar-accent` (`oklch(0.80 0.12 228)`,
+  the same value in both modes), with a navy label, `--sidebar-accent-foreground`.
+  The active icon uses `--sidebar-primary`, the same navy as the label — never the
+  rail's own navy fill, or the icon would vanish against it.
+- **Hover:** `--sidebar-hover`, a near-transparent white wash (6% light / 5% dark)
+  — no border, no shadow. It hints interactivity without mimicking the active pill
+  (icon + label rows, `SIDEBAR_NAV_ITEM_CLASS`).
+- **Ring/focus:** `--sidebar-ring`, the same cyan as the active pill.
 
 ### Frosted-Glass Popover (signature)
 - The Command Desk's signature surface: `--popover-glass` fill over `backdrop-filter`
