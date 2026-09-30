@@ -208,8 +208,8 @@ Use slash-separated paths to reference any view context unambiguously. Format: `
 | `Pipeline[fresh]/Kanban/Customer/Meeting/Proposal` | `customer-pipelines/ui/components/customer-kanban-card.tsx` | `useProposalActionConfigs` |
 | `Pipeline[projects]/Kanban/Customer/Project` | `customer-pipelines/ui/components/customer-kanban-card.tsx` | `useProjectActionConfigs` |
 | `Pipeline[projects]/Kanban/Customer/Project/Proposal` | `customer-pipelines/ui/components/customer-kanban-card.tsx` | `useProposalActionConfigs` |
-| `Meetings/Calendar/Meeting` | `meeting-flow/ui/components/calendar/meeting-calendar.tsx` | `useMeetingActionConfigs` |
-| `Meetings/Calendar/Meeting` (dot) | `meeting-flow/ui/components/calendar/meeting-calendar-dot.tsx` | `useMeetingActionConfigs` |
+| `Meetings/Calendar/Meeting` | `schedule-management/ui/components/schedule-meetings-calendar.tsx` | `useMeetingActionConfigs` |
+| `Meetings/Calendar/Meeting` (dot) | `schedule-management/ui/components/schedule-calendar-dot.tsx` | `useMeetingActionConfigs` |
 | `Meetings/Table/Meeting` | `shared/entities/meetings/components/meetings-table/` | `useMeetingActionConfigs` |
 | `Proposals/Table/Proposal` | `proposal-flow/ui/components/table/` | `useProposalActionConfigs` |
 | `Projects/Table/Project` | `project-management/ui/components/table/` | `useProjectActionConfigs` |
