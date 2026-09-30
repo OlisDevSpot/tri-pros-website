@@ -8,7 +8,6 @@ import type { SaleFact } from '@/shared/modules/proposals/core/dal/server/analyt
 
 import assert from 'node:assert/strict'
 
-import { meetingMonthWindow } from '@/features/agent-dashboard/lib/meeting-windows'
 import { REPORT_TABS } from '@/features/analytics/constants/tabs'
 import { aggregateLeadRecords } from '@/features/analytics/lib/aggregate-lead-records'
 import { addMonths, lastDayOfMonth, monthsBetween, resolveAnalyticsPeriod } from '@/features/analytics/lib/analytics-periods'
@@ -186,7 +185,6 @@ assert.equal(businessMonthKey(new Date('2026-08-01T07:00:00.000Z')), '2026-08', 
 assert.deepEqual(businessMonthWindow('2026-03'), { from: '2026-03-01T08:00:00.000Z', to: '2026-04-01T07:00:00.000Z' }, 'March spans the spring-forward switch')
 assert.deepEqual(businessMonthWindow('2026-11'), { from: '2026-11-01T07:00:00.000Z', to: '2026-12-01T08:00:00.000Z' }, 'November spans the fall-back switch')
 assert.deepEqual(businessMonthWindow('2026-12'), { from: '2026-12-01T08:00:00.000Z', to: '2027-01-01T08:00:00.000Z' }, 'December rolls the year')
-assert.deepEqual(meetingMonthWindow('2026-03-15'), businessMonthWindow('2026-03'), 'dashboard month window is the business month window')
 console.log('7. Pacific months ✓')
 
 // ── 8. Sales (classification) ───────────────────────────────────────────────

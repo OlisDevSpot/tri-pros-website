@@ -4,18 +4,19 @@
 // module inlining its own pagination/sort/filter shape.
 //
 // Each builder's return type is checked with `satisfies` against the real
-// procedure input type (imported, not hand-mirrored) — see
-// docs/codebase-conventions for why builders are isolated in one file: a
-// wrong filter/sort key here fails `pnpm tsc`, not a runtime 500.
+// procedure input type (imported, not hand-mirrored): a wrong filter/sort
+// key here fails `pnpm tsc`, not a runtime 500.
 
 import type { inferRouterInputs } from '@trpc/server'
 import type { MeetingWindowKind } from '../lib/meeting-windows'
+import type { DataViewQueryConfig } from '@/shared/dal/lib/query/data-view-query-config'
 import type { MeetingListInput } from '@/shared/entities/meetings/dal/server/queries'
 import type { ProposalListInput } from '@/shared/modules/proposals/core/dal/server/queries'
 import type { AppRouter } from '@/trpc/routers/app'
 
 import { LIVE_MEETING_OUTCOMES } from '@/shared/constants/enums'
-import { meetingMonthWindow, meetingWindow } from '../lib/meeting-windows'
+import { MEETING_FIELDS } from '@/shared/entities/meetings/dal/meeting-fields'
+import { meetingWindow } from '../lib/meeting-windows'
 
 // `projects.crud.list`'s input isn't exported as a named schema/type (it's
 // inlined in the router's `.input(...)`), so it's pulled off the router type
@@ -23,8 +24,8 @@ import { meetingMonthWindow, meetingWindow } from '../lib/meeting-windows'
 // dashboard's `DashboardProjectSection` can type its `input` prop against it.
 export type ProjectsListInput = inferRouterInputs<AppRouter>['projectsRouter']['crud']['list']
 
-/** Top-N caps shared by every dashboard module that lists this entity. */
-export const DASHBOARD_LIMITS = { meetings: 8, proposals: 20, proposalsPerSection: 5, projects: 15, projectsPerSection: 5, actionQueue: 8 } as const
+/** Caps shared by every dashboard module that lists this entity — a Top-N slice for most, the month grid's row cap for the meetings calendar. */
+export const DASHBOARD_LIMITS = { meetings: 8, meetingsCalendar: 500, proposals: 20, proposalsPerSection: 5, projects: 15, projectsPerSection: 5, actionQueue: 8 } as const
 
 /** Meetings list input for a Today/Upcoming/Past window, sorted by `scheduledFor`. */
 export function meetingsWindowInput(kind: MeetingWindowKind) {
@@ -35,14 +36,17 @@ export function meetingsWindowInput(kind: MeetingWindowKind) {
   } satisfies MeetingListInput
 }
 
-/** All meetings in the LA calendar month of `anchorCalendarDay`, live outcomes only, chronological. */
-export function meetingsMonthInput(anchorCalendarDay: string) {
-  return {
-    pagination: { limit: 200, offset: 0 },
-    sort: { sortBy: 'scheduledFor', sortDir: 'asc' },
-    filters: { scheduledFor: meetingMonthWindow(anchorCalendarDay), outcome: LIVE_MEETING_OUTCOMES },
-  } satisfies MeetingListInput
-}
+/** Live outcomes only: pinned by the procedure through `DASHBOARD_MEETINGS_EXTRA`, since a data-view config never pins a filter. */
+export const DASHBOARD_MEETINGS_QUERY = {
+  fields: MEETING_FIELDS,
+  paramPrefix: 'dm',
+  toolbar: [],
+  defaultSort: { sortBy: 'scheduledFor', sortDir: 'asc' },
+  window: { kind: 'date', field: 'scheduledFor', cap: DASHBOARD_LIMITS.meetingsCalendar, views: ['month'] },
+} as const satisfies DataViewQueryConfig<typeof MEETING_FIELDS>
+
+/** The calendar read's `extra`; the page's prefetch and the hub's hook pass this one object so their keys match. */
+export const DASHBOARD_MEETINGS_EXTRA = { liveOnly: true } as const
 
 /** Proposals awaiting the homeowner's signature (contract sent, unsigned/undeclined). */
 export function awaitingProposalsInput() {

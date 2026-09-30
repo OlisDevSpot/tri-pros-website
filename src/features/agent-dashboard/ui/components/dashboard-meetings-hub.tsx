@@ -1,32 +1,37 @@
 'use client'
 
-import { format } from 'date-fns'
 import { CalendarCheckIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 
+import { DASHBOARD_MEETINGS_EXTRA, DASHBOARD_MEETINGS_QUERY } from '@/features/agent-dashboard/constants/dashboard-queries'
 import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
+import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { businessDayKey, businessToday } from '@/shared/lib/business-time'
+import { useTRPC } from '@/trpc/helpers'
 
 import { DashboardMeetingsCalendar } from './dashboard-meetings-calendar'
 import { DashboardModule } from './dashboard-module'
 
 /**
- * Meetings module — the dashboard's focal moment. Owns the calendar's month +
- * selected-day state so the header can carry a compact "Today" reset (an icon
- * button beside "See all →") without spending a calendar row on it. Renders the
- * month calendar + day-agenda composition (see ./dashboard-meetings-calendar.tsx),
- * which replaced the earlier Today/Upcoming/Past tabs.
+ * Meetings module — the dashboard's focal moment. Owns the calendar's read (month in the URL as `dm_d`, so Back
+ * steps months) and the picked day, so the header can carry a compact "Today" reset (an icon button beside
+ * "See all →") without spending a calendar row on it.
  */
 export function DashboardMeetingsHub() {
-  const [selectedDay, setSelectedDay] = useState<Date>(() => new Date(`${businessToday()}T12:00:00`))
-  const [month, setMonth] = useState<Date>(() => new Date(`${businessToday()}T12:00:00`))
+  const trpc = useTRPC()
+  const query = useDataViewQuery(trpc.meetingsRouter.reads.list, DASHBOARD_MEETINGS_EXTRA, DASHBOARD_MEETINGS_QUERY)
+  const { anchor, range, isPending, setAnchor } = query.window
+  const [pickedDay, setPickedDay] = useState(businessToday)
 
   const todayKey = businessToday()
-  const isViewingToday
-    = businessDayKey(selectedDay) === todayKey
-      && format(month, 'yyyy-MM') === todayKey.slice(0, 7)
+  // A fresh load or Back can land on a month whose grid doesn't hold the picked day. The agenda then lists the
+  // month's anchor day instead of calling a day it never read empty.
+  const shownDay = pickedDay >= businessDayKey(new Date(range.from)) && pickedDay <= businessDayKey(new Date(range.to))
+    ? pickedDay
+    : anchor
+  const isViewingToday = shownDay === todayKey && anchor.slice(0, 7) === todayKey.slice(0, 7)
 
   return (
     <DashboardModule
@@ -41,9 +46,8 @@ export function DashboardMeetingsHub() {
             title="Today"
             disabled={isViewingToday}
             onClick={() => {
-              const today = new Date(`${todayKey}T12:00:00`)
-              setSelectedDay(today)
-              setMonth(today)
+              setPickedDay(todayKey)
+              setAnchor(undefined)
             }}
             className="-my-1 size-8 text-muted-foreground hover:text-primary"
           >
@@ -59,10 +63,14 @@ export function DashboardMeetingsHub() {
       )}
     >
       <DashboardMeetingsCalendar
-        month={month}
-        onMonthChange={setMonth}
-        selectedDay={selectedDay}
-        onSelectDay={setSelectedDay}
+        rows={query.rows}
+        isPending={isPending}
+        isError={query.isError}
+        onRetry={() => void query.refresh()}
+        month={anchor}
+        onMonthChange={setAnchor}
+        selectedDay={shownDay}
+        onSelectDay={setPickedDay}
       />
     </DashboardModule>
   )
