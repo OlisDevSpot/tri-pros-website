@@ -1,6 +1,5 @@
 // src/shared/lib/file-optimization/strategies/pdf.ts
 import type { Buffer } from 'node:buffer'
-import { PDFDocument } from 'pdf-lib'
 
 /**
  * Best-effort page count for a PDF. Returns null (never throws) when the PDF
@@ -12,6 +11,7 @@ import { PDFDocument } from 'pdf-lib'
  */
 export async function readPdfPageCount(buffer: Buffer): Promise<number | null> {
   try {
+    const { PDFDocument } = await import('pdf-lib')
     const doc = await PDFDocument.load(buffer, { ignoreEncryption: true })
     return doc.getPageCount()
   }
