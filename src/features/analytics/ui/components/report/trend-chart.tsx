@@ -4,7 +4,6 @@ import type { ChartSeriesKey } from '@/features/analytics/constants/chart-series
 import type { ReportTab } from '@/features/analytics/constants/tabs'
 import type { AnalyticsReport } from '@/features/analytics/types'
 
-import { SERIES_COLOR_VARS } from '@/features/analytics/constants/chart-series'
 import { ANALYTICS_INTERVALS } from '@/features/analytics/constants/dimensions'
 import { INTERVAL_LABELS } from '@/features/analytics/constants/labels'
 import { METRICS } from '@/features/analytics/constants/metrics'
@@ -43,7 +42,7 @@ export function TrendChart({ tab, report }: Props) {
   }
 
   return (
-    <section aria-labelledby="trend-heading" className={cn('flex min-w-0 flex-col gap-3', SERIES_COLOR_VARS)}>
+    <section aria-labelledby="trend-heading" className={cn('flex min-w-0 flex-col gap-3')}>
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <div className="flex items-center gap-3">
           {/* The step control and the tick labels already say day, week or month. */}

@@ -3,8 +3,7 @@
  * background / foreground / ring triplet that works in both light and dark
  * mode (opacity-based backgrounds + a high-contrast foreground).
  *
- * Kept intentionally small (10 hues) and evenly-spaced around the color
- * wheel so two adjacent colors in a participant stack read as distinct.
+ * Eight hues, 45° apart, L-matched per mode, so one person keeps one hue in light and dark.
  */
 export interface UserColorToken {
   /** Avatar fallback background (subtle tint). */
@@ -16,16 +15,14 @@ export interface UserColorToken {
 }
 
 const USER_COLOR_PALETTE: readonly UserColorToken[] = [
-  { bg: 'bg-amber-500/25', text: 'text-amber-700 dark:text-amber-200', ring: 'ring-amber-500/50' },
-  { bg: 'bg-rose-500/25', text: 'text-rose-700 dark:text-rose-200', ring: 'ring-rose-500/50' },
-  { bg: 'bg-sky-500/25', text: 'text-sky-700 dark:text-sky-200', ring: 'ring-sky-500/50' },
-  { bg: 'bg-emerald-500/25', text: 'text-emerald-700 dark:text-emerald-200', ring: 'ring-emerald-500/50' },
-  { bg: 'bg-violet-500/25', text: 'text-violet-700 dark:text-violet-200', ring: 'ring-violet-500/50' },
-  { bg: 'bg-fuchsia-500/25', text: 'text-fuchsia-700 dark:text-fuchsia-200', ring: 'ring-fuchsia-500/50' },
-  { bg: 'bg-cyan-500/25', text: 'text-cyan-700 dark:text-cyan-200', ring: 'ring-cyan-500/50' },
-  { bg: 'bg-orange-500/25', text: 'text-orange-700 dark:text-orange-200', ring: 'ring-orange-500/50' },
-  { bg: 'bg-lime-500/25', text: 'text-lime-700 dark:text-lime-200', ring: 'ring-lime-500/50' },
-  { bg: 'bg-pink-500/25', text: 'text-pink-700 dark:text-pink-200', ring: 'ring-pink-500/50' },
+  { bg: 'bg-identity-1-bg', text: 'text-identity-1-fg', ring: 'ring-identity-1-ring' },
+  { bg: 'bg-identity-2-bg', text: 'text-identity-2-fg', ring: 'ring-identity-2-ring' },
+  { bg: 'bg-identity-3-bg', text: 'text-identity-3-fg', ring: 'ring-identity-3-ring' },
+  { bg: 'bg-identity-4-bg', text: 'text-identity-4-fg', ring: 'ring-identity-4-ring' },
+  { bg: 'bg-identity-5-bg', text: 'text-identity-5-fg', ring: 'ring-identity-5-ring' },
+  { bg: 'bg-identity-6-bg', text: 'text-identity-6-fg', ring: 'ring-identity-6-ring' },
+  { bg: 'bg-identity-7-bg', text: 'text-identity-7-fg', ring: 'ring-identity-7-ring' },
+  { bg: 'bg-identity-8-bg', text: 'text-identity-8-fg', ring: 'ring-identity-8-ring' },
 ] as const
 
 /**
