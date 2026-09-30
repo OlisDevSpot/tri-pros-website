@@ -16,7 +16,8 @@ import { STORY_COPY } from '@/features/calculators/remodel-roi-calculator/consta
 import { formatMoney } from '@/features/calculators/remodel-roi-calculator/lib/format-money'
 import { SegmentRect } from '@/features/calculators/remodel-roi-calculator/ui/components/charts/segment-rect'
 import { ChartTooltipCard } from '@/shared/components/charts/chart-tooltip-card'
-import { ChartContainer, ChartTooltip } from '@/shared/components/ui/chart'
+import { PinnedChartTooltip } from '@/shared/components/charts/pinned-chart-tooltip'
+import { ChartContainer } from '@/shared/components/ui/chart'
 import { usePinnedChartTooltip } from '@/shared/hooks/use-pinned-chart-tooltip'
 
 interface Props {
@@ -73,7 +74,7 @@ export function MonthlyBreakdownChart({ projection, lookAhead }: Props) {
         <CartesianGrid stroke="var(--border)" vertical={false} />
         <XAxis axisLine={false} dataKey="t" tickFormatter={t => `Yr ${t}`} tickLine={false} />
         <YAxis axisLine={false} tickFormatter={value => formatMoney(Number(value))} tickLine={false} width={72} />
-        <ChartTooltip active={tooltip.tooltipActive} content={content} cursor={false} shared={false} />
+        <PinnedChartTooltip content={content} cursor={false} pin={tooltip.pin} shared={false} />
         {segments.map(segment => (
           <Bar
             activeBar

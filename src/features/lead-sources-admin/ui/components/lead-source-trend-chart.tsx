@@ -10,7 +10,8 @@ import { LEAD_SOURCE_TREND_CHART_CONFIG } from '@/features/lead-sources-admin/co
 import { formatBucketLabel } from '@/features/lead-sources-admin/lib/format-bucket-label'
 import { formatTimeRangeClause } from '@/features/lead-sources-admin/lib/format-time-range-clause'
 import { LeadSourceTrendTooltip } from '@/features/lead-sources-admin/ui/components/lead-source-trend-tooltip'
-import { ChartContainer, ChartTooltip } from '@/shared/components/ui/chart'
+import { PinnedChartTooltip } from '@/shared/components/charts/pinned-chart-tooltip'
+import { ChartContainer } from '@/shared/components/ui/chart'
 import { usePinnedChartTooltip } from '@/shared/hooks/use-pinned-chart-tooltip'
 import { formatAsCount } from '@/shared/lib/formatters'
 
@@ -42,7 +43,7 @@ export function LeadSourceTrendChart({ trend, bucket, chip }: Props) {
             className="text-xs"
             stroke="var(--muted-foreground)"
           />
-          <ChartTooltip active={tooltip.tooltipActive} content={props => <LeadSourceTrendTooltip {...props} bucket={bucket} />} />
+          <PinnedChartTooltip content={props => <LeadSourceTrendTooltip {...props} bucket={bucket} />} pin={tooltip.pin} />
           <Legend wrapperStyle={{ fontSize: 12 }} iconType="line" />
           <Line type="monotone" dataKey="leads" stroke="var(--color-leads)" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name={LEAD_SOURCE_TREND_CHART_CONFIG.leads.label} />
           <Line type="monotone" dataKey="meetings" stroke="var(--color-meetings)" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name={LEAD_SOURCE_TREND_CHART_CONFIG.meetings.label} />

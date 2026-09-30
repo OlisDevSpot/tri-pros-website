@@ -13,7 +13,8 @@ import { STORY_COPY } from '@/features/calculators/remodel-roi-calculator/consta
 import { formatMoney, roundMoney } from '@/features/calculators/remodel-roi-calculator/lib/format-money'
 import { ChartTooltipCard } from '@/shared/components/charts/chart-tooltip-card'
 import { LegendSwatches } from '@/shared/components/charts/legend-swatches'
-import { ChartContainer, ChartTooltip } from '@/shared/components/ui/chart'
+import { PinnedChartTooltip } from '@/shared/components/charts/pinned-chart-tooltip'
+import { ChartContainer } from '@/shared/components/ui/chart'
 import { usePinnedChartTooltip } from '@/shared/hooks/use-pinned-chart-tooltip'
 
 interface Props {
@@ -40,7 +41,7 @@ export function HomeValueChart({ projection, lookAhead }: Props) {
           <CartesianGrid stroke="var(--border)" vertical={false} />
           <XAxis axisLine={false} dataKey="t" tickFormatter={t => (t === 0 ? 'Now' : `Yr ${t}`)} tickLine={false} />
           <YAxis axisLine={false} domain={[0, 'auto']} tickFormatter={value => roundMoney(Number(value))} tickLine={false} width={72} />
-          <ChartTooltip active={tooltip.tooltipActive} content={content} />
+          <PinnedChartTooltip content={content} pin={tooltip.pin} />
           {waits && <Line dataKey="valueWait" dot={false} isAnimationActive={!reduceMotion} stroke="var(--color-valueWait)" strokeWidth={2.5} type="stepAfter" />}
           <Line dataKey="valueNow" dot={false} isAnimationActive={!reduceMotion} stroke="var(--color-valueNow)" strokeWidth={2.5} type="monotone" />
         </LineChart>

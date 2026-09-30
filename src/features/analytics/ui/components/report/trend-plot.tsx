@@ -74,7 +74,7 @@ export function TrendPlot({ rows, interval, panels, onBucket }: Props) {
       <div ref={scroller} className="overflow-x-auto overscroll-x-contain pb-1">
         <div className="flex flex-col gap-2" style={{ minWidth, width: '100%' }}>
           {panels.map((panel, i) => (
-            <TrendBars key={panel.format} rows={rows} interval={interval} series={panel.series} ticks={scales[i]} height={panel.height} tooltipActive={tooltip.tooltipActive} onBucket={tap} />
+            <TrendBars key={panel.format} rows={rows} interval={interval} series={panel.series} ticks={scales[i]} height={panel.height} pin={tooltip.pin} onBucket={tap} />
           ))}
         </div>
       </div>

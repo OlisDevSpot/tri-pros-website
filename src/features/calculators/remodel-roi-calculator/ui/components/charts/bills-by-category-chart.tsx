@@ -15,7 +15,8 @@ import { formatMoney } from '@/features/calculators/remodel-roi-calculator/lib/f
 import { SegmentRect } from '@/features/calculators/remodel-roi-calculator/ui/components/charts/segment-rect'
 import { ChartTooltipCard } from '@/shared/components/charts/chart-tooltip-card'
 import { LegendSwatches } from '@/shared/components/charts/legend-swatches'
-import { ChartContainer, ChartTooltip } from '@/shared/components/ui/chart'
+import { PinnedChartTooltip } from '@/shared/components/charts/pinned-chart-tooltip'
+import { ChartContainer } from '@/shared/components/ui/chart'
 import { usePinnedChartTooltip } from '@/shared/hooks/use-pinned-chart-tooltip'
 
 interface Props {
@@ -49,7 +50,7 @@ export function BillsByCategoryChart({ projection, lookAhead }: Props) {
           <CartesianGrid stroke="var(--border)" vertical={false} />
           <XAxis axisLine={false} dataKey="label" tickLine={false} />
           <YAxis axisLine={false} tickFormatter={value => formatMoney(Number(value))} tickLine={false} width={72} />
-          <ChartTooltip active={tooltip.tooltipActive} content={content} cursor={false} shared={false} />
+          <PinnedChartTooltip content={content} cursor={false} pin={tooltip.pin} shared={false} />
           {used.map((category, position) => (
             <Bar
               activeBar

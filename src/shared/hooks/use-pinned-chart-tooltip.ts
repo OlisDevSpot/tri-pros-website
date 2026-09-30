@@ -2,17 +2,46 @@ import type { PointerEvent as ReactPointerEvent } from 'react'
 
 import { useEffect, useRef, useState } from 'react'
 
-// Chromium's touch emulation never fires a touchmove for a tap alone, so its active axis index never updates
-// past the first one; replaying a mousemove at the tap's own point makes recharts re-run that selection
-// itself (WebKit taps already re-select through their own compat mouse events). Targets only the wrapper
-// under the tap: recharts throttles this move through one shared scheduler, so dispatching to every wrapper
-// in a syncId group would only let the last one land — the rest follow recharts' own sync instead.
-function forceReselect(container: Element, clientX: number, clientY: number) {
+/** What a pinned tooltip reads: `active` for `<Tooltip>`, undefined while a mouse drives recharts' own hover. */
+export interface ChartTooltipPin {
+  subscribe: (listener: () => void) => () => void
+  getActive: () => boolean | undefined
+}
+
+// Lives outside React state: re-rendering the chart that owns the hook hands recharts fresh data, axis and bar
+// props, which rebuilds every bar and replays its entry animation, so only the tooltip subscribes to it.
+function createPin() {
+  let active: boolean | undefined
+  const listeners = new Set<() => void>()
+  return {
+    subscribe: (listener: () => void) => {
+      listeners.add(listener)
+      return () => {
+        listeners.delete(listener)
+      }
+    },
+    getActive: () => active,
+    set: (next: boolean | undefined) => {
+      if (next !== active) {
+        active = next
+        listeners.forEach(listener => listener())
+      }
+    },
+  }
+}
+
+// A tap's compat mouse events arrive only after the finger lifts (and Chromium's touch emulation never re-selects a
+// line chart's x past the first tap), so the pin would show whatever was selected before, such as the last mouse
+// hover. A mouseover at the tap selects it at once: per-item tooltips through the segment's own enter, axis tooltips
+// through the wrapper's. Only the chart under the tap gets it: recharts throttles the axis selection through one
+// scheduler shared by every chart, so in a syncId group only the last dispatch would land; the rest follow its sync.
+function forceReselect(container: Element, target: EventTarget, clientX: number, clientY: number) {
   const wrapper = Array.from(container.querySelectorAll('.recharts-wrapper')).find((element) => {
     const rect = element.getBoundingClientRect()
     return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom
   })
-  wrapper?.dispatchEvent(new MouseEvent('mousemove', { clientX, clientY, bubbles: true, cancelable: true }))
+  const arrivedAt = target instanceof Element && wrapper?.contains(target) ? target : wrapper
+  arrivedAt?.dispatchEvent(new MouseEvent('mouseover', { clientX, clientY, bubbles: true, cancelable: true }))
 }
 
 // WebKit's compat mouseout on an outside tap fires on whatever the tap actually landed on, never on the
@@ -37,45 +66,52 @@ function clearHover(container: Element) {
  */
 export function usePinnedChartTooltip<T extends HTMLElement = HTMLDivElement>() {
   const ref = useRef<T>(null)
-  const [pinned, setPinned] = useState(false)
-  const [touchLike, setTouchLike] = useState(false)
+  const pendingPin = useRef(0)
+  const [pin] = useState(createPin)
 
   useEffect(() => {
-    if (!pinned) {
-      return
-    }
     const releaseOutside = (event: PointerEvent) => {
-      if (!(event.target instanceof Node) || !ref.current?.contains(event.target)) {
-        setPinned(false)
-        if (ref.current) {
-          clearHover(ref.current)
-        }
+      if (event.target instanceof Node && ref.current?.contains(event.target)) {
+        return
+      }
+      cancelAnimationFrame(pendingPin.current)
+      if (pin.getActive() !== true) {
+        return
+      }
+      pin.set(false)
+      if (ref.current) {
+        clearHover(ref.current)
       }
     }
     document.addEventListener('pointerdown', releaseOutside, true)
     return () => document.removeEventListener('pointerdown', releaseOutside, true)
-  }, [pinned])
+  }, [pin])
 
   return {
-    pinned,
     /** Spread on the element wrapping the chart (or every chart sharing a syncId). */
     containerProps: {
       ref,
       onPointerDownCapture: (event: ReactPointerEvent<T>) => {
-        const isTouchLike = event.pointerType !== 'mouse'
-        setTouchLike(isTouchLike)
-        setPinned(isTouchLike)
-        if (isTouchLike && ref.current) {
-          forceReselect(ref.current, event.clientX, event.clientY)
+        cancelAnimationFrame(pendingPin.current)
+        if (event.pointerType === 'mouse') {
+          pin.set(undefined)
+          return
         }
+        if (ref.current) {
+          forceReselect(ref.current, event.target, event.clientX, event.clientY)
+        }
+        // An axis tooltip applies that selection on recharts' next animation frame; pinning in the same frame,
+        // after it, keeps the tooltip from first flashing whatever was selected before.
+        pendingPin.current = requestAnimationFrame(() => pin.set(true))
       },
       onPointerMove: (event: ReactPointerEvent<T>) => {
         if (event.pointerType === 'mouse') {
-          setTouchLike(false)
+          cancelAnimationFrame(pendingPin.current)
+          pin.set(undefined)
         }
       },
     },
-    /** Pass to `<Tooltip active>`; undefined leaves recharts' own hover in charge (real mouse use). */
-    tooltipActive: touchLike ? pinned : undefined,
+    /** Pass to `<PinnedChartTooltip pin>`. */
+    pin,
   }
 }

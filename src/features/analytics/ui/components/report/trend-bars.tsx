@@ -5,6 +5,7 @@ import type { TooltipContentProps } from 'recharts'
 import type { ChartSeriesKey } from '@/features/analytics/constants/chart-series'
 import type { AnalyticsInterval } from '@/features/analytics/constants/dimensions'
 import type { ChartRow } from '@/features/analytics/lib/chart-rows'
+import type { ChartTooltipPin } from '@/shared/hooks/use-pinned-chart-tooltip'
 
 import { useLayoutEffect, useRef, useState } from 'react'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
@@ -15,7 +16,8 @@ import { CHART_BAR_GAP, groupedBarSize } from '@/features/analytics/lib/chart-ba
 import { chartBucketTitle, chartTickLabel } from '@/features/analytics/lib/chart-rows'
 import { metricDisplayText } from '@/features/analytics/lib/read-metric'
 import { ChartTooltipCard } from '@/shared/components/charts/chart-tooltip-card'
-import { ChartContainer, ChartTooltip } from '@/shared/components/ui/chart'
+import { PinnedChartTooltip } from '@/shared/components/charts/pinned-chart-tooltip'
+import { ChartContainer } from '@/shared/components/ui/chart'
 
 interface Props {
   rows: ChartRow[]
@@ -24,13 +26,13 @@ interface Props {
   /** The fixed axis's scale; this plot hides its own axis but draws gridlines on the same ticks. */
   ticks: number[]
   height: number
-  tooltipActive?: boolean
+  pin: ChartTooltipPin
   /** Every click or tap on a bucket; the plot decides which ones zoom. */
   onBucket?: (row: ChartRow) => void
 }
 
 /** One grouped-bar panel; panels share a sync id so one hover reads counts and dollars together. */
-export function TrendBars({ rows, interval, series, ticks, height, tooltipActive, onBucket }: Props) {
+export function TrendBars({ rows, interval, series, ticks, height, pin, onBucket }: Props) {
   const [plotWidth, setPlotWidth] = useState(0)
   const measure = useRef<HTMLDivElement>(null)
   useLayoutEffect(() => {
@@ -83,8 +85,8 @@ export function TrendBars({ rows, interval, series, ticks, height, tooltipActive
             className="text-xs"
           />
           <YAxis hide domain={[0, ticks[ticks.length - 1]]} ticks={ticks} />
-          <ChartTooltip
-            active={tooltipActive}
+          <PinnedChartTooltip
+            pin={pin}
             cursor={{ fill: 'var(--muted)', fillOpacity: 0.6 }}
             content={content}
           />
