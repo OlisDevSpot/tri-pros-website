@@ -10,12 +10,14 @@ import { ActivityForm } from '@/features/schedule-management/ui/components/activ
 import { ScheduleActivitiesCalendar } from '@/features/schedule-management/ui/components/schedule-activities-calendar'
 import { ScheduleMeetingsCalendar } from '@/features/schedule-management/ui/components/schedule-meetings-calendar'
 import { ScheduleShowToggle } from '@/features/schedule-management/ui/components/schedule-show-toggle'
+import { useIsHydrating } from '@/shared/hooks/use-is-hydrating'
 
 export function ScheduleView() {
   const [show, setShow] = useQueryState('show', scheduleShowParser)
   const [showSaturday, setShowSaturday] = useState(false)
   const [activityFormOpen, setActivityFormOpen] = useState(false)
   const { isHighlighted, highlightRef } = useScheduleHighlight()
+  const isHydrating = useIsHydrating()
 
   const handleToggleSaturday = useCallback(() => setShowSaturday(prev => !prev), [])
   const handleNewActivity = useCallback(() => setActivityFormOpen(true), [])
@@ -24,7 +26,7 @@ export function ScheduleView() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
+      initial={isHydrating ? false : { opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 30 }}
       transition={{ delay: 0.25, duration: 0.25 }}

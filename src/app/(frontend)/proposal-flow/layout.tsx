@@ -7,6 +7,7 @@ import { ProposalFlowShell } from '@/features/proposal-flow/ui/components/propos
 import { ProposalSplashScreen } from '@/features/proposal-flow/ui/components/proposal-splash-screen'
 import { ProposalFlowLoadingState } from '@/features/proposal-flow/ui/components/states/loading'
 import { GlobalDialogs } from '@/shared/components/dialogs/modals/global-dialogs'
+import { ServerAbilityProvider } from '@/shared/components/providers/server-ability-provider'
 import { auth } from '@/shared/domains/auth/server'
 
 export default async function ProposalFlowLayout({
@@ -18,8 +19,12 @@ export default async function ProposalFlowLayout({
   const session = await auth.api.getSession({ headers: reqHeaders })
   const isAuthenticated = Boolean(session)
 
+  // The agent/homeowner view is gated on the ability; seeding it from this session puts the
+  // agent's view in the first paint instead of swapping it in after the browser's session fetch.
+  const abilityUser = session ? { id: session.user.id, role: session.user.role } : null
+
   return (
-    <>
+    <ServerAbilityProvider user={abilityUser}>
       <ProposalSplashScreen isAuthenticated={isAuthenticated} />
       <GlobalDialogs />
       <ProposalFlowShell>
@@ -36,6 +41,6 @@ export default async function ProposalFlowLayout({
           </div>
         </ScrollRootProvider>
       </ProposalFlowShell>
-    </>
+    </ServerAbilityProvider>
   )
 }
