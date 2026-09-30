@@ -43,7 +43,7 @@ export function InputsPanel({ projection, config, variant }: Props) {
       <div className="flex items-center justify-between gap-3 border-b px-5 py-3.5">
         <div>
           <BlockEyebrow>{STORY_COPY.inputs}</BlockEyebrow>
-          <p className="mt-1 text-[13px] font-semibold">{projection.ready ? 'Story is up to date' : 'Add trades, price and bills to see the story'}</p>
+          <p className="mt-1 text-sm font-semibold">{projection.ready ? 'Story is up to date' : 'Add trades, price and bills to see the story'}</p>
         </div>
         {variant === 'docked' && <Button aria-label="Collapse inputs" className="size-11" onClick={() => setCollapsed(true)} size="icon" type="button" variant="ghost"><PanelLeftCloseIcon /></Button>}
       </div>

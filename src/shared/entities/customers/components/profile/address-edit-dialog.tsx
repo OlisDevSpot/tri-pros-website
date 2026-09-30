@@ -160,7 +160,7 @@ function PreviewTile({ label, src }: { label: string, src: string | null }) {
               No preview
             </div>
           )}
-      <span className="absolute left-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white backdrop-blur-sm">
+      <span className="absolute left-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-xs font-medium uppercase tracking-wider text-white backdrop-blur-sm">
         {label}
       </span>
     </div>

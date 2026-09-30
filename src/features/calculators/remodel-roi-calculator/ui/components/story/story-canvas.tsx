@@ -49,11 +49,11 @@ export function StoryCanvas({ projection, story, lookAhead, onLookAheadChange, s
               {isDetailChapter(chapter) && <ChapterBody chapter={chapter} content={story[chapter]} lookAhead={lookAhead} projection={projection} />}
               {chapter === 'basis' && (
                 <>
-                  <h3 className="max-w-[34ch] font-sans text-[25px] font-semibold leading-[1.28]">{story.basis.answer}</h3>
-                  <p className="max-w-[60ch] text-[15.5px] leading-relaxed text-muted-foreground">{story.basis.guide}</p>
+                  <h3 className="max-w-[34ch] font-sans text-2xl font-semibold">{story.basis.answer}</h3>
+                  <p className="max-w-[60ch] text-base leading-relaxed text-muted-foreground">{story.basis.guide}</p>
                   <Receipt rows={story.basis.receipt} />
                   <Button className="min-h-11 justify-self-start" onClick={openAssumptions} type="button" variant="outline">{STORY_COPY.changeWorkingNumber}</Button>
-                  <p className="mt-2 max-w-[26ch] font-sans text-[22px] font-semibold leading-snug">{STORY_COPY.close}</p>
+                  <p className="mt-2 max-w-[26ch] font-sans text-2xl font-semibold leading-snug">{STORY_COPY.close}</p>
                 </>
               )}
             </StoryChapter>

@@ -12,7 +12,7 @@ export function LoansNote({ projection }: Props) {
     return null
   }
   return (
-    <p className="text-[15px]">
+    <p className="text-base">
       You also pay
       {' '}
       <b className="tabular-nums">{roundMoney(projection.liabilitiesMonthly)}</b>

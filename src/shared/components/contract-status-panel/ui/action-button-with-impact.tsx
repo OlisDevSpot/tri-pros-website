@@ -70,7 +70,7 @@ export function ActionButtonWithImpact({
       </Button>
       <div className="flex items-center gap-1.5 px-0.5">
         <ImpactIcon className={cn('size-3 shrink-0', meta.iconClassName)} aria-hidden />
-        <p className={cn('text-[11px] leading-tight', meta.labelClassName)}>
+        <p className={cn('text-xs leading-tight', meta.labelClassName)}>
           {impactCopy}
         </p>
       </div>

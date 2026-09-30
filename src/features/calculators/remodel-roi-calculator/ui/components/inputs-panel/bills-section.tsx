@@ -10,7 +10,7 @@ interface Props {
 export function BillsSection({ projection }: Props) {
   return (
     <>
-      <p className="text-[12.5px] leading-snug text-muted-foreground">Monthly averages. The cut comes from the trades you picked; switch to % or $ to type your own.</p>
+      <p className="text-xs leading-snug text-muted-foreground">Monthly averages. The cut comes from the trades you picked; switch to % or $ to type your own.</p>
       {BILL_CATEGORIES.map(category => <BillRow category={category} cut={projection.cuts[category]} key={category} />)}
     </>
   )

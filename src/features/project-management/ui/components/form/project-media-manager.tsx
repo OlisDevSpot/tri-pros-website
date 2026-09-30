@@ -517,7 +517,7 @@ export function ProjectMediaManager({ projectId, mediaFiles, onUpdate }: Props) 
                             return (
                               <>
                                 {f.isHeroImage && (
-                                  <Badge className="bg-warning/90 text-warning-foreground text-[10px] py-0 px-1.5">
+                                  <Badge className="bg-warning/90 text-warning-foreground text-xs py-0 px-1.5">
                                     Hero
                                   </Badge>
                                 )}

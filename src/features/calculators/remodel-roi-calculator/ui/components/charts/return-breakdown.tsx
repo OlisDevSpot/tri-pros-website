@@ -34,14 +34,14 @@ export function ReturnBreakdown({ projection, lookAhead }: Props) {
   const zero = at(0)
   return (
     <div className="grid grid-cols-[9.5rem_minmax(0,1fr)_auto] gap-x-3 gap-y-1 @max-md/story:grid-cols-[7rem_minmax(0,1fr)_auto]">
-      <p className="col-span-full text-[13px] font-extrabold">
+      <p className="col-span-full text-sm font-extrabold">
         Where the return comes from, by year
         {' '}
         {lookAhead}
       </p>
       {spans.map(span => (
         <div className="col-span-full grid min-h-8 grid-cols-subgrid items-center" key={span.label}>
-          <span className="text-[13.5px] font-bold">{span.label}</span>
+          <span className="text-sm font-bold">{span.label}</span>
           <span className="relative h-4.5">
             <TipSegment
               className={cn('absolute inset-y-0 rounded-sm', span.value >= 0 ? 'bg-primary' : 'bg-muted-foreground/50')}
@@ -51,11 +51,11 @@ export function ReturnBreakdown({ projection, lookAhead }: Props) {
             />
             <b aria-hidden className="absolute -inset-y-1 w-px bg-muted-foreground" style={{ left: `${zero}%` }} />
           </span>
-          <span className="text-right font-sans text-[14.5px] font-semibold tabular-nums">{signedMoney(span.value)}</span>
+          <span className="text-right font-sans text-sm font-semibold tabular-nums">{signedMoney(span.value)}</span>
         </div>
       ))}
       <div className="col-span-full mt-1 grid min-h-8 grid-cols-subgrid items-center border-t pt-2">
-        <span className="text-[13.5px] font-extrabold">
+        <span className="text-sm font-extrabold">
           Where you stand in year
           {' '}
           {lookAhead}
@@ -64,7 +64,7 @@ export function ReturnBreakdown({ projection, lookAhead }: Props) {
           <TipSegment className="absolute inset-y-0 rounded-sm bg-foreground" rows={[{ label: 'All the parts above', value: formatMoney(running) }]} style={{ left: `${at(Math.min(0, running))}%`, width: `${Math.abs(at(running) - zero)}%` }} title={`Where you stand in year ${lookAhead}`} />
           <b aria-hidden className="absolute -inset-y-1 w-px bg-muted-foreground" style={{ left: `${zero}%` }} />
         </span>
-        <span className="text-right font-sans text-[14.5px] font-extrabold tabular-nums">{signedMoney(running)}</span>
+        <span className="text-right font-sans text-sm font-extrabold tabular-nums">{signedMoney(running)}</span>
       </div>
     </div>
   )

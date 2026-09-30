@@ -18,7 +18,7 @@ export function FilterControlField({ definition }: FilterControlFieldProps) {
     <div className="space-y-1.5">
       <span
         className={cn(
-          'block text-[10px] font-medium uppercase tracking-[0.08em] transition-colors',
+          'block text-xs font-medium uppercase tracking-[0.08em] transition-colors',
           isActive ? 'text-foreground' : 'text-muted-foreground/70',
         )}
       >

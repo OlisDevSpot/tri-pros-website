@@ -34,7 +34,7 @@ export function ShowcaseText({ trade, titleId }: ShowcaseTextProps) {
         {trade.name}
       </h2>
       {outcome && (
-        <p className="line-clamp-3 max-w-[48ch] text-[17px] leading-normal text-pretty text-white @4xl/specialties:line-clamp-none @4xl/specialties:max-w-[44ch] @4xl/specialties:text-xl">
+        <p className="line-clamp-3 max-w-[48ch] text-lg leading-normal text-pretty text-white @4xl/specialties:line-clamp-none @4xl/specialties:max-w-[44ch] @4xl/specialties:text-xl">
           {outcome}
         </p>
       )}
@@ -49,7 +49,7 @@ export function ShowcaseText({ trade, titleId }: ShowcaseTextProps) {
           {benefits.map(benefit => (
             <li key={benefit.headline} className="flex flex-col gap-0.5 border-t border-white/15 pt-3">
               <span className="text-base font-semibold text-white">{benefit.headline}</span>
-              <span className="text-[15px] leading-normal text-white/75">{benefit.body}</span>
+              <span className="text-base leading-normal text-white/75">{benefit.body}</span>
             </li>
           ))}
         </ul>

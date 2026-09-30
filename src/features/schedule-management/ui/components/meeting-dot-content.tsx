@@ -73,7 +73,7 @@ export function MeetingDotContent({
 
         {/* Status badge */}
         <div className="flex flex-wrap items-center gap-1.5">
-          <Badge className={cn('text-[10px] px-1.5 py-0 leading-4', MEETING_OUTCOME_COLORS[event.meetingOutcome])}>
+          <Badge className={cn('text-xs px-1.5 py-0 leading-4', MEETING_OUTCOME_COLORS[event.meetingOutcome])}>
             {MEETING_OUTCOME_LABELS[event.meetingOutcome] ?? event.meetingOutcome.replace(/_/g, ' ')}
           </Badge>
         </div>

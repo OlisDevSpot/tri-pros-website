@@ -38,7 +38,7 @@ export function TradeRow({ trade, config, replacement }: Props) {
           name="trades.hvac.ducts"
           render={({ field }) => (
             <FormItem className="flex min-h-11 flex-row items-center justify-between gap-3">
-              <FormLabel className="text-[12.5px] font-bold">New ducts too</FormLabel>
+              <FormLabel className="text-xs font-bold">New ducts too</FormLabel>
               <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
             </FormItem>
           )}

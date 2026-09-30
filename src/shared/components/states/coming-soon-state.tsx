@@ -63,7 +63,7 @@ export function ComingSoonState({
           </span>
           <div className="flex flex-col gap-0.5 text-left">
             <p className="font-semibold">{title.replace(/\n/g, ' ')}</p>
-            {description && <p className="text-[13px] text-muted-foreground">{description}</p>}
+            {description && <p className="text-sm text-muted-foreground">{description}</p>}
           </div>
         </div>
       </div>
@@ -94,7 +94,7 @@ export function ComingSoonState({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.05, ease: ENTER_EASE }}
           >
-            <span className="inline-flex items-center gap-[9px] self-center rounded-[999px] border border-[oklch(from_var(--primary)_l_c_h/0.35)] bg-cs-accent-soft px-[13px] py-[7px] text-[12px] font-bold whitespace-nowrap text-primary uppercase tracking-[0.24em]">
+            <span className="inline-flex items-center gap-[9px] self-center rounded-[999px] border border-[oklch(from_var(--primary)_l_c_h/0.35)] bg-cs-accent-soft px-[13px] py-[7px] text-xs font-bold whitespace-nowrap text-primary uppercase tracking-[0.24em]">
               <span className="size-0 border-x-[5px] border-b-[10px] border-x-transparent border-b-primary filter-[drop-shadow(0_1px_0_var(--color-cs-accent-d))]" aria-hidden="true" />
               {eyebrow}
             </span>
@@ -120,7 +120,7 @@ export function ComingSoonState({
             {showProgress && <ProgressBar value={progress} label={progressLabel} />}
             {showForm && <NotifyForm ctaLabel={ctaLabel} />}
             {homeHref && (
-              <div className="text-[12px] font-semibold uppercase tracking-widest">
+              <div className="text-xs font-semibold uppercase tracking-widest">
                 <a href={homeHref} className="border-b-2 border-b-primary pb-0.5 text-foreground no-underline [transition:color_0.15s] [&:hover]:text-primary">{homeLabel}</a>
               </div>
             )}
@@ -159,7 +159,7 @@ function ProgressBar({ value, label }: { value: number, label: string }) {
       aria-valuemax={100}
       aria-label="Site progress"
     >
-      <div className="mb-1.5 flex items-baseline justify-between text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
+      <div className="mb-1.5 flex items-baseline justify-between text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">
         <span>Site progress</span>
         <b className="font-bold text-foreground">
           {safe}
@@ -202,7 +202,7 @@ function NotifyForm({ ctaLabel }: { ctaLabel: string }) {
         ? (
             <motion.div
               key="success"
-              className="flex w-[min(420px,100%)] items-center gap-2.5 rounded-[12px] border border-primary bg-card px-4 py-3 text-left text-[14px] text-foreground"
+              className="flex w-[min(420px,100%)] items-center gap-2.5 rounded-[12px] border border-primary bg-card px-4 py-3 text-left text-sm text-foreground"
               initial={{ opacity: 0, scale: 0.94 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.96 }}
@@ -242,7 +242,7 @@ function NotifyForm({ ctaLabel }: { ctaLabel: string }) {
                 <Button type="submit">{ctaLabel}</Button>
               </form>
               <div
-                className={cn('min-h-4 w-[min(420px,100%)] text-left text-[12px]', state === 'error' ? 'text-destructive' : 'text-muted-foreground')}
+                className={cn('min-h-4 w-[min(420px,100%)] text-left text-xs', state === 'error' ? 'text-destructive' : 'text-muted-foreground')}
                 role={state === 'error' ? 'alert' : undefined}
               >
                 {state === 'error'

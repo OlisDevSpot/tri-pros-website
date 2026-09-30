@@ -171,7 +171,7 @@ function AllRow({ total, rangeLabel, isSelected, onSelect, disabled }: AllRowPro
       </span>
       <span className="flex flex-col items-end gap-px tabular-nums">
         <span className="text-sm font-semibold text-foreground">{total}</span>
-        <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{rangeLabel}</span>
+        <span className="text-xs uppercase tracking-wide text-muted-foreground">{rangeLabel}</span>
       </span>
     </button>
   )

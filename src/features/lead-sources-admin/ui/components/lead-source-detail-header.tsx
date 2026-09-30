@@ -56,7 +56,7 @@ export function LeadSourceDetailHeader({ source, onJumpToSettings, onAddCustomer
       <div className="flex min-w-0 flex-col gap-1">
         <motion.p
           {...entrance(0, 6)}
-          className="text-[11px] text-muted-foreground"
+          className="text-xs text-muted-foreground"
         >
           <span className="font-medium uppercase tracking-[0.18em]">Lead source</span>
           <span aria-hidden="true" className="mx-2 opacity-40">·</span>

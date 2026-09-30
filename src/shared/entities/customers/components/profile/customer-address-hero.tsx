@@ -80,7 +80,7 @@ export function CustomerAddressHero({ address, view }: Props) {
           issues (missing API enablement, referrer restrictions, etc.) without
           requiring a trip to the server logs. */}
       {errorUrl && (
-        <div className="pointer-events-none absolute bottom-3 left-3 z-20 max-w-[60%] rounded-md border border-status-pending-dot/40 bg-status-pending-bg px-2 py-1 text-[10px] font-medium text-status-pending-fg">
+        <div className="pointer-events-none absolute bottom-3 left-3 z-20 max-w-[60%] rounded-md border border-status-pending-dot/40 bg-status-pending-bg px-2 py-1 text-xs font-medium text-status-pending-fg">
           Map unavailable — check console for diagnostics
         </div>
       )}

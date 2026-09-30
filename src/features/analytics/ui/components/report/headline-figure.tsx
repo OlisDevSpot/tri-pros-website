@@ -38,7 +38,7 @@ export function HeadlineFigure({ figure, row, reasons, selected, onSelect }: Pro
       <span className={cn('text-xs text-muted-foreground', selected && 'font-semibold text-foreground')}>
         {METRICS[figure.metric].label}
       </span>
-      <MetricText display={main} className="truncate font-sans text-lg leading-tight font-medium md:text-[1.75rem]" />
+      <MetricText display={main} className="truncate font-sans text-lg leading-tight font-medium md:text-3xl" />
       {figure.sub && sub && (
         <span className="truncate text-xs text-muted-foreground">
           <span className="max-md:hidden">{METRICS[figure.sub].label}</span>

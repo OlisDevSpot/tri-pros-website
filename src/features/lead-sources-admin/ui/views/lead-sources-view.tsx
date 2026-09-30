@@ -84,7 +84,7 @@ export function LeadSourcesView() {
           </p>
         </div>
         <div className="flex shrink-0 items-center justify-between gap-3 lg:justify-end">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Time range
           </span>
           <TimeRangeChips

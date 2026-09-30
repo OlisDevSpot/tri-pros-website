@@ -153,7 +153,7 @@ export function AssignProjectDialog({ meetingId, open, onOpenChange }: AssignPro
                     <div className="flex items-center gap-2 min-w-0">
                       <FileTextIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                       <span className="text-sm truncate">{proposal.label || 'Untitled'}</span>
-                      <Badge variant="secondary" className="text-[10px] shrink-0">
+                      <Badge variant="secondary" className="text-xs shrink-0">
                         {proposal.status}
                       </Badge>
                     </div>

@@ -13,7 +13,7 @@ interface Props {
 
 export function ChartTooltipRows({ title, rows }: Props) {
   return (
-    <div className="grid min-w-52 gap-1 text-[13px]">
+    <div className="grid min-w-52 gap-1 text-sm">
       <p className="text-xs font-extrabold text-muted-foreground">{title}</p>
       {rows.map(row => (
         <div className="flex items-center gap-2" key={`${row.label}${row.value}`}>

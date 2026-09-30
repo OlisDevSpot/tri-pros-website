@@ -85,7 +85,7 @@ export function EntityList<T>({
   return (
     <div className={cn('space-y-1', chromeClasses, className)}>
       {!hideHeader && (
-        <div className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground mb-1.5">
+        <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground mb-1.5">
           {Icon && <Icon className="size-3" aria-hidden="true" />}
           <span>{`${title} (${resolvedCount})`}</span>
           {headerAction && (

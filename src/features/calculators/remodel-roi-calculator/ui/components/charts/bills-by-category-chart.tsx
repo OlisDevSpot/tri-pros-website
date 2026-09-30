@@ -62,7 +62,7 @@ export function BillsByCategoryChart({ projection, lookAhead }: Props) {
               shape={props => <SegmentRect {...props} fill={`var(--color-${category})`} />}
               stackId="bills"
             >
-              {position === used.length - 1 && <LabelList className="fill-foreground font-sans text-[13px] font-semibold" dataKey="total" formatter={value => formatMoney(Number(value))} position="top" />}
+              {position === used.length - 1 && <LabelList className="fill-foreground font-sans text-sm font-semibold" dataKey="total" formatter={value => formatMoney(Number(value))} position="top" />}
             </Bar>
           ))}
         </BarChart>

@@ -141,7 +141,7 @@ function FullVariant({ meetingId, entityListVariant = 'card', className }: FullV
             type="button"
             variant="ghost"
             size="sm"
-            className="h-5 px-1.5 text-[10px] font-medium uppercase tracking-wide"
+            className="h-5 px-1.5 text-xs font-medium uppercase tracking-wide"
             onClick={() => setManageOpen(true)}
           >
             Manage
@@ -356,7 +356,7 @@ function CompactVariant({ meetingId, initialParticipants, className }: CompactVa
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-5 px-1.5 text-[10px] font-medium uppercase tracking-wide"
+                className="h-5 px-1.5 text-xs font-medium uppercase tracking-wide"
                 onClick={() => {
                   setPopoverOpen(false)
                   setManageOpen(true)

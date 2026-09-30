@@ -31,7 +31,7 @@ export function OftenTogether({ trade }: OftenTogetherProps) {
       <TradeThumb className="size-11" trade={paired} />
       <p className="flex flex-col">
         <span className="text-sm font-semibold">{SPECIALTIES_COPY.work.together}</span>
-        <span className="text-[13px] text-muted-foreground">{SPECIALTIES_COPY.work.togetherPair(trade.name, paired.name)}</span>
+        <span className="text-sm text-muted-foreground">{SPECIALTIES_COPY.work.togetherPair(trade.name, paired.name)}</span>
       </p>
       <Button className="h-11" variant="outline" onClick={() => showTrade(paired.id)}>
         {SPECIALTIES_COPY.work.show(paired.name)}

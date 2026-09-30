@@ -16,7 +16,7 @@ export function HeadlineStats({ answer }: Props) {
       <div className="grid gap-3 @2xl/story:grid-cols-3">
         {answer.stats.map(stat => <StatTile key={stat.label} label={stat.label} onClick={() => scrollToChapter(stat.target)} sub={stat.sub} value={stat.value} />)}
       </div>
-      {answer.note && <p className="max-w-[60ch] text-[15.5px] leading-relaxed text-muted-foreground">{answer.note}</p>}
+      {answer.note && <p className="max-w-[60ch] text-base leading-relaxed text-muted-foreground">{answer.note}</p>}
     </div>
   )
 }

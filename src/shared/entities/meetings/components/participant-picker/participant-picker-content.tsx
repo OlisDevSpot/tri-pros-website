@@ -97,7 +97,7 @@ export function ParticipantPickerContent({
         )}
       >
         <div className="flex items-baseline justify-between px-1 pb-2">
-          <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground tabular-nums">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground tabular-nums">
             {`Current · ${(owner ? 1 : 0) + (coOwner ? 1 : 0)} of 2`}
           </h3>
         </div>
@@ -144,7 +144,7 @@ export function ParticipantPickerContent({
         {owner && !coOwner && (
           <p
             id={lockHintId}
-            className="mt-3 px-1 text-[11px] leading-relaxed text-muted-foreground"
+            className="mt-3 px-1 text-xs leading-relaxed text-muted-foreground"
           >
             Add a co-owner below to make this owner removable.
           </p>
@@ -161,7 +161,7 @@ export function ParticipantPickerContent({
           <section aria-label="Helpers" className="overflow-hidden">
             <div className="pt-5">
               <div className="flex items-baseline justify-between px-1 pb-2">
-                <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground tabular-nums">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground tabular-nums">
                   {`Helpers · ${helperCount}`}
                 </h3>
               </div>
@@ -192,7 +192,7 @@ export function ParticipantPickerContent({
             <section aria-label="Add participant" className="mt-5 space-y-2">
               <label
                 htmlFor="participant-search"
-                className="block px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
+                className="block px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
               >
                 Add participant
               </label>

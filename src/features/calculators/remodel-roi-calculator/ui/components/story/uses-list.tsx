@@ -14,7 +14,7 @@ export function UsesList({ rows }: Props) {
   return (
     <div className="grid border-t">
       {rows.map(row => (
-        <div className="grid grid-cols-[minmax(0,1fr)_auto_7rem_3rem] items-center gap-2.5 border-b border-dashed py-2 text-[13.5px]" key={row.label}>
+        <div className="grid grid-cols-[minmax(0,1fr)_auto_7rem_3rem] items-center gap-2.5 border-b border-dashed py-2 text-sm" key={row.label}>
           <span>{row.label}</span>
           <span className="whitespace-nowrap text-right font-extrabold tabular-nums">{row.value}</span>
           <SourceTag tag={row.tag} />

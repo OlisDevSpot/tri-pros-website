@@ -86,7 +86,7 @@ export function SidebarPipelineItem({
               e.stopPropagation()
             }}
             className={cn(
-              'absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider select-none transition-[opacity,transform,background,color,box-shadow] duration-200 ease-linear disabled:cursor-default group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:scale-90 group-data-[collapsible=icon]:opacity-0',
+              'absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer rounded-md border px-2 py-0.5 text-xs font-semibold uppercase tracking-wider select-none transition-[opacity,transform,background,color,box-shadow] duration-200 ease-linear disabled:cursor-default group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:scale-90 group-data-[collapsible=icon]:opacity-0',
               isActive ? 'border-sidebar-primary/30 text-sidebar-primary' : 'border-sidebar-accent/30 text-sidebar-accent',
             )}
           >

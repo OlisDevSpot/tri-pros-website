@@ -48,7 +48,7 @@ export function SourcePolicyRow({ source, campaigns, busy, onPatch }: SourcePoli
         <div className="flex min-w-0 items-center gap-2">
           <span className="truncate font-medium text-foreground">{source.name}</span>
           {isLive && (
-            <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium text-primary">
+            <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-primary">
               <span aria-hidden="true" className="size-1.5 rounded-full bg-primary" />
               Live
             </span>

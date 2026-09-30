@@ -29,7 +29,7 @@ export function OverviewSummaryBar({ dnc, eligible, enrolled }: OverviewSummaryB
             aria-hidden="true"
             className={cn('size-1.5 shrink-0 rounded-full sm:size-2', seg.dotClass)}
           />
-          <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground sm:text-xs">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground sm:text-xs">
             {seg.label}
           </span>
           <span className="text-base font-semibold tabular-nums text-foreground sm:text-lg">

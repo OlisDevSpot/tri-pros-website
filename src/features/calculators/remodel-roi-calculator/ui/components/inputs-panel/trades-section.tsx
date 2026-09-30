@@ -38,13 +38,13 @@ export function TradesSection({ projection, config }: Props) {
         value={picked}
       >
         {TRADE_KEYS.map(trade => (
-          <ToggleGroupItem className="group min-h-11 flex-none gap-1.5 rounded-full border px-3.5 text-[13px] font-bold data-[state=on]:border-primary data-[state=on]:bg-primary/10 data-[state=on]:text-primary" key={trade} value={trade}>
+          <ToggleGroupItem className="group min-h-11 flex-none gap-1.5 rounded-full border px-3.5 text-sm font-bold data-[state=on]:border-primary data-[state=on]:bg-primary/10 data-[state=on]:text-primary" key={trade} value={trade}>
             <CheckIcon className="hidden size-3.5 group-data-[state=on]:block" />
             {TRADE_LABELS[trade]}
           </ToggleGroupItem>
         ))}
       </ToggleGroup>
-      <p className="text-[12.5px] leading-snug text-muted-foreground">Bill cuts assume the energy-efficient version: cool roof, cool-life paint, turf. If the current one of a trade is aging, add its age: waiting means repairing it until it gives out, then paying that year's price.</p>
+      <p className="text-xs leading-snug text-muted-foreground">Bill cuts assume the energy-efficient version: cool roof, cool-life paint, turf. If the current one of a trade is aging, add its age: waiting means repairing it until it gives out, then paying that year's price.</p>
       {picked.filter(isAgingTrade).map(trade => <TradeRow config={config} key={trade} replacement={projection.replacements.find(replacement => replacement.trade === trade)} trade={trade} />)}
     </>
   )

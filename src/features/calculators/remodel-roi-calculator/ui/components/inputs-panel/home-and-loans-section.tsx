@@ -19,7 +19,7 @@ export function HomeAndLoansSection({ projection }: Props) {
   const { fields, append, remove } = useFieldArray({ control, name: 'liabilities' })
   return (
     <>
-      <p className="text-[12.5px] leading-snug text-muted-foreground">Home value and loans are the same on both paths, so they don't change the comparison. They add total net worth to the story.</p>
+      <p className="text-xs leading-snug text-muted-foreground">Home value and loans are the same on both paths, so they don't change the comparison. They add total net worth to the story.</p>
       <FormNumberField control={control} label="Home value today" name="homeValue" prefix="$" />
       {fields.map((field, index) => (
         <LiabilityRow

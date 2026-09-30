@@ -159,7 +159,7 @@ export function TimelineEventItem({ event, customerId, isExpanded, onToggle, onO
                   <div className="flex min-w-0 items-center gap-2">
                     <Avatar className="size-5 shrink-0">
                       <AvatarImage src={note.authorImage ?? undefined} />
-                      <AvatarFallback className="text-[10px]">
+                      <AvatarFallback className="text-xs">
                         {(note.authorName ?? 'System').slice(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>

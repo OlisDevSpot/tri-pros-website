@@ -136,7 +136,7 @@ function CustomerKanbanCardImpl({
                   )}
                 </div>
                 {item.latestActivityAt && (
-                  <p className="text-[11px] text-muted-foreground/70 leading-tight">
+                  <p className="text-xs text-muted-foreground/70 leading-tight">
                     {'Created '}
                     {formatDistanceToNow(new Date(item.latestActivityAt), { addSuffix: true })}
                   </p>
@@ -182,7 +182,7 @@ function CustomerKanbanCardImpl({
               </div>
 
               {/* Started date + total approved value */}
-              <div className="flex items-center gap-2 text-[11px]">
+              <div className="flex items-center gap-2 text-xs">
                 {item.project.startedAt && (
                   <span className="text-muted-foreground">
                     {format(new Date(item.project.startedAt), 'MMM d, yyyy')}
@@ -239,7 +239,7 @@ function CustomerKanbanCardImpl({
                       <Badge
                         variant="outline"
                         className={cn(
-                          'gap-1 text-[11px] font-normal w-fit',
+                          'gap-1 text-xs font-normal w-fit',
                           meetingLabel.variant === 'active' && 'border-status-pending-dot/40 bg-status-pending-bg text-status-pending-fg',
                           meetingLabel.variant === 'upcoming' && 'border-status-info-dot/40 bg-status-info-bg text-status-info-fg',
                           meetingLabel.variant === 'past' && 'border-muted-foreground/20 text-muted-foreground',
@@ -253,7 +253,7 @@ function CustomerKanbanCardImpl({
                     ? (
                         <Badge
                           variant="outline"
-                          className="gap-1 text-[11px] font-normal w-fit border-muted-foreground/20 text-muted-foreground"
+                          className="gap-1 text-xs font-normal w-fit border-muted-foreground/20 text-muted-foreground"
                         >
                           <CalendarIcon size={10} />
                           {formatDistanceToNow(new Date(item.meetingScheduledFor), { addSuffix: true })}
@@ -333,11 +333,11 @@ function KanbanProposalRow({ proposal }: { proposal: PipelineItemProposal }) {
     >
       <div className="flex items-center gap-1.5 min-w-0 flex-1">
         <ProposalOverviewCard.StatusIcon size="sm" />
-        <ProposalOverviewCard.Label className="text-[11px]" />
+        <ProposalOverviewCard.Label className="text-xs" />
         <ProposalOverviewCard.Value
           showIcon
           className="text-xs ml-auto"
-          fallback={<span className="text-[11px] text-muted-foreground italic ml-auto shrink-0">No price</span>}
+          fallback={<span className="text-xs text-muted-foreground italic ml-auto shrink-0">No price</span>}
         />
       </div>
       <ProposalOverviewCard.Actions

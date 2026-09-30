@@ -25,7 +25,7 @@ export function ProgramPresentation({ program }: ProgramPresentationProps) {
           <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">The Story</h3>
         </div>
         <div className="rounded-2xl border border-border/40 bg-card/50 px-6 py-5">
-          <p className="text-[15px] leading-relaxed text-foreground/85">
+          <p className="text-base leading-relaxed text-foreground/85">
             {presentation.story}
           </p>
         </div>
@@ -53,7 +53,7 @@ export function ProgramPresentation({ program }: ProgramPresentationProps) {
               <span className="text-lg font-bold tabular-nums tracking-tight text-foreground">
                 {stat.value}
               </span>
-              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 {stat.label}
               </span>
             </div>

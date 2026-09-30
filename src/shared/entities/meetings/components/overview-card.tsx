@@ -221,7 +221,7 @@ function Owner({
             {avatarNode}
           </div>
         </HybridPopoverTooltip>
-        <span className="text-[10px] text-muted-foreground truncate">{meeting.ownerName}</span>
+        <span className="text-xs text-muted-foreground truncate">{meeting.ownerName}</span>
       </div>
     )
   }
@@ -253,7 +253,7 @@ function CreatedAt({ className }: { className?: string }) {
     return null
   }
   return (
-    <span className={cn('text-[10px] text-muted-foreground/60 shrink-0', className)}>
+    <span className={cn('text-xs text-muted-foreground/60 shrink-0', className)}>
       {formatDistanceToNow(new Date(meeting.createdAt), { addSuffix: true })}
     </span>
   )
@@ -268,7 +268,7 @@ function Phone({ className }: { className?: string }) {
   }
   return (
     <div className={cn('min-w-0 text-muted-foreground', className)} onClick={e => e.stopPropagation()}>
-      <PhoneAction phone={meeting.customerPhone} className="text-[11px]" />
+      <PhoneAction phone={meeting.customerPhone} className="text-xs" />
     </div>
   )
 }
@@ -288,7 +288,7 @@ function Address({ children, className }: { children?: ReactNode, className?: st
 
   return (
     <div className={cn('min-w-0 text-muted-foreground', className)} onClick={e => e.stopPropagation()}>
-      <AddressAction address={fullAddress} className="text-[11px]">
+      <AddressAction address={fullAddress} className="text-xs">
         {children}
       </AddressAction>
     </div>
@@ -324,7 +324,7 @@ function OutcomeField({ variant = 'badge' }: { variant?: 'badge' | 'dot' | 'edit
           colorMap={MEETING_LIST_STATUS_COLORS}
           onChange={value => void changeOutcome(meeting.id, value)}
           formatLabel={value => MEETING_OUTCOME_LABELS[value] ?? value.replace(/_/g, ' ')}
-          triggerClassName="gap-1 px-1.5 py-0.5 text-[11px] font-normal"
+          triggerClassName="gap-1 px-1.5 py-0.5 text-xs font-normal"
           triggerAriaLabel="Change meeting outcome"
           showCaret
           optionStyle="dot"
@@ -390,9 +390,9 @@ function ScheduledDateField({
               onChange(d)
             }
           }}
-          className="h-auto p-0 text-[11px]"
+          className="h-auto p-0 text-xs"
         >
-          <Badge variant="secondary" className="gap-1 px-1.5 py-0.5 text-[11px] font-normal hover:bg-secondary/80 cursor-pointer">
+          <Badge variant="secondary" className="gap-1 px-1.5 py-0.5 text-xs font-normal hover:bg-secondary/80 cursor-pointer">
             <CalendarIcon className="h-3 w-3 shrink-0" />
             <span>{display}</span>
           </Badge>
@@ -427,7 +427,7 @@ function ProposalCountField() {
     return null
   }
   return (
-    <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground shrink-0">
+    <span className="flex items-center gap-0.5 text-xs text-muted-foreground shrink-0">
       <FileTextIcon className="size-3" />
       {count}
     </span>
@@ -480,12 +480,12 @@ function Trades({ max, className }: { max?: number, className?: string }) {
   return (
     <div className={cn('flex flex-wrap gap-1', className)}>
       {visible.map(trade => (
-        <Badge key={trade} variant="outline" className="text-[10px] font-normal">
+        <Badge key={trade} variant="outline" className="text-xs font-normal">
           {trade}
         </Badge>
       ))}
       {remaining > 0 && (
-        <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground">
+        <Badge variant="outline" className="text-xs font-normal text-muted-foreground">
           {`+${remaining}`}
         </Badge>
       )}
@@ -565,7 +565,7 @@ function DefaultProposalRow({ proposal }: { proposal: MeetingOverviewCardProposa
     >
       <ProposalOverviewCard.StatusIcon size="sm" />
       <ProposalOverviewCard.Label />
-      <ProposalOverviewCard.StatusBadge className="ml-auto text-[10px]" />
+      <ProposalOverviewCard.StatusBadge className="ml-auto text-xs" />
     </ProposalOverviewCard>
   )
 }

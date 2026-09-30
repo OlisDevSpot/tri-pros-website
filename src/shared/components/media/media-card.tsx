@@ -169,7 +169,7 @@ export function MediaCard({
           <input
             value={name}
             onChange={e => handleNameChange(e.target.value)}
-            className="h-5 w-full bg-transparent text-[10px] text-foreground outline-none placeholder:text-foreground/50"
+            className="h-5 w-full bg-transparent text-xs text-foreground outline-none placeholder:text-foreground/50"
             placeholder="File name"
           />
         </div>

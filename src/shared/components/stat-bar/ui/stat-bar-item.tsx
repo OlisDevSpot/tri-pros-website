@@ -25,7 +25,7 @@ export function StatBarItem({ icon: Icon, label, value, displayValue, color, isL
           : (
               <>
                 <span className="relative text-lg font-bold tabular-nums">{displayValue ?? value}</span>
-                <span className="relative text-[10px] text-muted-foreground">{label}</span>
+                <span className="relative text-xs text-muted-foreground">{label}</span>
               </>
             )}
       </div>

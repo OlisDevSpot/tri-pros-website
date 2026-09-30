@@ -42,7 +42,7 @@ export function TradeSwitcher({ trade }: TradeSwitcherProps) {
           <span className="flex min-w-0 items-center gap-3">
             <TradeThumb className="size-11" trade={trade} />
             <span className="flex min-w-0 flex-col">
-              <span className="text-[13px] font-normal text-muted-foreground">{SPECIALTIES_COPY.work.tradeLabel}</span>
+              <span className="text-sm font-normal text-muted-foreground">{SPECIALTIES_COPY.work.tradeLabel}</span>
               <span className="truncate font-sans text-lg font-semibold">{trade.name}</span>
             </span>
           </span>
@@ -66,7 +66,7 @@ export function TradeSwitcher({ trade }: TradeSwitcherProps) {
                       <TradeThumb trade={option} />
                       <span className="flex min-w-0 flex-1 flex-col">
                         <span className="text-sm font-semibold">{option.name}</span>
-                        {meta && <span className="text-[13px] text-muted-foreground">{meta}</span>}
+                        {meta && <span className="text-sm text-muted-foreground">{meta}</span>}
                       </span>
                       {option.id === trade.id && <CheckIcon aria-hidden className="size-4" />}
                     </CommandItem>

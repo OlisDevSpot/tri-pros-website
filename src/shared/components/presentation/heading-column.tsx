@@ -45,7 +45,7 @@ export function HeadingColumn({ items, numberedTotal }: HeadingColumnProps) {
           transition={HEADING_SWAP_TRANSITION}
         >
           {heading.number !== undefined && (
-            <span className="font-serif text-[11cqw] leading-[0.9] tracking-tight text-white/25 lining-nums @max-[56rem]/presentation:hidden">
+            <span className="font-serif text-presentation-figure leading-[0.9] tracking-tight text-white/25 lining-nums @max-[56rem]/presentation:hidden">
               {heading.number}
             </span>
           )}

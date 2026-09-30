@@ -28,7 +28,7 @@ const SEVERITY_COLORS: Record<string, string> = {
 export function SeverityBadge({ value }: { value: string }) {
   return (
     <Badge
-      className={`text-[10px] font-medium ${SEVERITY_COLORS[value] ?? 'bg-muted text-muted-foreground'}`}
+      className={`text-xs font-medium ${SEVERITY_COLORS[value] ?? 'bg-muted text-muted-foreground'}`}
       variant="outline"
     >
       {value}
@@ -52,7 +52,7 @@ export function PersonaProfileSection({ children, count, defaultOpen = false, ic
       >
         <span className="text-muted-foreground">{icon}</span>
         <span className="flex-1 text-sm font-medium">{title}</span>
-        <Badge className="h-5 min-w-[1.5rem] px-1.5 text-[10px] tabular-nums" variant="outline">
+        <Badge className="h-5 min-w-[1.5rem] px-1.5 text-xs tabular-nums" variant="outline">
           {count}
         </Badge>
         <ChevronDownIcon className={`size-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />

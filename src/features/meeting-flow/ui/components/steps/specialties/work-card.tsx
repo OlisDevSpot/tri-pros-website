@@ -37,7 +37,7 @@ function WorkCardImpl({ scopeId, name, media }: WorkCardProps) {
       </span>
       <span className="flex flex-col gap-1.5 p-3">
         <span className="text-base leading-snug font-semibold">{name}</span>
-        <span className="flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground group-data-[state=on]:text-foreground">
+        <span className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground group-data-[state=on]:text-foreground">
           <PlusIcon aria-hidden className="size-3.5 group-data-[state=on]:hidden" />
           <CheckIcon aria-hidden className="hidden size-3.5 text-primary group-data-[state=on]:block" />
           <span className="group-data-[state=on]:hidden">{SPECIALTIES_COPY.work.add}</span>

@@ -38,7 +38,7 @@ export function ReasonPicker({ tradeId, reasons }: ReasonPickerProps) {
         </Button>
       </div>
       {visible.length === 0
-        ? <p className="text-[13px] text-muted-foreground">{TRADE_SELECTION_COPY.noReason}</p>
+        ? <p className="text-sm text-muted-foreground">{TRADE_SELECTION_COPY.noReason}</p>
         : (
             <ToggleGroup aria-labelledby={labelId} className="flex w-full flex-wrap gap-2" type="multiple" value={reasons} onValueChange={handleValueChange}>
               {visible.map(reason => (

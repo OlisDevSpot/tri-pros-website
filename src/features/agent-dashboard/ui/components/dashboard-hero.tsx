@@ -21,7 +21,7 @@ export function DashboardHero({ name }: DashboardHeroProps): ReactElement {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-muted-foreground">Your desk</p>
+        <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">Your desk</p>
         <h1 className="font-sans text-2xl font-medium text-foreground">
           {firstName ? `👋 Welcome back, ${firstName}` : '👋 Welcome back'}
         </h1>

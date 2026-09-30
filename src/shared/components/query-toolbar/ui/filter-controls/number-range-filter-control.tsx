@@ -102,7 +102,7 @@ export function NumberRangeFilterControl({ definition, value, onChange }: Props)
       </PopoverTrigger>
       <PopoverContent align="start" className="w-72 p-0">
         <div className="flex items-baseline justify-between gap-3 border-b border-border/50 px-4 py-3">
-          <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+          <span className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
             {definition.label}
           </span>
           <span className="font-medium text-sm tabular-nums text-foreground">
@@ -123,7 +123,7 @@ export function NumberRangeFilterControl({ definition, value, onChange }: Props)
             aria-label={`${definition.label} range`}
             minStepsBetweenThumbs={1}
           />
-          <div className="mt-2 flex items-center justify-between text-[10px] tabular-nums text-muted-foreground/70">
+          <div className="mt-2 flex items-center justify-between text-xs tabular-nums text-muted-foreground/70">
             <span>{definition.formatValue(bounds.min)}</span>
             <span>{definition.formatValue(bounds.max)}</span>
           </div>
@@ -183,7 +183,7 @@ function NumberField({ label, value, ariaLabel, onChange }: NumberFieldProps) {
 
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground/80">
+      <span className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground/80">
         {label}
       </span>
       <Input

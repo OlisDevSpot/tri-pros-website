@@ -50,7 +50,7 @@ export function IdentityEditor({ leadSourceId, initialName, initialSlug }: Ident
     <section className="flex flex-col gap-4">
       <SlugConfirmDialog />
       <div className="flex items-center justify-between">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Identity
         </h3>
         <div className={cn('flex items-center gap-2', !isDirty && 'invisible')}>
@@ -102,7 +102,7 @@ function Field({ label, hint, children }: { label: string, hint?: string, childr
     <div className="flex flex-col gap-1.5">
       <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
       {children}
-      {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
+      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
     </div>
   )
 }

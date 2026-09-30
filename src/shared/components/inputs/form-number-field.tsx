@@ -28,7 +28,7 @@ export function FormNumberField<T extends FieldValues>({ control, name, label, p
       name={name}
       render={({ field }) => (
         <FormItem className="min-w-0 gap-1.5">
-          <FormLabel className={cn('text-[12.5px] font-bold', hideLabel && 'sr-only')}>{label}</FormLabel>
+          <FormLabel className={cn('text-xs font-bold', hideLabel && 'sr-only')}>{label}</FormLabel>
           <InputGroup className="h-11">
             {prefix && <InputGroupAddon><InputGroupText>{prefix}</InputGroupText></InputGroupAddon>}
             <FormControl>

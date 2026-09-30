@@ -170,10 +170,10 @@ export function ProgramStep({ flowContext, meetingType }: ProgramStepProps) {
                     </div>
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2">
-                        <h4 className="text-[15px] font-semibold leading-snug tracking-tight">
+                        <h4 className="text-base font-semibold leading-snug tracking-tight">
                           {benefit.headline}
                         </h4>
-                        <Badge variant="outline" className={cn('text-[10px]', config.border)}>
+                        <Badge variant="outline" className={cn('text-xs', config.border)}>
                           {config.label}
                         </Badge>
                       </div>

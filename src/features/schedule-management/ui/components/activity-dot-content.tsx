@@ -51,7 +51,7 @@ export function ActivityDotContent({
         </div>
 
         {/* Type badge */}
-        <Badge className={cn('text-[10px] px-1.5 py-0 leading-4', config.bgColor, config.color)}>
+        <Badge className={cn('text-xs px-1.5 py-0 leading-4', config.bgColor, config.color)}>
           {config.label}
         </Badge>
 

@@ -61,7 +61,7 @@ function ProjectSectionImpl() {
     <section aria-labelledby={headingId} className="flex flex-col gap-4">
       <div className="flex items-baseline justify-between gap-3">
         <h3 ref={headingRef} className="font-sans text-base font-semibold outline-none" id={headingId} tabIndex={-1}>{SPECIALTIES_COPY.panel.heading}</h3>
-        <p className="text-[13px] text-muted-foreground tabular-nums">
+        <p className="text-sm text-muted-foreground tabular-nums">
           {`${formatCount(onProject.length, SPECIALTIES_COPY.units.trade)} · ${formatCount(scopeCount, SPECIALTIES_COPY.units.scope)}`}
         </p>
       </div>

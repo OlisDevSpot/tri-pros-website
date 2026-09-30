@@ -171,7 +171,7 @@ export function DataTableFilterBar<TData>({ table, filters }: Props<TData>) {
                 <Button variant="outline" size="icon" className="relative shrink-0">
                   <SlidersHorizontal className="size-4" />
                   {activeSelectCount > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
+                    <span className="absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
                       {activeSelectCount}
                     </span>
                   )}

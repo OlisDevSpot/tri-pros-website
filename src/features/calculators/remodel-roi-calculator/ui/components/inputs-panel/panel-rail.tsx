@@ -19,7 +19,7 @@ export function PanelRail({ done }: Props) {
     <div className="grid content-start justify-items-center gap-1.5 px-1.5 py-3.5">
       <Button aria-label="Show inputs" className="size-11" onClick={() => setCollapsed(false)} size="icon" type="button" variant="ghost"><PanelLeftOpenIcon /></Button>
       {PANEL_SECTION_KEYS.map(section => (
-        <button className="grid min-h-14 w-16 justify-items-center gap-1 rounded-lg py-2 text-[11px] font-bold text-muted-foreground hover:bg-muted hover:text-foreground" key={section} onClick={() => editSection(section)} type="button">
+        <button className="grid min-h-14 w-16 justify-items-center gap-1 rounded-lg py-2 text-xs font-bold text-muted-foreground hover:bg-muted hover:text-foreground" key={section} onClick={() => editSection(section)} type="button">
           <StepMarker state={done[section] ? 'done' : 'pending'} />
           {PANEL_SECTION_SHORT_LABELS[section]}
         </button>

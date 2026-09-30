@@ -99,7 +99,7 @@ function ProjectRowImpl({ entry, expanded, onStage, pairedOnProject, onExpandedC
       </AnimatedCollapsibleContent>
       {paired && pairing && !pairedOnProject && (
         <div className="flex items-center justify-between gap-2 border-t border-dashed py-0.5 pr-1 pl-3">
-          <p className="text-[13px] text-muted-foreground">{SPECIALTIES_COPY.panel.pairsWith(paired.name, pairing.reason)}</p>
+          <p className="text-sm text-muted-foreground">{SPECIALTIES_COPY.panel.pairsWith(paired.name, pairing.reason)}</p>
           <Button className="h-11 shrink-0 px-2 font-semibold" variant="ghost" onClick={() => showTrade(paired.id)}>
             {SPECIALTIES_COPY.panel.show}
           </Button>

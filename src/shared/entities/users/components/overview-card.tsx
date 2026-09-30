@@ -40,8 +40,8 @@ const AVATAR_SIZE_CLASSES: Record<UserAvatarSize, string> = {
 }
 
 const AVATAR_FALLBACK_TEXT: Record<UserAvatarSize, string> = {
-  xs: 'text-[8px]',
-  sm: 'text-[10px]',
+  xs: 'text-xs',
+  sm: 'text-xs',
   md: 'text-xs',
   lg: 'text-sm',
 }
@@ -181,7 +181,7 @@ function RoleSlot({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        'text-[10px] font-medium uppercase tracking-wide text-muted-foreground',
+        'text-xs font-medium uppercase tracking-wide text-muted-foreground',
         className,
       )}
     >

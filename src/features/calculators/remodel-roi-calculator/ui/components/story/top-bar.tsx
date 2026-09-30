@@ -32,7 +32,7 @@ export function TopBar({ projection, lookAhead, onLookAheadChange, showInputsBut
           {STORY_COPY.inputs}
         </Button>
       )}
-      <div className="flex min-w-0 flex-1 flex-nowrap gap-x-4.5 text-[13.5px] font-semibold text-muted-foreground @max-[58rem]/story:text-[12.5px] @max-[44rem]/story:min-w-min @max-[44rem]/story:flex-wrap">
+      <div className="flex min-w-0 flex-1 flex-nowrap gap-x-4.5 text-sm font-semibold text-muted-foreground @max-[58rem]/story:text-xs @max-[44rem]/story:min-w-min @max-[44rem]/story:flex-wrap">
         {projection.ready
           ? (
               <>

@@ -72,7 +72,7 @@ export function CalendarHeader({
         {/* Mobile: stacked date info */}
         <div className="flex min-w-0 flex-col gap-0.5 sm:hidden">
           <span className="truncate text-sm font-semibold leading-tight">{monthYear}</span>
-          <span className="truncate text-[10px] leading-tight text-muted-foreground">{rangeText}</span>
+          <span className="truncate text-xs leading-tight text-muted-foreground">{rangeText}</span>
         </div>
       </div>
 

@@ -18,7 +18,7 @@ export function NetWorthSummary({ projection, lookAhead }: Props) {
   }
   return (
     <div className="grid gap-2.5 rounded-xl border bg-card p-5">
-      <p className="text-[13px] font-extrabold">
+      <p className="text-sm font-extrabold">
         Your net worth in year
         {' '}
         {lookAhead}
@@ -34,7 +34,7 @@ export function NetWorthSummary({ projection, lookAhead }: Props) {
           </div>
         ))}
       </div>
-      <p className="text-[12.5px] leading-snug text-muted-foreground">
+      <p className="text-xs leading-snug text-muted-foreground">
         What you own minus what you owe: your home (
         {roundMoney(net.home)}
         ) plus the value each path adds, minus every loan still owed (

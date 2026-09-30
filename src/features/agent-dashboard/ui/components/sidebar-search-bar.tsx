@@ -55,7 +55,7 @@ export function SidebarSearchBar() {
               className="
                 pointer-events-none hidden shrink-0 select-none items-center gap-0.5
                 rounded border border-sidebar-border bg-transparent px-1.5 py-0.5
-                font-mono text-[10px] font-medium text-sidebar-muted
+                font-mono text-xs font-medium text-sidebar-muted
                 sm:inline-flex
                 group-data-[collapsible=icon]:hidden
               "

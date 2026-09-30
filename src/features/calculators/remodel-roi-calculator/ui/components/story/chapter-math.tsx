@@ -27,7 +27,7 @@ export function ChapterMath({ equation, rows }: Props) {
         onClick={() => setOpen(value => !value)}
         type="button"
       >
-        <span className="flex-1 text-[13px] leading-snug tabular-nums">{equation}</span>
+        <span className="flex-1 text-sm leading-snug tabular-nums">{equation}</span>
         <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs font-extrabold text-primary">
           {open ? STORY_COPY.hideMath : STORY_COPY.showMath}
           <ChevronDownIcon className={cn('size-4 transition-transform', open && 'rotate-180')} />

@@ -101,13 +101,13 @@ export function ProposalMediaManager({ proposalId }: Props) {
           return (
             <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 bg-muted p-2 text-center">
               <FileTextIcon className="h-8 w-8 text-muted-foreground" />
-              <span className="line-clamp-2 text-[10px] text-muted-foreground">{item.name}</span>
+              <span className="line-clamp-2 text-xs text-muted-foreground">{item.name}</span>
             </div>
           )
         }}
         renderControls={item => (
           <div className="flex items-center gap-1.5 rounded bg-background/70 px-1.5 py-0.5">
-            <span className="text-[10px]">Homeowner</span>
+            <span className="text-xs">Homeowner</span>
             <Switch
               checked={viewById.get(item.id)?.visibility === 'homeowner'}
               onCheckedChange={checked => media.setVisibility.mutate({ id: item.id, visibility: checked ? 'homeowner' : 'internal' })}

@@ -33,15 +33,15 @@ export function TradeSelectionSummary({ entry, work, name, thumb, badges, showNo
     <>
       {thumb}
       <span className={cn('flex min-w-0 flex-1 flex-col gap-0.5', className)}>
-        <span className="flex flex-wrap items-center gap-2 text-[15px] font-semibold">
+        <span className="flex flex-wrap items-center gap-2 text-base font-semibold">
           {name ?? entry.tradeName}
           {badges}
         </span>
-        <span className="text-[13px]">{workText}</span>
-        <span className={cn('text-[13px] text-muted-foreground', work === 'summary' && 'truncate')}>{reasons}</span>
+        <span className="text-sm">{workText}</span>
+        <span className={cn('text-sm text-muted-foreground', work === 'summary' && 'truncate')}>{reasons}</span>
         {note && (
           <HybridPopoverTooltip content={<p className="max-w-xs whitespace-pre-wrap">{note}</p>}>
-            <span tabIndex={0} className="line-clamp-3 text-[13px] text-muted-foreground">
+            <span tabIndex={0} className="line-clamp-3 text-sm text-muted-foreground">
               {TRADE_SELECTION_COPY.notePrefix}
               {note}
             </span>

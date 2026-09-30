@@ -66,7 +66,7 @@ export function ProjectEntityCard({ customerId, project, onMutationSuccess, onNa
           </div>
 
           {/* Project meta */}
-          <div className="flex items-center gap-3 px-3 pb-2 text-[10px] text-muted-foreground">
+          <div className="flex items-center gap-3 px-3 pb-2 text-xs text-muted-foreground">
             {project.address && (
               <span className="flex items-center gap-1">
                 <MapPinIcon className="size-2.5" />

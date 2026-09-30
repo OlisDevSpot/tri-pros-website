@@ -260,7 +260,7 @@ export function CreateProjectForm({
                           {ts.scopes.length > 0 && (
                             <div className="flex flex-wrap gap-1 pl-4">
                               {ts.scopes.map(scope => (
-                                <Badge key={scope.id} variant="outline" className="text-[10px] font-normal">
+                                <Badge key={scope.id} variant="outline" className="text-xs font-normal">
                                   {scope.label}
                                 </Badge>
                               ))}

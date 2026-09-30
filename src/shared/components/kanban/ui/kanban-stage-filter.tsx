@@ -32,7 +32,7 @@ export function KanbanStageFilter({
         <Button variant="outline" size="sm" className="gap-1.5">
           <SlidersHorizontalIcon size={14} />
           Stages
-          <Badge variant="secondary" className="text-[10px] px-1.5">
+          <Badge variant="secondary" className="text-xs px-1.5">
             {visibleStages.size}
             /
             {stages.length}

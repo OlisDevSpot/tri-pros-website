@@ -28,7 +28,7 @@ export function AssumptionsSheet({ projection, config }: Props) {
   return (
     <ResponsiveSheet description={STORY_COPY.assumptionsDescription} drawerClassName="max-h-[85vh]" onOpenChange={open => !open && closeSheet()} open={sheet?.kind === 'assumptions'} sheetClassName="sm:max-w-[460px]" title={STORY_COPY.assumptions}>
       <div className="grid gap-3.5">
-        <p className="flex items-start gap-2 text-[12.5px] leading-snug text-muted-foreground">
+        <p className="flex items-start gap-2 text-xs leading-snug text-muted-foreground">
           <SourceTag tag="assumption" />
           Leave a field empty to use the working number shown. Change any of them and every chapter updates. The years to look ahead live in the top bar.
         </p>
@@ -45,7 +45,7 @@ export function AssumptionsSheet({ projection, config }: Props) {
         <BlockEyebrow className="pt-2">What each trade cuts, and how long a new one lasts</BlockEyebrow>
         <div className="grid border-t">
           {TRADE_KEYS.map(trade => (
-            <div className="flex justify-between gap-3 border-b border-dashed py-1.5 text-[13px]" key={trade}>
+            <div className="flex justify-between gap-3 border-b border-dashed py-1.5 text-sm" key={trade}>
               <span>{TRADE_LABELS[trade]}</span>
               <span className="text-right text-muted-foreground">
                 {formatCuts(config.trades[trade].cutsPercent)}
@@ -58,7 +58,7 @@ export function AssumptionsSheet({ projection, config }: Props) {
         <BlockEyebrow className="pt-2">The current one, replaced like-for-like</BlockEyebrow>
         <div className="grid border-t">
           {AGING_TRADE_KEYS.map(trade => (
-            <div className="flex justify-between gap-3 border-b border-dashed py-1.5 text-[13px]" key={trade}>
+            <div className="flex justify-between gap-3 border-b border-dashed py-1.5 text-sm" key={trade}>
               <span>{CURRENT_LABELS[trade]}</span>
               <span className="text-right text-muted-foreground">
                 {config.trades[trade].current.standardLifeYears}

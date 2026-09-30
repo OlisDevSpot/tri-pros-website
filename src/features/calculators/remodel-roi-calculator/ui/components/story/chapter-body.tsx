@@ -18,11 +18,11 @@ interface Props {
 export function ChapterBody({ chapter, content, projection, lookAhead }: Props) {
   return (
     <>
-      <h3 className="max-w-[34ch] font-sans text-[25px] font-semibold leading-[1.28] text-balance"><AnswerText parts={content.answer} /></h3>
+      <h3 className="max-w-[34ch] font-sans text-2xl font-semibold text-balance"><AnswerText parts={content.answer} /></h3>
       <ChapterVisual chapter={chapter} lookAhead={lookAhead} projection={projection} />
       {chapter === 'today' && <LoansNote projection={projection} />}
       {chapter === 'total' && <NetWorthSummary lookAhead={lookAhead} projection={projection} />}
-      <p className="max-w-[60ch] text-[15.5px] leading-relaxed text-muted-foreground">{content.guide}</p>
+      <p className="max-w-[60ch] text-base leading-relaxed text-muted-foreground">{content.guide}</p>
       <ChapterMath equation={content.equation} rows={content.receipt} />
     </>
   )

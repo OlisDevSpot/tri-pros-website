@@ -375,12 +375,12 @@ function Trades({ max, className }: { max?: number, className?: string }) {
   return (
     <div className={cn('flex flex-wrap gap-1', className)}>
       {visible.map(trade => (
-        <Badge key={trade} variant="outline" className="text-[10px] font-normal">
+        <Badge key={trade} variant="outline" className="text-xs font-normal">
           {trade}
         </Badge>
       ))}
       {remaining > 0 && (
-        <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground">
+        <Badge variant="outline" className="text-xs font-normal text-muted-foreground">
           {`+${remaining}`}
         </Badge>
       )}
@@ -400,12 +400,12 @@ function ScopeCoverage({ className }: { className?: string }) {
     <ul aria-label="Scope coverage" className={cn('flex flex-wrap gap-1', className)}>
       {coverage.covered.map(scope => (
         <li key={`covered-${scope.id}`}>
-          <Badge variant="outline" className="text-[10px] font-normal">{scope.label}</Badge>
+          <Badge variant="outline" className="text-xs font-normal">{scope.label}</Badge>
         </li>
       ))}
       {coverage.missing.map(scope => (
         <li key={`missing-${scope.id}`}>
-          <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground line-through">
+          <Badge variant="outline" className="text-xs font-normal text-muted-foreground line-through">
             <span className="sr-only">Not included: </span>
             {scope.label}
           </Badge>
@@ -413,7 +413,7 @@ function ScopeCoverage({ className }: { className?: string }) {
       ))}
       {coverage.extra.map(scope => (
         <li key={`extra-${scope.id}`}>
-          <Badge variant="outline" className="border-dashed text-[10px] font-normal">
+          <Badge variant="outline" className="border-dashed text-xs font-normal">
             <span aria-hidden="true">+ </span>
             <span className="sr-only">Added: </span>
             {scope.label}

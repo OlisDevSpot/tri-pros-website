@@ -32,7 +32,7 @@ export function EnvelopePreSendReview({ proposalKind, customerName }: EnvelopePr
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
             <p className="text-sm font-medium text-foreground">{kindLabel}</p>
-            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-primary">
               {proposalKind}
             </span>
           </div>

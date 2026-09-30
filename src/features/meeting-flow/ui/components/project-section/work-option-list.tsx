@@ -42,7 +42,7 @@ export function WorkOptionList({ entry, label, scopes, onBeforeRemove }: WorkOpt
         {scopes.map(scope => (
           <ToggleGroupItem
             key={scope.id}
-            className="group h-auto min-h-11 w-full flex-none justify-between gap-2 rounded-md border border-border bg-card py-2 pr-2 pl-3 text-left text-[15px] font-normal whitespace-normal motion-safe:transition-colors motion-safe:duration-200 first:rounded-md last:rounded-md hover:bg-muted hover:text-foreground data-[state=on]:border-primary/45 data-[state=on]:bg-primary/8 data-[state=on]:text-foreground"
+            className="group h-auto min-h-11 w-full flex-none justify-between gap-2 rounded-md border border-border bg-card py-2 pr-2 pl-3 text-left text-base font-normal whitespace-normal motion-safe:transition-colors motion-safe:duration-200 first:rounded-md last:rounded-md hover:bg-muted hover:text-foreground data-[state=on]:border-primary/45 data-[state=on]:bg-primary/8 data-[state=on]:text-foreground"
             value={scope.id}
           >
             <span>{scope.name}</span>

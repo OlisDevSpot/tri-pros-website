@@ -53,7 +53,7 @@ function DayAgendaRow({ row }: { row: MeetingListRow }) {
   return (
     <li className="flex items-stretch gap-3">
       <div className="flex w-18 shrink-0 items-center justify-end">
-        <span className="whitespace-nowrap rounded-md border border-primary/20 bg-primary/5 px-1.5 py-1 font-mono text-[0.72rem] tabular-nums text-foreground">
+        <span className="whitespace-nowrap rounded-md border border-primary/20 bg-primary/5 px-1.5 py-1 font-mono text-xs tabular-nums text-foreground">
           {format(new Date(row.scheduledFor), 'h:mm a')}
         </span>
       </div>

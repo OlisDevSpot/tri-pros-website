@@ -105,14 +105,14 @@ export function MeetingCard({ event, onAssignOwner, onUpdateScheduledFor, isHigh
       <MeetingOverviewCard.Address>
         <button
           type="button"
-          className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer min-w-0"
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer min-w-0"
           onClick={e => e.stopPropagation()}
         >
           <MapPinIcon size={14} className="shrink-0" />
           <span className="min-w-0">
             {event.customerAddress && <span className="block truncate text-left">{event.customerAddress}</span>}
             {[event.customerCity, event.customerState, event.customerZip].filter(Boolean).join(', ') && (
-              <span className="block truncate text-left text-[10px] opacity-70">
+              <span className="block truncate text-left text-xs opacity-70">
                 {[event.customerCity, event.customerState, event.customerZip].filter(Boolean).join(', ')}
               </span>
             )}

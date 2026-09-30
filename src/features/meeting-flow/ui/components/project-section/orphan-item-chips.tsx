@@ -23,7 +23,7 @@ export function OrphanItemChips({ entry, items, onBeforeRemove }: OrphanItemChip
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-[13px] text-muted-foreground">{SPECIALTIES_COPY.panel.orphanHint}</p>
+      <p className="text-sm text-muted-foreground">{SPECIALTIES_COPY.panel.orphanHint}</p>
       <ul className="flex flex-wrap gap-2">
         {items.map(item => (
           <li key={item.id}>
