@@ -21,9 +21,11 @@ export function MonthlyCostChart({ projection, lookAhead }: Props) {
   const shown = projection.years.slice(1, lookAhead + 1)
   const breakdownKeys = [
     'nowBills',
-    ...(projection.project.hasLoan ? ['nowLoan'] : []),
+    // Each branch is its own `as const`: spreading a plain array here would widen the whole
+    // tuple to `string`, past `nowBills`, and LegendSwatches checks these keys against the config.
+    ...(projection.project.hasLoan ? ['nowLoan'] as const : [] as const),
     'waitRepairs',
-    ...(shown.some(year => year.replacementPayments > 0) ? ['waitLoan'] : []),
+    ...(shown.some(year => year.replacementPayments > 0) ? ['waitLoan'] as const : [] as const),
   ] as const
   return (
     <div className="grid gap-1">

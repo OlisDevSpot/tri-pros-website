@@ -17,7 +17,7 @@ interface Props {
 export function TrendAxis({ ticks, format, height }: Props) {
   return (
     <ChartContainer aria-hidden className="aspect-auto w-full" config={{}} style={{ height }}>
-      <BarChart data={[{}]} margin={CHART_MARGIN}>
+      <BarChart accessibilityLayer={false} data={[{}]} margin={CHART_MARGIN}>
         <XAxis height={CHART_X_AXIS_HEIGHT} tick={false} axisLine={false} tickLine={false} />
         <YAxis
           width={48}

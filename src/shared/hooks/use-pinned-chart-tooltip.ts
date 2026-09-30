@@ -87,11 +87,11 @@ export function usePinnedChartTooltip<T extends HTMLElement = HTMLDivElement>() 
     containerProps: {
       ref,
       onPointerDownCapture: (event: ReactPointerEvent<T>) => {
-        cancelPendingFrame()
         if (event.pointerType === 'mouse') {
-          pin.set(undefined)
+          handBackToMouse(event)
           return
         }
+        cancelPendingFrame()
         if (ref.current) {
           forceReselect(ref.current, event.target, event.clientX, event.clientY)
         }

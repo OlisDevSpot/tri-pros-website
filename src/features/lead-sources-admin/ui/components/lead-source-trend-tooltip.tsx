@@ -7,7 +7,9 @@ import { LEAD_SOURCE_TREND_CHART_CONFIG } from '@/features/lead-sources-admin/co
 import { formatBucketRange } from '@/features/lead-sources-admin/lib/format-bucket-label'
 import { formatAsCount } from '@/shared/lib/formatters'
 
-type Props = TooltipContentProps & { bucket: Bucket }
+interface Props extends TooltipContentProps {
+  bucket: Bucket
+}
 
 export function LeadSourceTrendTooltip({ active, payload, bucket }: Props) {
   if (!active || !payload?.length) {

@@ -6,7 +6,7 @@ import { useActiveTooltipCoordinate, useIsTooltipActive } from 'recharts'
 
 import { cn } from '@/shared/lib/utils'
 
-type Props = BarShapeProps & {
+interface Props extends BarShapeProps {
   fill: string
 }
 

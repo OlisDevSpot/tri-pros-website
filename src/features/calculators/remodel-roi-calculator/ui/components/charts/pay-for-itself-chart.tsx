@@ -52,7 +52,7 @@ export function PayForItselfChart({ projection, lookAhead }: Props) {
         <YAxis axisLine={false} tickFormatter={value => signedMoney(Number(value))} tickLine={false} width={92} />
         <ReferenceLine stroke="var(--muted-foreground)" y={0} />
         <PinnedChartTooltip content={content} pin={tooltip.pin} />
-        <Area dataKey="benefit" fill={`url(#${gradientId})`} isAnimationActive={!reduceMotion} stroke="var(--primary)" strokeWidth={2.5} type="monotone" />
+        <Area dataKey="benefit" fill={`url(#${gradientId})`} isAnimationActive={!reduceMotion} stroke="var(--color-benefit)" strokeWidth={2.5} type="monotone" />
         {payback != null && payback <= lookAhead && <ReferenceDot fill="var(--card)" label={{ value: `Pays for itself · year ${payback}`, position: 'right', className: 'fill-foreground text-xs font-semibold' }} r={5} stroke="var(--primary)" strokeWidth={2.5} x={payback} y={projection.years[payback].benefit} />}
       </AreaChart>
     </ChartContainer>

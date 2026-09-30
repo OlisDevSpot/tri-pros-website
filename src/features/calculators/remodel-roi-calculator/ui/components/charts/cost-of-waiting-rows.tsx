@@ -38,8 +38,8 @@ export function CostOfWaitingRows({ trade, growth, max }: Props) {
     return <ChartTooltipCard rows={[{ label: 'Price when it gives out', value: formatMoney(row.price) }, { label: `${formatMoney(likeForLikePrice)} × ${(growth ** row.year).toFixed(3)}`, value: '' }]} title={`${label} · year ${row.year}`} />
   }
   return (
-    <ChartContainer aria-label={`${label}: ${rows.map(row => `${row.name} ${formatMoney(row.total)}`).join(', ')}`} className="aspect-auto w-full" config={COST_OF_WAITING_CHART_CONFIG} debounce={150} role="img" style={{ height: rows.length * 34 + 8 }} {...tooltip.containerProps}>
-      <BarChart barCategoryGap={6} data={rows} layout="vertical" margin={{ top: 4, right: 88, left: 0, bottom: 4 }}>
+    <ChartContainer aria-label={`${label}: ${rows.map(row => (row.repairs > 0 ? `${row.name} ${formatMoney(row.price)} plus ${formatMoney(row.repairs)} in repairs, ${formatMoney(row.total)} total` : `${row.name} ${formatMoney(row.total)}`)).join('; ')}`} className="aspect-auto w-full" config={COST_OF_WAITING_CHART_CONFIG} debounce={150} role="img" style={{ height: rows.length * 34 + 8 }} {...tooltip.containerProps}>
+      <BarChart accessibilityLayer={false} barCategoryGap={6} data={rows} layout="vertical" margin={{ top: 4, right: 88, left: 0, bottom: 4 }}>
         <XAxis domain={[0, max || 1]} hide type="number" />
         <YAxis axisLine={false} dataKey="name" tickLine={false} type="category" width={64} />
         <PinnedChartTooltip content={content} cursor={false} pin={tooltip.pin} shared={false} />

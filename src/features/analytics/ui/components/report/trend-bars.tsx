@@ -91,7 +91,7 @@ export function TrendBars({ rows, interval, series, ticks, height, pin, onBucket
             content={content}
           />
           {series.map(key => (
-            <Bar key={key} dataKey={(row: ChartRow) => row.values[key] ?? null} name={METRICS[key].label} fill={SERIES_COLORS[key].fill} radius={[4, 4, 0, 0]} maxBarSize={28} isAnimationActive={false} />
+            <Bar key={key} dataKey={(row: ChartRow) => row.values[key] ?? null} name={METRICS[key].label} fill={`var(--color-${key})`} radius={[4, 4, 0, 0]} maxBarSize={28} isAnimationActive={false} />
           ))}
         </BarChart>
       </ChartContainer>

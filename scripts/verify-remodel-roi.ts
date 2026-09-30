@@ -131,6 +131,12 @@ assert.equal(combineCuts({ trades: [], ducts: false }, 'electric', config.trades
 }
 assert.ok(!buildReturnWaterfall(run(cash(JOB_A)), 10).rows.some(row => row.label === 'Interest on your loan'), 'cash job: no loan-interest row')
 
+// Job E: incentives cover the whole price and there's nothing to replace, so every return part is zero or positive.
+{
+  const waterfall = buildReturnWaterfall(run(JOB_E), 10)
+  assert.ok(waterfall.rows.every(row => row.kind !== 'cost') && waterfall.low === 0, 'waterfall: no negative parts → no cost bars, axis starts at 0')
+}
+
 // Cost of waiting, built from job A's projection.
 {
   const waiting = buildCostOfWaiting(run(JOB_A))

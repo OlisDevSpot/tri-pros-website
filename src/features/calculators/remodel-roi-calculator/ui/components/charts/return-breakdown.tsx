@@ -39,8 +39,8 @@ export function ReturnBreakdown({ projection, lookAhead }: Props) {
         {' '}
         {lookAhead}
       </p>
-      <ChartContainer aria-label={`Where the return comes from by year ${lookAhead}: ${rows.map(row => `${row.label} ${signedMoney(row.value)}`).join(', ')}`} className="aspect-auto w-full" config={RETURN_BREAKDOWN_CHART_CONFIG} debounce={150} role="img" style={{ height: rows.length * 34 + 16 }} {...tooltip.containerProps}>
-        <BarChart barCategoryGap={8} data={rows} layout="vertical" margin={{ top: 4, right: 96, left: 0, bottom: 4 }}>
+      <ChartContainer aria-label={`Where the return comes from by year ${lookAhead}: ${rows.map(row => `${row.label}, ${row.detail}, ${signedMoney(row.value)}${row.kind === 'total' ? '' : `, running total ${formatMoney(row.to)}`}`).join('; ')}`} className="aspect-auto w-full" config={RETURN_BREAKDOWN_CHART_CONFIG} debounce={150} role="img" style={{ height: rows.length * 34 + 16 }} {...tooltip.containerProps}>
+        <BarChart accessibilityLayer={false} barCategoryGap={8} data={rows} layout="vertical" margin={{ top: 4, right: 96, left: 0, bottom: 4 }}>
           <XAxis domain={[low, high]} hide type="number" />
           <YAxis axisLine={false} dataKey="label" tickLine={false} type="category" width={152} />
           <ReferenceLine stroke="var(--muted-foreground)" x={0} />
