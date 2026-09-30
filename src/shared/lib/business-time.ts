@@ -57,6 +57,38 @@ export function businessToday(): string {
   return businessDayKey(new Date())
 }
 
+const businessFormatters = new Map<string, Intl.DateTimeFormat>()
+
+/**
+ * Wall-clock text in the business timezone, so the server's render and the
+ * browser's hydration print the same string. Formatters are cached per option
+ * set: building one per call dominated table re-renders.
+ */
+export function formatBusinessTime(date: Date | string, options: Intl.DateTimeFormatOptions): string {
+  const key = JSON.stringify(options)
+  let formatter = businessFormatters.get(key)
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat('en-US', { ...options, timeZone: BUSINESS_TIMEZONE })
+    businessFormatters.set(key, formatter)
+  }
+  return formatter.format(new Date(date))
+}
+
+/** 0–23 hour of the business day, for bucketing by business hours. */
+export function businessHour(date: Date | string): number {
+  return Number(formatBusinessTime(date, { hour: 'numeric', hourCycle: 'h23' }))
+}
+
+/** Whole business days from `date`'s business day to today's; negative in the future. */
+export function businessDaysAgo(date: Date | string): number {
+  return Math.round((Date.parse(businessToday()) - Date.parse(businessDayKey(new Date(date)))) / 86_400_000)
+}
+
+/** True when both instants fall in the same Sunday-started business week. */
+export function isSameBusinessWeek(a: Date | string, b: Date | string): boolean {
+  return sundayOnOrBefore(businessDayKey(new Date(a))) === sundayOnOrBefore(businessDayKey(new Date(b)))
+}
+
 export function businessMonthKey(date: Date | string): string {
   return businessDayKey(new Date(date)).slice(0, 7)
 }

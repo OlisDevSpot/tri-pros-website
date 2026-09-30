@@ -4,7 +4,6 @@ import type { SwimlaneCombo } from '@/features/schedule-management/lib/today-vie
 import type { ScheduleCalendarEvent } from '@/features/schedule-management/types'
 
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area'
-import { isSameDay, parseISO } from 'date-fns'
 import { motion } from 'motion/react'
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
@@ -16,6 +15,7 @@ import { Skeleton } from '@/shared/components/ui/skeleton'
 import { SKELETON_BLOCK_TONE_CLASS, SKELETON_TONE_CLASS } from '@/shared/constants/skeleton-tone'
 import { TODAY_VIEW_BUCKETS } from '@/shared/constants/today-view-buckets'
 import { UserOverviewCard } from '@/shared/entities/users/components/overview-card'
+import { businessDayKey } from '@/shared/lib/business-time'
 import { cn } from '@/shared/lib/utils'
 
 import { ScheduleCardSkeleton } from './schedule-card-skeleton'
@@ -45,7 +45,7 @@ export function ScheduleTodayView({
   renderCard,
 }: ScheduleTodayViewProps) {
   const todayEvents = useMemo(
-    () => events.filter(e => isSameDay(parseISO(e.startAt), currentDate)),
+    () => events.filter(e => businessDayKey(new Date(e.startAt)) === localDateToCalendarDay(currentDate)),
     [events, currentDate],
   )
 

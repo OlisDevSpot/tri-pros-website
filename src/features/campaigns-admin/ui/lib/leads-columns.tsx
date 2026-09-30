@@ -11,6 +11,7 @@ import { LeadSelectCell } from '@/features/campaigns-admin/ui/components/leads/l
 import { LeadSelectHeader } from '@/features/campaigns-admin/ui/components/leads/lead-select-header'
 import { LeadStatusBadge } from '@/features/campaigns-admin/ui/components/leads/lead-status-badge'
 import { Button } from '@/shared/components/ui/button'
+import { formatBusinessTime } from '@/shared/lib/business-time'
 import { formatPhone } from '@/shared/lib/phone'
 
 export interface LeadsTableMeta {
@@ -34,7 +35,7 @@ function formatEnrolledAt(iso: string | null): string {
   if (!iso) {
     return '—'
   }
-  return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+  return formatBusinessTime(iso, { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 function formatRelativeAge(iso: string | null): string {
@@ -102,7 +103,7 @@ export function buildLeadsColumns(): ColumnDef<LeadTableRow>[] {
       id: 'attempts',
     },
     {
-      cell: ({ row }) => <span className="text-sm text-muted-foreground">{formatRelativeAge(row.original.createdAt)}</span>,
+      cell: ({ row }) => <span className="text-sm text-muted-foreground" suppressHydrationWarning>{formatRelativeAge(row.original.createdAt)}</span>,
       header: 'Age',
       id: 'createdAt',
     },

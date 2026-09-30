@@ -6,13 +6,14 @@ import type { Proposal } from '@/shared/db/schema/proposals'
 import type { ProposalRowStyle } from '@/shared/modules/proposals/core/constants/proposal-row-styles'
 import type { SowTradeScope } from '@/shared/modules/proposals/core/types'
 
-import { format, formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNow } from 'date-fns'
 import { DollarSignIcon, EyeIcon } from 'lucide-react'
 import React, { createContext, useCallback, useMemo } from 'react'
 
 import { EntityActionMenu } from '@/shared/components/entities/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
 import { ROOTS } from '@/shared/config/roots'
+import { formatBusinessTime } from '@/shared/lib/business-time'
 import { formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 import { PROPOSAL_ROW_STYLES } from '@/shared/modules/proposals/core/constants/proposal-row-styles'
@@ -231,7 +232,7 @@ function StatusDot({ className }: { className?: string }) {
 function Label({ className }: { className?: string }) {
   const { proposal, style } = useProposalOverviewCard()
   const text = proposal.label
-    || (proposal.createdAt ? format(new Date(proposal.createdAt), 'MMM d') : 'Untitled')
+    || (proposal.createdAt ? formatBusinessTime(proposal.createdAt, { month: 'short', day: 'numeric' }) : 'Untitled')
   return (
     <span className={cn('truncate', style.textClass, className)}>
       {text}
@@ -300,17 +301,17 @@ function CreatedAt({
   let display: string
   switch (dateFormat) {
     case 'full':
-      display = format(date, 'MMM d, yyyy')
+      display = formatBusinessTime(date, { month: 'short', day: 'numeric', year: 'numeric' })
       break
     case 'date-only':
-      display = format(date, 'MMM d')
+      display = formatBusinessTime(date, { month: 'short', day: 'numeric' })
       break
     case 'relative':
       display = formatDistanceToNow(date, { addSuffix: true })
       break
   }
   return (
-    <span className={cn('text-xs text-muted-foreground shrink-0', className)}>
+    <span className={cn('text-xs text-muted-foreground shrink-0', className)} suppressHydrationWarning={dateFormat === 'relative'}>
       {display}
     </span>
   )

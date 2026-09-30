@@ -2,10 +2,9 @@
 
 import type { CalendarEvent } from '@/shared/components/calendar/types'
 
-import { isToday } from 'date-fns'
 import { useMemo } from 'react'
 
-import { getCalendarCells, getEventsForDay, localDateToCalendarDay, seededIntInRange } from '@/shared/components/calendar/lib/calendar-helpers'
+import { getCalendarCells, getEventsForDay, isBusinessToday, localDateToCalendarDay, seededIntInRange } from '@/shared/components/calendar/lib/calendar-helpers'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { SKELETON_TONE_CLASS } from '@/shared/constants/skeleton-tone'
 import { cn } from '@/shared/lib/utils'
@@ -66,7 +65,7 @@ export function CalendarMonthView<T extends CalendarEvent>({
                 className={cn(
                   'h-6 px-1 text-xs font-semibold',
                   !cell.currentMonth && 'opacity-30',
-                  isToday(cell.date) && 'flex w-6 items-center justify-center rounded-full bg-primary font-bold text-primary-foreground',
+                  isBusinessToday(cell.date) && 'flex w-6 items-center justify-center rounded-full bg-primary font-bold text-primary-foreground',
                 )}
               >
                 {cell.day}

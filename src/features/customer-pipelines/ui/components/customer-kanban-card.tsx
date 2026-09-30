@@ -4,7 +4,7 @@ import type { CustomerPipelineItem, PipelineItemProjectMeeting, PipelineItemProp
 import type { MeetingOverviewCardProposal } from '@/shared/entities/meetings/components/overview-card'
 
 import { useDraggable } from '@dnd-kit/core'
-import { format, formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNow } from 'date-fns'
 import {
   CalendarIcon,
   FolderOpenIcon,
@@ -24,6 +24,7 @@ import { useCustomerActionConfigs } from '@/shared/entities/customers/hooks/use-
 import { getMeetingTimeLabel } from '@/shared/entities/customers/lib/get-meeting-time-label'
 import { MeetingOverviewCard } from '@/shared/entities/meetings/components/overview-card'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
+import { formatBusinessTime } from '@/shared/lib/business-time'
 import { formatAddress, formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 import { useProjectActionConfigs } from '@/shared/modules/projects/core/hooks/use-project-action-configs'
@@ -135,8 +136,9 @@ function CustomerKanbanCardImpl({
                     />
                   )}
                 </div>
+                {/* Relative to now, so the server's render and hydration can straddle a minute boundary. */}
                 {item.latestActivityAt && (
-                  <p className="text-xs text-muted-foreground/70 leading-tight">
+                  <p className="text-xs text-muted-foreground/70 leading-tight" suppressHydrationWarning>
                     {'Created '}
                     {formatDistanceToNow(new Date(item.latestActivityAt), { addSuffix: true })}
                   </p>
@@ -185,7 +187,7 @@ function CustomerKanbanCardImpl({
               <div className="flex items-center gap-2 text-xs">
                 {item.project.startedAt && (
                   <span className="text-muted-foreground">
-                    {format(new Date(item.project.startedAt), 'MMM d, yyyy')}
+                    {formatBusinessTime(item.project.startedAt, { month: 'short', day: 'numeric', year: 'numeric' })}
                   </span>
                 )}
                 {item.project.totalValue > 0 && (
@@ -244,6 +246,7 @@ function CustomerKanbanCardImpl({
                           meetingLabel.variant === 'upcoming' && 'border-status-info-dot/40 bg-status-info-bg text-status-info-fg',
                           meetingLabel.variant === 'past' && 'border-muted-foreground/20 text-muted-foreground',
                         )}
+                        suppressHydrationWarning
                       >
                         <CalendarIcon size={10} />
                         {meetingLabel.text}
@@ -254,6 +257,7 @@ function CustomerKanbanCardImpl({
                         <Badge
                           variant="outline"
                           className="gap-1 text-xs font-normal w-fit border-muted-foreground/20 text-muted-foreground"
+                          suppressHydrationWarning
                         >
                           <CalendarIcon size={10} />
                           {formatDistanceToNow(new Date(item.meetingScheduledFor), { addSuffix: true })}

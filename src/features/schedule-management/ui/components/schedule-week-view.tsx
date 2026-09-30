@@ -2,11 +2,11 @@
 
 import type { ScheduleCalendarEvent } from '@/features/schedule-management/types'
 
-import { format, isToday, parseISO } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { useEffect, useMemo, useRef } from 'react'
 
 import { SKELETON_EVENTS_PER_DAY } from '@/features/schedule-management/constants/schedule-calendar-config'
-import { getEventsForDay, getWeekDays, localDateToCalendarDay, seededIntInRange } from '@/shared/components/calendar/lib/calendar-helpers'
+import { getEventsForDay, getWeekDays, isBusinessToday, localDateToCalendarDay, seededIntInRange } from '@/shared/components/calendar/lib/calendar-helpers'
 import { cn } from '@/shared/lib/utils'
 
 import { ScheduleCardSkeleton } from './schedule-card-skeleton'
@@ -83,19 +83,19 @@ export function ScheduleWeekView({
               key={day.toISOString()}
               className={cn(
                 'py-2 text-center text-xs font-medium text-muted-foreground border-r last:border-r-0',
-                isToday(day) && 'bg-primary/10',
+                isBusinessToday(day) && 'bg-primary/10',
               )}
             >
               <span className="block sm:hidden">
                 {format(day, 'EEE').charAt(0)}
-                <span className={cn('block text-xs font-semibold', isToday(day) ? 'text-foreground' : 'text-foreground')}>
+                <span className={cn('block text-xs font-semibold', isBusinessToday(day) ? 'text-foreground' : 'text-foreground')}>
                   {format(day, 'd')}
                 </span>
               </span>
               <span className="hidden sm:inline">
                 {format(day, 'EE')}
                 {' '}
-                <span className={cn('ml-1 font-semibold', isToday(day) ? 'text-foreground' : 'text-foreground')}>
+                <span className={cn('ml-1 font-semibold', isBusinessToday(day) ? 'text-foreground' : 'text-foreground')}>
                   {format(day, 'd')}
                 </span>
               </span>
@@ -116,7 +116,7 @@ export function ScheduleWeekView({
             const skeletonCount = seededIntInRange(localDateToCalendarDay(day), SKELETON_EVENTS_PER_DAY)
 
             const dow = day.getDay()
-            const colRef = isToday(day)
+            const colRef = isBusinessToday(day)
               ? todayColRef
               : dow === 0
                 ? sundayColRef
@@ -130,7 +130,7 @@ export function ScheduleWeekView({
                 ref={colRef}
                 className={cn(
                   'flex flex-col gap-1.5 overflow-y-auto scrollbar-gutter-stable border-r p-1.5 last:border-r-0',
-                  isToday(day) && 'bg-primary/5',
+                  isBusinessToday(day) && 'bg-primary/5',
                 )}
               >
                 {isPending && Array.from({ length: skeletonCount }).map((_, i) => (

@@ -1,6 +1,6 @@
 import type { FilterDefinition, FilterValue } from '@/shared/dal/client/lib/types'
 
-import { format } from 'date-fns'
+import { formatBusinessTime } from '@/shared/lib/business-time'
 
 /**
  * Format a filter value for display inside an active-filter chip. The chip's
@@ -28,8 +28,8 @@ export function formatChipValue(definition: FilterDefinition, value: FilterValue
     }
     case 'date-range': {
       const range = value as { from?: string, to?: string }
-      const fromStr = range.from ? format(new Date(range.from), 'MMM d') : '…'
-      const toStr = range.to ? format(new Date(range.to), 'MMM d') : '…'
+      const fromStr = range.from ? formatBusinessTime(range.from, { month: 'short', day: 'numeric' }) : '…'
+      const toStr = range.to ? formatBusinessTime(range.to, { month: 'short', day: 'numeric' }) : '…'
       return `${fromStr} → ${toStr}`
     }
     case 'number-range': {

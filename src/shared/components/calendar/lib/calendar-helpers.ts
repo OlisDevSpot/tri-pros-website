@@ -8,14 +8,14 @@ import {
   endOfMonth,
   endOfWeek,
   format,
-  isSameDay,
-  parseISO,
   startOfMonth,
   startOfWeek,
   subDays,
   subMonths,
   subWeeks,
 } from 'date-fns'
+
+import { businessDayKey, businessToday } from '@/shared/lib/business-time'
 
 const FORMAT_STRING = 'MM/dd/yy'
 
@@ -109,10 +109,13 @@ export function getEventsForDay<T extends CalendarEvent>(
   events: T[],
   date: Date,
 ): T[] {
-  return events.filter((event) => {
-    const startDate = parseISO(event.startAt)
-    return isSameDay(startDate, date)
-  })
+  const calendarDay = localDateToCalendarDay(date)
+  return events.filter(event => businessDayKey(new Date(event.startAt)) === calendarDay)
+}
+
+/** Grid days are local-noon stand-ins for calendar days; "today" is the business zone's, not the runtime's. */
+export function isBusinessToday(date: Date): boolean {
+  return localDateToCalendarDay(date) === businessToday()
 }
 
 /**

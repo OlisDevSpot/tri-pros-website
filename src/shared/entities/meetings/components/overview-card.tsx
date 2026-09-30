@@ -7,7 +7,7 @@ import type { Meeting } from '@/shared/db/schema/meetings'
 import type { Proposal } from '@/shared/db/schema/proposals'
 import type { SowTradeScope } from '@/shared/modules/proposals/core/types'
 
-import { format, formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNow } from 'date-fns'
 import { CalendarIcon, FileTextIcon } from 'lucide-react'
 import React, { createContext, useCallback, useMemo } from 'react'
 
@@ -29,6 +29,7 @@ import {
 import { useMeetingActionConfigs } from '@/shared/entities/meetings/hooks/use-meeting-action-configs'
 import { UserOverviewCard } from '@/shared/entities/users/components/overview-card'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
+import { formatBusinessTime } from '@/shared/lib/business-time'
 import { formatMeetingShortStamp } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 import { ProposalOverviewCard } from '@/shared/modules/proposals/core/components/overview-card'
@@ -253,7 +254,7 @@ function CreatedAt({ className }: { className?: string }) {
     return null
   }
   return (
-    <span className={cn('text-xs text-muted-foreground/60 shrink-0', className)}>
+    <span className={cn('text-xs text-muted-foreground/60 shrink-0', className)} suppressHydrationWarning>
       {formatDistanceToNow(new Date(meeting.createdAt), { addSuffix: true })}
     </span>
   )
@@ -360,13 +361,13 @@ function ScheduledDateField({
   let display: string
   switch (dateFormat) {
     case 'full':
-      display = format(date, 'MMM d, yyyy · h:mm a')
+      display = `${formatBusinessTime(date, { month: 'short', day: 'numeric', year: 'numeric' })} · ${formatBusinessTime(date, { hour: 'numeric', minute: '2-digit' })}`
       break
     case 'date-only':
-      display = format(date, 'MMM d, yyyy')
+      display = formatBusinessTime(date, { month: 'short', day: 'numeric', year: 'numeric' })
       break
     case 'time-only':
-      display = format(date, 'h:mm a')
+      display = formatBusinessTime(date, { hour: 'numeric', minute: '2-digit' })
       break
     case 'relative':
       display = formatDistanceToNow(date, { addSuffix: true })
@@ -394,7 +395,7 @@ function ScheduledDateField({
         >
           <Badge variant="secondary" className="gap-1 px-1.5 py-0.5 text-xs font-normal hover:bg-secondary/80 cursor-pointer">
             <CalendarIcon className="h-3 w-3 shrink-0" />
-            <span>{display}</span>
+            <span suppressHydrationWarning={dateFormat === 'relative'}>{display}</span>
           </Badge>
         </DateTimePicker>
       </div>
@@ -402,7 +403,7 @@ function ScheduledDateField({
   }
 
   return (
-    <span className="text-xs text-muted-foreground shrink-0">
+    <span className="text-xs text-muted-foreground shrink-0" suppressHydrationWarning={dateFormat === 'relative'}>
       {display}
     </span>
   )

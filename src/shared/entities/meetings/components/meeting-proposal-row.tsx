@@ -5,10 +5,10 @@ import type { ReactNode } from 'react'
 import type { CustomerProfileProposal } from '@/shared/entities/customers/types'
 import type { ProposalOverviewCardMeta } from '@/shared/modules/proposals/core/components/overview-card'
 
-import { format, isThisYear } from 'date-fns'
 import { useCallback } from 'react'
 
 import { ROOTS } from '@/shared/config/roots'
+import { businessDayKey, businessToday, formatBusinessTime } from '@/shared/lib/business-time'
 import { cn } from '@/shared/lib/utils'
 import { ProposalOverviewCard } from '@/shared/modules/proposals/core/components/overview-card'
 import { PROPOSAL_ROW_STYLES } from '@/shared/modules/proposals/core/constants/proposal-row-styles'
@@ -65,7 +65,7 @@ export function MeetingProposalRow({ proposal, onMutationSuccess: _onMutationSuc
         {showSentDate && (
           <span className="text-xs text-muted-foreground">
             {proposal.sentAt
-              ? `Sent ${format(new Date(proposal.sentAt), isThisYear(new Date(proposal.sentAt)) ? 'MMM d' : 'MMM d, yyyy')}`
+              ? `Sent ${formatBusinessTime(proposal.sentAt, businessDayKey(new Date(proposal.sentAt)).slice(0, 4) === businessToday().slice(0, 4) ? { month: 'short', day: 'numeric' } : { month: 'short', day: 'numeric', year: 'numeric' })}`
               : 'Not sent'}
           </span>
         )}

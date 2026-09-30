@@ -4,7 +4,6 @@ import type { ReactNode } from 'react'
 
 import type { ScheduleCalendarEvent } from '@/features/schedule-management/types'
 
-import { format } from 'date-fns'
 import { useCallback, useMemo } from 'react'
 
 import { SCHEDULE_ACTIVITIES_QUERY } from '@/features/schedule-management/constants/schedule-queries'
@@ -16,6 +15,7 @@ import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar
 import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { useActivityActionConfigs } from '@/shared/entities/activities/hooks/use-activity-action-configs'
+import { formatBusinessTime } from '@/shared/lib/business-time'
 import { useTRPC } from '@/trpc/helpers'
 
 interface ScheduleActivitiesCalendarProps {
@@ -46,7 +46,7 @@ export function ScheduleActivitiesCalendar({ showToggle, showSaturday, onToggleS
   ), [])
 
   const renderCompact = useCallback((event: ScheduleCalendarEvent) => (event.kind === 'activity'
-    ? <ActivityDotContent event={event} formattedTime={format(new Date(event.startAt), 'h:mm a')} permittedActions={permittedActions} />
+    ? <ActivityDotContent event={event} formattedTime={formatBusinessTime(event.startAt, { hour: 'numeric', minute: '2-digit' })} permittedActions={permittedActions} />
     : null), [permittedActions])
 
   return (
