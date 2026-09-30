@@ -2,11 +2,10 @@
 
 import type { ColumnDef, VisibilityState } from '@tanstack/react-table'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 
+import { useTablePreferences } from '@/shared/components/data-table/contexts/table-preferences-context'
 import { getColumnId } from '@/shared/components/data-table/lib/get-column-id'
-
-const COL_VISIBILITY_KEY = 'dt-col-visibility'
 
 export interface ToggleableColumn {
   id: string
@@ -33,38 +32,17 @@ interface ColumnMetaShape {
   defaultHidden?: boolean
 }
 
-function loadOverrides(tableId: string): Record<string, boolean> {
-  try {
-    const raw = localStorage.getItem(`${COL_VISIBILITY_KEY}:${tableId}`)
-    return raw ? JSON.parse(raw) as Record<string, boolean> : {}
-  }
-  catch {
-    return {}
-  }
-}
+const NO_OVERRIDES: Record<string, boolean> = {}
 
 export function useColumnVisibility<TData>(
   tableId: string,
   columns: readonly ColumnDef<TData>[],
 ): UseColumnVisibilityResult {
-  const [overrides, setOverrides] = useState<Record<string, boolean>>(() => loadOverrides(tableId))
-
-  // Persist (debounced). Empty map clears the key so localStorage stays
-  // tidy when a user resets back to defaults.
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      try {
-        if (Object.keys(overrides).length === 0) {
-          localStorage.removeItem(`${COL_VISIBILITY_KEY}:${tableId}`)
-        }
-        else {
-          localStorage.setItem(`${COL_VISIBILITY_KEY}:${tableId}`, JSON.stringify(overrides))
-        }
-      }
-      catch { /* localStorage unavailable */ }
-    }, 200)
-    return () => clearTimeout(timer)
-  }, [tableId, overrides])
+  const [preferences, updatePreferences] = useTablePreferences(tableId)
+  const overrides = preferences.visibility ?? NO_OVERRIDES
+  const setOverrides = useCallback((apply: (prev: Record<string, boolean>) => Record<string, boolean>) => {
+    updatePreferences(prev => ({ ...prev, visibility: apply(prev.visibility ?? NO_OVERRIDES) }))
+  }, [updatePreferences])
 
   const defaultVisibleById = useMemo(() => {
     const map = new Map<string, boolean>()
@@ -120,7 +98,7 @@ export function useColumnVisibility<TData>(
 
   const setColumnVisible = useCallback((id: string, visible: boolean) => {
     setOverrides((prev) => {
-      // Storing only departures from the column's default keeps localStorage free of stale entries.
+      // Storing only departures from the column's default keeps the saved preferences free of stale entries.
       if (visible === (defaultVisibleById.get(id) ?? true)) {
         if (!(id in prev)) {
           return prev
@@ -133,11 +111,11 @@ export function useColumnVisibility<TData>(
       }
       return { ...prev, [id]: visible }
     })
-  }, [defaultVisibleById])
+  }, [defaultVisibleById, setOverrides])
 
   const resetVisibility = useCallback(() => {
     setOverrides(prev => (Object.keys(prev).length === 0 ? prev : {}))
-  }, [])
+  }, [setOverrides])
 
   return { columnVisibility, setColumnVisible, resetVisibility, toggleableColumns, hiddenCount }
 }

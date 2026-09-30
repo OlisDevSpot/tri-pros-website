@@ -10,6 +10,8 @@ import { DashboardSessionSidebar } from '@/features/agent-dashboard/ui/component
 import { DashboardSignIn } from '@/features/agent-dashboard/ui/components/dashboard-sign-in'
 import { SidebarSessionBoundary } from '@/features/agent-dashboard/ui/components/sidebar-session-boundary'
 import { MeetingSplashMount } from '@/features/meeting-flow/ui/components/meeting-splash-mount'
+import { readTablePreferences } from '@/shared/components/data-table/lib/read-table-preferences'
+import { TablePreferencesProvider } from '@/shared/components/data-table/ui/table-preferences-provider'
 import { GlobalDialogs } from '@/shared/components/dialogs/modals/global-dialogs'
 import { PwaInstallPrompt } from '@/shared/components/pwa-install-prompt'
 import { SidebarInset, SidebarProvider } from '@/shared/components/ui/sidebar'
@@ -32,29 +34,31 @@ export default async function DashboardLayout({ children }: { children: React.Re
       {hasSessionCookie && <MeetingSplashMount />}
       <GlobalDialogs />
       <PwaInstallPrompt />
-      <SidebarProvider defaultOpen={defaultOpen} data-no-gutter-stable>
-        {hasSessionCookie && (
-          <SidebarSessionBoundary fallback={<AppSidebarSkeleton />}>
-            <DashboardSessionSidebar />
-          </SidebarSessionBoundary>
-        )}
-        <SidebarInset className="h-full min-w-0 overflow-hidden bg-background">
-          <div className="flex-1 min-h-0 pt-[env(safe-area-inset-top)]">
-            {hasSessionCookie
-              ? (
-                  <Suspense fallback={<DashboardContentSkeleton />}>
-                    <DashboardSessionContent>{children}</DashboardSessionContent>
-                  </Suspense>
-                )
-              : <DashboardSignIn />}
-          </div>
+      <TablePreferencesProvider initial={readTablePreferences(cookieStore.getAll())}>
+        <SidebarProvider defaultOpen={defaultOpen} data-no-gutter-stable>
           {hasSessionCookie && (
-            <Suspense>
-              <DashboardSessionMobileNav />
-            </Suspense>
+            <SidebarSessionBoundary fallback={<AppSidebarSkeleton />}>
+              <DashboardSessionSidebar />
+            </SidebarSessionBoundary>
           )}
-        </SidebarInset>
-      </SidebarProvider>
+          <SidebarInset className="h-full min-w-0 overflow-hidden bg-background">
+            <div className="flex-1 min-h-0 pt-[env(safe-area-inset-top)]">
+              {hasSessionCookie
+                ? (
+                    <Suspense fallback={<DashboardContentSkeleton />}>
+                      <DashboardSessionContent>{children}</DashboardSessionContent>
+                    </Suspense>
+                  )
+                : <DashboardSignIn />}
+            </div>
+            {hasSessionCookie && (
+              <Suspense>
+                <DashboardSessionMobileNav />
+              </Suspense>
+            )}
+          </SidebarInset>
+        </SidebarProvider>
+      </TablePreferencesProvider>
     </>
   )
 }
