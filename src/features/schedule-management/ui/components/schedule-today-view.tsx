@@ -8,7 +8,7 @@ import { isSameDay, parseISO } from 'date-fns'
 import { motion } from 'motion/react'
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
-import { SKELETON_EVENTS_PER_DAY } from '@/features/schedule-management/constants/schedule-calendar-config'
+import { SKELETON_BUSINESS_HOURS_END_HOUR, SKELETON_EVENTS_PER_DAY } from '@/features/schedule-management/constants/schedule-calendar-config'
 import { getEventsForBucket, getUniqueCombos, groupEventsByParticipantCombo } from '@/features/schedule-management/lib/today-view-helpers'
 import { localDateToCalendarDay, seededIntInRange } from '@/shared/components/calendar/lib/calendar-helpers'
 import { ScrollBar } from '@/shared/components/ui/scroll-area'
@@ -20,6 +20,7 @@ import { cn } from '@/shared/lib/utils'
 import { ScheduleCardSkeleton } from './schedule-card-skeleton'
 
 const BUCKET_COUNT = TODAY_VIEW_BUCKETS.length
+const SKELETON_CARD_BUCKET_INDEXES = TODAY_VIEW_BUCKETS.flatMap((bucket, index) => bucket.endHour <= SKELETON_BUSINESS_HOURS_END_HOUR ? [index] : [])
 const LABEL_COL_EXPANDED = 140
 const LABEL_COL_COLLAPSED = 48
 const SCROLL_COLLAPSE_THRESHOLD = 40
@@ -83,7 +84,7 @@ export function ScheduleTodayView({
   const skeletonCardBuckets = isPending
     ? Array.from(
         { length: seededIntInRange(dayKey, SKELETON_EVENTS_PER_DAY) },
-        (_, lane) => seededIntInRange(`${dayKey}:${lane}`, { min: 0, max: BUCKET_COUNT - 1 }),
+        (_, lane) => SKELETON_CARD_BUCKET_INDEXES[seededIntInRange(`${dayKey}:${lane}`, { min: 0, max: SKELETON_CARD_BUCKET_INDEXES.length - 1 })],
       )
     : []
 

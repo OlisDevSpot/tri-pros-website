@@ -6,6 +6,10 @@ export const DEFAULT_HIDDEN_DAYS = [6] // Saturday
 // A loading day draws a believable day's load rather than the same block everywhere.
 export const SKELETON_EVENTS_PER_DAY = { min: 1, max: 4 } as const
 
+// Day-view skeleton cards stay in buckets that end by 5 PM: the evening bucket sits off-screen
+// at common widths, and a one-lane day with its card there would look empty while loading.
+export const SKELETON_BUSINESS_HOURS_END_HOUR = 17
+
 // One accent color per sentiment, rendered as a solid left bar on a real
 // (bg-card) surface — so the card reads as a distinct, categorized surface in
 // BOTH themes. Built on theme-aware semantic tokens. (The old 5%-opacity full
