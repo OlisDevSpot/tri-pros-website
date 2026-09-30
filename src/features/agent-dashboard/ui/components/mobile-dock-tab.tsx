@@ -27,7 +27,7 @@ export function MobileDockTab({ tab, href, isActive, onNavigate }: MobileDockTab
         isActive ? 'text-sidebar-accent-foreground' : 'text-sidebar-muted',
       )}
     >
-      <Icon aria-hidden className={cn('size-5 transition-colors duration-200', isActive && 'text-sidebar-primary')} strokeWidth={isActive ? 2.25 : 2} />
+      <Icon aria-hidden className={cn('size-5 transition-colors duration-200', isActive && 'text-sidebar-active-icon')} strokeWidth={isActive ? 2.25 : 2} />
       <span className="text-xs leading-none font-semibold tracking-tight max-[379px]:tracking-tighter">{tab.label}</span>
     </Link>
   )

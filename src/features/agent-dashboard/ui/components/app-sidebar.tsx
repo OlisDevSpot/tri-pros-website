@@ -198,7 +198,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
 
           <SidebarGroup>
             <div
-              className="rounded-xl bg-sidebar-hover p-1 transition-[padding,border-radius] duration-200 ease-linear group-data-[collapsible=icon]:rounded-md group-data-[collapsible=icon]:p-0"
+              className="rounded-xl p-1 transition-[padding,border-radius] duration-200 ease-linear group-data-[collapsible=icon]:rounded-md group-data-[collapsible=icon]:p-0"
             >
               <SidebarMenu>
                 {renderNavItem(navConfig.dashboardItem)}

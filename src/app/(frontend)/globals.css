@@ -41,15 +41,15 @@
   --warning-foreground: oklch(1 0 0);
   --input: oklch(0.62 0.03 255);
   --ring: oklch(0.58 0.15 238);
-  --sidebar: var(--brand-navy);
-  --sidebar-foreground: oklch(0.93 0.015 250);
+  --sidebar: oklch(0.22 0.06 262);
+  --sidebar-foreground: oklch(0.86 0.02 250);
   --sidebar-muted: oklch(0.74 0.05 250);
-  --sidebar-primary: oklch(0.2 0.07 262);
-  --sidebar-primary-foreground: oklch(0.19 0.045 258);
-  --sidebar-accent: var(--brand-cyan-bright);
-  --sidebar-accent-foreground: oklch(0.2 0.07 262);
-  --sidebar-hover: oklch(1 0 0 / 0.06);
-  --sidebar-border: oklch(0.29 0.075 262);
+  /* The active pill is a darker navy, not cyan: only its icon carries the brand colour. */
+  --sidebar-accent: oklch(0.3 0.065 262);
+  --sidebar-accent-foreground: oklch(0.97 0.01 250);
+  --sidebar-active-icon: var(--brand-cyan-bright);
+  --sidebar-hover: oklch(0.26 0.06 262);
+  --sidebar-border: oklch(0.27 0.06 262);
   --sidebar-ring: var(--brand-cyan-bright);
   --status-info-fg: oklch(0.44 0.08 252);
   --status-info-bg: oklch(0.945 0.02 250);
@@ -343,15 +343,14 @@
   --warning-foreground: oklch(0.19 0.045 258);
   --input: oklch(0.53 0.04 256);
   --ring: oklch(0.78 0.12 228);
-  --sidebar: var(--brand-navy-deep);
-  --sidebar-foreground: oklch(0.92 0.012 250);
+  /* Dark rail sits level with the cards, a navy tint of the card step. */
+  --sidebar: oklch(calc(var(--canvas-l) + var(--lift)) 0.05 262);
+  --sidebar-foreground: oklch(0.82 0.02 252);
   --sidebar-muted: oklch(0.68 0.03 252);
-  --sidebar-primary: oklch(0.18 0.06 262);
-  --sidebar-primary-foreground: oklch(0.19 0.045 258);
-  --sidebar-accent: var(--brand-cyan-bright);
-  --sidebar-accent-foreground: oklch(0.18 0.06 262);
-  --sidebar-hover: oklch(1 0 0 / 0.05);
-  --sidebar-border: oklch(0.25 0.06 262);
+  --sidebar-accent: oklch(calc(var(--canvas-l) + 2.2 * var(--lift)) 0.055 262);
+  --sidebar-accent-foreground: oklch(0.96 0.01 250);
+  --sidebar-hover: oklch(calc(var(--canvas-l) + 1.6 * var(--lift)) 0.05 262);
+  --sidebar-border: oklch(calc(var(--canvas-l) + 2 * var(--lift)) 0.05 262);
   --sidebar-ring: var(--brand-cyan-bright);
   --status-info-fg: oklch(0.84 0.06 245);
   --status-info-bg: oklch(0.3 0.045 250);
@@ -492,8 +491,6 @@
   --color-chart-5: var(--chart-5);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
   --color-sidebar-accent: var(--sidebar-accent);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
@@ -510,6 +507,7 @@
   --color-destructive-text: var(--destructive-text);
   --color-sidebar-muted: var(--sidebar-muted);
   --color-sidebar-hover: var(--sidebar-hover);
+  --color-sidebar-active-icon: var(--sidebar-active-icon);
   --color-status-info-fg: var(--status-info-fg);
   --color-status-info-bg: var(--status-info-bg);
   --color-status-info-dot: var(--status-info-dot);
