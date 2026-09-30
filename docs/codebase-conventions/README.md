@@ -40,7 +40,7 @@ This directory must be **standardized** (every rule has a predictable home) and 
 3. **Is it about *how a subsystem operates internally*** (middleware contracts, factory rules, hook lifecycles)?
    → Write to that subsystem's `DOCS.md` (e.g., `src/trpc/DOCS.md`).
 4. **Is it about *how to write code* that cuts across features / entities / subsystems** (signatures, conventions, file placement, anti-patterns)?
-   → Pick the right topic file in this directory. If none fits, **create a new topic file** here and add it to the table above. New topic files are cheap; misplaced rules rot.
+   → Encode it in code first — a schema, guard, lint rule, or helper (CLAUDE.md "Working principles"). Edit the closest existing topic file in this directory only where code cannot carry the rule; never create a new topic file.
 5. **Is it about *how to perform a specific task end-to-end*** ("add a new entity," "wire a new push type")?
    → Write to [`docs/how-to/`](../how-to/).
 6. **Is it about *visual design language*** (tokens, layouts, color hierarchy, AI-slop avoidance)?
@@ -54,8 +54,7 @@ This directory must be **standardized** (every rule has a predictable home) and 
 
 ## How to use this directory
 
-- **Adding a rule**: pick the right topic file, add it as a new H3 with a slug-anchor name, fill in *Why* / *Reference impl* / *Enforced by*. Update the README's table if a new topic file is added.
-- **Referencing from code**: `// see docs/codebase-conventions/dal-conventions.md#dal-returns-dalreturn` on the line above the relevant code. Keep refs to one line.
+- **Adding a rule**: encode it in code first (schema, guard, lint rule, helper). Only when code cannot carry it, edit the existing topic file that fits — add the rule as a new H3 with a slug-anchor name, fill in *Why* / *Reference impl* / *Enforced by*. Never create a new topic file. Code comments never cite this directory or any other doc (CLAUDE.md "Working principles").
 - **Promoting**: if a rule needs deep rationale or an alternatives-considered section, write an ADR in `docs/adr/` and link from the topic file (keep the topic file's *Why* one sentence with a link).
 
 ## Self-healing rituals
