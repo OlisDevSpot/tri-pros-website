@@ -17,6 +17,72 @@ const PALETTE_MSG = 'Use a theme token (status-*, chart-*, identity-*, destructi
 // The 2px rule: every font size is an even number of pixels, and Tailwind's steps are the ramp.
 const TYPE_RAMP_RE = '/\\btext-\\[\\d+(\\.\\d+)?(px|rem)\\]/'
 const TYPE_RAMP_MSG = 'Use the type ramp (2px rule: Tailwind steps only, text-xs 12px is the floor).'
+// Surfaces are solid steps of one ramp (globals.css). A see-through surface class takes its colour from
+// whatever happens to be beneath it, which is how tables came to blend into the page.
+// esquery regexes cannot contain "/", hence \x2F.
+const SURFACE_ALPHA_RE
+  = '/(^|[\\s:!])(bg|border(-[xytrblse])?|divide|ring|outline|from|via|to|fill|stroke)-(background|card|muted|secondary|accent|popover|border|foreground|input|sidebar(-[a-z]+)?)\\x2F(\\d+|\\[[\\d.]+\\])/'
+const SURFACE_ALPHA_MSG = 'Use a solid surface step (background, muted, band, card, surface-raised, border, border-strong, row-hover, row-selected); glass is --popover-glass.'
+// Translucent by design: scrims and gradients over photos, lightbox and modal chrome, and the two follow-ups
+// the spec defers (public-site `secondary` used as an accent; the proposal-flow navbar).
+const SURFACE_ALPHA_IGNORES = [
+  // Scrims, gradients and chrome over photos.
+  'src/features/landing/ui/components/about/about-hero.tsx',
+  'src/features/landing/ui/components/about/credentials.tsx',
+  'src/features/landing/ui/components/about/partner-story.tsx',
+  'src/features/landing/ui/components/about/team.tsx',
+  'src/features/landing/ui/components/blog/blog-hero.tsx',
+  'src/features/landing/ui/components/blog/blogpost-card-small.tsx',
+  'src/features/landing/ui/components/blog/blogpost-card.tsx',
+  'src/features/landing/ui/components/contact/contact-info.tsx',
+  'src/features/landing/ui/components/experience/hero.tsx',
+  'src/features/landing/ui/components/experience/project-story-card.tsx',
+  'src/features/landing/ui/components/home/home-hero.tsx',
+  'src/features/landing/ui/components/home/photo-card.tsx',
+  'src/features/landing/ui/components/home/services-preview.tsx',
+  'src/features/landing/ui/components/portfolio/portfolio-hero.tsx',
+  'src/features/landing/ui/components/portfolio/project-card.tsx',
+  'src/features/landing/ui/components/portfolio/project/progress-gallery.tsx',
+  'src/features/landing/ui/components/portfolio/project/project-hero.tsx',
+  'src/features/landing/ui/components/services/services-hero.tsx',
+  'src/features/landing/ui/components/services/trade-hero.tsx',
+  'src/features/landing/ui/views/pillar-view.tsx',
+  'src/features/project-management/ui/components/form/import-from-proposal-dialog.tsx',
+  'src/features/project-management/ui/components/phase-carousel.tsx',
+  'src/features/project-management/ui/components/photo-lightbox.tsx',
+  'src/features/project-management/ui/components/portfolio-hero.tsx',
+  'src/features/project-management/ui/components/portfolio-project-card.tsx',
+  'src/features/project-management/ui/components/story-before-after.tsx',
+  'src/features/project-management/ui/components/story-gallery.tsx',
+  'src/features/project-management/ui/components/story-hero.tsx',
+  'src/features/proposal-flow/ui/components/form/proposal-media-manager.tsx',
+  'src/features/proposal-flow/ui/components/proposal/trusted-contractor.tsx',
+  'src/shared/components/image-slider.tsx',
+  'src/shared/components/media/media-card.tsx',
+  'src/shared/components/navigation/popover-nav.tsx',
+  'src/shared/components/navigation/site-navbar.tsx',
+  'src/shared/components/tiptap/tiptap.tsx',
+  'src/shared/domains/funnels/ui/blocks/before-after-showcase.tsx',
+  'src/shared/domains/funnels/ui/blocks/funnel-project-carousel.tsx',
+  'src/shared/entities/customers/components/profile/customer-hero-header.tsx',
+  'src/shared/modules/proposals/core/components/overview-card.tsx',
+  // Modal scrims.
+  'src/shared/components/ui/alert-dialog.tsx',
+  'src/shared/components/ui/dialog.tsx',
+  'src/shared/components/ui/drawer.tsx',
+  'src/shared/components/ui/sheet.tsx',
+  'src/shared/components/ui/sidebar-mobile-sheet.tsx',
+  // A data mark (bar fill), not a surface.
+  'src/features/lead-sources-admin/ui/components/lead-source-funnel.tsx',
+  // Follow-up: public-site `secondary` is used as a brand accent and renders grey today.
+  'src/features/landing/ui/components/about/company-story.tsx',
+  'src/features/landing/ui/components/about/process-overview.tsx',
+  'src/shared/components/decorative-line.tsx',
+  // Follow-up: the proposal-flow navbar needs a visual check before its grey band moves.
+  'src/features/proposal-flow/ui/components/navbar/navbar-frame.tsx',
+  'src/features/proposal-flow/ui/components/navbar/navbar-menu.tsx',
+  'src/features/proposal-flow/ui/components/navbar/navbar.tsx',
+]
 // The marketing world keeps its own palette, third-party brand marks keep theirs, and the meeting-flow
 // program/benefit accents wait on a presentation decision before they move onto tokens.
 const THEME_TOKEN_IGNORES = [
@@ -30,6 +96,13 @@ const THEME_TOKEN_IGNORES = [
   'src/features/meeting-flow/ui/components/steps/closing-step.tsx',
   'src/features/meeting-flow/ui/components/steps/who-we-are/reputation-mark.tsx',
 ]
+// A flat config can declare one plugin name in two blocks only if both use the same object, so
+// project/theme-tokens and project/surface-alpha (different ignore lists) share this constant.
+const themeTokensPlugin = { rules: {
+  'palette': builtinRules.get('no-restricted-syntax'),
+  'type-ramp': builtinRules.get('no-restricted-syntax'),
+  'surface-alpha': builtinRules.get('no-restricted-syntax'),
+} }
 
 // Packages no page render needs. A static value import puts their code in the
 // server bundle of every route that imports the tRPC app router, and each cold
@@ -196,10 +269,7 @@ export default antfu({
   name: 'project/theme-tokens',
   files: ['src/features/**/*.{ts,tsx}', 'src/shared/**/*.{ts,tsx}'],
   ignores: THEME_TOKEN_IGNORES,
-  plugins: { 'theme-tokens': { rules: {
-    'palette': builtinRules.get('no-restricted-syntax'),
-    'type-ramp': builtinRules.get('no-restricted-syntax'),
-  } } },
+  plugins: { 'theme-tokens': themeTokensPlugin },
   rules: {
     'theme-tokens/palette': ['error',
       { selector: `Literal[value=${PALETTE_RE}]`, message: PALETTE_MSG },
@@ -208,6 +278,18 @@ export default antfu({
     'theme-tokens/type-ramp': ['error',
       { selector: `Literal[value=${TYPE_RAMP_RE}]`, message: TYPE_RAMP_MSG },
       { selector: `TemplateElement[value.raw=${TYPE_RAMP_RE}]`, message: TYPE_RAMP_MSG },
+    ],
+  },
+}).append({
+  // Its own block because its ignores differ: the landing pages and funnels are swept, not exempt.
+  name: 'project/surface-alpha',
+  files: ['src/**/*.{ts,tsx}'],
+  ignores: SURFACE_ALPHA_IGNORES,
+  plugins: { 'theme-tokens': themeTokensPlugin },
+  rules: {
+    'theme-tokens/surface-alpha': ['warn',
+      { selector: `Literal[value=${SURFACE_ALPHA_RE}]`, message: SURFACE_ALPHA_MSG },
+      { selector: `TemplateElement[value.raw=${SURFACE_ALPHA_RE}]`, message: SURFACE_ALPHA_MSG },
     ],
   },
 }).append({
