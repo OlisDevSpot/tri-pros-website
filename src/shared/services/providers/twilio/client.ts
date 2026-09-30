@@ -5,7 +5,13 @@ import type { MessageInstance, MessageListInstanceCreateOptions } from 'twilio/l
 
 import type { MintVoiceAccessTokenInput } from './schemas/access-token'
 
-import twilio, { RestException as TwilioRestException } from 'twilio'
+import RestException from 'twilio/lib/base/RestException'
+import AccessToken from 'twilio/lib/jwt/AccessToken'
+import MessagingResponse from 'twilio/lib/twiml/MessagingResponse'
+import VoiceResponse from 'twilio/lib/twiml/VoiceResponse'
+import { validateRequest } from 'twilio/lib/webhooks/webhooks'
+
+import { lazyAsync } from '@/shared/config/lazy-async'
 
 import { ACCESS_TOKEN_TTL_SECONDS, INBOUND_VOICE_TTS_VOICE } from './constants'
 import { getTwilioConfig } from './lib/config'
@@ -48,43 +54,45 @@ interface VerifyWebhookSignatureInput {
 }
 
 function createTwilioClient() {
-  // Lazy: module-load construction breaks edge-runtime static probes and test envs with a partial env.
-  let _sdk: Twilio | undefined
-  function sdk(): Twilio {
-    if (!_sdk) {
-      const config = getTwilioConfig()
-      _sdk = twilio(config.accountSid, config.authToken)
-    }
-    return _sdk
-  }
+  // The REST client is most of the SDK's weight, and a static import compiles
+  // it on every cold start of every route that imports the app router, so it
+  // loads on the first REST call. Construction stays lazy too: module-load
+  // construction breaks edge-runtime static probes and test envs with a
+  // partial env. The TwiML, JWT and webhook helpers come from twilio's own
+  // small modules above, so they stay synchronous.
+  const sdk = lazyAsync(async (): Promise<Twilio> => {
+    const { default: twilio } = await import('twilio')
+    const config = getTwilioConfig()
+    return twilio(config.accountSid, config.authToken)
+  })
 
   return {
     /** NEVER call from a route handler — go through `voip-calls.service` so the compliance gate + DNC check run first. */
     async placeOutboundCall(params: CallListInstanceCreateOptions): Promise<CallInstance> {
-      return sdk().calls.create(params)
+      return (await sdk()).calls.create(params)
     },
 
     async fetchCall(callSid: string): Promise<CallInstance> {
-      return sdk().calls(callSid).fetch()
+      return (await sdk()).calls(callSid).fetch()
     },
 
     /** Server-side hangup for when the softphone's local disconnect didn't propagate. */
     async hangupCall(callSid: string): Promise<CallInstance> {
-      return sdk().calls(callSid).update({ status: 'completed' })
+      return (await sdk()).calls(callSid).update({ status: 'completed' })
     },
 
     /** NEVER call from a route handler — go through `voip-messages.service` so the compliance gate, STOP-keyword guard, and 10DLC check run first. */
     async sendMessage(params: MessageListInstanceCreateOptions): Promise<MessageInstance> {
-      return sdk().messages.create(params)
+      return (await sdk()).messages.create(params)
     },
 
     async fetchMessage(messageSid: string): Promise<MessageInstance> {
-      return sdk().messages(messageSid).fetch()
+      return (await sdk()).messages(messageSid).fetch()
     },
 
     /** Paid (~$0.005/lookup). Throws on a transport/API error — callers MUST treat that as indeterminate and fail open (never block a lead on a Twilio outage). */
     async lookupPhoneNumber(e164: string): Promise<PhoneLookupResult> {
-      const res = await sdk().lookups.v2.phoneNumbers(e164).fetch({ fields: 'line_type_intelligence' })
+      const res = await (await sdk()).lookups.v2.phoneNumbers(e164).fetch({ fields: 'line_type_intelligence' })
       return {
         valid: res.valid ?? false,
         lineType: res.lineTypeIntelligence?.type ?? null,
@@ -97,21 +105,21 @@ function createTwilioClient() {
     async listIncomingPhoneNumbers(
       params?: IncomingPhoneNumberListInstanceOptions,
     ): Promise<IncomingPhoneNumberInstance[]> {
+      const client = await sdk()
       // Branch the overload — the SDK's no-arg + params forms are distinct.
       if (params === undefined) {
-        return sdk().incomingPhoneNumbers.list()
+        return client.incomingPhoneNumbers.list()
       }
-      return sdk().incomingPhoneNumbers.list(params)
+      return client.incomingPhoneNumbers.list(params)
     },
 
     async fetchIncomingPhoneNumber(sid: string): Promise<IncomingPhoneNumberInstance> {
-      return sdk().incomingPhoneNumbers(sid).fetch()
+      return (await sdk()).incomingPhoneNumbers(sid).fetch()
     },
 
     /** Signed with the API Key SID + Secret, NOT the account auth token — Twilio uses API Keys for JWTs and the auth token for REST + webhook validation. */
     mintVoiceAccessToken(input: MintVoiceAccessTokenInput): string {
       const config = getTwilioConfig()
-      const { AccessToken } = twilio.jwt
       const { VoiceGrant } = AccessToken
 
       const token = new AccessToken(
@@ -134,7 +142,7 @@ function createTwilioClient() {
     },
 
     buildInboundVoiceTwiml(input: BuildInboundVoiceTwimlInput): string {
-      const response = new twilio.twiml.VoiceResponse()
+      const response = new VoiceResponse()
 
       if (input.greeting) {
         response.say({ voice: INBOUND_VOICE_TTS_VOICE }, input.greeting)
@@ -158,7 +166,7 @@ function createTwilioClient() {
     },
 
     buildDialTwiml(input: BuildDialTwimlInput): string {
-      const response = new twilio.twiml.VoiceResponse()
+      const response = new VoiceResponse()
 
       const dialAttrs: { callerId: string, action?: string, record?: 'record-from-answer' } = {
         callerId: input.callerId,
@@ -176,7 +184,7 @@ function createTwilioClient() {
     },
 
     buildInboundMessagingTwiml(input: BuildInboundMessagingTwimlInput): string {
-      const response = new twilio.twiml.MessagingResponse()
+      const response = new MessagingResponse()
 
       if (input.replyBody) {
         response.message(input.replyBody)
@@ -187,7 +195,7 @@ function createTwilioClient() {
 
     /** Twilio signs webhooks with HMAC-SHA1 over url + sorted form params using the account auth token; `false` ⇒ respond 403. */
     verifyWebhookSignature(input: VerifyWebhookSignatureInput): boolean {
-      return twilio.validateRequest(
+      return validateRequest(
         getTwilioConfig().authToken,
         input.signature,
         input.url,
@@ -201,4 +209,6 @@ export type TwilioClient = ReturnType<typeof createTwilioClient>
 
 export const twilioClient = createTwilioClient()
 
-export { TwilioRestException as RestException }
+// The class twilio's REST client throws for legacy error bodies (the same
+// module instance it requires internally), so callers keep `instanceof RestException`.
+export { RestException }
