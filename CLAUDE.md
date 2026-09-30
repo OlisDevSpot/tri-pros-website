@@ -19,7 +19,8 @@ pnpm tunnel           # ngrok tunnel only
 pnpm lint             # ESLint
 pnpm tsc              # Type-check (NEVER pnpm build unless explicitly asked)
 pnpm db:push:dev      # Push schema to dev DB (prod = explicit db:push:prod, only when asked)
-pnpm db:reset:dev / db:seed:dev / db:snapshot
+pnpm db:reset:dev / db:seed:dev
+pnpm db:refresh:dev [--dry-run]   # dev DB ← Neon reset from parent + scrub (no children allowed on the dev branch)
 # Scripts target the prod DB ONLY via DRIZZLE_TARGET=prod — never NODE_ENV (see src/shared/config/server-env.ts).
 pnpm push:test --to <email> --title "..." [--body "..."] [--navigate /path]
 pnpm dispatch help    # Parallel issue work
