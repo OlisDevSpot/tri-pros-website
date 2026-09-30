@@ -5,7 +5,7 @@
 **Goal:** Give each entity one field list in its own DAL, derive the server SQL, input schema, URL parsing, toolbar and column sorting from it, and run the meetings records table, the schedule calendar, the three customers tables and the pipelines kanban on that one path.
 
 **Architecture:**
-- **Isomorphic core** (`src/shared/dal/lib/query/`): the value schemas and shapes both sides share (`contracts.ts`), field-list types and builders, the query config, and one pure derivation from URL state to read input. It imports nothing from `dal/client/` or `dal/server/`.
+- **Isomorphic core** (`src/shared/dal/lib/query/`): the range schemas (`range-schemas.ts`) and list-result shape (`paginated-result.ts`) both sides share, field-list types and builders, the query config, and one pure derivation from URL state to read input. It imports nothing from `dal/client/` or `dal/server/`.
 - **Server core** (`src/shared/dal/server/lib/query/`): derives the zod input from a field list. Each entity declares its SQL once with `defineFieldSql(FIELDS, { filter, sort }, { defaultOrder, tieBreaker })`, which is type-checked against the field list and returns the `where` and `orderBy` its reads call.
 - **Client core** (`src/shared/dal/client/`): one hook, `useDataViewQuery`, that returns plain data, including the loaded choices for the toolbar's runtime-option filters. `QueryToolbar` and `DataTable` consume that data. No hook is ever passed as a prop.
 - **Legacy tables** (proposals, projects, campaign leads) keep `usePaginatedQuery` byte for byte and reach the new toolbar through one adapter, `fromPaginatedQuery`. Retiring the adapter is follow-up work recorded at hand-off (Task 21).
@@ -43,7 +43,7 @@
   - comments say why, never what; no new `DOCS.md`.
 - **Names:** use only names from spec §3 or from the "Names this plan introduces" table below. That table must be approved by the owner before Task 1 starts. No name is promoted from an option label.
 - **Legacy path untouched:** do not edit the code of `usePaginatedQuery`, `derivePaginatedQueryState`, `makePaginatedParsers`, `loadPaginatedQueryInput`, `buildFilterWhere`, `buildOrderBy`, `paginatedQueryInput` or `sortFieldsSchema`. Proposals, projects and campaign-leads query keys must stay byte-identical (checked in Task 21).
-  - The one exception is import lines: Task 1 moves shared types into `contracts.ts`, and legacy files re-point their imports. No other line in them changes.
+  - The one exception is import lines: Task 1 moves shared types into the core (`range-schemas.ts`, `paginated-result.ts`, `field-list.ts`), and legacy files re-point their imports. No other line in them changes.
 - **Reserved URL suffixes** for field ids: `p q sort dir ps d v`.
 - **Date windows:**
   - Boundaries are computed in `America/Los_Angeles` through `src/shared/lib/business-time.ts`, never in the browser's timezone.
@@ -57,7 +57,7 @@
 
 ## Before Task 1: owner decisions this plan needs
 
-1. **Approve the names in the table below**, including the ones added by the 2026-09-27 review: `contracts.ts`, `OPTION_SOURCES`/`OptionSource`/`OPTION_SOURCE_READS`/`OptionSourceRow`, `filterSort.options`, `defineFieldSql`/`FieldSqlMap`, `businessMonthGridWindow`, `toInclusiveRange`, `toScheduleWindowHref`.
+1. **Approve the names in the table below**, including the ones added by the 2026-09-27 review: `range-schemas.ts`, `paginated-result.ts`, `OPTION_SOURCES`/`OptionSource`/`OPTION_SOURCE_READS`/`OptionSourceRow`, `filterSort.options`, `defineFieldSql`/`FieldSqlMap`, `businessMonthGridWindow`, `toInclusiveRange`, `toScheduleWindowHref`.
 2. **Rehash/dead kanban default order** (Task 19). Today `DISTINCT ON (customers.id)` forces the order to customer id, which is effectively random.
    - The plan switches that branch to `EXISTS` so a sort can apply.
    - Its default order becomes `updated_at DESC`, which is what the code already asks for after the id.
@@ -75,7 +75,7 @@ Ruled 2026-09-27 (plan review): `customerId` and `projectId` are dropped from th
 | `ToolbarFilterValues<F>` | filter values the toolbar shows (fixed ones excluded) | `field-list.ts` |
 | `SortDir`, `SortState<F>` | `'asc' \| 'desc'`; `{ sortBy, sortDir }` over a field list's sort ids | `field-list.ts` |
 | `optionLabel` | builder argument that turns an option value into its label | `multiSelect`, `select` |
-| `contracts.ts` | the value schemas and shapes client and server share: `dateRangeSchema`, `numberRangeSchema`, `DateRange`, `NumberRange`, `FilterOption`, `PaginatedResult` (existing names, moved) | `dal/lib/query/` |
+| `range-schemas.ts`, `paginated-result.ts` | new homes for existing names both sides share: `dateRangeSchema`, `numberRangeSchema`, `DateRange`, `NumberRange`; `PaginatedResult`. `FilterOption` moves into `field-list.ts` | `dal/lib/query/` |
 | `RESERVED_URL_SUFFIXES` | the reserved suffix list above | `dal/lib/query/constants.ts` |
 | `OPTION_SOURCES`, `OptionSource` | the reads a runtime-option filter can load its choices from (`trades`, `reps`, `leadSources`); a field names one with `source:` | `dal/lib/query/constants.ts`, `field-list.ts` |
 | `OPTION_SOURCE_READS`, `OptionSourceRow` | each source's tRPC query plus the ability check that mirrors its server guard; the `{ id, name }` row every source returns | `dal/client/constants/option-source-reads.ts` |
@@ -136,7 +136,7 @@ Ruled 2026-09-27 (plan review): `customerId` and `projectId` are dropped from th
 17. **The query config has no `fixed` key.** Every fixed value is set by a procedure (`sourceId`, `segment`), never by a data view. `fixedOnly` fields stay for those. The meetings `customerId` / `projectId` fields are dropped (no caller sends them).
 18. **The month view fetches every day its grid draws** (`businessMonthGridWindow`): the Sunday on or before the 1st through the Saturday after the last day. The grid shows leading and trailing days of the next and previous months, which a calendar-month window would leave empty.
 19. **Date-range presets are a toolbar concern.** `dateRange()` takes no presets; the toolbar supplies `DEFAULT_TIME_PRESETS` (every legacy date filter already uses them). Field lists live in the DAL and import nothing from `shared/components`.
-20. **The value schemas and shapes both sides share move into `src/shared/dal/lib/query/contracts.ts`.** The isomorphic core imported runtime schemas from `dal/server/` and types from `dal/client/`; now both import from the core.
+20. **The value types both sides share move into the core:** range schemas into `range-schemas.ts`, `PaginatedResult` into `paginated-result.ts`, `FilterOption` into `field-list.ts`. The isomorphic core imported runtime schemas from `dal/server/` and types from `dal/client/`; now both import from the core.
 21. **Meetings search escapes `%` and `_`**, like every other migrated read, through `buildSearchWhere` (which now also accepts an SQL expression, for the `meeting_type::text` cast).
 22. **Activity dots use the activities entity's own actions** (`useActivityActionConfigs`: view, mark complete, delete). Before, they carried meeting actions called with an activity id.
 23. **Field schemas are typed on both sides** (`z.ZodType<Out, In>`). zod's input side defaults to `unknown`, which let a procedure's input type accept any sort or filter: the typed page prefetch and the "wrong config for this read" check never fired.
@@ -157,7 +157,7 @@ Ruled 2026-09-27 (plan review): `customerId` and `projectId` are dropped from th
 
 | Path | Responsibility |
 |---|---|
-| `src/shared/dal/lib/query/contracts.ts` | value schemas and shapes client and server share (moved) |
+| `src/shared/dal/lib/query/range-schemas.ts`, `paginated-result.ts` | range schemas and the list-result shape client and server share (moved) |
 | `src/shared/dal/lib/query/field-list.ts` | field-list types, derived id/value types, `defineFieldList`, builders |
 | `src/shared/dal/lib/query/data-view-query-config.ts` | config, window, input and state types |
 | `src/shared/dal/lib/query/derive-data-view-input.ts` | URL keys, parsers, pure derivation |
@@ -183,7 +183,7 @@ Ruled 2026-09-27 (plan review): `customerId` and `projectId` are dropped from th
 | `src/features/customer-pipelines/constants/customer-pipeline-query.ts` | kanban config |
 | `src/shared/domains/pipelines/lib/resolve-pipeline-param.ts` | route param → `Pipeline`, shared by the kanban page and `PipelineProvider` |
 
-**Notable modifications** (beyond the tables and views each task names): `src/shared/config/roots.ts` (schedule link), `src/features/agent-dashboard/lib/meeting-windows.ts` (inclusive windows), `src/shared/dal/server/lib/query/search.ts` (accepts SQL expressions), and the import lines of every file that used the moved contracts (Task 1).
+**Notable modifications** (beyond the tables and views each task names): `src/shared/config/roots.ts` (schedule link), `src/features/agent-dashboard/lib/meeting-windows.ts` (inclusive windows), `src/shared/dal/server/lib/query/search.ts` (accepts SQL expressions), and the import lines of every file that used the moved types (Task 1).
 
 **Deleted:**
 - `src/shared/entities/meetings/constants/meeting-filter-config.ts`
@@ -212,6 +212,8 @@ REPO=/home/olis-solutions/olis-v3/nextjs/tri-pros-website
 SCRATCH=<your scratchpad directory>
 mkdir -p "$SCRATCH/tests" "$SCRATCH/types" "$SCRATCH/baseline"
 ln -sfn "$REPO/node_modules" "$SCRATCH/node_modules"
+# tsx treats .ts as CommonJS without this, and the scripts use top-level await.
+echo '{ "type": "module" }' > "$SCRATCH/package.json"
 cat > "$SCRATCH/tsconfig.json" <<EOF
 {
   "extends": "$REPO/tsconfig.json",
@@ -278,10 +280,10 @@ Expected: note any errors that already exist so later tasks don't mistake them f
 
 ---
 
-### Task 1: Shared contracts move into the core; the field-list contract
+### Task 1: Shared value types move into the core; the field-list contract
 
 **Files:**
-- Create: `src/shared/dal/lib/query/contracts.ts`, `src/shared/dal/lib/query/field-list.ts`
+- Create: `src/shared/dal/lib/query/range-schemas.ts`, `src/shared/dal/lib/query/paginated-result.ts`, `src/shared/dal/lib/query/field-list.ts`
 - Modify: `src/shared/dal/lib/query/constants.ts`
 - Modify (the moved declarations leave): `src/shared/dal/server/lib/query/schemas.ts`, `src/shared/dal/client/lib/types.ts`, `src/shared/dal/server/lib/query/output.ts`
 - Modify (import lines only):
@@ -300,7 +302,7 @@ Expected: note any errors that already exist so later tasks don't mistake them f
 - Test (scratch): `$SCRATCH/types/field-list.ts`
 
 **Interfaces:**
-- Moves, names unchanged: `dateRangeSchema`, `DateRange`, `numberRangeSchema`, `NumberRange` (from `dal/server/lib/query/schemas.ts`), `FilterOption` (from `dal/client/lib/types.ts`), `PaginatedResult` (from `dal/server/lib/query/output.ts`) → `@/shared/dal/lib/query/contracts`.
+- Moves, names unchanged: `dateRangeSchema`, `DateRange`, `numberRangeSchema`, `NumberRange` (from `dal/server/lib/query/schemas.ts`), `FilterOption` (from `dal/client/lib/types.ts`), `PaginatedResult` (from `dal/server/lib/query/output.ts`) → `range-schemas.ts`, `field-list.ts` and `paginated-result.ts` in `@/shared/dal/lib/query/` (see Step 3).
 - Produces:
   - `RESERVED_URL_SUFFIXES`, `OPTION_SOURCES` and `OptionSource` in `constants.ts`.
   - Types: `SortDir`, `MultiSelectFilter<V, O>`, `SelectFilter<V, O>`, `DateRangeFilter`, `NumberRangeFilter`, `BooleanFilter`, `FixedFilter<V>`, `ToolbarFilterSpec`, `FilterSpec`, `FieldDefinition`, `FieldList`.
@@ -366,9 +368,14 @@ multiSelect({ schema: z.string(), source: 'people' })
 Run: `cd $REPO && pnpm exec tsc -p "$SCRATCH/tsconfig.json"`
 Expected: FAIL with `Cannot find module '@/shared/dal/lib/query/field-list'`.
 
-- [ ] **Step 3: Move the shared contracts**
+- [ ] **Step 3: Move the shared value types into the core**
 
-Create `src/shared/dal/lib/query/contracts.ts`:
+Each moved name goes to the core file that says what it is:
+- the date and number range schemas → `src/shared/dal/lib/query/range-schemas.ts`;
+- `FilterOption` (one choice of a select filter) → `field-list.ts` (Step 5), beside the builders that produce it;
+- `PaginatedResult` (the `{ rows, total }` every list read returns) → `src/shared/dal/lib/query/paginated-result.ts`.
+
+Create `src/shared/dal/lib/query/range-schemas.ts`:
 
 ```ts
 import { z } from 'zod'
@@ -395,15 +402,11 @@ export const numberRangeSchema = z.object({
 })
 
 export type NumberRange = z.infer<typeof numberRangeSchema>
+```
 
-/**
- * Single-value option for `select` and `multi-select` filter types.
- */
-export interface FilterOption {
-  label: string
-  value: string
-}
+Create `src/shared/dal/lib/query/paginated-result.ts`:
 
+```ts
 /**
  * Standardized response shape returned by every paginated tRPC procedure.
  * The client `usePaginatedQuery` hook depends on this contract.
@@ -416,10 +419,10 @@ export interface PaginatedResult<T> {
 
 Then delete the originals, so each name has one home:
 - `dal/server/lib/query/schemas.ts`: delete `pgSafeDatetime` and its comment, `dateRangeSchema`, `DateRange`, `numberRangeSchema` and `NumberRange`. Everything from `paginationFieldsSchema` through `sortFieldsSchema`, and from `paginatedQueryInput` on, stays.
-- `dal/client/lib/types.ts`: delete `FilterOption` and its doc comment, and change the first import to `import type { DateRange, FilterOption, NumberRange } from '@/shared/dal/lib/query/contracts'`.
-- `dal/server/lib/query/output.ts`: delete `PaginatedResult` and its doc comment, and add `import type { PaginatedResult } from '@/shared/dal/lib/query/contracts'` at the top.
+- `dal/client/lib/types.ts`: delete `FilterOption` and its doc comment, and change the first import to `import type { DateRange, NumberRange } from '@/shared/dal/lib/query/range-schemas'` plus `import type { FilterOption } from '@/shared/dal/lib/query/field-list'`.
+- `dal/server/lib/query/output.ts`: delete `PaginatedResult` and its doc comment, and add `import type { PaginatedResult } from '@/shared/dal/lib/query/paginated-result'` at the top.
 
-In each file under **Modify (import lines only)**, move the moved names out of their old import into an import from `@/shared/dal/lib/query/contracts`, keeping `type` imports as `type`. For example, `import { dateRangeSchema, paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'` becomes `import { paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'` plus `import { dateRangeSchema } from '@/shared/dal/lib/query/contracts'`. Then run `pnpm exec eslint --fix` on those files to sort the imports.
+In each file under **Modify (import lines only)**, move the moved names out of their old import into an import from their new file, keeping `type` imports as `type`. For example, `import { dateRangeSchema, paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'` becomes `import { paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'` plus `import { dateRangeSchema } from '@/shared/dal/lib/query/range-schemas'`. Then run `pnpm exec eslint --fix` on those files to sort the imports.
 
 Run: `cd $REPO && grep -rnE "import.*\b(dateRangeSchema|numberRangeSchema|DateRange|NumberRange)\b.*dal/server/lib/query/schemas|import.*PaginatedResult.*query/output'" src`
 Expected: no output.
@@ -444,13 +447,18 @@ export type OptionSource = (typeof OPTION_SOURCES)[number]
 
 ```ts
 import type { OptionSource, ReservedUrlSuffix } from '@/shared/dal/lib/query/constants'
-import type { FilterOption } from '@/shared/dal/lib/query/contracts'
 
 import z from 'zod'
 
-import { dateRangeSchema, numberRangeSchema } from '@/shared/dal/lib/query/contracts'
+import { dateRangeSchema, numberRangeSchema } from '@/shared/dal/lib/query/range-schemas'
 
 export type SortDir = 'asc' | 'desc'
+
+/** One choice of a select or multi-select filter. */
+export interface FilterOption {
+  label: string
+  value: string
+}
 
 // Schemas are typed on both sides (`ZodType<Out, In>`): zod's input side defaults to `unknown`, which would let a
 // procedure's input type accept any value and silence every typed caller.
@@ -598,15 +606,15 @@ Expected: no errors. Every `@ts-expect-error` line errors as intended; an unused
 - [ ] **Step 7: Repo checks**
 
 Run: `cd $REPO && pnpm tsc && pnpm lint`
-Expected: no new errors. The contracts move changes no behaviour and no query key.
+Expected: no new errors. The move changes no behaviour and no query key.
 
 - [ ] **Step 8: Commit**
 
 ```bash
-P="src/shared/dal/lib/query/contracts.ts src/shared/dal/lib/query/constants.ts src/shared/dal/lib/query/field-list.ts src/shared/dal/server/lib/query/schemas.ts src/shared/dal/client/lib/types.ts src/shared/dal/server/lib/query/output.ts src/shared/dal/lib/query/filter-parser-registry.ts src/shared/dal/client/hooks/use-paginated-query.ts src/shared/components/query-toolbar/lib/filter-renderer-registry.tsx src/shared/components/query-toolbar/ui/filter-controls/date-range-filter-control.tsx src/shared/components/query-toolbar/ui/filter-controls/number-range-filter-control.tsx src/shared/entities/meetings/dal/server/queries.ts src/shared/modules/proposals/core/dal/server/queries.ts src/shared/modules/projects/core/dal/server/queries.ts src/trpc/routers/lead-sources.router.ts src/trpc/routers/customers.router/business.router.ts src/trpc/routers/projects.router/crud.router.ts src/trpc/routers/schedule.router/activities.router.ts"
+P="src/shared/dal/lib/query/range-schemas.ts src/shared/dal/lib/query/paginated-result.ts src/shared/dal/lib/query/constants.ts src/shared/dal/lib/query/field-list.ts src/shared/dal/server/lib/query/schemas.ts src/shared/dal/client/lib/types.ts src/shared/dal/server/lib/query/output.ts src/shared/dal/lib/query/filter-parser-registry.ts src/shared/dal/client/hooks/use-paginated-query.ts src/shared/components/query-toolbar/lib/filter-renderer-registry.tsx src/shared/components/query-toolbar/ui/filter-controls/date-range-filter-control.tsx src/shared/components/query-toolbar/ui/filter-controls/number-range-filter-control.tsx src/shared/entities/meetings/dal/server/queries.ts src/shared/modules/proposals/core/dal/server/queries.ts src/shared/modules/projects/core/dal/server/queries.ts src/trpc/routers/lead-sources.router.ts src/trpc/routers/customers.router/business.router.ts src/trpc/routers/projects.router/crud.router.ts src/trpc/routers/schedule.router/activities.router.ts"
 git diff -- $P
-git add src/shared/dal/lib/query/contracts.ts src/shared/dal/lib/query/field-list.ts
-git commit -m "feat(data-view): shared query contracts move into the core; field-list contract — typed ids, value schemas, option sources, builders" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" -- $P
+git add src/shared/dal/lib/query/range-schemas.ts src/shared/dal/lib/query/paginated-result.ts src/shared/dal/lib/query/field-list.ts
+git commit -m "feat(data-view): shared range schemas and list-result shape move into the core; field-list contract — typed ids, value schemas, option sources, builders" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" -- $P
 git show --stat HEAD
 ```
 
@@ -1373,8 +1381,8 @@ If `tsc` rejects the overload return types, fix only the generic shape types (`I
 ```ts
 import type { AnyColumn, SQL } from 'drizzle-orm'
 
-import type { DateRange } from '@/shared/dal/lib/query/contracts'
 import type { FieldList, FilterId, FilterValue, FilterValues, SortId, SortState } from '@/shared/dal/lib/query/field-list'
+import type { DateRange } from '@/shared/dal/lib/query/range-schemas'
 
 import { and, asc, desc, gte, lte } from 'drizzle-orm'
 
@@ -1513,7 +1521,7 @@ git show --stat HEAD
 - Test (scratch): `$SCRATCH/types/data-view-query.ts`
 
 **Interfaces:**
-- Consumes: Tasks 1, 3, 4 (`PaginatedResult` from `contracts.ts`).
+- Consumes: Tasks 1, 3, 4 (`PaginatedResult` from `paginated-result.ts`).
 - Produces:
   - `OPTION_SOURCE_READS`: for each `OptionSource`, `{ canRead(ability), queryOptions(trpc) }`.
     - `canRead` mirrors the read's own server guard: `trades` is open to everyone, `reps` requires `assign Meeting`, `leadSources` is super-admin only.
@@ -1560,14 +1568,15 @@ Expected: FAIL, `DataViewRowOf` is not exported.
 
 - [ ] **Step 3: The result types**
 
-In `src/shared/dal/client/lib/types.ts`, replace the import block at the top (Task 1 left it as the `contracts` import alone) with:
+In `src/shared/dal/client/lib/types.ts`, replace the import block at the top (Task 1 left it as the `range-schemas` and `field-list` imports alone) with:
 
 ```ts
 import type { DecorateQueryProcedure, inferOutput } from '@trpc/tanstack-react-query'
 import type { CalendarViewType } from '@/shared/constants/enums'
-import type { DateRange, FilterOption, NumberRange, PaginatedResult } from '@/shared/dal/lib/query/contracts'
 import type { DataViewWindowKind } from '@/shared/dal/lib/query/data-view-query-config'
-import type { FilterValue as FieldFilterValue, FieldList, RuntimeOptionId, SortDir, SortId, ToolbarFilterId } from '@/shared/dal/lib/query/field-list'
+import type { FilterValue as FieldFilterValue, FieldList, FilterOption, RuntimeOptionId, SortDir, SortId, ToolbarFilterId } from '@/shared/dal/lib/query/field-list'
+import type { PaginatedResult } from '@/shared/dal/lib/query/paginated-result'
+import type { DateRange, NumberRange } from '@/shared/dal/lib/query/range-schemas'
 ```
 
 Append:
@@ -1698,9 +1707,9 @@ import type { CalendarViewType } from '@/shared/constants/enums'
 import type { OptionSourceRow } from '@/shared/dal/client/constants/option-source-reads'
 import type { DataViewFilterSort, DataViewQueryResult, DataViewRowOf, DataViewWindowControls } from '@/shared/dal/client/lib/types'
 import type { OptionSource } from '@/shared/dal/lib/query/constants'
-import type { FilterOption, PaginatedResult } from '@/shared/dal/lib/query/contracts'
 import type { DataViewInput, DataViewQueryConfig, DataViewWindow } from '@/shared/dal/lib/query/data-view-query-config'
-import type { FieldList, SortDir, ToolbarFilterId, ToolbarFilterSpec } from '@/shared/dal/lib/query/field-list'
+import type { FieldList, FilterOption, SortDir, ToolbarFilterId, ToolbarFilterSpec } from '@/shared/dal/lib/query/field-list'
+import type { PaginatedResult } from '@/shared/dal/lib/query/paginated-result'
 
 import { keepPreviousData, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useQueryStates } from 'nuqs'
@@ -1936,7 +1945,7 @@ import type { FieldList, ToolbarFilterSpec } from '@/shared/dal/lib/query/field-
 
 import z from 'zod'
 
-import { dateRangeSchema, numberRangeSchema } from '@/shared/dal/lib/query/contracts'
+import { dateRangeSchema, numberRangeSchema } from '@/shared/dal/lib/query/range-schemas'
 
 // Every legacy date-range definition uses the default presets, which the toolbar supplies.
 function toFilterSpec(definition: FilterDefinition): ToolbarFilterSpec {
@@ -2202,8 +2211,7 @@ Expected: FAIL, `to-toolbar-filters` is missing.
 
 ```ts
 import type { FilterDefinition } from '@/shared/dal/client/lib/types'
-import type { FilterOption } from '@/shared/dal/lib/query/contracts'
-import type { FieldList, ToolbarFilterSpec } from '@/shared/dal/lib/query/field-list'
+import type { FieldList, FilterOption, ToolbarFilterSpec } from '@/shared/dal/lib/query/field-list'
 
 import { DEFAULT_TIME_PRESETS } from '@/shared/components/data-table/constants/time-filter-presets'
 
@@ -2285,8 +2293,7 @@ Replace `src/shared/components/query-toolbar/lib/context.ts` with:
 
 import type { ToolbarFilter } from '@/shared/components/query-toolbar/lib/to-toolbar-filters'
 import type { DataViewQueryResult } from '@/shared/dal/client/lib/types'
-import type { FilterOption } from '@/shared/dal/lib/query/contracts'
-import type { FieldList } from '@/shared/dal/lib/query/field-list'
+import type { FieldList, FilterOption } from '@/shared/dal/lib/query/field-list'
 
 import { createContext, use } from 'react'
 
@@ -3768,7 +3775,7 @@ export const ACTIVITY_FIELD_SQL = defineFieldSql(ACTIVITY_FIELDS, {
 import type { SQL } from 'drizzle-orm'
 import type z from 'zod'
 
-import type { PaginatedResult } from '@/shared/dal/lib/query/contracts'
+import type { PaginatedResult } from '@/shared/dal/lib/query/paginated-result'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 
 import { and, count, eq, getTableColumns } from 'drizzle-orm'
@@ -4812,7 +4819,7 @@ Imports it adds:
 ```ts
 import type z from 'zod'
 import type { Pipeline } from '@/shared/constants/enums/pipelines'
-import type { PaginatedResult } from '@/shared/dal/lib/query/contracts'
+import type { PaginatedResult } from '@/shared/dal/lib/query/paginated-result'
 import { fieldListInput } from '@/shared/dal/server/lib/query/field-list-input'
 import { paginate } from '@/shared/dal/server/lib/query/output'
 import { buildSearchWhere } from '@/shared/dal/server/lib/query/search'
@@ -5177,7 +5184,7 @@ function pipelineItemsFor(pipeline: Pipeline, args: PipelineBranchArgs): Promise
      - Add `args.customerWhere` as a third argument of the existing `and(…)`.
      - `.orderBy(desc(projects.createdAt))` → `.orderBy(...(args.customerOrder ?? []), desc(projects.createdAt))`, with the comment `// Customers take their first row's position below, so the chosen customer order leads and each customer's newest project still wins.`
 5. Imports to add:
-   - `import type { SQL } from 'drizzle-orm'`, `z`, `ScopedContext`, `DalReturn`, `PaginatedResult` (from `@/shared/dal/lib/query/contracts`);
+   - `import type { SQL } from 'drizzle-orm'`, `z`, `ScopedContext`, `DalReturn`, `PaginatedResult` (from `@/shared/dal/lib/query/paginated-result`);
    - `pipelines` (from `@/shared/constants/enums/pipelines`), `dalDbOperation`, `fieldListInput`;
    - `buildSearchWhere`, `leadSourcesTable`;
    - `CUSTOMER_FIELDS`, `CUSTOMER_FIELD_SQL`, `canSeeUngatedPhone`;

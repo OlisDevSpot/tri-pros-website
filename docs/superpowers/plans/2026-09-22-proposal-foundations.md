@@ -1,10 +1,12 @@
 # Proposal Foundations (Spec A) Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+>
+> **Amended 2026-09-29 (owner; tracker C67, C68).** `pre-draft` is deferred: proposals keep four statuses (`draft | sent | approved | declined`). Task 4 (A4) is dropped and Tasks 5, 7 and 8 lose every pre-draft step. `send` lives in the module's `business` child (`proposalService.business.send`). The original A4 text is in git history (`4aae7eab`).
 
-**Goal:** Make a proposal empty-able, section-addressable, explicitly seeded, identically duplicable from every caller, hidden while untouched (`pre-draft`), gated at send and envelope creation by one readiness predicate, and always attached to a meeting — the server foundations specs B–G build on.
+**Goal:** Make a proposal empty-able, section-addressable, explicitly seeded, identically duplicable from every caller, gated at send and envelope creation by one readiness predicate, and always attached to a meeting — the server foundations specs B–G build on.
 
-**Architecture:** Seven additive commits on `main` (A1–A7, spec §6), each `pnpm tsc` + `pnpm lint` clean, each pushed to the **dev** DB where it carries DDL. One engine change (`duplicate.after` on the `createCrudDal` duplicate config), then everything else inside `src/shared/modules/proposals/` and its consumers: the Zod SOW shape + a one-time id backfill, a `pre-draft` status whose promotion helper is the lock gate's twin, a visibility module applied to every agent-side listing read, a `proposalService.send` verb that writes before it delivers, a `seedSowSections` pure mapper replacing the create-time auto-snapshot, `meeting_id NOT NULL` + `ON DELETE RESTRICT`, and a `modules/proposals/sow/` child unit whose four verbs carry the engine's slot signatures so Wave 4 swaps their bodies for `...proposalSowItemCrud`. Every seam lands where the W4 re-grounding expects it.
+**Architecture:** Six additive commits on `main` (A1–A3, A5–A7, spec §6; A4 deferred), each `pnpm tsc` + `pnpm lint` clean, each pushed to the **dev** DB where it carries DDL. One engine change (`duplicate.after` on the `createCrudDal` duplicate config), then everything else inside `src/shared/modules/proposals/` and its consumers: the Zod SOW shape + a one-time id backfill, a `proposalService.business.send` verb (the module's first `business` child) that writes before it delivers, a `seedSowSections` pure mapper replacing the create-time auto-snapshot, `meeting_id NOT NULL` + `ON DELETE RESTRICT`, and a `modules/proposals/sow/` child unit whose four verbs carry the engine's slot signatures so Wave 4 swaps their bodies for `...proposalSowItemCrud`. Every seam lands where the W4 re-grounding expects it.
 
 **Tech Stack:** Next.js 15 App Router, tRPC v11, Drizzle 0.45 + Postgres (Neon), Zod 4, drizzle-zod, react-hook-form 7.71, pnpm, `tsx` scripts. **No test runner in the repo**: pure helpers are verified by committed `scripts/verify-*.ts` files (`node:assert/strict`, non-zero exit on failure — precedent `scripts/verify-normalize-notion-id.ts`); DB behavior by a session-scoped, never-committed `scripts/tmp-smoke-proposal-foundations.ts` against the dev DB (precedent `scripts/tmp-smoke-proposals-module.ts`).
 
@@ -34,7 +36,7 @@ The W4 re-grounding (§5 step 1) asked spec A's plan to settle two things; three
 2. **Readiness at envelope creation (C63).** The contracts router loads no row, so the gate lives in `contractService.createDraft` (`src/shared/services/contracts.service.ts:21`) right after `getFullView`. It throws `ThrowableDalError`; the two router procedures that reach `createDraft` (`createContractDraft`, `resendContract`) catch it and hand it to `dalToTrpc(dalError(…))` so the client gets `PRECONDITION_FAILED: proposal_not_ready:<reasons>`. No new names.
 3. **`_v` waiver (C64).** `projectJSON` gains no `_v` (`jsonb-columns.md#mandatory-schema-version`): W4 freezes the column; the id backfill is the shape marker. Recorded as a comment on `projectDataSchema.sow`.
 4. **Hook placement + DAL clone twin (C65).** `duplicate.after` is the third key of the `duplicate` config block (`CrudConfig.duplicate.{exclude, overrides, after}`), not a `CrudSlotHookMap` slot, so `CrudMutationSlot`, `CrudHooks` and the callsite hooks stay untouched. Because a DAL module never imports a service, the hook clones incentive rows through a new DAL function `cloneGlobalIncentiveRows` (`incentives/dal/server/mutations.ts`, the body of today's `proposalIncentivesService.clone`); the service verb `clone` is **deleted** (zero callers once the root override dies). W4's `sow.clone` follows the same shape (a DAL function called from the hook).
-5. **Shape and status details (C66).** `painPoints` is **required** (no `.default`) — the form schema feeds `zodResolver`, and a defaulted key splits Zod input/output types; the backfill stamps `painPoints: []` beside the id. `notes` stays optional. `LISTABLE_STATUSES` / `HOMEOWNER_VISIBLE_STATUSES` live in `src/shared/constants/enums/proposals.ts` beside `proposalStatuses` (client-safe, enum co-location); `core/lib/proposal-visibility.ts` holds the row predicates + SQL forms. Promotion never overrides an explicit `status` in the payload. The proposals table's status dropdown disables `pre-draft` and its filter offers `LISTABLE_STATUSES` only.
+5. **Shape and status details (C66).** `painPoints` is **required** (no `.default`) — the form schema feeds `zodResolver`, and a defaulted key splits Zod input/output types; the backfill stamps `painPoints: []` beside the id. `notes` stays optional. The status half of C66 (`LISTABLE_STATUSES` / `HOMEOWNER_VISIBLE_STATUSES`, the visibility module, promotion respecting an explicit `status`) is deferred with `pre-draft` (C67).
 
 Also folded in from the re-grounding: Q2 ruled scopes as rows (`proposal_sow_scopes`) — no effect on spec A's work, §4.11's "trade / scopes" row is re-worded. The heading's stored-note copy is "A note from Tri Pros Remodeling" (`companyInfo.name`) because `getFullView` carries no owner name.
 
@@ -1059,393 +1061,22 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 ---
 
-### Task 4: `pre-draft` status, promotion, listing visibility (A4)
+### Task 4: (deferred) `pre-draft` status, promotion, listing visibility (A4)
 
-**Files:**
-- Modify: `src/shared/constants/enums/proposals.ts:1-2`
-- Create: `src/shared/modules/proposals/core/lib/proposal-pre-draft.ts`
-- Create: `src/shared/modules/proposals/core/lib/proposal-visibility.ts`
-- Modify: `src/shared/modules/proposals/core/dal/server/crud.ts` (`create.before`, `update.before`, `duplicate.overrides`)
-- Modify: `src/shared/modules/proposals/core/dal/server/queries.ts:66-81,164-278,326-337`
-- Modify: `src/shared/entities/meetings/dal/server/queries.ts:179,292`
-- Modify: `src/features/customer-pipelines/dal/server/get-customer-pipeline-items.ts:187-203,236-251,410-421`
-- Modify: `src/features/customer-pipelines/dal/server/get-customer-profile.ts:89-115`
-- Modify: `src/shared/components/contract-status-panel/lib/get-status-badge.ts:28-41`
-- Modify: `src/shared/modules/proposals/core/constants/proposal-status-colors.ts`, `proposal-row-styles.ts`
-- Modify: `src/shared/modules/proposals/core/components/overview-card.tsx:203-208`
-- Modify: `src/shared/modules/proposals/core/lib/columns-registry.tsx:87-99`
-- Modify: `src/features/proposal-flow/constants/proposal-table-filter-config.ts:4,25-28`
-- Modify: `src/shared/modules/proposals/core/DOCS.md` (`#duplicate-resets-and-redrives` first sentence)
-- Modify: `scripts/verify-proposal-foundations.ts`; `scripts/tmp-smoke-proposal-foundations.ts` (never committed)
-
-**Interfaces:**
-- Produces: `proposalStatuses = ['pre-draft', 'draft', 'sent', 'approved', 'declined']`; `LISTABLE_STATUSES`, `HOMEOWNER_VISIBLE_STATUSES` (enums file); `shouldPromotePreDraft(signals: Pick<Proposal,'status'>, data: Record<string, unknown>): boolean`; `isListableProposal(p)`, `isHomeownerVisibleProposal(p)`, `listableProposalSql(col)`, `homeownerVisibleProposalSql(col)`; `listProposals` input `filters.includePreDraft?: boolean`.
-- Consumers later: Task 5's send verb (`pre-draft → sent`), Task 7's `sow` verbs (promotion through the root update), spec C (`includePreDraft`), spec F (`homeownerVisible*`).
-
-- [ ] **Step 1: Write the failing pure checks**
-
-Append to `scripts/verify-proposal-foundations.ts` (imports at the top with the others; sections before the final `console.log`):
-
-```ts
-import { HOMEOWNER_VISIBLE_STATUSES, LISTABLE_STATUSES, proposalStatuses } from '@/shared/constants/enums/proposals'
-import { shouldPromotePreDraft } from '@/shared/modules/proposals/core/lib/proposal-pre-draft'
-import { isHomeownerVisibleProposal, isListableProposal } from '@/shared/modules/proposals/core/lib/proposal-visibility'
-```
-
-```ts
-// ── pre-draft promotion ────────────────────────────────────────────────────
-console.log('[3] shouldPromotePreDraft')
-assert.equal(shouldPromotePreDraft({ status: 'pre-draft' }, { label: 'x' }), true, 'label write promotes')
-assert.equal(shouldPromotePreDraft({ status: 'pre-draft' }, { projectJSON: {} }), true, 'projectJSON write promotes')
-assert.equal(shouldPromotePreDraft({ status: 'pre-draft' }, { startingTcpCents: 1 }), true, 'funding scalar promotes')
-assert.equal(shouldPromotePreDraft({ status: 'pre-draft' }, { sentAt: 'now' }), false, 'lifecycle-only write does not promote')
-assert.equal(shouldPromotePreDraft({ status: 'pre-draft' }, { sentMessage: 'hi' }), false, 'sentMessage does not promote')
-assert.equal(shouldPromotePreDraft({ status: 'pre-draft' }, { label: 'x', status: 'sent' }), false, 'an explicit status in the payload is respected')
-assert.equal(shouldPromotePreDraft({ status: 'draft' }, { label: 'x' }), false, 'only pre-draft promotes')
-assert.equal(shouldPromotePreDraft({ status: 'sent' }, { projectJSON: {} }), false, 'sent never promotes')
-
-// ── listing visibility ─────────────────────────────────────────────────────
-console.log('[4] visibility predicates')
-assert.deepEqual([...proposalStatuses], ['pre-draft', 'draft', 'sent', 'approved', 'declined'], 'status vocabulary')
-assert.deepEqual([...LISTABLE_STATUSES], ['draft', 'sent', 'approved', 'declined'])
-assert.deepEqual([...HOMEOWNER_VISIBLE_STATUSES], ['sent', 'approved', 'declined'])
-assert.equal(isListableProposal({ status: 'pre-draft' }), false)
-assert.equal(isListableProposal({ status: 'draft' }), true)
-assert.equal(isHomeownerVisibleProposal({ status: 'draft' }), false)
-assert.equal(isHomeownerVisibleProposal({ status: 'sent' }), true)
-assert.equal(isHomeownerVisibleProposal({ status: 'declined' }), true, 'declined stays visible to the homeowner (C20)')
-```
-
-Run: `pnpm tsx scripts/verify-proposal-foundations.ts` → fails (missing modules).
-
-- [ ] **Step 2: The enum and the two status subsets**
-
-Replace `src/shared/constants/enums/proposals.ts:1-2` with:
-
-```ts
-// `pre-draft` = created, never edited (multi-proposal epic C43): every create is
-// born there and the first write touching a user-authored field promotes it to
-// `draft` (modules/proposals/core/lib/proposal-pre-draft.ts). The column default
-// stays 'draft' (C53): the create hook is the rule, the default the fallback.
-export const proposalStatuses = ['pre-draft', 'draft', 'sent', 'approved', 'declined'] as const
-export type ProposalStatus = (typeof proposalStatuses)[number]
-
-/** What every agent-side listing/count shows by default (C43/P13): pre-drafts are filtered, never deleted. */
-export const LISTABLE_STATUSES = ['draft', 'sent', 'approved', 'declined'] as const satisfies readonly ProposalStatus[]
-/** What the homeowner's meeting proposals page shows (C20) — applied by spec F's single token resolver. */
-export const HOMEOWNER_VISIBLE_STATUSES = ['sent', 'approved', 'declined'] as const satisfies readonly ProposalStatus[]
-```
-
-- [ ] **Step 3: The promotion helper**
-
-Create `src/shared/modules/proposals/core/lib/proposal-pre-draft.ts`:
-
-```ts
-import type { Proposal } from '@/shared/db/schema/proposals'
-
-import { touchesFrozenLockedFields } from './proposal-lock'
-
-/**
- * The lock gate's twin (C58): a `pre-draft` proposal becomes `draft` on the
- * first write that touches a user-authored (locked) field — the SAME field set
- * and the SAME probe the lock ladder uses, so whatever write the ladder would
- * refuse on a frozen proposal promotes an untouched one. Lifecycle-only writes
- * (status, timestamps, contract ids, sentMessage) never promote, and a payload
- * that sets `status` itself is respected as-is (C66). Called from
- * `dal/server/crud.ts:hooks.update.before` right after the gate; W4 moves both
- * into the SOW child unit's hooks together. see ../DOCS.md#pre-draft-status
- */
-export function shouldPromotePreDraft(
-  signals: Pick<Proposal, 'status'>,
-  data: Record<string, unknown>,
-): boolean {
-  return signals.status === 'pre-draft' && data.status === undefined && touchesFrozenLockedFields(data)
-}
-```
-
-- [ ] **Step 4: The visibility module**
-
-Create `src/shared/modules/proposals/core/lib/proposal-visibility.ts`:
-
-```ts
-import type { SQL } from 'drizzle-orm'
-import type { AnyPgColumn } from 'drizzle-orm/pg-core'
-
-import type { Proposal } from '@/shared/db/schema/proposals'
-
-import { sql } from 'drizzle-orm'
-
-import { HOMEOWNER_VISIBLE_STATUSES, LISTABLE_STATUSES } from '@/shared/constants/enums/proposals'
-
-// see ../DOCS.md#listing-visibility
-// ONE module for "which proposals does a listing show": the row form for
-// in-memory checks, the SQL form for WHERE clauses. Both derive from the two
-// status subsets in constants/enums/proposals.ts. Ad-hoc `status <> 'pre-draft'`
-// literals anywhere else are forbidden — the lock ladder's discipline.
-
-function inStatuses(col: SQL | AnyPgColumn, statuses: readonly string[]): SQL {
-  return sql`${col} IN (${sql.join(statuses.map(status => sql`${status}`), sql`, `)})`
-}
-
-/** Every agent-side listing/count (spec A §4.5): hides `pre-draft`. */
-export function isListableProposal(proposal: Pick<Proposal, 'status'>): boolean {
-  return (LISTABLE_STATUSES as readonly string[]).includes(proposal.status)
-}
-
-/** The homeowner's meeting proposals page (C20); applied by spec F's single token resolver (H11). */
-export function isHomeownerVisibleProposal(proposal: Pick<Proposal, 'status'>): boolean {
-  return (HOMEOWNER_VISIBLE_STATUSES as readonly string[]).includes(proposal.status)
-}
-
-/** SQL twin of `isListableProposal`. `col` is the status column, or an aliased fragment such as sql`p.status` inside a raw subquery. */
-export function listableProposalSql(col: SQL | AnyPgColumn): SQL {
-  return inStatuses(col, LISTABLE_STATUSES)
-}
-
-/** SQL twin of `isHomeownerVisibleProposal`. */
-export function homeownerVisibleProposalSql(col: SQL | AnyPgColumn): SQL {
-  return inStatuses(col, HOMEOWNER_VISIBLE_STATUSES)
-}
-```
-
-- [ ] **Step 5: The hooks — born `pre-draft`, promoted by the gate's twin**
-
-In `src/shared/modules/proposals/core/dal/server/crud.ts`:
-
-Add the import (alphabetical, after `proposal-lock`):
-```ts
-import { shouldPromotePreDraft } from '@/shared/modules/proposals/core/lib/proposal-pre-draft'
-```
-
-In `create.before` make BOTH return statements carry `status: 'pre-draft' as const` (the no-meeting branch dies in Task 7):
-```ts
-        if (!input.meetingId) {
-          return { ...input, kind: deriveProposalKind(null), token: generateShareToken(), status: 'pre-draft' as const }
-        }
-        …
-        return { ...enriched, kind, token, status: 'pre-draft' as const }
-```
-and add above the hook's existing comment lines:
-```ts
-      // see ../../DOCS.md#pre-draft-status — every create is born `pre-draft`
-      // (blank, seeded, duplicate); a client-sent status never survives.
-```
-
-Replace the `update.before` body (`:57-66`) with:
-```ts
-      async before(input, _ctx, meta) {
-        if (!touchesFrozenLockedFields(input)) {
-          return input
-        }
-        const signals = dalVerifySuccess(await getProposalLockSignals(String(meta.id)))
-        if (isProposalFrozen(signals)) {
-          throw new ThrowableDalError({ type: 'precondition-failed', reason: 'proposal_frozen' })
-        }
-        // Promotion is the gate's twin (C58): same probe, same field set. A
-        // first content write on a pre-draft makes it a draft. see ../../DOCS.md#pre-draft-status
-        return shouldPromotePreDraft(signals, input) ? { ...input, status: 'draft' as const } : input
-      },
-```
-
-In `duplicate.overrides` change `status: 'draft' as const,` to `status: 'pre-draft' as const,` and in `src/shared/modules/proposals/core/DOCS.md` `#duplicate-resets-and-redrives` change its first words `Duplicating a proposal: status resets to \`draft\`,` to `Duplicating a proposal: status resets to \`pre-draft\` (\`#pre-draft-status\`),`.
-
-- [ ] **Step 6: UI vocabulary consumers**
-
-`src/shared/components/contract-status-panel/lib/get-status-badge.ts` — in `getProposalStatusBadge` add before `case 'draft':`:
-```ts
-    case 'pre-draft':
-      return { label: 'Pre-draft', className: 'bg-muted text-muted-foreground' }
-```
-
-`src/shared/modules/proposals/core/constants/proposal-status-colors.ts` — add as the first entry:
-```ts
-  'pre-draft': 'bg-slate-500/10 text-slate-500',
-```
-(the `Record<Proposal['status'], string>` type requires it).
-
-`src/shared/modules/proposals/core/constants/proposal-row-styles.ts` — add before the `draft:` entry, same values as `draft`:
-```ts
-  'pre-draft': { bg: 'hover:bg-background/50', icon: FileTextIcon, iconClass: 'text-muted-foreground', textClass: 'text-muted-foreground', valueClass: 'text-muted-foreground' },
-```
-
-`src/shared/modules/proposals/core/components/overview-card.tsx` — in `StatusDot`'s `dotColors` add `'pre-draft': 'bg-slate-300',` before `draft`.
-
-`src/shared/modules/proposals/core/lib/columns-registry.tsx` — on the `StatusDropdownCell` (`:92-97`) add the prop `isStatusDisabled={status => status === 'pre-draft'}` (a birth state, never hand-set; the current value is never disabled by the component).
-
-`src/features/proposal-flow/constants/proposal-table-filter-config.ts` — change the import to `import { LISTABLE_STATUSES } from '@/shared/constants/enums'` and the options to `options: LISTABLE_STATUSES.map(s => ({ …same mapping… }))` (the default listing hides pre-drafts, so offering the value would filter to nothing).
-
-- [ ] **Step 7: `listProposals` — hidden by default, `includePreDraft` opt-in; `getProposalsByMeetingId`**
-
-In `src/shared/modules/proposals/core/dal/server/queries.ts`:
-
-Add the import (alphabetical, after `ThrowableDalError`'s import block):
-```ts
-import { listableProposalSql } from '@/shared/modules/proposals/core/lib/proposal-visibility'
-```
-
-In `proposalListFiltersSchema` (`:67-78`) add:
-```ts
-  /** Opt-in (C43/D6/S5): only the meeting flow lists pre-drafts (the switcher + the gate). Every other listing hides them. */
-  includePreDraft: z.boolean().optional(),
-```
-
-In `listProposals`, add to the `buildFilterWhere` predicate map (it is opt-in per key, `dal/server/lib/query/filters.ts:31-56`, so an unknown key would be silently ignored — declare it explicitly as "no fragment"):
-```ts
-      includePreDraft: () => undefined,
-```
-and replace `const where = and(ctx.scope ?? undefined, searchWhere, filterWhere)` with:
-```ts
-    // see ../../DOCS.md#listing-visibility — pre-drafts are hidden unless the
-    // caller opts in (meeting flow only).
-    const visibilityWhere = input.filters?.includePreDraft ? undefined : listableProposalSql(proposals.status)
-    const where = and(ctx.scope ?? undefined, visibilityWhere, searchWhere, filterWhere)
-```
-
-Replace `getProposalsByMeetingId` (`:326-337`) with:
-```ts
-/** Minimal LISTABLE proposals of a meeting — id + projectJSON — feeds the project-create gate + scope derivation. Pre-drafts have no authored content and do not count (#listing-visibility). */
-export async function getProposalsByMeetingId(
-  ctx: ScopedContext,
-  meetingId: string,
-): Promise<DalReturn<{ id: string, projectJSON: ProjectSection }[]>> {
-  return dalDbOperation(async () =>
-    db
-      .select({ id: proposals.id, projectJSON: proposals.projectJSON })
-      .from(proposals)
-      .where(and(eq(proposals.meetingId, meetingId), listableProposalSql(proposals.status), ctx.scope ?? undefined)),
-  )
-}
-```
-
-- [ ] **Step 8: Meeting `proposalCount` (two sites)**
-
-In `src/shared/entities/meetings/dal/server/queries.ts` add the import:
-```ts
-import { listableProposalSql } from '@/shared/modules/proposals/core/lib/proposal-visibility'
-```
-and at BOTH `proposalCount` sites (`:179` in `listMeetings`, `:292` in `getByIdWithJoins`) replace
-```ts
-proposalCount: sql<number>`(SELECT count(*) FROM proposals p WHERE p.meeting_id = ${meetings.id})`.as('proposal_count'),
-```
-with
-```ts
-proposalCount: sql<number>`(SELECT count(*) FROM proposals p WHERE p.meeting_id = ${meetings.id} AND ${listableProposalSql(sql`p.status`)})`.as('proposal_count'),
-```
-(`hasSentProposal` / `hasApprovedProposal` on the next lines are status-specific — unchanged.)
-
-- [ ] **Step 9: Pipeline items and the customer profile**
-
-`src/features/customer-pipelines/dal/server/get-customer-pipeline-items.ts` — add the import `import { listableProposalSql } from '@/shared/modules/proposals/core/lib/proposal-visibility'` and add `listableProposalSql(proposals.status),` as the first argument of the `and(` in each of the three proposal reads: the aggregate (`:198-201` — this is what keeps `compute-fresh-stage.ts:30` correct), the per-customer detail rows (`:248-251`), and the per-meeting rows (`:420` — wrap the existing `inArray(...)` in `and(listableProposalSql(proposals.status), inArray(proposals.meetingId, meetingIds))`).
-
-`src/features/customer-pipelines/dal/server/get-customer-profile.ts` — add the same import and change the `.where(` of the `proposalRows` query (`:106-113`) to:
-```ts
-    .where(and(
-      listableProposalSql(proposals.status),
-      sql`${proposals.meetingId} IN (${sql.join(
-        meetingRows.length > 0
-          ? meetingRows.map(m => sql`${m.id}`)
-          : [sql`NULL`],
-        sql`, `,
-      )})`,
-    ))
-```
-(`and` is already imported at `:6`.) The customer timeline (`entities/customers/lib/build-timeline-events.ts:54-63`) is fed by this query, so it emits `proposal_created` for listable proposals only with no change of its own.
-
-- [ ] **Step 10: Audit — every `from(proposals)` read, with its verdict**
-
-Run `grep -rn "from(proposals)" src --include=*.ts --include=*.tsx` and confirm the table below covers every hit (add any newcomer to the right row):
-
-| Read | Verdict |
-|---|---|
-| `core/dal/server/queries.ts` `listProposals`, `getProposalsByMeetingId` | predicate applied (Step 7) |
-| `core/dal/server/queries.ts` `getFullView`, `getProposalsByIds`, `getProposalsByInvoiceIds`, `getProposalByInvoiceId`, `getByContractEnvelopeId`, `getProposalLockSignals` | single-row / id-keyed reads — untouched by design |
-| `core/dal/server/mutations.ts` (`recompute…`, `setCashInDeal`) | writes by id — untouched |
-| meetings `queries.ts:179,292` `proposalCount` | predicate applied (Step 8) |
-| `get-customer-pipeline-items.ts` ×3 | predicate applied (Step 9) |
-| `get-customer-profile.ts` | predicate applied (Step 9) |
-| `get-action-queue.ts:131` | `status = 'sent'` — already excludes pre-draft |
-| `move-customer-pipeline-item.ts:138` | `status = 'sent'` — same |
-| `entities/customers/lib/phone-gating-sql.ts` (`EXISTS_SENT_PROPOSAL`) | `status IN ('sent','approved')` — same |
-| `domains/permissions/lib/validate-share-token.ts:36` | token path — spec F applies `homeownerVisibleProposalSql` in its single resolver (H11) |
-| `services/providers/ai/client.ts:98` | W4 prep A3's raw hatch — untouched |
-| `modules/proposals/media/dal/server/queries.ts:88` | media join by proposal id — untouched |
-
-Client-side status checks that need no change: `assign-project-dialog.tsx:80` (`sent || draft`), `compute-fresh-stage.ts` (its inputs are now listable-only).
-
-- [ ] **Step 11: Pure checks, type-check, lint**
-
-Run: `pnpm tsx scripts/verify-proposal-foundations.ts` → `✅`. Run: `pnpm tsc && pnpm lint` → clean.
-
-- [ ] **Step 12: Smoke — insert section 4 before `finally`**
-
-```ts
-    // ── 4. pre-draft + listing visibility ──────────────────────────────────
-    section('4. pre-draft: born, promoted by content, hidden from listings')
-    const fresh = await proposalService.create(sys, {
-      label: `SMOKE-pre-${Date.now()}`,
-      ownerId: admin.id,
-      meetingId: meeting.id,
-      projectJSON: smokeProjectJSON(),
-      startingTcpCents: 0,
-      depositAmountCents: 0,
-      cashInDealCents: 0,
-    })
-    check('create ⇒ pre-draft', fresh.success && fresh.data.status === 'pre-draft', fresh.success && fresh.data.status)
-    if (fresh.success) {
-      created.push(fresh.data.id)
-      const f = fresh.data
-      const dupPre = await proposalService.duplicate(adminCtx, { id: f.id })
-      check('duplicate ⇒ pre-draft', dupPre.success && dupPre.data.status === 'pre-draft', dupPre.success && dupPre.data.status)
-      if (dupPre.success) {
-        created.push(dupPre.data.id)
-      }
-      const lifecycle = await proposalService.update(sys, { id: f.id, data: { sentAt: new Date().toISOString() } })
-      check('lifecycle-only write keeps pre-draft', lifecycle.success && lifecycle.data.status === 'pre-draft', lifecycle.success && lifecycle.data.status)
-      const hidden = await listProposals(adminCtx, { pagination: { limit: 200, offset: 0 }, filters: { meetingId: meeting.id } })
-      check('listProposals hides pre-drafts by default', hidden.success && !hidden.data.rows.some(r => r.id === f.id), hidden.success && hidden.data.rows.map(r => [r.id.slice(0, 8), r.status]))
-      const shown = await listProposals(adminCtx, { pagination: { limit: 200, offset: 0 }, filters: { meetingId: meeting.id, includePreDraft: true } })
-      check('listProposals shows them with includePreDraft', shown.success && shown.data.rows.some(r => r.id === f.id), shown)
-      // Every SMOKE proposal so far (sections 1–4) was created and never
-      // content-written, so all of them are pre-draft: the meeting counts 0.
-      const mtgBefore = await getByIdWithJoins(adminCtx, { id: meeting.id })
-      check('meeting proposalCount ignores pre-drafts (0)', mtgBefore.success && Number(mtgBefore.data?.proposalCount) === 0, mtgBefore.success && mtgBefore.data?.proposalCount)
-      const promoted = await proposalService.update(sys, { id: f.id, data: { label: 'SMOKE-promoted' } })
-      check('label write promotes pre-draft → draft', promoted.success && promoted.data.status === 'draft', promoted.success && promoted.data.status)
-      const mtgAfter = await getByIdWithJoins(adminCtx, { id: meeting.id })
-      check('meeting proposalCount counts the promoted draft (1)', mtgAfter.success && Number(mtgAfter.data?.proposalCount) === 1, mtgAfter.success && mtgAfter.data?.proposalCount)
-      const explicit = await proposalService.update(sys, { id: f.id, data: { label: 'SMOKE-explicit', status: 'declined' } })
-      check('an explicit status in a content write is respected', explicit.success && explicit.data.status === 'declined', explicit.success && explicit.data.status)
-    }
-```
-Add the imports `import { getByIdWithJoins } from '@/shared/entities/meetings/dal/server/queries'` and `import { listProposals } from '@/shared/modules/proposals/core/dal/server/queries'` (`listProposals` returns `PaginatedResult<ProposalListRow>` = `{ rows, total }`, `src/shared/dal/server/lib/query/output.ts:5-8`).
-
-Run the smoke → all pass.
-
-- [ ] **Step 13: Commit**
-
-```bash
-git add src/shared/constants/enums/proposals.ts src/shared/modules/proposals/core/lib/proposal-pre-draft.ts src/shared/modules/proposals/core/lib/proposal-visibility.ts src/shared/modules/proposals/core/dal/server/crud.ts src/shared/modules/proposals/core/dal/server/queries.ts src/shared/entities/meetings/dal/server/queries.ts src/features/customer-pipelines/dal/server/get-customer-pipeline-items.ts src/features/customer-pipelines/dal/server/get-customer-profile.ts src/shared/components/contract-status-panel/lib/get-status-badge.ts src/shared/modules/proposals/core/constants/proposal-status-colors.ts src/shared/modules/proposals/core/constants/proposal-row-styles.ts src/shared/modules/proposals/core/components/overview-card.tsx src/shared/modules/proposals/core/lib/columns-registry.tsx src/features/proposal-flow/constants/proposal-table-filter-config.ts src/shared/modules/proposals/core/DOCS.md scripts/verify-proposal-foundations.ts
-git commit -m "feat(proposals): pre-draft status, promotion as the lock gate's twin, listing visibility
-
-Every create is born pre-draft; the first write touching a locked field
-promotes it (shouldPromotePreDraft, same probe as the lock ladder). One
-visibility module (isListable / listableProposalSql) hides pre-drafts on
-listProposals (includePreDraft opt-in), getProposalsByMeetingId, meeting
-proposalCount, pipeline items and the customer profile. Spec A §4.4–4.5,
-C43/C53/C58/C66.
-
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
-```
+**Deferred 2026-09-29 (owner, tracker C67).** Proposals keep four statuses; there is no A4 commit. The pre-draft rethink (C43, C53, C58, the status half of C51 and C66; requirements P12, P13, H15's agent half) returns in its own session. The full task text is in git history at `4aae7eab`. Verify sections `[3]`–`[4]` and smoke section 4 stay unused.
 
 ---
 
 ### Task 5: Readiness predicate, `send` verb, `sent_message` (A5)
 
+> **Held 2026-09-29 (owner, tracker C69):** do not execute until the approval/contract/project/outcome session (`docs/plans/2026-09-29-approval-project-outcome-handoff.md`) rules on proposal status and meeting outcome; it may reshape this task. Task 7 Step 5's `send` guard waits with it.
+
 **Files:**
 - Create: `src/shared/modules/proposals/core/lib/proposal-readiness.ts`
 - Create: `src/shared/modules/proposals/core/constants/readiness-reason-labels.ts`
 - Modify: `src/shared/db/schema/proposals.ts:35-37` (add `sentMessage`) → `pnpm db:push:dev`
-- Modify: `src/shared/modules/proposals/service.ts` (add `send`)
+- Create: `src/shared/modules/proposals/business/service.ts` (the `business` child; `send`)
+- Modify: `src/shared/modules/proposals/service.ts` (`business` getter; header)
 - Modify: `src/trpc/routers/proposals.router/delivery.router.ts:8-67`
 - Modify: `src/shared/services/contracts.service.ts:1-31`
 - Modify: `src/trpc/routers/proposals.router/contracts.router.ts:14-30,71-75,101-105`
@@ -1456,7 +1087,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Modify: `scripts/verify-proposal-foundations.ts`; `scripts/tmp-smoke-proposal-foundations.ts` (never committed)
 
 **Interfaces:**
-- Produces: `ReadinessReason = 'no-sow-section' | 'declined'`; `ReadinessInput = { status: ProposalStatus; sow: Pick<SOW,'trade'>[] }`; `ProposalReadiness = { ready: true } | { ready: false; reasons: ReadinessReason[] }`; `getProposalReadiness(input)`; `assertProposalReady(input)` (throws `ThrowableDalError precondition-failed: proposal_not_ready:<reasons>`); `READINESS_REASON_LABELS: Record<ReadinessReason, string>`; column `proposals.sent_message text NULL` (`sentMessage`); `proposalService.send(ctx, { id, recipient: { email, customerName }, message? }): Promise<DalReturn<Proposal>>`.
+- Produces: `ReadinessReason = 'no-sow-section' | 'declined'`; `ReadinessInput = { status: ProposalStatus; sow: Pick<SOW,'trade'>[] }`; `ProposalReadiness = { ready: true } | { ready: false; reasons: ReadinessReason[] }`; `getProposalReadiness(input)`; `assertProposalReady(input)` (throws `ThrowableDalError precondition-failed: proposal_not_ready:<reasons>`); `READINESS_REASON_LABELS: Record<ReadinessReason, string>`; column `proposals.sent_message text NULL` (`sentMessage`); `proposalService.business.send(ctx, { id, recipient: { email, customerName }, message? }): Promise<DalReturn<Proposal>>` (`proposalBusinessService.send`, reached through the root's `business` getter).
 - Consumes: `getFullView`, `proposalCrud.update`, `deriveOutcomeOnProposalSent`, `emailService.sendProposalEmail` (all existing).
 - Unchanged surface: `deliveryRouter.sendProposalEmail` name + `sendEmailSchema` input; `useSendProposal`; the link mechanism.
 
@@ -1473,7 +1104,6 @@ console.log('[5] getProposalReadiness / assertProposalReady')
 const withTrade = [createEmptySowSection({ trade: { id: 'kitchen', label: 'Kitchen' } })]
 const blankTrade = [createEmptySowSection()]
 assert.deepEqual(getProposalReadiness({ status: 'draft', sow: withTrade }), { ready: true })
-assert.deepEqual(getProposalReadiness({ status: 'pre-draft', sow: withTrade }), { ready: true }, 'a pre-draft with a trade is ready (send skips draft)')
 assert.deepEqual(getProposalReadiness({ status: 'approved', sow: withTrade }), { ready: true }, 'approved may be re-delivered')
 assert.deepEqual(getProposalReadiness({ status: 'draft', sow: [] }), { ready: false, reasons: ['no-sow-section'] })
 assert.deepEqual(getProposalReadiness({ status: 'draft', sow: blankTrade }), { ready: false, reasons: ['no-sow-section'] }, 'a placeholder section without a trade id does not count')
@@ -1554,22 +1184,23 @@ In `src/shared/db/schema/proposals.ts` after `qbPaymentStatus: text('qb_payment_
   // The rep's note stored with the send (C44/C45): shown on the homeowner's
   // proposal view ("A note from …"). Lifecycle, not content — NOT in
   // frozenProposalLockedFields (a locked proposal can still be re-sent with a
-  // new note) and excluded from duplicate. Written only by proposalService.send.
+  // new note) and excluded from duplicate. Written only by proposalService.business.send.
   // see ../../modules/proposals/core/DOCS.md#send-verb
   sentMessage: text('sent_message'),
 ```
 
 Run: `pnpm db:push:dev` → expected one statement `ALTER TABLE "proposals" ADD COLUMN "sent_message" text;` and no data-loss prompt. (`insertProposalSchema` picks the nullable column up as optional — the send verb writes it through `proposalCrud.update`.)
 
-- [ ] **Step 4: The `send` verb**
+- [ ] **Step 4: The `send` verb in the `business` child**
 
-In `src/shared/modules/proposals/service.ts` set the imports to:
+Business orchestration lives in the module's `business` child, reached as `proposalService.business.<verb>` like `.incentives` / `.views` / `.media` (owner rule 2026-09-28, tracker C68). `send` is its first verb.
+
+Create `src/shared/modules/proposals/business/service.ts`:
 
 ```ts
-import type { DalReturn, ScopedContext, SpecCrudHandlers } from '@/shared/dal/server/types'
+import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { Proposal } from '@/shared/db/schema/proposals'
 
-import type { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { SYSTEM_CONTEXT, ThrowableDalError } from '@/shared/dal/server/types'
 import { deriveOutcomeOnProposalSent } from '@/shared/entities/meetings/dal/server/mutations'
@@ -1578,24 +1209,17 @@ import { getFullView } from '@/shared/modules/proposals/core/dal/server/queries'
 import { assertProposalReady } from '@/shared/modules/proposals/core/lib/proposal-readiness'
 import { emailService } from '@/shared/services/email.service'
 
-import { proposalIncentivesService } from './incentives/service'
-import { proposalMediaService } from './media/service'
-import { proposalViewsService } from './views/service'
-```
-
-and add the verb after `...proposalCrud,` (before the getters):
-
-```ts
+export const proposalBusinessService = {
   /**
    * Send the proposal to the homeowner (C44/C45; DOCS #send-verb). Readiness
    * first, then WRITE, then deliver: under C20 the homeowner page shows a
    * proposal only once it is `sent`, so delivering before writing would hand
    * out a link to a proposal the page refuses to show. The first send stamps
-   * `status: 'sent'` + `sentAt` (`pre-draft → sent` skips draft, P12); a resend
-   * re-stores the message and re-delivers, status untouched. A delivery failure
-   * after the write leaves the row `sent` and surfaces the provider error —
-   * the rep resends. Sequential, no transaction (W4 R.1). The link mechanism is
-   * unchanged (C25): the row's own token, the same email template.
+   * `status: 'sent'` + `sentAt`; a resend re-stores the message and
+   * re-delivers, status untouched. A delivery failure after the write leaves
+   * the row `sent` and surfaces the provider error — the rep resends.
+   * Sequential, no transaction (W4 R.1). The link mechanism is unchanged
+   * (C25): the row's own token, the same email template.
    */
   async send(
     ctx: ScopedContext,
@@ -1608,7 +1232,7 @@ and add the verb after `...proposalCrud,` (before the getters):
       }
       assertProposalReady({ status: row.status, sow: row.projectJSON.data.sow })
 
-      const firstSend = row.status === 'pre-draft' || row.status === 'draft'
+      const firstSend = row.status === 'draft'
       const updated = dalVerifySuccess(await proposalCrud.update(ctx, {
         id: row.id,
         data: {
@@ -1636,9 +1260,26 @@ and add the verb after `...proposalCrud,` (before the getters):
       return updated
     })
   },
+} as const
+
+export type ProposalBusinessService = typeof proposalBusinessService
 ```
 
-Also add to the header comment's `<verbs>` line: `//   <verbs>           orchestrations composing the slots with reads, peers and jobs` → append ` (\`send\`: readiness → write → deliver)`.
+In `src/shared/modules/proposals/service.ts` add `import { proposalBusinessService } from './business/service'` beside the other child imports, and a getter before `incentives`:
+
+```ts
+  get business() {
+    return proposalBusinessService
+  },
+```
+
+In the header comment, delete the line `//   <verbs>           orchestrations composing the slots with reads, peers and jobs` and add after the `<children>` block:
+
+```ts
+//   business          the one home for orchestration verbs — they compose the
+//                     slots with reads, peers, jobs and providers:
+//                     `proposalService.business.send`
+```
 
 - [ ] **Step 5: The delivery router becomes a thin adapter**
 
@@ -1661,7 +1302,7 @@ and replace the `sendProposalEmail` procedure (`:31-67`) with:
 
 ```ts
   /**
-   * Thin adapter over `proposalService.send` (spec A §4.3 / C50): the name,
+   * Thin adapter over `proposalService.business.send` (spec A §4.3 / C50): the name,
    * the input and the link mechanism stay until the access grill (Q14).
    * `input.token` is accepted and ignored — the verb builds the link from the
    * row's own token. Readiness, the write-before-deliver order, the meeting
@@ -1671,7 +1312,7 @@ and replace the `sendProposalEmail` procedure (`:31-67`) with:
   sendProposalEmail: proposalProcedure
     .input(sendEmailSchema)
     .mutation(async ({ ctx, input }) => {
-      const proposal = dalToTrpc(await proposalService.send(ctx, {
+      const proposal = dalToTrpc(await proposalService.business.send(ctx, {
         id: input.proposalId,
         recipient: { email: input.email, customerName: input.customerName },
         message: input.message,
@@ -1790,7 +1431,7 @@ Sending really emails through Resend: use a throwaway inbox the owner controls (
     const smokeEmail = process.env.SMOKE_EMAIL
     const recipient = { email: smokeEmail ?? 'smoke@example.invalid', customerName: 'Smoke Customer' }
     if (empty.success) {
-      const notReady = await proposalService.send(adminCtx, { id: empty.data.id, recipient, message: 'hi' })
+      const notReady = await proposalService.business.send(adminCtx, { id: empty.data.id, recipient, message: 'hi' })
       check('send refuses a zero-SOW proposal', errType(notReady) === 'precondition-failed' && errReason(notReady) === 'proposal_not_ready:no-sow-section', notReady)
     }
     const declined = await proposalService.create(sys, {
@@ -1805,10 +1446,10 @@ Sending really emails through Resend: use a throwaway inbox the owner controls (
     if (declined.success) {
       created.push(declined.data.id)
       await proposalService.update(sys, { id: declined.data.id, data: { status: 'declined' } })
-      const sendDeclined = await proposalService.send(adminCtx, { id: declined.data.id, recipient })
+      const sendDeclined = await proposalService.business.send(adminCtx, { id: declined.data.id, recipient })
       check('send refuses a declined proposal', errType(sendDeclined) === 'precondition-failed' && errReason(sendDeclined) === 'proposal_not_ready:declined', sendDeclined)
     }
-    const first = await proposalService.send(adminCtx, { id: p.id, recipient, message: '  Looking forward to it!  ' })
+    const first = await proposalService.business.send(adminCtx, { id: p.id, recipient, message: '  Looking forward to it!  ' })
     const afterFirst = await proposalService.getById(sys, { id: p.id })
     if (smokeEmail) {
       check('first send succeeds (SMOKE_EMAIL set)', first.success, first)
@@ -1818,7 +1459,7 @@ Sending really emails through Resend: use a throwaway inbox the owner controls (
     }
     check('first send wrote status=sent + sentAt + trimmed message BEFORE delivering', afterFirst.success && afterFirst.data?.status === 'sent' && afterFirst.data.sentAt !== null && afterFirst.data.sentMessage === 'Looking forward to it!', afterFirst.success && [afterFirst.data?.status, afterFirst.data?.sentAt, afterFirst.data?.sentMessage])
     const sentAtFirst = afterFirst.success ? afterFirst.data?.sentAt : null
-    await proposalService.send(adminCtx, { id: p.id, recipient, message: 'Second note' })
+    await proposalService.business.send(adminCtx, { id: p.id, recipient, message: 'Second note' })
     const afterSecond = await proposalService.getById(sys, { id: p.id })
     check('resend keeps sentAt, replaces the message, stays sent', afterSecond.success && afterSecond.data?.sentAt === sentAtFirst && afterSecond.data.sentMessage === 'Second note' && afterSecond.data.status === 'sent', afterSecond.success && [afterSecond.data?.sentAt, afterSecond.data?.sentMessage])
     const noteOnly = await proposalService.update(sys, { id: p.id, data: { sentMessage: 'edited note' } })
@@ -1829,18 +1470,18 @@ Sending really emails through Resend: use a throwaway inbox the owner controls (
       check('duplicate excludes sentMessage', dupNote.data.sentMessage === null, dupNote.data.sentMessage)
     }
 ```
-(`p` was created in section 1 and content-written by nothing since, so it is still `pre-draft` here: the first send moves it `pre-draft → sent` directly, which is P12.)
+(`p` was created in section 1 as a `draft`; the first send moves it `draft → sent`.)
 
 Run the smoke → all pass (the `ℹ️` line is informational).
 
 - [ ] **Step 12: Commit**
 
 ```bash
-git add src/shared/modules/proposals/core/lib/proposal-readiness.ts src/shared/modules/proposals/core/constants/readiness-reason-labels.ts src/shared/db/schema/proposals.ts src/shared/modules/proposals/service.ts src/trpc/routers/proposals.router/delivery.router.ts src/shared/services/contracts.service.ts src/trpc/routers/proposals.router/contracts.router.ts src/shared/modules/proposals/core/dal/server/crud.ts src/features/proposal-flow/ui/components/proposal/heading.tsx src/features/proposal-flow/ui/components/proposal/index.tsx src/shared/components/contract-status-panel/ui/contract-status-panel.tsx src/shared/components/contract-status-panel/ui/agent-contract-view.tsx src/shared/components/contract-status-panel/ui/proposal-card.tsx src/shared/components/contract-status-panel/ui/envelope-card.tsx scripts/verify-proposal-foundations.ts
+git add src/shared/modules/proposals/core/lib/proposal-readiness.ts src/shared/modules/proposals/core/constants/readiness-reason-labels.ts src/shared/db/schema/proposals.ts src/shared/modules/proposals/business/service.ts src/shared/modules/proposals/service.ts src/trpc/routers/proposals.router/delivery.router.ts src/shared/services/contracts.service.ts src/trpc/routers/proposals.router/contracts.router.ts src/shared/modules/proposals/core/dal/server/crud.ts src/features/proposal-flow/ui/components/proposal/heading.tsx src/features/proposal-flow/ui/components/proposal/index.tsx src/shared/components/contract-status-panel/ui/contract-status-panel.tsx src/shared/components/contract-status-panel/ui/agent-contract-view.tsx src/shared/components/contract-status-panel/ui/proposal-card.tsx src/shared/components/contract-status-panel/ui/envelope-card.tsx scripts/verify-proposal-foundations.ts
 git commit -m "feat(proposals): readiness predicate, send verb, stored send message
 
 getProposalReadiness/assertProposalReady (domain sow in, never the
-column) gate proposalService.send and contractService.createDraft; the
+column) gate proposalService.business.send and contractService.createDraft; the
 delivery router is a thin adapter; send writes status/sentAt/sentMessage
 before it delivers; the homeowner heading shows the note; Send and
 Create Draft are disabled with the reason. New column sent_message
@@ -1933,7 +1574,7 @@ export function seedSowSections(requested: TradeSelection[]): SOW[] {
 ```bash
 git rm src/shared/modules/proposals/core/lib/snap-sow-from-meeting.ts
 ```
-In `src/shared/modules/proposals/core/dal/server/crud.ts`: delete the `snapSowFromMeeting` import (`:12`) and the comment line `// see ../../DOCS.md#sow-snapshot-from-meeting-on-create`; in `create.before` delete `const enriched = snapSowFromMeeting(input, meeting?.flowStateJSON ?? null)` and return `{ ...input, kind, token, status: 'pre-draft' as const }`. Then `grep -rn "snapSowFromMeeting\|snap-sow-from-meeting" src docs scripts` — expected: no hits in `src/` (doc mentions are fixed in Step 5).
+In `src/shared/modules/proposals/core/dal/server/crud.ts`: delete the `snapSowFromMeeting` import (`:12`) and the comment line `// see ../../DOCS.md#sow-snapshot-from-meeting-on-create`; in `create.before` delete `const enriched = snapSowFromMeeting(input, meeting?.flowStateJSON ?? null)` and return `{ ...input, kind, token }`. Then `grep -rn "snapSowFromMeeting\|snap-sow-from-meeting" src docs scripts` — expected: no hits in `src/` (doc mentions are fixed in Step 5).
 
 - [ ] **Step 4: `buildProposalDefaults` — trades half onto the seed, objectives copy gone**
 
@@ -2004,7 +1645,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Modify: `src/shared/modules/proposals/core/dal/server/queries.ts` (add `countProposalsForMeeting`)
 - Modify: `src/shared/entities/meetings/dal/server/crud.ts:1-15,163-188` (`delete.before`)
 - Modify: `src/features/proposal-flow/ui/views/create-new-proposal-view.tsx:74`
-- Modify: `src/shared/modules/proposals/service.ts` (send guard; `sow` getter)
+- Modify: `src/shared/modules/proposals/business/service.ts` (send guard); `src/shared/modules/proposals/service.ts` (`sow` getter)
 - Create: `src/shared/modules/proposals/sow/schemas/index.ts`, `src/shared/modules/proposals/sow/dal/server/queries.ts`, `src/shared/modules/proposals/sow/service.ts`
 - Modify: `src/shared/modules/proposals/core/DOCS.md` (K2 rewrite — §4.10)
 - Modify: `docs/plans/2026-09-20-multi-proposal-meeting-flow-epic.md` (ticks)
@@ -2012,7 +1653,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 **Interfaces:**
 - Produces: `proposals.meeting_id` NOT NULL, FK `ON DELETE RESTRICT`; `insertProposalSchema.meetingId` required; `create.before` ⇒ `precondition-failed: meeting_not_found`; meetings `delete.before` ⇒ `precondition-failed: meeting_has_proposals`; `countProposalsForMeeting(meetingId): Promise<DalReturn<number>>`.
-- Produces (`proposalService.sow`): `getById(ctx, { id }): DalReturn<SOW | undefined>` · `create(ctx, input: SowSectionInsert): DalReturn<SOW>` (appends) · `update(ctx, { id, data: SowSectionUpdate }): DalReturn<SOW>` (never reorders; `scopes` replacement drops orphaned cost lines) · `delete(ctx, { id }): DalReturn<void>` (compacts). Zod: `sowSectionFieldsSchema = sowSchema.omit({ id, financials }).strict()`, `sowSectionInsertSchema` (+ `proposalId`, optional `id`), `sowSectionUpdateSchema` (partial). Errors: unknown id ⇒ `not-found`; `create` with an id already on any proposal ⇒ `precondition-failed: sow_section_exists`; a payload with `financials` ⇒ rejected by Zod. Lock gate, promotion and rollup fire through the root `update`.
+- Produces (`proposalService.sow`): `getById(ctx, { id }): DalReturn<SOW | undefined>` · `create(ctx, input: SowSectionInsert): DalReturn<SOW>` (appends) · `update(ctx, { id, data: SowSectionUpdate }): DalReturn<SOW>` (never reorders; `scopes` replacement drops orphaned cost lines) · `delete(ctx, { id }): DalReturn<void>` (compacts). Zod: `sowSectionFieldsSchema = sowSchema.omit({ id, financials }).strict()`, `sowSectionInsertSchema` (+ `proposalId`, optional `id`), `sowSectionUpdateSchema` (partial). Errors: unknown id ⇒ `not-found`; `create` with an id already on any proposal ⇒ `precondition-failed: sow_section_exists`; a payload with `financials` ⇒ rejected by Zod. Lock gate and rollup fire through the root `update`.
 - W4 landing: this unit gains `server-spec.ts` + `dal/server/crud.ts`; `service.ts` becomes `{ ...proposalSowItemCrud, replace, clone }`; `dal/server/queries.ts`'s blob locator is replaced by row reads. No caller changes.
 
 - [ ] **Step 1: Dev pre-check — no proposal without a meeting**
@@ -2061,7 +1702,6 @@ In `src/shared/modules/proposals/core/dal/server/crud.ts` replace the `create.be
           ...input,
           kind: deriveProposalKind(meeting.projectId),
           token: generateShareToken(),
-          status: 'pre-draft' as const,
         }
       },
 ```
@@ -2071,7 +1711,7 @@ In `src/shared/modules/proposals/core/dal/server/crud.ts` replace the `create.be
 
 Append to `src/shared/modules/proposals/core/dal/server/queries.ts`:
 ```ts
-/** Every proposal on a meeting, pre-drafts included — the pre-check behind `proposals.meeting_id ON DELETE RESTRICT` (meetings delete.before). */
+/** Every proposal on a meeting — the pre-check behind `proposals.meeting_id ON DELETE RESTRICT` (meetings delete.before). */
 export async function countProposalsForMeeting(meetingId: string): Promise<DalReturn<number>> {
   return dalDbOperation(async () => {
     const [row] = await db.select({ c: count(proposals.id) }).from(proposals).where(eq(proposals.meetingId, meetingId))
@@ -2108,7 +1748,7 @@ and replace the `delete.before` hook body (`:183-187`) with:
 
 `src/features/proposal-flow/ui/views/create-new-proposal-view.tsx:74`: change `meetingId: meetingId || undefined,` to `meetingId,` (the view already refuses to render without one).
 
-`src/shared/modules/proposals/service.ts` `send`: replace
+`src/shared/modules/proposals/business/service.ts` `send`: replace
 ```ts
       if (row.meetingId) {
         dalVerifySuccess(await deriveOutcomeOnProposalSent(SYSTEM_CONTEXT, { meetingId: row.meetingId }))
@@ -2200,8 +1840,8 @@ Create `src/shared/modules/proposals/sow/service.ts`:
 //
 // Bodies today: locate the owning proposal (dal/server/queries.ts — one scoped
 // containment query), rebuild the `sow` array, write through the ROOT's update
-// slot, so the lock ladder, the pre-draft promotion and the rollup re-drive all
-// fire (core/dal/server/crud.ts). Array index is the section's order (W4
+// slot, so the lock ladder and the rollup re-drive both fire
+// (core/dal/server/crud.ts). Array index is the section's order (W4
 // `position`): create appends, delete compacts, update never reorders. No
 // transaction (W4 R.1): one read + one write per verb. Two agents editing the
 // SAME proposal concurrently can lose an update until W4 makes sections rows —
@@ -2232,7 +1872,7 @@ async function locate(ctx: ScopedContext, sectionId: string): Promise<{ proposal
   return { proposal, index }
 }
 
-/** One whole-document write through the root update slot: lock gate → promotion → write → rollup. */
+/** One whole-document write through the root update slot: lock gate → write → rollup. */
 async function writeSow(ctx: ScopedContext, proposal: Proposal, sow: SOW[]): Promise<void> {
   const projectJSON = { ...proposal.projectJSON, data: { ...proposal.projectJSON.data, sow } }
   dalVerifySuccess(await proposalService.update(ctx, { id: proposal.id, data: { projectJSON } }))
@@ -2363,7 +2003,6 @@ Add `import { proposalSowService } from '@/shared/modules/proposals/sow/service'
     check('create ×2 succeeds and appends in order', s1.success && s2.success, [s1, s2])
     if (s1.success && s2.success) {
       const hostAfter = await proposalService.getById(sys, { id: host.data.id })
-      check('host promoted to draft by the section write', hostAfter.success && hostAfter.data?.status === 'draft', hostAfter.success && hostAfter.data?.status)
       check('array order = creation order', hostAfter.success && hostAfter.data?.projectJSON.data.sow.map(s => s.id).join() === [s1.data.id, s2.data.id].join())
       const got = await proposalService.sow.getById(sys, { id: s2.data.id })
       check('getById by section id alone round-trips (notes included)', got.success && got.data?.title === 'Second' && got.data.notes === 'rep only', got)
@@ -2406,69 +2045,29 @@ Run the smoke → all pass. (Cleanup already deletes proposals before the raw me
 
 In `src/shared/modules/proposals/core/DOCS.md`:
 
-(a) Replace the Lifecycle diagram block (`:9-19`) and the sentence under it with:
-
-```markdown
-```
-   pre-draft ──► draft ──► sent ──► approved ──► (project created — separate agent action)
-       │                    ▲
-       └────────────────────┘  first send skips draft (P12)
-                            │
-                            ├── contractSentAt        (Zoho envelope out)
-                            ├── contractViewedAt      (Zoho webhook: viewed)
-                            ├── contractSignedAt      (Zoho webhook: completed → auto-approves)
-                            └── contractDeclinedAt    (Zoho webhook: declined — status unchanged)
-
-   declined                (terminal; agent recovers manually if relevant)
-```
-
-`status` has five values: `pre-draft | draft | sent | approved | declined`. `pre-draft` is a birth state (`#pre-draft-status`); contract events are separate timestamp columns (not status values) — set by Zoho Sign webhooks independent of status.
-```
+(a) Leave the Lifecycle block as it is: four statuses (`pre-draft` deferred, C67).
 
 (b) In `### kind-derived-from-meeting-project` append to the first paragraph: ` A proposal always has a meeting (\`#proposal-requires-meeting\`), so the input is always the meeting's \`projectId\`.`
 
 (c) In `### proposal-lock-ladder`, after the sentence listing lifecycle fields (`Lifecycle fields (status, sentAt/approvedAt, signing ids, contract timestamps, QB refs) stay writable`), add: ` \`sentMessage\` is lifecycle too — a locked proposal can be re-sent with a new note (\`#send-verb\`).`
 
-(d) Insert the following eight rules after `### one-approved-initial-sale-per-meeting` (before `### conversion-trigger`):
+(d) Insert the following six rules after `### one-approved-initial-sale-per-meeting` (before `### conversion-trigger`):
 
 ```markdown
-### pre-draft-status
-
-Every create — blank, seeded, duplicate — is born `pre-draft` (`create.before` overwrites any client-sent status; `duplicate.overrides` sets it too). The first write that touches a user-authored field promotes it to `draft`: `lib/proposal-pre-draft.ts:shouldPromotePreDraft` is called in `update.before` right after the lock gate, with the same probe (`getProposalLockSignals`) and the same field set (`frozenProposalLockedFields`) — promotion is the lock gate's twin, so whatever write the ladder would refuse on a frozen proposal promotes an untouched one. Lifecycle-only writes (status, timestamps, contract ids, `sentMessage`) never promote; a payload that sets `status` itself is respected; media uploads never promote (a photo is not authorship). `send` moves `pre-draft` straight to `sent`. The column default stays `'draft'` (the hook is the rule); rows created before this rule are not reclassified. Stale pre-drafts are filtered (`#listing-visibility`), never auto-deleted.
-
-**Why**: the meeting flow mints a proposal per started sit (C6/C43); untouched ones must not contaminate every listing. Tying promotion to the lock ladder's field set keeps one definition of "user content".
-**Reference impl**: `lib/proposal-pre-draft.ts`; `dal/server/crud.ts:hooks.create.before`, `hooks.update.before`, `duplicate.overrides`
-**Enforced by**: the config-factory hooks (every origin). W4 moves the gate and the promotion together into the SOW child unit's hooks for child-row writes.
-
-### listing-visibility
-
-Two predicates, one module — `lib/proposal-visibility.ts`, row form + SQL form, both derived from the status subsets in `src/shared/constants/enums/proposals.ts`:
-
-| Predicate | Statuses | Applied by |
-|---|---|---|
-| `isListableProposal` / `listableProposalSql` | `draft, sent, approved, declined` | EVERY agent-side listing/count: `listProposals` (opt-out `filters.includePreDraft`, meeting flow only), `getProposalsByMeetingId`, meeting `proposalCount`, pipeline items, the customer profile (and through it the timeline) |
-| `isHomeownerVisibleProposal` / `homeownerVisibleProposalSql` | `sent, approved, declined` | the homeowner's meeting proposals page, inside spec F's single token resolver (H11) |
-
-Status-specific reads (`status = 'sent'`, `IN ('sent','approved')`) are already narrower and stay as they are. Ad-hoc `status <> 'pre-draft'` literals anywhere else are forbidden.
-
-**Why**: "which proposals does a list show" is one business rule with two consumers; scattering it is how the token path's four hand-rolled compares happened.
-**Reference impl**: `lib/proposal-visibility.ts`; `dal/server/queries.ts:listProposals` (`includePreDraft`)
-**Enforced by**: convention + the `from(proposals)` audit in the spec A plan (Task 4, Step 10)
-
 ### readiness-predicate
 
-`lib/proposal-readiness.ts:getProposalReadiness({ status, sow })` is THE rule for "can this proposal go to the homeowner": at least one SOW section with a trade id, and not `declined` (permanent — re-sending would resurrect it). `approved` is ready (re-delivering a signed proposal's link is legitimate; status untouched). It takes the DOMAIN sow list, never the column — callers pass `row.projectJSON.data.sow` today and `toSowInputs(row)` after W4. `assertProposalReady` throws `precondition-failed: proposal_not_ready:<reasons>`. Enforced at `proposalService.send` (`#send-verb`) and `contractService.createDraft` (envelope creation; the router maps the error to `PRECONDITION_FAILED`). The UI disables Send / Create Draft and shows the reason (`constants/readiness-reason-labels.ts`). Ad-hoc `sow.length` checks are forbidden — the lock ladder's discipline.
+`lib/proposal-readiness.ts:getProposalReadiness({ status, sow })` is THE rule for "can this proposal go to the homeowner": at least one SOW section with a trade id, and not `declined` (permanent — re-sending would resurrect it). `approved` is ready (re-delivering a signed proposal's link is legitimate; status untouched). It takes the DOMAIN sow list, never the column — callers pass `row.projectJSON.data.sow` today and `toSowInputs(row)` after W4. `assertProposalReady` throws `precondition-failed: proposal_not_ready:<reasons>`. Enforced at `proposalService.business.send` (`#send-verb`) and `contractService.createDraft` (envelope creation; the router maps the error to `PRECONDITION_FAILED`). The UI disables Send / Create Draft and shows the reason (`constants/readiness-reason-labels.ts`). Ad-hoc `sow.length` checks are forbidden — the lock ladder's discipline.
 
 **Why**: an empty proposal is valid (`#sow-seeded-explicitly`), so "has a scope of work" had to become a gate at the moments it matters instead of a schema rule.
-**Reference impl**: `lib/proposal-readiness.ts`; gates in `../service.ts:send` and `src/shared/services/contracts.service.ts:createDraft`
+**Reference impl**: `lib/proposal-readiness.ts`; gates in `../business/service.ts:send` and `src/shared/services/contracts.service.ts:createDraft`
 **Enforced by**: the two server gates; the UI is affordance-only
 
 ### send-verb
 
-`proposalService.send(ctx, { id, recipient, message? })` is the ONE way a proposal reaches the homeowner: load → `assertProposalReady` → **write** (`sentMessage`; on the first send also `status: 'sent'` + `sentAt` — `pre-draft → sent` skips draft) → flip the meeting outcome (`deriveOutcomeOnProposalSent`) → **deliver** (the same email template and `ROOTS.public.proposalReview(id, token)` link as before — C25 keeps the mechanism). Write before deliver: under C20 the homeowner page shows a proposal only once it is `sent`, so delivering first would hand out a link to a proposal the page refuses to show; a delivery failure after the write leaves the row `sent` and surfaces the provider error — the rep resends. A resend re-stores the message and re-delivers, status untouched. Sequential, no transaction (W4 R.1). `deliveryRouter.sendProposalEmail` is a thin adapter (name and input unchanged until the access grill, Q14). The stored note renders on the proposal heading, customer and agent view alike.
+`proposalService.business.send(ctx, { id, recipient, message? })` is the ONE way a proposal reaches the homeowner: load → `assertProposalReady` → **write** (`sentMessage`; on the first send also `status: 'sent'` + `sentAt`) → flip the meeting outcome (`deriveOutcomeOnProposalSent`) → **deliver** (the same email template and `ROOTS.public.proposalReview(id, token)` link as before — C25 keeps the mechanism). Write before deliver: under C20 the homeowner page shows a proposal only once it is `sent`, so delivering first would hand out a link to a proposal the page refuses to show; a delivery failure after the write leaves the row `sent` and surfaces the provider error — the rep resends. A resend re-stores the message and re-delivers, status untouched. Sequential, no transaction (W4 R.1). `deliveryRouter.sendProposalEmail` is a thin adapter (name and input unchanged until the access grill, Q14). The stored note renders on the proposal heading, customer and agent view alike.
 
 **Why**: send was an unguarded router procedure (any status, message never stored); one verb gives every caller the gate, the order and the stored note.
-**Reference impl**: `../service.ts:send`; `src/trpc/routers/proposals.router/delivery.router.ts:sendProposalEmail`; display `features/proposal-flow/ui/components/proposal/heading.tsx`
+**Reference impl**: `../business/service.ts:send`; `src/trpc/routers/proposals.router/delivery.router.ts:sendProposalEmail`; display `features/proposal-flow/ui/components/proposal/heading.tsx`
 **Enforced by**: the router calls the verb only; `sent_message` has no other writer
 
 ### sow-rep-inputs
@@ -2489,7 +2088,7 @@ Every SOW section has a stable uuid `id` (required by `sowSchema`, minted by `cr
 
 ### sow-child-service
 
-`proposalService.sow` (`../sow/service.ts`) is the per-section CONTENT API: `getById` / `create` / `update` / `delete`, addressed by section id alone, with the engine's slot signatures (`{ id }` / `{ id, data }`) so W4 swaps the bodies for `...proposalSowItemCrud` and no caller changes. Content only: `financials` (section price, cost lines, section incentives) is rejected at the Zod input — money is written by the whole-SOW save (today the editor's `projectJSON` write; in W4 `replaceProposalSow` / `proposals.sow.replace`, in this same unit and the same `proposals.sow.*` leaf). Today's bodies locate the owning proposal with one scoped containment query and write through the root's `update` slot, so the lock ladder, the promotion and the rollup all fire. `create` appends, `delete` compacts, `update` never reorders and replaces nested arrays wholesale; replacing `scopes` drops the section's cost lines tied to removed scopes (the server twin of the editor's cascade; incentives untouched). No transaction (W4 R.1): two agents editing the same proposal concurrently can lose an update until W4 makes sections rows — known, W4-resolved. tRPC exposure (`proposals.router/sow.router.ts` → `proposals.sow.{create,update,delete}`) lands with its first consumer, spec D.
+`proposalService.sow` (`../sow/service.ts`) is the per-section CONTENT API: `getById` / `create` / `update` / `delete`, addressed by section id alone, with the engine's slot signatures (`{ id }` / `{ id, data }`) so W4 swaps the bodies for `...proposalSowItemCrud` and no caller changes. Content only: `financials` (section price, cost lines, section incentives) is rejected at the Zod input — money is written by the whole-SOW save (today the editor's `projectJSON` write; in W4 `replaceProposalSow` / `proposals.sow.replace`, in this same unit and the same `proposals.sow.*` leaf). Today's bodies locate the owning proposal with one scoped containment query and write through the root's `update` slot, so the lock ladder and the rollup fire. `create` appends, `delete` compacts, `update` never reorders and replaces nested arrays wholesale; replacing `scopes` drops the section's cost lines tied to removed scopes (the server twin of the editor's cascade; incentives untouched). No transaction (W4 R.1): two agents editing the same proposal concurrently can lose an update until W4 makes sections rows — known, W4-resolved. tRPC exposure (`proposals.router/sow.router.ts` → `proposals.sow.{create,update,delete}`) lands with its first consumer, spec D.
 
 **Why**: Specialties edits one section at a time and never holds the whole document; W4 needs one unit and one leaf (R.3), pre-shaped.
 **Reference impl**: `../sow/service.ts`; locator `../sow/dal/server/queries.ts`; inputs `../sow/schemas/index.ts`
@@ -2497,7 +2096,7 @@ Every SOW section has a stable uuid `id` (required by `sowSchema`, minted by `cr
 
 ### proposal-requires-meeting
 
-`proposals.meeting_id` is NOT NULL with `ON DELETE RESTRICT`. `create.before` refuses a payload whose meeting does not exist (`precondition-failed: meeting_not_found`); the meetings `delete.before` hook refuses to delete a meeting that still has proposals (`precondition-failed: meeting_has_proposals`, via `countProposalsForMeeting` — pre-drafts count) — move them first ("Assign to meeting", spec B). `kind` derives from the meeting's `projectId` directly.
+`proposals.meeting_id` is NOT NULL with `ON DELETE RESTRICT`. `create.before` refuses a payload whose meeting does not exist (`precondition-failed: meeting_not_found`); the meetings `delete.before` hook refuses to delete a meeting that still has proposals (`precondition-failed: meeting_has_proposals`, via `countProposalsForMeeting`) — move them first ("Assign to meeting", spec B). `kind` derives from the meeting's `projectId` directly.
 
 **Why**: visibility, the homeowner page and "Assign to meeting" all derive from the meeting (C38); a meeting-less proposal had no owner surface.
 **Reference impl**: `src/shared/db/schema/proposals.ts`; `dal/server/crud.ts:hooks.create.before`; `src/shared/entities/meetings/dal/server/crud.ts:hooks.delete.before`; `dal/server/queries.ts:countProposalsForMeeting`
@@ -2508,24 +2107,23 @@ Every SOW section has a stable uuid `id` (required by `sowSchema`, minted by `cr
 (e) In `## Anti-patterns` append before `## See also`:
 
 ```markdown
-- **Hand-writing `status <> 'pre-draft'` (or `IN ('sent', …)` for the homeowner) anywhere but `lib/proposal-visibility.ts`.** One module, two predicates — see `#listing-visibility`.
 - **Checking `sow.length` to decide whether a proposal can be sent or enveloped.** Use `getProposalReadiness` — see `#readiness-predicate`.
-- **Sending a proposal from a router or job without `proposalService.send`.** The verb owns readiness, write-before-deliver and the stored note — see `#send-verb`.
+- **Sending a proposal from a router or job without `proposalService.business.send`.** The verb owns readiness, write-before-deliver and the stored note — see `#send-verb`.
 - **Writing `financials` through `proposalService.sow.*`.** Content only; money goes through the whole-SOW save — see `#sow-child-service`.
 - **Snapshotting the meeting's trade selections on the server at create.** Seeding is the caller's choice through `seedSowSections` — see `#sow-seeded-explicitly`.
 ```
 
-(f) Update the footer to `**Last updated**: 2026-09-22 (spec A — proposal foundations: pre-draft, listing visibility, readiness, send verb, SOW ids + rep inputs, SOW child service, meeting required; multi-proposal epic)`.
+(f) Update the footer to `**Last updated**: 2026-09-22 (spec A — proposal foundations: readiness, send verb, SOW ids + rep inputs, SOW child service, meeting required; multi-proposal epic)`.
 
 (g) Also update the header paragraph's directory list sentence to include `the SOW child unit (\`../sow/\`)` after `dal/server/`.
 
-Then `grep -n "four values\|snapSowFromMeeting\|sow-snapshot" src/shared/modules/proposals/core/DOCS.md` — expected: no hits.
+Then `grep -n "snapSowFromMeeting\|sow-snapshot" src/shared/modules/proposals/core/DOCS.md` — expected: no hits.
 
 - [ ] **Step 13: Tracker ticks**
 
 In `docs/plans/2026-09-20-multi-proposal-meeting-flow-epic.md`:
-- §0 row A: replace the status cell `[~] awaiting the owner's go → writing-plans` with `[x] built on dev 2026-<mm-dd> (7 commits A1–A7); Push 1 pending (owner's go)`.
-- §1 requirement rows P1, P2, P3, P4, P5, P6, P7, P8, P10, P12, P13, D11, H15 (agent half), H16, K2: append ` — built (spec A, <short hash of the commit that landed it>)` to each Status cell; H15's note says `agent half built; homeowner half = spec F`.
+- §0 row A: replace the status cell `[~] awaiting the owner's go → writing-plans` with `[x] built on dev 2026-<mm-dd> (6 commits: A1–A3, A5–A7); Push 1 pending (owner's go)`.
+- §1 requirement rows P1, P2, P3, P4, P5, P6, P7, P8, P10, D11, H16, K2: append ` — built (spec A, <short hash of the commit that landed it>)` to each Status cell. P12, P13 and H15 stay open (deferred with `pre-draft`, C67).
 - Status line at the top of the file: `Spec A BUILT on dev (2026-…); Push 1 pending; spec B/C next.`
 
 - [ ] **Step 14: Type-check, lint, full smoke, pure checks**
@@ -2542,7 +2140,7 @@ proposals.meeting_id NOT NULL + ON DELETE RESTRICT (dev pushed; prod =
 Push 1): create refuses a missing meeting, meeting delete refuses while
 proposals exist. New unit modules/proposals/sow (proposalService.sow):
 engine-shaped content-only getById/create/update/delete by section id,
-routed through the root update so lock, promotion and rollup fire — the
+routed through the root update so lock and rollup fire — the
 bodies W4 replaces with ...proposalSowItemCrud. DOCS rules for every
 spec A seam. Spec A §4.6, §4.9, §4.10; C38/C54/C56/C62.
 
@@ -2571,10 +2169,10 @@ DRIZZLE_TARGET=dev QSTASH_TOKEN= NODE_OPTIONS=--conditions=react-server pnpm tsx
 
 Start `pnpm dev`; sign in as an agent (or use `/api/dev/playwright-session` per `memory/reference-playwright-auth.md` with the Playwright MCP). Walk:
 1. `/dashboard/proposals/new?meetingId=<a dev meeting with tradeSelections>` — the form is pre-seeded with one section per selected trade (pain points/notes ride along; `projectObjectives` is empty). Remove every section: the empty state "No scope of work yet" renders; the form still submits (a proposal with `sow: []`).
-2. The proposals table — the just-created proposal is **absent** (pre-draft). Open it via the meeting's proposals (`/dashboard/proposals/<id>`), edit the label, save — it now appears in the table as Draft. The status filter offers no "Pre-draft"; the status dropdown shows Pre-draft greyed out on a pre-draft row reached with `includePreDraft` (none reachable today — fine).
+2. The proposals table lists the just-created proposal as Draft.
 3. On the zero-SOW proposal's Agreement step: "Send Proposal Email" and "Create Draft" are disabled with "Add a scope of work with a trade before sending." Add a section with a trade, save: both enable.
 4. Send it with a personal note. Reload `/proposals/<id>?token=<token>` (homeowner view): the note renders under the greeting as "A note from Tri Pros Remodeling". Status badge Sent. Resend with a different note: the new note shows, `sentAt` unchanged (check the "Sent to … on" line).
-5. Edit a proposal with two sections, save, reload, open DevTools → the `getFullView` payload: section ids are unchanged after the save. Duplicate the section in the form: the copy has a different id. Duplicate the proposal from the table action: its sections have new ids, the source's are unchanged, incentives are cloned, the copy is not listed (pre-draft) until edited.
+5. Edit a proposal with two sections, save, reload, open DevTools → the `getFullView` payload: section ids are unchanged after the save. Duplicate the section in the form: the copy has a different id. Duplicate the proposal from the table action: its sections have new ids, the source's are unchanged, incentives are cloned, the copy is listed as Draft.
 6. Delete a meeting that has proposals from the meetings table: the toast reads `meeting_has_proposals` (raw reason — friendly copy is spec B's, with "Assign to meeting").
 
 - [ ] **Step 3: Push 1 preflight (prepare; the owner runs the prod steps)**
@@ -2592,12 +2190,12 @@ Nothing here touches prod. Prepare and hand over:
 
 - [ ] **Step 4: Report**
 
-Report to the owner: the seven commit hashes, the smoke's pass count, the dev backfill counts, the browser walk results (each of the six items pass/fail), and the Push 1 preflight artifacts (statement list, grep result). Do not push to prod.
+Report to the owner: the six commit hashes, the smoke's pass count, the dev backfill counts, the browser walk results (each of the six items pass/fail), and the Push 1 preflight artifacts (statement list, grep result). Do not push to prod.
 
 ---
 
 ## Self-review notes (run after writing; kept for the executor)
 
-- **Spec coverage.** §4.1 → Task 3; §4.2 → Task 5 (+ UI); §4.3 → Task 5; §4.4 → Task 4; §4.5 → Task 4 (every row of the spec's table has a step, plus `getProposalsByMeetingId`); §4.6 → Task 7; §4.7 → Task 6; §4.8 → Tasks 1–3; §4.9 → Task 7; §4.10 → Task 7 Step 12; §4.11 → honored throughout (no W4 prep item touched; ids/painPoints/notes/position/promotion/duplicate/readiness seams as specified); §6 A1–A7 = Tasks 1–7; §7 smoke items → Tasks 2–7 sections 1–7 + Task 8; §8 → Task 8 Step 3.
-- **Type consistency.** `shouldPromotePreDraft(signals, data)` (Task 4) is what Task 4's `update.before` calls; `assertProposalReady({ status, sow })` (Task 5) is what Task 5's `send` and `createDraft` call; `cloneGlobalIncentiveRows(sourceId, targetId)` (Task 2) is what the hook calls; `seedSowSections(TradeSelection[])` (Task 6) is what `buildProposalDefaults` calls; `SowSectionInsert` / `SowSectionUpdate` (Task 7 schemas) are the `sow.create` / `sow.update` input types; `listableProposalSql(col)` takes a column or `sql\`p.status\`` everywhere it is used; `PaginatedResult.rows` is the list field.
-- **Deviations from the spec text, all recorded as C62–C66 in the tracker and SA17–SA21 in the spec:** hook on the duplicate config (not `CrudSlotHookMap`); DAL clone twin + service `clone` deleted; `painPoints` required (no `.default`); constants in `constants/enums/`; promotion respects explicit `status`; readiness gate in `contractService.createDraft` + router error mapping; orphan cost-line pruning; `_v` waiver.
+- **Spec coverage.** §4.1 → Task 3; §4.2 → Task 5 (+ UI); §4.3 → Task 5; §4.4–§4.5 → deferred (C67; Task 4 dropped); §4.6 → Task 7; §4.7 → Task 6; §4.8 → Tasks 1–3; §4.9 → Task 7; §4.10 → Task 7 Step 12; §4.11 → honored throughout (no W4 prep item touched; ids/painPoints/notes/position/promotion/duplicate/readiness seams as specified); §6 A1–A3, A5–A7 = Tasks 1–3, 5–7; §7 smoke items → Tasks 2–7 sections 1–7 + Task 8; §8 → Task 8 Step 3.
+- **Type consistency.** `assertProposalReady({ status, sow })` (Task 5) is what Task 5's `send` and `createDraft` call; `cloneGlobalIncentiveRows(sourceId, targetId)` (Task 2) is what the hook calls; `seedSowSections(TradeSelection[])` (Task 6) is what `buildProposalDefaults` calls; `SowSectionInsert` / `SowSectionUpdate` (Task 7 schemas) are the `sow.create` / `sow.update` input types; `PaginatedResult.rows` is the list field.
+- **Deviations from the spec text, all recorded as C62–C66 in the tracker and SA17–SA21 in the spec:** hook on the duplicate config (not `CrudSlotHookMap`); DAL clone twin + service `clone` deleted; `painPoints` required (no `.default`); readiness gate in `contractService.createDraft` + router error mapping; orphan cost-line pruning; `_v` waiver.
