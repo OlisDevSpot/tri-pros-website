@@ -27,11 +27,7 @@ interface DashboardMeetingsCalendarProps {
   onSelectDay: (calendarDay: string) => void
 }
 
-/**
- * Meetings calendar — a month `<Calendar>` (left) whose cells carry a cobalt dot on any day with ≥1 live meeting
- * (`CalendarMeetingDayButton`), beside a `<DashboardDayAgenda>` (right) listing the selected day's meetings. The
- * rows cover the whole month grid, so the outside days the picker shows get their dots too.
- */
+/** The rows cover the whole month grid (live outcomes only), so the outside days the picker shows get their dots too. */
 export function DashboardMeetingsCalendar({ rows, isPending, isError, onRetry, month, onMonthChange, selectedDay, onSelectDay }: DashboardMeetingsCalendarProps) {
   const visibleRows = isPending ? [] : rows
   const daysWithMeetings = new Set(visibleRows.map(row => businessDayKey(new Date(row.scheduledFor))))
