@@ -12,7 +12,7 @@ const NAV_PATH_MSG
 // Status, identity and chart colors are theme tokens; a raw palette class is light-only or needs a
 // `dark:` patch, which is how 88 files drifted off-theme before.
 const PALETTE_RE
-  = '/\\b(bg|text|border|ring|fill|stroke|outline|divide|from|to|via)-(slate|gray|zinc|neutral|stone|blue|sky|indigo|cyan|teal|red|rose|pink|green|emerald|lime|amber|yellow|orange|purple|violet|fuchsia)-\\d{2,3}\\b/'
+  = '/\\b(bg|text|border(-[xytrblse])?|ring(-offset)?|fill|stroke|outline|divide|from|to|via|shadow|decoration|placeholder|accent|caret)-(slate|gray|zinc|neutral|stone|blue|sky|indigo|cyan|teal|red|rose|pink|green|emerald|lime|amber|yellow|orange|purple|violet|fuchsia)-\\d{2,3}\\b/'
 const PALETTE_MSG = 'Use a theme token (status-*, chart-*, identity-*, destructive, success, warning) chosen by meaning.'
 // The marketing world keeps its own palette, third-party brand marks keep theirs, and the meeting-flow
 // program/benefit accents wait on a presentation decision before they move onto tokens.

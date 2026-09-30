@@ -43,7 +43,7 @@ export function ProjectEntityCard({ customerId, project, onMutationSuccess, onNa
   return (
     <>
       <DeleteConfirmDialog />
-      <Card className="border-l-4 border-l-green-500/60 dark:border-l-green-400/40">
+      <Card className="border-l-4 border-l-status-success-dot/60">
         <CardContent className="p-0">
           {/* Project Header — compact */}
           <div className="flex items-center gap-2 px-3 py-2">
