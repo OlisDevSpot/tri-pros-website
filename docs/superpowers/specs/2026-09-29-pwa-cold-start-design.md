@@ -84,6 +84,8 @@ Largest avoidable packages in `/dashboard` (none is needed to render it):
 
 Together ≈ 5.7 MB, about half of the route. Checked and not a problem in the deployed build: `react-icons` (5.8 MB in an unminified build, removed by the minifier's dead-code elimination).
 
+After Phase 1 server seams (`4313ed27`): `/dashboard` 4.8 MB, cold 1260 / 1170 / 1284 ms; `/api/trpc` 2.5 MB, cold 867 / 940 / 840 ms; `/api/auth` 1.4 MB, cold 490 / 551 / 512 ms. Size target met (≤ 6.0 MB); cold-time target missed (median 1260 ms vs ≤ 600 ms) — Task 9 stopped per plan and reported the miss with a proposed next seam instead of starting Task 10.
+
 ## 5. Phase 1 — server code
 
 ### 5.1 One session read per request
@@ -209,10 +211,10 @@ When Phase 3 is recorded, this spec and its plan are deleted (git keeps them) an
 |---|---|
 | Phase 0 — §4.1 baseline | ⬜ |
 | Phase 0 — §4.2 boot profile | ✅ 2026-09-29 (§4.3) |
-| Phase 1 — §5.1 session single read | ⬜ |
-| Phase 1 — §5.2 lazy SDKs + lint guard | ⬜ |
+| Phase 1 — §5.1 session single read | ✅ 2026-09-29 |
+| Phase 1 — §5.2 lazy SDKs + lint guard | ✅ 2026-09-29 (§4.3) |
 | Phase 1 — §5.3 layout streams before session | ⬜ |
-| Phase 1 — measured | ⬜ |
+| Phase 1 — measured | ⬜ (cold-time target missed, §4.3) |
 | Phase 2 — §6.1–§6.5 | ⬜ |
 | Phase 2 — measured | ⬜ |
 | Phase 3 — paid decision | ⬜ |
