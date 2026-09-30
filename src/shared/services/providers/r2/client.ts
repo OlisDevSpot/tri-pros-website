@@ -2,10 +2,7 @@ import type { R2BucketName } from './types'
 
 import { Buffer } from 'node:buffer'
 
-import { CopyObjectCommand, DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
-
-import { lazyProxy } from '@/shared/config/lazy-proxy'
+import { lazyAsync } from '@/shared/config/lazy-async'
 
 import { getR2Config } from './lib/config'
 
@@ -25,14 +22,16 @@ import { getR2Config } from './lib/config'
 // ---------------------------------------------------------------------------
 
 /**
- * Raw S3 client, lazy-constructed via `lazyProxy` so missing R2 credentials
- * don't crash app boot — the first object op throws `NotConfiguredError` if
- * any of R2_ACCOUNT_ID / R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY is unset.
- *
+ * The S3 SDK and its client load on the first object operation, not at boot.
+ * `@aws-sdk/client-s3` is a Next server external, required from node_modules,
+ * so a static import would require it on every cold start of every route that
+ * imports the app router. Missing R2_ACCOUNT_ID / R2_ACCESS_KEY_ID /
+ * R2_SECRET_ACCESS_KEY reject that first operation with `NotConfiguredError`.
  */
-const s3 = lazyProxy(() => {
+const loadS3 = lazyAsync(async () => {
+  const sdk = await import('@aws-sdk/client-s3')
   const config = getR2Config()
-  return new S3Client({
+  const client = new sdk.S3Client({
     region: 'auto',
     endpoint: config.endpoint,
     forcePathStyle: false,
@@ -41,6 +40,7 @@ const s3 = lazyProxy(() => {
       secretAccessKey: config.secretAccessKey,
     },
   })
+  return { sdk, client }
 })
 
 interface PresignedUploadInput {
@@ -59,14 +59,16 @@ interface PresignedDownloadInput {
 export const r2Client = {
   /** Upload a buffer to `bucket/pathKey` with the given content type. */
   putObject: async (bucket: R2BucketName, pathKey: string, body: Buffer, mimeType: string): Promise<void> => {
-    await s3.send(
-      new PutObjectCommand({ Bucket: bucket, Key: pathKey, Body: body, ContentType: mimeType }),
+    const { sdk, client } = await loadS3()
+    await client.send(
+      new sdk.PutObjectCommand({ Bucket: bucket, Key: pathKey, Body: body, ContentType: mimeType }),
     )
   },
 
   /** Download `bucket/pathKey` into a Buffer. Throws if the object is empty. */
   getObject: async (bucket: R2BucketName, pathKey: string): Promise<Buffer> => {
-    const response = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: pathKey }))
+    const { sdk, client } = await loadS3()
+    const response = await client.send(new sdk.GetObjectCommand({ Bucket: bucket, Key: pathKey }))
 
     if (!response.Body) {
       throw new Error(`Empty response for ${bucket}/${pathKey}`)
@@ -78,10 +80,11 @@ export const r2Client = {
 
   /** List every object key in a bucket (optionally under a prefix), paginated. */
   listAllKeys: async (bucket: R2BucketName, prefix?: string): Promise<string[]> => {
+    const { sdk, client } = await loadS3()
     const keys: string[] = []
     let continuationToken: string | undefined
     do {
-      const res = await s3.send(new ListObjectsV2Command({
+      const res = await client.send(new sdk.ListObjectsV2Command({
         Bucket: bucket,
         Prefix: prefix,
         ContinuationToken: continuationToken,
@@ -98,7 +101,8 @@ export const r2Client = {
 
   /** Delete a single object at `bucket/pathKey`. */
   deleteObject: async (bucket: R2BucketName, pathKey: string): Promise<void> => {
-    await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: pathKey }))
+    const { sdk, client } = await loadS3()
+    await client.send(new sdk.DeleteObjectCommand({ Bucket: bucket, Key: pathKey }))
   },
 
   /**
@@ -127,7 +131,8 @@ export const r2Client = {
     destBucket: R2BucketName
     destKey: string
   }): Promise<void> => {
-    await s3.send(new CopyObjectCommand({
+    const { sdk, client } = await loadS3()
+    await client.send(new sdk.CopyObjectCommand({
       Bucket: destBucket,
       Key: destKey,
       // CopySource is `${bucket}/${key}`; the key segment must be URL-encoded
@@ -137,14 +142,16 @@ export const r2Client = {
   },
 
   /** Presigned PUT URL for a direct browser upload. Default TTL 15 min. */
-  getPresignedUploadUrl: ({ bucket, pathKey, mimeType, expiresIn = 900 }: PresignedUploadInput): Promise<string> => {
-    const command = new PutObjectCommand({ Bucket: bucket, Key: pathKey, ContentType: mimeType })
-    return getSignedUrl(s3, command, { expiresIn })
+  getPresignedUploadUrl: async ({ bucket, pathKey, mimeType, expiresIn = 900 }: PresignedUploadInput): Promise<string> => {
+    const [{ sdk, client }, { getSignedUrl }] = await Promise.all([loadS3(), import('@aws-sdk/s3-request-presigner')])
+    const command = new sdk.PutObjectCommand({ Bucket: bucket, Key: pathKey, ContentType: mimeType })
+    return getSignedUrl(client, command, { expiresIn })
   },
 
   /** Presigned GET URL for a direct browser download. Default TTL 1 hour. */
-  getPresignedDownloadUrl: ({ bucket, pathKey, expiresIn = 3600 }: PresignedDownloadInput): Promise<string> => {
-    const command = new GetObjectCommand({ Bucket: bucket, Key: pathKey })
-    return getSignedUrl(s3, command, { expiresIn })
+  getPresignedDownloadUrl: async ({ bucket, pathKey, expiresIn = 3600 }: PresignedDownloadInput): Promise<string> => {
+    const [{ sdk, client }, { getSignedUrl }] = await Promise.all([loadS3(), import('@aws-sdk/s3-request-presigner')])
+    const command = new sdk.GetObjectCommand({ Bucket: bucket, Key: pathKey })
+    return getSignedUrl(client, command, { expiresIn })
   },
 }

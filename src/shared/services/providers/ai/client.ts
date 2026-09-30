@@ -1,7 +1,5 @@
 import type { ProposalFormSchema } from '@/shared/modules/proposals/core/schemas'
 
-import { openai } from '@ai-sdk/openai'
-import { generateText, Output } from 'ai'
 import { eq } from 'drizzle-orm'
 
 import z from 'zod'
@@ -33,6 +31,10 @@ function createAiClient() {
       proposal: Partial<ProposalFormSchema>,
     ): Promise<void> {
       try {
+        const [{ openai }, { generateText, Output }] = await Promise.all([
+          import('@ai-sdk/openai'),
+          import('ai'),
+        ])
         const { output } = await generateText({
           model: openai('gpt-4.1-mini-2025-04-14'),
           system:
