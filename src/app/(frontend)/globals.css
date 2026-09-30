@@ -170,6 +170,8 @@
   --accent-foreground: #ffffff;
   --border: #ddd4c4; /* hairline */
   --input: #ddd4c4;
+  /* Marketing fields keep their transparent fill; the app's white field fill is a Command Desk role. */
+  --input-background: transparent;
   --ring: #03afed;
   --radius: 0.375rem; /* 6px panel — not the slop 8px-everywhere */
 

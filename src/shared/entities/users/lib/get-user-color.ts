@@ -1,7 +1,8 @@
 /**
  * Stable color palette for user avatars. Each entry gives us a coordinated
  * background / foreground / ring triplet that works in both light and dark
- * mode (opacity-based backgrounds + a high-contrast foreground).
+ * mode (the identity tokens — solid, L-matched tints with a high-contrast
+ * foreground, not opacity-based).
  *
  * Eight hues, 45° apart, L-matched per mode, so one person keeps one hue in light and dark.
  */

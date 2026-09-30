@@ -299,9 +299,11 @@ Both worlds tint their shadows toward blue so elevation reads as "ours."
 - **The Command Desk's card/dialog shadow ramp** (`--shadow-xs` … `--shadow-2xl`) is
   navy-tinted, not flat gray. In light mode every step is a soft
   `oklch(0.25 0.05 258 / …)` drop that widens and deepens through the ramp; in dark
-  mode the low steps add an inset top highlight (`inset 0 1px 0 white / 0.04–0.06`)
-  before the drop grows to `oklch(0 0 0 / 0.6–0.7)` — dark surfaces need a lit top
-  edge to read as raised rather than sunken. `--radius` stays `0.5rem`.
+  mode the two lowest steps (`--shadow-2xs`, `--shadow-xs`) stay a flat
+  `oklch(0 0 0 / 0.4)` drop with no highlight, and from `--shadow-sm` up an inset
+  top highlight (`inset 0 1px 0 white / 0.04–0.06`) joins a drop that grows to
+  `oklch(0 0 0 / 0.6–0.7)` — dark surfaces need a lit top edge to read as raised
+  rather than sunken. `--radius` stays `0.5rem`.
 - **Blueprint Authority** uses a warm elevation ramp where every shadow pairs a black
   drop for honest depth with a faint **Blueprint-Blue** accent layer underneath
   (`--shadow-card` … `--shadow-xl`), so panels lift with a subtle blue cast rather

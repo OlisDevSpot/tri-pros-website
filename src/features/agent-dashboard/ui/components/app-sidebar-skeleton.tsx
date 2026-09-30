@@ -18,17 +18,17 @@ export function AppSidebarSkeleton() {
     <Sidebar collapsible="icon" side="left" variant="floating">
       <SidebarHeader>
         <div className="flex h-12 items-center px-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
-          <Skeleton className="h-6 w-28 group-data-[collapsible=icon]:w-6" />
+          <Skeleton className="h-6 w-28 bg-sidebar-hover group-data-[collapsible=icon]:w-6" />
         </div>
       </SidebarHeader>
       <SidebarSeparator className="mx-0" />
       <SidebarContent className="gap-0">
         <SidebarGroup>
-          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full bg-sidebar-hover" />
         </SidebarGroup>
         <SidebarGroup>
           <div className="flex flex-col gap-1 p-1 group-data-[collapsible=icon]:p-0">
-            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full bg-sidebar-hover" />
             <Skeleton className="h-8 w-full" />
             <Skeleton className="h-8 w-full" />
             <Skeleton className="h-8 w-full" />
