@@ -2,9 +2,11 @@ import type { SearchParams } from 'nuqs/server'
 
 import { redirect } from 'next/navigation'
 
+import { CAMPAIGN_LEADS_TABLE_QUERY_CONFIG } from '@/features/campaigns-admin/constants/campaign-leads-table-query-config'
 import { loadCampaignsSearchParams } from '@/features/campaigns-admin/constants/query-parsers'
 import { CampaignsView } from '@/features/campaigns-admin/ui/views/campaigns-view'
 import { ROOTS } from '@/shared/config/roots'
+import { loadPaginatedQueryInput } from '@/shared/dal/server/lib/query/load-paginated-query-input'
 import { protectDashboardPage } from '@/shared/domains/permissions/lib/protect-dashboard-page'
 import { HydrateClient } from '@/trpc/components/hydrate-client'
 import { prefetch } from '@/trpc/lib/prefetch'
@@ -32,6 +34,11 @@ export default async function CampaignsPage({ searchParams }: Props) {
     if (tab === 'overview') {
       prefetch(trpc.voipCampaignsRouter.getSourceCampaignSummaries.queryOptions())
       prefetch(trpc.voipCampaignsRouter.listCampaigns.queryOptions())
+    }
+    // A `?tab=leads` deep link renders the leads table on the server; its first read must be prefetched with the
+    // viewer's session (a suspense read without one would fetch cookieless during SSR).
+    if (tab === 'leads') {
+      prefetch(trpc.voipCampaignsRouter.listLeads.queryOptions(await loadPaginatedQueryInput(searchParams, CAMPAIGN_LEADS_TABLE_QUERY_CONFIG) as never))
     }
   }
 

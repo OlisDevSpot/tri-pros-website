@@ -10,6 +10,7 @@ import { CampaignsOverviewSkeleton } from '@/features/campaigns-admin/ui/compone
 import { CampaignsLeadsView } from '@/features/campaigns-admin/ui/views/campaigns-leads-view'
 import { CampaignsOverviewView } from '@/features/campaigns-admin/ui/views/campaigns-overview-view'
 import { CampaignsSetupView } from '@/features/campaigns-admin/ui/views/campaigns-setup-view'
+import { DataViewBoundary } from '@/shared/components/data-view-boundary'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 
 export function CampaignsView() {
@@ -36,7 +37,11 @@ export function CampaignsView() {
             <CampaignsOverviewView />
           </Suspense>
         </TabsContent>
-        <TabsContent className="flex min-h-0 flex-1 flex-col" value="leads"><CampaignsLeadsView /></TabsContent>
+        <TabsContent className="flex min-h-0 flex-1 flex-col" value="leads">
+          <DataViewBoundary>
+            <CampaignsLeadsView />
+          </DataViewBoundary>
+        </TabsContent>
         <TabsContent className="flex min-h-0 flex-1 flex-col" value="setup"><CampaignsSetupView /></TabsContent>
       </Tabs>
     </div>

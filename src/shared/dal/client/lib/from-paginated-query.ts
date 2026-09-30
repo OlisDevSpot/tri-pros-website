@@ -29,9 +29,9 @@ export function fromPaginatedQuery<TRow>(result: PaginatedQueryResult<TRow>): Da
   return {
     rows: result.rows,
     total: result.total,
-    isPending: result.isLoading,
-    isStale: result.isPlaceholderData,
-    isFetching: result.isFetching && !result.isPlaceholderData,
+    isPending: result.isPending,
+    isStale: result.isStale,
+    isFetching: result.isFetching,
     refresh: result.refresh,
     filterSort: {
       fields,

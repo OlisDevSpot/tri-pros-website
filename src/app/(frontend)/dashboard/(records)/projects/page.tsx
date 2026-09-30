@@ -2,6 +2,7 @@ import type { SearchParams } from 'nuqs/server'
 
 import { PROJECTS_TABLE_QUERY_CONFIG } from '@/features/project-management/constants/projects-table-query-config'
 import { PortfolioProjectsTable } from '@/features/project-management/ui/components/table'
+import { DataViewBoundary } from '@/shared/components/data-view-boundary'
 import { RecordsPageMotionShell } from '@/shared/components/records-page-motion-shell'
 import { loadPaginatedQueryInput } from '@/shared/dal/server/lib/query/load-paginated-query-input'
 import { protectDashboardPage } from '@/shared/domains/permissions/lib/protect-dashboard-page'
@@ -28,7 +29,9 @@ export default async function ProjectsPage({ searchParams }: Props) {
   return (
     <HydrateClient>
       <RecordsPageMotionShell>
-        <PortfolioProjectsTable />
+        <DataViewBoundary>
+          <PortfolioProjectsTable />
+        </DataViewBoundary>
       </RecordsPageMotionShell>
     </HydrateClient>
   )

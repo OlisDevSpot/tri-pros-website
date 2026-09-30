@@ -129,11 +129,12 @@ export interface PaginatedQueryResult<TRow> {
   activeFilterCount: number
 
   // -- Query state --
-  isLoading: boolean
+  /** True only inside a `DataViewBoundary` fallback: no rows exist yet, and the view draws its loading state. */
+  isPending: boolean
+  /** The rows belong to an older URL state while the requested one loads; tables dim them. */
+  isStale: boolean
+  /** A background refetch (an invalidation or `refresh()`); the rows stay. */
   isFetching: boolean
-  isPlaceholderData: boolean
-  isError: boolean
-  error: unknown
 
   // -- Refresh --
   /**
