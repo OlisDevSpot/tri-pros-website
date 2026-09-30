@@ -5,6 +5,7 @@ import assert from 'node:assert/strict'
 
 import { BILL_CATEGORIES } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
 import { createRemodelRoiDefaults, createTradePicks } from '@/features/calculators/remodel-roi-calculator/constants/form-defaults'
+import { buildCostOfWaiting } from '@/features/calculators/remodel-roi-calculator/lib/build-cost-of-waiting'
 import { combineCuts } from '@/features/calculators/remodel-roi-calculator/lib/combine-cuts'
 import { formatMoney, roundMoney } from '@/features/calculators/remodel-roi-calculator/lib/format-money'
 import { formatYears } from '@/features/calculators/remodel-roi-calculator/lib/format-years'
@@ -114,6 +115,21 @@ assert.equal(combineCuts({ trades: [], ducts: false }, 'electric', config.trades
   assert.deepEqual(p.milestones, { paysForItselfYear: 3, costsLessMonthlyYear: 4, payoffYear: 15 }, 'A milestones (pinned)')
   near(p.years[10].benefit, 23379.77, 'A +10 yrs (pinned)')
   near(p.years[20].benefit, 95699.35, 'A +20 yrs (pinned)')
+}
+
+// Cost of waiting, built from job A's projection.
+{
+  const waiting = buildCostOfWaiting(run(JOB_A))
+  const hvac = waiting.trades[0]
+  assert.deepEqual(hvac.rows.map(row => row.name).slice(0, 2), ['Today', 'Year 3'], 'cost of waiting: today, then the year it gives out')
+  near(hvac.rows[1].total, 18522 + 1891.5, 'cost of waiting: the give-out row adds the repairs until then')
+  assert.ok(hvac.rows.slice(2).every(row => row.repairs === 0), 'cost of waiting: repairs only on the first give-out')
+  assert.ok(waiting.trades.every(trade => trade.rows.every(row => row.total <= waiting.max)), 'cost of waiting: one scale fits every row')
+  const blank = buildCostOfWaiting(run(job((v) => {
+    v.trades.hvac = picks.hvac
+    v.project.price = 32000
+  })))
+  assert.deepEqual(blank.trades, [], 'cost of waiting: nothing to wait for → no trades')
 }
 
 // Job D. Hand-checked: paint aged 8 of 10 → year 2 at 8,000 × 1.05² = $8,820, renewed in year 12 at 8,000 × 1.05¹² = $14,366.85.

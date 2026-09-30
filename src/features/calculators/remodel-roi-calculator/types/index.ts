@@ -226,3 +226,27 @@ export interface StoryInputs {
 }
 
 export type StorySheet = { kind: 'info', chapter: ChapterId } | { kind: 'assumptions' } | { kind: 'inputs' } | null
+
+export interface CostOfWaitingRow {
+  name: string
+  year: number
+  today: number
+  price: number
+  repairs: number
+  total: number
+}
+
+export interface CostOfWaitingTrade {
+  trade: AgingTradeKey
+  label: string
+  givesOutYear: number
+  likeForLikePrice: number
+  rows: CostOfWaitingRow[]
+}
+
+export interface CostOfWaiting {
+  growth: number
+  /** One scale for every trade, so their bars compare. */
+  max: number
+  trades: CostOfWaitingTrade[]
+}
