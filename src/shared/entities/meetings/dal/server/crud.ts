@@ -13,11 +13,11 @@ import { graduateFromCampaignJob } from '@/shared/services/providers/upstash/job
 import { metaCapiEventJob } from '@/shared/services/providers/upstash/jobs/meta-capi-event'
 import { notifyMeetingTimeChangedJob } from '@/shared/services/providers/upstash/jobs/notify-meeting-time-changed'
 import { syncMeetingToGcalJob } from '@/shared/services/providers/upstash/jobs/sync-meeting-to-gcal'
-import { ably } from '@/shared/services/providers/upstash/realtime'
+import { realtimeClient } from '@/shared/services/providers/upstash/realtime'
 
 export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
   hooks: {
-    // The after-hook side-effects below (job dispatches, ably.publish, addParticipant on raw `db`) run
+    // The after-hook side-effects below (job dispatches, realtimeClient.publish, addParticipant on raw `db`) run
     // inline with no post-commit phase: threading a tx into meetingCrud.* fires them PRE-COMMIT with no
     // rollback, and addParticipant writes outside that tx.
     create: {
@@ -103,7 +103,7 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
           await Promise.all(dispatches)
         }
 
-        await ably.channels.get(`meeting:${row.id}`).publish('meeting.updated', {
+        await realtimeClient.publish(`meeting:${row.id}`, 'meeting.updated', {
           fields: Object.keys(data),
         })
 

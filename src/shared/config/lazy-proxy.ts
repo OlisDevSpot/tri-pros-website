@@ -4,7 +4,7 @@
  * to consumers (zero call-site change) while actually being lazily built
  * on first use.
  *
- * Use case: provider clients (Resend, Notion SDK, S3Client, etc.) that
+ * Use case: provider clients (Notion SDK, QStash Client, etc.) that
  * historically were created via `const xClient = new Sdk(env.X)` at module
  * scope — which fails at boot when `env.X` is optional+missing. Wrapping
  * the factory with `lazyProxy()` means:
