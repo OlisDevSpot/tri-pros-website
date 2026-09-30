@@ -1,11 +1,13 @@
 'use client'
 
+import type { TooltipContentProps } from 'recharts'
+
 import type { ChartSeriesKey } from '@/features/analytics/constants/chart-series'
 import type { AnalyticsInterval } from '@/features/analytics/constants/dimensions'
 import type { ChartRow } from '@/features/analytics/lib/chart-rows'
 
-import { useState } from 'react'
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { useLayoutEffect, useRef, useState } from 'react'
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 
 import { CHART_MARGIN, CHART_X_AXIS_HEIGHT, SERIES_COLORS } from '@/features/analytics/constants/chart-series'
 import { METRICS } from '@/features/analytics/constants/metrics'
@@ -13,6 +15,7 @@ import { CHART_BAR_GAP, groupedBarSize } from '@/features/analytics/lib/chart-ba
 import { chartBucketTitle, chartTickLabel } from '@/features/analytics/lib/chart-rows'
 import { metricDisplayText } from '@/features/analytics/lib/read-metric'
 import { ChartTooltipCard } from '@/shared/components/charts/chart-tooltip-card'
+import { ChartContainer, ChartTooltip } from '@/shared/components/ui/chart'
 
 interface Props {
   rows: ChartRow[]
@@ -29,10 +32,29 @@ interface Props {
 /** One grouped-bar panel; panels share a sync id so one hover reads counts and dollars together. */
 export function TrendBars({ rows, interval, series, ticks, height, tooltipActive, onBucket }: Props) {
   const [plotWidth, setPlotWidth] = useState(0)
+  const measure = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const el = measure.current
+    if (!el) {
+      return
+    }
+    const observer = new ResizeObserver(([entry]) => setPlotWidth(entry.contentRect.width))
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
   const label = series.map(key => METRICS[key].label).join(', ')
+  const config = Object.fromEntries(series.map(key => [key, { label: METRICS[key].label, color: SERIES_COLORS[key].fill }]))
+  const content = ({ active, payload }: TooltipContentProps) => {
+    const row: ChartRow | undefined = payload?.[0]?.payload
+    if (!active || !row) {
+      return null
+    }
+    const shown = series.map(key => ({ label: METRICS[key].label, value: row.displays[key] ? metricDisplayText(row.displays[key]) : '—', swatch: SERIES_COLORS[key].swatch }))
+    return <ChartTooltipCard title={chartBucketTitle(interval, row.key, row.last)} rows={shown} />
+  }
   return (
-    <div role="img" aria-label={`${label} by ${interval}`} style={{ height }} className={onBucket ? 'cursor-pointer touch-manipulation select-none' : undefined}>
-      <ResponsiveContainer width="100%" height="100%" onResize={width => setPlotWidth(width)}>
+    <div role="img" aria-label={`${label} by ${interval}`} style={{ height }} className={onBucket ? 'cursor-pointer touch-manipulation select-none' : undefined} ref={measure}>
+      <ChartContainer className="aspect-auto h-full w-full" config={config}>
         <BarChart
           data={rows}
           syncId="analytics-trend"
@@ -41,7 +63,8 @@ export function TrendBars({ rows, interval, series, ticks, height, tooltipActive
           barSize={groupedBarSize(plotWidth - CHART_MARGIN.left - CHART_MARGIN.right, rows.length, series.length)}
           margin={CHART_MARGIN}
           onClick={(chart) => {
-            const row = chart?.activeTooltipIndex === undefined ? undefined : rows[chart.activeTooltipIndex]
+            const index = chart?.activeTooltipIndex == null ? undefined : Number(chart.activeTooltipIndex)
+            const row = index !== undefined ? rows[index] : undefined
             if (row && onBucket) {
               onBucket(row)
             }
@@ -60,23 +83,16 @@ export function TrendBars({ rows, interval, series, ticks, height, tooltipActive
             className="text-xs"
           />
           <YAxis hide domain={[0, ticks[ticks.length - 1]]} ticks={ticks} />
-          <Tooltip
+          <ChartTooltip
             active={tooltipActive}
             cursor={{ fill: 'var(--muted)', fillOpacity: 0.6 }}
-            content={({ active, payload }) => {
-              const row: ChartRow | undefined = payload?.[0]?.payload
-              if (!active || !row) {
-                return null
-              }
-              const shown = series.map(key => ({ label: METRICS[key].label, value: row.displays[key] ? metricDisplayText(row.displays[key]) : '—', swatch: SERIES_COLORS[key].swatch }))
-              return <ChartTooltipCard title={chartBucketTitle(interval, row.key, row.last)} rows={shown} />
-            }}
+            content={content}
           />
           {series.map(key => (
             <Bar key={key} dataKey={(row: ChartRow) => row.values[key] ?? null} name={METRICS[key].label} fill={SERIES_COLORS[key].fill} radius={[4, 4, 0, 0]} maxBarSize={28} isAnimationActive={false} />
           ))}
         </BarChart>
-      </ResponsiveContainer>
+      </ChartContainer>
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import type { RemodelRoiProjection } from '@/features/calculators/remodel-roi-calculator/types'
 
+import { COST_OF_WAITING_CHART_CONFIG } from '@/features/calculators/remodel-roi-calculator/constants/chart-configs'
 import { CURRENT_LABELS } from '@/features/calculators/remodel-roi-calculator/constants/trades'
 import { formatMoney } from '@/features/calculators/remodel-roi-calculator/lib/format-money'
 import { formatYears } from '@/features/calculators/remodel-roi-calculator/lib/format-years'
@@ -21,7 +22,7 @@ export function CostOfWaitingChart({ projection }: Props) {
   const width = (value: number) => ({ width: `${(value / (max || 1)) * 100}%` })
   return (
     <div className="grid gap-3">
-      <LegendSwatches items={[{ label: 'Price today', swatch: 'bg-muted-foreground/40' }, { label: 'Price when it gives out', swatch: 'bg-warning' }, { label: 'Repairs until then', swatch: 'bg-warning/40' }]} />
+      <LegendSwatches config={COST_OF_WAITING_CHART_CONFIG} />
       <div className="grid gap-4.5">
         {replacements.map((replacement) => {
           const label = CURRENT_LABELS[replacement.trade]

@@ -3,18 +3,12 @@
 import type { TimeRangeChip } from '@/features/lead-sources-admin/constants/time-ranges'
 import type { FunnelCounts } from '@/features/lead-sources-admin/lib/compute-funnel-rates'
 import type { Bucket } from '@/features/lead-sources-admin/lib/format-bucket-label'
+import type { TrendPoint } from '@/features/lead-sources-admin/types'
 
 import { EmptyState } from '@/shared/components/states/empty-state'
 
 import { LeadSourceFunnel } from './lead-source-funnel'
 import { LeadSourceTrendChart } from './lead-source-trend-chart'
-
-interface TrendPoint {
-  bucketStart: string
-  leads: number
-  meetings: number
-  signed: number
-}
 
 interface Props {
   funnel: FunnelCounts

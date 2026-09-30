@@ -5,7 +5,7 @@ import type { RemodelRoiProjection } from '@/features/calculators/remodel-roi-ca
 
 import { useState } from 'react'
 
-import { STORY_COPY } from '@/features/calculators/remodel-roi-calculator/constants/story-copy'
+import { MONTHLY_BREAKDOWN_CHART_CONFIG, MONTHLY_TREND_CHART_CONFIG } from '@/features/calculators/remodel-roi-calculator/constants/chart-configs'
 import { MonthlyBreakdownChart } from '@/features/calculators/remodel-roi-calculator/ui/components/charts/monthly-breakdown-chart'
 import { MonthlyTrendChart } from '@/features/calculators/remodel-roi-calculator/ui/components/charts/monthly-trend-chart'
 import { LegendSwatches } from '@/shared/components/charts/legend-swatches'
@@ -19,18 +19,16 @@ interface Props {
 export function MonthlyCostChart({ projection, lookAhead }: Props) {
   const [view, setView] = useState<'trend' | 'breakdown'>('trend')
   const shown = projection.years.slice(1, lookAhead + 1)
-  const legend = view === 'trend'
-    ? [{ label: STORY_COPY.paths.now, swatch: 'bg-primary' }, { label: STORY_COPY.paths.wait, swatch: 'bg-warning' }]
-    : [
-        { label: 'Bills', swatch: 'bg-muted-foreground/35' },
-        ...(projection.project.hasLoan ? [{ label: 'Project loan', swatch: 'bg-primary' }] : []),
-        { label: 'Repairs', swatch: 'bg-warning/40' },
-        ...(shown.some(year => year.replacementPayments > 0) ? [{ label: 'Replacement loans', swatch: 'bg-warning' }] : []),
-      ]
+  const breakdownKeys = [
+    'nowBills',
+    ...(projection.project.hasLoan ? ['nowLoan'] : []),
+    'waitRepairs',
+    ...(shown.some(year => year.replacementPayments > 0) ? ['waitLoan'] : []),
+  ] as const
   return (
     <div className="grid gap-1">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <LegendSwatches items={legend} />
+        <LegendSwatches config={view === 'trend' ? MONTHLY_TREND_CHART_CONFIG : MONTHLY_BREAKDOWN_CHART_CONFIG} keys={view === 'trend' ? ['monthlyNow', 'monthlyWait'] : breakdownKeys} />
         <ToggleGroup aria-label="Chart view" onValueChange={value => (value === 'trend' || value === 'breakdown') && setView(value)} type="single" value={view} variant="outline">
           <ToggleGroupItem className="h-11 flex-none px-3 text-xs" value="trend">Trend</ToggleGroupItem>
           <ToggleGroupItem className="h-11 flex-none px-3 text-xs" value="breakdown">What makes it up</ToggleGroupItem>
