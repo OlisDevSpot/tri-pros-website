@@ -320,7 +320,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
         </div>
       )}
 
-      <div className="grow min-h-0 flex flex-col rounded-xl border border-border/50 overflow-hidden">
+      <div className="grow min-h-0 flex flex-col rounded-xl border overflow-hidden surface">
         <div
           ref={scrollRef}
           onScroll={handleScroll}
@@ -340,7 +340,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
             aria-busy={!!(serverPagination?.isFetching || serverPagination?.isStale)}
             data-stale={serverPagination?.isStale || undefined}
           >
-            <TableHeader className="sticky top-0 z-10 bg-background">
+            <TableHeader className="sticky top-0 z-10 bg-(--card)">
               {table.getHeaderGroups().map(headerGroup => (
                 <TableRow key={headerGroup.id} className="hover:bg-transparent border-border/50">
                   {headerGroup.headers.map((header, colIdx) => {
@@ -357,7 +357,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                           'group/th relative',
                           CELL_BORDER,
                           isFirstCol && isFrozen && cn(
-                            'sticky left-0 z-30 bg-background border-r border-border/50',
+                            'sticky left-0 z-30 bg-(--card) border-r border-border/50',
                             FROZEN_COLUMN_SHADOW,
                           ),
                         )}

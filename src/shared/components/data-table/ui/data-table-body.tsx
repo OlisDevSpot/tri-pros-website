@@ -7,7 +7,6 @@ import type { DataTableServerPagination } from '@/shared/components/data-table/t
 import { RefreshCw } from 'lucide-react'
 import { memo } from 'react'
 
-import { CELL_BORDER } from '@/shared/components/data-table/constants/cell-border'
 import { SKELETON_CELL_WIDTHS } from '@/shared/components/data-table/constants/skeleton-widths'
 import { DataTableRow } from '@/shared/components/data-table/ui/data-table-row'
 import { Skeleton } from '@/shared/components/ui/skeleton'
@@ -66,7 +65,7 @@ function DataTableBodyImpl<TData extends { id: string }>({
               {/* Container width, so the spinner centers on the visible width, not the overflowing table. */}
               <div className="flex h-16 items-end justify-center pb-2" style={{ width: '100cqw' }}>
                 <div
-                  className="rounded-full border border-border/50 bg-background p-1.5 shadow-sm"
+                  className="rounded-full border border-border/50 bg-muted p-1.5 shadow-sm"
                   style={{ opacity: 'calc(var(--dt-pull, 0) / 64)', transition: 'opacity var(--dt-pull-ms, 0ms) ease-out' }}
                 >
                   <RefreshCw className={cn('size-4 text-muted-foreground', isRefreshing && 'motion-safe:animate-spin')} />
@@ -85,9 +84,9 @@ function DataTableBodyImpl<TData extends { id: string }>({
           const visibleCols = table.getVisibleFlatColumns()
           return Array.from({ length: 5 }).map((_, rowIdx) => (
             // eslint-disable-next-line react/no-array-index-key -- static skeleton list, no reordering
-            <TableRow key={`skeleton-row-${rowIdx}`} className={cn('border-border/50 hover:bg-transparent', skeletonRowClassName)}>
+            <TableRow key={`skeleton-row-${rowIdx}`} className={cn('hover:bg-transparent', rowIdx % 2 === 1 && 'bg-band hover:bg-band', skeletonRowClassName)}>
               {visibleCols.map((col, colIdx) => (
-                <TableCell key={`skeleton-${rowIdx}-${col.id}`} className={CELL_BORDER}>
+                <TableCell key={`skeleton-${rowIdx}-${col.id}`}>
                   <Skeleton className={cn('h-3.5', SKELETON_CELL_WIDTHS[colIdx % SKELETON_CELL_WIDTHS.length])} />
                 </TableCell>
               ))}
@@ -105,7 +104,7 @@ function DataTableBodyImpl<TData extends { id: string }>({
           </TableRow>
         )
       })()}
-      {rows.map((row) => {
+      {rows.map((row, index) => {
         const isExpanded = row.getIsExpanded()
         return (
           <DataTableRow
@@ -116,6 +115,7 @@ function DataTableBodyImpl<TData extends { id: string }>({
             visibleColumnIds={visibleColumnIds}
             isExpanded={isExpanded}
             isFrozen={isFrozen}
+            isOddRow={index % 2 === 1}
             rowClassName={getRowClassName?.(row.original)}
             rowDataAttribute={rowDataAttribute}
             detailId={`${tableId ?? entityName}-detail-${row.id}`}

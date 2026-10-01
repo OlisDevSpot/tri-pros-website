@@ -23,6 +23,8 @@ interface DataTableRowProps<TData extends { id: string }> {
   visibleColumnIds: string
   isExpanded: boolean
   isFrozen: boolean
+  /** By rendered position, not `nth-child`, so an open row's panel row doesn't shift the stripes. */
+  isOddRow: boolean
   rowClassName?: string
   rowDataAttribute: string
   detailId: string
@@ -36,6 +38,7 @@ function DataTableRowImpl<TData extends { id: string }>({
   row,
   isExpanded,
   isFrozen,
+  isOddRow,
   rowClassName,
   rowDataAttribute,
   detailId,
@@ -65,7 +68,8 @@ function DataTableRowImpl<TData extends { id: string }>({
   return (
     <Fragment>
       <TableRow
-        className={`group cursor-pointer border-border/50${rowClassName ? ` ${rowClassName}` : ''}`}
+        data-band={isOddRow ? 'odd' : 'even'}
+        className={cn('group cursor-pointer bg-(--card) hover:bg-row-hover', isOddRow && 'bg-band')}
         onClick={e => onRowClick(e, row)}
         {...rowProps}
       >
@@ -84,10 +88,9 @@ function DataTableRowImpl<TData extends { id: string }>({
             return (
               <TableCell
                 key={cell.id}
-                className={cn('sticky left-0 z-5 p-0 border-r border-border/50', CELL_BORDER, FROZEN_COLUMN_SHADOW)}
+                className={cn('sticky left-0 z-5 p-0 border-r border-border/50 bg-inherit', FROZEN_COLUMN_SHADOW)}
                 style={{ borderRightStyle: 'dashed' }}
               >
-                <div className="absolute inset-0 bg-background group-hover:bg-muted/50 transition-colors" />
                 {rowClassName && <div className={cn('absolute inset-0', rowClassName)} />}
                 <div className="relative p-2">
                   {cellContent}
@@ -97,7 +100,7 @@ function DataTableRowImpl<TData extends { id: string }>({
           }
 
           return (
-            <TableCell key={cell.id} className={CELL_BORDER}>
+            <TableCell key={cell.id} className={rowClassName}>
               {cellContent}
             </TableCell>
           )
