@@ -23,8 +23,8 @@ Remember the public site reads the same `:root` tokens (only `/test` uses `.them
 ## The gate before committing
 
 1. `pnpm theme:check` and `pnpm tsc` pass.
-2. Screenshots in light and dark of: `/dashboard`, a records table (`/dashboard/meetings`), a proposal-flow page, `/` scrolled past the hero (navbar over content), the bottom of `/` (footer), and `/about`. Use the repo's verify harness or a local Playwright script; sign in through `/api/dev/playwright-session` and never print the login secret or URL.
-3. Shoot the live site (`https://triprosremodeling.com/`) at the same spots as the "before".
+2. Shoot the local build before and after the change: `node scripts/shoot.mjs --base http://localhost:$PORT --out <dir>` (light and dark, on desktop, tablet and phone; 11 shots: dashboard, records table, its row menu, the customer dialog, the proposal editor and review page, home scrolled and at the footer, `/about`, `/services`, `/test`). It signs in through `/api/dev/playwright-session` without printing the secret. Read its `report.json`: surfaces by depth, page-coloured holes inside surfaces, and see-through fills.
+3. Shoot the live site with `--public` as the "before" for the public pages.
 4. Show the owner the pairs. Commit only after they say so, by explicit pathspec (`git commit -m "…" -- <paths>`); never `git add -A`, stash, reset or checkout in this shared tree.
 5. Record it in `ladder.json`: set `applied` to `{ "date": …, "commit": … }` and note it in the history entry.
 

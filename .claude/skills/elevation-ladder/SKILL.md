@@ -28,6 +28,7 @@ Chips and hovers step up one rung from whatever they sit on; table stripes sit h
 - `assets/ladder-template.html`: the page (scenes + sliders). Its scenes mirror the app's real surfaces: dashboard modules with meeting and proposal cards, a note inside a card, an open menu, a records table, the public site with its footer.
 - `scripts/measure.mjs`: reads the served tokens in light and dark and writes one comparison preset.
 - `scripts/build.mjs`: fills the template with `ladder.json` and the measured presets.
+- `scripts/shoot.mjs`: the gate's screenshots, light and dark, on desktop, tablet and phone, of the pages the owner judges by, with a report of surfaces by depth, page-coloured holes and see-through fills.
 - `references/applying-values.md`: how a pick goes into the app's tokens, and the screenshot gate before it may be committed.
 
 ## Run
