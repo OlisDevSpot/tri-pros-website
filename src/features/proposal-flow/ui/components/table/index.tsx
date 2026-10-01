@@ -21,7 +21,7 @@ import { ROOTS } from '@/shared/config/roots'
 import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
 import { fromPaginatedQuery } from '@/shared/dal/client/lib/from-paginated-query'
 
-import { useModalStore } from '@/shared/hooks/use-modal-store'
+import { openModal } from '@/shared/lib/open-modal'
 import { useProposalActionConfigs } from '@/shared/modules/proposals/core/hooks/use-proposal-action-configs'
 import { useProposalActions } from '@/shared/modules/proposals/core/hooks/use-proposal-actions'
 import { PROPOSAL_COLUMNS } from '@/shared/modules/proposals/core/lib/columns-registry'
@@ -39,7 +39,6 @@ interface ProjectPrompt {
 export function PastProposalsTable() {
   const trpc = useTRPC()
   const { updateProposal } = useProposalActions()
-  const { open: openModal, setModal } = useModalStore()
   const [projectPrompt, setProjectPrompt] = useState<ProjectPrompt | null>(null)
 
   const pagination = usePaginatedQuery<Record<string, never>, ProposalRow>(
@@ -131,10 +130,9 @@ export function PastProposalsTable() {
       { onSuccess: () => toast.success('Created date updated') },
     ),
     onViewProfile: (customerId) => {
-      setModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props: { customerId } })
-      openModal()
+      openModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props: { customerId } })
     },
-  }), [sharedActions, handleStatusChange, updateProposal, setModal, openModal])
+  }), [sharedActions, handleStatusChange, updateProposal])
 
   return (
     <>

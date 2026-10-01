@@ -6,8 +6,8 @@ import { Avatar, AvatarFallback } from '@/shared/components/ui/avatar'
 import { Button } from '@/shared/components/ui/button'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { getInitials } from '@/shared/entities/users/lib/get-initials'
-import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { formatCustomerAddress } from '@/shared/lib/formatters'
+import { openModal } from '@/shared/lib/open-modal'
 
 interface CustomerChipProps {
   customer: Pick<CustomerWithProfile, 'id' | 'name' | 'address' | 'city' | 'state' | 'zip'> | null
@@ -21,8 +21,6 @@ interface CustomerChipProps {
  * name and address with an ellipsis instead of clipping the chip.
  */
 export function CustomerChip({ customer, meetingId }: CustomerChipProps) {
-  const { open, setModal } = useModalStore()
-
   if (!customer) {
     return (
       <Button className="h-11 rounded-full px-3 text-muted-foreground" disabled size="sm" variant="ghost">
@@ -35,12 +33,11 @@ export function CustomerChip({ customer, meetingId }: CustomerChipProps) {
   const address = formatCustomerAddress(customer)
 
   function handleClick() {
-    setModal({
+    openModal({
       accessor: 'CustomerProfile',
       Component: CustomerProfileModal,
       props: { customerId, highlightMeetingId: meetingId },
     })
-    open()
   }
 
   return (

@@ -20,7 +20,8 @@ interface Props {
 }
 
 export function CustomerProfileModal({ customerId, defaultTab, highlightMeetingId }: Props) {
-  const { isOpen, close } = useModalStore()
+  const isOpen = useModalStore(state => state.isOpen)
+  const close = useModalStore(state => state.close)
   const trpc = useTRPC()
   const { invalidateCustomer } = useInvalidation()
   const [heroView, setHeroView] = useState<HeroView>('street')

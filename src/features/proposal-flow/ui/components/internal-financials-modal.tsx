@@ -20,7 +20,8 @@ interface Props {
  * store — never rendered inline, never reachable by the homeowner.
  */
 export function InternalFinancialsModal({ funding, sow, priceDisplayMode }: Props) {
-  const { isOpen, close } = useModalStore()
+  const isOpen = useModalStore(state => state.isOpen)
+  const close = useModalStore(state => state.close)
 
   return (
     <Modal

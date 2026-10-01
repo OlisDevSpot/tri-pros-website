@@ -28,9 +28,9 @@ import {
 } from '@/shared/entities/meetings/constants/status-colors'
 import { useMeetingActionConfigs } from '@/shared/entities/meetings/hooks/use-meeting-action-configs'
 import { UserOverviewCard } from '@/shared/entities/users/components/overview-card'
-import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { formatBusinessTime } from '@/shared/lib/business-time'
 import { formatMeetingShortStamp } from '@/shared/lib/formatters'
+import { openModal } from '@/shared/lib/open-modal'
 import { cn } from '@/shared/lib/utils'
 import { ProposalOverviewCard } from '@/shared/modules/proposals/core/components/overview-card'
 
@@ -108,16 +108,13 @@ function MeetingOverviewCardRoot({
   onAssignOwner,
   onAssignProject,
 }: MeetingOverviewCardProps) {
-  const { open: openModal, setModal } = useModalStore()
-
   const openProfile = useCallback(() => {
-    setModal({
+    openModal({
       accessor: 'CustomerProfile',
       Component: CustomerProfileModal,
       props: { customerId, defaultTab: 'meetings' as const, highlightMeetingId: meeting.id },
     })
-    openModal()
-  }, [customerId, meeting.id, setModal, openModal])
+  }, [customerId, meeting.id])
 
   const { actions, DeleteConfirmDialog, AssignOwnerDialog, OutcomeReasonDialog, RescheduleDialog, changeOutcome } = useMeetingActionConfigs({
     onView: () => openProfile(),

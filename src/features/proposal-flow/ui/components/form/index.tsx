@@ -16,7 +16,7 @@ import { Label } from '@/shared/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import { Switch } from '@/shared/components/ui/switch'
 import { Tabs, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
-import { useModalStore } from '@/shared/hooks/use-modal-store'
+import { openModal } from '@/shared/lib/open-modal'
 import { cn } from '@/shared/lib/utils'
 import { FundingFields } from './funding-fields'
 import { GeneralFields } from './general-fields'
@@ -72,11 +72,10 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
   const [saveOpenDesktop, setSaveOpenDesktop] = useState(false)
   const saveOpen = saveOpenMobile || saveOpenDesktop
   const pricingMode = useWatch({ control: form.control, name: 'priceDisplayMode' })
-  const { open: openModal, setModal } = useModalStore()
 
   function handleInternalFinancials() {
     const v = form.getValues()
-    setModal({
+    openModal({
       accessor: 'InternalFinancials',
       Component: InternalFinancialsModal,
       props: {
@@ -85,7 +84,6 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
         priceDisplayMode: v.priceDisplayMode,
       },
     })
-    openModal()
   }
 
   useEffect(() => {

@@ -15,6 +15,7 @@ import { MultiSelect, MultiSelectContent, MultiSelectGroup, MultiSelectItem, Mul
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
+import { openModal } from '@/shared/lib/open-modal'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
 import { SOWFinancialsFields } from './sow-financials-fields'
@@ -64,8 +65,6 @@ export function SOWSection({
     }
     setTradeId(id)
   }
-
-  const { open: openModal, close: closeModal, setModal } = useModalStore()
 
   async function handleScopesChange(values: string[]): Promise<boolean> {
     const oldScopes = form.getValues(`project.data.sow.${index}.scopes`)
@@ -230,14 +229,14 @@ export function SOWSection({
                           className="text-xs text-muted-foreground hover:underline"
                           size="sm"
                           onClick={() => {
-                            setModal({
+                            openModal({
                               accessor: 'Templates',
                               Component: TemplatesModal,
                               props: {
                                 trade: allTrades.data?.find(trade => trade.id === tradeId),
                                 scopes: form.getValues(`project.data.sow.${index}.scopes`).map(scope => scopesOfTrade.data?.find(scopeOfTrade => scopeOfTrade.id === scope.id)).filter(Boolean) as Scope[],
                                 onSelect: async (sowId) => {
-                                  closeModal()
+                                  useModalStore.getState().close()
                                   setIsLoadingTemplate(true)
                                   try {
                                     const json = await queryClient.fetchQuery(trpc.constructionRouter.sow.content.queryOptions({ sowId }))
@@ -249,7 +248,6 @@ export function SOWSection({
                                 },
                               },
                             })
-                            openModal()
                           }}
                         >
                           Templates

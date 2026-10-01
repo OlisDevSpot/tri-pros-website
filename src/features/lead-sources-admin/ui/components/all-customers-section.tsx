@@ -18,7 +18,7 @@ import { CustomerProfileModal } from '@/shared/entities/customers/components/pro
 import { useCustomerActionConfigs } from '@/shared/entities/customers/hooks/use-customer-action-configs'
 
 import { CUSTOMER_COLUMNS } from '@/shared/entities/customers/lib/columns-registry'
-import { useModalStore } from '@/shared/hooks/use-modal-store'
+import { openModal } from '@/shared/lib/open-modal'
 import { useTRPC } from '@/trpc/helpers'
 
 const SHOW_COLUMNS = ['name', 'leadSourceName', 'pipeline', 'createdAt'] as const
@@ -26,7 +26,6 @@ const SHOW_COLUMNS = ['name', 'leadSourceName', 'pipeline', 'createdAt'] as cons
 export function AllCustomersSection() {
   const trpc = useTRPC()
   const { invalidateCustomer, invalidateLeadSource } = useInvalidation()
-  const { setModal, open: openModal } = useModalStore()
 
   const query = useDataViewQuery(trpc.customersRouter.business.list, {}, ALL_CUSTOMERS_TABLE_QUERY_CONFIG)
 
@@ -42,13 +41,12 @@ export function AllCustomersSection() {
   )
 
   const handleViewProfile = useCallback((customerId: string) => {
-    setModal({
+    openModal({
       accessor: 'CustomerProfile',
       Component: CustomerProfileModal,
       props: { customerId },
     })
-    openModal()
-  }, [setModal, openModal])
+  }, [])
 
   const { actions, DeleteConfirmDialog } = useCustomerActionConfigs<CustomerTableRow>({
     onView: entity => handleViewProfile(entity.id),

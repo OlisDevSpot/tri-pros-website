@@ -18,7 +18,7 @@ import { CustomerProfileModal } from '@/shared/entities/customers/components/pro
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
 import { useMeetingActionConfigs } from '@/shared/entities/meetings/hooks/use-meeting-action-configs'
 import { useMeetingActions } from '@/shared/entities/meetings/hooks/use-meeting-actions'
-import { useModalStore } from '@/shared/hooks/use-modal-store'
+import { openModal } from '@/shared/lib/open-modal'
 import { useTRPC } from '@/trpc/helpers'
 
 interface ScheduleMeetingsCalendarProps {
@@ -34,7 +34,6 @@ export function ScheduleMeetingsCalendar({ showToggle, showSaturday, onToggleSat
   const trpc = useTRPC()
   const query = useDataViewQuery(trpc.meetingsRouter.reads.list, {}, SCHEDULE_MEETINGS_QUERY)
   const { updateScheduledFor } = useMeetingActions()
-  const { open: openModal, setModal } = useModalStore()
   const [assignRepMeetingId, setAssignRepMeetingId] = useState<string | null>(null)
 
   const events = useMemo<ScheduleCalendarEvent[]>(() => query.rows.map(toCalendarEvent), [query.rows])
@@ -43,13 +42,12 @@ export function ScheduleMeetingsCalendar({ showToggle, showSaturday, onToggleSat
     if (!event.customerId) {
       return
     }
-    setModal({
+    openModal({
       accessor: 'CustomerProfile',
       Component: CustomerProfileModal,
       props: { customerId: event.customerId, defaultTab: 'meetings' as const, highlightMeetingId: event.meetingId },
     })
-    openModal()
-  }, [setModal, openModal])
+  }, [])
 
   const handleAssignOwner = useCallback((event: ScheduleCalendarEvent) => {
     if (event.kind === 'meeting') {

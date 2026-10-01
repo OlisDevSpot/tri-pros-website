@@ -24,7 +24,7 @@ import { CustomerProfileModal } from '@/shared/entities/customers/components/pro
 import { CreateMeetingModal } from '@/shared/entities/meetings/components/create-meeting-modal'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
 import { useIsHydrating } from '@/shared/hooks/use-is-hydrating'
-import { useModalStore } from '@/shared/hooks/use-modal-store'
+import { openModal } from '@/shared/lib/open-modal'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -40,7 +40,6 @@ export function CustomerPipelineView() {
   const [createMeetingForCustomer, setCreateMeetingForCustomer] = useState<{ id: string, name: string } | null>(null)
   const [assignRepTarget, setAssignRepTarget] = useState<{ meetingIds: string[] } | null>(null)
   const trpc = useTRPC()
-  const { open: openModal, setModal } = useModalStore()
   const ability = useAbility()
   const isHydrating = useIsHydrating()
   const canManagePipeline = ability.can('manage', 'CustomerPipeline')
@@ -92,13 +91,12 @@ export function CustomerPipelineView() {
   }
 
   const handleViewProfile = useCallback((customerId: string) => {
-    setModal({
+    openModal({
       accessor: 'CustomerProfile',
       Component: CustomerProfileModal,
       props: { customerId },
     })
-    openModal()
-  }, [setModal, openModal])
+  }, [])
 
   const handleAssignRep = useCallback((meetingId: string, _currentRepId: string | null) => {
     setAssignRepTarget({ meetingIds: [meetingId] })

@@ -18,7 +18,7 @@ import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
 import { fromPaginatedQuery } from '@/shared/dal/client/lib/from-paginated-query'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
-import { useModalStore } from '@/shared/hooks/use-modal-store'
+import { openModal } from '@/shared/lib/open-modal'
 import { useTRPC } from '@/trpc/helpers'
 
 // `DataTable` requires `TData extends { id: string }`. `CampaignLeadRow` uses
@@ -31,7 +31,6 @@ function toTableRow(row: CampaignLeadRow): LeadTableRow {
 export function CampaignsLeadsView() {
   const trpc = useTRPC()
   const { enroll } = useCampaignMutations()
-  const { open: openModal, setModal } = useModalStore()
 
   const summariesQuery = useQuery(trpc.voipCampaignsRouter.getSourceCampaignSummaries.queryOptions())
   const campaignsQuery = useQuery(trpc.voipCampaignsRouter.listCampaigns.queryOptions())
@@ -106,14 +105,13 @@ export function CampaignsLeadsView() {
 
   const handleOpenProfile = useCallback(
     (customerId: string) => {
-      setModal({
+      openModal({
         accessor: 'CustomerProfile',
         Component: CustomerProfileModal,
         props: { customerId },
       })
-      openModal()
     },
-    [openModal, setModal],
+    [],
   )
 
   const pageRowIds = useMemo(

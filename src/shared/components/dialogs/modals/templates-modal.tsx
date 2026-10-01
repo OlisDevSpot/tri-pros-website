@@ -11,7 +11,8 @@ interface Props {
 }
 
 export function TemplatesModal({ trade, scopes, onSelect }: Props) {
-  const { isOpen, close } = useModalStore()
+  const isOpen = useModalStore(state => state.isOpen)
+  const close = useModalStore(state => state.close)
 
   const trpc = useTRPC()
   const SOWs = useQueries({

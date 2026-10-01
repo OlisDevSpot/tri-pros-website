@@ -23,7 +23,7 @@ import { useMeetingActionConfigs } from '@/shared/entities/meetings/hooks/use-me
 import { useMeetingActions } from '@/shared/entities/meetings/hooks/use-meeting-actions'
 import { MEETING_COLUMNS } from '@/shared/entities/meetings/lib/columns-registry'
 import { getMeetingRowClassName } from '@/shared/entities/meetings/lib/meeting-row-class'
-import { useModalStore } from '@/shared/hooks/use-modal-store'
+import { openModal } from '@/shared/lib/open-modal'
 import { useTRPC } from '@/trpc/helpers'
 
 export interface MeetingsExpandedRowContext {
@@ -41,7 +41,6 @@ export function useMeetingsTable(
   const trpc = useTRPC()
   const ability = useAbility()
   const { updateScheduledFor } = useMeetingActions()
-  const { open: openModal, setModal } = useModalStore()
 
   const [participantsMeetingId, setParticipantsMeetingId] = useState<string | null>(null)
   const [assignProjectMeetingId, setAssignProjectMeetingId] = useState<string | null>(null)
@@ -52,13 +51,12 @@ export function useMeetingsTable(
     if (!row.customerId) {
       return
     }
-    setModal({
+    openModal({
       accessor: 'CustomerProfile',
       Component: CustomerProfileModal,
       props: { customerId: row.customerId, defaultTab: 'meetings' as const, highlightMeetingId: row.id },
     })
-    openModal()
-  }, [setModal, openModal])
+  }, [])
 
   // Memoized: the action configs are keyed on this object's identity.
   const overrides = useMemo(() => ({
@@ -83,10 +81,9 @@ export function useMeetingsTable(
     onAssignRep: meetingId => setParticipantsMeetingId(meetingId),
     canAssignMeeting: ability.can('assign', 'Meeting'),
     onViewProfile: (customerId) => {
-      setModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props: { customerId } })
-      openModal()
+      openModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props: { customerId } })
     },
-  }), [actions, changeOutcome, updateScheduledFor, ability, setModal, openModal])
+  }), [actions, changeOutcome, updateScheduledFor, ability])
 
   const expandedRowRenderer = useMemo(
     () => renderExpandedRow ? (row: MeetingRow) => renderExpandedRow(row, { actions }) : undefined,
