@@ -90,6 +90,10 @@ Legend: `[ ]` open · `[x]` done · `[~]` in progress · ⏸ gated.
 | **D46** | **Proposals and projects move onto field lists** (`PROPOSAL_FIELDS`, `PROJECT_FIELDS`; `EntityTableView.query` requires one). R4 projects is built now; R3 proposals is planned and built after the approval session (D38). | 2026-09-29 |
 | **D47** | **Set by on `CreateMeetingForm`:** a viewer who can `assign Meeting` (super-admin) picks from setters (default self, "No setter" allowed); agents and dispatchers see "Set by: you" read-only and send their own id. No server default (a duplicate stays empty, D42). | 2026-09-29 |
 | **D48** | **R2 customers is the next spec**, built on the entity-table hook (D45); not folded into the bulk spec. | 2026-09-29 |
+| **D49** | **Tables first, bulk last** (supersedes the 2026-09-29 plan's B1→B5 order): projects (plan Tasks 11–13, corrected) → customers (R2) → proposals (R3) → setter + bulk + selection across all four tables at once → delete the legacy query path (`usePaginatedQuery` / `loadPaginatedQueryInput` / `fromPaginatedQuery`). Row selection reaches each memoized `DataTableRow` as a prop (like `isExpanded`); no row or cell reads `row.getIsSelected()` while rendering. | 2026-10-01 |
+| **D50** | **Proposals entity table builds now**, before the approval session (amends D38/D46). The status cell keeps today's approve-then-create-project behaviour unchanged, moved into the entity table hook as the one place the approval session later replaces. No Approve action in the expanded row until then. | 2026-10-01 |
+| **D51** | **No customer pane in expanded rows** (owner, meetings change 2026-10-01): the customer shows in the table's first column instead. Projects follows: its list read joins the customer for a customer column; the planned shared `RecordCustomerPane` is not built. | 2026-10-01 |
+| **D52** | **Lead-source customers table view: deferred.** How it pins `sourceId` on the shared customers list (generic fixed filters, O9, vs a one-off `leadSourceId` input) is undecided; until then it keeps `leadSourcesRouter.getCustomers`. R2 converges the records page and the lead-sources "all customers" table view. | 2026-10-01 |
 
 ---
 
@@ -176,7 +180,7 @@ Legend: `[ ]` open · `[x]` done · `[~]` in progress · ⏸ gated.
 From the records-table render isolation build (local main `6896b1d4..6fd3a3e8`, 2026-10-01; owner hand-checks passed 2026-10-01). Legend as above.
 
 **Owner**
-- [ ] **A1** Rotate `DEV_LOGIN_SECRET`. It was printed once into a subagent's tool output; the probe now redacts it.
+- [x] **A1** Rotate `DEV_LOGIN_SECRET`. It was printed once into a subagent's tool output; the probe now redacts it. Rotated 2026-10-01 in every local `.env.local` (main + worktrees). Not checked: whether Vercel preview also sets it (production 404s the route regardless).
 - [ ] **A2** Push `6896b1d4..6fd3a3e8`, plus the double-skeleton fix (H6) once committed. Note: `f3e3541e` + `bf54d461` are a commit-and-restore pair; together they change only the participant-picker files.
 - [ ] **A3** After the push: delete the uncommitted plan and spec (`docs/superpowers/plans|specs/2026-10-01-records-table-render-isolation*.md`) and the gitignored workspace `.superpowers/sdd/2026-10-01-records-table-render-isolation/`. Copy the before/after numbers from its `acceptance.md` into the PR first.
 
