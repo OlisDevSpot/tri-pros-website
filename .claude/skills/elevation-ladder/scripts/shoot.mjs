@@ -107,7 +107,8 @@ async function load(page, shot) {
   let target = page
   if (shot.open) {
     await page.locator(shot.open).first().click({ timeout: 20000 })
-    await page.locator('[role="dialog"], [role="menu"]').first().waitFor({ timeout: 20000 })
+    // On phones the sidebar is an always-mounted, hidden role="dialog" ahead of every other one in the DOM.
+    await page.locator('[role="dialog"]:visible, [role="menu"]:visible').first().waitFor({ timeout: 20000 })
     await page.waitForTimeout(600)
   }
   if (shot.hover) {
@@ -188,7 +189,8 @@ try {
             }
             target = await load(page, shot)
           }
-          else if (target !== page) {
+          // A popup opens at the context's size, not the opener's.
+          if (target !== page) {
             await target.setViewportSize(VIEWPORTS[viewport])
           }
           await scroll(target, shot)
