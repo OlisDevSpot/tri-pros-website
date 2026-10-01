@@ -7,6 +7,7 @@ import type { AppRouterOutputs } from '@/trpc/routers/app'
 
 import { EyeIcon, PlusIcon } from 'lucide-react'
 
+import { CustomerNameCell } from '@/shared/components/data-table/ui/customer-name-cell'
 import { PrimaryCell } from '@/shared/components/data-table/ui/primary-cell'
 import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
@@ -32,7 +33,6 @@ export const PROPOSAL_COLUMNS = {
     cell: ({ row, table }) => {
       const meta = table.options.meta as ProposalTableMeta | undefined
       const { customerName, customerId } = row.original
-      const canOpenProfile = Boolean(customerName && customerId)
       return (
         <PrimaryCell
           entity={row.original}
@@ -52,26 +52,14 @@ export const PROPOSAL_COLUMNS = {
               )}
             </div>
           )}
-          subtitle={canOpenProfile
-            ? (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    meta?.onViewProfile?.(customerId!)
-                  }}
-                  className={cn(
-                    'block max-w-full truncate text-left text-xs text-muted-foreground',
-                    'underline decoration-dotted decoration-muted-foreground/40 underline-offset-[3px]',
-                    'transition-colors hover:text-foreground hover:decoration-foreground/60',
-                    'focus-visible:text-foreground focus-visible:decoration-foreground/60 focus-visible:outline-none',
-                    'cursor-pointer',
-                  )}
-                >
-                  {customerName}
-                </button>
-              )
-            : '—'}
+          subtitle={(
+            <CustomerNameCell
+              customerId={customerId}
+              customerName={customerName}
+              onViewProfile={meta?.onViewProfile}
+              className="text-xs text-muted-foreground"
+            />
+          )}
         />
       )
     },

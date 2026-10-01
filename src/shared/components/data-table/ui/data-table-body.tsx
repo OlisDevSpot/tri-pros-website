@@ -10,7 +10,7 @@ import { Fragment, memo } from 'react'
 
 import { CELL_BORDER } from '@/shared/components/data-table/constants/cell-border'
 import { SKELETON_CELL_WIDTHS } from '@/shared/components/data-table/constants/skeleton-widths'
-import { shouldToggleRow } from '@/shared/components/data-table/lib/should-toggle-row'
+import { isRowClick } from '@/shared/components/data-table/lib/is-row-click'
 import { AnimatedCollapsibleContent } from '@/shared/components/ui/collapsible'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { TableBody, TableCell, TableRow } from '@/shared/components/ui/table'
@@ -137,14 +137,16 @@ function DataTableBodyImpl<TData extends { id: string }>({
             <TableRow
               className={`group cursor-pointer border-border/50${customRowClass ? ` ${customRowClass}` : ''}`}
               onClick={(e) => {
-                if (renderExpandedRow) {
-                  if (shouldToggleRow(e, window.getSelection()?.toString() ?? '')) {
+                if (onRowClick || renderExpandedRow) {
+                  if (!isRowClick(e, window.getSelection()?.toString() ?? '')) {
+                    return
+                  }
+                  if (renderExpandedRow) {
                     row.toggleExpanded()
                   }
-                  return
-                }
-                if (onRowClick) {
-                  onRowClick(row.original)
+                  else {
+                    onRowClick?.(row.original)
+                  }
                 }
                 else if (isMobile) {
                   setActiveRowId(prev => prev === row.original.id ? null : row.original.id)

@@ -5,8 +5,8 @@ interface RowClickEventLike {
   target: EventTarget | null
 }
 
-/** Whether a click on an expandable row toggles it, or belongs to a control inside the row. */
-export function shouldToggleRow(event: RowClickEventLike, selectedText: string): boolean {
+/** Whether a click on a row is meant for the row, rather than for a control inside it or a text selection. */
+export function isRowClick(event: RowClickEventLike, selectedText: string): boolean {
   const target = event.target as Element | null
   // Portaled popover, menu and dialog content bubbles to the row through React's tree but lives outside it in the DOM.
   if (!target || !event.currentTarget.contains(target)) {

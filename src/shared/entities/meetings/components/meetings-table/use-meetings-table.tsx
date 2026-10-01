@@ -82,7 +82,11 @@ export function useMeetingsTable(
       updateScheduledFor.mutate({ id: meetingId, data: { scheduledFor: date.toISOString() } }),
     onAssignRep: meetingId => setParticipantsMeetingId(meetingId),
     canAssignMeeting: ability.can('assign', 'Meeting'),
-  }), [actions, changeOutcome, updateScheduledFor, ability])
+    onViewProfile: (customerId) => {
+      setModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props: { customerId } })
+      openModal()
+    },
+  }), [actions, changeOutcome, updateScheduledFor, ability, setModal, openModal])
 
   const expandedRowRenderer = useMemo(
     () => renderExpandedRow ? (row: MeetingRow) => renderExpandedRow(row, { actions }) : undefined,
@@ -99,8 +103,7 @@ export function useMeetingsTable(
     rowDataAttribute: 'data-meeting-row',
     skeletonRowClassName: 'h-[58.5px]',
     renderExpandedRow: expandedRowRenderer,
-    // Without an expanded row, a row click opens the customer profile.
-    onRowClick: expandedRowRenderer ? undefined : handleView,
+    onRowClick: handleView,
     serverPagination: toDataTablePagination(query),
     serverSorting: toDataTableSorting(query),
     columnVisibility: visibility.columnVisibility,

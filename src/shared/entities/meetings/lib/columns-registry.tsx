@@ -28,15 +28,23 @@ export interface MeetingTableMeta {
   onUpdateScheduledFor?: (meetingId: string, date: Date) => void
   onAssignRep?: (meetingId: string, currentOwnerId: string) => void
   canAssignMeeting?: boolean
+  onViewProfile?: (customerId: string) => void
 }
 
 export const MEETING_COLUMNS = {
   customerName: {
     label: 'Meeting',
+    size: 420,
     sort: 'customerName',
     cell: ({ row, table }) => {
       const meta = table.options.meta as MeetingTableMeta | undefined
-      return <MeetingCustomerCell meeting={row.original} actions={meta?.meetingActions?.(row.original)} />
+      return (
+        <MeetingCustomerCell
+          meeting={row.original}
+          actions={meta?.meetingActions?.(row.original)}
+          onViewProfile={meta?.onViewProfile}
+        />
+      )
     },
   },
   meetingType: {
