@@ -134,6 +134,7 @@ Legend: `[ ]` open · `[x]` done · `[~]` in progress · ⏸ gated.
 - **H3:** #285 overlaps the customer files; see D12 and M1.
 - **H4:** a route group must not add its own `layout.tsx` (`app-shell.md#dashboard-layout-shape-fixed`), or it remounts the sidebar.
 - **H5:** **agents can write `meetings.setBy`.** Agents hold `update` on Meeting with no field limit (`abilities.ts:96`), so the generic `crud.update` accepts `setBy` from them; dispatchers too (`abilities.ts:169`), and `createCrudRouter.create` has no field check at all, so both can set it at create. The meetings crud invariant (D42) bounds it to internal users. The setter UI is super-admin only, but the server does not gate it. **#285 owns the fix** (agent permission rules ship there; owner ruling 2026-09-27): add the `setBy` field exclusion for agents and dispatchers. This effort deliberately adds no permission rows.
+- **H6:** **an urgent context change above a page during hydration flashes its skeleton.** React 19 schedules work on every Suspense boundary still hydrating under a provider whose value changes, even under a nested provider of the same context. A data view waiting on its streamed rows then drops the server HTML and shows its pending view. Seen 2026-10-01 on meetings, where the server rows showed, then the skeleton, then the rows again; the root `AbilityProvider` (session lands) and `SidebarProvider` (phones, `useIsMobile`) were the triggers. Rule: a provider above dashboard pages changes after hydration only inside a transition or `useDeferredValue`.
 
 ---
 
@@ -167,3 +168,25 @@ Legend: `[ ]` open · `[x]` done · `[~]` in progress · ⏸ gated.
 - Studies: https://claude.ai/artifact/K2KD9CWhVk6fNKpC3T9PCp (v3 = A1).
 - Research: `docs/plans/2026-09-24-expandable-table-rows-research.md`.
 - Session memory: `project-records-table-enrichment.md`.
+
+---
+
+## 7. Actions
+
+From the records-table render isolation build (local main `6896b1d4..6fd3a3e8`, 2026-10-01; owner hand-checks passed 2026-10-01). Legend as above.
+
+**Owner**
+- [ ] **A1** Rotate `DEV_LOGIN_SECRET`. It was printed once into a subagent's tool output; the probe now redacts it.
+- [ ] **A2** Push `6896b1d4..6fd3a3e8`, plus the double-skeleton fix (H6) once committed. Note: `f3e3541e` + `bf54d461` are a commit-and-restore pair; together they change only the participant-picker files.
+- [ ] **A3** After the push: delete the uncommitted plan and spec (`docs/superpowers/plans|specs/2026-10-01-records-table-render-isolation*.md`) and the gitignored workspace `.superpowers/sdd/2026-10-01-records-table-render-isolation/`. Copy the before/after numbers from its `acceptance.md` into the PR first.
+
+**Code**
+- [ ] **A4** `ReadOnlyParticipantSummary` still sends one `getParticipants` per row for viewers who can't assign meetings (about 20 requests on every load, invalidation and focus refetch). It should render from the row's owner snapshot, as the picker does while closed.
+- [ ] **A5** `withLatestCallbacks` (`src/shared/lib/stable-callbacks.ts`) finds an array entry's latest callbacks by its index, not by `action.id`. A wrapper kept across a change in the list's shape would fire the wrong action. No caller keeps one today.
+- [ ] **A6** `useStableCallbacks` writes its latest-closure ref in `useLayoutEffect`, so a child's layout effect that calls a wrapper still sees the previous closure. `useInsertionEffect` would close that gap.
+
+**Re-measure, then decide** (deferred by the spec; run `node scripts/perf/records-probe.mjs <path>`)
+- [ ] **A7** Narrow `useInvalidation`'s router-level `pathFilter()`.
+- [ ] **A8** Trim what `meetingsRouter.reads.list` selects per row (`flowStateJSON`, `contextJSON` and notes ship with every row).
+- [ ] **A9** `next/dynamic` for the customer profile, participants and assign-project modals.
+- [ ] **A10** The list SQL: correlated proposal subqueries; no index on `meetings.customer_id` / `scheduled_for`.
