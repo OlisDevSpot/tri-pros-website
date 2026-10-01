@@ -160,7 +160,7 @@ export function AssignProjectDialog({ meetingId, open, onOpenChange }: AssignPro
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-7 gap-1 text-xs shrink-0"
+                      className="h-7 gap-1 text-xs shrink-0 hover:bg-border dark:hover:bg-border"
                       disabled={approveProposalMutation.isPending}
                       onClick={() => handleApproveProposal(proposal.id)}
                     >

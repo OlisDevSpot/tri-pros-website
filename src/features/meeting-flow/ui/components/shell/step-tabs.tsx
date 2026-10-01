@@ -47,7 +47,7 @@ export function StepTabs({ currentStep, onStepClick }: StepTabsProps) {
               className={cn(
                 'flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums',
                 isActive && 'bg-primary text-primary-foreground',
-                isDone && 'bg-band text-foreground',
+                isDone && 'bg-border text-foreground',
                 !isActive && !isDone && 'bg-muted text-muted-foreground',
               )}
             >

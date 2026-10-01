@@ -211,7 +211,7 @@ export function CreateProjectForm({
                 headline price + trade count so opening is optional. */}
             {selectedProposal && (
               <Collapsible open={detailsOpen} onOpenChange={setDetailsOpen}>
-                <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-muted">
+                <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-border">
                   <span className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-muted-foreground">
                     <ChevronDownIcon
                       className={cn(

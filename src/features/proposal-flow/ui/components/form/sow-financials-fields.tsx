@@ -142,7 +142,7 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
               type="button"
               size="sm"
               variant="outline"
-              className="gap-1.5"
+              className="gap-1.5 hover:bg-border dark:hover:bg-border"
               disabled={!canAddCostLine}
               onClick={() => {
                 appendCost({
@@ -288,7 +288,7 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
             type="button"
             size="sm"
             variant="outline"
-            className="gap-1.5"
+            className="gap-1.5 hover:bg-border dark:hover:bg-border"
             onClick={() => {
               appendIncentive({
                 id: crypto.randomUUID(),
