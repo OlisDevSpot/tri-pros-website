@@ -17,11 +17,7 @@ export function QueryToolbarBar({ className, children }: BarProps) {
   const showShimmer = query.isPending || query.isFetching || query.isStale
   return (
     <div
-      className={cn(
-        'relative flex items-center gap-2 lg:gap-3',
-        'border-b border-border/60 pb-2',
-        className,
-      )}
+      className={cn('relative flex items-center gap-2 lg:gap-3', className)}
     >
       {children}
       <QueryToolbarChipRail placement="inline" />
