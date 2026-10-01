@@ -10,7 +10,7 @@ interface Props {
 
 export function ChartTooltipCard({ title, rows }: Props) {
   return (
-    <div className="rounded-md px-3 py-2 text-popover-foreground" style={GLASS_SURFACE_STYLE}>
+    <div className="surface-overlay rounded-md px-3 py-2 text-popover-foreground" style={GLASS_SURFACE_STYLE}>
       <ChartTooltipRows rows={rows} title={title} />
     </div>
   )
