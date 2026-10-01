@@ -116,8 +116,8 @@ export function StandardPricingCard({ isSelected, onSelect }: StandardPricingCar
       className={cn(
         'relative w-full rounded-xl border-2 p-5 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         isSelected
-          ? 'border-foreground/50 ring-2 ring-foreground/20'
-          : 'border-border bg-card hover:border-foreground/30',
+          ? 'border-border-strong ring-2 ring-border-strong'
+          : 'border-border bg-card hover:border-border-strong',
       )}
     >
       {/* Selection indicator */}

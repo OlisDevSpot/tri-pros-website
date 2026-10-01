@@ -54,9 +54,9 @@ export function ScopeOfWork() {
               <AccordionItem
                 key={`sow-${index}`}
                 value={`sow-${index}`}
-                className="border border-border/50 rounded-xl overflow-hidden bg-card shadow-sm last:border-b"
+                className="border border-border rounded-xl overflow-hidden bg-card shadow-sm last:border-b"
               >
-                <AccordionTrigger className="px-6 py-5 hover:no-underline hover:bg-muted/30 data-[state=open]:bg-muted/20 transition-colors">
+                <AccordionTrigger className="px-6 py-5 hover:no-underline hover:bg-muted data-[state=open]:bg-row-selected transition-colors">
                   <div className="flex items-center justify-between w-full mr-3">
                     <div className="flex items-start gap-4">
                       <span className="text-xl font-light text-muted-foreground/40 tabular-nums leading-tight shrink-0 w-6 pt-0.5">
@@ -117,7 +117,7 @@ export function ScopeOfWork() {
             ))}
           </Accordion>
           {proposal.data.projectJSON.data.agreementNotes && (
-            <div className="mt-6 border-t border-border/30 pt-6">
+            <div className="mt-6 border-t border-border pt-6">
               <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Agreement Notes</h3>
               <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/80">
                 {proposal.data.projectJSON.data.agreementNotes}

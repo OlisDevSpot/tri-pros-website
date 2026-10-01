@@ -236,7 +236,7 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
                       <button
                         type="button"
                         disabled={isLoading}
-                        className="hidden items-center border-l border-current/10 ml-1 px-1.5 rounded-r-md transition-colors hover:bg-foreground/5 lg:inline-flex"
+                        className="hidden items-center border-l border-current/10 ml-1 px-1.5 rounded-r-md transition-colors hover:bg-muted lg:inline-flex"
                       >
                         <ChevronDownIcon className="size-3" />
                       </button>

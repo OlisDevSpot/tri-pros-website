@@ -48,7 +48,7 @@ export function InspectorRail({ openSection, projectBadge, contextFilledCount, c
   return (
     <aside
       aria-label={SHELL_COPY.railLabel}
-      className="z-30 hidden w-12 shrink-0 flex-col items-center gap-2 border-l border-border/40 bg-card py-2 lg:flex"
+      className="z-30 hidden w-12 shrink-0 flex-col items-center gap-2 border-l border-border bg-card py-2 lg:flex"
     >
       {items.map(({ section, icon, badge, accent }) => {
         const isOpen = openSection === section

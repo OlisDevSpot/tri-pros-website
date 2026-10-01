@@ -58,7 +58,7 @@ export function ProposalMediaGallery({ media }: { media: ProposalMediaView[] }) 
                       href={item.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm hover:bg-muted/50"
+                      className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm hover:bg-muted"
                     >
                       <FileText className="h-4 w-4 shrink-0" />
                       <span className="truncate max-w-[220px]">{item.name}</span>

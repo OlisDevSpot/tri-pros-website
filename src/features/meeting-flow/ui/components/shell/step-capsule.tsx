@@ -34,7 +34,7 @@ export function StepCapsule({ currentStep, stepTitle, tone, presenting, onPrev, 
         'absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-10 flex h-12 -translate-x-1/2 items-center gap-0.5 rounded-full border p-0.5 shadow-lg backdrop-blur-md',
         tone === 'presentation'
           ? 'border-white/15 bg-(--presentation-ground)/70 text-white'
-          : 'border-border bg-background/80 text-foreground',
+          : 'border-border bg-surface-raised text-foreground',
       )}
     >
       <Button

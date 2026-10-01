@@ -69,7 +69,7 @@ export function ClosingStep({ flowContext, meetingOutcome, onOutcomeChange, prop
       )}
 
       {tradeSelections.length === 0 && (
-        <Card className="border-border/60 bg-muted/30">
+        <Card className="border-border bg-muted">
           <CardContent className="py-5 text-center">
             <p className="text-muted-foreground text-sm">No trades selected yet.</p>
           </CardContent>
@@ -122,7 +122,7 @@ export function ClosingStep({ flowContext, meetingOutcome, onOutcomeChange, prop
       {/* Pricing section */}
       <section className="space-y-3">
         <h3 className="text-sm font-semibold">Pricing Summary</h3>
-        <Card className="border-border/60">
+        <Card className="border-border">
           <CardContent className="space-y-3 px-5 py-4">
             {/* Starting TCP */}
             <div className="flex items-center justify-between text-sm">
@@ -181,7 +181,7 @@ export function ClosingStep({ flowContext, meetingOutcome, onOutcomeChange, prop
       {/* Timeline section */}
       <section className="space-y-3">
         <h3 className="text-sm font-semibold">Project Timeline</h3>
-        <Card className="border-border/60 bg-muted/30">
+        <Card className="border-border bg-muted">
           <CardContent className="space-y-2 px-5 py-4">
             <div className="flex items-start gap-2 text-sm">
               <span className="text-muted-foreground mt-0.5 shrink-0">•</span>

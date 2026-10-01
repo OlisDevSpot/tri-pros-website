@@ -108,7 +108,7 @@ export function DealStructureFields({
 
       {/* Incentives section */}
       {programName && incentiveDisplays.length > 0 && (
-        <Card className="border-border/60 bg-muted/30">
+        <Card className="border-border bg-muted">
           <CardHeader className="pb-3 pt-4">
             <div className="flex items-center gap-2">
               <CardTitle className="text-sm font-semibold">Program Incentives</CardTitle>
@@ -204,7 +204,7 @@ export function DealStructureFields({
           />
 
           {/* Monthly payment preview */}
-          <Card className="border-border/60 bg-muted/30">
+          <Card className="border-border bg-muted">
             <CardContent className="flex items-center justify-between px-5 py-4">
               <div>
                 <p className="text-sm font-semibold">Monthly Payment</p>
@@ -252,7 +252,7 @@ export function DealStructureFields({
           />
 
           {/* Deposit percentage */}
-          <Card className="border-border/60 bg-muted/30">
+          <Card className="border-border bg-muted">
             <CardContent className="flex items-center justify-between px-5 py-4">
               <div>
                 <p className="text-sm font-semibold">Deposit Percentage</p>

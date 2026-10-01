@@ -37,7 +37,7 @@ export function TopBar({ customer, meetingId, currentStep, onStepClick, syncStat
   const panelLabel = panelOpen ? SHELL_COPY.closePanel : SHELL_COPY.openPanel
 
   return (
-    <header className="@container/topbar grid h-12 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 border-b border-border/40 px-3 md:px-4 lg:pr-0">
+    <header className="@container/topbar grid h-12 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 border-b border-border px-3 md:px-4 lg:pr-0">
       <div className="flex min-w-0 items-center gap-1 overflow-hidden">
         <Button
           asChild

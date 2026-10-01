@@ -41,7 +41,7 @@ export function StorySolution({ project, tradesWithScopes }: Props) {
   ].filter(Boolean) as Array<{ label: string, value: string }>
 
   return (
-    <section ref={ref} className="bg-muted/20 py-16 lg:py-24">
+    <section ref={ref} className="bg-muted py-16 lg:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -91,7 +91,7 @@ export function StorySolution({ project, tradesWithScopes }: Props) {
                 className="flex gap-3"
               >
                 {stats.map(stat => (
-                  <Card key={stat.label} className="bg-background/60">
+                  <Card key={stat.label} className="bg-card">
                     <CardContent className="px-5 py-3">
                       <p className="text-xl font-bold text-foreground">{stat.value}</p>
                       <p className="text-xs text-muted-foreground">{stat.label}</p>
@@ -114,7 +114,7 @@ export function StorySolution({ project, tradesWithScopes }: Props) {
                 Trades & Scopes
               </p>
               {tradesWithScopes.map(({ trade, scopes }) => (
-                <Card key={trade.id} className="bg-background/60">
+                <Card key={trade.id} className="bg-card">
                   <CardContent className="p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <Badge className="bg-primary text-primary-foreground">{trade.name}</Badge>

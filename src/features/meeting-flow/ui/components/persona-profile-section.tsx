@@ -44,9 +44,9 @@ export function PersonaProfileSection({ children, count, defaultOpen = false, ic
   }
 
   return (
-    <div className="border-b border-border/40 last:border-b-0">
+    <div className="border-b border-border last:border-b-0">
       <button
-        className="flex w-full items-center gap-2 px-4 py-3 text-left transition-colors hover:bg-muted/50"
+        className="flex w-full items-center gap-2 px-4 py-3 text-left transition-colors hover:bg-muted"
         type="button"
         onClick={() => setIsOpen(!isOpen)}
       >

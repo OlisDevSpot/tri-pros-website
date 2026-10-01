@@ -55,7 +55,7 @@ export function MeetingPanel({ openSection, headerRef, onSelect, onClose, childr
       aria-label={SHELL_COPY.panelLabel}
       role="complementary"
       className={cn(
-        'absolute inset-y-0 right-0 z-20 grid w-full max-w-full grid-rows-[auto_minmax(0,1fr)] border-l border-border/40 bg-card shadow-lg sm:w-[380px] lg:right-12',
+        'absolute inset-y-0 right-0 z-20 grid w-full max-w-full grid-rows-[auto_minmax(0,1fr)] border-l border-border bg-card shadow-lg sm:w-[380px] lg:right-12',
         'motion-safe:transition-transform motion-safe:duration-300 motion-safe:ease-[cubic-bezier(.32,.72,0,1)]',
         isOpen ? 'translate-x-0' : 'translate-x-full',
       )}

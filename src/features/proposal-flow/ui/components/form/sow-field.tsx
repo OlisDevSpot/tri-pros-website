@@ -194,7 +194,7 @@ export function SOWSection({
             <CollapsibleTrigger asChild>
               <button
                 type="button"
-                className="flex w-full items-center justify-between px-3 py-2 text-sm font-medium hover:bg-muted/50 lg:px-4"
+                className="flex w-full items-center justify-between px-3 py-2 text-sm font-medium hover:bg-muted lg:px-4"
               >
                 <span>Scope of Work</span>
                 <ChevronDownIcon className={cn('size-4 transition-transform', !scopeOpen && '-rotate-90')} />
@@ -204,7 +204,7 @@ export function SOWSection({
               open={scopeOpen}
               className={cn(
                 'rounded-b-lg transition-colors cursor-pointer',
-                scopeDeadHover && 'bg-muted/50',
+                scopeDeadHover && 'bg-muted',
               )}
               onMouseOver={(e) => {
                 e.stopPropagation()
@@ -277,12 +277,12 @@ export function SOWSection({
         </div>
 
         {/* Financials collapsible */}
-        <div className="w-full border-t border-border/30">
+        <div className="w-full border-t border-border">
           <Collapsible open={financialsOpen} onOpenChange={setFinancialsOpen}>
             <CollapsibleTrigger asChild>
               <button
                 type="button"
-                className="flex w-full items-center justify-between px-3 py-2 text-sm font-medium hover:bg-muted/50 lg:px-4"
+                className="flex w-full items-center justify-between px-3 py-2 text-sm font-medium hover:bg-muted lg:px-4"
               >
                 <span>Financials</span>
                 <ChevronDownIcon className={cn('size-4 transition-transform', !financialsOpen && '-rotate-90')} />
@@ -292,7 +292,7 @@ export function SOWSection({
               open={financialsOpen}
               className={cn(
                 'rounded-b-lg transition-colors cursor-pointer',
-                finDeadHover && 'bg-muted/50',
+                finDeadHover && 'bg-muted',
               )}
               onMouseOver={(e) => {
                 e.stopPropagation()
