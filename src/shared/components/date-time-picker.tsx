@@ -23,12 +23,13 @@ export function DateTimePicker({ value, onChange, className, placeholder = 'Pick
   const [draft, setDraft] = useState<Date | undefined>(value)
   const openRef = useRef(false)
 
-  // Sync draft from external value when popover is closed
+  // Rows build a new Date from the same ISO string every render; syncing on the instant skips those.
+  const valueTime = value?.getTime()
   useEffect(() => {
     if (!openRef.current) {
-      setDraft(value)
+      setDraft(valueTime === undefined ? undefined : new Date(valueTime))
     }
-  }, [value])
+  }, [valueTime])
 
   function handleOpenChange(nextOpen: boolean) {
     if (!nextOpen && openRef.current) {
