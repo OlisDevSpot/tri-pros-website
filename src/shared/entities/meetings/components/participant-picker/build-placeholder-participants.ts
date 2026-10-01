@@ -6,16 +6,15 @@ import type { AppRouter } from '@/trpc/routers/app'
 type ParticipantsCache = inferRouterOutputs<AppRouter>['meetingsRouter']['participants']['getParticipants']
 
 /**
- * Builds a `ParticipantsCache`-shaped array from optional owner / co-owner
- * snapshots so it can be used as React Query `placeholderData` / `initialData`.
+ * Shapes the owner / co-owner a row already carries like a `getParticipants` result, so a table can
+ * show them without one request per row.
  *
- * Returns `null` when neither snapshot is present so callers can fall back to
- * the normal loading state instead of seeding an empty cache.
+ * Returns `null` when neither is present, so callers fetch and show their loading state rather than
+ * an empty list that reads as "no participants".
  *
- * Note: the resulting array does NOT include helper participants — the real
- * `getParticipants` fetch is still required for an accurate helper count.
- * That's why the picker uses `placeholderData` (background refetch) rather
- * than `initialData` (treats as fresh).
+ * The snapshot has no helpers, so it stands in only where helpers are not shown: the read-only
+ * summary seeds it as `initialData`, and the picker shows it while closed and fetches the full list
+ * when it opens.
  */
 export function buildPlaceholderParticipants(
   initialOwner: InitialParticipantSummary | null | undefined,

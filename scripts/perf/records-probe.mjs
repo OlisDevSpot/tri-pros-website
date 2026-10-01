@@ -155,8 +155,16 @@ function firstRowFullyShown() {
   return !!tr
 }
 
-await page.goto(`${base}/api/dev/playwright-session?secret=${encodeURIComponent(secret)}&redirect=${encodeURIComponent(path)}`)
-await page.waitForFunction(hasDataRows, null, { timeout: 120000 })
+try {
+  await page.goto(`${base}/api/dev/playwright-session?secret=${encodeURIComponent(secret)}&redirect=${encodeURIComponent(path)}`)
+  await page.waitForFunction(hasDataRows, null, { timeout: 120000 })
+}
+catch (error) {
+  // Playwright's navigation errors quote the URL, which carries the secret.
+  console.error(error.message.replaceAll(encodeURIComponent(secret), '***').replaceAll(secret, '***'))
+  await browser.close()
+  process.exit(1)
+}
 const rowAttribute = await page.evaluate(() => {
   const tr = [...document.querySelectorAll('tbody tr')]
     .find(el => [...el.attributes].some(attr => /^data-.+-row$/.test(attr.name) && attr.name !== 'data-expanded-row'))

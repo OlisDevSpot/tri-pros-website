@@ -58,7 +58,6 @@ export function useMeetingsTable(
     })
   }, [])
 
-  // Memoized: the action configs are keyed on this object's identity.
   const overrides = useMemo(() => ({
     onView: handleView,
     onAssignOwner: (row: MeetingRow) => setParticipantsMeetingId(row.id),
