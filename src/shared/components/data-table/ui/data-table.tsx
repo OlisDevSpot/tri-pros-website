@@ -1,7 +1,7 @@
 'use client'
 
-import type { ColumnDef, ColumnFiltersState, ColumnSizingState, ExpandedState, FilterFnOption, SortingState, Updater, VisibilityState } from '@tanstack/react-table'
-import type { ReactNode } from 'react'
+import type { ColumnDef, ColumnFiltersState, ColumnSizingState, ExpandedState, FilterFnOption, Row, SortingState, TableMeta, Updater, VisibilityState } from '@tanstack/react-table'
+import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react'
 import type { DataTableFilterConfig, DataTableServerPagination, DataTableServerSorting, DataTableTimePresetFilter } from '@/shared/components/data-table/types'
 
 import {
@@ -16,21 +16,29 @@ import { PinIcon } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { CELL_BORDER } from '@/shared/components/data-table/constants/cell-border'
+import { FROZEN_COLUMN_SHADOW } from '@/shared/components/data-table/constants/frozen-column-shadow'
 import { SKELETON_ROW_HEIGHT_CLASS } from '@/shared/components/data-table/constants/skeleton-widths'
 import { useTablePreferences } from '@/shared/components/data-table/contexts/table-preferences-context'
 import { usePullToRefresh } from '@/shared/components/data-table/hooks/use-pull-to-refresh'
 import { createDateRangeFilterFn } from '@/shared/components/data-table/lib/filter-fns'
+import { isRowClick } from '@/shared/components/data-table/lib/is-row-click'
 import { mapColumnSortIds } from '@/shared/components/data-table/lib/map-column-sort-ids'
 import { DataTableBody } from '@/shared/components/data-table/ui/data-table-body'
 import { DataTableFilterBar } from '@/shared/components/data-table/ui/data-table-filter-bar'
 import { DataTablePagination } from '@/shared/components/data-table/ui/data-table-pagination'
 import { Table, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
+import { useStableCallbacks } from '@/shared/hooks/use-stable-callbacks'
 import { cn } from '@/shared/lib/utils'
 
 export interface DataTableProps<TData, TMeta = unknown> {
   data: TData[]
   columns: ColumnDef<TData>[]
+  /**
+   * Read by cells through `table.options.meta`. Function entries are event callbacks: they stay stable and
+   * always run the latest version. Anything a cell reads while rendering must be a value, because rows
+   * re-render only when a value here changes identity.
+   */
   meta?: TMeta
   /** Unique ID under which the viewer's column widths, frozen column and hidden columns persist. Omit to keep them for this mount only. */
   tableId?: string
@@ -55,6 +63,7 @@ export interface DataTableProps<TData, TMeta = unknown> {
 }
 
 const NO_COLUMN_SIZING: ColumnSizingState = {}
+const NO_META = {}
 
 interface Props<TData, TMeta = unknown> extends DataTableProps<TData, TMeta> {
   onActiveRowChange?: (id: string | null) => void
@@ -102,7 +111,6 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   const [preferences, updatePreferences] = useTablePreferences(tableId)
   const columnSizing = preferences.sizes ?? NO_COLUMN_SIZING
   const isFrozen = preferences.frozen ?? true
-  const [isScrolled, setIsScrolled] = useState(false)
 
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -111,7 +119,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   const handleScroll = useCallback(() => {
     const el = scrollRef.current
     if (el) {
-      setIsScrolled(el.scrollLeft > 0)
+      el.toggleAttribute('data-scrolled', el.scrollLeft > 0)
     }
   }, [])
 
@@ -191,6 +199,26 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
     }
   }, [activeRowId, rowDataAttribute])
 
+  const stableMeta = useStableCallbacks((meta ?? NO_META) as object) as TableMeta<TData>
+  const { handleRowClick } = useStableCallbacks({
+    handleRowClick: (event: ReactMouseEvent<HTMLTableRowElement>, row: Row<TData>) => {
+      if (onRowClick || renderExpandedRow) {
+        if (!isRowClick(event, window.getSelection()?.toString() ?? '')) {
+          return
+        }
+        if (renderExpandedRow) {
+          row.toggleExpanded()
+        }
+        else {
+          onRowClick?.(row.original)
+        }
+      }
+      else if (isMobile) {
+        setActiveRowId(prev => prev === row.original.id ? null : row.original.id)
+      }
+    },
+  })
+
   const table = useReactTable({
     data,
     columns: patchedColumns,
@@ -255,10 +283,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
       ? { manualPagination: true, manualFiltering: true, rowCount: serverPagination.rowCount }
       : { getPaginationRowModel: getPaginationRowModel(), initialState: { pagination: { pageSize } } }),
     ...(serverSorting ? { manualSorting: true } : {}),
-    meta: {
-      ...meta,
-      activeRowId,
-    } as TMeta & { activeRowId: string | null },
+    meta: stableMeta,
   })
 
   // Derived during render, not in a handler: page size and the toolbar's Reset change the URL state without going through this table's handlers.
@@ -273,8 +298,6 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   const isAnyColumnResizing = !!table.getState().columnSizingInfo.isResizingColumn
 
   const totalDeclaredWidth = table.getFlatHeaders().reduce((sum, h) => sum + h.getSize(), 0)
-
-  const showFrozenShadow = isFrozen && isScrolled
 
   const filteredRows = table.getFilteredRowModel().rows
   const filteredCount = filteredRows.length
@@ -300,7 +323,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
           ref={scrollRef}
           onScroll={handleScroll}
           className={cn(
-            'grow min-h-0 overflow-auto overscroll-none touch-pan-x touch-pan-y',
+            'group/scroller grow min-h-0 overflow-auto overscroll-none touch-pan-x touch-pan-y',
             // The pull spinner and expanded panels size to the visible width with `cqw`, without measuring it.
             // The size container is this scroller's full-width child, not the scroller: Chromium resolves a
             // scroller's own `cqw` with its vertical scrollbar included, so `100cqw` overflowed it sideways.
@@ -333,8 +356,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                           CELL_BORDER,
                           isFirstCol && isFrozen && cn(
                             'sticky left-0 z-30 bg-background border-r border-border/50',
-                            'transition-shadow duration-200',
-                            showFrozenShadow && 'shadow-[4px_0_8px_0_rgba(0,0,0,0.3)]',
+                            FROZEN_COLUMN_SHADOW,
                           ),
                         )}
                         style={{
@@ -431,11 +453,8 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
               rowDataAttribute={rowDataAttribute}
               getRowClassName={getRowClassName}
               renderExpandedRow={renderExpandedRow}
-              onRowClick={onRowClick}
-              isMobile={isMobile}
-              setActiveRowId={setActiveRowId}
+              onRowClick={handleRowClick}
               isFrozen={isFrozen}
-              showFrozenShadow={showFrozenShadow}
               serverPagination={serverPagination}
               isRefreshing={isRefreshing}
               skeletonRowClassName={skeletonRowClassName}

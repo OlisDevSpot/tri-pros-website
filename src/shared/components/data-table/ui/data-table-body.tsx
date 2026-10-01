@@ -1,17 +1,15 @@
 'use client'
 
 import type { Row, Table } from '@tanstack/react-table'
-import type { Dispatch, ReactNode, SetStateAction } from 'react'
+import type { MouseEvent, ReactNode } from 'react'
 import type { DataTableServerPagination } from '@/shared/components/data-table/types'
 
-import { flexRender } from '@tanstack/react-table'
-import { ChevronRightIcon, RefreshCw } from 'lucide-react'
-import { Fragment, memo } from 'react'
+import { RefreshCw } from 'lucide-react'
+import { memo } from 'react'
 
 import { CELL_BORDER } from '@/shared/components/data-table/constants/cell-border'
 import { SKELETON_CELL_WIDTHS } from '@/shared/components/data-table/constants/skeleton-widths'
-import { isRowClick } from '@/shared/components/data-table/lib/is-row-click'
-import { AnimatedCollapsibleContent } from '@/shared/components/ui/collapsible'
+import { DataTableRow } from '@/shared/components/data-table/ui/data-table-row'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { TableBody, TableCell, TableRow } from '@/shared/components/ui/table'
 import { cn } from '@/shared/lib/utils'
@@ -27,11 +25,8 @@ interface DataTableBodyProps<TData extends { id: string }> {
   rowDataAttribute: string
   getRowClassName?: (row: TData) => string | undefined
   renderExpandedRow?: (row: TData) => ReactNode
-  onRowClick?: (row: TData) => void
-  isMobile: boolean
-  setActiveRowId: Dispatch<SetStateAction<string | null>>
+  onRowClick: (event: MouseEvent<HTMLTableRowElement>, row: Row<TData>) => void
   isFrozen: boolean
-  showFrozenShadow: boolean
   serverPagination?: DataTableServerPagination
   isRefreshing: boolean
   skeletonRowClassName: string
@@ -47,14 +42,15 @@ function DataTableBodyImpl<TData extends { id: string }>({
   getRowClassName,
   renderExpandedRow,
   onRowClick,
-  isMobile,
-  setActiveRowId,
   isFrozen,
-  showFrozenShadow,
   serverPagination,
   isRefreshing,
   skeletonRowClassName,
 }: DataTableBodyProps<TData>) {
+  const meta = table.options.meta
+  const columns = table.options.columns
+  const visibleColumnIds = table.getVisibleLeafColumns().map(column => column.id).join(',')
+
   return (
     <TableBody>
       {/* Spacer reflows the rows (a transform would break the frozen column's sticky-left).
@@ -110,103 +106,23 @@ function DataTableBodyImpl<TData extends { id: string }>({
         )
       })()}
       {rows.map((row) => {
-        const rowProps: Record<string, unknown> = { [rowDataAttribute]: true }
-        const customRowClass = getRowClassName?.(row.original)
         const isExpanded = row.getIsExpanded()
-        const detailId = `${tableId ?? entityName}-detail-${row.id}`
-        const expandToggle = renderExpandedRow
-          ? (
-              <button
-                type="button"
-                aria-expanded={isExpanded}
-                aria-controls={detailId}
-                aria-label={isExpanded ? 'Collapse row' : 'Expand row'}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  row.toggleExpanded()
-                }}
-                className="shrink-0 cursor-pointer rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
-              >
-                <ChevronRightIcon className={cn('size-4 motion-safe:transition-transform', isExpanded && 'rotate-90')} />
-              </button>
-            )
-          : null
-
         return (
-          <Fragment key={row.id}>
-            <TableRow
-              className={`group cursor-pointer border-border/50${customRowClass ? ` ${customRowClass}` : ''}`}
-              onClick={(e) => {
-                if (onRowClick || renderExpandedRow) {
-                  if (!isRowClick(e, window.getSelection()?.toString() ?? '')) {
-                    return
-                  }
-                  if (renderExpandedRow) {
-                    row.toggleExpanded()
-                  }
-                  else {
-                    onRowClick?.(row.original)
-                  }
-                }
-                else if (isMobile) {
-                  setActiveRowId(prev => prev === row.original.id ? null : row.original.id)
-                }
-              }}
-              {...rowProps}
-            >
-              {row.getVisibleCells().map((cell, colIdx) => {
-                const content = flexRender(cell.column.columnDef.cell, cell.getContext())
-                const cellContent = colIdx === 0 && expandToggle
-                  ? (
-                      <div className="flex items-center gap-1">
-                        {expandToggle}
-                        <div className="min-w-0 flex-1">{content}</div>
-                      </div>
-                    )
-                  : content
-
-                if (colIdx === 0 && isFrozen) {
-                  return (
-                    <TableCell
-                      key={cell.id}
-                      className={cn(
-                        'sticky left-0 z-5 p-0 border-r border-border/50',
-                        CELL_BORDER,
-                        'transition-shadow duration-200',
-                        showFrozenShadow && 'shadow-[4px_0_8px_0_rgba(0,0,0,0.3)]',
-                      )}
-                      style={{ borderRightStyle: 'dashed' }}
-                    >
-                      <div className="absolute inset-0 bg-background group-hover:bg-muted/50 transition-colors" />
-                      {customRowClass && <div className={cn('absolute inset-0', customRowClass)} />}
-                      <div className="relative p-2">
-                        {cellContent}
-                      </div>
-                    </TableCell>
-                  )
-                }
-
-                return (
-                  <TableCell key={cell.id} className={CELL_BORDER}>
-                    {cellContent}
-                  </TableCell>
-                )
-              })}
-            </TableRow>
-            {renderExpandedRow && (
-              <TableRow data-expanded-row aria-hidden={!isExpanded || undefined} className="hover:bg-transparent">
-                <TableCell colSpan={row.getVisibleCells().length} className={cn('p-0 whitespace-normal', isExpanded && CELL_BORDER)}>
-                  {/* Pinned to the visible width so the panel stays in view while the columns scroll sideways.
-                      Sticky breaks if this cell or any ancestor up to the scroller gets overflow: hidden. */}
-                  <div id={detailId} className="sticky left-0" style={{ width: '100cqw' }}>
-                    <AnimatedCollapsibleContent open={isExpanded}>
-                      {isExpanded ? renderExpandedRow(row.original) : null}
-                    </AnimatedCollapsibleContent>
-                  </div>
-                </TableCell>
-              </TableRow>
-            )}
-          </Fragment>
+          <DataTableRow
+            key={row.id}
+            row={row}
+            meta={meta}
+            columns={columns}
+            visibleColumnIds={visibleColumnIds}
+            isExpanded={isExpanded}
+            isFrozen={isFrozen}
+            rowClassName={getRowClassName?.(row.original)}
+            rowDataAttribute={rowDataAttribute}
+            detailId={`${tableId ?? entityName}-detail-${row.id}`}
+            hasExpandedRow={!!renderExpandedRow}
+            expandedContent={isExpanded && renderExpandedRow ? renderExpandedRow(row.original) : null}
+            onRowClick={onRowClick}
+          />
         )
       })}
     </TableBody>
