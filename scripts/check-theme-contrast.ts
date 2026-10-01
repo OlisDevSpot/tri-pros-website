@@ -6,14 +6,18 @@ type Tokens = Map<string, string>
 type Mode = 'light' | 'dark'
 type Rgba = [number, number, number, number]
 
+/** Where a token is read: the page, a surface on a rung of the elevation ladder, an overlay, or beneath the page. */
+type Place = 'beneath' | 'page' | 'rung 1' | 'rung 2' | 'rung 3' | 'overlay'
+
 interface Pair {
   label: string
   fg: string
   bg: string
-  /** Non-text steps can need a different floor per mode; see the border pairs. */
-  min: number | Record<Mode, number>
+  min: number
   /** Resolves a translucent `bg` against this token first (e.g. a pill fill over the card). */
   base?: string
+  /** Surface-relative pairs are checked on every place listed; the rest on the page only. */
+  on?: Place[]
 }
 
 const STATUS_TONES = ['info', 'pending', 'attention', 'action', 'success', 'danger', 'idle'] as const
@@ -51,30 +55,43 @@ function readBlock(selector: RegExp): Tokens {
   return tokens
 }
 
-// The cascade on <html>: :root first, then .dark (settings only in dark mode), then the ramp block,
-// which derives every surface from those settings.
+// The cascade: the settings (:root, then .dark in dark mode), the page's absolute rungs, then the relative block
+// that every surface re-declares against its own --depth. A place is that cascade with the depth it would have.
 const rootBlock = readBlock(/^:root,\s*\.funnel-light\s*\{/m)
 const darkBlock = readBlock(/^\.dark\s*\{/m)
-const rampBlock = readBlock(/^:root,\s*\.dark\s*\{/m)
-const blocks: Record<Mode, Tokens> = {
-  light: new Map([...rootBlock, ...rampBlock]),
-  dark: new Map([...rootBlock, ...darkBlock, ...rampBlock]),
+const pageBlock = readBlock(/^:root,\s*\.dark\s*\{/m)
+const relativeBlock = readBlock(/^:root,\s*\.dark,\s*:is\(\.bg-card/m)
+const overlayBlock = readBlock(/^:is\(\.bg-popover,\s*\.surface-overlay\)\s*\{/m)
+const beneathBlock = readBlock(/^\.surface-beneath\s*\{/m)
+
+const PLACES: Record<Place, Tokens> = {
+  'beneath': beneathBlock,
+  'page': new Map(),
+  'rung 1': new Map([['--depth', '1']]),
+  'rung 2': new Map([['--depth', '2']]),
+  'rung 3': new Map([['--depth', '3']]),
+  'overlay': overlayBlock,
+}
+const CARDS: Place[] = ['rung 1', 'rung 2', 'rung 3']
+
+function tokensFor(mode: Mode, place: Place): Tokens {
+  return new Map([...rootBlock, ...(mode === 'dark' ? darkBlock : []), ...pageBlock, ...relativeBlock, ...PLACES[place]])
 }
 
-function substitute(value: string, mode: Mode, depth = 0): string {
+function substitute(value: string, tokens: Tokens, depth = 0): string {
   if (depth > 12) {
     throw new Error(`var() nests too deep in "${value}"`)
   }
   return value.replace(/var\((--[\w-]+)\)/g, (_, name: string) => {
-    const raw = blocks[mode].get(name)
+    const raw = tokens.get(name)
     if (raw === undefined) {
       throw new Error(`${name} is not declared`)
     }
-    return substitute(raw, mode, depth + 1)
+    return substitute(raw, tokens, depth + 1)
   })
 }
 
-const resolve = (name: string, mode: Mode) => substitute(`var(${name})`, mode)
+const resolve = (name: string, mode: Mode, place: Place = 'page') => substitute(`var(${name})`, tokensFor(mode, place))
 
 // Splits on a separator only outside parentheses, so `calc(a + b) 0.01 255` gives three channels.
 function splitTopLevel(text: string, separator: RegExp): string[] {
@@ -98,7 +115,7 @@ function splitTopLevel(text: string, separator: RegExp): string[] {
   return parts.map(part => part.trim()).filter(Boolean)
 }
 
-// calc()/min()/max() arithmetic on plain numbers, which is all the ramp uses.
+// calc()/min()/max() arithmetic on plain numbers, which is all the ladder uses.
 function evaluate(expression: string): number {
   const tokens = expression.replace(/calc\(/g, '(').match(/min|max|\d*\.?\d+|[-+*/(),]/g) ?? []
   let at = 0
@@ -165,7 +182,7 @@ function toOklab(color: string): Oklab {
   if (call[1] === 'oklch') {
     const [channels, alpha] = splitTopLevel(call[2], /\//)
     const [l, c, h] = splitTopLevel(channels, /\s/)
-    // CSS clamps oklch lightness to 0..1, which is what lets light-mode steps above the card stop at white.
+    // CSS clamps oklch lightness to 0..1, which is what lets light-mode steps above the top rung stop at white.
     const lightness = Math.min(1, Math.max(0, l.endsWith('%') ? evaluate(l.slice(0, -1)) / 100 : evaluate(l)))
     const chroma = evaluate(c)
     const hue = (evaluate(h) * Math.PI) / 180
@@ -221,82 +238,116 @@ function composite(top: Rgba, bottom: Rgba): Rgba {
 }
 
 const luminance = (rgb: Rgba) => 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
+const luminanceOf = (name: string, mode: Mode, place: Place = 'page') => luminance(toLinearRgba(resolve(name, mode, place)))
 
-function contrast(pair: Pair, mode: Mode): number {
-  let background = toLinearRgba(resolve(pair.bg, mode))
+function contrast(pair: Pair, mode: Mode, place: Place): number {
+  let background = toLinearRgba(resolve(pair.bg, mode, place))
   if (pair.base) {
-    background = composite(background, toLinearRgba(resolve(pair.base, mode)))
+    background = composite(background, toLinearRgba(resolve(pair.base, mode, place)))
   }
-  const foreground = composite(toLinearRgba(resolve(pair.fg, mode)), background)
+  const foreground = composite(toLinearRgba(resolve(pair.fg, mode, place)), background)
   const [high, low] = [luminance(foreground), luminance(background)].sort((x, y) => y - x)
   return (high + 0.05) / (low + 0.05)
 }
 
+const EVERYWHERE: Place[] = ['beneath', 'page', ...CARDS, 'overlay']
+const ON_SURFACES: Place[] = ['page', ...CARDS, 'overlay']
+
 const pairs: Pair[] = [
   { label: 'body text on page', fg: '--foreground', bg: '--background', min: 4.5 },
-  { label: 'muted text on card', fg: '--muted-foreground', bg: '--card', min: 4.5 },
-  { label: 'link on card', fg: '--link', bg: '--card', min: 4.5 },
+  { label: 'body text on surface', fg: '--foreground', bg: '--card', min: 4.5, on: EVERYWHERE },
+  { label: 'muted text on surface', fg: '--muted-foreground', bg: '--card', min: 4.5, on: EVERYWHERE },
+  { label: 'muted text on step-up', fg: '--muted-foreground', bg: '--muted', min: 4.5, on: EVERYWHERE },
+  { label: 'link on surface', fg: '--link', bg: '--card', min: 4.5, on: ON_SURFACES },
+  { label: 'destructive text on surface', fg: '--destructive-text', bg: '--card', min: 4.5, on: ON_SURFACES },
+  { label: 'control border vs surface', fg: '--input', bg: '--card', min: 3, on: ON_SURFACES },
+  { label: 'body text on band', fg: '--foreground', bg: '--band', min: 4.5, on: ['page', ...CARDS] },
+  { label: 'muted text on band', fg: '--muted-foreground', bg: '--band', min: 4.5, on: ['page', ...CARDS] },
+  { label: 'body text on hovered row', fg: '--foreground', bg: '--row-hover', min: 4.5, on: ON_SURFACES },
+  { label: 'body text on selected row', fg: '--foreground', bg: '--row-selected', min: 4.5, on: ON_SURFACES },
+  // Edges are the owner's pick (`--edge`, tuned by eye with the elevation-ladder skill). These floors only catch a
+  // retune that makes them vanish; the pick of 2026-10-01 measures 1.13–1.22 on cards.
+  { label: 'edge vs its surface', fg: '--border', bg: '--card', min: 1.1, on: [...CARDS, 'overlay'] },
+  { label: 'skeleton bar vs its surface', fg: '--skeleton', bg: '--card', min: 1.1, on: [...CARDS, 'overlay'] },
+  { label: 'skeleton block vs its surface', fg: '--skeleton-soft', bg: '--card', min: 1.07, on: [...CARDS, 'overlay'] },
   { label: 'button label on primary', fg: '--primary-foreground', bg: '--primary', min: 4.5 },
   { label: 'primary vs page', fg: '--primary', bg: '--background', min: 3 },
-  { label: 'control border vs card', fg: '--input', bg: '--card', min: 3 },
   { label: 'focus ring vs page', fg: '--ring', bg: '--background', min: 3 },
-  { label: 'destructive text on card', fg: '--destructive-text', bg: '--card', min: 4.5 },
   { label: 'label on destructive', fg: '--destructive-foreground', bg: '--destructive', min: 4.5 },
   { label: 'label on success', fg: '--success-foreground', bg: '--success', min: 4.5 },
   { label: 'label on warning', fg: '--warning-foreground', bg: '--warning', min: 4.5 },
   { label: 'sidebar label on rail', fg: '--sidebar-foreground', bg: '--sidebar', min: 4.5 },
   { label: 'sidebar muted on rail', fg: '--sidebar-muted', bg: '--sidebar', min: 4.5 },
   { label: 'active nav label on pill', fg: '--sidebar-accent-foreground', bg: '--sidebar-accent', min: 4.5 },
-  { label: 'body text on band', fg: '--foreground', bg: '--band', min: 4.5 },
-  { label: 'muted text on band', fg: '--muted-foreground', bg: '--band', min: 4.5 },
-  { label: 'muted text on muted', fg: '--muted-foreground', bg: '--muted', min: 4.5 },
-  { label: 'body text on hovered row', fg: '--foreground', bg: '--row-hover', min: 4.5 },
-  { label: 'body text on selected row', fg: '--foreground', bg: '--row-selected', min: 4.5 },
   { label: 'sidebar label on hover', fg: '--sidebar-foreground', bg: '--sidebar-hover', min: 4.5 },
   { label: 'sidebar label on active pill', fg: '--sidebar-foreground', bg: '--sidebar-accent', min: 4.5 },
   { label: 'active icon on pill', fg: '--sidebar-active-icon', bg: '--sidebar-accent', min: 3 },
-  // Dark borders and skeletons measure 1.29:1 on a card at today's settings; the dark floor sits at 1.25 until the settings are tuned on the iPad.
-  { label: 'border vs card', fg: '--border', bg: '--card', min: { light: 1.3, dark: 1.25 } },
-  { label: 'skeleton bar vs card', fg: '--skeleton', bg: '--card', min: { light: 1.3, dark: 1.25 } },
-  { label: 'skeleton block vs card', fg: '--skeleton-soft', bg: '--card', min: 1.15 },
-  ...STATUS_TONES.map(tone => ({ label: `status ${tone} text on its fill`, fg: `--status-${tone}-fg`, bg: `--status-${tone}-bg`, min: 4.5, base: '--card' })),
-  ...SERIES.map(series => ({ label: `series ${series} vs card`, fg: `--series-${series}`, bg: '--card', min: 3 })),
-  ...Array.from({ length: IDENTITY_COUNT }, (_, i) => ({ label: `identity ${i + 1} text on its fill`, fg: `--identity-${i + 1}-fg`, bg: `--identity-${i + 1}-bg`, min: 4.5, base: '--card' })),
+  ...STATUS_TONES.map(tone => ({ label: `status ${tone} text on its fill`, fg: `--status-${tone}-fg`, bg: `--status-${tone}-bg`, min: 4.5, base: '--card', on: CARDS })),
+  ...SERIES.map(series => ({ label: `series ${series} vs surface`, fg: `--series-${series}`, bg: '--card', min: 3, on: CARDS })),
+  ...Array.from({ length: IDENTITY_COUNT }, (_, i) => ({ label: `identity ${i + 1} text on its fill`, fg: `--identity-${i + 1}-fg`, bg: `--identity-${i + 1}-bg`, min: 4.5, base: '--card', on: CARDS })),
 ]
 
-// Sunlight from above: every step must sit where the ramp puts it. In light mode nothing can be lighter than
-// the card (white), so the band and borders step down from it; in dark mode they step up.
-const depthSteps: Record<Mode, [string, string][]> = {
-  light: [['--card', '--background'], ['--muted', '--background'], ['--card', '--muted'], ['--card', '--band'], ['--band', '--border']],
-  dark: [['--card', '--background'], ['--muted', '--background'], ['--card', '--muted'], ['--band', '--card'], ['--border', '--band'], ['--surface-raised', '--card'], ['--sidebar', '--background']],
-}
+// Sunlight from above: the ladder climbs from beneath the page to the overlays, and on every surface the band sits
+// between the surface and its step-up. Each entry reads [lower, upper]: upper must be lighter.
+const climb: [[string, Place], [string, Place]][] = [
+  [['--card', 'beneath'], ['--background', 'page']],
+  [['--background', 'page'], ['--card', 'rung 1']],
+  [['--card', 'rung 1'], ['--card', 'rung 2']],
+  [['--card', 'rung 2'], ['--card', 'rung 3']],
+  [['--card', 'rung 3'], ['--card', 'overlay']],
+  [['--card', 'rung 3'], ['--popover', 'page']],
+  ...CARDS.flatMap((place): [[string, Place], [string, Place]][] => [
+    [['--card', place], ['--band', place]],
+    [['--band', place], ['--muted', place]],
+  ]),
+]
+
+// In light mode an edge is darker than its surface; in dark mode, lighter.
+const edgeLeans: Record<Mode, 'darker' | 'lighter'> = { light: 'darker', dark: 'lighter' }
+
+const railClimb: [string, string][] = [['--background', '--sidebar'], ['--sidebar', '--sidebar-hover'], ['--sidebar-hover', '--sidebar-accent']]
 
 const failures: string[] = []
 let checks = 0
 
-for (const mode of ['light', 'dark'] as const) {
-  for (const pair of pairs) {
-    checks++
-    try {
-      const ratio = contrast(pair, mode)
-      const min = typeof pair.min === 'number' ? pair.min : pair.min[mode]
-      if (ratio < min) {
-        failures.push(`${mode}: ${pair.label} is ${ratio.toFixed(2)}:1, needs ${min}:1`)
-      }
-    }
-    catch (error) {
-      failures.push(`${mode}: ${pair.label}: ${(error as Error).message}`)
+function guard(label: string, test: () => string | undefined) {
+  checks++
+  try {
+    const failure = test()
+    if (failure) {
+      failures.push(failure)
     }
   }
-  for (const [upper, lower] of depthSteps[mode]) {
-    checks++
-    try {
-      if (luminance(toLinearRgba(resolve(upper, mode))) <= luminance(toLinearRgba(resolve(lower, mode)))) {
-        failures.push(`${mode}: ${upper} must be lighter than ${lower}`)
-      }
+  catch (error) {
+    failures.push(`${label}: ${(error as Error).message}`)
+  }
+}
+
+for (const mode of ['light', 'dark'] as const) {
+  for (const pair of pairs) {
+    for (const place of pair.on ?? ['page']) {
+      guard(`${mode}: ${pair.label} (${place})`, () => {
+        const ratio = contrast(pair, mode, place)
+        return ratio < pair.min ? `${mode}: ${pair.label} (${place}) is ${ratio.toFixed(2)}:1, needs ${pair.min}:1` : undefined
+      })
     }
-    catch (error) {
-      failures.push(`${mode}: ${upper} over ${lower}: ${(error as Error).message}`)
+  }
+  for (const [[lower, lowerPlace], [upper, upperPlace]] of climb) {
+    guard(`${mode}: ${upper} (${upperPlace}) over ${lower} (${lowerPlace})`, () =>
+      luminanceOf(upper, mode, upperPlace) <= luminanceOf(lower, mode, lowerPlace)
+        ? `${mode}: ${upper} (${upperPlace}) must be lighter than ${lower} (${lowerPlace})`
+        : undefined)
+  }
+  for (const place of CARDS) {
+    guard(`${mode}: edge on ${place}`, () => {
+      const edgeIsLighter = luminanceOf('--border', mode, place) > luminanceOf('--card', mode, place)
+      return edgeIsLighter === (edgeLeans[mode] === 'lighter') ? undefined : `${mode}: the edge on ${place} must be ${edgeLeans[mode]} than its surface`
+    })
+  }
+  if (mode === 'dark') {
+    for (const [lower, upper] of railClimb) {
+      guard(`dark: ${upper} over ${lower}`, () =>
+        luminanceOf(upper, mode) <= luminanceOf(lower, mode) ? `dark: ${upper} must be lighter than ${lower}` : undefined)
     }
   }
 }

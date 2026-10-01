@@ -6,15 +6,16 @@
 :root,
 .funnel-light {
   color-scheme: light;
-  /* Every app surface is one hue at a lightness step from the page (the :root, .dark block derives them).
-     Tune the look here: page lightness, step size, tint strength. Borders step toward the ink. */
-  --surface-h: 255;
-  --surface-c: 0.012;
-  --canvas-l: 0.945;
-  --lift: 0.055;
+  /* The elevation ladder: one hue, the page darkest, every surface stacked over another one rung lighter.
+     Tune it with the elevation-ladder skill (its ladder.json records each pick): page lightness, rung step,
+     tint, and how far an edge sits from its surface (darker in light, lighter in dark). */
+  --surface-h: 253;
+  --surface-c: 0.017;
+  --canvas-l: 0.894;
+  --step: 0.024;
+  --edge: 0.048;
   --edge-dir: -1;
-  /* One band, lighter than the page and darker than the card: every other row. */
-  --band: oklch(calc(var(--canvas-l) + 0.7 * var(--lift)) var(--surface-c) var(--surface-h));
+  --depth: 0;
   /* The floating rail's inset, the page margin and every gap between section cards. */
   --gutter: 0.5rem;
   /* The raw logo color is identity only (logo, browser theme-color): as text on light it fails contrast. */
@@ -39,8 +40,8 @@
   --success-foreground: oklch(1 0 0);
   --warning: var(--status-pending-fg);
   --warning-foreground: oklch(1 0 0);
-  --input: oklch(0.62 0.03 255);
-  --ring: oklch(0.58 0.15 238);
+  --input: oklch(0.6 0.03 255);
+  --ring: oklch(0.575 0.15 238);
   --sidebar: oklch(0.22 0.06 262);
   --sidebar-foreground: oklch(0.86 0.02 250);
   --sidebar-muted: oklch(0.74 0.05 250);
@@ -72,9 +73,9 @@
   --status-idle-fg: oklch(0.46 0.02 255);
   --status-idle-bg: oklch(0.94 0.008 255);
   --status-idle-dot: oklch(0.66 0.02 255);
-  --series-leads: oklch(0.655 0.12 228);
-  --series-booked: oklch(0.56 0.14 236);
-  --series-sits: oklch(0.46 0.14 245);
+  --series-leads: oklch(0.59 0.12 228);
+  --series-booked: oklch(0.51 0.14 236);
+  --series-sits: oklch(0.43 0.14 245);
   --series-sales: oklch(0.3 0.075 258);
   --series-neutral-strong: oklch(0.4 0.03 256);
   --series-neutral-soft: oklch(0.66 0.02 255);
@@ -175,7 +176,6 @@
   /* Marketing fields keep their transparent fill; the app's white field fill is a Command Desk role. */
   --input-background: transparent;
   /* The app derives these from its ramp on :root/.dark; this palette is literal, so it derives them from its own tokens here, or a dark page would lend them its values. */
-  --surface-raised: var(--popover);
   --border-strong: color-mix(in oklab, var(--border) 75%, var(--foreground));
   --band: color-mix(in oklab, var(--muted) 50%, var(--card));
   --row-hover: color-mix(in oklab, var(--primary) 8%, var(--card));
@@ -319,19 +319,18 @@
 
 .dark {
   color-scheme: dark;
-  --surface-c: 0.045;
-  --canvas-l: 0.16;
-  --lift: 0.045;
+  --surface-c: 0.059;
+  --canvas-l: 0.159;
+  --step: 0.047;
   --edge-dir: 1;
-  /* Dark bands need a bigger step than light ones to read at the same strength. */
-  --band: oklch(calc(var(--canvas-l) + 1.5 * var(--lift)) var(--surface-c) var(--surface-h));
+  --depth: 0;
   --foreground: oklch(0.955 0.008 250);
   --card-foreground: var(--foreground);
   --popover-foreground: var(--foreground);
   --primary: oklch(0.76 0.13 230);
   --primary-foreground: oklch(0.19 0.045 258);
   --secondary-foreground: var(--foreground);
-  --muted-foreground: oklch(0.75 0.03 252);
+  --muted-foreground: oklch(0.77 0.03 252);
   --accent-foreground: var(--foreground);
   --link: oklch(0.81 0.11 228);
   --destructive: oklch(0.53 0.19 27);
@@ -341,16 +340,16 @@
   --success-foreground: oklch(0.19 0.045 258);
   --warning: var(--status-pending-fg);
   --warning-foreground: oklch(0.19 0.045 258);
-  --input: oklch(0.53 0.04 256);
+  --input: oklch(0.62 0.04 256);
   --ring: oklch(0.78 0.12 228);
-  /* Dark rail sits level with the cards, a navy tint of the card step. */
-  --sidebar: oklch(calc(var(--canvas-l) + var(--lift)) 0.05 262);
+  /* The dark rail is rung 1, level with a section; its active pill sits 2.2 steps above it. */
+  --sidebar: oklch(calc(var(--canvas-l) + var(--step)) var(--surface-c) var(--surface-h));
   --sidebar-foreground: oklch(0.82 0.02 252);
   --sidebar-muted: oklch(0.68 0.03 252);
-  --sidebar-accent: oklch(calc(var(--canvas-l) + 2.2 * var(--lift)) 0.055 262);
+  --sidebar-accent: oklch(calc(var(--canvas-l) + 3.2 * var(--step)) var(--surface-c) var(--surface-h));
   --sidebar-accent-foreground: oklch(0.96 0.01 250);
-  --sidebar-hover: oklch(calc(var(--canvas-l) + 1.6 * var(--lift)) 0.05 262);
-  --sidebar-border: oklch(calc(var(--canvas-l) + 2 * var(--lift)) 0.05 262);
+  --sidebar-hover: oklch(calc(var(--canvas-l) + 1.6 * var(--step)) var(--surface-c) var(--surface-h));
+  --sidebar-border: oklch(calc(var(--canvas-l) + 2 * var(--step)) var(--surface-c) var(--surface-h));
   --sidebar-ring: var(--brand-cyan-bright);
   --status-info-fg: oklch(0.84 0.06 245);
   --status-info-bg: oklch(0.3 0.045 250);
@@ -433,31 +432,83 @@
   --shadow-2xl: 0 18px 40px -12px oklch(0 0 0 / 0.7), inset 0 1px 0 oklch(1 0 0 / 0.06);
 }
 
-/* Declared on both selectors because var() resolves where a property is declared: a nested .dark
-   wrapper (the customer profile hero) must recompute its surfaces from its own settings, not
-   inherit the page's light values. */
+/* Absolute rungs, the same wherever they are read: the page (rung 0) and the overlays on rung 4. Declared on
+   .dark too, so a nested .dark wrapper (the customer profile hero) resolves them with the dark settings. */
 :root,
 .dark {
-  --surface-card-l: min(1, var(--canvas-l) + var(--lift));
   --background: oklch(calc(var(--canvas-l)) var(--surface-c) var(--surface-h));
-  --muted: oklch(calc(var(--canvas-l) + 0.5 * var(--lift)) var(--surface-c) var(--surface-h));
+  --popover: oklch(calc(var(--canvas-l) + 4 * var(--step)) var(--surface-c) var(--surface-h));
+}
+
+/* Relative tokens. Every surface declares them again, because var() resolves where a property is declared and
+   is inherited as a finished colour: declared on :root alone, a card inside a card would get the page's answer.
+   On the page itself (not a surface) they describe a card placed on it, rung 1; `muted` is always one rung above
+   wherever it is read. */
+:root,
+.dark,
+:is(.bg-card, .surface, .surface-beneath, .bg-popover, .surface-overlay) {
+  --here-l: calc(var(--canvas-l) + max(var(--depth), 1) * var(--step));
+  --card: oklch(var(--here-l) var(--surface-c) var(--surface-h));
+  --muted: oklch(calc(var(--canvas-l) + (var(--depth) + 1) * var(--step)) var(--surface-c) var(--surface-h));
   --secondary: var(--muted);
   --accent: var(--muted);
-  --card: oklch(calc(var(--surface-card-l)) var(--surface-c) var(--surface-h));
+  --band: oklch(calc(var(--here-l) + 0.5 * var(--step)) var(--surface-c) var(--surface-h));
+  --border: oklch(calc(var(--here-l) + var(--edge-dir) * var(--edge)) var(--surface-c) var(--surface-h));
+  --border-strong: oklch(calc(var(--here-l) + var(--edge-dir) * 2 * var(--edge)) var(--surface-c) var(--surface-h));
   --input-background: var(--card);
-  /* Light mode clamps at white, so the step above the card is carried by shadow there. */
-  --surface-raised: oklch(calc(min(1, var(--canvas-l) + 2 * var(--lift))) var(--surface-c) var(--surface-h));
-  --popover: var(--surface-raised);
-  --border: oklch(calc(var(--surface-card-l) + var(--edge-dir) * 2 * var(--lift)) var(--surface-c) var(--surface-h));
-  --border-strong: oklch(
-    calc(var(--surface-card-l) + var(--edge-dir) * 3 * var(--lift)) var(--surface-c) var(--surface-h)
-  );
   --row-hover: color-mix(in oklab, var(--primary) 8%, var(--card));
   --row-selected: color-mix(in oklab, var(--primary) 12%, var(--card));
   --skeleton: var(--border);
-  --skeleton-soft: oklch(
-    calc(var(--surface-card-l) + var(--edge-dir) * 1.5 * var(--lift)) var(--surface-c) var(--surface-h)
-  );
+  --skeleton-soft: oklch(calc(var(--here-l) + var(--edge-dir) * 0.75 * var(--edge)) var(--surface-c) var(--surface-h));
+}
+
+/* A surface counts the surfaces it sits in, up to three. Variants (`md:bg-card`, `bg-card/50`) are other class
+   names, so they are not surfaces. */
+:is(.bg-card, .surface) {
+  --depth: 1;
+}
+:is(.bg-card, .surface) :is(.bg-card, .surface) {
+  --depth: 2;
+}
+:is(.bg-card, .surface) :is(.bg-card, .surface) :is(.bg-card, .surface) {
+  --depth: 3;
+}
+
+/* Overlays render in portals, out of nesting's reach, and sit on the top rung. `surface-overlay` marks the glass
+   ones, which paint their own fill. */
+:is(.bg-popover, .surface-overlay) {
+  --depth: 4;
+}
+
+/* The rung beneath the page: the public footer the page scrolls over. Comes after the relative block so its
+   lightness wins. */
+.surface-beneath {
+  --depth: -1;
+  --here-l: calc(var(--canvas-l) - var(--step));
+}
+
+/* The marketing world keeps its literal palette: its surfaces take the scope's values, not the ladder's. */
+:is(.theme-marketing, .funnel-light) :is(.bg-card, .surface, .surface-beneath, .bg-popover, .surface-overlay) {
+  --card: inherit;
+  --muted: inherit;
+  --secondary: inherit;
+  --accent: inherit;
+  --band: inherit;
+  --border: inherit;
+  --border-strong: inherit;
+  --input-background: inherit;
+  --row-hover: inherit;
+  --row-selected: inherit;
+  --skeleton: inherit;
+  --skeleton-soft: inherit;
+}
+
+@utility surface {
+  background-color: var(--card);
+}
+
+@utility surface-beneath {
+  background-color: var(--card);
 }
 
 @theme inline {
@@ -495,7 +546,6 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  --color-surface-raised: var(--surface-raised);
   --color-band: var(--band);
   --color-row-hover: var(--row-hover);
   --color-row-selected: var(--row-selected);
