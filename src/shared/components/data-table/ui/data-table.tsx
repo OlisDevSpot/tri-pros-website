@@ -300,9 +300,11 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
           ref={scrollRef}
           onScroll={handleScroll}
           className={cn(
-            // A size container: the pull spinner and expanded panels size to it with `cqw`, without measuring it.
-            '@container grow min-h-0 overflow-auto overscroll-none touch-pan-x touch-pan-y',
-            '**:data-[slot=table-container]:overflow-visible',
+            'grow min-h-0 overflow-auto overscroll-none touch-pan-x touch-pan-y',
+            // The pull spinner and expanded panels size to the visible width with `cqw`, without measuring it.
+            // The size container is this scroller's full-width child, not the scroller: Chromium resolves a
+            // scroller's own `cqw` with its vertical scrollbar included, so `100cqw` overflowed it sideways.
+            '**:data-[slot=table-container]:overflow-visible *:data-[slot=table-container]:@container',
             isAnyColumnResizing && 'cursor-col-resize select-none',
           )}
         >

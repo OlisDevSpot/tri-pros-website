@@ -67,7 +67,7 @@ function DataTableBodyImpl<TData extends { id: string }>({
               className="overflow-hidden"
               style={{ height: 'calc(var(--dt-pull, 0) * 1px)', transition: 'height var(--dt-pull-ms, 0ms) ease-out' }}
             >
-              {/* Container width, so the spinner centers on the viewport, not the overflowing table. */}
+              {/* Container width, so the spinner centers on the visible width, not the overflowing table. */}
               <div className="flex h-16 items-end justify-center pb-2" style={{ width: '100cqw' }}>
                 <div
                   className="rounded-full border border-border/50 bg-background p-1.5 shadow-sm"
