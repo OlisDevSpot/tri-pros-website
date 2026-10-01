@@ -23,7 +23,7 @@ import { PROPOSAL_STATUS_DOT_COLORS } from '@/shared/modules/proposals/core/cons
 export type MeetingRow = AppRouterOutputs['meetingsRouter']['reads']['list']['rows'][number]
 
 export interface MeetingTableMeta {
-  meetingActions?: (row: MeetingRow) => EntityActionConfig<MeetingRow>[]
+  meetingActions?: EntityActionConfig<MeetingRow>[]
   onUpdateOutcome?: (meetingId: string, outcome: MeetingOutcome) => void
   onUpdateScheduledFor?: (meetingId: string, date: Date) => void
   onAssignRep?: (meetingId: string, currentOwnerId: string) => void
@@ -41,7 +41,7 @@ export const MEETING_COLUMNS = {
       return (
         <MeetingCustomerCell
           meeting={row.original}
-          actions={meta?.meetingActions?.(row.original)}
+          actions={meta?.meetingActions}
           onViewProfile={meta?.onViewProfile}
         />
       )

@@ -1,12 +1,11 @@
 import type { JSX } from 'react'
 import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
 
-import { useMemo } from 'react'
-
 import { ROOTS } from '@/shared/config/roots'
 import { CUSTOMER_ACTIONS } from '@/shared/entities/customers/constants/actions'
 import { useCustomerActions } from '@/shared/entities/customers/hooks/use-customer-actions'
 import { useConfirm } from '@/shared/hooks/use-confirm'
+import { useStableCallbacks } from '@/shared/hooks/use-stable-callbacks'
 
 interface CustomerEntity {
   id: string
@@ -44,7 +43,8 @@ export function useCustomerActionConfigs<T extends CustomerEntity>(
     message: 'This will permanently delete this customer and all associated data. This cannot be undone.',
   })
 
-  const actions = useMemo((): EntityActionConfig<T>[] => [
+  // The configs' callbacks close over this render's mutations; only the loading flag should re-render rows.
+  const actions = useStableCallbacks<EntityActionConfig<T>[]>([
     {
       action: CUSTOMER_ACTIONS.view,
       onAction: overrides.onView ?? defaultNavigate,
@@ -71,7 +71,7 @@ export function useCustomerActionConfigs<T extends CustomerEntity>(
       },
       isLoading: deleteCustomer.isPending,
     },
-  ], [overrides, confirmDelete, deleteCustomer])
+  ])
 
   return { actions, DeleteConfirmDialog }
 }

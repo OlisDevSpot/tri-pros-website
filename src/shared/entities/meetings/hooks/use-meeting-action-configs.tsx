@@ -5,7 +5,7 @@ import type { JSX } from 'react'
 import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
 import type { MeetingOutcome } from '@/shared/constants/enums'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 
 import { ROOTS } from '@/shared/config/roots'
 import { CANNOT_RESCHEDULE_REASON, canRescheduleFromOutcome } from '@/shared/constants/enums/meetings'
@@ -14,6 +14,7 @@ import { MEETING_ACTIONS } from '@/shared/entities/meetings/constants/actions'
 import { MEETING_CONFIRMATION_OPTIONS } from '@/shared/entities/meetings/constants/confirmation-options'
 import { MEETING_OUTCOME_OPTIONS } from '@/shared/entities/meetings/constants/outcome-options'
 import { useConfirm } from '@/shared/hooks/use-confirm'
+import { useStableCallbacks } from '@/shared/hooks/use-stable-callbacks'
 
 import { useMeetingActions } from './use-meeting-actions'
 import { useOutcomeChange } from './use-outcome-change'
@@ -106,89 +107,88 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
     [assignTarget, clearAssignTarget],
   )
 
-  const actions = useMemo((): EntityActionConfig<T>[] => {
-    const configs: EntityActionConfig<T>[] = [
-      {
-        action: MEETING_ACTIONS.view,
-        onAction: overrides.onView ?? defaultNavigate,
+  const configs: EntityActionConfig<T>[] = [
+    {
+      action: MEETING_ACTIONS.view,
+      onAction: overrides.onView ?? defaultNavigate,
+    },
+    {
+      action: MEETING_ACTIONS.viewSchedule,
+      onAction: overrides.onViewSchedule ?? defaultViewSchedule,
+    },
+    {
+      action: MEETING_ACTIONS.start,
+      onAction: overrides.onStart ?? defaultNavigate,
+    },
+    {
+      action: MEETING_ACTIONS.duplicate,
+      onAction: entity => duplicateMeeting.mutate({ id: entity.id }),
+      isLoading: duplicateMeeting.isPending,
+    },
+    {
+      action: MEETING_ACTIONS.setOutcome,
+      type: 'select' as const,
+      options: MEETING_OUTCOME_OPTIONS,
+      getCurrentValue: (entity: T) => entity.meetingOutcome ?? 'not_set',
+      onSelect: (entity: T, value: string) => {
+        void changeOutcome(entity.id, value as MeetingOutcome)
       },
-      {
-        action: MEETING_ACTIONS.viewSchedule,
-        onAction: overrides.onViewSchedule ?? defaultViewSchedule,
+    },
+    {
+      action: MEETING_ACTIONS.confirmation,
+      type: 'select' as const,
+      options: MEETING_CONFIRMATION_OPTIONS,
+      getCurrentValue: (entity: T) => entity.confirmedAt ? 'confirmed' : 'unconfirmed',
+      onSelect: (entity: T, value: string) => {
+        updateConfirmation.mutate({
+          id: entity.id,
+          data: { confirmedAt: value === 'confirmed' ? new Date().toISOString() : null },
+        })
       },
-      {
-        action: MEETING_ACTIONS.start,
-        onAction: overrides.onStart ?? defaultNavigate,
-      },
-      {
-        action: MEETING_ACTIONS.duplicate,
-        onAction: entity => duplicateMeeting.mutate({ id: entity.id }),
-        isLoading: duplicateMeeting.isPending,
-      },
-      {
-        action: MEETING_ACTIONS.setOutcome,
-        type: 'select' as const,
-        options: MEETING_OUTCOME_OPTIONS,
-        getCurrentValue: (entity: T) => entity.meetingOutcome ?? 'not_set',
-        onSelect: (entity: T, value: string) => {
-          void changeOutcome(entity.id, value as MeetingOutcome)
-        },
-      },
-      {
-        action: MEETING_ACTIONS.confirmation,
-        type: 'select' as const,
-        options: MEETING_CONFIRMATION_OPTIONS,
-        getCurrentValue: (entity: T) => entity.confirmedAt ? 'confirmed' : 'unconfirmed',
-        onSelect: (entity: T, value: string) => {
-          updateConfirmation.mutate({
-            id: entity.id,
-            data: { confirmedAt: value === 'confirmed' ? new Date().toISOString() : null },
-          })
-        },
-        isLoading: updateConfirmation.isPending,
-      },
-      {
-        action: MEETING_ACTIONS.reschedule,
-        onAction: (entity: T) => void reschedule(entity.id),
-        getDisabledReason: (entity: T) =>
-          canRescheduleFromOutcome((entity.meetingOutcome ?? 'not_set') as MeetingOutcome)
-            ? null
-            : CANNOT_RESCHEDULE_REASON,
-      },
-      {
-        action: MEETING_ACTIONS.createProposal,
-        onAction: overrides.onCreateProposal ?? defaultCreateProposal,
-      },
-      // Always present — CASL permission ['assign', 'Meeting'] controls visibility.
-      // Single click opens the full ManageParticipantsModal on every platform.
-      // (A prior desktop-only submenu rendered the same picker inline, which was
-      // redundant with the modal now that both share ParticipantPickerContent.)
-      {
-        action: MEETING_ACTIONS.assignOwner,
-        onAction: overrides.onAssignOwner ?? defaultAssignOwner,
-      },
-    ]
+      isLoading: updateConfirmation.isPending,
+    },
+    {
+      action: MEETING_ACTIONS.reschedule,
+      onAction: (entity: T) => void reschedule(entity.id),
+      getDisabledReason: (entity: T) =>
+        canRescheduleFromOutcome((entity.meetingOutcome ?? 'not_set') as MeetingOutcome)
+          ? null
+          : CANNOT_RESCHEDULE_REASON,
+    },
+    {
+      action: MEETING_ACTIONS.createProposal,
+      onAction: overrides.onCreateProposal ?? defaultCreateProposal,
+    },
+    // Always present — CASL permission ['assign', 'Meeting'] controls visibility.
+    // Single click opens the full ManageParticipantsModal on every platform.
+    // (A prior desktop-only submenu rendered the same picker inline, which was
+    // redundant with the modal now that both share ParticipantPickerContent.)
+    {
+      action: MEETING_ACTIONS.assignOwner,
+      onAction: overrides.onAssignOwner ?? defaultAssignOwner,
+    },
+  ]
 
-    if (overrides.onAssignProject) {
-      configs.push({
-        action: MEETING_ACTIONS.assignProject,
-        onAction: overrides.onAssignProject,
-      })
-    }
-
+  if (overrides.onAssignProject) {
     configs.push({
-      action: MEETING_ACTIONS.delete,
-      onAction: async (entity: T) => {
-        const ok = await confirmDelete()
-        if (ok) {
-          deleteMeeting.mutate({ id: entity.id })
-        }
-      },
-      isLoading: deleteMeeting.isPending,
+      action: MEETING_ACTIONS.assignProject,
+      onAction: overrides.onAssignProject,
     })
+  }
 
-    return configs
-  }, [overrides, duplicateMeeting, updateConfirmation, changeOutcome, reschedule, deleteMeeting, confirmDelete, defaultAssignOwner])
+  configs.push({
+    action: MEETING_ACTIONS.delete,
+    onAction: async (entity: T) => {
+      const ok = await confirmDelete()
+      if (ok) {
+        deleteMeeting.mutate({ id: entity.id })
+      }
+    },
+    isLoading: deleteMeeting.isPending,
+  })
+
+  // The configs' callbacks close over this render's mutations; only the loading flags should re-render rows.
+  const actions = useStableCallbacks(configs)
 
   return { actions, DeleteConfirmDialog, AssignOwnerDialog, OutcomeReasonDialog, RescheduleDialog, changeOutcome }
 }

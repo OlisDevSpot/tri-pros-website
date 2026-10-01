@@ -74,7 +74,7 @@ export function useMeetingsTable(
   const visibility = useColumnVisibility(tableView.tableId, columns)
 
   const meta = useMemo<MeetingTableMeta>(() => ({
-    meetingActions: () => actions,
+    meetingActions: actions,
     onUpdateOutcome: (meetingId, outcome) => {
       void changeOutcome(meetingId, outcome)
     },

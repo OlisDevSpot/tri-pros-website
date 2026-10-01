@@ -1,10 +1,9 @@
 import type { JSX } from 'react'
 import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
 
-import { useMemo } from 'react'
-
 import { ROOTS } from '@/shared/config/roots'
 import { useConfirm } from '@/shared/hooks/use-confirm'
+import { useStableCallbacks } from '@/shared/hooks/use-stable-callbacks'
 import { PROJECT_ACTIONS } from '@/shared/modules/projects/core/constants/actions'
 
 import { useProjectActions } from './use-project-actions'
@@ -42,7 +41,8 @@ export function useProjectActionConfigs<T extends ProjectEntity>(
     message: 'This will permanently delete this project and all its media. This cannot be undone.',
   })
 
-  const actions = useMemo((): EntityActionConfig<T>[] => [
+  // The configs' callbacks close over this render's mutations; only the loading flag should re-render rows.
+  const actions = useStableCallbacks<EntityActionConfig<T>[]>([
     {
       action: PROJECT_ACTIONS.view,
       onAction: overrides.onView ?? defaultView,
@@ -61,7 +61,7 @@ export function useProjectActionConfigs<T extends ProjectEntity>(
       },
       isLoading: deleteProject.isPending,
     },
-  ], [overrides.onView, overrides.onEdit, deleteProject, confirmDelete])
+  ])
 
   return { actions, DeleteConfirmDialog }
 }

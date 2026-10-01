@@ -2,12 +2,12 @@ import type { JSX } from 'react'
 import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
 
 import { useMutation } from '@tanstack/react-query'
-import { useMemo } from 'react'
 import { toast } from 'sonner'
 
 import { ROOTS } from '@/shared/config/roots'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { useConfirm } from '@/shared/hooks/use-confirm'
+import { useStableCallbacks } from '@/shared/hooks/use-stable-callbacks'
 import { copyToClipboard } from '@/shared/lib/clipboard'
 import { mainSiteUrl } from '@/shared/lib/main-site-url'
 import { PROPOSAL_ACTIONS } from '@/shared/modules/proposals/core/constants/actions'
@@ -77,7 +77,8 @@ export function useProposalActionConfigs<T extends ProposalEntity>(
     }),
   )
 
-  const actions = useMemo((): EntityActionConfig<T>[] => [
+  // The configs' callbacks close over this render's mutations; only the loading flag should re-render rows.
+  const actions = useStableCallbacks<EntityActionConfig<T>[]>([
     {
       action: PROPOSAL_ACTIONS.view,
       onAction: overrides.onView ?? defaultView,
@@ -119,7 +120,7 @@ export function useProposalActionConfigs<T extends ProposalEntity>(
       },
       isLoading: deleteProposal.isPending,
     },
-  ], [overrides.onView, overrides.onEdit, overrides.onAssignOwner, duplicateProposal, deleteProposal, confirmDelete])
+  ])
 
   return { actions, DeleteConfirmDialog }
 }

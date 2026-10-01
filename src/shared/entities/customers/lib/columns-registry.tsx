@@ -33,7 +33,7 @@ export interface CustomerTableRow {
 }
 
 export interface CustomerTableMeta {
-  customerActions?: (row: CustomerTableRow) => EntityActionConfig<CustomerTableRow>[]
+  customerActions?: EntityActionConfig<CustomerTableRow>[]
   onUpdateCreatedAt?: (customerId: string, date: Date) => void
   /**
    * Optional override for lead-source reassignment. The cell defaults to
@@ -107,7 +107,7 @@ export const CUSTOMER_COLUMNS = {
       return (
         <PrimaryCell
           entity={row.original}
-          actions={meta?.customerActions?.(row.original)}
+          actions={meta?.customerActions}
           title={row.original.name}
           subtitle={row.original.email ?? undefined}
         />

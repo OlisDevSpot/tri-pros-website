@@ -11,7 +11,7 @@ import { cn } from '@/shared/lib/utils'
 export type ProjectRow = AppRouterOutputs['projectsRouter']['crud']['list']['rows'][number]
 
 export interface ProjectTableMeta {
-  projectActions?: (row: ProjectRow) => EntityActionConfig<ProjectRow>[]
+  projectActions?: EntityActionConfig<ProjectRow>[]
 }
 
 export const PROJECT_COLUMNS = {
@@ -23,7 +23,7 @@ export const PROJECT_COLUMNS = {
       return (
         <PrimaryCell
           entity={row.original}
-          actions={meta?.projectActions?.(row.original)}
+          actions={meta?.projectActions}
           title={row.original.title}
           subtitle={row.original.description ?? undefined}
           tooltipContent={row.original.title}

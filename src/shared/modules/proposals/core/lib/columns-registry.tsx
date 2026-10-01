@@ -20,7 +20,7 @@ import { PROPOSAL_STATUS_COLORS } from '@/shared/modules/proposals/core/constant
 export type ProposalRow = AppRouterOutputs['proposalsRouter']['business']['list']['rows'][number]
 
 export interface ProposalTableMeta {
-  proposalActions?: (row: ProposalRow) => EntityActionConfig<ProposalRow>[]
+  proposalActions?: EntityActionConfig<ProposalRow>[]
   onUpdateCreatedAt?: (proposalId: string, date: Date) => void
   onUpdateStatus?: (proposalId: string, status: ProposalStatus) => void
   onViewProfile?: (customerId: string) => void
@@ -36,7 +36,7 @@ export const PROPOSAL_COLUMNS = {
       return (
         <PrimaryCell
           entity={row.original}
-          actions={meta?.proposalActions?.(row.original)}
+          actions={meta?.proposalActions}
           title={(
             <div className="flex min-w-0 items-center gap-1.5">
               <p className="truncate text-sm font-medium leading-tight text-foreground">{row.original.label}</p>
