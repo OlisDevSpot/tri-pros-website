@@ -25,7 +25,7 @@ export function TopBar({ projection, lookAhead, onLookAheadChange, showInputsBut
   const { openAssumptions, openInputs } = useStoryUi()
   const { paysForItselfYear, costsLessMonthlyYear } = projection.milestones
   return (
-    <div className="sticky top-0 z-10 flex h-14 items-center gap-3.5 border-b bg-(--popover-glass) px-8 backdrop-blur-md @max-[44rem]/story:h-auto @max-[44rem]/story:flex-wrap @max-[44rem]/story:py-2" data-slot="story-top-bar">
+    <div className="sticky top-0 z-10 flex h-14 items-center gap-3.5 border-b bg-background/85 px-8 backdrop-blur-md @max-[44rem]/story:h-auto @max-[44rem]/story:flex-wrap @max-[44rem]/story:py-2" data-slot="story-top-bar">
       {showInputsButton && (
         <Button className="min-h-11" onClick={openInputs} type="button" variant="outline">
           <SlidersHorizontalIcon />

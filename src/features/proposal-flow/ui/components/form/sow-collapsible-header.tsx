@@ -54,7 +54,7 @@ export function SOWCollapsibleHeader({
   }
 
   return (
-    <div className="flex w-full cursor-pointer flex-col gap-1 px-3 py-2.5 transition-colors hover:bg-border lg:px-4 lg:py-3">
+    <div className="flex w-full cursor-pointer flex-col gap-1 px-3 py-2.5 transition-colors hover:bg-muted/50 lg:px-4 lg:py-3">
       <div className="flex items-center justify-between gap-3">
         {isEditing
           ? (

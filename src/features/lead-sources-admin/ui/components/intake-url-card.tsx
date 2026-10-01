@@ -67,7 +67,7 @@ export function IntakeUrlCard({ leadSourceId, slug, token }: IntakeUrlCardProps)
           Rotate
         </Button>
       </div>
-      <div className="flex items-center gap-2 rounded-lg border border-border bg-muted p-1.5">
+      <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-background/50 p-1.5">
         <code
           className="flex-1 select-all truncate rounded-md px-2.5 py-1.5 text-xs font-mono text-foreground/90"
           translate="no"

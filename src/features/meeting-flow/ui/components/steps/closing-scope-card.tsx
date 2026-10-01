@@ -13,7 +13,7 @@ export function ClosingScopeCard({ selection }: ClosingScopeCardProps) {
   const hasPainPoints = selection.painPoints.length > 0
 
   return (
-    <Card className="border-border">
+    <Card className="border-border/60">
       <CardHeader className="pb-2 pt-4">
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="text-sm font-semibold">{selection.tradeName}</CardTitle>
@@ -52,7 +52,7 @@ export function ClosingScopeCard({ selection }: ClosingScopeCardProps) {
         )}
 
         {selection.notes && (
-          <p className="text-muted-foreground border-border border-t pt-2 text-xs">
+          <p className="text-muted-foreground border-border/40 border-t pt-2 text-xs">
             {selection.notes}
           </p>
         )}

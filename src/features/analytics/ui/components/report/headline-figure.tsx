@@ -31,7 +31,7 @@ export function HeadlineFigure({ figure, row, reasons, selected, onSelect }: Pro
         'flex min-w-0 flex-1 flex-col gap-0.5 px-2.5 py-2.5 text-left md:px-4 md:py-3.5 transition-[background-color,box-shadow] outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset disabled:cursor-default',
         // Phone: a 3-up hairline grid, to keep the strip short.
         'max-md:border-b max-md:border-border max-md:[&:not(:nth-child(3n+1))]:border-l',
-        focusable && 'hover:bg-muted',
+        focusable && 'hover:bg-muted/60',
         selected && 'shadow-[inset_0_-2px_0_var(--primary)]',
       )}
     >

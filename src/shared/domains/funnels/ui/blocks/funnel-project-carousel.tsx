@@ -70,7 +70,7 @@ export function FunnelProjectCarousel({ slug }: { slug: string }) {
   }, [scopesQ.data, projectsQ.data, tradeId])
 
   if (slides === null) {
-    return <div className="bg-muted h-56 w-full animate-pulse rounded-2xl" />
+    return <div className="bg-muted/40 h-56 w-full animate-pulse rounded-2xl" />
   }
 
   return (

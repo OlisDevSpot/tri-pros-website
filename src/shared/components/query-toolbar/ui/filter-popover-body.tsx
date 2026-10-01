@@ -14,7 +14,7 @@ export function FilterPopoverBody() {
   }
   return (
     <div className="flex flex-col">
-      <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
+      <div className="flex items-center justify-between border-b border-foreground/10 px-4 py-2.5">
         <span className="text-xs font-semibold tracking-wide text-foreground">
           Filters
         </span>

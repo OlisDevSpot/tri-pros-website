@@ -24,7 +24,7 @@ export interface BeforeAfterPair {
  */
 const ReactCompareSlider = dynamic(
   () => import('react-compare-slider').then(m => m.ReactCompareSlider),
-  { ssr: false, loading: () => <div className="bg-muted size-full" /> },
+  { ssr: false, loading: () => <div className="bg-muted/30 size-full" /> },
 )
 
 /**

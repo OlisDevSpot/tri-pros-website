@@ -125,7 +125,7 @@ export function PortfolioFilterBar({
                 className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                   selectedTradeIds.includes(trade.id)
                     ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground hover:bg-border'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
                 }`}
               >
                 {trade.name}

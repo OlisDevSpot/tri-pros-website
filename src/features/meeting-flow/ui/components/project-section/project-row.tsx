@@ -56,7 +56,7 @@ function ProjectRowImpl({ entry, expanded, onStage, pairedOnProject, onExpandedC
   return (
     <Collapsible className={cn('rounded-md border bg-card', onStage && 'border-primary/50')} open={expanded} onOpenChange={open => onExpandedChange(entry.tradeId, open)}>
       <CollapsibleTrigger asChild>
-        <Button className="h-auto w-full justify-start gap-3 rounded-md px-3 py-2.5 text-left font-normal whitespace-normal hover:bg-row-hover" data-project-row-trigger data-trade-id={entry.tradeId} variant="ghost">
+        <Button className="h-auto w-full justify-start gap-3 rounded-md px-3 py-2.5 text-left font-normal whitespace-normal hover:bg-muted/60" data-project-row-trigger data-trade-id={entry.tradeId} variant="ghost">
           <TradeSelectionSummary
             entry={entry}
             work="summary"

@@ -40,7 +40,7 @@ export function ContextPanelSection({
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md px-2 py-2 text-left transition-colors hover:bg-muted">
+      <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md px-2 py-2 text-left transition-colors hover:bg-muted/50">
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold">{title}</span>
           <Badge className="h-4 px-1.5 text-xs" variant={filledCount === totalCount ? 'default' : 'secondary'}>

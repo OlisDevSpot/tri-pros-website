@@ -104,7 +104,7 @@ export function ProjectFields({ priceDisplayMode }: Props) {
                   open={isOpen}
                   onOpenChange={() => toggleSection(index)}
                 >
-                  <div className="border border-border rounded-xl overflow-hidden bg-band">
+                  <div className="border border-border/30 rounded-xl overflow-hidden bg-[color-mix(in_oklch,var(--card)_97%,var(--foreground)_3%)]">
                     <CollapsibleTrigger asChild>
                       <div>
                         <SOWCollapsibleHeader

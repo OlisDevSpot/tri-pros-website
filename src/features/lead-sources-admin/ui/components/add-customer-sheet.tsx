@@ -103,7 +103,7 @@ export function AddCustomerSheet({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="flex w-full flex-col gap-0 sm:max-w-xl">
-        <SheetHeader className="border-b border-border px-6 py-5">
+        <SheetHeader className="border-b border-border/40 px-6 py-5">
           <SheetTitle>
             {`Add customer${titleSuffix}`}
           </SheetTitle>

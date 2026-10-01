@@ -102,7 +102,7 @@ export function LeadSourcesView() {
             // border-r only on lg+ — below lg the aside and main are mutually
             // exclusive (drill-down), so the divider would be a stray vertical
             // line on the right edge of the screen.
-            'min-w-0 flex-1 flex-col sm:max-w-xs lg:max-w-sm lg:border-r lg:border-border',
+            'min-w-0 flex-1 flex-col sm:max-w-xs lg:max-w-sm lg:border-r lg:border-border/40',
             // Mobile drill-down: list shows only when no specific source is selected
             // (i.e. `id=all`). On lg+ the split pane always shows both panes.
             isAllSelected ? 'flex' : 'hidden lg:flex',
@@ -133,7 +133,7 @@ export function LeadSourcesView() {
             <Button
               variant="outline"
               onClick={() => setNewSheetOpen(true)}
-              className="h-11 w-full justify-start gap-2 border-dashed text-muted-foreground motion-safe:transition-colors hover:border-solid hover:bg-muted hover:text-foreground sm:h-9"
+              className="h-11 w-full justify-start gap-2 border-dashed text-muted-foreground motion-safe:transition-colors hover:border-solid hover:bg-muted/60 hover:text-foreground sm:h-9"
             >
               <PlusIcon className="size-4" />
               New lead source

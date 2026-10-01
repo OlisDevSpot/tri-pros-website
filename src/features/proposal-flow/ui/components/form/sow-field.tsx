@@ -194,7 +194,7 @@ export function SOWSection({
             <CollapsibleTrigger asChild>
               <button
                 type="button"
-                className="flex w-full items-center justify-between px-3 py-2 text-sm font-medium hover:bg-border lg:px-4"
+                className="flex w-full items-center justify-between px-3 py-2 text-sm font-medium hover:bg-muted/50 lg:px-4"
               >
                 <span>Scope of Work</span>
                 <ChevronDownIcon className={cn('size-4 transition-transform', !scopeOpen && '-rotate-90')} />
@@ -204,7 +204,7 @@ export function SOWSection({
               open={scopeOpen}
               className={cn(
                 'rounded-b-lg transition-colors cursor-pointer',
-                scopeDeadHover && 'bg-border',
+                scopeDeadHover && 'bg-muted/50',
               )}
               onMouseOver={(e) => {
                 e.stopPropagation()
@@ -227,7 +227,7 @@ export function SOWSection({
                         <Button
                           variant="outline"
                           type="button"
-                          className="text-xs text-muted-foreground hover:underline hover:bg-border dark:hover:bg-border"
+                          className="text-xs text-muted-foreground hover:underline"
                           size="sm"
                           onClick={() => {
                             setModal({
@@ -277,12 +277,12 @@ export function SOWSection({
         </div>
 
         {/* Financials collapsible */}
-        <div className="w-full border-t border-border">
+        <div className="w-full border-t border-border/30">
           <Collapsible open={financialsOpen} onOpenChange={setFinancialsOpen}>
             <CollapsibleTrigger asChild>
               <button
                 type="button"
-                className="flex w-full items-center justify-between px-3 py-2 text-sm font-medium hover:bg-border lg:px-4"
+                className="flex w-full items-center justify-between px-3 py-2 text-sm font-medium hover:bg-muted/50 lg:px-4"
               >
                 <span>Financials</span>
                 <ChevronDownIcon className={cn('size-4 transition-transform', !financialsOpen && '-rotate-90')} />
@@ -292,7 +292,7 @@ export function SOWSection({
               open={financialsOpen}
               className={cn(
                 'rounded-b-lg transition-colors cursor-pointer',
-                finDeadHover && 'bg-border',
+                finDeadHover && 'bg-muted/50',
               )}
               onMouseOver={(e) => {
                 e.stopPropagation()

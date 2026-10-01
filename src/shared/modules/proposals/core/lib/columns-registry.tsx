@@ -43,7 +43,7 @@ export const PROPOSAL_COLUMNS = {
               {row.original.kind === 'additional-work' && (
                 <HybridPopoverTooltip content="Addendum">
                   <span
-                    className="inline-flex size-3.5 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground ring-1 ring-inset ring-border"
+                    className="inline-flex size-3.5 shrink-0 items-center justify-center rounded-full bg-muted/60 text-muted-foreground ring-1 ring-inset ring-border/60"
                     aria-label="Addendum"
                   >
                     <PlusIcon className="size-2.5" strokeWidth={2.5} />

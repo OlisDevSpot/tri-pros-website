@@ -122,7 +122,7 @@ export function CadenceMessageRow({
             type="button"
             aria-label={`Insert {{${t.token}}}`}
             onClick={() => handleInsertToken(t.token)}
-            className="inline-flex items-center rounded-md border border-border bg-transparent px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-border hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+            className="inline-flex items-center rounded-md border border-border/60 bg-transparent px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-border hover:bg-muted/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
           >
             {`{{${t.token}}}`}
           </button>

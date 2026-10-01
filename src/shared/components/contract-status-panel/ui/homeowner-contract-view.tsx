@@ -202,7 +202,7 @@ function ActionArea(props: {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="rounded-lg border border-border bg-muted p-4"
+        className="rounded-lg border border-border bg-muted/30 p-4"
       >
         <p className="text-sm text-muted-foreground">
           Your agreement is being reviewed by our team. You will receive a signing email once it has been approved.
@@ -218,7 +218,7 @@ function ActionArea(props: {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="rounded-lg border border-border bg-muted p-4"
+        className="rounded-lg border border-border bg-muted/30 p-4"
       >
         <p className="text-sm text-muted-foreground">
           Your agreement has been prepared and is awaiting final review. You will be notified by email when it is ready for your signature.

@@ -343,7 +343,7 @@ function SummaryCard({ answers, onEdit, onReset }: {
           <div key={section.eyebrow} className="border-border border-t">
             {/* Quiet data-group label — reuses the funnel eyebrow tokens (--fs-eyebrow /
                 --tracking-eyebrow) in a muted tone rather than the accent BlockEyebrow. */}
-            <p className="text-muted-foreground bg-muted px-5 py-1.5 font-bold uppercase text-(length:--fs-eyebrow) tracking-(--tracking-eyebrow)">
+            <p className="text-muted-foreground bg-muted/40 px-5 py-1.5 font-bold uppercase text-(length:--fs-eyebrow) tracking-(--tracking-eyebrow)">
               {section.eyebrow}
             </p>
             {section.rows.map(field => (
@@ -408,7 +408,7 @@ function SummaryRow({ field, answers, onEdit }: { field: EditField, answers: Ans
           )
         : Icon
           ? (
-              <span className="bg-muted border-border flex size-11 shrink-0 items-center justify-center rounded-md border">
+              <span className="bg-muted/40 border-border flex size-11 shrink-0 items-center justify-center rounded-md border">
                 <Icon className="text-foreground size-6" />
               </span>
             )
@@ -504,7 +504,7 @@ function CardEditor({ field, draft, reduce, setDraft }: {
             >
               {(opt.img || Icon)
                 ? (
-                    <div className="bg-muted flex aspect-video w-full items-center justify-center">
+                    <div className="bg-muted/40 flex aspect-video w-full items-center justify-center">
                       {opt.img
                         ? <Image src={opt.img} alt={opt.label} width={600} height={282} sizes="(max-width: 640px) 45vw, 280px" className="h-full w-full object-cover object-center" />
                         : Icon ? <Icon className="text-foreground size-8 sm:size-10" /> : null}

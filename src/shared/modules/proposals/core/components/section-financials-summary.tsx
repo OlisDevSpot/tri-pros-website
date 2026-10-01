@@ -32,7 +32,7 @@ export function SectionFinancialsSummary({ financials, priceDisplayMode, compact
 
   if (compact) {
     return (
-      <div className="rounded-lg bg-muted px-4 py-2 text-sm space-y-1">
+      <div className="rounded-lg bg-muted/30 px-4 py-2 text-sm space-y-1">
         {isBreakdown && section.netPrice != null && (
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground text-xs">Net Price</span>
@@ -58,7 +58,7 @@ export function SectionFinancialsSummary({ financials, priceDisplayMode, compact
   }
 
   return (
-    <div className="rounded-lg bg-muted px-4 py-3 text-sm space-y-2">
+    <div className="rounded-lg bg-muted/30 px-4 py-3 text-sm space-y-2">
       {/* Section Price (breakdown only) */}
       {isBreakdown && section.price != null && (
         <SummaryRow

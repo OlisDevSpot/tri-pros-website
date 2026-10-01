@@ -20,7 +20,7 @@ interface Props {
 export function LiabilityRow({ index, isMortgage, heldFlat, onRemove }: Props) {
   const { control } = useFormContext<RemodelRoiFormValues>()
   return (
-    <div className="grid gap-2.5 rounded-lg bg-muted p-3">
+    <div className="grid gap-2.5 rounded-lg bg-muted/60 p-3">
       <div className="flex items-end gap-1.5">
         {isMortgage
           ? <b className="flex-1 text-sm font-semibold">Mortgage</b>

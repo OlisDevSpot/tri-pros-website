@@ -32,7 +32,7 @@ export function ProposalRow({ proposal }: Props) {
   return (
     <>
       <DeleteConfirmDialog />
-      <div className="group flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-row-hover">
+      <div className="group flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-muted/50">
         <div className="flex items-center gap-2 min-w-0">
           <Badge variant="secondary" className={`text-xs ${PROPOSAL_STATUS_COLORS[proposal.status] ?? ''}`}>
             {proposal.status}

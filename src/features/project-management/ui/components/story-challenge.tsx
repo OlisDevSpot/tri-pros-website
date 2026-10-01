@@ -47,7 +47,7 @@ export function StoryChallenge({ project, mainImage }: Props) {
               </p>
             )}
             {project.challengeDescription && (
-              <div className="rounded-lg border-l-4 border-primary/30 bg-muted p-5">
+              <div className="rounded-lg border-l-4 border-primary/30 bg-muted/50 p-5">
                 <p className="text-sm font-medium text-muted-foreground mb-1">The Challenge</p>
                 <p className="text-foreground/80 leading-relaxed">
                   {project.challengeDescription}

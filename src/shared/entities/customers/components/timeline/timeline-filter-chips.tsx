@@ -27,7 +27,7 @@ export function TimelineFilterChips({ value, onChange, counts }: Props) {
               'inline-flex shrink-0 items-center gap-2 rounded-full px-2.5 py-1 text-xs font-medium leading-none transition-colors',
               isActive
                 ? 'bg-primary text-primary-foreground'
-                : 'bg-secondary text-secondary-foreground hover:bg-border',
+                : 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
             )}
             key={filter.id}
             onClick={() => onChange(filter.id)}

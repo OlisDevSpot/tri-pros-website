@@ -143,7 +143,7 @@ export function SiteNavbar() {
       <motion.nav
         className={cn(
           'fixed left-0 right-0 z-50 transition-all duration-300',
-          scrolled ? 'bg-(--popover-glass) shadow-lg' : 'bg-transparent',
+          scrolled ? 'bg-background/95 shadow-lg' : 'bg-transparent',
         )}
         style={{
           top: scrolled || !matches.lg || pathname !== '/' ? '0' : '32px',
@@ -212,7 +212,7 @@ export function SiteNavbar() {
                     style={{
                       height: subitemsContainerHeight,
                     }}
-                    className="absolute top-[calc(100%+24px)] left-0 right-0 transition-all bg-(--popover-glass) backdrop-blur-sm border-border-strong shadow-2xl rounded-lg"
+                    className="absolute top-[calc(100%+24px)] left-0 right-0 transition-all bg-background/80 backdrop-blur-sm border-foreground/30 shadow-2xl rounded-lg"
                   >
                     {/* Bridge */}
                     <div className="absolute -top-6 h-6 left-0 w-full" />
@@ -267,7 +267,7 @@ export function SiteNavbar() {
                           }}
                           className={
                             cn(
-                              'h-12 w-12 bg-primary text-primary-foreground lg:bg-transparent lg:text-foreground border-border shadow-md',
+                              'h-12 w-12 bg-primary text-primary-foreground lg:bg-transparent lg:text-foreground border-foreground/15 shadow-md',
                               session?.user && 'stroke-red-200 bg-rose-400 dark:bg-rose-800 lg:bg-rose-400',
                             )
                           }
@@ -282,7 +282,7 @@ export function SiteNavbar() {
                       ) }
                   <ThemeToggleButton className={
                     cn(
-                      'h-12 w-12 border-border shadow-md',
+                      'h-12 w-12 border-foreground/15 shadow-md',
                       pathname === '/' ? 'rounded-[40px]' : '',
                     )
                   }

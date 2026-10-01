@@ -154,7 +154,7 @@ interface ToggleProps {
 
 function Toggle({ label, checked, disabled, onChange }: ToggleProps) {
   return (
-    <label className={cn('flex items-center justify-between gap-3 rounded-md border border-border bg-muted px-3 py-2.5', disabled && 'opacity-50')}>
+    <label className={cn('flex items-center justify-between gap-3 rounded-md border border-border/60 bg-background/40 px-3 py-2.5', disabled && 'opacity-50')}>
       <span className="text-sm text-foreground">{label}</span>
       <Switch checked={checked} onCheckedChange={onChange} disabled={disabled} />
     </label>

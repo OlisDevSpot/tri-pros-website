@@ -24,7 +24,7 @@ export function ProgramPresentation({ program }: ProgramPresentationProps) {
           <BookOpenIcon className="size-4 text-primary/70" />
           <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">The Story</h3>
         </div>
-        <div className="rounded-2xl border border-border bg-card px-6 py-5">
+        <div className="rounded-2xl border border-border/40 bg-card/50 px-6 py-5">
           <p className="text-base leading-relaxed text-foreground/85">
             {presentation.story}
           </p>
@@ -48,7 +48,7 @@ export function ProgramPresentation({ program }: ProgramPresentationProps) {
           {presentation.keyStats.map(stat => (
             <div
               key={stat.label}
-              className="flex flex-col items-center gap-1 rounded-xl border border-border bg-card px-4 py-4 text-center shadow-sm"
+              className="flex flex-col items-center gap-1 rounded-xl border border-border/40 bg-card/50 px-4 py-4 text-center shadow-sm"
             >
               <span className="text-lg font-bold tabular-nums tracking-tight text-foreground">
                 {stat.value}
@@ -86,9 +86,9 @@ export function ProgramPresentation({ program }: ProgramPresentationProps) {
               <AccordionItem
                 key={faq.question}
                 value={faq.question}
-                className="overflow-hidden rounded-xl border border-border bg-card shadow-sm last:border-b"
+                className="overflow-hidden rounded-xl border border-border/40 bg-card/50 shadow-sm last:border-b"
               >
-                <AccordionTrigger className="px-5 py-3.5 text-sm font-medium hover:no-underline hover:bg-muted data-[state=open]:bg-row-selected">
+                <AccordionTrigger className="px-5 py-3.5 text-sm font-medium hover:no-underline hover:bg-muted/30 data-[state=open]:bg-muted/20">
                   {faq.question}
                 </AccordionTrigger>
                 <AccordionContent className="px-5 pb-4 pt-1">

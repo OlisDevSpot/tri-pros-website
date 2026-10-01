@@ -60,7 +60,7 @@ export function CustomerSearch({ onSelect, onClear, prefillCustomerId }: Custome
 
   if (selectedId) {
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-border bg-muted px-3 py-2">
+      <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2">
         <CheckIcon className="size-4 shrink-0 text-primary" />
         <span className="flex-1 text-sm font-medium">{selectedName}</span>
         <Button size="icon" variant="ghost" className="size-6" onClick={handleClear}>
@@ -92,7 +92,7 @@ export function CustomerSearch({ onSelect, onClear, prefillCustomerId }: Custome
           {searchQuery.data?.map(c => (
             <button
               key={c.id}
-              className="flex w-full flex-col gap-0.5 px-3 py-2 text-left hover:bg-row-hover"
+              className="flex w-full flex-col gap-0.5 px-3 py-2 text-left hover:bg-muted/50"
               onClick={() => handleSelect(c.id, c.name)}
             >
               <span className="text-sm font-medium">{c.name}</span>

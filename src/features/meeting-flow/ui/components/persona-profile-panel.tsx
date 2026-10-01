@@ -22,7 +22,7 @@ function FearsList({ fears }: { fears: CustomerPersonaProfile['fears'] }) {
   return (
     <>
       {fears.map((fear, i) => (
-        <div className="rounded-md border border-border bg-muted p-2.5" key={i}>
+        <div className="rounded-md border border-border/50 bg-muted/30 p-2.5" key={i}>
           <div className="mb-1 flex items-center gap-1.5">
             <SeverityBadge value={fear.severity} />
             <span className="text-xs text-muted-foreground">{fear.emotionalDriver}</span>
@@ -38,7 +38,7 @@ function BenefitsList({ benefits }: { benefits: CustomerPersonaProfile['benefits
   return (
     <>
       {benefits.map((benefit, i) => (
-        <div className="rounded-md border border-border bg-muted p-2.5" key={i}>
+        <div className="rounded-md border border-border/50 bg-muted/30 p-2.5" key={i}>
           <div className="mb-1 flex items-center gap-1.5">
             <span className="text-xs font-medium text-primary">{benefit.tradeName}</span>
             <span className="text-xs text-muted-foreground">{benefit.category}</span>
@@ -55,7 +55,7 @@ function DecisionDriversList({ drivers }: { drivers: CustomerPersonaProfile['dec
   return (
     <>
       {drivers.map((driver, i) => (
-        <div className="flex items-start gap-2 rounded-md border border-border bg-muted p-2.5" key={i}>
+        <div className="flex items-start gap-2 rounded-md border border-border/50 bg-muted/30 p-2.5" key={i}>
           <SeverityBadge value={driver.weight} />
           <div className="flex-1">
             <p className="text-xs leading-relaxed">{driver.driver}</p>
@@ -71,7 +71,7 @@ function EmotionalLeversList({ levers }: { levers: CustomerPersonaProfile['emoti
   return (
     <>
       {levers.map((lever, i) => (
-        <div className="flex items-start gap-2 rounded-md border border-border bg-muted p-2.5" key={i}>
+        <div className="flex items-start gap-2 rounded-md border border-border/50 bg-muted/30 p-2.5" key={i}>
           <SeverityBadge value={lever.relevance} />
           <div className="flex-1">
             <p className="text-xs font-medium">{lever.lever}</p>
@@ -87,7 +87,7 @@ function HouseholdResonanceList({ items }: { items: CustomerPersonaProfile['hous
   return (
     <>
       {items.map((item, i) => (
-        <div className="rounded-md border border-border bg-muted p-2.5" key={i}>
+        <div className="rounded-md border border-border/50 bg-muted/30 p-2.5" key={i}>
           <p className="text-xs font-medium">{item.factor}</p>
           <ul className="mt-1 space-y-0.5">
             {item.amplifiedConcerns.map((concern, j) => (
@@ -106,7 +106,7 @@ function RiskFactorsList({ risks }: { risks: CustomerPersonaProfile['riskFactors
   return (
     <>
       {risks.map((risk, i) => (
-        <div className="rounded-md border border-border bg-muted p-2.5" key={i}>
+        <div className="rounded-md border border-border/50 bg-muted/30 p-2.5" key={i}>
           <div className="mb-1 flex items-center gap-1.5">
             <SeverityBadge value={risk.severity} />
           </div>

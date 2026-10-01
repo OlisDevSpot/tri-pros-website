@@ -34,7 +34,7 @@ export function DataTablePagination<TData>({ table, serverPagination }: Props<TD
   return (
     <nav
       aria-label="Pagination"
-      className="grid shrink-0 grid-cols-3 items-stretch border-t border-border"
+      className="grid shrink-0 grid-cols-3 items-stretch border-t border-border/50"
     >
       <DataTablePaginationButton
         direction="prev"

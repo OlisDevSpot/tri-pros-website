@@ -29,7 +29,7 @@ export function StoryTransformation({ media }: Props) {
   const additionalAfter = media.after.slice(1)
 
   return (
-    <section ref={ref} className="bg-muted py-16 lg:py-24">
+    <section ref={ref} className="bg-muted/20 py-16 lg:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}

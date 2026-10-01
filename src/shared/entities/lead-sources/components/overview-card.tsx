@@ -73,7 +73,7 @@ function Root({ source, isSelected, onClick, children, className }: RootProps) {
           // The one primary-color moment in the list — the selected card.
           isSelected
             ? 'bg-primary/5 ring-1 ring-inset ring-primary/15'
-            : 'hover:bg-row-hover focus-visible:bg-row-hover',
+            : 'hover:bg-muted/60 focus-visible:bg-muted/60',
           !source.isActive && !isSelected && 'opacity-75',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60',
           className,

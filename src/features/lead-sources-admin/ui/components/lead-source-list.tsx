@@ -93,7 +93,7 @@ export function LeadSourceList({
             disabled={isLoading}
           />
 
-          <div role="separator" aria-hidden="true" className="mx-1 my-1 h-px bg-border" />
+          <div role="separator" aria-hidden="true" className="mx-1 my-1 h-px bg-border/40" />
         </div>
 
         {isLoading
@@ -114,7 +114,7 @@ export function LeadSourceList({
                     label={rangeLabel}
                   />
                   <LeadSourceOverviewCard.Actions>
-                    <div className="flex items-center gap-px rounded-md border border-border p-1">
+                    <div className="flex items-center gap-px rounded-md border border-border/50 p-1">
                       <Button
                         type="button"
                         variant="ghost"
@@ -160,7 +160,7 @@ function AllRow({ total, rangeLabel, isSelected, onSelect, disabled }: AllRowPro
         'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left motion-safe:transition-colors',
         isSelected
           ? 'bg-primary/5 ring-1 ring-inset ring-primary/15'
-          : 'hover:bg-row-hover focus-visible:bg-row-hover',
+          : 'hover:bg-muted/60 focus-visible:bg-muted/60',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60',
         disabled && 'pointer-events-none opacity-50',
       )}
@@ -180,7 +180,7 @@ function AllRow({ total, rangeLabel, isSelected, onSelect, disabled }: AllRowPro
 function EmptyState({ hasQuery }: { hasQuery: boolean }) {
   return (
     <div className={cn(
-      'flex flex-col items-center gap-2 rounded-lg border border-dashed border-border px-4 py-8 text-center',
+      'flex flex-col items-center gap-2 rounded-lg border border-dashed border-border/60 px-4 py-8 text-center',
     )}
     >
       <RadioTowerIcon aria-hidden="true" className="size-5 text-muted-foreground/50" />

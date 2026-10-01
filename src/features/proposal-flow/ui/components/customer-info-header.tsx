@@ -21,7 +21,7 @@ interface Props {
 
 export function CustomerInfoHeader({ customer }: Props) {
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted p-4">
+    <div className="flex flex-col gap-3 rounded-lg border border-border/50 bg-muted/30 p-4">
       <div className="flex items-center gap-2">
         <Badge variant="outline" className="text-xs font-medium uppercase tracking-wider">
           Customer

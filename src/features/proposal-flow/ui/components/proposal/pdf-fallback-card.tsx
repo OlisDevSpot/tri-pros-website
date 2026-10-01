@@ -23,7 +23,8 @@ export function PdfFallbackCard({ pdfUrl }: Props) {
 
       <div
         className={cn(
-          'rounded-xl border border-border bg-card shadow-sm',
+          'rounded-xl border border-border/50 bg-card/60 backdrop-blur-md shadow-sm',
+          'bg-linear-to-br from-card/80 to-card/40',
           'flex flex-col items-center gap-5 px-6 py-8 text-center',
           'sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-8 sm:py-6 sm:text-left',
         )}

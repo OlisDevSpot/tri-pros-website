@@ -154,7 +154,7 @@ export function ScheduleTodayView({
                       key={bucket.id}
                       className={cn(
                         'border-r p-1.5 last:border-r-0 min-h-24',
-                        index !== cardBucket && 'bg-band',
+                        index !== cardBucket && 'bg-muted/20',
                       )}
                     >
                       {index === cardBucket && <ScheduleCardSkeleton />}
@@ -235,7 +235,7 @@ function SwimlaneRow({ combo, comboEvents, renderCard, collapsed, gridCols }: Sw
             key={bucket.id}
             className={cn(
               'border-r p-1.5 last:border-r-0 min-h-24',
-              bucketEvents.length === 0 && 'bg-muted',
+              bucketEvents.length === 0 && 'bg-muted/20',
             )}
           >
             <div className={cn(

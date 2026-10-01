@@ -84,7 +84,7 @@ export function TimelineEventItem({ event, customerId, isExpanded, onToggle, onO
 
   return (
     <div
-      className={`group/row relative -ml-3 rounded-lg py-1.5 pl-10 pr-1.5 transition-colors ${isExpanded ? 'bg-surface-raised' : 'hover:bg-row-hover'}`}
+      className={`group/row relative -ml-3 rounded-lg py-1.5 pl-10 pr-1.5 transition-colors ${isExpanded ? 'bg-muted/50' : 'hover:bg-muted/40'}`}
     >
       <span
         className={`absolute left-3 top-1 grid size-5.5 place-items-center rounded-full border border-muted-foreground/25 bg-background ${config.color}`}
@@ -121,7 +121,7 @@ export function TimelineEventItem({ event, customerId, isExpanded, onToggle, onO
       </button>
 
       {isExpanded && (
-        <div className="mt-2 space-y-2 border-t border-border pt-2 text-sm">
+        <div className="mt-2 space-y-2 border-t border-border/60 pt-2 text-sm">
           {note
             ? (
                 <>

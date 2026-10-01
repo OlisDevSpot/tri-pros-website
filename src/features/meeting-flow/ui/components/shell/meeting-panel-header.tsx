@@ -21,7 +21,7 @@ interface MeetingPanelHeaderProps {
 /** Section tabs and the close button, shared by the lg+ overlay panel and the drawer below lg. */
 export function MeetingPanelHeader({ openSection, headerRef, onSelect, onClose, className }: MeetingPanelHeaderProps) {
   return (
-    <div ref={headerRef} className={cn('flex items-center gap-1 border-b border-border px-2 py-2 outline-none', className)} tabIndex={-1}>
+    <div ref={headerRef} className={cn('flex items-center gap-1 border-b border-border/40 px-2 py-2 outline-none', className)} tabIndex={-1}>
       <div className="flex min-w-0 flex-1 items-center gap-2">
         {PANEL_SECTIONS.map((section) => {
           const isCurrent = openSection === section

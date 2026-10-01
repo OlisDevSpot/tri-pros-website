@@ -10,7 +10,7 @@ interface PageSizeSegmentedProps {
 
 export function PageSizeSegmented({ options, value, onChange }: PageSizeSegmentedProps) {
   return (
-    <div role="radiogroup" aria-label="Rows per page" className="flex gap-1 rounded-md border border-border p-1">
+    <div role="radiogroup" aria-label="Rows per page" className="flex gap-1 rounded-md border border-border/60 p-1">
       {options.map((opt) => {
         const selected = opt === value
         return (
@@ -24,8 +24,8 @@ export function PageSizeSegmented({ options, value, onChange }: PageSizeSegmente
               'h-9 flex-1 rounded-sm text-sm font-medium tabular-nums touch-manipulation transition-colors',
               'focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2',
               selected
-                ? 'bg-row-selected text-foreground'
-                : 'text-muted-foreground hover:bg-muted',
+                ? 'bg-foreground/10 text-foreground'
+                : 'text-muted-foreground hover:bg-foreground/5',
             )}
           >
             {opt}

@@ -393,7 +393,7 @@ function ScheduledDateField({
           }}
           className="h-auto p-0 text-xs"
         >
-          <Badge variant="secondary" className="gap-1 px-1.5 py-0.5 text-xs font-normal hover:bg-border cursor-pointer">
+          <Badge variant="secondary" className="gap-1 px-1.5 py-0.5 text-xs font-normal hover:bg-secondary/80 cursor-pointer">
             <CalendarIcon className="h-3 w-3 shrink-0" />
             <span suppressHydrationWarning={dateFormat === 'relative'}>{display}</span>
           </Badge>

@@ -18,7 +18,7 @@ export function StoryScopesBar({ trades, scopes }: Props) {
   }
 
   return (
-    <section className="sticky top-0 z-10 border-b bg-(--popover-glass) backdrop-blur-md">
+    <section className="sticky top-0 z-10 border-b bg-background/80 backdrop-blur-md">
       <div className="mx-auto max-w-7xl overflow-x-auto px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex items-center gap-2">
           {trades.map(trade => (

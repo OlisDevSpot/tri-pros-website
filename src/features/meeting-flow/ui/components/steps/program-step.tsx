@@ -96,7 +96,7 @@ export function ProgramStep({ flowContext, meetingType }: ProgramStepProps) {
         {selectedProgram
           ? <ProgramPresentation program={selectedProgram} />
           : (
-              <div className="rounded-xl border border-dashed border-border bg-muted px-6 py-8 text-center">
+              <div className="rounded-xl border border-dashed border-border/60 bg-muted/20 px-6 py-8 text-center">
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   Standard pricing applies. No program incentives or promotional add-ons.
                   The project is scoped and priced based on materials and labor only.
@@ -111,7 +111,7 @@ export function ProgramStep({ flowContext, meetingType }: ProgramStepProps) {
   return (
     <div className="space-y-10">
       {/* ── Personalized Story Hero ────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-2xl border border-border bg-linear-to-br from-card via-muted to-card px-8 py-12 shadow-xl md:px-12 md:py-16">
+      <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-linear-to-br from-card via-muted to-card px-8 py-12 shadow-xl md:px-12 md:py-16">
         <div className="pointer-events-none absolute left-1/2 top-0 h-40 w-80 -translate-x-1/2 rounded-full bg-primary/20 blur-[100px]" />
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.03]"

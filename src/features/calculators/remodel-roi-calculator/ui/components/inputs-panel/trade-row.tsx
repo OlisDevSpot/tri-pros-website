@@ -30,7 +30,7 @@ export function TradeRow({ trade, config, replacement }: Props) {
       ? `~${formatYears(replacement.installs[0].year)} left of ~${replacement.standardLifeYears}`
       : `Lasts past year ${PROJECTION_YEARS}, so waiting has nothing to replace`
   return (
-    <div className="grid gap-2.5 rounded-lg bg-muted p-3">
+    <div className="grid gap-2.5 rounded-lg bg-muted/60 p-3">
       <p className="text-sm font-bold">{TRADE_LABELS[trade]}</p>
       {trade === 'hvac' && (
         <FormField

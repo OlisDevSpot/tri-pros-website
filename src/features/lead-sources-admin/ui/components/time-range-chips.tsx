@@ -36,8 +36,8 @@ export function TimeRangeChips({ chips, value, onChange }: TimeRangeChipsProps) 
               'h-11 sm:h-7 sm:px-2.5 sm:py-1',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60',
               isActive
-                ? 'border-border-strong bg-row-selected text-foreground'
-                : 'border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground',
+                ? 'border-foreground/20 bg-foreground/5 text-foreground'
+                : 'border-border/60 bg-background/60 text-muted-foreground hover:bg-muted/60 hover:text-foreground',
             )}
           >
             {chip.label}

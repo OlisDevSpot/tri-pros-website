@@ -132,7 +132,7 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
 
       {/* Cost Lines */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between border-t border-border pt-3">
+        <div className="flex items-center justify-between border-t border-border/30 pt-3">
           <h5 className="text-sm font-semibold">Cost Lines</h5>
           <div className="flex items-center gap-2">
             {!canAddCostLine && (
@@ -142,7 +142,7 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
               type="button"
               size="sm"
               variant="outline"
-              className="gap-1.5 hover:bg-border dark:hover:bg-border"
+              className="gap-1.5"
               disabled={!canAddCostLine}
               onClick={() => {
                 appendCost({
@@ -171,7 +171,7 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
                 {costFields.map((field, lineIndex) => (
                   <div
                     key={field.id}
-                    className="rounded-lg border border-border bg-card p-3 space-y-3"
+                    className="rounded-lg border border-border/30 bg-card p-3 space-y-3"
                   >
                     <div className="grid grid-cols-1 gap-3 lg:grid-cols-[2fr_1fr_1.5fr_auto]">
                       <FormField
@@ -282,13 +282,13 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
 
       {/* Section Incentives */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between border-t border-border pt-3">
+        <div className="flex items-center justify-between border-t border-border/30 pt-3">
           <h5 className="text-sm font-semibold">Section Incentives</h5>
           <Button
             type="button"
             size="sm"
             variant="outline"
-            className="gap-1.5 hover:bg-border dark:hover:bg-border"
+            className="gap-1.5"
             onClick={() => {
               appendIncentive({
                 id: crypto.randomUUID(),
