@@ -74,7 +74,7 @@ export function SOWCollapsibleHeader({
                 role="button"
                 tabIndex={0}
                 className={cn(
-                  'min-w-0 truncate rounded px-1 py-0.5 text-sm font-medium transition-colors hover:bg-border lg:text-base',
+                  'min-w-0 truncate rounded px-1 py-0.5 text-sm font-medium transition-colors hover:bg-muted lg:text-base',
                   !hasTitle && 'text-muted-foreground italic',
                 )}
                 onClick={handleTitleClick}
