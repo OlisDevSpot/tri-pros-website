@@ -37,7 +37,9 @@ export interface DataTableProps<TData, TMeta = unknown> {
   /**
    * Read by cells through `table.options.meta`. Function entries are event callbacks: they stay stable and
    * always run the latest version. Anything a cell reads while rendering must be a value, because rows
-   * re-render only when a value here changes identity.
+   * re-render only when a value here changes identity. For the same reason, cells must not read table state
+   * or selection (`table.getState()`, `row.getIsSelected()`) while rendering: rows re-render only when their
+   * data, expansion, `meta` values or columns change.
    */
   meta?: TMeta
   /** Unique ID under which the viewer's column widths, frozen column and hidden columns persist. Omit to keep them for this mount only. */
