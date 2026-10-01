@@ -1047,3 +1047,11 @@
   --presentation-accent: #5cc6f2;
   --presentation-scrim: 0.14 0.03 257;
 }
+
+/* The dashboard theme switch reveals the new theme as a circle clipped from the control; the default
+   cross-fade would show both themes at half strength under that circle. */
+:root[data-theme-reveal]::view-transition-old(root),
+:root[data-theme-reveal]::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}

@@ -41,7 +41,7 @@ export interface SidebarNavConfig {
   mainItems: readonly SidebarNavItem[]
   recordsItems: readonly SidebarNavItem[]
   adminItems: readonly SidebarNavItem[]
-  footerItems: readonly SidebarNavItem[]
+  settingsItem: SidebarNavItem
 }
 
 export function getSidebarNav(ability: AppAbility): SidebarNavConfig {
@@ -114,9 +114,7 @@ export function getSidebarNav(ability: AppAbility): SidebarNavConfig {
       ]
     : []
 
-  const footerItems: SidebarNavItem[] = [
-    { href: ROOTS.dashboard.settings(), icon: SettingsIcon, label: 'Settings', enabled: true },
-  ]
+  const settingsItem: SidebarNavItem = { href: ROOTS.dashboard.settings(), icon: SettingsIcon, label: 'Settings', enabled: true }
 
-  return { dashboardItem, mainItems, recordsItems, adminItems, footerItems }
+  return { dashboardItem, mainItems, recordsItems, adminItems, settingsItem }
 }

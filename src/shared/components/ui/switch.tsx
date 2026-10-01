@@ -5,10 +5,19 @@ import * as React from 'react'
 
 import { cn } from '@/shared/lib/utils'
 
+interface SwitchProps extends React.ComponentProps<typeof SwitchPrimitive.Root> {
+  thumb?: React.ReactNode
+  thumbClassName?: string
+}
+
+// `children` paint the track behind the thumb; `thumb` rides inside it.
 function Switch({
   className,
+  thumb,
+  thumbClassName,
+  children,
   ...props
-}: React.ComponentProps<typeof SwitchPrimitive.Root>) {
+}: SwitchProps) {
   return (
     <SwitchPrimitive.Root
       data-slot="switch"
@@ -18,12 +27,16 @@ function Switch({
       )}
       {...props}
     >
+      {children}
       <SwitchPrimitive.Thumb
         data-slot="switch-thumb"
         className={cn(
           'bg-background dark:data-[state=unchecked]:bg-foreground dark:data-[state=checked]:bg-primary-foreground pointer-events-none block size-4 rounded-full ring-0 transition-transform data-[state=checked]:translate-x-[calc(100%-2px)] data-[state=unchecked]:translate-x-0',
+          thumbClassName,
         )}
-      />
+      >
+        {thumb}
+      </SwitchPrimitive.Thumb>
     </SwitchPrimitive.Root>
   )
 }

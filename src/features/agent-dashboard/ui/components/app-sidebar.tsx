@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import type { SidebarNavItem } from '@/features/agent-dashboard/lib/get-sidebar-nav'
 import type { Pipeline } from '@/shared/constants/enums/pipelines'
 import type { BetterAuthUser } from '@/shared/domains/auth/server'
@@ -20,6 +21,7 @@ import { ActionCenterSheet } from '@/features/agent-dashboard/ui/components/acti
 import { SidebarPipelineItem } from '@/features/agent-dashboard/ui/components/sidebar-pipeline-item'
 import { SidebarRecordsGroup } from '@/features/agent-dashboard/ui/components/sidebar-records-group'
 import { SidebarSearchBar } from '@/features/agent-dashboard/ui/components/sidebar-search-bar'
+import { SidebarThemeSwitch } from '@/features/agent-dashboard/ui/components/sidebar-theme-switch'
 import { SidebarUserButton } from '@/features/agent-dashboard/ui/components/sidebar-user-button'
 import { Button } from '@/shared/components/ui/button'
 import {
@@ -78,16 +80,16 @@ export function AppSidebar({ user }: AppSidebarProps) {
     [user.id, user.role],
   )
 
-  function renderNavItem(item: SidebarNavItem) {
+  function renderNavItem(item: SidebarNavItem, { trailing }: { trailing?: ReactNode } = {}) {
     const isActive = isNavItemActive(item, pathname)
 
     return (
-      <SidebarMenuItem key={item.href}>
+      <SidebarMenuItem key={item.href} className={trailing ? 'flex flex-wrap items-center' : undefined}>
         <SidebarMenuButton
           asChild
           tooltip={item.label}
           isActive={isActive}
-          className={cn('gap-4', SIDEBAR_NAV_ITEM_CLASS)}
+          className={cn('gap-4', SIDEBAR_NAV_ITEM_CLASS, trailing && 'w-auto min-w-0 flex-1')}
         >
           <Link
             href={item.href}
@@ -115,6 +117,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
             </motion.span>
           </Link>
         </SidebarMenuButton>
+        {trailing}
       </SidebarMenuItem>
     )
   }
@@ -211,7 +214,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
 
           <SidebarRecordsGroup
             items={navConfig.recordsItems}
-            renderItem={renderNavItem}
+            renderItem={item => renderNavItem(item)}
           />
 
           {navConfig.adminItems.length > 0 && (
@@ -219,7 +222,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
               <SidebarGroupLabel className="text-sidebar-muted">Admin</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {navConfig.adminItems.map(renderNavItem)}
+                  {navConfig.adminItems.map(item => renderNavItem(item))}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -239,7 +242,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
                 <span>Action Center</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            {navConfig.footerItems.map(renderNavItem)}
+            {renderNavItem(navConfig.settingsItem, { trailing: <SidebarThemeSwitch /> })}
           </SidebarMenu>
 
           <SidebarUserButton
