@@ -19,7 +19,7 @@ interface DashboardModuleProps {
  */
 export function DashboardModule({ title, action, className, children }: DashboardModuleProps): ReactElement {
   return (
-    <div className={cn('rounded-xl border border-border bg-card p-4 shadow-sm', className)}>
+    <div className={cn('rounded-xl border border-border bg-card p-4 shadow-sm shadow-primary/5', className)}>
       <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="font-sans text-base font-semibold text-foreground">{title}</h2>
         {action}

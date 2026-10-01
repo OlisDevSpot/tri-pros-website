@@ -39,9 +39,9 @@ export function DashboardProposalSectionList({ title, input, timeSince, emptyMes
         hideHeader
         items={data.rows}
         getItemKey={row => row.id}
-        renderItem={(row, index) => <DashboardProposalCard row={row} index={index} timeSince={timeSince} />}
+        renderItem={row => <DashboardProposalCard row={row} timeSince={timeSince} />}
         emptyState={{ message: emptyMessage }}
-        itemsClassName="-mx-2.5 space-y-0"
+        itemsClassName="space-y-2"
         variant="flush"
       />
     </section>

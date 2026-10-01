@@ -11,8 +11,6 @@ import { useProjectActionConfigs } from '@/shared/modules/projects/core/hooks/us
 
 interface DashboardProjectCardProps {
   row: ProjectRow
-  /** Rendered position in its list; odd rows take the band. */
-  index: number
   className?: string
 }
 
@@ -30,20 +28,19 @@ interface DashboardProjectCardProps {
  * advances) and shows only the specific `pipelineStage`, the informative axis.
  * Reuses the same `useProjectActionConfigs` + `EntityActionMenu` action
  * plumbing every other project surface (table, `ProjectEntityCard`) uses, so
- * actions can't drift between surfaces. Renders as a banded row of the
- * module's list, like DashboardMeetingCard and DashboardProposalCard.
+ * actions can't drift between surfaces. Matches `DashboardMeetingCard`/
+ * `DashboardProposalCard`'s row treatment (`rounded-lg border bg-card p-2.5`)
+ * so the dashboard's list modules read as one visual family.
  */
-export function DashboardProjectCard({ row, index, className }: DashboardProjectCardProps) {
+export function DashboardProjectCard({ row, className }: DashboardProjectCardProps) {
   const { actions: projectActions, DeleteConfirmDialog } = useProjectActionConfigs<ProjectRow>()
 
   return (
     <>
       <DeleteConfirmDialog />
       <div
-        data-row-band={index % 2 === 1 ? 'odd' : 'even'}
         className={cn(
-          'flex flex-wrap items-center gap-2 px-2.5 py-2 transition-colors duration-200 hover:bg-row-hover',
-          index % 2 === 1 && 'bg-band',
+          'flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-2.5',
           className,
         )}
       >

@@ -7,10 +7,10 @@ export function DashboardListSectionSkeleton({ title, card }: { title: string, c
   return (
     <section className="flex flex-col gap-2" aria-busy="true">
       <DashboardListSectionHeader title={title} />
-      <div className="-mx-2.5">
+      <div className="space-y-2">
         {card === 'proposal'
-          ? [0, 1].map(i => <DashboardProposalCardSkeleton key={i} odd={i === 1} />)
-          : [0, 1].map(i => <DashboardProjectCardSkeleton key={i} odd={i === 1} />)}
+          ? [0, 1].map(i => <DashboardProposalCardSkeleton key={i} />)
+          : [0, 1].map(i => <DashboardProjectCardSkeleton key={i} />)}
       </div>
     </section>
   )

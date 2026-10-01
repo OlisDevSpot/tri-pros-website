@@ -1,11 +1,11 @@
 import { Skeleton } from '@/shared/components/ui/skeleton'
-import { SKELETON_BLOCK_TONE_CLASS, SKELETON_TONE_CLASS } from '@/shared/constants/skeleton-tone'
+import { SKELETON_BLOCK_TONE_CLASS, SKELETON_FRAME_TONE_CLASS, SKELETON_TONE_CLASS } from '@/shared/constants/skeleton-tone'
 import { cn } from '@/shared/lib/utils'
 
 /** `DashboardProposalCard`'s frame and rows (label + actions, then two meta lines), so the swap to the card moves nothing. */
-export function DashboardProposalCardSkeleton({ odd = false }: { odd?: boolean }) {
+export function DashboardProposalCardSkeleton() {
   return (
-    <div className={cn('px-2.5 py-2', odd && 'bg-band')} aria-hidden>
+    <div className={cn('rounded-lg border border-border bg-card p-2.5', SKELETON_FRAME_TONE_CLASS)} aria-hidden>
       <div className="flex h-6 items-center gap-1.5">
         <Skeleton className={cn(SKELETON_TONE_CLASS, 'h-3.5 w-40 max-w-full')} />
         <Skeleton className={cn(SKELETON_BLOCK_TONE_CLASS, 'ml-auto size-6 shrink-0 rounded-md')} />
