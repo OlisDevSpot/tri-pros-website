@@ -83,7 +83,7 @@ export function CustomerProfileModalContent({ data, defaultTab, heroAddress, her
                 is pushed down by safe-area. This also makes the hero taller
                 on iOS PWA, which is the desired effect. */}
           <div className="relative z-10 flex flex-1 flex-col justify-end gap-4 px-4 pb-4 pt-[calc(env(safe-area-inset-top)+4.25rem)] text-white sm:px-6 sm:pb-6 sm:pt-10">
-            <CustomerHeroHeader customer={data.customer} editForm={editForm} />
+            <CustomerHeroHeader customer={data.customer} editForm={editForm} layout="photo" />
 
             <CustomerProfileKeyInsights customer={data.customer} />
 
