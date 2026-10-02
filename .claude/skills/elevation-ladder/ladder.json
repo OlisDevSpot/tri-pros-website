@@ -9,12 +9,17 @@
     "edge": 0.048,
     "edges": true
   },
-  "applied": null,
+  "applied": { "date": "2026-10-01", "commit": "fff2c2db" },
   "history": [
     {
       "date": "2026-10-01",
       "values": "light canvas 0.894 step 0.024 tint 0.017 · dark canvas 0.159 step 0.047 tint 0.059 · hue 253 · edge 0.048",
       "note": "First pick, after the surface sweep was reverted (6af35af2). Not applied to the app yet."
+    },
+    {
+      "date": "2026-10-01",
+      "values": "light canvas 0.894 step 0.024 tint 0.017 · dark canvas 0.159 step 0.047 tint 0.059 · hue 253 · edge 0.048",
+      "note": "Applied to the app's tokens in fff2c2db, with the owner's contrast rulings on --input, --ring, the series ramp and dark --muted-foreground."
     }
   ],
   "rail": { "light": "token", "dark": 1 },
@@ -23,12 +28,12 @@
     "live": "https://triprosremodeling.com/",
     "map": {
       "levels": {
-        "-1": "--muted",
-        "0": "--background",
-        "1": "--card",
-        "2": "--card",
-        "3": "--card",
-        "4": "--popover"
+        "-1": { "chain": ["surface-beneath"], "else": "--muted" },
+        "0": { "chain": [] },
+        "1": { "chain": ["bg-card"] },
+        "2": { "chain": ["bg-card", "bg-card"] },
+        "3": { "chain": ["bg-card", "bg-card", "bg-card"] },
+        "4": { "chain": ["bg-popover"] }
       },
       "chip": "--muted",
       "band": "--band",

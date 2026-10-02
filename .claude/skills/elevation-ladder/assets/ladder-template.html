@@ -342,7 +342,7 @@
   function ladderFor(mode) {
     if (preset === 'proposed') return proposed(mode)
     const m = compare(preset)[mode]
-    return { lv: m.lv, chip: m.chip, band: m.band, edge: m.edge, relative: false, text: m.text ?? {} }
+    return { lv: m.lv, chip: m.chip, band: m.band, edge: m.edge, chipAt: m.chipAt, bandAt: m.bandAt, edgeAt: m.edgeAt, relative: false, text: m.text ?? {} }
   }
 
   function levelOf(el, scene) {
@@ -362,8 +362,10 @@
     const at = n => lad.lv[n] ?? lad.lv[4]
     const shift = (n, d) => ({ ...at(n), L: at(n).L + d })
     const surf = n => col(at(n))
-    const edgeOf = n => lad.relative ? col(shift(n, dir * edgeD)) : (lad.edge ? col(lad.edge) : surf(n))
-    const upOf = n => lad.relative ? col(shift(n, lad.step)) : (lad.chip ? col(lad.chip) : surf(n))
+    // A measured build reports its chip, band and edge per rung; older presets carry one value for all rungs.
+    const measured = (byRung, single, n, fallback) => byRung?.[n] ? col(byRung[n]) : (single ? col(single) : fallback)
+    const edgeOf = n => lad.relative ? col(shift(n, dir * edgeD)) : measured(lad.edgeAt, lad.edge, n, surf(n))
+    const upOf = n => lad.relative ? col(shift(n, lad.step)) : measured(lad.chipAt, lad.chip, n, surf(n))
 
     const s = scene.style
     s.setProperty('--fg', t.fg ?? (mode === 'light' ? '#1d2433' : '#e9edf3'))
@@ -404,7 +406,7 @@
       el.style.setProperty('--pop-hover', upOf(n))
       if (el.classList.contains('tablewrap')) {
         const row = surf(n)
-        const band = lad.relative ? col(shift(n, lad.step * 0.5)) : (lad.band ? col(lad.band) : row)
+        const band = lad.relative ? col(shift(n, lad.step * 0.5)) : measured(lad.bandAt, lad.band, n, row)
         el.style.setProperty('--row', row)
         el.style.setProperty('--row-band', band)
         el.style.setProperty('--row-hover', mix(t.primary ?? '#0b63b6', row, 9))

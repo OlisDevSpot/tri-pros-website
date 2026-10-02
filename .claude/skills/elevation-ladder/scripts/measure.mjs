@@ -1,10 +1,11 @@
-// Reads the surface tokens a running site actually serves, in light and dark, and
+// Reads the surface colours a running site actually serves, in light and dark, and
 // writes them as one comparison preset for the ladder page.
 //
 //   node measure.mjs --url http://localhost:3000/ --id current --label "Local build now" --out /tmp/current.json
 //
-// Tokens live on :root, so a public page is enough; no login is needed.
-// The token map (which custom property paints which rung) comes from ladder.json.
+// A public page is enough; no login is needed. Each rung is built in the page from its chain of classes in
+// ladder.json and read where it paints, so a card nested in cards reports its real colour; the chip, band and
+// edge are read inside each rung. A rung whose class the site doesn't ship falls back to the token in `else`.
 import { readFileSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
@@ -72,6 +73,37 @@ function toOklch(value) {
 const round = x => x && { L: +x.L.toFixed(4), c: +x.c.toFixed(4), h: +x.h.toFixed(1), ...(x.alpha < 1 ? { alpha: +x.alpha.toFixed(3) } : {}) }
 const css = x => x && `oklch(${x.L.toFixed(4)} ${x.c.toFixed(4)} ${x.h.toFixed(1)})`
 
+// Runs in the page: builds each rung, reads its paint and the step tokens inside it, then removes it.
+function readRungs({ levels, inside, textNames }) {
+  const paint = el => getComputedStyle(el).backgroundColor
+  const probe = (host, token) => {
+    const el = document.createElement('div')
+    el.style.backgroundColor = `var(${token})`
+    host.append(el)
+    const value = paint(el)
+    el.remove()
+    return value
+  }
+  const rungs = {}
+  for (const [level, spec] of Object.entries(levels)) {
+    let host = document.body
+    let root = null
+    for (const name of spec.chain) {
+      const el = document.createElement('div')
+      el.className = name
+      host.append(el)
+      root ??= el
+      host = el
+    }
+    let surface = paint(host)
+    if (spec.else && (surface === 'rgba(0, 0, 0, 0)' || surface === 'transparent'))
+      surface = probe(document.body, spec.else)
+    rungs[level] = { surface, ...Object.fromEntries(Object.entries(inside).map(([role, token]) => [role, probe(host, token)])) }
+    root?.remove()
+  }
+  return { rungs, raw: Object.fromEntries(textNames.map(name => [name, probe(document.body, name)])) }
+}
+
 const { chromium } = createRequire(path.join(REPO, 'package.json'))('playwright')
 const browser = await chromium.launch()
 const result = { id: args.id, label: args.label, source: args.url, measuredAt: new Date().toISOString() }
@@ -82,36 +114,22 @@ try {
     const page = await context.newPage()
     await page.goto(args.url, { waitUntil: 'domcontentloaded', timeout: 120000 })
     await page.waitForTimeout(1500)
-    const names = [...new Set([
-      ...Object.values(map.levels),
-      map.chip,
-      map.band,
-      map.edge,
-      ...Object.values(map.text),
-    ].filter(Boolean))]
-    const raw = await page.evaluate((list) => {
-      const out = {}
-      for (const name of list) {
-        const probe = document.createElement('div')
-        probe.style.backgroundColor = `var(${name})`
-        document.body.append(probe)
-        out[name] = getComputedStyle(probe).backgroundColor
-        probe.remove()
-      }
-      return out
-    }, names)
-    const read = name => (name ? toOklch(raw[name]) : null)
-    const lv = {}
-    for (const [level, name] of Object.entries(map.levels)) lv[level] = round(read(name))
+    const textNames = [...new Set(Object.values(map.text).filter(Boolean))]
+    const { rungs, raw } = await page.evaluate(readRungs, { levels: map.levels, inside: { chip: map.chip, band: map.band, edge: map.edge }, textNames })
+    const byRung = role => Object.fromEntries(Object.entries(rungs).map(([level, r]) => [level, round(toOklch(r[role]))]))
+    const onPage = rungs['0']
     const text = {}
-    for (const [role, name] of Object.entries(map.text)) text[role] = css(read(name))
+    for (const [role, name] of Object.entries(map.text)) text[role] = css(toOklch(raw[name]))
     result[scheme] = {
-      lv,
-      chip: round(read(map.chip)),
-      band: round(read(map.band)),
-      edge: round(read(map.edge)),
+      lv: byRung('surface'),
+      chip: round(toOklch(onPage?.chip)),
+      band: round(toOklch(onPage?.band)),
+      edge: round(toOklch(onPage?.edge)),
+      chipAt: byRung('chip'),
+      bandAt: byRung('band'),
+      edgeAt: byRung('edge'),
       text,
-      raw,
+      raw: { ...raw, rungs },
     }
     await context.close()
   }

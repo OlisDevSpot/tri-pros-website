@@ -65,5 +65,5 @@ Why the gate: on 2026-10-01 a token retune plus a mechanical class sweep was jud
 ## Keeping the page useful over time
 
 - If the owner reports a surface the page doesn't show (a kanban column, a dialog, a sheet), add a small scene for it to the template so the next tune covers it. Keep the sample content invented: no real customers.
-- When the app's tokens change (for example once rung tokens exist), update `measure.map` in `ladder.json` so "Local build now" measures the real rungs instead of the legacy names.
+- `measure.map.levels` builds each rung in the page as a chain of classes (`bg-card` nested for rungs 1–3, `bg-popover` for 4, `surface-beneath` for −1) and reads what paints. If the app renames its surface classes, update the chains.
 - The template reads only `CONFIG.project`, `picked`, `rail`, `text` and `compare`; keep `build.mjs` and the template in step if either changes.

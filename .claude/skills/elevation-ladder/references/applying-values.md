@@ -14,9 +14,7 @@ A pick has five numbers per the page: canvas lightness, step, tint (OKLCH chroma
 | hue | hue shared by every rung, both modes |
 | edge | how far a hairline edge sits from its surface (darker in light, lighter in dark) |
 
-**Status on 2026-10-01:** the app does not have rung tokens yet. `globals.css` still carries the earlier ramp (`--canvas-l`, `--lift`, `--surface-c`, `--surface-h` with `muted`/`band`/`card` formulas that do not follow the ladder: light `card` is pinned at white, `muted` sits below `card`). Applying a pick therefore needs the rung-token change first, which is its own spec and owner review. If `globals.css` has no rung knobs when you get here, stop and tell the owner; don't bend the old ramp to approximate the ladder.
-
-Once rung tokens exist, also update `measure.map` in `ladder.json` so the measuring script reads the rungs directly.
+**Where each number goes.** Light values sit in the `:root, .funnel-light` block and dark values in `.dark`: canvas → `--canvas-l`, step → `--step`, tint → `--surface-c`. Hue → `--surface-h` and edge → `--edge` are declared once, in `:root, .funnel-light`. Everything else (rungs, chips, bands, edges, the dark rail) derives from these. After a change, `pnpm theme:check` resolves every text and control colour on every rung; a failure there is the owner's call, not a number to nudge quietly.
 
 Remember the public site reads the same `:root` tokens (only `/test` uses `.theme-marketing`). A change to the canvas or the step moves the landing pages too; check them every time.
 
