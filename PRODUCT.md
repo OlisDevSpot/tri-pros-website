@@ -56,7 +56,7 @@ public statement of it).
   visits) → Proposal Created & Sent → Signed Contract (via **Zoho Sign** e-sign)
   → Project Delivered.
 - **Two project categories**: Energy-Efficient Remodeling (roofing, insulation,
-  windows & doors, HVAC, solar — tied to tax credits/rebates and monthly savings)
+  windows & doors, HVAC — tied to tax credits/rebates and monthly savings)
   and General Remodeling (bathroom, kitchen, flooring, paint, decking,
   foundation).
 - **Showcase funnels are per-trade, never generic** — Kitchen Showcase, Bathroom

@@ -43,7 +43,6 @@ Manufacturer warranties are only valid when the product is installed by a certif
 | HVAC | `[Carrier / Trane / Lennox]` | Equipment warranty | Parts + labor (years vary) |
 | Windows | `[Andersen / Milgard / Pella]` | Limited lifetime | Glass, frame, hardware |
 | Insulation | `[Owens Corning / Johns Manville]` | Limited lifetime | Product defects |
-| Solar | `[Manufacturer TBD]` | 25-year panel warranty | Power output guarantee |
 
 > **Key point**: A cheap contractor using the same brand shingles but without a certification installs the product out of spec and voids the manufacturer warranty entirely. The homeowner thinks they have a warranty — they don't.
 

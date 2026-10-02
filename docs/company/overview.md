@@ -31,7 +31,6 @@ Projects that reduce energy consumption, qualify for tax credits/rebates, and ge
 - Insulation
 - Windows & Doors
 - HVAC
-- Solar
 
 ### General Remodeling
 Projects that improve livability, aesthetics, or structural integrity:
