@@ -2,55 +2,78 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Super-admins bulk-act on ticked rows of the meetings, projects and campaign-leads tables through one server runner; meetings record their setter from every add-a-meeting form; projects move onto a field list and get an entity table with an expanded row.
+**Goal:** Super-admins bulk-act on ticked rows of the records tables through one server runner (meetings and campaign leads here; projects, customers and proposals at D49's bulk step); meetings record their setter from every add-a-meeting form.
 
-**Architecture:** One pure runner (`runBulk`) under two tRPC procedure builders gives each entity router a `bulk.delete` / `bulk.update` leaf whose rows run one at a time through the entity's own crud (hooks fire). `DataTable` owns row selection and mounts a floating `BulkActionBar` that renders ordinary `EntityActionConfig<RowSelection>`s through `EntityActionMenu`. Each entity table is a headless hook (`use<Entity>Table`); records views compose the page shell themselves.
+**Architecture:** One pure runner (`runBulk`) under two tRPC procedure builders gives each entity router a `bulk.delete` / `bulk.update` leaf whose rows run one at a time through the entity's own crud (hooks fire). `DataTable` owns row selection and mounts a floating `BulkActionBar` that renders ordinary `EntityActionConfig<RowSelection>`s through `EntityActionMenu`. Each entity table is a headless hook (`use<Entity>Table`) on the shared `useEntityTable`, and records pages go through `EntityRecordsTable` (both from the projects plan).
 
 **Tech Stack:** Next.js 15 App Router, tRPC v11, Drizzle + Postgres (Neon), Zod 4, drizzle-zod, TanStack Table/Query, CASL, shadcn/ui (Radix), motion/react, pnpm, `tsx`.
 
-**Spec:** `docs/superpowers/specs/2026-09-28-records-bulk-actions-and-entity-tables-design.md` (v3, approved for planning 2026-09-29). Tracker: `docs/plans/2026-09-26-records-management-epic.md` (D37–D48, O8, O9). **Out of this plan:** spec §6 (proposals, B6) — planned after the approval session (`docs/plans/2026-09-29-approval-project-outcome-handoff.md`); the legacy-query-helper deletion that waits for it.
+**Spec:** `docs/superpowers/specs/2026-09-28-records-bulk-actions-and-entity-tables-design.md` (v3, approved for planning 2026-09-29). Tracker: `docs/plans/2026-09-26-records-management-epic.md` (D37–D52, O8, O9). **Out of this plan:** the proposals entity table (spec §6, R3), which D50 builds before bulk in its own plan; the customers entity table (R2, D48); the legacy query path's deletion (D49's last step).
+
+> **Status (2026-10-02): partly superseded, and not to be executed as written.** Tracker **D49** (2026-10-01) puts tables first and bulk last: projects → customers (R2) → proposals (R3) → the setter, bulk and selection across all four tables at once. This plan is the base for that last step.
+> - **Tasks 11–13** are replaced by `docs/superpowers/plans/2026-10-01-projects-entity-table.md`. **Task 14** (projects bulk) moves to the all-tables bulk step. Their text is removed below; git history keeps it.
+> - **Task 7 Steps 1–4** (`hidden`, `isActionPermitted`, `getVisibleActions`) landed in `a1d70db1`. Task 7 keeps only the bulk pieces.
+> - **Task 9 Step 6** (delete `MeetingsTable`; the view composes its shell) is done by the projects plan's Task 3 (`useEntityTable`, `EntityRecordsTable`, meta key `rowActions`). Task 9 wires into that.
+> - **Task 8 was rewritten on 2026-10-02** against the render-isolation code (`data-table-row.tsx`, `isRowClick`): selection reaches each memoized `DataTableRow` as a prop, like `isExpanded`; no row or cell reads `row.getIsSelected()` while rendering (D49).
+> - **Task 10** was re-checked on 2026-10-02: campaign leads' meta, columns and mutations match the code.
+> - **Not yet planned for D49's step:** the projects, proposals and customers bulk UI (configs on `useProjectsTable` / `useProposalsTable` / `useCustomersTable`, none built yet). Their server leaves are in Task 6. Campaign leads stays on `usePaginatedQuery` (owner, 2026-10-02: partly legacy, left alone), so D49's deletion of the legacy query path keeps what it uses.
+> - **Owner rulings 2026-10-02** are recorded as settlements 14–17 and tracker D53–D57; the lead-source setters are tracker O10.
+> - The 2026-10-02 reviews' mechanical fixes are applied below. Their open owner decisions are marked **(open)** where they sit.
 
 ## Global Constraints
 
 - Verification per task: `pnpm tsc` and `pnpm lint`. **Never `pnpm build`.**
 - **No database writes for testing** (dev included). Browser checks read and open UI only; any write check (a bulk run, a setter change) runs only on rows the owner designates, or is verified by code and types.
 - No unit runner in the repo: pure functions are checked with throwaway `node:test` files under `.superpowers/sdd/2026-09-29-records-bulk-actions/tests/` (git-ignored), run from the repo root with `pnpm exec tsx --test <file>` so the `@/` alias resolves. Never commit them.
-- Work on `main`; other sessions commit concurrently. Stage by explicit path, never `git add -A`; before each commit run `git diff --cached --stat` and confirm only this task's files are staged. Commits happen under the owner's execution go (approving this plan is that go). Message shape `type(scope): subject`, ending with `Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>`.
+- Work on `main`; other sessions commit concurrently and the index can hold their staged work (on 2026-10-02 it held a deletion and a rename). Stage by explicit path, never `git add -A`, and **commit with an explicit pathspec** (`git commit -m "…" -- <paths>`, as every commit block below does) so nothing already staged rides along; confirm with `git show --stat HEAD`. Never `git stash`, `checkout`, `reset`, `restore`, `clean` or `commit --amend`. Before editing any file this plan modifies, run `git status --short <file>`: if it shows changes you didn't make, stop and ask (on 2026-10-02 `data-table-row.tsx`, `use-meetings-table.tsx` and the meetings `columns-registry.tsx` had another session's edits). Commits happen under the owner's execution go (approving this plan is that go). Message shape `type(scope): subject`, ending with `Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>`.
+- Render rules (`data-table.tsx` meta doc): meta function entries are event callbacks; anything a cell reads while rendering is a value; rows and cells never read `table.getState()` / `row.getIsSelected()` while rendering.
+- Browser checks: a local Playwright script (memory `reference-playwright-auth.md`, `/api/dev/playwright-session`), screenshots saved under `.superpowers/sdd/2026-09-29-records-bulk-actions/` in light and dark, desktop and 390px wide, listed in the task report. Use the running dev server (`ss -ltnp` first); never touch `.next`.
 - Schema: `pnpm db:push:dev` after Task 1 is **owner-run**; `db:push:prod` must run **before** deploying Task 1 (every meetings list selects `set_by`); no `db:refresh:dev` between the two pushes.
-- Code conventions (memory `coding-conventions.md`): one component per file, named exports, constants in `constants/`, pure helpers in `lib/`, only DAL files import `db`, DAL functions return `DalReturn`. Comments say why, never what; no plan/spec/tracker citations in code.
+- Code conventions (memory `coding-conventions.md`): one component per file, named exports, constants in `constants/`, pure helpers in `lib/` (no toasts or other side effects there), only DAL files import `db`, DAL functions return `DalReturn`. Comments say why, never what; no plan/spec/tracker citations in code.
+- Action config arrays go through `useStableCallbacks` (`src/shared/hooks/use-stable-callbacks.ts`), never `useMemo` over mutation objects (repo convention since `1135ce23`). A function on a config that runs while rendering (`hidden`) reads only its argument.
+- Routers reach a module through its service where one exists (`proposalService`, `projectsService`): writes through its CRUD slots, reads through `<m>Service.queries` (settlement 16), never its `dal/server/*`. New entity files still land under `shared/entities/`; the modules consolidation (memory `project-modules-consolidation.md`) moves them later.
+- A role list is derived from the one ability definition (`rolesWithAbility`), never written out as role strings, the way the meetings crud resolves an owner by ability (`entities/meetings/dal/server/crud.ts:24-25`, `resolve-owner.ts:14`). Settlement 13.
 - Action labels are Title Case like the existing constants ("Set Setter", "Open Project", "View on Site", "Show on Portfolio", "Hide from Portfolio").
 - Bulk is super-admin only (D43): every bulk action config carries `BULK_ACTION_PERMISSION` (`['manage', 'all']`), matching the `superAdminProcedure` the bulk leaves run on. Single-row actions keep their existing permissions.
 
 ## Review Focus
 
-1. **Agents and dispatchers see no bulk UI.** On meetings, projects and campaign leads an agent sees no checkboxes, and on meetings no Setter column, Setter filter or Set Setter action; single-row Show/Hide on Portfolio still shows for agents (they can already toggle Public on the edit form). Pinned by Task 2 Step 6, Task 9 Step 9 and Task 14 Step 4 (browser, agent session).
-2. **A checkbox tap is only a checkbox tap.** Ticking a row never expands it (meetings, projects) and never opens campaign leads' drawer, including on a phone-width viewport. Pinned by Task 9 Step 8 and Task 10 Step 6.
+1. **Agents and dispatchers see no bulk UI.** On meetings and campaign leads neither an agent nor a dispatcher sees checkboxes, and on meetings no Setter column, Setter filter or Set Setter action. Pinned by Task 2 Step 6 and Task 9 Step 10 (browser, agent and dispatcher sessions).
+2. **A checkbox tap is only a checkbox tap.** Ticking a row never expands it (meetings) and never opens campaign leads' drawer, including on a phone-width viewport. Pinned by Task 9 Step 8 and Task 10 Step 6.
 3. **Selection only holds what the viewer can see.** Ticked rows that a filter or search removes are un-ticked (not silently re-ticked when they come back); page, page-size and sort changes clear the selection. Pinned by `pruneRowSelection` checks (Task 8 Step 1).
-4. **"No setter" is a real value.** Choosing it single-row or in bulk writes `null`; a duplicate starts with no setter; a reschedule keeps it. Pinned by Task 1 Step 7, Task 5 Step 1 (empty-vs-null patch check) and Task 9 Step 9.
-5. **A run where nothing happens says so.** Bulk delete on rows that are all skipped toasts "Deleted 0 · skipped 3 (has proposals)", not a success tick, and still clears the selection. Pinned by `formatBulkActionResult` checks (Task 9 Step 1).
+4. **"No setter" is a real value, and the setter follows the lead.** Choosing "No setter" single-row or in bulk writes `null`. A form left unpicked records the creator. A duplicate and a reschedule both keep the setter, including a `null` one (the duplicate engine's null → undefined mapping must not turn it into the duplicator). Pinned by Task 1 Step 7, Task 5 Step 1 (empty-vs-null patch check) and Task 9 Step 9.
+5. **A run where nothing happens says so.** Bulk delete on rows that are all skipped toasts "Deleted 0 · skipped 3 (with proposals)" as a warning, not a success tick, and still clears the selection. Pinned by `describeBulkActionResult` checks (Task 9 Step 1).
 
 ## Plan-time settlements (deviations from the spec text; mirrored into the spec in Task 15)
 
-1. **`SetterPicker`, not an extracted `InternalUserPicker`.** `ParticipantPickerContent`'s rows are role-add buttons ("Add as owner…") with slot rules; the setter needs one selectable value. `SetterPicker` (meetings entity) runs the setter-candidates query itself and renders `UserOverviewCard` rows like `AvailableParticipantRow`; `ParticipantPickerContent` is unchanged.
-2. **Single-row Set Setter lives in `useMeetingActionConfigs` behind an opt-in** (`withSetSetter: true`), the same way `assignProject` is gated by `onAssignProject`; only `useMeetingsTable` opts in. It keeps the menu order (before Delete) in one place.
-3. **The setter invariant runs for every origin** that writes a non-null `setBy` (fail fast). A reschedule of a meeting whose setter was later demoted fails with `set_by_not_internal` until a super-admin changes the setter.
+1. **`SetterPicker`, not an extracted `InternalUserPicker`.** `ParticipantPickerContent`'s rows are role-add buttons ("Add as owner…") with slot rules; the setter needs one selectable value. Both pickers compose one users-entity row, `UserCommandItem`, extracted from `AvailableParticipantRow`. `SetterPicker` (meetings entity) runs the setter-candidates query itself; `ParticipantPickerContent` is otherwise unchanged. One `SetterSelect` (trigger, popover, label) serves the add-meeting form (and the lead-source work later).
+2. **Single-row Set Setter lives in `useMeetingActionConfigs`, hidden where the entity carries no setter** (owner, 2026-10-02: `hidden`): `hidden: entity => entity.setBy === undefined`, the `ProjectEntity.isPublic?` pattern. Only the records table's rows carry `setBy`, so the schedule calendar and the overview card never show it. It keeps the menu order (before Delete) in one place. Amends spec §4.5 ("appended inside `useMeetingsTable`").
+3. **The setter invariant runs for every origin** that writes a non-null `setBy` (fail fast). A reschedule or a duplicate of a meeting whose setter's role later changed fails with `set_by_not_internal` until a super-admin changes the setter. Reschedule's create unwraps with `dalToTrpc`, so that reason reaches the client as PRECONDITION_FAILED and the toast words it. **(open)** Exempting copied setters needs a way for a crud hook to tell a copy from a choice, which it cannot today; it is settled with the lead-source setters work (tracker O10), which redefines who a valid setter is.
 4. **One bulk permission.** Bulk configs use `BULK_ACTION_PERMISSION` (`['manage', 'all']`) rather than each action's single-row permission, so an agent's `update Project` never shows checkboxes the server would refuse.
 5. **Toolbar mode renders a promoted `custom` action as a popover button.** The bulk bar promotes every action, so pickers (Set Setter, Enroll) are one click away instead of under More; single-row toolbars gain the same ability.
-6. **Selection is pruned in state, not only in view:** when the row ids change, ids no longer present are dropped (render-phase, like the expansion reset).
-7. **`ProjectEntityCard` drops its `onView` override:** with `view` relabelled "View on Site", the override would open the dashboard page under that label.
-8. **`ProjectMeetingList`** is extracted from `ProjectEntityCard` so the projects sales-history pane reuses it (two callers).
-9. **Projects visibility sorts by field `visibility`:** a field list has one id per field, so the `isPublic` column's sort id becomes `visibility` (old `pjsortBy=isPublic` URLs fall back to the default order).
+6. **Selection is pruned in state, not only in view:** when the row ids change, ids no longer present are dropped (render-phase, like the expansion reset). Task 8's rewrite (D49) keeps this rule.
+7–9. Moved with Tasks 11–13 to the projects plan.
+10. **A duplicate keeps the setter** (owner, 2026-10-02: "it's still their lead"). Amends spec §4.4 ("joins `duplicate.exclude`") and tracker D42 ("duplicate clears"). `setBy` stays off `duplicate.exclude`.
+11. **The bulk procedure builders take the same config as `createCrudRouter`:** `spec` and `schemas.id` beside `crud`. They resolve the entity's visibility scope like `createCrudRouter` does, so relaxing D43 later can never run a bulk leaf unscoped. Amends spec §5.2's `idSchema`.
+12. **Each entity's delete skip labels are the source of its skip-reason type** (`MEETING_DELETE_SKIP_LABELS` → `MeetingDeleteSkipReason`), in the entity's `constants/`. The router's `classify` returns that type; no client file derives it from `AppRouterOutputs`. The result formatter labels `notFound` itself.
+13. **The setter and participant role lists derive from CASL:** `SETTER_ROLES` = the roles that can `create Meeting`, `PARTICIPANT_ROLES` = the roles that can `own Meeting`. Same sets as written out today; they can no longer drift from `abilities.ts`.
+14. **An unpicked setter is the meeting's creator** (owner, 2026-10-02): `create.before` fills `setBy` from the session when the input omits it; forms send `setBy` only as held. Amends D47 ("no server default").
+15. **Only super-admins change a setter** (owner, 2026-10-02): `update.before` refuses `setBy` from a viewer without `assign Meeting`. This takes the update half of H5 out of #285; an agent naming someone else at create stays H5's.
+16. **Routers read a module through `<m>Service.queries`** (owner, 2026-10-02; the modules-consolidation shape): the proposals and projects bulk leaves read `proposalService.queries.getProposalsByIds` and `projectsService.queries.getProjectDeleteFacts`, never `dal/server/queries`. An entity without a service (meetings) keeps its DAL reads.
+17. **The setter is meetings-only** (owner, 2026-10-02). Intake carries no setter in this plan; the lead-source setters (in-house and external, configured per lead source) are their own design (tracker O10).
+
+Settlements 1–13 and the names they introduce were approved by the owner on 2026-10-02.
 
 ## File map
 
 | Area | Files |
 |---|---|
-| Setter (B1) | `db/schema/meetings.ts` · `entities/meetings/constants/internal-user-roles.ts` (new) · `entities/users/dal/server/queries.ts` · `entities/meetings/dal/server/crud.ts` · `trpc/routers/meetings.router/{business,reads}.router.ts` · `dal/lib/query/constants.ts` · `dal/client/constants/option-source-reads.ts` · `entities/meetings/dal/meeting-fields.ts` · `entities/meetings/dal/server/{meeting-field-sql,queries}.ts` · `entities/meetings/lib/columns-registry.tsx` · `features/records-management/constants/meetings-records-table-view.ts` · `entities/meetings/components/setter-picker.tsx` (new) · `entities/meetings/components/create-meeting-form.tsx` · `features/intake/{schemas/intake-form-schema.ts, ui/components/set-by-field.tsx (new), ui/views/intake-form-view.tsx}` · `trpc/routers/customers.router/business.router.ts` · `services/customer-intake.service.ts` |
-| Bulk server (B2) | `dal/server/lib/run-bulk.ts` (new) · `trpc/lib/{non-empty-patch,bulk-procedures}.ts` (new) · `trpc/routers/{meetings,proposals,projects}.router/{bulk.router.ts (new), index.ts}` · `entities/meetings/dal/server/queries.ts` · `modules/projects/core/dal/server/queries.ts` |
-| Selection + bar (B3) | `components/entities/entity-actions/{types.ts, lib/visible-actions.ts (new), lib/format-bulk-action-result.ts (new), lib/toast-bulk-action-result.ts (new), constants/bulk-action-permission.ts (new), ui/entity-action-menu.tsx, ui/entity-action-dropdown.tsx, ui/toolbar-popover-button.tsx (new), ui/bulk-action-bar.tsx (new)}` · `features/schedule-management/ui/components/{schedule-calendar-dot,schedule-activities-calendar}.tsx` · `components/ui/checkbox.tsx` · `components/data-table/{lib/prune-row-selection.ts (new), ui/data-table.tsx, ui/data-table-body.tsx}` |
-| Meetings UI (B3) | `entities/meetings/{constants/actions.ts, constants/bulk-skip-labels.ts (new), hooks/use-meeting-actions.ts, hooks/use-meeting-action-configs.tsx, hooks/use-meeting-bulk-action-configs.tsx (new), components/meetings-table/use-meetings-table.tsx}` · delete `components/meetings-table/meetings-table.tsx` · `features/records-management/ui/views/meetings-records-view.tsx` |
+| Setter (B1) | `db/schema/meetings.ts` · `domains/permissions/lib/roles-with-ability.ts` (new) · `entities/meetings/constants/{internal-user-roles.ts, set-by-not-internal.ts}` (new) · `entities/users/dal/server/queries.ts` · `entities/meetings/dal/server/crud.ts` · `trpc/routers/meetings.router/{business,reads}.router.ts` · `dal/lib/query/constants.ts` · `dal/client/constants/option-source-reads.ts` · `entities/meetings/dal/meeting-fields.ts` · `entities/meetings/dal/server/{meeting-field-sql,queries}.ts` · `entities/meetings/lib/columns-registry.tsx` · `features/records-management/constants/meetings-records-table-view.ts` · `entities/users/components/user-command-item.tsx` (new) · `entities/meetings/constants/participant-add-labels.ts` (new) · `entities/meetings/components/participant-picker/available-participant-row.tsx` · `entities/meetings/components/{setter-picker,setter-select}.tsx` (new) · `entities/meetings/components/create-meeting-form.tsx` |
+| Bulk server (B2) | `dal/server/lib/run-bulk.ts` (new) · `trpc/lib/{non-empty-patch,bulk-procedures}.ts` (new) · `trpc/routers/{meetings,proposals,projects}.router/{bulk.router.ts (new), index.ts}` · `trpc/routers/projects.router/crud.router.ts` (revalidate line) · `entities/meetings/{dal/server/queries.ts, constants/delete-skip-reasons.ts (new)}` · `modules/projects/core/{dal/server/queries.ts, constants/delete-skip-reasons.ts (new)}` · `modules/proposals/core/constants/delete-skip-reasons.ts` (new) |
+| Selection + bar (B3) | `components/entities/entity-actions/{types.ts, lib/with-toolbar-roles.ts, lib/describe-bulk-action-result.ts (new), constants/bulk-action-permission.ts (new), constants/bulk-not-found-label.ts (new), ui/entity-action-menu.tsx, ui/toolbar-button.tsx (new), ui/toolbar-popover-button.tsx (new), ui/bulk-action-bar.tsx (new)}` · `hooks/use-confirm.tsx` · `components/ui/checkbox.tsx` · `components/data-table/{lib/prune-row-selection.ts (new), ui/data-table.tsx, ui/data-table-body.tsx, ui/data-table-row.tsx}` |
+| Meetings UI (B3) | `entities/meetings/{constants/actions.ts, constants/bulk-actions.ts (new), hooks/use-meeting-actions.ts, hooks/use-meeting-action-configs.tsx, hooks/use-meeting-bulk-action-configs.tsx (new), components/meetings-table/use-meetings-table.tsx}` |
 | Campaign leads (B4) | `features/campaigns-admin/{constants/lead-bulk-actions.ts (new), hooks/use-lead-bulk-action-configs.tsx (new), ui/components/leads/bulk-enroll-form.tsx (new), ui/lib/leads-columns.tsx, ui/views/campaigns-leads-view.tsx}` · delete `lead-select-cell.tsx`, `lead-select-header.tsx`, `leads-bulk-action-bar.tsx`, `bulk-enroll-popover.tsx` |
-| Projects (B5) | `modules/projects/core/{dal/project-fields.ts (new), dal/server/project-field-sql.ts (new), dal/server/queries.ts, constants/status-labels.ts (new), constants/actions.ts, constants/bulk-skip-labels.ts (new), lib/columns-registry.tsx, hooks/use-project-actions.ts, hooks/use-project-action-configs.ts, hooks/use-project-bulk-action-configs.ts (new), components/projects-table/use-projects-table.tsx (new)}` · `trpc/routers/projects.router/crud.router.ts` · `features/agent-dashboard/{constants/dashboard-queries.ts, ui/components/dashboard-project-section.tsx}` · `app/(frontend)/dashboard/(records)/projects/page.tsx` · `features/records-management/{constants/projects-records-table-view.ts (new), ui/views/projects-records-view.tsx (new), ui/components/project-row-panel/* (new), ui/components/record-customer-pane.tsx (new)}` · `entities/customers/{hooks/use-customer-profile.ts (new), components/lists/project-meeting-list.tsx (new), components/lists/project-entity-card.tsx, components/profile/customer-profile-modal.tsx}` · delete `features/project-management/ui/components/table/`, `project-detail-sheet.tsx`, `constants/projects-table-query-config.ts`, `constants/project-table-filter-config.ts`, `features/records-management/ui/components/meeting-row-panel/meeting-customer-pane.tsx` |
+| Projects (B5) | Moved: `docs/superpowers/plans/2026-10-01-projects-entity-table.md` (Tasks 11–13) and the all-tables bulk step (Task 14). |
 | Hand-off (B7, partial) | `components/data-table/types.ts` · `components/data-table/hooks/use-table-url-filters.ts` · `CONTEXT.md` · records tracker · spec |
 
 All paths above are under `src/shared/` unless they start with `features/`, `trpc/` or `app/` (then `src/`), or are repo-root docs.
@@ -63,13 +86,15 @@ All paths above are under `src/shared/` unless they start with `features/`, `trp
 
 **Files:**
 - Modify: `src/shared/db/schema/meetings.ts:21-41`
+- Create: `src/shared/domains/permissions/lib/roles-with-ability.ts`
 - Create: `src/shared/entities/meetings/constants/internal-user-roles.ts`
+- Create: `src/shared/entities/meetings/constants/set-by-not-internal.ts`
 - Modify: `src/shared/entities/users/dal/server/queries.ts`
-- Modify: `src/shared/entities/meetings/dal/server/crud.ts:1-77,132-146`
+- Modify: `src/shared/entities/meetings/dal/server/crud.ts:1-77,132-151`
 - Modify: `src/trpc/routers/meetings.router/business.router.ts:120-131`
 
 **Interfaces:**
-- Produces: column `meetings.setBy: string | null` (FK `user.id`, `on delete set null`); `PARTICIPANT_ROLES = ['agent', 'super-admin']`, `SETTER_ROLES = ['dispatcher', 'agent', 'super-admin']` (`as const`); `listUsersByRoles(roles, { excludeIds? }): Promise<DalReturn<InternalUserRow[]>>` with `InternalUserRow = { id: string, name: string, email: string, image: string | null, role: UserRole | null }`; `getUserRoleById(id): Promise<DalReturn<UserRole | null>>`; meetings crud refuses a non-internal `setBy` with `precondition-failed: set_by_not_internal`.
+- Produces: column `meetings.setBy: string | null` (FK `user.id`, `on delete set null`); `rolesWithAbility(action, subject): UserRole[]`; `PARTICIPANT_ROLES` (= `own Meeting`: agent, super-admin) and `SETTER_ROLES` (= `create Meeting`: dispatcher, agent, super-admin); `SET_BY_NOT_INTERNAL = { reason, message }`; `listUsersByRoles(roles, { excludeIds? }): Promise<DalReturn<InternalUserRow[]>>` with `InternalUserRow = Pick<User, 'id' | 'name' | 'email' | 'image' | 'role'>`; `getUserRoleById(id): Promise<DalReturn<UserRole | null>>`; meetings crud defaults an unpicked `setBy` to the creating session's user, refuses a non-internal `setBy` with `precondition-failed: set_by_not_internal`, and refuses a `setBy` update from a viewer without `assign Meeting` (`forbidden`).
 
 - [ ] **Step 1: The column**
 
@@ -82,32 +107,51 @@ In `src/shared/db/schema/meetings.ts`, after the `ownerId` line (`:23`), add:
 
 drizzle-zod carries it into `selectMeetingSchema`, `insertMeetingSchema` and the update partial as nullable-optional; no schema edit is needed.
 
-- [ ] **Step 2: The role lists**
+- [ ] **Step 2: The role lists, read off the abilities**
+
+Create `src/shared/domains/permissions/lib/roles-with-ability.ts`:
+
+```ts
+import type { UserRole } from '@/shared/constants/enums'
+import type { AppAction, AppSubject } from '@/shared/domains/permissions/types'
+
+import { userRoles } from '@/shared/constants/enums'
+import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
+
+/** A SQL `role IN (…)` needs role strings; deriving them from the abilities keeps the two from drifting. */
+export function rolesWithAbility(action: AppAction, subject: AppSubject): UserRole[] {
+  return userRoles.filter(role => defineAbilitiesFor({ id: '', role }).can(action, subject))
+}
+```
 
 Create `src/shared/entities/meetings/constants/internal-user-roles.ts`:
 
 ```ts
-import type { UserRole } from '@/shared/constants/enums/user'
+import { rolesWithAbility } from '@/shared/domains/permissions/lib/roles-with-ability'
 
-/** Who can sit a meeting. */
-export const PARTICIPANT_ROLES = ['agent', 'super-admin'] as const satisfies readonly UserRole[]
+/** Who can sit a meeting: the roles that own the meetings they book. */
+export const PARTICIPANT_ROLES = rolesWithAbility('own', 'Meeting')
 
 /** Who can have booked a meeting: dispatchers book most of them but never sit one. */
-export const SETTER_ROLES = ['dispatcher', 'agent', 'super-admin'] as const satisfies readonly UserRole[]
+export const SETTER_ROLES = rolesWithAbility('create', 'Meeting')
+```
+
+Create `src/shared/entities/meetings/constants/set-by-not-internal.ts`:
+
+```ts
+/** The crud's refusal code for a setter who isn't on the team, and the words a toast shows for it. */
+export const SET_BY_NOT_INTERNAL = {
+  reason: 'set_by_not_internal',
+  message: 'That person is no longer on the team, so they can\'t be the setter. Choose another setter.',
+} as const
 ```
 
 - [ ] **Step 3: The users DAL reads**
 
-In `src/shared/entities/users/dal/server/queries.ts`, change the drizzle import to `import { and, eq, inArray, notInArray } from 'drizzle-orm'`, add `import type { UserRole } from '@/shared/constants/enums/user'` beside the `DalReturn` type import, and append:
+In `src/shared/entities/users/dal/server/queries.ts`, change the drizzle import to `import { and, eq, inArray, notInArray } from 'drizzle-orm'`, add `import type { UserRole } from '@/shared/constants/enums/user'` and `import type { User } from '@/shared/db/schema/auth'` beside the `DalReturn` type import, and append:
 
 ```ts
-export interface InternalUserRow {
-  id: string
-  name: string
-  email: string
-  image: string | null
-  role: UserRole | null
-}
+export type InternalUserRow = Pick<User, 'id' | 'name' | 'email' | 'image' | 'role'>
 
 /** Users with one of these roles, by name. `excludeIds` drops system accounts. */
 export async function listUsersByRoles(
@@ -134,7 +178,7 @@ export async function getUserRoleById(id: string): Promise<DalReturn<UserRole | 
 }
 ```
 
-If `pnpm tsc` reports `user.name` / `user.email` as nullable, widen `InternalUserRow` to match the column types rather than casting.
+The row type comes from the `user` select schema, so a column change reaches it without a hand edit.
 
 - [ ] **Step 4: The setter rule in the meetings crud hooks**
 
@@ -144,6 +188,7 @@ In `src/shared/entities/meetings/dal/server/crud.ts` add the imports (alphabetic
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { ThrowableDalError } from '@/shared/dal/server/types'
 import { SETTER_ROLES } from '@/shared/entities/meetings/constants/internal-user-roles'
+import { SET_BY_NOT_INTERNAL } from '@/shared/entities/meetings/constants/set-by-not-internal'
 import { getUserRoleById } from '@/shared/entities/users/dal/server/queries'
 ```
 
@@ -156,8 +201,8 @@ async function assertSetterIsInternal(setBy: string | null | undefined): Promise
     return
   }
   const role = dalVerifySuccess(await getUserRoleById(setBy))
-  if (!role || !(SETTER_ROLES as readonly string[]).includes(role)) {
-    throw new ThrowableDalError({ type: 'precondition-failed', reason: 'set_by_not_internal' })
+  if (!role || !SETTER_ROLES.includes(role)) {
+    throw new ThrowableDalError({ type: 'precondition-failed', reason: SET_BY_NOT_INTERNAL.reason })
   }
 }
 ```
@@ -166,32 +211,51 @@ Replace the `create.before` body (`:27-32`) with:
 
 ```ts
       async before(input, ctx) {
-        await assertSetterIsInternal(input.setBy)
+        // No setter picked: whoever books the meeting set it. A picked "No setter" (`null`) stays null;
+        // SYSTEM_CONTEXT has no session, so its unpicked setter is null.
+        const setBy = input.setBy === undefined ? ctx.session?.user.id ?? null : input.setBy
+        await assertSetterIsInternal(setBy)
         if (!ctx.session) {
-          return input
+          return { ...input, setBy }
         }
-        return { ...input, ownerId: await resolveMeetingOwnerId(ctx) }
+        return { ...input, setBy, ownerId: await resolveMeetingOwnerId(ctx) }
       },
 ```
+
+A meeting's creator holds `create Meeting`, which is exactly `SETTER_ROLES`, so the default always passes the check.
 
 and make the first lines of `update.before` (`:60-61`):
 
 ```ts
-      async before(data, _ctx, { id }) {
+      async before(data, ctx, { id }) {
         if ('setBy' in data) {
+          // Only super-admins change a setter for now; SYSTEM_CONTEXT (no ability) may.
+          if (ctx.ability?.cannot('assign', 'Meeting')) {
+            throw new ThrowableDalError({ type: 'forbidden' })
+          }
           await assertSetterIsInternal(data.setBy)
         }
         let next = data
 ```
 
+Only the setter UI (Tasks 5, 9) sends `setBy` on update; on 2026-10-02 no other update caller sent it (re-check with `grep -rn "setBy" src` before relying on it), so agents' other edits are untouched.
+
 Both hooks run inside the engine's `dalDbOperation` (`create-crud-dal.ts:81-87,113-119`), so the throw becomes a `precondition-failed` `DalReturn`, which `dalToTrpc` maps to `PRECONDITION_FAILED`.
 
-- [ ] **Step 5: Duplicate clears the setter; reschedule keeps it**
+- [ ] **Step 5: Duplicate and reschedule keep the setter**
 
-In the same file, add `'setBy',` to `duplicate.exclude` after `'agentNotes',` and extend the comment above the block:
+In the same file, leave `setBy` **off** `duplicate.exclude`, and copy it explicitly in `duplicate.overrides`: the engine turns every `null` into `undefined` before the insert (`create-crud-dal.ts`, "null → undefined"), and `create.before` would then make the person duplicating the setter of a "No setter" meeting. Extend the block comment and the overrides:
 
 ```ts
-  // A duplicate is a fresh sit, not a continuation — only reschedule carries flow state and the setter forward.
+  // A duplicate is a fresh sit, not a continuation — only reschedule carries flow state forward.
+  // The setter is copied, `null` included: the lead is still theirs.
+```
+
+```ts
+    overrides: (source, ctx) => ({
+      ownerId: ctx.session?.user.id ?? source.ownerId,
+      setBy: source.setBy,
+    }),
 ```
 
 In `src/trpc/routers/meetings.router/business.router.ts`, inside the `meetingCrud.create(SYSTEM_CONTEXT, { … })` call of the reschedule procedure (`:120-131`), add after `meetingType: original.meetingType,`:
@@ -200,6 +264,8 @@ In `src/trpc/routers/meetings.router/business.router.ts`, inside the `meetingCru
         setBy: original.setBy,
 ```
 
+and change that call's unwrap from `dalVerifySuccess(await meetingCrud.create(…))` to `dalToTrpc(await meetingCrud.create(…))` (already imported). `dalVerifySuccess` throws a `ThrowableDalError` outside any `dalDbOperation`, which tRPC turns into a 500 reading "DalError: precondition-failed"; `dalToTrpc` sends PRECONDITION_FAILED with the reason, which the reschedule toast words (Task 9 Step 3). Leave the later `dalVerifySuccess(await meetingCrud.update(…))` as it is.
+
 - [ ] **Step 6: Type-check and lint**
 
 Run: `pnpm tsc && pnpm lint`
@@ -207,16 +273,16 @@ Expected: clean.
 
 - [ ] **Step 7: Owner gate — dev schema push; read-only confirmation**
 
-Ask the owner to run `pnpm db:push:dev` and paste the printed statements. Expected: exactly `ALTER TABLE "meetings" ADD COLUMN "set_by" text;` plus the FK constraint, no `truncate`, no rebuild. Then confirm by code read that `crud.ts` `duplicate.exclude` lists `'setBy'` and the reschedule create passes `setBy: original.setBy` (Review Focus 4).
+Ask the owner to run `pnpm db:push:dev` and paste the printed statements. Expected: exactly `ALTER TABLE "meetings" ADD COLUMN "set_by" text;` plus the FK constraint, no `truncate`, no rebuild. Then confirm by code read that `crud.ts` `duplicate.exclude` does **not** list `'setBy'`, `duplicate.overrides` sets `setBy: source.setBy`, and the reschedule create passes `setBy: original.setBy` (Review Focus 4). Confirm by a throwaway `node:test` (or a `tsx -e` one-liner) that `SETTER_ROLES` is `['agent', 'super-admin', 'dispatcher']` and `PARTICIPANT_ROLES` is `['agent', 'super-admin']`, in `userRoles` order.
 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add src/shared/db/schema/meetings.ts src/shared/entities/meetings/constants/internal-user-roles.ts src/shared/entities/users/dal/server/queries.ts src/shared/entities/meetings/dal/server/crud.ts src/trpc/routers/meetings.router/business.router.ts
-git diff --cached --stat
-git commit -m "feat(meetings): setter column; a setter must be on the team; duplicate clears it, reschedule keeps it
+git add src/shared/db/schema/meetings.ts src/shared/domains/permissions/lib/roles-with-ability.ts src/shared/entities/meetings/constants/internal-user-roles.ts src/shared/entities/meetings/constants/set-by-not-internal.ts src/shared/entities/users/dal/server/queries.ts src/shared/entities/meetings/dal/server/crud.ts src/trpc/routers/meetings.router/business.router.ts
+git commit -m "feat(meetings): setter column, defaulting to the creator; a setter must be on the team; only super-admins change it
 
-Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/shared/db/schema/meetings.ts src/shared/domains/permissions/lib/roles-with-ability.ts src/shared/entities/meetings/constants/internal-user-roles.ts src/shared/entities/meetings/constants/set-by-not-internal.ts src/shared/entities/users/dal/server/queries.ts src/shared/entities/meetings/dal/server/crud.ts src/trpc/routers/meetings.router/business.router.ts
+git show --stat HEAD
 ```
 
 ---
@@ -229,7 +295,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 - Modify: `src/shared/dal/client/constants/option-source-reads.ts:19-34`
 - Modify: `src/shared/entities/meetings/dal/meeting-fields.ts:11-30`
 - Modify: `src/shared/entities/meetings/dal/server/meeting-field-sql.ts`
-- Modify: `src/shared/entities/meetings/dal/server/queries.ts:43-62,95-128`
+- Modify: `src/shared/entities/meetings/dal/server/queries.ts` (`MeetingListRow`, `listMeetings`; line numbers moved when `listMeetingsForProject` landed in `fd4ea64b`)
 - Modify: `src/shared/entities/meetings/lib/columns-registry.tsx` (new `setter` column)
 - Modify: `src/features/records-management/constants/meetings-records-table-view.ts`
 
@@ -239,7 +305,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 
 - [ ] **Step 1: The candidates read**
 
-Edit `src/trpc/routers/meetings.router/reads.router.ts` in place (another session edits this file's `list` procedure; leave `list` and `getByIdWithJoins` untouched):
+Edit `src/trpc/routers/meetings.router/reads.router.ts` in place (other sessions edit this file; leave `list`, `getByIdWithJoins` and `listForProject` untouched, and keep the `projectProcedure` import `listForProject` uses):
 - imports: delete `import { inArray } from 'drizzle-orm'`, `import { db } from '@/shared/db'` and `import { user } from '@/shared/db/schema'`; add
 
 ```ts
@@ -367,30 +433,139 @@ Start `pnpm dev` (check `ss -ltnp | grep 3000` first; reuse a running server). S
 
 ```bash
 git add src/trpc/routers/meetings.router/reads.router.ts src/shared/dal/lib/query/constants.ts src/shared/dal/client/constants/option-source-reads.ts src/shared/entities/meetings/dal/meeting-fields.ts src/shared/entities/meetings/dal/server/meeting-field-sql.ts src/shared/entities/meetings/dal/server/queries.ts src/shared/entities/meetings/lib/columns-registry.tsx src/features/records-management/constants/meetings-records-table-view.ts
-git diff --cached --stat
 git commit -m "feat(meetings): setter candidates include dispatchers; Setter filter, sort and column for super-admins
 
-Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/trpc/routers/meetings.router/reads.router.ts src/shared/dal/lib/query/constants.ts src/shared/dal/client/constants/option-source-reads.ts src/shared/entities/meetings/dal/meeting-fields.ts src/shared/entities/meetings/dal/server/meeting-field-sql.ts src/shared/entities/meetings/dal/server/queries.ts src/shared/entities/meetings/lib/columns-registry.tsx src/features/records-management/constants/meetings-records-table-view.ts
+git show --stat HEAD
 ```
 
 ---
 
-### Task 3: `SetterPicker`; "Set by" on every add-a-meeting form
+### Task 3: `SetterPicker` and `SetterSelect`; "Set by" on every add-a-meeting form
 
 **Files:**
+- Create: `src/shared/entities/users/components/user-command-item.tsx`
+- Create: `src/shared/entities/meetings/constants/participant-add-labels.ts`
+- Modify: `src/shared/entities/meetings/components/participant-picker/available-participant-row.tsx`
 - Create: `src/shared/entities/meetings/components/setter-picker.tsx`
+- Create: `src/shared/entities/meetings/components/setter-select.tsx`
 - Modify: `src/shared/entities/meetings/components/create-meeting-form.tsx`
-- Modify: `src/features/intake/schemas/intake-form-schema.ts:26-32,61-62`
-- Create: `src/features/intake/ui/components/set-by-field.tsx`
-- Modify: `src/features/intake/ui/views/intake-form-view.tsx`
-- Modify: `src/trpc/routers/customers.router/business.router.ts` (`createFromIntake`)
-- Modify: `src/shared/services/customer-intake.service.ts:20,115-120`
 
 **Interfaces:**
 - Consumes: `getInternalUsers({ purpose: 'setter' })` (Task 2).
-- Produces: `SetterPicker({ value: string | null | undefined, onPick: (userId: string | null) => void, disabled?: boolean })` — `undefined` value = no checkmark (mixed bulk selection); `createFromIntake` input `setBy?: string | null`; `IngestLeadInput.meeting.setBy?: string | null`.
+- Produces: `UserCommandItem({ user, onSelect, disabled?, leading?, trailing?, ariaLabel?, className? })`; `PARTICIPANT_ADD_LABELS`; `SetterPicker({ value: string | null | undefined, onPick: (userId: string | null) => void, disabled?: boolean })` (`undefined` = no checkmark, for a mixed bulk selection); `SetterSelect({ value: string | null | undefined, onChange: (userId: string | null) => void, selfId: string | null, selfName: string | null })`.
 
-- [ ] **Step 1: The picker**
+One encoding wherever a form holds the setter: `undefined` = not picked (the crud records the creator, Task 1), `null` = "No setter", a string = that user. The form sends what it holds; it never resolves the default itself (owner, 2026-10-02).
+
+Intake is out of this plan (owner, 2026-10-02: the setter belongs to meetings, not intake). The intake form, `createFromIntake` and `ingestLead` are untouched; a meeting they create has a null setter until the lead-source setters work (tracker O10) defines intake setters.
+
+- [ ] **Step 1: One user row for both pickers**
+
+Create `src/shared/entities/users/components/user-command-item.tsx` (the row `AvailableParticipantRow` draws today, with a slot on either side):
+
+```tsx
+'use client'
+
+import type { ReactNode } from 'react'
+
+import type { UserOverviewCardUser } from '@/shared/entities/users/components/overview-card'
+
+import { CommandItem } from '@/shared/components/ui/command'
+import { UserOverviewCard } from '@/shared/entities/users/components/overview-card'
+import { cn } from '@/shared/lib/utils'
+
+interface UserCommandItemProps {
+  user: UserOverviewCardUser
+  onSelect: () => void
+  disabled?: boolean
+  /** Before the avatar, e.g. a checkmark. */
+  leading?: ReactNode
+  /** After the name, e.g. an "Add as owner" chip. */
+  trailing?: ReactNode
+  ariaLabel?: string
+  className?: string
+}
+
+export function UserCommandItem({ user, onSelect, disabled = false, leading, trailing, ariaLabel, className }: UserCommandItemProps) {
+  const name = user.name ?? user.email ?? 'Unknown'
+
+  return (
+    <CommandItem
+      // cmdk filters on `value`, so name and email both match.
+      value={`${name} ${user.email ?? ''}`}
+      disabled={disabled}
+      onSelect={onSelect}
+      aria-label={ariaLabel}
+      // shadcn's selected tint is `accent`, which equals `primary` in the dark theme and floods the row; a muted tint stays quiet.
+      className={cn(
+        'group flex items-center gap-3 rounded-md px-3 py-2.5',
+        'data-[selected=true]:bg-muted/70 hover:bg-muted/70',
+        'data-[selected=true]:text-foreground',
+        className,
+      )}
+    >
+      {leading}
+      <UserOverviewCard user={user} className="contents">
+        <UserOverviewCard.Avatar size="sm" className="size-8" />
+        <div className="flex min-w-0 flex-1 flex-col gap-px overflow-hidden">
+          <UserOverviewCard.Name className="truncate text-sm font-medium text-foreground group-data-[selected=true]:font-semibold" />
+          <UserOverviewCard.Email className="truncate text-xs text-muted-foreground" />
+        </div>
+      </UserOverviewCard>
+      {trailing}
+    </CommandItem>
+  )
+}
+```
+
+Create `src/shared/entities/meetings/constants/participant-add-labels.ts` (today a file-level constant in the row component, which Rule 2 forbids):
+
+```ts
+import type { MeetingParticipantRole } from '@/shared/constants/enums'
+
+/** The add affordance's words for the role a picked user will get. */
+export const PARTICIPANT_ADD_LABELS = {
+  owner: 'Add as owner',
+  co_owner: 'Add as co-owner',
+  helper: 'Add as helper',
+} as const satisfies Record<MeetingParticipantRole, string>
+```
+
+Rewrite `available-participant-row.tsx` on `UserCommandItem`. Re-read the file first: another session changed its chip classes on 2026-10-01, and they stay as they are now. Props, the disabled/pending guard and the chip are unchanged; the `ADD_LABEL` constant and the row's own `CommandItem` / `UserOverviewCard` markup go:
+
+```tsx
+export function AvailableParticipantRow({ user, inferredRole, disabled, isPending, onAdd }: AvailableParticipantRowProps) {
+  const name = user.name ?? user.email ?? 'Unknown'
+
+  return (
+    <UserCommandItem
+      user={user}
+      disabled={disabled || isPending}
+      onSelect={() => {
+        if (!disabled && !isPending) {
+          onAdd()
+        }
+      }}
+      ariaLabel={`${PARTICIPANT_ADD_LABELS[inferredRole]} — ${name}`}
+      className={cn(disabled && 'opacity-50')}
+      trailing={(
+        <span className="{the chip's current classes, unchanged}">
+          {isPending
+            ? <Loader2 className="size-3 animate-spin" />
+            : (
+                <>
+                  <Plus className="size-3" />
+                  {PARTICIPANT_ADD_LABELS[inferredRole]}
+                </>
+              )}
+        </span>
+      )}
+    />
+  )
+}
+```
+
+- [ ] **Step 2: The picker**
 
 Create `src/shared/entities/meetings/components/setter-picker.tsx`:
 
@@ -401,7 +576,7 @@ import { useQuery } from '@tanstack/react-query'
 import { CheckIcon } from 'lucide-react'
 
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/shared/components/ui/command'
-import { UserOverviewCard } from '@/shared/entities/users/components/overview-card'
+import { UserCommandItem } from '@/shared/entities/users/components/user-command-item'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -426,28 +601,18 @@ export function SetterPicker({ value, onPick, disabled = false }: SetterPickerPr
               <>
                 <CommandEmpty>{setters.isLoading ? 'Loading team…' : 'No team members match.'}</CommandEmpty>
                 <CommandGroup>
-                  <CommandItem value="No setter" disabled={disabled} onSelect={() => onPick(null)} className="gap-3 px-3 py-2">
+                  <CommandItem value="No setter" disabled={disabled} onSelect={() => onPick(null)} className="gap-3 px-3 py-2.5 data-[selected=true]:bg-muted/70">
                     <CheckIcon className={cn('size-3.5 shrink-0', value === null ? 'opacity-100' : 'opacity-0')} />
                     <span className="text-sm text-muted-foreground">No setter</span>
                   </CommandItem>
                   {(setters.data ?? []).map(setter => (
-                    <CommandItem
+                    <UserCommandItem
                       key={setter.id}
-                      // cmdk filters on `value`; name and email both match.
-                      value={`${setter.name} ${setter.email}`}
+                      user={setter}
                       disabled={disabled}
                       onSelect={() => onPick(setter.id)}
-                      className="gap-3 px-3 py-2 data-[selected=true]:bg-muted/70"
-                    >
-                      <CheckIcon className={cn('size-3.5 shrink-0', value === setter.id ? 'opacity-100' : 'opacity-0')} />
-                      <UserOverviewCard user={{ id: setter.id, name: setter.name, image: setter.image, email: setter.email }} className="contents">
-                        <UserOverviewCard.Avatar size="sm" className="size-7" />
-                        <div className="flex min-w-0 flex-1 flex-col gap-px overflow-hidden">
-                          <UserOverviewCard.Name className="truncate text-sm font-medium text-foreground" />
-                          <UserOverviewCard.Email className="truncate text-xs text-muted-foreground" />
-                        </div>
-                      </UserOverviewCard>
-                    </CommandItem>
+                      leading={<CheckIcon className={cn('size-3.5 shrink-0', value === setter.id ? 'opacity-100' : 'opacity-0')} />}
+                    />
                   ))}
                 </CommandGroup>
               </>
@@ -458,42 +623,98 @@ export function SetterPicker({ value, onPick, disabled = false }: SetterPickerPr
 }
 ```
 
-- [ ] **Step 2: "Set by" on `CreateMeetingForm`**
+- [ ] **Step 3: The trigger both forms use**
+
+Create `src/shared/entities/meetings/components/setter-select.tsx`:
+
+```tsx
+'use client'
+
+import { useQuery } from '@tanstack/react-query'
+import { ChevronsUpDownIcon } from 'lucide-react'
+import { useState } from 'react'
+
+import { Button } from '@/shared/components/ui/button'
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
+import { SetterPicker } from '@/shared/entities/meetings/components/setter-picker'
+import { useTRPC } from '@/trpc/helpers'
+
+interface SetterSelectProps {
+  /** `undefined` = not picked yet, which means the viewer; `null` = "No setter". */
+  value: string | null | undefined
+  onChange: (userId: string | null) => void
+  selfId: string | null
+  selfName: string | null
+}
+
+export function SetterSelect({ value, onChange, selfId, selfName }: SetterSelectProps) {
+  const [open, setOpen] = useState(false)
+  const trpc = useTRPC()
+  // Same key as the picker's own read, so the list loads once.
+  const setters = useQuery(trpc.meetingsRouter.reads.getInternalUsers.queryOptions({ purpose: 'setter' }))
+  const current = value === undefined ? selfId : value
+  const label = current === null
+    ? 'No setter'
+    : setters.data?.find(setter => setter.id === current)?.name ?? (current === selfId ? selfName : null) ?? 'Loading…'
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button type="button" variant="outline" className="w-full justify-between font-normal">
+          <span className="truncate">{label}</span>
+          <ChevronsUpDownIcon className="size-4 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-[min(420px,calc(100vw-2rem))] p-0">
+        <SetterPicker
+          value={current}
+          onPick={(userId) => {
+            onChange(userId)
+            setOpen(false)
+          }}
+        />
+      </PopoverContent>
+    </Popover>
+  )
+}
+```
+
+- [ ] **Step 4: "Set by" on `CreateMeetingForm`**
 
 In `src/shared/entities/meetings/components/create-meeting-form.tsx`:
 
 Add imports:
 
 ```tsx
-import { ChevronsUpDownIcon } from 'lucide-react'
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
+import { toast } from 'sonner'
+
 import { useSession } from '@/shared/domains/auth/client'
 import { useAbility } from '@/shared/domains/permissions/hooks'
-import { SetterPicker } from './setter-picker'
+import { SET_BY_NOT_INTERNAL } from '@/shared/entities/meetings/constants/set-by-not-internal'
+import { SetterSelect } from './setter-select'
 ```
 
-(merge `ChevronsUpDownIcon` into the existing `lucide-react` import.)
-
-After the `projectId` state (`:54`):
+After the `projectId` state:
 
 ```tsx
-  const ability = useAbility()
-  const canPickSetter = ability.can('assign', 'Meeting')
+  const canPickSetter = useAbility().can('assign', 'Meeting')
   const { data: session } = useSession()
-  // Null until the viewer picks, so the default follows the session once it loads.
-  const [setterChoice, setSetterChoice] = useState<{ userId: string | null } | null>(null)
-  const [setterOpen, setSetterOpen] = useState(false)
-  const setBy = setterChoice ? setterChoice.userId : (session?.user.id ?? null)
-  const settersQuery = useQuery({
-    ...trpc.meetingsRouter.reads.getInternalUsers.queryOptions({ purpose: 'setter' }),
-    enabled: canPickSetter && !isEditMode,
-  })
-  const setterLabel = setBy === null
-    ? 'No setter'
-    : settersQuery.data?.find(user => user.id === setBy)?.name ?? session?.user.name ?? 'You'
+  const selfId = session?.user.id ?? null
+  const selfName = session?.user.name ?? null
+  const [setBy, setSetBy] = useState<string | null | undefined>(undefined)
 ```
 
-In `createMutation`'s `onSuccess`, add `setSetterChoice(null)` beside the other resets. In `handleSubmit`'s create branch, add `setBy,` to the `createMutation.mutate({ … })` payload (after `scheduledFor`).
+In `createMutation`'s `onSuccess`, add `setSetBy(undefined)` beside the other resets. `createMutation` has no `onError` today, so a refused create fails silently (no global mutation error handler exists); add one beside `onSuccess`:
+
+```tsx
+      onError: err => toast.error(err.message === SET_BY_NOT_INTERNAL.reason ? SET_BY_NOT_INTERNAL.message : 'Failed to create meeting'),
+```
+
+ In `handleSubmit`'s create branch, add after `scheduledFor`:
+
+```tsx
+        setBy,
+```
 
 Render, between the "Date & Time" block and the "Trade & Scope Selection" block, only when creating:
 
@@ -502,186 +723,28 @@ Render, between the "Date & Time" block and the "Trade & Scope Selection" block,
         <div className="space-y-2">
           <Label>Set by</Label>
           {canPickSetter
-            ? (
-                <Popover open={setterOpen} onOpenChange={setSetterOpen}>
-                  <PopoverTrigger asChild>
-                    <Button type="button" variant="outline" className="w-full justify-between font-normal">
-                      <span className="truncate">{setterLabel}</span>
-                      <ChevronsUpDownIcon className="size-4 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent align="start" className="w-[min(420px,calc(100vw-2rem))] p-0">
-                    <SetterPicker
-                      value={setBy}
-                      onPick={(userId) => {
-                        setSetterChoice({ userId })
-                        setSetterOpen(false)
-                      }}
-                    />
-                  </PopoverContent>
-                </Popover>
-              )
-            : <p className="text-sm text-muted-foreground">{`${session?.user.name ?? 'You'} (you)`}</p>}
+            ? <SetterSelect value={setBy} onChange={setSetBy} selfId={selfId} selfName={selfName} />
+            : <p className="text-sm text-muted-foreground">{`${selfName ?? 'You'} (you)`}</p>}
         </div>
       )}
 ```
 
-Agents and dispatchers send their own id; the server invariant accepts both roles.
-
-- [ ] **Step 3: The intake form carries `setBy`**
-
-In `src/features/intake/schemas/intake-form-schema.ts`, add to `customerAndMeetingSchema` after `mp3Key`:
-
-```ts
-  // Only the in-dashboard sheet sets it (super-admins); the public intake form never shows the field.
-  setBy: z.string().nullable().optional(),
-```
-
-and in `getIntakeFormDefaults`' meeting branch return `{ ...base, mode, scheduledFor: '', closedBy: '', mp3Key: '', setBy: undefined }`.
-
-Create `src/features/intake/ui/components/set-by-field.tsx`:
-
-```tsx
-'use client'
-
-import type { IntakeFormData } from '@/features/intake/schemas/intake-form-schema'
-
-import { useQuery } from '@tanstack/react-query'
-import { ChevronsUpDownIcon } from 'lucide-react'
-import { useState } from 'react'
-import { useFormContext } from 'react-hook-form'
-
-import { Button } from '@/shared/components/ui/button'
-import { FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
-import { SetterPicker } from '@/shared/entities/meetings/components/setter-picker'
-import { useTRPC } from '@/trpc/helpers'
-
-interface SetByFieldProps {
-  /** The signed-in super-admin: the setter until someone else is picked. */
-  selfId: string | null
-  selfName: string | null
-}
-
-export function SetByField({ selfId, selfName }: SetByFieldProps) {
-  const form = useFormContext<IntakeFormData>()
-  const [open, setOpen] = useState(false)
-  const trpc = useTRPC()
-  // Same key as the picker's own read, so the list loads once.
-  const setters = useQuery(trpc.meetingsRouter.reads.getInternalUsers.queryOptions({ purpose: 'setter' }))
-
-  return (
-    <FormField
-      control={form.control}
-      name="setBy"
-      render={({ field }) => {
-        const value = field.value === undefined ? selfId : field.value
-        const label = value === null
-          ? 'No setter'
-          : setters.data?.find(setter => setter.id === value)?.name ?? (value === selfId ? selfName : null) ?? 'Loading…'
-        return (
-          <FormItem>
-            <FormLabel>Set by</FormLabel>
-            <Popover open={open} onOpenChange={setOpen}>
-              <PopoverTrigger asChild>
-                <Button type="button" variant="outline" className="w-full justify-between font-normal">
-                  <span className="truncate">{label}</span>
-                  <ChevronsUpDownIcon className="size-4 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="start" className="w-[min(420px,calc(100vw-2rem))] p-0">
-                <SetterPicker
-                  value={value}
-                  onPick={(userId) => {
-                    field.onChange(userId)
-                    setOpen(false)
-                  }}
-                />
-              </PopoverContent>
-            </Popover>
-            <FormMessage />
-          </FormItem>
-        )
-      }}
-    />
-  )
-}
-```
-
-In `src/features/intake/ui/views/intake-form-view.tsx`:
-- add imports `import { SetByField } from '@/features/intake/ui/components/set-by-field'`, `import { useSession } from '@/shared/domains/auth/client'`, `import { useAbility } from '@/shared/domains/permissions/hooks'`;
-- after `const trpc = useTRPC()`:
-
-```tsx
-  const ability = useAbility()
-  const canPickSetter = ability.can('assign', 'Meeting')
-  const { data: session } = useSession()
-  const selfId = session?.user.id ?? null
-```
-
-- in `onSubmit`, before `submit.mutate`:
-
-```tsx
-    const setBy = data.mode === 'customer_and_meeting' && canPickSetter
-      ? (data.setBy === undefined ? selfId : data.setBy)
-      : undefined
-```
-
-and add `setBy,` to the `submit.mutate({ … })` payload;
-- inside the meeting-mode block, after the `ClosedByField` conditional:
-
-```tsx
-                  {canPickSetter && <SetByField selfId={selfId} selfName={session?.user.name ?? null} />}
-```
-
-On the public `/intake` page there is no session, so the field never renders and `setBy` is not sent.
-
-- [ ] **Step 4: The router and the intake service pass it through**
-
-In `src/trpc/routers/customers.router/business.router.ts`:
-- add `import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'`;
-- in `createFromIntake`'s `.input(z.object({ … }))`, after `leadSourceSlug`:
-
-```ts
-      setBy: z.string().min(1).nullable().optional(),
-```
-
-- change the first line of the mutation body to `const { notes, mode, leadSourceSlug, setBy, ...customerData } = input`;
-- the body binds `const session = (ctx as { session?: { user: { id: string } } }).session ?? null`; widen that cast to `{ session?: { user: { id: string, role: UserRole } } }` (add `import type { UserRole } from '@/shared/constants/enums/user'`) and, right after the binding, add:
-
-```ts
-      // Naming a setter is an assign-level act; the public intake form never sends one.
-      if (setBy && !(session && defineAbilitiesFor({ id: session.user.id, role: session.user.role }).can('assign', 'Meeting'))) {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to name a setter' })
-      }
-```
-
-- change `meeting = { ownerId: ownerId! }` to `meeting = { ownerId: ownerId!, setBy: setBy ?? null }` and the declaration above it to `let meeting: { ownerId: string, setBy: string | null } | null = null`.
-
-In `src/shared/services/customer-intake.service.ts`:
-- in `IngestLeadInput` (`:20`), change the field to `meeting?: { ownerId: string, setBy?: string | null } | null`;
-- in the meeting branch's `meetingCrud.create(ctx, { … })`, add after `ownerId: input.meeting.ownerId,`:
-
-```ts
-          setBy: input.meeting.setBy,
-```
-
-Under `SYSTEM_CONTEXT` the meetings `create.before` still runs `assertSetterIsInternal`.
+Agents and dispatchers send nothing; the crud records them as the setter (Task 1 Step 4).
 
 - [ ] **Step 5: Type-check, lint, browser read check**
 
 Run: `pnpm tsc && pnpm lint` → clean.
 
-Browser (super-admin): open a customer profile → "Add meeting": the form shows "Set by" with the signed-in user; the popover lists setters incl. dispatchers, "No setter" first. Pipeline kanban (`/dashboard/customer-pipelines`, leads): drag a card to "Meeting scheduled" → the modal form shows the same field. Lead-sources admin → "Add customer" → toggle "Customer + meeting": "Set by" appears; the public `/intake?source=…&token=…` page shows no such field. As an agent: "Add meeting" shows "Set by" as "<name> (you)", no picker. Do not submit any form unless the owner designates a customer for it.
+Browser (super-admin): open every mount of the form (`grep -rn "CreateMeetingForm\|CreateMeetingModal" src` lists them; on 2026-10-02 they were the pipeline kanban's `CreateMeetingModal` and the customer profile's command dialogs, which spec §4.4's four entry points — kanban drag to "Meeting scheduled", kanban card "Schedule Meeting", profile "Add meeting", customer meetings tab "Add Meeting" — all reach). Each shows "Set by" with the signed-in user; the popover lists setters incl. dispatchers, "No setter" first. The lead-sources admin "Add customer" sheet and the public `/intake` page are unchanged (no "Set by"). As an agent: "Add meeting" shows "Set by" as "<name> (you)", no picker. The meetings table's Rep picker and the Manage Participants modal list, search and add exactly as before (the `UserCommandItem` extraction). Do not submit any form unless the owner designates a customer for it.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add src/shared/entities/meetings/components/setter-picker.tsx src/shared/entities/meetings/components/create-meeting-form.tsx src/features/intake/schemas/intake-form-schema.ts src/features/intake/ui/components/set-by-field.tsx src/features/intake/ui/views/intake-form-view.tsx src/trpc/routers/customers.router/business.router.ts src/shared/services/customer-intake.service.ts
-git diff --cached --stat
-git commit -m "feat(meetings): Set by on every add-a-meeting form — a picker for super-admins, yourself for everyone else
+git add src/shared/entities/users/components/user-command-item.tsx src/shared/entities/meetings/constants/participant-add-labels.ts src/shared/entities/meetings/components/participant-picker/available-participant-row.tsx src/shared/entities/meetings/components/setter-picker.tsx src/shared/entities/meetings/components/setter-select.tsx src/shared/entities/meetings/components/create-meeting-form.tsx
+git commit -m "feat(meetings): Set by on the add-meeting form — a picker for super-admins, the creator by default
 
-Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/shared/entities/users/components/user-command-item.tsx src/shared/entities/meetings/constants/participant-add-labels.ts src/shared/entities/meetings/components/participant-picker/available-participant-row.tsx src/shared/entities/meetings/components/setter-picker.tsx src/shared/entities/meetings/components/setter-select.tsx src/shared/entities/meetings/components/create-meeting-form.tsx
+git show --stat HEAD
 ```
 
 ---
@@ -747,6 +810,17 @@ test('not-found becomes a notFound skip; other errors fail and the loop continue
   assert.deepEqual(result.done, ['fine'])
   assert.deepEqual(outputs, ['row-fine'])
 })
+
+test('a row whose write throws fails as unknown-error and the loop continues', async () => {
+  const { result } = await runBulk(['boom', 'fine'], {
+    run: async (id) => {
+      if (id === 'boom') throw new Error('dispatch failed')
+      return ok(id)
+    },
+  })
+  assert.deepEqual(result.failed, [{ id: 'boom', error: 'unknown-error' }])
+  assert.deepEqual(result.done, ['fine'])
+})
 ```
 
 - [ ] **Step 2: Run it to see it fail**
@@ -792,7 +866,14 @@ export async function runBulk<TReason extends string = never, TOut = void>(
       result.skipped.push({ id, reason })
       continue
     }
-    const outcome = await steps.run(id)
+    let outcome: DalReturn<TOut>
+    try {
+      outcome = await steps.run(id)
+    }
+    catch (cause) {
+      // Crud returns DalReturn, so a throw is a hook or dispatch bug; it must not abandon the rows after it.
+      outcome = { success: false, error: { type: 'unknown-error', cause } }
+    }
     if (outcome.success) {
       result.done.push(id)
       outputs.push(outcome.data)
@@ -814,17 +895,17 @@ export async function runBulk<TReason extends string = never, TOut = void>(
 
 - [ ] **Step 4: Run it to see it pass; type-check and lint**
 
-Run: `pnpm exec tsx --test .superpowers/sdd/2026-09-29-records-bulk-actions/tests/run-bulk.test.ts` → 3 pass.
+Run: `pnpm exec tsx --test .superpowers/sdd/2026-09-29-records-bulk-actions/tests/run-bulk.test.ts` → 4 pass.
 Run: `pnpm tsc && pnpm lint` → clean.
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git add src/shared/dal/server/lib/run-bulk.ts
-git diff --cached --stat
 git commit -m "feat(dal): runBulk — one entity write per id, skips classified rows, reports done, skipped and failed
 
-Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/shared/dal/server/lib/run-bulk.ts
+git show --stat HEAD
 ```
 
 ---
@@ -834,13 +915,14 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 **Files:**
 - Create: `src/trpc/lib/non-empty-patch.ts`
 - Create: `src/trpc/lib/bulk-procedures.ts`
+- Create: `src/shared/entities/meetings/constants/delete-skip-reasons.ts`
 - Modify: `src/shared/entities/meetings/dal/server/queries.ts` (append the facts read)
 - Create: `src/trpc/routers/meetings.router/bulk.router.ts`
 - Modify: `src/trpc/routers/meetings.router/index.ts`
 
 **Interfaces:**
-- Consumes: `runBulk`, `BULK_MAX_IDS`, `BulkActionResult` (Task 4); `meetingCrud`, `meetingSchemas` (`entities/meetings/lib/server-spec.ts`).
-- Produces: `nonEmptyPatch(schema)` (pure); `bulkDeleteProcedure({ crud, facts, classify })`, `bulkUpdateProcedure({ crud, data, afterRun? })` (both `superAdminProcedure`, input `ids: uuid[1..100]`); `getMeetingBulkDeleteFacts(ctx, ids): Promise<DalReturn<{ id, hasProposals, hasApplications }[]>>`; `meetingsRouter.bulk.delete({ ids })` → `BulkActionResult<'hasProposals' | 'hasApplications'>`; `meetingsRouter.bulk.update({ ids, data: { setBy } })` → `BulkActionResult`.
+- Consumes: `runBulk`, `BULK_MAX_IDS`, `BulkActionResult` (Task 4); `meetingCrud`, `meetingSchemas`, `meetingServerSpec` (`entities/meetings/lib/server-spec.ts`); `resolveVisibilityScope` (`trpc/lib/middleware/scope-middleware.ts`).
+- Produces: `nonEmptyPatch(schema)` (pure); `bulkDeleteProcedure({ spec, schemas: { id }, crud, facts, classify })`, `bulkUpdateProcedure({ spec, schemas: { id }, crud, data, afterRun? })` (both on `superAdminProcedure` with the entity's visibility scope resolved, input `ids: id[1..100]`); `MEETING_DELETE_SKIP_LABELS`, `MeetingDeleteSkipReason`; `getMeetingDeleteFacts(ctx, ids): Promise<DalReturn<MeetingDeleteFacts[]>>`; `meetingsRouter.bulk.delete({ ids })` → `BulkActionResult<MeetingDeleteSkipReason>`; `meetingsRouter.bulk.update({ ids, data: { setBy } })` → `BulkActionResult`.
 
 - [ ] **Step 1: Write the failing check for the non-empty patch rule**
 
@@ -878,26 +960,39 @@ import type z from 'zod'
 /** An update schema narrowed to the fields a bulk update may write, refusing a patch that writes nothing. */
 export function nonEmptyPatch<TShape extends z.ZodRawShape>(schema: z.ZodObject<TShape>) {
   // The engine answers an empty update with the unchanged row, which a bulk run would count as done.
+  // Refine last: Zod 4 throws at runtime on `.pick` / `.partial` of a refined object, so pick before calling this.
   return schema.refine(data => Object.values(data).some(value => value !== undefined), { message: 'Nothing to update' })
 }
 ```
 
-Create `src/trpc/lib/bulk-procedures.ts`:
+Create `src/trpc/lib/bulk-procedures.ts`. The config mirrors `CreateCrudRouterConfig` (`spec`, `schemas.id`, `crud`), and the scope is resolved the way `createCrudRouter` does it (`create-crud-router.ts:46-47`). They are not a sixth `createCrudRouter` slot: its five slots are a fixed contract.
 
 ```ts
 import type { BulkActionResult } from '@/shared/dal/server/lib/run-bulk'
-import type { DalReturn, MaybePromise, ScopedContext } from '@/shared/dal/server/types'
+import type { DalReturn, EntityServerSpec, MaybePromise, ScopedContext } from '@/shared/dal/server/types'
 
 import z from 'zod'
 
 import { BULK_MAX_IDS, runBulk } from '@/shared/dal/server/lib/run-bulk'
 import { superAdminProcedure } from '@/trpc/init'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
+import { resolveVisibilityScope } from '@/trpc/lib/middleware/scope-middleware'
 import { nonEmptyPatch } from '@/trpc/lib/non-empty-patch'
 
-const idsInput = z.array(z.string().uuid()).min(1).max(BULK_MAX_IDS)
+interface BulkEntity {
+  spec: EntityServerSpec
+  schemas: { id: z.ZodType<string> }
+}
 
-interface BulkDeleteConfig<TFacts extends { id: string }, TReason extends string> {
+// Scoped like the entity's crud router, so a bulk leaf opened to more roles later still sees only their rows.
+function bulkProcedure({ spec, schemas }: BulkEntity) {
+  return superAdminProcedure
+    .use(async ({ ctx, next }) =>
+      next({ ctx: { ...ctx, scope: resolveVisibilityScope(spec, { userId: ctx.session.user.id, ability: ctx.ability }) } }))
+    .input(z.object({ ids: z.array(schemas.id).min(1).max(BULK_MAX_IDS) }))
+}
+
+interface BulkDeleteConfig<TFacts extends { id: string }, TReason extends string> extends BulkEntity {
   crud: { delete: (ctx: ScopedContext, input: { id: string }) => Promise<DalReturn<void>> }
   /** One read for the whole batch; an id missing from it is skipped as `notFound`. */
   facts: (ctx: ScopedContext, ids: string[]) => Promise<DalReturn<TFacts[]>>
@@ -906,8 +1001,7 @@ interface BulkDeleteConfig<TFacts extends { id: string }, TReason extends string
 }
 
 export function bulkDeleteProcedure<TFacts extends { id: string }, TReason extends string>(config: BulkDeleteConfig<TFacts, TReason>) {
-  return superAdminProcedure
-    .input(z.object({ ids: idsInput }))
+  return bulkProcedure(config)
     .mutation(async ({ ctx, input }): Promise<BulkActionResult<TReason>> => {
       const facts = dalToTrpc(await config.facts(ctx, input.ids))
       const factsById = new Map(facts.map(row => [row.id, row]))
@@ -922,7 +1016,7 @@ export function bulkDeleteProcedure<TFacts extends { id: string }, TReason exten
     })
 }
 
-interface BulkUpdateConfig<TShape extends z.ZodRawShape, TRow> {
+interface BulkUpdateConfig<TShape extends z.ZodRawShape, TRow> extends BulkEntity {
   crud: { update: (ctx: ScopedContext, input: { id: string, data: z.output<z.ZodObject<TShape>> }) => Promise<DalReturn<TRow>> }
   /** The entity's update schema picked down to the fields a bulk update may write. */
   data: z.ZodObject<TShape>
@@ -930,8 +1024,8 @@ interface BulkUpdateConfig<TShape extends z.ZodRawShape, TRow> {
 }
 
 export function bulkUpdateProcedure<TShape extends z.ZodRawShape, TRow>(config: BulkUpdateConfig<TShape, TRow>) {
-  return superAdminProcedure
-    .input(z.object({ ids: idsInput, data: nonEmptyPatch(config.data) }))
+  return bulkProcedure(config)
+    .input(z.object({ data: nonEmptyPatch(config.data) }))
     .mutation(async ({ ctx, input }): Promise<BulkActionResult> => {
       // Zod 4 can't resolve a generic object's output inside z.object; runtime validation already ran.
       const data = input.data as z.output<z.ZodObject<TShape>>
@@ -942,7 +1036,20 @@ export function bulkUpdateProcedure<TShape extends z.ZodRawShape, TRow>(config: 
 }
 ```
 
-- [ ] **Step 3: The meetings facts read**
+(tRPC merges chained `.input()` objects, so the update leaf's input is `{ ids, data }`; the repo has no chained-input precedent, so `pnpm tsc` is the check, including `TShape`'s inference from both `data` and `crud.update`. If `pnpm tsc` rejects `EntityServerSpec` for a concrete spec, type the field the way `CreateCrudRouterConfig` does, with the table and id generics.)
+
+- [ ] **Step 3: The skip reasons and the meetings facts read**
+
+Create `src/shared/entities/meetings/constants/delete-skip-reasons.ts`:
+
+```ts
+/** Why a delete leaves a meeting alone, worded for the bulk toast. Its keys are the skip reasons the bulk delete returns. */
+export const MEETING_DELETE_SKIP_LABELS = {
+  hasProposals: 'with proposals',
+  hasApplications: 'with applications',
+} as const
+export type MeetingDeleteSkipReason = keyof typeof MEETING_DELETE_SKIP_LABELS
+```
 
 In `src/shared/entities/meetings/dal/server/queries.ts` add `inArray` to the `drizzle-orm` import and the imports:
 
@@ -954,17 +1061,17 @@ import { proposals } from '@/shared/db/schema/proposals'
 Append:
 
 ```ts
-export interface MeetingBulkDeleteFacts {
+export interface MeetingDeleteFacts {
   id: string
   hasProposals: boolean
   hasApplications: boolean
 }
 
-/** What bulk delete decides on, for the whole batch in one read. */
-export async function getMeetingBulkDeleteFacts(
+/** What a delete decides on, for many meetings in one read. */
+export async function getMeetingDeleteFacts(
   ctx: ScopedContext,
   ids: string[],
-): Promise<DalReturn<MeetingBulkDeleteFacts[]>> {
+): Promise<DalReturn<MeetingDeleteFacts[]>> {
   return dalDbOperation(async () =>
     db
       .select({
@@ -978,28 +1085,35 @@ export async function getMeetingBulkDeleteFacts(
 }
 ```
 
-(If `applications.ts` exports the table under another name, use that export; `applications.meeting_id` is the FK column.)
-
 - [ ] **Step 4: The meetings leaf**
 
 Create `src/trpc/routers/meetings.router/bulk.router.ts`:
 
 ```ts
+import type { MeetingDeleteSkipReason } from '@/shared/entities/meetings/constants/delete-skip-reasons'
+
+import z from 'zod'
+
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
-import { getMeetingBulkDeleteFacts } from '@/shared/entities/meetings/dal/server/queries'
-import { meetingSchemas } from '@/shared/entities/meetings/lib/server-spec'
+import { getMeetingDeleteFacts } from '@/shared/entities/meetings/dal/server/queries'
+import { meetingSchemas, meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 
 import { createTRPCRouter } from '../../init'
 import { bulkDeleteProcedure, bulkUpdateProcedure } from '../../lib/bulk-procedures'
 
+const meetingEntity = { spec: meetingServerSpec, schemas: { id: z.string().uuid() } }
+
 export const bulkRouter = createTRPCRouter({
   // A deleted meeting strands its proposals (they reach their customer only through it) and cascades its applications.
   delete: bulkDeleteProcedure({
+    ...meetingEntity,
     crud: meetingCrud,
-    facts: getMeetingBulkDeleteFacts,
-    classify: facts => facts.hasProposals ? 'hasProposals' as const : facts.hasApplications ? 'hasApplications' as const : null,
+    facts: getMeetingDeleteFacts,
+    classify: (facts): MeetingDeleteSkipReason | null =>
+      facts.hasProposals ? 'hasProposals' : facts.hasApplications ? 'hasApplications' : null,
   }),
   update: bulkUpdateProcedure({
+    ...meetingEntity,
     crud: meetingCrud,
     data: meetingSchemas.update.pick({ setBy: true }),
   }),
@@ -1011,40 +1125,76 @@ In `src/trpc/routers/meetings.router/index.ts` add `import { bulkRouter } from '
 - [ ] **Step 5: Run the check; type-check and lint**
 
 Run: `pnpm exec tsx --test .superpowers/sdd/2026-09-29-records-bulk-actions/tests/bulk-patch.test.ts` → 2 pass.
-Run: `pnpm tsc && pnpm lint` → clean. If `meetingSchemas.update.pick` does not typecheck because `meetingSchemas.update` is not a `ZodObject` in its declared type, read `server-spec.ts` and pass the `insertMeetingSchema.partial()` object it is built from.
+Run: `pnpm tsc && pnpm lint` → clean.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add src/trpc/lib/non-empty-patch.ts src/trpc/lib/bulk-procedures.ts src/shared/entities/meetings/dal/server/queries.ts src/trpc/routers/meetings.router/bulk.router.ts src/trpc/routers/meetings.router/index.ts
-git diff --cached --stat
+git add src/trpc/lib/non-empty-patch.ts src/trpc/lib/bulk-procedures.ts src/shared/entities/meetings/constants/delete-skip-reasons.ts src/shared/entities/meetings/dal/server/queries.ts src/trpc/routers/meetings.router/bulk.router.ts src/trpc/routers/meetings.router/index.ts
 git commit -m "feat(meetings): bulk delete skips meetings with proposals or applications; bulk set setter
 
-Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/trpc/lib/non-empty-patch.ts src/trpc/lib/bulk-procedures.ts src/shared/entities/meetings/constants/delete-skip-reasons.ts src/shared/entities/meetings/dal/server/queries.ts src/trpc/routers/meetings.router/bulk.router.ts src/trpc/routers/meetings.router/index.ts
+git show --stat HEAD
 ```
 
 ---
 
-### Task 6: Proposals and projects bulk leaves
+### Task 6: Proposals, projects and customers bulk leaves
 
 **Files:**
+- Create: `src/shared/modules/proposals/core/constants/delete-skip-reasons.ts`
 - Create: `src/trpc/routers/proposals.router/bulk.router.ts`
 - Modify: `src/trpc/routers/proposals.router/index.ts`
+- Create: `src/shared/modules/projects/core/constants/delete-skip-reasons.ts`
 - Modify: `src/shared/modules/projects/core/dal/server/queries.ts` (append the facts read)
+- Modify: `src/shared/modules/proposals/service.ts` (a `queries` namespace)
+- Modify: `src/shared/modules/projects/service.ts` (a `queries` namespace)
 - Create: `src/trpc/routers/projects.router/bulk.router.ts`
 - Modify: `src/trpc/routers/projects.router/index.ts`
+- Modify: `src/trpc/routers/projects.router/crud.router.ts` (the `update` procedure's `revalidatePath` line only)
+- Create: `src/shared/entities/customers/constants/delete-skip-reasons.ts`
+- Modify: `src/shared/entities/customers/dal/server/queries.ts` (append the facts read)
+- Create: `src/trpc/routers/customers.router/bulk.router.ts`
+- Modify: `src/trpc/routers/customers.router/index.ts`
 
 **Interfaces:**
-- Consumes: `bulkDeleteProcedure`, `bulkUpdateProcedure` (Task 5); `getProposalsByIds`, `getProposalLockState`, `proposalService`; `projectCrud`, `projectSchemas`, `hasAssociatedMeeting`.
-- Produces: `proposalsRouter.bulk.delete({ ids })` → `BulkActionResult<'notDraft' | 'locked'>`; `getProjectBulkFacts(ctx, ids): Promise<DalReturn<{ id, isPublic, hasMeeting }[]>>`; `projectsRouter.bulk.delete({ ids })` → `BulkActionResult<'onPortfolio' | 'linkedToMeeting'>`; `projectsRouter.bulk.update({ ids, data: { isPublic } })` → `BulkActionResult`.
+- Consumes: `bulkDeleteProcedure`, `bulkUpdateProcedure` (Task 5); `getProposalsByIds`, `getProposalLockState`, `proposalService`, `proposalServerSpec`; `projectsService`, `projectServerSpec`, `projectSchemas`, `hasAssociatedMeeting`; `ROOTS.landing.portfolioProject`.
+- Produces: `PROPOSAL_DELETE_SKIP_LABELS`, `ProposalDeleteSkipReason`; `proposalsRouter.bulk.delete({ ids })` → `BulkActionResult<ProposalDeleteSkipReason>`; `PROJECT_DELETE_SKIP_LABELS`, `ProjectDeleteSkipReason`; `getProjectDeleteFacts(ctx, ids): Promise<DalReturn<ProjectDeleteFacts[]>>`; `projectsRouter.bulk.delete({ ids })` → `BulkActionResult<ProjectDeleteSkipReason>`; `projectsRouter.bulk.update({ ids, data: { isPublic } })` → `BulkActionResult`; `CUSTOMER_DELETE_SKIP_LABELS`, `CustomerDeleteSkipReason`; `getCustomerDeleteFacts(ctx, ids)`; `customersRouter.bulk.delete({ ids })` → `BulkActionResult<CustomerDeleteSkipReason>`.
+
+Both leaves reach their module through its service only (settlement 16): writes through the spread CRUD slots, reads through a new `queries` namespace on the root service (`<m>Service.queries.*`, the modules-consolidation shape). Neither service has `queries` yet; this task adds it with the one read each leaf needs.
 
 - [ ] **Step 1: The proposals leaf**
+
+Create `src/shared/modules/proposals/core/constants/delete-skip-reasons.ts`:
+
+```ts
+/** Why a delete leaves a proposal alone, worded for the bulk toast. Its keys are the skip reasons the bulk delete returns. */
+export const PROPOSAL_DELETE_SKIP_LABELS = {
+  notDraft: 'not drafts',
+  locked: 'with a contract',
+} as const
+export type ProposalDeleteSkipReason = keyof typeof PROPOSAL_DELETE_SKIP_LABELS
+```
+
+In `src/shared/modules/proposals/service.ts`, import `getProposalsByIds` from `@/shared/modules/proposals/core/dal/server/queries` and add, after `...proposalCrud,`:
+
+```ts
+  queries: {
+    getProposalsByIds,
+  },
+```
+
+A DAL import at the top level is fine (the DAL never imports a service, per the file's banner). Replace the banner's last paragraph ("Reads stay in the sub-module DALs …") with: `// Reads are reached through \`queries\`, which re-exports the sub-module DAL reads; a service reads on its own only when it must cross into a peer service or a provider.`
 
 Create `src/trpc/routers/proposals.router/bulk.router.ts`:
 
 ```ts
-import { getProposalsByIds } from '@/shared/modules/proposals/core/dal/server/queries'
+import type { ProposalDeleteSkipReason } from '@/shared/modules/proposals/core/constants/delete-skip-reasons'
+
+import z from 'zod'
+
 import { getProposalLockState } from '@/shared/modules/proposals/core/lib/proposal-lock'
+import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 import { proposalService } from '@/shared/modules/proposals/service'
 
 import { createTRPCRouter } from '../../init'
@@ -1053,33 +1203,45 @@ import { bulkDeleteProcedure } from '../../lib/bulk-procedures'
 export const bulkRouter = createTRPCRouter({
   // Only an untouched draft goes: a sent proposal is a customer's live link, and an enveloped one is contract evidence.
   delete: bulkDeleteProcedure({
+    spec: proposalServerSpec,
+    schemas: { id: z.string().uuid() },
     crud: proposalService,
-    facts: getProposalsByIds,
-    classify: proposal => proposal.status !== 'draft'
-      ? 'notDraft' as const
-      : getProposalLockState(proposal) !== 'unlocked' ? 'locked' as const : null,
+    facts: proposalService.queries.getProposalsByIds,
+    classify: (proposal): ProposalDeleteSkipReason | null =>
+      proposal.status !== 'draft' ? 'notDraft' : getProposalLockState(proposal) !== 'unlocked' ? 'locked' : null,
   }),
 })
 ```
 
-In `src/trpc/routers/proposals.router/index.ts` add `import { bulkRouter } from './bulk.router'` and `bulk: bulkRouter,` after `business: businessRouter,`. (No proposals UI uses it until B6; the leaf lands with its siblings so the three entities stay alike.)
+In `src/trpc/routers/proposals.router/index.ts` add `import { bulkRouter } from './bulk.router'` and `bulk: bulkRouter,` after `business: businessRouter,`. (No proposals UI uses it until R3's bulk step; the leaf lands with its siblings so the three entities stay alike.)
 
-- [ ] **Step 2: The projects facts read**
+- [ ] **Step 2: The projects skip reasons and facts read**
+
+Create `src/shared/modules/projects/core/constants/delete-skip-reasons.ts`:
+
+```ts
+/** Why a delete leaves a project alone, worded for the bulk toast. Its keys are the skip reasons the bulk delete returns. */
+export const PROJECT_DELETE_SKIP_LABELS = {
+  onPortfolio: 'on the portfolio',
+  linkedToMeeting: 'linked to a meeting',
+} as const
+export type ProjectDeleteSkipReason = keyof typeof PROJECT_DELETE_SKIP_LABELS
+```
 
 In `src/shared/modules/projects/core/dal/server/queries.ts` append:
 
 ```ts
-export interface ProjectBulkFacts {
+export interface ProjectDeleteFacts {
   id: string
   isPublic: boolean
   hasMeeting: boolean
 }
 
-/** What bulk delete decides on, for the whole batch in one read. */
-export async function getProjectBulkFacts(
+/** What a delete decides on, for many projects in one read. */
+export async function getProjectDeleteFacts(
   ctx: ScopedContext,
   ids: string[],
-): Promise<DalReturn<ProjectBulkFacts[]>> {
+): Promise<DalReturn<ProjectDeleteFacts[]>> {
   return dalDbOperation(async () =>
     db
       .select({ id: projects.id, isPublic: projects.isPublic, hasMeeting: sql<boolean>`${hasAssociatedMeeting()}` })
@@ -1089,36 +1251,52 @@ export async function getProjectBulkFacts(
 }
 ```
 
-(`and`, `inArray`, `sql`, `hasAssociatedMeeting` are already imported there.)
+(`and`, `inArray`, `sql`, `hasAssociatedMeeting` are imported there today; re-check after the projects plan's Task 4 rewrites this file's imports.)
 
-- [ ] **Step 3: The projects leaf**
+In `src/shared/modules/projects/service.ts`, import `getProjectDeleteFacts` from `@/shared/modules/projects/core/dal/server/queries` and add, after `...projectCrud,`:
+
+```ts
+  queries: {
+    getProjectDeleteFacts,
+  },
+```
+
+- [ ] **Step 3: The projects leaf; one way to name the public page**
 
 Create `src/trpc/routers/projects.router/bulk.router.ts`:
 
 ```ts
-import { revalidatePath } from 'next/cache'
+import type { ProjectDeleteSkipReason } from '@/shared/modules/projects/core/constants/delete-skip-reasons'
 
-import { projectCrud } from '@/shared/modules/projects/core/dal/server/crud'
-import { getProjectBulkFacts } from '@/shared/modules/projects/core/dal/server/queries'
-import { projectSchemas } from '@/shared/modules/projects/core/server-spec'
+import { revalidatePath } from 'next/cache'
+import z from 'zod'
+
+import { ROOTS } from '@/shared/config/roots'
+import { projectSchemas, projectServerSpec } from '@/shared/modules/projects/core/server-spec'
+import { projectsService } from '@/shared/modules/projects/service'
 
 import { createTRPCRouter } from '../../init'
 import { bulkDeleteProcedure, bulkUpdateProcedure } from '../../lib/bulk-procedures'
 
+const projectEntity = { spec: projectServerSpec, schemas: { id: z.string().uuid() } }
+
 export const bulkRouter = createTRPCRouter({
   // A public project is on the website; a meeting-linked one is sales history.
   delete: bulkDeleteProcedure({
-    crud: projectCrud,
-    facts: getProjectBulkFacts,
-    classify: project => project.isPublic ? 'onPortfolio' as const : project.hasMeeting ? 'linkedToMeeting' as const : null,
+    ...projectEntity,
+    crud: projectsService,
+    facts: projectsService.queries.getProjectDeleteFacts,
+    classify: (project): ProjectDeleteSkipReason | null =>
+      project.isPublic ? 'onPortfolio' : project.hasMeeting ? 'linkedToMeeting' : null,
   }),
   update: bulkUpdateProcedure({
-    crud: projectCrud,
+    ...projectEntity,
+    crud: projectsService,
     data: projectSchemas.update.pick({ isPublic: true }),
     // The public story page is prerendered; without this, a visibility change shows only after the next deploy.
     afterRun: (rows) => {
       for (const row of rows) {
-        revalidatePath(`/portfolio/projects/${row.accessor}`)
+        revalidatePath(ROOTS.landing.portfolioProject(row.accessor))
       }
     },
   }),
@@ -1127,120 +1305,125 @@ export const bulkRouter = createTRPCRouter({
 
 In `src/trpc/routers/projects.router/index.ts` add `import { bulkRouter } from './bulk.router'` and `bulk: bulkRouter,` after `business: businessRouter,`.
 
-- [ ] **Step 4: Type-check and lint**
+The single-row `update` procedure goes through `updateProjectWithScopes`, which also syncs scopes; the bulk leaf writes only `isPublic`, so `projectsService.update` is the right path and the scope sync is not needed.
+
+In `src/trpc/routers/projects.router/crud.router.ts`, change the `update` procedure's `revalidatePath(\`/portfolio/projects/${project.accessor}\`)` to `revalidatePath(ROOTS.landing.portfolioProject(project.accessor))` and import `ROOTS` from `@/shared/config/roots`, so the path is built in one place (`roots.ts`). Touch nothing else in that file: the projects plan rewrites its `list` procedure.
+
+- [ ] **Step 4: The customers leaf**
+
+Spec §5.1's customers rule (recorded for R2, built now so all four entities' leaves land together; its UI waits for D49's step). Customers is an entity without a service, so the leaf reads its DAL directly (settlement 16).
+
+Create `src/shared/entities/customers/constants/delete-skip-reasons.ts`:
+
+```ts
+/** Why a delete leaves a customer alone, worded for the bulk toast. Its keys are the skip reasons the bulk delete returns. */
+export const CUSTOMER_DELETE_SKIP_LABELS = {
+  hasMeetingsOrProjects: 'with meetings or projects',
+} as const
+export type CustomerDeleteSkipReason = keyof typeof CUSTOMER_DELETE_SKIP_LABELS
+```
+
+In `src/shared/entities/customers/dal/server/queries.ts`, add `inArray` and `sql` to the `drizzle-orm` import, import `meetings` from `@/shared/db/schema/meetings` and `projects` from `@/shared/db/schema/projects`, and append:
+
+```ts
+export interface CustomerDeleteFacts {
+  id: string
+  hasMeetingsOrProjects: boolean
+}
+
+/** What a delete decides on, for many customers in one read. */
+export async function getCustomerDeleteFacts(
+  ctx: ScopedContext,
+  ids: string[],
+): Promise<DalReturn<CustomerDeleteFacts[]>> {
+  return dalDbOperation(async () =>
+    db
+      .select({
+        id: customers.id,
+        hasMeetingsOrProjects: sql<boolean>`(
+          EXISTS (SELECT 1 FROM ${meetings} WHERE ${meetings.customerId} = ${customers.id})
+          OR EXISTS (SELECT 1 FROM ${projects} WHERE ${projects.customerId} = ${customers.id})
+        )`,
+      })
+      .from(customers)
+      .where(and(inArray(customers.id, ids), ctx.scope ?? undefined)),
+  )
+}
+```
+
+Create `src/trpc/routers/customers.router/bulk.router.ts`:
+
+```ts
+import type { CustomerDeleteSkipReason } from '@/shared/entities/customers/constants/delete-skip-reasons'
+
+import z from 'zod'
+
+import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
+import { getCustomerDeleteFacts } from '@/shared/entities/customers/dal/server/queries'
+import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
+
+import { createTRPCRouter } from '../../init'
+import { bulkDeleteProcedure } from '../../lib/bulk-procedures'
+
+export const bulkRouter = createTRPCRouter({
+  // A customer's delete takes its meetings' proposals and its projects with it; only an empty record goes in bulk.
+  delete: bulkDeleteProcedure({
+    spec: customerServerSpec,
+    schemas: { id: z.string().uuid() },
+    crud: customerCrud,
+    facts: getCustomerDeleteFacts,
+    classify: (customer): CustomerDeleteSkipReason | null =>
+      customer.hasMeetingsOrProjects ? 'hasMeetingsOrProjects' : null,
+  }),
+})
+```
+
+In `src/trpc/routers/customers.router/index.ts` add `import { bulkRouter } from './bulk.router'` and `bulk: bulkRouter,` after `business: businessRouter,`.
+
+- [ ] **Step 5: Type-check and lint**
 
 Run: `pnpm tsc && pnpm lint` → clean.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add src/trpc/routers/proposals.router/bulk.router.ts src/trpc/routers/proposals.router/index.ts src/shared/modules/projects/core/dal/server/queries.ts src/trpc/routers/projects.router/bulk.router.ts src/trpc/routers/projects.router/index.ts
-git diff --cached --stat
-git commit -m "feat(bulk): proposals bulk delete keeps sent and enveloped ones; projects bulk delete and portfolio visibility
+git add src/shared/modules/proposals/core/constants/delete-skip-reasons.ts src/trpc/routers/proposals.router/bulk.router.ts src/trpc/routers/proposals.router/index.ts src/shared/modules/projects/core/constants/delete-skip-reasons.ts src/shared/modules/projects/core/dal/server/queries.ts src/shared/modules/proposals/service.ts src/shared/modules/projects/service.ts src/trpc/routers/projects.router/bulk.router.ts src/trpc/routers/projects.router/index.ts src/trpc/routers/projects.router/crud.router.ts src/shared/entities/customers/constants/delete-skip-reasons.ts src/shared/entities/customers/dal/server/queries.ts src/trpc/routers/customers.router/bulk.router.ts src/trpc/routers/customers.router/index.ts
+git commit -m "feat(bulk): proposals bulk delete keeps sent and enveloped ones; projects bulk delete and portfolio visibility; customers bulk delete keeps any with meetings or projects
 
-Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/shared/modules/proposals/core/constants/delete-skip-reasons.ts src/trpc/routers/proposals.router/bulk.router.ts src/trpc/routers/proposals.router/index.ts src/shared/modules/projects/core/constants/delete-skip-reasons.ts src/shared/modules/projects/core/dal/server/queries.ts src/shared/modules/proposals/service.ts src/shared/modules/projects/service.ts src/trpc/routers/projects.router/bulk.router.ts src/trpc/routers/projects.router/index.ts src/trpc/routers/projects.router/crud.router.ts src/shared/entities/customers/constants/delete-skip-reasons.ts src/shared/entities/customers/dal/server/queries.ts src/trpc/routers/customers.router/bulk.router.ts src/trpc/routers/customers.router/index.ts
+git show --stat HEAD
 ```
 
 ---
 
 ## Phase B3 — selection, the bar, meetings
 
-### Task 7: Entity actions — `hidden`, one visibility helper, promoted pickers, `BulkActionBar`
+### Task 7: Entity actions — promoted pickers, one toolbar-roles helper, `BulkActionBar`
+
+`hidden`, `isActionPermitted` and `getVisibleActions` landed in `a1d70db1` (the projects plan's Task 6); this task builds on them.
 
 **Files:**
-- Modify: `src/shared/components/entities/entity-actions/types.ts`
-- Create: `src/shared/components/entities/entity-actions/lib/visible-actions.ts`
+- Modify: `src/shared/components/entities/entity-actions/types.ts` (append `RowSelection`)
 - Create: `src/shared/components/entities/entity-actions/constants/bulk-action-permission.ts`
-- Modify: `src/shared/components/entities/entity-actions/ui/entity-action-menu.tsx`
+- Modify: `src/shared/components/entities/entity-actions/lib/with-toolbar-roles.ts`
+- Create: `src/shared/components/entities/entity-actions/ui/toolbar-button.tsx`
 - Create: `src/shared/components/entities/entity-actions/ui/toolbar-popover-button.tsx`
-- Modify: `src/shared/components/entities/entity-actions/ui/entity-action-dropdown.tsx:43-52`
-- Modify: `src/features/schedule-management/ui/components/schedule-calendar-dot.tsx:24-33`
-- Modify: `src/features/schedule-management/ui/components/schedule-activities-calendar.tsx:36-38`
+- Modify: `src/shared/components/entities/entity-actions/ui/entity-action-menu.tsx`
 - Create: `src/shared/components/entities/entity-actions/ui/bulk-action-bar.tsx`
-- Test (throwaway): `.superpowers/sdd/2026-09-29-records-bulk-actions/tests/visible-actions.test.ts`
 
 **Interfaces:**
-- Produces: `RowSelection = { ids: string[], clear: () => void }`; optional `hidden?: (entity: TEntity) => boolean` on click / select / custom configs; `isActionPermitted(action, ability): boolean`; `getVisibleActions(configs, ability, entity)`; `BULK_ACTION_PERMISSION: [AppAction, AppSubject]` = `['manage', 'all']`; toolbar mode renders a promoted `custom` action as `ToolbarPopoverButton`; `BulkActionBar({ selection, actions })`.
+- Consumes: `getVisibleActions`, `isActionPermitted` (`entity-actions/lib/visible-actions.ts`, landed).
+- Produces: `RowSelection = { ids: string[], clear: () => void }`; `BULK_ACTION_PERMISSION: [AppAction, AppSubject]` = `['manage', 'all']`; `withToolbarRoles(actions, { primaryId?, promotedIds? })`; `ToolbarButton` in its own file, honouring `destructive`; toolbar mode renders a promoted `custom` action as `ToolbarPopoverButton`; `BulkActionBar({ selection, actions })`.
 
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 1: The selection type and the bulk permission**
 
-Create `.superpowers/sdd/2026-09-29-records-bulk-actions/tests/visible-actions.test.ts`:
-
-```ts
-import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
-import type { AppAbility } from '@/shared/domains/permissions/types'
-
-import assert from 'node:assert/strict'
-import { test } from 'node:test'
-
-import { EyeIcon } from 'lucide-react'
-
-import { getVisibleActions } from '@/shared/components/entities/entity-actions/lib/visible-actions'
-
-// Only the `can` the helper calls.
-const agent = { can: (action: string, subject: string) => !(action === 'delete' && subject === 'Project') } as unknown as AppAbility
-
-interface Row { id: string, isPublic: boolean }
-
-const configs: EntityActionConfig<Row>[] = [
-  { action: { id: 'open', label: 'Open', icon: EyeIcon }, onAction: () => {} },
-  { action: { id: 'view', label: 'View on Site', icon: EyeIcon }, onAction: () => {}, hidden: row => !row.isPublic },
-  { action: { id: 'delete', label: 'Delete', icon: EyeIcon, permission: ['delete', 'Project'] }, onAction: () => {} },
-]
-
-test('drops actions the viewer lacks the permission for', () => {
-  const ids = getVisibleActions(configs, agent, { id: '1', isPublic: true }).map(c => c.action.id)
-  assert.deepEqual(ids, ['open', 'view'])
-})
-
-test('drops actions hidden for this entity', () => {
-  const ids = getVisibleActions(configs, agent, { id: '1', isPublic: false }).map(c => c.action.id)
-  assert.deepEqual(ids, ['open'])
-})
-```
-
-Run: `pnpm exec tsx --test .superpowers/sdd/2026-09-29-records-bulk-actions/tests/visible-actions.test.ts` → FAIL (module not found).
-
-- [ ] **Step 2: Types**
-
-In `src/shared/components/entities/entity-actions/types.ts`:
-
-Add to `EntityActionClickConfig`, `EntityActionSelectConfig` and `EntityActionCustomConfig` (after `isDisabled?`):
-
-```ts
-  /** Leaves the action out for this entity (Approve once approved, Show on Portfolio once public). */
-  hidden?: (entity: TEntity) => boolean
-```
-
-Append:
+Append to `src/shared/components/entities/entity-actions/types.ts`:
 
 ```ts
 /** What a bulk action receives: the ticked rows' ids, and a way to clear the selection once it ran. */
 export interface RowSelection {
   ids: string[]
   clear: () => void
-}
-```
-
-- [ ] **Step 3: The helper and the bulk permission**
-
-Create `src/shared/components/entities/entity-actions/lib/visible-actions.ts`:
-
-```ts
-import type { EntityAction, EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
-import type { AppAbility } from '@/shared/domains/permissions/types'
-
-export function isActionPermitted(action: EntityAction, ability: AppAbility): boolean {
-  return !action.permission || ability.can(action.permission[0], action.permission[1])
-}
-
-/** The actions this viewer may run on this entity: the CASL permission first, then the action's own `hidden` rule. */
-export function getVisibleActions<TEntity>(
-  configs: EntityActionConfig<TEntity>[],
-  ability: AppAbility,
-  entity: TEntity,
-): EntityActionConfig<TEntity>[] {
-  return configs.filter(config => isActionPermitted(config.action, ability) && !config.hidden?.(entity))
 }
 ```
 
@@ -1253,19 +1436,15 @@ import type { AppAction, AppSubject } from '@/shared/domains/permissions/types'
 export const BULK_ACTION_PERMISSION: [AppAction, AppSubject] = ['manage', 'all']
 ```
 
-Run the test from Step 1 → 2 pass.
+- [ ] **Step 2: A toolbar with no primary**
 
-- [ ] **Step 4: Menus use the helper**
+In `src/shared/components/entities/entity-actions/lib/with-toolbar-roles.ts`, make `primaryId` optional (`primaryId?: string`). `config.action.id === primaryId` is then false for every action when it is absent, so the bulk bar can promote all of its actions without a primary. Existing callers pass it and are unchanged.
 
-In `entity-action-menu.tsx` replace the `permitted` block (`:28-33`) with:
+- [ ] **Step 3: `ToolbarButton` in its own file; destructive buttons look destructive**
 
-```tsx
-  const permitted = getVisibleActions(actions, ability, entity)
-```
+Move `ToolbarButton` and its `ToolbarButtonProps` out of `entity-action-menu.tsx` into `src/shared/components/entities/entity-actions/ui/toolbar-button.tsx` unchanged (one component per file), export it, and import it in the menu. In its `<Button>`, add `className={cn(config.action.destructive && 'text-destructive hover:text-destructive')}`, importing `cn`. Re-read `entity-action-menu.tsx` first: it changed in `a1d70db1`.
 
-(import `getVisibleActions` from `@/shared/components/entities/entity-actions/lib/visible-actions`). In `entity-action-dropdown.tsx` replace its `permitted` block (`:47-52`) the same way. In `schedule-calendar-dot.tsx` replace the `permittedActions` block with `const permittedActions = getVisibleActions(actions, ability, event)`. In `schedule-activities-calendar.tsx` (one list for every event, no entity) replace the filter body with `actions.filter(({ action }) => isActionPermitted(action, ability))`.
-
-- [ ] **Step 5: Toolbar mode promotes pickers; destructive buttons look destructive**
+- [ ] **Step 4: Toolbar mode promotes pickers**
 
 Create `src/shared/components/entities/entity-actions/ui/toolbar-popover-button.tsx`:
 
@@ -1305,7 +1484,7 @@ export function ToolbarPopoverButton<TEntity>({ config, entity }: ToolbarPopover
 ```
 
 In `entity-action-menu.tsx`:
-- import `EntityActionCustomConfig` (type), `isCustomAction`, and `ToolbarPopoverButton`;
+- import `EntityActionCustomConfig` (type), `isCustomAction` (already imported) and `ToolbarPopoverButton`;
 - replace the toolbar branch's `promoted` / `overflow` lines and the `promoted.map(...)` render with:
 
 ```tsx
@@ -1321,9 +1500,7 @@ In `entity-action-menu.tsx`:
           : <ToolbarButton key={config.action.id} config={config} entity={entity} variant="outline" toolbarRole="promoted" />)}
 ```
 
-- in `ToolbarButton`'s `<Button>`, add `className={cn(config.action.destructive && 'text-destructive hover:text-destructive')}`.
-
-- [ ] **Step 6: `BulkActionBar`**
+- [ ] **Step 5: `BulkActionBar`**
 
 Create `src/shared/components/entities/entity-actions/ui/bulk-action-bar.tsx`:
 
@@ -1335,6 +1512,7 @@ import type { EntityActionConfig, RowSelection } from '@/shared/components/entit
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useMemo } from 'react'
 
+import { withToolbarRoles } from '@/shared/components/entities/entity-actions/lib/with-toolbar-roles'
 import { EntityActionMenu } from '@/shared/components/entities/entity-actions/ui/entity-action-menu'
 import { Button } from '@/shared/components/ui/button'
 
@@ -1347,7 +1525,7 @@ export function BulkActionBar({ selection, actions }: BulkActionBarProps) {
   const reduceMotion = useReducedMotion()
   // Every bulk action is a button; a picker opens in place.
   const barActions = useMemo(
-    () => actions.map(config => ({ ...config, action: { ...config.action, primary: false, promoted: true } })),
+    () => withToolbarRoles(actions, { promotedIds: actions.map(config => config.action.id) }),
     [actions],
   )
   const count = selection.ids.length
@@ -1375,34 +1553,39 @@ export function BulkActionBar({ selection, actions }: BulkActionBarProps) {
 }
 ```
 
-- [ ] **Step 7: Type-check, lint, and a regression read**
+(Colour classes must pass the `theme-tokens/palette` lint rule; `bg-card`, `border-border` are tokens.)
 
-Run: `pnpm tsc && pnpm lint` → clean. Re-run the Step 1 test → pass. In the browser, the meetings expanded row's action bar still shows Start Meeting, Create Proposal and More; the schedule calendar's meeting dot menu still lists its actions.
+- [ ] **Step 6: Type-check, lint, and a regression read**
 
-- [ ] **Step 8: Commit**
+Run: `pnpm tsc && pnpm lint` → clean. In the browser, the meetings expanded row's action bar still shows Start Meeting, Create Proposal and More; a destructive action promoted in a toolbar reads red.
+
+- [ ] **Step 7: Commit**
 
 ```bash
-git add src/shared/components/entities/entity-actions/types.ts src/shared/components/entities/entity-actions/lib/visible-actions.ts src/shared/components/entities/entity-actions/constants/bulk-action-permission.ts src/shared/components/entities/entity-actions/ui/entity-action-menu.tsx src/shared/components/entities/entity-actions/ui/toolbar-popover-button.tsx src/shared/components/entities/entity-actions/ui/entity-action-dropdown.tsx src/features/schedule-management/ui/components/schedule-calendar-dot.tsx src/features/schedule-management/ui/components/schedule-activities-calendar.tsx src/shared/components/entities/entity-actions/ui/bulk-action-bar.tsx
-git diff --cached --stat
-git commit -m "feat(entity-actions): hidden per entity, one visibility helper, promoted pickers, the bulk action bar
+git add src/shared/components/entities/entity-actions/types.ts src/shared/components/entities/entity-actions/constants/bulk-action-permission.ts src/shared/components/entities/entity-actions/lib/with-toolbar-roles.ts src/shared/components/entities/entity-actions/ui/toolbar-button.tsx src/shared/components/entities/entity-actions/ui/toolbar-popover-button.tsx src/shared/components/entities/entity-actions/ui/entity-action-menu.tsx src/shared/components/entities/entity-actions/ui/bulk-action-bar.tsx
+git commit -m "feat(entity-actions): promoted pickers, an optional primary, the bulk action bar
 
-Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/shared/components/entities/entity-actions/types.ts src/shared/components/entities/entity-actions/constants/bulk-action-permission.ts src/shared/components/entities/entity-actions/lib/with-toolbar-roles.ts src/shared/components/entities/entity-actions/ui/toolbar-button.tsx src/shared/components/entities/entity-actions/ui/toolbar-popover-button.tsx src/shared/components/entities/entity-actions/ui/entity-action-menu.tsx src/shared/components/entities/entity-actions/ui/bulk-action-bar.tsx
+git show --stat HEAD
 ```
 
 ---
 
 ### Task 8: `DataTable` owns row selection
 
+Rewritten 2026-10-02 against the render-isolation code. Selection reaches each memoized `DataTableRow` as a prop, like `isExpanded`; no row or cell reads `row.getIsSelected()` while rendering (D49, the `data-table.tsx` meta doc). Rules kept: the checkbox sits in the frozen primary cell beside the chevron; the header holds a tri-state "select page" box; page / page-size / sort changes clear the selection; ids a filter or search removes are pruned in state (`pruneRowSelection`, settlement 6); a checkbox tap never toggles the row or fires `onRowClick` (the existing `isRowClick` guard already treats `label` and `[role=checkbox]` as interactive, so no new guard is needed).
+
 **Files:**
 - Create: `src/shared/components/data-table/lib/prune-row-selection.ts`
 - Modify: `src/shared/components/ui/checkbox.tsx`
 - Modify: `src/shared/components/data-table/ui/data-table.tsx`
 - Modify: `src/shared/components/data-table/ui/data-table-body.tsx`
+- Modify: `src/shared/components/data-table/ui/data-table-row.tsx` (had another session's uncommitted `tintClassName` edit on 2026-10-02: stop and ask if it is still uncommitted)
 - Test (throwaway): `.superpowers/sdd/2026-09-29-records-bulk-actions/tests/prune-row-selection.test.ts`
 
 **Interfaces:**
 - Consumes: `RowSelection`, `isActionPermitted`, `BulkActionBar` (Task 7).
-- Produces: `DataTableProps.bulkActions?: EntityActionConfig<RowSelection>[]`; `pruneRowSelection(selection, rowIds): RowSelectionState`; `Checkbox` renders `checked="indeterminate"` with a minus glyph; `DataTableBody` prop `canSelect: boolean`.
+- Produces: `DataTableProps.bulkActions?: EntityActionConfig<RowSelection>[]`; `pruneRowSelection(selection, rowIds): RowSelectionState`; `Checkbox` renders `checked="indeterminate"` with a minus glyph; `DataTableBody` prop `canSelect: boolean`; `DataTableRow` props `canSelect: boolean`, `isSelected: boolean`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1473,6 +1656,8 @@ import { Checkbox } from '@/shared/components/ui/checkbox'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 ```
 
+(sorted into the existing groups the way `pnpm lint` wants them).
+
 `DataTableProps`, after `columnVisibility?`:
 
 ```tsx
@@ -1480,7 +1665,7 @@ import { useAbility } from '@/shared/domains/permissions/hooks'
   bulkActions?: EntityActionConfig<RowSelection>[]
 ```
 
-Destructure `bulkActions` in the component signature. After `const [expanded, setExpanded] = useState<ExpandedState>({})`:
+Destructure `bulkActions` in the component signature. After `const [expanded, setExpanded] = useState<ExpandedState>({})` (`:99`):
 
 ```tsx
   const ability = useAbility()
@@ -1491,7 +1676,7 @@ Destructure `bulkActions` in the component signature. After `const [expanded, se
   const canSelect = permittedBulkActions.length > 0
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
 
-  // Same render-phase pattern as the expansion reset below: a filter, search or refetch that drops a row drops its tick.
+  // Same render-phase pattern as the expansion reset: a filter, search or refetch that drops a row drops its tick.
   const rowIdsKey = data.map(row => row.id).join('|')
   const [lastRowIdsKey, setLastRowIdsKey] = useState(rowIdsKey)
   if (rowIdsKey !== lastRowIdsKey) {
@@ -1504,21 +1689,20 @@ Destructure `bulkActions` in the component signature. After `const [expanded, se
   const selection = useMemo<RowSelection>(() => ({ ids: selectedIds, clear: clearSelection }), [selectedIds, clearSelection])
 ```
 
-In `useReactTable({ … })`: add `rowSelection,` to `state`; add after `onExpandedChange: setExpanded,`:
+In `useReactTable({ … })` (`:224-289`): add `rowSelection,` to `state` after `expanded,`; add after `onExpandedChange: setExpanded,`:
 
 ```tsx
     onRowSelectionChange: setRowSelection,
     enableRowSelection: canSelect,
 ```
 
-In the expansion-reset block, add `setRowSelection({})` beside `setExpanded({})`, and change its comment to `// Derived during render, not in a handler: page size and the toolbar's Reset change the URL state without going through this table's handlers. Selection clears with expansion.`
+In the reset block (`:291-298`), add `setRowSelection({})` after `setExpanded({})` and extend its comment: `… without going through this table's handlers. Selection clears with expansion.`
 
 - [ ] **Step 5: The header "select page" checkbox**
 
-In the header's `isFirstCol` branch, make the flex row start with:
+In the header's `isFirstCol` branch (`:369-396`), insert as the first child of `<div className="flex items-center gap-1">`, before `<div className="min-w-0 flex-1">`:
 
 ```tsx
-                              <div className="flex items-center gap-1">
                                 {canSelect && (
                                   <label className="-m-1.5 flex shrink-0 cursor-pointer items-center p-1.5">
                                     <Checkbox
@@ -1528,31 +1712,26 @@ In the header's `isFirstCol` branch, make the flex row start with:
                                     />
                                   </label>
                                 )}
-                                <div className="min-w-0 flex-1">
 ```
 
-(the rest of the branch — the header content and the pin button — is unchanged).
+The header is not memoized, so reading table state here is allowed.
 
 - [ ] **Step 6: The bar's place**
 
-Replace the card's inner structure (the scroller `div` through `<DataTablePagination …/>`) so the scroller sits in a `relative` box with the bar floating over its bottom:
+Wrap the existing scroller `div` (`:324-465`, `ref={scrollRef}` through its closing tag) in a `relative` box and float the bar over its bottom. **Keep the scroller's current classes exactly** (`group/scroller`, the `*:data-[slot=table-container]:@container` comment and class, the resize cursor); only add the padding line:
 
 ```tsx
-      <div className="grow min-h-0 flex flex-col rounded-xl border border-border/50 overflow-hidden">
         <div className="relative grow min-h-0 flex flex-col">
           <div
             ref={scrollRef}
             onScroll={handleScroll}
             className={cn(
-              // A size container: the pull spinner and expanded panels size to it with `cqw`, without measuring it.
-              '@container grow min-h-0 overflow-auto overscroll-none touch-pan-x touch-pan-y',
-              '**:data-[slot=table-container]:overflow-visible',
-              isAnyColumnResizing && 'cursor-col-resize select-none',
+              /* …the current classes and comments, unchanged… */
               // Room for the bar, so the last row can scroll clear of it.
               selectedIds.length > 0 && 'pb-16',
             )}
           >
-            {/* The existing <Table>…</Table> element (data-table.tsx:378-507), unchanged. */}
+            {/* The current <Table>…</Table>, unchanged. */}
           </div>
           {canSelect && (
             <div className="pointer-events-none absolute inset-x-0 bottom-3 z-20 flex justify-center px-4">
@@ -1560,61 +1739,58 @@ Replace the card's inner structure (the scroller `div` through `<DataTablePagina
             </div>
           )}
         </div>
-
-        <DataTablePagination table={table} serverPagination={serverPagination} />
-      </div>
 ```
 
-Pass `canSelect={canSelect}` to `<DataTableBody … />`.
+`<DataTablePagination …/>` stays after it, inside the outer `surface` card. Pass `canSelect={canSelect}` to `<DataTableBody … />`.
 
-- [ ] **Step 7: The row checkbox, the selected look and the row-click guard**
+- [ ] **Step 7: Selection as a row prop**
 
-In `src/shared/components/data-table/ui/data-table-body.tsx`:
+In `src/shared/components/data-table/ui/data-table-body.tsx`: add `canSelect: boolean` to `DataTableBodyProps` and destructure it; in the `rows.map` (`:107-127`), beside `const isExpanded = row.getIsExpanded()`, read `const isSelected = canSelect && row.getIsSelected()` and pass `canSelect={canSelect}` and `isSelected={isSelected}` to `<DataTableRow>`. The body reads state in its own render, as it already does for expansion; `areRowPropsEqual` compares every non-`row` prop, so only the toggled row re-renders.
+
+In `src/shared/components/data-table/ui/data-table-row.tsx`:
 - import `import { Checkbox } from '@/shared/components/ui/checkbox'`;
-- add `canSelect: boolean` to `DataTableBodyProps` and destructure it;
+- add to `DataTableRowProps` after `isExpanded: boolean`:
+
+```tsx
+  canSelect: boolean
+  isSelected: boolean
+```
+
+  and destructure both;
 - beside `expandToggle`, build:
 
 ```tsx
-        const selectToggle = canSelect
-          ? (
-              // The label widens the tap target; it is in the row's interactive selector, so a tap never expands the row.
-              <label className="-m-1.5 flex shrink-0 cursor-pointer items-center p-1.5" onClick={e => e.stopPropagation()}>
-                <Checkbox
-                  checked={row.getIsSelected()}
-                  onCheckedChange={value => row.toggleSelected(value === true)}
-                  aria-label={`Select ${entityName}`}
-                />
-              </label>
-            )
-          : null
+  const selectToggle = canSelect
+    ? (
+        // The label widens the tap target; `isRowClick` treats it as interactive, so a tap never toggles the row.
+        <label className="-m-1.5 flex shrink-0 cursor-pointer items-center p-1.5">
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={value => row.toggleSelected(value === true)}
+            aria-label="Select row"
+          />
+        </label>
+      )
+    : null
 ```
 
-- `TableRow`: add `data-state={row.getIsSelected() ? 'selected' : undefined}`;
-- replace the `onRowClick` branch of the row's `onClick` with:
+- the status tint steps aside on a selected row as it does on hover: `const tintClassName = rowClassName && cn(rowClassName, 'group-hover:bg-transparent group-data-[state=selected]:bg-transparent')`;
+- the first `TableRow` gains `data-state={isSelected ? 'selected' : undefined}` (`TableRow` already styles `data-[state=selected]:bg-row-selected`, `ui/table.tsx:60`);
+- the first-cell composition becomes:
 
 ```tsx
-                if (onRowClick) {
-                  if (shouldToggleRow(e, window.getSelection()?.toString() ?? '')) {
-                    onRowClick(row.original)
-                  }
-                }
+          const cellContent = colIdx === 0 && (selectToggle || expandToggle)
+            ? (
+                <div className="flex items-center gap-1">
+                  {selectToggle}
+                  {expandToggle}
+                  <div className="min-w-0 flex-1">{content}</div>
+                </div>
+              )
+            : content
 ```
 
-- replace the `cellContent` computation with:
-
-```tsx
-                const cellContent = colIdx === 0 && (selectToggle || expandToggle)
-                  ? (
-                      <div className="flex items-center gap-1">
-                        {selectToggle}
-                        {expandToggle}
-                        <div className="min-w-0 flex-1">{content}</div>
-                      </div>
-                    )
-                  : content
-```
-
-- the frozen cell's opaque overlay (`absolute inset-0 bg-background group-hover:bg-muted/50 …`) gains `group-data-[state=selected]:bg-muted` so the tint reaches the frozen column.
+`row.toggleSelected` runs in the event handler only, the same way the chevron calls `row.toggleExpanded()`.
 
 - [ ] **Step 8: Type-check, lint, tests**
 
@@ -1622,90 +1798,101 @@ Run: `pnpm tsc && pnpm lint` → clean. Run the prune test → pass.
 
 - [ ] **Step 9: Browser regression read (no consumer passes `bulkActions` yet)**
 
-As a super-admin: `/dashboard/meetings` shows no checkboxes yet, rows still expand, the pin toggle still freezes the first column; `/dashboard/customers` row click still opens the profile, and clicking a control inside a row (e.g. a date picker) no longer also opens it; campaign leads still shows its own select column (replaced in Task 10).
+As a super-admin, with screenshots per Global Constraints: `/dashboard/meetings` shows no checkboxes yet, rows still expand, the pin toggle still freezes the first column, the status tints still show; `/dashboard/customers` row click still opens the profile; campaign leads still shows its own select column (replaced in Task 10). Re-run `node scripts/perf/records-probe.mjs /dashboard/meetings < /dev/null`: expand still re-renders one row, modal open/close zero.
 
 - [ ] **Step 10: Commit**
 
 ```bash
-git add src/shared/components/data-table/lib/prune-row-selection.ts src/shared/components/ui/checkbox.tsx src/shared/components/data-table/ui/data-table.tsx src/shared/components/data-table/ui/data-table-body.tsx
-git diff --cached --stat
+git add src/shared/components/data-table/lib/prune-row-selection.ts src/shared/components/ui/checkbox.tsx src/shared/components/data-table/ui/data-table.tsx src/shared/components/data-table/ui/data-table-body.tsx src/shared/components/data-table/ui/data-table-row.tsx
 git commit -m "feat(data-table): row selection owned by the table — checkbox in the primary cell, select page, the bulk bar
 
-Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/shared/components/data-table/lib/prune-row-selection.ts src/shared/components/ui/checkbox.tsx src/shared/components/data-table/ui/data-table.tsx src/shared/components/data-table/ui/data-table-body.tsx src/shared/components/data-table/ui/data-table-row.tsx
+git show --stat HEAD
 ```
 
 ---
 
-### Task 9: Meetings — bulk actions, Set Setter, the records view composes its shell
+### Task 9: Meetings — bulk actions and Set Setter
+
+The records page and its shell are the projects plan's Task 3 (`useEntityTable`, `EntityRecordsTable`, `MeetingsTable` deleted). This task wires into them.
 
 **Files:**
-- Create: `src/shared/components/entities/entity-actions/lib/format-bulk-action-result.ts`
-- Create: `src/shared/components/entities/entity-actions/lib/toast-bulk-action-result.ts`
-- Create: `src/shared/components/entities/entity-actions/constants/bulk-skip-labels.ts`
-- Create: `src/shared/entities/meetings/constants/bulk-skip-labels.ts`
+- Create: `src/shared/components/entities/entity-actions/constants/bulk-not-found-label.ts`
+- Create: `src/shared/components/entities/entity-actions/lib/describe-bulk-action-result.ts`
+- Modify: `src/shared/hooks/use-confirm.tsx`
 - Modify: `src/shared/entities/meetings/constants/actions.ts`
+- Create: `src/shared/entities/meetings/constants/bulk-actions.ts`
 - Modify: `src/shared/entities/meetings/hooks/use-meeting-actions.ts`
 - Modify: `src/shared/entities/meetings/hooks/use-meeting-action-configs.tsx`
 - Create: `src/shared/entities/meetings/hooks/use-meeting-bulk-action-configs.tsx`
 - Modify: `src/shared/entities/meetings/components/meetings-table/use-meetings-table.tsx`
-- Delete: `src/shared/entities/meetings/components/meetings-table/meetings-table.tsx`
-- Modify: `src/features/records-management/ui/views/meetings-records-view.tsx`
-- Test (throwaway): `.superpowers/sdd/2026-09-29-records-bulk-actions/tests/format-bulk-action-result.test.ts`
+- Test (throwaway): `.superpowers/sdd/2026-09-29-records-bulk-actions/tests/describe-bulk-action-result.test.ts`
 
 **Interfaces:**
-- Consumes: `meetingsRouter.bulk.{delete,update}` (Task 5); `SetterPicker` (Task 3); `BULK_ACTION_PERMISSION`, `RowSelection` (Task 7); `DataTableProps.bulkActions` (Task 8).
-- Produces: `formatBulkActionResult(result, verb, reasonLabels): string`; `toastBulkActionResult(result, verb, reasonLabels): void`; `BULK_NOT_FOUND_LABELS`; `MEETING_BULK_DELETE_SKIP_LABELS`; `MEETING_ACTIONS.setSetter`; `useMeetingActions()` gains `updateSetter`, `bulkDeleteMeetings`, `bulkSetSetter`; `useMeetingActionConfigs` override `withSetSetter?: boolean` and `MeetingEntity.setBy?`; `useMeetingBulkActionConfigs(): { bulkActions: EntityActionConfig<RowSelection>[], dialogs: ReactNode }`; `useMeetingsTable` returns `{ query, visibility, dataTableProps, dialogs }` (no `MeetingsTableQuery` export).
+- Consumes: `meetingsRouter.bulk.{delete,update}`, `MEETING_DELETE_SKIP_LABELS` (Task 5); `SetterPicker`, `SET_BY_NOT_INTERNAL` (Tasks 1, 3); `BULK_ACTION_PERMISSION`, `RowSelection` (Task 7); `DataTableProps.bulkActions` (Task 8).
+- Produces: `describeBulkActionResult(result, verb, reasonLabels): { message, tone: 'success' | 'warning' | 'error' }`; `BULK_NOT_FOUND_LABEL`; `useConfirm(defaults)` returning `confirm(copy?: Partial<{ title, message }>)`; `MEETING_ACTIONS.setSetter`; `MEETING_BULK_ACTIONS`; `useMeetingActions()` gains `updateSetter`, `bulkDeleteMeetings`, `bulkSetSetter`; `useMeetingActionConfigs` gains Set Setter (hidden without `setBy`) and `MeetingEntity.setBy?`; `useMeetingBulkActionConfigs(): { bulkActions: EntityActionConfig<RowSelection>[], dialogs: ReactNode }`.
 
 - [ ] **Step 1: Write the failing test**
 
-Create `.superpowers/sdd/2026-09-29-records-bulk-actions/tests/format-bulk-action-result.test.ts`:
+Create `.superpowers/sdd/2026-09-29-records-bulk-actions/tests/describe-bulk-action-result.test.ts`:
 
 ```ts
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { formatBulkActionResult } from '@/shared/components/entities/entity-actions/lib/format-bulk-action-result'
+import { describeBulkActionResult } from '@/shared/components/entities/entity-actions/lib/describe-bulk-action-result'
 
-const labels = { hasProposals: 'with proposals', notFound: 'no longer there' }
+const labels = { hasProposals: 'with proposals' }
 
-test('all done', () => {
-  assert.equal(formatBulkActionResult({ done: ['a', 'b', 'c'], skipped: [], failed: [] }, 'Deleted', labels), 'Deleted 3')
+test('all done is a success', () => {
+  assert.deepEqual(
+    describeBulkActionResult({ done: ['a', 'b', 'c'], skipped: [], failed: [] }, 'Deleted', labels),
+    { message: 'Deleted 3', tone: 'success' },
+  )
 })
 
-test('everything skipped for one reason still reports the zero', () => {
+test('everything skipped for one reason still reports the zero, as a warning', () => {
   const result = { done: [], skipped: [{ id: 'a', reason: 'hasProposals' }, { id: 'b', reason: 'hasProposals' }, { id: 'c', reason: 'hasProposals' }], failed: [] }
-  assert.equal(formatBulkActionResult(result, 'Deleted', labels), 'Deleted 0 · skipped 3 (with proposals)')
+  assert.deepEqual(describeBulkActionResult(result, 'Deleted', labels), { message: 'Deleted 0 · skipped 3 (with proposals)', tone: 'warning' })
 })
 
-test('mixed reasons are counted; failures are reported', () => {
+test('mixed reasons are counted, notFound needs no label, and a failure makes it an error', () => {
   const result = {
     done: ['a', 'b'],
     skipped: [{ id: 'c', reason: 'hasProposals' }, { id: 'd', reason: 'hasProposals' }, { id: 'e', reason: 'notFound' }],
     failed: [{ id: 'f', error: 'db-error' }],
   }
-  assert.equal(formatBulkActionResult(result, 'Deleted', labels), 'Deleted 2 · skipped 3 (2 with proposals, 1 no longer there) · 1 failed')
+  assert.deepEqual(
+    describeBulkActionResult(result, 'Deleted', labels),
+    { message: 'Deleted 2 · skipped 3 (2 with proposals, 1 no longer there) · 1 failed', tone: 'error' },
+  )
 })
 ```
 
-Run: `pnpm exec tsx --test .superpowers/sdd/2026-09-29-records-bulk-actions/tests/format-bulk-action-result.test.ts` → FAIL.
+Run: `pnpm exec tsx --test .superpowers/sdd/2026-09-29-records-bulk-actions/tests/describe-bulk-action-result.test.ts` → FAIL.
 
-- [ ] **Step 2: Result formatting and the toast**
+- [ ] **Step 2: Describing a result**
 
-Create `src/shared/components/entities/entity-actions/lib/format-bulk-action-result.ts`:
+Create `src/shared/components/entities/entity-actions/constants/bulk-not-found-label.ts`:
 
 ```ts
-interface BulkResultCounts {
-  done: readonly unknown[]
-  skipped: readonly { reason: string }[]
-  failed: readonly unknown[]
-}
+/** Every bulk procedure can skip a row that vanished between the page load and the run. */
+export const BULK_NOT_FOUND_LABEL = 'no longer there'
+```
 
-/** "Deleted 2 · skipped 3 (2 with proposals, 1 no longer there) · 1 failed" */
-export function formatBulkActionResult(
-  result: BulkResultCounts,
+Create `src/shared/components/entities/entity-actions/lib/describe-bulk-action-result.ts` (pure; the toast happens at the mutation):
+
+```ts
+import type { BulkActionResult } from '@/shared/dal/server/lib/run-bulk'
+
+import { BULK_NOT_FOUND_LABEL } from '@/shared/components/entities/entity-actions/constants/bulk-not-found-label'
+
+/** "Deleted 2 · skipped 3 (2 with proposals, 1 no longer there) · 1 failed", and how loudly to say it: a run that changed nothing warns rather than celebrates. */
+export function describeBulkActionResult(
+  result: BulkActionResult<string>,
   verb: string,
   reasonLabels: Readonly<Record<string, string>>,
-): string {
+): { message: string, tone: 'success' | 'warning' | 'error' } {
   const parts = [`${verb} ${result.done.length}`]
   if (result.skipped.length > 0) {
     const counts = new Map<string, number>()
@@ -1713,7 +1900,7 @@ export function formatBulkActionResult(
       counts.set(reason, (counts.get(reason) ?? 0) + 1)
     }
     const reasons = [...counts].map(([reason, count]) => {
-      const label = reasonLabels[reason] ?? reason
+      const label = reason === 'notFound' ? BULK_NOT_FOUND_LABEL : reasonLabels[reason] ?? reason
       return counts.size === 1 ? label : `${count} ${label}`
     })
     parts.push(`skipped ${result.skipped.length} (${reasons.join(', ')})`)
@@ -1721,60 +1908,39 @@ export function formatBulkActionResult(
   if (result.failed.length > 0) {
     parts.push(`${result.failed.length} failed`)
   }
-  return parts.join(' · ')
+  const tone = result.failed.length > 0 ? 'error' : result.done.length === 0 ? 'warning' : 'success'
+  return { message: parts.join(' · '), tone }
 }
-```
-
-Create `src/shared/components/entities/entity-actions/lib/toast-bulk-action-result.ts`:
-
-```ts
-import { toast } from 'sonner'
-
-import { formatBulkActionResult } from './format-bulk-action-result'
-
-type BulkResult = Parameters<typeof formatBulkActionResult>[0]
-
-/** A run that changed nothing warns rather than celebrates. */
-export function toastBulkActionResult(result: BulkResult, verb: string, reasonLabels: Readonly<Record<string, string>>): void {
-  const message = formatBulkActionResult(result, verb, reasonLabels)
-  if (result.failed.length > 0) {
-    toast.error(message)
-  }
-  else if (result.done.length === 0) {
-    toast.warning(message)
-  }
-  else {
-    toast.success(message)
-  }
-}
-```
-
-Create `src/shared/components/entities/entity-actions/constants/bulk-skip-labels.ts`:
-
-```ts
-/** Every bulk procedure can skip a row that vanished between the page load and the run. */
-export const BULK_NOT_FOUND_LABELS = { notFound: 'no longer there' } as const
-```
-
-Create `src/shared/entities/meetings/constants/bulk-skip-labels.ts`:
-
-```ts
-import type { AppRouterOutputs } from '@/trpc/routers/app'
-
-import { BULK_NOT_FOUND_LABELS } from '@/shared/components/entities/entity-actions/constants/bulk-skip-labels'
-
-type MeetingBulkDeleteSkip = AppRouterOutputs['meetingsRouter']['bulk']['delete']['skipped'][number]['reason']
-
-export const MEETING_BULK_DELETE_SKIP_LABELS = {
-  ...BULK_NOT_FOUND_LABELS,
-  hasProposals: 'with proposals',
-  hasApplications: 'with applications',
-} as const satisfies Record<MeetingBulkDeleteSkip, string>
 ```
 
 Run the Step 1 test → 3 pass.
 
-- [ ] **Step 3: The action and the mutations**
+- [ ] **Step 3: A confirm whose words fit this call**
+
+In `src/shared/hooks/use-confirm.tsx`, let `confirm` take per-call copy, so a bulk confirm can name its count without a state variable at each caller. Existing callers call `confirm()` and are unchanged:
+
+```tsx
+interface ConfirmCopy {
+  title: string
+  message: string
+}
+
+export function useConfirm(defaults: ConfirmCopy): [() => JSX.Element, (copy?: Partial<ConfirmCopy>) => Promise<boolean>] {
+  const [promise, setPromise] = useState<{ resolve: (value: boolean) => void } | null>(null)
+  // Kept after close, so the dialog's exit animation still shows the words it opened with.
+  const [copy, setCopy] = useState<ConfirmCopy>(defaults)
+
+  const confirm = (overrides?: Partial<ConfirmCopy>) => {
+    setCopy({ ...defaults, ...overrides })
+    return new Promise<boolean>((resolve) => {
+      setPromise({ resolve })
+    })
+  }
+```
+
+and render `copy.title` / `copy.message` in `DialogTitle` / `DialogDescription` instead of `title` / `message`. The rest of the hook is unchanged.
+
+- [ ] **Step 4: The action and the mutations**
 
 In `src/shared/entities/meetings/constants/actions.ts` add `UserPenIcon` to the lucide import and, after `assignOwner`:
 
@@ -1787,15 +1953,30 @@ In `src/shared/entities/meetings/constants/actions.ts` add `UserPenIcon` to the 
   },
 ```
 
+Create `src/shared/entities/meetings/constants/bulk-actions.ts` (module constants, so `useStableCallbacks` sees the same `action` objects every render; an inline `{ ...MEETING_ACTIONS.x, permission }` is new each render and re-renders the bar):
+
+```ts
+import type { EntityAction } from '@/shared/components/entities/entity-actions/types'
+
+import { BULK_ACTION_PERMISSION } from '@/shared/components/entities/entity-actions/constants/bulk-action-permission'
+import { MEETING_ACTIONS } from '@/shared/entities/meetings/constants/actions'
+
+/** The bulk twins of the single-row actions: same words and icons, the bulk permission. */
+export const MEETING_BULK_ACTIONS = {
+  setSetter: { ...MEETING_ACTIONS.setSetter, permission: BULK_ACTION_PERMISSION },
+  delete: { ...MEETING_ACTIONS.delete, permission: BULK_ACTION_PERMISSION },
+} as const satisfies Record<string, EntityAction>
+```
+
 In `src/shared/entities/meetings/hooks/use-meeting-actions.ts` add the imports:
 
 ```ts
-import { BULK_NOT_FOUND_LABELS } from '@/shared/components/entities/entity-actions/constants/bulk-skip-labels'
-import { toastBulkActionResult } from '@/shared/components/entities/entity-actions/lib/toast-bulk-action-result'
-import { MEETING_BULK_DELETE_SKIP_LABELS } from '@/shared/entities/meetings/constants/bulk-skip-labels'
+import { describeBulkActionResult } from '@/shared/components/entities/entity-actions/lib/describe-bulk-action-result'
+import { MEETING_DELETE_SKIP_LABELS } from '@/shared/entities/meetings/constants/delete-skip-reasons'
+import { SET_BY_NOT_INTERNAL } from '@/shared/entities/meetings/constants/set-by-not-internal'
 ```
 
-and before the `return`:
+Before the `return`:
 
 ```ts
   const updateSetter = useMutation(
@@ -1804,7 +1985,7 @@ and before the `return`:
         invalidateMeeting()
         toast.success('Setter updated')
       },
-      onError: err => toast.error(err.message || 'Failed to update setter'),
+      onError: err => toast.error(err.message === SET_BY_NOT_INTERNAL.reason ? SET_BY_NOT_INTERNAL.message : 'Failed to update setter'),
     }),
   )
 
@@ -1812,7 +1993,8 @@ and before the `return`:
     trpc.meetingsRouter.bulk.delete.mutationOptions({
       onSuccess: (result) => {
         invalidateMeeting()
-        toastBulkActionResult(result, 'Deleted', MEETING_BULK_DELETE_SKIP_LABELS)
+        const { message, tone } = describeBulkActionResult(result, 'Deleted', MEETING_DELETE_SKIP_LABELS)
+        toast[tone](message)
       },
       onError: err => toast.error(err.message || 'Failed to delete meetings'),
     }),
@@ -1822,52 +2004,50 @@ and before the `return`:
     trpc.meetingsRouter.bulk.update.mutationOptions({
       onSuccess: (result) => {
         invalidateMeeting()
-        toastBulkActionResult(result, 'Updated', BULK_NOT_FOUND_LABELS)
+        const { message, tone } = describeBulkActionResult(result, 'Updated', {})
+        toast[tone](message)
       },
       onError: err => toast.error(err.message || 'Failed to update setters'),
     }),
   )
 ```
 
-and add `updateSetter, bulkDeleteMeetings, bulkSetSetter` to the returned object.
+and add `updateSetter, bulkDeleteMeetings, bulkSetSetter` to the returned object. In the existing `rescheduleMeeting`, change `onError` to word the setter refusal (Task 1 Step 5 sends it through):
 
-- [ ] **Step 4: Single-row Set Setter behind an opt-in**
+```ts
+      onError: err => toast.error(err.message === SET_BY_NOT_INTERNAL.reason ? SET_BY_NOT_INTERNAL.message : err.message || 'Failed to reschedule meeting'),
+```
+
+- [ ] **Step 5: Single-row Set Setter, hidden where the row has no setter**
 
 In `src/shared/entities/meetings/hooks/use-meeting-action-configs.tsx`:
 - import `import { SetterPicker } from '@/shared/entities/meetings/components/setter-picker'`;
-- `MeetingEntity`: add `setBy?: string | null`;
-- `MeetingActionOverrides`: add
-
-```ts
-  /** Adds Set Setter. Only the records table opts in: the schedule and the cards don't carry the setter. */
-  withSetSetter?: boolean
-```
-
-- add `updateSetter` to the `useMeetingActions()` destructure in the hook body;
+- `MeetingEntity`: add `setBy?: string | null` (absent = this caller's rows don't carry the setter);
+- add `updateSetter` to the `useMeetingActions()` destructure;
 - before the `configs.push({ action: MEETING_ACTIONS.delete, … })`:
 
 ```tsx
-    if (overrides.withSetSetter) {
-      configs.push({
-        action: MEETING_ACTIONS.setSetter,
-        type: 'custom',
-        isLoading: updateSetter.isPending,
-        renderContent: (entity: T, closeMenu) => (
-          <SetterPicker
-            value={entity.setBy ?? null}
-            onPick={(setBy) => {
-              closeMenu()
-              updateSetter.mutate({ id: entity.id, data: { setBy } })
-            }}
-          />
-        ),
-      })
-    }
+  configs.push({
+    action: MEETING_ACTIONS.setSetter,
+    type: 'custom',
+    isLoading: updateSetter.isPending,
+    // A caller whose rows don't carry the setter can't show the current one, so the action stays out.
+    hidden: entity => entity.setBy === undefined,
+    renderContent: (entity: T, closeMenu) => (
+      <SetterPicker
+        value={entity.setBy ?? null}
+        onPick={(setBy) => {
+          closeMenu()
+          updateSetter.mutate({ id: entity.id, data: { setBy } })
+        }}
+      />
+    ),
+  })
 ```
 
-- add `updateSetter` to that `useMemo`'s dependency list.
+`hidden` reads only its argument (Global Constraints). The configs already go through `useStableCallbacks`; there is no dependency list to extend. The action shows wherever a row carries `setBy`: the records table (`listMeetings` selects every column), and any other caller whose read does the same at runtime even if its type omits the field (check the customer profile's meetings read, `get-customer-profile.ts`, at build time). Its `assign Meeting` permission keeps it super-admin only everywhere.
 
-- [ ] **Step 5: The bulk configs**
+- [ ] **Step 6: The bulk configs**
 
 Create `src/shared/entities/meetings/hooks/use-meeting-bulk-action-configs.tsx`:
 
@@ -1876,27 +2056,23 @@ Create `src/shared/entities/meetings/hooks/use-meeting-bulk-action-configs.tsx`:
 
 import type { EntityActionConfig, RowSelection } from '@/shared/components/entities/entity-actions/types'
 
-import { useMemo, useState } from 'react'
-
-import { BULK_ACTION_PERMISSION } from '@/shared/components/entities/entity-actions/constants/bulk-action-permission'
 import { SetterPicker } from '@/shared/entities/meetings/components/setter-picker'
-import { MEETING_ACTIONS } from '@/shared/entities/meetings/constants/actions'
+import { MEETING_BULK_ACTIONS } from '@/shared/entities/meetings/constants/bulk-actions'
 import { useConfirm } from '@/shared/hooks/use-confirm'
+import { useStableCallbacks } from '@/shared/hooks/use-stable-callbacks'
 
 import { useMeetingActions } from './use-meeting-actions'
 
 export function useMeetingBulkActionConfigs() {
   const { bulkDeleteMeetings, bulkSetSetter } = useMeetingActions()
-  // The confirm copy is read when the dialog renders, so the count set just before `confirm()` shows.
-  const [pendingCount, setPendingCount] = useState(0)
   const [DeleteConfirmDialog, confirmDelete] = useConfirm({
-    title: `Delete ${pendingCount} ${pendingCount === 1 ? 'meeting' : 'meetings'}?`,
+    title: 'Delete meetings?',
     message: 'Meetings with proposals or applications are skipped. This cannot be undone.',
   })
 
-  const bulkActions = useMemo((): EntityActionConfig<RowSelection>[] => [
+  const configs: EntityActionConfig<RowSelection>[] = [
     {
-      action: { ...MEETING_ACTIONS.setSetter, permission: BULK_ACTION_PERMISSION },
+      action: MEETING_BULK_ACTIONS.setSetter,
       type: 'custom',
       isLoading: bulkSetSetter.isPending,
       renderContent: (selection, closeMenu) => (
@@ -1910,101 +2086,57 @@ export function useMeetingBulkActionConfigs() {
       ),
     },
     {
-      action: { ...MEETING_ACTIONS.delete, permission: BULK_ACTION_PERMISSION },
+      action: MEETING_BULK_ACTIONS.delete,
       isLoading: bulkDeleteMeetings.isPending,
       onAction: async (selection) => {
-        setPendingCount(selection.ids.length)
-        if (await confirmDelete()) {
+        const count = selection.ids.length
+        if (await confirmDelete({ title: `Delete ${count} ${count === 1 ? 'meeting' : 'meetings'}?` })) {
           bulkDeleteMeetings.mutate({ ids: selection.ids }, { onSuccess: selection.clear })
         }
       },
     },
-  ], [bulkDeleteMeetings, bulkSetSetter, confirmDelete])
+  ]
+
+  // Callbacks always reach the latest mutations; only the loading flags (values) re-render the bar.
+  const bulkActions = useStableCallbacks(configs)
 
   return { bulkActions, dialogs: <DeleteConfirmDialog /> }
 }
 ```
 
-- [ ] **Step 6: Wire the table; the records view composes its shell**
+- [ ] **Step 7: Wire the meetings table**
 
-In `src/shared/entities/meetings/components/meetings-table/use-meetings-table.tsx`:
-- import `useMeetingBulkActionConfigs` from `@/shared/entities/meetings/hooks/use-meeting-bulk-action-configs`;
-- in the `overrides` memo add `withSetSetter: true,`;
-- after the `useMeetingActionConfigs` line: `const { bulkActions, dialogs: bulkDialogs } = useMeetingBulkActionConfigs()`;
-- add `bulkActions,` to `dataTableProps`;
-- add `{bulkDialogs}` as the first child of the `dialogs` fragment;
-- delete the `export type MeetingsTableQuery = …` line.
+In `src/shared/entities/meetings/components/meetings-table/use-meetings-table.tsx` (as the projects plan's Task 3 leaves it):
+- call `const { bulkActions, dialogs: bulkDialogs } = useMeetingBulkActionConfigs()`;
+- add `bulkActions` to the hook's `dataTableProps` (Task 8's `DataTableProps.bulkActions`);
+- add `{bulkDialogs}` to the hook's `dialogs`.
 
-Delete `src/shared/entities/meetings/components/meetings-table/meetings-table.tsx` (`git rm`). Run `grep -rn "meetings-table/meetings-table\|MeetingsTableQuery\|<MeetingsTable" src` → expected: no hits after the next edit.
+- [ ] **Step 8: Type-check, lint, tests**
 
-Replace `src/features/records-management/ui/views/meetings-records-view.tsx` with:
+Run: `pnpm tsc && pnpm lint` → clean. Re-run the throwaway tests → all pass.
 
-```tsx
-'use client'
-
-import type { MeetingsExpandedRowContext } from '@/shared/entities/meetings/components/meetings-table/use-meetings-table'
-import type { MeetingRow } from '@/shared/entities/meetings/lib/columns-registry'
-
-import { MEETINGS_RECORDS_TABLE_VIEW } from '@/features/records-management/constants/meetings-records-table-view'
-import { MeetingRowPanel } from '@/features/records-management/ui/components/meeting-row-panel'
-import { DataTable } from '@/shared/components/data-table/ui/data-table'
-import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
-import { RecordsPageHeader } from '@/shared/components/records-page-header'
-import { RecordsPageMotionShell } from '@/shared/components/records-page-motion-shell'
-import { RecordsPageShell } from '@/shared/components/records-page-shell'
-import { useMeetingsTable } from '@/shared/entities/meetings/components/meetings-table/use-meetings-table'
-
-// Module level keeps its identity stable, so the table's props don't churn.
-function renderMeetingRowPanel(row: MeetingRow, { actions }: MeetingsExpandedRowContext) {
-  return <MeetingRowPanel meeting={row} actions={actions} />
-}
-
-export function MeetingsRecordsView() {
-  const { query, visibility, dataTableProps, dialogs } = useMeetingsTable(MEETINGS_RECORDS_TABLE_VIEW, { renderExpandedRow: renderMeetingRowPanel })
-
-  return (
-    <RecordsPageMotionShell>
-      {dialogs}
-      <RecordsPageShell
-        header={<RecordsPageHeader title="Meetings" query={query} />}
-        toolbar={(
-          <QueryToolbar query={query} entityName="meetings">
-            <QueryToolbar.Standard searchPlaceholder="Search by customer or type…" visibility={visibility} />
-          </QueryToolbar>
-        )}
-        table={<DataTable {...dataTableProps} />}
-      />
-    </RecordsPageMotionShell>
-  )
-}
-```
-
-- [ ] **Step 7: Type-check, lint, tests**
-
-Run: `pnpm tsc && pnpm lint` → clean. Re-run the four throwaway tests → all pass.
-
-- [ ] **Step 8: Browser check — super-admin (read-only)**
+- [ ] **Step 9: Browser check — super-admin (read-only)**
 
 On `/dashboard/meetings` (desktop, then a 390px viewport):
 1. Each row's first cell shows a checkbox left of the chevron; ticking it neither expands the row nor scrolls; the header checkbox goes indeterminate, then ticks the whole page.
 2. The bar shows "N selected · Set Setter · Delete · Clear"; Set Setter opens the picker in a popover; Delete opens "Delete N meetings?" — press **Cancel**; Clear hides the bar.
 3. Changing page, page size or sort clears the ticks; searching away a ticked row and clearing the search shows it un-ticked (Review Focus 3).
-4. A row's More menu has "Set Setter" with the picker (checkmark on the current setter, or on "No setter").
+4. A row's More menu has "Set Setter" with the picker (checkmark on the current setter, or on "No setter"); at 390px the picker stays on screen.
 5. The Setter column (turned on) reads the same as the picker's checkmark.
 
-- [ ] **Step 9: Browser check — agent, and the owner's write check**
+- [ ] **Step 10: Browser check — agent, and the owner's write check**
 
-As an agent: no checkboxes, no bar, no Set Setter in the row menu, no Setter column or filter (Review Focus 1).
+As an agent, then as a dispatcher: no checkboxes, no bar, no Set Setter in the row menu, no Setter column or filter (Review Focus 1). Screenshots per Global Constraints.
 Owner-designated rows only: the owner ticks one meeting with a proposal and one without, runs Delete → toast "Deleted 1 · skipped 1 (with proposals)"; ticks two meetings and sets "No setter" → toast "Updated 2", the Setter column shows "—" (Review Focus 4, 5).
 
-- [ ] **Step 10: Commit**
+- [ ] **Step 11: Commit**
 
 ```bash
-git add src/shared/components/entities/entity-actions/lib/format-bulk-action-result.ts src/shared/components/entities/entity-actions/lib/toast-bulk-action-result.ts src/shared/components/entities/entity-actions/constants/bulk-skip-labels.ts src/shared/entities/meetings/constants/bulk-skip-labels.ts src/shared/entities/meetings/constants/actions.ts src/shared/entities/meetings/hooks/use-meeting-actions.ts src/shared/entities/meetings/hooks/use-meeting-action-configs.tsx src/shared/entities/meetings/hooks/use-meeting-bulk-action-configs.tsx src/shared/entities/meetings/components/meetings-table/use-meetings-table.tsx src/shared/entities/meetings/components/meetings-table/meetings-table.tsx src/features/records-management/ui/views/meetings-records-view.tsx
-git diff --cached --stat
-git commit -m "feat(meetings): bulk delete and set setter on the records table; Set Setter per row; the view composes its shell
+git add src/shared/components/entities/entity-actions/constants/bulk-not-found-label.ts src/shared/components/entities/entity-actions/lib/describe-bulk-action-result.ts src/shared/hooks/use-confirm.tsx src/shared/entities/meetings/constants/actions.ts src/shared/entities/meetings/constants/bulk-actions.ts src/shared/entities/meetings/hooks/use-meeting-actions.ts src/shared/entities/meetings/hooks/use-meeting-action-configs.tsx src/shared/entities/meetings/hooks/use-meeting-bulk-action-configs.tsx src/shared/entities/meetings/components/meetings-table/use-meetings-table.tsx
+git commit -m "feat(meetings): bulk delete and set setter on the records table; Set Setter per row
 
-Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/shared/components/entities/entity-actions/constants/bulk-not-found-label.ts src/shared/components/entities/entity-actions/lib/describe-bulk-action-result.ts src/shared/hooks/use-confirm.tsx src/shared/entities/meetings/constants/actions.ts src/shared/entities/meetings/constants/bulk-actions.ts src/shared/entities/meetings/hooks/use-meeting-actions.ts src/shared/entities/meetings/hooks/use-meeting-action-configs.tsx src/shared/entities/meetings/hooks/use-meeting-bulk-action-configs.tsx src/shared/entities/meetings/components/meetings-table/use-meetings-table.tsx
+git show --stat HEAD
 ```
 
 ---
@@ -2100,12 +2232,11 @@ Create `src/features/campaigns-admin/hooks/use-lead-bulk-action-configs.tsx`:
 import type { EntityActionConfig, RowSelection } from '@/shared/components/entities/entity-actions/types'
 import type { VoipCampaign } from '@/shared/entities/voip-campaigns/types'
 
-import { useMemo } from 'react'
-
 import { LEAD_BULK_ACTIONS } from '@/features/campaigns-admin/constants/lead-bulk-actions'
 import { useCampaignMutations } from '@/features/campaigns-admin/hooks/use-campaign-mutations'
 import { BulkEnrollForm } from '@/features/campaigns-admin/ui/components/leads/bulk-enroll-form'
 import { useConfirm } from '@/shared/hooks/use-confirm'
+import { useStableCallbacks } from '@/shared/hooks/use-stable-callbacks'
 
 export function useLeadBulkActionConfigs(campaigns: VoipCampaign[]) {
   const { disqualifyBulk, markDnc, removeBulk } = useCampaignMutations()
@@ -2114,7 +2245,7 @@ export function useLeadBulkActionConfigs(campaigns: VoipCampaign[]) {
     title: 'Apply to selected leads?',
   })
 
-  const bulkActions = useMemo((): EntityActionConfig<RowSelection>[] => [
+  const configs: EntityActionConfig<RowSelection>[] = [
     {
       action: LEAD_BULK_ACTIONS.enroll,
       type: 'custom',
@@ -2152,7 +2283,10 @@ export function useLeadBulkActionConfigs(campaigns: VoipCampaign[]) {
         }
       },
     },
-  ], [campaigns, removeBulk, disqualifyBulk, markDnc, confirm])
+  ]
+
+  // Callbacks, `renderContent` included, always reach the latest `campaigns` and mutations; only the loading flags (values) re-render the bar.
+  const bulkActions = useStableCallbacks(configs)
 
   return { bulkActions, dialogs: <ConfirmDialog /> }
 }
@@ -2177,1062 +2311,23 @@ Run: `pnpm tsc && pnpm lint` → clean.
 
 - [ ] **Step 6: Browser check (super-admin, read-only)**
 
-On the campaigns admin Leads view: the name column carries the checkbox; ticking it does **not** open the lead drawer (Review Focus 2); clicking elsewhere on the row still opens it; the bar shows Enroll, Remove, Disqualify, Mark DNC, Clear; Enroll opens the campaign picker in place; Disqualify and Mark DNC ask to confirm — press Cancel. Paging clears the ticks (per-page selection, D41). No action runs unless the owner designates leads.
+On the campaigns admin Leads view (screenshots per Global Constraints): the name column carries the checkbox; ticking it does **not** open the lead drawer (Review Focus 2); clicking elsewhere on the row still opens it; the bar shows Enroll, Remove, Disqualify, Mark DNC, Clear; Enroll opens the campaign picker in place; Disqualify and Mark DNC ask to confirm — press Cancel. Paging clears the ticks (per-page selection, D41). No action runs unless the owner designates leads.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/features/campaigns-admin/constants/lead-bulk-actions.ts src/features/campaigns-admin/ui/components/leads/bulk-enroll-form.tsx src/features/campaigns-admin/hooks/use-lead-bulk-action-configs.tsx src/features/campaigns-admin/ui/views/campaigns-leads-view.tsx src/features/campaigns-admin/ui/lib/leads-columns.tsx src/features/campaigns-admin/ui/components/leads/lead-select-cell.tsx src/features/campaigns-admin/ui/components/leads/lead-select-header.tsx src/features/campaigns-admin/ui/components/leads/leads-bulk-action-bar.tsx src/features/campaigns-admin/ui/components/leads/bulk-enroll-popover.tsx
-git diff --cached --stat
+git add src/features/campaigns-admin/constants/lead-bulk-actions.ts src/features/campaigns-admin/ui/components/leads/bulk-enroll-form.tsx src/features/campaigns-admin/hooks/use-lead-bulk-action-configs.tsx src/features/campaigns-admin/ui/views/campaigns-leads-view.tsx src/features/campaigns-admin/ui/lib/leads-columns.tsx
 git commit -m "refactor(campaigns): leads use the table's selection and bulk bar; the hand-rolled select column and bar go
 
-Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/features/campaigns-admin/constants/lead-bulk-actions.ts src/features/campaigns-admin/ui/components/leads/bulk-enroll-form.tsx src/features/campaigns-admin/hooks/use-lead-bulk-action-configs.tsx src/features/campaigns-admin/ui/views/campaigns-leads-view.tsx src/features/campaigns-admin/ui/lib/leads-columns.tsx src/features/campaigns-admin/ui/components/leads/lead-select-cell.tsx src/features/campaigns-admin/ui/components/leads/lead-select-header.tsx src/features/campaigns-admin/ui/components/leads/leads-bulk-action-bar.tsx src/features/campaigns-admin/ui/components/leads/bulk-enroll-popover.tsx
+git show --stat HEAD
 ```
 
 ---
 
-## Phase B5 — projects (R4)
+## Phase B5 — projects (R4): moved
 
-### Task 11: Projects on a field list; the projects entity table and records view
-
-**Files:**
-- Create: `src/shared/modules/projects/core/constants/status-labels.ts`
-- Create: `src/shared/modules/projects/core/dal/project-fields.ts`
-- Create: `src/shared/modules/projects/core/dal/server/project-field-sql.ts`
-- Modify: `src/shared/modules/projects/core/dal/server/queries.ts` (`listProjects` and its input)
-- Modify: `src/trpc/routers/projects.router/crud.router.ts:24-37`
-- Modify: `src/features/agent-dashboard/constants/dashboard-queries.ts:10-25,76-91`
-- Modify: `src/features/agent-dashboard/ui/components/dashboard-project-section.tsx:3,16`
-- Modify: `src/shared/modules/projects/core/lib/columns-registry.tsx`
-- Create: `src/shared/modules/projects/core/components/projects-table/use-projects-table.tsx`
-- Create: `src/features/records-management/constants/projects-records-table-view.ts`
-- Create: `src/features/records-management/ui/views/projects-records-view.tsx`
-- Modify: `src/app/(frontend)/dashboard/(records)/projects/page.tsx`
-- Delete: `src/features/project-management/ui/components/table/index.tsx`, `src/features/project-management/ui/components/project-detail-sheet.tsx`, `src/features/project-management/constants/projects-table-query-config.ts`, `src/features/project-management/constants/project-table-filter-config.ts`
-
-**Interfaces:**
-- Produces: `PROJECT_STATUS_BUCKET_LABELS`, `PROJECT_VISIBILITY_LABELS`; `PROJECT_FIELDS` (sortable `title`, `city`, `visibility`, `completedAt`, `createdAt`; filters `statusBucket`, `visibility`, `completedAt`, `createdAt`; fixed `excludePortfolio`); `PROJECT_FIELD_SQL`; `projectListInputSchema` / `ProjectListInput` (replaces the hand-mirrored interface); `ProjectColumnKey`; `useProjectsTable(tableView, { renderExpandedRow? })` → `{ query, visibility, dataTableProps, dialogs }`; `ProjectsExpandedRowContext = { actions }`; `PROJECTS_RECORDS_TABLE_VIEW`; `ProjectsRecordsView`.
-
-- [ ] **Step 1: Labels and the field list**
-
-Create `src/shared/modules/projects/core/constants/status-labels.ts` (moved out of the legacy filter config):
-
-```ts
-import type { ProjectStatusBucket, ProjectVisibility } from '@/shared/constants/enums'
-
-export const PROJECT_STATUS_BUCKET_LABELS: Record<ProjectStatusBucket, string> = {
-  active: 'Active',
-  completed: 'Completed',
-  on_hold: 'On Hold',
-  cancelled: 'Cancelled',
-}
-
-export const PROJECT_VISIBILITY_LABELS: Record<ProjectVisibility, string> = {
-  public: 'Public',
-  draft: 'Draft',
-}
-```
-
-Create `src/shared/modules/projects/core/dal/project-fields.ts`:
-
-```ts
-import z from 'zod'
-
-import { projectStatusBuckets, projectVisibilities } from '@/shared/constants/enums'
-import { dateRange, defineFieldList, fixedOnly, multiSelect, select } from '@/shared/dal/lib/query/field-list'
-import { PROJECT_STATUS_BUCKET_LABELS, PROJECT_VISIBILITY_LABELS } from '@/shared/modules/projects/core/constants/status-labels'
-
-/** Every filterable and sortable projects field; each id is both the URL key suffix and the read's filter/sort key. */
-export const PROJECT_FIELDS = defineFieldList({
-  title: { label: 'Project', sort: true },
-  city: { label: 'Location', sort: true },
-  statusBucket: { label: 'Status', filter: multiSelect({ values: projectStatusBuckets, optionLabel: bucket => PROJECT_STATUS_BUCKET_LABELS[bucket] }) },
-  visibility: { label: 'Visibility', filter: select({ values: projectVisibilities, optionLabel: visibility => PROJECT_VISIBILITY_LABELS[visibility] }), sort: true },
-  completedAt: { label: 'Completed', filter: dateRange(), sort: true },
-  createdAt: { label: 'Created', filter: dateRange(), sort: true },
-  // Showcase-only projects never ran the lifecycle; the dashboard's work counts drop them.
-  excludePortfolio: { filter: fixedOnly(z.boolean()) },
-})
-```
-
-- [ ] **Step 2: The field SQL**
-
-Create `src/shared/modules/projects/core/dal/server/project-field-sql.ts`:
-
-```ts
-import { desc, eq, inArray, sql } from 'drizzle-orm'
-
-import { stagesForBuckets } from '@/shared/constants/enums'
-import { dateRangeCondition, defineFieldSql } from '@/shared/dal/server/lib/query/field-sql'
-import { projects } from '@/shared/db/schema'
-import { PROJECT_FIELDS } from '@/shared/modules/projects/core/dal/project-fields'
-import { hasAssociatedMeeting } from '@/shared/modules/projects/core/lib/visibility'
-import 'server-only'
-
-export const PROJECT_FIELD_SQL = defineFieldSql(PROJECT_FIELDS, {
-  filter: {
-    // Null stage groups with Completed, as deriveProjectStatusBucket does.
-    statusBucket: v => inArray(sql`coalesce(${projects.pipelineStage}, 'closed')`, stagesForBuckets(v)),
-    visibility: v => eq(projects.isPublic, v === 'public'),
-    completedAt: v => dateRangeCondition(projects.completedAt, v),
-    createdAt: v => dateRangeCondition(projects.createdAt, v),
-    excludePortfolio: v => (v ? hasAssociatedMeeting() : undefined),
-  },
-  sort: {
-    title: projects.title,
-    city: projects.city,
-    visibility: projects.isPublic,
-    completedAt: projects.completedAt,
-    createdAt: projects.createdAt,
-  },
-}, { defaultOrder: [desc(projects.createdAt)], tieBreaker: projects.id })
-```
-
-- [ ] **Step 3: `listProjects` on the field list**
-
-In `src/shared/modules/projects/core/dal/server/queries.ts`:
-- delete the hand-mirrored `ProjectListInput` interface and its doc comment;
-- above `listProjects` add:
-
-```ts
-export const projectListInputSchema = fieldListInput(PROJECT_FIELDS, { pagination: true })
-export type ProjectListInput = z.infer<typeof projectListInputSchema>
-```
-
-- replace `listProjects`' doc comment with `/** The records table's and the agent dashboard's projects read. Each row carries its \`scopeIds\`, so a row resolves its trades without a per-row fetch. */` and the lines from `const scopeWhere = ctx.scope ?? undefined` through `const orderBy = buildOrderBy(…)` (inclusive) with:
-
-```ts
-    const where = and(
-      ctx.scope ?? undefined,
-      buildSearchWhere(input.search, [projects.title, projects.city]),
-      PROJECT_FIELD_SQL.where(input.filters),
-    )
-    const orderBy = PROJECT_FIELD_SQL.orderBy(input.sort)
-```
-
-(the page, count and scope-row queries below stay as they are);
-- imports: add `import type z from 'zod'`, `import { fieldListInput } from '@/shared/dal/server/lib/query/field-list-input'`, `import { buildSearchWhere } from '@/shared/dal/server/lib/query/search'`, `import { PROJECT_FIELDS } from '@/shared/modules/projects/core/dal/project-fields'`, `import { PROJECT_FIELD_SQL } from '@/shared/modules/projects/core/dal/server/project-field-sql'`; remove `buildFilterWhere`, `buildOrderBy`, `stagesForBuckets`, the `ProjectStatusBucket` / `ProjectVisibility` / `DateRange` / `PaginationFields` / `SortFields` type imports, and any `drizzle-orm` helper `pnpm lint` then reports unused.
-
-The new search escapes `%` and `_` (`buildSearchWhere`); the old `ilike` did not.
-
-- [ ] **Step 4: The router input and the dashboard builders**
-
-In `src/trpc/routers/projects.router/crud.router.ts` replace the `list` procedure with:
-
-```ts
-  list: projectProcedure
-    .input(projectListInputSchema)
-    .query(async ({ ctx, input }) => dalToTrpc(await listProjects(ctx, input))),
-```
-
-import `projectListInputSchema` beside `listProjects`, and remove the imports left unused (`projectStatusBuckets`, `projectVisibilities`, `dateRangeSchema`, `paginatedQueryInput`).
-
-In `src/features/agent-dashboard/constants/dashboard-queries.ts`: delete the `inferRouterInputs` / `AppRouter` type imports if nothing else uses them, delete the `ProjectsListInput` comment and type, add `import type { ProjectListInput } from '@/shared/modules/projects/core/dal/server/queries'`, and change both `satisfies ProjectsListInput` to `satisfies ProjectListInput`. In `dashboard-project-section.tsx` import `ProjectListInput` from the same path and type `input: ProjectListInput`.
-
-- [ ] **Step 5: The registry is typed by the field list**
-
-In `src/shared/modules/projects/core/lib/columns-registry.tsx`: add `import type { SortId } from '@/shared/dal/lib/query/field-list'` and `import type { PROJECT_FIELDS } from '@/shared/modules/projects/core/dal/project-fields'`; change the `isPublic` column's `sort: 'isPublic'` to `sort: 'visibility'`; change the closing line to `} as const satisfies ColumnRegistry<ProjectRow, SortId<typeof PROJECT_FIELDS>>` and append:
-
-```ts
-export type ProjectColumnKey = keyof typeof PROJECT_COLUMNS
-```
-
-- [ ] **Step 6: The entity table hook**
-
-Create `src/shared/modules/projects/core/components/projects-table/use-projects-table.tsx`:
-
-```tsx
-'use client'
-
-import type { ReactNode } from 'react'
-
-import type { EntityTableView } from '@/shared/components/data-table/types/entity-table-view'
-import type { DataTableProps } from '@/shared/components/data-table/ui/data-table'
-import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
-import type { PROJECT_FIELDS } from '@/shared/modules/projects/core/dal/project-fields'
-import type { ProjectColumnKey, ProjectRow, ProjectTableMeta } from '@/shared/modules/projects/core/lib/columns-registry'
-
-import { useRouter } from 'next/navigation'
-import { useCallback, useMemo } from 'react'
-
-import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
-import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
-import { useColumnVisibility } from '@/shared/components/data-table/lib/use-column-visibility'
-import { useEntityColumns } from '@/shared/components/data-table/lib/use-entity-columns'
-import { ROOTS } from '@/shared/config/roots'
-import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
-import { useProjectActionConfigs } from '@/shared/modules/projects/core/hooks/use-project-action-configs'
-import { PROJECT_COLUMNS } from '@/shared/modules/projects/core/lib/columns-registry'
-import { useTRPC } from '@/trpc/helpers'
-
-export interface ProjectsExpandedRowContext {
-  actions: EntityActionConfig<ProjectRow>[]
-}
-
-export interface UseProjectsTableOptions {
-  renderExpandedRow?: (row: ProjectRow, ctx: ProjectsExpandedRowContext) => ReactNode
-}
-
-export function useProjectsTable(
-  tableView: EntityTableView<ProjectColumnKey, typeof PROJECT_FIELDS>,
-  { renderExpandedRow }: UseProjectsTableOptions = {},
-) {
-  const trpc = useTRPC()
-  const router = useRouter()
-  const query = useDataViewQuery(trpc.projectsRouter.crud.list, {}, tableView.query)
-
-  const { actions, DeleteConfirmDialog } = useProjectActionConfigs<ProjectRow>()
-
-  const columns = useEntityColumns(PROJECT_COLUMNS, { show: tableView.columns })
-  const visibility = useColumnVisibility(tableView.tableId, columns)
-
-  const meta = useMemo<ProjectTableMeta>(() => ({ projectActions: () => actions }), [actions])
-
-  const openProject = useCallback((row: ProjectRow) => router.push(ROOTS.dashboard.projects.byId(row.id)), [router])
-
-  const expandedRowRenderer = useMemo(
-    () => renderExpandedRow ? (row: ProjectRow) => renderExpandedRow(row, { actions }) : undefined,
-    [renderExpandedRow, actions],
-  )
-
-  const dataTableProps = {
-    tableId: tableView.tableId,
-    data: query.rows,
-    columns,
-    meta,
-    entityName: 'project',
-    rowDataAttribute: 'data-project-row',
-    renderExpandedRow: expandedRowRenderer,
-    // Without an expanded row, a row click opens the project.
-    onRowClick: expandedRowRenderer ? undefined : openProject,
-    serverPagination: toDataTablePagination(query),
-    serverSorting: toDataTableSorting(query),
-    columnVisibility: visibility.columnVisibility,
-  } satisfies DataTableProps<ProjectRow, ProjectTableMeta>
-
-  return { query, visibility, dataTableProps, dialogs: <DeleteConfirmDialog /> }
-}
-```
-
-- [ ] **Step 7: The table view, the records view, the page**
-
-Create `src/features/records-management/constants/projects-records-table-view.ts`:
-
-```ts
-import type { EntityTableView } from '@/shared/components/data-table/types/entity-table-view'
-import type { ProjectColumnKey } from '@/shared/modules/projects/core/lib/columns-registry'
-
-import { DEFAULT_RECORDS_PAGE_SIZE_OPTIONS } from '@/shared/dal/client/lib/constants'
-import { PROJECT_FIELDS } from '@/shared/modules/projects/core/dal/project-fields'
-
-export const PROJECTS_RECORDS_TABLE_VIEW = {
-  tableId: 'projects',
-  query: {
-    fields: PROJECT_FIELDS,
-    paramPrefix: 'pj',
-    toolbar: ['statusBucket', 'visibility', 'completedAt', 'createdAt'],
-    window: { kind: 'page', pageSize: 20, pageSizeOptions: DEFAULT_RECORDS_PAGE_SIZE_OPTIONS },
-  },
-  columns: ['title', 'city', 'isPublic', 'completedAt', 'createdAt'],
-} as const satisfies EntityTableView<ProjectColumnKey, typeof PROJECT_FIELDS>
-```
-
-Create `src/features/records-management/ui/views/projects-records-view.tsx`:
-
-```tsx
-'use client'
-
-import { PlusIcon } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-
-import { PROJECTS_RECORDS_TABLE_VIEW } from '@/features/records-management/constants/projects-records-table-view'
-import { DataTable } from '@/shared/components/data-table/ui/data-table'
-import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
-import { RecordsPageHeader } from '@/shared/components/records-page-header'
-import { RecordsPageMotionShell } from '@/shared/components/records-page-motion-shell'
-import { RecordsPageShell } from '@/shared/components/records-page-shell'
-import { Button } from '@/shared/components/ui/button'
-import { ROOTS } from '@/shared/config/roots'
-import { useProjectsTable } from '@/shared/modules/projects/core/components/projects-table/use-projects-table'
-
-export function ProjectsRecordsView() {
-  const router = useRouter()
-  const { query, visibility, dataTableProps, dialogs } = useProjectsTable(PROJECTS_RECORDS_TABLE_VIEW)
-
-  return (
-    <RecordsPageMotionShell>
-      {dialogs}
-      <RecordsPageShell
-        header={(
-          <RecordsPageHeader
-            title="Projects"
-            query={query}
-            actions={(
-              <Button size="sm" onClick={() => router.push(ROOTS.dashboard.projects.new())}>
-                <PlusIcon className="mr-2 h-4 w-4" />
-                New Project
-              </Button>
-            )}
-          />
-        )}
-        toolbar={(
-          <QueryToolbar query={query} entityName="projects">
-            <QueryToolbar.Standard searchPlaceholder="Search by title or city…" visibility={visibility} />
-          </QueryToolbar>
-        )}
-        table={<DataTable {...dataTableProps} />}
-      />
-    </RecordsPageMotionShell>
-  )
-}
-```
-
-Replace `src/app/(frontend)/dashboard/(records)/projects/page.tsx` with the meetings page's shape:
-
-```tsx
-import type { SearchParams } from 'nuqs/server'
-
-import { PROJECTS_RECORDS_TABLE_VIEW } from '@/features/records-management/constants/projects-records-table-view'
-import { ProjectsRecordsView } from '@/features/records-management/ui/views/projects-records-view'
-import { loadDataViewQueryInput } from '@/shared/dal/server/lib/query/load-data-view-query-input'
-import { protectDashboardPage } from '@/shared/domains/permissions/lib/protect-dashboard-page'
-import { HydrateClient } from '@/trpc/components/hydrate-client'
-import { prefetch } from '@/trpc/lib/prefetch'
-import { trpc } from '@/trpc/server'
-
-export const dynamic = 'force-dynamic'
-
-interface Props {
-  searchParams: Promise<SearchParams>
-}
-
-export default async function ProjectsPage({ searchParams }: Props) {
-  const authState = await protectDashboardPage()
-
-  // Unauthenticated visitors get the layout's sign-in screen; skip the
-  // prefetch work.
-  if (authState.status === 'authenticated') {
-    const input = await loadDataViewQueryInput(searchParams, PROJECTS_RECORDS_TABLE_VIEW.query)
-    prefetch(trpc.projectsRouter.crud.list.queryOptions(input))
-  }
-
-  return (
-    <HydrateClient>
-      <ProjectsRecordsView />
-    </HydrateClient>
-  )
-}
-```
-
-- [ ] **Step 8: Delete the legacy table**
-
-`git rm` the four files listed under Delete. Run `grep -rn "PortfolioProjectsTable\|ProjectDetailSheet\|PROJECTS_TABLE_QUERY_CONFIG\|PROJECT_FILTER_CONFIG\|project-detail-sheet\|projects-table-query-config\|project-table-filter-config" src` → expected: no hits.
-
-- [ ] **Step 9: Type-check, lint, browser read check**
-
-Run: `pnpm tsc && pnpm lint` → clean.
-
-Browser (super-admin): `/dashboard/projects` loads with the same five columns; the Status, Visibility, Completed and Created filters narrow the list; clicking a sortable header sorts (Visibility too); "New Project" navigates; a row click opens the project page; reloading with filters in the URL hydrates without a refetch flash. The agent dashboard's Active and On Hold project sections still list projects.
-
-- [ ] **Step 10: Commit**
-
-```bash
-git add src/shared/modules/projects/core/constants/status-labels.ts src/shared/modules/projects/core/dal/project-fields.ts src/shared/modules/projects/core/dal/server/project-field-sql.ts src/shared/modules/projects/core/dal/server/queries.ts src/trpc/routers/projects.router/crud.router.ts src/features/agent-dashboard/constants/dashboard-queries.ts src/features/agent-dashboard/ui/components/dashboard-project-section.tsx src/shared/modules/projects/core/lib/columns-registry.tsx src/shared/modules/projects/core/components/projects-table/use-projects-table.tsx src/features/records-management/constants/projects-records-table-view.ts src/features/records-management/ui/views/projects-records-view.tsx "src/app/(frontend)/dashboard/(records)/projects/page.tsx" src/features/project-management/ui/components/table/index.tsx src/features/project-management/ui/components/project-detail-sheet.tsx src/features/project-management/constants/projects-table-query-config.ts src/features/project-management/constants/project-table-filter-config.ts
-git diff --cached --stat
-git commit -m "feat(projects): projects on a field list; the projects entity table and records view replace the portfolio table and sheet
-
-Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
-```
-
----
-
-### Task 12: Shared panel pieces — `useCustomerProfile`, `RecordCustomerPane`, `ProjectMeetingList`
-
-**Files:**
-- Create: `src/shared/entities/customers/hooks/use-customer-profile.ts`
-- Modify: `src/features/records-management/hooks/use-meeting-row-panel-data.ts`
-- Modify: `src/shared/entities/customers/components/profile/customer-profile-modal.tsx:28-30`
-- Modify: `src/shared/entities/meetings/components/create-meeting-form.tsx:58-62`
-- Create: `src/features/records-management/ui/components/record-customer-pane.tsx`
-- Delete: `src/features/records-management/ui/components/meeting-row-panel/meeting-customer-pane.tsx`
-- Modify: `src/features/records-management/ui/components/meeting-row-panel/index.tsx`
-- Create: `src/shared/entities/customers/components/lists/project-meeting-list.tsx`
-- Modify: `src/shared/entities/customers/components/lists/project-entity-card.tsx`
-
-**Interfaces:**
-- Produces: `useCustomerProfile(customerId: string | null | undefined)` (the `getCustomerProfile` query, disabled without an id); `RecordCustomerPane({ customer, isLoading, leadSource? })`; `ProjectMeetingList({ customerId, meetings, onMutationSuccess, onNavigate?, onAssignRep?, highlightMeetingId? })`. No behaviour change.
-
-- [ ] **Step 1: The profile hook, adopted by its callers**
-
-Create `src/shared/entities/customers/hooks/use-customer-profile.ts`:
-
-```ts
-'use client'
-
-import { useQuery } from '@tanstack/react-query'
-
-import { useTRPC } from '@/trpc/helpers'
-
-/** One query key for the customer profile, so every surface that opens a customer shares the cache. */
-export function useCustomerProfile(customerId: string | null | undefined) {
-  const trpc = useTRPC()
-  return useQuery({
-    ...trpc.customerPipelinesRouter.getCustomerProfile.queryOptions({ customerId: customerId ?? '' }),
-    enabled: !!customerId,
-  })
-}
-```
-
-- `use-meeting-row-panel-data.ts`: replace the `trpc` / `customerId` / `useQuery` lines with `const profile = useCustomerProfile(meeting.customerId)`; drop the now-unused imports.
-- `customer-profile-modal.tsx`: `const profileQuery = useCustomerProfile(customerId)`; remove `useQuery` / `useTRPC` only if nothing else in the file uses them.
-- `create-meeting-form.tsx`: `const profileQuery = useCustomerProfile(isProjectType ? customerId : null)`.
-
-- [ ] **Step 2: `RecordCustomerPane`**
-
-Create `src/features/records-management/ui/components/record-customer-pane.tsx`:
-
-```tsx
-'use client'
-
-import type { CustomerOverviewCardData } from '@/shared/entities/customers/components/overview-card'
-import type { LeadSourceOverviewCardSource } from '@/shared/entities/lead-sources/components/overview-card'
-
-import { ExpandedRowPanel } from '@/shared/components/data-table/ui/expanded-row-panel'
-import { CustomerOverviewCard } from '@/shared/entities/customers/components/overview-card'
-
-interface RecordCustomerPaneProps {
-  customer: CustomerOverviewCardData | null
-  isLoading: boolean
-  /** Only rows that carry their lead source pass it (meetings do; proposals and projects don't). */
-  leadSource?: LeadSourceOverviewCardSource | null
-}
-
-export function RecordCustomerPane({ customer, isLoading, leadSource = null }: RecordCustomerPaneProps) {
-  return (
-    <ExpandedRowPanel.Pane title="Customer" isLoading={isLoading}>
-      {!customer
-        ? <p className="text-sm text-muted-foreground">No customer linked</p>
-        : (
-            <CustomerOverviewCard customer={customer} leadSource={leadSource}>
-              <CustomerOverviewCard.ContactActions />
-              <CustomerOverviewCard.LeadSource />
-              <CustomerOverviewCard.Insights />
-              <CustomerOverviewCard.ProfileFields />
-            </CustomerOverviewCard>
-          )}
-    </ExpandedRowPanel.Pane>
-  )
-}
-```
-
-A row with no customer never enables the query (`isLoading` stays false, `customer` stays null), so `hasCustomer` is gone. In `meeting-row-panel/index.tsx` replace the `MeetingCustomerPane` import and element with:
-
-```tsx
-          <RecordCustomerPane customer={customer} isLoading={profile.isLoading} leadSource={meeting.leadSource} />
-```
-
-and `git rm src/features/records-management/ui/components/meeting-row-panel/meeting-customer-pane.tsx`.
-
-- [ ] **Step 3: `ProjectMeetingList`**
-
-Create `src/shared/entities/customers/components/lists/project-meeting-list.tsx` holding the meetings block of `ProjectEntityCard` (its `project.meetings.map(…)` list, unchanged):
-
-```tsx
-'use client'
-
-import type { CustomerProfileProject, CustomerProfileProposal } from '@/shared/entities/customers/types'
-
-import { PlusIcon } from 'lucide-react'
-
-import { Button } from '@/shared/components/ui/button'
-import { Card, CardContent } from '@/shared/components/ui/card'
-import { ROOTS } from '@/shared/config/roots'
-import { useAbility } from '@/shared/domains/permissions/hooks'
-import { MeetingProposalRow } from '@/shared/entities/meetings/components/meeting-proposal-row'
-import { MeetingOverviewCard } from '@/shared/entities/meetings/components/overview-card'
-import { ParticipantsSlot } from '@/shared/entities/meetings/components/participants-slot'
-import { cn } from '@/shared/lib/utils'
-
-interface ProjectMeetingListProps {
-  customerId: string
-  meetings: CustomerProfileProject['meetings']
-  onMutationSuccess: () => void
-  onNavigate?: () => void
-  onAssignRep?: (meetingId: string, currentRepId: string | null) => void
-  highlightMeetingId?: string
-}
-
-export function ProjectMeetingList({ customerId, meetings, onMutationSuccess, onNavigate, onAssignRep, highlightMeetingId }: ProjectMeetingListProps) {
-  const ability = useAbility()
-  const canCreateProposal = ability.can('create', 'Proposal')
-
-  return (
-    <div className="space-y-2.5">
-      {meetings.map(meeting => (
-        <Card key={meeting.id} className={cn('group pt-0 pb-0 gap-0', meeting.id === highlightMeetingId && 'outline-2 outline-primary -outline-offset-2 shadow-sm')}>
-          <CardContent className="p-0">
-            <MeetingOverviewCard
-              meeting={meeting}
-              customerId={customerId}
-              onAssignOwner={onAssignRep ? () => onAssignRep(meeting.id, meeting.ownerId ?? null) : undefined}
-            >
-              <MeetingOverviewCard.Header className="px-3 py-2">
-                <MeetingOverviewCard.Fields fields={[
-                  { field: 'scheduledDate' },
-                  { field: 'type' },
-                  { field: 'outcome' },
-                  { field: 'proposalCount' },
-                ]}
-                />
-                <MeetingOverviewCard.CreatedAt />
-                <MeetingOverviewCard.Actions mode="compact" className="ml-auto opacity-60 hover:opacity-100 transition-opacity" />
-              </MeetingOverviewCard.Header>
-              <div className="grid grid-cols-1 border-t divide-y md:grid-cols-[minmax(0,1fr)_minmax(0,3fr)] md:divide-y-0 md:divide-x">
-                <div className="p-3">
-                  <ParticipantsSlot meetingId={meeting.id} variant="full" entityListVariant="flush" />
-                </div>
-                <div className="p-3">
-                  <MeetingOverviewCard.Proposals
-                    showHeader
-                    entityListVariant="flush"
-                    emptyStateAction={canCreateProposal && (
-                      <Button type="button" variant="outline" size="sm" className="h-7 gap-1 text-xs" asChild>
-                        <a href={`${ROOTS.dashboard.proposals.new()}?meetingId=${meeting.id}`}>
-                          <PlusIcon className="size-3" />
-                          Create proposal
-                        </a>
-                      </Button>
-                    )}
-                    renderProposal={p => (
-                      <MeetingProposalRow
-                        key={p.id}
-                        proposal={p as CustomerProfileProposal}
-                        onMutationSuccess={onMutationSuccess}
-                        onNavigate={onNavigate}
-                      />
-                    )}
-                  />
-                </div>
-              </div>
-            </MeetingOverviewCard>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  )
-}
-```
-
-In `project-entity-card.tsx` replace the `<div className="space-y-2.5">…</div>` inside the "Meetings within this project" block with:
-
-```tsx
-              <ProjectMeetingList
-                customerId={customerId}
-                meetings={project.meetings}
-                onMutationSuccess={onMutationSuccess}
-                onNavigate={onNavigate}
-                onAssignRep={onAssignRep}
-                highlightMeetingId={highlightMeetingId}
-              />
-```
-
-import it, and remove the imports `pnpm lint` then reports unused (`PlusIcon`, `Button`, `MeetingProposalRow`, `MeetingOverviewCard`, `ParticipantsSlot`, `CustomerProfileProposal`, and `canCreateProposal` / `useAbility` if nothing else uses them).
-
-- [ ] **Step 4: Type-check, lint, browser read check (no behaviour change)**
-
-Run: `pnpm tsc && pnpm lint` → clean.
-
-Browser: a meetings row's expanded Customer pane looks as before (lead source line included); a meeting without a customer says "No customer linked"; the customer profile modal's projects list renders its meetings and proposals as before; "Add meeting" with type Project still lists the customer's projects.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add src/shared/entities/customers/hooks/use-customer-profile.ts src/features/records-management/hooks/use-meeting-row-panel-data.ts src/shared/entities/customers/components/profile/customer-profile-modal.tsx src/shared/entities/meetings/components/create-meeting-form.tsx src/features/records-management/ui/components/record-customer-pane.tsx src/features/records-management/ui/components/meeting-row-panel/meeting-customer-pane.tsx src/features/records-management/ui/components/meeting-row-panel/index.tsx src/shared/entities/customers/components/lists/project-meeting-list.tsx src/shared/entities/customers/components/lists/project-entity-card.tsx
-git diff --cached --stat
-git commit -m "refactor(records): one customer-profile hook; the customer pane and a project's meeting list become shared pieces
-
-Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
-```
-
----
-
-### Task 13: Project actions and the projects expanded row
-
-**Files:**
-- Modify: `src/shared/modules/projects/core/constants/actions.ts`
-- Modify: `src/shared/modules/projects/core/hooks/use-project-actions.ts`
-- Modify: `src/shared/modules/projects/core/hooks/use-project-action-configs.ts`
-- Modify: `src/shared/entities/customers/components/lists/project-entity-card.tsx:38-41`
-- Create: `src/features/records-management/ui/components/project-row-panel/index.tsx`
-- Create: `src/features/records-management/ui/components/project-row-panel/project-row-action-bar.tsx`
-- Create: `src/features/records-management/ui/components/project-row-panel/project-row-details.tsx`
-- Create: `src/features/records-management/ui/components/project-row-panel/project-scopes-pane.tsx`
-- Create: `src/features/records-management/ui/components/project-row-panel/project-sales-history-pane.tsx`
-- Modify: `src/features/records-management/ui/views/projects-records-view.tsx`
-
-**Interfaces:**
-- Consumes: `hidden` + `getVisibleActions` (Task 7); `useCustomerProfile`, `RecordCustomerPane`, `ProjectMeetingList` (Task 12); `useProjectsTable` (Task 11); `PROJECT_STATUS_BUCKET_LABELS`.
-- Produces: `PROJECT_ACTIONS.edit` = "Open Project" (primary), `PROJECT_ACTIONS.view` = "View on Site", new `showOnPortfolio` / `hideFromPortfolio`; `useProjectActions().setPortfolioVisibility`; `ProjectEntity.isPublic?`; `ProjectRowPanel({ project, actions })`.
-
-- [ ] **Step 1: The actions**
-
-Replace `PROJECT_ACTIONS` in `src/shared/modules/projects/core/constants/actions.ts` (icons: `CopyIcon, ExternalLinkIcon, EyeIcon, EyeOffIcon, FolderOpenIcon, TrashIcon`):
-
-```ts
-export const PROJECT_ACTIONS = {
-  edit: {
-    id: 'edit',
-    label: 'Open Project',
-    icon: FolderOpenIcon,
-    permission: ['update', 'Project'],
-    primary: true,
-  },
-  view: {
-    id: 'view',
-    label: 'View on Site',
-    icon: ExternalLinkIcon,
-    permission: ['read', 'Project'],
-  },
-  showOnPortfolio: {
-    id: 'showOnPortfolio',
-    label: 'Show on Portfolio',
-    icon: EyeIcon,
-    permission: ['update', 'Project'],
-  },
-  hideFromPortfolio: {
-    id: 'hideFromPortfolio',
-    label: 'Hide from Portfolio',
-    icon: EyeOffIcon,
-    permission: ['update', 'Project'],
-  },
-  duplicate: {
-    id: 'duplicate',
-    label: 'Duplicate',
-    icon: CopyIcon,
-    permission: ['create', 'Project'],
-    separatorBefore: true,
-  },
-  delete: {
-    id: 'delete',
-    label: 'Delete',
-    icon: TrashIcon,
-    permission: ['delete', 'Project'],
-    destructive: true,
-    separatorBefore: true,
-  },
-} as const satisfies Record<string, EntityAction>
-```
-
-- [ ] **Step 2: The mutation and the configs**
-
-In `use-project-actions.ts` add before the `return`:
-
-```ts
-  const setPortfolioVisibility = useMutation(trpc.projectsRouter.crud.update.mutationOptions({
-    onSuccess: (project) => {
-      invalidateProject()
-      toast.success(project.isPublic ? 'Shown on portfolio' : 'Hidden from portfolio')
-    },
-    onError: err => toast.error(err.message || 'Failed to change portfolio visibility'),
-  }))
-```
-
-and return `{ deleteProject, setPortfolioVisibility }`.
-
-In `use-project-action-configs.ts`:
-- `ProjectEntity` gains `/** Absent where the caller's row doesn't carry it (the customer profile); the portfolio actions then stay hidden. */ isPublic?: boolean`;
-- destructure `setPortfolioVisibility` beside `deleteProject`;
-- the configs become (order: open, site, portfolio, delete):
-
-```ts
-  const actions = useMemo((): EntityActionConfig<T>[] => [
-    {
-      action: PROJECT_ACTIONS.edit,
-      onAction: overrides.onEdit ?? defaultEdit,
-    },
-    {
-      action: PROJECT_ACTIONS.view,
-      onAction: overrides.onView ?? defaultView,
-      // A draft's public page is a 404.
-      hidden: entity => entity.isPublic !== true,
-    },
-    {
-      action: PROJECT_ACTIONS.showOnPortfolio,
-      onAction: entity => setPortfolioVisibility.mutate({ id: entity.id, data: { isPublic: true } }),
-      isLoading: setPortfolioVisibility.isPending,
-      hidden: entity => entity.isPublic !== false,
-    },
-    {
-      action: PROJECT_ACTIONS.hideFromPortfolio,
-      onAction: entity => setPortfolioVisibility.mutate({ id: entity.id, data: { isPublic: false } }),
-      isLoading: setPortfolioVisibility.isPending,
-      hidden: entity => entity.isPublic !== true,
-    },
-    {
-      action: PROJECT_ACTIONS.delete,
-      onAction: async (entity) => {
-        const ok = await confirmDelete()
-        if (ok) {
-          deleteProject.mutate({ id: entity.id })
-        }
-      },
-      isLoading: deleteProject.isPending,
-    },
-  ], [overrides.onView, overrides.onEdit, deleteProject, setPortfolioVisibility, confirmDelete])
-```
-
-In `project-entity-card.tsx` change the configs call to `useProjectActionConfigs({ onEdit: handleViewProject })` (its `onView` override would open the dashboard under "View on Site").
-
-- [ ] **Step 3: The expanded row**
-
-Create `src/features/records-management/ui/components/project-row-panel/project-row-action-bar.tsx`:
-
-```tsx
-'use client'
-
-import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
-import type { ProjectRow } from '@/shared/modules/projects/core/lib/columns-registry'
-
-import { useMemo } from 'react'
-
-import { withToolbarRoles } from '@/shared/components/entities/entity-actions/lib/with-toolbar-roles'
-import { EntityActionMenu } from '@/shared/components/entities/entity-actions/ui/entity-action-menu'
-
-interface ProjectRowActionBarProps {
-  project: ProjectRow
-  actions: EntityActionConfig<ProjectRow>[]
-}
-
-export function ProjectRowActionBar({ project, actions }: ProjectRowActionBarProps) {
-  const toolbarActions = useMemo(
-    () => withToolbarRoles(actions, { primaryId: 'edit', promotedIds: ['showOnPortfolio', 'hideFromPortfolio', 'view'] }),
-    [actions],
-  )
-  return <EntityActionMenu entity={project} actions={toolbarActions} mode="toolbar" />
-}
-```
-
-Create `project-row-details.tsx`:
-
-```tsx
-'use client'
-
-import type { ProjectRow } from '@/shared/modules/projects/core/lib/columns-registry'
-
-import { format } from 'date-fns'
-
-import { Badge } from '@/shared/components/ui/badge'
-import { deriveProjectStatusBucket } from '@/shared/constants/enums/pipelines'
-import { cn } from '@/shared/lib/utils'
-import { PROJECT_STATUS_BUCKET_LABELS } from '@/shared/modules/projects/core/constants/status-labels'
-
-export function ProjectRowDetails({ project }: { project: ProjectRow }) {
-  const location = project.state ? `${project.city}, ${project.state}` : project.city
-  return (
-    <>
-      <Badge className={cn('text-xs', project.isPublic ? 'bg-emerald-500/15 text-emerald-700' : 'bg-muted text-muted-foreground')}>
-        {project.isPublic ? 'Public' : 'Draft'}
-      </Badge>
-      <span className="font-medium text-foreground">{PROJECT_STATUS_BUCKET_LABELS[deriveProjectStatusBucket(project.pipelineStage)]}</span>
-      {project.pipelineStage && <span>{project.pipelineStage.replace(/_/g, ' ')}</span>}
-      {location && <span>{location}</span>}
-      {project.completedAt && <span>{`Completed ${format(new Date(project.completedAt), 'MMM d, yyyy')}`}</span>}
-    </>
-  )
-}
-```
-
-Create `project-scopes-pane.tsx`:
-
-```tsx
-'use client'
-
-import type { ProjectRow } from '@/shared/modules/projects/core/lib/columns-registry'
-
-import { useMemo } from 'react'
-
-import { ExpandedRowPanel } from '@/shared/components/data-table/ui/expanded-row-panel'
-import { useConstructionCatalog } from '@/shared/modules/construction/core/hooks/use-construction-catalog'
-import { resolveScopes } from '@/shared/modules/construction/core/lib/resolve-catalog-ids'
-
-export function ProjectScopesPane({ project }: { project: ProjectRow }) {
-  const catalog = useConstructionCatalog()
-  const trades = useMemo(() => {
-    const scopesByTrade = new Map<string, string[]>()
-    for (const scope of resolveScopes(project.scopeIds, catalog).found) {
-      scopesByTrade.set(scope.tradeId, [...(scopesByTrade.get(scope.tradeId) ?? []), scope.name])
-    }
-    return [...scopesByTrade].map(([tradeId, scopes]) => ({ tradeId, name: catalog.tradesById.get(tradeId)?.name ?? 'Unknown trade', scopes }))
-  }, [project.scopeIds, catalog])
-
-  return (
-    <ExpandedRowPanel.Pane title="Trades and scopes" isLoading={catalog.isLoading}>
-      {trades.length === 0
-        ? <p className="text-sm text-muted-foreground">No scopes recorded</p>
-        : (
-            <ul className="flex flex-col gap-2">
-              {trades.map(trade => (
-                <li key={trade.tradeId}>
-                  <span className="text-sm font-medium">{trade.name}</span>
-                  <span className="block text-xs text-muted-foreground">{trade.scopes.join(', ')}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-    </ExpandedRowPanel.Pane>
-  )
-}
-```
-
-Create `project-sales-history-pane.tsx`:
-
-```tsx
-'use client'
-
-import type { CustomerProfileProject } from '@/shared/entities/customers/types'
-
-import { ExpandedRowPanel } from '@/shared/components/data-table/ui/expanded-row-panel'
-import { ProjectMeetingList } from '@/shared/entities/customers/components/lists/project-meeting-list'
-
-interface ProjectSalesHistoryPaneProps {
-  customerId: string | null
-  meetings: CustomerProfileProject['meetings']
-  isLoading: boolean
-  onMutationSuccess: () => void
-  className?: string
-}
-
-export function ProjectSalesHistoryPane({ customerId, meetings, isLoading, onMutationSuccess, className }: ProjectSalesHistoryPaneProps) {
-  return (
-    <ExpandedRowPanel.Pane title="Sales history" isLoading={isLoading} className={className}>
-      {!customerId || meetings.length === 0
-        ? <p className="text-sm text-muted-foreground">No meetings linked to this project</p>
-        : <ProjectMeetingList customerId={customerId} meetings={meetings} onMutationSuccess={onMutationSuccess} />}
-    </ExpandedRowPanel.Pane>
-  )
-}
-```
-
-Create `index.tsx`:
-
-```tsx
-'use client'
-
-import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
-import type { ProjectRow } from '@/shared/modules/projects/core/lib/columns-registry'
-
-import { useMemo } from 'react'
-
-import { ProjectRowActionBar } from '@/features/records-management/ui/components/project-row-panel/project-row-action-bar'
-import { ProjectRowDetails } from '@/features/records-management/ui/components/project-row-panel/project-row-details'
-import { ProjectSalesHistoryPane } from '@/features/records-management/ui/components/project-row-panel/project-sales-history-pane'
-import { ProjectScopesPane } from '@/features/records-management/ui/components/project-row-panel/project-scopes-pane'
-import { RecordCustomerPane } from '@/features/records-management/ui/components/record-customer-pane'
-import { ExpandedRowPanel } from '@/shared/components/data-table/ui/expanded-row-panel'
-import { useCustomerProfile } from '@/shared/entities/customers/hooks/use-customer-profile'
-
-interface ProjectRowPanelProps {
-  project: ProjectRow
-  actions: EntityActionConfig<ProjectRow>[]
-}
-
-export function ProjectRowPanel({ project, actions }: ProjectRowPanelProps) {
-  const profile = useCustomerProfile(project.customerId)
-
-  const meetings = useMemo(() => {
-    const linked = profile.data?.projects.find(p => p.id === project.id)?.meetings ?? []
-    const soldIt = (meeting: (typeof linked)[number]) => meeting.proposals.some(proposal => proposal.status === 'approved')
-    // The meeting that sold the project leads.
-    return [...linked].sort((a, b) => Number(soldIt(b)) - Number(soldIt(a)))
-  }, [profile.data, project.id])
-
-  return (
-    <ExpandedRowPanel>
-      <ExpandedRowPanel.ActionBar>
-        <ProjectRowActionBar project={project} actions={actions} />
-      </ExpandedRowPanel.ActionBar>
-      <ExpandedRowPanel.Details>
-        <ProjectRowDetails project={project} />
-      </ExpandedRowPanel.Details>
-      {profile.isError && (
-        <ExpandedRowPanel.Error
-          title="Couldn't load this project's customer"
-          description="Trades and scopes still show; retry to load the customer and sales history."
-          onRetry={() => void profile.refetch()}
-        />
-      )}
-      {/* Scopes come from the row itself, so a failed profile read hides only the panes that need it. */}
-      <ExpandedRowPanel.Panes className={profile.isError ? undefined : '@min-[600px]:grid-cols-2 @min-[900px]:grid-cols-[250px_minmax(0,1fr)_minmax(0,1.15fr)]'}>
-        {!profile.isError && <RecordCustomerPane customer={profile.data?.customer ?? null} isLoading={profile.isLoading} />}
-        <ProjectScopesPane project={project} />
-        {!profile.isError && (
-          <ProjectSalesHistoryPane
-            customerId={project.customerId}
-            meetings={meetings}
-            isLoading={profile.isLoading}
-            onMutationSuccess={() => void profile.refetch()}
-            className="@min-[600px]:col-span-2 @min-[900px]:col-span-1"
-          />
-        )}
-      </ExpandedRowPanel.Panes>
-    </ExpandedRowPanel>
-  )
-}
-```
-
-In `projects-records-view.tsx` add the imports `import type { ProjectsExpandedRowContext } from '@/shared/modules/projects/core/components/projects-table/use-projects-table'`, `import type { ProjectRow } from '@/shared/modules/projects/core/lib/columns-registry'`, `import { ProjectRowPanel } from '@/features/records-management/ui/components/project-row-panel'`, add above the component:
-
-```tsx
-// Module level keeps its identity stable, so the table's props don't churn.
-function renderProjectRowPanel(row: ProjectRow, { actions }: ProjectsExpandedRowContext) {
-  return <ProjectRowPanel project={row} actions={actions} />
-}
-```
-
-and pass it: `useProjectsTable(PROJECTS_RECORDS_TABLE_VIEW, { renderExpandedRow: renderProjectRowPanel })`.
-
-- [ ] **Step 4: Type-check, lint, browser read check**
-
-Run: `pnpm tsc && pnpm lint` → clean.
-
-Browser (super-admin, then agent): on `/dashboard/projects` a row click expands the row. A draft project's bar shows Open Project, Show on Portfolio and More (Delete); a public one shows Open Project, Hide from Portfolio, View on Site. Details show public/draft, status, stage, location, completed date. Panes: Customer (none for a pure-portfolio project), Trades and scopes, Sales history (the project's meetings, the approved one first). The customer profile modal's project card menu shows Open Project and Delete only. As an agent the same bar shows (Show/Hide included — they can already toggle Public on the edit form), without Delete. Toggling visibility is a write: only on a project the owner designates.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add src/shared/modules/projects/core/constants/actions.ts src/shared/modules/projects/core/hooks/use-project-actions.ts src/shared/modules/projects/core/hooks/use-project-action-configs.ts src/shared/entities/customers/components/lists/project-entity-card.tsx src/features/records-management/ui/components/project-row-panel/index.tsx src/features/records-management/ui/components/project-row-panel/project-row-action-bar.tsx src/features/records-management/ui/components/project-row-panel/project-row-details.tsx src/features/records-management/ui/components/project-row-panel/project-scopes-pane.tsx src/features/records-management/ui/components/project-row-panel/project-sales-history-pane.tsx src/features/records-management/ui/views/projects-records-view.tsx
-git diff --cached --stat
-git commit -m "feat(projects): expanded row with customer, scopes and sales history; show or hide on the portfolio per row
-
-Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
-```
-
----
-
-### Task 14: Projects bulk actions
-
-**Files:**
-- Create: `src/shared/modules/projects/core/constants/bulk-skip-labels.ts`
-- Modify: `src/shared/modules/projects/core/hooks/use-project-actions.ts`
-- Create: `src/shared/modules/projects/core/hooks/use-project-bulk-action-configs.tsx`
-- Modify: `src/shared/modules/projects/core/components/projects-table/use-projects-table.tsx`
-
-**Interfaces:**
-- Consumes: `projectsRouter.bulk.{delete,update}` (Task 6); `toastBulkActionResult`, `BULK_NOT_FOUND_LABELS`, `BULK_ACTION_PERMISSION` (Tasks 7, 9).
-- Produces: `PROJECT_BULK_DELETE_SKIP_LABELS`; `useProjectActions()` gains `bulkDeleteProjects`, `bulkSetPortfolioVisibility`; `useProjectBulkActionConfigs(): { bulkActions, dialogs }`.
-
-- [ ] **Step 1: Labels and mutations**
-
-Create `src/shared/modules/projects/core/constants/bulk-skip-labels.ts`:
-
-```ts
-import type { AppRouterOutputs } from '@/trpc/routers/app'
-
-import { BULK_NOT_FOUND_LABELS } from '@/shared/components/entities/entity-actions/constants/bulk-skip-labels'
-
-type ProjectBulkDeleteSkip = AppRouterOutputs['projectsRouter']['bulk']['delete']['skipped'][number]['reason']
-
-export const PROJECT_BULK_DELETE_SKIP_LABELS = {
-  ...BULK_NOT_FOUND_LABELS,
-  onPortfolio: 'on the portfolio',
-  linkedToMeeting: 'linked to a meeting',
-} as const satisfies Record<ProjectBulkDeleteSkip, string>
-```
-
-In `use-project-actions.ts` add the imports for `toastBulkActionResult`, `BULK_NOT_FOUND_LABELS`, `PROJECT_BULK_DELETE_SKIP_LABELS`, and before the `return`:
-
-```ts
-  const bulkDeleteProjects = useMutation(trpc.projectsRouter.bulk.delete.mutationOptions({
-    onSuccess: (result) => {
-      invalidateProject()
-      toastBulkActionResult(result, 'Deleted', PROJECT_BULK_DELETE_SKIP_LABELS)
-    },
-    onError: err => toast.error(err.message || 'Failed to delete projects'),
-  }))
-
-  const bulkSetPortfolioVisibility = useMutation(trpc.projectsRouter.bulk.update.mutationOptions({
-    onSuccess: (result) => {
-      invalidateProject()
-      toastBulkActionResult(result, 'Updated', BULK_NOT_FOUND_LABELS)
-    },
-    onError: err => toast.error(err.message || 'Failed to change portfolio visibility'),
-  }))
-```
-
-returning `{ deleteProject, setPortfolioVisibility, bulkDeleteProjects, bulkSetPortfolioVisibility }`.
-
-- [ ] **Step 2: The bulk configs**
-
-Create `src/shared/modules/projects/core/hooks/use-project-bulk-action-configs.tsx`:
-
-```tsx
-'use client'
-
-import type { EntityActionConfig, RowSelection } from '@/shared/components/entities/entity-actions/types'
-
-import { useMemo, useState } from 'react'
-
-import { BULK_ACTION_PERMISSION } from '@/shared/components/entities/entity-actions/constants/bulk-action-permission'
-import { useConfirm } from '@/shared/hooks/use-confirm'
-import { PROJECT_ACTIONS } from '@/shared/modules/projects/core/constants/actions'
-
-import { useProjectActions } from './use-project-actions'
-
-export function useProjectBulkActionConfigs() {
-  const { bulkDeleteProjects, bulkSetPortfolioVisibility } = useProjectActions()
-  // The confirm copy is read when the dialog renders, so the count set just before `confirm()` shows.
-  const [pendingCount, setPendingCount] = useState(0)
-  const [DeleteConfirmDialog, confirmDelete] = useConfirm({
-    title: `Delete ${pendingCount} ${pendingCount === 1 ? 'project' : 'projects'}?`,
-    message: 'Public projects and projects linked to a meeting are skipped. Media goes with the rest. This cannot be undone.',
-  })
-
-  const bulkActions = useMemo((): EntityActionConfig<RowSelection>[] => [
-    {
-      action: { ...PROJECT_ACTIONS.showOnPortfolio, permission: BULK_ACTION_PERMISSION },
-      isLoading: bulkSetPortfolioVisibility.isPending,
-      onAction: selection => bulkSetPortfolioVisibility.mutate({ ids: selection.ids, data: { isPublic: true } }, { onSuccess: selection.clear }),
-    },
-    {
-      action: { ...PROJECT_ACTIONS.hideFromPortfolio, permission: BULK_ACTION_PERMISSION },
-      isLoading: bulkSetPortfolioVisibility.isPending,
-      onAction: selection => bulkSetPortfolioVisibility.mutate({ ids: selection.ids, data: { isPublic: false } }, { onSuccess: selection.clear }),
-    },
-    {
-      action: { ...PROJECT_ACTIONS.delete, permission: BULK_ACTION_PERMISSION },
-      isLoading: bulkDeleteProjects.isPending,
-      onAction: async (selection) => {
-        setPendingCount(selection.ids.length)
-        if (await confirmDelete()) {
-          bulkDeleteProjects.mutate({ ids: selection.ids }, { onSuccess: selection.clear })
-        }
-      },
-    },
-  ], [bulkDeleteProjects, bulkSetPortfolioVisibility, confirmDelete])
-
-  return { bulkActions, dialogs: <DeleteConfirmDialog /> }
-}
-```
-
-- [ ] **Step 3: Wire the table**
-
-In `use-projects-table.tsx`: import `useProjectBulkActionConfigs`; add `const { bulkActions, dialogs: bulkDialogs } = useProjectBulkActionConfigs()` after the action configs; add `bulkActions,` to `dataTableProps`; return `dialogs: (<><DeleteConfirmDialog />{bulkDialogs}</>)`.
-
-- [ ] **Step 4: Type-check, lint, browser check**
-
-Run: `pnpm tsc && pnpm lint` → clean.
-
-Browser (super-admin): ticking projects shows "N selected · Show on Portfolio · Hide from Portfolio · Delete · Clear"; Delete asks "Delete N projects?" — Cancel. As an agent: no checkboxes (Review Focus 1). Owner-designated projects only: bulk Hide on two public projects → "Updated 2", their public pages 404 after a reload; bulk Delete on a meeting-linked project and a draft pure-portfolio project → "Deleted 1 · skipped 1 (linked to a meeting)".
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add src/shared/modules/projects/core/constants/bulk-skip-labels.ts src/shared/modules/projects/core/hooks/use-project-actions.ts src/shared/modules/projects/core/hooks/use-project-bulk-action-configs.tsx src/shared/modules/projects/core/components/projects-table/use-projects-table.tsx
-git diff --cached --stat
-git commit -m "feat(projects): bulk show, hide and delete on the records table; public and meeting-linked projects are skipped
-
-Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
-```
+Tasks 11–13 are replaced by `docs/superpowers/plans/2026-10-01-projects-entity-table.md`. Task 14 (projects bulk: show, hide and delete on the records table, `useProjectBulkActionConfigs`) moves to D49's all-tables bulk step and is planned there against that plan's `useProjectsTable`, with the corrections above: `useStableCallbacks`, `useConfirm` copy per call, `describeBulkActionResult`, and `PROJECT_DELETE_SKIP_LABELS` (Task 6). The removed text is in git history (`f49749f8`).
 
 ---
 
@@ -3247,6 +2342,8 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 - Modify: `docs/plans/2026-09-26-records-management-epic.md`
 - Modify: `docs/superpowers/specs/2026-09-28-records-bulk-actions-and-entity-tables-design.md`
 
+Re-read each file first: the projects plan's hand-off (its Task 9) and later R2/R3 work edit the same tracker rows. Edit only what this plan built.
+
 - [ ] **Step 1: Stale deprecation text**
 
 In `data-table/types.ts`, replace the `@deprecated` block above `DataTableFilterConfig` with:
@@ -3254,7 +2351,7 @@ In `data-table/types.ts`, replace the `@deprecated` block above `DataTableFilter
 ```ts
 /**
  * @deprecated No table filters on the client any more: tables read through `useDataViewQuery` and
- * `<QueryToolbar>`. Kept only until DataTable's client-filter path is deleted (records tracker O11).
+ * `<QueryToolbar>`. Kept only until DataTable's client-filter path is deleted.
  */
 ```
 
@@ -3262,21 +2359,26 @@ In `use-table-url-filters.ts`, replace the `@deprecated` lead line with `@deprec
 
 - [ ] **Step 2: Glossary**
 
-In `CONTEXT.md:62` (Setter row), replace the code cell `\`meetings.setBy\` (planned, analytics Spec D; not built)` with `\`meetings.setBy\` · captured on every add-a-meeting form; super-admins change it per row or in bulk`.
+In `CONTEXT.md:62` (Setter row), replace the code cell `\`meetings.setBy\` (planned, analytics Spec D; not built)` with `\`meetings.setBy\` · picked on the add-meeting form, else the meeting's creator; kept by a duplicate and a reschedule; only super-admins change it, per row or in bulk`.
 
 - [ ] **Step 3: Records tracker**
 
 In `docs/plans/2026-09-26-records-management-epic.md`:
-- status line: R4 projects and O8 (meetings, projects, campaign leads) built on local `main` (list the commit range); R3 proposals after the approval session;
-- R4 row → `[x]` with the commit range; O8 row → `built (meetings, projects, campaign leads); proposals with R3`;
-- H2: replace `loadPaginatedQueryInput` / `usePaginatedQuery` with `loadDataViewQueryInput` / `useDataViewQuery`;
-- add two open items:
-  - **O10** — legacy query path retirement: after R3 moves proposals onto a field list, delete `buildFilterWhere`, `buildOrderBy` and `loadPaginatedQueryInput`; moving campaign leads onto a field list (campaigns and lead-source option sources keyed by id) retires `usePaginatedQuery`, `fromPaginatedQuery` and `paginatedQueryInput` (the filtering plan's Task 21 step 5.3 follow-up).
-  - **O11** — `DataTable`'s client-side filter path (`filterConfig`, `DataTableFilterBar`, time presets, `getPaginationRowModel`) has no callers; delete it.
+- O8 row → built for the tables this step covered (list the commit range);
+- H2: replace `loadPaginatedQueryInput` / `usePaginatedQuery` with `loadDataViewQueryInput` / `useDataViewQuery` if it still names them;
+- if no item covers it yet, add one: `DataTable`'s client-side filter path (`filterConfig`, `DataTableFilterBar`, time presets, `getPaginationRowModel`) has no callers; delete it. (The legacy query path's deletion is already D49's last step.)
+
+D42, D47, spec §1 and §4.4 already record that a duplicate keeps the setter (fixed 2026-10-02).
 
 - [ ] **Step 4: Spec**
 
-In the spec, add under the header a `> **Plan:** \`docs/superpowers/plans/2026-09-29-records-bulk-actions-setter-projects.md\` (B1–B5, B7 partial; B6 after the approval session). Plan-time settlements 1–9 amend §4.5 (\`SetterPicker\`; Set Setter behind an opt-in in \`useMeetingActionConfigs\`), §4.2 (the invariant runs for every origin), §5.3–5.4 (bulk permission constant; promoted pickers; state-level pruning) and §7 (\`ProjectEntityCard\` drops \`onView\`; the visibility sort id).` line, and change §4.5's `InternalUserPicker` bullets to describe `SetterPicker` as built.
+In the spec, add under the header a `> **Plan:** \`docs/superpowers/plans/2026-09-29-records-bulk-actions-setter-projects.md\` (setter, bulk server, selection, meetings and campaign-leads bulk; projects moved to \`2026-10-01-projects-entity-table.md\`).` line. Mirror the plan-time settlements into the text they amend:
+- §4.2: the invariant runs for every origin; the role lists derive from CASL (settlements 3, 13);
+- §4.4: an unpicked setter is the creator (D53); the lead-sources admin and public intake rows leave for O10 (D56); only super-admins change a setter (D54);
+- §5.2 and §11: module reads go through `<m>Service.queries` (D55); customers' bulk leaf is built (Task 6); campaign leads stays on the legacy query path (D57);
+- §4.5: `SetterPicker` and `SetterSelect` on `UserCommandItem` replace the `InternalUserPicker` bullets; Set Setter as the owner decided (settlements 1, 2);
+- §5.2: the builders take `spec` and `schemas.id`; skip reasons come from each entity's labels (settlements 11, 12);
+- §5.3–5.4: the bulk permission constant, promoted pickers, state-level pruning (settlements 4–6).
 
 - [ ] **Step 5: Verify and commit**
 
@@ -3284,18 +2386,16 @@ Run: `pnpm tsc && pnpm lint` → clean.
 
 ```bash
 git add src/shared/components/data-table/types.ts src/shared/components/data-table/hooks/use-table-url-filters.ts CONTEXT.md docs/plans/2026-09-26-records-management-epic.md docs/superpowers/specs/2026-09-28-records-bulk-actions-and-entity-tables-design.md
-git diff --cached --stat
-git commit -m "docs(records): bulk actions, setter and projects table shipped; legacy query and client-filter clean-ups tracked
+git commit -m "docs(records): setter and bulk actions shipped; spec and tracker follow the plan-time settlements
 
-Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/shared/components/data-table/types.ts src/shared/components/data-table/hooks/use-table-url-filters.ts CONTEXT.md docs/plans/2026-09-26-records-management-epic.md docs/superpowers/specs/2026-09-28-records-bulk-actions-and-entity-tables-design.md
+git show --stat HEAD
 ```
-
-(If the owner has not yet committed the spec, tracker and handoff as a docs commit of their own, ask before staging those files here.)
 
 ---
 
 ## Self-review notes (kept for the executor)
 
-- **Spec coverage.** §4.1 → Task 1; §4.2 → Tasks 1–2; §4.3 → Task 2; §4.4 → Tasks 1, 3; §4.5 → Tasks 2, 3, 9; §5.1–5.2 → Tasks 4–6; §5.3 → Task 8; §5.4 → Tasks 7, 9, 14; §5.5 → Tasks 9, 14; §6 → not in this plan (B6); §7 → Tasks 11–14; §8 → Tasks 11–12 (hook-only entity tables, `RecordCustomerPane`, `useCustomerProfile`); §9 → Task 10; §10 → Tasks 4, 5, 9 (toasts); §11 → Global Constraints + Task 15; §12 → every task's verification.
-- **Type consistency.** `RowSelection` (Task 7) is the entity of every bulk config (Tasks 9, 10, 14) and of `DataTableProps.bulkActions` (Task 8). `BulkActionResult` (Task 4) is what `bulkDeleteProcedure` / `bulkUpdateProcedure` return (Task 5) and what `toastBulkActionResult` formats (Task 9). `MEETING_BULK_DELETE_SKIP_LABELS` and `PROJECT_BULK_DELETE_SKIP_LABELS` are typed against the router outputs, so a renamed skip reason fails `pnpm tsc`. `ProjectListInput` (Task 11) replaces `ProjectsListInput` everywhere. `useMeetingsTable` / `useProjectsTable` return the same four-key shape.
-- **Order.** Task 5 needs Task 1's column (the update schema must contain `setBy`); Task 9 needs Tasks 2, 3, 5, 7, 8; Task 10 needs Tasks 7, 8; Task 13 needs Tasks 7, 11, 12; Task 14 needs Tasks 6, 8, 9. B2 (Tasks 4–6) can run in parallel with Task 3.
+- **Spec coverage.** §4.1 → Task 1; §4.2 → Tasks 1–2; §4.3 → Task 2; §4.4 → Tasks 1, 3; §4.5 → Tasks 2, 3, 9; §5.1–5.2 → Tasks 4–6; §5.3 → Task 8; §5.4 → Tasks 7, 9; §5.5 → Task 9; §6 → R3; §7 → the projects plan, plus projects bulk at D49's step; §8 → the projects plan (shared hook and records page; no `RecordCustomerPane`, D51); §9 → Task 10; §10 → Tasks 4, 5, 9 (toasts); §11 → Global Constraints + Task 15; §12 → every task's verification.
+- **Type consistency.** `RowSelection` (Task 7) is the entity of every bulk config (Tasks 9, 10) and of the table's bulk prop (Task 8). `BulkActionResult` (Task 4) is what `bulkDeleteProcedure` / `bulkUpdateProcedure` return (Task 5) and what `describeBulkActionResult` reads (Task 9). Each entity's `*_DELETE_SKIP_LABELS` keys are its skip-reason type, which its router's `classify` returns (Tasks 5, 6), so a renamed reason fails `pnpm tsc`.
+- **Order.** Task 5 needs Task 1's column (the update schema must contain `setBy`); Task 9 needs Tasks 2, 3, 5, 7, 8 and the projects plan's Task 3; Task 10 needs Tasks 7 and 8. B2 (Tasks 4–6) can run in parallel with Task 3. Task 6's projects half runs after the projects plan's Task 4 (both edit `projects.router/crud.router.ts` and `projects/core/dal/server/queries.ts`).

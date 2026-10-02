@@ -26,7 +26,7 @@
 
 **Success criteria**
 - A super-admin ticks meetings, proposals, projects or campaign leads and runs each action in §5.1; skipped rows are reported with their reason; agents and dispatchers see no checkboxes.
-- Every add-a-meeting surface records a setter per §4.4; duplicating a meeting leaves the setter empty; rescheduling keeps it.
+- Every add-a-meeting surface records a setter per §4.4; duplicating and rescheduling a meeting both keep its setter (owner, 2026-10-02: "it's still their lead").
 - The projects records page (and, with B6, the proposals one) runs on `useDataViewQuery`. `PortfolioProjectsTable`, `ProjectDetailSheet`, `MeetingsTable` and the projects legacy query/filter configs are gone; `project-management` keeps no records table (D11). B6 does the same for `PastProposalsTable` and `proposal-flow`.
 - `pnpm tsc` and `pnpm lint` are clean.
 
@@ -101,7 +101,7 @@ B1–B5 and B7's projects half are planned now; B6 is planned after the approval
 
 | Path | Setter |
 |---|---|
-| **Duplicate** (`crud.ts:134-146`) | `'setBy'` joins `duplicate.exclude`: a duplicate is a fresh sit. No server default exists, so `create.before` (which runs on duplicate) leaves it empty. |
+| **Duplicate** (`crud.ts:132-151`) | `'setBy'` stays off `duplicate.exclude`, so the engine copies it: the lead is still the setter's (owner, 2026-10-02; earlier text had a duplicate clear it as a fresh sit). |
 | **Reschedule** (`meetings.router/business.router.ts:120-131`) | `setBy: original.setBy`: the same sit. |
 | **`CreateMeetingForm`** (`shared/entities/meetings/components/create-meeting-form.tsx`) — pipeline kanban drag to "meeting scheduled", kanban card "Schedule Meeting", customer profile "Add meeting", customer meetings tab "Add Meeting" | (D47) A viewer who can `assign Meeting` (super-admin) gets an `InternalUserPicker` over setters (default self, "No setter" allowed); agents and dispatchers see "Set by: you" read-only and send their own id. |
 | **Lead-sources admin "Add customer"** (`add-customer-sheet.tsx:90-128`, super-admin) | Setter picker. `customersRouter.business.createFromIntake` passes `setBy` to `ingestLead`'s meeting branch only when the session can `assign Meeting`, and refuses it otherwise. |

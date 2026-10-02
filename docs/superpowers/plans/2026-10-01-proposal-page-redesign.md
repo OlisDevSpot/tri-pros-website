@@ -2087,11 +2087,11 @@ The imports this needs:
 
 Chips are shown as stored strings. If a field's stored value is an enum key, map it through the label constant that `ProfileCard` / `CUSTOMER_OVERVIEW_PROFILE_FIELDS` already uses for that field (open `customer-overview-profile-fields.ts` and reuse its formatter). Add `Actions`, `Notes` and `PresentableInsights` to the compound export.
 
-3. The existing callsite (`features/records-management/ui/components/meeting-row-panel/meeting-customer-pane.tsx`) passes no new props and keeps working. Confirm with `pnpm tsc`.
+3. `CustomerOverviewCard` has no other callsite (the records meeting-row customer pane was removed by the owner on 2026-10-01), so the cockpit is its only consumer. Confirm with `grep -rn "CustomerOverviewCard" src` and `pnpm tsc`.
 
 - [ ] **Step 5: Verify and commit**
 
-Run `pnpm tsc` and `pnpm lint`. Open the records page (meetings, expand a row) and screenshot the customer pane at 1440. It should look unchanged.
+Run `pnpm tsc` and `pnpm lint`. Open the proposals table and a meeting card on the dashboard and screenshot both at 1440: their proposal and meeting cards must look unchanged.
 
 ```bash
 git add src/shared/components/entities/entity-card/entity-card.tsx src/shared/entities/customers/constants/presentable-insight-fields.ts src/shared/modules/proposals/core/components/overview-card.tsx src/shared/entities/customers/components/overview-card.tsx src/shared/entities/meetings/components/overview-card.tsx

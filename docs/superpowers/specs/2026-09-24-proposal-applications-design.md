@@ -238,6 +238,27 @@ The repo has no test runner. Each task is verified with `pnpm tsc` and `pnpm lin
 6. **Age resolver:** date of birth set gives a derived age; date of birth unset gives `age`. The contract envelope's senior check reads the resolved value.
 7. **Permissions:** a dispatcher cannot reach `proposals.applications.*`. An agent outside the proposal's visibility gets `not-found`.
 
+## 14. Drift since approval — checked against the code on 2026-10-01; settle these when planning
+
+Nothing in this spec is built yet. `programs.ts`, `qualify-programs.ts` and `energy-trades.ts` are still in `features/meeting-flow`, and `entities/applications` and the `Application` grants are unchanged. Rulings made after this spec change how the plan is laid out:
+
+1. **Service layout (modules consolidation, 2026-09-29).**
+   - CRUD slots stay on the unit service, and reads go under `.queries`.
+   - Cross-entity verbs go in a `business` child service (never a one-verb `…Service`). `approve` and `revoke` write incentives and re-run the rollup, so they are cross-entity.
+   - Rules true of every row stay in crud hooks: the `delete.after` rollup, and status moves only through the verbs.
+   - The unit reaches its parent proposal through the proposals module's DAL, not `proposalService`. This avoids an import cycle; `incentives.replace → proposalService.getById` is the cycle that already exists.
+   - Ask the owner at plan time where `.business` sits for a unit; it has only been ruled for root services.
+2. **Reaching the customer (§9) depends on proposal-foundations Task 7.**
+   - Proposals have no `customer_id`.
+   - `proposals.meeting_id` is still `ON DELETE SET NULL` (`db/schema/proposals.ts`) until Task 7 makes it `RESTRICT`.
+   - Until then, a proposal can lose its meeting and therefore its customer. `saveStep` must refuse shared-fact writes on such a proposal (`precondition-failed: proposal_has_no_meeting`), or the plan must schedule this work after Task 7.
+3. **One profile write path.** The customers module spec (`2026-09-29-customers-module-design.md`) makes `customer_profiles` writes one scoped path with an optional meeting broadcast. Its Phase 0 fixes the meeting-flow profile write, which currently takes a client `customerId` under `SYSTEM_CONTEXT`. §9 uses that path and must not copy the meeting-flow router.
+4. **Meetings bulk delete.** The records bulk spec (`2026-09-28-records-bulk-actions-and-entity-tables-design.md`) skips meetings with `hasApplications` because meeting deletes cascade applications. That stops being true once applications belong to proposals, so drop the clause. It isn't built yet, so nothing in code needs changing.
+5. **Homeowner visibility of granted incentives.**
+   - On the redesigned proposal page (`2026-10-01-proposal-page-design.md`, D19), global incentives render in "Applies to the whole project", and that includes rows an approval wrote.
+   - Its R1 leak means the token path still sends incentive `notes` to homeowners until H10 (#285 / spec F) ships. Until then, the review page's incentive editor treats `notes` as text the homeowner will read.
+6. **Binding per scope item (A13)** waits on W4. The W4 spec is awaiting owner review, and the single pricing-mode ruling blocks it.
+
 ---
 
 ## Appendix A — §6 of the multi-proposal meeting-flow tracker, moved verbatim (2026-09-24)
