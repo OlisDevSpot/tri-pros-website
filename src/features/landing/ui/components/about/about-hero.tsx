@@ -45,9 +45,9 @@ export function AboutHero() {
               <motion.span
                 variants={FADE_UP}
                 transition={STAT_TRANSITION}
-                className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-secondary font-semibold"
+                className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-primary font-semibold"
               >
-                <span className="h-px w-8 bg-secondary/70" aria-hidden />
+                <span className="h-px w-8 bg-primary/70" aria-hidden />
                 Our Story
               </motion.span>
 
@@ -58,7 +58,7 @@ export function AboutHero() {
               >
                 A Company Built on Values, Ethics, and
                 {' '}
-                <span className="text-secondary">Master Craftsmanship</span>
+                <span className="text-primary">Master Craftsmanship</span>
               </motion.h1>
 
               <motion.p
@@ -131,7 +131,7 @@ export function AboutHero() {
               className="relative aspect-4/5 lg:aspect-auto lg:h-144 xl:h-160"
             >
               {/* Architectural offset frame */}
-              <div className="absolute -inset-3 sm:-inset-4 border border-secondary/40 rounded-2xl hidden sm:block" aria-hidden />
+              <div className="absolute -inset-3 sm:-inset-4 border border-primary/40 rounded-2xl hidden sm:block" aria-hidden />
 
               <motion.div
                 style={{ y: portraitY }}
@@ -155,7 +155,7 @@ export function AboutHero() {
                 transition={{ duration: 0.6, delay: 0.9, ease: [0.22, 1, 0.36, 1] }}
                 className="absolute top-4 right-4 sm:-top-4 sm:-right-4 bg-card/95 supports-backdrop-filter:bg-card/80 backdrop-blur-sm border border-border/60 rounded-xl px-4 py-3 shadow-xl flex items-center gap-3"
               >
-                <span className="inline-flex items-center justify-center size-9 rounded-lg bg-secondary/15 text-secondary">
+                <span className="inline-flex items-center justify-center size-9 rounded-lg bg-primary/15 text-primary">
                   <ShieldCheck className="size-5" aria-hidden />
                 </span>
                 <div className="leading-tight">

@@ -54,33 +54,33 @@ export function ContactInfo() {
                     </h4>
                     <div className="space-y-2 text-background/90">
                       <div className="flex items-start space-x-2">
-                        <span className="text-secondary">📍</span>
+                        <span className="text-primary">📍</span>
                         <div>
                           <div>{office.address}</div>
                           <div>{office.city}</div>
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <span className="text-secondary">📞</span>
+                        <span className="text-primary">📞</span>
                         <a
                           href={`tel:${office.phoneHref}`}
-                          className="hover:text-secondary transition-colors"
+                          className="hover:text-primary transition-colors"
                         >
                           {office.phone}
                         </a>
                       </div>
                       <div className="flex items-start space-x-2">
-                        <span className="text-secondary">🕒</span>
+                        <span className="text-primary">🕒</span>
                         <div className="whitespace-pre-line text-sm">
                           {office.hours}
                         </div>
                       </div>
                       <div>
                         <div className="flex items-center space-x-2">
-                          <span className="text-secondary">📧</span>
+                          <span className="text-primary">📧</span>
                           <a
                             href={`mailto:${companyInfo.contactInfo.find(info => info.accessor === 'email')!.value}`}
-                            className="hover:text-secondary transition-colors"
+                            className="hover:text-primary transition-colors"
                           >
                             {companyInfo.contactInfo.find(info => info.accessor === 'email')!.value}
                           </a>
@@ -94,7 +94,7 @@ export function ContactInfo() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.6 }}
-                className="bg-secondary/20 rounded-lg p-6 border border-secondary/30 flex-1"
+                className="bg-primary/20 rounded-lg p-6 border border-primary/30 flex-1"
               >
                 <h3 className=" text-lg font-bold text-background mb-4">
                   Our Response Commitment

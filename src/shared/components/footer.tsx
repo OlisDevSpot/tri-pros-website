@@ -133,19 +133,19 @@ export default function Footer() {
             <div className="flex space-x-6 text-sm">
               <Link
                 href={ROOTS.landing.privacy()}
-                className="text-foreground/70 hover:text-secondary transition-colors duration-200"
+                className="text-foreground/70 hover:text-primary transition-colors duration-200"
               >
                 Privacy Policy
               </Link>
               <Link
                 href={ROOTS.landing.terms()}
-                className="text-foreground/70 hover:text-secondary transition-colors duration-200"
+                className="text-foreground/70 hover:text-primary transition-colors duration-200"
               >
                 Terms of Service
               </Link>
               <Link
                 href="/sitemap.xml"
-                className="text-foreground/70 hover:text-secondary transition-colors duration-200"
+                className="text-foreground/70 hover:text-primary transition-colors duration-200"
               >
                 Sitemap
               </Link>

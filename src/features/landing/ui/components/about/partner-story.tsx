@@ -58,7 +58,7 @@ export function PartnerStory({
         {/* Architectural offset accent in the corner */}
         <div
           className={cn(
-            'absolute top-4 h-12 w-12 border-t-2 border-l-2 border-secondary/70 pointer-events-none',
+            'absolute top-4 h-12 w-12 border-t-2 border-l-2 border-primary/70 pointer-events-none',
             flipOrder ? 'right-4 rotate-90' : 'left-4',
           )}
           aria-hidden
@@ -66,7 +66,7 @@ export function PartnerStory({
 
         {/* Name plate */}
         <div className="absolute bottom-0 inset-x-0 p-5 sm:p-6">
-          <p className="text-[11px] uppercase tracking-[0.22em] text-secondary font-semibold mb-1">
+          <p className="text-[11px] uppercase tracking-[0.22em] text-primary font-semibold mb-1">
             {partnerTitle}
           </p>
           <h3 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight whitespace-pre-line">

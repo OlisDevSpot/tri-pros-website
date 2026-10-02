@@ -45,15 +45,15 @@ export function CompanyStory() {
           transition={{ duration: 0.7, ease: REVEAL_EASE }}
           className="text-center max-w-4xl mx-auto"
         >
-          <span className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-secondary font-semibold mb-5">
-            <span className="h-px w-8 bg-secondary/70" aria-hidden />
+          <span className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-primary font-semibold mb-5">
+            <span className="h-px w-8 bg-primary/70" aria-hidden />
             The Journey
-            <span className="h-px w-8 bg-secondary/70" aria-hidden />
+            <span className="h-px w-8 bg-primary/70" aria-hidden />
           </span>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground leading-tight">
             How Tri Pros Remodeling Came to Be — A Story of
             {' '}
-            <span className="text-secondary">Drive & Dedication</span>
+            <span className="text-primary">Drive & Dedication</span>
           </h2>
         </motion.div>
 
@@ -63,7 +63,7 @@ export function CompanyStory() {
           partnerImgSrc={`/${teamInfo.owners[0].image}`}
           isInView={isInView}
           Quote={() => (
-            <figure className="relative pl-6 border-l-2 border-secondary/60">
+            <figure className="relative pl-6 border-l-2 border-primary/60">
               <blockquote className="font-script text-xl sm:text-2xl text-foreground italic leading-snug">
                 &ldquo;We don&apos;t just build structures; we craft legacies
                 that families will cherish for generations.&rdquo;
@@ -98,11 +98,11 @@ export function CompanyStory() {
           initial={FADE_UP_HIDDEN}
           animate={isInView ? FADE_UP_VISIBLE : FADE_UP_HIDDEN}
           transition={{ duration: 0.8, delay: 0.2, ease: REVEAL_EASE }}
-          className="relative isolate overflow-hidden rounded-2xl border border-border/60 bg-linear-to-br from-primary/5 via-background to-secondary/5 px-6 py-12 sm:px-10 sm:py-16 lg:px-16 lg:py-20"
+          className="relative isolate overflow-hidden rounded-2xl border border-border/60 bg-linear-to-br from-primary/5 via-background to-primary/5 px-6 py-12 sm:px-10 sm:py-16 lg:px-16 lg:py-20"
         >
           {/* Decorative ambient glow */}
           <div
-            className="absolute -top-32 -right-32 size-80 rounded-full bg-secondary/15 blur-3xl pointer-events-none -z-10"
+            className="absolute -top-32 -right-32 size-80 rounded-full bg-primary/15 blur-3xl pointer-events-none -z-10"
             aria-hidden
           />
           <div
@@ -111,7 +111,7 @@ export function CompanyStory() {
           />
 
           <div className="text-center max-w-3xl mx-auto mb-12">
-            <span className="inline-block text-xs uppercase tracking-[0.22em] text-secondary font-semibold mb-4">
+            <span className="inline-block text-xs uppercase tracking-[0.22em] text-primary font-semibold mb-4">
               Our Mission
             </span>
             <p className="text-xl sm:text-2xl text-foreground leading-relaxed font-medium">
@@ -130,7 +130,7 @@ export function CompanyStory() {
                 transition={{ duration: 0.6, delay: 0.3 + i * 0.1, ease: REVEAL_EASE }}
                 className="bg-background/80 backdrop-blur-sm px-6 py-8 flex flex-col items-start gap-4"
               >
-                <span className="inline-flex items-center justify-center size-11 rounded-lg bg-secondary/15 text-secondary">
+                <span className="inline-flex items-center justify-center size-11 rounded-lg bg-primary/15 text-primary">
                   <pillar.icon className="size-5" aria-hidden />
                 </span>
                 <div>
