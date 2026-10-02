@@ -19,7 +19,7 @@ With nothing underneath the new layer for those frames, the fading-out old photo
 | O2 | When the next image isn't ready: **hold the current image up to `CROSSFADE_HOLD_MS` (300 ms)**. Ready in time → one crossfade. Not ready → crossfade to the next image's blur placeholder, which sharpens when the image loads. Never old → blur → old → dark → new. |
 | O3 | All four surfaces that crossfade media move to `CrossfadeImage` in F1: Portfolio `ProjectPhoto`, Specialties `ShowcaseMedia`, `StoryBeforeAfter`, `PhotoLightbox`. The lightbox's zoom-in (scale 0.97 → 1) goes. |
 | O4 | Approach A: `CrossfadeImage` holds the image on screen in its own state until the next is decoded off-screen, then swaps on the existing `AnimatePresence` pattern. |
-| O5 | Feature-layering D1 = (b): display code lives in a new `modules/media/display/` unit; the management UI moves into `modules/media/core/`. |
+| O5 | Media UI lives in `modules/media/core` (owner 2026-10-02, revising the 2026-09-27 pick of a separate `display` unit): display components in `core/components/display/`, management components in `core/components/`, helpers in `core/lib/` and `core/hooks/`. |
 | O6 | Feature-layering D2 stays open: `CrossfadeImage` takes `{ file } \| { src }`; `OptimizedImage` keeps its `file` prop. |
 
 ## 3. Step 0 — move media UI into `modules/media` (no behaviour change)
@@ -28,8 +28,8 @@ One commit that only moves files and rewrites imports. No re-export shims; every
 
 | From | To |
 |---|---|
-| `src/shared/components/optimized-image.tsx` | `src/shared/modules/media/display/components/optimized-image.tsx` |
-| `src/shared/lib/get-optimized-urls.ts` | `src/shared/modules/media/display/lib/get-optimized-urls.ts` |
+| `src/shared/components/optimized-image.tsx` | `src/shared/modules/media/core/components/display/optimized-image.tsx` |
+| `src/shared/lib/get-optimized-urls.ts` | `src/shared/modules/media/core/lib/get-optimized-urls.ts` |
 | `src/shared/components/media/media-manager.tsx`, `media-card.tsx`, `media-reorder-grid.tsx`, `media-sortable-item.tsx`, `media-upload-button.tsx`, `photo-detail-dialog.tsx` | `src/shared/modules/media/core/components/` (same file names) |
 | `src/shared/components/media/types.ts` (`MediaItem`, `MediaGroup`) | appended to `src/shared/modules/media/core/types.ts` (type-only; the file already holds the `MediaStore` contract) |
 | `src/shared/components/media/use-media-upload.ts` | `src/shared/modules/media/core/hooks/use-media-upload.ts` |
@@ -52,7 +52,7 @@ The prop interface is unchanged apart from exporting its file type as `Optimized
 
 ## 5. `CrossfadeImage`
 
-`src/shared/modules/media/display/components/crossfade-image.tsx`
+`src/shared/modules/media/core/components/display/crossfade-image.tsx`
 
 ```ts
 export type CrossfadeImageSource = { file: OptimizedImageFile } | { src: string }
@@ -81,7 +81,7 @@ Renders absolutely positioned layers that fill the parent, so the parent must be
 - **Swap.** `AnimatePresence initial={false}` keyed on the identity. The incoming `motion.div` fades 0 → 1 with `CROSSFADE_TRANSITION`, on top. The outgoing one stays at opacity 1 underneath and is removed only once the incoming one is fully in (exit: `{ opacity: 0 }` with `duration: 0`, `delay` = the crossfade's duration). Fading both at once would let the background through, down to 75 % visible at the midpoint, which fails §7's ≥ 0.95. Under `useReducedMotion()` the transition is `{ duration: 0 }` and the exit is immediate. *(Amended 2026-10-02 while planning.)*
 - **Rendering.** A file renders through `OptimizedImage fill`. A static photo renders through `next/image fill` (the app sets `images.unoptimized: true`, so it emits the plain path, the same URL `decodeImage` fetched).
 
-**`decodeImage`**, in `src/shared/modules/media/display/lib/decode-image.ts`:
+**`decodeImage`**, in `src/shared/modules/media/core/lib/decode-image.ts`:
 
 ```ts
 export function decodeImage(source: { src: string, srcSet?: string, sizes?: string }): Promise<void>

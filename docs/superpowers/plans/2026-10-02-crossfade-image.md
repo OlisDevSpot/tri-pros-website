@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Every photo change shows one clean crossfade: the old photo never reappears and the frame never dips to dark. Display media lives in `modules/media/display`.
+**Goal:** Every photo change shows one clean crossfade: the old photo never reappears and the frame never dips to dark. Media UI lives in `modules/media/core`.
 
 **Architecture:**
 - Step 0 moves the media UI into `modules/media` and changes no behaviour.
@@ -19,7 +19,7 @@
 - Names are owner-agreed (CONTEXT.md "Media display terms"): `CrossfadeImage`, `CrossfadeImageSource`, `decodeImage`, `OptimizedImageFile`, `CROSSFADE_TRANSITION`, `CROSSFADE_HOLD_MS`. Never use "stage" in new code (CONTEXT.md: Stage = pipeline stage).
 - `CROSSFADE_TRANSITION = { duration: 0.4, ease: BRAND_EASE }`; `CROSSFADE_HOLD_MS = 300`.
 - `CrossfadeImage` takes `{ file } | { src }`; `OptimizedImage` keeps its `file` prop (feature-layering D2 stays open).
-- Display code goes to `src/shared/modules/media/display/`; management UI goes to `src/shared/modules/media/core/` (feature-layering D1 = b).
+- Media UI lives in the media module's one unit (owner 2026-10-02, revising feature-layering D1): display components in `src/shared/modules/media/core/components/display/`, management components in `src/shared/modules/media/core/components/`, their helpers in `core/lib/` and `core/hooks/`. No separate `display` unit.
 - No re-export shims. Every importer moves in the same commit as the file it imports.
 - Comments say why, never what. No citations of plans, specs or tasks from code.
 - Verification is `pnpm tsc` + `pnpm lint` + the trace script. There is no test runner; do not add one, and never run `pnpm build`.
@@ -41,10 +41,10 @@
 
 | File | Responsibility |
 |---|---|
-| `src/shared/modules/media/display/components/optimized-image.tsx` | One media file as an `<img>` with blur placeholder (moved, then fixed in Task 2) |
-| `src/shared/modules/media/display/components/crossfade-image.tsx` | NEW. Swaps images with one crossfade after decode or the hold |
-| `src/shared/modules/media/display/lib/get-optimized-urls.ts` | Variant URL building (moved) |
-| `src/shared/modules/media/display/lib/decode-image.ts` | NEW. Off-screen fetch + decode of one image |
+| `src/shared/modules/media/core/components/display/optimized-image.tsx` | One media file as an `<img>` with blur placeholder (moved, then fixed in Task 2) |
+| `src/shared/modules/media/core/components/display/crossfade-image.tsx` | NEW. Swaps images with one crossfade after decode or the hold |
+| `src/shared/modules/media/core/lib/get-optimized-urls.ts` | Variant URL building (moved) |
+| `src/shared/modules/media/core/lib/decode-image.ts` | NEW. Off-screen fetch + decode of one image |
 | `src/shared/modules/media/core/components/{media-manager,media-card,media-reorder-grid,media-sortable-item,media-upload-button,photo-detail-dialog}.tsx` | Media management UI (moved) |
 | `src/shared/modules/media/core/hooks/use-media-upload.ts` | Upload hook (moved) |
 | `src/shared/modules/media/core/types.ts` | Gains `MediaItem`, `MediaGroup` |
@@ -58,8 +58,8 @@
 ### Task 1: Move the media UI into `modules/media` (no behaviour change)
 
 **Files:**
-- Move: `src/shared/components/optimized-image.tsx` → `src/shared/modules/media/display/components/optimized-image.tsx`
-- Move: `src/shared/lib/get-optimized-urls.ts` → `src/shared/modules/media/display/lib/get-optimized-urls.ts`
+- Move: `src/shared/components/optimized-image.tsx` → `src/shared/modules/media/core/components/display/optimized-image.tsx`
+- Move: `src/shared/lib/get-optimized-urls.ts` → `src/shared/modules/media/core/lib/get-optimized-urls.ts`
 - Move: `src/shared/components/media/{media-manager,media-card,media-reorder-grid,media-sortable-item,media-upload-button,photo-detail-dialog}.tsx` → `src/shared/modules/media/core/components/`
 - Move: `src/shared/components/media/use-media-upload.ts` → `src/shared/modules/media/core/hooks/use-media-upload.ts`
 - Merge then delete: `src/shared/components/media/types.ts` → appended to `src/shared/modules/media/core/types.ts`
@@ -68,8 +68,8 @@
 **Interfaces:**
 - Consumes: nothing.
 - Produces these import paths, used by every later task:
-  - `OptimizedImage` from `@/shared/modules/media/display/components/optimized-image`
-  - `getOptimizedSrc`, `getOptimizedSrcSet`, `deriveOriginalMediaUrl` from `@/shared/modules/media/display/lib/get-optimized-urls`
+  - `OptimizedImage` from `@/shared/modules/media/core/components/display/optimized-image`
+  - `getOptimizedSrc`, `getOptimizedSrcSet`, `deriveOriginalMediaUrl` from `@/shared/modules/media/core/lib/get-optimized-urls`
   - `MediaItem`, `MediaGroup` from `@/shared/modules/media/core/types`
   - `useMediaUpload` from `@/shared/modules/media/core/hooks/use-media-upload`
   - management components from `@/shared/modules/media/core/components/<file>`
@@ -87,9 +87,9 @@ git status --porcelain -- $(cat /tmp/media-move-importers.txt)   # must print no
 - [ ] **Step 2: Move the files**
 
 ```bash
-mkdir -p src/shared/modules/media/display/components src/shared/modules/media/display/lib src/shared/modules/media/core/components src/shared/modules/media/core/hooks
-git mv src/shared/components/optimized-image.tsx src/shared/modules/media/display/components/optimized-image.tsx
-git mv src/shared/lib/get-optimized-urls.ts src/shared/modules/media/display/lib/get-optimized-urls.ts
+mkdir -p src/shared/modules/media/core/components/display src/shared/modules/media/core/hooks
+git mv src/shared/components/optimized-image.tsx src/shared/modules/media/core/components/display/optimized-image.tsx
+git mv src/shared/lib/get-optimized-urls.ts src/shared/modules/media/core/lib/get-optimized-urls.ts
 for f in media-manager media-card media-reorder-grid media-sortable-item media-upload-button photo-detail-dialog; do
   git mv "src/shared/components/media/$f.tsx" "src/shared/modules/media/core/components/$f.tsx"
 done
@@ -103,10 +103,10 @@ ls src/shared/components/media 2>/dev/null && echo "UNEXPECTED: folder not empty
 
 ```bash
 F=$(cat /tmp/media-move-importers.txt | sed \
-  -e 's#^src/shared/components/optimized-image.tsx$#src/shared/modules/media/display/components/optimized-image.tsx#')
+  -e 's#^src/shared/components/optimized-image.tsx$#src/shared/modules/media/core/components/display/optimized-image.tsx#')
 sed -i \
-  -e 's#@/shared/components/optimized-image#@/shared/modules/media/display/components/optimized-image#g' \
-  -e 's#@/shared/lib/get-optimized-urls#@/shared/modules/media/display/lib/get-optimized-urls#g' \
+  -e 's#@/shared/components/optimized-image#@/shared/modules/media/core/components/display/optimized-image#g' \
+  -e 's#@/shared/lib/get-optimized-urls#@/shared/modules/media/core/lib/get-optimized-urls#g' \
   -e 's#@/shared/components/media/types#@/shared/modules/media/core/types#g' \
   -e 's#@/shared/components/media/use-media-upload#@/shared/modules/media/core/hooks/use-media-upload#g' \
   -e 's#@/shared/components/media/\(media-[a-z-]*\)#@/shared/modules/media/core/components/\1#g' \
@@ -114,7 +114,7 @@ sed -i \
 # the moved management components imported the old sibling './types'
 sed -i "s#from './types'#from '@/shared/modules/media/core/types'#" src/shared/modules/media/core/components/*.tsx
 # the pending proposal-page plan imports OptimizedImage at the old path in its code snippets
-sed -i 's#@/shared/components/optimized-image#@/shared/modules/media/display/components/optimized-image#g' docs/superpowers/plans/2026-10-01-proposal-page-redesign.md
+sed -i 's#@/shared/components/optimized-image#@/shared/modules/media/core/components/display/optimized-image#g' docs/superpowers/plans/2026-10-01-proposal-page-redesign.md
 ```
 
 - [ ] **Step 4: Update the media module's DOCS.md citations**
@@ -146,7 +146,7 @@ If `perfectionist/sort-imports` (or the antfu `import/order` equivalent) flags a
 OLD="src/shared/components/optimized-image.tsx src/shared/lib/get-optimized-urls.ts src/shared/components/media"
 NEW="src/shared/modules/media"
 git add -- $NEW $(cat /tmp/media-move-importers.txt | grep -v '^src/shared/components/\|^src/shared/lib/get-optimized-urls.ts$') docs/superpowers/plans/2026-10-01-proposal-page-redesign.md
-git commit -q -m "refactor(media): display media into modules/media/display, management UI into modules/media/core
+git commit -q -m "refactor(media): media UI into modules/media/core (display components under components/display)
 
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- $OLD $NEW $(cat /tmp/media-move-importers.txt | grep -v '^src/shared/components/\|^src/shared/lib/get-optimized-urls.ts$') docs/superpowers/plans/2026-10-01-proposal-page-redesign.md
 git show --stat HEAD | tail -5          # expect ~45 files, renames shown as renames
@@ -159,7 +159,7 @@ git diff --cached --name-only          # must equal Step 1's foreign list exactl
 
 **Files:**
 - Create (gitignored): `.superpowers/sdd/2026-10-02-crossfade-image/tools/trace-photo-swap.mjs`
-- Modify: `src/shared/modules/media/display/components/optimized-image.tsx`
+- Modify: `src/shared/modules/media/core/components/display/optimized-image.tsx`
 
 **Interfaces:**
 - Consumes: Task 1 paths.
@@ -356,7 +356,7 @@ Paste the two entries into the task report as the baseline. If meeting `cd8b5810
 
 - [ ] **Step 3: Export the file type and check `complete` before first paint**
 
-In `src/shared/modules/media/display/components/optimized-image.tsx`, replace the props block and the hooks above `const src = …`.
+In `src/shared/modules/media/core/components/display/optimized-image.tsx`, replace the props block and the hooks above `const src = …`.
 
 Old:
 
@@ -364,7 +364,7 @@ Old:
 import { LoaderIcon, RefreshCwIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
-import { getOptimizedSrc, getOptimizedSrcSet } from '@/shared/modules/media/display/lib/get-optimized-urls'
+import { getOptimizedSrc, getOptimizedSrcSet } from '@/shared/modules/media/core/lib/get-optimized-urls'
 import { cn } from '@/shared/lib/utils'
 
 interface OptimizedImageProps {
@@ -385,7 +385,7 @@ New:
 import { LoaderIcon, RefreshCwIcon } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { getOptimizedSrc, getOptimizedSrcSet } from '@/shared/modules/media/display/lib/get-optimized-urls'
+import { getOptimizedSrc, getOptimizedSrcSet } from '@/shared/modules/media/core/lib/get-optimized-urls'
 import { cn } from '@/shared/lib/utils'
 
 export interface OptimizedImageFile {
@@ -514,7 +514,7 @@ Leave everything else as it is: the timeout effect, `handleRetry`, the badges. `
 
 ```bash
 pnpm tsc
-npx eslint src/shared/modules/media/display/components/optimized-image.tsx
+npx eslint src/shared/modules/media/core/components/display/optimized-image.tsx
 ```
 
 Expected: `pnpm tsc` exits 0; eslint reports 0 problems.
@@ -536,10 +536,10 @@ The crossfade is still the old one, which fades both layers at once, so the fram
 - [ ] **Step 7: Commit**
 
 ```bash
-git add -- src/shared/modules/media/display/components/optimized-image.tsx
+git add -- src/shared/modules/media/core/components/display/optimized-image.tsx
 git commit -q -m "fix(media): OptimizedImage shows an already-loaded image at once; blur placeholder stays until the image has faded in
 
-Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/shared/modules/media/display/components/optimized-image.tsx
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/shared/modules/media/core/components/display/optimized-image.tsx
 ```
 
 ---
@@ -547,8 +547,8 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/sha
 ### Task 3: `CrossfadeImage` + `decodeImage` + constants; Portfolio and Specialties adopt it
 
 **Files:**
-- Create: `src/shared/modules/media/display/lib/decode-image.ts`
-- Create: `src/shared/modules/media/display/components/crossfade-image.tsx`
+- Create: `src/shared/modules/media/core/lib/decode-image.ts`
+- Create: `src/shared/modules/media/core/components/display/crossfade-image.tsx`
 - Modify: `src/shared/constants/motion.ts` (append)
 - Modify: `src/features/meeting-flow/constants/showcase.ts` (delete `SHOWCASE_CROSSFADE`)
 - Modify: `src/features/meeting-flow/ui/components/steps/portfolio/project-photo.tsx`
@@ -577,7 +577,7 @@ export const CROSSFADE_HOLD_MS = 300
 
 - [ ] **Step 2: Write `decodeImage`**
 
-Create `src/shared/modules/media/display/lib/decode-image.ts`:
+Create `src/shared/modules/media/core/lib/decode-image.ts`:
 
 ```ts
 /**
@@ -599,19 +599,19 @@ export function decodeImage({ src, srcSet, sizes }: { src: string, srcSet?: stri
 
 - [ ] **Step 3: Write `CrossfadeImage`**
 
-Create `src/shared/modules/media/display/components/crossfade-image.tsx`:
+Create `src/shared/modules/media/core/components/display/crossfade-image.tsx`:
 
 ```tsx
 'use client'
 
-import type { OptimizedImageFile } from '@/shared/modules/media/display/components/optimized-image'
+import type { OptimizedImageFile } from '@/shared/modules/media/core/components/display/optimized-image'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import Image from 'next/image'
 import { useEffect, useEffectEvent, useState } from 'react'
 import { CROSSFADE_HOLD_MS, CROSSFADE_TRANSITION } from '@/shared/constants/motion'
-import { OptimizedImage } from '@/shared/modules/media/display/components/optimized-image'
-import { decodeImage } from '@/shared/modules/media/display/lib/decode-image'
-import { getOptimizedSrc, getOptimizedSrcSet } from '@/shared/modules/media/display/lib/get-optimized-urls'
+import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
+import { decodeImage } from '@/shared/modules/media/core/lib/decode-image'
+import { getOptimizedSrc, getOptimizedSrcSet } from '@/shared/modules/media/core/lib/get-optimized-urls'
 
 export type CrossfadeImageSource = { file: OptimizedImageFile } | { src: string }
 
@@ -721,7 +721,7 @@ Replace `src/features/meeting-flow/ui/components/steps/portfolio/project-photo.t
 import type { ProjectMediaFile } from '@/shared/db/schema'
 import { PORTFOLIO_COPY } from '@/features/meeting-flow/constants/portfolio-step'
 import { usePreloadPhoto } from '@/features/meeting-flow/hooks/use-preload-photo'
-import { CrossfadeImage } from '@/shared/modules/media/display/components/crossfade-image'
+import { CrossfadeImage } from '@/shared/modules/media/core/components/display/crossfade-image'
 
 interface ProjectPhotoProps {
   file: ProjectMediaFile
@@ -756,7 +756,7 @@ Before replacing, diff the current file against the old block quoted in the spec
 - [ ] **Step 6: Specialties adopts it**
 
 In `src/features/meeting-flow/ui/components/steps/specialties/showcase-media.tsx`:
-- Replace the imports of `AnimatePresence, motion`, `next/image`, `SHOWCASE_CROSSFADE` and `OptimizedImage` with `import { CrossfadeImage } from '@/shared/modules/media/display/components/crossfade-image'`.
+- Replace the imports of `AnimatePresence, motion`, `next/image`, `SHOWCASE_CROSSFADE` and `OptimizedImage` with `import { CrossfadeImage } from '@/shared/modules/media/core/components/display/crossfade-image'`.
 - Replace the whole `<AnimatePresence initial={false}>…</AnimatePresence>` block with:
 
 ```tsx
@@ -797,7 +797,7 @@ grep -rn "SHOWCASE_CROSSFADE" src
 
 ```bash
 pnpm tsc
-npx eslint src/shared/constants/motion.ts src/shared/modules/media/display src/features/meeting-flow/constants/showcase.ts src/features/meeting-flow/ui/components/steps/portfolio/project-photo.tsx src/features/meeting-flow/ui/components/steps/specialties/showcase-media.tsx
+npx eslint src/shared/constants/motion.ts src/shared/modules/media/core/components/display src/shared/modules/media/core/lib/decode-image.ts src/features/meeting-flow/constants/showcase.ts src/features/meeting-flow/ui/components/steps/portfolio/project-photo.tsx src/features/meeting-flow/ui/components/steps/specialties/showcase-media.tsx
 ```
 
 Expected: `pnpm tsc` exits 0; eslint reports 0 problems. In particular, there must be no `react-hooks/exhaustive-deps` warning on `crossfade-image.tsx`: effect events are not dependencies.
@@ -851,7 +851,7 @@ If any expectation fails, STOP and report the full JSON. Do not tune the thresho
 - [ ] **Step 12: Commit**
 
 ```bash
-FILES="src/shared/constants/motion.ts src/shared/modules/media/display/lib/decode-image.ts src/shared/modules/media/display/components/crossfade-image.tsx src/features/meeting-flow/constants/showcase.ts src/features/meeting-flow/ui/components/steps/portfolio/project-photo.tsx src/features/meeting-flow/ui/components/steps/specialties/showcase-media.tsx"
+FILES="src/shared/constants/motion.ts src/shared/modules/media/core/lib/decode-image.ts src/shared/modules/media/core/components/display/crossfade-image.tsx src/features/meeting-flow/constants/showcase.ts src/features/meeting-flow/ui/components/steps/portfolio/project-photo.tsx src/features/meeting-flow/ui/components/steps/specialties/showcase-media.tsx"
 git add -- $FILES
 git commit -q -m "feat(media): CrossfadeImage — one crossfade per photo change, after decode or a 300 ms hold; Portfolio and Specialties adopt it
 
@@ -938,7 +938,7 @@ Replace the `itemTwo` block the same way, writing it out in full:
 
 Imports:
 - `import { AnimatePresence, motion, useInView } from 'motion/react'` becomes `import { motion, useInView } from 'motion/react'`; `motion.div` is still used for the header and the pills.
-- Replace `import { OptimizedImage } from '@/shared/modules/media/display/components/optimized-image'` with `import { CrossfadeImage } from '@/shared/modules/media/display/components/crossfade-image'`, after checking with `grep -n "OptimizedImage" <file>` that no other `OptimizedImage` use remains. If one does, keep both imports.
+- Replace `import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'` with `import { CrossfadeImage } from '@/shared/modules/media/core/components/display/crossfade-image'`, after checking with `grep -n "OptimizedImage" <file>` that no other `OptimizedImage` use remains. If one does, keep both imports.
 
 - [ ] **Step 3: Lightbox adopts it**
 
@@ -981,7 +981,7 @@ New:
           </div>
 ```
 
-Add `import { CrossfadeImage } from '@/shared/modules/media/display/components/crossfade-image'`.
+Add `import { CrossfadeImage } from '@/shared/modules/media/core/components/display/crossfade-image'`.
 - Keep the `OptimizedImage` import: the thumbnail strip still uses it.
 - Keep `AnimatePresence, motion`: the overlay's own fade still uses them.
 
@@ -1025,7 +1025,7 @@ In `docs/plans/2026-09-27-media-display-epic.md`:
 - Append to `## Log`:
 
 ```markdown
-- 2026-10-02 — F1 done: `OptimizedImage` shows an already-loaded image at once and keeps its blur placeholder until the image has faded in; `CrossfadeImage` (hold ≤ 300 ms for decode, then one crossfade) on Portfolio, Specialties, the before/after slider and the lightbox. Media UI moved into `modules/media/{display,core}`. Trace before → after (Portfolio cached Space): maxRebound <baseline> → <after>, minTotal <baseline> → <after>. Next: F2.
+- 2026-10-02 — F1 done: `OptimizedImage` shows an already-loaded image at once and keeps its blur placeholder until the image has faded in; `CrossfadeImage` (hold ≤ 300 ms for decode, then one crossfade) on Portfolio, Specialties, the before/after slider and the lightbox. Media UI moved into `modules/media/core` (display components under `components/display/`). Trace before → after (Portfolio cached Space): maxRebound <baseline> → <after>, minTotal <baseline> → <after>. Next: F2.
 ```
 
 Fill the four numbers from Task 2 Step 2 (baseline) and Task 3 Step 9 (after).
