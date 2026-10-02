@@ -26,3 +26,9 @@ export const COLLAPSE_HEIGHT_VARIANTS = {
  * `.funnel-light` in `globals.css`, so motion outside the funnels takes it from here.
  */
 export const BRAND_EASE: [number, number, number, number] = [0.32, 0.72, 0, 1]
+
+/** The photo crossfade: opacity only, the brand curve. */
+export const CROSSFADE_TRANSITION = { duration: 0.4, ease: BRAND_EASE } as const
+
+/** How long a photo change waits for the next image to decode before showing its blur placeholder instead. */
+export const CROSSFADE_HOLD_MS = 300

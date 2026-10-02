@@ -100,7 +100,7 @@ export function OptimizedImage({
           aria-hidden
           className={cn(
             'absolute inset-0 z-0 h-full w-full object-cover scale-110 blur-xl',
-            !loadedAtMount && 'transition-opacity duration-500 motion-reduce:transition-none',
+            !loadedAtMount && 'transition-opacity duration-500 delay-300 motion-reduce:transition-none',
             loaded && persistBlur ? 'opacity-40' : loaded ? 'opacity-0' : 'opacity-100',
           )}
         />
