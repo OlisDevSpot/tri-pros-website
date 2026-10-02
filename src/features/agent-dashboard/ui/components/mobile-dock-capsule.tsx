@@ -40,6 +40,10 @@ export function MobileDockCapsule({ tabs, onActionCenterClick, className }: Mobi
   // The pathname only changes once the next page has rendered, a beat after the tap. The tapped
   // tab lights up at once and hands back to the pathname as soon as it moves.
   const [pending, setPending] = useState<{ href: string, from: string } | null>(null)
+  // Cleared once the pathname moves, or coming Back to `from` would light the tapped tab again.
+  if (pending && pending.from !== pathname) {
+    setPending(null)
+  }
   const pendingHref = pending?.from === pathname ? pending.href : null
   const activeIndex = pendingHref
     ? tabs.findIndex(tab => tab.item.href === pendingHref)
