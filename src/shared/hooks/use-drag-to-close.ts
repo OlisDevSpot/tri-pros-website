@@ -35,11 +35,15 @@ export function useDragToClose({ backdropRef, ignoreSelector, onOpenChange, shee
     }
 
     const onPointerDown = (event: PointerEvent) => {
+      // A second finger must not touch the gesture already in progress.
+      if (!event.isPrimary) {
+        return
+      }
       // Reset before the ignore check: otherwise a drag that sprang back without a click leaves
       // offset >0, and the next tap landing on an ignored target (e.g. a picker row) gets swallowed
       // by onClickCapture below, which still sees the stale offset from the prior gesture.
       offset = 0
-      if (!event.isPrimary || (ignoreSelector && (event.target as Element).closest(ignoreSelector))) {
+      if (ignoreSelector && (event.target as Element).closest(ignoreSelector)) {
         return
       }
       start = { y: event.clientY, time: event.timeStamp, pointerId: event.pointerId }
