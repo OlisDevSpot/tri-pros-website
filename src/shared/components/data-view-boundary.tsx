@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 import { ErrorBoundary } from 'react-error-boundary'
 
+import { DataViewPending } from '@/shared/components/data-view-pending'
 import { DataViewPendingContext } from '@/shared/dal/client/lib/data-view-pending-context'
 import { HydrationErrorFallback } from '@/trpc/components/hydration-error-fallback'
 
@@ -30,13 +31,7 @@ export function DataViewBoundary({ children }: { children: React.ReactNode }) {
             </>
           )}
         >
-          <Suspense
-            fallback={(
-              <DataViewPendingContext value={true}>
-                <div className="contents" data-slot="data-view-pending">{children}</div>
-              </DataViewPendingContext>
-            )}
-          >
+          <Suspense fallback={<DataViewPending>{children}</DataViewPending>}>
             {children}
           </Suspense>
         </ErrorBoundary>
