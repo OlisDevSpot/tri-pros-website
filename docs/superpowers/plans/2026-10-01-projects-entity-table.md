@@ -511,7 +511,7 @@ import type { MeetingRow } from '@/shared/entities/meetings/lib/columns-registry
 import { MeetingRowPanel } from '@/features/records-management/ui/components/meeting-row-panel'
 import { MeetingsRecordsTable } from '@/features/records-management/ui/components/meetings-records-table'
 import { DataViewBoundary } from '@/shared/components/data-view-boundary'
-import { RecordsPageMotionShell } from '@/shared/components/records-page-motion-shell'
+import { RecordsPageFrame } from '@/shared/components/records-page-frame'
 
 // Module level keeps its identity stable, so the table's props don't churn.
 function renderMeetingRowPanel(row: MeetingRow, { actions }: EntityExpandedRowContext<MeetingRow>) {
@@ -520,11 +520,11 @@ function renderMeetingRowPanel(row: MeetingRow, { actions }: EntityExpandedRowCo
 
 export function MeetingsRecordsView() {
   return (
-    <RecordsPageMotionShell>
+    <RecordsPageFrame>
       <DataViewBoundary>
         <MeetingsRecordsTable renderExpandedRow={renderMeetingRowPanel} />
       </DataViewBoundary>
-    </RecordsPageMotionShell>
+    </RecordsPageFrame>
   )
 }
 ```
@@ -977,15 +977,15 @@ Create `src/features/records-management/ui/views/projects-records-view.tsx`:
 
 import { ProjectsRecordsTable } from '@/features/records-management/ui/components/projects-records-table'
 import { DataViewBoundary } from '@/shared/components/data-view-boundary'
-import { RecordsPageMotionShell } from '@/shared/components/records-page-motion-shell'
+import { RecordsPageFrame } from '@/shared/components/records-page-frame'
 
 export function ProjectsRecordsView() {
   return (
-    <RecordsPageMotionShell>
+    <RecordsPageFrame>
       <DataViewBoundary>
         <ProjectsRecordsTable />
       </DataViewBoundary>
-    </RecordsPageMotionShell>
+    </RecordsPageFrame>
   )
 }
 ```
@@ -1816,7 +1816,7 @@ import type { ProjectRow } from '@/shared/modules/projects/core/lib/columns-regi
 import { ProjectRowPanel } from '@/features/records-management/ui/components/project-row-panel'
 import { ProjectsRecordsTable } from '@/features/records-management/ui/components/projects-records-table'
 import { DataViewBoundary } from '@/shared/components/data-view-boundary'
-import { RecordsPageMotionShell } from '@/shared/components/records-page-motion-shell'
+import { RecordsPageFrame } from '@/shared/components/records-page-frame'
 
 // Module level keeps its identity stable, so the table's props don't churn.
 function renderProjectRowPanel(row: ProjectRow, { actions }: EntityExpandedRowContext<ProjectRow>) {
@@ -1825,11 +1825,11 @@ function renderProjectRowPanel(row: ProjectRow, { actions }: EntityExpandedRowCo
 
 export function ProjectsRecordsView() {
   return (
-    <RecordsPageMotionShell>
+    <RecordsPageFrame>
       <DataViewBoundary>
         <ProjectsRecordsTable renderExpandedRow={renderProjectRowPanel} />
       </DataViewBoundary>
-    </RecordsPageMotionShell>
+    </RecordsPageFrame>
   )
 }
 ```
