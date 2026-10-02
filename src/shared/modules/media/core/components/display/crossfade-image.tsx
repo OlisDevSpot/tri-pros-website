@@ -87,9 +87,11 @@ export function CrossfadeImage({ image, alt, sizes, className, persistBlur = fal
         key={shownKey}
         animate={{ opacity: 1 }}
         className="absolute inset-0"
-        // The outgoing image stays opaque under the incoming one until that has fully faded in; fading
-        // both at once lets the background show through mid-way (a quarter of the frame at the midpoint).
-        exit={{ opacity: 0, transition: { duration: 0, delay: transition.duration } }}
+        // Holding the outgoing image opaque underneath only works when the incoming one covers the whole
+        // frame; fading both at once would let the background show through mid-way. An image letterboxed
+        // with persistBlur doesn't cover the frame, so it fades out with the incoming one instead — that
+        // way it never shows through in the bars.
+        exit={persistBlur ? { opacity: 0, transition } : { opacity: 0, transition: { duration: 0, delay: transition.duration } }}
         initial={{ opacity: 0 }}
         transition={transition}
       >
