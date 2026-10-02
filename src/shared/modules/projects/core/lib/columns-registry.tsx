@@ -1,7 +1,7 @@
 'use client'
 
 import type { ColumnRegistry } from '@/shared/components/data-table/lib/use-entity-columns'
-import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
+import type { EntityTableMeta } from '@/shared/components/data-table/types/entity-table-meta'
 import type { AppRouterOutputs } from '@/trpc/routers/app'
 
 import { PrimaryCell } from '@/shared/components/data-table/ui/primary-cell'
@@ -10,9 +10,7 @@ import { cn } from '@/shared/lib/utils'
 
 export type ProjectRow = AppRouterOutputs['projectsRouter']['crud']['list']['rows'][number]
 
-export interface ProjectTableMeta {
-  projectActions?: EntityActionConfig<ProjectRow>[]
-}
+export type ProjectTableMeta = EntityTableMeta<ProjectRow>
 
 export const PROJECT_COLUMNS = {
   title: {
@@ -23,7 +21,7 @@ export const PROJECT_COLUMNS = {
       return (
         <PrimaryCell
           entity={row.original}
-          actions={meta?.projectActions}
+          actions={meta?.rowActions}
           title={row.original.title}
           subtitle={row.original.description ?? undefined}
           tooltipContent={row.original.title}

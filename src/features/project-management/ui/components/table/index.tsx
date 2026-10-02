@@ -57,7 +57,7 @@ export function PortfolioProjectsTable() {
   const visibility = useColumnVisibility('projects', columns)
 
   const meta = useMemo<ProjectTableMeta>(() => ({
-    projectActions: sharedActions,
+    rowActions: sharedActions,
   }), [sharedActions])
 
   return (

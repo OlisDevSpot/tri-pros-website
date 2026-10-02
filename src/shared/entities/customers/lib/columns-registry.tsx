@@ -1,7 +1,7 @@
 'use client'
 
 import type { ColumnRegistry } from '@/shared/components/data-table/lib/use-entity-columns'
-import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
+import type { EntityTableMeta } from '@/shared/components/data-table/types/entity-table-meta'
 import type { Pipeline } from '@/shared/constants/enums/pipelines'
 import type { SortId } from '@/shared/dal/lib/query/field-list'
 import type { CUSTOMER_FIELDS } from '@/shared/entities/customers/dal/customer-fields'
@@ -32,8 +32,7 @@ export interface CustomerTableRow {
   leadSourceSlug?: string | null
 }
 
-export interface CustomerTableMeta {
-  customerActions?: EntityActionConfig<CustomerTableRow>[]
+export interface CustomerTableMeta extends EntityTableMeta<CustomerTableRow> {
   onUpdateCreatedAt?: (customerId: string, date: Date) => void
   /**
    * Optional override for lead-source reassignment. The cell defaults to
@@ -107,7 +106,7 @@ export const CUSTOMER_COLUMNS = {
       return (
         <PrimaryCell
           entity={row.original}
-          actions={meta?.customerActions}
+          actions={meta?.rowActions}
           title={row.original.name}
           subtitle={row.original.email ?? undefined}
         />

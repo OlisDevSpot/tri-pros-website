@@ -67,7 +67,7 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
   // query trees, so no override is needed.
   const meta = useMemo<CustomerTableMeta>(
     () => ({
-      customerActions: actions,
+      rowActions: actions,
       onUpdateCreatedAt: (customerId, date) =>
         updateCreatedAt.mutate({ id: customerId, data: { createdAt: date.toISOString() } }),
     }),

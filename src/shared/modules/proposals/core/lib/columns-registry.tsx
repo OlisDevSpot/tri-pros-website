@@ -1,7 +1,7 @@
 'use client'
 
 import type { ColumnRegistry } from '@/shared/components/data-table/lib/use-entity-columns'
-import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
+import type { EntityTableMeta } from '@/shared/components/data-table/types/entity-table-meta'
 import type { ProposalStatus } from '@/shared/constants/enums'
 import type { AppRouterOutputs } from '@/trpc/routers/app'
 
@@ -19,8 +19,7 @@ import { PROPOSAL_STATUS_COLORS } from '@/shared/modules/proposals/core/constant
 
 export type ProposalRow = AppRouterOutputs['proposalsRouter']['business']['list']['rows'][number]
 
-export interface ProposalTableMeta {
-  proposalActions?: EntityActionConfig<ProposalRow>[]
+export interface ProposalTableMeta extends EntityTableMeta<ProposalRow> {
   onUpdateCreatedAt?: (proposalId: string, date: Date) => void
   onUpdateStatus?: (proposalId: string, status: ProposalStatus) => void
   onViewProfile?: (customerId: string) => void
@@ -36,7 +35,7 @@ export const PROPOSAL_COLUMNS = {
       return (
         <PrimaryCell
           entity={row.original}
-          actions={meta?.proposalActions}
+          actions={meta?.rowActions}
           title={(
             <div className="flex min-w-0 items-center gap-1.5">
               <p className="truncate text-sm font-medium leading-tight text-foreground">{row.original.label}</p>

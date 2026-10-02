@@ -57,7 +57,7 @@ export function AllCustomersSection() {
 
   const meta = useMemo<CustomerTableMeta>(
     () => ({
-      customerActions: actions,
+      rowActions: actions,
       onUpdateCreatedAt: (customerId, date) =>
         updateCreatedAt.mutate({ id: customerId, data: { createdAt: date.toISOString() } }),
     }),

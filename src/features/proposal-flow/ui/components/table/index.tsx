@@ -125,7 +125,7 @@ export function PastProposalsTable() {
   const visibility = useColumnVisibility('proposals', columns)
 
   const meta = useMemo<ProposalTableMeta>(() => ({
-    proposalActions: sharedActions,
+    rowActions: sharedActions,
     onUpdateStatus: handleStatusChange,
     onUpdateCreatedAt: (id, date) => updateProposal.mutate(
       { id, data: { createdAt: date.toISOString() } },

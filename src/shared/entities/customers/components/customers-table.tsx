@@ -59,7 +59,7 @@ export function CustomersTable() {
   // mutation + invalidation) — no `onUpdateLeadSource` needed here.
   const meta = useMemo<CustomerTableMeta>(
     () => ({
-      customerActions: actions,
+      rowActions: actions,
       onUpdateCreatedAt: (customerId, date) =>
         updateCreatedAt.mutate({ id: customerId, data: { createdAt: date.toISOString() } }),
     }),

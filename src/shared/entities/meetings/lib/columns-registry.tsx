@@ -1,7 +1,7 @@
 'use client'
 
 import type { ColumnRegistry } from '@/shared/components/data-table/lib/use-entity-columns'
-import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
+import type { EntityTableMeta } from '@/shared/components/data-table/types/entity-table-meta'
 import type { MeetingOutcome } from '@/shared/constants/enums'
 import type { SortId } from '@/shared/dal/lib/query/field-list'
 import type { MEETING_FIELDS } from '@/shared/entities/meetings/dal/meeting-fields'
@@ -22,8 +22,7 @@ import { PROPOSAL_STATUS_DOT_COLORS } from '@/shared/modules/proposals/core/cons
 
 export type MeetingRow = AppRouterOutputs['meetingsRouter']['reads']['list']['rows'][number]
 
-export interface MeetingTableMeta {
-  meetingActions?: EntityActionConfig<MeetingRow>[]
+export interface MeetingTableMeta extends EntityTableMeta<MeetingRow> {
   onUpdateOutcome?: (meetingId: string, outcome: MeetingOutcome) => void
   onUpdateScheduledFor?: (meetingId: string, date: Date) => void
   onAssignRep?: (meetingId: string, currentOwnerId: string) => void
@@ -41,7 +40,7 @@ export const MEETING_COLUMNS = {
       return (
         <MeetingCustomerCell
           meeting={row.original}
-          actions={meta?.meetingActions}
+          actions={meta?.rowActions}
           onViewProfile={meta?.onViewProfile}
         />
       )
