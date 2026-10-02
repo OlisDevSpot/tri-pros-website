@@ -1,9 +1,9 @@
 import type { AnyColumn, SQL } from 'drizzle-orm'
 
-import type { FieldList, FilterId, FilterValue, FilterValues, SortId, SortState } from '@/shared/dal/lib/query/field-list'
+import type { FieldList, FilterId, FilterValue, FilterValues, SortDir, SortId, SortState } from '@/shared/dal/lib/query/field-list'
 import type { DateRange } from '@/shared/dal/lib/query/range-schemas'
 
-import { and, asc, desc, gte, lte } from 'drizzle-orm'
+import { and, asc, Column, desc, gte, is, lte, sql } from 'drizzle-orm'
 
 import { filterParserRegistry } from '@/shared/dal/lib/query/filter-parser-registry'
 import 'server-only'
@@ -39,6 +39,13 @@ function isActive(field: FieldList[string] | undefined, value: unknown): boolean
   return normalize(value) !== undefined
 }
 
+// Postgres sorts NULL first on DESC, which buried every finished project under the unfinished ones.
+// A NOT NULL column has no empty values, so it stays plain and its index can still serve the order.
+function sortTerm(target: AnyColumn | SQL, dir: SortDir): SQL {
+  const ordered = dir === 'asc' ? asc(target) : desc(target)
+  return is(target, Column) && target.notNull ? ordered : sql`${ordered} nulls last`
+}
+
 export function defineFieldSql<F extends FieldList>(fields: F, map: NoInfer<FieldSqlMap<F>>, order: FieldOrder): FieldSql<F> {
   const fieldList: FieldList = fields
   // Widened once: the mapped keys are conditional types, so the map can't be indexed by a plain id.
@@ -67,9 +74,7 @@ export function defineFieldSql<F extends FieldList>(fields: F, map: NoInfer<Fiel
       if (sort && !targets[sort.sortBy]) {
         throw new Error(`[defineFieldSql] '${sort.sortBy}' is not a sortable field`)
       }
-      const chosen = sort
-        ? [sort.sortDir === 'asc' ? asc(targets[sort.sortBy]) : desc(targets[sort.sortBy])]
-        : [...order.defaultOrder]
+      const chosen = sort ? [sortTerm(targets[sort.sortBy], sort.sortDir)] : [...order.defaultOrder]
       return [...chosen, asc(order.tieBreaker)]
     },
   }
