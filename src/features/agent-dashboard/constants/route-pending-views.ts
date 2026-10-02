@@ -11,6 +11,6 @@ export const DASHBOARD_ROUTE_PENDING_VIEWS: Record<string, ComponentType> = {
   [ROOTS.dashboard.customers.root()]: dynamic(() => import('@/features/agent-dashboard/ui/components/customers-route-pending-view').then(m => m.CustomersRoutePendingView)),
   [ROOTS.dashboard.meetings.root()]: dynamic(() => import('@/features/records-management/ui/views/meetings-records-view').then(m => m.MeetingsRecordsView)),
   [ROOTS.dashboard.proposals.root()]: dynamic(() => import('@/features/agent-dashboard/ui/components/proposals-route-pending-view').then(m => m.ProposalsRoutePendingView)),
-  [ROOTS.dashboard.projects.root()]: dynamic(() => import('@/features/agent-dashboard/ui/components/projects-route-pending-view').then(m => m.ProjectsRoutePendingView)),
+  [ROOTS.dashboard.projects.root()]: dynamic(() => import('@/features/records-management/ui/views/projects-records-view').then(m => m.ProjectsRecordsView)),
   [ROOTS.dashboard.schedule()]: dynamic(() => import('@/features/schedule-management/ui/views/schedule-view').then(m => m.ScheduleView)),
 }

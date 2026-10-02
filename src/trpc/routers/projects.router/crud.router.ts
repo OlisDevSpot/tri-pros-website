@@ -1,11 +1,8 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
-import { projectStatusBuckets, projectVisibilities } from '@/shared/constants/enums'
-import { dateRangeSchema } from '@/shared/dal/lib/query/range-schemas'
-import { paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
 import { createProjectWithScopes, projectCrud, updateProjectWithScopes } from '@/shared/modules/projects/core/dal/server/crud'
-import { getAllProjects, getProjectForEdit, listProjects } from '@/shared/modules/projects/core/dal/server/queries'
+import { getAllProjects, getProjectForEdit, listProjects, projectListInputSchema } from '@/shared/modules/projects/core/dal/server/queries'
 import { projectFormSchema } from '@/shared/modules/projects/core/schemas'
 
 import { agentProcedure, createTRPCRouter } from '../../init'
@@ -18,22 +15,8 @@ export const crudRouter = createTRPCRouter({
       return getAllProjects()
     }),
 
-  // Server-paginated projects list for /dashboard/projects.
-  // Each row carries `scopeIds` (aggregated from x_projectScopes) so the
-  // detail sheet can resolve trade names without a per-row fetch.
   list: projectProcedure
-    .input(paginatedQueryInput({
-      // Status is derived from `pipelineStage`, never stored — callers filter by
-      // the coarse bucket (active/completed/on_hold/cancelled) and the handler
-      // expands it to the matching stages via `stagesForBuckets`.
-      statusBucket: z.array(z.enum(projectStatusBuckets)).optional(),
-      // Exclude pure-portfolio projects (no meetings) — showcase-only entries
-      // that never ran the lifecycle. Real projects have ≥1 birthing meeting.
-      excludePortfolio: z.boolean().optional(),
-      visibility: z.enum(projectVisibilities).optional(),
-      completedAt: dateRangeSchema.optional(),
-      createdAt: dateRangeSchema.optional(),
-    }))
+    .input(projectListInputSchema)
     .query(async ({ ctx, input }) => dalToTrpc(await listProjects(ctx, input))),
 
   getForEdit: agentProcedure

@@ -2,15 +2,23 @@
 
 import type { ColumnRegistry } from '@/shared/components/data-table/lib/use-entity-columns'
 import type { EntityTableMeta } from '@/shared/components/data-table/types/entity-table-meta'
+import type { SortId } from '@/shared/dal/lib/query/field-list'
+import type { PROJECT_FIELDS } from '@/shared/modules/projects/core/dal/project-fields'
 import type { AppRouterOutputs } from '@/trpc/routers/app'
 
+import { CustomerNameCell } from '@/shared/components/data-table/ui/customer-name-cell'
 import { PrimaryCell } from '@/shared/components/data-table/ui/primary-cell'
 import { Badge } from '@/shared/components/ui/badge'
+import { deriveProjectStatusBucket } from '@/shared/constants/enums'
 import { cn } from '@/shared/lib/utils'
+import { PROJECT_STATUS_BUCKET_COLORS } from '@/shared/modules/projects/core/constants/status-colors'
+import { PROJECT_STATUS_BUCKET_LABELS } from '@/shared/modules/projects/core/constants/status-labels'
 
 export type ProjectRow = AppRouterOutputs['projectsRouter']['crud']['list']['rows'][number]
 
-export type ProjectTableMeta = EntityTableMeta<ProjectRow>
+export interface ProjectTableMeta extends EntityTableMeta<ProjectRow> {
+  onViewProfile?: (customerId: string) => void
+}
 
 export const PROJECT_COLUMNS = {
   title: {
@@ -29,6 +37,36 @@ export const PROJECT_COLUMNS = {
       )
     },
   },
+  customerName: {
+    label: 'Customer',
+    sort: 'customerName',
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as ProjectTableMeta | undefined
+      return (
+        <CustomerNameCell
+          customerId={row.original.customerId}
+          customerName={row.original.customerName}
+          onViewProfile={meta?.onViewProfile}
+          className="max-w-48 text-sm text-foreground"
+        />
+      )
+    },
+  },
+  status: {
+    label: 'Status',
+    // The bucket is derived from the stage; the Status filter covers "show me On Hold".
+    cell: ({ row }) => {
+      const bucket = deriveProjectStatusBucket(row.original.pipelineStage)
+      return (
+        <div className="flex min-w-0 items-center gap-1.5">
+          <Badge className={cn('shrink-0 text-xs', PROJECT_STATUS_BUCKET_COLORS[bucket])}>{PROJECT_STATUS_BUCKET_LABELS[bucket]}</Badge>
+          {row.original.pipelineStage && (
+            <span className="truncate text-xs capitalize text-muted-foreground">{row.original.pipelineStage.replace(/_/g, ' ')}</span>
+          )}
+        </div>
+      )
+    },
+  },
   city: {
     label: 'Location',
     sort: 'city',
@@ -42,7 +80,7 @@ export const PROJECT_COLUMNS = {
   },
   isPublic: {
     label: 'Visibility',
-    sort: 'isPublic',
+    sort: 'visibility',
     cell: ({ row }) => (
       <Badge
         className={cn(
@@ -66,4 +104,6 @@ export const PROJECT_COLUMNS = {
     sort: 'createdAt',
     format: 'date',
   },
-} as const satisfies ColumnRegistry<ProjectRow>
+} as const satisfies ColumnRegistry<ProjectRow, SortId<typeof PROJECT_FIELDS>>
+
+export type ProjectColumnKey = keyof typeof PROJECT_COLUMNS

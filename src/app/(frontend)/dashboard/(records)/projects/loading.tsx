@@ -1,10 +1,10 @@
-import { ProjectsRoutePendingView } from '@/features/agent-dashboard/ui/components/projects-route-pending-view'
+import { ProjectsRecordsView } from '@/features/records-management/ui/views/projects-records-view'
 import { DataViewPending } from '@/shared/components/data-view-pending'
 
 export default function ProjectsLoading() {
   return (
     <DataViewPending>
-      <ProjectsRoutePendingView />
+      <ProjectsRecordsView />
     </DataViewPending>
   )
 }

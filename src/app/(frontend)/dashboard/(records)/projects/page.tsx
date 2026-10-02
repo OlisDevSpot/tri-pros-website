@@ -1,10 +1,8 @@
 import type { SearchParams } from 'nuqs/server'
 
-import { PROJECTS_TABLE_QUERY_CONFIG } from '@/features/project-management/constants/projects-table-query-config'
-import { PortfolioProjectsTable } from '@/features/project-management/ui/components/table'
-import { DataViewBoundary } from '@/shared/components/data-view-boundary'
-import { RecordsPageFrame } from '@/shared/components/records-page-frame'
-import { loadPaginatedQueryInput } from '@/shared/dal/server/lib/query/load-paginated-query-input'
+import { PROJECTS_RECORDS_TABLE_VIEW } from '@/features/records-management/constants/projects-records-table-view'
+import { ProjectsRecordsView } from '@/features/records-management/ui/views/projects-records-view'
+import { loadDataViewQueryInput } from '@/shared/dal/server/lib/query/load-data-view-query-input'
 import { protectDashboardPage } from '@/shared/domains/permissions/lib/protect-dashboard-page'
 import { HydrateClient } from '@/trpc/components/hydrate-client'
 import { prefetch } from '@/trpc/lib/prefetch'
@@ -22,17 +20,13 @@ export default async function ProjectsPage({ searchParams }: Props) {
   // Unauthenticated visitors get the layout's sign-in screen; skip the
   // prefetch work.
   if (authState.status === 'authenticated') {
-    const input = await loadPaginatedQueryInput(searchParams, PROJECTS_TABLE_QUERY_CONFIG)
+    const input = await loadDataViewQueryInput(searchParams, PROJECTS_RECORDS_TABLE_VIEW.query)
     prefetch(trpc.projectsRouter.crud.list.queryOptions(input))
   }
 
   return (
     <HydrateClient>
-      <RecordsPageFrame>
-        <DataViewBoundary>
-          <PortfolioProjectsTable />
-        </DataViewBoundary>
-      </RecordsPageFrame>
+      <ProjectsRecordsView />
     </HydrateClient>
   )
 }

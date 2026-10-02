@@ -1,16 +1,16 @@
-import type { ProjectStatusBucket, ProjectVisibility } from '@/shared/constants/enums'
-import type { DateRange } from '@/shared/dal/lib/query/range-schemas'
-import type { PaginationFields, SortFields } from '@/shared/dal/server/lib/query/schemas'
+import type z from 'zod'
+
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { Project, ProjectMediaFile } from '@/shared/db/schema'
 import type { PortfolioProject, PortfolioProjectDetail } from '@/shared/modules/projects/core/types'
-import { and, asc, count, desc, eq, getTableColumns, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm'
-import { stagesForBuckets } from '@/shared/constants/enums'
+import { and, asc, count, desc, eq, getTableColumns, inArray, sql } from 'drizzle-orm'
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
-import { buildFilterWhere } from '@/shared/dal/server/lib/query/filters'
-import { buildOrderBy } from '@/shared/dal/server/lib/query/sort'
+import { fieldListInput } from '@/shared/dal/server/lib/query/field-list-input'
+import { buildSearchWhere } from '@/shared/dal/server/lib/query/search'
 import { db } from '@/shared/db'
-import { projectMediaFiles, projects, x_projectScopes } from '@/shared/db/schema'
+import { customers, projectMediaFiles, projects, x_projectScopes } from '@/shared/db/schema'
+import { PROJECT_FIELDS } from '@/shared/modules/projects/core/dal/project-fields'
+import { PROJECT_FIELD_SQL } from '@/shared/modules/projects/core/dal/server/project-field-sql'
 import { hasAssociatedMeeting } from '@/shared/modules/projects/core/lib/visibility'
 import { getMediaPhaseCountsByProjectIds } from '@/shared/modules/projects/media/dal/server/queries'
 
@@ -180,75 +180,36 @@ export async function getAllProjects(): Promise<ProjectWithScopeIds[]> {
   }))
 }
 
-/** `crud.list` input shape — mirrors the router's `paginatedQueryInput({...})` schema (kept in crud.router.ts). */
-export interface ProjectListInput {
-  pagination: PaginationFields
-  sort?: SortFields
-  search?: string
-  filters?: {
-    statusBucket?: ProjectStatusBucket[]
-    excludePortfolio?: boolean
-    visibility?: ProjectVisibility
-    completedAt?: DateRange
-    createdAt?: DateRange
-  }
-}
+export const projectListInputSchema = fieldListInput(PROJECT_FIELDS, { pagination: true })
+export type ProjectListInput = z.infer<typeof projectListInputSchema>
 
-/**
- * Server-paginated projects list for /dashboard/projects. Each row carries
- * `scopeIds` (aggregated from x_projectScopes) so the detail sheet can
- * resolve trade names without a per-row fetch. Scope is set by middleware
- * (`projectProcedure` → `ctx.scope`; null for omni).
- */
+export type ProjectListRow = ProjectWithScopeIds & { customerName: string | null, hasMeetings: boolean }
+
+/** The records table's and the agent dashboard's projects read. Each row carries its `scopeIds`, so a row resolves its trades without a per-row fetch. */
 export async function listProjects(
   ctx: ScopedContext,
   input: ProjectListInput,
-): Promise<DalReturn<{ rows: ProjectWithScopeIds[], total: number }>> {
+): Promise<DalReturn<{ rows: ProjectListRow[], total: number }>> {
   return dalDbOperation(async () => {
-    const scopeWhere = ctx.scope ?? undefined
-
-    const searchTerm = input.search?.trim()
-    const searchWhere = searchTerm
-      ? or(
-          ilike(projects.title, `%${searchTerm}%`),
-          ilike(projects.city, `%${searchTerm}%`),
-        )
-      : undefined
-
-    const filterWhere = buildFilterWhere(input.filters, {
-      // Expand the requested buckets to their stages. coalesce null→'closed'
-      // so a stray unset-stage project groups with Completed, matching
-      // deriveProjectStatusBucket's null fallback. (Pure-portfolio nulls are
-      // separately dropped by excludePortfolio.)
-      statusBucket: v => (v.length > 0 ? inArray(sql`coalesce(${projects.pipelineStage}, 'closed')`, stagesForBuckets(v)) : undefined),
-      excludePortfolio: v => (v ? hasAssociatedMeeting() : undefined),
-      visibility: v => eq(projects.isPublic, v === 'public'),
-      completedAt: v => and(
-        v.from ? gte(projects.completedAt, v.from) : undefined,
-        v.to ? lte(projects.completedAt, v.to) : undefined,
-      ),
-      createdAt: v => and(
-        v.from ? gte(projects.createdAt, v.from) : undefined,
-        v.to ? lte(projects.createdAt, v.to) : undefined,
-      ),
-    })
-
-    const where = and(scopeWhere, searchWhere, filterWhere)
-
-    const orderBy = buildOrderBy(input.sort, {
-      title: projects.title,
-      city: projects.city,
-      isPublic: projects.isPublic,
-      completedAt: projects.completedAt,
-      createdAt: projects.createdAt,
-    })
+    const where = and(
+      ctx.scope ?? undefined,
+      buildSearchWhere(input.search, [projects.title, projects.city, customers.name]),
+      PROJECT_FIELD_SQL.where(input.filters),
+    )
+    const orderBy = PROJECT_FIELD_SQL.orderBy(input.sort)
 
     // Page query resolves first; count + scopes overlap in flight.
     // Scopes only depend on the page's projectIds, not the count, so
     // serializing scopes behind `paginate()` would waste a round-trip.
     const rows = await db
-      .select(getTableColumns(projects))
+      .select({
+        ...getTableColumns(projects),
+        customerName: customers.name,
+        // The expanded row skips its sales-history read when there is nothing to show.
+        hasMeetings: sql<boolean>`${hasAssociatedMeeting()}`.as('has_meetings'),
+      })
       .from(projects)
+      .leftJoin(customers, eq(customers.id, projects.customerId))
       .where(where)
       .orderBy(...orderBy)
       .limit(input.pagination.limit)
@@ -260,6 +221,7 @@ export async function listProjects(
       db
         .select({ c: count(projects.id) })
         .from(projects)
+        .leftJoin(customers, eq(customers.id, projects.customerId))
         .where(where)
         .then(r => r[0]?.c ?? 0),
       projectIds.length > 0
