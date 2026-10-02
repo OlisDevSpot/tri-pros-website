@@ -43,7 +43,7 @@ export function DashboardMeetingsCalendar({ rows, isPending, month, onMonthChang
         // Cells are local dates and rows are keyed by Pacific day; converting the cell to Pacific would shift it a day east of California.
         modifiers={{ hasMeeting: date => daysWithMeetings.has(localDateToCalendarDay(date)) }}
         components={{ DayButton: CalendarMeetingDayButton }}
-        className="w-full p-0 md:w-fit md:shrink-0 md:p-3"
+        className="w-full bg-card p-0 md:w-fit md:shrink-0 md:p-3"
         // WebKit (every iOS browser) sizes this flex column from the grid's pre-stretch
         // width, where the aspect-square cells are smaller, so the grid then overflows
         // onto the agenda. An explicit width makes it measure at its real size.
