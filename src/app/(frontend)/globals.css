@@ -1059,12 +1059,6 @@
   padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }
 
-/* Mobile sheet sidebar                                           */
-[data-sidebar][data-mobile='true'] > div {
-  padding-top: max(0.5rem, env(safe-area-inset-top));
-  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
-}
-
 /* Fullscreen sheets                                              */
 [data-slot='sheet-content'] {
   padding-top: env(safe-area-inset-top);
