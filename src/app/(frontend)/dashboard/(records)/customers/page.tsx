@@ -1,7 +1,7 @@
 import type { SearchParams } from 'nuqs/server'
 
 import { DataViewBoundary } from '@/shared/components/data-view-boundary'
-import { RecordsPageMotionShell } from '@/shared/components/records-page-motion-shell'
+import { RecordsPageFrame } from '@/shared/components/records-page-frame'
 import { loadDataViewQueryInput } from '@/shared/dal/server/lib/query/load-data-view-query-input'
 import { protectDashboardPage } from '@/shared/domains/permissions/lib/protect-dashboard-page'
 import { CustomersTable } from '@/shared/entities/customers/components/customers-table'
@@ -28,11 +28,11 @@ export default async function CustomersPage({ searchParams }: Props) {
 
   return (
     <HydrateClient>
-      <RecordsPageMotionShell>
+      <RecordsPageFrame>
         <DataViewBoundary>
           <CustomersTable />
         </DataViewBoundary>
-      </RecordsPageMotionShell>
+      </RecordsPageFrame>
     </HydrateClient>
   )
 }

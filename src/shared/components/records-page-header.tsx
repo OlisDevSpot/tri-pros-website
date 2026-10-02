@@ -22,8 +22,7 @@ interface RecordsPageHeaderProps {
 
 /**
  * Standard header bar for a records page. Renders the title and the live
- * total-count badge baseline-aligned on a single row, with an optional
- * right-aligned actions slot.
+ * total-count badge baseline-aligned, with an optional right-aligned actions slot.
  *
  * Sibling to `<QueryToolbar>` and `<DataTable>` — the three together form
  * the canonical records-page shape. Compose via `<RecordsPageShell>` for
@@ -39,7 +38,8 @@ export function RecordsPageHeader({
   const Tag = as
   const countText = query.isPending ? 'Loading…' : formatTotalCount(query.total)
   return (
-    <header className={cn('flex flex-wrap items-baseline gap-x-3 gap-y-1', className)}>
+    // The row is always one button tall, so a page with actions sits at the same height as one without.
+    <header className={cn('flex min-h-9 flex-wrap items-center gap-x-3 gap-y-1', className)}>
       <div className="flex flex-wrap items-baseline gap-x-2">
         <Tag className="text-lg font-semibold tracking-tight">
           {title}
