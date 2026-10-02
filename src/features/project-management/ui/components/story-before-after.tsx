@@ -3,11 +3,12 @@
 import type { Project, ProjectMediaFile } from '@/shared/db/schema'
 import type { BeforeAfterPairs } from '@/shared/modules/projects/core/schemas'
 import type { ProjectMediaGroups } from '@/shared/modules/projects/core/types'
-import { AnimatePresence, motion, useInView } from 'motion/react'
+import { motion, useInView } from 'motion/react'
 import dynamic from 'next/dynamic'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { Badge } from '@/shared/components/ui/badge'
 import { cn } from '@/shared/lib/utils'
+import { CrossfadeImage } from '@/shared/modules/media/core/components/display/crossfade-image'
 import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
 
 const ReactCompareSlider = dynamic(
@@ -114,46 +115,22 @@ export function StoryBeforeAfter({ project, media }: Props) {
           <ReactCompareSlider
             itemOne={(
               <div className="relative h-full w-full">
-                <AnimatePresence mode="popLayout">
-                  <motion.div
-                    key={activePair.before.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="absolute inset-0"
-                  >
-                    <OptimizedImage
-                      file={activePair.before}
-                      alt={`${activePair.label} — Before`}
-                      fill
-                      sizes="(max-width: 768px) 100vw, (max-width: 1280px) 80vw, 1200px"
-                      priority={activePairIndex === 0}
-                    />
-                  </motion.div>
-                </AnimatePresence>
+                <CrossfadeImage
+                  alt={`${activePair.label} — Before`}
+                  image={{ file: activePair.before }}
+                  priority={activePairIndex === 0}
+                  sizes="(max-width: 768px) 100vw, (max-width: 1280px) 80vw, 1200px"
+                />
               </div>
             )}
             itemTwo={(
               <div className="relative h-full w-full">
-                <AnimatePresence mode="popLayout">
-                  <motion.div
-                    key={activePair.after.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="absolute inset-0"
-                  >
-                    <OptimizedImage
-                      file={activePair.after}
-                      alt={`${activePair.label} — After`}
-                      fill
-                      sizes="(max-width: 768px) 100vw, (max-width: 1280px) 80vw, 1200px"
-                      priority={activePairIndex === 0}
-                    />
-                  </motion.div>
-                </AnimatePresence>
+                <CrossfadeImage
+                  alt={`${activePair.label} — After`}
+                  image={{ file: activePair.after }}
+                  priority={activePairIndex === 0}
+                  sizes="(max-width: 768px) 100vw, (max-width: 1280px) 80vw, 1200px"
+                />
               </div>
             )}
             className="h-full"
