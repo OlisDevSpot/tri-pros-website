@@ -260,8 +260,9 @@ function Sidebar({
       <div
         data-slot="sidebar-container"
         className={cn(
-          // In an iOS standalone PWA (viewport-fit=cover) 100svh falls short by the status bar; see the html rule in globals.css.
-          'fixed top-0 z-10 hidden h-[calc(100svh+env(safe-area-inset-top))] w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex',
+          // Sized like the html rule in globals.css, never by viewport units: after an out-of-scope trip (Google
+          // sign-in) an iOS standalone PWA reports svh as if Safari's toolbar were showing, leaving a band below.
+          'fixed top-0 z-10 hidden h-[calc(100%+env(safe-area-inset-top))] w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex',
           side === 'left'
             ? 'left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]'
             : 'right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]',
