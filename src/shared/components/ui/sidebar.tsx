@@ -260,9 +260,8 @@ function Sidebar({
       <div
         data-slot="sidebar-container"
         className={cn(
-          // Sized like the html rule in globals.css, never by viewport units: after an out-of-scope trip (Google
-          // sign-in) an iOS standalone PWA reports svh as if Safari's toolbar were showing, leaving a band below.
-          'fixed top-0 z-10 hidden h-[calc(100%+env(safe-area-inset-top))] w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex',
+          // In an iOS standalone PWA (viewport-fit=cover) 100svh falls short by the status bar; see the html rule in globals.css.
+          'fixed top-0 z-10 hidden h-[calc(100svh+env(safe-area-inset-top))] w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex',
           side === 'left'
             ? 'left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]'
             : 'right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]',
@@ -439,8 +438,9 @@ function SidebarGroupLabel({
       data-slot="sidebar-group-label"
       data-sidebar="group-label"
       className={cn(
-        'text-sidebar-foreground/70 ring-sidebar-ring flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium outline-hidden transition-[margin,opacity] duration-200 ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0',
-        'group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0',
+        'text-sidebar-foreground/70 ring-sidebar-ring flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium outline-hidden transition-[margin,opacity,visibility] duration-200 ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0',
+        // Collapsed, the label slides up over the item above it; opacity alone would leave it catching that item's taps.
+        'group-data-[collapsible=icon]:invisible group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0',
         className,
       )}
       {...props}

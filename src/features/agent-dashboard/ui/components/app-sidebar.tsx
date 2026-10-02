@@ -23,6 +23,7 @@ import { SidebarRecordsGroup } from '@/features/agent-dashboard/ui/components/si
 import { SidebarSearchBar } from '@/features/agent-dashboard/ui/components/sidebar-search-bar'
 import { SidebarThemeSwitch } from '@/features/agent-dashboard/ui/components/sidebar-theme-switch'
 import { SidebarUserButton } from '@/features/agent-dashboard/ui/components/sidebar-user-button'
+import { ViewportProbe } from '@/features/agent-dashboard/ui/components/viewport-probe'
 import { Button } from '@/shared/components/ui/button'
 import {
   Sidebar,
@@ -261,6 +262,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
         </SidebarFooter>
       </Sidebar>
       <ActionCenterSheet isOpen={isActionCenterOpen} onClose={() => setIsActionCenterOpen(false)} />
+      {user.role === 'super-admin' && <ViewportProbe />}
     </>
   )
 }
