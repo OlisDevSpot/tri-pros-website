@@ -78,7 +78,7 @@ Renders absolutely positioned layers that fill the parent, so the parent must be
   - The decode settles (resolved or rejected): it swaps to the next image.
   - `CROSSFADE_HOLD_MS` passes: it swaps anyway. The new layer's `OptimizedImage` shows the blur placeholder, then sharpens when the image loads (section 4, item 2).
 - **Newest wins.** Each change takes a sequence number; a decode or timer from an older change is ignored. The timer is cleared on change and on unmount.
-- **Swap.** `AnimatePresence initial={false}` keyed on the identity, `motion.div` opacity 0 → 1 / exit 1 → 0 with `CROSSFADE_TRANSITION`. Under `useReducedMotion()` the transition is `{ duration: 0 }`.
+- **Swap.** `AnimatePresence initial={false}` keyed on the identity. The incoming `motion.div` fades 0 → 1 with `CROSSFADE_TRANSITION`, on top. The outgoing one stays at opacity 1 underneath and is removed only once the incoming one is fully in (exit: `{ opacity: 0 }` with `duration: 0`, `delay` = the crossfade's duration). Fading both at once would let the background through, down to 75 % visible at the midpoint, which fails §7's ≥ 0.95. Under `useReducedMotion()` the transition is `{ duration: 0 }` and the exit is immediate. *(Amended 2026-10-02 while planning.)*
 - **Rendering.** A file renders through `OptimizedImage fill`. A static photo renders through `next/image fill` (the app sets `images.unoptimized: true`, so it emits the plain path, the same URL `decodeImage` fetched).
 
 **`decodeImage`**, in `src/shared/modules/media/display/lib/decode-image.ts`:
