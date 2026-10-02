@@ -5,10 +5,11 @@ import z from 'zod'
 import { LIVE_MEETING_OUTCOMES } from '@/shared/constants/enums'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema'
-import { getByIdWithJoins, listMeetings, meetingListInputSchema } from '@/shared/entities/meetings/dal/server/queries'
+import { getByIdWithJoins, listMeetings, listMeetingsForProject, meetingListInputSchema } from '@/shared/entities/meetings/dal/server/queries'
 import { createTRPCRouter } from '@/trpc/init'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 
+import { projectProcedure } from '../projects.router/procedures'
 import { meetingProcedure } from './procedures'
 
 export const readsRouter = createTRPCRouter({
@@ -30,6 +31,11 @@ export const readsRouter = createTRPCRouter({
       }
       return row
     }),
+
+  // Scoped by the project, not the meeting: a rep who can see the project sees every meeting that sold it.
+  listForProject: projectProcedure
+    .input(z.object({ projectId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => dalToTrpc(await listMeetingsForProject(ctx, input))),
 
   getInternalUsers: meetingProcedure
     .query(async ({ ctx }) => {

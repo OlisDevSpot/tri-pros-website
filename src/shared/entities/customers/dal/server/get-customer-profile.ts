@@ -2,10 +2,10 @@
 
 import type { CustomerLeadAttributionRow } from '@/shared/db/schema/customer-lead-attribution'
 
-import type { CustomerProfileData, CustomerProfileMeeting, CustomerProfileProject, CustomerProfileProposal, CustomerProfileProposalView } from '@/shared/entities/customers/types'
+import type { CustomerProfileData, CustomerProfileMeeting, CustomerProfileProject, CustomerProfileProposalView } from '@/shared/entities/customers/types'
 
 import { TRPCError } from '@trpc/server'
-import { and, asc, count, desc, eq, getTableColumns, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, getTableColumns, sql } from 'drizzle-orm'
 
 import { deriveProjectStatusBucket } from '@/shared/constants/enums'
 import { db } from '@/shared/db'
@@ -18,10 +18,10 @@ import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
-import { proposals } from '@/shared/db/schema/proposals'
 import { userCanSeeCustomer } from '@/shared/entities/customers/dal/server/visibility'
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { profileCols } from '@/shared/entities/customers/lib/profile-select'
+import { getMeetingsWithProposals } from '@/shared/entities/meetings/dal/server/meetings-with-proposals'
 
 // Local viewer shape for this DAL. The customers entity used to export a
 // shared `CustomersViewer` interface; that was removed when queries.ts
@@ -73,109 +73,7 @@ export async function getCustomerProfile(customerId: string, viewer: CustomerPro
   // separate presigned-URL fetch, instead of flashing a skeleton then removing it.
   const hasRecording = Boolean(attribution?.captureJSON?.mp3RecordingKey)
 
-  const meetingRows = await db
-    .select({
-      id: meetings.id,
-      ownerId: meetings.ownerId,
-      projectId: meetings.projectId,
-      meetingType: meetings.meetingType,
-      meetingOutcome: meetings.meetingOutcome,
-      scheduledFor: meetings.scheduledFor,
-      confirmedAt: meetings.confirmedAt,
-      createdAt: meetings.createdAt,
-      updatedAt: meetings.updatedAt,
-    })
-    .from(meetings)
-    .where(eq(meetings.customerId, customerId))
-    .orderBy(desc(meetings.createdAt))
-
-  const proposalRows = await db
-    .select({
-      id: proposals.id,
-      label: proposals.label,
-      status: proposals.status,
-      token: proposals.token,
-      meetingId: proposals.meetingId,
-      sentAt: proposals.sentAt,
-      contractSentAt: proposals.contractSentAt,
-      createdAt: proposals.createdAt,
-      trade: sql<string | null>`${proposals.projectJSON}->'data'->'sow'->0->'trade'->>'label'`.as('trade'),
-      finalTcpCents: proposals.finalTcpCents,
-      sowRaw: sql<string | null>`${proposals.projectJSON}->'data'->'sow'`.as('sow_raw'),
-      viewCount: count(proposalViews.id).as('view_count'),
-    })
-    .from(proposals)
-    .leftJoin(proposalViews, eq(proposalViews.proposalId, proposals.id))
-    .where(
-      sql`${proposals.meetingId} IN (${sql.join(
-        meetingRows.length > 0
-          ? meetingRows.map(m => sql`${m.id}`)
-          : [sql`NULL`],
-        sql`, `,
-      )})`,
-    )
-    .groupBy(proposals.id)
-    .orderBy(desc(proposals.createdAt))
-
-  const allProposals: CustomerProfileProposal[] = proposalRows.map((p) => {
-    // Parse SOW JSON into trade+scopes summary
-    let sowSummary: CustomerProfileProposal['sowSummary'] = []
-    try {
-      const rawSow = typeof p.sowRaw === 'string' ? JSON.parse(p.sowRaw) : p.sowRaw
-      if (Array.isArray(rawSow)) {
-        sowSummary = rawSow
-          .filter((entry: any) => entry?.trade?.label)
-          .map((entry: any) => ({
-            trade: entry.trade.label as string,
-            scopes: Array.isArray(entry.scopes)
-              ? entry.scopes.filter((s: any) => s?.label && typeof s?.id === 'string').map((s: any) => ({ id: s.id as string, label: s.label as string }))
-              : [],
-          }))
-      }
-    }
-    catch {
-      // Invalid JSON — leave empty
-    }
-
-    return {
-      id: p.id,
-      label: p.label,
-      status: p.status,
-      token: p.token,
-      trade: p.trade,
-      // Stored rollup (Wave 2) — maintained by recomputeProposalFinancials; null
-      // only pre-backfill.
-      value: (p.finalTcpCents ?? 0) / 100,
-      sentAt: p.sentAt,
-      contractSentAt: p.contractSentAt,
-      viewCount: p.viewCount,
-      meetingId: p.meetingId,
-      createdAt: p.createdAt,
-      sowSummary,
-    }
-  })
-
-  const proposalsByMeeting = new Map<string, CustomerProfileProposal[]>()
-  for (const p of allProposals) {
-    if (p.meetingId) {
-      const existing = proposalsByMeeting.get(p.meetingId) ?? []
-      existing.push(p)
-      proposalsByMeeting.set(p.meetingId, existing)
-    }
-  }
-
-  const meetingsWithProposals: CustomerProfileMeeting[] = meetingRows.map(m => ({
-    id: m.id,
-    ownerId: m.ownerId,
-    projectId: m.projectId,
-    meetingType: m.meetingType,
-    meetingOutcome: m.meetingOutcome,
-    scheduledFor: m.scheduledFor,
-    confirmedAt: m.confirmedAt,
-    createdAt: m.createdAt,
-    updatedAt: m.updatedAt,
-    proposals: proposalsByMeeting.get(m.id) ?? [],
-  }))
+  const { meetings: meetingsWithProposals, proposals: allProposals } = await getMeetingsWithProposals(eq(meetings.customerId, customerId))
 
   const noteRows = await db
     .select({

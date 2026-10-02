@@ -6,7 +6,8 @@ import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { Meeting } from '@/shared/db/schema/meetings'
 
 import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
-import { and, count, eq, getTableColumns, sql } from 'drizzle-orm'
+import type { CustomerProfileMeeting } from '@/shared/entities/customers/types'
+import { and, count, eq, exists, getTableColumns, sql } from 'drizzle-orm'
 
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { fieldListInput } from '@/shared/dal/server/lib/query/field-list-input'
@@ -18,10 +19,12 @@ import { customerProfiles } from '@/shared/db/schema/customer-profiles'
 import { customers } from '@/shared/db/schema/customers'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { meetings } from '@/shared/db/schema/meetings'
+import { projects } from '@/shared/db/schema/projects'
 import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { profileCols } from '@/shared/entities/customers/lib/profile-select'
 import { MEETING_FIELDS } from '@/shared/entities/meetings/dal/meeting-fields'
 import { MEETING_FIELD_SQL } from '@/shared/entities/meetings/dal/server/meeting-field-sql'
+import { getMeetingsWithProposals } from '@/shared/entities/meetings/dal/server/meetings-with-proposals'
 import { getAllParticipantsForMeetings } from '@/shared/entities/meetings/dal/server/participants'
 
 export interface MeetingListParticipant {
@@ -251,4 +254,21 @@ export async function getMeetingSchedule(id: string): Promise<Pick<Meeting, 'sch
     .where(eq(meetings.id, id))
     .limit(1)
   return row
+}
+
+/**
+ * A project's sales history. `ctx.scope` here is the project's visibility (the router runs this under
+ * `projectProcedure`), so it is applied through the project: whoever can see the project sees all of its meetings.
+ */
+export async function listMeetingsForProject(
+  ctx: ScopedContext,
+  input: { projectId: string },
+): Promise<DalReturn<CustomerProfileMeeting[]>> {
+  return dalDbOperation(async () => {
+    const projectVisible = ctx.scope
+      ? exists(db.select({ id: projects.id }).from(projects).where(and(eq(projects.id, input.projectId), ctx.scope)))
+      : undefined
+    const { meetings: rows } = await getMeetingsWithProposals(and(eq(meetings.projectId, input.projectId), projectVisible))
+    return rows
+  })
 }
