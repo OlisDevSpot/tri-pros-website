@@ -27,7 +27,7 @@ function Root({ className, children }: SlotProps) {
 function ActionBar({ className, children }: SlotProps) {
   const isMobile = useIsMobile()
   return (
-    <div className={cn('min-w-0', isMobile && '**:data-[toolbar-role=primary]:w-full', className)}>
+    <div className={cn('min-w-0', isMobile && '**:data-[toolbar-role=primary]:w-full **:data-[toolbar-role=promoted]:flex-1', className)}>
       {children}
     </div>
   )

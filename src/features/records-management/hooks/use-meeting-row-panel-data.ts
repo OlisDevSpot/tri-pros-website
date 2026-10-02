@@ -25,5 +25,5 @@ export function useMeetingRowPanelData(meeting: MeetingRow) {
     [profile.data, meeting.id],
   )
 
-  return { profile, customer: profile.data?.customer ?? null, proposals }
+  return { profile, proposals }
 }

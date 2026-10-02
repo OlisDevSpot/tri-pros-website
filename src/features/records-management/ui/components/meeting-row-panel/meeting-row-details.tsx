@@ -12,18 +12,17 @@ export function MeetingRowDetails({ meeting }: { meeting: MeetingRow }) {
   const scheduled = meeting.scheduledFor ? formatDateCell(meeting.scheduledFor) : null
   return (
     <>
-      <span className="font-medium text-foreground">{meeting.meetingType}</span>
-      <Badge variant="outline" className={cn('text-xs', MEETING_LIST_STATUS_COLORS[meeting.meetingOutcome])}>
-        {MEETING_OUTCOME_LABELS[meeting.meetingOutcome] ?? meeting.meetingOutcome.replace(/_/g, ' ')}
-      </Badge>
-      <UserOverviewCard.InlineList users={meeting.participants} mode="full" />
       {scheduled && (
-        <span>
+        <span className="basis-full font-medium text-foreground">
           {scheduled.relative}
           {' · '}
           {scheduled.dayAtTime}
         </span>
       )}
+      <Badge variant="outline" className={cn('text-xs', MEETING_LIST_STATUS_COLORS[meeting.meetingOutcome])}>
+        {MEETING_OUTCOME_LABELS[meeting.meetingOutcome] ?? meeting.meetingOutcome.replace(/_/g, ' ')}
+      </Badge>
+      <UserOverviewCard.InlineList users={meeting.participants} mode="full" />
     </>
   )
 }

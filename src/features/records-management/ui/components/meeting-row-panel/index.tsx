@@ -4,7 +4,6 @@ import type { EntityActionConfig } from '@/shared/components/entities/entity-act
 import type { MeetingRow } from '@/shared/entities/meetings/lib/columns-registry'
 
 import { useMeetingRowPanelData } from '@/features/records-management/hooks/use-meeting-row-panel-data'
-import { MeetingCustomerPane } from '@/features/records-management/ui/components/meeting-row-panel/meeting-customer-pane'
 import { MeetingProposalsPane } from '@/features/records-management/ui/components/meeting-row-panel/meeting-proposals-pane'
 import { MeetingRowActionBar } from '@/features/records-management/ui/components/meeting-row-panel/meeting-row-action-bar'
 import { MeetingRowDetails } from '@/features/records-management/ui/components/meeting-row-panel/meeting-row-details'
@@ -17,7 +16,7 @@ interface MeetingRowPanelProps {
 }
 
 export function MeetingRowPanel({ meeting, actions }: MeetingRowPanelProps) {
-  const { profile, customer, proposals } = useMeetingRowPanelData(meeting)
+  const { profile, proposals } = useMeetingRowPanelData(meeting)
 
   return (
     <ExpandedRowPanel>
@@ -29,16 +28,13 @@ export function MeetingRowPanel({ meeting, actions }: MeetingRowPanelProps) {
       </ExpandedRowPanel.Details>
       {profile.isError && (
         <ExpandedRowPanel.Error
-          title="Couldn't load this meeting's customer"
-          description="Trades still show; retry to load the customer and proposals."
+          title="Couldn't load this meeting's proposals"
+          description="Trades still show; retry to load the proposals."
           onRetry={() => void profile.refetch()}
         />
       )}
-      {/* Trades come from the row itself, so a failed profile read hides only the panes that need it. */}
-      <ExpandedRowPanel.Panes className={profile.isError ? undefined : '@min-[600px]:grid-cols-2 @min-[900px]:grid-cols-[250px_minmax(0,1fr)_minmax(0,1.15fr)]'}>
-        {!profile.isError && (
-          <MeetingCustomerPane customer={customer} hasCustomer={!!meeting.customerId} isLoading={profile.isLoading} leadSource={meeting.leadSource} />
-        )}
+      {/* Trades come from the row itself, so a failed profile read hides only the proposals pane. */}
+      <ExpandedRowPanel.Panes className={profile.isError ? undefined : '@min-[600px]:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]'}>
         <MeetingTradesPane meeting={meeting} actions={actions} />
         {!profile.isError && (
           <MeetingProposalsPane
@@ -46,7 +42,6 @@ export function MeetingRowPanel({ meeting, actions }: MeetingRowPanelProps) {
             proposals={proposals}
             isLoading={profile.isLoading}
             onMutationSuccess={() => void profile.refetch()}
-            className="@min-[600px]:col-span-2 @min-[900px]:col-span-1"
           />
         )}
       </ExpandedRowPanel.Panes>
