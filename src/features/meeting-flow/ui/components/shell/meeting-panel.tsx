@@ -41,7 +41,7 @@ export function MeetingPanel({ openSection, headerRef, onSelect, onClose, childr
           }
         }}
       >
-        <MeetingPanelHeader className="sticky top-0 z-10 -mx-4 bg-background px-3" headerRef={headerRef} openSection={openSection} onSelect={onSelect} />
+        <MeetingPanelHeader className="sticky top-0 z-10 -mx-4 bg-(--card) px-3" headerRef={headerRef} openSection={openSection} onSelect={onSelect} />
         <div className="py-3">
           {openSection && <h2 className="sr-only">{PANEL_SECTION_LABELS[openSection]}</h2>}
           {children}

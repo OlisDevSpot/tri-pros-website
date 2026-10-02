@@ -47,6 +47,8 @@ function DataTableRowImpl<TData extends { id: string }>({
   onRowClick,
 }: DataTableRowProps<TData>) {
   const rowProps: Record<string, unknown> = { [rowDataAttribute]: true }
+  // A status tint paints the cells, over the row's hover colour, so it steps aside on hover.
+  const tintClassName = rowClassName && cn(rowClassName, 'group-hover:bg-transparent')
   const expandToggle = hasExpandedRow
     ? (
         <button
@@ -91,7 +93,7 @@ function DataTableRowImpl<TData extends { id: string }>({
                 className={cn('sticky left-0 z-5 p-0 border-r border-border/50 bg-inherit', FROZEN_COLUMN_SHADOW)}
                 style={{ borderRightStyle: 'dashed' }}
               >
-                {rowClassName && <div className={cn('absolute inset-0', rowClassName)} />}
+                {tintClassName && <div className={cn('absolute inset-0', tintClassName)} />}
                 <div className="relative p-2">
                   {cellContent}
                 </div>
@@ -100,7 +102,7 @@ function DataTableRowImpl<TData extends { id: string }>({
           }
 
           return (
-            <TableCell key={cell.id} className={rowClassName}>
+            <TableCell key={cell.id} className={tintClassName}>
               {cellContent}
             </TableCell>
           )

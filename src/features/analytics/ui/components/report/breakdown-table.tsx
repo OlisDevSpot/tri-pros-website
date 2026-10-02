@@ -71,7 +71,7 @@ export function BreakdownTable({ config, report, focus, groupBy, onGroupBy }: Pr
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="sticky left-0 z-10 bg-card text-xs font-semibold text-muted-foreground">{GROUP_BY_LABELS[report.groupBy]}</TableHead>
+              <TableHead className="sticky left-0 z-10 bg-(--card) text-xs font-semibold text-muted-foreground">{GROUP_BY_LABELS[report.groupBy]}</TableHead>
               {columns.map(key => (
                 <TableHead
                   key={key}

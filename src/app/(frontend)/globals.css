@@ -16,6 +16,8 @@
   --edge: 0.048;
   --edge-dir: -1;
   --depth: 0;
+  /* A menu on the top rung is near white, with no lighter step for its highlight, so the tint does the work. */
+  --overlay-hover-mix: 14%;
   /* The floating rail's inset, the page margin and every gap between section cards. */
   --gutter: 0.5rem;
   /* The raw logo color is identity only (logo, browser theme-color): as text on light it fails contrast. */
@@ -324,6 +326,7 @@
   --step: 0.047;
   --edge-dir: 1;
   --depth: 0;
+  --overlay-hover-mix: 8%;
   --foreground: oklch(0.955 0.008 250);
   --card-foreground: var(--foreground);
   --popover-foreground: var(--foreground);
@@ -478,6 +481,7 @@
    ones, which paint their own fill. */
 :is(.bg-popover, .surface-overlay) {
   --depth: 4;
+  --row-hover: color-mix(in oklab, var(--primary) var(--overlay-hover-mix), var(--card));
 }
 
 /* The rung beneath the page: the public footer the page scrolls over. Comes after the relative block so its
