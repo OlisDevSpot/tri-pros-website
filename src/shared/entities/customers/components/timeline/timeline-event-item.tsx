@@ -87,7 +87,7 @@ export function TimelineEventItem({ event, customerId, isExpanded, onToggle, onO
       className={`group/row relative -ml-3 rounded-lg py-1.5 pl-10 pr-1.5 transition-colors ${isExpanded ? 'bg-muted/50' : 'hover:bg-muted/40'}`}
     >
       <span
-        className={`absolute left-3 top-1 grid size-5.5 place-items-center rounded-full border border-muted-foreground/25 bg-background ${config.color}`}
+        className={`absolute left-3 top-1 grid size-5.5 place-items-center rounded-full border border-muted-foreground/25 bg-(--card) ${config.color}`}
       >
         <Icon className="size-3.5" />
         <span className="sr-only">{config.label}</span>
