@@ -1,19 +1,14 @@
 'use client'
 
-import type { ReactNode } from 'react'
-
+import type { RenderExpandedRow } from '@/shared/components/data-table/types/entity-expanded-row'
 import type { EntityTableView } from '@/shared/components/data-table/types/entity-table-view'
-import type { DataTableProps } from '@/shared/components/data-table/ui/data-table'
-import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
+import type { MeetingOutcome } from '@/shared/constants/enums'
 import type { MEETING_FIELDS } from '@/shared/entities/meetings/dal/meeting-fields'
 import type { MeetingColumnKey, MeetingRow, MeetingTableMeta } from '@/shared/entities/meetings/lib/columns-registry'
 
 import { useCallback, useMemo, useState } from 'react'
 
-import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
-import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
-import { useColumnVisibility } from '@/shared/components/data-table/lib/use-column-visibility'
-import { useEntityColumns } from '@/shared/components/data-table/lib/use-entity-columns'
+import { useEntityTable } from '@/shared/components/data-table/lib/use-entity-table'
 import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
@@ -26,12 +21,8 @@ import { getMeetingRowClassName } from '@/shared/entities/meetings/lib/meeting-r
 import { openModal } from '@/shared/lib/open-modal'
 import { useTRPC } from '@/trpc/helpers'
 
-export interface MeetingsExpandedRowContext {
-  actions: EntityActionConfig<MeetingRow>[]
-}
-
 export interface UseMeetingsTableOptions {
-  renderExpandedRow?: (row: MeetingRow, ctx: MeetingsExpandedRowContext) => ReactNode
+  renderExpandedRow?: RenderExpandedRow<MeetingRow>
 }
 
 export function useMeetingsTable(
@@ -67,43 +58,32 @@ export function useMeetingsTable(
   const { actions, DeleteConfirmDialog, OutcomeReasonDialog, RescheduleDialog, changeOutcome }
     = useMeetingActionConfigs<MeetingRow>(overrides)
 
-  const columns = useEntityColumns(MEETING_COLUMNS, { show: tableView.columns })
-  const visibility = useColumnVisibility(tableView.tableId, columns)
-
-  const meta = useMemo<MeetingTableMeta>(() => ({
-    rowActions: actions,
-    onUpdateOutcome: (meetingId, outcome) => {
+  const meta = useMemo(() => ({
+    onUpdateOutcome: (meetingId: string, outcome: MeetingOutcome) => {
       void changeOutcome(meetingId, outcome)
     },
-    onUpdateScheduledFor: (meetingId, date) =>
+    onUpdateScheduledFor: (meetingId: string, date: Date) =>
       updateScheduledFor.mutate({ id: meetingId, data: { scheduledFor: date.toISOString() } }),
-    onAssignRep: meetingId => setParticipantsMeetingId(meetingId),
+    onAssignRep: (meetingId: string) => setParticipantsMeetingId(meetingId),
     canAssignMeeting: ability.can('assign', 'Meeting'),
-    onViewProfile: (customerId) => {
+    onViewProfile: (customerId: string) => {
       openModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props: { customerId } })
     },
-  }), [actions, changeOutcome, updateScheduledFor, ability])
+  }) satisfies Omit<MeetingTableMeta, 'rowActions'>, [changeOutcome, updateScheduledFor, ability])
 
-  const expandedRowRenderer = useMemo(
-    () => renderExpandedRow ? (row: MeetingRow) => renderExpandedRow(row, { actions }) : undefined,
-    [renderExpandedRow, actions],
-  )
-
-  const dataTableProps = {
-    tableId: tableView.tableId,
-    data: query.rows,
-    columns,
+  const { visibility, dataTableProps } = useEntityTable({
+    tableView,
+    registry: MEETING_COLUMNS,
+    query,
+    actions,
     meta,
-    getRowClassName: getMeetingRowClassName,
+    renderExpandedRow,
+    onRowClick: handleView,
     entityName: 'meeting',
     rowDataAttribute: 'data-meeting-row',
     skeletonRowClassName: 'h-[58.5px]',
-    renderExpandedRow: expandedRowRenderer,
-    onRowClick: handleView,
-    serverPagination: toDataTablePagination(query),
-    serverSorting: toDataTableSorting(query),
-    columnVisibility: visibility.columnVisibility,
-  } satisfies DataTableProps<MeetingRow, MeetingTableMeta>
+    getRowClassName: getMeetingRowClassName,
+  })
 
   const dialogs = (
     <>
@@ -125,5 +105,3 @@ export function useMeetingsTable(
 
   return { query, visibility, dataTableProps, dialogs }
 }
-
-export type MeetingsTableQuery = ReturnType<typeof useMeetingsTable>['query']
