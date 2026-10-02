@@ -12,6 +12,9 @@ const tabsListVariants = cva('text-muted-foreground inline-flex items-center', {
     variant: {
       default: 'bg-muted h-9 w-fit justify-center rounded-lg p-0.75',
       underline: 'h-auto w-full justify-start gap-1 border-b border-border',
+      // A bottom tab bar's tab group. Layout comes from the caller (a grid that also holds plain
+      // buttons beside the tabs), so this only clears the default pill track.
+      bar: 'h-auto items-stretch bg-transparent p-0',
     },
   },
   defaultVariants: { variant: 'default' },
@@ -24,6 +27,7 @@ const tabsTriggerVariants = cva(
       variant: {
         default: 'data-[state=active]:bg-popover dark:data-[state=active]:text-foreground dark:data-[state=active]:border-border text-foreground dark:text-muted-foreground h-[calc(100%-1px)] flex-1 rounded-md border border-transparent px-2 py-1 data-[state=active]:shadow-sm',
         underline: '-mb-px min-h-10 rounded-none border-b-2 border-transparent px-3 text-muted-foreground hover:text-foreground data-[state=active]:border-foreground data-[state=active]:text-foreground',
+        bar: 'h-14 min-w-0 flex-col gap-1 rounded-xl px-0 text-xs font-semibold text-muted-foreground hover:text-foreground data-[state=active]:bg-muted data-[state=active]:text-primary motion-reduce:transition-none',
       },
     },
     defaultVariants: { variant: 'default' },
@@ -91,4 +95,4 @@ function TabsContent({
   )
 }
 
-export { Tabs, TabsContent, TabsList, TabsTrigger }
+export { Tabs, TabsContent, TabsList, TabsTrigger, tabsTriggerVariants }
