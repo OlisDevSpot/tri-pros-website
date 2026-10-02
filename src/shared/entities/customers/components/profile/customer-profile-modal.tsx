@@ -1,21 +1,22 @@
 'use client'
 
 import type { HeroView } from './hero-view-toggle'
+import type { CustomerProfileTab } from '@/shared/entities/customers/types/profile-modal'
 import { useQuery } from '@tanstack/react-query'
-
 import { useState } from 'react'
 import { Modal } from '@/shared/components/dialogs/modals/base-modal'
 import { ErrorState } from '@/shared/components/states/error-state'
+import { Button } from '@/shared/components/ui/button'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
+import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
-import { CustomerHeroActions } from './customer-hero-actions'
+import { CustomerProfileLoadingSkeleton } from './customer-profile-loading-skeleton'
 import { CustomerProfileModalContent } from './customer-profile-modal-content'
-import { HeroViewToggle } from './hero-view-toggle'
 
 interface Props {
   customerId: string
-  defaultTab?: 'overview' | 'meetings' | 'projects'
+  defaultTab?: CustomerProfileTab
   highlightMeetingId?: string
 }
 
@@ -42,92 +43,47 @@ export function CustomerProfileModal({ customerId, defaultTab, highlightMeetingI
     ? [customer.address, customer.city, customer.state, customer.zip].filter(Boolean).join(', ') || null
     : null
 
-  // Common-action cluster + view toggle share the Modal's header row. The
-  // actions need the loaded profile (customer + meetings), so they appear once
-  // the query resolves; the toggle stays gated on there being an address to map.
-  const headerActions = profileQuery.data
-    ? (
-        <div className="flex items-center gap-2">
-          {heroAddress && <HeroViewToggle onChange={setHeroView} value={heroView} />}
-          <CustomerHeroActions
-            customer={profileQuery.data.customer}
-            meetings={profileQuery.data.meetings}
-            onMutationSuccess={handleMutationSuccess}
-            variant="desktop"
-          />
-        </div>
-      )
-    : undefined
-
   return (
     <Modal
-      className="sm:max-w-[min(72rem,calc(100vw-2rem))] sm:h-[85vh] overflow-hidden flex flex-col"
+      className={cn(
+        'flex flex-col overflow-hidden',
+        // md and up: 32px from every viewport edge, capped so a very wide screen does not stretch the pane.
+        'md:h-[calc(100dvh-4rem)] md:max-h-none md:w-[calc(100vw-4rem)] md:max-w-[100rem]',
+        // The base modal turns into a centered dialog at sm, but the rail needs 768px: stay fullscreen until md.
+        'sm:max-md:h-full sm:max-md:max-h-none sm:max-md:max-w-full sm:max-md:rounded-none sm:max-md:border-0',
+        // Close lives in the rail and the tab bar; the header's corner X would be a second home.
+        '**:data-modal-close:hidden',
+      )}
       close={close}
-      headerActions={headerActions}
       isOpen={isOpen}
       title={title}
     >
-      <div data-modal-hero className="flex min-h-0 w-full flex-1 flex-col">
-        {profileQuery.isPending && <CustomerProfileLoadingSkeleton />}
+      <div className="flex min-h-0 w-full flex-1 flex-col" data-modal-hero>
+        {profileQuery.isPending && <CustomerProfileLoadingSkeleton onClose={close} />}
 
-        {profileQuery.isError && (
+        {/* A failed refetch keeps the cached data, so the error state is only for a profile that never loaded. */}
+        {profileQuery.isError && !profileQuery.data && (
           <div className="flex flex-1 items-center justify-center p-6">
-            <ErrorState
-              description="Could not load customer data"
-              title="Failed to load profile"
-            />
+            <ErrorState description="Could not load customer data" title="Failed to load profile">
+              <Button className="mt-4 h-11 min-w-32" onClick={close} variant="outline">Close</Button>
+            </ErrorState>
           </div>
         )}
 
         {profileQuery.data && (
           <CustomerProfileModalContent
-            key={profileQuery.data.customer.id}
             data={profileQuery.data}
             defaultTab={defaultTab}
             heroAddress={heroAddress}
             heroView={heroView}
             highlightMeetingId={highlightMeetingId}
+            key={profileQuery.data.customer.id}
+            onClose={close}
+            onHeroViewChange={setHeroView}
             onMutationSuccess={handleMutationSuccess}
           />
         )}
       </div>
     </Modal>
-  )
-}
-
-// Matches the structure of the loaded CustomerProfileModalContent — same hero
-// band height, same body below — so swapping to real content is a content
-// swap, not a layout jump.
-function CustomerProfileLoadingSkeleton() {
-  return (
-    <div className="flex min-h-0 w-full flex-1 flex-col">
-      <div className="relative isolate overflow-hidden">
-        {/* Stands in for the hero's dark photo ground, which is dark in both themes. */}
-        <div className="h-65 animate-pulse bg-linear-to-br from-black/85 via-black/75 to-black sm:h-75" />
-        <div className="absolute inset-x-5 bottom-5 flex flex-col gap-3">
-          <div className="h-8 w-56 rounded-md bg-white/10" />
-          <div className="h-4 w-72 rounded-md bg-white/10" />
-          <div className="flex gap-2">
-            <div className="h-6 w-20 rounded-full bg-white/10" />
-            <div className="h-6 w-24 rounded-full bg-white/10" />
-          </div>
-          <div className="h-9 w-full rounded-md bg-black/40" />
-        </div>
-      </div>
-
-      <div className="flex-1 p-4 sm:p-6">
-        <div className="grid gap-4 md:grid-cols-[3fr_2fr]">
-          <div className="space-y-3">
-            <div className="h-4 w-24 animate-pulse rounded bg-muted" />
-            <div className="h-20 animate-pulse rounded-lg bg-muted" />
-            <div className="h-20 animate-pulse rounded-lg bg-muted" />
-          </div>
-          <div className="space-y-3">
-            <div className="h-28 animate-pulse rounded-lg bg-muted" />
-            <div className="h-28 animate-pulse rounded-lg bg-muted" />
-          </div>
-        </div>
-      </div>
-    </div>
   )
 }

@@ -4,15 +4,12 @@ import type { CustomerProfileMeeting, CustomerProfileProposal } from '@/shared/e
 
 import { PlusIcon } from 'lucide-react'
 import Link from 'next/link'
-import { useState } from 'react'
 
 import { EmptyState } from '@/shared/components/states/empty-state'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import { ROOTS } from '@/shared/config/roots'
 import { useAbility } from '@/shared/domains/permissions/hooks'
-import { CreateMeetingForm } from '@/shared/entities/meetings/components/create-meeting-form'
 import { MeetingProposalRow } from '@/shared/entities/meetings/components/meeting-proposal-row'
 import { MeetingOverviewCard } from '@/shared/entities/meetings/components/overview-card'
 import { ParticipantsSlot } from '@/shared/entities/meetings/components/participants-slot'
@@ -21,7 +18,6 @@ import { cn } from '@/shared/lib/utils'
 interface Props {
   meetings: CustomerProfileMeeting[]
   customerId: string
-  customerName: string
   highlightMeetingId?: string
   onMutationSuccess: () => void
 }
@@ -29,46 +25,16 @@ interface Props {
 export function CustomerMeetingsList({
   meetings,
   customerId,
-  customerName,
   highlightMeetingId,
   onMutationSuccess: _onMutationSuccess,
 }: Props) {
   const ability = useAbility()
-  const [popoverOpen, setPopoverOpen] = useState(false)
-
-  function handleCreateSuccess() {
-    setPopoverOpen(false)
-    _onMutationSuccess()
-  }
 
   return (
     <div className="space-y-3">
-      {/* Header with Add Meeting */}
-      <div className="flex items-center justify-between">
-        <h4 className="text-sm font-medium text-muted-foreground">
-          Meetings (
-          {meetings.length}
-          )
-        </h4>
-        {ability.can('create', 'Meeting') && (
-          <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm">
-                <PlusIcon className="h-3.5 w-3.5 mr-1" />
-                Add Meeting
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-96" align="end">
-              <CreateMeetingForm
-                customerId={customerId}
-                customerName={customerName}
-                onSuccess={handleCreateSuccess}
-                onCancel={() => setPopoverOpen(false)}
-              />
-            </PopoverContent>
-          </Popover>
-        )}
-      </div>
+      <h4 className="text-sm font-medium text-muted-foreground">
+        {`Meetings (${meetings.length})`}
+      </h4>
 
       {/* Meeting cards */}
       {meetings.length === 0
