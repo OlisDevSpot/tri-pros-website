@@ -23,7 +23,7 @@ export function CustomerProfileNewButton({ className, onToggle, open }: Props) {
       onClick={onToggle}
       type="button"
     >
-      <span aria-hidden className="grid size-12 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg ring-4 ring-card">
+      <span aria-hidden className="grid size-12 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg ring-4 ring-card">
         <PlusIcon className={cn('size-6 transition-transform duration-200 motion-reduce:transition-none', open && 'rotate-45')} />
       </span>
       New
