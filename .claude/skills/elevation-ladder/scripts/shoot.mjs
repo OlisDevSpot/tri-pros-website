@@ -63,6 +63,7 @@ const SHOTS = [
   { id: 'home-footer', path: '/', scroll: 'bottom', on: ALL },
   { id: 'about', path: '/about', on: ['desktop', 'phone'] },
   { id: 'services', path: '/services', on: ['desktop', 'phone'] },
+  { id: 'contact', path: '/contact', on: ['desktop', 'phone'] },
   { id: 'marketing', path: '/test', on: ['desktop'] },
 ]
 
@@ -71,7 +72,8 @@ const wanted = SHOTS.filter(s => (!only || only.has(s.id)) && (args.public !== '
 
 const env = readFileSync(path.join(REPO, '.env.local'), 'utf8')
 const secret = /^DEV_LOGIN_SECRET=(.*)$/m.exec(env)?.[1]?.trim().replace(/^["']|["']$/g, '')
-const redact = text => (secret ? String(text).split(secret).join('<secret>') : String(text))
+// The sign-in URL carries the secret URL-encoded, so a navigation error can print either form.
+const redact = text => (secret ? String(text).split(secret).join('<secret>').split(encodeURIComponent(secret)).join('<secret>') : String(text))
 
 // Runs in the page. A surface is .bg-card/.surface; a hole is a bg-background element inside one (it paints the
 // page's colour); a see-through fill is bg-card|muted|accent|secondary/N inside a surface.
