@@ -113,6 +113,37 @@ Legend: `[ ]` open · `[x]` done · `[~]` in progress · ⏸ gated.
 
 **Acceptance for every entity table:** each existing table view of that entity is expressible as `{ table view constant + header }` plus, at most, a scope input on the entity's own list read.
 
+### 3.1 Shared table adoption ledger
+
+Every `DataTable` caller, and what it still needs before it matches the shared structure. The shared structure is:
+
+- the read is on a field list, so it goes through `useDataViewQuery`;
+- the table goes through the shared hook, `useEntityTable`;
+- a records page goes through `EntityRecordsTable`, while a table embedded in another page keeps its own layout and uses only the hook;
+- row actions sit under the meta key `rowActions`.
+
+The hook, the records page and `rowActions` arrive with the projects plan (`docs/superpowers/plans/2026-10-01-projects-entity-table.md`, Tasks 2–3). A row is done when every column reads `[x]` or `n/a`.
+
+Check the ledger against the code with:
+
+```bash
+grep -rln "<DataTable" src/features src/shared/entities src/shared/modules
+```
+
+Every file listed must have a row here. A row is done when its file uses `useEntityTable`.
+
+| Table view | File | Field-list read | Shared hook | Records page | `rowActions` | Owner |
+|---|---|---|---|---|---|---|
+| Meetings records | `shared/entities/meetings/components/meetings-table/meetings-table.tsx` | [x] | [ ] | [ ] | [ ] | projects plan Tasks 2–3 (file is deleted; replaced by `meetings-records-table.tsx`) |
+| Projects records | `features/project-management/ui/components/table/index.tsx` | [ ] | [ ] | [ ] | [ ] | projects plan Tasks 2, 4–5 (file is deleted) |
+| Customers records | `shared/entities/customers/components/customers-table.tsx` | [x] | [ ] | [ ] | [ ] (Task 2 renames the key) | R2 |
+| Lead sources: all customers | `features/lead-sources-admin/ui/components/all-customers-section.tsx` | [x] | [ ] | n/a (embedded) | [ ] (Task 2) | R2 |
+| Lead sources: one source's customers | `features/lead-sources-admin/ui/components/lead-source-customers-section.tsx` | [~] reads `leadSourcesRouter.getCustomers`; R2 makes it a `leadSourceId` scope on the customers list | [ ] | n/a (embedded) | [ ] (Task 2) | R2 |
+| Proposals records | `features/proposal-flow/ui/components/table/index.tsx` | [ ] still on `usePaginatedQuery` + `fromPaginatedQuery` | [ ] | [ ] | [ ] (Task 2) | R3 |
+| Campaign leads | `features/campaigns-admin/ui/views/campaigns-leads-view.tsx` | [ ] `usePaginatedQuery` | [ ] | n/a (admin view) | n/a (no row actions) | **no phase yet.** Its hand-rolled selection `Set` goes with the bulk work (O8, D49). It must leave `usePaginatedQuery` before D49's last step deletes that path. |
+
+When R2 or R3 lands, tick its rows here in the same commit.
+
 ---
 
 ## 4. Open

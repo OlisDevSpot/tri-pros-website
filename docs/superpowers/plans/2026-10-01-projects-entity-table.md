@@ -1870,7 +1870,15 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 
 - [ ] **Step 1: The tracker**
 
-Check the tracker for edits by others first (`git diff docs/plans/2026-09-26-records-management-epic.md`). In the Rollout table set **R4** to `[x] built on local main <first-sha>..<last-sha> (shared table hook + records page, meetings moved onto them; projects entity table with customer and status columns, expanded row with sales history, optimistic portfolio toggle; empty values sort last; bulk moves to the all-tables bulk plan, D49)`. Under the Status line at the top, replace the "R4 projects now" wording with the D49 order and point at this plan as built. Edit only those two places.
+Check the tracker for edits by others first (`git diff docs/plans/2026-09-26-records-management-epic.md`). In the Rollout table set **R4** to `[x] built on local main <first-sha>..<last-sha> (shared table hook + records page, meetings moved onto them; projects entity table with customer and status columns, expanded row with sales history, optimistic portfolio toggle; empty values sort last; bulk moves to the all-tables bulk plan, D49)`. Under the Status line at the top, replace the "R4 projects now" wording with the D49 order and point at this plan as built.
+
+In **§3.1 Shared table adoption ledger**:
+- Replace the meetings row's file with `shared/entities/meetings/components/meetings-records-table.tsx` and tick all four columns.
+- Replace the projects row's file with the new `ProjectsRecordsTable` path and tick all four columns.
+- Tick `rowActions` on the customers, both lead-source and proposals rows. Task 2 renamed their key.
+- Run the ledger's grep. If it lists a `DataTable` caller that has no row, add one.
+
+Edit only these three places.
 
 - [ ] **Step 2: The memory note**
 
