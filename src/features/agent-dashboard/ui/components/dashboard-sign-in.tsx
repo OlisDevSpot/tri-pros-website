@@ -25,7 +25,7 @@ export function DashboardSignIn() {
         <h1 className="text-2xl font-semibold tracking-tight">Agent Dashboard</h1>
         <p className="text-sm text-muted-foreground">Sign in to access the dashboard</p>
       </div>
-      <SignInGoogleButton callbackURL="/dashboard" />
+      <SignInGoogleButton />
     </div>
   )
 }

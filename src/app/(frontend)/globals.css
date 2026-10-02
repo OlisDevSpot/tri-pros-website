@@ -345,14 +345,14 @@
   --warning-foreground: oklch(0.19 0.045 258);
   --input: oklch(0.62 0.04 256);
   --ring: oklch(0.78 0.12 228);
-  /* The dark rail is rung 1, level with a section; its active pill sits 2.2 steps above it. */
-  --sidebar: oklch(calc(var(--canvas-l) + var(--step)) var(--surface-c) var(--surface-h));
+  /* The dark rail is rung 2, a step above a section; its active pill sits 2.2 steps above it. */
+  --sidebar: oklch(calc(var(--canvas-l) + 2 * var(--step)) var(--surface-c) var(--surface-h));
   --sidebar-foreground: oklch(0.82 0.02 252);
   --sidebar-muted: oklch(0.68 0.03 252);
-  --sidebar-accent: oklch(calc(var(--canvas-l) + 3.2 * var(--step)) var(--surface-c) var(--surface-h));
+  --sidebar-accent: oklch(calc(var(--canvas-l) + 4.2 * var(--step)) var(--surface-c) var(--surface-h));
   --sidebar-accent-foreground: oklch(0.96 0.01 250);
-  --sidebar-hover: oklch(calc(var(--canvas-l) + 1.6 * var(--step)) var(--surface-c) var(--surface-h));
-  --sidebar-border: oklch(calc(var(--canvas-l) + 2 * var(--step)) var(--surface-c) var(--surface-h));
+  --sidebar-hover: oklch(calc(var(--canvas-l) + 2.6 * var(--step)) var(--surface-c) var(--surface-h));
+  --sidebar-border: oklch(calc(var(--canvas-l) + 3 * var(--step)) var(--surface-c) var(--surface-h));
   --sidebar-ring: var(--brand-cyan-bright);
   --status-info-fg: oklch(0.84 0.06 245);
   --status-info-bg: oklch(0.3 0.045 250);
@@ -1050,12 +1050,19 @@
 
 /* ── PWA safe-area insets ──────────────────────────────────────── */
 /* Sidebar: pad header/footer so border-r extends full height.    */
+/* Floating and inset sidebars pad their container instead.       */
 /* max() ensures non-PWA views keep a 0.5rem minimum (matches p-2). */
-[data-slot='sidebar-container'] > [data-slot='sidebar-inner'] > [data-slot='sidebar-header'] {
+[data-variant='sidebar']
+  > [data-slot='sidebar-container']
+  > [data-slot='sidebar-inner']
+  > [data-slot='sidebar-header'] {
   padding-top: max(0.5rem, env(safe-area-inset-top));
 }
 
-[data-slot='sidebar-container'] > [data-slot='sidebar-inner'] > [data-slot='sidebar-footer'] {
+[data-variant='sidebar']
+  > [data-slot='sidebar-container']
+  > [data-slot='sidebar-inner']
+  > [data-slot='sidebar-footer'] {
   padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }
 

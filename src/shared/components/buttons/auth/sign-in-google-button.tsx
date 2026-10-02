@@ -4,6 +4,7 @@ import type { LoginFormSchema } from '@/shared/domains/auth/schemas'
 import { FaGoogle } from 'react-icons/fa6'
 
 import { Button } from '@/shared/components/ui/button'
+import { ROOTS } from '@/shared/config/roots'
 import { signIn } from '@/shared/domains/auth/client'
 
 interface Props extends React.ComponentProps<'div'> {
@@ -14,7 +15,8 @@ interface Props extends React.ComponentProps<'div'> {
 
 export function SignInGoogleButton({
   isPending = false,
-  callbackURL = '/',
+  // The dashboard page sends signed-in users without dashboard access back to '/'.
+  callbackURL = ROOTS.dashboard.root,
 }: Props) {
   return (
     <div className="w-full max-w-sm lg:max-w-3xl">
