@@ -4,8 +4,8 @@ import type { Trade } from '@/shared/modules/construction/core/schemas'
 import Image from 'next/image'
 import { useTradeCatalogContext } from '@/features/meeting-flow/contexts/trade-catalog-context'
 import { selectStageMedia } from '@/features/meeting-flow/lib/select-stage-media'
-import { OptimizedImage } from '@/shared/components/optimized-image'
 import { cn } from '@/shared/lib/utils'
+import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
 
 interface TradeThumbProps {
   trade: Trade | undefined

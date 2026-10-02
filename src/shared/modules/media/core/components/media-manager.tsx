@@ -1,7 +1,7 @@
 'use client'
 
 import type { ChangeEvent, ReactNode } from 'react'
-import type { MediaGroup, MediaItem } from './types'
+import type { MediaGroup, MediaItem } from '@/shared/modules/media/core/types'
 import { useRef, useState } from 'react'
 import { MediaCard } from './media-card'
 import { MediaReorderGrid } from './media-reorder-grid'

@@ -5,8 +5,8 @@ import { SHOWCASE_PROOF_LIMIT } from '@/features/meeting-flow/constants/showcase
 import { SPECIALTIES_COPY } from '@/features/meeting-flow/constants/specialties-copy'
 import { useTradeStage } from '@/features/meeting-flow/contexts/trade-stage-context'
 import { projectMedia } from '@/features/meeting-flow/lib/to-showcase-media'
-import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Toggle } from '@/shared/components/ui/toggle'
+import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
 
 interface ProjectProofStripProps {
   projects: ShowcaseProject[]

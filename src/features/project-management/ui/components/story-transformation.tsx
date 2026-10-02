@@ -4,7 +4,7 @@ import type { ProjectMediaGroups } from '@/shared/modules/projects/core/types'
 import { motion, useInView } from 'motion/react'
 import dynamic from 'next/dynamic'
 import { useRef } from 'react'
-import { OptimizedImage } from '@/shared/components/optimized-image'
+import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
 
 const ReactCompareSlider = dynamic(
   () => import('react-compare-slider').then(mod => mod.ReactCompareSlider),

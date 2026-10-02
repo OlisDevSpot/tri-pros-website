@@ -4,8 +4,8 @@ import type { ProjectMediaFile } from '@/shared/db/schema'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useRef } from 'react'
-import { OptimizedImage } from '@/shared/components/optimized-image'
 import { cn } from '@/shared/lib/utils'
+import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
 
 interface Props {
   photos: ProjectMediaFile[]

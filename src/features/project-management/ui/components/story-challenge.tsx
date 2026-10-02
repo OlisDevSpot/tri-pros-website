@@ -3,7 +3,7 @@
 import type { Project, ProjectMediaFile } from '@/shared/db/schema'
 import { motion, useInView } from 'motion/react'
 import { useRef } from 'react'
-import { OptimizedImage } from '@/shared/components/optimized-image'
+import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
 
 interface Props {
   project: Project

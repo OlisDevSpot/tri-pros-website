@@ -2,7 +2,7 @@
 
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
 import type { ReactNode } from 'react'
-import type { MediaItem } from './types'
+import type { MediaItem } from '@/shared/modules/media/core/types'
 import {
   AutoScrollActivator,
   closestCenter,

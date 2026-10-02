@@ -1,7 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import type { MediaItem } from './types'
+import type { MediaItem } from '@/shared/modules/media/core/types'
 import { FileTextIcon, GripVertical, MoreVertical, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/shared/components/ui/button'

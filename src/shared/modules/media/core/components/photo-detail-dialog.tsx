@@ -1,7 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import type { MediaItem } from './types'
+import type { MediaItem } from '@/shared/modules/media/core/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog'
 
 interface PhotoDetailDialogProps {

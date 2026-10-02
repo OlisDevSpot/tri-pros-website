@@ -1536,7 +1536,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 - Modify: `src/features/proposal-flow/ui/components/proposal/project-overview.tsx`
 
 **Interfaces:**
-- Consumes: `useProposalDocument()`, `companyInfo` (`@/shared/constants/company`), `OptimizedImage` (`@/shared/components/optimized-image`), `PhoneAction` / `EmailAction` / `AddressAction` (`@/shared/components/contact-actions/ui/*`).
+- Consumes: `useProposalDocument()`, `companyInfo` (`@/shared/constants/company`), `OptimizedImage` (`@/shared/modules/media/core/components/display/optimized-image`), `PhoneAction` / `EmailAction` / `AddressAction` (`@/shared/components/contact-actions/ui/*`).
 - Produces: `OverviewHero()` and `OverviewContextCard()`. Both are argument-free and read the context.
 
 - [ ] **Step 1: The hero**
@@ -1548,7 +1548,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 import Image from 'next/image'
 
 import { useProposalDocument } from '@/features/proposal-flow/contexts/proposal-document-context'
-import { OptimizedImage } from '@/shared/components/optimized-image'
+import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
 import { companyInfo } from '@/shared/constants/company'
 
 const FALLBACK_HERO = '/hero-photos/modern-house-5.jpg'
@@ -1796,7 +1796,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 
-import { OptimizedImage } from '@/shared/components/optimized-image'
+import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
 import { ROOTS } from '@/shared/config/roots'
 import { useTRPC } from '@/trpc/helpers'
 

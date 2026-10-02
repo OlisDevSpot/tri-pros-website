@@ -5,7 +5,7 @@ import { db } from '@/shared/db'
 import { meetings } from '@/shared/db/schema/meetings'
 import { proposalMediaFiles } from '@/shared/db/schema/proposal-media-files'
 import { proposals } from '@/shared/db/schema/proposals'
-import { deriveOriginalMediaUrl } from '@/shared/lib/get-optimized-urls'
+import { deriveOriginalMediaUrl } from '@/shared/modules/media/core/lib/get-optimized-urls'
 
 /**
  * Homeowner-facing projection of a proposal media file. Public canonical bucket

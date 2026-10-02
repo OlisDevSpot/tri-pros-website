@@ -8,8 +8,8 @@ import { useMemo } from 'react'
 import { Block } from '@/shared/components/block/block'
 import { PORTFOLIO_BENTO_SPANS, PORTFOLIO_FALLBACK_IMAGES, PORTFOLIO_SLOT_COUNT } from '@/shared/domains/funnels/constants/portfolio-fallback-images'
 import { getTradeFacts } from '@/shared/domains/funnels/constants/trade-facts'
-import { getOptimizedSrc } from '@/shared/lib/get-optimized-urls'
 import { cn } from '@/shared/lib/utils'
+import { getOptimizedSrc } from '@/shared/modules/media/core/lib/get-optimized-urls'
 import { useTRPC } from '@/trpc/helpers'
 
 export function PortfolioBlock({ content, ctx }: { content: PortfolioBlockContent, ctx: FunnelContext }) {

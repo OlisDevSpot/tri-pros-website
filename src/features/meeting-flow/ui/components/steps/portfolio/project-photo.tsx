@@ -5,7 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { PORTFOLIO_COPY } from '@/features/meeting-flow/constants/portfolio-step'
 import { SHOWCASE_CROSSFADE } from '@/features/meeting-flow/constants/showcase'
 import { usePreloadPhoto } from '@/features/meeting-flow/hooks/use-preload-photo'
-import { OptimizedImage } from '@/shared/components/optimized-image'
+import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
 
 interface ProjectPhotoProps {
   file: ProjectMediaFile

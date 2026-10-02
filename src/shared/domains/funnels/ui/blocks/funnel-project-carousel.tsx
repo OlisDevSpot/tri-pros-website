@@ -10,9 +10,9 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { ROOTS } from '@/shared/config/roots'
 import { PORTFOLIO_FALLBACK_IMAGES } from '@/shared/domains/funnels/constants/portfolio-fallback-images'
 import { getTradeFacts } from '@/shared/domains/funnels/constants/trade-facts'
-import { getOptimizedSrc } from '@/shared/lib/get-optimized-urls'
 import { mainSiteUrl } from '@/shared/lib/main-site-url'
 import { cn } from '@/shared/lib/utils'
+import { getOptimizedSrc } from '@/shared/modules/media/core/lib/get-optimized-urls'
 import { useTRPC } from '@/trpc/helpers'
 
 const MAX_SLIDES = 8

@@ -1,6 +1,6 @@
 import type { PortfolioMatch } from '@/features/meeting-flow/types'
-import { OptimizedImage } from '@/shared/components/optimized-image'
 import { cn } from '@/shared/lib/utils'
+import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
 
 interface ProjectListCardProps {
   match: PortfolioMatch

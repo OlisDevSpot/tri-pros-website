@@ -6,8 +6,8 @@ import Image from 'next/image'
 import { memo } from 'react'
 import { SPECIALTIES_COPY } from '@/features/meeting-flow/constants/specialties-copy'
 import { Decor } from '@/shared/components/decor/decor'
-import { OptimizedImage } from '@/shared/components/optimized-image'
 import { ToggleGroupItem } from '@/shared/components/ui/toggle-group'
+import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
 
 interface WorkCardProps {
   scopeId: string

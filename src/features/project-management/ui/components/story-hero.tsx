@@ -5,10 +5,10 @@ import type { Project, ProjectMediaFile } from '@/shared/db/schema'
 import { motion } from 'motion/react'
 
 import { InlineEditButton } from '@/shared/components/buttons/inline-edit-button'
-import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Badge } from '@/shared/components/ui/badge'
 import { ROOTS } from '@/shared/config/roots'
 import { useAbility } from '@/shared/domains/permissions/hooks'
+import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
 
 interface NamedItem {
   id: string

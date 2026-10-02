@@ -1,7 +1,7 @@
 import type { ProposalMediaView } from '@/shared/modules/proposals/media/dal/server/queries'
 import { FileText } from 'lucide-react'
-import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
 
 /**
  * Homeowner-facing media gallery shown above the SOW. Images + videos render

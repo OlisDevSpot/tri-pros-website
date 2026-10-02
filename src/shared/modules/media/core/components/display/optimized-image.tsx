@@ -3,8 +3,8 @@
 import { LoaderIcon, RefreshCwIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
-import { getOptimizedSrc, getOptimizedSrcSet } from '@/shared/lib/get-optimized-urls'
 import { cn } from '@/shared/lib/utils'
+import { getOptimizedSrc, getOptimizedSrcSet } from '@/shared/modules/media/core/lib/get-optimized-urls'
 
 interface OptimizedImageProps {
   file: {

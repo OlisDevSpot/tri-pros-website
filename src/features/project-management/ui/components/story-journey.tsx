@@ -4,7 +4,7 @@ import type { ProjectMediaFile } from '@/shared/db/schema'
 import { motion, useInView } from 'motion/react'
 import { useRef } from 'react'
 import { JOURNEY_STEPS } from '@/features/project-management/constants/journey-steps'
-import { OptimizedImage } from '@/shared/components/optimized-image'
+import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
 
 interface Props {
   duringPhotos: ProjectMediaFile[]

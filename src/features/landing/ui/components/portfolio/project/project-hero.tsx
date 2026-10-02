@@ -5,8 +5,8 @@ import type { ProjectDetail } from '@/shared/modules/projects/core/types'
 
 import { motion } from 'motion/react'
 
-import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Badge } from '@/shared/components/ui/badge'
+import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
 
 interface Props {
   project: NonNullable<ProjectDetail>['project']

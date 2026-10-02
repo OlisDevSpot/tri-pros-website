@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 import type { MediaReorderGridRenderArgs } from './media-reorder-grid'
-import type { MediaItem } from './types'
+import type { MediaItem } from '@/shared/modules/media/core/types'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 

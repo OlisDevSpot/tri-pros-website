@@ -2,8 +2,8 @@
 
 import type { ProjectMediaFile } from '@/shared/db/schema'
 import { useScrollStripToActive } from '@/features/meeting-flow/hooks/use-scroll-strip-to-active'
-import { OptimizedImage } from '@/shared/components/optimized-image'
 import { cn } from '@/shared/lib/utils'
+import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
 
 interface StoryPhasePhotosProps {
   photos: ProjectMediaFile[]

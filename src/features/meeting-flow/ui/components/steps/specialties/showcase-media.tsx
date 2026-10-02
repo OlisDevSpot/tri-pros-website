@@ -4,7 +4,7 @@ import type { ShowcaseMedia as ShowcaseMediaData } from '@/features/meeting-flow
 import { AnimatePresence, motion } from 'motion/react'
 import Image from 'next/image'
 import { SHOWCASE_CROSSFADE } from '@/features/meeting-flow/constants/showcase'
-import { OptimizedImage } from '@/shared/components/optimized-image'
+import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
 
 interface ShowcaseMediaProps {
   media: ShowcaseMediaData

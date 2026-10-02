@@ -137,10 +137,10 @@ Its callers today are the two media units' `delete.before` hooks (`modules/{proj
 
 ### shared-ui-is-dependency-injected
 
-`src/shared/components/media/*` (`MediaManager` + `MediaCard`, `MediaReorderGrid`, `MediaUploadButton`, `PhotoDetailDialog`) is a DI area: it imports **no** router hooks, no `OptimizedImage`, and no phase enum — every owner-specific rendering decision (thumbnail, per-item controls, preview, detail fields) is passed in as a render-prop by the consumer. Project (`features/project-management/...`) and proposal (`features/proposal-flow/...`) media managers are the two consumers today.
+`src/shared/modules/media/core/components/*` (`MediaManager` + `MediaCard`, `MediaReorderGrid`, `MediaUploadButton`, `PhotoDetailDialog`) is a DI area: it imports **no** router hooks, no `OptimizedImage`, and no phase enum — every owner-specific rendering decision (thumbnail, per-item controls, preview, detail fields) is passed in as a render-prop by the consumer. Project (`features/project-management/...`) and proposal (`features/proposal-flow/...`) media managers are the two consumers today.
 
 **Why**: the components carry no opinion about what phase enums exist, what an "optimized image" component looks like, or which router to call — that stays in `@/features/**`. Keeping the shared layer ignorant of it is what lets both consumers, with different phase models and image-rendering primitives, share one implementation.
-**Reference impl**: `src/shared/components/media/media-manager.tsx` + sibling files
+**Reference impl**: `src/shared/modules/media/core/components/media-manager.tsx` + sibling files
 **Enforced by**: convention (no `@/features` import in this directory)
 
 ## Anti-patterns

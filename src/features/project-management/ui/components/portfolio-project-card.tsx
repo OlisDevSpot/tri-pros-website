@@ -6,9 +6,9 @@ import { AnimatePresence, motion, useInView } from 'motion/react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useMemo, useRef, useState } from 'react'
-import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Badge } from '@/shared/components/ui/badge'
 import { ROOTS } from '@/shared/config/roots'
+import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
 
 interface Props {
   project: PortfolioProject
