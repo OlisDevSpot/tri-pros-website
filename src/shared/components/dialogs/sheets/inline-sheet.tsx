@@ -1,7 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { INLINE_SHEET_SCROLL_SELECTOR } from '@/shared/constants/inline-sheet'
 import { useDragToClose } from '@/shared/hooks/use-drag-to-close'
 import { cn } from '@/shared/lib/utils'
@@ -28,7 +28,17 @@ export function InlineSheet({ children, className, id, labelledBy, onOpenChange,
   const backdropRef = useRef<HTMLDivElement>(null)
   const state = open ? 'open' : 'closed'
 
-  useDragToClose({ backdropRef, ignoreSelector: INLINE_SHEET_SCROLL_SELECTOR, onOpenChange, sheetRef })
+  // `inert` below (set from `open`) blurs focus to <body> the instant the DOM commits the close,
+  // which runs before any effect cleanup — so every close path must move focus to the opener here,
+  // synchronously, before flipping `open`, rather than after.
+  const close = useCallback(() => {
+    if (sheetRef.current?.contains(document.activeElement)) {
+      document.querySelector<HTMLElement>(`[aria-controls="${id}"]`)?.focus()
+    }
+    onOpenChange(false)
+  }, [id, onOpenChange])
+
+  useDragToClose({ backdropRef, ignoreSelector: INLINE_SHEET_SCROLL_SELECTOR, onOpenChange: close, sheetRef })
 
   useEffect(() => {
     if (!open) {
@@ -45,18 +55,14 @@ export function InlineSheet({ children, className, id, labelledBy, onOpenChange,
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.stopPropagation()
-        onOpenChange(false)
+        close()
       }
     }
     window.addEventListener('keydown', onKeyDown, true)
     return () => {
       window.removeEventListener('keydown', onKeyDown, true)
-      // Closing makes the sheet inert; hand focus back to its opener rather than to <body>.
-      if (sheet?.contains(document.activeElement)) {
-        document.querySelector<HTMLElement>(`[aria-controls="${id}"]`)?.focus()
-      }
     }
-  }, [id, open, onOpenChange])
+  }, [open, close])
 
   return (
     <>
@@ -65,7 +71,7 @@ export function InlineSheet({ children, className, id, labelledBy, onOpenChange,
         className="absolute inset-0 z-20 touch-none bg-background/60 transition-opacity duration-260 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none data-[state=closed]:pointer-events-none data-[state=closed]:opacity-0"
         data-inline-sheet-backdrop
         data-state={state}
-        onClick={() => onOpenChange(false)}
+        onClick={close}
         ref={backdropRef}
       />
       <div
