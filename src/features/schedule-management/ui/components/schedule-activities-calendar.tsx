@@ -11,6 +11,7 @@ import { activityToCalendarEvent } from '@/features/schedule-management/lib/to-c
 import { ActivityDotContent } from '@/features/schedule-management/ui/components/activity-dot-content'
 import { ScheduleCalendar } from '@/features/schedule-management/ui/components/schedule-calendar'
 import { ScheduleControlsBar } from '@/features/schedule-management/ui/components/schedule-controls-bar'
+import { isActionPermitted } from '@/shared/components/entities/entity-actions/lib/visible-actions'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { useAbility } from '@/shared/domains/permissions/hooks'
@@ -32,7 +33,7 @@ export function ScheduleActivitiesCalendar({ showToggle, showSaturday, onToggleS
   const { actions, DeleteConfirmDialog } = useActivityActionConfigs<ScheduleCalendarEvent>()
 
   const permittedActions = useMemo(
-    () => actions.filter(({ action }) => !action.permission || ability.can(action.permission[0], action.permission[1])),
+    () => actions.filter(({ action }) => isActionPermitted(action, ability)),
     [actions, ability],
   )
 

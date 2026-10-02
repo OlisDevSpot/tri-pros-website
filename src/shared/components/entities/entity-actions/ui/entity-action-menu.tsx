@@ -2,6 +2,7 @@
 
 import type { EntityActionClickConfig, EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
 
+import { getVisibleActions } from '@/shared/components/entities/entity-actions/lib/visible-actions'
 import { isClickAction, isCustomAction, isSelectAction } from '@/shared/components/entities/entity-actions/types'
 import { EntityActionDropdown } from '@/shared/components/entities/entity-actions/ui/entity-action-dropdown'
 import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
@@ -25,12 +26,7 @@ export function EntityActionMenu<TEntity>({
 }: EntityActionMenuProps<TEntity>) {
   const ability = useAbility()
 
-  const permitted = actions.filter(({ action }) => {
-    if (!action.permission) {
-      return true
-    }
-    return ability.can(action.permission[0], action.permission[1])
-  })
+  const permitted = getVisibleActions(actions, ability, entity)
 
   if (permitted.length === 0) {
     return null

@@ -45,6 +45,8 @@ export interface EntityActionClickConfig<TEntity> {
    * only from did-not-occur outcomes) that a static `isDisabled` can't express.
    */
   getDisabledReason?: (entity: TEntity) => string | null
+  /** Leaves the action out for this entity. Runs while rendering, so it reads only its argument. */
+  hidden?: (entity: TEntity) => boolean
 }
 
 /** Sub-menu (select) action — shows options in a flyout, fires onSelect with entity + value. */
@@ -57,6 +59,8 @@ export interface EntityActionSelectConfig<TEntity> {
   onSelect: (entity: TEntity, value: string) => void
   isLoading?: boolean
   isDisabled?: boolean
+  /** Leaves the action out for this entity. Runs while rendering, so it reads only its argument. */
+  hidden?: (entity: TEntity) => boolean
 }
 
 /**
@@ -76,6 +80,8 @@ export interface EntityActionCustomConfig<TEntity> {
   renderContent: (entity: TEntity, closeMenu: () => void) => ReactNode
   isLoading?: boolean
   isDisabled?: boolean
+  /** Leaves the action out for this entity. Runs while rendering, so it reads only its argument. */
+  hidden?: (entity: TEntity) => boolean
 }
 
 /** Union of all action config types. */

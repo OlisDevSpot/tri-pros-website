@@ -5,6 +5,7 @@ import type { EntityActionConfig, EntityActionCustomConfig, EntityActionSelectCo
 import { CheckIcon, MoreHorizontalIcon, MoreVerticalIcon } from 'lucide-react'
 import { useCallback, useState } from 'react'
 
+import { getVisibleActions } from '@/shared/components/entities/entity-actions/lib/visible-actions'
 import { isCustomAction, isSelectAction } from '@/shared/components/entities/entity-actions/types'
 
 import { Button } from '@/shared/components/ui/button'
@@ -44,12 +45,7 @@ export function EntityActionDropdown<TEntity>({
   const [open, setOpen] = useState(false)
   const closeDropdown = useCallback(() => setOpen(false), [])
 
-  const permitted = actions.filter(({ action }) => {
-    if (!action.permission) {
-      return true
-    }
-    return ability.can(action.permission[0], action.permission[1])
-  })
+  const permitted = getVisibleActions(actions, ability, entity)
 
   if (permitted.length === 0) {
     return null

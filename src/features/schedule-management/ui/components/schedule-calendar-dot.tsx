@@ -3,6 +3,7 @@
 import type { ScheduleCalendarEvent } from '@/features/schedule-management/types'
 import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
 
+import { getVisibleActions } from '@/shared/components/entities/entity-actions/lib/visible-actions'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { formatBusinessTime } from '@/shared/lib/business-time'
 
@@ -24,12 +25,7 @@ export function ScheduleCalendarDot({
 
   const formattedTime = formatBusinessTime(event.startAt, { hour: 'numeric', minute: '2-digit' })
 
-  const permittedActions = actions.filter(({ action }) => {
-    if (!action.permission) {
-      return true
-    }
-    return ability.can(action.permission[0], action.permission[1])
-  })
+  const permittedActions = getVisibleActions(actions, ability, event)
 
   if (event.kind === 'meeting') {
     return (
