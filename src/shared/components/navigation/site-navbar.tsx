@@ -3,7 +3,6 @@
 import type { Variants } from 'motion/react'
 import { CalendarPlus2Icon, LogInIcon, LogOutIcon, MenuIcon, PhoneIcon } from 'lucide-react'
 import { animate, AnimatePresence, motion, useMotionValue } from 'motion/react'
-import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useQueryState } from 'nuqs'
 import {
@@ -228,22 +227,22 @@ export function SiteNavbar() {
                       className="flex flex-col"
                     >
                       {marketingNavItems[selectedItemIndex].subItems?.map((subItem, index) => (
-                        <MotionButton
+                        <Button
                           key={subItem.name}
                           variant="link"
-                          initial={{ opacity: 0, y: -20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.1 }}
                           className="h-12"
                           asChild
                         >
-                          <Link
+                          <MotionLink
                             href={subItem.href}
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.1 }}
                             className="flex items-center justify-start h-20"
                           >
                             {subItem.name}
-                          </Link>
-                        </MotionButton>
+                          </MotionLink>
+                        </Button>
                       ))}
                     </div>
                   </motion.div>
