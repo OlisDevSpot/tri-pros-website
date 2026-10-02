@@ -1,21 +1,23 @@
 'use client'
 
 import { LoaderIcon, RefreshCwIcon } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { cn } from '@/shared/lib/utils'
 import { getOptimizedSrc, getOptimizedSrcSet } from '@/shared/modules/media/core/lib/get-optimized-urls'
 
+export interface OptimizedImageFile {
+  id?: number
+  url: string
+  pathKey: string | null
+  bucket: string | null
+  optimizationStatus: string
+  optimizationVariants?: string[] | null
+  blurDataUrl?: string | null
+}
+
 interface OptimizedImageProps {
-  file: {
-    id?: number
-    url: string
-    pathKey: string | null
-    bucket: string | null
-    optimizationStatus: string
-    optimizationVariants?: string[] | null
-    blurDataUrl?: string | null
-  }
+  file: OptimizedImageFile
   alt: string
   sizes?: string
   priority?: boolean
@@ -42,16 +44,17 @@ export function OptimizedImage({
   onRetryOptimization,
 }: OptimizedImageProps) {
   const [loaded, setLoaded] = useState(false)
+  const [loadedAtMount, setLoadedAtMount] = useState(false)
   const [timedOut, setTimedOut] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const imgRef = useRef<HTMLImageElement>(null)
 
-  // SSR'd images can finish loading before hydration attaches onLoad — the
-  // event never replays, so catch up from img.complete on mount. Without this
-  // the blur placeholder sticks over an already-downloaded image.
-  useEffect(() => {
-    if (imgRef.current?.complete) {
+  // A ref callback runs in the commit, before the browser paints, so an image the browser already
+  // holds (cached, or SSR'd and loaded before hydration attached onLoad) is shown in the first frame
+  // instead of flashing its blur placeholder and fading in. Stable identity: it runs once, on mount.
+  const catchUpIfLoaded = useCallback((img: HTMLImageElement | null) => {
+    if (img?.complete) {
       setLoaded(true)
+      setLoadedAtMount(true)
     }
   }, [])
 
@@ -89,22 +92,22 @@ export function OptimizedImage({
 
   return (
     <div className={cn('relative z-0 overflow-hidden', fill && 'absolute inset-0', containerClassName)}>
-      {/* Blur placeholder — shown while loading, optionally persists as background behind image */}
-      {isOptimized && file.blurDataUrl && (!loaded || persistBlur) && (
+      {/* Stays mounted under the image until it has faded in: unmounting it on load leaves the container empty for the fade's first frames. */}
+      {isOptimized && file.blurDataUrl && (persistBlur || !loadedAtMount) && (
         <img
           src={file.blurDataUrl}
           alt=""
           aria-hidden
           className={cn(
-            'absolute inset-0 z-0 h-full w-full object-cover scale-110 blur-xl transition-opacity duration-500',
+            'absolute inset-0 z-0 h-full w-full object-cover scale-110 blur-xl',
+            !loadedAtMount && 'transition-opacity duration-500 motion-reduce:transition-none',
             loaded && persistBlur ? 'opacity-40' : loaded ? 'opacity-0' : 'opacity-100',
           )}
         />
       )}
 
-      {/* Real image — ALWAYS shown, z-10 to sit above blur */}
       <img
-        ref={imgRef}
+        ref={catchUpIfLoaded}
         src={src}
         srcSet={srcSet}
         sizes={srcSet ? sizes : undefined}
@@ -115,7 +118,8 @@ export function OptimizedImage({
         onLoad={() => setLoaded(true)}
         onError={() => setLoaded(true)}
         className={cn(
-          'relative z-10 h-full w-full object-cover transition-opacity duration-300',
+          'relative z-10 h-full w-full object-cover',
+          !loadedAtMount && 'transition-opacity duration-300 motion-reduce:transition-none',
           isOptimized && file.blurDataUrl && !loaded ? 'opacity-0' : 'opacity-100',
           className,
         )}
