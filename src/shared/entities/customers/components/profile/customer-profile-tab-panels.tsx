@@ -26,7 +26,6 @@ export function CustomerProfileTabPanels({ data, editForm, highlightMeetingId, o
           customerId={data.customer.id}
           highlightMeetingId={highlightMeetingId}
           meetings={data.meetings}
-          onMutationSuccess={onMutationSuccess}
         />
       </TabsContent>
       <TabsContent className="mt-0 p-4 md:p-6" value="projects">

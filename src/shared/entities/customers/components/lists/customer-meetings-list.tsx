@@ -19,14 +19,12 @@ interface Props {
   meetings: CustomerProfileMeeting[]
   customerId: string
   highlightMeetingId?: string
-  onMutationSuccess: () => void
 }
 
 export function CustomerMeetingsList({
   meetings,
   customerId,
   highlightMeetingId,
-  onMutationSuccess: _onMutationSuccess,
 }: Props) {
   const ability = useAbility()
 
@@ -87,7 +85,6 @@ export function CustomerMeetingsList({
                             <MeetingProposalRow
                               key={p.id}
                               proposal={p as CustomerProfileProposal}
-                              onMutationSuccess={_onMutationSuccess}
                             />
                           )}
                         />

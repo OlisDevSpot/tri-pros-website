@@ -46,7 +46,7 @@ export function CustomerHeroActions({ commands, meetings, onClose }: Props) {
       <Button className="h-10 justify-start text-muted-foreground" onClick={onClose} variant="ghost">
         <XIcon />
         Close
-        <kbd className="ml-auto rounded border border-border px-1.5 text-xs font-medium">Esc</kbd>
+        <kbd aria-hidden className="ml-auto rounded border border-border px-1.5 text-xs font-medium">Esc</kbd>
       </Button>
     </div>
   )

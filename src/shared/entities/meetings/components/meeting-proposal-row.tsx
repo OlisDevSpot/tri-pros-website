@@ -16,7 +16,7 @@ import { PROPOSAL_ROW_STYLES } from '@/shared/modules/proposals/core/constants/p
 
 interface Props {
   proposal: CustomerProfileProposal
-  onMutationSuccess: () => void
+  onMutationSuccess?: () => void
   onNavigate?: () => void
   /** Shows "Sent <date>", or "Not sent", under the label. */
   showSentDate?: boolean

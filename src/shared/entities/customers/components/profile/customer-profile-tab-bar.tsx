@@ -28,7 +28,13 @@ export function CustomerProfileTabBar({ counts, newSheetOpen, onClose, onToggleN
         Close
       </button>
       <CustomerProfileNewButton className="col-start-3 row-start-1" onToggle={onToggleNew} open={newSheetOpen} />
-      <TabsList className="col-span-4 col-start-2 row-start-1 grid grid-cols-subgrid" variant="bar">
+      <TabsList
+        className="col-span-4 col-start-2 row-start-1 grid grid-cols-subgrid"
+        onClick={() => newSheetOpen && onToggleNew()}
+        variant="bar"
+      >
+        {/* Radix onValueChange skips a tap on the already-active tab; this catches that case too
+            so tapping any tab closes the New sheet, per spec. */}
         <CustomerProfileTabBarTrigger className="col-start-1" value="overview" />
         <CustomerProfileTabBarTrigger className="col-start-3" count={counts.meetings} value="meetings" />
         <CustomerProfileTabBarTrigger className="col-start-4" count={counts.projects} value="projects" />

@@ -63,10 +63,9 @@ export function CustomerProfileModal({ customerId, defaultTab, highlightMeetingI
 
         {/* A failed refetch keeps the cached data, so the error state is only for a profile that never loaded. */}
         {profileQuery.isError && !profileQuery.data && (
-          <div className="flex flex-1 items-center justify-center p-6">
-            <ErrorState description="Could not load customer data" title="Failed to load profile">
-              <Button className="mt-4 h-11 min-w-32" onClick={close} variant="outline">Close</Button>
-            </ErrorState>
+          <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6">
+            <ErrorState className="h-auto" description="Could not load customer data" title="Failed to load profile" />
+            <Button className="h-11 min-w-32" onClick={close} variant="outline">Close</Button>
           </div>
         )}
 
