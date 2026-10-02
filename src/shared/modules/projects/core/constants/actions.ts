@@ -1,19 +1,31 @@
 import type { EntityAction } from '@/shared/components/entities/entity-actions/types'
 
-import { CopyIcon, ExternalLinkIcon, PencilIcon, TrashIcon } from 'lucide-react'
+import { CopyIcon, ExternalLinkIcon, EyeIcon, EyeOffIcon, FolderOpenIcon, TrashIcon } from 'lucide-react'
 
 export const PROJECT_ACTIONS = {
-  view: {
-    id: 'view',
-    label: 'View Project',
-    icon: ExternalLinkIcon,
-    permission: ['read', 'Project'],
-    primary: true,
-  },
   edit: {
     id: 'edit',
-    label: 'Edit Project',
-    icon: PencilIcon,
+    label: 'Open Project',
+    icon: FolderOpenIcon,
+    permission: ['update', 'Project'],
+    primary: true,
+  },
+  view: {
+    id: 'view',
+    label: 'View on Site',
+    icon: ExternalLinkIcon,
+    permission: ['read', 'Project'],
+  },
+  showOnPortfolio: {
+    id: 'showOnPortfolio',
+    label: 'Show on Portfolio',
+    icon: EyeIcon,
+    permission: ['update', 'Project'],
+  },
+  hideFromPortfolio: {
+    id: 'hideFromPortfolio',
+    label: 'Hide from Portfolio',
+    icon: EyeOffIcon,
     permission: ['update', 'Project'],
   },
   duplicate: {

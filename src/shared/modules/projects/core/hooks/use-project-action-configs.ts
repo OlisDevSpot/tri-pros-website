@@ -12,6 +12,8 @@ import { useProjectActions } from './use-project-actions'
 interface ProjectEntity {
   id: string
   accessor?: string
+  /** Absent where the caller's row doesn't carry it (the customer profile); the site and portfolio actions then stay hidden. */
+  isPublic?: boolean
 }
 
 interface ProjectActionOverrides<T extends ProjectEntity> {
@@ -33,7 +35,7 @@ export function useProjectActionConfigs<T extends ProjectEntity>(
   overrides: ProjectActionOverrides<T> = {},
 ): ProjectActionConfigsResult<T> {
   const router = useRouter()
-  const { deleteProject } = useProjectActions()
+  const { deleteProject, setPortfolioVisibility } = useProjectActions()
   const [DeleteConfirmDialog, confirmDelete] = useConfirm({
     title: 'Delete project',
     message: 'This will permanently delete this project and all its media. This cannot be undone.',
@@ -41,15 +43,27 @@ export function useProjectActionConfigs<T extends ProjectEntity>(
 
   const defaultEdit = (entity: { id: string }) => router.push(ROOTS.dashboard.projects.byId(entity.id))
 
-  // The configs' callbacks close over this render's mutations; only the loading flag should re-render rows.
+  // The configs' callbacks close over this render's mutations; only the delete loading flag should re-render rows.
   const actions = useStableCallbacks<EntityActionConfig<T>[]>([
-    {
-      action: PROJECT_ACTIONS.view,
-      onAction: overrides.onView ?? defaultView,
-    },
     {
       action: PROJECT_ACTIONS.edit,
       onAction: overrides.onEdit ?? defaultEdit,
+    },
+    {
+      action: PROJECT_ACTIONS.view,
+      onAction: overrides.onView ?? defaultView,
+      // A draft's public page is a 404.
+      hidden: entity => entity.isPublic !== true,
+    },
+    {
+      action: PROJECT_ACTIONS.showOnPortfolio,
+      onAction: entity => setPortfolioVisibility.mutate({ id: entity.id, data: { isPublic: true } }),
+      hidden: entity => entity.isPublic !== false,
+    },
+    {
+      action: PROJECT_ACTIONS.hideFromPortfolio,
+      onAction: entity => setPortfolioVisibility.mutate({ id: entity.id, data: { isPublic: false } }),
+      hidden: entity => entity.isPublic !== true,
     },
     {
       action: PROJECT_ACTIONS.delete,
