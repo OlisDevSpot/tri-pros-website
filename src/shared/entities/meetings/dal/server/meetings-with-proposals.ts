@@ -11,7 +11,7 @@ import { proposals } from '@/shared/db/schema/proposals'
 import 'server-only'
 
 /** Meetings matching `where`, newest first, each with its proposals: the shape the customer profile and a project's sales history render. */
-export async function getMeetingsWithProposals(where: SQL | undefined): Promise<{ meetings: CustomerProfileMeeting[], proposals: CustomerProfileProposal[] }> {
+export async function getMeetingsWithProposals(where: SQL): Promise<{ meetings: CustomerProfileMeeting[], proposals: CustomerProfileProposal[] }> {
   const meetingRows = await db
     .select({
       id: meetings.id,

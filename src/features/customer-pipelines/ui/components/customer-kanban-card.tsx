@@ -94,7 +94,6 @@ function CustomerKanbanCardImpl({
   }, [item.project, router])
 
   const { actions: projectActions, DeleteConfirmDialog: ProjectDeleteDialog } = useProjectActionConfigs({
-    onView: handleViewProject,
     onEdit: handleViewProject,
   })
 

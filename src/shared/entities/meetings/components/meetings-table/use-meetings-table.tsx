@@ -71,7 +71,7 @@ export function useMeetingsTable(
     },
   }) satisfies Omit<MeetingTableMeta, 'rowActions'>, [changeOutcome, updateScheduledFor, ability])
 
-  const { visibility, dataTableProps } = useEntityTable({
+  const table = useEntityTable({
     tableView,
     registry: MEETING_COLUMNS,
     query,
@@ -103,5 +103,5 @@ export function useMeetingsTable(
     </>
   )
 
-  return { query, visibility, dataTableProps, dialogs }
+  return { ...table, dialogs }
 }

@@ -72,5 +72,5 @@ export function useEntityTable<TRow extends { id: string }, TExtra extends objec
     columnVisibility: visibility.columnVisibility,
   } satisfies DataTableProps<TRow, TExtra & EntityTableMeta<TRow>>
 
-  return { visibility, dataTableProps }
+  return { query, visibility, dataTableProps }
 }

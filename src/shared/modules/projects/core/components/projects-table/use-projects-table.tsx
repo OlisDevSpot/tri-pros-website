@@ -40,7 +40,7 @@ export function useProjectsTable(
   // Without an expanded row, a row click opens the project.
   const openProject = useCallback((row: ProjectRow) => router.push(ROOTS.dashboard.projects.byId(row.id)), [router])
 
-  const { visibility, dataTableProps } = useEntityTable({
+  const table = useEntityTable({
     tableView,
     registry: PROJECT_COLUMNS,
     query,
@@ -53,5 +53,5 @@ export function useProjectsTable(
     skeletonRowClassName: 'h-[52.5px]',
   })
 
-  return { query, visibility, dataTableProps, dialogs: <DeleteConfirmDialog /> }
+  return { ...table, dialogs: <DeleteConfirmDialog /> }
 }

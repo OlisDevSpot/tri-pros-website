@@ -265,10 +265,11 @@ export async function listMeetingsForProject(
   input: { projectId: string },
 ): Promise<DalReturn<CustomerProfileMeeting[]>> {
   return dalDbOperation(async () => {
-    const projectVisible = ctx.scope
-      ? exists(db.select({ id: projects.id }).from(projects).where(and(eq(projects.id, input.projectId), ctx.scope)))
-      : undefined
-    const { meetings: rows } = await getMeetingsWithProposals(and(eq(meetings.projectId, input.projectId), projectVisible))
+    const projectCondition = eq(meetings.projectId, input.projectId)
+    const where = ctx.scope
+      ? and(projectCondition, exists(db.select({ id: projects.id }).from(projects).where(and(eq(projects.id, input.projectId), ctx.scope)))) ?? projectCondition
+      : projectCondition
+    const { meetings: rows } = await getMeetingsWithProposals(where)
     return rows
   })
 }

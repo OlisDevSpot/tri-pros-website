@@ -9,22 +9,18 @@
 // `DASHBOARD_MEETINGS_QUERY` is checked instead against `DataViewQueryConfig`;
 // its procedure compatibility is checked where `useDataViewQuery` is called.
 
-import type { inferRouterInputs } from '@trpc/server'
 import type { MeetingWindowKind } from '../lib/meeting-windows'
 import type { DataViewQueryConfig } from '@/shared/dal/lib/query/data-view-query-config'
 import type { MeetingListInput } from '@/shared/entities/meetings/dal/server/queries'
+import type { ProjectListInput } from '@/shared/modules/projects/core/dal/server/queries'
 import type { ProposalListInput } from '@/shared/modules/proposals/core/dal/server/queries'
-import type { AppRouter } from '@/trpc/routers/app'
 
 import { LIVE_MEETING_OUTCOMES } from '@/shared/constants/enums'
 import { MEETING_FIELDS } from '@/shared/entities/meetings/dal/meeting-fields'
 import { meetingWindow } from '../lib/meeting-windows'
 
-// `projects.crud.list`'s input isn't exported as a named schema/type (it's
-// inlined in the router's `.input(...)`), so it's pulled off the router type
-// itself — same pattern as `use-participant-mutations.tsx`. Exported so the
-// dashboard's `DashboardProjectSection` can type its `input` prop against it.
-export type ProjectsListInput = inferRouterInputs<AppRouter>['projectsRouter']['crud']['list']
+// Exported so the dashboard's `DashboardProjectSection` can type its `input` prop against it.
+export type ProjectsListInput = ProjectListInput
 
 /** Caps shared by every dashboard module that lists this entity — a Top-N slice for most, the month grid's row cap for the meetings calendar. */
 export const DASHBOARD_LIMITS = { meetings: 8, meetingsCalendar: 500, proposals: 20, proposalsPerSection: 5, projects: 15, projectsPerSection: 5, actionQueue: 8 } as const
