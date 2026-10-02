@@ -22,7 +22,7 @@
       "note": "Applied to the app's tokens in fff2c2db, with the owner's contrast rulings on --input, --ring, the series ramp and dark --muted-foreground."
     }
   ],
-  "rail": { "light": "token", "dark": 1 },
+  "rail": { "light": "token", "dark": 2 },
   "measure": {
     "local": "http://localhost:{PORT}/",
     "live": "https://triprosremodeling.com/",

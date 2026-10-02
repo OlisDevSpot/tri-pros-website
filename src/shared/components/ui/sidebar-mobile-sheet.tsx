@@ -97,7 +97,7 @@ export function SidebarMobileSheet({ open, onOpenChange, className, children }: 
           className,
         )}
       >
-        <div aria-hidden className="mx-auto mt-2.5 h-1.5 w-10 shrink-0 rounded-full bg-sidebar-muted/50" />
+        <div aria-hidden className="mx-auto mt-2 h-1 w-8 shrink-0 rounded-full bg-sidebar-muted/40" />
         {/* The list scrolls natively; everywhere else on the sheet a downward drag closes it. A
             capped sheet can end its scroll area on a clean row, which reads as the end of the list:
             the fade says there is more, and the padding lets the last row clear it. */}
