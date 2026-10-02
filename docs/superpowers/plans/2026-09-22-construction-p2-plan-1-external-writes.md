@@ -10,6 +10,17 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-22-construction-p2-rules-and-identity-design.md` — §2 decisions, §4.1 surface, §4.2 identity, §4.4 taxonomy and pricing units, §4.8 DDL, §5 gates V1, V3, V4, V5, §7 plan 1 table. Read it first; this plan argues from it.
 
+## Status 2026-10-01 — read before Tasks 3–6
+
+- **Tasks 1–2 shipped** (`501dd605`, `43e6ffe4`). Live: 27 trades, 27 unique stored slugs; the id→slug set was byte-identical across the switch, so no URL moved.
+- **Owner ruling (2026-09-26): this plan is over-engineered.** Before each remaining task, reduce it to its requirement and build the smallest thing that meets it. Example: Task 1's requirement was only "every row gets today's slug, nothing typed is overwritten, nothing invalid or duplicate is written, dry-run by default".
+- **CLAUDE.md changed on 2026-09-23 and overrides this plan's text:** no new DOCS.md sections (the planned `#catalog-identity`, `#slug-is-stored`, `#category-taxonomy` anchors are NOT written; correct only lines that become false), no doc citations or file banners in code, comments only for a non-obvious why.
+- **Scripts:** `scripts/` is outside `next lint`. Let `eslint --fix` place `./lib/load-env` (safe: the Notion client is a lazy proxy) and do not add `/* eslint-disable no-console */` (antfu turns `no-console` off under `scripts/`).
+- **Task 3 open owner call:** one generator, no separate `verify-catalog-keys.ts` (a re-run that changes the file is the drift signal; `tsc` flags stale keys), and file name `core/constants/trade-slugs.ts` with a `// GENERATED … do not edit by hand` header (precedent `src/shared/constants/company/service-area-zips.ts`; `.generated.ts` has no precedent). Recommendation: yes to both.
+- **Known gap, accepted:** the backfill only refuses empty or duplicate derived slugs. A Notion title with a leading or trailing space derives `-x` or `x-`, which the adapter's regex then drops with a warn. Fix the title in Notion and re-run.
+- **Task 5 (taxonomy DDL):** do not cite plan-2 anchors; `docs/codebase-conventions/enum-standardization.md:11` still names the deleted `constructionTypes` path (owner-reserved file).
+- **Task 4:** also correct `DOCS.md`'s "`Unit of Pricing` still a bare string" table note when the enum lands.
+
 ## Global Constraints
 
 These apply to **every** task. They are repo rules, not suggestions.
