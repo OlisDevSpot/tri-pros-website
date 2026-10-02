@@ -5,6 +5,7 @@ import type { JSX } from 'react'
 import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
 import type { MeetingOutcome } from '@/shared/constants/enums'
 
+import { useRouter } from 'next/navigation'
 import { useCallback, useState } from 'react'
 
 import { ROOTS } from '@/shared/config/roots'
@@ -67,21 +68,10 @@ interface MeetingActionConfigsResult<T extends MeetingEntity> {
   changeOutcome: (meetingId: string, outcome: MeetingOutcome) => Promise<void>
 }
 
-function defaultNavigate(entity: { id: string }) {
-  window.location.href = ROOTS.dashboard.meetings.byId(entity.id)
-}
-
-function defaultViewSchedule(entity: { id: string, scheduledFor?: string | null }) {
-  window.location.href = ROOTS.dashboard.scheduleWithMeetingHighlight(entity.id, entity.scheduledFor)
-}
-
-function defaultCreateProposal(entity: { id: string }) {
-  window.location.href = `${ROOTS.dashboard.proposals.new()}?meetingId=${entity.id}`
-}
-
 export function useMeetingActionConfigs<T extends MeetingEntity>(
   overrides: MeetingActionOverrides<T> = {},
 ): MeetingActionConfigsResult<T> {
+  const router = useRouter()
   const { deleteMeeting, duplicateMeeting, updateConfirmation } = useMeetingActions()
   const { changeOutcome, OutcomeReasonDialog } = useOutcomeChange()
   const { reschedule, RescheduleDialog } = useRescheduleChange()
@@ -100,6 +90,10 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
   }, [])
 
   const clearAssignTarget = useCallback(() => setAssignTarget(null), [])
+
+  const defaultNavigate = (entity: T) => router.push(ROOTS.dashboard.meetings.byId(entity.id))
+  const defaultViewSchedule = (entity: T) => router.push(ROOTS.dashboard.scheduleWithMeetingHighlight(entity.id, entity.scheduledFor))
+  const defaultCreateProposal = (entity: T) => router.push(ROOTS.dashboard.proposals.newForMeeting(entity.id))
 
   // Stable component identity — props change, component reference does not
   const AssignOwnerDialog = useCallback(

@@ -3,6 +3,7 @@
 import type { CustomerProfileProposal } from '@/shared/entities/customers/types'
 
 import { EyeIcon, FlameIcon } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 
 import { EntityActionMenu } from '@/shared/components/entities/entity-actions/ui/entity-action-menu'
@@ -16,13 +17,14 @@ interface Props {
 }
 
 export function ProposalRow({ proposal }: Props) {
+  const router = useRouter()
   const handleView = useCallback(() => {
     window.open(ROOTS.public.proposalReview(proposal.id), '_blank')
   }, [proposal.id])
 
   const handleEdit = useCallback(() => {
-    window.location.href = ROOTS.dashboard.proposals.byId(proposal.id)
-  }, [proposal.id])
+    router.push(ROOTS.dashboard.proposals.byId(proposal.id))
+  }, [proposal.id, router])
 
   const { actions: proposalActions, DeleteConfirmDialog } = useProposalActionConfigs<CustomerProfileProposal>({
     onView: handleView,

@@ -4,6 +4,7 @@ import type { CustomerProfileProposal } from '@/shared/entities/customers/types'
 import type { MeetingRow } from '@/shared/entities/meetings/lib/columns-registry'
 
 import { PlusIcon } from 'lucide-react'
+import Link from 'next/link'
 import { useMemo } from 'react'
 
 import { computeScopeCoverage } from '@/features/records-management/lib/compute-scope-coverage'
@@ -47,10 +48,10 @@ export function MeetingProposalsPane({ meeting, proposals, isLoading, onMutation
           <p className="text-sm text-muted-foreground">No proposals yet</p>
           {ability.can('create', 'Proposal') && (
             <Button type="button" variant="outline" size="sm" className="h-7 gap-1 text-xs" asChild>
-              <a href={`${ROOTS.dashboard.proposals.new()}?meetingId=${meeting.id}`}>
+              <Link href={ROOTS.dashboard.proposals.newForMeeting(meeting.id)}>
                 <PlusIcon className="size-3" />
                 Create Proposal
-              </a>
+              </Link>
             </Button>
           )}
         </div>

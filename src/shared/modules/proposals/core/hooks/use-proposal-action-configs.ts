@@ -2,6 +2,7 @@ import type { JSX } from 'react'
 import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
 
 import { useMutation } from '@tanstack/react-query'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 import { ROOTS } from '@/shared/config/roots'
@@ -43,19 +44,18 @@ function defaultView(entity: { id: string }) {
   window.open(ROOTS.public.proposalReview(entity.id), '_blank')
 }
 
-function defaultNavigate(entity: { id: string }) {
-  window.location.href = ROOTS.dashboard.proposals.byId(entity.id)
-}
-
 export function useProposalActionConfigs<T extends ProposalEntity>(
   overrides: ProposalActionOverrides<T> = {},
 ): ProposalActionConfigsResult<T> {
   const trpc = useTRPC()
+  const router = useRouter()
   const { invalidateProposal } = useInvalidation()
   const [DeleteConfirmDialog, confirmDelete] = useConfirm({
     title: 'Delete proposal',
     message: 'This will permanently delete this proposal. This cannot be undone.',
   })
+
+  const defaultNavigate = (entity: { id: string }) => router.push(ROOTS.dashboard.proposals.byId(entity.id))
 
   const duplicateProposal = useMutation(
     trpc.proposalsRouter.crud.duplicate.mutationOptions({

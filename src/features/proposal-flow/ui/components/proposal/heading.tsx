@@ -1,5 +1,6 @@
 import { CalculatorIcon, CalendarIcon, PencilIcon, UserIcon } from 'lucide-react'
 import { motion } from 'motion/react'
+import Link from 'next/link'
 import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
 import { useViewMode } from '@/features/proposal-flow/hooks/use-view-mode'
@@ -123,10 +124,10 @@ export function Heading() {
               size="sm"
               asChild
             >
-              <a href={ROOTS.dashboard.proposals.byId(proposal.data.id)}>
+              <Link href={ROOTS.dashboard.proposals.byId(proposal.data.id)}>
                 <PencilIcon className="size-4" />
                 Edit Proposal
-              </a>
+              </Link>
             </Button>
           </div>
         )}

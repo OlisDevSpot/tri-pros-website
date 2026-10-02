@@ -11,6 +11,7 @@ import {
   GripVerticalIcon,
   MapPinIcon,
 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { memo, useCallback } from 'react'
 
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
@@ -47,6 +48,7 @@ function CustomerKanbanCardImpl({
   onAssignRep,
 }: Props) {
   const isMobile = useIsMobile()
+  const router = useRouter()
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: item.id,
     data: item,
@@ -87,9 +89,9 @@ function CustomerKanbanCardImpl({
 
   const handleViewProject = useCallback(() => {
     if (item.project) {
-      window.location.href = ROOTS.dashboard.projects.byId(item.project.id)
+      router.push(ROOTS.dashboard.projects.byId(item.project.id))
     }
-  }, [item.project])
+  }, [item.project, router])
 
   const { actions: projectActions, DeleteConfirmDialog: ProjectDeleteDialog } = useProjectActionConfigs({
     onView: handleViewProject,
@@ -320,9 +322,10 @@ function KanbanProjectMeeting({ meeting, customerId, isFirst, isDragOverlay, onA
 }
 
 function KanbanProposalRow({ proposal }: { proposal: PipelineItemProposal }) {
+  const router = useRouter()
   const handleEdit = useCallback(() => {
-    window.location.href = ROOTS.dashboard.proposals.byId(proposal.id)
-  }, [proposal.id])
+    router.push(ROOTS.dashboard.proposals.byId(proposal.id))
+  }, [proposal.id, router])
 
   const style = PROPOSAL_ROW_STYLES[proposal.status] ?? PROPOSAL_ROW_STYLES.draft
 

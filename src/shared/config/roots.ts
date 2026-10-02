@@ -68,6 +68,7 @@ const APP_ROOTS = {
     proposals: {
       root: () => '/dashboard/proposals',
       new: () => `${APP_ROOTS.dashboard.proposals.root()}/new`,
+      newForMeeting: (meetingId: string) => `${APP_ROOTS.dashboard.proposals.new()}?meetingId=${meetingId}`,
       byId: (id: string) => `${APP_ROOTS.dashboard.proposals.root()}/${id}`,
     },
     projects: {

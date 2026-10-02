@@ -3,6 +3,7 @@
 import type { ProposalStatus } from '@/shared/constants/enums'
 
 import type { ProposalRow, ProposalTableMeta } from '@/shared/modules/proposals/core/lib/columns-registry'
+import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 
 import { toast } from 'sonner'
@@ -38,6 +39,7 @@ interface ProjectPrompt {
 
 export function PastProposalsTable() {
   const trpc = useTRPC()
+  const router = useRouter()
   const { updateProposal } = useProposalActions()
   const [projectPrompt, setProjectPrompt] = useState<ProjectPrompt | null>(null)
 
@@ -53,8 +55,8 @@ export function PastProposalsTable() {
   }, [])
 
   const handleEdit = useCallback((entity: ProposalRow) => {
-    window.location.href = ROOTS.dashboard.proposals.byId(entity.id)
-  }, [])
+    router.push(ROOTS.dashboard.proposals.byId(entity.id))
+  }, [router])
 
   const { actions: sharedActions, DeleteConfirmDialog } = useProposalActionConfigs<ProposalRow>({
     onView: handleView,
@@ -112,12 +114,12 @@ export function PastProposalsTable() {
         action: {
           label: 'View Project',
           onClick: () => {
-            window.location.href = ROOTS.dashboard.projects.byId(projectId)
+            router.push(ROOTS.dashboard.projects.byId(projectId))
           },
         },
       })
     }
-  }, [updateProposal])
+  }, [router, updateProposal])
 
   const columns = useEntityColumns(PROPOSAL_COLUMNS, { show: SHOW_COLUMNS })
   const visibility = useColumnVisibility('proposals', columns)

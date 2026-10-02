@@ -4,6 +4,8 @@ import type { CustomerProfileProject, CustomerProfileProposal } from '@/shared/e
 
 import { formatDistanceToNow } from 'date-fns'
 import { FolderOpenIcon, MapPinIcon, PlusIcon } from 'lucide-react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 
 import { EntityActionMenu } from '@/shared/components/entities/entity-actions/ui/entity-action-menu'
@@ -28,12 +30,13 @@ interface Props {
 }
 
 export function ProjectEntityCard({ customerId, project, onMutationSuccess, onNavigate, onAssignRep, highlightMeetingId }: Props) {
+  const router = useRouter()
   const ability = useAbility()
   const canCreateProposal = ability.can('create', 'Proposal')
   const handleViewProject = useCallback(() => {
     onNavigate?.()
-    window.location.href = ROOTS.dashboard.projects.byId(project.id)
-  }, [project.id, onNavigate])
+    router.push(ROOTS.dashboard.projects.byId(project.id))
+  }, [project.id, onNavigate, router])
 
   const { actions: projectActions, DeleteConfirmDialog } = useProjectActionConfigs({
     onView: handleViewProject,
@@ -121,10 +124,10 @@ export function ProjectEntityCard({ customerId, project, onMutationSuccess, onNa
                                   className="h-7 gap-1 text-xs"
                                   asChild
                                 >
-                                  <a href={`${ROOTS.dashboard.proposals.new()}?meetingId=${meeting.id}`}>
+                                  <Link href={ROOTS.dashboard.proposals.newForMeeting(meeting.id)}>
                                     <PlusIcon className="size-3" />
                                     Create proposal
-                                  </a>
+                                  </Link>
                                 </Button>
                               )}
                               renderProposal={p => (

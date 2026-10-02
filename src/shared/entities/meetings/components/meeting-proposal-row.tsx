@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 import type { CustomerProfileProposal } from '@/shared/entities/customers/types'
 import type { ProposalOverviewCardMeta } from '@/shared/modules/proposals/core/components/overview-card'
 
+import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 
 import { ROOTS } from '@/shared/config/roots'
@@ -25,14 +26,15 @@ interface Props {
 }
 
 export function MeetingProposalRow({ proposal, onMutationSuccess: _onMutationSuccess, onNavigate, showSentDate = false, meta, footer }: Props) {
+  const router = useRouter()
   const handleView = useCallback(() => {
     window.open(ROOTS.public.proposalReview(proposal.id), '_blank')
   }, [proposal.id])
 
   const handleEdit = useCallback(() => {
     onNavigate?.()
-    window.location.href = ROOTS.dashboard.proposals.byId(proposal.id)
-  }, [proposal.id, onNavigate])
+    router.push(ROOTS.dashboard.proposals.byId(proposal.id))
+  }, [proposal.id, onNavigate, router])
 
   const style = PROPOSAL_ROW_STYLES[proposal.status] ?? PROPOSAL_ROW_STYLES.draft
 

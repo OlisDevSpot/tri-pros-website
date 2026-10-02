@@ -2,6 +2,7 @@
 
 import { Check, HardHat } from 'lucide-react'
 import { AnimatePresence, motion, MotionConfig } from 'motion/react'
+import Link from 'next/link'
 import { useState } from 'react'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
@@ -121,7 +122,7 @@ export function ComingSoonState({
             {showForm && <NotifyForm ctaLabel={ctaLabel} />}
             {homeHref && (
               <div className="text-xs font-semibold uppercase tracking-widest">
-                <a href={homeHref} className="border-b-2 border-b-primary pb-0.5 text-foreground no-underline [transition:color_0.15s] [&:hover]:text-primary">{homeLabel}</a>
+                <Link href={homeHref} className="border-b-2 border-b-primary pb-0.5 text-foreground no-underline [transition:color_0.15s] [&:hover]:text-primary">{homeLabel}</Link>
               </div>
             )}
           </motion.div>

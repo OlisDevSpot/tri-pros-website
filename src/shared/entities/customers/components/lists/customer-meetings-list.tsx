@@ -3,6 +3,7 @@
 import type { CustomerProfileMeeting, CustomerProfileProposal } from '@/shared/entities/customers/types'
 
 import { PlusIcon } from 'lucide-react'
+import Link from 'next/link'
 import { useState } from 'react'
 
 import { EmptyState } from '@/shared/components/states/empty-state'
@@ -110,10 +111,10 @@ export function CustomerMeetingsList({
                               className="h-7 gap-1 text-xs"
                               asChild
                             >
-                              <a href={`${ROOTS.dashboard.proposals.new()}?meetingId=${meeting.id}`}>
+                              <Link href={ROOTS.dashboard.proposals.newForMeeting(meeting.id)}>
                                 <PlusIcon className="size-3" />
                                 Create proposal
-                              </a>
+                              </Link>
                             </Button>
                           )}
                           renderProposal={p => (

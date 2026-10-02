@@ -9,6 +9,7 @@ import {
   MoreHorizontalIcon,
   StickyNoteIcon,
 } from 'lucide-react'
+import Link from 'next/link'
 import { useState } from 'react'
 import {
   Dialog,
@@ -83,7 +84,7 @@ export function CustomerHeroActions({ customer, meetings, onMutationSuccess, var
   const canAddMeeting = ability.can('create', 'Meeting')
   const canAddProposal = ability.can('create', 'Proposal')
 
-  const newProposalHref = (meetingId: string) => `${ROOTS.dashboard.proposals.new()}?meetingId=${meetingId}`
+  const newProposalHref = ROOTS.dashboard.proposals.newForMeeting
 
   const dialogs = (
     <>
@@ -228,7 +229,7 @@ function ProposalPickerBody({ meetings, href, onAddMeeting }: {
         : (
             meetings.map(m => (
               <DropdownMenuItem asChild key={m.id}>
-                <a className="flex cursor-pointer items-center gap-2" href={href(m.id)}>
+                <Link className="flex cursor-pointer items-center gap-2" href={href(m.id)}>
                   <CalendarIcon className="size-4 shrink-0 text-muted-foreground" />
                   <span className="flex min-w-0 flex-col">
                     <span className="truncate text-sm font-medium">
@@ -239,7 +240,7 @@ function ProposalPickerBody({ meetings, href, onAddMeeting }: {
                       {m.meetingOutcome ? ` · ${m.meetingOutcome.replace(/_/g, ' ')}` : ''}
                     </span>
                   </span>
-                </a>
+                </Link>
               </DropdownMenuItem>
             ))
           )}

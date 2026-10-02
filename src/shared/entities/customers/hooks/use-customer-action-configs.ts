@@ -1,6 +1,7 @@
 import type { JSX } from 'react'
 import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
 
+import { useRouter } from 'next/navigation'
 import { ROOTS } from '@/shared/config/roots'
 import { CUSTOMER_ACTIONS } from '@/shared/entities/customers/constants/actions'
 import { useCustomerActions } from '@/shared/entities/customers/hooks/use-customer-actions'
@@ -30,18 +31,17 @@ interface CustomerActionConfigsResult<T extends CustomerEntity> {
   DeleteConfirmDialog: () => JSX.Element
 }
 
-function defaultNavigate() {
-  window.location.href = ROOTS.dashboard.pipeline()
-}
-
 export function useCustomerActionConfigs<T extends CustomerEntity>(
   overrides: CustomerActionOverrides<T> = {},
 ): CustomerActionConfigsResult<T> {
+  const router = useRouter()
   const { deleteCustomer } = useCustomerActions()
   const [DeleteConfirmDialog, confirmDelete] = useConfirm({
     title: 'Delete customer',
     message: 'This will permanently delete this customer and all associated data. This cannot be undone.',
   })
+
+  const defaultNavigate = () => router.push(ROOTS.dashboard.pipeline())
 
   // The configs' callbacks close over this render's mutations; only the loading flag should re-render rows.
   const actions = useStableCallbacks<EntityActionConfig<T>[]>([
