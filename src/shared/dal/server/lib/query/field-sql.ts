@@ -3,7 +3,7 @@ import type { AnyColumn, SQL } from 'drizzle-orm'
 import type { FieldList, FilterId, FilterValue, FilterValues, SortDir, SortId, SortState } from '@/shared/dal/lib/query/field-list'
 import type { DateRange } from '@/shared/dal/lib/query/range-schemas'
 
-import { and, asc, Column, desc, gte, is, lte, sql } from 'drizzle-orm'
+import { and, asc, desc, gte, lte, sql } from 'drizzle-orm'
 
 import { filterParserRegistry } from '@/shared/dal/lib/query/filter-parser-registry'
 import 'server-only'
@@ -39,11 +39,10 @@ function isActive(field: FieldList[string] | undefined, value: unknown): boolean
   return normalize(value) !== undefined
 }
 
-// Postgres sorts NULL first on DESC, which buried every finished project under the unfinished ones.
-// A NOT NULL column has no empty values, so it stays plain and its index can still serve the order.
+// Postgres sorts NULL first on DESC. Even a NOT NULL column reads NULL on rows a LEFT JOIN left unmatched.
 function sortTerm(target: AnyColumn | SQL, dir: SortDir): SQL {
   const ordered = dir === 'asc' ? asc(target) : desc(target)
-  return is(target, Column) && target.notNull ? ordered : sql`${ordered} nulls last`
+  return sql`${ordered} nulls last`
 }
 
 export function defineFieldSql<F extends FieldList>(fields: F, map: NoInfer<FieldSqlMap<F>>, order: FieldOrder): FieldSql<F> {
