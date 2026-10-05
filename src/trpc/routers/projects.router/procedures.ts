@@ -13,7 +13,10 @@ import { resolveTrpcActorScope } from '../../lib/middleware/resolve-trpc-actor-s
  * signature, so the compiler cannot catch a regression here).
  */
 export const projectProcedure = agentProcedure.use(async ({ ctx, next }) =>
-  next({ ctx: { ...ctx, scope: resolveTrpcActorScope(projectServerSpec, { userId: ctx.session.user.id, ability: ctx.ability }) } }))
+  next({ ctx: {
+    ...ctx,
+    scope: resolveTrpcActorScope(projectServerSpec, { userId: ctx.session.user.id, ability: ctx.ability }),
+  } }))
 
 /**
  * Agent-scoped to the project-media CHILD entity: `ctx.scope` is the parent
@@ -25,4 +28,7 @@ export const projectProcedure = agentProcedure.use(async ({ ctx, next }) =>
  * (no `read Project` grant) resolves to deny → sees zero project media.
  */
 export const projectMediaProcedure = agentProcedure.use(async ({ ctx, next }) =>
-  next({ ctx: { ...ctx, scope: resolveTrpcActorScope(mediaFileServerSpec, { userId: ctx.session.user.id, ability: ctx.ability }) } }))
+  next({ ctx: {
+    ...ctx,
+    scope: resolveTrpcActorScope(mediaFileServerSpec, { userId: ctx.session.user.id, ability: ctx.ability }),
+  } }))

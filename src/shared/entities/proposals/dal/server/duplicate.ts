@@ -13,8 +13,8 @@ import type { Proposal } from '@/shared/db/schema/proposals'
 
 import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { cloneProposalIncentives } from '@/shared/entities/proposal-incentives/dal/server/mutations'
-import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
-import { recomputeProposalFinancials } from '@/shared/entities/proposals/dal/server/mutations'
+import { proposalCrud } from './crud'
+import { recomputeProposalFinancials } from './mutations'
 
 /**
  * Duplicate override — clones the source proposal's GLOBAL incentive rows
