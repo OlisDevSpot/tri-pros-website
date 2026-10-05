@@ -71,7 +71,8 @@ function DataTableRowImpl<TData extends { id: string }>({
     <Fragment>
       <TableRow
         data-band={isOddRow ? 'odd' : 'even'}
-        className={cn('group cursor-pointer bg-(--card) hover:bg-row-hover', isOddRow && 'bg-band')}
+        data-press
+        className={cn('group cursor-pointer bg-(--card) hover:bg-row-hover pressed:bg-row-press', isOddRow && 'bg-band')}
         onClick={e => onRowClick(e, row)}
         {...rowProps}
       >
