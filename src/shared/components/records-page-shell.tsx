@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react'
 
+import { PageBar } from '@/shared/components/page-bar'
 import { cn } from '@/shared/lib/utils'
 
 interface RecordsPageShellProps {
@@ -26,7 +27,8 @@ interface RecordsPageShellProps {
  * The shell owns:
  *   - The outer flex column with `h-full min-h-0` so the table area can
  *     scroll inside a constrained-height parent
- *   - The vertical gap between header / toolbar / table
+ *   - The header and toolbar sharing one `<PageBar>` strip, and the gap
+ *     between that strip and the table
  *   - The `flex-1 min-h-0` wrapping on the table slot so it fills available
  *     vertical space and its inner scroll region works correctly
  *
@@ -36,8 +38,10 @@ interface RecordsPageShellProps {
 export function RecordsPageShell({ header, toolbar, table, className }: RecordsPageShellProps) {
   return (
     <div className={cn('flex h-full min-h-0 flex-col gap-3', className)}>
-      {header}
-      {toolbar}
+      <PageBar>
+        {header}
+        {toolbar}
+      </PageBar>
       <div className="min-h-0 flex-1">
         {table}
       </div>
