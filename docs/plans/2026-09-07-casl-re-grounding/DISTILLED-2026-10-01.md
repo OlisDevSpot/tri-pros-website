@@ -1,11 +1,12 @@
-# Permissions epic (#285) — distilled record (2026-10-01)
+# Permissions epic (#285) — distilled record (2026-10-01; status and next steps updated 2026-10-05)
 
 One page. Everything else in this folder is evidence. Code is the source of truth: re-verify any line here against the code before acting on it.
 
 ## 1. Status
-- Branch `refactor/285-…` @ `b40403b6` (last code commit 2026-09-06): 74 ahead, **518 behind** main. Dry-run merge was already 18 conflicts at 117 behind.
-- **Nothing is built under the current design.** The branch still runs the old shapes (actor union, router seam, `ctx.scope`, legacy visibility engine).
-- **This folder (30 files) and the tracker rewrite are untracked/uncommitted** — the only copy of every decision since 09-06.
+- Branch `refactor/285-…` in `.worktrees/issue-285` = **main (`61d3e1e2`) + these docs**, since the supersede merge `2b038591` (2026-10-05). 0 behind main. Pushed to origin.
+- The pre-re-grounding code (tip `b40403b6`, last code commit 2026-09-06) is no longer in the tree. It stays an ancestor of the branch: restore a file with `git show b40403b6:<path>`.
+- **Nothing is built under the current design.** The tree runs main's legacy shapes: `ScopedContext { session, ability, scope }`, `SYSTEM_CONTEXT`, `spec.visibility` + `resolveEffectiveScope`, and CASL rules that grant verbs without conditions.
+- Baseline on the merge: `pnpm tsc` passes; `pnpm lint` fails on two formatting errors in `src/app/(frontend)/globals.css:491-492` that main carries.
 - Main is mid-move from `entities/` to `modules/` (proposals, projects, media, construction done), which relocates the files this epic rewrites.
 
 ## 2. Decided by the owner
@@ -66,12 +67,11 @@ One page. Everything else in this folder is evidence. Code is the source of trut
 | Creating a meeting on any customer makes the creator a participant (gains visibility) | `src/shared/entities/meetings/dal/server/crud.ts:39` — re-verify there is no customer reach check | probe the customer before create |
 
 ## 7. Next steps, in order
-0. **Bank the documents**: commit this folder and the tracker in the worktree, or move them to main.
-1. **Decide the delivery path.** At 518 behind with main restructuring into modules, merging main into the branch may cost more than re-landing the design on main unit by unit, porting the 33 keep-primitives (adapter core, outcome classification) as files. Recommendation: re-land on main. Owner's call.
-2. **Fix the holes in §6 now** through the hotfix path. They do not need the epic.
-3. Ratify §3 (sub-entity model, interface, names).
-4. Rule the open items: homeowner phone grant; pipeline map for prod; root ability provider; test runner for the compiler; lint wall shape; the 25 business rulings in report 10 §5.
-5. Build order: request-actor unification → adapter + DAL self-scoping → rules per role → client hydration → lint wall + financial reads → delete the legacy engine → one end-to-end pass.
+1. **Fix the holes in §6** through the hotfix path. They do not need the epic.
+2. Ratify §3 (sub-entity model, interface, names).
+3. Rule the open items: homeowner phone grant; pipeline map for prod; root ability provider; test runner for the compiler; lint wall shape; the 25 business rulings in report 10 §5.
+4. Build order: request-actor unification → adapter + DAL self-scoping → rules per role → client hydration → lint wall + financial reads → delete the legacy engine → one end-to-end pass. The 33 keep-primitives (adapter core, outcome classification) come back from `b40403b6` in the unit that gives each a home.
+5. Merge main into the branch at every unit boundary; one merge to main after the end-to-end pass.
 
 ## 8. Where the detail lives
-Tracker `docs/plans/2026-08-10-casl-scope-compiler-epic.md` (decision table, units, ledgers) · `README.md` §L (reasoning per decision) · `18` decision and progress map · `19` what the branch built · `22` table topology · `24` interface comparison · `17` worked example · `21` merge picture as of 09-16 (stale: main has moved 400 more commits).
+Tracker `docs/plans/2026-08-10-casl-scope-compiler-epic.md` (decision table, units, ledgers) · `README.md` §L (reasoning per decision) · `18` decision and progress map · `19` what the branch built · `22` table topology · `24` interface comparison · `17` worked example · `19` §1 is the list of what to restore from `b40403b6`. Reports `16` and `21` (merge plans) are history: the 2026-10-05 supersede merge replaced them.

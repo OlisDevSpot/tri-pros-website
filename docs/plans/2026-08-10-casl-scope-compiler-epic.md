@@ -1,25 +1,27 @@
 # CASL Permissions Epic (#285) — tracker
 
 > **Rewritten 2026-09-09** (re-grounding README §G1 / §J8; user asked for a from-scratch rewrite on 2026-09-07). This is the **roadmap + status + ledgers**. It does not restate designs: the *reasoning* behind every current decision is the decision log in `docs/plans/2026-09-07-casl-re-grounding/README.md` §L (L1–L11), the *evidence* is reports `01`–`16` beside it, and the *engine* design is `docs/superpowers/specs/2026-08-10-casl-scope-compiler-design.md` (v2) where §2 below does not override it.
-> **START HERE:** `docs/plans/2026-09-07-casl-re-grounding/DISTILLED-2026-10-01.md` — one page: decisions, business rules, live security holes, next steps. As of 2026-10-01 the branch is **518 behind** main and the delivery path (merge vs re-land on main) is the first open decision; the 117-behind figures below are stale.
+> **START HERE:** `docs/plans/2026-09-07-casl-re-grounding/DISTILLED-2026-10-01.md` — one page: decisions, business rules, live security holes, next steps. Since the supersede merge of 2026-10-05 the branch tree is main plus these docs; §0.1, §4 (7.2 onward) and §5 still cite files and lines as of `b40403b6` and are re-derived against the tree in each unit's plan.
 > **Editing rule (the anti-derailment rule):** a supersession EDITS the superseded text in place. No "read me first / supersedes below" banners, ever again. Dated summaries of what changed go to Appendix A. The verbatim pre-rewrite tracker (three stacked generations of Phase-7 prose) is preserved read-only at `docs/plans/2026-09-07-casl-re-grounding/00-epic-tracker-snapshot-2026-09-09-pre-rewrite.md`.
 > **Precedence when documents disagree:** §2 of this tracker (current design) → README §L (reasoning) → reports → spec v2 → per-phase plans (point-in-time execution records, left as authored) → `docs/permissions/visibility-rules-catalog.md` (Parts 3/4 are pre-CASL; see G3).
 
 ---
 
-## 0. Status at a glance (2026-09-09)
+## 0. Status at a glance (2026-10-05)
 
 | Fact | Value |
 |---|---|
-| Branch / worktree | `refactor/285-refactor-permissions-casl-scope-compiler` @ `b40403b6`, `.worktrees/issue-285` — the long-lived home of the WHOLE epic (no per-phase PRs; one merge at Phase 9) |
-| vs `main` | 74 ahead / **117 behind** `3451b9cd` (2026-09-16; merge-base `bd35a168`). Dry-run merge: **18 conflict entries / 17 paths** (report 21 §1; was 10/9 in report 16) + **17 dead imports and 1 dead call that auto-merge silently** (old `entities/proposals*` paths, `compute-customer-stage`). Main moved proposals to `src/shared/modules/proposals/` (`187f8a00`, mixed 44 renames + 88 edits) and made `createCrudDal` generic over the spec (`a0a01ddf` — take main's structure, carry the branch's three `requireResolvedScope` predicates, do not pre-implement 7.3). Net-new permission-relevant sites since the base: 35 (report 16 §3) + 9 (report 21 §4) |
-| `pnpm tsc` / `pnpm lint` | PASS / PASS (0 errors, 63 pre-existing warnings) — re-run 2026-09-16 (report 21) |
-| Uncommitted / untracked (AT RISK — commit first) | `docs/plans/2026-09-07-casl-re-grounding/` (**27 files: README + decision log L1–L13 + reports 00–24** — the ONLY copy of every decision since 09-06), this tracker rewrite, `.claude/agents/knowledge/convention-auditor-ledger.md`, a whitespace-only reformat of `src/trpc/routers/projects.router/procedures.ts`, stale untracked `CLAUDE.local.md` (dispatch file still says "Phase 0" and instructs `pnpm build` — regenerate via `pnpm dispatch` or delete) |
-| Two commits slated for REVERT | `3e901178` (customer) + `b40403b6` (meeting) — the Phase-7 "router seam" (`resolveScope: resolveTrpcActorScope` on `createCrudRouter`). Wrong layer (README §B1). No later commit depends on them |
-| Session lineage | one resumable chain in the main project dir: `32493656` (08-10→08-19) → `63bbad6e` (08-19→09-07) → `e0066a5c` (09-07→09-09; stopped mid-grill at **Q7**) → `a078cbb8` (09-09 evening: recovery, verification 14–16, this rewrite → 09-13 grill: L12/L13, report 17 → 09-16 orientation pass: reports 18–24) |
+| Branch / worktree | `refactor/285-refactor-permissions-casl-scope-compiler`, `.worktrees/issue-285` — the long-lived home of the WHOLE epic (no per-phase PRs; one merge at Phase 9). On origin since 2026-10-05 |
+| vs `main` | **0 behind**. Supersede merge `2b038591` (2026-10-05): tree = main `61d3e1e2` + the permissions docs. The dry-run merge had grown to 44 conflicted paths at 581 behind, and main had rewritten `create-crud-dal.ts`, `dal/server/types.ts` and `create-crud-router.ts` under the branch's seam, so main's tree was taken whole. The 76 branch commits stay ancestors (`b40403b6` = last code tip) |
+| What the tree runs | main's legacy engine everywhere: `ScopedContext { session, ability, scope }`, `SYSTEM_CONTEXT`, `spec.visibility` + `resolveEffectiveScope` + `resolveVisibilityScope`, `shareableMiddleware` (token ⇒ `ability: null`), conditionless CASL rules. No file under `src/shared/domains/permissions/scope/` exists in the tree |
+| `pnpm tsc` / `pnpm lint` | PASS / 2 errors, both formatting in `src/app/(frontend)/globals.css:491-492`, carried by main (62 warnings) — run 2026-10-05 on `2b038591` |
+| Keep-primitives | restored from `b40403b6` per unit (report 19 §1: adapter core A5–A12, A16–A19, operators A20/A22, `SystemReason`, `MEETING_OUTCOME_CLASS` derivations, set-based media mutations) |
+| Session lineage | `32493656` (08-10→08-19) → `63bbad6e` (08-19→09-07) → `e0066a5c` (09-07→09-09) → `a078cbb8` (09-09→10-01: verification, grill L12/L13, reports 17–24, distill) → `5ed2f09c` (10-05: docs banked, supersede merge) |
 | GitHub | #285 still titled/bodied as "Phase 0" (G4). Open, unlinked: **#210 (P0)** agent-scoped leak (live residual = E1-5), #218 owner-delete (→ 7.4), #220 participant-role model + #217 role enum (→ 7.4 Meeting rows), #226 activities → Entity Server System (→ 7.4 D4) |
 
 ### 0.1 Phase ledger
+
+Phases 0–6 below landed on the branch and are history: their code left the tree with the supersede merge and is read from `b40403b6`.
 
 | Phase | Status | Landed as | Notes |
 |---|---|---|---|
@@ -32,25 +34,14 @@
 | A dead-code delete | ✅ 2026-08-20 | `a8ec6c3f`, `21758862` | 9 orphan `*Visibility` fns + `scopeMiddleware`; dispatcher widened to rehash+dead |
 | 6 owned sub-entities + homeowner precedence | ✅ 2026-08-24→09-03 | `4b705e81`, `c215c3d2`, `59676416`, `f286b3c6`, `07442fb8`, `ac8efe45`, `6c565a66` | `parent` on customer-notes/applications/media-files/proposal-media; media routers on CASL + `canAccess`; agent-first shareable precedence |
 | dispatcher corrections | ✅ 2026-09-04→06 | `c62813d5`, `ad71a076`, `5fec560b`, `5a983124` | financial gate (defensive — Grill-D residual), fresh-wide + all-meetings, notes + discovery profile, note-create `canAccess` probe |
-| **7 CASL-native plumbing** | 🔄 re-oriented 09-06, re-grounded 09-07, grilled 09-08/09, L12/L13 09-13, oriented 09-16 | — | **No code under the re-oriented definition yet.** Units in §4. The two router-seam commits above are to be reverted in 7.0 |
+| **7 CASL-native plumbing** | 🔄 re-oriented 09-06, re-grounded 09-07, grilled 09-08/09, L12/L13 09-13, oriented 09-16 | — | **No code under the re-oriented definition yet.** Units in §4. The two router-seam commits (`3e901178`, `b40403b6`) left the tree with the supersede merge |
 | 8 delete legacy engine | ⏳ blocked-by: all of Phase 7 | — | §4 |
 | 9 pre-merge E2E gate + single merge | ⏳ | — | §4 |
 | ~~7.5~~ | **deleted** as a phase 2026-09-06 | — | action-awareness + own-record conditions + field-level are ONE design inside Phase 7 (7.3/7.4) |
 
-### 0.2 Which engine runs today, per entity (report 03 §A, at `b40403b6`)
+### 0.2 Which engine runs today
 
-| Entity | Reads | Mutations |
-|---|---|---|
-| Customer | CASL | CASL via router seam (`3e901178`) → reverts to legacy on unwind (interim: §4 7.0-B3) |
-| Meeting | mixed (CASL except `meeting-flow.getPersonaProfile` via `buildUserContext`) | mixed; router seam `b40403b6` → reverts on unwind |
-| Proposal | mixed (`business.list`/contracts/delivery CASL) | **legacy** (crud leaf + every shareable procedure, `shareable-middleware.ts:45`) |
-| Project | mixed (`list` on CASL `projectProcedure`) | **none** — `getAll/getForEdit/create/update/delete` on bare `agentProcedure`, ctx-less DAL (E1-1) |
-| CustomerNote | legacy (Customer bridge) | create = CASL probe; update/delete legacy + `assertNoteAuthorOrAdmin` |
-| Application | legacy (Meeting bridge) | legacy |
-| MediaFile / ProposalMedia | CASL | CASL (google-drive create unscoped) |
-| Activity, User, LeadSource, AppSetting, VoIP × 7 | outside both engines | outside both (hand-rolled owner checks / `superAdminProcedure` / `SYSTEM_CONTEXT`) |
-
-Live legacy footprint on the branch: 19 reachable legacy-engine calls; 3 specs still declare `visibility:` (customers, meetings, proposals) — **5 after the merge** (+ `lead-sources`, `voip-contact-fields`, report 16 §3.3-F).
+Every scoped entity runs main's legacy engine (see §0 "What the tree runs"). The per-entity CASL/legacy split that this section used to tabulate described `b40403b6`. The per-entity survey of main is taken in the 7.3 plan, against the tree.
 
 ### 0.3 Open user decisions (HITL queue, in the order they will be asked)
 
@@ -61,12 +52,10 @@ Live legacy footprint on the branch: 19 reachable legacy-engine calls; 3 specs s
 | **Q8** | The 25 business-rule rulings in report 10 §5 (⭐ #1–6, #8 first: Meeting update/delete conditions, dispatcher Meeting update, Project read/update, create-side parent requirements, …) | each row carries a default | 7.4 (`abilities.ts` authoring) — Meeting rows also wait on #217/#220 |
 | **Q9** | Which other documents get rewritten and how (spec v2, catalog Parts 3/4, `src/trpc/DOCS.md`, per-entity DOCS, `add-an-entity.md`, memory) | tracker ✅ done; rest at 7.0-G3 (now) and Phase 8 (full rewrites) | 7.0 / 8 |
 | **Q10** | Root `AbilityProvider` (README L11): (a) keep session-derived root fallback, (b) ship rules from the root layout via the same cached `getRequestActor()`, (c) deny-all outside dashboard + proposal trees | **(b)** | 7.5 |
-| **Q11** | Merge conflict #4 `outcome-pipeline-map.ts`: taking the branch flips prod `not_good`/`ftd` from `rehash` to `dead` (matches the 2026-08-19 ruling; main's copy is stale) | take branch | 7.1 |
-| M-R1 / M-R2 | Merge rulings surfaced by report 21 §5: **R1** `recordView` — main's `proposalService.views.record(SYSTEM_CONTEXT)` vs the branch's bearer path (L12: the bearer records a view on its own row through the `views` collection field); **R2** proposal-media probes — main's service `assertParentVisible` introduced a NEW legacy `isVisible` caller (contradicts README C13); the branch's `canAccess` probe must be ported (→ `permit().probe` at 7.3) | R1: keep main's service shape, drive it from the bearer actor (no `SYSTEM_CONTEXT`); R2: port the probe | 7.1 |
-| J3 | Interim for the dispatcher regression the seam revert re-opens (customer edit NOT_FOUND on `fresh/rehash/dead`; getById/update on dispatcher-booked meetings) | **Corrected 2026-09-16 (report 18):** widening the legacy `customerVisibility` contradicts the 09-06 ruling "do NOT widen the legacy engine". Recommended instead: **revert the two seam commits in 7.3, in the same unit that lands DAL self-scoping**, so no interim exists; the branch is not deployed before Phase 9, so the regression is dev-only | 7.0 → 7.3 |
+| **Q11** | `outcome-pipeline-map.ts`: restoring the branch's map (`b40403b6`) flips prod `not_good`/`ftd` from `rehash` to `dead` (matches the 2026-08-19 ruling; the tree carries main's copy) | restore the branch's map | 7.3 (the `$inDerivedPipeline` operator reads it) |
+| M-R1 / M-R2 | **R1** `recordView` — main's `proposalService.views.record(SYSTEM_CONTEXT)` vs the bearer path (L12: the bearer records a view on its own row through the `views` collection field); **R2** proposal-media probes — main's service `assertParentVisible` calls the legacy `isVisible` | R1: keep main's service shape, drive it from the bearer actor (no `SYSTEM_CONTEXT`); R2: replace with the adapter's probe | 7.3 |
 | J6 | Wall guard shape (E2) | ESLint rule + allowlist | 7.6 |
 | J7 | Test runner for the pure compiler — reverses the 2026-08-11 "no vitest/scripts" ruling | minimal vitest, compiler-only; else the checked-in parity script (I1) | 7.3 gate |
-| conflict #10 | `projects.router/media.router.ts`: main's naked-writer `mutations.ts` vs branch's `mediaService` + `canAccess` guard | keep branch's guard, call main's `listImportableProjectMedia` (report 16 §2.1) | 7.1 |
 
 ---
 
@@ -196,23 +185,18 @@ Residual facts a Phase-7 implementer must know: `$hasNoMeeting` is orphaned (dro
 
 ### Phase 7 — CASL-native plumbing (re-oriented; the real design)
 
-- [ ] **7.0 · Hygiene + unwind + P0 fixes · AFK except B3/J3 · blocked-by: nothing.** Ships green on its own, engine-independent.
-  - Commit the at-risk docs (§0). Retitle #285 to the epic; link this tracker; cross-link #210/#218/#220/#217/#226 to their units (G4). Regenerate or delete `CLAUDE.local.md` (G5).
-  - ~~Revert `3e901178` + `b40403b6` here~~ → moved to **7.3** (see B3). Still in 7.0: drop nothing; record the two facts below. Keep two facts here, not in code comments: the child-bridge death-timing rule (a `*Visibility` fn dies only when its entity AND every child declaring `parent:<spec>` AND every `buildUserContext`/shareable caller are on CASL) and the Meeting parity template (agent `via:'self'` ≡ `userParticipatesInMeeting`; omni → null both; dispatcher = intended widening).
-  - **B3 (J3, corrected 2026-09-16):** NO legacy widening (09-06 ruling). The two seam commits are reverted in **7.3** together with DAL self-scoping, not here; until then the branch keeps them (dev-only). Corrected comment at `customers/lib/visibility.ts` (paths do NOT agree).
-  - **P0 bypasses of BOTH engines (README §E1):** E1-1 projects `crud.router.ts:14-65` five slots onto `projectProcedure` + `canAccess` + `assertCan` (any agent/dispatcher can delete any project + R2 media today); E1-2 `ai.router` unauthenticated `baseProcedure` → agent/bearer gate + probe; E1-3 interim: deny `update` on the token branch unless an explicit allowlist (final = D-11 in 7.3); E1-5 `customer-pipelines.router.ts:103-124` proposals/projects reads through owning DALs (the live #210 residual); E1-6 raw writers (`move-customer-pipeline-item.ts:61-71`, `landing.router/index.tsx:137`, `schedule.router/sync.router.ts:43-57`, `activities.router.ts:254`).
-  - **G3 stale-ref pings with no design dependency:** 3 dead slug anchors (`scope-middleware.ts:1,17`; 4× `procedures.ts:5`; `meetings/dal/server/crud.ts:164`); false comments `abilities.ts:168-170,204-206,281-284` (CASL "can't express own record" — it can, via `subject()`), `media-files/lib/server-spec.ts:26-31`, `resolve-actor-scope.ts:18,63,88`, `types.ts:7,23,174,183-191`, `create-crud-dal.ts:6`, `customers/dal/server/queries.ts:64-65`, `phone-gating-sql.ts:9`; add a "two engines coexist" note to `src/trpc/DOCS.md` now (full rewrite at Phase 8).
-  - **AC:** reverts landed; P0 rows closed and greppable; pings fixed; #285 retitled; tsc+lint green.
+- [ ] **7.0 · P0 fixes · AFK · blocked-by: nothing.** Engine-independent; lands on main through the hotfix path, then reaches the branch by the next main merge.
+  - **P0 bypasses (current paths: DISTILLED §6):** `ai.router/index.ts` unauthenticated `baseProcedure` → staff or bearer gate + reach check; `projects.router/crud.router.ts` `getAll/getForEdit/create/update/delete` on bare `agentProcedure` → scoped, delete admin-only; `create-crud-router.ts` skips verb + field gates when `ctx.ability` is null → deny `update` on the token path except an explicit allowlist (final = D-11 in 7.3); `customer-pipelines.router.ts` proposals/projects reads → through the owning DALs (the live #210 residual); meeting create on any customer → probe the customer first.
+  - Retitle #285 to the epic; link this tracker; cross-link #210/#218/#220/#217/#226 to their units (G4). Delete the stale `CLAUDE.local.md` dispatch file (G5).
+  - **AC:** P0 rows closed and greppable on main; #285 retitled; tsc+lint green.
 
-- [ ] **7.1 · Merge `main` → branch · HITL on conflicts #4 (Q11) and #10 · blocked-by: 7.0.** Report 16 is the merge plan. 10 entries / 9 paths: 5 trivial deletes of `*Visibility` files (re-apply the `visibility:` strip to the renamed `voip-contact-fields` spec), docs add/add (take the branch tracker), `create-crud-dal.ts` + `types.ts` keep both sides (do NOT pre-implement 7.3 in the merge), `customer-notes/lib/server-spec.ts` → drop the branch `hooks:` block and **port** `canAccess(customerServerSpec, ctx.actor, input.customerId)` into main's `customer-notes/dal/server/crud.ts:41-50` (else dispatcher note-create AND `rescheduleMeeting` regress), `outcome-pipeline-map.ts` → branch (Q11), `media.router.ts` → branch guard + main's `listImportableProjectMedia`. Then re-read the auto-merged hot files (`enums/meetings.ts`, `get-customer-pipeline-items.ts`, `meetings/DOCS.md`), classify the **35 net-new sites** (report 16 §3.3: 9 `SYSTEM_CONTEXT`, 10 `{...ctx, scope:null}`, 7 `ctx.scope ?? undefined`, 2 procedures incl. `rescheduleMeeting` — non-atomic, creates the replacement meeting under `SYSTEM_CONTEXT` — 2 legacy `spec.visibility` consumers, 3 ctx-less DAL calls, 1 cancel→GCal hook), and reconcile the CRUD-DAL mutation-interface epic's "DAL is actor-agnostic" §3.2 with D-16 (H3).
-  - **Delta 2026-09-16 (report 21 — READ IT before merging):** 18 entries / 17 paths; +8 vs report 16 (`pdf/route.ts`, `summary/route.ts`, `get-customer-pipeline-items.ts`, `abilities.ts`, `proposal-incentives/dal/server/mutations.ts` modify/delete, `create-crud-router.ts` — vanishes if the seam is reverted first, `proposals.router/{media,views}.router.ts`); proposals relocated to `modules/proposals/core/dal/server/*` (rename detection carried the branch's hunks); 17 dead imports + 1 dead call auto-merge silently and must be swept; `ENTITY_NAMES` on main admits `'ProposalView'`/`'ProposalIncentive'` as subject *types* (delete under L12/L13); +9 new sites (3 `SYSTEM_CONTEXT` reads in `notification.service.ts`, an `isVisible` consumer, a relocated token compare, 3 ctx-less DAL calls). The sync plan's order (bank → cherry-pick `db87d28d` → revert seam → merge) survives; rulings M-R1/M-R2 (§0.3) are needed at step 3.
-  - **AC:** merge commit; tsc+lint green; the 35 + 9 sites appended to §5 ledgers with their landing unit; dead imports swept; H4 recorded (merge at every phase boundary from here).
+- [x] **7.1 · Bring the branch in line with `main` · DONE 2026-10-05 (`2b038591`).** Supersede merge: main's tree taken whole, docs kept, the pre-re-grounding code left to history at `b40403b6`. Reports 16 and 21 and `docs/plans/2026-09-13-main-285-sync-plan.md` planned a literal merge and are history. Carried forward into 7.3: the Q11 map, rulings M-R1/M-R2, and the classification of every `SYSTEM_CONTEXT` / `{ ...ctx, scope: null }` / `ctx.scope ?? undefined` site in the tree.
 
 - [ ] **7.2 · Context unification (upstream of the DAL) · AFK · blocked-by: 7.1.** Executes `docs/plans/2026-09-07-casl-re-grounding/13-handoff-trpc-context-unification.md` inside this worktree (option A), with the 15 §4 corrections: `resHeaders?` optional; the `hasMounted` sentence reworded; step-9 "after" floor = per server request. Introduces `Actor` record + `getRequestActor()`; folds `get-cached-session.ts` and the RSC branch of `create-http-context.ts` into it; rewrites `init.ts` rungs to narrow only; deletes `systemProcedure` and the `scope: null` stamp at `init.ts:60`; migrates `ctx.ability` readers to `ctx.actor.ability`; RSC guards call `getRequestActor()`; route handlers that should be session-gated call it once. The old union's engine consumers are left alone (7.3 owns them); per-entity `<entity>Procedure`s keep stamping `scope` until 7.3.
   - **AC:** `defineAbilitiesFor` called in exactly `getRequestActor` + the shareable token branch (+ scripts); `/dashboard/pipeline/[pipeline]` traces to 1 session lookup / 1 ability build per server request (from 3 / 7); `google-calendar/webhook/route.ts` + `quickbooks/callback/route.ts` reported as no-auth; tsc+lint green.
 
 - [ ] **7.3 · Engine plumbing — DAL self-scopes per action · AFK (parity-gated) · blocked-by: 7.2; J7 decides the gate tooling.** README §C1–C13 under D-08/D-09/D-11/D-14/D-15/D-16/D-19/D-20:
-  - Delete the union: `scope/actor.ts` members, `tokenActor`/`systemActor`, the `kind` switches in `compile-scope.ts` / `resolve-actor-scope.ts` / `meeting-participation.ts` / `phone-gating-sql.ts`, `resolve-trpc-actor-scope.ts`, `requireResolvedScope`, `buildUserContext`, `SYSTEM_CONTEXT`-as-const → `systemContext(reason)` (F3 classification per site: `SystemReason` gains `webhook:* | sync:* | intake:* | admin:*`; ~39 sites).
+  - Restore the adapter core from `b40403b6` (report 19 §1 KEEP rows) without the union: no `scope/actor.ts`, no `kind` switches, no `resolve-actor-scope.ts` / `resolve-trpc-actor-scope.ts` / `requireResolvedScope`; `SYSTEM_CONTEXT`-as-const → `systemContext(reason)` (F3 classification per site: `SystemReason` gains `webhook:* | sync:* | intake:* | admin:*`; ~39 sites).
   - Adapter: `toWhere(ability, action, spec)` action-aware (C1); C9 OR-with-allow-all fix; C10 operator subject-binding asserts; C11 `server-only`; C8 typing V6; `OperatorCtx = { table, pk }` with user ids baked into rules (D-14).
   - `createCrudDal` slots: getById `read`; update/delete `and(toWhere(action), toWhere('read'))` (D-15); `duplicate` source read likewise; `create` = parent FK probe for children / `verbOnly('create')` for roots (C4 — closes the create-side IDOR class E1-4); parent bridge + own-column child conditions (D-08); `permittedFieldsOf` post-load in update, `assertCanUpdateFields` retired (C6/C7).
   - `bearerActor(spec, rowId)` + `<entity>ShareableProcedure` (proposal only today); `recordView` moves off `systemProcedure`; delete the 4 `ctx.ability == null` role proxies; the homeowner conditionless `read Proposal` deleted in the same commit as the bearer ability (D-02).
@@ -279,7 +263,6 @@ Delete `resolveEffectiveScope` / `bridgeToParent` / `isInScope` / `resolveVisibi
 | `buildUserContext`, `isInScope` (`scope.ts:94` residual `?? undefined`), `isVisible` (0 callers) | `scopedWhere` / `canAccess` | 7.3 |
 | `resolveEffectiveScope` / `bridgeToParent` / `resolveVisibilityScope` / `scope-middleware.ts` / `spec.visibility` | adapter + `spec.parent` | 8 |
 | `assertCanUpdateFields`, `assertNoteAuthorOrAdmin`, 4 client mirrors | `permittedFieldsOf`, CASL conditions, `useAbility` + `subject()` | 7.3 / 7.4 / 7.5 |
-| `createCrudRouter` `resolveScope?` option (`3e901178`) | reverted | 7.0 |
 | interim staff gate `can('access','Dashboard')` | future is-staff reconception (marker only) | — |
 
 ### 5.5 IDOR ledger (2026-08-18 census) — status
@@ -293,11 +276,11 @@ README §G3 list (21 pings from report 05 §2) → 7.0 for the no-design-depende
 ## 6. Dependency graph
 
 ```
-Phases 0–6 + A + dispatcher corrections ✓ (b40403b6)
-  └─→ 7.0 hygiene + unwind + P0            [AFK; J3 interim]
-        └─→ 7.1 merge main → branch       [HITL: Q11, conflict #10]
+Phases 0–6 + A + dispatcher corrections ✓ (history at b40403b6)
+  ├─→ 7.0 P0 fixes on main (hotfix path)   [AFK; independent]
+  └─→ 7.1 supersede merge ✓ (2b038591, 2026-10-05)
               └─→ 7.2 context unification [AFK]  (handoff 13)
-                    └─→ 7.3 engine plumbing — DAL self-scope, adapter, bearer, union deleted   [AFK; parity gate — J7]
+                    └─→ 7.3 engine plumbing — adapter restored, DAL self-scope, bearer   [AFK; parity gate — J7]
                           ├─→ 7.4 rules matrix + own-record retirement   [HITL: Q7, Q8; #217/#220 for Meeting rows]
                           │      └─→ 7.5 client (one ability)            [AFK after Q10]
                           └─→ 7.6 wall + financial                       [AFK after J6]
@@ -332,6 +315,7 @@ Merge main → branch again at every phase boundary (D-22).
 - **2026-09-13** — Grill resumed (session `a078cbb8`): Q7 → **L12** (7a yes; 7b yes minus a `ProposalView` subject; 7c deferred). **L13 opened:** sub-entities as FIELDS of the parent CASL subject; report 17 (worked example + probe SQL on real tables); the probe exposed the action map (child writes ⇒ parent `update`).
 - **2026-09-16** — Orientation pass (8 subagents): report 18 (decision + progress map: 41 LOCKED / 25 SUPERSEDED / 1 in grill / 22 open), 19 (branch API inventory: 93 primitives → 33 keep / 3 rename / 35 rewrite / 22 delete; one decision drives ~30 rewrites), 21 (main drift: 117 behind, 18/17 conflicts, proposals in `modules/`, `createCrudDal` generic), 22 (topology: 50 tables; subject union 25 → 20; `CustomerNote` the only own-row child), 23-A…D (design-it-twice interface alternatives), 24 (comparison + **hybrid recommendation**, awaiting the user's ruling). Edited in place: report 17 §2 (D-19: no operators on mutation rules), D-11 (no `ProposalView` subject), J3 (no legacy widening; seam revert moves to 7.3), D-08 (pending L13), Q12 + M-R1/M-R2 added.
 - **2026-09-09 (evening)** — Recovery session: lineage located; Context7 + installed-package verification of every §L claim (14: all decisions stand; mechanism corrections to L7/L8/L10/C8; `@casl/react` 7.0.1 real; stay on `@casl/ability` 6.8.0), tRPC/Next/React/better-auth verification (15: all stand; `resHeaders?`; `hasMounted` premise false; root provider = new Q10), merge rebaseline (16: 10/9 conflicts, 35 new sites, tsc+lint green). **This tracker rewritten** (G1/J8); pre-rewrite copy snapshotted as report 00.
+- **2026-10-05** — Docs banked (`c19eddce`). **Supersede merge `2b038591`** (owner's choice over a literal merge and over a fresh branch): tree = main `61d3e1e2` + the permissions docs; 76 branch commits kept as ancestors; branch pushed to origin. 7.1 closed; 7.0 reduced to the P0 fixes on main; Q11 and M-R1/M-R2 move to 7.3; J3 and conflict #10 no longer exist.
 
 ## Appendix B — Pointers
 - Decision log + audit: `docs/plans/2026-09-07-casl-re-grounding/README.md` (§L) and reports `00`–`16`.
