@@ -1,7 +1,7 @@
 export const insurances = [
   {
     label: 'General Liability Insurance',
-    coverage: '$1M Coverage',
+    coverage: '$2M per project',
   },
   {
     label: 'Workers\' Compensation Insurance',
@@ -10,13 +10,5 @@ export const insurances = [
   {
     label: 'Professional Liability Insurance',
     coverage: '$1M Coverage',
-  },
-  {
-    label: 'Bonded',
-    coverage: 'Up to $5M',
-  },
-  {
-    label: 'Commercial General Liability Insurance',
-    coverage: '$10M Coverage',
   },
 ]

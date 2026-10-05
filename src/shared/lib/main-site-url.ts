@@ -1,4 +1,3 @@
-// see ../../../docs/codebase-conventions/urls-and-origins.md
 import { SUBDOMAIN_LABELS } from '@/shared/config/subdomains'
 
 /**

@@ -46,8 +46,8 @@ The premise that motivated QStash — "draft creation is slow on our side, push 
 
 ## See also
 
-- `src/shared/entities/proposals/DOCS.md#proposal-contract-independence`
-- `src/shared/entities/proposals/DOCS.md#agreement-context-as-coherent-unit`
+- `src/shared/modules/proposals/core/DOCS.md#proposal-contract-independence`
+- `src/shared/modules/proposals/core/DOCS.md#agreement-context-as-coherent-unit`
 - `src/features/proposal-flow/dal/client/mutations/use-send-proposal-with-draft.ts` (the orchestrator)
 - `src/shared/components/contract-status-panel/ui/send-proposal-progress.tsx` (the honest staged UI)
 
@@ -63,7 +63,7 @@ This ADR's original framing was: "cross-entity coupling that exists for a specif
 
 - **Anti-pattern (retired).** The old `customersRouter.submitCustomerAge` was a hand-rolled `publicProcedure` that manually validated a *proposal* token to allow writing a *customer* field. It belonged on neither router clearly and grew a cross-entity side-effect (envelope-doc reconciliation). The retirement is: cross-entity writes that share a single tokenized auth gate live on the entity that *carries* the token, named to make the cross-entity scope obvious (e.g., `applyEnvelopeContext`, not `setCustomerAge`).
 
-**Lock invariant** *(amended 2026-07-18, #264 — see below)*: `applyEnvelopeContext` refuses to mutate while the proposal is anywhere on the lock ladder (`isProposalFrozen`, `entities/proposals/lib/proposal-lock.ts`). The envelope is assembled from this context; editing one without killing the other would let them drift. To edit, the agent discards the draft or recalls the envelope — the same explicit unlocking gesture as everywhere else on the contracts router. (This holds the original `signingRequestId`-era semantics; what changed in #264 is that envelopes are no longer auto-created at proposal-send, so the lock now fires only on deliberate agent action.)
+**Lock invariant** *(amended 2026-07-18, #264 — see below)*: `applyEnvelopeContext` refuses to mutate while the proposal is anywhere on the lock ladder (`isProposalFrozen`, `modules/proposals/core/lib/proposal-lock.ts`). The envelope is assembled from this context; editing one without killing the other would let them drift. To edit, the agent discards the draft or recalls the envelope — the same explicit unlocking gesture as everywhere else on the contracts router. (This holds the original `signingRequestId`-era semantics; what changed in #264 is that envelopes are no longer auto-created at proposal-send, so the lock now fires only on deliberate agent action.)
 
 ## Amendment 2026-05-28 — Retire the legacy single-template path
 
@@ -99,12 +99,12 @@ signal's meaning.
   creation is always a manual agent decision on the envelope card. The synchronous-draft
   finding and the "no QStash / no inferred syncing state" rules from this ADR's original
   decision stand unchanged.
-- **The lock is a four-tier ladder**, derived once in `entities/proposals/lib/proposal-lock.ts`
+- **The lock is a four-tier ladder**, derived once in `modules/proposals/core/lib/proposal-lock.ts`
   (`getProposalLockState`) and consumed by every gate and UI affordance — never ad-hoc:
   `unlocked` (no envelope — the common case) → `draft-locked` (inline "discard draft & edit"
   unlock) → `inflight-locked` (recall to edit) → `terminal-locked` (approved / signed /
   declined — permanent, no thaw; changes go on a new proposal). Canonical rule + tier table:
-  `src/shared/entities/proposals/DOCS.md#proposal-lock-ladder`.
+  `src/shared/modules/proposals/core/DOCS.md#proposal-lock-ladder`.
 - **No rebuild-at-send.** Because content cannot change while an envelope exists (whole-
   proposal, field-scoped `update.before` gate), `sendContractEnvelope` submits the existing
   draft as-is — it is fresh by construction. The strict no-auto-create rule (two-tab race)

@@ -13,7 +13,7 @@ scalar fields to the owning row.
 `classifyFileKind(mimeType)` buckets a MIME type into `image | video | pdf | other`.
 
 - **image** → reuses `processImageVariants` from
-  `src/shared/entities/media-files/lib/process-image-variants.ts` for WebP size variants
+  `src/shared/modules/media/core/lib/process-image-variants.ts` for WebP size variants
   + blur placeholder. This layer does not reimplement image processing.
 - **pdf** → `readPdfPageCount` (in `strategies/pdf.ts`) reads a best-effort page count via
   `pdf-lib`. Never throws — a parse failure returns `null`, not an optimize failure.
@@ -33,4 +33,4 @@ Extension points are marked `// PLAN 1b:` in `strategies/pdf.ts` and `optimize-f
 
 This directory must never import from `@/features/**`, storage clients, or `db`. The only
 cross-imports allowed are `ImageVariant`/`processImageVariants` from
-`entities/media-files/lib` and the `pdf-lib`/`sharp` packages.
+`modules/media/core/lib` and the `pdf-lib`/`sharp` packages.

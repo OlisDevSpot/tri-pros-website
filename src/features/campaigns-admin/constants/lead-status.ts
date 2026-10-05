@@ -9,10 +9,10 @@ export interface LeadStatusMeta {
 }
 
 export const LEAD_STATUS_META: Record<LeadStatus, LeadStatusMeta> = {
-  enrolled: { label: 'Enrolled', dotClass: 'bg-green-500', toneClass: 'text-green-700 dark:text-green-400 border-green-500/30' },
+  enrolled: { label: 'Enrolled', dotClass: 'bg-status-success-dot', toneClass: 'text-status-success-fg border-status-success-dot/40' },
   eligible: { label: 'Eligible', dotClass: 'bg-muted-foreground', toneClass: 'text-muted-foreground border-border' },
-  removed: { label: 'Removed', dotClass: 'bg-amber-500', toneClass: 'text-amber-700 dark:text-amber-400 border-amber-500/30' },
-  dnc: { label: 'DNC', dotClass: 'bg-red-500', toneClass: 'text-red-700 dark:text-red-400 border-red-500/30' },
+  removed: { label: 'Removed', dotClass: 'bg-status-pending-dot', toneClass: 'text-status-pending-fg border-status-pending-dot/40' },
+  dnc: { label: 'DNC', dotClass: 'bg-status-danger-dot', toneClass: 'text-status-danger-fg border-status-danger-dot/40' },
 }
 
 export const LEAD_STATUS_OPTIONS: { label: string, value: LeadStatus }[] = [

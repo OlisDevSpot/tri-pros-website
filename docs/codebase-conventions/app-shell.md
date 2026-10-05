@@ -44,7 +44,7 @@ body {
 `body { height: 100% }` (not `min-height`) is critical — children using `h-full` can only resolve against an explicit `height`, not `min-height`.
 
 **Why**: unresolved WebKit bug from 2018; CSS-only workaround required for initial paint on iOS PWA.
-**Reference impl**: `src/app/globals.css`
+**Reference impl**: `src/app/(frontend)/globals.css`
 **Enforced by**: convention
 
 ### safe-area-padding-on-content-not-container
@@ -73,21 +73,33 @@ Padding goes on the **inner content wrapper**, NOT on the container that paints 
 All CSS-based safe-area rules live in `globals.css` under the "PWA safe-area insets" section.
 
 **Why**: backgrounds must paint edge-to-edge for the install experience to feel native; interactive content must clear the notch / home indicator.
-**Reference impl**: `src/app/globals.css`, `src/app/(frontend)/dashboard/layout.tsx`, `src/shared/components/dialogs/base-modal.tsx`
+**Reference impl**: `src/app/(frontend)/globals.css`, `src/app/(frontend)/dashboard/layout.tsx`, `src/shared/components/dialogs/modals/base-modal.tsx`
 **Enforced by**: convention (CSS lives in `globals.css`; component-level wrappers apply Tailwind utilities directly)
 
 ### dashboard-layout-shape-fixed
 
-The dashboard layout has one canonical shape. Do not refactor without reading the "Key lessons learned" anti-pattern list below.
+The dashboard layout has one canonical shape. Do not refactor without reading the Anti-patterns list below.
 
 ```jsx
-<SidebarProvider>                                    {/* height: 100% via CSS */}
-  <AppSidebar />                                     {/* fixed inset-y-0; owns its safe areas */}
+<SidebarProvider>                                        {/* height: 100% via CSS */}
+  {hasSessionCookie && (
+    <SidebarSessionBoundary fallback={<AppSidebarSkeleton />}>  {/* Suspense that re-renders on sidebar context changes */}
+      <DashboardSessionSidebar />                        {/* → AppSidebar: fixed inset-y-0; owns its safe areas */}
+    </SidebarSessionBoundary>
+  )}
   <SidebarInset className="h-full min-w-0 overflow-hidden">
     <div className="flex-1 min-h-0 pt-[env(safe-area-inset-top)]">
-      <Suspense>{children}</Suspense>
+      {hasSessionCookie
+        ? (
+            <Suspense fallback={<DashboardContentSkeleton />}>
+              <DashboardSessionContent>{children}</DashboardSessionContent>
+            </Suspense>
+          )
+        : <DashboardSignIn />}
     </div>
-    <DashboardMobileNav />                           {/* fixed bottom-4 */}
+    {hasSessionCookie && (
+      <Suspense><DashboardSessionMobileNav /></Suspense> {/* → DashboardMobileNav: floating dock, bottom max(1rem, safe area) */}
+    )}
   </SidebarInset>
 </SidebarProvider>
 ```
@@ -101,6 +113,19 @@ The dashboard layout has one canonical shape. Do not refactor without reading th
 **Why**: every deviation tried (layout-level scroll, lifting Suspense up, removing `min-h-0`) has caused a visible regression. Lessons paid for in PR pain.
 **Reference impl**: `src/app/(frontend)/dashboard/layout.tsx`
 **Enforced by**: convention (no enforcement mechanism — guard via review)
+
+### stage-routes-opt-out-with-data-stage
+
+A route that must render edge to edge inside the dashboard (today: the meeting flow, `/dashboard/meetings/[meetingId]`) marks its root element with `data-stage`. Two selectors react to it; `layout.tsx` does not change:
+
+- `src/app/(frontend)/dashboard/template.tsx` — `motion.main` carries `has-data-stage:p-0`, so the template's page padding disappears only while a stage is inside it.
+- `src/app/(frontend)/globals.css` — `[data-slot='sidebar-inset']:has([data-stage]) [data-slot='dashboard-mobile-nav'] { display: none }` hides the mobile bottom nav for that route.
+
+The stage route then supplies its own gutters where it wants them (the meeting flow's page steps do; its presentation does not) and its own safe-area bottom padding.
+
+**Why**: the dashboard layout shape is fixed (rule above). A route group or a nested layout would fork the shell or remount the sidebar; a pathname-aware template couples the template to routes. One attribute plus two `:has()` selectors keeps one layout and one template.
+**Reference impl**: `src/features/meeting-flow/ui/views/meeting-flow.tsx` (root `data-stage`)
+**Enforced by**: convention
 
 ### proposal-flow-layout-shape-fixed
 
@@ -141,7 +166,7 @@ Theme resolution now happens in two layers:
 - **Before first paint**: `next-themes` (`attribute="class"`, `defaultTheme="system"`, `enableSystem` — see `ThemeProvider` in `src/shared/components/providers/index.tsx`) injects a blocking script that sets the `class` and inline `color-scheme` on `<html>` before the browser paints, so the correct theme is live immediately — no client-side flash.
 - **Static/no-JS fallback**: `globals.css` declares `color-scheme: light` on `:root` and `color-scheme: dark` on `.dark`, so the UA-painted canvas (and overscroll gutters) matches the resolved theme even on the very first frame, before the blocking script or React runs.
 
-The intentional **always-dark** PWA cold-launch moment (the moment before hydration, regardless of system theme) is handled separately by the `apple-touch-startup-image` matrix (`metadata.appleWebApp.startupImage` in `layout.tsx`, generated by `scripts/generate-pwa-splash.ts`) plus the `PwaSplashScreen` SVG overlay — not by hardcoded `<html>` markup.
+The intentional **always-dark** PWA cold-launch moment (the moment before hydration, regardless of system theme) is handled separately by an inline `@media (display-mode: standalone)` `<style>` block in `layout.tsx` that forces `html,body` to `#09090b` before the external stylesheet loads or `next-themes` resolves, plus the manifest's `background_color` (`src/app/manifest.ts`) for the pre-web-view surface — not by hardcoded `<html>` markup.
 
 **Why**: hardcoding a dark `<html>` fights `next-themes` and breaks light-mode cold-launch; `color-scheme` + the next-themes blocking script gives correct-theme-on-first-paint without a FOUC in either direction.
 **Reference impl**: `src/app/(frontend)/layout.tsx`, `src/app/(frontend)/globals.css`, `src/shared/components/providers/theme-provider.tsx`, `src/shared/components/providers/index.tsx`
@@ -169,9 +194,9 @@ See `environment.md#vapid-keys-never-rotate`. Generated once; every existing sub
 
 ### manifest-scope-stays-slash
 
-`scope: '/'` in `public/manifest.json` is required for deep-link push notifications (the `navigate` field on Declarative Web Push). Narrowing scope breaks deep links on iOS.
+`scope: '/'` in `src/app/manifest.ts` is required for deep-link push notifications (the `navigate` field on Declarative Web Push). Narrowing scope breaks deep links on iOS.
 
-**Reference impl**: `public/manifest.json`
+**Reference impl**: `src/app/manifest.ts`
 **Related**: `memory/pattern-push-notifications.md` — how to add a new push type
 
 ## Anti-patterns

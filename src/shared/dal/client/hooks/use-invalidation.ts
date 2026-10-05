@@ -33,6 +33,10 @@ export function useInvalidation() {
       trpc.customerPipelinesRouter.getCustomerProjects.queryFilter(),
     landingProjects: () =>
       trpc.landingRouter.projectsRouter.getProjects.queryFilter(),
+    meetingsList: () =>
+      trpc.meetingsRouter.reads.list.queryFilter(),
+    meetingsForProject: () =>
+      trpc.meetingsRouter.reads.listForProject.queryFilter(),
   }
 
   // ── Entity Invalidators ────────────────────────────────────────
@@ -57,6 +61,10 @@ export function useInvalidation() {
     void qc.invalidateQueries(trpc.proposalsRouter.pathFilter())
     void qc.invalidateQueries(cross.customerPipeline())
     void qc.invalidateQueries(cross.customerProfile(opts?.customerId))
+    // Meeting rows show their proposals' status dots and count.
+    void qc.invalidateQueries(cross.meetingsList())
+    // A project's sales history shows its meetings' proposals.
+    void qc.invalidateQueries(cross.meetingsForProject())
     void qc.invalidateQueries(trpc.dashboardRouter.pathFilter())
     // Proposal approval creates a project, which flips the customer's "signed"
     // status — lead-source signed counts must refresh alongside.
@@ -69,6 +77,7 @@ export function useInvalidation() {
     void qc.invalidateQueries(cross.customerProfile(opts?.customerId))
     void qc.invalidateQueries(cross.meetingCustomerProjects())
     void qc.invalidateQueries(cross.landingProjects())
+    void qc.invalidateQueries(cross.meetingsForProject())
     void qc.invalidateQueries(trpc.dashboardRouter.pathFilter())
     // Signed-customer status is defined as "has ≥1 project" — any project
     // mutation can change a source's signed count.
@@ -86,6 +95,8 @@ export function useInvalidation() {
 
   function invalidateLeadSource() {
     void qc.invalidateQueries(trpc.leadSourcesRouter.pathFilter())
+    // Lead-source names, archived flags, spend and spend modes all feed the analytics page.
+    void qc.invalidateQueries(trpc.analyticsRouter.pathFilter())
   }
 
   function invalidateVoipCampaigns() {

@@ -1,12 +1,12 @@
 'use client'
 
-import type { ProjectDetail } from '@/shared/entities/projects/types'
+import type { ProjectDetail } from '@/shared/modules/projects/core/types'
 import { X } from 'lucide-react'
 import { motion, useInView } from 'motion/react'
 import Image from 'next/image'
 import { useRef, useState } from 'react'
-import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Dialog, DialogContent } from '@/shared/components/ui/dialog'
+import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
 
 interface Props {
   media: NonNullable<ProjectDetail>['media']

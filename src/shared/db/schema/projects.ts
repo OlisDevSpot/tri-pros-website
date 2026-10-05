@@ -1,13 +1,13 @@
 import type z from 'zod'
-import type { BeforeAfterPairs } from '@/shared/entities/projects/schemas'
+import type { BeforeAfterPairs } from '@/shared/modules/projects/core/schemas'
 import { relations } from 'drizzle-orm'
 import { boolean, jsonb, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { accessor, createdAt, description, id, updatedAt } from '../lib/schema-helpers'
 import { user } from './auth'
 import { customers } from './customers'
-import { mediaFiles } from './media-files'
 import { meetings } from './meetings'
+import { projectMediaFiles } from './project-media-files'
 import { x_projectScopes } from './x-project-scopes'
 
 export const projects = pgTable('projects', {
@@ -29,10 +29,6 @@ export const projects = pgTable('projects', {
   challengeDescription: text('challenge_description'),
   solutionDescription: text('solution_description'),
   resultDescription: text('result_description'),
-  beforeDescription: text('before_description'),
-  duringDescription: text('during_description'),
-  afterDescription: text('after_description'),
-  mainDescription: text('main_description'),
   beforeAfterPairsJSON: jsonb('before_after_pairs_json').$type<BeforeAfterPairs>(),
   customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'cascade' }),
   ownerId: text('owner_id').references(() => user.id, { onDelete: 'cascade' }),
@@ -53,7 +49,7 @@ export const projectsRelations = relations(projects, ({ many, one }) => ({
     references: [user.id],
   }),
   meetings: many(meetings),
-  mediaFiles: many(mediaFiles),
+  projectMediaFiles: many(projectMediaFiles),
   projectScopes: many(x_projectScopes),
 }))
 

@@ -1,0 +1,84 @@
+'use client'
+
+import type { ReactNode } from 'react'
+
+import type { CustomerProfileProposal } from '@/shared/entities/customers/types'
+import type { ProposalOverviewCardMeta } from '@/shared/modules/proposals/core/components/overview-card'
+
+import { useRouter } from 'next/navigation'
+import { useCallback } from 'react'
+
+import { ROOTS } from '@/shared/config/roots'
+import { businessDayKey, businessToday, formatBusinessTime } from '@/shared/lib/business-time'
+import { cn } from '@/shared/lib/utils'
+import { ProposalOverviewCard } from '@/shared/modules/proposals/core/components/overview-card'
+import { PROPOSAL_ROW_STYLES } from '@/shared/modules/proposals/core/constants/proposal-row-styles'
+
+interface Props {
+  proposal: CustomerProfileProposal
+  onMutationSuccess?: () => void
+  onNavigate?: () => void
+  /** Shows "Sent <date>", or "Not sent", under the label. */
+  showSentDate?: boolean
+  meta?: ProposalOverviewCardMeta
+  /** Rendered inside the card, below the row, so it can use the card's slots. */
+  footer?: ReactNode
+}
+
+export function MeetingProposalRow({ proposal, onMutationSuccess: _onMutationSuccess, onNavigate, showSentDate = false, meta, footer }: Props) {
+  const router = useRouter()
+  const handleView = useCallback(() => {
+    window.open(ROOTS.public.proposalReview(proposal.id), '_blank')
+  }, [proposal.id])
+
+  const handleEdit = useCallback(() => {
+    onNavigate?.()
+    router.push(ROOTS.dashboard.proposals.byId(proposal.id))
+  }, [proposal.id, onNavigate, router])
+
+  const style = PROPOSAL_ROW_STYLES[proposal.status] ?? PROPOSAL_ROW_STYLES.draft
+
+  return (
+    <ProposalOverviewCard
+      proposal={proposal}
+      onView={handleView}
+      onEdit={handleEdit}
+      meta={meta}
+      className={cn(
+        // Grid (not flex) so the leading StatusIconTile can use `h-full
+        // aspect-square` and resolve to a true square — flex doesn't derive
+        // inline-size from stretched block-size reliably. `items-stretch`
+        // makes each cell's block-size equal the tallest cell; padding
+        // defines the outer envelope so the tile respects it.
+        'group grid grid-cols-[auto_minmax(0,1fr)_auto] items-stretch gap-2 rounded-md px-3 py-2 transition-colors',
+        style.bg,
+      )}
+    >
+      <ProposalOverviewCard.StatusIconTile />
+      {/* Label + trade stacked vertically. Status badge sits to the right of
+          the label (trailing state badge convention) so the reading order is
+          "[icon] [proposal label] [state] · [trade]". */}
+      <div className="flex min-w-0 flex-col justify-center gap-0.5">
+        <div className="flex items-center gap-1.5">
+          <ProposalOverviewCard.Label className="truncate text-sm font-medium" />
+          <ProposalOverviewCard.StatusBadge className="shrink-0" />
+        </div>
+        <ProposalOverviewCard.Trade />
+        {showSentDate && (
+          <span className="text-xs text-muted-foreground">
+            {proposal.sentAt
+              ? `Sent ${formatBusinessTime(proposal.sentAt, businessDayKey(new Date(proposal.sentAt)).slice(0, 4) === businessToday().slice(0, 4) ? { month: 'short', day: 'numeric' } : { month: 'short', day: 'numeric', year: 'numeric' })}`
+              : 'Not sent'}
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-2 self-center">
+        <ProposalOverviewCard.Value className="text-sm" />
+        <ProposalOverviewCard.ViewCount />
+        <ProposalOverviewCard.Actions mode="compact" className="opacity-60 hover:opacity-100 transition-opacity" />
+      </div>
+      {/* The card's own click opens the proposal; the footer is informational, so clicks stop here. */}
+      {footer && <div className="col-span-full" onClick={e => e.stopPropagation()}>{footer}</div>}
+    </ProposalOverviewCard>
+  )
+}

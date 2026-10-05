@@ -15,8 +15,6 @@ import {
   AddressPredictionsDropdown,
 } from './address-predictions-dropdown'
 
-export type { AddressFields } from '@/shared/lib/google-maps-helpers'
-
 interface AddressAutocompleteProps {
   onSelect: (fields: AddressFields) => void
   onClear?: () => void

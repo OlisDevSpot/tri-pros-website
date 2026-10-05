@@ -1,5 +1,4 @@
 // Custom DAL queries for voip-link-tokens — token-keyed lookup + safe consume.
-// see ../../DOCS.md (48h hard expiry, immutable-except-usedAt invariant)
 
 import type { DalReturn } from '@/shared/dal/server/types'
 import type { Row } from '@/shared/db/types'

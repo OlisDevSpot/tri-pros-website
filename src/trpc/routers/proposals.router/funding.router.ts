@@ -7,7 +7,7 @@
 
 import z from 'zod'
 
-import { setCashInDeal } from '@/shared/entities/proposals/dal/server/mutations'
+import { setCashInDeal } from '@/shared/modules/proposals/core/dal/server/mutations'
 
 import { createTRPCRouter } from '../../init'
 import { dalToTrpc } from '../../lib/dal-to-trpc'

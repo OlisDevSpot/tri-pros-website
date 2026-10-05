@@ -2,8 +2,6 @@
 // (idempotent upsert + provider-id keyed patches). Services call these — never
 // reach for `db.insert/update` from a service layer.
 //
-// see ../../DOCS.md for invariants
-// see docs/codebase-conventions/dal-conventions.md
 // see memory/feedback-services-orchestrate-dal-implements.md
 
 import type { DalReturn } from '@/shared/dal/server/types'

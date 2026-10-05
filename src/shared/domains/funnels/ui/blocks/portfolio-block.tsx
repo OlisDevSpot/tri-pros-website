@@ -1,20 +1,20 @@
 'use client'
 
 import type { FunnelContext, PortfolioBlockContent } from '@/shared/domains/funnels/types'
-import type { PortfolioProject } from '@/shared/entities/projects/types'
+import type { PortfolioProject } from '@/shared/modules/projects/core/types'
 import { useQuery } from '@tanstack/react-query'
 import Image from 'next/image'
 import { useMemo } from 'react'
 import { Block } from '@/shared/components/block/block'
 import { PORTFOLIO_BENTO_SPANS, PORTFOLIO_FALLBACK_IMAGES, PORTFOLIO_SLOT_COUNT } from '@/shared/domains/funnels/constants/portfolio-fallback-images'
 import { getTradeFacts } from '@/shared/domains/funnels/constants/trade-facts'
-import { getOptimizedSrc } from '@/shared/lib/get-optimized-urls'
 import { cn } from '@/shared/lib/utils'
+import { getOptimizedSrc } from '@/shared/modules/media/core/lib/get-optimized-urls'
 import { useTRPC } from '@/trpc/helpers'
 
 export function PortfolioBlock({ content, ctx }: { content: PortfolioBlockContent, ctx: FunnelContext }) {
   const trpc = useTRPC()
-  const scopesQ = useQuery(trpc.notionRouter.scopes.getAll.queryOptions())
+  const scopesQ = useQuery(trpc.constructionRouter.scopes.getAll.queryOptions())
   const projectsQ = useQuery(trpc.projectsRouter.showroomDisplay.getAll.queryOptions())
   const tradeId = getTradeFacts(ctx.slug).notionTradeId
 
@@ -24,7 +24,7 @@ export function PortfolioBlock({ content, ctx }: { content: PortfolioBlockConten
     if (!scopes || !projects) {
       return null
     }
-    const scopeToTrade = new Map(scopes.map(s => [s.id, s.relatedTrade]))
+    const scopeToTrade = new Map(scopes.map(s => [s.id, s.tradeId]))
     const hits = projects.filter((p): p is PortfolioProject & { heroImage: NonNullable<PortfolioProject['heroImage']> } =>
       p.heroImage !== null && p.scopeIds.some(id => scopeToTrade.get(id) === tradeId),
     )

@@ -46,6 +46,7 @@ export const selectableMeetingOutcomes = [
   'cancelled',
   'nra',
   'follow_up_needed',
+  'reschedule_needed',
 ] as const
 export type SelectableMeetingOutcome = (typeof selectableMeetingOutcomes)[number]
 
@@ -66,74 +67,78 @@ export const meetingOutcomes = [
 ] as const
 export type MeetingOutcome = (typeof meetingOutcomes)[number]
 
-/**
- * THE single source of truth for what a meeting outcome MEANS. Each outcome is
- * classified exactly once, at the finest grain the domain needs — the common
- * refinement of the two axes every consumer cares about:
- *   • sentiment (color / stats / reason-gating): unset · neutral · positive · negative
- *   • pipeline consequence of a negative: recallable (→ rehash) vs terminal (→ dead)
- *
- * Everything else — `MEETING_OUTCOME_SENTIMENT`, the recallable/terminal/positive
- * sets, `OUTCOME_PIPELINE_MAP` — DERIVES from this map, so they can never drift
- * and no runtime partition guard is needed. Because it's `Record<MeetingOutcome, …>`,
- * adding an outcome is a compile error until it is classified here, once.
- * Abbrev meanings: memory/reference-meeting-outcome-abbreviations.md.
- */
-export type MeetingOutcomeClass = 'unset' | 'neutral' | 'positive' | 'negative-recallable' | 'negative-terminal'
+export type MeetingOutcomeSentiment = 'positive' | 'neutral' | 'negative' | 'unset'
 
-export const MEETING_OUTCOME_CLASS: Record<MeetingOutcome, MeetingOutcomeClass> = {
+/**
+ * THE canonical classifier for a meeting outcome's sentiment. Every color map,
+ * stat bucket, and negative/positive branch in the app derives from this — do
+ * not re-encode outcome sentiment anywhere else.
+ *
+ * - unset:    no decision recorded yet (not_set). Never colored like a neutral
+ *             result; never requires a reason.
+ * - neutral:  a real, in-progress / non-terminal result (follow-up, proposal
+ *             created/sent). Each keeps its own distinct hue.
+ * - positive: revenue outcome (new project or additional work).
+ * - negative: lost / failed meeting.
+ */
+export const MEETING_OUTCOME_SENTIMENT: Record<MeetingOutcome, MeetingOutcomeSentiment> = {
   not_set: 'unset',
   follow_up_needed: 'neutral',
+  reschedule_needed: 'neutral',
   proposal_created: 'neutral',
   proposal_sent: 'neutral',
   converted_to_project: 'positive',
   additional_work: 'positive',
-  cancelled: 'negative-recallable',
-  no_show: 'negative-recallable',
-  pns: 'negative-recallable',
-  npns: 'negative-recallable',
-  nra: 'negative-recallable',
-  lost_to_competitor: 'negative-terminal',
-  not_good: 'negative-terminal',
-  ftd: 'negative-terminal',
+  not_good: 'negative',
+  pns: 'negative',
+  npns: 'negative',
+  ftd: 'negative',
+  no_show: 'negative',
+  lost_to_competitor: 'negative',
+  cancelled: 'negative',
+  nra: 'negative',
 }
-
-/** The outcomes whose class is one of the given classes. The one way to slice the SoT. */
-function outcomesOfClass(...classes: readonly MeetingOutcomeClass[]): MeetingOutcome[] {
-  return meetingOutcomes.filter(o => classes.includes(MEETING_OUTCOME_CLASS[o]))
-}
-
-// ── Derived views of the outcome taxonomy (never hand-authored) ──────────────
-
-export type MeetingOutcomeSentiment = 'positive' | 'neutral' | 'negative' | 'unset'
-
-/** Coarsen the class to the 4-value sentiment axis (both negative kinds → negative). */
-function classToSentiment(c: MeetingOutcomeClass): MeetingOutcomeSentiment {
-  return c === 'negative-recallable' || c === 'negative-terminal' ? 'negative' : c
-}
-
-/**
- * Outcome → sentiment (color maps, stat buckets, reason-gating). Derived from
- * `MEETING_OUTCOME_CLASS`; same shape/values as before. (`Object.fromEntries`
- * widens the key type, so re-assert the `Record` — the values are exhaustive by
- * construction over `meetingOutcomes`.)
- */
-export const MEETING_OUTCOME_SENTIMENT = Object.fromEntries(
-  meetingOutcomes.map(o => [o, classToSentiment(MEETING_OUTCOME_CLASS[o])]),
-) as Record<MeetingOutcome, MeetingOutcomeSentiment>
 
 export function isNegativeOutcome(outcome: MeetingOutcome): boolean {
   return MEETING_OUTCOME_SENTIMENT[outcome] === 'negative'
 }
 
+export type MeetingSit = 'sat' | 'not_sat' | 'unknown'
+
 /**
- * Pipeline-relevant outcome sets, sliced from the SoT. `negative-recallable` →
- * a customer's `rehash` bucket; `negative-terminal` → `dead`; `positive` →
- * `projects`. Consumed by `derived-pipeline-sql.ts` and `outcome-pipeline-map.ts`.
+ * Whether the rep physically met the homeowner. Orthogonal to sentiment: a lost
+ * or pending deal still sat. not_set is unknown and never counts as a sit.
  */
-export const RECALLABLE_OUTCOMES: MeetingOutcome[] = outcomesOfClass('negative-recallable')
-export const TERMINAL_OUTCOMES: MeetingOutcome[] = outcomesOfClass('negative-terminal')
-export const POSITIVE_OUTCOMES: MeetingOutcome[] = outcomesOfClass('positive')
+export const MEETING_OUTCOME_SIT: Record<MeetingOutcome, MeetingSit> = {
+  not_set: 'unknown',
+  not_good: 'sat',
+  pns: 'sat',
+  npns: 'sat',
+  ftd: 'sat',
+  lost_to_competitor: 'sat',
+  follow_up_needed: 'sat',
+  proposal_created: 'sat',
+  proposal_sent: 'sat',
+  converted_to_project: 'sat',
+  additional_work: 'sat',
+  no_show: 'not_sat',
+  cancelled: 'not_sat',
+  reschedule_needed: 'not_sat',
+  nra: 'not_sat',
+}
+
+export function isSit(outcome: MeetingOutcome): boolean {
+  return MEETING_OUTCOME_SIT[outcome] === 'sat'
+}
+
+/**
+ * A project meeting serves an existing project (visits, upsells — additional_work
+ * only ever happens here); every other meeting works a lead toward its sale, so
+ * only those can book the lead or count as its sit.
+ */
+export function isProjectMeeting(meeting: { meetingType: MeetingType }): boolean {
+  return meeting.meetingType === 'Project'
+}
 
 /**
  * An agent must document a reason (stored as a customer note) whenever they set
@@ -141,7 +146,7 @@ export const POSITIVE_OUTCOMES: MeetingOutcome[] = outcomesOfClass('positive')
  * follow_up_needed. not_set (unset) and the positive outcomes never require one.
  */
 export function outcomeRequiresReason(outcome: MeetingOutcome): boolean {
-  return isNegativeOutcome(outcome) || outcome === 'follow_up_needed'
+  return isNegativeOutcome(outcome) || outcome === 'follow_up_needed' || outcome === 'reschedule_needed'
 }
 
 /** Outcomes that flag a meeting as needing agent attention (action queue). */
@@ -154,6 +159,22 @@ export const DECIDED_OUTCOMES: MeetingOutcome[] = meetingOutcomes.filter(o => o 
 export const LIVE_MEETING_OUTCOMES: MeetingOutcome[]
   = meetingOutcomes.filter(o => o !== 'cancelled' && o !== 'no_show')
 
-// Energy-efficient trade classification (for program qualification)
-export const energyEfficientTradeAccessors = ['insulation', 'hvac', 'windows', 'solar'] as const
-export type EnergyEfficientTrade = (typeof energyEfficientTradeAccessors)[number]
+/**
+ * Outcomes where the meeting did NOT physically occur — the only states a
+ * Reschedule (cancel-and-rebook) may start from. Orthogonal to sentiment: it
+ * cuts across unset / neutral / negative, so it cannot derive from the
+ * sentiment map. Single source for the UI action gate AND the server guard.
+ */
+export const DID_NOT_OCCUR_OUTCOMES = [
+  'not_set',
+  'reschedule_needed',
+  'no_show',
+  'cancelled',
+] as const satisfies readonly MeetingOutcome[]
+
+export function canRescheduleFromOutcome(outcome: MeetingOutcome): boolean {
+  return (DID_NOT_OCCUR_OUTCOMES as readonly MeetingOutcome[]).includes(outcome)
+}
+
+/** UI reason shown when a meeting can't be rescheduled because it already happened. */
+export const CANNOT_RESCHEDULE_REASON = 'This meeting already happened — book a new meeting instead of rescheduling.'

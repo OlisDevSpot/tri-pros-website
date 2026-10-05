@@ -1,6 +1,4 @@
 // Business queries for the voip-dids entity. Custom lookups beyond CRUD.
-// see ../../DOCS.md for business rules + the sticky-DID invariant.
-// All DAL conventions: see docs/codebase-conventions/dal-conventions.md
 
 import type { DalReturn } from '@/shared/dal/server/types'
 import type { VoipDid } from '@/shared/db/schema/voip-dids'

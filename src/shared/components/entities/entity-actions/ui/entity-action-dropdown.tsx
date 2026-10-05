@@ -1,0 +1,262 @@
+'use client'
+
+import type { EntityActionConfig, EntityActionCustomConfig, EntityActionSelectConfig } from '@/shared/components/entities/entity-actions/types'
+
+import { CheckIcon, MoreHorizontalIcon, MoreVerticalIcon } from 'lucide-react'
+import { useCallback, useState } from 'react'
+
+import { getVisibleActions } from '@/shared/components/entities/entity-actions/lib/visible-actions'
+import { isCustomAction, isSelectAction } from '@/shared/components/entities/entity-actions/types'
+
+import { Button } from '@/shared/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from '@/shared/components/ui/dropdown-menu'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
+import { useAbility } from '@/shared/domains/permissions/hooks'
+import { cn } from '@/shared/lib/utils'
+
+interface EntityActionDropdownProps<TEntity> {
+  entity: TEntity
+  actions: EntityActionConfig<TEntity>[]
+  /** MoreHorizontal or MoreVertical icon */
+  orientation?: 'horizontal' | 'vertical'
+  /** Additional classes on the trigger button */
+  triggerClassName?: string
+  /** Renders a labeled outline trigger instead of the icon-only one; always visible, so it works on touch. */
+  triggerLabel?: string
+}
+
+export function EntityActionDropdown<TEntity>({
+  entity,
+  actions,
+  orientation = 'vertical',
+  triggerClassName,
+  triggerLabel,
+}: EntityActionDropdownProps<TEntity>) {
+  const ability = useAbility()
+  const [open, setOpen] = useState(false)
+  const closeDropdown = useCallback(() => setOpen(false), [])
+
+  const permitted = getVisibleActions(actions, ability, entity)
+
+  if (permitted.length === 0) {
+    return null
+  }
+
+  const TriggerIcon = orientation === 'horizontal' ? MoreHorizontalIcon : MoreVerticalIcon
+
+  return (
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
+        {triggerLabel
+          ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn('gap-1', triggerClassName)}
+                onClick={e => e.stopPropagation()}
+              >
+                <TriggerIcon className="h-3.5 w-3.5" />
+                {triggerLabel}
+              </Button>
+            )
+          : (
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn('h-6 w-6 shrink-0', triggerClassName)}
+                onClick={e => e.stopPropagation()}
+              >
+                <TriggerIcon className="h-3.5 w-3.5" />
+                <span className="sr-only">Actions</span>
+              </Button>
+            )}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" onClick={e => e.stopPropagation()}>
+        {permitted.map((config) => {
+          if (isSelectAction(config)) {
+            return (
+              <EntityActionSelectItem
+                key={config.action.id}
+                config={config}
+                entity={entity}
+              />
+            )
+          }
+          if (isCustomAction(config)) {
+            return (
+              <EntityActionCustomItem
+                key={config.action.id}
+                config={config}
+                entity={entity}
+                closeDropdown={closeDropdown}
+              />
+            )
+          }
+          return (
+            <EntityActionClickItem
+              key={config.action.id}
+              action={config.action}
+              entity={entity}
+              onAction={config.onAction}
+              isLoading={config.isLoading}
+              isDisabled={config.isDisabled}
+              disabledReason={config.getDisabledReason?.(entity) ?? null}
+            />
+          )
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+// ── Click action item ────────────────────────────────────────────────────────
+
+interface ClickItemProps<TEntity> {
+  action: EntityActionConfig<TEntity>['action']
+  entity: TEntity
+  onAction: (entity: TEntity) => void
+  isLoading?: boolean
+  isDisabled?: boolean
+  disabledReason?: string | null
+}
+
+function EntityActionClickItem<TEntity>({
+  action,
+  entity,
+  onAction,
+  isLoading,
+  isDisabled,
+  disabledReason,
+}: ClickItemProps<TEntity>) {
+  const Icon = action.icon
+  const disabled = isLoading || isDisabled || disabledReason != null
+
+  const item = (
+    <DropdownMenuItem
+      disabled={disabled}
+      className={cn(action.destructive && 'text-destructive focus:text-destructive')}
+      onClick={() => onAction(entity)}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      {action.label}
+    </DropdownMenuItem>
+  )
+
+  return (
+    <>
+      {action.separatorBefore && <DropdownMenuSeparator />}
+      {disabledReason
+        ? (
+            // Radix disables pointer events on a disabled item, so wrap the row
+            // in a focusable span the tooltip can anchor to.
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span tabIndex={0} className="block">{item}</span>
+              </TooltipTrigger>
+              <TooltipContent>{disabledReason}</TooltipContent>
+            </Tooltip>
+          )
+        : item}
+    </>
+  )
+}
+
+// ── Select (sub-menu) action item ────────────────────────────────────────────
+
+interface SelectItemProps<TEntity> {
+  config: EntityActionSelectConfig<TEntity>
+  entity: TEntity
+}
+
+function EntityActionSelectItem<TEntity>({
+  config,
+  entity,
+}: SelectItemProps<TEntity>) {
+  const { action, options, getCurrentValue, onSelect, isLoading, isDisabled } = config
+  const Icon = action.icon
+  const currentValue = getCurrentValue(entity)
+
+  return (
+    <>
+      {action.separatorBefore && <DropdownMenuSeparator />}
+      <DropdownMenuSub>
+        <DropdownMenuSubTrigger disabled={isLoading || isDisabled}>
+          <Icon className="h-3.5 w-3.5" />
+          {action.label}
+        </DropdownMenuSubTrigger>
+        <DropdownMenuSubContent>
+          {options.map(option => (
+            <DropdownMenuItem
+              key={option.value}
+              className={cn(option.value === currentValue && 'font-medium')}
+              onClick={() => onSelect(entity, option.value)}
+            >
+              <CheckIcon
+                className={cn(
+                  'h-3 w-3 shrink-0',
+                  option.value === currentValue ? 'opacity-100' : 'opacity-0',
+                )}
+              />
+              {option.color && (
+                <span className={cn('h-2 w-2 shrink-0 rounded-full', option.color)} />
+              )}
+              {option.label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuSubContent>
+      </DropdownMenuSub>
+    </>
+  )
+}
+
+// ── Custom (sub-menu) action item ────────────────────────────────────────────
+
+interface CustomItemProps<TEntity> {
+  config: EntityActionCustomConfig<TEntity>
+  entity: TEntity
+  closeDropdown: () => void
+}
+
+function EntityActionCustomItem<TEntity>({
+  config,
+  entity,
+  closeDropdown,
+}: CustomItemProps<TEntity>) {
+  const { action, renderContent, isLoading, isDisabled } = config
+  const Icon = action.icon
+  // Controlled submenu state. Needed because cmdk's <Command> / <CommandInput>
+  // call stopPropagation on pointer/key events, which prevents Radix's default
+  // close-on-pointer-leave / close-on-sibling-hover behavior from firing.
+  const [subOpen, setSubOpen] = useState(false)
+
+  return (
+    <>
+      {action.separatorBefore && <DropdownMenuSeparator />}
+      <DropdownMenuSub open={subOpen} onOpenChange={setSubOpen}>
+        <DropdownMenuSubTrigger
+          disabled={isLoading || isDisabled}
+          onPointerEnter={() => setSubOpen(true)}
+        >
+          <Icon className="h-3.5 w-3.5" />
+          {action.label}
+        </DropdownMenuSubTrigger>
+        <DropdownMenuSubContent
+          className="w-[min(420px,calc(100vw-2rem))] p-0"
+          onFocusOutside={() => setSubOpen(false)}
+          onInteractOutside={() => setSubOpen(false)}
+        >
+          {renderContent(entity, closeDropdown)}
+        </DropdownMenuSubContent>
+      </DropdownMenuSub>
+    </>
+  )
+}

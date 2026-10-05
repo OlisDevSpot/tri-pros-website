@@ -6,7 +6,7 @@ import {
   selectApplicationSchema,
 } from '@/shared/db/schema'
 import { APPLICATION } from '@/shared/entities/applications/lib/constants'
-import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
+import { applicationVisibility } from '@/shared/entities/applications/lib/visibility'
 
 // Type/meetingId come from input; status defaults to 'draft' at the column.
 // No server-derived fields, so update simply partials the insert schema.
@@ -21,7 +21,7 @@ export const applicationSchemas = {
 export const applicationServerSpec = {
   entityName: APPLICATION,
   caslSubject: APPLICATION,
-  parent: { spec: meetingServerSpec, fk: applications.meetingId },
+  visibility: applicationVisibility,
   table: applications,
   schemas: {
     insert: insertApplicationSchema,

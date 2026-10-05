@@ -169,9 +169,9 @@ key for both REST + webhook callbacks. There is no separate
 
 - **`import { placeOutboundCall } from '.../twilio/lib/voice'`** — `lib/`
   doesn't exist. Use `twilioClient.placeOutboundCall(...)`.
-- **`import twilio from 'twilio'`** outside this directory — the provider is
-  the single boundary that knows the SDK. Slug E enforces this via ESLint
-  `no-restricted-imports`.
+- **`import twilio from 'twilio'`** anywhere — a static value import fails lint
+  (`lazy-only/imports`); `client.ts` loads the REST client with
+  `await import('twilio')`, and nothing outside this directory imports the SDK.
 - **Call `twilioClient.placeOutboundCall` / `.sendMessage` from a route
   handler directly** — go through Slug C's `services/voip/*.service.ts`
   which run the compliance gate + DNC check + dev-override rewriting first.

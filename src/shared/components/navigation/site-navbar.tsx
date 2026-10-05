@@ -3,7 +3,6 @@
 import type { Variants } from 'motion/react'
 import { CalendarPlus2Icon, LogInIcon, LogOutIcon, MenuIcon, PhoneIcon } from 'lucide-react'
 import { animate, AnimatePresence, motion, useMotionValue } from 'motion/react'
-import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useQueryState } from 'nuqs'
 import {
@@ -14,8 +13,10 @@ import {
   useState,
 } from 'react'
 import { MotionButton } from '@/shared/components/buttons/motion-button'
+import { MotionLink } from '@/shared/components/buttons/motion-link'
 import { LogoLink } from '@/shared/components/logo'
 import { ThemeToggleButton } from '@/shared/components/theme-toggle-button'
+import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
 import { companyInfo } from '@/shared/constants/company'
 import { generateNavItemsGroups, marketingNavItems } from '@/shared/constants/nav-items'
@@ -226,22 +227,22 @@ export function SiteNavbar() {
                       className="flex flex-col"
                     >
                       {marketingNavItems[selectedItemIndex].subItems?.map((subItem, index) => (
-                        <MotionButton
+                        <Button
                           key={subItem.name}
                           variant="link"
-                          initial={{ opacity: 0, y: -20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.1 }}
                           className="h-12"
                           asChild
                         >
-                          <Link
+                          <MotionLink
                             href={subItem.href}
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.1 }}
                             className="flex items-center justify-start h-20"
                           >
                             {subItem.name}
-                          </Link>
-                        </MotionButton>
+                          </MotionLink>
+                        </Button>
                       ))}
                     </div>
                   </motion.div>
@@ -290,7 +291,9 @@ export function SiteNavbar() {
                 </div>
               )}
               <div>
-                <MotionButton
+                {/* Motion sits on the slotted child, not on Button: asChild hands the element a new ref every render,
+                    and motion replays `initial` on each re-attach, so the pill would fade in again on every scroll. */}
+                <Button
                   className={
                     cn(
                       'h-12 shadow-sm shadow-foreground/30 gap-2 py-1 pl-1 pr-1',
@@ -299,43 +302,46 @@ export function SiteNavbar() {
                   }
                   size="lg"
                   variant="cta"
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
                   asChild
                 >
-                  <div>
-                    <MotionButton
+                  <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <Button
                       variant="outline"
-                      initial={{ opacity: 0, y: -20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      style={{
-                        borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
-                      }}
                       className={
                         cn(
-                          'h-10 w-fit rounded-full hover:bg-background/20 text-neutral-300 px-1 py-1 gap-3',
+                          'h-10 w-fit rounded-full hover:bg-primary-foreground/15 text-primary-foreground px-1 py-1 gap-3',
                         )
                       }
                       asChild
                     >
-                      <div className="flex items-center">
-                        <MotionButton
+                      <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        style={{
+                          borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
+                        }}
+                        className="flex items-center"
+                      >
+                        <Button
                           variant="ghost"
                           size={matches['2xl'] ? 'default' : 'icon'}
-                          initial={{ opacity: 0, y: -20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          style={{
-                            borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
-                          }}
                           className={
                             cn(
-                              'h-8 w-8 2xl:w-fit rounded-full hover:bg-background/20 text-neutral-300 p-0',
+                              'h-8 w-8 2xl:w-fit rounded-full hover:bg-primary-foreground/15 text-primary-foreground p-0',
                             )
                           }
                           asChild
                         >
-                          <Link
+                          <MotionLink
                             href={ROOTS.landing.contact()}
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            style={{
+                              borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
+                            }}
                             className="flex items-center gap-2 px-2"
                           >
                             {matches['2xl']
@@ -347,29 +353,31 @@ export function SiteNavbar() {
                               : (
                                   <CalendarPlus2Icon />
                                 )}
-                          </Link>
-                        </MotionButton>
-                        <MotionButton
+                          </MotionLink>
+                        </Button>
+                        <Button
                           size="icon"
                           variant="ghost"
-                          initial={{ opacity: 0, y: -20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          style={{
-                            borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
-                          }}
                           className={
                             cn(
-                              'h-8 w-8 rounded-full hover:bg-background/20 text-neutral-300 p-0',
+                              'h-8 w-8 rounded-full hover:bg-primary-foreground/15 text-primary-foreground p-0',
                             )
                           }
                           asChild
                         >
-                          <a href={`tel:${toDialString(companyInfo.contactInfo.find(info => info.accessor === 'phone')?.value)}`}>
+                          <motion.a
+                            href={`tel:${toDialString(companyInfo.contactInfo.find(info => info.accessor === 'phone')?.value)}`}
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            style={{
+                              borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
+                            }}
+                          >
                             <PhoneIcon />
-                          </a>
-                        </MotionButton>
-                      </div>
-                    </MotionButton>
+                          </motion.a>
+                        </Button>
+                      </motion.div>
+                    </Button>
 
                     {/* Popover menu button */}
                     <MotionButton
@@ -382,7 +390,7 @@ export function SiteNavbar() {
                       }}
                       className={
                         cn(
-                          'rounded-full hover:bg-background/20 flex',
+                          'rounded-full hover:bg-primary-foreground/15 flex',
                           // hasPopoverItems ? 'flex' : 'hidden',
                         )
                       }
@@ -392,10 +400,10 @@ export function SiteNavbar() {
                       aria-label="Toggle menu"
                       type="button"
                     >
-                      <MenuIcon size={24} className="text-neutral-300 h-6 w-6" />
+                      <MenuIcon size={24} className="text-primary-foreground h-6 w-6" />
                     </MotionButton>
-                  </div>
-                </MotionButton>
+                  </motion.div>
+                </Button>
               </div>
             </div>
           </motion.div>

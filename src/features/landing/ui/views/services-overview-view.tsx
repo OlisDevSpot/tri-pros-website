@@ -19,15 +19,15 @@ export function ServicesOverviewView() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <PillarCard
             title="Energy-Efficient Construction"
-            description="Stop paying your utility company for your home's inefficiency. Compounding savings from insulation, HVAC, windows, solar, and roofing upgrades."
-            tradePreview={['HVAC', 'Solar', 'Windows', 'Insulation']}
+            description="Stop paying your utility company for your home's inefficiency. Compounding savings from insulation, HVAC, windows, and roofing upgrades."
+            tradePreview={['HVAC', 'Windows', 'Insulation', 'Roofing']}
             href={ROOTS.landing.servicesPillar('energy-efficient-construction')}
             pillarType="energy"
           />
           <PillarCard
             title="Luxury Renovations"
             description="The home you've always wanted — built by people who'll still be here when you need us. Kitchens, bathrooms, flooring, additions, and more."
-            tradePreview={['Kitchen', 'Bathroom', 'Flooring', 'ADU']}
+            tradePreview={['Kitchen', 'Bathroom', 'Flooring']}
             href={ROOTS.landing.servicesPillar('luxury-renovations')}
             pillarType="luxury"
           />

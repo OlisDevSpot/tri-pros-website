@@ -2,7 +2,6 @@
 // every flattened-spread leftJoin site: customers getCustomer, the
 // customer-pipelines getCustomerProfile feature query, and the meetings
 // getByIdWithJoins nested-customer projection.
-// see docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md §10
 
 import { getTableColumns } from 'drizzle-orm'
 import { customerProfiles } from '@/shared/db/schema/customer-profiles'

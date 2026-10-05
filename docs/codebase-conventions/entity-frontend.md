@@ -5,20 +5,20 @@ Every business entity (Customer, Meeting, Proposal, Project, User, LeadSource, f
 | Primitive | What it is | Lives at |
 |---|---|---|
 | `<XOverviewCard>` | Compound component — root + context + slotted sub-components | `entities/<x>/components/overview-card.tsx` |
-| `<EntityActionMenu>` | Shared action dropdown driven by per-entity `EntitySpec` registry | `shared/components/entity-actions/ui/entity-action-menu.tsx` |
-| `<EntityList>` | Generic header + count + empty-state + render-prop list wrapper | `shared/components/entity-list/ui/entity-list.tsx` |
-| `<EntityViewButton>` | Inline "View" affordance for cell-level use | `shared/components/entity-actions/entity-view-button.tsx` |
+| `<EntityActionMenu>` | Shared action dropdown driven by per-entity `EntitySpec` registry | `shared/components/entities/entity-actions/ui/entity-action-menu.tsx` |
+| `<EntityList>` | Generic header + count + empty-state + render-prop list wrapper | `shared/components/entities/entity-list/ui/entity-list.tsx` |
+| `<EntityViewButton>` | Inline "View" affordance for cell-level use | `shared/components/entities/entity-actions/entity-view-button.tsx` |
 
-This is the **frontend mirror of the backend Entity Server System** ([ADR-0002](../adr/0002-entity-server-system.md)). Backend: every entity declares an `EntityServerSpec` consumed by `createEntityRouter`. Frontend: every entity exposes a compound `<XOverviewCard>` + an `EntitySpec` ([ADR-0001](../adr/0001-entity-action-system.md)) driving its action menu. The intent is parallel — typed declarations per entity, generic primitives consume them.
+This is the **frontend mirror of the backend Entity Server System** ([ADR-0002](../adr/0002-entity-server-system.md)). Backend: every entity declares an `EntityServerSpec` consumed by `createCrudRouter` and its router's `procedures.ts` (see `src/trpc/DOCS.md`). Frontend: every entity exposes a compound `<XOverviewCard>` + an `EntitySpec` ([ADR-0001](../adr/0001-entity-action-system.md)) driving its action menu. The intent is parallel — typed declarations per entity, generic primitives consume them.
 
 ## Rules
 
 ### one-overview-card-per-entity
 
-Every entity that appears in 3+ view contexts (kanban + calendar + profile + list) has exactly one compound component at `entities/<x>/components/overview-card.tsx`. Consumers compose the slots they need at each call site — never import a family of standalone primitives (`UserAvatar`, `UserRow`, `UserAvatarStack`, etc.).
+Every entity that appears in 3+ view contexts (kanban + calendar + profile + list) has exactly one compound component at `entities/<x>/components/overview-card.tsx` (module unit: `modules/<module>/<unit>/components/overview-card.tsx`). Consumers compose the slots they need at each call site — never import a family of standalone primitives (`UserAvatar`, `UserRow`, `UserAvatarStack`, etc.).
 
 **Why**: mixing styles (some entities as compounds, others as primitive families) fragments the mental model. Compound + context lets sub-components share derived state (avatar URL, gated fields, action menu) without prop-drilling, and gives one ergonomic import per view.
-**Reference impl**: `src/shared/entities/meetings/components/overview-card.tsx`, `src/shared/entities/proposals/components/overview-card.tsx`
+**Reference impl**: `src/shared/entities/meetings/components/overview-card.tsx`, `src/shared/modules/proposals/core/components/overview-card.tsx`
 **Enforced by**: convention
 
 ### data-type-derives-from-drizzle-schema
@@ -65,7 +65,7 @@ function useMeetingOverviewCard() {
 Consumers **never** call `useXActionConfigs` directly — the Root does it internally and threads actions through context.
 
 **Why**: every sub-component reads from one place; the consumer wires one provider and forgets. Eliminates prop drilling for shared state. Throw-on-no-context turns misuse into a compile-level mistake.
-**Reference impl**: `src/shared/entities/proposals/components/overview-card.tsx:useProposalOverviewCard`
+**Reference impl**: `src/shared/modules/proposals/core/components/overview-card.tsx:useProposalOverviewCard`
 **Enforced by**: runtime throw + convention
 
 ### root-owns-default-click-and-confirm-dialogs
@@ -83,7 +83,7 @@ The Root also renders shared dialogs (e.g., `<DeleteConfirmDialog />`) once at t
 Sub-components like `<Phone>`, `<Address>`, `<Owner>` read from context and return `null` when their field is missing. No `showX` boolean props. Consumers compose the slots they want; missing data disappears gracefully.
 
 **Why**: every `showX` prop creates a combinatorial explosion of consumer configs. Null-on-missing-data is automatic and consistent.
-**Reference impl**: `src/shared/entities/proposals/components/overview-card.tsx:Status` / `Trade` / `Value`
+**Reference impl**: `src/shared/modules/proposals/core/components/overview-card.tsx:StatusBadge` / `Trade` / `Value`
 **Enforced by**: convention
 
 ### fields-slot-is-discriminated-union-config
@@ -147,16 +147,15 @@ A card slot that renders nested entities (e.g., `<MeetingOverviewCard.Proposals>
 
 ### actions-slot-plugs-in-entity-action-menu
 
-The Card's `<Actions>` slot renders `<EntityActionMenu>` (or `<EntityViewButton>` for cell-level surfaces). Per [ADR-0001](../adr/0001-entity-action-system.md), `<EntityActionMenu>` reads from the `entityRegistry` and applies CASL via `useAbility()`. Consumers stop mounting their own `<DeleteConfirmDialog />` / `<AssignOwnerDialog />` — `<EntityActionMenu>` owns those internally via Radix Portal.
+The Card's `<Actions>` slot renders `<EntityActionMenu>` (or `<EntityViewButton>` for cell-level surfaces). As built (see the status note at the top of [ADR-0001](../adr/0001-entity-action-system.md) — the `entityRegistry` / `EntitySpec` design was **not** built), the menu takes an `entity` object plus a pre-built `actions` array and applies CASL via `useAbility()` to each action's `permission` tuple.
 
-**Three flat consumer props** on `<EntityActionMenu>` (no nested config object):
-- `disableActions={[...]}` — suppress specific actions
-- `actionOverrides={{ key: handler }}` — swap a handler for any keyed action
-- `customActions={{ ... }}` — append entity-unique actions at the call site
+**Per entity, three files** produce that array: `constants/actions.ts` (plain `EntityAction` metadata — label, icon, CASL verb), `hooks/use-<entity>-actions.ts` (mutation wrappers over the entity's CRUD router), and `hooks/use-<entity>-action-configs.{ts,tsx}` (binds handlers + confirm dialogs and returns `{ actions, DeleteConfirmDialog, … }`). The **consumer renders the returned dialogs** next to the menu — the menu does not own them.
 
-**Why**: action menus are the most-divergent compound surface — strict types in the registry are the only mechanism preventing re-drift.
-**Reference impl**: `src/shared/components/entity-actions/ui/entity-action-menu.tsx`; per-entity hook still at `entities/<x>/hooks/use-<x>-action-configs.{ts,tsx}` (being migrated to spec under ADR-0001 issues #171–#175)
-**Enforced by**: ADR-0001 + `EntitySpec<E>` types
+**Props** on `<EntityActionMenu>`: `entity`, `actions`, `mode` (`'bar'` = primary button + overflow dropdown, `'compact'` = dropdown only), `className`. There are no `disableActions` / `actionOverrides` / `customActions` props — a call site shapes the menu by building a different `actions` array.
+
+**Why**: action menus are the most-divergent compound surface; one render surface plus one hook per entity keeps them uniform without a registry.
+**Reference impl**: `src/shared/components/entities/entity-actions/ui/entity-action-menu.tsx`; `src/shared/entities/meetings/hooks/use-meeting-action-configs.tsx`; `src/shared/entities/customer-notes/hooks/use-customer-note-action-configs.ts`
+**Enforced by**: convention (ADR-0001 as-built status note)
 
 ### list-rendering-uses-entitylist
 
@@ -182,7 +181,7 @@ When rendering multiple entities inside a parent view (participants under a meet
 **Variants**: `variant="card"` (default — rounded border + bg + padding; standalone) vs `variant="flush"` (no border, no padding, transparent; for sibling lists under one outer card).
 
 **Why**: list chrome is universal; per-entity content varies. Generic + render prop is the right split.
-**Reference impl**: `src/shared/components/entity-list/ui/entity-list.tsx`
+**Reference impl**: `src/shared/components/entities/entity-list/ui/entity-list.tsx`
 **Enforced by**: convention
 
 ### parent-enriched-meta-flows-via-context-not-cross-entity-imports

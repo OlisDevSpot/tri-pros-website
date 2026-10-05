@@ -10,7 +10,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shar
 import { Input } from '@/shared/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Textarea } from '@/shared/components/ui/textarea'
-import { SectionFinancialsSummary } from '@/shared/entities/proposals/components/section-financials-summary'
+import { SectionFinancialsSummary } from '@/shared/modules/proposals/core/components/section-financials-summary'
 
 interface Props {
   index: number
@@ -314,7 +314,7 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
                 {incentiveFields.map((field, incIndex) => (
                   <div
                     key={field.id}
-                    className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3"
+                    className="rounded-lg border border-status-success-dot/40 bg-status-success-bg/70 p-3"
                   >
                     <div className="grid grid-cols-1 gap-3 lg:grid-cols-[2fr_1fr_auto]">
                       <FormField

@@ -12,13 +12,10 @@ import {
 } from 'lucide-react'
 import { PersonaProfileSection, SeverityBadge } from '@/features/meeting-flow/ui/components/persona-profile-section'
 import { LoadingState } from '@/shared/components/states/loading-state'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/shared/components/ui/sheet'
 import { useTRPC } from '@/trpc/helpers'
 
 interface PersonaProfilePanelProps {
   meetingId: string
-  isOpen: boolean
-  onOpenChange: (open: boolean) => void
 }
 
 function FearsList({ fears }: { fears: CustomerPersonaProfile['fears'] }) {
@@ -28,7 +25,7 @@ function FearsList({ fears }: { fears: CustomerPersonaProfile['fears'] }) {
         <div className="rounded-md border border-border/50 bg-muted/30 p-2.5" key={i}>
           <div className="mb-1 flex items-center gap-1.5">
             <SeverityBadge value={fear.severity} />
-            <span className="text-[10px] text-muted-foreground">{fear.emotionalDriver}</span>
+            <span className="text-xs text-muted-foreground">{fear.emotionalDriver}</span>
           </div>
           <p className="text-xs leading-relaxed">{fear.fear}</p>
         </div>
@@ -43,8 +40,8 @@ function BenefitsList({ benefits }: { benefits: CustomerPersonaProfile['benefits
       {benefits.map((benefit, i) => (
         <div className="rounded-md border border-border/50 bg-muted/30 p-2.5" key={i}>
           <div className="mb-1 flex items-center gap-1.5">
-            <span className="text-[10px] font-medium text-primary">{benefit.tradeName}</span>
-            <span className="text-[10px] text-muted-foreground">{benefit.category}</span>
+            <span className="text-xs font-medium text-primary">{benefit.tradeName}</span>
+            <span className="text-xs text-muted-foreground">{benefit.category}</span>
           </div>
           <p className="text-xs font-medium">{benefit.headline}</p>
           <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{benefit.body}</p>
@@ -62,7 +59,7 @@ function DecisionDriversList({ drivers }: { drivers: CustomerPersonaProfile['dec
           <SeverityBadge value={driver.weight} />
           <div className="flex-1">
             <p className="text-xs leading-relaxed">{driver.driver}</p>
-            <p className="mt-0.5 text-[10px] text-muted-foreground">{driver.signal}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{driver.signal}</p>
           </div>
         </div>
       ))}
@@ -78,7 +75,7 @@ function EmotionalLeversList({ levers }: { levers: CustomerPersonaProfile['emoti
           <SeverityBadge value={lever.relevance} />
           <div className="flex-1">
             <p className="text-xs font-medium">{lever.lever}</p>
-            <p className="mt-0.5 text-[10px] text-muted-foreground">{lever.context}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{lever.context}</p>
           </div>
         </div>
       ))}
@@ -94,7 +91,7 @@ function HouseholdResonanceList({ items }: { items: CustomerPersonaProfile['hous
           <p className="text-xs font-medium">{item.factor}</p>
           <ul className="mt-1 space-y-0.5">
             {item.amplifiedConcerns.map((concern, j) => (
-              <li className="text-[10px] leading-relaxed text-muted-foreground" key={j}>
+              <li className="text-xs leading-relaxed text-muted-foreground" key={j}>
                 {concern}
               </li>
             ))}
@@ -114,7 +111,7 @@ function RiskFactorsList({ risks }: { risks: CustomerPersonaProfile['riskFactors
             <SeverityBadge value={risk.severity} />
           </div>
           <p className="text-xs font-medium">{risk.risk}</p>
-          <p className="mt-0.5 text-[10px] leading-relaxed text-muted-foreground">{risk.mitigation}</p>
+          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{risk.mitigation}</p>
         </div>
       ))}
     </>
@@ -196,35 +193,30 @@ function ProfileContent({ profile }: { profile: CustomerPersonaProfile }) {
   )
 }
 
-export function PersonaProfilePanel({ isOpen, meetingId, onOpenChange }: PersonaProfilePanelProps) {
+/**
+ * The persona profile body. Mount it only while the Persona section is open so
+ * the profile query keeps running lazily, exactly as it did behind the old Sheet.
+ */
+export function PersonaProfilePanel({ meetingId }: PersonaProfilePanelProps) {
   const trpc = useTRPC()
 
   const profileQuery = useQuery(
-    trpc.meetingFlowRouter.getPersonaProfile.queryOptions(
-      { meetingId },
-      { enabled: isOpen },
-    ),
+    trpc.meetingFlowRouter.getPersonaProfile.queryOptions({ meetingId }),
   )
 
   return (
-    <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full overflow-y-auto p-0 sm:max-w-md" side="right">
-        <SheetHeader className="border-b border-border/40 px-4 py-3">
-          <SheetTitle className="text-base">Customer Persona Profile</SheetTitle>
-        </SheetHeader>
+    <div className="-mx-4">
+      {profileQuery.isLoading && (
+        <LoadingState description="Analyzing customer data..." title="Building profile" />
+      )}
 
-        {profileQuery.isLoading && (
-          <LoadingState description="Analyzing customer data..." title="Building profile" />
-        )}
+      {profileQuery.data && <ProfileContent profile={profileQuery.data} />}
 
-        {profileQuery.data && <ProfileContent profile={profileQuery.data} />}
-
-        {profileQuery.isError && (
-          <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-            Failed to load persona profile. Try again later.
-          </div>
-        )}
-      </SheetContent>
-    </Sheet>
+      {profileQuery.isError && (
+        <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+          Failed to load persona profile. Try again later.
+        </div>
+      )}
+    </div>
   )
 }

@@ -32,7 +32,7 @@ export function useFunnelTracking(spec: FunnelSpec, engine: FunnelEngineApi): vo
 
   // CompleteRegistration (and any future kind-bound conversion event) — on step
   // kind. Renter rule: renters fire traffic events (PageView/ViewContent),
-  // never conversion events. see ../../DOCS.md and lead-qualification.ts.
+  // never conversion events.
   const stepKind = engine.step.kind
   const answers = engine.answers
   useEffect(() => {

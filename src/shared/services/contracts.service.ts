@@ -4,9 +4,9 @@ import type { InsertProposalSchema } from '@/shared/db/schema/proposals'
 import type { ZohoContractStatus } from '@/shared/services/providers/zoho-sign/types'
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { deriveOutcomeOnAdditionalWorkApproved } from '@/shared/entities/meetings/dal/server/mutations'
-import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
-import { getByContractEnvelopeId, getFullView } from '@/shared/entities/proposals/dal/server/queries'
-import { contractEventColumn, contractEventIdempotencyPolicy, shouldAutoApproveOnContractEvent } from '@/shared/entities/proposals/lib/contract-events'
+import { proposalCrud } from '@/shared/modules/proposals/core/dal/server/crud'
+import { getByContractEnvelopeId, getFullView } from '@/shared/modules/proposals/core/dal/server/queries'
+import { contractEventColumn, contractEventIdempotencyPolicy, shouldAutoApproveOnContractEvent } from '@/shared/modules/proposals/core/lib/contract-events'
 import { buildProposalContext } from '@/shared/services/providers/zoho-sign/lib/documents/proposal-context'
 import { zohoSyncService } from '@/shared/services/zoho-sync.service'
 
@@ -54,7 +54,7 @@ function createContractService() {
      * agent never reviewed.
      *
      * The draft is submitted as-is, never rebuilt: the proposal lock ladder
-     * (see `entities/proposals/lib/proposal-lock.ts`) guarantees content
+     * (see `modules/proposals/core/lib/proposal-lock.ts`) guarantees content
      * cannot change while a draft exists — the sanctioned edit path discards
      * the draft first — so an existing draft is fresh by construction.
      */

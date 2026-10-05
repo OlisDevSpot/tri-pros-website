@@ -1,7 +1,13 @@
+import type { LucideIcon } from 'lucide-react'
 import type { CalendarEvent } from '@/shared/components/calendar/types'
+import type { PresentationHandle, PresentationSlide } from '@/shared/components/presentation/types'
 import type { MeetingOutcome, MeetingType } from '@/shared/constants/enums'
+import type { Project, ProjectMediaFile } from '@/shared/db/schema'
 import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { MeetingFlowState, TradeSelection } from '@/shared/entities/meetings/schemas'
+import type { ConstructionCatalog } from '@/shared/modules/construction/core/hooks/use-construction-catalog'
+import type { Trade } from '@/shared/modules/construction/core/schemas'
+import type { PortfolioProjectWithHero } from '@/shared/modules/projects/core/types'
 import type { JsonbSection } from '@/shared/types/jsonb'
 
 // ── Intake Collection Field (used by intake step components) ────────────────
@@ -42,6 +48,8 @@ export interface QualificationContext {
   tradeSelections: TradeSelection[]
   customer: CustomerWithProfile | null
   meetingType: MeetingType
+  /** The live trade catalog, so qualifiers can classify by category rather than by id. */
+  tradesById: ReadonlyMap<string, Trade>
 }
 
 export interface QualificationResult {
@@ -73,13 +81,123 @@ export type MeetingStepId
     | 'closing'
     | 'create-proposal'
 
-export interface MeetingStepConfig {
-  id: MeetingStepId
-  stepNumber: number
-  title: string
-  shortLabel: string
-  isCustomerFacing: boolean
+// ── Presentation (scroll-snap step layout) ─────────────────────────────────
+
+/** `page` = padded scrolling document; `presentation` = the step owns a snapping scroller; `split` = the step owns two independent scrollers (showcase + work column). */
+export type MeetingStepLayout = 'page' | 'presentation' | 'split'
+
+// ── Shell (top bar, inspector panel, keys) ─────────────────────────────────
+
+/** Which inspector-panel section is open; the panel is closed when the view holds `null`. */
+export type PanelSection = 'meeting' | 'project' | 'context' | 'persona'
+
+/** One row of the keyboard help list. */
+export interface KeyHint {
+  keys: string[]
+  label: string
 }
+
+/** A paper document shown on the stage; every page shares one pixel size. */
+export interface PresentationDocument {
+  title: string
+  alt: string
+  pages: string[]
+  width: number
+  height: number
+}
+
+/** A figure with what it means, e.g. `$2M` / `Insurance per project`. */
+export interface ProofFigure {
+  value: string
+  label: string
+}
+
+/** A public rating on the Performance slide; `href` opens where the homeowner can check it. */
+export type ReputationMark
+  = | { kind: 'stars', platform: 'Google' | 'Yelp', rating: string, count: number, href: string }
+    | { kind: 'grade', platform: 'BBB', grade: string, href: string }
+
+/** The meeting owner, introduced on the Communication slide. */
+export interface PresentationAgent {
+  name: string
+  image: string | null
+  email: string
+  phone: string | null
+  yearsOfExperience: number | null
+}
+
+export interface ComparisonRow {
+  label: string
+  triPros: string
+  others: string
+}
+
+/** A before/after pair shown side by side at the photos' own proportions. */
+export interface BeforeAfterMedia {
+  before: string
+  after: string
+  alt: string
+  width: number
+  height: number
+}
+
+/** The senior partner introduced on the Team slide. */
+export interface PresentationPartner {
+  name: string
+  title: string
+  image: string
+  points: string[]
+}
+
+/** A spot on a document's scan: fractions of its width and height. */
+export interface FocusPoint {
+  x: number
+  y: number
+}
+
+/** One proof in a rail. `opens` names one of the slide's documents and the spot the tile cites. */
+export interface ProofTile {
+  kicker: string
+  icon: LucideIcon
+  value: string
+  label: string
+  opens?: { document: number, focus: FocusPoint }
+}
+
+/**
+ * The proofs under a slide's centrepiece: three, or four on Performance, whose record is four
+ * figures of one kind (owner, 2026-09-24). More turns the rail into a stat wall.
+ */
+export interface ProofRail {
+  eyebrow: string
+  tiles: readonly [ProofTile, ProofTile, ProofTile] | readonly [ProofTile, ProofTile, ProofTile, ProofTile]
+}
+
+/** One stage of the homeowner's line to their contact. The caption names the meeting owner by first name. */
+export interface TimelineStage {
+  when: string
+  caption: (firstName: string) => string
+}
+
+/**
+ * The feature-specific content of each Who We Are slide, by kind. `hero` is empty: the hook is
+ * its heading and photo alone (owner, 2026-09-20).
+ */
+export type WhoWeAreContent
+  = | { kind: 'hero' }
+    | { kind: 'credentials', documents: PresentationDocument[], rail: ProofRail, openLabel: string }
+    | { kind: 'sample', proof: ProofFigure, document: PresentationDocument, openLabel: string }
+    | { kind: 'point', proof: ProofFigure }
+    | { kind: 'agent', cardRole: string, timelineLabel: string, timeline: TimelineStage[], rail: ProofRail }
+    | { kind: 'team', proof: ProofFigure, partner: PresentationPartner, teamPhotoLabel: string }
+    | { kind: 'performance', media: BeforeAfterMedia, rail: ProofRail, reputation: ReputationMark[] }
+    | { kind: 'comparison', rows: ComparisonRow[] }
+    | { kind: 'closing', quote: string, cta: { label: string } }
+
+/** One arm of `WhoWeAreContent`, e.g. `WhoWeAreContentOf<'point'>`. */
+export type WhoWeAreContentOf<K extends WhoWeAreContent['kind']> = Extract<WhoWeAreContent, { kind: K }>
+
+export type WhoWeAreSlide = PresentationSlide<WhoWeAreContent>
 
 // ── Flow Context (passed to step components) ────────────────────────────────
 
@@ -109,4 +227,101 @@ export interface MeetingCalendarEvent extends CalendarEvent {
   customerState: string | null
   customerZip: string | null
   createdAt: string
+}
+
+// ── Specialties (trade selection) ───────────────────────────────────────────
+
+/** One chosen scope or add-on, as persisted in `TradeSelection.selectedScopes`. */
+export type SelectionItem = TradeSelection['selectedScopes'][number]
+
+export interface TradePhoto {
+  src: string
+  alt: string
+}
+
+export interface TradePairing {
+  pairedSlug: string
+  reason: string
+}
+
+/** A portfolio project reduced to what the showcase shows. */
+export type ShowcaseProject = Pick<Project, 'id' | 'city' | 'state' | 'projectDuration'> & { heroImage: ProjectMediaFile, scopeIds: string[] }
+
+export interface ShowcaseProjectIndex {
+  /** Projects tagged with any of the trade's scopes, most matching scopes first. */
+  byTrade: ReadonlyMap<string, ShowcaseProject[]>
+  /** Projects tagged with the scope, in portfolio order. */
+  byScope: ReadonlyMap<string, ShowcaseProject[]>
+}
+
+/** One photo the showcase can put on stage. `key` is stable: a curated photo's `src`, or `project:<id>`. */
+export type ShowcaseMedia
+  = | { key: string, kind: 'project', file: ProjectMediaFile, caption: string }
+    | { key: string, kind: 'curated', photo: TradePhoto, caption: string }
+
+export interface TradeBenefit {
+  headline: string
+  body: string
+}
+
+/** Stable once both reads have loaded. */
+export interface TradeCatalogContextValue {
+  catalog: ConstructionCatalog
+  projects: ShowcaseProjectIndex
+}
+
+/** Stable callbacks; they never change on a toggle. */
+export interface TradeActions {
+  /** Adds the item when absent, removes it when present. Creates the trade entry on first add. */
+  toggleItem: (tradeId: string, item: SelectionItem) => void
+  toggleReason: (tradeId: string, reason: string) => void
+  setNote: (tradeId: string, note: string) => void
+  /** Drops the trade entry entirely: items, reasons, and note. */
+  removeTrade: (tradeId: string) => void
+  /** Puts a removed entry back (Undo), replacing any entry for the same trade. */
+  restoreTrade: (entry: TradeSelection) => void
+}
+
+export interface TradeStageState {
+  /** The trade on stage, resolved: `?trade=` when it names a catalog trade, else the first on-project trade, else the first catalog trade. */
+  stageTradeId: string | null
+  /** The photo on stage; null means the stage trade's first photo. Reset whenever the stage trade changes. */
+  stageMediaKey: string | null
+  /** `null` clears the explicit choice so the stage falls back to the default. */
+  showTrade: (tradeId: string | null) => void
+  showMedia: (key: string | null) => void
+}
+
+export interface SwitcherGroup {
+  key: string
+  label: string
+  trades: Trade[]
+}
+
+// ── Portfolio step ──────────────────────────────────────────────────────────
+
+/** What a presentation-layout meeting step exposes to the flow's key map. `advance` is the Space key; a step without it ignores Space. */
+export type MeetingStepHandle = PresentationHandle & { advance?: () => void }
+
+export type PortfolioMatchKind = 'scope' | 'trade' | 'fallback' | 'none'
+
+/** A portfolio project and why it is shown for this meeting. */
+export interface PortfolioMatch {
+  row: PortfolioProjectWithHero
+  kind: PortfolioMatchKind
+  matchedScopeIds: string[]
+  matchedTradeIds: string[]
+  /** The pills: matched scope labels, or trade names, as the meeting named them. */
+  matchLabels: string[]
+}
+
+export interface PortfolioMatchSection {
+  label: string
+  items: { match: PortfolioMatch, index: number }[]
+}
+
+export interface PortfolioPosition {
+  projectIndex: number
+  phaseIndex: number
+  photoIndex: number
 }

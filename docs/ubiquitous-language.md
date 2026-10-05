@@ -34,11 +34,14 @@ shared/entities/customers/           ← Single Unit (entity)
 shared/entities/meetings/            ← Single Unit (entity)
 ├── constants/, hooks/, components/, schemas/
 
-shared/pipelines/                    ← Single Unit (domain system)
+shared/modules/proposals/            ← Module: aggregate of entity units under one root service.ts
+├── service.ts, core/, incentives/, media/, views/   (each unit keeps the entity layout)
+
+shared/domains/pipelines/            ← Single Unit (domain system)
 ├── constants/, hooks/, lib/, types/, ui/
 
-shared/auth/                         ← Single Unit (domain system)
-├── hooks/, lib/, schemas/
+shared/domains/auth/                 ← Single Unit (domain system)
+├── forms/, hooks/, lib/, schemas/
 
 features/meeting-flow/               ← Single Unit (feature)
 ├── constants/, hooks/, lib/, types/, ui/
@@ -60,27 +63,29 @@ A directory is a **Single Unit** (domain/entity/feature) when it has 2+ of these
 | **Customer** | A homeowner or prospect engaged with Tri Pros. Primary entity — everything flows from here. | `db/schema/customers.ts` |
 | **Meeting** | An in-home consultation between agent and customer. Captures situation + program data as JSONB. | `db/schema/meetings.ts` |
 | **Proposal** | Formal document: scopes, SOWs, pricing, financing. Statuses: `draft → sent → approved → declined`. | `db/schema/proposals.ts` |
-| **Project** | A construction engagement at a specific address. Created at contract signing. Lifecycle: `active → completed → on_hold`. When `isPublic = true`, appears in portfolio/showroom. | `db/schema/projects.ts` |
+| **Project** | A construction engagement at a specific address. Created at contract signing. Status is derived from `pipelineStage`, never stored: buckets `active | completed | on_hold | cancelled` via `deriveProjectStatusBucket` (`constants/enums/pipelines.ts`). When `isPublic = true`, appears in portfolio/showroom. | `db/schema/projects.ts` |
 | **User** _(forthcoming)_ | An internal staff member's profile entity (distinct from the auth-role concept of the same name — see _Flagged ambiguities_). Acted upon by super-admins via conveniences like text-rep, dispatch-meeting, deactivate. Migration planned in `entities/users/`. | `db/schema/auth.ts` (today) |
 
 ## Construction Hierarchy
 
 ```
 Trade (discipline)
-  └─ Scope (work package)
-       ├─ Material (product)
-       ├─ Variable (configurable param)
-       ├─ Addon (optional upgrade)
-       └─ SOW (scope of work — narrative document)
+  ├─ Scope (work package)
+  │    ├─ SOW template (narrative document)
+  │    ├─ Material (product)            ← seeded Postgres catalog only
+  │    └─ Variable (configurable param) ← seeded Postgres catalog only
+  └─ Addon (optional upsell, sibling of scopes)
 ```
+
+Runtime source of truth for trades, scopes/add-ons, SOW templates, and pain points is Notion (`src/shared/services/providers/notion/`, via `construction-data.service.ts`). The Postgres catalog tables (`trades`, `scopes`, `addons`, materials, variables, benefits) are seeded but not read at runtime. Planned home: `docs/plans/2026-09-14-construction-catalog-centralization-design.md`.
 
 | Term | Definition | Example |
 |------|-----------|---------|
-| **Trade** | A construction specialty. Has `location` (exterior/interior/lot). | Roofing, HVAC, Solar, Windows |
+| **Trade** | A construction specialty. Has a category (`type`: Energy Efficiency / General Construction / Structural / Rough) and a site area (`homeOrLot`: Home / Lot). The seeded Postgres table uses `location` (exterior/interior/lot) instead. | Roofing, HVAC, Solar, Windows |
 | **Scope** | A defined unit of work within a trade. Atomic proposal building block. | "Full Roof Replacement", "Attic Insulation" |
-| **SOW** (Scope of Work) | Detailed narrative describing work included in a scope: materials, labor, timeline, exclusions. | Stored as TipTap JSON + HTML |
+| **SOW** (Scope of Work) | Detailed narrative describing work included in a scope: materials, labor, timeline, exclusions. Notion SOW templates link to scopes; proposals copy the content into each SOW section. | Stored as TipTap JSON + HTML |
 | **Material** | A specific product used in a scope. Has lifespan + warranty. | Tesla Solar Roof, GAF Timberline |
-| **Addon** | Optional upgrade to a scope. Incremental upsell. | Premium paint, extended warranty |
+| **Addon** | Optional upsell related to a trade. In Notion it is a scopes-database row with `entryType = 'Addon'`; in the seeded Postgres catalog it is the `addons` table with a trade FK. | Premium paint, extended warranty |
 | **Variable** | Configurable field that affects SOW content. Types: text, select, number, boolean. | Roof pitch, HVAC capacity |
 | **Benefit** | A value proposition tied to a trade/scope/material. Grouped by category. | Energy savings, durability |
 
@@ -88,7 +93,7 @@ Trade (discipline)
 
 | Term | Definition |
 |------|-----------|
-| **Price** | Front-facing financial value — what the customer pays. Examples: `Section Price` (per SOW section), `startingTcp` / `finalTcp` (whole proposal). Visible to homeowner. Stored at `proposal.projectJSON.sow[].financials.sectionPrice` (per section) and `proposal.fundingJSON.data.startingTcp` (proposal level). |
+| **Price** | Front-facing financial value — what the customer pays. Examples: `Section Price` (per SOW section), `startingTcp` / `finalTcp` (whole proposal). Visible to homeowner. Stored at `proposal.projectJSON.sow[].financials.sectionPrice` (per section) and `proposals.starting_tcp_cents` / `final_tcp_cents` (proposal level, integer cents; `finalTcp` is derived — see `src/shared/modules/proposals/core/DOCS.md#final-tcp-derived`). |
 | **Cost** | Back-facing financial value — what the work costs Tri Pros (materials, labor, fees, overhead). Internal/agent-only. Multi-line per SOW section: each line has `{label, amount, relatedScopeId, notes?}` and ties to a specific selected scope. Stored at `proposal.projectJSON.sow[].financials.costLines`. **Never visible to homeowner.** |
 | **Cost Line** | One internal line of cost. Has `label`, `amount`, `relatedScopeId`, optional `notes`. Lives in `sow[].financials.costLines[]`. |
 | **Margin** | Derived: `Price − Cost`. Margin % = `(Margin / Price) × 100`. Computed at SOW-section level and at proposal level (aggregate) via `computeSectionMargin` / `computeProposalCostTotals`. Never persisted. Internal/agent-only. Sections missing cost data are excluded from aggregate margin and surfaced as a "missing cost data" warning. |
@@ -104,13 +109,13 @@ Trade (discipline)
 
 | Term | Definition | Stored On |
 |------|-----------|-----------|
-| **Pain Point** | Customer's problem/frustration. Has `accessor` + `urgencyRating` (1-10). | `customers.customerProfileJSON` |
-| **Trigger Event** | Recent catalyst that prompted contact (leak, high bill, neighbor's project). | `customers.customerProfileJSON` |
-| **Outcome Priority** | What matters most: Price, Quality, or Speed. | `customers.customerProfileJSON` |
+| **Pain Point** | Customer's problem/frustration. Has `accessor` + `urgencyRating` (1-10). The pain-point catalog itself lives in Notion. | `customer_profiles.main_pain_accessor` + `main_pain_urgency`; others in `customer_profiles.additional_pain_points` |
+| **Trigger Event** | Recent catalyst that prompted contact (leak, high bill, neighbor's project). | `customer_profiles.trigger_event` |
+| **Outcome Priority** | What matters most: Price, Quality, or Speed. | `customer_profiles.outcome_priority` |
 | **Customer Persona Profile** | Synthesized sales intelligence object. Joins customer/meeting JSONB data with Notion pain points to produce fears, benefits, decision drivers, emotional levers, household resonance, and risk factors — all contextualized to selected trades. | Generated at runtime (not stored) |
-| **Decision Timeline** | When they want to act: ASAP, 1-3mo, 3-6mo, 6+mo, Not sure. | `customers.customerProfileJSON` |
-| **Decision Urgency** | How urgent the need feels (1-10 scale). Distinct from timeline. | `customers.customerProfileJSON` |
-| **Credit Score Range** | Self-reported bracket. Predicts financing approval. | `customers.financialProfileJSON` |
+| **Decision Timeline** | When they want to act: ASAP, 1-3mo, 3-6mo, 6+mo, Not sure. | `customer_profiles.decision_timeline` |
+| **Decision Urgency** | How urgent the need feels (1-10 scale). Distinct from timeline. | No dedicated column today |
+| **Credit Score Range** | Self-reported bracket. Predicts financing approval. | `customer_profiles.credit_score` |
 | **DMs Present** | Who attended the meeting. All, Only husband, Only wife, Partial, None. | `meetings.situationProfileJSON` |
 
 ## Pipeline & Lifecycle
@@ -119,14 +124,14 @@ Trade (discipline)
 |------|-----------|
 | **Pipeline** | Business-wide post-meeting workflow track: `fresh` (new sales), `projects` (active construction), `rehash` (re-engagement), `dead` (archived). Derived from meetings + projects — not stored on customer. A customer can appear in multiple pipelines simultaneously. **Note:** the **pre-meeting "lead" stage** is NOT part of this enum — it's owned by the third-party auto-dialer provider (CloudTalk; see `docs/plans/voip-campaigns/EPIC.md` § "Data ownership model"). Our app caches pre-meeting lifecycle state in `customers.voipCampaignStatus` + `customers.voipLifecycleTags` JSONB but the provider is the source of truth. |
 | **Pipeline (on meeting)** | Stored field: `fresh \| rehash \| dead`. If `meeting.projectId` is set, effective pipeline is `projects` (overrides stored field). |
-| **Lead lifecycle** | The pre-meeting state machine: `Lead → Engaged → Transferred → Booked / Exhausted / BadNumber`. **Owned by the auto-dialer provider** (CloudTalk), not our app. Our app reads this state via webhook push and caches it; the provider is the source of truth. On `Booked`, the graduation event hands ownership over to our app's **Pipeline** (above) — from `Booked` onward, our app is authoritative. |
-| **Fresh Pipeline Stage** | Computed from meetings + proposals: `needs_confirmation → meeting_scheduled → meeting_in_progress → meeting_completed → follow_up_scheduled → proposal_sent → contract_sent → approved \| declined`. |
+| **Lead lifecycle** | The pre-meeting state machine: `Lead → Engaged → Transferred → Booked / Exhausted / BadNumber`. **Owned by the auto-dialer provider** (CloudTalk; see `docs/plans/voip-campaigns/EPIC.md` § "Data ownership model"), not our app. Our app reads this state via webhook push and caches it; the provider is the source of truth. On `Booked`, the graduation event hands ownership over to our app's **Pipeline** (above) — from `Booked` onward, our app is authoritative. |
+| **Fresh Pipeline Stage** | Computed from meetings + proposals (`computeFreshStage`): `needs_confirmation → meeting_confirmed → reschedule → meeting_in_progress → meeting_completed → follow_up_scheduled → proposal_sent → contract_sent → approved \| declined`. A booked meeting starts in `needs_confirmation`; the day-of confirmation (`meetings.confirmedAt`) moves it to `meeting_confirmed`. See **Stage** and **Confirmed** in `CONTEXT.md`. |
 | **Projects Pipeline Stage** | Stored on project: `signed → permits_pending → in_progress → punch_list → completed`. |
 | **SFH** (Single Family Home) | A residential structure type — the primary unit of work. A project is typically associated with a single SFH at a unique physical address. |
 | **Lead Source** | Acquisition channel: `telemarketing_philippines`, `noy`, `quoteme`, `other`. |
 | **Lead Type** | Qualification state: `appointment_set`, `needs_confirmation`, `manual`. |
 | **Proposal View** | A tracked event when customer opens their proposal link. Source: email, direct, unknown. |
-| **Schedule** | Meta standard event meaning *an appointment was set*: a meeting row was created for a funnel-originated customer. Fired server-only via CAPI from the meetings `create.after` hook — the documented exception to dual-fire (no browser session at appointment-set time). Renter-gated (via `customer_lead_attribution.ownership`), once per lead. Canonical: `src/shared/services/providers/meta/DOCS.md`. |
+| **Schedule** | Meta standard event meaning *an appointment was set*: a meeting row was created for a funnel-originated customer. Fired server-only via CAPI from the meetings `create.after` hook — the documented exception to dual-fire (no browser session at appointment-set time). Renter-gated (via `customer_lead_attribution.ownership`), once per lead. Canonical: `src/shared/services/providers/meta/`. |
 | **Purchase** | Meta standard event RESERVED for contract-signed with a real `value`/`currency`. Never repurposed for appointment-set — `Schedule` owns that moment. Not implemented as of 2026-07-27. |
 
 ## User Roles
@@ -136,6 +141,7 @@ Trade (discipline)
 | `user` | Basic app access |
 | `homeowner` | Views own proposal via token |
 | `agent` | Full sales + dashboard. Auto-assigned for `@triprosremodeling.com` signups. |
+| `dispatcher` | Internal lead-qualifier: books meetings (they land unassigned), reads the leads pool. Usually the **setter**. |
 | `super-admin` | System admin. Can delete, manage all. |
 
 ## Features (Application Modules)
@@ -154,10 +160,10 @@ Trade (discipline)
 | Term | Definition |
 |------|-----------|
 | **Entity View Context** | Any UI surface that renders one or more entities — regardless of presentation format (calendar, kanban, data table, card list, modal). View contexts nest following the ownership chain `Customer > Project > Meeting > Proposal`. Every entity in a view context gets the standardized entity action menu (base actions gated by CASL + optional context-specific actions). |
-| **Entity Action System** | The shared mechanism by which every business entity exposes a uniform `MoreHorizontalIcon` dropdown of permitted actions. Comprises (1) a typed **Entity Spec** per entity, (2) a compile-time **Entity Registry** that maps entity-type to spec, and (3) a single shared `<EntityActionMenu>` consumer entry point. Replaces the legacy per-entity `useXActionConfigs` hooks. CASL-gated. |
-| **Entity Spec** | The per-entity declaration in the Entity Registry. Strict types enforce four **Universal CRUD Slots** (`view`, `edit`, `delete`, `duplicate?`) plus a keyed `customActions` record for entity-unique actions. One spec file per entity at `entities/<entity>/spec.ts`. |
-| **Universal CRUD Slot** | One of the four base action roles every entity must satisfy: `view`, `edit`, `delete` (or its semantic equivalent — User's slot is "Deactivate"), and the optional `duplicate`. Each slot's user-facing label and icon are provided by the entity, allowing role consistency without forced vocabulary (e.g. Meeting's `view` slot renders as "Start" with a play icon). |
-| **Custom Action** _(entity-baked)_ | An entity-unique action declared in the spec's `customActions: Record<string, ...>`. Examples: Meeting's `setOutcome`, Proposal's `shareByEmail`, User's `textRep`. Keyed so `disableActions` and `actionOverrides` can target them by name. Distinct from **call-site custom actions** appended via the `<EntityActionMenu customActions={[...]}>` prop, which are unkeyed and append-only. |
+| **Entity Action System** | The shared mechanism by which every business entity exposes a uniform `MoreHorizontalIcon` dropdown of permitted actions. **As built** (ADR-0001 status note, 2026-08-05): per entity a `constants/actions.ts` (action metadata + CASL verb), a `hooks/use-<entity>-actions.ts` (mutations) and a `hooks/use-<entity>-action-configs.ts` (handlers + confirm dialogs → `{ actions, … }`), rendered through the single shared `<EntityActionMenu entity actions mode />`. CASL-gated per action. The compile-time registry originally decided in ADR-0001 was never built. |
+| **Entity Spec** _(not built)_ | Term from ADR-0001's original design, kept for reading that ADR — no `entities/<entity>/spec.ts` action spec or Entity Registry exists (not to be confused with the server-side `EntityServerSpec`). The per-entity declaration in the Entity Registry. Strict types enforce four **Universal CRUD Slots** (`view`, `edit`, `delete`, `duplicate?`) plus a keyed `customActions` record for entity-unique actions. One spec file per entity at `entities/<entity>/spec.ts`. |
+| **Universal CRUD Slot** _(design vocabulary, not enforced by types)_ | One of the four base action roles every entity must satisfy: `view`, `edit`, `delete` (or its semantic equivalent — User's slot is "Deactivate"), and the optional `duplicate`. Each slot's user-facing label and icon are provided by the entity, allowing role consistency without forced vocabulary (e.g. Meeting's `view` slot renders as "Start" with a play icon). |
+| **Custom Action** _(entity-baked)_ | An entity-unique action beyond the base CRUD roles, declared in the entity's `constants/actions.ts` and wired in its `use-<entity>-action-configs` hook. Examples: Meeting's `setOutcome`, Proposal's `shareByEmail`, User's `textRep`. As built there are no `disableActions` / `actionOverrides` / `customActions` props on `<EntityActionMenu>` — a call site that needs a different menu builds a different `actions` array. |
 | **View Mode** | `'customer' \| 'agent'`. URL-persisted via `?view=agent`. Determines whether internal data renders on the proposal-flow display route. Sourced from `useViewMode()` which gates with `ability.can('update', 'Proposal')` — homeowners constructing the param manually still get `'customer'`. |
 
 ### View Context Path Notation
@@ -202,9 +208,9 @@ Use slash-separated paths to reference any view context unambiguously. Format: `
 | `Pipeline[fresh]/Kanban/Customer/Meeting/Proposal` | `customer-pipelines/ui/components/customer-kanban-card.tsx` | `useProposalActionConfigs` |
 | `Pipeline[projects]/Kanban/Customer/Project` | `customer-pipelines/ui/components/customer-kanban-card.tsx` | `useProjectActionConfigs` |
 | `Pipeline[projects]/Kanban/Customer/Project/Proposal` | `customer-pipelines/ui/components/customer-kanban-card.tsx` | `useProposalActionConfigs` |
-| `Meetings/Calendar/Meeting` | `meeting-flow/ui/components/calendar/meeting-calendar.tsx` | `useMeetingActionConfigs` |
-| `Meetings/Calendar/Meeting` (dot) | `meeting-flow/ui/components/calendar/meeting-calendar-dot.tsx` | `useMeetingActionConfigs` |
-| `Meetings/Table/Meeting` | `meeting-flow/ui/components/table/` | `useMeetingActionConfigs` |
+| `Meetings/Calendar/Meeting` | `schedule-management/ui/components/schedule-meetings-calendar.tsx` | `useMeetingActionConfigs` |
+| `Meetings/Calendar/Meeting` (dot) | `schedule-management/ui/components/schedule-calendar-dot.tsx` | `useMeetingActionConfigs` |
+| `Meetings/Table/Meeting` | `shared/entities/meetings/components/meetings-table/` | `useMeetingActionConfigs` |
 | `Proposals/Table/Proposal` | `proposal-flow/ui/components/table/` | `useProposalActionConfigs` |
 | `Projects/Table/Project` | `project-management/ui/components/table/` | `useProjectActionConfigs` |
 | `Profile/Meetings/Meeting` | `shared/entities/meetings/components/overview-card.tsx` | `useMeetingActionConfigs` |
@@ -216,14 +222,12 @@ Use slash-separated paths to reference any view context unambiguously. Format: `
 
 | Entity | Column | Zod Schema | Contains |
 |--------|--------|------------|----------|
-| Customer | `customerProfileJSON` | `customerProfileSchema` | Age, trigger, pain points, priority, timeline, urgency |
-| Customer | `propertyProfileJSON` | `propertyProfileSchema` | HOA, year built |
-| Customer | `financialProfileJSON` | `financialProfileSchema` | Credit score, quotes received |
-| Meeting | `situationProfileJSON` | `situationProfileSchema` | DMs present, meeting type |
-| Meeting | `programDataJSON` | `programDataSchema` | Scopes, utility, timeline, years in home |
-| Proposal | `formMetaJSON` | `formMetaSectionSchema` | Pricing display mode |
+| Meeting | `contextJSON` | `meetingContextSchema` | DMs present, observed urgency, budget comfort, spouse dynamic, demeanor |
+| Meeting | `flowStateJSON` | `meetingFlowStateSchema` | Current step, trade selections, selected program, deal structure, closing adjustments |
 | Proposal | `projectJSON` | `projectSectionSchema` | Scopes, trades, SOWs, objectives |
-| Proposal | `fundingJSON` | `fundingSectionSchema` | TCP, cash, deposit, incentives |
+| Proposal | `formMetaJSONDeprecated` / `fundingJSONDeprecated` | `formMetaSectionSchema` / `fundingSectionSchema` | Frozen legacy blobs (Wave 3); scalars now live in columns and `proposal_incentives`; dropped at the Wave-4 push |
+
+The former customer `customerProfileJSON` / `propertyProfileJSON` / `financialProfileJSON` blobs are gone: `age` is a `customers` column and the other fields are columns on the 1:1 `customer_profiles` table.
 
 ## Migration & Contract-Change Vocabulary
 
@@ -231,18 +235,18 @@ Terms for communicating about codebase alterations — retiring a pattern, migra
 
 | Term | Definition |
 |------|-----------|
-| **API surface** | The total externally-consumable contract of a unit of code: its exported functions/types, the parameter shapes it accepts (usually Zod schemas), the shapes it returns, and its side-effect contract. The surface can be **generic** (`shared/dal/server/lib/create-crud-dal.ts` — its surface is inherited by every entity that registers a spec) or **concrete** (`replaceProposalIncentives` — one function, one contract). "Tightening the surface" means narrowing what it accepts/returns to exactly the current contract and nothing else. |
+| **API surface** | The total externally-consumable contract of a unit of code: its exported functions/types, the parameter shapes it accepts (usually Zod schemas), the shapes it returns, and its side-effect contract. The surface can be **generic** (`shared/dal/server/lib/create-crud-dal.ts` — its surface is inherited by every entity that registers a spec) or **concrete** (`proposalService.incentives.replace` — one function, one contract). "Tightening the surface" means narrowing what it accepts/returns to exactly the current contract and nothing else. |
 | **Blast radius** | The complete set of code affected by changing a contract: every consumer, implementer, schema, script, doc, and test that touches the changed shape. Discovered up front via project-wide sweep so the full extent is KNOWN — but not necessarily rewritten up front (see the tightening tally below). Example: retiring `fundingJSON.data.incentives` puts the blank-writers (`edit-proposal-view`, `create-new-proposal-view`, the pipelines popover), the `getFullView` hydration bridge, the PDF/AI-summary/Zoho consumers, the backfill script, and the entity DOCS.md all inside the blast radius. **Rule: the radius must be fully mapped, and every site inside it must end up either rewritten or tallied — a site that is neither is a silent gap.** |
 | **Dual-shape tolerance** | **Anti-pattern.** An API surface that accepts BOTH the old shape and the new shape so neither breaks, introduced by a defensive/additive session — and left **untallied**. The additive move itself is often fine during a transition (see the tightening tally below); what makes it tolerance is that nobody recorded it, so it never gets tightened. It hides an incomplete migration: the blast radius looks smaller than it is, and the old shape survives silently until it resurfaces as corrupt data or a dead branch. Live specimen: `shared/domains/funnels/lib/build-funnel-lead-note.ts:28-31` — the `typeof raw === 'string'` legacy-flat branch alongside the new `{label,value,order}` entries (registered for deletion in the seam-tightening register; its sibling `FunnelIntakePanel.toRows()` was already killed in `215790be`). |
 | **Sanctioned bridge** | The legitimate counterpart to dual-shape tolerance: a DELIBERATE, temporary dual-shape seam kept alive during a migration window, **registered in the deprecation ledger with a named kill trigger**. Example: `getFullView` re-hydrating `proposal_incentives` rows back into `fundingJSON.data.incentives` shape until W3 kills `fundingJSON` itself. The register entry is what makes it a bridge instead of tolerance — unregistered dual-shape is a defect by definition. |
-| **Escape hatch** | A write (or read) path that bypasses the sanctioned boundary for an operation, letting the old shape or unvalidated data around the gate. Example: `updateProposalSchema.partial()` flowing into the generic `updateImpl` whole-column `.set()` lets any authed caller write blob incentives verbatim — bypassing `replaceProposalIncentives`, its freeze gate, and row creation. Another: `upsertOneToOne` accepting `Record<string, unknown>` with no Zod parse. Escape hatches are what dual-shape tolerance leaves behind at the persistence layer: the front door was migrated, the side door still speaks the old contract. |
+| **Escape hatch** | A write (or read) path that bypasses the sanctioned boundary for an operation, letting the old shape or unvalidated data around the gate. Example: `updateProposalSchema.partial()` flowing into the generic `updateImpl` whole-column `.set()` lets any authed caller write blob incentives verbatim — bypassing `proposalService.incentives.replace`, its freeze gate, and row creation. Another: `upsertOneToOne` accepting `Record<string, unknown>` with no Zod parse. Escape hatches are what dual-shape tolerance leaves behind at the persistence layer: the front door was migrated, the side door still speaks the old contract. |
 | **Tightening tally** | The running list a session keeps WHILE implementing a change, recording every site where it went additive instead of rewriting — **specifically where the additive choice was made because of the transition itself, not because the new implementation needs it**. That distinction is the entry test: "would this branch/param/bridge exist if we were writing this fresh today?" No → tally it. The tally is worked through AFTER the migration is validated, one site at a time, tightening each surface to the new contract. Concrete instance: the per-wave **seam-tightening register** in `docs/plans/jsonb-decomposition-deprecation-ledger.md`. |
 
 **How they compose — the additive-first workflow:** during active implementation, thinking additively is the norm, not a failure — rewriting the whole blast radius mid-flight is often the riskier move. The discipline is: (1) map the full blast radius up front so nothing is invisible; (2) implement, going additive where the transition makes that easier; (3) every additive-because-of-the-transition site goes on the tightening tally the moment it's written; (4) once the migration is validated, sweep the tally and tighten the API surface site by site. Dual-shape tolerance and escape hatches are what an **untallied** additive site becomes — the same code, minus the accountability. The end-of-wave seam audit is the backstop that catches what sessions forgot to tally.
 
 ## Derived-Value Vocabulary
 
-Terms for talking about values computable from other stored data. Canonical rule + disciplines: `docs/codebase-conventions/derived-values.md` (ratified 2026-07-17; supersedes the old blanket "never persist derived values"). Proposal-specific case: `src/shared/entities/proposals/DOCS.md#final-tcp-derived`.
+Terms for talking about values computable from other stored data. Canonical rule + disciplines: `docs/codebase-conventions/derived-values.md` (ratified 2026-07-17; supersedes the old blanket "never persist derived values"). Proposal-specific case: `src/shared/modules/proposals/core/DOCS.md#final-tcp-derived`.
 
 | Term | Definition |
 |------|-----------|
@@ -256,6 +260,7 @@ Terms for talking about values computable from other stored data. Canonical rule
 
 - **Customer** not "client" or "user" (unless referring to the user role)
 - **Meeting** not "appointment" or "consultation" (those are casual synonyms, not code terms)
+- **Setter** (appointment setter) not "closer", "closed by" or "created by": the user, often a dispatcher, who booked the meeting. Field `meetings.setBy`. **Closer** means the reps who sit the meeting (its participants)
 - **Proposal** not "quote" or "estimate"
 - **Price** vs **Cost** — never use interchangeably. **Price** is what the customer pays (front-facing). **Cost** is what the work costs Tri Pros (back-facing, internal). **Margin** is the difference. Use the precise term in code, comments, UI copy, and PRs.
 - **Scope** not "line item" or "service"

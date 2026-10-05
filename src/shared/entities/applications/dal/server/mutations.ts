@@ -1,5 +1,4 @@
 // Application entity DAL mutations. Business-specific operations beyond CRUD.
-// DAL conventions: docs/codebase-conventions/dal-conventions.md
 
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { Application } from '@/shared/db/schema/applications'
@@ -7,7 +6,7 @@ import type { ApplicationDraft } from '@/shared/entities/applications/schemas'
 
 import { and, eq, sql } from 'drizzle-orm'
 
-import { dalDbOperation, requireResolvedScope } from '@/shared/dal/server/lib/helpers'
+import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { ThrowableDalError } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { applicationAnswers } from '@/shared/db/schema/application-answers'
@@ -21,7 +20,7 @@ import { applicationDraftSchema } from '@/shared/entities/applications/schemas'
 /**
  * Autosave target for the engine (sub-project #2's DB adapter). Debounced,
  * idempotent. Only a draft may be autosaved — a submitted/withdrawn
- * application is immutable via this path. see ../../DOCS.md#draft-commit-split
+ * application is immutable via this path.
  */
 export async function saveDraft(
   ctx: ScopedContext,
@@ -31,7 +30,7 @@ export async function saveDraft(
     const [application] = await db
       .select({ id: applications.id, status: applications.status })
       .from(applications)
-      .where(and(eq(applications.id, input.applicationId), requireResolvedScope(ctx.scope)))
+      .where(and(eq(applications.id, input.applicationId), ctx.scope ?? undefined))
     if (!application) {
       throw new ThrowableDalError({ type: 'not-found' })
     }
@@ -57,7 +56,7 @@ export async function saveDraft(
  * into application_answers rows (idempotent upsert) + route the reserved
  * TRADES_QUESTION_KEY value to x_application_trades, then flip status to
  * 'submitted'. draftAnswersJSON is LEFT INTACT (inert record). Only a draft
- * may be submitted. see ../../DOCS.md#draft-commit-split
+ * may be submitted.
  */
 export async function submitApplication(
   ctx: ScopedContext,
@@ -71,7 +70,7 @@ export async function submitApplication(
         draftAnswersJSON: applications.draftAnswersJSON,
       })
       .from(applications)
-      .where(and(eq(applications.id, input.applicationId), requireResolvedScope(ctx.scope)))
+      .where(and(eq(applications.id, input.applicationId), ctx.scope ?? undefined))
     if (!application) {
       throw new ThrowableDalError({ type: 'not-found' })
     }
@@ -86,7 +85,7 @@ export async function submitApplication(
 
     // Split answers: reserved trades key → junction; everything else → answer rows.
     // Trades are Notion-managed: the reserved key holds { tradeId (Notion page
-    // UUID), tradeName } objects — NOT Postgres trade ids. see ../../DOCS.md#trades-question-key-seam
+    // UUID), tradeName } objects — NOT Postgres trade ids.
     const answerRows: { applicationId: string, questionKey: string, value: string, position: number }[] = []
     let tradeSelections: { tradeId: string, tradeName: string }[] = []
     let position = 0
@@ -150,7 +149,6 @@ export async function submitApplication(
 
 /**
  * Pre-decision abandon. A draft or submitted application may be withdrawn.
- * see ../../DOCS.md#lifecycle
  */
 export async function withdraw(
   ctx: ScopedContext,
@@ -160,7 +158,7 @@ export async function withdraw(
     const [application] = await db
       .select({ id: applications.id, status: applications.status })
       .from(applications)
-      .where(and(eq(applications.id, input.applicationId), requireResolvedScope(ctx.scope)))
+      .where(and(eq(applications.id, input.applicationId), ctx.scope ?? undefined))
     if (!application) {
       throw new ThrowableDalError({ type: 'not-found' })
     }

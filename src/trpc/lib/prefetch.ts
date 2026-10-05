@@ -28,11 +28,12 @@ function executePrefetch(queryOptions: AnyQueryOptions): Promise<void> {
  * Fire-and-forget server-side prefetch (the canonical tRPC v11 form — never
  * await this; it returns void so awaiting is impossible by type). The pending
  * query is dehydrated and streamed: suspense views resolve it via
- * useSuspenseQuery; paginated tables' useQuery adopts the streamed promise
- * with no client roundtrip. Awaiting a prefetch in a page body re-blocks the
+ * useSuspenseQuery. A plain useQuery also adopts the streamed promise with no
+ * client roundtrip, but it renders pending on the server and can hydrate with
+ * data already in, a hydration mismatch (TanStack/query#9399, still open), so
+ * read prefetched keys with useSuspenseQuery. Awaiting a prefetch in a page body re-blocks the
  * route on EVERY soft navigation (Next re-runs dynamic pages each nav) — that
- * regression is why the blocking variant was removed; see
- * docs/superpowers/plans/2026-07-26-prefetch-hydration-fault-audit.md (addendum).
+ * regression is why the blocking variant was removed.
  */
 export function prefetch<T extends AnyQueryOptions>(queryOptions: T): void {
   void executePrefetch(queryOptions)

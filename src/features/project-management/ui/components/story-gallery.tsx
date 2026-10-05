@@ -1,15 +1,15 @@
 'use client'
 
 import type { MediaPhase } from '@/shared/constants/enums/media'
-import type { ProjectMediaGroups } from '@/shared/entities/projects/types'
+import type { ProjectMediaGroups } from '@/shared/modules/projects/core/types'
 import { motion, useInView } from 'motion/react'
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { PHASE_LABELS } from '@/features/project-management/constants/phase-labels'
 import { PhotoLightbox } from '@/features/project-management/ui/components/photo-lightbox'
-import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Badge } from '@/shared/components/ui/badge'
 import { mediaPhases } from '@/shared/constants/enums/media'
 import { cn } from '@/shared/lib/utils'
+import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
+import { PHASE_LABELS } from '@/shared/modules/projects/media/constants/phase-labels'
 
 interface Props {
   media: ProjectMediaGroups

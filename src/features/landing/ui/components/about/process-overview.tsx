@@ -134,7 +134,7 @@ export function ProcessOverview({ className }: Props) {
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
             Proven
             {' '}
-            <span className="text-secondary">Process</span>
+            <span className="text-primary">Process</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
             A systematic approach refined over
@@ -264,9 +264,9 @@ export function ProcessOverview({ className }: Props) {
                   isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }
                 }
                 transition={{ duration: 0.6, delay: index * 0.1 + 0.8 }}
-                className="select-none text-center p-6 rounded-xl bg-linear-to-br from-primary/5 to-secondary/5 hover:from-primary/10 hover:to-secondary/10 transition-colors duration-300"
+                className="select-none text-center p-6 rounded-xl bg-linear-to-br from-primary/5 to-primary/5 hover:from-primary/10 hover:to-primary/10 transition-colors duration-300"
               >
-                <div className="w-16 h-16 bg-secondary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-2xl">{measure.icon}</span>
                 </div>
                 <h4 className="font-semibold text-foreground mb-2">

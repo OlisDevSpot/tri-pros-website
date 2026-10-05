@@ -4,15 +4,21 @@ import type { SwimlaneCombo } from '@/features/schedule-management/lib/today-vie
 import type { ScheduleCalendarEvent } from '@/features/schedule-management/types'
 
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area'
-import { isSameDay, parseISO } from 'date-fns'
 import { motion } from 'motion/react'
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
+import { SKELETON_BUSINESS_HOURS_END_HOUR, SKELETON_EVENTS_PER_DAY } from '@/features/schedule-management/constants/schedule-calendar-config'
 import { getEventsForBucket, getUniqueCombos, groupEventsByParticipantCombo } from '@/features/schedule-management/lib/today-view-helpers'
+import { localDateToCalendarDay, seededIntInRange } from '@/shared/components/calendar/lib/calendar-helpers'
 import { ScrollBar } from '@/shared/components/ui/scroll-area'
+import { Skeleton } from '@/shared/components/ui/skeleton'
+import { SKELETON_BLOCK_TONE_CLASS, SKELETON_TONE_CLASS } from '@/shared/constants/skeleton-tone'
 import { TODAY_VIEW_BUCKETS } from '@/shared/constants/today-view-buckets'
 import { UserOverviewCard } from '@/shared/entities/users/components/overview-card'
+import { businessDayKey } from '@/shared/lib/business-time'
 import { cn } from '@/shared/lib/utils'
+
+import { ScheduleCardSkeleton } from './schedule-card-skeleton'
 
 const BUCKET_COUNT = TODAY_VIEW_BUCKETS.length
 const LABEL_COL_EXPANDED = 140
@@ -28,16 +34,18 @@ function makeGridCols(labelWidth: number): string {
 interface ScheduleTodayViewProps {
   events: ScheduleCalendarEvent[]
   currentDate: Date
+  isPending: boolean
   renderCard: (event: ScheduleCalendarEvent) => React.ReactNode
 }
 
 export function ScheduleTodayView({
   events,
   currentDate,
+  isPending,
   renderCard,
 }: ScheduleTodayViewProps) {
   const todayEvents = useMemo(
-    () => events.filter(e => isSameDay(parseISO(e.startAt), currentDate)),
+    () => events.filter(e => businessDayKey(new Date(e.startAt)) === localDateToCalendarDay(currentDate)),
     [events, currentDate],
   )
 
@@ -72,7 +80,16 @@ export function ScheduleTodayView({
   const gridCols = makeGridCols(collapsed ? LABEL_COL_COLLAPSED : LABEL_COL_EXPANDED)
   const gridMinWidth = (collapsed ? LABEL_COL_COLLAPSED : LABEL_COL_EXPANDED) + BUCKET_COUNT * BUCKET_COL_MIN_WIDTH
 
-  if (combos.length === 0) {
+  const dayKey = localDateToCalendarDay(currentDate)
+  const skeletonCardBucketIndexes = TODAY_VIEW_BUCKETS.flatMap((bucket, index) => bucket.endHour <= SKELETON_BUSINESS_HOURS_END_HOUR ? [index] : [])
+  const skeletonCardBuckets = isPending
+    ? Array.from(
+        { length: seededIntInRange(dayKey, SKELETON_EVENTS_PER_DAY) },
+        (_, lane) => skeletonCardBucketIndexes[seededIntInRange(`${dayKey}:${lane}`, { min: 0, max: skeletonCardBucketIndexes.length - 1 })],
+      )
+    : []
+
+  if (!isPending && combos.length === 0) {
     return (
       <div className="flex h-full items-center justify-center">
         <span className="text-sm text-muted-foreground">No events scheduled for this day</span>
@@ -81,7 +98,7 @@ export function ScheduleTodayView({
   }
 
   return (
-    <ScrollAreaPrimitive.Root className="relative h-full" type="always">
+    <ScrollAreaPrimitive.Root className="relative h-full" type="always" aria-busy={isPending || undefined}>
       <ScrollAreaPrimitive.Viewport ref={viewportRef} className="size-full rounded-[inherit]">
         <div className="flex min-h-full flex-col" style={{ minWidth: `${gridMinWidth}px` }}>
           {/* Bucket header row */}
@@ -118,16 +135,43 @@ export function ScheduleTodayView({
           </motion.div>
 
           {/* Swimlane rows — one per unique participant combo */}
-          {combos.map(combo => (
-            <SwimlaneRow
-              key={combo.key}
-              combo={combo}
-              comboEvents={eventsByCombo.get(combo.key) ?? []}
-              renderCard={renderCard}
-              collapsed={collapsed}
-              gridCols={gridCols}
-            />
-          ))}
+          {isPending
+            ? skeletonCardBuckets.map((cardBucket, lane) => (
+                <motion.div
+                  // eslint-disable-next-line react/no-array-index-key
+                  key={lane}
+                  className="grid border-b border-dashed"
+                  initial={false}
+                  animate={{ gridTemplateColumns: gridCols }}
+                  transition={TRANSITION}
+                >
+                  <div className="sticky left-0 z-10 flex items-center gap-2 overflow-hidden border-r bg-background px-3 py-3">
+                    <Skeleton className={cn(SKELETON_BLOCK_TONE_CLASS, 'size-6 shrink-0 rounded-full')} />
+                    <Skeleton className={cn(SKELETON_TONE_CLASS, 'h-2.5 w-20')} />
+                  </div>
+                  {TODAY_VIEW_BUCKETS.map((bucket, index) => (
+                    <div
+                      key={bucket.id}
+                      className={cn(
+                        'border-r p-1.5 last:border-r-0 min-h-24',
+                        index !== cardBucket && 'bg-muted/20',
+                      )}
+                    >
+                      {index === cardBucket && <ScheduleCardSkeleton />}
+                    </div>
+                  ))}
+                </motion.div>
+              ))
+            : combos.map(combo => (
+                <SwimlaneRow
+                  key={combo.key}
+                  combo={combo}
+                  comboEvents={eventsByCombo.get(combo.key) ?? []}
+                  renderCard={renderCard}
+                  collapsed={collapsed}
+                  gridCols={gridCols}
+                />
+              ))}
 
           {/* Filler row — extends vertical column borders to the bottom */}
           <motion.div

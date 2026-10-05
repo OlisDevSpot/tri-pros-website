@@ -1,50 +1,59 @@
 'use client'
 
 import type { ColumnRegistry } from '@/shared/components/data-table/lib/use-entity-columns'
-import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
+import type { EntityTableMeta } from '@/shared/components/data-table/types/entity-table-meta'
 import type { MeetingOutcome } from '@/shared/constants/enums'
+import type { SortId } from '@/shared/dal/lib/query/field-list'
+import type { MEETING_FIELDS } from '@/shared/entities/meetings/dal/meeting-fields'
 import type { AppRouterOutputs } from '@/trpc/routers/app'
 
-import { PrimaryCell } from '@/shared/components/data-table/ui/primary-cell'
 import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
+import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
 import { meetingOutcomes } from '@/shared/constants/enums'
 import { getOutcomeDisabledChecker } from '@/shared/domains/pipelines/lib/get-disabled-outcomes'
+import { LeadSourceOverviewCard } from '@/shared/entities/lead-sources/components/overview-card'
+import { MeetingCustomerCell } from '@/shared/entities/meetings/components/meeting-customer-cell'
 import { ParticipantPicker, ReadOnlyParticipantSummary } from '@/shared/entities/meetings/components/participant-picker'
 import { MEETING_OUTCOME_COLORS, MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
 import { formatDateCell } from '@/shared/lib/formatters'
+import { cn } from '@/shared/lib/utils'
+import { PROPOSAL_STATUS_DOT_COLORS } from '@/shared/modules/proposals/core/constants/proposal-status-colors'
 
 export type MeetingRow = AppRouterOutputs['meetingsRouter']['reads']['list']['rows'][number]
 
-export interface MeetingTableMeta {
-  meetingActions?: (row: MeetingRow) => EntityActionConfig<MeetingRow>[]
+export interface MeetingTableMeta extends EntityTableMeta<MeetingRow> {
   onUpdateOutcome?: (meetingId: string, outcome: MeetingOutcome) => void
   onUpdateScheduledFor?: (meetingId: string, date: Date) => void
   onAssignRep?: (meetingId: string, currentOwnerId: string) => void
   canAssignMeeting?: boolean
+  onViewProfile?: (customerId: string) => void
 }
 
 export const MEETING_COLUMNS = {
   customerName: {
     label: 'Meeting',
-    sortable: true,
+    size: 420,
+    sort: 'customerName',
     cell: ({ row, table }) => {
       const meta = table.options.meta as MeetingTableMeta | undefined
-      const selectedProgram = row.original.flowStateJSON?.selectedProgram ?? null
-      const meetingLabel = selectedProgram ?? row.original.meetingType
       return (
-        <PrimaryCell
-          entity={row.original}
-          actions={meta?.meetingActions?.(row.original)}
-          title={row.original.customerName ?? '—'}
-          subtitle={meetingLabel}
-          tooltipContent={`${row.original.customerName ?? 'No customer'} — ${meetingLabel}`}
+        <MeetingCustomerCell
+          meeting={row.original}
+          actions={meta?.rowActions}
+          onViewProfile={meta?.onViewProfile}
         />
       )
     },
   },
+  meetingType: {
+    label: 'Meeting type',
+    size: 130,
+    sort: 'meetingType',
+  },
   meetingOutcome: {
     label: 'Outcome',
+    sort: 'outcome',
     cell: ({ row, table }) => {
       const meta = table.options.meta as MeetingTableMeta | undefined
       return (
@@ -65,6 +74,7 @@ export const MEETING_COLUMNS = {
   },
   ownerName: {
     label: 'Rep',
+    sort: 'rep',
     cell: ({ row, table }) => {
       const meta = table.options.meta as MeetingTableMeta | undefined
       // Owner + co-owner come from the table query (joined via the
@@ -75,8 +85,7 @@ export const MEETING_COLUMNS = {
       const initialCoOwner = row.original.coOwner
 
       if (!meta?.canAssignMeeting) {
-        // Read-only fallback: no popover means no need for stopPropagation —
-        // row click should still navigate as normal.
+        // Read-only fallback: no popover, so the click is left to the row.
         return (
           <ReadOnlyParticipantSummary
             meetingId={row.original.id}
@@ -102,7 +111,7 @@ export const MEETING_COLUMNS = {
   },
   scheduledFor: {
     label: 'Scheduled For',
-    sortable: true,
+    sort: 'scheduledFor',
     cell: ({ row, table }) => {
       const meta = table.options.meta as MeetingTableMeta | undefined
       const dateStr = row.original.scheduledFor
@@ -141,4 +150,91 @@ export const MEETING_COLUMNS = {
       )
     },
   },
-} as const satisfies ColumnRegistry<MeetingRow>
+  createdAt: {
+    label: 'Booked on',
+    format: 'date',
+    sort: 'createdAt',
+    defaultHidden: true,
+  },
+  tradeSelections: {
+    label: 'Trades',
+    accessorFn: row => row.flowStateJSON?.tradeSelections?.length ?? 0,
+    cell: ({ row }) => {
+      const selections = row.original.flowStateJSON?.tradeSelections ?? []
+      const [first, ...rest] = selections
+      if (!first) {
+        return <span className="text-muted-foreground">—</span>
+      }
+      return (
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className="truncate text-sm">{first.tradeName}</span>
+          {rest.length > 0 && (
+            <HybridPopoverTooltip
+              content={(
+                <ul className="flex flex-col gap-1.5">
+                  {selections.map(selection => (
+                    <li key={selection.tradeId}>
+                      <span className="font-medium">{selection.tradeName}</span>
+                      {selection.selectedScopes.length > 0 && (
+                        <span className="block text-xs opacity-80">
+                          {selection.selectedScopes.map(scope => scope.label).join(', ')}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            >
+              <span tabIndex={0} className="shrink-0 rounded-full bg-muted px-1.5 text-xs tabular-nums text-muted-foreground">
+                {`+${rest.length}`}
+              </span>
+            </HybridPopoverTooltip>
+          )}
+        </div>
+      )
+    },
+  },
+  leadSource: {
+    label: 'Lead source',
+    sort: 'leadSource',
+    accessorFn: row => row.leadSource?.name ?? '',
+    cell: ({ row }) => {
+      const source = row.original.leadSource
+      if (!source) {
+        return <span className="text-muted-foreground">—</span>
+      }
+      return (
+        <LeadSourceOverviewCard
+          source={source}
+          className="min-h-0 w-auto gap-2 rounded-none p-0 hover:bg-transparent focus-visible:bg-transparent sm:min-h-0"
+        >
+          <LeadSourceOverviewCard.Name className="font-normal" />
+        </LeadSourceOverviewCard>
+      )
+    },
+  },
+  proposalStatuses: {
+    label: 'Proposals',
+    accessorFn: row => row.proposalStatuses.length,
+    cell: ({ row }) => {
+      const statuses = row.original.proposalStatuses
+      if (statuses.length === 0) {
+        return <span className="text-muted-foreground">—</span>
+      }
+      return (
+        <div className="flex items-center gap-1.5">
+          <span aria-hidden="true" className="flex items-center gap-1">
+            {statuses.map((status, index) => (
+              // eslint-disable-next-line react/no-array-index-key -- one dot per proposal in created order; statuses repeat
+              <span key={index} className={cn('size-2 rounded-full', PROPOSAL_STATUS_DOT_COLORS[status])} />
+            ))}
+          </span>
+          <span className="text-sm tabular-nums text-muted-foreground">{statuses.length}</span>
+          <span className="sr-only">{statuses.join(', ')}</span>
+        </div>
+      )
+    },
+  },
+} as const satisfies ColumnRegistry<MeetingRow, SortId<typeof MEETING_FIELDS>>
+
+export type MeetingColumnKey = keyof typeof MEETING_COLUMNS

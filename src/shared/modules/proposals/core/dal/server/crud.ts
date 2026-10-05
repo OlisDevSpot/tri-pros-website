@@ -1,0 +1,118 @@
+import type { Proposal } from '@/shared/db/schema'
+
+import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
+import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { SYSTEM_CONTEXT, ThrowableDalError } from '@/shared/dal/server/types'
+import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
+import { recomputeProposalFinancials } from '@/shared/modules/proposals/core/dal/server/mutations'
+import { getProposalLockSignals } from '@/shared/modules/proposals/core/dal/server/queries'
+import { deriveProposalKind } from '@/shared/modules/proposals/core/lib/derive-proposal-kind'
+import { generateShareToken } from '@/shared/modules/proposals/core/lib/generate-share-token'
+import { isProposalFrozen, touchesFrozenLockedFields } from '@/shared/modules/proposals/core/lib/proposal-lock'
+import { snapSowFromMeeting } from '@/shared/modules/proposals/core/lib/snap-sow-from-meeting'
+import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
+import { cloneGlobalIncentiveRows } from '@/shared/modules/proposals/incentives/dal/server/mutations'
+
+/**
+ * Stable CRUD handlers for the proposals entity. Hooks + duplicate config live
+ * here (config factory), not on the spec — see src/shared/entities/meetings/dal/server/crud.ts
+ * for the canonical shape.
+ */
+export const proposalCrud = createCrudDal(proposalServerSpec, () => ({
+  hooks: {
+    create: {
+      // No blob scrub: `insertProposalSchema` omits the frozen blob columns
+      // (fundingJSONDeprecated/formMetaJSONDeprecated) since the W3
+      // write-seam flip, so nothing can arrive here to scrub.
+      async before(input, _ctx) {
+        if (!input.meetingId) {
+          return { ...input, kind: deriveProposalKind(null), token: generateShareToken() }
+        }
+
+        const meeting = dalVerifySuccess(
+          await meetingCrud.getById(SYSTEM_CONTEXT, { id: input.meetingId }),
+        )
+        const kind = deriveProposalKind(meeting?.projectId ?? null)
+        const token = generateShareToken()
+        const enriched = snapSowFromMeeting(input, meeting?.flowStateJSON ?? null)
+
+        return { ...enriched, kind, token }
+      },
+      // New proposals get their rollup immediately (rows are empty at create;
+      // startingTcp comes from the column; section terms from projectJSON
+      // until W4).
+      async after(row: Proposal, _ctx) {
+        dalVerifySuccess(await recomputeProposalFinancials(row.id))
+      },
+    },
+    update: {
+      // Whole-proposal lock ladder (#264): any envelope (draft or beyond) or
+      // terminal status makes user-authored content immutable — the sanctioned
+      // edit path kills the envelope first (discard/recall). Field-scoped so
+      // lifecycle writes (status, signing ids, contract timestamps — webhooks,
+      // auto-approve, send flows) keep flowing on a locked proposal.
+      async before(input, _ctx, meta) {
+        if (!touchesFrozenLockedFields(input)) {
+          return input
+        }
+        const signals = dalVerifySuccess(await getProposalLockSignals(String(meta.id)))
+        if (isProposalFrozen(signals)) {
+          throw new ThrowableDalError({ type: 'precondition-failed', reason: 'proposal_frozen' })
+        }
+        return input
+      },
+      // Any write that moves a finalTcp input must re-converge the rollup:
+      // the startingTcp column, or projectJSON (section incentives, until W4).
+      // Cheap + idempotent; skipped when neither was touched.
+      async after(row: Proposal, _ctx, meta) {
+        if ('startingTcpCents' in meta.input || 'projectJSON' in meta.input) {
+          dalVerifySuccess(await recomputeProposalFinancials(row.id))
+        }
+      },
+    },
+    // No `delete` hook: deleting a proposal cascades its proposal_media_files
+    // rows but leaves their R2 objects behind (project delete purges its media
+    // in entities/projects/dal/server/crud.ts). This was a rushed call to keep
+    // Who We Are round 2 small (2026-09-14, tracker Q15 → C30) and may not
+    // reflect the rule we actually want. Revisit before relying on it.
+  },
+
+  // Default: copy full row minus PK. Exclude derived/status/timeline fields.
+  // Routed through createImpl — create.before re-derives kind + generates fresh token.
+  duplicate: {
+    exclude: [
+      'createdAt',
+      'updatedAt',
+      'status',
+      'kind',
+      'token',
+      'sentAt',
+      'approvedAt',
+      'contractSentAt',
+      'contractViewedAt',
+      'contractSignedAt',
+      'contractDeclinedAt',
+      'contractEnvelopeId',
+      'qbInvoiceId',
+      'qbPaymentStatus',
+    ],
+    overrides: (source, ctx) => ({
+      label: `Copy of ${source.label}`,
+      ownerId: ctx.session!.user.id,
+      status: 'draft' as const,
+    }),
+    // Proposal-COMPLETE duplicate for EVERY caller (router, meeting flow,
+    // scripts): the engine copies `spec.table` only, so the source's GLOBAL
+    // incentive rows are cloned here and the rollup re-driven once, merged into
+    // the returned row. Sequential, no transaction (W4 ruling R.1). W4 adds the
+    // SOW child rows' clone beside this call.
+    async after(row, _ctx, { source }) {
+      const cloned = dalVerifySuccess(await cloneGlobalIncentiveRows(source.id, row.id))
+      if (cloned === 0) {
+        return
+      }
+      const { finalTcpCents } = dalVerifySuccess(await recomputeProposalFinancials(row.id))
+      return { ...row, finalTcpCents }
+    },
+  },
+}))

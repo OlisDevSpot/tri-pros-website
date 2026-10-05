@@ -25,7 +25,6 @@ import { cva } from 'class-variance-authority'
  * The Root is a pure FRAME: it owns radius + surface + shadow but NEVER overflow.
  * Clipping is delegated to self-clipping child layers (`Block.Media`, `Block.Decor`),
  * each `rounded-[inherit]` to match this radius. This is the frame/clip split —
- * see docs/codebase-conventions/frontend-stack.md#never-co-locate-shadow-and-overflow.
  * (Co-locating overflow-hidden here would slice every card/child shadow.)
  */
 export const blockVariants = cva(

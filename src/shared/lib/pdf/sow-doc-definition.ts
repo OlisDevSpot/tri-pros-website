@@ -1,6 +1,6 @@
 import type { Content, TDocumentDefinitions } from 'pdfmake/interfaces'
 import type { TiptapNode } from './tiptap-to-pdfmake'
-import type { ProposalWithCustomer } from '@/shared/entities/proposals/dal/server/queries'
+import type { ProposalWithCustomer } from '@/shared/modules/proposals/core/dal/server/queries'
 import { tiptapToPdfmake } from './tiptap-to-pdfmake'
 
 /**

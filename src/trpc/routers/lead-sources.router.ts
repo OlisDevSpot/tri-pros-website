@@ -1,55 +1,34 @@
+import type { Insert } from '@/shared/db/types'
+
 import { TRPCError } from '@trpc/server'
 import { differenceInCalendarDays, eachDayOfInterval, eachMonthOfInterval, eachWeekOfInterval, max as maxDate, startOfDay, startOfMonth, startOfWeek } from 'date-fns'
-import { and, asc, desc, eq, gte, inArray, isNull, lte, ne, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm'
 import z from 'zod'
 
-import { pipelines } from '@/shared/constants/enums/pipelines'
-import { buildFilterWhere } from '@/shared/dal/server/lib/query/filters'
-import { paginate } from '@/shared/dal/server/lib/query/output'
-import { dateRangeSchema, paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
-import { buildSearchWhere } from '@/shared/dal/server/lib/query/search'
-import { buildOrderBy } from '@/shared/dal/server/lib/query/sort'
+import { leadSourceSpendModes } from '@/shared/constants/enums/lead-sources'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
-import { derivedPipelineSql, derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
+import { customerListInputSchema, listCustomers } from '@/shared/entities/customers/dal/server/queries'
 import { isSignedCustomerSql } from '@/shared/entities/customers/lib/signed-customer-sql'
 import { customerSegments } from '@/shared/entities/lead-sources/constants/customer-segments'
+import { leadSourceCrud } from '@/shared/entities/lead-sources/dal/server/crud'
+import { listLeadSources } from '@/shared/entities/lead-sources/dal/server/queries'
+import { listLeadSourceSpend, setLeadSourceSpend } from '@/shared/entities/lead-sources/dal/server/spend'
 import { buildSegmentWhere } from '@/shared/entities/lead-sources/lib/segment-sql'
-import { leadSourceFormConfigSchema } from '@/shared/entities/lead-sources/schemas'
+import { leadSourceFormConfigSchema, leadSourceSpendMonthSchema } from '@/shared/entities/lead-sources/schemas'
 import { generateToken } from '@/shared/lib/generate-token'
-import { slugify } from '@/shared/lib/slugify'
+import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 
 import { createTRPCRouter, superAdminProcedure } from '../init'
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
-
-async function generateUniqueSlug(base: string): Promise<string> {
-  const root = slugify(base, { maxLen: 64 }) || 'source'
-  for (let i = 0; i < 50; i++) {
-    const candidate = i === 0 ? root : `${root}-${i + 1}`
-    const [existing] = await db
-      .select({ id: leadSourcesTable.id })
-      .from(leadSourcesTable)
-      .where(eq(leadSourcesTable.slug, candidate))
-      .limit(1)
-    if (!existing) {
-      return candidate
-    }
-  }
-  throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Could not generate unique slug.' })
-}
-
-// Match customers to a lead source by FK. Callers pass the lead_sources.id.
 function customersMatchingSource(leadSourceId: string) {
   return eq(customers.leadSourceId, leadSourceId)
 }
 
-// Build the optional [gte(from), lte(to)] predicate pair against customers.createdAt.
-// Returned array is spread-friendly: `and(baseMatch, ...customerCreatedAtInRange(…))`.
 function customerCreatedAtInRange(from?: string, to?: string) {
   return [
     from ? gte(customers.createdAt, from) : undefined,
@@ -59,8 +38,6 @@ function customerCreatedAtInRange(from?: string, to?: string) {
 
 type Bucket = 'day' | 'week' | 'month'
 
-// Pick the trend-chart bucket size from the resolved date range.
-// Matches the spec's "≤14 day, ≤95 week, else month" thresholds.
 function selectBucket(from?: string, to?: string): Bucket {
   if (!from || !to) {
     return 'month'
@@ -75,7 +52,7 @@ function selectBucket(from?: string, to?: string): Bucket {
   return 'month'
 }
 
-// Truncate a JS Date to the start of its bucket (matches Postgres date_trunc).
+// Must match Postgres date_trunc so JS-side bucket keys line up with the SQL series.
 function truncateToBucket(d: Date, bucket: Bucket): Date {
   switch (bucket) {
     case 'day':
@@ -88,8 +65,6 @@ function truncateToBucket(d: Date, bucket: Bucket): Date {
   }
 }
 
-// Enumerate every bucket between `from` and `to` (inclusive) so the trend
-// series can be backfilled with zeros for empty buckets.
 function enumerateBuckets(from: Date, to: Date, bucket: Bucket): Date[] {
   const start = truncateToBucket(from, bucket)
   const end = truncateToBucket(to, bucket)
@@ -105,8 +80,6 @@ function enumerateBuckets(from: Date, to: Date, bucket: Bucket): Date[] {
       return eachMonthOfInterval({ start, end })
   }
 }
-
-// ── Schemas ─────────────────────────────────────────────────────────────────
 
 const timeRangeInput = z.object({
   from: z.string().datetime().optional(),
@@ -124,15 +97,39 @@ const updateInput = z.object({
   slug: z.string().min(1).max(64).optional(),
   formConfigJSON: leadSourceFormConfigSchema.optional(),
   isActive: z.boolean().optional(),
+  spendMode: z.enum(leadSourceSpendModes).optional(),
 })
 
-// ── Router ──────────────────────────────────────────────────────────────────
+// $10M a month is far past any real spend; the cap only stops a typo from landing.
+const MAX_MONTHLY_SPEND_CENTS = 1_000_000_000
+
+// Ten years of columns: the grid shows twelve months plus any older month still owed spend.
+const MAX_SPEND_GRID_MONTHS = 120
+
+const spendRouter = createTRPCRouter({
+  grid: superAdminProcedure
+    .input(z.object({ months: z.array(leadSourceSpendMonthSchema).min(1).max(MAX_SPEND_GRID_MONTHS) }))
+    .query(async ({ input }) => {
+      const [sources, entries] = await Promise.all([listLeadSources(), listLeadSourceSpend(input.months)])
+      return {
+        sources: dalToTrpc(sources).map(s => ({ id: s.id, name: s.name, spendMode: s.spendMode, archived: s.archivedAt !== null })),
+        entries: dalToTrpc(entries),
+      }
+    }),
+
+  set: superAdminProcedure
+    .input(z.object({
+      leadSourceId: z.string().uuid(),
+      month: leadSourceSpendMonthSchema,
+      amountCents: z.number().int().min(0).max(MAX_MONTHLY_SPEND_CENTS).nullable(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      dalToTrpc(await setLeadSourceSpend({ ...ctx, scope: null }, input))
+      return { success: true as const }
+    }),
+})
 
 export const leadSourcesRouter = createTRPCRouter({
-  // List of all lead sources with compact stats for the left-pane picker.
-  // The optional time range scopes `leadsInRange` so the list reacts to the
-  // global time picker in the page header. When absent, `leadsInRange`
-  // degrades to `totalLeads`.
   list: superAdminProcedure
     .input(z.object({
       includeInactive: z.boolean().default(true),
@@ -186,9 +183,6 @@ export const leadSourcesRouter = createTRPCRouter({
       return row
     }),
 
-  // Performance stats for a single lead source over a time range.
-  // Stats: total leads (all-time), leads within range, signed customers (all-time).
-  // "Signed" is defined by `isSignedCustomerSql` (customer has ≥1 project).
   getStats: superAdminProcedure
     .input(z.object({ id: z.string().uuid() }).merge(timeRangeInput))
     .query(async ({ input }) => {
@@ -211,8 +205,6 @@ export const leadSourcesRouter = createTRPCRouter({
         db.$count(customers, baseMatch),
         db.$count(customers, rangeWhere),
         db.$count(customers, and(baseMatch, isSignedCustomerSql())),
-        // Approved proposals belonging to customers from this lead source.
-        // Sum the stored final_tcp_cents rollup (Wave 2) across approved proposals.
         db
           .select({ finalTcpCents: proposals.finalTcpCents })
           .from(proposals)
@@ -227,16 +219,10 @@ export const leadSourcesRouter = createTRPCRouter({
       }
       totalSales = Math.round(totalSales)
 
-      // totalSales is lifetime by design (Phase 1) — the time-range filter
-      // scopes `range` only. Range-scoped revenue can land in Phase 2.
+      // totalSales is lifetime by design; the time range scopes `range` only.
       return { total, range, signedCustomers, totalSales }
     }),
 
-  // Aggregate performance across every lead source. Mirrors getStats shape so
-  // the PerformanceStrip renders identically for the "All" pane and per-source
-  // panes. `total` counts every customer (including legacy NULL-source rows);
-  // `range` applies the time window; `signedCustomers` counts customers with
-  // at least one project (see `isSignedCustomerSql`).
   getAggregateStats: superAdminProcedure
     .input(timeRangeInput)
     .query(async ({ input }) => {
@@ -252,8 +238,6 @@ export const leadSourcesRouter = createTRPCRouter({
       return { total, range, signedCustomers }
     }),
 
-  // Dynamic list of years with at least one customer for any lead source.
-  // Used to build time-range chips (2026, 2025, …).
   getYearsWithActivity: superAdminProcedure
     .query(async () => {
       const rows = await db
@@ -266,20 +250,13 @@ export const leadSourcesRouter = createTRPCRouter({
       return rows.map(r => r.year)
     }),
 
-  // Customers sourced from a given lead source. Paginated via shared schema.
-  // Filters: `pipeline` (multi-select against the derived 5-bucket
-  // `pipelines` enum), `createdAt` (date range). Top-level `segment` narrows
-  // results to 'all' | 'active' | 'signed' | 'dead' without exposing the
-  // control in the QueryToolbar filter row.
+  // `segment` stays a top-level input and becomes a fixed filter here, so no toolbar ever shows it.
   getCustomers: superAdminProcedure
-    .input(paginatedQueryInput({
-      pipeline: z.array(z.enum(pipelines)).optional(),
-      createdAt: dateRangeSchema.optional(),
-    }).extend({
+    .input(customerListInputSchema.extend({
       id: z.string().uuid(),
       segment: z.enum(customerSegments).optional(),
     }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const [src] = await db
         .select({ id: leadSourcesTable.id })
         .from(leadSourcesTable)
@@ -288,52 +265,11 @@ export const leadSourcesRouter = createTRPCRouter({
       if (!src) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Lead source not found.' })
       }
-
-      const match = customersMatchingSource(src.id)
-      const searchWhere = buildSearchWhere(input.search, [customers.name, customers.email])
-      const filterWhere = buildFilterWhere(input.filters, {
-        pipeline: v => derivedPipelineWhere(v),
-        createdAt: v => and(
-          v.from ? gte(customers.createdAt, v.from) : undefined,
-          v.to ? lte(customers.createdAt, v.to) : undefined,
-        ),
-      })
-      const segmentWhere = buildSegmentWhere(input.segment)
-      const where = and(match, searchWhere, filterWhere, segmentWhere)
-
-      // Pipeline omitted from the sort whitelist for the same reason as
-      // `customersRouter.list`: the visible value is derived, sorting on
-      // the underlying 3-bucket DB column would surprise.
-      const orderBy = buildOrderBy(input.sort, {
-        name: customers.name,
-        email: customers.email,
-        createdAt: customers.createdAt,
-      })
-
-      return paginate({
-        // Source fields are joined so the row carries the same shape as
-        // `customersRouter.list` — the shared `LeadSourceCell` then renders
-        // an editable picker. Reassigning here removes the row from the
-        // list (it no longer matches `match`), which is the desired UX.
-        query: () => db
-          .select({
-            id: customers.id,
-            name: customers.name,
-            email: customers.email,
-            createdAt: customers.createdAt,
-            pipeline: derivedPipelineSql(),
-            leadSourceId: customers.leadSourceId,
-            leadSourceName: leadSourcesTable.name,
-            leadSourceSlug: leadSourcesTable.slug,
-          })
-          .from(customers)
-          .leftJoin(leadSourcesTable, eq(leadSourcesTable.id, customers.leadSourceId))
-          .where(where)
-          .orderBy(...orderBy)
-          .limit(input.pagination.limit)
-          .offset(input.pagination.offset),
-        count: () => db.$count(customers, where),
-      })
+      const { id: _id, segment, ...query } = input
+      return dalToTrpc(await listCustomers(
+        { ...ctx, scope: null },
+        { ...query, filters: { ...query.filters, sourceId: src.id, segment } },
+      ))
     }),
 
   getStatusCounts: superAdminProcedure
@@ -359,9 +295,7 @@ export const leadSourcesRouter = createTRPCRouter({
       return { all, active, signed, dead }
     }),
 
-  // Funnel + trend for the Analytics tab. One round-trip — both visualizations
-  // share the same (lead-source, range) scope. Trend buckets are picked
-  // server-side so axis labels and tooltips stay consistent across renders.
+  // Trend buckets are picked server-side so axis labels and tooltips stay consistent across renders.
   getAnalytics: superAdminProcedure
     .input(z.object({
       id: z.string().uuid(),
@@ -380,9 +314,7 @@ export const leadSourcesRouter = createTRPCRouter({
 
       const baseMatch = customersMatchingSource(src.id)
 
-      // Resolve the trend's lower bound up front. When the chip is "all" we
-      // need a concrete window so bucket selection + backfill have something
-      // to work with — the lower bound becomes the source's first lead.
+      // With no `from`, the window starts at the source's first lead so bucket selection + backfill have a bound.
       let resolvedFrom = input.from
       const resolvedTo = input.to ?? new Date().toISOString()
       if (!resolvedFrom) {
@@ -395,14 +327,10 @@ export const leadSourcesRouter = createTRPCRouter({
 
       const bucket = selectBucket(resolvedFrom, resolvedTo)
 
-      // Customer-creation range predicates (both funnel + trend leads use this).
       const customerRange = customerCreatedAtInRange(input.from, input.to)
       const leadsWhere = and(baseMatch, ...customerRange)
 
-      // Range predicates for the event-side filters (meetings.scheduledFor,
-      // proposals.createdAt, projects.createdAt). Each is filtered to the
-      // chip's window so a customer who booked a meeting outside the range
-      // does not contribute to that step.
+      // Event-side filters are windowed too, so a customer who booked outside the range doesn't count toward that step.
       const meetingRangeWhere = and(
         input.from ? gte(meetings.scheduledFor, input.from) : undefined,
         input.to ? lte(meetings.scheduledFor, input.to) : undefined,
@@ -416,11 +344,7 @@ export const leadSourcesRouter = createTRPCRouter({
         input.to ? lte(projects.createdAt, input.to) : undefined,
       )
 
-      // ── Funnel ────────────────────────────────────────────────────────────
-      // Each step narrows `leadsWhere` with an EXISTS-style `inArray`
-      // subquery against the relevant event table. Drizzle has no `exists`
-      // helper today, so subquery + inArray is the idiomatic alternative
-      // (compiles to `WHERE … AND customers.id IN (SELECT … FROM …)`).
+      // Drizzle has no `exists` helper, so subquery + inArray stands in for EXISTS.
       const [leadsCount, meetingsBookedCount, proposalsSentCount, signedCount] = await Promise.all([
         db.$count(customers, leadsWhere),
         db.$count(
@@ -468,10 +392,8 @@ export const leadSourcesRouter = createTRPCRouter({
         ),
       ])
 
-      // ── Trend (3 parallel queries → JS union) ─────────────────────────────
-      // date_trunc requires the bucket name as a literal, not a bind parameter:
-      // a bound $1 in SELECT and $3 in GROUP BY are not equated by the planner.
-      // `bucket` is whitelisted to 'day' | 'week' | 'month' so sql.raw is safe.
+      // date_trunc needs the bucket name as a literal: a bound $1 in SELECT and $3 in GROUP BY
+      // are not equated by the planner. `bucket` is whitelisted to day|week|month, so sql.raw is safe.
       const bucketLiteral = sql.raw(`'${bucket}'`)
       const bucketLeads = sql<string>`date_trunc(${bucketLiteral}, ${customers.createdAt})`
       const bucketMeetings = sql<string>`date_trunc(${bucketLiteral}, ${meetings.scheduledFor})`
@@ -506,8 +428,7 @@ export const leadSourcesRouter = createTRPCRouter({
           .groupBy(bucketProjects),
       ])
 
-      // Union the three series by bucket-start. Backfill missing buckets with
-      // zeros so the trend chart renders a continuous x-axis.
+      // Backfill empty buckets with zeros so the chart's x-axis is continuous.
       interface TrendRow {
         bucketStart: string
         leads: number
@@ -516,8 +437,6 @@ export const leadSourcesRouter = createTRPCRouter({
       }
       const trendMap = new Map<string, TrendRow>()
 
-      // Determine the actual span of buckets to render. Use the resolved
-      // window if available, otherwise widen to cover any observed data.
       const observedDates: Date[] = []
       for (const r of [...leadsByBucket, ...meetingsByBucket, ...signedByBucket]) {
         if (r.bucketStart) {
@@ -563,8 +482,6 @@ export const leadSourcesRouter = createTRPCRouter({
       }
     }),
 
-  // Aggregate analytics across ALL customers (no lead-source filter). Mirrors
-  // getAnalytics shape so the same client AnalyticsContent can render either.
   getAggregateAnalytics: superAdminProcedure
     .input(timeRangeInput)
     .query(async ({ input }) => {
@@ -705,75 +622,20 @@ export const leadSourcesRouter = createTRPCRouter({
       }
     }),
 
+  // Cast: the Zod input lacks the slug + token that create.before fills in. scope: null — super-admin callers are omni.
   create: superAdminProcedure
     .input(createInput)
-    .mutation(async ({ input }) => {
-      const slug = await generateUniqueSlug(input.name)
-      const token = generateToken()
-      const [created] = await db
-        .insert(leadSourcesTable)
-        .values({ name: input.name, slug, token, formConfigJSON: input.formConfigJSON, isActive: true })
-        .returning()
-      if (!created) {
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create lead source.' })
-      }
-      return created
-    }),
+    .mutation(async ({ ctx, input }) =>
+      dalToTrpc(await leadSourceCrud.create(
+        { ...ctx, scope: null },
+        input as unknown as Insert<typeof leadSourcesTable>,
+      ))),
 
   update: superAdminProcedure
     .input(updateInput)
-    .mutation(async ({ input }) => {
-      const { id, slug, ...rest } = input
-
-      const patch: Partial<typeof leadSourcesTable.$inferInsert> = { ...rest }
-
-      if (slug !== undefined) {
-        // Reject malformed input — only canonical kebab-case is accepted.
-        if (slugify(slug, { maxLen: 64 }) !== slug) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Use lowercase letters, numbers, and hyphens only.',
-          })
-        }
-
-        // Read current slug so a no-op save (UI echoes the existing slug)
-        // does not silently rotate the token and break live intake URLs.
-        const [current] = await db
-          .select({ slug: leadSourcesTable.slug })
-          .from(leadSourcesTable)
-          .where(eq(leadSourcesTable.id, id))
-          .limit(1)
-        if (!current) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Lead source not found.' })
-        }
-
-        if (slug !== current.slug) {
-          // Reject duplicates against any other source.
-          const [existing] = await db
-            .select({ id: leadSourcesTable.id })
-            .from(leadSourcesTable)
-            .where(and(eq(leadSourcesTable.slug, slug), ne(leadSourcesTable.id, id)))
-            .limit(1)
-          if (existing) {
-            throw new TRPCError({
-              code: 'CONFLICT',
-              message: 'That slug is already in use.',
-            })
-          }
-          patch.slug = slug
-          patch.token = generateToken()
-        }
-      }
-
-      const [updated] = await db
-        .update(leadSourcesTable)
-        .set(patch)
-        .where(eq(leadSourcesTable.id, id))
-        .returning()
-      if (!updated) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Lead source not found.' })
-      }
-      return updated
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input
+      return dalToTrpc(await leadSourceCrud.update({ ...ctx, scope: null }, { id, data }))
     }),
 
   rotateToken: superAdminProcedure
@@ -806,44 +668,15 @@ export const leadSourcesRouter = createTRPCRouter({
 
   duplicate: superAdminProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .mutation(async ({ input }) => {
-      const [source] = await db
-        .select()
-        .from(leadSourcesTable)
-        .where(eq(leadSourcesTable.id, input.id))
-        .limit(1)
-      if (!source) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Lead source not found.' })
-      }
-      const newName = `${source.name} (copy)`
-      const newSlug = await generateUniqueSlug(newName)
-      const [created] = await db
-        .insert(leadSourcesTable)
-        .values({
-          name: newName,
-          slug: newSlug,
-          token: generateToken(),
-          formConfigJSON: source.formConfigJSON,
-          isActive: false,
-        })
-        .returning()
-      if (!created) {
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to duplicate.' })
-      }
-      return created
-    }),
+    .mutation(async ({ ctx, input }) =>
+      dalToTrpc(await leadSourceCrud.duplicate({ ...ctx, scope: null }, { id: input.id }))),
 
   delete: superAdminProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .mutation(async ({ input }) => {
-      const attachedCount = await db.$count(customers, customersMatchingSource(input.id))
-      if (attachedCount > 0) {
-        throw new TRPCError({
-          code: 'PRECONDITION_FAILED',
-          message: `${attachedCount} ${attachedCount === 1 ? 'customer is' : 'customers are'} still attached. Reassign or archive instead.`,
-        })
-      }
-      await db.delete(leadSourcesTable).where(eq(leadSourcesTable.id, input.id))
+    .mutation(async ({ ctx, input }) => {
+      dalToTrpc(await leadSourceCrud.delete({ ...ctx, scope: null }, { id: input.id }))
       return { success: true as const }
     }),
+
+  spend: spendRouter,
 })

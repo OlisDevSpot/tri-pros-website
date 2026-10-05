@@ -1,7 +1,7 @@
 'use client'
 
-import type { MediaFile } from '@/shared/db/schema'
-import type { ProjectFormData } from '@/shared/entities/projects/schemas'
+import type { ProjectMediaFile } from '@/shared/db/schema'
+import type { ProjectFormData } from '@/shared/modules/projects/core/schemas'
 import { ImageIcon, Loader2, Settings2Icon } from 'lucide-react'
 import { useEffect } from 'react'
 import { useFormContext } from 'react-hook-form'
@@ -15,13 +15,26 @@ interface Props {
   initialValues?: Partial<ProjectFormData>
   onSubmit: (data: ProjectFormData) => void
   projectId?: string
-  mediaFiles?: MediaFile[]
+  mediaFiles?: ProjectMediaFile[]
   onMediaUpdate?: () => void
 }
 
 export function ProjectForm({ isLoading, initialValues, onSubmit, projectId, mediaFiles, onMediaUpdate }: Props) {
   const form = useFormContext<ProjectFormData>()
 
+  // KNOWN ISSUE (pre-existing, NOT from the crud-dal epic — server scopes-persist
+  // path verified correct 2026-08-20): this resets on EVERY change to
+  // `initialValues`, which is a fresh object on every `project.data` refetch —
+  // and the edit view refetches often (media-optimization `refetchInterval` poll
+  // + the query client's default `refetchOnWindowFocus: true`). Each refetch
+  // silently reverts `form` to server state, discarding unsaved edits. It bites
+  // trades/scopes hardest and INVISIBLY: the trade picker keeps its own `rows`
+  // state (guarded by `initializedRef`), so `form.reset` reverts `form.scopeIds`
+  // but not the picker UI — the user sees their new trades, saves, and the form
+  // submits the OLD scopeIds → "scopes didn't persist". Plain text fields snap
+  // back visibly; scopes don't. Fix = hydrate ONCE (ref guard), or move to
+  // `useForm({ values, resetOptions: { keepDirtyValues: true } })`. Left as-is
+  // per owner (out of crud-epic scope).
   useEffect(() => {
     if (initialValues) {
       form.reset(initialValues)
@@ -38,14 +51,14 @@ export function ProjectForm({ isLoading, initialValues, onSubmit, projectId, med
             <>
               {/* Desktop: side-by-side */}
               <div className="hidden min-h-0 flex-1 gap-6 lg:flex">
-                <div className="flex-2 min-w-0 overflow-y-auto p-1">
+                <div className="flex-2 min-w-0 overflow-y-auto scrollbar-gutter-stable p-1">
                   <PhotosTabContent
                     projectId={projectId}
                     mediaFiles={mediaFiles}
                     onUpdate={onMediaUpdate}
                   />
                 </div>
-                <div className="flex-1 min-h-0 overflow-y-auto p-1">
+                <div className="flex-1 min-h-0 overflow-y-auto scrollbar-gutter-stable p-1">
                   <MetadataTabContent />
                 </div>
               </div>

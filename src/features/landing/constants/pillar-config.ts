@@ -35,7 +35,7 @@ export const pillarConfigs: Record<PillarSlug, PillarConfig> = {
   'energy-efficient-construction': {
     title: 'Energy-Efficient Construction',
     heroHeadline: 'Your Home Is Costing You More Than It Should',
-    heroSubheadline: 'A complete energy envelope upgrade — insulation, HVAC, windows, solar, roofing — delivered by one contractor, in one mobilization, with compounding savings.',
+    heroSubheadline: 'A complete energy envelope upgrade — insulation, HVAC, windows, roofing — delivered by one contractor, in one mobilization, with compounding savings.',
     stats: [
       { value: '30–55%', label: 'Average Bill Reduction' },
       { value: '$3,200', label: 'In Federal Tax Credits' },
@@ -51,7 +51,7 @@ export const pillarConfigs: Record<PillarSlug, PillarConfig> = {
     ],
     pairings: [
       { trade1Name: 'Insulation', trade1Slug: 'attic-and-basement', trade2Name: 'HVAC', trade2Slug: 'hvac', story: 'Seal the envelope, upgrade the system. Your bills drop from both sides.' },
-      { trade1Name: 'Roofing', trade1Slug: 'roof-and-gutters', trade2Name: 'Solar', trade2Slug: 'solar', story: 'A new roof is the ideal foundation for solar — one install, better ROI.' },
+      { trade1Name: 'Roofing', trade1Slug: 'roof-and-gutters', trade2Name: 'Insulation', trade2Slug: 'attic-and-basement', story: 'While the attic is open, we can upgrade insulation — one crew visit, compounding energy savings.' },
       { trade1Name: 'Windows', trade1Slug: 'windows-and-doors', trade2Name: 'Insulation', trade2Slug: 'attic-and-basement', story: 'Complete envelope sealing — the most cost-effective energy upgrade.' },
     ],
   },
@@ -75,7 +75,7 @@ export const pillarConfigs: Record<PillarSlug, PillarConfig> = {
     pairings: [
       { trade1Name: 'Bathroom', trade1Slug: 'bathroom-remodel', trade2Name: 'Flooring', trade2Slug: 'flooring', story: 'Updating the bathroom? The transition to new flooring in the hallway is natural and seamless.' },
       { trade1Name: 'Kitchen', trade1Slug: 'kitchen-remodel', trade2Name: 'Interior Paint', trade2Slug: 'patch-and-interior-paint', story: 'A remodeled kitchen paired with fresh paint transforms how the whole home feels.' },
-      { trade1Name: 'ADU', trade1Slug: 'adu', trade2Name: 'Engineering & Plans', trade2Slug: 'engineering-plans-and-blueprints', story: 'From blueprints to finished unit — one team, one process.' },
+      { trade1Name: 'Kitchen', trade1Slug: 'kitchen-remodel', trade2Name: 'Flooring', trade2Slug: 'flooring', story: 'New kitchen floors flow naturally into the rest of your home.' },
     ],
   },
 }

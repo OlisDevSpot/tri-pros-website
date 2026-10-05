@@ -1,6 +1,4 @@
-import * as Ably from 'ably'
-
-import { lazyProxy } from '@/shared/config/lazy-proxy'
+import { lazyAsync } from '@/shared/config/lazy-async'
 
 import { getAblyConfig } from './lib/config'
 
@@ -19,9 +17,24 @@ import { getAblyConfig } from './lib/config'
 // connection). The client-side uses Ably Realtime (WebSocket, managed by Ably's infra —
 // no Vercel function time consumed for the connection).
 //
-// Lazy-constructed via `lazyProxy` so missing ABLY_API_KEY doesn't crash app boot —
-// first call to `ably.channels.get(...).publish(...)` throws `NotConfiguredError`.
-//
-// see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
+// The REST client loads and is constructed on the first publish, not at boot: the SDK
+// brings its own HTTP and WebSocket stacks, which no page render needs. A missing
+// ABLY_API_KEY rejects that first publish with `NotConfiguredError` instead of crashing
+// app boot.
 
-export const ably = lazyProxy(() => new Ably.Rest({ key: getAblyConfig().apiKey }))
+function createRealtimeClient() {
+  const rest = lazyAsync(async () => {
+    const { Rest } = await import('ably')
+    return new Rest({ key: getAblyConfig().apiKey })
+  })
+
+  return {
+    async publish(channel: string, event: string, data: unknown): Promise<void> {
+      await (await rest()).channels.get(channel).publish(event, data)
+    },
+  }
+}
+
+export type RealtimeClient = ReturnType<typeof createRealtimeClient>
+
+export const realtimeClient = createRealtimeClient()

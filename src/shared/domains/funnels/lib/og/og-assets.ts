@@ -11,7 +11,7 @@ import 'server-only'
  * dependency in prod. fs reads are local and synchronous-fast. The files must
  * be force-shipped to the serverless function via `outputFileTracingIncludes`
  * in next.config.ts (NFT can't trace a runtime `process.cwd()` path), exactly
- * like the pdfkit AFM/ICC assets. see ../../DOCS.md#funnel-metadata
+ * like the pdfkit AFM/ICC assets.
  */
 const MIME: Record<string, string> = {
   '.jpeg': 'image/jpeg',

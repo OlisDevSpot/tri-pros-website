@@ -1,20 +1,19 @@
 'use client'
 
-import type { PortfolioProject } from '@/shared/entities/projects/types'
-import type { ScopeOrAddon } from '@/shared/services/providers/notion/lib/scopes/schema'
-import type { Trade } from '@/shared/services/providers/notion/lib/trades/schema'
+import type { Scope, Trade } from '@/shared/modules/construction/core/schemas'
+import type { PortfolioProject } from '@/shared/modules/projects/core/types'
 import { AnimatePresence, motion, useInView } from 'motion/react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useMemo, useRef, useState } from 'react'
-import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Badge } from '@/shared/components/ui/badge'
 import { ROOTS } from '@/shared/config/roots'
+import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
 
 interface Props {
   project: PortfolioProject
   index: number
-  allScopes: ScopeOrAddon[]
+  allScopes: Scope[]
   allTrades: Trade[]
 }
 
@@ -24,7 +23,7 @@ export function PortfolioProjectCard({ project: item, index, allScopes, allTrade
   const trades = useMemo(() => {
     const scopeIdSet = new Set(scopeIds)
     const tradeIdSet = new Set(
-      allScopes.filter(s => scopeIdSet.has(s.id)).map(s => s.relatedTrade),
+      allScopes.filter(s => scopeIdSet.has(s.id)).map(s => s.tradeId),
     )
     return allTrades
       .filter(t => tradeIdSet.has(t.id))

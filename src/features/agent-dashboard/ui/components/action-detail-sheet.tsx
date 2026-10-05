@@ -4,6 +4,7 @@ import type { ActionItem } from '@/features/agent-dashboard/dal/server/get-actio
 
 import { formatDistanceToNow } from 'date-fns'
 import { ExternalLinkIcon, MailIcon, PhoneIcon } from 'lucide-react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 import { actionTierConfig } from '@/features/agent-dashboard/constants/action-tiers'
@@ -134,10 +135,10 @@ export function ActionDetailSheet({ item, onClose }: Props) {
                 )}
               </div>
               <Button variant="outline" size="sm" className="mt-2 gap-2" asChild>
-                <a href={ROOTS.dashboard.proposals.byId(item.proposalId!)}>
+                <Link href={ROOTS.dashboard.proposals.byId(item.proposalId!)}>
                   <ExternalLinkIcon size={14} />
                   View Proposal
-                </a>
+                </Link>
               </Button>
             </div>
           )}

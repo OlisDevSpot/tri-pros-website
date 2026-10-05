@@ -1,8 +1,8 @@
 /* eslint-disable no-console */
 // Worked-example self-check for the proposal financials façade.
 // Run: pnpm tsx scripts/verify-financials-facade.ts
-import type { ProjectSection } from '@/shared/entities/proposals/types'
-import { computeProposalFinancials } from '@/shared/entities/proposals/lib/financials'
+import type { ProjectSection } from '@/shared/modules/proposals/core/types'
+import { computeProposalFinancials } from '@/shared/modules/proposals/core/lib/financials'
 
 const sow: ProjectSection['data']['sow'] = [
   {

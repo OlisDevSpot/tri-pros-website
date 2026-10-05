@@ -451,9 +451,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CMD=$(node -e \"const d=require('fs').readFileSync('/dev/stdin','utf8');const j=JSON.parse(d);process.stdout.write(j.tool_input?.command||'')\" 2>/dev/null); case \"$CMD\" in 'git commit'*) cd /home/olis-solutions/olis-v3/nextjs/tri-pros-website && TSC=$(pnpm tsc --noEmit 2>&1) && LINT=$(pnpm lint 2>&1) && exit 0 || echo '{\"decision\":\"block\",\"reason\":\"Pre-commit gate: tsc or lint failed. Fix all errors before committing.\"}' ;; *) exit 0 ;; esac",
+            "command": "CMD=$(node -e \"const d=require('fs').readFileSync('/dev/stdin','utf8');const j=JSON.parse(d);process.stdout.write(j.tool_input?.command||'')\" 2>/dev/null); case \"$CMD\" in 'git commit'*) cd /home/olis-solutions/olis-v3/nextjs/tri-pros-website && TSC=$(pnpm tsc --noEmit 2>&1) && LINT=$(pnpm lint 2>&1) && THEME=$(pnpm theme:check 2>&1) && exit 0 || echo '{\"decision\":\"block\",\"reason\":\"Pre-commit gate: tsc, lint or theme:check failed. Fix all errors before committing.\"}' ;; *) exit 0 ;; esac",
             "timeout": 120,
-            "statusMessage": "Running pre-commit checks (tsc + lint)..."
+            "statusMessage": "Running pre-commit checks (tsc + lint + theme:check)..."
           }
         ]
       }

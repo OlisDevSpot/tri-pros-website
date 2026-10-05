@@ -1,3 +1,6 @@
+import type z from 'zod'
+import type { Pipeline } from '@/shared/constants/enums/pipelines'
+import type { PaginatedResult } from '@/shared/dal/lib/query/paginated-result'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { CustomerEnrichmentRow } from '@/shared/db/schema/customer-enrichment'
 import type { CustomerLeadAttributionRow } from '@/shared/db/schema/customer-lead-attribution'
@@ -7,13 +10,19 @@ import type { ProfileKey } from '@/shared/entities/customers/schemas'
 
 import { and, asc, eq, getTableColumns, isNotNull, isNull } from 'drizzle-orm'
 
-import { dalDbOperation, requireResolvedScope } from '@/shared/dal/server/lib/helpers'
+import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
+import { fieldListInput } from '@/shared/dal/server/lib/query/field-list-input'
+import { paginate } from '@/shared/dal/server/lib/query/output'
+import { buildSearchWhere } from '@/shared/dal/server/lib/query/search'
 import { db } from '@/shared/db'
 import { customerEnrichment } from '@/shared/db/schema/customer-enrichment'
 import { customerLeadAttribution } from '@/shared/db/schema/customer-lead-attribution'
 import { customerProfiles } from '@/shared/db/schema/customer-profiles'
 import { customers } from '@/shared/db/schema/customers'
-import { derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
+import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
+import { CUSTOMER_FIELDS } from '@/shared/entities/customers/dal/customer-fields'
+import { CUSTOMER_FIELD_SQL } from '@/shared/entities/customers/dal/server/customer-field-sql'
+import { derivedPipelineSql, derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
 import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { profileCols } from '@/shared/entities/customers/lib/profile-select'
 import { toNationalDigits } from '@/shared/lib/phone'
@@ -22,48 +31,25 @@ export type { Customer }
 
 export type CustomerWithPhoneGate = Customer & { hasSentProposal: boolean }
 
-// Composed read type for the flattened-spread leftJoin against
-// `customer_profiles` (Addendum B, 2026-07-14). `| null` covers the ~82% of
-// customers with no discovery data collected yet (lazy upsert — no child row).
-// see docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md §10
+// `| null`: the profile child row is lazily upserted, so most customers have none yet.
 export type CustomerWithProfile = CustomerWithPhoneGate & { [K in ProfileKey]: CustomerProfileRow[K] | null }
 
-// Composed read type adding the 1:1 `customer_lead_attribution` child (NESTED,
-// not flattened-spread like customer_profiles — attribution's generic column
-// names like `kind`/`offer` would be ambiguous spread directly onto the
-// customer) and the dynamic-key `customer_enrichment` rows. `attribution` is
-// `null` for the pre-Wave-2 backfill gap / non-upserted rows (leftJoin miss);
-// `enrichment` is `[]` when no funnel steps were captured.
+// `attribution` is nested, not spread: its generic column names (`kind`, `offer`) would be ambiguous on the customer.
 export type CustomerFullView = CustomerWithProfile & {
   attribution: CustomerLeadAttributionRow | null
   enrichment: CustomerEnrichmentRow[]
 }
 
-// Phone-gating column selection. `canSeeUngatedPhone` tells us whether the
-// caller is omni/leads-pool (sees real phone) or agent (sees gated null).
-// When ability is null (SYSTEM_CONTEXT — jobs, webhooks), we ungate fully
-// because SYSTEM-level callers never surface phone to a user.
-// see ../../DOCS.md#phone-visibility-threshold
+// A null ability (SYSTEM_CONTEXT) is ungated: system callers never surface the phone to a user.
 function customerSelectWithGate(ctx: ScopedContext) {
   const { phone: _phone, ...rest } = getTableColumns(customers)
   return {
     ...rest,
-    phone: gatedPhoneSql(canSeeUngatedPhone(ctx.actor)),
+    phone: gatedPhoneSql(canSeeUngatedPhone(ctx.ability)),
     hasSentProposal: hasSentProposalSql(),
   }
 }
 
-// ── Reads ─────────────────────────────────────────────────────────────────────
-
-/**
- * Phone-gated single-customer read, flattened-spread joined against
- * `customer_profiles` (1:1 child, Addendum B) — every profile-trio field
- * reads straight off the composed row — plus the NESTED `customer_lead_attribution`
- * child (leftJoin) and a second query for `customer_enrichment` rows (ordered
- * by `order` ascending — house batch-fetch idiom, no join). Scope applied via
- * ctx.scope (set by the customers entity router's inline scope step, or by
- * buildUserContext for service/job callers).
- */
 export async function getCustomer(
   ctx: ScopedContext,
   input: { id: string },
@@ -78,7 +64,7 @@ export async function getCustomer(
       .from(customers)
       .leftJoin(customerProfiles, eq(customerProfiles.customerId, customers.id))
       .leftJoin(customerLeadAttribution, eq(customerLeadAttribution.customerId, customers.id))
-      .where(and(eq(customers.id, input.id), requireResolvedScope(ctx.scope)))
+      .where(and(eq(customers.id, input.id), ctx.scope ?? undefined))
 
     if (!row) {
       return undefined
@@ -98,12 +84,7 @@ export async function getCustomer(
   })
 }
 
-/**
- * Raw single-row read of the `customer_lead_attribution` 1:1 child. SYSTEM-level
- * (no phone-gating concern — attribution has no PII beyond what's already on
- * `customers`). Used wherever only the attribution snapshot is needed without
- * the full customer join (e.g. ads-reporting queries).
- */
+/** Ungated: attribution carries no PII beyond what is already on `customers`. */
 export async function getCustomerAttribution(
   customerId: string,
 ): Promise<DalReturn<CustomerLeadAttributionRow | undefined>> {
@@ -116,16 +97,10 @@ export async function getCustomerAttribution(
   })
 }
 
-/**
- * Resolve a customer by exact phone (E.164). SYSTEM-level read — ungated,
- * returns the raw row (no phone-gating; callers are webhooks/jobs, never UI).
- * Phones can be shared across household members; returns the first match.
- * Used by the CloudTalk webhook to resolve an inbound STOP's customer.
- */
+/** Ungated (webhook/job callers, never UI). Phones can be shared across a household — first match wins. */
 export async function findCustomerByPhone(phone: string): Promise<DalReturn<Customer | null>> {
   return dalDbOperation(async () => {
-    // Normalize the lookup to the canonical storage shape (bare 10-digit) so an
-    // E.164 / formatted input still matches — see @/shared/lib/phone.
+    // Phone is stored as bare 10 digits, so E.164/formatted input is normalized first.
     const national = toNationalDigits(phone)
     if (!national) {
       return null
@@ -139,10 +114,6 @@ export async function findCustomerByPhone(phone: string): Promise<DalReturn<Cust
   })
 }
 
-/**
- * Is this customer in the derived `leads` pipeline (pre-meeting: active, no
- * project, no meeting)? Used by the enrollment gate chain. SYSTEM-level read.
- */
 export async function isCustomerInLeads(customerId: string): Promise<DalReturn<boolean>> {
   return dalDbOperation(async () => {
     const [row] = await db
@@ -154,12 +125,7 @@ export async function isCustomerInLeads(customerId: string): Promise<DalReturn<b
   })
 }
 
-/**
- * Enrollment-eligible leads for a lead source (bulk "enroll all"): in the
- * `leads` pipeline, not DNC'd, with a phone. The per-customer "already
- * enrolled?" gate is applied downstream by the enroll op (idempotent skip).
- * SYSTEM-level read — returns raw rows (no phone-gating; job-only).
- */
+/** Ungated (job-only). The "already enrolled?" gate is applied downstream by the enroll op. */
 export async function listEnrollableLeadsBySource(
   leadSourceId: string,
 ): Promise<DalReturn<Customer[]>> {
@@ -176,24 +142,54 @@ export async function listEnrollableLeadsBySource(
   })
 }
 
-/** Phone-gated list of all customers visible to ctx. */
-export async function listCustomers(
-  ctx: ScopedContext,
-): Promise<DalReturn<CustomerWithPhoneGate[]>> {
+export const customerListInputSchema = fieldListInput(CUSTOMER_FIELDS, { pagination: true })
+export type CustomerListInput = z.infer<typeof customerListInputSchema>
+
+export interface CustomerListRow {
+  id: string
+  name: string
+  email: string | null
+  createdAt: string
+  /** The derived five-bucket pipeline, not the stored three-bucket column. */
+  pipeline: Pipeline
+  leadSourceId: string | null
+  leadSourceName: string | null
+  leadSourceSlug: string | null
+}
+
+/** One customers list for every table: callers scope through `ctx.scope` and pin a source or segment through fixed filters. */
+export async function listCustomers(ctx: ScopedContext, input: CustomerListInput): Promise<DalReturn<PaginatedResult<CustomerListRow>>> {
   return dalDbOperation(async () => {
-    const rows = await db
-      .select(customerSelectWithGate(ctx))
-      .from(customers)
-      .where(requireResolvedScope(ctx.scope))
-    return rows as CustomerWithPhoneGate[]
+    const where = and(
+      ctx.scope ?? undefined,
+      buildSearchWhere(input.search, [customers.name, customers.email]),
+      CUSTOMER_FIELD_SQL.where(input.filters),
+    )
+
+    return paginate({
+      query: () => db
+        .select({
+          id: customers.id,
+          name: customers.name,
+          email: customers.email,
+          createdAt: customers.createdAt,
+          pipeline: derivedPipelineSql(),
+          leadSourceId: customers.leadSourceId,
+          leadSourceName: leadSourcesTable.name,
+          leadSourceSlug: leadSourcesTable.slug,
+        })
+        .from(customers)
+        .leftJoin(leadSourcesTable, eq(leadSourcesTable.id, customers.leadSourceId))
+        .where(where)
+        .orderBy(...CUSTOMER_FIELD_SQL.orderBy(input.sort))
+        .limit(input.pagination.limit)
+        .offset(input.pagination.offset),
+      count: () => db.$count(customers, where),
+    })
   })
 }
 
-// ── System-level upserts ──────────────────────────────────────────────────────
-// Runs under SYSTEM_CONTEXT (funnel/webhook ingestion). Writes the customers
-// table directly because it predates the entity-server pattern and is
-// scheduled for migration to customerCrud.create in a follow-up.
-
+// TODO: migrate to customerCrud.create — writes `customers` directly because it predates the entity-server pattern.
 interface HomeownerData {
   name: string
   email: string

@@ -1,4 +1,9 @@
-import type { DateRange, NumberRange } from '@/shared/dal/server/lib/query/schemas'
+import type { DecorateQueryProcedure, inferOutput } from '@trpc/tanstack-react-query'
+import type { CalendarViewType } from '@/shared/constants/enums'
+import type { DataViewWindowKind } from '@/shared/dal/lib/query/data-view-query-config'
+import type { FilterValue as FieldFilterValue, FieldList, FilterOption, RuntimeOptionId, SortDir, SortId, ToolbarFilterId } from '@/shared/dal/lib/query/field-list'
+import type { PaginatedResult } from '@/shared/dal/lib/query/paginated-result'
+import type { DateRange, NumberRange } from '@/shared/dal/lib/query/range-schemas'
 
 /**
  * Time-preset descriptor for `date-range` filter type. Click a preset → fill
@@ -9,14 +14,6 @@ export interface TimePreset {
   label: string
   value: string
   getRange: () => DateRange
-}
-
-/**
- * Single-value option for `select` and `multi-select` filter types.
- */
-export interface FilterOption {
-  label: string
-  value: string
 }
 
 /**
@@ -110,13 +107,11 @@ export interface PaginatedQueryResult<TRow> {
   setPage: (page: number) => void
   setPageSize: (pageSize: number) => void
 
-  // -- Search (debounced internally) --
-  /** Raw input value — bind to a controlled `<input>`. */
-  searchInput: string
-  /** Updates raw input and resets `page` to 1 atomically. */
-  setSearchInput: (value: string) => void
-  /** Debounced value the underlying query actually uses. */
-  searchDebounced: string
+  // -- Search --
+  /** The committed search; the toolbar's search box debounces before it sets it. */
+  search: string
+  /** Commits the search and resets `page` to 1 atomically. */
+  setSearch: (value: string) => void
 
   // -- Sort --
   sortBy: string | undefined
@@ -134,18 +129,95 @@ export interface PaginatedQueryResult<TRow> {
   activeFilterCount: number
 
   // -- Query state --
-  isLoading: boolean
+  /** True only inside a `DataViewBoundary` fallback: no rows exist yet, and the view draws its loading state. */
+  isPending: boolean
+  /** The rows belong to an older URL state while the requested one loads; tables dim them. */
+  isStale: boolean
+  /** A background refetch (an invalidation or `refresh()`); the rows stay. */
   isFetching: boolean
-  isPlaceholderData: boolean
-  isError: boolean
-  error: unknown
 
   // -- Refresh --
   /**
    * Invalidate every cached page of this table's tRPC procedure and refetch
    * the active page(s). Resolves when the refetches settle — pull-to-refresh
-   * awaits this; the toolbar button spins on `isFetching`. See
-   * `docs/superpowers/specs/2026-08-11-records-table-refresh-design.md` §4.
+   * awaits this; the toolbar button spins on `isFetching`.
    */
   refresh: () => Promise<void>
+}
+
+/** Every data-view read returns `{ rows, total }`; this reads the row type off the tRPC procedure. */
+export type DataViewRowOf<TProcedure extends DecorateQueryProcedure<any>> = inferOutput<TProcedure> extends PaginatedResult<infer TRow> ? TRow : never
+
+export interface DataViewFilterSort<F extends FieldList, T extends ToolbarFilterId<F> = ToolbarFilterId<F>> {
+  fields: F
+  toolbar: readonly T[]
+  /** Active toolbar values only. */
+  filters: { [K in T]?: FieldFilterValue<F, K> }
+  /** Loaded choices for the toolbar's runtime-option filters; a missing entry (loading, refused, not permitted) hides that filter. */
+  options: { [K in Extract<RuntimeOptionId<F>, T>]?: readonly FilterOption[] }
+  activeFilterCount: number
+  /** Resets the page to 1; never moves a date window. */
+  setFilter: <K extends T>(id: K, value: FieldFilterValue<F, K> | undefined) => void
+  /** Clears toolbar filters, search and sort; leaves the window alone. */
+  clearFilters: () => void
+  /** The committed search; the toolbar's search box debounces before it sets it. */
+  search: string
+  /** Resets the page to 1; never moves a date window. */
+  setSearch: (value: string) => void
+  sortBy: SortId<F> | undefined
+  sortDir: SortDir | undefined
+  setSort: (sortBy: SortId<F> | undefined, sortDir?: SortDir) => void
+}
+
+export interface PageWindowControls {
+  kind: 'page'
+  page: number
+  pageSize: number
+  pageSizeOptions: readonly number[]
+  pageCount: number
+  setPage: (page: number) => void
+  setPageSize: (pageSize: number) => void
+}
+
+export interface DateWindowControls {
+  kind: 'date'
+  /** `YYYY-MM-DD` in the business timezone. */
+  anchor: string
+  view: CalendarViewType
+  range: { from: string, to: string }
+  cap: number
+  /**
+   * True while this window's own rows aren't shown: inside a `DataViewBoundary` fallback, or while a window step, a
+   * filter or a search loads (the shown rows belong to another key). Date views draw skeletons, never those rows.
+   */
+  isPending: boolean
+  /** `undefined` returns to today. */
+  setAnchor: (calendarDay: string | undefined) => void
+  setView: (view: CalendarViewType) => void
+}
+
+export type DataViewWindowControls<K extends DataViewWindowKind = DataViewWindowKind> = Extract<
+  PageWindowControls | DateWindowControls | { kind: 'whole-list' },
+  { kind: K }
+>
+
+/** What `useDataViewQuery` returns: plain data and setters, safe to pass down as props. */
+export interface DataViewQueryResult<
+  TRow,
+  F extends FieldList,
+  T extends ToolbarFilterId<F> = ToolbarFilterId<F>,
+  K extends DataViewWindowKind = DataViewWindowKind,
+> {
+  rows: TRow[]
+  total: number
+  /** True only inside a `DataViewBoundary` fallback: no rows exist yet, and the view draws its loading state. */
+  isPending: boolean
+  /** The rows belong to an older URL state while the requested one loads; tables dim them. */
+  isStale: boolean
+  /** A background refetch (an invalidation or `refresh()`); the rows stay. */
+  isFetching: boolean
+  /** Invalidates every cached input of this procedure; resolves when the refetch settles. */
+  refresh: () => Promise<void>
+  filterSort: DataViewFilterSort<F, T>
+  window: DataViewWindowControls<K>
 }

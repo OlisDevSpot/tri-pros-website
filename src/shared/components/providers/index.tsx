@@ -2,6 +2,7 @@
 
 import { AbilityProvider } from './casl-provider'
 import { NuqsProvider } from './nuqs-adapter'
+import { PressFeedbackProvider } from './press-feedback-provider'
 import { RealtimeProvider } from './realtime-provider'
 import { ThemeProvider } from './theme-provider'
 import { ToasterProvider } from './toaster-provider'
@@ -24,6 +25,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 {children}
               </TooltipProvider>
               <ToasterProvider />
+              <PressFeedbackProvider />
             </ThemeProvider>
           </NuqsProvider>
         </AbilityProvider>

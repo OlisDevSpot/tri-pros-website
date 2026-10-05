@@ -1,6 +1,6 @@
 'use client'
 
-import type { CalendarViewType } from '@/shared/components/calendar/types'
+import type { CalendarViewType } from '@/shared/constants/enums'
 
 import { PlusIcon, SettingsIcon } from 'lucide-react'
 
@@ -44,7 +44,7 @@ export function ScheduleControlsBar({
           </div>
 
           <div className="px-4 py-3">
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               View
             </p>
             <div className="flex rounded-md border">
@@ -79,7 +79,7 @@ export function ScheduleControlsBar({
             <>
               <Separator />
               <div className="px-4 py-3">
-                <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Visible Days
                 </p>
                 <label className="flex cursor-pointer items-center gap-2">
@@ -93,7 +93,7 @@ export function ScheduleControlsBar({
           <Separator />
 
           <div className="px-4 py-3">
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Calendar Sync
             </p>
             <SyncStatusBadge />

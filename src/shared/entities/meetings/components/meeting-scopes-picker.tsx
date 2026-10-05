@@ -1,7 +1,8 @@
 'use client'
 
 import type { TradeSelection } from '@/shared/entities/meetings/schemas'
-import type { Trade } from '@/shared/services/providers/notion/lib/trades/schema'
+import type { Trade } from '@/shared/modules/construction/core/schemas'
+import { useQuery } from '@tanstack/react-query'
 import { PlusIcon, Trash2Icon } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { Label } from '@/shared/components/ui/label'
@@ -20,8 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
-import { useGetScopes } from '@/shared/services/providers/notion/dal/scopes/hooks/queries/use-get-scopes'
-import { useGetAllTrades } from '@/shared/services/providers/notion/dal/trades/hooks/queries/use-get-trades'
+import { useTRPC } from '@/trpc/helpers'
 
 interface ScopeRowProps {
   entry: TradeSelection
@@ -33,10 +33,11 @@ interface ScopeRowProps {
 }
 
 function ScopeRow({ entry, index, allTrades, usedTradeIds, onUpdate, onRemove }: ScopeRowProps) {
-  const scopesQuery = useGetScopes(
-    { query: entry.tradeId, filterProperty: 'relatedTrade' },
+  const trpc = useTRPC()
+  const scopesQuery = useQuery(trpc.constructionRouter.scopes.byTrade.queryOptions(
+    { tradeId: entry.tradeId },
     { enabled: !!entry.tradeId },
-  )
+  ))
 
   const availableScopes = scopesQuery.data ?? []
   const selectedScopeIds = entry.selectedScopes.map(s => s.id)
@@ -118,7 +119,8 @@ interface MeetingScopePickerProps {
 }
 
 export function MeetingScopesPicker({ value, onChange }: MeetingScopePickerProps) {
-  const tradesQuery = useGetAllTrades()
+  const trpc = useTRPC()
+  const tradesQuery = useQuery(trpc.constructionRouter.trades.getAll.queryOptions())
   const allTrades = tradesQuery.data ?? []
 
   const usedTradeIds = new Set(value.map(e => e.tradeId).filter(Boolean))

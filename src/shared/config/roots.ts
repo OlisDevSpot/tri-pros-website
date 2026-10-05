@@ -1,4 +1,3 @@
-// see ../../../docs/codebase-conventions/urls-and-origins.md
 // MUST stay type-only. roots.ts is loaded by next.config.ts in a CommonJS
 // transpile that does NOT resolve `@/` path aliases for runtime (value)
 // imports — a value import here breaks `next dev`/`next build`. (services.ts
@@ -69,6 +68,7 @@ const APP_ROOTS = {
     proposals: {
       root: () => '/dashboard/proposals',
       new: () => `${APP_ROOTS.dashboard.proposals.root()}/new`,
+      newForMeeting: (meetingId: string) => `${APP_ROOTS.dashboard.proposals.new()}?meetingId=${meetingId}`,
       byId: (id: string) => `${APP_ROOTS.dashboard.proposals.root()}/${id}`,
     },
     projects: {
@@ -81,18 +81,20 @@ const APP_ROOTS = {
     },
     schedule: () => '/dashboard/schedule',
     /**
-     * Schedule URL with the nuqs params that trigger scroll + highlight in
-     * use-schedule-highlight.ts. Single source of truth — used by the
-     * "View in Schedule" entity action, GCal event descriptions, and push
-     * notifications. If the param shape ever changes, change here only.
+     * "View in Schedule": opens the meetings calendar on the meeting's LA day (`show`, `s_d` are the
+     * schedule's date-window keys, prefix `s` in schedule-queries.ts) and highlights it.
+     * Used by the entity action, GCal event descriptions and push notifications; change the shape here only.
      */
     scheduleWithMeetingHighlight: (
       meetingId: string,
       scheduledFor?: string | null,
     ) => {
       const search = new URLSearchParams({ highlightMeeting: meetingId })
-      if (scheduledFor) {
-        search.set('highlightDate', scheduledFor)
+      const instant = scheduledFor ? new Date(scheduledFor) : null
+      if (instant && !Number.isNaN(instant.getTime())) {
+        search.set('show', 'meetings')
+        // businessDayKey() inlined: this file can't value-import (see the note at the top).
+        search.set('s_d', instant.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' }))
       }
       return `/dashboard/schedule?${search.toString()}`
     },
@@ -101,6 +103,7 @@ const APP_ROOTS = {
     campaigns: () => '/dashboard/campaigns',
     team: () => '/dashboard/team',
     analytics: () => '/dashboard/analytics',
+    calculators: () => '/dashboard/calculators',
   },
   public: {
     intake: () => '/intake',

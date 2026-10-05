@@ -2,19 +2,24 @@ import { TRPCError } from '@trpc/server'
 import { inArray } from 'drizzle-orm'
 import z from 'zod'
 
+import { LIVE_MEETING_OUTCOMES } from '@/shared/constants/enums'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema'
-import { getByIdWithJoins, listMeetings, meetingListInputSchema } from '@/shared/entities/meetings/dal/server/queries'
+import { getByIdWithJoins, listMeetings, listMeetingsForProject, meetingListInputSchema } from '@/shared/entities/meetings/dal/server/queries'
 import { createTRPCRouter } from '@/trpc/init'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 
+import { projectProcedure } from '../projects.router/procedures'
 import { meetingProcedure } from './procedures'
 
 export const readsRouter = createTRPCRouter({
+  // `liveOnly` stays a top-level input and becomes a fixed filter here, so no toolbar ever shows it.
   list: meetingProcedure
-    .input(meetingListInputSchema)
+    .input(meetingListInputSchema.extend({ liveOnly: z.boolean().optional() }))
     .query(async ({ ctx, input }) => {
-      return dalToTrpc(await listMeetings(ctx, input))
+      const { liveOnly, ...query } = input
+      const filters = liveOnly ? { ...query.filters, outcome: LIVE_MEETING_OUTCOMES } : query.filters
+      return dalToTrpc(await listMeetings(ctx, { ...query, filters }))
     }),
 
   getByIdWithJoins: meetingProcedure
@@ -26,6 +31,11 @@ export const readsRouter = createTRPCRouter({
       }
       return row
     }),
+
+  // Scoped by the project, not the meeting: a rep who can see the project sees every meeting that sold it.
+  listForProject: projectProcedure
+    .input(z.object({ projectId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => dalToTrpc(await listMeetingsForProject(ctx, input))),
 
   getInternalUsers: meetingProcedure
     .query(async ({ ctx }) => {

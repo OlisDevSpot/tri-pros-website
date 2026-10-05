@@ -2,10 +2,11 @@
 
 import type { ReactNode } from 'react'
 
-import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
+import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
 
-import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
+import { EntityActionMenu } from '@/shared/components/entities/entity-actions/ui/entity-action-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
+import { cn } from '@/shared/lib/utils'
 
 interface PrimaryCellProps<TEntity> {
   title: ReactNode
@@ -13,6 +14,7 @@ interface PrimaryCellProps<TEntity> {
   entity?: TEntity
   actions?: EntityActionConfig<TEntity>[]
   tooltipContent?: ReactNode
+  className?: string
 }
 
 export function PrimaryCell<TEntity>({
@@ -21,9 +23,10 @@ export function PrimaryCell<TEntity>({
   entity,
   actions,
   tooltipContent,
+  className,
 }: PrimaryCellProps<TEntity>) {
   const stack = (
-    <div className="min-w-0 max-w-55 space-y-0.5">
+    <div className={cn('min-w-0 max-w-55 space-y-0.5', className)}>
       {typeof title === 'string'
         ? (
             <p className="truncate text-sm font-medium leading-tight text-foreground">{title}</p>

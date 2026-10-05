@@ -16,7 +16,7 @@ export * from './benefits'
 export * from './finance-options'
 export * from './finance-providers'
 export * from './materials'
-export * from './media-files'
+export * from './project-media-files'
 export * from './meeting-participants'
 export * from './meetings'
 export * from './projects'
@@ -37,6 +37,7 @@ export * from './x-trade-benefits'
 export * from './proposal-views'
 export * from './customer-notes'
 export * from './lead-sources'
+export * from './lead-source-monthly-spend'
 export * from './qb-auth-tokens'
 export * from './bina-webhook-logs'
 export * from './push-subscriptions'
@@ -48,9 +49,9 @@ export * from './voip-messages'
 export * from './voip-link-tokens'
 export * from './app-settings'
 
-// voip-campaigns (CloudTalk)
+// voip-campaigns (JustCall dialer)
 export * from './voip-campaigns'
-export * from './voip-contact-attributes'
+export * from './voip-contact-fields'
 export * from './voip-campaign-contacts'
 
 // applications

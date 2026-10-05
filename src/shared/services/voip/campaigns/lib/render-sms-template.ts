@@ -3,7 +3,7 @@ import type { SmsMergeVars } from '@/shared/entities/voip-campaigns/lib/sms-merg
 import { SMS_MERGE_TOKENS } from '@/shared/entities/voip-campaigns/lib/sms-merge-tokens'
 
 // Pure {{token}} substitution for campaign SMS bodies. Renders in-app because
-// CloudTalk's /sms/send takes a literal body (no contact merge). Tokens come
+// The dialer's SMS send takes a literal body (no contact merge). Tokens come
 // from the shared registry; unknown tokens are left untouched. No I/O.
 
 const RESOLVERS = new Map(SMS_MERGE_TOKENS.map(t => [t.token, t.resolve]))

@@ -7,6 +7,7 @@ import type { HTTPTRPCContext } from '@/trpc/types'
 import { headers as getHeaders } from 'next/headers'
 import { cache } from 'react'
 
+import { getCachedSession } from '@/shared/domains/auth/lib/get-cached-session'
 import { auth } from '@/shared/domains/auth/server'
 
 export const createHTTPTRPCContext = cache(async (ctx: { req?: Request, resHeaders: Headers }): Promise<HTTPTRPCContext> => {
@@ -20,7 +21,6 @@ export const createHTTPTRPCContext = cache(async (ctx: { req?: Request, resHeade
     session,
     ability: null,
     scope: null,
-    actor: null,
     req: ctx.req,
     resHeaders: ctx.resHeaders,
   }
@@ -28,11 +28,17 @@ export const createHTTPTRPCContext = cache(async (ctx: { req?: Request, resHeade
 
 // ─── createRSCTRPCContext ────────────────────────────────────────────────────
 // Context for server-component prefetching via the options proxy in
-// `src/trpc/server.ts`. Same session resolution as the HTTP adapter (headers
-// from next/headers), but with no adapter Request: `req` stays undefined.
-// Shareable-token procedures don't read `req` anyway — they pull `token` out
-// of the procedure input via `getRawInput()` (shareable-middleware.ts) — so
-// `req: undefined` is safe here either way; `ctx.req` currently has no live
-// readers. React cache() dedupes per request.
-export const createRSCTRPCContext = cache(async (): Promise<HTTPTRPCContext> =>
-  createHTTPTRPCContext({ resHeaders: new Headers() }))
+// `src/trpc/server.ts`. It takes the session from getCachedSession, the
+// request memo the dashboard layout and protectDashboardPage share, so a
+// prefetching page reads the session once instead of twice in sequence
+// before its first query starts. There is no adapter Request: `req` stays
+// undefined, which is safe because shareable-token procedures pull `token`
+// out of the procedure input via `getRawInput()` (shareable-middleware.ts),
+// never `req`.
+export const createRSCTRPCContext = cache(async (): Promise<HTTPTRPCContext> => ({
+  session: await getCachedSession(),
+  ability: null,
+  scope: null,
+  req: undefined,
+  resHeaders: new Headers(),
+}))

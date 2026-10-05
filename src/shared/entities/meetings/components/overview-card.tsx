@@ -2,21 +2,24 @@
 
 import type { ReactNode } from 'react'
 
+import type { MeetingOutcome } from '@/shared/constants/enums'
 import type { Meeting } from '@/shared/db/schema/meetings'
 import type { Proposal } from '@/shared/db/schema/proposals'
-import type { SowTradeScope } from '@/shared/entities/proposals/types'
+import type { SowTradeScope } from '@/shared/modules/proposals/core/types'
 
-import { format, formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNow } from 'date-fns'
 import { CalendarIcon, FileTextIcon } from 'lucide-react'
 import React, { createContext, useCallback, useMemo } from 'react'
 
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
+import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
-import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
-import { EntityList } from '@/shared/components/entity-list/ui/entity-list'
+import { EntityActionMenu } from '@/shared/components/entities/entity-actions/ui/entity-action-menu'
+import { EntityList } from '@/shared/components/entities/entity-list/ui/entity-list'
 import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
 import { Badge } from '@/shared/components/ui/badge'
+import { selectableMeetingOutcomes } from '@/shared/constants/enums'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import {
   MEETING_LIST_STATUS_COLORS,
@@ -24,11 +27,12 @@ import {
   MEETING_OUTCOME_LABELS,
 } from '@/shared/entities/meetings/constants/status-colors'
 import { useMeetingActionConfigs } from '@/shared/entities/meetings/hooks/use-meeting-action-configs'
-import { ProposalOverviewCard } from '@/shared/entities/proposals/components/overview-card'
 import { UserOverviewCard } from '@/shared/entities/users/components/overview-card'
-import { useModalStore } from '@/shared/hooks/use-modal-store'
+import { formatBusinessTime } from '@/shared/lib/business-time'
 import { formatMeetingShortStamp } from '@/shared/lib/formatters'
+import { openModal } from '@/shared/lib/open-modal'
 import { cn } from '@/shared/lib/utils'
+import { ProposalOverviewCard } from '@/shared/modules/proposals/core/components/overview-card'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -44,7 +48,7 @@ export type MeetingOverviewCardProposal
 
 export type MeetingOverviewCardData
   = Pick<Meeting, 'id'>
-    & Partial<Pick<Meeting, 'scheduledFor' | 'createdAt' | 'meetingType' | 'meetingOutcome' | 'ownerId' | 'customerId'>>
+    & Partial<Pick<Meeting, 'scheduledFor' | 'confirmedAt' | 'createdAt' | 'meetingType' | 'meetingOutcome' | 'ownerId' | 'customerId'>>
     & {
       ownerName?: string | null
       ownerImage?: string | null
@@ -60,7 +64,7 @@ export type MeetingOverviewCardData
     }
 
 export type MeetingFieldConfig
-  = | { field: 'outcome', variant?: 'badge' | 'dot' }
+  = | { field: 'outcome', variant?: 'badge' | 'dot' | 'editable' }
     | { field: 'scheduledDate', format?: 'full' | 'date-only' | 'time-only' | 'relative' | 'short-stamp', onChange?: (date: Date) => void }
     | { field: 'type' }
     | { field: 'proposalCount' }
@@ -71,6 +75,8 @@ interface MeetingOverviewCardContextValue {
   meeting: MeetingOverviewCardData
   customerId: string
   actions: ReturnType<typeof useMeetingActionConfigs>['actions']
+  /** Shared with the ⋯ menu's "Set Outcome" — same reason-dialog flow. */
+  changeOutcome: (meetingId: string, outcome: MeetingOutcome) => Promise<void>
 }
 
 const MeetingOverviewCardContext = createContext<MeetingOverviewCardContextValue | null>(null)
@@ -102,18 +108,15 @@ function MeetingOverviewCardRoot({
   onAssignOwner,
   onAssignProject,
 }: MeetingOverviewCardProps) {
-  const { open: openModal, setModal } = useModalStore()
-
   const openProfile = useCallback(() => {
-    setModal({
+    openModal({
       accessor: 'CustomerProfile',
       Component: CustomerProfileModal,
       props: { customerId, defaultTab: 'meetings' as const, highlightMeetingId: meeting.id },
     })
-    openModal()
-  }, [customerId, meeting.id, setModal, openModal])
+  }, [customerId, meeting.id])
 
-  const { actions, DeleteConfirmDialog, AssignOwnerDialog, OutcomeReasonDialog } = useMeetingActionConfigs({
+  const { actions, DeleteConfirmDialog, AssignOwnerDialog, OutcomeReasonDialog, RescheduleDialog, changeOutcome } = useMeetingActionConfigs({
     onView: () => openProfile(),
     onAssignOwner: onAssignOwner
       ? () => onAssignOwner(meeting)
@@ -124,8 +127,8 @@ function MeetingOverviewCardRoot({
   })
 
   const value = useMemo<MeetingOverviewCardContextValue>(
-    () => ({ meeting, customerId, actions }),
-    [meeting, customerId, actions],
+    () => ({ meeting, customerId, actions, changeOutcome }),
+    [meeting, customerId, actions, changeOutcome],
   )
 
   const handleClick = useCallback((e: React.MouseEvent) => {
@@ -154,6 +157,7 @@ function MeetingOverviewCardRoot({
       <DeleteConfirmDialog />
       <AssignOwnerDialog />
       <OutcomeReasonDialog />
+      <RescheduleDialog />
       <div className={className} onClick={handleClick}>
         {children}
       </div>
@@ -215,7 +219,7 @@ function Owner({
             {avatarNode}
           </div>
         </HybridPopoverTooltip>
-        <span className="text-[10px] text-muted-foreground truncate">{meeting.ownerName}</span>
+        <span className="text-xs text-muted-foreground truncate">{meeting.ownerName}</span>
       </div>
     )
   }
@@ -247,7 +251,7 @@ function CreatedAt({ className }: { className?: string }) {
     return null
   }
   return (
-    <span className={cn('text-[10px] text-muted-foreground/60 shrink-0', className)}>
+    <span className={cn('text-xs text-muted-foreground/60 shrink-0', className)} suppressHydrationWarning>
       {formatDistanceToNow(new Date(meeting.createdAt), { addSuffix: true })}
     </span>
   )
@@ -262,7 +266,7 @@ function Phone({ className }: { className?: string }) {
   }
   return (
     <div className={cn('min-w-0 text-muted-foreground', className)} onClick={e => e.stopPropagation()}>
-      <PhoneAction phone={meeting.customerPhone} className="text-[11px]" />
+      <PhoneAction phone={meeting.customerPhone} className="text-xs" />
     </div>
   )
 }
@@ -282,7 +286,7 @@ function Address({ children, className }: { children?: ReactNode, className?: st
 
   return (
     <div className={cn('min-w-0 text-muted-foreground', className)} onClick={e => e.stopPropagation()}>
-      <AddressAction address={fullAddress} className="text-[11px]">
+      <AddressAction address={fullAddress} className="text-xs">
         {children}
       </AddressAction>
     </div>
@@ -291,8 +295,8 @@ function Address({ children, className }: { children?: ReactNode, className?: st
 
 // ── Fields sub-component ───────────────────────────────────────────────────────
 
-function OutcomeField({ variant = 'badge' }: { variant?: 'badge' | 'dot' }) {
-  const { meeting } = useMeetingOverviewCard()
+function OutcomeField({ variant = 'badge' }: { variant?: 'badge' | 'dot' | 'editable' }) {
+  const { meeting, changeOutcome } = useMeetingOverviewCard()
   const outcome = meeting.meetingOutcome ?? 'not_set'
 
   if (variant === 'dot') {
@@ -303,6 +307,28 @@ function OutcomeField({ variant = 'badge' }: { variant?: 'badge' | 'dot' }) {
           MEETING_OUTCOME_DOT_COLORS[outcome],
         )}
       />
+    )
+  }
+
+  // Inline-editable badge: clicking opens the same outcome picker (and reason
+  // dialog) as the ⋯ menu's "Set Outcome". stopPropagation keeps the card's
+  // profile-modal click from firing, exactly like ScheduledDateField.
+  if (variant === 'editable') {
+    return (
+      <div onClick={e => e.stopPropagation()}>
+        <StatusDropdownCell<MeetingOutcome>
+          currentStatus={outcome}
+          statuses={selectableMeetingOutcomes}
+          colorMap={MEETING_LIST_STATUS_COLORS}
+          onChange={value => void changeOutcome(meeting.id, value)}
+          formatLabel={value => MEETING_OUTCOME_LABELS[value] ?? value.replace(/_/g, ' ')}
+          triggerClassName="gap-1 px-1.5 py-0.5 text-xs font-normal"
+          triggerAriaLabel="Change meeting outcome"
+          showCaret
+          optionStyle="dot"
+          dotColorMap={MEETING_OUTCOME_DOT_COLORS}
+        />
+      </div>
     )
   }
 
@@ -332,13 +358,13 @@ function ScheduledDateField({
   let display: string
   switch (dateFormat) {
     case 'full':
-      display = format(date, 'MMM d, yyyy · h:mm a')
+      display = `${formatBusinessTime(date, { month: 'short', day: 'numeric', year: 'numeric' })} · ${formatBusinessTime(date, { hour: 'numeric', minute: '2-digit' })}`
       break
     case 'date-only':
-      display = format(date, 'MMM d, yyyy')
+      display = formatBusinessTime(date, { month: 'short', day: 'numeric', year: 'numeric' })
       break
     case 'time-only':
-      display = format(date, 'h:mm a')
+      display = formatBusinessTime(date, { hour: 'numeric', minute: '2-digit' })
       break
     case 'relative':
       display = formatDistanceToNow(date, { addSuffix: true })
@@ -362,11 +388,11 @@ function ScheduledDateField({
               onChange(d)
             }
           }}
-          className="h-auto p-0 text-[11px]"
+          className="h-auto p-0 text-xs"
         >
-          <Badge variant="secondary" className="gap-1 px-1.5 py-0.5 text-[11px] font-normal hover:bg-secondary/80 cursor-pointer">
+          <Badge variant="secondary" className="gap-1 px-1.5 py-0.5 text-xs font-normal hover:bg-secondary/80 cursor-pointer">
             <CalendarIcon className="h-3 w-3 shrink-0" />
-            <span>{display}</span>
+            <span suppressHydrationWarning={dateFormat === 'relative'}>{display}</span>
           </Badge>
         </DateTimePicker>
       </div>
@@ -374,7 +400,7 @@ function ScheduledDateField({
   }
 
   return (
-    <span className="text-xs text-muted-foreground shrink-0">
+    <span className="text-xs text-muted-foreground shrink-0" suppressHydrationWarning={dateFormat === 'relative'}>
       {display}
     </span>
   )
@@ -399,7 +425,7 @@ function ProposalCountField() {
     return null
   }
   return (
-    <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground shrink-0">
+    <span className="flex items-center gap-0.5 text-xs text-muted-foreground shrink-0">
       <FileTextIcon className="size-3" />
       {count}
     </span>
@@ -452,12 +478,12 @@ function Trades({ max, className }: { max?: number, className?: string }) {
   return (
     <div className={cn('flex flex-wrap gap-1', className)}>
       {visible.map(trade => (
-        <Badge key={trade} variant="outline" className="text-[10px] font-normal">
+        <Badge key={trade} variant="outline" className="text-xs font-normal">
           {trade}
         </Badge>
       ))}
       {remaining > 0 && (
-        <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground">
+        <Badge variant="outline" className="text-xs font-normal text-muted-foreground">
           {`+${remaining}`}
         </Badge>
       )}
@@ -537,7 +563,7 @@ function DefaultProposalRow({ proposal }: { proposal: MeetingOverviewCardProposa
     >
       <ProposalOverviewCard.StatusIcon size="sm" />
       <ProposalOverviewCard.Label />
-      <ProposalOverviewCard.StatusBadge className="ml-auto text-[10px]" />
+      <ProposalOverviewCard.StatusBadge className="ml-auto text-xs" />
     </ProposalOverviewCard>
   )
 }

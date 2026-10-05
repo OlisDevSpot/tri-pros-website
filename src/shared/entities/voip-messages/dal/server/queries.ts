@@ -1,15 +1,13 @@
 // Voip-messages business queries — composite-key thread fetch + other
 // custom reads that don't fit through generic getById/listAll.
 //
-// see ../../DOCS.md for invariants (composite thread key)
-// see docs/codebase-conventions/dal-conventions.md
 
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { VoipMessage } from '@/shared/db/schema/voip-messages'
 
 import { and, desc, eq } from 'drizzle-orm'
 
-import { dalDbOperation, requireResolvedScope } from '@/shared/dal/server/lib/helpers'
+import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { db } from '@/shared/db'
 import { voipMessages } from '@/shared/db/schema/voip-messages'
 
@@ -37,7 +35,7 @@ export async function fetchThread(
       .where(and(
         eq(voipMessages.voipDidId, input.voipDidId),
         eq(voipMessages.remoteE164, input.remoteE164),
-        requireResolvedScope(ctx.scope),
+        ctx.scope ?? undefined,
       ))
       .orderBy(desc(voipMessages.createdAt))
       .limit(limit)

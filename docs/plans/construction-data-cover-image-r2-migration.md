@@ -27,10 +27,10 @@ DevTools Network panel on a real meeting (verified 2026-06-02):
   - `photo-1549448046-…?ixlib=rb-1.2.1&q=80` — **3.5 MB**
   - `photo-1600607688066-…?ixlib=rb-4.0.3&q=85` — **2.8 MB**
   - `_mg_4410_1600x1000.jpg?width=800&height=800&quality=100` — **1.3 MB**
-- Card-render sites — both emit raw `<img>` with no srcSet/sizes/dims:
-  - [`src/features/meeting-flow/ui/components/steps/trade-card.tsx:58-68`](../../src/features/meeting-flow/ui/components/steps/trade-card.tsx#L58-L68)
-  - [`src/features/meeting-flow/ui/components/steps/scope-card.tsx:54-65`](../../src/features/meeting-flow/ui/components/steps/scope-card.tsx#L54-L65)
-- These are the **only** two render sites of `coverImageUrl` in the codebase (`grep -rn "coverImageUrl" src/` returns 2 render sites + adapter/schema/router files).
+- Card-render sites (at time of writing) — both emitted raw `<img>` with no srcSet/sizes/dims:
+  - `src/features/meeting-flow/ui/components/steps/trade-card.tsx:58-68`
+  - `src/features/meeting-flow/ui/components/steps/scope-card.tsx:54-65`
+- These were the **only** two render sites of `coverImageUrl`. **Both files were deleted in `528f77cf` (specialties step rebuilt on the selection model); no current render site (as of 2026-09-14)** — `grep -rn "coverImageUrl" src/` now returns only the Notion adapter/schema/properties-map/database-registry files and `notion.router/scopes.router.ts`. The field is still extracted from Notion but not rendered.
 
 ## Why this is in EPIC scope (not a standalone perf hotfix)
 
@@ -47,10 +47,10 @@ The repo ships a complete R2-variant pipeline. Cover images should adopt it.
 | Layer | Path | Purpose |
 |---|---|---|
 | Schema | [`src/shared/db/schema/media-files.ts`](../../src/shared/db/schema/media-files.ts) | `mediaFiles` table — `url`, `pathKey`, `bucket`, `optimizationStatus`, `optimizationVariants`, `blurDataUrl` |
-| Variant generation | [`src/shared/services/providers/r2/lib/process-image-variants.ts`](../../src/shared/services/providers/r2/lib/process-image-variants.ts) | Pre-generates `sm` (640w), `md` (1280w), `lg` (1920w) WebP variants from any source buffer |
+| Variant generation | [`src/shared/entities/media-files/lib/process-image-variants.ts`](../../src/shared/entities/media-files/lib/process-image-variants.ts) | Pre-generates WebP variants from any source buffer — the per-use-case subset of `VARIANT_OPTIONS` (`xs` 320w, `sm` 640w, `md` 1280w, `lg` 1920w) declared in `src/shared/entities/media-files/lib/image-variants.ts` |
 | URL helpers | [`src/shared/lib/get-optimized-urls.ts`](../../src/shared/lib/get-optimized-urls.ts) | `getOptimizedSrc()`, `getOptimizedSrcSet()` |
 | Render component | [`src/shared/components/optimized-image.tsx`](../../src/shared/components/optimized-image.tsx) | Plain `<img>` with `srcSet` + `sizes` + base64 blur placeholder; required since `next.config.ts` sets `images.unoptimized: true` |
-| Reference usage | `src/features/landing/ui/components/portfolio/project-card.tsx`, `src/features/project-management/ui/components/phase-carousel.tsx`, etc. (26+ files) | Canonical `<OptimizedImage file={file} alt="…" sizes="…" />` |
+| Reference usage | `src/features/landing/ui/components/portfolio/project-card.tsx`, `src/features/project-management/ui/components/phase-carousel.tsx`, etc. (19 files as of 2026-09-14) | Canonical `<OptimizedImage file={file} alt="…" sizes="…" />` |
 
 ## Schema implication for #198 + #199
 
@@ -81,8 +81,8 @@ Single script `scripts/migrate-construction-cover-images.ts` invoked once per en
 
 1. **Source rows** — every row in `trades` and `scopes` (post Notion import #205-prep) with non-null `imageUrl` and null `coverFileId`.
 2. **Fetch** — HTTP GET the `imageUrl`. Handle 404 / network failures with a per-row retry + final log; skip rows that fail twice (manual cleanup later via admin UI).
-3. **Process** — feed the buffer to `processImageVariants()` (already handles too-small / too-narrow skip logic per [process-image-variants.ts:28-32](../../src/shared/services/providers/r2/lib/process-image-variants.ts#L28-L32)).
-4. **Upload** — push original + variants to R2 under `construction/<entity>/<id>-<slug>.<ext>` keys, in the appropriate bucket (decide as part of follow-up tracker #206 item 5 — likely the existing `tpr-portfolio-projects` bucket with a `construction/` prefix, OR a new `tpr-construction` bucket; coordinate with #206).
+3. **Process** — feed the buffer to `processImageVariants()` (already handles too-small / too-narrow skip logic per [process-image-variants.ts:28-39](../../src/shared/entities/media-files/lib/process-image-variants.ts#L28-L39) — `MIN_DOWNSCALE_FACTOR` / `TINY_IMAGE_THRESHOLD`).
+4. **Upload** — push original + variants to R2 under `construction/<entity>/<id>-<slug>.<ext>` keys, in the appropriate bucket (decide as part of follow-up tracker #206 item 5 — likely the canonical public `tpr-media` bucket (`R2_BUCKETS.media` in `src/shared/services/providers/r2/types.ts`) with a `construction/` prefix, OR a new `tpr-construction` bucket; coordinate with #206).
 5. **Create `mediaFiles` row** — `optimizationStatus: 'optimized'`, populate `optimizationVariants`, `blurDataUrl` (server-side generated from the smallest variant), `bucket`, `pathKey`, `url`.
 6. **Wire FK** — `UPDATE trades SET cover_file_id = <newId> WHERE id = …` (same for scopes).
 7. **Idempotency** — re-runs skip rows where `coverFileId IS NOT NULL`.
@@ -94,11 +94,10 @@ For the Notion import phase (existing #205-prep work), trades/scopes that come f
 
 After #243 merges and runs in prod:
 
-- [`trade-card.tsx`](../../src/features/meeting-flow/ui/components/steps/trade-card.tsx) — replace raw `<img src={trade.coverImageUrl}>` with `<OptimizedImage file={trade.coverFile} alt="" sizes="(max-width: 768px) 50vw, 200px" />`.
-- [`scope-card.tsx`](../../src/features/meeting-flow/ui/components/steps/scope-card.tsx) — same with scope dims (`sizes="(max-width: 768px) 50vw, 160px"`). Keep the deterministic-gradient fallback for the no-image branch.
+- ~~`trade-card.tsx` / `scope-card.tsx`~~ — both deleted in `528f77cf`; no current render site (as of 2026-09-14). Any future surface that renders a trade/scope cover must use `<OptimizedImage file={…coverFile} alt="" sizes="…" />`, never raw `<img src={coverImageUrl}>`.
 - Update the `Trade` + `ScopeOrAddon` schemas to surface `coverFile: MediaFileSelect | null` on the read path (joined in the router/spec).
 - Re-measure: target < 2 MB total page weight on the meeting flow step 2 (vs current 11.9 MB). Verify with DevTools.
-- Independent of cover images, also worth landing in the same PR: add explicit `width` / `height` to both cards and consider `fetchPriority="low"` on off-screen cards.
+- Independent of cover images, also worth landing in the same PR: add explicit `width` / `height` to any card that renders a cover and consider `fetchPriority="low"` on off-screen cards.
 
 ## Out of scope (still)
 
@@ -120,4 +119,4 @@ After #243 merges and runs in prod:
 
 ## ⚠️ Stale-ref ping
 
-There is **no `docs/codebase-conventions/image-rendering.md`** documenting the `OptimizedImage` + R2-variants pattern, even though it's the canonical approach across 26+ files. The convention exists in code only. This entire class of "developer reaches for raw `<img src={remoteUrl}>`" regression is exactly what a conventions doc would prevent. Worth filing a separate small docs PR.
+There is **no `docs/codebase-conventions/image-rendering.md`** documenting the `OptimizedImage` + R2-variants pattern, even though it's the canonical approach across 19 files (as of 2026-09-14; still no such doc). The convention exists in code only. This entire class of "developer reaches for raw `<img src={remoteUrl}>`" regression is exactly what a conventions doc would prevent. Worth filing a separate small docs PR.

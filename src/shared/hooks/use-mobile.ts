@@ -11,8 +11,9 @@ export function useIsMobile() {
       setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
     }
     mql.addEventListener('change', onChange)
-    // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
+    // A transition: SidebarProvider puts this in context above every page, and an urgent context change during
+    // hydration makes React drop the server HTML of boundaries still waiting on data and show their fallback.
+    React.startTransition(() => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT))
     return () => mql.removeEventListener('change', onChange)
   }, [])
 

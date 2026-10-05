@@ -1,30 +1,36 @@
 'use client'
 
+import { cn } from '@/shared/lib/utils'
+
 interface Props {
   customerId: string | null
   customerName: string | null
   onViewProfile?: (customerId: string) => void
+  /** Type size and colour; the cell supplies truncation and the link affordance. */
+  className?: string
 }
 
-export function CustomerNameCell({ customerId, customerName, onViewProfile }: Props) {
-  if (!customerId || !onViewProfile) {
-    return (
-      <span className="text-sm text-muted-foreground truncate max-w-40 block">
-        {customerName ?? '—'}
-      </span>
-    )
+export function CustomerNameCell({ customerId, customerName, onViewProfile, className }: Props) {
+  if (!customerId || !customerName || !onViewProfile) {
+    return <span className={cn('block max-w-full truncate', className)}>{customerName ?? '—'}</span>
   }
 
   return (
     <button
       type="button"
-      className="text-sm text-muted-foreground truncate max-w-40 block hover:text-foreground hover:underline cursor-pointer"
       onClick={(e) => {
         e.stopPropagation()
         onViewProfile(customerId)
       }}
+      className={cn(
+        'block max-w-full cursor-pointer truncate text-left',
+        'underline decoration-dotted decoration-muted-foreground/40 underline-offset-[3px]',
+        'transition-colors hover:text-foreground hover:decoration-foreground/60',
+        'focus-visible:text-foreground focus-visible:decoration-foreground/60 focus-visible:outline-none',
+        className,
+      )}
     >
-      {customerName ?? '—'}
+      {customerName}
     </button>
   )
 }

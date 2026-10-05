@@ -1,4 +1,4 @@
-import type { PortfolioProject } from '@/shared/entities/projects/types'
+import type { PortfolioProject } from '@/shared/modules/projects/core/types'
 
 interface FilterCriteria {
   tradeIds: string[]

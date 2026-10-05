@@ -6,7 +6,7 @@
 import z from 'zod'
 
 import { getFinanceOptions } from '@/shared/entities/finance-options/dal/server/queries'
-import { getFullView, listProposals, proposalListInputSchema } from '@/shared/entities/proposals/dal/server/queries'
+import { getFullView, listProposals, proposalListInputSchema } from '@/shared/modules/proposals/core/dal/server/queries'
 
 import { createTRPCRouter } from '../../init'
 import { dalToTrpc } from '../../lib/dal-to-trpc'

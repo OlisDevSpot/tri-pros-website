@@ -1,6 +1,6 @@
 'use client'
 
-import type { SOW } from '@/shared/entities/proposals/types'
+import type { SOW } from '@/shared/modules/proposals/core/types'
 
 import { CheckIcon, CopyIcon } from 'lucide-react'
 import { useCallback, useState } from 'react'
@@ -39,7 +39,7 @@ export function CopySowButton({ section }: CopySowButtonProps) {
       title={copied ? 'Copied' : `Copy "${section.title}"`}
     >
       {copied
-        ? <CheckIcon className="size-3.5 text-green-600" />
+        ? <CheckIcon className="size-3.5 text-status-success-fg" />
         : <CopyIcon className="size-3.5" />}
     </Button>
   )

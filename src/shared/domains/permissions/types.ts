@@ -4,12 +4,13 @@
 // parameterized with our specific actions and subjects.
 //
 // Subjects derive from per-entity constants:
-//   - `EntityName` (5 business entities) comes from `abilities.ts`, which
-//     imports each entity's identity from `entities/<entity>/lib/constants.ts`.
+//   - `EntityName` (the `ENTITY_NAMES` list) comes from `abilities.ts`, which
+//     imports each entity's identity from `entities/<entity>/lib/constants.ts`
+//     or `modules/<module>/<unit>/lib/constants.ts`.
 //   - The non-entity subjects below are feature/route gates that aren't
 //     real business entities — they stay hand-maintained.
 
-import type { MongoAbility, MongoQuery } from '@casl/ability'
+import type { MongoAbility } from '@casl/ability'
 
 import type { EntityName } from './abilities'
 
@@ -20,7 +21,7 @@ import type { EntityName } from './abilities'
 export type AppAction = 'access' | 'assign' | 'create' | 'delete' | 'manage' | 'own' | 'read' | 'update'
 
 // Subjects (resources) that actions apply to.
-// `EntityName` covers the 5 business entities (Customer/Meeting/Proposal/Project/Activity).
+// `EntityName` covers every business entity listed in `ENTITY_NAMES` (abilities.ts).
 // The rest are non-entity feature gates that stay hand-maintained:
 //   - 'all'              CASL built-in wildcard
 //   - 'Dashboard'        route-level gate (dashboard access)
@@ -37,25 +38,7 @@ export type AppSubject
     | 'LeadsPool'
     | 'User'
 
-// Row conditions our rules use — the three custom document operators
-// (see scope/operators/*.ts) plus explicit scalar column conditions (e.g.
-// `{ ownerId }`). `MongoQuery` alone (a generic, HKT-branded container) does
-// NOT reliably type-check plain scalar object literals through the
-// `AbilityBuilder.can()` overloads' generic inference — hence the dedicated
-// `{ ownerId: string }` member below rather than relying on the `MongoQuery`
-// branch. Add further scalar columns the same way as they're needed. NOTE:
-// these keys are how conditions are AUTHORED in `can()` calls (with the
-// leading `$` for custom operators) — that's independent of how the
-// `defineScopeOperator` REGISTRY names them internally; see
-// scope/conditions-matcher.ts for why the registry drops the `$`.
-export type AppConditions
-  = MongoQuery
-    | { $participatesViaMeeting?: { via: 'customerId' | 'meetingId' | 'projectId' | 'self' } }
-    | { $hasNoMeeting?: boolean }
-    | { $inDerivedPipeline?: readonly ('dead' | 'fresh' | 'leads' | 'projects' | 'rehash')[] }
-    | { ownerId: string }
-
 // The main ability type used throughout the app.
 // MongoAbility is CASL's default ability class — named "Mongo" for historical
 // reasons but works with any backend. It's just the standard CASL ability.
-export type AppAbility = MongoAbility<[AppAction, AppSubject], AppConditions>
+export type AppAbility = MongoAbility<[AppAction, AppSubject]>

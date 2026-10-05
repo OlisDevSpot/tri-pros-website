@@ -1,26 +1,21 @@
 import { TRPCError } from '@trpc/server'
-import { eq } from 'drizzle-orm'
 import { buildUserContext, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
-import { db } from '@/shared/db'
-import { customers } from '@/shared/db/schema/customers'
-import { proposals } from '@/shared/db/schema/proposals'
+import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
-import { createProject, setProjectScopes } from '@/shared/entities/projects/dal/server/mutations'
-import { extractScopeIdsFromProposals } from '@/shared/entities/projects/lib/derive-scope-ids'
-import { createProjectFormSchema } from '@/shared/entities/projects/schemas'
+import { projectCrud } from '@/shared/modules/projects/core/dal/server/crud'
+import { setProjectScopes } from '@/shared/modules/projects/core/dal/server/mutations'
+import { extractScopeIdsFromProposals } from '@/shared/modules/projects/core/lib/derive-scope-ids'
+import { createProjectFormSchema } from '@/shared/modules/projects/core/schemas'
+import { getProposalsByMeetingId } from '@/shared/modules/proposals/core/dal/server/queries'
 import { agentProcedure, createTRPCRouter } from '../../init'
 
 export const businessRouter = createTRPCRouter({
   create: agentProcedure
     .input(createProjectFormSchema)
     .mutation(async ({ ctx, input }) => {
-      // 1. Validate meeting has at least one proposal
-      // BYPASS(crud): cross-entity read for operational create — de-inline + route through createCrudDal in Phase 3
-      const meetingProposals = await db
-        .select({ id: proposals.id, projectJSON: proposals.projectJSON })
-        .from(proposals)
-        .where(eq(proposals.meetingId, input.meetingId))
+      // 1. Validate meeting has at least one proposal (unscoped read — operational create)
+      const meetingProposals = dalVerifySuccess(await getProposalsByMeetingId({ ...ctx, scope: null }, input.meetingId))
 
       if (meetingProposals.length === 0) {
         throw new TRPCError({
@@ -29,12 +24,8 @@ export const businessRouter = createTRPCRouter({
         })
       }
 
-      // 2. Fetch customer address data
-      // BYPASS(crud): cross-entity read for operational create — de-inline + route through createCrudDal in Phase 3
-      const [customer] = await db
-        .select({ address: customers.address, city: customers.city, state: customers.state, zip: customers.zip })
-        .from(customers)
-        .where(eq(customers.id, input.customerId))
+      // 2. Fetch customer address data (unscoped read — operational create)
+      const customer = dalVerifySuccess(await customerCrud.getById({ ...ctx, scope: null }, { id: input.customerId }))
 
       if (!customer) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Customer not found' })
@@ -44,8 +35,10 @@ export const businessRouter = createTRPCRouter({
       const slug = input.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
       const accessor = `${slug}-${Math.random().toString(36).slice(2, 8)}`
 
-      // 4. Create the project (address from customer)
-      const project = await createProject({
+      // 4. Create the project (address from customer). Routes through
+      //    projectCrud (scope:null — unscoped, matching the pre-D feature-DAL
+      //    path); scopes are linked in step 6 from the proposals' SOWs.
+      const project = dalVerifySuccess(await projectCrud.create({ ...ctx, scope: null }, {
         title: input.title,
         accessor,
         customerId: input.customerId,
@@ -58,7 +51,7 @@ export const businessRouter = createTRPCRouter({
         projectDuration: input.projectDuration,
         pipelineStage: 'signed',
         isPublic: false,
-      }, [])
+      }))
 
       // 5. Link meeting to project and set outcome — through meetingCrud so the
       //    entity update hook fires (sync to GCal with the new project prefix

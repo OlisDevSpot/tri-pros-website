@@ -83,6 +83,7 @@ export function HeadshotUpload({ profile }: HeadshotUploadProps) {
               <AvatarImage src={headshotUrl ?? profile.image ?? undefined} alt={profile.name} />
               <AvatarFallback className="rounded-xl text-2xl">{initials}</AvatarFallback>
             </Avatar>
+            {/* A scrim over the photo stays black in both themes. */}
             {isUploading && (
               <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/50">
                 <Loader2Icon className="size-6 animate-spin text-white" />

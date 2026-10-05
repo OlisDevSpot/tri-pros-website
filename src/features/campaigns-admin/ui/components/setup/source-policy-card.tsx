@@ -79,7 +79,7 @@ export function SourcePolicyCard() {
                   // header's position:sticky. The thead sticks to the Setup tab's
                   // scroll region instead.
                   <Table>
-                    <TableHeader className="sticky top-0 z-10 bg-card">
+                    <TableHeader className="sticky top-0 z-10 bg-(--card)">
                       <TableRow>
                         <TableHead>Source</TableHead>
                         <TableHead>Default campaign</TableHead>

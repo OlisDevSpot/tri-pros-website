@@ -1,19 +1,8 @@
 // src/shared/lib/file-optimization/types.ts
-import type { ImageVariant } from '@/shared/entities/media-files/lib/process-image-variants'
+import type { ImageVariant } from '@/shared/modules/media/core/lib/process-image-variants'
 
 /** Coarse file classification that selects an optimization strategy. */
 export type FileKind = 'image' | 'video' | 'pdf' | 'other'
-
-/** Map a MIME type to its optimization strategy bucket. */
-export function classifyFileKind(mimeType: string): FileKind {
-  if (mimeType.startsWith('image/'))
-    return 'image'
-  if (mimeType.startsWith('video/'))
-    return 'video'
-  if (mimeType === 'application/pdf')
-    return 'pdf'
-  return 'other'
-}
 
 /**
  * The result of optimizing one file — a pure description of what to persist.

@@ -14,21 +14,21 @@ interface PersonaProfileSectionProps {
 }
 
 const SEVERITY_COLORS: Record<string, string> = {
-  critical: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-  high: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-  medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-  low: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-  strong: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  moderate: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
-  weak: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
-  primary: 'bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-400',
-  secondary: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+  critical: 'bg-status-danger-bg text-status-danger-fg',
+  high: 'bg-status-attention-bg text-status-attention-fg',
+  medium: 'bg-status-pending-bg text-status-pending-fg',
+  low: 'bg-status-success-bg text-status-success-fg',
+  strong: 'bg-status-info-bg text-status-info-fg',
+  moderate: 'bg-status-idle-bg text-status-idle-fg',
+  weak: 'bg-muted text-muted-foreground',
+  primary: 'bg-status-action-bg text-status-action-fg',
+  secondary: 'bg-status-idle-bg text-status-idle-fg',
 }
 
 export function SeverityBadge({ value }: { value: string }) {
   return (
     <Badge
-      className={`text-[10px] font-medium ${SEVERITY_COLORS[value] ?? 'bg-gray-100 text-gray-600'}`}
+      className={`text-xs font-medium ${SEVERITY_COLORS[value] ?? 'bg-muted text-muted-foreground'}`}
       variant="outline"
     >
       {value}
@@ -52,7 +52,7 @@ export function PersonaProfileSection({ children, count, defaultOpen = false, ic
       >
         <span className="text-muted-foreground">{icon}</span>
         <span className="flex-1 text-sm font-medium">{title}</span>
-        <Badge className="h-5 min-w-[1.5rem] px-1.5 text-[10px] tabular-nums" variant="outline">
+        <Badge className="h-5 min-w-[1.5rem] px-1.5 text-xs tabular-nums" variant="outline">
           {count}
         </Badge>
         <ChevronDownIcon className={`size-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />

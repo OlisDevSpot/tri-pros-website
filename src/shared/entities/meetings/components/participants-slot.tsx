@@ -7,7 +7,7 @@ import { useQuery } from '@tanstack/react-query'
 import { CrownIcon, MailIcon, MessageSquareIcon, MoreHorizontalIcon, PhoneIcon, UserMinusIcon, UsersIcon } from 'lucide-react'
 import { useState } from 'react'
 
-import { EntityList } from '@/shared/components/entity-list/ui/entity-list'
+import { EntityList } from '@/shared/components/entities/entity-list/ui/entity-list'
 import { Button } from '@/shared/components/ui/button'
 import {
   DropdownMenu,
@@ -141,7 +141,7 @@ function FullVariant({ meetingId, entityListVariant = 'card', className }: FullV
             type="button"
             variant="ghost"
             size="sm"
-            className="h-5 px-1.5 text-[10px] font-medium uppercase tracking-wide"
+            className="h-5 px-1.5 text-xs font-medium uppercase tracking-wide"
             onClick={() => setManageOpen(true)}
           >
             Manage
@@ -330,7 +330,7 @@ function CompactVariant({ meetingId, initialParticipants, className }: CompactVa
           <button
             type="button"
             className={cn(
-              'inline-flex items-center gap-2 rounded-md px-1 py-0.5 -mx-1 hover:bg-accent/50 transition-colors min-w-0',
+              'inline-flex w-fit max-w-full items-center gap-2 self-start rounded-md px-1 py-0.5 -mx-1 hover:bg-accent/50 transition-colors min-w-0',
               className,
             )}
             aria-label={`Participants: ${thumbnail.map(p => p.name ?? 'Unknown').join(', ')}`}
@@ -356,7 +356,7 @@ function CompactVariant({ meetingId, initialParticipants, className }: CompactVa
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-5 px-1.5 text-[10px] font-medium uppercase tracking-wide"
+                className="h-5 px-1.5 text-xs font-medium uppercase tracking-wide"
                 onClick={() => {
                   setPopoverOpen(false)
                   setManageOpen(true)

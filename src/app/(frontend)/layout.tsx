@@ -62,13 +62,13 @@ export const metadata: Metadata = {
     title: 'TPR',
     statusBarStyle: 'black-translucent',
   },
-  description: 'Family-led residential construction company serving Southern California homeowners. Kitchen and bathroom remodels, ADU construction, garage conversions, and home additions across the San Fernando Valley, San Gabriel Valley, and Greater Los Angeles.',
+  description: 'Family-led residential construction company serving Southern California homeowners. Kitchen and bathroom remodels, garage conversions, and home additions across the San Fernando Valley, San Gabriel Valley, and Greater Los Angeles.',
   authors: [{ name: 'Tri Pros Remodeling' }],
   creator: 'Tri Pros Remodeling',
   publisher: 'Tri Pros Remodeling',
   openGraph: {
-    title: 'Tri Pros Remodeling | Kitchen, Bath, ADU & Home Remodeling in SoCal',
-    description: 'Family-led residential construction company. Kitchen and bathroom remodels, ADU construction, garage conversions, and home additions across the San Fernando Valley, San Gabriel Valley, and Greater Los Angeles.',
+    title: 'Tri Pros Remodeling | Kitchen, Bath & Home Remodeling in SoCal',
+    description: 'Family-led residential construction company. Kitchen and bathroom remodels, garage conversions, and home additions across the San Fernando Valley, San Gabriel Valley, and Greater Los Angeles.',
     url: 'https://triprosremodeling.com',
     siteName: 'Tri Pros Remodeling',
     type: 'website',
@@ -78,15 +78,15 @@ export const metadata: Metadata = {
         url: '/company/logo/opengraph-image.png',
         width: 1200,
         height: 630,
-        alt: 'Tri Pros Remodeling — Kitchen, Bath, ADU and Home Remodeling in Southern California',
+        alt: 'Tri Pros Remodeling — Kitchen, Bath and Home Remodeling in Southern California',
         type: 'image/png',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Tri Pros Remodeling | Kitchen, Bath, ADU & Home Remodeling in SoCal',
-    description: 'Family-led residential construction company. Kitchen and bathroom remodels, ADU construction, garage conversions, and home additions across the San Fernando Valley, San Gabriel Valley, and Greater Los Angeles.',
+    title: 'Tri Pros Remodeling | Kitchen, Bath & Home Remodeling in SoCal',
+    description: 'Family-led residential construction company. Kitchen and bathroom remodels, garage conversions, and home additions across the San Fernando Valley, San Gabriel Valley, and Greater Los Angeles.',
     images: ['/company/logo/opengraph-image.png'],
   },
   alternates: {
@@ -128,19 +128,6 @@ export default function RootLayout({
       <body
         className={`${syne.variable} ${playfair.variable} ${dancingScript.variable} ${spaceMono.variable} ${nunito.className} antialiased`}
       >
-        {/* Installed-PWA cold-start: paint the launch dark from the very first
-            frame. Inlined (not in globals.css) so it applies before the external
-            stylesheet loads and before next-themes resolves — otherwise the
-            light `bg-background` on <body> flashes white on cold launch. Scoped
-            to standalone so the browser/marketing site is untouched; !important
-            so the theme's bg-background can't override it. Pairs with the
-            manifest background_color (#09090b) for the pre-web-view surface. */}
-        <style
-          // eslint-disable-next-line react-dom/no-dangerously-set-innerhtml
-          dangerouslySetInnerHTML={{
-            __html: '@media (display-mode: standalone){html,body{background-color:#09090b!important}}',
-          }}
-        />
         <Providers>
           {children}
         </Providers>

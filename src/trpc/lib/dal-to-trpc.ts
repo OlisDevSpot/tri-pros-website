@@ -1,4 +1,4 @@
-// DAL → tRPC error bridge. see ../DOCS.md#dal-to-trpc-bridge
+// DAL → tRPC error bridge.
 // Services/jobs handle DalReturn directly — only tRPC uses this bridge.
 
 import type { DalReturn } from '@/shared/dal/server/types'

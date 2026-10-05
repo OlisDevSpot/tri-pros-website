@@ -27,20 +27,18 @@ export function useCampaignMutations() {
   }
 
   const resync = useMutation(
-    trpc.voipCampaignsRouter.resyncFromCloudtalk.mutationOptions({
+    trpc.voipCampaignsRouter.resyncDialer.mutationOptions({
       onSuccess: (res) => {
         invalidateVoipCampaigns()
         toast.success(
-          `Synced ${res.campaignsSynced} campaign(s), ${res.attributesSynced} attribute(s)`,
+          `Synced ${res.campaignsSynced} campaign(s), ${res.fieldsSynced} field(s)`,
         )
         // Explain any campaign that didn't sync so "2 of 3" isn't a mystery.
-        const noTag = res.skippedCampaigns
-          .filter(c => c.reason === 'no_membership_tag')
-          .map(c => c.name)
-        if (noTag.length > 0) {
+        const failed = res.skippedCampaigns.map(c => c.name)
+        if (failed.length > 0) {
           toast.warning(
-            `Skipped ${noTag.length} campaign(s) with no membership tag: ${noTag.join(', ')}. `
-            + 'Add a contact-list tag to the campaign in CloudTalk, then resync.',
+            `Skipped ${failed.length} campaign(s) that failed to sync: ${failed.join(', ')}. `
+            + 'Check the campaign in JustCall, then resync.',
             { duration: 12000 },
           )
         }
@@ -76,7 +74,7 @@ export function useCampaignMutations() {
         // refetch, not synchronously. Invalidate so a slightly-later refetch
         // picks up early progress.
         invalidateVoipCampaigns()
-        toast.success('Enroll-all queued — leads are being pushed to CloudTalk')
+        toast.success('Enroll-all queued — leads are being pushed to the dialer')
       },
       onError: err => toast.error(err.message || 'Failed to queue enroll-all'),
     }),

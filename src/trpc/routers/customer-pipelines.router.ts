@@ -1,22 +1,20 @@
 import { TRPCError } from '@trpc/server'
 import { desc, eq } from 'drizzle-orm'
 import { z } from 'zod'
-import { getCustomerPipelineItems } from '@/features/customer-pipelines/dal/server/get-customer-pipeline-items'
-import { getCustomerProfile } from '@/features/customer-pipelines/dal/server/get-customer-profile'
 import { moveCustomerPipelineItem } from '@/features/customer-pipelines/dal/server/move-customer-pipeline-item'
 import { moveCustomerToPipeline } from '@/features/customer-pipelines/dal/server/move-customer-to-pipeline'
 import { deriveProjectStatusBucket, meetingPipelines, pipelines } from '@/shared/constants/enums/pipelines'
-import { canAccess, resolveActorScope } from '@/shared/dal/server/lib/resolve-actor-scope'
+import { buildUserContext } from '@/shared/dal/server/lib/helpers'
 import { db } from '@/shared/db'
 import { customerLeadAttribution } from '@/shared/db/schema/customer-lead-attribution'
 import { customers } from '@/shared/db/schema/customers'
 import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
-import { getAccessiblePipelines } from '@/shared/domains/pipelines/lib/get-accessible-pipelines'
-import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
+import { getCustomerProfile } from '@/shared/entities/customers/dal/server/get-customer-profile'
+import { customerPipelineItemsInputSchema, getCustomerPipelineItems } from '@/shared/entities/customers/dal/server/pipeline-items'
+import { canSeeUngatedPhone } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
-import { projectServerSpec } from '@/shared/entities/projects/lib/server-spec'
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { R2_BUCKETS } from '@/shared/services/providers/r2/types'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
@@ -25,18 +23,8 @@ import { agentProcedure, createTRPCRouter } from '../init'
 
 export const customerPipelinesRouter = createTRPCRouter({
   getCustomerPipelineItems: agentProcedure
-    .input(z.object({
-      pipeline: z.enum(pipelines).default('fresh'),
-    }).optional())
-    .query(async ({ ctx, input }) => {
-      const pipeline = input?.pipeline ?? 'fresh'
-      // Close the "any agent can request pipeline:'leads' directly" gap — a tab
-      // outside the actor's accessible set is FORBIDDEN, not silently empty.
-      if (!getAccessiblePipelines(ctx.ability).includes(pipeline)) {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have access to this pipeline' })
-      }
-      return getCustomerPipelineItems(ctx, pipeline)
-    }),
+    .input(customerPipelineItemsInputSchema)
+    .query(async ({ ctx, input }) => dalToTrpc(await getCustomerPipelineItems({ ...ctx, scope: null }, input))),
 
   moveCustomerPipelineItem: agentProcedure
     .input(z.object({
@@ -46,7 +34,11 @@ export const customerPipelinesRouter = createTRPCRouter({
       pipeline: z.enum(pipelines).default('fresh'),
     }))
     .mutation(async ({ ctx, input }) => {
-      await moveCustomerPipelineItem(ctx, input)
+      await moveCustomerPipelineItem({
+        ...input,
+        userId: ctx.session.user.id,
+        userRole: ctx.session.user.role,
+      })
     }),
 
   moveCustomerToPipeline: agentProcedure
@@ -66,19 +58,15 @@ export const customerPipelinesRouter = createTRPCRouter({
       customerId: z.string().uuid(),
     }))
     .query(async ({ input, ctx }) => {
-      return getCustomerProfile(ctx, input.customerId)
+      const isSuperAdmin = ctx.ability.can('manage', 'all')
+      return getCustomerProfile(input.customerId, { userId: ctx.session.user.id, isSuperAdmin, canSeeUngated: canSeeUngatedPhone(ctx.ability) })
     }),
 
   getRecordingUrl: agentProcedure
     .input(z.object({
       customerId: z.string().uuid(),
     }))
-    .query(async ({ ctx, input }) => {
-      const actor = ctx.actor
-      if (!(await canAccess(customerServerSpec, actor, input.customerId, 'read'))) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Customer not found' })
-      }
-
+    .query(async ({ input }) => {
       const [row] = await db
         .select({ captureJSON: customerLeadAttribution.captureJSON })
         .from(customers)
@@ -103,7 +91,7 @@ export const customerPipelinesRouter = createTRPCRouter({
   getCustomerProjects: agentProcedure
     .input(z.object({ meetingId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const scopedCtx = { ...ctx, scope: resolveActorScope(meetingServerSpec, ctx.actor) }
+      const scopedCtx = buildUserContext(ctx.session.user.id, ctx.session.user.role, meetingServerSpec)
       const meeting = dalToTrpc(await meetingCrud.getById(scopedCtx, { id: input.meetingId }))
       if (!meeting?.customerId) {
         return { projects: [], proposals: [] }
@@ -133,15 +121,8 @@ export const customerPipelinesRouter = createTRPCRouter({
       if (ctx.ability.cannot('update', 'Meeting')) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to update meetings' })
       }
-      const actor = ctx.actor
-      if (!(await canAccess(meetingServerSpec, actor, input.meetingId, 'read'))) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Meeting not found' })
-      }
-      if (!(await canAccess(projectServerSpec, actor, input.projectId, 'read'))) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Project not found' })
-      }
       return dalToTrpc(await meetingCrud.update(
-        { session: ctx.session, ability: ctx.ability, scope: resolveActorScope(meetingServerSpec, actor), actor },
+        { session: ctx.session, ability: ctx.ability, scope: null },
         {
           id: input.meetingId,
           data: { projectId: input.projectId, meetingOutcome: 'converted_to_project' },

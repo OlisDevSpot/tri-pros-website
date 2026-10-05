@@ -2,7 +2,8 @@
 
 import type { ReactNode } from 'react'
 
-import type { PaginatedQueryResult } from '@/shared/dal/client/lib/types'
+import type { DataViewQueryResult } from '@/shared/dal/client/lib/types'
+import type { FieldList } from '@/shared/dal/lib/query/field-list'
 
 import { formatTotalCount } from '@/shared/lib/pagination-format'
 import { cn } from '@/shared/lib/utils'
@@ -10,11 +11,8 @@ import { cn } from '@/shared/lib/utils'
 interface RecordsPageHeaderProps {
   /** Heading text — the entity name in plural form (e.g. "Proposals"). */
   title: string
-  /**
-   * Pagination result from `usePaginatedQuery`. The header reads `total`
-   *  and `isLoading` from it to render the count badge.
-   */
-  pagination: PaginatedQueryResult<unknown>
+  /** Any data-view result; the header reads only `total` and `isPending` for the count. */
+  query: Pick<DataViewQueryResult<unknown, FieldList, string>, 'total' | 'isPending'>
   /** Heading level for semantics; visual size stays the same. Defaults to h2. */
   as?: 'h1' | 'h2' | 'h3'
   /** Right-aligned slot for page-level actions ("New", "Export", etc.). */
@@ -24,8 +22,7 @@ interface RecordsPageHeaderProps {
 
 /**
  * Standard header bar for a records page. Renders the title and the live
- * total-count badge baseline-aligned on a single row, with an optional
- * right-aligned actions slot.
+ * total-count badge baseline-aligned, with an optional right-aligned actions slot.
  *
  * Sibling to `<QueryToolbar>` and `<DataTable>` — the three together form
  * the canonical records-page shape. Compose via `<RecordsPageShell>` for
@@ -33,17 +30,16 @@ interface RecordsPageHeaderProps {
  */
 export function RecordsPageHeader({
   title,
-  pagination,
+  query,
   as = 'h2',
   actions,
   className,
 }: RecordsPageHeaderProps) {
   const Tag = as
-  const countText = pagination.isLoading
-    ? 'Loading…'
-    : formatTotalCount(pagination.total)
+  const countText = query.isPending ? 'Loading…' : formatTotalCount(query.total)
   return (
-    <header className={cn('flex flex-wrap items-baseline gap-x-3 gap-y-1', className)}>
+    // The row is always one button tall, so a page with actions sits at the same height as one without.
+    <header className={cn('flex min-h-9 flex-wrap items-center gap-x-3 gap-y-1', className)}>
       <div className="flex flex-wrap items-baseline gap-x-2">
         <Tag className="text-lg font-semibold tracking-tight">
           {title}

@@ -9,7 +9,7 @@ import { LogoLink } from './logo'
 
 export default function Footer() {
   return (
-    <footer className="text-foreground lg:sticky lg:bottom-0 w-full z-1 min-h-fit bg-muted">
+    <footer className="text-foreground lg:sticky lg:bottom-0 w-full z-1 min-h-fit surface-beneath">
       <div className="container pt-8 pb-6">
         {/* Main Footer Content */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8">
@@ -86,7 +86,7 @@ export default function Footer() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="mt-6 pt-6 border-t border-primary-foreground/20"
+          className="mt-6 pt-6 border-t border-border"
         >
           <h3 className=" font-bold text-lg text-foreground mb-3">
             Contact Information
@@ -119,7 +119,7 @@ export default function Footer() {
       </div>
 
       {/* Bottom Bar */}
-      <div className="border-t border-primary-foreground/20">
+      <div className="border-t border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
             <div className="text-foreground/70 text-sm">
@@ -133,19 +133,19 @@ export default function Footer() {
             <div className="flex space-x-6 text-sm">
               <Link
                 href={ROOTS.landing.privacy()}
-                className="text-foreground/70 hover:text-secondary transition-colors duration-200"
+                className="text-foreground/70 hover:text-primary transition-colors duration-200"
               >
                 Privacy Policy
               </Link>
               <Link
                 href={ROOTS.landing.terms()}
-                className="text-foreground/70 hover:text-secondary transition-colors duration-200"
+                className="text-foreground/70 hover:text-primary transition-colors duration-200"
               >
                 Terms of Service
               </Link>
               <Link
                 href="/sitemap.xml"
-                className="text-foreground/70 hover:text-secondary transition-colors duration-200"
+                className="text-foreground/70 hover:text-primary transition-colors duration-200"
               >
                 Sitemap
               </Link>

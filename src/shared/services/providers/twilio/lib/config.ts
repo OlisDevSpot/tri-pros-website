@@ -5,7 +5,6 @@ import { createProviderConfig } from '@/shared/config/create-provider-config'
 /**
  * Twilio env var schema fragment + runtime-config builder + accessor.
  *
- * see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
  *
  * Notes:
  * - `TWILIO_TRUST_PROFILE_SID` and `TWILIO_10DLC_CAMPAIGN_SID` are vetting-

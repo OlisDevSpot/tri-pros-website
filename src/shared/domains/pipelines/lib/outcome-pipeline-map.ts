@@ -1,24 +1,19 @@
-import type { MeetingOutcome, MeetingOutcomeClass, MeetingPipeline } from '@/shared/constants/enums'
+import type { MeetingPipeline } from '@/shared/constants/enums/pipelines'
 
-import { MEETING_OUTCOME_CLASS, meetingOutcomes } from '@/shared/constants/enums/meetings'
-
-/** The meeting-grain pipeline bucket a given outcome class forces, or null. */
-function classToPipeline(c: MeetingOutcomeClass): MeetingPipeline | null {
-  if (c === 'negative-recallable') {
-    return 'rehash'
-  }
-  if (c === 'negative-terminal') {
-    return 'dead'
-  }
-  return null // unset / neutral / positive don't force a rehash|dead bucket
+export const OUTCOME_PIPELINE_MAP: Record<string, MeetingPipeline | null> = {
+  not_set: null,
+  proposal_created: null,
+  proposal_sent: null,
+  follow_up_needed: null,
+  reschedule_needed: null,
+  converted_to_project: null,
+  additional_work: null,
+  not_good: 'rehash',
+  pns: 'rehash',
+  npns: 'rehash',
+  ftd: 'rehash',
+  no_show: 'rehash',
+  cancelled: 'rehash',
+  nra: 'rehash',
+  lost_to_competitor: 'dead',
 }
-
-/**
- * Outcome → the meeting-grain pipeline bucket it forces (`rehash`/`dead`), or
- * `null` for outcomes that don't move the bucket. DERIVED from the single
- * outcome source of truth (`MEETING_OUTCOME_CLASS`), so it can never drift:
- * recallable ⇒ rehash, terminal ⇒ dead, else null.
- */
-export const OUTCOME_PIPELINE_MAP: Record<string, MeetingPipeline | null> = Object.fromEntries(
-  meetingOutcomes.map((o: MeetingOutcome) => [o, classToPipeline(MEETING_OUTCOME_CLASS[o])]),
-)

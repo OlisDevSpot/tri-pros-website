@@ -7,7 +7,6 @@
 // Not wired into createCrudDal — no entity/children registry exists yet.
 // Business-DAL mutations call this directly; promote to a spec-level
 // `children` registry only after the rule-of-three (Addendum B).
-// see docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md §10
 
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core'
 

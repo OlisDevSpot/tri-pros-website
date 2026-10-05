@@ -1,5 +1,4 @@
 // lead-sources business mutations for voip-campaigns policy.
-// see docs/codebase-conventions/dal-conventions.md
 
 import type { DalReturn } from '@/shared/dal/server/types'
 

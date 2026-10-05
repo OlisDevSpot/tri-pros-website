@@ -14,6 +14,7 @@ import { LeadSourcePerformanceStrip } from '@/features/lead-sources-admin/ui/com
 import { LeadSourceSettingsPanel } from '@/features/lead-sources-admin/ui/components/lead-source-settings-panel'
 import { MobileBackButton } from '@/features/lead-sources-admin/ui/components/mobile-back-button'
 import { SourceTabTrigger } from '@/features/lead-sources-admin/ui/components/source-tab-trigger'
+import { DataViewBoundary } from '@/shared/components/data-view-boundary'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList } from '@/shared/components/ui/tabs'
 import { useTRPC } from '@/trpc/helpers'
@@ -116,7 +117,7 @@ export function SourceDetail({ leadSourceId, activeChip, range, onAddCustomer, o
             <SourceTabTrigger value="customers">
               Customers
               {customerCountLabel != null && (
-                <span className="ml-2 rounded-full bg-muted px-1.5 py-0.5 text-[10px] tabular-nums text-muted-foreground">
+                <span className="ml-2 rounded-full bg-muted px-1.5 py-0.5 text-xs tabular-nums text-muted-foreground">
                   {customerCountLabel}
                 </span>
               )}
@@ -131,7 +132,9 @@ export function SourceDetail({ leadSourceId, activeChip, range, onAddCustomer, o
         </div>
 
         <TabsContent value="customers" className="flex min-h-0 flex-1 flex-col">
-          <LeadSourceCustomersSection leadSourceId={source.id} />
+          <DataViewBoundary>
+            <LeadSourceCustomersSection leadSourceId={source.id} />
+          </DataViewBoundary>
         </TabsContent>
 
         <TabsContent value="analytics" className="flex min-h-0 flex-1 flex-col">

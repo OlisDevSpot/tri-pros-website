@@ -45,7 +45,7 @@ export function SourceRollupCard({ campaigns, summary }: { campaigns: VoipCampai
             key={s.label}
             className="flex flex-col"
           >
-            <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+            <span className="text-xs uppercase tracking-wide text-muted-foreground">
               {s.label}
             </span>
             <span className={cn('text-lg font-semibold tabular-nums', s.value > 0 ? s.accent : 'text-muted-foreground')}>

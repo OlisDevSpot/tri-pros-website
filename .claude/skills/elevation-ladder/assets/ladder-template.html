@@ -1,0 +1,488 @@
+<title>Elevation Ladder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Space+Mono&family=Syne:wght@600&display=swap">
+<style>
+  :root {
+    --page: #f3f4f6;
+    --panel: #ffffff;
+    --ink: #1d2433;
+    --ink-soft: #5b6475;
+    --line: #d9dde4;
+    --accent: #0b63b6;
+    --accent-ink: #ffffff;
+    --warn: #b4560f;
+    --display: 'Syne', 'Arial Black', system-ui, sans-serif;
+    --body: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --mono: 'Space Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #11151c;
+      --panel: #19202a;
+      --ink: #e9edf3;
+      --ink-soft: #9aa4b4;
+      --line: #2c3542;
+      --accent: #6cc3f0;
+      --accent-ink: #0d1726;
+      --warn: #f0a35e;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #11151c;
+    --panel: #19202a;
+    --ink: #e9edf3;
+    --ink-soft: #9aa4b4;
+    --line: #2c3542;
+    --accent: #6cc3f0;
+    --accent-ink: #0d1726;
+    --warn: #f0a35e;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--page);
+    color: var(--ink);
+    font: 15px/1.5 var(--body);
+    padding-inline: 16px;
+    padding-block: 20px 48px;
+  }
+  .wrap { max-width: 1480px; margin-inline: auto; display: grid; gap: 20px; }
+  h1 { font: 600 clamp(26px, 3.4vw, 38px)/1.1 var(--display); margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+  .lede { margin: 6px 0 0; max-width: 72ch; color: var(--ink-soft); }
+  .eyebrow { font: 11px/1 var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-soft); }
+
+  .controls {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px;
+    display: grid;
+    gap: 14px;
+  }
+  .preset { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .preset button, .ghost {
+    font: 600 14px var(--body);
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--ink);
+    padding: 8px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .preset button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .preset button:focus-visible, .sliders input:focus-visible, .copy:focus-visible, .ghost:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .preset-note { color: var(--ink-soft); font-size: 13px; }
+  .sliders { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px 24px; }
+  .sliders fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; }
+  .sliders legend { font: 600 13px var(--body); margin-bottom: 4px; }
+  .sliders label { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; font-size: 13px; color: var(--ink-soft); }
+  .sliders label output { font: 12px var(--mono); color: var(--ink); font-variant-numeric: tabular-nums; }
+  .sliders input[type="range"] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+  .sliders .toggle { display: flex; gap: 8px; align-items: center; grid-template-columns: none; color: var(--ink); }
+  .sliders[aria-disabled="true"] { opacity: 0.45; }
+  .values { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .values code { font: 12px/1.5 var(--mono); background: var(--page); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; flex: 1 1 420px; overflow-wrap: anywhere; }
+  .copy { font: 600 13px var(--body); border: 1px solid var(--line); background: transparent; color: var(--ink); border-radius: 8px; padding: 8px 12px; cursor: pointer; }
+  .picked { font-size: 13px; color: var(--ink-soft); }
+  .warn { color: var(--warn); font-size: 13px; }
+
+  .scenes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 620px), 1fr)); gap: 20px; }
+
+  /* Every colour inside a scene comes from variables the script sets for that scene's mode. */
+  .scene {
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    color: var(--fg);
+    background: var(--lv0);
+    font-size: 13px;
+  }
+  .scene-bar { display: flex; justify-content: space-between; align-items: baseline; padding: 12px 14px 0; }
+  .scene-bar h2 { font: 600 18px var(--display); margin: 0; }
+  .scene-bar span { font: 11px var(--mono); color: var(--mfg); letter-spacing: 0.1em; text-transform: uppercase; }
+
+  .ladder { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); margin: 12px 14px 4px; border-radius: 10px; overflow: hidden; }
+  .rung { padding: 10px 8px 8px; min-height: 74px; display: flex; flex-direction: column; justify-content: space-between; }
+  .rung b { font: 600 12px var(--body); }
+  .rung small { font: 11px var(--mono); color: var(--mfg); font-variant-numeric: tabular-nums; }
+  .ladder-note { margin: 0 14px; font-size: 12px; color: var(--mfg); }
+
+  .label { font: 10px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--mfg); margin: 18px 14px 6px; }
+
+  .app { display: grid; grid-template-columns: 132px minmax(0, 1fr); margin: 0 14px; border-radius: 10px; overflow: hidden; outline: 1px solid var(--edge0); }
+  .rail { background: var(--rail); color: var(--rail-fg); padding: 12px 8px; display: grid; align-content: start; gap: 4px; }
+  .rail .brand { font: 600 13px var(--display); padding: 2px 8px 10px; color: var(--rail-brand); }
+  .rail a { color: inherit; text-decoration: none; padding: 6px 8px; border-radius: 6px; font-size: 12px; }
+  .rail a.on { background: var(--rail-on); color: var(--rail-brand); }
+  .canvas { padding: 10px; display: grid; gap: 10px; min-width: 0; }
+  .canvas h3 { margin: 0; font: 600 16px var(--display); }
+  .modules { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+  .module { border-radius: 10px; padding: 10px; display: grid; gap: 8px; align-content: start; position: relative; }
+  .module header { display: flex; justify-content: space-between; align-items: baseline; }
+  .module header strong { font: 600 14px var(--display); }
+  .module header a { color: var(--primary); font-size: 12px; text-decoration: none; }
+  .card { border-radius: 8px; padding: 9px 10px; display: grid; gap: 6px; }
+  .card .top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .card .name { font-weight: 700; }
+  .meta { color: var(--mfg); font-size: 12px; }
+  .money { color: var(--primary); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+  .chip { border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
+  .btn { font: 600 11px var(--body); border-radius: 6px; padding: 3px 9px; border: 1px solid var(--btn-edge, transparent); background: transparent; color: var(--fg); }
+  .note { border-radius: 6px; padding: 6px 8px; font-size: 12px; color: var(--mfg); }
+  .popover { position: absolute; right: 14px; top: 64px; width: 150px; border-radius: 8px; padding: 4px; display: grid; box-shadow: 0 10px 24px -10px rgb(0 0 0 / 0.45); z-index: 2; }
+  .popover span { padding: 6px 8px; border-radius: 5px; font-size: 12px; }
+  .popover span.hl { background: var(--pop-hover); }
+
+  .tablewrap { border-radius: 10px; overflow: hidden; }
+  .tablescroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 460px; font-variant-numeric: tabular-nums; }
+  th { text-align: left; font: 600 11px var(--body); color: var(--mfg); padding: 8px 10px; border-bottom: 1px solid var(--th-edge); background: var(--th-bg); }
+  td { padding: 8px 10px; }
+  tbody tr { background: var(--row); transition: background-color 120ms ease; }
+  tbody tr.odd { background: var(--row-band); }
+  tbody tr:hover, tbody tr.hover { background: var(--row-hover); }
+  tbody tr.sel { background: var(--row-sel); }
+  td .sub { display: block; color: var(--mfg); font-size: 11px; }
+
+  .site { margin: 0 14px 14px; border-radius: 10px; overflow: hidden; outline: 1px solid var(--edge0); }
+  .site-page { padding: 16px; display: grid; gap: 8px; justify-items: start; border-radius: 0 0 10px 10px; position: relative; z-index: 1; box-shadow: 0 12px 20px -14px rgb(0 0 0 / 0.5); }
+  .site-page h4 { margin: 0; font: 600 18px var(--display); }
+  .site-page p { margin: 0; color: var(--mfg); max-width: 46ch; }
+  .cta { background: var(--primary); color: var(--primary-fg); border-radius: 8px; padding: 7px 14px; font-weight: 700; font-size: 12px; }
+  .site-foot { padding: 14px 16px; display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 12px; }
+  .site-foot strong { font: 600 13px var(--display); width: 100%; }
+  .site-foot span { color: var(--mfg); }
+
+  .tell { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 8px; }
+  .tell h2 { margin: 0; font: 600 18px var(--display); }
+  .tell ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 90ch; }
+
+  @media (max-width: 560px) {
+    .app { grid-template-columns: minmax(0, 1fr); }
+    .rail { display: none; }
+    .ladder { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (prefers-reduced-motion: reduce) { tbody tr { transition: none; } }
+</style>
+
+<script id="ladder-config" type="application/json">__LADDER_CONFIG__</script>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow" id="eyebrow">Surfaces</div>
+    <h1>Elevation Ladder</h1>
+    <p class="lede">One base hue. The canvas is the darkest layer, and every surface stacked over another is one step lighter, in light and dark. Cards inside a section, a note inside a card and an open menu each climb one rung on their own. Chips and hovers step up from whatever they sit on. The site footer sits beneath the page, one rung down.</p>
+  </header>
+
+  <section class="controls" aria-label="Controls">
+    <div class="preset" role="group" aria-label="Compare" id="presets">
+      <button type="button" data-preset="proposed" aria-pressed="true">Proposed ladder</button>
+      <span class="preset-note" id="preset-note"></span>
+    </div>
+    <div class="sliders" id="sliders">
+      <fieldset>
+        <legend>Light mode</legend>
+        <label for="l-base">Canvas lightness <output id="o-l-base"></output><input id="l-base" type="range" min="0.8" max="0.98" step="0.001"></label>
+        <label for="l-step">Step per layer <output id="o-l-step"></output><input id="l-step" type="range" min="0.005" max="0.045" step="0.001"></label>
+        <label for="l-chroma">Tint strength <output id="o-l-chroma"></output><input id="l-chroma" type="range" min="0" max="0.04" step="0.001"></label>
+      </fieldset>
+      <fieldset>
+        <legend>Dark mode</legend>
+        <label for="d-base">Canvas lightness <output id="o-d-base"></output><input id="d-base" type="range" min="0.08" max="0.3" step="0.001"></label>
+        <label for="d-step">Step per layer <output id="o-d-step"></output><input id="d-step" type="range" min="0.01" max="0.07" step="0.001"></label>
+        <label for="d-chroma">Tint strength <output id="o-d-chroma"></output><input id="d-chroma" type="range" min="0" max="0.1" step="0.001"></label>
+      </fieldset>
+      <fieldset>
+        <legend>Both modes</legend>
+        <label for="hue">Hue <output id="o-hue"></output><input id="hue" type="range" min="0" max="359" step="1"></label>
+        <label for="edge">Edge contrast <output id="o-edge"></output><input id="edge" type="range" min="0" max="0.16" step="0.002"></label>
+        <label class="toggle" for="edges"><input id="edges" type="checkbox"> Hairline edges on cards</label>
+      </fieldset>
+    </div>
+    <div class="values">
+      <code id="values"></code>
+      <button type="button" class="copy" id="copy">Copy values</button>
+      <button type="button" class="ghost" id="reset">Back to picked</button>
+    </div>
+    <div class="picked" id="picked"></div>
+    <div class="warn" id="warn" hidden></div>
+  </section>
+
+  <div class="scenes" id="scenes"></div>
+
+  <section class="tell">
+    <h2>What to look at</h2>
+    <ol>
+      <li>Meetings: can you tell the section, each meeting card, and the note inside a card apart without hunting?</li>
+      <li>Records table: does the table read as one sheet on the canvas, with the header, the striped rows, a hovered row and the selected row all distinct?</li>
+      <li>Chips and the open menu: do they lift off the card under them in both modes?</li>
+      <li>Public site: does the footer clearly sit beneath the page in both modes?</li>
+      <li>Use the comparison buttons to see the same scenes with measured values.</li>
+    </ol>
+  </section>
+</div>
+
+<template id="scene-tpl">
+  <article class="scene">
+    <div class="scene-bar"><h2 class="mode-name"></h2><span class="mode-preset"></span></div>
+    <div class="ladder"></div>
+    <p class="ladder-note"></p>
+
+    <div class="label">Dashboard</div>
+    <div class="app">
+      <nav class="rail" aria-label="Sample navigation">
+        <div class="brand">TRI PROS</div>
+        <a class="on">Dashboard</a><a>Pipeline</a><a>Schedule</a><a>Customers</a><a>Meetings</a><a>Proposals</a>
+      </nav>
+      <div class="canvas" data-lvl="0">
+        <div><div class="eyebrow" style="color:var(--mfg)">Your desk</div><h3>Welcome back</h3></div>
+        <div class="modules">
+          <section class="surface module">
+            <header><strong>Meetings</strong><a>See all →</a></header>
+            <article class="surface card">
+              <div class="top"><span class="name">Dana Whitfield</span><span class="meta">10:00 AM</span></div>
+              <div class="meta">4127 Mariposa Ave, Glendale</div>
+              <div class="chips"><span class="chip">Roof &amp; Gutters</span><span class="chip">Fresh</span><button class="btn" type="button">Open</button></div>
+              <div class="surface note">Last note: wants the gutter guards priced separately.</div>
+            </article>
+            <article class="surface card">
+              <div class="top"><span class="name">Marcus Ilunga</span><span class="meta">1:30 PM</span></div>
+              <div class="meta">88 Sycamore Ct, Pasadena</div>
+              <div class="chips"><span class="chip">HVAC</span><span class="chip">Follow-up</span><button class="btn" type="button">Open</button></div>
+            </article>
+          </section>
+          <section class="surface module">
+            <header><strong>Proposals</strong><a>See all →</a></header>
+            <article class="surface card">
+              <div class="top"><span class="name">Kitchen refresh</span><span class="money">$41,250</span></div>
+              <div class="meta">Priya Raman · Windows &amp; doors · 6 days ago</div>
+            </article>
+            <article class="surface card">
+              <div class="top"><span class="name">Roof re-deck</span><span class="money">$28,900</span></div>
+              <div class="meta">Tomás Ferreira · Roof &amp; Gutters · 2 weeks ago</div>
+            </article>
+            <div class="surface popover" data-lvl="4" role="presentation">
+              <span class="hl">Edit proposal</span><span>Duplicate</span><span>Send to customer</span>
+            </div>
+          </section>
+        </div>
+
+        <div class="surface tablewrap">
+          <div class="tablescroll">
+            <table>
+              <thead><tr><th>Meeting</th><th>Type</th><th>Rep</th><th>Scheduled</th><th>Trade</th></tr></thead>
+              <tbody>
+                <tr><td>Dana Whitfield<span class="sub">4127 Mariposa Ave, Glendale</span></td><td>Fresh</td><td><span class="chip">SP</span></td><td>Today<span class="sub">10:00 AM</span></td><td>Roof &amp; Gutters</td></tr>
+                <tr class="odd"><td>Marcus Ilunga<span class="sub">88 Sycamore Ct, Pasadena</span></td><td>Follow-up</td><td><span class="chip">OP</span></td><td>Today<span class="sub">1:30 PM</span></td><td>HVAC</td></tr>
+                <tr class="hover"><td>Priya Raman<span class="sub">915 Laurel Canyon Blvd, Studio City</span></td><td>Fresh</td><td><span class="chip">SP</span></td><td>Tomorrow<span class="sub">9:00 AM</span></td><td>Windows &amp; doors</td></tr>
+                <tr class="odd sel"><td>Tomás Ferreira<span class="sub">2210 Vista Del Mar, Torrance</span></td><td>Project</td><td><span class="chip">SP</span></td><td>Friday<span class="sub">3:00 PM</span></td><td>Dryscaping</td></tr>
+                <tr><td>Grace Okafor<span class="sub">530 Rosewood Ln, Burbank</span></td><td>Fresh</td><td><span class="chip">OP</span></td><td>Monday<span class="sub">11:00 AM</span></td><td>Exterior paint</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="meta">Row 3 shows hover, row 4 is selected. Hover the other rows to try it.</div>
+      </div>
+    </div>
+
+    <div class="label">Public site · footer revealed under the page</div>
+    <div class="site">
+      <div class="site-page surface" data-lvl="0">
+        <h4>Our Premium Services</h4>
+        <p>From custom homes to full remodels, one team from design to final walkthrough.</p>
+        <span class="cta">Schedule a consultation</span>
+      </div>
+      <div class="site-foot surface" data-lvl="-1">
+        <strong>TRI PROS REMODELING</strong>
+        <span>Services</span><span>About Us</span><span>Projects</span><span>Contact</span>
+      </div>
+    </div>
+  </article>
+</template>
+
+<script>
+(() => {
+  const CONFIG = JSON.parse(document.getElementById('ladder-config').textContent)
+  const NAMES = { '-1': 'Beneath', 0: 'Canvas', 1: 'Section', 2: 'Card', 3: 'Card on card', 4: 'Menu / popover' }
+  const LEVELS = [-1, 0, 1, 2, 3, 4]
+  const $ = id => document.getElementById(id)
+  const SLIDERS = { 'l-base': ['light', 'canvas'], 'l-step': ['light', 'step'], 'l-chroma': ['light', 'tint'], 'd-base': ['dark', 'canvas'], 'd-step': ['dark', 'step'], 'd-chroma': ['dark', 'tint'] }
+  const ids = [...Object.keys(SLIDERS), 'hue', 'edge']
+  let preset = 'proposed'
+
+  const clamp = L => Math.max(0, Math.min(1, L))
+  const col = x => `oklch(${clamp(x.L).toFixed(4)} ${(x.c ?? 0).toFixed(4)} ${(x.h ?? 0).toFixed(1)})`
+  const mix = (a, b, pct) => `color-mix(in oklab, ${a} ${pct}%, ${b})`
+
+  function setPicked() {
+    const p = CONFIG.picked
+    for (const [id, [mode, key]] of Object.entries(SLIDERS)) $(id).value = p[mode][key]
+    $('hue').value = p.hue
+    $('edge').value = p.edge
+    $('edges').checked = p.edges !== false
+  }
+
+  function proposed(mode) {
+    const k = mode === 'light' ? 'l' : 'd'
+    const base = +$(`${k}-base`).value
+    const step = +$(`${k}-step`).value
+    const c = +$(`${k}-chroma`).value
+    const h = +$('hue').value
+    const lv = {}
+    for (const n of LEVELS) lv[n] = { L: base + n * step, c, h }
+    return { lv, step, c, h, relative: true, text: CONFIG.text?.[mode] ?? {} }
+  }
+
+  const compare = id => CONFIG.compare.find(m => m.id === id)
+
+  function ladderFor(mode) {
+    if (preset === 'proposed') return proposed(mode)
+    const m = compare(preset)[mode]
+    return { lv: m.lv, chip: m.chip, band: m.band, edge: m.edge, chipAt: m.chipAt, bandAt: m.bandAt, edgeAt: m.edgeAt, relative: false, text: m.text ?? {} }
+  }
+
+  function levelOf(el, scene) {
+    if (el.dataset.lvl !== undefined) return +el.dataset.lvl
+    for (let p = el.parentElement; p && p !== scene; p = p.parentElement) {
+      if (p.classList.contains('surface') || p.dataset.lvl !== undefined) return levelOf(p, scene) + 1
+    }
+    return 1
+  }
+
+  function paint(scene, mode) {
+    const lad = ladderFor(mode)
+    const dir = mode === 'light' ? -1 : 1
+    const edgeD = +$('edge').value
+    const edgesOn = $('edges').checked
+    const t = lad.text
+    const at = n => lad.lv[n] ?? lad.lv[4]
+    const shift = (n, d) => ({ ...at(n), L: at(n).L + d })
+    const surf = n => col(at(n))
+    // A measured build reports its chip, band and edge per rung; older presets carry one value for all rungs.
+    const measured = (byRung, single, n, fallback) => byRung?.[n] ? col(byRung[n]) : (single ? col(single) : fallback)
+    const edgeOf = n => lad.relative ? col(shift(n, dir * edgeD)) : measured(lad.edgeAt, lad.edge, n, surf(n))
+    const upOf = n => lad.relative ? col(shift(n, lad.step)) : measured(lad.chipAt, lad.chip, n, surf(n))
+
+    const s = scene.style
+    s.setProperty('--fg', t.fg ?? (mode === 'light' ? '#1d2433' : '#e9edf3'))
+    s.setProperty('--mfg', t.mfg ?? (mode === 'light' ? '#5b6475' : '#9aa4b4'))
+    s.setProperty('--primary', t.primary ?? '#0b63b6')
+    s.setProperty('--primary-fg', t.primaryFg ?? '#ffffff')
+    s.setProperty('--lv0', surf(0))
+    s.setProperty('--edge0', col(shift(0, dir * 0.08)))
+    const railLevel = CONFIG.rail?.[mode]
+    s.setProperty('--rail', typeof railLevel === 'number' ? surf(railLevel) : (t.rail ?? surf(1)))
+    s.setProperty('--rail-fg', t.railFg ?? t.fg)
+    s.setProperty('--rail-on', typeof railLevel === 'number' ? col(shift(railLevel, 2.2 * (lad.step ?? 0.03))) : (t.railOn ?? surf(2)))
+    s.setProperty('--rail-brand', t.railFg ?? t.fg ?? '#ffffff')
+
+    scene.querySelector('.mode-name').textContent = mode === 'light' ? 'Light' : 'Dark'
+    scene.querySelector('.mode-preset').textContent = preset === 'proposed' ? 'proposed ladder' : compare(preset).label
+
+    const rungs = scene.querySelector('.ladder')
+    rungs.textContent = ''
+    for (const n of LEVELS) {
+      const r = document.createElement('div')
+      r.className = 'rung'
+      r.style.background = surf(n)
+      r.innerHTML = `<b>${n} · ${NAMES[n]}</b><small>L ${clamp(at(n).L).toFixed(3)}</small>`
+      rungs.append(r)
+    }
+    const capped = LEVELS.filter(n => at(n).L > 1).length
+    scene.querySelector('.ladder-note').textContent = preset === 'proposed'
+      ? (capped ? `${capped} rung(s) hit pure white and stop climbing. Lower the canvas or the step.` : `Each rung is ${lad.step.toFixed(3)} lighter than the one below. Top rung ${at(4).L.toFixed(3)}.`)
+      : (compare(preset).note ?? `Measured from ${compare(preset).source}.`)
+
+    for (const el of scene.querySelectorAll('.surface')) {
+      const n = levelOf(el, scene)
+      el.style.background = surf(n)
+      const showEdge = edgesOn && n >= 1 && n <= 3
+      el.style.border = showEdge ? `1px solid ${edgeOf(n)}` : '0'
+      el.style.setProperty('--btn-edge', edgeOf(n))
+      el.style.setProperty('--pop-hover', upOf(n))
+      if (el.classList.contains('tablewrap')) {
+        const row = surf(n)
+        const band = lad.relative ? col(shift(n, lad.step * 0.5)) : measured(lad.bandAt, lad.band, n, row)
+        el.style.setProperty('--row', row)
+        el.style.setProperty('--row-band', band)
+        el.style.setProperty('--row-hover', mix(t.primary ?? '#0b63b6', row, 9))
+        el.style.setProperty('--row-sel', mix(t.primary ?? '#0b63b6', row, 16))
+        el.style.setProperty('--th-bg', row)
+        el.style.setProperty('--th-edge', edgeOf(n))
+        for (const chip of el.querySelectorAll('.chip')) chip.style.background = upOf(n)
+      }
+    }
+    for (const chip of scene.querySelectorAll('.card .chips .chip')) chip.style.background = upOf(levelOf(chip.closest('.surface'), scene))
+  }
+
+  const scenes = $('scenes')
+  const tpl = $('scene-tpl')
+  const light = tpl.content.firstElementChild.cloneNode(true)
+  const dark = tpl.content.firstElementChild.cloneNode(true)
+  scenes.append(light, dark)
+
+  const presets = $('presets')
+  for (const m of CONFIG.compare ?? []) {
+    const b = document.createElement('button')
+    b.type = 'button'
+    b.dataset.preset = m.id
+    b.setAttribute('aria-pressed', 'false')
+    b.textContent = m.label
+    presets.insertBefore(b, $('preset-note'))
+  }
+
+  function valuesString() {
+    const v = id => (+$(id).value).toFixed(3)
+    return `light canvas ${v('l-base')} step ${v('l-step')} tint ${v('l-chroma')} · dark canvas ${v('d-base')} step ${v('d-step')} tint ${v('d-chroma')} · hue ${$('hue').value} · edge ${v('edge')}${$('edges').checked ? '' : ' · edges off'}`
+  }
+
+  function render() {
+    for (const id of ids) $(`o-${id}`).textContent = (+$(id).value).toFixed(id === 'hue' ? 0 : 3)
+    const sliders = $('sliders')
+    sliders.setAttribute('aria-disabled', preset === 'proposed' ? 'false' : 'true')
+    for (const input of sliders.querySelectorAll('input')) input.disabled = preset !== 'proposed'
+    paint(light, 'light')
+    paint(dark, 'dark')
+    $('values').textContent = valuesString()
+    const lTop = +$('l-base').value + 4 * +$('l-step').value
+    const w = $('warn')
+    w.hidden = !(preset === 'proposed' && lTop > 1)
+    w.textContent = `Light mode tops out at ${lTop.toFixed(3)}: the upper rungs flatten into white.`
+    $('preset-note').textContent = preset === 'proposed' ? 'Drag the sliders until both scenes read right.' : 'Read-only: values measured from that build.'
+  }
+
+  $('eyebrow').textContent = `${CONFIG.project ?? 'App'} · surfaces`
+  const p = CONFIG.picked
+  $('picked').textContent = p.date ? `Sliders start at the values picked on ${p.date}.` : ''
+  setPicked()
+  for (const id of ids) $(id).addEventListener('input', render)
+  $('edges').addEventListener('change', render)
+  presets.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-preset]')
+    if (!b) return
+    preset = b.dataset.preset
+    for (const o of presets.querySelectorAll('button')) o.setAttribute('aria-pressed', String(o === b))
+    render()
+  })
+  $('reset').addEventListener('click', () => { setPicked(); render() })
+  $('copy').addEventListener('click', () => {
+    const text = $('values').textContent
+    const done = label => { $('copy').textContent = label; setTimeout(() => { $('copy').textContent = 'Copy values' }, 1800) }
+    const select = () => {
+      const r = document.createRange()
+      r.selectNodeContents($('values'))
+      const sel = getSelection()
+      sel.removeAllRanges()
+      sel.addRange(r)
+      done('Selected, press Ctrl+C')
+    }
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(() => done('Copied'), select)
+    else select()
+  })
+  render()
+})()
+</script>

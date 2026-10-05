@@ -1,7 +1,8 @@
 'use client'
 
-import type { ColumnFiltersState, ColumnSizingState, FilterFnOption, SortingState, VisibilityState } from '@tanstack/react-table'
-import type { DataTableProps, DataTableTimePresetFilter } from '@/shared/components/data-table/types'
+import type { ColumnDef, ColumnFiltersState, ColumnSizingState, ExpandedState, FilterFnOption, Row, SortingState, TableMeta, Updater, VisibilityState } from '@tanstack/react-table'
+import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react'
+import type { DataTableFilterConfig, DataTableServerPagination, DataTableServerSorting, DataTableTimePresetFilter } from '@/shared/components/data-table/types'
 
 import {
   flexRender,
@@ -11,55 +12,60 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { PinIcon, RefreshCw } from 'lucide-react'
+import { PinIcon } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { SKELETON_CELL_WIDTHS, SKELETON_ROW_HEIGHT_CLASS } from '@/shared/components/data-table/constants/skeleton-widths'
+import { CELL_BORDER } from '@/shared/components/data-table/constants/cell-border'
+import { FROZEN_COLUMN_SHADOW } from '@/shared/components/data-table/constants/frozen-column-shadow'
+import { SKELETON_ROW_HEIGHT_CLASS } from '@/shared/components/data-table/constants/skeleton-widths'
+import { useTablePreferences } from '@/shared/components/data-table/contexts/table-preferences-context'
 import { usePullToRefresh } from '@/shared/components/data-table/hooks/use-pull-to-refresh'
 import { createDateRangeFilterFn } from '@/shared/components/data-table/lib/filter-fns'
+import { isRowClick } from '@/shared/components/data-table/lib/is-row-click'
+import { mapColumnSortIds } from '@/shared/components/data-table/lib/map-column-sort-ids'
+import { DataTableBody } from '@/shared/components/data-table/ui/data-table-body'
 import { DataTableFilterBar } from '@/shared/components/data-table/ui/data-table-filter-bar'
 import { DataTablePagination } from '@/shared/components/data-table/ui/data-table-pagination'
-import { ErrorState } from '@/shared/components/states/error-state'
-import { Skeleton } from '@/shared/components/ui/skeleton'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
+import { Table, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
+import { useStableCallbacks } from '@/shared/hooks/use-stable-callbacks'
 import { cn } from '@/shared/lib/utils'
 
-// ---------------------------------------------------------------------------
-// localStorage helpers
-// ---------------------------------------------------------------------------
-
-const COL_SIZE_KEY = 'dt-col-sizes'
-const FROZEN_KEY = 'dt-frozen'
-
-function loadColumnSizing(tableId: string): ColumnSizingState {
-  try {
-    const raw = localStorage.getItem(`${COL_SIZE_KEY}:${tableId}`)
-    return raw ? JSON.parse(raw) as ColumnSizingState : {}
-  }
-  catch {
-    return {}
-  }
+export interface DataTableProps<TData, TMeta = unknown> {
+  data: TData[]
+  columns: ColumnDef<TData>[]
+  /**
+   * Read by cells through `table.options.meta`. Function entries are event callbacks: they stay stable and
+   * always run the latest version. Anything a cell reads while rendering must be a value, because rows
+   * re-render only when a value here changes identity. For the same reason, cells must not read table state
+   * or selection (`table.getState()`, `row.getIsSelected()`) while rendering: rows re-render only when their
+   * data, expansion, `meta` values or columns change.
+   */
+  meta?: TMeta
+  /** Unique ID under which the viewer's column widths, frozen column and hidden columns persist. Omit to keep them for this mount only. */
+  tableId?: string
+  filterConfig?: DataTableFilterConfig[]
+  defaultSort?: SortingState
+  /** Client-side page size. Ignored when `serverPagination` is provided. */
+  pageSize?: number
+  entityName?: string
+  rowDataAttribute?: string
+  getRowClassName?: (row: TData) => string | undefined
+  onRowClick?: (row: TData) => void
+  /** When set, a row click expands the row and renders this below it instead of calling `onRowClick`. */
+  renderExpandedRow?: (row: TData) => ReactNode
+  onFilteredCountChange?: (count: number) => void
+  onFilteredDataChange?: (data: TData[]) => void
+  /** When set, the caller owns page state and `data` holds only the current page's rows. */
+  serverPagination?: DataTableServerPagination
+  serverSorting?: DataTableServerSorting
+  columnVisibility?: VisibilityState
+  /** The loading rows' height class, when this table's rows render at a height other than the default's. */
+  skeletonRowClassName?: string
 }
 
-function loadFrozen(tableId: string): boolean {
-  try {
-    return localStorage.getItem(`${FROZEN_KEY}:${tableId}`) !== 'false'
-  }
-  catch {
-    return true
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Shared class constants
-// ---------------------------------------------------------------------------
-
-const CELL_BORDER = 'border-b border-border/50'
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
+const NO_COLUMN_SIZING: ColumnSizingState = {}
+const NO_META = {}
 
 interface Props<TData, TMeta = unknown> extends DataTableProps<TData, TMeta> {
   onActiveRowChange?: (id: string | null) => void
@@ -78,155 +84,58 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   getRowClassName,
   onActiveRowChange,
   onRowClick,
+  renderExpandedRow,
   onFilteredCountChange,
   onFilteredDataChange,
   serverPagination,
   serverSorting,
   columnVisibility: controlledColumnVisibility,
+  skeletonRowClassName = SKELETON_ROW_HEIGHT_CLASS,
 }: Props<TData, TMeta>) {
   const isMobile = useIsMobile()
   const [activeRowId, setActiveRowId] = useState<string | null>(null)
   const [internalSorting, setInternalSorting] = useState<SortingState>(defaultSort ?? [])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [expanded, setExpanded] = useState<ExpandedState>({})
 
-  // -- Server sort bridge ---------------------------------------------------
-  // When `serverSorting` is set, present its sort state to TanStack Table
-  // (with fallbackVisual filling in when sortBy is undefined). Column-header
-  // clicks dispatch through `serverSorting.onSortChange` instead of mutating
-  // local state.
+  const { sortIdByColumnId, columnIdBySortId } = useMemo(() => mapColumnSortIds(columns), [columns])
 
   const sorting: SortingState = useMemo(() => {
     if (!serverSorting) {
       return internalSorting
     }
-    if (serverSorting.sortBy) {
-      return [{ id: serverSorting.sortBy, desc: serverSorting.sortDir !== 'asc' }]
-    }
-    if (serverSorting.fallbackVisual) {
-      return [serverSorting.fallbackVisual]
-    }
-    return []
-  }, [serverSorting, internalSorting])
-  // Default state matches SSR. Hydration from localStorage happens in the
-  // effect below — reading during `useState` init renders server-side with
-  // defaults but tries to apply saved values during hydration, and React 18
-  // refuses to patch layout-affecting attribute mismatches like column
-  // widths ("This won't be patched up"). Saved values then never reach the
-  // DOM. `isFrozen` uses a `null` sentinel for the pre-hydration value so
-  // the persist effect can tell "not yet loaded" from "user chose true".
-  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({})
-  const [isFrozen, setIsFrozen] = useState<boolean | null>(null)
-  const [isScrolled, setIsScrolled] = useState(false)
-
-  // Hydrate from localStorage after mount. The setState calls below are
-  // the intentional double-render — server and client both first render
-  // with defaults so hydration matches, then this effect updates state to
-  // saved values for the next render.
-  useEffect(() => {
-    if (!tableId) {
-      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect -- hydration sentinel
-      setIsFrozen(true)
-      return
-    }
-    // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect -- localStorage hydration
-    setColumnSizing(loadColumnSizing(tableId))
-    // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect -- localStorage hydration
-    setIsFrozen(loadFrozen(tableId))
-  }, [tableId])
-
-  const isFrozenEffective = isFrozen ?? true
-
-  // -- Container width + scroll tracking ------------------------------------
+    const shown = serverSorting.sortBy
+      ? { sortId: serverSorting.sortBy, desc: serverSorting.sortDir !== 'asc' }
+      : serverSorting.fallbackVisual && { sortId: serverSorting.fallbackVisual.id, desc: serverSorting.fallbackVisual.desc }
+    const columnId = shown ? columnIdBySortId.get(shown.sortId) : undefined
+    return shown && columnId ? [{ id: columnId, desc: shown.desc }] : []
+  }, [serverSorting, internalSorting, columnIdBySortId])
+  const [preferences, updatePreferences] = useTablePreferences(tableId)
+  const columnSizing = preferences.sizes ?? NO_COLUMN_SIZING
+  const isFrozen = preferences.frozen ?? true
 
   const scrollRef = useRef<HTMLDivElement>(null)
-  const [containerWidth, setContainerWidth] = useState(0)
 
-  // -- Pull-to-refresh (touch) ----------------------------------------------
-  // Distance is driven by a CSS var on the scroll container (see the hook) —
-  // `isRefreshing` is the only React state, toggled once per refresh.
   const { isRefreshing } = usePullToRefresh(scrollRef, serverPagination?.onRefresh)
-
-  useEffect(() => {
-    const el = scrollRef.current
-    if (!el) {
-      return
-    }
-    const ro = new ResizeObserver(([entry]) => {
-      if (entry) {
-        setContainerWidth(entry.contentRect.width)
-      }
-    })
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
 
   const handleScroll = useCallback(() => {
     const el = scrollRef.current
     if (el) {
-      setIsScrolled(el.scrollLeft > 0)
+      el.toggleAttribute('data-scrolled', el.scrollLeft > 0)
     }
   }, [])
 
-  // -- Persist column sizes (debounced) -------------------------------------
-  // 300ms debounce keeps localStorage off the drag hot-path. The unmount
-  // flush below catches the case where the timer is cancelled before it
-  // fires — typically when the user reloads or navigates within 300ms of
-  // the last drag tick, which used to silently lose the resize.
-  const latestColumnSizing = useRef(columnSizing)
-  latestColumnSizing.current = columnSizing
-
-  // Skip the empty state — that covers both the pre-hydration default and
-  // the "user reset all columns" case. Both should NOT overwrite saved
-  // widths (the first would wipe them on mount; users who genuinely want a
-  // clean slate can clear localStorage).
-  useEffect(() => {
-    if (!tableId || Object.keys(columnSizing).length === 0) {
-      return
-    }
-    const timer = setTimeout(() => {
-      try {
-        localStorage.setItem(`${COL_SIZE_KEY}:${tableId}`, JSON.stringify(columnSizing))
-      }
-      catch { /* localStorage unavailable */ }
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [tableId, columnSizing])
-
-  // Synchronous flush on unmount. Reads via ref so we capture the latest
-  // sizing — the value closed over by the debounced effect would be stale
-  // by the time this cleanup runs. Same empty-state guard.
-  useEffect(() => () => {
-    if (!tableId) {
-      return
-    }
-    const sizing = latestColumnSizing.current
-    if (Object.keys(sizing).length === 0) {
-      return
-    }
-    try {
-      localStorage.setItem(`${COL_SIZE_KEY}:${tableId}`, JSON.stringify(sizing))
-    }
-    catch { /* localStorage unavailable */ }
-  }, [tableId])
-
-  // -- Persist frozen state -------------------------------------------------
-  // Skip the `null` sentinel — that's the pre-hydration value and writing
-  // it would clobber the user's saved choice with the default `true`.
-  useEffect(() => {
-    if (!tableId || isFrozen === null) {
-      return
-    }
-    try {
-      localStorage.setItem(`${FROZEN_KEY}:${tableId}`, String(isFrozen))
-    }
-    catch { /* localStorage unavailable */ }
-  }, [tableId, isFrozen])
+  // Whole pixels, so the width the server renders from the cookie is the width the client computes.
+  const setColumnSizing = useCallback((updater: Updater<ColumnSizingState>) => {
+    updatePreferences((prev) => {
+      const next = typeof updater === 'function' ? updater(prev.sizes ?? NO_COLUMN_SIZING) : updater
+      return { ...prev, sizes: Object.fromEntries(Object.entries(next).map(([id, width]) => [id, Math.round(width)])) }
+    })
+  }, [updatePreferences])
 
   const toggleFrozen = useCallback(() => {
-    setIsFrozen(prev => !(prev ?? true))
-  }, [])
-
-  // -- Column visibility ----------------------------------------------------
+    updatePreferences(prev => ({ ...prev, frozen: (prev.frozen ?? true) ? false : undefined }))
+  }, [updatePreferences])
 
   const fallbackColumnVisibility = useMemo<VisibilityState>(() => {
     const visibility: VisibilityState = {}
@@ -240,8 +149,6 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   }, [columns])
 
   const columnVisibility = controlledColumnVisibility ?? fallbackColumnVisibility
-
-  // -- Time-preset filter machinery -----------------------------------------
 
   const timePresetFilters = useMemo(
     () => (filterConfig?.filter((f): f is DataTableTimePresetFilter => f.type === 'time-preset') ?? []),
@@ -270,8 +177,6 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
     })
   }, [columns, timePresetFilters])
 
-  // -- Active-row management ------------------------------------------------
-
   useEffect(() => {
     onActiveRowChange?.(activeRowId)
   }, [activeRowId, onActiveRowChange])
@@ -296,7 +201,25 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
     }
   }, [activeRowId, rowDataAttribute])
 
-  // -- TanStack Table instance ----------------------------------------------
+  const stableMeta = useStableCallbacks((meta ?? NO_META) as object) as TableMeta<TData>
+  const { handleRowClick } = useStableCallbacks({
+    handleRowClick: (event: ReactMouseEvent<HTMLTableRowElement>, row: Row<TData>) => {
+      if (onRowClick || renderExpandedRow) {
+        if (!isRowClick(event, window.getSelection()?.toString() ?? '')) {
+          return
+        }
+        if (renderExpandedRow) {
+          row.toggleExpanded()
+        }
+        else {
+          onRowClick?.(row.original)
+        }
+      }
+      else if (isMobile) {
+        setActiveRowId(prev => prev === row.original.id ? null : row.original.id)
+      }
+    },
+  })
 
   const table = useReactTable({
     data,
@@ -308,6 +231,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
       columnFilters,
       columnVisibility,
       columnSizing,
+      expanded,
       ...(serverPagination
         ? { pagination: { pageIndex: serverPagination.pageIndex, pageSize: serverPagination.pageSize } }
         : {}),
@@ -320,17 +244,25 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
             serverSorting.onSortChange(undefined)
             return
           }
-          // Don't dispatch when the click matches the fallback visual — that
-          // would write a redundant URL key for the server's natural order.
-          const fallback = serverSorting.fallbackVisual
-          if (fallback && head.id === fallback.id && head.desc === fallback.desc && !serverSorting.sortBy) {
+          const sortId = sortIdByColumnId.get(head.id)
+          if (!sortId) {
             return
           }
-          serverSorting.onSortChange(head.id, head.desc ? 'desc' : 'asc')
+          // Matching the fallback visual would write a redundant URL key for the server's natural order.
+          const fallback = serverSorting.fallbackVisual
+          if (fallback && sortId === fallback.id && head.desc === fallback.desc && !serverSorting.sortBy) {
+            return
+          }
+          serverSorting.onSortChange(sortId, head.desc ? 'desc' : 'asc')
         }
       : setInternalSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnSizingChange: setColumnSizing,
+    onExpandedChange: setExpanded,
+    getRowId: row => row.id,
+    getRowCanExpand: () => !!renderExpandedRow,
+    // Expansion is cleared on page, size and sort changes below; a same-page refetch keeps rows open.
+    autoResetExpanded: false,
     onPaginationChange: serverPagination
       ? (updater) => {
           const prev = { pageIndex: serverPagination.pageIndex, pageSize: serverPagination.pageSize }
@@ -353,27 +285,21 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
       ? { manualPagination: true, manualFiltering: true, rowCount: serverPagination.rowCount }
       : { getPaginationRowModel: getPaginationRowModel(), initialState: { pagination: { pageSize } } }),
     ...(serverSorting ? { manualSorting: true } : {}),
-    meta: {
-      ...meta,
-      activeRowId,
-    } as TMeta & { activeRowId: string | null },
+    meta: stableMeta,
   })
+
+  // Derived during render, not in a handler: page size and the toolbar's Reset change the URL state without going through this table's handlers.
+  const { pageIndex, pageSize: currentPageSize } = table.getState().pagination
+  const expansionResetKey = `${pageIndex}:${currentPageSize}:${JSON.stringify(sorting)}`
+  const [lastExpansionResetKey, setLastExpansionResetKey] = useState(expansionResetKey)
+  if (expansionResetKey !== lastExpansionResetKey) {
+    setLastExpansionResetKey(expansionResetKey)
+    setExpanded({})
+  }
 
   const isAnyColumnResizing = !!table.getState().columnSizingInfo.isResizingColumn
 
-  // -- Exact table & column sizing ------------------------------------------
-
-  const flatHeaders = table.getFlatHeaders()
-  const totalDeclaredWidth = flatHeaders.reduce((sum, h) => sum + h.getSize(), 0)
-  const effectiveContainer = containerWidth || totalDeclaredWidth
-  const needsOverflow = totalDeclaredWidth > effectiveContainer
-  const tableWidth = needsOverflow ? totalDeclaredWidth : effectiveContainer
-  const lastColExtra = needsOverflow ? 0 : effectiveContainer - totalDeclaredWidth
-
-  // Frozen column shows shadow only when scrolled horizontally
-  const showFrozenShadow = isFrozenEffective && isScrolled
-
-  // -- Filtered-data callbacks ----------------------------------------------
+  const totalDeclaredWidth = table.getFlatHeaders().reduce((sum, h) => sum + h.getSize(), 0)
 
   const filteredRows = table.getFilteredRowModel().rows
   const filteredCount = filteredRows.length
@@ -386,8 +312,6 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
     onFilteredDataChange?.(filteredRows.map(r => r.original))
   }, [filteredRows, onFilteredDataChange])
 
-  // -- Render ---------------------------------------------------------------
-
   return (
     <div className="flex flex-col h-full gap-4">
       {filterConfig && filterConfig.length > 0 && (
@@ -396,29 +320,35 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
         </div>
       )}
 
-      <div className="grow min-h-0 flex flex-col rounded-xl border border-border/50 overflow-hidden">
+      <div className="grow min-h-0 flex flex-col rounded-xl border overflow-hidden surface">
         <div
           ref={scrollRef}
           onScroll={handleScroll}
           className={cn(
-            'grow min-h-0 overflow-auto overscroll-none touch-pan-x touch-pan-y',
-            '**:data-[slot=table-container]:overflow-visible',
+            'group/scroller grow min-h-0 overflow-auto overscroll-none touch-pan-x touch-pan-y',
+            // The pull spinner and expanded panels size to the visible width with `cqw`, without measuring it.
+            // The size container is this scroller's full-width child, not the scroller: Chromium resolves a
+            // scroller's own `cqw` with its vertical scrollbar included, so `100cqw` overflowed it sideways.
+            '**:data-[slot=table-container]:overflow-visible *:data-[slot=table-container]:@container',
             isAnyColumnResizing && 'cursor-col-resize select-none',
           )}
         >
+          {/* Fills the container or overflows it in CSS alone, so a window resize runs no script and re-renders nothing. */}
           <Table
-            className="table-fixed border-separate border-spacing-0"
-            style={{ width: tableWidth }}
-            aria-busy={!!serverPagination?.isFetching}
+            className="table-fixed border-separate border-spacing-0 transition-opacity duration-200 data-[stale=true]:opacity-60 data-[stale=true]:delay-200"
+            style={{ width: totalDeclaredWidth, minWidth: '100%' }}
+            aria-busy={!!(serverPagination?.isFetching || serverPagination?.isStale)}
+            data-stale={serverPagination?.isStale || undefined}
           >
-            <TableHeader className="sticky top-0 z-10 bg-background">
+            <TableHeader className="sticky top-0 z-10 bg-(--card)">
               {table.getHeaderGroups().map(headerGroup => (
                 <TableRow key={headerGroup.id} className="hover:bg-transparent border-border/50">
                   {headerGroup.headers.map((header, colIdx) => {
                     const isColResizing = header.column.getIsResizing()
                     const isFirstCol = colIdx === 0
                     const isLastCol = colIdx === headerGroup.headers.length - 1
-                    const colWidth = header.getSize() + (isLastCol ? lastColExtra : 0)
+                    // Under table-layout: fixed the one auto-width column takes the slack, so the last column fills a wide container.
+                    const colWidth = isLastCol ? undefined : header.getSize()
 
                     return (
                       <TableHead
@@ -426,18 +356,16 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                         className={cn(
                           'group/th relative',
                           CELL_BORDER,
-                          isFirstCol && isFrozenEffective && cn(
-                            'sticky left-0 z-30 bg-background border-r border-border/50',
-                            'transition-shadow duration-200',
-                            showFrozenShadow && 'shadow-[4px_0_8px_0_rgba(0,0,0,0.3)]',
+                          isFirstCol && isFrozen && cn(
+                            'sticky left-0 z-30 bg-(--card) border-r border-border/50',
+                            FROZEN_COLUMN_SHADOW,
                           ),
                         )}
                         style={{
                           width: colWidth,
-                          ...(isFirstCol && isFrozenEffective ? { borderRightStyle: 'dashed' as const } : undefined),
+                          ...(isFirstCol && isFrozen ? { borderRightStyle: 'dashed' as const } : undefined),
                         }}
                       >
-                        {/* Header content — first col gets a pin toggle */}
                         {isFirstCol
                           ? (
                               <div className="flex items-center gap-1">
@@ -453,12 +381,12 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                                     toggleFrozen()
                                   }}
                                   className="shrink-0 cursor-pointer rounded p-0.5 hover:bg-muted"
-                                  title={isFrozenEffective ? 'Unfreeze column' : 'Freeze column'}
+                                  title={isFrozen ? 'Unfreeze column' : 'Freeze column'}
                                 >
                                   <PinIcon
                                     className={cn(
                                       'h-3 w-3 rotate-45 transition-colors',
-                                      isFrozenEffective
+                                      isFrozen
                                         ? 'fill-foreground text-foreground'
                                         : 'text-muted-foreground/50',
                                     )}
@@ -471,7 +399,6 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                               : flexRender(header.column.columnDef.header, header.getContext())
                             )}
 
-                        {/* Resize handle — centred on the column's right edge */}
                         {header.column.getCanResize() && !isLastCol && (
                           <div
                             data-resize-handle
@@ -492,7 +419,6 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                           </div>
                         )}
 
-                        {/* Last column: resize handle on the RIGHT edge (inside the cell) */}
                         {header.column.getCanResize() && isLastCol && (
                           <div
                             data-resize-handle
@@ -519,127 +445,22 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
               ))}
             </TableHeader>
 
-            <TableBody>
-              {/* Pull-to-refresh spacer — reflows the rows down (no transform,
-                  so the frozen first column's sticky-left survives). Height and
-                  spinner opacity are driven by the `--dt-pull` CSS var the hook
-                  writes on the scroll container — no React render on the drag
-                  hot path. `--dt-pull-ms` is 0 while dragging (1:1 follow) and
-                  ~220ms on release (smooth retract). The spinner is bottom-
-                  anchored so it sits directly above row 1 and reads fully as the
-                  strip opens. `--dt-pull` is unitless; opacity divisor mirrors
-                  PULL_TO_REFRESH_THRESHOLD (64). */}
-              {serverPagination?.onRefresh && (
-                <tr aria-hidden>
-                  <td colSpan={table.getVisibleFlatColumns().length} className="border-0 p-0">
-                    <div
-                      className="overflow-hidden"
-                      style={{ height: 'calc(var(--dt-pull, 0) * 1px)', transition: 'height var(--dt-pull-ms, 0ms) ease-out' }}
-                    >
-                      {/* Center on the VIEWPORT, not the full (scrollable) table
-                          width — constrain the centering region to the measured
-                          container width so justify-center lands on screen for
-                          horizontally-overflowing tables. */}
-                      <div className="flex h-16 items-end justify-center pb-2" style={{ width: containerWidth || undefined }}>
-                        <div
-                          className="rounded-full border border-border/50 bg-background p-1.5 shadow-sm"
-                          style={{ opacity: 'calc(var(--dt-pull, 0) / 64)', transition: 'opacity var(--dt-pull-ms, 0ms) ease-out' }}
-                        >
-                          <RefreshCw className={cn('size-4 text-muted-foreground', isRefreshing && 'motion-safe:animate-spin')} />
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              )}
-              {(() => {
-                const dataRows = table.getRowModel().rows
-                if (dataRows.length > 0) {
-                  return null
-                }
-                if (serverPagination?.isFetching) {
-                  const visibleCols = table.getVisibleFlatColumns()
-                  return Array.from({ length: 5 }).map((_, rowIdx) => (
-                    // eslint-disable-next-line react/no-array-index-key -- static skeleton list, no reordering
-                    <TableRow key={`skeleton-row-${rowIdx}`} className={cn('border-border/50 hover:bg-transparent', SKELETON_ROW_HEIGHT_CLASS)}>
-                      {visibleCols.map((col, colIdx) => (
-                        <TableCell key={`skeleton-${rowIdx}-${col.id}`} className={CELL_BORDER}>
-                          <Skeleton className={cn('h-3.5', SKELETON_CELL_WIDTHS[colIdx % SKELETON_CELL_WIDTHS.length])} />
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                }
-                if (serverPagination?.isError) {
-                  return (
-                    <TableRow>
-                      <TableCell colSpan={columns.length} className="h-24 p-0">
-                        <ErrorState title={`Couldn't load ${entityName}s`} description="Please try again." className="border-0" />
-                      </TableCell>
-                    </TableRow>
-                  )
-                }
-                return (
-                  <TableRow>
-                    <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
-                      No
-                      {' '}
-                      {entityName}
-                      s match your filter.
-                    </TableCell>
-                  </TableRow>
-                )
-              })()}
-              {table.getRowModel().rows.map((row) => {
-                const rowProps: Record<string, unknown> = { [rowDataAttribute]: true }
-                const customRowClass = getRowClassName?.(row.original)
-
-                return (
-                  <TableRow
-                    key={row.id}
-                    className={`group cursor-pointer border-border/50${customRowClass ? ` ${customRowClass}` : ''}`}
-                    onClick={() => {
-                      if (onRowClick) {
-                        onRowClick(row.original)
-                      }
-                      else if (isMobile) {
-                        setActiveRowId(prev => prev === row.original.id ? null : row.original.id)
-                      }
-                    }}
-                    {...rowProps}
-                  >
-                    {row.getVisibleCells().map((cell, colIdx) => {
-                      if (colIdx === 0 && isFrozenEffective) {
-                        return (
-                          <TableCell
-                            key={cell.id}
-                            className={cn(
-                              'sticky left-0 z-5 p-0 border-r border-border/50',
-                              CELL_BORDER,
-                              'transition-shadow duration-200',
-                              showFrozenShadow && 'shadow-[4px_0_8px_0_rgba(0,0,0,0.3)]',
-                            )}
-                            style={{ borderRightStyle: 'dashed' }}
-                          >
-                            <div className="absolute inset-0 bg-background group-hover:bg-muted/50 transition-colors" />
-                            {customRowClass && <div className={cn('absolute inset-0', customRowClass)} />}
-                            <div className="relative p-2">
-                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                            </div>
-                          </TableCell>
-                        )
-                      }
-
-                      return (
-                        <TableCell key={cell.id} className={CELL_BORDER}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </TableCell>
-                      )
-                    })}
-                  </TableRow>
-                )
-              })}
-            </TableBody>
+            <DataTableBody
+              table={table}
+              rows={table.getRowModel().rows}
+              isColumnResizing={isAnyColumnResizing}
+              columnCount={columns.length}
+              entityName={entityName}
+              tableId={tableId}
+              rowDataAttribute={rowDataAttribute}
+              getRowClassName={getRowClassName}
+              renderExpandedRow={renderExpandedRow}
+              onRowClick={handleRowClick}
+              isFrozen={isFrozen}
+              serverPagination={serverPagination}
+              isRefreshing={isRefreshing}
+              skeletonRowClassName={skeletonRowClassName}
+            />
           </Table>
         </div>
 

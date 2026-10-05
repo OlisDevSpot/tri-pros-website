@@ -1,14 +1,13 @@
 'use client'
 
-import type { PortfolioProject } from '@/shared/entities/projects/types'
-import type { ScopeOrAddon } from '@/shared/services/providers/notion/lib/scopes/schema'
-import type { Trade } from '@/shared/services/providers/notion/lib/trades/schema'
+import type { Scope, Trade } from '@/shared/modules/construction/core/schemas'
+import type { PortfolioProject } from '@/shared/modules/projects/core/types'
 import { AnimatePresence, motion } from 'motion/react'
 import { PortfolioProjectCard } from '@/features/project-management/ui/components/portfolio-project-card'
 
 interface Props {
   projects: PortfolioProject[]
-  allScopes: ScopeOrAddon[]
+  allScopes: Scope[]
   allTrades: Trade[]
 }
 

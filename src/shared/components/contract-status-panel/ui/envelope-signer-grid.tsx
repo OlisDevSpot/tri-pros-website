@@ -16,8 +16,8 @@ interface EnvelopeSignerGridProps {
 const ACTION_ICONS: Record<ZohoActionStatus, React.ReactNode> = {
   NOACTION: <Minus className="size-3.5 text-muted-foreground" aria-hidden />,
   UNOPENED: <Mail className="size-3.5 text-muted-foreground" aria-hidden />,
-  VIEWED: <Eye className="size-3.5 text-blue-500" aria-hidden />,
-  SIGNED: <CheckCircle className="size-3.5 text-green-500" aria-hidden />,
+  VIEWED: <Eye className="size-3.5 text-status-info-fg" aria-hidden />,
+  SIGNED: <CheckCircle className="size-3.5 text-status-success-fg" aria-hidden />,
 }
 
 const ACTION_LABELS: Record<ZohoActionStatus, string> = {
@@ -36,14 +36,14 @@ export function EnvelopeSignerGrid({ signerStatuses }: EnvelopeSignerGridProps) 
           className={cn(
             'flex items-center gap-3 rounded-lg border p-3',
             signer.status === 'SIGNED'
-              ? 'border-green-500/20 bg-green-500/5'
+              ? 'border-status-success-dot/40 bg-status-success-bg/70'
               : 'border-border bg-muted/30',
           )}
         >
           <div
             className={cn(
               'flex size-8 shrink-0 items-center justify-center rounded-full',
-              signer.status === 'SIGNED' ? 'bg-green-500/10' : 'bg-muted',
+              signer.status === 'SIGNED' ? 'bg-status-success-bg' : 'bg-muted',
             )}
           >
             {ACTION_ICONS[signer.status]}

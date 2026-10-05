@@ -1,6 +1,6 @@
 # Derived Values — Snapshot / Cache / Just-in-Time
 
-Any value that is a pure function of other stored data is a **derived value**. The default is: don't store it — compute it just-in-time from a single canonical helper. Persisting one is a deliberate exception with exactly two sanctioned forms (**snapshot** and **cache column**), each with its own discipline. Ratified 2026-07-17 (during the Wave-2 cutover); supersedes the old blanket "never persist derived values" rule. The proposal-specific canonical case is `src/shared/entities/proposals/DOCS.md#final-tcp-derived`; schema-level placement rationale is [ADR-0005](../adr/0005-jsonb-vs-column-vs-child-table.md).
+Any value that is a pure function of other stored data is a **derived value**. The default is: don't store it — compute it just-in-time from a single canonical helper. Persisting one is a deliberate exception with exactly two sanctioned forms (**snapshot** and **cache column**), each with its own discipline. Ratified 2026-07-17 (during the Wave-2 cutover); supersedes the old blanket "never persist derived values" rule. The proposal-specific canonical case is `src/shared/modules/proposals/core/DOCS.md#final-tcp-derived`; schema-level placement rationale is [ADR-0005](../adr/0005-jsonb-vs-column-vs-child-table.md).
 
 ## Rules
 
@@ -10,7 +10,7 @@ For any candidate value, ask in order — the first "yes" decides:
 
 1. **Is it a business fact frozen at an event** (contract total at signing, `kind` at insert, intake payload at capture)? → Persist as a **snapshot** (see `#snapshot-discipline`). It stops being "derived" the moment it's agreed or captured — recomputing it later would be a bug, not freshness.
 2. **Does SQL itself need it** — sort / filter / paginate / aggregate across many rows, where hydrating every row to compute is incoherent? → Persist as a **cache column** (see `#cache-column-discipline`).
-3. **Everything else** → derive just-in-time via a pure helper in `src/shared/entities/<domain>/lib/`. Detail pages, PDFs, AI summaries, external-payload builders that already hold hydrated inputs get the helper, never a stored copy.
+3. **Everything else** → derive just-in-time via a pure helper in `src/shared/entities/<domain>/lib/` (or `src/shared/modules/<module>/<unit>/lib/`). Detail pages, PDFs, AI summaries, external-payload builders that already hold hydrated inputs get the helper, never a stored copy.
 
 Postgres can't rescue you from #2: generated columns are immutable + same-row-only (no cross-table rollups), and materialized views are stale between refreshes — a fresh-on-write cross-table rollup must be an application-maintained column.
 
@@ -36,5 +36,5 @@ A cache column requires all four legs, or it doesn't ship:
 4. **Versioned** — a `calc_version`-style stamp records which formula wrote the value, enabling targeted rebuilds after formula changes.
 
 **Why**: the known failure mode of denormalized rollups is a write path that skips the recompute — the four legs make that impossible to miss (1), impossible to fork (2), cheap to repair (3), and safe to evolve (4).
-**Reference impl**: `recomputeProposalFinancials` (`src/shared/entities/proposals/dal/server/mutations.ts`) + `computeFinalTcp` + `scripts/recompute-final-tcp.ts` (leg 3 — drift detect via `--dry-run`, repair only through the chokepoint) + `proposals.calc_version`.
+**Reference impl**: `recomputeProposalFinancials` (`src/shared/modules/proposals/core/dal/server/mutations.ts`) + `computeFinalTcp` + `scripts/recompute-final-tcp.ts` (leg 3 — drift detect via `--dry-run`, repair only through the chokepoint) + `proposals.calc_version`.
 **Enforced by**: convention + review (naming smell: verb-past-tense columns like `calculatedTotal` signal a cache missing its discipline)

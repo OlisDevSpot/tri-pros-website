@@ -25,7 +25,6 @@ interface BlockMediaProps {
  * NO overflow, so this wrapper owns its own `overflow-hidden` + `rounded-[inherit]`
  * to clip the photo to the frame's corners. Mobile = rounded top banner; desktop =
  * the two corners flush to the Root edge on its side.
- * See docs/codebase-conventions/frontend-stack.md#never-co-locate-shadow-and-overflow.
  */
 export function BlockMedia({ side = 'right', overlay, asChild, className, children }: BlockMediaProps) {
   const wrapperCls = cn(

@@ -5,7 +5,6 @@ import { customerLeadAttribution, customers } from '@/shared/db/schema'
 /**
  * Read surface for the delayed CRM→CAPI Schedule event. One joined read: the
  * customer's identity match keys + the immutable funnel attribution snapshot.
- * see docs/superpowers/specs/2026-07-26-funnel-event-model-redesign-design.md §2
  */
 export async function getCustomerForMeasurement(customerId: string) {
   const [row] = await db

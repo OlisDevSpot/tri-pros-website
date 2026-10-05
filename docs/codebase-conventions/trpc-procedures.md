@@ -28,20 +28,27 @@ Super-admin-only endpoints use `superAdminProcedure` — **never** an inline `if
 **Reference impl**: `src/trpc/routers/lead-sources.router.ts`
 **Enforced by**: convention
 
-### entity-procedures-from-factory
+### entity-procedures-defined-once
 
-Entity routers (Customer, Meeting, Proposal, Project) use `createEntityRouter(spec, factory)` and consume `entity.authedProcedure` / `entity.shareableProcedure` / `entity.publicProcedure` from the toolkit. Never call `agentProcedure` directly inside an entity router — you'd lose the scope middleware.
+Entity routers are a directory of plain leaves, assembled by definition (no factory, no toolkit param — `createEntityRouter` / `EntityToolkit` were removed 2026-08-11):
 
-**Why**: scope middleware injects `ctx.scope` (the per-user visibility predicate). Bypassing it means agents could read rows they shouldn't.
-**Reference impl**: `src/trpc/routers/proposals.router/index.ts`
-**Enforced by**: ADR-0002 + convention (no machine enforcement yet)
+- `procedures.ts` — the entity's pre-scoped procedures (`<entity>Procedure`, plus `<entity>ShareableProcedure` / `<entity>PublicProcedure` only where used), defined once as top-level consts with scope resolution baked on.
+- `crud.router.ts` — the 5 single-row slots via `createCrudRouter({ spec, schemas, crud })`.
+- other `*.router.ts` leaves — `createTRPCRouter({...})` importing procedures from `./procedures`.
+- `index.ts` — pure composition, one `createTRPCRouter({...})`.
+
+Never call `agentProcedure` directly inside an entity sub-router — you'd skip scope resolution. `src/trpc/DOCS.md` is canonical for the full rules (`procedures-defined-once`, `one-leaf-shape`, `pure-composition-index`).
+
+**Why**: scope resolution injects `ctx.scope` (the per-user visibility predicate). Bypassing it means agents could read rows they shouldn't.
+**Reference impl**: `src/trpc/routers/proposals.router/procedures.ts`, `.../crud.router.ts`, `.../index.ts`; `src/trpc/lib/create-crud-router.ts`
+**Enforced by**: ADR-0002 + convention (a bare `agentProcedure` leaves `ctx.scope` null)
 
 ### procedure-body-is-thin
 
 A procedure body parses input, calls DAL or a service, and unwraps the result via `dalToTrpc()`. No `db.select()`, no inline SQL, no transaction blocks.
 
 ```ts
-list: entity.authedProcedure
+list: proposalProcedure
   .input(proposalListInputSchema)
   .query(async ({ ctx, input }) => {
     return dalToTrpc(await listProposals(ctx, input))
@@ -49,7 +56,7 @@ list: entity.authedProcedure
 ```
 
 **Why**: business logic in routers can't be reused by jobs/scripts/RSC. DAL is the only layer touching db.
-**Reference impl**: `src/trpc/routers/proposals.router/index.ts`
+**Reference impl**: `src/trpc/routers/proposals.router/business.router.ts`
 **Enforced by**: convention (compliance sweep tracks violations)
 
 ### sub-router-when-2-plus
@@ -58,12 +65,11 @@ A flat `*.router.ts` file is fine for one router. When a router has 2+ sub-route
 
 ```
 src/trpc/routers/
-  notion.router/          ← directory (3 sub-routers: trades, contacts, scopes)
+  notion.router/          ← directory (2 sub-routers: trades, scopes)
     index.ts
     trades.router.ts
-    contacts.router.ts
     scopes.router.ts
-  landing.router.ts       ← flat file (single router)
+  lead-sources.router.ts  ← flat file (single router)
 ```
 
 **Why**: a 600-line single-file router with five sub-namespaces is impossible to navigate.
@@ -88,7 +94,7 @@ Every router is registered in `src/trpc/routers/app.ts`. No "private" routers �
 
 ## Anti-patterns
 
-- **Calling `agentProcedure` inside an entity router.** Use the entity toolkit's `authedProcedure`.
+- **Calling `agentProcedure` inside an entity router.** Import the entity's `<entity>Procedure` from `./procedures`.
 - **Inline `db.select()` in a procedure.** Move to DAL.
 - **Manual `if (!ctx.session) throw UNAUTHORIZED` in a procedure body.** Use `agentProcedure`.
 - **Manual `isOmni`-or-predicate dance.** Use scope middleware (entity routers get this free).

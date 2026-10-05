@@ -86,7 +86,7 @@ export function AddressEditDialog({ customerId, isOpen, onClose, defaultAddress 
               {picked
                 ? (
                     <span className="inline-flex items-center gap-1.5">
-                      <CheckCircle2Icon className="size-3.5 text-emerald-500" />
+                      <CheckCircle2Icon className="size-3.5 text-status-success-fg" />
                       Ready to save
                     </span>
                   )
@@ -160,7 +160,7 @@ function PreviewTile({ label, src }: { label: string, src: string | null }) {
               No preview
             </div>
           )}
-      <span className="absolute left-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white backdrop-blur-sm">
+      <span className="absolute left-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-xs font-medium uppercase tracking-wider text-white backdrop-blur-sm">
         {label}
       </span>
     </div>
@@ -180,7 +180,7 @@ function EmptyPreview({ currentAddress }: { currentAddress?: string }) {
         </p>
       </div>
       {currentAddress && (
-        <div className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-xs text-muted-foreground">
+        <div className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-(--card) px-2.5 py-1 text-xs text-muted-foreground">
           <span className="shrink-0 font-semibold text-foreground/70">Currently:</span>
           <span className="truncate">{currentAddress}</span>
         </div>

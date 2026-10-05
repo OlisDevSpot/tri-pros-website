@@ -1,6 +1,6 @@
 'use client'
 
-import type { PortfolioProjectDetail } from '@/shared/entities/projects/types'
+import type { PortfolioProjectDetail } from '@/shared/modules/projects/core/types'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { StoryBeforeAfter } from '@/features/project-management/ui/components/story-before-after'
@@ -22,8 +22,8 @@ export function ProjectStoryView({ detail }: Props) {
   const { project, media, scopeIds } = detail
   const heroImage = media.hero[0] ?? media.after[0] ?? media.during[0] ?? media.uncategorized[0]
 
-  const { data: allScopes = [] } = useQuery(trpc.notionRouter.scopes.getAll.queryOptions())
-  const { data: allTrades = [] } = useQuery(trpc.notionRouter.trades.getAll.queryOptions())
+  const { data: allScopes = [] } = useQuery(trpc.constructionRouter.scopes.getAll.queryOptions())
+  const { data: allTrades = [] } = useQuery(trpc.constructionRouter.trades.getAll.queryOptions())
 
   const tradesWithScopes = useMemo(() => {
     const scopeIdSet = new Set(scopeIds)
@@ -32,10 +32,10 @@ export function ProjectStoryView({ detail }: Props) {
     // Group scopes by their related trade
     const tradeMap = new Map<string, { id: string, name: string }[]>()
     for (const scope of matchedScopes) {
-      if (!tradeMap.has(scope.relatedTrade)) {
-        tradeMap.set(scope.relatedTrade, [])
+      if (!tradeMap.has(scope.tradeId)) {
+        tradeMap.set(scope.tradeId, [])
       }
-      tradeMap.get(scope.relatedTrade)!.push({ id: scope.id, name: scope.name })
+      tradeMap.get(scope.tradeId)!.push({ id: scope.id, name: scope.name })
     }
 
     // Resolve trade names and build grouped structure
@@ -54,7 +54,7 @@ export function ProjectStoryView({ detail }: Props) {
       <StoryHero project={project} heroImage={heroImage} tradesWithScopes={tradesWithScopes} />
       <StoryChallenge project={project} mainImage={media.uncategorized[0]} />
       <StoryBeforeAfter project={project} media={media} />
-      {hasTimelinePhotos && <StoryTimeline project={project} media={media} />}
+      {hasTimelinePhotos && <StoryTimeline media={media} />}
       <StorySolution project={project} tradesWithScopes={tradesWithScopes} />
       <StoryGallery media={media} />
       <StoryTestimonial project={project} />

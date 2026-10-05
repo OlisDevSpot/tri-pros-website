@@ -5,7 +5,6 @@ import { createProviderConfig } from '@/shared/config/create-provider-config'
 /**
  * Notion env var schema fragment + runtime-config builder + accessor.
  *
- * see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
  */
 export const notionEnvFragment = z.object({
   NOTION_API_KEY: z.string().optional(),

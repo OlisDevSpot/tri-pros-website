@@ -1,25 +1,19 @@
 import type { DataTableServerPagination } from '@/shared/components/data-table/types'
-import type { PaginatedQueryResult } from '@/shared/dal/client/lib/types'
+import type { DataViewQueryResult } from '@/shared/dal/client/lib/types'
+import type { FieldList, ToolbarFilterId } from '@/shared/dal/lib/query/field-list'
 
-/**
- * Adapt a `usePaginatedQuery` result into the `DataTableServerPagination`
- * contract. Converts 1-indexed `page` to 0-indexed `pageIndex` and merges
- * `isFetching || isPlaceholderData` into a single loading hint.
- *
- * @example
- *   const pagination = usePaginatedQuery(...)
- *   <DataTable serverPagination={toDataTablePagination(pagination)} {...} />
- */
-export function toDataTablePagination<T>(p: PaginatedQueryResult<T>): DataTableServerPagination {
+/** 1-indexed page → TanStack's 0-indexed `pageIndex`; a table needs a page window, which the type enforces. */
+export function toDataTablePagination<F extends FieldList, T extends ToolbarFilterId<F>>(query: DataViewQueryResult<unknown, F, T, 'page'>): DataTableServerPagination {
+  const pageWindow = query.window
   return {
-    pageIndex: p.page - 1,
-    pageSize: p.pageSize,
-    rowCount: p.total,
-    onPageChange: nextIndex => p.setPage(nextIndex + 1),
-    onPageSizeChange: p.setPageSize,
-    pageSizeOptions: p.pageSizeOptions,
-    isFetching: p.isFetching || p.isPlaceholderData,
-    isError: p.isError,
-    onRefresh: p.refresh,
+    pageIndex: pageWindow.page - 1,
+    pageSize: pageWindow.pageSize,
+    rowCount: query.total,
+    onPageChange: nextIndex => pageWindow.setPage(nextIndex + 1),
+    onPageSizeChange: pageWindow.setPageSize,
+    pageSizeOptions: pageWindow.pageSizeOptions.length > 1 ? pageWindow.pageSizeOptions : undefined,
+    isFetching: query.isPending || query.isFetching,
+    isStale: query.isStale,
+    onRefresh: query.refresh,
   }
 }

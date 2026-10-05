@@ -133,9 +133,9 @@ Outbound links to trusted sources increase your own page's perceived trust. Not 
 ```markdown
 About the Author
 [Photo of business owner]
-[Owner Name], Founder of Tri Pros Remodeling
-- CSLB Licensed Contractor #XXXXXX
-- 25+ years residential construction
+[Partner Name], Senior Partner at Tri Pros Remodeling
+- CSLB Licensed Contractor #[from `licenses.ts`]
+- [N]+ years combined construction experience on the team (from `companyInfo.combinedYearsExperience`)
 - Specializes in kitchen, bath, ADU, and home addition projects across SoCal
 - Reseda, CA
 [LinkedIn link]
@@ -146,7 +146,7 @@ JSON-LD `Person` schema on the author bio:
 {
   "@type": "Person",
   "name": "[Owner Name]",
-  "jobTitle": "Founder",
+  "jobTitle": "Senior Partner",
   "worksFor": { "@type": "LocalBusiness", "name": "Tri Pros Remodeling" },
   "url": "https://triprosremodeling.com/about",
   "image": "https://triprosremodeling.com/team/owner-headshot.jpg",
@@ -154,7 +154,7 @@ JSON-LD `Person` schema on the author bio:
 }
 ```
 
-**Important:** This needs a real person — not a brand-byline. LLMs heavily weight first-person authority over anonymous "Tri Pros Team" attribution.
+**Important:** This needs a real person — not a brand-byline. Every figure (title, license, years) comes from `src/shared/constants/company/`, never typed into copy. LLMs heavily weight first-person authority over anonymous "Tri Pros Team" attribution.
 
 ### 2.6 `/llms.txt` manifest
 

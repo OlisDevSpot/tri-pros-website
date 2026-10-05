@@ -14,10 +14,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
-import { computeFinalTcp } from '@/shared/entities/proposals/lib/financials'
-import { toFundingInputs } from '@/shared/entities/proposals/lib/funding-columns'
 import { getLoanValues } from '@/shared/lib/loan-calculations'
 import { cn } from '@/shared/lib/utils'
+import { computeFinalTcp } from '@/shared/modules/proposals/core/lib/financials'
+import { toFundingInputs } from '@/shared/modules/proposals/core/lib/funding-columns'
 
 interface Props {
   onPickFinancingOption?: (option: FinanceOption) => void

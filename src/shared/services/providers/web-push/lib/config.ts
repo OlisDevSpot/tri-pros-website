@@ -5,7 +5,6 @@ import { createProviderConfig } from '@/shared/config/create-provider-config'
 /**
  * Web Push (VAPID) env var schema fragment + boot-banner meta.
  *
- * see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
  *
  * Deviation from the canonical five-export shape, by design:
  * - The public key `NEXT_PUBLIC_VAPID_PUBLIC_KEY` is a build-inlined client var

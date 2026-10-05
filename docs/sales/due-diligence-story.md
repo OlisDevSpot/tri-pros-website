@@ -22,10 +22,10 @@ Demand a clear and clearly-defined scope of work. This protects you and eliminat
 Make sure you have proper supervision on your project. We recommend at least 2 sets of eyes — they will ensure they measure twice and cut once.
 
 ### 4. Communication
-Make sure you know how communication will work on this project. Know who your point of contact is and what to expect.
+Make sure you know how communication will work on this project. Know who your point of contact is and what to expect. At Tri Pros the agent in the room is that contact, from the first meeting to the final walkthrough (an agent + project manager model is planned).
 
-### 5. Office Support
-Make sure you have enough office support. Know what your contractor is offering you and at what quality.
+### 5. Team & Support Staff
+Make sure there is a real team behind the person you meet: a hands-on senior partner and enough office support. Know what your contractor is offering you and at what quality.
 
 ### 6. Proof of Performance
 Make sure you check for solid proof of performance. Ask to see reference projects, testimonials, past clients, and relevant customer successes.
@@ -102,7 +102,7 @@ The closing truth redefines what "success" means. Most homeowners walk in thinki
 | 2. Clear Scope of Work | Scope of Work Presentation | Present detailed, written scope tied to discovery |
 | 3. Proper Supervision | Trusted Contractor Presentation | Explain TPR's dual-supervision model |
 | 4. Communication | Discovery / Close | Identify point of contact, set expectations |
-| 5. Office Support | Trusted Contractor Presentation | Explain what TPR's office team handles |
+| 5. Team & Support Staff | Trusted Contractor Presentation | Introduce the senior partner and what TPR's office team handles |
 | 6. Proof of Performance | Portfolio Presentation | Show before/after, testimonials, case studies |
 
 ---
@@ -124,7 +124,7 @@ The customer has just spent 5-10 minutes reliving unlicensed work, vague scopes,
 | 2. Clear Scope of Work | "We never got anything in writing" | Protection from what burned them |
 | 3. Proper Supervision | "Nobody was watching the crew" | Direct contrast to their experience |
 | 4. Communication | "I couldn't reach anyone for weeks" | The opposite of what they suffered |
-| 5. Office Support | "There was no office — just a guy with a truck" | Legitimacy they've been craving |
+| 5. Team & Support Staff | "There was no office — just a guy with a truck" | Legitimacy they've been craving |
 | 6. Proof of Performance | "I never saw any past work" | Evidence that eliminates the leap of faith |
 
 For the full Circle of Pain technique, see `sales/sales-frameworks.md`.

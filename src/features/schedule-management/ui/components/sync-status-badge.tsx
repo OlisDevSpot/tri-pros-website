@@ -63,8 +63,8 @@ export function SyncStatusBadge() {
           >
             {isPending
               ? <Loader2Icon size={14} className="animate-spin" />
-              : <CloudIcon size={14} className="text-emerald-500" />}
-            <span className="hidden sm:inline text-emerald-600">Synced</span>
+              : <CloudIcon size={14} className="text-status-success-fg" />}
+            <span className="hidden sm:inline text-status-success-fg">Synced</span>
           </Button>
         </TooltipTrigger>
         <TooltipContent>Click to disconnect Google Calendar</TooltipContent>

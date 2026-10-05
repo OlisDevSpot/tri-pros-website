@@ -1,4 +1,4 @@
-import type { ProposalFormSchema } from '@/shared/entities/proposals/schemas'
+import type { ProposalFormSchema } from '@/shared/modules/proposals/core/schemas'
 import { aiClient } from '@/shared/services/providers/ai/client'
 
 /** AI service: wraps existing AI functions + stubs for future expansion */

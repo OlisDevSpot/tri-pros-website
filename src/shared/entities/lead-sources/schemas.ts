@@ -21,7 +21,6 @@ export type LeadSourceFormConfig = z.infer<typeof leadSourceFormConfigSchema>
 // ── voipConfigJSON — per-source VoIP policy ─────────────────────────────────
 // Shared field; each EPIC owns a sub-object. APP-side policy only — CT-runtime
 // identity lives in the voip_campaigns + voip_contact_attributes tables.
-// see docs/plans/voip/INTEGRATION-SEAM.md §9
 
 /**
  * @deprecated Wave-1 frozen (epic #256/#259). The campaigns policy now lives
@@ -57,3 +56,6 @@ export const voipInHousePolicySchema = z.object({
   }).optional(),
 })
 export type VoipInHousePolicy = z.infer<typeof voipInHousePolicySchema>
+
+/** A Pacific business month, the unit spend is entered in. */
+export const leadSourceSpendMonthSchema = z.string().regex(/^\d{4}-(?:0[1-9]|1[0-2])$/, 'A month, as YYYY-MM.')

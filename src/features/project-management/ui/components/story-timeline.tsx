@@ -1,26 +1,26 @@
 'use client'
 
-import type { MediaFile, Project } from '@/shared/db/schema'
-import type { ProjectMediaGroups } from '@/shared/entities/projects/types'
+import type { ProjectMediaFile } from '@/shared/db/schema'
+import type { ProjectMediaGroups } from '@/shared/modules/projects/core/types'
 import { motion, useInView } from 'motion/react'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { PHASE_CONFIG } from '@/features/project-management/constants/phase-config'
 import { PhaseCarousel } from '@/features/project-management/ui/components/phase-carousel'
 import { PhotoLightbox } from '@/features/project-management/ui/components/photo-lightbox'
+import { PHASE_LABELS } from '@/shared/modules/projects/media/constants/phase-labels'
 
 interface TimelinePhase {
   key: string
   label: string
   description: string | null
-  photos: MediaFile[]
+  photos: ProjectMediaFile[]
 }
 
 interface Props {
-  project: Project
   media: ProjectMediaGroups
 }
 
-export function StoryTimeline({ project, media }: Props) {
+export function StoryTimeline({ media }: Props) {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-80px' })
   const [lightbox, setLightbox] = useState<{ phaseKey: string, index: number } | null>(null)
@@ -35,22 +35,15 @@ export function StoryTimeline({ project, media }: Props) {
   }, [])
 
   const phases = useMemo<TimelinePhase[]>(() => {
-    const descriptionMap: Record<string, string | null> = {
-      before: project.beforeDescription,
-      during: project.duringDescription,
-      after: project.afterDescription,
-      main: project.mainDescription,
-    }
-
     return PHASE_CONFIG
       .filter(cfg => media[cfg.key].length > 0)
       .map(cfg => ({
         key: cfg.key,
-        label: cfg.label,
-        description: descriptionMap[cfg.key] ?? cfg.fallbackDescription,
+        label: PHASE_LABELS[cfg.key],
+        description: cfg.fallbackDescription,
         photos: media[cfg.key],
       }))
-  }, [project, media])
+  }, [media])
 
   if (phases.length === 0) {
     return null

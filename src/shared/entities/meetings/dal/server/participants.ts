@@ -5,7 +5,7 @@ import { and, asc, eq, exists, inArray, or } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { meetingParticipants, user } from '@/shared/db/schema'
 
-// Visibility helper — see ../../DOCS.md#visibility-via-participation
+// Visibility helper.
 export function userParticipatesInMeeting(userId: string, meetingIdColumn: SQL | any): SQL {
   return exists(
     db.select({ id: meetingParticipants.id })
@@ -91,7 +91,7 @@ export interface OwnerCoOwnerRow {
 
 /**
  * Batch-fetch owner + co_owner for a set of meetings. Use this instead of
- * LEFT JOIN — see ../../DOCS.md anti-patterns. Ordered by created_at ASC so
+ * LEFT JOIN.
  * defensive callers that pick first-per-(meeting, role) get deterministic results.
  */
 export async function getOwnerCoOwnerForMeetings(meetingIds: string[]): Promise<OwnerCoOwnerRow[]> {

@@ -1,42 +1,64 @@
-import { cookies } from 'next/headers'
+import { getSessionCookie } from 'better-auth/cookies'
+import { cookies, headers } from 'next/headers'
 import { Suspense } from 'react'
 
-import { AppSidebar } from '@/features/agent-dashboard/ui/components/app-sidebar'
-import { DashboardMobileNav } from '@/features/agent-dashboard/ui/components/dashboard-mobile-nav'
+import { AppSidebarSkeleton } from '@/features/agent-dashboard/ui/components/app-sidebar-skeleton'
+import { DashboardContentSkeleton } from '@/features/agent-dashboard/ui/components/dashboard-content-skeleton'
+import { DashboardSessionContent } from '@/features/agent-dashboard/ui/components/dashboard-session-content'
+import { DashboardSessionMobileNav } from '@/features/agent-dashboard/ui/components/dashboard-session-mobile-nav'
+import { DashboardSessionSidebar } from '@/features/agent-dashboard/ui/components/dashboard-session-sidebar'
 import { DashboardSignIn } from '@/features/agent-dashboard/ui/components/dashboard-sign-in'
+import { SidebarSessionBoundary } from '@/features/agent-dashboard/ui/components/sidebar-session-boundary'
+import { MeetingSplashMount } from '@/features/meeting-flow/ui/components/meeting-splash-mount'
+import { readTablePreferences } from '@/shared/components/data-table/lib/read-table-preferences'
+import { TablePreferencesProvider } from '@/shared/components/data-table/ui/table-preferences-provider'
 import { GlobalDialogs } from '@/shared/components/dialogs/modals/global-dialogs'
-import { PushSubscriptionBanner } from '@/shared/components/push-subscription-banner'
 import { PwaInstallPrompt } from '@/shared/components/pwa-install-prompt'
 import { SidebarInset, SidebarProvider } from '@/shared/components/ui/sidebar'
-import { getCachedSession } from '@/shared/domains/auth/lib/get-cached-session'
 
+// Nothing here waits on the database. Whether a session cookie is present (a
+// header read) picks the sign-in screen or the signed-in shell; the session
+// itself is read inside the three Suspense slots, which share one request memo.
+// On a cold start the sidebar frame and skeletons stream while the database
+// wakes, instead of the whole document waiting on it.
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const [session, cookieStore] = await Promise.all([getCachedSession(), cookies()])
+  const [cookieStore, requestHeaders] = await Promise.all([cookies(), headers()])
+  const hasSessionCookie = getSessionCookie(requestHeaders) !== null
 
   const sidebarCookie = cookieStore.get('sidebar_state')
   const defaultOpen = sidebarCookie ? sidebarCookie.value === 'true' : true
 
   return (
     <>
+      {/* Above the sidebar and the template so it is the first paint of a meeting. */}
+      {hasSessionCookie && <MeetingSplashMount />}
       <GlobalDialogs />
       <PwaInstallPrompt />
-      <SidebarProvider defaultOpen={defaultOpen} data-no-gutter-stable>
-        {session && <AppSidebar user={session.user} />}
-        <SidebarInset
-          className="h-full min-w-0 overflow-hidden"
-          style={{
-            background: `radial-gradient(ellipse 80% 50% at 50% 0%, color-mix(in oklch, var(--primary) 35%, transparent), var(--background) 70%), var(--background)`,
-          }}
-        >
-          <div className="flex-1 min-h-0 pt-[env(safe-area-inset-top)]">
-            {session && <PushSubscriptionBanner />}
-            <Suspense>
-              {session ? children : <DashboardSignIn />}
-            </Suspense>
-          </div>
-          {session && <DashboardMobileNav />}
-        </SidebarInset>
-      </SidebarProvider>
+      <TablePreferencesProvider initial={readTablePreferences(cookieStore.getAll())}>
+        <SidebarProvider defaultOpen={defaultOpen} data-no-gutter-stable>
+          {hasSessionCookie && (
+            <SidebarSessionBoundary fallback={<AppSidebarSkeleton />}>
+              <DashboardSessionSidebar />
+            </SidebarSessionBoundary>
+          )}
+          <SidebarInset className="h-full min-w-0 overflow-hidden bg-background">
+            <div className="flex-1 min-h-0 pt-[env(safe-area-inset-top)]">
+              {hasSessionCookie
+                ? (
+                    <Suspense fallback={<DashboardContentSkeleton />}>
+                      <DashboardSessionContent>{children}</DashboardSessionContent>
+                    </Suspense>
+                  )
+                : <DashboardSignIn />}
+            </div>
+            {hasSessionCookie && (
+              <Suspense>
+                <DashboardSessionMobileNav />
+              </Suspense>
+            )}
+          </SidebarInset>
+        </SidebarProvider>
+      </TablePreferencesProvider>
     </>
   )
 }

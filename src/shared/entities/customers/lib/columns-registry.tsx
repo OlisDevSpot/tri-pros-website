@@ -1,8 +1,10 @@
 'use client'
 
 import type { ColumnRegistry } from '@/shared/components/data-table/lib/use-entity-columns'
-import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
+import type { EntityTableMeta } from '@/shared/components/data-table/types/entity-table-meta'
 import type { Pipeline } from '@/shared/constants/enums/pipelines'
+import type { SortId } from '@/shared/dal/lib/query/field-list'
+import type { CUSTOMER_FIELDS } from '@/shared/entities/customers/dal/customer-fields'
 
 import { PrimaryCell } from '@/shared/components/data-table/ui/primary-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
@@ -30,8 +32,7 @@ export interface CustomerTableRow {
   leadSourceSlug?: string | null
 }
 
-export interface CustomerTableMeta {
-  customerActions?: (row: CustomerTableRow) => EntityActionConfig<CustomerTableRow>[]
+export interface CustomerTableMeta extends EntityTableMeta<CustomerTableRow> {
   onUpdateCreatedAt?: (customerId: string, date: Date) => void
   /**
    * Optional override for lead-source reassignment. The cell defaults to
@@ -99,13 +100,13 @@ export const CUSTOMER_COLUMNS = {
   name: {
     label: 'Customer',
     size: 260,
-    sortable: true,
+    sort: 'name',
     cell: ({ row, table }) => {
       const meta = table.options.meta as CustomerTableMeta | undefined
       return (
         <PrimaryCell
           entity={row.original}
-          actions={meta?.customerActions?.(row.original)}
+          actions={meta?.rowActions}
           title={row.original.name}
           subtitle={row.original.email ?? undefined}
         />
@@ -115,7 +116,7 @@ export const CUSTOMER_COLUMNS = {
   email: {
     label: 'Email',
     size: 220,
-    sortable: true,
+    sort: 'email',
   },
   pipeline: {
     label: 'Pipeline',
@@ -129,7 +130,7 @@ export const CUSTOMER_COLUMNS = {
   leadSourceName: {
     label: 'Source',
     size: 160,
-    sortable: true,
+    sort: 'leadSource',
     cell: ({ row, table }) => {
       const meta = table.options.meta as CustomerTableMeta | undefined
       return (
@@ -144,7 +145,7 @@ export const CUSTOMER_COLUMNS = {
   createdAt: {
     label: 'Created',
     size: 180,
-    sortable: true,
+    sort: 'createdAt',
     cell: ({ row, table }) => {
       const { relative, dayAtTime } = formatDateCell(row.original.createdAt)
       const meta = table.options.meta as CustomerTableMeta | undefined
@@ -174,4 +175,4 @@ export const CUSTOMER_COLUMNS = {
       )
     },
   },
-} as const satisfies ColumnRegistry<CustomerTableRow>
+} as const satisfies ColumnRegistry<CustomerTableRow, SortId<typeof CUSTOMER_FIELDS>>

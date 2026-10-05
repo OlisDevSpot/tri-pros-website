@@ -12,7 +12,6 @@ import { voipDids } from './voip-dids'
 // agent opens a customer thread, they see messages on THEIR DID with that customer,
 // not a flat merge across all DIDs.
 //
-// see docs/plans/voip-in-house/phase-1-mvp.md GRILL RESULTS — voip_messages
 export const voipMessages = pgTable('voip_messages', {
   id,
   // UNIQUE for webhook idempotency (status callbacks re-deliver).

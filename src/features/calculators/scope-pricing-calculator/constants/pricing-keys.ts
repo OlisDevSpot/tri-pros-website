@@ -1,0 +1,25 @@
+export const PRICING_KEYS = [
+  'overlay',
+  'tearOff',
+  'redeck',
+  'tileReset',
+  'replaceSplitSystem',
+  'replaceFurnace',
+  'installMiniSplit',
+  'replaceWindows',
+  'replaceSlidingDoor',
+  'replaceFrenchDoors',
+  'rnrAttic',
+  'topOffAttic',
+  'installCrawlSpaceInsulation',
+  'installArtificial',
+  'installGravel',
+  'installMulch',
+  'installConcrete',
+  'installPavers',
+  'installDg',
+  'mpu',
+  'installExteriorPaint',
+] as const
+
+export type PricingKey = typeof PRICING_KEYS[number]

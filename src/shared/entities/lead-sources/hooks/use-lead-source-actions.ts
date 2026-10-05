@@ -80,6 +80,14 @@ export function useLeadSourceActions() {
     }),
   )
 
+  // Cells save on blur, so a success toast per cell would be noise; only failures speak up.
+  const setSpend = useMutation(
+    trpc.leadSourcesRouter.spend.set.mutationOptions({
+      onSuccess: () => invalidateLeadSource(),
+      onError: err => toast.error(err.message || 'Failed to save spend'),
+    }),
+  )
+
   return {
     createLeadSource,
     updateLeadSource,
@@ -88,5 +96,6 @@ export function useLeadSourceActions() {
     duplicateLeadSource,
     archiveLeadSource,
     deleteLeadSource,
+    setSpend,
   }
 }

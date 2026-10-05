@@ -43,7 +43,7 @@ export function TipTapMenuBar({ editor }: Props) {
           onClick={toggleEditable}
           className={cn(
             'rounded-none',
-            editor.isEditable ? 'bg-red-500/40' : editor.isActive('heading', { level: 1 }) ? 'is-active' : '',
+            editor.isEditable ? 'bg-status-danger-bg' : editor.isActive('heading', { level: 1 }) ? 'is-active' : '',
           )}
         >
           {editor.isEditable ? <UnlockIcon /> : <LockIcon />}

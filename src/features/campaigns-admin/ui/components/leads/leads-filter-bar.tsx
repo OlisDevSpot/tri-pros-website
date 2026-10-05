@@ -1,17 +1,18 @@
 'use client'
 
-import type { PaginatedQueryResult } from '@/shared/dal/client/lib/types'
+import type { DataViewQueryResult } from '@/shared/dal/client/lib/types'
+import type { FieldList } from '@/shared/dal/lib/query/field-list'
 import type { CampaignLeadRow } from '@/shared/entities/voip-campaign-contacts/dal/server/queries'
 
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 
 interface LeadsFilterBarProps {
-  pagination: PaginatedQueryResult<CampaignLeadRow>
+  query: DataViewQueryResult<CampaignLeadRow, FieldList, string, 'page'>
 }
 
-export function LeadsFilterBar({ pagination }: LeadsFilterBarProps) {
+export function LeadsFilterBar({ query }: LeadsFilterBarProps) {
   return (
-    <QueryToolbar entityName="leads" pagination={pagination}>
+    <QueryToolbar entityName="leads" query={query}>
       <QueryToolbar.Bar>
         <QueryToolbar.Search placeholder="Search name or phone…" />
         <QueryToolbar.FilterTrigger />

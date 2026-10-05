@@ -4,7 +4,7 @@
  * to consumers (zero call-site change) while actually being lazily built
  * on first use.
  *
- * Use case: provider clients (Resend, Notion SDK, S3Client, etc.) that
+ * Use case: provider clients (Notion SDK, QStash Client, etc.) that
  * historically were created via `const xClient = new Sdk(env.X)` at module
  * scope — which fails at boot when `env.X` is optional+missing. Wrapping
  * the factory with `lazyProxy()` means:
@@ -23,7 +23,6 @@
  * (`const { something } = xClient`) eager-trigger the proxy but are otherwise
  * fine. Typical `xClient.method(...)` usage is transparent.
  *
- * see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
  */
 export function lazyProxy<T extends object>(factory: () => T): T {
   let cached: T | undefined

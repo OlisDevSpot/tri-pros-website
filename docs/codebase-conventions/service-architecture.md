@@ -2,11 +2,61 @@
 
 Operational rules for the four-tier backend split. Full rationale in [ADR-0003](../adr/0003-service-provider-architecture.md).
 
+## Modules
+
+A **module** (`src/shared/modules/<module>/`) is a bounded slice of the domain that owns its **units** — each unit is one entity, with its own DAL, schemas, and (usually) `service.ts`. A module's root `service.ts` is the module-level API; a unit's own `service.ts` is the entity-level API for just that unit. Three kinds exist today:
+
+| Kind | Owns tables? | Example | Notes |
+|---|---|---|---|
+| **Entity module** | Yes — one or more units, each with its own table | `modules/proposals/` (units: `core`, `incentives`, `media`, `views`), `modules/projects/` (units: `core`, `media`) | The common case: an entity that grows a child that needs its own table/service (media, views, incentives) is promoted from `entities/<x>/` to a module so the children have a home next to it. |
+| **Provider-backed module** | No table of its own — reads through a provider instead | `modules/construction/` — **planned, not yet built** (`docs/plans/2026-09-15-construction-data-standardization-epic.md`) | Backs onto Notion (or another external source) instead of Postgres. |
+| **Capability module** | No table at all — generic over OTHER modules' tables | `modules/media/` | Its DAL takes the owner's table as a parameter (`listMediaByOwner(table, ownerColumn, ctx, ownerId)`) instead of importing one — see `modules/media/DOCS.md`. |
+
+### root-vs-unit-service
+
+A module's root `service.ts` spreads its primary unit's CRUD, adds verbs, and exposes every OTHER unit's service as a **getter** — never a top-level property value:
+
+```ts
+export const projectsService = {
+  ...projectCrud,
+  get media() { return projectMediaService },   // getter, not `media: projectMediaService`
+} satisfies SpecCrudHandlers<typeof projectServerSpec>
+```
+
+**Why a getter, not a plain property**: a child unit's service reaches back into the root or a sibling from inside its own method bodies, which makes the import graph cyclic (root → child → root/sibling). ES module bindings are live, so a reference resolved at CALL time is always initialised — but a plain `media: projectMediaService` here would read that binding while THIS object literal is being evaluated, and on whichever import order loads the child module first, the binding is still in its temporal dead zone (`ReferenceError: Cannot access '...' before initialization`). `modules/proposals/service.ts:1-36`'s header comment walks this failure mode in detail — read it before adding a new child service. A unit's own `service.ts` follows the identical rule for anything it re-exposes: **reference an imported service only inside a method body or a getter, never as a top-level property value.**
+
+Top-level references are fine for a DAL module (the `...<entity>Crud` spread included) — a DAL never imports a service, so that side of the graph is acyclic.
+
+### server-spec-lives-at-the-unit-root
+
+`server-spec.ts` for a module unit lives at the **unit root** (`modules/<module>/<unit>/server-spec.ts`) — e.g. `modules/proposals/core/server-spec.ts`, `modules/projects/media/server-spec.ts` — not in a `lib/` subdirectory. This differs from a top-level `src/shared/entities/<entity>/`, which still keeps its spec at `entities/<entity>/lib/server-spec.ts` (ADR-0002 amendment, 2026-09-14). A unit's `constants.ts`, and its own `visibility.ts` where it has one, stay in the unit's `lib/`.
+
+### modules-on-the-db-allowlist
+
+`db` is imported only from inside a `dal/` directory (`dal-conventions.md#only-dal-imports-db`). For a module that means `modules/<module>/dal/server/**` (a module with its own root-level table — none exist yet) **and** `modules/<module>/<unit>/dal/server/**` (the per-unit case: `modules/proposals/core/dal/server/`, `modules/projects/media/dal/server/`, `modules/media/core/dal/server/`, …). A module's `service.ts` — root or unit — never imports `db` directly, same as any other service tier.
+
+**Exception — a `lib/visibility.ts` correlated-subquery builder.** A unit's `visibility.ts` may import `db` when it uses it purely as a query-builder handle to construct a correlated subquery that some OTHER query (`resolveEffectiveScope`, a caller's `WHERE`) embeds and executes — never to run or await a query itself. `modules/projects/core/lib/visibility.ts:4,12-21` is the example: `projectParticipationScope` builds `exists(db.select(...).from(meetings)...)` and returns the unexecuted `SQL` fragment; nothing in the file calls `.then`/`await` on it. This stays outside the allowlist without becoming a DAL because it never touches Postgres itself — the embedding query does.
+
+### entities-vs-modules
+
+An entity that no other entity has grown children under stays a plain `src/shared/entities/<entity>/` — `meetings/`, `customers/`, `users/` today. **Moving an entity into a module is a deliberate decision**, made when it grows a child that needs its own table/service (proposals grew `incentives`/`media`/`views`; projects grew `media`) — never a routine rename. The move itself is a **path-only commit** (`git mv` + import rewrites, zero behavior change) so it can be verified mechanically (a path-normalized diff against its parent) and replayed across branches — see the proposals module move and this repo's projects/media modules restructure (tracker `docs/plans/2026-09-14-upgrading-meeting-flow-epic.md`, C20).
+
+### row-lifecycle-vs-orchestration
+
+A side effect that must fire for **every** origin that touches a row — a tRPC mutation, a background job, a script's bare `crud.create` — is a `createCrudDal` **hook** (the `hooks.{create,update,delete}.{before,after}` config-factory slots), never a service wrapper. A service method only runs the side effect for callers that happen to go through that service; a hook runs for every caller, including the ones that bypass the service entirely.
+
+Authorization probes (parent-visibility checks, own-row ownership checks) and cross-entity orchestration (composing two units' DALs, calling a peer service) stay service verbs — a DAL must never import a service.
+
+**Reference impl**: `modules/projects/media/dal/server/crud.ts` (optimize-on-create, purge-on-delete as `create.after`/`delete.before` hooks) and `entities/meetings/dal/server/crud.ts` (five job dispatches across `create.after`/`update.after` — the precedent this pattern follows). Both hooks run inline (pre-commit, no `afterCommit` phase yet); see either file's header comment for the caveat.
+
+**Why**: two scripts that used to insert project media rows with raw `db.insert` (`add-during-media.ts`, `portfolio-scraper/import-project.ts`) never went through the media service, so their rows were silently never optimized — a service-level side effect only reaches callers that call the service. Moving the dispatch onto the DAL hook means every origin gets it, the same argument that already kept the project-delete R2 purge in a DAL hook rather than a service method (a DAL may not import a service, so that hook reads media rows through the media module's table-generic DAL and purges through a provider-level helper instead).
+**Enforced by**: convention + PR review
+
 ## The four tiers
 
 | Tier | What it is | Lives at | Receives |
 |---|---|---|---|
-| **Internal service** | Business orchestrator. Calls DAL + other services + providers. | `src/shared/services/<x>.service.ts` | `ScopedContext` |
+| **Internal service** | Business orchestrator. Calls DAL + other services + providers. | `src/shared/services/<x>.service.ts`, or a module's root `src/shared/modules/<module>/service.ts` + its units' `<unit>/service.ts` (e.g. `modules/proposals/service.ts`, `modules/proposals/{incentives,media,views}/service.ts`) | `ScopedContext` |
 | **Sync service** | ACL facade. Wraps one provider in domain operations. | `src/shared/services/<x>-sync.service.ts` | provider client + native types |
 | **Provider** | External API client. Auth + HTTP + translation. | `src/shared/services/providers/<x>/` | nothing app-aware |
 | **Shared lib** | Local utility, no external HTTP. | `src/shared/lib/<x>/` | varies |
@@ -18,9 +68,11 @@ Operational rules for the four-tier backend split. Full rationale in [ADR-0003](
 Before creating any new backend file: *Does this code make HTTP calls to an external system?*
 
 - **Yes** → it goes in a **provider** (`services/providers/<name>/`)
-- **No, but it orchestrates business logic** → **internal service** (`services/<x>.service.ts`)
+- **No, but it orchestrates business logic** → **internal service** (`services/<x>.service.ts`) **when it coordinates a provider/external system or cross-cutting infra**. Pure entity-CRUD flows (compose entity CRUD + notes/participants, no external coordination) orchestrate in the **tRPC router** instead — e.g. `meetings.business.setOutcomeWithReason` / `rescheduleMeeting`.
 - **No, it's pure local computation** (PDF gen, formatting, math) → **shared lib** (`shared/lib/<x>/`)
 - **It does BOTH business logic AND raw HTTP** → split it. Extract HTTP into a provider; the orchestrator stays in `services/`.
+
+**Amendment (C17, 2026-09-14):** once an entity or module has its own `service.ts` (root or unit — see `#root-vs-unit-service` above), that service IS the one server API for it: CRUD slots spread + verbs + child services. Routers, RSC, jobs and webhooks call it — they are thin adapters, not a second place business logic lives. The "pure entity-CRUD flows orchestrate in the tRPC router" bullet above is the pattern for an entity that has **not yet** grown a `service.ts` (meetings today); the moment a module/entity service exists, verbs move there and the router stops composing them itself. Reads stay in DAL `queries.ts` either way — a service composes them, it doesn't reimplement them.
 
 **Why**: physical location predicts what code does. Mixed responsibilities create the `contracts.service.ts` problem (see ADR-0003).
 **Enforced by**: convention + PR review
@@ -29,7 +81,8 @@ Before creating any new backend file: *Does this code make HTTP calls to an exte
 
 ```
 internal service  →  provider client       OK
-internal service  →  provider lib/         OK (translators)
+internal service  →  provider types.ts     OK (type-only)
+internal service  →  provider lib/         NEVER (provider-internal)
 internal service  →  internal service      OK (composition)
 internal service  →  shared/dal/**         OK
 internal service  →  shared/lib/**         OK
@@ -40,9 +93,11 @@ provider          →  shared/dal/**         NEVER
 
 Providers are leaves. They don't know about the app's domain. If two providers need to coordinate, an internal service orchestrates them.
 
+A provider's `lib/` is **provider-internal** — only that provider's own `client.ts` imports it (config, token caches, internal helpers). External consumers import a provider's `client.ts` (actions) and `types.ts` (type-only). Never `lib/`, `dal/`, `schemas/`, `constants/`, `webhooks/`. **Translators live in domain-land**, not in the provider — see `#providers-have-no-domain-types-in-signatures`.
+
 **Why**: keeps providers swappable. Switch Zoho Sign → DocuSign by rewriting one provider directory; no business logic touches.
 **Reference impl**: `src/shared/services/contracts.service.ts` → `zoho-sync.service.ts` → `providers/zoho-sign/`
-**Enforced by**: convention (lint rules are a future possibility)
+**Enforced by**: convention (lint rules are a future possibility). ⚠️ Known non-compliant, not yet migrated: `providers/gohighlevel/lib/normalize-bina-lead.ts` (imported by the bina webhook route and `customer-intake.service`) and `providers/google-calendar/lib/{map-to-gcal,map-from-gcal,conflict}.ts` (imported by `scheduling.service`). Their redirects are specced in `docs/superpowers/specs/2026-08-20-provider-boundary-translator-home-design.md` §3–§4.
 
 ### client-is-the-superset-entry-point
 
@@ -82,9 +137,10 @@ spawning a new import path. Pattern-matching across providers becomes trivial.
 
 **Reference impl**: `src/shared/services/providers/twilio/` (canonical post-2026-06-02), `src/shared/services/providers/zoho-sign/` (older example, same pattern but pre-dating the formal codification).
 
-**Enforced by**: convention + PR review. Slug E of voip-in-house adds an
-ESLint `no-restricted-imports` rule preventing direct `import twilio from 'twilio'`
-outside the provider directory; the rule pattern generalizes to other SDKs.
+**Enforced by**: convention + PR review. Not lint-enforced as a boundary.
+`lazy-only/imports` in `eslint.config.js` bans *static value* imports of the
+heavy SDKs everywhere, provider directories included; it does not enforce the
+`client.ts` boundary (#255).
 
 ### provider-directory-shape
 
@@ -229,7 +285,7 @@ if (env.NODE_ENV !== 'production') {
 
 **Reference impl**: [`src/shared/services/providers/twilio/lib/config.ts`](../../src/shared/services/providers/twilio/lib/config.ts) (canonical post-2026-06-05). [Migration matrix](../plans/voip-in-house/EPIC.md) tracks remaining providers to retrofit.
 
-**Enforced by**: convention + PR review. ESLint `no-restricted-imports` (per `client-is-the-superset-entry-point`) already prevents consumers from importing raw `serverEnv.X_FOO` inside provider directories; this rule extends the discipline to require lazy reads only.
+**Enforced by**: convention + PR review. Not lint-enforced — `eslint.config.js` has no `no-restricted-imports` rule for raw `serverEnv.X_FOO` reads inside provider directories (verified 2026-09-14); this rule extends the `client-is-the-superset-entry-point` discipline to require lazy reads only.
 
 ### sync-service-when-2-plus-ops
 
@@ -249,15 +305,18 @@ Internal services accept `ScopedContext` (or `SYSTEM_CONTEXT`) and forward it to
 
 ### providers-have-no-domain-types-in-signatures
 
-Provider functions accept and return provider-native types (`ZohoEnvelope`, `QbInvoice`). Translation to/from domain types lives in the provider's `lib/` translators OR in the calling sync service.
+Provider functions accept and return provider-native types (`ZohoEnvelope`, `QbInvoice`). **Translation to/from domain types lives in domain-land** — the owning entity (`entities/<x>/lib`, `entities/<x>/schemas`), a module (`modules/<m>/...`), or the calling service (`services/<x>.service.ts` or `services/<x>/`). Never in the provider's `lib/`.
 
-**Why**: the provider is the only place that knows the third-party shape; everything above the provider speaks domain.
-**Reference impl**: `src/shared/services/providers/zoho-sign/client.ts`
-**Enforced by**: convention
+A **translator/adapter** (vendor payload → domain shape) is domain-land code. It may import the provider's `types.ts` **type-only** for its input signature, and imports the domain shapes it produces from the owning entity or module.
+
+**Why**: the provider is the only place that knows the third-party shape; everything above the provider speaks domain. A translator returns domain types, so by `#the-deciding-question` it is not provider code.
+**Ratified**: 2026-08-20, `docs/superpowers/specs/2026-08-20-provider-boundary-translator-home-design.md` §2 (epic #248). Supersedes the earlier "…OR in the provider's `lib/` translators" allowance.
+**Reference impl**: `src/shared/services/providers/zoho-sign/client.ts` (provider side). Target shape for translators: `modules/construction/sources/notion/` (`docs/plans/2026-09-15-construction-data-standardization-epic.md` D3).
+**Enforced by**: convention. See the non-compliance note under `#dependency-direction-is-one-way`.
 
 ### background-side-effects-via-qstash-jobs
 
-Side effects fired from a tRPC mutation, a Route Handler, or an Entity hook (`spec.hooks.{op}.{before,after}`) MUST go through a QStash job declared with `createJob` from `@/shared/services/providers/upstash/lib/create-job`. **Never** raw `void promise.catch(...)`. **Never** `after()` from `next/server` for anything you actually care about landing.
+Side effects fired from a tRPC mutation, a Route Handler, or an entity CRUD hook (the `hooks.{op}.{before,after}` config-factory slots in `dal/server/crud.ts` — never on the spec) MUST go through a QStash job declared with `createJob` from `@/shared/services/providers/upstash/lib/create-job`. **Never** raw `void promise.catch(...)`. **Never** `after()` from `next/server` for anything you actually care about landing.
 
 ```ts
 // 1. Declare the job in src/shared/services/providers/upstash/jobs/
@@ -300,7 +359,7 @@ Use `dispatchOrThrow` and `await` it for critical work. Use `dispatch` and `void
 
 **When NOT to enqueue a job**:
 - The user must see the outcome of the side effect in the same response — `await` the operation inline.
-- Pure realtime fan-out (e.g. `ably.channels.get(...).publish(...)`). The whole point of Ably is sub-100ms broadcast; routing through QStash adds 100-300ms of dispatch latency and defeats the use case. Use inline `await ably.publish(...)`. Same goes for any other ephemeral pub/sub.
+- Pure realtime fan-out (e.g. `realtimeClient.publish(channel, event, data)`). The whole point of Ably is sub-100ms broadcast; routing through QStash adds 100-300ms of dispatch latency and defeats the use case. Use inline `await realtimeClient.publish(...)`. Same goes for any other ephemeral pub/sub.
 - The work is so cheap it's not worth the round-trip (a synchronous `db.update` for one row, a single cache invalidation).
 
 **Anti-pattern: `after()` from `next/server`**. Do not use. It looks like background work but is best-effort with no durability. Either the work is critical (use `dispatchOrThrow`) or it's so ephemeral that inline `await` is acceptable. There is no middle ground we trust.
@@ -313,7 +372,7 @@ Use `dispatchOrThrow` and `await` it for critical work. Use `dispatch` and `void
 
 ## Current classification
 
-**Internal services:** `contracts`, `scheduling`, `email`, `notification`, `media`, `accounting`, `construction-data`, `pdf`, `ai`, `analytics`, `webhook`.
+**Internal services:** `contracts`, `scheduling`, `email`, `notification`, `accounting`, `construction-data`, `pdf`, `ai`, `analytics`, `webhook`. **Module services:** `proposals` (`modules/proposals/service.ts`, children `incentives` / `media` / `views`), `projects` (`modules/projects/service.ts`, child `media`), `media` (`modules/media/service.ts` — a capability module, not a `<x>.service.ts` file; its old top-level services-tier directory is gone).
 
 **Sync services:** `zoho-sync`. Future: `qb-sync` when accounting is decomposed.
 

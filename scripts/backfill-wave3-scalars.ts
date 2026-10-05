@@ -12,7 +12,7 @@ import process from 'node:process'
 import { and, eq, isNotNull } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { proposals } from '@/shared/db/schema'
-import { formMetaSectionSchema, fundingSectionSchema } from '@/shared/entities/proposals/schemas'
+import { formMetaSectionSchema, fundingSectionSchema } from '@/shared/modules/proposals/core/schemas'
 import { describeTargetDb } from './lib/describe-target-db'
 
 const dryRun = process.argv.includes('--dry-run')

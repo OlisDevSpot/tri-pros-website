@@ -27,7 +27,7 @@ export function CredentialsSection() {
           <h2 className=" text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
             Our
             {' '}
-            <span className="text-secondary">Credentials</span>
+            <span className="text-primary">Credentials</span>
             {' '}
             &
             Recognition
@@ -53,7 +53,7 @@ export function CredentialsSection() {
                 isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }
               }
               transition={{ duration: 0.5, delay: index * 0.1 + 0.3 }}
-              className="bg-linear-to-br from-secondary/15 to-secondary/25 rounded-xl p-6 text-center"
+              className="bg-linear-to-br from-primary/15 to-primary/25 rounded-xl p-6 text-center"
             >
               <div className="text-3xl lg:text-4xl font-bold text-foreground mb-2">
                 {stat.number}
@@ -80,7 +80,7 @@ export function CredentialsSection() {
             >
               {/* Header */}
               <div className="flex items-center space-x-4 mb-6">
-                <div className="w-16 h-16 bg-secondary/20 rounded-full flex items-center justify-center">
+                <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center">
                   <span className="text-3xl">{credential.icon}</span>
                 </div>
                 <div>
@@ -105,7 +105,7 @@ export function CredentialsSection() {
                     }}
                     className="flex items-start space-x-3"
                   >
-                    <div className="w-2 h-2 bg-secondary rounded-full shrink-0 mt-2" />
+                    <div className="w-2 h-2 bg-primary rounded-full shrink-0 mt-2" />
                     <span className="text-muted-foreground leading-relaxed">
                       {item}
                     </span>

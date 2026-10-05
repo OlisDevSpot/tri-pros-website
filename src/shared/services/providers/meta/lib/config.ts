@@ -18,7 +18,6 @@ import { createProviderConfig } from '@/shared/config/create-provider-config'
  * HARD-FAILS boot if it is ever set with NODE_ENV=production, so a stray code
  * cannot silently divert real prod Leads out of optimization.
  *
- * see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
  */
 export const metaEnvFragment = z.object({
   NEXT_PUBLIC_META_PIXEL_ID: z.string().optional(),

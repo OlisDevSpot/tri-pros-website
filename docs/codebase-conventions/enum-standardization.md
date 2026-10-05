@@ -8,15 +8,11 @@ Every fixed-set string value in the app — meeting outcomes, user roles, propos
 
 Every option set is declared once as a `readonly` tuple in `src/shared/constants/enums/<domain>.ts`.
 
+**Exception — an entity's or module's own option set may be co-located** in its `constants/`, when the set is part of that unit's domain vocabulary rather than a cross-cutting app enum. Live example: `src/shared/domains/construction/constants/enums.ts` (`tradeLocations`, `constructionTypes`, `variableDataTypes`, `homeAreas`), imported by `modules/proposals/core/schemas`, `db/schema/{customer-profiles,meta,scopes}.ts` and `entities/customers/constants/property-profile-fields.ts`. The pipeline below (const → type → Zod → Drizzle) applies identically wherever the tuple lives; only the *location* differs. That file folds into `modules/construction` at P1 of the construction epic (`docs/plans/2026-09-15-construction-data-standardization-epic.md`, A5).
+
 ```ts
 // src/shared/constants/enums/proposals.ts
-export const proposalStatuses = [
-  'draft',
-  'proposal-sent',
-  'approved',
-  'declined',
-  'expired',
-] as const
+export const proposalStatuses = ['draft', 'sent', 'approved', 'declined'] as const
 ```
 
 **Why**: a single mutation point; everything else derives.
@@ -25,16 +21,17 @@ export const proposalStatuses = [
 
 ### type-derived-from-const
 
-The TypeScript type lives in `src/shared/types/enums/<domain>.ts` and derives from the const array via `(typeof X)[number]`.
+The TypeScript type is declared directly under its const array, in the same `src/shared/constants/enums/<domain>.ts` file, and derives from it via `(typeof X)[number]`.
 
 ```ts
-// src/shared/types/enums/proposals.ts
-import type { proposalStatuses } from '@/shared/constants/enums/proposals'
+// src/shared/constants/enums/proposals.ts
+export const proposalStatuses = ['draft', 'sent', 'approved', 'declined'] as const
 export type ProposalStatus = (typeof proposalStatuses)[number]
 ```
 
 **Why**: type stays in lockstep with the array — add a value to the array, type updates automatically.
-**Reference impl**: `src/shared/types/enums/proposals.ts`
+**Reference impl**: `src/shared/constants/enums/proposals.ts`
+**Legacy**: `src/shared/types/enums/applications.ts` is the one remaining split-out type file (`ApplicationType`, `ApplicationStatus`) — co-locate it when touched.
 **Enforced by**: tsc (if you forget to add a value, downstream `switch (status)` exhaustiveness fails)
 
 ### text-with-enum
@@ -74,7 +71,7 @@ the next push. 19 remain for future opportunistic conversion or the deferred swe
 
 ### barrel-from-domain-files
 
-`src/shared/constants/enums/index.ts` re-exports from each domain file; `src/shared/types/enums/index.ts` mirrors. Consumers import from the barrel.
+`src/shared/constants/enums/index.ts` re-exports from each domain file (consts and their co-located types). Consumers import from the barrel.
 
 **Why**: refactoring a domain file (rename, split) doesn't break consumers.
 **Reference impl**: `src/shared/constants/enums/index.ts`
@@ -102,14 +99,13 @@ type SelectProps = { options: readonly string[] }
 ## Reference flow
 
 ```
-constants/enums/proposals.ts           types/enums/proposals.ts          db/schema/proposals.ts
-─────────────────────────────         ──────────────────────────        ──────────────────────────
-const proposalStatuses = [...]  ────► type ProposalStatus =       ────► text('status',
-  as const                              (typeof proposalStatuses)         { enum: proposalStatuses })
-                                          [number]
+constants/enums/proposals.ts                                       db/schema/proposals.ts
+──────────────────────────────────────────────────────            ──────────────────────────
+const proposalStatuses = [...] as const                   ────►  text('status',
+type ProposalStatus = (typeof proposalStatuses)[number]             { enum: proposalStatuses })
 ```
 
-All three derive from the const array. Modify the array → everything follows. (`proposal_status`
+Type and column typing both derive from the const array. Modify the array → everything follows. (`proposal_status`
 itself is one of the 4 enums converted from `pgEnum` to `text({ enum })` in Wave 2 of epic #256 —
 see `#legacy-pgenum-conversion`; the diagram shows the now-canonical shape.)
 

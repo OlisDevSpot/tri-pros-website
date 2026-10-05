@@ -5,7 +5,6 @@ import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server
 import type { ProfileFieldConfig } from '@/shared/entities/customers/types'
 import { useCallback } from 'react'
 import { ContextPanelSection } from '@/features/meeting-flow/ui/components/context-panel-section'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/shared/components/ui/sheet'
 import {
   budgetComforts,
   demeanors,
@@ -48,24 +47,21 @@ const OUTCOME_FIELDS: ProfileFieldConfig[] = [
 
 interface ContextPanelProps {
   customer: CustomerWithProfile | null
-  isOpen: boolean
   meeting: Meeting
   onContextChange: (patch: Record<string, unknown>) => void
   onCustomerProfileChange: (patch: Record<string, unknown>) => void
   onOutcomeChange: (outcome: string) => void
   onAgentNotesChange: (notes: string) => void
-  onOpenChange: (open: boolean) => void
 }
 
+/** The six context sections. Rendered inside the shell's inspector panel. */
 export function ContextPanel({
   customer,
-  isOpen,
   meeting,
   onContextChange,
   onCustomerProfileChange,
   onOutcomeChange,
   onAgentNotesChange,
-  onOpenChange,
 }: ContextPanelProps) {
   const ctx = (meeting.contextJSON ?? {}) as Record<string, unknown>
   const customerRow = (customer ?? {}) as unknown as Record<string, unknown>
@@ -133,74 +129,66 @@ export function ContextPanel({
   }
 
   return (
-    <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent className="flex w-80 flex-col gap-0 p-0 sm:max-w-80" side="left">
-        <SheetHeader className="shrink-0 border-b px-4 py-3">
-          <SheetTitle className="text-sm">Context Panel</SheetTitle>
-        </SheetHeader>
+    <div className="flex flex-col gap-1">
+      {/* Section 1 — Situational */}
+      <ContextPanelSection
+        fields={SITUATIONAL_FIELDS}
+        title="Situational"
+        values={situationalValues}
+        onFieldChange={(id, value) => {
+          if (id === 'agentNotes') {
+            handleAgentNotesChange(id, value)
+          }
+          else {
+            handlePreMeetingChange(id, value)
+          }
+        }}
+      />
 
-        <div className="flex flex-1 flex-col gap-1 overflow-y-auto px-2 py-2">
-          {/* Section 1 — Situational */}
-          <ContextPanelSection
-            fields={SITUATIONAL_FIELDS}
-            title="Situational"
-            values={situationalValues}
-            onFieldChange={(id, value) => {
-              if (id === 'agentNotes') {
-                handleAgentNotesChange(id, value)
-              }
-              else {
-                handlePreMeetingChange(id, value)
-              }
-            }}
-          />
+      {/* Section 2 — Customer Profile */}
+      <ContextPanelSection
+        defaultOpen={false}
+        fields={CUSTOMER_PROFILE_FIELDS}
+        title="Customer Profile"
+        values={customerRow}
+        onFieldChange={handleCustomerProfileChange}
+      />
 
-          {/* Section 2 — Customer Profile */}
-          <ContextPanelSection
-            defaultOpen={false}
-            fields={CUSTOMER_PROFILE_FIELDS}
-            title="Customer Profile"
-            values={customerRow}
-            onFieldChange={handleCustomerProfileChange}
-          />
+      {/* Section 3 — Property */}
+      <ContextPanelSection
+        defaultOpen={false}
+        fields={PROPERTY_PROFILE_FIELDS}
+        title="Property"
+        values={customerRow}
+        onFieldChange={handleCustomerProfileChange}
+      />
 
-          {/* Section 3 — Property */}
-          <ContextPanelSection
-            defaultOpen={false}
-            fields={PROPERTY_PROFILE_FIELDS}
-            title="Property"
-            values={customerRow}
-            onFieldChange={handleCustomerProfileChange}
-          />
+      {/* Section 4 — Financial */}
+      <ContextPanelSection
+        defaultOpen={false}
+        fields={FINANCIAL_PROFILE_FIELDS}
+        title="Financial"
+        values={customerRow}
+        onFieldChange={handleCustomerProfileChange}
+      />
 
-          {/* Section 4 — Financial */}
-          <ContextPanelSection
-            defaultOpen={false}
-            fields={FINANCIAL_PROFILE_FIELDS}
-            title="Financial"
-            values={customerRow}
-            onFieldChange={handleCustomerProfileChange}
-          />
+      {/* Section 5 — Agent Observations */}
+      <ContextPanelSection
+        defaultOpen={false}
+        fields={OBSERVATION_FIELDS}
+        title="Agent Observations"
+        values={observationValues}
+        onFieldChange={handleObservationsChange}
+      />
 
-          {/* Section 5 — Agent Observations */}
-          <ContextPanelSection
-            defaultOpen={false}
-            fields={OBSERVATION_FIELDS}
-            title="Agent Observations"
-            values={observationValues}
-            onFieldChange={handleObservationsChange}
-          />
-
-          {/* Section 6 — Outcome */}
-          <ContextPanelSection
-            defaultOpen={false}
-            fields={OUTCOME_FIELDS}
-            title="Outcome"
-            values={outcomeValues}
-            onFieldChange={handleOutcomeChange}
-          />
-        </div>
-      </SheetContent>
-    </Sheet>
+      {/* Section 6 — Outcome */}
+      <ContextPanelSection
+        defaultOpen={false}
+        fields={OUTCOME_FIELDS}
+        title="Outcome"
+        values={outcomeValues}
+        onFieldChange={handleOutcomeChange}
+      />
+    </div>
   )
 }

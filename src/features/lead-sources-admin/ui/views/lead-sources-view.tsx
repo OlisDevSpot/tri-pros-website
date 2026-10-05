@@ -84,7 +84,7 @@ export function LeadSourcesView() {
           </p>
         </div>
         <div className="flex shrink-0 items-center justify-between gap-3 lg:justify-end">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Time range
           </span>
           <TimeRangeChips
@@ -114,7 +114,7 @@ export function LeadSourcesView() {
             `pr-3` to keep a gap from the border-r divider; below lg the
             divider is hidden so no right padding is needed.
           */}
-          <div className="min-h-0 flex-1 overflow-y-auto pb-2 lg:pr-3">
+          <div className="min-h-0 flex-1 overflow-y-auto scrollbar-gutter-stable pb-2 lg:pr-3">
             <LeadSourceList
               sources={sources}
               isLoading={isLoading}

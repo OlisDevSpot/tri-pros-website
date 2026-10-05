@@ -10,7 +10,7 @@ import { companyInfo } from '@/shared/constants/company'
 export const metadata: Metadata = {
   title: 'About',
   description:
-    `Learn about our company heritage, founder's story, and the master craftsmen with ${companyInfo.combinedYearsExperience}+ years of combined experience building architectural masterpieces.`,
+    `Learn about our company heritage, our senior partner's story, and the master craftsmen with ${companyInfo.combinedYearsExperience}+ years of combined experience building architectural masterpieces.`,
 }
 
 export default function AboutPage() {

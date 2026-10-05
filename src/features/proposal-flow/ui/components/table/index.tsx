@@ -2,7 +2,8 @@
 
 import type { ProposalStatus } from '@/shared/constants/enums'
 
-import type { ProposalRow, ProposalTableMeta } from '@/shared/entities/proposals/lib/columns-registry'
+import type { ProposalRow, ProposalTableMeta } from '@/shared/modules/proposals/core/lib/columns-registry'
+import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 
 import { toast } from 'sonner'
@@ -19,11 +20,12 @@ import { RecordsPageHeader } from '@/shared/components/records-page-header'
 import { RecordsPageShell } from '@/shared/components/records-page-shell'
 import { ROOTS } from '@/shared/config/roots'
 import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
+import { fromPaginatedQuery } from '@/shared/dal/client/lib/from-paginated-query'
 
-import { useProposalActionConfigs } from '@/shared/entities/proposals/hooks/use-proposal-action-configs'
-import { useProposalActions } from '@/shared/entities/proposals/hooks/use-proposal-actions'
-import { PROPOSAL_COLUMNS } from '@/shared/entities/proposals/lib/columns-registry'
-import { useModalStore } from '@/shared/hooks/use-modal-store'
+import { openModal } from '@/shared/lib/open-modal'
+import { useProposalActionConfigs } from '@/shared/modules/proposals/core/hooks/use-proposal-action-configs'
+import { useProposalActions } from '@/shared/modules/proposals/core/hooks/use-proposal-actions'
+import { PROPOSAL_COLUMNS } from '@/shared/modules/proposals/core/lib/columns-registry'
 import { useTRPC } from '@/trpc/helpers'
 
 const SHOW_COLUMNS = ['label', 'price', 'status', 'createdAt', 'sentAt', 'viewCount'] as const
@@ -37,8 +39,8 @@ interface ProjectPrompt {
 
 export function PastProposalsTable() {
   const trpc = useTRPC()
+  const router = useRouter()
   const { updateProposal } = useProposalActions()
-  const { open: openModal, setModal } = useModalStore()
   const [projectPrompt, setProjectPrompt] = useState<ProjectPrompt | null>(null)
 
   const pagination = usePaginatedQuery<Record<string, never>, ProposalRow>(
@@ -46,14 +48,15 @@ export function PastProposalsTable() {
     {},
     PROPOSALS_TABLE_QUERY_CONFIG,
   )
+  const query = fromPaginatedQuery(pagination)
 
   const handleView = useCallback((entity: ProposalRow) => {
     window.open(ROOTS.public.proposalReview(entity.id), '_blank')
   }, [])
 
   const handleEdit = useCallback((entity: ProposalRow) => {
-    window.location.href = ROOTS.dashboard.proposals.byId(entity.id)
-  }, [])
+    router.push(ROOTS.dashboard.proposals.byId(entity.id))
+  }, [router])
 
   const { actions: sharedActions, DeleteConfirmDialog } = useProposalActionConfigs<ProposalRow>({
     onView: handleView,
@@ -111,37 +114,36 @@ export function PastProposalsTable() {
         action: {
           label: 'View Project',
           onClick: () => {
-            window.location.href = ROOTS.dashboard.projects.byId(projectId)
+            router.push(ROOTS.dashboard.projects.byId(projectId))
           },
         },
       })
     }
-  }, [updateProposal])
+  }, [router, updateProposal])
 
   const columns = useEntityColumns(PROPOSAL_COLUMNS, { show: SHOW_COLUMNS })
   const visibility = useColumnVisibility('proposals', columns)
 
   const meta = useMemo<ProposalTableMeta>(() => ({
-    proposalActions: () => sharedActions,
+    rowActions: sharedActions,
     onUpdateStatus: handleStatusChange,
     onUpdateCreatedAt: (id, date) => updateProposal.mutate(
       { id, data: { createdAt: date.toISOString() } },
       { onSuccess: () => toast.success('Created date updated') },
     ),
     onViewProfile: (customerId) => {
-      setModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props: { customerId } })
-      openModal()
+      openModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props: { customerId } })
     },
-  }), [sharedActions, handleStatusChange, updateProposal, setModal, openModal])
+  }), [sharedActions, handleStatusChange, updateProposal])
 
   return (
     <>
       <DeleteConfirmDialog />
 
       <RecordsPageShell
-        header={<RecordsPageHeader title="Proposals" pagination={pagination} />}
+        header={<RecordsPageHeader title="Proposals" query={query} />}
         toolbar={(
-          <QueryToolbar pagination={pagination} entityName="proposals">
+          <QueryToolbar query={query} entityName="proposals">
             <QueryToolbar.Standard searchPlaceholder="Search by label or customer…" visibility={visibility} />
           </QueryToolbar>
         )}
@@ -153,8 +155,9 @@ export function PastProposalsTable() {
             meta={meta}
             entityName="proposal"
             rowDataAttribute="data-proposal-row"
-            serverPagination={toDataTablePagination(pagination)}
-            serverSorting={toDataTableSorting(pagination)}
+            skeletonRowClassName="h-[58.5px]"
+            serverPagination={toDataTablePagination(query)}
+            serverSorting={toDataTableSorting(query)}
             columnVisibility={visibility.columnVisibility}
           />
         )}

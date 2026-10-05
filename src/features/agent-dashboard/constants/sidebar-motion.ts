@@ -1,12 +1,12 @@
-export const SIDEBAR_TRANSITION = { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] } as const
+import { BRAND_EASE, COLLAPSE_TRANSITION } from '@/shared/constants/motion'
 
-export const COLLAPSE_HEIGHT_VARIANTS = {
-  initial: { height: 0, opacity: 0 },
-  animate: { height: 'auto', opacity: 1 },
-  exit: { height: 0, opacity: 0 },
-} as const
+/** Sidebar collapse/label timing — the shared app-wide reveal tween. */
+export const SIDEBAR_TRANSITION = COLLAPSE_TRANSITION
 
 export const SIDEBAR_LABEL_ANIMATE = {
   expanded: { opacity: 1, width: 'auto' },
   collapsed: { opacity: 0, width: 0 },
 } as const
+
+/** WAAPI/CSS form of the brand curve, for the theme reveal and the switch thumb it carries. */
+export const THEME_SWITCH_EASE = `cubic-bezier(${BRAND_EASE.join(', ')})`

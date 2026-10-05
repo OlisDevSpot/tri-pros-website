@@ -1,45 +1,46 @@
 'use client'
 
-import type { CustomerPipelineItem, PipelineItemProjectMeeting, PipelineItemProposal } from '@/features/customer-pipelines/types'
+import type { CustomerPipelineItem, PipelineItemProjectMeeting, PipelineItemProposal } from '@/shared/entities/customers/types/pipeline-item'
 import type { MeetingOverviewCardProposal } from '@/shared/entities/meetings/components/overview-card'
 
 import { useDraggable } from '@dnd-kit/core'
-import { format, formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNow } from 'date-fns'
 import {
   CalendarIcon,
   FolderOpenIcon,
   GripVerticalIcon,
   MapPinIcon,
 } from 'lucide-react'
-import { useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import { memo, useCallback } from 'react'
 
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
-import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
+import { EntityActionMenu } from '@/shared/components/entities/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
-import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { Separator } from '@/shared/components/ui/separator'
 import { ROOTS } from '@/shared/config/roots'
 import { useCustomerActionConfigs } from '@/shared/entities/customers/hooks/use-customer-action-configs'
 import { getMeetingTimeLabel } from '@/shared/entities/customers/lib/get-meeting-time-label'
 import { MeetingOverviewCard } from '@/shared/entities/meetings/components/overview-card'
-import { useProjectActionConfigs } from '@/shared/entities/projects/hooks/use-project-action-configs'
-import { ProposalOverviewCard } from '@/shared/entities/proposals/components/overview-card'
-import { PROPOSAL_ROW_STYLES } from '@/shared/entities/proposals/constants/proposal-row-styles'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
+import { formatBusinessTime } from '@/shared/lib/business-time'
 import { formatAddress, formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
+import { useProjectActionConfigs } from '@/shared/modules/projects/core/hooks/use-project-action-configs'
+import { ProposalOverviewCard } from '@/shared/modules/proposals/core/components/overview-card'
+import { PROPOSAL_ROW_STYLES } from '@/shared/modules/proposals/core/constants/proposal-row-styles'
 
 interface Props {
   item: CustomerPipelineItem
   isDragOverlay?: boolean
   onViewProfile: (customerId: string) => void
-  onCreateMeeting?: (customerId: string) => void
+  onCreateMeeting?: (customer: { id: string, name: string }) => void
   onAssignRep?: (meetingId: string, currentRepId: string | null) => void
 }
 
-export function CustomerKanbanCard({
+function CustomerKanbanCardImpl({
   item,
   isDragOverlay,
   onViewProfile,
@@ -47,6 +48,7 @@ export function CustomerKanbanCard({
   onAssignRep,
 }: Props) {
   const isMobile = useIsMobile()
+  const router = useRouter()
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: item.id,
     data: item,
@@ -62,7 +64,7 @@ export function CustomerKanbanCard({
   }
 
   const meetingLabel = getMeetingTimeLabel(item.nextMeetingAt)
-  const isScheduledOrInProgress = item.stage === 'meeting_scheduled' || item.stage === 'meeting_in_progress'
+  const isScheduledOrInProgress = item.stage === 'needs_confirmation' || item.stage === 'meeting_confirmed' || item.stage === 'meeting_in_progress'
   const hasMeetingContext = item.meetingCount > 0
   const fullAddress = item.address
     ? formatAddress(item.address, item.city, item.state ?? 'CA', item.zip)
@@ -74,8 +76,8 @@ export function CustomerKanbanCard({
   }, [item.id, onViewProfile])
 
   const handleScheduleMeeting = useCallback(() => {
-    onCreateMeeting?.(item.id)
-  }, [item.id, onCreateMeeting])
+    onCreateMeeting?.({ id: item.id, name: item.name })
+  }, [item.id, item.name, onCreateMeeting])
 
   const { actions: customerActions, DeleteConfirmDialog: CustomerDeleteDialog } = useCustomerActionConfigs<CustomerPipelineItem>({
     onView: handleViewCustomer,
@@ -87,12 +89,11 @@ export function CustomerKanbanCard({
 
   const handleViewProject = useCallback(() => {
     if (item.project) {
-      window.location.href = ROOTS.dashboard.projects.byId(item.project.id)
+      router.push(ROOTS.dashboard.projects.byId(item.project.id))
     }
-  }, [item.project])
+  }, [item.project, router])
 
   const { actions: projectActions, DeleteConfirmDialog: ProjectDeleteDialog } = useProjectActionConfigs({
-    onView: handleViewProject,
     onEdit: handleViewProject,
   })
 
@@ -136,8 +137,9 @@ export function CustomerKanbanCard({
                     />
                   )}
                 </div>
+                {/* Relative to now, so the server's render and hydration can straddle a minute boundary. */}
                 {item.latestActivityAt && (
-                  <p className="text-[11px] text-muted-foreground/70 leading-tight">
+                  <p className="text-xs text-muted-foreground/70 leading-tight" suppressHydrationWarning>
                     {'Created '}
                     {formatDistanceToNow(new Date(item.latestActivityAt), { addSuffix: true })}
                   </p>
@@ -168,10 +170,10 @@ export function CustomerKanbanCard({
 
           {/* ── Project context container (projects pipeline) ── */}
           {item.project && (
-            <div className="rounded-md border border-green-500/20 bg-green-500/5 p-2.5 space-y-1.5 shadow-sm dark:border-green-500/15 dark:bg-green-500/8">
+            <div className="rounded-md border border-status-success-dot/40 bg-status-success-bg/70 p-2.5 space-y-1.5 shadow-sm">
               {/* Project header: title + actions */}
               <div className="flex items-center gap-1.5 min-w-0">
-                <FolderOpenIcon size={14} className="shrink-0 text-green-600 dark:text-green-400" />
+                <FolderOpenIcon size={14} className="shrink-0 text-status-success-fg" />
                 <span className="text-xs font-semibold truncate flex-1">{item.project.title}</span>
                 {!isDragOverlay && projectEntity && (
                   <EntityActionMenu
@@ -183,14 +185,14 @@ export function CustomerKanbanCard({
               </div>
 
               {/* Started date + total approved value */}
-              <div className="flex items-center gap-2 text-[11px]">
+              <div className="flex items-center gap-2 text-xs">
                 {item.project.startedAt && (
                   <span className="text-muted-foreground">
-                    {format(new Date(item.project.startedAt), 'MMM d, yyyy')}
+                    {formatBusinessTime(item.project.startedAt, { month: 'short', day: 'numeric', year: 'numeric' })}
                   </span>
                 )}
                 {item.project.totalValue > 0 && (
-                  <span className="font-bold text-green-700 dark:text-green-400">
+                  <span className="font-bold text-status-success-fg">
                     {formatAsDollars(item.project.totalValue)}
                   </span>
                 )}
@@ -214,6 +216,7 @@ export function CustomerKanbanCard({
                 meeting={{
                   id: item.nextMeetingId,
                   scheduledFor: item.meetingScheduledFor ?? undefined,
+                  confirmedAt: item.meetingConfirmedAt,
                   ownerId: item.assignedRep?.id,
                   ownerName: item.assignedRep?.name,
                   ownerImage: item.assignedRep?.image,
@@ -239,11 +242,12 @@ export function CustomerKanbanCard({
                       <Badge
                         variant="outline"
                         className={cn(
-                          'gap-1 text-[11px] font-normal w-fit',
-                          meetingLabel.variant === 'active' && 'border-yellow-500/30 bg-yellow-500/10 text-yellow-700 dark:border-yellow-500/20 dark:bg-yellow-500/10 dark:text-yellow-300',
-                          meetingLabel.variant === 'upcoming' && 'border-blue-500/30 bg-blue-500/10 text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300',
+                          'gap-1 text-xs font-normal w-fit',
+                          meetingLabel.variant === 'active' && 'border-status-pending-dot/40 bg-status-pending-bg text-status-pending-fg',
+                          meetingLabel.variant === 'upcoming' && 'border-status-info-dot/40 bg-status-info-bg text-status-info-fg',
                           meetingLabel.variant === 'past' && 'border-muted-foreground/20 text-muted-foreground',
                         )}
+                        suppressHydrationWarning
                       >
                         <CalendarIcon size={10} />
                         {meetingLabel.text}
@@ -253,7 +257,8 @@ export function CustomerKanbanCard({
                     ? (
                         <Badge
                           variant="outline"
-                          className="gap-1 text-[11px] font-normal w-fit border-muted-foreground/20 text-muted-foreground"
+                          className="gap-1 text-xs font-normal w-fit border-muted-foreground/20 text-muted-foreground"
+                          suppressHydrationWarning
                         >
                           <CalendarIcon size={10} />
                           {formatDistanceToNow(new Date(item.meetingScheduledFor), { addSuffix: true })}
@@ -270,19 +275,6 @@ export function CustomerKanbanCard({
             </div>
           )}
 
-          {/* CTA: Schedule Meeting for needs_confirmation */}
-          {item.stage === 'needs_confirmation' && onCreateMeeting && (
-            <Button
-              size="sm"
-              className="w-full"
-              onClick={(e) => {
-                e.stopPropagation()
-                onCreateMeeting(item.id)
-              }}
-            >
-              + Schedule Meeting
-            </Button>
-          )}
         </CardContent>
       </Card>
     </>
@@ -329,9 +321,10 @@ function KanbanProjectMeeting({ meeting, customerId, isFirst, isDragOverlay, onA
 }
 
 function KanbanProposalRow({ proposal }: { proposal: PipelineItemProposal }) {
+  const router = useRouter()
   const handleEdit = useCallback(() => {
-    window.location.href = ROOTS.dashboard.proposals.byId(proposal.id)
-  }, [proposal.id])
+    router.push(ROOTS.dashboard.proposals.byId(proposal.id))
+  }, [proposal.id, router])
 
   const style = PROPOSAL_ROW_STYLES[proposal.status] ?? PROPOSAL_ROW_STYLES.draft
 
@@ -346,11 +339,11 @@ function KanbanProposalRow({ proposal }: { proposal: PipelineItemProposal }) {
     >
       <div className="flex items-center gap-1.5 min-w-0 flex-1">
         <ProposalOverviewCard.StatusIcon size="sm" />
-        <ProposalOverviewCard.Label className="text-[11px]" />
+        <ProposalOverviewCard.Label className="text-xs" />
         <ProposalOverviewCard.Value
           showIcon
           className="text-xs ml-auto"
-          fallback={<span className="text-[11px] text-muted-foreground italic ml-auto shrink-0">No price</span>}
+          fallback={<span className="text-xs text-muted-foreground italic ml-auto shrink-0">No price</span>}
         />
       </div>
       <ProposalOverviewCard.Actions
@@ -360,3 +353,6 @@ function KanbanProposalRow({ proposal }: { proposal: PipelineItemProposal }) {
     </ProposalOverviewCard>
   )
 }
+
+// A column re-render only re-renders cards whose row changed (a same-key refetch keeps unchanged rows by reference).
+export const CustomerKanbanCard = memo(CustomerKanbanCardImpl)

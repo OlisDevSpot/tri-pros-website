@@ -1,13 +1,13 @@
 'use client'
 
 import type { PriceDisplayMode } from '@/shared/constants/enums'
-import type { FundingData } from '@/shared/entities/proposals/schemas'
-import type { SOW } from '@/shared/entities/proposals/types'
+import type { FundingData } from '@/shared/modules/proposals/core/schemas'
+import type { SOW } from '@/shared/modules/proposals/core/types'
 import { CheckIcon } from 'lucide-react'
 import { ExpandableLineItems } from '@/shared/components/expandable-line-items'
-import { buildPricingBreakdown } from '@/shared/entities/proposals/lib/financials'
 import { formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
+import { buildPricingBreakdown } from '@/shared/modules/proposals/core/lib/financials'
 import { ExpirationBadge } from './expiration-badge'
 
 interface Props {
@@ -63,7 +63,7 @@ export function PricingBreakdown({ funding, sow, priceDisplayMode }: Props) {
                               id: inc.id,
                               label: inc.label,
                               value: `-${formatAsDollars(inc.amount)}`,
-                              className: 'text-emerald-700 dark:text-emerald-400',
+                              className: 'text-status-success-fg',
                             })),
                           ]}
                         />
@@ -95,7 +95,7 @@ export function PricingBreakdown({ funding, sow, priceDisplayMode }: Props) {
       {hasAnyIncentives && (
         <>
           <div className="border-t border-border/40" />
-          <div className="px-5 py-4 space-y-2.5 text-emerald-700 dark:text-emerald-400">
+          <div className="px-5 py-4 space-y-2.5 text-status-success-fg">
             {globalLines.map((line) => {
               const isExpired = line.expiresAt ? new Date() >= new Date(line.expiresAt) : false
               const expiresAt = line.expiresAt ? new Date(line.expiresAt) : null

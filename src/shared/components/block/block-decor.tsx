@@ -13,7 +13,6 @@ interface BlockDecorProps {
  * deliberately bleeds past the box — this layer does it instead: pinned to the
  * Root bounds, `overflow-hidden` + `rounded-[inherit]` to clip decor to the
  * frame's corners. This is the clip half of the frame/clip split.
- * See docs/codebase-conventions/frontend-stack.md#never-co-locate-shadow-and-overflow.
  *
  * Sits at z-0 within the Root's `isolate`; lift content above it with `relative z-1`.
  */

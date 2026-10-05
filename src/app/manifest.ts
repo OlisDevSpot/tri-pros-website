@@ -11,7 +11,7 @@ export default function manifest(): MetadataRoute.Manifest {
     // open in Safari instead of routing into the installed app.
     scope: '/',
     display: 'standalone',
-    background_color: '#09090b',
+    background_color: '#040f23',
     theme_color: '#03AFED',
     orientation: 'portrait',
     icons: [

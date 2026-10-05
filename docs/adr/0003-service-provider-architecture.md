@@ -22,7 +22,7 @@ A **four-tier architecture** with physical directory boundaries:
 
 ### 1. Internal services — `src/shared/services/*.service.ts`
 
-Business orchestrators. Coordinate DAL + other services + providers. Receive `AuthedContext` and forward it to DAL calls. Never make raw HTTP calls — always delegate to a provider client.
+Business orchestrators. Coordinate DAL + other services + providers. Receive `ScopedContext` — the DAL-facing context type (`AuthedContext` is a separate, tRPC-layer type, `src/trpc/types.ts`; services don't take it) — and forward it to DAL calls. Never make raw HTTP calls — always delegate to a provider client.
 
 Examples: `contracts.service.ts`, `scheduling.service.ts`, `email.service.ts`, `notification.service.ts`, `media.service.ts`, `accounting.service.ts`, `pdf.service.ts`, `ai.service.ts`.
 
@@ -53,7 +53,7 @@ Providers always have a `client.ts` — even for single-endpoint integrations �
 
 Pure local utilities with **no external HTTP**. PDF generation, formatters, computation. **NOT** in `services/`.
 
-The deciding question: *Does this make HTTP calls to an external system?* If yes → provider. If no → shared lib.
+The deciding question: *Does this make HTTP calls to an external system?* If yes → provider. If no, but it orchestrates business logic → internal service, UNLESS it's a pure entity-CRUD flow with no external coordination, which orchestrates in the tRPC router instead — or, once the entity/module has its own `service.ts`, in that service (C17, 2026-09-14; see `docs/codebase-conventions/service-architecture.md#the-deciding-question` for the current, four-branch version this ADR's one-line summary has fallen behind).
 
 ### Dependency rules
 
@@ -90,11 +90,13 @@ Providers never know about business logic. Services never make raw HTTP. The dep
 - Adding a new external integration is a single provider directory + (if 2+ ops with translation) a sync service. No invented structure.
 - The dependency rules are enforceable by lint (future work) — today they're convention, but the directory boundary makes violations visually obvious in PRs.
 
-## Current classification (as of PR #207)
+## Current classification (as of PR #207; superseded — see the note below)
 
 **Internal services:** `contracts.service`, `scheduling.service`, `email.service`, `notification.service`, `media.service`, `accounting.service`, `construction-data.service`, `pdf.service`, `ai.service`, `analytics.service`, `webhook.service`.
 
 **Sync services:** `zoho-sync.service`. Future: `qb-sync.service`.
+
+> **Amendment (2026-09-14+):** this list predates **module services** and is stale on one entry: `media.service` moved out of `services/` entirely — it is now `modules/media/service.ts`, a **capability module** (owns no table, generic over the owner's table) rather than a `services/<x>.service.ts` file. Module services aren't a `services/` tier member and don't fit this classification's two buckets: `modules/proposals/service.ts` (children `incentives`/`media`/`views`) and `modules/projects/service.ts` (child `media`) are each an entity/module's root API — see `docs/codebase-conventions/service-architecture.md#modules` and its `#the-deciding-question` amendment (C17) for the current picture, including this ADR's four-tier table's own note that a module's root `service.ts` fills the "internal service" tier for its module.
 
 **Providers:** `zoho-sign/`, `google-calendar/`, `quickbooks/`, `r2/`, `resend/`, `notion/`, `web-push/`, `upstash/`, `ai/`, `google-drive/`, `google-maps/`, `gohighlevel/`.
 

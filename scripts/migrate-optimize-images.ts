@@ -38,7 +38,7 @@ import { sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import pg from 'pg'
 
-import { processImageVariants } from '../src/shared/entities/media-files/lib/process-image-variants'
+import { processImageVariants } from '../src/shared/modules/media/core/lib/process-image-variants'
 
 // ── Config ──────────────────────────────────────────────────────────────────
 

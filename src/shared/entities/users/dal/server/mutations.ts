@@ -1,5 +1,4 @@
 // users business mutations for the agent-settings profile.
-// see docs/codebase-conventions/dal-conventions.md
 
 import type { DalReturn } from '@/shared/dal/server/types'
 import type { User } from '@/shared/db/schema'

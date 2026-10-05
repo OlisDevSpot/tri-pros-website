@@ -7,6 +7,6 @@ export const dashboardRouter = createTRPCRouter({
   getActionQueue: agentProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id
     const isOmni = ctx.ability.can('manage', 'all')
-    return getActionQueue(userId, isOmni, canSeeUngatedPhone(ctx.actor))
+    return getActionQueue(userId, isOmni, canSeeUngatedPhone(ctx.ability))
   }),
 })

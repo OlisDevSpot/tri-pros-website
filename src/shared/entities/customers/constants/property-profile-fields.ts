@@ -8,7 +8,7 @@ import {
   insulationLevels,
   roofTypes,
   windowsTypes,
-} from '@/shared/domains/construction/constants/enums'
+} from '@/shared/modules/construction/core/constants/enums'
 
 export const PROPERTY_PROFILE_FIELDS: ProfileFieldConfig[] = [
   { id: 'yearBuilt', label: 'Year Built', type: 'select', options: yearBuiltRanges },

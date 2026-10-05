@@ -29,7 +29,7 @@ export function TeamSection() {
           <h2 className=" text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
             Meet Our
             {' '}
-            <span className="text-secondary">Expert Team</span>
+            <span className="text-primary">Expert Team</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
             Behind every exceptional project is a team of dedicated
@@ -78,7 +78,7 @@ export function TeamSection() {
                   >
                     <a
                       href={`mailto:${member.email}`}
-                      className="bg-secondary text-secondary-foreground px-4 py-2 rounded-lg font-semibold text-center block hover:bg-secondary/90 transition-colors duration-200"
+                      className="bg-primary text-primary-foreground px-4 py-2 rounded-lg font-semibold text-center block hover:bg-primary/90 transition-colors duration-200"
                     >
                       Contact
                       {' '}
@@ -118,7 +118,7 @@ export function TeamSection() {
                             duration: 0.3,
                             delay: index * 0.1 + specIndex * 0.1,
                           }}
-                          className="bg-secondary/10 text-secondary text-xs px-2 py-1 rounded-full font-medium"
+                          className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full font-medium"
                         >
                           {spec}
                         </motion.span>
@@ -150,10 +150,10 @@ export function TeamSection() {
           <div className="flex flex-col lg:flex-row w-full gap-8 [&>div]:flex-1">
             <div>
               <p className="text-3xl lg:text-4xl font-bold">
-                {companyInfo.teamInfo.numEmployees}
+                {companyInfo.teamInfo.numSupportStaff}
                 +
               </p>
-              <div className="text-sm">Team Members</div>
+              <div className="text-sm">Support Staff</div>
             </div>
             <div>
               <p className="text-3xl lg:text-4xl font-bold">

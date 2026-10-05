@@ -1,4 +1,4 @@
-import { format as formatDateFns, isSameDay, isSameWeek } from 'date-fns'
+import { BUSINESS_TIMEZONE, businessDaysAgo, formatBusinessTime, isSameBusinessWeek } from '@/shared/lib/business-time'
 
 export function formatDate(date: string | Date) {
   return new Date(date).toLocaleDateString('en-US', {
@@ -125,15 +125,16 @@ export function formatMeetingShortStamp(scheduledFor: string | Date | null | und
     return ''
   }
   const date = new Date(scheduledFor)
-  const now = new Date()
+  const hour = formatBusinessTime(date, { hour: 'numeric' }).replace(/\s/g, '')
 
-  if (isSameDay(date, now)) {
-    return `Today @${formatDateFns(date, 'ha')}`
+  if (businessDaysAgo(date) === 0) {
+    return `Today @${hour}`
   }
-  if (isSameWeek(date, now, { weekStartsOn: 0 })) {
-    return formatDateFns(date, 'EEE \'@\'ha')
+  const weekday = formatBusinessTime(date, { weekday: 'short' })
+  if (isSameBusinessWeek(date, new Date())) {
+    return `${weekday} @${hour}`
   }
-  return formatDateFns(date, 'EEE MMM d \'@\'ha')
+  return `${weekday} ${formatBusinessTime(date, { month: 'short', day: 'numeric' })} @${hour}`
 }
 
 /**
@@ -141,14 +142,14 @@ export function formatMeetingShortStamp(scheduledFor: string | Date | null | und
  * - `relative`: "Today", "Yesterday", "3 days ago", or "Mar 5, 2026"
  * - `dayAtTime`: "Monday at 5:00 PM"
  */
+// Built once: `toLocale*String` with options constructs a formatter per call, which dominated table re-renders.
+const DATE_CELL_DATE = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: BUSINESS_TIMEZONE })
+const DATE_CELL_WEEKDAY = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: BUSINESS_TIMEZONE })
+const DATE_CELL_TIME = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: BUSINESS_TIMEZONE })
+
 export function formatDateCell(dateInput: string | Date): { relative: string, dayAtTime: string } {
   const d = new Date(dateInput)
-  const now = new Date()
-
-  // Strip time for day comparison
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const startOfDate = new Date(d.getFullYear(), d.getMonth(), d.getDate())
-  const diffDays = Math.round((startOfToday.getTime() - startOfDate.getTime()) / (1000 * 60 * 60 * 24))
+  const diffDays = businessDaysAgo(d)
 
   let relative: string
   if (diffDays === 0) {
@@ -164,11 +165,11 @@ export function formatDateCell(dateInput: string | Date): { relative: string, da
     relative = 'Tomorrow'
   }
   else {
-    relative = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    relative = DATE_CELL_DATE.format(d)
   }
 
-  const dayOfWeek = d.toLocaleDateString('en-US', { weekday: 'long' })
-  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+  const dayOfWeek = DATE_CELL_WEEKDAY.format(d)
+  const time = DATE_CELL_TIME.format(d)
   const dayAtTime = `${dayOfWeek} at ${time}`
 
   return { relative, dayAtTime }

@@ -17,8 +17,7 @@ import { Skeleton } from '@/shared/components/ui/skeleton'
 import { useTRPC } from '@/trpc/helpers'
 
 /**
- * Action queue module — urgent triage only (see
- * docs/superpowers/specs/2026-08-06-adaptive-agent-dashboard-design.md#3).
+ * Action queue module — urgent triage only.
  * Reuses the exact grouping + card rendering the Action Center sheet already
  * uses (`groupByTier` + `ActionCard`), just capped to a top-N slice across
  * tiers (`DASHBOARD_LIMITS.actionQueue`) with a "See all →" that opens the
@@ -99,7 +98,7 @@ function ActionQueueSkeleton() {
 function ActionQueueEmptyState() {
   return (
     <div className="flex flex-col items-center gap-2 py-6 text-center">
-      <CheckCircleIcon size={32} className="text-green-500" />
+      <CheckCircleIcon size={32} className="text-status-success-fg" />
       <p className="text-sm font-medium text-foreground">You&apos;re all caught up</p>
       <p className="text-xs text-muted-foreground">No urgent follow-ups right now</p>
     </div>

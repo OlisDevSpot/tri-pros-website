@@ -97,7 +97,7 @@ row-visibility are all this atom viewed through a different FK — which is why 
 | Rule | Today (`file:line`) | Axis | Target CASL expression |
 |------|---------------------|------|------------------------|
 | Agent sees customers they've met with | `userCanSeeCustomer(userId, customers.id)` — one join deeper: `meetings ⋈ meeting_participants` on `customerId` — `entities/customers/dal/server/visibility.ts:9` | 2 | `can('read','Customer',{ $participatesViaMeetingPath:{ through:'customerId' } })` |
-| Dispatcher sees leads **+ rehash** (CANONICAL, user ruling 2026-08-11) | Today: `leadsPoolVisibility()` = `pipeline='active' AND NOT EXISTS meeting` — `visibility.ts:22` (leads ONLY); selected by `ability.can('read','LeadsPool')` branch — `lib/visibility.ts:8` | 2 | **Canonical dispatcher rule: derived-pipeline membership in `{leads, rehash}`** — `derivedPipelineWhere(['leads','rehash'])` (`lib/derived-pipeline-sql.ts`), i.e. `derivedPipelineSql() IN ('leads','rehash')`. Leads = `active` + no project + no meeting (pre-meeting); rehash = `pipeline='rehash'` (had a meeting, bad outcome). Target CASL: `can('read','Customer',{ $inDerivedPipeline:['leads','rehash'] })` (new operator emitting `derivedPipelineWhere`). ⚠️ **DEFERRED (2026-08-12):** the rehash half needs an outcome-derived pipeline classification that doesn't exist today — `customers.pipeline='rehash'` is **write-orphaned** (nothing writes it) so `derivedPipelineWhere(['rehash'])` returns zero rows. Deferred to the `domains/pipelines` derived-not-stored rethink (memory `project-pipelines-domain-rethink`). **Phase 1 (2026-08-12) shipped `$inDerivedPipeline:['leads']`** (leads-only, behavior-preserving); rehash lands with the pipeline rethink. `$hasNoMeeting` orphaned (unused). The role branch dissolves into rule authorship. |
+| Dispatcher sees the leads pool | `leadsPoolVisibility()` = `pipeline='active' AND NOT EXISTS meeting` — `visibility.ts:22`; selected by `ability.can('read','LeadsPool')` branch — `lib/visibility.ts:8` | 2 | dispatcher rule: `can('read','Customer',{ pipeline:'active', $hasNoMeeting:true })`. The **role branch dissolves into rule authorship** (two OR'd rules across roles). |
 | Agent may edit only `age` | `can('update','Customer',['age'])` — enforced in CRUD factory `create-crud-router.ts:195` | 3-static | unchanged (`permittedFieldsOf`) |
 | Dispatcher may edit contact fields | `can('update','Customer',[name,phone,email,address,city,state,zip,pipelineStage])` | 3-static | unchanged |
 | **Phone visible only if a `sent`/`approved` proposal exists** | `gatedPhoneSql` = `CASE WHEN EXISTS(sent proposal) THEN phone ELSE NULL END` — `phone-gating-sql.ts:51`; bypass `canSeeUngatedPhone` (omni \| leadsPool \| token) — `:37`. Applied `customers/dal/server/queries.ts:51`. UI also gets `hasSentProposal:boolean`. Rule doc: `customers/DOCS.md:26`. | **3-dynamic** | **Per-row threshold stays a SQL `CASE`** (depends on sibling-table state). **Bypass is CASL**: `can('read','Customer','phone')` ungated for omni/dispatcher/token. Compose: `mask = caslUngated ? raw : thresholdCase`. |
@@ -107,26 +107,25 @@ row-visibility are all this atom viewed through a different FK — which is why 
 
 | Rule | Today (`file:line`) | Axis | Target CASL expression |
 |------|---------------------|------|------------------------|
-| Agent sees proposals for meetings they're in | `proposalVisibility` → `userParticipatesInMeeting(userId, proposals.meetingId)` — `entities/proposals/lib/visibility.ts:9` | 2 | `can('read','Proposal',{ $participatesViaMeetingPath:{ through:'meetingId' } })` |
+| Agent sees proposals for meetings they're in | `proposalVisibility` → `userParticipatesInMeeting(userId, proposals.meetingId)` — `modules/proposals/core/lib/visibility.ts:9` | 2 | `can('read','Proposal',{ $participatesViaMeetingPath:{ through:'meetingId' } })` |
 | Homeowner reads their proposal | **token path** — `shareable` middleware, `proposal.token === input.token`, `ability=null` — `shareable-middleware.ts`; `spec.shareable.tokenColumn='token'` | **7** | stays a **bearer principal** (not CASL) |
 | Homeowner read-only vs agent edit (view-mode) | `can('update','Proposal') ? 'agent':'homeowner'` — `use-view-mode.ts:15`, `proposal/index.tsx:74` | 1 | unchanged verb check (client + server) |
-| Proposal-media manage (upload/list/reorder/setVisibility/delete) | `update Proposal` verb + parent-scope probe on **every** op — `proposals.router/media.router.ts:18`; `assertProposalInScope`/`assertProposalMediaInScope` — `proposal-media-files/dal/server/authz.ts:12` | 1 + 6 | verb (axis 1) + parent point-probe (axis 6). Declare `parent:{spec:proposalSpec, fk:'proposalId'}`; engine supplies the bridge. |
+| Proposal-media manage (upload/list/reorder/setVisibility/delete) | `update Proposal` verb — `assertCanUpdate`, `proposals.router/media.router.ts:22`; parent-scope bridge in `ctx.scope` via `proposalMediaProcedure` (`proposals.router/procedures.ts`) from `proposalMediaServerSpec.parent` — `modules/proposals/media/server-spec.ts:41` (the old `authz.ts` probes are gone, 2026-09-14) | 1 + 6 | verb (axis 1) + parent point-probe (axis 6). Declare `parent:{spec:proposalSpec, fk:'proposalId'}`; engine supplies the bridge. |
 | Media file internal-vs-homeowner exposure | writes `proposalMediaFiles.visibility` enum — `media.router.ts:64` | *content flag* | **not authorization** — a data attribute the homeowner render path reads. Keep out of the permission layer. |
-| Proposal-views: agents read, homeowner records | agents `isInScope(proposalSpec)` — `proposal-views/dal/server/queries.ts:36`; homeowner `recordView` on `systemProcedure` + token equality — `views.router.ts:44` | 6 + 7 | agents → parent probe (axis 6); homeowner → token principal (axis 7) |
+| Proposal-views: agents read, homeowner records | agents `isInScope(proposalSpec)` — `modules/proposals/views/dal/server/queries.ts:36`; homeowner `recordView` on `systemProcedure` (`views.router.ts:30`) + token equality in `proposalService.views.record` — `modules/proposals/views/service.ts:64` | 6 + 7 | agents → parent probe (axis 6); homeowner → token principal (axis 7) |
 
 ### PROJECTS
 
 | Rule | Today (`file:line`) | Axis | Target CASL expression |
 |------|---------------------|------|------------------------|
-| Agent sees projects for meetings they're in | `projectParticipationScope` = `meetings ⋈ mp` on `projectId` — `entities/projects/lib/visibility.ts:11`, `projectVisibility:31` | 2 | `can('read','Project',{ $participatesViaMeetingPath:{ through:'projectId' } })` |
+| Agent sees projects for meetings they're in | `projectParticipationScope` = `meetings ⋈ mp` on `projectId` — `modules/projects/core/lib/visibility.ts:11`, `projectVisibility:31` | 2 | `can('read','Project',{ $participatesViaMeetingPath:{ through:'projectId' } })` |
 | ⚠️ **Pipeline query ALSO grants `ownerId=me OR isPublic=true`** | hand-rolled SQL **wider than canonical** — `features/customer-pipelines/dal/server/get-customer-pipeline-items.ts:367`. Canonical `projectVisibility` uses **only** participation; ignores `projects.ownerId` & `projects.isPublic` (both exist on the table). | 2 | **UNRESOLVED — see Fork/Open Q.** Reconcile before authoring the rule. |
 | Pure-portfolio projects filtered even for omni | `hasAssociatedMeeting()` = `EXISTS(meetings WHERE projectId=projects.id)` — `visibility.ts:44` | *business filter* | **not authorization** — a "real vs portfolio" filter; keep beside the scope, not inside it. |
-| Project-media | anticipated `mediaFiles.projectId` bridge, **never wired** (no spec) | 6 | declare `parent` on a project-media spec; engine bridges. |
+| Project-media | `projectMediaServerSpec` declares `parent: { spec: projectServerSpec, fk: projectMediaFiles.projectId }` (`modules/projects/media/server-spec.ts:40`), but `projects.router/media.router.ts` still runs on a bare `agentProcedure` → **bridge not yet enforced** (unscoped) | 6 | swap the router to a child-scoped procedure; the engine already bridges. |
 
 ### Sub-entities (owned tables) — how each is scoped today
 
-None declare `parent` in a spec; none has its own `visibility` fragment (except customer_notes).
-All rely on point-probing the parent, riding the parent gate, or are unscoped.
+Proposal media, proposal views, proposal incentives and project media now declare `parent` in an `EntityServerSpec` (`modules/proposals/{media,views,incentives}/server-spec.ts`, `modules/projects/media/server-spec.ts`); the customer sub-entities still have no spec. None has its own `visibility` fragment (except customer_notes).
 
 | Sub-entity | Parent | FK | Today |
 |------------|--------|----|-------|
@@ -134,9 +133,9 @@ All rely on point-probing the parent, riding the parent gate, or are unscoped.
 | `customer_enrichment` | customer | `customerId` | No spec. Bare `eq(customerId)` after parent passed scope. |
 | `customer_lead_attribution` | customer | `customerId` | No spec. leftJoin on scoped customer. |
 | `customer_notes` | customer | `customerId` | **Own fragment** `userCanSeeCustomer(userId, customerNotes.customerId)` — `customer-notes/lib/visibility.ts:16`. Re-derives customer visibility inline vs bridging. |
-| `proposal_views` | proposal | `proposalId` | No spec. Read gated by `isInScope(proposalSpec)`. **Writes fully unscoped** (`recordProposalView` bare insert). |
-| `proposal_media_files` | proposal | `proposalId` | No spec. Parent probe joins `proposals`, filters `ctx.scope ?? undefined` (**leaks on null scope**). |
-| `media-files` / project media | project | `projectId` | **No spec at all.** Bridge anticipated, never wired. |
+| `proposal_views` | proposal | `proposalId` | `proposalViewServerSpec` with `parent` (`modules/proposals/views/server-spec.ts:33`). Agent reads gated by `isInScope(proposalSpec)`; homeowner `recordView` is token-gated on `systemProcedure` (see the Proposal-views row above). |
+| `proposal_media_files` | proposal | `proposalId` | `proposalMediaServerSpec` with `parent` (`modules/proposals/media/server-spec.ts:41`); scope bridged into `ctx.scope` by `proposalMediaProcedure` (`proposals.router/procedures.ts:37`). |
+| `media_files` / project media | project | `projectId` | `projectMediaServerSpec` with `parent` (`modules/projects/media/server-spec.ts:40`); the router still uses bare `agentProcedure`, so it runs **unscoped** until the child-scoped procedure swap. |
 
 ---
 
@@ -214,7 +213,7 @@ rule.
 1. **The Policy** — one `defineAbilitiesFor(principal)`, now *with conditions*. Roles + row-conditions
    + field-grants live here and nowhere else. Deletes the `lib/visibility.ts` role branches and the
    `LeadsPool` fan-out.
-2. **The Scope Compiler** — `resolveActorScope(spec, principal) → SQL | null`: `rulesToAST('read',subject)`
+2. **The Scope Compiler** — `resolveScope(spec, principal) → SQL | null`: `rulesToAST('read',subject)`
    → Drizzle interpreter hosting custom operators (`$participatesIn`, `$participatesViaMeetingPath`,
    `$hasNoMeeting`). `spec.visibility` the *function* disappears; the spec declares its `subject` + FK
    paths. Absorbs `resolveEffectiveScope`, all four `lib/visibility.ts`, and all 4 omni null-collapses.

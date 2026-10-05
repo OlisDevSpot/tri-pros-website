@@ -4,20 +4,22 @@ import type { UserOverviewCardUser } from '@/shared/entities/users/components/ov
 
 import { parseISO } from 'date-fns'
 
+import { businessHour } from '@/shared/lib/business-time'
+
 export interface SwimlaneCombo {
   /** Canonical combo key = participant user ids sorted asc, joined by `|`. */
   key: string
   participants: UserOverviewCardUser[]
 }
 
-/** Filter events whose startAt hour falls within [bucket.startHour, bucket.endHour) */
+/** Filter events whose business-zone startAt hour falls within [bucket.startHour, bucket.endHour) */
 export function getEventsForBucket(
   events: ScheduleCalendarEvent[],
   bucket: TimeBucket,
 ): ScheduleCalendarEvent[] {
   return events
     .filter((event) => {
-      const hour = parseISO(event.startAt).getHours()
+      const hour = businessHour(event.startAt)
       return hour >= bucket.startHour && hour < bucket.endHour
     })
     .sort((a, b) => parseISO(a.startAt).getTime() - parseISO(b.startAt).getTime())

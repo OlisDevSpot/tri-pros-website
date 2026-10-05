@@ -1,11 +1,11 @@
 'use client'
 
-import type { ProposalListRow } from '@/shared/entities/proposals/dal/server/queries'
+import type { ProposalListRow } from '@/shared/modules/proposals/core/dal/server/queries'
 
 import { mapProposalRowToCardData } from '@/features/agent-dashboard/lib/map-proposal-row-to-card-data'
 import { DashboardProposalCustomerLink } from '@/features/agent-dashboard/ui/components/dashboard-proposal-customer-link'
-import { ProposalOverviewCard } from '@/shared/entities/proposals/components/overview-card'
 import { cn } from '@/shared/lib/utils'
+import { ProposalOverviewCard } from '@/shared/modules/proposals/core/components/overview-card'
 
 interface DashboardProposalCardProps {
   row: ProposalListRow

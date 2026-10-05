@@ -8,7 +8,7 @@ import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-p
 import { SpinnerLoader2 } from '@/shared/components/loaders/spinner-loader-2'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
-import { toFundingInputs } from '@/shared/entities/proposals/lib/funding-columns'
+import { toFundingInputs } from '@/shared/modules/proposals/core/lib/funding-columns'
 import { isTruthy } from '@/shared/types'
 
 export function ProjectOverview() {
@@ -67,7 +67,7 @@ export function ProjectOverview() {
   }
 
   if (!proposal.data) {
-    return <div className="bg-blue-500">Sorry, nothing to display here</div>
+    return <div className="bg-muted text-muted-foreground">Sorry, nothing to display here</div>
   }
 
   const { summary, energyBenefits } = proposal.data.projectJSON.data

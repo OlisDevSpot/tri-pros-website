@@ -13,28 +13,12 @@ import { getLeadSourceBySlug } from '@/shared/entities/lead-sources/dal/server/q
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { enrollLeadJob } from '@/shared/services/providers/upstash/jobs/enroll-lead'
 
-// ---------------------------------------------------------------------------
-// customerIntakeService — channel-agnostic lead ingestion (DRY across the Bina
-// webhook + the public intake form). PURE ORCHESTRATION: zero raw db.*, zero
-// provider parsing. Composes customerCrud.create (canonical entity create) +
-// customerNoteCrud.create + meetingCrud.create.
-//
-// Standardizes both channels on customerCrud.create (the legacy
-// createCustomerFromWebhook is retired — see queries.ts migration note).
-//
-// see docs/codebase-conventions/service-architecture.md
-// ---------------------------------------------------------------------------
-
 interface IngestLeadInput {
   core: IntakeCore
   leadMeta?: LeadMeta
   note?: string | null
-  // When present, create a Meeting owned by `ownerId` using
-  // leadMeta.scheduledFor. Caller resolves the owner (session / fallback).
   meeting?: { ownerId: string } | null
-  // Renter-gate + delayed-CAPI match keys, captured at submit time (see
-  // customer-lead-attribution.ts) — merged onto the attribution row alongside
-  // leadMeta.
+  // Renter-gate + delayed-CAPI match keys captured at submit time.
   attributionExtra?: {
     ownership?: string | null
     contentCategory?: string | null
@@ -62,7 +46,6 @@ function createCustomerIntakeService() {
       ctx: ScopedContext,
       input: IngestLeadInput,
     ): Promise<DalReturn<{ customer: Customer, meetingId: string | null }>> {
-      // ── Resolve lead source slug → id ──────────────────────────────────────
       const sourceResult = await getLeadSourceBySlug(input.core.leadSourceSlug)
       if (!sourceResult.success) {
         return sourceResult
@@ -72,7 +55,6 @@ function createCustomerIntakeService() {
       }
       const leadSourceId = sourceResult.data.id
 
-      // ── 1. Create customer (canonical DAL; fires create hooks if defined) ───
       const created = await customerCrud.create(ctx, {
         name: input.core.name,
         phone: input.core.phone,
@@ -88,9 +70,7 @@ function createCustomerIntakeService() {
       }
       const customer = created.data
 
-      // ── 1b. Attribution capture (strict — ads reporting depends on it) ──────
-      // Customer is already committed; a failed attribution write surfaces as an
-      // error the caller can retry (same precedent as meeting_create_failed).
+      // Strict — ads reporting depends on it. The customer is already committed, so a failed write is surfaced for the caller to retry.
       if (input.leadMeta) {
         const attr = await upsertLeadAttribution({ customerId: customer.id, leadMeta: input.leadMeta, extra: input.attributionExtra })
         if (!attr.success) {
@@ -98,19 +78,12 @@ function createCustomerIntakeService() {
         }
       }
 
-      // ── Auto-enroll (best-effort, fire-and-forget) ─────────────────────────
-      // Source-anchored policy gates here; enrollLeadJob is a dumb executor.
-      // A dropped enqueue only means the lead isn't auto-dialed (admin can still
-      // "Enroll all"), so best-effort `dispatch` — never breaks ingest.
-      // see docs/superpowers/specs/2026-06-17-source-anchored-setup-auto-enroll-design.md
+      // Best-effort: a dropped enqueue only means no auto-dial (admin can still "Enroll all") — never breaks ingest.
       const source = sourceResult.data
       if (source.voipCampaignsEnabled && source.voipAutoEnroll && source.defaultCampaignId) {
         void enrollLeadJob.dispatch({ customerId: customer.id })
       }
 
-      // ── 2. Optional note (best-effort — never rolls back the customer) ──────
-      // ctx is SYSTEM_CONTEXT (public intake, no session) — the create.before
-      // hook probes with SYSTEM_CONTEXT and leaves authorId null.
       if (input.note) {
         const noteResult = await customerNoteCrud.create(ctx, {
           customerId: customer.id,
@@ -121,8 +94,7 @@ function createCustomerIntakeService() {
         }
       }
 
-      // ── 2b. Single funnel-intake note at creation time (best-effort) ─────────
-      // Fires once here so progressive enrichFunnelLead calls never duplicate it.
+      // Written once here so progressive enrichFunnelLead calls never duplicate it.
       const funnelNote = buildFunnelLeadNote(input.leadMeta)
       if (funnelNote) {
         const noteResult = await customerNoteCrud.create(ctx, {
@@ -134,7 +106,6 @@ function createCustomerIntakeService() {
         }
       }
 
-      // ── 3. Optional meeting ────────────────────────────────────────────────
       let meetingId: string | null = null
       if (input.meeting) {
         const scheduledFor = input.leadMeta?.scheduledFor
@@ -157,13 +128,7 @@ function createCustomerIntakeService() {
       return dalSuccess({ customer, meetingId })
     },
 
-    // Guarded enrichment upsert for an already-created funnel lead. The leadId
-    // is the capability; the funnel-kind check + the per-step row upsert
-    // (INSERT … ON CONFLICT (customer_id, step_id) DO UPDATE into
-    // customer_enrichment — Wave 2 replaced the old jsonb_set merge) both live
-    // in the DAL mutation. Best-effort from each progressive step; a zero-row
-    // match means the lead isn't a funnel lead.
-    // see ../entities/customers/dal/server/mutations.ts#upsertFunnelEnrichment
+    // The leadId is the capability (no session on the funnel); the funnel-kind check lives in the DAL upsert.
     async enrichFunnelLead(
       _ctx: ScopedContext,
       input: EnrichFunnelLeadInput,
@@ -178,11 +143,7 @@ function createCustomerIntakeService() {
       return dalSuccess({ ok: true })
     },
 
-    // Guarded address patch for an already-created funnel lead. Same capability
-    // model as enrichFunnelLead: the leadId is the capability and we refuse any
-    // non-funnel customer. The partial update triggers the existing geocode-
-    // invalidation hook (desired). Relies on the committed phone fix so a partial
-    // update doesn't null the phone.
+    // Same capability model as enrichFunnelLead; the partial update intentionally fires the geocode-invalidation hook.
     async setFunnelLeadAddress(
       ctx: ScopedContext,
       input: SetFunnelLeadAddressInput,

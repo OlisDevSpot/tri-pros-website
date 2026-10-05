@@ -16,8 +16,9 @@ import { buildLeadsColumns } from '@/features/campaigns-admin/ui/lib/leads-colum
 import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
+import { fromPaginatedQuery } from '@/shared/dal/client/lib/from-paginated-query'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
-import { useModalStore } from '@/shared/hooks/use-modal-store'
+import { openModal } from '@/shared/lib/open-modal'
 import { useTRPC } from '@/trpc/helpers'
 
 // `DataTable` requires `TData extends { id: string }`. `CampaignLeadRow` uses
@@ -30,7 +31,6 @@ function toTableRow(row: CampaignLeadRow): LeadTableRow {
 export function CampaignsLeadsView() {
   const trpc = useTRPC()
   const { enroll } = useCampaignMutations()
-  const { open: openModal, setModal } = useModalStore()
 
   const summariesQuery = useQuery(trpc.voipCampaignsRouter.getSourceCampaignSummaries.queryOptions())
   const campaignsQuery = useQuery(trpc.voipCampaignsRouter.listCampaigns.queryOptions())
@@ -40,7 +40,7 @@ export function CampaignsLeadsView() {
     () =>
       buildLeadsFilterConfig({
         campaigns: campaigns.map(c => ({
-          label: c.ctCampaignName,
+          label: c.providerCampaignName,
           value: c.id,
         })),
         sources: (summariesQuery.data ?? []).map(s => ({
@@ -72,8 +72,8 @@ export function CampaignsLeadsView() {
   // swapped for the runtime-merged (populated-options) config so the
   // filter UI can render real campaign/source choices. `usePaginatedQuery`
   // itself never sees this — only `<LeadsFilterBar>` does.
-  const toolbarPagination = useMemo(
-    () => ({ ...pagination, filterDefinitions: filterConfig }),
+  const toolbarQuery = useMemo(
+    () => fromPaginatedQuery({ ...pagination, filterDefinitions: filterConfig }),
     [pagination, filterConfig],
   )
 
@@ -105,14 +105,13 @@ export function CampaignsLeadsView() {
 
   const handleOpenProfile = useCallback(
     (customerId: string) => {
-      setModal({
+      openModal({
         accessor: 'CustomerProfile',
         Component: CustomerProfileModal,
         props: { customerId },
       })
-      openModal()
     },
-    [openModal, setModal],
+    [],
   )
 
   const pageRowIds = useMemo(
@@ -137,7 +136,7 @@ export function CampaignsLeadsView() {
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col gap-3">
-      <LeadsFilterBar pagination={toolbarPagination} />
+      <LeadsFilterBar query={toolbarQuery} />
 
       <div className="min-h-0 flex-1">
         <DataTable
@@ -146,7 +145,8 @@ export function CampaignsLeadsView() {
           entityName="lead"
           meta={meta}
           onRowClick={row => setDrawerRow(row)}
-          serverPagination={toDataTablePagination(pagination)}
+          serverPagination={toDataTablePagination(toolbarQuery)}
+          skeletonRowClassName="h-[53px]"
           tableId="campaign-leads"
         />
       </div>

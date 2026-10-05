@@ -2,18 +2,19 @@
 name: Tri Pros Remodeling
 description: A two-world design system — an operational "Command Desk" for the CRM and "Blueprint Authority" for marketing & funnels.
 colors:
-  # The Command Desk (app / dashboard) — oklch is the normative source
-  cobalt-command: "oklch(0.6231 0.188 259.8145)"
-  app-background: "oklch(0.9846 0.0017 247.8389)"
-  app-foreground: "oklch(0.2781 0.0296 256.848)"
+  # The Command Desk (app / dashboard) — oklch is the normative source. Light
+  # values; dark-mode pairs are in the Colors section below and docs/design-system/tokens.md.
+  harbor-blue: "oklch(0.50 0.15 243)"
+  app-background: "oklch(0.965 0.009 246)"
+  app-foreground: "oklch(0.235 0.045 258)"
   app-card: "oklch(1 0 0)"
-  app-secondary: "oklch(0.967 0.0029 264.5419)"
-  app-muted-foreground: "oklch(0.551 0.0234 264.3637)"
-  app-border: "oklch(0.9276 0.0058 264.5313)"
+  app-secondary: "oklch(0.955 0.008 250)"
+  app-muted-foreground: "oklch(0.47 0.03 256)"
+  app-border: "oklch(0.905 0.012 252)"
   app-input: "oklch(1 0 0)"
-  destructive: "oklch(0.6368 0.2078 25.3313)"
-  success: "oklch(0.55 0.13 150)"
-  warning: "oklch(0.56 0.115 72)"
+  destructive: "oklch(0.53 0.19 27)"
+  success: "oklch(0.45 0.11 152)"
+  warning: "oklch(0.46 0.095 72)"
   # Blueprint Authority (marketing / funnels) — hex is the normative source
   blueprint-blue: "#03afed"
   blueprint-ink: "#0784b3"
@@ -51,7 +52,7 @@ typography:
     fontWeight: 500
     lineHeight: 1.1
   eyebrow:
-    fontFamily: "Space Mono, ui-monospace, monospace"
+    fontFamily: "Nunito, system-ui, sans-serif"
     fontSize: "0.72rem"
     fontWeight: 700
     letterSpacing: "0.2em"
@@ -67,7 +68,7 @@ spacing:
   block-pad: "36px"
 components:
   button-primary:
-    backgroundColor: "{colors.cobalt-command}"
+    backgroundColor: "{colors.harbor-blue}"
     textColor: "#ffffff"
     rounded: "{rounded.md}"
     padding: "8px 16px"
@@ -107,7 +108,7 @@ that share a bloodline (blue accent, real depth, no slop) but never blur into a
 single averaged look. **The Command Desk** is the internal CRM — a premium,
 cinematic operating cockpit where a lean sales team moves leads from call to
 signed contract. It is calm, dense-where-it-counts, and quietly luxurious:
-near-white neutrals, a single saturated **Cobalt Command** blue reserved for
+near-white neutrals, a navy rail, a single **Harbor Blue** accent reserved for
 action, and a signature frosted-glass surface for floating UI. **Blueprint
 Authority** is the marketing and funnel world — warm poured-concrete neutrals, a
 bright **Blueprint Blue** drafting-line accent, and drafting-paper textures that
@@ -143,25 +144,44 @@ OKLCH; the marketing world is built on warm concrete neutrals in hex. Each has
 exactly one accent, and its rarity is the point.
 
 ### Primary
-- **Cobalt Command** (`oklch(0.6231 0.188 259.8145)`): the app world's single
-  accent. Primary buttons, active nav, focus rings, selected states, chart series,
-  links on hover. It is the interactive voice of the CRM — if it is cobalt, it does
-  something.
+- **Harbor Blue** (light `oklch(0.50 0.15 243)` / dark `oklch(0.76 0.13 230)`): the
+  app world's single accent. It does one job — "act here": primary buttons, active
+  nav, focus rings, selected states, links on hover. In light mode it is a deep
+  logo-derived blue carrying a white label; in dark mode it brightens to a
+  logo-cyan and its label flips to navy (`--primary-foreground`), because a white
+  label on that bright a fill would fail contrast.
 - **Blueprint Blue** (`#03afed`): the marketing world's single accent — the drafting
   line on warm concrete. CTAs, eyebrows, decor strokes, the blueprint grid, credential
   emphasis. **Blueprint Ink** (`#0784b3`) is the same hue value-darkened for small
   text and hairlines where the bright blue would fail contrast on light.
 
 ### Neutral — The Command Desk (app)
-- **Cool Paper** (`oklch(0.9846 0.0017 247.8389)`): the app page background — a
-  faintly cool near-white.
-- **Slate Ink** (`oklch(0.2781 0.0296 256.848)`): primary text; a soft blue-slate,
-  never pure black.
-- **Card White** (`oklch(1 0 0)`): raised card / popover / input surface, one step
-  brighter than the page.
-- **Quiet Steel** (`oklch(0.551 0.0234 264.3637)`): muted-foreground for secondary
-  text and captions.
-- **Hairline** (`oklch(0.9276 0.0058 264.5313)`): borders and dividers.
+- **The elevation ladder** (`globals.css`, knobs in `:root, .funnel-light` and `.dark`):
+  every app surface is one hue (`--surface-h`/`--surface-c`) at a lightness set by its
+  rung. The canvas (`--background`, rung 0) is the darkest; each surface stacked over
+  another sits one `--step` lighter, in both schemes. A nested `bg-card` climbs a rung
+  by itself (it counts the surfaces it sits in, up to three); `bg-(--card)` paints the
+  current rung without climbing; `bg-muted` is always one rung above wherever it is read.
+  Menus, selects and popovers (`bg-popover`, `surface-overlay`) sit on the top rung; a
+  dialog is a portaled `bg-card`, so it starts at rung 1 and its contents climb from
+  there. The public footer (`surface-beneath`) sits one rung below the page. Retune it with
+  the `elevation-ladder` skill; `pnpm theme:check` guards every pair on every rung.
+- **Slate Ink** (`oklch(0.235 0.045 258)`): primary text; a soft blue-slate, never
+  pure black.
+- **Bands** (`--band`): column bodies, table heads and striped rows — half a step
+  above their surface. Hovered and selected rows mix primary into the surface
+  (`--row-hover`, `--row-selected`); selected always sits further from it than hover.
+- **Quiet Steel** (`oklch(0.47 0.03 256)`): muted-foreground for secondary text
+  and captions.
+- **Hairline** (`--border`, one `--edge` off its surface: darker in light, lighter in
+  dark): borders and dividers. **Border Strong** (`--border-strong`, two edges off) is
+  the emphasized variant, for dashed empty states and
+  dividers that need to read as more than a hairline.
+- **Control Border** (`oklch(0.62 0.03 255)`, 3:1 against the card): the border on
+  inputs, textareas and other form controls — deliberately stronger than Hairline,
+  because a control needs a visible edge a divider doesn't.
+- **Navy Rail** (`oklch(0.215 0.072 262)` light / `oklch(0.13 0.05 262)` dark): the
+  sidebar fill — see Sidebar, below.
 
 ### Neutral — Blueprint Authority (marketing)
 - **Warm Concrete** (`#faf7f1` page, `#f4efe6` panel, `#efe7d7` raised): the poured-
@@ -173,18 +193,29 @@ exactly one accent, and its rarity is the point.
 - **Concrete Hairline** (`#ddd4c4`): borders and inputs.
 
 ### Status
-- **Destructive** (`oklch(0.6368 0.2078 25.3313)`), **Success** (`oklch(0.55 0.13 150)`),
-  **Warning** (`oklch(0.56 0.115 72)`): functional only. See the entity stage-color
-  convention below.
+- **Destructive** (`oklch(0.53 0.19 27)`), **Success** (`oklch(0.45 0.11 152)`),
+  **Warning** (`oklch(0.46 0.095 72)`): functional shadcn fills. Destructive's
+  `-foreground` label is white in both modes; Success and Warning flip their
+  `-foreground` label from white in light to navy in dark, matching Primary. For
+  pipeline and entity UI, use the seven Stage-Color tones below instead — they
+  carry the meaning.
 
 ### Named Rules
-**The One Voice Rule.** Each world has exactly one accent (Cobalt Command in the
-app, Blueprint Blue in marketing). It lands on ≤10% of any screen. Its scarcity is
-what makes it read as "act here." Never introduce a second decorative accent hue.
+**The One Voice Rule.** Each world has exactly one accent (Harbor Blue in the app,
+Blueprint Blue in marketing). It lands on ≤10% of any screen. Its scarcity is what
+makes it read as "act here." Never introduce a second decorative accent hue.
 
 **The Stage-Color Rule.** In pipeline and entity UI, status color is semantic and
-fixed: red = bad, yellow = in-progress, green = converted, purple = action,
-blue = neutral. These are data, not decoration — never restyle them for taste.
+fixed, never restyled for taste. Seven tones carry the meaning — `info`, `pending`,
+`attention`, `action`, `success`, `danger`, `idle` — each with a `fg` (text), `bg`
+(fill) and `dot` (marker) value in both light and dark. They live in
+`src/shared/constants/status-tones.ts`: pipeline stage objects keep their
+`color: '<key>'` field, and `STAGE_COLOR_TONE` in that module maps each key to its
+tone. The rule's original meanings still hold — red = bad (`danger`),
+yellow = in-progress (`pending`), green = converted (`success`),
+purple = action (`action`) — except the **blue** stage, which now renders as a
+muted steel (`info`) instead of a saturated blue, so it stops competing with
+Harbor Blue.
 
 **The Warm-Cool Border Rule.** Never paste an app-world cool neutral into a
 marketing surface or vice versa. Warm concrete belongs to Blueprint Authority; cool
@@ -199,15 +230,15 @@ and every `h1`–`h6`.
 on `body`.
 **Serif Accent:** Playfair Display (with Georgia, serif) — `--font-serif`, reserved
 for cinematic/editorial moments.
-**Mono / Eyebrow:** Space Mono (with ui-monospace) — `--font-mono`, for labels and
-blueprint eyebrows.
+**Mono:** Space Mono (with ui-monospace) — `--font-mono`. Not for eyebrows: eyebrows
+are Nunito 700 (`BlockEyebrow`).
 **Script:** Dancing Script — `--font-script`, a rare signature flourish only.
 
 **Character:** Syne is a geometric, slightly architectural sans — confident and a
 little engineered, which is exactly the brand. Pairing it with Nunito's rounded
 warmth keeps long body copy friendly and legible for a homeowner audience, while
 Syne carries the authority in headings. Playfair supplies the occasional cinematic
-serif accent; Space Mono supplies the drafting-eyebrow voice.
+serif accent.
 
 ### Hierarchy
 - **Display** (Syne 500, `clamp(2.25rem, 5vw, 3.75rem)` — the `h1` `text-4xl → 6xl`
@@ -216,7 +247,7 @@ serif accent; Space Mono supplies the drafting-eyebrow voice.
 - **Title** (Syne 600, `~1.125rem`): card titles, list headers, sub-sections.
 - **Body** (Nunito 400, `1rem`, `line-height` 1.6): all reading copy. Cap prose at
   the marketing `--measure-prose` of **60ch**.
-- **Eyebrow / Label** (Space Mono 700, `0.72rem`, `letter-spacing` 0.2em, uppercase):
+- **Eyebrow / Label** (Nunito 700, `--fs-eyebrow`, `--tracking-eyebrow`, uppercase; `BlockEyebrow`):
   kickers, credential labels, the funnel `--fs-eyebrow` voice.
 
 ### Named Rules
@@ -226,7 +257,18 @@ Nunito (it drops the architectural authority). Playfair and Dancing Script are
 accents, never a paragraph face.
 
 **The Eyebrow-Only Uppercase Rule.** All-caps + wide tracking is reserved for short
-eyebrows and labels (Space Mono). Never uppercase a sentence of body copy.
+eyebrows and labels (`BlockEyebrow`). Never uppercase a sentence of body copy.
+
+**The 2px Rule (app).** Every dashboard font size is an even number of pixels,
+almost always a multiple of 4 — Tailwind's default steps (and their bundled
+line-heights) are the ramp, and nothing else — `text-xs` 12px is the floor, up
+through `text-3xl` 30px and the `text-4xl`+ steps (36/48/60/72/96/128px). No
+bespoke `--text-*` step is added for the app world: `eslint.config.js`'s
+`theme-tokens/type-ramp` guard rejects any fixed `text-[Npx]` / `text-[Nrem]`
+literal under `src/features/**` and `src/shared/**`, and `pnpm theme:check`
+rejects any new fixed `--text-*` step in `globals.css` whose pixel size isn't
+even. (The fluid `--text-presentation-*` clamps used by the meeting-flow
+presentation are exempt from both guards — the follow-ups doc has the reason.)
 
 ## Layout
 
@@ -257,11 +299,19 @@ This is a **layered, brand-tinted** depth system — never flat, never generic g
 Both worlds tint their shadows toward blue so elevation reads as "ours."
 
 - **The Command Desk** carries a signature **frosted-glass** surface for popovers and
-  floating UI: a semi-transparent fill (`--popover-glass`, ~78% alpha in light, ~50%
+  floating UI: a semi-transparent fill (`--popover-glass`, ~78% alpha in light, ~62%
   in dark) over a `backdrop-filter` blur, finished with a four-layer shadow — an inset
   top-edge sheen (the lit glass rim), a 1px hairline, a close proximity drop, and a
   far elevation drop (`--popover-glass-shadow`). This is the most recognizable detail
   in the app; treat it as a brand asset, not a default.
+- **The Command Desk's card/dialog shadow ramp** (`--shadow-xs` … `--shadow-2xl`) is
+  navy-tinted, not flat gray. In light mode every step is a soft
+  `oklch(0.25 0.05 258 / …)` drop that widens and deepens through the ramp; in dark
+  mode the two lowest steps (`--shadow-2xs`, `--shadow-xs`) stay a flat
+  `oklch(0 0 0 / 0.4)` drop with no highlight, and from `--shadow-sm` up an inset
+  top highlight (`inset 0 1px 0 white / 0.04–0.06`) joins a drop that grows to
+  `oklch(0 0 0 / 0.6–0.7)` — dark surfaces need a lit top edge to read as raised
+  rather than sunken. `--radius` stays `0.5rem`.
 - **Blueprint Authority** uses a warm elevation ramp where every shadow pairs a black
   drop for honest depth with a faint **Blueprint-Blue** accent layer underneath
   (`--shadow-card` … `--shadow-xl`), so panels lift with a subtle blue cast rather
@@ -294,7 +344,7 @@ credential pills. Pills and progress bars use full `999px` rounding where a
 capsule is intentional (eyebrows, scarcity pills, meters).
 
 Borders are hairlines (1px, world-appropriate neutral). Textures are geometric and
-technical: the **blueprint grid** (`.funnel-grid-bg` — a fine 32px minor grid + a
+technical: the **blueprint grid** (in `funnel-engine.tsx` — a fine 32px minor grid + a
 heavier 160px major line in Blueprint Blue at ~5% opacity) appears behind funnel
 question steps only, and the "coming soon" state renders a full drafting-paper
 construction scene from pure CSS.
@@ -312,37 +362,58 @@ responsive depth.
 ### Buttons
 - **Shape:** `rounded-md` (6px). Sizes run `sm` (h-8) → `default` (h-9) → `lg` (h-10)
   → `xl` (h-12) → `xll` (h-14), padding scaling with height.
-- **Primary / default:** `bg-primary` (Cobalt Command) + white text + `shadow-xs`;
-  hover deepens to `bg-primary/90`.
-- **CTA (`cta`):** the marketing hero button — a deepened Blueprint-Blue gradient
-  (`--cta-from` → `--cta-to`) sized for AA+ white text, with `--cta-ring` for edge
-  definition. Never a glow.
-- **Secondary:** `bg-secondary` (neutral raised) + dark text — deliberately neutral,
-  not the saturated primary (a fixed regression: secondary must stay readable).
-- **Outline:** hairline border + `backdrop-blur-sm`, hover washes `foreground/5`.
-- **Ghost:** transparent at rest; hover fills with the primary and flips text to
-  primary-foreground.
-- **Link:** underline-on-hover, foreground text shifting toward primary.
+- **Hover states are solid or a neutral wash, never a see-through fill and never a
+  dimmed label.** Tokens: `--hover` (6% foreground wash, for transparent controls),
+  `--press` (10%), `--primary-hover` / `--destructive-hover` (the fill mixed toward
+  black: 12% light, 8% for the pale dark-mode blue), `--secondary-hover`.
+  `pnpm theme:check` holds each one's contrast on every rung in both schemes.
+- **Primary / default:** `bg-primary` (Harbor Blue) + `text-primary-foreground`
+  (white in light, navy in dark) + `shadow-xs`; hover `bg-primary-hover`.
+- **CTA (`cta`):** flat `bg-primary` with the same solid `bg-primary-hover`. The
+  deepened gradient (`--cta-from` → `--cta-to`, `--cta-ring`) belongs to the funnels'
+  `FunnelCta` only. Never a glow.
+- **Secondary:** `bg-secondary`, one rung above whatever holds it, + dark text;
+  hover `bg-secondary-hover`. A button sitting on a card or a dialog is
+  `secondary` so it climbs the ladder with them (the Google sign-in button).
+- **Outline:** hairline border + `backdrop-blur-sm`, hover `bg-hover`; the label
+  keeps its colour.
+- **Ghost:** transparent at rest, hover `bg-hover`. Blue stays for "act here",
+  so an icon button never turns into a blue chip on hover.
+- **Link:** underline-on-hover, text shifting to `--link`.
+- **Status pills** (`toneClasses().fill`) carry a hairline in their tone, because
+  the idle and info fills sit about 1.01:1 on the light rungs.
 
 ### Cards / Containers
 - **Corner Style:** `lg` (8px app) / 6px (marketing panel).
-- **Background:** Card White (app) or Warm Panel `#f4efe6` (marketing), one step off
-  the page.
+- **Background:** a ladder rung (app: `bg-card`, one rung above whatever it sits on)
+  or Warm Panel `#f4efe6` (marketing), one step off the page.
 - **Shadow Strategy:** the tinted ramp from Elevation & Depth — resting cards use the
   low end; never a flat gray drop.
 - **Border:** 1px world-neutral hairline.
 - **Internal Padding:** ~24px, tightening on compact variants via `--block-pad-compact`.
 
 ### Inputs / Fields
-- **Style:** solid fill (Card White / warm), 1px hairline, `rounded-md`.
+- **Style:** solid fill (`bg-input-background`, the rung the field sits on / warm),
+  1px control border, `rounded-md`.
 - **Focus:** a 3px `ring-ring/50` in the world's accent plus a border shift — crisp,
   not a glow. `aria-invalid` swaps the ring to destructive.
 
-### Navigation (app sidebar)
-- **Style:** icon + label rows (`data-nav-item`). Rest is transparent; **hover** is a
-  soft `primary @ 6%` wash with the icon tinting to primary (no border, no shadow —
-  it hints interactivity without mimicking the active state). Active state is the
-  fuller treatment.
+### Navigation (app sidebar) — the Navy Rail
+- **Shell:** a floating panel (`<Sidebar variant="floating">`), not a flush-edge
+  bar — 18px corner radius, `--shadow-lg`, and a `--sidebar-border` hairline. It
+  sits inset from the viewport edge on iPad and desktop, in both modes.
+- **Fill:** `--sidebar` — a navy anchor, `oklch(0.215 0.072 262)` in light,
+  `oklch(0.13 0.05 262)` in dark (one step deeper, so dark mode's rail still reads
+  darker than its own cards). Labels sit in `--sidebar-foreground`; group labels
+  and at-rest icons use the dimmer `--sidebar-muted`.
+- **Active state:** a solid cyan pill, `--sidebar-accent` (`oklch(0.80 0.12 228)`,
+  the same value in both modes), with a navy label, `--sidebar-accent-foreground`.
+  The active icon uses `--sidebar-primary`, the same navy as the label — never the
+  rail's own navy fill, or the icon would vanish against it.
+- **Hover:** `--sidebar-hover`, a near-transparent white wash (6% light / 5% dark)
+  — no border, no shadow. It hints interactivity without mimicking the active pill
+  (icon + label rows, `SIDEBAR_NAV_ITEM_CLASS`).
+- **Ring/focus:** `--sidebar-ring`, the same cyan as the active pill.
 
 ### Frosted-Glass Popover (signature)
 - The Command Desk's signature surface: `--popover-glass` fill over `backdrop-filter`
@@ -351,7 +422,7 @@ responsive depth.
   makes the app feel premium rather than templated.
 
 ### Credential Strip / Blueprint Eyebrow (signature, marketing)
-- Space Mono uppercase eyebrow (`--fs-eyebrow`, `0.2em` tracking) in Blueprint Ink,
+- `BlockEyebrow` (Nunito uppercase, `--fs-eyebrow`, `--tracking-eyebrow`) in Blueprint Ink,
   often paired with a capsule pill (3px/999px) and `<Decor>` strokes — the drafting-
   label voice that signals licensed authority.
 

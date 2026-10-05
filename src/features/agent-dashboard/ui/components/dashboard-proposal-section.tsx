@@ -1,13 +1,13 @@
 'use client'
 
-import type { ProposalListInput } from '@/shared/entities/proposals/dal/server/queries'
+import type { ProposalListInput } from '@/shared/modules/proposals/core/dal/server/queries'
 
-import { useQuery } from '@tanstack/react-query'
+import { Suspense } from 'react'
 
-import { DashboardProposalCard } from '@/features/agent-dashboard/ui/components/dashboard-proposal-card'
-import { EntityList } from '@/shared/components/entity-list/ui/entity-list'
-import { Skeleton } from '@/shared/components/ui/skeleton'
-import { useTRPC } from '@/trpc/helpers'
+import { DashboardListSectionSkeleton } from '@/features/agent-dashboard/ui/components/dashboard-list-section-skeleton'
+import { DashboardProposalSectionList } from '@/features/agent-dashboard/ui/components/dashboard-proposal-section-list'
+import { useIsDataViewPending } from '@/shared/dal/client/hooks/use-is-data-view-pending'
+import { HydrationErrorBoundary } from '@/trpc/components/hydration-error-boundary'
 
 interface DashboardProposalSectionProps {
   /** Space-Mono eyebrow naming the section's single state. */
@@ -21,56 +21,22 @@ interface DashboardProposalSectionProps {
 }
 
 /**
- * One labeled sub-section of the dashboard Proposals module: an eyebrow label +
- * the full-predicate total (a SQL `count()`, independent of the display cap),
- * then a capped `EntityList` of `DashboardProposalCard`s (or its empty state).
- * The section header IS the state — the cards carry no status badge.
+ * One labeled sub-section of the dashboard Proposals module. Each section suspends on its own,
+ * so the server streams its rows into the HTML as its prefetch lands and a failed read stays
+ * inside the section.
  */
 export function DashboardProposalSection({ title, input, timeSince, emptyMessage }: DashboardProposalSectionProps) {
-  const trpc = useTRPC()
-  const { data, isLoading } = useQuery(trpc.proposalsRouter.business.list.queryOptions(input))
-
+  // The layout's loading state draws this page with no reads (see DataViewPendingContext).
+  const isPending = useIsDataViewPending()
+  const skeleton = <DashboardListSectionSkeleton title={title} card="proposal" />
+  if (isPending) {
+    return skeleton
+  }
   return (
-    <section className="flex flex-col gap-2">
-      <div className="flex items-center justify-between gap-2">
-        <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-muted-foreground">{title}</p>
-        {data?.total !== undefined && (
-          <span className="font-mono text-[0.72rem] tabular-nums text-muted-foreground">{data.total}</span>
-        )}
-      </div>
-      {isLoading
-        ? <DashboardProposalSectionSkeleton />
-        : (
-            // EntityList renders the list body + empty state only. Its built-in
-            // header is bypassed (`hideHeader`) on purpose: it is hardcoded
-            // `text-[10px]` sans `Title (n)` (entity-list.tsx:88), which violates
-            // the dashboard type floor (no `text-[10px]`) and cannot express the
-            // spec's Space-Mono eyebrow + right-aligned count — so this section
-            // renders its own header above. `title` is a required EntityList prop
-            // but inert here. We deliberately do NOT extend the shared EntityList
-            // with dashboard eyebrow chrome (feature styling stays out of shared/).
-            <EntityList
-              title={title}
-              hideHeader
-              items={data?.rows ?? []}
-              getItemKey={row => row.id}
-              renderItem={row => <DashboardProposalCard row={row} timeSince={timeSince} />}
-              emptyState={{ message: emptyMessage }}
-              itemsClassName="space-y-2"
-              variant="flush"
-            />
-          )}
-    </section>
-  )
-}
-
-/** Two dense card-shaped rows while the section query is in flight. */
-function DashboardProposalSectionSkeleton() {
-  return (
-    <div className="flex flex-col gap-2">
-      {[0, 1].map(i => (
-        <Skeleton key={i} className="h-16 w-full rounded-lg" />
-      ))}
-    </div>
+    <HydrationErrorBoundary variant="section">
+      <Suspense fallback={skeleton}>
+        <DashboardProposalSectionList title={title} input={input} timeSince={timeSince} emptyMessage={emptyMessage} />
+      </Suspense>
+    </HydrationErrorBoundary>
   )
 }

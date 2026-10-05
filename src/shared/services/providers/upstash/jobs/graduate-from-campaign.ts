@@ -5,7 +5,7 @@ import { createJob } from '../lib/create-job'
 
 /**
  * Graduation handoff (EPIC decision #12 + #18). Fired when a meeting is booked
- * app-side — a booked meeting means CloudTalk's job is done, so we stop dialing
+ * app-side — a booked meeting means the dialer's job is done, so we stop dialing
  * by unenrolling with reason `graduated`. The SAME idempotent op also fires from
  * the CT `meeting_booked` disposition webhook; whichever lands first wins, the
  * second is a no-op (no active enrollment → no-op).

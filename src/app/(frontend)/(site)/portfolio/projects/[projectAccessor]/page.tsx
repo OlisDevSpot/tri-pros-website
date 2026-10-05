@@ -1,11 +1,13 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { ProjectStoryView } from '@/features/project-management/ui/views/project-story-view'
-import { getPortfolioProjectDetail, getPortfolioProjects } from '@/shared/entities/projects/dal/server/queries'
+import { getPortfolioProjectDetail, getPortfolioProjects } from '@/shared/modules/projects/core/dal/server/queries'
 
 interface Props {
   params: Promise<{ projectAccessor: string }>
 }
+
+export const revalidate = 60
 
 export async function generateStaticParams() {
   try {

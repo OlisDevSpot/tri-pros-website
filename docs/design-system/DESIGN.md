@@ -20,7 +20,7 @@ Tri Pros Remodeling is a Southern California residential remodeling company with
 
 ### Typography
 
-- **Display font:** Syne — used for all headings, eyebrows, and display copy.
+- **Display font:** Syne — used for all headings and display copy. Eyebrows are Nunito 700 uppercase (`BlockEyebrow`).
 - **Text font:** Nunito — used for body copy, labels, credentials, and UI text.
 - **No monospace, ever.** This is a remodeling business, not software. Monospace as decoration is a slop fingerprint. There is no mono token in this system.
 - **Use weight and size extremes.** The difference between `font-weight: 400` and `font-weight: 600` is mush. Use `800` or `900` for display text; `600` for credentials; `400` for body. Jump sizes aggressively: a headline at `clamp(2.5rem, 5vw, 4rem)` next to body at `1rem` has impact; splitting the difference does not.
@@ -60,7 +60,9 @@ Do not use `box-shadow: 0 4px 10px 0 rgb(0 0 0 / 0.05)` as a card shadow. That v
 
 ### Motion
 
-**High-impact entrance + `useReducedMotion` gate.** Every meaningful entrance animation must be wrapped in a `useReducedMotion()` check — if reduced motion is preferred, render the final (non-animated) state immediately with no movement.
+**High-impact entrance + reduced-motion gate.** Every meaningful entrance animation must be gated on reduced motion — if reduced motion is preferred, render the final state with no movement. Two sanctioned gates:
+- `useReducedMotion()` in the component, for a standalone animation.
+- `<MotionConfig reducedMotion="user">` at a subtree root, which gates every `motion` element beneath it (motion drops transform and layout animation; opacity may still fade). Used by the meeting flow (`meeting-flow.tsx`, `snap-presentation.tsx`). A shared component that can render outside such a root must gate itself with `useReducedMotion()`.
 
 The decor draw-in animation (`--dur-draw: 1.4s`, staggered stroke-dashoffset) is the most distinctive motion in the system. It should animate on first render; after that, only the gentle sweep (`18s infinite alternate`) and breathe (`7s infinite`) continue.
 
@@ -100,7 +102,7 @@ The layout grid is standard Tailwind — no custom primitives. Sections use `con
 
 **Specific beats generic.** "We've completed 520 projects across 8 cities" is specific. "We're the best choice for your home" is generic. Specific copy is always preferred.
 
-**Credential guardrail:** Tri Pros was founded in 2021. The team has a combined 40+ years of experience. The correct phrasing is always **"40+ years combined experience"** — never "40 years in business," never "decades of experience since [year]," never any phrasing that implies the company existed before 2021.
+**Credential guardrail:** Tri Pros was founded in 2021. The team has a combined 45+ years of experience. The correct phrasing is always **"45+ years combined experience"** — never "45 years in business," never "decades of experience since [year]," never any phrasing that implies the company existed before 2021.
 
 All credential data must come from `src/shared/constants/company/` — licenses, insurance, BBB rating, project counts, dollar volume, satisfaction rate. Never hardcode numbers in a component.
 
@@ -182,7 +184,6 @@ How to iterate on design together (used throughout the design session that produ
 
 - [tokens.md](./tokens.md) — three-tier token architecture, every `.theme-marketing` value, consumption patterns
 - [anti-slop-checklist.md](./anti-slop-checklist.md) — the 10-point gate to run before any block ships
-- [Spec: Anti-Slop Design Token System](../superpowers/specs/2026-06-22-anti-slop-design-system-design.md) — the original design session record
 - `src/app/(frontend)/globals.css` — the live token definitions (`.theme-marketing` block)
 - `src/shared/constants/company/` — credential data source (never hardcode these values)
 - `src/shared/components/decor/` — the `<Decor>` component (shared, app-wide)

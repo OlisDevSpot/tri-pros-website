@@ -1,17 +1,11 @@
 import { sql } from 'drizzle-orm'
 
+import { EXISTS_PROJECT } from './derived-pipeline-sql'
+
 /**
- * Server-only SQL helper for the "signed customer" status.
- * see ../DOCS.md#signed-customer-eq-has-project
- *
- * Same `"customers"."id"` literal pattern as phone-gating-sql.ts.
+ * "Signed" here is the pipeline's has-a-project bucket, not a sale: analytics
+ * counts sales from approved proposals, and a project can be created without one.
  */
-
-const EXISTS_PROJECT = sql`EXISTS (
-  SELECT 1 FROM projects p
-  WHERE p.customer_id = "customers"."id"
-)`
-
 export function isSignedCustomerSql() {
   return sql<boolean>`${EXISTS_PROJECT}`
 }

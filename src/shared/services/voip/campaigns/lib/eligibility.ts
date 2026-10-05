@@ -20,19 +20,19 @@ export type EnrollmentRejectReason
     | 'dnc_match'
     | 'invalid_phone'
     | 'already_enrolled'
-    | 'ct_api_failure'
+    | 'provider_api_failure'
 
 /**
- * Gate — the target campaign is dialable: it is CT-active. Campaigns are pools,
- * NOT owned by a lead source (the catch-all belongs to none), so source binding
- * is intentionally NOT checked. A campaign always has a membership tag (the sync
- * skips tagless ones), so CT-active is the only runtime requirement.
+ * Gate — the target campaign is dialable: it is active on the dialer. Campaigns
+ * are pools, NOT owned by a lead source (the catch-all belongs to none), so
+ * source binding is intentionally NOT checked. Provider-active is the only
+ * runtime requirement.
  */
 export function isCampaignDialable(campaign: VoipCampaign | null): boolean {
   if (!campaign) {
     return false
   }
-  return campaign.ctStatus === 'active'
+  return campaign.status === 'active'
 }
 
 /** Gate 4 — DNC. A customer with `dncOptedOutAt` set is never enrollable. */

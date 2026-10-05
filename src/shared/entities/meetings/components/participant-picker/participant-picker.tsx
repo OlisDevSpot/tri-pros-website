@@ -15,13 +15,7 @@ import { ParticipantPickerTrigger } from './participant-picker-trigger'
 interface ParticipantPickerProps {
   meetingId: string
   variant?: 'default' | 'compact'
-  /**
-   * Optional owner snapshot supplied by the parent (e.g. table row data).
-   * When provided, used as `placeholderData` so the picker shows the current
-   * owner instantly without waiting for `getParticipants` — eliminating the
-   * per-row N+1 fetch on table mount. The real query still runs in the
-   * background to populate helper count and pick up server-side updates.
-   */
+  /** The owner the parent already loaded (e.g. a table row). Shown while closed; no request until the picker opens. */
   initialOwner?: InitialParticipantSummary | null
   /** Optional co-owner snapshot (see `initialOwner`). */
   initialCoOwner?: InitialParticipantSummary | null
@@ -47,26 +41,24 @@ export function ParticipantPicker({
   const trpc = useTRPC()
   const [popoverOpen, setPopoverOpen] = useState(false)
 
-  const placeholderData = useMemo(
+  const snapshot = useMemo(
     () => buildPlaceholderParticipants(initialOwner, initialCoOwner),
     [initialOwner, initialCoOwner],
   )
 
+  // A row that passes its owner needs no request until the picker opens. While closed it shows that
+  // snapshot, not the cache: invalidation skips a disabled query, so the cache would keep a stale owner
+  // after a reassign, while the refetched row carries the new one.
   const participantsQuery = useQuery({
     ...trpc.meetingsRouter.participants.getParticipants.queryOptions({ meetingId }),
-    // `placeholderData` (vs `initialData`) keeps the query in `pending` so
-    // the helper count still gets refreshed in the background. Without an
-    // initial snapshot, falls back to the existing loading behavior.
-    placeholderData: placeholderData ?? undefined,
+    enabled: popoverOpen || !snapshot,
   })
 
-  const participants = participantsQuery.data ?? []
+  const fetched = popoverOpen || !snapshot ? participantsQuery.data : undefined
+  const participants = fetched ?? snapshot ?? []
   const owner = participants.find(p => p.role === 'owner')
   const coOwner = participants.find(p => p.role === 'co_owner')
-
-  // Treat the picker as "loaded" when we have a placeholder so the trigger
-  // doesn't render a disabled/loading state on table mount.
-  const isLoading = participantsQuery.isLoading && !placeholderData
+  const isLoading = !snapshot && participantsQuery.isLoading
 
   return (
     <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>

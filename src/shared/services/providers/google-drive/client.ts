@@ -6,7 +6,7 @@ import 'server-only'
 // googleDriveClient — the single, uniform server-side entry point for Google
 // Drive / Google OAuth-token operations.
 //
-// Pattern (matches `cloudtalkClient`, `twilioClient`): ONE singleton → ALL
+// Pattern (matches `twilioClient`, `justcallClient`): ONE singleton → ALL
 // methods. Server consumers do:
 //
 //   import { googleDriveClient } from '@/shared/services/providers/google-drive/client'

@@ -21,7 +21,7 @@ diverge significantly from actual payload behavior.
 | `RequestRejected` | `RequestRejected` or `RequestDeclined` | `declined` → `contractDeclinedAt` |
 
 Both documented and observed names are mapped in
-`src/shared/entities/proposals/lib/contract-events.ts` for resilience.
+`src/shared/modules/proposals/core/lib/contract-events.ts` for resilience.
 
 **⚠️ `RequestSigningSuccess` is per-signer, not per-envelope.** It fires once
 for **each** signer that signs. On a Contractor + Homeowner envelope it arrives

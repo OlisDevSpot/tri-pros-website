@@ -104,7 +104,7 @@ export function NewLeadSourceSheet({ open, onOpenChange, onCreated }: NewLeadSou
               autoFocus
               autoComplete="off"
             />
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Slug auto-generated from the name. The intake URL token is generated on save.
             </p>
           </div>

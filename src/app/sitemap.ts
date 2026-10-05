@@ -1,11 +1,11 @@
 import type { MetadataRoute } from 'next'
 import process from 'node:process'
 import { getTradesByPillar } from '@/features/landing/lib/notion-trade-helpers'
-import { getPortfolioProjects } from '@/shared/entities/projects/dal/server/queries'
+import { getPortfolioProjects } from '@/shared/modules/projects/core/dal/server/queries'
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://triprosremodeling.com'
 
-// see ./DOCS.md#sitemap-strategy — sitemap is data-driven, not nav-driven.
+// Sitemap strategy: the sitemap is data-driven, not nav-driven.
 // Nav serves users; sitemap serves crawlers. Different jobs, different sources
 // of truth. Static routes listed here MUST exist as real files in src/app;
 // dynamic routes are sourced from the DB + Notion.

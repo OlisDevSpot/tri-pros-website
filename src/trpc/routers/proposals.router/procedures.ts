@@ -2,31 +2,29 @@
 // here as top-level consts (tRPC-idiomatic `const + typeof`), imported directly
 // by every proposal sub-router. This replaces the old `createEntityRouter`
 // factory + `EntityToolkit` argument: the middleware is baked on at definition
-// time, not generated per call. see ../../DOCS.md#entity-router-via-factory
-// (being rewritten — epic S7)
+// time, not generated per call.
 //
 // server-spec.ts stays a PURE data object (imported by the DAL); the tRPC
 // runtime is pulled in HERE, router-side, never into the entity/DAL layer.
 //
-// Why the agent scope step is inlined (not a standalone scope middleware):
-// a shared middleware is typed against the ROOT context, where
+// Why the agent scope step is inlined (not `.use(scopeMiddleware(spec))`):
+// the standalone `scopeMiddleware` is typed against the ROOT context, where
 // `session` is nullable — chaining it would widen `ctx.session` back to null
 // and force an `as typeof agentProcedure` cast (the old factory's crutch).
 // An inline `.use()` infers `ctx` from `agentProcedure`, so the non-null
-// session/ability narrowing flows through and no cast is needed. Both the
-// proposal root and the proposal-media child compile their scope from CASL via
-// `resolveTrpcActorScope` (the child folds through the parent bridge).
+// session/ability narrowing flows through and no cast is needed. The scope
+// math stays DRY via the shared `resolveVisibilityScope`.
 
-import { proposalMediaServerSpec } from '@/shared/entities/proposal-media-files/lib/server-spec'
-import { proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
+import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
+import { proposalMediaServerSpec } from '@/shared/modules/proposals/media/server-spec'
 
 import { agentProcedure, baseProcedure } from '../../init'
-import { resolveTrpcActorScope } from '../../lib/middleware/resolve-trpc-actor-scope'
+import { resolveVisibilityScope } from '../../lib/middleware/scope-middleware'
 import { shareableMiddleware } from '../../lib/middleware/shareable-middleware'
 
-/** Agent-only. Session + ability guaranteed; `ctx.scope` compiled from CASL (null for omni). */
+/** Agent-only. Session + ability guaranteed; `ctx.scope` resolved from proposal visibility (null for omni). */
 export const proposalProcedure = agentProcedure.use(async ({ ctx, next }) => {
-  const scope = resolveTrpcActorScope(proposalServerSpec, { userId: ctx.session.user.id, ability: ctx.ability })
+  const scope = resolveVisibilityScope(proposalServerSpec, { userId: ctx.session.user.id, ability: ctx.ability })
   return next({ ctx: { ...ctx, scope } })
 })
 
@@ -37,7 +35,7 @@ export const proposalProcedure = agentProcedure.use(async ({ ctx, next }) => {
  * media mutation is authorized in ONE query — no per-row probe.
  */
 export const proposalMediaProcedure = agentProcedure.use(async ({ ctx, next }) => {
-  const scope = resolveTrpcActorScope(proposalMediaServerSpec, { userId: ctx.session.user.id, ability: ctx.ability })
+  const scope = resolveVisibilityScope(proposalMediaServerSpec, { userId: ctx.session.user.id, ability: ctx.ability })
   return next({ ctx: { ...ctx, scope } })
 })
 

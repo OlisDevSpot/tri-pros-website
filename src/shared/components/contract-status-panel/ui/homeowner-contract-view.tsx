@@ -4,6 +4,7 @@ import type { ZohoContractStatus } from '@/shared/services/providers/zoho-sign/t
 import { useMutation } from '@tanstack/react-query'
 import { ArrowRight, Loader2, Mail, PartyPopper, TriangleAlert } from 'lucide-react'
 import { motion } from 'motion/react'
+import { toast } from 'sonner'
 import { Button } from '@/shared/components/ui/button'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { useTRPC } from '@/trpc/helpers'
@@ -26,12 +27,14 @@ export function HomeownerContractView({ proposalId, token, contractStatus, custo
 
   // A pure signal to the agents — never touches the contract lifecycle.
   // The agent manually prepares/sends the signing draft (#264).
-  // see `src/shared/entities/proposals/DOCS.md#proposal-lock-ladder`
   const requestMoveForward = useMutation(
     trpc.proposalsRouter.delivery.requestToMoveForward.mutationOptions({
       onSuccess: () => {
         startCooldown()
         invalidateProposal()
+      },
+      onError: () => {
+        toast.error('We couldn’t send your request. Please try again in a moment.')
       },
     }),
   )
@@ -118,7 +121,7 @@ function ActionArea(props: {
   }
   // Terminal: declined / recalled / expired. Declined is PERMANENT — a
   // declined contract is renegotiated on a new proposal, never re-requested
-  // (see entities/proposals/lib/proposal-lock.ts), so no request button.
+  // (see modules/proposals/core/lib/proposal-lock.ts), so no request button.
   if (props.isTerminal) {
     const isDeclined = props.requestStatus === 'declined'
     return (
@@ -159,9 +162,9 @@ function ActionArea(props: {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="flex items-start gap-3 rounded-lg border border-green-500/20 bg-green-500/5 p-4"
+        className="flex items-start gap-3 rounded-lg border border-status-success-dot/40 bg-status-success-bg/70 p-4"
       >
-        <PartyPopper className="mt-0.5 size-5 shrink-0 text-green-600 dark:text-green-400" />
+        <PartyPopper className="mt-0.5 size-5 shrink-0 text-status-success-fg" />
         <div>
           <p className="text-sm font-semibold text-foreground">Agreement signed!</p>
           <p className="mt-0.5 text-xs text-muted-foreground">

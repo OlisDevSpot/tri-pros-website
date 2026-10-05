@@ -2,11 +2,14 @@
 
 import type { ScheduleCalendarEvent } from '@/features/schedule-management/types'
 
-import { format, isToday, parseISO } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { useEffect, useMemo, useRef } from 'react'
 
-import { getEventsForDay, getWeekDays } from '@/shared/components/calendar/lib/calendar-helpers'
+import { SKELETON_EVENTS_PER_DAY } from '@/features/schedule-management/constants/schedule-calendar-config'
+import { getEventsForDay, getWeekDays, isBusinessToday, localDateToCalendarDay, seededIntInRange } from '@/shared/components/calendar/lib/calendar-helpers'
 import { cn } from '@/shared/lib/utils'
+
+import { ScheduleCardSkeleton } from './schedule-card-skeleton'
 
 const DAY_MIN_WIDTH_PX = 210
 
@@ -14,6 +17,7 @@ interface ScheduleWeekViewProps {
   events: ScheduleCalendarEvent[]
   currentDate: Date
   hiddenDays: number[]
+  isPending: boolean
   renderCard: (event: ScheduleCalendarEvent) => React.ReactNode
 }
 
@@ -21,6 +25,7 @@ export function ScheduleWeekView({
   events,
   currentDate,
   hiddenDays,
+  isPending,
   renderCard,
 }: ScheduleWeekViewProps) {
   const weekDays = useMemo(
@@ -66,7 +71,7 @@ export function ScheduleWeekView({
   }, [currentDate])
 
   return (
-    <div ref={scrollRef} className="h-full overflow-x-auto">
+    <div ref={scrollRef} className="h-full overflow-x-auto" aria-busy={isPending || undefined}>
       <div className="flex h-full flex-col" style={{ minWidth: `${gridMinWidth}px` }}>
         {/* Day headers */}
         <div
@@ -78,19 +83,19 @@ export function ScheduleWeekView({
               key={day.toISOString()}
               className={cn(
                 'py-2 text-center text-xs font-medium text-muted-foreground border-r last:border-r-0',
-                isToday(day) && 'bg-primary/10',
+                isBusinessToday(day) && 'bg-primary/10',
               )}
             >
               <span className="block sm:hidden">
                 {format(day, 'EEE').charAt(0)}
-                <span className={cn('block text-xs font-semibold', isToday(day) ? 'text-foreground' : 'text-foreground')}>
+                <span className={cn('block text-xs font-semibold', isBusinessToday(day) ? 'text-foreground' : 'text-foreground')}>
                   {format(day, 'd')}
                 </span>
               </span>
               <span className="hidden sm:inline">
                 {format(day, 'EE')}
                 {' '}
-                <span className={cn('ml-1 font-semibold', isToday(day) ? 'text-foreground' : 'text-foreground')}>
+                <span className={cn('ml-1 font-semibold', isBusinessToday(day) ? 'text-foreground' : 'text-foreground')}>
                   {format(day, 'd')}
                 </span>
               </span>
@@ -108,9 +113,10 @@ export function ScheduleWeekView({
             const sorted = [...dayEvents].sort(
               (a, b) => parseISO(a.startAt).getTime() - parseISO(b.startAt).getTime(),
             )
+            const skeletonCount = seededIntInRange(localDateToCalendarDay(day), SKELETON_EVENTS_PER_DAY)
 
             const dow = day.getDay()
-            const colRef = isToday(day)
+            const colRef = isBusinessToday(day)
               ? todayColRef
               : dow === 0
                 ? sundayColRef
@@ -123,16 +129,22 @@ export function ScheduleWeekView({
                 key={day.toISOString()}
                 ref={colRef}
                 className={cn(
-                  'flex flex-col gap-1.5 overflow-y-auto border-r p-1.5 last:border-r-0',
-                  isToday(day) && 'bg-primary/5',
+                  'flex flex-col gap-1.5 overflow-y-auto scrollbar-gutter-stable border-r p-1.5 last:border-r-0',
+                  isBusinessToday(day) && 'bg-primary/5',
                 )}
               >
-                {sorted.length === 0 && (
+                {isPending && Array.from({ length: skeletonCount }).map((_, i) => (
+                  <ScheduleCardSkeleton
+                    // eslint-disable-next-line react/no-array-index-key
+                    key={i}
+                  />
+                ))}
+                {!isPending && sorted.length === 0 && (
                   <div className="flex flex-1 items-center justify-center min-h-48">
-                    <span className="text-[10px] text-muted-foreground/50">No events</span>
+                    <span className="text-xs text-muted-foreground">No events</span>
                   </div>
                 )}
-                {sorted.map(event => (
+                {!isPending && sorted.map(event => (
                   <div key={event.id}>
                     {renderCard(event)}
                   </div>

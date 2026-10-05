@@ -9,7 +9,6 @@ import { isSignedCustomerSql } from '@/shared/entities/customers/lib/signed-cust
 /**
  * Customer segmentation predicate for the lead-source detail panel. The
  * active/signed/dead/all partition invariant is essential for KPI accuracy.
- * see ../DOCS.md#customer-segmentation-partition
  */
 export function buildSegmentWhere(segment: CustomerSegment | undefined): SQL | undefined {
   if (!segment || segment === 'all') {

@@ -1,4 +1,4 @@
-import type { CustomerPipelineItem } from '../types'
+import type { CustomerPipelineItem } from '@/shared/entities/customers/types/pipeline-item'
 
 export function groupCustomersByStage<T extends string>(
   items: CustomerPipelineItem[],

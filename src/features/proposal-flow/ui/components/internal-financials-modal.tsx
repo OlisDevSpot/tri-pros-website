@@ -1,8 +1,8 @@
 'use client'
 
 import type { PriceDisplayMode } from '@/shared/constants/enums'
-import type { FundingData } from '@/shared/entities/proposals/schemas'
-import type { SOW } from '@/shared/entities/proposals/types'
+import type { FundingData } from '@/shared/modules/proposals/core/schemas'
+import type { SOW } from '@/shared/modules/proposals/core/types'
 import { Modal } from '@/shared/components/dialogs/modals/base-modal'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { PricingBreakdown } from './pricing-breakdown'
@@ -20,7 +20,8 @@ interface Props {
  * store — never rendered inline, never reachable by the homeowner.
  */
 export function InternalFinancialsModal({ funding, sow, priceDisplayMode }: Props) {
-  const { isOpen, close } = useModalStore()
+  const isOpen = useModalStore(state => state.isOpen)
+  const close = useModalStore(state => state.close)
 
   return (
     <Modal

@@ -3,9 +3,8 @@
 import type { DateRange as ReactDayPickerRange } from 'react-day-picker'
 
 import type { FilterDefinition } from '@/shared/dal/client/lib/types'
-import type { DateRange } from '@/shared/dal/server/lib/query/schemas'
+import type { DateRange } from '@/shared/dal/lib/query/range-schemas'
 
-import { format } from 'date-fns'
 import { CalendarIcon } from 'lucide-react'
 import { useState } from 'react'
 
@@ -14,6 +13,7 @@ import { Calendar } from '@/shared/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
+import { formatBusinessTime } from '@/shared/lib/business-time'
 import { cn } from '@/shared/lib/utils'
 
 interface Props {
@@ -22,12 +22,14 @@ interface Props {
   onChange: (value: DateRange | undefined) => void
 }
 
+const RANGE_LABEL_DATE: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' }
+
 function fmtRangeLabel(value: DateRange | undefined, fallback: string): string {
   if (!value) {
     return fallback
   }
-  const fromStr = value.from ? format(new Date(value.from), 'MMM d, yyyy') : '…'
-  const toStr = value.to ? format(new Date(value.to), 'MMM d, yyyy') : '…'
+  const fromStr = value.from ? formatBusinessTime(value.from, RANGE_LABEL_DATE) : '…'
+  const toStr = value.to ? formatBusinessTime(value.to, RANGE_LABEL_DATE) : '…'
   return `${fromStr} → ${toStr}`
 }
 

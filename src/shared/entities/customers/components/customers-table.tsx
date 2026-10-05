@@ -13,26 +13,21 @@ import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 import { RecordsPageHeader } from '@/shared/components/records-page-header'
 import { RecordsPageShell } from '@/shared/components/records-page-shell'
+import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
-import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { CUSTOMERS_TABLE_QUERY_CONFIG, CUSTOMERS_TABLE_SHOW_COLUMNS } from '@/shared/entities/customers/constants/customers-table-query-config'
 import { useCustomerActionConfigs } from '@/shared/entities/customers/hooks/use-customer-action-configs'
 
 import { CUSTOMER_COLUMNS } from '@/shared/entities/customers/lib/columns-registry'
-import { useModalStore } from '@/shared/hooks/use-modal-store'
+import { openModal } from '@/shared/lib/open-modal'
 import { useTRPC } from '@/trpc/helpers'
 
 export function CustomersTable() {
   const trpc = useTRPC()
   const { invalidateCustomer, invalidateLeadSource } = useInvalidation()
-  const { setModal, open: openModal } = useModalStore()
 
-  const pagination = usePaginatedQuery<Record<string, never>, CustomerTableRow>(
-    trpc.customersRouter.business.list.queryOptions,
-    {},
-    CUSTOMERS_TABLE_QUERY_CONFIG,
-  )
+  const query = useDataViewQuery(trpc.customersRouter.business.list, {}, CUSTOMERS_TABLE_QUERY_CONFIG)
 
   const updateCreatedAt = useMutation(
     trpc.customersRouter.crud.update.mutationOptions({
@@ -46,13 +41,12 @@ export function CustomersTable() {
   )
 
   const handleViewProfile = useCallback((customerId: string) => {
-    setModal({
+    openModal({
       accessor: 'CustomerProfile',
       Component: CustomerProfileModal,
       props: { customerId },
     })
-    openModal()
-  }, [setModal, openModal])
+  }, [])
 
   const { actions, DeleteConfirmDialog } = useCustomerActionConfigs<CustomerTableRow>({
     onView: entity => handleViewProfile(entity.id),
@@ -65,7 +59,7 @@ export function CustomersTable() {
   // mutation + invalidation) — no `onUpdateLeadSource` needed here.
   const meta = useMemo<CustomerTableMeta>(
     () => ({
-      customerActions: () => actions,
+      rowActions: actions,
       onUpdateCreatedAt: (customerId, date) =>
         updateCreatedAt.mutate({ id: customerId, data: { createdAt: date.toISOString() } }),
     }),
@@ -77,23 +71,23 @@ export function CustomersTable() {
       <DeleteConfirmDialog />
 
       <RecordsPageShell
-        header={<RecordsPageHeader title="Customers" pagination={pagination} />}
+        header={<RecordsPageHeader title="Customers" query={query} />}
         toolbar={(
-          <QueryToolbar pagination={pagination} entityName="customers">
+          <QueryToolbar query={query} entityName="customers">
             <QueryToolbar.Standard searchPlaceholder="Search by name or email…" visibility={visibility} />
           </QueryToolbar>
         )}
         table={(
           <DataTable
             tableId="customers"
-            data={pagination.rows}
+            data={query.rows}
             columns={columns}
             meta={meta}
             entityName="customer"
             rowDataAttribute="data-customer-row"
             onRowClick={row => handleViewProfile(row.id)}
-            serverPagination={toDataTablePagination(pagination)}
-            serverSorting={toDataTableSorting(pagination)}
+            serverPagination={toDataTablePagination(query)}
+            serverSorting={toDataTableSorting(query)}
             columnVisibility={visibility.columnVisibility}
           />
         )}

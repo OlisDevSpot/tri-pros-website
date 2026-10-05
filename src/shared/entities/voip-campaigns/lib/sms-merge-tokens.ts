@@ -4,7 +4,6 @@ import { pickPrimaryTrade } from '@/shared/services/voip/campaigns/lib/pick-prim
 // renderSmsTemplate (server) both derive from this list, so the UI can never
 // advertise a token the renderer ignores. Pure — no I/O. Unknown tokens render
 // literal (see render-sms-template.ts).
-// see docs/superpowers/specs/2026-06-18-sms-cadence-editor-ui-design.md §6
 
 export interface SmsMergeVars {
   name: string

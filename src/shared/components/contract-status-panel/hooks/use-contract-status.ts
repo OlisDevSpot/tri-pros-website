@@ -8,7 +8,7 @@ import { useTRPC } from '@/trpc/helpers'
  * **Scope is intentionally narrow**: this hook polls only for signing
  * lifecycle transitions (`inprogress → completed/declined`). It does NOT
  * try to detect "a draft is about to be created" — draft creation is now
- * synchronous (no QStash hop, see ADR-0004 + the proposals DOCS.md on
+ * synchronous (no QStash hop,)
  * proposal-contract independence). Once `getContractStatus` returns
  * `null`, polling stops. The "Create Draft" CTA is the only way back to
  * an envelope from a null state.

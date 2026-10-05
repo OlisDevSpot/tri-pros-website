@@ -1,0 +1,44 @@
+'use client'
+
+import type { ProjectMediaFile } from '@/shared/db/schema'
+import { useScrollStripToActive } from '@/features/meeting-flow/hooks/use-scroll-strip-to-active'
+import { cn } from '@/shared/lib/utils'
+import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
+
+interface StoryPhasePhotosProps {
+  photos: ProjectMediaFile[]
+  photoIndex: number
+  phaseLabel: string
+  onSelect: (photoIndex: number) => void
+}
+
+export function StoryPhasePhotos({ photos, photoIndex, phaseLabel, onSelect }: StoryPhasePhotosProps) {
+  const { stripRef, activeRef } = useScrollStripToActive<HTMLDivElement, HTMLButtonElement>(photoIndex, photos)
+
+  if (photos.length < 2) {
+    return null
+  }
+  return (
+    <div ref={stripRef} className="relative flex gap-1.5 overflow-x-auto overscroll-contain pb-1">
+      {photos.map((photo, index) => (
+        <button
+          key={photo.id}
+          ref={index === photoIndex ? activeRef : undefined}
+          aria-current={index === photoIndex ? 'true' : undefined}
+          aria-label={`${phaseLabel} photo ${index + 1} of ${photos.length}`}
+          className={cn(
+            'relative h-12 w-16 shrink-0 overflow-hidden rounded-sm border-2 border-white/30 @5xl/portfolio:h-14 @5xl/portfolio:w-20',
+            'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white',
+            index === photoIndex && 'border-white',
+          )}
+          type="button"
+          // Keeps focus off the thumbnail after a pointer click, so a following Space advances the photo instead of re-clicking it.
+          onMouseDown={event => event.preventDefault()}
+          onClick={() => onSelect(index)}
+        >
+          <OptimizedImage alt="" className="object-cover" fill file={photo} sizes="80px" />
+        </button>
+      ))}
+    </div>
+  )
+}

@@ -25,6 +25,5 @@ export const FUNNEL_QUESTION_MAX_W = 'max-w-xl'
  * single-column flow. The 2-column grid is retained only as the fallback for a
  * genuine ≤2-tile question. Identical across every funnel — the threshold lives
  * here, not in any per-funnel spec.
- * see docs/superpowers/specs/2026-06-26-funnel-card-select-layout-system-design.md
  */
 export const CARD_SELECT_SINGLE_COLUMN_THRESHOLD = 2

@@ -78,7 +78,6 @@ export function PiiFormStepView({ content, answers, ctx, setValue, advance }: St
     // Renters (ownership='rent') are ingested but excluded from Meta's Lead
     // optimization: a missing eventId makes submitLead's CAPI twin no-op, and we
     // skip the browser pixel below. Funnels without an ownership step always fire.
-    // see lib/tracking/lead-qualification.ts + ../../DOCS.md
     const optimize = firesLeadOptimization(answers)
     const eventId = optimize ? mintEventId() : undefined
     const created = await submit.mutateAsync({

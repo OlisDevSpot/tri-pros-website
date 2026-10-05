@@ -14,6 +14,7 @@ import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Separator } from '@/shared/components/ui/separator'
 import { cn } from '@/shared/lib/utils'
+import { useConstructionCatalog } from '@/shared/modules/construction/core/hooks/use-construction-catalog'
 
 const STANDARD_PRICING_ACCESSOR = 'standard-pricing'
 
@@ -32,12 +33,14 @@ export function ProgramStep({ flowContext, meetingType }: ProgramStepProps) {
     [flowContext.flowState?.tradeSelections],
   )
   const customer = flowContext.customer
+  const { tradesById } = useConstructionCatalog()
 
   const qualCtx: QualificationContext = useMemo(() => ({
     tradeSelections,
     customer,
     meetingType,
-  }), [tradeSelections, customer, meetingType])
+    tradesById,
+  }), [tradeSelections, customer, meetingType, tradesById])
 
   const qualifications = useMemo(() => qualifyAllPrograms(qualCtx), [qualCtx])
 
@@ -108,7 +111,7 @@ export function ProgramStep({ flowContext, meetingType }: ProgramStepProps) {
   return (
     <div className="space-y-10">
       {/* ── Personalized Story Hero ────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 px-8 py-12 shadow-xl md:px-12 md:py-16">
+      <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-linear-to-br from-card via-muted to-card px-8 py-12 shadow-xl md:px-12 md:py-16">
         <div className="pointer-events-none absolute left-1/2 top-0 h-40 w-80 -translate-x-1/2 rounded-full bg-primary/20 blur-[100px]" />
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.03]"
@@ -167,10 +170,10 @@ export function ProgramStep({ flowContext, meetingType }: ProgramStepProps) {
                     </div>
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2">
-                        <h4 className="text-[15px] font-semibold leading-snug tracking-tight">
+                        <h4 className="text-base font-semibold leading-snug tracking-tight">
                           {benefit.headline}
                         </h4>
-                        <Badge variant="outline" className={cn('text-[10px]', config.border)}>
+                        <Badge variant="outline" className={cn('text-xs', config.border)}>
                           {config.label}
                         </Badge>
                       </div>

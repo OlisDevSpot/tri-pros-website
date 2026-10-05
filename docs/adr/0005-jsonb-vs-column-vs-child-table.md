@@ -205,7 +205,7 @@ ADR referenced:
   `proposals.final_tcp_cents` rollup by the `recomputeProposalFinancials` choke point.
   Section-scoped incentives remain jsonb until Wave 3 (documented residue, confined to the
   single recompute statement). See
-  `src/shared/entities/proposals/DOCS.md#final-tcp-derived`.
+  `src/shared/modules/proposals/core/DOCS.md#final-tcp-derived`.
 - **Closed Vocabulary Standard applied to 4 legacy enums**: `proposal_status`,
   `proposal_kind`, `customer_pipeline`, `lead_type` converted from `pgEnum` to
   `text({ enum })` (opportunistic conversion, per Addendum C in the decomposition program

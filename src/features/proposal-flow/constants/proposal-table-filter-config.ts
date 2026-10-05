@@ -68,4 +68,14 @@ export const PROPOSAL_FILTER_CONFIG = [
     step: PROPOSAL_PRICE_STEP,
     formatValue: formatAsDollars,
   },
+  {
+    id: 'missingApprovedAt',
+    type: 'boolean',
+    label: 'No approval date',
+  },
+  {
+    id: 'noProject',
+    type: 'boolean',
+    label: 'No project',
+  },
 ] as const satisfies readonly FilterDefinition[]

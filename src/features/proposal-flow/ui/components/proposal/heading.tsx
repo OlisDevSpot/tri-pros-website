@@ -1,5 +1,6 @@
 import { CalculatorIcon, CalendarIcon, PencilIcon, UserIcon } from 'lucide-react'
 import { motion } from 'motion/react'
+import Link from 'next/link'
 import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
 import { useViewMode } from '@/features/proposal-flow/hooks/use-view-mode'
@@ -10,14 +11,13 @@ import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
 import { companyInfo } from '@/shared/constants/company'
 import { useAbility } from '@/shared/domains/permissions/hooks'
-import { toFundingInputs } from '@/shared/entities/proposals/lib/funding-columns'
-import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { formatStringAsDate } from '@/shared/lib/formatters'
+import { openModal } from '@/shared/lib/open-modal'
+import { toFundingInputs } from '@/shared/modules/proposals/core/lib/funding-columns'
 
 export function Heading() {
   const proposal = useCurrentProposal()
   const ability = useAbility()
-  const { open: openModal, setModal } = useModalStore()
   const viewMode = useViewMode()
 
   if (proposal.isLoading) {
@@ -32,19 +32,18 @@ export function Heading() {
     if (!customerId) {
       return
     }
-    setModal({
+    openModal({
       accessor: 'CustomerProfile',
       Component: CustomerProfileModal,
       props: { customerId },
     })
-    openModal()
   }
 
   function handleInternalFinancials() {
     if (!proposal.data) {
       return
     }
-    setModal({
+    openModal({
       accessor: 'InternalFinancials',
       Component: InternalFinancialsModal,
       props: {
@@ -53,7 +52,6 @@ export function Heading() {
         priceDisplayMode: proposal.data.priceDisplayMode,
       },
     })
-    openModal()
   }
 
   const { sow } = proposal.data.projectJSON.data
@@ -126,10 +124,10 @@ export function Heading() {
               size="sm"
               asChild
             >
-              <a href={ROOTS.dashboard.proposals.byId(proposal.data.id)}>
+              <Link href={ROOTS.dashboard.proposals.byId(proposal.data.id)}>
                 <PencilIcon className="size-4" />
                 Edit Proposal
-              </a>
+              </Link>
             </Button>
           </div>
         )}

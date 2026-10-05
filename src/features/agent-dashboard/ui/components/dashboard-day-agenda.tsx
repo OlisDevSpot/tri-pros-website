@@ -6,6 +6,7 @@ import { format } from 'date-fns'
 import Link from 'next/link'
 
 import { ROOTS } from '@/shared/config/roots'
+import { formatBusinessTime } from '@/shared/lib/business-time'
 
 import { DashboardMeetingCard } from './dashboard-meeting-card'
 
@@ -53,8 +54,8 @@ function DayAgendaRow({ row }: { row: MeetingListRow }) {
   return (
     <li className="flex items-stretch gap-3">
       <div className="flex w-18 shrink-0 items-center justify-end">
-        <span className="whitespace-nowrap rounded-md border border-primary/20 bg-primary/5 px-1.5 py-1 font-mono text-[0.72rem] tabular-nums text-foreground">
-          {format(new Date(row.scheduledFor), 'h:mm a')}
+        <span className="whitespace-nowrap rounded-md border border-primary/20 bg-primary/5 px-1.5 py-1 font-mono text-xs tabular-nums text-foreground">
+          {formatBusinessTime(row.scheduledFor, { hour: 'numeric', minute: '2-digit' })}
         </span>
       </div>
 

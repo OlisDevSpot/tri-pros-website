@@ -1,6 +1,4 @@
 // Business queries for the voip-campaigns entity. Custom lookups beyond CRUD.
-// see ../../DOCS.md for business rules.
-// All DAL conventions: see docs/codebase-conventions/dal-conventions.md
 
 import type { DalReturn } from '@/shared/dal/server/types'
 import type { VoipCampaign } from '@/shared/db/schema/voip-campaigns'
@@ -17,11 +15,11 @@ export async function listVoipCampaigns(): Promise<DalReturn<VoipCampaign[]>> {
     return db
       .select()
       .from(voipCampaigns)
-      .orderBy(asc(voipCampaigns.ctCampaignName))
+      .orderBy(asc(voipCampaigns.providerCampaignName))
   })
 }
 
-/** A single campaign by its app-side id. Used by enrollment to read the membership tag. */
+/** A single campaign by its app-side id. Used by enrollment to read the provider campaign id. */
 export async function getVoipCampaignById(id: string): Promise<DalReturn<VoipCampaign | null>> {
   return dalDbOperation(async () => {
     const [row] = await db

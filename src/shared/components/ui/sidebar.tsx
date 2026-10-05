@@ -16,6 +16,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/shared/components/ui/sheet'
+import { SidebarMobileSheet } from '@/shared/components/ui/sidebar-mobile-sheet'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import {
   Tooltip,
@@ -37,13 +38,17 @@ interface SidebarContextProps {
   state: 'expanded' | 'collapsed'
   open: boolean
   setOpen: (open: boolean) => void
-  openMobile: boolean
   setOpenMobile: (open: boolean) => void
   isMobile: boolean
   toggleSidebar: () => void
 }
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null)
+
+// The phone sheet's open state flips on every tap, while the rest of the context changes only
+// when the rail collapses or the viewport crosses the phone breakpoint. Kept apart, a tap
+// re-renders the sheet and whatever reads this, not every row of the nav.
+const SidebarOpenMobileContext = React.createContext<boolean | null>(null)
 
 function useSidebar() {
   const context = React.use(SidebarContext)
@@ -52,6 +57,15 @@ function useSidebar() {
   }
 
   return context
+}
+
+function useSidebarOpenMobile() {
+  const openMobile = React.use(SidebarOpenMobileContext)
+  if (openMobile === null) {
+    throw new Error('useSidebarOpenMobile must be used within a SidebarProvider.')
+  }
+
+  return openMobile
 }
 
 function SidebarProvider({
@@ -121,34 +135,35 @@ function SidebarProvider({
       open,
       setOpen,
       isMobile,
-      openMobile,
       setOpenMobile,
       toggleSidebar,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar],
+    [state, open, setOpen, isMobile, setOpenMobile, toggleSidebar],
   )
 
   return (
     <SidebarContext value={contextValue}>
-      <TooltipProvider delayDuration={0}>
-        <div
-          data-slot="sidebar-wrapper"
-          style={
-            {
-              '--sidebar-width': SIDEBAR_WIDTH,
-              '--sidebar-width-icon': SIDEBAR_WIDTH_ICON,
-              ...style,
-            } as React.CSSProperties
-          }
-          className={cn(
-            'group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full',
-            className,
-          )}
-          {...props}
-        >
-          {children}
-        </div>
-      </TooltipProvider>
+      <SidebarOpenMobileContext value={openMobile}>
+        <TooltipProvider delayDuration={0}>
+          <div
+            data-slot="sidebar-wrapper"
+            style={
+              {
+                '--sidebar-width': SIDEBAR_WIDTH,
+                '--sidebar-width-icon': SIDEBAR_WIDTH_ICON,
+                ...style,
+              } as React.CSSProperties
+            }
+            className={cn(
+              'group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full',
+              className,
+            )}
+            {...props}
+          >
+            {children}
+          </div>
+        </TooltipProvider>
+      </SidebarOpenMobileContext>
     </SidebarContext>
   )
 }
@@ -157,6 +172,8 @@ function Sidebar({
   side = 'left',
   variant = 'sidebar',
   collapsible = 'offcanvas',
+  mobilePresentation = 'side-sheet',
+  mobileClassName,
   className,
   children,
   ...props
@@ -164,8 +181,12 @@ function Sidebar({
   side?: 'left' | 'right'
   variant?: 'sidebar' | 'floating' | 'inset'
   collapsible?: 'offcanvas' | 'icon' | 'none'
+  mobilePresentation?: 'side-sheet' | 'bottom-sheet'
+  /** Classes for the phone presentation, e.g. where a bottom sheet lands. */
+  mobileClassName?: string
 }) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+  const { isMobile, state, setOpenMobile } = useSidebar()
+  const openMobile = useSidebarOpenMobile()
 
   if (collapsible === 'none') {
     return (
@@ -179,6 +200,14 @@ function Sidebar({
       >
         {children}
       </div>
+    )
+  }
+
+  if (isMobile && mobilePresentation === 'bottom-sheet') {
+    return (
+      <SidebarMobileSheet open={openMobile} onOpenChange={setOpenMobile} className={mobileClassName}>
+        {children}
+      </SidebarMobileSheet>
     )
   }
 
@@ -201,7 +230,7 @@ function Sidebar({
             <SheetTitle>Sidebar</SheetTitle>
             <SheetDescription>Displays the mobile sidebar.</SheetDescription>
           </SheetHeader>
-          <div className="flex h-full w-full flex-col">{children}</div>
+          <div className="flex h-full w-full flex-col pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(0.5rem,env(safe-area-inset-bottom))]">{children}</div>
         </SheetContent>
       </Sheet>
     )
@@ -224,20 +253,22 @@ function Sidebar({
           'group-data-[collapsible=offcanvas]:w-0',
           'group-data-[side=right]:rotate-180',
           variant === 'floating' || variant === 'inset'
-            ? 'group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4)))]'
+            ? 'group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+var(--gutter)*2+2px)]'
             : 'group-data-[collapsible=icon]:w-(--sidebar-width-icon)',
         )}
       />
       <div
         data-slot="sidebar-container"
         className={cn(
-          'fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex',
+          // Anchored to both edges, no height: the iPad PWA reports svh short (by the status bar on launch, by a phantom
+          // Safari toolbar after Google sign-in), while the fixed containing block stays the full screen in both.
+          'fixed inset-y-0 z-10 hidden w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex',
           side === 'left'
             ? 'left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]'
             : 'right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]',
           // Adjust the padding for floating and inset variants.
           variant === 'floating' || variant === 'inset'
-            ? 'p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]'
+            ? 'p-(--gutter) pt-[calc(var(--gutter)+env(safe-area-inset-top))] group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+var(--gutter)*2+2px)]'
             : 'group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-r group-data-[side=right]:border-l',
           className,
         )}
@@ -246,7 +277,7 @@ function Sidebar({
         <div
           data-sidebar="sidebar"
           data-slot="sidebar-inner"
-          className="bg-sidebar group-data-[variant=floating]:border-sidebar-border flex h-full w-full flex-col group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow-sm"
+          className="bg-sidebar group-data-[variant=floating]:border-sidebar-border flex h-full w-full flex-col group-data-[variant=floating]:rounded-[18px] group-data-[variant=floating]:border group-data-[variant=floating]:shadow-lg"
         >
           {children}
         </div>
@@ -408,8 +439,9 @@ function SidebarGroupLabel({
       data-slot="sidebar-group-label"
       data-sidebar="group-label"
       className={cn(
-        'text-sidebar-foreground/70 ring-sidebar-ring flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium outline-hidden transition-[margin,opacity] duration-200 ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0',
-        'group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0',
+        'text-sidebar-foreground/70 ring-sidebar-ring flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium outline-hidden transition-[margin,opacity,visibility] duration-200 ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0',
+        // Collapsed, the label slides up over the item above it; opacity alone would leave it catching that item's taps.
+        'group-data-[collapsible=icon]:invisible group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0',
         className,
       )}
       {...props}
@@ -429,7 +461,7 @@ function SidebarGroupAction({
       data-slot="sidebar-group-action"
       data-sidebar="group-action"
       className={cn(
-        'text-sidebar-foreground ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground absolute top-3.5 right-3 flex aspect-square w-5 items-center justify-center rounded-md p-0 outline-hidden transition-transform focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0',
+        'text-sidebar-foreground ring-sidebar-ring hover:bg-sidebar-hover hover:text-sidebar-foreground absolute top-3.5 right-3 flex aspect-square w-5 items-center justify-center rounded-md p-0 outline-hidden transition-transform focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0',
         // Increases the hit area of the button on mobile.
         'after:absolute after:-inset-2 md:after:hidden',
         'group-data-[collapsible=icon]:hidden',
@@ -477,13 +509,13 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<'li'>) {
 }
 
 const sidebarMenuButtonVariants = cva(
-  'peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-hidden ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-data-[sidebar=menu-action]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0',
+  'peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-hidden ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-hover hover:text-sidebar-foreground focus-visible:ring-2 active:bg-sidebar-hover active:text-sidebar-foreground disabled:pointer-events-none disabled:opacity-50 group-has-data-[sidebar=menu-action]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[active=true]:[&>svg]:text-sidebar-active-icon data-[state=open]:hover:bg-sidebar-hover data-[state=open]:hover:text-sidebar-foreground group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0',
   {
     variants: {
       variant: {
-        default: 'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+        default: 'hover:bg-sidebar-hover hover:text-sidebar-foreground',
         outline:
-          'bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]',
+          'bg-background shadow-[0_0_0_1px_var(--sidebar-border)] hover:bg-sidebar-hover hover:text-sidebar-foreground hover:shadow-[0_0_0_1px_var(--sidebar-border)]',
       },
       size: {
         default: 'h-8 text-sm',
@@ -525,7 +557,9 @@ function SidebarMenuButton({
     />
   )
 
-  if (!tooltip) {
+  // The tooltip names a row when the desktop rail collapses to icons. A phone never shows it, and
+  // each one mounts a Radix popper, so the phone sheet skips them.
+  if (!tooltip || isMobile) {
     return button
   }
 
@@ -564,7 +598,7 @@ function SidebarMenuAction({
       data-slot="sidebar-menu-action"
       data-sidebar="menu-action"
       className={cn(
-        'text-sidebar-foreground ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground peer-hover/menu-button:text-sidebar-accent-foreground absolute top-1.5 right-1 flex aspect-square w-5 items-center justify-center rounded-md p-0 outline-hidden transition-transform focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0',
+        'text-sidebar-foreground ring-sidebar-ring hover:bg-sidebar-hover hover:text-sidebar-foreground peer-hover/menu-button:text-sidebar-foreground absolute top-1.5 right-1 flex aspect-square w-5 items-center justify-center rounded-md p-0 outline-hidden transition-transform focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0',
         // Increases the hit area of the button on mobile.
         'after:absolute after:-inset-2 md:after:hidden',
         'peer-data-[size=sm]/menu-button:top-1',
@@ -590,7 +624,7 @@ function SidebarMenuBadge({
       data-sidebar="menu-badge"
       className={cn(
         'text-sidebar-foreground pointer-events-none absolute right-1 flex h-5 min-w-5 items-center justify-center rounded-md px-1 text-xs font-medium tabular-nums select-none',
-        'peer-hover/menu-button:text-sidebar-accent-foreground peer-data-[active=true]/menu-button:text-sidebar-accent-foreground',
+        'peer-hover/menu-button:text-sidebar-foreground peer-data-[active=true]/menu-button:text-sidebar-accent-foreground',
         'peer-data-[size=sm]/menu-button:top-1',
         'peer-data-[size=default]/menu-button:top-1.5',
         'peer-data-[size=lg]/menu-button:top-2.5',
@@ -689,8 +723,8 @@ function SidebarMenuSubButton({
       data-size={size}
       data-active={isActive}
       className={cn(
-        'text-sidebar-foreground ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground active:bg-sidebar-accent active:text-sidebar-accent-foreground [&>svg]:text-sidebar-accent-foreground flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 outline-hidden focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0',
-        'data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground',
+        'text-sidebar-foreground ring-sidebar-ring hover:bg-sidebar-hover hover:text-sidebar-foreground active:bg-sidebar-hover active:text-sidebar-foreground [&>svg]:text-sidebar-muted flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 outline-hidden focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0',
+        'data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:[&>svg]:text-sidebar-active-icon',
         size === 'sm' && 'text-xs',
         size === 'md' && 'text-sm',
         'group-data-[collapsible=icon]:hidden',
@@ -726,4 +760,5 @@ export {
   SidebarSeparator,
   SidebarTrigger,
   useSidebar,
+  useSidebarOpenMobile,
 }

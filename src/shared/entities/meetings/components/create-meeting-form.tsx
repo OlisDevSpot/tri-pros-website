@@ -143,7 +143,7 @@ export function CreateMeetingForm({
                 'px-4 py-1.5 rounded-full text-sm font-medium border transition-colors',
                 meetingType === t
                   ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-background text-muted-foreground border-input hover:bg-accent',
+                  : 'text-muted-foreground border-input hover:bg-hover',
               )}
             >
               {t}
@@ -170,7 +170,7 @@ export function CreateMeetingForm({
                     {customerProjects.map(p => (
                       <SelectItem key={p.id} value={p.id}>
                         <span className="flex items-center gap-2">
-                          <FolderOpenIcon size={14} className="text-green-600 dark:text-green-400" />
+                          <FolderOpenIcon size={14} className="text-status-success-fg" />
                           {p.title}
                         </span>
                       </SelectItem>

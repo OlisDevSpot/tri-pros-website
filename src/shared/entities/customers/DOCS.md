@@ -36,30 +36,27 @@ UI surfaces also receive `hasSentProposal: boolean` so they can distinguish "pho
 
 ### derived-5-bucket-pipeline
 
-UI surfaces classify customers against a 5-bucket pipeline (`projects | fresh | leads | rehash | dead`), derived PURELY from `meetings.meeting_outcome` + project existence — no stored `.pipeline` column is read. `derivedPipelineSql()` is a priority-ordered, first-match, total CASE:
+UI surfaces classify customers against a 5-bucket pipeline (`projects | fresh | leads | rehash | dead`). The underlying column `customers.pipeline` is 3-bucket (`active | rehash | dead`); `derivedPipelineSql()` explodes `active` based on downstream records:
 
 ```
-projects — has a project OR ≥1 positive outcome (converted_to_project | additional_work)
-leads    — no meetings
-fresh    — ≥1 non-negative meeting (unset/neutral; no positive/project by prior arms)
-rehash   — all meetings negative, ≥1 RECALLABLE (cancelled|no_show|pns|npns|nra)
-dead     — all meetings negative, ALL TERMINAL (lost_to_competitor|not_good|ftd)
+rehash | dead     → passthrough (stored on customers.pipeline)
+active + project  → 'projects'   (signed customer)
+active + meeting  → 'fresh'      (meeting-stage)
+active otherwise  → 'leads'      (pre-meeting)
 ```
 
-Any non-negative meeting pulls a customer out of rehash/dead into fresh; among all-negative customers, ANY recallable ⇒ rehash (mixed recallable+terminal → rehash; hope dominates). The recallable/terminal distinction — and sentiment, and `OUTCOME_PIPELINE_MAP` — all DERIVE from the single outcome classifier `MEETING_OUTCOME_CLASS` in `constants/enums/meetings.ts` (the finest-grain SoT: `unset | neutral | positive | negative-recallable | negative-terminal`).
-
-**Why**: pipeline is a perfectly-derived in-code fact, not a persisted column (ADR-0005 JIT-derivation). This removed a real drift bug — the old CASE read `customers.pipeline`, which is **write-orphaned** (always `'active'`), so its rehash/dead arms never fired and those customers mis-read as fresh/leads.
+**Why**: `rehash` and `dead` need to live on the customer (a dead customer may have no meetings; the dead state outlives the meeting). `active` is too coarse for the UI — the 5-bucket view distinguishes leads / fresh / signed by what records the customer has.
 
 **Reference impl**: `lib/derived-pipeline-sql.ts` (`derivedPipelineSql`, `derivedPipelineWhere`)
-**Enforced by**: convention — every list query that surfaces `pipeline` to a customer-table consumer must use this helper, never a raw `.pipeline` column read.
+**Enforced by**: convention — every list query that surfaces `pipeline` to a customer-table consumer must use this helper, not raw `customers.pipeline`.
 
-**Retired columns (deferred physical drop)**: `customers.pipeline` (write-orphaned) and the customer-grain read of `meetings.pipeline` are no longer consulted here. `meetings.pipeline` still exists as a *materialized* meeting-grain projection of `meeting_outcome` (maintained by the meetings CRUD update hook via `OUTCOME_PIPELINE_MAP`), read only by the meeting-list filter — see `../meetings/DOCS.md#meeting-pipeline-storage-vs-derived`. Both columns are slated for a dedicated drop ceremony; see `docs/plans/2026-08-10-casl-scope-compiler-epic.md` and the deferred `domains/pipelines` engine/UI rethink.
+**⚠️ Stale comment on schema**: `customers.pipeline` is marked `@deprecated` in `src/shared/db/schema/customers.ts` ("will be removed after backfill migration"), but it's still the source of truth for `rehash` and `dead`. The deprecation comment is misleading and should be removed or rephrased — those values can't move to `meetings.pipeline` (a dead customer may have no meetings).
 
 ### signed-customer-eq-has-project
 
 A customer is "signed" when they have at least one project. Projects are the business symbol of a converted customer — this rule is the single definition; every router, job, and aggregate counts signed customers the same way.
 
-**Why**: a project = signed contract = revenue commitment. An approved proposal is the precondition an agent checks before creating the project — creation itself is a separate agent action, not an automatic effect of approval (see `../proposals/DOCS.md#conversion-trigger`); after a project exists, "signed" means "has the project."
+**Why**: a project = signed contract = revenue commitment. An approved proposal is the precondition an agent checks before creating the project — creation itself is a separate agent action, not an automatic effect of approval (see `../../modules/proposals/core/DOCS.md#conversion-trigger`); after a project exists, "signed" means "has the project."
 **Reference impl**: `lib/signed-customer-sql.ts:isSignedCustomerSql`
 **Enforced by**: convention (single helper; all consumers go through it)
 
@@ -78,7 +75,7 @@ A "senior" customer has two distinct definitions depending on the data path:
 - **From customer profile (bucket)**: `ageGroup ∈ {'65-75', '75-or-older'}` → `isSenior(ageGroup)` returns boolean (or null when ageGroup unset).
 - **From numeric age (precise)**: `age ≥ 65` → `isSeniorByAge(age)` returns boolean. Used by the contract flow where the agent enters a precise age for CSLB compliance.
 
-**Why**: the customer profile collects bucketed age for sales psychology; the contract flow needs the precise numeric for CSLB 5-day rescission window legal compliance (see `../proposals/DOCS.md#cslb-start-date`).
+**Why**: the customer profile collects bucketed age for sales psychology; the contract flow needs the precise numeric for CSLB 5-day rescission window legal compliance (see `../../modules/proposals/core/DOCS.md#cslb-start-date`).
 **Reference impl**: `lib/customer-predicates.ts`
 **Enforced by**: tsc + convention (two distinct functions; pick the right one for the data path)
 
@@ -87,7 +84,7 @@ A "senior" customer has two distinct definitions depending on the data path:
 **Decomposed to a 1:1 child table (Addendum B, 2026-07-14 — supersedes the Wave-1
 wide-column build).** The three profile blobs (`customerProfileJSON`,
 `propertyProfileJSON`, `financialProfileJSON`) are frozen — `*Deprecated` columns
-with zero writers, read only by the one-time backfill script, dropped next release.
+with zero writers — **dropped** (dev 2026-08-11; prod 2026-08-24/25).
 Every field they used to hold (except `age`) now lives on `customer_profiles`, a
 1:1 child table keyed `customer_id` PK-as-FK (`ON DELETE CASCADE`, house precedent
 `voip_campaign_contacts`). `age` stays a plain column on `customers` — it's
@@ -143,8 +140,7 @@ A customer's lead origin is captured by three fields:
 
 - `leadSourceId` (FK to `lead_sources`) — which campaign/channel attributed the lead
 - `leadType` (enum) — broad classification (`facebook_ad`, `referral`, etc.)
-- `leadMetaJSONDeprecated` — **frozen (Wave 2, epic #256)**, zero writers, dropped next
-  release. The source-specific payload it used to hold now lives on
+- `leadMetaJSONDeprecated` — **dropped** (Wave 2 freeze, epic #256; dev 2026-08-11; prod 2026-08-24/25). The source-specific payload it used to hold now lives on
   `customer_lead_attribution` + `customer_enrichment` — see `#lead-attribution-child`.
 
 **Why**: separates "which campaign" (FK) from "what kind" (enum) from "campaign-specific payload" (now a child table, was JSONB). Each gets to evolve independently.
@@ -236,16 +232,16 @@ Separately: the customer profile's **activity timeline** (Overview tab) is **der
 - **Hardcoding `status === 'sent'` for phone-unlock UI logic.** Use `hasSentProposal` (the boolean computed by `hasSentProposalSql`) — it already encodes the threshold.
 - **Storing computed `isSigned` on the customer row.** Always derive via `isSignedCustomerSql` (or check projects directly).
 - **Setting `pipelineStage` on a customer that has meetings.** It's meaningless for non-leads.
-- **Writing to `customerProfileJSONDeprecated` / `propertyProfileJSONDeprecated` / `financialProfileJSONDeprecated`.** These no longer exist — dropped at the Wave-3 ceremony (dev 2026-08-11; prod via `docs/plans/2026-07-26-wave-3-cutover-runbook.md`). Patch the real columns via `upsertCustomerProfile` (`age` via `customerCrud.update`) — see `#three-jsonb-profiles`.
+- **Writing to `customerProfileJSONDeprecated` / `propertyProfileJSONDeprecated` / `financialProfileJSONDeprecated`.** These no longer exist — dropped at the Wave-3 ceremony (dev 2026-08-11; prod 2026-08-24/25). Patch the real columns via `upsertCustomerProfile` (`age` via `customerCrud.update`) — see `#three-jsonb-profiles`.
 - **Reading `customer.triggerEvent` (or any profile-trio field) straight off a bare `Customer` row.** Those fields live on the `customer_profiles` child table now — use the composed `CustomerWithProfile` type (flattened-spread joined) or `CustomerProfileRow | null`, never a `Partial` spread off `Customer` that would compile even when the join is missing.
-- **Writing to `leadMetaJSONDeprecated`, or attempting to update `customer_lead_attribution`.** `leadMetaJSONDeprecated` no longer exists — dropped at the Wave-3 ceremony (dev 2026-08-11; prod via `docs/plans/2026-07-26-wave-3-cutover-runbook.md`). Attribution is write-once via `upsertLeadAttribution` at capture; there is no update path by design — see `#lead-attribution-child`.
+- **Writing to `leadMetaJSONDeprecated`, or attempting to update `customer_lead_attribution`.** `leadMetaJSONDeprecated` no longer exists — dropped at the Wave-3 ceremony (dev 2026-08-11; prod 2026-08-24/25). Attribution is write-once via `upsertLeadAttribution` at capture; there is no update path by design — see `#lead-attribution-child`.
 - **Bypassing the senior-age path mismatch.** Customer profile = bucket; contract flow = precise number. Pick the right helper.
 
 ## See also
 
-- [`../proposals/DOCS.md`](../proposals/DOCS.md) — proposal lifecycle, phone-gating trigger (`sent` status), CSLB senior threshold
+- [`../../modules/proposals/core/DOCS.md`](../../modules/proposals/core/DOCS.md) — proposal lifecycle, phone-gating trigger (`sent` status), CSLB senior threshold
 - [`../meetings/DOCS.md`](../meetings/DOCS.md) (when written) — meeting participation is the visibility bridge
-- [`../projects/DOCS.md`](../projects/DOCS.md) (when written) — projects = signed customer
+- [`../../modules/projects/core/DOCS.md`](../../modules/projects/core/DOCS.md) (when written) — projects = signed customer
 - [`../lead-sources/DOCS.md`](../lead-sources/DOCS.md) (when written) — attribution + segment classification (shares `customers.pipeline` semantics)
 - `memory/feedback-phone-visibility-threshold.md` — recent threshold-vs-equality fix
 - `docs/codebase-conventions/dal-conventions.md` — DAL conventions

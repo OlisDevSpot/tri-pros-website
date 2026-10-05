@@ -20,12 +20,12 @@ Customer ──► Meeting ──► Proposal
 
 `meetings.ownerId` is a **permission level**, not a meeting role. It answers "who can delete/fully-edit this meeting?" The owner is the user who created the meeting record.
 
-- If info@ (system account) creates → info@ is owner. The meeting has no implicit sales agent.
-- If any other user creates → that user is owner AND implicitly fills all participation roles (sales_agent, etc.) until explicit participants are added.
+- If info@ (system account) creates → info@ is owner. The meeting has no implicit primary rep.
+- If any other user creates → that user is owner AND is implicitly the meeting's primary rep (equivalent to the `owner` participant role) until explicit participants are added.
 - Only the owner OR a super-admin can delete a meeting.
 
 **Why**: ownership controls permissions (delete, full update). Participation roles control meeting-contextual function (who's the sales rep, who's QA). These are orthogonal concerns — see `#participant-roles-are-meeting-contextual`.
-**Reference impl**: schema (`ownerId` column); `hooks.create.before` in `lib/server-spec.ts` (stamps ownerId)
+**Reference impl**: schema (`ownerId` column); `create.before` in `dal/server/crud.ts` (resolves ownerId via `lib/resolve-owner.ts`)
 **Enforced by**: CASL conditions (planned: `can('delete', 'Meeting', { ownerId: user.id })`) + convention
 
 ### system-account-not-a-person
@@ -34,7 +34,7 @@ The system account (`info@triprosremodeling.com`, resolved via `getSystemOwnerId
 
 When info@ owns a meeting with no participants: the meeting has **no sales agent**. It's an unassigned meeting waiting for dispatch.
 
-When any other user owns a meeting with no participants: that user **implicitly fills all roles** (sales_agent, etc.) because someone has to do the work.
+When any other user owns a meeting with no participants: that user **implicitly fills the primary rep role** (equivalent to the `owner` participant) because someone has to do the work.
 
 **Why**: info@ is the company identity, not a person. Sean (sean@) is a person who happens to be super-admin. The system must distinguish between "company created this" and "a person created this" for dispatch logic.
 **Reference impl**: `src/shared/constants/system-users.ts` (`SYSTEM_OWNER_EMAIL`); `src/shared/entities/users/dal/server/system.ts` (`getSystemOwnerId`)
@@ -42,32 +42,32 @@ When any other user owns a meeting with no participants: that user **implicitly 
 
 ### participant-roles-are-meeting-contextual
 
-Participant roles describe a user's function **in the context of a specific meeting**, not their system-wide role. Current roles:
+Participant roles describe a user's function **in the context of a specific meeting**, not their system-wide role. Real, current roles (`meetingParticipantRoles`):
 
-- **`sales_agent`**: the rep running this meeting. The primary role for dispatch.
-- Future roles: `qa`, `financing`, `co_agent`, etc. — extensible as departments are added.
+- **`owner`**: the primary rep running this meeting — the dispatch-relevant role. At most one per meeting (Postgres partial unique index). This is a *participant role*, distinct from `meetings.ownerId` (the row-level permission owner, see `#ownership-model`) — the two are often but not always the same user, and the doubled "owner" name is a known naming collision, not two names for the same thing.
+- **`co_owner`**: a second rep with equal functional standing. At most one per meeting (partial unique index).
+- **`helper`**: any number of additional participants. Unconstrained.
 
-The `owner` role is **removed** from participants. Ownership lives on `meetings.ownerId` (the row column), not in the participants table. The participants table only tracks meeting-contextual functional roles.
+**Write capability is separate from participant role.** Whether a user can create/read/update a Meeting at all comes from the CASL `agent` role (`can('read'|'create'|'update'|'own', 'Meeting')` — see `src/shared/domains/permissions/abilities.ts`), not from holding a participant role. A participant row only describes function within a meeting the user is already permitted to act on (dispatch status, visibility bridging) — it is not itself the permission gate.
 
 The `(meetingId, userId)` unique constraint prevents the same user holding multiple roles on one meeting.
 
-**Why**: the old system had redundancy — `ownerId` on the row AND an `owner` participant. Ownership is a permission concern (who can delete?); participation is a functional concern (who's the sales rep?). Separating them makes both systems cleaner.
-**Reference impl**: `src/shared/db/schema/meeting-participants.ts` (indexes, planned refactor); `dal/server/participants.ts` (helpers)
-**Enforced by**: Postgres unique constraint + convention
-**Status**: PLANNED — current code still uses `owner`/`co_owner`/`helper` roles. Migration tracked in GitHub issues.
+**Why**: `meetings.ownerId` is a permission concern (who can delete/fully-edit?); participation is a functional concern (who's the primary rep, who's the co-rep, who's just along). Separating them lets both systems evolve independently — see `#ownership-model` for the ownership half.
+**Reference impl**: `src/shared/constants/enums/meeting-participants.ts` (`meetingParticipantRoles`); `src/shared/db/schema/meeting-participants.ts` (partial unique indexes on `owner`/`co_owner`); `dal/server/participants.ts` (`getOwnerCoOwnerForMeetings`, `getParticipantByRole`); `src/shared/domains/permissions/abilities.ts` (CASL `agent` role grants)
+**Enforced by**: Postgres unique constraint (one `owner`, one `co_owner` per meeting) + CASL ability checks (`can('read'|'create'|'update'|'own', 'Meeting')`) + convention
 
 ### dispatched-derived
 
-A meeting is **dispatched** when it has a sales agent — either explicit or implicit:
+A meeting is **dispatched** when it has a primary rep — either explicit or implicit:
 
-- Owner is system account (info@) + no `sales_agent` participant → **not dispatched**
-- Owner is system account (info@) + has `sales_agent` participant → **dispatched**
-- Owner is any real person + no participants → **dispatched** (owner implicitly fills sales_agent)
-- Owner is any real person + has `sales_agent` participant → **dispatched** (explicit assignment)
+- Row owner is system account (info@) + no `owner` participant → **not dispatched**
+- Row owner is system account (info@) + has `owner` participant → **dispatched**
+- Row owner is any real person + no participants → **dispatched** (that person implicitly fills the `owner` participant role)
+- Row owner is any real person + has `owner` participant → **dispatched** (explicit assignment)
 
 `isDispatched` is a **derived boolean** — computed from ownerId + participants, never stored.
 
-**Why**: dispatch status determines whether a meeting is actionable. A meeting created by info@ with no sales agent is an inbox item waiting for assignment. A meeting created by an agent is immediately actionable.
+**Why**: dispatch status determines whether a meeting is actionable. A meeting created by info@ with no primary rep is an inbox item waiting for assignment. A meeting created by an agent is immediately actionable.
 **Reference impl**: planned — `lib/is-dispatched.ts` helper
 **Enforced by**: convention (derived, never stored)
 
@@ -75,7 +75,7 @@ A meeting is **dispatched** when it has a sales agent — either explicit or imp
 
 A non-omni agent sees a meeting only if they are a participant (any of `owner | co_owner | helper`). Super-admins (`ability.can('manage', 'all')`) bypass scoping.
 
-This predicate cascades upward to customers (`../customers/DOCS.md#visibility-via-meeting-participation`) and downward to proposals (`../proposals/DOCS.md#visibility-via-meeting-participation`).
+This predicate cascades upward to customers (`../customers/DOCS.md#visibility-via-meeting-participation`) and downward to proposals (`../../modules/proposals/core/DOCS.md#visibility-via-meeting-participation`).
 
 **Why**: meeting participation is the single source of "did this agent work with this customer." Every visibility predicate in the entity graph derives from here.
 **Reference impl**: `dal/server/participants.ts:userParticipatesInMeeting`
@@ -98,23 +98,28 @@ Only `Fresh` and `Project` are creatable (`creatableMeetingTypes`); `Follow-up` 
 
 ### meeting-pipeline-storage-vs-derived
 
-The `meetings.pipeline` column stores 3 values (`fresh | rehash | dead`) and is now a **materialized meeting-grain projection of `meeting_outcome`** — the meetings CRUD update hook writes it via `OUTCOME_PIPELINE_MAP` (recallable→rehash, terminal→dead, else unchanged). A meeting's display pipeline includes `projects` — derived from `projectId IS NOT NULL`.
+The `meetings.pipeline` column stores 3 values (`fresh | rehash | dead`). A meeting's display pipeline includes `projects` — derived from `projectId IS NOT NULL`. The customer-pipeline `derivedPipelineSql` mirrors this (see `../customers/DOCS.md#derived-5-bucket-pipeline`).
 
-Customer-grain classification NO LONGER reads this column — `../customers/DOCS.md#derived-5-bucket-pipeline` derives the 5 buckets directly from `meeting_outcome` + project existence. The only remaining reader of `meetings.pipeline` is the meeting-list filter (`dal/server/queries.ts`). The column is a materialized-only convenience slated for a deferred physical drop once that filter derives from outcome too.
-
-**Why**: pipeline is a derived fact, not an independently-authored column (ADR-0005). Keeping the meeting-grain column purely materialized-from-outcome (never hand-authored except the deferred `moveCustomerToPipeline` override) keeps it consistent with the customer-grain derivation.
-**Reference impl**: `entities/meetings/dal/server/crud.ts` (update.before materializes it); `domains/pipelines/lib/outcome-pipeline-map.ts`
+**Why**: a meeting with a project IS a project-pipeline meeting; the projectId link is the source of truth, not a separate enum value.
+**Reference impl**: schema; consumers branch on `meetings.projectId IS NOT NULL`
 **Enforced by**: convention
 
 ### outcome-selectable-vs-derived
 
 `meetingOutcomes` is a composite of:
 
-- **Selectable** (`selectableMeetingOutcomes`) — `not_set | not_good | pns | npns | ftd | no_show | lost_to_competitor | follow_up_needed`. These appear in the outcome dropdown.
-- **Derived** (`derivedMeetingOutcomes`) — `proposal_created | proposal_sent | converted_to_project`. These appear in the dropdown but are **disabled** — set automatically by upstream events.
+- **Selectable** (`selectableMeetingOutcomes`) — `not_set | not_good | pns | npns | ftd | no_show | lost_to_competitor | cancelled | nra | follow_up_needed | reschedule_needed`. Always available in the outcome dropdown.
+- **Derived** (`derivedMeetingOutcomes`) — `proposal_created | proposal_sent | converted_to_project | additional_work`. They track proposal/project state. In the dropdown each is **disabled until its condition holds** (`getOutcomeDisabledChecker`), after which it can be hand-selected:
 
-**Why**: derived outcomes encode pipeline progression and must not be hand-set. `converted_to_project` is set when a project is created or linked (`projects.router/business.router.ts` `create`, or `customerPipelinesRouter.assignToProject`) — proposal approval only unlocks the dropdown option, it does not itself write the outcome (see `../proposals/DOCS.md#conversion-trigger`); `proposal_sent` is set by sending a proposal (see `#outcome-flips-on-proposal-sent`).
-**Reference impl**: `src/shared/constants/enums/meetings.ts`
+| Outcome | Dropdown enabled when | Written automatically by |
+|---|---|---|
+| `proposal_created` | the meeting has ≥ 1 proposal | **nothing** — no server code writes it; it is only ever hand-selected |
+| `proposal_sent` | a proposal on the meeting has `status = 'sent'` (equality — an approved proposal no longer counts) | `deriveOutcomeOnProposalSent` (`#outcome-flips-on-proposal-sent`) |
+| `converted_to_project` | a proposal on the meeting is `approved` | project creation / `assignToProject` |
+| `additional_work` | never — always disabled | `deriveOutcomeOnAdditionalWorkApproved` |
+
+**Why**: derived outcomes encode pipeline progression, so the dropdown offers one only once the underlying state exists. `converted_to_project` is set when a project is created or linked (`projects.router/business.router.ts` `create`, or `customerPipelinesRouter.assignToProject`) — proposal approval only unlocks the dropdown option, it does not itself write the outcome (see `../../modules/proposals/core/DOCS.md#conversion-trigger`); `proposal_sent` is set by sending a proposal (see `#outcome-flips-on-proposal-sent`).
+**Reference impl**: `src/shared/constants/enums/meetings.ts`; `src/shared/domains/pipelines/lib/get-disabled-outcomes.ts`
 **Enforced by**: convention + disabled UI options in outcome picker
 
 ### outcome-flips-on-proposal-sent
@@ -132,12 +137,46 @@ When a proposal is sent on a meeting, the meeting's outcome **conditionally** fl
 
 User-initiated meeting-outcome changes go through `useOutcomeChange` (`hooks/use-outcome-change.tsx`) — the ONE controller that applies the reason gate (`outcomeRequiresReason` → reason modal → `setOutcomeWithReason`; else `updateOutcome`). Server-side derivations (see `#outcome-flips-on-proposal-sent`) bypass this controller by design. `updateOutcome`/`setOutcomeWithReason` are never called for user-initiated outcome changes outside that controller. Config-driven surfaces get it via `useMeetingActionConfigs`, which owns one instance and returns `changeOutcome` + `OutcomeReasonDialog`; consumers render the dialog like they render `DeleteConfirmDialog`. Adding a direct `updateOutcome.mutate` at a call site is the bypass this rule exists to prevent.
 
+### outcome-cancelled-means-archived
+
+`cancelled` canonically means **archived**: the meeting did not happen and is
+not currently being rescheduled, but the record is kept. It is negative
+sentiment and maps to the `rehash` pipeline (customer returns to the recall
+pool). Distinguish from `no_show` — the customer failed to appear at the
+scheduled time — which is also negative/rehash but records a different fact.
+Setting an outcome to `cancelled` removes the meeting's Google Calendar event
+(the meeting row is preserved); see `#gcal-removed-on-cancel`.
+
+### gcal-removed-on-cancel
+
+When a meeting's `meetingOutcome` transitions to `cancelled`, the `update.after`
+hook dispatches `deleteMeetingEventJob` for its `gcalEventId` and clears the
+`gcalEventId`/`gcalEtag`/`gcalSyncedAt` fields on the row. The row itself is
+preserved. `no_show` is intentionally NOT treated this way (its event is already
+in the past). The one-time transition guard + gcalEventId null-check prevent
+re-dispatch.
+
+**Reference impl**: `dal/server/crud.ts:hooks.update.after`
+**Enforced by**: convention (one-time transition guard in the hook)
+
+### reschedule-cancels-and-rebooks
+
+The Reschedule action (`meetingsRouter.business.rescheduleMeeting`) keeps the
+original meeting and sets it to `cancelled`, then books a NEW meeting at the new
+time copying the original's owner + all participants + customer + project +
+type + `flowStateJSON` (outcome resets to `not_set`), and posts one customer
+note. Available only from `DID_NOT_OCCUR_OUTCOMES` (`canRescheduleFromOutcome`)
+so a meeting that already happened can never have its disposition clobbered.
+
+**Why the flow state carries**: a reschedule is the same sit moved to a new slot. Trade selections, program, deal structure and closing adjustments entered before the customer no-showed or had to stop are still the opportunity's working state, and nothing in that blob is bound to the calendar date — so the replacement resumes where the original left off instead of making the agent re-enter it. This is the ONLY path that carries `flowStateJSON`; duplicate deliberately drops it (`#duplicate-copies-setup-only`). The cancelled original keeps its own copy as the archived record.
+**Reference impl**: `src/trpc/routers/meetings.router/business.router.ts:rescheduleMeeting`
+
 ### trade-selections-snapshot-source
 
 `meetings.flowStateJSON.tradeSelections` is the meeting-time scope picker output. On proposal creation, the create handler snapshots these into the proposal's SOW (`projectJSON.data.sow`). After snapshot, the proposal SOW is independent.
 
 **Why**: the agent picks trades during the meeting; that picks-list flows into the first proposal as a starting point. Once the proposal exists, the agent edits the SOW independently — re-pulling from meeting state would erase their work.
-**Reference impl**: `../proposals/lib/server-spec.ts:hooks.create.before` (the snapshot step, reads meeting via `meetingCrud.getById`); `dal/server/google-calendar.ts:getMeetingForGCal` (also reads tradeSelections for the GCal event description)
+**Reference impl**: `../../modules/proposals/core/dal/server/crud.ts:hooks.create.before` (the snapshot step, reads meeting via `meetingCrud.getById`); `dal/server/google-calendar.ts:getMeetingForGCal` (also reads tradeSelections for the GCal event description)
 **Enforced by**: convention
 
 ### gcal-sync-state-fields
@@ -163,7 +202,7 @@ Meeting `flowStateJSON.dealStructure` carries the agent's in-meeting pricing scr
 - `computeDealMonthlyPayment(deal)` → amortized monthly when `mode === 'finance'`. Zero-interest falls back to `P / n`.
 - `computeDealDepositPercent(deal)` → `round(depositAmount / finalTcp * 100)` when `mode === 'cash'`.
 
-**Why**: derived = single source of truth (see `../proposals/DOCS.md#final-tcp-derived` for the same pattern). The meeting scratchpad mirrors what eventually flows into the proposal's `fundingJSON`.
+**Why**: derived = single source of truth (see `../../modules/proposals/core/DOCS.md#final-tcp-derived` for the same pattern). The meeting scratchpad mirrors what eventually flows into the proposal's `fundingJSON`.
 **Reference impl**: `lib/compute-deal-derived.ts`
 **Enforced by**: convention (no persisted columns; helpers exported from `lib/`)
 
@@ -179,28 +218,46 @@ Meeting `flowStateJSON.dealStructure` carries the agent's in-meeting pricing scr
 
 `meetings.ownerId` is the user who created the meeting record. It controls **permissions** (delete, full update), not meeting function. See `#ownership-model` for the full ownership rules and `#participant-roles-are-meeting-contextual` for the distinction between ownership and participation.
 
-**Reference impl**: schema (`ownerId` column); `hooks.create.before` in `lib/server-spec.ts`
-**Enforced by**: lifecycle hooks (stamps ownerId from ctx.session)
+**Reference impl**: schema (`ownerId` column); `create.before` in `dal/server/crud.ts` (resolves ownerId via `lib/resolve-owner.ts`)
+**Enforced by**: `create.before` in `dal/server/crud.ts` (server-resolves ownerId for authed callers; `SYSTEM_CONTEXT` passes its explicit ownerId through)
+
+### duplicate-copies-setup-only
+
+The Duplicate action (`meetingsRouter.crud.duplicate`) copies the source row minus the PK and the `duplicate.exclude` list in `dal/server/crud.ts`, then routes through `create` — so `create.before` re-resolves the owner and `create.after` adds the owner participant and enqueues a fresh GCal push. Anything not in the exclude list is copied; the list is the single source of truth.
+
+| Survives | Starts fresh |
+|---|---|
+| `customerId`, `meetingType`, `scheduledFor` | `meetingOutcome` → `not_set`, `pipeline` → `fresh` (column defaults) |
+| `contextJSON` | `flowStateJSON` — the sit's working state (trade selections, program, deal structure, closing adjustments) |
+| | `projectId` — the copy is not a project meeting |
+| | `agentNotes` |
+| | `gcalEventId` / `gcalEtag` / `gcalSyncedAt` — the copy is pushed as a new calendar event |
+| | `ownerId` → the duplicating user (`duplicate.overrides`; falls back to the source owner under `SYSTEM_CONTEXT`) |
+
+**Why**: a duplicate is a fresh sit that shares the customer and setup — not a continuation of the source. Working state, project link, outcome, notes and calendar identity all describe the source sit and must not leak into a new one. The ONE path that carries `flowStateJSON` forward is reschedule (`#reschedule-cancels-and-rebooks`), because a reschedule is the same sit moved to a new slot.
+**Reference impl**: `dal/server/crud.ts` (`duplicate.exclude` + `duplicate.overrides`); engine `src/shared/dal/server/lib/create-crud-dal.ts` (`duplicateImpl`)
+**Enforced by**: config — `duplicate.exclude` in `dal/server/crud.ts`
 
 ## Anti-patterns
 
+- **Carrying `flowStateJSON` (or `projectId`) on duplicate.** A duplicate is a fresh sit; only reschedule continues one — see `#duplicate-copies-setup-only` / `#reschedule-cancels-and-rebooks`.
 - **Adding `'projects'` to `meetings.pipeline` enum.** Use `projectId IS NOT NULL` — see `#meeting-pipeline-storage-vs-derived`.
-- **Selecting `meetingOutcome = 'converted_to_project'` from the outcome dropdown without actually creating/linking a project.** The dropdown option is enabled once the meeting has an approved proposal, and selecting it writes the enum directly (`useOutcomeChange` → plain `updateOutcome`) — it does NOT create a project. This desyncs the outcome from reality; always drive the outcome via project creation (`projects.router/business.router.ts` `create`) or `customerPipelinesRouter.assignToProject` instead. See `../proposals/DOCS.md#conversion-trigger`.
+- **Selecting `meetingOutcome = 'converted_to_project'` from the outcome dropdown without actually creating/linking a project.** The dropdown option is enabled once the meeting has an approved proposal, and selecting it writes the enum directly (`useOutcomeChange` → plain `updateOutcome`) — it does NOT create a project. This desyncs the outcome from reality; always drive the outcome via project creation (`projects.router/business.router.ts` `create`) or `customerPipelinesRouter.assignToProject` instead. See `../../modules/proposals/core/DOCS.md#conversion-trigger`.
 - **Unconditionally setting `meetingOutcome = 'proposal_sent'` when sending a proposal.** Use `deriveOutcomeOnProposalSent` — see `#outcome-flips-on-proposal-sent`.
 - **Storing computed deal values** (`finalTcp`, `monthlyPayment`, `depositPercent`) on the meeting. Always derive.
 - **Joining `meetingParticipants` directly into a meetings list query without `getOwnerCoOwnerForMeetings`.** The raw join cross-products when duplicates exist; the batch helper deduplicates safely.
 - **Re-snapshotting trade selections from meeting on proposal update.** Snapshot is at create only.
-- **Trusting `meetings.ownerId` as the salesperson.** Owner is a permission level, not a functional role. Check participant `sales_agent` role (or implicit owner-fills-roles for non-system owners). See `#ownership-model`.
+- **Trusting `meetings.ownerId` as the salesperson.** `meetings.ownerId` is a permission level, not a functional role. Check the `owner` participant role (or implicit owner-fills-role for non-system row owners). See `#ownership-model`.
 - **Treating the system account (info@) as a person.** It cannot be dispatched, cannot be a sales agent. See `#system-account-not-a-person`.
 - **Storing `isDispatched` as a column.** Always derive from ownerId + participants. See `#dispatched-derived`.
-- **Using `owner` as a participant role.** Ownership lives on `meetings.ownerId`. Participant roles are meeting-contextual functions (`sales_agent`, etc.). See `#participant-roles-are-meeting-contextual`.
+- **Conflating `meetings.ownerId` (row permission owner) with the `owner` participant role (primary rep).** They track different concerns on different tables and are not always the same user. See `#ownership-model` and `#participant-roles-are-meeting-contextual`.
 
 ## See also
 
 - `../customers/DOCS.md#visibility-via-meeting-participation` — meeting participation is the visibility bridge
-- `../proposals/DOCS.md#conversion-trigger` — approval is a precondition for project creation, not the trigger itself; project creation/linking sets `converted_to_project`
-- `../proposals/DOCS.md#sow-snapshot-from-meeting-on-create` — proposal-side of trade-selections snapshot
-- `../projects/DOCS.md` (when written) — projectId link semantics
+- `../../modules/proposals/core/DOCS.md#conversion-trigger` — approval is a precondition for project creation, not the trigger itself; project creation/linking sets `converted_to_project`
+- `../../modules/proposals/core/DOCS.md#sow-snapshot-from-meeting-on-create` — proposal-side of trade-selections snapshot
+- `../../modules/projects/core/DOCS.md#one-project-per-birthing-meeting` — projectId link semantics (a project has one birthing meeting; later meetings on it are typed `Project`)
 - `memory/project-gcal-sync-architecture.md` — GCal sync architecture (planned)
 - `docs/codebase-conventions/dal-conventions.md` — DAL conventions
 - `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested` — `contextJSON`/`flowStateJSON` are whole-document writers; always plain-replaced, never merged (the `jsonbMergeColumns` opt-in mechanism these columns deliberately stayed out of was deleted entirely in Wave 2, epic #256)

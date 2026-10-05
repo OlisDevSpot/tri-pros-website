@@ -1,14 +1,11 @@
 import type { QBCustomer, QBInvoice, QBInvoiceLine, QBPayment, QBQueryResponse } from '@/shared/services/providers/quickbooks/types'
-import { eq, inArray } from 'drizzle-orm'
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
-import { db } from '@/shared/db'
-import { customers } from '@/shared/db/schema/customers'
-import { projects } from '@/shared/db/schema/projects'
-import { proposals } from '@/shared/db/schema/proposals'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
-import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
 import { formatPhone } from '@/shared/lib/phone'
+import { projectCrud } from '@/shared/modules/projects/core/dal/server/crud'
+import { proposalCrud } from '@/shared/modules/proposals/core/dal/server/crud'
+import { getProposalByInvoiceId, getProposalsByIds, getProposalsByInvoiceIds } from '@/shared/modules/proposals/core/dal/server/queries'
 import { qbRequest } from '@/shared/services/providers/quickbooks/client'
 
 function createAccountingService() {
@@ -24,7 +21,7 @@ function createAccountingService() {
 
   return {
     ensureCustomer: async (customerId: string): Promise<string> => {
-      const [customer] = await db.select().from(customers).where(eq(customers.id, customerId))
+      const customer = dalVerifySuccess(await customerCrud.getById(SYSTEM_CONTEXT, { id: customerId }))
 
       if (!customer) {
         throw new Error(`Customer ${customerId} not found`)
@@ -86,7 +83,7 @@ function createAccountingService() {
     },
 
     ensureProjectSubCustomer: async (projectId: string, qbParentCustomerId: string): Promise<string> => {
-      const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
+      const project = dalVerifySuccess(await projectCrud.getById(SYSTEM_CONTEXT, { id: projectId }))
 
       if (!project) {
         throw new Error(`Project ${projectId} not found`)
@@ -117,24 +114,24 @@ function createAccountingService() {
       )
 
       const qbSubCustomerId = newSubCustomer.Customer.Id
-      await db.update(projects).set({ qbSubCustomerId }).where(eq(projects.id, projectId))
+      dalVerifySuccess(await projectCrud.update(SYSTEM_CONTEXT, { id: projectId, data: { qbSubCustomerId } }))
       return qbSubCustomerId
     },
 
     createInvoice: async (projectId: string, proposalIds: string[]): Promise<string> => {
-      const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
+      const project = dalVerifySuccess(await projectCrud.getById(SYSTEM_CONTEXT, { id: projectId }))
 
       if (!project?.qbSubCustomerId) {
         throw new Error(`Project ${projectId} has no QB sub-customer`)
       }
 
-      const proposalRows = await db.select().from(proposals).where(inArray(proposals.id, proposalIds))
+      const proposalRows = dalVerifySuccess(await getProposalsByIds(SYSTEM_CONTEXT, proposalIds))
 
       const lineItems: QBInvoiceLine[] = proposalRows
         .filter(Boolean)
         .map((proposal) => {
           // Stored rollup (Wave 2) — maintained by recomputeProposalFinancials; null
-          // only pre-backfill. see entities/proposals/DOCS.md#final-tcp-derived
+          // only pre-backfill.
           const amount = (proposal.finalTcpCents ?? 0) / 100
           return {
             Amount: amount,
@@ -192,10 +189,7 @@ function createAccountingService() {
       }
 
       // Batch: find proposals linked to these invoices
-      const linkedProposals = await db
-        .select()
-        .from(proposals)
-        .where(inArray(proposals.qbInvoiceId, invoiceIds))
+      const linkedProposals = dalVerifySuccess(await getProposalsByInvoiceIds(SYSTEM_CONTEXT, invoiceIds))
 
       if (linkedProposals.length === 0) {
         return
@@ -233,10 +227,7 @@ function createAccountingService() {
       const invoiceData = await qbRequest<{ Invoice: QBInvoice }>(`/invoice/${invoiceId}`)
       const invoice = invoiceData.Invoice
 
-      const [proposal] = await db
-        .select()
-        .from(proposals)
-        .where(eq(proposals.qbInvoiceId, invoiceId))
+      const proposal = dalVerifySuccess(await getProposalByInvoiceId(SYSTEM_CONTEXT, invoiceId))
 
       if (!proposal) {
         return

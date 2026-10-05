@@ -1,17 +1,17 @@
 'use client'
 
 import type { PriceDisplayMode } from '@/shared/constants/enums'
-import type { FundingData } from '@/shared/entities/proposals/schemas'
-import type { SOW } from '@/shared/entities/proposals/types'
+import type { FundingData } from '@/shared/modules/proposals/core/schemas'
+import type { SOW } from '@/shared/modules/proposals/core/types'
 import { ChevronsUpDownIcon, LockIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/shared/components/ui/button'
 import { Separator } from '@/shared/components/ui/separator'
-import { SectionFinancialsSummary } from '@/shared/entities/proposals/components/section-financials-summary'
-import { MULTIPLIER_STYLES } from '@/shared/entities/proposals/constants/multiplier-styles'
-import { computeProposalFinancials, formatMultiplier } from '@/shared/entities/proposals/lib/financials'
 import { formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
+import { SectionFinancialsSummary } from '@/shared/modules/proposals/core/components/section-financials-summary'
+import { MULTIPLIER_STYLES } from '@/shared/modules/proposals/core/constants/multiplier-styles'
+import { computeProposalFinancials, formatMultiplier } from '@/shared/modules/proposals/core/lib/financials'
 
 interface Props {
   funding: FundingData
@@ -71,21 +71,21 @@ export function InternalCalculationBlock({ funding, sow, priceDisplayMode }: Pro
         <SummaryRow
           label="Subtotal"
           value={formatAsDollars(financials.subtotal)}
-          className="text-emerald-600 dark:text-emerald-400"
+          className="text-status-success-fg"
           bold
         />
         {financials.totalSectionIncentives > 0 && (
           <SummaryRow
             label="Section Incentives"
             value={`-${formatAsDollars(financials.totalSectionIncentives)}`}
-            className="text-emerald-700 dark:text-emerald-400"
+            className="text-status-success-fg"
           />
         )}
         {financials.totalGlobalDiscounts > 0 && (
           <SummaryRow
             label="Global Discounts"
             value={`-${formatAsDollars(financials.totalGlobalDiscounts)}`}
-            className="text-emerald-700 dark:text-emerald-400"
+            className="text-status-success-fg"
           />
         )}
         <SummaryRow
@@ -96,7 +96,7 @@ export function InternalCalculationBlock({ funding, sow, priceDisplayMode }: Pro
         <SummaryRow
           label="Total Job Costs"
           value={`-${formatAsDollars(financials.totalJobCosts)}`}
-          className="text-red-600/90 dark:text-red-400/90"
+          className="text-status-danger-fg"
         />
 
         <Separator />
@@ -104,7 +104,7 @@ export function InternalCalculationBlock({ funding, sow, priceDisplayMode }: Pro
         <SummaryRow
           label="Total Margin"
           value={formatAsDollars(financials.margin)}
-          className="text-emerald-600 dark:text-emerald-400"
+          className="text-status-success-fg"
           bold
         />
         <div className="flex items-center justify-between">
@@ -116,7 +116,7 @@ export function InternalCalculationBlock({ funding, sow, priceDisplayMode }: Pro
       </div>
 
       {financials.hasMissingCostData && (
-        <div className="border-t border-destructive/20 px-5 py-3 bg-amber-500/10 text-amber-700 dark:text-amber-300 text-xs">
+        <div className="border-t border-destructive/20 px-5 py-3 bg-status-pending-bg/70 text-status-pending-fg text-xs">
           One or more sections are missing cost data — multiplier and margin reflect partial cost.
         </div>
       )}

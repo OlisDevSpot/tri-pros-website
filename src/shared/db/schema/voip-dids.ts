@@ -10,7 +10,6 @@ import { user } from './auth'
 // inbound reception lines). At most one DID per user is `is_primary=TRUE`,
 // enforced by a partial unique index.
 //
-// see docs/plans/voip-in-house/phase-1-mvp.md GRILL RESULTS — voip_dids
 export const voipDids = pgTable('voip_dids', {
   id,
   e164: text('e164').notNull().unique(),

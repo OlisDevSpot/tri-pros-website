@@ -1,45 +1,22 @@
 import type { DataTableServerSorting } from '@/shared/components/data-table/types'
-import type { PaginatedQueryResult } from '@/shared/dal/client/lib/types'
+import type { DataViewQueryResult } from '@/shared/dal/client/lib/types'
+import type { FieldList, SortId, ToolbarFilterId } from '@/shared/dal/lib/query/field-list'
 
 interface ToDataTableSortingOptions {
-  /**
-   * Visual default for the column-header sort indicator when the server is
-   * using its natural fallback order (no explicit `sortBy`). The URL state
-   * stays clean (?sort= unset) while the matching column shows the arrow.
-   *
-   * @example
-   *   toDataTableSorting(p, { fallbackVisual: { id: 'createdAt', desc: true } })
-   */
+  /** Arrow shown when no sort is set (legacy reads fall back to newest first); a sort id, not a column id. */
   fallbackVisual?: { id: string, desc: boolean }
 }
 
-/**
- * Adapt a `usePaginatedQuery` result into the `DataTableServerSorting`
- * contract. DataTable will run in `manualSorting` mode — column-header
- * clicks call `onSortChange`, which `usePaginatedQuery` routes through to
- * the server input.
- *
- * @example
- *   // Default: newest-first arrow on the createdAt column, no options needed.
- *   const pagination = usePaginatedQuery(...)
- *   <DataTable
- *     serverPagination={toDataTablePagination(pagination)}
- *     serverSorting={toDataTableSorting(pagination)}
- *     {...}
- *   />
- *
- * @example
- *   // Override when the default arrow should sit on a different column:
- *   toDataTableSorting(pagination, { fallbackVisual: { id: 'sentAt', desc: true } })
- */
-export function toDataTableSorting<T>(
-  p: PaginatedQueryResult<T>,
+export function toDataTableSorting<F extends FieldList, T extends ToolbarFilterId<F>>(
+  query: DataViewQueryResult<unknown, F, T>,
   options: ToDataTableSortingOptions = {},
 ): DataTableServerSorting {
+  const { sortBy, sortDir, setSort } = query.filterSort
   return {
-    sortBy: p.sortBy,
-    sortDir: p.sortDir,
-    onSortChange: p.setSort,
+    sortBy,
+    sortDir,
+    // DataTable only emits sort ids read from column `meta`, and registries type those as SortId<F>.
+    onSortChange: (next, nextDir) => setSort(next as SortId<F> | undefined, nextDir),
     fallbackVisual: options.fallbackVisual ?? { id: 'createdAt', desc: true },
   }
 }

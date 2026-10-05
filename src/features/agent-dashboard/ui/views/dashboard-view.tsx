@@ -16,17 +16,21 @@ import { DashboardHero } from '@/features/agent-dashboard/ui/components/dashboar
 import { DashboardMeetingsHub } from '@/features/agent-dashboard/ui/components/dashboard-meetings-hub'
 import { DashboardProjects } from '@/features/agent-dashboard/ui/components/dashboard-projects'
 import { DashboardProposals } from '@/features/agent-dashboard/ui/components/dashboard-proposals'
+import { DataViewBoundary } from '@/shared/components/data-view-boundary'
 
 export function DashboardView({ name }: { name?: string | null }) {
   return (
     <div className="flex h-full flex-col overflow-x-hidden overflow-y-auto lg:overflow-y-hidden">
-      <div className="flex w-full flex-col gap-6 pb-16 lg:min-h-0 lg:flex-1 lg:pb-0">
+      <div className="flex w-full flex-col gap-(--gutter) pb-16 lg:min-h-0 lg:flex-1 lg:pb-0">
         <DashboardHero name={name} />
-        <div className="grid grid-cols-1 gap-6 lg:min-h-0 lg:flex-1 lg:grid-cols-12">
-          <section id="meetings" className="lg:col-span-8 lg:min-h-0 lg:overflow-y-auto lg:pr-1 lg:pb-6">
-            <DashboardMeetingsHub />
+        <div className="grid grid-cols-1 gap-(--gutter) lg:min-h-0 lg:flex-1 lg:grid-cols-12">
+          {/* A scrollbar here would sit between the two cards and widen that one gap past --gutter. */}
+          <section id="meetings" className="lg:col-span-8 lg:min-h-0 lg:overflow-y-auto lg:[scrollbar-width:none] lg:[&::-webkit-scrollbar]:hidden">
+            <DataViewBoundary>
+              <DashboardMeetingsHub />
+            </DataViewBoundary>
           </section>
-          <div className="flex flex-col gap-6 lg:col-span-4 lg:min-h-0 lg:overflow-y-auto lg:pr-1 lg:pb-6">
+          <div className="flex flex-col gap-(--gutter) lg:col-span-4 lg:min-h-0 lg:overflow-y-auto lg:scrollbar-gutter-stable">
             <section id="proposals">
               <DashboardProposals />
             </section>

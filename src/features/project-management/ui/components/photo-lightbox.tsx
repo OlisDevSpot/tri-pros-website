@@ -1,14 +1,15 @@
 'use client'
 
-import type { MediaFile } from '@/shared/db/schema'
+import type { ProjectMediaFile } from '@/shared/db/schema'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useRef } from 'react'
-import { OptimizedImage } from '@/shared/components/optimized-image'
 import { cn } from '@/shared/lib/utils'
+import { CrossfadeImage } from '@/shared/modules/media/core/components/display/crossfade-image'
+import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
 
 interface Props {
-  photos: MediaFile[]
+  photos: ProjectMediaFile[]
   currentIndex: number
   onClose: () => void
   onNavigate: (index: number) => void
@@ -106,23 +107,16 @@ export function PhotoLightbox({ photos, currentIndex, onClose, onNavigate }: Pro
           )}
 
           {/* Image — constrained to same max-width as thumbnail strip */}
-          <motion.div
-            key={photo.id}
-            initial={{ opacity: 0, scale: 0.97 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.2 }}
-            className="relative mx-auto h-full w-full max-w-4xl overflow-hidden rounded-lg"
-          >
-            <OptimizedImage
-              file={photo}
+          <div className="relative mx-auto h-full w-full max-w-4xl overflow-hidden rounded-lg">
+            <CrossfadeImage
               alt={photo.name}
-              fill
-              persistBlur
               className="object-contain"
-              sizes="(max-width: 896px) 100vw, 896px"
+              image={{ file: photo }}
+              persistBlur
               priority
+              sizes="(max-width: 896px) 100vw, 896px"
             />
-          </motion.div>
+          </div>
 
           {/* Next button — overlaid on image */}
           {photos.length > 1 && (

@@ -56,7 +56,7 @@ public statement of it).
   visits) → Proposal Created & Sent → Signed Contract (via **Zoho Sign** e-sign)
   → Project Delivered.
 - **Two project categories**: Energy-Efficient Remodeling (roofing, insulation,
-  windows & doors, HVAC, solar — tied to tax credits/rebates and monthly savings)
+  windows & doors, HVAC — tied to tax credits/rebates and monthly savings)
   and General Remodeling (bathroom, kitchen, flooring, paint, decking,
   foundation).
 - **Showcase funnels are per-trade, never generic** — Kitchen Showcase, Bathroom
@@ -104,11 +104,11 @@ public statement of it).
 
 Real, verifiable company facts (canonical in `src/shared/constants/company/`):
 
-- Founded **2021**; **40+** combined years of team experience; **2** generations.
+- Founded **2021**; **45+** combined years of team experience; **2** generations.
 - **520** projects completed; **~$9M** in project value delivered.
 - **98%** client satisfaction.
-- **BBB A+**, accredited since 2021; **100% Licensed & Bonded**; published bonding
-  capacity for large projects.
+- **BBB A+**, accredited since 2021; **100% Licensed & Bonded**; **$2M** general
+  liability insurance per project; Google 4.9 (212 reviews), Yelp 4.9 (49 reviews).
 - Licenses, insurances, certifications, awards, testimonials, and a defined
   Southern California service area (cities + ZIPs) all enumerated in constants.
 - Portfolio of real projects + testimonials (public `/portfolio`).

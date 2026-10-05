@@ -1,50 +1,31 @@
-// ─── CASL Ability Definitions ───────────────────────────────────────────────
-// This is THE single source of truth for permissions in the app.
-// Both server (tRPC procedures) and client (React components) import this
-// same function, so permissions are always in sync.
-//
-// HOW TO READ THIS:
-// - Each role gets a block of `can(action, subject)` calls
-// - `can('manage', 'all')` = can do everything (super-admin shorthand)
-// - Conditions like `{ id: user.id }` restrict to "own" resources
-//
-// HOW TO EXTEND:
-// - New entity? Add its identity constant at `entities/<entity>/lib/constants.ts`,
-//   import it below, and add it to ENTITY_NAMES.
-// - New non-entity subject (feature/route gate)? Add it to AppSubject in types.ts.
-// - New role? Add a new case block below.
-// - New action on existing subject? Add a `can()` line to the role.
+// Imported by both server (tRPC) and client (React) so permissions can never drift between them.
 
 import type { AppAbility } from './types'
 
 import type { UserRole } from '@/shared/constants/enums'
 
 import { AbilityBuilder, createMongoAbility } from '@casl/ability'
-import { userRoles } from '@/shared/constants/enums'
 
-// Per-entity identity constants colocated with the entity. The derived
-// `EntityName` union is the entity portion of `AppSubject` — every entity
-// here is automatically permittable. Adding a new entity is one import +
-// one line in ENTITY_NAMES.
 import { ACTIVITY } from '@/shared/entities/activities/lib/constants'
 import { APP_SETTING } from '@/shared/entities/app-settings/lib/constants'
 import { APPLICATION } from '@/shared/entities/applications/lib/constants'
 import { CUSTOMER_NOTE } from '@/shared/entities/customer-notes/lib/constants'
 import { CUSTOMER, CUSTOMER_LEAD_ATTRIBUTION, CUSTOMER_PROFILE } from '@/shared/entities/customers/lib/constants'
-import { MEDIA_FILE } from '@/shared/entities/media-files/lib/constants'
+import { LEAD_SOURCE } from '@/shared/entities/lead-sources/lib/constants'
 import { MEETING } from '@/shared/entities/meetings/lib/constants'
-import { PROJECT } from '@/shared/entities/projects/lib/constants'
-import { PROPOSAL_MEDIA_FILE } from '@/shared/entities/proposal-media-files/lib/constants'
-import { PROPOSAL } from '@/shared/entities/proposals/lib/constants'
 import { VOIP_CALL } from '@/shared/entities/voip-calls/lib/constants'
 import { VOIP_CAMPAIGN_CONTACT } from '@/shared/entities/voip-campaign-contacts/lib/constants'
 import { VOIP_CAMPAIGN } from '@/shared/entities/voip-campaigns/lib/constants'
-import { VOIP_CONTACT_ATTRIBUTE } from '@/shared/entities/voip-contact-attributes/lib/constants'
+import { VOIP_CONTACT_FIELD } from '@/shared/entities/voip-contact-fields/lib/constants'
 import { VOIP_DID } from '@/shared/entities/voip-dids/lib/constants'
 import { VOIP_LINK_TOKEN } from '@/shared/entities/voip-link-tokens/lib/constants'
 import { VOIP_MESSAGE } from '@/shared/entities/voip-messages/lib/constants'
-import { buildScopeConditionsMatcher } from './scope/conditions-matcher'
-import { assertScopeWiring } from './scope/exhaustiveness'
+import { PROJECT } from '@/shared/modules/projects/core/lib/constants'
+import { PROJECT_MEDIA_FILE } from '@/shared/modules/projects/media/lib/constants'
+import { PROPOSAL } from '@/shared/modules/proposals/core/lib/constants'
+import { PROPOSAL_INCENTIVE } from '@/shared/modules/proposals/incentives/lib/constants'
+import { PROPOSAL_MEDIA_FILE } from '@/shared/modules/proposals/media/lib/constants'
+import { PROPOSAL_VIEW } from '@/shared/modules/proposals/views/lib/constants'
 
 export const ENTITY_NAMES = [
   CUSTOMER,
@@ -54,8 +35,12 @@ export const ENTITY_NAMES = [
   MEETING,
   PROPOSAL,
   PROPOSAL_MEDIA_FILE,
+  PROPOSAL_VIEW,
+  PROPOSAL_INCENTIVE,
   PROJECT,
-  MEDIA_FILE,
+  PROJECT_MEDIA_FILE,
+  // Agents have no lead-source grants by design — super-admin's `manage all` is the only access path.
+  LEAD_SOURCE,
   ACTIVITY,
   VOIP_CALL,
   VOIP_DID,
@@ -63,111 +48,78 @@ export const ENTITY_NAMES = [
   VOIP_LINK_TOKEN,
   APP_SETTING,
   VOIP_CAMPAIGN,
-  VOIP_CONTACT_ATTRIBUTE,
+  VOIP_CONTACT_FIELD,
   VOIP_CAMPAIGN_CONTACT,
   APPLICATION,
 ] as const
 export type EntityName = (typeof ENTITY_NAMES)[number]
 
-// The user shape we need for permission decisions.
-// Intentionally minimal — only id and role. If you need more fields
-// for conditions (e.g., departmentId), add them here.
 interface PermissionUser {
   id: string
   role: UserRole
 }
 
 export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
-  // AbilityBuilder provides `can` and `cannot` helpers for defining rules.
-  // The generic parameter tells CASL our action/subject types.
   const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility)
 
   if (!user) {
-    // No user = no permissions. The returned ability will answer
-    // `can(anything)` with false. This is used for unauthenticated visitors.
-    return build({ conditionsMatcher: buildScopeConditionsMatcher() })
+    return build()
   }
 
   switch (user.role) {
-    // ── super-admin ───────────────────────────────────────────────────────
-    // One line grants ALL actions on ALL resources — current and future.
-    // When you add a new resource, super-admin automatically has access.
     case 'super-admin':
       can('manage', 'all')
       break
 
-    // ── agent ─────────────────────────────────────────────────────────────
-    // Explicit per-resource permissions. Delete is narrow: Activity and
-    // CustomerNote grant the verb here, but per-row ownership (author-or-
-    // admin for notes) is enforced in the DAL, not by CASL — see the
-    // CustomerNote block below. Everything else has no delete grant.
-    // Cannot create customers (that's office/super-admin responsibility).
     case 'agent':
       can('access', 'Dashboard')
 
-      can('read', 'Customer', { $participatesViaMeeting: { via: 'customerId' } })
-      // `age` is the only Customer-owned field an agent may write directly —
-      // the other 23 sales-discovery fields moved to the customer_profiles
-      // child table (Addendum B, 2026-07-14) and are gated below on the
-      // CustomerProfile subject instead.
+      can('read', 'Customer')
+      // `age` is the only Customer-owned field an agent writes directly; the discovery fields are gated on CustomerProfile.
       can('update', 'Customer', ['age'])
-      // Note: no can('create', 'Customer') — intentional
+      // No create — customer creation is office/super-admin work.
 
       can('read', 'CustomerProfile')
       can('update', 'CustomerProfile')
 
-      // 1:1 attribution child (Addendum B) — SYSTEM-written at capture, immutable
-      // afterward. Agents can read for context; no update grant.
+      // SYSTEM-written at capture and immutable afterward — no update grant.
       can('read', 'CustomerLeadAttribution')
 
-      // Notes: any agent can read/create; update/delete are author-or-admin,
-      // enforced in customerNoteServerSpec hooks (assertNoteAuthorOrAdmin) —
-      // CASL can't express "own record" on plain-string subjects (see note above).
+      // update/delete are author-or-admin, enforced in the DAL — CASL can't express "own record" on plain-string subjects.
       can('read', 'CustomerNote')
       can('create', 'CustomerNote')
       can('update', 'CustomerNote')
       can('delete', 'CustomerNote')
 
-      can('read', 'Meeting', { $participatesViaMeeting: { via: 'self' } })
+      can('read', 'Meeting')
       can('create', 'Meeting')
       can('update', 'Meeting')
       can('own', 'Meeting') // agents own the meetings they create (implicitly the sales rep)
 
-      can('read', 'Proposal', { $participatesViaMeeting: { via: 'meetingId' } })
+      can('read', 'Proposal')
       can('create', 'Proposal')
       can('update', 'Proposal')
 
-      // Agents run applications. No delete; decisions come in #3.
       can('read', 'Application')
       can('create', 'Application')
       can('update', 'Application')
 
-      // Row-security = participation OR ownerId=me (CASL OR-merges same-subject
-      // rules). `isPublic` is intentionally NOT an authz condition here — it
-      // stays a display/public-query filter only (projects.router/crud.router.ts
-      // `visibility` filter, unrelated to row-security).
-      can('read', 'Project', { ownerId: user.id })
-      can('read', 'Project', { $participatesViaMeeting: { via: 'projectId' } })
+      can('read', 'Project')
       can('create', 'Project')
       can('update', 'Project')
 
-      // Activities
       can('read', 'Activity')
       can('create', 'Activity')
       can('update', 'Activity')
       can('delete', 'Activity')
-      // Calendar sync
       can('manage', 'Calendar')
 
-      // Agents can only navigate fresh + projects pipelines.
-      // Leads, rehash, dead are super-admin only (managed via 'manage' on 'CustomerPipeline').
+      // Read only: leads, rehash and dead pipelines are super-admin-managed.
       can('read', 'CustomerPipeline')
 
       can('read', 'User')
 
-      // voip-in-house — agent ↔ already-known-customer comms (Phase 1).
-      // Scoping (only see own rows) is enforced by entity visibility predicates;
-      // CASL grants the action verbs the agent can use across them.
+      // Row scoping (own rows only) is enforced by entity visibility predicates; CASL grants only the verbs.
       can('read', 'VoipCall')
       can('create', 'VoipCall') // placeAgentCall via softphone
 
@@ -179,85 +131,39 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       can('read', 'VoipLinkToken')
       can('create', 'VoipLinkToken') // mint L-DOC links
 
-      // voip-campaigns (CloudTalk) — agents can read campaign config + their
-      // customers' participation, and disqualify a lead from the campaign
-      // ("stop calling / bad lead"). Resync + source-binding + bulk enroll-all
-      // are super-admin-only (via 'manage' on 'all'); no agent rule for those.
+      // Resync, source binding and bulk enroll-all are super-admin-only — no agent rule for those.
       can('read', 'VoipCampaign')
-      can('read', 'VoipContactAttribute')
+      can('read', 'VoipContactField')
       can('read', 'VoipCampaignContact')
       can('update', 'VoipCampaignContact') // disqualify (unenroll) a lead
 
       // No agent rule for AppSetting — super-admin only via the 'manage' on 'all'.
       break
 
-    // ── homeowner ─────────────────────────────────────────────────────────
-    // Future-proofing for customer portal. Most homeowners today are
-    // unauthenticated and use token-based access (see validate-share-token.ts).
-    // These rules are for authenticated homeowners only.
-    //
-    // Note: Proposal read has no condition yet because proposals link through
-    // Meeting → Customer, not directly to user. The token gate handles the
-    // current use case. When we build the customer portal, we'll either add
-    // a condition here or use a join-based check.
-    //
-    // Note on "own record" enforcement: CASL field conditions require subject
-    // type objects (not plain strings). Since AppSubject uses plain strings,
-    // the { id } restriction is enforced at the DAL layer, not here.
+    // Authenticated homeowners only — most use token-based access instead. Proposal read has no
+    // "own" condition because proposals link through Meeting → Customer; the token gate covers it today.
     case 'homeowner':
       can('read', 'Proposal')
       can('read', 'User')
       break
 
-    // ── user (default role) ───────────────────────────────────────────────
-    // Minimal permissions — can only read their own user record.
-    // "Own record" enforcement happens at the DAL layer (see note above).
+    // "Own record" is enforced at the DAL layer.
     case 'user':
       can('read', 'User')
       break
 
-    // ── dispatcher ────────────────────────────────────────────────────────
-    // Internal lead-qualifier (e.g. a virtual assistant). Works the shared
-    // leads pool: qualifies leads and books appointments that land UNASSIGNED
-    // (system-owned) for the dispatch/assignment flow. NOT a sales agent —
-    // deliberately WITHOUT can('own','Meeting'), so meetings they create are
-    // owned by the system account, not by them. No proposal/project/calendar.
+    // Internal lead-qualifier, NOT a sales agent: deliberately without can('own','Meeting'),
+    // so the appointments they book land unassigned (system-owned) for the dispatch flow.
     case 'dispatcher':
       can('access', 'Dashboard')
       can('read', 'LeadsPool') // sees the shared leads pool (drives visibility + phone + pipeline access)
 
-      // Dispatcher works the whole operational pipeline — the cold pool (leads /
-      // rehash / dead) PLUS fresh, so a lead they just booked (which flips
-      // leads→fresh) stays visible. NOT 'projects' (converted = the agent's book).
-      // Financials stay hidden via the absent Proposal/Project grants, not by bucket.
-      can('read', 'Customer', { $inDerivedPipeline: ['leads', 'rehash', 'dead', 'fresh'] })
-      // Lead-contact fields + `age` (the sole Customer-owned sales-discovery
-      // field; the other discovery fields live on CustomerProfile below).
-      can('update', 'Customer', ['name', 'phone', 'email', 'address', 'city', 'state', 'zip', 'pipelineStage', 'age'])
+      can('read', 'Customer')
+      // Lead-contact fields only — not the sales-discovery profile.
+      can('update', 'Customer', ['name', 'phone', 'email', 'address', 'city', 'state', 'zip', 'pipelineStage'])
 
-      // Full sales-discovery profile (customer_profiles child, Addendum B) —
-      // dispatchers qualify leads, so they read + edit discovery like agents.
-      // Financials stay separate (no Proposal/Project grant).
-      can('read', 'CustomerProfile')
-      can('update', 'CustomerProfile')
-
-      // 1:1 attribution child (Addendum B) — read-only, SYSTEM-written at capture.
       can('read', 'CustomerLeadAttribution')
 
-      // Notes: dispatchers work notes exactly like an agent (user-ratified
-      // 2026-08-20 / 2026-09-04). Row scope flows from the Customer parent bridge
-      // (dispatcher's operational Customer scope). update/delete are author-or-
-      // admin, enforced by assertNoteAuthorOrAdmin in customerNoteServerSpec's
-      // hooks — identical to the agent grant. Grill C converts BOTH agent and
-      // dispatcher "own note" to a CASL {authorId} condition when it retires the hook.
-      can('read', 'CustomerNote')
-      can('create', 'CustomerNote')
-      can('update', 'CustomerNote')
-      can('delete', 'CustomerNote')
-
-      // Unconditional: a dispatcher's bookings land SYSTEM-owned (unassigned), so a
-      // participation check would hide the meeting they just created. Meetings carry
-      // no financials (proposals are a separate, ungranted subject).
       can('read', 'Meeting')
       can('create', 'Meeting') // books appointments (lands unassigned — see resolve-owner.ts)
       can('update', 'Meeting')
@@ -265,7 +171,6 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
 
       can('read', 'User')
 
-      // Dial + text leads (voip-in-house verbs; row-scoping via visibility predicates).
       can('read', 'VoipCall')
       can('create', 'VoipCall')
       can('read', 'VoipMessage')
@@ -274,12 +179,5 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       break
   }
 
-  return build({ conditionsMatcher: buildScopeConditionsMatcher() })
+  return build()
 }
-
-// Fail loud at startup if any role's rules reference a scope operator that
-// isn't registered (spec §11.4). Runs once when this module is first
-// imported. With every rule above still conditionless, `referenced` is
-// empty in `assertScopeWiring`, so this never throws — it's dormant until
-// Tasks 6-9 add conditions to real rules.
-assertScopeWiring(userRoles.map(role => defineAbilitiesFor({ id: '__assert__', role })))

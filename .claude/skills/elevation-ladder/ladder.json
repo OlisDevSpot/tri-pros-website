@@ -1,0 +1,56 @@
+{
+  "project": "Tri Pros",
+  "artifact": "https://claude.ai/artifact/A1bSP9VEgRaQZRT9waiiDe",
+  "picked": {
+    "date": "2026-10-01",
+    "light": { "canvas": 0.894, "step": 0.024, "tint": 0.017 },
+    "dark": { "canvas": 0.159, "step": 0.047, "tint": 0.059 },
+    "hue": 253,
+    "edge": 0.048,
+    "edges": true
+  },
+  "applied": { "date": "2026-10-01", "commit": "fff2c2db" },
+  "history": [
+    {
+      "date": "2026-10-01",
+      "values": "light canvas 0.894 step 0.024 tint 0.017 · dark canvas 0.159 step 0.047 tint 0.059 · hue 253 · edge 0.048",
+      "note": "First pick, after the surface sweep was reverted (6af35af2). Not applied to the app yet."
+    },
+    {
+      "date": "2026-10-01",
+      "values": "light canvas 0.894 step 0.024 tint 0.017 · dark canvas 0.159 step 0.047 tint 0.059 · hue 253 · edge 0.048",
+      "note": "Applied to the app's tokens in fff2c2db, with the owner's contrast rulings on --input, --ring, the series ramp and dark --muted-foreground."
+    }
+  ],
+  "rail": { "light": "token", "dark": 2 },
+  "measure": {
+    "local": "http://localhost:{PORT}/",
+    "live": "https://triprosremodeling.com/",
+    "map": {
+      "levels": {
+        "-1": { "chain": ["surface-beneath"], "else": "--muted" },
+        "0": { "chain": [] },
+        "1": { "chain": ["bg-card"] },
+        "2": { "chain": ["bg-card", "bg-card"] },
+        "3": { "chain": ["bg-card", "bg-card", "bg-card"] },
+        "4": { "chain": ["bg-popover"] }
+      },
+      "chip": "--muted",
+      "band": "--band",
+      "edge": "--border",
+      "text": {
+        "fg": "--foreground",
+        "mfg": "--muted-foreground",
+        "primary": "--primary",
+        "primaryFg": "--primary-foreground",
+        "rail": "--sidebar",
+        "railFg": "--sidebar-foreground",
+        "railOn": "--sidebar-accent"
+      }
+    }
+  },
+  "fallbackText": {
+    "light": { "fg": "oklch(0.235 0.045 258)", "mfg": "oklch(0.47 0.03 256)", "primary": "oklch(0.5 0.15 243)", "primaryFg": "oklch(1 0 0)", "rail": "oklch(0.22 0.06 262)", "railFg": "oklch(0.86 0.02 250)", "railOn": "oklch(0.3 0.065 262)" },
+    "dark": { "fg": "oklch(0.955 0.008 250)", "mfg": "oklch(0.75 0.03 252)", "primary": "oklch(0.76 0.13 230)", "primaryFg": "oklch(0.19 0.045 258)", "railFg": "oklch(0.82 0.02 252)" }
+  }
+}

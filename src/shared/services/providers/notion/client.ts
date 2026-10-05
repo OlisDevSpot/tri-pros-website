@@ -10,6 +10,5 @@ import { getNotionConfig } from './lib/config'
  * `notionClient.<resource>.<method>(...)` throws `NotConfiguredError` if
  * the env var isn't set.
  *
- * see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
  */
 export const notionClient = lazyProxy(() => new Client({ auth: getNotionConfig().apiKey }))

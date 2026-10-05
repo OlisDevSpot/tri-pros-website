@@ -1,14 +1,6 @@
 import { z } from 'zod'
 
-/**
- * Pagination fields. Discrete (offset/limit) — supports jump-to-page UX.
- *
- * The 500 cap is the server-side hard wall. Most consumers stay within the
- * toolkit's `pageSizeOptions` allowlist (typically [10, 20, 50, 100]).
- * Calendar/kanban consumers that fetch a date-windowed slice ("all meetings
- * this week") can use larger pages up to 500 — sufficient for any realistic
- * single-window render.
- */
+/** The 500 cap exists for date-windowed calendar/kanban slices; table consumers stay within `pageSizeOptions`. */
 export const paginationFieldsSchema = z.object({
   limit: z.number().int().min(1).max(500).default(20),
   offset: z.number().int().min(0).default(0),
@@ -16,10 +8,7 @@ export const paginationFieldsSchema = z.object({
 
 export type PaginationFields = z.infer<typeof paginationFieldsSchema>
 
-/**
- * Sort fields. `sortBy` is loose at this layer — procedures that allow
- * server-side sort narrow it via `buildOrderBy`'s columnMap whitelist.
- */
+/** `sortBy` is deliberately loose here — `buildOrderBy`'s columnMap whitelists it per procedure. */
 export const sortFieldsSchema = z.object({
   sortBy: z.string().optional(),
   sortDir: z.enum(['asc', 'desc']).optional(),
@@ -27,59 +16,6 @@ export const sortFieldsSchema = z.object({
 
 export type SortFields = z.infer<typeof sortFieldsSchema>
 
-// zod's .datetime() accepts year 0000, which Postgres rejects (verified 500).
-// Bound to instants both PG and our domain accept; an out-of-range value fails
-// validation → the filter collapses to inactive identically on the parser path
-// (parseAsJson catches the throw) and the procedure path.
-const pgSafeDatetime = z.string().datetime().refine((s) => {
-  const t = Date.parse(s)
-  return Number.isFinite(t) && t >= Date.UTC(1970, 0, 1) && t <= Date.UTC(2200, 0, 1)
-}, 'Date out of supported range')
-
-/**
- * ISO datetime range, inclusive on both ends. Used by the toolkit's
- * `date-range` filter type and by any procedure that needs a time window.
- */
-export const dateRangeSchema = z.object({
-  from: pgSafeDatetime.optional(),
-  to: pgSafeDatetime.optional(),
-})
-
-export type DateRange = z.infer<typeof dateRangeSchema>
-
-/**
- * Numeric range, inclusive on both ends. Used by the toolkit's `number-range`
- * filter type. `undefined` on either side means open-ended on that side
- * (filter normalizer drops the field), so persisted state stays minimal.
- */
-export const numberRangeSchema = z.object({
-  min: z.number().optional(),
-  max: z.number().optional(),
-})
-
-export type NumberRange = z.infer<typeof numberRangeSchema>
-
-/**
- * Composer for paginated procedure inputs. Every paginated tRPC procedure
- * should use this so the client `usePaginatedQuery` hook can drive it.
- *
- * Groups by function:
- *   - `pagination`: limit + offset
- *   - `sort`: optional sortBy + sortDir
- *   - `search`: optional debounced free-text
- *   - `filters`: consumer-defined per-procedure shape (always optional)
- *
- * Procedures can `.extend({ id: z.string().uuid() })` to add business inputs
- * at the top level alongside the structured query groups.
- *
- * @example
- *   .input(paginatedQueryInput({
- *     status: z.array(meetingStatusEnum).optional(),
- *     createdAt: dateRangeSchema.optional(),
- *   }).extend({ projectId: z.string().uuid() }))
- *
- * For procedures without filters, pass an empty object: `paginatedQueryInput({})`.
- */
 export function paginatedQueryInput<TFilters extends z.ZodRawShape>(filtersShape: TFilters) {
   return z.object({
     pagination: paginationFieldsSchema,
@@ -89,14 +25,7 @@ export function paginatedQueryInput<TFilters extends z.ZodRawShape>(filtersShape
   })
 }
 
-/**
- * Inferred input type for procedures with no declared filters.
- */
 export type PaginatedQueryInputBase = z.infer<ReturnType<typeof paginatedQueryInput<Record<string, never>>>>
 
-/**
- * Reserved top-level keys the toolkit owns. Consumer business inputs (e.g.
- * `id`, `projectId`) must avoid these names to prevent client/server shape
- * collisions.
- */
+/** Consumer business inputs must not use these names — they would collide with the toolkit's shape. */
 export const RESERVED_QUERY_INPUT_KEYS = ['pagination', 'sort', 'search', 'filters'] as const

@@ -9,7 +9,7 @@ import { ArrowRightIcon, ChevronDownIcon } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 
-import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
+import { EntityActionMenu } from '@/shared/components/entities/entity-actions/ui/entity-action-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar'
 import { Button } from '@/shared/components/ui/button'
 import { Textarea } from '@/shared/components/ui/textarea'
@@ -87,7 +87,7 @@ export function TimelineEventItem({ event, customerId, isExpanded, onToggle, onO
       className={`group/row relative -ml-3 rounded-lg py-1.5 pl-10 pr-1.5 transition-colors ${isExpanded ? 'bg-muted/50' : 'hover:bg-muted/40'}`}
     >
       <span
-        className={`absolute left-3 top-1 grid size-5.5 place-items-center rounded-full border border-muted-foreground/25 bg-background ${config.color}`}
+        className={`absolute left-3 top-1 grid size-5.5 place-items-center rounded-full border border-muted-foreground/25 bg-(--card) ${config.color}`}
       >
         <Icon className="size-3.5" />
         <span className="sr-only">{config.label}</span>
@@ -159,7 +159,7 @@ export function TimelineEventItem({ event, customerId, isExpanded, onToggle, onO
                   <div className="flex min-w-0 items-center gap-2">
                     <Avatar className="size-5 shrink-0">
                       <AvatarImage src={note.authorImage ?? undefined} />
-                      <AvatarFallback className="text-[10px]">
+                      <AvatarFallback className="text-xs">
                         {(note.authorName ?? 'System').slice(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>

@@ -7,7 +7,6 @@ import { user } from './auth'
 // (examples: 'voip-in-house', 'voip-campaigns', 'compliance'). Each feature
 // owns a Zod schema in its entity dir that validates `configJson` at write time.
 //
-// see docs/plans/voip-in-house/phase-1-mvp.md GRILL RESULTS — app_settings
 export const appSettings = pgTable('app_settings', {
   feature: text('feature').primaryKey(),
   configJson: jsonb('config_json').notNull(),

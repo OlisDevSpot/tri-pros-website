@@ -1,14 +1,14 @@
 # CLAUDE.md
 
-Auto-loaded every session. Address book + commands. Rules live elsewhere — follow the pointers.
+Auto-loaded every session. Address book + commands. Keep it short.
 
 ## Working principles (non-negotiable)
 
-**Trust but verify — always check code before asserting documented behavior.** Docs (DOCS.md, ADRs, codebase-conventions, memory) describe rules as-of-when-written. Code is what runs. Before quoting a rule as fact in a recommendation or implementation, verify the code still matches.
+**The code is the source of truth.** Read the implementation, not a description of it. Prose about how the code works drifts. Do not write new `DOCS.md` files or convention docs; encode rules in schemas, guards and helpers. A plan or spec is deleted once it ships (git history keeps it); the docs it alone depended on go with it. Executed plans were pruned 2026-09-23 after a per-file audit; what remains under `docs/` is live, pending, or still cited by pending work.
 
-**Ping on staleness.** If you notice a referenced file, function, slug, or business rule has diverged from its natural-language description anywhere (DOCS.md, memory, comments, ADR), STOP and tell the user immediately. Format: "⚠️ Stale ref — `<doc>:<line>` says `X`, but code at `<path>` does `Y`." Then propose a fix. Do not silently work around it; do not assume the doc is right. Business rules drift faster than anything else — favor the code, propose the doc update.
+**Trust but verify.** Before quoting any rule from a doc, memory, or comment, check the code still matches. If it doesn't, STOP and tell the user: "⚠️ Stale ref — `<doc>:<line>` says `X`, but code at `<path>` does `Y`." Favor the code; propose the doc fix. Never silently work around drift.
 
-**Why this matters**: a stale rule that silently misleads future sessions costs hours of debugging. A 30-second ping saves them. This applies during normal feature work and especially during refactors that touch business logic.
+**Comments say why, never what.** No file banners, no restating the adjacent code, no citations of plans, specs, tasks, or docs from code. A comment earns its place only for a non-obvious reason, an external constraint (API quirk, statute, browser bug), or a trap.
 
 ## Commands
 
@@ -19,9 +19,9 @@ pnpm tunnel           # ngrok tunnel only
 pnpm lint             # ESLint
 pnpm tsc              # Type-check (NEVER pnpm build unless explicitly asked)
 pnpm db:push:dev      # Push schema to dev DB (prod = explicit db:push:prod, only when asked)
-pnpm db:reset:dev / db:seed:dev / db:snapshot
-# Scripts target the prod DB ONLY via DRIZZLE_TARGET=prod — never NODE_ENV.
-# Canonical: docs/codebase-conventions/environment.md#environment-axes
+pnpm db:reset:dev / db:seed:dev
+pnpm db:refresh:dev [--dry-run]   # dev DB ← Neon reset from parent + scrub (no children allowed on the dev branch)
+# Scripts target the prod DB ONLY via DRIZZLE_TARGET=prod — never NODE_ENV (see src/shared/config/server-env.ts).
 pnpm push:test --to <email> --title "..." [--body "..."] [--navigate /path]
 pnpm dispatch help    # Parallel issue work
 ```
@@ -30,38 +30,28 @@ Package manager: **pnpm**. Path alias: `@/` → `src/`.
 
 ## Where to find things
 
-**Engineering — how we write code**
-- `docs/adr/` — architectural decisions ("why we chose X")
-- `docs/how-to/` — step-by-step recipes (start with `add-an-entity.md` for the entity workflow)
-- `docs/codebase-conventions/` — cross-cutting engineering rules (DAL signatures, schema, enums, tRPC, services, query toolkit, frontend stack, environment)
-- `docs/design-system/` — design tokens, anti-slop DESIGN.md + checklist
+**Engineering (kept only where code cannot carry it, or pending work still cites it)**
+- `docs/adr/` — why: 0001 entity actions · 0002 entity server system · 0003 service/provider tiers · 0004 proposal/contract independence · 0005 JSONB vs column vs child table
+- `docs/codebase-conventions/` — cross-cutting rules that pending plans still cite. Verify each against the code before asserting it; delete a file when the plan that cites it ships.
+- `src/**/DOCS.md` — business-rule notes that survive only where a pending spec or plan cites them (proposals core, meetings, customers, applications, projects, construction, media, notion, meta, trpc, proposal-flow, funnels, lead-sources, file-optimization, twilio). Same rule: verify against code, delete when the citing work ships, never add one.
+- `CONTEXT.md` and `docs/ubiquitous-language.md` — domain terms (two glossaries today; merge pending)
+- `DESIGN.md` (root), `PRODUCT.md`, `docs/design-system/` — tokens, audiences, anti-slop rules
+- `docs/ui-design-playbook.md` + `docs/how-to/ui-exploration.md` — the UI process behind `/ui-exploration`
 
-**Business rules — what the code means**
-- `src/shared/entities/<entity>/DOCS.md` — per-entity invariants, derivations, gates (proposals/ is the canonical example)
-- `src/features/<feature>/DOCS.md` — feature-level UX/flow rules
-- `src/trpc/DOCS.md` — Entity Server System operational rules (server-side)
-- `docs/ubiquitous-language.md` — canonical business terms
-- `docs/marketing/showcase-offer.md` — THE Showcase offer (canonical for all funnels + ads)
+**Business content (not engineering)**
+- `docs/README.md` — index of `docs/sales/`, `docs/proposal/`, `docs/company/`, `docs/customer/`, `docs/programs/`, `docs/marketing/` (`showcase-offer.md` is THE Showcase offer), `docs/seo/`
 
-**Sales / company**
-- `docs/README.md` — master index
-- `docs/sales/`, `docs/proposal/`, `docs/company/`, `docs/customer/`, `docs/programs/` — sales-side playbooks
+**Planning**
+- `docs/plans/` — live epic trackers, standing contracts and ledgers, research that open work cites, and the VoIP epics. `docs/superpowers/specs|plans/` — pending, partial, or in-progress designs and plans only. Delete a plan when it ships.
 
-**Active planning**
-- `docs/plans/` — large unimplemented designs (meta-ads compound intelligence, notion-CRM migration)
-
-**Operational know-how (personal session memory)**
-- `memory/MEMORY.md` — auto-loaded index
-- `memory/reference-dispatch-system.md` — `pnpm dispatch` full reference
-- `memory/reference-github-workflow.md` — issues / PRs / project board details
-
-**In-code references**: `// see ./DOCS.md#slug` (same dir) or `// see <path>/DOCS.md#slug` (cross-dir). Refs use slug anchors — they survive reordering.
+**Session memory**
+- `memory/MEMORY.md` — auto-loaded index; `reference-dispatch-system.md`, `reference-github-workflow.md` for ops details
 
 ## Mobile testing
 
 `pnpm dev:mobile` runs dev + ngrok + QR. Static tunnel: `destined-emu-bold.ngrok-free.app`. Auth and OAuth work via `APP_HOSTS` in `src/shared/config/roots.ts` (single source of truth for valid hosts).
 
-**One ngrok at a time** (free plan). **Webhooks** route to whichever worktree holds the tunnel — see `docs/codebase-conventions/environment.md` for details.
+**One ngrok at a time** (free plan). **Webhooks** route to whichever worktree holds the tunnel.
 
 Per-worktree port via `.env.local` (gitignored): `PORT=3001`. `pnpm dev` and `pnpm tunnel` honor it.
 

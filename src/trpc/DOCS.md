@@ -34,8 +34,8 @@ src/trpc/
     meetings.router/         MIGRATED — crud + reads + participants + business leaves
     customer-notes.router/   MIGRATED — pure CRUD
     applications.router/     MIGRATED — crud + business + draft leaves
-    projects.router/         NOT MIGRATED (uses agentProcedure directly; spec/DAL exist, router pending S8)
-    lead-sources.router.ts   NOT MIGRATED
+    projects.router/         PARTIAL — procedures.ts + leaf files + pure index.ts; crud.router.ts is hand-written (not createCrudRouter)
+    lead-sources.router.ts   NOT MIGRATED — single file on superAdminProcedure
     ... other routers ...
     app.ts                   root router; mounts everything
 ```
@@ -119,7 +119,7 @@ export const businessRouter = createTRPCRouter({
 })
 ```
 
-CRUD is its own leaf, `crud.router.ts`, built by `createCrudRouter({ spec, schemas, handlers? })` — which builds its own scoped procedures **inline from `config.spec`** (same inline pattern, no cast, no procedure params).
+CRUD is its own leaf, `crud.router.ts`, built by `createCrudRouter({ spec, schemas, crud, handlers? })` (`crud` = the entity's single hooked `createCrudDal` instance from `dal/server/crud.ts`, required) — which builds its own scoped procedures **inline from `config.spec`** (same inline pattern, no cast, no procedure params).
 
 **Reference impl**: `src/trpc/routers/proposals.router/crud.router.ts`, `.../business.router.ts`
 **Enforced by**: convention
@@ -166,13 +166,11 @@ This replaces the `isOmni`-or-predicate dance that previously had to be inlined 
 
 ### shareable-middleware-token-or-session
 
-`shareableMiddleware(spec)` resolves dual-credential access, **session-first (agent-first, Phase 6)**:
+`shareableMiddleware(spec)` resolves dual-credential access:
 
-- **Session present**: builds ability, resolves scope from `spec.visibility({ userId, ability })`, actor = `userActor`. An authenticated session ALWAYS wins — **a token in the URL is ignored**. This guarantees agent-always-user (a logged-in agent is never dropped to `ability = null`, which would strip agent-only capabilities such as the envelope gate in `contracts.router.ts`).
-- **No session, token present** (e.g., `?token=tpr-xxx`): validates the token column on the entity table, sets `ctx.scope = eq(tokenColumn, token)`, `ctx.ability = null`, actor = `tokenActor`. **Token IS the authorization** — CASL is null. This is the homeowner (unauthenticated) path.
+- **Token present** (e.g., `?token=tpr-xxx`): validates the token column on the entity table, sets `ctx.scope = eq(tokenColumn, token)`, `ctx.ability = null`. **Token IS the authorization** — CASL is null.
+- **Session present, no token**: requires session, builds ability, resolves scope from `spec.visibility({ userId, ability })`.
 - **Neither**: throws UNAUTHORIZED.
-
-Precedence is a **tightening**: a token no longer sideways-grants an authenticated agent a row outside their own CASL scope (the token is a homeowner credential, not an agent backdoor). Each branch asserts its resolved `actor.kind` matches the path taken.
 
 Activated by `spec.shareable: { tokenColumn: '...' }` in the entity spec. The middleware peeks at `getRawInput()` for the `token` field before Zod validation — branching has to happen before schema enforcement.
 
@@ -184,7 +182,7 @@ Handler code receives `ctx.scope` either way and applies it identically. The han
 
 ## Lifecycle Hooks
 
-Entity lifecycle hooks execute at the DAL layer — both before and after database writes. All hooks live on `EntityServerSpec.hooks`, organized by operation (`create`, `update`, `delete`).
+Entity lifecycle hooks execute at the DAL layer — both before and after database writes. Hooks live in the entity's `dal/server/crud.ts` config factory, passed as `createCrudDal(spec, configFactory)` and organized by operation (`create`, `update`, `delete`). `EntityServerSpec` no longer carries `hooks`/`duplicate` (Sub-plan D).
 
 ### Hook Contract
 
@@ -202,7 +200,7 @@ Entity lifecycle hooks execute at the DAL layer — both before and after databa
 - **Hooks are thin orchestrators.** Pure business logic in `entities/<entity>/lib/`. Service orchestration via existing services.
 - **Never use naked `db` in hooks.** All DB access through DAL functions.
 - **`ScopedContext` always.** `ctx.session` may be null when called from jobs/services.
-- **`duplicate` is declarative config, not a hook.** Lives on `spec.duplicate` with `exclude` + `overrides`. Routes through `createImpl` so create hooks fire automatically.
+- **`duplicate` is declarative config, not a hook.** Lives in the config factory alongside `hooks`, with `exclude` + `overrides`. Routes through `createImpl` so create hooks fire automatically.
 - **`handlers` overrides bypass hooks entirely.** Use only when the full operation must be replaced.
 
 ### Framework Precedent
@@ -223,7 +221,7 @@ Follows better-auth (`databaseHooks`), Payload CMS (collection `beforeChange`/`a
 
 **List is NOT CRUD** — it's always a business sub-router procedure with custom return shape (multi-table joins, derived columns, aggregates).
 
-Per-slot handler override is supported: pass `handlers: { create: customCreateDal, ... }`. Unspecified slots fall back to `createCrudDal(spec)` defaults.
+Per-slot handler override is supported: pass `handlers: { create: customCreateDal, ... }`. Unspecified slots fall back to the required `crud` instance (the entity's hooked `createCrudDal` result); the router never rebuilds handlers itself.
 
 **Why**: 5 single-row operations are mechanical and benefit from a factory. List queries are inherently entity-specific; forcing them into a generic factory produces worse code (see ADR-0002 "Considered alternatives").
 **Reference impl**: `src/trpc/lib/create-crud-router.ts`; `src/shared/dal/server/lib/create-crud-dal.ts`
@@ -255,7 +253,7 @@ call automatically without any per-entity router code.
 DAL functions return `DalReturn<T>` (never throw on domain errors). tRPC procedures unwrap with `dalToTrpc()`:
 
 ```ts
-list: entity.authedProcedure
+list: proposalProcedure
   .input(proposalListInputSchema)
   .query(async ({ ctx, input }) => dalToTrpc(await listProposals(ctx, input))),
 ```
@@ -316,7 +314,7 @@ Client components use `useTRPC()` + `useQuery(trpc.x.y.queryOptions())` from `@/
 
 ### rsc-prefetch-uses-rsc-context
 
-`src/trpc/server.ts`'s options proxy resolves its context via `createRSCTRPCContext` (`src/trpc/lib/create-http-context.ts`) — the SAME session resolution as the HTTP adapter (headers from `next/headers`), React-`cache()`'d per request. Never hand-roll a ctx for the proxy; a ctx without request headers yields `session: null` and every `agentProcedure` call through `prefetch` throws UNAUTHORIZED. Note `req` is `undefined` in RSC context: shareable-token procedures must never be server-prefetched.
+`src/trpc/server.ts`'s options proxy resolves its context via `createRSCTRPCContext` (`src/trpc/lib/create-http-context.ts`), which takes the session from `getCachedSession()` — the same request memo the dashboard layout and `protectDashboardPage()` use, so a prefetching page reads the session once. Never hand-roll a ctx for the proxy; a ctx without request headers yields `session: null` and every `agentProcedure` call through `prefetch` throws UNAUTHORIZED. `req` is `undefined` in RSC context, so a procedure that reads `ctx.req` (clientIp rate limits in funnels/intake/customers.createFromIntake) must not be server-prefetched.
 
 `prefetch` wraps one internal `executePrefetch` that asserts the query key's expected shape in dev (`queryKey[0]` must be an array) before dispatching — a dev-only guard pinning the assumption that tRPC's `keyPrefix` flag is never enabled (enabling it moves a meta object to `queryKey[1]` and would silently break the infinite-query discriminator). See `src/trpc/lib/prefetch.ts`.
 
@@ -339,7 +337,7 @@ proposals.router/
 **Reference impl**: `src/trpc/routers/proposals.router/`, `src/trpc/routers/notion.router/`
 **Enforced by**: convention
 
-## Migration status (as of 2026-08-11)
+## Migration status (as of 2026-09-14)
 
 Adoption is broad now, not limited to the original canonical example — most agent-facing entities run through `EntityServerSpec` + the definition-once router shape (`procedures.ts` + `createCrudRouter` + pure `index.ts`). The `createEntityRouter` factory is gone (S6/S7); every migrated router below is factory-free.
 
@@ -352,10 +350,10 @@ Adoption is broad now, not limited to the original canonical example — most ag
 | Customer Note | ✅ Migrated | pure CRUD; author-or-admin hooks, see `../shared/entities/customers/DOCS.md#note-authorship` |
 | Voip (calls, campaigns, DIDs, contacts, messages, link-tokens, contact-attributes) | ✅ Migrated | `entities/voip-*/` |
 | App Settings | ✅ Migrated | `entities/app-settings/` |
-| Project | ⚠️ Partial | `projectServerSpec` + `projectCrud` exist (S5a); `projects.router` still hand-written on `agentProcedure` directly — router migration is S8 |
-| Lead Source | ❌ Not migrated | Single-file router; audited + scheduled in S8 |
+| Project | ⚠️ Partial | `projectServerSpec` + `projectCrud` + `procedures.ts` (`projectProcedure`) exist; `crud.router.ts` is still hand-written (`agentProcedure` / `projectProcedure`), not `createCrudRouter` |
+| Lead Source | ❌ Not migrated | Single-file router on `superAdminProcedure` |
 
-Project (router) and Lead Source are the known gaps — the tRPC Standardization Epic slice **S8** audits both against R1–R13 and migrates `projects.router` onto `createCrudRouter`.
+Project (CRUD leaf) and Lead Source are the known gaps. The epic's S8 audit (2026-08-11) spun both out: projects → `docs/plans/2026-08-11-projects-standardization-epic.md`; lead-sources deferred until after projects.
 
 ## Anti-patterns
 

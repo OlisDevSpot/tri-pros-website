@@ -1,15 +1,32 @@
-import { Resend } from 'resend'
+import type { Resend } from 'resend'
 
-import { lazyProxy } from '@/shared/config/lazy-proxy'
+import { lazyAsync } from '@/shared/config/lazy-async'
 
 import { getResendConfig } from './lib/config'
 
 /**
- * Resend SDK client. Lazy-constructed on first property access via
- * `lazyProxy` so missing RESEND_API_KEY doesn't crash app boot — only
- * the first call to `resendClient.emails.send(...)` (or any other method)
- * throws `NotConfiguredError` if the env var isn't set.
- *
- * see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
+ * Resend SDK client, loaded and constructed on the first send. The SDK brings
+ * mail-parsing dependencies (mailparser → libmime, iconv-lite) and webhook
+ * signing (svix) that no page render needs; a static import compiles them on
+ * every cold start of every route that imports the app router. A missing
+ * RESEND_API_KEY rejects the first send with `NotConfiguredError` instead of
+ * crashing app boot.
  */
-export const resendClient = lazyProxy(() => new Resend(getResendConfig().apiKey))
+function createResendClient() {
+  const sdk = lazyAsync(async (): Promise<Resend> => {
+    const { Resend } = await import('resend')
+    return new Resend(getResendConfig().apiKey)
+  })
+
+  return {
+    emails: {
+      async send(...args: Parameters<Resend['emails']['send']>) {
+        return (await sdk()).emails.send(...args)
+      },
+    },
+  }
+}
+
+export type ResendClient = ReturnType<typeof createResendClient>
+
+export const resendClient = createResendClient()

@@ -4,7 +4,7 @@
  * The during-photos pipeline (.claude/skills/during-photos/SKILL.md) decorates
  * existing projects — it never creates them. After Oliver picks winners from
  * his Downloads, this script converts each image to webp, uploads it to R2
- * under the project's during bucket, and inserts the mediaFiles row.
+ * under the project's during bucket, and inserts the projectMediaFiles row.
  *
  * Usage: pnpm tsx scripts/add-during-media.ts <accessor> <file...>
  */
@@ -15,8 +15,11 @@ import process from 'node:process'
 import './lib/load-env'
 import { desc, eq } from 'drizzle-orm'
 import sharp from 'sharp'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
-import { mediaFiles, projects } from '@/shared/db/schema'
+import { projectMediaFiles, projects } from '@/shared/db/schema'
+import { projectMediaCrud } from '@/shared/modules/projects/media/dal/server/crud'
+import { projectMediaStore } from '@/shared/modules/projects/media/store'
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
 
@@ -38,10 +41,10 @@ async function main() {
   }
 
   const [last] = await db
-    .select({ sortOrder: mediaFiles.sortOrder })
-    .from(mediaFiles)
-    .where(eq(mediaFiles.projectId, project.id))
-    .orderBy(desc(mediaFiles.sortOrder))
+    .select({ sortOrder: projectMediaFiles.sortOrder })
+    .from(projectMediaFiles)
+    .where(eq(projectMediaFiles.projectId, project.id))
+    .orderBy(desc(projectMediaFiles.sortOrder))
     .limit(1)
   let sortOrder = (last?.sortOrder ?? -1) + 1
 
@@ -55,11 +58,11 @@ async function main() {
 
     const webp = await sharp(file).webp({ quality: 82 }).toBuffer()
     const fileId = crypto.randomUUID()
-    const pathKey = `projects/${project.id}/during/${fileId}.webp`
+    const pathKey = projectMediaStore.buildPathKey(project.id, fileId, '.webp', { phase: 'during' })
 
     await r2Client.putObject(BUCKET, pathKey, webp, 'image/webp')
 
-    await db.insert(mediaFiles).values({
+    const created = await projectMediaCrud.create(SYSTEM_CONTEXT, {
       name: path.basename(file),
       pathKey,
       bucket: BUCKET,
@@ -71,11 +74,21 @@ async function main() {
       sortOrder: sortOrder++,
       projectId: project.id,
     })
+    if (!created.success) {
+      // R2 upload already happened — an orphaned object with no DB row is worse
+      // than stopping here, so abort the run instead of logging and continuing
+      // (matches the pre-hook behavior, when a raw `db.insert` threw on failure).
+      throw new Error(`insert failed for ${path.basename(file)}: ${created.error.type}`)
+    }
 
     console.log(`  + during/${fileId}.webp  (${path.basename(file)})`)
   }
 
-  process.exit(0)
+  // No `process.exit(0)` here: the create hook's `void optimizeMediaJob.dispatch(...)`
+  // (fire-and-forget QStash publish) would race a forced exit and can lose the
+  // last iteration's dispatch. Close the pool explicitly instead so the process
+  // still exits on its own once that dispatch settles.
+  await db.$client.end()
 }
 
 main()

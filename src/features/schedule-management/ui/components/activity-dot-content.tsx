@@ -1,7 +1,7 @@
 'use client'
 
 import type { ScheduleActivityEvent, ScheduleCalendarEvent } from '@/features/schedule-management/types'
-import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
+import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
 
 import { format } from 'date-fns'
 
@@ -51,7 +51,7 @@ export function ActivityDotContent({
         </div>
 
         {/* Type badge */}
-        <Badge className={cn('text-[10px] px-1.5 py-0 leading-4', config.bgColor, config.color)}>
+        <Badge className={cn('text-xs px-1.5 py-0 leading-4', config.bgColor, config.color)}>
           {config.label}
         </Badge>
 

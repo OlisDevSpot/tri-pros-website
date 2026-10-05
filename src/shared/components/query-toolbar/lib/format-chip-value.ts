@@ -1,6 +1,6 @@
 import type { FilterDefinition, FilterValue } from '@/shared/dal/client/lib/types'
 
-import { format } from 'date-fns'
+import { formatBusinessTime } from '@/shared/lib/business-time'
 
 /**
  * Format a filter value for display inside an active-filter chip. The chip's
@@ -15,19 +15,21 @@ export function formatChipValue(definition: FilterDefinition, value: FilterValue
   switch (definition.type) {
     case 'select': {
       const opt = definition.options.find(o => o.value === value)
-      return opt?.label ?? String(value)
+      return opt?.label ?? '1 selected'
     }
     case 'multi-select': {
       const arr = value as string[]
-      if (arr.length <= 2) {
-        return arr.map(v => definition.options.find(o => o.value === v)?.label ?? v).join(', ')
+      const labels = arr.map(v => definition.options.find(o => o.value === v)?.label)
+      // A value with no loaded label (options still loading, refused, or the option was deleted) shows as a count, never a raw id.
+      if (arr.length <= 2 && labels.every(label => label !== undefined)) {
+        return labels.join(', ')
       }
       return `${arr.length} selected`
     }
     case 'date-range': {
       const range = value as { from?: string, to?: string }
-      const fromStr = range.from ? format(new Date(range.from), 'MMM d') : '…'
-      const toStr = range.to ? format(new Date(range.to), 'MMM d') : '…'
+      const fromStr = range.from ? formatBusinessTime(range.from, { month: 'short', day: 'numeric' }) : '…'
+      const toStr = range.to ? formatBusinessTime(range.to, { month: 'short', day: 'numeric' }) : '…'
       return `${fromStr} → ${toStr}`
     }
     case 'number-range': {

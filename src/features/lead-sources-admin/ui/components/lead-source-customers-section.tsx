@@ -12,13 +12,13 @@ import { useColumnVisibility } from '@/shared/components/data-table/lib/use-colu
 import { useEntityColumns } from '@/shared/components/data-table/lib/use-entity-columns'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
+import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
-import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { useCustomerActionConfigs } from '@/shared/entities/customers/hooks/use-customer-action-configs'
 
 import { CUSTOMER_COLUMNS } from '@/shared/entities/customers/lib/columns-registry'
-import { useModalStore } from '@/shared/hooks/use-modal-store'
+import { openModal } from '@/shared/lib/open-modal'
 import { useTRPC } from '@/trpc/helpers'
 
 const SHOW_COLUMNS = ['name', 'leadSourceName', 'pipeline', 'createdAt'] as const
@@ -30,13 +30,8 @@ interface LeadSourceCustomersSectionProps {
 export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomersSectionProps) {
   const trpc = useTRPC()
   const { invalidateCustomer, invalidateLeadSource } = useInvalidation()
-  const { setModal, open: openModal } = useModalStore()
 
-  const pagination = usePaginatedQuery<{ id: string }, CustomerTableRow>(
-    trpc.leadSourcesRouter.getCustomers.queryOptions,
-    { id: leadSourceId },
-    LEAD_SOURCE_CUSTOMERS_TABLE_QUERY_CONFIG,
-  )
+  const query = useDataViewQuery(trpc.leadSourcesRouter.getCustomers, { id: leadSourceId }, LEAD_SOURCE_CUSTOMERS_TABLE_QUERY_CONFIG)
 
   const updateCreatedAt = useMutation(
     trpc.customersRouter.crud.update.mutationOptions({
@@ -50,13 +45,12 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
   )
 
   const handleViewProfile = useCallback((customerId: string) => {
-    setModal({
+    openModal({
       accessor: 'CustomerProfile',
       Component: CustomerProfileModal,
       props: { customerId },
     })
-    openModal()
-  }, [setModal, openModal])
+  }, [])
 
   const { actions, DeleteConfirmDialog } = useCustomerActionConfigs<CustomerTableRow>({
     onView: entity => handleViewProfile(entity.id),
@@ -67,12 +61,13 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
 
   // Lead-source edit is wired by the cell itself (CASL-gated, default
   // mutation + invalidation). Reassigning a row here removes it from the
-  // list (no longer matches `customersMatchingSource`) — that drop is
-  // covered by the default invalidation hitting both customer + lead-source
+  // list — getCustomers pins the source through CUSTOMER_FIELDS' `sourceId`
+  // fixed filter, so a reassigned row no longer matches it — and that drop
+  // is covered by the default invalidation hitting both customer + lead-source
   // query trees, so no override is needed.
   const meta = useMemo<CustomerTableMeta>(
     () => ({
-      customerActions: () => actions,
+      rowActions: actions,
       onUpdateCreatedAt: (customerId, date) =>
         updateCreatedAt.mutate({ id: customerId, data: { createdAt: date.toISOString() } }),
     }),
@@ -88,15 +83,15 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
 
       <div className="flex shrink-0 flex-col gap-2">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
-          <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Customers from this source
           </h3>
           <span className="text-xs text-muted-foreground tabular-nums">
-            {pagination.isLoading ? 'Loading…' : `${pagination.total.toLocaleString()} total`}
+            {query.isPending ? 'Loading…' : `${query.total.toLocaleString()} total`}
           </span>
         </div>
 
-        <QueryToolbar pagination={pagination} entityName="customers">
+        <QueryToolbar query={query} entityName="customers">
           <QueryToolbar.Bar>
             <QueryToolbar.Search placeholder="Filter by name or email…" />
             <QueryToolbar.FilterTrigger />
@@ -119,12 +114,12 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
         <DataTable
           tableId="lead-source-customers"
           columns={columns}
-          data={pagination.rows}
+          data={query.rows}
           meta={meta}
           entityName="customer"
           onRowClick={row => handleViewProfile(row.id)}
-          serverPagination={toDataTablePagination(pagination)}
-          serverSorting={toDataTableSorting(pagination)}
+          serverPagination={toDataTablePagination(query)}
+          serverSorting={toDataTableSorting(query)}
           columnVisibility={visibility.columnVisibility}
         />
       </div>

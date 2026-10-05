@@ -1,11 +1,11 @@
 'use client'
 
 import type { ScheduleCalendarEvent } from '@/features/schedule-management/types'
-import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
+import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
 
-import { format } from 'date-fns'
-
+import { getVisibleActions } from '@/shared/components/entities/entity-actions/lib/visible-actions'
 import { useAbility } from '@/shared/domains/permissions/hooks'
+import { formatBusinessTime } from '@/shared/lib/business-time'
 
 import { ActivityDotContent } from './activity-dot-content'
 import { MeetingDotContent } from './meeting-dot-content'
@@ -23,14 +23,9 @@ export function ScheduleCalendarDot({
 }: ScheduleCalendarDotProps) {
   const ability = useAbility()
 
-  const formattedTime = format(new Date(event.startAt), 'h:mm a')
+  const formattedTime = formatBusinessTime(event.startAt, { hour: 'numeric', minute: '2-digit' })
 
-  const permittedActions = actions.filter(({ action }) => {
-    if (!action.permission) {
-      return true
-    }
-    return ability.can(action.permission[0], action.permission[1])
-  })
+  const permittedActions = getVisibleActions(actions, ability, event)
 
   if (event.kind === 'meeting') {
     return (

@@ -5,14 +5,6 @@ import { resendClient } from '@/shared/services/providers/resend/client'
 import { RESEND_FROM, RESEND_LEAD_INBOX } from '@/shared/services/providers/resend/constants'
 import { buildSenderFrom } from '@/shared/services/providers/resend/lib/build-sender-from'
 import { formatProjectType } from '@/shared/services/providers/resend/lib/format-project-type'
-import {
-  renderCustomerConfirmationEmail,
-  renderGeneralInquiryEmail,
-  renderMoveForwardRequestEmail,
-  renderNewLeadEmail,
-  renderProposalEmail,
-  renderScheduleConsultationEmail,
-} from '@/shared/services/providers/resend/lib/render-emails'
 
 // Best-effort recap projections: include only fields the customer actually
 // filled in so the confirmation email doesn't show empty rows.
@@ -50,6 +42,12 @@ function firstNameOf(fullName: string): string {
   return fullName.trim().split(/\s+/)[0] || fullName
 }
 
+// No page render needs the react-email templates, and they pull in
+// react-email, so they load on the first send.
+function loadEmailTemplates() {
+  return import('@/shared/services/providers/resend/lib/render-emails')
+}
+
 function createEmailService() {
   return {
     sendProposalEmail: async (params: {
@@ -61,6 +59,7 @@ function createEmailService() {
       replyTo?: string
       repName?: string
     }) => {
+      const templates = await loadEmailTemplates()
       const proposalUrl = publicUrl(`${ROOTS.public.proposalReview(params.proposalId, params.token)}&utm_source=email`)
       const firstName = params.customerName.split(' ')[0] ?? params.customerName
 
@@ -68,8 +67,14 @@ function createEmailService() {
         from: buildSenderFrom(params.repName),
         to: params.email,
         replyTo: params.replyTo,
-        subject: `🏠 ${firstName}, your Tri Pros proposal is ready`,
-        react: renderProposalEmail({
+        subject: `${firstName}, your Tri Pros proposal is ready`,
+        // Gmail/Yahoo expect List-Unsubscribe even on transactional mail; its
+        // absence raises spam score. mailto: form needs no endpoint — replies
+        // land in the monitored inbox. One-click (RFC 8058) is a later follow-up.
+        headers: {
+          'List-Unsubscribe': `<mailto:${RESEND_LEAD_INBOX}?subject=unsubscribe>`,
+        },
+        react: templates.renderProposalEmail({
           proposalUrl,
           customerName: params.customerName,
           message: params.message,
@@ -87,7 +92,6 @@ function createEmailService() {
      * Agent-facing: the homeowner requested to move forward. A pure signal —
      * never touches contract lifecycle. Recipients = meeting participants
      * (fallback: proposal owner), resolved by the caller.
-     * see `src/shared/entities/proposals/DOCS.md#proposal-lock-ladder`
      */
     sendMoveForwardRequestEmail: async (params: {
       recipients: string[]
@@ -95,11 +99,15 @@ function createEmailService() {
       proposalLabel: string
       proposalId: string
     }) => {
+      const templates = await loadEmailTemplates()
       const { data, error } = await resendClient.emails.send({
         from: RESEND_FROM.default,
         to: params.recipients,
-        subject: `🚀 ${params.customerName} is ready to move forward`,
-        react: renderMoveForwardRequestEmail({
+        // Replies to "customer is ready" route to the monitored inbox rather
+        // than the notifications@ sender. see RESEND_LEAD_INBOX.
+        replyTo: RESEND_LEAD_INBOX,
+        subject: `${params.customerName} is ready to move forward`,
+        react: templates.renderMoveForwardRequestEmail({
           customerName: params.customerName,
           proposalLabel: params.proposalLabel,
           proposalId: params.proposalId,
@@ -114,12 +122,13 @@ function createEmailService() {
     },
 
     sendScheduleConsultationEmail: async (formData: ScheduleConsultationFormSchema) => {
+      const templates = await loadEmailTemplates()
       const { data, error } = await resendClient.emails.send({
         to: RESEND_LEAD_INBOX,
         from: RESEND_FROM.default,
         replyTo: formData.email,
         subject: 'Consultation scheduled!',
-        react: renderScheduleConsultationEmail(formData),
+        react: templates.renderScheduleConsultationEmail(formData),
       })
 
       if (error) {
@@ -130,12 +139,13 @@ function createEmailService() {
     },
 
     sendGeneralInquiryEmail: async (formData: GeneralInquiryFormSchema) => {
+      const templates = await loadEmailTemplates()
       const { data, error } = await resendClient.emails.send({
         to: RESEND_LEAD_INBOX,
         from: RESEND_FROM.default,
         replyTo: formData.email,
         subject: `New inquiry: ${formData.name}`,
-        react: renderGeneralInquiryEmail(formData),
+        react: templates.renderGeneralInquiryEmail(formData),
       })
 
       if (error) {
@@ -154,6 +164,7 @@ function createEmailService() {
       type: 'general' | 'schedule'
       formData: GeneralInquiryFormSchema | ScheduleConsultationFormSchema
     }) => {
+      const templates = await loadEmailTemplates()
       const { type, formData } = params
       const recapItems = type === 'general'
         ? buildGeneralInquiryRecap(formData as GeneralInquiryFormSchema)
@@ -165,7 +176,11 @@ function createEmailService() {
         from: RESEND_FROM.default,
         replyTo: RESEND_LEAD_INBOX,
         subject: `Thanks, ${firstName} — we'll be in touch within 24 hours`,
-        react: renderCustomerConfirmationEmail({
+        // see List-Unsubscribe rationale on sendProposalEmail
+        headers: {
+          'List-Unsubscribe': `<mailto:${RESEND_LEAD_INBOX}?subject=unsubscribe>`,
+        },
+        react: templates.renderCustomerConfirmationEmail({
           firstName,
           smsConsent: formData.smsConsent,
           callConsent: formData.callConsent,
@@ -193,11 +208,12 @@ function createEmailService() {
       zip: string | null
       source: string
     }) => {
+      const templates = await loadEmailTemplates()
       const { data, error } = await resendClient.emails.send({
         from: RESEND_FROM.default,
         to: params.to,
         subject: `New lead: ${params.name} — ${params.source}`,
-        react: renderNewLeadEmail({
+        react: templates.renderNewLeadEmail({
           name: params.name,
           phone: params.phone,
           city: params.city,

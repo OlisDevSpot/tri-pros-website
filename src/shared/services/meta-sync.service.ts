@@ -121,7 +121,6 @@ function createMetaSyncService() {
      * the documented exception to dual-fire; explicit event_id gives retry
      * idempotence and future-proofs a dual-fire upgrade). Renter gate lives in
      * measurement.service, NOT here — this tier only translates domain → wire.
-     * see providers/meta/DOCS.md
      *
      * Returns whether the event was actually sent. The caller uses this to
      * decide whether to stamp the once-ever `metaScheduleSentAt` marker — a

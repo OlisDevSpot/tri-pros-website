@@ -16,7 +16,7 @@ import { Label } from '@/shared/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import { Switch } from '@/shared/components/ui/switch'
 import { Tabs, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
-import { useModalStore } from '@/shared/hooks/use-modal-store'
+import { openModal } from '@/shared/lib/open-modal'
 import { cn } from '@/shared/lib/utils'
 import { FundingFields } from './funding-fields'
 import { GeneralFields } from './general-fields'
@@ -35,7 +35,7 @@ const TAB_LABELS: Record<FormTab, string> = {
 
 const TOOLBAR_BUTTON_BASE = 'inline-flex size-[calc(100%-1px)] items-center justify-center rounded-md border border-transparent transition-[color,box-shadow]'
 const TOOLBAR_BUTTON_INACTIVE = 'text-muted-foreground hover:text-foreground'
-const TOOLBAR_BUTTON_ACTIVE = 'bg-background shadow-sm dark:border-input dark:bg-input/30'
+const TOOLBAR_BUTTON_ACTIVE = 'bg-popover shadow-sm dark:border-border'
 
 interface Props {
   onSubmit: (data: ProposalFormSchema) => void
@@ -72,11 +72,10 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
   const [saveOpenDesktop, setSaveOpenDesktop] = useState(false)
   const saveOpen = saveOpenMobile || saveOpenDesktop
   const pricingMode = useWatch({ control: form.control, name: 'priceDisplayMode' })
-  const { open: openModal, setModal } = useModalStore()
 
   function handleInternalFinancials() {
     const v = form.getValues()
-    setModal({
+    openModal({
       accessor: 'InternalFinancials',
       Component: InternalFinancialsModal,
       props: {
@@ -85,7 +84,6 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
         priceDisplayMode: v.priceDisplayMode,
       },
     })
-    openModal()
   }
 
   useEffect(() => {
@@ -283,7 +281,7 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
             )}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto scrollbar-gutter-stable">
         <Card className="w-full p-3 lg:p-5">
           {FORM_TABS.map((tab) => {
             const isActive = activeTab === tab
@@ -308,7 +306,7 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
         </Card>
 
         {form.formState.errors.root && (
-          <div className="mt-3 text-red-500">
+          <div className="mt-3 text-destructive-text">
             {JSON.stringify(form.formState.errors, null, 2)}
           </div>
         )}

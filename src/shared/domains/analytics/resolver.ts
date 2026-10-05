@@ -1,6 +1,5 @@
 // Analytics resolver: loads each source once, inner-joins per metric, runs value/total.
 // Pure orchestration — no DB/network here; sources supply the I/O.
-// See docs/superpowers/specs/2026-07-28-analytics-feature-marketing-sales-design.md#53-resolver
 
 import type {
   AnyMetric,

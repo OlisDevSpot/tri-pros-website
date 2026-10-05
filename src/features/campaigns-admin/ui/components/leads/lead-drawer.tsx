@@ -40,7 +40,7 @@ export function LeadDrawer({ campaigns, onOpenChange, onOpenProfile, row }: Lead
             <LeadDrawerIdentity row={row} />
 
             {/*
-              PHASE 2 (deferred): live CloudTalk activity block mounts here —
+              PHASE 2 (deferred): live dialer activity block mounts here —
               <LeadDrawerCtActivity ctContactId={...} /> with its own
               loading/data/error states. Do NOT build until getLeadCtActivity ships.
             */}

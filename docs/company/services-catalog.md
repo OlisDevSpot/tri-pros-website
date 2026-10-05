@@ -62,22 +62,7 @@
 
 ---
 
-### 5. Solar
-**What it includes**: Rooftop solar panel system installation. Inverter, monitoring system, and utility interconnection.
-
-**Materials offered**: Monocrystalline panels, microinverters, string inverters, battery storage options.
-
-**Typical outcomes**:
-- Monthly electricity bill reduction or elimination
-- Fixed energy costs for 25+ years
-- Federal Investment Tax Credit (ITC) eligibility
-- Increased home resale value
-
-**Classification**: Energy-efficient
-
----
-
-### 6. Foundation
+### 5. Foundation
 **What it includes**: Foundation repair, leveling, crack injection, waterproofing, pier systems.
 
 **Materials offered**: Helical piers, push piers, carbon fiber straps, polyurethane injection.
@@ -92,7 +77,7 @@
 
 ---
 
-### 7. Bathroom Remodel
+### 6. Bathroom Remodel
 **What it includes**: Full or partial bathroom renovation. Shower/tub replacement, vanity, tile, flooring, lighting, plumbing fixture upgrades.
 
 **Materials offered**: Acrylic surrounds, tile, stone, luxury vinyl plank (LVP), frameless glass enclosures.
@@ -106,7 +91,7 @@
 
 ---
 
-### 8. Kitchen Remodel
+### 7. Kitchen Remodel
 **What it includes**: Cabinet replacement or refacing, countertops, backsplash, appliance coordination, flooring, lighting.
 
 **Materials offered**: Quartz/granite countertops, soft-close cabinetry, tile backsplash.
@@ -120,7 +105,7 @@
 
 ---
 
-### 9. Flooring
+### 8. Flooring
 **What it includes**: Full floor replacement for one or more rooms. Subfloor prep included.
 
 **Materials offered**: Luxury vinyl plank (LVP), hardwood, engineered hardwood, tile, laminate.
@@ -134,7 +119,7 @@
 
 ---
 
-### 10. Paint (Interior / Exterior)
+### 9. Paint (Interior / Exterior)
 **What it includes**: Interior room painting or full exterior painting. Includes prep, priming, and finish coats.
 
 **Materials offered**: Premium zero-VOC and standard latex paints. Various finish levels (matte, eggshell, satin).
@@ -148,7 +133,7 @@
 
 ---
 
-### 11. Decking
+### 10. Decking
 **What it includes**: New deck construction or existing deck replacement/restoration.
 
 **Materials offered**: Composite decking (Trex-style), pressure-treated wood, hardwood.
@@ -156,6 +141,18 @@
 **Typical outcomes**:
 - Expanded outdoor living space
 - Increased home value and curb appeal
+
+**Classification**: General remodeling
+
+---
+
+### 11. Outdoor Living
+**What it includes**: Pool construction and remodels, dryscaping and artificial turf, pavers, patio covers, outdoor kitchens, and exterior lot layout. Delivered on the Riviera, Altura, Atlas, and Bliss projects.
+
+**Typical outcomes**:
+- A backyard the family actually uses
+- Lower water use (dryscaping, turf)
+- Expanded outdoor living space and curb appeal
 
 **Classification**: General remodeling
 
@@ -169,22 +166,22 @@
 | HVAC | ✓ | ✓ | ✓ | | |
 | Windows & Doors | ✓ | ✓ | | | |
 | Insulation | ✓ | | ✓ | ✓ | |
-| Solar | | ✓ | | | ✓ |
 | Foundation | | ✓ | | ✓ | |
 | Bathroom | ✓ | | | | |
 | Kitchen | ✓ | | | | |
 | Flooring | ✓ | | | | |
 | Paint | ✓ | ✓ | | | |
 | Decking | | ✓ | | | |
+| Outdoor Living | | ✓ | | | |
 
 ---
 
 ## Project Type Classification
 
 **Energy-Efficient Projects** (utility savings, rebates, tax credit angle):
-Roofing (cool roof), HVAC, Windows & Doors, Insulation, Solar
+Roofing (cool roof), HVAC, Windows & Doors, Insulation
 
 **General Remodeling Projects** (comfort, aesthetics, home value):
-Foundation, Bathroom, Kitchen, Flooring, Paint, Decking
+Foundation, Bathroom, Kitchen, Flooring, Paint, Decking, Outdoor Living
 
-> Note: Many customers combine energy-efficient and general remodeling scopes in a single project. Presenting complementary scopes together (e.g., insulation + HVAC, or roofing + solar) increases contract size and delivers compounding ROI to the customer.
+> Note: Many customers combine energy-efficient and general remodeling scopes in a single project. Presenting complementary scopes together (e.g., insulation + HVAC, or roofing + insulation) increases contract size and delivers compounding ROI to the customer.

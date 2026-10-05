@@ -5,7 +5,6 @@ import superjson from 'superjson'
 import { ZodError } from 'zod'
 
 import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
-import { userActor } from '@/shared/domains/permissions/scope/actor'
 
 export { createHTTPTRPCContext } from '@/trpc/lib/create-http-context'
 
@@ -57,7 +56,7 @@ export const protectedProcedure = baseProcedure.use(async ({ ctx, next }) => {
   })
 
   return await next({
-    ctx: { ...ctx, session: ctx.session, ability, scope: null, actor: userActor(ctx.session.user.id, ability) },
+    ctx: { ...ctx, session: ctx.session, ability, scope: null },
   })
 })
 
@@ -86,7 +85,7 @@ export const agentProcedure = protectedProcedure.use(async ({ ctx, next }) => {
 // cross-source/global operations (resync, campaign binding, disqualify,
 // destructive lead-source admin) INSTEAD of an inline
 // `if (ctx.session.user.role !== 'super-admin') throw` in the handler body —
-// procedure-level gating is the convention. see DOCS.md#superadmin-procedure
+// procedure-level gating is the convention.
 //
 // Uses the centralized CASL ability (`can('manage', 'all')` is super-admin's
 // omni grant — see domains/permissions/abilities.ts) rather than a hardcoded

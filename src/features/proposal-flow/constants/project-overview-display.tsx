@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import type { IconType } from 'react-icons/lib'
 import type { Proposal } from '@/shared/db/schema'
-import type { FundingData } from '@/shared/entities/proposals/schemas'
+import type { FundingData } from '@/shared/modules/proposals/core/schemas'
 import {
   BanknoteArrowDownIcon,
   CircleUserIcon,

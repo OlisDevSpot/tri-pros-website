@@ -1,7 +1,6 @@
 // ─── Incentives Router ──────────────────────────────────────────────────────
 // proposal_incentives child rows (Wave 2). Replace-all upsert from the funding
 // form. Freeze gate (contractEnvelopeId) enforced in the DAL.
-// see ../../../shared/entities/proposals/DOCS.md#final-tcp-derived
 //
 // Plain leaf: imports pre-scoped procedures from ./procedures. The inline CASL
 // check is consolidated into a shared `assertCanUpdateProposal` in S5. When
@@ -11,8 +10,8 @@
 import { TRPCError } from '@trpc/server'
 import z from 'zod'
 
-import { replaceProposalIncentives } from '@/shared/entities/proposal-incentives/dal/server/mutations'
-import { incentiveSchema } from '@/shared/entities/proposals/schemas'
+import { incentiveSchema } from '@/shared/modules/proposals/core/schemas'
+import { proposalService } from '@/shared/modules/proposals/service'
 
 import { createTRPCRouter } from '../../init'
 import { dalToTrpc } from '../../lib/dal-to-trpc'
@@ -31,6 +30,6 @@ export const incentivesRouter = createTRPCRouter({
           message: 'You do not have permission to update this proposal.',
         })
       }
-      return dalToTrpc(await replaceProposalIncentives(ctx, input))
+      return dalToTrpc(await proposalService.incentives.replace(ctx, input))
     }),
 })

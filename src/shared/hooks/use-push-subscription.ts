@@ -6,11 +6,6 @@ import { urlBase64ToUint8Array } from '@/shared/lib/push'
 import { isIOSDevice, isStandalonePWA } from '@/shared/lib/pwa'
 import { useTRPC } from '@/trpc/helpers'
 
-// All the states the manager UI needs to render. Driven off the browser
-// APIs + the user's current OS context. The flow:
-//   loading -> (one of the terminal states)
-//   not-subscribed -> (subscribe()) -> subscribed
-//   subscribed     -> (unsubscribe()) -> not-subscribed
 export type PushSubscriptionStatus
   = | 'loading'
     | 'unsupported' // SW or PushManager missing — desktop Safari pre-16, very old browsers
@@ -21,15 +16,8 @@ export type PushSubscriptionStatus
     | 'error'
 
 export interface UsePushSubscriptionOptions {
-  /**
-   * VAPID public key. Defaults to NEXT_PUBLIC_VAPID_PUBLIC_KEY which Next.js
-   * inlines at build time. Override only if you have a reason (e.g. tests).
-   */
   vapidPublicKey?: string
-  /**
-   * Path to the registered service worker. Must be served from the origin
-   * root with no-cache headers (see next.config.ts). Override only for tests.
-   */
+  /** Must be served from the origin root with no-cache headers. */
   swPath?: string
 }
 
@@ -38,16 +26,12 @@ export interface UsePushSubscriptionResult {
   error: string | null
   subscribe: () => Promise<void>
   unsubscribe: () => Promise<void>
-  /** True while a subscribe/unsubscribe network call is in flight. */
   busy: boolean
 }
 
 const DEFAULT_SW_PATH = '/sw.js'
 
-// Reconcile cadence: re-POST the existing subscription to the server at
-// most once per day per device. The reconcile catches Apple's silent
-// invalidation + ITP wipes + DB row loss — but those don't fire mid-day,
-// so a 24h cadence covers the cases without billing every page mount.
+// Daily is enough: the drift this catches (Apple's silent invalidation, ITP wipes, DB row loss) never happens mid-day.
 const RECONCILE_KEY = 'push-reconcile-at'
 const RECONCILE_TTL_MS = 24 * 60 * 60 * 1000
 
@@ -81,22 +65,14 @@ export function usePushSubscription(opts: UsePushSubscriptionOptions = {}): UseP
   const [status, setStatus] = useState<PushSubscriptionStatus>('loading')
   const [error, setError] = useState<string | null>(null)
 
-  // Cache the registration so subscribe()/unsubscribe() don't have to walk
-  // through SW registration every call. Stays null until mount-time setup
-  // resolves.
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null)
 
   // eslint-disable-next-line node/prefer-global/process
   const vapidPublicKey = opts.vapidPublicKey ?? process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ''
   const swPath = opts.swPath ?? DEFAULT_SW_PATH
 
-  // ── Mount-time setup + reconcile ───────────────────────────────────────
-  // On every app mount we POST whatever the browser thinks is the current
-  // subscription back to the server. Apple invalidates subscriptions on a
-  // sliding undocumented schedule, ITP can wipe SWs after ~7 days of
-  // inactivity, and the server-side delete on 4xx isn't fully reliable
-  // (Apple sometimes returns 200 for already-dead endpoints). The upsert
-  // is a no-op when the row already exists; cheap insurance against drift.
+  // Reconciles on mount: Apple invalidates subscriptions on an undocumented schedule, ITP wipes idle SWs
+  // after ~7 days, and Apple can return 200 for dead endpoints, so the server's 4xx delete isn't reliable.
   useEffect(() => {
     let cancelled = false
 
@@ -138,11 +114,7 @@ export function usePushSubscription(opts: UsePushSubscriptionOptions = {}): UseP
 
         const existing = await registration.pushManager.getSubscription()
         if (existing) {
-          // Reconcile: re-upsert in case the server lost the row.
-          // Throttled to once/24h (RECONCILE_TTL_MS) — drift catching
-          // doesn't need same-session granularity. Failures here don't
-          // change the user-visible state since the browser still has
-          // a working subscription.
+          // A failed reconcile keeps status 'subscribed': the browser still holds a working subscription.
           if (shouldReconcile()) {
             subscribeMutation.mutate({
               subscription: existing.toJSON() as {
@@ -181,10 +153,8 @@ export function usePushSubscription(opts: UsePushSubscriptionOptions = {}): UseP
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vapidPublicKey, swPath])
 
-  // ── subscribe ──────────────────────────────────────────────────────────
-  // MUST be called from within a click handler — both Notification.requestPermission
-  // and pushManager.subscribe require user activation on Safari. Calling
-  // them from a useEffect or async chain will silently fail on iOS.
+  // Must run inside a click handler: Safari requires user activation for requestPermission
+  // and pushManager.subscribe, and iOS fails silently from an effect or async chain.
   const subscribe = useCallback(async () => {
     setError(null)
     if (!registrationRef.current) {
@@ -197,10 +167,7 @@ export function usePushSubscription(opts: UsePushSubscriptionOptions = {}): UseP
     }
 
     try {
-      // Skip the permission prompt if already granted. Even though
-      // requestPermission() is a no-op when granted, on Safari it still
-      // counts against the user-activation budget — so we save the gesture
-      // for the actual pushManager.subscribe call.
+      // Even when already granted, requestPermission() spends the Safari user-activation budget — save the gesture for subscribe().
       let permission = Notification.permission
       if (permission !== 'granted') {
         permission = await Notification.requestPermission()
@@ -228,9 +195,7 @@ export function usePushSubscription(opts: UsePushSubscriptionOptions = {}): UseP
       setStatus('subscribed')
     }
     catch (err) {
-      // If the server call fails after the browser subscribed, roll back
-      // the browser-side subscription so we don't have a ghost on the
-      // device that nobody can deliver to.
+      // Roll back the browser subscription so a failed server call leaves no ghost nobody can deliver to.
       try {
         const existing = await registrationRef.current.pushManager.getSubscription()
         if (existing) {
@@ -245,7 +210,6 @@ export function usePushSubscription(opts: UsePushSubscriptionOptions = {}): UseP
     }
   }, [subscribeMutation, vapidPublicKey])
 
-  // ── unsubscribe ────────────────────────────────────────────────────────
   const unsubscribe = useCallback(async () => {
     setError(null)
     if (!registrationRef.current) {
@@ -259,8 +223,7 @@ export function usePushSubscription(opts: UsePushSubscriptionOptions = {}): UseP
       }
       const endpoint = sub.endpoint
       await sub.unsubscribe()
-      // Tell the server even if browser-side unsub fails partway — the
-      // row is dead either way and our 4xx-deletion would clean it up.
+      // A failed server call is only warned: the row is dead either way and 4xx-deletion cleans it up.
       await unsubscribeMutation.mutateAsync({ endpoint }).catch((err) => {
         console.warn('[push] server unsubscribe failed:', err.message)
       })

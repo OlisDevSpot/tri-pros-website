@@ -18,7 +18,6 @@ import { twilioClient } from '@/shared/services/providers/twilio/client'
 // of the DAL.
 //
 // see memory/feedback-services-orchestrate-dal-implements.md
-// see src/shared/entities/voip-dids/DOCS.md (1:N cardinality + partial unique index)
 // ---------------------------------------------------------------------------
 
 interface AssignDidInput {

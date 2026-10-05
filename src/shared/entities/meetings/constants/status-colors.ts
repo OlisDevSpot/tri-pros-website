@@ -20,28 +20,31 @@ function buildOutcomeColorMap(scheme: OutcomeColorScheme): Record<MeetingOutcome
   ) as Record<MeetingOutcome, string>
 }
 
-// Profile modal badge colors (used with Badge variant="outline")
+// Outcome badge colors — read the status tones (Task 5), which are
+// theme-aware by construction, so the label clears contrast in BOTH light
+// and dark with no per-mode variants.
 export const MEETING_LIST_STATUS_COLORS: Record<MeetingOutcome, string> = buildOutcomeColorMap({
-  negative: 'bg-red-500/10 text-red-600',
-  positive: 'bg-green-500/10 text-green-600',
-  neutral: 'bg-amber-500/10 text-amber-600',
-  unset: 'bg-zinc-500/10 text-zinc-600',
+  negative: 'border-status-danger-dot/40 bg-status-danger-bg text-status-danger-fg',
+  positive: 'border-status-success-dot/40 bg-status-success-bg text-status-success-fg',
+  neutral: 'border-status-pending-dot/40 bg-status-pending-bg text-status-pending-fg',
+  unset: 'border-border bg-muted text-muted-foreground',
 })
 
-// Table badge colors (used with StatusDropdownCell default Badge)
+// Table badge colors (used with StatusDropdownCell default Badge) — same
+// status-tone treatment so table badges read in dark mode too.
 export const MEETING_OUTCOME_COLORS: Record<MeetingOutcome, string> = buildOutcomeColorMap({
-  negative: 'border-red-500/30 bg-red-500/10 text-red-400',
-  positive: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400',
-  neutral: 'border-amber-500/30 bg-amber-500/10 text-amber-400',
-  unset: 'border-zinc-500/30 bg-zinc-500/10 text-zinc-400',
+  negative: 'border-status-danger-dot/40 bg-status-danger-bg text-status-danger-fg',
+  positive: 'border-status-success-dot/40 bg-status-success-bg text-status-success-fg',
+  neutral: 'border-status-pending-dot/40 bg-status-pending-bg text-status-pending-fg',
+  unset: 'border-border bg-muted text-muted-foreground',
 })
 
 // Dot colors for status indicators and sub-menu option indicators
 export const MEETING_OUTCOME_DOT_COLORS: Record<MeetingOutcome, string> = buildOutcomeColorMap({
-  negative: 'bg-red-500',
-  positive: 'bg-emerald-500',
-  neutral: 'bg-amber-500',
-  unset: 'bg-zinc-500',
+  negative: 'bg-status-danger-dot',
+  positive: 'bg-status-success-dot',
+  neutral: 'bg-status-pending-dot',
+  unset: 'bg-status-idle-dot',
 })
 
 // Human-readable labels for display
@@ -52,6 +55,7 @@ export const MEETING_OUTCOME_LABELS: Record<MeetingOutcome, string> = {
   proposal_sent: 'Proposal Sent',
   proposal_created: 'Proposal Created',
   follow_up_needed: 'Follow-up Needed',
+  reschedule_needed: 'Reschedule Needed',
   not_good: 'Not Good',
   pns: 'PNS',
   npns: 'NPNS',

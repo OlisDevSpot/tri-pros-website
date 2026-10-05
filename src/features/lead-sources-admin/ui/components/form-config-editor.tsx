@@ -51,7 +51,7 @@ export function FormConfigEditor({ leadSourceId, initial }: FormConfigEditorProp
   return (
     <section className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Form configuration
         </h3>
         <div className={cn('flex items-center gap-2', !isDirty && 'invisible')}>

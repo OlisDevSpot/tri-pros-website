@@ -11,7 +11,6 @@ import { voipLinkTokenTypeEnum } from './meta'
 // framework is in place so `l_pay` / `l_cal` / `l_esign` drop in later
 // without a migration.
 //
-// see docs/plans/voip-in-house/phase-1-mvp.md GRILL RESULTS — voip_link_tokens
 export const voipLinkTokens = pgTable('voip_link_tokens', {
   id,
   // URL-safe random (~32 chars; base64url of 24 random bytes).

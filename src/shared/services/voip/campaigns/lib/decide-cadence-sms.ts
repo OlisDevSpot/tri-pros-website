@@ -4,7 +4,6 @@ import type { SmsCadence, SmsCadenceMessage } from '@/shared/entities/voip-campa
 // after a counted dial, return the message to send now, or "don't send".
 // Gates: enabled, < maxMessages, next message exists, attempt threshold met,
 // and (if oneSmsPerDay) nothing already sent today in the lead-local tz.
-// see docs/superpowers/specs/2026-06-17-voip-campaigns-sms-cadence-design.md §6
 
 const CADENCE_TZ = 'America/Los_Angeles'
 

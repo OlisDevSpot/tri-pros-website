@@ -2,7 +2,7 @@ import type { AppAbility } from '@/shared/domains/permissions/types'
 
 /**
  * Render-site helper: did the DAL gate this customer's phone, or is it
- * genuinely empty? see ../DOCS.md#phone-visibility-threshold
+ * genuinely empty?
  *
  * Super-admins always see the phone; agents see it once `hasSentProposal`
  * is true (a proposal at status `sent` or `approved`). The DAL is the

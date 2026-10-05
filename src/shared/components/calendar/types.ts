@@ -4,5 +4,3 @@ export interface CalendarEvent {
   endAt?: string
   title: string
 }
-
-export type CalendarViewType = 'today' | 'week' | 'month'

@@ -2,7 +2,7 @@
 
 An **Application** is an agent-run, in-home promotion application (`type`: `tpr_assistance`; `showcase` is stubbed for a future phase) that persists to the DB and links to a meeting. Meeting (1) → Applications (many). This entity is the **persistence substrate** only: the multi-step form engine and UI are sub-project #2, and the review/approval + decision email are sub-project #3.
 
-This directory holds: the draft-state schema (`schemas/index.ts`), enum re-exports and reserved keys (`lib/constants.ts`), the visibility predicate + server spec (`lib/`), CRUD + business DAL (`dal/server/`). Backend module layout mirrors `proposals/`. The server spec at `lib/server-spec.ts` is consumed by `createEntityRouter` in `src/trpc/routers/applications.router/index.ts`, which is already wired (CRUD + business reads + draft lifecycle).
+This directory holds: the draft-state schema (`schemas/index.ts`), enum re-exports and reserved keys (`lib/constants.ts`), the visibility predicate + server spec (`lib/`), CRUD + business DAL (`dal/server/`). Backend module layout mirrors `proposals/`. The server spec at `lib/server-spec.ts` is consumed by `createCrudRouter` in `src/trpc/routers/applications.router/crud.router.ts`; `applications.router/index.ts` composes it with the `business` and `draft` sub-routers (CRUD + business reads + draft lifecycle, all wired).
 
 ## Lifecycle
 
@@ -66,7 +66,7 @@ doesn't. Multi-select trades are aggregatable (e.g. "how many applications
 selected Kitchen?"), so they need a real junction table, never a JSON array
 buried in an answer value.
 **Reference impl**: `dal/server/mutations.ts:submitApplication` (modeled on
-proposals' `replaceProposalIncentives` — read-current → transactional
+proposals' `proposalService.incentives.replace` (`src/shared/modules/proposals/incentives/service.ts`) — read-current → transactional
 upsert-and-flip).
 **Enforced by**: `applications_submitted_at_ck` CHECK (`applications.ts`); the
 `status === 'draft'` guards in `saveDraft` and `submitApplication`.
@@ -87,7 +87,7 @@ Notion id with **no FK** to the Postgres `trades` table (mirroring
 `x_project_scopes.scopeId`), and `tradeName` snapshots the label at submit
 because marketing renames trades in Notion freely. Sub-project #2's
 multi-select-trades step reads the Notion-backed picker
-(`notionRouter.trades.getAll` → `constructionDataService.getTrades()`) and
+(`constructionRouter.trades.getAll` → `constructionService.getCatalog()`) and
 **must** write `{ tradeId, tradeName }` objects under
 `draftAnswersJSON.answers['trades']` — any other key name silently falls
 through to the generic answer path and never reaches the trades junction.
@@ -107,18 +107,12 @@ re-typed as a string literal.
 
 ### visibility-via-meeting-participation
 
-Applications have no `ownerId` column and declare no standalone visibility fn.
-They are a structural CHILD of `Meeting`:
-`applicationServerSpec.parent = { spec: meetingServerSpec, fk: applications.meetingId }`.
-The scope engine derives visibility from that link as the parent bridge
-`applications.meetingId IN (SELECT meetings.id WHERE <meeting scope>)` — the
-legacy engine via `resolveEffectiveScope`→`bridgeToParent` (folding the parent's
-`meetingVisibility`), the CASL engine via `resolveActorScope` (folding
-`resolveActorScope(meetingServerSpec)`) once the shared factory flips in Phase 7.
-Non-omni agents see an application only if they participate in its meeting (any
-role) — mirroring proposals' "meeting participation is the gate" rule. (Phase 6,
-2026-08-20: replaced the former `lib/visibility.ts:applicationVisibility` +
-`scopeMiddleware` wiring, both now deleted.)
+Applications have no `ownerId` column. Visibility is
+`userParticipatesInMeeting(userId, applications.meetingId)`
+(`lib/visibility.ts:applicationVisibility`), resolved by `scopeMiddleware`
+into `ctx.scope` for every entity procedure. Non-omni agents see an
+application only if they participate in its meeting (any role) — mirroring
+proposals' "meeting participation is the gate" rule.
 
 Child rows (`application_answers`, `x_application_trades`) carry no
 independent visibility of their own. They are always reached through the
@@ -132,11 +126,11 @@ scoped parent row before touching `application_answers` / `x_application_trades`
 independent owner concept to hang visibility off of. Reusing the meeting
 scope instead of inventing an `ownerId` keeps applications consistent with
 how proposals already do it.
-**Reference impl**: `applicationServerSpec.parent` → `meetingServerSpec`
-(whose scope folds `@/shared/entities/meetings/dal/server/participants:userParticipatesInMeeting`).
-**Enforced by**: `applicationServerSpec.parent` (read by the scope engine to
-emit the parent bridge); the scope-probe in every business DAL function that
-reads or mutates a child row.
+**Reference impl**: `lib/visibility.ts:applicationVisibility` →
+`@/shared/entities/meetings/dal/server/participants:userParticipatesInMeeting`.
+**Enforced by**: `applicationServerSpec.visibility` (wired into
+`scopeMiddleware`); the scope-probe in every business DAL function that reads
+or mutates a child row.
 
 ## Anti-patterns
 
@@ -170,6 +164,6 @@ reads or mutates a child row.
 - ADR-0005 — JSONB vs column vs child table (the storage-shape decision behind [`#draft-commit-split`](#draft-commit-split))
 - `docs/codebase-conventions/dal-conventions.md` — `DalReturn<T>` + `ScopedContext` pattern used in this entity's DAL
 - [`../meetings/DOCS.md`](../meetings/DOCS.md) — `userParticipatesInMeeting`, the shared visibility primitive this entity reuses
-- [`../proposals/DOCS.md`](../proposals/DOCS.md) — structural precedent this entity's backend module layout and visibility rule mirror
+- [`../../modules/proposals/core/DOCS.md`](../../modules/proposals/core/DOCS.md) — structural precedent this entity's backend module layout and visibility rule mirror
 
 **Last updated:** 2026-07-30 — initial (sub-project #1: data model + backend).

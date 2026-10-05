@@ -95,7 +95,7 @@ export function ProposalNavbarMenu({ variant }: Props) {
         {showViewToggle && (
           <>
             <div className="-mx-1.5 my-1.5 h-px bg-linear-to-r from-transparent via-border to-transparent" />
-            <div className="px-3 pt-1.5 pb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+            <div className="px-3 pt-1.5 pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
               Viewing as
             </div>
             <div role="radiogroup" aria-label="View mode" className="flex gap-1 p-1">

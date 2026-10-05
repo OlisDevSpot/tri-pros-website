@@ -18,7 +18,7 @@ export function IntakeTradeScopePicker() {
     name: 'tradeRows',
   })
 
-  const { data: trades = [] } = useQuery(trpc.notionRouter.trades.getAll.queryOptions())
+  const { data: trades = [] } = useQuery(trpc.constructionRouter.trades.getAll.queryOptions())
 
   const usedTradeIds = new Set(
     form.getValues('tradeRows').map(r => r.tradeId).filter(Boolean),

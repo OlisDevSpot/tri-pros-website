@@ -1,112 +1,61 @@
-// ─── DAL Shared Types ──────────────────────────────────────────────────────
-// These types define the contracts between DAL, tRPC, services, and jobs.
-// They live here (not in trpc/) because DAL is the foundational layer —
-// tRPC, services, and jobs all depend on DAL, never the reverse.
-//
-// Import from: `@/shared/dal/server/types`
+// Lives in dal/, not trpc/: tRPC, services, and jobs all depend on DAL, never the reverse.
 
 import type { SQL } from 'drizzle-orm'
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core'
 import type z from 'zod'
 
+import type { Tx } from '@/shared/db'
 import type { Insert, Row, Update } from '@/shared/db/types'
 import type { BetterAuthSession } from '@/shared/domains/auth/server'
 import type { EntityName } from '@/shared/domains/permissions/abilities'
-import type { Actor } from '@/shared/domains/permissions/scope/actor'
-import type { SystemReason } from '@/shared/domains/permissions/scope/system-reasons'
 import type { AppAbility, AppSubject } from '@/shared/domains/permissions/types'
 
-import { systemActor } from '@/shared/domains/permissions/scope/actor'
-
-// ── Context ─────────────────────────────────────────────────────────────
-
-/**
- * Minimal context for all DAL functions. Every DAL function receives this
- * as its first argument, regardless of how it's invoked:
- *
- * - **From tRPC**: middleware resolves session/ability/scope from HTTP
- *   request, passes as `ScopedContext`.
- * - **From services/jobs**: caller constructs context via helpers
- *   (`SYSTEM_CONTEXT` for privileged, `buildUserContext()` for scoped).
- *
- * `scope` is a Drizzle SQL fragment applied to WHERE clauses for
- * visibility. `null` = no restriction (system/omni access).
- */
+/** `scope: null` = no visibility restriction (system/omni). */
 export interface ScopedContext {
   session: BetterAuthSession | null
   ability: AppAbility | null
   scope: SQL | null
-  /**
-   * WHO is invoking this — the source of truth from which `scope` is derived
-   * (spec §3). Always non-null at a DAL entry: every construction site stamps a
-   * real actor (userActor / tokenActor / systemActor). `scope` remains the
-   * pre-resolved cache the permission-agnostic CRUD factory consumes; bespoke
-   * DALs may read `actor` directly (resolveActorScope / canAccess / phone gate).
-   */
-  actor: Actor
+  /** Present ⇒ run on the caller's ambient transaction. Absent ⇒ autocommit on `db`. */
+  tx?: Tx
 }
 
-/**
- * System-level context with no scoping. Used by background jobs,
- * webhooks, and services that need full access to all rows.
- */
 export const SYSTEM_CONTEXT: ScopedContext = {
   session: null,
   ability: null,
   scope: null,
-  actor: systemActor('legacy:system-context'),
 }
 
-/**
- * Named, auditable system context — the ScopedContext-layer analogue of
- * `systemActor(reason)`. Same allow-all shape as `SYSTEM_CONTEXT`, but the
- * required `SystemReason` makes each unrestricted call site greppable and
- * forces a conscious "why is this bypass safe?" at review. Prefer this over
- * the bare `SYSTEM_CONTEXT` for any NEW privileged write.
- * see ../../../plans/2026-08-10-casl-scope-compiler-epic.md (Retiring-Seams Register)
- */
-export function systemContext(reason: SystemReason): ScopedContext {
-  return { session: null, ability: null, scope: null, actor: systemActor(reason) }
-}
-
-// ── Visibility Scope ────────────────────────────────────────────────────
-
-/** Inputs a visibility predicate may branch on. userId for row-ownership; ability for capability-based views. */
 export interface VisibilityScope {
   userId: string
   ability: AppAbility
 }
 
-// ── Hook plumbing (Sub-plan A) ──────────────────────────────────────────
-
-/** A hook may be sync or async. No existing repo util covers this. */
 export type MaybePromise<T> = T | Promise<T>
 
-/** Meta for a create `after` hook. `input` is the ORIGINAL insert payload. */
-export interface CreateAfterMeta<TTable extends PgTable> {
-  input: Insert<TTable>
+/** `input` is the ORIGINAL (pre-hook) insert payload. */
+export interface CreateAfterMeta<TTable extends PgTable, TInsert = Insert<TTable>> {
+  input: TInsert
 }
 
-/** Meta for an update `after` hook. `previousRow` is the pre-update snapshot; `input` is the ORIGINAL update payload. */
-export interface UpdateAfterMeta<TTable extends PgTable> {
+/** `previousRow` is the pre-update snapshot; `input` is the ORIGINAL (pre-hook) update payload. */
+export interface UpdateAfterMeta<TTable extends PgTable, TUpdate = Update<TTable>> {
   previousRow: Row<TTable>
-  input: Update<TTable>
+  input: TUpdate
 }
 
-/**
- * SINGLE source of truth for per-slot hook signatures. Add a slot or change a
- * signature here and every hook type below follows. `create`/`update` `before`
- * threads (transforms) the payload; `delete` `before`/`after` take the pre-delete
- * row and return void.
- */
-export interface CrudSlotHookMap<TTable extends PgTable, TId extends string | number> {
+/** Meta for a duplicate `after` hook. `source` is the row that was copied. */
+export interface DuplicateAfterMeta<TTable extends PgTable> {
+  source: Row<TTable>
+}
+
+export interface CrudSlotHookMap<TTable extends PgTable, TId extends string | number, TInsert = Insert<TTable>, TUpdate = Update<TTable>> {
   create: {
-    before?: (input: Insert<TTable>, ctx: ScopedContext) => MaybePromise<Insert<TTable>>
-    after?: (row: Row<TTable>, ctx: ScopedContext, meta: CreateAfterMeta<TTable>) => MaybePromise<Row<TTable> | void>
+    before?: (input: TInsert, ctx: ScopedContext) => MaybePromise<TInsert>
+    after?: (row: Row<TTable>, ctx: ScopedContext, meta: CreateAfterMeta<TTable, TInsert>) => MaybePromise<Row<TTable> | void>
   }
   update: {
-    before?: (data: Update<TTable>, ctx: ScopedContext, meta: { id: TId }) => MaybePromise<Update<TTable>>
-    after?: (row: Row<TTable>, ctx: ScopedContext, meta: UpdateAfterMeta<TTable>) => MaybePromise<Row<TTable> | void>
+    before?: (data: TUpdate, ctx: ScopedContext, meta: { id: TId }) => MaybePromise<TUpdate>
+    after?: (row: Row<TTable>, ctx: ScopedContext, meta: UpdateAfterMeta<TTable, TUpdate>) => MaybePromise<Row<TTable> | void>
   }
   delete: {
     before?: (row: Row<TTable>, ctx: ScopedContext) => MaybePromise<void>
@@ -114,65 +63,53 @@ export interface CrudSlotHookMap<TTable extends PgTable, TId extends string | nu
   }
 }
 
-/** The three hook-bearing mutation slots, derived from the map (stays in sync). */
-export type CrudMutationSlot = keyof CrudSlotHookMap<PgTable, string>
+export type CrudMutationSlot = keyof CrudSlotHookMap<PgTable, string> & string
 
-/** Factory-invariant hooks — each slot optional. Fire every call, every origin. */
-export type CrudHooks<TTable extends PgTable, TId extends string | number = string> = {
-  [S in CrudMutationSlot]?: CrudSlotHookMap<TTable, TId>[S]
+/** Factory-invariant hooks: fire on every call from every origin. */
+export type CrudHooks<TTable extends PgTable, TId extends string | number = string, TInsert = Insert<TTable>, TUpdate = Update<TTable>> = {
+  [S in CrudMutationSlot]?: CrudSlotHookMap<TTable, TId, TInsert, TUpdate>[S]
 }
 
-/**
- * Call-site hooks for ONE slot: that slot's before/after (looked up) PLUS a
- * commit-boundary hook. `afterCommit` is declared for a stable option surface
- * but WIRED by Sub-plan C — never invoked in A.
- */
+/** Per-call hooks for one slot. `afterCommit` is declared but NOT wired — it is never invoked. */
 export type CrudCallsiteHooks<
   TTable extends PgTable,
   TId extends string | number,
   S extends CrudMutationSlot,
-> = CrudSlotHookMap<TTable, TId>[S] & {
+  TInsert = Insert<TTable>,
+  TUpdate = Update<TTable>,
+> = CrudSlotHookMap<TTable, TId, TInsert, TUpdate>[S] & {
   afterCommit?: (row: Row<TTable>, ctx: ScopedContext) => void
 }
 
-/**
- * Factory-invariant hook + duplicate config for an entity. Returned by a
- * `CrudConfigFactory`, or synthesized from `EntityServerSpec` (deprecated path)
- * by `synthesizeFromSpec` in create-crud-dal.ts.
- */
-export interface CrudConfig<TTable extends PgTable, TId extends string | number = string> {
-  hooks?: CrudHooks<TTable, TId>
+export interface CrudConfig<TTable extends PgTable, TId extends string | number = string, TInsert = Insert<TTable>, TUpdate = Update<TTable>> {
+  hooks?: CrudHooks<TTable, TId, TInsert, TUpdate>
   duplicate?: {
     exclude?: readonly string[]
-    overrides?: (source: Row<TTable>, ctx: ScopedContext) => Partial<Insert<TTable>>
+    overrides?: (source: Row<TTable>, ctx: ScopedContext) => Partial<TInsert>
+    /**
+     * Fires once the copy exists — after `createImpl` (and therefore after the
+     * create before/after hooks) returned success — with the created row and
+     * the SOURCE row. The place for child-row cloning the engine cannot express
+     * (`duplicateImpl` copies `spec.table` only). Return a replacement row to
+     * thread it back to the caller, or void. There is no `duplicate.before`:
+     * `overrides` is the before-shaping seam. Fires for every origin.
+     */
+    after?: (row: Row<TTable>, ctx: ScopedContext, meta: DuplicateAfterMeta<TTable>) => MaybePromise<Row<TTable> | void>
   }
 }
 
-/**
- * Late-bound config factory. Receives the crud handlers the factory itself
- * produces, so a hook can call `crudHandlers.getById(...)` for a same-entity
- * read — resolved at call time, long after construction. This kills the
- * circular barrier (spec §1.1, §2.3).
- */
-export type CrudConfigFactory<TTable extends PgTable, TId extends string | number = string>
-  = (crudHandlers: CrudHandlers<TTable, TId>) => CrudConfig<TTable, TId>
+/** Late-bound so a hook can call the entity's own crud handlers without a circular import — resolved at call time. */
+export type CrudConfigFactory<TTable extends PgTable, TId extends string | number = string, TInsert = Insert<TTable>, TUpdate = Update<TTable>>
+  = (crudHandlers: CrudHandlers<TTable, TId, TInsert, TUpdate>) => CrudConfig<TTable, TId, TInsert, TUpdate>
 
-// ── Entity Server Spec ──────────────────────────────────────────────────
+// The engine validates payloads with the spec's Zod schemas AFTER the hooks run, so the
+// contract is the schema INPUT (hook-filled columns optional), not Drizzle's insert model.
+export type SpecInsert<TSpec extends EntityServerSpec<any, any>> = z.input<TSpec['schemas']['insert']>
+export type SpecUpdate<TSpec extends EntityServerSpec<any, any>> = z.input<TSpec['schemas']['update']>
+/** PK value type, read off the table's `id` column (serial → number, uuid → string). Tables keyed by another column (`primaryKey` override) fall back to string. */
+export type SpecId<TSpec extends EntityServerSpec<any, any>> = Row<TSpec['table']> extends { id: infer I extends string | number } ? I : string
+export type SpecCrudHandlers<TSpec extends EntityServerSpec<any, any>> = CrudHandlers<TSpec['table'], SpecId<TSpec>, SpecInsert<TSpec>, SpecUpdate<TSpec>>
 
-/**
- * Typed declaration per entity. The single source of truth for an entity's
- * table, schemas, visibility predicate, and named configuration.
- *
- * @typeParam TTable — Drizzle table type for this entity.
- * @typeParam TId — Primary key value type. Defaults to `string` (UUID).
- *   Override to `number` for serial PKs.
- *
- * Consumed by:
- * - `createCrudDal(spec)` — DAL crud factory
- * - `createCrudRouter({ spec, schemas })` — tRPC CRUD leaf (builds scoped procedures inline)
- * - `<entity>.router/procedures.ts` — per-entity pre-scoped procedures (defined once)
- * - `buildUserContext(userId, spec)` — context builder for services/jobs
- */
 export interface EntityServerSpec<
   TTable extends PgTable = PgTable,
   // eslint-disable-next-line unused-imports/no-unused-vars -- Phantom type param carried through to CrudHandlers<TTable, TId> via createCrudDal
@@ -180,23 +117,9 @@ export interface EntityServerSpec<
 > {
   entityName: EntityName
   caslSubject: AppSubject
-  /**
-   * The entity's OWN visibility fragment (references THIS table's columns).
-   * Optional: a pure child entity (one with a `parent` link and no independent
-   * ownership) omits it — its effective scope is entirely parent-derived. A
-   * top-level entity without a `parent` MUST declare it, else it would be
-   * unscoped. Enforced at resolve time (`resolveEffectiveScope`), which ANDs
-   * this fragment with the parent bridge. Omni is handled by the callers of
-   * `resolveEffectiveScope`, never here.
-   */
+  /** The entity's OWN visibility fragment. Optional only for a child with `parent`; a top-level entity MUST declare it or it is unscoped (checked in `resolveEffectiveScope`). */
   visibility?: (scope: VisibilityScope) => SQL
-  /**
-   * Parent link for a sub-entity. `fk` is the CHILD column that references the
-   * parent's primary key. `resolveEffectiveScope` composes
-   * `fk IN (SELECT parent.pk FROM parent WHERE <parent effective scope>)` and
-   * ANDs it with this entity's own `visibility` (additive). Children reuse the
-   * parent's `caslSubject`. see dal/server/lib/scope.ts
-   */
+  /** Parent link for a sub-entity: `fk` is the CHILD column referencing the parent's PK; the parent's effective scope is ANDed in through it. Children reuse the parent's `caslSubject`. */
   parent?: { spec: EntityServerSpec, fk: PgColumn }
   table: TTable
   schemas: {
@@ -207,94 +130,20 @@ export interface EntityServerSpec<
   /** Defaults to 'id'. Override for serial PKs or custom column names. */
   primaryKey?: string
   shareable?: { tokenColumn: string }
-  /**
-   * @deprecated Sub-plan A relocates hooks onto `createCrudDal(spec, configFactory)`.
-   * Still read via `synthesizeFromSpec` for entities not yet migrated; REMOVED in
-   * Sub-plan D — see docs/superpowers/plans/2026-08-16-crud-dal-sub-plan-a-factory-config-hooks.md.
-   *
-   * Entity lifecycle hooks. Executed by createCrudDal — both before and after.
-   *
-   * - `before` hooks: async, data transformation. Can read DB via DAL functions
-   *   (never naked `db`). Return the (possibly enriched) data.
-   * - `after` hooks: async, side effects (services, notifications, realtime).
-   *   The hook implementation decides what to `await` (critical) vs
-   *   `void .catch()` (best-effort).
-   *
-   * All hooks receive ScopedContext. Hooks should be thin orchestrators —
-   * pure business logic belongs in `entities/<entity>/lib/`, service
-   * orchestration uses existing services.
-   */
-  hooks?: {
-    create?: {
-      // eslint-disable-next-line ts/method-signature-style -- bivariant method signatures required for EntityServerSpec<Table> → EntityServerSpec<PgTable> assignability
-      before?(input: Insert<TTable>, ctx: ScopedContext): Promise<Insert<TTable>> | Insert<TTable>
-      // eslint-disable-next-line ts/method-signature-style
-      after?(row: Row<TTable>, ctx: ScopedContext): Promise<void>
-    }
-    update?: {
-      // eslint-disable-next-line ts/method-signature-style
-      before?(data: Update<TTable>, ctx: ScopedContext, meta: { id: string | number }): Promise<Update<TTable>> | Update<TTable>
-      // eslint-disable-next-line ts/method-signature-style
-      after?(row: Row<TTable>, ctx: ScopedContext, meta: {
-        previousRow: Row<TTable>
-        input: Update<TTable>
-      }): Promise<void>
-    }
-    delete?: {
-      // eslint-disable-next-line ts/method-signature-style
-      before?(id: string | number, ctx: ScopedContext): Promise<void>
-      // eslint-disable-next-line ts/method-signature-style
-      after?(id: string | number, ctx: ScopedContext): Promise<void>
-    }
-  }
-  /**
-   * @deprecated Sub-plan A relocates duplicate config into the config factory;
-   * REMOVED in Sub-plan D — see
-   * docs/superpowers/plans/2026-08-16-crud-dal-sub-plan-a-factory-config-hooks.md.
-   *
-   * Declarative duplicate config. Default behavior: copy full row minus PK.
-   * Duplicate routes through createImpl — create hooks fire automatically.
-   * This is NOT a hook. It's declarative configuration for field selection.
-   */
-  duplicate?: {
-    /** Fields to drop beyond PK (which is always dropped). */
-    exclude?: readonly string[]
-    /** Override/transform specific field values on the copy. */
-    // eslint-disable-next-line ts/method-signature-style
-    overrides?(source: Row<TTable>, ctx: ScopedContext): Partial<Insert<TTable>>
-  }
 }
 
-// ── CRUD Slot Names ─────────────────────────────────────────────────────
-
-/**
- * Canonical CRUD slot names — 5 single-row operations.
- * `list` is NOT CRUD — each entity writes its own list query.
- */
+/** `list` is deliberately not a slot — each entity writes its own list query. */
 export type SlotName = 'getById' | 'create' | 'update' | 'delete' | 'duplicate'
 
-// ── CRUD Handler Interface ──────────────────────────────────────────────
-
-export interface CrudHandlers<TTable extends PgTable, TId extends string | number = string> {
+export interface CrudHandlers<TTable extends PgTable, TId extends string | number = string, TInsert = Insert<TTable>, TUpdate = Update<TTable>> {
   getById: (ctx: ScopedContext, input: { id: TId }) => Promise<DalReturn<Row<TTable> | undefined>>
-  create: (ctx: ScopedContext, input: Insert<TTable>, options?: CrudCallsiteHooks<TTable, TId, 'create'>) => Promise<DalReturn<Row<TTable>>>
-  update: (ctx: ScopedContext, input: { id: TId, data: Update<TTable> }, options?: CrudCallsiteHooks<TTable, TId, 'update'>) => Promise<DalReturn<Row<TTable>>>
-  delete: (ctx: ScopedContext, input: { id: TId }, options?: CrudCallsiteHooks<TTable, TId, 'delete'>) => Promise<DalReturn<void>>
-  duplicate: (ctx: ScopedContext, input: { id: TId }, options?: CrudCallsiteHooks<TTable, TId, 'create'>) => Promise<DalReturn<Row<TTable>>>
+  create: (ctx: ScopedContext, input: TInsert, options?: CrudCallsiteHooks<TTable, TId, 'create', TInsert, TUpdate>) => Promise<DalReturn<Row<TTable>>>
+  update: (ctx: ScopedContext, input: { id: TId, data: TUpdate }, options?: CrudCallsiteHooks<TTable, TId, 'update', TInsert, TUpdate>) => Promise<DalReturn<Row<TTable>>>
+  delete: (ctx: ScopedContext, input: { id: TId }, options?: CrudCallsiteHooks<TTable, TId, 'delete', TInsert, TUpdate>) => Promise<DalReturn<void>>
+  duplicate: (ctx: ScopedContext, input: { id: TId }, options?: CrudCallsiteHooks<TTable, TId, 'create', TInsert, TUpdate>) => Promise<DalReturn<Row<TTable>>>
 }
 
-// ── DalReturn Result Type ───────────────────────────────────────────────
-//
-// Every DAL function returns this discriminated union — never throws,
-// never redirects. The DAL is a pure data boundary. Callers decide what
-// to do with errors:
-//
-// - tRPC procedures: map DalError → TRPCError (client gets HTTP status)
-// - Services/jobs: inspect error type, log, retry, or propagate
-// - Server components: redirect on no-user, throw on DB error
-//
-// Adapted from WebDevSimplified/next-js-data-access-layer.
-
+// Every DAL function returns this — never throws, never redirects; the caller maps the error.
 export type DalReturn<T>
   = | { success: true, data: T }
     | { success: false, error: DalError }
@@ -308,8 +157,6 @@ export type DalError
     | { type: 'unknown-error', cause: unknown }
     | { type: 'precondition-failed', reason: string }
 
-// ── Result Constructors ─────────────────────────────────────────────────
-
 export function dalSuccess<T>(data: T): DalReturn<T> {
   return { success: true, data }
 }
@@ -318,12 +165,7 @@ export function dalError<T = never>(error: DalError): DalReturn<T> {
   return { success: false, error }
 }
 
-// ── ThrowableDalError ───────────────────────────────────────────────────
-//
-// For use INSIDE dalDbOperation: when business logic detects an error
-// mid-query (e.g., row count = 0 after update), throw this to short-
-// circuit into a structured DalError instead of an unknown-error.
-
+// Throw inside `dalDbOperation` to short-circuit into a structured DalError instead of a db-error.
 export class ThrowableDalError extends Error {
   dalError: DalError
   constructor(dalError: DalError) {

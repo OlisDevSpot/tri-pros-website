@@ -1,6 +1,6 @@
 'use client'
 
-import type { ProjectFormData } from '@/shared/entities/projects/schemas'
+import type { ProjectFormData } from '@/shared/modules/projects/core/schemas'
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -11,14 +11,14 @@ import { useMemo, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { ProjectForm } from '@/features/project-management/ui/components/form'
-import { EntityViewButton } from '@/shared/components/entity-actions/entity-view-button'
+import { EntityViewButton } from '@/shared/components/entities/entity-actions/entity-view-button'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { Button } from '@/shared/components/ui/button'
 import { Form } from '@/shared/components/ui/form'
 import { ROOTS } from '@/shared/config/roots'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
-import { projectFormDefaults, projectFormSchema } from '@/shared/entities/projects/schemas'
+import { projectFormDefaults, projectFormSchema } from '@/shared/modules/projects/core/schemas'
 import { useTRPC } from '@/trpc/helpers'
 
 interface Props {
@@ -88,10 +88,6 @@ export function EditProjectView({ projectId }: Props) {
       challengeDescription: p.challengeDescription ?? null,
       solutionDescription: p.solutionDescription ?? null,
       resultDescription: p.resultDescription ?? null,
-      beforeDescription: p.beforeDescription ?? null,
-      duringDescription: p.duringDescription ?? null,
-      afterDescription: p.afterDescription ?? null,
-      mainDescription: p.mainDescription ?? null,
       scopeIds,
     } satisfies ProjectFormData
   }, [project.data])

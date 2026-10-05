@@ -8,16 +8,18 @@ import { HydrationErrorFallback } from '@/trpc/components/hydration-error-fallba
 interface Props {
   children: React.ReactNode
   fallback?: React.ReactNode
+  /** Size of the default retry fallback; ignored when `fallback` is given. */
+  variant?: 'page' | 'section'
 }
 
-export function HydrationErrorBoundary({ children, fallback }: Props) {
+export function HydrationErrorBoundary({ children, fallback, variant }: Props) {
   return (
     <QueryErrorResetBoundary>
       {({ reset }) => (
         <ErrorBoundary
           onReset={reset}
           fallbackRender={({ resetErrorBoundary }) =>
-            fallback ?? <HydrationErrorFallback onRetry={() => resetErrorBoundary()} />}
+            fallback ?? <HydrationErrorFallback variant={variant} onRetry={() => resetErrorBoundary()} />}
         >
           {children}
         </ErrorBoundary>

@@ -4,6 +4,7 @@ import type { AppAbility } from '@/shared/domains/permissions/types'
 
 import {
   BarChart3Icon,
+  CalculatorIcon,
   CalendarIcon,
   FileTextIcon,
   GitBranchIcon,
@@ -40,7 +41,7 @@ export interface SidebarNavConfig {
   mainItems: readonly SidebarNavItem[]
   recordsItems: readonly SidebarNavItem[]
   adminItems: readonly SidebarNavItem[]
-  footerItems: readonly SidebarNavItem[]
+  settingsItem: SidebarNavItem
 }
 
 export function getSidebarNav(ability: AppAbility): SidebarNavConfig {
@@ -68,6 +69,12 @@ export function getSidebarNav(ability: AppAbility): SidebarNavConfig {
       icon: CalendarIcon,
       label: 'Schedule',
       enabled: ability.can('read', 'Meeting'),
+    },
+    {
+      href: ROOTS.dashboard.calculators(),
+      icon: CalculatorIcon,
+      label: 'Calculators',
+      enabled: ability.can('access', 'Dashboard'),
     },
   ]
 
@@ -103,13 +110,11 @@ export function getSidebarNav(ability: AppAbility): SidebarNavConfig {
         { href: ROOTS.dashboard.leadSources(), icon: RadioTowerIcon, label: 'Lead Sources', enabled: true },
         { href: ROOTS.dashboard.campaigns(), icon: MegaphoneIcon, label: 'Campaigns', enabled: true },
         { href: ROOTS.dashboard.team(), icon: UsersIcon, label: 'Team', enabled: false },
-        { href: ROOTS.dashboard.analytics(), icon: BarChart3Icon, label: 'Analytics', enabled: false },
+        { href: ROOTS.dashboard.analytics(), icon: BarChart3Icon, label: 'Analytics', enabled: true },
       ]
     : []
 
-  const footerItems: SidebarNavItem[] = [
-    { href: ROOTS.dashboard.settings(), icon: SettingsIcon, label: 'Settings', enabled: true },
-  ]
+  const settingsItem: SidebarNavItem = { href: ROOTS.dashboard.settings(), icon: SettingsIcon, label: 'Settings', enabled: true }
 
-  return { dashboardItem, mainItems, recordsItems, adminItems, footerItems }
+  return { dashboardItem, mainItems, recordsItems, adminItems, settingsItem }
 }

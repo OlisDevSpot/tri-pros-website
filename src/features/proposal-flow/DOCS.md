@@ -2,7 +2,7 @@
 
 The proposal-flow feature is the **multi-step customer-and-agent UX** for authoring, reviewing, and signing a proposal. Both the agent (building) and the homeowner (reviewing/signing) consume the same flow — distinguished by `?view=agent|customer` and a CASL permission gate.
 
-This DOCS.md captures flow-level UX rules. **Data invariants** (status transitions, kind derivation, JSONB merge, etc.) live in [`../../shared/entities/proposals/DOCS.md`](../../shared/entities/proposals/DOCS.md).
+This DOCS.md captures flow-level UX rules. **Data invariants** (status transitions, kind derivation, JSONB merge, etc.) live in [`../../shared/modules/proposals/core/DOCS.md`](../../shared/modules/proposals/core/DOCS.md).
 
 ## Layout
 
@@ -67,7 +67,7 @@ Most steps are **static**: their content comes from constants + portfolio data. 
 
 **Retired (Wave 1, epic #256; the merge mechanism itself was deleted entirely in Wave
 2).** `projectJSON` is a whole-document column — see
-`../../shared/entities/proposals/DOCS.md#jsonb-merge-on-update`. Scope-of-Work edits
+`../../shared/modules/proposals/core/DOCS.md#jsonb-merge-on-update`. Scope-of-Work edits
 write to `projectJSON.data.sow` via the proposal entity router's update mutation, and
 the client reconstructs and submits the full `projectJSON` document on every save
 (never a bare `{ sow: [...] }` partial), so the plain CRUD path is safe.
@@ -82,7 +82,7 @@ plain-replaces a column now, so this is simply how `update` behaves, not an opt-
 
 ### customer-token-access-is-update-capable
 
-Homeowners access their proposal via `?token=<shareToken>` (see `../../shared/entities/proposals/DOCS.md#shareable-via-token`). Crucially, the token allows **read AND update** — homeowners can change their finance option selection from the customer view (which writes to the `proposals.financeOptionId` scalar column, FK → `finance_options`).
+Homeowners access their proposal via `?token=<shareToken>` (see `../../shared/modules/proposals/core/DOCS.md#shareable-via-token`). Crucially, the token allows **read AND update** — homeowners can change their finance option selection from the customer view (which writes to the `proposals.financeOptionId` scalar column, FK → `finance_options`).
 
 **Corrected 2026-08-11**: `selectedFinanceOptionId` was never a real field — it was never stored in either JSONB blob (verified: zero rows, dev 59 blobs / prod 100 blobs, carried that key). The finance-option selection has always lived on the plain `financeOptionId` column; this rule previously mis-cited a blob path that doesn't exist.
 
@@ -97,7 +97,7 @@ The Agreement step renders `ContractStatusPanel` which derives status display pu
 When a Zoho webhook fires, contracts service updates these timestamps and the panel reflects new state on next query.
 
 **Why**: contract events are real-world facts (when did the email get sent? when did the homeowner open it?). Persisting as timestamps preserves the audit trail without requiring a denormalized "status" column.
-**Reference impl**: `src/shared/components/contract-status-panel/`; events mapped in `src/shared/entities/proposals/lib/contract-events.ts`
+**Reference impl**: `src/shared/components/contract-status-panel/`; events mapped in `src/shared/modules/proposals/core/lib/contract-events.ts`
 **Enforced by**: convention (status is derived from timestamps, never stored as a separate column)
 
 ### scroll-context-syncs-step-nav
@@ -112,14 +112,14 @@ When a Zoho webhook fires, contracts service updates these timestamps and the pa
 
 - **Adding a new step without role gating.** Even if it's visible to both today, the `roles` field is the future seam — don't drop it.
 - **Bypassing `useViewMode`.** Always go through the hook so the CASL gate runs. Reading `searchParams.get('view')` directly is a bug.
-- **Sending a partial `projectJSON` object on update.** It is a whole-document column; `update` always plain-replaces (the `jsonbMergeColumns` mechanism it was deregistered from in Wave 1 was deleted entirely in Wave 2) — always reconstruct and submit the full object. See `../../shared/entities/proposals/DOCS.md#jsonb-merge-on-update`. (`fundingJSON` no longer applies — W3 moved funding to scalar columns + incentive rows, and the blob is omitted from the insert/update schemas.)
+- **Sending a partial `projectJSON` object on update.** It is a whole-document column; `update` always plain-replaces (the `jsonbMergeColumns` mechanism it was deregistered from in Wave 1 was deleted entirely in Wave 2) — always reconstruct and submit the full object. See `../../shared/modules/proposals/core/DOCS.md#jsonb-merge-on-update`. (`fundingJSON` no longer applies — W3 moved funding to scalar columns + incentive rows, and the blob is omitted from the insert/update schemas.)
 - **Storing a denormalized "contract status" enum.** Derive from the timestamp columns.
 - **Manual proposal status flips inside the flow** (e.g., setting `status = 'approved'` from a button). Approval is a contract-event consequence (`completed` webhook), or the explicit approve mutation.
 - **Putting cost-line edits in the customer view.** Cost lines are agent-only — they show margin/multiplier info that must not leak to homeowners.
 
 ## See also
 
-- `../../shared/entities/proposals/DOCS.md` — proposal data invariants (kind, TCP, JSONB merge, CSLB, contract events)
+- `../../shared/modules/proposals/core/DOCS.md` — proposal data invariants (kind, TCP, JSONB merge, CSLB, contract events)
 - `../../shared/entities/customers/DOCS.md#phone-visibility-threshold` — paired customer-side gate
 - `../../trpc/DOCS.md#shareable-middleware-token-or-session` — token-or-session middleware
 - `docs/proposal/creation-guide.md` — sales-side proposal-authoring playbook

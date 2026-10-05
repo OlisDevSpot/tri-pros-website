@@ -1,12 +1,12 @@
 'use client'
 
-import type { PublicProject } from '@/shared/entities/projects/types'
+import type { PublicProject } from '@/shared/modules/projects/core/types'
 import { AnimatePresence, motion, useInView } from 'motion/react'
 import Link from 'next/link'
 import { useRef, useState } from 'react'
-import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Badge } from '@/shared/components/ui/badge'
 import { ROOTS } from '@/shared/config/roots'
+import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
 
 export function ProjectCard({ row, index }: { row: PublicProject, index: number }) {
   const { project, heroImage } = row

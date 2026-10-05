@@ -1,0 +1,32 @@
+import type { ChapterId } from '@/features/calculators/remodel-roi-calculator/constants/chapters'
+
+export const STORY_COPY = {
+  paths: { now: 'Upgrade now', wait: 'Wait and replace' },
+  questions: {
+    intro: 'Two ways forward',
+    answer: 'The short answer',
+    today: 'What do you pay today?',
+    monthly: 'Will my monthly cost go up?',
+    waiting: 'What if I just wait?',
+    value: 'Is my home worth more?',
+    total: 'So what\'s it all worth?',
+    basis: 'What is this based on?',
+  } satisfies Record<ChapterId, string>,
+  introTitle: 'Upgrade now, or wait and replace?',
+  close: 'And you get to live in a house worth living in.',
+  tags: { yours: 'You told us', assumption: 'Working number', calc: 'Calculated' },
+  showMath: 'Show the math',
+  hideMath: 'Hide the math',
+  infoLabel: 'How this section works',
+  topBarEmpty: 'Your numbers appear here as you fill in the inputs',
+  missingTitle: 'To tell your story we need',
+  missingItems: { trades: 'The trades in the project', bills: 'Today\'s bills', price: 'The project price' },
+  openInputs: 'Open inputs',
+  inputs: 'Inputs',
+  assumptions: 'Assumptions',
+  assumptionsDescription: 'The team\'s current estimates, not yet sourced.',
+  lookAhead: 'Look ahead',
+  basisAnswer: 'Your bills, your price and your financing, plus a few working numbers you can change.',
+  basisGuide: 'Working numbers are the team\'s current estimates, not yet sourced. Change any of them and every chapter updates.',
+  changeWorkingNumber: 'Change a working number',
+} as const

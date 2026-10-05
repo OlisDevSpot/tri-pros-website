@@ -1,22 +1,21 @@
-import type { CalendarEvent, CalendarViewType } from '@/shared/components/calendar/types'
+import type { CalendarEvent } from '@/shared/components/calendar/types'
+import type { CalendarViewType } from '@/shared/constants/enums'
 
 import {
   addDays,
   addMonths,
   addWeeks,
-  endOfDay,
   endOfMonth,
   endOfWeek,
   format,
-  isSameDay,
-  parseISO,
-  startOfDay,
   startOfMonth,
   startOfWeek,
   subDays,
   subMonths,
   subWeeks,
 } from 'date-fns'
+
+import { businessDayKey, businessToday } from '@/shared/lib/business-time'
 
 const FORMAT_STRING = 'MM/dd/yy'
 
@@ -57,18 +56,14 @@ export function navigateDate(
   return operations[view](date, 1)
 }
 
-export function getDateRange(
-  date: Date,
-  view: CalendarViewType,
-): { from: Date, to: Date } {
-  switch (view) {
-    case 'today':
-      return { from: startOfDay(date), to: endOfDay(date) }
-    case 'month':
-      return { from: startOfMonth(date), to: endOfMonth(date) }
-    case 'week':
-      return { from: startOfWeek(date), to: endOfWeek(date) }
-  }
+/** Local noon, so date-fns arithmetic and the grid can't slip a day across a DST change. */
+export function calendarDayToLocalDate(calendarDay: string): Date {
+  const [year, month, day] = calendarDay.split('-').map(Number)
+  return new Date(year, month - 1, day, 12)
+}
+
+export function localDateToCalendarDay(date: Date): string {
+  return format(date, 'yyyy-MM-dd')
 }
 
 export function getCalendarCells(selectedDate: Date): CalendarCell[] {
@@ -114,8 +109,31 @@ export function getEventsForDay<T extends CalendarEvent>(
   events: T[],
   date: Date,
 ): T[] {
-  return events.filter((event) => {
-    const startDate = parseISO(event.startAt)
-    return isSameDay(startDate, date)
-  })
+  const calendarDay = localDateToCalendarDay(date)
+  return events.filter(event => businessDayKey(new Date(event.startAt)) === calendarDay)
+}
+
+/** Grid days are local-noon stand-ins for calendar days; "today" is the business zone's, not the runtime's. */
+export function isBusinessToday(date: Date): boolean {
+  return localDateToCalendarDay(date) === businessToday()
+}
+
+/**
+ * The same seed always gives the same integer in `[min, max]`, so a placeholder drawn from a
+ * `YYYY-MM-DD` key stays put across re-renders and matches between server and client, where
+ * `Math.random` would flicker and break hydration.
+ *
+ * Precondition: `range.min <= range.max`. Violating it returns NaN or a value outside `[min, max]`.
+ */
+export function seededIntInRange(seed: string, range: { min: number, max: number }): number {
+  // FNV-1a, then murmur3's finalizer: consecutive dates usually differ in their last character
+  // alone, and without the finalizer the low bits a modulo reads would just cycle in step with the date.
+  let hash = 0x811C9DC5
+  for (let i = 0; i < seed.length; i++) {
+    hash = Math.imul(hash ^ seed.charCodeAt(i), 0x01000193)
+  }
+  hash = Math.imul(hash ^ (hash >>> 16), 0x85EBCA6B)
+  hash = Math.imul(hash ^ (hash >>> 13), 0xC2B2AE35)
+  hash = (hash ^ (hash >>> 16)) >>> 0
+  return range.min + (hash % (range.max - range.min + 1))
 }

@@ -1,81 +1,88 @@
 'use client'
 
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { format } from 'date-fns'
+import type { MeetingListRow } from '@/shared/entities/meetings/dal/server/queries'
 
-import { meetingsMonthInput } from '@/features/agent-dashboard/constants/dashboard-queries'
-import { businessDayKey } from '@/features/agent-dashboard/lib/meeting-windows'
+import { calendarDayToLocalDate, localDateToCalendarDay } from '@/shared/components/calendar/lib/calendar-helpers'
 import { Calendar } from '@/shared/components/ui/calendar'
 import { Skeleton } from '@/shared/components/ui/skeleton'
-import { useTRPC } from '@/trpc/helpers'
+import { SKELETON_BLOCK_TONE_CLASS, SKELETON_FRAME_TONE_CLASS, SKELETON_TONE_CLASS } from '@/shared/constants/skeleton-tone'
+import { businessDayKey } from '@/shared/lib/business-time'
+import { cn } from '@/shared/lib/utils'
 
 import { CalendarMeetingDayButton } from './calendar-meeting-day-button'
 import { DashboardDayAgenda } from './dashboard-day-agenda'
 
 interface DashboardMeetingsCalendarProps {
-  /** The visible month (controlled by the hub so its header Today control can reset it). */
-  month: Date
-  onMonthChange: (month: Date) => void
-  /** The day whose meetings the agenda lists (controlled by the hub). */
-  selectedDay: Date
-  onSelectDay: (day: Date) => void
+  /** The month grid's live meetings, chronological. */
+  rows: MeetingListRow[]
+  /** True while rows belong to another month or haven't arrived (the boundary fallback): no dots, and the agenda shows a skeleton. */
+  isPending: boolean
+  /** Any `YYYY-MM-DD` in the month shown. */
+  month: string
+  /** Called with the 1st of the month the viewer pages to. */
+  onMonthChange: (firstOfMonth: string) => void
+  /** `YYYY-MM-DD` the agenda lists; the hub keeps it inside the loaded grid. */
+  selectedDay: string
+  onSelectDay: (calendarDay: string) => void
 }
 
-/**
- * Meetings calendar — a month `<Calendar>` (left) whose cells carry a
- * cobalt dot on any day with ≥1 live meeting (`CalendarMeetingDayButton`),
- * paired with a `<DashboardDayAgenda>` (right) listing the selected day's
- * meetings chronologically. Replaces the old Today/Upcoming/Past tabs: one
- * `meetingsRouter.reads.list` query per visible month (`meetingsMonthInput`,
- * capped/sorted server-side), sliced client-side by LA calendar day.
- * `placeholderData: keepPreviousData` keeps the current month's rows on
- * screen while paging to a new month, instead of flashing to a skeleton.
- *
- * Month + selected-day state is lifted to `DashboardMeetingsHub` so the
- * module header's "Today" control (beside "See all →") can reset both without
- * spending a calendar row on its own button.
- */
-export function DashboardMeetingsCalendar({ month, onMonthChange, selectedDay, onSelectDay }: DashboardMeetingsCalendarProps) {
-  const trpc = useTRPC()
-
-  const anchor = format(month, 'yyyy-MM-dd')
-  const { data, isLoading } = useQuery(
-    trpc.meetingsRouter.reads.list.queryOptions(meetingsMonthInput(anchor), { placeholderData: keepPreviousData }),
-  )
-
-  const rows = data?.rows ?? []
-  const daysWithMeetings = new Set(rows.map(row => businessDayKey(new Date(row.scheduledFor))))
-  const selectedDayKey = businessDayKey(selectedDay)
-  const selectedDayRows = rows.filter(row => businessDayKey(new Date(row.scheduledFor)) === selectedDayKey)
+/** The rows cover the whole month grid (live outcomes only), so the outside days the picker shows get their dots too. */
+export function DashboardMeetingsCalendar({ rows, isPending, month, onMonthChange, selectedDay, onSelectDay }: DashboardMeetingsCalendarProps) {
+  const visibleRows = isPending ? [] : rows
+  const daysWithMeetings = new Set(visibleRows.map(row => businessDayKey(new Date(row.scheduledFor))))
+  const selectedDayRows = visibleRows.filter(row => businessDayKey(new Date(row.scheduledFor)) === selectedDay)
 
   return (
     <div className="flex flex-col gap-4 md:flex-row">
       <Calendar
         mode="single"
-        selected={selectedDay}
-        onSelect={day => day && onSelectDay(day)}
-        month={month}
-        onMonthChange={onMonthChange}
-        modifiers={{ hasMeeting: date => daysWithMeetings.has(businessDayKey(date)) }}
+        selected={calendarDayToLocalDate(selectedDay)}
+        onSelect={day => day && onSelectDay(localDateToCalendarDay(day))}
+        month={calendarDayToLocalDate(month)}
+        onMonthChange={next => onMonthChange(`${localDateToCalendarDay(next).slice(0, 7)}-01`)}
+        // Cells are local dates and rows are keyed by Pacific day; converting the cell to Pacific would shift it a day east of California.
+        modifiers={{ hasMeeting: date => daysWithMeetings.has(localDateToCalendarDay(date)) }}
         components={{ DayButton: CalendarMeetingDayButton }}
-        className="w-full p-0 md:w-fit md:shrink-0 md:p-3"
-        classNames={{ root: 'w-full md:w-fit' }}
+        className="w-full bg-card p-0 md:w-fit md:shrink-0 md:p-3"
+        // WebKit (every iOS browser) sizes this flex column from the grid's pre-stretch
+        // width, where the aspect-square cells are smaller, so the grid then overflows
+        // onto the agenda. An explicit width makes it measure at its real size.
+        classNames={{ root: 'w-full md:w-fit', month_grid: 'w-full md:w-auto' }}
       />
-      <div className="min-w-0 flex-1">
-        {isLoading
+      <div className="min-w-0 flex-1" aria-busy={isPending || undefined}>
+        {isPending
           ? <DashboardMeetingsCalendarSkeleton />
-          : <DashboardDayAgenda rows={selectedDayRows} selectedDay={selectedDay} />}
+          : <DashboardDayAgenda rows={selectedDayRows} selectedDay={calendarDayToLocalDate(selectedDay)} />}
       </div>
     </div>
   )
 }
 
-/** Dense card-shaped rows matching the agenda's resting row height while the month query is in flight. */
+/** Two of the agenda's rail rows (time badge, hairline, card) at their real 92px, so the swap to the agenda neither jumps nor reflows sideways. */
 function DashboardMeetingsCalendarSkeleton() {
   return (
-    <div className="flex flex-col gap-2 py-2">
-      <Skeleton className="h-16 w-full rounded-lg" />
-      <Skeleton className="h-16 w-full rounded-lg" />
+    <div className="flex flex-col">
+      {[0, 1].map(i => (
+        <div key={i} className="flex items-stretch gap-3">
+          <div className="flex w-18 shrink-0 items-center justify-end">
+            <Skeleton className={cn(SKELETON_BLOCK_TONE_CLASS, 'h-7 w-17')} />
+          </div>
+          <div className="w-px shrink-0 bg-border dark:bg-border/40" />
+          <div className="min-w-0 flex-1 py-2">
+            <div className={cn('rounded-lg border bg-card p-2.5', SKELETON_FRAME_TONE_CLASS)}>
+              <div className="flex h-6 items-center gap-1.5">
+                <Skeleton className={cn(SKELETON_TONE_CLASS, 'size-2 shrink-0 rounded-full')} />
+                <Skeleton className={cn(SKELETON_TONE_CLASS, 'h-3 w-28 max-w-full')} />
+              </div>
+              <div className="mt-1.5 flex h-6 items-center gap-2">
+                <Skeleton className={cn(SKELETON_BLOCK_TONE_CLASS, 'h-5.5 w-12 shrink-0')} />
+                <Skeleton className={cn(SKELETON_BLOCK_TONE_CLASS, 'ml-auto size-5 shrink-0 rounded-full')} />
+                <Skeleton className={cn(SKELETON_TONE_CLASS, 'h-2.5 w-8')} />
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

@@ -154,7 +154,7 @@ export function ContextPanelField({ config, value, onChange }: ContextPanelField
           {config.label}
         </Label>
         {isFilled && (
-          <Badge className="h-3.5 px-1 text-[9px]" variant="secondary">
+          <Badge className="h-3.5 px-1 text-xs leading-none" variant="secondary">
             saved
           </Badge>
         )}

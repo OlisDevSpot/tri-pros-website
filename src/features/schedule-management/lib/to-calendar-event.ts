@@ -6,13 +6,17 @@ import type { AppRouter } from '@/trpc/routers/app'
 
 type ActivityRow = inferRouterOutputs<AppRouter>['scheduleRouter']['activities']['list']['rows'][number]
 
-export function activityToCalendarEvent(activity: ActivityRow): ScheduleActivityEvent {
+/** The calendar windows on `scheduledFor`, so an unscheduled activity has no place on it. */
+export function activityToCalendarEvent(activity: ActivityRow): ScheduleActivityEvent | null {
+  if (!activity.scheduledFor) {
+    return null
+  }
   return {
     kind: 'activity',
     id: activity.id,
     activityId: activity.id,
     activityType: activity.type,
-    startAt: activity.scheduledFor ?? activity.dueAt ?? activity.createdAt,
+    startAt: activity.scheduledFor,
     title: activity.title,
     description: activity.description,
     entityType: activity.entityType,

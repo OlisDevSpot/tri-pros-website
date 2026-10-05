@@ -1,6 +1,6 @@
 import type { MeetingForGCal } from '@/shared/services/providers/google-calendar/lib/map-to-gcal'
 
-import { and, eq, isNotNull } from 'drizzle-orm'
+import { and, eq, isNotNull, sql } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
@@ -124,6 +124,10 @@ export async function updateMeetingScheduledFor(
   scheduledFor: string,
 ): Promise<void> {
   await db.update(meetings)
-    .set({ scheduledFor })
+    .set({
+      scheduledFor,
+      // Mirrors meetingCrud's update hook: a moved meeting must be confirmed again; a same-time re-sync keeps it.
+      confirmedAt: sql`CASE WHEN ${meetings.scheduledFor} = ${scheduledFor}::timestamptz THEN ${meetings.confirmedAt} ELSE NULL END`,
+    })
     .where(eq(meetings.id, meetingId))
 }

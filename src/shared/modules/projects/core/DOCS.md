@@ -1,0 +1,198 @@
+# Projects — Business Rules
+
+A **Project** is a signed contract — the business symbol of a converted customer. Projects are created exclusively from approved proposals (one per birthing meeting) and own the post-signing lifecycle (install → inspection → payment → close).
+
+Projects also serve as the public **portfolio** when `isPublic = true` — the marketing site reads them as case studies. Both purposes share the same row.
+
+This directory holds: schemas (`schemas/`), types (`types.ts`), constants (action configs, `lib/constants.ts`), columns registry (`lib/columns-registry.tsx`), action-config hooks (`hooks/`), and DAL (`dal/server/queries.ts` reads, `mutations.ts` writes). The tRPC router (`src/trpc/routers/projects.router/`) is **partially migrated** to the entity server system — per-entity scoped procedures + DAL calls, but not yet on `createCrudRouter` (see `#migration-status`).
+
+## Relationships
+
+```
+                                 (one approved-initial-sale proposal mints the project)
+Customer ──► Meeting ──► Proposal ──► Project ──► x_projectScopes
+              │                          ▲
+              └── projectId ─────────────┘ (set on conversion)
+                                           │
+                                           └── Media files (before/after pairs, gallery)
+```
+
+## Lifecycle
+
+`pipelineStage` is the real operational axis; the coarse **status bucket** is
+*derived* from it, never stored (see `#status-derived-from-pipeline-stage`).
+
+```
+pipelineStage:  signed → opened → pending_inspection → install_complete →
+                pending_final_inspection → passed_final →
+                got_partial_payment → got_full_payment → closed
+                                                (+ on_hold / cancelled side-states)
+
+derived bucket: └───────────── active ─────────────┘   completed (closed)
+                on_hold  ←  on_hold stage      cancelled  ←  cancelled stage
+```
+
+The stage is the lifecycle; it does NOT sit "within" a status. The old
+`projects.status` column (`active | completed | on_hold`) was **removed** (#283):
+it defaulted to `active`, never advanced, and couldn't express `cancelled`, so it
+lied. A project's coarse state is now **derived** from `pipelineStage` via
+`deriveProjectStatusBucket`, never stored.
+
+## Rules
+
+### projects-created-from-approved-proposals-only
+
+There are **two** project-creation paths; this rule keeps the *operational* one honest.
+
+1. **Operational project** — via the `business.create` mutation, which requires: (a) the meeting has ≥1 proposal (validated at handler entry); (b) the customer exists; (c) the meeting is linked (`meetings.projectId`); (d) the meeting outcome flips to `converted_to_project`; (e) scope ids are **derived** from the proposals' `projectJSON.data.sow` (see `#scope-extraction-from-proposals`).
+2. **Portfolio project** — via the `crud.create` mutation (the portfolio editor). No proposal, no meeting, null `pipelineStage` → a pure-portfolio showcase (`#pure-portfolio-projects-are-not-real-projects`); its scopes are **hard-set** directly, not derived.
+
+The invariant "every *operational* project originates from a signed proposal" **is** true and must stay truthful — but it is upheld by **not exposing a UI to manually add an operational project**, NOT by a code-level prohibition. Projects can (and must) be created/controlled from other code paths through the projects DAL; there is simply no manual "add operational project" surface. The only manual-add UI is the portfolio editor, explicitly for showcases.
+
+**Why**: an operational project represents revenue commitment — without an approved proposal there's no contract basis, so we give users no way to conjure one. Portfolio entries are marketing assets with no contract basis: a separate, legitimate path.
+**Reference impl**: `business.router.ts:create` (operational); `crud.router.ts:create` (portfolio)
+**Enforced by**: `business.create` validates proposal-existence; the operational invariant is upheld by **UI omission** (no manual operational-create surface), not code gating
+
+### one-project-per-birthing-meeting
+
+By construction, each project has exactly one birthing meeting (the meeting whose approved `initial-sale` proposal minted it). The unique index on proposals (`proposals_one_approved_initial_sale_per_meeting_idx`) transitively enforces this — see `../../proposals/core/DOCS.md#one-approved-initial-sale-per-meeting`.
+
+Subsequent `additional-work` proposals on the same project live on the same birthing meeting; new meetings on the project (e.g., site visits during install) are typed `Project` and don't mint new projects.
+
+**Why**: the project lineage anchors on the meeting that produced the initial signed contract. Branching projects from arbitrary meetings would break the additional-work accumulation model.
+**Reference impl**: `../../proposals/core/DOCS.md#one-approved-initial-sale-per-meeting` (DB constraint)
+**Enforced by**: Postgres (via the proposals unique index)
+
+### accessor-is-url-slug
+
+`projects.accessor` is a unique URL-safe slug used for public portfolio pages (`/portfolio/[accessor]`). Generated server-side at creation as `<title-slug>-<6-char-random>`.
+
+**Why**: portfolio URLs must be human-readable but globally unique. Title-only collides (two "Bathroom Remodel" projects); random suffix avoids that without exposing an internal UUID.
+**Reference impl**: `src/trpc/routers/projects.router/business.router.ts:create` (slug generation)
+**Enforced by**: DB unique constraint on `accessor`
+
+### address-snapshot-from-customer-on-create
+
+At project creation, the address fields (`address`, `city`, `state`, `zip`) are **snapshot from the customer** at that moment. Later customer-address changes do NOT cascade to the project.
+
+**Why**: the project address is the install site at contract time; if a customer moves mid-project, the install site doesn't move with them. (For projects, the address is the property under construction, not the customer's mailing address.)
+**Reference impl**: `business.router.ts:create` (snapshot at lines 50–54)
+**Enforced by**: convention (no sync code exists; address is independent post-creation)
+
+### pipeline-stage-on-project-not-meeting
+
+A project's `pipelineStage` (text column, **nullable, no DB default**) tracks the post-signing operational sequence. App code sets `signed` at creation (`business.router.ts:create`); a raw insert would leave it NULL, so readers must treat NULL as unset (→ `active`, per `deriveProjectStatusBucket`). This is **distinct** from `meetings.pipeline` (the sales kanban bucket) and `customers.pipelineStage` (lead-funnel stage).
+
+Project pipeline stages (`projectPipelineStages` enum):
+```
+signed → opened → pending_inspection → install_complete →
+pending_final_inspection → passed_final →
+got_partial_payment → got_full_payment → closed (+ cancelled / on_hold side-states)
+```
+
+**Why**: project operations have their own lifecycle that the sales pipeline doesn't capture (inspections, payments, closing). Mixing them into `meetings.pipeline` would conflate sales and project management.
+**Reference impl**: `projectPipelineStages` enum in `src/shared/constants/enums/pipelines.ts`
+**Enforced by**: convention (text column, not pgEnum; agents move via the project-pipeline kanban)
+
+### status-derived-from-pipeline-stage
+
+A project's coarse **status bucket** (`active | completed | on_hold | cancelled`) is derived from its `pipelineStage` through `PROJECT_STAGE_BUCKET` — the single canonical classifier. Derive on read via `deriveProjectStatusBucket(stage)`; NULL/unknown → `completed` (an unset stage means a pure-portfolio showcase entry — a finished piece of work — see `#pure-portfolio-projects-are-not-real-projects`). Buckets group by pre-derived stage arrays (`ACTIVE_PROJECT_STAGES`, `ON_HOLD_PROJECT_STAGES`, …) spread into `inArray(projects.pipelineStage, …)` predicates — the dashboard Projects module's Active / On hold sections do exactly this.
+
+Do **not** re-encode the stage→bucket relationship anywhere else. The `projects.status` column was **removed** (#283) — status is derived-only, never stored. Query-side grouping goes through the `statusBucket` filter on `crud.list` (expands buckets → stages via `stagesForBuckets`); display-side goes through `deriveProjectStatusBucket`. Mirrors the meetings classifier (`MEETING_OUTCOME_SENTIMENT`).
+
+**Why**: `status` was set once at creation and never maintained, so nearly every project read `active` regardless of its true state. `pipelineStage` is the axis agents actually move, so it's the truthful source; deriving keeps one source of truth and avoids a status-sync mechanism (JIT derivation — see ADR-0005).
+**Reference impl**: `PROJECT_STAGE_BUCKET` + `deriveProjectStatusBucket` in `src/shared/constants/enums/pipelines.ts`; consumed by `src/features/agent-dashboard/constants/dashboard-queries.ts` (`activeProjectsInput` / `onHoldProjectsInput`)
+**Enforced by**: convention; the `Record<ProjectPipelineStage, …>` type makes the map exhaustive (omitting a stage fails `pnpm tsc`)
+
+### project-visibility-scope
+
+The **canonical derivation of which projects a user can see** (their visibility scope): a user can see a project **iff they are a participant on ≥1 meeting of the project whose outcome is NOT negative**. Formally — `EXISTS meeting M where M.projectId = project.id AND participant(user, M) AND MEETING_OUTCOME_SENTIMENT[M.meetingOutcome] !== 'negative'`.
+
+Negative-outcome meetings (lost/failed — `not_good`, `pns`, `npns`, `ftd`, `no_show`, … per `MEETING_OUTCOME_SENTIMENT`) do **not** confer visibility: a user who attended only a dead-lead meeting on a project has no live operational stake in it. Omni (super-admin) bypasses the predicate entirely (scope = `null`). Pure-portfolio projects (no meetings) fall outside this predicate by construction — see `#pure-portfolio-projects-are-not-real-projects`.
+
+**Why**: participation defines stake, but surfacing a project reached only through a lost meeting is noise. The non-negative filter keeps a user's project list to the ones they have a living stake in.
+**Reference impl**: `projectParticipationScope` / `projectVisibility` in `src/shared/modules/projects/core/lib/visibility.ts`; negative set from `MEETING_OUTCOME_SENTIMENT` (`src/shared/constants/enums/meetings.ts`)
+**Enforced by**: the entity scope compiler (`ctx.scope`). ⚠️ **Code gap**: the negative-outcome exclusion is NOT yet implemented — `projectParticipationScope` is participation-only today. Added during the projects standardization epic (coordinated with the CASL scope-compiler refactor, issue #285).
+
+### pure-portfolio-projects-are-not-real-projects
+
+A **pure-portfolio project** has **no meetings** linked to it (`meetings.projectId`). Because a real project is only ever minted from an approved proposal on a birthing meeting (`#projects-created-from-approved-proposals-only`), zero meetings means the row was created purely to showcase work on the marketing portfolio — it never ran the signed→closed lifecycle (its `pipelineStage` is NULL). These must be **completely disregarded** in operational lists, analytics, filtering, and aggregations.
+
+The predicate is meeting-existence, NOT a null-stage check — meeting existence is the semantic definition; the null stage is a symptom. Row-level: `isPurePortfolioProject(project)` (`lib/portfolio.ts`) for shapes carrying their meetings. Query-level: `hasAssociatedMeeting()` (`lib/visibility.ts`, an `exists` predicate) + the `excludePortfolio: true` filter on `crud.list` — the dashboard Active / On hold sections set it. This matters especially for omni users, whose visibility scope is otherwise unbounded (non-omni users are already meeting-scoped via `projectParticipationScope`, which implies ≥1 meeting).
+
+**Why**: ~80% of project rows are portfolio-only showcases; counting them as operational projects makes every dashboard/metric read wrong (e.g. an inflated "active" count). Meeting-existence cleanly separates the two populations.
+**Reference impl**: `isPurePortfolioProject` (`src/shared/modules/projects/core/lib/portfolio.ts`), `hasAssociatedMeeting` (`src/shared/modules/projects/core/lib/visibility.ts`), `excludePortfolio` filter in `src/trpc/routers/projects.router/crud.router.ts`
+**Enforced by**: convention (callers opt in via `excludePortfolio`; analytics surfaces must apply the same predicate)
+
+### isPublic-gates-portfolio-visibility
+
+`projects.isPublic` (boolean, default `false`) controls whether the project appears on the public marketing portfolio. Default is private; agents explicitly publish via the portfolio editor.
+
+**Why**: most signed projects are NOT marketing-ready (no photos, no story, mid-construction). Defaulting to private prevents accidental portfolio leakage.
+**Reference impl**: column; consumed by `showroom-display.router.ts`
+**Enforced by**: column constraint + showroom queries filter by `isPublic = true`
+
+### before-after-pairs-jsonb-shape
+
+`beforeAfterPairsJSON` is an array of `{ beforeId: string, afterId: string }` referencing media-file IDs. Used by the portfolio carousel to render aligned before/after image pairs.
+
+**Why**: photographic comparisons are how customers evaluate construction work. The JSONB structure (rather than a separate table) keeps the order explicit and trivially mutable from the portfolio editor.
+**Reference impl**: schema column; `BeforeAfterPairs` type in `schemas/`
+**Enforced by**: Zod validation on insert/update
+
+### scope-extraction-from-proposals
+
+A project's `x_project_scopes` (its set of Notion trade-scope ids) is populated **differently per population**:
+
+- **Operational projects**: scopes are **dictated by the project's approved proposals** — the union of the meeting's proposals' `projectJSON.data.sow` scope ids, de-duped (a project may aggregate initial-sale + additional-work). The derivation is a **pure helper in `modules/projects/core/lib/`** (no `db`); persistence is a full-replace.
+- **Portfolio projects**: have **no linked proposals**, so they **hard-set** their own scopes directly via the portfolio editor.
+
+Both paths write `x_project_scopes` **only through the projects DAL** (`modules/projects/core/dal/server/`) — never inline `db` in a router. The projects router orchestrates from the UI; other code paths reach the same functions through the projects module namespace.
+
+**Why**: operational scope = "what did the customer sign for" (proposal-derived, tracks the contract); portfolio scope = "what trades does this showcase cover" (curated, no contract). Same column, two sources of truth, split by population.
+**Reference impl**: derivation helper in `modules/projects/core/lib/`; persistence in `modules/projects/core/dal/server/`
+**Enforced by**: convention — never-inline-`db` (`docs/codebase-conventions/dal-conventions.md`); re-extraction when a proposal's SOW changes post-creation is a future concern (Wave 4 SOW normalization)
+
+### ownership-and-customer-cascade
+
+- `customerId` (FK to customers, `onDelete: 'cascade'`) — projects are destroyed when their customer is.
+- `ownerId` (FK to user, `onDelete: 'cascade'`) — projects are destroyed when their owning agent is. **Note**: this is the agent who created the project, not the agent currently managing it.
+
+**Why**: customer cascade is correct (no orphan projects). Owner cascade is a defensive choice — in practice, agents are rarely deleted; if they leave, ownership is reassigned beforehand.
+**Reference impl**: schema FK clauses
+**Enforced by**: Postgres
+
+### migration-status
+
+The projects entity is **mostly migrated** to the Entity Server System (ADR-0002) — projects-standardization epic Phases 1–3 (`docs/plans/2026-08-11-projects-standardization-epic.md`). Shipped:
+- DAL under `src/shared/modules/projects/core/dal/server/`: `queries.ts` (reads incl. `listProjects`), `crud.ts` (`projectCrud = createCrudDal(projectServerSpec)` plus `createProjectWithScopes` / `updateProjectWithScopes`), `mutations.ts` (`setProjectScopes`). The legacy feature-scoped DAL (`features/project-management/dal/`) is gone. (This directory itself moved here from the old top-level projects entity's DAL as a path-only commit — `docs/codebase-conventions/service-architecture.md#entities-vs-modules`.)
+- Mutations route through `projectCrud`, so server-spec hooks fire (`crud.router.ts` create/update/delete, `business.router.ts` create).
+- Per-entity scoped procedures (`procedures.ts` → `projectProcedure`, injecting `ctx.scope` via `resolveVisibilityScope`); `crud.router.ts`'s `list` consumes `ctx.scope`.
+- No inline `db` remains in `src/trpc/routers/projects.router/`.
+
+Not yet done: `crud.router.ts` is hand-written rather than `createCrudRouter`; `getAll`/`getForEdit`/`showroomDisplay.*` and the `media` sub-router run on bare `agentProcedure`/`baseProcedure` (unscoped). Remaining visibility tightening belongs to the permissions epic (#285).
+
+Migration order from ADR-0002: Proposal → Customer → Meeting → **Project**. Proposal is done (PR #207).
+
+**Why this matters now**: the business rules above describe what the code does *today*. Don't assume full parity with proposals' generated CRUD surface: the projects router is still hand-written.
+
+**Reference impl**: `docs/adr/0002-entity-server-system.md`; `docs/plans/2026-08-11-projects-standardization-epic.md`; the compliance sweep todo (item #13) will surface remaining migration tasks.
+
+## Anti-patterns
+
+- **Creating a project directly via DB insert.** Use the `create` business mutation — it enforces proposal-existence + meeting linkage + scope extraction.
+- **Updating the customer's address and expecting the project's to change.** Address is snapshotted at project creation; see `#address-snapshot-from-customer-on-create`.
+- **Using a project pipeline stage on a meeting** or vice versa. Three distinct pipeline-stage enums for three distinct lifecycles (customers, meetings, projects).
+- **Publishing a project to the portfolio without media + story fields.** `isPublic = true` is intentional, not a default flip.
+- **Branching a "second project" off the same birthing meeting.** Use additional-work proposals on the existing project's meeting; don't create a second project.
+
+## See also
+
+- `../../proposals/core/DOCS.md#conversion-trigger` — approval is a precondition, but project creation (this router's `create` mutation) is a separate agent action, not an automatic effect of approval
+- `../../proposals/core/DOCS.md#one-approved-initial-sale-per-meeting` — DB constraint that anchors `#one-project-per-birthing-meeting`
+- `../../../entities/meetings/DOCS.md#meeting-pipeline-storage-vs-derived` — `meeting.projectId IS NOT NULL` derives "projects" pipeline
+- `../../../entities/customers/DOCS.md#signed-customer-eq-has-project` — "signed" = has ≥1 project
+- ADR-0002 — Entity Server System (target architecture for the pending migration)
+- `docs/codebase-conventions/dal-conventions.md` — DAL conventions (target for migration)
+- `docs/codebase-conventions/jsonb-columns.md#arrays-of-objects-vs-keyed-objects` — `beforeAfterPairsJSON` array-of-objects shape + write-boundary validation (`#before-after-pairs-jsonb-shape`)
+- ADR-0005 — JSONB vs column vs child table (storage-shape decision rule)

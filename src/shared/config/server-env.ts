@@ -5,7 +5,7 @@ import { expand } from 'dotenv-expand'
 
 import z from 'zod'
 
-import { cloudtalkConfigMeta, cloudtalkEnvFragment } from '@/shared/services/providers/cloudtalk/lib/config'
+import { justcallConfigMeta, justcallEnvFragment } from '@/shared/services/providers/justcall/lib/config'
 import { metaConfigMeta, metaEnvFragment } from '@/shared/services/providers/meta/lib/config'
 import { notionConfigMeta, notionEnvFragment } from '@/shared/services/providers/notion/lib/config'
 import { quickbooksConfigMeta, quickbooksEnvFragment } from '@/shared/services/providers/quickbooks/lib/config'
@@ -24,7 +24,6 @@ expand(config({ path: '.env' }))
 // shape + runtime-config builder in its `lib/config.ts`; this file spreads
 // those fragments into the central schema and re-exports cached getters so
 // consumers always import config from one place.
-// see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
 
 const envSchema = z.object({
   // General
@@ -33,12 +32,10 @@ const envSchema = z.object({
   // (production | preview | development). Never exists on a local machine, so
   // it answers "am I the deployed prod site?" in a way a laptop can't fake by
   // accident. NODE_ENV answers only "optimized build or dev build?".
-  // see docs/codebase-conventions/environment.md#environment-axes
   VERCEL_ENV: z.enum(['development', 'preview', 'production']).optional(),
   // Dev-only: gates /api/dev/playwright-session (OAuth-bypass login for the
   // Playwright MCP browser). Optional so production builds never require it;
-  // the route refuses unless this is set AND matches. see
-  // docs/codebase-conventions/dev-auth-route.md
+  // the route refuses unless this is set AND matches.
   DEV_LOGIN_SECRET: z.string().min(1).optional(),
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
   PORT: z.coerce.number().default(3000),
@@ -102,12 +99,11 @@ const envSchema = z.object({
   // META (Pixel + Conversions API) — fragment lives at providers/meta/lib/config.ts
   ...metaEnvFragment.shape,
 
-  // VOIP — shared between voip-in-house (Twilio) and voip-campaigns (CloudTalk).
-  // See docs/plans/voip/INTEGRATION-SEAM.md + .env.voip.example.
+  // VOIP — shared between voip-in-house (Twilio) and voip-campaigns (JustCall).
   //
-  // All VoIP env vars in this section (VOIP_*, TWILIO_*, CLOUDTALK_*) are
+  // All VoIP env vars in this section (VOIP_*, TWILIO_*, JUSTCALL_*) are
   // OPTIONAL during schema validation — same precedent as the VAPID block below.
-  // The consuming code (Twilio client factories, CloudTalk webhook receivers)
+  // The consuming code (Twilio client factories, the JustCall dialer client)
   // asserts non-null at the point of use. Build environments without VoIP
   // credentials (CI, prod-before-VoIP-launches, fresh dev clones) parse the
   // schema cleanly; only environments actively using VoIP features need them.
@@ -123,7 +119,6 @@ const envSchema = z.object({
   // imported by consumers DIRECTLY from the provider's lib/config — NOT
   // re-exported from this file. server-env's role is bootstrap orchestration
   // (schema spread + parse + boot banner + production gates).
-  // see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
   ...twilioEnvFragment.shape,
 
   // Pilot DID env vars removed 2026-06-04 — DID source of truth is now the
@@ -136,12 +131,13 @@ const envSchema = z.object({
   FTC_DNC_USERNAME: z.string().optional(),
   FTC_DNC_PASSWORD: z.string().optional(),
 
-  // CLOUDTALK (voip-campaigns) — schema fragment lives at
-  // `src/shared/services/providers/cloudtalk/lib/config.ts` and is spread
-  // in here. Runtime narrowing happens via `getCloudtalkConfig()`, imported
-  // by consumers directly from the provider's lib/config.
-  // see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
-  ...cloudtalkEnvFragment.shape,
+  // JUSTCALL (voip-campaigns auto-dialer) — schema fragment lives at
+  // `src/shared/services/providers/justcall/lib/config.ts` and is spread in here.
+  // Runtime narrowing happens via `getJustcallConfig()`, imported by consumers
+  // directly from the provider's lib/config. Optional at schema level — the
+  // client asserts non-null at the point of use, so builds without JustCall
+  // creds parse cleanly.
+  ...justcallEnvFragment.shape,
 
   // WEB PUSH (VAPID)
   // Generate with `node scripts/generate-vapid-keys.mjs`. The public key is
@@ -186,7 +182,6 @@ export default env
 // no matter which DB it targets (DRIZZLE_TARGET=prod). If a forbidden var is
 // ever added to the Vercel prod env config, the gate fails the production
 // build/boot — exactly when we want to hear about it.
-// see docs/codebase-conventions/environment.md#environment-axes
 
 // VOIP_DEV_OVERRIDE_NUMBER reroutes all outbound voice/SMS to a single test
 // number — invaluable in dev/preview, catastrophic in production.
@@ -207,7 +202,7 @@ if (env.VERCEL_ENV === 'production' && env.META_TEST_EVENT_CODE) {
 // Each provider / domain-shared config exports a `<x>ConfigMeta` object from
 // its `lib/config.ts`. server-env aggregates them here, queries each
 // `listMissing()`, and prints one line per service. Surfaces "twilio is up
-// but cloudtalk isn't" at boot rather than hidden behind a runtime error
+// but justcall isn't" at boot rather than hidden behind a runtime error
 // the first time a feature is exercised.
 //
 // Production omits the banner (clean logs); the typed runtime checks from
@@ -215,11 +210,10 @@ if (env.VERCEL_ENV === 'production' && env.META_TEST_EVENT_CODE) {
 //
 // To register a newly-migrated provider: add its `<x>ConfigMeta` import at
 // the top of this file and append to `PROVIDER_METAS` below.
-// see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
 
 const PROVIDER_METAS = [
   twilioConfigMeta,
-  cloudtalkConfigMeta,
+  justcallConfigMeta,
   metaConfigMeta,
   resendConfigMeta,
   notionConfigMeta,

@@ -1,16 +1,16 @@
 'use client'
 
 import type { inferRouterOutputs } from '@trpc/server'
-import type { MediaGroup, MediaItem } from '@/shared/components/media/types'
+import type { MediaGroup, MediaItem } from '@/shared/modules/media/core/types'
 import type { AppRouter } from '@/trpc/routers/app'
 import { useQuery } from '@tanstack/react-query'
 import { FileTextIcon } from 'lucide-react'
 import { useMemo } from 'react'
-import { MediaManager } from '@/shared/components/media/media-manager'
-import { useMediaUpload } from '@/shared/components/media/use-media-upload'
-import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Switch } from '@/shared/components/ui/switch'
 import { useConfirm } from '@/shared/hooks/use-confirm'
+import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
+import { MediaManager } from '@/shared/modules/media/core/components/media-manager'
+import { useMediaUpload } from '@/shared/modules/media/core/hooks/use-media-upload'
 import { useTRPC } from '@/trpc/helpers'
 import { useProposalMedia } from '../../../dal/client/mutations/use-proposal-media'
 
@@ -101,13 +101,13 @@ export function ProposalMediaManager({ proposalId }: Props) {
           return (
             <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 bg-muted p-2 text-center">
               <FileTextIcon className="h-8 w-8 text-muted-foreground" />
-              <span className="line-clamp-2 text-[10px] text-muted-foreground">{item.name}</span>
+              <span className="line-clamp-2 text-xs text-muted-foreground">{item.name}</span>
             </div>
           )
         }}
         renderControls={item => (
           <div className="flex items-center gap-1.5 rounded bg-background/70 px-1.5 py-0.5">
-            <span className="text-[10px]">Homeowner</span>
+            <span className="text-xs">Homeowner</span>
             <Switch
               checked={viewById.get(item.id)?.visibility === 'homeowner'}
               onCheckedChange={checked => media.setVisibility.mutate({ id: item.id, visibility: checked ? 'homeowner' : 'internal' })}

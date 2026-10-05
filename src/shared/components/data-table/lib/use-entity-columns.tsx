@@ -15,13 +15,15 @@ import { formatAsDollars } from '@/shared/lib/formatters'
 
 export type ColumnFormat = 'date' | 'currency' | 'number' | 'text'
 
-export interface ColumnSpec<TData> {
+export interface ColumnSpec<TData, TSortId extends string = string> {
   /** Header label and column-toggle display name. */
   label: string
   /** Default column width. */
   size?: number
-  /** Show sortable affordance in header. */
-  sortable?: boolean
+  /** Server sort id this column's header drives; omit when the column can't sort. */
+  sort?: TSortId
+  /** Hidden until the viewer turns it on in the Columns menu. */
+  defaultHidden?: boolean
   /** Optional icon shown next to the label in a sortable header. */
   headerIcon?: LucideIcon
   /**
@@ -49,9 +51,9 @@ export interface ColumnSpec<TData> {
   permission?: [AppAction, AppSubject]
 }
 
-export type ColumnRegistry<TData> = Record<string, ColumnSpec<TData>>
+export type ColumnRegistry<TData, TSortId extends string = string> = Record<string, ColumnSpec<TData, TSortId>>
 
-type RegistryRow<R> = R extends ColumnRegistry<infer T> ? T : never
+type RegistryRow<R> = R extends ColumnRegistry<infer T, any> ? T : never
 
 interface UseEntityColumnsOptions<R extends ColumnRegistry<any>> {
   /** Ordered subset of registry keys to display. */
@@ -101,8 +103,8 @@ export function useEntityColumns<R extends ColumnRegistry<any>>(
       // cast at push is the simpler path.
       const col: Record<string, unknown> = {
         id: key,
-        meta: { displayName: config.label },
-        header: config.sortable
+        meta: { displayName: config.label, sortId: config.sort, defaultHidden: config.defaultHidden },
+        header: config.sort
           ? ({ column }: { column: Column<RegistryRow<R>, unknown> }) => <SortableHeader column={column} label={config.label} icon={config.headerIcon} />
           : config.label,
       }

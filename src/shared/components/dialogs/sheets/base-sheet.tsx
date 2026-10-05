@@ -32,7 +32,7 @@ export function BaseSheet({
             </SheetDescription>
           )}
         </SheetHeader>
-        <div className="flex-1 overflow-y-auto px-4 pb-4">
+        <div className="flex-1 overflow-y-auto scrollbar-gutter-stable px-4 pb-4">
           {children}
         </div>
       </SheetContent>

@@ -8,8 +8,8 @@ import { tradeBenefits } from '@/features/landing/constants/trade-benefits'
 import { tradePainHeadlines } from '@/features/landing/constants/trade-pain-headlines'
 import { tradePairings } from '@/features/landing/constants/trade-pairings'
 import { tradeSymptoms } from '@/features/landing/constants/trade-symptoms'
+import { CatalogRefreshButton } from '@/features/landing/ui/components/services/catalog-refresh-button'
 import { NaturalPairings } from '@/features/landing/ui/components/services/natural-pairings'
-import { NotionRefreshButton } from '@/features/landing/ui/components/services/notion-refresh-button'
 import { PortfolioProof } from '@/features/landing/ui/components/services/portfolio-proof'
 import { ProgramsTeaser } from '@/features/landing/ui/components/services/programs-teaser'
 import { ScopesGrid } from '@/features/landing/ui/components/services/scopes-grid'
@@ -52,7 +52,7 @@ export function TradeView({ trade, pillarSlug }: TradeViewProps) {
         painHeadline={painHeadline}
       />
 
-      <NotionRefreshButton />
+      <CatalogRefreshButton />
 
       {isEnergy
         ? <TradeSymptomsBand symptoms={symptoms} />

@@ -1,68 +1,35 @@
 import type { Buffer } from 'node:buffer'
 import type { EnvelopeDocumentId, ProposalKind } from '@/shared/constants/enums'
-import type { ProposalWithCustomer } from '@/shared/entities/proposals/dal/server/queries'
+import type { ProposalWithCustomer } from '@/shared/modules/proposals/core/dal/server/queries'
 
-/**
- * Snapshot of everything an envelope assembler needs to fill fields and
- * evaluate per-kind rules. Built once per draft creation by
- * `buildProposalContext` (see `proposal-context.ts`). Predicates and
- * field sources receive this and return values — never read globals or
- * issue queries themselves.
- */
+/** Predicates and field sources read only this — never globals or queries. */
 export interface ProposalContext {
   proposal: ProposalWithCustomer
-  /**
-   * Mirror of `proposal.kind` — kept on the context so predicates and
-   * field sources don't have to reach through `proposal` to read it.
-   */
+  /** Mirrors `proposal.kind`. */
   kind: ProposalKind
   isSenior: boolean
   isLongSow: boolean
   /** Total contract price after incentives. */
   finalTcp: number
-  /** Plaintext of the SOW (already computed once for the long/short check). */
   sowText: string
-  /**
-   * Earliest `contractSentAt` across all proposals on all meetings of
-   * this proposal's project. Fills AWD's `original-contract-date`
-   * field on additional-work envelopes. Null on initial-sale (no project yet).
-   */
+  /** Earliest `contractSentAt` across the project's proposals; null on initial-sale (no project yet). */
   originalContractDate: Date | null
 }
 
-/** Resolves a Zoho field's value from the context. Pure function. */
 export type FieldSource = (ctx: ProposalContext) => string
 
-/**
- * Per-kind rule for a document. Predicates fire against the same
- * `ProposalContext` the field sources see.
- *
- * - `required`: always required when this kind is applicable.
- * - `required-when`: required only when predicate returns true; otherwise forbidden.
- * - `optional`: agent toggles via UI, default off.
- * - `forbidden-when`: explicitly forbidden when predicate is true; otherwise optional.
- */
+/** `required-when` falls back to forbidden; `forbidden-when` falls back to optional. */
 export type DocumentRule
   = | { kind: 'required' }
     | { kind: 'required-when', predicate: (ctx: ProposalContext) => boolean }
     | { kind: 'optional' }
     | { kind: 'forbidden-when', predicate: (ctx: ProposalContext) => boolean }
 
-/**
- * Source of a document — either a Zoho-hosted template (with form
- * fields) or a generated PDF (no form fields, attached via the existing
- * `addFilesToRequest` multipart endpoint).
- */
 export type DocumentSource
   = | { kind: 'zoho-template', zohoTemplateId: string }
     | { kind: 'generated-pdf', generator: (ctx: ProposalContext) => Promise<Buffer> }
 
-/**
- * Per-template signer action IDs sent in the mergesend payload. Zoho
- * dedupes by email and assigns new envelope-level action IDs in the
- * response. Optional fields handle ancillary templates that have only
- * one signer (Homeowner-only, no Contractor placement).
- */
+/** Template-level action ids; Zoho returns new envelope-level ids after deduping by email. */
 export interface TemplateSignerActions {
   contractor?: string
   homeowner?: string
@@ -70,17 +37,15 @@ export interface TemplateSignerActions {
 
 export interface EnvelopeDocument {
   id: EnvelopeDocumentId
-  /** Human-readable label for the agent UI. */
   label: string
   source: DocumentSource
-  /** Proposal kinds where this document can ever appear. */
   applicableKinds: readonly ProposalKind[]
-  /** Rule per applicable kind — keys must be a subset of applicableKinds. */
+  /** Keys must be a subset of `applicableKinds`. */
   perKindRules: Partial<Record<ProposalKind, DocumentRule>>
-  /** Zoho field-name → value resolver. Only present for `zoho-template` sources. */
+  /** `zoho-template` sources only. */
   fieldMappings?: Record<string, FieldSource>
-  /** Zoho field-name → value resolver for date fields (CustomDate type). */
+  /** Zoho CustomDate fields. */
   dateFieldMappings?: Record<string, FieldSource>
-  /** Action IDs sent in mergesend. Only present for `zoho-template` sources. */
+  /** `zoho-template` sources only. */
   signerActions?: TemplateSignerActions
 }

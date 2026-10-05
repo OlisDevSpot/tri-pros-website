@@ -1,22 +1,18 @@
 'use client'
 
-import type { CustomerProfileProject, CustomerProfileProposal } from '@/shared/entities/customers/types'
+import type { CustomerProfileProject } from '@/shared/entities/customers/types'
 
 import { formatDistanceToNow } from 'date-fns'
-import { FolderOpenIcon, MapPinIcon, PlusIcon } from 'lucide-react'
+import { FolderOpenIcon, MapPinIcon } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 
-import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
+import { EntityActionMenu } from '@/shared/components/entities/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
-import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { ROOTS } from '@/shared/config/roots'
-import { useAbility } from '@/shared/domains/permissions/hooks'
-import { MeetingOverviewCard } from '@/shared/entities/meetings/components/overview-card'
-import { ParticipantsSlot } from '@/shared/entities/meetings/components/participants-slot'
-import { useProjectActionConfigs } from '@/shared/entities/projects/hooks/use-project-action-configs'
-import { cn } from '@/shared/lib/utils'
-import { MeetingProposalRow } from './meeting-proposal-row'
+import { ProjectMeetingList } from '@/shared/entities/meetings/components/project-meeting-list'
+import { useProjectActionConfigs } from '@/shared/modules/projects/core/hooks/use-project-action-configs'
 
 interface Props {
   customerId: string
@@ -28,28 +24,26 @@ interface Props {
 }
 
 export function ProjectEntityCard({ customerId, project, onMutationSuccess, onNavigate, onAssignRep, highlightMeetingId }: Props) {
-  const ability = useAbility()
-  const canCreateProposal = ability.can('create', 'Proposal')
+  const router = useRouter()
   const handleViewProject = useCallback(() => {
     onNavigate?.()
-    window.location.href = ROOTS.dashboard.projects.byId(project.id)
-  }, [project.id, onNavigate])
+    router.push(ROOTS.dashboard.projects.byId(project.id))
+  }, [project.id, onNavigate, router])
 
   const { actions: projectActions, DeleteConfirmDialog } = useProjectActionConfigs({
-    onView: handleViewProject,
     onEdit: handleViewProject,
   })
 
   return (
     <>
       <DeleteConfirmDialog />
-      <Card className="border-l-4 border-l-green-500/60 dark:border-l-green-400/40">
+      <Card className="border-l-4 border-l-status-success-dot/60">
         <CardContent className="p-0">
           {/* Project Header — compact */}
           <div className="flex items-center gap-2 px-3 py-2">
-            <FolderOpenIcon className="size-3.5 shrink-0 text-green-600 dark:text-green-400" />
+            <FolderOpenIcon className="size-3.5 shrink-0 text-status-success-fg" />
             <span className="text-sm font-semibold truncate flex-1">{project.title}</span>
-            <Badge variant="outline" className="border-green-500/30 bg-green-500/10 text-xs text-green-700 dark:border-green-500/20 dark:text-green-300">
+            <Badge variant="outline" className="border-status-success-dot/40 bg-status-success-bg text-xs text-status-success-fg">
               {project.status}
             </Badge>
             {project.pipelineStage && (
@@ -66,7 +60,7 @@ export function ProjectEntityCard({ customerId, project, onMutationSuccess, onNa
           </div>
 
           {/* Project meta */}
-          <div className="flex items-center gap-3 px-3 pb-2 text-[10px] text-muted-foreground">
+          <div className="flex items-center gap-3 px-3 pb-2 text-xs text-muted-foreground">
             {project.address && (
               <span className="flex items-center gap-1">
                 <MapPinIcon className="size-2.5" />
@@ -85,64 +79,14 @@ export function ProjectEntityCard({ customerId, project, onMutationSuccess, onNa
               <span className="text-xs font-medium text-muted-foreground">
                 {`Meetings (${project.meetings.length})`}
               </span>
-              <div className="space-y-2.5">
-                {project.meetings.map(meeting => (
-                  <Card key={meeting.id} className={cn('group pt-0 pb-0 gap-0', meeting.id === highlightMeetingId && 'outline-2 outline-primary -outline-offset-2 shadow-sm')}>
-                    <CardContent className="p-0">
-                      <MeetingOverviewCard
-                        meeting={meeting}
-                        customerId={customerId}
-                        onAssignOwner={onAssignRep ? () => onAssignRep(meeting.id, meeting.ownerId ?? null) : undefined}
-                      >
-                        <MeetingOverviewCard.Header className="px-3 py-2">
-                          <MeetingOverviewCard.Fields fields={[
-                            { field: 'scheduledDate' },
-                            { field: 'type' },
-                            { field: 'outcome' },
-                            { field: 'proposalCount' },
-                          ]}
-                          />
-                          <MeetingOverviewCard.CreatedAt />
-                          <MeetingOverviewCard.Actions mode="compact" className="ml-auto opacity-60 hover:opacity-100 transition-opacity" />
-                        </MeetingOverviewCard.Header>
-                        <div className="grid grid-cols-1 border-t divide-y md:grid-cols-[minmax(0,1fr)_minmax(0,3fr)] md:divide-y-0 md:divide-x">
-                          <div className="p-3">
-                            <ParticipantsSlot meetingId={meeting.id} variant="full" entityListVariant="flush" />
-                          </div>
-                          <div className="p-3">
-                            <MeetingOverviewCard.Proposals
-                              showHeader
-                              entityListVariant="flush"
-                              emptyStateAction={canCreateProposal && (
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-7 gap-1 text-xs"
-                                  asChild
-                                >
-                                  <a href={`${ROOTS.dashboard.proposals.new()}?meetingId=${meeting.id}`}>
-                                    <PlusIcon className="size-3" />
-                                    Create proposal
-                                  </a>
-                                </Button>
-                              )}
-                              renderProposal={p => (
-                                <MeetingProposalRow
-                                  key={p.id}
-                                  proposal={p as CustomerProfileProposal}
-                                  onMutationSuccess={onMutationSuccess}
-                                  onNavigate={onNavigate}
-                                />
-                              )}
-                            />
-                          </div>
-                        </div>
-                      </MeetingOverviewCard>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              <ProjectMeetingList
+                customerId={customerId}
+                meetings={project.meetings}
+                onMutationSuccess={onMutationSuccess}
+                onNavigate={onNavigate}
+                onAssignRep={onAssignRep}
+                highlightMeetingId={highlightMeetingId}
+              />
             </div>
           )}
         </CardContent>

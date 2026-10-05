@@ -1,11 +1,6 @@
-export const TRADE_CATEGORY_ORDER = [
-  'Energy Efficiency',
-  'General Construction',
-  'Structural / Rough',
-] as const
+import type { TradeCategory } from '@/shared/modules/construction/core/schemas'
 
-export type TradeCategory = (typeof TRADE_CATEGORY_ORDER)[number]
-
+/** Display copy for the specialties trade switcher. The category list itself lives in the module — `tradeCategories` in `modules/construction/core/schemas`. */
 export const TRADE_CATEGORY_LABELS: Record<TradeCategory, string> = {
   'Energy Efficiency': 'Energy Efficiency',
   'General Construction': 'General Construction',

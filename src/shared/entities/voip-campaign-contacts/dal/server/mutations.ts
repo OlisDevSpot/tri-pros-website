@@ -1,16 +1,3 @@
-// voip-campaign-contacts business mutations — enrollment membership writes that
-// don't fit generic CRUD (idempotent enroll upsert + idempotent unenroll patch).
-// The enrollment service calls these; never reach for `db.insert/update` from a
-// service layer.
-//
-// State model (see ../../DOCS.md):
-//   - Enrolled now = row exists AND unenrolled_at IS NULL.
-//   - Re-enroll reuses the same row + cloudtalk_contact_id (clears unenrolled_at
-//     + reason, resets dial_attempts, sets a fresh enrolled_at + campaign).
-//
-// see docs/codebase-conventions/dal-conventions.md
-// see memory/feedback-services-orchestrate-dal-implements.md
-
 import type { VoipUnenrollReason } from '@/shared/constants/enums/voip'
 import type { DalReturn } from '@/shared/dal/server/types'
 import type { VoipCampaignContact } from '@/shared/db/schema/voip-campaign-contacts'
@@ -23,19 +10,12 @@ import { voipCampaignContacts } from '@/shared/db/schema/voip-campaign-contacts'
 
 interface UpsertEnrolledInput {
   customerId: string
-  cloudtalkContactId: string
+  providerContactId: string
   voipCampaignId: string
   attributeHash: string
 }
 
-/**
- * Idempotent enroll upsert keyed on the PK `customer_id`. Insert path = first
- * enroll; conflict path = re-enroll (clears the prior unenroll, resets the dial
- * counter, points at the possibly-new campaign). Sets `enrolled_at = now`,
- * `unenrolled_at = NULL`, `unenroll_reason = NULL`.
- *
- * `updatedAt` auto-bumps via the schema-helper `$onUpdate` — do not set it.
- */
+/** `updatedAt` auto-bumps via `$onUpdate` — do not set it. */
 export async function upsertEnrolled(
   input: UpsertEnrolledInput,
 ): Promise<DalReturn<VoipCampaignContact>> {
@@ -45,7 +25,7 @@ export async function upsertEnrolled(
       .insert(voipCampaignContacts)
       .values({
         customerId: input.customerId,
-        cloudtalkContactId: input.cloudtalkContactId,
+        providerContactId: input.providerContactId,
         voipCampaignId: input.voipCampaignId,
         enrolledAt: now,
         unenrolledAt: null,
@@ -58,7 +38,7 @@ export async function upsertEnrolled(
       .onConflictDoUpdate({
         target: voipCampaignContacts.customerId,
         set: {
-          cloudtalkContactId: input.cloudtalkContactId,
+          providerContactId: input.providerContactId,
           voipCampaignId: input.voipCampaignId,
           enrolledAt: now,
           unenrolledAt: null,
@@ -75,12 +55,7 @@ export async function upsertEnrolled(
   })
 }
 
-/**
- * Idempotent unenroll patch — sets `unenrolled_at = now` + `unenroll_reason`
- * ONLY on a currently-active row (`unenrolled_at IS NULL`). Returns
- * `rowsAffected` so the caller can detect the no-op case (already unenrolled,
- * or never enrolled). The row + cloudtalk_contact_id persist for re-enroll.
- */
+/** Patches rather than deletes: the row + provider_contact_id persist so re-enroll reuses the same provider contact. */
 export async function markUnenrolled(
   customerId: string,
   reason: VoipUnenrollReason,
@@ -100,15 +75,7 @@ export async function markUnenrolled(
   })
 }
 
-/**
- * Atomically re-point an active enrollment to a different campaign. Updates
- * ONLY the `voip_campaign_id` FK on the currently-active row
- * (`unenrolled_at IS NULL`). Caller must have already swapped the membership
- * tags on CloudTalk (removeTags old → addTags new) before calling this.
- * Returns `void`; the service detects the no-op case upstream.
- *
- * `updatedAt` auto-bumps via the schema-helper `$onUpdate` — do not set it.
- */
+/** Call only after dialerProvider.switchCampaign has moved the provider-side membership. */
 export async function repointCampaign(
   input: { customerId: string, toCampaignId: string },
 ): Promise<DalReturn<void>> {
@@ -123,12 +90,7 @@ export async function repointCampaign(
   })
 }
 
-/**
- * Record a per-customer sync error (used by the bulk enroll-all job when a
- * single customer's CT push fails). No-op when the row doesn't exist yet —
- * a never-enrolled customer has nowhere to attach the error, so the caller
- * also logs. Returns `rowsAffected`.
- */
+/** No-op for a never-enrolled customer (no row to attach the error to) — the caller logs as well. */
 export async function recordSyncError(
   customerId: string,
   error: string,
@@ -144,12 +106,7 @@ export async function recordSyncError(
   })
 }
 
-/**
- * Exactly-once dial-attempt counting. The dedup IS the increment: a single
- * atomic conditional UPDATE that only fires when this call_uuid differs from
- * the last counted one. Returns the new dial_attempts on a first sighting, or
- * null on a redelivery (row unchanged). See design §8.1.
- */
+/** The dedup IS the increment — one atomic conditional UPDATE; null means a redelivery of an already-counted call_uuid. */
 export async function claimAndIncrementDialAttempt(
   customerId: string,
   callUuid: string,
@@ -171,10 +128,7 @@ export async function claimAndIncrementDialAttempt(
   })
 }
 
-/**
- * Record a successful auto-SMS: advance the ladder index + stamp the day for
- * the ≤1/day gate. Called only after cloudtalkClient.sendSms succeeds.
- */
+/** Call only after dialerProvider.sendSms succeeds; the stamp drives the ≤1/day gate. */
 export async function recordAutoSmsSent(customerId: string): Promise<DalReturn<void>> {
   return dalDbOperation(async () => {
     await db

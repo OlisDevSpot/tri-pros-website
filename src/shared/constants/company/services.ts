@@ -33,7 +33,6 @@ export const services: Service[] = [
       'Elevate your home\'s energy efficiency and environmental impact with our energy-efficient construction services.',
     features: [
       'Insulation upgrades',
-      'Solar panels installation',
       'Energy-efficient windows',
       'Green roofing solutions',
       'Smart home technology integration',

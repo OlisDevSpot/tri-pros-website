@@ -1,6 +1,6 @@
 import type { ProposalFormSchema } from '../schemas/form-schema'
 
-import { computeFinalTcp, computeTotalDiscounts, computeTotalSectionPrices } from '@/shared/entities/proposals/lib/financials'
+import { computeFinalTcp, computeTotalDiscounts, computeTotalSectionPrices } from '@/shared/modules/proposals/core/lib/financials'
 
 /**
  * Live form-state aggregates. Form values are the ONLY input shape — server

@@ -1,19 +1,14 @@
 'use client'
 
-import type { MediaItem } from '@/shared/components/media/types'
 import type { MediaPhase } from '@/shared/constants/enums/media'
-import type { MediaFile } from '@/shared/db/schema'
+import type { ProjectMediaFile } from '@/shared/db/schema'
+import type { MediaItem } from '@/shared/modules/media/core/types'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowRightIcon, Star, Trash2, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { toast } from 'sonner'
-import { MediaCard } from '@/shared/components/media/media-card'
-import { MediaReorderGrid } from '@/shared/components/media/media-reorder-grid'
-import { MediaUploadButton } from '@/shared/components/media/media-upload-button'
-import { useMediaUpload } from '@/shared/components/media/use-media-upload'
-import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import {
@@ -30,13 +25,18 @@ import { mediaPhases } from '@/shared/constants/enums/media'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { cn } from '@/shared/lib/utils'
+import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
+import { MediaCard } from '@/shared/modules/media/core/components/media-card'
+import { MediaReorderGrid } from '@/shared/modules/media/core/components/media-reorder-grid'
+import { MediaUploadButton } from '@/shared/modules/media/core/components/media-upload-button'
+import { useMediaUpload } from '@/shared/modules/media/core/hooks/use-media-upload'
 import { useGooglePicker } from '@/shared/services/providers/google-drive/hooks/use-google-picker'
 import { useTRPC } from '@/trpc/helpers'
 import { ImportFromProposalDialog } from './import-from-proposal-dialog'
 
 interface Props {
   projectId: string
-  mediaFiles: MediaFile[]
+  mediaFiles: ProjectMediaFile[]
   onUpdate: () => void
 }
 
@@ -215,12 +215,12 @@ export function ProjectMediaManager({ projectId, mediaFiles, onUpdate }: Props) 
 
   const fileById = new Map(mediaFiles.map(f => [f.id, f]))
 
-  const mediaByPhase = (phase: string): MediaFile[] =>
+  const mediaByPhase = (phase: string): ProjectMediaFile[] =>
     mediaFiles
       .filter(f => f.phase === phase && !f.mimeType.startsWith('video/'))
       .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
 
-  const toMediaItem = (f: MediaFile): MediaItem => ({
+  const toMediaItem = (f: ProjectMediaFile): MediaItem => ({
     id: f.id,
     name: f.name,
     mimeType: f.mimeType,
@@ -517,7 +517,7 @@ export function ProjectMediaManager({ projectId, mediaFiles, onUpdate }: Props) 
                             return (
                               <>
                                 {f.isHeroImage && (
-                                  <Badge className="bg-yellow-500/90 text-yellow-950 text-[10px] py-0 px-1.5">
+                                  <Badge className="bg-warning/90 text-warning-foreground text-xs py-0 px-1.5">
                                     Hero
                                   </Badge>
                                 )}
@@ -527,7 +527,7 @@ export function ProjectMediaManager({ projectId, mediaFiles, onUpdate }: Props) 
                                   size="icon"
                                   className={
                                     f.isHeroImage
-                                      ? 'h-6 w-6 bg-yellow-500 hover:bg-yellow-600 text-yellow-950'
+                                      ? 'h-6 w-6 bg-warning hover:bg-warning/90 text-warning-foreground'
                                       : cn('h-6 w-6 bg-primary hover:bg-primary/80 text-primary-foreground opacity-0 transition-opacity group-hover:opacity-100', menuOpen && 'opacity-100')
                                   }
                                   onClick={() => handleToggleHero(f.id, f.isHeroImage)}

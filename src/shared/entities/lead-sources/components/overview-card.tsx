@@ -94,7 +94,7 @@ function Indicator({ className }: { className?: string }) {
       aria-hidden="true"
       className={cn(
         'inline-block size-2 shrink-0 rounded-full motion-safe:transition-colors motion-safe:duration-200',
-        source.isActive ? 'bg-emerald-500' : 'bg-muted-foreground/30',
+        source.isActive ? 'bg-status-success-dot' : 'bg-muted-foreground/30',
         className,
       )}
     />
@@ -138,7 +138,7 @@ function Stat({ value, label, className }: StatProps) {
   return (
     <div className={cn('flex flex-col items-end gap-px tabular-nums', className)}>
       <span className="text-sm font-semibold text-foreground">{value ?? 0}</span>
-      <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</span>
+      <span className="text-xs uppercase tracking-wide text-muted-foreground">{label}</span>
     </div>
   )
 }

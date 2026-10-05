@@ -2,7 +2,7 @@
 
 import type { CarouselApi } from '@/shared/components/ui/carousel'
 import type { FunnelSlug } from '@/shared/domains/funnels/constants/slugs'
-import type { PortfolioProject } from '@/shared/entities/projects/types'
+import type { PortfolioProject } from '@/shared/modules/projects/core/types'
 import { useQuery } from '@tanstack/react-query'
 import Image from 'next/image'
 import { useCallback, useMemo, useState } from 'react'
@@ -10,9 +10,9 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { ROOTS } from '@/shared/config/roots'
 import { PORTFOLIO_FALLBACK_IMAGES } from '@/shared/domains/funnels/constants/portfolio-fallback-images'
 import { getTradeFacts } from '@/shared/domains/funnels/constants/trade-facts'
-import { getOptimizedSrc } from '@/shared/lib/get-optimized-urls'
 import { mainSiteUrl } from '@/shared/lib/main-site-url'
 import { cn } from '@/shared/lib/utils'
+import { getOptimizedSrc } from '@/shared/modules/media/core/lib/get-optimized-urls'
 import { useTRPC } from '@/trpc/helpers'
 
 const MAX_SLIDES = 8
@@ -34,7 +34,7 @@ interface Slide {
  */
 export function FunnelProjectCarousel({ slug }: { slug: string }) {
   const trpc = useTRPC()
-  const scopesQ = useQuery(trpc.notionRouter.scopes.getAll.queryOptions())
+  const scopesQ = useQuery(trpc.constructionRouter.scopes.getAll.queryOptions())
   const projectsQ = useQuery(trpc.projectsRouter.showroomDisplay.getAll.queryOptions())
   const tradeId = getTradeFacts(slug as FunnelSlug).notionTradeId
 
@@ -54,7 +54,7 @@ export function FunnelProjectCarousel({ slug }: { slug: string }) {
     if (!scopes || !projects) {
       return null
     }
-    const scopeToTrade = new Map(scopes.map(s => [s.id, s.relatedTrade]))
+    const scopeToTrade = new Map(scopes.map(s => [s.id, s.tradeId]))
     const real: Slide[] = projects
       .filter((p): p is PortfolioProject & { heroImage: NonNullable<PortfolioProject['heroImage']> } =>
         p.heroImage !== null && p.scopeIds.some(id => scopeToTrade.get(id) === tradeId),

@@ -1,4 +1,4 @@
-import type { EntityAction } from '@/shared/components/entity-actions/types'
+import type { EntityAction } from '@/shared/components/entities/entity-actions/types'
 
 import { CalendarPlusIcon, EyeIcon, PencilIcon, TrashIcon } from 'lucide-react'
 

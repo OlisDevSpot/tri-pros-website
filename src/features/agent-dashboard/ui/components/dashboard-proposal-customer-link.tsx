@@ -5,7 +5,7 @@ import type { MouseEvent } from 'react'
 import { UserRoundIcon } from 'lucide-react'
 
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
-import { useModalStore } from '@/shared/hooks/use-modal-store'
+import { openModal } from '@/shared/lib/open-modal'
 import { cn } from '@/shared/lib/utils'
 
 interface DashboardProposalCustomerLinkProps {
@@ -19,26 +19,23 @@ interface DashboardProposalCustomerLinkProps {
 /**
  * The proposal's customer, rendered as the clickable anchor of the card's meta
  * row. Opens the shared `CustomerProfileModal` on the meetings tab with the
- * proposal's own meeting highlighted — the same `useModalStore` entrypoint the
+ * proposal's own meeting highlighted — the same `openModal` entrypoint the
  * dashboard meeting card uses, so both rosters open the identical modal. Stops
  * propagation so the click never also triggers the card root's "open proposal
  * review" handler. Renders nothing when the row has no joined customer.
  */
 export function DashboardProposalCustomerLink({ customerId, customerName, meetingId, className }: DashboardProposalCustomerLinkProps) {
-  const { open: openModal, setModal } = useModalStore()
-
   if (!customerId || !customerName) {
     return null
   }
 
   function handleClick(e: MouseEvent) {
     e.stopPropagation()
-    setModal({
+    openModal({
       accessor: 'CustomerProfile',
       Component: CustomerProfileModal,
       props: { customerId: customerId as string, defaultTab: 'meetings' as const, highlightMeetingId: meetingId ?? undefined },
     })
-    openModal()
   }
 
   return (

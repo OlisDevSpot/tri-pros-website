@@ -16,7 +16,9 @@ import { cn } from '@/shared/lib/utils'
  * day with ≥1 scheduled meeting). `CalendarDayButton`'s className includes
  * `[&>span]:opacity-70` (styling the day-number span), which would fade the
  * dot too if it were a `<span>` — so the dot is a `<div>` instead, which the
- * `[&>span]` selector can't match, keeping it solid cobalt. A visually-hidden
+ * `[&>span]` selector can't match, keeping it solid cobalt. On the selected
+ * day the button itself is `bg-primary`, so the dot flips to
+ * `primary-foreground` to stay visible. A visually-hidden
  * "has meetings" label surfaces the same signal to screen readers, since the
  * dot itself is `aria-hidden`.
  */
@@ -33,7 +35,10 @@ export function CalendarMeetingDayButton({ className, day, modifiers, children, 
         <>
           <div
             aria-hidden="true"
-            className="absolute bottom-1 left-1/2 size-1 -translate-x-1/2 rounded-full bg-primary"
+            className={cn(
+              'absolute bottom-1 left-1/2 size-1 -translate-x-1/2 rounded-full',
+              modifiers.selected ? 'bg-primary-foreground' : 'bg-primary',
+            )}
           />
           <span className="sr-only">has meetings</span>
         </>

@@ -1,6 +1,5 @@
 // Customer business mutations that don't fit generic CRUD. Services call these;
 // never reach for db.insert/update from a service layer.
-// see docs/codebase-conventions/dal-conventions.md
 
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { CustomerProfilePatch, CustomerProfileRow } from '@/shared/db/schema/customer-profiles'

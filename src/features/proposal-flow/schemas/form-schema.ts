@@ -2,5 +2,5 @@ export {
   proposalFormBaseDefaultValues as baseDefaultValues,
   proposalFormSchema,
   proposalFormShape,
-} from '@/shared/entities/proposals/schemas'
-export type { ProposalFormSchema } from '@/shared/entities/proposals/schemas'
+} from '@/shared/modules/proposals/core/schemas'
+export type { ProposalFormSchema } from '@/shared/modules/proposals/core/schemas'

@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next'
+import { hiddenTradeSlugs } from './src/features/landing/constants/hidden-trades'
 import { APP_HOSTS } from './src/shared/config/roots'
 import { FUNNEL_SLUGS } from './src/shared/domains/funnels/constants/slugs'
 
@@ -59,6 +60,14 @@ const nextConfig: NextConfig = {
       './public/portfolio-photos/*.jpeg',
       './public/company/logo/logo-light-right.png',
     ],
+  },
+  // Temporary (307) so search engines keep the hidden trade pages indexed for when they come back.
+  async redirects() {
+    return hiddenTradeSlugs.map(slug => ({
+      source: `/services/luxury-renovations/${slug}`,
+      destination: '/services/luxury-renovations',
+      permanent: false,
+    }))
   },
   // Service worker headers. Browsers cache /sw.js by default and skip the
   // update check unless the response says otherwise — without no-cache,

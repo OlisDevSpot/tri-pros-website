@@ -15,23 +15,15 @@ import { getInitials } from '@/shared/entities/users/lib/get-initials'
 import { getUserColorToken } from '@/shared/entities/users/lib/get-user-color'
 import { cn } from '@/shared/lib/utils'
 
-// ── Types ──────────────────────────────────────────────────────────────────────
-
 export interface UserOverviewCardUser {
   id: string
   name: string | null
   image: string | null
-  /** Optional — enables the Email slot and Email contact action. */
   email?: string | null
-  /** Optional — enables the Phone slot and Phone contact action. */
   phone?: string | null
 }
 
-/**
- * Parent-enriched contextual metadata. Populated by consumers like
- * `ParticipantsSlot` to surface situational info (role in this meeting,
- * ownership) without the card itself reaching into meeting context.
- */
+/** Supplied by the parent so the card never reaches into meeting context itself. */
 export interface UserOverviewCardMeta {
   role?: MeetingParticipantRole
   /** Convenience flag — derived from role='owner' but overridable. */
@@ -48,8 +40,8 @@ const AVATAR_SIZE_CLASSES: Record<UserAvatarSize, string> = {
 }
 
 const AVATAR_FALLBACK_TEXT: Record<UserAvatarSize, string> = {
-  xs: 'text-[8px]',
-  sm: 'text-[10px]',
+  xs: 'text-xs',
+  sm: 'text-xs',
   md: 'text-xs',
   lg: 'text-sm',
 }
@@ -59,8 +51,6 @@ const ROLE_LABELS: Record<MeetingParticipantRole, string> = {
   co_owner: 'Co-owner',
   helper: 'Helper',
 }
-
-// ── Context ────────────────────────────────────────────────────────────────────
 
 interface UserOverviewCardContextValue {
   user: UserOverviewCardUser
@@ -77,11 +67,8 @@ function useUserOverviewCard() {
   return ctx
 }
 
-// ── Root ───────────────────────────────────────────────────────────────────────
-
 interface UserOverviewCardRootProps {
   user: UserOverviewCardUser
-  /** Parent-enriched metadata. Optional — slots gracefully render nothing when absent. */
   meta?: UserOverviewCardMeta
   children: ReactNode
   className?: string
@@ -106,11 +93,8 @@ function UserOverviewCardRoot({ user, meta, children, className }: UserOverviewC
   )
 }
 
-// ── Primitive slots ────────────────────────────────────────────────────────────
-
 interface AvatarSlotProps {
   size?: UserAvatarSize
-  /** Wrap the avatar in a hover tooltip showing the user's name. Default: false. */
   withTooltip?: boolean
   className?: string
 }
@@ -176,11 +160,6 @@ function PhoneSlot({ className }: { className?: string }) {
   )
 }
 
-/**
- * Role indicator — only renders when `meta.role` was provided by the parent
- * (e.g. rendered inside a meeting context via `ParticipantsSlot`). Owner gets
- * a crown; co_owner/helper get a compact text badge.
- */
 function RoleSlot({ className }: { className?: string }) {
   const { meta } = useUserOverviewCard()
   if (!meta.role) {
@@ -191,7 +170,7 @@ function RoleSlot({ className }: { className?: string }) {
       <span
         aria-label={ROLE_LABELS.owner}
         className={cn(
-          'inline-flex items-center justify-center text-amber-400',
+          'inline-flex items-center justify-center text-chart-3',
           className,
         )}
       >
@@ -202,7 +181,7 @@ function RoleSlot({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        'text-[10px] font-medium uppercase tracking-wide text-muted-foreground',
+        'text-xs font-medium uppercase tracking-wide text-muted-foreground',
         className,
       )}
     >
@@ -211,18 +190,11 @@ function RoleSlot({ className }: { className?: string }) {
   )
 }
 
-// ── Composed layouts ───────────────────────────────────────────────────────────
-
 interface RowSlotProps {
   children: ReactNode
   className?: string
 }
 
-/**
- * Flex row wrapper for composing an in-line user summary (avatar + text stack
- * + trailing actions). Children compose freely; use with Avatar + Name + any
- * trailing content.
- */
 function RowSlot({ children, className }: RowSlotProps) {
   return (
     <div className={cn('flex items-center gap-2 min-w-0', className)}>
@@ -232,17 +204,11 @@ function RowSlot({ children, className }: RowSlotProps) {
 }
 
 interface ContactActionsSlotProps {
-  /** Which actions to include. Defaults to whatever data is available on `user`. */
   include?: ReadonlyArray<'phone' | 'email'>
   className?: string
 }
 
-/**
- * Call + Email button cluster. Hides each action when the underlying
- * `user.phone` / `user.email` field is absent — no need to guard at the call
- * site. Reuses the shared `contact-actions` primitives so formatting +
- * copy/edit dropdowns match customer contact surfaces.
- */
+/** Reuses the shared contact-actions primitives so formatting and dropdowns match customer contact surfaces. */
 function ContactActionsSlot({ include = ['phone', 'email'], className }: ContactActionsSlotProps) {
   const { user } = useUserOverviewCard()
   const phoneEnabled = include.includes('phone') && !!user.phone
@@ -260,14 +226,10 @@ function ContactActionsSlot({ include = ['phone', 'email'], className }: Contact
   )
 }
 
-// ── Stack (multi-user static slot) ─────────────────────────────────────────────
-
 interface StackSlotProps {
   users: UserOverviewCardUser[]
-  /** Max avatars to render before showing a `+N` overflow badge. Default: 3. */
   max?: number
   size?: UserAvatarSize
-  /** Per-avatar hover tooltips with the user's name. Default: true. */
   withTooltip?: boolean
   className?: string
 }
@@ -306,16 +268,9 @@ function StackSlot({ users, max = 3, size = 'sm', withTooltip = true, className 
   )
 }
 
-// ── Inline list (static multi-user slot) ───────────────────────────────────────
-
 interface InlineListSlotProps {
   users: UserOverviewCardUser[]
-  /** Separator between pairs. Default: `/`. */
   separator?: string
-  /**
-   * Which form of the name to show next to each avatar. `first` takes the
-   * first whitespace-delimited token; `full` uses `user.name`. Default: `first`.
-   */
   mode?: 'first' | 'full'
   size?: UserAvatarSize
   className?: string
@@ -329,16 +284,7 @@ function firstToken(name: string | null): string {
   return first || 'Unknown'
 }
 
-/**
- * Inline user summary: `[avatar] Oliver / [avatar] Sean`. One avatar per user
- * (not stacked), each paired with its first name. Avatar fallback uses the
- * stable per-user color token; the name text stays at `text-foreground` to
- * keep label legibility crisp and avoid competing with the avatar hue.
- *
- * Use when space allows names to be shown inline (schedule card summary row,
- * breadcrumb-style attribution). Use `UserOverviewCard.Stack` when space only
- * permits overlapping avatars.
- */
+/** Name text stays `text-foreground` rather than the avatar hue so labels stay legible. */
 function InlineListSlot({ users, separator = '/', mode = 'first', size = 'xs', className }: InlineListSlotProps) {
   if (users.length === 0) {
     return null
@@ -362,8 +308,6 @@ function InlineListSlot({ users, separator = '/', mode = 'first', size = 'xs', c
     </span>
   )
 }
-
-// ── Compound export ────────────────────────────────────────────────────────────
 
 export const UserOverviewCard = Object.assign(UserOverviewCardRoot, {
   Avatar: AvatarSlot,

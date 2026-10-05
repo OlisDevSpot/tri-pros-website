@@ -1,7 +1,5 @@
-import type { ProposalFormSchema } from '@/shared/entities/proposals/schemas'
+import type { ProposalFormSchema } from '@/shared/modules/proposals/core/schemas'
 
-import { openai } from '@ai-sdk/openai'
-import { generateText, Output } from 'ai'
 import { eq } from 'drizzle-orm'
 
 import z from 'zod'
@@ -12,7 +10,7 @@ import { proposals } from '@/shared/db/schema'
 // ---------------------------------------------------------------------------
 // aiClient — the single, uniform entry point for AI/LLM interactions.
 //
-// Pattern (matches `cloudtalkClient`, `twilioClient`, and every other provider):
+// Pattern (matches `twilioClient`, `justcallClient`, and every other provider):
 // ONE factory → ONE singleton → ALL methods hanging off it. Callers do:
 //
 //   import { aiClient } from '@/shared/services/providers/ai/client'
@@ -33,6 +31,10 @@ function createAiClient() {
       proposal: Partial<ProposalFormSchema>,
     ): Promise<void> {
       try {
+        const [{ openai }, { generateText, Output }] = await Promise.all([
+          import('@ai-sdk/openai'),
+          import('ai'),
+        ])
         const { output } = await generateText({
           model: openai('gpt-4.1-mini-2025-04-14'),
           system:

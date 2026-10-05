@@ -1,4 +1,4 @@
-import type { PublicProject } from '@/shared/entities/projects/types'
+import type { PublicProject } from '@/shared/modules/projects/core/types'
 
 export interface ProjectStorySlide {
   imageUrl: string

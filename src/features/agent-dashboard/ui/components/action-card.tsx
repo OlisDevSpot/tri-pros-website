@@ -53,7 +53,7 @@ export function ActionCard({ item, onSelect }: Props) {
           </div>
           <p className="text-sm text-muted-foreground truncate">{item.suggestedAction}</p>
           {timeContext && (
-            <p className="text-xs text-muted-foreground/70 mt-0.5">{timeContext}</p>
+            <p className="text-xs text-muted-foreground/70 mt-0.5" suppressHydrationWarning>{timeContext}</p>
           )}
         </div>
         <Button variant="ghost" size="sm" className="shrink-0">

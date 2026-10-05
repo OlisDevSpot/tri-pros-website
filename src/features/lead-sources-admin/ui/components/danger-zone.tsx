@@ -65,7 +65,7 @@ export function DangerZone({ leadSourceId, slug, isActive, customerCount }: Dang
 
   return (
     <section className="flex flex-col gap-3">
-      <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         Danger zone
       </h3>
       <div className="flex flex-col rounded-lg border border-destructive/40">
@@ -80,7 +80,7 @@ export function DangerZone({ leadSourceId, slug, isActive, customerCount }: Dang
             disabled={toggleActive.isPending}
             onCheckedChange={next => onPause(next)}
             aria-label={isActive ? 'Pause intake' : 'Resume intake'}
-            className="data-[state=checked]:bg-emerald-500"
+            className="data-[state=checked]:bg-status-success-dot"
           />
         </DangerZoneRow>
 

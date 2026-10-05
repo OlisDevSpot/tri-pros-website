@@ -2,6 +2,7 @@ import { awards } from './awards'
 import { certifications } from './certifications'
 import { insurances } from './insurances'
 import { licenses } from './licenses'
+import { reviews } from './reviews'
 
 // Derived from the sibling canonical files — never hardcode license numbers,
 // coverage amounts, or award names here. Industry memberships have no other
@@ -10,7 +11,7 @@ export const credentials = [
   {
     category: 'Licenses & Certifications',
     items: [
-      ...licenses.map(l => `Licensed General Contractor (State of California - License #${l.licenseNumber})`),
+      ...licenses.map(l => `Licensed${l.bonded ? ' & Bonded' : ''} General Contractor (State of California - License #${l.licenseNumber})`),
       ...certifications.map(c => c.label),
     ],
     icon: '📋',
@@ -23,7 +24,7 @@ export const credentials = [
   {
     category: 'Industry Memberships',
     items: [
-      'Better Business Bureau (A+ Rating)',
+      `Better Business Bureau (${reviews.bbb.rating} Rating)`,
       'National Association of the Remodeling Industry (NARI)',
       'Associated General Contractors of America (AGC)',
       'U.S. Green Building Council (USGBC)',

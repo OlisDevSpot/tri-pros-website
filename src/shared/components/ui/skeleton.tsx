@@ -1,3 +1,4 @@
+import { SKELETON_TONE_CLASS } from '@/shared/constants/skeleton-tone'
 import { cn } from '@/shared/lib/utils'
 
 function Skeleton({ className, ...props }: React.ComponentProps<'div'>) {
@@ -5,7 +6,8 @@ function Skeleton({ className, ...props }: React.ComponentProps<'div'>) {
     <div
       data-slot="skeleton"
       className={cn(
-        'rounded-md bg-muted/60 motion-safe:animate-pulse',
+        'rounded-md motion-safe:animate-pulse',
+        SKELETON_TONE_CLASS,
         className,
       )}
       {...props}

@@ -3,22 +3,9 @@ import type { UserRole } from '@/shared/constants/enums/user'
 import { Buffer } from 'node:buffer'
 import { timingSafeEqual } from 'node:crypto'
 /**
- * ⚠️ DEV-ONLY OAuth-bypass login for the Playwright MCP browser. ⚠️
- *
- * The app's only interactive login is "Sign in with Google" (better-auth,
- * google-only). Google blocks OAuth inside automation-controlled browsers, so
- * the Playwright MCP browser cannot sign in the normal way. This route mints a
- * real better-auth session directly (our DB, our secret) and sets the session
- * cookie, letting the automated browser reach authenticated pages.
- *
- * It is the ENTIRE security boundary that keeps this out of production:
- *   1. env.VERCEL_ENV !== 'production'
- *   2. request host is not a production host (is-production-host)
- *   3. ?secret= matches env.DEV_LOGIN_SECRET (must be set + non-empty)
- * Any failure returns 404 (not 403) so the route's existence is never disclosed.
- *
- * Ritual: the Playwright browser navigates here FIRST each session, then works
- * authenticated. see docs/codebase-conventions/dev-auth-route.md
+ * DEV-ONLY: mints a real better-auth session for the Playwright MCP browser, because Google
+ * blocks OAuth inside automation-controlled browsers. Every guard failure is a 404, not a 403,
+ * so the route's existence is never disclosed.
  */
 import { serializeCookie, serializeSignedCookie } from 'better-call'
 import { NextResponse } from 'next/server'
@@ -29,11 +16,8 @@ import { auth } from '@/shared/domains/auth/server'
 
 const notFound = () => new NextResponse('Not found', { status: 404 })
 
-// Timing-safe string compare — crypto.timingSafeEqual throws on length
-// mismatch, so guard that first (differing length is itself just a mismatch,
-// not an error). Never used unless env.DEV_LOGIN_SECRET is already confirmed
-// set (see call site) — we don't want to leak timing signal about whether the
-// secret is configured, only about whether a provided value matches it.
+// timingSafeEqual throws on length mismatch, so guard it first. Only called once DEV_LOGIN_SECRET
+// is known set, so timing never reveals whether the secret is configured.
 function timingSafeEqualStrings(a: string, b: string): boolean {
   const bufA = Buffer.from(a, 'utf8')
   const bufB = Buffer.from(b, 'utf8')
@@ -43,10 +27,7 @@ function timingSafeEqualStrings(a: string, b: string): boolean {
 }
 
 function sanitizeRedirect(raw: string | null, origin: string): string {
-  // Resolve against origin, then verify same-origin — rejects protocol-relative
-  // (//evil.com), backslash (/\evil.com — browsers treat \ as / in URLs, which
-  // WHATWG URL parsing also normalizes, so a naive startsWith('/') check can be
-  // bypassed), and any other authority-changing redirect target.
+  // Resolve, then compare origins: a naive startsWith('/') is bypassed by //evil.com and /\evil.com (browsers treat \ as /).
   if (raw) {
     try {
       const resolved = new URL(raw, origin)
@@ -65,7 +46,6 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url)
   const host = request.headers.get('host')
 
-  // --- Guards (all required) ---
   if (env.VERCEL_ENV === 'production')
     return notFound()
   if (isProductionHost(host))
@@ -77,7 +57,6 @@ export async function GET(request: NextRequest) {
   const ctx = await auth.$context
   const adapter = ctx.internalAdapter
 
-  // --- Resolve target user: as > role > default ---
   const asEmail = url.searchParams.get('as')
   const roleParam = url.searchParams.get('role')
 
@@ -115,7 +94,6 @@ export async function GET(request: NextRequest) {
   if (!user)
     return notFound()
 
-  // --- Mint session + set signed cookie (same as better-auth setSessionCookie) ---
   const session = await adapter.createSession(user.id)
   const cookie = ctx.authCookies.sessionToken
   const setCookie = await serializeSignedCookie(
@@ -129,19 +107,9 @@ export async function GET(request: NextRequest) {
   const response = NextResponse.redirect(new URL(redirectPath, url.origin))
   response.headers.append('set-cookie', setCookie)
 
-  // Expire better-auth's session-data cache cookie so an identity SWITCH takes
-  // effect immediately. better-auth's cookieCache (auth/server.ts, session.cookieCache,
-  // 5-min TTL) writes this signed cookie on the client's get-session call; it would
-  // otherwise shadow the freshly-minted session_token until it expires.
-  //
-  // `ctx` here is the STATIC `auth.$context` (no request bound), so
-  // `ctx.authCookies.sessionData.attributes` lacks `domain` — better-auth only
-  // fills that in per-request (crossSubDomainCookies + dynamic baseURL are
-  // resolved against the incoming host inside its own request pipeline, which
-  // this route doesn't go through). The real cache cookie IS set with
-  // `Domain=<host>` (see auth/server.ts crossSubDomainCookies config), so an
-  // expiry cookie without a matching `domain` is a different cookie identity
-  // and silently fails to clear it. Set it explicitly from this request's host.
+  // Expire the session-data cache cookie, or the old identity shadows the new session for up to 5 min.
+  // `ctx` is the static `auth.$context`, so its cookie attributes lack the per-request `domain`;
+  // without a matching Domain the expiry is a different cookie identity and silently fails to clear.
   const dataCookie = ctx.authCookies.sessionData
   response.headers.append(
     'set-cookie',

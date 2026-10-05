@@ -1,5 +1,5 @@
 import type { ProposalStatus } from '@/shared/constants/enums'
-import type { FormMetaSection, FundingSection, ProjectSection } from '@/shared/entities/proposals/types'
+import type { FormMetaSection, FundingSection, ProjectSection } from '@/shared/modules/proposals/core/types'
 
 import { relations, sql } from 'drizzle-orm'
 import { bigint, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
@@ -7,7 +7,7 @@ import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import z from 'zod'
 
 import { envelopeDocumentIds, priceDisplayModes, proposalKinds, proposalStatuses } from '@/shared/constants/enums'
-import { projectSectionSchema } from '@/shared/entities/proposals/schemas'
+import { projectSectionSchema } from '@/shared/modules/proposals/core/schemas'
 import { createdAt, id, label, updatedAt } from '../lib/schema-helpers'
 import { user } from './auth'
 import { financeOptions } from './finance-options'
@@ -36,9 +36,11 @@ export const proposals = pgTable('proposals', {
   qbInvoiceId: text('qb_invoice_id'),
   qbPaymentStatus: text('qb_payment_status'),
 
-  /** @deprecated W3 froze this blob (2026-07-26 spec). Scalars live in the
+  /**
+   * @deprecated W3 froze this blob (2026-07-26 spec). Scalars live in the
    * price_display_mode/envelope_document_ids columns. Read only by
-   * scripts/backfill-wave3-scalars.ts. Dropped on the Wave-4 push (ledger). */
+   * scripts/backfill-wave3-scalars.ts. Dropped on the Wave-4 push (ledger).
+   */
   formMetaJSONDeprecated: jsonb('form_meta_JSON').$type<FormMetaSection>(),
   projectJSON: jsonb('project_JSON').$type<ProjectSection>().notNull(),
   /** @deprecated same — scalars in *_cents columns, incentives in proposal_incentives. */
@@ -57,7 +59,6 @@ export const proposals = pgTable('proposals', {
   // 2026-07-24 ruling). Until the pricing editor lands it still gates authoring
   // behavior (breakdown-mode validation + client-side startingTcp sync).
   priceDisplayMode: text('price_display_mode', { enum: priceDisplayModes }).notNull().default('total'),
-  // see ../entities/proposals/DOCS.md#agreement-context-as-coherent-unit
   envelopeDocumentIds: text('envelope_document_ids', { enum: envelopeDocumentIds }).array(),
 
   // Stage-2 rollup cache (Addendum A.2): recomputed by the SINGLE choke point
@@ -65,8 +66,7 @@ export const proposals = pgTable('proposals', {
   // self-healing (re-running always converges from rows). Nullable only for
   // the backfill window — treat null as "not yet computed", never as $0-truth.
   finalTcpCents: bigint('final_tcp_cents', { mode: 'number' }),
-  // Bumped when the TCP formula or rounding policy changes; changelog in
-  // ../entities/proposals/DOCS.md#final-tcp-derived. v1 = 2026-07-09 ruling.
+  // Bumped when the TCP formula or rounding policy changes. v1 = 2026-07-09 ruling.
   calcVersion: integer('calc_version').notNull().default(1),
 
   meetingId: uuid('meeting_id')
@@ -136,8 +136,6 @@ export const insertProposalSchema = createInsertSchema(proposals, {
 }).extend({
   // Server-derived fields: hooks.create.before sets these. Optional so
   // clients don't send them (hook fills in), but Zod doesn't strip them.
-  // see ../entities/proposals/DOCS.md#kind-derived-from-meeting-project
-  // see ../entities/proposals/DOCS.md#share-token-generated-at-insert
   kind: z.enum(['initial-sale', 'additional-work']).optional(),
   token: z.string().optional(),
 })

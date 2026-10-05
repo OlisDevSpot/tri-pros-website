@@ -61,7 +61,7 @@ export async function runPrompts(opts: {
   }
   else if (opts.matchedScopes.length > 0) {
     const scopeChoices = opts.matchedScopes.map(s => ({
-      name: `${s.name} (${s.entryType})`,
+      name: `${s.name} (${s.kind})`,
       value: s.id,
       checked: true,
     }))
