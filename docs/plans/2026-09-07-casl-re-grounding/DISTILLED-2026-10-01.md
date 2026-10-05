@@ -28,10 +28,13 @@ One page. Everything else in this folder is evidence. Code is the source of trut
 | 14 | Server-side masking of cost data on bearer reads: **deferred**, kept open. |
 | 15 | Never widen the legacy engine to patch a gap. |
 | 16 | A supersession edits the superseded text. No "read me first" banners. |
+| 17 | **A sub-entity is a field of its parent's CASL subject** (2026-10-05). The child spec declares only its parent, foreign key and collection name. Reading the child = the parent's `read`; creating, updating or deleting it = the parent's `update` on that collection. Customer notes are the one child with its own subject. A parent `update` rule without a field list covers every collection; narrow with a field list or a `cannot`. |
+| 18 | **The specs are the single typed source** (2026-10-05). Rule fields, conditions, operator placement and the checks the client makes are all type-checked against the specs. Rules are written through a thin typed `can`/`cannot` wrapper that emits stock CASL rules. Each subject spec lists the columns rules may condition on. A checked-in file of wrong-on-purpose lines guards the types. |
 
-## 3. Liked by the owner, not yet ratified
-- **A sub-entity is a field of its parent's CASL subject.** The child spec declares only its parent, foreign key and collection name; its subject is inferred. Reading the child = the parent's `read`; creating, updating or deleting it = the parent's `update` on that collection. It compiles to SQL (`child.fk IN (SELECT parent.pk WHERE …)`). Worked example with real SQL: report 17.
-- **Interface shape** (four design studies, report 24): the spec type splits into root and child; a scope is always a real SQL value; one entry point for hand-written queries; a pure, connection-free core tested by comparing SQL strings; one rules file per role. The owner asked for SOLID and low cyclomatic complexity; this is the proposed answer. Names in report 24 (`permit`, `defineRootSpec`, `defineChildSpec`, `collection`, `bearerContext`) are proposals and need the owner's agreement.
+## 3. Proposed, not yet agreed
+- **Names and folder layout.** Report 24's names (`permit`, `defineRootSpec`, `defineChildSpec`, `collection`, `bearerContext`) and the new ones decision 18 needs (the typed rules wrapper, the condition-column list, the client check helpers) are proposals and need the owner's agreement.
+- **The rest of the interface** (report 24 §4): one entry point for hand-written queries; a scope that is always a real SQL value; a pure, connection-free core tested by comparing SQL strings; one rules file per role; the field gate after the row is loaded.
+- **Test runner** for the compiler core (vitest, or a checked-in parity script).
 
 ## 4. Business rules
 - **Homeowner with a share link** may: read their proposal, pick a financing option, set cash in deal, give their age, record a view, ask to move forward (a notification only). They may never touch status, price, scope of work, owner, contract timestamps, the contract lifecycle, or which documents go in the envelope.
