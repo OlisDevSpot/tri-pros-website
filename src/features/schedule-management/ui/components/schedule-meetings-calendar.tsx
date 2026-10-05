@@ -12,6 +12,7 @@ import { MeetingCard } from '@/features/schedule-management/ui/components/meetin
 import { ScheduleCalendar } from '@/features/schedule-management/ui/components/schedule-calendar'
 import { ScheduleCalendarDot } from '@/features/schedule-management/ui/components/schedule-calendar-dot'
 import { ScheduleControlsBar } from '@/features/schedule-management/ui/components/schedule-controls-bar'
+import { PageBar } from '@/shared/components/page-bar'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
@@ -87,10 +88,12 @@ export function ScheduleMeetingsCalendar({ showToggle, showSaturday, onToggleSat
   ), [actions, handleUpdateScheduledFor])
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3">
-      <QueryToolbar query={query} entityName="meetings">
-        <QueryToolbar.Standard leading={showToggle} searchPlaceholder="Search by customer or type…" />
-      </QueryToolbar>
+    <div className="flex h-full min-h-0 flex-col gap-(--gutter)">
+      <PageBar>
+        <QueryToolbar query={query} entityName="meetings">
+          <QueryToolbar.Standard leading={showToggle} searchPlaceholder="Search by customer or type…" />
+        </QueryToolbar>
+      </PageBar>
       <div className="min-h-0 flex-1">
         <ScheduleCalendar
           events={events}

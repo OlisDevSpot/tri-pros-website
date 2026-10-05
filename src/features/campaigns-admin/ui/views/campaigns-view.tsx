@@ -11,39 +11,39 @@ import { CampaignsLeadsView } from '@/features/campaigns-admin/ui/views/campaign
 import { CampaignsOverviewView } from '@/features/campaigns-admin/ui/views/campaigns-overview-view'
 import { CampaignsSetupView } from '@/features/campaigns-admin/ui/views/campaigns-setup-view'
 import { DataViewBoundary } from '@/shared/components/data-view-boundary'
+import { PageBar } from '@/shared/components/page-bar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 
 export function CampaignsView() {
   const [tab, setTab] = useQueryState('tab', campaignTabParser)
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold text-foreground">Campaigns</h1>
-        <p className="text-xs text-muted-foreground">
-          Dialer lead-conversion campaigns — enroll, curate, and inspect leads.
-        </p>
-      </header>
-
-      <Tabs className="flex min-h-0 flex-1 flex-col" onValueChange={v => setTab(v as CampaignTab)} value={tab}>
+    <Tabs className="flex h-full min-h-0 flex-col gap-(--gutter)" onValueChange={v => setTab(v as CampaignTab)} value={tab}>
+      <PageBar>
+        <header className="flex flex-col gap-1">
+          <h1 className="text-xl font-semibold text-foreground">Campaigns</h1>
+          <p className="text-xs text-muted-foreground">
+            Dialer lead-conversion campaigns — enroll, curate, and inspect leads.
+          </p>
+        </header>
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="leads">Leads</TabsTrigger>
           <TabsTrigger value="setup">Setup</TabsTrigger>
         </TabsList>
+      </PageBar>
 
-        <TabsContent className="flex min-h-0 flex-1 flex-col" value="overview">
-          <Suspense fallback={<CampaignsOverviewSkeleton />}>
-            <CampaignsOverviewView />
-          </Suspense>
-        </TabsContent>
-        <TabsContent className="flex min-h-0 flex-1 flex-col" value="leads">
-          <DataViewBoundary>
-            <CampaignsLeadsView />
-          </DataViewBoundary>
-        </TabsContent>
-        <TabsContent className="flex min-h-0 flex-1 flex-col" value="setup"><CampaignsSetupView /></TabsContent>
-      </Tabs>
-    </div>
+      <TabsContent className="flex min-h-0 flex-1 flex-col" value="overview">
+        <Suspense fallback={<CampaignsOverviewSkeleton />}>
+          <CampaignsOverviewView />
+        </Suspense>
+      </TabsContent>
+      <TabsContent className="flex min-h-0 flex-1 flex-col" value="leads">
+        <DataViewBoundary>
+          <CampaignsLeadsView />
+        </DataViewBoundary>
+      </TabsContent>
+      <TabsContent className="flex min-h-0 flex-1 flex-col" value="setup"><CampaignsSetupView /></TabsContent>
+    </Tabs>
   )
 }

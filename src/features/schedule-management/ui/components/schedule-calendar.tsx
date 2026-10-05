@@ -43,7 +43,8 @@ export function ScheduleCalendar({ events, dateWindow, showSaturday = false, ren
     : [...new Set([...DEFAULT_HIDDEN_DAYS, 6])]
 
   return (
-    <div className="flex h-full w-full flex-col rounded-xl border">
+    // A surface of its own, so the grid reads as one panel off the page and the event cards inside climb a rung.
+    <div className="surface flex h-full w-full flex-col overflow-hidden rounded-xl border">
       <CalendarHeader
         currentDate={currentDate}
         activeView={view}

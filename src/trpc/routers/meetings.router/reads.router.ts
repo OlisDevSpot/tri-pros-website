@@ -1,11 +1,11 @@
 import { TRPCError } from '@trpc/server'
-import { inArray } from 'drizzle-orm'
 import z from 'zod'
 
 import { LIVE_MEETING_OUTCOMES } from '@/shared/constants/enums'
-import { db } from '@/shared/db'
-import { user } from '@/shared/db/schema'
+import { PARTICIPANT_ROLES, SETTER_ROLES } from '@/shared/entities/meetings/constants/internal-user-roles'
 import { getByIdWithJoins, listMeetings, listMeetingsForProject, meetingListInputSchema } from '@/shared/entities/meetings/dal/server/queries'
+import { listUsersByRoles } from '@/shared/entities/users/dal/server/queries'
+import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
 import { createTRPCRouter } from '@/trpc/init'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 
@@ -37,21 +37,17 @@ export const readsRouter = createTRPCRouter({
     .input(z.object({ projectId: z.string().uuid() }))
     .query(async ({ ctx, input }) => dalToTrpc(await listMeetingsForProject(ctx, input))),
 
+  // `setter` adds dispatchers, who book meetings but never sit them, so they stay out of the participant picker.
   getInternalUsers: meetingProcedure
-    .query(async ({ ctx }) => {
+    .input(z.object({ purpose: z.enum(['participant', 'setter']) }).optional())
+    .query(async ({ ctx, input }) => {
       if (ctx.ability.cannot('assign', 'Meeting')) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to assign meeting owners' })
       }
-      return db
-        .select({
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          image: user.image,
-          role: user.role,
-        })
-        .from(user)
-        .where(inArray(user.role, ['agent', 'super-admin']))
-        .orderBy(user.name)
+      if (input?.purpose === 'setter') {
+        // The system owner holds unassigned bookings; it never booked anything.
+        return dalToTrpc(await listUsersByRoles(SETTER_ROLES, { excludeIds: [await getSystemOwnerId()] }))
+      }
+      return dalToTrpc(await listUsersByRoles(PARTICIPANT_ROLES))
     }),
 })

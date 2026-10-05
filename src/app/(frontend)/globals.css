@@ -16,6 +16,9 @@
   --surface-c: 0.017;
   --canvas-l: 0.894;
   --step: 0.024;
+  /* Extra lightness on the first step off the page only. Near black an equal step reads weaker than the ones above
+     it, so dark mode widens this one and leaves every rung from 1 up where it was. */
+  --lift: 0;
   --edge: 0.048;
   --edge-dir: -1;
   --depth: 0;
@@ -187,6 +190,11 @@
   --input-background: transparent;
   /* The app derives these from its ramp on :root/.dark; this palette is literal, so it derives them from its own tokens here, or a dark page would lend them its values. */
   --border-strong: color-mix(in oklab, var(--border) 75%, var(--foreground));
+  --grid-line: color-mix(in oklab, var(--border) 50%, var(--border-strong));
+  --axis: var(--border-strong);
+  /* Marketing outline buttons stay literal outlines over photos and warm panels. */
+  --control: transparent;
+  --control-hover: var(--hover);
   --band: color-mix(in oklab, var(--muted) 50%, var(--card));
   --row-hover: color-mix(in oklab, var(--primary) 8%, var(--card));
   --row-selected: color-mix(in oklab, var(--primary) 12%, var(--card));
@@ -334,9 +342,13 @@
 
 .dark {
   color-scheme: dark;
-  --surface-c: 0.059;
-  --canvas-l: 0.159;
+  /* The highest tint that keeps the canvas inside sRGB; above it the page clips to an inky blue-black. */
+  --surface-c: 0.04;
+  --canvas-l: 0.125;
   --step: 0.047;
+  --lift: 0.034;
+  /* The same lightness gap reads fainter near black, so dark edges sit further out than light ones. */
+  --edge: 0.07;
   --edge-dir: 1;
   --depth: 0;
   --overlay-hover-mix: 8%;
@@ -362,13 +374,13 @@
   --input: oklch(0.62 0.04 256);
   --ring: oklch(0.78 0.12 228);
   /* The dark rail is rung 2, a step above a section; its active pill sits 2.2 steps above it. */
-  --sidebar: oklch(calc(var(--canvas-l) + 2 * var(--step)) var(--surface-c) var(--surface-h));
+  --sidebar: oklch(calc(var(--canvas-l) + var(--lift) + 2 * var(--step)) var(--surface-c) var(--surface-h));
   --sidebar-foreground: oklch(0.82 0.02 252);
   --sidebar-muted: oklch(0.68 0.03 252);
-  --sidebar-accent: oklch(calc(var(--canvas-l) + 4.2 * var(--step)) var(--surface-c) var(--surface-h));
+  --sidebar-accent: oklch(calc(var(--canvas-l) + var(--lift) + 4.2 * var(--step)) var(--surface-c) var(--surface-h));
   --sidebar-accent-foreground: oklch(0.96 0.01 250);
-  --sidebar-hover: oklch(calc(var(--canvas-l) + 2.6 * var(--step)) var(--surface-c) var(--surface-h));
-  --sidebar-border: oklch(calc(var(--canvas-l) + 3 * var(--step)) var(--surface-c) var(--surface-h));
+  --sidebar-hover: oklch(calc(var(--canvas-l) + var(--lift) + 2.6 * var(--step)) var(--surface-c) var(--surface-h));
+  --sidebar-border: oklch(calc(var(--canvas-l) + var(--lift) + 3 * var(--step)) var(--surface-c) var(--surface-h));
   --sidebar-ring: var(--brand-cyan-bright);
   --status-info-fg: oklch(0.84 0.06 245);
   --status-info-bg: oklch(0.3 0.045 250);
@@ -456,7 +468,7 @@
 :root,
 .dark {
   --background: oklch(calc(var(--canvas-l)) var(--surface-c) var(--surface-h));
-  --popover: oklch(calc(var(--canvas-l) + 4 * var(--step)) var(--surface-c) var(--surface-h));
+  --popover: oklch(calc(var(--canvas-l) + var(--lift) + 4 * var(--step)) var(--surface-c) var(--surface-h));
 }
 
 /* Relative tokens. Every surface declares them again, because var() resolves where a property is declared and
@@ -466,14 +478,22 @@
 :root,
 .dark,
 :is(.bg-card, .surface, .surface-beneath, .bg-popover, .surface-overlay) {
-  --here-l: calc(var(--canvas-l) + max(var(--depth), 1) * var(--step));
+  --here-l: calc(var(--canvas-l) + var(--lift) + max(var(--depth), 1) * var(--step));
   --card: oklch(var(--here-l) var(--surface-c) var(--surface-h));
-  --muted: oklch(calc(var(--canvas-l) + (var(--depth) + 1) * var(--step)) var(--surface-c) var(--surface-h));
+  /* Beneath the page, one rung up is the page itself, which takes no lift. */
+  --muted: oklch(
+    calc(var(--canvas-l) + min(var(--depth) + 1, 1) * var(--lift) + (var(--depth) + 1) * var(--step)) var(--surface-c)
+      var(--surface-h)
+  );
   --secondary: var(--muted);
   --accent: var(--muted);
   --band: oklch(calc(var(--here-l) + 0.5 * var(--step)) var(--surface-c) var(--surface-h));
   --border: oklch(calc(var(--here-l) + var(--edge-dir) * var(--edge)) var(--surface-c) var(--surface-h));
   --border-strong: oklch(calc(var(--here-l) + var(--edge-dir) * 2 * var(--edge)) var(--surface-c) var(--surface-h));
+  /* Chart and calendar grids sit between an edge and a strong edge: a plain edge vanishes behind data, and every
+     line at border-strong turns a grid into a cage. The axis baseline is the one line that takes the strong edge. */
+  --grid-line: oklch(calc(var(--here-l) + var(--edge-dir) * 1.5 * var(--edge)) var(--surface-c) var(--surface-h));
+  --axis: var(--border-strong);
   --input-background: var(--card);
   --row-hover: color-mix(in oklab, var(--primary) 8%, var(--card));
   --row-selected: color-mix(in oklab, var(--primary) 12%, var(--card));
@@ -481,6 +501,10 @@
      stays for "act here". A filled neutral button steps the same distance from its own fill. */
   --hover: color-mix(in oklab, var(--foreground) 6%, transparent);
   --secondary-hover: color-mix(in oklab, var(--foreground) 6%, var(--secondary));
+  /* An outline button is filled one rung above where it sits, so it reads as a control, not a hole in the surface.
+     Its hover has to be solid: the wash over it would replace the fill. */
+  --control: var(--muted);
+  --control-hover: color-mix(in oklab, var(--foreground) 6%, var(--control));
   /* Pressed: a wash over transparent controls, and a solid step past hover for rows, whose cells inherit the fill. */
   --press: color-mix(in oklab, var(--foreground) 10%, transparent);
   --row-press: color-mix(in oklab, var(--foreground) 6%, var(--row-hover));
@@ -488,8 +512,17 @@
   --skeleton-soft: oklch(calc(var(--here-l) + var(--edge-dir) * 0.75 * var(--edge)) var(--surface-c) var(--surface-h));
   /* A segmented track and its active tab. The tab sits on the top rung or two rungs up, whichever is higher; near
      the top of light mode that lands on white, so the track gives way a rung below the tab instead of matching it. */
-  --tab-active: oklch(min(1, calc(var(--canvas-l) + max(4, var(--depth) + 2) * var(--step))) var(--surface-c) var(--surface-h));
-  --tab-track: oklch(min(calc(var(--canvas-l) + (var(--depth) + 1) * var(--step)), calc(min(1, var(--canvas-l) + max(4, var(--depth) + 2) * var(--step)) - var(--step))) var(--surface-c) var(--surface-h));
+  --tab-active: oklch(
+    min(1, calc(var(--canvas-l) + var(--lift) + max(4, var(--depth) + 2) * var(--step))) var(--surface-c)
+      var(--surface-h)
+  );
+  --tab-track: oklch(
+    min(
+        calc(var(--canvas-l) + var(--lift) + (var(--depth) + 1) * var(--step)),
+        calc(min(1, var(--canvas-l) + var(--lift) + max(4, var(--depth) + 2) * var(--step)) - var(--step))
+      )
+      var(--surface-c) var(--surface-h)
+  );
 }
 
 /* A surface counts the surfaces it sits in, up to three. Variants (`md:bg-card`, `bg-card/50`) are other class
@@ -528,6 +561,10 @@
   --band: inherit;
   --border: inherit;
   --border-strong: inherit;
+  --grid-line: inherit;
+  --axis: inherit;
+  --control: inherit;
+  --control-hover: inherit;
   --input-background: inherit;
   --row-hover: inherit;
   --row-selected: inherit;
@@ -538,14 +575,16 @@
   --tab-track: inherit;
 }
 
-/* Presses in fast and settles back with a slight overshoot; colours keep the plain ease. */
+/* Presses in fast and settles back with a slight overshoot; colours keep the plain ease. Only the properties the
+   button states change are listed: `all` would also animate layout (size, padding) on every button. */
 @utility press-motion {
-  transition:
-    all 150ms ease,
-    scale 280ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition-property: color, background-color, border-color, box-shadow, opacity, filter, scale;
+  transition-duration: 150ms, 150ms, 150ms, 150ms, 150ms, 150ms, 280ms;
+  transition-timing-function: ease, ease, ease, ease, ease, ease, cubic-bezier(0.34, 1.56, 0.64, 1);
   &:is([data-pressed], #press) {
     scale: var(--press-scale, 0.96);
-    transition: all 70ms ease-out;
+    transition-duration: 70ms;
+    transition-timing-function: ease-out;
   }
   @media (prefers-reduced-motion: reduce) {
     &:is([data-pressed], #press) {
@@ -612,6 +651,10 @@
   --color-skeleton-soft: var(--skeleton-soft);
   --color-link: var(--link);
   --color-border-strong: var(--border-strong);
+  --color-grid-line: var(--grid-line);
+  --color-axis: var(--axis);
+  --color-control: var(--control);
+  --color-control-hover: var(--control-hover);
   --color-input-background: var(--input-background);
   --color-destructive-text: var(--destructive-text);
   --color-sidebar-muted: var(--sidebar-muted);

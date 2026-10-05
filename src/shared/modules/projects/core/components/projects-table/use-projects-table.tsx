@@ -50,7 +50,8 @@ export function useProjectsTable(
     onRowClick: openProject,
     entityName: 'project',
     rowDataAttribute: 'data-project-row',
-    skeletonRowClassName: 'h-[52.5px]',
+    // A project without a description renders one line and sits 2px shorter (the Created cell's two lines set it).
+    skeletonRowClassName: 'h-[51.5px]',
   })
 
   return { ...table, dialogs: <DeleteConfirmDialog /> }

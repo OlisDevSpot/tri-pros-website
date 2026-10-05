@@ -103,13 +103,13 @@ export function ScheduleTodayView({
         <div className="flex min-h-full flex-col" style={{ minWidth: `${gridMinWidth}px` }}>
           {/* Bucket header row */}
           <motion.div
-            className="sticky top-0 z-10 grid border-b bg-background"
+            className="sticky top-0 z-10 grid border-b border-grid-line bg-(--card)"
             initial={false}
             animate={{ gridTemplateColumns: gridCols }}
             transition={TRANSITION}
           >
             {/* Corner cell */}
-            <div className="sticky left-0 z-20 overflow-hidden border-r bg-background px-3 py-2">
+            <div className="sticky left-0 z-20 overflow-hidden border-r border-grid-line bg-(--card) px-3 py-2">
               <motion.span
                 className="text-xs font-medium text-muted-foreground whitespace-nowrap"
                 animate={{ opacity: collapsed ? 0 : 1 }}
@@ -122,7 +122,7 @@ export function ScheduleTodayView({
             {TODAY_VIEW_BUCKETS.map(bucket => (
               <div
                 key={bucket.id}
-                className="border-r px-3 py-2 text-center last:border-r-0"
+                className="border-r border-grid-line px-3 py-2 text-center last:border-r-0"
               >
                 <span className="hidden text-xs font-medium text-muted-foreground sm:inline">
                   {bucket.label}
@@ -140,12 +140,12 @@ export function ScheduleTodayView({
                 <motion.div
                   // eslint-disable-next-line react/no-array-index-key
                   key={lane}
-                  className="grid border-b border-dashed"
+                  className="grid border-b border-dashed border-grid-line"
                   initial={false}
                   animate={{ gridTemplateColumns: gridCols }}
                   transition={TRANSITION}
                 >
-                  <div className="sticky left-0 z-10 flex items-center gap-2 overflow-hidden border-r bg-background px-3 py-3">
+                  <div className="sticky left-0 z-10 flex items-center gap-2 overflow-hidden border-r border-grid-line bg-(--card) px-3 py-3">
                     <Skeleton className={cn(SKELETON_BLOCK_TONE_CLASS, 'size-6 shrink-0 rounded-full')} />
                     <Skeleton className={cn(SKELETON_TONE_CLASS, 'h-2.5 w-20')} />
                   </div>
@@ -153,7 +153,7 @@ export function ScheduleTodayView({
                     <div
                       key={bucket.id}
                       className={cn(
-                        'border-r p-1.5 last:border-r-0 min-h-24',
+                        'border-r border-grid-line p-1.5 last:border-r-0 min-h-24',
                         index !== cardBucket && 'bg-muted/20',
                       )}
                     >
@@ -180,9 +180,9 @@ export function ScheduleTodayView({
             animate={{ gridTemplateColumns: gridCols }}
             transition={TRANSITION}
           >
-            <div className="sticky left-0 border-r bg-background" />
+            <div className="sticky left-0 border-r border-grid-line bg-(--card)" />
             {TODAY_VIEW_BUCKETS.map(bucket => (
-              <div key={bucket.id} className="border-r last:border-r-0" />
+              <div key={bucket.id} className="border-r border-grid-line last:border-r-0" />
             ))}
           </motion.div>
         </div>
@@ -209,13 +209,13 @@ function SwimlaneRow({ combo, comboEvents, renderCard, collapsed, gridCols }: Sw
 
   return (
     <motion.div
-      className="grid border-b border-dashed"
+      className="grid border-b border-dashed border-grid-line"
       initial={false}
       animate={{ gridTemplateColumns: gridCols }}
       transition={TRANSITION}
     >
       {/* Combo label — sticky left, collapses to avatar-stack-only on scroll */}
-      <div className="sticky left-0 z-10 flex items-center gap-2 overflow-hidden border-r bg-background px-3 py-3">
+      <div className="sticky left-0 z-10 flex items-center gap-2 overflow-hidden border-r border-grid-line bg-(--card) px-3 py-3">
         <UserOverviewCard.Stack users={combo.participants} max={3} size="sm" />
         <motion.span
           className="truncate text-xs font-medium leading-6 whitespace-nowrap"
@@ -234,7 +234,7 @@ function SwimlaneRow({ combo, comboEvents, renderCard, collapsed, gridCols }: Sw
           <div
             key={bucket.id}
             className={cn(
-              'border-r p-1.5 last:border-r-0 min-h-24',
+              'border-r border-grid-line p-1.5 last:border-r-0 min-h-24',
               bucketEvents.length === 0 && 'bg-muted/20',
             )}
           >

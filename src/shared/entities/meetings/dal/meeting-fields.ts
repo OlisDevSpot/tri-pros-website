@@ -17,6 +17,7 @@ export const MEETING_FIELDS = defineFieldList({
   trade: { label: 'Trade', filter: multiSelect({ schema: z.string().min(1), source: 'trades' }) },
   // User ids are free text, not uuids.
   rep: { label: 'Rep', filter: multiSelect({ schema: z.string().min(1), source: 'reps' }), sort: true },
+  setter: { label: 'Setter', filter: multiSelect({ schema: z.string().min(1), source: 'setters' }), sort: true },
   leadSource: { label: 'Lead source', filter: multiSelect({ schema: z.string().uuid(), source: 'leadSources' }), sort: true },
   createdAt: { label: 'Booked on', filter: dateRange(), sort: true },
   scheduledFor: { label: 'Scheduled', filter: dateRange(), sort: true },

@@ -75,14 +75,14 @@ export function ScheduleWeekView({
       <div className="flex h-full flex-col" style={{ minWidth: `${gridMinWidth}px` }}>
         {/* Day headers */}
         <div
-          className="grid shrink-0 border-b bg-background"
+          className="grid shrink-0 border-b border-grid-line bg-(--card)"
           style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
         >
           {weekDays.map(day => (
             <div
               key={day.toISOString()}
               className={cn(
-                'py-2 text-center text-xs font-medium text-muted-foreground border-r last:border-r-0',
+                'py-2 text-center text-xs font-medium text-muted-foreground border-r border-grid-line last:border-r-0',
                 isBusinessToday(day) && 'bg-primary/10',
               )}
             >
@@ -129,7 +129,7 @@ export function ScheduleWeekView({
                 key={day.toISOString()}
                 ref={colRef}
                 className={cn(
-                  'flex flex-col gap-1.5 overflow-y-auto scrollbar-gutter-stable border-r p-1.5 last:border-r-0',
+                  'flex flex-col gap-1.5 overflow-y-auto scrollbar-gutter-stable border-r border-grid-line p-1.5 last:border-r-0',
                   isBusinessToday(day) && 'bg-primary/5',
                 )}
               >

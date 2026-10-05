@@ -109,6 +109,16 @@ export const MEETING_COLUMNS = {
       )
     },
   },
+  setter: {
+    label: 'Setter',
+    sort: 'setter',
+    defaultHidden: true,
+    permission: ['assign', 'Meeting'],
+    accessorFn: row => row.setterName ?? '',
+    cell: ({ row }) => row.original.setterName
+      ? <span className="block truncate text-sm">{row.original.setterName}</span>
+      : <span className="text-muted-foreground">—</span>,
+  },
   scheduledFor: {
     label: 'Scheduled For',
     sort: 'scheduledFor',

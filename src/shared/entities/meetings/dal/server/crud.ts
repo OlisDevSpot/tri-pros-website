@@ -1,12 +1,17 @@
 import type { Meeting } from '@/shared/db/schema'
 
 import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
+import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { ThrowableDalError } from '@/shared/dal/server/types'
 import { OUTCOME_PIPELINE_MAP } from '@/shared/domains/pipelines/lib/outcome-pipeline-map'
+import { SETTER_ROLES } from '@/shared/entities/meetings/constants/internal-user-roles'
+import { SET_BY_NOT_INTERNAL } from '@/shared/entities/meetings/constants/set-by-not-internal'
 import { clearMeetingGCalFields } from '@/shared/entities/meetings/dal/server/google-calendar'
 import { addParticipant } from '@/shared/entities/meetings/dal/server/participants'
 import { getMeetingSchedule } from '@/shared/entities/meetings/dal/server/queries'
 import { resolveMeetingOwnerId } from '@/shared/entities/meetings/lib/resolve-owner'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
+import { getUserRoleById } from '@/shared/entities/users/dal/server/queries'
 import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
 import { deleteMeetingEventJob } from '@/shared/services/providers/upstash/jobs/delete-meeting-event'
 import { graduateFromCampaignJob } from '@/shared/services/providers/upstash/jobs/graduate-from-campaign'
@@ -14,6 +19,17 @@ import { metaCapiEventJob } from '@/shared/services/providers/upstash/jobs/meta-
 import { notifyMeetingTimeChangedJob } from '@/shared/services/providers/upstash/jobs/notify-meeting-time-changed'
 import { syncMeetingToGcalJob } from '@/shared/services/providers/upstash/jobs/sync-meeting-to-gcal'
 import { realtimeClient } from '@/shared/services/providers/upstash/realtime'
+
+// The FK alone would accept any user, including a homeowner's account.
+async function assertSetterIsInternal(setBy: string | null | undefined): Promise<void> {
+  if (setBy == null) {
+    return
+  }
+  const role = dalVerifySuccess(await getUserRoleById(setBy))
+  if (!role || !SETTER_ROLES.includes(role)) {
+    throw new ThrowableDalError({ type: 'precondition-failed', reason: SET_BY_NOT_INTERNAL.reason })
+  }
+}
 
 export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
   hooks: {
@@ -25,10 +41,14 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
       // or a role string) so a wire client can't create a meeting owned by someone else.
       // SYSTEM_CONTEXT orchestrators have no session and supply ownerId themselves.
       async before(input, ctx) {
+        // No setter picked: whoever books the meeting set it. A picked "No setter" (`null`) stays null;
+        // SYSTEM_CONTEXT has no session, so its unpicked setter is null.
+        const setBy = input.setBy === undefined ? ctx.session?.user.id ?? null : input.setBy
+        await assertSetterIsInternal(setBy)
         if (!ctx.session) {
-          return input
+          return { ...input, setBy }
         }
-        return { ...input, ownerId: await resolveMeetingOwnerId(ctx) }
+        return { ...input, setBy, ownerId: await resolveMeetingOwnerId(ctx) }
       },
       // row.ownerId, not ctx.session.user.id, so the participant follows the actual owner on the
       // SYSTEM_CONTEXT path too. dispatchOrThrow: a missed enqueue must fail the mutation, not drop the event.
@@ -57,7 +77,14 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
       },
     },
     update: {
-      async before(data, _ctx, { id }) {
+      async before(data, ctx, { id }) {
+        if ('setBy' in data) {
+          // Only super-admins change a setter for now; SYSTEM_CONTEXT (no ability) may.
+          if (ctx.ability?.cannot('assign', 'Meeting')) {
+            throw new ThrowableDalError({ type: 'forbidden' })
+          }
+          await assertSetterIsInternal(data.setBy)
+        }
         let next = data
         if (data.meetingOutcome) {
           const pipeline = OUTCOME_PIPELINE_MAP[data.meetingOutcome]
@@ -130,6 +157,7 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
     },
   },
   // A duplicate is a fresh sit, not a continuation — only reschedule carries flow state forward.
+  // The setter is copied, `null` included: the lead is still theirs.
   duplicate: {
     exclude: [
       'createdAt',
@@ -147,6 +175,7 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
     // Loses to create.before on the authed path; the source.ownerId fallback keeps a SYSTEM_CONTEXT duplicate from crashing.
     overrides: (source, ctx) => ({
       ownerId: ctx.session?.user.id ?? source.ownerId,
+      setBy: source.setBy,
     }),
   },
 }))

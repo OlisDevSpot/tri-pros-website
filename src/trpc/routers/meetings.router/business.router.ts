@@ -117,11 +117,12 @@ export const businessRouter = createTRPCRouter({
       //    explicit ownerId through (an authed office reschedule would otherwise
       //    reassign it to the office user). create.after adds the owner
       //    participant + dispatches GCal sync / graduation / Meta CAPI.
-      const replacement = dalVerifySuccess(await meetingCrud.create(SYSTEM_CONTEXT, {
+      const replacement = dalToTrpc(await meetingCrud.create(SYSTEM_CONTEXT, {
         ownerId: replacementOwnerId,
         customerId: original.customerId,
         projectId: original.projectId,
         meetingType: original.meetingType,
+        setBy: original.setBy,
         scheduledFor: input.newScheduledFor,
         // Same sit, new slot: the in-meeting working state (trade selections,
         // program, deal structure, closing adjustments) continues in the

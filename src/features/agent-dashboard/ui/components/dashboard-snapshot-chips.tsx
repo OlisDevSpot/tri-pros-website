@@ -16,13 +16,13 @@ export function DashboardSnapshotChips({ counts }: DashboardSnapshotChipsProps) 
   ]
 
   return (
-    <div className="grid grid-cols-3 gap-3" aria-busy={counts === undefined || undefined}>
+    <div className="grid grid-cols-3 gap-(--gutter)" aria-busy={counts === undefined || undefined}>
       {chips.map(chip => (
         <a
           key={chip.href}
           href={chip.href}
           className="
-            flex min-h-11 flex-col items-start justify-center gap-1 rounded-md
+            flex min-h-11 flex-col items-start justify-center gap-1 rounded-xl
             border border-border bg-card px-3 py-2
             transition-colors duration-200
             hover:border-primary/40 hover:bg-accent/50

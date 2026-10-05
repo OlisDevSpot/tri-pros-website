@@ -9,10 +9,10 @@ export const MEETINGS_RECORDS_TABLE_VIEW = {
   query: {
     fields: MEETING_FIELDS,
     paramPrefix: 'pm',
-    toolbar: ['meetingType', 'proposalStatus', 'trade', 'rep', 'leadSource', 'outcome', 'scheduledFor', 'createdAt', 'pipeline'],
+    toolbar: ['meetingType', 'proposalStatus', 'trade', 'rep', 'setter', 'leadSource', 'outcome', 'scheduledFor', 'createdAt', 'pipeline'],
     // A meeting's scheduled slot is its natural axis, so this table sorts by it rather than by booking date.
     defaultSort: { sortBy: 'scheduledFor', sortDir: 'desc' },
     window: { kind: 'page', pageSize: 20, pageSizeOptions: DEFAULT_RECORDS_PAGE_SIZE_OPTIONS },
   },
-  columns: ['customerName', 'meetingType', 'meetingOutcome', 'ownerName', 'scheduledFor', 'createdAt', 'tradeSelections', 'leadSource', 'proposalStatuses'],
+  columns: ['customerName', 'meetingType', 'meetingOutcome', 'ownerName', 'setter', 'scheduledFor', 'createdAt', 'tradeSelections', 'leadSource', 'proposalStatuses'],
 } as const satisfies EntityTableView<MeetingColumnKey, typeof MEETING_FIELDS>

@@ -13,8 +13,10 @@ const toggleVariants = cva(
     variants: {
       variant: {
         default: 'bg-transparent',
+        // Filled like an outline Button. --accent is the same rung as --control, so the on-state climbs to the
+        // active-tab rung or a selected item would match its neighbours.
         outline:
-          'border border-input bg-transparent shadow-xs',
+          'border border-input bg-control shadow-xs data-[state=off]:hover:bg-control-hover data-[state=on]:bg-tab-active data-[state=on]:text-foreground',
         // Selection is a neutral raised fill, not bg-accent: dark --accent is solid cobalt.
         segmented:
           'rounded-md bg-transparent px-2.5 text-muted-foreground hover:bg-transparent hover:text-foreground data-[state=on]:bg-secondary data-[state=on]:text-foreground data-[state=on]:shadow-xs',

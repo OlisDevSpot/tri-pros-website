@@ -23,6 +23,7 @@ export interface ProjectTableMeta extends EntityTableMeta<ProjectRow> {
 export const PROJECT_COLUMNS = {
   title: {
     label: 'Project',
+    size: 260,
     sort: 'title',
     cell: ({ row, table }) => {
       const meta = table.options.meta as ProjectTableMeta | undefined

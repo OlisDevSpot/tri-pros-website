@@ -83,7 +83,7 @@ export function StatBar<T>({ items, data, isLoading, className }: StatBarProps<T
       </div>
 
       {/* Desktop — always visible, single row */}
-      <div className="hidden lg:flex lg:gap-3 lg:w-fit">
+      <div className="hidden gap-(--gutter) lg:flex lg:w-fit">
         {computedItems.map(item => (
           <StatBarItem
             key={item.key}

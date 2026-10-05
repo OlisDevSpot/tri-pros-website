@@ -26,6 +26,10 @@ export const OPTION_SOURCE_READS = {
     canRead: ability => ability.can('assign', 'Meeting'),
     queryOptions: trpc => trpc.meetingsRouter.reads.getInternalUsers.queryOptions(),
   },
+  setters: {
+    canRead: ability => ability.can('assign', 'Meeting'),
+    queryOptions: trpc => trpc.meetingsRouter.reads.getInternalUsers.queryOptions({ purpose: 'setter' }),
+  },
   // Inactive sources included: old customers still point at them.
   leadSources: {
     canRead: ability => ability.can('manage', 'all'),

@@ -53,7 +53,7 @@ export function MonthlyTrendChart({ projection, lookAhead }: Props) {
   return (
     <ChartContainer aria-label={`Monthly cost each year. ${STORY_COPY.paths.now} ${formatMoney(data[0].monthlyNow)} in year 1, ${STORY_COPY.paths.wait} ${formatMoney(data[0].monthlyWait)}.${from ? ` Upgrading costs less from year ${from}.` : ''}`} className="aspect-auto h-72 w-full" config={MONTHLY_TREND_CHART_CONFIG} debounce={150} role="img" {...tooltip.containerProps}>
       <LineChart data={data} margin={{ top: 20, right: 16, left: 0, bottom: 0 }}>
-        <CartesianGrid stroke="var(--border)" vertical={false} />
+        <CartesianGrid vertical={false} />
         <XAxis axisLine={false} dataKey="t" tickFormatter={t => `Yr ${t}`} tickLine={false} />
         <YAxis axisLine={false} domain={[0, 'auto']} tickFormatter={value => formatMoney(Number(value))} tickLine={false} width={72} />
         {from != null && from > 1 && <ReferenceArea fill="var(--warning)" fillOpacity={0.08} ifOverflow="hidden" x1={1} x2={from} />}

@@ -1,7 +1,23 @@
 # Sales lifecycle: rules and event map (customer · meeting · proposal · contract · project)
 
-> **Status:** working input for the brainstorm that replaces `docs/superpowers/specs/2026-10-01-project-meeting-outcomes-design.md` and settles `docs/plans/2026-09-29-approval-project-outcome-handoff.md`. Nothing here is built. Facts are from four read-only audits on 2026-10-01 (at `5ba4bcde`); re-check a `file:line` before relying on it.
+> **Status:** the tracker for the sales lifecycle rules (owner, 2026-10-05). The rules are specced and built slice by slice (§0); each slice gets its own spec and plan that cite the IDs here, and together they replace `docs/superpowers/specs/2026-10-01-project-meeting-outcomes-design.md` and settle `docs/plans/2026-09-29-approval-project-outcome-handoff.md`. Nothing here is built. Facts are from four read-only audits on 2026-10-01 (at `5ba4bcde`); re-check a `file:line` before relying on it.
 > **Legend:** **[ruled]** owner decision · **[proposed]** recommendation awaiting a ruling · **[open]** question in the grill queue (§6).
+
+## 0. Delivery slices (owner, 2026-10-05)
+
+One slice at a time: grill its open items, write its spec, plan it, build it. The order puts the slices that need the fewest rulings first, so building starts while the grill continues on the later ones. A slice's IDs point at §2 (R), §3 (I), §4 (P, M, J), §6 (Q), §8 (A) and §9 (S).
+
+| # | Slice | What it builds | Carries | To settle before its spec | Database |
+|---|---|---|---|---|---|
+| 1 | **Guards** | Refusals only, on today's values, each with no legitimate caller today or with a way round (R29): `kind` and `token` frozen, a proposal created as a draft, the share-link write allowlist, send only from draft or sent, `approvedAt` stamped by the server, delete guards on proposals and meetings, the kanban's project stage write through `projectCrud.update`, ability checks on project writes, and every refusal worded. Spec: `docs/superpowers/specs/2026-10-05-lifecycle-guards-design.md`. | I1, I11 (`approvedAt` and send only), P3, P8, M6, J2, S44, S45, S49 | Scope ruled 2026-10-05 (R29); the written spec awaits the owner's review. | none |
+| 2 | **Outcome policy** | One pure policy (allowed outcomes with reasons, derived outcome, precedence) used by `meetingCrud` and every outcome picker; per-type outcome sets; `site_visit` default; type-aware pipeline mapping. `StatusDropdownCell` and the action select options take a reason. | R2–R4, R26, I6–I8, I12, P1, M1 (default outcome), M4, M5, M7, S8, S10, S32, S34, S37, S43, S51 | Q4, Q5, Q9, S2 | Outcome enum gains `site_visit` and `cancelled_scopes` in one push; prod before the deploy |
+| 3 | **Approval route** | One route for every approval path, and the verbs around it: approve, decline, cancel, amend, revert approval, plus `send`. Initial-sale approval creates the project through `projectCrud.create`; `CreateProjectModal` and `CreateProjectForm` go. Statuses gain `cancelled` and `amended`; `cancelled_scopes` becomes reachable from here on. Also the rules slice 1 could not take before revert approval exists: the full status graph, approved never back to draft or sent (P7), and no delete of a project with linked meetings (J3). | R1, R6, R7, R10–R12, R15–R25, R27, R28, I9, I10, I11 (the graph), P4–P7, P9, J1, J3, S46, S9, S12, S16–S30, S33, S35, S36, S50 | Q6, Q7, A4–A8, S17, S18, S19, S28 | The one-approved-per-meeting index (R16) |
+| 4 | **Project links** | Assign to Project is a move; a project meeting always has its project, of the same customer; duplicate keeps the project; proposal `kind` after a move. | R5, R8, R14, I2–I5, P2, M1 (link checks), M2, M3, S15, S38, S39, S48 | Q2, Q3, Q8, S5 | Depends on Q3 |
+| 5 | **Backfill and figures** | Legacy rows brought under the invariants (dry-run on both databases, a check per invariant); the sale, opened-sale and signed-customer definitions handed to analytics Spec B. | I13, S52–S59 | Q11, Q12, S40, S54, S56–S58 | Data only |
+
+R9 (one structure, one route) and R13 (store facts, derive the rest) bind every slice. Left out until a real case asks: several projects for one customer (S31, S41, S42), a new proposal replacing an earlier meeting's (S13), stale open proposals (F1). `proposals.meeting_id` NOT NULL (S14) stays with the proposal-foundations plan.
+
+**Where the slices meet other work:** the records tables (`docs/plans/2026-09-26-records-management-epic.md` §3.2: the proposals status cell, status pickers, bulk delete), the multi-proposal epic's `send` verb (slice 3), analytics Spec B (slice 5), and the security hotfix batch (the share-link part of slice 1 may ship ahead).
 
 ## 1. The entities and their links
 
@@ -42,8 +58,12 @@ The **birthing meeting** is the lead meeting whose approved initial-sale created
 | R23 | An amended sale keeps its **original date** (first approval on the meeting, carried by the `amended` row) and takes the **current value** (the agreement in force); amending never adds or removes a sale; closer credit unchanged. When the amendment happened = Y's `approvedAt` (backup: Y's `contractSentAt`). | 2026-10-02 (A3) |
 | R24 | `amended` = **the same agreement, corrected**: "cancelled because a more recent approved version exists". The sale's date stays the original one. | 2026-10-02 (A3b) |
 | R25 | `cancelled` = signed/approved, then cancelled for any reason. It **counts as a sale** but **not as an opened sale** (opened = work actually started). Cancelled-sale figures are derived from stored data. | 2026-10-02 (A3b) |
+| R26 | **Outcome precedence**, strongest first: (1) agreement states, locked — `converted_to_project`/`additional_work`, then `cancelled_scopes`; (2) a human's decided pick (`pns`, `npns`, `not_good`, `ftd`, `lost_to_competitor`, `follow_up_needed`, `reschedule_needed`, `no_show`, `cancelled`, `nra`); (3) proposal progress — `proposal_sent`, then `proposal_created`; (4) default — `not_set` (lead) / `site_visit` (project meeting). Stored = the latest hand pick; shown = the first level that applies. No "overwritable" lists. | 2026-10-02 (S8) |
+| R27 | **Revert approval** (correction of a mistaken approval, not a cancellation): admin-only, manual approvals only (a Zoho signature is real → `cancelled`); proposal returns to its prior open status (`sent` if sent, else `draft`), `approvedAt` cleared, never counted; the project it created is removed and the meeting unlinked only if nothing else uses it yet, else refused; a reverted amendment restores X to `approved`. Condition: simple to understand and built through the approved architecture and paths (one verb, no side door). | 2026-10-02 (S22) |
+| R28 | Approving one option leaves the meeting's other open proposals **as they are** (`sent`/`draft` may stay forever for now). Consequence (proposed): approving any open proposal on a meeting that already holds an approved one **is** an amendment (R16 leaves no other meaning), behind an explicit "this replaces the agreement of <date>" confirmation; a wrong pick is undone with R27. "Amendment in progress" is shown only when that open proposal has a contract envelope (a real signal), not merely because it is open. Readers that treat `sent` as actionable (agent action queue `get-action-queue.ts:137`) skip proposals on meetings that hold an approved agreement. | 2026-10-02 (S9/Q14) |
 | R16 | R15 holds for **every** meeting, project meetings included: at most one approved proposal per meeting, any kind; a second scope at the same visit amends. Replaces the "one approved initial-sale per meeting" index. | 2026-10-02 (Q3) |
 | R15 | **One agreement per sitting.** A second sale in the same sitting is never approved alongside the first; it **amends** the existing agreement (duplicate → decline the existing → approve the new, or similar). | 2026-10-02 |
+| R29 | **Slice 1 carries only safe refusals:** a rule lands there only if no legitimate caller does the refused thing today, or the user keeps a way round. A real contract signature is never refused. P7, J3 and the full status graph wait for slice 3, because each would remove today's only way to correct a mistaken approval before revert approval (R27) exists. | 2026-10-05 |
 
 ## 3. Invariants (what must always be true)
 
@@ -51,7 +71,7 @@ Each row: the rule, how today's code breaks it, where enforcement could live.
 
 | # | Invariant | Status | Broken today by | Enforcement candidates |
 |---|---|---|---|---|
-| I1 | `kind` is set once, at proposal create, and never changes. | [ruled R7] + [proposed] immutability | Update schema keeps `kind`, `token`, `status`, `approvedAt`, `ownerId` writable (`proposals/core/server-spec.ts:11-14`); share-token path writes any of them (§5 S1). | Omit from update schema; `proposalCrud` `update.before` refuses. |
+| I1 | `kind` is set once, at proposal create, and never changes. | [ruled R7] + [proposed] immutability | Update schema keeps `kind`, `token`, `status`, `approvedAt`, `ownerId` writable (`proposals/core/server-spec.ts:11-14`); share-token path writes any of them (§4.1 P4 path E; §6 Q10). | Omit from update schema; `proposalCrud` `update.before` refuses. |
 | I2 | `kind` derivation: `additional-work` iff the proposal's meeting already belongs to a project at create time. | [proposed] keep today's rule | Moving a meeting (R5) leaves its draft/sent `initial-sale` proposals behind. | §6 Q2. |
 | I3 | A **Project meeting** always has a project (`meetingType = 'Project'` ⇒ `projectId` set). | [ruled R8, how open] | Duplicate keeps type, drops `projectId` (`meetings/dal/server/crud.ts:133-146`); project delete sets null; `crud.create/update` from the wire. | §6 Q3. |
 | I4 | A **lead meeting with a project** is that project's birthing meeting (has the approved initial-sale that created it). | [proposed] | `assignToProject` (no proposal check), `projects.business.create` (needs any proposal, any status), reschedule copies `projectId` onto a proposal-less meeting (`meetings.router/business.router.ts:123`), wire writes. | §6 Q3. |
@@ -109,7 +129,7 @@ Each row: the rule, how today's code breaks it, where enforcement could live.
 **Today, outcome policy is spread over:** `constants/enums/meetings.ts` (lists, sentiment, sit, `isProjectMeeting`), `domains/pipelines/lib/get-disabled-outcomes.ts` (client-only), `domains/pipelines/lib/outcome-pipeline-map.ts`, `entities/meetings/constants/outcome-options.ts`, and two private "overwritable" lists in `entities/meetings/dal/server/mutations.ts`. **"Is this a project meeting"** is decided three ways: `meetingType === 'Project'` (analytics, create form), `projectId` null/not null (pipelines, kanban, proposals queries, GCal colour, visibility, analytics `hasProject`), and `kind` (sale classification, contracts, Zoho documents).
 
 **Seams that exist:**
-- `createCrudDal` hooks: `update.before(data, ctx, { id })` gets no stored row; `previousRow` is prefetched only for after hooks (`create-crud-dal.ts:116-150`). Refusals: `ThrowableDalError({ type: 'precondition-failed', reason })` → `PRECONDITION_FAILED`; the only one today is `proposal_frozen`.
+- `createCrudDal` hooks: `update.before(data, ctx, { id })` gets no stored row; `previousRow` is prefetched only for after hooks (`create-crud-dal.ts:116-150`). Refusals: `ThrowableDalError({ type: 'precondition-failed', reason })` → `PRECONDITION_FAILED`. Corrected 2026-10-05: `proposal_frozen` fires at three sites (the crud hook, `setCashInDeal`, the incentives service) and other entities refuse too (lead sources, applications); no client words any proposal refusal. The lead-sources crud already reads the stored row inside `update.before` through the factory's own `getById`.
 - Cross-entity calls inside hooks already exist (proposal `create.before` reads the meeting; customer `delete.before` deletes meetings).
 - No service has a `.business` child yet; `meetingService` and `projectService` don't exist (`projectsService` does).
 - `withTx` and `afterCommit` exist and have no callers. Meeting after-hooks dispatch QStash/Ably/GCal before commit, and several hooks write through raw `db`: threading a transaction through today's hooks risks a lock wait between pool connections.
@@ -134,7 +154,7 @@ Each row: the rule, how today's code breaks it, where enforcement could live.
 | Q10 | Share-link writes (`proposalsRouter.crud.update` with `ability: null`): close before approval gains side effects. | Security; also #285. |
 | Q11 | Analytics: `upsellRate` population (numerator includes upsells on birthing meetings, which are not site visits); `newSalesWithoutProject` once projects auto-create. | |
 | ~~Q13~~ | An agreement can stop being in force two ways, both seen in the field: **superseded** (amended; work continues) and **cancelled** (customer backs out). Today cancellation is recorded on the project stage while the proposal stays `approved`. Which fact records each? | **Ruled → R17, R18.** |
-| Q14 | When one of several sent options on a meeting is approved, what happens to the others? | Field: options are common. |
+| ~~Q14~~ | Unpicked options. | **Ruled → R28.** |
 | ~~Q15~~ | Amend as one action or two steps? | **Ruled → R19.** Sub-questions A1–A8 below. |
 | Q12 | Rollout and backfill: derived generically from the invariants (no hard-coded ids), dry-run both DBs, verification queries for every invariant in both directions. | |
 
@@ -191,9 +211,9 @@ Legend: **D** decided (ruling) · **P** proposed, awaiting a ruling · **O** ope
 ### 9.2 Proposals before a sale
 | # | Scenario | Expected behaviour | Status |
 |---|---|---|---|
-| S8 | Proposal drafted at the meeting, sent | Outcome follows proposal state (`proposal_created` → `proposal_sent`) unless a human pick outranks it. | O (S8: precedence between hand picks like `pns` and proposal-derived neutrals; field: `pns` meetings with sent proposals) |
-| S9 | Several options sent on one meeting; customer picks one | One approved per meeting (R16). Unpicked options: auto-`declined` on approval, or left `sent`? | O (Q14) |
-| S10 | Customer says no to a sent proposal | `declined` (R17). Meeting outcome falls back to the remaining state. | D (R17) / O (fallback when every proposal is declined) |
+| S8 | Proposal drafted at the meeting, sent | Outcome follows proposal state (`proposal_created` → `proposal_sent`) unless a human pick outranks it. | D (R26) |
+| S9 | Several options sent on one meeting; customer picks one | One approved per meeting (R16). Unpicked options: auto-`declined` on approval, or left `sent`? | D (R28) |
+| S10 | Customer says no to a sent proposal | `declined` (R17). Meeting outcome falls back to the remaining state. | D (R17) · P (R26: falls to the hand pick, else the default; an unresolved past lead meeting is flagged for a pick) |
 | S11 | Proposal edited after sending | Lock ladder: content editable until an envelope exists; edits after that = recall/discard first. | D (today) |
 | S12 | Proposal written at meeting 1, signed after meeting 2 | The proposal's meeting is the birth meeting; meeting 2 stays a lead meeting. | P |
 | S13 | New proposal written at meeting 2 replacing meeting 1's | Meeting 1's proposal stays `sent` until declined; nothing links them. | O (should creating at meeting 2 decline meeting 1's open proposals?) |
@@ -209,7 +229,7 @@ Legend: **D** decided (ruling) · **P** proposed, awaiting a ruling · **O** ope
 | S19 | Customer refuses to sign in Zoho | Today only `contractDeclinedAt`; should be `declined`. | O (Q7) |
 | S20 | Partial signature (one of two signers) | Nothing until all sign. | D (today) |
 | S21 | Approval when the meeting has no customer | Refused (a project needs a customer). | P (Q6) |
-| S22 | Approved by mistake (wrong row in the status cell) | Undo must not count as a cancelled sale. Needs an admin "revert approval" distinct from `cancelled`. | O |
+| S22 | Approved by mistake (wrong row in the status cell) | Admin revert approval (R27). | D (R27) |
 
 ### 9.4 Right after the sale
 | # | Scenario | Expected behaviour | Status |
@@ -229,7 +249,7 @@ Legend: **D** decided (ruling) · **P** proposed, awaiting a ruling · **O** ope
 |---|---|---|---|
 | S32 | Site visit booked for a project | Project meeting, default `site_visit`, never a lead/sit. | D (R3) |
 | S33 | Site visit → upsell signed | `additional_work`; project untouched; upsell sale. | D (R1, R7) |
-| S34 | Upsell sent, customer declines | `declined`; meeting falls back (to `site_visit`?). | O (with S10) |
+| S34 | Upsell sent, customer declines | `declined`; meeting falls back to its hand pick, else `site_visit`. | P (R26) |
 | S35 | Upsell signed, later cancelled | `cancelled_scopes`; project continues. | D (R18) |
 | S36 | Upsell changed (change order, up or down) | Amend with a new Additional Work Description. | D (R19, R21) |
 | S37 | Project meeting rescheduled / no-show / cancelled | Never enters lead pipelines. | P (I12) |
@@ -263,3 +283,9 @@ Legend: **D** decided (ruling) · **P** proposed, awaiting a ruling · **O** ope
 | S57 | Customer pipeline after a cancellation | Projects bucket (cancelled stage) or back to rehash? | O |
 | S58 | Site visits, upsell rate, revenue per visit | Past project meetings that occurred; population of the rate. | O (Q9, Q11) |
 | S59 | Amendment time | Y's `approvedAt` (backup `contractSentAt`). Does Y keep its own `approvedAt`, with the sale date derived from the chain? | P (R23 vs R24 wording) |
+
+## 10. Future ideas (recorded, not scheduled)
+
+| # | Idea | Source |
+|---|---|---|
+| F1 | Stale open proposals: a cleanup job, or a deadline after which an action is required or taken automatically (e.g. unpicked options left `sent` after a sale). | Owner, 2026-10-02 (R28) |

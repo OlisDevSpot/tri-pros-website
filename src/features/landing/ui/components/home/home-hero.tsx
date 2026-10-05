@@ -136,11 +136,12 @@ export function HomeHero() {
                   whileTap={{ scale: 0.98 }}
                   className="flex-1"
                 >
+                  {/* Over the hero photo the outline stays see-through; the app's outline fill would read as a grey slab. */}
                   <Button
                     asChild
                     variant="outline"
                     size="lg"
-                    className="h-14 text-lg w-full"
+                    className="h-14 text-lg w-full bg-transparent border-border/70 hover:bg-hover"
                   >
                     <Link href={ROOTS.landing.portfolioProjects()}>View Portfolio</Link>
                   </Button>
