@@ -85,7 +85,7 @@ User roles: `user`, `homeowner`, `agent`, `super-admin`.
 
 ### casl-for-row-level-and-action-permissions
 
-CASL abilities live in `src/shared/domains/permissions/abilities.ts`. Every entity declares its `caslSubject` in the entity's server-spec. Per-role rules in `defineAbilitiesFor`. tRPC middleware (`scopeMiddleware`) resolves `ctx.ability` and `ctx.scope` per request.
+CASL abilities live in `src/shared/domains/permissions/abilities.ts`. Every entity declares its `subject` in the entity's server-spec. Per-role rules in `defineAbilitiesFor`. tRPC middleware (`scopeMiddleware`) resolves `ctx.ability` and `ctx.scope` per request.
 
 **Why**: separates "can this user perform action X" (CASL) from "which rows can they see" (visibility predicate SQL).
 **Reference impl**: `src/shared/domains/permissions/abilities.ts`; ADR-0002

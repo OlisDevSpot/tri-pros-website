@@ -5,7 +5,7 @@ One page. Everything else in this folder is evidence. Code is the source of trut
 ## 1. Status
 - Branch `refactor/285-…` in `.worktrees/issue-285` = **main (`61d3e1e2`) + these docs**, since the supersede merge `2b038591` (2026-10-05). 0 behind main. Pushed to origin.
 - The pre-re-grounding code (tip `b40403b6`, last code commit 2026-09-06) is no longer in the tree. It stays an ancestor of the branch: restore a file with `git show b40403b6:<path>`.
-- **Nothing is built under the current design.** The tree runs main's legacy shapes: `ScopedContext { session, ability, scope }`, `SYSTEM_CONTEXT`, `spec.visibility` + `resolveEffectiveScope`, and CASL rules that grant verbs without conditions.
+- **Unit 1 (typed foundation) is in the tree; nothing enforces through it yet.** Spec constructors, the type-only list of specs, `defineRules` and the operator declarations exist; rules and enforcement are still the legacy engine's. The tree runs main's legacy shapes: `ScopedContext { session, ability, scope }`, `SYSTEM_CONTEXT`, `spec.visibility` + `resolveEffectiveScope`, and CASL rules that grant verbs without conditions.
 - Baseline on the merge: `pnpm tsc` passes.
 - Main is mid-move from `entities/` to `modules/` (proposals, projects, media, construction done), which relocates the files this epic rewrites.
 
@@ -77,7 +77,7 @@ The full list of 20, with file and line, is the tracker's §5.1. The fixes the e
 
 ## 7. Next steps, in order
 1. **Fix the holes in §6** through the hotfix path. They do not need the epic.
-2. Write the plan for unit 1 (typed foundation) for the owner's approval.
+2. Write the plan for unit 2 (one actor per request) for the owner's approval.
 3. Rule the open items in the spec's §12: homeowner phone grant; pipeline map for prod; lint wall shape; which dev records browser tests may change; the 25 business rulings in report 10 §5.
 4. Build order (spec §11): typed foundation → one actor per request → compiler + DAL self-scoping per entity family → rules matrix → lint wall + financial reads → delete the legacy engine → full browser pass. The keep-primitives (adapter core, outcome classification) come back from `b40403b6` in the unit that gives each a home.
 5. Merge main into the branch at every unit boundary; one merge to main after the end-to-end pass.

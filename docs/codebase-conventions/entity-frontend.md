@@ -207,7 +207,7 @@ Child sub-components (`<RoleBadge>`) read `meta.role` from their own context. Wh
 
 ## Future direction — unified EntityClientSpec (open)
 
-Backend has `EntityServerSpec` (ADR-0002) and the action system has `EntitySpec<E>` (ADR-0001). The next architectural step is a **unified `EntityClientSpec`** that declares per entity:
+Backend has `ServerSpec` (ADR-0002) and the action system has `EntitySpec<E>` (ADR-0001). The next architectural step is a **unified `EntityClientSpec`** that declares per entity:
 
 - `defaultIcon` (LucideIcon)
 - `defaultColor` (color token for badges / dots)
