@@ -280,7 +280,12 @@
 ### L15 — Structure walk-through (2026-10-05): names, home of the compiler, verification
 - **Decisions (user 2026-10-05, approved section by section).** Spec constructors `defineEntitySpec` (own subject; may have a parent) and `defineSubEntitySpec` (no subject); link `parent: { spec, fk, field }` — `field`, not `collection`; `subject` replaces `caslSubject`; `entityName` stays; `conditionColumns` on entity specs. Rules: one file per role through `defineRules`; `defineAbilitiesFor` stays the one loader. Enforcement: `permit(ctx, action, spec, fields?) → { sql, probe, test }`, living in the DAL library in place of `scope.ts`. Share links: `bearerContext(spec, token)` validates the token itself. Client: `@casl/react` 7.0.1 is added as decided (the owner declined dropping it); the provider is fed from the root layout (closes L11 / Q10 as option b).
 - **Verification (user 2026-10-05): "No testing within our library. Tsc & lint + e2e browser tests."** Closes J7 with no runner. The SQL parity script of D-21 is dropped with it; the wrong-on-purpose type file stays because it is only `pnpm tsc`. Report 24's connection-free core is not built: it only served unit tests.
-- **Written form.** `docs/superpowers/specs/2026-10-05-permissions-structure-design.md`, awaiting the owner's review.
+- **Written form.** `docs/superpowers/specs/2026-10-05-permissions-structure-design.md`, approved by the owner 2026-10-05.
+
+### L16 — No backwards compatibility in the rollout (2026-10-05)
+- **Decision (user 2026-10-05, at the start of unit 1): "we aren't coding defensively … built with scalability in mind; not with backwards compatibility in mind."** A unit removes what it replaces in the same change: no alias under an old name, no re-export or wrapper kept for old call sites, no unused type parameter, no old and new shape side by side.
+- **Applied to unit 1.** `EntityServerSpec` is deleted, not kept as an alias: `ServerSpec<TTable>` is the union of `EntitySpec` and `SubEntitySpec`, and every consumer moves in the same change. The unused id type parameter and the `any` fallback of the first plan draft are gone.
+- **What it does not change.** The order of work. A spec is still reclassified in the change that carries its family's rules (unit 3), because reclassifying changes which rule a request is checked against.
 
 ### Still open (asked next, in order)
 - ~~**Q7**~~ → L12 (7a yes · 7b yes minus the `ProposalView` subject → L13 · 7c deferred).

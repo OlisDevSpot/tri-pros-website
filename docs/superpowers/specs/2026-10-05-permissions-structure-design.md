@@ -53,7 +53,7 @@ src/shared/domains/permissions/     client-safe unless marked
   server/get-request-actor.ts       server-only
 
 src/shared/dal/server/              server-only
-  types.ts                          ScopedContext, the two spec types
+  types.ts                          ScopedContext, EntitySpec, SubEntitySpec, their union ServerSpec
   lib/define-spec.ts                defineEntitySpec, defineSubEntitySpec
   lib/permit.ts                     permit(); replaces lib/scope.ts
   lib/permit/                       rule walk, interpreter, operator SQL bodies
@@ -126,7 +126,7 @@ function defineSubEntitySpec<T extends PgTable, P, const F extends string>(o: {
 
 ```ts
 // permissions/specs.ts — type-only imports, so client-safe files may import it
-export type Specs = typeof customerServerSpec | typeof customerProfileServerSpec | typeof proposalServerSpec | /* every spec */
+export type ServerSpecs = typeof customerServerSpec | typeof customerProfileServerSpec | typeof proposalServerSpec | /* every spec */
 
 export type EntitySubject                       // 'Customer' | 'Proposal' | 'CustomerNote' | …
 export type RowOf<S extends EntitySubject>      // the Drizzle row of that entity's table
@@ -338,6 +338,8 @@ Two accepted consequences:
 ## 11. Order of work
 
 Each unit ends with `pnpm tsc` and `pnpm lint` passing. Main is merged into the branch at each boundary. Each unit gets its own plan, written against the tree.
+
+**No backwards compatibility (owner, 2026-10-05).** A unit removes what it replaces in the same change: no alias under an old name, no re-export or wrapper kept for old call sites, no old and new shape side by side. The legacy engine keeps running only where a later unit has not yet replaced it, and nothing new is written to keep it alive.
 
 | # | Unit | Changes for users |
 |---|---|---|

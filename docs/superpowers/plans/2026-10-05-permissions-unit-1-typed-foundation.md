@@ -12,8 +12,9 @@
 
 ## Global Constraints
 
-- **No behaviour change.** `src/shared/domains/permissions/abilities.ts`, `src/shared/dal/server/lib/scope.ts`, `create-crud-dal.ts`, the middlewares and every router keep their behaviour. The only runtime edit outside the spec files is two reads of `spec.caslSubject` becoming `subjectOf(spec)`.
-- **A spec is converted according to what it is today.** A spec whose `caslSubject` is its own constant becomes an entity, with no `parent` added even when the table has one (customer notes, applications, voip campaign contacts). Only the four specs that already declare `parent` and reuse the parent's subject become sub-entities. Reclassifying is unit 3, together with the rule change.
+- **No behaviour change.** `src/shared/domains/permissions/abilities.ts`, `src/shared/dal/server/lib/scope.ts`, `create-crud-dal.ts`, the middlewares and every router keep their behaviour. The only runtime edit outside the spec files is two reads of `spec.caslSubject` becoming `subjectOf(spec)`. Every other edit to those files is the type name `EntityServerSpec` becoming `ServerSpec`.
+- **No backwards compatibility (owner, 2026-10-05).** The old shape is removed in the change that introduces the new one. No alias under an old name, no unused type parameter kept for old call sites, no re-export kept so that consumers do not break, no `any` to get past an assignability error, no old and new shape side by side. `EntityServerSpec`, `caslSubject` and `satisfies` on a spec do not survive Task 1 anywhere under `src/`. When a rename breaks the type-check, the fix is at the consumer or in the type, never a looser type. What remains of the legacy engine (`visibility`, `shareable`, the scope resolver, today's rules) remains because it is the enforcement that runs; later units replace it family by family, and nothing in this unit is written to keep it alive.
+- **A spec is converted according to what it is today.** A spec whose `caslSubject` is its own constant becomes an entity, with no `parent` added even when the table has one (customer notes, applications, voip campaign contacts). Only the four specs that already declare `parent` and reuse the parent's subject become sub-entities. Reclassifying is unit 3, together with the rule change. This is not kept for compatibility: reclassifying a spec changes which rule a request is checked against, so it lands in the same change as that family's rules.
 - **Names are fixed by the spec:** `defineEntitySpec`, `defineSubEntitySpec`, `parent: { spec, fk, field }`, `subject`, `conditionColumns`, `defineRules`. `entityName` stays on every spec.
 - **No test runner, no unit tests.** Verification is `pnpm tsc`, `pnpm lint`, and the must-not-compile file. Never `pnpm build`.
 - **Lint baseline.** `pnpm lint` on this branch reports two formatting errors in `src/app/(frontend)/globals.css` that come from main and are out of scope. "Lint passes" in this plan means: no error outside that file.
@@ -39,10 +40,11 @@
 
 | File | Responsibility |
 |---|---|
-| `src/shared/dal/server/types.ts` (modify) | `EntitySpec`, `SubEntitySpec`, `AnyServerSpec`; `EntityServerSpec` becomes their union |
+| `src/shared/dal/server/types.ts` (modify) | `EntitySpec`, `SubEntitySpec` and their union `ServerSpec`; `EntityServerSpec` is deleted |
 | `src/shared/dal/server/lib/define-spec.ts` (create) | `defineEntitySpec`, `defineSubEntitySpec`, `subjectOf` |
 | 19 × `server-spec.ts` (modify) | built with the constructors |
-| `src/trpc/lib/create-crud-router.ts` (modify) | reads the subject through `subjectOf` |
+| `src/trpc/lib/create-crud-router.ts` (modify) | reads the subject through `subjectOf`; takes `ServerSpec` |
+| `create-crud-dal.ts`, `helpers.ts`, `scope.ts` under `src/shared/dal/server/lib/`; the two middlewares under `src/trpc/lib/middleware/`; `src/trpc/types.ts` (modify) | the type name only: `EntityServerSpec` → `ServerSpec` |
 | `src/shared/domains/permissions/specs.ts` (create) | the type-only list and the types derived from it |
 | `src/shared/domains/permissions/operators.ts` (create) | operator names, payloads, and the subjects each may sit on |
 | `src/shared/domains/permissions/rules/define-rules.ts` (create) | typed `can` / `cannot` → stock CASL rules |
@@ -53,13 +55,15 @@
 ### Task 1: Spec constructors and the 19 specs
 
 **Files:**
-- Modify: `src/shared/dal/server/types.ts` (the `EntityServerSpec` interface, currently lines 113–133, and its imports)
+- Modify: `src/shared/dal/server/types.ts` (the `EntityServerSpec` interface, currently lines 113–133, the four `Spec…` helper types above it, and the imports)
 - Create: `src/shared/dal/server/lib/define-spec.ts`
-- Modify: `src/trpc/lib/create-crud-router.ts:124,146`
+- Modify: `src/trpc/lib/create-crud-router.ts` (lines 4, 28, 121, 124, 139, 146)
+- Modify, type name only: `src/shared/dal/server/lib/create-crud-dal.ts`, `src/shared/dal/server/lib/helpers.ts`, `src/shared/dal/server/lib/scope.ts`, `src/trpc/lib/middleware/scope-middleware.ts`, `src/trpc/lib/middleware/shareable-middleware.ts`, `src/trpc/types.ts`
 - Modify: the 19 `server-spec.ts` files in the table below
+- Modify, comments only: `lib/constants.ts` of proposal views, proposal media, proposal incentives, users, accounts and push-subscriptions; `src/trpc/DOCS.md`
 
 **Interfaces:**
-- Produces: `EntitySpec`, `SubEntitySpec`, `AnyServerSpec`, `ServerSpecSchemas` (types, from `@/shared/dal/server/types`); `defineEntitySpec`, `defineSubEntitySpec`, `subjectOf` (from `@/shared/dal/server/lib/define-spec`). `EntityServerSpec<TTable, TId>` keeps its name and both type parameters.
+- Produces: `EntitySpec`, `SubEntitySpec`, `ServerSpec<TTable>`, `ServerSpecSchemas` (types, from `@/shared/dal/server/types`); `defineEntitySpec`, `defineSubEntitySpec`, `subjectOf` (from `@/shared/dal/server/lib/define-spec`). The name `EntityServerSpec` no longer exists.
 
 - [ ] **Step 1: Replace the spec type in `src/shared/dal/server/types.ts`**
 
@@ -80,46 +84,47 @@ interface ServerSpecBase<TTable extends PgTable, TSchemas extends ServerSpecSche
   schemas: TSchemas
   /** Defaults to 'id'. Override for serial PKs or custom column names. */
   primaryKey?: string
-  /** The entity's OWN visibility fragment. A top-level entity MUST declare it or it is unscoped (checked in `resolveEffectiveScope`). Entities only. */
-  visibility?: (scope: VisibilityScope) => SQL
-  /** Entities only. */
-  shareable?: { tokenColumn: string }
 }
 
 /** Has its own CASL subject. A `parent` adds reach through another entity without giving up the subject. */
 export interface EntitySpec<
-  TTable extends PgTable = PgTable,
-  TSchemas extends ServerSpecSchemas = ServerSpecSchemas,
-  TSubject extends EntityName = EntityName,
-  TConditionColumn extends string = string,
-  TParent extends AnyServerSpec = AnyServerSpec,
+  TTable extends PgTable,
+  TSchemas extends ServerSpecSchemas,
+  TSubject extends EntityName,
+  TConditionColumn extends string,
+  TParent extends ServerSpec,
 > extends ServerSpecBase<TTable, TSchemas> {
   subject: TSubject
   /** The only columns a rule condition may name. A row checked against a rule on the client must carry them. */
   conditionColumns: readonly TConditionColumn[]
   parent?: { spec: TParent, fk: PgColumn }
+  /** The entity's OWN visibility fragment. An entity without a `parent` MUST declare it or it is unscoped (checked in `resolveEffectiveScope`). */
+  visibility?: (scope: VisibilityScope) => SQL
+  shareable?: { tokenColumn: string }
 }
 
-/** Has no subject: it is the field `parent.field` of its parent's subject. */
+/** Has no subject: it is the field `parent.field` of its parent's subject, and is reached only through that parent. */
 export interface SubEntitySpec<
-  TTable extends PgTable = PgTable,
-  TSchemas extends ServerSpecSchemas = ServerSpecSchemas,
-  TParent extends AnyServerSpec = AnyServerSpec,
-  TField extends string = string,
+  TTable extends PgTable,
+  TSchemas extends ServerSpecSchemas,
+  TParent extends ServerSpec,
+  TField extends string,
 > extends ServerSpecBase<TTable, TSchemas> {
   parent: { spec: TParent, fk: PgColumn, field: TField }
+  // Entity-only. Declared `never` so a sub-entity cannot carry them.
+  visibility?: never
+  shareable?: never
 }
 
-export type AnyServerSpec = EntitySpec<any, any, any, any, any> | SubEntitySpec<any, any, any, any>
-
-export type EntityServerSpec<
-  TTable extends PgTable = PgTable,
-  // eslint-disable-next-line unused-imports/no-unused-vars -- Phantom type param carried through to CrudHandlers<TTable, TId> via createCrudDal
-  TId extends string | number = string,
-> = EntitySpec<TTable> | SubEntitySpec<TTable>
+/** Any spec over `TTable`. */
+export type ServerSpec<TTable extends PgTable = PgTable>
+  = | EntitySpec<TTable, ServerSpecSchemas, EntityName, string, ServerSpec>
+    | SubEntitySpec<TTable, ServerSpecSchemas, ServerSpec, string>
 ```
 
-`SpecInsert`, `SpecUpdate`, `SpecId` and `SpecCrudHandlers` (lines 107–111) stay exactly as they are.
+In `SpecInsert`, `SpecUpdate`, `SpecId` and `SpecCrudHandlers` (lines 107–111) change the constraint `TSpec extends EntityServerSpec<any, any>` to `TSpec extends ServerSpec<any>`; nothing else in them changes. `ServerSpec<any>` in a constraint means "a spec over some table". Those four types and `createCrudDal` are the only places it is written.
+
+No type parameter carries the id any more. `SpecId` already reads the id type off the table's `id` column, and nothing ever read the old `TId`.
 
 - [ ] **Step 2: Create `src/shared/dal/server/lib/define-spec.ts`**
 
@@ -127,7 +132,7 @@ export type EntityServerSpec<
 import type { SQL } from 'drizzle-orm'
 import type { PgTable } from 'drizzle-orm/pg-core'
 
-import type { AnyServerSpec, EntityServerSpec, EntitySpec, ServerSpecSchemas, SubEntitySpec, VisibilityScope } from '../types'
+import type { EntitySpec, ServerSpec, ServerSpecSchemas, SubEntitySpec, VisibilityScope } from '../types'
 import type { EntityName } from '@/shared/domains/permissions/abilities'
 
 type ColumnOf<TTable extends PgTable> = TTable['_']['columns'][keyof TTable['_']['columns']]
@@ -140,7 +145,7 @@ export function defineEntitySpec<
   TSchemas extends ServerSpecSchemas,
   const TSubject extends EntityName,
   const TConditionColumn extends ColumnKey<TTable>,
-  TParent extends AnyServerSpec = never,
+  TParent extends ServerSpec = never,
 >(spec: {
   entityName: EntityName
   subject: TSubject
@@ -158,7 +163,7 @@ export function defineEntitySpec<
 export function defineSubEntitySpec<
   TTable extends PgTable,
   TSchemas extends ServerSpecSchemas,
-  TParent extends AnyServerSpec,
+  TParent extends ServerSpec,
   const TField extends string,
 >(spec: {
   entityName: EntityName
@@ -173,29 +178,58 @@ export function defineSubEntitySpec<
 }
 
 /** The CASL subject a spec is checked under: its own, or its parent's for a sub-entity. */
-export function subjectOf(spec: EntityServerSpec): EntityName {
+export function subjectOf(spec: ServerSpec): EntityName {
   return 'subject' in spec ? spec.subject : subjectOf(spec.parent.spec)
 }
 ```
 
-- [ ] **Step 3: Read the subject through `subjectOf` in `src/trpc/lib/create-crud-router.ts`**
+- [ ] **Step 3: `src/trpc/lib/create-crud-router.ts` takes `ServerSpec` and reads the subject through `subjectOf`**
 
-Add the import beside the other value imports:
+Line 4 imports `EntityServerSpec` through `@/trpc/types`. Take the spec type from its source instead:
+
+```ts
+import type { ServerSpec } from '@/shared/dal/server/types'
+import type { CrudHandlers, SlotName } from '@/trpc/types'
+```
+
+Add beside the other value imports:
 
 ```ts
 import { subjectOf } from '@/shared/dal/server/lib/define-spec'
 ```
 
-In `assertCan` (line 124) change `ability.can(action, spec.caslSubject)` to `ability.can(action, subjectOf(spec))`. In `assertCanUpdateFields` (line 146) change `ability.can('update', spec.caslSubject, field)` to `ability.can('update', subjectOf(spec), field)`. Nothing else in the file changes.
+- `CreateCrudRouterConfig` (line 28): `spec: EntityServerSpec<TTable, TId>` → `spec: ServerSpec<TTable>`. `TId` is still inferred from `schemas.id` and `crud`.
+- `assertCan` (line 121) and `assertCanUpdateFields` (line 139): the parameter type `EntityServerSpec` → `ServerSpec`.
+- `assertCan` (line 124): `ability.can(action, spec.caslSubject)` → `ability.can(action, subjectOf(spec))`.
+- `assertCanUpdateFields` (line 146): `ability.can('update', spec.caslSubject, field)` → `ability.can('update', subjectOf(spec), field)`.
 
-- [ ] **Step 4: Convert the 19 spec files**
+Nothing else in the file changes.
+
+- [ ] **Step 4: Move every other consumer to `ServerSpec`**
+
+Each edit below changes a type name and nothing else.
+
+| File | Change |
+|---|---|
+| `src/shared/dal/server/lib/create-crud-dal.ts` | import `ServerSpec` in place of `EntityServerSpec`; line 28 `TSpec extends EntityServerSpec<any, any>` → `TSpec extends ServerSpec<any>`; lines 57 and 257 `EntityServerSpec<TTable>` → `ServerSpec<TTable>`; lines 75, 106, 170 and 216 `EntityServerSpec<TTable, TId>` → `ServerSpec<TTable>` |
+| `src/shared/dal/server/lib/helpers.ts` | lines 1 and 45 |
+| `src/shared/dal/server/lib/scope.ts` | lines 8, 14, 27, 36, 53 and 62 |
+| `src/trpc/lib/middleware/scope-middleware.ts` | lines 6, 23 and 31 |
+| `src/trpc/lib/middleware/shareable-middleware.ts` | lines 5 and 15 |
+| `src/trpc/types.ts` | delete `EntityServerSpec` from the re-export list (line 22) and add nothing in its place: the router now imports the type from its source. In the comment on lines 4–5 drop the name from the list and correct the path, which is `shared/dal/server/types.ts` |
+| `src/shared/entities/users/lib/constants.ts`, `src/shared/entities/accounts/lib/constants.ts`, `src/shared/entities/push-subscriptions/lib/constants.ts` | the comment on line 3: "no EntityServerSpec" → "no server spec" |
+| `src/trpc/DOCS.md` | lines 3, 185 and 342: `EntityServerSpec` → `ServerSpec` |
+
+The private functions in `create-crud-dal.ts` keep their own `TId` type parameter, which types `input` and the hooks; only the `spec` parameter stops mentioning it.
+
+- [ ] **Step 5: Convert the 19 spec files**
 
 The rule, for every file:
 1. Replace `import type { EntityServerSpec } from '@/shared/dal/server/types'` with `import { defineEntitySpec } from '@/shared/dal/server/lib/define-spec'` (or `defineSubEntitySpec`), placed with the value imports in sorted order.
 2. Replace `export const xServerSpec = { … } satisfies EntityServerSpec<typeof table>` (or `…<typeof table, number>`) with `export const xServerSpec = defineEntitySpec({ … })` (or `defineSubEntitySpec({ … })`).
 3. Entity: rename `caslSubject:` to `subject:` (same value) and add `conditionColumns:` from the table. Sub-entity: delete the `caslSubject:` line and add `field:` inside `parent`.
 4. Keep every other property and every other export (`xSchemas`, local `updateXSchema`) as it is.
-5. Where a comment says the spec "reuses the parent's `caslSubject`", reword it to say the spec is a field of its parent.
+5. Reword every comment that mentions `caslSubject` or a `TId` type argument: a sub-entity is a field of its parent's subject, and the id type is read off the table's `id` column. Three `lib/constants.ts` files carry the same sentence about `caslSubject` (proposal views, proposal media, proposal incentives): reword those too.
 
 | File | Constructor | `subject` (old `caslSubject`) | `conditionColumns` | Sub-entity `field` |
 |---|---|---|---|---|
@@ -299,34 +333,40 @@ export const voipCampaignContactServerSpec = defineEntitySpec({
 })
 ```
 
-- [ ] **Step 5: Type-check**
+- [ ] **Step 6: Type-check**
 
 Run: `pnpm tsc`
 Expected: no errors.
 
-If an error appears at the `getByIdImpl` / `createImpl` / `updateImpl` / `deleteImpl` / `duplicateImpl` / `getPkColumn` calls in `src/shared/dal/server/lib/create-crud-dal.ts` saying the spec is not assignable to `EntityServerSpec<TTable, …>`, change those six private functions' `spec` parameter type to `EntityServerSpec<any, any>`. They read only `table`, `schemas`, `primaryKey` and `entityName`. Change nothing else in that file.
+An error saying a spec is not assignable to `ServerSpec<…>` means a type in Step 1 or a constraint in Step 4 was transcribed wrongly. Compare it against the code above. Do not widen a parameter to make the error go away.
 
-- [ ] **Step 6: Confirm nothing still uses the old shape**
+- [ ] **Step 7: Confirm nothing still uses the old shape**
 
-Run: `git grep -n "caslSubject" -- src ; git grep -n "satisfies EntityServerSpec" -- src`
-Expected: no output from either.
+Run: `git grep -n "caslSubject\|EntityServerSpec" -- src`
+Expected: no output.
 
 Run: `git grep -c "defineEntitySpec(\|defineSubEntitySpec(" -- 'src/**/server-spec.ts' | wc -l`
 Expected: `19`
 
-- [ ] **Step 7: Lint**
+- [ ] **Step 8: Lint**
 
 Run: `pnpm lint`
-Expected: no error outside `src/app/(frontend)/globals.css`.
+Expected: no error outside `src/app/(frontend)/globals.css`. For an import-order error, run `pnpm exec eslint --fix` on the files this task touched, never on the whole repo.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
-git add -- src/shared/dal/server/types.ts src/shared/dal/server/lib/define-spec.ts src/trpc/lib/create-crud-router.ts \
-  src/shared/entities/*/lib/server-spec.ts src/shared/modules/projects/core/server-spec.ts src/shared/modules/projects/media/server-spec.ts \
+git add -- src/shared/dal/server/types.ts src/shared/dal/server/lib/define-spec.ts src/shared/dal/server/lib/create-crud-dal.ts \
+  src/shared/dal/server/lib/helpers.ts src/shared/dal/server/lib/scope.ts src/trpc/lib/create-crud-router.ts \
+  src/trpc/lib/middleware/scope-middleware.ts src/trpc/lib/middleware/shareable-middleware.ts src/trpc/types.ts src/trpc/DOCS.md \
+  src/shared/entities/*/lib/server-spec.ts src/shared/entities/users/lib/constants.ts src/shared/entities/accounts/lib/constants.ts \
+  src/shared/entities/push-subscriptions/lib/constants.ts \
+  src/shared/modules/projects/core/server-spec.ts src/shared/modules/projects/media/server-spec.ts \
   src/shared/modules/proposals/core/server-spec.ts src/shared/modules/proposals/incentives/server-spec.ts \
-  src/shared/modules/proposals/media/server-spec.ts src/shared/modules/proposals/views/server-spec.ts
-git commit -m "refactor(permissions): entity specs are built by defineEntitySpec and defineSubEntitySpec
+  src/shared/modules/proposals/media/server-spec.ts src/shared/modules/proposals/views/server-spec.ts \
+  src/shared/modules/proposals/incentives/lib/constants.ts src/shared/modules/proposals/media/lib/constants.ts \
+  src/shared/modules/proposals/views/lib/constants.ts
+git commit -m "refactor(permissions): specs are built by defineEntitySpec and defineSubEntitySpec; ServerSpec replaces EntityServerSpec
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 git push origin refactor/285-refactor-permissions-casl-scope-compiler
@@ -418,8 +458,8 @@ export const fieldTypo: FieldOf<'Proposal'> = 'veiws'
 export const subEntityColumnTypo: FieldOf<'Proposal'> = 'views.nope'
 // @ts-expect-error `views` belongs to Proposal, not Customer
 export const otherParentsField: FieldOf<'Customer'> = 'views'
-// @ts-expect-error a customer note is an entity today, not a field of Customer
-export const notAFieldYet: FieldOf<'Customer'> = 'notes'
+// @ts-expect-error a customer note has its own subject: it is not a field of Customer
+export const ownSubjectIsNotAField: FieldOf<'Customer'> = 'notes'
 
 // ── one field name per parent ──────────────────────────────────────────────
 
@@ -817,11 +857,16 @@ Expected: no output (nothing imports the file).
 
 - [ ] **Step 3: Enforcement is untouched**
 
-Run: `git diff --stat main -- src/shared/domains/permissions/abilities.ts src/shared/dal/server/lib/scope.ts src/trpc/lib/middleware src/trpc/init.ts`
+Compare against the commit this unit's code started from: the parent of Task 1's commit. Find it with `git log --oneline -8` and use its hash as `BASE` below.
+
+Run: `git diff --stat BASE -- src/shared/domains/permissions/abilities.ts src/trpc/init.ts`
 Expected: no output.
 
-Run: `git diff main -- src/trpc/lib/create-crud-router.ts | grep "^[+-]" | grep -v "^+++\|^---"`
-Expected: exactly five lines — one added import and the two `spec.caslSubject` → `subjectOf(spec)` replacements.
+Run: `git diff BASE -- src/shared/dal/server/lib/scope.ts src/shared/dal/server/lib/helpers.ts src/shared/dal/server/lib/create-crud-dal.ts src/trpc/lib/middleware | grep "^[+-]" | grep -v "^+++\|^---" | grep -v "ServerSpec"`
+Expected: no output. Every changed line in those files is the type rename.
+
+Run: `git diff BASE -- src/trpc/lib/create-crud-router.ts | grep "^[+-]" | grep -v "^+++\|^---" | grep -v "ServerSpec"`
+Expected: the `CrudHandlers, SlotName` import line, the added `subjectOf` import, and the two `spec.caslSubject` → `subjectOf(spec)` replacements. A blank line moved by import sorting may also show.
 
 - [ ] **Step 4: Full verification and timing**
 
@@ -833,6 +878,7 @@ Expected: type-check clean; no lint error outside `globals.css`; warm type-check
 In `docs/plans/2026-08-10-casl-scope-compiler-epic.md`:
 - §4: in the Unit 1 item, change `- [ ]` to `- [x]`, change `· AFK.` to `· DONE <today's date>.`, and replace the `**Plan:** _(to write)_` line with `**Landed as:**` followed by the three commit hashes of Tasks 1–3.
 - §5.4: delete the table row whose first cell is "`caslSubject` on the spec".
+- §5.5: delete the first sentence (the `src/trpc/types.ts:4-5` path, corrected in Task 1) and append this sentence: `docs/adr/0002-entity-server-system.md` still describes `EntityServerSpec` and a required `caslSubject` (lines 4, 17, 41, 43, 151, 155, 218); it is rewritten when the epic lands.
 - Appendix A: append this line, with today's date:
 
 ```markdown
@@ -852,14 +898,28 @@ In `docs/plans/2026-09-07-casl-re-grounding/DISTILLED-2026-10-01.md`:
 2. Write the plan for unit 2 (one actor per request) for the owner's approval.
 ```
 
-The plan file itself is deleted in the next step, per the repo rule that a plan is deleted when it ships.
+In `docs/codebase-conventions/environment.md` line 88, replace `caslSubject` with `subject`. In `docs/codebase-conventions/entity-frontend.md` line 210, replace `EntityServerSpec` with `ServerSpec`.
 
-- [ ] **Step 6: Commit, then bring main in**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add -- docs/plans/2026-08-10-casl-scope-compiler-epic.md docs/plans/2026-09-07-casl-re-grounding/DISTILLED-2026-10-01.md
-git rm -q docs/superpowers/plans/2026-10-05-permissions-unit-1-typed-foundation.md
+git add -- docs/plans/2026-08-10-casl-scope-compiler-epic.md docs/plans/2026-09-07-casl-re-grounding/DISTILLED-2026-10-01.md \
+  docs/codebase-conventions/environment.md docs/codebase-conventions/entity-frontend.md
 git commit -m "docs(permissions): unit 1 (typed foundation) landed
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+git push origin refactor/285-refactor-permissions-casl-scope-compiler
+```
+
+---
+
+### After the whole-branch review (not a dispatched task)
+
+The review reads the unit's own diff, so main comes in only after it. The plan file is deleted in the same step, per the repo rule that a plan is deleted when it ships.
+
+```bash
+git rm -q docs/superpowers/plans/2026-10-05-permissions-unit-1-typed-foundation.md
+git commit -m "docs(permissions): unit 1 plan removed, shipped
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 git merge --no-ff main
@@ -867,4 +927,4 @@ pnpm tsc && pnpm lint
 git push origin refactor/285-refactor-permissions-casl-scope-compiler
 ```
 
-If the merge brings a new or moved `server-spec.ts` from main, convert it with the Task 1 rule, add it to `ServerSpecs`, and re-run Step 1 with the new count before pushing.
+If the merge brings a new or moved `server-spec.ts` from main, or a new use of `EntityServerSpec` or `caslSubject`, convert it with the Task 1 rules, add a new spec to `ServerSpecs`, and re-run Task 4 Step 1 with the new count before pushing.
