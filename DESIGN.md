@@ -354,17 +354,26 @@ responsive depth.
 ### Buttons
 - **Shape:** `rounded-md` (6px). Sizes run `sm` (h-8) → `default` (h-9) → `lg` (h-10)
   → `xl` (h-12) → `xll` (h-14), padding scaling with height.
+- **Hover states are solid or a neutral wash, never a see-through fill and never a
+  dimmed label.** Tokens: `--hover` (6% foreground wash, for transparent controls),
+  `--press` (10%), `--primary-hover` / `--destructive-hover` (the fill mixed toward
+  black: 12% light, 8% for the pale dark-mode blue), `--secondary-hover`.
+  `pnpm theme:check` holds each one's contrast on every rung in both schemes.
 - **Primary / default:** `bg-primary` (Harbor Blue) + `text-primary-foreground`
-  (white in light, navy in dark) + `shadow-xs`; hover deepens to `bg-primary/90`.
-- **CTA (`cta`):** the marketing hero button — a deepened Blueprint-Blue gradient
-  (`--cta-from` → `--cta-to`) sized for AA+ white text, with `--cta-ring` for edge
-  definition. Never a glow.
-- **Secondary:** `bg-secondary` (neutral raised) + dark text — deliberately neutral,
-  not the saturated primary (a fixed regression: secondary must stay readable).
-- **Outline:** hairline border + `backdrop-blur-sm`, hover washes `foreground/5`.
-- **Ghost:** transparent at rest; hover fills with the primary and flips text to
-  primary-foreground.
-- **Link:** underline-on-hover, foreground text shifting toward primary.
+  (white in light, navy in dark) + `shadow-xs`; hover `bg-primary-hover`.
+- **CTA (`cta`):** flat `bg-primary` with the same solid `bg-primary-hover`. The
+  deepened gradient (`--cta-from` → `--cta-to`, `--cta-ring`) belongs to the funnels'
+  `FunnelCta` only. Never a glow.
+- **Secondary:** `bg-secondary`, one rung above whatever holds it, + dark text;
+  hover `bg-secondary-hover`. A button sitting on a card or a dialog is
+  `secondary` so it climbs the ladder with them (the Google sign-in button).
+- **Outline:** hairline border + `backdrop-blur-sm`, hover `bg-hover`; the label
+  keeps its colour.
+- **Ghost:** transparent at rest, hover `bg-hover`. Blue stays for "act here",
+  so an icon button never turns into a blue chip on hover.
+- **Link:** underline-on-hover, text shifting to `--link`.
+- **Status pills** (`toneClasses().fill`) carry a hairline in their tone, because
+  the idle and info fills sit about 1.01:1 on the light rungs.
 
 ### Cards / Containers
 - **Corner Style:** `lg` (8px app) / 6px (marketing panel).

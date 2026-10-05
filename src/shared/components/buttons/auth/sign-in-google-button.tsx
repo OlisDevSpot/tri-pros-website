@@ -1,7 +1,7 @@
 'use client'
 
 import type { LoginFormSchema } from '@/shared/domains/auth/schemas'
-import { FaGoogle } from 'react-icons/fa6'
+import { FcGoogle } from 'react-icons/fc'
 
 import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
@@ -19,25 +19,22 @@ export function SignInGoogleButton({
   callbackURL = ROOTS.dashboard.root,
 }: Props) {
   return (
-    <div className="w-full max-w-sm lg:max-w-3xl">
-      <div className="w-full">
-        <Button
-          variant="outline"
-          type="submit"
-          disabled={isPending}
-          className="flex items-center gap-2 w-full"
-          onClick={async () => {
-            await signIn.social({
-              provider: 'google',
-              callbackURL,
-              errorCallbackURL: callbackURL,
-            })
-          }}
-        >
-          <FaGoogle className="text-lg" />
-          Sign In with Google
-        </Button>
-      </div>
-    </div>
+    // `secondary` is one rung above whatever holds it: the card on the sign-in page, the dialog, the menu panel.
+    <Button
+      variant="secondary"
+      type="submit"
+      disabled={isPending}
+      className="h-10 w-full border"
+      onClick={async () => {
+        await signIn.social({
+          provider: 'google',
+          callbackURL,
+          errorCallbackURL: callbackURL,
+        })
+      }}
+    >
+      <FcGoogle className="size-5" />
+      Sign in with Google
+    </Button>
   )
 }

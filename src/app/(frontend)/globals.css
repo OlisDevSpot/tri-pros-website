@@ -34,12 +34,15 @@
   --popover-foreground: var(--foreground);
   --primary: var(--brand-blue);
   --primary-foreground: oklch(1 0 0);
+  /* Hovered fills stay solid: a translucent hover lets whatever sits behind the button show through. */
+  --primary-hover: color-mix(in oklab, var(--primary) 88%, black);
   --secondary-foreground: var(--foreground);
   --muted-foreground: oklch(0.47 0.03 256);
   --accent-foreground: var(--foreground);
   --link: oklch(0.47 0.14 243);
   --destructive: oklch(0.53 0.19 27);
   --destructive-foreground: oklch(1 0 0);
+  --destructive-hover: color-mix(in oklab, var(--destructive) 88%, black);
   --destructive-text: oklch(0.49 0.17 27);
   --success: var(--status-success-fg);
   --success-foreground: oklch(1 0 0);
@@ -185,6 +188,9 @@
   --band: color-mix(in oklab, var(--muted) 50%, var(--card));
   --row-hover: color-mix(in oklab, var(--primary) 8%, var(--card));
   --row-selected: color-mix(in oklab, var(--primary) 12%, var(--card));
+  --hover: color-mix(in oklab, var(--foreground) 6%, transparent);
+  --secondary-hover: color-mix(in oklab, var(--foreground) 6%, var(--secondary));
+  --primary-hover: color-mix(in oklab, var(--primary) 88%, black);
   --press: color-mix(in oklab, var(--foreground) 10%, transparent);
   --row-press: color-mix(in oklab, var(--foreground) 6%, var(--row-hover));
   --skeleton: var(--border);
@@ -337,6 +343,8 @@
   --popover-foreground: var(--foreground);
   --primary: oklch(0.76 0.13 230);
   --primary-foreground: oklch(0.19 0.045 258);
+  /* The pale dark-mode blue goes muddy fast toward black, so it takes a smaller step than light. */
+  --primary-hover: color-mix(in oklab, var(--primary) 92%, black);
   --secondary-foreground: var(--foreground);
   --muted-foreground: oklch(0.77 0.03 252);
   --accent-foreground: var(--foreground);
@@ -466,6 +474,10 @@
   --input-background: var(--card);
   --row-hover: color-mix(in oklab, var(--primary) 8%, var(--card));
   --row-selected: color-mix(in oklab, var(--primary) 12%, var(--card));
+  /* Hover on a transparent control is a neutral wash, so it reads on any fill (band, hovered row, chip); blue
+     stays for "act here". A filled neutral button steps the same distance from its own fill. */
+  --hover: color-mix(in oklab, var(--foreground) 6%, transparent);
+  --secondary-hover: color-mix(in oklab, var(--foreground) 6%, var(--secondary));
   /* Pressed: a wash over transparent controls, and a solid step past hover for rows, whose cells inherit the fill. */
   --press: color-mix(in oklab, var(--foreground) 10%, transparent);
   --row-press: color-mix(in oklab, var(--foreground) 6%, var(--row-hover));
@@ -578,6 +590,10 @@
   --color-band: var(--band);
   --color-row-hover: var(--row-hover);
   --color-row-selected: var(--row-selected);
+  --color-hover: var(--hover);
+  --color-secondary-hover: var(--secondary-hover);
+  --color-primary-hover: var(--primary-hover);
+  --color-destructive-hover: var(--destructive-hover);
   --color-press: var(--press);
   --color-row-press: var(--row-press);
   --color-skeleton: var(--skeleton);

@@ -174,7 +174,13 @@ function evaluate(expression: string): number {
 
 type Oklab = [number, number, number, number]
 
+const KEYWORDS: Record<string, Oklab> = { black: [0, 0, 0, 1], white: [1, 0, 0, 1], transparent: [0, 0, 0, 0] }
+
 function toOklab(color: string): Oklab {
+  const keyword = KEYWORDS[color.trim()]
+  if (keyword) {
+    return keyword
+  }
   const call = /^(oklch|color-mix)\(([\s\S]*)\)$/.exec(color.trim())
   if (!call) {
     throw new Error(`Cannot parse color "${color}"`)
@@ -203,7 +209,13 @@ function toOklab(color: string): Oklab {
   const [b, shareB] = stop(second)
   const weightA = shareA ?? (shareB === undefined ? 0.5 : 1 - shareB)
   const weightB = shareB ?? 1 - weightA
-  return [0, 1, 2, 3].map(i => a[i] * weightA + b[i] * weightB) as Oklab
+  // color-mix interpolates premultiplied: mixing into `transparent` keeps the colour and only thins its alpha.
+  const alpha = a[3] * weightA + b[3] * weightB
+  if (alpha === 0) {
+    return [0, 0, 0, 0]
+  }
+  const channel = (i: number) => (a[i] * a[3] * weightA + b[i] * b[3] * weightB) / alpha
+  return [channel(0), channel(1), channel(2), alpha]
 }
 
 // Same oklab → linear sRGB math as the theme studies page, so its ratios reproduce here.
@@ -232,9 +244,13 @@ function toLinearRgba(color: string): Rgba {
   return oklabToLinear(toOklab(color))
 }
 
+const encode = (value: number) => (value <= 0.0031308 ? value * 12.92 : 1.055 * value ** (1 / 2.4) - 0.055)
+const decode = (value: number) => (value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4)
+
+// Browsers blend a translucent fill in gamma-encoded sRGB, not in linear light.
 function composite(top: Rgba, bottom: Rgba): Rgba {
   const alpha = top[3]
-  return [0, 1, 2].map(i => top[i] * alpha + bottom[i] * (1 - alpha)).concat(1) as Rgba
+  return [0, 1, 2].map(i => decode(encode(top[i]) * alpha + encode(bottom[i]) * (1 - alpha))).concat(1) as Rgba
 }
 
 const luminance = (rgb: Rgba) => 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
@@ -265,12 +281,22 @@ const pairs: Pair[] = [
   { label: 'muted text on band', fg: '--muted-foreground', bg: '--band', min: 4.5, on: ['page', ...CARDS] },
   { label: 'body text on hovered row', fg: '--foreground', bg: '--row-hover', min: 4.5, on: ON_SURFACES },
   { label: 'body text on selected row', fg: '--foreground', bg: '--row-selected', min: 4.5, on: ON_SURFACES },
+  { label: 'body text on hover wash', fg: '--foreground', bg: '--hover', base: '--card', min: 4.5, on: ON_SURFACES },
+  { label: 'muted text on hover wash', fg: '--muted-foreground', bg: '--hover', base: '--card', min: 4.5, on: ON_SURFACES },
+  { label: 'body text on press wash', fg: '--foreground', bg: '--press', base: '--card', min: 4.5, on: ON_SURFACES },
+  { label: 'label on hovered secondary', fg: '--secondary-foreground', bg: '--secondary-hover', min: 4.5, on: ON_SURFACES },
   // Edges are the owner's pick (`--edge`, tuned by eye with the elevation-ladder skill). These floors only catch a
   // retune that makes them vanish; the pick of 2026-10-01 measures 1.13–1.22 on cards.
   { label: 'edge vs its surface', fg: '--border', bg: '--card', min: 1.1, on: [...CARDS, 'overlay'] },
   { label: 'skeleton bar vs its surface', fg: '--skeleton', bg: '--card', min: 1.1, on: [...CARDS, 'overlay'] },
   { label: 'skeleton block vs its surface', fg: '--skeleton-soft', bg: '--card', min: 1.07, on: [...CARDS, 'overlay'] },
+  // A hover has to show: the wash on its surface, and a filled button against its own rest colour.
+  { label: 'hover wash vs its surface', fg: '--hover', bg: '--card', min: 1.1, on: ON_SURFACES },
+  { label: 'hovered secondary vs secondary', fg: '--secondary-hover', bg: '--secondary', min: 1.1, on: ON_SURFACES },
+  { label: 'hovered primary vs primary', fg: '--primary-hover', bg: '--primary', min: 1.15 },
   { label: 'button label on primary', fg: '--primary-foreground', bg: '--primary', min: 4.5 },
+  { label: 'button label on hovered primary', fg: '--primary-foreground', bg: '--primary-hover', min: 4.5 },
+  { label: 'label on hovered destructive', fg: '--destructive-foreground', bg: '--destructive-hover', min: 4.5 },
   { label: 'primary vs page', fg: '--primary', bg: '--background', min: 3 },
   { label: 'focus ring vs page', fg: '--ring', bg: '--background', min: 3 },
   { label: 'label on destructive', fg: '--destructive-foreground', bg: '--destructive', min: 4.5 },
