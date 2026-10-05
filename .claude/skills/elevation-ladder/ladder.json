@@ -2,9 +2,9 @@
   "project": "Tri Pros",
   "artifact": "https://claude.ai/artifact/A1bSP9VEgRaQZRT9waiiDe",
   "picked": {
-    "date": "2026-10-01",
+    "date": "2026-10-05",
     "light": { "canvas": 0.894, "step": 0.024, "tint": 0.017 },
-    "dark": { "canvas": 0.159, "step": 0.047, "tint": 0.059 },
+    "dark": { "canvas": 0.125, "step": 0.047, "tint": 0.04, "lift": 0.034, "edge": 0.07 },
     "hue": 253,
     "edge": 0.048,
     "edges": true
@@ -20,6 +20,11 @@
       "date": "2026-10-01",
       "values": "light canvas 0.894 step 0.024 tint 0.017 · dark canvas 0.159 step 0.047 tint 0.059 · hue 253 · edge 0.048",
       "note": "Applied to the app's tokens in fff2c2db, with the owner's contrast rulings on --input, --ring, the series ramp and dark --muted-foreground."
+    },
+    {
+      "date": "2026-10-05",
+      "values": "light canvas 0.894 step 0.024 tint 0.017 · dark canvas 0.125 lift 0.034 step 0.047 tint 0.04 edge 0.07 · hue 253 · light edge 0.048",
+      "note": "Owner rulings: dark canvas darker with every rung from 1 up kept (lift = the first step's extra), tint lowered until the canvas is in sRGB (0.045 still clipped at L 0.125, so 0.04), dark borders more pronounced (card edge 1.21-1.34 on rungs 1-4). Set in globals.css by hand; the slider page has no lift or dark-edge slider yet."
     }
   ],
   "rail": { "light": "token", "dark": 2 },

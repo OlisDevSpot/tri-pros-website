@@ -18,6 +18,8 @@ interface Pair {
   base?: string
   /** Surface-relative pairs are checked on every place listed; the rest on the page only. */
   on?: Place[]
+  /** Checked in both schemes unless narrowed here. */
+  modes?: Mode[]
 }
 
 const STATUS_TONES = ['info', 'pending', 'attention', 'action', 'success', 'danger', 'idle'] as const
@@ -288,8 +290,18 @@ const pairs: Pair[] = [
   { label: 'body text on press wash', fg: '--foreground', bg: '--press', base: '--card', min: 4.5, on: ON_SURFACES },
   { label: 'label on hovered secondary', fg: '--secondary-foreground', bg: '--secondary-hover', min: 4.5, on: ON_SURFACES },
   // Edges are the owner's pick (`--edge`, tuned by eye with the elevation-ladder skill). These floors only catch a
-  // retune that makes them vanish; the pick of 2026-10-01 measures 1.13–1.22 on cards.
+  // retune that makes them vanish; the picks of 2026-10-05 measure 1.14–1.16 light and 1.21–1.34 dark on cards.
   { label: 'edge vs its surface', fg: '--border', bg: '--card', min: 1.1, on: [...CARDS, 'overlay'] },
+  { label: 'grid line vs its surface', fg: '--grid-line', bg: '--card', min: 1.18, on: [...CARDS, 'overlay'] },
+  { label: 'axis vs its surface', fg: '--axis', bg: '--card', min: 1.28, on: [...CARDS, 'overlay'] },
+  // An outline button is filled a rung above what it sits on. On the page that is the canvas, not a card. An overlay
+  // is the top rung, so a button in a menu has no rung left to climb and is not checked there.
+  { label: 'outline button fill vs the page', fg: '--control', bg: '--background', min: 1.06 },
+  { label: 'outline button fill vs its surface', fg: '--control', bg: '--card', min: 1.06, on: CARDS },
+  { label: 'outline button edge vs its fill', fg: '--border', bg: '--control', min: 1.05, on: ['page', ...CARDS] },
+  { label: 'hovered outline button vs its fill', fg: '--control-hover', bg: '--control', min: 1.1, on: ['page', ...CARDS] },
+  // Near black the first step reads weakest, so dark mode's lift has to keep a card off the page.
+  { label: 'card vs the page', fg: '--card', bg: '--background', min: 1.1, on: ['rung 1'], modes: ['dark'] },
   { label: 'skeleton bar vs its surface', fg: '--skeleton', bg: '--card', min: 1.1, on: [...CARDS, 'overlay'] },
   { label: 'skeleton block vs its surface', fg: '--skeleton-soft', bg: '--card', min: 1.07, on: [...CARDS, 'overlay'] },
   // A hover has to show: the wash on its surface, and a filled button against its own rest colour.
@@ -361,7 +373,7 @@ function guard(label: string, test: () => string | undefined) {
 }
 
 for (const mode of ['light', 'dark'] as const) {
-  for (const pair of pairs) {
+  for (const pair of pairs.filter(pair => !pair.modes || pair.modes.includes(mode))) {
     for (const place of pair.on ?? ['page']) {
       guard(`${mode}: ${pair.label} (${place})`, () => {
         const ratio = contrast(pair, mode, place)
