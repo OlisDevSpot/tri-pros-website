@@ -29,12 +29,13 @@ One page. Everything else in this folder is evidence. Code is the source of trut
 | 15 | Never widen the legacy engine to patch a gap. |
 | 16 | A supersession edits the superseded text. No "read me first" banners. |
 | 17 | **A sub-entity is a field of its parent's CASL subject** (2026-10-05). The child spec declares only its parent, foreign key and collection name. Reading the child = the parent's `read`; creating, updating or deleting it = the parent's `update` on that collection. Customer notes are the one child with its own subject. A parent `update` rule without a field list covers every collection; narrow with a field list or a `cannot`. |
+| 19 | **Names** (2026-10-05): `defineEntitySpec`, `defineSubEntitySpec`, `parent: { spec, fk, field }`, `subject`, `conditionColumns`, `defineRules`, `permit`, `bearerContext(spec, token)`. `defineAbilitiesFor` and `entityName` keep their names. |
+| 20 | **Verification** (2026-10-05): no test runner and no unit tests in the library. `pnpm tsc`, `pnpm lint`, the wrong-on-purpose type file, and browser end-to-end tests per role. |
+| 21 | **Client** (2026-10-05): `@casl/react` is added as decided; rules are sent from the root layout. |
 | 18 | **The specs are the single typed source** (2026-10-05). Rule fields, conditions, operator placement and the checks the client makes are all type-checked against the specs. Rules are written through a thin typed `can`/`cannot` wrapper that emits stock CASL rules. Each subject spec lists the columns rules may condition on. A checked-in file of wrong-on-purpose lines guards the types. |
 
-## 3. Proposed, not yet agreed
-- **Names and folder layout.** Report 24's names (`permit`, `defineRootSpec`, `defineChildSpec`, `collection`, `bearerContext`) and the new ones decision 18 needs (the typed rules wrapper, the condition-column list, the client check helpers) are proposals and need the owner's agreement.
-- **The rest of the interface** (report 24 §4): one entry point for hand-written queries; a scope that is always a real SQL value; a pure, connection-free core tested by comparing SQL strings; one rules file per role; the field gate after the row is loaded.
-- **Test runner** for the compiler core (vitest, or a checked-in parity script).
+## 3. Awaiting the owner's review
+- **The structure spec**: `docs/superpowers/specs/2026-10-05-permissions-structure-design.md`. Its six sections were approved in chat on 2026-10-05; the written form is not yet approved. No plan and no code before it is.
 
 ## 4. Business rules
 - **Homeowner with a share link** may: read their proposal, pick a financing option, set cash in deal, give their age, record a view, ask to move forward (a notification only). They may never touch status, price, scope of work, owner, contract timestamps, the contract lifecycle, or which documents go in the envelope.
@@ -71,9 +72,9 @@ One page. Everything else in this folder is evidence. Code is the source of trut
 
 ## 7. Next steps, in order
 1. **Fix the holes in §6** through the hotfix path. They do not need the epic.
-2. Ratify §3 (sub-entity model, interface, names).
-3. Rule the open items: homeowner phone grant; pipeline map for prod; root ability provider; test runner for the compiler; lint wall shape; the 25 business rulings in report 10 §5.
-4. Build order: request-actor unification → adapter + DAL self-scoping → rules per role → client hydration → lint wall + financial reads → delete the legacy engine → one end-to-end pass. The 33 keep-primitives (adapter core, outcome classification) come back from `b40403b6` in the unit that gives each a home.
+2. Owner reviews the structure spec (§3); then the plan for unit 1 (typed foundation).
+3. Rule the open items in the spec's §12: homeowner phone grant; pipeline map for prod; lint wall shape; which dev records browser tests may change; the 25 business rulings in report 10 §5.
+4. Build order (spec §11): typed foundation → one actor per request → compiler + DAL self-scoping per entity family → rules matrix → lint wall + financial reads → delete the legacy engine → full browser pass. The keep-primitives (adapter core, outcome classification) come back from `b40403b6` in the unit that gives each a home.
 5. Merge main into the branch at every unit boundary; one merge to main after the end-to-end pass.
 
 ## 8. Where the detail lives

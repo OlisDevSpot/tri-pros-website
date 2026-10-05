@@ -277,13 +277,18 @@
 - **Not decided.** Names (spec constructors, the wrapper, the condition-column list, the check helpers) and the folder layout.
 - **Sources.** installed `@casl/ability@6.8.0` types; 14 §1.10; 24 §1 C6.
 
+### L15 — Structure walk-through (2026-10-05): names, home of the compiler, verification
+- **Decisions (user 2026-10-05, approved section by section).** Spec constructors `defineEntitySpec` (own subject; may have a parent) and `defineSubEntitySpec` (no subject); link `parent: { spec, fk, field }` — `field`, not `collection`; `subject` replaces `caslSubject`; `entityName` stays; `conditionColumns` on entity specs. Rules: one file per role through `defineRules`; `defineAbilitiesFor` stays the one loader. Enforcement: `permit(ctx, action, spec, fields?) → { sql, probe, test }`, living in the DAL library in place of `scope.ts`. Share links: `bearerContext(spec, token)` validates the token itself. Client: `@casl/react` 7.0.1 is added as decided (the owner declined dropping it); the provider is fed from the root layout (closes L11 / Q10 as option b).
+- **Verification (user 2026-10-05): "No testing within our library. Tsc & lint + e2e browser tests."** Closes J7 with no runner. The SQL parity script of D-21 is dropped with it; the wrong-on-purpose type file stays because it is only `pnpm tsc`. Report 24's connection-free core is not built: it only served unit tests.
+- **Written form.** `docs/superpowers/specs/2026-10-05-permissions-structure-design.md`, awaiting the owner's review.
+
 ### Still open (asked next, in order)
 - ~~**Q7**~~ → L12 (7a yes · 7b yes minus the `ProposalView` subject → L13 · 7c deferred).
-- ~~**Q7b′**~~ → L13 (ratified 2026-10-05) and L14 (typed source). Open under them: names and folder layout, and the remaining report-24 §4 points (rare-caller handle, post-load field gate, one rules file per role, bearer entry, test runner J7).
+- ~~**Q7b′**~~ → L13, L14, L15. The written spec awaits the owner's review.
 - **M-R1 / M-R2** merge rulings from report 21 §5 (`recordView` under `SYSTEM_CONTEXT` on main vs the bearer path; main's new legacy `isVisible` caller in the proposal media service) — tracker §0.3.
 - **Q8** The 25 business-rule rulings in `10-business-rules-matrix.md` §5 (Meeting ownership vs participation, dispatcher meeting update, Project read ruling, create-side parent requirements, …).
 - **Q9** The document set to rewrite and its structure (epic tracker, spec v2, catalog, `src/trpc/DOCS.md`, per-entity DOCS, memory). *2026-09-09: the epic tracker was rewritten (G1/J8 — user asked for it explicitly on 09-07); the rest of the set is still Q9.*
-- **Q10** Root `AbilityProvider` shape (L11) — recommended (b).
+- ~~**Q10**~~ → L15: rules are sent from the root layout (option b).
 - **Q11** `outcome-pipeline-map.ts`: restoring the branch's map (`b40403b6`) flips prod `not_good`/`ftd` from `rehash` to `dead` (matches the 2026-08-19 ruling; the tree carries main's map) — confirm before 7.3.
 - **Q12** Bearer READ surface: 7c masking (deferred) + `canSeeUngatedPhone` bearer gating under a per-row ability (report 19 §7) + public project reads under anonymous deny-all (09-14 item, report 18 §4). Recommended: grant `phone` on the bearer read rule now; the rest with 7.4.
 - ~~**J3**~~ no longer exists: the seam commits left the tree with the 2026-10-05 supersede merge.
