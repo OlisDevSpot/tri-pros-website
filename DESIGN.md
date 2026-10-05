@@ -156,18 +156,26 @@ exactly one accent, and its rarity is the point.
   text and hairlines where the bright blue would fail contrast on light.
 
 ### Neutral — The Command Desk (app)
-- **Cool Paper** (`oklch(0.965 0.009 246)`): the app page background — a faintly
-  cool near-white.
+- **The elevation ladder** (`globals.css`, knobs in `:root, .funnel-light` and `.dark`):
+  every app surface is one hue (`--surface-h`/`--surface-c`) at a lightness set by its
+  rung. The canvas (`--background`, rung 0) is the darkest; each surface stacked over
+  another sits one `--step` lighter, in both schemes. A nested `bg-card` climbs a rung
+  by itself (it counts the surfaces it sits in, up to three); `bg-(--card)` paints the
+  current rung without climbing; `bg-muted` is always one rung above wherever it is read.
+  Menus, selects and popovers (`bg-popover`, `surface-overlay`) sit on the top rung; a
+  dialog is a portaled `bg-card`, so it starts at rung 1 and its contents climb from
+  there. The public footer (`surface-beneath`) sits one rung below the page. Retune it with
+  the `elevation-ladder` skill; `pnpm theme:check` guards every pair on every rung.
 - **Slate Ink** (`oklch(0.235 0.045 258)`): primary text; a soft blue-slate, never
   pure black.
-- **Card White** (`oklch(1 0 0)`): raised card / popover / input-background
-  surface, one step brighter than the page.
-- **Surface Raised** (`oklch(0.978 0.006 250)`): column bodies, table heads and
-  hover rows — a step between the page and Card White.
+- **Bands** (`--band`): column bodies, table heads and striped rows — half a step
+  above their surface. Hovered and selected rows mix primary into the surface
+  (`--row-hover`, `--row-selected`); selected always sits further from it than hover.
 - **Quiet Steel** (`oklch(0.47 0.03 256)`): muted-foreground for secondary text
   and captions.
-- **Hairline** (`oklch(0.905 0.012 252)`): borders and dividers. **Border Strong**
-  (`oklch(0.84 0.015 252)`) is the emphasized variant, for dashed empty states and
+- **Hairline** (`--border`, one `--edge` off its surface: darker in light, lighter in
+  dark): borders and dividers. **Border Strong** (`--border-strong`, two edges off) is
+  the emphasized variant, for dashed empty states and
   dividers that need to read as more than a hairline.
 - **Control Border** (`oklch(0.62 0.03 255)`, 3:1 against the card): the border on
   inputs, textareas and other form controls — deliberately stronger than Hairline,
@@ -377,15 +385,16 @@ responsive depth.
 
 ### Cards / Containers
 - **Corner Style:** `lg` (8px app) / 6px (marketing panel).
-- **Background:** Card White (app) or Warm Panel `#f4efe6` (marketing), one step off
-  the page.
+- **Background:** a ladder rung (app: `bg-card`, one rung above whatever it sits on)
+  or Warm Panel `#f4efe6` (marketing), one step off the page.
 - **Shadow Strategy:** the tinted ramp from Elevation & Depth — resting cards use the
   low end; never a flat gray drop.
 - **Border:** 1px world-neutral hairline.
 - **Internal Padding:** ~24px, tightening on compact variants via `--block-pad-compact`.
 
 ### Inputs / Fields
-- **Style:** solid fill (Card White / warm), 1px hairline, `rounded-md`.
+- **Style:** solid fill (`bg-input-background`, the rung the field sits on / warm),
+  1px control border, `rounded-md`.
 - **Focus:** a 3px `ring-ring/50` in the world's accent plus a border shift — crisp,
   not a glow. `aria-invalid` swaps the ring to destructive.
 
