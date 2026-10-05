@@ -128,19 +128,6 @@ export default function RootLayout({
       <body
         className={`${syne.variable} ${playfair.variable} ${dancingScript.variable} ${spaceMono.variable} ${nunito.className} antialiased`}
       >
-        {/* Installed-PWA cold-start: paint the launch dark from the very first
-            frame. Inlined (not in globals.css) so it applies before the external
-            stylesheet loads and before next-themes resolves — otherwise the
-            light `bg-background` on <body> flashes white on cold launch. Scoped
-            to standalone so the browser/marketing site is untouched; !important
-            so the theme's bg-background can't override it. Pairs with the
-            manifest background_color (#040f23) for the pre-web-view surface. */}
-        <style
-          // eslint-disable-next-line react-dom/no-dangerously-set-innerhtml
-          dangerouslySetInnerHTML={{
-            __html: '@media (display-mode: standalone){html,body{background-color:#040f23!important}}',
-          }}
-        />
         <Providers>
           {children}
         </Providers>
