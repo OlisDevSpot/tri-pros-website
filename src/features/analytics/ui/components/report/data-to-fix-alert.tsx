@@ -27,8 +27,8 @@ export function DataToFixAlert({ keys, hygiene, asOf }: Props) {
   }
   const total = items.reduce((sum, key) => sum + hygiene[key], 0)
   return (
-    <Collapsible open={open} onOpenChange={setOpen} className="rounded-lg border border-warning/35 bg-warning/6">
-      <CollapsibleTrigger className="flex min-h-10 w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring">
+    <Collapsible open={open} onOpenChange={setOpen} className="rounded-xl border border-warning/35 bg-warning/6">
+      <CollapsibleTrigger className="flex min-h-10 w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <AlertTriangleIcon className="size-4 shrink-0 text-warning" aria-hidden="true" />
         <span className="font-semibold">
           {formatAsCount(total)}
