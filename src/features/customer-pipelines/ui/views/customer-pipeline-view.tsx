@@ -14,6 +14,7 @@ import { PipelineSelect } from '@/features/customer-pipelines/ui/components/pipe
 import { useKanbanStageFilter } from '@/shared/components/kanban/hooks/use-kanban-stage-filter'
 import { KanbanBoard } from '@/shared/components/kanban/ui/kanban-board'
 import { KanbanStageFilter } from '@/shared/components/kanban/ui/kanban-stage-filter'
+import { PageBar } from '@/shared/components/page-bar'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 import { EmptyState } from '@/shared/components/states/empty-state'
 import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
@@ -130,24 +131,25 @@ export function CustomerPipelineView() {
       transition={{ delay: 0.25, duration: 0.25 }}
       className="w-full h-full flex flex-col gap-(--gutter) overflow-hidden"
     >
-      <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between shrink-0">
-        <CustomerPipelineMetricsBar items={items} pipeline={pipeline} isLoading={query.isPending || isSwitching} />
-        <div className="flex w-full items-center justify-between gap-2 lg:w-auto lg:justify-end">
-          {canManagePipeline && <PipelineSelect value={pipeline} onChange={setPipeline} />}
-          <KanbanStageFilter
-            stages={config.stageConfig}
-            visibleStages={stageFilter.visibleStages}
-            alwaysVisible={stageFilter.alwaysVisible}
-            onToggleStage={stageFilter.handleToggleStage}
-            onShowAll={stageFilter.handleShowAll}
-            onHideAll={stageFilter.handleHideAll}
-          />
+      <PageBar className="shrink-0">
+        <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between">
+          <CustomerPipelineMetricsBar items={items} pipeline={pipeline} isLoading={query.isPending || isSwitching} />
+          <div className="flex w-full items-center justify-between gap-2 lg:w-auto lg:justify-end">
+            {canManagePipeline && <PipelineSelect value={pipeline} onChange={setPipeline} />}
+            <KanbanStageFilter
+              stages={config.stageConfig}
+              visibleStages={stageFilter.visibleStages}
+              alwaysVisible={stageFilter.alwaysVisible}
+              onToggleStage={stageFilter.handleToggleStage}
+              onShowAll={stageFilter.handleShowAll}
+              onHideAll={stageFilter.handleHideAll}
+            />
+          </div>
         </div>
-      </div>
-
-      <QueryToolbar query={query} entityName="customers" className="shrink-0">
-        <QueryToolbar.Standard searchPlaceholder="Search by name or email…" sort />
-      </QueryToolbar>
+        <QueryToolbar query={query} entityName="customers">
+          <QueryToolbar.Standard searchPlaceholder="Search by name or email…" sort />
+        </QueryToolbar>
+      </PageBar>
 
       {/* A filter change dims only after a short delay (quick loads never flash); a background refetch after a drag dims at once. */}
       <div

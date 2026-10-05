@@ -12,6 +12,7 @@ import { ActivityDotContent } from '@/features/schedule-management/ui/components
 import { ScheduleCalendar } from '@/features/schedule-management/ui/components/schedule-calendar'
 import { ScheduleControlsBar } from '@/features/schedule-management/ui/components/schedule-controls-bar'
 import { isActionPermitted } from '@/shared/components/entities/entity-actions/lib/visible-actions'
+import { PageBar } from '@/shared/components/page-bar'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { useAbility } from '@/shared/domains/permissions/hooks'
@@ -52,9 +53,11 @@ export function ScheduleActivitiesCalendar({ showToggle, showSaturday, onToggleS
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-(--gutter)">
-      <QueryToolbar query={query} entityName="activities">
-        <QueryToolbar.Standard leading={showToggle} searchPlaceholder="Search by title or notes…" />
-      </QueryToolbar>
+      <PageBar>
+        <QueryToolbar query={query} entityName="activities">
+          <QueryToolbar.Standard leading={showToggle} searchPlaceholder="Search by title or notes…" />
+        </QueryToolbar>
+      </PageBar>
       <div className="min-h-0 flex-1">
         <ScheduleCalendar
           events={events}
