@@ -47,7 +47,7 @@ export function BillsByCategoryChart({ projection, lookAhead }: Props) {
       <LegendSwatches config={BILL_CHART_CONFIG} keys={used} />
       <ChartContainer aria-label={`Monthly bills today and later, by bill: ${data.map(row => `${row.label} ${formatMoney(row.total)}`).join(', ')}`} className="aspect-auto h-64 w-full" config={BILL_CHART_CONFIG} debounce={150} role="img" {...tooltip.containerProps}>
         <BarChart data={data} margin={{ top: 24, right: 8, left: 0, bottom: 0 }}>
-          <CartesianGrid stroke="var(--border)" vertical={false} />
+          <CartesianGrid vertical={false} />
           <XAxis axisLine={false} dataKey="label" tickLine={false} />
           <YAxis axisLine={false} tickFormatter={value => formatMoney(Number(value))} tickLine={false} width={72} />
           <PinnedChartTooltip content={content} cursor={false} pin={tooltip.pin} shared={false} />

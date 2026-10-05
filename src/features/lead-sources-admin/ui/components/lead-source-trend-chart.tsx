@@ -30,18 +30,16 @@ export function LeadSourceTrendChart({ trend, bucket, chip }: Props) {
       </h3>
       <ChartContainer className="aspect-auto h-56 w-full" config={LEAD_SOURCE_TREND_CHART_CONFIG} {...tooltip.containerProps}>
         <LineChart data={trend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} />
           <XAxis
             dataKey="bucketStart"
             tickFormatter={v => formatBucketLabel(v, bucket)}
             className="text-xs"
-            stroke="var(--muted-foreground)"
           />
           <YAxis
             tickFormatter={formatAsCount}
             allowDecimals={false}
             className="text-xs"
-            stroke="var(--muted-foreground)"
           />
           <PinnedChartTooltip content={props => <LeadSourceTrendTooltip {...props} bucket={bucket} />} pin={tooltip.pin} />
           <Legend wrapperStyle={{ fontSize: 12 }} iconType="line" />

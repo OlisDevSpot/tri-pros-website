@@ -47,7 +47,7 @@ export function PayForItselfChart({ projection, lookAhead }: Props) {
             <stop offset={offset} stopColor="var(--warning)" stopOpacity={0.18} />
           </linearGradient>
         </defs>
-        <CartesianGrid stroke="var(--border)" vertical={false} />
+        <CartesianGrid vertical={false} />
         <XAxis axisLine={false} dataKey="t" tickFormatter={t => (t === 0 ? 'Now' : `Yr ${t}`)} tickLine={false} />
         <YAxis axisLine={false} tickFormatter={value => signedMoney(Number(value))} tickLine={false} width={92} />
         <ReferenceLine stroke="var(--muted-foreground)" y={0} />

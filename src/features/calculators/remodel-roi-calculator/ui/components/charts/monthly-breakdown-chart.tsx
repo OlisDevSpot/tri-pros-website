@@ -71,7 +71,7 @@ export function MonthlyBreakdownChart({ projection, lookAhead }: Props) {
             <line stroke="var(--warning)" strokeWidth="2" x1="0" x2="0" y1="0" y2="6" />
           </pattern>
         </defs>
-        <CartesianGrid stroke="var(--border)" vertical={false} />
+        <CartesianGrid vertical={false} />
         <XAxis axisLine={false} dataKey="t" tickFormatter={t => `Yr ${t}`} tickLine={false} />
         <YAxis axisLine={false} tickFormatter={value => formatMoney(Number(value))} tickLine={false} width={72} />
         <PinnedChartTooltip content={content} cursor={false} pin={tooltip.pin} shared={false} />

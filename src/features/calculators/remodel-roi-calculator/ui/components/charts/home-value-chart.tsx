@@ -38,7 +38,7 @@ export function HomeValueChart({ projection, lookAhead }: Props) {
       <LegendSwatches config={HOME_VALUE_CHART_CONFIG} keys={waits ? ['valueNow', 'valueWait'] : ['valueNow']} />
       <ChartContainer aria-label={`Value added to the home: ${roundMoney(data[lookAhead].valueNow)} by year ${lookAhead} if you upgrade now.`} className="aspect-auto h-56 w-full" config={HOME_VALUE_CHART_CONFIG} debounce={150} role="img" {...tooltip.containerProps}>
         <LineChart data={data} margin={{ top: 12, right: 16, left: 0, bottom: 0 }}>
-          <CartesianGrid stroke="var(--border)" vertical={false} />
+          <CartesianGrid vertical={false} />
           <XAxis axisLine={false} dataKey="t" tickFormatter={t => (t === 0 ? 'Now' : `Yr ${t}`)} tickLine={false} />
           <YAxis axisLine={false} domain={[0, 'auto']} tickFormatter={value => roundMoney(Number(value))} tickLine={false} width={72} />
           <PinnedChartTooltip content={content} pin={tooltip.pin} />

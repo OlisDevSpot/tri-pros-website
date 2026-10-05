@@ -72,14 +72,13 @@ export function TrendBars({ rows, interval, series, ticks, height, pin, onBucket
             }
           }}
         >
-          <CartesianGrid vertical={false} stroke="var(--border)" strokeOpacity={0.6} />
+          <CartesianGrid vertical={false} />
           <XAxis
             dataKey="key"
             height={CHART_X_AXIS_HEIGHT}
             interval={0}
             tickFormatter={(key: string, index: number) => chartTickLabel(interval, key, rows[index - 1]?.key)}
             tickLine={false}
-            axisLine={false}
             tickMargin={6}
             tick={{ fill: 'var(--muted-foreground)' }}
             className="text-xs"
