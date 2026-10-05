@@ -104,11 +104,11 @@ export type CrudConfigFactory<TTable extends PgTable, TId extends string | numbe
 
 // The engine validates payloads with the spec's Zod schemas AFTER the hooks run, so the
 // contract is the schema INPUT (hook-filled columns optional), not Drizzle's insert model.
-export type SpecInsert<TSpec extends ServerSpec<any>> = z.input<TSpec['schemas']['insert']>
-export type SpecUpdate<TSpec extends ServerSpec<any>> = z.input<TSpec['schemas']['update']>
+export type SpecInsert<TSpec extends ServerSpec> = z.input<TSpec['schemas']['insert']>
+export type SpecUpdate<TSpec extends ServerSpec> = z.input<TSpec['schemas']['update']>
 /** PK value type, read off the table's `id` column (serial → number, uuid → string). Tables keyed by another column (`primaryKey` override) fall back to string. */
-export type SpecId<TSpec extends ServerSpec<any>> = Row<TSpec['table']> extends { id: infer I extends string | number } ? I : string
-export type SpecCrudHandlers<TSpec extends ServerSpec<any>> = CrudHandlers<TSpec['table'], SpecId<TSpec>, SpecInsert<TSpec>, SpecUpdate<TSpec>>
+export type SpecId<TSpec extends ServerSpec> = Row<TSpec['table']> extends { id: infer I extends string | number } ? I : string
+export type SpecCrudHandlers<TSpec extends ServerSpec> = CrudHandlers<TSpec['table'], SpecId<TSpec>, SpecInsert<TSpec>, SpecUpdate<TSpec>>
 
 type ZodObjectAny = z.ZodObject<Record<string, z.ZodTypeAny>>
 

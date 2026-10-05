@@ -7,15 +7,18 @@ import type z from 'zod'
 import type { SpecInsert } from '@/shared/dal/server/types'
 import type { insertProjectMediaFilesSchema } from '@/shared/db/schema/project-media-files'
 import type { insertProposalSchema } from '@/shared/db/schema/proposals'
-import type { ConditionColumnOf, DuplicateFieldsIn, EntitySubject, FieldOf, RowOf, ServerSpecs } from '@/shared/domains/permissions/specs'
+import type { OperatorName, ReadOperators } from '@/shared/domains/permissions/operators'
+import type { ConditionColumnOf, DuplicateFieldsIn, DuplicateSubjectsIn, EntitySubject, FieldOf, RowOf, ServerSpecs } from '@/shared/domains/permissions/specs'
 
 import type { projectMediaServerSpec } from '@/shared/modules/projects/media/server-spec'
 import { defineEntitySpec, defineSubEntitySpec } from '@/shared/dal/server/lib/define-spec'
+import { customerNotes } from '@/shared/db/schema/customer-notes'
 import { customers } from '@/shared/db/schema/customers'
 import { proposalMediaFiles } from '@/shared/db/schema/proposal-media-files'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
 import { defineRules } from '@/shared/domains/permissions/rules/define-rules'
+import { customerNoteServerSpec } from '@/shared/entities/customer-notes/lib/server-spec'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 import { proposalMediaServerSpec } from '@/shared/modules/proposals/media/server-spec'
@@ -24,6 +27,7 @@ import { proposalViewServerSpec } from '@/shared/modules/proposals/views/server-
 type Expect<T extends true> = T
 type Equal<A, B> = (<X>() => X extends A ? 1 : 2) extends (<X>() => X extends B ? 1 : 2) ? true : false
 type AssertNever<T extends never> = T
+type UnionToIntersection<U> = (U extends unknown ? (k: U) => void : never) extends (k: infer I) => void ? I : never
 
 // ── spec constructors ──────────────────────────────────────────────────────
 
@@ -41,6 +45,20 @@ defineEntitySpec({ entityName: 'Customer', subject: 'Customer', table: customers
 defineEntitySpec({ entityName: 'Proposal', subject: 'Proposal', table: proposals, schemas: proposalServerSpec.schemas, conditionColumns: [], shareable: { tokenColumn: 'nope' } })
 // @ts-expect-error the subject must be a known entity name
 defineEntitySpec({ entityName: 'Customer', subject: 'Custmer', table: customers, schemas: customerServerSpec.schemas, conditionColumns: [] })
+declare const widenedField: string
+// @ts-expect-error a field name widened to string would switch off every field check on the parent
+defineSubEntitySpec({ entityName: 'ProposalView', table: proposalViews, schemas: proposalViewServerSpec.schemas, parent: { spec: proposalServerSpec, fk: proposalViews.proposalId, field: widenedField } })
+// @ts-expect-error a field name cannot contain the path separator
+defineSubEntitySpec({ entityName: 'ProposalView', table: proposalViews, schemas: proposalViewServerSpec.schemas, parent: { spec: proposalServerSpec, fk: proposalViews.proposalId, field: 'views.more' } })
+// @ts-expect-error a field name cannot contain a wildcard
+defineSubEntitySpec({ entityName: 'ProposalView', table: proposalViews, schemas: proposalViewServerSpec.schemas, parent: { spec: proposalServerSpec, fk: proposalViews.proposalId, field: 'views*' } })
+// @ts-expect-error a field name cannot be empty
+defineSubEntitySpec({ entityName: 'ProposalView', table: proposalViews, schemas: proposalViewServerSpec.schemas, parent: { spec: proposalServerSpec, fk: proposalViews.proposalId, field: '' } })
+// @ts-expect-error an entity is named by its subject
+defineEntitySpec({ entityName: 'Customer', subject: 'Proposal', table: customers, schemas: customerServerSpec.schemas, conditionColumns: [] })
+// @ts-expect-error an entity's parent link takes no field
+defineEntitySpec({ entityName: 'CustomerNote', subject: 'CustomerNote', table: customerNotes, schemas: customerNoteServerSpec.schemas, conditionColumns: ['authorId'], parent: { spec: customerServerSpec, fk: customerNotes.customerId, field: 'notes' } })
+export const entityUnderParent = defineEntitySpec({ entityName: 'CustomerNote', subject: 'CustomerNote', table: customerNotes, schemas: customerNoteServerSpec.schemas, conditionColumns: ['authorId'], parent: { spec: customerServerSpec, fk: customerNotes.customerId } })
 
 // ── the constructors keep the schemas precise ──────────────────────────────
 
@@ -79,6 +97,16 @@ const _secondViews = defineSubEntitySpec({ entityName: 'ProposalMediaFile', tabl
 // @ts-expect-error two sub-entities claim `views` under Proposal
 export type DuplicateIsCaught = AssertNever<DuplicateFieldsIn<ServerSpecs | typeof _secondViews>>
 
+// ── one spec per subject, one declaration per operator ─────────────────────
+
+export type NoDuplicateSubjects = AssertNever<DuplicateSubjectsIn<ServerSpecs>>
+
+const _secondCustomer = defineEntitySpec({ entityName: 'Customer', subject: 'Customer', table: customers, schemas: customerServerSpec.schemas, conditionColumns: ['id'] })
+// @ts-expect-error two entity specs claim Customer
+export type DuplicateSubjectIsCaught = AssertNever<DuplicateSubjectsIn<ServerSpecs | typeof _secondCustomer>>
+
+export type OperatorNamesMatchDeclarations = Expect<Equal<keyof UnionToIntersection<ReadOperators[keyof ReadOperators]>, `$${OperatorName}`>>
+
 // ── rules ──────────────────────────────────────────────────────────────────
 
 const userId = 'user-1'
@@ -88,6 +116,11 @@ const operatorBuiltElsewhere = { $participatesViaMeeting: { via: 'customerId' as
 const sharedFields = ['name', 'phone'] as const
 declare const maybeUserId: string | undefined
 declare const optionalConditions: { ownerId?: string }
+const emptyConditions = {}
+declare const anyAction: 'create' | 'delete' | 'read' | 'update'
+declare const maybeConditions: { ownerId: string } | undefined
+declare const maybeProposalConditions: { id: string } | undefined
+declare const maybeNoteConditions: { authorId: string } | undefined
 
 export const rulesThatMustCompile = defineRules((can, cannot) => {
   can('manage', 'all')
@@ -116,6 +149,9 @@ export const rulesThatMustCompile = defineRules((can, cannot) => {
   cannot('delete', 'CustomerNote')
   can('update', 'Customer', sharedFields)
   can('read', 'VoipCall', { agentUserId: null })
+  can(anyAction, 'Project')
+  can('read', 'Application')
+  cannot(['update', 'delete'], 'Proposal')
 }).length
 
 defineRules((can, cannot) => {
@@ -196,4 +232,20 @@ defineRules((can, cannot) => {
   can('read', 'Customer', ['agee'])
   // @ts-expect-error a widened list of strings is not a field list
   can('update', 'Customer', ['age'] as string[])
+
+  // A conditions argument that may be absent would leave a rule with no conditions.
+  // @ts-expect-error conditions that may be undefined
+  can('read', 'Project', maybeConditions)
+  // @ts-expect-error conditions that may be undefined, after a field list
+  can('update', 'Proposal', ['views'], maybeProposalConditions)
+  // @ts-expect-error conditions that may be undefined on a cannot
+  cannot('update', 'CustomerNote', maybeNoteConditions)
+  // @ts-expect-error an empty conditions object: a rule without conditions is written without the argument
+  can('read', 'Project', {})
+  // @ts-expect-error an empty conditions object held in a variable
+  can('read', 'Project', emptyConditions)
+  // @ts-expect-error an empty conditions object on an entity with no condition columns
+  can('update', 'Application', {})
+  // @ts-expect-error an empty conditions object after a field list
+  can('update', 'Proposal', ['views'], {})
 })

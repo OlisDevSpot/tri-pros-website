@@ -65,9 +65,15 @@ type SubEntityPath<TParent> = SubEntitiesOf<TParent> extends infer TChild
 /** What a rule may list as a field of `S`: its columns, and every sub-entity path under it. */
 export type FieldOf<S extends EntitySubject> = ColumnKey<SpecOf<S>['table']> | SubEntityPath<SpecOf<S>>
 
+// `boolean`, not `true`, when one member is a subtype of another: callers test `true extends IsUnion<…>`.
 type IsUnion<T, U = T> = T extends unknown ? ([U] extends [T] ? false : true) : never
+
+/** The subjects claimed by more than one entity spec; `never` when there are none. */
+export type DuplicateSubjectsIn<TSpecs, TAll = TSpecs> = TSpecs extends { subject: infer TSubject extends string }
+  ? true extends IsUnion<Extract<TAll, { subject: TSubject }>> ? TSubject : never
+  : never
 
 /** The field names claimed by more than one sub-entity of the same parent; `never` when there are none. */
 export type DuplicateFieldsIn<TSpecs, TAll = TSpecs> = TSpecs extends { parent: { spec: infer TParent, field: infer TField extends string } }
-  ? IsUnion<Extract<TAll, { parent: { spec: TParent, field: TField } }>> extends true ? TField : never
+  ? true extends IsUnion<Extract<TAll, { parent: { spec: TParent, field: TField } }>> ? TField : never
   : never

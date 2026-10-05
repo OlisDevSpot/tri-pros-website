@@ -7,7 +7,13 @@ import type { EntityName } from '@/shared/domains/permissions/abilities'
 type ColumnOf<TTable extends PgTable> = TTable['_']['columns'][keyof TTable['_']['columns']]
 type ColumnKey<TTable extends PgTable> = keyof TTable['$inferSelect'] & string
 type TableOf<TSpec> = TSpec extends { table: infer TTable extends PgTable } ? TTable : never
-type FreeFieldName<TParent, TField extends string> = TField extends ColumnKey<TableOf<TParent>> ? never : TField
+// A name widened to `string` would make the parent's field type `string` and switch every field
+// check off. `.` and `*` are the separators of a field path.
+type FreeFieldName<TParent, TField extends string> = string extends TField
+  ? never
+  : TField extends '' | `${string}.${string}` | `${string}*${string}`
+    ? never
+    : TField extends ColumnKey<TableOf<TParent>> ? never : TField
 
 export function defineEntitySpec<
   TTable extends PgTable,
@@ -16,7 +22,8 @@ export function defineEntitySpec<
   const TConditionColumn extends ColumnKey<TTable>,
   TParent extends ServerSpec = never,
 >(spec: {
-  entityName: EntityName
+  // An entity is named by its subject: a spec that reuses another entity's subject is a sub-entity.
+  entityName: NoInfer<TSubject>
   subject: TSubject
   table: TTable
   schemas: TSchemas

@@ -25,7 +25,7 @@ import { ThrowableDalError } from '../types'
 import { dalDbOperation } from './helpers'
 
 // Generic over the spec, not the table, so handler payload types are the spec's Zod inputs.
-export function createCrudDal<TSpec extends ServerSpec<any>>(
+export function createCrudDal<TSpec extends ServerSpec>(
   spec: TSpec,
   configFactory?: CrudConfigFactory<TSpec['table'], SpecId<TSpec>, SpecInsert<TSpec>, SpecUpdate<TSpec>>,
 ): SpecCrudHandlers<TSpec> {
