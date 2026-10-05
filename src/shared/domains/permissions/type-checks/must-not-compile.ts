@@ -15,6 +15,7 @@ import { customers } from '@/shared/db/schema/customers'
 import { proposalMediaFiles } from '@/shared/db/schema/proposal-media-files'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
+import { defineRules } from '@/shared/domains/permissions/rules/define-rules'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 import { proposalMediaServerSpec } from '@/shared/modules/proposals/media/server-spec'
@@ -77,3 +78,90 @@ export type NoDuplicateFields = AssertNever<DuplicateFieldsIn<ServerSpecs>>
 const _secondViews = defineSubEntitySpec({ entityName: 'ProposalMediaFile', table: proposalMediaFiles, schemas: proposalMediaServerSpec.schemas, parent: { spec: proposalServerSpec, fk: proposalMediaFiles.proposalId, field: 'views' } })
 // @ts-expect-error two sub-entities claim `views` under Proposal
 export type DuplicateIsCaught = AssertNever<DuplicateFieldsIn<ServerSpecs | typeof _secondViews>>
+
+// ── rules ──────────────────────────────────────────────────────────────────
+
+const userId = 'user-1'
+const proposalId = 'proposal-1'
+const conditionsBuiltElsewhere = { token: 'x' }
+const operatorBuiltElsewhere = { $participatesViaMeeting: { via: 'customerId' as const, userId } }
+
+export const rulesThatMustCompile = defineRules((can, cannot) => {
+  can('manage', 'all')
+  can('access', 'Dashboard')
+  can('own', 'Meeting')
+  can('read', 'User')
+  can(['read', 'create', 'update', 'delete'], 'Activity')
+
+  can('read', 'Customer', { $participatesViaMeeting: { via: 'customerId', userId } })
+  can('read', 'Customer', { $inDerivedPipeline: ['leads', 'rehash', 'dead', 'fresh'] })
+  can('update', 'Customer', ['age'])
+  can('update', 'Customer', ['name', 'phone', 'email', 'address', 'city', 'state', 'zip', 'pipelineStage'])
+
+  can('read', 'Proposal', { id: proposalId })
+  can('update', 'Proposal', ['financeOptionId', 'cashInDealCents', 'views'], { id: proposalId })
+  can('read', 'Proposal', { $participatesViaMeeting: { via: 'meetingId', userId } })
+  cannot('update', 'Proposal', ['incentives', 'incentives.*'], { id: proposalId })
+
+  can('read', 'Meeting', { $participatesViaMeeting: { via: 'self', userId } })
+  can('read', 'Project', { $participatesViaMeeting: { via: 'projectId', userId } })
+  can('read', 'Project', { ownerId: userId })
+  can(['update', 'delete'], 'CustomerNote', { authorId: userId })
+  can('read', 'VoipCall', { agentUserId: { $in: [userId] } })
+  can('read', 'Customer', operatorBuiltElsewhere)
+  can('update', 'Proposal', ['views'])
+  cannot('delete', 'CustomerNote')
+}).length
+
+defineRules((can, cannot) => {
+  // @ts-expect-error typo in a field
+  can('update', 'Customer', ['agee'])
+  // @ts-expect-error typo in a field of a cannot: the restriction would silently not apply
+  cannot('update', 'Proposal', ['incentivs'], { id: proposalId })
+  // @ts-expect-error a Proposal field named on Customer
+  can('update', 'Customer', ['views'])
+  // @ts-expect-error not a column of the sub-entity's table
+  can('update', 'Proposal', ['views.nope'])
+  // @ts-expect-error a condition on a column that is not a declared condition column
+  can('update', 'Proposal', { token: 'x' })
+  // @ts-expect-error a condition value of the wrong type
+  can('read', 'Proposal', { id: 42 })
+  // @ts-expect-error an operator on a mutation rule
+  can('update', 'Customer', { $participatesViaMeeting: { via: 'customerId', userId } })
+  // @ts-expect-error an operator together with a field list
+  can('read', 'Customer', ['age'], { $participatesViaMeeting: { via: 'customerId', userId } })
+  // @ts-expect-error an operator on a cannot
+  cannot('read', 'Customer', { $participatesViaMeeting: { via: 'customerId', userId } })
+  // @ts-expect-error an operator that this subject does not declare
+  can('read', 'Proposal', { $inDerivedPipeline: ['leads'] })
+  // @ts-expect-error a `via` this subject's table cannot join through
+  can('read', 'Customer', { $participatesViaMeeting: { via: 'meetingId', userId } })
+  // @ts-expect-error not a pipeline
+  can('read', 'Customer', { $inDerivedPipeline: ['nope'] })
+  // @ts-expect-error an action that does not exist for an entity
+  can('access', 'Customer')
+  // @ts-expect-error `own` is declared for Meeting only
+  can('own', 'Proposal')
+  // @ts-expect-error unknown subject
+  can('read', 'Custmer')
+  // @ts-expect-error a subject without a spec takes no fields
+  can('read', 'User', ['name'])
+  // @ts-expect-error a subject without a spec takes no conditions
+  can('read', 'User', { id: userId })
+
+  // An entity with no condition columns has an empty conditions type; an empty type must not accept everything.
+  // @ts-expect-error no condition columns: no conditions on a mutation
+  can('update', 'Application', { anything: 1 })
+  // @ts-expect-error no condition columns and no operator: no conditions on a read
+  can('read', 'Application', { anything: 1 })
+  // @ts-expect-error an unknown key beside a valid operator
+  can('read', 'Customer', { $participatesViaMeeting: { via: 'customerId', userId }, extra: 1 })
+  // @ts-expect-error conditions built elsewhere are checked too: undeclared column
+  can('update', 'Proposal', conditionsBuiltElsewhere)
+  // @ts-expect-error conditions built elsewhere are checked too: operator on a mutation
+  can('update', 'Customer', operatorBuiltElsewhere)
+  // @ts-expect-error a field list is never read as conditions
+  can('update', 'Proposal', ['veiws'])
+  // @ts-expect-error a field list is never read as conditions (cannot)
+  cannot('update', 'Proposal', ['veiws'])
+})
