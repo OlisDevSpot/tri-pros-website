@@ -1,12 +1,12 @@
 # Permissions structure — design (2026-10-05)
 
-**Status.** Approved by the owner on 2026-10-05: six sections in chat, then this written form. No code exists under it yet; each unit of §11 gets its own plan.
+**Status.** Approved by the owner on 2026-10-05: six sections in chat, then this written form. Unit 1 of §11 is built (2026-10-05); each further unit gets its own plan.
 
 **What this is.** The structure of the permission system: types, names, layers, where each check happens, and the order of work. It is the written form of decisions D-01 to D-26 in `docs/plans/2026-08-10-casl-scope-compiler-epic.md` and of the decision log L1 to L14 in `docs/plans/2026-09-07-casl-re-grounding/README.md`, plus the rulings of the 2026-10-05 walk-through.
 
 **What this is not.** It does not decide which role may do what (the 25 business rulings in report 10 §5), cost masking on share-link reads (deferred by the owner), or the security holes on main (they go through the hotfix path).
 
-**The tree today.** Worktree `.worktrees/issue-285` is main plus the permissions docs. It runs main's legacy engine: `ScopedContext { session, ability, scope }`, `SYSTEM_CONTEXT`, `spec.visibility` with `resolveEffectiveScope`, and CASL rules that grant verbs without conditions. The code of the earlier attempt is read from `b40403b6`.
+**The tree today.** Worktree `.worktrees/issue-285` is main plus the permissions docs and unit 1's typed foundation, which enforces nothing yet. It runs main's legacy engine: `ScopedContext { session, ability, scope }`, `SYSTEM_CONTEXT`, `spec.visibility` with `resolveEffectiveScope`, and CASL rules that grant verbs without conditions. The code of the earlier attempt is read from `b40403b6`.
 
 ---
 
@@ -100,6 +100,7 @@ export const customerNoteServerSpec = defineEntitySpec({
 ```
 
 - `primaryKey` and `shareable` keep their meaning.
+- An entity's `entityName` equals its `subject`. A spec that reuses another entity's subject is a sub-entity.
 - `visibility` stays on the type until the legacy engine is deleted (unit 6).
 - A sub-entity of a sub-entity is allowed (application answers under applications under Meeting). Its field path is dotted: `applications.answers`.
 - A sub-entity whose primary key is its foreign key (customer profile, lead attribution) is a one-to-one part. Its write slot is an upsert, built on the existing `upsert-one-to-one.ts`.
@@ -211,7 +212,7 @@ The SQL body of each operator is server-only and lives with the compiler. An ope
 Three facts the types cannot see are asserted when the rules module loads, on both server and client:
 
 1. For an action and subject, every `cannot` comes after every `can`.
-2. No rule without conditions sits beside a rule with conditions for the same action and subject. CASL combines them with OR, so the bare rule would allow every row. `{}` counts as no conditions.
+2. No rule without conditions sits beside a rule with conditions for the same action and subject. CASL combines them with OR, so the bare rule would allow every row. An empty conditions object does not compile (§9), so a rule without conditions is always written without the argument.
 3. Every role has rules.
 
 ## 6. Compiler and DAL
@@ -311,9 +312,10 @@ ability.can('update', subject('Customer', customer), 'profile.hoa')
 | Mistake | Caught |
 |---|---|
 | Foreign key from another table; field shadowing a parent column; unknown condition column; duplicate field under one parent | compile |
+| Sub-entity field name that is widened to `string`, empty, or contains `.` or `*`; entity `subject` that differs from its `entityName`; two entity specs with one subject | compile |
 | Rule field that is not a column or declared path, in `can` or `cannot` | compile |
 | Condition on an undeclared column, or of the wrong type | compile |
-| Condition or operator whose value may be `undefined`; empty field list | compile |
+| Condition, operator or whole conditions argument that may be `undefined`; empty conditions object; empty field list | compile |
 | Operator on a mutation rule, with a field list, or on the wrong subject | compile |
 | Unknown subject or action | compile |
 | Client check with a mistyped field, or a row lacking condition columns | compile |
@@ -367,6 +369,9 @@ Each unit ends with `pnpm tsc` and `pnpm lint` passing. Main is merged into the 
 | Shape of the lint wall | unit 5 |
 | Which dev records browser tests may change | unit 7 |
 | Cost masking on share-link reads | deferred by the owner |
+| Which actions may carry a field list. §5.2 gives a `read` rule none; the unit 1 types accept one on any action; a field list on `create` or `delete` has no reader in §6 | unit 3's plan |
+| Whether `subject` stays on an entity spec now that it must equal `entityName` | owner, before unit 3 |
+| The names `ServerSpec` (any spec) and `ServerSpecs` (the list of real ones) differ by one letter | owner, any time |
 
 ## 13. What this changes in earlier documents
 

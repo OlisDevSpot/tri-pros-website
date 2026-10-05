@@ -3,10 +3,10 @@
 One page. Everything else in this folder is evidence. Code is the source of truth: re-verify any line here against the code before acting on it.
 
 ## 1. Status
-- Branch `refactor/285-…` in `.worktrees/issue-285` = **main (`61d3e1e2`) + these docs**, since the supersede merge `2b038591` (2026-10-05). 0 behind main. Pushed to origin.
+- Branch `refactor/285-…` in `.worktrees/issue-285` = **main + these docs + unit 1's typed foundation**. Supersede merge `2b038591` (2026-10-05, main `61d3e1e2`); main merged in again at the unit 1 boundary (`2818bf06`). 0 behind main. Pushed to origin.
 - The pre-re-grounding code (tip `b40403b6`, last code commit 2026-09-06) is no longer in the tree. It stays an ancestor of the branch: restore a file with `git show b40403b6:<path>`.
-- **Unit 1 (typed foundation) is in the tree; nothing enforces through it yet.** Spec constructors, the type-only list of specs, `defineRules` and the operator declarations exist; rules and enforcement are still the legacy engine's. The tree runs main's legacy shapes: `ScopedContext { session, ability, scope }`, `SYSTEM_CONTEXT`, `spec.visibility` + `resolveEffectiveScope`, and CASL rules that grant verbs without conditions.
-- Baseline on the merge: `pnpm tsc` passes.
+- **Unit 1 (typed foundation) is in the tree; nothing enforces through it yet.** Spec constructors, the type-only list of specs, `defineRules` and the operator declarations exist. The tree still runs main's legacy shapes: `ScopedContext { session, ability, scope }`, `SYSTEM_CONTEXT`, `spec.visibility` + `resolveEffectiveScope`, and CASL rules that grant verbs without conditions.
+- On `2818bf06`: `pnpm tsc` and `pnpm lint` pass.
 - Main is mid-move from `entities/` to `modules/` (proposals, projects, media, construction done), which relocates the files this epic rewrites.
 
 ## 2. Decided by the owner
@@ -32,6 +32,7 @@ One page. Everything else in this folder is evidence. Code is the source of trut
 | 19 | **Names** (2026-10-05): `defineEntitySpec`, `defineSubEntitySpec`, `parent: { spec, fk, field }`, `subject`, `conditionColumns`, `defineRules`, `permit`, `bearerContext(spec, token)`. `defineAbilitiesFor` and `entityName` keep their names. |
 | 20 | **Verification** (2026-10-05): no test runner and no unit tests in the library. `pnpm tsc`, `pnpm lint`, the wrong-on-purpose type file, and browser end-to-end tests per role. |
 | 21 | **Client** (2026-10-05): `@casl/react` is added as decided; rules are sent from the root layout. |
+| 22 | **No backwards compatibility in the rollout** (2026-10-05): a unit removes what it replaces in the same change. No alias, re-export, wrapper or dual shape kept for old call sites. |
 | 18 | **The specs are the single typed source** (2026-10-05). Rule fields, conditions, operator placement and the checks the client makes are all type-checked against the specs. Rules are written through a thin typed `can`/`cannot` wrapper that emits stock CASL rules. Each subject spec lists the columns rules may condition on. A checked-in file of wrong-on-purpose lines guards the types. |
 
 ## 3. The approved structure
