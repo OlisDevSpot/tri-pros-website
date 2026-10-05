@@ -44,7 +44,7 @@ function KanbanColumnImpl<T extends KanbanItem>({
         <button
           type="button"
           onClick={() => setIsCollapsed(false)}
-          className="w-full flex items-center gap-2 p-3 rounded-lg border border-dashed border-muted-foreground/30 hover:bg-accent/50 transition-colors"
+          className="w-full flex items-center gap-2 p-3 rounded-lg border border-dashed border-border-strong hover:bg-hover transition-colors"
         >
           <Icon size={14} className="text-muted-foreground" />
           <span className="text-sm font-medium text-muted-foreground">{stage.label}</span>
@@ -58,12 +58,14 @@ function KanbanColumnImpl<T extends KanbanItem>({
   }
 
   return (
+    // A column is a rung-1 surface with the ladder's edge, so it holds its shape in dark and its cards climb a rung.
+    // The drop target shows as a ring alone: a fill here would fight the surface's own background.
     <div
       ref={setNodeRef}
       className={cn(
-        'min-w-70 flex-1 flex flex-col rounded-lg border border-border/50 bg-muted/30 border-t-2 transition-all',
+        'surface min-w-70 flex-1 flex flex-col rounded-lg border border-t-2 transition-all',
         borderColor,
-        isOver && 'ring-2 ring-primary/30 bg-primary/5',
+        isOver && 'ring-2 ring-primary/40',
       )}
     >
       <div className="flex items-center gap-2 p-3 pb-2">
