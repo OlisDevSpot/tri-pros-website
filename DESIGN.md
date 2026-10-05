@@ -391,7 +391,9 @@ responsive depth.
   the idle and info fills sit about 1.01:1 on the light rungs.
 
 ### Cards / Containers
-- **Corner Style:** `lg` (8px app) / 6px (marketing panel).
+- **Corner Style:** `xl` (12px app) / 6px (marketing panel).
+- **Spacing between page surfaces:** page-level surfaces sit `--gutter` (8px) apart,
+  owned by the page container's `gap-(--gutter)`; the surfaces carry no outer margins.
 - **Background:** a ladder rung (app: `bg-card`, one rung above whatever it sits on)
   or Warm Panel `#f4efe6` (marketing), one step off the page.
 - **Shadow Strategy:** the tinted ramp from Elevation & Depth — resting cards use the
