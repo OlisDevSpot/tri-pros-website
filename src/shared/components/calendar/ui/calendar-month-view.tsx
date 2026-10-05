@@ -56,7 +56,7 @@ export function CalendarMonthView<T extends CalendarEvent>({
             <div
               key={cell.date.toISOString()}
               className={cn(
-                'flex min-h-28 flex-col gap-1 border-l border-t p-1 lg:min-h-32',
+                'flex min-h-28 flex-col gap-1 border-l border-t border-grid-line p-1 lg:min-h-32',
                 isSunday && 'border-l-0',
               )}
             >
