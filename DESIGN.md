@@ -159,7 +159,8 @@ exactly one accent, and its rarity is the point.
 - **The elevation ladder** (`globals.css`, knobs in `:root, .funnel-light` and `.dark`):
   every app surface is one hue (`--surface-h`/`--surface-c`) at a lightness set by its
   rung. The canvas (`--background`, rung 0) is the darkest; each surface stacked over
-  another sits one `--step` lighter, in both schemes. A nested `bg-card` climbs a rung
+  another sits one `--step` lighter, in both schemes. Dark mode widens only the first
+  step (`--lift`): near black an equal step reads weaker than the ones above it. A nested `bg-card` climbs a rung
   by itself (it counts the surfaces it sits in, up to three); `bg-(--card)` paints the
   current rung without climbing; `bg-muted` is always one rung above wherever it is read.
   Menus, selects and popovers (`bg-popover`, `surface-overlay`) sit on the top rung; a
@@ -176,7 +177,9 @@ exactly one accent, and its rarity is the point.
 - **Hairline** (`--border`, one `--edge` off its surface: darker in light, lighter in
   dark): borders and dividers. **Border Strong** (`--border-strong`, two edges off) is
   the emphasized variant, for dashed empty states and
-  dividers that need to read as more than a hairline.
+  dividers that need to read as more than a hairline. Chart and calendar grids use
+  **Grid Line** (`--grid-line`, one and a half edges off) and the axis baseline uses
+  **Axis** (`--axis`, = Border Strong). Dark edges sit further out than light ones.
 - **Control Border** (`oklch(0.62 0.03 255)`, 3:1 against the card): the border on
   inputs, textareas and other form controls — deliberately stronger than Hairline,
   because a control needs a visible edge a divider doesn't.
@@ -375,8 +378,12 @@ responsive depth.
 - **Secondary:** `bg-secondary`, one rung above whatever holds it, + dark text;
   hover `bg-secondary-hover`. A button sitting on a card or a dialog is
   `secondary` so it climbs the ladder with them (the Google sign-in button).
-- **Outline:** hairline border + `backdrop-blur-sm`, hover `bg-hover`; the label
-  keeps its colour.
+- **Outline:** filled `bg-control` (one rung above whatever holds it) with a full
+  hairline; hover `bg-control-hover`, a solid step off the fill. The marketing scopes
+  set `--control: transparent`, and the public hero and navbar pass `bg-transparent`,
+  so outlines over photos stay see-through.
+- **Page Bar** (`PageBar`): a page's title and toolbar share one `surface` strip, so
+  the chrome sits on rung 1 like the content and the controls in it climb a rung.
 - **Ghost:** transparent at rest, hover `bg-hover`. Blue stays for "act here",
   so an icon button never turns into a blue chip on hover.
 - **Link:** underline-on-hover, text shifting to `--link`.
