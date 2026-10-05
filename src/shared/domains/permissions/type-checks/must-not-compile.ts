@@ -85,6 +85,9 @@ const userId = 'user-1'
 const proposalId = 'proposal-1'
 const conditionsBuiltElsewhere = { token: 'x' }
 const operatorBuiltElsewhere = { $participatesViaMeeting: { via: 'customerId' as const, userId } }
+const sharedFields = ['name', 'phone'] as const
+declare const maybeUserId: string | undefined
+declare const optionalConditions: { ownerId?: string }
 
 export const rulesThatMustCompile = defineRules((can, cannot) => {
   can('manage', 'all')
@@ -111,6 +114,8 @@ export const rulesThatMustCompile = defineRules((can, cannot) => {
   can('read', 'Customer', operatorBuiltElsewhere)
   can('update', 'Proposal', ['views'])
   cannot('delete', 'CustomerNote')
+  can('update', 'Customer', sharedFields)
+  can('read', 'VoipCall', { agentUserId: null })
 }).length
 
 defineRules((can, cannot) => {
@@ -164,4 +169,31 @@ defineRules((can, cannot) => {
   can('update', 'Proposal', ['veiws'])
   // @ts-expect-error a field list is never read as conditions (cannot)
   cannot('update', 'Proposal', ['veiws'])
+
+  // A condition that may be `undefined` would drop the filter it stands for.
+  // @ts-expect-error a condition value that may be undefined
+  can('read', 'Project', { ownerId: maybeUserId })
+  // @ts-expect-error a condition value that is undefined
+  can('read', 'Project', { ownerId: undefined })
+  // @ts-expect-error conditions whose key may be absent
+  can('read', 'Project', optionalConditions)
+  // @ts-expect-error an operator that is undefined
+  can('read', 'Customer', { $participatesViaMeeting: undefined })
+  // @ts-expect-error an operator payload that may be undefined
+  can('read', 'Customer', { $participatesViaMeeting: { via: 'customerId', userId: maybeUserId } })
+  // @ts-expect-error a value inside $in that may be undefined
+  can('read', 'VoipCall', { agentUserId: { $in: [maybeUserId] } })
+  // @ts-expect-error a cannot condition that may be undefined
+  cannot('update', 'CustomerNote', { authorId: maybeUserId })
+
+  // @ts-expect-error an empty field list
+  can('update', 'Customer', [])
+  // @ts-expect-error an empty field list on a cannot
+  cannot('update', 'Proposal', [])
+  // @ts-expect-error an empty field list with conditions
+  can('update', 'Proposal', [], { id: proposalId })
+  // @ts-expect-error a mistyped field list on a read of an entity with no condition columns
+  can('read', 'Customer', ['agee'])
+  // @ts-expect-error a widened list of strings is not a field list
+  can('update', 'Customer', ['age'] as string[])
 })

@@ -30,33 +30,36 @@ type ColumnConditions<S extends EntitySubject> = {
 type ReadOperatorsOf<S extends EntitySubject> = S extends keyof ReadOperators ? ReadOperators[S] : unknown
 type ReadConditions<S extends EntitySubject> = ColumnConditions<S> & ReadOperatorsOf<S>
 
-/** An array has an iterator and a conditions object does not; without this a field list can be read as conditions. */
-interface NotAList {
-  readonly [Symbol.iterator]?: never
-}
-
 // An entity with no condition columns has an EMPTY conditions type, and an empty object type
-// accepts any object. So the given conditions are captured as `TGiven` and every key outside
-// `TAllowed` is turned into `never`. The no-extra-keys branch returns `TGiven` untouched because
-// intersecting with `{}` would switch off the "no properties in common" check.
-type Only<TGiven, TAllowed> = ([Exclude<keyof TGiven, keyof TAllowed>] extends [never]
+// accepts any object. So the given conditions are captured as `TGiven`, and two kinds of key are
+// turned into `never`: a key outside `TAllowed`, and a key whose value may be `undefined`, which
+// would drop the filter it stands for. When nothing is rejected the result is `TGiven` untouched,
+// because intersecting with `{}` would switch off the "no properties in common" check.
+type MaybeUndefinedKey<TGiven> = { [K in keyof TGiven]-?: undefined extends TGiven[K] ? K : never }[keyof TGiven]
+type Rejected<TGiven, TAllowed> = Exclude<keyof TGiven, keyof TAllowed> | MaybeUndefinedKey<TGiven>
+type Only<TGiven, TAllowed> = [Rejected<TGiven, TAllowed>] extends [never]
   ? TGiven
-  : TGiven & { [K in Exclude<keyof TGiven, keyof TAllowed>]: never }) & NotAList
+  : TGiven & { [K in Rejected<TGiven, TAllowed>]: never }
+
+/** At least one field: CASL refuses an empty field list, and only when the ability is built. */
+type FieldList<S extends EntitySubject> = readonly [FieldOf<S>, ...FieldOf<S>[]]
 
 interface RuleHandle {
   because: (reason: string) => void
 }
 
+// `const C`: `Only` rewrites the parameter's type, so the literal types of the given conditions
+// must be captured from the argument itself and not from that parameter type.
 export interface AddCannotRule {
-  <S extends EntitySubject, C extends ColumnConditions<S>>(action: CrudAction | readonly CrudAction[], subject: S, conditions?: Only<C, ColumnConditions<S>>): RuleHandle
-  <S extends EntitySubject, C extends ColumnConditions<S>>(action: CrudAction | readonly CrudAction[], subject: S, fields: readonly FieldOf<S>[], conditions?: Only<C, ColumnConditions<S>>): RuleHandle
+  <S extends EntitySubject, const C extends ColumnConditions<S>>(action: CrudAction | readonly CrudAction[], subject: S, conditions?: Only<C, ColumnConditions<S>>): RuleHandle
+  <S extends EntitySubject, const C extends ColumnConditions<S>>(action: CrudAction | readonly CrudAction[], subject: S, fields: FieldList<S>, conditions?: Only<C, ColumnConditions<S>>): RuleHandle
 }
 
 export interface AddRule {
   /** The only form that may carry an operator: `read`, no field list. Operators are SQL-only, so a client cannot test them on a row. */
-  <S extends EntitySubject, C extends ReadConditions<S>>(action: 'read', subject: S, conditions?: Only<C, ReadConditions<S>>): RuleHandle
-  <S extends EntitySubject, C extends ColumnConditions<S>>(action: Exclude<CrudAction, 'read'> | readonly CrudAction[], subject: S, conditions?: Only<C, ColumnConditions<S>>): RuleHandle
-  <S extends EntitySubject, C extends ColumnConditions<S>>(action: CrudAction | readonly CrudAction[], subject: S, fields: readonly FieldOf<S>[], conditions?: Only<C, ColumnConditions<S>>): RuleHandle
+  <S extends EntitySubject, const C extends ReadConditions<S>>(action: 'read', subject: S, conditions?: Only<C, ReadConditions<S>>): RuleHandle
+  <S extends EntitySubject, const C extends ColumnConditions<S>>(action: Exclude<CrudAction, 'read'> | readonly CrudAction[], subject: S, conditions?: Only<C, ColumnConditions<S>>): RuleHandle
+  <S extends EntitySubject, const C extends ColumnConditions<S>>(action: CrudAction | readonly CrudAction[], subject: S, fields: FieldList<S>, conditions?: Only<C, ColumnConditions<S>>): RuleHandle
   <S extends keyof ExtraEntityActions>(action: ExtraEntityActions[S], subject: S): RuleHandle
   <S extends keyof SubjectsWithoutSpec>(action: SubjectsWithoutSpec[S] | readonly SubjectsWithoutSpec[S][], subject: S): RuleHandle
 }
