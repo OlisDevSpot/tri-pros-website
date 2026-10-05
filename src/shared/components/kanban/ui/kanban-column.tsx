@@ -44,7 +44,7 @@ function KanbanColumnImpl<T extends KanbanItem>({
         <button
           type="button"
           onClick={() => setIsCollapsed(false)}
-          className="w-full flex items-center gap-2 p-3 rounded-lg border border-dashed border-border-strong hover:bg-hover transition-colors"
+          className="w-full flex items-center gap-2 p-3 rounded-xl border border-dashed border-border-strong hover:bg-hover transition-colors"
         >
           <Icon size={14} className="text-muted-foreground" />
           <span className="text-sm font-medium text-muted-foreground">{stage.label}</span>
@@ -63,7 +63,7 @@ function KanbanColumnImpl<T extends KanbanItem>({
     <div
       ref={setNodeRef}
       className={cn(
-        'surface min-w-70 flex-1 flex flex-col rounded-lg border border-t-2 transition-all',
+        'surface min-w-70 flex-1 flex flex-col rounded-xl border border-t-2 transition-all',
         borderColor,
         isOver && 'ring-2 ring-primary/40',
       )}

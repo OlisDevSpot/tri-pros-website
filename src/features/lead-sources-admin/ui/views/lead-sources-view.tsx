@@ -68,7 +68,7 @@ export function LeadSourcesView() {
   const isAllSelected = selectedId === ALL_PSEUDO_ID
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3">
+    <div className="flex h-full min-h-0 flex-col gap-(--gutter)">
       {/* Below lg the time range stacks under the title so the chips get the full width to wrap. */}
       <PageBar>
         <header className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between lg:gap-6">

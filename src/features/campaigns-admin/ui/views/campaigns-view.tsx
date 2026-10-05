@@ -18,7 +18,7 @@ export function CampaignsView() {
   const [tab, setTab] = useQueryState('tab', campaignTabParser)
 
   return (
-    <Tabs className="flex h-full min-h-0 flex-col gap-3" onValueChange={v => setTab(v as CampaignTab)} value={tab}>
+    <Tabs className="flex h-full min-h-0 flex-col gap-(--gutter)" onValueChange={v => setTab(v as CampaignTab)} value={tab}>
       <PageBar>
         <header className="flex flex-col gap-1">
           <h1 className="text-xl font-semibold text-foreground">Campaigns</h1>

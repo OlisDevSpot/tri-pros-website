@@ -87,7 +87,7 @@ export function ScheduleMeetingsCalendar({ showToggle, showSaturday, onToggleSat
   ), [actions, handleUpdateScheduledFor])
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3">
+    <div className="flex h-full min-h-0 flex-col gap-(--gutter)">
       <QueryToolbar query={query} entityName="meetings">
         <QueryToolbar.Standard leading={showToggle} searchPlaceholder="Search by customer or type…" />
       </QueryToolbar>

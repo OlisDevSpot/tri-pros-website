@@ -37,7 +37,7 @@ interface RecordsPageShellProps {
  */
 export function RecordsPageShell({ header, toolbar, table, className }: RecordsPageShellProps) {
   return (
-    <div className={cn('flex h-full min-h-0 flex-col gap-3', className)}>
+    <div className={cn('flex h-full min-h-0 flex-col gap-(--gutter)', className)}>
       <PageBar>
         {header}
         {toolbar}

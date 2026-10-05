@@ -51,7 +51,7 @@ export function ScheduleActivitiesCalendar({ showToggle, showSaturday, onToggleS
     : null), [permittedActions])
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3">
+    <div className="flex h-full min-h-0 flex-col gap-(--gutter)">
       <QueryToolbar query={query} entityName="activities">
         <QueryToolbar.Standard leading={showToggle} searchPlaceholder="Search by title or notes…" />
       </QueryToolbar>

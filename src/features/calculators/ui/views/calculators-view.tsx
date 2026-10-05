@@ -15,7 +15,7 @@ export function CalculatorsView() {
   const [tab, setTab] = useQueryState('tab', calculatorTabParser)
 
   return (
-    <Tabs className="flex h-full min-h-0 flex-col gap-3" onValueChange={value => setTab(value as CalculatorTab)} value={tab}>
+    <Tabs className="flex h-full min-h-0 flex-col gap-(--gutter)" onValueChange={value => setTab(value as CalculatorTab)} value={tab}>
       <PageBar>
         <header className="flex flex-col gap-1">
           <h1 className="text-xl font-semibold text-foreground">Calculators</h1>

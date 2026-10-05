@@ -27,14 +27,14 @@ export function SettingsView() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="mx-auto max-w-4xl space-y-6 pb-8">
+      <div className="mx-auto flex max-w-4xl flex-col gap-(--gutter) pb-8">
         <PageBar>
           <h1 className="text-3xl font-bold">Settings</h1>
           <p className="text-muted-foreground">Manage your profile, preferences, and account settings.</p>
         </PageBar>
         <ProfileHeaderCard profile={profile} />
         <HeadshotUpload profile={profile} />
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-(--gutter) lg:grid-cols-2">
           <IdentityContactSection profile={profile} />
           <AppSettingsSection />
           <CustomerBrandSection profile={profile} />

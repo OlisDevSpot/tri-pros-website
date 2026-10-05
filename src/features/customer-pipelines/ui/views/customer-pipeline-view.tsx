@@ -128,7 +128,7 @@ export function CustomerPipelineView() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 30 }}
       transition={{ delay: 0.25, duration: 0.25 }}
-      className="w-full h-full flex flex-col gap-4 overflow-hidden"
+      className="w-full h-full flex flex-col gap-(--gutter) overflow-hidden"
     >
       <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between shrink-0">
         <CustomerPipelineMetricsBar items={items} pipeline={pipeline} isLoading={query.isPending || isSwitching} />
