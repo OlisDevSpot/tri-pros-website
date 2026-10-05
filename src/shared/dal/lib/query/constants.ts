@@ -12,5 +12,5 @@ export const RESERVED_URL_SUFFIXES = ['p', 'q', 'sort', 'dir', 'ps', 'd', 'v'] a
 export type ReservedUrlSuffix = (typeof RESERVED_URL_SUFFIXES)[number]
 
 /** Reads that load a runtime-option filter's choices; `OPTION_SOURCE_READS` maps each to its tRPC query. */
-export const OPTION_SOURCES = ['trades', 'reps', 'leadSources'] as const
+export const OPTION_SOURCES = ['trades', 'reps', 'setters', 'leadSources'] as const
 export type OptionSource = (typeof OPTION_SOURCES)[number]

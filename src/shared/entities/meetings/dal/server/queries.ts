@@ -23,7 +23,7 @@ import { projects } from '@/shared/db/schema/projects'
 import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { profileCols } from '@/shared/entities/customers/lib/profile-select'
 import { MEETING_FIELDS } from '@/shared/entities/meetings/dal/meeting-fields'
-import { MEETING_FIELD_SQL } from '@/shared/entities/meetings/dal/server/meeting-field-sql'
+import { MEETING_FIELD_SQL, setterUser } from '@/shared/entities/meetings/dal/server/meeting-field-sql'
 import { getMeetingsWithProposals } from '@/shared/entities/meetings/dal/server/meetings-with-proposals'
 import { getAllParticipantsForMeetings } from '@/shared/entities/meetings/dal/server/participants'
 
@@ -53,6 +53,7 @@ export type MeetingListRow = Meeting & {
   customerZip: string | null
   ownerName: string | null
   ownerImage: string | null
+  setterName: string | null
   proposalCount: number
   hasSentProposal: boolean
   hasApprovedProposal: boolean
@@ -109,6 +110,7 @@ export async function listMeetings(
           // Still derived from meetings.ownerId for consumers that read ownerName/ownerImage directly.
           ownerName: user.name,
           ownerImage: user.image,
+          setterName: setterUser.name,
           proposalCount: sql<number>`(SELECT count(*) FROM proposals p WHERE p.meeting_id = ${meetings.id})`.as('proposal_count'),
           hasSentProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'sent')`.as('has_sent_proposal'),
           hasApprovedProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'approved')`.as('has_approved_proposal'),
@@ -124,6 +126,7 @@ export async function listMeetings(
         .from(meetings)
         .leftJoin(customers, eq(customers.id, meetings.customerId))
         .leftJoin(user, eq(user.id, meetings.ownerId))
+        .leftJoin(setterUser, eq(setterUser.id, meetings.setBy))
         .leftJoin(leadSourcesTable, eq(leadSourcesTable.id, customers.leadSourceId))
         .where(where)
         .orderBy(...orderBy)
