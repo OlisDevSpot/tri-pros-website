@@ -1,0 +1,77 @@
+# Permissions epic (#285) — distilled record (2026-10-01)
+
+One page. Everything else in this folder is evidence. Code is the source of truth: re-verify any line here against the code before acting on it.
+
+## 1. Status
+- Branch `refactor/285-…` @ `b40403b6` (last code commit 2026-09-06): 74 ahead, **518 behind** main. Dry-run merge was already 18 conflicts at 117 behind.
+- **Nothing is built under the current design.** The branch still runs the old shapes (actor union, router seam, `ctx.scope`, legacy visibility engine).
+- **This folder (30 files) and the tracker rewrite are untracked/uncommitted** — the only copy of every decision since 09-06.
+- Main is mid-move from `entities/` to `modules/` (proposals, projects, media, construction done), which relocates the files this epic rewrites.
+
+## 2. Decided by the owner
+| # | Decision |
+|---|---|
+| 1 | CASL rules are the only permission source for server, database and client. Row filters are compiled from the rules into Drizzle `where()`. |
+| 2 | The actor is the plain record `{ ability, userId }`. No user/token/system union, no `kind` branches. |
+| 3 | The session is the truth. No session → only an entity's shareable procedure may admit a share-token bearer. A logged-in staff member opening a share link acts as staff. |
+| 4 | The actor is computed once per request and shared by tRPC, server components and route handlers. Middlewares only narrow. |
+| 5 | Procedure ladder: base → protected → agent → superAdmin, plus one shareable procedure per shareable entity. Per-entity scope procedures, `systemProcedure`, `ctx.scope`, `ctx.ability` go away. |
+| 6 | The DAL scopes itself per action from the ability. Routers and handlers carry no permission code. |
+| 7 | A mutation's rows = its own action scope AND the read scope. Permanent. |
+| 8 | The parent relation is declared once, on the child's spec. |
+| 9 | The client hydrates the same rules (`packRules` → `@casl/react`, `subject()` for row checks). No hand mirrors. |
+| 10 | Custom operators (participation, derived pipeline) appear only on `read` rules without fields. |
+| 11 | Stay on `@casl/ability` 6.8.0. Add `@casl/react` 7.0.1. |
+| 12 | The share-token bearer gets a real per-row ability: read its proposal; update only `financeOptionId` and `cashInDealCents`; record views. No separate `ProposalView` subject. |
+| 13 | The `homeowner` role's unconditional `read Proposal` rule is deleted in the same change as #12. |
+| 14 | Server-side masking of cost data on bearer reads: **deferred**, kept open. |
+| 15 | Never widen the legacy engine to patch a gap. |
+| 16 | A supersession edits the superseded text. No "read me first" banners. |
+
+## 3. Liked by the owner, not yet ratified
+- **A sub-entity is a field of its parent's CASL subject.** The child spec declares only its parent, foreign key and collection name; its subject is inferred. Reading the child = the parent's `read`; creating, updating or deleting it = the parent's `update` on that collection. It compiles to SQL (`child.fk IN (SELECT parent.pk WHERE …)`). Worked example with real SQL: report 17.
+- **Interface shape** (four design studies, report 24): the spec type splits into root and child; a scope is always a real SQL value; one entry point for hand-written queries; a pure, connection-free core tested by comparing SQL strings; one rules file per role. The owner asked for SOLID and low cyclomatic complexity; this is the proposed answer. Names in report 24 (`permit`, `defineRootSpec`, `defineChildSpec`, `collection`, `bearerContext`) are proposals and need the owner's agreement.
+
+## 4. Business rules
+- **Homeowner with a share link** may: read their proposal, pick a financing option, set cash in deal, give their age, record a view, ask to move forward (a notification only). They may never touch status, price, scope of work, owner, contract timestamps, the contract lifecycle, or which documents go in the envelope.
+- The age write and the document reconciliation it triggers are **server-derived** from the token-validated proposal, never from a client-supplied id.
+- **Cost, margin and multiplier are never shown to the homeowner.** Today only the client view mode and the PDF enforce this; the server returns everything.
+- **The homeowner must keep seeing their own phone number** once the bearer becomes a rule set (needs an explicit grant).
+- **You cannot change what you cannot see.**
+- A client-supplied id you cannot reach answers **not found**, never forbidden.
+- **Parts of a parent** (customer profile, lead attribution, enrichment, proposal views, incentives, media, meeting participants, applications) are governed by the parent: permission to touch them is permission to update that part of the parent.
+- **Customer notes** are the one exception: anyone who can see the customer can read and add; only the author or an admin edits or deletes.
+- **Dispatcher**: customers in leads, rehash, dead, fresh; all meetings; notes and discovery profile. No proposals, no projects, no financials.
+- **Pipeline is derived from meeting outcomes.** `not_good` and `ftd` are terminal (dead). Prod still maps them to rehash until the branch's map lands; needs the owner's go.
+
+## 5. Realizations
+- A CASL rule with fields but no conditions is **allow-all on rows**. That is why #7 is permanent.
+- Stock `rulesToAST` ignores fields. A ~15-line walk over `ability.rulesFor(action, subject, field)` is what lets a sub-entity compile to SQL. Probe-verified on 6.8.0.
+- Passing a child's own verb to the parent collapses to deny (agents hold no `delete Proposal`). Hence child writes map to the parent's `update`.
+- Operators on mutation rules break the client matcher. Mutation rules carry fields and scalar conditions only; their row reach comes from the read scope.
+- `null` meant allow-all, omni and unresolved at once. Scope must be a value that is always SQL.
+- `applyEnvelopeContext` writes `envelopeDocumentIds` on the token path. A naive bearer allowlist silently breaks age reconciliation.
+- `.because(reason)` is stored on the rule but `ForbiddenError` only reports it for `cannot` rules. Read it with `relevantRuleFor`.
+- Of 93 primitives the branch built: 33 keep (the adapter core), 35 rewrite, 22 delete. One decision (#2 + #6) drives about 30 of the rewrites.
+- The epic derailed because decisions were stacked as banners and one reversal was only spoken. Decision #16 is the fix.
+
+## 6. Live security holes (verified in main's code 2026-10-01; all independent of this epic)
+| Hole | Where on main | Fix |
+|---|---|---|
+| Unauthenticated caller can trigger a job that rewrites any proposal's `projectJSON` | `src/trpc/routers/ai.router/index.ts:7` (`baseProcedure`) | require staff or a valid share token + reach check |
+| Any agent or dispatcher can read, edit or **delete any project** | `src/trpc/routers/projects.router/crud.router.ts:16,39,49,56,69` (bare `agentProcedure`) | scope the five procedures; delete stays admin-only |
+| A share-link holder can update **any column** of their proposal | `src/trpc/lib/create-crud-router.ts:63,89` (gates skipped when `ctx.ability` is null) | deny `update` on the token path except an explicit allowlist |
+| Proposals and projects read unscoped after a meeting check | `src/trpc/routers/customer-pipelines.router.ts:99-110` | read through the owning DALs |
+| Bearer receives every proposal column incl. cost lines | `src/shared/modules/proposals/core/dal/server/queries.ts:85` | homeowner projection (decision 14, deferred) |
+| Creating a meeting on any customer makes the creator a participant (gains visibility) | `src/shared/entities/meetings/dal/server/crud.ts:39` — re-verify there is no customer reach check | probe the customer before create |
+
+## 7. Next steps, in order
+0. **Bank the documents**: commit this folder and the tracker in the worktree, or move them to main.
+1. **Decide the delivery path.** At 518 behind with main restructuring into modules, merging main into the branch may cost more than re-landing the design on main unit by unit, porting the 33 keep-primitives (adapter core, outcome classification) as files. Recommendation: re-land on main. Owner's call.
+2. **Fix the holes in §6 now** through the hotfix path. They do not need the epic.
+3. Ratify §3 (sub-entity model, interface, names).
+4. Rule the open items: homeowner phone grant; pipeline map for prod; root ability provider; test runner for the compiler; lint wall shape; the 25 business rulings in report 10 §5.
+5. Build order: request-actor unification → adapter + DAL self-scoping → rules per role → client hydration → lint wall + financial reads → delete the legacy engine → one end-to-end pass.
+
+## 8. Where the detail lives
+Tracker `docs/plans/2026-08-10-casl-scope-compiler-epic.md` (decision table, units, ledgers) · `README.md` §L (reasoning per decision) · `18` decision and progress map · `19` what the branch built · `22` table topology · `24` interface comparison · `17` worked example · `21` merge picture as of 09-16 (stale: main has moved 400 more commits).
