@@ -1,6 +1,6 @@
 # Permissions structure — design (2026-10-05)
 
-**Status.** Approved by the owner section by section in chat on 2026-10-05. Awaiting the owner's review of this written form. No code exists under it.
+**Status.** Approved by the owner on 2026-10-05: six sections in chat, then this written form. No code exists under it yet; each unit of §11 gets its own plan.
 
 **What this is.** The structure of the permission system: types, names, layers, where each check happens, and the order of work. It is the written form of decisions D-01 to D-26 in `docs/plans/2026-08-10-casl-scope-compiler-epic.md` and of the decision log L1 to L14 in `docs/plans/2026-09-07-casl-re-grounding/README.md`, plus the rulings of the 2026-10-05 walk-through.
 
@@ -36,7 +36,7 @@ One permission system:
 | `bearerContext(spec, token)` | Validates a share token and returns a context limited to that row, or nothing. |
 | `systemContext(reason)` | An unrestricted context for jobs, webhooks and scripts, with a named reason. |
 
-`entityName` stays on every spec. It is the entity's identity label well beyond permissions.
+`entityName` stays on every spec. It is the name error messages use, and a sub-entity has no subject to be named by.
 
 ## 3. Layers
 
@@ -369,4 +369,4 @@ Each unit ends with `pnpm tsc` and `pnpm lint` passing. Main is merged into the 
 
 - **Report 24 §4** (the hybrid): superseded on names (`defineEntitySpec` / `defineSubEntitySpec`, `field`, `bearerContext`), on boot asserts that are now compile errors, on the connection-free core (not built), and on vitest (not used).
 - **Tracker D-21** (a rerunnable SQL parity script): superseded by §10.
-- **`docs/superpowers/specs/2026-08-10-casl-scope-compiler-design.md`** (v2): its actor union and interfaces were already superseded by D-09, D-11 and D-14; this document is the current structure. It is deleted with unit 1.
+- **The earlier engine spec and phase-0 plan** (`2026-08-10-casl-scope-compiler-design.md`, `2026-08-10-casl-phase-0-engine-scaffolding.md`) and the 2026-09-13 sync plan were deleted from the tree on 2026-10-05; git history keeps them. Their actor union and interfaces had already been superseded by D-09, D-11 and D-14.

@@ -6,7 +6,7 @@ One page. Everything else in this folder is evidence. Code is the source of trut
 - Branch `refactor/285-…` in `.worktrees/issue-285` = **main (`61d3e1e2`) + these docs**, since the supersede merge `2b038591` (2026-10-05). 0 behind main. Pushed to origin.
 - The pre-re-grounding code (tip `b40403b6`, last code commit 2026-09-06) is no longer in the tree. It stays an ancestor of the branch: restore a file with `git show b40403b6:<path>`.
 - **Nothing is built under the current design.** The tree runs main's legacy shapes: `ScopedContext { session, ability, scope }`, `SYSTEM_CONTEXT`, `spec.visibility` + `resolveEffectiveScope`, and CASL rules that grant verbs without conditions.
-- Baseline on the merge: `pnpm tsc` passes; `pnpm lint` fails on two formatting errors in `src/app/(frontend)/globals.css:491-492` that main carries.
+- Baseline on the merge: `pnpm tsc` passes.
 - Main is mid-move from `entities/` to `modules/` (proposals, projects, media, construction done), which relocates the files this epic rewrites.
 
 ## 2. Decided by the owner
@@ -34,8 +34,8 @@ One page. Everything else in this folder is evidence. Code is the source of trut
 | 21 | **Client** (2026-10-05): `@casl/react` is added as decided; rules are sent from the root layout. |
 | 18 | **The specs are the single typed source** (2026-10-05). Rule fields, conditions, operator placement and the checks the client makes are all type-checked against the specs. Rules are written through a thin typed `can`/`cannot` wrapper that emits stock CASL rules. Each subject spec lists the columns rules may condition on. A checked-in file of wrong-on-purpose lines guards the types. |
 
-## 3. Awaiting the owner's review
-- **The structure spec**: `docs/superpowers/specs/2026-10-05-permissions-structure-design.md`. Its six sections were approved in chat on 2026-10-05; the written form is not yet approved. No plan and no code before it is.
+## 3. The approved structure
+- `docs/superpowers/specs/2026-10-05-permissions-structure-design.md`, approved by the owner 2026-10-05. It is the reference for types, names, layers, where each mistake is caught, verification and the order of work. No code before the owner approves a plan for the unit.
 
 ## 4. Business rules
 - **Homeowner with a share link** may: read their proposal, pick a financing option, set cash in deal, give their age, record a view, ask to move forward (a notification only). They may never touch status, price, scope of work, owner, contract timestamps, the contract lifecycle, or which documents go in the envelope.
@@ -60,19 +60,24 @@ One page. Everything else in this folder is evidence. Code is the source of trut
 - Of 93 primitives the branch built: 33 keep (the adapter core), 35 rewrite, 22 delete. One decision (#2 + #6) drives about 30 of the rewrites.
 - The epic derailed because decisions were stacked as banners and one reversal was only spoken. Decision #16 is the fix.
 
-## 6. Live security holes (verified in main's code 2026-10-01; all independent of this epic)
-| Hole | Where on main | Fix |
+## 6. Security holes in the tree (verified against the code 2026-10-05; all independent of this epic)
+The full list of 20, with file and line, is the tracker's §5.1. The fixes the earlier attempt made for some of them were never on main. The worst:
+
+| Who | What | Where |
 |---|---|---|
-| Unauthenticated caller can trigger a job that rewrites any proposal's `projectJSON` | `src/trpc/routers/ai.router/index.ts:7` (`baseProcedure`) | require staff or a valid share token + reach check |
-| Any agent or dispatcher can read, edit or **delete any project** | `src/trpc/routers/projects.router/crud.router.ts:16,39,49,56,69` (bare `agentProcedure`) | scope the five procedures; delete stays admin-only |
-| A share-link holder can update **any column** of their proposal | `src/trpc/lib/create-crud-router.ts:63,89` (gates skipped when `ctx.ability` is null) | deny `update` on the token path except an explicit allowlist |
-| Proposals and projects read unscoped after a meeting check | `src/trpc/routers/customer-pipelines.router.ts:99-110` | read through the owning DALs |
-| Bearer receives every proposal column incl. cost lines | `src/shared/modules/proposals/core/dal/server/queries.ts:85` | homeowner projection (decision 14, deferred) |
-| Creating a meeting on any customer makes the creator a participant (gains visibility) | `src/shared/entities/meetings/dal/server/crud.ts:39` — re-verify there is no customer reach check | probe the customer before create |
+| Anyone, no login | Starts an AI job that writes into any proposal's `projectJSON` | `src/trpc/routers/ai.router/index.ts:7` |
+| Share-link holder | Can change almost any column of their proposal: status, price, scope of work, owner, signing timestamps, the link token | `src/trpc/lib/create-crud-router.ts:89` |
+| Share-link holder | Receives every proposal column, cost lines included (masking deferred by the owner) | `modules/proposals/core/dal/server/queries.ts:78` |
+| Agent or dispatcher | Reads, edits and deletes any project | `src/trpc/routers/projects.router/crud.router.ts:13` |
+| Agent or dispatcher | Edits media on any project, and can delete any stored file by pointing a media row at it | `src/trpc/routers/projects.router/media.router.ts:26` |
+| Agent or dispatcher | Download link for any customer's lead call recording | `src/trpc/routers/customer-pipelines.router.ts:65` |
+| Agent or dispatcher | Sends a company-branded proposal email to any address with a chosen link | `src/trpc/routers/proposals.router/delivery.router.ts:37` |
+| Agent | Creates a meeting on any customer and thereby sees that customer, with every rep's proposals and share tokens | `src/trpc/routers/meetings.router/crud.router.ts` |
+| Agent | Overwrites any customer's discovery profile | `src/trpc/routers/meeting-flow.router.ts:26` |
 
 ## 7. Next steps, in order
 1. **Fix the holes in §6** through the hotfix path. They do not need the epic.
-2. Owner reviews the structure spec (§3); then the plan for unit 1 (typed foundation).
+2. Write the plan for unit 1 (typed foundation) for the owner's approval.
 3. Rule the open items in the spec's §12: homeowner phone grant; pipeline map for prod; lint wall shape; which dev records browser tests may change; the 25 business rulings in report 10 §5.
 4. Build order (spec §11): typed foundation → one actor per request → compiler + DAL self-scoping per entity family → rules matrix → lint wall + financial reads → delete the legacy engine → full browser pass. The keep-primitives (adapter core, outcome classification) come back from `b40403b6` in the unit that gives each a home.
 5. Merge main into the branch at every unit boundary; one merge to main after the end-to-end pass.
