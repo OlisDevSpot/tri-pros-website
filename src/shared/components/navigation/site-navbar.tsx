@@ -312,7 +312,7 @@ export function SiteNavbar() {
                       variant="outline"
                       className={
                         cn(
-                          'h-10 w-fit rounded-full hover:bg-background/20 text-primary-foreground px-1 py-1 gap-3',
+                          'h-10 w-fit rounded-full hover:bg-primary-foreground/15 text-primary-foreground px-1 py-1 gap-3',
                         )
                       }
                       asChild
@@ -330,7 +330,7 @@ export function SiteNavbar() {
                           size={matches['2xl'] ? 'default' : 'icon'}
                           className={
                             cn(
-                              'h-8 w-8 2xl:w-fit rounded-full hover:bg-background/20 text-primary-foreground p-0',
+                              'h-8 w-8 2xl:w-fit rounded-full hover:bg-primary-foreground/15 text-primary-foreground p-0',
                             )
                           }
                           asChild
@@ -360,7 +360,7 @@ export function SiteNavbar() {
                           variant="ghost"
                           className={
                             cn(
-                              'h-8 w-8 rounded-full hover:bg-background/20 text-primary-foreground p-0',
+                              'h-8 w-8 rounded-full hover:bg-primary-foreground/15 text-primary-foreground p-0',
                             )
                           }
                           asChild
@@ -390,7 +390,7 @@ export function SiteNavbar() {
                       }}
                       className={
                         cn(
-                          'rounded-full hover:bg-background/20 flex',
+                          'rounded-full hover:bg-primary-foreground/15 flex',
                           // hasPopoverItems ? 'flex' : 'hidden',
                         )
                       }
