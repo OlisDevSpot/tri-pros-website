@@ -138,7 +138,7 @@ Legend: `[ ]` open · `[x]` done · `[~]` in progress · ⚠️ blocked on a §2
 - [ ] **D3** Setter captured at booking on every intake path (funnels, `/intake`, Bina webhook, website forms, dispatcher booking, reschedule rebook).
 - [ ] **D4** Backfill past setters by date range (C18, Q3); system-owned (info@) rows are the targets; the script follows the repo's `--dry-run` + explicit-prod-go shape.
 - [ ] **D5** #217 and #285 docs updated to the new model.
-- [ ] **D6** Retire the `closedBy` name in code (owner, 2026-09-27: **setter** is the one term everywhere). Today it survives in intake: `leadMetaJSON.closedBy` (`src/shared/entities/customers/schemas/index.ts:57`), lead-source `closedByOptions` (`src/shared/entities/lead-sources/schemas.ts:16`), `ClosedByField`, the intake form schema and `add-customer-sheet.tsx`. Both keys are stored JSONB, so the rename needs a data migration; D3's capture work is the natural place.
+- [ ] **D6** Retire the `closedBy` name in code (owner, 2026-09-27: **setter** is the one term everywhere). Today it survives in intake: `leadMetaJSON.closedBy` (`src/shared/entities/customers/schemas/index.ts:57`), lead-source `closedByOptions` (`src/shared/entities/lead-sources/schemas.ts:16`), `ClosedByField`, the intake form schema and `add-customer-sheet.tsx`. Both keys are stored JSONB, so the rename needs a data migration; D3's capture work is the natural place. **Parked (owner, 2026-10-02; records tracker D58):** the rename happens when external setters are built, as part of migrating `closedByOptions` / `closedBy` into `lead_source_setters`, not before.
 
 ### E — Lead-source spend
 

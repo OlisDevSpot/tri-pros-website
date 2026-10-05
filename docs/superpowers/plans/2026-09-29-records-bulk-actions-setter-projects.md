@@ -11,13 +11,14 @@
 **Spec:** `docs/superpowers/specs/2026-09-28-records-bulk-actions-and-entity-tables-design.md` (v3, approved for planning 2026-09-29). Tracker: `docs/plans/2026-09-26-records-management-epic.md` (D37–D52, O8, O9). **Out of this plan:** the proposals entity table (spec §6, R3), which D50 builds before bulk in its own plan; the customers entity table (R2, D48); the legacy query path's deletion (D49's last step).
 
 > **Status (2026-10-02): partly superseded, and not to be executed as written.** Tracker **D49** (2026-10-01) puts tables first and bulk last: projects → customers (R2) → proposals (R3) → the setter, bulk and selection across all four tables at once. This plan is the base for that last step.
+> - **2026-10-05, tracker D59: the setter runs first.** Phase B1 (Tasks 1–3) and the Set Setter parts of Task 9 (the single-row action, the Setter column in the meetings table view) are cut into their own small plan, built right after the projects table lands. Bulk Set Setter and everything in B2–B4 stay for the last step. Re-check Tasks 1–3 against the code when that plan is cut.
 > - **Tasks 11–13** are replaced by `docs/superpowers/plans/2026-10-01-projects-entity-table.md`. **Task 14** (projects bulk) moves to the all-tables bulk step. Their text is removed below; git history keeps it.
 > - **Task 7 Steps 1–4** (`hidden`, `isActionPermitted`, `getVisibleActions`) landed in `a1d70db1`. Task 7 keeps only the bulk pieces.
 > - **Task 9 Step 6** (delete `MeetingsTable`; the view composes its shell) is done by the projects plan's Task 3 (`useEntityTable`, `EntityRecordsTable`, meta key `rowActions`). Task 9 wires into that.
 > - **Task 8 was rewritten on 2026-10-02** against the render-isolation code (`data-table-row.tsx`, `isRowClick`): selection reaches each memoized `DataTableRow` as a prop, like `isExpanded`; no row or cell reads `row.getIsSelected()` while rendering (D49).
 > - **Task 10** was re-checked on 2026-10-02: campaign leads' meta, columns and mutations match the code.
 > - **Not yet planned for D49's step:** the projects, proposals and customers bulk UI (configs on `useProjectsTable` / `useProposalsTable` / `useCustomersTable`, none built yet). Their server leaves are in Task 6. Campaign leads stays on `usePaginatedQuery` (owner, 2026-10-02: partly legacy, left alone), so D49's deletion of the legacy query path keeps what it uses.
-> - **Owner rulings 2026-10-02** are recorded as settlements 14–17 and tracker D53–D57; the lead-source setters are tracker O10.
+> - **Owner rulings 2026-10-02** are recorded as settlements 14–17 and tracker D53–D58 (external setters deferred, D58).
 > - The 2026-10-02 reviews' mechanical fixes are applied below. Their open owner decisions are marked **(open)** where they sit.
 
 ## Global Constraints
@@ -48,7 +49,7 @@
 
 1. **`SetterPicker`, not an extracted `InternalUserPicker`.** `ParticipantPickerContent`'s rows are role-add buttons ("Add as owner…") with slot rules; the setter needs one selectable value. Both pickers compose one users-entity row, `UserCommandItem`, extracted from `AvailableParticipantRow`. `SetterPicker` (meetings entity) runs the setter-candidates query itself; `ParticipantPickerContent` is otherwise unchanged. One `SetterSelect` (trigger, popover, label) serves the add-meeting form (and the lead-source work later).
 2. **Single-row Set Setter lives in `useMeetingActionConfigs`, hidden where the entity carries no setter** (owner, 2026-10-02: `hidden`): `hidden: entity => entity.setBy === undefined`, the `ProjectEntity.isPublic?` pattern. Only the records table's rows carry `setBy`, so the schedule calendar and the overview card never show it. It keeps the menu order (before Delete) in one place. Amends spec §4.5 ("appended inside `useMeetingsTable`").
-3. **The setter invariant runs for every origin** that writes a non-null `setBy` (fail fast). A reschedule or a duplicate of a meeting whose setter's role later changed fails with `set_by_not_internal` until a super-admin changes the setter. Reschedule's create unwraps with `dalToTrpc`, so that reason reaches the client as PRECONDITION_FAILED and the toast words it. **(open)** Exempting copied setters needs a way for a crud hook to tell a copy from a choice, which it cannot today; it is settled with the lead-source setters work (tracker O10), which redefines who a valid setter is.
+3. **The setter invariant runs for every origin** that writes a non-null `setBy` (fail fast). A reschedule or a duplicate of a meeting whose setter's role later changed fails with `set_by_not_internal` until a super-admin changes the setter. Reschedule's create unwraps with `dalToTrpc`, so that reason reaches the client as PRECONDITION_FAILED and the toast words it. **(open)** Exempting copied setters needs a way for a crud hook to tell a copy from a choice, which it cannot today. With only in-house setters (D58) the case is a dispatcher who leaves the team while their meetings are still being rescheduled; a super-admin clears or changes the setter, then the reschedule succeeds.
 4. **One bulk permission.** Bulk configs use `BULK_ACTION_PERMISSION` (`['manage', 'all']`) rather than each action's single-row permission, so an agent's `update Project` never shows checkboxes the server would refuse.
 5. **Toolbar mode renders a promoted `custom` action as a popover button.** The bulk bar promotes every action, so pickers (Set Setter, Enroll) are one click away instead of under More; single-row toolbars gain the same ability.
 6. **Selection is pruned in state, not only in view:** when the row ids change, ids no longer present are dropped (render-phase, like the expansion reset). Task 8's rewrite (D49) keeps this rule.
@@ -60,7 +61,7 @@
 14. **An unpicked setter is the meeting's creator** (owner, 2026-10-02): `create.before` fills `setBy` from the session when the input omits it; forms send `setBy` only as held. Amends D47 ("no server default").
 15. **Only super-admins change a setter** (owner, 2026-10-02): `update.before` refuses `setBy` from a viewer without `assign Meeting`. This takes the update half of H5 out of #285; an agent naming someone else at create stays H5's.
 16. **Routers read a module through `<m>Service.queries`** (owner, 2026-10-02; the modules-consolidation shape): the proposals and projects bulk leaves read `proposalService.queries.getProposalsByIds` and `projectsService.queries.getProjectDeleteFacts`, never `dal/server/queries`. An entity without a service (meetings) keeps its DAL reads.
-17. **The setter is meetings-only** (owner, 2026-10-02). Intake carries no setter in this plan; the lead-source setters (in-house and external, configured per lead source) are their own design (tracker O10).
+17. **The setter is meetings-only; external setters are deferred** (owner, 2026-10-02; tracker D56, D58). Intake carries no setter in this plan and keeps its `closedByOptions` / `closedBy` path untouched. External setters later add `meetings.external_setter_id` beside `set_by` (never both), so this plan keeps `set_by` a nullable user FK and reads the setter in one place per surface (`setterName` in `listMeetings`, the `setters` option source, `SetterPicker`); that is where the external kind joins.
 
 Settlements 1–13 and the names they introduce were approved by the owner on 2026-10-02.
 
@@ -457,7 +458,7 @@ git show --stat HEAD
 
 One encoding wherever a form holds the setter: `undefined` = not picked (the crud records the creator, Task 1), `null` = "No setter", a string = that user. The form sends what it holds; it never resolves the default itself (owner, 2026-10-02).
 
-Intake is out of this plan (owner, 2026-10-02: the setter belongs to meetings, not intake). The intake form, `createFromIntake` and `ingestLead` are untouched; a meeting they create has a null setter until the lead-source setters work (tracker O10) defines intake setters.
+Intake is out of this plan (owner, 2026-10-02: the setter belongs to meetings, not intake). The intake form, `createFromIntake` and `ingestLead` are untouched; a meeting they create has a null `set_by`, and a lead source's pick stays in `leadMetaJSON.closedBy` until external setters are built (tracker D58).
 
 - [ ] **Step 1: One user row for both pickers**
 
@@ -2374,7 +2375,7 @@ D42, D47, spec §1 and §4.4 already record that a duplicate keeps the setter (f
 
 In the spec, add under the header a `> **Plan:** \`docs/superpowers/plans/2026-09-29-records-bulk-actions-setter-projects.md\` (setter, bulk server, selection, meetings and campaign-leads bulk; projects moved to \`2026-10-01-projects-entity-table.md\`).` line. Mirror the plan-time settlements into the text they amend:
 - §4.2: the invariant runs for every origin; the role lists derive from CASL (settlements 3, 13);
-- §4.4: an unpicked setter is the creator (D53); the lead-sources admin and public intake rows leave for O10 (D56); only super-admins change a setter (D54);
+- §4.4: an unpicked setter is the creator (D53); the lead-sources admin and public intake rows leave this spec (D56; external setters deferred, D58); only super-admins change a setter (D54);
 - §5.2 and §11: module reads go through `<m>Service.queries` (D55); customers' bulk leaf is built (Task 6); campaign leads stays on the legacy query path (D57);
 - §4.5: `SetterPicker` and `SetterSelect` on `UserCommandItem` replace the `InternalUserPicker` bullets; Set Setter as the owner decided (settlements 1, 2);
 - §5.2: the builders take `spec` and `schemas.id`; skip reasons come from each entity's labels (settlements 11, 12);
