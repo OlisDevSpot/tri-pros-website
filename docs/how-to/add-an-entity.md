@@ -4,7 +4,7 @@ Step-by-step procedure for adding a new business entity to the tRPC layer under 
 
 **Read first**: [`docs/adr/0002-entity-server-system.md`](../adr/0002-entity-server-system.md) for the *why*. This document is the *how*.
 
-Every top-level entity is an `EntityServerSpec` with its own CASL subject and visibility predicate. A child table (per-parent rows, append-only logs) is also an `EntityServerSpec`, but declares `parent: { spec, fk }` and omits its own `visibility` — its scope is derived from the parent (ADR-0002 Amendment 2026-08-11; e.g. `src/shared/modules/proposals/incentives/server-spec.ts`).
+Every top-level entity is a `ServerSpec` built with `defineEntitySpec`, with its own CASL subject and visibility predicate. A child table (per-parent rows, append-only logs) that has no subject of its own is built with `defineSubEntitySpec`; it declares `parent: { spec, fk, field }`, where `field` is the name it takes inside its parent, and omits its own `visibility` — its scope is derived from the parent (ADR-0002 Amendment 2026-08-11; e.g. `src/shared/modules/proposals/incentives/server-spec.ts`).
 
 ---
 
@@ -57,7 +57,7 @@ import type { VisibilityScope } from '@/shared/dal/server/types'
 import { and, eq, or, exists } from 'drizzle-orm'
 import { proposals, meetings } from '@/shared/db/schema'
 
-// Signature is fixed by `EntityServerSpec.visibility: (scope: VisibilityScope) => SQL`
+// Signature is fixed by `ServerSpec.visibility: (scope: VisibilityScope) => SQL`
 // — a single destructured object, not positional args. `ability` is there for
 // capability-based branching (e.g. a dispatcher-only leads-pool clause); most
 // predicates only need `userId`.
@@ -83,6 +83,7 @@ export function proposalVisibility({ userId }: VisibilityScope): SQL {
 ```ts
 // src/shared/modules/proposals/core/server-spec.ts
 // (a plain entity puts this at src/shared/entities/<entity>/lib/server-spec.ts)
+import { defineEntitySpec } from '@/shared/dal/server/lib/define-spec'
 import { PROPOSAL } from '@/shared/modules/proposals/core/lib/constants'
 import { proposalVisibility } from '@/shared/modules/proposals/core/lib/visibility'
 import { insertProposalSchema, proposals, selectProposalSchema } from '@/shared/db/schema'
@@ -90,16 +91,17 @@ import { insertProposalSchema, proposals, selectProposalSchema } from '@/shared/
 const updateProposalSchema = insertProposalSchema.partial()
 
 // Concrete-typed schemas — consumed by createCrudRouter for tRPC type inference.
-// The spec also holds these objects, but type-erased via the EntityServerSpec
+// The spec also holds these objects, but type-erased via the ServerSpec
 // interface (fine for DAL's runtime .parse()).
 export const proposalSchemas = {
   insert: insertProposalSchema,
   update: updateProposalSchema,
 }
 
-export const proposalServerSpec = {
+export const proposalServerSpec = defineEntitySpec({
   entityName: PROPOSAL,
-  caslSubject: PROPOSAL,
+  subject: PROPOSAL,
+  conditionColumns: [],
   visibility: proposalVisibility,
   table: proposals,
   schemas: { ...proposalSchemas, select: selectProposalSchema },
@@ -108,8 +110,10 @@ export const proposalServerSpec = {
   // Note: list is NOT on the spec — it's a business concern with entity-specific
   // joins, derived columns, and filter predicates. Each entity writes its own
   // list query as a business sub-router procedure.
-} satisfies EntityServerSpec<typeof proposals>  // TId defaults to string (UUID)
+})
 ```
+
+Then add the new spec to the `ServerSpecs` union in `src/shared/domains/permissions/specs.ts` and, for an entity, its subject to the pinned list in `src/shared/domains/permissions/type-checks/must-not-compile.ts`. A spec missing from the list cannot be named in a rule.
 
 ---
 
@@ -227,7 +231,7 @@ trpc.proposalsRouter.crud.getById.useQuery({ id, token: shareToken })
 
 - **Enrich or derive data on create/update**: use `hooks.create.before` / `hooks.update.before` in the entity's `createCrudDal` config factory (`dal/server/crud.ts`). These run at the DAL layer before the DB write and return enriched input. Prefer config-factory hooks over handler overrides for data transformation. Never put hooks on the spec.
 - **Override a CRUD handler** (last resort — bypasses hooks entirely): pass `handlers: { create: customCreateDal }` to `createCrudRouter`. The custom handler must match `CrudHandlers<TTable, TId>` for that slot. Non-overridden slots use the generic DAL defaults from `createCrudDal(spec)`.
-- **Non-`id` primary key** (serial integer, custom column name, etc.): set `primaryKey` on the spec and pass `id: z.number().int()` in the schemas config. Use `EntityServerSpec<typeof table, number>` for the `TId` generic.
+- **Non-`id` primary key** (serial integer, custom column name, etc.): set `primaryKey` on the spec and pass `id: z.number().int()` in the schemas config. The id type is read off the table's `id` column.
 - **Behavior not covered by any spec field**: write it as a business procedure on the business sub-router. If the same pattern appears across 2+ entities, propose adding it as a named typed spec field — that's the promotion bar.
 - **Service-layer sub-router** (email, contracts, etc.): a plain leaf — `export const deliveryRouter = createTRPCRouter({...})` importing procedures from `./procedures`, calling services and the entity's `<entity>Crud` handlers. See `proposals.router/delivery.router.ts` as the reference implementation.
 

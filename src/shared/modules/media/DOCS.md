@@ -50,7 +50,7 @@ Two stores exist today, each on the owning unit, not in this module:
 Adding a new owner is exactly:
 
 1. A `store.ts` on the new unit implementing `MediaStore` (table, `ownerColumn`, bucket, `buildPathKey`, `variants`, and a `get crud()` getter).
-2. A leaf constants module: the entity-name identity constant (the source of truth for `ServerSpec.entityName`, typed `EntityName` — `src/shared/dal/server/types.ts:181`), registered in `ENTITY_NAMES` (`src/shared/domains/permissions/abilities.ts`) so CASL knows the subject; plus the `PROJECT_MEDIA`-style shape (`{ ownerKind, variants }` as `const`) read by BOTH the store and the unit's CRUD hooks, so neither has to import the other. Skipping the `ENTITY_NAMES` registration fails `tsc` at the unit's `server-spec.ts` (`entityName` won't satisfy `EntityName`), not silently.
+2. A leaf constants module: the entity-name identity constant (the source of truth for `ServerSpec.entityName`, typed `EntityName` — `src/shared/dal/server/types.ts`), registered in `ENTITY_NAMES` (`src/shared/domains/permissions/abilities.ts`) so CASL knows the subject; plus the `PROJECT_MEDIA`-style shape (`{ ownerKind, variants }` as `const`) read by BOTH the store and the unit's CRUD hooks, so neither has to import the other. Skipping the `ENTITY_NAMES` registration fails `tsc` at the unit's `server-spec.ts` (`entityName` won't satisfy `EntityName`), not silently.
 3. The two CRUD hooks on the unit's `createCrudDal` call: `create.after` dispatches the optimize job when the row is optimizable; `delete.before` purges the R2 object (+ variants) before the row is deleted.
 4. One line in the optimize job's `STORES` map (`services/providers/upstash/jobs/optimize-media.ts`) — `newOwner: () => newOwnerStore`.
 
