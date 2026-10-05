@@ -268,7 +268,7 @@ export function SiteNavbar() {
                           }}
                           className={
                             cn(
-                              'h-12 w-12 bg-primary text-primary-foreground lg:bg-transparent lg:text-foreground border-foreground/15 shadow-md',
+                              'h-12 w-12 bg-primary text-primary-foreground lg:bg-transparent lg:text-foreground border-foreground/15 shadow-md hover:bg-hover',
                               session?.user && 'stroke-red-200 bg-rose-400 dark:bg-rose-800 lg:bg-rose-400',
                             )
                           }
@@ -283,7 +283,8 @@ export function SiteNavbar() {
                       ) }
                   <ThemeToggleButton className={
                     cn(
-                      'h-12 w-12 border-foreground/15 shadow-md',
+                      // The navbar floats over the hero photo, so its outline buttons stay see-through.
+                      'h-12 w-12 bg-transparent border-foreground/15 shadow-md hover:bg-hover',
                       pathname === '/' ? 'rounded-[40px]' : '',
                     )
                   }
@@ -312,7 +313,8 @@ export function SiteNavbar() {
                       variant="outline"
                       className={
                         cn(
-                          'h-10 w-fit rounded-full hover:bg-primary-foreground/15 text-primary-foreground px-1 py-1 gap-3',
+                          // A capsule drawn inside the CTA pill takes no fill of its own, or the blue pill turns grey.
+                          'h-10 w-fit rounded-full bg-transparent border-border/70 hover:bg-primary-foreground/15 text-primary-foreground px-1 py-1 gap-3',
                         )
                       }
                       asChild
