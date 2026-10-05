@@ -21,6 +21,8 @@ import { projects } from './projects'
 export const meetings = pgTable('meetings', {
   id,
   ownerId: text('owner_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  // Who booked the meeting, often a dispatcher. Not ownerId: a dispatcher's booking goes to the system owner.
+  setBy: text('set_by').references(() => user.id, { onDelete: 'set null' }),
   customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'set null' }),
   meetingType: meetingTypeEnum('meeting_type').notNull().default('Fresh'),
   meetingOutcome: meetingOutcomeEnum('meeting_outcome').notNull().default('not_set'),
