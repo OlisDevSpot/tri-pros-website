@@ -21,6 +21,8 @@
   --depth: 0;
   /* A menu on the top rung is near white, with no lighter step for its highlight, so the tint does the work. */
   --overlay-hover-mix: 14%;
+  /* Selected has to outrank hover in a menu too, or the hovered row reads as the chosen one. */
+  --overlay-selected-mix: 20%;
   /* The floating rail's inset, the page margin and every gap between section cards. */
   --gutter: 0.5rem;
   /* The raw logo color is identity only (logo, browser theme-color): as text on light it fails contrast. */
@@ -338,6 +340,7 @@
   --edge-dir: 1;
   --depth: 0;
   --overlay-hover-mix: 8%;
+  --overlay-selected-mix: 12%;
   --foreground: oklch(0.955 0.008 250);
   --card-foreground: var(--foreground);
   --popover-foreground: var(--foreground);
@@ -483,6 +486,10 @@
   --row-press: color-mix(in oklab, var(--foreground) 6%, var(--row-hover));
   --skeleton: var(--border);
   --skeleton-soft: oklch(calc(var(--here-l) + var(--edge-dir) * 0.75 * var(--edge)) var(--surface-c) var(--surface-h));
+  /* A segmented track and its active tab. The tab sits on the top rung or two rungs up, whichever is higher; near
+     the top of light mode that lands on white, so the track gives way a rung below the tab instead of matching it. */
+  --tab-active: oklch(min(1, calc(var(--canvas-l) + max(4, var(--depth) + 2) * var(--step))) var(--surface-c) var(--surface-h));
+  --tab-track: oklch(min(calc(var(--canvas-l) + (var(--depth) + 1) * var(--step)), calc(min(1, var(--canvas-l) + max(4, var(--depth) + 2) * var(--step)) - var(--step))) var(--surface-c) var(--surface-h));
 }
 
 /* A surface counts the surfaces it sits in, up to three. Variants (`md:bg-card`, `bg-card/50`) are other class
@@ -502,6 +509,7 @@
 :is(.bg-popover, .surface-overlay) {
   --depth: 4;
   --row-hover: color-mix(in oklab, var(--primary) var(--overlay-hover-mix), var(--card));
+  --row-selected: color-mix(in oklab, var(--primary) var(--overlay-selected-mix), var(--card));
 }
 
 /* The rung beneath the page: the public footer the page scrolls over. Comes after the relative block so its
@@ -526,6 +534,8 @@
   --row-press: inherit;
   --skeleton: inherit;
   --skeleton-soft: inherit;
+  --tab-active: inherit;
+  --tab-track: inherit;
 }
 
 /* Presses in fast and settles back with a slight overshoot; colours keep the plain ease. */
@@ -590,6 +600,8 @@
   --color-band: var(--band);
   --color-row-hover: var(--row-hover);
   --color-row-selected: var(--row-selected);
+  --color-tab-active: var(--tab-active);
+  --color-tab-track: var(--tab-track);
   --color-hover: var(--hover);
   --color-secondary-hover: var(--secondary-hover);
   --color-primary-hover: var(--primary-hover);

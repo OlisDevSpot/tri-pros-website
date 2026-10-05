@@ -22,7 +22,7 @@ export function MeetingDateField() {
             value={field.value ? new Date(field.value) : undefined}
             onChange={d => field.onChange(d?.toISOString() ?? '')}
             placeholder="Select date & time"
-            className="w-full justify-start border border-input bg-background px-3 py-2 h-9 text-sm"
+            className="w-full justify-start border border-input bg-input-background px-3 py-2 h-9 text-sm"
           />
           <FormMessage />
         </FormItem>

@@ -281,6 +281,8 @@ const pairs: Pair[] = [
   { label: 'muted text on band', fg: '--muted-foreground', bg: '--band', min: 4.5, on: ['page', ...CARDS] },
   { label: 'body text on hovered row', fg: '--foreground', bg: '--row-hover', min: 4.5, on: ON_SURFACES },
   { label: 'body text on selected row', fg: '--foreground', bg: '--row-selected', min: 4.5, on: ON_SURFACES },
+  { label: 'body text on active tab', fg: '--foreground', bg: '--tab-active', min: 4.5, on: ON_SURFACES },
+  { label: 'muted text on tab track', fg: '--muted-foreground', bg: '--tab-track', min: 4.5, on: ON_SURFACES },
   { label: 'body text on hover wash', fg: '--foreground', bg: '--hover', base: '--card', min: 4.5, on: ON_SURFACES },
   { label: 'muted text on hover wash', fg: '--muted-foreground', bg: '--hover', base: '--card', min: 4.5, on: ON_SURFACES },
   { label: 'body text on press wash', fg: '--foreground', bg: '--press', base: '--card', min: 4.5, on: ON_SURFACES },
@@ -326,7 +328,16 @@ const climb: [[string, Place], [string, Place]][] = [
     [['--card', place], ['--band', place]],
     [['--band', place], ['--muted', place]],
   ]),
+  ...ON_SURFACES.map((place): [[string, Place], [string, Place]] => [['--tab-track', place], ['--tab-active', place]]),
 ]
+
+// A selected row has to stand further from its surface than a hovered one, or hover reads as the selection.
+const outranks: [string, string][] = [['--row-selected', '--row-hover']]
+const distanceFromSurface = (name: string, mode: Mode, place: Place) => {
+  const [l1, a1, b1] = toOklab(resolve(name, mode, place))
+  const [l2, a2, b2] = toOklab(resolve('--card', mode, place))
+  return Math.hypot(l1 - l2, a1 - a2, b1 - b2)
+}
 
 // In light mode an edge is darker than its surface; in dark mode, lighter.
 const edgeLeans: Record<Mode, 'darker' | 'lighter'> = { light: 'darker', dark: 'lighter' }
@@ -363,6 +374,14 @@ for (const mode of ['light', 'dark'] as const) {
       luminanceOf(upper, mode, upperPlace) <= luminanceOf(lower, mode, lowerPlace)
         ? `${mode}: ${upper} (${upperPlace}) must be lighter than ${lower} (${lowerPlace})`
         : undefined)
+  }
+  for (const [stronger, weaker] of outranks) {
+    for (const place of ON_SURFACES) {
+      guard(`${mode}: ${stronger} vs ${weaker} (${place})`, () =>
+        distanceFromSurface(stronger, mode, place) <= distanceFromSurface(weaker, mode, place)
+          ? `${mode}: ${stronger} (${place}) must sit further from its surface than ${weaker}`
+          : undefined)
+    }
   }
   for (const place of CARDS) {
     guard(`${mode}: edge on ${place}`, () => {

@@ -180,7 +180,7 @@ function EmptyPreview({ currentAddress }: { currentAddress?: string }) {
         </p>
       </div>
       {currentAddress && (
-        <div className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-xs text-muted-foreground">
+        <div className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-(--card) px-2.5 py-1 text-xs text-muted-foreground">
           <span className="shrink-0 font-semibold text-foreground/70">Currently:</span>
           <span className="truncate">{currentAddress}</span>
         </div>
