@@ -1,5 +1,4 @@
-import type { EntityServerSpec } from '@/shared/dal/server/types'
-
+import { defineSubEntitySpec } from '@/shared/dal/server/lib/define-spec'
 import {
   insertProjectMediaFilesSchema,
   projectMediaFiles,
@@ -30,19 +29,18 @@ export const projectMediaSchemas = {
  * procedure) is a deliberate security TIGHTENING, deferred to its own reviewed
  * slice. The spec/DAL are ready for that flip; nothing else needs to change.
  *
- * `caslSubject` reuses the parent `Project` subject. Serial int PK → `TId =
- * number`. The spec itself carries no `hooks` — those live on `createCrudDal`'s
+ * It is the field `media` of `Project`, with no subject of its own. The spec
+ * itself carries no `hooks` — those live on `createCrudDal`'s
  * config factory in `dal/server/crud.ts`, where `create.after`/`delete.before`
  * fire optimize dispatch and R2 cleanup on every origin (C32, D5).
  */
-export const projectMediaServerSpec = {
+export const projectMediaServerSpec = defineSubEntitySpec({
   entityName: PROJECT_MEDIA_FILE,
-  caslSubject: projectServerSpec.caslSubject,
-  parent: { spec: projectServerSpec, fk: projectMediaFiles.projectId },
+  parent: { spec: projectServerSpec, fk: projectMediaFiles.projectId, field: 'media' },
   table: projectMediaFiles,
   schemas: {
     insert: insertProjectMediaFilesSchema,
     update: updateProjectMediaFileSchema,
     select: selectProjectMediaFilesSchema,
   },
-} satisfies EntityServerSpec<typeof projectMediaFiles, number>
+})

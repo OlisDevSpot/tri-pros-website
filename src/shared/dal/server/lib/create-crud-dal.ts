@@ -7,8 +7,8 @@ import type {
   CrudConfigFactory,
   CrudHandlers,
   DalReturn,
-  EntityServerSpec,
   ScopedContext,
+  ServerSpec,
   SpecCrudHandlers,
   SpecId,
   SpecInsert,
@@ -25,7 +25,7 @@ import { ThrowableDalError } from '../types'
 import { dalDbOperation } from './helpers'
 
 // Generic over the spec, not the table, so handler payload types are the spec's Zod inputs.
-export function createCrudDal<TSpec extends EntityServerSpec<any, any>>(
+export function createCrudDal<TSpec extends ServerSpec<any>>(
   spec: TSpec,
   configFactory?: CrudConfigFactory<TSpec['table'], SpecId<TSpec>, SpecInsert<TSpec>, SpecUpdate<TSpec>>,
 ): SpecCrudHandlers<TSpec> {
@@ -54,7 +54,7 @@ export function createCrudDal<TSpec extends EntityServerSpec<any, any>>(
 }
 
 async function getByIdImpl<TTable extends PgTable>(
-  spec: EntityServerSpec<TTable>,
+  spec: ServerSpec<TTable>,
   pkColumn: PgColumn,
   ctx: ScopedContext,
   input: { id: string | number },
@@ -72,7 +72,7 @@ async function getByIdImpl<TTable extends PgTable>(
 }
 
 async function createImpl<TTable extends PgTable, TId extends string | number, TInsert, TUpdate>(
-  spec: EntityServerSpec<TTable, TId>,
+  spec: ServerSpec<TTable>,
   cfg: CrudConfig<TTable, TId, TInsert, TUpdate>,
   ctx: ScopedContext,
   input: TInsert,
@@ -103,7 +103,7 @@ async function createImpl<TTable extends PgTable, TId extends string | number, T
 }
 
 async function updateImpl<TTable extends PgTable, TId extends string | number, TInsert, TUpdate>(
-  spec: EntityServerSpec<TTable, TId>,
+  spec: ServerSpec<TTable>,
   cfg: CrudConfig<TTable, TId, TInsert, TUpdate>,
   pkColumn: PgColumn,
   ctx: ScopedContext,
@@ -167,7 +167,7 @@ async function updateImpl<TTable extends PgTable, TId extends string | number, T
 }
 
 async function deleteImpl<TTable extends PgTable, TId extends string | number, TInsert, TUpdate>(
-  spec: EntityServerSpec<TTable, TId>,
+  spec: ServerSpec<TTable>,
   cfg: CrudConfig<TTable, TId, TInsert, TUpdate>,
   pkColumn: PgColumn,
   ctx: ScopedContext,
@@ -213,7 +213,7 @@ async function deleteImpl<TTable extends PgTable, TId extends string | number, T
 }
 
 async function duplicateImpl<TTable extends PgTable, TId extends string | number, TInsert, TUpdate>(
-  spec: EntityServerSpec<TTable, TId>,
+  spec: ServerSpec<TTable>,
   cfg: CrudConfig<TTable, TId, TInsert, TUpdate>,
   pkColumn: PgColumn,
   ctx: ScopedContext,
@@ -254,7 +254,7 @@ async function duplicateImpl<TTable extends PgTable, TId extends string | number
 }
 
 function getPkColumn<TTable extends PgTable>(
-  spec: EntityServerSpec<TTable>,
+  spec: ServerSpec<TTable>,
 ): PgColumn {
   const pkName = spec.primaryKey ?? 'id'
   const table = spec.table as unknown as Record<string, PgColumn>

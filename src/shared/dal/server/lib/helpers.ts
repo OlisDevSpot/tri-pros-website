@@ -1,4 +1,4 @@
-import type { DalReturn, EntityServerSpec, ScopedContext } from '../types'
+import type { DalReturn, ScopedContext, ServerSpec } from '../types'
 
 import type { UserRole } from '@/shared/constants/enums'
 
@@ -42,7 +42,7 @@ export async function withTx<T>(
 export function buildUserContext(
   userId: string,
   userRole: UserRole,
-  spec: EntityServerSpec,
+  spec: ServerSpec,
 ): ScopedContext {
   const ability = defineAbilitiesFor({ id: userId, role: userRole })
   const isOmni = ability.can('manage', 'all')

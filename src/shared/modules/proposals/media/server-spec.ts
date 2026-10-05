@@ -1,5 +1,4 @@
-import type { EntityServerSpec } from '@/shared/dal/server/types'
-
+import { defineSubEntitySpec } from '@/shared/dal/server/lib/define-spec'
 import {
   insertProposalMediaFileSchema,
   proposalMediaFiles,
@@ -27,23 +26,21 @@ export const proposalMediaSchemas = {
  * `createCrudDal` WHERE (getById/update/delete), so scoping a media mutation is
  * ONE query — no per-row authz probe (the N+1 this epic set out to kill).
  *
- * `caslSubject` reuses the parent `Proposal` subject: there are no grants for
+ * It is the field `media` of `Proposal`: there are no grants for
  * `ProposalMediaFile`, and "may I touch this proposal's media?" IS "may I update
  * this proposal?" — enforced by the router's capability gate + this row scope.
  *
- * Serial int PK → `TId = number`. The spec itself carries no `hooks` — those
- * live on `createCrudDal`'s config factory in `dal/server/crud.ts`, where
+ * The spec itself carries no `hooks` — those live on `createCrudDal`'s config factory in `dal/server/crud.ts`, where
  * `create.after`/`delete.before` fire optimize dispatch and R2 cleanup on every
  * origin (C32, D5), same as the project twin.
  */
-export const proposalMediaServerSpec = {
+export const proposalMediaServerSpec = defineSubEntitySpec({
   entityName: PROPOSAL_MEDIA_FILE,
-  caslSubject: proposalServerSpec.caslSubject,
-  parent: { spec: proposalServerSpec, fk: proposalMediaFiles.proposalId },
+  parent: { spec: proposalServerSpec, fk: proposalMediaFiles.proposalId, field: 'media' },
   table: proposalMediaFiles,
   schemas: {
     insert: insertProposalMediaFileSchema,
     update: updateProposalMediaFileSchema,
     select: selectProposalMediaFileSchema,
   },
-} satisfies EntityServerSpec<typeof proposalMediaFiles, number>
+})

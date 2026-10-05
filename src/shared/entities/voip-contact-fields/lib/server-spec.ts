@@ -1,4 +1,4 @@
-import type { EntityServerSpec } from '@/shared/dal/server/types'
+import { defineEntitySpec } from '@/shared/dal/server/lib/define-spec'
 import { insertVoipContactFieldSchema, selectVoipContactFieldSchema, voipContactFields } from '@/shared/db/schema'
 import { VOIP_CONTACT_FIELD } from './constants'
 import { voipContactFieldVisibility } from './visibility'
@@ -11,9 +11,10 @@ export const voipContactFieldSchemas = {
   update: updateVoipContactFieldSchema,
 }
 
-export const voipContactFieldServerSpec = {
+export const voipContactFieldServerSpec = defineEntitySpec({
   entityName: VOIP_CONTACT_FIELD,
-  caslSubject: VOIP_CONTACT_FIELD,
+  subject: VOIP_CONTACT_FIELD,
+  conditionColumns: [],
   visibility: voipContactFieldVisibility,
   table: voipContactFields,
   schemas: {
@@ -21,4 +22,4 @@ export const voipContactFieldServerSpec = {
     update: updateVoipContactFieldSchema,
     select: selectVoipContactFieldSchema,
   },
-} satisfies EntityServerSpec<typeof voipContactFields>
+})

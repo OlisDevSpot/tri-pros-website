@@ -1,4 +1,4 @@
-import type { EntityServerSpec } from '@/shared/dal/server/types'
+import { defineEntitySpec } from '@/shared/dal/server/lib/define-spec'
 import { insertVoipCampaignContactSchema, selectVoipCampaignContactSchema, voipCampaignContacts } from '@/shared/db/schema'
 import { VOIP_CAMPAIGN_CONTACT } from './constants'
 import { voipCampaignContactVisibility } from './visibility'
@@ -11,9 +11,10 @@ export const voipCampaignContactSchemas = {
   update: updateVoipCampaignContactSchema,
 }
 
-export const voipCampaignContactServerSpec = {
+export const voipCampaignContactServerSpec = defineEntitySpec({
   entityName: VOIP_CAMPAIGN_CONTACT,
-  caslSubject: VOIP_CAMPAIGN_CONTACT,
+  subject: VOIP_CAMPAIGN_CONTACT,
+  conditionColumns: [],
   visibility: voipCampaignContactVisibility,
   table: voipCampaignContacts,
   // PK is `customer_id` (1:1 with customers), not `id`.
@@ -23,4 +24,4 @@ export const voipCampaignContactServerSpec = {
     update: updateVoipCampaignContactSchema,
     select: selectVoipCampaignContactSchema,
   },
-} satisfies EntityServerSpec<typeof voipCampaignContacts>
+})

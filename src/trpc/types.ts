@@ -1,8 +1,8 @@
 // ─── tRPC Types ─────────────────────────────────────────────────────────────
 // tRPC-specific context types + re-exports of shared DAL types.
 //
-// DAL-layer types (ScopedContext, EntityServerSpec, CrudHandlers, etc.) are
-// canonical in `shared/dal/server/lib/types.ts`. This file re-exports them
+// DAL-layer types (ScopedContext, CrudHandlers, etc.) are
+// canonical in `shared/dal/server/types.ts`. This file re-exports them
 // so existing tRPC consumers don't break, and adds tRPC-specific context
 // types (BaseTRPCContext, AuthedContext, HTTPTRPCContext).
 
@@ -19,7 +19,6 @@ export type {
   CrudHandlers,
   DalError,
   DalReturn,
-  EntityServerSpec,
   ScopedContext,
   SlotName,
 } from '@/shared/dal/server/types'

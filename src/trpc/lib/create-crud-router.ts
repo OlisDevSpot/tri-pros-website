@@ -1,11 +1,13 @@
 import type { PgTable } from 'drizzle-orm/pg-core'
-import type { AppAction, AppSubject } from '@/shared/domains/permissions/types'
+import type { ServerSpec } from '@/shared/dal/server/types'
 
-import type { CrudHandlers, EntityServerSpec, SlotName } from '@/trpc/types'
+import type { AppAction, AppSubject } from '@/shared/domains/permissions/types'
+import type { CrudHandlers, SlotName } from '@/trpc/types'
 
 import { TRPCError } from '@trpc/server'
 import z from 'zod'
 
+import { subjectOf } from '@/shared/dal/server/lib/define-spec'
 import { agentProcedure, baseProcedure, createTRPCRouter } from '@/trpc/init'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 import { resolveVisibilityScope } from '@/trpc/lib/middleware/scope-middleware'
@@ -25,7 +27,7 @@ export interface CreateCrudRouterConfig<
   TInsert extends z.ZodObject<z.ZodRawShape>,
   TUpdate extends z.ZodObject<z.ZodRawShape>,
 > {
-  spec: EntityServerSpec<TTable, TId>
+  spec: ServerSpec<TTable>
   schemas: { id: z.ZodType<TId>, insert: TInsert, update: TUpdate }
   /** The entity's single hooked crud instance — the router never rebuilds handlers, so un-hooked ones cannot exist. */
   crud: CrudHandlers<TTable, TId, z.input<TInsert>, z.input<TUpdate>>
@@ -118,10 +120,10 @@ export function createCrudRouter<
 function assertCan(
   ability: { can: (action: AppAction, subject: AppSubject, field?: string) => boolean },
   slot: SlotName,
-  spec: EntityServerSpec,
+  spec: ServerSpec,
 ): void {
   const action = SLOT_ACTIONS[slot]
-  if (!ability.can(action, spec.caslSubject)) {
+  if (!ability.can(action, subjectOf(spec))) {
     throw new TRPCError({
       code: 'FORBIDDEN',
       message: `You do not have permission to ${action} ${spec.entityName}`,
@@ -136,14 +138,14 @@ function assertCan(
  */
 function assertCanUpdateFields(
   ability: { can: (action: AppAction, subject: AppSubject, field?: string) => boolean },
-  spec: EntityServerSpec,
+  spec: ServerSpec,
   data: Record<string, unknown>,
 ): void {
   for (const [field, value] of Object.entries(data)) {
     if (value === undefined) {
       continue
     }
-    if (!ability.can('update', spec.caslSubject, field)) {
+    if (!ability.can('update', subjectOf(spec), field)) {
       throw new TRPCError({
         code: 'FORBIDDEN',
         message: `You do not have permission to update ${spec.entityName}.${field}`,

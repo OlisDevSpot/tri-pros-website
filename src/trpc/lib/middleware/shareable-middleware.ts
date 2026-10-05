@@ -2,7 +2,7 @@
 
 import type { PgColumn } from 'drizzle-orm/pg-core'
 
-import type { EntityServerSpec } from '@/shared/dal/server/types'
+import type { ServerSpec } from '@/shared/dal/server/types'
 
 import { TRPCError } from '@trpc/server'
 import { eq } from 'drizzle-orm'
@@ -12,7 +12,7 @@ import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
 import { createMiddleware } from '@/trpc/init'
 
 /** Token path → eq(tokenColumn, token) + ability null. Session path → normal scope resolution. */
-export function shareableMiddleware(spec: EntityServerSpec) {
+export function shareableMiddleware(spec: ServerSpec) {
   // Cast: Drizzle's PgTable type doesn't expose columns as a keyed record.
   // Dynamic column lookup by name (from spec.shareable.tokenColumn) requires
   // treating the table object as a record. No typed API exists for this.

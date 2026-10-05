@@ -1,7 +1,6 @@
-import type { EntityServerSpec } from '@/shared/dal/server/types'
-
 import { z } from 'zod'
 
+import { defineEntitySpec } from '@/shared/dal/server/lib/define-spec'
 import {
   customerNotes,
   insertCustomerNoteSchema,
@@ -29,9 +28,10 @@ export const customerNoteSchemas = {
 // author-gate on update/delete) live in the config factory in
 // ../dal/server/crud.ts — NOT on this spec. That factory takes `crudHandlers`
 // as an arg, which is why the old TDZ-avoiding lazy import is gone.
-export const customerNoteServerSpec = {
+export const customerNoteServerSpec = defineEntitySpec({
   entityName: CUSTOMER_NOTE,
-  caslSubject: CUSTOMER_NOTE,
+  subject: CUSTOMER_NOTE,
+  conditionColumns: ['authorId'],
   visibility: customerNoteVisibility,
   table: customerNotes,
   schemas: {
@@ -39,4 +39,4 @@ export const customerNoteServerSpec = {
     update: updateCustomerNoteSchema,
     select: selectCustomerNoteSchema,
   },
-} satisfies EntityServerSpec<typeof customerNotes>
+})

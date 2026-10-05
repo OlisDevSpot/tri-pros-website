@@ -1,5 +1,4 @@
-import type { EntityServerSpec } from '@/shared/dal/server/types'
-
+import { defineSubEntitySpec } from '@/shared/dal/server/lib/define-spec'
 import {
   insertProposalIncentiveSchema,
   proposalIncentives,
@@ -21,18 +20,17 @@ export const proposalIncentiveSchemas = {
  * so no own `visibility`: its effective scope is parent-derived —
  * `proposalId IN (SELECT proposals.id WHERE <proposal effective scope>)` —
  * folded into `ctx.scope` by whichever procedure resolves this spec.
- * `caslSubject` reuses the parent `Proposal` subject. Lifecycle hooks (the
+ * It is the field `incentives` of `Proposal`. Lifecycle hooks (the
  * parent rollup re-drive) live in the createCrudDal config factory at
  * dal/server/crud.ts — never here.
  */
-export const proposalIncentiveServerSpec = {
+export const proposalIncentiveServerSpec = defineSubEntitySpec({
   entityName: PROPOSAL_INCENTIVE,
-  caslSubject: proposalServerSpec.caslSubject,
-  parent: { spec: proposalServerSpec, fk: proposalIncentives.proposalId },
+  parent: { spec: proposalServerSpec, fk: proposalIncentives.proposalId, field: 'incentives' },
   table: proposalIncentives,
   schemas: {
     insert: insertProposalIncentiveSchema,
     update: updateProposalIncentiveSchema,
     select: selectProposalIncentiveSchema,
   },
-} satisfies EntityServerSpec<typeof proposalIncentives>
+})

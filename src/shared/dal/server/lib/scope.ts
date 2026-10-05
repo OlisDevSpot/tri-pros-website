@@ -5,13 +5,13 @@
 import type { SQL } from 'drizzle-orm'
 import type { PgColumn } from 'drizzle-orm/pg-core'
 
-import type { EntityServerSpec, ScopedContext, VisibilityScope } from '@/shared/dal/server/types'
+import type { ScopedContext, ServerSpec, VisibilityScope } from '@/shared/dal/server/types'
 
 import { and, eq, inArray, sql } from 'drizzle-orm'
 
 import { db } from '@/shared/db'
 
-export function resolveEffectiveScope(spec: EntityServerSpec, auth: VisibilityScope): SQL {
+export function resolveEffectiveScope(spec: ServerSpec, auth: VisibilityScope): SQL {
   const own = spec.visibility?.(auth) ?? null
   const bridge = spec.parent ? bridgeToParent(spec.parent, auth) : null
 
@@ -24,7 +24,7 @@ export function resolveEffectiveScope(spec: EntityServerSpec, auth: VisibilitySc
   return fragments.length === 1 ? fragments[0] : and(...fragments)!
 }
 
-function bridgeToParent(parent: NonNullable<EntityServerSpec['parent']>, auth: VisibilityScope): SQL {
+function bridgeToParent(parent: NonNullable<ServerSpec['parent']>, auth: VisibilityScope): SQL {
   const parentScope = resolveEffectiveScope(parent.spec, auth) // recurse up the chain
   return inArray(
     parent.fk,
@@ -33,7 +33,7 @@ function bridgeToParent(parent: NonNullable<EntityServerSpec['parent']>, auth: V
 }
 
 /** Point probe for create/precursor paths that have no host query to compose `ctx.scope` into. NEVER call per-row in a loop — that is what the composable predicate is for. */
-export async function isVisible(spec: EntityServerSpec, ctx: ScopedContext, id: string | number): Promise<boolean> {
+export async function isVisible(spec: ServerSpec, ctx: ScopedContext, id: string | number): Promise<boolean> {
   if (!ctx.session) {
     return true // SYSTEM_CONTEXT — unrestricted
   }
@@ -50,7 +50,7 @@ export async function isVisible(spec: EntityServerSpec, ctx: ScopedContext, id: 
 }
 
 /** @deprecated Point probe against the already-resolved `ctx.scope`; use `resolveEffectiveScope` + `isVisible`. Do not add callers. */
-export async function isInScope(spec: EntityServerSpec, ctx: ScopedContext, id: string | number): Promise<boolean> {
+export async function isInScope(spec: ServerSpec, ctx: ScopedContext, id: string | number): Promise<boolean> {
   const [row] = await db
     .select({ ok: sql`1` })
     .from(spec.table)
@@ -59,7 +59,7 @@ export async function isInScope(spec: EntityServerSpec, ctx: ScopedContext, id: 
   return !!row
 }
 
-function pkColumn(spec: EntityServerSpec): PgColumn {
+function pkColumn(spec: ServerSpec): PgColumn {
   // Drizzle's PgTable doesn't expose columns as a keyed record, hence the cast.
   const table = spec.table as unknown as Record<string, PgColumn | undefined>
   const pkName = spec.primaryKey ?? 'id'

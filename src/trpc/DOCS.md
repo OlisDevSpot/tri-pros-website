@@ -1,6 +1,6 @@
 # tRPC — Entity Server System Operational Rules
 
-tRPC is the client-to-server typesafe glue layer. The **Entity Server System** (ADR-0002) gives each business entity (Customer, Meeting, Proposal, Project) a typed `EntityServerSpec` that drives uniform auth, visibility scoping, schema validation, and standardized CRUD — all backed by a standardized DAL.
+tRPC is the client-to-server typesafe glue layer. The **Entity Server System** (ADR-0002) gives each business entity (Customer, Meeting, Proposal, Project) a typed `ServerSpec` that drives uniform auth, visibility scoping, schema validation, and standardized CRUD — all backed by a standardized DAL.
 
 The router for an entity is assembled by **definition, not generation**: per-entity pre-scoped procedures are defined once in `<entity>.router/procedures.ts`, every sub-router is a plain `createTRPCRouter` leaf importing them, and `index.ts` is pure composition. (This replaced the `createEntityRouter` factory + `EntityToolkit` param + `entity-registry` — removed in the tRPC Standardization Epic, slice S7, 2026-08-11.)
 
@@ -182,7 +182,7 @@ Handler code receives `ctx.scope` either way and applies it identically. The han
 
 ## Lifecycle Hooks
 
-Entity lifecycle hooks execute at the DAL layer — both before and after database writes. Hooks live in the entity's `dal/server/crud.ts` config factory, passed as `createCrudDal(spec, configFactory)` and organized by operation (`create`, `update`, `delete`). `EntityServerSpec` no longer carries `hooks`/`duplicate` (Sub-plan D).
+Entity lifecycle hooks execute at the DAL layer — both before and after database writes. Hooks live in the entity's `dal/server/crud.ts` config factory, passed as `createCrudDal(spec, configFactory)` and organized by operation (`create`, `update`, `delete`). `ServerSpec` no longer carries `hooks`/`duplicate` (Sub-plan D).
 
 ### Hook Contract
 
@@ -339,7 +339,7 @@ proposals.router/
 
 ## Migration status (as of 2026-09-14)
 
-Adoption is broad now, not limited to the original canonical example — most agent-facing entities run through `EntityServerSpec` + the definition-once router shape (`procedures.ts` + `createCrudRouter` + pure `index.ts`). The `createEntityRouter` factory is gone (S6/S7); every migrated router below is factory-free.
+Adoption is broad now, not limited to the original canonical example — most agent-facing entities run through `ServerSpec` + the definition-once router shape (`procedures.ts` + `createCrudRouter` + pure `index.ts`). The `createEntityRouter` factory is gone (S6/S7); every migrated router below is factory-free.
 
 | Entity | Status | Notes |
 |---|---|---|

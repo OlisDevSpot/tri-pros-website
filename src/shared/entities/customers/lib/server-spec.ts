@@ -1,7 +1,6 @@
-import type { EntityServerSpec } from '@/shared/dal/server/types'
-
 import { z } from 'zod'
 
+import { defineEntitySpec } from '@/shared/dal/server/lib/define-spec'
 import {
   customers,
   insertCustomerSchema,
@@ -29,9 +28,10 @@ export const customerSchemas = {
 // Lifecycle hooks (address-change geocode invalidation, customer-change
 // propagation, delete cascade) live in the config factory in
 // ../dal/server/crud.ts — NOT on this spec.
-export const customerServerSpec = {
+export const customerServerSpec = defineEntitySpec({
   entityName: CUSTOMER,
-  caslSubject: CUSTOMER,
+  subject: CUSTOMER,
+  conditionColumns: [],
   visibility: customerVisibility,
   table: customers,
   schemas: {
@@ -39,4 +39,4 @@ export const customerServerSpec = {
     update: updateCustomerSchema,
     select: selectCustomerSchema,
   },
-} satisfies EntityServerSpec<typeof customers>
+})

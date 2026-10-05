@@ -1,5 +1,4 @@
-import type { EntityServerSpec } from '@/shared/dal/server/types'
-
+import { defineSubEntitySpec } from '@/shared/dal/server/lib/define-spec'
 import {
   insertProposalViewSchema,
   proposalViews,
@@ -23,18 +22,17 @@ export const proposalViewSchemas = {
  * `proposal_views` as a first-class CHILD entity. No independent ownership, so
  * no own `visibility`: its effective scope is parent-derived —
  * `proposalId IN (SELECT proposals.id WHERE <proposal effective scope>)` —
- * folded into `ctx.scope` by whichever procedure resolves this spec. `caslSubject`
- * reuses the parent `Proposal` subject. No lifecycle hooks: a view is an
- * immutable event with nothing to derive.
+ * folded into `ctx.scope` by whichever procedure resolves this spec. It is the
+ * field `views` of `Proposal`. No lifecycle hooks: a view is an immutable event
+ * with nothing to derive.
  */
-export const proposalViewServerSpec = {
+export const proposalViewServerSpec = defineSubEntitySpec({
   entityName: PROPOSAL_VIEW,
-  caslSubject: proposalServerSpec.caslSubject,
-  parent: { spec: proposalServerSpec, fk: proposalViews.proposalId },
+  parent: { spec: proposalServerSpec, fk: proposalViews.proposalId, field: 'views' },
   table: proposalViews,
   schemas: {
     insert: insertProposalViewSchema,
     update: updateProposalViewSchema,
     select: selectProposalViewSchema,
   },
-} satisfies EntityServerSpec<typeof proposalViews>
+})

@@ -8,7 +8,7 @@ import type { Tx } from '@/shared/db'
 import type { Insert, Row, Update } from '@/shared/db/types'
 import type { BetterAuthSession } from '@/shared/domains/auth/server'
 import type { EntityName } from '@/shared/domains/permissions/abilities'
-import type { AppAbility, AppSubject } from '@/shared/domains/permissions/types'
+import type { AppAbility } from '@/shared/domains/permissions/types'
 
 /** `scope: null` = no visibility restriction (system/omni). */
 export interface ScopedContext {
@@ -104,33 +104,62 @@ export type CrudConfigFactory<TTable extends PgTable, TId extends string | numbe
 
 // The engine validates payloads with the spec's Zod schemas AFTER the hooks run, so the
 // contract is the schema INPUT (hook-filled columns optional), not Drizzle's insert model.
-export type SpecInsert<TSpec extends EntityServerSpec<any, any>> = z.input<TSpec['schemas']['insert']>
-export type SpecUpdate<TSpec extends EntityServerSpec<any, any>> = z.input<TSpec['schemas']['update']>
+export type SpecInsert<TSpec extends ServerSpec<any>> = z.input<TSpec['schemas']['insert']>
+export type SpecUpdate<TSpec extends ServerSpec<any>> = z.input<TSpec['schemas']['update']>
 /** PK value type, read off the table's `id` column (serial → number, uuid → string). Tables keyed by another column (`primaryKey` override) fall back to string. */
-export type SpecId<TSpec extends EntityServerSpec<any, any>> = Row<TSpec['table']> extends { id: infer I extends string | number } ? I : string
-export type SpecCrudHandlers<TSpec extends EntityServerSpec<any, any>> = CrudHandlers<TSpec['table'], SpecId<TSpec>, SpecInsert<TSpec>, SpecUpdate<TSpec>>
+export type SpecId<TSpec extends ServerSpec<any>> = Row<TSpec['table']> extends { id: infer I extends string | number } ? I : string
+export type SpecCrudHandlers<TSpec extends ServerSpec<any>> = CrudHandlers<TSpec['table'], SpecId<TSpec>, SpecInsert<TSpec>, SpecUpdate<TSpec>>
 
-export interface EntityServerSpec<
-  TTable extends PgTable = PgTable,
-  // eslint-disable-next-line unused-imports/no-unused-vars -- Phantom type param carried through to CrudHandlers<TTable, TId> via createCrudDal
-  TId extends string | number = string,
-> {
+type ZodObjectAny = z.ZodObject<Record<string, z.ZodTypeAny>>
+
+export interface ServerSpecSchemas {
+  insert: ZodObjectAny
+  update: ZodObjectAny
+  select: ZodObjectAny
+}
+
+interface ServerSpecBase<TTable extends PgTable, TSchemas extends ServerSpecSchemas> {
   entityName: EntityName
-  caslSubject: AppSubject
-  /** The entity's OWN visibility fragment. Optional only for a child with `parent`; a top-level entity MUST declare it or it is unscoped (checked in `resolveEffectiveScope`). */
-  visibility?: (scope: VisibilityScope) => SQL
-  /** Parent link for a sub-entity: `fk` is the CHILD column referencing the parent's PK; the parent's effective scope is ANDed in through it. Children reuse the parent's `caslSubject`. */
-  parent?: { spec: EntityServerSpec, fk: PgColumn }
   table: TTable
-  schemas: {
-    insert: z.ZodObject<Record<string, z.ZodTypeAny>>
-    update: z.ZodObject<Record<string, z.ZodTypeAny>>
-    select: z.ZodObject<Record<string, z.ZodTypeAny>>
-  }
+  schemas: TSchemas
   /** Defaults to 'id'. Override for serial PKs or custom column names. */
   primaryKey?: string
+}
+
+/** Has its own CASL subject. A `parent` adds reach through another entity without giving up the subject. */
+export interface EntitySpec<
+  TTable extends PgTable,
+  TSchemas extends ServerSpecSchemas,
+  TSubject extends EntityName,
+  TConditionColumn extends string,
+  TParent extends ServerSpec,
+> extends ServerSpecBase<TTable, TSchemas> {
+  subject: TSubject
+  /** The only columns a rule condition may name. A row checked against a rule on the client must carry them. */
+  conditionColumns: readonly TConditionColumn[]
+  parent?: { spec: TParent, fk: PgColumn }
+  /** The entity's OWN visibility fragment. An entity without a `parent` MUST declare it or it is unscoped (checked in `resolveEffectiveScope`). */
+  visibility?: (scope: VisibilityScope) => SQL
   shareable?: { tokenColumn: string }
 }
+
+/** Has no subject: it is the field `parent.field` of its parent's subject, and is reached only through that parent. */
+export interface SubEntitySpec<
+  TTable extends PgTable,
+  TSchemas extends ServerSpecSchemas,
+  TParent extends ServerSpec,
+  TField extends string,
+> extends ServerSpecBase<TTable, TSchemas> {
+  parent: { spec: TParent, fk: PgColumn, field: TField }
+  // Entity-only. Declared `never` so a sub-entity cannot carry them.
+  visibility?: never
+  shareable?: never
+}
+
+/** Any spec over `TTable`. */
+export type ServerSpec<TTable extends PgTable = PgTable>
+  = | EntitySpec<TTable, ServerSpecSchemas, EntityName, string, ServerSpec>
+    | SubEntitySpec<TTable, ServerSpecSchemas, ServerSpec, string>
 
 /** `list` is deliberately not a slot — each entity writes its own list query. */
 export type SlotName = 'getById' | 'create' | 'update' | 'delete' | 'duplicate'

@@ -3,7 +3,7 @@
 
 import type { SQL } from 'drizzle-orm'
 
-import type { EntityServerSpec } from '@/shared/dal/server/types'
+import type { ServerSpec } from '@/shared/dal/server/types'
 import type { AppAbility } from '@/shared/domains/permissions/types'
 
 import { TRPCError } from '@trpc/server'
@@ -20,7 +20,7 @@ import { createMiddleware } from '@/trpc/init'
  * two can never drift.
  */
 export function resolveVisibilityScope(
-  spec: EntityServerSpec,
+  spec: ServerSpec,
   auth: { userId: string, ability: AppAbility },
 ): SQL | null {
   const isOmni = auth.ability.can('manage', 'all')
@@ -28,7 +28,7 @@ export function resolveVisibilityScope(
 }
 
 /** Returns a middleware that sets `ctx.scope` from `spec.visibility({ userId, ability })` (or null for omni). */
-export function scopeMiddleware(spec: EntityServerSpec) {
+export function scopeMiddleware(spec: ServerSpec) {
   return createMiddleware(async ({ ctx, next }) => {
     // Runtime guard — agentProcedure already checked, but createMiddleware
     // types ctx from the base HTTPTRPCContext where these are nullable.

@@ -1,5 +1,4 @@
-import type { EntityServerSpec } from '@/shared/dal/server/types'
-
+import { defineEntitySpec } from '@/shared/dal/server/lib/define-spec'
 import {
   insertProposalSchema,
   proposals,
@@ -23,9 +22,10 @@ export const proposalSchemas = {
 // recompute on update) and the `duplicate` config live in the config factory in
 // ../dal/server/crud.ts — NOT on this spec. `shareable` stays here (spec-level
 // token-scope config consumed by the shareable middleware).
-export const proposalServerSpec = {
+export const proposalServerSpec = defineEntitySpec({
   entityName: PROPOSAL,
-  caslSubject: PROPOSAL,
+  subject: PROPOSAL,
+  conditionColumns: ['id'],
   visibility: proposalVisibility,
   table: proposals,
   schemas: {
@@ -34,4 +34,4 @@ export const proposalServerSpec = {
     select: selectProposalSchema,
   },
   shareable: { tokenColumn: 'token' },
-} satisfies EntityServerSpec<typeof proposals>
+})
