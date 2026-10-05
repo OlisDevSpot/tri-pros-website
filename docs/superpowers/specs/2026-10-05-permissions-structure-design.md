@@ -313,6 +313,7 @@ ability.can('update', subject('Customer', customer), 'profile.hoa')
 | Foreign key from another table; field shadowing a parent column; unknown condition column; duplicate field under one parent | compile |
 | Rule field that is not a column or declared path, in `can` or `cannot` | compile |
 | Condition on an undeclared column, or of the wrong type | compile |
+| Condition or operator whose value may be `undefined`; empty field list | compile |
 | Operator on a mutation rule, with a field list, or on the wrong subject | compile |
 | Unknown subject or action | compile |
 | Client check with a mistyped field, or a row lacking condition columns | compile |

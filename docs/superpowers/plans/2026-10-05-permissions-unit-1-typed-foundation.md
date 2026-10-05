@@ -20,7 +20,7 @@
 - **Lint baseline.** `pnpm lint` on this branch reports two formatting errors in `src/app/(frontend)/globals.css` that come from main and are out of scope. "Lint passes" in this plan means: no error outside that file.
 - **Type-check baseline.** A warm `pnpm tsc` takes about 12 s on this branch. Task 4 compares against it.
 - **Inference trap.** A type parameter that should capture a literal must be inferred from a plain property (`field: TField`) and validated in an intersection (`& { field: FreeFieldName<…> }`). Written as the conditional type alone, it falls back to `string` and every field check silently accepts anything.
-- **Empty-type trap.** An object type with no properties accepts every object, and intersecting a type with `{}` switches off TypeScript's "no properties in common" check. Eight of the fifteen entities start with no condition columns, so a conditions parameter typed as a plain mapped type would accept an operator, an unknown key, or even a field list. Task 3's `Only<>` and `NotAList` exist for this; do not simplify them away.
+- **Empty-type trap.** An object type with no properties accepts every object, and intersecting a type with `{}` switches off TypeScript's "no properties in common" check. Eight of the fifteen entities start with no condition columns, so a conditions parameter typed as a plain mapped type would accept an operator, an unknown key, or even a field list. Task 3's `Only<>` exists for this; do not simplify it away. It also turns into `never` every condition whose value may be `undefined`, because such a condition would drop the filter it stands for.
 - **Spec §9 rows that wait.** The two client-check rows (a mistyped field in a check; a row lacking condition columns) get their must-not-compile lines in unit 2, when the typed client checks exist.
 - **Lint rules that bite here:** every `// @ts-expect-error` needs a description after it; unused top-level names are errors unless exported or `_`-prefixed; type imports sort before value imports; top-level functions are `function` declarations; object shapes are `interface`, not `type X = {}`.
 - **Comments say why, never what.** No citations of plans, specs or tasks from code.
@@ -600,6 +600,9 @@ const userId = 'user-1'
 const proposalId = 'proposal-1'
 const conditionsBuiltElsewhere = { token: 'x' }
 const operatorBuiltElsewhere = { $participatesViaMeeting: { via: 'customerId' as const, userId } }
+const sharedFields = ['name', 'phone'] as const
+declare const maybeUserId: string | undefined
+declare const optionalConditions: { ownerId?: string }
 
 export const rulesThatMustCompile = defineRules((can, cannot) => {
   can('manage', 'all')
@@ -626,6 +629,8 @@ export const rulesThatMustCompile = defineRules((can, cannot) => {
   can('read', 'Customer', operatorBuiltElsewhere)
   can('update', 'Proposal', ['views'])
   cannot('delete', 'CustomerNote')
+  can('update', 'Customer', sharedFields)
+  can('read', 'VoipCall', { agentUserId: null })
 }).length
 
 defineRules((can, cannot) => {
@@ -679,6 +684,33 @@ defineRules((can, cannot) => {
   can('update', 'Proposal', ['veiws'])
   // @ts-expect-error a field list is never read as conditions (cannot)
   cannot('update', 'Proposal', ['veiws'])
+
+  // A condition that may be `undefined` would drop the filter it stands for.
+  // @ts-expect-error a condition value that may be undefined
+  can('read', 'Project', { ownerId: maybeUserId })
+  // @ts-expect-error a condition value that is undefined
+  can('read', 'Project', { ownerId: undefined })
+  // @ts-expect-error conditions whose key may be absent
+  can('read', 'Project', optionalConditions)
+  // @ts-expect-error an operator that is undefined
+  can('read', 'Customer', { $participatesViaMeeting: undefined })
+  // @ts-expect-error an operator payload that may be undefined
+  can('read', 'Customer', { $participatesViaMeeting: { via: 'customerId', userId: maybeUserId } })
+  // @ts-expect-error a value inside $in that may be undefined
+  can('read', 'VoipCall', { agentUserId: { $in: [maybeUserId] } })
+  // @ts-expect-error a cannot condition that may be undefined
+  cannot('update', 'CustomerNote', { authorId: maybeUserId })
+
+  // @ts-expect-error an empty field list
+  can('update', 'Customer', [])
+  // @ts-expect-error an empty field list on a cannot
+  cannot('update', 'Proposal', [])
+  // @ts-expect-error an empty field list with conditions
+  can('update', 'Proposal', [], { id: proposalId })
+  // @ts-expect-error a mistyped field list on a read of an entity with no condition columns
+  can('read', 'Customer', ['agee'])
+  // @ts-expect-error a widened list of strings is not a field list
+  can('update', 'Customer', ['age'] as string[])
 })
 ```
 
@@ -746,33 +778,36 @@ type ColumnConditions<S extends EntitySubject> = {
 type ReadOperatorsOf<S extends EntitySubject> = S extends keyof ReadOperators ? ReadOperators[S] : unknown
 type ReadConditions<S extends EntitySubject> = ColumnConditions<S> & ReadOperatorsOf<S>
 
-/** An array has an iterator and a conditions object does not; without this a field list can be read as conditions. */
-interface NotAList {
-  readonly [Symbol.iterator]?: never
-}
-
 // An entity with no condition columns has an EMPTY conditions type, and an empty object type
-// accepts any object. So the given conditions are captured as `TGiven` and every key outside
-// `TAllowed` is turned into `never`. The no-extra-keys branch returns `TGiven` untouched because
-// intersecting with `{}` would switch off the "no properties in common" check.
-type Only<TGiven, TAllowed> = ([Exclude<keyof TGiven, keyof TAllowed>] extends [never]
+// accepts any object. So the given conditions are captured as `TGiven`, and two kinds of key are
+// turned into `never`: a key outside `TAllowed`, and a key whose value may be `undefined`, which
+// would drop the filter it stands for. When nothing is rejected the result is `TGiven` untouched,
+// because intersecting with `{}` would switch off the "no properties in common" check.
+type MaybeUndefinedKey<TGiven> = { [K in keyof TGiven]-?: undefined extends TGiven[K] ? K : never }[keyof TGiven]
+type Rejected<TGiven, TAllowed> = Exclude<keyof TGiven, keyof TAllowed> | MaybeUndefinedKey<TGiven>
+type Only<TGiven, TAllowed> = [Rejected<TGiven, TAllowed>] extends [never]
   ? TGiven
-  : TGiven & { [K in Exclude<keyof TGiven, keyof TAllowed>]: never }) & NotAList
+  : TGiven & { [K in Rejected<TGiven, TAllowed>]: never }
+
+/** At least one field: CASL refuses an empty field list, and only when the ability is built. */
+type FieldList<S extends EntitySubject> = readonly [FieldOf<S>, ...FieldOf<S>[]]
 
 interface RuleHandle {
   because: (reason: string) => void
 }
 
+// `const C`: `Only` rewrites the parameter's type, so the literal types of the given conditions
+// must be captured from the argument itself and not from that parameter type.
 export interface AddCannotRule {
-  <S extends EntitySubject, C extends ColumnConditions<S>>(action: CrudAction | readonly CrudAction[], subject: S, conditions?: Only<C, ColumnConditions<S>>): RuleHandle
-  <S extends EntitySubject, C extends ColumnConditions<S>>(action: CrudAction | readonly CrudAction[], subject: S, fields: readonly FieldOf<S>[], conditions?: Only<C, ColumnConditions<S>>): RuleHandle
+  <S extends EntitySubject, const C extends ColumnConditions<S>>(action: CrudAction | readonly CrudAction[], subject: S, conditions?: Only<C, ColumnConditions<S>>): RuleHandle
+  <S extends EntitySubject, const C extends ColumnConditions<S>>(action: CrudAction | readonly CrudAction[], subject: S, fields: FieldList<S>, conditions?: Only<C, ColumnConditions<S>>): RuleHandle
 }
 
 export interface AddRule {
   /** The only form that may carry an operator: `read`, no field list. Operators are SQL-only, so a client cannot test them on a row. */
-  <S extends EntitySubject, C extends ReadConditions<S>>(action: 'read', subject: S, conditions?: Only<C, ReadConditions<S>>): RuleHandle
-  <S extends EntitySubject, C extends ColumnConditions<S>>(action: Exclude<CrudAction, 'read'> | readonly CrudAction[], subject: S, conditions?: Only<C, ColumnConditions<S>>): RuleHandle
-  <S extends EntitySubject, C extends ColumnConditions<S>>(action: CrudAction | readonly CrudAction[], subject: S, fields: readonly FieldOf<S>[], conditions?: Only<C, ColumnConditions<S>>): RuleHandle
+  <S extends EntitySubject, const C extends ReadConditions<S>>(action: 'read', subject: S, conditions?: Only<C, ReadConditions<S>>): RuleHandle
+  <S extends EntitySubject, const C extends ColumnConditions<S>>(action: Exclude<CrudAction, 'read'> | readonly CrudAction[], subject: S, conditions?: Only<C, ColumnConditions<S>>): RuleHandle
+  <S extends EntitySubject, const C extends ColumnConditions<S>>(action: CrudAction | readonly CrudAction[], subject: S, fields: FieldList<S>, conditions?: Only<C, ColumnConditions<S>>): RuleHandle
   <S extends keyof ExtraEntityActions>(action: ExtraEntityActions[S], subject: S): RuleHandle
   <S extends keyof SubjectsWithoutSpec>(action: SubjectsWithoutSpec[S] | readonly SubjectsWithoutSpec[S][], subject: S): RuleHandle
 }
@@ -810,7 +845,7 @@ export function defineRules(build: (can: AddRule, cannot: AddCannotRule) => void
 Run: `pnpm tsc`
 Expected: no errors, and no `TS2578`.
 
-If a line under `rulesThatMustCompile` reports "No overload matches this call", the types are too strict: fix `define-rules.ts`, never the fixture. If a `@ts-expect-error` line reports `TS2578`, the types are too loose: check first that no generic fell back to `string` (hover `FieldOf<'Customer'>`; it must be a union of literals), then that `Only<>` and `NotAList` are intact.
+If a line under `rulesThatMustCompile` reports "No overload matches this call", the types are too strict: fix `define-rules.ts`, never the fixture. If a `@ts-expect-error` line reports `TS2578`, the types are too loose: check first that no generic fell back to `string` (hover `FieldOf<'Customer'>`; it must be a union of literals), then that `Only<>` is intact.
 
 - [ ] **Step 6: Prove two lines are live**
 
@@ -876,7 +911,7 @@ Expected: type-check clean; no lint error outside `globals.css`; warm type-check
 - [ ] **Step 5: Update the tracker and the distilled record**
 
 In `docs/plans/2026-08-10-casl-scope-compiler-epic.md`:
-- §4: in the Unit 1 item, change `- [ ]` to `- [x]`, change `· AFK.` to `· DONE <today's date>.`, and replace the `**Plan:** _(to write)_` line with `**Landed as:**` followed by the three commit hashes of Tasks 1–3.
+- §4: in the Unit 1 item, change `- [ ]` to `- [x]`, change `· AFK.` to `· DONE <today's date>.`, and replace the whole `- **Plan:** …` line under it with `- **Landed as:** fb7e6a39 (constructors, 19 specs, `ServerSpec`), 55f1537e (type-only list), 2ed3d7b4 and e84c07f0 (`defineRules`, operators).`
 - §5.4: delete the table row whose first cell is "`caslSubject` on the spec".
 - §5.5: delete the first sentence (the `src/trpc/types.ts:4-5` path, corrected in Task 1) and append this sentence: `docs/adr/0002-entity-server-system.md` still describes `EntityServerSpec` and a required `caslSubject` (lines 4, 17, 41, 43, 151, 155, 218); it is rewritten when the epic lands.
 - Appendix A: append this line, with today's date:
@@ -886,10 +921,10 @@ In `docs/plans/2026-08-10-casl-scope-compiler-epic.md`:
 ```
 
 In `docs/plans/2026-09-07-casl-re-grounding/DISTILLED-2026-10-01.md`:
-- §1: add this bullet:
+- §1: the bullet that begins `**Nothing is built under the current design.**` is no longer true. Replace its first sentence with the sentence below and keep the rest of the bullet (the description of the legacy shapes) as it is:
 
 ```markdown
-- Unit 1 (typed foundation) is in the tree: spec constructors, the type-only list, `defineRules`. Rules and enforcement are still the legacy engine's.
+**Unit 1 (typed foundation) is in the tree; nothing enforces through it yet.** Spec constructors, the type-only list of specs, `defineRules` and the operator declarations exist; rules and enforcement are still the legacy engine's.
 ```
 
 - §7: replace step 2 with:
