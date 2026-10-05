@@ -5,6 +5,7 @@ import type { DateRange as ReactDayPickerRange } from 'react-day-picker'
 import type { FilterDefinition } from '@/shared/dal/client/lib/types'
 import type { DateRange } from '@/shared/dal/lib/query/range-schemas'
 
+import { endOfDay } from 'date-fns'
 import { CalendarIcon } from 'lucide-react'
 import { useState } from 'react'
 
@@ -57,9 +58,11 @@ export function DateRangeFilterControl({ definition, value, onChange }: Props) {
       onChange(undefined)
       return
     }
+    // The picker hands back the end day at midnight; the server compares `to` inclusively,
+    // so the rest of that day would drop out without endOfDay (the quick ranges do the same).
     onChange({
       from: range.from?.toISOString(),
-      to: range.to?.toISOString(),
+      to: range.to ? endOfDay(range.to).toISOString() : undefined,
     })
   }
 
