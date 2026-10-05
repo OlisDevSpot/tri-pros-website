@@ -16,6 +16,7 @@ import { LeadSourceList } from '@/features/lead-sources-admin/ui/components/lead
 import { NewLeadSourceSheet } from '@/features/lead-sources-admin/ui/components/new-lead-source-sheet'
 import { SourceDetail } from '@/features/lead-sources-admin/ui/components/source-detail'
 import { TimeRangeChips } from '@/features/lead-sources-admin/ui/components/time-range-chips'
+import { PageBar } from '@/shared/components/page-bar'
 import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
@@ -68,32 +69,27 @@ export function LeadSourcesView() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
-      {/*
-        Combined page header on lg+: title block on the left, time-range
-        cluster on the right. Below lg the two clusters stack so the chips
-        get full width to wrap. Outer padding/spacing comes from the
-        dashboard template — match the records-page pattern (no inner
-        px/py, no border) so the gap from the sidebar and the top of the
-        page lines up with /dashboard/customers, /dashboard/proposals, etc.
-      */}
-      <header className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between lg:gap-6">
-        <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="text-xl font-semibold text-foreground">Lead Sources</h1>
-          <p className="text-xs text-muted-foreground">
-            Performance tracking and intake configuration for every lead channel.
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center justify-between gap-3 lg:justify-end">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Time range
-          </span>
-          <TimeRangeChips
-            chips={chips}
-            value={activeChip.key}
-            onChange={k => setRangeKey(k as TimeRangeKey, { history: 'replace' })}
-          />
-        </div>
-      </header>
+      {/* Below lg the time range stacks under the title so the chips get the full width to wrap. */}
+      <PageBar>
+        <header className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between lg:gap-6">
+          <div className="flex min-w-0 flex-col gap-1">
+            <h1 className="text-xl font-semibold text-foreground">Lead Sources</h1>
+            <p className="text-xs text-muted-foreground">
+              Performance tracking and intake configuration for every lead channel.
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center justify-between gap-3 lg:justify-end">
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Time range
+            </span>
+            <TimeRangeChips
+              chips={chips}
+              value={activeChip.key}
+              onChange={k => setRangeKey(k as TimeRangeKey, { history: 'replace' })}
+            />
+          </div>
+        </header>
+      </PageBar>
 
       <div className="flex min-h-0 flex-1">
         <aside

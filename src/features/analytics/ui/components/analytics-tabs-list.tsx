@@ -12,7 +12,7 @@ interface Props {
 /** Report tabs read the numbers; Spend, set apart at the end, is where they are entered. */
 export function AnalyticsTabsList({ spendMissing }: Props) {
   return (
-    <div className="-mx-4 overflow-x-auto overflow-y-hidden px-4 [scrollbar-width:none] md:mx-0 md:px-0">
+    <div className="-mx-3 overflow-x-auto overflow-y-hidden px-3 [scrollbar-width:none] md:mx-0 md:px-0">
       <TabsList variant="underline" className="min-w-max">
         {ANALYTICS_TABS.filter(t => t !== 'spend').map(t => (
           <TabsTrigger key={t} value={t} className="min-h-11 md:min-h-10">{TAB_LABELS[t]}</TabsTrigger>
