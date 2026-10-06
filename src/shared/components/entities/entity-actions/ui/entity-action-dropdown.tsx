@@ -250,7 +250,14 @@ function EntityActionCustomItem<TEntity>({
           {action.label}
         </DropdownMenuSubTrigger>
         <DropdownMenuSubContent
-          className="w-[min(420px,calc(100vw-2rem))] p-0"
+          className="w-[min(420px,calc(100vw-2rem))] max-w-(--radix-dropdown-menu-content-available-width) p-0"
+          collisionPadding={8}
+          // Radix hands focus to the submenu itself; the picker's search field has to hold it instead.
+          ref={(node) => {
+            if (node) {
+              requestAnimationFrame(() => node.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true }))
+            }
+          }}
           onFocusOutside={() => setSubOpen(false)}
           onInteractOutside={() => setSubOpen(false)}
         >
