@@ -1,4 +1,3 @@
-import { headers } from 'next/headers'
 import { Suspense } from 'react'
 
 import { ScrollRootProvider } from '@/features/proposal-flow/contexts/scroll-context'
@@ -8,15 +7,14 @@ import { ProposalSplashScreen } from '@/features/proposal-flow/ui/components/pro
 import { ProposalFlowLoadingState } from '@/features/proposal-flow/ui/components/states/loading'
 import { GlobalDialogs } from '@/shared/components/dialogs/modals/global-dialogs'
 import { ServerAbilityProvider } from '@/shared/components/providers/server-ability-provider'
-import { auth } from '@/shared/domains/auth/server'
+import { getRequestActor } from '@/shared/domains/permissions/server/get-request-actor'
 
 export default async function ProposalFlowLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const reqHeaders = await headers()
-  const session = await auth.api.getSession({ headers: reqHeaders })
+  const { session } = await getRequestActor()
   const isAuthenticated = Boolean(session)
 
   // The agent/homeowner view is gated on the ability; seeding it from this session puts the

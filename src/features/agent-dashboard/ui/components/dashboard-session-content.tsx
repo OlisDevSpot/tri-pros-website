@@ -1,7 +1,7 @@
 import { DashboardSignIn } from '@/features/agent-dashboard/ui/components/dashboard-sign-in'
 import { ServerAbilityProvider } from '@/shared/components/providers/server-ability-provider'
 import { PushSubscriptionBanner } from '@/shared/components/push-subscription-banner'
-import { getCachedSession } from '@/shared/domains/auth/lib/get-cached-session'
+import { getRequestActor } from '@/shared/domains/permissions/server/get-request-actor'
 
 // Owns the session read for the page slot. A session cookie that no longer maps
 // to a session (expired, revoked) lands here as null and gets the sign-in
@@ -9,7 +9,7 @@ import { getCachedSession } from '@/shared/domains/auth/lib/get-cached-session'
 // permissions from this session, so gated UI is in the first paint instead of
 // waiting on the browser's session fetch.
 export async function DashboardSessionContent({ children }: { children: React.ReactNode }) {
-  const session = await getCachedSession()
+  const { session } = await getRequestActor()
   if (!session) {
     return <DashboardSignIn />
   }
