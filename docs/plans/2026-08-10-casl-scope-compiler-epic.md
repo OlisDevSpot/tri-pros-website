@@ -14,7 +14,7 @@
 |---|---|
 | Branch / worktree | `refactor/285-refactor-permissions-casl-scope-compiler`, `.worktrees/issue-285` — the long-lived home of the WHOLE epic (no per-phase PRs; one merge at Phase 9). On origin since 2026-10-05 |
 | vs `main` | **0 behind**: main merged in again at the unit 1 boundary (`2818bf06`, 2026-10-05, no conflicts). Supersede merge `2b038591` (2026-10-05): tree = main `61d3e1e2` + the permissions docs. The dry-run merge had grown to 44 conflicted paths at 581 behind, and main had rewritten `create-crud-dal.ts`, `dal/server/types.ts` and `create-crud-router.ts` under the branch's seam, so main's tree was taken whole. The 76 branch commits stay ancestors (`b40403b6` = last code tip) |
-| What the tree runs | Unit 1's typed foundation is in the tree and enforces nothing yet. Enforcement is main's legacy engine everywhere: `ScopedContext { session, ability, scope }`, `SYSTEM_CONTEXT`, `spec.visibility` + `resolveEffectiveScope` + `resolveVisibilityScope`, `shareableMiddleware` (token ⇒ `ability: null`), conditionless CASL rules. No file under `src/shared/domains/permissions/scope/` exists in the tree |
+| What the tree runs | Unit 1's typed foundation is in the tree and enforces nothing yet. Enforcement is main's legacy engine everywhere: `ScopedContext { actor, scope }`, `SYSTEM_CONTEXT`, `spec.visibility` + `resolveEffectiveScope` + `resolveVisibilityScope`, `shareableMiddleware` (token ⇒ a holder actor with bare `read` + `update`), conditionless CASL rules. No file under `src/shared/domains/permissions/scope/` exists in the tree |
 | `pnpm tsc` / `pnpm lint` | PASS / PASS — run 2026-10-05 on `2818bf06`, the unit 1 boundary merge (the two formatting errors in `globals.css` left with that merge) |
 | Structure spec | `docs/superpowers/specs/2026-10-05-permissions-structure-design.md` — approved by the owner 2026-10-05 (six sections in chat, then the written form). Unit 1 landed 2026-10-05. Next: the plan for unit 2 |
 | Keep-primitives | restored from `b40403b6` per unit (spec §6.6; report 19 §1: adapter core A5–A12, A16–A19, operators A20/A22, `SystemReason`, `MEETING_OUTCOME_CLASS` derivations, set-based media mutations) |
@@ -231,7 +231,7 @@ Found by a read-only pass over the whole tree. Rows marked ● were then re-read
 | Activity is its owner's | `schedule.router/activities.router.ts` — raw `db`, inline owner checks on `update`/`delete`, none on `getById`/`complete` | `{ ownerId }` rules on an Activity entity (#226) | 4 |
 | Customer note: author or admin edits | `customer-notes/dal/server/crud.ts:58-72` + `lib/assert-note-author.ts`; client copy `customer-notes/hooks/use-customer-note-action-configs.ts` | `can(['update','delete'], 'CustomerNote', { authorId })` | 4 |
 | Customer note: creator must reach the customer | `customer-notes/dal/server/crud.ts:40-53` (`buildUserContext`) | the parent probe in `create` | 3 (Customer) |
-| Envelope document choice is staff-only | `proposals.router/contracts.router.ts:143-148` (`ctx.ability == null` as the test) | the bearer's field list | 3 (Proposal) |
+| Envelope document choice is staff-only | `proposals.router/contracts.router.ts:143-148` (`ctx.actor.userId === null` as the test) | the bearer's field list | 3 (Proposal) |
 | Customer profile edits | `customers.router/profile.router.ts:20`, `meeting-flow.router.ts:33`, client `customers/hooks/use-customer-edit-form.ts:30` (`'CustomerProfile'`) | `update Customer ['profile.*']` | 3 (Customer) |
 | Proposal children follow the proposal | `proposals.router/media.router.ts:25`, `incentives.router.ts:27` (`cannot('update','Proposal')` by hand) | sub-entity fields `media`, `incentives` | 3 (Proposal) |
 | Meeting participants list | `meetings.router/participants.router.ts` (`isParticipant` by hand) | the Meeting read rule | 3 (Meeting) |
@@ -241,11 +241,11 @@ Found by a read-only pass over the whole tree. Rows marked ● were then re-read
 |---|---|---|
 | `SYSTEM_CONTEXT` (106 sites / 43 files) | `systemContext(reason)` | 3 |
 | `ctx.scope` (88 sites / 38 files), `{ ...ctx, scope: null }`, `ctx.scope ?? undefined` | `permit` inside the DAL | 3 |
-| `resolveVisibilityScope` (24 sites / 9 files) and the per-entity `procedures.ts` scope stamps; `scopeMiddleware` (no caller) | — | 3, file deleted in 6 |
+| `resolveVisibilityScope` (24 sites / 9 files) and the per-entity `procedures.ts` scope stamps; `scopeMiddleware` (no caller; deleted in unit 2) | — | 3, file deleted in 6 |
 | `buildUserContext` (`dal/server/lib/helpers.ts:42`; callers: customer-notes crud, customer-pipelines router, meeting-flow router, projects business router, `move-customer-pipeline-item.ts` ×4) | `ctx.actor` + `permit(...).probe` | 3 |
 | `isVisible` (one caller: proposal media service), `isInScope` (one caller: proposal views queries) | `permit(...).probe` | 3 |
 | `assertCan` / `assertCanUpdateFields` in `create-crud-router.ts` | the DAL slots | 3 |
-| `shareableMiddleware` (a token gives `ability: null`, and wins over a session) | `bearerContext` + the proposal shareable procedure | 3 (Proposal) |
+| `shareableMiddleware` (a token gives a holder actor with bare `read` + `update`, and wins over a session) | `bearerContext` + the proposal shareable procedure | 3 (Proposal) |
 | `systemProcedure`; a separate `ctx.ability`; the `scope: null` stamp in `protectedProcedure` | the ladder narrows | 2 |
 | Client-side `defineAbilitiesFor` ×4 (`casl-provider.tsx`, `server-ability-provider.tsx`, `app-sidebar.tsx`, `mobile-dock.tsx`) | the provider fed from the root layout | 2 |
 | Hand-written copies of server rules: `get-accessible-pipelines.ts`, `use-customer-note-action-configs.ts`, `can-see-phone.ts` | `ability.can` | 4 |
@@ -254,7 +254,7 @@ Found by a read-only pass over the whole tree. Rows marked ● were then re-read
 | interim staff gate `can('access','Dashboard')` | future is-staff reconception (marker only) | — |
 
 ### 5.5 Stale refs seen 2026-10-05 (fix when the file is touched)
-Several `DOCS.md` files and job comments cite `customerServerSpec.hooks.*` / `meetingServerSpec.hooks.*`, which moved to the `dal/server/crud.ts` config factories. `modules/proposals/core/constants/actions.ts:43` declares `permission: ['assign', 'Proposal']`; no rule grants it. `modules/projects/media/service.ts:15-17` and `modules/proposals/core/server-spec.ts:11-14` defer their checks to "#285" by name. `docs/adr/0002-entity-server-system.md` still describes `EntityServerSpec` and a required `caslSubject` (lines 4, 17, 41, 43, 123, 151, 153, 155, 199, 207, 218), and `docs/permissions/visibility-rules-catalog.md:128` and `docs/ubiquitous-language.md:164` use the old names too; they are rewritten when the epic lands.
+Several `DOCS.md` files and job comments cite `customerServerSpec.hooks.*` / `meetingServerSpec.hooks.*`, which moved to the `dal/server/crud.ts` config factories. `modules/proposals/core/constants/actions.ts:43` declares `permission: ['assign', 'Proposal']`; no rule grants it. `modules/projects/media/service.ts:15-17` and `modules/proposals/core/server-spec.ts:11-14` defer their checks to "#285" by name. `docs/adr/0002-entity-server-system.md` still describes `EntityServerSpec` and a required `caslSubject` (lines 4, 17, 41, 43, 123, 151, 153, 155, 199, 207, 218), `ctx.ability` samples (lines 23, 108, 119) and `scopeMiddleware` mentions (lines 95, 105, 201), and `docs/permissions/visibility-rules-catalog.md:128` and `docs/ubiquitous-language.md:164` use the old names too; they are rewritten when the epic lands.
 
 ---
 

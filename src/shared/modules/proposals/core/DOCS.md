@@ -57,7 +57,7 @@ When creating a proposal, if the meeting has `flowStateJSON.tradeSelections` and
 
 ### shareable-via-token
 
-A proposal can be read AND updated by an unauthenticated client via `?token=<shareToken>`. The `shareableMiddleware` resolves token-or-session and sets `ctx.scope = eq(proposals.token, token)` on the token path. CASL is `null` on token path — token IS authorization.
+A proposal can be read AND updated by an unauthenticated client via `?token=<shareToken>`. The `shareableMiddleware` resolves token-or-session and sets `ctx.scope = eq(proposals.token, token)` on the token path. On the token path the request acts as the share-link holder: an ability with `read` and `update` on the proposal, and no user id.
 
 **Why**: customer e-signature flow + finance-option selection both require unauthenticated read/update. Treating token as scope means the DAL is unchanged from the authed path.
 **Reference impl**: `server-spec.ts:shareable`
@@ -80,7 +80,7 @@ Non-omni agents see a proposal only if they participate in the proposal's meetin
 
 **Why**: the meeting is where the customer relationship is owned; proposals inherit visibility from there. `ownerId` is the author, not the gate.
 **Reference impl**: `lib/visibility.ts` → `userParticipatesInMeeting`
-**Enforced by**: `scopeMiddleware(proposalServerSpec)` on every entity procedure
+**Enforced by**: the inline scope step (`resolveVisibilityScope(proposalServerSpec, …)`) on every entity procedure
 
 ### one-approved-initial-sale-per-meeting
 
@@ -396,7 +396,7 @@ Proposals can carry attached files (photos, videos, PDFs) in `proposal_media_fil
 - **Storing `finalTcp`.** Always derive via `computeFinalTcp` — see `#final-tcp-derived`.
 - **Setting `kind` from client input.** Server-derived; `create.before` overwrites whatever arrives. (The schemas carry it as optional — they do not omit it.)
 - **Hand-writing a `||` merge against `formMetaJSON` / `projectJSON` / `fundingJSON`.** The `jsonbMergeColumns` mechanism these were once registered in (Retired Wave 1) was deleted entirely in Wave 2 — every writer sends the whole document; a `||` merge would resurrect deliberately-cleared fields the same way the old mechanism did. See `#jsonb-merge-on-update`.
-- **Adding a CASL check on the share-token path.** Token IS authorization; CASL is `null`.
+- **Adding a CASL check on the share-token path.** Token IS authorization: the request acts as the share-link holder (bare `read` + `update` on the proposal, no user id), and the CRUD router checks that ability like any other.
 - **Assuming proposal approval creates a project or sets `converted_to_project`.** It does neither — see `#conversion-trigger`. Project creation (`projects.router/business.router.ts` `create`) or `customerPipelinesRouter.assignToProject` are the only writers of that outcome.
 - **Computing project start date by adding 3 calendar days to signing.** Use `cslbEarliestStartDate(signingDate, isSenior)` — Sundays don't count.
 - **Re-deriving `kind` when `meeting.projectId` changes.** Frozen at insert.

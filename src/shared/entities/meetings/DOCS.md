@@ -79,7 +79,7 @@ This predicate cascades upward to customers (`../customers/DOCS.md#visibility-vi
 
 **Why**: meeting participation is the single source of "did this agent work with this customer." Every visibility predicate in the entity graph derives from here.
 **Reference impl**: `dal/server/participants.ts:userParticipatesInMeeting`
-**Enforced by**: `scopeMiddleware(meetingServerSpec)` on every entity procedure (when meetings is migrated to the entity server system)
+**Enforced by**: the inline scope step (`resolveVisibilityScope(meetingServerSpec, …)`) on every entity procedure (when meetings is migrated to the entity server system)
 
 ### meeting-type-vs-pipeline-are-orthogonal
 

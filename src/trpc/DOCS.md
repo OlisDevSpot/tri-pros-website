@@ -44,13 +44,13 @@ src/trpc/
 
 ### base-procedure-types
 
-`src/trpc/init.ts` exports a four-rung procedure ladder, each rung extending the one above it (so session/ability/guards accumulate):
+`src/trpc/init.ts` exports a four-rung procedure ladder, each rung extending the one above it (so the session narrowing and the guards accumulate; the actor is built once with the context):
 
 | Procedure | Guard | Ctx after |
 |---|---|---|
-| `baseProcedure` | None | `session: null, ability: null, scope: null` |
-| `protectedProcedure` | Throws UNAUTHORIZED if no session; builds CASL `ability` from session role | `session: non-null, ability: non-null, scope: null` |
-| `agentProcedure` | Extends protected; FORBIDDEN unless `ability.can('access', 'Dashboard')` (internal users) | same as protected |
+| `baseProcedure` | None | `session: null, actor: no rules, scope: null` |
+| `protectedProcedure` | Throws UNAUTHORIZED if no session | `session: non-null, scope: null` |
+| `agentProcedure` | Extends protected; FORBIDDEN unless `actor.ability.can('access', 'Dashboard')` (internal users) | same as protected |
 | `superAdminProcedure` | Extends agent; FORBIDDEN unless `ability.can('manage', 'all')` (super-admin omni grant) | same as protected |
 
 Entity sub-routers **never** call `agentProcedure` directly — they import the entity's pre-scoped procedure (`<entity>Procedure` / `<entity>ShareableProcedure`) from `<entity>.router/procedures.ts`, which has scope resolution baked on at definition time.
@@ -86,22 +86,22 @@ Per-entity pre-scoped procedures are defined **once** as top-level consts in `<e
 
 ```ts
 // proposals.router/procedures.ts
-/** Agent-only. Session + ability guaranteed; `ctx.scope` resolved (null for omni). */
+/** Agent-only. Session guaranteed; `ctx.scope` resolved (null for omni). */
 export const proposalProcedure = agentProcedure.use(async ({ ctx, next }) => {
-  const scope = resolveVisibilityScope(proposalServerSpec, { userId: ctx.session.user.id, ability: ctx.ability })
+  const scope = resolveVisibilityScope(proposalServerSpec, { userId: ctx.session.user.id, ability: ctx.actor.ability })
   return next({ ctx: { ...ctx, scope } })
 })
 
-/** Token-or-session. Token path → `ctx.scope = eq(token, …)`, `ctx.ability = null`. */
+/** Token-or-session. Token path → the holder's ability and `ctx.scope = eq(token, …)`. */
 export const proposalShareableProcedure = baseProcedure.use(shareableMiddleware(proposalServerSpec))
 
 /** No auth. Pass-through of baseProcedure — the caller enforces authorization inline. */
 export const proposalPublicProcedure = baseProcedure
 ```
 
-**The agent scope step is inlined, NOT `.use(scopeMiddleware(spec))`.** The standalone `scopeMiddleware` is typed against the ROOT context (nullable `session`); chaining it widens `ctx.session` back to null and forces an `as typeof agentProcedure` cast — the crutch the old factory needed. An inline `.use()` infers `ctx` from `agentProcedure`, so the non-null session/ability narrowing flows through and no cast is needed. The scope math stays DRY via the shared `resolveVisibilityScope(spec, { userId, ability })`.
+**The agent scope step is inlined in each `procedures.ts`.** An inline `.use()` infers `ctx` from `agentProcedure`, so the non-null session narrowing flows through and no cast is needed. The scope math stays DRY via the shared `resolveVisibilityScope(spec, { userId, ability })`.
 
-**Naming**: the agent procedure is `<entity>Procedure`; shareable/public/system variants are `<entity>ShareableProcedure` / `<entity>PublicProcedure` / `systemProcedure`. Only declare the variants an entity actually uses (proposals needs all; meetings/applications need only the agent one).
+**Naming**: the agent procedure is `<entity>Procedure`; shareable and public variants are `<entity>ShareableProcedure` / `<entity>PublicProcedure`. An endpoint whose caller is proven outside the session (a share token, a webhook signature) uses `baseProcedure` and says so in a comment. Only declare the variants an entity actually uses (proposals needs all; meetings/applications need only the agent one).
 
 **Why**: `server-spec.ts` stays a pure data object (imported by the DAL) — the tRPC runtime is pulled in only here, router-side, never into the entity/DAL layer. tRPC-idiomatic `const + typeof` deletes the cast.
 **Reference impl**: `src/trpc/routers/proposals.router/procedures.ts`
@@ -168,13 +168,13 @@ This replaces the `isOmni`-or-predicate dance that previously had to be inlined 
 
 `shareableMiddleware(spec)` resolves dual-credential access:
 
-- **Token present** (e.g., `?token=tpr-xxx`): validates the token column on the entity table, sets `ctx.scope = eq(tokenColumn, token)`, `ctx.ability = null`. **Token IS the authorization** — CASL is null.
+- **Token present** (e.g., `?token=tpr-xxx`): validates the token column on the entity table, sets `ctx.scope = eq(tokenColumn, token)` and gives the request the holder's actor: an ability with `read` and `update` on that entity, and no user id.
 - **Session present, no token**: requires session, builds ability, resolves scope from `spec.visibility({ userId, ability })`.
 - **Neither**: throws UNAUTHORIZED.
 
 Activated by `spec.shareable: { tokenColumn: '...' }` in the entity spec. The middleware peeks at `getRawInput()` for the `token` field before Zod validation — branching has to happen before schema enforcement.
 
-Handler code receives `ctx.scope` either way and applies it identically. The handler doesn't know which credential path was taken. CASL gating in handler bodies checks `if (ctx.ability)` — null means token path, CASL is intentionally bypassed.
+Handler code receives `ctx.scope` either way and applies it identically. The handler doesn't know which credential path was taken. The CRUD router checks the actor's ability on both paths.
 
 **Why**: customer e-signature flow needs unauthenticated read/update. Treating token as scope means the DAL is unchanged from the authed path; only middleware differs.
 **Reference impl**: `src/trpc/lib/middleware/shareable-middleware.ts`
@@ -314,7 +314,7 @@ Client components use `useTRPC()` + `useQuery(trpc.x.y.queryOptions())` from `@/
 
 ### rsc-prefetch-uses-rsc-context
 
-`src/trpc/server.ts`'s options proxy resolves its context via `createRSCTRPCContext` (`src/trpc/lib/create-http-context.ts`), which takes the session from `getCachedSession()` — the same request memo the dashboard layout and `protectDashboardPage()` use, so a prefetching page reads the session once. Never hand-roll a ctx for the proxy; a ctx without request headers yields `session: null` and every `agentProcedure` call through `prefetch` throws UNAUTHORIZED. `req` is `undefined` in RSC context, so a procedure that reads `ctx.req` (clientIp rate limits in funnels/intake/customers.createFromIntake) must not be server-prefetched.
+`src/trpc/server.ts`'s options proxy resolves its context via `createRSCTRPCContext` (`src/trpc/lib/create-http-context.ts`), which takes the session and the actor from `getRequestActor()`: the same request memo the dashboard slots and `protectDashboardPage()` use, so a prefetching page reads the session and builds the ability once. Never hand-roll a ctx for the proxy; a ctx without request headers yields `session: null` and every `agentProcedure` call through `prefetch` throws UNAUTHORIZED. `req` is `undefined` in RSC context, so a procedure that reads `ctx.req` (clientIp rate limits in funnels/intake/customers.createFromIntake) must not be server-prefetched.
 
 `prefetch` wraps one internal `executePrefetch` that asserts the query key's expected shape in dev (`queryKey[0]` must be an array) before dispatching — a dev-only guard pinning the assumption that tRPC's `keyPrefix` flag is never enabled (enabling it moves a meta object to `queryKey[1]` and would silently break the infinite-query discriminator). See `src/trpc/lib/prefetch.ts`.
 
@@ -360,8 +360,7 @@ Project (CRUD leaf) and Lead Source are the known gaps. The epic's S8 audit (202
 - **Calling `agentProcedure` directly in an entity sub-router.** Import the entity's `<entity>Procedure` from `./procedures` — scope resolution is mandatory; a bare `agentProcedure` leaves `ctx.scope` null and the DAL runs unscoped.
 - **Reintroducing a factory / toolkit / registry.** Procedures are defined once in `procedures.ts`; `index.ts` is pure composition. No `createEntityRouter`, no `EntityToolkit` param, no `entityRegistry`.
 - **Inline `db.select()` / `db.insert()` in a procedure body.** Move to DAL.
-- **Manual `isOmni` / visibility-predicate branching in a procedure.** That's what `scopeMiddleware` exists for.
-- **Adding a CASL check on the shareable token path.** Token IS authorization; `ctx.ability` is null. Gating must be inside `if (ctx.ability)`.
+- **Manual `isOmni` / visibility-predicate branching in a procedure.** That's what the inline scope step and `resolveVisibilityScope` exist for.
 - **Treating `list` as a CRUD slot.** It's not. Always a business sub-router procedure.
 - **Returning a `Row<TTable>` from a business sub-router that should return enriched data.** Free-form business return types are the point; don't force list/getFullView to match CRUD.
 - **Throwing in DAL.** Use `dalError(...)` / `ThrowableDalError`. Let `dalToTrpc` map at the boundary.

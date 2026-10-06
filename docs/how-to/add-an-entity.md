@@ -163,7 +163,7 @@ orchestrators — extract business logic to `lib/` helpers. Reference impls:
 ```ts
 // procedures.ts — pre-scoped procedures, defined ONCE, imported by every leaf
 export const proposalProcedure = agentProcedure.use(async ({ ctx, next }) => {
-  const scope = resolveVisibilityScope(proposalServerSpec, { userId: ctx.session.user.id, ability: ctx.ability })
+  const scope = resolveVisibilityScope(proposalServerSpec, { userId: ctx.session.user.id, ability: ctx.actor.ability })
   return next({ ctx: { ...ctx, scope } })
 })
 export const proposalShareableProcedure = baseProcedure.use(shareableMiddleware(proposalServerSpec))
@@ -242,7 +242,7 @@ trpc.proposalsRouter.crud.getById.useQuery({ id, token: shareToken })
 - ❌ **Don't put callback functions or business logic in the server-spec.** The spec is data. The only function allowed is the visibility predicate (and it's a named spec field, not free-form).
 - ❌ **Don't write a new `userCanSeeX` predicate in `dal/server/`.** Visibility colocates with the entity at `entities/<entity>/lib/visibility.ts`.
 - ❌ **Don't hand-roll CRUD procedures.** Use `createCrudRouter()`. If the factory's output isn't sufficient, you almost certainly want a business procedure, not a custom CRUD slot.
-- ❌ **Don't write `if (ctx.ability.can('manage', 'all')) ...` inline.** The CRUD factory applies CASL and visibility uniformly. Reaching for the omni check inline is a smell.
+- ❌ **Don't write `if (ctx.actor.ability.can('manage', 'all')) ...` inline.** The CRUD factory applies CASL and visibility uniformly. Reaching for the omni check inline is a smell.
 - ❌ **Don't generate procedures or sub-routers from a factory** (`createXxxRouter(entity)`, toolkit params). Define procedures once in `procedures.ts`; CRUD is its own `crud.router.ts` leaf via `createCrudRouter()`.
 - ❌ **Don't define entity-name strings in `domains/permissions/`.** Identity lives in `entities/<entity>/lib/constants.ts` and is *imported* by `permissions/abilities.ts`. Inverting this creates circular logic and breaks the "entity owns its identity" rule.
 
