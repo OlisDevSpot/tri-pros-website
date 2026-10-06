@@ -114,8 +114,8 @@ B1–B5 and B7's projects half are planned now; B6 is planned after the approval
 ### 4.5 UI
 
 - **Setter column** in `MEETING_COLUMNS`: `defaultHidden: true`, `permission: ['assign', 'Meeting']`, sort id `setter`.
-- **Single-row "Set setter"** (`MEETING_ACTIONS.setSetter`, permission `['assign', 'Meeting']`): a `custom` action whose `renderContent` shows `SetterSelect` (a `SetterPicker` over `UserCommandItem`) plus "No setter", writing through `meetingCrud.update` (`meetingsRouter.crud.update`). It lives in `useMeetingActionConfigs` with `hidden: entity => entity.setBy === undefined`, so the schedule calendar and the overview card, which do not select `setBy`, never show it.
-- **`SetterPicker` and `SetterSelect`**, both built on `UserCommandItem`, replace the earlier `InternalUserPicker` extraction from `ParticipantPickerContent`.
+- **Single-row "Set setter"** (`MEETING_ACTIONS.setSetter`, permission `['assign', 'Meeting']`): a `custom` action whose `renderContent` shows `SetterPicker` (over `UserCommandItem`, "No setter" first), writing through `meetingCrud.update` (`meetingsRouter.crud.update`). It lives in `useMeetingActionConfigs` with `hidden: entity => entity.setBy === undefined`: it shows on the records table and the dashboard's meeting card (both read full rows) and stays out of the schedule calendar, the customer-profile and project meeting lists and the kanban cards, whose rows do not carry `setBy`.
+- **`SetterPicker` and `SetterSelect`** (the form's trigger around the picker), both built on `UserCommandItem`, replace the earlier `InternalUserPicker` extraction from `ParticipantPickerContent`; `AvailableParticipantRow` now composes `UserCommandItem` too.
 
 ---
 
