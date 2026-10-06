@@ -4,6 +4,7 @@ import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
+import { SET_BY_NOT_INTERNAL } from '@/shared/entities/meetings/constants/set-by-not-internal'
 import { useTRPC } from '@/trpc/helpers'
 
 export function useMeetingActions() {
@@ -26,7 +27,7 @@ export function useMeetingActions() {
         invalidateMeeting()
         toast.success('Meeting duplicated')
       },
-      onError: () => toast.error('Failed to duplicate meeting'),
+      onError: err => toast.error(err.message === SET_BY_NOT_INTERNAL.reason ? SET_BY_NOT_INTERNAL.message : 'Failed to duplicate meeting'),
     }),
   )
 
@@ -76,9 +77,19 @@ export function useMeetingActions() {
         invalidateMeeting()
         toast.success('Meeting rescheduled')
       },
-      onError: err => toast.error(err.message || 'Failed to reschedule meeting'),
+      onError: err => toast.error(err.message === SET_BY_NOT_INTERNAL.reason ? SET_BY_NOT_INTERNAL.message : err.message || 'Failed to reschedule meeting'),
     }),
   )
 
-  return { deleteMeeting, duplicateMeeting, updateOutcome, updateScheduledFor, updateConfirmation, setOutcomeWithReason, rescheduleMeeting }
+  const updateSetter = useMutation(
+    trpc.meetingsRouter.crud.update.mutationOptions({
+      onSuccess: () => {
+        invalidateMeeting()
+        toast.success('Setter updated')
+      },
+      onError: err => toast.error(err.message === SET_BY_NOT_INTERNAL.reason ? SET_BY_NOT_INTERNAL.message : 'Failed to update setter'),
+    }),
+  )
+
+  return { deleteMeeting, duplicateMeeting, updateOutcome, updateScheduledFor, updateConfirmation, setOutcomeWithReason, rescheduleMeeting, updateSetter }
 }

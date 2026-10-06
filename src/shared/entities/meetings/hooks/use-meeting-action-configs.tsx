@@ -11,6 +11,7 @@ import { useCallback, useState } from 'react'
 import { ROOTS } from '@/shared/config/roots'
 import { CANNOT_RESCHEDULE_REASON, canRescheduleFromOutcome } from '@/shared/constants/enums/meetings'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
+import { SetterPicker } from '@/shared/entities/meetings/components/setter-picker'
 import { MEETING_ACTIONS } from '@/shared/entities/meetings/constants/actions'
 import { MEETING_CONFIRMATION_OPTIONS } from '@/shared/entities/meetings/constants/confirmation-options'
 import { MEETING_OUTCOME_OPTIONS } from '@/shared/entities/meetings/constants/outcome-options'
@@ -47,6 +48,8 @@ interface MeetingEntity {
   scheduledFor?: string | null
   confirmedAt?: string | null
   ownerId?: string | null
+  /** Absent when the caller's rows don't carry the setter; the action then stays out. */
+  setBy?: string | null
 }
 
 interface MeetingActionOverrides<T extends MeetingEntity> {
@@ -72,7 +75,7 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
   overrides: MeetingActionOverrides<T> = {},
 ): MeetingActionConfigsResult<T> {
   const router = useRouter()
-  const { deleteMeeting, duplicateMeeting, updateConfirmation } = useMeetingActions()
+  const { deleteMeeting, duplicateMeeting, updateConfirmation, updateSetter } = useMeetingActions()
   const { changeOutcome, OutcomeReasonDialog } = useOutcomeChange()
   const { reschedule, RescheduleDialog } = useRescheduleChange()
   const [DeleteConfirmDialog, confirmDelete] = useConfirm({
@@ -169,6 +172,23 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
       onAction: overrides.onAssignProject,
     })
   }
+
+  configs.push({
+    action: MEETING_ACTIONS.setSetter,
+    type: 'custom',
+    isLoading: updateSetter.isPending,
+    // A caller whose rows don't carry the setter can't show the current one, so the action stays out.
+    hidden: entity => entity.setBy === undefined,
+    renderContent: (entity: T, closeMenu) => (
+      <SetterPicker
+        value={entity.setBy ?? null}
+        onPick={(setBy) => {
+          closeMenu()
+          updateSetter.mutate({ id: entity.id, data: { setBy } })
+        }}
+      />
+    ),
+  })
 
   configs.push({
     action: MEETING_ACTIONS.delete,
