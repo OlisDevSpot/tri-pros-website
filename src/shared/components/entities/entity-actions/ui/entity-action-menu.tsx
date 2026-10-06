@@ -7,7 +7,7 @@ import { isClickAction, isCustomAction, isSelectAction } from '@/shared/componen
 import { EntityActionDropdown } from '@/shared/components/entities/entity-actions/ui/entity-action-dropdown'
 import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
 import { Button } from '@/shared/components/ui/button'
-import { useAbility } from '@/shared/domains/permissions/hooks'
+import { useAbility } from '@/shared/domains/permissions/client'
 import { cn } from '@/shared/lib/utils'
 
 interface EntityActionMenuProps<TEntity> {

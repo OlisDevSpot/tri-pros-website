@@ -22,7 +22,7 @@ import { usePrefetchQueries } from '@/shared/dal/client/hooks/use-prefetch-queri
 import { useServerPrefetchGuard } from '@/shared/dal/client/hooks/use-server-prefetch-guard'
 import { adjacentDataViewWindows } from '@/shared/dal/lib/query/adjacent-windows'
 import { dataViewUrlKeys, deriveDataViewWindow, deriveFilterSortState, makeDataViewParsers, toDataViewInput } from '@/shared/dal/lib/query/derive-data-view-input'
-import { useAbility } from '@/shared/domains/permissions/hooks'
+import { useAbility } from '@/shared/domains/permissions/client'
 import { checkHydrationParity } from '@/shared/lib/hydration-drift'
 import { useTRPC } from '@/trpc/helpers'
 

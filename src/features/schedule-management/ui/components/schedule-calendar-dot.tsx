@@ -4,7 +4,7 @@ import type { ScheduleCalendarEvent } from '@/features/schedule-management/types
 import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
 
 import { getVisibleActions } from '@/shared/components/entities/entity-actions/lib/visible-actions'
-import { useAbility } from '@/shared/domains/permissions/hooks'
+import { useAbility } from '@/shared/domains/permissions/client'
 import { formatBusinessTime } from '@/shared/lib/business-time'
 
 import { ActivityDotContent } from './activity-dot-content'

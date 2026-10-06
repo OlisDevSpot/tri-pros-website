@@ -1,7 +1,5 @@
 'use client'
 
-import type { UserRole } from '@/shared/constants/enums'
-
 import { useMemo } from 'react'
 
 import { MOBILE_DOCK_BOTTOM_CLASS } from '@/features/agent-dashboard/constants/mobile-dock'
@@ -11,20 +9,16 @@ import { getSidebarNav } from '@/features/agent-dashboard/lib/get-sidebar-nav'
 import { MobileDockCapsule } from '@/features/agent-dashboard/ui/components/mobile-dock-capsule'
 import { MobileDockMenuButton } from '@/features/agent-dashboard/ui/components/mobile-dock-menu-button'
 import { useSidebar } from '@/shared/components/ui/sidebar'
-import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
+import { useAbility } from '@/shared/domains/permissions/client'
 import { cn } from '@/shared/lib/utils'
 
 interface MobileDockProps {
-  /** The session user the server already read, so the tabs are right in the first paint. */
-  user: { id: string, role: UserRole }
   onActionCenterClick: () => void
 }
 
-export function MobileDock({ user, onActionCenterClick }: MobileDockProps) {
-  const tabs = useMemo(
-    () => getMobileDockTabs(getSidebarNav(defineAbilitiesFor({ id: user.id, role: user.role }))),
-    [user.id, user.role],
-  )
+export function MobileDock({ onActionCenterClick }: MobileDockProps) {
+  const ability = useAbility()
+  const tabs = useMemo(() => getMobileDockTabs(getSidebarNav(ability)), [ability])
   const isTyping = useIsTyping()
   const { setOpenMobile } = useSidebar()
 

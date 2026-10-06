@@ -4,7 +4,7 @@ import type { useCustomerEditForm } from '@/shared/entities/customers/hooks/use-
 import type { CustomerProfileData } from '@/shared/entities/customers/types'
 import { useState } from 'react'
 import { Input } from '@/shared/components/ui/input'
-import { useAbility } from '@/shared/domains/permissions/hooks'
+import { useAbility } from '@/shared/domains/permissions/client'
 import { canAgentSeePhone } from '@/shared/entities/customers/lib/can-see-phone'
 import { formatCustomerAddress } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'

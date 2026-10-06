@@ -7,7 +7,7 @@ import type { CustomerNoteWithAuthor } from '@/shared/entities/customers/types'
 import { useMemo } from 'react'
 
 import { useSession } from '@/shared/domains/auth/client'
-import { useAbility } from '@/shared/domains/permissions/hooks'
+import { useAbility } from '@/shared/domains/permissions/client'
 import { NOTE_ACTIONS } from '@/shared/entities/customer-notes/constants/note-actions'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { useCustomerNoteActions } from './use-customer-note-actions'

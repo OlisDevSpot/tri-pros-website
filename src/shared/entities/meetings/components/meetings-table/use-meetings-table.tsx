@@ -10,7 +10,7 @@ import { useCallback, useMemo, useState } from 'react'
 
 import { useEntityTable } from '@/shared/components/data-table/lib/use-entity-table'
 import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
-import { useAbility } from '@/shared/domains/permissions/hooks'
+import { useAbility } from '@/shared/domains/permissions/client'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { AssignProjectDialog } from '@/shared/entities/meetings/components/assign-project-dialog'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'

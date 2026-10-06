@@ -11,7 +11,7 @@ import { computeScopeCoverage } from '@/features/records-management/lib/compute-
 import { ExpandedRowPanel } from '@/shared/components/data-table/ui/expanded-row-panel'
 import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
-import { useAbility } from '@/shared/domains/permissions/hooks'
+import { useAbility } from '@/shared/domains/permissions/client'
 import { MeetingProposalRow } from '@/shared/entities/meetings/components/meeting-proposal-row'
 import { ProposalOverviewCard } from '@/shared/modules/proposals/core/components/overview-card'
 

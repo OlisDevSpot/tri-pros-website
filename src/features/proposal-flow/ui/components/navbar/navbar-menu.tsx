@@ -8,7 +8,7 @@ import { useViewModeToggle } from '@/features/proposal-flow/hooks/use-view-mode-
 import { getProposalPdfUrl } from '@/features/proposal-flow/lib/get-proposal-pdf-url'
 import { Button } from '@/shared/components/ui/button'
 import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
-import { useAbility } from '@/shared/domains/permissions/hooks'
+import { useAbility } from '@/shared/domains/permissions/client'
 import { cn } from '@/shared/lib/utils'
 
 interface Props {

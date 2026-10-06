@@ -1,6 +1,8 @@
+import { packRules } from '@casl/ability/extra'
+
 import { DashboardSignIn } from '@/features/agent-dashboard/ui/components/dashboard-sign-in'
-import { ServerAbilityProvider } from '@/shared/components/providers/server-ability-provider'
 import { PushSubscriptionBanner } from '@/shared/components/push-subscription-banner'
+import { AbilityProvider } from '@/shared/domains/permissions/client'
 import { getRequestActor } from '@/shared/domains/permissions/server/get-request-actor'
 
 // Owns the session read for the page slot. A session cookie that no longer maps
@@ -9,14 +11,14 @@ import { getRequestActor } from '@/shared/domains/permissions/server/get-request
 // permissions from this session, so gated UI is in the first paint instead of
 // waiting on the browser's session fetch.
 export async function DashboardSessionContent({ children }: { children: React.ReactNode }) {
-  const { session } = await getRequestActor()
+  const { session, actor } = await getRequestActor()
   if (!session) {
     return <DashboardSignIn />
   }
   return (
-    <ServerAbilityProvider user={{ id: session.user.id, role: session.user.role }}>
+    <AbilityProvider user={{ id: session.user.id, role: session.user.role }} rules={packRules(actor.ability.rules)}>
       <PushSubscriptionBanner />
       {children}
-    </ServerAbilityProvider>
+    </AbilityProvider>
   )
 }

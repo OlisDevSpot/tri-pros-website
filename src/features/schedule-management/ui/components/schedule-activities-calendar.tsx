@@ -15,7 +15,7 @@ import { isActionPermitted } from '@/shared/components/entities/entity-actions/l
 import { PageBar } from '@/shared/components/page-bar'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
-import { useAbility } from '@/shared/domains/permissions/hooks'
+import { useAbility } from '@/shared/domains/permissions/client'
 import { useActivityActionConfigs } from '@/shared/entities/activities/hooks/use-activity-action-configs'
 import { formatBusinessTime } from '@/shared/lib/business-time'
 import { useTRPC } from '@/trpc/helpers'

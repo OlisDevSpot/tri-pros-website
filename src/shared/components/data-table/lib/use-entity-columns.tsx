@@ -10,7 +10,7 @@ import { useMemo } from 'react'
 
 import { DateCell } from '@/shared/components/data-table/ui/date-cell'
 import { SortableHeader } from '@/shared/components/data-table/ui/sortable-header'
-import { useAbility } from '@/shared/domains/permissions/hooks'
+import { useAbility } from '@/shared/domains/permissions/client'
 import { formatAsDollars } from '@/shared/lib/formatters'
 
 export type ColumnFormat = 'date' | 'currency' | 'number' | 'text'

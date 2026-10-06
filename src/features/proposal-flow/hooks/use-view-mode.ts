@@ -2,7 +2,7 @@
 
 import { useQueryState } from 'nuqs'
 
-import { useAbility } from '@/shared/domains/permissions/hooks'
+import { useAbility } from '@/shared/domains/permissions/client'
 
 export type ViewMode = 'customer' | 'agent'
 

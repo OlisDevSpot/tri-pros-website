@@ -1,6 +1,6 @@
 'use client'
 
-import { AbilityProvider } from './casl-provider'
+import { AbilityProvider } from '@/shared/domains/permissions/client'
 import { NuqsProvider } from './nuqs-adapter'
 import { PressFeedbackProvider } from './press-feedback-provider'
 import { RealtimeProvider } from './realtime-provider'

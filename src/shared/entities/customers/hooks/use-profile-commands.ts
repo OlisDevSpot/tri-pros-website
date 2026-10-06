@@ -2,7 +2,7 @@
 
 import type { ProfileCommands } from '@/shared/entities/customers/types/profile-modal'
 import { useState } from 'react'
-import { useAbility } from '@/shared/domains/permissions/hooks'
+import { useAbility } from '@/shared/domains/permissions/client'
 
 // The rail and the phone New sheet are two entry points to the same verbs; holding the dialog
 // state here lets CustomerProfileCommandDialogs mount each dialog once for both.

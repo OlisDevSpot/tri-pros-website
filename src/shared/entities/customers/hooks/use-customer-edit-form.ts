@@ -9,7 +9,7 @@ import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
-import { useAbility } from '@/shared/domains/permissions/hooks'
+import { useAbility } from '@/shared/domains/permissions/client'
 import { buildCustomerFormDefaults } from '@/shared/entities/customers/lib/build-customer-form-defaults'
 import { PROFILE_COLUMN_KEYS } from '@/shared/entities/customers/schemas'
 import { useTRPC } from '@/trpc/helpers'

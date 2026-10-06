@@ -23,6 +23,9 @@ importers:
       '@casl/ability':
         specifier: ^6.8.0
         version: 6.8.0
+      '@casl/react':
+        specifier: 7.0.1
+        version: 7.0.1(@casl/ability@6.8.0)(react@19.2.4)
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -1324,6 +1327,12 @@ packages:
 
   '@casl/ability@6.8.0':
     resolution: {integrity: sha512-Ipt4mzI4gSgnomFdaPjaLgY2MWuXqAEZLrU6qqWBB7khGiBBuuEp6ytYDnq09bRXqcjaeeHiaCvCGFbBA2SpvA==}
+
+  '@casl/react@7.0.1':
+    resolution: {integrity: sha512-HFfBxQD5wFUIyd9gAPa5LDqMbB7CIOqRcocxzwMC589d8vLMzaz/OAdFLglGiBz9pAcumC0ULp5QLFiYZ46mUw==}
+    peerDependencies:
+      '@casl/ability': ^4.0.0 || ^5.1.0 || ^6.0.0 || ^7.0.0
+      react: ^18.0.0 || ^19.0.0
 
   '@clack/core@0.5.0':
     resolution: {integrity: sha512-p3y0FIOwaYRUPRcMO7+dlmLh8PSRcrjuTndsiA0WAFbWES0mLZlrjVoBRZ9DzkPFJZG6KGkJmoEAY0ZcVWTkow==}
@@ -11701,6 +11710,11 @@ snapshots:
   '@casl/ability@6.8.0':
     dependencies:
       '@ucast/mongo2js': 1.4.1
+
+  '@casl/react@7.0.1(@casl/ability@6.8.0)(react@19.2.4)':
+    dependencies:
+      '@casl/ability': 6.8.0
+      react: 19.2.4
 
   '@clack/core@0.5.0':
     dependencies:

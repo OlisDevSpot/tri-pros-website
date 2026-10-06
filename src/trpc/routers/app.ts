@@ -15,6 +15,7 @@ import { landingRouter } from './landing.router'
 import { leadSourcesRouter } from './lead-sources.router'
 import { meetingFlowRouter } from './meeting-flow.router'
 import { meetingsRouter } from './meetings.router'
+import { permissionsRouter } from './permissions.router'
 import { projectsRouter } from './projects.router'
 import { proposalsRouter } from './proposals.router'
 import { pushRouter } from './push.router'
@@ -37,6 +38,7 @@ export const appRouter = createTRPCRouter({
   leadSourcesRouter,
   meetingFlowRouter,
   meetingsRouter,
+  permissionsRouter,
   customerPipelinesRouter,
   proposalsRouter,
   projectsRouter,
