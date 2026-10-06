@@ -30,6 +30,8 @@ One permission system:
 | `conditionColumns` | On an entity spec: the columns a rule condition may name. A row checked on the client must carry them. |
 | `defineRules` | Typed `can` / `cannot` that returns stock CASL rules. |
 | `defineAbilitiesFor(user)` | Keeps its name; the one loader that turns a user into an ability. |
+| `abilityFromRules(rules)` | The one place an ability is built from rules. The server and the browser both use it, so they match rules the same way. |
+| `subject(type, row)` | Tags a row with its subject for a row-level check. A plain module: the server may call it too. |
 | `permit(ctx, action, spec, fields?)` | The one entry point for enforcement: returns `{ sql, probe(id), test(row) }`. |
 | `Actor` | `{ ability, userId }`. `userId` is `null` for a share link or the system. |
 | `getRequestActor()` | The actor for the current request, computed once. |
@@ -43,13 +45,16 @@ One permission system:
 ```
 src/shared/domains/permissions/     client-safe unless marked
   specs.ts                          type-only list of every spec, and the types derived from it
+  types.ts                          subjects without a spec, and the ability types derived from the list
   operators.ts                      operator names, payload types, the subjects each may sit on (no SQL)
   rules/define-rules.ts             typed can / cannot
   rules/<role>.ts                   one file per role that has rules
   rules/bearer.ts                   rules for a share-link holder, per shareable entity
   rules/system.ts                   manage all, with a reason
-  abilities.ts                      defineAbilitiesFor(user), the conditions matcher, the startup checks
+  abilities.ts                      defineAbilitiesFor(user), abilityFromRules(rules), the conditions matcher, the startup checks
+  subject.ts                        typed subject(type, row)
   actor.ts                          Actor
+  client.tsx                        'use client': AbilityProvider, useAbility()
   server/get-request-actor.ts       server-only
 
 src/shared/dal/server/              server-only
@@ -289,9 +294,12 @@ interface ScopedContext { actor: Actor, tx?: Tx }
 ## 8. Client
 
 ```tsx
-// server: the root layout
-const { actor } = await getRequestActor()
-<AbilityProvider rules={packRules(actor.ability.rules)}>…</AbilityProvider>
+// server: a boundary that has already read the session
+const { session, actor } = await getRequestActor()
+<AbilityProvider
+  user={session ? { id: session.user.id, role: session.user.role } : null}
+  rules={packRules(actor.ability.rules)}
+>…</AbilityProvider>
 
 // client
 const ability = useAbility()
@@ -300,12 +308,13 @@ ability.can('update', subject('CustomerNote', note))
 ability.can('update', subject('Customer', customer), 'profile.hoa')
 ```
 
-- `@casl/react` 7.0.1 is added (decision 11 stands); `@casl/ability` stays at 6.8.0. It is imported in exactly one `'use client'` module. That module exports our `AbilityProvider` (it takes the packed `rules` and wraps the package's provider) and the typed `useAbility()`, `subject()` and `<Can>`.
-- The provider is fed from the root layout, so no component renders outside it.
-- The typed layer rejects: a field that is not in `FieldOf<S>`; a row passed to `subject()` without that entity's `conditionColumns`; a row-level `read` check on a subject whose read rule uses an operator.
-- `subject()` is applied where the row is used, not before it crosses the wire: the tag does not survive serialization.
-- The four client-side ability rebuilds and the three hand-written copies of server rules (`get-accessible-pipelines.ts`, `use-customer-note-action-configs.ts`, `can-see-phone.ts`) are deleted.
-- After a sign-in or role change in place, the page calls `router.refresh()`.
+- `@casl/react` 7.0.1 is added (decision 11 stands); `@casl/ability` stays at 6.8.0. It is imported in exactly one `'use client'` module, `permissions/client.tsx`, which exports our `AbilityProvider` and the typed `useAbility()`.
+- **Where the rules come from.** The root layout reads nothing per request, so public pages keep their static rendering and the dashboard shell streams before the session is read. The root `AbilityProvider` starts with no rules. Each server boundary that reads the session (the dashboard's three session slots, the proposal-flow layout) feeds a nested provider the packed rules, so gated UI is in the first paint there. Anywhere else (public pages, dialogs mounted above those boundaries) the provider follows the browser's session read and asks the server for that user's rules through `permissionsRouter.rules`. The browser never builds rules from a role.
+- A provider keeps following the browser's session read after the first paint: a sign-out, a role change or an expired session shows without a reload.
+- `ability.can` and `ability.cannot` are typed from the specs on the server and the client alike. They reject: an action its subject does not have; an unknown subject; a field that is not in `FieldOf<S>`; a row-level `read` check on a subject whose read rule may carry an operator.
+- `subject(type, row)` lives in `permissions/subject.ts`, a plain module. It rejects a row without that entity's `conditionColumns`. It is applied where the row is used, not before it crosses the wire: the tag does not survive serialization.
+- `<Can>` is added with its first call site.
+- The client-side ability rebuilds are deleted in unit 2. The three hand-written copies of server rules (`get-accessible-pipelines.ts`, `use-customer-note-action-configs.ts`, `can-see-phone.ts`) are deleted in unit 4.
 
 ## 9. Where each mistake is caught
 
@@ -316,6 +325,7 @@ ability.can('update', subject('Customer', customer), 'profile.hoa')
 | Rule field that is not a column or declared path, in `can` or `cannot` | compile |
 | Condition on an undeclared column, or of the wrong type | compile |
 | Condition, operator or whole conditions argument that may be `undefined`; empty conditions object; empty field list | compile |
+| Condition value that may be `null` (the literal `null` is legal); a check that asks an action its subject does not have | compile |
 | Operator on a mutation rule, with a field list, or on the wrong subject | compile |
 | Unknown subject or action | compile |
 | Client check with a mistyped field, or a row lacking condition columns | compile |
