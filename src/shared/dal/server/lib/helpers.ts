@@ -1,9 +1,6 @@
-import type { DalReturn, ScopedContext, ServerSpec } from '../types'
-
-import type { UserRole } from '@/shared/constants/enums'
+import type { DalReturn, ScopedContext, ServerSpec, VisibilityScope } from '../types'
 
 import { db } from '@/shared/db'
-import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
 
 import { dalError, dalSuccess, ThrowableDalError } from '../types'
 import { resolveEffectiveScope } from './scope'
@@ -39,17 +36,12 @@ export async function withTx<T>(
   return db.transaction(tx => fn({ ...ctx, tx }))
 }
 
-export function buildUserContext(
-  userId: string,
-  userRole: UserRole,
-  spec: ServerSpec,
-): ScopedContext {
-  const ability = defineAbilitiesFor({ id: userId, role: userRole })
-  const isOmni = ability.can('manage', 'all')
+/** A context for `user` whose row filter is `spec`'s: for probing an entity other than the one `ctx.scope` was resolved for. */
+export function buildUserContext(user: VisibilityScope, spec: ServerSpec): ScopedContext {
+  const isOmni = user.ability.can('manage', 'all')
   return {
-    session: { user: { id: userId, role: userRole } } as ScopedContext['session'],
-    ability,
-    scope: isOmni ? null : resolveEffectiveScope(spec, { userId, ability }),
+    actor: { ability: user.ability, userId: user.userId },
+    scope: isOmni ? null : resolveEffectiveScope(spec, user),
   }
 }
 

@@ -1,6 +1,6 @@
-import type { UserRole } from '@/shared/constants/enums'
-
 import type { Pipeline } from '@/shared/constants/enums/pipelines'
+
+import type { VisibilityScope } from '@/shared/dal/server/types'
 
 import type { FreshPipelineStage } from '@/shared/domains/pipelines/constants/fresh-pipeline'
 
@@ -25,8 +25,7 @@ interface MoveParams {
   fromStage: string
   toStage: string
   pipeline: Pipeline
-  userId: string
-  userRole: UserRole
+  user: VisibilityScope
 }
 
 export async function moveCustomerPipelineItem({
@@ -34,14 +33,13 @@ export async function moveCustomerPipelineItem({
   fromStage,
   toStage,
   pipeline,
-  userId,
-  userRole,
+  user,
 }: MoveParams): Promise<void> {
   // Leads pipeline: update customers.pipelineStage through customerCrud so any
   // future spec.hooks.update.* fires consistently. The user must be able to see
   // the customer (meeting-participation visibility) for the write to land.
   if (pipeline === 'leads') {
-    const ctx = buildUserContext(userId, userRole, customerServerSpec)
+    const ctx = buildUserContext(user, customerServerSpec)
     dalVerifySuccess(
       await customerCrud.update(ctx, {
         id: customerId,
@@ -98,7 +96,7 @@ export async function moveCustomerPipelineItem({
     (fromStage === 'needs_confirmation' && toStage === 'meeting_confirmed')
     || (fromStage === 'meeting_confirmed' && toStage === 'needs_confirmation')
   ) {
-    const ctx = buildUserContext(userId, userRole, meetingServerSpec)
+    const ctx = buildUserContext(user, meetingServerSpec)
 
     const [nextMeeting] = await db
       .select({ id: meetings.id })
@@ -132,7 +130,7 @@ export async function moveCustomerPipelineItem({
   }
 
   if (toStage === 'meeting_completed') {
-    const ctx = buildUserContext(userId, userRole, meetingServerSpec)
+    const ctx = buildUserContext(user, meetingServerSpec)
 
     const customerMeetings = await db
       .select({ id: meetings.id })
@@ -163,7 +161,7 @@ export async function moveCustomerPipelineItem({
   }
 
   if (fromStage === 'proposal_sent' && toStage === 'declined') {
-    const ctx = buildUserContext(userId, userRole, proposalServerSpec)
+    const ctx = buildUserContext(user, proposalServerSpec)
 
     const sentProposals = await db
       .select({ id: proposals.id })

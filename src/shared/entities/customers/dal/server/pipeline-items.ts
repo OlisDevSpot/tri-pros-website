@@ -47,10 +47,10 @@ interface PipelineBranchArgs {
 export async function getCustomerPipelineItems(ctx: ScopedContext, input: CustomerPipelineItemsInput): Promise<DalReturn<PaginatedResult<CustomerPipelineItem>>> {
   return dalDbOperation(async () => {
     const args: PipelineBranchArgs = {
-      // Each pipeline reaches customers through a different table, so scoping stays per branch; without a session the fallback id '' never matches a participant or owner (leads is unscoped; projects still shows public projects).
-      userId: ctx.session?.user.id ?? '',
-      isOmni: !ctx.ability || ctx.ability.can('manage', 'all'),
-      canSeeUngated: canSeeUngatedPhone(ctx.ability),
+      // Each pipeline reaches customers through a different table, so scoping stays per branch; without a user the fallback id '' never matches a participant or owner (leads is unscoped; projects still shows public projects).
+      userId: ctx.actor.userId ?? '',
+      isOmni: ctx.actor.ability.can('manage', 'all'),
+      canSeeUngated: canSeeUngatedPhone(ctx.actor.ability),
       customerWhere: and(
         buildSearchWhere(input.search, [customers.name, customers.email]),
         CUSTOMER_FIELD_SQL.where(input.filters),

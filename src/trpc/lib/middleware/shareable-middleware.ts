@@ -7,11 +7,12 @@ import type { ServerSpec } from '@/shared/dal/server/types'
 import { TRPCError } from '@trpc/server'
 import { eq } from 'drizzle-orm'
 
+import { subjectOf } from '@/shared/dal/server/lib/define-spec'
 import { resolveEffectiveScope } from '@/shared/dal/server/lib/scope'
-import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
+import { abilityFromRules } from '@/shared/domains/permissions/abilities'
 import { createMiddleware } from '@/trpc/init'
 
-/** Token path → eq(tokenColumn, token) + ability null. Session path → normal scope resolution. */
+/** Token path → the holder's ability and `scope = eq(tokenColumn, token)`. Session path → the request's actor and its row filter. */
 export function shareableMiddleware(spec: ServerSpec) {
   // Cast: Drizzle's PgTable type doesn't expose columns as a keyed record.
   // Dynamic column lookup by name (from spec.shareable.tokenColumn) requires
@@ -27,6 +28,9 @@ export function shareableMiddleware(spec: ServerSpec) {
     )
   }
 
+  // What a token allows today: read and update, on the row it names. `scope` pins the row.
+  const bearerAbility = abilityFromRules([{ action: ['read', 'update'], subject: subjectOf(spec) }])
+
   return createMiddleware(async ({ ctx, next, getRawInput }) => {
     // Cast: tRPC v11's getRawInput() returns Promise<unknown> by design —
     // input hasn't been Zod-validated yet. We peek at the token field before
@@ -34,21 +38,17 @@ export function shareableMiddleware(spec: ServerSpec) {
     const rawInput = await getRawInput() as Record<string, unknown> | undefined
     const token = rawInput?.token as string | undefined
 
-    // ── Token path ───────────────────────────────────────────────────────
-    // Token IS authorization. No session/ability needed.
+    // A token wins over a session: staff who open a share link act as its holder.
     if (token && tokenColumn) {
       return next({
         ctx: {
           ...ctx,
-          session: ctx.session,
-          ability: null,
+          actor: { ability: bearerAbility, userId: null },
           scope: eq(tokenColumn, token),
         },
       })
     }
 
-    // ── Session path ─────────────────────────────────────────────────────
-    // No token — require authenticated session.
     if (!ctx.session) {
       throw new TRPCError({
         code: 'UNAUTHORIZED',
@@ -56,21 +56,9 @@ export function shareableMiddleware(spec: ServerSpec) {
       })
     }
 
-    const ability = defineAbilitiesFor({
-      id: ctx.session.user.id,
-      role: ctx.session.user.role,
-    })
+    const isOmni = ctx.actor.ability.can('manage', 'all')
+    const scope = isOmni ? null : resolveEffectiveScope(spec, { userId: ctx.session.user.id, ability: ctx.actor.ability })
 
-    const isOmni = ability.can('manage', 'all')
-    const scope = isOmni ? null : resolveEffectiveScope(spec, { userId: ctx.session.user.id, ability })
-
-    return next({
-      ctx: {
-        ...ctx,
-        session: ctx.session,
-        ability,
-        scope,
-      },
-    })
+    return next({ ctx: { ...ctx, session: ctx.session, scope } })
   })
 }

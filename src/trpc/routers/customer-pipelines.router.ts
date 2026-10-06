@@ -36,8 +36,7 @@ export const customerPipelinesRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       await moveCustomerPipelineItem({
         ...input,
-        userId: ctx.session.user.id,
-        userRole: ctx.session.user.role,
+        user: { userId: ctx.session.user.id, ability: ctx.actor.ability },
       })
     }),
 
@@ -47,7 +46,7 @@ export const customerPipelinesRouter = createTRPCRouter({
       pipeline: z.enum(meetingPipelines),
     }))
     .mutation(async ({ ctx, input }) => {
-      if (ctx.ability.cannot('manage', 'CustomerPipeline')) {
+      if (ctx.actor.ability.cannot('manage', 'CustomerPipeline')) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to move customers between pipelines' })
       }
       await moveCustomerToPipeline(input.customerId, input.pipeline)
@@ -58,8 +57,8 @@ export const customerPipelinesRouter = createTRPCRouter({
       customerId: z.string().uuid(),
     }))
     .query(async ({ input, ctx }) => {
-      const isSuperAdmin = ctx.ability.can('manage', 'all')
-      return getCustomerProfile(input.customerId, { userId: ctx.session.user.id, isSuperAdmin, canSeeUngated: canSeeUngatedPhone(ctx.ability) })
+      const isSuperAdmin = ctx.actor.ability.can('manage', 'all')
+      return getCustomerProfile(input.customerId, { userId: ctx.session.user.id, isSuperAdmin, canSeeUngated: canSeeUngatedPhone(ctx.actor.ability) })
     }),
 
   getRecordingUrl: agentProcedure
@@ -91,7 +90,7 @@ export const customerPipelinesRouter = createTRPCRouter({
   getCustomerProjects: agentProcedure
     .input(z.object({ meetingId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const scopedCtx = buildUserContext(ctx.session.user.id, ctx.session.user.role, meetingServerSpec)
+      const scopedCtx = buildUserContext({ userId: ctx.session.user.id, ability: ctx.actor.ability }, meetingServerSpec)
       const meeting = dalToTrpc(await meetingCrud.getById(scopedCtx, { id: input.meetingId }))
       if (!meeting?.customerId) {
         return { projects: [], proposals: [] }
@@ -118,11 +117,11 @@ export const customerPipelinesRouter = createTRPCRouter({
       projectId: z.string().uuid(),
     }))
     .mutation(async ({ ctx, input }) => {
-      if (ctx.ability.cannot('update', 'Meeting')) {
+      if (ctx.actor.ability.cannot('update', 'Meeting')) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to update meetings' })
       }
       return dalToTrpc(await meetingCrud.update(
-        { session: ctx.session, ability: ctx.ability, scope: null },
+        { actor: ctx.actor, scope: null },
         {
           id: input.meetingId,
           data: { projectId: input.projectId, meetingOutcome: 'converted_to_project' },

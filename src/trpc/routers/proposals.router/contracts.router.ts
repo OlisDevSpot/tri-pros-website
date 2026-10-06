@@ -139,8 +139,8 @@ export const contractsRouter = createTRPCRouter({
       { message: 'Must provide age or envelopeDocumentIds (or both)' },
     ))
     .mutation(async ({ ctx, input }) => {
-      // ability is null on the share-token path (shareableMiddleware).
-      if (ctx.ability == null && input.envelopeDocumentIds !== undefined) {
+      // No user on a shareable procedure means the share-token path.
+      if (ctx.actor.userId === null && input.envelopeDocumentIds !== undefined) {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'Envelope document selection is agent-only.',

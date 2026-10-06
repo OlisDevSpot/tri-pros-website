@@ -91,7 +91,7 @@ export const syncRouter = createTRPCRouter({
    */
   systemOwnerHealth: agentProcedure
     .query(async ({ ctx }) => {
-      if (ctx.ability.cannot('manage', 'all')) {
+      if (ctx.actor.ability.cannot('manage', 'all')) {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'Only super-admins can view system-owner sync health.',
@@ -136,7 +136,7 @@ export const syncRouter = createTRPCRouter({
    */
   renewSystemOwnerChannel: agentProcedure
     .mutation(async ({ ctx }) => {
-      if (ctx.ability.cannot('manage', 'all')) {
+      if (ctx.actor.ability.cannot('manage', 'all')) {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'Only super-admins can renew the system owner channel.',

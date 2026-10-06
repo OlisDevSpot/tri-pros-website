@@ -22,7 +22,7 @@ import { proposalMediaProcedure } from './procedures'
  * `assertCan`). #285 D-16/D-17 retires it once the DAL self-scopes per action.
  */
 function assertCanUpdate(ctx: ScopedContext) {
-  if (ctx.ability?.cannot('update', 'Proposal') !== false) {
+  if (ctx.actor.ability.cannot('update', 'Proposal')) {
     throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to update this proposal.' })
   }
 }

@@ -71,7 +71,7 @@ export const insertMeetingSchema = createInsertSchema(meetings, {
   createdAt: true,
   updatedAt: true,
 }).extend({
-  // Un-omitted: hooks.create.before defaults from ctx.session.
+  // Un-omitted: hooks.create.before defaults it from the acting user.
   // Optional so clients don't need to send it (hook fills it in).
   ownerId: z.string().optional(),
 })

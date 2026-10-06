@@ -57,11 +57,7 @@ export const businessRouter = createTRPCRouter({
       //    entity update hook fires (sync to GCal with the new project prefix
       //    + color, broadcast Ably refresh). `projectId` is now in the GCal
       //    trigger set in meetingServerSpec.hooks.update.after.
-      const meetingCtx = buildUserContext(
-        ctx.session.user.id,
-        ctx.session.user.role,
-        meetingServerSpec,
-      )
+      const meetingCtx = buildUserContext({ userId: ctx.session.user.id, ability: ctx.actor.ability }, meetingServerSpec)
       dalVerifySuccess(await meetingCrud.update(meetingCtx, {
         id: input.meetingId,
         data: { projectId: project.id, meetingOutcome: 'converted_to_project' },

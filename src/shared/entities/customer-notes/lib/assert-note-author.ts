@@ -5,8 +5,8 @@ import { ThrowableDalError } from '@/shared/dal/server/types'
 
 /** Author + admins only. */
 export function assertNoteAuthorOrAdmin(note: CustomerNote, ctx: ScopedContext): void {
-  const userId = ctx.session?.user.id
-  const isAdmin = ctx.ability?.can('manage', 'all') ?? false
+  const { ability, userId } = ctx.actor
+  const isAdmin = ability.can('manage', 'all')
   if (isAdmin) {
     return
   }

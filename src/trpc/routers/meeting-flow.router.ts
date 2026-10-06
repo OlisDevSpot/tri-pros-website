@@ -30,7 +30,7 @@ export const meetingFlowRouter = createTRPCRouter({
       patch: customerProfilePatchSchema,
     }))
     .mutation(async ({ ctx, input }) => {
-      if (ctx.ability.cannot('update', 'CustomerProfile')) {
+      if (ctx.actor.ability.cannot('update', 'CustomerProfile')) {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'You do not have permission to update the customer profile.',
@@ -55,7 +55,7 @@ export const meetingFlowRouter = createTRPCRouter({
   getPersonaProfile: agentProcedure
     .input(z.object({ meetingId: z.string() }))
     .query(async ({ ctx, input }) => {
-      const scopedCtx = buildUserContext(ctx.session.user.id, ctx.session.user.role, meetingServerSpec)
+      const scopedCtx = buildUserContext({ userId: ctx.session.user.id, ability: ctx.actor.ability }, meetingServerSpec)
       const row = dalToTrpc(await getByIdWithJoins(scopedCtx, { id: input.meetingId }))
       if (!row) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Meeting not found' })

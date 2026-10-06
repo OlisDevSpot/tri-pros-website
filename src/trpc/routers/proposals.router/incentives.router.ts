@@ -24,7 +24,7 @@ export const incentivesRouter = createTRPCRouter({
       incentives: z.array(incentiveSchema),
     }))
     .mutation(async ({ ctx, input }) => {
-      if (ctx.ability.cannot('update', 'Proposal')) {
+      if (ctx.actor.ability.cannot('update', 'Proposal')) {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'You do not have permission to update this proposal.',

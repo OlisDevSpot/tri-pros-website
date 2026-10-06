@@ -98,7 +98,7 @@ export const proposalCrud = createCrudDal(proposalServerSpec, () => ({
     ],
     overrides: (source, ctx) => ({
       label: `Copy of ${source.label}`,
-      ownerId: ctx.session!.user.id,
+      ownerId: ctx.actor.userId ?? source.ownerId,
       status: 'draft' as const,
     }),
     // Proposal-COMPLETE duplicate for EVERY caller (router, meeting flow,

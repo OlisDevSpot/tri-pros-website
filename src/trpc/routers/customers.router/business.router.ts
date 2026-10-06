@@ -48,7 +48,7 @@ export const businessRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       // isOmni drives the phone-column gating and the agent-vs-super-admin
       // text WHERE clause — legitimate non-visibility use of ability.can.
-      const isOmni = ctx.ability.can('manage', 'all')
+      const isOmni = ctx.actor.ability.can('manage', 'all')
       const q = `%${input.query}%`
       // Phone is stored canonical 10-digit — strip the query to digits so a
       // formatted/E.164 search term still matches (see @/shared/lib/phone).
@@ -65,7 +65,7 @@ export const businessRouter = createTRPCRouter({
         .select({
           id: customers.id,
           name: customers.name,
-          phone: gatedPhoneSql(canSeeUngatedPhone(ctx.ability)),
+          phone: gatedPhoneSql(canSeeUngatedPhone(ctx.actor.ability)),
           hasSentProposal: hasSentProposalSql(),
           address: customers.address,
         })

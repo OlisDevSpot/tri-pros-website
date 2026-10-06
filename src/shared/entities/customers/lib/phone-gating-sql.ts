@@ -8,7 +8,7 @@ import { customers } from '@/shared/db/schema/customers'
  * Omni/leads-pool/trusted callers see it ungated (see `canSeeUngatedPhone`).
  *
  * Agent-facing queries that expose `customers.phone` MUST swap the column for
- * `gatedPhoneSql(canSeeUngatedPhone(ctx.ability))` and include
+ * `gatedPhoneSql(canSeeUngatedPhone(ctx.actor.ability))` and include
  * `hasSentProposalSql()` so the client can distinguish "locked" from "empty"
  * in the unlock-notice render.
  * Server-side raw-phone consumers (GCal push, proposal delivery, email jobs)
@@ -33,13 +33,11 @@ export function hasSentProposalSql() {
 }
 
 /**
- * Ungated-phone policy. Omni callers (super-admin), leads-pool workers
- * (dispatchers, who dial leads), and trusted server/token paths (ability === null)
- * see raw phone. Everyone else is gated behind a sent proposal.
+ * Ungated-phone policy. Omni callers (super-admin, and the system, which holds
+ * `manage all`) and leads-pool workers (dispatchers, who dial leads) see raw
+ * phone. Everyone else is gated behind a sent proposal.
  */
-export function canSeeUngatedPhone(ability: AppAbility | null): boolean {
-  if (!ability)
-    return true // SYSTEM_CONTEXT / token path — already trusted upstream
+export function canSeeUngatedPhone(ability: AppAbility): boolean {
   return ability.can('manage', 'all') || ability.can('read', 'LeadsPool')
 }
 

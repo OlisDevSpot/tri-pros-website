@@ -6,22 +6,23 @@ import type z from 'zod'
 
 import type { Tx } from '@/shared/db'
 import type { Insert, Row, Update } from '@/shared/db/types'
-import type { BetterAuthSession } from '@/shared/domains/auth/server'
 import type { EntityName } from '@/shared/domains/permissions/abilities'
+import type { Actor } from '@/shared/domains/permissions/actor'
 import type { AppAbility } from '@/shared/domains/permissions/types'
 
-/** `scope: null` = no visibility restriction (system/omni). */
+import { abilityFromRules } from '@/shared/domains/permissions/abilities'
+
 export interface ScopedContext {
-  session: BetterAuthSession | null
-  ability: AppAbility | null
+  actor: Actor
+  /** `null` = no visibility restriction (system/omni). */
   scope: SQL | null
   /** Present ⇒ run on the caller's ambient transaction. Absent ⇒ autocommit on `db`. */
   tx?: Tx
 }
 
+// No user and every action: jobs, webhooks and server-derived writes.
 export const SYSTEM_CONTEXT: ScopedContext = {
-  session: null,
-  ability: null,
+  actor: { ability: abilityFromRules([{ action: 'manage', subject: 'all' }]), userId: null },
   scope: null,
 }
 

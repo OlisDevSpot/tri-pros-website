@@ -39,18 +39,19 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
     create: {
       // Authed callers: ownerId is ALWAYS server-resolved (off the `own Meeting` capability, never input
       // or a role string) so a wire client can't create a meeting owned by someone else.
-      // SYSTEM_CONTEXT orchestrators have no session and supply ownerId themselves.
+      // SYSTEM_CONTEXT orchestrators have no user and supply ownerId themselves.
       async before(input, ctx) {
+        const { ability, userId } = ctx.actor
         // No setter picked: whoever books the meeting set it. A picked "No setter" (`null`) stays null;
-        // SYSTEM_CONTEXT has no session, so its unpicked setter is null.
-        const setBy = input.setBy === undefined ? ctx.session?.user.id ?? null : input.setBy
+        // SYSTEM_CONTEXT has no user, so its unpicked setter is null.
+        const setBy = input.setBy === undefined ? userId : input.setBy
         await assertSetterIsInternal(setBy)
-        if (!ctx.session) {
+        if (userId === null) {
           return { ...input, setBy }
         }
-        return { ...input, setBy, ownerId: await resolveMeetingOwnerId(ctx) }
+        return { ...input, setBy, ownerId: await resolveMeetingOwnerId(userId, ability) }
       },
-      // row.ownerId, not ctx.session.user.id, so the participant follows the actual owner on the
+      // row.ownerId, not the acting user's id, so the participant follows the actual owner on the
       // SYSTEM_CONTEXT path too. dispatchOrThrow: a missed enqueue must fail the mutation, not drop the event.
       async after(row: Meeting, _ctx) {
         const systemOwnerId = await getSystemOwnerId()
@@ -79,8 +80,8 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
     update: {
       async before(data, ctx, { id }) {
         if ('setBy' in data) {
-          // Only super-admins change a setter for now; SYSTEM_CONTEXT (no ability) may.
-          if (ctx.ability?.cannot('assign', 'Meeting')) {
+          // Only super-admins change a setter for now; SYSTEM_CONTEXT (`manage all`) may.
+          if (ctx.actor.ability.cannot('assign', 'Meeting')) {
             throw new ThrowableDalError({ type: 'forbidden' })
           }
           await assertSetterIsInternal(data.setBy)
@@ -123,7 +124,7 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
             meetingId: row.id,
             oldScheduledFor: previousRow.scheduledFor,
             newScheduledFor: row.scheduledFor,
-            excludeUserId: ctx.session?.user.id,
+            excludeUserId: ctx.actor.userId ?? undefined,
           }))
         }
         if (dispatches.length > 0) {
@@ -174,7 +175,7 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
     ],
     // Loses to create.before on the authed path; the source.ownerId fallback keeps a SYSTEM_CONTEXT duplicate from crashing.
     overrides: (source, ctx) => ({
-      ownerId: ctx.session?.user.id ?? source.ownerId,
+      ownerId: ctx.actor.userId ?? source.ownerId,
       setBy: source.setBy,
     }),
   },

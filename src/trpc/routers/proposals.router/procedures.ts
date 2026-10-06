@@ -6,14 +6,6 @@
 //
 // server-spec.ts stays a PURE data object (imported by the DAL); the tRPC
 // runtime is pulled in HERE, router-side, never into the entity/DAL layer.
-//
-// Why the agent scope step is inlined (not `.use(scopeMiddleware(spec))`):
-// the standalone `scopeMiddleware` is typed against the ROOT context, where
-// `session` is nullable — chaining it would widen `ctx.session` back to null
-// and force an `as typeof agentProcedure` cast (the old factory's crutch).
-// An inline `.use()` infers `ctx` from `agentProcedure`, so the non-null
-// session/ability narrowing flows through and no cast is needed. The scope
-// math stays DRY via the shared `resolveVisibilityScope`.
 
 import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 import { proposalMediaServerSpec } from '@/shared/modules/proposals/media/server-spec'
@@ -22,9 +14,9 @@ import { agentProcedure, baseProcedure } from '../../init'
 import { resolveVisibilityScope } from '../../lib/middleware/scope-middleware'
 import { shareableMiddleware } from '../../lib/middleware/shareable-middleware'
 
-/** Agent-only. Session + ability guaranteed; `ctx.scope` resolved from proposal visibility (null for omni). */
+/** Agent-only. Session guaranteed; `ctx.scope` resolved from proposal visibility (null for omni). */
 export const proposalProcedure = agentProcedure.use(async ({ ctx, next }) => {
-  const scope = resolveVisibilityScope(proposalServerSpec, { userId: ctx.session.user.id, ability: ctx.ability })
+  const scope = resolveVisibilityScope(proposalServerSpec, { userId: ctx.session.user.id, ability: ctx.actor.ability })
   return next({ ctx: { ...ctx, scope } })
 })
 
@@ -35,11 +27,11 @@ export const proposalProcedure = agentProcedure.use(async ({ ctx, next }) => {
  * media mutation is authorized in ONE query — no per-row probe.
  */
 export const proposalMediaProcedure = agentProcedure.use(async ({ ctx, next }) => {
-  const scope = resolveVisibilityScope(proposalMediaServerSpec, { userId: ctx.session.user.id, ability: ctx.ability })
+  const scope = resolveVisibilityScope(proposalMediaServerSpec, { userId: ctx.session.user.id, ability: ctx.actor.ability })
   return next({ ctx: { ...ctx, scope } })
 })
 
-/** Token-or-session. Token path → `ctx.scope = eq(token, …)`, `ctx.ability = null`. Session path → normal scope. */
+/** Token-or-session. Token path → the holder's ability and `ctx.scope = eq(token, …)`. Session path → the request's actor and its row filter. */
 export const proposalShareableProcedure = baseProcedure.use(shareableMiddleware(proposalServerSpec))
 
 /** No auth. Pass-through of baseProcedure — the caller enforces authorization inline (e.g. manual token check). */

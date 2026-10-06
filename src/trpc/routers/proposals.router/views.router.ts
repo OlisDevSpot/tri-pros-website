@@ -14,7 +14,7 @@ import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { proposalService } from '@/shared/modules/proposals/service'
 import { getProposalViews } from '@/shared/modules/proposals/views/dal/server/queries'
 
-import { createTRPCRouter, systemProcedure } from '../../init'
+import { baseProcedure, createTRPCRouter } from '../../init'
 import { dalToTrpc } from '../../lib/dal-to-trpc'
 import { proposalProcedure } from './procedures'
 
@@ -27,11 +27,10 @@ const recordViewSchema = z.object({
 })
 
 export const viewsRouter = createTRPCRouter({
-  recordView: systemProcedure
+  recordView: baseProcedure
     .input(recordViewSchema)
     .mutation(async ({ input }) => {
-      // SYSTEM_CONTEXT: systemProcedure has no session — the share token proves
-      // the caller, and the service performs that check. (#285: bearer actor.)
+      // No session here: the share token proves the caller, and the service checks it.
       dalToTrpc(await proposalService.views.record(SYSTEM_CONTEXT, input))
     }),
 

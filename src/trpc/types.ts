@@ -4,12 +4,12 @@
 // DAL-layer types (ScopedContext, CrudHandlers, etc.) are
 // canonical in `shared/dal/server/types.ts`. This file re-exports them
 // so existing tRPC consumers don't break, and adds tRPC-specific context
-// types (BaseTRPCContext, AuthedContext, HTTPTRPCContext).
+// types (BaseTRPCContext, HTTPTRPCContext).
 
 import type { SQL } from 'drizzle-orm'
 
 import type { BetterAuthSession } from '@/shared/domains/auth/server'
-import type { AppAbility } from '@/shared/domains/permissions/types'
+import type { Actor } from '@/shared/domains/permissions/actor'
 
 // ── Re-exports from DAL types (canonical source) ────────────────────────
 // Consumers can import from either location. Prefer `@/shared/dal/server/types`
@@ -30,29 +30,14 @@ export {
   ThrowableDalError,
 } from '@/shared/dal/server/types'
 
-// ── tRPC-specific context types ─────────────────────────────────────────
-
-/**
- * Single shared context shape for all tRPC procedures. Each field starts
- * nullable; middleware layers progressively narrow:
- *   - baseProcedure:      all nullable (public routes)
- *   - protectedProcedure: session + ability non-null
- *   - L1 entity layer:    scope computed (null for omni, SQL for scoped)
- */
+/** What every procedure starts with. `protectedProcedure` narrows `session` to non-null; nothing rebuilds the actor. */
 export interface BaseTRPCContext {
   session: BetterAuthSession | null
-  ability: AppAbility | null
+  actor: Actor
+  /** The row filter a per-entity procedure resolves. `null` = unrestricted. */
   scope: SQL | null
 }
 
-/** Context after protectedProcedure/agentProcedure — session + ability guaranteed non-null. */
-export type AuthedContext = BaseTRPCContext & {
-  session: BetterAuthSession
-  ability: AppAbility
-  scope: SQL | null
-}
-
-/** HTTP adapter context — extends base with request/response headers. */
 export interface HTTPTRPCContext extends BaseTRPCContext {
   req?: Request
   resHeaders: Headers

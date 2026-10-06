@@ -22,7 +22,7 @@ export const customerNoteCrud = createCrudDal(customerNoteServerSpec, crudHandle
   hooks: {
     create: {
       // Probe the target customer is visible, and stamp authorId from the
-      // session (closes the addNote scope gap — see issue #280).
+      // acting user (closes the addNote scope gap — see issue #280).
       //
       // MUST probe with the CUSTOMER's own visibility, not `ctx.scope` (which
       // here is `customerNoteVisibility` — an EXISTS correlated on
@@ -34,15 +34,15 @@ export const customerNoteCrud = createCrudDal(customerNoteServerSpec, crudHandle
       // differently-scoped probe — see
       // `features/customer-pipelines/dal/server/move-customer-pipeline-item.ts`)
       // rebuilds a context whose scope is `customerServerSpec.visibility`
-      // instead. Omni callers and system/public writes (no session — Bina
+      // instead. Omni callers and system/public writes (no user — Bina
       // ingest, intake) skip straight to SYSTEM_CONTEXT (unrestricted), since
       // there's no per-user visibility to apply.
       async before(input, ctx) {
-        const userId = ctx.session?.user.id
-        const isOmni = ctx.ability?.can('manage', 'all') ?? false
-        const probeCtx = (!userId || isOmni)
+        const { ability, userId } = ctx.actor
+        const isOmni = ability.can('manage', 'all')
+        const probeCtx = (userId === null || isOmni)
           ? SYSTEM_CONTEXT
-          : buildUserContext(userId, ctx.session!.user.role, customerServerSpec)
+          : buildUserContext({ userId, ability }, customerServerSpec)
 
         const customer = dalVerifySuccess(await customerCrud.getById(probeCtx, { id: input.customerId }))
         if (!customer) {

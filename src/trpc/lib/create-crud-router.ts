@@ -46,7 +46,7 @@ export function createCrudRouter<
 
   // Built inline off agentProcedure so `ctx` infers concretely — no builder-type cast at a param boundary.
   const authedProcedure = agentProcedure.use(async ({ ctx, next }) =>
-    next({ ctx: { ...ctx, scope: resolveVisibilityScope(config.spec, { userId: ctx.session.user.id, ability: ctx.ability }) } }))
+    next({ ctx: { ...ctx, scope: resolveVisibilityScope(config.spec, { userId: ctx.session.user.id, ability: ctx.actor.ability }) } }))
   const shareableProcedure = baseProcedure.use(shareableMiddleware(config.spec))
 
   const readProcedure = config.spec.shareable ? shareableProcedure : authedProcedure
@@ -62,9 +62,7 @@ export function createCrudRouter<
     getById: readProcedure
       .input(idInput)
       .query(async ({ ctx, input }) => {
-        if (ctx.ability) {
-          assertCan(ctx.ability, 'getById', config.spec)
-        }
+        assertCan(ctx.actor.ability, 'getById', config.spec)
         const row = dalToTrpc(await handlers.getById(ctx, { id: input.id }))
         if (!row) {
           throw new TRPCError({ code: 'NOT_FOUND', message: `${config.spec.entityName} not found` })
@@ -75,7 +73,7 @@ export function createCrudRouter<
     create: authedProcedure
       .input(config.schemas.insert)
       .mutation(async ({ ctx, input }) => {
-        assertCan(ctx.ability, 'create', config.spec)
+        assertCan(ctx.actor.ability, 'create', config.spec)
         // tRPC hands us the schema OUTPUT; the DAL contract is its INPUT. Identical for our
         // transform-free insert schemas, which TS cannot prove for a generic TInsert — hence the cast.
         const row = dalToTrpc(await handlers.create(ctx, input as z.input<TInsert>))
@@ -88,9 +86,7 @@ export function createCrudRouter<
         // Zod 4 can't resolve the generic TUpdate output inside z.object({ data: TUpdate }); runtime validation already ran.
         const { id, data } = input as { id: TId, data: z.input<TUpdate>, token?: string }
 
-        if (ctx.ability) {
-          assertCanUpdateFields(ctx.ability, config.spec, data as Record<string, unknown>)
-        }
+        assertCanUpdateFields(ctx.actor.ability, config.spec, data as Record<string, unknown>)
 
         const row = dalToTrpc(await handlers.update(ctx, { id, data }))
         return row
@@ -99,14 +95,14 @@ export function createCrudRouter<
     delete: authedProcedure
       .input(idOnlyInput)
       .mutation(async ({ ctx, input }) => {
-        assertCan(ctx.ability, 'delete', config.spec)
+        assertCan(ctx.actor.ability, 'delete', config.spec)
         dalToTrpc(await handlers.delete(ctx, { id: input.id }))
       }),
 
     duplicate: authedProcedure
       .input(idOnlyInput)
       .mutation(async ({ ctx, input }) => {
-        assertCan(ctx.ability, 'duplicate', config.spec)
+        assertCan(ctx.actor.ability, 'duplicate', config.spec)
         const row = dalToTrpc(await handlers.duplicate(ctx, { id: input.id }))
         return row
       }),

@@ -34,13 +34,14 @@ function bridgeToParent(parent: NonNullable<ServerSpec['parent']>, auth: Visibil
 
 /** Point probe for create/precursor paths that have no host query to compose `ctx.scope` into. NEVER call per-row in a loop — that is what the composable predicate is for. */
 export async function isVisible(spec: ServerSpec, ctx: ScopedContext, id: string | number): Promise<boolean> {
-  if (!ctx.session) {
-    return true // SYSTEM_CONTEXT — unrestricted
+  const { ability, userId } = ctx.actor
+  if (userId === null) {
+    return true // no user: the system, or a share-link holder whose row the token already pinned
   }
-  if (ctx.ability?.can('manage', 'all')) {
+  if (ability.can('manage', 'all')) {
     return true // omni
   }
-  const scope = resolveEffectiveScope(spec, { userId: ctx.session.user.id, ability: ctx.ability! })
+  const scope = resolveEffectiveScope(spec, { userId, ability })
   const [row] = await db
     .select({ ok: sql`1` })
     .from(spec.table)

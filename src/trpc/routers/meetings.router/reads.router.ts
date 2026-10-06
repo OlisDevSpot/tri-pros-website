@@ -41,7 +41,7 @@ export const readsRouter = createTRPCRouter({
   getInternalUsers: meetingProcedure
     .input(z.object({ purpose: z.enum(['participant', 'setter']) }).optional())
     .query(async ({ ctx, input }) => {
-      if (ctx.ability.cannot('assign', 'Meeting')) {
+      if (ctx.actor.ability.cannot('assign', 'Meeting')) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to assign meeting owners' })
       }
       if (input?.purpose === 'setter') {

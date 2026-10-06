@@ -17,7 +17,7 @@ export const profileRouter = createTRPCRouter({
   upsert: customerProcedure
     .input(z.object({ id: z.string().uuid(), data: customerProfilePatchSchema }))
     .mutation(async ({ ctx, input }) => {
-      if (ctx.ability.cannot('update', 'CustomerProfile')) {
+      if (ctx.actor.ability.cannot('update', 'CustomerProfile')) {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'You do not have permission to update the customer profile.',

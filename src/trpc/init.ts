@@ -4,8 +4,6 @@ import { initTRPC, TRPCError } from '@trpc/server'
 import superjson from 'superjson'
 import { ZodError } from 'zod'
 
-import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
-
 export { createHTTPTRPCContext } from '@/trpc/lib/create-http-context'
 
 const t = initTRPC.context<HTTPTRPCContext>().create({
@@ -27,21 +25,7 @@ export const createMiddleware = t.middleware
 export const createCallerFactory = t.createCallerFactory
 export const baseProcedure = t.procedure
 
-// ── systemProcedure ─────────────────────────────────────────────────────────
-// Public, unauthenticated procedure for system-level / event-ingestion
-// endpoints where authorization is EXTERNAL to the session — a share token
-// proves the caller, or a webhook signature does. The handler owns its own
-// authorization (manual token match, signature check) and runs its DAL calls
-// under SYSTEM_CONTEXT (no ctx.scope). Use INSTEAD of a bare baseProcedure so
-// the "no session, auth is external" intent is explicit and greppable.
-// Canonical use: proposalsRouter.views.recordView (homeowner-open, token-gated).
-export const systemProcedure = baseProcedure
-
-// ── protectedProcedure ────────────────────────────────────────────────────
-// Any authenticated user. Use for endpoints that homeowners/default users
-// might need in the future (e.g., viewing their own proposal).
-// Attaches CASL ability to context so downstream handlers can do
-// granular checks like `ctx.ability.can('read', 'Proposal')`.
+// Any signed-in user. Narrows `session`; the actor was built once, with the context.
 export const protectedProcedure = baseProcedure.use(async ({ ctx, next }) => {
   if (!ctx.session) {
     throw new TRPCError({
@@ -50,26 +34,12 @@ export const protectedProcedure = baseProcedure.use(async ({ ctx, next }) => {
     })
   }
 
-  const ability = defineAbilitiesFor({
-    id: ctx.session.user.id,
-    role: ctx.session.user.role,
-  })
-
-  return await next({
-    ctx: { ...ctx, session: ctx.session, ability, scope: null },
-  })
+  return await next({ ctx: { ...ctx, session: ctx.session } })
 })
 
-// ── agentProcedure ────────────────────────────────────────────────────────
-// Internal users only (agent, super-admin). This is the main guard for
-// dashboard/CRM endpoints. Extends protectedProcedure, so session and
-// ability are already on ctx.
-//
-// The CASL check `can('access', 'Dashboard')` is equivalent to checking
-// if the user is agent or super-admin, but uses the centralized permission
-// system instead of hardcoded role checks.
+// Internal users: the guard for dashboard and CRM endpoints.
 export const agentProcedure = protectedProcedure.use(async ({ ctx, next }) => {
-  if (ctx.ability.cannot('access', 'Dashboard')) {
+  if (ctx.actor.ability.cannot('access', 'Dashboard')) {
     throw new TRPCError({
       code: 'FORBIDDEN',
       message: 'You do not have permission to access this resource',
@@ -79,19 +49,9 @@ export const agentProcedure = protectedProcedure.use(async ({ ctx, next }) => {
   return await next({ ctx })
 })
 
-// ── superAdminProcedure ────────────────────────────────────────────────────
-// Super-admin only. Extends agentProcedure, so session + ability + the
-// Dashboard guard are already in place. Use this for privileged,
-// cross-source/global operations (resync, campaign binding, disqualify,
-// destructive lead-source admin) INSTEAD of an inline
-// `if (ctx.session.user.role !== 'super-admin') throw` in the handler body —
-// procedure-level gating is the convention.
-//
-// Uses the centralized CASL ability (`can('manage', 'all')` is super-admin's
-// omni grant — see domains/permissions/abilities.ts) rather than a hardcoded
-// role string, mirroring agentProcedure's `can('access', 'Dashboard')`.
+// Super-admin only. Gate privileged, cross-source operations here, not with a role check in the handler.
 export const superAdminProcedure = agentProcedure.use(async ({ ctx, next }) => {
-  if (ctx.ability.cannot('manage', 'all')) {
+  if (ctx.actor.ability.cannot('manage', 'all')) {
     throw new TRPCError({
       code: 'FORBIDDEN',
       message: 'Super-admin access required.',

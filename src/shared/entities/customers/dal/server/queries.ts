@@ -40,12 +40,12 @@ export type CustomerFullView = CustomerWithProfile & {
   enrichment: CustomerEnrichmentRow[]
 }
 
-// A null ability (SYSTEM_CONTEXT) is ungated: system callers never surface the phone to a user.
+// SYSTEM_CONTEXT (`manage all`) is ungated: system callers never surface the phone to a user.
 function customerSelectWithGate(ctx: ScopedContext) {
   const { phone: _phone, ...rest } = getTableColumns(customers)
   return {
     ...rest,
-    phone: gatedPhoneSql(canSeeUngatedPhone(ctx.ability)),
+    phone: gatedPhoneSql(canSeeUngatedPhone(ctx.actor.ability)),
     hasSentProposal: hasSentProposalSql(),
   }
 }

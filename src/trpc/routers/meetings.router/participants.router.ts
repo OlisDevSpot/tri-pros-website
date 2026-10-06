@@ -34,7 +34,7 @@ export const participantsRouter = createTRPCRouter({
   getParticipants: meetingProcedure
     .input(z.object({ meetingId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const isOmni = ctx.ability.can('manage', 'all')
+      const isOmni = ctx.actor.ability.can('manage', 'all')
 
       if (!isOmni && !(await isParticipant(input.meetingId, ctx.session.user.id))) {
         throw new TRPCError({
@@ -56,7 +56,7 @@ export const participantsRouter = createTRPCRouter({
       role: z.enum(meetingParticipantRoles).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      if (ctx.ability.cannot('assign', 'Meeting')) {
+      if (ctx.actor.ability.cannot('assign', 'Meeting')) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Only super-admins can manage meeting participants' })
       }
 
