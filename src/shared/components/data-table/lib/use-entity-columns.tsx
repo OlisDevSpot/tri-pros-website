@@ -4,7 +4,7 @@ import type { CellContext, Column, ColumnDef } from '@tanstack/react-table'
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
-import type { AppAction, AppSubject } from '@/shared/domains/permissions/types'
+import type { Permission } from '@/shared/domains/permissions/types'
 
 import { useMemo } from 'react'
 
@@ -48,7 +48,7 @@ export interface ColumnSpec<TData, TSortId extends string = string> {
    * current user lacks this permission. Excluded columns also disappear
    * from the column-toggle UI.
    */
-  permission?: [AppAction, AppSubject]
+  permission?: Permission
 }
 
 export type ColumnRegistry<TData, TSortId extends string = string> = Record<string, ColumnSpec<TData, TSortId>>
@@ -93,7 +93,7 @@ export function useEntityColumns<R extends ColumnRegistry<any>>(
 
       const config: ColumnSpec<RegistryRow<R>> = { ...base, ...(overrides?.[key] ?? {}) }
 
-      if (config.permission && !ability.can(config.permission[0], config.permission[1])) {
+      if (config.permission && !ability.can(...config.permission)) {
         continue
       }
 

@@ -1,27 +1,6 @@
-import type { MongoAbility, RawRuleOf } from '@casl/ability'
-
 import type { ReadOperators } from '@/shared/domains/permissions/operators'
 import type { ConditionColumnOf, EntitySubject, FieldOf, RowOf } from '@/shared/domains/permissions/specs'
-
-export type PermissionRule = RawRuleOf<MongoAbility>
-
-type CrudAction = 'create' | 'delete' | 'read' | 'update'
-
-/** Subjects that have no spec: feature gates, and entities whose table has none yet. Verbs only. */
-interface SubjectsWithoutSpec {
-  all: 'manage'
-  Dashboard: 'access'
-  Calendar: 'manage'
-  CustomerPipeline: 'read'
-  LeadsPool: 'read'
-  User: 'read'
-  Activity: CrudAction
-}
-
-/** Capabilities on an entity that are not about a row. */
-interface ExtraEntityActions {
-  Meeting: 'own'
-}
+import type { CrudAction, ExtraEntityActions, PermissionRule, SubjectsWithoutSpec } from '@/shared/domains/permissions/types'
 
 // Equality and `$in` are the two forms the SQL compiler turns into a filter.
 type ColumnConditions<S extends EntitySubject> = {
@@ -31,13 +10,16 @@ type ReadOperatorsOf<S extends EntitySubject> = S extends keyof ReadOperators ? 
 type ReadConditions<S extends EntitySubject> = ColumnConditions<S> & ReadOperatorsOf<S>
 
 // An entity with no condition columns has an EMPTY conditions type, and an empty object type
-// accepts any object. So the given conditions are captured as `TGiven`, and two kinds of key are
-// turned into `never`: a key outside `TAllowed`, and a key whose value may be `undefined`, which
-// would drop the filter it stands for. When nothing is rejected the result is `TGiven` untouched,
-// because intersecting with `{}` would switch off the "no properties in common" check. An empty
-// conditions object is rejected too: a rule without conditions is written without the argument.
+// accepts any object. So the given conditions are captured as `TGiven`, and three kinds of key are
+// turned into `never`: a key outside `TAllowed`; a key whose value may be `undefined`, which would
+// drop the filter it stands for; and a key whose value may be `null` without being the literal
+// `null`, which would turn "this user's rows" into "rows with no user" when the id is missing.
+// When nothing is rejected the result is `TGiven` untouched, because intersecting with `{}` would
+// switch off the "no properties in common" check. An empty conditions object is rejected too: a
+// rule without conditions is written without the argument.
 type MaybeUndefinedKey<TGiven> = { [K in keyof TGiven]-?: undefined extends TGiven[K] ? K : never }[keyof TGiven]
-type Rejected<TGiven, TAllowed> = Exclude<keyof TGiven, keyof TAllowed> | MaybeUndefinedKey<TGiven>
+type MaybeNullKey<TGiven> = { [K in keyof TGiven]-?: null extends TGiven[K] ? ([TGiven[K]] extends [null] ? never : K) : never }[keyof TGiven]
+type Rejected<TGiven, TAllowed> = Exclude<keyof TGiven, keyof TAllowed> | MaybeUndefinedKey<TGiven> | MaybeNullKey<TGiven>
 type Only<TGiven, TAllowed> = [keyof TGiven] extends [never]
   ? never
   : [Rejected<TGiven, TAllowed>] extends [never]

@@ -1,6 +1,6 @@
-// Imported by both server (tRPC) and client (React) so permissions can never drift between them.
+// Client-safe: the browser builds its ability from the rules the server sends, with `abilityFromRules`.
 
-import type { AppAbility } from './types'
+import type { AppAbility, PermissionRule, StockAbility } from './types'
 
 import type { UserRole } from '@/shared/constants/enums'
 
@@ -59,11 +59,16 @@ interface PermissionUser {
   role: UserRole
 }
 
+/** The one place an ability is built from rules, so the server and the browser match them the same way. */
+export function abilityFromRules(rules: PermissionRule[]): StockAbility {
+  return createMongoAbility<StockAbility>(rules)
+}
+
 export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
-  const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility)
+  const { can, rules } = new AbilityBuilder<StockAbility>(createMongoAbility)
 
   if (!user) {
-    return build()
+    return abilityFromRules(rules)
   }
 
   switch (user.role) {
@@ -179,5 +184,5 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       break
   }
 
-  return build()
+  return abilityFromRules(rules)
 }

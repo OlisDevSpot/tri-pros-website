@@ -1,44 +1,57 @@
-// ─── CASL Permission Types ──────────────────────────────────────────────────
-// These types define the shape of our permission system.
-// `AppAbility` is the main type used everywhere — it's a CASL Ability
-// parameterized with our specific actions and subjects.
-//
-// Subjects derive from per-entity constants:
-//   - `EntityName` (the `ENTITY_NAMES` list) comes from `abilities.ts`, which
-//     imports each entity's identity from `entities/<entity>/lib/constants.ts`
-//     or `modules/<module>/<unit>/lib/constants.ts`.
-//   - The non-entity subjects below are feature/route gates that aren't
-//     real business entities — they stay hand-maintained.
+import type { ForcedSubject, MongoAbility, RawRuleOf } from '@casl/ability'
 
-import type { MongoAbility } from '@casl/ability'
+import type { ReadOperators } from './operators'
+import type { ConditionColumnOf, EntitySubject, FieldOf, RowOf } from './specs'
 
-import type { EntityName } from './abilities'
+export type CrudAction = 'create' | 'delete' | 'read' | 'update'
 
-// Actions a user can perform.
-// 'manage' is CASL's built-in wildcard — means "all actions".
-// 'access' is our custom action for route/feature gating (e.g., Dashboard).
-// 'assign' is our custom action for reassigning ownership (e.g., meeting owner).
-export type AppAction = 'access' | 'assign' | 'create' | 'delete' | 'manage' | 'own' | 'read' | 'update'
+/** Subjects that have no entity spec: feature gates, and records whose table has no spec yet. Verbs only. */
+export interface SubjectsWithoutSpec {
+  all: 'manage'
+  Dashboard: 'access'
+  Calendar: 'manage'
+  CustomerPipeline: 'read'
+  LeadsPool: 'read'
+  User: 'read'
+  Activity: CrudAction
+  CustomerProfile: 'read' | 'update'
+  CustomerLeadAttribution: 'read'
+}
 
-// Subjects (resources) that actions apply to.
-// `EntityName` covers every business entity listed in `ENTITY_NAMES` (abilities.ts).
-// The rest are non-entity feature gates that stay hand-maintained:
-//   - 'all'              CASL built-in wildcard
-//   - 'Dashboard'        route-level gate (dashboard access)
-//   - 'Calendar'         feature gate (GCal sync)
-//   - 'CustomerPipeline' feature gate (manage rehash/dead pipeline access)
-//   - 'LeadsPool'        feature gate (shared leads pool visibility)
-//   - 'User'             user-record reads (no Entity Server System integration yet)
-export type AppSubject
-  = EntityName
-    | 'all'
-    | 'Calendar'
-    | 'CustomerPipeline'
-    | 'Dashboard'
-    | 'LeadsPool'
-    | 'User'
+/** Capabilities on an entity that are not about a row. */
+export interface ExtraEntityActions {
+  Meeting: 'assign' | 'own'
+  Proposal: 'assign'
+}
 
-// The main ability type used throughout the app.
-// MongoAbility is CASL's default ability class — named "Mongo" for historical
-// reasons but works with any backend. It's just the standard CASL ability.
-export type AppAbility = MongoAbility<[AppAction, AppSubject]>
+export type AppSubject = EntitySubject | keyof SubjectsWithoutSpec
+
+type ActionOn<S extends AppSubject> = S extends EntitySubject
+  ? CrudAction | (S extends keyof ExtraEntityActions ? ExtraEntityActions[S] : never)
+  : S extends keyof SubjectsWithoutSpec ? SubjectsWithoutSpec[S] : never
+
+// `manage` is CASL's "every action": only `manage all` grants it, and a check may ask it of any subject.
+export type AppAction = ActionOn<AppSubject> | 'manage'
+
+/** A verb and the subject it is asked of, as one value: what a nav item, a column or an action carries. */
+export type Permission = { [S in AppSubject]: [action: ActionOn<S> | 'manage', subject: S] }[AppSubject]
+
+// A condition on a column the row does not carry reads `undefined` and never matches.
+type SubjectRow<S extends EntitySubject> = Pick<RowOf<S>, ConditionColumnOf<S> & keyof RowOf<S>> & ForcedSubject<S>
+
+// A `read` rule on these subjects may carry an operator, which only SQL can evaluate.
+type RowAction<S extends EntitySubject> = S extends keyof ReadOperators ? Exclude<CrudAction, 'read'> : CrudAction
+
+interface AbilityCheck {
+  (...permission: Permission): boolean
+  <S extends EntitySubject>(action: CrudAction, subject: S, field: FieldOf<S>): boolean
+  <S extends EntitySubject>(action: RowAction<S>, subject: SubjectRow<S>, field?: FieldOf<S>): boolean
+}
+
+/** CASL's own ability type. Only the code that builds an ability, or hands one to CASL's React provider, needs it. */
+export type StockAbility = MongoAbility<[AppAction, AppSubject | ForcedSubject<EntitySubject>]>
+
+export type PermissionRule = RawRuleOf<StockAbility>
+
+/** The app's ability: CASL's, with `can` and `cannot` typed from the specs. */
+export type AppAbility = Omit<StockAbility, 'can' | 'cannot'> & { can: AbilityCheck, cannot: AbilityCheck }

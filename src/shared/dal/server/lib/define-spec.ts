@@ -3,6 +3,7 @@ import type { PgTable } from 'drizzle-orm/pg-core'
 
 import type { EntitySpec, ServerSpec, ServerSpecSchemas, SubEntitySpec, VisibilityScope } from '../types'
 import type { EntityName } from '@/shared/domains/permissions/abilities'
+import type { EntitySubject } from '@/shared/domains/permissions/specs'
 
 type ColumnOf<TTable extends PgTable> = TTable['_']['columns'][keyof TTable['_']['columns']]
 type ColumnKey<TTable extends PgTable> = keyof TTable['$inferSelect'] & string
@@ -54,6 +55,9 @@ export function defineSubEntitySpec<
 }
 
 /** The CASL subject a spec is checked under: its own, or its parent's for a sub-entity. */
-export function subjectOf(spec: ServerSpec): EntityName {
-  return 'subject' in spec ? spec.subject : subjectOf(spec.parent.spec)
+export function subjectOf(spec: ServerSpec): EntitySubject {
+  // The erased spec type only knows `EntityName`: typing its subject as `EntitySubject` is circular,
+  // because that type is derived from the specs themselves. A spec left out of the list gets a
+  // subject no rule names, so CASL denies it.
+  return ('subject' in spec ? spec.subject : subjectOf(spec.parent.spec)) as EntitySubject
 }

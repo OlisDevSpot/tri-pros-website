@@ -9,6 +9,7 @@ import type { insertProjectMediaFilesSchema } from '@/shared/db/schema/project-m
 import type { insertProposalSchema } from '@/shared/db/schema/proposals'
 import type { OperatorName, ReadOperators } from '@/shared/domains/permissions/operators'
 import type { ConditionColumnOf, DuplicateFieldsIn, DuplicateSubjectsIn, EntitySubject, FieldOf, RowOf, ServerSpecs } from '@/shared/domains/permissions/specs'
+import type { AppAbility, Permission } from '@/shared/domains/permissions/types'
 
 import type { projectMediaServerSpec } from '@/shared/modules/projects/media/server-spec'
 import { defineEntitySpec, defineSubEntitySpec } from '@/shared/dal/server/lib/define-spec'
@@ -18,6 +19,7 @@ import { proposalMediaFiles } from '@/shared/db/schema/proposal-media-files'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
 import { defineRules } from '@/shared/domains/permissions/rules/define-rules'
+import { subject } from '@/shared/domains/permissions/subject'
 import { customerNoteServerSpec } from '@/shared/entities/customer-notes/lib/server-spec'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
@@ -248,4 +250,64 @@ defineRules((can, cannot) => {
   can('update', 'Application', {})
   // @ts-expect-error an empty conditions object after a field list
   can('update', 'Proposal', ['views'], {})
+})
+
+// ── checks ─────────────────────────────────────────────────────────────────
+
+declare const ability: AppAbility
+declare const somePermission: Permission
+declare const nullableUserId: string | null
+declare const noteRow: { id: string, authorId: string | null, content: string }
+
+export function checksThatMustCompile() {
+  ability.can('create', 'Proposal')
+  ability.can('manage', 'all')
+  ability.cannot('manage', 'CustomerPipeline')
+  ability.cannot('assign', 'Meeting')
+  ability.can('assign', 'Proposal')
+  ability.can('own', 'Meeting')
+  ability.can('read', 'User')
+  ability.can('update', 'CustomerProfile')
+  ability.can('update', 'Customer', 'age')
+  ability.can('update', 'Proposal', 'views')
+  ability.can('update', 'Proposal', 'views.viewedAt')
+  ability.can(...somePermission)
+  ability.can('update', subject('CustomerNote', noteRow))
+  ability.can('update', subject('CustomerNote', { authorId: null }))
+  ability.can('update', subject('Proposal', { id: 'proposal-1' }), 'financeOptionId')
+  ability.can('read', subject('CustomerNote', noteRow))
+  ability.can('delete', subject('Application', {}))
+}
+
+// @ts-expect-error a field that is not a column or path of the subject
+ability.can('update', 'Customer', 'agee')
+// @ts-expect-error a sub-entity path that does not exist
+ability.can('update', 'Proposal', 'views.nope')
+// @ts-expect-error an action that is not asked of an entity
+ability.can('access', 'Customer')
+// @ts-expect-error an unknown subject
+ability.can('read', 'Custmer')
+// @ts-expect-error an unknown action
+ability.cannot('edit', 'Customer')
+// @ts-expect-error a field on a subject that has no spec
+ability.can('read', 'User', 'name')
+// @ts-expect-error `own` belongs to Meeting
+ability.can('own', 'Proposal')
+// @ts-expect-error a row that lacks the subject's condition column
+subject('CustomerNote', { id: 'note-1' })
+// @ts-expect-error a row tagged as an unknown subject
+subject('Custmer', {})
+// @ts-expect-error a read rule on Proposal may carry an operator, which only SQL can evaluate
+ability.can('read', subject('Proposal', { id: 'proposal-1' }))
+// @ts-expect-error a mistyped field on a row check
+ability.can('update', subject('CustomerNote', noteRow), 'contnt')
+
+defineRules((can, cannot) => {
+  can('read', 'CustomerNote', { authorId: null })
+  // @ts-expect-error a condition value that may be null
+  can('read', 'CustomerNote', { authorId: nullableUserId })
+  // @ts-expect-error a cannot condition that may be null
+  cannot('update', 'CustomerNote', { authorId: nullableUserId })
+  // @ts-expect-error a condition value that may be null, after a field list
+  can('update', 'Proposal', ['views'], { id: nullableUserId })
 })

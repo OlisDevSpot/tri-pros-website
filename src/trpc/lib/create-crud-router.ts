@@ -1,7 +1,7 @@
 import type { PgTable } from 'drizzle-orm/pg-core'
 import type { ServerSpec } from '@/shared/dal/server/types'
 
-import type { AppAction, AppSubject } from '@/shared/domains/permissions/types'
+import type { AppAbility, AppAction } from '@/shared/domains/permissions/types'
 import type { CrudHandlers, SlotName } from '@/trpc/types'
 
 import { TRPCError } from '@trpc/server'
@@ -113,17 +113,17 @@ export function createCrudRouter<
   })
 }
 
-/**
- * Not for `update`: a slot-level check would let a field-restricted grant bypass per-field intent.
- * Takes `ability` rather than `ctx` because TS won't narrow the full ctx through a function boundary.
- */
-function assertCan(
-  ability: { can: (action: AppAction, subject: AppSubject, field?: string) => boolean },
-  slot: SlotName,
-  spec: ServerSpec,
-): void {
+// The subject and the field are known only at run time here, which the typed `can` refuses.
+// This is what `can` does inside CASL.
+function isGranted(ability: AppAbility, action: AppAction, spec: ServerSpec, field?: string): boolean {
+  const rule = ability.relevantRuleFor(action, subjectOf(spec), field)
+  return rule != null && !rule.inverted
+}
+
+/** Not for `update`: a slot-level check would let a field-restricted grant bypass per-field intent. */
+function assertCan(ability: AppAbility, slot: SlotName, spec: ServerSpec): void {
   const action = SLOT_ACTIONS[slot]
-  if (!ability.can(action, subjectOf(spec))) {
+  if (!isGranted(ability, action, spec)) {
     throw new TRPCError({
       code: 'FORBIDDEN',
       message: `You do not have permission to ${action} ${spec.entityName}`,
@@ -136,16 +136,12 @@ function assertCan(
  * (`can('update', 'X', ['a', 'b'])`) passes only those; `manage all` passes every field.
  * Undefined values are skipped — "not attempting to write this field", same as the input shape.
  */
-function assertCanUpdateFields(
-  ability: { can: (action: AppAction, subject: AppSubject, field?: string) => boolean },
-  spec: ServerSpec,
-  data: Record<string, unknown>,
-): void {
+function assertCanUpdateFields(ability: AppAbility, spec: ServerSpec, data: Record<string, unknown>): void {
   for (const [field, value] of Object.entries(data)) {
     if (value === undefined) {
       continue
     }
-    if (!ability.can('update', subjectOf(spec), field)) {
+    if (!isGranted(ability, 'update', spec, field)) {
       throw new TRPCError({
         code: 'FORBIDDEN',
         message: `You do not have permission to update ${spec.entityName}.${field}`,
