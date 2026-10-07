@@ -73,7 +73,7 @@ export function rulesForUser({ id, role }: PermissionUser): PermissionRule[] {
     case 'agent':
       return agentRules(id)
     case 'dispatcher':
-      return dispatcherRules()
+      return dispatcherRules(id)
     case 'homeowner':
       return homeownerRules()
     case 'user':
