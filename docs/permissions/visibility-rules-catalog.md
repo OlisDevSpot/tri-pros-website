@@ -66,7 +66,7 @@ must be drawn on these seams, not on "permissions" as a blob.
 | 6 | **Create / precursor** | May I create under *this parent*? | Point-probe of parent's compiled scope | Server only |
 | 7 | **Bearer / token principal** | Does this *token* grant access? | Parallel principal, `ability = null` | Server only |
 
-**Non-mechanism hazard — write elevation:** `SYSTEM_CONTEXT` drops row-scope after a coarse verb
+**Non-mechanism hazard — write elevation:** `SYSTEM_CONTEXT` (the Customer family names a reason with `systemContext('<reason>')` instead) drops row-scope after a coarse verb
 check. It is a *discipline problem*, not an axis. See Part 5.
 
 ---
@@ -96,8 +96,8 @@ row-visibility are all this atom viewed through a different FK — which is why 
 
 | Rule | Today (`file:line`) | Axis | Target CASL expression |
 |------|---------------------|------|------------------------|
-| Agent sees customers they've met with | `userCanSeeCustomer(userId, customers.id)` — one join deeper: `meetings ⋈ meeting_participants` on `customerId` — `entities/customers/dal/server/visibility.ts:9` | 2 | `can('read','Customer',{ $participatesViaMeetingPath:{ through:'customerId' } })` |
-| Dispatcher sees the leads pool | `leadsPoolVisibility()` = `pipeline='active' AND NOT EXISTS meeting` — `visibility.ts:22`; selected by `ability.can('read','LeadsPool')` branch — `lib/visibility.ts:8` | 2 | dispatcher rule: `can('read','Customer',{ pipeline:'active', $hasNoMeeting:true })`. The **role branch dissolves into rule authorship** (two OR'd rules across roles). |
+| Agent sees customers they've met with | `can('read','Customer',{ $participatesViaMeeting:{ via:'customerId', userId } })` in `permissions/rules/agent.ts`, compiled by `permit(ctx,'read',customerServerSpec)` — `shared/dal/server/lib/permissions/permit.ts` | 2 | as written |
+| Dispatcher sees the leads pool | `can('read','Customer',{ $inDerivedPipeline:['leads'] })` in `permissions/rules/dispatcher.ts`; the role branch is gone, each role's file carries its own rule | 2 | as written |
 | Agent may edit only `age` | `can('update','Customer',['age'])` — enforced in CRUD factory `create-crud-router.ts:195` | 3-static | unchanged (`permittedFieldsOf`) |
 | Dispatcher may edit contact fields | `can('update','Customer',[name,phone,email,address,city,state,zip,pipelineStage])` | 3-static | unchanged |
 | **Phone visible only if a `sent`/`approved` proposal exists** | `gatedPhoneSql` = `CASE WHEN EXISTS(sent proposal) THEN phone ELSE NULL END` — `phone-gating-sql.ts:51`; bypass `canSeeUngatedPhone` (omni \| leadsPool \| token) — `:37`. Applied `customers/dal/server/queries.ts:51`. UI also gets `hasSentProposal:boolean`. Rule doc: `customers/DOCS.md:26`. | **3-dynamic** | **Per-row threshold stays a SQL `CASE`** (depends on sibling-table state). **Bypass is CASL**: `can('read','Customer','phone')` ungated for omni/dispatcher/token. Compose: `mask = caslUngated ? raw : thresholdCase`. |
@@ -119,20 +119,20 @@ row-visibility are all this atom viewed through a different FK — which is why 
 | Rule | Today (`file:line`) | Axis | Target CASL expression |
 |------|---------------------|------|------------------------|
 | Agent sees projects for meetings they're in | `projectParticipationScope` = `meetings ⋈ mp` on `projectId` — `modules/projects/core/lib/visibility.ts:11`, `projectVisibility:31` | 2 | `can('read','Project',{ $participatesViaMeetingPath:{ through:'projectId' } })` |
-| ⚠️ **Pipeline query ALSO grants `ownerId=me OR isPublic=true`** | hand-rolled SQL **wider than canonical** — `features/customer-pipelines/dal/server/get-customer-pipeline-items.ts:367`. Canonical `projectVisibility` uses **only** participation; ignores `projects.ownerId` & `projects.isPublic` (both exist on the table). | 2 | **UNRESOLVED — see Fork/Open Q.** Reconcile before authoring the rule. |
+| ⚠️ **Pipeline query ALSO grants `ownerId=me OR isPublic=true`** | hand-rolled SQL **wider than canonical** — `features/customer-pipelines/dal/server/get-customer-pipeline-items.ts:367`. Canonical `projectVisibility` uses **only** participation; ignores `projects.ownerId` & `projects.isPublic` (both exist on the table). | 2 | **RESOLVED — participation only** (D-04, amended 2026-10-07: projects have no owner; `isPublic` is display-only). The query moved to `entities/customers/dal/server/pipeline-items.ts:428` and still carries both extra disjuncts. |
 | Pure-portfolio projects filtered even for omni | `hasAssociatedMeeting()` = `EXISTS(meetings WHERE projectId=projects.id)` — `visibility.ts:44` | *business filter* | **not authorization** — a "real vs portfolio" filter; keep beside the scope, not inside it. |
 | Project-media | `projectMediaServerSpec` declares `parent: { spec: projectServerSpec, fk: projectMediaFiles.projectId }` (`modules/projects/media/server-spec.ts:40`), but `projects.router/media.router.ts` still runs on a bare `agentProcedure` → **bridge not yet enforced** (unscoped) | 6 | swap the router to a child-scoped procedure; the engine already bridges. |
 
 ### Sub-entities (owned tables) — how each is scoped today
 
-Proposal media, proposal views, proposal incentives and project media now declare `parent` in an `EntityServerSpec` (`modules/proposals/{media,views,incentives}/server-spec.ts`, `modules/projects/media/server-spec.ts`); the customer sub-entities still have no spec. None has its own `visibility` fragment (except customer_notes).
+Proposal media, proposal views, proposal incentives and project media now declare `parent` in an `EntityServerSpec` (`modules/proposals/{media,views,incentives}/server-spec.ts`, `modules/projects/media/server-spec.ts`); `customer_profiles` and `customer_lead_attribution` are sub-entity specs too (fields `profile` and `leadAttribution` of `Customer`), and `customer_notes` declares `parent` = customer. None has its own `visibility` fragment.
 
 | Sub-entity | Parent | FK | Today |
 |------------|--------|----|-------|
-| `customer_profiles` | customer | `customerId` | No spec. Read via leftJoin on scoped customer. **Written unscoped** via `SYSTEM_CONTEXT` — see Part 5. |
+| `customer_profiles` | customer | `customerId` | `customerProfileServerSpec` (sub-entity, field `profile` of `Customer`). Reach comes from the customer; an agent writes it with `update Customer` on `profile`, checked by `permit`. |
 | `customer_enrichment` | customer | `customerId` | No spec. Bare `eq(customerId)` after parent passed scope. |
-| `customer_lead_attribution` | customer | `customerId` | No spec. leftJoin on scoped customer. |
-| `customer_notes` | customer | `customerId` | **Own fragment** `userCanSeeCustomer(userId, customerNotes.customerId)` — `customer-notes/lib/visibility.ts:16`. Re-derives customer visibility inline vs bridging. |
+| `customer_lead_attribution` | customer | `customerId` | `customerLeadAttributionServerSpec` (sub-entity, field `leadAttribution` of `Customer`). Reach comes from the customer; no role is granted a write. |
+| `customer_notes` | customer | `customerId` | `customerNoteServerSpec` declares `parent` = customer; the family is compiled, so a note's reach is the customer's, and agents and dispatchers edit or delete only notes they wrote (`authorId`). |
 | `proposal_views` | proposal | `proposalId` | `proposalViewServerSpec` with `parent` (`modules/proposals/views/server-spec.ts:33`). Agent reads gated by `isInScope(proposalSpec)`; homeowner `recordView` is token-gated on `baseProcedure` (see the Proposal-views row above). |
 | `proposal_media_files` | proposal | `proposalId` | `proposalMediaServerSpec` with `parent` (`modules/proposals/media/server-spec.ts:41`); scope bridged into `ctx.scope` by `proposalMediaProcedure` (`proposals.router/procedures.ts:37`). |
 | `media_files` / project media | project | `projectId` | `projectMediaServerSpec` with `parent` (`modules/projects/media/server-spec.ts:40`); the router still uses bare `agentProcedure`, so it runs **unscoped** until the child-scoped procedure swap. |
@@ -141,23 +141,23 @@ Proposal media, proposal views, proposal incentives and project media now declar
 
 ## Part 4 — Role → capability matrix (CASL inventory)
 
-Source: `src/shared/domains/permissions/abilities.ts` (`defineAbilitiesFor`). **Zero `cannot()` rules;
-zero object-conditions today** — all subjects are plain strings, "own record" scoping is done in
-the DAL, not CASL. Only field restrictions: agent `update Customer ['age']`; dispatcher contact fields.
+Source: `src/shared/domains/permissions/rules/<role>.ts` (`rulesForUser` in `abilities.ts` picks the file). **Zero `cannot()` rules;
+condition-carrying rules only on the Customer family (`$participatesViaMeeting`, `$inDerivedPipeline`) and `CustomerNote` (`authorId`); other subjects are plain strings and "own record" scoping is done in
+the DAL, not CASL. Field restrictions: agent `update Customer ['age','profile','profile.*']`; dispatcher contact fields.
 
 - **super-admin** — `can('manage','all')` (omni; the widest fan-out flag).
 - **agent** — `access Dashboard`; read/create/update on Meeting/Proposal/Application/Project/Activity;
-  `own Meeting`; read Customer (+`update ['age']`), CustomerProfile r/u, CustomerNote CRUD (author-gated),
-  Calendar manage, VoIP reads/creates. No `create Customer`, no deletes except Activity & CustomerNote.
-- **dispatcher** — `access Dashboard`; `read LeadsPool` (fan-out flag); read Customer (+update contact
-  fields); Meeting read/create/update but **no `own Meeting`** (bookings → system account); VoIP subset.
-  No Proposal/Project/Calendar/CustomerProfile.
+  `own Meeting`; read Customer (via a meeting they sit in; `update ['age','profile','profile.*']`), CustomerNote read/create and update/delete of own notes,
+  Calendar manage, VoIP reads/creates. No `create Customer`, no deletes except Activity & own CustomerNote.
+- **dispatcher** — `access Dashboard`; `read LeadsPool` (fan-out flag); read Customer in the leads pipeline (+update contact
+  fields), CustomerNote read/create and update/delete of own notes; Meeting read/create/update but **no `own Meeting`** (bookings → system account); VoIP subset.
+  No Proposal/Project/Calendar, and no `profile` field of Customer.
 - **homeowner** — `read Proposal`, `read User`. Real gate is the **token path**, not CASL.
 - **user** (default) — `read User` only.
 
 **Fan-out flags (hidden coupling to eliminate):**
 - `can('read','LeadsPool')` drives **3** behaviors in 3 files: (a) row-visibility switch
-  (`customers/lib/visibility.ts:11`), (b) phone ungating (`phone-gating-sql.ts:44`), (c) pipeline-set
+  (the dispatcher's `read Customer` rule in `rules/dispatcher.ts`), (b) phone ungating (`phone-gating-sql.ts:44`), (c) pipeline-set
   restriction to `['leads']` (`get-accessible-pipelines.ts:19`). → make **3 explicit rules**.
 - `can('manage','all')` (omni) — collapsed to `scope=null` in **4** copies: `scope-middleware.ts:26`,
   `helpers.ts:68`, `scope.ts:71`, `shareable-middleware.ts:64`, plus ~15 ad-hoc `isOmni` call sites.
@@ -191,13 +191,12 @@ is currently over-trusting on those three)? **This one ruling reconciles ~5 drif
 participation and ignores `ownerId`/`isPublic`. **One is wrong.** Business question: *should project
 owners and public projects be visible independent of meeting participation?* Answer determines the
 rule.
+**Answered (owner, 2026-08-11; amended 2026-10-07):** no — participation only. Projects have no owner and `isPublic` is display-only (D-04).
 
 **Live vulnerabilities the new system must subsume (do not lose):**
-- `meeting-flow.router.ts:40` — `upsertCustomerProfile(SYSTEM_CONTEXT, …)`: verb checked
-  (`update CustomerProfile`) but **row scope dropped** → an agent can write ANY customer's profile by id.
 - `contracts.router.ts:218` — `customerCrud.update(SYSTEM_CONTEXT, …)` writes `customers.age` unscoped
   (comment: visibility "already established" upstream — carry a delegated scope instead).
-- `proposal_views` / `customer_profiles` — unscoped writes.
+- `proposal_views` — unscoped writes.
 - `authz.ts:23` & legacy `isInScope` (`scope.ts:90`) — filter on `ctx.scope ?? undefined`; **null scope
   ⇒ predicate dropped ⇒ row returned unconditionally.**
 - `isVisible` `scope.ts:68` — `if (!ctx.session) return true` (SYSTEM_CONTEXT unrestricted).

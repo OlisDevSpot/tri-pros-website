@@ -53,11 +53,11 @@ src/trpc/
 | `agentProcedure` | Extends protected; FORBIDDEN unless `actor.ability.can('access', 'Dashboard')` (internal users) | same as protected |
 | `superAdminProcedure` | Extends agent; FORBIDDEN unless `actor.ability.can('manage', 'all')` (super-admin omni grant) | same as protected |
 
-Entity sub-routers **never** call `agentProcedure` directly — they import the entity's pre-scoped procedure (`<entity>Procedure` / `<entity>ShareableProcedure`) from `<entity>.router/procedures.ts`, which has scope resolution baked on at definition time.
+Entity sub-routers **never** call `agentProcedure` directly — they import the entity's pre-scoped procedure (`<entity>Procedure` / `<entity>ShareableProcedure`) from `<entity>.router/procedures.ts`, which has scope resolution baked on at definition time. A compiled family (Customer, CustomerNote) has no scope step: its sub-routers use `agentProcedure` and the DAL scopes through `permit(ctx, action, spec)`.
 
-**Why**: scope resolution injects `ctx.scope` (the per-user visibility predicate). Bypassing it means agents could read rows they shouldn't.
+**Why**: for a family not yet compiled, scope resolution injects `ctx.scope` (the per-user visibility predicate). Bypassing it means agents could read rows they shouldn't.
 **Reference impl**: `src/trpc/init.ts`; `src/trpc/routers/proposals.router/procedures.ts`
-**Enforced by**: convention (a bare `agentProcedure` leaves `ctx.scope` null → DAL runs unscoped)
+**Enforced by**: convention (for a family not yet compiled, a bare `agentProcedure` leaves `ctx.scope` null → DAL runs unscoped)
 
 ### superadmin-procedure
 
@@ -235,12 +235,11 @@ write any column. Instead, `createCrudRouter.update` iterates the input
 `data` payload and calls `ability.can('update', subject, field)` for each
 defined field, throwing `FORBIDDEN` on the first failure.
 
-Implication: per-entity field-restricted grants in `abilities.ts` are
+Implication: per-entity field-restricted grants in `permissions/rules/<role>.ts` are
 enforced automatically. For example, the agent grant
-`can('update', 'Customer', ['age'])` (Addendum B, 2026-07-14 — the 23
-sales-discovery fields that used to be field-restricted `Customer` columns
-now live on the `customer_profiles` child table, gated by its own
-`CustomerProfile` CASL subject instead — see
+`can('update', 'Customer', ['age', 'profile', 'profile.*'])` (the
+sales-discovery fields live on the `customer_profiles` child table, which
+is the `profile` field of `Customer` — see
 `../shared/entities/customers/DOCS.md#three-jsonb-profiles`) means agents
 can call `crud.update({ data: { age: 42 } })` but NOT
 `crud.update({ data: { phone: '...' } })` — the gate rejects the second

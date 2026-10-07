@@ -48,7 +48,7 @@ Participant roles describe a user's function **in the context of a specific meet
 - **`co_owner`**: a second rep with equal functional standing. At most one per meeting (partial unique index).
 - **`helper`**: any number of additional participants. Unconstrained.
 
-**Write capability is separate from participant role.** Whether a user can create/read/update a Meeting at all comes from the CASL `agent` role (`can('read'|'create'|'update'|'own', 'Meeting')` — see `src/shared/domains/permissions/abilities.ts`), not from holding a participant role. A participant row only describes function within a meeting the user is already permitted to act on (dispatch status, visibility bridging) — it is not itself the permission gate.
+**Write capability is separate from participant role.** Whether a user can create/read/update a Meeting at all comes from the CASL `agent` role (`can('read'|'create'|'update'|'own', 'Meeting')` — see `src/shared/domains/permissions/rules/agent.ts`), not from holding a participant role. A participant row only describes function within a meeting the user is already permitted to act on (dispatch status, visibility bridging) — it is not itself the permission gate.
 
 The `(meetingId, userId)` unique constraint prevents the same user holding multiple roles on one meeting.
 

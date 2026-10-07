@@ -1493,7 +1493,7 @@ Expected:
 |---|---|---|
 | wire `proposalsRouter.crud.delete` (`use-proposal-actions.ts`, `use-proposal-action-configs.ts`) | super-admins only (`createCrudRouter` asserts `delete Proposal`) | refused for an approved proposal or one with a contract envelope. Way round: decline it, or discard or recall the envelope, then delete |
 | wire `meetingsRouter.crud.delete` (`use-meeting-actions.ts`) | super-admins only | refused while the meeting holds an approved proposal. Way round: decline the proposal first |
-| `src/shared/entities/customers/dal/server/crud.ts` (`delete.before`: `meetingCrud.delete(SYSTEM_CONTEXT, …)` per meeting) | customer delete | never refused: that hook deletes the customer's proposals with a raw `db.delete` before it deletes each meeting, so no approved proposal is left when the guard reads |
+| `src/shared/entities/customers/dal/server/crud.ts` (`delete.before`: `meetingCrud.delete(systemContext('derived:customer-delete-cascade'), …)` per meeting) | customer delete | never refused: that hook deletes the customer's proposals with a raw `db.delete` before it deletes each meeting, so no approved proposal is left when the guard reads |
 
 No caller of `proposalCrud.delete` exists in server code (the customer delete bypasses it; that is the customers module's to change). Both refusals keep a way round, which is R29's second clause. One case has none by design: a proposal whose contract was signed keeps its envelope id for good, so it can no longer be deleted on its own (the customer delete still removes it). That is the rules map's S44; say it in the task report so the owner hears it.
 

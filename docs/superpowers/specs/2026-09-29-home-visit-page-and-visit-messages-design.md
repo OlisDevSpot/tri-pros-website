@@ -351,7 +351,7 @@ Because the automatic runs look for "no message **for this time**", a moved meet
 - `scheduledFor` in the future.
 
 **Visit summary** (manual; the setter sends it during the booking call, D13): `meetingService.business.sendVisitSummary(ctx, { meetingId, note? })`
-- **Who.** `update Meeting` on a meeting inside the sender's visit-messages scope (§7.5). A dispatcher's booking is system-owned with no participant row (`crud.ts` `create.after`), and the customer leaves the leads pool once it has a meeting (`leadsPoolVisibility`), so the meeting scope would lock the setter out right after booking.
+- **Who.** `update Meeting` on a meeting inside the sender's visit-messages scope (§7.5). A dispatcher's booking is system-owned with no participant row (`crud.ts` `create.after`), and the customer leaves the leads pool once it has a meeting (the dispatcher's `read Customer` rule is `$inDerivedPipeline: ['leads']`), so the meeting scope would lock the setter out right after booking.
 - **Preconditions.** The meeting is eligible. A main line is configured. In production, the 10DLC campaign SID is set.
   - Per-meeting failures disable the action with the reason (§8.3).
   - System failures (no main line, no campaign SID) are shown in the send dialog.

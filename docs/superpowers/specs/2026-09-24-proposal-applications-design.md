@@ -84,7 +84,7 @@ This is the concrete form of G7's "future `source` column". `sow_item_id` stays 
   - a SQL form for selects, which is `COALESCE(date_part('year', age(current_date, date_of_birth))::int, age)`.
 - Every age **reader** switches to the resolver. The one DAL read is `proposals/core/dal/server/queries.ts` (`age: customers.age` → `customerAge`). It feeds the contracts router, the Zoho Sign document registry, and the senior check in `proposal-context.ts`. Changing that select to the SQL form covers them all.
 - **Writers** are unchanged. The contracts share-token flow and the customer edit form keep writing `age`. Nothing writes a derived age back into `age`.
-- Agents get a field-level `update Customer` grant on `dateOfBirth` next to `age` (`abilities.ts:79`).
+- Agents get a field-level `update Customer` grant on `dateOfBirth` next to `age` (`permissions/rules/agent.ts`).
 - Where date of birth is collected is decided in the field session (§12).
 
 ### 3.6 `customer_profiles`
@@ -115,7 +115,7 @@ src/shared/modules/proposals/applications/
   - `src/shared/entities/applications/` (including `DOCS.md`);
   - `src/trpc/routers/applications.router/` and its mount in `app.ts`;
   - `shared/constants/enums/applications.ts` and `shared/types/enums/applications.ts`;
-  - the `Application` CASL subject and its agent grants (`abilities.ts:103-105`).
+  - the `Application` CASL subject and its agent grants (`permissions/rules/agent.ts`).
 - The docs that cite `entities/applications` are updated in the same change:
   - `docs/marketing/assistance-offer.md`
   - `docs/plans/2026-09-14-construction-catalog-centralization-design.md`
@@ -186,7 +186,7 @@ Step 1 is a DAL function in `applications/dal/server/mutations.ts`, because a DA
 ## 9. Writing shared facts
 
 `saveStep` resolves the customer as **proposal → meeting → customer** on the server. It never takes a client-supplied customer id. It then writes through the customers entity's existing paths:
-- `upsertCustomerProfile` for `customer_profiles`, gated by `update CustomerProfile`;
+- `upsertCustomerProfile` for `customer_profiles`, gated by `update Customer` on its `profile` field;
 - the customers CRUD `update` for `customers` columns, gated by the field-level `update Customer` grant.
 
 A failed shared-fact write fails the step save. The agent sees the error and nothing is half-saved in the draft.

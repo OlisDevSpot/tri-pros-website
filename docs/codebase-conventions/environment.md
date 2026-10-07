@@ -85,10 +85,10 @@ User roles: `user`, `homeowner`, `agent`, `super-admin`.
 
 ### casl-for-row-level-and-action-permissions
 
-CASL abilities live in `src/shared/domains/permissions/abilities.ts`. Every entity declares its `subject` in the entity's server-spec. Per-role rules in `defineAbilitiesFor`. `getRequestActor()` builds `ctx.actor` once per request; each entity's inline scope step resolves `ctx.scope`.
+CASL rules live one file per role in `src/shared/domains/permissions/rules/`; `abilities.ts` holds `ENTITY_NAMES` and `rulesForUser`/`defineAbilitiesFor`, which pick the role's file. Every entity declares its `subject` in the entity's server-spec. `getRequestActor()` builds `ctx.actor` once per request; each entity's inline scope step resolves `ctx.scope`.
 
 **Why**: separates "can this user perform action X" (CASL) from "which rows can they see" (visibility predicate SQL).
-**Reference impl**: `src/shared/domains/permissions/abilities.ts`; ADR-0002
+**Reference impl**: `src/shared/domains/permissions/rules/agent.ts`, `src/shared/domains/permissions/abilities.ts`; ADR-0002
 **Enforced by**: middleware
 
 ## Dev tooling

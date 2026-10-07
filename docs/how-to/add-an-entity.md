@@ -42,11 +42,13 @@ export const ENTITY_NAMES = [
 export type EntityName = (typeof ENTITY_NAMES)[number]
 ```
 
-If your entity needs its own CASL rules, add rules per role in `defineAbilitiesFor`.
+Its rules go in `src/shared/domains/permissions/rules/<role>.ts` (one file per role, written with the typed `defineRules`); `abilities.ts` only holds `ENTITY_NAMES` and picks each role's file.
 
 ---
 
-## Step 3: Write the visibility predicate
+## Step 3: Write the visibility predicate (families not yet compiled)
+
+A compiled entity declares no `visibility`: add its subject to `COMPILED_SUBJECTS` (`src/shared/dal/server/lib/scope.ts`), put its row condition in the `read` rule of each role's `rules/<role>.ts`, and `createCrudDal` scopes it through `permit(ctx, 'read', spec)`. A compiled spec that still declares `visibility` throws at load. A sub-entity of a compiled parent inherits its reach. Everything below is for a family still on a predicate.
 
 `src/shared/entities/<entity>/lib/visibility.ts`:
 
@@ -102,7 +104,7 @@ export const proposalServerSpec = defineEntitySpec({
   entityName: PROPOSAL,
   subject: PROPOSAL,
   conditionColumns: [],
-  visibility: proposalVisibility,
+  visibility: proposalVisibility, // a compiled entity omits this
   table: proposals,
   schemas: { ...proposalSchemas, select: selectProposalSchema },
   // Optional spec fields — named typed config for cross-entity patterns:
@@ -113,7 +115,7 @@ export const proposalServerSpec = defineEntitySpec({
 })
 ```
 
-Then add the new spec to the `ServerSpec` union in `src/shared/domains/permissions/specs.ts` and, for an entity, its subject to the pinned list in `src/shared/domains/permissions/type-checks/must-not-compile.ts`. A spec missing from the list cannot be named in a rule.
+Then add the new spec to the `ServerSpec` union in `src/shared/domains/permissions/specs.ts` and to `SERVER_SPECS` in `src/shared/dal/server/specs.ts`, and, for an entity, its subject to the pinned list in `src/shared/domains/permissions/type-checks/must-not-compile.ts`. A spec missing from the list cannot be named in a rule.
 
 ---
 
@@ -130,7 +132,7 @@ export const proposalCrud = createCrudDal(proposalServerSpec, () => ({
   hooks: {
     create: {
       before(input, ctx) {
-        return { ...input, ownerId: ctx.session!.user.id }
+        return { ...input, ownerId: ctx.actor.userId }
       },
       async after(row, ctx) {
         await someService.onCreated(row, ctx)
@@ -142,7 +144,7 @@ export const proposalCrud = createCrudDal(proposalServerSpec, () => ({
     exclude: ['createdAt', 'updatedAt', 'status'],
     overrides: (source, ctx) => ({
       label: `Copy of ${source.label}`,
-      ownerId: ctx.session!.user.id,
+      ownerId: ctx.actor.userId,
     }),
   },
 }))
@@ -190,7 +192,7 @@ export const proposalsRouter = createTRPCRouter({
 })
 ```
 
-Declare only the procedure variants the entity uses (meetings/applications need only the agent one). These are NOT custom abstractions — `proposalProcedure` IS a real tRPC procedure with full type inference and middleware composability.
+A compiled entity needs no scope step: its leaves use `agentProcedure` directly (`resolveVisibilityScope` returns `null` for it) and the DAL scopes through `permit`. Declare only the procedure variants the entity uses (meetings/applications need only the agent one). These are NOT custom abstractions — `proposalProcedure` IS a real tRPC procedure with full type inference and middleware composability.
 
 ---
 
@@ -239,8 +241,8 @@ trpc.proposalsRouter.crud.getById.useQuery({ id, token: shareToken })
 
 ## What NOT to do
 
-- ❌ **Don't put callback functions or business logic in the server-spec.** The spec is data. The only function allowed is the visibility predicate (and it's a named spec field, not free-form).
-- ❌ **Don't write a new `userCanSeeX` predicate in `dal/server/`.** Visibility colocates with the entity at `entities/<entity>/lib/visibility.ts`.
+- ❌ **Don't put callback functions or business logic in the server-spec.** The spec is data. The only function allowed is a not-yet-compiled family's visibility predicate (and it's a named spec field, not free-form).
+- ❌ **Don't write a new `userCanSeeX` predicate in `dal/server/`.** Visibility colocates with the entity at `entities/<entity>/lib/visibility.ts`; a compiled entity has none, its rule lives in `rules/<role>.ts`.
 - ❌ **Don't hand-roll CRUD procedures.** Use `createCrudRouter()`. If the factory's output isn't sufficient, you almost certainly want a business procedure, not a custom CRUD slot.
 - ❌ **Don't write `if (ctx.actor.ability.can('manage', 'all')) ...` inline.** The CRUD factory applies CASL and visibility uniformly. Reaching for the omni check inline is a smell.
 - ❌ **Don't generate procedures or sub-routers from a factory** (`createXxxRouter(entity)`, toolkit params). Define procedures once in `procedures.ts`; CRUD is its own `crud.router.ts` leaf via `createCrudRouter()`.

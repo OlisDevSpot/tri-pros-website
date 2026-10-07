@@ -200,7 +200,7 @@ both jobs.
 the attribution row + enrichment rows at intake time);
 `src/shared/services/customer-intake.service.ts`.
 **Enforced by**: Zod (`leadMetaSchema` at the funnel-intake write boundary); CASL
-(`CustomerLeadAttribution` read-only grant); convention (no CRUD update handler exists for
+(no rule grants a write to the `leadAttribution` field of `Customer`); convention (no CRUD update handler exists for
 either table)
 see `docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md` §10 (Addendum B)
 

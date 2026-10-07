@@ -172,7 +172,7 @@ A no-show shows as **Fresh** in the customers table and **Rehash** on the kanban
 - `listCustomers` and the `pipeline` filter (`customer-field-sql.ts`)
 - the kanban lane queries in `pipeline-items.ts`
 - `isCustomerInLeads`, `listEnrollableLeadsBySource`
-- `leadsPoolVisibility` (becomes `inPipelineSql('leads')`)
+- the dispatcher's leads rule (`$inDerivedPipeline: ['leads']` in `permissions/rules/dispatcher.ts`)
 - campaign eligibility `isEligibleSql` (`voip-campaign-contacts/lib/lead-campaign-status.ts:52`)
 - the lead-source segments: signed = projects; dead = pipeline dead; active = pipeline leads, fresh or rehash
 
@@ -184,7 +184,7 @@ A no-show shows as **Fresh** in the customers table and **Rehash** on the kanban
 
 **Not here:**
 - The single-meeting rule copied into `meeting-field-sql.ts:37-42` and `proposals/core/dal/server/queries.ts:166-178` moves with meetings (§7).
-- The kanban leads lane being unscoped, and `getAccessiblePipelines` hiding lanes only in the UI, are #285's to fix (role gates).
+- `getAccessiblePipelines` hiding lanes only in the UI is #285's to fix (role gates). The lane queries themselves are scoped by `permit(ctx, 'read', customerServerSpec)`.
 
 ### 5.2 Intake: one `ingestLead`
 

@@ -43,7 +43,7 @@ export async function getById(
 
 ### scoped-context-first-arg
 
-Every DAL function takes `ctx: ScopedContext` as its first argument. `ctx.scope` is the visibility predicate (a Drizzle `SQL` fragment or `null`). DAL applies it to the WHERE clause for any query that should be visibility-scoped.
+Every DAL function takes `ctx: ScopedContext` as its first argument. `ctx.scope` is the visibility predicate (a Drizzle `SQL` fragment or `null`). DAL applies it to the WHERE clause for any query that should be visibility-scoped. The Customer family (Customer, CustomerNote) does not use it: its reach is `permit(ctx, action, spec)` (`src/shared/dal/server/lib/permissions/permit.ts`), compiled from the actor's rules, and `createCrudDal` applies it automatically.
 
 **Why**: visibility scoping is enforced by the DAL itself, not the caller. Caller can't forget.
 **Reference impl**: `src/shared/dal/server/lib/create-crud-dal.ts`
@@ -55,10 +55,10 @@ Two pathways construct `ScopedContext`:
 
 1. **Via tRPC** — per-entity `procedures.ts` files (e.g. `customers.router/procedures.ts`, `projects.router/procedures.ts`) define pre-scoped procedures that chain `agentProcedure.use(...)` and call `resolveVisibilityScope(spec, { userId, ability })` inline to set `ctx.scope`, forwarding the tRPC context (`BaseTRPCContext` / `HTTPTRPCContext` in `src/trpc/types.ts`, separate from `ScopedContext`) to the procedure body. Dual-credential (session-or-share-token) access goes through `shareableMiddleware`, used by `createCrudRouter` and the proposals share-token path.
 
-2. **Via server-initiated work** (jobs, webhooks, cron, RSC) — caller imports `SYSTEM_CONTEXT` (full access, scope = null) or builds a scoped context via a future `buildUserContext()` helper.
+2. **Via server-initiated work** (jobs, webhooks, cron, RSC) — caller passes `systemContext('<reason>')` (full access, the reason named on the rule; the Customer family's sites all do) or, for a family not yet classified, `SYSTEM_CONTEXT` (full access, scope = null), or builds a scoped context via a future `buildUserContext()` helper.
 
 **Why**: a job or webhook receiving a payload from QStash needs the same DAL — but with different auth semantics. Same function, different ctx.
-**Reference impl**: `src/shared/dal/server/types.ts:SYSTEM_CONTEXT`; jobs in `src/shared/services/providers/upstash/jobs/`
+**Reference impl**: `src/shared/dal/server/lib/contexts.ts:systemContext`, `src/shared/dal/server/types.ts:SYSTEM_CONTEXT`; jobs in `src/shared/services/providers/upstash/jobs/`
 **Enforced by**: convention
 
 ### explicit-return-types
@@ -165,7 +165,7 @@ Client-side custom hook wrappers only when the query is reused in 2+ places. For
 
 The DAL layer is the hook execution engine for all entity lifecycle hooks. Both `before` and `after` hooks execute inside `createCrudDal` functions.
 
-- Hooks can call other DAL functions (via `SYSTEM_CONTEXT` or passed `ctx`)
+- Hooks can call other DAL functions (via `systemContext('<reason>')`, `SYSTEM_CONTEXT` in a family not yet classified, or the passed `ctx`)
 - Never use naked `db` in hooks — always go through DAL
 - `before` hooks return type: `Promise<T> | T` (sync enrichment still works)
 - `after` hooks return type: `Promise<void>` (fire-and-forget decided by hook impl)
