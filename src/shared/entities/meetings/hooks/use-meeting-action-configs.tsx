@@ -181,7 +181,7 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
     hidden: entity => entity.setBy === undefined,
     renderContent: (entity: T, closeMenu) => (
       <SetterPicker
-        value={entity.setBy ?? null}
+        value={entity.setBy ?? undefined}
         onPick={(setBy) => {
           closeMenu()
           updateSetter.mutate({ id: entity.id, data: { setBy } })

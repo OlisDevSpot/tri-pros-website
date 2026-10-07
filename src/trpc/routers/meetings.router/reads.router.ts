@@ -5,7 +5,6 @@ import { LIVE_MEETING_OUTCOMES } from '@/shared/constants/enums'
 import { PARTICIPANT_ROLES, SETTER_ROLES } from '@/shared/entities/meetings/constants/internal-user-roles'
 import { getByIdWithJoins, listMeetings, listMeetingsForProject, meetingListInputSchema } from '@/shared/entities/meetings/dal/server/queries'
 import { listUsersByRoles } from '@/shared/entities/users/dal/server/queries'
-import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
 import { createTRPCRouter } from '@/trpc/init'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 
@@ -45,8 +44,8 @@ export const readsRouter = createTRPCRouter({
         throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to assign meeting owners' })
       }
       if (input?.purpose === 'setter') {
-        // The system owner holds unassigned bookings; it never booked anything.
-        return dalToTrpc(await listUsersByRoles(SETTER_ROLES, { excludeIds: [await getSystemOwnerId()] }))
+        // The office account is a candidate: it books intake and ingested meetings, and is the default setter for those.
+        return dalToTrpc(await listUsersByRoles(SETTER_ROLES))
       }
       return dalToTrpc(await listUsersByRoles(PARTICIPANT_ROLES))
     }),

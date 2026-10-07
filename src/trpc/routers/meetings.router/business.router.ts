@@ -122,7 +122,7 @@ export const businessRouter = createTRPCRouter({
         customerId: original.customerId,
         projectId: original.projectId,
         meetingType: original.meetingType,
-        setBy: original.setBy,
+        setBy: original.setBy ?? undefined,
         scheduledFor: input.newScheduledFor,
         // Same sit, new slot: the in-meeting working state (trade selections,
         // program, deal structure, closing adjustments) continues in the
