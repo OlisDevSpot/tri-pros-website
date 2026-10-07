@@ -113,9 +113,9 @@ B1–B5 and B7's projects half are planned now; B6 is planned after the approval
 
 ### 4.5 UI
 
-- **Setter column** in `MEETING_COLUMNS`: `defaultHidden: true`, `permission: ['assign', 'Meeting']`, sort id `setter`.
+- **Setter column** in `MEETING_COLUMNS`: `defaultHidden: true`, `permission: ['assign', 'Meeting']`, sort id `setter`. Its cell is an inline picker shaped like the Rep column's (owner, 2026-10-07): `SetterCell` shows the setter's avatar and name as a compact trigger ("Not recorded" on a row that predates setters) and opens `SetterPicker` in a popover, writing through the table meta's `onUpdateSetter` (`meetingsRouter.crud.update`); a table whose meta carries no `onUpdateSetter` shows the name only. The row carries `setterImage` beside `setterName` for it.
 - **Single-row "Set setter"** (`MEETING_ACTIONS.setSetter`, permission `['assign', 'Meeting']`): a `custom` action whose `renderContent` shows `SetterPicker` (over `UserCommandItem`), writing through `meetingCrud.update` (`meetingsRouter.crud.update`). It lives in `useMeetingActionConfigs` with `hidden: entity => entity.setBy === undefined`: it shows on the records table and the dashboard's meeting card (both read full rows) and stays out of the schedule calendar, the customer-profile and project meeting lists and the kanban cards, whose rows do not carry `setBy`.
-- **`SetterPicker` and `SetterSelect`** (the form's trigger around the picker), both built on `UserCommandItem`, replace the earlier `InternalUserPicker` extraction from `ParticipantPickerContent`; `AvailableParticipantRow` now composes `UserCommandItem` too.
+- **`SetterPicker` and `SetterSelect`** (the form's trigger around the picker), both built on `UserCommandItem`, replace the earlier `InternalUserPicker` extraction from `ParticipantPickerContent`; `AvailableParticipantRow` now composes `UserCommandItem` too. The picker lists the current setter first: cmdk highlights the first row and scrolls the highlighted row into view, so the list opens at the top with the current one checked. `SetterSelect`'s popover is modal: the add-meeting form sits in a dialog whose scroll lock swallows wheel events over a non-modal popover (the same setting `MultiSelect` bakes in). Picking the current setter again writes nothing.
 
 ---
 
