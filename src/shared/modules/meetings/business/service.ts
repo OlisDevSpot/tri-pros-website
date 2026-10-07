@@ -100,13 +100,23 @@ export const meetingBusinessService = {
         data: { meetingOutcome: 'cancelled' },
       }))
 
-      dalVerifySuccess(await handOffShareToken({ fromMeetingId: original.id, toMeetingId: replacement.id }))
+      // Once the replacement exists a failure has to say so: a bare error reads as "try again", and a cancelled original can be rescheduled a second time.
+      const handOff = await handOffShareToken({ fromMeetingId: original.id, toMeetingId: replacement.id })
+      if (!handOff.success) {
+        throw new ThrowableDalError({
+          type: 'precondition-failed',
+          reason: 'Meeting rescheduled, but the original visit link did not carry over to the new meeting.',
+        })
+      }
 
       if (original.customerId) {
-        dalVerifySuccess(await customerNoteCrud.create(ctx, {
+        const note = await customerNoteCrud.create(ctx, {
           customerId: original.customerId,
           content: buildRescheduleNote(original.scheduledFor, input.newScheduledFor, input.reason),
-        }))
+        })
+        if (!note.success) {
+          throw new ThrowableDalError({ type: 'precondition-failed', reason: 'Meeting rescheduled but note failed.' })
+        }
       }
 
       return { ...replacement, shareToken: original.shareToken }
