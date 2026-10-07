@@ -1,6 +1,6 @@
 # Records bulk actions, setter, proposals and projects entity tables — design
 
-> **Status:** v3, **approved for planning** 2026-09-29 (owner: "go with recommendations for all questions"). v1 (2026-09-28) was stress-tested against the code by eight read-only audits and revised with the owner's rulings (tracker D38–D48). The proposal-approval rule left this spec for its own session (`docs/plans/2026-09-29-approval-project-outcome-handoff.md`, D38). Nothing is built.
+> **Status:** v3, **approved for planning** 2026-09-29 (owner: "go with recommendations for all questions"). v1 (2026-09-28) was stress-tested against the code by eight read-only audits and revised with the owner's rulings (tracker D38–D48). The proposal-approval rule left this spec for its own session (`docs/plans/2026-09-29-approval-project-outcome-handoff.md`, D38). Only the setter slice is built (plan below); the rest is not.
 > **Cites:** records-management tracker `docs/plans/2026-09-26-records-management-epic.md` (D2, D3, D4, D5, D11, D15, D21, D22, D25, D32, D33, D36, D38–D48, O8, O9, H5); analytics tracker `docs/plans/2026-09-26-analytics-epic.md` (Spec D, C20, D6); multi-proposal tracker C67 (`pre-draft` deferred), C68 (`business` child).
 > **Setter plan:** `docs/superpowers/plans/2026-10-05-meetings-setter.md` (built).
 > **Code read** at `b7e3df8e` (data-view filtering Tasks 1–20 and final fixes landed); the `DataTable` split (`data-table-body.tsx`) landed in `2495d193`.
@@ -89,7 +89,7 @@ B1–B5 and B7's projects half are planned now; B6 is planned after the approval
 ### 4.2 Candidates and the invariant
 
 - **Setter roles:** dispatcher, agent, super-admin (derived from the CASL ability, not written out as role strings). The system owner (`getSystemOwnerId`) is excluded.
-- **Read:** the candidates come from `getInternalUsers({ purpose: 'setter' })` (agents, super-admins and dispatchers, never the system owner). `meetingsRouter.reads.getInternalUsers` gains an optional input `{ purpose: 'participant' | 'setter' }`. With no input it returns what it returns today (agent + super-admin), so the participant picker, the `reps` option source and analytics labels are unchanged. Its query moves out of the router into the users DAL as `listUsersByRoles(roles)` (the router queries `db` directly today, `reads.router.ts:35`). The guard stays `assign Meeting` (super-admin).
+- **Read:** the candidates come from `getInternalUsers({ purpose: 'setter' })` (agents, super-admins and dispatchers, never the system owner). `meetingsRouter.reads.getInternalUsers` gains an optional input `{ purpose: 'participant' | 'setter' }`. With no input it returns what it returns today (agent + super-admin), so the participant picker, the `reps` option source and analytics labels are unchanged. Its query moves out of the router into the users DAL as `listUsersByRoles(roles)` (the router queried `db` directly before the setter build). The guard stays `assign Meeting` (super-admin).
 - **Option source:** `setters` → `getInternalUsers({ purpose: 'setter' })`, `canRead: assign Meeting` (`shared/dal/client/constants/option-source-reads.ts`).
 - **Invariant (entity rule):** a non-null `setBy` must be a user whose role is in `SETTER_ROLES`. Checked in the meetings crud `create.before` (after owner resolution) and `update.before` (when `'setBy' in data`), for every origin (the rule runs on every create and update, whatever the caller), through a new users DAL read `getUserRoleById`. Violation throws `ThrowableDalError({ type: 'precondition-failed', reason: 'set_by_not_internal' })` (`dalToTrpc` → PRECONDITION_FAILED).
 
@@ -109,7 +109,7 @@ B1–B5 and B7's projects half are planned now; B6 is planned after the approval
 | **Public partner intake** (`/intake`, `IntakeFormView`, no session) | Leaves this spec (D56): `setBy` stays null; the free-text `closedBy` JSONB stays until Spec D6. External setters are deferred (D58). |
 | Single-row and bulk Set setter | §4.5, §5 |
 
-**Known gap (H5, #285):** agents and dispatchers hold `update Meeting` with no field limit, and `createCrudRouter.create` has no field check, so either can write `setBy` through generic crud. The invariant bounds it to internal users. No permission rows here.
+**Known gap (H5, #285):** agents and dispatchers hold `update Meeting` with no field limit, and `createCrudRouter.create` has no field check, so either can write `setBy` through generic crud on create. The update half is closed (D54: `update.before` refuses `setBy` from a viewer without `assign Meeting`); the create half stays with #285. The invariant bounds it to internal users. No permission rows here.
 
 ### 4.5 UI
 
