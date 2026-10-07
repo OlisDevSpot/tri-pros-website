@@ -4,7 +4,7 @@ Step-by-step procedure for adding a new business entity to the tRPC layer under 
 
 **Read first**: [`docs/adr/0002-entity-server-system.md`](../adr/0002-entity-server-system.md) for the *why*. This document is the *how*.
 
-Every top-level entity is a `ServerSpec` built with `defineEntitySpec`, with its own CASL subject and visibility predicate. A child table (per-parent rows, append-only logs) that has no subject of its own is built with `defineSubEntitySpec`; it declares `parent: { spec, fk, field }`, where `field` is the name it takes inside its parent, and omits its own `visibility` — its scope is derived from the parent (ADR-0002 Amendment 2026-08-11; e.g. `src/shared/modules/proposals/incentives/server-spec.ts`).
+Every top-level entity is an `AnyServerSpec` built with `defineEntitySpec`, with its own CASL subject and visibility predicate. A child table (per-parent rows, append-only logs) that has no subject of its own is built with `defineSubEntitySpec`; it declares `parent: { spec, fk, field }`, where `field` is the name it takes inside its parent, and omits its own `visibility` — its scope is derived from the parent (ADR-0002 Amendment 2026-08-11; e.g. `src/shared/modules/proposals/incentives/server-spec.ts`).
 
 ---
 
@@ -57,7 +57,7 @@ import type { VisibilityScope } from '@/shared/dal/server/types'
 import { and, eq, or, exists } from 'drizzle-orm'
 import { proposals, meetings } from '@/shared/db/schema'
 
-// Signature is fixed by `ServerSpec.visibility: (scope: VisibilityScope) => SQL`
+// Signature is fixed by `AnyServerSpec.visibility: (scope: VisibilityScope) => SQL`
 // — a single destructured object, not positional args. `ability` is there for
 // capability-based branching (e.g. a dispatcher-only leads-pool clause); most
 // predicates only need `userId`.
@@ -91,7 +91,7 @@ import { insertProposalSchema, proposals, selectProposalSchema } from '@/shared/
 const updateProposalSchema = insertProposalSchema.partial()
 
 // Concrete-typed schemas — consumed by createCrudRouter for tRPC type inference.
-// The spec also holds these objects, but type-erased via the ServerSpec
+// The spec also holds these objects, but type-erased via the AnyServerSpec
 // interface (fine for DAL's runtime .parse()).
 export const proposalSchemas = {
   insert: insertProposalSchema,
@@ -113,7 +113,7 @@ export const proposalServerSpec = defineEntitySpec({
 })
 ```
 
-Then add the new spec to the `ServerSpecs` union in `src/shared/domains/permissions/specs.ts` and, for an entity, its subject to the pinned list in `src/shared/domains/permissions/type-checks/must-not-compile.ts`. A spec missing from the list cannot be named in a rule.
+Then add the new spec to the `ServerSpec` union in `src/shared/domains/permissions/specs.ts` and, for an entity, its subject to the pinned list in `src/shared/domains/permissions/type-checks/must-not-compile.ts`. A spec missing from the list cannot be named in a rule.
 
 ---
 

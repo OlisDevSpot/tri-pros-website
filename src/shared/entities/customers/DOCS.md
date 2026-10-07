@@ -131,7 +131,7 @@ the `*_COLUMN_KEYS` constants needed to re-group the table's own columns was
 itself the smell that the group wanted to be a table.
 **Reference impl**: `src/shared/db/schema/customer-profiles.ts` (table + patch
 schema); `schemas/index.ts` (`CUSTOMER_PROFILE_COLUMN_KEYS` / `PROPERTY_PROFILE_COLUMN_KEYS` / `FINANCIAL_PROFILE_COLUMN_KEYS` / `PROFILE_COLUMN_KEYS` / `ProfileKey`); `dal/server/mutations.ts` (`upsertCustomerProfile`); `dal/server/queries.ts` (`CustomerWithProfile`); `lib/profile-select.ts` (`profileCols`)
-**Enforced by**: Zod validation on `customerProfilePatchSchema` (child-table patch); CASL gates the whole child table as one subject — `can('read'/'update', 'CustomerProfile')` in `src/shared/domains/permissions/abilities.ts` (separate from `can('update', 'Customer', ['age'])`)
+**Enforced by**: Zod validation on `customerProfilePatchSchema` (child-table patch); CASL treats the profile as the `profile` field of `Customer` — `can('update', 'Customer', 'profile')`, with columns as `profile.<column>` (separate from `can('update', 'Customer', ['age'])`)
 see `docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md` §10 (Addendum B)
 
 ### lead-attribution-fields
@@ -176,11 +176,10 @@ application code path.
 
 **SYSTEM-only writes**: both tables are written exclusively from `customerIntakeService`
 (`upsertLeadAttribution` at capture, `upsertFunnelEnrichment` on progressive funnel steps)
-via `funnelsRouter` `baseProcedure` endpoints running under `SYSTEM_CONTEXT` — never through
-`customerCrud.update` or any authenticated agent mutation. CASL subject
-`CustomerLeadAttribution` is **read-only** for `agent` and `dispatcher`
-(`can('read', 'CustomerLeadAttribution')`, no `update`/`create` grant — see
-`src/shared/domains/permissions/abilities.ts`); `customer_enrichment` has no CASL subject
+via `funnelsRouter` `baseProcedure` endpoints, written through `upsertOneToOne` with the caller's
+context (intake runs under `systemContext('intake:form' | 'intake:funnel' | 'intake:landing' | 'webhook:bina')`)
+— never through `customerCrud.update` or any authenticated agent mutation. It is read with the
+customer as its `leadAttribution` field (`src/shared/domains/permissions/rules/`); `customer_enrichment` has no CASL subject
 of its own (read alongside its parent attribution row where needed; it has no
 authenticated write path to gate).
 
@@ -222,7 +221,7 @@ Enforced **server-side** by the compiled rules: `createCrudDal` scopes `Customer
 Separately: the customer profile's **activity timeline** (Overview tab) is **derived just-in-time**, not persisted. `buildTimelineEvents` (`lib/build-timeline-events.ts`) recomputes the event list on every render from the live meetings/proposals/notes already fetched for the profile — there is no `timeline_events` table or snapshot to keep in sync. Follows the codebase's default derived-value rule (`docs/codebase-conventions/derived-values.md`): compute from a single canonical helper unless persistence earns its keep via the snapshot or cache-column exceptions, neither of which applies here.
 
 **Why**: authorship is the natural ownership boundary for a note (only the person who wrote it should be able to change what it says), with an admin override for moderation/cleanup. The timeline stays JIT because it's a read-only composition of data that's already fetched for the profile — persisting a duplicate would just be another cache to invalidate.
-**Reference impl**: `entities/customer-notes/lib/server-spec.ts` (`parent`) and the note rules; `entities/customer-notes/hooks/use-customer-note-action-configs.ts` (`canManage`); `lib/build-timeline-events.ts` (`buildTimelineEvents`)
+**Reference impl**: `entities/customer-notes/lib/server-spec.ts` (`parent`) and the note rules in `src/shared/domains/permissions/rules/agent.ts`; `entities/customer-notes/hooks/use-customer-note-action-configs.ts` (`canManage`); `lib/build-timeline-events.ts` (`buildTimelineEvents`)
 **Enforced by**: compiled rules in `createCrudDal` (server, authoritative) + `canManage` (client, UX-only mirror)
 
 ## Anti-patterns

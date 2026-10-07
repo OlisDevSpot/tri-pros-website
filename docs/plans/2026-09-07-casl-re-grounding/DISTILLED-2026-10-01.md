@@ -3,9 +3,10 @@
 One page. Everything else in this folder is evidence. Code is the source of truth: re-verify any line here against the code before acting on it.
 
 ## 1. Status
-- Branch `refactor/285-…` in `.worktrees/issue-285` = **main + these docs + units 1 and 2**. Supersede merge `2b038591` (2026-10-05, main `61d3e1e2`); main merged in again at the unit 1 boundary (`2818bf06`) and at the unit 2 boundary (2026-10-06). Pushed to origin.
+- Branch `refactor/285-…` in `.worktrees/issue-285` = **main + these docs + units 1 and 2 + part 1 of unit 3**. Supersede merge `2b038591` (2026-10-05, main `61d3e1e2`); main merged in again at the unit 1 boundary (`2818bf06`) and at the unit 2 boundary (2026-10-06). Pushed to origin.
 - The pre-re-grounding code (tip `b40403b6`, last code commit 2026-09-06) is no longer in the tree. It stays an ancestor of the branch: restore a file with `git show b40403b6:<path>`.
 - **Units 1 and 2 are in the tree; the legacy row filter still enforces.** Unit 1: spec constructors, the type-only list of specs, `defineRules`, the operator declarations. Unit 2 (commits d92e1037 … a467a5e7, tracker §4): one `getRequestActor()` per server render; `ScopedContext { actor, scope }` and the tRPC context `{ session, actor, scope }`; `can` / `cannot` typed from the spec list on server and client; `@casl/react` 7.0.1 behind `permissions/client.tsx`, fed by the server at the dashboard slots and the proposal-flow layout and by `permissionsRouter.rules` elsewhere; `systemProcedure`, `scopeMiddleware`, `getCachedSession` and the four client-side ability rebuilds are gone. Still legacy until unit 3: `ctx.scope`, `spec.visibility` + `resolveEffectiveScope`, the `SYSTEM_CONTEXT` call sites (its ability is now `manage all`), the token branch of `shareableMiddleware` (a holder actor with bare `read` + `update`), and CASL rules that grant verbs without conditions.
+- **Unit 3 part 1 is in the tree (2026-10-07, commits 69720177 … 30cae570):** the compiler, `permit`, `systemContext`, field lists on `read`/`update`, one rules file per role, and the Customer family (`Customer`, `CustomerNote`) enforced by compiled filters; the other families still run on the legacy engine. Browser evidence in tracker Unit 3. The `db87d28d` restore waits on Q11; the dispatcher's four-bucket reach is unit 4's.
 - On the unit 2 tip (after the merge of main): `pnpm tsc` and `pnpm lint` pass; browser checks recorded in tracker §4, Unit 2.
 - Main is mid-move from `entities/` to `modules/` (proposals, projects, media, construction done), which relocates the files this epic rewrites.
 
@@ -83,7 +84,7 @@ The full list of 20, with file and line, is the tracker's §5.1. The fixes the e
 
 ## 7. Next steps, in order
 1. **The holes in §6 ship with the epic** (decision 26). S20 is outside it and stays open.
-2. Write the plan for unit 3 (compiler and DAL self-scoping, one entity family at a time, Customer first) for the owner's approval. The three unit-1 rulings are in (decisions 23–25); the unit 2 items the tracker's Unit 3 note carries go into it.
+2. Unit 3 part 2: the Meeting family (then Proposal, Project, the rest), each with its own plan for the owner's approval; part 1 (the compiler and the Customer family) is built. The items the tracker's Unit 3 note carries go into the plan.
 3. Rule the open items in the spec's §12: homeowner phone grant; pipeline map for prod; lint wall shape; which dev records browser tests may change; the 25 business rulings in report 10 §5.
 4. Build order (spec §11): typed foundation → one actor per request → compiler + DAL self-scoping per entity family → rules matrix → lint wall + financial reads → delete the legacy engine → full browser pass. The keep-primitives (adapter core, outcome classification) come back from `b40403b6` in the unit that gives each a home.
 5. Merge main into the branch at every unit boundary; one merge to main after the end-to-end pass.

@@ -1,6 +1,6 @@
 # Permissions structure — design (2026-10-05)
 
-**Status.** Approved by the owner on 2026-10-05: six sections in chat, then this written form. Units 1 and 2 of §11 are built (2026-10-05, 2026-10-06); each further unit gets its own plan.
+**Status.** Approved by the owner on 2026-10-05: six sections in chat, then this written form. Units 1 and 2 of §11, and part 1 of unit 3, are built (2026-10-05, 2026-10-06, 2026-10-07); each further unit gets its own plan.
 
 **What this is.** The structure of the permission system: types, names, layers, where each check happens, and the order of work. It is the written form of decisions D-01 to D-26 in `docs/plans/2026-08-10-casl-scope-compiler-epic.md` and of the decision log L1 to L14 in `docs/plans/2026-09-07-casl-re-grounding/README.md`, plus the rulings of the 2026-10-05 walk-through.
 
