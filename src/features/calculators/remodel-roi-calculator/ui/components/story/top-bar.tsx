@@ -70,9 +70,9 @@ export function TopBar({ projection, lookAhead, onLookAheadChange, showInputsBut
           }}
           type="single"
           value={String(lookAhead)}
-          variant="outline"
+          variant="segmented"
         >
-          {LOOK_AHEAD_YEARS.map(years => <ToggleGroupItem className="h-11 min-w-11 flex-none px-3" key={years} value={String(years)}>{years === LOOK_AHEAD_YEARS[0] ? `${years} yrs` : years}</ToggleGroupItem>)}
+          {LOOK_AHEAD_YEARS.map(years => <ToggleGroupItem className="h-9.5 min-w-9.5 px-3" key={years} value={String(years)}>{years === LOOK_AHEAD_YEARS[0] ? `${years} yrs` : years}</ToggleGroupItem>)}
         </ToggleGroup>
       </div>
     </div>

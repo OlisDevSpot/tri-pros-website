@@ -31,7 +31,7 @@ export function DataViewTypeToggle({
       className={cn('', className)}
       type="single"
       size="sm"
-      variant="outline"
+      variant="segmented"
       value={value}
       onValueChange={(v) => {
         if (v) {

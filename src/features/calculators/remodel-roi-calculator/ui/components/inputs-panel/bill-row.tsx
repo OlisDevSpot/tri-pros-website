@@ -44,8 +44,8 @@ export function BillRow({ category, cut }: Props) {
             render={({ field }) => (
               <FormItem>
                 <FormControl>
-                  <ToggleGroup aria-label={`${label} cut`} onValueChange={value => value && field.onChange(value as CutMode)} type="single" value={field.value} variant="outline">
-                    {CUT_MODES.map(cutMode => <ToggleGroupItem className="h-11 flex-none px-3 text-xs" key={cutMode} value={cutMode}>{CUT_MODE_LABELS[cutMode]}</ToggleGroupItem>)}
+                  <ToggleGroup aria-label={`${label} cut`} onValueChange={value => value && field.onChange(value as CutMode)} type="single" value={field.value} variant="segmented">
+                    {CUT_MODES.map(cutMode => <ToggleGroupItem className="h-9.5 px-3 text-xs" key={cutMode} value={cutMode}>{CUT_MODE_LABELS[cutMode]}</ToggleGroupItem>)}
                   </ToggleGroup>
                 </FormControl>
               </FormItem>

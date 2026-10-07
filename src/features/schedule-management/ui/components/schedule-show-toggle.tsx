@@ -14,7 +14,7 @@ export function ScheduleShowToggle({ value, onChange }: ScheduleShowToggleProps)
   return (
     <ToggleGroup
       type="single"
-      variant="outline"
+      variant="segmented"
       value={value}
       onValueChange={(next) => {
         const show = SCHEDULE_SHOW_VALUES.find(candidate => candidate === next)
@@ -26,7 +26,7 @@ export function ScheduleShowToggle({ value, onChange }: ScheduleShowToggleProps)
       className="shrink-0"
     >
       {SCHEDULE_SHOW_VALUES.map(show => (
-        <ToggleGroupItem key={show} value={show} className="h-11 px-3 lg:h-9">
+        <ToggleGroupItem key={show} value={show} className="h-9.5 px-3 lg:h-7.5">
           {SCHEDULE_SHOW_LABELS[show]}
         </ToggleGroupItem>
       ))}

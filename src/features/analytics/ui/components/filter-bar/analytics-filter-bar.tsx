@@ -23,7 +23,7 @@ export function AnalyticsFilterBar() {
     <section aria-label="Timeframe and filters" className="flex min-w-0 flex-col items-end gap-2">
       <Popover open={picking} onOpenChange={setPicking}>
         <PopoverAnchor asChild>
-          <div ref={toolbar} className="flex max-w-full items-center rounded-lg border border-border bg-card p-0.5 shadow-xs">
+          <div ref={toolbar} data-slot="control-group" className="flex max-w-full items-center rounded-lg border border-control-border bg-card p-0.5 shadow-xs">
             <PeriodPicker onCustom={() => setPicking(true)} onPreset={() => setPicking(false)} />
             <span aria-hidden="true" className="mx-1 h-5 w-px shrink-0 bg-border" />
             <PopoverTrigger asChild>

@@ -152,7 +152,8 @@ export function AllDetail({ sourceCount, activeChip, range, sources, onAddCustom
             />
           </section>
           <TabsList
-            className="-mb-px h-auto justify-start gap-4 self-start overflow-x-auto rounded-none bg-transparent p-0 sm:self-end"
+            variant="underline"
+            className="-mb-px w-auto self-start overflow-x-auto border-b-0 sm:self-end"
           >
             <SourceTabTrigger value="customers">
               Customers
