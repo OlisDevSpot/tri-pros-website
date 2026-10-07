@@ -189,6 +189,12 @@ if (env.VERCEL_ENV === 'production' && env.VOIP_DEV_OVERRIDE_NUMBER) {
   throw new Error('VOIP_DEV_OVERRIDE_NUMBER must NOT be set in production')
 }
 
+// EMAIL_DEV_OVERRIDE reroutes every outbound email to one inbox. In production it would
+// black-hole every customer email.
+if (env.VERCEL_ENV === 'production' && env.EMAIL_DEV_OVERRIDE) {
+  throw new Error('EMAIL_DEV_OVERRIDE must NOT be set in production')
+}
+
 // META_TEST_EVENT_CODE tags CAPI events for Events Manager → Test Events,
 // which Meta EXCLUDES from optimization + reporting. Set in prod it would
 // silently divert every real Lead out of ad optimization — fail boot instead.

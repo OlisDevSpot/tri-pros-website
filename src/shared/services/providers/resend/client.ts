@@ -1,8 +1,10 @@
 import type { Resend } from 'resend'
 
 import { lazyAsync } from '@/shared/config/lazy-async'
+import env from '@/shared/config/server-env'
 
 import { getResendConfig } from './lib/config'
+import { applyDevRecipientOverride } from './lib/dev-recipients'
 
 /**
  * Resend SDK client, loaded and constructed on the first send. The SDK brings
@@ -21,7 +23,12 @@ function createResendClient() {
   return {
     emails: {
       async send(...args: Parameters<Resend['emails']['send']>) {
-        return (await sdk()).emails.send(...args)
+        const [payload, options] = args
+        const guarded = applyDevRecipientOverride(payload, {
+          isProduction: env.VERCEL_ENV === 'production',
+          override: getResendConfig().devRecipientOverride,
+        })
+        return (await sdk()).emails.send(guarded, options)
       },
     },
   }
