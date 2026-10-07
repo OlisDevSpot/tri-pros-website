@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 
 import type { MergeToken } from '@/shared/services/voip/lib/sms-merge-template'
 
+import { businessDateTime, formatBusinessClock, formatBusinessDay, formatBusinessDayTime } from '@/shared/lib/business-time'
+import { formatArrivalWindow } from '@/shared/modules/meetings/core/lib/arrival-window'
 import { applyDevRecipientOverride } from '@/shared/services/providers/resend/lib/dev-recipients'
 import { listMergeTokens, renderMergeSample, renderMergeTemplate } from '@/shared/services/voip/lib/sms-merge-template'
 import { countSmsSegments, findNonGsm7 } from '@/shared/services/voip/lib/sms-segments'
@@ -61,5 +63,30 @@ console.log('1. Dev email recipients ✓')
   assert.deepEqual(findNonGsm7('Hi “Maria” — ok \u{1F600}'), ['“', '”', '—', '\u{1F600}'], 'each offending character, once, in order')
 }
 console.log('2. SMS templates and segments ✓')
+
+{
+  assert.equal(formatBusinessDay('2026-10-07T17:00:00.000Z'), 'Wed, Oct 7')
+  assert.equal(formatBusinessClock('2026-10-07T17:00:00.000Z'), '10:00 AM')
+  assert.equal(formatBusinessDayTime('2026-10-07T17:00:00.000Z'), 'Wed, Oct 7, 10:00 AM')
+  assert.equal(formatBusinessClock('2026-10-07 17:00:00+00'), '10:00 AM', 'the spelling Postgres hands back is the same instant')
+  assert.equal(countSmsSegments(formatBusinessDayTime('2026-10-07T17:00:00.000Z')).encoding, 'gsm7', 'no narrow no-break space survives')
+
+  // 10:00 AM local on the days around both 2026 clock changes (Mar 8, Nov 1).
+  assert.equal(formatBusinessClock('2026-03-07T18:00:00.000Z'), '10:00 AM')
+  assert.equal(formatBusinessClock('2026-03-08T17:00:00.000Z'), '10:00 AM')
+  assert.equal(formatBusinessClock('2026-10-31T17:00:00.000Z'), '10:00 AM')
+  assert.equal(formatBusinessClock('2026-11-01T18:00:00.000Z'), '10:00 AM')
+
+  assert.equal(businessDateTime('2026-10-08', 18, 0).toISOString(), '2026-10-09T01:00:00.000Z')
+  assert.equal(businessDateTime('2026-10-09', 0, 0).toISOString(), '2026-10-09T07:00:00.000Z')
+  assert.equal(businessDateTime('2026-03-08', 8, 30).toISOString(), '2026-03-08T15:30:00.000Z', '8:30 AM on the spring-forward day')
+  assert.equal(businessDateTime('2026-03-08', 18, 0).toISOString(), '2026-03-09T01:00:00.000Z', '6 PM on the spring-forward day')
+  assert.equal(businessDateTime('2026-11-01', 8, 30).toISOString(), '2026-11-01T16:30:00.000Z', '8:30 AM on the fall-back day')
+  assert.equal(businessDateTime('2026-11-01', 18, 0).toISOString(), '2026-11-02T02:00:00.000Z', '6 PM on the fall-back day')
+
+  assert.equal(formatArrivalWindow('2026-10-07T17:00:00.000Z'), '10:00 and 10:30 AM')
+  assert.equal(formatArrivalWindow('2026-10-07T18:45:00.000Z'), '11:45 AM and 12:15 PM', 'a window that crosses noon names both halves')
+}
+console.log('3. Pacific time text ✓')
 
 console.log('✅ verify-visit-messages passed')
