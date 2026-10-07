@@ -234,46 +234,67 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
 
   const customerIds = rows.map(r => r.customerId)
 
-  // Pipeline value is read per-customer below from the stored final_tcp_cents
-  // rollup (Wave 2). This aggregate query only counts + summarizes statuses.
-  const proposalRows = await db
-    .select({
-      customerId: customers.id,
-      proposalCount: count(proposals.id).as('proposal_count'),
-      proposalStatuses: sql<string[] | string>`array_agg(DISTINCT ${proposals.status})`.as('proposal_statuses'),
-      hasSentContract: sql<boolean>`bool_or(${proposals.contractSentAt} IS NOT NULL)`.as('has_sent_contract'),
-      latestProposalAt: max(proposals.createdAt).as('latest_proposal_at'),
-    })
-    .from(proposals)
-    .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
-    .innerJoin(customers, eq(customers.id, meetings.customerId))
-    .where(and(
-      args.isOmni ? undefined : userParticipatesInMeeting(args.userId, proposals.meetingId),
-      inArray(customers.id, customerIds),
-    ))
-    .groupBy(customers.id)
+  // The three follow-ups need only the customer ids, so they run together.
+  const [proposalRows, repRows, proposalDetailRows] = await Promise.all([
+    // Pipeline value is read per-customer below from the stored final_tcp_cents
+    // rollup (Wave 2). This aggregate query only counts + summarizes statuses.
+    db
+      .select({
+        customerId: customers.id,
+        proposalCount: count(proposals.id).as('proposal_count'),
+        proposalStatuses: sql<string[] | string>`array_agg(DISTINCT ${proposals.status})`.as('proposal_statuses'),
+        hasSentContract: sql<boolean>`bool_or(${proposals.contractSentAt} IS NOT NULL)`.as('has_sent_contract'),
+        latestProposalAt: max(proposals.createdAt).as('latest_proposal_at'),
+      })
+      .from(proposals)
+      .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
+      .innerJoin(customers, eq(customers.id, meetings.customerId))
+      .where(and(
+        args.isOmni ? undefined : userParticipatesInMeeting(args.userId, proposals.meetingId),
+        inArray(customers.id, customerIds),
+      ))
+      .groupBy(customers.id),
+    // Assigned rep + meeting ID: owner of the most relevant meeting (latest by scheduledFor) per customer
+    db
+      .selectDistinctOn([meetings.customerId], {
+        customerId: meetings.customerId,
+        meetingId: meetings.id,
+        meetingScheduledFor: meetings.scheduledFor,
+        meetingConfirmedAt: meetings.confirmedAt,
+        repId: user.id,
+        repName: user.name,
+        repEmail: user.email,
+        repImage: user.image,
+      })
+      .from(meetings)
+      .innerJoin(user, eq(user.id, meetings.ownerId))
+      .where(and(
+        inArray(meetings.customerId, customerIds),
+        args.isOmni ? undefined : userParticipatesInMeeting(args.userId, meetings.id),
+      ))
+      .orderBy(meetings.customerId, desc(meetings.scheduledFor)),
+    // Individual proposals per customer for card display + value calculation.
+    // Value reads the stored final_tcp_cents rollup (Wave 2).
+    db
+      .select({
+        customerId: meetings.customerId,
+        meetingId: proposals.meetingId,
+        proposalId: proposals.id,
+        token: proposals.token,
+        status: proposals.status,
+        createdAt: proposals.createdAt,
+        finalTcpCents: proposals.finalTcpCents,
+      })
+      .from(proposals)
+      .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
+      .where(and(
+        args.isOmni ? undefined : userParticipatesInMeeting(args.userId, proposals.meetingId),
+        inArray(meetings.customerId, customerIds),
+      ))
+      .orderBy(desc(proposals.createdAt)),
+  ])
 
   const proposalMap = new Map(proposalRows.map(r => [r.customerId, r]))
-
-  // Fetch assigned rep + meeting ID: owner of the most relevant meeting (latest by scheduledFor) per customer
-  const repRows = await db
-    .selectDistinctOn([meetings.customerId], {
-      customerId: meetings.customerId,
-      meetingId: meetings.id,
-      meetingScheduledFor: meetings.scheduledFor,
-      meetingConfirmedAt: meetings.confirmedAt,
-      repId: user.id,
-      repName: user.name,
-      repEmail: user.email,
-      repImage: user.image,
-    })
-    .from(meetings)
-    .innerJoin(user, eq(user.id, meetings.ownerId))
-    .where(and(
-      inArray(meetings.customerId, customerIds),
-      args.isOmni ? undefined : userParticipatesInMeeting(args.userId, meetings.id),
-    ))
-    .orderBy(meetings.customerId, desc(meetings.scheduledFor))
 
   const repMap = new Map(
     repRows
@@ -285,26 +306,6 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
         rep: { id: r.repId, name: r.repName, email: r.repEmail, image: r.repImage } as PipelineItemRep,
       }]),
   )
-
-  // Fetch individual proposals per customer for card display + value calculation.
-  // Value reads the stored final_tcp_cents rollup (Wave 2).
-  const proposalDetailRows = await db
-    .select({
-      customerId: meetings.customerId,
-      meetingId: proposals.meetingId,
-      proposalId: proposals.id,
-      token: proposals.token,
-      status: proposals.status,
-      createdAt: proposals.createdAt,
-      finalTcpCents: proposals.finalTcpCents,
-    })
-    .from(proposals)
-    .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
-    .where(and(
-      args.isOmni ? undefined : userParticipatesInMeeting(args.userId, proposals.meetingId),
-      inArray(meetings.customerId, customerIds),
-    ))
-    .orderBy(desc(proposals.createdAt))
 
   const proposalDetailMap = new Map<string, PipelineItemProposal[]>()
   const proposalValueMap = new Map<string, Array<{ meetingId: string | null, status: string, value: number | null }>>()
