@@ -4,7 +4,7 @@ Step-by-step procedure for adding a new business entity to the tRPC layer under 
 
 **Read first**: [`docs/adr/0002-entity-server-system.md`](../adr/0002-entity-server-system.md) for the *why*. This document is the *how*.
 
-Every top-level entity is an `AnyServerSpec` built with `defineEntitySpec`, with its own CASL subject and visibility predicate. A child table (per-parent rows, append-only logs) that has no subject of its own is built with `defineSubEntitySpec`; it declares `parent: { spec, fk, field }`, where `field` is the name it takes inside its parent, and omits its own `visibility` — its scope is derived from the parent (ADR-0002 Amendment 2026-08-11; e.g. `src/shared/modules/proposals/incentives/server-spec.ts`).
+Every top-level entity is an `AnyServerSpec` built with `defineEntitySpec`, with its own CASL subject; a converted family's reach comes from its rules through `permit`, an unconverted one still declares a visibility predicate. A child table (per-parent rows, append-only logs) that has no subject of its own is built with `defineSubEntitySpec`; it declares `parent: { spec, fk, field }`, where `field` is the name it takes inside its parent, and omits its own `visibility` — its scope is derived from the parent (ADR-0002 Amendment 2026-08-11; e.g. `src/shared/modules/proposals/incentives/server-spec.ts`).
 
 ---
 

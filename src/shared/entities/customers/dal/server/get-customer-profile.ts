@@ -20,6 +20,7 @@ import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
+import { customerNoteServerSpec } from '@/shared/entities/customer-notes/lib/server-spec'
 import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { profileCols } from '@/shared/entities/customers/lib/profile-select'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
@@ -79,7 +80,7 @@ export async function getCustomerProfile(ctx: ScopedContext, customerId: string)
     })
     .from(customerNotes)
     .leftJoin(user, eq(user.id, customerNotes.authorId))
-    .where(eq(customerNotes.customerId, customerId))
+    .where(and(eq(customerNotes.customerId, customerId), permit(ctx, 'read', customerNoteServerSpec).sql))
     .orderBy(desc(customerNotes.createdAt))
 
   const proposalViewRows: CustomerProfileProposalView[] = allProposals.length > 0

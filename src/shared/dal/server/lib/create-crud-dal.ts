@@ -43,6 +43,8 @@ interface Scoping {
   assertColumns: (ctx: ScopedContext, row: Record<string, unknown>, columns: string[]) => Promise<void>
   /** A create under a parent: readable for an entity with a parent, updatable on this field for a sub-entity. A miss is not found. */
   assertParentReachable: (ctx: ScopedContext, input: Record<string, unknown>) => Promise<void>
+  /** An entity's insert row against its `create` rules' conditions; a sub-entity is covered by the parent probe on its field. */
+  assertCreatable: (ctx: ScopedContext, row: Record<string, unknown>) => void
   /** Always loaded before an update, so the columns can be checked against it. */
   loadsRowBeforeUpdate: boolean
   project: (ctx: ScopedContext, row: Record<string, unknown>) => Promise<Record<string, unknown>>
@@ -54,6 +56,7 @@ const legacyScoping: Scoping = {
   assert: () => {},
   assertColumns: async () => {},
   assertParentReachable: async () => {},
+  assertCreatable: () => {},
   loadsRowBeforeUpdate: false,
   project: async (_ctx, row) => row,
 }
@@ -81,6 +84,11 @@ function compiledScoping(spec: AnyServerSpec): Scoping {
         : reachFor(ctx, 'update', spec.parent.spec, [spec.parent.field])
       if (!(await reach.probe(parentId))) {
         throw new ThrowableDalError({ type: 'not-found' })
+      }
+    },
+    assertCreatable: (ctx, row) => {
+      if ('subject' in spec && !reachFor(ctx, 'create', spec).test(row)) {
+        throw new ThrowableDalError({ type: 'forbidden' })
       }
     },
     loadsRowBeforeUpdate: true,
@@ -144,7 +152,7 @@ async function projected<TRow extends Record<string, unknown> | undefined>(scopi
   if (!result.success || !result.data) {
     return result
   }
-  return { success: true, data: await scoping.project(ctx, result.data) as TRow }
+  return dalDbOperation(async () => (await scoping.project(ctx, result.data as Record<string, unknown>)) as TRow)
 }
 
 async function createImpl<TTable extends PgTable, TId extends string | number, TInsert, TUpdate>(
@@ -164,6 +172,7 @@ async function createImpl<TTable extends PgTable, TId extends string | number, T
     if (callsite?.before)
       data = await callsite.before(data, ctx)
     const validated = spec.schemas.insert.parse(data) as Insert<TTable>
+    scoping.assertCreatable(ctx, validated as Record<string, unknown>)
     await scoping.assertParentReachable(ctx, validated as Record<string, unknown>)
 
     const [inserted] = await exec.insert(spec.table as PgTable).values(validated).returning()
@@ -229,7 +238,10 @@ async function updateImpl<TTable extends PgTable, TId extends string | number, T
         throw new ThrowableDalError({ type: 'not-found' })
       }
       previousRow = prev.data as Row<TTable>
-      await scoping.assertColumns(ctx, previousRow as Record<string, unknown>, changed)
+      // The rules judge what the caller asked to change; a column a before-hook derives from it
+      // (a cleared geocode after an address edit) is the server's own write.
+      const requested = changed.filter(column => (input.data as Record<string, unknown>)[column] !== undefined)
+      await scoping.assertColumns(ctx, previousRow as Record<string, unknown>, requested)
     }
 
     // Drizzle drops undefined keys and appends $onUpdate columns here (updatedAt bumps).
