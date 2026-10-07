@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 
 import type { MergeToken } from '@/shared/services/voip/lib/sms-merge-template'
 
+import { ROOTS } from '@/shared/config/roots'
 import { businessDateTime, formatBusinessClock, formatBusinessDay, formatBusinessDayTime } from '@/shared/lib/business-time'
 import { buildIcs } from '@/shared/modules/meetings/messages/lib/build-ics'
 import { formatArrivalWindow } from '@/shared/modules/meetings/core/lib/arrival-window'
@@ -153,5 +154,11 @@ console.log('3. Pacific time text ✓')
   assert.ok(unfoldedMultibyte.includes('SUMMARY:' + 'é'.repeat(60)), 'unfolded SUMMARY line contains all 60 multibyte characters')
 }
 console.log('4. Calendar invite ✓')
+
+{
+  assert.equal(ROOTS.public.homeVisit('m-1', 'tok'), '/home-visits/m-1?token=tok')
+  assert.equal(ROOTS.public.homeVisit('m-1'), '/home-visits/m-1', 'staff open it signed in, with no token')
+}
+console.log('5. Home visit path ✓')
 
 console.log('✅ verify-visit-messages passed')

@@ -5,7 +5,7 @@ import { builtinRules } from 'eslint/use-at-your-own-risk'
 // Selectors are intentionally NARROW (navigation call sites only) to avoid
 // false-positives on asset paths, sitemap config, pathname comparisons, etc.
 const NAV_PATH_RE
-  = '/^\\/(dashboard|portfolio|services|proposal-flow|funnels|intake|about|contact|blog|community|experience)(\\/|$)/'
+  = '/^\\/(dashboard|portfolio|services|proposal-flow|home-visits|funnels|intake|about|contact|blog|community|experience)(\\/|$)/'
 const NAV_PATH_MSG
   = 'Build app paths with ROOTS.* (absolute via mainSiteUrl/publicUrl), not string literals. See docs/codebase-conventions/urls-and-origins.md'
 
