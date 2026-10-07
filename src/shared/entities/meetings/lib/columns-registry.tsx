@@ -113,7 +113,7 @@ export const MEETING_COLUMNS = {
   },
   setter: {
     label: 'Setter',
-    size: 190,
+    size: 220,
     sort: 'setter',
     defaultHidden: true,
     permission: ['assign', 'Meeting'],
