@@ -164,6 +164,7 @@ export function CustomerPipelineView() {
               <KanbanBoard<CustomerPipelineItem>
                 stageConfig={stageFilter.filteredStageConfig}
                 groupedItems={groupedItems}
+                isPending={query.isPending}
                 allowedTransitions={config.allowedTransitions}
                 blockedMessages={config.blockedMessages}
                 onMoveItem={handleMoveItem}

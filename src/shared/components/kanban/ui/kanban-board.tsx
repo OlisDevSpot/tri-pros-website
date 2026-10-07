@@ -21,6 +21,7 @@ import { cn } from '@/shared/lib/utils'
 interface Props<T extends KanbanItem = KanbanItem> {
   stageConfig: readonly KanbanStageConfig[]
   groupedItems: Record<string, T[]>
+  isPending?: boolean
   allowedTransitions: Record<string, readonly string[]>
   blockedMessages: Record<string, string>
   onMoveItem?: (itemId: string, fromStage: string, toStage: string) => void
@@ -47,6 +48,7 @@ function noItemHref() {
 export function KanbanBoard<T extends KanbanItem>({
   stageConfig,
   groupedItems,
+  isPending,
   allowedTransitions,
   blockedMessages,
   onMoveItem,
@@ -122,6 +124,7 @@ export function KanbanBoard<T extends KanbanItem>({
             key={stage.key}
             stage={stage}
             items={groupedItems[stage.key] ?? []}
+            isPending={isPending}
             collapsed={collapsedStages.includes(stage.key)}
             getItemHref={getItemHref}
             showValueTotal={showColumnValues}
