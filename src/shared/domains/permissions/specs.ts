@@ -5,7 +5,7 @@ import type { PgTable } from 'drizzle-orm/pg-core'
 import type { appSettingServerSpec } from '@/shared/entities/app-settings/lib/server-spec'
 import type { applicationServerSpec } from '@/shared/entities/applications/lib/server-spec'
 import type { customerNoteServerSpec } from '@/shared/entities/customer-notes/lib/server-spec'
-import type { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
+import type { customerLeadAttributionServerSpec, customerProfileServerSpec, customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import type { leadSourceServerSpec } from '@/shared/entities/lead-sources/lib/server-spec'
 import type { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 import type { voipCallServerSpec } from '@/shared/entities/voip-calls/lib/server-spec'
@@ -26,7 +26,9 @@ import type { proposalViewServerSpec } from '@/shared/modules/proposals/views/se
 export type ServerSpec
   = | typeof appSettingServerSpec
     | typeof applicationServerSpec
+    | typeof customerLeadAttributionServerSpec
     | typeof customerNoteServerSpec
+    | typeof customerProfileServerSpec
     | typeof customerServerSpec
     | typeof leadSourceServerSpec
     | typeof meetingServerSpec

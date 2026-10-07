@@ -1,12 +1,24 @@
 import { z } from 'zod'
 
-import { defineEntitySpec } from '@/shared/dal/server/lib/define-spec'
+import { defineEntitySpec, defineSubEntitySpec } from '@/shared/dal/server/lib/define-spec'
 import {
   customers,
   insertCustomerSchema,
   selectCustomerSchema,
 } from '@/shared/db/schema'
-import { CUSTOMER } from '@/shared/entities/customers/lib/constants'
+import {
+  customerLeadAttribution,
+  insertCustomerLeadAttributionSchema,
+  leadAttributionCaptureSchema,
+  selectCustomerLeadAttributionSchema,
+} from '@/shared/db/schema/customer-lead-attribution'
+import {
+  customerProfilePatchSchema,
+  customerProfiles,
+  insertCustomerProfileSchema,
+  selectCustomerProfileSchema,
+} from '@/shared/db/schema/customer-profiles'
+import { CUSTOMER, CUSTOMER_LEAD_ATTRIBUTION, CUSTOMER_PROFILE } from '@/shared/entities/customers/lib/constants'
 import { customerVisibility } from '@/shared/entities/customers/lib/visibility'
 
 // Updates allow `createdAt` (super-admin-only via CASL field gate) — legacy
@@ -39,4 +51,31 @@ export const customerServerSpec = defineEntitySpec({
     update: updateCustomerSchema,
     select: selectCustomerSchema,
   },
+})
+
+// The discovery profile is a part of the customer: a rule names it as the field `profile`, and a
+// write needs the customer's `update` on `profile` and on each `profile.<column>`.
+export const customerProfileServerSpec = defineSubEntitySpec({
+  entityName: CUSTOMER_PROFILE,
+  table: customerProfiles,
+  schemas: {
+    insert: insertCustomerProfileSchema,
+    update: customerProfilePatchSchema,
+    select: selectCustomerProfileSchema,
+  },
+  primaryKey: 'customerId',
+  parent: { spec: customerServerSpec, fk: customerProfiles.customerId, field: 'profile' },
+})
+
+// Written once at capture by the system; read with the customer.
+export const customerLeadAttributionServerSpec = defineSubEntitySpec({
+  entityName: CUSTOMER_LEAD_ATTRIBUTION,
+  table: customerLeadAttribution,
+  schemas: {
+    insert: insertCustomerLeadAttributionSchema,
+    update: leadAttributionCaptureSchema,
+    select: selectCustomerLeadAttributionSchema,
+  },
+  primaryKey: 'customerId',
+  parent: { spec: customerServerSpec, fk: customerLeadAttribution.customerId, field: 'leadAttribution' },
 })

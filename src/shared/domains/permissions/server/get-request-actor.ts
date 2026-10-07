@@ -5,9 +5,13 @@ import type { Actor } from '@/shared/domains/permissions/actor'
 import { headers } from 'next/headers'
 import { cache } from 'react'
 
+import { assertRulesCompile } from '@/shared/dal/server/lib/permissions/check-rules'
 import { auth } from '@/shared/domains/auth/server'
 import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
 import 'server-only'
+
+// Once per server process: the first request of a process with a rule the interpreter rejects fails here.
+assertRulesCompile()
 
 interface RequestActor {
   session: BetterAuthSession | null

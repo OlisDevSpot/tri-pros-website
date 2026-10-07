@@ -30,7 +30,7 @@ export const meetingFlowRouter = createTRPCRouter({
       patch: customerProfilePatchSchema,
     }))
     .mutation(async ({ ctx, input }) => {
-      if (ctx.actor.ability.cannot('update', 'CustomerProfile')) {
+      if (ctx.actor.ability.cannot('update', 'Customer', 'profile')) {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'You do not have permission to update the customer profile.',

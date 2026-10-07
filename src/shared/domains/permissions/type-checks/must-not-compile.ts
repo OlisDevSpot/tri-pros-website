@@ -4,13 +4,14 @@
 
 import type z from 'zod'
 
+import type { SERVER_SPECS } from '@/shared/dal/server/specs'
 import type { SpecInsert } from '@/shared/dal/server/types'
 import type { insertProjectMediaFilesSchema } from '@/shared/db/schema/project-media-files'
 import type { insertProposalSchema } from '@/shared/db/schema/proposals'
 import type { OperatorName, ReadOperators } from '@/shared/domains/permissions/operators'
 import type { ConditionColumnOf, DuplicateFieldsIn, DuplicateSubjectsIn, EntitySubject, FieldOf, RowOf, ServerSpec } from '@/shared/domains/permissions/specs'
-import type { AppAbility, Permission } from '@/shared/domains/permissions/types'
 
+import type { AppAbility, Permission } from '@/shared/domains/permissions/types'
 import type { projectMediaServerSpec } from '@/shared/modules/projects/media/server-spec'
 import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
 import { defineEntitySpec, defineSubEntitySpec } from '@/shared/dal/server/lib/define-spec'
@@ -81,7 +82,7 @@ export type TheListIsExact = [
 
 export const proposalFields: FieldOf<'Proposal'>[] = ['status', 'views', 'views.*', 'views.**', 'views.viewedAt', 'incentives', 'media', 'media.**']
 export const projectFields: FieldOf<'Project'>[] = ['title', 'media', 'media.phase']
-export const customerFields: FieldOf<'Customer'>[] = ['age', 'name', 'phone', 'email', 'address', 'city', 'state', 'zip', 'pipelineStage']
+export const customerFields: FieldOf<'Customer'>[] = ['age', 'name', 'phone', 'email', 'address', 'city', 'state', 'zip', 'pipelineStage', 'profile', 'profile.*', 'profile.**', 'profile.hoa', 'leadAttribution', 'leadAttribution.kind']
 
 // @ts-expect-error not a field of Proposal
 export const fieldTypo: FieldOf<'Proposal'> = 'veiws'
@@ -107,6 +108,8 @@ export type NoDuplicateSubjects = AssertNever<DuplicateSubjectsIn<ServerSpec>>
 const _secondCustomer = defineEntitySpec({ entityName: 'Customer', subject: 'Customer', table: customers, schemas: customerServerSpec.schemas, conditionColumns: ['id'] })
 // @ts-expect-error two entity specs claim Customer
 export type DuplicateSubjectIsCaught = AssertNever<DuplicateSubjectsIn<ServerSpec | typeof _secondCustomer>>
+
+export type RuntimeListMatchesTypeList = Expect<Equal<(typeof SERVER_SPECS)[number], ServerSpec>>
 
 // @ts-expect-error a spec outside the list cannot be enforced
 createCrudDal(_secondCustomer)
@@ -275,7 +278,8 @@ export function checksThatMustCompile() {
   ability.can('assign', 'Proposal')
   ability.can('own', 'Meeting')
   ability.can('read', 'User')
-  ability.can('update', 'CustomerProfile')
+  ability.can('update', 'Customer', 'profile')
+  ability.can('update', 'Customer', 'profile.hoa')
   ability.can('update', 'Customer', 'age')
   ability.can('update', 'Proposal', 'views')
   ability.can('update', 'Proposal', 'views.viewedAt')
@@ -301,6 +305,8 @@ ability.cannot('edit', 'Customer')
 ability.can('read', 'User', 'name')
 // @ts-expect-error `own` belongs to Meeting
 ability.can('own', 'Proposal')
+// @ts-expect-error the profile is a part of Customer, not a subject
+ability.can('update', 'CustomerProfile')
 // @ts-expect-error a row that lacks the subject's condition column
 subject('CustomerNote', { id: 'note-1' })
 // @ts-expect-error a row tagged as an unknown subject

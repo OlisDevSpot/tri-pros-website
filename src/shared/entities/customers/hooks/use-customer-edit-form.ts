@@ -21,13 +21,9 @@ export function useCustomerEditForm(customer: CustomerWithProfile) {
   const { invalidateCustomer } = useInvalidation()
 
   const canEditContact = ability.can('update', 'Customer', 'name')
-  // `age` is a field-restricted Customer grant, separate from the
-  // CustomerProfile subject (Addendum B, 2026-07-14) — only agents hold it,
-  // not dispatchers.
   const canEditAge = ability.can('update', 'Customer', 'age')
-  // Profile-trio columns (customer_profiles child table) are gated as one
-  // CASL subject — all-or-nothing, unlike Customer's field-restricted grants.
-  const canEditProfiles = ability.can('update', 'CustomerProfile')
+  // The discovery profile is a part of the customer: writing it is `update Customer` on `profile`.
+  const canEditProfiles = ability.can('update', 'Customer', 'profile')
   const canEdit = canEditContact || canEditProfiles || canEditAge
 
   const form = useForm<CustomerFormValues>({

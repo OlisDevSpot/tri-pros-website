@@ -14,8 +14,6 @@ export interface SubjectsWithoutSpec {
   LeadsPool: 'read'
   User: 'read'
   Activity: CrudAction
-  CustomerProfile: 'read' | 'update'
-  CustomerLeadAttribution: 'read'
 }
 
 /** Capabilities on an entity that are not about a row. */
