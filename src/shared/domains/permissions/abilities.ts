@@ -1,6 +1,4 @@
-// Client-safe: the browser builds its ability from the rules the server sends, with `abilityFromRules`.
-
-import type { AppAbility, PermissionRule, StockAbility } from './types'
+import type { AppAbility, StockAbility } from './types'
 
 import type { UserRole } from '@/shared/constants/enums'
 
@@ -26,6 +24,8 @@ import { PROPOSAL } from '@/shared/modules/proposals/core/lib/constants'
 import { PROPOSAL_INCENTIVE } from '@/shared/modules/proposals/incentives/lib/constants'
 import { PROPOSAL_MEDIA_FILE } from '@/shared/modules/proposals/media/lib/constants'
 import { PROPOSAL_VIEW } from '@/shared/modules/proposals/views/lib/constants'
+import { abilityFromRules } from './ability-from-rules'
+import 'server-only'
 
 export const ENTITY_NAMES = [
   CUSTOMER,
@@ -57,11 +57,6 @@ export type EntityName = (typeof ENTITY_NAMES)[number]
 interface PermissionUser {
   id: string
   role: UserRole
-}
-
-/** The one place an ability is built from rules, so the server and the browser match them the same way. */
-export function abilityFromRules(rules: PermissionRule[]): StockAbility {
-  return createMongoAbility<StockAbility>(rules)
 }
 
 export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {

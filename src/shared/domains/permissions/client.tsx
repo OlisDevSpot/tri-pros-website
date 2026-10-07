@@ -11,7 +11,7 @@ import { skipToken, useQuery } from '@tanstack/react-query'
 import { useDeferredValue, useMemo, useState } from 'react'
 
 import { useSession } from '@/shared/domains/auth/client'
-import { abilityFromRules } from '@/shared/domains/permissions/abilities'
+import { abilityFromRules } from '@/shared/domains/permissions/ability-from-rules'
 import { useTRPC } from '@/trpc/helpers'
 
 interface SignedInUser {

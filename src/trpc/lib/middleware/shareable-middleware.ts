@@ -9,7 +9,7 @@ import { eq } from 'drizzle-orm'
 
 import { subjectOf } from '@/shared/dal/server/lib/define-spec'
 import { resolveEffectiveScope } from '@/shared/dal/server/lib/scope'
-import { abilityFromRules } from '@/shared/domains/permissions/abilities'
+import { abilityFromRules } from '@/shared/domains/permissions/ability-from-rules'
 import { createMiddleware } from '@/trpc/init'
 
 /** Token path → the holder's ability and `scope = eq(tokenColumn, token)`. Session path → the request's actor and its row filter. */

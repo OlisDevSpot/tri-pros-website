@@ -10,7 +10,7 @@ import type { EntityName } from '@/shared/domains/permissions/abilities'
 import type { Actor } from '@/shared/domains/permissions/actor'
 import type { AppAbility } from '@/shared/domains/permissions/types'
 
-import { abilityFromRules } from '@/shared/domains/permissions/abilities'
+import { abilityFromRules } from '@/shared/domains/permissions/ability-from-rules'
 
 export interface ScopedContext {
   actor: Actor
