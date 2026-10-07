@@ -206,12 +206,12 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ### Task 2: The compiler — AST, interpreter, operators, the rule walk, and the shared conditions matcher
 
 **Files:**
-- Create: `src/shared/dal/server/lib/permit/ast.ts`
-- Create: `src/shared/dal/server/lib/permit/operators.ts`
-- Create: `src/shared/dal/server/lib/permit/operators/meeting-participation.ts`
-- Create: `src/shared/dal/server/lib/permit/operators/derived-pipeline.ts`
-- Create: `src/shared/dal/server/lib/permit/interpret.ts`
-- Create: `src/shared/dal/server/lib/permit/where.ts`
+- Create: `src/shared/dal/server/lib/permissions/ast.ts`
+- Create: `src/shared/dal/server/lib/permissions/operators.ts`
+- Create: `src/shared/dal/server/lib/permissions/operators/meeting-participation.ts`
+- Create: `src/shared/dal/server/lib/permissions/operators/derived-pipeline.ts`
+- Create: `src/shared/dal/server/lib/permissions/interpret.ts`
+- Create: `src/shared/dal/server/lib/permissions/where.ts`
 - Create: `src/shared/domains/permissions/ability-from-rules.ts`
 - Modify: `src/shared/domains/permissions/abilities.ts` (loses `abilityFromRules`, gains `import 'server-only'`)
 - Modify: `src/shared/domains/permissions/client.tsx:14`, `src/shared/dal/server/types.ts:13`, `src/trpc/lib/middleware/shareable-middleware.ts:12` (import path)
@@ -517,7 +517,7 @@ Expected: both pass. Then `grep -rn "permissions/abilities'" src --include=*.tsx
 - [ ] **Step 9: Commit**
 
 ```bash
-git add src/shared/dal/server/lib/permit src/shared/domains/permissions/ability-from-rules.ts src/shared/domains/permissions/abilities.ts src/shared/domains/permissions/client.tsx src/shared/dal/server/types.ts src/trpc/lib/middleware/shareable-middleware.ts
+git add src/shared/dal/server/lib/permissions src/shared/domains/permissions/ability-from-rules.ts src/shared/domains/permissions/abilities.ts src/shared/domains/permissions/client.tsx src/shared/dal/server/types.ts src/trpc/lib/middleware/shareable-middleware.ts
 git commit -m "feat(permissions): the compiler — AST walk, interpreter, operator registry with the two SQL bodies, and the shared conditions matcher
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
@@ -528,9 +528,9 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ### Task 3: `permit`, `systemContext`, and a `createCrudDal` that scopes itself
 
 **Files:**
-- Create: `src/shared/dal/server/lib/permit/core.ts`
-- Create: `src/shared/dal/server/lib/permit/project.ts`
-- Create: `src/shared/dal/server/lib/permit.ts`
+- Create: `src/shared/dal/server/lib/permissions/core.ts`
+- Create: `src/shared/dal/server/lib/permissions/project.ts`
+- Create: `src/shared/dal/server/lib/permissions/permit.ts`
 - Create: `src/shared/dal/server/lib/contexts.ts`
 - Create: `src/shared/domains/permissions/rules/system.ts`
 - Modify: `src/shared/dal/server/lib/scope.ts` (`COMPILED_SUBJECTS`, `isCompiled`, the compiled branch of the legacy resolver)
@@ -544,7 +544,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 After this task nothing behaves differently: the compiled set is empty, so every spec still runs on the legacy engine. Task 5 fills the set.
 
-- [ ] **Step 1: `permit/core.ts` (the erased core the engine uses)**
+- [ ] **Step 1: `permissions/core.ts` (the erased core the engine uses)**
 
 ```ts
 import type { SQL } from 'drizzle-orm'
@@ -715,7 +715,7 @@ export function columnKeyOf(table: PgTable, column: PgColumn): string {
 
 The `as never` casts on `subject` and `tagged` are the one place run-time strings meet CASL's typed parameters: `rulesFor` and `relevantRuleFor` keep CASL's loose signatures on purpose, and this module is where that looseness is used. No other file casts for this.
 
-- [ ] **Step 2: `permit/project.ts` (the read projection, D-29)**
+- [ ] **Step 2: `permissions/project.ts` (the read projection, D-29)**
 
 ```ts
 import type { AnyServerSpec } from '../../types'
@@ -775,18 +775,18 @@ function columnsNamedBy(fields: readonly string[], columns: string[], prefix: st
 }
 ```
 
-- [ ] **Step 3: `permit.ts` (the typed entry point)**
+- [ ] **Step 3: `permissions/permit.ts` (the typed entry point)**
 
 ```ts
-import type { ScopedContext } from '../types'
+import type { ScopedContext } from '../../types'
 import type { EntitySubject, FieldOf, ServerSpec } from '@/shared/domains/permissions/specs'
 import type { CrudAction } from '@/shared/domains/permissions/types'
 
-import type { Permit } from './permit/core'
+import type { Permit } from './core'
 
-import { reachFor } from './permit/core'
+import { reachFor } from './core'
 
-export type { Permit } from './permit/core'
+export type { Permit } from './core'
 
 /** The subject a spec is checked under: its own, or its root parent's for a sub-entity. */
 export type SubjectOf<TSpec> = TSpec extends { subject: infer S extends EntitySubject }
@@ -873,7 +873,7 @@ In `bridgeToParent`, before `const parentScope = …`:
   }
 ```
 
-In `isVisible`, after the omni check: `if (isCompiled(spec)) { return (await reachFor(ctx, 'read', spec).probe(id)) }` with `reachFor` imported from `./permit/core`.
+In `isVisible`, after the omni check: `if (isCompiled(spec)) { return (await reachFor(ctx, 'read', spec).probe(id)) }` with `reachFor` imported from `./permissions/core`.
 
 In `src/trpc/lib/middleware/scope-middleware.ts`:
 
@@ -933,8 +933,8 @@ import { db } from '@/shared/db'
 
 import { ThrowableDalError } from '../types'
 import { dalDbOperation } from './helpers'
-import { assertGranted, columnKeyOf, reachFor, rootRowFor } from './permit/core'
-import { projectToReadFields } from './permit/project'
+import { assertGranted, columnKeyOf, reachFor, rootRowFor } from './permissions/core'
+import { projectToReadFields } from './permissions/project'
 import { isCompiled } from './scope'
 
 /**
@@ -1261,7 +1261,7 @@ Expected: both pass (the compiled set is empty, so every spec still takes the le
 - [ ] **Step 8: Commit**
 
 ```bash
-git add src/shared/dal/server/lib/permit src/shared/dal/server/lib/permit.ts src/shared/dal/server/lib/contexts.ts src/shared/domains/permissions/rules/system.ts src/shared/dal/server/lib/scope.ts src/trpc/lib/middleware/scope-middleware.ts src/shared/dal/server/lib/helpers.ts src/shared/dal/server/lib/create-crud-dal.ts src/shared/dal/server/types.ts
+git add src/shared/dal/server/lib/permissions src/shared/dal/server/lib/contexts.ts src/shared/domains/permissions/rules/system.ts src/shared/dal/server/lib/scope.ts src/trpc/lib/middleware/scope-middleware.ts src/shared/dal/server/lib/helpers.ts src/shared/dal/server/lib/create-crud-dal.ts src/shared/dal/server/types.ts
 git commit -m "feat(permissions): permit, systemContext, and a CRUD engine that scopes compiled specs itself
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
@@ -1277,7 +1277,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Modify: `src/shared/domains/permissions/types.ts` (`SubjectsWithoutSpec` loses `CustomerProfile` and `CustomerLeadAttribution`)
 - Create: `src/shared/domains/permissions/rules/super-admin.ts`, `rules/agent.ts`, `rules/dispatcher.ts`, `rules/homeowner.ts`, `rules/user.ts`, `rules/check-rules.ts`
 - Modify: `src/shared/domains/permissions/abilities.ts` (whole file)
-- Create: `src/shared/dal/server/specs.ts` (`SERVER_SPECS`), `src/shared/dal/server/lib/permit/check-rules.ts`
+- Create: `src/shared/dal/server/specs.ts` (`SERVER_SPECS`), `src/shared/dal/server/lib/permissions/check-rules.ts`
 - Modify: `src/shared/domains/permissions/server/get-request-actor.ts` (runs the compile check at load)
 - Modify: `src/shared/domains/permissions/type-checks/must-not-compile.ts`
 - Modify: `src/shared/entities/customers/hooks/use-customer-edit-form.ts:30`, `src/trpc/routers/customers.router/profile.router.ts`, `src/trpc/routers/meeting-flow.router.ts` (the three `'CustomerProfile'` checks; the routers' full edits are Task 5, here only the check line changes so tsc passes)
@@ -1721,7 +1721,7 @@ export const SERVER_SPECS = [
 ] as const
 ```
 
-`src/shared/dal/server/lib/permit/check-rules.ts`:
+`src/shared/dal/server/lib/permissions/check-rules.ts`:
 
 ```ts
 import type { AnyServerSpec } from '../../types'
@@ -1761,7 +1761,7 @@ export function assertRulesCompile(): void {
 }
 ```
 
-In `get-request-actor.ts` add `import { assertRulesCompile } from '@/shared/dal/server/lib/permit/check-rules'` and, after the imports, `assertRulesCompile()` with the comment `// Once per server process: the first request of a process with a rule the interpreter rejects fails here.`
+In `get-request-actor.ts` add `import { assertRulesCompile } from '@/shared/dal/server/lib/permissions/check-rules'` and, after the imports, `assertRulesCompile()` with the comment `// Once per server process: the first request of a process with a rule the interpreter rejects fails here.`
 
 - [ ] **Step 4: The three `'CustomerProfile'` checks**
 
@@ -1800,7 +1800,7 @@ Expected: both pass. Then start (or restart) the dev server on 3003 and request 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/shared/entities/customers/lib/server-spec.ts src/shared/domains/permissions/specs.ts src/shared/domains/permissions/types.ts src/shared/domains/permissions/rules src/shared/domains/permissions/abilities.ts src/shared/dal/server/specs.ts src/shared/dal/server/lib/permit/check-rules.ts src/shared/domains/permissions/server/get-request-actor.ts src/shared/domains/permissions/type-checks/must-not-compile.ts src/shared/entities/customers/hooks/use-customer-edit-form.ts src/trpc/routers/customers.router/profile.router.ts src/trpc/routers/meeting-flow.router.ts
+git add src/shared/entities/customers/lib/server-spec.ts src/shared/domains/permissions/specs.ts src/shared/domains/permissions/types.ts src/shared/domains/permissions/rules src/shared/domains/permissions/abilities.ts src/shared/dal/server/specs.ts src/shared/dal/server/lib/permissions/check-rules.ts src/shared/domains/permissions/server/get-request-actor.ts src/shared/domains/permissions/type-checks/must-not-compile.ts src/shared/entities/customers/hooks/use-customer-edit-form.ts src/trpc/routers/customers.router/profile.router.ts src/trpc/routers/meeting-flow.router.ts
 git commit -m "feat(permissions): one rules file per role; the Customer family's rules carry their conditions; the profile and lead attribution are parts of Customer; startup checks
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
@@ -1851,7 +1851,7 @@ In `customers/lib/server-spec.ts` delete the `visibility: customerVisibility,` l
 
 - [ ] **Step 2: The customer reads**
 
-`queries.ts`: add `import { permit } from '@/shared/dal/server/lib/permit'` and `import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'`. In `getCustomer`: `.where(and(eq(customers.id, input.id), permit(ctx, 'read', customerServerSpec).sql))`. In `listCustomers`: the first `and` member becomes `permit(ctx, 'read', customerServerSpec).sql`; its doc comment becomes `/** One customers list for every table: the rules scope it, and callers pin a source or segment through fixed filters. */`.
+`queries.ts`: add `import { permit } from '@/shared/dal/server/lib/permissions/permit'` and `import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'`. In `getCustomer`: `.where(and(eq(customers.id, input.id), permit(ctx, 'read', customerServerSpec).sql))`. In `listCustomers`: the first `and` member becomes `permit(ctx, 'read', customerServerSpec).sql`; its doc comment becomes `/** One customers list for every table: the rules scope it, and callers pin a source or segment through fixed filters. */`.
 
 `pipeline-items.ts`: same two imports; in `getCustomerPipelineItems` replace the comment on line 50 and the `customerWhere` member:
 
@@ -1888,7 +1888,7 @@ import { db } from '@/shared/db'
 
 import { ThrowableDalError } from '../types'
 import { dalDbOperation } from './helpers'
-import { columnKeyOf, reachFor, rootRowFor } from './permit/core'
+import { columnKeyOf, reachFor, rootRowFor } from './permissions/core'
 import { isCompiled } from './scope'
 
 /**
@@ -1979,7 +1979,7 @@ Delete `src/shared/entities/customer-notes/lib/assert-note-author.ts`.
 
 `customers.router/procedures.ts`: delete `customerProcedure` and the `resolveVisibilityScope` and `customerServerSpec` imports; the file keeps `customerPublicProcedure` and the header comment loses its first paragraph (the pre-scoped procedure is gone) and keeps the one about `server-spec.ts` staying pure.
 
-`business.router.ts`: import `agentProcedure` from `'../../init'` beside `createTRPCRouter`, `permit` from `@/shared/dal/server/lib/permit`, `systemContext` from `@/shared/dal/server/lib/contexts`, `customerServerSpec` from `@/shared/entities/customers/lib/server-spec`; remove the `SYSTEM_CONTEXT` import and the `customerProcedure` import (keep `customerPublicProcedure`). `list` and `search` use `agentProcedure`; in `search`: `.where(and(textWhere, permit(ctx, 'read', customerServerSpec).sql))`; in `createFromIntake`: `customerIntakeService.ingestLead(systemContext('intake:form'), {`.
+`business.router.ts`: import `agentProcedure` from `'../../init'` beside `createTRPCRouter`, `permit` from `@/shared/dal/server/lib/permissions/permit`, `systemContext` from `@/shared/dal/server/lib/contexts`, `customerServerSpec` from `@/shared/entities/customers/lib/server-spec`; remove the `SYSTEM_CONTEXT` import and the `customerProcedure` import (keep `customerPublicProcedure`). `list` and `search` use `agentProcedure`; in `search`: `.where(and(textWhere, permit(ctx, 'read', customerServerSpec).sql))`; in `createFromIntake`: `customerIntakeService.ingestLead(systemContext('intake:form'), {`.
 
 `profile.router.ts` becomes:
 
@@ -2030,7 +2030,7 @@ Replace `SYSTEM_CONTEXT` with `systemContext('<reason>')` (import `systemContext
 In `src/shared/entities/customers/DOCS.md` the `visibility-via-meeting-participation` rule's two lines become:
 
 ```
-**Reference impl**: `rules/agent.ts`: `can('read', 'Customer', { $participatesViaMeeting: { via: 'customerId', userId } })`; SQL body in `dal/server/lib/permit/operators/meeting-participation.ts`
+**Reference impl**: `rules/agent.ts`: `can('read', 'Customer', { $participatesViaMeeting: { via: 'customerId', userId } })`; SQL body in `dal/server/lib/permissions/operators/meeting-participation.ts`
 **Enforced by**: `createCrudDal` and every customer read through `permit(ctx, 'read', customerServerSpec).sql`
 ```
 

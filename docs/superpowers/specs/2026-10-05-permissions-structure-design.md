@@ -60,8 +60,8 @@ src/shared/domains/permissions/     client-safe unless marked
 src/shared/dal/server/              server-only
   types.ts                          ScopedContext, EntitySpec, SubEntitySpec, their erased union (named with the unit 3 plan)
   lib/define-spec.ts                defineEntitySpec, defineSubEntitySpec
-  lib/permit.ts                     permit(); replaces lib/scope.ts
-  lib/permit/                       rule walk, interpreter, operator SQL bodies
+  lib/permissions/permit.ts         permit(); replaces lib/scope.ts
+  lib/permissions/                  rule walk, interpreter, operator SQL bodies
   lib/contexts.ts                   systemContext, bearerContext
   lib/create-crud-dal.ts            scopes itself in every slot
 
