@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
 
+import type { MergeToken } from '@/shared/services/voip/lib/sms-merge-template'
+
 import { applyDevRecipientOverride } from '@/shared/services/providers/resend/lib/dev-recipients'
+import { listMergeTokens, renderMergeSample, renderMergeTemplate } from '@/shared/services/voip/lib/sms-merge-template'
+import { countSmsSegments, findNonGsm7 } from '@/shared/services/voip/lib/sms-segments'
 
 {
   const payload = {
@@ -35,5 +39,27 @@ import { applyDevRecipientOverride } from '@/shared/services/providers/resend/li
   assert.equal(templated.bcc, undefined, 'template email bcc is dropped')
 }
 console.log('1. Dev email recipients ✓')
+
+{
+  const tokens: MergeToken<{ name: string }>[] = [
+    { token: 'first_name', label: 'First name', sample: 'Maria', resolve: vars => vars.name },
+  ]
+  assert.equal(renderMergeTemplate('Hi {{first_name}}, {{ first_name }}!', tokens, { name: 'Sam' }), 'Hi Sam, Sam!', 'spaces inside the braces are allowed')
+  assert.equal(renderMergeTemplate('Hi {{nope}}', tokens, { name: 'Sam' }), 'Hi {{nope}}', 'an unknown token stays as typed')
+  assert.equal(renderMergeSample('Hi {{first_name}}', tokens), 'Hi Maria', 'samples stand in for values')
+  assert.deepEqual(listMergeTokens('{{a}} {{b}} {{a}}'), ['a', 'b'], 'token names, in order, once each')
+
+  assert.deepEqual(countSmsSegments(''), { chars: 0, segments: 0, encoding: 'gsm7' })
+  assert.deepEqual(countSmsSegments('a'.repeat(160)), { chars: 160, segments: 1, encoding: 'gsm7' })
+  assert.deepEqual(countSmsSegments('a'.repeat(161)), { chars: 161, segments: 2, encoding: 'gsm7' })
+  assert.deepEqual(countSmsSegments('a'.repeat(306)), { chars: 306, segments: 2, encoding: 'gsm7' })
+  assert.deepEqual(countSmsSegments('a'.repeat(307)), { chars: 307, segments: 3, encoding: 'gsm7' })
+  assert.deepEqual(countSmsSegments('[ok]'), { chars: 6, segments: 1, encoding: 'gsm7' }, 'extension characters count twice')
+  assert.deepEqual(countSmsSegments('’'.repeat(70)), { chars: 70, segments: 1, encoding: 'ucs2' }, 'a curly apostrophe switches the whole text to UCS-2')
+  assert.deepEqual(countSmsSegments('’'.repeat(71)), { chars: 71, segments: 2, encoding: 'ucs2' })
+  assert.equal(countSmsSegments('10:00\u202FAM').encoding, 'ucs2', 'the narrow no-break space Intl prints before AM is not GSM-7')
+  assert.deepEqual(findNonGsm7('Hi “Maria” — ok \u{1F600}'), ['“', '”', '—', '\u{1F600}'], 'each offending character, once, in order')
+}
+console.log('2. SMS templates and segments ✓')
 
 console.log('✅ verify-visit-messages passed')

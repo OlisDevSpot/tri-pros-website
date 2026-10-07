@@ -1,16 +1,9 @@
 import type { SmsMergeVars } from '@/shared/entities/voip-campaigns/lib/sms-merge-tokens'
 
 import { SMS_MERGE_TOKENS } from '@/shared/entities/voip-campaigns/lib/sms-merge-tokens'
+import { renderMergeTemplate } from '@/shared/services/voip/lib/sms-merge-template'
 
-// Pure {{token}} substitution for campaign SMS bodies. Renders in-app because
-// The dialer's SMS send takes a literal body (no contact merge). Tokens come
-// from the shared registry; unknown tokens are left untouched. No I/O.
-
-const RESOLVERS = new Map(SMS_MERGE_TOKENS.map(t => [t.token, t.resolve]))
-
+// The dialer's SMS send takes a literal body (no contact merge), so campaign bodies render in-app.
 export function renderSmsTemplate(body: string, vars: SmsMergeVars): string {
-  return body.replace(/\{\{\s*(\w+)\s*\}\}/g, (match, key: string) => {
-    const resolve = RESOLVERS.get(key)
-    return resolve ? resolve(vars) : match
-  })
+  return renderMergeTemplate(body, SMS_MERGE_TOKENS, vars)
 }

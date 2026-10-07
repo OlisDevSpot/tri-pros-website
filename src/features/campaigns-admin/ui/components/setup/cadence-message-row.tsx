@@ -5,11 +5,11 @@ import type { SmsCadenceMessage } from '@/shared/entities/voip-campaigns/schemas
 import { TriangleAlertIcon, XIcon } from 'lucide-react'
 import { useRef } from 'react'
 import { insertAtCursor } from '@/features/campaigns-admin/lib/insert-at-cursor'
-import { countSmsSegments } from '@/features/campaigns-admin/lib/sms-segments'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { SMS_MERGE_TOKENS } from '@/shared/entities/voip-campaigns/lib/sms-merge-tokens'
+import { countSmsSegments } from '@/shared/services/voip/lib/sms-segments'
 
 interface CadenceMessageRowProps {
   message: SmsCadenceMessage
