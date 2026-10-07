@@ -52,7 +52,7 @@ These are the same names every `bg-card` / `text-muted-foreground` consumer alre
 | `--accent-foreground` | = foreground | = foreground | |
 | `--border` | `oklch(0.905 0.012 252)` | `oklch(0.30 0.04 258)` | Hairline: dividers, card edges |
 | ✚ `--border-strong` | `oklch(0.84 0.015 252)` | `oklch(0.38 0.04 258)` | Dashed empties, emphasized dividers |
-| `--input` | `oklch(0.62 0.03 255)` | `oklch(0.53 0.04 256)` | **Control border** (3:1 vs card) — shadcn's `border-input` |
+| `--input` | ladder: `--control-edge` edges off the surface | same | **Field border** (≥1.9 vs card) — shadcn's `border-input`; checkboxes/radios/switch use `--indicator` (3:1) |
 | ✚ `--input-background` | `oklch(1 0 0)` | `oklch(0.195 0.038 258)` | Control fill |
 | `--primary` | `oklch(0.50 0.15 243)` (`--brand-blue`) | `oklch(0.76 0.13 230)` | The one action accent — "act here" |
 | `--primary-foreground` | `oklch(1 0 0)` (white) | `oklch(0.19 0.045 258)` (navy) | Label on the accent |

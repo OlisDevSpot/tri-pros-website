@@ -14,6 +14,8 @@ interface Pair {
   fg: string
   bg: string
   min: number
+  /** Caps a pair that has to stay quiet. */
+  max?: number
   /** Resolves a translucent `bg` against this token first (e.g. a pill fill over the card). */
   base?: string
   /** Surface-relative pairs are checked on every place listed; the rest on the page only. */
@@ -278,13 +280,23 @@ const pairs: Pair[] = [
   { label: 'muted text on step-up', fg: '--muted-foreground', bg: '--muted', min: 4.5, on: EVERYWHERE },
   { label: 'link on surface', fg: '--link', bg: '--card', min: 4.5, on: ON_SURFACES },
   { label: 'destructive text on surface', fg: '--destructive-text', bg: '--card', min: 4.5, on: ON_SURFACES },
-  { label: 'control border vs surface', fg: '--input', bg: '--card', min: 3, on: ON_SURFACES },
+  { label: 'checkbox, radio and switch edge vs surface', fg: '--indicator', bg: '--card', min: 3, on: ON_SURFACES },
+  // A field is filled with its own surface, so its edge alone marks it: about 2:1 keeps a search box from vanishing
+  // into a toolbar without the old 3:1 grid of dark boxes. The focus ring carries the 3:1 state change.
+  { label: 'field edge vs its surface', fg: '--input', bg: '--card', min: 1.9, on: ON_SURFACES },
   { label: 'body text on band', fg: '--foreground', bg: '--band', min: 4.5, on: ['page', ...CARDS] },
   { label: 'muted text on band', fg: '--muted-foreground', bg: '--band', min: 4.5, on: ['page', ...CARDS] },
   { label: 'body text on hovered row', fg: '--foreground', bg: '--row-hover', min: 4.5, on: ON_SURFACES },
   { label: 'body text on selected row', fg: '--foreground', bg: '--row-selected', min: 4.5, on: ON_SURFACES },
   { label: 'body text on active tab', fg: '--foreground', bg: '--tab-active', min: 4.5, on: ON_SURFACES },
   { label: 'muted text on tab track', fg: '--muted-foreground', bg: '--tab-track', min: 4.5, on: ON_SURFACES },
+  // A switch's state is its fill. 1.15 is the selected-control floor; below it the tabs read as one strip with a
+  // faint smudge. Near black (a dark page) luminance runs out first, so that is where the floor binds.
+  { label: 'active tab vs its track', fg: '--tab-active', bg: '--tab-track', min: 1.15, on: ON_SURFACES },
+  // The label brightening carries hover too, so the wash may sit a touch under the surface floor on the darkest well.
+  { label: 'hovered tab vs its track', fg: '--hover', bg: '--tab-track', min: 1.08, on: ON_SURFACES },
+  // The label says it too: an inactive label is muted, and that has to read as a different weight of ink.
+  { label: 'active label vs an inactive label', fg: '--foreground', bg: '--muted-foreground', min: 1.5 },
   { label: 'body text on hover wash', fg: '--foreground', bg: '--hover', base: '--card', min: 4.5, on: ON_SURFACES },
   { label: 'muted text on hover wash', fg: '--muted-foreground', bg: '--hover', base: '--card', min: 4.5, on: ON_SURFACES },
   { label: 'body text on press wash', fg: '--foreground', bg: '--press', base: '--card', min: 4.5, on: ON_SURFACES },
@@ -298,7 +310,16 @@ const pairs: Pair[] = [
   // is the top rung, so a button in a menu has no rung left to climb and is not checked there.
   { label: 'outline button fill vs the page', fg: '--control', bg: '--background', min: 1.06 },
   { label: 'outline button fill vs its surface', fg: '--control', bg: '--card', min: 1.06, on: CARDS },
-  { label: 'outline button edge vs its fill', fg: '--border', bg: '--control', min: 1.05, on: ['page', ...CARDS] },
+  // A button's edge is a quiet outline, not a field's 2:1 box: its fill and shadow already lift it. The caps catch a
+  // retune that brings back the bold toolbar of boxes the owner rejected on 2026-10-07.
+  { label: 'outline button edge vs its fill', fg: '--control-border', bg: '--control', min: 1.25, max: 1.5, on: ['page', ...CARDS] },
+  // Stronger than a card's own edge (1.14–1.34), so a button reads as standing on the card, not drawn on it.
+  { label: 'outline button edge vs its surface', fg: '--control-border', bg: '--card', min: 1.2, on: CARDS },
+  // Segmented tracks and button capsules take the button's edge. The edge is taken off the rung above the surface and
+  // the track sinks below it, so light's deepest rungs bring the two closest and dark's sunken track sits furthest off.
+  { label: 'segmented track edge vs its track', fg: '--control-border', bg: '--tab-track', min: 1.12, max: 2, on: ['page', ...CARDS] },
+  { label: 'selected control vs its rest fill', fg: '--control-selected', bg: '--control', min: 1.15, on: ['page', ...CARDS] },
+  { label: 'label on a selected control', fg: '--foreground', bg: '--control-selected', min: 4.5, on: ['page', ...CARDS] },
   { label: 'hovered outline button vs its fill', fg: '--control-hover', bg: '--control', min: 1.1, on: ['page', ...CARDS] },
   // Near black the first step reads weakest, so dark mode's lift has to keep a card off the page.
   { label: 'card vs the page', fg: '--card', bg: '--background', min: 1.1, on: ['rung 1'], modes: ['dark'] },
@@ -345,7 +366,7 @@ const climb: [[string, Place], [string, Place]][] = [
 
 // A selected row has to stand further from its surface than a hovered one, or hover reads as the selection.
 const outranks: [string, string][] = [['--row-selected', '--row-hover']]
-const distanceFromSurface = (name: string, mode: Mode, place: Place) => {
+function distanceFromSurface(name: string, mode: Mode, place: Place) {
   const [l1, a1, b1] = toOklab(resolve(name, mode, place))
   const [l2, a2, b2] = toOklab(resolve('--card', mode, place))
   return Math.hypot(l1 - l2, a1 - a2, b1 - b2)
@@ -377,7 +398,10 @@ for (const mode of ['light', 'dark'] as const) {
     for (const place of pair.on ?? ['page']) {
       guard(`${mode}: ${pair.label} (${place})`, () => {
         const ratio = contrast(pair, mode, place)
-        return ratio < pair.min ? `${mode}: ${pair.label} (${place}) is ${ratio.toFixed(2)}:1, needs ${pair.min}:1` : undefined
+        if (ratio < pair.min) {
+          return `${mode}: ${pair.label} (${place}) is ${ratio.toFixed(2)}:1, needs ${pair.min}:1`
+        }
+        return pair.max !== undefined && ratio > pair.max ? `${mode}: ${pair.label} (${place}) is ${ratio.toFixed(2)}:1, keep it under ${pair.max}:1` : undefined
       })
     }
   }
