@@ -3,7 +3,6 @@
 import type { CustomerPipelineItem } from '@/shared/entities/customers/types/pipeline-item'
 
 import { useMutation } from '@tanstack/react-query'
-import { motion } from 'motion/react'
 import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { CUSTOMER_PIPELINE_QUERY } from '@/features/customer-pipelines/constants/customer-pipeline-query'
@@ -24,7 +23,6 @@ import { usePipeline } from '@/shared/domains/pipelines/hooks/pipeline-context'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { CreateMeetingModal } from '@/shared/entities/meetings/components/create-meeting-modal'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
-import { useIsHydrating } from '@/shared/hooks/use-is-hydrating'
 import { openModal } from '@/shared/lib/open-modal'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
@@ -42,7 +40,6 @@ export function CustomerPipelineView() {
   const [assignRepTarget, setAssignRepTarget] = useState<{ meetingIds: string[] } | null>(null)
   const trpc = useTRPC()
   const ability = useAbility()
-  const isHydrating = useIsHydrating()
   const canManagePipeline = ability.can('manage', 'CustomerPipeline')
 
   const config = pipelineConfigs[pipeline]
@@ -124,13 +121,7 @@ export function CustomerPipelineView() {
   const isSwitching = query.isStale || query.isFetching
 
   return (
-    <motion.div
-      initial={isHydrating ? false : { opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 30 }}
-      transition={{ delay: 0.25, duration: 0.25 }}
-      className="w-full h-full flex flex-col gap-(--gutter) overflow-hidden"
-    >
+    <div className="w-full h-full flex flex-col gap-(--gutter) overflow-hidden">
       <PageBar className="shrink-0">
         <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between">
           <CustomerPipelineMetricsBar items={items} pipeline={pipeline} isLoading={query.isPending || isSwitching} />
@@ -212,6 +203,6 @@ export function CustomerPipelineView() {
           onSuccess={() => void query.refresh()}
         />
       )}
-    </motion.div>
+    </div>
   )
 }
