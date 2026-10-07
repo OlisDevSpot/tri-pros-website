@@ -45,13 +45,13 @@
 | `Refusal` (interface) | `refusal-message.ts` | the spec's own word |
 | Constant keys (`frozen`, `fieldFrozen`, …) | the three `constants/refusals.ts` | the reason code without its entity prefix, camel-cased |
 
-**4. Blocked: needs a ruling (G4).** Two cases where the Zoho signature path sends or omits an approval time and the spec's rule changes what is stored. Full text and both options in Task 4 Step 1. Tasks 1–3 do not wait on it.
+**4. Blocked: needs a ruling (G4).** Two cases where the Zoho signature path sends or omits an approval time and the spec's rule changes what is stored. Full text and both options in Task 4 Step 1. Tasks 1–3 do not wait on it. **Ruled 2026-10-06: B.**
 
 **5. Dispatchers and the projects kanban.** Dispatchers have no link to it (the sidebar and the pipeline select offer them only Leads), but `/dashboard/pipeline/projects` has no role guard, so by typing the URL they can open it and see public projects that have a customer. A drag there writes today (raw and unchecked). After Task 7 it is refused, because dispatchers hold no Project ability at all. Nothing legitimate is lost; the spec asks that you hear it before the build.
 
-**6. `projects.business.create` has the same hole G7 closes.** It is the bare `agentProcedure` behind the approval modal's project form, and a dispatcher can call it over the wire. The spec's G7 names only `projects.crud.create`, `.update` and `.delete`, so this plan leaves it. Recommendation: say yes and Task 2 gains the same three-line `create Project` check at the top of that mutation.
+**6. `projects.business.create` has the same hole G7 closes.** It is the bare `agentProcedure` behind the approval modal's project form, and a dispatcher can call it over the wire. The spec's G7 names only `projects.crud.create`, `.update` and `.delete`, so this plan leaves it. Recommendation: say yes and Task 2 gains the same three-line `create Project` check at the top of that mutation. **Owner 2026-10-06: deferred; Task 2 stays as written.**
 
-**7. `SET_BY_NOT_INTERNAL`** (the setter plan's refusal) has the same `{ reason, message }` shape as these constants. Not folded in here. Recommendation: once the setter plan's Task 4 lands, move it in as `MEETING_REFUSALS.setByNotInternal` so every meeting toast reads one constant.
+**7. `SET_BY_NOT_INTERNAL`** (the setter plan's refusal) has the same `{ reason, message }` shape as these constants. Not folded in here. Recommendation: once the setter plan's Task 4 lands, move it in as `MEETING_REFUSALS.setByNotInternal` so every meeting toast reads one constant. **Owner 2026-10-06: deferred.**
 
 **8. Stale tabs on deploy day.** A records table left open from before the deploy still sends an approval time with "approved". Task 4 refuses that, so the tab shows "Failed to update proposal" until it reloads. A reload is the way round.
 
@@ -951,7 +951,7 @@ git show --stat HEAD
 
 - [ ] **Step 1: Blocked: needs a ruling**
 
-Stop here and ask the owner. Do not pick one yourself. Tasks 5–7 do not depend on the answer and may proceed.
+**Ruled 2026-10-06 by the owner: B.** Use the B blocks below; the A blocks stay for the record.
 
 The spec's rule: on `status: 'approved'`, if the stored row was not approved, stamp `approvedAt` with the payload's value, else now; if it was already approved, keep the stored `approvedAt` and drop the payload's. The only caller that sends a value is the Zoho signature path (`contractService.applyContractEvent`, `SYSTEM_CONTEXT`), which sends the signing time only when the stored `approvedAt` is empty. Two cases come out differently from today:
 
