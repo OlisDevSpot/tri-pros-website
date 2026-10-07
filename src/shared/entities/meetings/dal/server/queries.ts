@@ -308,3 +308,12 @@ export async function getRescheduleChain(
     return rows.map(row => row.id)
   })
 }
+
+export async function getRescheduleSuccessorId(meetingId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ id: meetings.id })
+    .from(meetings)
+    .where(eq(meetings.rescheduledFromId, meetingId))
+    .limit(1)
+  return row?.id ?? null
+}

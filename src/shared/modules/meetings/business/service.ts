@@ -10,6 +10,7 @@ import { MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/sta
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { handOffShareToken } from '@/shared/entities/meetings/dal/server/mutations'
 import { addParticipant, getParticipantsForMeeting } from '@/shared/entities/meetings/dal/server/participants'
+import { getRescheduleSuccessorId } from '@/shared/entities/meetings/dal/server/queries'
 import { buildRescheduleNote, formatMeetingDateShort } from '@/shared/entities/meetings/lib/notes'
 
 export const meetingBusinessService = {
@@ -68,6 +69,14 @@ export const meetingBusinessService = {
         throw new ThrowableDalError({
           type: 'precondition-failed',
           reason: `A meeting with outcome "${original.meetingOutcome}" already happened and can't be rescheduled — book a new meeting instead.`,
+        })
+      }
+
+      // A second reschedule would fork the chain and carry the share token to the wrong replacement.
+      if (await getRescheduleSuccessorId(original.id)) {
+        throw new ThrowableDalError({
+          type: 'precondition-failed',
+          reason: 'This meeting was already rescheduled; reschedule the new meeting instead.',
         })
       }
 

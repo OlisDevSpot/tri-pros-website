@@ -35,17 +35,19 @@ function escapeText(value: string): string {
     .replace(/;/g, '\\;')
     .replace(/,/g, '\\,')
     .replace(/\r\n|\r|\n/g, '\\n')
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\u0000-\u0008\v\f\u000E-\u001F\u007F]/g, '')
 }
 
 function paramValue(value: string): string {
-  // eslint-disable-next-line no-control-regex, unicorn/escape-case
+  // eslint-disable-next-line no-control-regex
   const clean = value.replace(/[\u0000-\u001F\u007F"]/g, '')
   return /[,;:]/.test(clean) ? `"${clean}"` : clean
 }
 
 // RFC 5545 content lines end at CR LF, so a control character in any value would start a new property.
 function sanitizeRaw(value: string): string {
-  // eslint-disable-next-line no-control-regex, unicorn/escape-case
+  // eslint-disable-next-line no-control-regex
   return value.replace(/[\u0000-\u001F\u007F]/g, '')
 }
 

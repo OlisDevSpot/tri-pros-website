@@ -159,6 +159,9 @@ console.log('3. Pacific time text ✓')
   assert.ok(!injectionEvent.some(line => line === 'ATTENDEE;CN=x:mailto:evil@x.com'), 'no line contains the injected property')
   assert.ok(injectionEvent.includes('DESCRIPTION:a\\nb'), 'lone CR is escaped to newline escape')
 
+  const controlEvent = buildIcs({ ...event, method: 'REQUEST', sequence: 0, description: 'a\u0000b' }).replace(/\r\n /g, '').split('\r\n')
+  assert.ok(controlEvent.includes('DESCRIPTION:ab'), 'NUL and other C0 controls are dropped from TEXT values')
+
   const multibyteEvent = buildIcs({
     ...event,
     method: 'REQUEST',
@@ -374,6 +377,9 @@ console.log('8. Confirmation track ✓')
   const sameDay = planInput({ now: new Date('2026-10-09T16:20:00.000Z') }, { createdAt: '2026-10-09T16:15:00.000Z' })
   assert.equal(step(sameDay, 'rep_confirmation').state, 'not_sent')
   assert.equal(step(sameDay, 'rep_confirmation').reason, 'booked_after_run', 'booked at 9:15 AM for 10 AM: no "good morning" text an hour late')
+  const sameDayPostgres = planInput({ now: new Date('2026-10-09T16:20:00.000Z') }, { createdAt: '2026-10-09 16:15:00.123456+00' })
+  assert.equal(step(sameDayPostgres, 'rep_confirmation').state, 'not_sent')
+  assert.equal(step(sameDayPostgres, 'rep_confirmation').reason, 'booked_after_run', 'a createdAt in Postgres microsecond spelling reads the same')
   const missed = planInput({ now: new Date('2026-10-09T07:30:00.000Z') })
   assert.equal(step(missed, 'day_before_reminder').state, 'not_sent')
   assert.equal(step(missed, 'day_before_reminder').reason, 'no_record', 'the window closed at midnight with nothing recorded')
