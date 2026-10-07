@@ -58,7 +58,7 @@ src/shared/domains/permissions/     client-safe unless marked
   server/get-request-actor.ts       server-only
 
 src/shared/dal/server/              server-only
-  types.ts                          ScopedContext, EntitySpec, SubEntitySpec, their union ServerSpec
+  types.ts                          ScopedContext, EntitySpec, SubEntitySpec, their erased union (named with the unit 3 plan)
   lib/define-spec.ts                defineEntitySpec, defineSubEntitySpec
   lib/permit.ts                     permit(); replaces lib/scope.ts
   lib/permit/                       rule walk, interpreter, operator SQL bodies
@@ -105,7 +105,7 @@ export const customerNoteServerSpec = defineEntitySpec({
 ```
 
 - `primaryKey` and `shareable` keep their meaning.
-- An entity's `entityName` equals its `subject`. A spec that reuses another entity's subject is a sub-entity.
+- An entity's `entityName` equals its `subject`. A spec that reuses another entity's subject is a sub-entity. `subject` stays on the entity spec: it tells an entity from a sub-entity, and it is the name a rule is read under.
 - `visibility` stays on the type until the legacy engine is deleted (unit 6).
 - A sub-entity of a sub-entity is allowed (application answers under applications under Meeting). Its field path is dotted: `applications.answers`.
 - A sub-entity whose primary key is its foreign key (customer profile, lead attribution) is a one-to-one part. Its write slot is an upsert, built on the existing `upsert-one-to-one.ts`.
@@ -132,7 +132,7 @@ function defineSubEntitySpec<T extends PgTable, P, const F extends string>(o: {
 
 ```ts
 // permissions/specs.ts — type-only imports, so client-safe files may import it
-export type ServerSpecs = typeof customerServerSpec | typeof customerProfileServerSpec | typeof proposalServerSpec | /* every spec */
+export type ServerSpec = typeof customerServerSpec | typeof customerProfileServerSpec | typeof proposalServerSpec | /* every spec */
 
 export type EntitySubject                       // 'Customer' | 'Proposal' | 'CustomerNote' | …
 export type RowOf<S extends EntitySubject>      // the Drizzle row of that entity's table
@@ -178,9 +178,10 @@ export const proposalBearerRules = (proposalId: string) => defineRules((can) => 
 
 | Form | May carry | Why |
 |---|---|---|
-| `read` rule | an operator and plain column conditions; no field list | Operators are SQL-only. The client cannot evaluate them on a row. |
-| mutation rule | fields and plain column conditions | Its row reach comes from the read rule (§6.2). |
-| `cannot` rule | the same as a mutation rule | — |
+| `read` rule | plain column conditions with either an operator or a field list, never both | Operators are SQL-only, so the client cannot evaluate them on a row. A field list narrows what the read returns (§5.3). |
+| `update` rule | fields and plain column conditions | Its row reach comes from the read rule (§6.2). |
+| `create` and `delete` rules | plain column conditions only | Nothing reads a field list on them. |
+| `cannot` rule | fields and plain column conditions | — |
 
 Plain conditions name `conditionColumns` only, with the column's own value type, as equality or `$in`. Those are the two forms the interpreter compiles.
 
@@ -192,6 +193,7 @@ User ids are written into the conditions when the rules are built. Nothing looks
 - `'views.*'` and `'views.viewedAt'` are its columns.
 - `'applications.**'` reaches every level under it.
 - A parent `update` rule with no field list covers every column and every sub-entity of that parent. Narrow it with a field list or a `cannot`.
+- A `read` rule with a field list limits what the actor receives: the row leaves the DAL with those columns only, and a sub-entity path admits that collection. Reading a proposal is not seeing its financial internals: the bearer's list leaves the money columns out. The cost lines inside `projectJSON` are a sub-column mask, which is unit 5's financial-reads work.
 
 ### 5.4 Operators
 
@@ -250,7 +252,7 @@ permit(ctx, 'update', customerServerSpec, ['profile.hoa']).sql   // narrowed to 
 
 | Slot | Behaviour |
 |---|---|
-| `getById` | primary key AND the read filter |
+| `getById` | primary key AND the read filter; the row is projected to the field list of the `read` rule that covers it, when there is one |
 | `create` | the verb must be granted. With a parent, the parent is probed first: readable for an entity with a parent, updatable on this field for a sub-entity. A miss is not found. |
 | `update` | primary key AND the update filter. Each changed column is checked against the loaded row; for a sub-entity, against the parent row as `field.column`. |
 | `delete` | primary key AND the delete filter |
@@ -327,6 +329,7 @@ ability.can('update', subject('Customer', customer), 'profile.hoa')
 | Condition, operator or whole conditions argument that may be `undefined`; empty conditions object; empty field list | compile |
 | Condition value that may be `null` (the literal `null` is legal); a check that asks an action its subject does not have | compile |
 | Operator on a mutation rule, with a field list, or on the wrong subject | compile |
+| Field list on a `create` or `delete` rule | compile |
 | Unknown subject or action | compile |
 | Client check with a mistyped field, or a row lacking condition columns | compile |
 | `cannot` before `can`; bare rule beside a conditioned one; role without rules | startup |
@@ -378,10 +381,8 @@ Each unit ends with `pnpm tsc` and `pnpm lint` passing. Main is merged into the 
 | Whether share-link media reads need `proposal_media_files` as its own entity (report 22 §3.4) | when share-link reads are masked |
 | Shape of the lint wall | unit 5 |
 | Which dev records browser tests may change | unit 7 |
-| Cost masking on share-link reads | deferred by the owner |
-| Which actions may carry a field list. §5.2 gives a `read` rule none; the unit 1 types accept one on any action; a field list on `create` or `delete` has no reader in §6 | unit 3's plan |
-| Whether `subject` stays on an entity spec now that it must equal `entityName` | owner, before unit 3 |
-| The names `ServerSpec` (any spec) and `ServerSpecs` (the list of real ones) differ by one letter | owner, any time |
+| Cost masking on share-link reads: the bearer's `read` field list drops the money columns (unit 3, Proposal family); the cost lines inside `projectJSON` | unit 5, financial reads |
+| The name of the erased spec union once `ServerSpec` names the list (`AnyServerSpec` proposed) | unit 3's plan |
 
 ## 13. What this changes in earlier documents
 

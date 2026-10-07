@@ -34,6 +34,11 @@ One page. Everything else in this folder is evidence. Code is the source of trut
 | 21 | **Client** (2026-10-05): `@casl/react` is added as decided; rules are sent from the root layout. |
 | 22 | **No backwards compatibility in the rollout** (2026-10-05): a unit removes what it replaces in the same change. No alias, re-export, wrapper or dual shape kept for old call sites. |
 | 18 | **The specs are the single typed source** (2026-10-05). Rule fields, conditions, operator placement and the checks the client makes are all type-checked against the specs. Rules are written through a thin typed `can`/`cannot` wrapper that emits stock CASL rules. Each subject spec lists the columns rules may condition on. A checked-in file of wrong-on-purpose lines guards the types. |
+| 23 | **`ServerSpec`** (2026-10-07) names the union of the listed specs; the erased constructor-side union is renamed in unit 3 (`AnyServerSpec` proposed). |
+| 24 | **Field lists sit on `read` and `update` rules only** (2026-10-07). A `read` field list limits what the actor receives: reading a proposal is not seeing its financial internals. `create` and `delete` take none. Reopens #14: the bearer's money columns drop in unit 3, the `projectJSON` cost lines in unit 5. |
+| 25 | `subject` stays on entity specs (2026-10-07, by default). |
+| 26 | **The security holes ship with the epic** (2026-10-07): no separate hotfix; S20 stays open outside it. |
+| 27 | **No per-issue database branch** (2026-10-07): the epic changes no schema; the worktree runs on the shared development database, never written for testing. |
 
 ## 3. The approved structure
 - `docs/superpowers/specs/2026-10-05-permissions-structure-design.md`, approved by the owner 2026-10-05. It is the reference for types, names, layers, where each mistake is caught, verification and the order of work. No code before the owner approves a plan for the unit.
@@ -62,7 +67,7 @@ One page. Everything else in this folder is evidence. Code is the source of trut
 - The epic derailed because decisions were stacked as banners and one reversal was only spoken. Decision #16 is the fix.
 
 ## 6. Security holes in the tree (verified against the code 2026-10-05; all independent of this epic)
-The full list of 20, with file and line, is the tracker's §5.1. The fixes the earlier attempt made for some of them were never on main. The worst:
+The full list of 20, with file and line, is the tracker's §5.1. The fixes the earlier attempt made for some of them were never on main. They ship with the epic's single merge (decision 26); none is hotfixed separately. The worst:
 
 | Who | What | Where |
 |---|---|---|
@@ -77,8 +82,8 @@ The full list of 20, with file and line, is the tracker's §5.1. The fixes the e
 | Agent | Overwrites any customer's discovery profile | `src/trpc/routers/meeting-flow.router.ts:26` |
 
 ## 7. Next steps, in order
-1. **Fix the holes in §6** through the hotfix path. They do not need the epic.
-2. Write the plan for unit 3 (compiler and DAL self-scoping, one entity family at a time, Customer first) for the owner's approval. Rulings it needs first: the three carried from unit 1 (`ServerSpec` / `ServerSpecs` names; whether `subject` stays on entity specs; which actions may carry a field list) and the unit 2 items the tracker's Unit 3 note carries.
+1. **The holes in §6 ship with the epic** (decision 26). S20 is outside it and stays open.
+2. Write the plan for unit 3 (compiler and DAL self-scoping, one entity family at a time, Customer first) for the owner's approval. The three unit-1 rulings are in (decisions 23–25); the unit 2 items the tracker's Unit 3 note carries go into it.
 3. Rule the open items in the spec's §12: homeowner phone grant; pipeline map for prod; lint wall shape; which dev records browser tests may change; the 25 business rulings in report 10 §5.
 4. Build order (spec §11): typed foundation → one actor per request → compiler + DAL self-scoping per entity family → rules matrix → lint wall + financial reads → delete the legacy engine → full browser pass. The keep-primitives (adapter core, outcome classification) come back from `b40403b6` in the unit that gives each a home.
 5. Merge main into the branch at every unit boundary; one merge to main after the end-to-end pass.
