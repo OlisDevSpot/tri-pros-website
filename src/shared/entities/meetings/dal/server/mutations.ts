@@ -5,9 +5,11 @@ import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import { eq } from 'drizzle-orm'
 
 import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { ThrowableDalError } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { meetings } from '@/shared/db/schema'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
+import { generateToken } from '@/shared/lib/generate-token'
 
 const OVERWRITABLE_OUTCOMES = ['not_set', 'proposal_created'] as const
 
@@ -71,5 +73,26 @@ export async function deriveOutcomeOnAdditionalWorkApproved(
       id: input.meetingId,
       data: { meetingOutcome: 'additional_work' },
     }))
+  })
+}
+
+/**
+ * The token belongs to the visit: after a reschedule the link a homeowner already holds opens the replacement.
+ * One transaction and raw updates, so no meeting hook fires and the unique index never sees two rows with one token.
+ */
+export async function handOffShareToken(input: { fromMeetingId: string, toMeetingId: string }): Promise<DalReturn<void>> {
+  return dalDbOperation(async () => {
+    await db.transaction(async (tx) => {
+      const [from] = await tx
+        .select({ shareToken: meetings.shareToken })
+        .from(meetings)
+        .where(eq(meetings.id, input.fromMeetingId))
+        .for('update')
+      if (!from) {
+        throw new ThrowableDalError({ type: 'not-found' })
+      }
+      await tx.update(meetings).set({ shareToken: generateToken() }).where(eq(meetings.id, input.fromMeetingId))
+      await tx.update(meetings).set({ shareToken: from.shareToken }).where(eq(meetings.id, input.toMeetingId))
+    })
   })
 }

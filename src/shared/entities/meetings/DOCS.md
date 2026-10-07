@@ -161,15 +161,17 @@ re-dispatch.
 
 ### reschedule-cancels-and-rebooks
 
-The Reschedule action (`meetingsRouter.business.rescheduleMeeting`) keeps the
+The Reschedule action (`meetingService.business.reschedule`, reached through `meetingsRouter.business.rescheduleMeeting`) keeps the
 original meeting and sets it to `cancelled`, then books a NEW meeting at the new
 time copying the original's owner + all participants + customer + project +
 type + `flowStateJSON` (outcome resets to `not_set`), and posts one customer
 note. Available only from `DID_NOT_OCCUR_OUTCOMES` (`canRescheduleFromOutcome`)
 so a meeting that already happened can never have its disposition clobbered.
 
+The replacement records the meeting it replaced in `rescheduledFromId`, and takes the original's `shareToken` (the original gets a fresh one), so a link the homeowner already holds opens the replacement. `getRescheduleChain` reads a meeting with the meetings it replaced.
+
 **Why the flow state carries**: a reschedule is the same sit moved to a new slot. Trade selections, program, deal structure and closing adjustments entered before the customer no-showed or had to stop are still the opportunity's working state, and nothing in that blob is bound to the calendar date — so the replacement resumes where the original left off instead of making the agent re-enter it. This is the ONLY path that carries `flowStateJSON`; duplicate deliberately drops it (`#duplicate-copies-setup-only`). The cancelled original keeps its own copy as the archived record.
-**Reference impl**: `src/trpc/routers/meetings.router/business.router.ts:rescheduleMeeting`
+**Reference impl**: `src/shared/modules/meetings/business/service.ts`
 
 ### trade-selections-snapshot-source
 
@@ -231,6 +233,7 @@ The Duplicate action (`meetingsRouter.crud.duplicate`) copies the source row min
 | `contextJSON` | `flowStateJSON` — the sit's working state (trade selections, program, deal structure, closing adjustments) |
 | | `projectId` — the copy is not a project meeting |
 | | `agentNotes` |
+| | `shareToken` (a fresh one is minted), `homeownerConfirmedAt` / `homeownerConfirmedVia` / `newTimeRequestedAt` (the copy has no homeowner response), `rescheduledFromId` (the copy replaces nothing) |
 | | `gcalEventId` / `gcalEtag` / `gcalSyncedAt` — the copy is pushed as a new calendar event |
 | | `ownerId` → the duplicating user (`duplicate.overrides`; falls back to the source owner under `SYSTEM_CONTEXT`) |
 

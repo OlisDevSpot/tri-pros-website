@@ -282,3 +282,29 @@ export async function listMeetingsForProject(
     return rows
   })
 }
+
+/**
+ * A meeting and the meetings it replaced, oldest first. `ctx.scope` gates the meeting asked for;
+ * the ones it replaced come with it, because they are the same visit.
+ */
+export async function getRescheduleChain(
+  ctx: ScopedContext,
+  input: { meetingId: string },
+): Promise<DalReturn<string[]>> {
+  return dalDbOperation(async () => {
+    const rows = (await db.execute(sql`
+      WITH RECURSIVE chain AS (
+        SELECT ${meetings.id} AS id, ${meetings.rescheduledFromId} AS rescheduled_from_id, 0 AS depth
+        FROM ${meetings}
+        WHERE ${and(eq(meetings.id, input.meetingId), ctx.scope ?? undefined)}
+        UNION ALL
+        SELECT prior.id, prior.rescheduled_from_id, chain.depth + 1
+        FROM meetings prior
+        JOIN chain ON prior.id = chain.rescheduled_from_id
+        WHERE chain.depth < 50
+      )
+      SELECT id FROM chain ORDER BY depth DESC
+    `)).rows as { id: string }[]
+    return rows.map(row => row.id)
+  })
+}
