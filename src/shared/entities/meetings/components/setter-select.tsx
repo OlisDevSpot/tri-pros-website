@@ -35,7 +35,12 @@ export function SetterSelect({ value, onChange, selfId, selfName }: SetterSelect
           <ChevronsUpDownIcon className="size-4 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[min(420px,calc(100vw-2rem))] p-0">
+      <PopoverContent
+        align="start"
+        // The phone tab bar covers the bottom edge.
+        collisionPadding={{ bottom: 72, left: 16, right: 16 }}
+        className="w-[min(420px,calc(100vw-2rem))] p-0"
+      >
         <SetterPicker
           value={current}
           onPick={(userId) => {
