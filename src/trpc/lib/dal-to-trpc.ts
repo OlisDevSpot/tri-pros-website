@@ -14,7 +14,10 @@ export function dalToTrpc<T>(result: DalReturn<T>): T {
     case 'not-found':
       throw new TRPCError({ code: 'NOT_FOUND' })
     case 'forbidden':
-      throw new TRPCError({ code: 'FORBIDDEN' })
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: result.error.field ? `You do not have permission to change ${result.error.field}` : undefined,
+      })
     case 'create-failed':
     case 'duplicate-failed':
       throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error.type })

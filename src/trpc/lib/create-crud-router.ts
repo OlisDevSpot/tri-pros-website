@@ -1,6 +1,6 @@
-import type { PgTable } from 'drizzle-orm/pg-core'
-import type { ServerSpec } from '@/shared/dal/server/types'
+import type { AnyServerSpec } from '@/shared/dal/server/types'
 
+import type { ServerSpec } from '@/shared/domains/permissions/specs'
 import type { AppAbility, AppAction } from '@/shared/domains/permissions/types'
 import type { CrudHandlers, SlotName } from '@/trpc/types'
 
@@ -22,25 +22,26 @@ const SLOT_ACTIONS: Record<SlotName, AppAction> = {
 }
 
 export interface CreateCrudRouterConfig<
-  TTable extends PgTable,
+  TSpec extends ServerSpec,
   TId extends string | number,
   TInsert extends z.ZodObject<z.ZodRawShape>,
   TUpdate extends z.ZodObject<z.ZodRawShape>,
 > {
-  spec: ServerSpec<TTable>
+  spec: TSpec
   schemas: { id: z.ZodType<TId>, insert: TInsert, update: TUpdate }
   /** The entity's single hooked crud instance — the router never rebuilds handlers, so un-hooked ones cannot exist. */
-  crud: CrudHandlers<TTable, TId, z.input<TInsert>, z.input<TUpdate>>
+  crud: CrudHandlers<TSpec['table'], TId, z.input<TInsert>, z.input<TUpdate>>
   /** Slot overrides BYPASS the crud's hooks entirely — the override replaces the whole DAL function. */
-  handlers?: Partial<CrudHandlers<TTable, TId, z.input<TInsert>, z.input<TUpdate>>>
+  handlers?: Partial<CrudHandlers<TSpec['table'], TId, z.input<TInsert>, z.input<TUpdate>>>
 }
 
 export function createCrudRouter<
-  TTable extends PgTable,
+  TSpec extends ServerSpec,
   TId extends string | number,
   TInsert extends z.ZodObject<z.ZodRawShape>,
   TUpdate extends z.ZodObject<z.ZodRawShape>,
->(config: CreateCrudRouterConfig<TTable, TId, TInsert, TUpdate>) {
+>(config: CreateCrudRouterConfig<TSpec, TId, TInsert, TUpdate>) {
+  type TTable = TSpec['table']
   // Spreading the Partial `handlers` widens property types to include `undefined`, hence the cast.
   const handlers = { ...config.crud, ...config.handlers } as CrudHandlers<TTable, TId, z.input<TInsert>, z.input<TUpdate>>
 
@@ -111,13 +112,13 @@ export function createCrudRouter<
 
 // The subject and the field are known only at run time here, which the typed `can` refuses.
 // This is what `can` does inside CASL.
-function isGranted(ability: AppAbility, action: AppAction, spec: ServerSpec, field?: string): boolean {
+function isGranted(ability: AppAbility, action: AppAction, spec: AnyServerSpec, field?: string): boolean {
   const rule = ability.relevantRuleFor(action, subjectOf(spec), field)
   return rule != null && !rule.inverted
 }
 
 /** Not for `update`: a slot-level check would let a field-restricted grant bypass per-field intent. */
-function assertCan(ability: AppAbility, slot: SlotName, spec: ServerSpec): void {
+function assertCan(ability: AppAbility, slot: SlotName, spec: AnyServerSpec): void {
   const action = SLOT_ACTIONS[slot]
   if (!isGranted(ability, action, spec)) {
     throw new TRPCError({
@@ -132,7 +133,7 @@ function assertCan(ability: AppAbility, slot: SlotName, spec: ServerSpec): void 
  * (`can('update', 'X', ['a', 'b'])`) passes only those; `manage all` passes every field.
  * Undefined values are skipped — "not attempting to write this field", same as the input shape.
  */
-function assertCanUpdateFields(ability: AppAbility, spec: ServerSpec, data: Record<string, unknown>): void {
+function assertCanUpdateFields(ability: AppAbility, spec: AnyServerSpec, data: Record<string, unknown>): void {
   for (const [field, value] of Object.entries(data)) {
     if (value === undefined) {
       continue

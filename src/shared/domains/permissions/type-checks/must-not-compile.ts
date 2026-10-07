@@ -8,10 +8,11 @@ import type { SpecInsert } from '@/shared/dal/server/types'
 import type { insertProjectMediaFilesSchema } from '@/shared/db/schema/project-media-files'
 import type { insertProposalSchema } from '@/shared/db/schema/proposals'
 import type { OperatorName, ReadOperators } from '@/shared/domains/permissions/operators'
-import type { ConditionColumnOf, DuplicateFieldsIn, DuplicateSubjectsIn, EntitySubject, FieldOf, RowOf, ServerSpecs } from '@/shared/domains/permissions/specs'
+import type { ConditionColumnOf, DuplicateFieldsIn, DuplicateSubjectsIn, EntitySubject, FieldOf, RowOf, ServerSpec } from '@/shared/domains/permissions/specs'
 import type { AppAbility, Permission } from '@/shared/domains/permissions/types'
 
 import type { projectMediaServerSpec } from '@/shared/modules/projects/media/server-spec'
+import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
 import { defineEntitySpec, defineSubEntitySpec } from '@/shared/dal/server/lib/define-spec'
 import { customerNotes } from '@/shared/db/schema/customer-notes'
 import { customers } from '@/shared/db/schema/customers'
@@ -93,19 +94,22 @@ export const ownSubjectIsNotAField: FieldOf<'Customer'> = 'notes'
 
 // ── one field name per parent ──────────────────────────────────────────────
 
-export type NoDuplicateFields = AssertNever<DuplicateFieldsIn<ServerSpecs>>
+export type NoDuplicateFields = AssertNever<DuplicateFieldsIn<ServerSpec>>
 
 const _secondViews = defineSubEntitySpec({ entityName: 'ProposalMediaFile', table: proposalMediaFiles, schemas: proposalMediaServerSpec.schemas, parent: { spec: proposalServerSpec, fk: proposalMediaFiles.proposalId, field: 'views' } })
 // @ts-expect-error two sub-entities claim `views` under Proposal
-export type DuplicateIsCaught = AssertNever<DuplicateFieldsIn<ServerSpecs | typeof _secondViews>>
+export type DuplicateIsCaught = AssertNever<DuplicateFieldsIn<ServerSpec | typeof _secondViews>>
 
 // ── one spec per subject, one declaration per operator ─────────────────────
 
-export type NoDuplicateSubjects = AssertNever<DuplicateSubjectsIn<ServerSpecs>>
+export type NoDuplicateSubjects = AssertNever<DuplicateSubjectsIn<ServerSpec>>
 
 const _secondCustomer = defineEntitySpec({ entityName: 'Customer', subject: 'Customer', table: customers, schemas: customerServerSpec.schemas, conditionColumns: ['id'] })
 // @ts-expect-error two entity specs claim Customer
-export type DuplicateSubjectIsCaught = AssertNever<DuplicateSubjectsIn<ServerSpecs | typeof _secondCustomer>>
+export type DuplicateSubjectIsCaught = AssertNever<DuplicateSubjectsIn<ServerSpec | typeof _secondCustomer>>
+
+// @ts-expect-error a spec outside the list cannot be enforced
+createCrudDal(_secondCustomer)
 
 export type OperatorNamesMatchDeclarations = Expect<Equal<keyof UnionToIntersection<ReadOperators[keyof ReadOperators]>, `$${OperatorName}`>>
 
@@ -230,6 +234,10 @@ defineRules((can, cannot) => {
   cannot('update', 'Proposal', [])
   // @ts-expect-error an empty field list with conditions
   can('update', 'Proposal', [], { id: proposalId })
+  // @ts-expect-error a field list on a create: nothing reads it
+  can('create', 'Proposal', ['status'])
+  // @ts-expect-error a field list on a delete: nothing reads it
+  cannot('delete', 'Proposal', ['status'])
   // @ts-expect-error a mistyped field list on a read of an entity with no condition columns
   can('read', 'Customer', ['agee'])
   // @ts-expect-error a widened list of strings is not a field list

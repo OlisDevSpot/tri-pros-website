@@ -2,7 +2,7 @@
 
 import type { SQL } from 'drizzle-orm'
 
-import type { ServerSpec } from '@/shared/dal/server/types'
+import type { AnyServerSpec } from '@/shared/dal/server/types'
 import type { AppAbility } from '@/shared/domains/permissions/types'
 
 import { resolveEffectiveScope } from '@/shared/dal/server/lib/scope'
@@ -15,7 +15,7 @@ import { resolveEffectiveScope } from '@/shared/dal/server/lib/scope'
  * per-entity `procedures.ts` inline chains so the two can never drift.
  */
 export function resolveVisibilityScope(
-  spec: ServerSpec,
+  spec: AnyServerSpec,
   auth: { userId: string, ability: AppAbility },
 ): SQL | null {
   const isOmni = auth.ability.can('manage', 'all')

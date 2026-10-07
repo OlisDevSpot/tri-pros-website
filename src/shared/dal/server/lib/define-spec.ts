@@ -1,7 +1,7 @@
 import type { SQL } from 'drizzle-orm'
 import type { PgTable } from 'drizzle-orm/pg-core'
 
-import type { EntitySpec, ServerSpec, ServerSpecSchemas, SubEntitySpec, VisibilityScope } from '../types'
+import type { AnyServerSpec, EntitySpec, ServerSpecSchemas, SubEntitySpec, VisibilityScope } from '../types'
 import type { EntityName } from '@/shared/domains/permissions/abilities'
 import type { EntitySubject } from '@/shared/domains/permissions/specs'
 
@@ -21,7 +21,7 @@ export function defineEntitySpec<
   TSchemas extends ServerSpecSchemas,
   const TSubject extends EntityName,
   const TConditionColumn extends ColumnKey<TTable>,
-  TParent extends ServerSpec = never,
+  TParent extends AnyServerSpec = never,
 >(spec: {
   // An entity is named by its subject: a spec that reuses another entity's subject is a sub-entity.
   entityName: NoInfer<TSubject>
@@ -40,7 +40,7 @@ export function defineEntitySpec<
 export function defineSubEntitySpec<
   TTable extends PgTable,
   TSchemas extends ServerSpecSchemas,
-  TParent extends ServerSpec,
+  TParent extends AnyServerSpec,
   const TField extends string,
 >(spec: {
   entityName: EntityName
@@ -55,7 +55,7 @@ export function defineSubEntitySpec<
 }
 
 /** The CASL subject a spec is checked under: its own, or its parent's for a sub-entity. */
-export function subjectOf(spec: ServerSpec): EntitySubject {
+export function subjectOf(spec: AnyServerSpec): EntitySubject {
   // The erased spec type only knows `EntityName`: typing its subject as `EntitySubject` is circular,
   // because that type is derived from the specs themselves. A spec left out of the list gets a
   // subject no role rule names, so only `manage all` reaches it.

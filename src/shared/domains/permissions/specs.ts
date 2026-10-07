@@ -23,7 +23,7 @@ import type { proposalMediaServerSpec } from '@/shared/modules/proposals/media/s
 import type { proposalViewServerSpec } from '@/shared/modules/proposals/views/server-spec'
 
 /** Every spec. A spec missing here is invisible to rule typing. */
-export type ServerSpecs
+export type ServerSpec
   = | typeof appSettingServerSpec
     | typeof applicationServerSpec
     | typeof customerNoteServerSpec
@@ -44,7 +44,7 @@ export type ServerSpecs
     | typeof voipLinkTokenServerSpec
     | typeof voipMessageServerSpec
 
-type EntitySpecs = Extract<ServerSpecs, { subject: string }>
+type EntitySpecs = Extract<ServerSpec, { subject: string }>
 type ColumnKey<TTable extends PgTable> = keyof TTable['$inferSelect'] & string
 
 export type EntitySubject = EntitySpecs['subject']
@@ -52,7 +52,7 @@ export type SpecOf<S extends EntitySubject> = Extract<EntitySpecs, { subject: S 
 export type RowOf<S extends EntitySubject> = SpecOf<S>['table']['$inferSelect']
 export type ConditionColumnOf<S extends EntitySubject> = SpecOf<S>['conditionColumns'][number]
 
-type SubEntitiesOf<TParent> = ServerSpecs extends infer TSpec
+type SubEntitiesOf<TParent> = ServerSpec extends infer TSpec
   ? TSpec extends { parent: { spec: TParent, field: string } } ? TSpec : never
   : never
 

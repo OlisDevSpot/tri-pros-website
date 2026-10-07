@@ -1,6 +1,7 @@
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core'
 
 import type {
+  AnyServerSpec,
   CreateAfterMeta,
   CrudCallsiteHooks,
   CrudConfig,
@@ -8,7 +9,6 @@ import type {
   CrudHandlers,
   DalReturn,
   ScopedContext,
-  ServerSpec,
   SpecCrudHandlers,
   SpecId,
   SpecInsert,
@@ -16,6 +16,7 @@ import type {
   UpdateAfterMeta,
 } from '../types'
 import type { Insert, Row, Update } from '@/shared/db/types'
+import type { ServerSpec } from '@/shared/domains/permissions/specs'
 
 import { and, eq } from 'drizzle-orm'
 
@@ -25,6 +26,7 @@ import { ThrowableDalError } from '../types'
 import { dalDbOperation } from './helpers'
 
 // Generic over the spec, not the table, so handler payload types are the spec's Zod inputs.
+// Only a listed spec can be enforced: the rules are typed against the list, and a spec outside it has no subject they can name.
 export function createCrudDal<TSpec extends ServerSpec>(
   spec: TSpec,
   configFactory?: CrudConfigFactory<TSpec['table'], SpecId<TSpec>, SpecInsert<TSpec>, SpecUpdate<TSpec>>,
@@ -33,7 +35,7 @@ export function createCrudDal<TSpec extends ServerSpec>(
   type TId = SpecId<TSpec>
   type TInsert = SpecInsert<TSpec>
   type TUpdate = SpecUpdate<TSpec>
-  const pkColumn = getPkColumn(spec)
+  const pkColumn = getPkColumn<TTable>(spec)
   const crudHandlers = {} as CrudHandlers<TTable, TId, TInsert, TUpdate> // ← bootstrap cast (spec §2.3)
   const cfg: CrudConfig<TTable, TId, TInsert, TUpdate> = configFactory
     ? configFactory(crudHandlers)
@@ -54,7 +56,7 @@ export function createCrudDal<TSpec extends ServerSpec>(
 }
 
 async function getByIdImpl<TTable extends PgTable>(
-  spec: ServerSpec<TTable>,
+  spec: AnyServerSpec<TTable>,
   pkColumn: PgColumn,
   ctx: ScopedContext,
   input: { id: string | number },
@@ -72,7 +74,7 @@ async function getByIdImpl<TTable extends PgTable>(
 }
 
 async function createImpl<TTable extends PgTable, TId extends string | number, TInsert, TUpdate>(
-  spec: ServerSpec<TTable>,
+  spec: AnyServerSpec<TTable>,
   cfg: CrudConfig<TTable, TId, TInsert, TUpdate>,
   ctx: ScopedContext,
   input: TInsert,
@@ -103,7 +105,7 @@ async function createImpl<TTable extends PgTable, TId extends string | number, T
 }
 
 async function updateImpl<TTable extends PgTable, TId extends string | number, TInsert, TUpdate>(
-  spec: ServerSpec<TTable>,
+  spec: AnyServerSpec<TTable>,
   cfg: CrudConfig<TTable, TId, TInsert, TUpdate>,
   pkColumn: PgColumn,
   ctx: ScopedContext,
@@ -167,7 +169,7 @@ async function updateImpl<TTable extends PgTable, TId extends string | number, T
 }
 
 async function deleteImpl<TTable extends PgTable, TId extends string | number, TInsert, TUpdate>(
-  spec: ServerSpec<TTable>,
+  spec: AnyServerSpec<TTable>,
   cfg: CrudConfig<TTable, TId, TInsert, TUpdate>,
   pkColumn: PgColumn,
   ctx: ScopedContext,
@@ -213,7 +215,7 @@ async function deleteImpl<TTable extends PgTable, TId extends string | number, T
 }
 
 async function duplicateImpl<TTable extends PgTable, TId extends string | number, TInsert, TUpdate>(
-  spec: ServerSpec<TTable>,
+  spec: AnyServerSpec<TTable>,
   cfg: CrudConfig<TTable, TId, TInsert, TUpdate>,
   pkColumn: PgColumn,
   ctx: ScopedContext,
@@ -254,7 +256,7 @@ async function duplicateImpl<TTable extends PgTable, TId extends string | number
 }
 
 function getPkColumn<TTable extends PgTable>(
-  spec: ServerSpec<TTable>,
+  spec: AnyServerSpec<TTable>,
 ): PgColumn {
   const pkName = spec.primaryKey ?? 'id'
   const table = spec.table as unknown as Record<string, PgColumn>

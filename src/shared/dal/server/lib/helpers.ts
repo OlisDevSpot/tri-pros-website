@@ -1,4 +1,4 @@
-import type { DalReturn, ScopedContext, ServerSpec, VisibilityScope } from '../types'
+import type { AnyServerSpec, DalReturn, ScopedContext, VisibilityScope } from '../types'
 
 import { db } from '@/shared/db'
 
@@ -37,7 +37,7 @@ export async function withTx<T>(
 }
 
 /** A context for `user` whose row filter is `spec`'s: for probing an entity other than the one `ctx.scope` was resolved for. */
-export function buildUserContext(user: VisibilityScope, spec: ServerSpec): ScopedContext {
+export function buildUserContext(user: VisibilityScope, spec: AnyServerSpec): ScopedContext {
   const isOmni = user.ability.can('manage', 'all')
   return {
     actor: { ability: user.ability, userId: user.userId },

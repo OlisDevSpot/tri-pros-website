@@ -29,6 +29,9 @@ type Only<TGiven, TAllowed> = [keyof TGiven] extends [never]
 /** At least one field: CASL refuses an empty field list, and only when the ability is built. */
 type FieldList<S extends EntitySubject> = readonly [FieldOf<S>, ...FieldOf<S>[]]
 
+/** The actions a field list may sit on: `update` checks columns against it, `read` projects the row to it. Nothing reads one on `create` or `delete`. */
+type FieldAction = 'read' | 'update'
+
 interface RuleHandle {
   because: (reason: string) => void
 }
@@ -39,8 +42,8 @@ interface RuleHandle {
 export interface AddCannotRule {
   <S extends EntitySubject>(action: CrudAction | readonly CrudAction[], subject: S): RuleHandle
   <S extends EntitySubject, const C extends ColumnConditions<S>>(action: CrudAction | readonly CrudAction[], subject: S, conditions: Only<C, ColumnConditions<S>>): RuleHandle
-  <S extends EntitySubject>(action: CrudAction | readonly CrudAction[], subject: S, fields: FieldList<S>): RuleHandle
-  <S extends EntitySubject, const C extends ColumnConditions<S>>(action: CrudAction | readonly CrudAction[], subject: S, fields: FieldList<S>, conditions: Only<C, ColumnConditions<S>>): RuleHandle
+  <S extends EntitySubject>(action: FieldAction | readonly FieldAction[], subject: S, fields: FieldList<S>): RuleHandle
+  <S extends EntitySubject, const C extends ColumnConditions<S>>(action: FieldAction | readonly FieldAction[], subject: S, fields: FieldList<S>, conditions: Only<C, ColumnConditions<S>>): RuleHandle
 }
 
 export interface AddRule {
@@ -48,8 +51,8 @@ export interface AddRule {
   /** The only form that may carry an operator: `read`, no field list. Operators are SQL-only, so a client cannot test them on a row. */
   <S extends EntitySubject, const C extends ReadConditions<S>>(action: 'read', subject: S, conditions: Only<C, ReadConditions<S>>): RuleHandle
   <S extends EntitySubject, const C extends ColumnConditions<S>>(action: Exclude<CrudAction, 'read'> | readonly CrudAction[], subject: S, conditions: Only<C, ColumnConditions<S>>): RuleHandle
-  <S extends EntitySubject>(action: CrudAction | readonly CrudAction[], subject: S, fields: FieldList<S>): RuleHandle
-  <S extends EntitySubject, const C extends ColumnConditions<S>>(action: CrudAction | readonly CrudAction[], subject: S, fields: FieldList<S>, conditions: Only<C, ColumnConditions<S>>): RuleHandle
+  <S extends EntitySubject>(action: FieldAction | readonly FieldAction[], subject: S, fields: FieldList<S>): RuleHandle
+  <S extends EntitySubject, const C extends ColumnConditions<S>>(action: FieldAction | readonly FieldAction[], subject: S, fields: FieldList<S>, conditions: Only<C, ColumnConditions<S>>): RuleHandle
   <S extends keyof ExtraEntityActions>(action: ExtraEntityActions[S], subject: S): RuleHandle
   <S extends keyof SubjectsWithoutSpec>(action: SubjectsWithoutSpec[S] | readonly SubjectsWithoutSpec[S][], subject: S): RuleHandle
 }

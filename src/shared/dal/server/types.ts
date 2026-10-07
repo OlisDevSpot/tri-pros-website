@@ -105,11 +105,11 @@ export type CrudConfigFactory<TTable extends PgTable, TId extends string | numbe
 
 // The engine validates payloads with the spec's Zod schemas AFTER the hooks run, so the
 // contract is the schema INPUT (hook-filled columns optional), not Drizzle's insert model.
-export type SpecInsert<TSpec extends ServerSpec> = z.input<TSpec['schemas']['insert']>
-export type SpecUpdate<TSpec extends ServerSpec> = z.input<TSpec['schemas']['update']>
+export type SpecInsert<TSpec extends AnyServerSpec> = z.input<TSpec['schemas']['insert']>
+export type SpecUpdate<TSpec extends AnyServerSpec> = z.input<TSpec['schemas']['update']>
 /** PK value type, read off the table's `id` column (serial → number, uuid → string). Tables keyed by another column (`primaryKey` override) fall back to string. */
-export type SpecId<TSpec extends ServerSpec> = Row<TSpec['table']> extends { id: infer I extends string | number } ? I : string
-export type SpecCrudHandlers<TSpec extends ServerSpec> = CrudHandlers<TSpec['table'], SpecId<TSpec>, SpecInsert<TSpec>, SpecUpdate<TSpec>>
+export type SpecId<TSpec extends AnyServerSpec> = Row<TSpec['table']> extends { id: infer I extends string | number } ? I : string
+export type SpecCrudHandlers<TSpec extends AnyServerSpec> = CrudHandlers<TSpec['table'], SpecId<TSpec>, SpecInsert<TSpec>, SpecUpdate<TSpec>>
 
 type ZodObjectAny = z.ZodObject<Record<string, z.ZodTypeAny>>
 
@@ -133,7 +133,7 @@ export interface EntitySpec<
   TSchemas extends ServerSpecSchemas,
   TSubject extends EntityName,
   TConditionColumn extends string,
-  TParent extends ServerSpec,
+  TParent extends AnyServerSpec,
 > extends ServerSpecBase<TTable, TSchemas> {
   subject: TSubject
   /** The only columns a rule condition may name. A row checked against a rule on the client must carry them. */
@@ -148,7 +148,7 @@ export interface EntitySpec<
 export interface SubEntitySpec<
   TTable extends PgTable,
   TSchemas extends ServerSpecSchemas,
-  TParent extends ServerSpec,
+  TParent extends AnyServerSpec,
   TField extends string,
 > extends ServerSpecBase<TTable, TSchemas> {
   parent: { spec: TParent, fk: PgColumn, field: TField }
@@ -157,10 +157,10 @@ export interface SubEntitySpec<
   shareable?: never
 }
 
-/** Any spec over `TTable`. */
-export type ServerSpec<TTable extends PgTable = PgTable>
-  = | EntitySpec<TTable, ServerSpecSchemas, EntityName, string, ServerSpec>
-    | SubEntitySpec<TTable, ServerSpecSchemas, ServerSpec, string>
+/** Any spec over `TTable`: the two shapes the constructors build. Enforcement is typed against the list in `permissions/specs.ts`. */
+export type AnyServerSpec<TTable extends PgTable = PgTable>
+  = | EntitySpec<TTable, ServerSpecSchemas, EntityName, string, AnyServerSpec>
+    | SubEntitySpec<TTable, ServerSpecSchemas, AnyServerSpec, string>
 
 /** `list` is deliberately not a slot — each entity writes its own list query. */
 export type SlotName = 'getById' | 'create' | 'update' | 'delete' | 'duplicate'
@@ -180,7 +180,7 @@ export type DalReturn<T>
 
 export type DalError
   = | { type: 'not-found' }
-    | { type: 'forbidden' }
+    | { type: 'forbidden', field?: string }
     | { type: 'create-failed', cause?: unknown }
     | { type: 'duplicate-failed', cause?: unknown }
     | { type: 'db-error', cause: unknown }
