@@ -8,7 +8,6 @@ import { z } from 'zod'
 
 import { buildPersonaProfile } from '@/features/meeting-flow/lib/build-persona-profile'
 import { buildUserContext } from '@/shared/dal/server/lib/helpers'
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { customerProfilePatchSchema } from '@/shared/db/schema'
 import { upsertCustomerProfile } from '@/shared/entities/customers/dal/server/mutations'
 import { getByIdWithJoins } from '@/shared/entities/meetings/dal/server/queries'
@@ -20,9 +19,8 @@ import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 import { agentProcedure, createTRPCRouter } from '../init'
 
 export const meetingFlowRouter = createTRPCRouter({
-  // Upsert into customer_profiles from within the meeting flow (Addendum B
-  // 1:1 child table; emits realtime sync event). Flat column patch — no
-  // read-modify-merge, the column IS the field.
+  // Upsert into customer_profiles from within the meeting flow; emits a realtime sync event.
+  // Flat column patch — no read-modify-merge, the column IS the field.
   updateCustomerProfile: agentProcedure
     .input(z.object({
       meetingId: z.string().uuid(),
@@ -30,14 +28,8 @@ export const meetingFlowRouter = createTRPCRouter({
       patch: customerProfilePatchSchema,
     }))
     .mutation(async ({ ctx, input }) => {
-      if (ctx.actor.ability.cannot('update', 'Customer', 'profile')) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'You do not have permission to update the customer profile.',
-        })
-      }
       const { meetingId, customerId, patch } = input
-      const updated = dalToTrpc(await upsertCustomerProfile(SYSTEM_CONTEXT, {
+      const updated = dalToTrpc(await upsertCustomerProfile(ctx, {
         customerId,
         patch,
       }))

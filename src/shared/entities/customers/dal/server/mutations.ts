@@ -5,49 +5,21 @@ import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { CustomerProfilePatch, CustomerProfileRow } from '@/shared/db/schema/customer-profiles'
 import type { EnrichmentRecord, LeadMeta } from '@/shared/entities/customers/schemas'
 
-import { and, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { upsertOneToOne } from '@/shared/dal/server/lib/upsert-one-to-one'
-import { ThrowableDalError } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { customerEnrichment } from '@/shared/db/schema/customer-enrichment'
-import { customerLeadAttribution, leadAttributionCaptureSchema } from '@/shared/db/schema/customer-lead-attribution'
-import { customerProfilePatchSchema, customerProfiles } from '@/shared/db/schema/customer-profiles'
-import { customers } from '@/shared/db/schema/customers'
+import { customerLeadAttribution } from '@/shared/db/schema/customer-lead-attribution'
+import { customerLeadAttributionServerSpec, customerProfileServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { splitLeadMeta } from '../../lib/split-lead-meta'
 
-/**
- * Lazy upsert into the `customer_profiles` 1:1 child table (Addendum B,
- * 2026-07-14). Row-exists = discovery data has been collected — first write
- * inserts, every write after updates the same row via `upsertOneToOne`.
- *
- * `ctx.scope` filters against `customers`, not the child table (the child has
- * no visibility predicate of its own), so a scoped caller (agent) is probed
- * against the parent row before the write; SYSTEM/omni callers (`ctx.scope ===
- * null`) skip straight to the upsert.
- */
+/** The discovery profile is a part of the customer: the engine tests `update Customer` on `profile` and each written column against the customer row. */
 export async function upsertCustomerProfile(
   ctx: ScopedContext,
   input: { customerId: string, patch: CustomerProfilePatch },
 ): Promise<DalReturn<CustomerProfileRow>> {
-  return dalDbOperation(async () => {
-    const validated = customerProfilePatchSchema.parse(input.patch)
-
-    if (ctx.scope) {
-      const [parent] = await db
-        .select({ id: customers.id })
-        .from(customers)
-        .where(and(eq(customers.id, input.customerId), ctx.scope))
-        .limit(1)
-      if (!parent) {
-        throw new ThrowableDalError({ type: 'not-found' })
-      }
-    }
-
-    return dalVerifySuccess(
-      await upsertOneToOne(customerProfiles, customerProfiles.customerId, input.customerId, validated),
-    )
-  })
+  return upsertOneToOne(ctx, customerProfileServerSpec, input.customerId, input.patch)
 }
 
 /**
@@ -56,12 +28,11 @@ export async function upsertCustomerProfile(
  * re-ingest of an existing lead refreshes the snapshot idempotently.
  */
 export async function upsertLeadAttribution(
+  ctx: ScopedContext,
   input: { customerId: string, leadMeta: LeadMeta, extra?: { ownership?: string | null, contentCategory?: string | null, clientIp?: string | null, clientUserAgent?: string | null } },
 ): Promise<DalReturn<{ ok: true }>> {
   return dalDbOperation(async () => {
     const { attribution, enrichment } = splitLeadMeta(input.leadMeta)
-    // Parse at the write boundary (mirrors upsertCustomerProfile) — the
-    // capture snapshot's internal shape is pinned by leadMetaSchema.
     const attributionWithExtra = {
       ...attribution,
       ownership: input.extra?.ownership ?? null,
@@ -69,13 +40,7 @@ export async function upsertLeadAttribution(
       clientIp: input.extra?.clientIp ?? null,
       clientUserAgent: input.extra?.clientUserAgent ?? null,
     }
-    const validated = leadAttributionCaptureSchema.parse(attributionWithExtra)
-    dalVerifySuccess(await upsertOneToOne(
-      customerLeadAttribution,
-      customerLeadAttribution.customerId,
-      input.customerId,
-      validated,
-    ))
+    dalVerifySuccess(await upsertOneToOne(ctx, customerLeadAttributionServerSpec, input.customerId, attributionWithExtra))
     const rows = Object.entries(enrichment).map(([stepId, e]) => ({
       customerId: input.customerId,
       stepId,

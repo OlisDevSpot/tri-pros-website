@@ -21,8 +21,8 @@ interface Result {
   actions: EntityActionConfig<CustomerNoteWithAuthor>[]
   DeleteConfirmDialog: () => JSX.Element
   /**
-   * Author-or-admin gate — mirrors `assertNoteAuthorOrAdmin` (server enforces
-   * the same rule). The render site (timeline row) applies this per-note to
+   * Author-or-admin gate — mirrors the author rule the server compiles (`authorId`
+   * in the agent's note rule; super-admins hold all). The render site (timeline row) applies this per-note to
    * decide whether to mount the actions menu at all, rather than filtering
    * inside the memoized `actions` array below.
    */

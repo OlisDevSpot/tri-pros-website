@@ -5,6 +5,7 @@ import { moveCustomerPipelineItem } from '@/features/customer-pipelines/dal/serv
 import { moveCustomerToPipeline } from '@/features/customer-pipelines/dal/server/move-customer-to-pipeline'
 import { deriveProjectStatusBucket, meetingPipelines, pipelines } from '@/shared/constants/enums/pipelines'
 import { buildUserContext } from '@/shared/dal/server/lib/helpers'
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { db } from '@/shared/db'
 import { customerLeadAttribution } from '@/shared/db/schema/customer-lead-attribution'
 import { customers } from '@/shared/db/schema/customers'
@@ -12,7 +13,7 @@ import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
 import { getCustomerProfile } from '@/shared/entities/customers/dal/server/get-customer-profile'
 import { customerPipelineItemsInputSchema, getCustomerPipelineItems } from '@/shared/entities/customers/dal/server/pipeline-items'
-import { canSeeUngatedPhone } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 import { r2Client } from '@/shared/services/providers/r2/client'
@@ -24,7 +25,7 @@ import { agentProcedure, createTRPCRouter } from '../init'
 export const customerPipelinesRouter = createTRPCRouter({
   getCustomerPipelineItems: agentProcedure
     .input(customerPipelineItemsInputSchema)
-    .query(async ({ ctx, input }) => dalToTrpc(await getCustomerPipelineItems({ ...ctx, scope: null }, input))),
+    .query(async ({ ctx, input }) => dalToTrpc(await getCustomerPipelineItems(ctx, input))),
 
   moveCustomerPipelineItem: agentProcedure
     .input(z.object({
@@ -56,16 +57,16 @@ export const customerPipelinesRouter = createTRPCRouter({
     .input(z.object({
       customerId: z.string().uuid(),
     }))
-    .query(async ({ input, ctx }) => {
-      const isSuperAdmin = ctx.actor.ability.can('manage', 'all')
-      return getCustomerProfile(input.customerId, { userId: ctx.session.user.id, isSuperAdmin, canSeeUngated: canSeeUngatedPhone(ctx.actor.ability) })
-    }),
+    .query(async ({ input, ctx }) => getCustomerProfile(ctx, input.customerId)),
 
   getRecordingUrl: agentProcedure
     .input(z.object({
       customerId: z.string().uuid(),
     }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      if (!(await permit(ctx, 'read', customerServerSpec).probe(input.customerId))) {
+        throw new TRPCError({ code: 'NOT_FOUND' })
+      }
       const [row] = await db
         .select({ captureJSON: customerLeadAttribution.captureJSON })
         .from(customers)

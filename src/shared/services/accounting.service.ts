@@ -1,4 +1,5 @@
 import type { QBCustomer, QBInvoice, QBInvoiceLine, QBPayment, QBQueryResponse } from '@/shared/services/providers/quickbooks/types'
+import { systemContext } from '@/shared/dal/server/lib/contexts'
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
@@ -21,7 +22,7 @@ function createAccountingService() {
 
   return {
     ensureCustomer: async (customerId: string): Promise<string> => {
-      const customer = dalVerifySuccess(await customerCrud.getById(SYSTEM_CONTEXT, { id: customerId }))
+      const customer = dalVerifySuccess(await customerCrud.getById(systemContext('sync:quickbooks'), { id: customerId }))
 
       if (!customer) {
         throw new Error(`Customer ${customerId} not found`)
@@ -74,7 +75,7 @@ function createAccountingService() {
       }
 
       dalVerifySuccess(
-        await customerCrud.update(SYSTEM_CONTEXT, {
+        await customerCrud.update(systemContext('sync:quickbooks'), {
           id: customerId,
           data: { qbCustomerId },
         }),

@@ -1,22 +1,7 @@
-// Per-entity pre-scoped procedures for the customers router — defined ONCE
-// here as top-level consts (tRPC-idiomatic `const + typeof`), imported directly
-// by every customer sub-router. This replaces the old `createEntityRouter`
-// factory + `EntityToolkit` argument: the middleware is baked on at definition
-// time, not generated per call.
-//
 // server-spec.ts stays a PURE data object (imported by the DAL); the tRPC
 // runtime is pulled in HERE, router-side, never into the entity/DAL layer.
 
-import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
-
-import { agentProcedure, baseProcedure } from '../../init'
-import { resolveVisibilityScope } from '../../lib/middleware/scope-middleware'
-
-/** Agent-only. Session guaranteed; `ctx.scope` resolved from customer visibility (null for omni). */
-export const customerProcedure = agentProcedure.use(async ({ ctx, next }) => {
-  const scope = resolveVisibilityScope(customerServerSpec, { userId: ctx.session.user.id, ability: ctx.actor.ability })
-  return next({ ctx: { ...ctx, scope } })
-})
+import { baseProcedure } from '../../init'
 
 /** No auth. Pass-through of baseProcedure — the public intake entrypoint enforces its own rate-limit + validation inline. */
 export const customerPublicProcedure = baseProcedure

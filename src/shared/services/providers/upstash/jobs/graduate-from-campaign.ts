@@ -1,4 +1,4 @@
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { systemContext } from '@/shared/dal/server/lib/contexts'
 import { campaignEnrollmentService } from '@/shared/services/voip/campaigns/enrollment.service'
 
 import { createJob } from '../lib/create-job'
@@ -17,7 +17,7 @@ import { createJob } from '../lib/create-job'
 export const graduateFromCampaignJob = createJob(
   'graduate-from-campaign',
   async (payload: { customerId: string }) => {
-    const result = await campaignEnrollmentService.unenroll(SYSTEM_CONTEXT, {
+    const result = await campaignEnrollmentService.unenroll(systemContext('job:campaign-enrollment'), {
       customerId: payload.customerId,
       reason: 'graduated',
     })

@@ -6,12 +6,14 @@ import z from 'zod'
 
 import env from '@/shared/config/server-env'
 import { intakeModes } from '@/shared/constants/enums'
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { systemContext } from '@/shared/dal/server/lib/contexts'
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { customers } from '@/shared/db/schema/customers'
 import { customerListInputSchema, listCustomers } from '@/shared/entities/customers/dal/server/queries'
 import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { leadMetaSchema } from '@/shared/entities/customers/schemas'
 import { toDigits } from '@/shared/lib/phone'
 import { constructionService } from '@/shared/modules/construction/service'
@@ -19,9 +21,9 @@ import { customerIntakeService } from '@/shared/services/customer-intake.service
 import { validatePhoneLine } from '@/shared/services/providers/twilio/lib/validate-phone-line'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 
-import { createTRPCRouter } from '../../init'
+import { agentProcedure, createTRPCRouter } from '../../init'
 import { clientIp } from '../../lib/client-ip'
-import { customerProcedure, customerPublicProcedure } from './procedures'
+import { customerPublicProcedure } from './procedures'
 
 const redis = new Redis({
   url: env.UPSTASH_REDIS_REST_URL,
@@ -35,15 +37,15 @@ const intakeRatelimit = new Ratelimit({
 })
 
 export const businessRouter = createTRPCRouter({
-  // Drives /dashboard/customers and the lead-sources "All customers" pane; `ctx.scope` is customer visibility.
-  list: customerProcedure
+  // Drives /dashboard/customers and the lead-sources "All customers" pane; the rules scope it.
+  list: agentProcedure
     .input(customerListInputSchema)
     .query(async ({ ctx, input }) => dalToTrpc(await listCustomers(ctx, input))),
 
   // Search customers by name (agents) or name + phone (super-admins). Phone
   // is returned gated — agents only see it once a proposal has been sent for
   // the customer. See canAgentSeePhone / phone-gating-sql.
-  search: customerProcedure
+  search: agentProcedure
     .input(z.object({ query: z.string().min(1) }))
     .query(async ({ input, ctx }) => {
       // isOmni drives the phone-column gating and the agent-vs-super-admin
@@ -70,7 +72,7 @@ export const businessRouter = createTRPCRouter({
           address: customers.address,
         })
         .from(customers)
-        .where(and(textWhere, ctx.scope ?? undefined))
+        .where(and(textWhere, permit(ctx, 'read', customerServerSpec).sql))
         .limit(10)
     }),
 
@@ -165,7 +167,7 @@ export const businessRouter = createTRPCRouter({
         meeting = { ownerId: ownerId! }
       }
 
-      const result = await customerIntakeService.ingestLead(SYSTEM_CONTEXT, {
+      const result = await customerIntakeService.ingestLead(systemContext('intake:form'), {
         core: {
           name: customerData.name,
           phone: customerData.phone,

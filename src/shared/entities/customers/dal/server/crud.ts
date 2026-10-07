@@ -2,9 +2,9 @@ import type { Customer } from '@/shared/db/schema'
 
 import { eq, inArray } from 'drizzle-orm'
 
+import { systemContext } from '@/shared/dal/server/lib/contexts'
 import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { meetings, proposals } from '@/shared/db/schema'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
@@ -80,7 +80,7 @@ export const customerCrud = createCrudDal(customerServerSpec, () => ({
       //
       // Meeting deletes go through `meetingCrud.delete` so each meeting's
       // `delete` hook fires — that hook is responsible for one-way GCal event
-      // cleanup. SYSTEM_CONTEXT because the caller has already passed
+      // cleanup. A system context because the caller has already passed
       // `delete:Customer` (super-admin manage:all) at the tRPC layer; the
       // cascade should not be re-gated by per-row participation.
       //
@@ -109,7 +109,7 @@ export const customerCrud = createCrudDal(customerServerSpec, () => ({
         await db.delete(proposals).where(inArray(proposals.meetingId, meetingIds))
 
         for (const m of customerMeetings) {
-          dalVerifySuccess(await meetingCrud.delete(SYSTEM_CONTEXT, { id: m.id }))
+          dalVerifySuccess(await meetingCrud.delete(systemContext('derived:customer-delete-cascade'), { id: m.id }))
         }
       },
     },

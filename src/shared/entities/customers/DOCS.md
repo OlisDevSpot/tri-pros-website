@@ -20,8 +20,8 @@ Lead Source ──► Customer ──► Meeting ──► Proposal ──► Pr
 A non-omni agent sees a customer only if they participate in **any** meeting tied to that customer (any role). Customers have no direct owner column; meeting participation is the bridge. Super-admins (`ability.can('manage', 'all')`) bypass scoping.
 
 **Why**: the meeting is where the customer relationship is owned. Customer-level access derives from there.
-**Reference impl**: `dal/server/visibility.ts:userCanSeeCustomer` (raw SQL); `lib/visibility.ts:customerVisibility` (entity-spec adapter)
-**Enforced by**: the inline scope step (`resolveVisibilityScope(customerServerSpec, …)`) on every entity procedure
+**Reference impl**: `rules/agent.ts`: `can('read', 'Customer', { $participatesViaMeeting: { via: 'customerId', userId } })`; SQL body in `dal/server/lib/permissions/operators/meeting-participation.ts`
+**Enforced by**: `createCrudDal` and every customer read through `permit(ctx, 'read', customerServerSpec).sql`
 
 ### phone-visibility-threshold
 
@@ -217,13 +217,13 @@ Customers carry `latitude`, `longitude`, `geocodedAt`. Address-edit flows trigge
 
 A customer note may be edited or deleted only by its **author** or an **admin** (super-admin / `manage:all`). Notes live on `customer_notes` — a sibling top-level entity on the Entity Server System (`entities/customer-notes/`), not a column on `customers` — documented here because notes are a customer-child business concept, same as the other rules in this file.
 
-Enforced **server-side** by `assertNoteAuthorOrAdmin` (`entities/customer-notes/lib/assert-note-author.ts`), invoked from `customerNoteServerSpec.hooks.update.before` / `hooks.delete.before` (`entities/customer-notes/lib/server-spec.ts`): admins (`ctx.actor.ability.can('manage', 'all')`) pass unconditionally; everyone else must be the note's `authorId`, or the hook throws `forbidden`. Mirrored **client-side** by `canManage` in `useCustomerNoteActionConfigs` (`entities/customer-notes/hooks/use-customer-note-action-configs.ts`), which the timeline row uses to decide whether to mount the edit/delete action menu at all for a given note — the server hook is the real enforcement boundary; the client gate only avoids showing controls that would 403.
+Enforced **server-side** by the compiled rules: `createCrudDal` scopes `CustomerNote` through its customer and tests the author condition (`authorId`) on update and delete; admins (`ctx.actor.ability.can('manage', 'all')`) pass unconditionally. Mirrored **client-side** by `canManage` in `useCustomerNoteActionConfigs` (`entities/customer-notes/hooks/use-customer-note-action-configs.ts`), which the timeline row uses to decide whether to mount the edit/delete action menu at all for a given note — the server rule is the real enforcement boundary; the client gate only avoids showing controls that would 403.
 
 Separately: the customer profile's **activity timeline** (Overview tab) is **derived just-in-time**, not persisted. `buildTimelineEvents` (`lib/build-timeline-events.ts`) recomputes the event list on every render from the live meetings/proposals/notes already fetched for the profile — there is no `timeline_events` table or snapshot to keep in sync. Follows the codebase's default derived-value rule (`docs/codebase-conventions/derived-values.md`): compute from a single canonical helper unless persistence earns its keep via the snapshot or cache-column exceptions, neither of which applies here.
 
 **Why**: authorship is the natural ownership boundary for a note (only the person who wrote it should be able to change what it says), with an admin override for moderation/cleanup. The timeline stays JIT because it's a read-only composition of data that's already fetched for the profile — persisting a duplicate would just be another cache to invalidate.
-**Reference impl**: `entities/customer-notes/lib/assert-note-author.ts` (`assertNoteAuthorOrAdmin`); `entities/customer-notes/lib/server-spec.ts` (`update.before` / `delete.before` hooks); `entities/customer-notes/hooks/use-customer-note-action-configs.ts` (`canManage`); `lib/build-timeline-events.ts` (`buildTimelineEvents`)
-**Enforced by**: DAL hooks (server, authoritative) + `canManage` (client, UX-only mirror)
+**Reference impl**: `entities/customer-notes/lib/server-spec.ts` (`parent`) and the note rules; `entities/customer-notes/hooks/use-customer-note-action-configs.ts` (`canManage`); `lib/build-timeline-events.ts` (`buildTimelineEvents`)
+**Enforced by**: compiled rules in `createCrudDal` (server, authoritative) + `canManage` (client, UX-only mirror)
 
 ## Anti-patterns
 

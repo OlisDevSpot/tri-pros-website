@@ -1,4 +1,4 @@
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { systemContext } from '@/shared/dal/server/lib/contexts'
 import { listEnrollableLeadsBySource } from '@/shared/entities/customers/dal/server/queries'
 import { getLeadSourceBySlug } from '@/shared/entities/lead-sources/dal/server/queries'
 import { recordSyncError } from '@/shared/entities/voip-campaign-contacts/dal/server/mutations'
@@ -44,7 +44,7 @@ export const enrollSourceBatchJob = createJob(
     let enrolled = 0
     let skipped = 0
     for (const customer of leadsResult.data) {
-      const result = await campaignEnrollmentService.enroll(SYSTEM_CONTEXT, {
+      const result = await campaignEnrollmentService.enroll(systemContext('job:campaign-enrollment'), {
         customerId: customer.id,
         campaignId: payload.campaignId,
       })

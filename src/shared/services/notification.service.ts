@@ -2,6 +2,7 @@ import type { ContractEvent } from '@/shared/constants/enums'
 import { ROOTS } from '@/shared/config/roots'
 import { NEW_LEAD_NOTIFICATION_EMAILS } from '@/shared/constants/company/new-lead-notifications'
 import { SYSTEM_OWNER_EMAIL } from '@/shared/constants/system-users'
+import { systemContext } from '@/shared/dal/server/lib/contexts'
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
@@ -46,7 +47,7 @@ function createNotificationService() {
     },
 
     notifyNewLead: async (params: { customerId: string, source: string }) => {
-      const customer = dalVerifySuccess(await customerCrud.getById(SYSTEM_CONTEXT, { id: params.customerId }))
+      const customer = dalVerifySuccess(await customerCrud.getById(systemContext('derived:new-lead-notification'), { id: params.customerId }))
       if (!customer) {
         console.warn(`[notificationService] notifyNewLead: customer ${params.customerId} not found`)
         return

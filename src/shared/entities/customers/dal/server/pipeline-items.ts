@@ -13,6 +13,7 @@ import z from 'zod'
 import { DECIDED_OUTCOMES } from '@/shared/constants/enums/meetings'
 import { deriveProjectStatusBucket, pipelines } from '@/shared/constants/enums/pipelines'
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { fieldListInput } from '@/shared/dal/server/lib/query/field-list-input'
 import { buildSearchWhere } from '@/shared/dal/server/lib/query/search'
 import { db } from '@/shared/db'
@@ -27,6 +28,7 @@ import { computePipelineValue, computeProjectValue } from '@/shared/domains/pipe
 import { CUSTOMER_FIELDS } from '@/shared/entities/customers/dal/customer-fields'
 import { CUSTOMER_FIELD_SQL } from '@/shared/entities/customers/dal/server/customer-field-sql'
 import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { userParticipatesInMeeting } from '@/shared/entities/meetings/dal/server/participants'
 
 export const customerPipelineItemsInputSchema = fieldListInput(CUSTOMER_FIELDS, { pagination: false }).extend({
@@ -47,11 +49,12 @@ interface PipelineBranchArgs {
 export async function getCustomerPipelineItems(ctx: ScopedContext, input: CustomerPipelineItemsInput): Promise<DalReturn<PaginatedResult<CustomerPipelineItem>>> {
   return dalDbOperation(async () => {
     const args: PipelineBranchArgs = {
-      // Each pipeline reaches customers through a different table, so scoping stays per branch; without a user the fallback id '' never matches a participant or owner (leads is unscoped; projects still shows public projects).
+      // The customer reach comes from the rules; each branch adds the meeting-side participation its pipeline needs.
       userId: ctx.actor.userId ?? '',
       isOmni: ctx.actor.ability.can('manage', 'all'),
       canSeeUngated: canSeeUngatedPhone(ctx.actor.ability),
       customerWhere: and(
+        permit(ctx, 'read', customerServerSpec).sql,
         buildSearchWhere(input.search, [customers.name, customers.email]),
         CUSTOMER_FIELD_SQL.where(input.filters),
       ),

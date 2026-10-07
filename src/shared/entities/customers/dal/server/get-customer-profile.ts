@@ -1,13 +1,15 @@
 // LAZY: customers is still a plain entity; this read moves to modules/customers/core/dal/server when customers is promoted to a module.
 
-import type { CustomerLeadAttributionRow } from '@/shared/db/schema/customer-lead-attribution'
+import type { ScopedContext } from '@/shared/dal/server/types'
 
+import type { CustomerLeadAttributionRow } from '@/shared/db/schema/customer-lead-attribution'
 import type { CustomerProfileData, CustomerProfileMeeting, CustomerProfileProject, CustomerProfileProposalView } from '@/shared/entities/customers/types'
 
 import { TRPCError } from '@trpc/server'
 import { and, asc, desc, eq, getTableColumns, sql } from 'drizzle-orm'
 
 import { deriveProjectStatusBucket } from '@/shared/constants/enums'
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { customerEnrichment } from '@/shared/db/schema/customer-enrichment'
@@ -18,30 +20,19 @@ import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
-import { userCanSeeCustomer } from '@/shared/entities/customers/dal/server/visibility'
-import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { profileCols } from '@/shared/entities/customers/lib/profile-select'
+import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { getMeetingsWithProposals } from '@/shared/entities/meetings/dal/server/meetings-with-proposals'
 
-// Local viewer shape for this DAL. The customers entity used to export a
-// shared `CustomersViewer` interface; that was removed when queries.ts
-// adopted the canonical (ctx: ScopedContext, input) signature. This file is
-// next on the migration list — until then, keep the shape inline so the
-// customer-pipelines router caller stays unchanged.
-interface CustomerProfileViewer {
-  userId: string
-  isSuperAdmin: boolean
-  canSeeUngated: boolean
-}
-
-export async function getCustomerProfile(customerId: string, viewer: CustomerProfileViewer): Promise<CustomerProfileData> {
+export async function getCustomerProfile(ctx: ScopedContext, customerId: string): Promise<CustomerProfileData> {
   const { phone: _phone, ...customerCols } = getTableColumns(customers)
 
   const [customerRow] = await db
     .select({
       ...customerCols,
       ...profileCols(),
-      phone: gatedPhoneSql(viewer.canSeeUngated),
+      phone: gatedPhoneSql(canSeeUngatedPhone(ctx.actor.ability)),
       hasSentProposal: hasSentProposalSql(),
       attribution: getTableColumns(customerLeadAttribution),
     })
@@ -50,7 +41,7 @@ export async function getCustomerProfile(customerId: string, viewer: CustomerPro
     .leftJoin(customerLeadAttribution, eq(customerLeadAttribution.customerId, customers.id))
     .where(and(
       eq(customers.id, customerId),
-      viewer.isSuperAdmin ? undefined : userCanSeeCustomer(viewer.userId, customers.id),
+      permit(ctx, 'read', customerServerSpec).sql,
     ))
 
   if (!customerRow) {

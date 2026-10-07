@@ -12,6 +12,7 @@ import { and, eq, inArray, sql } from 'drizzle-orm'
 
 import { db } from '@/shared/db'
 
+import { SERVER_SPECS } from '../specs'
 import { subjectOf } from './define-spec'
 import { reachFor } from './permissions/core'
 
@@ -20,10 +21,17 @@ import { reachFor } from './permissions/core'
  * scopes them through `permit`. A family joins when it converts; the set and this module go when
  * the last one has.
  */
-export const COMPILED_SUBJECTS: ReadonlySet<EntitySubject> = new Set<EntitySubject>([])
+export const COMPILED_SUBJECTS: ReadonlySet<EntitySubject> = new Set<EntitySubject>(['Customer', 'CustomerNote'])
 
 export function isCompiled(spec: AnyServerSpec): boolean {
   return COMPILED_SUBJECTS.has(subjectOf(spec))
+}
+
+// A compiled spec that still declared `visibility` would run on both engines, the legacy one silently.
+for (const spec of SERVER_SPECS) {
+  if (COMPILED_SUBJECTS.has(subjectOf(spec)) && spec.visibility) {
+    throw new Error(`[scope] ${spec.entityName} is compiled and still declares visibility`)
+  }
 }
 
 export function resolveEffectiveScope(spec: AnyServerSpec, auth: VisibilityScope): SQL {

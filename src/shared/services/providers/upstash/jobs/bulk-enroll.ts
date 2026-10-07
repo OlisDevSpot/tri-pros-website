@@ -1,4 +1,4 @@
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { systemContext } from '@/shared/dal/server/lib/contexts'
 import { recordSyncError } from '@/shared/entities/voip-campaign-contacts/dal/server/mutations'
 import { campaignEnrollmentService } from '@/shared/services/voip/campaigns/enrollment.service'
 
@@ -23,7 +23,7 @@ export const bulkEnrollJob = createJob(
     let enrolled = 0
     let skipped = 0
     for (const customerId of payload.customerIds) {
-      const result = await campaignEnrollmentService.enroll(SYSTEM_CONTEXT, {
+      const result = await campaignEnrollmentService.enroll(systemContext('job:campaign-enrollment'), {
         customerId,
         campaignId: payload.campaignId,
       })

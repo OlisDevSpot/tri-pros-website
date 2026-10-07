@@ -72,7 +72,7 @@ function createCustomerIntakeService() {
 
       // Strict — ads reporting depends on it. The customer is already committed, so a failed write is surfaced for the caller to retry.
       if (input.leadMeta) {
-        const attr = await upsertLeadAttribution({ customerId: customer.id, leadMeta: input.leadMeta, extra: input.attributionExtra })
+        const attr = await upsertLeadAttribution(ctx, { customerId: customer.id, leadMeta: input.leadMeta, extra: input.attributionExtra })
         if (!attr.success) {
           return dalError({ type: 'precondition-failed', reason: 'attribution_write_failed' })
         }

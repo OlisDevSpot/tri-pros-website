@@ -11,6 +11,7 @@ import type { ProfileKey } from '@/shared/entities/customers/schemas'
 import { and, asc, eq, getTableColumns, isNotNull, isNull } from 'drizzle-orm'
 
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { fieldListInput } from '@/shared/dal/server/lib/query/field-list-input'
 import { paginate } from '@/shared/dal/server/lib/query/output'
 import { buildSearchWhere } from '@/shared/dal/server/lib/query/search'
@@ -25,6 +26,7 @@ import { CUSTOMER_FIELD_SQL } from '@/shared/entities/customers/dal/server/custo
 import { derivedPipelineSql, derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
 import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { profileCols } from '@/shared/entities/customers/lib/profile-select'
+import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { toNationalDigits } from '@/shared/lib/phone'
 
 export type { Customer }
@@ -64,7 +66,7 @@ export async function getCustomer(
       .from(customers)
       .leftJoin(customerProfiles, eq(customerProfiles.customerId, customers.id))
       .leftJoin(customerLeadAttribution, eq(customerLeadAttribution.customerId, customers.id))
-      .where(and(eq(customers.id, input.id), ctx.scope ?? undefined))
+      .where(and(eq(customers.id, input.id), permit(ctx, 'read', customerServerSpec).sql))
 
     if (!row) {
       return undefined
@@ -157,11 +159,11 @@ export interface CustomerListRow {
   leadSourceSlug: string | null
 }
 
-/** One customers list for every table: callers scope through `ctx.scope` and pin a source or segment through fixed filters. */
+/** One customers list for every table: the rules scope it, and callers pin a source or segment through fixed filters. */
 export async function listCustomers(ctx: ScopedContext, input: CustomerListInput): Promise<DalReturn<PaginatedResult<CustomerListRow>>> {
   return dalDbOperation(async () => {
     const where = and(
-      ctx.scope ?? undefined,
+      permit(ctx, 'read', customerServerSpec).sql,
       buildSearchWhere(input.search, [customers.name, customers.email]),
       CUSTOMER_FIELD_SQL.where(input.filters),
     )

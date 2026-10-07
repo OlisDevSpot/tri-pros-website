@@ -1,4 +1,4 @@
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { systemContext } from '@/shared/dal/server/lib/contexts'
 import { campaignEnrollmentService } from '@/shared/services/voip/campaigns/enrollment.service'
 import { complianceService } from '@/shared/services/voip/compliance.service'
 
@@ -18,7 +18,7 @@ export const bulkDncJob = createJob(
     for (const customerId of payload.customerIds) {
       try {
         await complianceService.addToDnc({ customerId, reason: 'admin', addedByUserId: payload.requestedByUserId })
-        await campaignEnrollmentService.unenroll(SYSTEM_CONTEXT, { customerId, reason: 'opted_out' })
+        await campaignEnrollmentService.unenroll(systemContext('job:campaign-enrollment'), { customerId, reason: 'opted_out' })
         marked++
       }
       catch (error) {

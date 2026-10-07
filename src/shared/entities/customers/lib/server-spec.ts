@@ -19,7 +19,6 @@ import {
   selectCustomerProfileSchema,
 } from '@/shared/db/schema/customer-profiles'
 import { CUSTOMER, CUSTOMER_LEAD_ATTRIBUTION, CUSTOMER_PROFILE } from '@/shared/entities/customers/lib/constants'
-import { customerVisibility } from '@/shared/entities/customers/lib/visibility'
 
 // Updates allow `createdAt` (super-admin-only via CASL field gate) — legacy
 // Notion imports land with import-day timestamps and lead-source stats by
@@ -44,7 +43,6 @@ export const customerServerSpec = defineEntitySpec({
   entityName: CUSTOMER,
   subject: CUSTOMER,
   conditionColumns: [],
-  visibility: customerVisibility,
   table: customers,
   schemas: {
     insert: insertCustomerSchema,

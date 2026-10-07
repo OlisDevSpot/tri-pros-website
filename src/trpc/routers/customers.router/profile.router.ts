@@ -1,28 +1,14 @@
-// ─── Customer Profile Router ─────────────────────────────────────────────────
-// customer_profiles 1:1 child table (Addendum B). Own CASL subject
-// ('CustomerProfile') — a different permission boundary than Customer's
-// contact/identity fields. Lazy upsert: row-exists = discovery data collected.
-
-import { TRPCError } from '@trpc/server'
 import z from 'zod'
 
 import { customerProfilePatchSchema } from '@/shared/db/schema'
 import { upsertCustomerProfile } from '@/shared/entities/customers/dal/server/mutations'
 
-import { createTRPCRouter } from '../../init'
+import { agentProcedure, createTRPCRouter } from '../../init'
 import { dalToTrpc } from '../../lib/dal-to-trpc'
-import { customerProcedure } from './procedures'
 
 export const profileRouter = createTRPCRouter({
-  upsert: customerProcedure
+  // The engine answers forbidden when the actor may not write the profile, and not found when the customer is out of reach.
+  upsert: agentProcedure
     .input(z.object({ id: z.string().uuid(), data: customerProfilePatchSchema }))
-    .mutation(async ({ ctx, input }) => {
-      if (ctx.actor.ability.cannot('update', 'Customer', 'profile')) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'You do not have permission to update the customer profile.',
-        })
-      }
-      return dalToTrpc(await upsertCustomerProfile(ctx, { customerId: input.id, patch: input.data }))
-    }),
+    .mutation(async ({ ctx, input }) => dalToTrpc(await upsertCustomerProfile(ctx, { customerId: input.id, patch: input.data }))),
 })
