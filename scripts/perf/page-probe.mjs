@@ -222,8 +222,22 @@ page.on('request', (request) => {
   }
 })
 
+// A dev-server recompile can reload the page mid-run; one retry rides out that navigation instead of ending the probe.
+async function evaluateSettled(fn, arg) {
+  try {
+    return await page.evaluate(fn, arg)
+  }
+  catch (error) {
+    if (!/Execution context was destroyed/.test(error.message)) {
+      throw error
+    }
+    await page.waitForTimeout(1500)
+    return page.evaluate(fn, arg)
+  }
+}
+
 async function take(label) {
-  const snapshot = await page.evaluate(() => {
+  const snapshot = await evaluateSettled(() => {
     const probe = window.__probe
     window.__probe = { commits: [], longTasks: [], components: {}, cards: {} }
     return probe
@@ -313,7 +327,7 @@ try {
       await take('(discarded)')
       const link = page.locator(`a[href="${target.link}"]`).first()
       const softItem = key === 'schedule' ? '[class*="min-h-48"], .group.relative.rounded-md.border.bg-card' : target.item
-      await page.evaluate(selector => window.__timelineStart(selector), softItem)
+      await evaluateSettled(selector => window.__timelineStart(selector), softItem)
       await link.click({ timeout: 10000 })
       const marks = await waitTimeline('itemsShown')
       softRuns.push(marks)
