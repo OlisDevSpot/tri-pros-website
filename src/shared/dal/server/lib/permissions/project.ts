@@ -11,16 +11,17 @@ import { fieldPathOf } from './core'
  * columns only. A rule without a field list, or `manage all`, admits every column. For a sub-entity
  * the parent's rules decide: `views` or `views.*` admits every column of a view, `views.viewedAt` one.
  * Lowest priority first, each matching rule adding or removing its columns, as CASL's own
- * `permittedFieldsOf` walks. A rule with an operator counts as matching: the SQL filter that loaded
+ * `permittedFieldsOf` walks. `target` is the row the rules are written against: the entity's own, or the
+ * root parent's for a sub-entity. A rule with an operator counts as matching: the SQL filter that loaded
  * the row already applied it, and the in-memory matcher cannot evaluate it.
  */
-export function projectToReadFields(ability: AppAbility, spec: AnyServerSpec, row: Record<string, unknown>): Record<string, unknown> {
+export function projectToReadFields(ability: AppAbility, spec: AnyServerSpec, row: Record<string, unknown>, target: Record<string, unknown>): Record<string, unknown> {
   // `as never`: the subject is a run-time string, and CASL's typed parameters want the literal union.
   const columns = Object.keys(row)
   const subject = subjectOf(spec)
   const path = fieldPathOf(spec)
   const prefix = path ? `${path}.` : ''
-  const tagged = tagSubject(subject, row)
+  const tagged = tagSubject(subject, target)
   const permitted = new Set<string>()
   for (const rule of [...ability.possibleRulesFor('read', subject as never)].reverse()) {
     const carriesOperator = rule.conditions != null && Object.keys(rule.conditions).some(key => key.startsWith('$'))
