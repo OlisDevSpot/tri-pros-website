@@ -34,12 +34,19 @@ function escapeText(value: string): string {
     .replace(/\\/g, '\\\\')
     .replace(/;/g, '\\;')
     .replace(/,/g, '\\,')
-    .replace(/\r?\n/g, '\\n')
+    .replace(/\r\n|\r|\n/g, '\\n')
 }
 
 function paramValue(value: string): string {
-  const clean = value.replace(/"/g, '')
+  // eslint-disable-next-line no-control-regex, unicorn/escape-case
+  const clean = value.replace(/[\u0000-\u001F\u007F"]/g, '')
   return /[,;:]/.test(clean) ? `"${clean}"` : clean
+}
+
+// RFC 5545 content lines end at CR LF, so a control character in any value would start a new property.
+function sanitizeRaw(value: string): string {
+  // eslint-disable-next-line no-control-regex, unicorn/escape-case
+  return value.replace(/[\u0000-\u001F\u007F]/g, '')
 }
 
 // RFC 5545 caps a line at 75 octets; a continuation starts with one space, which counts.
@@ -72,7 +79,7 @@ export function buildIcs(input: IcsEventInput): string {
     'CALSCALE:GREGORIAN',
     `METHOD:${input.method}`,
     'BEGIN:VEVENT',
-    `UID:${input.uid}`,
+    `UID:${sanitizeRaw(input.uid)}`,
     `SEQUENCE:${input.sequence}`,
     `DTSTAMP:${utcStamp(input.now)}`,
     `DTSTART:${utcStamp(start)}`,
@@ -80,9 +87,9 @@ export function buildIcs(input: IcsEventInput): string {
     `SUMMARY:${escapeText(input.summary)}`,
     ...(input.description ? [`DESCRIPTION:${escapeText(input.description)}`] : []),
     ...(input.location ? [`LOCATION:${escapeText(input.location)}`] : []),
-    ...(input.url ? [`URL:${input.url}`] : []),
-    `ORGANIZER;CN=${paramValue(input.organizer.name)}:mailto:${input.organizer.email}`,
-    `ATTENDEE;CN=${paramValue(input.attendee.name)};ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:${input.attendee.email}`,
+    ...(input.url ? [`URL:${sanitizeRaw(input.url)}`] : []),
+    `ORGANIZER;CN=${paramValue(input.organizer.name)}:mailto:${sanitizeRaw(input.organizer.email)}`,
+    `ATTENDEE;CN=${paramValue(input.attendee.name)};ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:${sanitizeRaw(input.attendee.email)}`,
     `STATUS:${input.method === 'CANCEL' ? 'CANCELLED' : 'CONFIRMED'}`,
     'END:VEVENT',
     'END:VCALENDAR',

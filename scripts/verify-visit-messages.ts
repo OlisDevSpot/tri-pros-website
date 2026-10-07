@@ -128,6 +128,29 @@ console.log('3. Pacific time text ✓')
   assert.ok(cancellation.includes('UID:meeting-1@example.com'), 'a cancellation names the same event')
   assert.ok(cancellation.includes('SEQUENCE:3'))
   assert.ok(cancellation.includes('STATUS:CANCELLED'))
+
+  const injectionEvent = buildIcs({
+    ...event,
+    method: 'REQUEST',
+    sequence: 0,
+    attendee: { name: 'Maria\r\nATTENDEE;CN=x:mailto:evil@x.com', email: 'maria@example.com' },
+    description: 'a\rb',
+  }).replace(/\r\n /g, '').split('\r\n')
+  const attendeeLines = injectionEvent.filter(line => line.startsWith('ATTENDEE'))
+  assert.equal(attendeeLines.length, 1, 'exactly one line starts with ATTENDEE')
+  assert.ok(!injectionEvent.some(line => line === 'ATTENDEE;CN=x:mailto:evil@x.com'), 'no line contains the injected property')
+  assert.ok(injectionEvent.includes('DESCRIPTION:a\\nb'), 'lone CR is escaped to newline escape')
+
+  const multibyteEvent = buildIcs({
+    ...event,
+    method: 'REQUEST',
+    sequence: 0,
+    summary: 'é'.repeat(60),
+  })
+  const byteLines = multibyteEvent.split('\r\n')
+  assert.ok(byteLines.every(line => Buffer.byteLength(line, 'utf8') <= 75), 'every physical line is at most 75 octets')
+  const unfoldedMultibyte = multibyteEvent.replace(/\r\n /g, '').split('\r\n')
+  assert.ok(unfoldedMultibyte.includes('SUMMARY:' + 'é'.repeat(60)), 'unfolded SUMMARY line contains all 60 multibyte characters')
 }
 console.log('4. Calendar invite ✓')
 
