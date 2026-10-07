@@ -58,6 +58,6 @@ export function defineSubEntitySpec<
 export function subjectOf(spec: ServerSpec): EntitySubject {
   // The erased spec type only knows `EntityName`: typing its subject as `EntitySubject` is circular,
   // because that type is derived from the specs themselves. A spec left out of the list gets a
-  // subject no rule names, so CASL denies it.
+  // subject no role rule names, so only `manage all` reaches it.
   return ('subject' in spec ? spec.subject : subjectOf(spec.parent.spec)) as EntitySubject
 }

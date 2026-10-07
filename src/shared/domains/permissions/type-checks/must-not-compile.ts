@@ -309,5 +309,5 @@ defineRules((can, cannot) => {
   // @ts-expect-error a cannot condition that may be null
   cannot('update', 'CustomerNote', { authorId: nullableUserId })
   // @ts-expect-error a condition value that may be null, after a field list
-  can('update', 'Proposal', ['views'], { id: nullableUserId })
+  can('update', 'CustomerNote', ['content'], { authorId: nullableUserId })
 })

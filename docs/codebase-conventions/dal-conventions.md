@@ -53,7 +53,7 @@ Every DAL function takes `ctx: ScopedContext` as its first argument. `ctx.scope`
 
 Two pathways construct `ScopedContext`:
 
-1. **Via tRPC** — per-entity `procedures.ts` files (e.g. `customers.router/procedures.ts`, `projects.router/procedures.ts`) define pre-scoped procedures that chain `agentProcedure.use(...)` and call `resolveVisibilityScope(spec, { userId, ability })` inline to set `ctx.scope`, forwarding `AuthedContext` (a narrowed `ScopedContext`) to the procedure body. Dual-credential (session-or-share-token) access goes through `shareableMiddleware`, used by `createCrudRouter` and the proposals share-token path.
+1. **Via tRPC** — per-entity `procedures.ts` files (e.g. `customers.router/procedures.ts`, `projects.router/procedures.ts`) define pre-scoped procedures that chain `agentProcedure.use(...)` and call `resolveVisibilityScope(spec, { userId, ability })` inline to set `ctx.scope`, forwarding the tRPC context (`BaseTRPCContext` / `HTTPTRPCContext` in `src/trpc/types.ts`, separate from `ScopedContext`) to the procedure body. Dual-credential (session-or-share-token) access goes through `shareableMiddleware`, used by `createCrudRouter` and the proposals share-token path.
 
 2. **Via server-initiated work** (jobs, webhooks, cron, RSC) — caller imports `SYSTEM_CONTEXT` (full access, scope = null) or builds a scoped context via a future `buildUserContext()` helper.
 

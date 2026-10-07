@@ -22,7 +22,7 @@ export const customerNoteCrud = createCrudDal(customerNoteServerSpec, crudHandle
   hooks: {
     create: {
       // Probe the target customer is visible, and stamp authorId from the
-      // acting user (closes the addNote scope gap — see issue #280).
+      // acting user (closes the addNote scope gap).
       //
       // MUST probe with the CUSTOMER's own visibility, not `ctx.scope` (which
       // here is `customerNoteVisibility` — an EXISTS correlated on

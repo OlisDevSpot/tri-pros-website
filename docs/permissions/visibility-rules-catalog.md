@@ -112,7 +112,7 @@ row-visibility are all this atom viewed through a different FK — which is why 
 | Homeowner read-only vs agent edit (view-mode) | `can('update','Proposal') ? 'agent':'homeowner'` — `use-view-mode.ts:15`, `proposal/index.tsx:74` | 1 | unchanged verb check (client + server) |
 | Proposal-media manage (upload/list/reorder/setVisibility/delete) | `update Proposal` verb — `assertCanUpdate`, `proposals.router/media.router.ts:22`; parent-scope bridge in `ctx.scope` via `proposalMediaProcedure` (`proposals.router/procedures.ts`) from `proposalMediaServerSpec.parent` — `modules/proposals/media/server-spec.ts:41` (the old `authz.ts` probes are gone, 2026-09-14) | 1 + 6 | verb (axis 1) + parent point-probe (axis 6). Declare `parent:{spec:proposalSpec, fk:'proposalId'}`; engine supplies the bridge. |
 | Media file internal-vs-homeowner exposure | writes `proposalMediaFiles.visibility` enum — `media.router.ts:64` | *content flag* | **not authorization** — a data attribute the homeowner render path reads. Keep out of the permission layer. |
-| Proposal-views: agents read, homeowner records | agents `isInScope(proposalSpec)` — `modules/proposals/views/dal/server/queries.ts:36`; homeowner `recordView` on `systemProcedure` (`views.router.ts:30`) + token equality in `proposalService.views.record` — `modules/proposals/views/service.ts:64` | 6 + 7 | agents → parent probe (axis 6); homeowner → token principal (axis 7) |
+| Proposal-views: agents read, homeowner records | agents `isInScope(proposalSpec)` — `modules/proposals/views/dal/server/queries.ts:36`; homeowner `recordView` on `baseProcedure` (`views.router.ts:30`) + token equality in `proposalService.views.record` — `modules/proposals/views/service.ts:64` | 6 + 7 | agents → parent probe (axis 6); homeowner → token principal (axis 7) |
 
 ### PROJECTS
 
@@ -133,7 +133,7 @@ Proposal media, proposal views, proposal incentives and project media now declar
 | `customer_enrichment` | customer | `customerId` | No spec. Bare `eq(customerId)` after parent passed scope. |
 | `customer_lead_attribution` | customer | `customerId` | No spec. leftJoin on scoped customer. |
 | `customer_notes` | customer | `customerId` | **Own fragment** `userCanSeeCustomer(userId, customerNotes.customerId)` — `customer-notes/lib/visibility.ts:16`. Re-derives customer visibility inline vs bridging. |
-| `proposal_views` | proposal | `proposalId` | `proposalViewServerSpec` with `parent` (`modules/proposals/views/server-spec.ts:33`). Agent reads gated by `isInScope(proposalSpec)`; homeowner `recordView` is token-gated on `systemProcedure` (see the Proposal-views row above). |
+| `proposal_views` | proposal | `proposalId` | `proposalViewServerSpec` with `parent` (`modules/proposals/views/server-spec.ts:33`). Agent reads gated by `isInScope(proposalSpec)`; homeowner `recordView` is token-gated on `baseProcedure` (see the Proposal-views row above). |
 | `proposal_media_files` | proposal | `proposalId` | `proposalMediaServerSpec` with `parent` (`modules/proposals/media/server-spec.ts:41`); scope bridged into `ctx.scope` by `proposalMediaProcedure` (`proposals.router/procedures.ts:37`). |
 | `media_files` / project media | project | `projectId` | `projectMediaServerSpec` with `parent` (`modules/projects/media/server-spec.ts:40`); the router still uses bare `agentProcedure`, so it runs **unscoped** until the child-scoped procedure swap. |
 

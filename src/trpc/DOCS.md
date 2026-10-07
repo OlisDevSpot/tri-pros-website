@@ -48,10 +48,10 @@ src/trpc/
 
 | Procedure | Guard | Ctx after |
 |---|---|---|
-| `baseProcedure` | None | `session: null, actor: no rules, scope: null` |
+| `baseProcedure` | None | `session` and `actor` as the request carries them (anonymous: `null` and no rules), `scope: null` |
 | `protectedProcedure` | Throws UNAUTHORIZED if no session | `session: non-null, scope: null` |
 | `agentProcedure` | Extends protected; FORBIDDEN unless `actor.ability.can('access', 'Dashboard')` (internal users) | same as protected |
-| `superAdminProcedure` | Extends agent; FORBIDDEN unless `ability.can('manage', 'all')` (super-admin omni grant) | same as protected |
+| `superAdminProcedure` | Extends agent; FORBIDDEN unless `actor.ability.can('manage', 'all')` (super-admin omni grant) | same as protected |
 
 Entity sub-routers **never** call `agentProcedure` directly — they import the entity's pre-scoped procedure (`<entity>Procedure` / `<entity>ShareableProcedure`) from `<entity>.router/procedures.ts`, which has scope resolution baked on at definition time.
 
@@ -169,7 +169,7 @@ This replaces the `isOmni`-or-predicate dance that previously had to be inlined 
 `shareableMiddleware(spec)` resolves dual-credential access:
 
 - **Token present** (e.g., `?token=tpr-xxx`): validates the token column on the entity table, sets `ctx.scope = eq(tokenColumn, token)` and gives the request the holder's actor: an ability with `read` and `update` on that entity, and no user id.
-- **Session present, no token**: requires session, builds ability, resolves scope from `spec.visibility({ userId, ability })`.
+- **Session present, no token**: requires session; resolves scope from `spec.visibility({ userId, ability })` with the request's actor.
 - **Neither**: throws UNAUTHORIZED.
 
 Activated by `spec.shareable: { tokenColumn: '...' }` in the entity spec. The middleware peeks at `getRawInput()` for the `token` field before Zod validation — branching has to happen before schema enforcement.
