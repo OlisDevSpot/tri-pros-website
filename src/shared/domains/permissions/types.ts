@@ -28,6 +28,7 @@ export type AppAction = 'access' | 'assign' | 'create' | 'delete' | 'manage' | '
 //   - 'Calendar'         feature gate (GCal sync)
 //   - 'CustomerPipeline' feature gate (manage rehash/dead pipeline access)
 //   - 'LeadsPool'        feature gate (shared leads pool visibility)
+//   - 'VisitMessages'    feature gate (see and send a meeting's visit messages)
 //   - 'User'             user-record reads (no Entity Server System integration yet)
 export type AppSubject
   = EntityName
@@ -37,6 +38,7 @@ export type AppSubject
     | 'Dashboard'
     | 'LeadsPool'
     | 'User'
+    | 'VisitMessages'
 
 // The main ability type used throughout the app.
 // MongoAbility is CASL's default ability class — named "Mongo" for historical

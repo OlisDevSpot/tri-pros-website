@@ -9,6 +9,7 @@ import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { getRescheduleChain } from '@/shared/entities/meetings/dal/server/queries'
 
 import { meetingBusinessService } from './business/service'
+import { meetingMessageService } from './messages/service'
 
 export const meetingService = {
   ...meetingCrud,
@@ -21,6 +22,10 @@ export const meetingService = {
   // A getter, not a property: a child that reaches a peer service would otherwise be read while this literal is still being built.
   get business() {
     return meetingBusinessService
+  },
+
+  get messages() {
+    return meetingMessageService
   },
 } satisfies SpecCrudHandlers<typeof meetingServerSpec>
 

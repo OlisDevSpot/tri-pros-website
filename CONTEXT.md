@@ -24,9 +24,22 @@ The boundary is sharp. voip-in-house does **not** handle lead-conversion outreac
 ## VoIP terms
 
 - **voip-in-house** — Twilio-backed in-app communication layer for Phase 2. Owns `voip_*` tables. Clean DIDs assigned 1:1 to humans.
-- **voip-campaigns** — Integration surface to whichever lead-conversion provider is wired in (currently CloudTalk). Owns the config + webhook parsing, NOT the call/SMS data.
-- **DID** — A phone number provisioned on Twilio. In voip-in-house, every DID is `agent_personal` (sticky to a sales agent), `office_worker` (sticky to a non-sales user), or `main_line` (the inbound reception number).
-- **Lead-conversion provider** — The external system that handles Phase 1. Today: CloudTalk. Pluggable.
+- **voip-campaigns** — Integration surface to whichever lead-conversion provider is wired in (currently JustCall). Owns the config + webhook parsing, NOT the call/SMS data.
+- **DID** — A phone number provisioned on Twilio. A DID is assigned to a user (sticky to that person), or is the one **main line** (`voip_dids.is_main_line`).
+- **Lead-conversion provider** — The external system that handles Phase 1. Today: JustCall. Pluggable.
+
+## Visit messages
+
+- **Main line** — The one company DID that sends visit messages and receives their replies. Never "company line".
+- **Visit message** — A text or email Tri Pros sends about a meeting, or a homeowner's reply to one (`meeting_messages`). The kinds: **visit summary** (sent by a person), **day-before reminder** and **rep confirmation** (automatic), **confirmation reply** (the thank-you after a YES), **visit cancellation** (the email that removes a calendar entry), **homeowner reply** (inbound).
+- **Sequence** — The ordered visit messages a meeting can get: visit summary → day-before reminder → rep confirmation. The confirmation reply and the visit cancellation are reactions, not steps.
+- **Visit message plan** — Each sequence step's state for one meeting, computed from its visit messages, the rules, pauses and the current time (`planVisitMessages`). The scheduled runs send exactly the steps it marks due.
+- **Visit message template** — The wording of one visit text, with `{{tokens}}`. **Default** is the wording in code; **edited** is a super-admin's saved wording.
+- **Skip** — A person stops one automatic text for one meeting time. **Unskip** undoes it before the text's time.
+- **Paused** — A super-admin stopped one automatic kind for every meeting until it is resumed.
+- **Confirmation track** — The three confirmations of one visit: the office's (a visit message went out), the homeowner's, and the rep's (a rep confirmation went out for this time). Never "stage", which is a pipeline word.
+- **Homeowner confirmed** — The homeowner said they will be there for this time, by replying YES or on their home visit page (`meetings.homeownerConfirmedAt`, `homeownerConfirmedVia`). Shown to the office; never moves the pipeline. The office still sets **Confirmed**.
+- **Reschedule chain** — A meeting and the meetings it replaced, linked by `meetings.rescheduledFromId` (`getRescheduleChain`). Visit messages are read across it.
 
 ## DNC (Do-Not-Call)
 
