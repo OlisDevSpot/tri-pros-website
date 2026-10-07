@@ -3,7 +3,7 @@ import type { AnyServerSpec, DalReturn, ScopedContext, VisibilityScope } from '.
 import { db } from '@/shared/db'
 
 import { dalError, dalSuccess, ThrowableDalError } from '../types'
-import { resolveEffectiveScope } from './scope'
+import { isCompiled, resolveEffectiveScope } from './scope'
 
 export async function dalDbOperation<T>(
   operation: () => Promise<T>,
@@ -38,10 +38,10 @@ export async function withTx<T>(
 
 /** A context for `user` whose row filter is `spec`'s: for probing an entity other than the one `ctx.scope` was resolved for. */
 export function buildUserContext(user: VisibilityScope, spec: AnyServerSpec): ScopedContext {
-  const isOmni = user.ability.can('manage', 'all')
+  const unscoped = isCompiled(spec) || user.ability.can('manage', 'all')
   return {
     actor: { ability: user.ability, userId: user.userId },
-    scope: isOmni ? null : resolveEffectiveScope(spec, user),
+    scope: unscoped ? null : resolveEffectiveScope(spec, user),
   }
 }
 

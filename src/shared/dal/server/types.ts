@@ -20,7 +20,7 @@ export interface ScopedContext {
   tx?: Tx
 }
 
-// No user and every action: jobs, webhooks and server-derived writes.
+// Sites not yet classified into `systemContext(reason)`; each family moves its own, and the constant goes with the last.
 export const SYSTEM_CONTEXT: ScopedContext = {
   actor: { ability: abilityFromRules([{ action: 'manage', subject: 'all' }]), userId: null },
   scope: null,

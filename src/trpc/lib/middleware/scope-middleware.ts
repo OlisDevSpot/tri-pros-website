@@ -5,7 +5,7 @@ import type { SQL } from 'drizzle-orm'
 import type { AnyServerSpec } from '@/shared/dal/server/types'
 import type { AppAbility } from '@/shared/domains/permissions/types'
 
-import { resolveEffectiveScope } from '@/shared/dal/server/lib/scope'
+import { isCompiled, resolveEffectiveScope } from '@/shared/dal/server/lib/scope'
 
 /**
  * Pure scope resolver: `null` for omni (super-admin), else the entity's
@@ -18,6 +18,9 @@ export function resolveVisibilityScope(
   spec: AnyServerSpec,
   auth: { userId: string, ability: AppAbility },
 ): SQL | null {
-  const isOmni = auth.ability.can('manage', 'all')
-  return isOmni ? null : resolveEffectiveScope(spec, { userId: auth.userId, ability: auth.ability })
+  // A compiled spec is scoped by the DAL itself; a legacy procedure hands it no filter.
+  if (isCompiled(spec) || auth.ability.can('manage', 'all')) {
+    return null
+  }
+  return resolveEffectiveScope(spec, { userId: auth.userId, ability: auth.ability })
 }

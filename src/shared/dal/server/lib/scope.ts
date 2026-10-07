@@ -6,10 +6,25 @@ import type { SQL } from 'drizzle-orm'
 import type { PgColumn } from 'drizzle-orm/pg-core'
 
 import type { AnyServerSpec, ScopedContext, VisibilityScope } from '@/shared/dal/server/types'
+import type { EntitySubject } from '@/shared/domains/permissions/specs'
 
 import { and, eq, inArray, sql } from 'drizzle-orm'
 
 import { db } from '@/shared/db'
+
+import { subjectOf } from './define-spec'
+import { reachFor } from './permissions/core'
+
+/**
+ * The subjects whose rules are compiled: their specs declare no `visibility`, and `createCrudDal`
+ * scopes them through `permit`. A family joins when it converts; the set and this module go when
+ * the last one has.
+ */
+export const COMPILED_SUBJECTS: ReadonlySet<EntitySubject> = new Set<EntitySubject>([])
+
+export function isCompiled(spec: AnyServerSpec): boolean {
+  return COMPILED_SUBJECTS.has(subjectOf(spec))
+}
 
 export function resolveEffectiveScope(spec: AnyServerSpec, auth: VisibilityScope): SQL {
   const own = spec.visibility?.(auth) ?? null
@@ -25,6 +40,9 @@ export function resolveEffectiveScope(spec: AnyServerSpec, auth: VisibilityScope
 }
 
 function bridgeToParent(parent: NonNullable<AnyServerSpec['parent']>, auth: VisibilityScope): SQL {
+  if (isCompiled(parent.spec)) {
+    throw new Error(`[resolveEffectiveScope] ${parent.spec.entityName} is compiled: a family converts its children with it.`)
+  }
   const parentScope = resolveEffectiveScope(parent.spec, auth) // recurse up the chain
   return inArray(
     parent.fk,
@@ -40,6 +58,9 @@ export async function isVisible(spec: AnyServerSpec, ctx: ScopedContext, id: str
   }
   if (ability.can('manage', 'all')) {
     return true // omni
+  }
+  if (isCompiled(spec)) {
+    return reachFor(ctx, 'read', spec).probe(id)
   }
   const scope = resolveEffectiveScope(spec, { userId, ability })
   const [row] = await db
