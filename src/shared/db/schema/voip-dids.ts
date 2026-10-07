@@ -24,6 +24,8 @@ export const voipDids = pgTable('voip_dids', {
   // User's primary outbound DID. At most one TRUE per assignedUserId (partial unique index below).
   // App logic auto-sets TRUE for the first DID assigned to a user; subsequent default FALSE.
   isPrimary: boolean('is_primary').notNull().default(false),
+  // The one company number that sends visit messages and receives their replies.
+  isMainLine: boolean('is_main_line').notNull().default(false),
   isActive: boolean('is_active').notNull().default(true),
   createdAt,
   updatedAt,
@@ -31,6 +33,9 @@ export const voipDids = pgTable('voip_dids', {
   uniqPrimaryPerUser: uniqueIndex('voip_dids_assigned_user_primary_uniq')
     .on(table.assignedUserId)
     .where(sql`${table.isPrimary} = TRUE`),
+  uniqMainLine: uniqueIndex('voip_dids_main_line_uniq')
+    .on(table.isMainLine)
+    .where(sql`${table.isMainLine} = TRUE`),
 }))
 
 export const selectVoipDidSchema = createSelectSchema(voipDids)
