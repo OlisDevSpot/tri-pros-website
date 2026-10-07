@@ -7,7 +7,7 @@ import type { UserRole } from '@/shared/constants/enums/user'
 import type { DalReturn } from '@/shared/dal/server/types'
 import type { User } from '@/shared/db/schema/auth'
 
-import { and, eq, inArray, notInArray } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { db } from '@/shared/db'
@@ -26,19 +26,13 @@ export async function getUserIdsByEmails(emails: string[]): Promise<DalReturn<st
 
 export type InternalUserRow = Pick<User, 'id' | 'name' | 'email' | 'image' | 'role'>
 
-/** Users with one of these roles, by name. `excludeIds` drops system accounts. */
-export async function listUsersByRoles(
-  roles: readonly UserRole[],
-  options: { excludeIds?: readonly string[] } = {},
-): Promise<DalReturn<InternalUserRow[]>> {
+/** Users with one of these roles, by name. */
+export async function listUsersByRoles(roles: readonly UserRole[]): Promise<DalReturn<InternalUserRow[]>> {
   return dalDbOperation(async () =>
     db
       .select({ id: user.id, name: user.name, email: user.email, image: user.image, role: user.role })
       .from(user)
-      .where(and(
-        inArray(user.role, [...roles]),
-        options.excludeIds?.length ? notInArray(user.id, [...options.excludeIds]) : undefined,
-      ))
+      .where(inArray(user.role, [...roles]))
       .orderBy(user.name),
   )
 }

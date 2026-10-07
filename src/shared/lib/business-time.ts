@@ -74,6 +74,37 @@ export function formatBusinessTime(date: Date | string, options: Intl.DateTimeFo
   return formatter.format(new Date(date))
 }
 
+// Intl prints a narrow no-break space before AM/PM. One of those in a text message switches it out of GSM-7.
+function plainSpaces(text: string): string {
+  return text.replace(/[\u202F\u00A0]/g, ' ')
+}
+
+/** "Wed, Oct 7" */
+export function formatBusinessDay(date: Date | string): string {
+  return plainSpaces(formatBusinessTime(date, { weekday: 'short', month: 'short', day: 'numeric' }))
+}
+
+/** "10:00 AM" */
+export function formatBusinessClock(date: Date | string): string {
+  return plainSpaces(formatBusinessTime(date, { hour: 'numeric', minute: '2-digit' }))
+}
+
+/** "Wed, Oct 7, 10:00 AM" */
+export function formatBusinessDayTime(date: Date | string): string {
+  return plainSpaces(formatBusinessTime(date, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))
+}
+
+/** The instant of `hour:minute` wall-clock time on a business day. Two-pass offset, like `startOfDayInTimeZone`. */
+export function businessDateTime(calendarDay: string, hour: number, minute: number): Date {
+  const [year, month, day] = calendarDay.split('-').map(Number)
+  const target = Date.UTC(year, month - 1, day, hour, minute, 0)
+
+  let instantMs = target - utcOffsetMs(new Date(target), BUSINESS_TIMEZONE)
+  instantMs = target - utcOffsetMs(new Date(instantMs), BUSINESS_TIMEZONE)
+
+  return new Date(instantMs)
+}
+
 /** 0–23 hour of the business day, for bucketing by business hours. */
 export function businessHour(date: Date | string): number {
   return Number(formatBusinessTime(date, { hour: 'numeric', hourCycle: 'h23' }))

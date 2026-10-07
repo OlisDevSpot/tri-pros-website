@@ -68,11 +68,11 @@ Authorization probes (parent-visibility checks, own-row ownership checks) and cr
 Before creating any new backend file: *Does this code make HTTP calls to an external system?*
 
 - **Yes** → it goes in a **provider** (`services/providers/<name>/`)
-- **No, but it orchestrates business logic** → **internal service** (`services/<x>.service.ts`) **when it coordinates a provider/external system or cross-cutting infra**. Pure entity-CRUD flows (compose entity CRUD + notes/participants, no external coordination) orchestrate in the **tRPC router** instead — e.g. `meetings.business.setOutcomeWithReason` / `rescheduleMeeting`.
+- **No, but it orchestrates business logic** → **internal service** (`services/<x>.service.ts`) **when it coordinates a provider/external system or cross-cutting infra**. Pure entity-CRUD flows (compose entity CRUD + notes/participants, no external coordination) orchestrate in the **tRPC router** instead.
 - **No, it's pure local computation** (PDF gen, formatting, math) → **shared lib** (`shared/lib/<x>/`)
 - **It does BOTH business logic AND raw HTTP** → split it. Extract HTTP into a provider; the orchestrator stays in `services/`.
 
-**Amendment (C17, 2026-09-14):** once an entity or module has its own `service.ts` (root or unit — see `#root-vs-unit-service` above), that service IS the one server API for it: CRUD slots spread + verbs + child services. Routers, RSC, jobs and webhooks call it — they are thin adapters, not a second place business logic lives. The "pure entity-CRUD flows orchestrate in the tRPC router" bullet above is the pattern for an entity that has **not yet** grown a `service.ts` (meetings today); the moment a module/entity service exists, verbs move there and the router stops composing them itself. Reads stay in DAL `queries.ts` either way — a service composes them, it doesn't reimplement them.
+**Amendment (C17, 2026-09-14):** once an entity or module has its own `service.ts` (root or unit — see `#root-vs-unit-service` above), that service IS the one server API for it: CRUD slots spread + verbs + child services. Routers, RSC, jobs and webhooks call it — they are thin adapters, not a second place business logic lives. The "pure entity-CRUD flows orchestrate in the tRPC router" bullet above is the pattern for an entity that has **not yet** grown a `service.ts` (for example activities); the moment a module/entity service exists, verbs move there and the router stops composing them itself. Reads stay in DAL `queries.ts` either way — a service composes them, it doesn't reimplement them.
 
 **Why**: physical location predicts what code does. Mixed responsibilities create the `contracts.service.ts` problem (see ADR-0003).
 **Enforced by**: convention + PR review

@@ -1,6 +1,6 @@
 'use client'
 
-import { cn } from '@/shared/lib/utils'
+import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-group'
 
 interface PageSizeSegmentedProps {
   options: readonly number[]
@@ -10,28 +10,24 @@ interface PageSizeSegmentedProps {
 
 export function PageSizeSegmented({ options, value, onChange }: PageSizeSegmentedProps) {
   return (
-    <div role="radiogroup" aria-label="Rows per page" className="flex gap-1 rounded-md border border-border/60 p-1">
-      {options.map((opt) => {
-        const selected = opt === value
-        return (
-          <button
-            key={opt}
-            type="button"
-            role="radio"
-            aria-checked={selected}
-            onClick={() => onChange(opt)}
-            className={cn(
-              'h-9 flex-1 rounded-sm text-sm font-medium tabular-nums touch-manipulation transition-colors',
-              'focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2',
-              selected
-                ? 'bg-foreground/10 text-foreground'
-                : 'text-muted-foreground hover:bg-foreground/5',
-            )}
-          >
-            {opt}
-          </button>
-        )
-      })}
-    </div>
+    <ToggleGroup
+      type="single"
+      variant="segmented"
+      value={String(value)}
+      onValueChange={(next) => {
+        const size = options.find(opt => String(opt) === next)
+        if (size !== undefined) {
+          onChange(size)
+        }
+      }}
+      aria-label="Rows per page"
+      className="w-full"
+    >
+      {options.map(opt => (
+        <ToggleGroupItem key={opt} value={String(opt)} className="h-9.5 flex-1 tabular-nums touch-manipulation">
+          {opt}
+        </ToggleGroupItem>
+      ))}
+    </ToggleGroup>
   )
 }

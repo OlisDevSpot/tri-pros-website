@@ -6,6 +6,7 @@ import { ThrowableDalError } from '@/shared/dal/server/types'
 import { OUTCOME_PIPELINE_MAP } from '@/shared/domains/pipelines/lib/outcome-pipeline-map'
 import { SETTER_ROLES } from '@/shared/entities/meetings/constants/internal-user-roles'
 import { SET_BY_NOT_INTERNAL } from '@/shared/entities/meetings/constants/set-by-not-internal'
+import { SET_BY_REQUIRED } from '@/shared/entities/meetings/constants/set-by-required'
 import { clearMeetingGCalFields } from '@/shared/entities/meetings/dal/server/google-calendar'
 import { addParticipant } from '@/shared/entities/meetings/dal/server/participants'
 import { getMeetingSchedule } from '@/shared/entities/meetings/dal/server/queries'
@@ -13,6 +14,8 @@ import { resolveMeetingOwnerId } from '@/shared/entities/meetings/lib/resolve-ow
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 import { getUserRoleById } from '@/shared/entities/users/dal/server/queries'
 import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
+import { generateToken } from '@/shared/lib/generate-token'
+import { confirmationsClearedByMove } from '@/shared/modules/meetings/core/lib/confirmation-reset'
 import { deleteMeetingEventJob } from '@/shared/services/providers/upstash/jobs/delete-meeting-event'
 import { graduateFromCampaignJob } from '@/shared/services/providers/upstash/jobs/graduate-from-campaign'
 import { metaCapiEventJob } from '@/shared/services/providers/upstash/jobs/meta-capi-event'
@@ -41,15 +44,20 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
       // or a role string) so a wire client can't create a meeting owned by someone else.
       // SYSTEM_CONTEXT orchestrators have no user and supply ownerId themselves.
       async before(input, ctx) {
-        const { ability, userId } = ctx.actor
-        // No setter picked: whoever books the meeting set it. A picked "No setter" (`null`) stays null;
-        // SYSTEM_CONTEXT has no user, so its unpicked setter is null.
-        const setBy = input.setBy === undefined ? userId : input.setBy
-        await assertSetterIsInternal(setBy)
-        if (userId === null) {
-          return { ...input, setBy }
+        if (input.setBy === null) {
+          throw new ThrowableDalError({ type: 'precondition-failed', reason: SET_BY_REQUIRED.reason })
         }
-        return { ...input, setBy, ownerId: await resolveMeetingOwnerId(userId, ability) }
+        const { ability, userId } = ctx.actor
+        // Unpicked: whoever books the meeting set it. Bookings nobody made in the app (intake, lead ingestion,
+        // system-made replacements) have no user, so the office account stands in as their setter.
+        const setBy = input.setBy ?? userId ?? await getSystemOwnerId()
+        await assertSetterIsInternal(setBy)
+        // The token is generated above the user check: intake and reschedule create with no user.
+        const withToken = { ...input, setBy, shareToken: generateToken() }
+        if (userId === null) {
+          return withToken
+        }
+        return { ...withToken, ownerId: await resolveMeetingOwnerId(userId, ability) }
       },
       // row.ownerId, not the acting user's id, so the participant follows the actual owner on the
       // SYSTEM_CONTEXT path too. dispatchOrThrow: a missed enqueue must fail the mutation, not drop the event.
@@ -80,6 +88,9 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
     update: {
       async before(data, ctx, { id }) {
         if (data.setBy !== undefined) {
+          if (data.setBy === null) {
+            throw new ThrowableDalError({ type: 'precondition-failed', reason: SET_BY_REQUIRED.reason })
+          }
           // Only super-admins change a setter for now; SYSTEM_CONTEXT (`manage all`) may.
           if (ctx.actor.ability.cannot('assign', 'Meeting')) {
             throw new ThrowableDalError({ type: 'forbidden' })
@@ -93,12 +104,10 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
             next = { ...next, pipeline }
           }
         }
-        // A confirmation holds for one appointment time; a moved meeting must be confirmed again.
-        // Compared against the stored time so a same-time re-save (e.g. GCal sync) keeps it.
-        if (data.scheduledFor && !('confirmedAt' in data)) {
+        if (data.scheduledFor) {
           const current = await getMeetingSchedule(id)
-          if (current?.confirmedAt && new Date(current.scheduledFor).getTime() !== new Date(data.scheduledFor).getTime()) {
-            next = { ...next, confirmedAt: null }
+          if (current) {
+            next = { ...next, ...confirmationsClearedByMove(current, data) }
           }
         }
         return next
@@ -158,13 +167,18 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
     },
   },
   // A duplicate is a fresh sit, not a continuation — only reschedule carries flow state forward.
-  // The setter is copied, `null` included: the lead is still theirs.
+  // The setter is copied: the lead is still theirs. A source that predates setters has none, so the copy takes the default.
   duplicate: {
     exclude: [
       'createdAt',
       'updatedAt',
       'meetingOutcome',
       'confirmedAt',
+      'homeownerConfirmedAt',
+      'homeownerConfirmedVia',
+      'newTimeRequestedAt',
+      'shareToken',
+      'rescheduledFromId',
       'pipeline',
       'flowStateJSON',
       'agentNotes',
@@ -176,7 +190,7 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
     // Loses to create.before on the authed path; the source.ownerId fallback keeps a SYSTEM_CONTEXT duplicate from crashing.
     overrides: (source, ctx) => ({
       ownerId: ctx.actor.userId ?? source.ownerId,
-      setBy: source.setBy,
+      setBy: source.setBy ?? undefined,
     }),
   },
 }))

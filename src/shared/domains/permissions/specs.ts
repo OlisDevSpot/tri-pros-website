@@ -15,6 +15,7 @@ import type { voipContactFieldServerSpec } from '@/shared/entities/voip-contact-
 import type { voipDidServerSpec } from '@/shared/entities/voip-dids/lib/server-spec'
 import type { voipLinkTokenServerSpec } from '@/shared/entities/voip-link-tokens/lib/server-spec'
 import type { voipMessageServerSpec } from '@/shared/entities/voip-messages/lib/server-spec'
+import type { meetingMessageServerSpec } from '@/shared/modules/meetings/messages/server-spec'
 import type { projectServerSpec } from '@/shared/modules/projects/core/server-spec'
 import type { projectMediaServerSpec } from '@/shared/modules/projects/media/server-spec'
 import type { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
@@ -31,6 +32,7 @@ export type ServerSpec
     | typeof customerProfileServerSpec
     | typeof customerServerSpec
     | typeof leadSourceServerSpec
+    | typeof meetingMessageServerSpec
     | typeof meetingServerSpec
     | typeof projectMediaServerSpec
     | typeof projectServerSpec

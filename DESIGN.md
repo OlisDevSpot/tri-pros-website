@@ -180,9 +180,16 @@ exactly one accent, and its rarity is the point.
   dividers that need to read as more than a hairline. Chart and calendar grids use
   **Grid Line** (`--grid-line`, one and a half edges off) and the axis baseline uses
   **Axis** (`--axis`, = Border Strong). Dark edges sit further out than light ones.
-- **Control Border** (`oklch(0.62 0.03 255)`, 3:1 against the card): the border on
-  inputs, textareas and other form controls — deliberately stronger than Hairline,
-  because a control needs a visible edge a divider doesn't.
+- **Field Edge** (`--input`): `--control-edge` edges (4.3 light, 2.85 dark; about 2:1)
+  off the field's own fill. A field is filled with the surface it sits on, so its edge
+  alone marks it.
+- **Control Border** (`--control-border`: outline buttons and toggles, segmented and tab
+  tracks, button capsules): `--control-border-edge` edges (2.2 light, 1.2 dark) off the
+  rung above, about 1.3–1.45:1 against a button's fill. Softer than a field's, because a
+  control's lighter fill and `shadow-xs` already lift it; at 2:1 a toolbar reads as a row
+  of boxes.
+  **Indicator** (`--indicator`, 3:1 against the card) edges checkboxes and radios and
+  fills the off switch track.
 - **Navy Rail** (`oklch(0.215 0.072 262)` light / `oklch(0.13 0.05 262)` dark): the
   sidebar fill — see Sidebar, below.
 
@@ -193,7 +200,9 @@ exactly one accent, and its rarity is the point.
 - **Warm Ink** (`#2a2520`): headline text; a warm near-black.
 - **Concrete Body** (`#5f574b`) / **Warm Muted** (`#8a7c6a`): body copy and muted
   microcopy.
-- **Concrete Hairline** (`#ddd4c4`): borders and inputs.
+- **Concrete Hairline** (`#ddd4c4`): borders. **Concrete Field Edge** (`#c6bba9`,
+  about 1.8:1 on the page) edges inputs, selects and textareas; checkboxes and radios
+  take `#928674` (3:1 on a panel).
 
 ### Status
 - **Destructive** (`oklch(0.53 0.19 27)`), **Success** (`oklch(0.45 0.11 152)`),
@@ -378,10 +387,17 @@ responsive depth.
 - **Secondary:** `bg-secondary`, one rung above whatever holds it, + dark text;
   hover `bg-secondary-hover`. A button sitting on a card or a dialog is
   `secondary` so it climbs the ladder with them (the Google sign-in button).
-- **Outline:** filled `bg-control` (one rung above whatever holds it) with a full
-  hairline; hover `bg-control-hover`, a solid step off the fill. The marketing scopes
+- **Outline:** filled `bg-control` (one rung above whatever holds it) with a
+  `border-control-border` edge taken off that fill, so it stands on the surface; hover
+  `bg-control-hover`, a solid step off the fill. The marketing scopes
   set `--control: transparent`, and the public hero and navbar pass `bg-transparent`,
   so outlines over photos stay see-through.
+- **Which variant in a toolbar:** a standalone action is `outline`; the items inside a
+  grouped capsule are `ghost`, and the capsule (`bg-card border-control-border`) is the raised
+  control; a filled neutral action in a card or dialog is `secondary`; the one main
+  action is `default` / `cta`.
+- **On / selected** (filters applied, a pressed toggle): `bg-control-selected`, the
+  primary mixed into the control fill, never a darker edge or a foreground alpha.
 - **Page Bar** (`PageBar`): a page's title and toolbar share one `surface` strip, so
   the chrome sits on rung 1 like the content and the controls in it climb a rung.
 - **Ghost:** transparent at rest, hover `bg-hover`. Blue stays for "act here",
@@ -389,6 +405,24 @@ responsive depth.
 - **Link:** underline-on-hover, text shifting to `--link`.
 - **Status pills** (`toneClasses().fill`) carry a hairline in their tone, because
   the idle and info fills sit about 1.01:1 on the light rungs.
+
+### Segmented & Tabs
+- **One-of-N switches** (a view, a period, a page size) are a segmented `ToggleGroup`
+  or pill `TabsList`, never a row of outline buttons with a tinted one.
+- **Track:** `bg-tab-track` edged `border-control-border`: it sinks a rung below the
+  surface, so the options that are off read dimmer than the surface around them, and it
+  takes a button's quiet edge, not a field's, because it is a control.
+- **Active:** `bg-tab-active` (`--tab-lift` rungs above the surface: 2 light, 1.5 dark),
+  foreground text, `shadow-xs`. At least 1.15:1 against the track on every rung.
+- **Inactive:** no fill, `text-muted-foreground`; hover `bg-hover` + foreground text,
+  press `bg-press`.
+- **Inside a control group** (a capsule marked `data-slot="control-group"`, like the analytics
+  filter bar): the track drops its edge, fill and padding, so the group draws the one edge.
+  A track sitting straight on a card, a popover or the Page Bar is not nested and keeps its own.
+- **Underline tabs** (`TabsList variant="underline"`): active is foreground text on a
+  foreground underline; inactive is muted text. No fills.
+- Multi-select chips (trades, series, filters) are toggles, not switches: they keep
+  their own on-state.
 
 ### Cards / Containers
 - **Corner Style:** `xl` (12px app) / 6px (marketing panel).
@@ -402,8 +436,11 @@ responsive depth.
 - **Internal Padding:** ~24px, tightening on compact variants via `--block-pad-compact`.
 
 ### Inputs / Fields
-- **Style:** solid fill (`bg-input-background`, the rung the field sits on / warm),
-  1px control border, `rounded-md`.
+- **Style:** filled with the rung it sits on (`bg-input-background`) so it sinks into
+  the surface, edged with `border-input` (`--control-edge` edges off that rung, about
+  2:1), `rounded-md`. Select, date and multi-select triggers are fields too. Fields sink,
+  buttons stand: an outline button is filled a rung up and takes the softer
+  `--control-border` off that rung. Checkbox, radio and switch keep a 3:1 `--indicator`.
 - **Focus:** a 3px `ring-ring/50` in the world's accent plus a border shift — crisp,
   not a glow. `aria-invalid` swaps the ring to destructive.
 

@@ -1,8 +1,9 @@
 # Pipeline and schedule speed: the records-page fixes, one action host per view, stage paging
 
-> **Status:** design approved in conversation 2026-10-05; spec written for the owner's review. Nothing is built.
+> **Status:** design approved 2026-10-05. **Phase 1 shipped 2026-10-07** on local main (acceptance: `.superpowers/sdd/2026-10-06-pipeline-schedule-speed-phase-1/acceptance.md`; the final schedule probe waits on the meetings schema push); Phases 2 and 3 not started.
 > **Supersedes** the "Spec B (one entity-action host per view)" pointer in `docs/superpowers/specs/2026-09-29-data-view-date-windows-design.md`.
 > **Cites:** records tracker `docs/plans/2026-09-26-records-management-epic.md` §7 (A4–A10 stay there); render-isolation acceptance `.superpowers/sdd/2026-10-01-records-table-render-isolation/acceptance.md` (the measurement method this spec reuses).
+> **Order (owner, 2026-10-07; records tracker D64):** records R2 (customers entity table and fixed filters, `docs/superpowers/plans/2026-10-05-customers-entity-table-and-fixed-filters.md` and `…-part-2.md`) lands **before Phase 2 and Phase 3**. R2 moves `entities/customers/components/lists/customer-meetings-list.tsx` to `entities/meetings/components/`, and `customer-projects-list.tsx` and `project-entity-card.tsx` to `modules/projects/core/components/`; it adds `fixed` filters and a `{ kind: 'first', count }` window to the data view (the files Phase 3 edits). Phase 2's plan names the moved paths; Phase 3's `grouped` kind is added beside `first`, and its window-kind switches cover all five kinds.
 > **Baseline + probe (gitignored):** `.superpowers/harness/pipeline-schedule-perf/` — `probe.mjs`, `step.mjs`, `baseline-2026-10-05/*.txt`.
 
 ## 1. Why
@@ -67,13 +68,13 @@ Three phases, in order, one implementation plan each. Each phase ends with the p
 
 ### 3.2 Phase 2 — one action host per view
 
-**Hosts.** One host component per entity, each in its entity's folder, each a thin client component that calls the existing action-config hook once with the view's overrides, renders that hook's dialogs once, and provides the result through a context:
+**Hosts.** One host component per entity, each at its module's address (a new file goes where its module will be: owner rule 2026-10-05, applied to customers and meetings 2026-10-07; R2 put the first customers files under `modules/customers/core/`), each a thin client component that calls the existing action-config hook once with the view's overrides, renders that hook's dialogs once, and provides the result through a context:
 
 | Host | Calls | Provides |
 |---|---|---|
-| `MeetingActionsHost` (`shared/entities/meetings/components/meeting-actions-host.tsx`) | `useMeetingActionConfigs(overrides)` | `actions`, `changeOutcome`, `manageParticipants(meetingId)` — the host also owns the one `ManageParticipantsModal` |
+| `MeetingActionsHost` (`shared/modules/meetings/core/components/meeting-actions-host.tsx`) | `useMeetingActionConfigs(overrides)` | `actions`, `changeOutcome`, `manageParticipants(meetingId)` — the host also owns the one `ManageParticipantsModal` |
 | `ProposalActionsHost` (`shared/modules/proposals/core/components/proposal-actions-host.tsx`) | `useProposalActionConfigs(overrides)` | `actions` |
-| `CustomerActionsHost` (`shared/entities/customers/components/customer-actions-host.tsx`) | `useCustomerActionConfigs(overrides)` | `actions` |
+| `CustomerActionsHost` (`shared/modules/customers/core/components/customer-actions-host.tsx`) | `useCustomerActionConfigs(overrides)` | `actions` |
 | `ProjectActionsHost` (`shared/modules/projects/core/components/project-actions-host.tsx`) | `useProjectActionConfigs(overrides)` | `actions` |
 
 Each host exports its reader hook (`useMeetingActionsHost()` …), which throws `"<Card> needs a <Host> above it"` when no host is mounted (R6). Overrides are the hooks' existing entity-taking signatures (`onView(entity)`, `onAssignOwner(entity)` …), so one `actions` array serves every card in the view, as it serves every row in a table.

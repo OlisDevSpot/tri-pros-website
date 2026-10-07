@@ -17,6 +17,7 @@ import { VOIP_CONTACT_FIELD } from '@/shared/entities/voip-contact-fields/lib/co
 import { VOIP_DID } from '@/shared/entities/voip-dids/lib/constants'
 import { VOIP_LINK_TOKEN } from '@/shared/entities/voip-link-tokens/lib/constants'
 import { VOIP_MESSAGE } from '@/shared/entities/voip-messages/lib/constants'
+import { MEETING_MESSAGE } from '@/shared/modules/meetings/messages/lib/constants'
 import { PROJECT } from '@/shared/modules/projects/core/lib/constants'
 import { PROJECT_MEDIA_FILE } from '@/shared/modules/projects/media/lib/constants'
 import { PROPOSAL } from '@/shared/modules/proposals/core/lib/constants'
@@ -39,6 +40,7 @@ export const ENTITY_NAMES = [
   CUSTOMER_LEAD_ATTRIBUTION,
   CUSTOMER_NOTE,
   MEETING,
+  MEETING_MESSAGE,
   PROPOSAL,
   PROPOSAL_MEDIA_FILE,
   PROPOSAL_VIEW,

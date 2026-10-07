@@ -7,7 +7,6 @@ import { scheduleShowParser } from '@/features/schedule-management/constants/que
 import { SCHEDULE_ACTIVITIES_QUERY, SCHEDULE_MEETINGS_QUERY } from '@/features/schedule-management/constants/schedule-queries'
 import { toScheduleWindowHref } from '@/features/schedule-management/lib/to-schedule-window-href'
 import { ScheduleView } from '@/features/schedule-management/ui/views/schedule-view'
-import { LoadingState } from '@/shared/components/states/loading-state'
 import { loadDataViewQueryInput } from '@/shared/dal/server/lib/query/load-data-view-query-input'
 import { protectDashboardPage } from '@/shared/domains/permissions/lib/protect-dashboard-page'
 import { HydrateClient } from '@/trpc/components/hydrate-client'
@@ -42,7 +41,7 @@ export default async function SchedulePage({ searchParams }: Props) {
   }
 
   return (
-    <HydrateClient fallback={<LoadingState title="Loading schedule…" />}>
+    <HydrateClient>
       <ScheduleView />
     </HydrateClient>
   )

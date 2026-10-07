@@ -32,8 +32,8 @@ export function MeetingPanelHeader({ openSection, headerRef, onSelect, onClose, 
               className={cn(
                 'h-11 flex-1 text-xs font-semibold motion-safe:transition-colors',
                 isCurrent
-                  ? 'bg-muted text-foreground hover:bg-muted hover:text-foreground'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                  ? 'bg-tab-active text-foreground shadow-xs hover:bg-tab-active hover:text-foreground'
+                  : 'text-muted-foreground hover:text-foreground',
               )}
               size="sm"
               variant="ghost"

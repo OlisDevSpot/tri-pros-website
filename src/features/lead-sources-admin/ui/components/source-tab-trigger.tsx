@@ -8,14 +8,6 @@ import { cn } from '@/shared/lib/utils'
 type SourceTabTriggerProps = ComponentPropsWithoutRef<typeof TabsTrigger>
 
 export function SourceTabTrigger({ className, ...props }: SourceTabTriggerProps) {
-  return (
-    <TabsTrigger
-      {...props}
-      className={cn(
-        'rounded-none border-b-2 border-transparent bg-transparent px-2 py-3 text-sm font-medium text-muted-foreground shadow-none',
-        'data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none',
-        className,
-      )}
-    />
-  )
+  // The list scrolls sideways, so a tab can't hang past it onto the divider; the list overlaps the divider instead.
+  return <TabsTrigger {...props} className={cn('mb-0', className)} />
 }

@@ -49,6 +49,11 @@ export * from './voip-messages'
 export * from './voip-link-tokens'
 export * from './app-settings'
 
+// visit messages
+export * from './meeting-messages'
+export * from './visit-message-templates'
+export * from './visit-message-pauses'
+
 // voip-campaigns (JustCall dialer)
 export * from './voip-campaigns'
 export * from './voip-contact-fields'

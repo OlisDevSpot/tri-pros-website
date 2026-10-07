@@ -1,6 +1,5 @@
 'use client'
 
-import { motion } from 'motion/react'
 import { useQueryState } from 'nuqs'
 import { useCallback, useState } from 'react'
 
@@ -11,14 +10,12 @@ import { ScheduleActivitiesCalendar } from '@/features/schedule-management/ui/co
 import { ScheduleMeetingsCalendar } from '@/features/schedule-management/ui/components/schedule-meetings-calendar'
 import { ScheduleShowToggle } from '@/features/schedule-management/ui/components/schedule-show-toggle'
 import { DataViewBoundary } from '@/shared/components/data-view-boundary'
-import { useIsHydrating } from '@/shared/hooks/use-is-hydrating'
 
 export function ScheduleView() {
   const [show, setShow] = useQueryState('show', scheduleShowParser)
   const [showSaturday, setShowSaturday] = useState(false)
   const [activityFormOpen, setActivityFormOpen] = useState(false)
   const { isHighlighted, highlightRef } = useScheduleHighlight()
-  const isHydrating = useIsHydrating()
 
   const handleToggleSaturday = useCallback(() => setShowSaturday(prev => !prev), [])
   const handleNewActivity = useCallback(() => setActivityFormOpen(true), [])
@@ -26,13 +23,7 @@ export function ScheduleView() {
   const showToggle = <ScheduleShowToggle value={show} onChange={next => void setShow(next)} />
 
   return (
-    <motion.div
-      initial={isHydrating ? false : { opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 30 }}
-      transition={{ delay: 0.25, duration: 0.25 }}
-      className="w-full h-full flex flex-col overflow-hidden"
-    >
+    <div className="w-full h-full flex flex-col overflow-hidden">
       {show === 'activities'
         ? (
             <DataViewBoundary>
@@ -58,6 +49,6 @@ export function ScheduleView() {
           )}
 
       <ActivityForm open={activityFormOpen} onOpenChange={setActivityFormOpen} />
-    </motion.div>
+    </div>
   )
 }

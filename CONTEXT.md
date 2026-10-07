@@ -9,7 +9,7 @@ A **customer** moves through two distinct phases. Different systems own each pha
 
 ### Phase 1 — Lead-to-meeting (conversion)
 
-From "we got a phone number from a marketing campaign" to "this person has a meeting booked." Owned by a **lead-conversion provider** (currently CloudTalk; pluggable). Our app does NOT place these calls or send these texts — the provider does. Our app's role is:
+From "we got a phone number from a marketing campaign" to "this person has a meeting booked." Owned by a **lead-conversion provider** (currently JustCall; pluggable). Our app does NOT place these calls or send these texts — the provider does. Our app's role is:
 
 - Push: enroll / unenroll a customer in a campaign, configure which `lead_source` routes to which provider campaign.
 - Pull: parse the provider's webhooks for 2-way sync (status changes, DNC events, graduation when a meeting is booked).
@@ -24,9 +24,22 @@ The boundary is sharp. voip-in-house does **not** handle lead-conversion outreac
 ## VoIP terms
 
 - **voip-in-house** — Twilio-backed in-app communication layer for Phase 2. Owns `voip_*` tables. Clean DIDs assigned 1:1 to humans.
-- **voip-campaigns** — Integration surface to whichever lead-conversion provider is wired in (currently CloudTalk). Owns the config + webhook parsing, NOT the call/SMS data.
-- **DID** — A phone number provisioned on Twilio. In voip-in-house, every DID is `agent_personal` (sticky to a sales agent), `office_worker` (sticky to a non-sales user), or `main_line` (the inbound reception number).
-- **Lead-conversion provider** — The external system that handles Phase 1. Today: CloudTalk. Pluggable.
+- **voip-campaigns** — Integration surface to whichever lead-conversion provider is wired in (currently JustCall). Owns the config + webhook parsing, NOT the call/SMS data.
+- **DID** — A phone number provisioned on Twilio. A DID is assigned to a user (sticky to that person), or is the one **main line** (`voip_dids.is_main_line`).
+- **Lead-conversion provider** — The external system that handles Phase 1. Today: JustCall. Pluggable.
+
+## Visit messages
+
+- **Main line** — The one company DID that sends visit messages and receives their replies. Never "company line".
+- **Visit message** — A text or email Tri Pros sends about a meeting, or a homeowner's reply to one (`meeting_messages`). The kinds: **visit summary** (sent by a person), **day-before reminder** and **rep confirmation** (automatic), **confirmation reply** (the thank-you after a YES), **visit cancellation** (the email that removes a calendar entry), **homeowner reply** (inbound).
+- **Sequence** — The ordered visit messages a meeting can get: visit summary → day-before reminder → rep confirmation. The confirmation reply and the visit cancellation are reactions, not steps.
+- **Visit message plan** — Each sequence step's state for one meeting, computed from its visit messages, the rules, pauses and the current time (`planVisitMessages`). The scheduled runs send exactly the steps it marks due.
+- **Visit message template** — The wording of one visit text, with `{{tokens}}`. **Default** is the wording in code; **edited** is a super-admin's saved wording.
+- **Skip** — A person stops one automatic text for one meeting time. **Unskip** undoes it before the text's time.
+- **Paused** — A super-admin stopped one automatic kind for every meeting until it is resumed.
+- **Confirmation track** — The three confirmations of one visit: the office's (a visit message went out), the homeowner's, and the rep's (a rep confirmation went out for this time). Never "stage", which is a pipeline word.
+- **Homeowner confirmed** — The homeowner said they will be there for this time, by replying YES or on their home visit page (`meetings.homeownerConfirmedAt`, `homeownerConfirmedVia`). Shown to the office; never moves the pipeline. The office still sets **Confirmed**.
+- **Reschedule chain** — A meeting and the meetings it replaced, linked by `meetings.rescheduledFromId` (`getRescheduleChain`). Visit messages are read across it.
 
 ## DNC (Do-Not-Call)
 
@@ -59,7 +72,7 @@ Each business rule behind an analytics number is one named export; change the ru
 | **Not applicable** | Filtering or grouping by closer, outcome or meeting order makes leads not applicable; by outcome or meeting order, sales too — shown as such, never as an unfiltered number | `inapplicableStages` · `src/features/analytics/lib/analytics-rules.ts` |
 | **Unknown city / zip** | Website-intake placeholders count as unknown | `UNKNOWN_PLACE_VALUES` · `src/features/analytics/lib/analytics-rules.ts` |
 | **Bankable** | A project's money is net, at risk (on hold) or cancelled | `projectBankability` · `src/shared/modules/projects/core/lib/bankability.ts` |
-| **Setter** | The appointment setter: the user, often a dispatcher, who booked the meeting. One per meeting; a super-admin can change it. The one term in code, schema, docs and UI; never "closed by", "closer" or "created by" | `meetings.setBy` · picked on the add-meeting form, else the meeting's creator; kept by a duplicate and a reschedule; only super-admins change it |
+| **Setter** | The appointment setter: the user, often a dispatcher, who booked the meeting. One per meeting; a super-admin can change it. The one term in code, schema, docs and UI; never "closed by", "closer" or "created by" | `meetings.setBy` · picked on the add-meeting form, else the meeting's creator; a meeting the system books gets the office account; never empty for new rows (nullable only for rows that predate it); kept by a duplicate and a reschedule; only super-admins change it |
 | **Closer** | Any participant of the meeting (the reps who sit it, never the setter); per-closer totals overlap by design; a meeting (and its sale) with no closer groups under an unassigned row | `MeetingFact.closerIds` · `src/shared/entities/meetings/dal/server/analytics-facts.ts` |
 | **Business month** | Calendar month in Pacific time, never UTC | `businessMonthKey`, `businessMonthWindow` · `src/shared/lib/business-time.ts` |
 | **Spend** | Dollars a lead source cost in one business month, typed in on the Analytics Spend tab; a blank month is "not entered", never $0 | `leadSourceMonthlySpendTable` · `src/shared/db/schema/lead-source-monthly-spend.ts` |

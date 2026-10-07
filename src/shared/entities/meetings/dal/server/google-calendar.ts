@@ -126,8 +126,10 @@ export async function updateMeetingScheduledFor(
   await db.update(meetings)
     .set({
       scheduledFor,
-      // Mirrors meetingCrud's update hook: a moved meeting must be confirmed again; a same-time re-sync keeps it.
+      // Mirrors meetingCrud's update hook: a moved meeting must be confirmed again, by the office and the homeowner; a same-time re-sync keeps it.
       confirmedAt: sql`CASE WHEN ${meetings.scheduledFor} = ${scheduledFor}::timestamptz THEN ${meetings.confirmedAt} ELSE NULL END`,
+      homeownerConfirmedAt: sql`CASE WHEN ${meetings.scheduledFor} = ${scheduledFor}::timestamptz THEN ${meetings.homeownerConfirmedAt} ELSE NULL END`,
+      homeownerConfirmedVia: sql`CASE WHEN ${meetings.scheduledFor} = ${scheduledFor}::timestamptz THEN ${meetings.homeownerConfirmedVia} ELSE NULL END`,
     })
     .where(eq(meetings.id, meetingId))
 }

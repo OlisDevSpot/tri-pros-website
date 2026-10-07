@@ -39,7 +39,7 @@ export function PeriodPicker({ onCustom, onPreset }: Props) {
           {ANALYTICS_PERIODS.map(p => <SelectItem key={p} value={p}>{p === 'custom' ? `${PERIOD_LABELS.custom}…` : PERIOD_LABELS[p]}</SelectItem>)}
         </SelectContent>
       </Select>
-      <ToggleGroup type="single" size="sm" variant="segmented" value={period} onValueChange={choose} aria-label="Period" className="data-[variant=segmented]:border-0 data-[variant=segmented]:bg-transparent data-[variant=segmented]:p-0 data-[variant=segmented]:shadow-none max-xl:hidden">
+      <ToggleGroup type="single" size="sm" variant="segmented" value={period} onValueChange={choose} aria-label="Period" className="max-xl:hidden">
         {ANALYTICS_PERIODS.map(p => <ToggleGroupItem key={p} value={p} className="h-7">{PERIOD_LABELS[p]}</ToggleGroupItem>)}
       </ToggleGroup>
     </>

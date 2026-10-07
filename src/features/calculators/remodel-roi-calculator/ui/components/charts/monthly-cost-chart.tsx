@@ -31,9 +31,9 @@ export function MonthlyCostChart({ projection, lookAhead }: Props) {
     <div className="grid gap-1">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <LegendSwatches config={view === 'trend' ? MONTHLY_TREND_CHART_CONFIG : MONTHLY_BREAKDOWN_CHART_CONFIG} keys={view === 'trend' ? ['monthlyNow', 'monthlyWait'] : breakdownKeys} />
-        <ToggleGroup aria-label="Chart view" onValueChange={value => (value === 'trend' || value === 'breakdown') && setView(value)} type="single" value={view} variant="outline">
-          <ToggleGroupItem className="h-11 flex-none px-3 text-xs" value="trend">Trend</ToggleGroupItem>
-          <ToggleGroupItem className="h-11 flex-none px-3 text-xs" value="breakdown">What makes it up</ToggleGroupItem>
+        <ToggleGroup aria-label="Chart view" onValueChange={value => (value === 'trend' || value === 'breakdown') && setView(value)} type="single" value={view} variant="segmented">
+          <ToggleGroupItem className="h-9.5 px-3 text-xs" value="trend">Trend</ToggleGroupItem>
+          <ToggleGroupItem className="h-9.5 px-3 text-xs" value="breakdown">What makes it up</ToggleGroupItem>
         </ToggleGroup>
       </div>
       {view === 'trend' ? <MonthlyTrendChart lookAhead={lookAhead} projection={projection} /> : <MonthlyBreakdownChart lookAhead={lookAhead} projection={projection} />}

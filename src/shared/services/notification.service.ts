@@ -10,6 +10,7 @@ import { getParticipantsForMeeting } from '@/shared/entities/meetings/dal/server
 import { getByIdWithJoins } from '@/shared/entities/meetings/dal/server/queries'
 import { getUserIdsByEmails } from '@/shared/entities/users/dal/server/queries'
 import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
+import { formatBusinessDayTime } from '@/shared/lib/business-time'
 import { emailService } from '@/shared/services/email.service'
 import { webPushClient } from '@/shared/services/providers/web-push/client'
 
@@ -19,19 +20,6 @@ import { webPushClient } from '@/shared/services/providers/web-push/client'
 function buildCustomerLabel(customer: { name: string | null, address: string | null }): string {
   const name = customer.name ?? 'Unknown customer'
   return customer.address ? `${name}, ${customer.address}` : name
-}
-
-const PT_DATE_FMT: Intl.DateTimeFormatOptions = {
-  weekday: 'short',
-  month: 'short',
-  day: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-  timeZone: 'America/Los_Angeles',
-}
-
-function formatScheduledTime(iso: string): string {
-  return new Date(iso).toLocaleString('en-US', PT_DATE_FMT)
 }
 
 function createNotificationService() {
@@ -147,7 +135,7 @@ function createNotificationService() {
 
       const pushResult = await webPushClient.sendToUsers(params.recipientUserIds, {
         title: `Proposal Viewed | ${params.customerName}`,
-        body: `${sourceLabel} • ${formatScheduledTime(params.viewedAt)}`,
+        body: `${sourceLabel} • ${formatBusinessDayTime(params.viewedAt)}`,
         navigate: ROOTS.dashboard.proposals.byId(params.proposalId),
         urgency: 'high',
       })
@@ -171,7 +159,7 @@ function createNotificationService() {
 
       const navigate = ROOTS.dashboard.scheduleWithMeetingHighlight(meeting.id, meeting.scheduledFor)
       const title = `New Meeting | ${buildCustomerLabel({ name: meeting.customer?.name ?? null, address: meeting.customer?.address ?? null })}`
-      const body = meeting.scheduledFor ? formatScheduledTime(meeting.scheduledFor) : 'Tap to view'
+      const body = meeting.scheduledFor ? formatBusinessDayTime(meeting.scheduledFor) : 'Tap to view'
 
       const result = await webPushClient.sendToUser(params.participantUserId, {
         title,
@@ -211,10 +199,10 @@ function createNotificationService() {
 
       let body: string
       if (params.newScheduledFor && params.oldScheduledFor) {
-        body = `${formatScheduledTime(params.oldScheduledFor)} → ${formatScheduledTime(params.newScheduledFor)}`
+        body = `${formatBusinessDayTime(params.oldScheduledFor)} → ${formatBusinessDayTime(params.newScheduledFor)}`
       }
       else if (params.newScheduledFor) {
-        body = `Now ${formatScheduledTime(params.newScheduledFor)}`
+        body = `Now ${formatBusinessDayTime(params.newScheduledFor)}`
       }
       else {
         body = 'No longer scheduled'

@@ -31,7 +31,7 @@ export function useMeetingsTable(
 ) {
   const trpc = useTRPC()
   const ability = useAbility()
-  const { updateScheduledFor } = useMeetingActions()
+  const { updateScheduledFor, updateSetter } = useMeetingActions()
 
   const [participantsMeetingId, setParticipantsMeetingId] = useState<string | null>(null)
   const [assignProjectMeetingId, setAssignProjectMeetingId] = useState<string | null>(null)
@@ -65,11 +65,13 @@ export function useMeetingsTable(
     onUpdateScheduledFor: (meetingId: string, date: Date) =>
       updateScheduledFor.mutate({ id: meetingId, data: { scheduledFor: date.toISOString() } }),
     onAssignRep: (meetingId: string) => setParticipantsMeetingId(meetingId),
+    onUpdateSetter: (meetingId: string, setBy: string) =>
+      updateSetter.mutate({ id: meetingId, data: { setBy } }),
     canAssignMeeting: ability.can('assign', 'Meeting'),
     onViewProfile: (customerId: string) => {
       openModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props: { customerId } })
     },
-  }) satisfies Omit<MeetingTableMeta, 'rowActions'>, [changeOutcome, updateScheduledFor, ability])
+  }) satisfies Omit<MeetingTableMeta, 'rowActions'>, [changeOutcome, updateScheduledFor, updateSetter, ability])
 
   const table = useEntityTable({
     tableView,

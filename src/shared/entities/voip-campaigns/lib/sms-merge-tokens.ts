@@ -1,3 +1,5 @@
+import type { MergeToken } from '@/shared/services/voip/lib/sms-merge-template'
+
 import { pickPrimaryTrade } from '@/shared/services/voip/campaigns/lib/pick-primary-trade'
 
 // Single source of truth for SMS merge tokens. The authoring chips (client) and
@@ -13,19 +15,9 @@ export interface SmsMergeVars {
   interestedTradesRaw: string[]
 }
 
-export interface SmsMergeToken {
-  /** The literal token as typed in a body, e.g. "first_name" (no braces). */
-  token: string
-  /** Human label for the chip, e.g. "First name". */
-  label: string
-  /** Example value shown in tooltips/preview, e.g. "Maria". */
-  sample: string
-  resolve: (vars: SmsMergeVars) => string
-}
-
 const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? ''
 
-export const SMS_MERGE_TOKENS: readonly SmsMergeToken[] = [
+export const SMS_MERGE_TOKENS: readonly MergeToken<SmsMergeVars>[] = [
   { token: 'first_name', label: 'First name', sample: 'Maria', resolve: v => firstName(v.name) },
   { token: 'full_name', label: 'Full name', sample: 'Maria Lopez', resolve: v => v.name },
   { token: 'city', label: 'City', sample: 'Pasadena', resolve: v => v.city },

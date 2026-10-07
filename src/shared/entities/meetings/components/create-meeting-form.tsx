@@ -61,7 +61,7 @@ export function CreateMeetingForm({
   const { data: session } = useSession()
   const selfId = session?.user.id ?? null
   const selfName = session?.user.name ?? null
-  const [setBy, setSetBy] = useState<string | null | undefined>(undefined)
+  const [setBy, setSetBy] = useState<string | undefined>(undefined)
 
   const isProjectType = meetingType === 'Project'
 

@@ -54,6 +54,7 @@ export type MeetingListRow = Meeting & {
   ownerName: string | null
   ownerImage: string | null
   setterName: string | null
+  setterImage: string | null
   proposalCount: number
   hasSentProposal: boolean
   hasApprovedProposal: boolean
@@ -111,6 +112,7 @@ export async function listMeetings(
           ownerName: user.name,
           ownerImage: user.image,
           setterName: setterUser.name,
+          setterImage: setterUser.image,
           proposalCount: sql<number>`(SELECT count(*) FROM proposals p WHERE p.meeting_id = ${meetings.id})`.as('proposal_count'),
           hasSentProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'sent')`.as('has_sent_proposal'),
           hasApprovedProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'approved')`.as('has_approved_proposal'),
@@ -250,9 +252,13 @@ export async function getByIdWithJoins(
 }
 
 /** Unscoped — only for entity hooks that already run behind a scope-checked write. */
-export async function getMeetingSchedule(id: string): Promise<Pick<Meeting, 'scheduledFor' | 'confirmedAt'> | undefined> {
+export async function getMeetingSchedule(id: string): Promise<Pick<Meeting, 'scheduledFor' | 'confirmedAt' | 'homeownerConfirmedAt'> | undefined> {
   const [row] = await db
-    .select({ scheduledFor: meetings.scheduledFor, confirmedAt: meetings.confirmedAt })
+    .select({
+      scheduledFor: meetings.scheduledFor,
+      confirmedAt: meetings.confirmedAt,
+      homeownerConfirmedAt: meetings.homeownerConfirmedAt,
+    })
     .from(meetings)
     .where(eq(meetings.id, id))
     .limit(1)
@@ -275,4 +281,39 @@ export async function listMeetingsForProject(
     const { meetings: rows } = await getMeetingsWithProposals(where)
     return rows
   })
+}
+
+/**
+ * A meeting and the meetings it replaced, oldest first. `ctx.scope` gates the meeting asked for;
+ * the ones it replaced come with it, because they are the same visit.
+ */
+export async function getRescheduleChain(
+  ctx: ScopedContext,
+  input: { meetingId: string },
+): Promise<DalReturn<string[]>> {
+  return dalDbOperation(async () => {
+    const rows = (await db.execute(sql`
+      WITH RECURSIVE chain AS (
+        SELECT ${meetings.id} AS id, ${meetings.rescheduledFromId} AS rescheduled_from_id, 0 AS depth
+        FROM ${meetings}
+        WHERE ${and(eq(meetings.id, input.meetingId), ctx.scope ?? undefined)}
+        UNION ALL
+        SELECT prior.id, prior.rescheduled_from_id, chain.depth + 1
+        FROM meetings prior
+        JOIN chain ON prior.id = chain.rescheduled_from_id
+        WHERE chain.depth < 50
+      )
+      SELECT id FROM chain ORDER BY depth DESC
+    `)).rows as { id: string }[]
+    return rows.map(row => row.id)
+  })
+}
+
+export async function getRescheduleSuccessorId(meetingId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ id: meetings.id })
+    .from(meetings)
+    .where(eq(meetings.rescheduledFromId, meetingId))
+    .limit(1)
+  return row?.id ?? null
 }

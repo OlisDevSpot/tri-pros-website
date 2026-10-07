@@ -64,6 +64,7 @@ The **birthing meeting** is the lead meeting whose approved initial-sale created
 | R16 | R15 holds for **every** meeting, project meetings included: at most one approved proposal per meeting, any kind; a second scope at the same visit amends. Replaces the "one approved initial-sale per meeting" index. | 2026-10-02 (Q3) |
 | R15 | **One agreement per sitting.** A second sale in the same sitting is never approved alongside the first; it **amends** the existing agreement (duplicate → decline the existing → approve the new, or similar). | 2026-10-02 |
 | R29 | **Slice 1 carries only safe refusals:** a rule lands there only if no legitimate caller does the refused thing today, or the user keeps a way round. A real contract signature is never refused. P7, J3 and the full status graph wait for slice 3, because each would remove today's only way to correct a mistaken approval before revert approval (R27) exists. | 2026-10-05 |
+| R30 | **G4, stamping the approval time (slice 1):** a system stamp (the Zoho signature path) fills an empty `approvedAt`, and the contract path always sends the signing time; a user-context write never sets or overwrites the stamp. Ruling B of the slice 1 plan's Task 4; the plan keeps both variants. | 2026-10-06 |
 
 ## 3. Invariants (what must always be true)
 

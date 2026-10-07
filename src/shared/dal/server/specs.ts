@@ -11,6 +11,7 @@ import { voipContactFieldServerSpec } from '@/shared/entities/voip-contact-field
 import { voipDidServerSpec } from '@/shared/entities/voip-dids/lib/server-spec'
 import { voipLinkTokenServerSpec } from '@/shared/entities/voip-link-tokens/lib/server-spec'
 import { voipMessageServerSpec } from '@/shared/entities/voip-messages/lib/server-spec'
+import { meetingMessageServerSpec } from '@/shared/modules/meetings/messages/server-spec'
 import { projectServerSpec } from '@/shared/modules/projects/core/server-spec'
 import { projectMediaServerSpec } from '@/shared/modules/projects/media/server-spec'
 import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
@@ -27,6 +28,7 @@ export const SERVER_SPECS = [
   customerProfileServerSpec,
   customerServerSpec,
   leadSourceServerSpec,
+  meetingMessageServerSpec,
   meetingServerSpec,
   projectMediaServerSpec,
   projectServerSpec,

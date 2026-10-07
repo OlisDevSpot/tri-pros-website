@@ -178,3 +178,7 @@ export function canRescheduleFromOutcome(outcome: MeetingOutcome): boolean {
 
 /** UI reason shown when a meeting can't be rescheduled because it already happened. */
 export const CANNOT_RESCHEDULE_REASON = 'This meeting already happened — book a new meeting instead of rescheduling.'
+
+/** Every way a homeowner can confirm a visit themselves. The office's own confirmation is `confirmedAt`. */
+export const homeownerConfirmationOptions = ['sms_reply', 'in_app'] as const
+export type HomeownerConfirmation = (typeof homeownerConfirmationOptions)[number]

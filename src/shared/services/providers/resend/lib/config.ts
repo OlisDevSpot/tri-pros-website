@@ -8,12 +8,15 @@ import { createProviderConfig } from '@/shared/config/create-provider-config'
  */
 export const resendEnvFragment = z.object({
   RESEND_API_KEY: z.string().optional(),
+  // Outside production every email is rerouted to this inbox. server-env refuses it in production.
+  EMAIL_DEV_OVERRIDE: z.email().optional(),
 })
 
 export type ParsedResendEnv = z.infer<typeof resendEnvFragment>
 
 export interface ResendRuntimeConfig {
   apiKey: string
+  devRecipientOverride: string | undefined
 }
 
 const helpers = createProviderConfig({
@@ -22,6 +25,7 @@ const helpers = createProviderConfig({
   requiredKeys: ['RESEND_API_KEY'],
   toConfig: (parsed): ResendRuntimeConfig => ({
     apiKey: parsed.RESEND_API_KEY!,
+    devRecipientOverride: parsed.EMAIL_DEV_OVERRIDE,
   }),
 })
 

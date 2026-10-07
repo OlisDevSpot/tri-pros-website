@@ -4,11 +4,14 @@ import type { CalendarViewType } from '@/shared/constants/enums'
 
 import { PlusIcon, SettingsIcon } from 'lucide-react'
 
+import { CALENDAR_VIEW_LABELS } from '@/features/schedule-management/constants/calendar-view-labels'
 import { SyncStatusBadge } from '@/features/schedule-management/ui/components/sync-status-badge'
 import { Button } from '@/shared/components/ui/button'
 import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import { Separator } from '@/shared/components/ui/separator'
+import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-group'
+import { calendarViewTypes } from '@/shared/constants/enums'
 
 interface ScheduleControlsBarProps {
   calendarView: CalendarViewType
@@ -47,32 +50,26 @@ export function ScheduleControlsBar({
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               View
             </p>
-            <div className="flex rounded-md border">
-              <Button
-                variant={calendarView === 'today' ? 'default' : 'ghost'}
-                size="sm"
-                className="h-8 flex-1 rounded-r-none"
-                onClick={() => onCalendarViewChange('today')}
-              >
-                Day
-              </Button>
-              <Button
-                variant={calendarView === 'week' ? 'default' : 'ghost'}
-                size="sm"
-                className="h-8 flex-1 rounded-none border-x"
-                onClick={() => onCalendarViewChange('week')}
-              >
-                Week
-              </Button>
-              <Button
-                variant={calendarView === 'month' ? 'default' : 'ghost'}
-                size="sm"
-                className="h-8 flex-1 rounded-l-none"
-                onClick={() => onCalendarViewChange('month')}
-              >
-                Month
-              </Button>
-            </div>
+            <ToggleGroup
+              type="single"
+              variant="segmented"
+              size="sm"
+              value={calendarView}
+              onValueChange={(next) => {
+                const view = calendarViewTypes.find(candidate => candidate === next)
+                if (view) {
+                  onCalendarViewChange(view)
+                }
+              }}
+              aria-label="View"
+              className="w-full"
+            >
+              {calendarViewTypes.map(view => (
+                <ToggleGroupItem key={view} value={view} className="h-8 flex-1">
+                  {CALENDAR_VIEW_LABELS[view]}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
           </div>
 
           {calendarView === 'week' && (

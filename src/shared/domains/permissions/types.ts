@@ -12,6 +12,8 @@ export interface SubjectsWithoutSpec {
   Calendar: 'manage'
   CustomerPipeline: 'read'
   LeadsPool: 'read'
+  /** Feature gate: see and send a meeting's visit messages. */
+  VisitMessages: 'read'
   User: 'read'
   Activity: CrudAction
 }

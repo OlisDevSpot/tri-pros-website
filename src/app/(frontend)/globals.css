@@ -53,7 +53,17 @@
   --success-foreground: oklch(1 0 0);
   --warning: var(--status-pending-fg);
   --warning-foreground: oklch(1 0 0);
-  --input: oklch(0.6 0.03 255);
+  /* Checkbox, radio and switch edges: a small mark whose edge is its whole shape keeps a 3:1 boundary. */
+  --indicator: oklch(0.6 0.03 255);
+  /* How many edges a field's boundary sits off its own fill. Dark needs fewer: the same gap reads brighter there. */
+  --control-edge: 4.3;
+  /* A button or track edge is softer than a field's: its lighter fill and shadow already lift it, and at a field's
+     2:1 a toolbar of them reads as a row of boxes. Dark's fill steps further off the surface, so its edge needs less. */
+  --control-border-edge: 2.2;
+  /* The pale dark-mode blue barely tints a dark fill, so dark mixes in more of it. */
+  --control-selected-mix: 14%;
+  /* How many rungs an active tab climbs above its surface: one rung reads as a smudge on light's short steps. */
+  --tab-lift: 2;
   --ring: oklch(0.575 0.15 238);
   --sidebar: oklch(0.22 0.06 262);
   --sidebar-foreground: oklch(0.86 0.02 250);
@@ -185,7 +195,12 @@
   --accent: #03afed;
   --accent-foreground: #ffffff;
   --border: #ddd4c4; /* hairline */
-  --input: #ddd4c4;
+  /* Fields sink into the warm panel like the app's: a hairline alone (1.3:1) loses them, the old 3:1 boxes them in. */
+  --input: #c6bba9; /* field edge, about 1.8:1 on the page and 1.65:1 on a panel */
+  /* A checkbox or radio is all edge, so it keeps 3:1 on the panel. */
+  --indicator: #928674;
+  --control-border: var(--border);
+  --control-selected: var(--row-selected);
   /* Marketing fields keep their transparent fill; the app's white field fill is a Command Desk role. */
   --input-background: transparent;
   /* The app derives these from its ramp on :root/.dark; this palette is literal, so it derives them from its own tokens here, or a dark page would lend them its values. */
@@ -371,7 +386,11 @@
   --success-foreground: oklch(0.19 0.045 258);
   --warning: var(--status-pending-fg);
   --warning-foreground: oklch(0.19 0.045 258);
-  --input: oklch(0.62 0.04 256);
+  --indicator: oklch(0.62 0.04 256);
+  --control-edge: 2.85;
+  --control-border-edge: 1.2;
+  --control-selected-mix: 24%;
+  --tab-lift: 1.5;
   --ring: oklch(0.78 0.12 228);
   /* The dark rail is rung 2, a step above a section; its active pill sits 2.2 steps above it. */
   --sidebar: oklch(calc(var(--canvas-l) + var(--lift) + 2 * var(--step)) var(--surface-c) var(--surface-h));
@@ -505,21 +524,46 @@
      Its hover has to be solid: the wash over it would replace the fill. */
   --control: var(--muted);
   --control-hover: color-mix(in oklab, var(--foreground) 6%, var(--control));
+  /* A field is filled with the rung it sits on, so it sinks into the surface and its edge alone marks it. An outline
+     button is filled a rung up, so its softer edge comes off that rung and it stands on the surface. Segmented tracks
+     and button capsules take the button's edge: they are controls, not something you type into. */
+  --input: oklch(
+    calc(var(--here-l) + var(--edge-dir) * var(--control-edge) * var(--edge)) var(--surface-c) var(--surface-h)
+  );
+  --control-border: oklch(
+    calc(
+        var(--canvas-l) + min(var(--depth) + 1, 1) * var(--lift) + (var(--depth) + 1) * var(--step) + var(--edge-dir) *
+          var(--control-border-edge) * var(--edge)
+      )
+      var(--surface-c) var(--surface-h)
+  );
+  /* A control that is on (filters applied, a pressed toggle) takes the selection's blue, not a darker edge. */
+  --control-selected: color-mix(in oklab, var(--primary) var(--control-selected-mix), var(--control));
   /* Pressed: a wash over transparent controls, and a solid step past hover for rows, whose cells inherit the fill. */
   --press: color-mix(in oklab, var(--foreground) 10%, transparent);
   --row-press: color-mix(in oklab, var(--foreground) 6%, var(--row-hover));
   --skeleton: var(--border);
   --skeleton-soft: oklch(calc(var(--here-l) + var(--edge-dir) * 0.75 * var(--edge)) var(--surface-c) var(--surface-h));
-  /* A segmented track and its active tab. The tab sits on the top rung or two rungs up, whichever is higher; near
-     the top of light mode that lands on white, so the track gives way a rung below the tab instead of matching it. */
+  /* A segmented track and its active tab straddle the surface they sit on: the track sinks a rung below it, so the
+     items that are off read dimmer than the surface, and the active tab climbs --tab-lift rungs above it. Near the
+     top of light mode the tab stops at white, so the track sinks further to keep the two as far apart. */
   --tab-active: oklch(
-    min(1, calc(var(--canvas-l) + var(--lift) + max(4, var(--depth) + 2) * var(--step))) var(--surface-c)
-      var(--surface-h)
+    min(
+        1,
+        calc(var(--canvas-l) + min(var(--depth) + 1, 1) * var(--lift) + (var(--depth) + var(--tab-lift)) * var(--step))
+      )
+      var(--surface-c) var(--surface-h)
   );
   --tab-track: oklch(
     min(
-        calc(var(--canvas-l) + var(--lift) + (var(--depth) + 1) * var(--step)),
-        calc(min(1, var(--canvas-l) + var(--lift) + max(4, var(--depth) + 2) * var(--step)) - var(--step))
+        calc(var(--canvas-l) + min(max(var(--depth) - 1, 0), 1) * var(--lift) + (var(--depth) - 1) * var(--step)),
+        calc(
+          min(
+              1,
+              var(--canvas-l) + min(var(--depth) + 1, 1) * var(--lift) + (var(--depth) + var(--tab-lift)) * var(--step)
+            ) -
+            (var(--tab-lift) + 1) * var(--step)
+        )
       )
       var(--surface-c) var(--surface-h)
   );
@@ -565,6 +609,9 @@
   --axis: inherit;
   --control: inherit;
   --control-hover: inherit;
+  --control-border: inherit;
+  --control-selected: inherit;
+  --input: inherit;
   --input-background: inherit;
   --row-hover: inherit;
   --row-selected: inherit;
@@ -655,6 +702,9 @@
   --color-axis: var(--axis);
   --color-control: var(--control);
   --color-control-hover: var(--control-hover);
+  --color-control-border: var(--control-border);
+  --color-control-selected: var(--control-selected);
+  --color-indicator: var(--indicator);
   --color-input-background: var(--input-background);
   --color-destructive-text: var(--destructive-text);
   --color-sidebar-muted: var(--sidebar-muted);

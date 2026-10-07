@@ -10,9 +10,9 @@ import { SetterPicker } from '@/shared/entities/meetings/components/setter-picke
 import { useTRPC } from '@/trpc/helpers'
 
 interface SetterSelectProps {
-  /** `undefined` = not picked yet, which means the viewer; `null` = "No setter". */
-  value: string | null | undefined
-  onChange: (userId: string | null) => void
+  /** `undefined` = not picked yet, which means the viewer. */
+  value: string | undefined
+  onChange: (userId: string) => void
   selfId: string | null
   selfName: string | null
 }
@@ -22,13 +22,12 @@ export function SetterSelect({ value, onChange, selfId, selfName }: SetterSelect
   const trpc = useTRPC()
   // Same key as the picker's own read, so the list loads once.
   const setters = useQuery(trpc.meetingsRouter.reads.getInternalUsers.queryOptions({ purpose: 'setter' }))
-  const current = value === undefined ? selfId : value
-  const label = current === null
-    ? 'No setter'
-    : setters.data?.find(setter => setter.id === current)?.name ?? (current === selfId ? selfName : null) ?? 'Loading…'
+  const current = value ?? selfId
+  const label = setters.data?.find(setter => setter.id === current)?.name ?? (current === selfId ? selfName : null) ?? 'Loading…'
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    // The add-meeting form sits in a dialog, whose scroll lock swallows wheel events over a non-modal popover.
+    <Popover open={open} onOpenChange={setOpen} modal>
       <PopoverTrigger asChild>
         <Button type="button" variant="outline" className="w-full justify-between font-normal">
           <span className="truncate">{label}</span>
@@ -42,7 +41,7 @@ export function SetterSelect({ value, onChange, selfId, selfName }: SetterSelect
         className="w-[min(420px,calc(100vw-2rem))] p-0"
       >
         <SetterPicker
-          value={current}
+          value={current ?? undefined}
           onPick={(userId) => {
             onChange(userId)
             setOpen(false)

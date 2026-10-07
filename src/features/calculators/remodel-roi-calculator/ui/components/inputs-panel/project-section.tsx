@@ -37,8 +37,8 @@ export function ProjectSection({ projection, config }: Props) {
           <FormItem className="gap-2">
             <FormLabel className="text-xs font-bold">How it's paid</FormLabel>
             <FormControl>
-              <ToggleGroup className="w-full" onValueChange={value => value && field.onChange(value as PaymentMode)} type="single" value={field.value} variant="outline">
-                {PAYMENT_MODES.map(mode => <ToggleGroupItem className="h-11 flex-1" key={mode} value={mode}>{PAYMENT_MODE_LABELS[mode]}</ToggleGroupItem>)}
+              <ToggleGroup className="w-full" onValueChange={value => value && field.onChange(value as PaymentMode)} type="single" value={field.value} variant="segmented">
+                {PAYMENT_MODES.map(mode => <ToggleGroupItem className="h-9.5 flex-1" key={mode} value={mode}>{PAYMENT_MODE_LABELS[mode]}</ToggleGroupItem>)}
               </ToggleGroup>
             </FormControl>
           </FormItem>
@@ -57,9 +57,9 @@ export function ProjectSection({ projection, config }: Props) {
               <FormItem className="gap-2">
                 <FormLabel className="text-xs font-bold">Term</FormLabel>
                 <FormControl>
-                  <ToggleGroup className="w-full" onValueChange={value => value && field.onChange(Number(value) as TermYears)} type="single" value={String(field.value)} variant="outline">
+                  <ToggleGroup className="w-full" onValueChange={value => value && field.onChange(Number(value) as TermYears)} type="single" value={String(field.value)} variant="segmented">
                     {TERM_YEARS.map(years => (
-                      <ToggleGroupItem className="h-11 flex-1" key={years} value={String(years)}>
+                      <ToggleGroupItem className="h-9.5 flex-1" key={years} value={String(years)}>
                         {years}
                         {' '}
                         yrs

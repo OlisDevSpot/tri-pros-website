@@ -110,6 +110,9 @@ const APP_ROOTS = {
     proposals: () => '/proposal-flow',
     proposalReview: (id: string, token?: string) =>
       `${APP_ROOTS.public.proposals()}/proposal/${id}${token ? `?token=${token}` : ''}`,
+    homeVisits: () => '/home-visits',
+    homeVisit: (meetingId: string, token?: string) =>
+      `${APP_ROOTS.public.homeVisits()}/${meetingId}${token ? `?token=${token}` : ''}`,
   },
   funnels: {
     // Internal rewrite TARGET — middleware rewrites a funnel host to this path.
