@@ -14,6 +14,8 @@ import { resolveMeetingOwnerId } from '@/shared/entities/meetings/lib/resolve-ow
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 import { getUserRoleById } from '@/shared/entities/users/dal/server/queries'
 import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
+import { generateToken } from '@/shared/lib/generate-token'
+import { confirmationsClearedByMove } from '@/shared/modules/meetings/core/lib/confirmation-reset'
 import { deleteMeetingEventJob } from '@/shared/services/providers/upstash/jobs/delete-meeting-event'
 import { graduateFromCampaignJob } from '@/shared/services/providers/upstash/jobs/graduate-from-campaign'
 import { metaCapiEventJob } from '@/shared/services/providers/upstash/jobs/meta-capi-event'
@@ -49,10 +51,12 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
         // system-made replacements) have no session, so the office account stands in as their setter.
         const setBy = input.setBy ?? ctx.session?.user.id ?? await getSystemOwnerId()
         await assertSetterIsInternal(setBy)
+        // The token is generated above the session check: intake and reschedule create with no session.
+        const withToken = { ...input, setBy, shareToken: generateToken() }
         if (!ctx.session) {
-          return { ...input, setBy }
+          return withToken
         }
-        return { ...input, setBy, ownerId: await resolveMeetingOwnerId(ctx) }
+        return { ...withToken, ownerId: await resolveMeetingOwnerId(ctx) }
       },
       // row.ownerId, not ctx.session.user.id, so the participant follows the actual owner on the
       // SYSTEM_CONTEXT path too. dispatchOrThrow: a missed enqueue must fail the mutation, not drop the event.
@@ -99,12 +103,10 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
             next = { ...next, pipeline }
           }
         }
-        // A confirmation holds for one appointment time; a moved meeting must be confirmed again.
-        // Compared against the stored time so a same-time re-save (e.g. GCal sync) keeps it.
-        if (data.scheduledFor && !('confirmedAt' in data)) {
+        if (data.scheduledFor) {
           const current = await getMeetingSchedule(id)
-          if (current?.confirmedAt && new Date(current.scheduledFor).getTime() !== new Date(data.scheduledFor).getTime()) {
-            next = { ...next, confirmedAt: null }
+          if (current) {
+            next = { ...next, ...confirmationsClearedByMove(current, data) }
           }
         }
         return next
@@ -171,6 +173,11 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
       'updatedAt',
       'meetingOutcome',
       'confirmedAt',
+      'homeownerConfirmedAt',
+      'homeownerConfirmedVia',
+      'newTimeRequestedAt',
+      'shareToken',
+      'rescheduledFromId',
       'pipeline',
       'flowStateJSON',
       'agentNotes',

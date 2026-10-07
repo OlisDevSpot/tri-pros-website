@@ -16,6 +16,7 @@ import { ROOTS } from '@/shared/config/roots'
 import { businessDateTime, formatBusinessClock, formatBusinessDay, formatBusinessDayTime } from '@/shared/lib/business-time'
 import { buildIcs } from '@/shared/modules/meetings/messages/lib/build-ics'
 import { formatArrivalWindow } from '@/shared/modules/meetings/core/lib/arrival-window'
+import { confirmationsClearedByMove } from '@/shared/modules/meetings/core/lib/confirmation-reset'
 import { companyInfo } from '@/shared/constants/company'
 import { visitMessageTemplateKeys } from '@/shared/modules/meetings/messages/constants/kinds'
 import { VISIT_MESSAGE_TEMPLATE_DEFAULTS } from '@/shared/modules/meetings/messages/constants/templates'
@@ -410,5 +411,16 @@ console.log('10. Run time ✓')
   assert.equal(shouldSendVisitCancellation({ chainMessages: [fact('visit_summary', { channel: 'email', forScheduledFor: OLD_VISIT })], hasSuccessor: false }), true, 'an invite sent before a reschedule is still on their calendar')
 }
 console.log('11. Cancellation rule ✓')
+
+{
+  const confirmed = { scheduledFor: VISIT_AS_POSTGRES, confirmedAt: '2026-10-08T01:00:00.000Z', homeownerConfirmedAt: '2026-10-08T02:00:00.000Z' }
+  assert.deepEqual(confirmationsClearedByMove(confirmed, { scheduledFor: OLD_VISIT }), { confirmedAt: null, homeownerConfirmedAt: null, homeownerConfirmedVia: null }, 'a moved time clears both confirmations')
+  assert.deepEqual(confirmationsClearedByMove(confirmed, { scheduledFor: VISIT }), {}, 'a same-time re-save in another spelling keeps them')
+  assert.deepEqual(confirmationsClearedByMove(confirmed, {}), {}, 'a patch that does not touch the time clears nothing')
+  assert.deepEqual(confirmationsClearedByMove({ ...confirmed, confirmedAt: null }, { scheduledFor: OLD_VISIT }), { homeownerConfirmedAt: null, homeownerConfirmedVia: null }, 'only what was set')
+  assert.deepEqual(confirmationsClearedByMove({ ...confirmed, homeownerConfirmedAt: null }, { scheduledFor: OLD_VISIT }), { confirmedAt: null })
+  assert.deepEqual(confirmationsClearedByMove(confirmed, { scheduledFor: OLD_VISIT, confirmedAt: '2026-10-08T03:00:00.000Z' }), { homeownerConfirmedAt: null, homeownerConfirmedVia: null }, 'a patch that moves the time and confirms it keeps its own confirmation')
+}
+console.log('12. Confirmations hold for one time ✓')
 
 console.log('✅ verify-visit-messages passed')
