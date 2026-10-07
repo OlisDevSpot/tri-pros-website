@@ -6,6 +6,7 @@ import type { TradeSelection } from '@/shared/entities/meetings/schemas'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { FolderOpenIcon } from 'lucide-react'
 import { useState } from 'react'
+import { toast } from 'sonner'
 
 import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { Button } from '@/shared/components/ui/button'
@@ -18,10 +19,14 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select'
 import { creatableMeetingTypes } from '@/shared/constants/enums/meetings'
+import { useSession } from '@/shared/domains/auth/client'
+import { useAbility } from '@/shared/domains/permissions/client'
+import { SET_BY_NOT_INTERNAL } from '@/shared/entities/meetings/constants/set-by-not-internal'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
 
 import { MeetingScopesPicker } from './meeting-scopes-picker'
+import { SetterSelect } from './setter-select'
 
 interface CreateMeetingFormProps {
   customerId: string
@@ -52,6 +57,11 @@ export function CreateMeetingForm({
   const [scheduledFor, setScheduledFor] = useState<Date | undefined>(initialValues?.scheduledFor)
   const [tradeSelections, setTradeSelections] = useState<TradeSelection[]>(initialValues?.tradeSelections ?? [])
   const [projectId, setProjectId] = useState<string>(initialValues?.projectId ?? '')
+  const canPickSetter = useAbility().can('assign', 'Meeting')
+  const { data: session } = useSession()
+  const selfId = session?.user.id ?? null
+  const selfName = session?.user.name ?? null
+  const [setBy, setSetBy] = useState<string | null | undefined>(undefined)
 
   const isProjectType = meetingType === 'Project'
 
@@ -70,8 +80,10 @@ export function CreateMeetingForm({
         setScheduledFor(undefined)
         setTradeSelections([])
         setProjectId('')
+        setSetBy(undefined)
         onSuccess?.()
       },
+      onError: err => toast.error(err.message === SET_BY_NOT_INTERNAL.reason ? SET_BY_NOT_INTERNAL.message : 'Failed to create meeting'),
     }),
   )
 
@@ -111,6 +123,7 @@ export function CreateMeetingForm({
         customerId,
         meetingType,
         scheduledFor: scheduledFor.toISOString(),
+        setBy,
         flowStateJSON: tradeSelections.length > 0
           ? { tradeSelections }
           : undefined,
@@ -201,6 +214,15 @@ export function CreateMeetingForm({
           placeholder="Pick date & time"
         />
       </div>
+
+      {!isEditMode && (
+        <div className="space-y-2">
+          <Label>Set by</Label>
+          {canPickSetter
+            ? <SetterSelect value={setBy} onChange={setSetBy} selfId={selfId} selfName={selfName} />
+            : <p className="text-sm text-muted-foreground">{`${selfName ?? 'You'} (you)`}</p>}
+        </div>
+      )}
 
       {/* Trade & Scope Selection */}
       <div className="space-y-2">

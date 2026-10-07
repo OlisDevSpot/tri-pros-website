@@ -237,6 +237,12 @@ function EntityActionCustomItem<TEntity>({
   // call stopPropagation on pointer/key events, which prevents Radix's default
   // close-on-pointer-leave / close-on-sibling-hover behavior from firing.
   const [subOpen, setSubOpen] = useState(false)
+  // Stable identity: React 19 re-runs an inline ref on every render, and a background refetch would pull focus back to the input.
+  const focusSearchField = useCallback((node: HTMLDivElement | null) => {
+    if (node) {
+      requestAnimationFrame(() => node.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true }))
+    }
+  }, [])
 
   return (
     <>
@@ -250,7 +256,10 @@ function EntityActionCustomItem<TEntity>({
           {action.label}
         </DropdownMenuSubTrigger>
         <DropdownMenuSubContent
-          className="w-[min(420px,calc(100vw-2rem))] p-0"
+          className="w-[min(420px,calc(100vw-2rem))] max-w-(--radix-dropdown-menu-content-available-width) p-0"
+          collisionPadding={8}
+          // Radix hands focus to the submenu itself; the picker's search field has to hold it instead.
+          ref={focusSearchField}
           onFocusOutside={() => setSubOpen(false)}
           onInteractOutside={() => setSubOpen(false)}
         >

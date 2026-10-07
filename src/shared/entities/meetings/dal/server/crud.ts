@@ -79,7 +79,7 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
     },
     update: {
       async before(data, ctx, { id }) {
-        if ('setBy' in data) {
+        if (data.setBy !== undefined) {
           // Only super-admins change a setter for now; SYSTEM_CONTEXT (`manage all`) may.
           if (ctx.actor.ability.cannot('assign', 'Meeting')) {
             throw new ThrowableDalError({ type: 'forbidden' })
