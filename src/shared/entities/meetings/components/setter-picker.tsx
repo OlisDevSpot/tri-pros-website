@@ -2,7 +2,6 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { CheckIcon } from 'lucide-react'
-import { useState } from 'react'
 
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandList } from '@/shared/components/ui/command'
 import { UserCommandItem } from '@/shared/entities/users/components/user-command-item'
@@ -20,23 +19,14 @@ export function SetterPicker({ value, onPick, disabled = false }: SetterPickerPr
   const trpc = useTRPC()
   const setters = useQuery(trpc.meetingsRouter.reads.getInternalUsers.queryOptions({ purpose: 'setter' }))
 
-  const [highlighted, setHighlighted] = useState<string>()
-
-  // cmdk would highlight the first row on open, and a stray Enter would pick it; start on the current choice instead.
-  const currentSetter = value ? setters.data?.find(setter => setter.id === value) : undefined
-  const currentRowValue = currentSetter && `${currentSetter.name ?? currentSetter.email ?? 'Unknown'} ${currentSetter.email ?? ''}`
-  const ready = currentRowValue !== undefined || value === undefined
+  // The current setter leads the list: cmdk highlights the first row and scrolls the highlighted row into
+  // view, so a current setter further down would open the list scrolled to it, and a stray Enter must not
+  // change anything.
+  const team = setters.data ?? []
+  const ordered = value ? [...team.filter(setter => setter.id === value), ...team.filter(setter => setter.id !== value)] : team
 
   return (
-    <Command
-      className="w-full bg-transparent"
-      value={highlighted ?? currentRowValue}
-      onValueChange={(next) => {
-        if (ready) {
-          setHighlighted(next)
-        }
-      }}
-    >
+    <Command className="w-full bg-transparent">
       <CommandInput
         placeholder="Search team by name or email…"
         autoComplete="off"
@@ -55,7 +45,7 @@ export function SetterPicker({ value, onPick, disabled = false }: SetterPickerPr
               <>
                 <CommandEmpty>{setters.isLoading ? 'Loading team…' : 'No team members match.'}</CommandEmpty>
                 <CommandGroup>
-                  {(setters.data ?? []).map(setter => (
+                  {ordered.map(setter => (
                     <UserCommandItem
                       key={setter.id}
                       user={setter}

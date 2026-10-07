@@ -54,6 +54,7 @@ export type MeetingListRow = Meeting & {
   ownerName: string | null
   ownerImage: string | null
   setterName: string | null
+  setterImage: string | null
   proposalCount: number
   hasSentProposal: boolean
   hasApprovedProposal: boolean
@@ -111,6 +112,7 @@ export async function listMeetings(
           ownerName: user.name,
           ownerImage: user.image,
           setterName: setterUser.name,
+          setterImage: setterUser.image,
           proposalCount: sql<number>`(SELECT count(*) FROM proposals p WHERE p.meeting_id = ${meetings.id})`.as('proposal_count'),
           hasSentProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'sent')`.as('has_sent_proposal'),
           hasApprovedProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'approved')`.as('has_approved_proposal'),

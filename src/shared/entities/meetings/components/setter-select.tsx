@@ -26,7 +26,8 @@ export function SetterSelect({ value, onChange, selfId, selfName }: SetterSelect
   const label = setters.data?.find(setter => setter.id === current)?.name ?? (current === selfId ? selfName : null) ?? 'Loading…'
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    // The add-meeting form sits in a dialog, whose scroll lock swallows wheel events over a non-modal popover.
+    <Popover open={open} onOpenChange={setOpen} modal>
       <PopoverTrigger asChild>
         <Button type="button" variant="outline" className="w-full justify-between font-normal">
           <span className="truncate">{label}</span>

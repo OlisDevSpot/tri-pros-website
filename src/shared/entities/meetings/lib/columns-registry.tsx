@@ -15,6 +15,7 @@ import { getOutcomeDisabledChecker } from '@/shared/domains/pipelines/lib/get-di
 import { LeadSourceOverviewCard } from '@/shared/entities/lead-sources/components/overview-card'
 import { MeetingCustomerCell } from '@/shared/entities/meetings/components/meeting-customer-cell'
 import { ParticipantPicker, ReadOnlyParticipantSummary } from '@/shared/entities/meetings/components/participant-picker'
+import { SetterCell } from '@/shared/entities/meetings/components/setter-cell'
 import { MEETING_OUTCOME_COLORS, MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
 import { formatDateCell } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
@@ -26,6 +27,7 @@ export interface MeetingTableMeta extends EntityTableMeta<MeetingRow> {
   onUpdateOutcome?: (meetingId: string, outcome: MeetingOutcome) => void
   onUpdateScheduledFor?: (meetingId: string, date: Date) => void
   onAssignRep?: (meetingId: string, currentOwnerId: string) => void
+  onUpdateSetter?: (meetingId: string, setBy: string) => void
   canAssignMeeting?: boolean
   onViewProfile?: (customerId: string) => void
 }
@@ -111,13 +113,28 @@ export const MEETING_COLUMNS = {
   },
   setter: {
     label: 'Setter',
+    size: 190,
     sort: 'setter',
     defaultHidden: true,
     permission: ['assign', 'Meeting'],
     accessorFn: row => row.setterName ?? '',
-    cell: ({ row }) => row.original.setterName
-      ? <span className="block truncate text-sm">{row.original.setterName}</span>
-      : <span className="text-muted-foreground">—</span>,
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as MeetingTableMeta | undefined
+      const onUpdateSetter = meta?.onUpdateSetter
+      if (!meta?.canAssignMeeting || !onUpdateSetter) {
+        return row.original.setterName
+          ? <span className="block truncate text-sm">{row.original.setterName}</span>
+          : <span className="text-muted-foreground">—</span>
+      }
+      const setter = row.original.setBy
+        ? { id: row.original.setBy, name: row.original.setterName, image: row.original.setterImage }
+        : null
+      return (
+        <div onClick={e => e.stopPropagation()}>
+          <SetterCell setter={setter} onPick={setBy => onUpdateSetter(row.original.id, setBy)} />
+        </div>
+      )
+    },
   },
   scheduledFor: {
     label: 'Scheduled For',

@@ -184,7 +184,9 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
         value={entity.setBy ?? undefined}
         onPick={(setBy) => {
           closeMenu()
-          updateSetter.mutate({ id: entity.id, data: { setBy } })
+          if (setBy !== entity.setBy) {
+            updateSetter.mutate({ id: entity.id, data: { setBy } })
+          }
         }}
       />
     ),
