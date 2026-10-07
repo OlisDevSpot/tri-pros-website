@@ -1,5 +1,14 @@
 import assert from 'node:assert/strict'
 
+import type { VisitMessageSequenceKind } from '@/shared/modules/meetings/messages/constants/kinds'
+import type { VisitMessageFact, VisitMessagePlanInput } from '@/shared/modules/meetings/messages/types'
+
+import { deriveConfirmationTrack } from '@/shared/modules/meetings/messages/lib/derive-confirmation-track'
+import { isVisitMessageEligible } from '@/shared/modules/meetings/messages/lib/is-visit-message-eligible'
+import { planVisitMessages } from '@/shared/modules/meetings/messages/lib/plan-visit-messages'
+import { resolveRunInstant } from '@/shared/modules/meetings/messages/lib/resolve-run-instant'
+import { shouldSendVisitCancellation } from '@/shared/modules/meetings/messages/lib/should-send-visit-cancellation'
+
 import type { MergeToken } from '@/shared/services/voip/lib/sms-merge-template'
 import type { VisitMessageTemplateKey } from '@/shared/modules/meetings/messages/constants/kinds'
 
@@ -240,5 +249,166 @@ console.log('5. Home visit path ✓')
   }
 }
 console.log('6. Wording: render, validate, replies ✓')
+
+// Fri Oct 9 2026, 10:00 AM Pacific. Day before: reminder 6 PM = 2026-10-09T01:00Z, noon = 2026-10-08T19:00Z.
+// Visit day: midnight = 2026-10-09T07:00Z, rep confirmation 8:30 AM = 2026-10-09T15:30Z.
+const VISIT = '2026-10-09T17:00:00.000Z'
+const VISIT_AS_POSTGRES = '2026-10-09 17:00:00+00'
+const OLD_VISIT = '2026-10-08T17:00:00.000Z'
+
+function fact(kind: VisitMessageFact['kind'], over: Partial<VisitMessageFact> = {}): VisitMessageFact {
+  return { kind, channel: 'sms', status: 'sent', reason: null, forScheduledFor: VISIT, createdAt: '2026-10-07T18:00:00.000Z', ...over }
+}
+function planInput(over: Partial<VisitMessagePlanInput> = {}, meeting: Partial<VisitMessagePlanInput['meeting']> = {}): VisitMessagePlanInput {
+  return {
+    meeting: {
+      scheduledFor: VISIT,
+      createdAt: '2026-10-07T17:00:00.000Z',
+      meetingType: 'Fresh',
+      meetingOutcome: 'not_set',
+      confirmedAt: null,
+      homeownerConfirmedAt: null,
+      hasRep: true,
+      ...meeting,
+    },
+    messages: [],
+    contact: { hasPhone: true, doNotContact: false },
+    pausedKinds: [],
+    now: new Date('2026-10-07T20:00:00.000Z'),
+    ...over,
+  }
+}
+function step(input: VisitMessagePlanInput, kind: VisitMessageSequenceKind) {
+  const found = planVisitMessages(input).find(candidate => candidate.kind === kind)
+  assert.ok(found, `the plan has a ${kind} step`)
+  return found
+}
+
+{
+  const now = new Date('2026-10-07T20:00:00.000Z')
+  assert.equal(isVisitMessageEligible({ meetingType: 'Fresh', meetingOutcome: 'not_set', scheduledFor: VISIT }, now), true)
+  assert.equal(isVisitMessageEligible({ meetingType: 'Project', meetingOutcome: 'not_set', scheduledFor: VISIT }, now), false, 'a project meeting serves an existing project')
+  assert.equal(isVisitMessageEligible({ meetingType: 'Fresh', meetingOutcome: 'cancelled', scheduledFor: VISIT }, now), false)
+  assert.equal(isVisitMessageEligible({ meetingType: 'Fresh', meetingOutcome: 'reschedule_needed', scheduledFor: VISIT }, now), false, 'a homeowner who asked for a new time gets no more texts for this one')
+  assert.equal(isVisitMessageEligible({ meetingType: 'Fresh', meetingOutcome: 'not_set', scheduledFor: VISIT }, new Date('2026-10-09T17:00:01.000Z')), false, 'past')
+}
+console.log('7. Eligibility ✓')
+
+{
+  const meeting = { scheduledFor: VISIT, confirmedAt: null, homeownerConfirmedAt: null, homeownerConfirmedVia: null }
+  assert.deepEqual(deriveConfirmationTrack(meeting, []), {
+    office: { done: false, nudge: 'summary_not_sent' },
+    homeowner: { done: false, via: null },
+    rep: { done: false },
+  })
+  assert.deepEqual(deriveConfirmationTrack(meeting, [fact('day_before_reminder')]).office, { done: true, nudge: 'summary_not_sent' }, 'a homeowner reached only by the reminder still sees Booked done')
+  assert.deepEqual(deriveConfirmationTrack(meeting, [fact('visit_summary', { forScheduledFor: VISIT_AS_POSTGRES })]).office, { done: true, nudge: null }, 'the same instant in Postgres spelling')
+  assert.deepEqual(deriveConfirmationTrack(meeting, [fact('visit_summary', { forScheduledFor: OLD_VISIT })]).office, { done: true, nudge: 'time_changed' }, 'a reschedule keeps the history and asks for a resend')
+  assert.deepEqual(deriveConfirmationTrack(meeting, [fact('visit_summary', { status: 'failed' })]).office, { done: false, nudge: 'summary_not_sent' }, 'a failed send reached nobody')
+  assert.deepEqual(deriveConfirmationTrack(meeting, [fact('homeowner_reply', { status: 'received' })]).office.done, false, 'a reply is not something the office sent')
+
+  assert.deepEqual(deriveConfirmationTrack({ ...meeting, homeownerConfirmedAt: '2026-10-08T01:00:00.000Z', homeownerConfirmedVia: 'in_app' }, []).homeowner, { done: true, via: 'in_app' })
+  assert.deepEqual(deriveConfirmationTrack({ ...meeting, confirmedAt: '2026-10-08T01:00:00.000Z' }, []).homeowner, { done: true, via: 'office' }, 'a phone confirmation the office recorded')
+
+  assert.equal(deriveConfirmationTrack(meeting, [fact('rep_confirmation')]).rep.done, true)
+  assert.equal(deriveConfirmationTrack(meeting, [fact('rep_confirmation', { forScheduledFor: OLD_VISIT })]).rep.done, false, 'a moved meeting needs the rep confirmation again')
+}
+console.log('8. Confirmation track ✓')
+
+{
+  const base = planInput()
+  assert.deepEqual(planVisitMessages(base).map(candidate => candidate.kind), ['visit_summary', 'day_before_reminder', 'rep_confirmation'])
+  assert.deepEqual(step(base, 'visit_summary'), { kind: 'visit_summary', plannedFor: null, state: 'not_sent', reason: 'never_sent', skipReason: null, late: false, variant: null, row: null })
+  assert.deepEqual(step(base, 'day_before_reminder'), { kind: 'day_before_reminder', plannedFor: '2026-10-09T01:00:00.000Z', state: 'scheduled', reason: null, skipReason: null, late: false, variant: 'unconfirmed', row: null })
+  assert.deepEqual(step(base, 'rep_confirmation'), { kind: 'rep_confirmation', plannedFor: '2026-10-09T15:30:00.000Z', state: 'scheduled', reason: null, skipReason: null, late: false, variant: null, row: null })
+
+  // The noon rule: a summary after noon the day before makes the 6 PM reminder a repeat.
+  const afterNoon = planInput({ messages: [fact('visit_summary', { createdAt: '2026-10-08T21:00:00.000Z' })] })
+  assert.equal(step(afterNoon, 'visit_summary').state, 'sent')
+  assert.equal(step(afterNoon, 'day_before_reminder').skipReason, 'booked_after_noon')
+  assert.equal(step(afterNoon, 'rep_confirmation').skipReason, null, 'the morning text still goes')
+  const beforeNoon = planInput({ messages: [fact('visit_summary', { createdAt: '2026-10-08T18:00:00.000Z' })] })
+  assert.equal(step(beforeNoon, 'day_before_reminder').skipReason, null)
+  const failedSummary = planInput({ messages: [fact('visit_summary', { status: 'failed', reason: 'twilio:30006', createdAt: '2026-10-08T21:00:00.000Z' })] })
+  assert.equal(step(failedSummary, 'day_before_reminder').skipReason, null, 'a summary that never arrived does not replace the reminder')
+
+  assert.equal(step(planInput({ pausedKinds: ['day_before_reminder'] }), 'day_before_reminder').skipReason, 'paused')
+  assert.equal(step(planInput({ pausedKinds: ['day_before_reminder'] }), 'rep_confirmation').skipReason, null)
+  assert.equal(step(planInput({ contact: { hasPhone: false, doNotContact: false } }), 'rep_confirmation').skipReason, 'no_phone')
+  assert.equal(step(planInput({ contact: { hasPhone: true, doNotContact: true } }), 'rep_confirmation').skipReason, 'dnc')
+
+  // Due: the planned time has come, the window is open, nothing is recorded.
+  const atRun = planInput({ now: new Date('2026-10-09T01:00:00.000Z') })
+  assert.equal(step(atRun, 'day_before_reminder').state, 'due')
+  assert.equal(step(atRun, 'day_before_reminder').late, false)
+  assert.equal(step(planInput({ now: new Date('2026-10-09T01:16:00.000Z') }), 'day_before_reminder').late, true, 'after 15 minutes the run is late')
+  assert.equal(step(planInput({ now: new Date('2026-10-09T01:00:00.000Z'), pausedKinds: ['day_before_reminder'] }), 'day_before_reminder').state, 'due', 'a paused step is still due: the run records the skip')
+
+  // Recorded rows win.
+  const manualSkip = planInput({ messages: [fact('day_before_reminder', { status: 'skipped', reason: 'manual' })] })
+  assert.equal(step(manualSkip, 'day_before_reminder').state, 'skipped')
+  assert.equal(step(manualSkip, 'day_before_reminder').reason, 'manual')
+  const sentThenDecided = planInput({ messages: [fact('visit_summary')] }, { meetingOutcome: 'cancelled' })
+  assert.equal(step(sentThenDecided, 'visit_summary').state, 'sent', 'a recorded text stays visible after the meeting is decided')
+  assert.equal(step(sentThenDecided, 'day_before_reminder').state, 'not_applicable')
+  assert.equal(step(sentThenDecided, 'day_before_reminder').reason, 'outcome_decided')
+  assert.equal(step(planInput({ messages: [fact('rep_confirmation', { forScheduledFor: VISIT_AS_POSTGRES })] }), 'rep_confirmation').state, 'sent', 'Postgres spelling of the visit time')
+
+  const sending = planInput({ now: new Date('2026-10-09T01:05:00.000Z'), messages: [fact('day_before_reminder', { status: 'pending', createdAt: '2026-10-09T01:00:05.000Z' })] })
+  assert.equal(step(sending, 'day_before_reminder').state, 'sending')
+  const stale = planInput({ now: new Date('2026-10-09T01:20:00.000Z'), messages: [fact('day_before_reminder', { status: 'pending', createdAt: '2026-10-09T01:00:05.000Z' })] })
+  assert.equal(step(stale, 'day_before_reminder').state, 'failed')
+  assert.equal(step(stale, 'day_before_reminder').reason, 'send_interrupted', 'a claim older than 10 minutes never sent')
+
+  // A moved time re-arms both automatic steps; the old texts stay in the chain.
+  const moved = planInput({ messages: [fact('visit_summary', { forScheduledFor: OLD_VISIT }), fact('day_before_reminder', { forScheduledFor: OLD_VISIT }), fact('rep_confirmation', { forScheduledFor: OLD_VISIT, status: 'skipped', reason: 'manual' })] })
+  assert.equal(step(moved, 'visit_summary').reason, 'time_changed')
+  assert.equal(step(moved, 'day_before_reminder').state, 'scheduled')
+  assert.equal(step(moved, 'rep_confirmation').state, 'scheduled', 'a skip covered the old time only')
+
+  // Nothing recorded and nothing will send.
+  const bookedAfterRun = planInput({ now: new Date('2026-10-09T02:30:00.000Z') }, { createdAt: '2026-10-09T02:00:00.000Z' })
+  assert.equal(step(bookedAfterRun, 'day_before_reminder').state, 'not_sent')
+  assert.equal(step(bookedAfterRun, 'day_before_reminder').reason, 'booked_after_run', 'booked at 7 PM the day before: the 6 PM run had gone')
+  const sameDay = planInput({ now: new Date('2026-10-09T16:20:00.000Z') }, { createdAt: '2026-10-09T16:15:00.000Z' })
+  assert.equal(step(sameDay, 'rep_confirmation').state, 'not_sent')
+  assert.equal(step(sameDay, 'rep_confirmation').reason, 'booked_after_run', 'booked at 9:15 AM for 10 AM: no "good morning" text an hour late')
+  const missed = planInput({ now: new Date('2026-10-09T07:30:00.000Z') })
+  assert.equal(step(missed, 'day_before_reminder').state, 'not_sent')
+  assert.equal(step(missed, 'day_before_reminder').reason, 'no_record', 'the window closed at midnight with nothing recorded')
+
+  // Not applicable.
+  assert.deepEqual(planVisitMessages(planInput({}, { meetingType: 'Project' })).map(candidate => [candidate.state, candidate.reason]), [['not_applicable', 'project_meeting'], ['not_applicable', 'project_meeting'], ['not_applicable', 'project_meeting']])
+  assert.equal(step(planInput({}, { hasRep: false }), 'rep_confirmation').reason, 'no_rep')
+  assert.equal(step(planInput({}, { hasRep: false }), 'day_before_reminder').state, 'scheduled', 'the reminder goes without a rep, as "your rep"')
+  const early = planInput({}, { scheduledFor: '2026-10-09T15:00:00.000Z' })
+  assert.equal(step(early, 'rep_confirmation').state, 'not_applicable')
+  assert.equal(step(early, 'rep_confirmation').reason, 'before_9am', 'an 8 AM visit gets no 8:30 text')
+
+  assert.equal(step(planInput({}, { homeownerConfirmedAt: '2026-10-08T01:00:00.000Z' }), 'day_before_reminder').variant, 'confirmed')
+  assert.equal(step(planInput({}, { confirmedAt: '2026-10-08T01:00:00.000Z' }), 'day_before_reminder').variant, 'confirmed', 'the office recording a phone confirmation counts')
+}
+console.log('9. Visit message plan ✓')
+
+{
+  assert.equal(resolveRunInstant('day_before_reminder', new Date('2026-10-09T00:59:58.000Z'))?.toISOString(), '2026-10-09T01:00:00.000Z', 'a delivery two seconds early is still tonight\'s run, evaluated at 6 PM')
+  assert.equal(step(planInput({ now: new Date('2026-10-09T01:00:00.000Z') }), 'day_before_reminder').state, 'due')
+  assert.equal(resolveRunInstant('day_before_reminder', new Date('2026-10-09T01:03:00.000Z'))?.toISOString(), '2026-10-09T01:03:00.000Z', 'a late delivery runs at the time it arrived')
+  assert.equal(resolveRunInstant('day_before_reminder', new Date('2026-10-09T00:50:00.000Z')), null, 'ten minutes early is not this run')
+  assert.equal(resolveRunInstant('day_before_reminder', new Date('2026-10-09T07:05:00.000Z')), null, 'a retry at 12:05 AM is not the next day\'s 6 PM run')
+  assert.equal(resolveRunInstant('rep_confirmation', new Date('2026-10-09T15:30:00.000Z'))?.toISOString(), '2026-10-09T15:30:00.000Z')
+  assert.equal(resolveRunInstant('rep_confirmation', new Date('2026-11-01T16:30:00.000Z'))?.toISOString(), '2026-11-01T16:30:00.000Z', '8:30 AM on the fall-back day')
+}
+console.log('10. Run time ✓')
+
+{
+  const invite = fact('visit_summary', { channel: 'email' })
+  assert.equal(shouldSendVisitCancellation({ chainMessages: [invite], hasSuccessor: false }), true)
+  assert.equal(shouldSendVisitCancellation({ chainMessages: [invite], hasSuccessor: true }), false, 'a reschedule\'s original has a successor: the next summary updates the same calendar entry')
+  assert.equal(shouldSendVisitCancellation({ chainMessages: [fact('visit_summary')], hasSuccessor: false }), false, 'a text-only summary put nothing on a calendar')
+  assert.equal(shouldSendVisitCancellation({ chainMessages: [fact('visit_summary', { channel: 'email', status: 'failed' })], hasSuccessor: false }), false)
+  assert.equal(shouldSendVisitCancellation({ chainMessages: [fact('visit_summary', { channel: 'email', forScheduledFor: OLD_VISIT })], hasSuccessor: false }), true, 'an invite sent before a reschedule is still on their calendar')
+}
+console.log('11. Cancellation rule ✓')
 
 console.log('✅ verify-visit-messages passed')
