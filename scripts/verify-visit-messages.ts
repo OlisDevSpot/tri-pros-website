@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import type { MergeToken } from '@/shared/services/voip/lib/sms-merge-template'
 
 import { businessDateTime, formatBusinessClock, formatBusinessDay, formatBusinessDayTime } from '@/shared/lib/business-time'
+import { buildIcs } from '@/shared/modules/meetings/messages/lib/build-ics'
 import { formatArrivalWindow } from '@/shared/modules/meetings/core/lib/arrival-window'
 import { applyDevRecipientOverride } from '@/shared/services/providers/resend/lib/dev-recipients'
 import { listMergeTokens, renderMergeSample, renderMergeTemplate } from '@/shared/services/voip/lib/sms-merge-template'
@@ -88,5 +89,46 @@ console.log('2. SMS templates and segments ✓')
   assert.equal(formatArrivalWindow('2026-10-07T18:45:00.000Z'), '11:45 AM and 12:15 PM', 'a window that crosses noon names both halves')
 }
 console.log('3. Pacific time text ✓')
+
+{
+  const event = {
+    prodId: '-//Example Co//Home Visit//EN',
+    uid: 'meeting-1@example.com',
+    start: '2026-10-07T17:00:00.000Z',
+    durationMs: 2 * 60 * 60 * 1000,
+    summary: 'Home visit with Oliver; bring questions',
+    description: 'Line one\nLine two',
+    location: '123 Main St, Pasadena, CA 91101',
+    url: 'https://example.com/home-visits/meeting-1?token=abc',
+    organizer: { name: 'Example Co', email: 'info@example.com' },
+    attendee: { name: 'Lopez, Maria', email: 'maria@example.com' },
+    now: new Date('2026-10-05T16:00:00.000Z'),
+  }
+  const invite = buildIcs({ ...event, method: 'REQUEST', sequence: 0 })
+  assert.ok(invite.endsWith('\r\n'), 'lines end in CRLF')
+  assert.ok(invite.split('\r\n').every(line => new TextEncoder().encode(line).length <= 75), 'no line is longer than 75 octets')
+
+  const lines = invite.replace(/\r\n /g, '').split('\r\n')
+  assert.equal(lines[0], 'BEGIN:VCALENDAR')
+  assert.ok(lines.includes('METHOD:REQUEST'))
+  assert.ok(lines.includes('UID:meeting-1@example.com'))
+  assert.ok(lines.includes('SEQUENCE:0'))
+  assert.ok(lines.includes('DTSTAMP:20261005T160000Z'))
+  assert.ok(lines.includes('DTSTART:20261007T170000Z'))
+  assert.ok(lines.includes('DTEND:20261007T190000Z'))
+  assert.ok(lines.includes('SUMMARY:Home visit with Oliver\\; bring questions'), 'semicolons are escaped')
+  assert.ok(lines.includes('DESCRIPTION:Line one\\nLine two'), 'newlines are escaped')
+  assert.ok(lines.includes('LOCATION:123 Main St\\, Pasadena\\, CA 91101'), 'commas are escaped')
+  assert.ok(lines.includes('ORGANIZER;CN=Example Co:mailto:info@example.com'))
+  assert.ok(lines.includes('ATTENDEE;CN="Lopez, Maria";ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:maria@example.com'), 'a name with a comma is quoted')
+  assert.ok(lines.includes('STATUS:CONFIRMED'))
+
+  const cancellation = buildIcs({ ...event, method: 'CANCEL', sequence: 3 }).replace(/\r\n /g, '').split('\r\n')
+  assert.ok(cancellation.includes('METHOD:CANCEL'))
+  assert.ok(cancellation.includes('UID:meeting-1@example.com'), 'a cancellation names the same event')
+  assert.ok(cancellation.includes('SEQUENCE:3'))
+  assert.ok(cancellation.includes('STATUS:CANCELLED'))
+}
+console.log('4. Calendar invite ✓')
 
 console.log('✅ verify-visit-messages passed')
