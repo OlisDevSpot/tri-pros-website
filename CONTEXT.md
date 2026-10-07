@@ -9,7 +9,7 @@ A **customer** moves through two distinct phases. Different systems own each pha
 
 ### Phase 1 — Lead-to-meeting (conversion)
 
-From "we got a phone number from a marketing campaign" to "this person has a meeting booked." Owned by a **lead-conversion provider** (currently CloudTalk; pluggable). Our app does NOT place these calls or send these texts — the provider does. Our app's role is:
+From "we got a phone number from a marketing campaign" to "this person has a meeting booked." Owned by a **lead-conversion provider** (currently JustCall; pluggable). Our app does NOT place these calls or send these texts — the provider does. Our app's role is:
 
 - Push: enroll / unenroll a customer in a campaign, configure which `lead_source` routes to which provider campaign.
 - Pull: parse the provider's webhooks for 2-way sync (status changes, DNC events, graduation when a meeting is booked).

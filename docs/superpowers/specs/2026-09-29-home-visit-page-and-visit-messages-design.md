@@ -1,6 +1,6 @@
 # Home Visit Page and Visit Messages — Design
 
-**Date:** 2026-09-29 · **Status:** owner review pending · **Brainstorm:** 2026-09-29 session; the owner approved every section of the first draft. **Revised** 2026-09-29 after a stress test against the code, the booking call scripts, Twilio/FCC/iCalendar documentation and 180 days of meeting data. The owner ruled on the stress-test questions the same day (D13–D19; deferred items in §15). **Extended** 2026-09-29 with message control (§7.5, D20–D23). One item awaits the owner's confirmation (§17).
+**Date:** 2026-09-29 · **Status:** approved 2026-10-05, building full v1 before launch (D24) · **Brainstorm:** 2026-09-29 session; the owner approved every section of the first draft. **Revised** 2026-09-29 after a stress test against the code, the booking call scripts, Twilio/FCC/iCalendar documentation and 180 days of meeting data. The owner ruled on the stress-test questions the same day (D13–D19; deferred items in §15). **Extended** 2026-09-29 with message control (§7.5, D20–D23). **Ruled and re-checked against the code** 2026-10-05 (D24–D27, §17, §18). **Plans:** `docs/superpowers/plans/2026-10-05-visit-messages-foundation.md` covers §12a step 1; the rest follow in §12a order.
 
 ## 1. Goal
 
@@ -77,6 +77,11 @@ The means:
 | D21 | The rep confirmation keeps "{Rep} just confirmed your home visit" for now, and is revisited when the team grows (owner, 2026-09-29). Its wording is an editable template (§7.5), so a change needs no code. |
 | D22 | Visit messages are visible and controllable from the dashboard: the sequence, what was sent, what is scheduled, what was or will be skipped, and manual skipping (owner, 2026-09-29). **Wording + on/off:** a super-admin edits each text's wording and pauses the day-before reminder or the rep confirmation for every meeting. Send times and the noon cutoff stay in code and are shown read-only. Dispatchers, and agents on their own meetings, skip texts. |
 | D23 | One planner, two views: a pure planner computes each step's state, the scheduled runs send exactly the steps it marks due, and the page and drawer display the same result (owner picked approach A, 2026-09-29). |
+| D24 | Full v1 ships before any homeowner gets a text: every step of §12a, message control and the home visit page included (owner, 2026-10-05). |
+| D25 | Visit-message surfaces (the Visit messages page, the Messages drawer, send summary, skip) are **super-admin only for now**. Dispatchers get them later, with the permissions rework (epic #285). **Agents are not in line for them:** an agent has no need to text the homeowner or to run the automatic texts, for the foreseeable future. This replaces D22's "dispatchers, and agents on their own meetings, skip texts" (owner, 2026-10-05, closing §17). |
+| D26 | `EMAIL_DEV_OVERRIDE` covers **every** email outside production, not only visit emails. This reverses the 2026-08-11 ruling that left the variable out (owner, 2026-10-05). |
+| D27 | The D22 terms in §3a are approved (owner, 2026-10-05). |
+| D28 | **Code lives where its module will be** (owner, 2026-10-05). SMS and texting are not app-wide: they belong to a `voip` module (not yet created) that may use the app's entities. Until it exists, VoIP primitives go under the VoIP service (`src/shared/services/voip/lib/`) and move with the rest of VoIP later; VoIP client code sits with the VoIP entities. The same holds for meetings and customers, both due to migrate: new meeting-core code goes to `src/shared/modules/meetings/core/`, the address `entities/meetings/**` moves to. Nothing domain-specific in naked `src/shared/lib/`. Build with the module architecture in mind without coding defensively: no shims, no re-exports, no abstractions for a move that has not happened. |
 
 ## 3a. Vocabulary (approved, D19)
 
@@ -94,7 +99,7 @@ The means:
 | **Portfolio match** | Existing term. "Projects near you" is a portfolio match ordered by distance. | `matchPortfolioProjects` |
 | **Reschedule chain** | A meeting and the meetings it replaced, linked by `rescheduled_from_id`. | `getRescheduleChain` |
 
-**Added with D22** (awaiting the owner's approval in spec review):
+**Added with D22** (approved, D27):
 
 | Term | Meaning | Code |
 |---|---|---|
@@ -118,9 +123,9 @@ The means:
 | `src/app/(frontend)/dashboard/visit-messages/page.tsx` | Visit messages page route (§7.5); `ROOTS.dashboard.visitMessages`; a sidebar entry in `get-sidebar-nav.ts` |
 | `src/app/api/home-visits/[meetingId]/{ics,preview-image}/route.ts` | Token-checked `.ics` download and link-preview image |
 | `src/app/api/company/vcard/route.ts` | The company contact card (MMS media and *Save our contact*) |
-| `src/shared/modules/meetings/` (new, §4.2) | Root `meetingService` (CRUD spread, `queries`, getters), the `business` child holding the verbs, and the `messages` unit: `meeting_messages` server-spec, dal (including its field list), service, `visit_message_templates` and `visit_message_pauses` DAL, `lib/` (planner, renderer, template validator, visit-messages scope), `constants/` (kinds, template keys, defaults, tokens, the send schedule) |
-| `src/shared/lib/sms/` (new) | `merge-template.ts` (the `{{token}}` pattern, `renderMergeTemplate`, `listMergeTokens`, the `MergeToken<TVars>` type) and `segments.ts` (`countSmsSegments`, moved from `features/campaigns-admin/lib/` and made encoding-aware) |
-| `src/shared/components/sms-body-editor.tsx` (new) | The SMS body editor (textarea, token chips, segment and encoding counter), promoted from `CadenceMessageRow`; `insertAtCursor` moves to `src/shared/lib/insert-at-cursor.ts` |
+| `src/shared/modules/meetings/` (new, §4.2) | Root `meetingService` (CRUD spread, `queries`, getters), the `business` child holding the verbs, and the `messages` unit: `meeting_messages` server-spec, dal (including its field list), service, `visit_message_templates` and `visit_message_pauses` DAL, `lib/` (planner, renderer, template validator, the `.ics` builder), `constants/` (kinds, template keys, defaults, tokens, the send schedule). `core/lib/` holds the new meeting-core rules (`arrival-window.ts`, `confirmation-reset.ts`), the address `entities/meetings/**` migrates to (D28) |
+| `src/shared/services/voip/lib/` (new) | `sms-merge-template.ts` (the `{{token}}` pattern, `renderMergeTemplate`, `listMergeTokens`, the `MergeToken<TVars>` type) and `sms-segments.ts` (`countSmsSegments`, moved from `features/campaigns-admin/lib/` and made encoding-aware). VoIP primitives, not app-wide; they move into `modules/voip/` with the rest of VoIP (D28) |
+| `src/shared/entities/voip-messages/components/sms-body-editor.tsx` (new) | The SMS body editor (textarea, token chips, segment and encoding counter), promoted from `CadenceMessageRow`. VoIP client code, so it sits with the VoIP entities until `modules/voip/` exists, never in `shared/components/` (D28); plan 3's UI process confirms the file. `insertAtCursor`, a plain textarea helper, moves to `src/shared/lib/insert-at-cursor.ts` |
 | `src/shared/domains/permissions/` | The `VisitMessages` feature gate (§7.5) |
 | `src/shared/entities/meetings/` (existing core; moves later) | New columns, the `update.before` rules and the `update.after` cancellation dispatch, client schemas, `MEETING_ACTIONS` entries, the **Send visit summary** action and dialog, the `MeetingOverviewCard.HomeownerConfirmed` part |
 | `src/shared/entities/users/dal/server/` | Rep public-profile read (`getRepPublicProfile`) |
@@ -130,8 +135,7 @@ The means:
 | `src/app/api/webhooks/twilio/route.ts` (new) | Status callbacks (async webhook) |
 | `src/app/api/voip/twiml/messaging-inbound/route.ts` (new) | Inbound messages (sync, returns TwiML) |
 | `src/shared/services/email.service.ts` + `providers/resend/emails/` | Visit summary email template and dev override |
-| `src/shared/lib/business-time.ts` (existing) | Pacific date / time / arrival-window formatters, added next to `businessDayWindow` |
-| `src/shared/lib/` | The `.ics` builder |
+| `src/shared/lib/business-time.ts` (existing) | Pacific day and clock formatters and `businessDateTime`, added next to `businessDayWindow`; time in the business zone is app-wide |
 | `src/shared/services/providers/upstash/jobs/` | `send-day-before-reminders`, `send-rep-confirmations` and `send-visit-cancellation`, registered in `src/app/api/qstash-jobs/route.ts` |
 | `scripts/setup-visit-message-crons.ts` | Creates the two QStash schedules (`scripts/setup-gcal-cron.ts` precedent) |
 
@@ -194,7 +198,7 @@ This deliberately does **not** copy the proposal page. There, the homeowner/agen
 **Staff procedures** stay in the session-scoped trees:
 - `meetingsRouter.reads.homeVisitView` on `meetingProcedure`;
 - `meetingsRouter.business.resetShareLink` on `meetingProcedure`, mirroring `meetingService.business`;
-- `meetingsRouter.business.sendVisitSummary` on the visit-messages procedure (§7.5), so a dispatcher can send the summary for a meeting they just booked;
+- `meetingsRouter.business.sendVisitSummary` on the visit-messages procedure (§7.5);
 - `meetingsRouter.messages.*`, mirroring `meetingService.messages` (§7.5): the Messages drawer read, `shareLink`, the Visit messages page reads, skip and unskip on the visit-messages procedure; template and pause writes on `superAdminProcedure`.
 
 ⚠️ **Trap:** do **not** set `meetingServerSpec.shareable`. `createCrudRouter` would then make meetings `crud.update` token-writable, and field checks run only `if (ctx.ability)` (`src/trpc/lib/create-crud-router.ts:83-95`). A sub-router-scoped `shareableMiddleware` does not work either: its token path wins over the session (`shareable-middleware.ts:39-48`), so a staff member holding a link could never reach staff mode. ADR-0002 rejected separate token procedures (`:145`); §14 records this exception as an amendment.
@@ -215,7 +219,7 @@ This deliberately does **not** copy the proposal page. There, the homeowner/agen
 
 **Generalized.** These are explicit costs:
 - **Rep public profile.** `AgentCard` is tied to the presentation, and `getByIdWithJoins` selects none of bio, quote, specialties, languages or certifications. The users entity gains `getRepPublicProfile`, an allow-listed read: display name (`nickname ?? first name`), `headshotUrl`, `bio`, `quote`, `yearsOfExperience`, `tradeSpecialties`, `languagesSpoken`, `certifications`. The feature's `RepCard` renders it. The presentation card stays as it is; converging the two is a later owner call.
-- **Pacific time formatting.** `business-time.ts` gains the date-only, time-only and arrival-window formatters the copy needs. `formatStringAsDate` (`formatters.ts:54`) is reused where its format fits. The private formatter in `notification.service.ts:23-34` is replaced by the shared one (a non-defensive move). SMS, email, page and `.ics` all use it.
+- **Pacific time formatting.** `business-time.ts` gains the day and clock formatters the copy needs; the arrival-window text is a meetings rule (`modules/meetings/core/lib/arrival-window.ts`) built on them. `formatStringAsDate` (`formatters.ts:54`) is reused where its format fits. The private formatter in `notification.service.ts:23-34` is replaced by the shared one (a non-defensive move). SMS, email, page and `.ics` all use it.
 - **Projects near you.** `matchPortfolioProjects` moves to `modules/projects/core/lib/` with its `PortfolioMatch` type and `FALLBACK_MATCH_COUNT`, and meeting-flow imports it from there (one change, no re-export).
   - Its trade input is the meeting's `flowStateJSON.tradeSelections`, captured at booking. When there are none, the lead's funnel trade (`customer_lead_attribution.funnelSlug`, `isFunnelSlug` → `getTradeFacts(slug).notionTradeId`) stands in as a trade-only selection.
   - It gains an optional distance input that orders each match group nearest first. Meeting-flow passes none and keeps today's order.
@@ -223,7 +227,7 @@ This deliberately does **not** copy the proposal page. There, the homeowner/agen
   - It never uses `projectsRouter.showroomDisplay.getAll`, the known unauthenticated full-row read.
   - `SERVICE_AREA_CITIES` is not used: it maps 45 of the 750 service ZIPs.
 - **SMS authoring** gets its second consumer: visit message templates (§7.5) next to campaign cadence messages. Moves are non-defensive: consumers switch and the old files are deleted in the same change.
-  - `countSmsSegments` moves from `features/campaigns-admin/lib/sms-segments.ts` to `src/shared/lib/sms/segments.ts`. It becomes encoding-aware:
+  - `countSmsSegments` moves from `features/campaigns-admin/lib/sms-segments.ts` to `src/shared/services/voip/lib/sms-segments.ts` (D28). It becomes encoding-aware:
     - it returns `{ chars, segments, encoding: 'gsm7' | 'ucs2' }`;
     - GSM-7 extension characters count as two;
     - UCS-2 uses 70/67 per segment.
@@ -254,11 +258,11 @@ The ADR-0005 placement rule applies: single facts about a meeting are columns; r
 
 **`meetings`, new columns**
 - `share_token text NOT NULL UNIQUE`.
-  - Generated by `generateToken()` in `meetingCrud`'s `create.before`, as lead-sources generates its token in its create hook (`entities/lead-sources/dal/server/crud.ts:48`). Unlike lead-sources, the hook keeps a token the caller supplies. Only the reschedule handoff does that, and only server code can (see *Client schemas* below).
+  - Generated by `generateToken()` in `meetingCrud`'s `create.before`, as lead-sources generates its token in its create hook (`entities/lead-sources/dal/server/crud.ts:48`). Unlike lead-sources, no caller supplies a token: the hook always mints one, and the reschedule handoff swaps the original's token onto the replacement after the create (see *Client schemas* below).
   - A DB default `replace(gen_random_uuid()::text, '-', '')` exists only so the push fills existing rows. Application inserts always supply `generateToken()`.
   - Staff **Reset link** writes a fresh `generateToken()` through `meetingService.business.resetShareLink`.
 - `new_time_requested_at timestamptz`: when the homeowner tapped *Request a new time*. A fact for measurement; the page's state follows the outcome.
-- `homeowner_confirmed_at timestamptz` and `homeowner_confirmed_via text` (`sms_reply | page`): the homeowner's own confirmation (D15). Only `meetingService.business.confirmByHomeowner` writes them; `confirmedAt` stays the office's.
+- `homeowner_confirmed_at timestamptz` and `homeowner_confirmed_via text` (`sms_reply | in_app`, the `homeownerConfirmationOptions` set: every way a homeowner can confirm): the homeowner's own confirmation (D15). Only `meetingService.business.confirmByHomeowner` writes them; `confirmedAt` stays the office's.
 - `rescheduled_from_id uuid`, FK `meetings`, `ON DELETE SET NULL`: the meeting this one replaced.
 
 **Legacy pgEnum conversion.** This push touches `meetings`, so its three legacy pgEnum columns (`meeting_type`, `meeting_outcome`, `pipeline`, `db/schema/meetings.ts:25-27`) convert to `text` in the same push (`enum-standardization.md#legacy-pgenum-conversion`, D20).
@@ -293,7 +297,7 @@ The ADR-0005 placement rule applies: single facts about a meeting are columns; r
 
 - A partial unique index on `(meeting_id, kind, channel, for_scheduled_for) WHERE kind IN ('day_before_reminder', 'rep_confirmation', 'visit_cancellation')` makes the automatic sends idempotent. Summaries can be resent. QStash delivers at least once, so this index is the only dedupe; the QStash message id is not used. A manual skip is a row under the same index, which is how it stops the run (§7.5).
 - The const arrays and their types live in `modules/meetings/messages/constants/` (a module's own option set may be co-located, `enum-standardization.md` "Exception").
-- **Visibility.** The unit's server spec declares its own `visibility` and no `parent`: `meeting_id` in the meetings the viewer's visit-messages scope allows (§7.5). With a `parent`, `resolveEffectiveScope` would AND the meetings scope (`dal/server/lib/scope.ts:14-24`), and dispatchers would see nothing.
+- **Visibility.** The unit's server spec declares `meetings` as its `parent` and no `visibility` of its own, like `proposal_views` (`modules/proposals/views/server-spec.ts`): a viewer sees the visit messages of the meetings they can see. Who reaches the visit-message surfaces at all is the `VisitMessages` gate (§7.5, D25).
 
 **`visit_message_templates`, a new table** (`modules/meetings/messages/`): a super-admin's edited wording. A row exists only for an edited template. Code holds the defaults, and **Reset to default** deletes the row. Nothing is seeded.
 
@@ -318,10 +322,13 @@ Neither table goes through `createCrudRouter`: their writes are super-admin verb
 - `is_main_line boolean NOT NULL DEFAULT false`, with a partial unique index `WHERE is_main_line` (the `is_primary` index precedent, `voip-dids.ts:31-33`), so at most one DID is the main line.
 - A voip-dids DAL query, `getMainLineDid`.
 
-**Reschedules keep the link.** `meetingService.business.reschedule` replaces the router's `rescheduleMeeting` (`src/trpc/routers/meetings.router/business.router.ts:86`, `entities/meetings/DOCS.md#reschedule-cancels-and-rebooks`). In one transaction (`withTx`):
-1. write a fresh token to the original;
-2. create the replacement with the original's token and `rescheduled_from_id` = the original;
-3. copy participants, cancel the original and write the customer note (today's steps).
+**Reschedules keep the link.** `meetingService.business.reschedule` replaces the router's `rescheduleMeeting` (`src/trpc/routers/meetings.router/business.router.ts:86`, `entities/meetings/DOCS.md#reschedule-cancels-and-rebooks`). It keeps today's order and is not one transaction: `meetingCrud`'s after-hooks dispatch jobs and write participants outside a threaded transaction (`entities/meetings/dal/server/crud.ts:36-38`).
+1. create the replacement with `rescheduled_from_id` = the original and a token of its own;
+2. copy participants and cancel the original (today's steps);
+3. hand the token over in one small transaction on the meetings DAL (`handOffShareToken`): the original gets a fresh token and the replacement takes the original's;
+4. write the customer note.
+
+A failure before step 3 leaves the original's token where it was.
 
 The page looks meetings up **by token**. When the token belongs to a different meeting than the path's `meetingId`, it redirects to that meeting's path with a `moved` search param, which shows the banner.
 
@@ -351,7 +358,7 @@ Because the automatic runs look for "no message **for this time**", a moved meet
 - `scheduledFor` in the future.
 
 **Visit summary** (manual; the setter sends it during the booking call, D13): `meetingService.business.sendVisitSummary(ctx, { meetingId, note? })`
-- **Who.** `update Meeting` on a meeting inside the sender's visit-messages scope (§7.5). A dispatcher's booking is system-owned with no participant row (`crud.ts` `create.after`), and the customer leaves the leads pool once it has a meeting (`leadsPoolVisibility`), so the meeting scope would lock the setter out right after booking.
+- **Who.** `update VisitMessages` on a meeting the sender can see (§7.5; a super-admin for now, D25).
 - **Preconditions.** The meeting is eligible. A main line is configured. In production, the 10DLC campaign SID is set.
   - Per-meeting failures disable the action with the reason (§8.3).
   - System failures (no main line, no campaign SID) are shown in the send dialog.
@@ -400,11 +407,11 @@ Rules for both runs:
 - Skipped for the same `paused`, `no_phone`, `dnc` and `manual` reasons as the reminder.
 
 **Visit cancellation** (automatic, D17): the `update.after` dispatch (§5) runs `send-visit-cancellation` → `meetingService.business.sendVisitCancellation(SYSTEM_CONTEXT, { meetingId })`.
-- It sends only when a summary email went out in the chain and the meeting has no successor. A reschedule also cancels its original, but the replacement continues the same calendar entry (same UID), so no cancellation goes out. The job checks at run time, after the reschedule transaction has committed.
+- It sends only when a summary email went out in the chain and the meeting has no successor. A reschedule also cancels its original, but the replacement continues the same calendar entry (same UID), so no cancellation goes out. The job checks at run time. A reschedule creates the replacement before it cancels the original, so the successor is always there to see.
 - An email with an `.ics` sent as `text/calendar; method=CANCEL`: the same UID, `SEQUENCE` one above the last summary, `STATUS:CANCELLED`. Email only; no text.
 - One `meeting_messages` row (`kind = visit_cancellation`, `channel = email`).
 
-**Schedules as code.** `scripts/setup-visit-message-crons.ts` creates the two cron schedules with `qstashClient.schedules.create`, following `scripts/setup-gcal-cron.ts`: dry run by default, `--apply` to write, and a duplicate guard. It runs as `pnpm tsx scripts/setup-visit-message-crons.ts` with no `package.json` entry. All three job keys are registered in `src/app/api/qstash-jobs/route.ts`, whose unknown keys return 200 silently.
+**Schedules as code.** `scripts/setup-visit-message-crons.ts` creates the two cron schedules with `qstashClient.schedules.create`, following `scripts/setup-gcal-cron.ts`: dry run by default, `--apply` to write, and a duplicate guard. It runs as `DRIZZLE_TARGET=prod NODE_OPTIONS="--conditions=react-server" pnpm tsx scripts/setup-visit-message-crons.ts`, with no `package.json` entry; it reaches `server-only` modules, as `gcal:cron:setup` does. All three job keys are registered in `src/app/api/qstash-jobs/route.ts`, whose unknown keys return 200 silently.
 
 **Pausing automation** is the super-admin switch on the Sequence tab (§7.5). The QStash schedules keep running, and each run records the paused kind's steps as `skipped`, reason `paused`, so the History tab shows what a pause withheld. Resuming does not resend a run that already happened.
 
@@ -481,7 +488,7 @@ Keywords follow Twilio's semantics: **the whole message**, trimmed, lowercased a
 - the meeting's visit message plan;
 - the chain's `meeting_messages` joined to their `voip_messages` rows.
 
-Visibility is the viewer's visit-messages scope. Main-line rows have no `agentUserId`, so `voip_messages`' own visibility (`entities/voip-messages/lib/visibility.ts:16`) would hide them from reps. *Mark do-not-contact* is a customers procedure under the customer's own scope. The drawer shows it only to viewers who can update that customer, so a dispatcher (whose customer scope is the leads pool) calls the office instead.
+Visibility follows the meeting (§5), behind the `VisitMessages` gate (§7.5). The join reads the `voip_messages` rows directly: main-line rows have no `agentUserId`, so that table's own visibility (`entities/voip-messages/lib/visibility.ts:16`) would hide them. *Mark do-not-contact* is a customers procedure under the customer's own scope, shown only to viewers who can update that customer.
 
 ### 7.4 Compliance and environments
 
@@ -489,7 +496,8 @@ Visibility is the viewer's visit-messages scope. Main-line rows have no `agentUs
 - **Opt-out detection** on the main line uses `OptOutType`, not a keyword list. The customers spec's merged `isStopKeyword` matches the first token and includes `cancel`, `end`, `remove` and `revoke` (`customers-module-design.md:245`). It must not be applied to main-line replies, where "Cancel, can we do Thursday?" would mark the customer do-not-contact (§14).
 - The A2P campaign is **Customer Care** (`docs/plans/voip-in-house/phase-0-setup.md:73`). Everything in v1 fits it, including MMS. The repo records the campaign as SUBMITTED on 2026-05-22 with approval unconfirmed, and its sample text is not in the repo (§12).
 - **Consent.** Telemarketing bookings record no SMS consent: the intake has no consent field and the booking scripts have no consent line. Informational texts need prior express consent, which may be verbal, and 10DLC vetting requires the campaign's message flow to describe it. The booking scripts gain the consent question (§14), and the campaign describes it (§12).
-- New env `EMAIL_DEV_OVERRIDE`: outside production, visit emails go to that address. It is declared in `resendEnvFragment` and rejected in production after parse, like `VOIP_DEV_OVERRIDE_NUMBER` (`server-env.ts:186-190`, `VERCEL_ENV`).
+- New env `EMAIL_DEV_OVERRIDE` (D26): outside production **every** email goes to that address, and a send is refused when it is not set. The guard sits in the Resend client, the one place email leaves the app. It is declared in `resendEnvFragment` and rejected in production after parse, like `VOIP_DEV_OVERRIDE_NUMBER` (`server-env.ts:186-190`, `VERCEL_ENV`).
+- Texts get the same floor: outside production the send core refuses to send unless `VOIP_DEV_OVERRIDE_NUMBER` is set. The dev database holds real customer phones and emails (the refresh scrub leaves them), and the 10DLC gate stops covering preview deploys once it keys on `VERCEL_ENV`.
 
 ### 7.5 Message control (D22, D23)
 
@@ -562,29 +570,20 @@ Steps are keyed by the current `scheduledFor`, so a moved meeting re-arms both a
 
 **Pauses.** `meetingService.messages.setPaused(ctx, { kind, paused })` inserts or deletes the `visit_message_pauses` row.
 
-**Who can do what**
+**Who can do what** (D25: super-admins only for now)
 
 | | super-admin | dispatcher | agent |
 |---|---|---|---|
-| See visit messages (page and drawer) | every meeting | every non-project meeting | meetings they take part in |
-| Send summary, skip, unskip | ✓ | ✓ | on those meetings |
+| See visit messages (page and drawer) | every meeting | later, with #285 | no |
+| Send summary, skip, unskip | ✓ | later, with #285 | no |
 | Edit wording, reset, pause, resume | ✓ | — | — |
 
-- **One scope rule.** `visitMessagesMeetingScope({ userId, ability })` in `modules/meetings/messages/lib/` decides which meetings' visit messages a viewer sees.
-  - Omni resolves to `null` first, as the scope middleware does (`scope-middleware.ts:22-28`).
-  - `read VisitMessages` covers every non-project meeting.
-  - Anyone else gets `meetingVisibility` (participation, `entities/meetings/lib/visibility.ts:9`).
-
-  The `meeting_messages` spec's visibility (§5), the page's meeting reads and the **visit-messages procedure** (`agentProcedure` + this scope) all use it.
-- **`VisitMessages`** is a new non-entity CASL subject, a feature gate like `LeadsPool` (`permissions/types.ts:32-39`).
-  - Dispatchers get `can('read', 'VisitMessages')`; agents get nothing new.
-  - This follows dispatcher Phase A: a capability branch in visibility, not a role check (`customers/lib/visibility.ts:10`).
-- Sending the summary, skipping and unskipping also require `update Meeting`, which agents and dispatchers already hold (`abilities.ts:96,169`).
+- **One gate.** `VisitMessages` is a non-entity CASL subject, a feature gate like `LeadsPool` (`permissions/types.ts:32-39`). No role is granted it today, so only a super-admin (`manage all`) passes. The server's **visit-messages procedure** (`meetingProcedure` + `read VisitMessages`) and the client's action and nav gates check the same subject; writes check `update VisitMessages`.
+- **Rows follow the meeting.** `meeting_messages` declares `meetings` as its parent (§5), so a viewer sees the visit messages of the meetings they can see. Widening later is a grant, not a rewrite. Dispatchers arrive with the permissions rework (epic #285), where a dispatcher sees every meeting.
+- Until then the setter who sends the summary during the booking call (D13) is a super-admin. Of D22's "dispatchers, and agents on their own meetings, skip texts", the dispatcher half waits for that grant and the agent half is withdrawn (D25). The booking toast and the two meeting actions show only to someone who can `update VisitMessages`.
+- Reps still see **Homeowner confirmed** on their meeting cards (a meeting fact, not a visit-message surface) and still get the push when a homeowner replies. That push opens the customer profile for anyone who cannot `read VisitMessages`.
 - Template and pause writes use `superAdminProcedure` (`init.ts:93`), as campaign setup does (`voip-campaigns.router.ts:102`).
-- **The widening stops at visit-message surfaces.**
-  - Dispatchers still see no meetings on the schedule, records, kanban or customer profile.
-  - The home visit page's staff mode keeps the meeting scope (§4.3); a dispatcher opens the homeowner view through *Copy homeowner link*.
-  - These surfaces show customer names, visit times and message bodies, never phone numbers.
+- These surfaces show customer names, visit times and message bodies, never phone numbers.
 
 **The Visit messages page**
 - **Route:** `/dashboard/visit-messages`, behind `protectDashboardPage`.
@@ -613,15 +612,15 @@ Steps are keyed by the current `scheduledFor`, so a moved meeting re-arms both a
   - its template or templates, marked **Default** or "Edited by {name} · {date}", with a sample preview.
 - The two reactions follow: the confirmation reply (a template) and the visit cancellation email (fixed wording).
 - Super-admins also get the editor (Save, Reset to default) and, on the two automatic steps, the **Paused** switch.
-- Everyone else sees it read-only, so a dispatcher can tell a homeowner exactly which texts they will get.
+- Anyone later given `read VisitMessages` without super-admin sees it read-only.
 
 **The Messages drawer** (§8.3) opens with the meeting's sequence: the three steps with state, planned time, reason and actor, plus Skip and Unskip. The history follows. The staff bar and the Visit messages page open the same drawer.
 
 **After booking (D13).** `CreateMeetingForm`'s create success (`create-meeting-form.tsx:66-74`) shows a toast when:
 - the meeting is non-project;
-- the viewer can `update Meeting`.
+- the viewer can `update VisitMessages`.
 
-The toast reads "Meeting booked" with the action **Send visit summary**, which goes to `/dashboard/visit-messages?meeting=<id>`. The toast-with-action precedent is `proposal-flow/ui/components/table/index.tsx:111`. The form unmounts on success, so the action navigates to the drawer instead of opening a dialog in place. This is how a dispatcher, who loses sight of the meeting on booking, sends the summary during the call. The records spec edits the same form for its setter picker (§14).
+The toast reads "Meeting booked" with the action **Send visit summary**, which goes to `/dashboard/visit-messages?meeting=<id>`. The toast-with-action precedent is `proposal-flow/ui/components/table/index.tsx:111`. The form unmounts on success, so the action navigates to the drawer instead of opening a dialog in place. The setter sends the summary from there during the call (D13). The records spec edits the same form for its setter picker (§14).
 
 ## 8. The page
 
@@ -635,7 +634,7 @@ The visual design runs through `/ui-exploration` as the **first step of the page
    - On the day, the arrival window.
 2. **Confirmation track.**
    - Booked → You → {Rep}.
-   - While **You** is pending, the primary button is **I'll be there** (`homeVisit.confirm` → `confirmByHomeowner`, via `page`). The secondary is *Can't make it? Request a new time*, which asks for confirmation first.
+   - While **You** is pending, the primary button is **I'll be there** (`homeVisit.confirm` → `confirmByHomeowner`, via `in_app`). The secondary is *Can't make it? Request a new time*, which asks for confirmation first.
 3. **Everyone who decides (D12).** "We kindly request that everyone needed to make this decision is present during our meeting. Want to keep your partner in the loop?" with **Copy link to meeting** (`navigator.share` where available, falling back to copy). Copy lives in the feature's `constants/`.
 4. **Meet your rep.** `RepCard`, then **Call or text us**. That button uses the main line, which forwards calls to the office (§12). The page shows only the main line, so replies land on the thread the visit messages came from.
 5. **Note from our team**, only if one was sent.
@@ -710,7 +709,7 @@ The dialog and drawer are code-split behind skeletons (heavy children are code-s
 - Twilio routes: signature-verified; 401 otherwise.
 - Portfolio distances are computed server-side; customer coordinates never reach a client or a public read.
 - Never set `meetingServerSpec.shareable` (§4.3).
-- Visit-message surfaces widen dispatchers' reach only to visit messages of non-project meetings, through the `VisitMessages` gate (§7.5). They show no phone numbers.
+- Visit-message surfaces sit behind the `VisitMessages` gate (§7.5), which only a super-admin passes today (D25). They show no phone numbers.
 - Only a super-admin changes wording or pauses a kind (`superAdminProcedure`). The server re-runs the validator on save, and the STOP line and required tokens cannot be edited away.
 
 ## 10. Failure handling and edge cases
@@ -730,7 +729,7 @@ The dialog and drawer are code-split behind skeletons (heavy children are code-s
 | Reply "Cancel, can we do Thursday?" | Not a Twilio opt-out (not a single word) → forwarded to staff as "anything else" |
 | Reply "Yes but my husband can't make it" | Not a confirm keyword → forwarded to staff |
 | Reply after a reschedule | Matches the replacement through its reschedule chain |
-| Reschedule fails mid-way | The transaction rolls back; the original keeps its token |
+| Reschedule fails mid-way | The token handoff is the last write before the note, so the original keeps its token |
 | Time edited in place after a new-time request | Stays `reschedule_needed` (kanban Reschedule, no visit messages) until staff change the outcome; deferred (§5, §15) |
 | Meeting cancelled after its invite went out | Cancellation email removes the calendar entry (D17) |
 | Reschedule | No cancellation email; the next summary updates the same calendar entry |
@@ -742,7 +741,7 @@ The dialog and drawer are code-split behind skeletons (heavy children are code-s
 | Template saved with a curly quote or emoji | Rejected, with the characters listed |
 | QStash delivers the run a moment early | The run evaluates the plan at its scheduled time, so the step is still due (§7.1) |
 | The run never fires | Steps show "Late" after 15 minutes, then `not_sent` (`no_record`) once the window closes |
-| Dispatcher books a meeting | The toast's **Send visit summary** opens the meeting's drawer on the Visit messages page (§7.5) |
+| A meeting is booked by someone who can `update VisitMessages` | The toast's **Send visit summary** opens the meeting's drawer on the Visit messages page (§7.5) |
 
 ## 11. Verification
 
@@ -778,10 +777,10 @@ The dialog and drawer are code-split behind skeletons (heavy children are code-s
     - cancel a meeting whose invite you received (expect the calendar entry removed);
     - trigger both runs by publishing each job URL once from the QStash console;
     - message control (§7.5):
-      - as a dispatcher, skip a scheduled rep confirmation, unskip it, skip it again, then trigger the run (expect a `manual` skipped row and no text);
+      - skip a scheduled rep confirmation, unskip it, skip it again, then trigger the run (expect a `manual` skipped row and no text);
       - as a super-admin, pause the day-before reminder, trigger the run (expect `skipped` / `paused`), then resume;
       - edit a template, try a curly quote (expect it rejected), save, and trigger a send (expect the new wording); then reset to default;
-      - book a meeting as a dispatcher and send the summary from the toast;
+      - book a meeting and send the summary from the toast;
       - check Upcoming, History and Sequence against what was actually sent;
     - open the invite in Gmail and Outlook, then resend after a reschedule (expect one updated event);
     - check the link preview on iPhone and Android;
@@ -789,7 +788,7 @@ The dialog and drawer are code-split behind skeletons (heavy children are code-s
 
 ## 12. Rollout: owner tasks before launch
 
-1. **Flag the 213 DID `is_main_line`** (D18). It is today's CloudTalk warm-transfer target (`phase-0-setup.md:58`), so forwarding its calls (item 3) changes where transfers land. When the main line changes later, keep the old number's messaging webhook, so replies to texts it already sent still arrive.
+1. **Flag the main-line DID `is_main_line`** (D18: the 213 number for now). `voip_dids` is empty and nothing fills it today, so this is two steps: run the Twilio resync, then flag the row (the sending plan ships the script). The 213 number was labelled a CloudTalk transfer target in Twilio in May; CloudTalk is retired (the dialer is JustCall) and no code reads that label, so forwarding its calls (item 3) moves nothing in the app. When the main line changes later, keep the old number's messaging webhook, so replies to texts it already sent still arrive.
 2. **The 10DLC campaign.**
    - Confirm it is approved and set `TWILIO_10DLC_CAMPAIGN_SID`.
    - Its message-flow description covers phone bookings: the verbal consent question from the booking scripts (§14), what the texts are, "Msg & data rates may apply", HELP and STOP.
@@ -815,10 +814,10 @@ The dialog and drawer are code-split behind skeletons (heavy children are code-s
    - The `meetings` `update.before` rules and the Google Calendar inbound mirror.
    - The `modules/meetings` root, with its documentation (§4.2), and `reschedule` / `setOutcomeWithReason` moved into `meetingService.business`.
    - The `messages` unit and `getRescheduleChain`.
-   - Pacific formatters in `business-time.ts`, and the `.ics` builder.
+   - Pacific formatters in `business-time.ts`; the arrival window and confirmation reset in `modules/meetings/core/lib/`; the `.ics` builder in `modules/meetings/messages/lib/`.
    - `ROOTS.public.homeVisit` and `NAV_PATH_RE`.
-   - `src/shared/lib/sms/` (merge template, encoding-aware segments), with the campaign consumers moved onto it (§4.4).
-   - The `VisitMessages` gate, `visitMessagesMeetingScope`, the `meeting_messages` visibility and the visit-messages procedure.
+   - `src/shared/services/voip/lib/` (merge template, encoding-aware segments), with the campaign consumers moved onto it (§4.4).
+   - The `VisitMessages` gate, the `meeting_messages` spec (child of `meetings`) and the visit-messages procedure.
    - `deriveConfirmationTrack`, `isVisitMessageEligible`, `planVisitMessages`, `VISIT_MESSAGE_SCHEDULE`, the template keys, defaults and tokens, `validateVisitMessageTemplate`, `renderVisitMessage`, and keywords.
    - The verify script.
 2. **Twilio path live.**
@@ -848,7 +847,7 @@ The dialog and drawer are code-split behind skeletons (heavy children are code-s
 7. **Docs and rollout** (§12, §14).
    - The owner gate (§11).
 
-Steps 5 and 6 can be separate plans after step 4; step 6's staff bar composes step 5's drawer.
+**Plans.** One plan per runnable slice, in this order: (1) foundation = step 1; (2) sending and replies = steps 2–4; (3) message control = step 5; (4) the home visit page = step 6; step 7 closes the launch. Plans 3 and 4 start with their UI process, so each is written when its turn comes.
 
 ## 13. Measurement
 
@@ -889,7 +888,7 @@ The analytics epic can add the view later. v1 only has to write the data.
 - **Records bulk-actions spec** (`2026-09-28-records-bulk-actions-and-entity-tables-design.md` §4.4) edits `CreateMeetingForm` for its setter picker. The booking toast (§7.5) is additive; whichever lands second rebases.
 - **`CONTEXT.md`:** the D22 terms once approved (Visit messages page, Sequence, Visit message template, Skip, Paused).
 - **Memory:**
-  - `project-dispatcher-role.md`: `read VisitMessages` is the dispatcher's second capability branch, after `LeadsPool`;
+  - `project-dispatcher-role.md`: dispatchers get visit messages with the permissions rework (#285), not through a capability branch here (D25);
   - fix `project-voip-in-house.md`, which is stale: it says no `voip_*` tables and puts compliance at `services/compliance.service.ts`;
   - update this project's memory.
 
@@ -919,14 +918,33 @@ The analytics epic can add the view later. v1 only has to write the data.
 - **`robots.ts` disallows `/tests`**; the route is `/test`.
 - **The company phone is hardcoded** in two email templates instead of `contact-info.ts`: `tel:8184707656` in `resend/emails/customer-confirmation-email.tsx:122`, and the `repPhone = '8184707656'` default in `proposal-email.tsx:131`.
 
-## 17. Open owner decisions
+## 17. Owner decisions (closed 2026-10-05)
 
-The owner ruled on the rest on 2026-09-29: D13–D19, the rep-confirmation wording (D21), the pgEnum conversion (D20), and message control (D22, D23). Deferred items are in §15.
+1. **Dispatcher reach (§7.5).** Ruled D25: super-admins only for now; dispatchers later, with the permissions rework (#285). The owner confirmed the same day that agents stay out: they have no need to text homeowners or to run the automatic texts for the foreseeable future, so control sits with super-admins and passes to dispatchers when the time is right.
+2. **D22 vocabulary.** Approved (D27).
+3. **`EMAIL_DEV_OVERRIDE`.** Ruled D26: every email outside production.
+4. **First rollout.** Ruled D24: full v1 before launch.
 
-1. **Confirm the dispatcher's reach (§7.5).** D22 asks that dispatchers skip texts "as needed". Today a dispatcher sees no meetings at all:
-   - meeting visibility is participation only (`entities/meetings/lib/visibility.ts:9`);
-   - a dispatcher's booking is system-owned with no participant row (`crud.ts` `create.after`);
-   - the customer leaves the leads pool once it has a meeting.
+## 18. Code re-check, 2026-10-05
 
-   The same gap would stop the setter from sending the summary after booking (D13). **Recommended, and written into this spec:** a new `read VisitMessages` capability gives dispatchers visit messages for every non-project meeting (page, drawer, send summary, skip), and nothing else.
-   - The alternative is to scope dispatchers to meetings they set, through `meetings.setBy` from the records bulk-actions spec. That field is not built yet. Dispatchers could then act only on their own bookings, not skip a text when a rep calls in sick.
+The spec was checked against main six days after it was written. What changed in this document as a result:
+
+- **Reschedule is not one transaction** (§5): `meetingCrud`'s after-hooks cannot run inside one.
+- **`meeting_messages` follows its parent meeting** (§5, §7.5), the shape the permissions rework also expects.
+- **The cron setup command** needs the `react-server` condition (§7.1).
+- **Dev sends fail closed**, for email and for texts (§7.4).
+- **The 213 DID** is not a live transfer target (§12).
+
+What the plans carry (no sentence above depended on it):
+
+- An action can now be left out per row (`hidden` on an action config, since `a1d70db1`). The two new meeting actions are hidden for project meetings and disabled with a reason otherwise; §8.3 says "only disabled".
+- `MeetingsTable` is gone. The records table reads row actions from `useMeetingActionConfigs` through `useMeetingsTable`, and an eighth surface, `ProjectMeetingList`, renders meeting actions.
+- The History tab is built on the current table stack (an `EntityTableView` constant, `useEntityTable`, a prefetched first read), not a bare `DataTable`.
+- `formatBusinessTime` already exists; the new formatters wrap it. Node prints a narrow no-break space before AM/PM, which is not GSM-7, so the wrappers replace it.
+- The page's staff / homeowner / 404 choice needs an awaited server call; `prefetch()` returns nothing to branch on (§4.3).
+- `matchPortfolioProjects` takes the construction catalog as a third argument (§4.4).
+- Local `.env` points `VOIP_WEBHOOK_BASE_URL` at the production host. Dev sets it to the tunnel, or status callbacks and signature checks miss (§11).
+- The Twilio status schema rejects a status outside its list with a 400; the callback route maps unknown statuses instead (§7.3).
+- A status callback that arrives before the message row has its SID updates nothing today (§7.3).
+- A run cannot read its scheduled time from the QStash request, and a retry after midnight would look like the next day's run. The run resolves its own instant and refuses to run early (§7.1).
+- Two pending pieces of work edit the same `meetingCrud` hooks: the records bulk-actions plan (`set_by`) and the project-meeting-outcomes spec (`site_visit`). This work lands first; D20's pgEnum conversion removes that spec's `ALTER TYPE` step.
