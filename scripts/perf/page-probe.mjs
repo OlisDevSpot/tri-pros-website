@@ -268,7 +268,7 @@ async function scenario(label, run) {
   }
 }
 
-async function waitTimeline(field, timeout = 60000) {
+async function waitTimeline(field, timeout = 150000) {
   await page.waitForFunction(name => window.__timeline?.[name] != null, field, { timeout, polling: 50 })
   return page.evaluate(() => window.__timeline)
 }
@@ -341,7 +341,7 @@ try {
 
   // 4 ─ Steady state: what is mounted, and what each interaction costs.
   await page.goto(`${BASE}${target.path}`, { timeout: 120000 })
-  await page.waitForSelector(target.item, { timeout: 60000 })
+  await page.waitForSelector(target.item, { timeout: 150000 })
   // The census walks fibers, so it must wait for hydration, which a cold dev server can take far longer than the settle.
   await page.waitForFunction(selector => Object.keys(document.querySelector(selector) ?? {}).some(name => name.startsWith('__reactFiber')), target.item, { timeout: 120000, polling: 100 })
   await page.waitForTimeout(4000)
