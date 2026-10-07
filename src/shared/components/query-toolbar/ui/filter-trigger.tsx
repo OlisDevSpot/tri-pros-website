@@ -13,7 +13,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/sh
 import { useIsBelowLg } from '@/shared/hooks/use-is-below-lg'
 import { cn } from '@/shared/lib/utils'
 
-// Active state shifts the border so icon-only mobile users can still tell filters are on.
+// Active filters tint the trigger like any control that is on, so icon-only mobile users can still tell.
 export function QueryToolbarFilterTrigger() {
   const { query, filters, sortOptions } = useQueryToolbarContext()
   const { activeFilterCount } = query.filterSort
@@ -34,7 +34,7 @@ export function QueryToolbarFilterTrigger() {
     : 'Filters'
   const triggerClassName = cn(
     'h-11 w-11 lg:h-9 lg:w-auto px-0 lg:px-3 font-normal gap-1.5 touch-manipulation',
-    activeFilterCount > 0 && 'border-foreground/60 text-foreground',
+    activeFilterCount > 0 && 'bg-control-selected hover:bg-control-selected',
   )
 
   const triggerInner = (
