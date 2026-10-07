@@ -1,11 +1,18 @@
 import assert from 'node:assert/strict'
 
 import type { MergeToken } from '@/shared/services/voip/lib/sms-merge-template'
+import type { VisitMessageTemplateKey } from '@/shared/modules/meetings/messages/constants/kinds'
 
 import { ROOTS } from '@/shared/config/roots'
 import { businessDateTime, formatBusinessClock, formatBusinessDay, formatBusinessDayTime } from '@/shared/lib/business-time'
 import { buildIcs } from '@/shared/modules/meetings/messages/lib/build-ics'
 import { formatArrivalWindow } from '@/shared/modules/meetings/core/lib/arrival-window'
+import { companyInfo } from '@/shared/constants/company'
+import { visitMessageTemplateKeys } from '@/shared/modules/meetings/messages/constants/kinds'
+import { VISIT_MESSAGE_TEMPLATE_DEFAULTS } from '@/shared/modules/meetings/messages/constants/templates'
+import { matchReplyKeyword } from '@/shared/modules/meetings/messages/lib/match-reply-keyword'
+import { buildVisitMessageVars, renderVisitMessage } from '@/shared/modules/meetings/messages/lib/render-visit-message'
+import { validateVisitMessageTemplate } from '@/shared/modules/meetings/messages/lib/validate-visit-message-template'
 import { applyDevRecipientOverride } from '@/shared/services/providers/resend/lib/dev-recipients'
 import { listMergeTokens, renderMergeSample, renderMergeTemplate } from '@/shared/services/voip/lib/sms-merge-template'
 import { countSmsSegments, findNonGsm7 } from '@/shared/services/voip/lib/sms-segments'
@@ -160,5 +167,78 @@ console.log('4. Calendar invite ✓')
   assert.equal(ROOTS.public.homeVisit('m-1'), '/home-visits/m-1', 'staff open it signed in, with no token')
 }
 console.log('5. Home visit path ✓')
+
+{
+  for (const key of visitMessageTemplateKeys) {
+    assert.deepEqual(validateVisitMessageTemplate(key, VISIT_MESSAGE_TEMPLATE_DEFAULTS[key]), { errors: [], warnings: [] }, `the default for ${key} is clean`)
+  }
+
+  const errors = (key: VisitMessageTemplateKey, body: string) => validateVisitMessageTemplate(key, body).errors.map(issue => issue.code)
+  assert.deepEqual(errors('confirmation_reply', '   '), ['empty'])
+  assert.deepEqual(errors('confirmation_reply', 'See you {{visit_date}} at {{visit_time}} — thanks'), ['not_gsm7'], 'an em dash is rejected')
+  assert.match(validateVisitMessageTemplate('confirmation_reply', 'See you {{visit_date}} at {{visit_time}} — \u{1F600}').errors[0].message, /—.*\u{1F600}/u, 'the message lists each offending character')
+  assert.deepEqual(errors('confirmation_reply', 'See you {{visit_date}} at {{visit_time}} {{nope}}'), ['unknown_token'])
+  assert.deepEqual(errors('confirmation_reply', 'See you {{visit_date}} at {{visit_time}} {{office_note}}'), ['token_not_allowed'])
+  assert.deepEqual(errors('confirmation_reply', 'See you {{visit_date}}'), ['missing_token'])
+  assert.deepEqual(errors('confirmation_reply', 'See you {{visit_date}} at {{visit_time}}. Reply stop to opt out.'), ['contains_stop'], 'the renderer adds the STOP line; a second copy would repeat it')
+
+  const warnings = (key: VisitMessageTemplateKey, body: string) => validateVisitMessageTemplate(key, body).warnings.map(issue => issue.code)
+  assert.deepEqual(warnings('rep_confirmation', `${VISIT_MESSAGE_TEMPLATE_DEFAULTS.rep_confirmation} ${'x'.repeat(200)}`), ['too_long'])
+  assert.deepEqual(warnings('visit_summary', `${VISIT_MESSAGE_TEMPLATE_DEFAULTS.visit_summary} ${'x'.repeat(400)}`), [], 'the summary goes as MMS, so its length is not flagged')
+  assert.deepEqual(warnings('rep_confirmation', '{{rep_name}} confirmed. He arrives between {{arrival_window}}. {{visit_link}}'), ['pronoun'])
+  assert.deepEqual(warnings('rep_confirmation', '{{rep_name}} is here between {{arrival_window}}, this morning: {{visit_link}}'), [], '"here" and "this" are not pronouns')
+  assert.deepEqual(warnings('day_before_reminder_unconfirmed', 'See you tomorrow at {{visit_time}}: {{visit_link}}'), ['no_yes_ask'])
+
+  const vars = buildVisitMessageVars({ customerName: 'Maria Lopez', repName: 'Oliver', scheduledFor: '2026-10-07T17:00:00.000Z', visitLink: 'https://example.com/v' })
+  assert.deepEqual(vars, {
+    firstName: 'Maria',
+    repName: 'Oliver',
+    visitDate: 'Wed, Oct 7',
+    visitTime: '10:00 AM',
+    arrivalWindow: '10:00 and 10:30 AM',
+    visitLink: 'https://example.com/v',
+    officeNote: '',
+  })
+  assert.equal(
+    renderVisitMessage(VISIT_MESSAGE_TEMPLATE_DEFAULTS.visit_summary, vars, { stopLine: true }),
+    `Hi Maria, this is ${companyInfo.name}. Your home visit is booked for Wed, Oct 7 at 10:00 AM with Oliver. Meet Oliver and see your visit details: https://example.com/v Reply YES to confirm. Reply STOP to opt out.`,
+    'an empty note leaves no double space, and the STOP line is appended',
+  )
+  assert.ok(
+    renderVisitMessage(VISIT_MESSAGE_TEMPLATE_DEFAULTS.visit_summary, { ...vars, officeNote: 'Gate code 1234.' }, { stopLine: false })
+      .includes('with Oliver. Gate code 1234. Meet Oliver'),
+    'the office note sits where the token is',
+  )
+  assert.ok(
+    renderVisitMessage(VISIT_MESSAGE_TEMPLATE_DEFAULTS.visit_summary, { ...vars, repName: null }, { stopLine: false })
+      .includes('with your rep. Meet your rep and see'),
+    'a meeting with no rep yet says "your rep"',
+  )
+  assert.ok(!renderVisitMessage(VISIT_MESSAGE_TEMPLATE_DEFAULTS.rep_confirmation, vars, { stopLine: false }).includes('STOP'))
+
+  for (const key of visitMessageTemplateKeys) {
+    assert.equal(countSmsSegments(renderVisitMessage(VISIT_MESSAGE_TEMPLATE_DEFAULTS[key], vars, { stopLine: true })).encoding, 'gsm7', `${key} renders as GSM-7 with real formatted times`)
+  }
+
+  const visit = { repName: 'Oliver', scheduledFor: '2026-10-07T17:00:00.000Z', visitLink: 'https://example.com/v' }
+  assert.equal(buildVisitMessageVars({ ...visit, customerName: null }).firstName, 'there', 'no name on file reads "Hi there"')
+  assert.equal(buildVisitMessageVars({ ...visit, customerName: '   ' }).firstName, 'there')
+  assert.equal(buildVisitMessageVars({ ...visit, customerName: 'Cher' }).firstName, 'Cher')
+  assert.equal(buildVisitMessageVars({ ...visit, customerName: '  Zoë  Kim ' }).firstName, 'Zoë')
+  assert.equal(
+    countSmsSegments(renderVisitMessage(VISIT_MESSAGE_TEMPLATE_DEFAULTS.confirmation_reply, buildVisitMessageVars({ ...visit, customerName: 'Zoë Kim' }), { stopLine: false })).encoding,
+    'ucs2',
+    'a name outside GSM-7 still sends, spelled right',
+  )
+  assert.equal(buildVisitMessageVars({ ...visit, customerName: 'Maria', officeNote: '  Gate\ncode   1234. ' }).officeNote, 'Gate code 1234.', 'a note is one line')
+
+  for (const reply of ['YES', 'yes', ' Yes! ', 'y', 'Confirm.', 'confirmed']) {
+    assert.equal(matchReplyKeyword(reply), 'confirm', reply)
+  }
+  for (const reply of ['', 'yes please', 'Yes but my husband can\'t make it', 'no', 'Cancel, can we do Thursday?', 'yess']) {
+    assert.equal(matchReplyKeyword(reply), null, reply)
+  }
+}
+console.log('6. Wording: render, validate, replies ✓')
 
 console.log('✅ verify-visit-messages passed')
