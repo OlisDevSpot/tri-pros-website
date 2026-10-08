@@ -2,7 +2,7 @@
 
 The single source of truth for design intent at Tri Pros Remodeling. Every component, every AI session, and every code review runs against this document.
 
-**Cross-references:** [tokens.md](./tokens.md) · [anti-slop-checklist.md](./anti-slop-checklist.md)
+**Cross-references:** [root DESIGN.md](../../DESIGN.md) · [anti-slop-checklist.md](./anti-slop-checklist.md)
 
 ---
 
@@ -182,7 +182,7 @@ How to iterate on design together (used throughout the design session that produ
 
 ## 6. See Also
 
-- [tokens.md](./tokens.md) — three-tier token architecture, every `.theme-marketing` value, consumption patterns
+- [root DESIGN.md](../../DESIGN.md) — the token tables (status, charts, identity, marketing-only tokens)
 - [anti-slop-checklist.md](./anti-slop-checklist.md) — the 10-point gate to run before any block ships
 - `src/app/(frontend)/globals.css` — the live token definitions (`.theme-marketing` block)
 - `src/shared/constants/company/` — credential data source (never hardcode these values)
