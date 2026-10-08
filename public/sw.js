@@ -111,14 +111,25 @@ async function serveShell(event) {
     // Cache Storage unavailable: the network answers, as on every launch before the shell existed.
   }
   event.waitUntil(syncShell().catch(() => {}))
-  const preloaded = await event.preloadResponse
+  const preloaded = await Promise.resolve(event.preloadResponse).catch(() => undefined)
   return preloaded || fetch(event.request)
+}
+
+// A cache-hit launch and the page's revalidate message can ask for a sync in the same instant; two running at
+// once could each prune the chunks the other's document needs, so one runs and later callers share it.
+let syncInFlight = null
+
+function syncShell() {
+  if (!syncInFlight) {
+    syncInFlight = writeShell().finally(() => { syncInFlight = null })
+  }
+  return syncInFlight
 }
 
 // The shell and the chunks it references are one set: assets go in first and the document last, so a
 // launch during the swap finds a complete set or none, and the document never points at a chunk the
 // cache lacks. An unchanged document costs one fetch and no writes.
-async function syncShell() {
+async function writeShell() {
   const cache = await caches.open(SHELL_CACHE)
   const fresh = await fetchShell()
   const current = await cache.match(LAUNCH_URL)
