@@ -476,3 +476,17 @@ Entries older than the doc's last git edit must be re-verified before citing.
 - ⚠️ Stale ref: plan Global Constraint 31 attributes "never … a role string" to `resolve-owner.ts`; the comment is `entities/meetings/dal/server/crud.ts:24-25` (about ownerId resolution).
 - ⚠️ Conflict: memory project-modules-consolidation ("reads under `<m>Service.queries`; code outside modules/ goes through the service") vs `modules/proposals/service.ts:35` ("Reads stay in the sub-module DALs") and live router practice (proposals.router/business.router.ts:9, projects.router/business.router.ts:6-10 import module DAL). Seam lint not built.
 - Rulings: per-row crud loop in runBulk is SANCTIONED by D33/D39 despite feedback-reuse-existing-api-surface's "N rows = one DAL write" exception (that exception is for copy/replace where hooks are re-driven once).
+
+## module placement — new meetings/customers code (last verified 2026-10-07)
+- Rule: new meetings/customers code → `src/shared/modules/<m>/core/`; existing `entities/<m>/**` files edited in place until the path-only move; no shims — source: memory feedback-code-lives-where-its-module-will-be (2026-10-05); precedent plan `docs/superpowers/plans/2026-10-05-visit-messages-foundation.md:26,51-60` (creates `modules/meetings/core/lib/` before the meetings move)
+- Exemplar: table hook home = `src/shared/modules/projects/core/components/projects-table/use-projects-table.tsx` (projects already moved)
+- Known drift: customers R2 plan part 2 (2026-10-05, 10-07 additions) creates new files under `entities/customers/` (use-customers-table.tsx, lib/open-customer-profile.ts); pipeline-speed spec §3.2 puts Customer/MeetingActionsHost under `entities/`. Reported 2026-10-07.
+- Rulings: 2026-09-26 "partial module = split-brain DAL, rejected" applies to DAL only; client hooks/helpers in an early `modules/customers/core/` don't split the DAL. Moving an EXISTING file into `entities/meetings/components/` is carried by the path-only move (not a violation).
+
+## records tracker staleness (last verified 2026-10-07)
+- ⚠️ D45 ("no per-entity or generic ready component") vs code `src/shared/components/entity-records-table.tsx` (R4); no D-row amends D45.
+- ⚠️ R2 row + §3.1 ledger + analytics epic :9 say lead-source pane = "`leadSourceId` scope"; D62/spec = a `fixed` `leadSource` filter pin, explicitly not access control.
+- coding-conventions Rule 7 (lib/ pure, no side effects) vs `src/shared/lib/open-modal.ts` (store side effect) — precedent in code.
+
+## permissions #285 vs customers files (last verified 2026-10-07)
+- wt `.worktrees/issue-285` (114 ahead, 13 behind main) already edits `useAbility` import `permissions/hooks` → `permissions/client` in customers columns-registry, use-profile-commands, lists/customer-meetings-list, meetings use-meetings-table. Unit 3 part 1 plan (2026-10-07, in wt) deletes `customerProcedure` and `ctx.scope` for Customer (`permit`), edits `customers/dal/server/queries.ts` listCustomers + customers DOCS.md.

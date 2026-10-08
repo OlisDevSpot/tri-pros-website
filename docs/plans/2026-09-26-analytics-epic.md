@@ -6,7 +6,7 @@
 > **Evidence:** read-only code sweep 2026-09-24 (lead-sources dashboard, analytics engine, schema, intake, dedup) spot-checked by hand; `#285` worktree at `b40403b6` and issues #217 / #220 read 2026-09-26. Findings with file:line in §4, present-day defects in §5.
 
 **Adjacent, owned elsewhere (do not duplicate):**
-- **Records Management epic** (`docs/plans/2026-09-26-records-management-epic.md`): owns source *management* and every entity table. Its **R2** turns the lead-source customers list into a `leadSourceId` scope on the customers table; its **D1** says per-customer de-duplication belongs to analytics (this epic).
+- **Records Management epic** (`docs/plans/2026-09-26-records-management-epic.md`): owns source *management* and every entity table. Its **R2** reads one lead source's customers through the shared customers list with that source pinned as a fixed filter (a narrowing, not access control; records D62); its **D1** says per-customer de-duplication belongs to analytics (this epic).
 - **#285 permissions** (`refactor/285-…` worktree): owns meeting visibility and every CASL row. Spec D needs it (C20, Q2). Junk/test marking rights come from it (C13).
 - **Multi-proposal meeting flow epic** (`docs/plans/2026-09-20-multi-proposal-meeting-flow-epic.md`): owns proposal status and selection. The deferred auto-project work (X1) touches its selected-proposal model.
 - **JSONB Wave 4** (SOW normalization): the trade dimension waits for it (X5).

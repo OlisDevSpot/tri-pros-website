@@ -8,7 +8,7 @@
 
 **Tech Stack:** Next.js 15 App Router, tRPC v11, TanStack Query and Table, nuqs, Zod 4, CASL, shadcn/ui, pnpm, `tsx`, Playwright (read-only checks).
 
-**Spec:** `docs/superpowers/specs/2026-10-05-customers-entity-table-and-fixed-filters-design.md` §5, §7, §8, §11 (approved by the owner 2026-10-05), under the records tracker `docs/plans/2026-09-26-records-management-epic.md` **D11, D25, D45, D48, D51, D60, D62**, open item **O3**, ledger §3.1.
+**Spec:** `docs/superpowers/specs/2026-10-05-customers-entity-table-and-fixed-filters-design.md` §5, §7, §8, §11 (approved by the owner 2026-10-05; stress-tested 2026-10-07 and the owner's rulings of that day applied), under the records tracker `docs/plans/2026-09-26-records-management-epic.md` **D11, D25, D45, D48, D51, D60, D62**, open item **O3**, ledger §3.1.
 
 **Requires:** part 1, `docs/superpowers/plans/2026-10-05-customers-entity-table-and-fixed-filters.md`, Tasks 1 and 2 (the `fixed` argument of `useDataViewQuery` and `loadDataViewQueryInput`, and `staticDataViewInput`). Confirm before starting: `grep -n "fixed?: FilterValues<F>" src/shared/dal/client/hooks/use-data-view-query.ts` prints one line.
 
@@ -16,20 +16,29 @@
 
 Each is isolated so a different answer is a small change.
 
-1. **Spec §5.5: Edit Profile and Schedule Meeting open the customer profile modal** (the spec's proposal; the owner said "proceed" without choosing). Edit Profile opens it as View Profile does; Schedule Meeting opens it with the Add meeting dialog already up. All of it is Task 3, one commit. To pick the alternative (hide both actions in tables until they have a real target), drop Task 3 and say so; hiding needs a `hidden` rule on those two configs instead.
+1. **Spec §5.5, ruled 2026-10-07:** Edit Profile opens the profile modal **in its edit mode** (`defaultEditing`, item 12); Schedule Meeting opens it with the Add meeting dialog up, **settled by the investigation in item 13**. Original text: Edit Profile and Schedule Meeting open the customer profile modal (the spec's proposal; the owner said "proceed" without choosing). Edit Profile opens it as View Profile does; Schedule Meeting opens it with the Add meeting dialog already up. All of it is Task 3, one commit. To pick the alternative (hide both actions in tables until they have a real target), drop Task 3 and say so; hiding needs a `hidden` rule on those two configs instead.
 2. **`defaultMeetingOpen`** is the new optional prop on `CustomerProfileModal` that Task 3 needs: the modal has no way today to open on its Add meeting dialog (its props are `customerId`, `defaultTab`, `highlightMeetingId`). The name follows `defaultTab` and the `meetingOpen` state it seeds.
 3. **File names for the two lead-sources table views:** `all-customers-table-view.ts` and `lead-source-customers-table-view.ts` in `features/lead-sources-admin/constants/`, one constant per file as records-management does; `lead-sources-table-query-configs.ts` is deleted. The options type is `UseCustomersTableOptions`, as `UseMeetingsTableOptions` and `UseProjectsTableOptions`.
 4. **`CustomerTableRow` becomes the list read's row type** (`AppRouterOutputs['customersRouter']['business']['list']['rows'][number]`), as `MeetingRow` and `ProjectRow` are. Today it is a hand-written interface with a nullable `pipeline` and optional lead-source fields, which `useEntityTable` rejects against the read's rows. The name stays.
 5. **What refreshes the one-source pane changes slightly.** It read `leadSourcesRouter.getCustomers`, which every proposal and project change invalidates (for the signed counts). It will read `customersRouter.business.list`, which those changes do not invalidate, as the other two customers tables never were; customer edits, which did not refresh the pane before, now do. A Pipeline badge in the pane can therefore lag a proposal or project change until the next refetch (30 s stale time, window focus, or Refresh). To keep the old behaviour, add `trpc.customersRouter.business.list.queryFilter()` to `invalidateProposal` and `invalidateProject` in `use-invalidation.ts`. Not planned: the tracker's A7 wants those invalidations narrower, not wider.
 6. **The pane loses the Source cell's reassign picker with the column** (the spec drops the column because its value is constant there). A super-admin reassigns a customer's lead source from the "All customers" pane or the customers records page.
+7. **`openCustomerProfile(props)`** (added 2026-10-07; owner asked for it): one helper at `src/shared/modules/customers/core/lib/open-customer-profile.ts` (module address, item 11) replacing the 14 hand-written `openModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props })` calls (Task 0). Its `props` type is the modal's own, so Task 3's `defaultMeetingOpen` flows through with no helper change.
+8. **No `EntityTableSection`** (retracted by the owner later on 2026-10-07, tracker **D65**, after D64 had recorded it): the two lead-sources sections compose the `DataView` parts (`src/shared/components/data-view/`, built by the data-view spec's phase 1, which lands **before** this plan) in their own `<section>` (Task 2 Steps 3–4). Re-check the part names and import path against that phase's code before dispatch; the sketches below follow the spec as ruled.
+9. **The panes gain the row-cap notice.** `QueryToolbar.Standard` includes `QueryToolbar.RowCapNotice`, which the hand-written pane toolbars left out. It shows only when a read hits the row cap, as on the records pages.
+10. **Customers skeleton row height** (added 2026-10-07): the hook sets `skeletonRowClassName` to the measured row height (Task 1 Step 8), as projects did in `7572c341`. Without it the default `h-[61px]` jumps against the real rows.
+11. **New customers files live at the module address** (owner ruling 2026-10-07, under the 2026-10-05 rule "code lives where its module will be"): `useCustomersTable` at `src/shared/modules/customers/core/components/customers-table/use-customers-table.tsx`, `openCustomerProfile` at `src/shared/modules/customers/core/lib/open-customer-profile.ts`, the first files under `modules/customers/`. Both are client files with no DAL, so D12's "no partial module" (split-brain DAL) does not apply. Existing `entities/customers/**` files are edited where they are until the path-only move; Task 4's moves of existing files are unchanged.
+12. **Edit Profile opens the profile in edit mode** (owner ruling 2026-10-07: "fix as needed"): new optional prop `defaultEditing` on `CustomerProfileModal`, seeding `useCustomerEditForm`'s `isEditing` for a viewer who can edit (Task 3 Step 1). Before, Edit Profile did exactly what View Profile does. The pipeline kanban card's Edit Profile still falls back to the pipeline board: same bug, out of this plan; name it in the Task 5 report.
+13. **Schedule Meeting on an already-loaded profile needs investigating first** (owner ruling 2026-10-07: "we'll need to look deeper"). When the profile is cached, the profile modal and the Add meeting dialog mount in the same commit; the inner dialog's focus trap and dismiss layer may register before the outer one, so Escape or a click in the form could close the whole profile. Unconfirmed. Task 3 Step 2b reproduces it before anything is committed; if it reproduces, the dialog opens one commit after the content mounts (an effect, not a `useState` seed) and Step 4 checks the cached case; if that fails too, Task 3 stops for the owner.
+14. **Switching sources starts the pane on page 1** (owner ruling 2026-10-07). Today, and in the plan as first written, page 3 of source A became page 3 of source B. The selection handler clears the pane's page key (Task 2 Step 4b). Its pipeline filter and search still carry over, as today.
 
 ## Global Constraints
 
 - Verification per task: `pnpm tsc` and `pnpm lint`. **Never `pnpm build`.**
 - **No database writes for testing** (dev included). Browser checks read and open UI only: never submit the Add meeting form, never confirm a delete, never pick a created date. A write check runs only on a customer the owner names, or is verified by code read.
+- **Order (owner ruling 2026-10-07, tracker D64):** R2 lands before the permissions #285 merge and before pipeline-speed phase 2 (the action hosts). #285 rebases onto R2 (in this plan's files: `columns-registry.tsx`, `use-profile-commands.ts`, the moved `customer-meetings-list.tsx`, `use-meetings-table.tsx`, the customers `queries.ts` and `DOCS.md`); do not wait for it, and do not adopt its names (`permit`, `permissions/client`) before it merges.
 - **No schema change.** If a step seems to need one, stop and report it.
 - No unit runner in the repo: pure functions are checked with throwaway `node:test` files under `.superpowers/sdd/2026-10-05-customers-entity-table-and-fixed-filters/tests/` (git-ignored; the same workspace as part 1), run from the repo root with `pnpm exec tsx --test <file>`. A file that imports a `server-only` module runs with `NODE_OPTIONS=--conditions=react-server`. Never commit them.
-- Work on `main`; other sessions commit concurrently and the index can hold their staged work. Add only new files with `git add -- <path>`, then **commit with an explicit pathspec** (`git commit -m "…" -- <paths>`, as every commit block below does) so nothing already staged rides along; confirm with `git show --stat HEAD`. Never `git add -A`, `git stash`, `checkout`, `reset`, `restore`, `clean` or `commit --amend`. Before editing, moving or deleting any file this plan touches, run `git status --short <file>`: if it shows changes you didn't make, stop and ask. The #285 permissions worktree and the profile modal's polish pass both touch customer files. Message shape `type(scope): subject`, ending with `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
+- Work on `main`; other sessions commit concurrently and the index can hold their staged work. Add only new files with `git add -- <path>`, then **commit with an explicit pathspec** (`git commit -m "…" -- <paths>`, as every commit block below does) so nothing already staged rides along; confirm with `git show --stat HEAD`. Never `git add -A`, `git stash`, `checkout`, `reset`, `restore`, `clean` or `commit --amend`. Before editing, moving or deleting any file this plan touches, run `git status --short <file>`: if it shows changes you didn't make, stop and ask. The #285 permissions worktree and the profile modal's polish pass both touch customer files. Message shape `type(scope): subject`, ending with `Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>`.
 - Edits are given as exact "replace this with that" pairs or whole files. If the text to replace is not in the file as written, stop and re-read the file: another session changed it. Do not guess.
 - Never start, stop or restart a dev server; never touch `.next`. Run `ss -ltnp | grep :3000` and reuse the running one.
 - Browser checks: the local Playwright script (Task 1 Step 1; memory `reference-playwright-auth.md`, `/api/dev/playwright-session`, roles via `&role=super-admin|agent`), desktop and 390px wide, light and dark; screenshots and reports land under `.superpowers/sdd/2026-10-05-customers-entity-table-and-fixed-filters/` and are listed in the task report. Never print `.env.local`, `DEV_LOGIN_SECRET` or a URL containing `secret=`. The script is a tool: if one of its selectors misses, fix the script, never the app, and say so in the report.
@@ -44,7 +53,7 @@ Each is isolated so a different answer is a small change.
 
 ## Review Focus
 
-1. **Switching lead sources in the pane shows the new source's customers, never the previous one's.** The pin changes while the table is mounted; the table must ask once for the new source and show its skeleton meanwhile, and an inline `fixed` object must not refetch on every render. Pinned by Task 2 Step 8 (browser: page 1 is read once per source, each read with its own `filters.leadSource`, and `readCount` stays small).
+1. **Switching lead sources in the pane shows the new source's customers, never the previous one's, from page 1.** The pin changes while the table is mounted; the table must ask once for the new source and show its skeleton meanwhile, and an inline `fixed` object must not refetch on every render. Pinned by Task 2 Step 8 (browser: page 1 is read once per source, each read with its own `filters.leadSource`, and `readCount` stays small).
 2. **A saved column layout that names the removed Source column still loads.** A viewer who resized or hid Source in the pane has `leadSourceName` in the `dt.lead-source-customers` cookie; the table must load, ignore it, and keep the rest of the layout. Pinned by Task 2 Step 8 (browser, cookie preset through `TABLE_PREFS`).
 3. **An agent sees the same customers as before, and the pane's read cannot widen that.** The records page for an agent shows the baseline's rows; `/dashboard/lead-sources` still sends an agent to the dashboard. Pinned by Task 1 Step 8 and Task 2 Step 8 (browser, agent session).
 4. **An old pane URL keeps its page and filters, and a key that tries to name another source is ignored.** `?src_p=2&src_pipeline=fresh` still applies; `src_leadSource` or `src_sourceId` in the URL never changes whose customers show. Pinned by Task 2 Step 1 (test) and Step 8 (browser).
@@ -54,13 +63,74 @@ Each is isolated so a different answer is a small change.
 
 | Task | Files |
 |---|---|
-| 1 The hook and the records page | `src/shared/entities/customers/lib/columns-registry.tsx` · `src/shared/entities/customers/components/customers-table/use-customers-table.tsx` (new) · `src/features/records-management/constants/customers-records-table-view.ts` (new) · `src/features/records-management/ui/components/customers-records-table.tsx` (new) · `src/app/(frontend)/dashboard/(records)/customers/page.tsx` · `src/features/agent-dashboard/ui/components/customers-route-pending-view.tsx` · deleted: `src/shared/entities/customers/components/customers-table.tsx`, `src/shared/entities/customers/constants/customers-table-query-config.ts` |
+| 0 `openCustomerProfile` | `src/shared/modules/customers/core/lib/open-customer-profile.ts` (new) · the 13 files that call `openModal({ accessor: 'CustomerProfile', … })` today (Task 0 Step 1 lists them) |
+| 1 The hook and the records page | `src/shared/entities/customers/lib/columns-registry.tsx` · `src/shared/modules/customers/core/components/customers-table/use-customers-table.tsx` (new) · `src/features/records-management/constants/customers-records-table-view.ts` (new) · `src/features/records-management/ui/components/customers-records-table.tsx` (new) · `src/app/(frontend)/dashboard/(records)/customers/page.tsx` · `src/features/agent-dashboard/ui/components/customers-route-pending-view.tsx` · deleted: `src/shared/entities/customers/components/customers-table.tsx`, `src/shared/entities/customers/constants/customers-table-query-config.ts` |
 | 2 The lead-sources tables | `src/features/lead-sources-admin/constants/{all-customers-table-view,lead-source-customers-table-view}.ts` (new) · `src/features/lead-sources-admin/ui/components/{all-customers-section,lead-source-customers-section}.tsx` · `src/app/(frontend)/dashboard/lead-sources/page.tsx` · `src/trpc/routers/lead-sources.router.ts` · `src/shared/entities/customers/dal/customer-fields.ts` · `src/shared/entities/customers/dal/server/{customer-field-sql,queries}.ts` · deleted: `src/features/lead-sources-admin/constants/lead-sources-table-query-configs.ts` |
-| 3 The two row actions | `src/shared/entities/customers/hooks/use-profile-commands.ts` · `src/shared/entities/customers/components/profile/{customer-profile-modal,customer-profile-modal-content}.tsx` · `src/shared/entities/customers/components/customers-table/use-customers-table.tsx` |
+| 3 The two row actions | `src/shared/entities/customers/hooks/{use-profile-commands,use-customer-edit-form}.ts` · `src/shared/entities/customers/components/profile/{customer-profile-modal,customer-profile-modal-content}.tsx` · `src/shared/modules/customers/core/components/customers-table/use-customers-table.tsx` |
 | 4 Ownership moves | `src/shared/entities/customers/components/lists/*` → `src/shared/entities/meetings/components/`, `src/shared/modules/projects/core/components/` · `src/shared/entities/customers/components/profile/customer-profile-tab-panels.tsx` |
-| 5 Hand-off | `docs/plans/2026-09-26-records-management-epic.md` · `docs/superpowers/specs/2026-10-05-customers-entity-table-and-fixed-filters-design.md` · `src/shared/entities/customers/DOCS.md` · `docs/ubiquitous-language.md` · `docs/codebase-conventions/query-toolkit.md` |
+| 5 Hand-off | `docs/plans/2026-09-26-records-management-epic.md` · `docs/superpowers/specs/2026-10-05-customers-entity-table-and-fixed-filters-design.md` · `src/shared/entities/customers/DOCS.md` · `docs/ubiquitous-language.md` · `docs/codebase-conventions/{query-toolkit,frontend-stack}.md` |
 
-None of these source files carried another session's uncommitted edits on 2026-10-05. `src/features/lead-sources-admin/ui/views/lead-sources-view.tsx` and `src/shared/components/records-page-shell.tsx` did (theme work); this plan does not edit them.
+On 2026-10-07 two Task 0 callers held other sessions' uncommitted edits (`features/customer-pipelines/ui/views/customer-pipeline-view.tsx`, pipeline speed; `features/agent-dashboard/ui/components/dashboard-proposal-customer-link.tsx`, the dashboard rework): Task 0 Step 1 leaves them on `openModal` unless they are committed first. `lead-sources-view.tsx` (Task 2 Step 4b) was clean. Check every file with `git status --short` anyway.
+
+---
+
+### Task 0: `openCustomerProfile` (Owner confirms 7)
+
+**Files:**
+- Create: `src/shared/modules/customers/core/lib/open-customer-profile.ts`
+- Modify: every file `grep -rln "accessor: 'CustomerProfile'" src` lists, **except** `src/shared/entities/customers/components/customers-table.tsx` and the two lead-sources sections (Tasks 1–2 replace them). On 2026-10-07 that left: `features/campaigns-admin/ui/views/campaigns-leads-view.tsx`, `features/schedule-management/ui/components/schedule-meetings-calendar.tsx`, `features/customer-pipelines/ui/views/customer-pipeline-view.tsx`, `features/proposal-flow/ui/components/proposal/heading.tsx`, `features/proposal-flow/ui/components/table/index.tsx`, `features/meeting-flow/ui/components/shell/customer-chip.tsx`, `features/agent-dashboard/ui/components/dashboard-proposal-customer-link.tsx`, `shared/entities/meetings/components/overview-card.tsx`, `shared/entities/meetings/components/meetings-table/use-meetings-table.tsx` (two calls), `shared/modules/projects/core/components/projects-table/use-projects-table.tsx`.
+
+**Interfaces:**
+- Produces: `openCustomerProfile(props: ComponentProps<typeof CustomerProfileModal>): void`.
+
+- [ ] **Step 1: Who holds these files**
+
+```bash
+grep -rln "accessor: 'CustomerProfile'" src
+git status --short $(grep -rln "accessor: 'CustomerProfile'" src)
+```
+
+A file with changes you didn't make is left on `openModal` this round: list it in the Task 5 report, don't edit it.
+
+- [ ] **Step 2: The helper**
+
+Create `src/shared/modules/customers/core/lib/open-customer-profile.ts`:
+
+```ts
+import type { ComponentProps } from 'react'
+
+import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
+import { openModal } from '@/shared/lib/open-modal'
+
+/** Opens the customer profile modal from anywhere; the one place that names its modal accessor. */
+export function openCustomerProfile(props: ComponentProps<typeof CustomerProfileModal>) {
+  openModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props })
+}
+```
+
+- [ ] **Step 3: The callers**
+
+In each listed file, replace the `openModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props: X })` call with `openCustomerProfile(X)`, keeping `X` as written. Then drop the `openModal` and `CustomerProfileModal` imports where nothing else in the file uses them, and add `import { openCustomerProfile } from '@/shared/modules/customers/core/lib/open-customer-profile'`. `features/proposal-flow/ui/components/proposal/heading.tsx` keeps its `openModal` import (its second `openModal` call stays). That file and `table/index.tsx` import `CustomerProfileModal` through the barrel `src/features/customer-pipelines/ui/components/index.ts`, whose only export it is; once neither imports it, `git rm` the barrel (`grep -rn "customer-pipelines/ui/components'" src` → no hits). A held file (Step 1) that still imports through the barrel keeps it; say so in the report. Change nothing else: the surrounding `useCallback`s, memo dependencies and meta entries stay as they are (`openCustomerProfile` is a module function, so no dependency list changes).
+
+- [ ] **Step 4: Type-check, lint, greps**
+
+```bash
+pnpm tsc
+pnpm exec eslint src/shared/modules/customers/core/lib/open-customer-profile.ts <each edited file>
+grep -rn "accessor: 'CustomerProfile'" src
+```
+
+The grep lists only `open-customer-profile.ts`, the three files Tasks 1–2 replace, and any file Step 1 left alone.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add -- src/shared/modules/customers/core/lib/open-customer-profile.ts
+git commit -m "refactor(customers): one openCustomerProfile helper opens the profile modal everywhere
+
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/shared/modules/customers/core/lib/open-customer-profile.ts <each edited file> src/features/customer-pipelines/ui/components/index.ts
+git show --stat HEAD
+```
 
 ---
 
@@ -68,7 +138,7 @@ None of these source files carried another session's uncommitted edits on 2026-1
 
 **Files:**
 - Modify: `src/shared/entities/customers/lib/columns-registry.tsx`
-- Create: `src/shared/entities/customers/components/customers-table/use-customers-table.tsx`
+- Create: `src/shared/modules/customers/core/components/customers-table/use-customers-table.tsx`
 - Create: `src/features/records-management/constants/customers-records-table-view.ts`
 - Create: `src/features/records-management/ui/components/customers-records-table.tsx`
 - Modify: `src/app/(frontend)/dashboard/(records)/customers/page.tsx`
@@ -78,7 +148,7 @@ None of these source files carried another session's uncommitted edits on 2026-1
 - Tool (throwaway): `.superpowers/sdd/2026-10-05-customers-entity-table-and-fixed-filters/capture.ts`
 
 **Interfaces:**
-- Consumes: `useDataViewQuery(procedure, extra, config, fixed?)` (part 1); `useEntityTable`, `EntityRecordsTable`, `EntityTableView` (built with the projects table); `useCustomerActionConfigs<T>({ onView?, onEdit?, onScheduleMeeting?, onDeleted? })`.
+- Consumes: `useDataViewQuery(procedure, extra, config, fixed?)` (part 1); `useEntityTable`, `EntityRecordsTable`, `EntityTableView` (built with the projects table); `useCustomerActionConfigs<T>({ onView?, onEdit?, onScheduleMeeting?, onDeleted? })`; `openCustomerProfile` (Task 0).
 - Produces:
   - `CustomerTableRow` = the row type of `customersRouter.business.list`; `CustomerColumnKey = keyof typeof CUSTOMER_COLUMNS`
   - `UseCustomersTableOptions { fixed?: FilterValues<typeof CUSTOMER_FIELDS> }`
@@ -245,7 +315,7 @@ export type CustomerColumnKey = keyof typeof CUSTOMER_COLUMNS
 
 - [ ] **Step 3: The entity table hook**
 
-Create `src/shared/entities/customers/components/customers-table/use-customers-table.tsx`:
+Create `src/shared/modules/customers/core/components/customers-table/use-customers-table.tsx`:
 
 ```tsx
 'use client'
@@ -262,10 +332,9 @@ import { toast } from 'sonner'
 import { useEntityTable } from '@/shared/components/data-table/lib/use-entity-table'
 import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
-import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { useCustomerActionConfigs } from '@/shared/entities/customers/hooks/use-customer-action-configs'
 import { CUSTOMER_COLUMNS } from '@/shared/entities/customers/lib/columns-registry'
-import { openModal } from '@/shared/lib/open-modal'
+import { openCustomerProfile } from '@/shared/modules/customers/core/lib/open-customer-profile'
 import { useTRPC } from '@/trpc/helpers'
 
 export interface UseCustomersTableOptions {
@@ -294,9 +363,7 @@ export function useCustomersTable(
     }),
   )
 
-  const openProfile = useCallback((row: CustomerTableRow) => {
-    openModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props: { customerId: row.id } })
-  }, [])
+  const openProfile = useCallback((row: CustomerTableRow) => openCustomerProfile({ customerId: row.id }), [])
 
   const { actions, DeleteConfirmDialog } = useCustomerActionConfigs<CustomerTableRow>({ onView: openProfile })
 
@@ -314,6 +381,8 @@ export function useCustomersTable(
     onRowClick: openProfile,
     entityName: 'customer',
     rowDataAttribute: 'data-customer-row',
+    // Measured in Step 8; replace with the real row height, as projects did.
+    skeletonRowClassName: 'h-[61px]',
   })
 
   return { ...table, dialogs: <DeleteConfirmDialog /> }
@@ -355,7 +424,7 @@ Create `src/features/records-management/ui/components/customers-records-table.ts
 
 import { CUSTOMERS_RECORDS_TABLE_VIEW } from '@/features/records-management/constants/customers-records-table-view'
 import { EntityRecordsTable } from '@/shared/components/entity-records-table'
-import { useCustomersTable } from '@/shared/entities/customers/components/customers-table/use-customers-table'
+import { useCustomersTable } from '@/shared/modules/customers/core/components/customers-table/use-customers-table'
 
 export function CustomersRecordsTable() {
   const table = useCustomersTable(CUSTOMERS_RECORDS_TABLE_VIEW)
@@ -429,13 +498,15 @@ Against `p2-baseline-*.json` and its screenshots, for both roles, both widths an
 
 By hand, as a super-admin on desktop: a row click opens that customer's profile modal; the row menu ("Actions") lists View Profile, Edit Profile, Schedule Meeting and Delete; clicking a Created cell opens the date picker (close it without picking); clicking a Source cell opens the lead-source picker (close it without picking). A hard reload shows the page's skeleton, then the rows, with no jump (the pending view draws the same table).
 
+**Skeleton height (Owner confirms 10).** Measure real customer row heights at 1440 px (`getBoundingClientRect().height` on `[data-customer-row]`, a few rows), set `skeletonRowClassName` in the hook to the common height (write the reason in a one-line comment if two heights exist, as projects does), re-run `pnpm tsc`, and reload once more to confirm no jump. Measure with no other session's theme edits in `globals.css` if possible (`git status --short src/app/(frontend)/globals.css`); if they are present, note it in the commit body.
+
 - [ ] **Step 9: Commit**
 
 ```bash
-git add -- src/shared/entities/customers/components/customers-table/use-customers-table.tsx src/features/records-management/constants/customers-records-table-view.ts src/features/records-management/ui/components/customers-records-table.tsx
+git add -- src/shared/modules/customers/core/components/customers-table/use-customers-table.tsx src/features/records-management/constants/customers-records-table-view.ts src/features/records-management/ui/components/customers-records-table.tsx
 git commit -m "feat(customers): customers entity table hook; the records page is a table view of it
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>" -- src/shared/entities/customers/lib/columns-registry.tsx src/shared/entities/customers/components/customers-table/use-customers-table.tsx src/features/records-management/constants/customers-records-table-view.ts src/features/records-management/ui/components/customers-records-table.tsx "src/app/(frontend)/dashboard/(records)/customers/page.tsx" src/features/agent-dashboard/ui/components/customers-route-pending-view.tsx src/shared/entities/customers/components/customers-table.tsx src/shared/entities/customers/constants/customers-table-query-config.ts
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/shared/entities/customers/lib/columns-registry.tsx src/shared/modules/customers/core/components/customers-table/use-customers-table.tsx src/features/records-management/constants/customers-records-table-view.ts src/features/records-management/ui/components/customers-records-table.tsx "src/app/(frontend)/dashboard/(records)/customers/page.tsx" src/features/agent-dashboard/ui/components/customers-route-pending-view.tsx src/shared/entities/customers/components/customers-table.tsx src/shared/entities/customers/constants/customers-table-query-config.ts
 git show --stat HEAD
 ```
 
@@ -450,6 +521,7 @@ git show --stat HEAD
 - Modify: `src/features/lead-sources-admin/ui/components/all-customers-section.tsx`
 - Modify: `src/features/lead-sources-admin/ui/components/lead-source-customers-section.tsx`
 - Modify: `src/app/(frontend)/dashboard/lead-sources/page.tsx`
+- Modify: `src/features/lead-sources-admin/ui/views/lead-sources-view.tsx` (the source selection handler; Owner confirms 14)
 - Modify: `src/trpc/routers/lead-sources.router.ts` (`getCustomers` and two imports)
 - Modify: `src/shared/entities/customers/dal/customer-fields.ts`
 - Modify: `src/shared/entities/customers/dal/server/customer-field-sql.ts`
@@ -457,7 +529,7 @@ git show --stat HEAD
 - Test (throwaway): `.superpowers/sdd/2026-10-05-customers-entity-table-and-fixed-filters/tests/customers-table-views.test.ts`
 
 **Interfaces:**
-- Consumes: `useCustomersTable(tableView, { fixed })` and `CustomerColumnKey` (Task 1); `CUSTOMERS_RECORDS_TABLE_VIEW` (Task 1, in the test); `staticDataViewInput`, `loadDataViewQueryInput(searchParams, config, extra?, fixed?)` (part 1).
+- Consumes: the `DataView` compound (`src/shared/components/data-view/`; the data-view spec's phase 1, which lands before this plan; D65); `useCustomersTable(tableView, { fixed })` and `CustomerColumnKey` (Task 1); `CUSTOMERS_RECORDS_TABLE_VIEW` (Task 1, in the test); `staticDataViewInput`, `loadDataViewQueryInput(searchParams, config, extra?, fixed?)` (part 1).
 - Produces: `ALL_CUSTOMERS_TABLE_VIEW` (`all-customers` · `all`, four columns); `LEAD_SOURCE_CUSTOMERS_TABLE_VIEW` (`lead-source-customers` · `src`, no Source column). Removed: `leadSourcesRouter.getCustomers`; `CUSTOMER_FIELDS.sourceId` and `.segment` with their SQL; `ALL_CUSTOMERS_TABLE_QUERY_CONFIG`, `LEAD_SOURCE_CUSTOMERS_TABLE_QUERY_CONFIG`.
 
 - [ ] **Step 1: Write the failing test**
@@ -564,68 +636,60 @@ Delete the old configs: `git rm -- src/features/lead-sources-admin/constants/lea
 
 Run the test again. Expected: 4 pass.
 
-- [ ] **Step 3: The "All customers" section**
+- [ ] **Step 3: The "All customers" section on the `DataView` parts (Owner confirms 8, 9)**
 
-Replace `src/features/lead-sources-admin/ui/components/all-customers-section.tsx` with (the markup is today's; the read, mutation, actions, columns and meta now come from the hook):
+Replace `src/features/lead-sources-admin/ui/components/all-customers-section.tsx` with (the section wrapper and the eyebrow heading are today's; the count, toolbar root, fill cell, stale dim and empty state come from the parts; `QueryToolbar.Standard` replaces the hand-written toolbar, which was Standard minus the row-cap notice):
 
 ```tsx
 'use client'
 
 import { ALL_CUSTOMERS_TABLE_VIEW } from '@/features/lead-sources-admin/constants/all-customers-table-view'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
+import { DataView } from '@/shared/components/data-view/data-view'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
-import { useCustomersTable } from '@/shared/entities/customers/components/customers-table/use-customers-table'
+import { useCustomersTable } from '@/shared/modules/customers/core/components/customers-table/use-customers-table'
 
 export function AllCustomersSection() {
   const { query, visibility, dataTableProps, dialogs } = useCustomersTable(ALL_CUSTOMERS_TABLE_VIEW)
 
   return (
-    <section aria-label="All customers" className="flex min-h-0 flex-1 flex-col gap-3">
+    <DataView query={query} entityName="customers">
       {dialogs}
-
-      <div className="flex shrink-0 flex-col gap-2">
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            All customers
-          </h3>
-          <span className="text-xs text-muted-foreground tabular-nums">
-            {query.isPending ? 'Loading…' : `${query.total.toLocaleString()} total`}
-          </span>
+      <section aria-label="All customers" className="flex min-h-0 flex-1 flex-col gap-3">
+        <div className="flex shrink-0 flex-col gap-2">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
+            <DataView.Title as="h3" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              All customers
+            </DataView.Title>
+            <DataView.Count />
+          </div>
+          <DataView.Toolbar>
+            <QueryToolbar.Standard searchPlaceholder="Filter by name or email…" visibility={visibility} />
+          </DataView.Toolbar>
         </div>
-
-        <QueryToolbar query={query} entityName="customers">
-          <QueryToolbar.Bar>
-            <QueryToolbar.Search placeholder="Filter by name or email…" />
-            <QueryToolbar.FilterTrigger />
-            <QueryToolbar.ColumnsTrigger visibility={visibility} />
-            <QueryToolbar.RefreshButton />
-            <QueryToolbar.PageSize />
-          </QueryToolbar.Bar>
-          <QueryToolbar.ChipRail />
-          <QueryToolbar.LiveStatus />
-        </QueryToolbar>
-      </div>
-
-      {/* DataTable sizes itself with `h-full`; this cell gives it a height, so the pagination bar pins to the bottom and the rows scroll. */}
-      <div className="min-h-0 flex-1">
-        <DataTable {...dataTableProps} />
-      </div>
-    </section>
+        <DataView.Body empty={{ title: 'No customers', description: 'Customers appear here as they are added' }}>
+          <DataTable {...dataTableProps} />
+        </DataView.Body>
+      </section>
+    </DataView>
   )
 }
 ```
 
+`DataView.Body` draws the `min-h-0 flex-1` cell the old file wrote by hand, so no extra wrapper around `DataTable`. `DataView.Count`'s wording is the shared one (`formatTotalCount`), replacing the pane's "N total".
+
 - [ ] **Step 4: The one-source section**
 
-Replace `src/features/lead-sources-admin/ui/components/lead-source-customers-section.tsx` with:
+Replace `src/features/lead-sources-admin/ui/components/lead-source-customers-section.tsx` with the same composition, pinned:
 
 ```tsx
 'use client'
 
 import { LEAD_SOURCE_CUSTOMERS_TABLE_VIEW } from '@/features/lead-sources-admin/constants/lead-source-customers-table-view'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
+import { DataView } from '@/shared/components/data-view/data-view'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
-import { useCustomersTable } from '@/shared/entities/customers/components/customers-table/use-customers-table'
+import { useCustomersTable } from '@/shared/modules/customers/core/components/customers-table/use-customers-table'
 
 interface LeadSourceCustomersSectionProps {
   leadSourceId: string
@@ -637,45 +701,45 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
   })
 
   return (
-    <section
-      aria-label="Customers from this lead source"
-      className="flex min-h-0 flex-1 flex-col gap-3"
-    >
+    <DataView query={query} entityName="customers">
       {dialogs}
-
-      <div className="flex shrink-0 flex-col gap-2">
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Customers from this source
-          </h3>
-          <span className="text-xs text-muted-foreground tabular-nums">
-            {query.isPending ? 'Loading…' : `${query.total.toLocaleString()} total`}
-          </span>
+      <section aria-label="Customers from this lead source" className="flex min-h-0 flex-1 flex-col gap-3">
+        <div className="flex shrink-0 flex-col gap-2">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
+            <DataView.Title as="h3" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Customers from this source
+            </DataView.Title>
+            <DataView.Count />
+          </div>
+          <DataView.Toolbar>
+            <QueryToolbar.Standard searchPlaceholder="Filter by name or email…" visibility={visibility} />
+          </DataView.Toolbar>
         </div>
-
-        <QueryToolbar query={query} entityName="customers">
-          <QueryToolbar.Bar>
-            <QueryToolbar.Search placeholder="Filter by name or email…" />
-            <QueryToolbar.FilterTrigger />
-            <QueryToolbar.ColumnsTrigger visibility={visibility} />
-            <QueryToolbar.RefreshButton />
-            <QueryToolbar.PageSize />
-          </QueryToolbar.Bar>
-          <QueryToolbar.ChipRail />
-          <QueryToolbar.LiveStatus />
-        </QueryToolbar>
-      </div>
-
-      {/* DataTable sizes itself with `h-full`; this cell gives it a height, so the pagination bar pins to the bottom and the rows scroll. */}
-      <div className="min-h-0 flex-1">
-        <DataTable {...dataTableProps} />
-      </div>
-    </section>
+        <DataView.Body empty={{ title: 'No customers', description: 'No customers have come from this source yet' }}>
+          <DataTable {...dataTableProps} />
+        </DataView.Body>
+      </section>
+    </DataView>
   )
 }
 ```
 
 The pane is mounted only in the browser, after the source's own read, so it has no server prefetch and the page passes no `fixed` to a loader.
+
+- [ ] **Step 4b: A new source starts on page 1 (Owner confirms 14)**
+
+`src/features/lead-sources-admin/ui/views/lead-sources-view.tsx` selects a source through `setSelectedId(id, { history: 'push' })` in three callbacks (`onSelect`, `onView`, `onCreated`). Run `git status --short` on the file first (clean on 2026-10-07). Add the imports `import { dataViewUrlKeys } from '@/shared/dal/lib/query/derive-data-view-input'` and `import { LEAD_SOURCE_CUSTOMERS_TABLE_VIEW } from '@/features/lead-sources-admin/constants/lead-source-customers-table-view'` (`useCallback` from `react` if not already imported), and after the `selectedId` state:
+
+```tsx
+  const [, setSourcePanePage] = useQueryState(dataViewUrlKeys(LEAD_SOURCE_CUSTOMERS_TABLE_VIEW.query.paramPrefix).pageKey)
+  // The pane's page belongs to the source it was read for; the next source starts on page 1.
+  const selectSource = useCallback((id: string) => {
+    void setSourcePanePage(null)
+    void setSelectedId(id, { history: 'push' })
+  }, [setSourcePanePage, setSelectedId])
+```
+
+Then replace each of the three `id => setSelectedId(id, { history: 'push' })` callbacks with `selectSource`. `onBack` (back to All) is unchanged: the All pane has its own prefix. nuqs applies both writes as one URL update, so the pane asks once, for page 1 of the new source.
 
 - [ ] **Step 5: The page's prefetch**
 
@@ -728,7 +792,7 @@ import { desc, inArray, sql } from 'drizzle-orm'
 `src/shared/entities/customers/dal/server/queries.ts`: the doc comment above `listCustomers` becomes
 
 ```ts
-/** One customers list for every table: `ctx.scope` decides who sees what; a table narrows it with filters, pinned ones included. */
+/** One customers list for every table: the read's visibility decides who sees what; a table narrows it with filters, pinned ones included. */
 ```
 
 - [ ] **Step 7: Tests, type-check, lint, greps**
@@ -757,6 +821,7 @@ Against `p2-baseline-super-admin.json` and its screenshots, at both widths and i
 - **All customers pane** (`/dashboard/lead-sources`): the same `columns`, `rows`, `reads[].input` and `reads[].ids`; the section title and "N total" are unchanged;
 - **one source's pane** (A, then B): `columns` are Customer, Pipeline, Created (Source is gone, and is not in the Columns menu); `reads` holds only `customersRouter.business.list` entries, each with `input.filters.leadSource` equal to `[<that source's id>]`, and their `ids` and `total` equal the baseline's `leadSourcesRouter.getCustomers` entries for the same source; no entry is a `leadSourcesRouter.getCustomers` read; `url` holds no `src_leadSource` key; the pane's count badge and performance strip above it are unchanged;
 - **the old bookmark**: `?id=<A>&src_p=2&src_leadSource=<B>&src_sourceId=<B>` shows page 2 of A's customers (or A's last page if A has one page; the clamp is today's), `input.filters.leadSource` is `[<A>]`, and no chip mentions a source (Review Focus 4);
+- **switching from page 2** (also run the switch capture from `"/dashboard/lead-sources?id=<A>&src_p=2"`): after the click the `url` holds no `src_p` and the read for B asks `offset: 0` (Owner confirms 14);
 - **switching** (`p2-task2-switch`, desktop entries): `reads` holds page 1 for A (asked at load) and page 1 for B (asked after the click), each with its own `filters.leadSource`; the final `rows` are B's baseline rows; `readCount` is under ten (A, B, B's Refresh and their next-page prefetches), where a pin that refetched on every render would show dozens (Review Focus 1);
 - **the saved layout** (`p2-task2-prefs`): the table loads with no error; `columns` are Customer and Created (Pipeline hidden by the saved layout, Source absent); the Customer column is visibly wider than in `p2-task2` (Review Focus 2);
 - `errors` holds no `[prefetch drift]`, no `[data-view]` and no hydration error the baseline did not have;
@@ -770,27 +835,28 @@ By hand, as a super-admin on desktop, in A's pane: a row click opens the profile
 git add -- src/features/lead-sources-admin/constants/all-customers-table-view.ts src/features/lead-sources-admin/constants/lead-source-customers-table-view.ts
 git commit -m "refactor(lead-sources): both customers tables are table views of the customers entity table; one source's pane reads the shared list with its source pinned, and getCustomers goes
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>" -- src/features/lead-sources-admin/constants/all-customers-table-view.ts src/features/lead-sources-admin/constants/lead-source-customers-table-view.ts src/features/lead-sources-admin/constants/lead-sources-table-query-configs.ts src/features/lead-sources-admin/ui/components/all-customers-section.tsx src/features/lead-sources-admin/ui/components/lead-source-customers-section.tsx "src/app/(frontend)/dashboard/lead-sources/page.tsx" src/trpc/routers/lead-sources.router.ts src/shared/entities/customers/dal/customer-fields.ts src/shared/entities/customers/dal/server/customer-field-sql.ts src/shared/entities/customers/dal/server/queries.ts
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/features/lead-sources-admin/constants/all-customers-table-view.ts src/features/lead-sources-admin/constants/lead-source-customers-table-view.ts src/features/lead-sources-admin/constants/lead-sources-table-query-configs.ts src/features/lead-sources-admin/ui/components/all-customers-section.tsx src/features/lead-sources-admin/ui/components/lead-source-customers-section.tsx "src/app/(frontend)/dashboard/lead-sources/page.tsx" src/features/lead-sources-admin/ui/views/lead-sources-view.tsx src/trpc/routers/lead-sources.router.ts src/shared/entities/customers/dal/customer-fields.ts src/shared/entities/customers/dal/server/customer-field-sql.ts src/shared/entities/customers/dal/server/queries.ts
 git show --stat HEAD
 ```
 
 ---
 
-### Task 3: Edit Profile and Schedule Meeting open the profile modal (Owner confirms 1 and 2)
+### Task 3: Edit Profile and Schedule Meeting open the profile modal (Owner confirms 1, 2, 12, 13)
 
 **Files:**
 - Modify: `src/shared/entities/customers/hooks/use-profile-commands.ts`
+- Modify: `src/shared/entities/customers/hooks/use-customer-edit-form.ts`
 - Modify: `src/shared/entities/customers/components/profile/customer-profile-modal-content.tsx`
 - Modify: `src/shared/entities/customers/components/profile/customer-profile-modal.tsx`
-- Modify: `src/shared/entities/customers/components/customers-table/use-customers-table.tsx`
+- Modify: `src/shared/modules/customers/core/components/customers-table/use-customers-table.tsx`
 
 **Interfaces:**
 - Consumes: `useCustomersTable` (Task 1); `useCustomerActionConfigs`'s `onEdit` and `onScheduleMeeting` overrides (existing).
-- Produces: `CustomerProfileModal` prop `defaultMeetingOpen?: boolean`; `useProfileCommands(defaultMeetingOpen = false)`. In every customers table, Edit Profile opens the profile modal and Schedule Meeting opens it with the Add meeting dialog up. Other callers of `useCustomerActionConfigs` (the pipeline card) are untouched.
+- Produces: `CustomerProfileModal` props `defaultMeetingOpen?: boolean` and `defaultEditing?: boolean`; `useProfileCommands(defaultMeetingOpen = false)`; `useCustomerEditForm(customer, { defaultEditing? })`. In every customers table, Edit Profile opens the profile modal in its edit mode and Schedule Meeting opens it with the Add meeting dialog up. Other callers of `useCustomerActionConfigs` (the pipeline card) are untouched.
 
 Today both actions fall through to `router.push(ROOTS.dashboard.pipeline())` in every customers table, because no table passes `onEdit` or `onScheduleMeeting` (`use-customer-action-configs.ts`, `defaultNavigate`).
 
-- [ ] **Step 1: The modal can open on its Add meeting dialog**
+- [ ] **Step 1: The modal can open on its Add meeting dialog or in edit mode**
 
 `src/shared/entities/customers/hooks/use-profile-commands.ts`: replace
 
@@ -830,11 +896,47 @@ export function CustomerProfileModal({ customerId, defaultMeetingOpen, defaultTa
 
 and pass it down: in the `<CustomerProfileModalContent …>` element, add `defaultMeetingOpen={defaultMeetingOpen}` above `defaultTab={defaultTab}`.
 
+Edit mode (Owner confirms 12) follows the same path. In the `Props` above add, after `customerId: string`,
+
+```tsx
+  /** Opens with the edit form on, for a caller whose action was "edit this customer". Ignored for a viewer who cannot edit. */
+  defaultEditing?: boolean
+```
+
+add `defaultEditing` to the signature's destructuring (after `customerId`), and pass `defaultEditing={defaultEditing}` to `<CustomerProfileModalContent …>`. In `customer-profile-modal-content.tsx`, add `defaultEditing?: boolean` to `Props`, destructure it, and change `const editForm = useCustomerEditForm(data.customer)` to
+
+```ts
+  const editForm = useCustomerEditForm(data.customer, { defaultEditing })
+```
+
+In `src/shared/entities/customers/hooks/use-customer-edit-form.ts`, replace
+
+```ts
+export function useCustomerEditForm(customer: CustomerWithProfile) {
+  const [isEditing, setIsEditing] = useState(false)
+  const ability = useAbility()
+```
+
+with
+
+```ts
+export function useCustomerEditForm(customer: CustomerWithProfile, { defaultEditing = false }: { defaultEditing?: boolean } = {}) {
+  const ability = useAbility()
+```
+
+and, right after the line `const canEdit = canEditContact || canEditProfiles || canEditAge`, add
+
+```ts
+  const [isEditing, setIsEditing] = useState(defaultEditing && canEdit)
+```
+
+(the state moves below the ability reads it depends on; hook order stays fixed on every render).
+
 The content mounts only once the profile has loaded (it is keyed by the customer's id), so the dialog opens with the customer's name in hand and never over the loading skeleton or the error state.
 
 - [ ] **Step 2: The hook passes both handlers**
 
-In `src/shared/entities/customers/components/customers-table/use-customers-table.tsx`, replace
+In `src/shared/modules/customers/core/components/customers-table/use-customers-table.tsx`, replace
 
 ```tsx
   const { actions, DeleteConfirmDialog } = useCustomerActionConfigs<CustomerTableRow>({ onView: openProfile })
@@ -843,29 +945,45 @@ In `src/shared/entities/customers/components/customers-table/use-customers-table
 with
 
 ```tsx
-  const scheduleMeeting = useCallback((row: CustomerTableRow) => {
-    openModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props: { customerId: row.id, defaultMeetingOpen: true } })
-  }, [])
+  const scheduleMeeting = useCallback(
+    (row: CustomerTableRow) => openCustomerProfile({ customerId: row.id, defaultMeetingOpen: true }),
+    [],
+  )
+
+  const editProfile = useCallback(
+    (row: CustomerTableRow) => openCustomerProfile({ customerId: row.id, defaultEditing: true }),
+    [],
+  )
 
   // Without these two, Edit Profile and Schedule Meeting fall back to opening the pipeline board.
   const { actions, DeleteConfirmDialog } = useCustomerActionConfigs<CustomerTableRow>({
     onView: openProfile,
-    onEdit: openProfile,
+    onEdit: editProfile,
     onScheduleMeeting: scheduleMeeting,
   })
 ```
+
+- [ ] **Step 2b: Investigate Schedule Meeting on an already-loaded profile (Owner confirms 13; before anything is committed)**
+
+The profile modal renders its content only once `profileQuery.data` exists. On a fresh open the Add meeting dialog therefore mounts after the modal; on a **cached** profile (the customer was opened earlier in the session) both mount in the same commit, and React runs the inner dialog's effects before the outer modal's. The question: does the inner dialog still own Escape, outside clicks and focus?
+
+With Steps 1–2 written (uncommitted), run a local Playwright script (as in Step 4; read-only, nothing submitted) as a super-admin on `/dashboard/customers`: (a) fresh: row 1's Schedule Meeting; (b) cached: row 1's View Profile, close it, then row 1's Schedule Meeting. For each, record which element has focus after open, whether Escape closes only the dialog, whether a click inside the form keeps both open, and both overlays' `data-state`; screenshots go in the report.
+
+- If (b) behaves like (a), keep Step 1 as written.
+- If it does not, seed the dialog one commit after the content mounts instead of in `useState`: in `useProfileCommands`, `useState(false)` plus `useEffect(() => { if (defaultMeetingOpen) setMeetingOpen(true) }, [])` with a why-comment; re-run (a) and (b), and keep (b) in Step 4.
+- If neither works, stop and report to the owner with the recordings; commit nothing from this task.
 
 - [ ] **Step 3: Type-check, lint, code read**
 
 Run: `pnpm tsc && pnpm lint`
 Expected: clean.
 
-Code read for Review Focus 5, with line numbers in the task report: in `customer-profile-modal.tsx`, `CustomerProfileModalContent` renders only inside `{profileQuery.data && …}`, so a failed or pending profile never mounts the dialog; `CUSTOMER_ACTIONS.scheduleMeeting` carries `permission: ['create', 'Meeting']`, so a viewer who cannot book never sees the action that sets `defaultMeetingOpen`. List the other `CustomerProfileModal` callers (`grep -rn "Component: CustomerProfileModal" src`) and confirm none passes the new prop, so they open as before.
+Code read for Review Focus 5, with line numbers in the task report: in `customer-profile-modal.tsx`, `CustomerProfileModalContent` renders only inside `{profileQuery.data && …}`, so a failed or pending profile never mounts the dialog; `CUSTOMER_ACTIONS.scheduleMeeting` carries `permission: ['create', 'Meeting']`, so a viewer who cannot book never sees the action that sets `defaultMeetingOpen`. List the other callers (`grep -rn "openCustomerProfile(" src`, plus any file Task 0 left on `openModal`) and confirm none but this hook passes `defaultMeetingOpen` or `defaultEditing`, so they open as before.
 
 - [ ] **Step 4: Browser read check (nothing submitted)**
 
 With the Playwright MCP browser, or a short script beside `capture.ts` that signs in the same way, as a super-admin and then as an agent, on `/dashboard/customers`, at 1440px and at 390px, light and dark:
-- open the first row's menu (the button named "Actions") and choose **Edit Profile**: the customer's profile modal opens (title "<name>'s Profile"); the URL is still `/dashboard/customers`. Close it.
+- open the first row's menu (the button named "Actions") and choose **Edit Profile**: the customer's profile modal opens (title "<name>'s Profile") with its edit form on (the save and cancel buttons show in place of the edit toggle) for the super-admin; the URL is still `/dashboard/customers`. Press cancel, close it. **Do not save.**
 - choose **Schedule Meeting**: the profile opens and the "Add meeting" dialog is up above it, with its form usable and fully on screen at 390px (Review Focus 5). Press Cancel (or Escape): the dialog closes and the profile stays. Close the profile. **Do not submit the form.**
 - choose **View Profile** and click a row: the profile opens with no dialog, as before.
 - repeat Edit Profile and Schedule Meeting once in `/dashboard/lead-sources` (All pane) and in one source's pane as a super-admin: the same.
@@ -876,9 +994,9 @@ Screenshots of the Schedule Meeting state at both widths and in both schemes go 
 - [ ] **Step 5: Commit**
 
 ```bash
-git commit -m "fix(customers): Edit Profile and Schedule Meeting in a customers table open the customer's profile, not the pipeline board
+git commit -m "fix(customers): Edit Profile opens the customer's profile in edit mode and Schedule Meeting opens it on Add meeting, not the pipeline board
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>" -- src/shared/entities/customers/hooks/use-profile-commands.ts src/shared/entities/customers/components/profile/customer-profile-modal-content.tsx src/shared/entities/customers/components/profile/customer-profile-modal.tsx src/shared/entities/customers/components/customers-table/use-customers-table.tsx
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/shared/entities/customers/hooks/use-profile-commands.ts src/shared/entities/customers/hooks/use-customer-edit-form.ts src/shared/entities/customers/components/profile/customer-profile-modal-content.tsx src/shared/entities/customers/components/profile/customer-profile-modal.tsx src/shared/modules/customers/core/components/customers-table/use-customers-table.tsx
 git show --stat HEAD
 ```
 
@@ -948,7 +1066,7 @@ Browser, super-admin, desktop and 390px: open a customer profile that has meetin
 ```bash
 git commit -m "refactor(customers): the profile's meeting and project lists live with the entity whose tree they render; the unused proposal row goes
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>" -- src/shared/entities/customers/components/lists/customer-meetings-list.tsx src/shared/entities/customers/components/lists/customer-projects-list.tsx src/shared/entities/customers/components/lists/project-entity-card.tsx src/shared/entities/customers/components/lists/proposal-row.tsx src/shared/entities/meetings/components/customer-meetings-list.tsx src/shared/modules/projects/core/components/customer-projects-list.tsx src/shared/modules/projects/core/components/project-entity-card.tsx src/shared/entities/customers/components/profile/customer-profile-tab-panels.tsx
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/shared/entities/customers/components/lists/customer-meetings-list.tsx src/shared/entities/customers/components/lists/customer-projects-list.tsx src/shared/entities/customers/components/lists/project-entity-card.tsx src/shared/entities/customers/components/lists/proposal-row.tsx src/shared/entities/meetings/components/customer-meetings-list.tsx src/shared/modules/projects/core/components/customer-projects-list.tsx src/shared/modules/projects/core/components/project-entity-card.tsx src/shared/entities/customers/components/profile/customer-profile-tab-panels.tsx
 git show --stat HEAD
 ```
 
@@ -962,6 +1080,7 @@ git show --stat HEAD
 - Modify: `src/shared/entities/customers/DOCS.md`
 - Modify: `docs/ubiquitous-language.md`
 - Modify: `docs/codebase-conventions/query-toolkit.md`
+- Modify: `docs/codebase-conventions/frontend-stack.md`
 
 Re-read each file first; edit only what this plan built. If a file carries uncommitted hunks you didn't make, do not commit it: report the edit for the owner.
 
@@ -971,23 +1090,29 @@ In `docs/plans/2026-09-26-records-management-epic.md`:
 - the **Status** line at the top: where it lists the order, mark R2 as built ("R2 customers with fixed filters: built") and leave the rest;
 - §3, row **R2**, status cell: `[x] built on local main <first-sha>..<last-sha> (part 1: fixed filters, the first-rows window, dashboard reads; part 2: \`useCustomersTable\`, three table views, the one-source pane on the shared list, \`getCustomers\` gone, the \`lists/\` components moved)`, with both parts' first and last commit hashes;
 - §3.1 ledger: the **Customers records** row's file becomes `features/records-management/ui/components/customers-records-table.tsx` with every column `[x]`; the two **Lead sources** rows read `[x]` under "Field-list read" and "Shared hook" (through `useCustomersTable`);
+- §3.1, the bullet list that defines the shared structure: replace the third bullet ("a records page goes through `EntityRecordsTable`, while a table embedded in another page keeps its own layout and uses only the hook;") with "a records page goes through `EntityRecordsTable`; a table embedded in another page composes the `DataView` parts in its own wrapper (D65);" (do not add a second bullet that contradicts it); the two **Lead sources** rows' "Records page" cells read `n/a (embedded; DataView parts)`;
 - §4, row **O3**: append "Audited and moved in R2: `customer-meetings-list` → meetings, `customer-projects-list` and `project-entity-card` → projects, `proposal-row` deleted. The green border on `project-entity-card` stays for the profile modal's polish pass; the `text-[10px]` finding was already gone."
 
 - [ ] **Step 2: The spec's status**
 
-In the spec, replace the **Status** line with `> **Status:** approved by the owner 2026-10-05; built (plans: \`docs/superpowers/plans/2026-10-05-customers-entity-table-and-fixed-filters.md\` and \`…-part-2.md\`).` If the owner chose differently on §5.5, say what was built in one sentence under §5.5.
+In the spec, replace the **Status** line with `> **Status:** approved by the owner 2026-10-05; rulings of 2026-10-07 applied; built (plans: \`docs/superpowers/plans/2026-10-05-customers-entity-table-and-fixed-filters.md\` and \`…-part-2.md\`).` Under §5.5, say in one sentence what Task 3 Step 2b found and which seeding was built.
 
 - [ ] **Step 3: Notes that name moved or deleted paths**
 
-- `src/shared/entities/customers/DOCS.md`, the "This directory holds" line: replace "components grouped by surface (`components/profile/`, `components/lists/`, `components/timeline/`)" with "components grouped by surface (`components/profile/`, `components/timeline/`) and the entity table hook (`components/customers-table/`)".
+- `src/shared/entities/customers/DOCS.md`, the "This directory holds" line: replace "components grouped by surface (`components/profile/`, `components/lists/`, `components/timeline/`)" with "components grouped by surface (`components/profile/`, `components/timeline/`); the entity table hook and `openCustomerProfile` already sit at the module address, `src/shared/modules/customers/core/`".
 - `docs/ubiquitous-language.md`, the action-surface table: the `Profile/Projects/Project` row's file becomes `shared/modules/projects/core/components/project-entity-card.tsx`; the `Profile/Projects/Project/Meeting/Proposal` row's file becomes `shared/entities/meetings/components/meeting-proposal-row.tsx` (it already lived there; the row was stale).
 - `docs/codebase-conventions/query-toolkit.md`, section "shared-table-config": its **Reference impl** line names the deleted `src/shared/entities/customers/constants/customers-table-query-config.ts`; point it at `src/features/records-management/constants/customers-records-table-view.ts` (the `query` of a table view). The section's text still describes the legacy `PaginatedQueryConfig` names; leave that and name it in the report.
+- `docs/codebase-conventions/query-toolkit.md`, the section whose **Reference impl** is `src/shared/entities/customers/components/customers-table.tsx` ("hand-rolled state diverges"): point it at `src/shared/modules/customers/core/components/customers-table/use-customers-table.tsx`.
+- `docs/codebase-conventions/query-toolkit.md`, the prefix section ("two tables sharing `?p=` reset each other"): its **Reference impl** names the two sections for `src_*` / `all_*`; point it at `src/features/lead-sources-admin/constants/lead-source-customers-table-view.ts` (`src`) vs `all-customers-table-view.ts` (`all`), where the prefixes now live.
+- `docs/codebase-conventions/frontend-stack.md`, the Tier 1 / Tier 2 **Reference impl** line: replace `src/shared/entities/customers/components/customers-table.tsx` (Tier 2) with `src/features/records-management/ui/components/customers-records-table.tsx` (Tier 2).
 
 - [ ] **Step 4: Report what this plan leaves stale elsewhere**
 
 Do not edit these; list them in the task report for the owner:
 - `docs/superpowers/specs/2026-09-29-customers-module-design.md` (lines naming `core/components/lists/project-entity-card.tsx` as moving with customers, and `lists/proposal-row.tsx` as a Phase 1 deletion): both already happened here.
 - `docs/superpowers/specs/2026-10-01-customer-profile-modal-design.md` and its plan name `components/lists/customer-meetings-list.tsx`, now `src/shared/entities/meetings/components/customer-meetings-list.tsx`.
+- Any file Task 0 Step 1 left on `openModal({ accessor: 'CustomerProfile', … })` because another session held it.
+- The pipeline kanban card's Edit Profile (`customer-kanban-card.tsx`) still falls back to the pipeline board: it passes no `onEdit` (Owner confirms 12).
 
 - [ ] **Step 5: Session memory (not in git)**
 
@@ -998,7 +1123,7 @@ In `/home/olis-solutions/.claude/projects/-home-olis-solutions-olis-v3-nextjs-tr
 ```bash
 git commit -m "docs(records): R2 is built; the tracker, the spec and the notes that named moved files follow
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>" -- docs/plans/2026-09-26-records-management-epic.md docs/superpowers/specs/2026-10-05-customers-entity-table-and-fixed-filters-design.md src/shared/entities/customers/DOCS.md docs/ubiquitous-language.md docs/codebase-conventions/query-toolkit.md
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- docs/plans/2026-09-26-records-management-epic.md docs/superpowers/specs/2026-10-05-customers-entity-table-and-fixed-filters-design.md src/shared/entities/customers/DOCS.md docs/ubiquitous-language.md docs/codebase-conventions/query-toolkit.md docs/codebase-conventions/frontend-stack.md
 git show --stat HEAD
 ```
 
