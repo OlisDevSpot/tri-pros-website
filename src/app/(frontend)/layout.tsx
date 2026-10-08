@@ -3,6 +3,7 @@ import process from 'node:process'
 import { Dancing_Script, Nunito, Playfair_Display, Space_Mono, Syne } from 'next/font/google'
 import { Providers } from '@/shared/components/providers'
 import { PWA_STARTUP_IMAGES } from '@/shared/domains/pwa/constants/startup-images'
+import { PwaLaunchCover } from '@/shared/domains/pwa/ui/pwa-launch-cover'
 import './globals.css'
 
 const playfair = Playfair_Display({
@@ -134,6 +135,7 @@ export default function RootLayout({
       >
         <Providers>
           {children}
+          <PwaLaunchCover />
         </Providers>
       </body>
     </html>

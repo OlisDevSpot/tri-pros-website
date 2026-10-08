@@ -15,6 +15,7 @@ import { TablePreferencesProvider } from '@/shared/components/data-table/ui/tabl
 import { GlobalDialogs } from '@/shared/components/dialogs/modals/global-dialogs'
 import { SidebarInset, SidebarProvider } from '@/shared/components/ui/sidebar'
 import { PwaInstallPrompt } from '@/shared/domains/pwa/ui/pwa-install-prompt'
+import { PwaLaunchReady } from '@/shared/domains/pwa/ui/pwa-launch-ready'
 
 // Nothing here waits on the database. Whether a session cookie is present (a
 // header read) picks the sign-in screen or the signed-in shell; the session
@@ -34,6 +35,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       {hasSessionCookie && <MeetingSplashMount />}
       <GlobalDialogs />
       <PwaInstallPrompt />
+      <PwaLaunchReady />
       <TablePreferencesProvider initial={readTablePreferences(cookieStore.getAll())}>
         <SidebarProvider defaultOpen={defaultOpen} data-no-gutter-stable>
           {hasSessionCookie && (
