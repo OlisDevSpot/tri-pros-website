@@ -4,7 +4,7 @@
 
 **Goal:** Every meeting, proposal, customer and project card reads its actions from one host per view instead of calling the action-config hooks and mounting dialogs itself, so a board of 50 cards carries 4 hosts' worth of mutations and dialogs, not 50 cards' worth.
 
-**Architecture:** Four thin client components (`MeetingActionsHost`, `ProposalActionsHost`, `CustomerActionsHost`, `ProjectActionsHost`), each at its module's address, call the existing action-config hook once with the view's overrides, render that hook's dialogs once and provide `actions` (plus `changeOutcome` and `manageParticipants` for meetings) through a context whose reader throws when no host is above it (spec R6). Cards drop their hook calls, dialogs and per-card handler props; every view that shows a card mounts the hosts it needs in the same commit as the card change. Two card-hygiene fixes (`MeetingCard` memoized, `useIsMobile` read once per board) take the schedule and kanban cards to one render on mount. The probe re-measures at the end and the acceptance table decides whether the lazy-dropdown step (spec §3.2, "Re-measure, then decide") is taken in a later plan.
+**Architecture:** Four thin client components (`MeetingActionsHost`, `ProposalActionsHost`, `CustomerActionsHost`, `ProjectActionsHost`), each at its module's address, call the existing action-config hook once with the view's overrides, render that hook's dialogs once and provide `actions` (plus `changeOutcome` and `manageParticipants` for meetings) through a context whose reader throws when no host is above it (spec R6). Cards drop their hook calls, dialogs and per-card handler props; every view that shows a card mounts the hosts it needs in the same commit as the card change. First, the board stops dimming for refetches the viewer did not cause (owner, 2026-10-08: the schedule → pipeline switch showed a faded board). Two card-hygiene fixes (`MeetingCard` memoized, `useIsMobile` read once per board) take the schedule and kanban cards to one render on mount. The probe re-measures at the end and the acceptance table decides whether the lazy-dropdown step (spec §3.2, "Re-measure, then decide") is taken in a later plan.
 
 **Tech Stack:** Next.js 15 App Router, React 19 (`use`, `memo`, `useMemo`), TanStack Query 5 via tRPC 11, Radix dialogs and dropdowns, dnd-kit, Playwright (read-only checks against the dev server), `tsx` for a render check with `react-dom/server`.
 
@@ -30,11 +30,11 @@ The spec's Order line (owner, 2026-10-07; records tracker D64) puts records R2 *
 
 ## Review Focus
 
-1. A meeting with no customer (`customerId` null: the row's left join found none): clicking the card or choosing View Meeting does nothing, instead of opening a profile for customer `''`. Test: Task 2 Step 2's `openMeetingProfile` guard, which `pnpm tsc` enforces (`CustomerProfileModal` takes `customerId: string`; the data carries `string | null`), re-checked in Task 3 Step 6.
-2. One host, two cards: Manage Participants from card A, close, Manage Participants from card B opens the modal again for B; a dialog whose state used to die with its card now lives in the host. Test: Task 3 Step 14 (`check-actions.mjs schedule`, two cards in turn).
-3. A host's own re-render (its modal opening, its confirm dialog) must not re-render the cards below it: the context value has to stay referentially stable. Test: Task 3 Step 14 and Task 5 Step 12 (card render deltas of 0 across open and close).
-4. The kanban drag overlay renders a card copy through `renderCard(item, href, true)`: it must render inside the hosts (no throw while dragging), with the overlay's menus hidden as today. Test: Task 5 Step 12 (`check-actions.mjs fresh-drag`).
-5. After `useIsMobile` moves to the board, a phone-width board still drags by the grip handle and a desktop board by the whole card. Test: Task 5 Step 12 (`check-actions.mjs fresh-mobile`, dnd-kit's `aria-roledescription="draggable"` on the handle at 500 px and on the card at 1400 px).
+1. A meeting with no customer (`customerId` null: the row's left join found none): clicking the card or choosing View Meeting does nothing, instead of opening a profile for customer `''`. Test: Task 3 Step 2's `openMeetingProfile` guard, which `pnpm tsc` enforces (`CustomerProfileModal` takes `customerId: string`; the data carries `string | null`), re-checked in Task 4 Step 6.
+2. One host, two cards: Manage Participants from card A, close, Manage Participants from card B opens the modal again for B; a dialog whose state used to die with its card now lives in the host. Test: Task 4 Step 14 (`check-actions.mjs schedule`, two cards in turn).
+3. A host's own re-render (its modal opening, its confirm dialog) must not re-render the cards below it: the context value has to stay referentially stable. Test: Task 4 Step 14 and Task 6 Step 12 (card render deltas of 0 across open and close).
+4. The kanban drag overlay renders a card copy through `renderCard(item, href, true)`: it must render inside the hosts (no throw while dragging), with the overlay's menus hidden as today. Test: Task 6 Step 12 (`check-actions.mjs fresh-drag`).
+5. After `useIsMobile` moves to the board, a phone-width board still drags by the grip handle and a desktop board by the whole card. Test: Task 6 Step 12 (`check-actions.mjs fresh-mobile`, dnd-kit's `aria-roledescription="draggable"` on the handle at 500 px and on the card at 1400 px).
 
 ## File structure
 
@@ -49,11 +49,12 @@ The spec's Order line (owner, 2026-10-07; records tracker D64) puts records R2 *
 
 **Modified, by task:**
 
-- Task 3 (meetings): `src/shared/entities/meetings/hooks/use-meeting-action-configs.tsx` (`onAssignOwner` required; the hook's internal participants dialog goes), `src/shared/entities/meetings/components/overview-card.tsx` (root reads the host; `customerId` required on the data; props `customerId`/`onAssignOwner`/`onAssignProject` go), `src/shared/entities/meetings/components/participants-slot.tsx` (compact variant calls `manageParticipants`), `src/shared/entities/customers/types.ts` + `src/shared/entities/meetings/dal/server/meetings-with-proposals.ts` (`customerId` on `CustomerProfileMeeting`), `src/features/schedule-management/ui/components/{schedule-meetings-calendar,schedule-calendar-dot,meeting-card}.tsx`, `src/features/customer-pipelines/ui/views/customer-pipeline-view.tsx`, `src/features/customer-pipelines/ui/components/customer-kanban-card.tsx` (meeting parts), `src/features/agent-dashboard/ui/components/{dashboard-day-agenda,dashboard-meeting-card}.tsx`, `src/shared/entities/customers/components/profile/customer-profile-tab-panels.tsx`, `src/shared/entities/customers/components/lists/{customer-meetings-list,customer-projects-list,project-entity-card}.tsx`, `src/shared/entities/meetings/components/project-meeting-list.tsx`, `src/features/records-management/ui/components/project-row-panel/{index,project-sales-history-pane}.tsx`.
-- Task 4 (proposals): `src/shared/modules/proposals/core/components/overview-card.tsx`, `src/shared/entities/meetings/components/meeting-proposal-row.tsx`, `src/features/records-management/ui/components/meeting-row-panel/meeting-proposals-pane.tsx`, `src/features/agent-dashboard/ui/components/dashboard-proposal-section-list.tsx`, plus the pipeline view, kanban card (`KanbanProposalRow`), profile tab panels, project meeting list and sales-history pane from Task 3.
-- Task 5 (customers, projects, `isMobile`): `src/shared/entities/customers/hooks/use-customer-action-configs.ts` (`CustomerEntity` gains `name`), the kanban card and pipeline view, `src/features/agent-dashboard/ui/components/{dashboard-project-card,dashboard-project-section-list}.tsx`, `project-entity-card.tsx`, profile tab panels.
-- Task 6: `meeting-card.tsx` (schedule) and `schedule-meetings-calendar.tsx` (`highlightRef` only for the highlighted card).
-- Task 7: `docs/superpowers/specs/2026-10-05-pipeline-schedule-speed-design.md` (status line), this plan (deleted).
+- Task 2 (board dim): `src/features/customer-pipelines/ui/views/customer-pipeline-view.tsx` (dim on `data-stale` and a drag's refresh only; `aria-busy` while fetching; metrics bar loads on stale only).
+- Task 4 (meetings): `src/shared/entities/meetings/hooks/use-meeting-action-configs.tsx` (`onAssignOwner` required; the hook's internal participants dialog goes), `src/shared/entities/meetings/components/overview-card.tsx` (root reads the host; `customerId` required on the data; props `customerId`/`onAssignOwner`/`onAssignProject` go), `src/shared/entities/meetings/components/participants-slot.tsx` (compact variant calls `manageParticipants`), `src/shared/entities/customers/types.ts` + `src/shared/entities/meetings/dal/server/meetings-with-proposals.ts` (`customerId` on `CustomerProfileMeeting`), `src/features/schedule-management/ui/components/{schedule-meetings-calendar,schedule-calendar-dot,meeting-card}.tsx`, `src/features/customer-pipelines/ui/views/customer-pipeline-view.tsx`, `src/features/customer-pipelines/ui/components/customer-kanban-card.tsx` (meeting parts), `src/features/agent-dashboard/ui/components/{dashboard-day-agenda,dashboard-meeting-card}.tsx`, `src/shared/entities/customers/components/profile/customer-profile-tab-panels.tsx`, `src/shared/entities/customers/components/lists/{customer-meetings-list,customer-projects-list,project-entity-card}.tsx`, `src/shared/entities/meetings/components/project-meeting-list.tsx`, `src/features/records-management/ui/components/project-row-panel/{index,project-sales-history-pane}.tsx`.
+- Task 5 (proposals): `src/shared/modules/proposals/core/components/overview-card.tsx`, `src/shared/entities/meetings/components/meeting-proposal-row.tsx`, `src/features/records-management/ui/components/meeting-row-panel/meeting-proposals-pane.tsx`, `src/features/agent-dashboard/ui/components/dashboard-proposal-section-list.tsx`, plus the pipeline view, kanban card (`KanbanProposalRow`), profile tab panels, project meeting list and sales-history pane from Task 4.
+- Task 6 (customers, projects, `isMobile`): `src/shared/entities/customers/hooks/use-customer-action-configs.ts` (`CustomerEntity` gains `name`), the kanban card and pipeline view, `src/features/agent-dashboard/ui/components/{dashboard-project-card,dashboard-project-section-list}.tsx`, `project-entity-card.tsx`, profile tab panels.
+- Task 7: `meeting-card.tsx` (schedule) and `schedule-meetings-calendar.tsx` (`highlightRef` only for the highlighted card).
+- Task 8: `docs/superpowers/specs/2026-10-05-pipeline-schedule-speed-design.md` (status line), this plan (deleted).
 
 **Not in this plan (found while planning, for the owner):** `src/shared/entities/customers/components/lists/proposal-row.tsx` has no importers (dead; it calls `useProposalActionConfigs` per row). `MeetingProposalRow`'s `onMutationSuccess` prop is unused (`_onMutationSuccess`). Both stay as they are.
 
@@ -254,7 +255,7 @@ catch (error) {
 await browser.close()
 ```
 
-- [ ] **Step 4: Write the host-required check (RED for Task 2)**
+- [ ] **Step 4: Write the host-required check (RED for Task 3)**
 
 `check-host-required.tsx` (the `React` import is needed: the repo's tsconfig keeps `jsx: preserve`, so `tsx` compiles JSX to `React.createElement`):
 
@@ -295,7 +296,7 @@ process.exit(failed ? 1 : 0)
 - [ ] **Step 5: Run the host-required check (RED) and the before-probes**
 
 Run: `pnpm exec tsx .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-host-required.tsx`
-Expected: exits non-zero with `Cannot find module '@/shared/modules/meetings/core/components/meeting-actions-host'` (the host does not exist yet). This is Task 2's RED.
+Expected: exits non-zero with `Cannot find module '@/shared/modules/meetings/core/components/meeting-actions-host'` (the host does not exist yet). This is Task 3's RED.
 
 Run (one at a time; each takes several minutes; the dev server must be warm):
 ```bash
@@ -312,14 +313,14 @@ Append to the ledger (`progress.md` in the workspace) one line per file with the
 
 ---
 
-### Task 2: `MeetingActionsHost`
+### Task 3: `MeetingActionsHost`
 
 **Files:**
 - Create: `src/shared/modules/meetings/core/components/meeting-actions-host.tsx`
 - Test: `.superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-host-required.tsx` (Task 1 Step 4)
 
 **Interfaces:**
-- Consumes: `useMeetingActionConfigs(overrides)` from `src/shared/entities/meetings/hooks/use-meeting-action-configs.tsx` as it is today (`onAssignOwner` still optional; Task 3 makes it required), `ManageParticipantsModal({ meetingIds, open, onOpenChange })`, `CustomerProfileModal` + `openModal` (the card's own profile-opening call today), `useStableCallbacks` from `src/shared/hooks/use-stable-callbacks.ts`.
+- Consumes: `useMeetingActionConfigs(overrides)` from `src/shared/entities/meetings/hooks/use-meeting-action-configs.tsx` as it is today (`onAssignOwner` still optional; Task 4 makes it required), `ManageParticipantsModal({ meetingIds, open, onOpenChange })`, `CustomerProfileModal` + `openModal` (the card's own profile-opening call today), `useStableCallbacks` from `src/shared/hooks/use-stable-callbacks.ts`.
 - Produces:
   ```ts
   export function MeetingActionsHost(props: { overrides?: Omit<MeetingActionOverrides, 'onAssignOwner'>, children: ReactNode }): JSX.Element
@@ -448,7 +449,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 ---
 
-### Task 3: Meeting cards and every meeting-card view onto the host (one commit, R6)
+### Task 4: Meeting cards and every meeting-card view onto the host (one commit, R6)
 
 **Files:**
 - Modify: `src/shared/entities/meetings/hooks/use-meeting-action-configs.tsx:1-105,166-170,208-210`
@@ -456,15 +457,15 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Modify: `src/shared/entities/meetings/components/participants-slot.tsx:300-382` (compact variant)
 - Modify: `src/shared/entities/customers/types.ts:7-9`, `src/shared/entities/meetings/dal/server/meetings-with-proposals.ts:16-25,106-116`
 - Modify: `src/features/schedule-management/ui/components/schedule-meetings-calendar.tsx`, `schedule-calendar-dot.tsx`, `meeting-card.tsx`
-- Modify: `src/features/customer-pipelines/ui/views/customer-pipeline-view.tsx`, `src/features/customer-pipelines/ui/components/customer-kanban-card.tsx` (meeting parts only; Task 5 finishes it)
+- Modify: `src/features/customer-pipelines/ui/views/customer-pipeline-view.tsx`, `src/features/customer-pipelines/ui/components/customer-kanban-card.tsx` (meeting parts only; Task 6 finishes it)
 - Modify: `src/features/agent-dashboard/ui/components/dashboard-day-agenda.tsx`, `dashboard-meeting-card.tsx`
 - Modify: `src/shared/entities/customers/components/profile/customer-profile-tab-panels.tsx`, `src/shared/entities/customers/components/lists/customer-meetings-list.tsx`, `customer-projects-list.tsx`, `project-entity-card.tsx`, `src/shared/entities/meetings/components/project-meeting-list.tsx`
 - Modify: `src/features/records-management/ui/components/project-row-panel/index.tsx`, `project-sales-history-pane.tsx`
 - Test: `check-host-required.tsx` (extended), new `check-actions.mjs` in the workspace, `check-census.mjs`
 
 **Interfaces:**
-- Consumes: `MeetingActionsHost`, `useMeetingActionsHost(consumer)` from Task 2.
-- Produces: `MeetingOverviewCardData` with `customerId: string | null` **required**; `MeetingOverviewCard` root props are `{ meeting, children } & Omit<ComponentProps<'div'>, 'onClick'>` (no `customerId`, `onAssignOwner`, `onAssignProject`); `useMeetingActionConfigs` overrides require `onAssignOwner` and the result no longer has `AssignOwnerDialog`; `CustomerProfileMeeting` has `customerId: string | null`; `ParticipantsSlot`'s compact variant needs a `MeetingActionsHost`; `ScheduleCalendarDot({ event, onUpdateScheduledFor })` (no `actions`); `MeetingCard({ event, onUpdateScheduledFor, isHighlighted?, highlightRef? })`; `CustomerKanbanCard` loses `onAssignRep`; `CustomerMeetingsList({ meetings, highlightMeetingId? })`; `ProjectMeetingList({ meetings, onMutationSuccess, onNavigate?, highlightMeetingId? })`; `ProjectEntityCard({ project, onMutationSuccess, onNavigate?, highlightMeetingId? })`; `ProjectSalesHistoryPane({ meetings, isLoading, onMutationSuccess })`. Task 4 and Task 5 consume these.
+- Consumes: `MeetingActionsHost`, `useMeetingActionsHost(consumer)` from Task 3.
+- Produces: `MeetingOverviewCardData` with `customerId: string | null` **required**; `MeetingOverviewCard` root props are `{ meeting, children } & Omit<ComponentProps<'div'>, 'onClick'>` (no `customerId`, `onAssignOwner`, `onAssignProject`); `useMeetingActionConfigs` overrides require `onAssignOwner` and the result no longer has `AssignOwnerDialog`; `CustomerProfileMeeting` has `customerId: string | null`; `ParticipantsSlot`'s compact variant needs a `MeetingActionsHost`; `ScheduleCalendarDot({ event, onUpdateScheduledFor })` (no `actions`); `MeetingCard({ event, onUpdateScheduledFor, isHighlighted?, highlightRef? })`; `CustomerKanbanCard` loses `onAssignRep`; `CustomerMeetingsList({ meetings, highlightMeetingId? })`; `ProjectMeetingList({ meetings, onMutationSuccess, onNavigate?, highlightMeetingId? })`; `ProjectEntityCard({ project, onMutationSuccess, onNavigate?, highlightMeetingId? })`; `ProjectSalesHistoryPane({ meetings, isLoading, onMutationSuccess })`. Task 5 and Task 6 consume these.
 
 - [ ] **Step 1: Extend the host-required check with the card and the slot (RED)**
 
@@ -816,7 +817,7 @@ export function ScheduleMeetingsCalendar({ showToggle, showSaturday, onToggleSat
   )
 ```
 
-- Wrap the returned root element: the component returns `<MeetingActionsHost>{…the existing root <div>…}</MeetingActionsHost>`. (Task 4 and Task 5 nest the other three hosts inside it.)
+- Wrap the returned root element: the component returns `<MeetingActionsHost>{…the existing root <div>…}</MeetingActionsHost>`. (Task 5 and Task 6 nest the other three hosts inside it.)
 
 `customer-kanban-card.tsx` (meeting parts only):
 
@@ -872,7 +873,7 @@ import { MeetingActionsHost } from '@/shared/modules/meetings/core/components/me
 
 `project-meeting-list.tsx`: `ProjectMeetingListProps` loses `customerId` and `onAssignRep`; the card is `<MeetingOverviewCard meeting={meeting}>`; the signature is `({ meetings, onMutationSuccess, onNavigate, highlightMeetingId })`.
 
-`project-entity-card.tsx`: `Props` loses `customerId` and `onAssignRep`; the `ProjectMeetingList` call drops both props. (Task 5 replaces this card's hook call.)
+`project-entity-card.tsx`: `Props` loses `customerId` and `onAssignRep`; the `ProjectMeetingList` call drops both props. (Task 6 replaces this card's hook call.)
 
 `customer-projects-list.tsx`: the `ProjectEntityCard` call drops `customerId={data.customer.id}`.
 
@@ -920,7 +921,7 @@ Expected: clean (the pre-existing warnings only). Unused imports the edits left 
 Run: `pnpm exec tsx .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-host-required.tsx`
 Expected: four `PASS` lines (`MeetingProbe` ×2, `MeetingOverviewCard`, `ParticipantsSlot`), exit 0.
 
-- [ ] **Step 13: Write the read-only actions check (used by Tasks 3, 4 and 5)**
+- [ ] **Step 13: Write the read-only actions check (used by Tasks 4, 5 and 6)**
 
 `.superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-actions.mjs`. Every step opens a menu, picks an item, waits for the dialog it names, presses Escape and waits for it to go; nothing is confirmed, so nothing is written. It also reports how many times the view's card component rendered across the whole sequence (Review Focus 3: a host's dialogs must not re-render the cards).
 
@@ -1076,7 +1077,7 @@ if (errors.length > 0) {
 await browser.close()
 ```
 
-(`home-project` is used by Task 5, `home-proposal`, `fresh-proposal` and `meetings-row` by Task 4, `fresh-customer`, `projects-project`, `profile-project`, `fresh-drag` and `fresh-mobile` by Task 5. The `meetings-row`/`projects-row` views report `TableRow` renders, which the dropdown's open state does not touch either.)
+(`home-project` is used by Task 6, `home-proposal`, `fresh-proposal` and `meetings-row` by Task 5, `fresh-customer`, `projects-project`, `profile-project`, `fresh-drag` and `fresh-mobile` by Task 6. The `meetings-row`/`projects-row` views report `TableRow` renders, which the dropdown's open state does not touch either.)
 
 - [ ] **Step 14: Run the meeting checks**
 
@@ -1089,7 +1090,7 @@ node .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-actions.m
 node .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-actions.mjs projects-row
 node .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-census.mjs '/dashboard/schedule?show=meetings&s_d=2026-08-24' MeetingCard
 ```
-Expected: every line `PASS`, exit 0 each; `schedule` shows three dialogs opened and closed (two cards' participants modals in turn) and `MeetingCard renders during the sequence: 0`. The census: `cards 13`, `mutationObservers` ≤ 45 (the host's hook holds 8 from `useMeetingActions` plus the outcome, reschedule and setter mutations, and `ScheduleMeetingsCalendar`'s own `useMeetingActions` holds 8 more; Phase 1 measured 304–347), `dialogContents` ≤ 12 (was 71–73). `cardRenders` is still 2–3 per card: Task 6 owns that.
+Expected: every line `PASS`, exit 0 each; `schedule` shows three dialogs opened and closed (two cards' participants modals in turn) and `MeetingCard renders during the sequence: 0`. The census: `cards 13`, `mutationObservers` ≤ 45 (the host's hook holds 8 from `useMeetingActions` plus the outcome, reschedule and setter mutations, and `ScheduleMeetingsCalendar`'s own `useMeetingActions` holds 8 more; Phase 1 measured 304–347), `dialogContents` ≤ 12 (was 71–73). `cardRenders` is still 2–3 per card: Task 7 owns that.
 
 - [ ] **Step 15: Commit (cards and views together, R6)**
 
@@ -1104,7 +1105,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 ---
 
-### Task 4: `ProposalActionsHost` and every proposal-card view
+### Task 5: `ProposalActionsHost` and every proposal-card view
 
 **Files:**
 - Create: `src/shared/modules/proposals/core/components/proposal-actions-host.tsx`
@@ -1249,11 +1250,11 @@ Expected: errors only in `meeting-proposal-row.tsx` (`onView`, `onEdit`), `custo
 
 `meeting-proposal-row.tsx`: delete the `useRouter`, `useCallback` and `ROOTS` imports, the `onNavigate` prop and doc line, `handleView` and `handleEdit`; the signature is `({ proposal, onMutationSuccess: _onMutationSuccess, showSentDate = false, meta, footer }: Props)` and the card is `<ProposalOverviewCard proposal={proposal} meta={meta} className={…}>`.
 
-`customer-kanban-card.tsx`: `KanbanProposalRow` loses `useRouter`/`handleEdit` and renders `<ProposalOverviewCard proposal={proposal} className={…}>`; delete the `useRouter` import if `CustomerKanbanCardImpl` no longer uses it either (it still does until Task 5, so leave it for now if so).
+`customer-kanban-card.tsx`: `KanbanProposalRow` loses `useRouter`/`handleEdit` and renders `<ProposalOverviewCard proposal={proposal} className={…}>`; delete the `useRouter` import if `CustomerKanbanCardImpl` no longer uses it either (it still does until Task 6, so leave it for now if so).
 
 `project-meeting-list.tsx`: remove `onNavigate` from the props interface, the signature and the `MeetingProposalRow` call (`<MeetingProposalRow key={p.id} proposal={p as CustomerProfileProposal} onMutationSuccess={onMutationSuccess} />`).
 
-`project-entity-card.tsx`: the `ProjectMeetingList` call drops `onNavigate={onNavigate}` (the prop itself goes in Task 5 with the card's hook).
+`project-entity-card.tsx`: the `ProjectMeetingList` call drops `onNavigate={onNavigate}` (the prop itself goes in Task 6 with the card's hook).
 
 `meeting-proposals-pane.tsx`: add `import { ProposalActionsHost } from '@/shared/modules/proposals/core/components/proposal-actions-host'` and wrap the list:
 
@@ -1304,7 +1305,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 ---
 
-### Task 5: `CustomerActionsHost`, `ProjectActionsHost`, the kanban card on both, `isMobile` read once per board
+### Task 6: `CustomerActionsHost`, `ProjectActionsHost`, the kanban card on both, `isMobile` read once per board
 
 **Files:**
 - Create: `src/shared/modules/customers/core/components/customer-actions-host.tsx`, `src/shared/modules/projects/core/components/project-actions-host.tsx`
@@ -1540,7 +1541,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 ---
 
-### Task 6: `MeetingCard` renders once per mount and per week step
+### Task 7: `MeetingCard` renders once per mount and per week step
 
 **Files:**
 - Modify: `src/features/schedule-management/ui/components/meeting-card.tsx`
@@ -1548,7 +1549,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Test: `check-census.mjs` on the schedule with `--step`
 
 **Interfaces:**
-- Consumes: `MeetingCard({ event, onUpdateScheduledFor, isHighlighted?, highlightRef? })` from Task 3; `useScheduleHighlight().highlightRef(id)` returns a new callback on every call.
+- Consumes: `MeetingCard({ event, onUpdateScheduledFor, isHighlighted?, highlightRef? })` from Task 4; `useScheduleHighlight().highlightRef(id)` returns a new callback on every call.
 - Produces: `MeetingCard` is `memo`ized; `highlightRef` is passed only for the highlighted card (`undefined` otherwise), so every other card's props are referentially stable across a calendar re-render.
 
 - [ ] **Step 1: Measure (RED)**
@@ -1630,7 +1631,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 ---
 
-### Task 7: Re-measure, acceptance table, spec status, delete the plan
+### Task 8: Re-measure, acceptance table, spec status, delete the plan
 
 **Files:**
 - Output (workspace): `after-schedule.txt`, `after-pipeline-fresh.txt`, `after-pipeline-leads.txt`, `after-census-*.txt`, `acceptance.md`
@@ -1663,7 +1664,7 @@ Rows, with "Where" naming the probe line, Phase 1's number, this run's number an
 | Closed dialogs mounted per view | `DialogContent×N` on the MOUNTED line | Fresh 337 · Schedule 71–73 · Leads 1025 | ≤ 12 |
 | Renders per card on mount | `after-census-*.txt` `cardRenders / cards`; the probe's `(doc load N render totals)` `max N per card` | Fresh 2 · Schedule 2–3 | 1 |
 | Fresh: sidebar click → fully shown | `SIDEBAR CLICK … content fully shown` | 2696 ms (min 2476) | ≤ 1.5 s (Phase 1 + 2) |
-| Schedule: cached week step | `=== next week (cached) ===` `settled after` | 490–502 ms (Task 2 run; baseline 409–461) | ≤ 150 ms |
+| Schedule: cached week step | `=== next week (cached) ===` `settled after` | 490–502 ms (Task 3 run; baseline 409–461) | ≤ 150 ms |
 | Idle 5 s, hover sweep, modal open/close: card renders | those scenarios | 0 | 0 |
 | Hydration warnings | DOCUMENT LOAD tail | 0/0/0 | 0 |
 | Phase 1 rows that must hold: content in DOM → fully shown; own pending view on document load; shell on click; switch keeps the cache | as in Phase 1's table | Phase 1's values | no regression |
