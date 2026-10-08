@@ -29,12 +29,15 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   try {
-    await voipMessagesService.applyStatusCallback(SYSTEM_CONTEXT, {
+    const applied = await voipMessagesService.applyStatusCallback(SYSTEM_CONTEXT, {
       providerMessageId: parsed.data.MessageSid,
       twilioStatus: parsed.data.MessageStatus,
       errorCode: parsed.data.ErrorCode,
       at: new Date().toISOString(),
     })
+    if (!applied.success) {
+      console.error('[twilio webhook] status callback failed', applied.error)
+    }
   }
   catch (error) {
     // Twilio retries on a non-2xx; a handler fault must not turn one callback into a storm.
