@@ -1,6 +1,3 @@
-// These procedures serve the meeting-flow feature (persona profile, in-meeting customer profile
-// updates); they are feature-specific, not entity CRUD.
-
 import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
 

@@ -6,6 +6,7 @@ import { canRescheduleFromOutcome, outcomeRequiresReason } from '@/shared/consta
 import { systemContext } from '@/shared/dal/server/lib/contexts'
 import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { permit } from '@/shared/dal/server/lib/permissions/permit'
+import { projectToReadFields } from '@/shared/dal/server/lib/permissions/project'
 import { ThrowableDalError } from '@/shared/dal/server/types'
 import { customerNoteCrud } from '@/shared/entities/customer-notes/dal/server/crud'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
@@ -15,6 +16,7 @@ import { handOffShareToken } from '@/shared/entities/meetings/dal/server/mutatio
 import { addParticipant, getParticipantsForMeeting } from '@/shared/entities/meetings/dal/server/participants'
 import { getRescheduleSuccessorId } from '@/shared/entities/meetings/dal/server/queries'
 import { buildRescheduleNote, formatMeetingDateShort } from '@/shared/entities/meetings/lib/notes'
+import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 
 export const meetingBusinessService = {
   /**
@@ -96,12 +98,16 @@ export const meetingBusinessService = {
         })
       }
 
+      // The replacement carries the whole sit, the deal structure included; the actor's own read may withhold that column.
+      const system = systemContext('derived:meeting-reschedule')
+      const carried = dalVerifySuccess(await meetingCrud.getById(system, { id: original.id }))
+
       // Visibility follows participants, so the replacement's owner is the original's owner participant.
       const participants = await getParticipantsForMeeting(input.meetingId)
       const ownerParticipant = participants.find(participant => participant.role === 'owner')
 
       // A system create keeps this ownerId: an authed create would resolve the owner from the acting user.
-      const replacement = dalVerifySuccess(await meetingCrud.create(systemContext('derived:meeting-reschedule'), {
+      const replacement = dalVerifySuccess(await meetingCrud.create(system, {
         ownerId: ownerParticipant?.userId ?? original.ownerId,
         customerId: original.customerId,
         projectId: original.projectId,
@@ -111,7 +117,7 @@ export const meetingBusinessService = {
         scheduledFor: input.newScheduledFor,
         rescheduledFromId: original.id,
         // The insert schema takes undefined, not null.
-        flowStateJSON: original.flowStateJSON ?? undefined,
+        flowStateJSON: carried?.flowStateJSON ?? undefined,
       }))
 
       for (const participant of participants) {
@@ -144,7 +150,8 @@ export const meetingBusinessService = {
         }
       }
 
-      return { ...replacement, shareToken: original.shareToken }
+      // The system-created row is unprojected; the actor receives what their own read would.
+      return projectToReadFields(ctx.actor.ability, meetingServerSpec, { ...replacement, shareToken: original.shareToken }, replacement) as Meeting
     })
   },
 } as const
