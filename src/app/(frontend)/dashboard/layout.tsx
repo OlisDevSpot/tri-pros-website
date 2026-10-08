@@ -13,8 +13,8 @@ import { MeetingSplashMount } from '@/features/meeting-flow/ui/components/meetin
 import { readTablePreferences } from '@/shared/components/data-table/lib/read-table-preferences'
 import { TablePreferencesProvider } from '@/shared/components/data-table/ui/table-preferences-provider'
 import { GlobalDialogs } from '@/shared/components/dialogs/modals/global-dialogs'
-import { PwaInstallPrompt } from '@/shared/components/pwa-install-prompt'
 import { SidebarInset, SidebarProvider } from '@/shared/components/ui/sidebar'
+import { PwaInstallPrompt } from '@/shared/domains/pwa/ui/pwa-install-prompt'
 
 // Nothing here waits on the database. Whether a session cookie is present (a
 // header read) picks the sign-in screen or the signed-in shell; the session

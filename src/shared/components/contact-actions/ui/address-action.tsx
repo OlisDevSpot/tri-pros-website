@@ -9,8 +9,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu'
+import { openExternalUrl } from '@/shared/domains/pwa/lib/device'
 import { copyToClipboard } from '@/shared/lib/clipboard'
-import { openExternalUrl } from '@/shared/lib/pwa'
 import { cn } from '@/shared/lib/utils'
 
 interface AddressActionProps {

@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useState } from 'react'
 
 import { GLASS_SURFACE_STYLE } from '@/shared/constants/glass-surface'
-import { isIOSDevice, isStandalonePWA } from '@/shared/lib/pwa'
+import { isIOSDevice, isStandalonePWA } from '@/shared/domains/pwa/lib/device'
 
 const DISMISS_KEY = 'pwa-install-dismissed'
 const DISMISS_DURATION_MS = 7 * 24 * 60 * 60 * 1000 // 7 days

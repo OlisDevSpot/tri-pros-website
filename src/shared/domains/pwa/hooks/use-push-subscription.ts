@@ -2,8 +2,8 @@
 
 import { useMutation } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { urlBase64ToUint8Array } from '@/shared/lib/push'
-import { isIOSDevice, isStandalonePWA } from '@/shared/lib/pwa'
+import { isIOSDevice, isStandalonePWA } from '@/shared/domains/pwa/lib/device'
+import { urlBase64ToUint8Array } from '@/shared/domains/pwa/lib/vapid-key'
 import { useTRPC } from '@/trpc/helpers'
 
 export type PushSubscriptionStatus

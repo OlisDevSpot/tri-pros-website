@@ -1,7 +1,7 @@
 import { DashboardSignIn } from '@/features/agent-dashboard/ui/components/dashboard-sign-in'
 import { ServerAbilityProvider } from '@/shared/components/providers/server-ability-provider'
-import { PushSubscriptionBanner } from '@/shared/components/push-subscription-banner'
 import { getCachedSession } from '@/shared/domains/auth/lib/get-cached-session'
+import { PushSubscriptionBanner } from '@/shared/domains/pwa/ui/push-subscription-banner'
 
 // Owns the session read for the page slot. A session cookie that no longer maps
 // to a session (expired, revoked) lands here as null and gets the sign-in

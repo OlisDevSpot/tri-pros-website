@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
-import { usePushSubscription } from '@/shared/hooks/use-push-subscription'
+import { usePushSubscription } from '@/shared/domains/pwa/hooks/use-push-subscription'
 import { useTRPC } from '@/trpc/helpers'
 
 // Standalone settings-style component. Renders the full state machine,

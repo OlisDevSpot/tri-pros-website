@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
 import { Button } from '@/shared/components/ui/button'
-import { usePushSubscription } from '@/shared/hooks/use-push-subscription'
+import { usePushSubscription } from '@/shared/domains/pwa/hooks/use-push-subscription'
 
 const DISMISS_KEY = 'push-banner-dismissed'
 const DISMISS_DURATION_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
