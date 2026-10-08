@@ -156,9 +156,9 @@ Both paths write `x_project_scopes` **only through the projects DAL** (`modules/
 ### ownership-and-customer-cascade
 
 - `customerId` (FK to customers, `onDelete: 'cascade'`) — projects are destroyed when their customer is.
-- `ownerId` (FK to user, `onDelete: 'cascade'`) — projects are destroyed when their owning agent is. **Note**: this is the agent who created the project, not the agent currently managing it.
+- `ownerId` (FK to user, `onDelete: 'cascade'`) — **retiring** (owner, 2026-10-07; sales lifecycle R31): a project has no owner, only participants (anyone in one of its meetings; super-admins see everything). Never grant access or filter on it; until the column is dropped, deleting a user still deletes any project carrying their id.
 
-**Why**: customer cascade is correct (no orphan projects). Owner cascade is a defensive choice — in practice, agents are rarely deleted; if they leave, ownership is reassigned beforehand.
+**Why**: customer cascade is correct (no orphan projects).
 **Reference impl**: schema FK clauses
 **Enforced by**: Postgres
 

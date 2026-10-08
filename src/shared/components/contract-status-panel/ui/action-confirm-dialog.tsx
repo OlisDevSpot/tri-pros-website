@@ -59,7 +59,7 @@ export function ActionConfirmDialog({
             onClick={onConfirm}
             disabled={isPending}
             className={cn(
-              confirmVariant === 'destructive' && 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+              confirmVariant === 'destructive' && 'bg-destructive text-destructive-foreground hover:bg-destructive-hover',
             )}
           >
             {isPending

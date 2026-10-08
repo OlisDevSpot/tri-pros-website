@@ -32,7 +32,7 @@ export function DashboardDayAgenda({ rows, selectedDay }: DashboardDayAgendaProp
         </p>
         <Link
           href={ROOTS.dashboard.schedule()}
-          className="-mx-2 inline-flex min-h-11 items-center rounded-md px-2 text-sm font-medium text-primary transition-colors duration-200 hover:bg-accent/50"
+          className="-mx-2 inline-flex min-h-11 items-center rounded-md px-2 text-sm font-medium text-link transition-colors duration-200 hover:bg-hover pressed:bg-press"
         >
           Book one →
         </Link>
@@ -54,7 +54,7 @@ function DayAgendaRow({ row }: { row: MeetingListRow }) {
   return (
     <li className="flex items-stretch gap-3">
       <div className="flex w-18 shrink-0 items-center justify-end">
-        <span className="whitespace-nowrap rounded-md border border-primary/20 bg-primary/5 px-1.5 py-1 font-mono text-xs tabular-nums text-foreground">
+        <span className="whitespace-nowrap rounded-md bg-muted px-1.5 py-1 font-mono text-xs tabular-nums text-foreground">
           {formatBusinessTime(row.scheduledFor, { hour: 'numeric', minute: '2-digit' })}
         </span>
       </div>

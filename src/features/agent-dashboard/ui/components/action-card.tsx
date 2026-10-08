@@ -30,7 +30,8 @@ export function ActionCard({ item, onSelect }: Props) {
 
   return (
     <Card
-      className="cursor-pointer transition-colors hover:bg-accent/50"
+      data-press
+      className="cursor-pointer transition-colors hover:bg-row-hover pressed:bg-row-press"
       onClick={() => onSelect(item)}
     >
       <CardContent className="flex items-center gap-4 py-3">
@@ -53,7 +54,7 @@ export function ActionCard({ item, onSelect }: Props) {
           </div>
           <p className="text-sm text-muted-foreground truncate">{item.suggestedAction}</p>
           {timeContext && (
-            <p className="text-xs text-muted-foreground/70 mt-0.5" suppressHydrationWarning>{timeContext}</p>
+            <p className="text-xs text-muted-foreground mt-0.5" suppressHydrationWarning>{timeContext}</p>
           )}
         </div>
         <Button variant="ghost" size="sm" className="shrink-0">

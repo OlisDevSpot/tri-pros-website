@@ -46,7 +46,7 @@ export function QueryToolbarSort({ className }: SortProps) {
         aria-label={isDescending ? 'Sorted descending; switch to ascending' : 'Sorted ascending; switch to descending'}
         className="h-11 w-11 shrink-0 px-0 lg:h-9 lg:w-9 touch-manipulation"
       >
-        <DirectionIcon className="size-4 opacity-80" aria-hidden />
+        <DirectionIcon className="size-4" aria-hidden />
       </Button>
     </div>
   )

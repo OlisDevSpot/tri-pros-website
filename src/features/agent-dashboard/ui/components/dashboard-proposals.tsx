@@ -1,10 +1,9 @@
 'use client'
 
-import Link from 'next/link'
-
 import { awaitingProposalsInput, sentProposalsInput } from '@/features/agent-dashboard/constants/dashboard-queries'
 import { DashboardModule } from '@/features/agent-dashboard/ui/components/dashboard-module'
 import { DashboardProposalSection } from '@/features/agent-dashboard/ui/components/dashboard-proposal-section'
+import { DashboardSeeAllLink } from '@/features/agent-dashboard/ui/components/dashboard-see-all-link'
 import { ROOTS } from '@/shared/config/roots'
 
 /**
@@ -19,14 +18,7 @@ export function DashboardProposals() {
   return (
     <DashboardModule
       title="Proposals"
-      action={(
-        <Link
-          href={ROOTS.dashboard.proposals.root()}
-          className="-mr-2 -my-2 inline-flex min-h-11 shrink-0 items-center rounded-md px-2 text-xs font-medium text-muted-foreground transition-colors duration-200 hover:bg-accent/50 hover:text-primary"
-        >
-          See all →
-        </Link>
-      )}
+      action={<DashboardSeeAllLink href={ROOTS.dashboard.proposals.root()} />}
     >
       <div className="flex flex-col gap-4">
         <DashboardProposalSection

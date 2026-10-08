@@ -11,7 +11,7 @@ export function ProposalNavbarFrame({ children, className, ...props }: Props) {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="h-14 bg-foreground/20 shrink-0"
+      className="surface h-14 shrink-0 border-b border-border"
     >
       <div className="h-full w-full flex justify-between overflow-hidden">
         <motion.div

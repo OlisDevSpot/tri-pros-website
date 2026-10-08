@@ -1,7 +1,7 @@
 # Customers entity table and fixed filters — design
 
-> **Status:** design approved in conversation by the owner on 2026-10-05 (scope and outline); this written spec awaits their review. Nothing is built.
-> **Tracker:** `docs/plans/2026-09-26-records-management-epic.md` — phase **R2**, rulings **D45, D48, D51, D60, D62**, open item **O9**, audit **O3**.
+> **Status:** approved by the owner 2026-10-05; plans written in two parts (`docs/superpowers/plans/2026-10-05-customers-entity-table-and-fixed-filters.md`, `…-part-2.md`); both stress-tested 2026-10-07 and the owner's rulings of that day applied here (tracker **D64**). Nothing is built.
+> **Tracker:** `docs/plans/2026-09-26-records-management-epic.md` — phase **R2**, rulings **D45, D48, D51, D60, D62, D64**, open item **O9**, audit **O3**.
 > **Facts:** a read-only code audit on 2026-10-05 at `213662b3`. Re-check a `file:line` before relying on it.
 
 ## 1. Goals, non-goals, success criteria
@@ -13,6 +13,8 @@
 4. The lead-source pane reads the shared customers list with its source pinned; `leadSourcesRouter.getCustomers` goes.
 5. The agent dashboard's meetings calendar and its project and meetings lists read through the same mechanism. Their cards do not change.
 6. Components under `entities/customers/components/lists/` move to the entity whose tree they render (O3).
+7. One `openCustomerProfile(props)` opens the customer profile modal everywhere, in place of the hand-written `openModal({ accessor: 'CustomerProfile', … })` calls (owner, 2026-10-07; §5.6).
+8. An embedded entity table composes the shared `DataView` parts in its own wrapper; no shared pane component (owner, 2026-10-07, **D65**, decided later the same day than D64 and replacing its `EntityTableSection`; §5.3).
 
 **Non-goals (owner, 2026-10-05)**
 - Whether the dashboard and the customer profile show tables or keep cards: **deferred**. Nothing here changes what either surface looks like.
@@ -23,7 +25,7 @@
 - Role-gated filters (they wait for #285).
 
 **Success criteria**
-- The three customers tables show the same rows, columns, actions and URL keys as today, except that the lead-source pane loses its Source column (constant in that pane).
+- The three customers tables show the same rows, columns and URL keys as today, except that the lead-source pane loses its Source column (constant in that pane). Their actions are the same, except that Edit Profile and Schedule Meeting reach real targets (§5.5); the panes gain the row-cap notice the records pages have; switching sources starts the pane on page 1 (§5.4).
 - `grep -rn "getCustomers" src` finds no customers-table caller, and the procedure is gone.
 - `grep -rn "liveOnly" src` finds nothing.
 - The dashboard shows the same cards and the same rows as before.
@@ -97,7 +99,7 @@ Three tables wire the same things by hand (`entities/customers/components/custom
 
 ### 5.2 The hook
 
-`src/shared/entities/customers/components/customers-table/use-customers-table.tsx`, the same shape as `useMeetingsTable` and `useProjectsTable`:
+`src/shared/modules/customers/core/components/customers-table/use-customers-table.tsx`, the same shape as `useMeetingsTable` and `useProjectsTable`. It is a new file, so it sits at the customers module's address (owner rule 2026-10-05 "code lives where its module will be", applied 2026-10-07): the first file under `modules/customers/`. It is client code with no DAL, so D12's "no partial module" (split-brain DAL) does not apply; existing `entities/customers/**` files are edited in place until the path-only move.
 
 ```ts
 useCustomersTable(
@@ -106,7 +108,7 @@ useCustomersTable(
 ): { query, visibility, dataTableProps, dialogs }
 ```
 
-It owns: the read (`useDataViewQuery(trpc.customersRouter.business.list, {}, tableView.query, options.fixed)`), the created-date mutation, the action configs, the table meta, the row click that opens `CustomerProfileModal`, and the delete confirm dialog. Layout stays the callsite's (D45).
+It owns: the read (`useDataViewQuery(trpc.customersRouter.business.list, {}, tableView.query, options.fixed)`), the created-date mutation, the action configs, the table meta, the row click that opens `CustomerProfileModal`, the delete confirm dialog, and a skeleton row height measured against the real rows (as projects does). Layout stays the callsite's (D45, D65): `EntityRecordsTable` draws the records-page layout from the hook's result; every other callsite composes the `DataView` parts in its own wrapper.
 
 ### 5.3 Table views and callsites
 
@@ -119,7 +121,7 @@ It owns: the read (`useDataViewQuery(trpc.customersRouter.business.list, {}, tab
 `tableId`s and prefixes do not change, so saved column layouts and existing URLs keep working.
 
 - **Records page:** a `CustomersRecordsTable` in `features/records-management/ui/components/` renders `EntityRecordsTable` from the hook result, like meetings and projects (D11). `entities/customers/components/customers-table.tsx` and `constants/customers-table-query-config.ts` are deleted; the page and its pending view import the new component and constant.
-- **Lead-source sections:** keep their own section layout and toolbar parts, and take `query`, `visibility`, `dataTableProps` and `dialogs` from the hook.
+- **Lead-source sections:** compose the `DataView` parts (**D65**, 2026-10-07, later than D64; the data-view spec's phase 1 lands before this plan's part 2) in their own `<section>`: an eyebrow `DataView.Title` with `DataView.Count`, `DataView.Toolbar` holding `QueryToolbar.Standard` (which adds the row-cap notice the hand-written toolbars lacked), and `DataView.Body` with `empty` around `DataTable`. `EntityTableSection` was proposed and retracted the same day: no shared pane component.
 
 ### 5.4 The lead-source pane's read
 
@@ -129,10 +131,15 @@ The pane calls `customersRouter.business.list` with `fixed: { leadSource: [leadS
 - **Access:** `getCustomers` is super-admin only and unscoped; `business.list` runs under the customers visibility scope, which is empty for a super-admin. The page already turns away everyone who cannot `manage all` (`lead-sources/page.tsx:25-27`), so who sees what does not change.
 - **Removed:** `leadSourcesRouter.getCustomers`; `CUSTOMER_FIELDS.sourceId` and `.segment` with their SQL entries (no client sends `segment`; the status counts call `buildSegmentWhere` directly). The plan confirms by grep that the pipeline kanban's input, which shares the field list, uses neither.
 - **Unchanged:** the pane's count badge and stats read their own procedures. The page's time range still does not reach the table.
+- **Switching sources** (owner, 2026-10-07): the selection handler clears the pane's page key, so a new source starts on page 1. Its pipeline filter and search carry over, as today.
 
 ### 5.5 A correction: two row actions go to the wrong place
 
-"Edit Profile" and "Schedule Meeting" in every customers table fall through to `router.push(ROOTS.dashboard.pipeline())` (`use-customer-action-configs.ts:44,53-59`), because no table passes `onEdit` or `onScheduleMeeting`. **Proposed:** the hook passes both, and each opens the customer profile modal: Edit Profile as View does today, Schedule Meeting on the modal's new-meeting step. The plan reads the modal's props to see what it can open directly. **Owner to confirm at spec review**; the alternative is to hide the two actions in tables until they have a real target.
+"Edit Profile" and "Schedule Meeting" in every customers table fall through to `router.push(ROOTS.dashboard.pipeline())` (`use-customer-action-configs.ts:44,53-59`), because no table passes `onEdit` or `onScheduleMeeting`. **Ruled (owner, 2026-10-07):** the hook passes both. **Edit Profile** opens the profile modal in its edit mode (`CustomerProfileModal` gains `defaultEditing`, seeding the edit form for a viewer who can edit); opening it as View does would make two actions identical. **Schedule Meeting** opens the profile with its Add meeting dialog up (`defaultMeetingOpen`). **Open, to investigate before it is built:** on a cached profile the modal and the dialog mount in the same commit, and the dialog may lose Escape, outside clicks or focus to the modal; part 2 Task 3 reproduces it first and opens the dialog one commit later if needed. The pipeline kanban card's Edit Profile has the same fallback and stays out of this spec.
+
+### 5.6 One way to open the customer profile
+
+`openCustomerProfile(props)` (`src/shared/modules/customers/core/lib/open-customer-profile.ts`, new; owner 2026-10-07) wraps `openModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props })`; its `props` are the modal's own, so `defaultEditing` and `defaultMeetingOpen` pass straight through. Every caller moves to it, except a file another session holds at build time (it moves later). The `customer-pipelines` components barrel, whose only export is the modal, goes once nothing imports it.
 
 ## 6. Dashboard reads
 
@@ -149,7 +156,7 @@ This replaces the mechanism, not the ruling, of data-view date windows A3 (2026-
 
 ## 7. Ownership moves (O3)
 
-A component lives with the entity whose tree it renders (D25). Path-only moves; no markup changes.
+A component lives with the entity whose tree it renders (D25). Path-only moves; no markup changes. These are existing files, so the meetings list goes where meetings components live today and moves again with the meetings module's path-only move (M2); the projects targets are already at the module address.
 
 | File (under `entities/customers/components/lists/`) | Renders | Goes to |
 |---|---|---|
@@ -178,7 +185,9 @@ The green left border on `project-entity-card.tsx:40` (a known design finding) i
 
 ## 10. Coordination
 
+- **Order (owner, 2026-10-07; D64):** R2 lands before the #285 permissions merge and before pipeline-speed Phase 2 (action hosts) and Phase 3 (grouped window). #285 (tracker H3; its unit 3 rebuilds the Customer family's permissions) rebases onto R2; the pipeline-speed spec names R2's moved paths and adds its `grouped` kind beside `first`.
 - **#285** touches customer files (tracker H3). This spec edits the customers table, its constants and the lead-sources router; check `git status` on each before editing.
+- **Dashboard rework (another session, uncommitted on 2026-10-07):** three dashboard files §6 edits hold its work; part 1's dashboard task waits until that session commits.
 - **Setter plan** (`docs/superpowers/plans/2026-10-05-meetings-setter.md`) edits `meetings.router/reads.router.ts` (`getInternalUsers`). §6 removes `liveOnly` from the same file's `list`. Build one after the other.
 - **Tracker:** H2 still names `loadPaginatedQueryInput` / `usePaginatedQuery`; the hand-off updates it to the data-view names and records O9 as built.
 

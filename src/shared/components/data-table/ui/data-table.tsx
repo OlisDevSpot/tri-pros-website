@@ -1,8 +1,8 @@
 'use client'
 
-import type { ColumnDef, ColumnFiltersState, ColumnSizingState, ExpandedState, FilterFnOption, Row, SortingState, TableMeta, Updater, VisibilityState } from '@tanstack/react-table'
+import type { ColumnDef, ColumnFiltersState, ColumnSizingState, ExpandedState, Row, SortingState, TableMeta, Updater, VisibilityState } from '@tanstack/react-table'
 import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react'
-import type { DataTableFilterConfig, DataTableServerPagination, DataTableServerSorting, DataTableTimePresetFilter } from '@/shared/components/data-table/types'
+import type { DataTableFilterConfig, DataTableServerPagination, DataTableServerSorting } from '@/shared/components/data-table/types'
 
 import {
   flexRender,
@@ -20,7 +20,6 @@ import { FROZEN_COLUMN_SHADOW } from '@/shared/components/data-table/constants/f
 import { SKELETON_ROW_HEIGHT_CLASS } from '@/shared/components/data-table/constants/skeleton-widths'
 import { useTablePreferences } from '@/shared/components/data-table/contexts/table-preferences-context'
 import { usePullToRefresh } from '@/shared/components/data-table/hooks/use-pull-to-refresh'
-import { createDateRangeFilterFn } from '@/shared/components/data-table/lib/filter-fns'
 import { isRowClick } from '@/shared/components/data-table/lib/is-row-click'
 import { mapColumnSortIds } from '@/shared/components/data-table/lib/map-column-sort-ids'
 import { DataTableBody } from '@/shared/components/data-table/ui/data-table-body'
@@ -150,33 +149,6 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
 
   const columnVisibility = controlledColumnVisibility ?? fallbackColumnVisibility
 
-  const timePresetFilters = useMemo(
-    () => (filterConfig?.filter((f): f is DataTableTimePresetFilter => f.type === 'time-preset') ?? []),
-    [filterConfig],
-  )
-
-  const filterFns = useMemo(() => {
-    const fns: Record<string, ReturnType<typeof createDateRangeFilterFn<TData>>> = {}
-    for (const f of timePresetFilters) {
-      fns[`dateRange_${f.columnId}`] = createDateRangeFilterFn<TData>(f.presets)
-    }
-    return fns
-  }, [timePresetFilters])
-
-  const patchedColumns = useMemo(() => {
-    if (timePresetFilters.length === 0) {
-      return columns
-    }
-    const timeColumnIds = new Set(timePresetFilters.map(f => f.columnId))
-    return columns.map((col) => {
-      const accessorKey = 'accessorKey' in col ? col.accessorKey as string : undefined
-      if (accessorKey && timeColumnIds.has(accessorKey)) {
-        return { ...col, filterFn: `dateRange_${accessorKey}` as FilterFnOption<TData> }
-      }
-      return col
-    })
-  }, [columns, timePresetFilters])
-
   useEffect(() => {
     onActiveRowChange?.(activeRowId)
   }, [activeRowId, onActiveRowChange])
@@ -223,8 +195,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
 
   const table = useReactTable({
     data,
-    columns: patchedColumns,
-    filterFns,
+    columns,
     defaultColumn: { minSize: 60, maxSize: 800 },
     state: {
       sorting,
@@ -334,6 +305,8 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
           )}
         >
           {/* Fills the container or overflows it in CSS alone, so a window resize runs no script and re-renders nothing. */}
+          {/* The dim is the one faded state the theme keeps: it marks rows that belong to the previous query and
+              lifts the moment the new ones land. */}
           <Table
             className="table-fixed border-separate border-spacing-0 transition-opacity duration-200 data-[stale=true]:opacity-60 data-[stale=true]:delay-200"
             style={{ width: totalDeclaredWidth, minWidth: '100%' }}
@@ -342,7 +315,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
           >
             <TableHeader className="sticky top-0 z-10 bg-(--card)">
               {table.getHeaderGroups().map(headerGroup => (
-                <TableRow key={headerGroup.id} className="hover:bg-transparent border-border/50">
+                <TableRow key={headerGroup.id} className="hover:bg-transparent">
                   {headerGroup.headers.map((header, colIdx) => {
                     const isColResizing = header.column.getIsResizing()
                     const isFirstCol = colIdx === 0
@@ -357,7 +330,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                           'group/th relative',
                           CELL_BORDER,
                           isFirstCol && isFrozen && cn(
-                            'sticky left-0 z-30 bg-(--card) border-r border-border/50',
+                            'sticky left-0 z-30 bg-(--card) border-r border-border',
                             FROZEN_COLUMN_SHADOW,
                           ),
                         )}
@@ -380,7 +353,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                                     e.stopPropagation()
                                     toggleFrozen()
                                   }}
-                                  className="shrink-0 cursor-pointer rounded p-0.5 hover:bg-muted"
+                                  className="shrink-0 cursor-pointer rounded p-0.5 hover:bg-hover pressed:bg-press focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                                   title={isFrozen ? 'Unfreeze column' : 'Freeze column'}
                                 >
                                   <PinIcon
@@ -388,7 +361,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                                       'h-3 w-3 rotate-45 transition-colors',
                                       isFrozen
                                         ? 'fill-foreground text-foreground'
-                                        : 'text-muted-foreground/50',
+                                        : 'text-muted-foreground',
                                     )}
                                   />
                                 </button>

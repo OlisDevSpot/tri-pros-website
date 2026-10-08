@@ -8,7 +8,7 @@
 
 **Tech Stack:** Next.js 15 App Router, tRPC v11, TanStack Query v5, nuqs, Zod 4, TypeScript 5.9, pnpm, `tsx`, Playwright (read-only checks).
 
-**Spec:** `docs/superpowers/specs/2026-10-05-customers-entity-table-and-fixed-filters-design.md` §2–§4, §6, §8, §11 (approved by the owner 2026-10-05), under the records tracker `docs/plans/2026-09-26-records-management-epic.md` **D29, D45, D60, D62** and open item **O9**. Part 2 (`docs/superpowers/plans/2026-10-05-customers-entity-table-and-fixed-filters-part-2.md`) builds the customers entity table on this; it needs Tasks 1 and 2 here. This part ships on its own.
+**Spec:** `docs/superpowers/specs/2026-10-05-customers-entity-table-and-fixed-filters-design.md` §2–§4, §6, §8, §11 (approved by the owner 2026-10-05; stress-tested 2026-10-07 and the owner's rulings of that day applied), under the records tracker `docs/plans/2026-09-26-records-management-epic.md` **D29, D45, D60, D62** and open item **O9**. Part 2 (`docs/superpowers/plans/2026-10-05-customers-entity-table-and-fixed-filters-part-2.md`) builds the customers entity table on this; it needs Tasks 1 and 2 here. This part ships on its own.
 
 ## Owner confirms
 
@@ -23,9 +23,10 @@ Each is isolated so a different answer is a small change. Spec §5.5 (the two cu
 
 - Verification per task: `pnpm tsc` and `pnpm lint`. **Never `pnpm build`.**
 - **No database writes for testing** (dev included). Browser checks read and open UI only; never submit a form.
+- **Order (owner ruling 2026-10-07, tracker D64):** R2 lands before the permissions #285 merge and before pipeline-speed phase 2 (the action hosts). #285 rebases onto R2 (in this plan's files: `columns-registry.tsx`, `use-profile-commands.ts`, the moved `customer-meetings-list.tsx`, `use-meetings-table.tsx`, the customers `queries.ts` and `DOCS.md`); do not wait for it, and do not adopt its names (`permit`, `permissions/client`) before it merges.
 - **No schema change.** If a step seems to need one, stop and report it.
 - No unit runner in the repo: pure functions are checked with throwaway `node:test` files under `.superpowers/sdd/2026-10-05-customers-entity-table-and-fixed-filters/tests/` (git-ignored), run from the repo root with `pnpm exec tsx --test <file>` so the `@/` alias resolves. A file that imports a `server-only` module runs with `NODE_OPTIONS=--conditions=react-server`. Never commit them.
-- Work on `main`; other sessions commit concurrently and the index can hold their staged work. Add only new files with `git add -- <path>`, then **commit with an explicit pathspec** (`git commit -m "…" -- <paths>`, as every commit block below does) so nothing already staged rides along; confirm with `git show --stat HEAD`. Never `git add -A`, `git stash`, `checkout`, `reset`, `restore`, `clean` or `commit --amend`. Before editing any file this plan modifies, run `git status --short <file>`: if it shows changes you didn't make, stop and ask. Message shape `type(scope): subject`, ending with `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
+- Work on `main`; other sessions commit concurrently and the index can hold their staged work. Add only new files with `git add -- <path>`, then **commit with an explicit pathspec** (`git commit -m "…" -- <paths>`, as every commit block below does) so nothing already staged rides along; confirm with `git show --stat HEAD`. Never `git add -A`, `git stash`, `checkout`, `reset`, `restore`, `clean` or `commit --amend`. Before editing any file this plan modifies, run `git status --short <file>`: if it shows changes you didn't make, stop and ask. Message shape `type(scope): subject`, ending with `Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>`.
 - **The meetings setter plan** (`docs/superpowers/plans/2026-10-05-meetings-setter.md`) is built on this tree. It rewrote the imports and `getInternalUsers` of `src/trpc/routers/meetings.router/reads.router.ts` and added to `MEETING_FIELDS`, `OPTION_SOURCES` and the meetings table view. Steps below name symbols, not line numbers; never undo its additions.
 - Edits are given as exact "replace this with that" pairs. If the text to replace is not in the file as written, stop and re-read the file: another session changed it. Do not guess.
 - Never start, stop or restart a dev server; never touch `.next`. Run `ss -ltnp | grep :3000` and reuse the running one.
@@ -40,7 +41,7 @@ Each is isolated so a different answer is a small change. Spec §5.5 (the two cu
 
 1. **Every existing data view still asks for exactly what it asked before.** The hook and the derivation every table, calendar and kanban uses change in Tasks 1 and 2; the customers, meetings and projects tables, the schedule, the pipeline board and the lead-sources tables must send the same inputs and show the same rows. Pinned by Task 2 Step 7 (before/after capture of each list request's input and row ids).
 2. **An old bookmark carrying a key for a pinned id changes nothing.** `/dashboard?dm_outcome=cancelled` still shows live meetings only, with no error. Pinned by Task 1 Step 2 (two tests), Task 2 Step 1 (loader test) and Task 3 Step 7 (browser).
-3. **An empty pin never returns every row silently.** `fixed: { source: [] }` throws in development, as a pin on a date window's field does. Pinned by Task 1 Step 2 (test).
+3. **An empty pin never returns every row silently.** An empty pin (in the app `fixed: { leadSource: [] }`; in the tests the fixture's `source: []`) throws in development, as a pin on a date window's field does. Pinned by Task 1 Step 2 (test).
 4. **A static data view built from a config that lists toolbar ids does not crash.** `staticDataViewInput` runs with an empty URL state, where a multi-select or a date range has no default to read. Pinned by Task 1 Step 2 (test).
 5. **The dashboard shows the same cards and counts to an agent, at 390px and in the dark scheme, with no prefetch-drift error.** The snapshot strip's counts read the same keys as the sections below it, so they must not send a request of their own. Pinned by Task 3 Step 1 (key-parity test) and Task 3 Step 7 (browser, both roles).
 
@@ -52,7 +53,7 @@ Each is isolated so a different answer is a small change. Spec §5.5 (the two cu
 | 2 Pins at the callsite | `src/shared/dal/client/hooks/use-data-view-query.ts` · `src/shared/dal/server/lib/query/load-data-view-query-input.ts` |
 | 3 Dashboard reads | `src/features/agent-dashboard/constants/dashboard-queries.ts` · `src/features/agent-dashboard/ui/components/{dashboard-meetings-hub,dashboard-snapshot-counts,dashboard-projects,dashboard-project-section,dashboard-project-section-list}.tsx` · `src/app/(frontend)/dashboard/page.tsx` · `src/trpc/routers/meetings.router/reads.router.ts` · `src/shared/modules/projects/core/DOCS.md` · tracker and spec status lines |
 
-None of these files carried another session's uncommitted edits on 2026-10-05, except `reads.router.ts` (the setter plan's, since committed or about to be). Check each with `git status --short` anyway.
+On 2026-10-07 three Task 3 files held another session's uncommitted dashboard rework (`dashboard-queries.ts`, `dashboard-meetings-hub.tsx`, `dashboard-projects.tsx`): Task 3 Step 0 gates on it. Tasks 1–2's files were clean. Check each with `git status --short` anyway.
 
 ---
 
@@ -395,7 +396,7 @@ function pinnedFilters<F extends FieldList>(config: DataViewQueryConfig<F>, fixe
 /** The toolbar ids a data view parses and shows: the config's list without the pinned ids, so one list serves a records page and a pinned embed. */
 export function dataViewToolbar<F extends FieldList, T extends ToolbarFilterId<F>>(config: DataViewQueryConfig<F, T>, fixed?: FilterValues<F>): readonly T[] {
   const pins = pinnedFilters(config, fixed)
-  return config.toolbar.filter(id => !(id in pins))
+  return config.toolbar.filter(id => !Object.hasOwn(pins, id))
 }
 ```
 
@@ -405,7 +406,7 @@ export function dataViewToolbar<F extends FieldList, T extends ToolbarFilterId<F
 export function makeDataViewParsers<F extends FieldList>(config: DataViewQueryConfig<F>, fixed?: FilterValues<F>): Record<string, unknown> {
 ```
 
-and, inside it, the loop header `for (const id of config.toolbar) {` to
+and, inside it, the loop header (the first of the file's two `for (const id of config.toolbar) {` lines; anchor on it together with the line after it, `    parsers[keys.filterKey(id)]`, so the edit matches once) to
 
 ```ts
   for (const id of dataViewToolbar(config, fixed)) {
@@ -461,7 +462,8 @@ function assertPinsApply<F extends FieldList>(config: DataViewQueryConfig<F>, pi
       throw new Error(`[data-view] '${id}' is pinned, but this data view's date window owns that filter. Remove the pin.`)
     }
     const filter = fields[id]?.filter
-    if (filter && filter.kind !== 'fixed' && (filterParserRegistry[filter.kind] as { normalize: (raw: unknown) => unknown }).normalize(value) === undefined) {
+    // A boolean filter normalizes `false` to "off", which is a value here, not an empty pin.
+    if (filter && filter.kind !== 'fixed' && filter.kind !== 'boolean' && (filterParserRegistry[filter.kind] as { normalize: (raw: unknown) => unknown }).normalize(value) === undefined) {
       throw new Error(`[data-view] The pin on '${id}' is empty, so the read would ignore it and return every row.`)
     }
   }
@@ -525,7 +527,7 @@ Expected: clean. No config has `fixed` yet and no view has a `first` window, so 
 ```bash
 git commit -m "feat(data-view): a data view pins filter values in its config and can ask for its first rows
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>" -- src/shared/dal/lib/query/data-view-query-config.ts src/shared/dal/lib/query/derive-data-view-input.ts src/shared/dal/lib/query/adjacent-windows.ts src/shared/dal/client/lib/types.ts src/shared/dal/client/hooks/use-data-view-query.ts
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/shared/dal/lib/query/data-view-query-config.ts src/shared/dal/lib/query/derive-data-view-input.ts src/shared/dal/lib/query/adjacent-windows.ts src/shared/dal/client/lib/types.ts src/shared/dal/client/hooks/use-data-view-query.ts
 git show --stat HEAD
 ```
 
@@ -725,7 +727,7 @@ Expected: for every path, width and scheme, `columns`, every `reads[].input`, ev
 ```bash
 git commit -m "feat(data-view): the hook and the loader take callsite pins; a pinned id has no URL key, control or chip
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>" -- src/shared/dal/client/hooks/use-data-view-query.ts src/shared/dal/server/lib/query/load-data-view-query-input.ts
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/shared/dal/client/hooks/use-data-view-query.ts src/shared/dal/server/lib/query/load-data-view-query-input.ts
 git show --stat HEAD
 ```
 
@@ -751,6 +753,22 @@ git show --stat HEAD
 **Interfaces:**
 - Consumes: `staticDataViewInput(config, fixed?)`, `DataViewQueryConfig.fixed`, the `first` window (Task 1); `loadDataViewQueryInput` and `useDataViewQuery` reading `config.fixed` (Tasks 1–2); `DataViewInput<F>` from `@/shared/dal/lib/query/data-view-query-config`.
 - Produces: `DASHBOARD_MEETINGS_WINDOW_QUERIES: Record<MeetingWindowKind, DataViewQueryConfig<typeof MEETING_FIELDS>>`; `meetingsWindowInput(kind): DataViewInput<typeof MEETING_FIELDS>`; `DASHBOARD_MEETINGS_QUERY` with `fixed: { outcome: LIVE_MEETING_OUTCOMES }`; `DASHBOARD_ACTIVE_PROJECTS_QUERY`, `DASHBOARD_ON_HOLD_PROJECTS_QUERY`. Removed: `DASHBOARD_MEETINGS_EXTRA`, `activeProjectsInput`, `onHoldProjectsInput`, `ProjectsListInput`, and the `liveOnly` input of `meetingsRouter.reads.list`.
+
+- [ ] **Step 0: Other sessions' edits come first (owner ruling 2026-10-07)**
+
+A pathspec commit takes the whole file, so no file this task commits may hold another session's uncommitted work. State on 2026-10-07 (re-check with `git status --short` and `git diff -- <file>`):
+- `src/trpc/routers/meetings.router/reads.router.ts`: clean; the setter hunks were committed (`7228df96`, `21e0021d`).
+- `src/shared/modules/projects/core/DOCS.md`: still holds another session's hunks (the `ownerId` bullet rewritten as retiring, R31; the owner-cascade "Why" sentence removed). If they are still uncommitted, commit them as their own commit:
+
+```bash
+git commit -m "docs(projects): ownerId marked retiring (R31)
+
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/shared/modules/projects/core/DOCS.md
+git show --stat HEAD
+```
+
+  If its diff holds anything beyond those two hunks, stop and ask.
+- **The dashboard rework (gate).** Another session's dashboard work held about 20 uncommitted files under `src/features/agent-dashboard/`, three of them this task's: `constants/dashboard-queries.ts` (the declined-proposals fix the Step 2 listing carries), `ui/components/dashboard-meetings-hub.tsx` and `ui/components/dashboard-projects.tsx` (both now import the untracked `ui/components/dashboard-see-all-link.tsx`). **Do not start Task 3 while any of the three is dirty**: committing them here would ship half of that session's work, and without the untracked file the commit would not compile. Ask the owner to have that session commit first; Tasks 1–2 do not touch these files and may run meanwhile.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -806,7 +824,7 @@ Expected: FAIL with `does not provide an export named 'DASHBOARD_ACTIVE_PROJECTS
 
 - [ ] **Step 2: The configs**
 
-Replace `src/features/agent-dashboard/constants/dashboard-queries.ts` with (the two proposal builders are unchanged; proposals have no field list until R3):
+Replace `src/features/agent-dashboard/constants/dashboard-queries.ts` with the listing below. The two proposal builders are as committed (proposals have no field list until R3): on 2026-10-07 the file held another session's uncommitted fix that keeps declined proposals out of "awaiting signature" (`OPEN_PROPOSAL_STATUSES`, imported `proposalStatuses`); the listing carries it. Before replacing, `git diff` the file: if the proposal builders differ from the listing in any other way, keep the file's version of them and stop to ask.
 
 ```ts
 // Every dashboard module (snapshot strip, meetings hub, proposals and projects sections) reads through these, so
@@ -818,7 +836,7 @@ import type { MeetingWindowKind } from '../lib/meeting-windows'
 import type { DataViewQueryConfig } from '@/shared/dal/lib/query/data-view-query-config'
 import type { ProposalListInput } from '@/shared/modules/proposals/core/dal/server/queries'
 
-import { LIVE_MEETING_OUTCOMES } from '@/shared/constants/enums'
+import { LIVE_MEETING_OUTCOMES, proposalStatuses } from '@/shared/constants/enums'
 import { staticDataViewInput } from '@/shared/dal/lib/query/derive-data-view-input'
 import { MEETING_FIELDS } from '@/shared/entities/meetings/dal/meeting-fields'
 import { PROJECT_FIELDS } from '@/shared/modules/projects/core/dal/project-fields'
@@ -870,12 +888,16 @@ export const DASHBOARD_MEETINGS_QUERY = {
   window: { kind: 'date', field: 'scheduledFor', cap: DASHBOARD_LIMITS.meetingsCalendar, views: ['month'] },
 } as const satisfies DataViewQueryConfig<typeof MEETING_FIELDS>
 
+const OPEN_PROPOSAL_STATUSES = proposalStatuses.filter(status => status !== 'declined')
+
 /** Proposals awaiting the homeowner's signature (contract sent, unsigned/undeclined). */
 export function awaitingProposalsInput() {
   return {
     pagination: { limit: DASHBOARD_LIMITS.proposalsPerSection, offset: 0 },
     sort: { sortBy: 'contractSentAt', sortDir: 'desc' },
-    filters: { awaitingSignature: true },
+    // A proposal can be declined while its contract envelope still reads unsigned and undeclined; the envelope
+    // alone would keep it listed as waiting for a signature.
+    filters: { awaitingSignature: true, status: OPEN_PROPOSAL_STATUSES },
   } satisfies ProposalListInput
 }
 
@@ -975,7 +997,7 @@ add, directly below the `ROOTS` import,
 import { staticDataViewInput } from '@/shared/dal/lib/query/derive-data-view-input'
 ```
 
-in the doc comment replace the sentence "Each section reuses the exact query keys the dashboard route prefetches (`activeProjectsInput` / `onHoldProjectsInput`), so both hydrate instantly." with "Each section builds its input from the config the dashboard route prefetches, so both hydrate instantly."; and the two props become
+in the doc comment replace the sentence "Each section reuses the exact query keys the dashboard route prefetches (`activeProjectsInput` / `onHoldProjectsInput`), so both hydrate instantly." with "Each section builds its input from the config the dashboard route prefetches, so both hydrate instantly." (the sentence is wrapped over the comment's lines 14–16 with ` * ` prefixes: replace those lines, re-wrapping the new sentence the same way); and the two props become
 
 ```tsx
           input={staticDataViewInput(DASHBOARD_ACTIVE_PROJECTS_QUERY)}
@@ -1050,17 +1072,26 @@ In `docs/plans/2026-09-26-records-management-epic.md`:
 - §4, row **O9**, last cell: `built with R2 part 1 (config \`fixed\`, a runtime \`fixed\` on the hook and the loader, \`staticDataViewInput\`)`.
 - §5, **H2**: replace "the page's `loadPaginatedQueryInput` and the client's `usePaginatedQuery` import (`query-toolkit.md#shared-table-config`)" with "the page's `loadDataViewQueryInput` and the client's `useDataViewQuery` import", and add the sentence "A runtime pin (`fixed`) is the one key-relevant value that is not in the constant: pass the same value to both."
 
-In the spec, replace the **Status** line with `> **Status:** approved by the owner 2026-10-05. Part 1 (§3, §4, §6) is built; part 2 (§5, §7) is planned.`
+In the spec, replace the **Status** line with `> **Status:** approved by the owner 2026-10-05; plans stress-tested and the owner's rulings applied 2026-10-07. Part 1 (§3, §4, §6) is built; part 2 (§5, §7) is planned.`
+
+In `CONTEXT.md`, under **Records terms**, after the **Scope coverage** entry, add (terms owner-approved 2026-10-05):
+
+```md
+- **Fixed filter** — a filter value a data view always applies, set by its callsite: in the data-view config (`fixed`) or at the callsite for a value only it knows (the `fixed` argument of `useDataViewQuery` and `loadDataViewQueryInput`). Never read from the URL, never shown in the toolbar. Narrows what a view asks for; it is not access control. _Avoid_: scope, preset filter.
+- **First-rows window** — a data view window that returns the first N rows of the view's order with no paging (`{ kind: 'first', count }`). A view with no user state builds its input with `staticDataViewInput`. _Avoid_: limit window, top-N.
+```
 
 - [ ] **Step 9: Commit**
+
+Step 0 cleared `DOCS.md` and the dashboard files of other sessions' hunks; run `git diff -- <file>` on every file below and confirm only this task's changes remain.
 
 ```bash
 git commit -m "refactor(dashboard): meetings and project reads come from data-view configs with their filters pinned; liveOnly goes
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>" -- src/features/agent-dashboard/constants/dashboard-queries.ts "src/app/(frontend)/dashboard/page.tsx" src/features/agent-dashboard/ui/components/dashboard-meetings-hub.tsx src/features/agent-dashboard/ui/components/dashboard-snapshot-counts.tsx src/features/agent-dashboard/ui/components/dashboard-projects.tsx src/features/agent-dashboard/ui/components/dashboard-project-section.tsx src/features/agent-dashboard/ui/components/dashboard-project-section-list.tsx src/trpc/routers/meetings.router/reads.router.ts
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/features/agent-dashboard/constants/dashboard-queries.ts "src/app/(frontend)/dashboard/page.tsx" src/features/agent-dashboard/ui/components/dashboard-meetings-hub.tsx src/features/agent-dashboard/ui/components/dashboard-snapshot-counts.tsx src/features/agent-dashboard/ui/components/dashboard-projects.tsx src/features/agent-dashboard/ui/components/dashboard-project-section.tsx src/features/agent-dashboard/ui/components/dashboard-project-section-list.tsx src/trpc/routers/meetings.router/reads.router.ts
 git commit -m "docs(records): fixed filters and the dashboard reads are built; tracker and spec follow
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>" -- docs/plans/2026-09-26-records-management-epic.md docs/superpowers/specs/2026-10-05-customers-entity-table-and-fixed-filters-design.md src/shared/modules/projects/core/DOCS.md
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- docs/plans/2026-09-26-records-management-epic.md docs/superpowers/specs/2026-10-05-customers-entity-table-and-fixed-filters-design.md src/shared/modules/projects/core/DOCS.md CONTEXT.md
 git show --stat HEAD
 ```
 

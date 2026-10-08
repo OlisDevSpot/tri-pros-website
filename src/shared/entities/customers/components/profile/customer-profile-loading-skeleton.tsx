@@ -19,7 +19,7 @@ export function CustomerProfileLoadingSkeleton({ onClose }: Props) {
     return (
       <div className="flex min-h-0 w-full flex-1">
         <div className="flex w-95 shrink-0 flex-col border-r border-border bg-card">
-          <div className="h-47.5 animate-pulse bg-linear-to-br from-black/85 via-black/75 to-black" />
+          <div className="h-47.5 animate-pulse bg-linear-to-br from-scrim/85 via-scrim/75 to-scrim" />
           <div className="flex flex-1 flex-col gap-3 px-6 pb-5">
             <div className="relative -mt-8.5 size-17 rounded-2xl bg-skeleton ring-4 ring-card" />
             <div className="h-7 w-48 animate-pulse rounded-md bg-skeleton" />
@@ -53,7 +53,7 @@ export function CustomerProfileLoadingSkeleton({ onClose }: Props) {
 
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col">
-      <div className="h-56 shrink-0 animate-pulse bg-linear-to-br from-black/85 via-black/75 to-black" />
+      <div className="h-56 shrink-0 animate-pulse bg-linear-to-br from-scrim/85 via-scrim/75 to-scrim" />
       <div className="flex-1 space-y-3 p-4">
         <div className="h-4 w-24 animate-pulse rounded bg-skeleton" />
         <div className="h-20 animate-pulse rounded-lg bg-skeleton" />

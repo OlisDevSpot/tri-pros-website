@@ -229,7 +229,7 @@ function ParticipantActionsMenu({
         <button
           type="button"
           className={cn(
-            'inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+            'inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-hover hover:text-foreground pressed:bg-press focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
             className,
           )}
           aria-label={`Actions for ${participant.name ?? 'participant'}`}
@@ -330,7 +330,7 @@ function CompactVariant({ meetingId, initialParticipants, className }: CompactVa
           <button
             type="button"
             className={cn(
-              'inline-flex w-fit max-w-full items-center gap-2 self-start rounded-md px-1 py-0.5 -mx-1 hover:bg-accent/50 transition-colors min-w-0',
+              'inline-flex w-fit max-w-full items-center gap-2 self-start rounded-md px-1 py-0.5 -mx-1 hover:bg-hover pressed:bg-press transition-colors min-w-0',
               className,
             )}
             aria-label={`Participants: ${thumbnail.map(p => p.name ?? 'Unknown').join(', ')}`}

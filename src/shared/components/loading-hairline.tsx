@@ -30,7 +30,7 @@ export function LoadingHairline({ isLoading, className }: LoadingHairlineProps) 
         className,
       )}
     >
-      <div className="h-full w-1/3 bg-foreground/40 animate-toolbar-shimmer" />
+      <div className="h-full w-1/3 bg-muted-foreground animate-toolbar-shimmer" />
     </div>
   )
 }

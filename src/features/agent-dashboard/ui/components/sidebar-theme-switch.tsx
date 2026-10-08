@@ -63,9 +63,7 @@ export function SidebarThemeSwitch() {
           aria-label="Dark mode"
           className={cn(
             'group/theme relative p-px',
-            // A groove below the rail, so the thumb (the active pill's navy lift) reads raised out of it.
-            'data-[state=checked]:bg-[color-mix(in_oklab,var(--sidebar),black_22%)] data-[state=unchecked]:bg-[color-mix(in_oklab,var(--sidebar),black_22%)]',
-            'shadow-[inset_0_0_0_1px_oklch(1_0_0/0.1),inset_0_1px_3px_oklch(0_0_0/0.45)]',
+            'data-[state=checked]:bg-sidebar-groove data-[state=unchecked]:bg-sidebar-groove shadow-(--shadow-sidebar-groove)',
             'focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-sidebar-ring',
             isMobile
               ? 'h-8 w-15 after:absolute after:-inset-1.5 after:content-[""]'
@@ -74,8 +72,7 @@ export function SidebarThemeSwitch() {
           thumbClassName={cn(
             // Dressed like the active nav row: navy-lift pill, cyan glyph.
             'relative grid place-items-center text-sidebar-active-icon',
-            'bg-sidebar-accent dark:data-[state=checked]:bg-sidebar-accent dark:data-[state=unchecked]:bg-sidebar-accent',
-            'shadow-[0_1px_3px_oklch(0_0_0/0.45),inset_0_1px_0_oklch(1_0_0/0.14)]',
+            'data-[state=checked]:bg-sidebar-accent data-[state=unchecked]:bg-sidebar-accent shadow-(--shadow-sidebar-thumb)',
             // Position follows the .dark class, not data-state: the server can't know the theme,
             // so data-state starts unchecked and would slide the thumb on every dark page load.
             'data-[state=checked]:translate-x-(--thumb-x) data-[state=unchecked]:translate-x-(--thumb-x) [--thumb-x:0px]',

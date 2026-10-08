@@ -160,7 +160,7 @@ export function CreateProjectForm({
       {/* ── Scrollable body: keeps the footer reachable no matter how tall ── */}
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto">
         {/* ── Context: Customer + Proposal (scope/meeting collapsed) ── */}
-        <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
+        <div className="space-y-3 rounded-lg border bg-muted p-3">
           {/* Customer */}
           <div className="space-y-1.5">
             <span className="text-xs font-medium text-muted-foreground">Customer</span>
@@ -211,7 +211,7 @@ export function CreateProjectForm({
                 headline price + trade count so opening is optional. */}
             {selectedProposal && (
               <Collapsible open={detailsOpen} onOpenChange={setDetailsOpen}>
-                <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-muted/60">
+                <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-hover pressed:bg-press">
                   <span className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-muted-foreground">
                     <ChevronDownIcon
                       className={cn(

@@ -104,8 +104,8 @@ export function AssignProjectDialog({ meetingId, open, onOpenChange }: AssignPro
                   type="button"
                   className={cn(
                     'flex items-center gap-2.5 w-full rounded-md px-3 py-2.5 text-left transition-colors cursor-pointer',
-                    'hover:bg-muted/50',
-                    selectedProjectId === project.id && 'bg-primary/10',
+                    'hover:bg-row-hover pressed:bg-row-press',
+                    selectedProjectId === project.id && 'bg-row-selected hover:bg-row-selected',
                   )}
                   onClick={() => setSelectedProjectId(project.id)}
                 >
@@ -148,7 +148,7 @@ export function AssignProjectDialog({ meetingId, open, onOpenChange }: AssignPro
                 {approvableProposals.map(proposal => (
                   <div
                     key={proposal.id}
-                    className="flex items-center justify-between gap-2 rounded-md px-3 py-2 bg-muted/30"
+                    className="flex items-center justify-between gap-2 rounded-md px-3 py-2 bg-muted"
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <FileTextIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />

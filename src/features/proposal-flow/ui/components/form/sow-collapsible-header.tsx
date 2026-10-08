@@ -54,7 +54,7 @@ export function SOWCollapsibleHeader({
   }
 
   return (
-    <div className="flex w-full cursor-pointer flex-col gap-1 px-3 py-2.5 transition-colors hover:bg-muted/50 lg:px-4 lg:py-3">
+    <div className="flex w-full cursor-pointer flex-col gap-1 px-3 py-2.5 transition-colors hover:bg-row-hover pressed:bg-row-press lg:px-4 lg:py-3">
       <div className="flex items-center justify-between gap-3">
         {isEditing
           ? (
@@ -74,7 +74,7 @@ export function SOWCollapsibleHeader({
                 role="button"
                 tabIndex={0}
                 className={cn(
-                  'min-w-0 truncate rounded px-1 py-0.5 text-sm font-medium transition-colors hover:bg-muted lg:text-base',
+                  'min-w-0 truncate rounded px-1 py-0.5 text-sm font-medium transition-colors hover:bg-hover lg:text-base',
                   !hasTitle && 'text-muted-foreground italic',
                 )}
                 onClick={handleTitleClick}
@@ -121,7 +121,7 @@ export function SOWCollapsibleHeader({
       {hasBadges && (
         <div className="flex items-center gap-2">
           {hasTrade && (
-            <Badge variant="secondary" className="bg-primary/10 text-xs text-primary">
+            <Badge variant="secondary" className="text-xs">
               {sow.trade.label}
             </Badge>
           )}

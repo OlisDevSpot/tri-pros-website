@@ -1,5 +1,6 @@
 import type { ProposalStatus } from '@/shared/constants/enums'
 import type { ZohoRequestStatus } from '@/shared/services/providers/zoho-sign/types'
+import { toneClasses } from '@/shared/constants/status-tones'
 
 interface StatusBadge {
   label: string
@@ -9,17 +10,17 @@ interface StatusBadge {
 export function getEnvelopeStatusBadge(requestStatus: ZohoRequestStatus | undefined): StatusBadge | null {
   switch (requestStatus) {
     case 'draft':
-      return { label: 'Draft', className: 'bg-muted text-muted-foreground' }
+      return { label: 'Draft', className: 'border-border bg-muted text-muted-foreground' }
     case 'inprogress':
-      return { label: 'Awaiting Signatures', className: 'bg-status-pending-bg text-status-pending-fg' }
+      return { label: 'Awaiting Signatures', className: toneClasses('pending').fill }
     case 'completed':
-      return { label: 'Signed', className: 'bg-status-success-bg text-status-success-fg' }
+      return { label: 'Signed', className: toneClasses('success').fill }
     case 'declined':
-      return { label: 'Declined', className: 'bg-status-danger-bg text-status-danger-fg' }
+      return { label: 'Declined', className: toneClasses('danger').fill }
     case 'recalled':
-      return { label: 'Recalled', className: 'bg-muted text-muted-foreground' }
+      return { label: 'Recalled', className: 'border-border bg-muted text-muted-foreground' }
     case 'expired':
-      return { label: 'Expired', className: 'bg-status-danger-bg text-status-danger-fg' }
+      return { label: 'Expired', className: toneClasses('danger').fill }
     default:
       return null
   }
@@ -28,13 +29,13 @@ export function getEnvelopeStatusBadge(requestStatus: ZohoRequestStatus | undefi
 export function getProposalStatusBadge(proposalStatus: ProposalStatus | undefined): StatusBadge | null {
   switch (proposalStatus) {
     case 'draft':
-      return { label: 'Draft', className: 'bg-muted text-muted-foreground' }
+      return { label: 'Draft', className: 'border-border bg-muted text-muted-foreground' }
     case 'sent':
-      return { label: 'Sent', className: 'bg-status-attention-bg text-status-attention-fg' }
+      return { label: 'Sent', className: toneClasses('attention').fill }
     case 'approved':
-      return { label: 'Approved', className: 'bg-status-success-bg text-status-success-fg' }
+      return { label: 'Approved', className: toneClasses('success').fill }
     case 'declined':
-      return { label: 'Declined', className: 'bg-status-danger-bg text-status-danger-fg' }
+      return { label: 'Declined', className: toneClasses('danger').fill }
     default:
       return null
   }

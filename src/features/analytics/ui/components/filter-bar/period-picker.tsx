@@ -32,7 +32,7 @@ export function PeriodPicker({ onCustom, onPreset }: Props) {
     <>
       {/* A custom period leaves the select empty, so choosing "Custom…" again still fires and reopens the dates. */}
       <Select value={period === 'custom' ? '' : period} onValueChange={choose}>
-        <SelectTrigger size="sm" className="w-36 border-0 bg-transparent shadow-none xl:hidden dark:bg-transparent" aria-label="Period">
+        <SelectTrigger size="sm" className="w-36 xl:hidden" aria-label="Period">
           <SelectValue placeholder={<span className="text-foreground">{PERIOD_LABELS.custom}</span>} />
         </SelectTrigger>
         <SelectContent>

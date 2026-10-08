@@ -13,7 +13,7 @@ The proposal page is "our main customer-facing artifact that's meant to make the
 |---|---|---|
 | D1 | Direction is **the Journey**: one long scroll document, with a chapter rail on wide screens and short chapter tabs on narrow ones. | R1 |
 | D2 | Keep today's section order: Overview → Trusted contractor → Past results → Scope of work → Funding → Next steps. Money comes at the end. | R1 |
-| D3 | Palette is **navy + cyan**, as in the meeting's Who We Are presentation. Light marketing ground; the hero and Next steps sit on navy. | R1–R2 |
+| D3 | Palette is **navy + cyan**, as in the meeting's Who We Are presentation. The ground is the app's elevation ladder (2026-10-07, was the light marketing ground); the hero and Next steps sit on navy. | R1–R2 |
 | D4 | The top section shows customer context: name, address, phone, email, and the consultant. | R1 |
 | D5 | Trust is shown by **the meeting's comparison table** (Tri Pros vs other contractors), not generic trust badges. On phones the table stacks into cards. | R1 |
 | D6 | "What you told us" is dropped, because the data usually doesn't exist at meeting time. | R1 |
@@ -40,7 +40,7 @@ The proposal page is "our main customer-facing artifact that's meant to make the
 
 Each beat names its source. Company facts come only from `src/shared/constants/company/` or an existing typed constant.
 
-**Chrome.** A navy top bar shows the logo (`companyInfo`), "{proposal label} · {customer name}", and the **Cockpit** button (agent only, §4.3). On wide screens a sticky chapter rail lists the six chapters, numbered, with the active one marked. On narrow screens a sticky row of short-label tabs (D15) does the same.
+**Chrome.** A top bar on the ladder (`surface`, hairline under it) shows the logo (`companyInfo`), "{proposal label} · {customer name}", and, agent only (§4.3), an **Agent view** badge and the **Cockpit** button. On wide screens a sticky chapter rail lists the six chapters, numbered, with the active one marked. On narrow screens a sticky row of short-label tabs (D15) does the same.
 
 **1 · Overview (navy hero, then a context card).**
 - Eyebrow: "Your proposal · {label}".
@@ -138,6 +138,7 @@ This is the prerequisite seam epic item F15 names. Doing it here means the redes
   - `CopySowButton` becomes agent only and moves into the Proposal card's overflow.
   - The homeowner's **payment mode, cash down and finance pick stay writable and are saved, debounced** (D24). This is a deliberate token-path write, not a gap. The writes stay limited to these fields once #285 adds field-level gating on the update path.
 - **Ability vs view mode:** these controls are gated by `can()`. The view mode decides only whether agent chrome is shown, so an agent can preview the homeowner view.
+- **Agent mode has no page tint** (no red wash or gradient). It shows as a small secondary "Agent view" badge in the top bar, plus the segmented "Viewing as" switch (Homeowner / Agent) in the kebab menu.
 
 ### 4.4 Cockpit and entity cards (generalize, don't rebuild)
 
@@ -208,11 +209,11 @@ The file starts with `// LAZY: replaced by the structured scope view model (F1) 
 - Touch targets are at least 44px on phone.
 - The cockpit's focus returns to the cockpit button (`ResponsiveSheet` handles this).
 - The comparison table keeps `<th scope>` on wide screens. On phones each stacked card uses its row header as the card title.
-- Text and controls on navy chapters use the cyan-on-navy token (`--presentation-accent`). Every pair must reach AA.
+- On navy chapters, text is `--on-media` / `--on-media-muted` and eyebrows and numerals are the cyan-on-navy `--presentation-accent`. Every pair must reach AA.
 
 ### 4.9 Tokens
 
-The page sits in the marketing world (`.theme-marketing` in `src/app/(frontend)/globals.css`) and uses the existing brand tokens (`--brand-navy`, `--brand-navy-deep`, `--brand-cyan`, `--brand-blue`, `--presentation-accent`). The plan maps each colour in the mock (navy, navy-2, cyan, cyan-ink, action, ok, warn) to an existing token. Any new token is a stop-and-ask, per `feedback-no-mechanical-surface-sweeps`. Dark scheme follows `.theme-marketing.theme-dark`.
+The page sits on the app's elevation ladder (`DESIGN.md`; amended 2026-10-07, it was `.theme-marketing`, which switches the ladder off). Chrome and chapter bands are `surface`, cards `bg-card`, in-card bands `bg-band`. The navy chapters use `--presentation-ground` with `--on-media` ink and `--presentation-accent`. Row choices use `--row-hover` / `--row-selected`, status lines the solid tones in `status-tones.ts` (ok = `success`, warn = `pending`). Any new token is a stop-and-ask, per `feedback-no-mechanical-surface-sweeps`. Dark scheme follows the app's `.dark`.
 
 ## 5. Data access
 

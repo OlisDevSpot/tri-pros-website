@@ -22,7 +22,7 @@ export function SplashCaption({ id, title, subheading, animate, ease }: SplashCa
   return (
     <motion.span
       animate={{ opacity: 1, y: 0 }}
-      className="grid max-w-[44ch] justify-items-center gap-2.5 text-center text-white"
+      className="grid max-w-[44ch] justify-items-center gap-2.5 text-center text-on-media"
       id={id}
       initial={animate ? { opacity: 0, y: 12 } : false}
       transition={{ duration: SPLASH_CAPTION_DURATION_S, delay: SPLASH_CAPTION_DELAY_S, ease }}
@@ -30,7 +30,7 @@ export function SplashCaption({ id, title, subheading, animate, ease }: SplashCa
       <span className="max-w-[22ch] font-sans text-[clamp(1.375rem,3.4vw,2.75rem)] leading-[1.1] font-semibold tracking-tight text-balance">
         {title}
       </span>
-      {subheading && <span className="text-[clamp(0.9375rem,1.5vw,1.25rem)] leading-normal text-white/70">{subheading}</span>}
+      {subheading && <span className="text-[clamp(0.9375rem,1.5vw,1.25rem)] leading-normal text-on-media-muted">{subheading}</span>}
     </motion.span>
   )
 }

@@ -32,7 +32,7 @@ export function ParticipantRoleIcon({ isOwner, className }: ParticipantRoleIconP
       aria-hidden="true"
       strokeWidth={1.5}
       className={cn(
-        'size-4.5 text-muted-foreground/40',
+        'size-4.5 text-muted-foreground',
         'group-hover:text-chart-3 group-focus-visible:text-chart-3',
         'motion-safe:transition-colors',
         className,

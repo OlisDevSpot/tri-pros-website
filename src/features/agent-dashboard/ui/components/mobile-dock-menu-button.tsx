@@ -35,9 +35,8 @@ export function MobileDockMenuButton({ className }: { className?: string }) {
       }}
       className={cn(
         'group/menu-button grid size-14 shrink-0 place-items-center rounded-full border border-sidebar-border text-sidebar-foreground outline-none [-webkit-tap-highlight-color:transparent]',
-        'bg-sidebar bg-[radial-gradient(120%_100%_at_50%_0%,oklch(1_0_0/0.16),transparent_62%)]',
-        'shadow-[inset_0_1px_0_oklch(1_0_0/0.18),inset_0_-3px_6px_oklch(0_0_0/0.28),0_10px_24px_-8px_oklch(0.2_0.06_255/0.55),0_2px_4px_oklch(0_0_0/0.18)]',
-        'transition-[transform,box-shadow] duration-150 active:scale-[0.93] active:shadow-[inset_0_1px_0_oklch(1_0_0/0.12),inset_0_-1px_3px_oklch(0_0_0/0.3),0_4px_10px_-6px_oklch(0.2_0.06_255/0.5)] motion-reduce:transition-none motion-reduce:active:scale-100',
+        'bg-sidebar bg-(image:--sidebar-sheen-radial) shadow-(--shadow-dock-button)',
+        'transition-[transform,box-shadow] duration-150 active:scale-[0.93] active:shadow-(--shadow-dock-button-pressed) motion-reduce:transition-none motion-reduce:active:scale-100',
         'focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
         className,
       )}

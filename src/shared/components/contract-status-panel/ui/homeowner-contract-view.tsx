@@ -50,9 +50,6 @@ export function HomeownerContractView({ proposalId, token, contractStatus, custo
       animate={{ opacity: 1 }}
     >
       <div className="relative overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-        {/* Gradient background wash */}
-        <div className="pointer-events-none absolute inset-0 bg-linear-to-br from-primary/4 via-primary/2 to-transparent dark:from-primary/8 dark:via-primary/3" />
-
         <div className="relative space-y-6 p-5 sm:p-7">
           {/* Header */}
           <div>
@@ -107,12 +104,12 @@ function ActionArea(props: {
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4"
+        className="flex items-start gap-3 rounded-lg border border-status-info-dot/40 bg-status-info-bg p-4 text-status-info-fg"
       >
-        <PartyPopper className="mt-0.5 size-5 shrink-0 text-primary" />
+        <PartyPopper className="mt-0.5 size-5 shrink-0 text-status-info-fg" />
         <div>
-          <p className="text-sm font-semibold text-foreground">Request sent!</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
+          <p className="text-sm font-semibold">Request sent!</p>
+          <p className="mt-0.5 text-xs">
             Your representative has been notified and will prepare your agreement. You&apos;ll receive an email when it&apos;s ready for your signature.
           </p>
         </div>
@@ -129,13 +126,13 @@ function ActionArea(props: {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="flex flex-col gap-3 rounded-lg border border-destructive/20 bg-destructive/5 p-4"
+        className="flex flex-col gap-3 rounded-lg border border-status-danger-dot/40 bg-status-danger-bg p-4 text-status-danger-fg"
       >
         <div className="flex items-start gap-2.5">
-          <TriangleAlert className="mt-0.5 size-4 shrink-0 text-destructive" />
+          <TriangleAlert className="mt-0.5 size-4 shrink-0" />
           <div>
-            <p className="text-sm font-medium text-foreground">Agreement no longer active</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p className="text-sm font-medium">Agreement no longer active</p>
+            <p className="mt-0.5 text-xs">
               {isDeclined
                 ? 'Please contact your representative to discuss an updated proposal.'
                 : 'Please contact your representative, or request a new agreement below.'}
@@ -162,12 +159,12 @@ function ActionArea(props: {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="flex items-start gap-3 rounded-lg border border-status-success-dot/40 bg-status-success-bg/70 p-4"
+        className="flex items-start gap-3 rounded-lg border border-status-success-dot/40 bg-status-success-bg p-4 text-status-success-fg"
       >
-        <PartyPopper className="mt-0.5 size-5 shrink-0 text-status-success-fg" />
+        <PartyPopper className="mt-0.5 size-5 shrink-0" />
         <div>
-          <p className="text-sm font-semibold text-foreground">Agreement signed!</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
+          <p className="text-sm font-semibold">Agreement signed!</p>
+          <p className="mt-0.5 text-xs">
             Thank you for choosing Tri Pros Remodeling. Our team will be in touch to schedule your project.
           </p>
         </div>
@@ -182,12 +179,12 @@ function ActionArea(props: {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4"
+        className="flex items-start gap-3 rounded-lg border border-status-info-dot/40 bg-status-info-bg p-4 text-status-info-fg"
       >
-        <Mail className="mt-0.5 size-5 shrink-0 text-primary" />
+        <Mail className="mt-0.5 size-5 shrink-0 text-status-info-fg" />
         <div>
-          <p className="text-sm font-semibold text-foreground">Your signature is needed</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
+          <p className="text-sm font-semibold">Your signature is needed</p>
+          <p className="mt-0.5 text-xs">
             Check your email for the signing link from Zoho Sign. Once signed, your project will be confirmed and our team will begin scheduling.
           </p>
         </div>
@@ -202,7 +199,7 @@ function ActionArea(props: {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="rounded-lg border border-border bg-muted/30 p-4"
+        className="rounded-lg border border-border bg-muted p-4"
       >
         <p className="text-sm text-muted-foreground">
           Your agreement is being reviewed by our team. You will receive a signing email once it has been approved.
@@ -218,7 +215,7 @@ function ActionArea(props: {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="rounded-lg border border-border bg-muted/30 p-4"
+        className="rounded-lg border border-border bg-muted p-4"
       >
         <p className="text-sm text-muted-foreground">
           Your agreement has been prepared and is awaiting final review. You will be notified by email when it is ready for your signature.

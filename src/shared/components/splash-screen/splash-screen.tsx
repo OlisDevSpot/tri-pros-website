@@ -129,7 +129,7 @@ export function SplashScreen({ open, onDismiss, dismiss, title, subheading, ease
           aria-busy={armed ? undefined : true}
           aria-describedby={title ? captionId : undefined}
           aria-disabled={armed ? undefined : true}
-          className="cursor-pointer rounded-full px-5 py-2.5 font-sans text-xs tracking-[0.18em] text-white/60 uppercase hover:text-white aria-disabled:cursor-default aria-disabled:hover:text-white/60 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--presentation-accent)"
+          className="cursor-pointer rounded-full px-5 py-2.5 font-sans text-xs tracking-[0.18em] text-on-media-muted uppercase hover:text-on-media aria-disabled:cursor-default aria-disabled:hover:text-on-media-muted focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--presentation-accent)"
           initial={animate ? { opacity: 0 } : false}
           transition={{ duration: SPLASH_CUE_DURATION_S, delay: SPLASH_CUE_DELAY_S, ease: 'easeOut' }}
           type="button"

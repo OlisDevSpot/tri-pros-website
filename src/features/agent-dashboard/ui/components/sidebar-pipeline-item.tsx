@@ -111,11 +111,11 @@ export function SidebarPipelineItem({
                   onPipelineChange(child.key as Pipeline)
                   setBadgeOpen(false)
                 }}
-                className={cn('flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150 hover:bg-accent', isCurrent && 'bg-accent font-semibold')}
+                className={cn('flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150 hover:bg-row-hover pressed:bg-row-press', isCurrent && 'bg-row-selected font-semibold hover:bg-row-selected')}
               >
                 <span className="flex-1 text-left">{child.label}</span>
                 {isCurrent && (
-                  <CheckIcon className="size-3.5 opacity-70" />
+                  <CheckIcon className="size-3.5 text-muted-foreground" />
                 )}
               </button>
             )

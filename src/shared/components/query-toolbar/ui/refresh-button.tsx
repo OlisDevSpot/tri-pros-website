@@ -20,7 +20,7 @@ export function QueryToolbarRefreshButton() {
     >
       <RefreshCw
         className={cn(
-          'size-4 opacity-80 motion-safe:transition-transform',
+          'size-4 motion-safe:transition-transform',
           isFetching && 'motion-safe:animate-spin motion-reduce:opacity-50',
         )}
         aria-hidden

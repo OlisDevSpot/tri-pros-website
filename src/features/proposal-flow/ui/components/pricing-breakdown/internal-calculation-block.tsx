@@ -28,11 +28,11 @@ export function InternalCalculationBlock({ funding, sow, priceDisplayMode }: Pro
   })
 
   return (
-    <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/5 overflow-hidden text-sm">
+    <div className="mt-4 rounded-xl border border-status-danger-dot/40 bg-status-danger-bg overflow-hidden text-sm">
       {/* Header */}
-      <div className="flex items-center justify-between gap-2 px-5 py-3 border-b border-destructive/20">
+      <div className="flex items-center justify-between gap-2 px-5 py-3 border-b border-status-danger-dot/40">
         <div className="flex items-center gap-2">
-          <LockIcon className="size-4 text-destructive" />
+          <LockIcon className="size-4 text-status-danger-fg" />
           <span className="font-semibold">Internal Calculation</span>
         </div>
         <div className="flex items-center gap-2">
@@ -67,7 +67,7 @@ export function InternalCalculationBlock({ funding, sow, priceDisplayMode }: Pro
       </div>
 
       {/* Aggregate totals — price side, then cost side */}
-      <div className="border-t border-destructive/20 px-5 py-4 space-y-2">
+      <div className="border-t border-status-danger-dot/40 px-5 py-4 space-y-2">
         <SummaryRow
           label="Subtotal"
           value={formatAsDollars(financials.subtotal)}
@@ -116,7 +116,7 @@ export function InternalCalculationBlock({ funding, sow, priceDisplayMode }: Pro
       </div>
 
       {financials.hasMissingCostData && (
-        <div className="border-t border-destructive/20 px-5 py-3 bg-status-pending-bg/70 text-status-pending-fg text-xs">
+        <div className="border-t border-status-danger-dot/40 px-5 py-3 bg-status-pending-bg text-status-pending-fg text-xs">
           One or more sections are missing cost data — multiplier and margin reflect partial cost.
         </div>
       )}

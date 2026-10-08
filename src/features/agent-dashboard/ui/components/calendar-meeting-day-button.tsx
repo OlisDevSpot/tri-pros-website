@@ -13,10 +13,8 @@ import { cn } from '@/shared/lib/utils'
  * flow through untouched via `children`), then adds a small cobalt dot
  * inside the button, absolutely centered beneath the date number, whenever
  * `modifiers.hasMeeting` is set (the calendar's day-cell modifier marking a
- * day with ≥1 scheduled meeting). `CalendarDayButton`'s className includes
- * `[&>span]:opacity-70` (styling the day-number span), which would fade the
- * dot too if it were a `<span>` — so the dot is a `<div>` instead, which the
- * `[&>span]` selector can't match, keeping it solid cobalt. On the selected
+ * day with ≥1 scheduled meeting). The dot is a `<div>`, so the day button's
+ * `[&>span]` label styling never reaches it. On the selected
  * day the button itself is `bg-primary`, so the dot flips to
  * `primary-foreground` to stay visible. A visually-hidden
  * "has meetings" label surfaces the same signal to screen readers, since the

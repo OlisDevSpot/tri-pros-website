@@ -44,7 +44,7 @@ export function CustomerAddressHero({ address, view }: Props) {
           themes: white text and a photo sit on it. */}
       <div
         aria-hidden
-        className="absolute inset-0 bg-linear-to-br from-black/85 via-black/75 to-black"
+        className="absolute inset-0 bg-linear-to-br from-scrim/85 via-scrim/75 to-scrim"
       />
 
       {/* Map image layer */}
@@ -73,7 +73,7 @@ export function CustomerAddressHero({ address, view }: Props) {
       {/* Scrim — always present. Stronger at the bottom where the tabs live. */}
       <div
         aria-hidden
-        className="absolute inset-0 bg-linear-to-b from-black/30 via-black/55 to-black/90"
+        className="absolute inset-0 bg-linear-to-b from-scrim/30 via-scrim/55 to-scrim/90"
       />
 
       {/* Dev-only visual hint when the image fails. Helps surface GCP config

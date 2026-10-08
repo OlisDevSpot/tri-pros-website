@@ -99,21 +99,21 @@ export function MediaCard({
         {/* Thumbnail */}
         <div className="relative aspect-5/4">
           {renderThumbnail(item)}
-          <div className={cn('absolute inset-0 transition-colors group-hover:bg-background/40', (menuOpen || isSelected) && 'bg-background/40')} />
+          <div className={cn('absolute inset-0 transition-colors group-hover:bg-scrim/40', (menuOpen || isSelected) && 'bg-scrim/40')} />
 
           {/* Top-left: checkbox + drag handle */}
           <div className="absolute left-1 top-1 flex items-center gap-1">
             {onSelectToggle && (
               <div
                 className={cn(
-                  'flex h-6 w-6 items-center justify-center rounded bg-background/60 transition-opacity',
+                  'flex h-6 w-6 items-center justify-center rounded bg-scrim/60 transition-opacity',
                   selectionActive || isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
                 )}
               >
                 <Checkbox
                   checked={isSelected}
                   onCheckedChange={() => onSelectToggle(item.id)}
-                  className="border-foreground/70 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                  className="border-on-media data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                 />
               </div>
             )}
@@ -122,8 +122,8 @@ export function MediaCard({
                 {...dragHandleProps}
                 className="cursor-grab opacity-0 transition-opacity group-hover:opacity-100 active:cursor-grabbing"
               >
-                <div className="flex h-6 w-6 items-center justify-center rounded bg-background/60">
-                  <GripVertical className="h-3.5 w-3.5 text-foreground" />
+                <div className="flex h-6 w-6 items-center justify-center rounded bg-scrim/60">
+                  <GripVertical className="h-3.5 w-3.5 text-on-media" />
                 </div>
               </div>
             )}
@@ -165,11 +165,11 @@ export function MediaCard({
         </div>
 
         {/* Editable name */}
-        <div className="bg-background/60 px-2 py-1">
+        <div className="bg-muted px-2 py-1">
           <input
             value={name}
             onChange={e => handleNameChange(e.target.value)}
-            className="h-5 w-full bg-transparent text-xs text-foreground outline-none placeholder:text-foreground/50"
+            className="h-5 w-full bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground"
             placeholder="File name"
           />
         </div>

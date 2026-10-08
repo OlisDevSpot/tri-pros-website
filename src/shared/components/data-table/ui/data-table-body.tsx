@@ -65,7 +65,7 @@ function DataTableBodyImpl<TData extends { id: string }>({
               {/* Container width, so the spinner centers on the visible width, not the overflowing table. */}
               <div className="flex h-16 items-end justify-center pb-2" style={{ width: '100cqw' }}>
                 <div
-                  className="rounded-full border border-border/50 bg-muted p-1.5 shadow-sm"
+                  className="rounded-full border border-border bg-muted p-1.5 shadow-sm"
                   style={{ opacity: 'calc(var(--dt-pull, 0) / 64)', transition: 'opacity var(--dt-pull-ms, 0ms) ease-out' }}
                 >
                   <RefreshCw className={cn('size-4 text-muted-foreground', isRefreshing && 'motion-safe:animate-spin')} />

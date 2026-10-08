@@ -33,7 +33,7 @@ export function AgreementTimeline({ steps }: AgreementTimelineProps) {
                 className={cn(
                   'absolute left-4.25 top-9 w-0.5',
                   'h-[calc(100%-12px)]',
-                  step.state === 'completed' ? 'bg-primary/40' : 'bg-border',
+                  step.state === 'completed' ? 'bg-primary' : 'bg-border',
                 )}
               />
             )}
@@ -57,10 +57,9 @@ export function AgreementTimeline({ steps }: AgreementTimelineProps) {
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ delay: i * 0.1, duration: 0.3 }}
-                        className="relative flex size-9 items-center justify-center rounded-full border-2 border-primary bg-primary/10 text-primary shadow-sm"
+                        className="flex size-9 items-center justify-center rounded-full border border-border bg-row-selected text-primary"
                       >
                         <Icon className="size-4" />
-                        <span className="absolute inset-0 animate-ping rounded-full border-2 border-primary/20" />
                       </motion.div>
                     )
                   : (
@@ -68,7 +67,7 @@ export function AgreementTimeline({ steps }: AgreementTimelineProps) {
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ delay: i * 0.1, duration: 0.3 }}
-                        className="flex size-9 items-center justify-center rounded-full border-2 border-border bg-muted text-muted-foreground"
+                        className="flex size-9 items-center justify-center rounded-full border border-border bg-muted text-muted-foreground"
                       >
                         <Circle className="size-3.5" />
                       </motion.div>
@@ -95,12 +94,7 @@ export function AgreementTimeline({ steps }: AgreementTimelineProps) {
               >
                 {config.label}
               </span>
-              <span
-                className={cn(
-                  'mt-0.5 text-xs leading-relaxed',
-                  step.state === 'upcoming' ? 'text-muted-foreground/60' : 'text-muted-foreground',
-                )}
-              >
+              <span className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
                 {config.description}
               </span>
             </motion.div>

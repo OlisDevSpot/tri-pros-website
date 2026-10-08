@@ -25,6 +25,7 @@ interface Pair {
 }
 
 const STATUS_TONES = ['info', 'pending', 'attention', 'action', 'success', 'danger', 'idle'] as const
+const TILE_TONES = ['attention', 'success', 'danger'] as const
 const SERIES = ['leads', 'booked', 'sits', 'sales'] as const
 const IDENTITY_COUNT = 8
 
@@ -67,6 +68,7 @@ const pageBlock = readBlock(/^:root,\s*\.dark\s*\{/m)
 const relativeBlock = readBlock(/^:root,\s*\.dark,\s*:is\(\.bg-card/m)
 const overlayBlock = readBlock(/^:is\(\.bg-popover,\s*\.surface-overlay\)\s*\{/m)
 const beneathBlock = readBlock(/^\.surface-beneath\s*\{/m)
+const mediaBlock = readBlock(/^:root\s*\{(?=[^{}]*--on-media)/m)
 
 const PLACES: Record<Place, Tokens> = {
   'beneath': beneathBlock,
@@ -78,8 +80,17 @@ const PLACES: Record<Place, Tokens> = {
 }
 const CARDS: Place[] = ['rung 1', 'rung 2', 'rung 3']
 
+// Ink over a photo can't lean on the photo: its pixels are unknown, and the worst case for light ink is a white one
+// (a sky, a stucco wall, a lit window). Each veil strength is checked as the scrim at that alpha composited over white,
+// the same color-mix Tailwind writes for `bg-scrim/NN`.
+const VEIL_STRENGTHS = [50, 60, 70] as const
+const PHOTO_PROBES: Tokens = new Map([
+  ['--photo-white', 'white'],
+  ...VEIL_STRENGTHS.map((alpha): [string, string] => [`--scrim-${alpha}`, `color-mix(in oklab, var(--scrim) ${alpha}%, transparent)`]),
+])
+
 function tokensFor(mode: Mode, place: Place): Tokens {
-  return new Map([...rootBlock, ...(mode === 'dark' ? darkBlock : []), ...pageBlock, ...relativeBlock, ...PLACES[place]])
+  return new Map([...rootBlock, ...(mode === 'dark' ? darkBlock : []), ...pageBlock, ...relativeBlock, ...mediaBlock, ...PHOTO_PROBES, ...PLACES[place]])
 }
 
 function substitute(value: string, tokens: Tokens, depth = 0): string {
@@ -320,6 +331,15 @@ const pairs: Pair[] = [
   { label: 'segmented track edge vs its track', fg: '--control-border', bg: '--tab-track', min: 1.12, max: 2, on: ['page', ...CARDS] },
   { label: 'selected control vs its rest fill', fg: '--control-selected', bg: '--control', min: 1.15, on: ['page', ...CARDS] },
   { label: 'label on a selected control', fg: '--foreground', bg: '--control-selected', min: 4.5, on: ['page', ...CARDS] },
+  // Proposal surfaces put ordinary ink on tone fills (the agent's internal numbers, a section's incentive card) and on
+  // selected rows (an open scope section, the active agreement step's disc).
+  { label: 'body text on the danger fill', fg: '--foreground', bg: '--status-danger-bg', base: '--card', min: 4.5, on: CARDS },
+  { label: 'muted text on the danger fill', fg: '--muted-foreground', bg: '--status-danger-bg', base: '--card', min: 4.5, on: CARDS },
+  { label: 'body text on the success fill', fg: '--foreground', bg: '--status-success-bg', base: '--card', min: 4.5, on: CARDS },
+  { label: 'muted text on the success fill', fg: '--muted-foreground', bg: '--status-success-bg', base: '--card', min: 4.5, on: CARDS },
+  { label: 'body text on a selected row', fg: '--foreground', bg: '--row-selected', min: 4.5, on: CARDS },
+  { label: 'muted text on a selected row', fg: '--muted-foreground', bg: '--row-selected', min: 4.5, on: CARDS },
+  { label: 'primary icon on a selected row', fg: '--primary', bg: '--row-selected', min: 3, on: CARDS },
   { label: 'hovered outline button vs its fill', fg: '--control-hover', bg: '--control', min: 1.1, on: ['page', ...CARDS] },
   // Near black the first step reads weakest, so dark mode's lift has to keep a card off the page.
   { label: 'card vs the page', fg: '--card', bg: '--background', min: 1.1, on: ['rung 1'], modes: ['dark'] },
@@ -332,6 +352,22 @@ const pairs: Pair[] = [
   { label: 'button label on primary', fg: '--primary-foreground', bg: '--primary', min: 4.5 },
   { label: 'button label on hovered primary', fg: '--primary-foreground', bg: '--primary-hover', min: 4.5 },
   { label: 'label on hovered destructive', fg: '--destructive-foreground', bg: '--destructive-hover', min: 4.5 },
+  // Records: proposal tiles are filled with their status tone and hover a solid step off it; their secondary lines are
+  // muted ink and the icon sits on a muted square. A draft tile hovers like a row.
+  ...TILE_TONES.flatMap(tone => [
+    { label: `status ${tone} text on its hovered tile`, fg: `--status-${tone}-fg`, bg: `--status-${tone}-hover`, min: 4.5, on: CARDS },
+    { label: `muted text on the ${tone} tile`, fg: '--muted-foreground', bg: `--status-${tone}-bg`, min: 4.5, on: CARDS },
+    { label: `muted text on the hovered ${tone} tile`, fg: '--muted-foreground', bg: `--status-${tone}-hover`, min: 4.5, on: CARDS },
+    { label: `hovered ${tone} tile vs its fill`, fg: `--status-${tone}-hover`, bg: `--status-${tone}-bg`, min: 1.1, on: CARDS },
+    { label: `status ${tone} icon on its icon square`, fg: `--status-${tone}-fg`, bg: '--muted', min: 3, on: CARDS },
+  ]),
+  { label: 'muted text on a hovered row', fg: '--muted-foreground', bg: '--row-hover', min: 4.5, on: ON_SURFACES },
+  // An upcoming meeting's row is filled solid with the pending tone, so the row's ink sits on it.
+  { label: 'body text on an upcoming row', fg: '--foreground', bg: '--status-pending-bg', min: 4.5, on: CARDS },
+  { label: 'muted text on an upcoming row', fg: '--muted-foreground', bg: '--status-pending-bg', min: 4.5, on: CARDS },
+  // A filter chip is filled like an outline button, and its label is part muted.
+  { label: 'muted text on an outline button', fg: '--muted-foreground', bg: '--control', min: 4.5, on: ['page', ...CARDS] },
+  { label: 'muted text on a hovered outline button', fg: '--muted-foreground', bg: '--control-hover', min: 4.5, on: ['page', ...CARDS] },
   { label: 'primary vs page', fg: '--primary', bg: '--background', min: 3 },
   { label: 'focus ring vs page', fg: '--ring', bg: '--background', min: 3 },
   { label: 'label on destructive', fg: '--destructive-foreground', bg: '--destructive', min: 4.5 },
@@ -343,6 +379,11 @@ const pairs: Pair[] = [
   { label: 'sidebar label on hover', fg: '--sidebar-foreground', bg: '--sidebar-hover', min: 4.5 },
   { label: 'sidebar label on active pill', fg: '--sidebar-foreground', bg: '--sidebar-accent', min: 4.5 },
   { label: 'active icon on pill', fg: '--sidebar-active-icon', bg: '--sidebar-accent', min: 3 },
+  // The theme switch: its sun and moon glyphs sit in the groove, and the thumb has to lift out of it.
+  { label: 'rail glyph on the switch groove', fg: '--sidebar-muted', bg: '--sidebar-groove', min: 3 },
+  { label: 'rail switch thumb vs its groove', fg: '--sidebar-accent', bg: '--sidebar-groove', min: 1.3 },
+  { label: 'switch thumb vs the off track', fg: '--switch-thumb', bg: '--indicator', min: 2.5 },
+  { label: 'switch thumb vs the on track', fg: '--switch-thumb-checked', bg: '--primary', min: 3 },
   ...STATUS_TONES.map(tone => ({ label: `status ${tone} text on its fill`, fg: `--status-${tone}-fg`, bg: `--status-${tone}-bg`, min: 4.5, base: '--card', on: CARDS })),
   ...SERIES.map(series => ({ label: `series ${series} vs surface`, fg: `--series-${series}`, bg: '--card', min: 3, on: CARDS })),
   ...Array.from({ length: IDENTITY_COUNT }, (_, i) => ({ label: `identity ${i + 1} text on its fill`, fg: `--identity-${i + 1}-fg`, bg: `--identity-${i + 1}-bg`, min: 4.5, base: '--card', on: CARDS })),
@@ -375,6 +416,15 @@ function distanceFromSurface(name: string, mode: Mode, place: Place) {
 // In light mode an edge is darker than its surface; in dark mode, lighter.
 const edgeLeans: Record<Mode, 'darker' | 'lighter'> = { light: 'darker', dark: 'lighter' }
 
+// Over media the floors are the veil strengths DESIGN.md promises: body ink from 60%, muted ink from 70%, and icons,
+// large text and control glyphs (WCAG's 3:1) from 50%. Without a photo the veil is solid and both inks clear 4.5:1.
+const mediaPairs: Pair[] = [
+  { label: 'on-media text on a 60% veil over a white photo', fg: '--on-media', bg: '--scrim-60', base: '--photo-white', min: 4.5 },
+  { label: 'on-media muted text on a 70% veil over a white photo', fg: '--on-media-muted', bg: '--scrim-70', base: '--photo-white', min: 4.5 },
+  { label: 'on-media icon or large text on a 50% veil over a white photo', fg: '--on-media', bg: '--scrim-50', base: '--photo-white', min: 3 },
+  { label: 'on-media muted text on the solid scrim', fg: '--on-media-muted', bg: '--scrim', min: 4.5 },
+]
+
 const railClimb: [string, string][] = [['--background', '--sidebar'], ['--sidebar', '--sidebar-hover'], ['--sidebar-hover', '--sidebar-accent']]
 
 const failures: string[] = []
@@ -394,7 +444,7 @@ function guard(label: string, test: () => string | undefined) {
 }
 
 for (const mode of ['light', 'dark'] as const) {
-  for (const pair of pairs.filter(pair => !pair.modes || pair.modes.includes(mode))) {
+  for (const pair of [...pairs, ...mediaPairs].filter(pair => !pair.modes || pair.modes.includes(mode))) {
     for (const place of pair.on ?? ['page']) {
       guard(`${mode}: ${pair.label} (${place})`, () => {
         const ratio = contrast(pair, mode, place)

@@ -300,7 +300,7 @@ function InlineListSlot({ users, separator = '/', mode = 'first', size = 'xs', c
               <span className="truncate font-medium text-foreground">{label}</span>
             </UserOverviewCardRoot>
             {idx < users.length - 1 && (
-              <span aria-hidden="true" className="text-muted-foreground/50">{separator}</span>
+              <span aria-hidden="true" className="text-muted-foreground">{separator}</span>
             )}
           </span>
         )

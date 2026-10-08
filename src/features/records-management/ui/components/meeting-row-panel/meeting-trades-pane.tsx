@@ -37,7 +37,7 @@ export function MeetingTradesPane({ meeting, actions }: MeetingTradesPaneProps) 
             // A narrow panel scrolls the trade cards sideways instead of stacking them down the page.
             <ul className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-2 overflow-x-auto px-4 pb-1 @min-[600px]:mx-0 @min-[600px]:flex-col @min-[600px]:overflow-visible @min-[600px]:px-0 @min-[600px]:pb-0">
               {selections.map(selection => (
-                <li key={selection.tradeId} className="flex w-[85%] shrink-0 snap-start gap-3 rounded-md border bg-background/50 px-3 py-2 @min-[600px]:w-auto">
+                <li key={selection.tradeId} className="flex w-[85%] shrink-0 snap-start gap-3 rounded-md border bg-card px-3 py-2 @min-[600px]:w-auto">
                   <TradeSelectionSummary entry={selection} work="full" showNote />
                 </li>
               ))}

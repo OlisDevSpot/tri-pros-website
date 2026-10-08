@@ -115,7 +115,7 @@ export function EnvelopeConfigurationSection({
   const hasAge = serverAge != null
 
   return (
-    <div className="space-y-3 rounded-lg border border-border/60 bg-background/40 p-3.5">
+    <div className="space-y-3 rounded-lg border border-border bg-muted p-3.5">
       {/* Age */}
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between gap-2">

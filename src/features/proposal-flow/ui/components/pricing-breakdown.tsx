@@ -32,7 +32,7 @@ export function PricingBreakdown({ funding, sow, priceDisplayMode }: Props) {
   const hasAnyIncentives = globalLines.length > 0
 
   return (
-    <div className="rounded-xl border border-border/40 overflow-hidden text-sm">
+    <div className="rounded-xl border border-border overflow-hidden text-sm">
       <div className="px-5 py-4 space-y-2.5">
         {isBreakdown
           ? (
@@ -51,7 +51,7 @@ export function PricingBreakdown({ funding, sow, priceDisplayMode }: Props) {
                           label={<span className="text-muted-foreground">{section.title}</span>}
                           value={(
                             <span className="flex items-center gap-2">
-                              <span className="text-muted-foreground/50 line-through text-xs tabular-nums">
+                              <span className="text-muted-foreground line-through text-xs tabular-nums">
                                 {formatAsDollars(section.price)}
                               </span>
                               <span className="tabular-nums">{formatAsDollars(section.netPrice)}</span>
@@ -86,7 +86,7 @@ export function PricingBreakdown({ funding, sow, priceDisplayMode }: Props) {
       </div>
 
       {isBreakdown && (
-        <div className="border-t border-border/40 px-5 py-3 flex items-center justify-between text-muted-foreground">
+        <div className="border-t border-border px-5 py-3 flex items-center justify-between text-muted-foreground">
           <span>Subtotal</span>
           <span>{formatAsDollars(breakdown.netSubtotal)}</span>
         </div>
@@ -94,7 +94,7 @@ export function PricingBreakdown({ funding, sow, priceDisplayMode }: Props) {
 
       {hasAnyIncentives && (
         <>
-          <div className="border-t border-border/40" />
+          <div className="border-t border-border" />
           <div className="px-5 py-4 space-y-2.5 text-status-success-fg">
             {globalLines.map((line) => {
               const isExpired = line.expiresAt ? new Date() >= new Date(line.expiresAt) : false
@@ -102,7 +102,7 @@ export function PricingBreakdown({ funding, sow, priceDisplayMode }: Props) {
 
               return (
                 <div key={line.key} className="space-y-1">
-                  <div className={cn('flex items-center justify-between', isExpired && 'line-through opacity-60')}>
+                  <div className={cn('flex items-center justify-between', isExpired && 'text-muted-foreground line-through')}>
                     {line.kind === 'exclusive-offer'
                       ? (
                           <div className="flex items-center">
@@ -142,7 +142,7 @@ export function PricingBreakdown({ funding, sow, priceDisplayMode }: Props) {
       )}
 
       <div className={cn(
-        'border-t border-border/40 bg-muted/30 px-5 py-4 flex items-center justify-between',
+        'border-t border-border bg-band px-5 py-4 flex items-center justify-between',
         !hasAnyIncentives && !isBreakdown && 'border-t-0',
       )}
       >

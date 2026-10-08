@@ -136,7 +136,7 @@ export function ParticipantPickerContent({
             />
           )}
           {!owner && !coOwner && (
-            <p className="rounded-lg border border-dashed border-border/60 px-3 py-4 text-center text-xs text-muted-foreground">
+            <p className="rounded-lg border border-dashed border-border-strong px-3 py-4 text-center text-xs text-muted-foreground">
               No one assigned. Search below to pick an owner.
             </p>
           )}
@@ -247,7 +247,7 @@ export function ParticipantPickerContent({
             </section>
           )
         : (
-            <p className="mt-5 rounded-lg border border-dashed border-border/60 px-3 py-4 text-center text-xs text-muted-foreground">
+            <p className="mt-5 rounded-lg border border-dashed border-border-strong px-3 py-4 text-center text-xs text-muted-foreground">
               Both slots are filled.
               {' '}
               <button
@@ -265,14 +265,14 @@ export function ParticipantPickerContent({
       {/* Footer — picker variant only. In modal variant the caller provides
           its own chrome. */}
       {!isModal && (
-        <div className="mt-3 flex items-center justify-between border-t border-border/60 px-1 pt-3">
+        <div className="mt-3 flex items-center justify-between border-t border-border px-1 pt-3">
           <span className="text-xs text-muted-foreground tabular-nums">
             {helperCount > 0 ? `+ ${helperCount} helper${helperCount === 1 ? '' : 's'}` : 'No helpers'}
           </span>
           <button
             type="button"
             onClick={onOpenManageModal}
-            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-foreground/80 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors"
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-foreground hover:bg-hover pressed:bg-press focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 motion-safe:transition-colors"
           >
             <Settings2 className="size-3.5" />
             Manage participants
@@ -302,7 +302,7 @@ function HelperRow({ user, isPending, onRemove }: HelperRowProps) {
       user={user}
       meta={{ role: 'helper' }}
       className={cn(
-        'group/row flex items-center gap-3 rounded-lg border border-border/60 bg-card/40 px-3 py-2.5 focus-within:ring-1 focus-within:ring-ring/60',
+        'group/row flex items-center gap-3 rounded-lg border border-border px-3 py-2.5',
         isPending && 'pointer-events-none opacity-60',
       )}
     >
@@ -310,10 +310,10 @@ function HelperRow({ user, isPending, onRemove }: HelperRowProps) {
       <div className="flex min-w-0 flex-1 flex-col gap-px overflow-hidden">
         <UserOverviewCard.Name className="truncate text-sm font-medium text-foreground" />
         <div className="truncate text-xs text-muted-foreground">
-          <span className="font-medium text-foreground/70">Helper</span>
+          <span className="font-medium text-muted-foreground">Helper</span>
           {user.email != null && user.email !== '' && (
             <>
-              <span aria-hidden="true" className="mx-1.5 text-muted-foreground/50">·</span>
+              <span aria-hidden="true" className="mx-1.5 text-muted-foreground">·</span>
               <span>{user.email}</span>
             </>
           )}
@@ -324,7 +324,7 @@ function HelperRow({ user, isPending, onRemove }: HelperRowProps) {
         onClick={onRemove}
         disabled={isPending}
         aria-label={`Remove ${name} from this meeting`}
-        className="inline-flex size-11 items-center justify-center rounded-md text-destructive/60 hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors"
+        className="inline-flex size-11 items-center justify-center rounded-md text-muted-foreground hover:bg-hover hover:text-destructive-text pressed:bg-press focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 motion-safe:transition-colors"
       >
         {isPending ? <Loader2 className="size-4 animate-spin" /> : <X className="size-4" />}
       </button>

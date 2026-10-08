@@ -52,12 +52,12 @@ export function StatusDropdownCell<TStatus extends string>({
         <button
           type="button"
           aria-label={triggerAriaLabel}
-          className="group/status-trigger cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          className="cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           <Badge className={cn('capitalize text-xs', colorMap[currentStatus], triggerClassName)}>
             {formatLabel(currentStatus)}
             {showCaret && (
-              <ChevronDownIcon className="opacity-50 transition-opacity group-hover/status-trigger:opacity-100" />
+              <ChevronDownIcon />
             )}
           </Badge>
         </button>
@@ -76,10 +76,7 @@ export function StatusDropdownCell<TStatus extends string>({
                 'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm capitalize transition-colors duration-150',
                 isDisabled
                   ? 'cursor-not-allowed opacity-40'
-                  : optionStyle === 'dot'
-                    ? 'cursor-pointer hover:bg-accent hover:text-accent-foreground'
-                    : 'cursor-pointer hover:bg-muted/50 hover:text-accent-foreground',
-                isCurrent && (optionStyle === 'dot' ? 'bg-accent/60 font-medium' : 'font-medium'),
+                  : cn('cursor-pointer pressed:bg-row-press pressed:duration-0', isCurrent ? 'bg-row-selected font-medium' : 'hover:bg-row-hover'),
               )}
               onClick={() => {
                 if (isDisabled) {

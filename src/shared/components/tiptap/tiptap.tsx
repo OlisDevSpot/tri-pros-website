@@ -135,8 +135,8 @@ export function Tiptap({ ref, onChange, initialValues, isLoading, loadingMessage
         </DragHandle>
         <EditorContent editor={editor} className="grow" />
         {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/60 backdrop-blur-xs rounded-md z-10">
-            <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="absolute inset-0 flex items-center justify-center bg-scrim/60 rounded-md z-10">
+            <div className="flex items-center gap-2 text-on-media">
               <SpinnerLoader2 />
               <span className="text-sm">{loadingMessage ?? 'Loading template...'}</span>
             </div>

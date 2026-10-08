@@ -45,7 +45,7 @@ export function FilterSheetBody({ onClose }: FilterSheetBodyProps) {
           </SheetSection>
         )}
       </div>
-      <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border/60 px-4 py-3">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border px-4 py-3">
         <Button
           type="button"
           variant="ghost"

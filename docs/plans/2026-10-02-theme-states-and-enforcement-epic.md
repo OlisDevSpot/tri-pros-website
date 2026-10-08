@@ -116,4 +116,31 @@ Harness and test choices, no cost:
 4. **Lint:** afterwards. Clean each area first and enable the rules after (no suppressions ratchet). E3 moves after Phase 1.
 5. **I3 pills:** a thin tone border.
 6. Cut-off message: dropped.
-7. **Hero CTA quieter:** owner rejected the warm-up approach 2026-10-05; open. (The navbar pill's dark-mode hover bug was fixed separately in `5c3e4a74`, without restyling the pill.)
+7. **Hero CTA quieter:** owner rejected the warm-up approach 2026-10-05; on 2026-10-07 ruled to leave it as is (closed). (The navbar pill's dark-mode hover bug was fixed separately in `5c3e4a74`, without restyling the pill.)
+8. **Control group marker (2026-10-07):** `data-slot="control-group"` on a capsule that groups controls; a segmented or pill-tab track inside it drops its own edge, fill and padding.
+9. **E1 photo tokens (2026-10-07):** add `--on-media` and `--scrim` now; areas adopt them during Phase 1.
+10. **Phase 1 review pace (2026-10-07):** two areas per owner review, in the order sign-in + dashboard, records + proposal, meeting-flow + customer profile, public site.
+11. **Dashboard round (2026-10-07):**
+    - clickable cards hover with `bg-row-hover` and never take a blue hover border;
+    - the calendar's today marker is `bg-row-selected`, with no outline;
+    - the snapshot counts use foreground ink;
+    - a declined proposal leaves the "Out for signature" list;
+    - the agenda time badge is `bg-muted`;
+    - the dock's gloss values move into tokens unchanged;
+    - the Google button keeps its hairline;
+    - the project card's ⋯ menu is not dimmed at rest.
+12. **Records + proposal round (2026-10-07):**
+    - Records:
+      - proposal tiles keep solid status-tone fills;
+      - upcoming-meeting rows take a solid `bg-status-pending-bg`;
+      - filter chips are filled like the toolbar buttons;
+      - the opened-row panel is `bg-band`;
+      - the frozen-column shadow becomes a `--shadow-frozen` token;
+      - the refetch `opacity-60` stays.
+    - Proposal:
+      - the whole customer proposal page is cleaned now, including files the unbuilt redesign replaces;
+      - agreement callouts take the info tone;
+      - the active timeline step is a `bg-row-selected` disc with no ping;
+      - "Viewing as" becomes a segmented control;
+      - form section cards are nested `bg-card`;
+      - the offer badge is secondary.

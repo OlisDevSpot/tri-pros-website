@@ -126,9 +126,8 @@ export function OptimizedImage({
       />
 
       {/* Status badges — only shown when onRetryOptimization is provided (dashboard context) */}
-      {/* Chips over the photo sit on a black scrim in both themes. */}
       {onRetryOptimization && isProcessing && (
-        <div className="absolute bottom-1 right-1 z-10 flex items-center gap-1 rounded-full bg-black/50 px-1.5 py-0.5 text-xs text-white/80 backdrop-blur-sm">
+        <div className="absolute bottom-1 right-1 z-10 flex items-center gap-1 rounded-full bg-scrim/60 px-1.5 py-0.5 text-xs text-on-media">
           <LoaderIcon size={8} className="animate-spin" />
           Optimizing...
         </div>
@@ -142,7 +141,7 @@ export function OptimizedImage({
             e.preventDefault()
             handleRetry()
           }}
-          className="absolute bottom-1 right-1 z-10 flex cursor-pointer items-center gap-1 rounded-full bg-destructive/80 px-1.5 py-0.5 text-xs text-destructive-foreground backdrop-blur-sm transition-colors hover:bg-destructive"
+          className="absolute bottom-1 right-1 z-10 flex cursor-pointer items-center gap-1 rounded-full bg-destructive px-1.5 py-0.5 text-xs text-destructive-foreground transition-colors hover:bg-destructive-hover"
         >
           <RefreshCwIcon size={8} />
           Retry

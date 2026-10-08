@@ -12,6 +12,7 @@ import { ROOTS } from '@/shared/config/roots'
 import { useAbility } from '@/shared/domains/permissions/client'
 import { useActiveSection } from '@/shared/hooks/use-active-section'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
+import { AgentViewBadge } from './agent-view-badge'
 import { ProposalNavbarFrame } from './navbar-frame'
 import { ProposalNavbarMenu } from './navbar-menu'
 
@@ -40,7 +41,7 @@ export function ProposalPageNavbar() {
   return (
     <ProposalNavbarFrame>
       <Link
-        className="h-full w-fit lex items-center justify-center transition px-8"
+        className="h-full w-fit flex items-center justify-center transition px-8"
         href={backHref}
       >
         <div className="flex items-center h-full gap-2">
@@ -56,10 +57,10 @@ export function ProposalPageNavbar() {
               {proposalSteps.map(step => (
                 <div
                   key={step.accessor}
-                  className="flex-1 last-of-type:bg-primary h-full"
+                  className="flex-1 h-full"
                 >
                   <Link
-                    className="h-full w-full flex items-center justify-center hover:bg-foreground/40 transition data-[active=true]:bg-foreground/40"
+                    className="h-full w-full flex items-center justify-center border-b-2 border-transparent text-muted-foreground transition-colors hover:text-foreground pressed:text-foreground data-[active=true]:border-foreground data-[active=true]:text-foreground"
                     href={`#${step.accessor}`}
                     data-active={activeSectionId === step.accessor}
                   >
@@ -67,6 +68,9 @@ export function ProposalPageNavbar() {
                   </Link>
                 </div>
               ))}
+              <div className="flex h-full shrink-0 items-center pl-3">
+                <AgentViewBadge />
+              </div>
               <ProposalNavbarMenu variant="desktop" />
             </>
           )
@@ -78,7 +82,7 @@ export function ProposalPageNavbar() {
                   router.push(`#${val}`)
                 }}
               >
-                <SelectTrigger className="w-full bg-card dark:bg-card outline-none border-none dark:border-none dark:outline-none">
+                <SelectTrigger className="w-full bg-card border-none">
                   <SelectValue placeholder="Select a project type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -93,6 +97,7 @@ export function ProposalPageNavbar() {
                   ))}
                 </SelectContent>
               </Select>
+              <AgentViewBadge />
               <ProposalNavbarMenu variant="mobile" />
             </div>
           )}

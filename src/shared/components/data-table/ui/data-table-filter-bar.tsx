@@ -6,7 +6,6 @@ import type { DataTableFilterConfig, DataTableMultiSelectFilter, DataTableSelect
 import { SlidersHorizontal } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
-import { DataTableTimePresetFilter } from '@/shared/components/data-table/ui/data-table-time-preset-filter'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import {
@@ -134,7 +133,6 @@ export function DataTableFilterBar<TData>({ table, filters }: Props<TData>) {
   const searchFilters = filters.filter((f): f is Extract<DataTableFilterConfig, { type: 'search' }> => f.type === 'search')
   const selectFilters = filters.filter((f): f is DataTableSelectFilter => f.type === 'select')
   const multiSelectFilters = filters.filter((f): f is DataTableMultiSelectFilter => f.type === 'multi-select')
-  const timePresetFilters = filters.filter((f): f is Extract<DataTableFilterConfig, { type: 'time-preset' }> => f.type === 'time-preset')
 
   const activeSelectFilterCount = selectFilters.filter((f) => {
     const value = (table.getColumn(f.columnId)?.getFilterValue() as string) ?? ''
@@ -158,10 +156,6 @@ export function DataTableFilterBar<TData>({ table, filters }: Props<TData>) {
           onChange={v => table.getColumn(filter.columnId)?.setFilterValue(v)}
           className="max-w-72 flex-1 md:flex-none"
         />
-      ))}
-
-      {timePresetFilters.map(filter => (
-        <DataTableTimePresetFilter key={filter.id} filter={filter} table={table} />
       ))}
 
       {isMobile && (selectFilters.length > 0 || multiSelectFilters.length > 0)

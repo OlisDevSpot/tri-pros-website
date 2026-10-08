@@ -38,7 +38,7 @@ export function SetterCell({ setter, onPick }: SetterCellProps) {
               )
             : (
                 <>
-                  <span aria-hidden="true" className="size-5 shrink-0 rounded-full border border-dashed border-muted-foreground/40" />
+                  <span aria-hidden="true" className="size-5 shrink-0 rounded-full border border-dashed border-border-strong" />
                   <span className="min-w-0 truncate text-xs font-medium text-muted-foreground">{label}</span>
                 </>
               )}

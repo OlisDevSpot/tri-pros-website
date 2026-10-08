@@ -170,7 +170,7 @@ function StatusIcon({
 }
 
 /**
- * Status icon wrapped in a square tile with a status-colored border.
+ * Status icon wrapped in a square tile.
  *
  * Designed to sit at the leading edge of a full-height proposal row using a
  * CSS grid layout. Grid cells have deterministic block-size when the parent
@@ -182,10 +182,6 @@ function StatusIcon({
  *     <ProposalOverviewCard.StatusIconTile />
  *     ...
  *   </ProposalOverviewCard>
- *
- * The tile inherits its color from `style.iconClass`, so the border
- * (`border-current/25`) and icon share the status hue without needing a
- * separate borderClass token.
  */
 function StatusIconTile({
   iconSize = 18,
@@ -200,7 +196,7 @@ function StatusIconTile({
     <div
       aria-hidden="true"
       className={cn(
-        'flex aspect-square h-full items-center justify-center rounded-md border border-current/25 bg-background/40',
+        'flex aspect-square h-full items-center justify-center rounded-md border border-border bg-muted',
         style.iconClass,
         className,
       )}

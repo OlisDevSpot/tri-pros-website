@@ -136,7 +136,7 @@ export function SOWSection({
                     value={field.value}
                     onValueChange={handleTradeChange}
                   >
-                    <SelectTrigger {...field} className="w-full bg-transparent dark:bg-transparent border-0">
+                    <SelectTrigger {...field} className="w-full bg-transparent border-0">
                       <SelectValue placeholder="Select a trade" />
                     </SelectTrigger>
                     <SelectContent {...field}>
@@ -193,7 +193,7 @@ export function SOWSection({
             <CollapsibleTrigger asChild>
               <button
                 type="button"
-                className="flex w-full items-center justify-between px-3 py-2 text-sm font-medium hover:bg-muted/50 lg:px-4"
+                className="flex w-full items-center justify-between px-3 py-2 text-sm font-medium hover:bg-hover pressed:bg-press lg:px-4"
               >
                 <span>Scope of Work</span>
                 <ChevronDownIcon className={cn('size-4 transition-transform', !scopeOpen && '-rotate-90')} />
@@ -203,7 +203,7 @@ export function SOWSection({
               open={scopeOpen}
               className={cn(
                 'rounded-b-lg transition-colors cursor-pointer',
-                scopeDeadHover && 'bg-muted/50',
+                scopeDeadHover && 'bg-hover',
               )}
               onMouseOver={(e) => {
                 e.stopPropagation()
@@ -275,12 +275,12 @@ export function SOWSection({
         </div>
 
         {/* Financials collapsible */}
-        <div className="w-full border-t border-border/30">
+        <div className="w-full border-t border-border">
           <Collapsible open={financialsOpen} onOpenChange={setFinancialsOpen}>
             <CollapsibleTrigger asChild>
               <button
                 type="button"
-                className="flex w-full items-center justify-between px-3 py-2 text-sm font-medium hover:bg-muted/50 lg:px-4"
+                className="flex w-full items-center justify-between px-3 py-2 text-sm font-medium hover:bg-hover pressed:bg-press lg:px-4"
               >
                 <span>Financials</span>
                 <ChevronDownIcon className={cn('size-4 transition-transform', !financialsOpen && '-rotate-90')} />
@@ -290,7 +290,7 @@ export function SOWSection({
               open={financialsOpen}
               className={cn(
                 'rounded-b-lg transition-colors cursor-pointer',
-                finDeadHover && 'bg-muted/50',
+                finDeadHover && 'bg-hover',
               )}
               onMouseOver={(e) => {
                 e.stopPropagation()

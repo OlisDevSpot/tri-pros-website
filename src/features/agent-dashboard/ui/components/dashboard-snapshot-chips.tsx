@@ -25,7 +25,7 @@ export function DashboardSnapshotChips({ counts }: DashboardSnapshotChipsProps) 
             flex min-h-11 flex-col items-start justify-center gap-1 rounded-xl
             border border-border bg-card px-3 py-2
             transition-colors duration-200
-            hover:border-primary/40 hover:bg-accent/50
+            hover:bg-row-hover pressed:bg-row-press
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
           "
         >
@@ -36,7 +36,7 @@ export function DashboardSnapshotChips({ counts }: DashboardSnapshotChipsProps) 
             className={
               chip.count === undefined
                 ? 'font-sans text-2xl font-bold tabular-nums text-muted-foreground'
-                : 'font-sans text-2xl font-bold tabular-nums text-primary'
+                : 'font-sans text-2xl font-bold tabular-nums text-foreground'
             }
           >
             {chip.count ?? '—'}

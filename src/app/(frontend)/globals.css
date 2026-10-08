@@ -75,6 +75,22 @@
   --sidebar-hover: oklch(0.26 0.06 262);
   --sidebar-border: oklch(0.27 0.06 262);
   --sidebar-ring: var(--brand-cyan-bright);
+  /* The rail's gloss is the same in both schemes: the navy material carries its own light, whatever the page does.
+     The groove sits below the rail so the theme switch's thumb reads raised out of it. */
+  --sidebar-groove: color-mix(in oklab, var(--sidebar), black 22%);
+  --sidebar-sheen: linear-gradient(180deg, oklch(1 0 0 / 0.07), transparent 55%);
+  --sidebar-sheen-radial: radial-gradient(120% 100% at 50% 0%, oklch(1 0 0 / 0.16), transparent 62%);
+  --shadow-sidebar-groove: inset 0 0 0 1px oklch(1 0 0 / 0.1), inset 0 1px 3px oklch(0 0 0 / 0.45);
+  --shadow-sidebar-thumb: 0 1px 3px oklch(0 0 0 / 0.45), inset 0 1px 0 oklch(1 0 0 / 0.14);
+  --shadow-dock-active: inset 0 1px 0 oklch(1 0 0 / 0.35), 0 4px 12px -6px oklch(0.8 0.12 228 / 0.6);
+  --shadow-dock-button:
+    inset 0 1px 0 oklch(1 0 0 / 0.18), inset 0 -3px 6px oklch(0 0 0 / 0.28),
+    0 10px 24px -8px oklch(0.2 0.06 255 / 0.55), 0 2px 4px oklch(0 0 0 / 0.18);
+  --shadow-dock-button-pressed:
+    inset 0 1px 0 oklch(1 0 0 / 0.12), inset 0 -1px 3px oklch(0 0 0 / 0.3), 0 4px 10px -6px oklch(0.2 0.06 255 / 0.5);
+  /* A switch thumb is the page colour in light; dark flips it per state, so it never sinks into the dark track. */
+  --switch-thumb: var(--background);
+  --switch-thumb-checked: var(--background);
   --status-info-fg: oklch(0.44 0.08 252);
   --status-info-bg: oklch(0.945 0.02 250);
   --status-info-dot: oklch(0.6 0.09 250);
@@ -131,6 +147,8 @@
   --identity-8-bg: oklch(0.93 0.045 335);
   --identity-8-fg: oklch(0.43 0.11 335);
   --identity-8-ring: oklch(0.66 0.13 335);
+  /* The frozen first column's edge once a table scrolls under it: a short drop to its right, tinted like the ramp. */
+  --shadow-frozen: 4px 0 8px -2px oklch(0.2 0.06 258 / 0.16);
   /* Frosted-glass surface: mixes the popover token toward transparent (in oklab,
      so premultiplied mixing preserves its hue/lightness) rather than a relative-color
      function, which iOS/iPadOS Safari below 16.4 can't parse.
@@ -158,6 +176,11 @@
   --shadow-lg: 0 16px 36px -14px oklch(0.2 0.06 258 / 0.35), 0 4px 10px -4px oklch(0.2 0.06 258 / 0.15);
   --shadow-xl: 0 16px 36px -14px oklch(0.2 0.06 258 / 0.35), 0 4px 10px -4px oklch(0.2 0.06 258 / 0.15);
   --shadow-2xl: 0 16px 36px -14px oklch(0.2 0.06 258 / 0.35), 0 4px 10px -4px oklch(0.2 0.06 258 / 0.15);
+  /* The page's edge over the footer it slides from under. The page is full-bleed, so the spread pushes the shadow
+     past the viewport sides (a plain blur fades to half strength at them) and the negative offset pulls its bottom
+     edge back to 18px. A 1px contact line keeps the edge crisp; the drop stays faint and long so it reads as a lift,
+     not a stripe. */
+  --shadow-page: 0 1px 0 0 oklch(0.2 0.06 258 / 0.06), 0 -18px 44px 36px oklch(0.2 0.06 258 / 0.12);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
 }
@@ -401,6 +424,8 @@
   --sidebar-hover: oklch(calc(var(--canvas-l) + var(--lift) + 2.6 * var(--step)) var(--surface-c) var(--surface-h));
   --sidebar-border: oklch(calc(var(--canvas-l) + var(--lift) + 3 * var(--step)) var(--surface-c) var(--surface-h));
   --sidebar-ring: var(--brand-cyan-bright);
+  --switch-thumb: var(--foreground);
+  --switch-thumb-checked: var(--primary-foreground);
   --status-info-fg: oklch(0.84 0.06 245);
   --status-info-bg: oklch(0.3 0.045 250);
   --status-info-dot: oklch(0.72 0.08 245);
@@ -457,6 +482,7 @@
   --identity-8-bg: oklch(0.33 0.06 335);
   --identity-8-fg: oklch(0.88 0.07 335);
   --identity-8-ring: oklch(0.66 0.13 335);
+  --shadow-frozen: 4px 0 10px -2px oklch(0 0 0 / 0.55);
   /* Dark glass: keep the popover token's blue cast (no foreground lift). At
      62% alpha, the card hue beneath bleeds through, so the surface reads as
      "the same color, sharper" — which is what real glass over a dark surface
@@ -480,6 +506,10 @@
   --shadow-lg: 0 18px 40px -12px oklch(0 0 0 / 0.7), inset 0 1px 0 oklch(1 0 0 / 0.06);
   --shadow-xl: 0 18px 40px -12px oklch(0 0 0 / 0.7), inset 0 1px 0 oklch(1 0 0 / 0.06);
   --shadow-2xl: 0 18px 40px -12px oklch(0 0 0 / 0.7), inset 0 1px 0 oklch(1 0 0 / 0.06);
+  /* A drop vanishes on a near-black footer, so the page edge is a 1px rim a rung up over a 1px black contact line,
+     and the drop only deepens the gap beneath them. The rim is outset and solid: an inset one is painted over by the
+     last section's own background, and a white wash would dim over the black line below it. */
+  --shadow-page: 0 1px 0 0 var(--card), 0 2px 0 0 oklch(0 0 0 / 0.6), 0 -16px 44px 36px oklch(0 0 0 / 0.7);
 }
 
 /* Absolute rungs, the same wherever they are read: the page (rung 0) and the overlays on rung 4. Declared on
@@ -488,6 +518,10 @@
 .dark {
   --background: oklch(calc(var(--canvas-l)) var(--surface-c) var(--surface-h));
   --popover: oklch(calc(var(--canvas-l) + var(--lift) + 4 * var(--step)) var(--surface-c) var(--surface-h));
+  /* A tile filled with a status tone hovers a solid step off that fill: a wash would show the surface through it. */
+  --status-attention-hover: color-mix(in oklab, var(--foreground) 6%, var(--status-attention-bg));
+  --status-success-hover: color-mix(in oklab, var(--foreground) 6%, var(--status-success-bg));
+  --status-danger-hover: color-mix(in oklab, var(--foreground) 6%, var(--status-danger-bg));
 }
 
 /* Relative tokens. Every surface declares them again, because var() resolves where a property is declared and
@@ -622,19 +656,24 @@
   --tab-track: inherit;
 }
 
-/* Presses in fast and settles back with a slight overshoot; colours keep the plain ease. Only the properties the
-   button states change are listed: `all` would also animate layout (size, padding) on every button. */
+/* Only the properties the button states change are listed: `all` would also animate layout (size, padding) on every
+   button. The never-matching id outranks a component's own `transition-*` class, which would otherwise drop `scale`
+   from the list and make the press snap. */
 @utility press-motion {
-  transition-property: color, background-color, border-color, box-shadow, opacity, filter, scale;
-  transition-duration: 150ms, 150ms, 150ms, 150ms, 150ms, 150ms, 280ms;
-  transition-timing-function: ease, ease, ease, ease, ease, ease, cubic-bezier(0.34, 1.56, 0.64, 1);
+  &:is(*, #press) {
+    transition-property: color, background-color, border-color, box-shadow, opacity, filter, scale;
+    transition-duration: 150ms, 150ms, 150ms, 150ms, 150ms, 150ms, 220ms;
+    transition-timing-function: ease, ease, ease, ease, ease, ease, cubic-bezier(0.25, 1, 0.5, 1);
+  }
   &:is([data-pressed], #press) {
-    scale: var(--press-scale, 0.96);
     transition-duration: 70ms;
     transition-timing-function: ease-out;
   }
-  @media (prefers-reduced-motion: reduce) {
-    &:is([data-pressed], #press) {
+  /* Fields and controls that open something keep the colour press but never move: a popover is placed from its
+     trigger's box, and on a wide field the shrink reads as a squish. */
+  &:is([data-pressed], #press):not([aria-haspopup], [aria-expanded], [role='combobox']) {
+    scale: var(--press-scale, 0.96);
+    @media (prefers-reduced-motion: reduce) {
       scale: none;
     }
   }
@@ -710,6 +749,9 @@
   --color-sidebar-muted: var(--sidebar-muted);
   --color-sidebar-hover: var(--sidebar-hover);
   --color-sidebar-active-icon: var(--sidebar-active-icon);
+  --color-sidebar-groove: var(--sidebar-groove);
+  --color-switch-thumb: var(--switch-thumb);
+  --color-switch-thumb-checked: var(--switch-thumb-checked);
   --color-status-info-fg: var(--status-info-fg);
   --color-status-info-bg: var(--status-info-bg);
   --color-status-info-dot: var(--status-info-dot);
@@ -731,6 +773,9 @@
   --color-status-idle-fg: var(--status-idle-fg);
   --color-status-idle-bg: var(--status-idle-bg);
   --color-status-idle-dot: var(--status-idle-dot);
+  --color-status-attention-hover: var(--status-attention-hover);
+  --color-status-success-hover: var(--status-success-hover);
+  --color-status-danger-hover: var(--status-danger-hover);
   --color-identity-1-bg: var(--identity-1-bg);
   --color-identity-1-fg: var(--identity-1-fg);
   --color-identity-1-ring: var(--identity-1-ring);
@@ -755,6 +800,9 @@
   --color-identity-8-bg: var(--identity-8-bg);
   --color-identity-8-fg: var(--identity-8-fg);
   --color-identity-8-ring: var(--identity-8-ring);
+  --color-on-media: var(--on-media);
+  --color-on-media-muted: var(--on-media-muted);
+  --color-scrim: var(--scrim);
 
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
@@ -791,7 +839,7 @@
   --shadow-xl: var(--shadow-xl);
   --shadow-2xl: var(--shadow-2xl);
 
-  /* Toolbar loading shimmer — a 1px-tall foreground/40 segment translating */
+  /* Toolbar loading shimmer — a 1px-tall muted-foreground segment translating */
   /* left→right under the bottom edge of `<QueryToolbar.Bar>` while a */
   /* paginated query is in flight. Compositor-only (transform). */
   --animate-toolbar-shimmer: toolbar-shimmer 1.6s linear infinite;
@@ -1254,6 +1302,20 @@
   --presentation-ground: oklch(0.2 0.028 257);
   --presentation-accent: #5cc6f2;
   --presentation-scrim: 0.14 0.03 257;
+}
+
+/* Over media. A photo or video looks the same in both schemes and on every rung, so ink over it and the veil
+   behind that ink are declared once, outside .dark and the ladder. The veil is navy-black rather than pure black so
+   it sits with the brand instead of greying the photo. Callers set the strength with an alpha (`bg-scrim/60`); the
+   floors below assume the worst photo, a white one, and theme:check holds them:
+   - text in `--on-media`: veil ≥ 60%
+   - text in `--on-media-muted`: veil ≥ 70%
+   - icons, large text and control glyphs: veil ≥ 50%
+   Muted ink is the base ink thinned, not a grey: a grey reads dirty over a warm photo. */
+:root {
+  --on-media: oklch(0.98 0 0);
+  --on-media-muted: color-mix(in oklab, var(--on-media) 80%, transparent);
+  --scrim: oklch(0.15 0.02 258);
 }
 
 /* The dashboard theme switch reveals the new theme as a circle clipped from the control; the default

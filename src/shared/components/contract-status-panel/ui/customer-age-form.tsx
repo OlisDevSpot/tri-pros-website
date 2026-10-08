@@ -40,13 +40,13 @@ export function CustomerAgeForm({ proposalId, token }: CustomerAgeFormProps) {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col gap-4 rounded-lg border border-primary/20 bg-primary/5 p-4"
+      className="flex flex-col gap-4 rounded-lg border border-status-info-dot/40 bg-status-info-bg p-4 text-status-info-fg"
     >
       <div className="flex items-start gap-2.5">
-        <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" />
+        <ShieldCheck className="mt-0.5 size-4 shrink-0" />
         <div>
-          <p className="text-sm font-medium text-foreground">Age verification required</p>
-          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+          <p className="text-sm font-medium">Age verification required</p>
+          <p className="mt-0.5 text-xs leading-relaxed">
             Per standard CA and CSLB home improvement contract requirements, any customers over the
             age of 65 must receive 5 days right of cancellation instead of the standard 3 days.
             Please specify your age below to continue with your agreement.
@@ -56,7 +56,7 @@ export function CustomerAgeForm({ proposalId, token }: CustomerAgeFormProps) {
 
       <div className="flex items-end gap-2">
         <div className="w-24">
-          <label htmlFor="customer-age" className="mb-1 block text-xs font-medium text-muted-foreground">
+          <label htmlFor="customer-age" className="mb-1 block text-xs font-medium">
             Age
           </label>
           <Input

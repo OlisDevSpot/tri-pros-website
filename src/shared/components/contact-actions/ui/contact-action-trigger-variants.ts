@@ -13,12 +13,12 @@ export const contactActionTriggerVariants = cva(
         round: 'size-10 shrink-0 justify-center rounded-full border',
       },
       surface: {
-        card: 'text-foreground hover:bg-muted [&_svg]:text-muted-foreground',
+        card: 'text-foreground hover:bg-hover pressed:bg-press [&_svg]:text-muted-foreground',
         image: 'text-white/90 hover:bg-white/10 [&_svg]:text-white/75',
       },
     },
     compoundVariants: [
-      { shape: 'round', surface: 'card', class: 'border-border bg-muted hover:bg-accent [&_svg]:text-foreground' },
+      { shape: 'round', surface: 'card', class: 'border-control-border bg-control hover:bg-control-hover [&_svg]:text-foreground' },
       { shape: 'round', surface: 'image', class: 'border-white/20 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 [&_svg]:text-white' },
     ],
     defaultVariants: { shape: 'row', surface: 'card' },
