@@ -1915,7 +1915,7 @@ Navigate to `http://localhost:3020/dashboard` (unmarked), `http://localhost:3020
 
 - [ ] **Step 7: Check 5 — a deploy**
 
-Change one byte in the shell (add a trailing space inside the `LaunchShell` doc comment in the **worktree** only — never in the main tree), rebuild in the worktree (`pnpm build`), restart `pnpm start` on :3020. Without touching the browser's storage, navigate to `http://localhost:3020/dashboard?launch=1`. Expected: the old shell is served from cache, hydrates, and one hard load of `/dashboard` (unmarked, from the network) follows; the dashboard renders. Wait 5 s, then navigate to `/dashboard?launch=1` again — expected: served from cache, no hard load (the revalidated shell matches the build). Revert the byte in the worktree.
+Change one byte in the shell (add a word inside the `LaunchShell` doc comment in the **worktree** only — never in the main tree; not a trailing space, which the build's lint rejects), rebuild in the worktree (`pnpm build`), restart `pnpm start` on :3020. Without touching the browser's storage, navigate to `http://localhost:3020/dashboard?launch=1`. Expected: the old shell is served from cache, hydrates, and one hard load of `/dashboard` (unmarked, from the network) follows; the dashboard renders. Wait 5 s, then navigate to `/dashboard?launch=1` again — expected: served from cache, no hard load (the revalidated shell matches the build). Revert the byte in the worktree.
 
 - [ ] **Step 8: Checks 6 and 7 — signed out, reduced motion**
 
