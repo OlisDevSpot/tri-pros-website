@@ -10,14 +10,15 @@
  *
  * Dry run unless --apply. The `--conditions=react-server` flag lets the CLI import server-only modules.
  */
+/* eslint-disable perfectionist/sort-imports -- load-env must run before any module that reads process.env */
+import './lib/load-env'
 import process from 'node:process'
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
-
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { voipDids } from '@/shared/db/schema/voip-dids'
 import { voipDidsService } from '@/shared/services/voip/voip-dids.service'
-import './lib/load-env'
+/* eslint-enable perfectionist/sort-imports */
 
 function flagValue(name: string): string | undefined {
   const index = process.argv.indexOf(name)
