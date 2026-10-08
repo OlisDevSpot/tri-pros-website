@@ -3,8 +3,8 @@ import type { VoipDid } from '@/shared/db/schema/voip-dids'
 
 import { dalError, dalSuccess, SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { voipDidCrud } from '@/shared/entities/voip-dids/dal/server/crud'
-import { assignToUser, promoteToPrimary, reconcileWithProvider, unassign } from '@/shared/entities/voip-dids/dal/server/mutations'
-import { getDidByE164, getDidByProviderId, getStickyDidForUser } from '@/shared/entities/voip-dids/dal/server/queries'
+import { assignToUser, promoteToPrimary, reconcileWithProvider, setMainLine, unassign } from '@/shared/entities/voip-dids/dal/server/mutations'
+import { getDidByE164, getDidByProviderId, getMainLineDid, getStickyDidForUser } from '@/shared/entities/voip-dids/dal/server/queries'
 import { twilioClient } from '@/shared/services/providers/twilio/client'
 
 // ---------------------------------------------------------------------------
@@ -110,6 +110,14 @@ function createVoipDidsService() {
 
     getDidByProviderId: (providerDidId: string): Promise<DalReturn<VoipDid | null>> => {
       return getDidByProviderId(providerDidId)
+    },
+
+    getMainLineDid: (): Promise<DalReturn<VoipDid | null>> => {
+      return getMainLineDid()
+    },
+
+    setMainLine: (_ctx: ScopedContext, input: { e164: string }): Promise<DalReturn<VoipDid>> => {
+      return setMainLine(input)
     },
 
     getDidByIdSystem: (didId: string): Promise<DalReturn<VoipDid | undefined>> => {

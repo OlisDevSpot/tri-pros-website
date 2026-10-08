@@ -66,3 +66,16 @@ export async function getDidByProviderId(providerDidId: string): Promise<DalRetu
     return row ?? null
   })
 }
+
+/** The one company number that sends visit messages and receives their replies; null until the owner flags one. */
+export async function getMainLineDid(): Promise<DalReturn<VoipDid | null>> {
+  return dalDbOperation(async () => {
+    const [row] = await db
+      .select()
+      .from(voipDids)
+      .where(and(eq(voipDids.isMainLine, true), eq(voipDids.isActive, true)))
+      .limit(1)
+
+    return row ?? null
+  })
+}
