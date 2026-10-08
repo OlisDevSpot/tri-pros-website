@@ -258,7 +258,7 @@ await browser.close()
 
 - [ ] **Step 4: Write the host-required check (RED for Task 3)**
 
-`check-host-required.tsx` (the `React` import is needed: the repo's tsconfig keeps `jsx: preserve`, so `tsx` compiles JSX to `React.createElement`):
+`check-host-required.tsx`, run with `TSX_TSCONFIG_PATH=<workspace>/tsconfig.json` where that file is `{ "extends": "../../../tsconfig.json", "compilerOptions": { "jsx": "react-jsx" } }`: the repo keeps `jsx: preserve`, under which `tsx` compiles JSX to `React.createElement`, and the app's components import no `React`, so their JSX would throw "React is not defined" before any hook ran:
 
 ```tsx
 import React from 'react'
@@ -296,7 +296,7 @@ process.exit(failed ? 1 : 0)
 
 - [ ] **Step 5: Run the host-required check (RED) and the before-probes**
 
-Run: `pnpm exec tsx .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-host-required.tsx`
+Run: `TSX_TSCONFIG_PATH=.superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/tsconfig.json pnpm exec tsx .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-host-required.tsx`
 Expected: exits non-zero with `Cannot find module '@/shared/modules/meetings/core/components/meeting-actions-host'` (the host does not exist yet). This is Task 3's RED.
 
 Run (one at a time; each takes several minutes; the dev server must be warm):
@@ -481,7 +481,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 - [ ] **Step 1: Run the check to see it fail for the right reason**
 
-Run: `pnpm exec tsx .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-host-required.tsx`
+Run: `TSX_TSCONFIG_PATH=.superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/tsconfig.json pnpm exec tsx .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-host-required.tsx`
 Expected: `Cannot find module '@/shared/modules/meetings/core/components/meeting-actions-host'`.
 
 - [ ] **Step 2: Write the host**
@@ -572,7 +572,7 @@ export function useMeetingActionsHost(consumer: string): MeetingActionsHostValue
 
 - [ ] **Step 3: Run the check to see it pass**
 
-Run: `pnpm exec tsx .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-host-required.tsx`
+Run: `TSX_TSCONFIG_PATH=.superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/tsconfig.json pnpm exec tsx .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-host-required.tsx`
 Expected:
 ```
 PASS useMeetingActionsHost without a host: MeetingProbe needs a <MeetingActionsHost> above it
@@ -638,7 +638,7 @@ expectThrow(
 )
 ```
 
-Run: `pnpm exec tsx .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-host-required.tsx`
+Run: `TSX_TSCONFIG_PATH=.superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/tsconfig.json pnpm exec tsx .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-host-required.tsx`
 Expected: the two new lines are `FAIL … invariant expected app router to be mounted` (the card still calls the hook itself) and `FAIL … ` (the slot reaches `useTRPC` or `useAbility` first). Exit 1. (`tsx` type-checks nothing, so the `customerId: null` the type does not yet allow is not an error here.)
 
 - [ ] **Step 2: The hook: `onAssignOwner` required, its internal participants dialog goes**
@@ -998,7 +998,11 @@ export function ScheduleMeetingsCalendar({ showToggle, showSaturday, onToggleSat
 
 ```tsx
 import { MeetingActionsHost } from '@/shared/modules/meetings/core/components/meeting-actions-host'
-…
+```
+
+and the return:
+
+```tsx
   return (
     <MeetingActionsHost>
       <TabsContent className="mt-0 p-4 md:p-6" value="overview">
@@ -1065,7 +1069,7 @@ export function ProjectSalesHistoryPane({ meetings, isLoading, onMutationSuccess
 Run: `pnpm tsc` then `pnpm lint`
 Expected: clean (the pre-existing warnings only). Unused imports the edits left behind (`useState` in the calendar, `ManageParticipantsModal` in the view, `useCallback` in the hook) are lint errors: remove them.
 
-Run: `pnpm exec tsx .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-host-required.tsx`
+Run: `TSX_TSCONFIG_PATH=.superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/tsconfig.json pnpm exec tsx .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-host-required.tsx`
 Expected: four `PASS` lines (`MeetingProbe` ×2, `MeetingOverviewCard`, `ParticipantsSlot`), exit 0.
 
 - [ ] **Step 13: Write the read-only actions check (used by Tasks 4, 5 and 6)**
@@ -1079,7 +1083,7 @@ import { installCensus, openPage, redact, waitForCards } from './check-lib.mjs'
 // Usage: node check-actions.mjs <view>   (run from the repo root)
 const KANBAN_CARD = '.min-w-70 [data-slot="card"]'
 const SCHEDULE_CARD = '.group.relative.rounded-md.border.bg-card'
-const PANE = 'div:has(> h4)'
+const PANE = 'section:has(> h4)'
 
 async function openAndCancel(page, scope, nth, item, dialogText) {
   await scope.getByRole('button', { name: 'Actions' }).nth(nth).click()
@@ -1098,7 +1102,8 @@ function kanbanCardWithMenus(page, count) {
 
 // Clicks table rows until an expanded pane titled `title` holds an Actions menu; the pane is returned.
 async function expandRowWithActions(page, title) {
-  const rows = page.locator('tbody tr')
+  // The tables start their body with a zero-height aria-hidden spacer row.
+  const rows = page.locator('tbody tr:not([aria-hidden="true"])')
   const total = Math.min(await rows.count(), 20)
   for (let index = 0; index < total; index++) {
     await rows.nth(index).click()
@@ -1150,9 +1155,10 @@ const VIEWS = {
     const card = profile.locator('[data-slot="card"]').filter({ has: page.getByRole('button', { name: 'Actions' }) }).first()
     await card.waitFor({ timeout: 30000 })
     await openAndCancel(page, card, 0, 'Delete', 'Delete meeting')
-    if (await profile.count() === 0) {
+    // Radix hides the profile from the accessibility tree while the confirm is on top; it comes back a tick later.
+    await profile.waitFor({ timeout: 5000 }).catch(() => {
       throw new Error('Escape closed the profile instead of the confirm dialog')
-    }
+    })
   } },
   'profile-project': { path: '/dashboard/pipeline/projects', cardName: 'CustomerKanbanCardImpl', async run(page) {
     await kanbanCardWithMenus(page, 2).locator('span.font-semibold').first().click()
@@ -1163,13 +1169,18 @@ const VIEWS = {
     await card.waitFor({ timeout: 30000 })
     await openAndCancel(page, card, 0, 'Delete', 'Delete project')
   } },
-  'meetings-row': { path: '/dashboard/meetings', cardName: 'TableRow', async run(page) {
+  // Expanding a row re-renders the table's rows, so these two start their render count after the expansion.
+  'meetings-row': { path: '/dashboard/meetings', cardName: 'TableRow', async run(page, renders) {
     const pane = await expandRowWithActions(page, 'Proposals')
+    const start = await renders()
     await openAndCancel(page, pane, 0, 'Delete', 'Delete proposal')
+    return start
   } },
-  'projects-row': { path: '/dashboard/projects', cardName: 'TableRow', async run(page) {
+  'projects-row': { path: '/dashboard/projects', cardName: 'TableRow', async run(page, renders) {
     const pane = await expandRowWithActions(page, 'Sales history')
+    const start = await renders()
     await openAndCancel(page, pane, 0, 'Delete', 'Delete meeting')
+    return start
   } },
   'fresh-drag': { path: '/dashboard/pipeline/fresh', cardName: 'CustomerKanbanCardImpl', async run(page) {
     const card = page.locator(KANBAN_CARD).first()
@@ -1205,9 +1216,9 @@ if (!view) {
 const { browser, page, errors } = await openPage(view.path, '', { viewport: view.viewport, init: [installCensus, [view.cardName]] })
 try {
   await waitForCards(page, view.cardName)
-  const before = await page.evaluate(name => window.__renders[name] ?? 0, view.cardName)
-  await view.run(page)
-  const after = await page.evaluate(name => window.__renders[name] ?? 0, view.cardName)
+  const renders = () => page.evaluate(name => window.__renders[name] ?? 0, view.cardName)
+  const before = (await view.run(page, renders)) ?? await renders()
+  const after = await renders()
   console.log(`${after - before === 0 ? 'PASS' : 'FAIL'} ${view.cardName} renders during the sequence: ${after - before}`)
   if (after - before !== 0) {
     process.exitCode = 1
@@ -1287,7 +1298,7 @@ expectThrow(
 )
 ```
 
-Run: `pnpm exec tsx .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-host-required.tsx`
+Run: `TSX_TSCONFIG_PATH=.superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/tsconfig.json pnpm exec tsx .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-host-required.tsx`
 Expected: the new line is `FAIL … invariant expected app router to be mounted` (the card still calls the hook, whose `useRouter` throws first). Exit 1.
 
 - [ ] **Step 2: Write the host**
@@ -1428,7 +1439,7 @@ Expected: errors only in `meeting-proposal-row.tsx` (`onView`, `onEdit`), `custo
 Run: `pnpm tsc` then `pnpm lint`
 Expected: clean (pre-existing warnings only).
 
-Run: `pnpm exec tsx .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-host-required.tsx`
+Run: `TSX_TSCONFIG_PATH=.superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/tsconfig.json pnpm exec tsx .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-host-required.tsx`
 Expected: five `PASS` lines, exit 0.
 
 - [ ] **Step 7: Browser checks**
@@ -1487,7 +1498,7 @@ expectThrow('CustomerKanbanCard without a customer host', <ProjectActionsHost><C
 expectThrow('CustomerKanbanCard without a project host', <CustomerActionsHost><CustomerKanbanCard item={item} isMobile={false} /></CustomerActionsHost>, /CustomerKanbanCard needs a <ProjectActionsHost> above it/)
 ```
 
-Run: `pnpm exec tsx .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-host-required.tsx`
+Run: `TSX_TSCONFIG_PATH=.superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/tsconfig.json pnpm exec tsx .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-host-required.tsx`
 Expected: `Cannot find module '@/shared/modules/customers/core/components/customer-actions-host'`, exit 1.
 
 - [ ] **Step 2: Write the two hosts**
@@ -1659,7 +1670,7 @@ and the returned tree is
 Run: `pnpm tsc` then `pnpm lint`
 Expected: clean. `tsc` will name every place that still passes `onViewProfile`, `onCreateMeeting`, `customerId` or `onNavigate` to a component that lost the prop; fix each (they are all in the files above).
 
-Run: `pnpm exec tsx .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-host-required.tsx`
+Run: `TSX_TSCONFIG_PATH=.superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/tsconfig.json pnpm exec tsx .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-host-required.tsx`
 Expected: seven `PASS` lines, exit 0. (The kanban item literal is cast; `tsx` does not type-check.)
 
 - [ ] **Step 8: Browser checks**

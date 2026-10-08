@@ -15,15 +15,13 @@ import { ProjectMeetingList } from '@/shared/entities/meetings/components/projec
 import { useProjectActionConfigs } from '@/shared/modules/projects/core/hooks/use-project-action-configs'
 
 interface Props {
-  customerId: string
   project: CustomerProfileProject
   onMutationSuccess: () => void
   onNavigate?: () => void
-  onAssignRep?: (meetingId: string, currentRepId: string | null) => void
   highlightMeetingId?: string
 }
 
-export function ProjectEntityCard({ customerId, project, onMutationSuccess, onNavigate, onAssignRep, highlightMeetingId }: Props) {
+export function ProjectEntityCard({ project, onMutationSuccess, onNavigate, highlightMeetingId }: Props) {
   const router = useRouter()
   const handleViewProject = useCallback(() => {
     onNavigate?.()
@@ -80,11 +78,9 @@ export function ProjectEntityCard({ customerId, project, onMutationSuccess, onNa
                 {`Meetings (${project.meetings.length})`}
               </span>
               <ProjectMeetingList
-                customerId={customerId}
                 meetings={project.meetings}
                 onMutationSuccess={onMutationSuccess}
                 onNavigate={onNavigate}
-                onAssignRep={onAssignRep}
                 highlightMeetingId={highlightMeetingId}
               />
             </div>

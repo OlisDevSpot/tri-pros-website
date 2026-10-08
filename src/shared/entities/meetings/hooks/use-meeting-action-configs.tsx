@@ -6,11 +6,8 @@ import type { EntityActionConfig } from '@/shared/components/entities/entity-act
 import type { MeetingOutcome } from '@/shared/constants/enums'
 
 import { useRouter } from 'next/navigation'
-import { useCallback, useState } from 'react'
-
 import { ROOTS } from '@/shared/config/roots'
 import { CANNOT_RESCHEDULE_REASON, canRescheduleFromOutcome } from '@/shared/constants/enums/meetings'
-import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
 import { SetterPicker } from '@/shared/entities/meetings/components/setter-picker'
 import { MEETING_ACTIONS } from '@/shared/entities/meetings/constants/actions'
 import { MEETING_CONFIRMATION_OPTIONS } from '@/shared/entities/meetings/constants/confirmation-options'
@@ -21,23 +18,6 @@ import { useStableCallbacks } from '@/shared/hooks/use-stable-callbacks'
 import { useMeetingActions } from './use-meeting-actions'
 import { useOutcomeChange } from './use-outcome-change'
 import { useRescheduleChange } from './use-reschedule-change'
-
-// ── Stable top-level component — never causes unmount/remount ──────────────
-
-interface AssignOwnerDialogProps {
-  target: { meetingId: string } | null
-  onClose: () => void
-}
-
-function InternalAssignOwnerDialog({ target, onClose }: AssignOwnerDialogProps) {
-  return (
-    <ManageParticipantsModal
-      meetingIds={target ? [target.meetingId] : []}
-      open={!!target}
-      onOpenChange={open => !open && onClose()}
-    />
-  )
-}
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -58,21 +38,20 @@ interface MeetingActionOverrides<T extends MeetingEntity> {
   onViewSchedule?: (entity: T) => void
   onAssignProject?: (entity: T) => void
   onCreateProposal?: (entity: T) => void
-  /** Override the default assign-owner dialog behavior */
-  onAssignOwner?: (entity: T) => void
+  /** Required: whoever calls this hook owns the participants modal, so the opener is theirs to supply. */
+  onAssignOwner: (entity: T) => void
 }
 
 interface MeetingActionConfigsResult<T extends MeetingEntity> {
   actions: EntityActionConfig<T>[]
   DeleteConfirmDialog: () => JSX.Element
-  AssignOwnerDialog: () => JSX.Element
   OutcomeReasonDialog: () => JSX.Element
   RescheduleDialog: () => JSX.Element
   changeOutcome: (meetingId: string, outcome: MeetingOutcome) => Promise<void>
 }
 
 export function useMeetingActionConfigs<T extends MeetingEntity>(
-  overrides: MeetingActionOverrides<T> = {},
+  overrides: MeetingActionOverrides<T>,
 ): MeetingActionConfigsResult<T> {
   const router = useRouter()
   const { deleteMeeting, duplicateMeeting, updateConfirmation, updateSetter } = useMeetingActions()
@@ -83,26 +62,9 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
     message: 'This will permanently delete this meeting and its data. This cannot be undone.',
   })
 
-  // Internal assign-owner dialog state (used when no override provided)
-  const [assignTarget, setAssignTarget] = useState<{
-    meetingId: string
-  } | null>(null)
-
-  const defaultAssignOwner = useCallback((entity: T) => {
-    setAssignTarget({ meetingId: entity.id })
-  }, [])
-
-  const clearAssignTarget = useCallback(() => setAssignTarget(null), [])
-
   const defaultNavigate = (entity: T) => router.push(ROOTS.dashboard.meetings.byId(entity.id))
   const defaultViewSchedule = (entity: T) => router.push(ROOTS.dashboard.scheduleWithMeetingHighlight(entity.id, entity.scheduledFor))
   const defaultCreateProposal = (entity: T) => router.push(ROOTS.dashboard.proposals.newForMeeting(entity.id))
-
-  // Stable component identity — props change, component reference does not
-  const AssignOwnerDialog = useCallback(
-    () => <InternalAssignOwnerDialog target={assignTarget} onClose={clearAssignTarget} />,
-    [assignTarget, clearAssignTarget],
-  )
 
   const configs: EntityActionConfig<T>[] = [
     {
@@ -157,12 +119,9 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
       onAction: overrides.onCreateProposal ?? defaultCreateProposal,
     },
     // Always present — CASL permission ['assign', 'Meeting'] controls visibility.
-    // Single click opens the full ManageParticipantsModal on every platform.
-    // (A prior desktop-only submenu rendered the same picker inline, which was
-    // redundant with the modal now that both share ParticipantPickerContent.)
     {
       action: MEETING_ACTIONS.assignOwner,
-      onAction: overrides.onAssignOwner ?? defaultAssignOwner,
+      onAction: overrides.onAssignOwner,
     },
   ]
 
@@ -206,5 +165,5 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
   // The configs' callbacks close over this render's mutations; only the loading flags should re-render rows.
   const actions = useStableCallbacks(configs)
 
-  return { actions, DeleteConfirmDialog, AssignOwnerDialog, OutcomeReasonDialog, RescheduleDialog, changeOutcome }
+  return { actions, DeleteConfirmDialog, OutcomeReasonDialog, RescheduleDialog, changeOutcome }
 }

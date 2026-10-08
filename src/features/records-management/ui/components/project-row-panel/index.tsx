@@ -52,7 +52,6 @@ export function ProjectRowPanel({ project, actions }: ProjectRowPanelProps) {
         <ProjectScopesPane project={project} />
         {!sales.isError && (
           <ProjectSalesHistoryPane
-            customerId={project.customerId}
             meetings={meetings}
             isLoading={sales.isLoading}
             onMutationSuccess={() => void sales.refetch()}

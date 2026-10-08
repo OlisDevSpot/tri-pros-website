@@ -16,6 +16,7 @@ export async function getMeetingsWithProposals(where: SQL): Promise<{ meetings: 
     .select({
       id: meetings.id,
       ownerId: meetings.ownerId,
+      customerId: meetings.customerId,
       projectId: meetings.projectId,
       meetingType: meetings.meetingType,
       meetingOutcome: meetings.meetingOutcome,
@@ -106,6 +107,7 @@ export async function getMeetingsWithProposals(where: SQL): Promise<{ meetings: 
   const meetingsWithProposals: CustomerProfileMeeting[] = meetingRows.map(m => ({
     id: m.id,
     ownerId: m.ownerId,
+    customerId: m.customerId,
     projectId: m.projectId,
     meetingType: m.meetingType,
     meetingOutcome: m.meetingOutcome,

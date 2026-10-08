@@ -37,7 +37,6 @@ interface Props {
   isDragOverlay?: boolean
   onViewProfile: (customerId: string) => void
   onCreateMeeting?: (customer: { id: string, name: string }) => void
-  onAssignRep?: (meetingId: string, currentRepId: string | null) => void
 }
 
 function CustomerKanbanCardImpl({
@@ -45,7 +44,6 @@ function CustomerKanbanCardImpl({
   isDragOverlay,
   onViewProfile,
   onCreateMeeting,
-  onAssignRep,
 }: Props) {
   const isMobile = useIsMobile()
   const router = useRouter()
@@ -202,7 +200,7 @@ function CustomerKanbanCardImpl({
               {item.project.meetings.length > 0 && (
                 <div className="space-y-0">
                   {item.project.meetings.map((mtg, idx) => (
-                    <KanbanProjectMeeting key={mtg.id} meeting={mtg} customerId={item.id} isFirst={idx === 0} isDragOverlay={isDragOverlay} onAssignRep={onAssignRep} />
+                    <KanbanProjectMeeting key={mtg.id} meeting={mtg} customerId={item.id} isFirst={idx === 0} isDragOverlay={isDragOverlay} />
                   ))}
                 </div>
               )}
@@ -215,6 +213,7 @@ function CustomerKanbanCardImpl({
               <MeetingOverviewCard
                 meeting={{
                   id: item.nextMeetingId,
+                  customerId: item.id,
                   scheduledFor: item.meetingScheduledFor ?? undefined,
                   confirmedAt: item.meetingConfirmedAt,
                   ownerId: item.assignedRep?.id,
@@ -222,10 +221,6 @@ function CustomerKanbanCardImpl({
                   ownerImage: item.assignedRep?.image,
                   proposals: item.proposals as MeetingOverviewCardProposal[],
                 }}
-                customerId={item.id}
-                onAssignOwner={onAssignRep
-                  ? () => onAssignRep(item.nextMeetingId!, item.assignedRep?.id ?? null)
-                  : undefined}
                 className="space-y-1.5"
               >
                 {/* Rep + actions */}
@@ -283,22 +278,19 @@ function CustomerKanbanCardImpl({
 
 /* ── Sub-components ── */
 
-function KanbanProjectMeeting({ meeting, customerId, isFirst, isDragOverlay, onAssignRep }: { meeting: PipelineItemProjectMeeting, customerId: string, isFirst: boolean, isDragOverlay?: boolean, onAssignRep?: (meetingId: string, currentRepId: string | null) => void }) {
+function KanbanProjectMeeting({ meeting, customerId, isFirst, isDragOverlay }: { meeting: PipelineItemProjectMeeting, customerId: string, isFirst: boolean, isDragOverlay?: boolean }) {
   return (
     <>
       {!isFirst && <Separator className="my-1.5" />}
       <MeetingOverviewCard
         meeting={{
           id: meeting.id,
+          customerId,
           ownerId: meeting.ownerId,
           ownerName: meeting.ownerName,
           ownerImage: meeting.ownerImage,
           proposals: meeting.proposals as MeetingOverviewCardProposal[],
         }}
-        customerId={customerId}
-        onAssignOwner={onAssignRep
-          ? () => onAssignRep(meeting.id, meeting.ownerId ?? null)
-          : undefined}
         className="space-y-1"
       >
         {/* Meeting header: avatar + actions */}

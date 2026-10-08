@@ -1,6 +1,6 @@
 'use client'
 
-import type { ScheduleCalendarEvent, ScheduleMeetingEvent } from '@/features/schedule-management/types'
+import type { ScheduleMeetingEvent } from '@/features/schedule-management/types'
 import type { MeetingType } from '@/shared/constants/enums'
 import type { MeetingOverviewCardData } from '@/shared/entities/meetings/components/overview-card'
 
@@ -14,13 +14,12 @@ import { cn } from '@/shared/lib/utils'
 
 interface MeetingCardProps {
   event: ScheduleMeetingEvent
-  onAssignOwner?: (event: ScheduleCalendarEvent) => void
   onUpdateScheduledFor: (meetingId: string, date: Date) => void
   isHighlighted?: boolean
   highlightRef?: React.RefCallback<HTMLDivElement>
 }
 
-export function MeetingCard({ event, onAssignOwner, onUpdateScheduledFor, isHighlighted, highlightRef }: MeetingCardProps) {
+export function MeetingCard({ event, onUpdateScheduledFor, isHighlighted, highlightRef }: MeetingCardProps) {
   const meetingData: MeetingOverviewCardData = {
     id: event.meetingId,
     meetingOutcome: event.meetingOutcome,
@@ -41,15 +40,9 @@ export function MeetingCard({ event, onAssignOwner, onUpdateScheduledFor, isHigh
     customerZip: event.customerZip,
   }
 
-  const handleAssignOwner = onAssignOwner
-    ? () => onAssignOwner(event)
-    : undefined
-
   const cardContent = (
     <MeetingOverviewCard
       meeting={meetingData}
-      customerId={event.customerId ?? ''}
-      onAssignOwner={handleAssignOwner}
       data-press
       className={cn(
         'group relative flex h-full flex-col gap-1.5 overflow-hidden rounded-md border bg-card p-3 pl-3.5 text-xs cursor-pointer shadow-sm transition-[box-shadow,background-color] hover:shadow-md pressed:bg-row-press',

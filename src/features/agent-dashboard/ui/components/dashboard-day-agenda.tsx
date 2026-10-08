@@ -7,6 +7,7 @@ import Link from 'next/link'
 
 import { ROOTS } from '@/shared/config/roots'
 import { formatBusinessTime } from '@/shared/lib/business-time'
+import { MeetingActionsHost } from '@/shared/modules/meetings/core/components/meeting-actions-host'
 
 import { DashboardMeetingCard } from './dashboard-meeting-card'
 
@@ -41,11 +42,13 @@ export function DashboardDayAgenda({ rows, selectedDay }: DashboardDayAgendaProp
   }
 
   return (
-    <ol className="flex flex-col">
-      {rows.map(row => (
-        <DayAgendaRow key={row.id} row={row} />
-      ))}
-    </ol>
+    <MeetingActionsHost>
+      <ol className="flex flex-col">
+        {rows.map(row => (
+          <DayAgendaRow key={row.id} row={row} />
+        ))}
+      </ol>
+    </MeetingActionsHost>
   )
 }
 
