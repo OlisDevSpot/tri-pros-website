@@ -2,7 +2,7 @@
 
 import type { ColumnDef, ColumnFiltersState, ColumnSizingState, ExpandedState, Row, SortingState, TableMeta, Updater, VisibilityState } from '@tanstack/react-table'
 import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react'
-import type { DataTableFilterConfig, DataTableServerPagination, DataTableServerSorting } from '@/shared/components/data-table/types'
+import type { DataTableServerPagination, DataTableServerSorting } from '@/shared/components/data-table/types'
 
 import {
   flexRender,
@@ -23,7 +23,6 @@ import { usePullToRefresh } from '@/shared/components/data-table/hooks/use-pull-
 import { isRowClick } from '@/shared/components/data-table/lib/is-row-click'
 import { mapColumnSortIds } from '@/shared/components/data-table/lib/map-column-sort-ids'
 import { DataTableBody } from '@/shared/components/data-table/ui/data-table-body'
-import { DataTableFilterBar } from '@/shared/components/data-table/ui/data-table-filter-bar'
 import { DataTablePagination } from '@/shared/components/data-table/ui/data-table-pagination'
 import { Table, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
@@ -43,7 +42,6 @@ export interface DataTableProps<TData, TMeta = unknown> {
   meta?: TMeta
   /** Unique ID under which the viewer's column widths, frozen column and hidden columns persist. Omit to keep them for this mount only. */
   tableId?: string
-  filterConfig?: DataTableFilterConfig[]
   defaultSort?: SortingState
   /** Client-side page size. Ignored when `serverPagination` is provided. */
   pageSize?: number
@@ -75,7 +73,6 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   columns,
   meta,
   tableId,
-  filterConfig,
   defaultSort,
   pageSize = 15,
   entityName = 'row',
@@ -285,12 +282,6 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
 
   return (
     <div className="flex flex-col h-full gap-4">
-      {filterConfig && filterConfig.length > 0 && (
-        <div className="shrink-0">
-          <DataTableFilterBar table={table} filters={filterConfig} />
-        </div>
-      )}
-
       <div className="grow min-h-0 flex flex-col rounded-xl border overflow-hidden surface">
         <div
           ref={scrollRef}

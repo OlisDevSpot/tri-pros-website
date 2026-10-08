@@ -11,42 +11,6 @@ export interface TimePreset {
   getRange: () => DateRange
 }
 
-// -- Discriminated union for filter configs --
-
-interface DataTableFilterBase {
-  id: string
-  label: string
-  columnId: string
-}
-
-export interface DataTableSearchFilter extends DataTableFilterBase {
-  type: 'search'
-  placeholder?: string
-}
-
-export interface DataTableSelectFilter extends DataTableFilterBase {
-  type: 'select'
-  placeholder?: string
-  options: readonly { label: string, value: string }[]
-}
-
-export interface DataTableMultiSelectFilter extends DataTableFilterBase {
-  type: 'multi-select'
-  placeholder?: string
-  options: readonly { label: string, value: string }[]
-}
-
-/**
- * @deprecated Use `<QueryToolbar>` + `usePaginatedQuery` for new tables. This
- * client-side filter config is still supported for legacy paths that haven't
- * been migrated yet (Activities, Past Meetings, Past Proposals, Projects,
- * Customer Pipelines). Each migration is queued as a follow-up issue.
- */
-export type DataTableFilterConfig
-  = DataTableSearchFilter
-    | DataTableSelectFilter
-    | DataTableMultiSelectFilter
-
 // -- Server-side pagination control --
 
 /**
