@@ -132,7 +132,8 @@ export function installCensus(cardNames) {
   window.__renders = {}
   const seen = new WeakMap()
   let commit = 0
-  let lastRoot = null
+  // Every root a commit has touched: a week step's last commit lands in a small sibling root (a portal's), not the app's.
+  const roots = new Set()
   window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = {
     renderers: new Map(),
     supportsFiber: true,
@@ -147,7 +148,7 @@ export function installCensus(cardNames) {
     checkDCE() {},
     onCommitFiberRoot(_id, root) {
       commit++
-      lastRoot = root
+      roots.add(root)
       const stack = [root.current.child]
       while (stack.length > 0) {
         const fiber = stack.pop()
@@ -180,7 +181,7 @@ export function installCensus(cardNames) {
     const counts = {}
     let mutationObservers = 0
     let fibers = 0
-    const stack = lastRoot ? [lastRoot.current.child] : []
+    const stack = [...roots].map(root => root.current.child)
     while (stack.length > 0) {
       const fiber = stack.pop()
       if (!fiber) {
