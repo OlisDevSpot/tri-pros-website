@@ -217,7 +217,8 @@ async function sendOutbound(ctx: ScopedContext, input: SendOutboundInput): Promi
     },
   })
   if (!patched.success) {
-    return patched
+    // Twilio accepted the message; the row is what is stale. Returning the send as failed would invite a second text.
+    console.error('[voip-messages] sent, but the row patch failed', { messageId: messageRow.id, sid: twilioMessage.sid, error: patched.error })
   }
   return dalSuccess({
     messageId: messageRow.id,
