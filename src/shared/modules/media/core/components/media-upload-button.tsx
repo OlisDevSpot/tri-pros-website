@@ -70,7 +70,7 @@ export function MediaUploadButton({
         <button
           type="button"
           disabled={isUploading}
-          className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
+          className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-row-hover pressed:bg-row-press disabled:pointer-events-none disabled:opacity-50"
           onClick={handleLocalClick}
         >
           <UploadIcon className="h-4 w-4 shrink-0" />
@@ -80,7 +80,7 @@ export function MediaUploadButton({
         <button
           type="button"
           disabled={isUploading || isExtraUploadLoading}
-          className="hidden sm:flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
+          className="hidden sm:flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-row-hover pressed:bg-row-press disabled:pointer-events-none disabled:opacity-50"
           onClick={handleExtraClick}
         >
           <HardDrive className="h-4 w-4 shrink-0" />
