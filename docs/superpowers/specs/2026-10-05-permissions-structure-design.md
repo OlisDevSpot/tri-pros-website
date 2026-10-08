@@ -190,7 +190,7 @@ User ids are written into the conditions when the rules are built. Nothing looks
 ### 5.3 Field meaning
 
 - `'views'` is the sub-entity's rows: creating or deleting one touches this field.
-- `'views.*'` and `'views.viewedAt'` are its columns.
+- `'views.*'` is its columns, and the rows with them: CASL's field matcher answers a check on `'views'` from a rule that lists `'views.*'` (D-33). A rule meant for columns only names them, as in `'views.viewedAt'`.
 - `'applications.**'` reaches every level under it.
 - A parent `update` rule with no field list covers every column and every sub-entity of that parent. Narrow it with a field list or a `cannot`.
 - A `read` rule with a field list limits what the actor receives: the row leaves the DAL with those columns only, and a sub-entity path admits that collection. Reading a proposal is not seeing its financial internals: the bearer's list leaves the money columns out. The cost lines inside `projectJSON` are a sub-column mask, which is unit 5's financial-reads work.
