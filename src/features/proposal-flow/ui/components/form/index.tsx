@@ -34,8 +34,8 @@ const TAB_LABELS: Record<FormTab, string> = {
 }
 
 const TOOLBAR_BUTTON_BASE = 'inline-flex size-[calc(100%-1px)] items-center justify-center rounded-md border border-transparent transition-[color,box-shadow]'
-const TOOLBAR_BUTTON_INACTIVE = 'text-muted-foreground hover:text-foreground'
-const TOOLBAR_BUTTON_ACTIVE = 'bg-popover shadow-sm dark:border-border'
+const TOOLBAR_BUTTON_INACTIVE = 'text-muted-foreground hover:bg-hover hover:text-foreground pressed:bg-press'
+const TOOLBAR_BUTTON_ACTIVE = 'bg-tab-active text-foreground shadow-xs'
 
 interface Props {
   onSubmit: (data: ProposalFormSchema) => void
@@ -153,7 +153,7 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
 
         {isEditMode
           ? (
-              <div className="inline-flex h-9 items-center gap-0.5 rounded-lg bg-muted p-0.75">
+              <div className="inline-flex h-9 items-center gap-0.5 rounded-lg border border-control-border bg-tab-track p-0.5">
                 {/* Internal financials */}
                 <button
                   type="button"
@@ -234,7 +234,7 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
                       <button
                         type="button"
                         disabled={isLoading}
-                        className="hidden items-center border-l border-current/10 ml-1 px-1.5 rounded-r-md transition-colors hover:bg-foreground/5 lg:inline-flex"
+                        className="hidden items-center border-l border-control-border ml-1 px-1.5 rounded-r-md transition-colors hover:bg-hover pressed:bg-press lg:inline-flex"
                       >
                         <ChevronDownIcon className="size-3" />
                       </button>

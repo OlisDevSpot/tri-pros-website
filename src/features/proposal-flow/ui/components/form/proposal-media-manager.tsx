@@ -106,7 +106,7 @@ export function ProposalMediaManager({ proposalId }: Props) {
           )
         }}
         renderControls={item => (
-          <div className="flex items-center gap-1.5 rounded bg-background/70 px-1.5 py-0.5">
+          <div className="flex items-center gap-1.5 rounded bg-scrim/70 px-1.5 py-0.5 text-on-media">
             <span className="text-xs">Homeowner</span>
             <Switch
               checked={viewById.get(item.id)?.visibility === 'homeowner'}

@@ -49,9 +49,6 @@ export function AgentContractView({
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <div className="relative overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-        {/* Gradient background wash — preserves prior agreement-section look */}
-        <div className="pointer-events-none absolute inset-0 bg-linear-to-br from-primary/4 via-primary/2 to-transparent dark:from-primary/8 dark:via-primary/3" />
-
         <div className="relative space-y-4 p-5 sm:p-7">
           <h3 className="text-base font-semibold tracking-tight sm:text-lg">
             Agreement

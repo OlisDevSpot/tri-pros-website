@@ -151,7 +151,7 @@ export function EnvelopeCard({
   }
 
   return (
-    <div className="rounded-lg border border-border bg-card/50 p-4 sm:p-5">
+    <div className="rounded-lg border border-border bg-card p-4 sm:p-5">
       {/* Header */}
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
@@ -165,7 +165,7 @@ export function EnvelopeCard({
         {statusBadge && (
           <span
             className={cn(
-              'shrink-0 rounded-full px-2.5 py-1 text-xs font-medium',
+              'shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium',
               statusBadge.className,
             )}
           >
@@ -184,7 +184,7 @@ export function EnvelopeCard({
 
         {/* State-specific body */}
         {!contractStatus && (
-          <div className="rounded-lg border border-border bg-muted/30 p-4">
+          <div className="rounded-lg border border-border bg-muted p-4">
             <p className="text-sm text-muted-foreground">
               Configuration ready. Create a draft to prepare the envelope
               for signing — or sending the proposal will prepare one
@@ -326,7 +326,7 @@ export function EnvelopeCard({
         title="Recall the signing envelope?"
         description={`${customerLabel}'s current signing link will stop working. They'll see the envelope marked as recalled in their inbox.`}
         details={(
-          <p className="text-xs text-destructive/80">
+          <p className="text-xs text-destructive-text">
             This cannot be undone.
           </p>
         )}

@@ -54,12 +54,12 @@ export function ScopeOfWork() {
               <AccordionItem
                 key={`sow-${index}`}
                 value={`sow-${index}`}
-                className="border border-border/50 rounded-xl overflow-hidden bg-card shadow-sm last:border-b"
+                className="border border-border rounded-xl overflow-hidden bg-card shadow-sm last:border-b"
               >
-                <AccordionTrigger className="px-6 py-5 hover:no-underline hover:bg-muted/30 data-[state=open]:bg-muted/20 transition-colors">
+                <AccordionTrigger className="px-6 py-5 hover:no-underline hover:bg-row-hover pressed:bg-row-press data-[state=open]:bg-row-selected transition-colors">
                   <div className="flex items-center justify-between w-full mr-3">
                     <div className="flex items-start gap-4">
-                      <span className="text-xl font-light text-muted-foreground/40 tabular-nums leading-tight shrink-0 w-6 pt-0.5">
+                      <span className="text-xl font-light text-muted-foreground tabular-nums leading-tight shrink-0 w-6 pt-0.5">
                         {String(index + 1).padStart(2, '0')}
                       </span>
                       <div className="space-y-1 text-left">
@@ -72,7 +72,7 @@ export function ScopeOfWork() {
                               <span>{section.trade.label}</span>
                             )}
                             {section.trade.label && section.scopes.length > 0 && (
-                              <span className="text-muted-foreground/40">·</span>
+                              <span className="text-muted-foreground">·</span>
                             )}
                             {section.scopes.length > 0 && (
                               <span>
@@ -86,7 +86,7 @@ export function ScopeOfWork() {
                       </div>
                     </div>
                     {pricingMode === 'breakdown' && (section.financials.sectionPrice ?? 0) > 0 && (
-                      <span className="text-sm font-semibold tabular-nums text-foreground/80 shrink-0">
+                      <span className="text-sm font-semibold tabular-nums text-foreground shrink-0">
                         {fmt(section.financials.sectionPrice!)}
                       </span>
                     )}
@@ -99,7 +99,7 @@ export function ScopeOfWork() {
                         {section.scopes.map(scope => (
                           <span
                             key={scope.id}
-                            className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-primary/8 text-primary border border-primary/15"
+                            className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-muted text-foreground border border-border"
                           >
                             {scope.label}
                           </span>
@@ -117,9 +117,9 @@ export function ScopeOfWork() {
             ))}
           </Accordion>
           {proposal.data.projectJSON.data.agreementNotes && (
-            <div className="mt-6 border-t border-border/30 pt-6">
+            <div className="mt-6 border-t border-border pt-6">
               <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Agreement Notes</h3>
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/80">
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
                 {proposal.data.projectJSON.data.agreementNotes}
               </p>
             </div>

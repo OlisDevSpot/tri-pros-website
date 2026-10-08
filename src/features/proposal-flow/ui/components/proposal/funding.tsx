@@ -168,8 +168,8 @@ export function Funding({ onPickFinancingOption }: Props) {
                             key={`${option.id}-${option.interestRate}`}
                             className={
                               cn(
-                                'p-4 border rounded-xl w-full flex items-center justify-between disabled:text-muted-foreground disabled:cursor-not-allowed disabled:opacity/50',
-                                option.id === proposalData.financeOptionId && 'bg-primary/20',
+                                'p-4 border rounded-xl w-full flex items-center justify-between transition-colors hover:bg-row-hover pressed:bg-row-press disabled:text-muted-foreground disabled:cursor-not-allowed',
+                                option.id === proposalData.financeOptionId && 'bg-row-selected hover:bg-row-selected',
                               )
                             }
                             type="button"

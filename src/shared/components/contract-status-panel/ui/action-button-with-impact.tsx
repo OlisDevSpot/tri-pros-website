@@ -51,7 +51,7 @@ export function ActionButtonWithImpact({
         disabled={disabled || isPending}
         className={cn(
           'w-full sm:w-auto',
-          isDestructiveVariant && 'border-destructive/30 text-destructive hover:border-destructive/50 hover:bg-destructive/5',
+          isDestructiveVariant && 'text-destructive-text',
         )}
       >
         {isPending

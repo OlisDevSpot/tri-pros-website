@@ -58,7 +58,7 @@ export function TrustedContractor() {
                     </div>
                   </header>
 
-                  <div className="overflow-hidden rounded-xl bg-muted ring-1 ring-background/10">
+                  <div className="overflow-hidden rounded-xl bg-muted ring-1 ring-border">
                     <Image
                       src={doc.src}
                       alt={doc.alt}

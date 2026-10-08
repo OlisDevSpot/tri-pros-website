@@ -26,17 +26,17 @@ export function EnvelopePreSendReview({ proposalKind, customerName }: EnvelopePr
       : 'Adding scope to an existing project.'
 
   return (
-    <div className="rounded-lg border border-primary/20 bg-primary/5 p-3.5">
+    <div className="rounded-lg border border-status-info-dot/40 bg-status-info-bg p-3.5 text-status-info-fg">
       <div className="flex items-start gap-2.5">
-        <KindIcon className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+        <KindIcon className="mt-0.5 size-4 shrink-0" aria-hidden />
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
-            <p className="text-sm font-medium text-foreground">{kindLabel}</p>
-            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-primary">
+            <p className="text-sm font-medium">{kindLabel}</p>
+            <span className="rounded-full border border-status-info-dot/40 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide">
               {proposalKind}
             </span>
           </div>
-          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+          <p className="mt-0.5 text-xs leading-relaxed">
             {reason}
           </p>
         </div>

@@ -158,7 +158,7 @@ export function FundingFields({ pricingMode }: Props) {
 
         {/* Incentives */}
         <div className="space-y-3 lg:space-y-4">
-          <div className="flex items-center justify-between border-t border-border/30 pt-3 lg:pt-4">
+          <div className="flex items-center justify-between border-t border-border pt-3 lg:pt-4">
             <h4 className="text-base font-semibold lg:text-lg">Incentives</h4>
             <Button
               type="button"
@@ -195,7 +195,7 @@ export function FundingFields({ pricingMode }: Props) {
                         open={isOpen}
                         onOpenChange={() => toggleIncentive(index)}
                       >
-                        <div className="overflow-hidden rounded-xl border border-border/30 bg-[color-mix(in_oklch,var(--card)_97%,var(--foreground)_3%)]">
+                        <div className="overflow-hidden rounded-xl border border-border bg-card">
                           <CollapsibleTrigger asChild>
                             <div>
                               <IncentiveCollapsibleHeader

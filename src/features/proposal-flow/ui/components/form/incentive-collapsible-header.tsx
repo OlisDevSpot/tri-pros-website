@@ -26,7 +26,7 @@ export function IncentiveCollapsibleHeader({
   const hasNotes = incentive.notes?.trim()
 
   return (
-    <div className="flex w-full cursor-pointer flex-col gap-1 px-3 py-2.5 transition-colors hover:bg-muted/50 lg:px-4 lg:py-3">
+    <div className="flex w-full cursor-pointer flex-col gap-1 px-3 py-2.5 transition-colors hover:bg-row-hover pressed:bg-row-press lg:px-4 lg:py-3">
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
           <span className="text-sm font-medium lg:text-base">
@@ -39,7 +39,7 @@ export function IncentiveCollapsibleHeader({
             </Badge>
           )}
           {hasOffer && (
-            <Badge variant="secondary" className="bg-primary/10 text-xs text-primary">
+            <Badge variant="secondary" className="text-xs">
               {incentive.offer}
             </Badge>
           )}
@@ -56,7 +56,7 @@ export function IncentiveCollapsibleHeader({
             type="button"
             size="icon"
             variant="ghost"
-            className="size-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            className="size-8 text-destructive-text"
             onClick={onDelete}
           >
             <TrashIcon className="size-4" />
