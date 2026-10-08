@@ -3,9 +3,10 @@ import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { Meeting } from '@/shared/db/schema'
 
 import { canRescheduleFromOutcome, outcomeRequiresReason } from '@/shared/constants/enums/meetings'
+import { systemContext } from '@/shared/dal/server/lib/contexts'
 import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { permit } from '@/shared/dal/server/lib/permissions/permit'
-import { SYSTEM_CONTEXT, ThrowableDalError } from '@/shared/dal/server/types'
+import { ThrowableDalError } from '@/shared/dal/server/types'
 import { customerNoteCrud } from '@/shared/entities/customer-notes/dal/server/crud'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
@@ -99,8 +100,8 @@ export const meetingBusinessService = {
       const participants = await getParticipantsForMeeting(input.meetingId)
       const ownerParticipant = participants.find(participant => participant.role === 'owner')
 
-      // SYSTEM_CONTEXT so create.before keeps this ownerId; an authed create would hand the meeting to the office user.
-      const replacement = dalVerifySuccess(await meetingCrud.create(SYSTEM_CONTEXT, {
+      // A system create keeps this ownerId: an authed create would resolve the owner from the acting user.
+      const replacement = dalVerifySuccess(await meetingCrud.create(systemContext('derived:meeting-reschedule'), {
         ownerId: ownerParticipant?.userId ?? original.ownerId,
         customerId: original.customerId,
         projectId: original.projectId,

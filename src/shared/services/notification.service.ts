@@ -4,7 +4,6 @@ import { NEW_LEAD_NOTIFICATION_EMAILS } from '@/shared/constants/company/new-lea
 import { SYSTEM_OWNER_EMAIL } from '@/shared/constants/system-users'
 import { systemContext } from '@/shared/dal/server/lib/contexts'
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { getParticipantsForMeeting } from '@/shared/entities/meetings/dal/server/participants'
 import { getByIdWithJoins } from '@/shared/entities/meetings/dal/server/queries'
@@ -151,7 +150,7 @@ function createNotificationService() {
       meetingId: string
       participantUserId: string
     }) => {
-      const meeting = dalVerifySuccess(await getByIdWithJoins(SYSTEM_CONTEXT, { id: params.meetingId }))
+      const meeting = dalVerifySuccess(await getByIdWithJoins(systemContext('derived:meeting-notification'), { id: params.meetingId }))
       if (!meeting) {
         console.warn(`[notificationService] notifyMeetingParticipantAdded: meeting ${params.meetingId} not found`)
         return
@@ -178,10 +177,10 @@ function createNotificationService() {
       meetingId: string
       newScheduledFor: string | null
       oldScheduledFor: string | null
-      /** Optional so SYSTEM_CONTEXT callers (inbound GCal sync) notify everyone — there is no actor to exclude. */
+      /** Optional: a caller with no actor (inbound calendar sync) notifies everyone. */
       excludeUserId?: string
     }) => {
-      const meeting = dalVerifySuccess(await getByIdWithJoins(SYSTEM_CONTEXT, { id: params.meetingId }))
+      const meeting = dalVerifySuccess(await getByIdWithJoins(systemContext('derived:meeting-notification'), { id: params.meetingId }))
       if (!meeting) {
         console.warn(`[notificationService] notifyMeetingScheduledTimeChanged: meeting ${params.meetingId} not found`)
         return

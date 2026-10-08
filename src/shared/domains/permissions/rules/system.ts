@@ -11,6 +11,8 @@ export type SystemReason
     | 'job:campaign-enrollment'
     | 'derived:new-lead-notification'
     | 'derived:customer-delete-cascade'
+    | 'derived:meeting-reschedule'
+    | 'derived:meeting-notification'
 
 export function systemRules(reason: SystemReason) {
   return defineRules((can) => {

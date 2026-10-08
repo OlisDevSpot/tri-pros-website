@@ -50,7 +50,7 @@ export const customerPipelinesRouter = createTRPCRouter({
       if (ctx.actor.ability.cannot('manage', 'CustomerPipeline')) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to move customers between pipelines' })
       }
-      await moveCustomerToPipeline(input.customerId, input.pipeline)
+      await moveCustomerToPipeline(ctx, input.customerId, input.pipeline)
     }),
 
   getCustomerProfile: agentProcedure
