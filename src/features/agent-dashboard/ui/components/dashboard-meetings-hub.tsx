@@ -1,7 +1,6 @@
 'use client'
 
 import { CalendarCheckIcon } from 'lucide-react'
-import Link from 'next/link'
 import { useState } from 'react'
 
 import { DASHBOARD_MEETINGS_EXTRA, DASHBOARD_MEETINGS_QUERY } from '@/features/agent-dashboard/constants/dashboard-queries'
@@ -13,6 +12,7 @@ import { useTRPC } from '@/trpc/helpers'
 
 import { DashboardMeetingsCalendar } from './dashboard-meetings-calendar'
 import { DashboardModule } from './dashboard-module'
+import { DashboardSeeAllLink } from './dashboard-see-all-link'
 
 /**
  * Meetings module — the dashboard's focal moment. Owns the calendar's read (month in the URL as `dm_d`, so Back
@@ -51,16 +51,11 @@ export function DashboardMeetingsHub() {
                 setAnchor(undefined)
               }
             }}
-            className="-my-1 size-8 text-muted-foreground hover:text-primary"
+            className="-my-1 size-8 text-muted-foreground hover:text-foreground"
           >
             <CalendarCheckIcon className="size-4" />
           </Button>
-          <Link
-            href={ROOTS.dashboard.meetings.root()}
-            className="-my-2 -mr-2 inline-flex min-h-11 shrink-0 items-center rounded-md px-2 text-xs font-medium text-muted-foreground transition-colors duration-200 hover:bg-accent/50 hover:text-primary"
-          >
-            See all →
-          </Link>
+          <DashboardSeeAllLink href={ROOTS.dashboard.meetings.root()} />
         </div>
       )}
     >

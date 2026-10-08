@@ -80,7 +80,7 @@ export function ActionCenterView() {
               <h3 className="text-sm font-medium text-muted-foreground">
                 {config.label}
               </h3>
-              <span className="text-xs text-muted-foreground/70">
+              <span className="text-xs text-muted-foreground">
                 (
                 {items.length}
                 )

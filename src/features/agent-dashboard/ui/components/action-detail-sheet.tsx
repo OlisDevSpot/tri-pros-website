@@ -184,7 +184,7 @@ export function ActionDetailSheet({ item, onClose }: Props) {
                     key={step.day}
                     className={`text-sm px-2 py-1.5 rounded-md ${
                       item.cadenceDay === step.day
-                        ? 'bg-primary/10 text-primary font-medium'
+                        ? 'bg-row-selected text-foreground font-medium'
                         : 'text-muted-foreground'
                     }`}
                   >

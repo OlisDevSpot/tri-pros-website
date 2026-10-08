@@ -3,5 +3,5 @@ export const tierColorMap: Record<string, string> = {
   orange: 'bg-status-attention-bg text-status-attention-fg border-status-attention-dot/40',
   yellow: 'bg-status-pending-bg text-status-pending-fg border-status-pending-dot/40',
   blue: 'bg-status-info-bg text-status-info-fg border-status-info-dot/40',
-  muted: 'bg-muted text-muted-foreground border-muted',
+  muted: 'bg-muted text-muted-foreground border-border',
 }

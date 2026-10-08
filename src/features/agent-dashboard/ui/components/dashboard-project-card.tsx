@@ -59,7 +59,7 @@ export function DashboardProjectCard({ row, className }: DashboardProjectCardPro
             {row.pipelineStage.replace(/_/g, ' ')}
           </Badge>
         )}
-        <EntityActionMenu entity={row} actions={projectActions} mode="compact" className="shrink-0 opacity-60 transition-opacity hover:opacity-100" />
+        <EntityActionMenu entity={row} actions={projectActions} mode="compact" className="shrink-0 text-muted-foreground hover:text-foreground data-[state=open]:text-foreground" />
       </div>
     </>
   )

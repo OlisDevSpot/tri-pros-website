@@ -1,10 +1,9 @@
 'use client'
 
-import Link from 'next/link'
-
 import { activeProjectsInput, onHoldProjectsInput } from '@/features/agent-dashboard/constants/dashboard-queries'
 import { DashboardModule } from '@/features/agent-dashboard/ui/components/dashboard-module'
 import { DashboardProjectSection } from '@/features/agent-dashboard/ui/components/dashboard-project-section'
+import { DashboardSeeAllLink } from '@/features/agent-dashboard/ui/components/dashboard-see-all-link'
 import { ROOTS } from '@/shared/config/roots'
 
 /**
@@ -20,14 +19,7 @@ export function DashboardProjects() {
   return (
     <DashboardModule
       title="Projects"
-      action={(
-        <Link
-          href={ROOTS.dashboard.projects.root()}
-          className="-mr-2 -my-2 inline-flex min-h-11 shrink-0 items-center rounded-md px-2 text-xs font-medium text-muted-foreground transition-colors duration-200 hover:bg-accent/50 hover:text-primary"
-        >
-          See all →
-        </Link>
-      )}
+      action={<DashboardSeeAllLink href={ROOTS.dashboard.projects.root()} />}
     >
       <div className="flex flex-col gap-4">
         <DashboardProjectSection

@@ -65,7 +65,7 @@ export function MobileDockCapsule({ tabs, onActionCenterClick, className }: Mobi
           data-hidden={activeIndex === -1 || undefined}
           className={cn(
             'pointer-events-none absolute inset-y-0 left-0 rounded-[14px] bg-sidebar-accent',
-            'shadow-[inset_0_1px_0_oklch(1_0_0/0.35),0_4px_12px_-6px_oklch(0.8_0.12_228/0.6)]',
+            'shadow-(--shadow-dock-active)',
             'transition-[translate,opacity,scale] duration-300 ease-[cubic-bezier(0.3,0.8,0.2,1)] motion-reduce:transition-none',
             'data-hidden:scale-90 data-hidden:opacity-0',
           )}

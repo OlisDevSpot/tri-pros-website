@@ -43,7 +43,7 @@ export function DashboardProposalCustomerLink({ customerId, customerName, meetin
       type="button"
       onClick={handleClick}
       className={cn(
-        'inline-flex min-w-0 items-center gap-1 rounded text-xs font-medium text-foreground/85 underline-offset-2 transition-colors duration-200 hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+        'inline-flex min-w-0 items-center gap-1 rounded text-xs font-medium text-foreground underline-offset-2 transition-colors duration-200 hover:text-link hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
         className,
       )}
     >
