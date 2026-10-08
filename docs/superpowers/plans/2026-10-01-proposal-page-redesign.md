@@ -8,6 +8,8 @@
 
 **Tech Stack:** Next.js 15 App Router, React 19, tRPC v11, TanStack Query, Tailwind v4 (container queries), shadcn/ui (Radix Slider, Switch, Sheet; vaul Drawer), motion/react, nuqs, CASL, pnpm, `tsx`.
 
+> **Tokens (2026-10-07):** brought onto the current app tokens: the elevation ladder, solid row/tone fills, `--on-media` on the navy stage, the Segmented & Tabs model, no faded text, no `theme-marketing`. Verify each class against `DESIGN.md` and `globals.css` before building.
+
 **Spec:** `docs/superpowers/specs/2026-10-01-proposal-page-design.md` (approved 2026-10-01, commit `1fc8b25a`). Studies artifact: https://claude.ai/artifact/LoR7Mjz2xZ8Wb7fR6soKGA (v6). **Out of this plan:**
 - spec §5 R1–R7 (the owner runs them; see "Data access gates" below);
 - the payment-plan persistence and scheduled-payments editor (after R7);
@@ -29,7 +31,12 @@
   - comments say why, never what, with no plan, spec or tracker citations in code;
   - the one exception is the `// LAZY:` header on the SOW parser.
 - Company facts come only from `src/shared/constants/company/` or an existing typed constant (`WHO_WE_ARE_SLIDES`, `COMPARISON_COLUMNS`). Never use `TRADE_OUTCOMES`, `testimonials`, `awards`, or anything about solar.
-- Colours: navy chapters use the existing `--presentation-ground` / `--presentation-accent` tokens (`bg-(--presentation-ground)`, `text-(--presentation-accent)`). Everything else uses theme tokens (`bg-background`, `bg-card`, `text-muted-foreground`, `border-border`, `text-status-success-fg`). **No new colour tokens.** If one seems needed, stop and ask the owner.
+- Colours (`DESIGN.md` is the rulebook):
+  - The page is on the app's elevation ladder, not `theme-marketing`: the shell is `bg-background`, chrome and chapter bands are `surface`, cards are `bg-card` (a nested `bg-card` climbs a rung by itself), in-card bands are `bg-band`, small fills `bg-muted`.
+  - The navy chapters (hero, Next steps, the comparison's Tri Pros header) sit on `bg-(--presentation-ground)`, a fixed dark stage in both schemes. Ink on it is `text-on-media` / `text-on-media-muted`; eyebrows and numerals are `text-(--presentation-accent)`. That accent is for the navy stage only; on ladder surfaces eyebrows and numerals are `text-muted-foreground`.
+  - Clickable cards and rows hover `bg-row-hover`, press `pressed:bg-row-press`, and a chosen one is `bg-row-selected` (never a primary border or ring). Status fills are solid: `toneClasses(tone).fill` or `bg-status-<tone>-bg`, never an alpha.
+  - No alpha fills or borders, no `white`/`black`, no `dark:` patches, no `opacity-*` on text (secondary text is `text-muted-foreground`), and no `text-[Npx]` (the type-ramp lint floor is `text-xs`).
+  - **No new colour tokens.** If one seems needed, stop and ask the owner.
 - Never show to anyone, on any surface: `creditScore`, `age`/`ageGroup`, `householdType`, `sellPlan`, `numQuotesReceived`, cost lines, margin.
 - Copy, verbatim from the spec:
   - Chapter titles and short labels: Overview · Trusted contractor/Contractor · Past results/Results · Scope of work/Scope · Funding · Next steps/Next steps.
@@ -63,12 +70,12 @@
 4. **The cockpit reads `customerPipelinesRouter.getCustomerProfile` once.** That one read feeds the Customer card (customer, notes) and the Meeting card (`profile.meetings.find(m => m.id === proposal.meetingId)`), so `meetings.getByIdWithJoins` is not needed.
 5. **The comparison is a proposal-local responsive table** reading `WHO_WE_ARE_SLIDES` rows. The meeting's `ComparisonTable` is sized for presentation slides (`cqw` units, white-on-navy only).
 6. **The hero photo** is the first image in `proposal.media`, else `/hero-photos/modern-house-5.jpg` (already shipped, used by Who We Are). Trade cover images are not on the read.
-7. **The shell joins the marketing world:** `ProposalFlowShell` drops the radial red/blue gradient and gets `theme-marketing bg-background`. Agent mode is shown by the cockpit button, not a red wash.
+7. **The shell stays on the app ladder:** `ProposalFlowShell` is already `bg-background` with no radial red/blue gradient (2026-10-07), and does not take `theme-marketing`, which would switch the ladder off for the whole page. Agent mode has no page tint: it shows as the "Agent view" badge in the top bar, the cockpit button, and the segmented "Viewing as" switch in the menu.
 8. **`internalFinancials` is wired through an `onInternalFinancials` override.** The action is omitted when no override is passed, so the proposals table and kanban are unchanged.
 
 ## Review Focus
 
-1. **A homeowner never sees an agent control.** Without `?view=agent`, and also for a logged-in agent without the param, the DOM has no cockpit button, no "View internal financials", no copy-SOW, no scheduled-payments editor and no send composer. Pinned by Task 15 Step 3 (DOM query on both viewers).
+1. **A homeowner never sees an agent control.** Without `?view=agent`, and also for a logged-in agent without the param, the DOM has no cockpit button, no "Agent view" badge, no "View internal financials", no copy-SOW, no scheduled-payments editor and no send composer. Pinned by Task 15 Step 3 (DOM query on both viewers).
 2. **The slider never lets financing drop below $3,500.** The maximum is `finalTcp − 3500` rounded down to $500. A stored `cashInDeal` above that is clamped and re-saved. Under $4,000 the financing modes are disabled. Pinned by `getCashDownBounds` tests (Task 6 Step 1) and Task 15 Step 5.
 3. **Dragging the slider sends one write, not dozens.** A drag of ten steps produces one `setCashInDeal` request 600ms after release, and a pending value is flushed on `pagehide`. Pinned by Task 15 Step 5 (request count).
 4. **Total-mode proposals show no part prices.** Parts list titles and their incentives only. The first priced line is "Contract price". The final price equals `buildPricingBreakdown().finalTcp`. Pinned by `buildPriceParts` tests (Task 5 Step 1) and Task 15 Step 4.
@@ -214,7 +221,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 
 ---
 
-## Task 2: Top bar, chapter nav and the marketing shell
+## Task 2: Top bar, chapter nav and the shell
 
 **Files:**
 - Create: `src/features/proposal-flow/ui/components/proposal/top-bar.tsx`
@@ -229,22 +236,15 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 - Consumes: `useProposalDocument()` (Task 1), `proposalSteps[].shortLabel` (Task 1), `useActiveSection(ids, { rootEl })` (`@/shared/hooks/use-active-section`), `useScrollRoot()`.
 - Produces: `ProposalTopBar({ onOpenCockpit }: { onOpenCockpit?: () => void })` and `ChapterNav({ variant }: { variant: 'rail' | 'tabs' })`. Each chapter wrapper is `<section id={accessor} aria-labelledby={`${accessor}-title`}>`. Each chapter's `<h2>` carries `id={`${accessor}-title`}`.
 
-- [ ] **Step 1: The shell joins the marketing world**
+- [ ] **Step 1: The shell stays on the ladder**
 
-Replace the body of `ProposalFlowShell` with:
+`ProposalFlowShell` is already `bg-background` with no gradient. Keep its `style` sidebar variables and `data-view-mode`; add only `text-foreground`:
 
 ```tsx
-export function ProposalFlowShell({ children }: Props) {
-  const viewMode = useViewMode()
-  return (
-    <div className="theme-marketing bg-background text-foreground h-full flex flex-col" data-no-gutter-stable data-view-mode={viewMode}>
-      {children}
-    </div>
-  )
-}
+<div style={/* unchanged */} className="h-full flex flex-col bg-background text-foreground" data-no-gutter-stable data-view-mode={viewMode}>
 ```
 
-Update its doc comment to say why: the proposal is a marketing-world surface, and agent mode is signalled by the cockpit button.
+Do not add `theme-marketing` or any agent-mode tint.
 
 - [ ] **Step 2: The layout drops the navbar and the container**
 
@@ -255,7 +255,8 @@ In `layout.tsx`, remove the `ProposalPageNavbar` import and its wrapper `div`. R
 In `navbar-menu.tsx`:
 - replace `useCurrentProposal()` with `useProposalDocument()`, so the PDF link uses `proposal.id` and `token`;
 - drop the `variant` prop, since it renders one style;
-- make the trigger `variant="ghost"` with `text-white hover:bg-white/10`.
+- keep the trigger `variant="ghost"` (its own `hover:bg-hover`) with `size-9 rounded-md data-[state=open]:bg-press`, since the bar is a ladder surface;
+- keep the "Viewing as" segmented `ToggleGroup` (`variant="segmented"`, Homeowner / Agent) as it is.
 
 - [ ] **Step 4: Write the top bar**
 
@@ -267,6 +268,7 @@ import { ArrowLeftIcon, PanelRightIcon } from 'lucide-react'
 import Link from 'next/link'
 
 import { useProposalDocument } from '@/features/proposal-flow/contexts/proposal-document-context'
+import { AgentViewBadge } from '@/features/proposal-flow/ui/components/navbar/agent-view-badge'
 import { ProposalNavbarMenu } from '@/features/proposal-flow/ui/components/navbar/navbar-menu'
 import { Logo } from '@/shared/components/logo'
 import { Button } from '@/shared/components/ui/button'
@@ -284,15 +286,16 @@ export function ProposalTopBar({ onOpenCockpit }: Props) {
   const title = [proposal.label, proposal.customer?.name].filter(Boolean).join(' · ')
 
   return (
-    <header className="bg-(--presentation-ground) text-white h-14 shrink-0 flex items-center gap-3 px-4">
+    <header className="surface border-b border-border h-14 shrink-0 flex items-center gap-3 px-4">
       <Link href={backHref} className="flex items-center gap-2 h-11 shrink-0" aria-label="Back">
         <ArrowLeftIcon className="size-5" />
         <Logo variant="icon" className="size-8" />
       </Link>
       <p className="min-w-0 truncate text-sm font-semibold">{title}</p>
       <div className="ml-auto flex items-center gap-2">
+        <AgentViewBadge />
         {isAgent && onOpenCockpit && (
-          <Button size="sm" onClick={onOpenCockpit} className="bg-(--presentation-accent) text-(--presentation-ground) hover:bg-(--presentation-accent)/90">
+          <Button size="sm" variant="outline" onClick={onOpenCockpit}>
             <PanelRightIcon className="size-4" />
             Cockpit
           </Button>
@@ -303,6 +306,8 @@ export function ProposalTopBar({ onOpenCockpit }: Props) {
   )
 }
 ```
+
+The bar is the same `surface border-b` strip as today's navbar, so the cockpit button is a standalone `outline` action and the menu trigger a `ghost`. `AgentViewBadge` already exists (secondary badge, shield icon, label sr-only below `sm`); it renders only in agent view and is `print:hidden`.
 
 - [ ] **Step 5: Write the chapter nav**
 
@@ -345,8 +350,8 @@ export function ChapterNav({ variant }: Props) {
                 onClick={() => go(step.accessor)}
                 aria-current={active === step.accessor ? 'true' : undefined}
                 className={cn(
-                  'flex w-full items-center gap-3 rounded-md border-l-2 border-transparent px-3 py-2 text-left text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground',
-                  active === step.accessor && 'border-(--presentation-accent) bg-card text-foreground',
+                  'flex w-full items-center gap-3 border-l-2 border-transparent px-3 py-2 text-left text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground pressed:text-foreground',
+                  active === step.accessor && 'border-foreground text-foreground',
                 )}
               >
                 <span className="w-4 text-xs tabular-nums">{i + 1}</span>
@@ -360,7 +365,7 @@ export function ChapterNav({ variant }: Props) {
   }
 
   return (
-    <nav aria-label="Proposal chapters" className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur">
+    <nav aria-label="Proposal chapters" className="surface sticky top-0 z-10 border-b border-border">
       <ol className="flex overflow-x-auto [scrollbar-width:none]">
         {proposalSteps.map(step => (
           <li key={step.accessor} className="shrink-0">
@@ -369,8 +374,8 @@ export function ChapterNav({ variant }: Props) {
               onClick={() => go(step.accessor)}
               aria-current={active === step.accessor ? 'true' : undefined}
               className={cn(
-                'min-h-11 whitespace-nowrap border-b-2 border-transparent px-3 text-sm font-semibold text-muted-foreground',
-                active === step.accessor && 'border-(--presentation-accent) text-foreground',
+                'min-h-11 whitespace-nowrap border-b-2 border-transparent px-3 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground pressed:text-foreground',
+                active === step.accessor && 'border-foreground text-foreground',
               )}
             >
               {step.shortLabel}
@@ -382,6 +387,8 @@ export function ChapterNav({ variant }: Props) {
   )
 }
 ```
+
+Both variants follow `DESIGN.md`'s underline-tabs model (foreground text on a foreground line when active, muted text otherwise, no fills), matching today's navbar links. They are scroll-spy buttons, not `Tabs`, because there are no tab panels.
 
 - [ ] **Step 6: Lay out the page**
 
@@ -416,7 +423,7 @@ In `index.tsx`:
 git rm src/features/proposal-flow/ui/components/navbar/navbar.tsx src/features/proposal-flow/ui/components/navbar/navbar-frame.tsx
 ```
 
-Then grep for `ProposalPageNavbar|ProposalNavbarFrame` under `src/`. Expected: no matches.
+Then grep for `ProposalPageNavbar|ProposalNavbarFrame` under `src/`. Expected: no matches. `navbar/agent-view-badge.tsx` and `navbar/navbar-menu.tsx` stay.
 
 - [ ] **Step 8: Verify**
 
@@ -720,7 +727,7 @@ export function ScopeSpecCard({ section, index, showPrice }: Props) {
   return (
     <article className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
       <header className="flex items-start gap-4 border-b border-border px-5 py-4">
-        <span className="pt-0.5 text-lg font-semibold tabular-nums text-(--presentation-accent)">{String(index + 1).padStart(2, '0')}</span>
+        <span className="pt-0.5 text-lg font-semibold tabular-nums text-muted-foreground">{String(index + 1).padStart(2, '0')}</span>
         <div className="min-w-0 flex-1">
           <h3 className="text-base font-bold text-balance">{section.title || 'Untitled part'}</h3>
           {section.trade.label && <p className="text-xs font-semibold text-muted-foreground">{section.trade.label}</p>}
@@ -769,7 +776,7 @@ export function ScopeSpecCard({ section, index, showPrice }: Props) {
                             type="button"
                             aria-expanded={open}
                             onClick={() => setOpenPhase(open ? null : i)}
-                            className="flex min-h-11 w-full items-center gap-3 px-3 text-left text-sm font-semibold"
+                            className="flex min-h-11 w-full items-center gap-3 px-3 text-left text-sm font-semibold transition-colors hover:bg-row-hover pressed:bg-row-press"
                           >
                             <span className="w-5 tabular-nums text-muted-foreground">{i + 1}</span>
                             <span className="flex-1">{phase.title}</span>
@@ -820,10 +827,10 @@ export function ScopeOfWork() {
   const showPrice = proposal.priceDisplayMode === 'breakdown'
 
   return (
-    <div className="bg-muted/40 px-4 py-12 sm:px-8">
+    <div className="surface px-4 py-12 sm:px-8">
       <div className="mx-auto grid max-w-5xl gap-6">
         <header className="grid gap-2">
-          <p className="text-xs font-bold uppercase tracking-widest text-(--presentation-accent)">Scope of work</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Scope of work</p>
           <h2 id="scope-of-work-title" className="text-3xl font-semibold text-balance">Exactly what we’ll do</h2>
           <p className="text-muted-foreground">{`${sow.length} ${sow.length === 1 ? 'part' : 'parts'}, written step by step before any work starts.`}</p>
         </header>
@@ -836,6 +843,8 @@ export function ScopeOfWork() {
   )
 }
 ```
+
+The chapter band is a `surface`, so each `ScopeSpecCard` (`bg-card`) climbs a rung above it by itself.
 
 The free-text `agreementNotes` block is gone: per-section notes now live in each card. The proposal-level `agreementNotes` is empty in every sampled proposal (spec §3).
 
@@ -1038,20 +1047,20 @@ export function PricingBreakdown({ funding, sow, priceDisplayMode }: Props) {
       <Row className="border-t border-border px-4 py-3.5 text-muted-foreground" label={showPrices ? 'Subtotal of all parts' : 'Subtotal'} value={formatAsDollars(breakdown.netSubtotal)} />
 
       {breakdown.globalLines.length > 0 && (
-        <div className="grid gap-2.5 border-t border-border bg-status-success-bg/40 px-4 py-3.5 text-status-success-fg">
-          <p className="text-[11px] font-bold uppercase tracking-wider">Applies to the whole project</p>
+        <div className="grid gap-2.5 border-t border-border bg-status-success-bg px-4 py-3.5 text-status-success-fg">
+          <p className="text-xs font-bold uppercase tracking-wider">Applies to the whole project</p>
           {breakdown.globalLines.map((line) => {
             const expiresAt = line.expiresAt ? new Date(line.expiresAt) : null
             const expired = expiresAt ? now >= expiresAt : false
             return (
               <div key={line.key} className="grid gap-1">
                 <Row
-                  className={cn(expired && 'line-through opacity-60')}
+                  className={cn(expired && 'text-muted-foreground line-through')}
                   label={(
                     <span className="inline-flex items-center gap-1.5">
                       <GiftIcon className="size-3.5 shrink-0" />
                       {line.label}
-                      {line.kind === 'exclusive-offer' && line.notes && <span className="opacity-80">{` · ${line.notes}`}</span>}
+                      {line.kind === 'exclusive-offer' && line.notes && <span className="text-muted-foreground">{` · ${line.notes}`}</span>}
                     </span>
                   )}
                   value={line.amount != null ? `−${formatAsDollars(line.amount)}` : <span className="inline-flex items-center gap-1"><CheckIcon className="size-3.5" />Included</span>}
@@ -1063,7 +1072,7 @@ export function PricingBreakdown({ funding, sow, priceDisplayMode }: Props) {
         </div>
       )}
 
-      <div className="grid gap-1.5 border-t border-border bg-muted/40 px-4 py-3.5">
+      <div className="grid gap-1.5 border-t border-border bg-band px-4 py-3.5">
         <Row label={<span className="font-bold">Final contract price</span>} value={<span className="text-2xl font-semibold">{formatAsDollars(breakdown.finalTcp)}</span>} />
         <Row className="text-muted-foreground" label="Deposit at signing" value={formatAsDollars(breakdown.deposit)} />
       </div>
@@ -1072,7 +1081,7 @@ export function PricingBreakdown({ funding, sow, priceDisplayMode }: Props) {
 }
 ```
 
-If `bg-status-success-bg` is not a defined utility, check with `grep -n "status-success" "src/app/(frontend)/globals.css"`. If it's missing, use the success-surface token the file defines instead. Do not add a token.
+`bg-status-success-bg` is the solid success tone fill (`TONE_CLASSES.success` in `src/shared/constants/status-tones.ts`). The total footer is `bg-band`, as today's breakdown has it.
 
 - [ ] **Step 6: Verify**
 
@@ -1339,8 +1348,8 @@ export function FinanceOptionGroup({ options, selectedId, amountFinanced, onSele
             onClick={() => onSelect(option)}
             onKeyDown={e => onKeyDown(e, i)}
             className={cn(
-              'flex min-h-14 items-center justify-between gap-3 rounded-md border border-border bg-card px-4 text-left',
-              checked && 'border-primary ring-1 ring-primary',
+              'flex min-h-14 items-center justify-between gap-3 rounded-md border border-border bg-card px-4 text-left transition-colors hover:bg-row-hover pressed:bg-row-press',
+              checked && 'bg-row-selected hover:bg-row-selected',
             )}
           >
             <span className="grid">
@@ -1385,8 +1394,8 @@ export function PaymentPlanGroup({ value, finalTcp, onChange }: Props) {
             disabled={!available}
             onClick={() => onChange(mode.value)}
             className={cn(
-              'grid min-h-11 rounded-md border border-border bg-card px-3 py-2 text-left text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50',
-              value === mode.value && 'border-primary ring-1 ring-primary',
+              'grid min-h-11 rounded-md border border-border bg-card px-3 py-2 text-left text-sm font-bold transition-colors hover:bg-row-hover pressed:bg-row-press disabled:cursor-not-allowed disabled:text-muted-foreground disabled:hover:bg-card',
+              value === mode.value && 'bg-row-selected hover:bg-row-selected',
             )}
           >
             {mode.label}
@@ -1423,7 +1432,9 @@ import { PricingBreakdown } from '@/features/proposal-flow/ui/components/pricing
 import { CashDownSlider } from '@/features/proposal-flow/ui/components/proposal/cash-down-slider'
 import { FinanceOptionGroup } from '@/features/proposal-flow/ui/components/proposal/finance-option-group'
 import { PaymentPlanGroup } from '@/features/proposal-flow/ui/components/proposal/payment-plan-group'
+import { toneClasses } from '@/shared/constants/status-tones'
 import { formatAsDollars } from '@/shared/lib/formatters'
+import { cn } from '@/shared/lib/utils'
 import { computeFinalTcp } from '@/shared/modules/proposals/core/lib/financials'
 import { toFundingInputs } from '@/shared/modules/proposals/core/lib/funding-columns'
 
@@ -1463,7 +1474,7 @@ export function Funding() {
     <div className="px-4 py-12 sm:px-8">
       <div className="mx-auto grid max-w-5xl gap-6">
         <header className="grid gap-2">
-          <p className="text-xs font-bold uppercase tracking-widest text-(--presentation-accent)">Funding</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Funding</p>
           <h2 id="funding-title" className="text-3xl font-semibold text-balance">Your investment</h2>
           <p className="text-muted-foreground">Every part priced, every saving shown. Choose how you’d like to pay.</p>
         </header>
@@ -1471,14 +1482,14 @@ export function Funding() {
           <div className="grid content-start gap-3">
             <PricingBreakdown funding={funding} sow={sow} priceDisplayMode={proposal.priceDisplayMode} />
             {validDays && (
-              <p className="flex items-center gap-2 rounded-md bg-status-warning-bg/50 px-3 py-2.5 text-sm font-semibold text-status-warning-fg">
+              <p className={cn('flex items-center gap-2 rounded-md border px-3 py-2.5 text-sm font-semibold', toneClasses('pending').fill)}>
                 <ClockIcon className="size-4" />
                 {`Pricing held for ${validDays}`}
               </p>
             )}
           </div>
           <div className="grid content-start gap-4 rounded-lg border border-border bg-card p-5">
-            <p className="text-xs font-bold uppercase tracking-widest text-(--presentation-accent)">How you’d like to pay</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">How you’d like to pay</p>
             <PaymentPlanGroup value={mode} finalTcp={finalTcp} onChange={setMode} />
             {mode === 'all-cash' && (
               <p className="text-sm">{`${formatAsDollars(finalTcp)} in total: ${formatAsDollars(funding.depositAmount)} at signing, the balance on completion.`}</p>
@@ -1507,7 +1518,7 @@ export function Funding() {
 Check the details before relying on them:
 - **`validThroughTimeframe`:** read its type in `src/shared/modules/proposals/core/schemas/index.ts`. If it is a phrase like "60 days", the hold line reads `Pricing held for 60 days`. If a date can be derived (`sentAt` plus days), render the spec's "Pricing held through {date} ({n} days)" instead. Pick by the stored shape; don't invent a parse.
 - **Mutation input types:** `setCashInDeal` and `crud.update` must accept `token` as the types require. Match `useSetCashInDeal`'s input (`{ id, token?, cashInDeal }`). `crud.update` takes `token` as a string, so pass `token ?? ''` as the old code did.
-- **Warning tokens:** if `status-warning-*` utilities don't exist, use the warning tokens `globals.css` defines.
+- **Hold line tone:** there are no `status-warning-*` utilities. The hold line is the solid `pending` tone, `toneClasses('pending').fill` (it carries its own tone hairline, hence `border`).
 
 - [ ] **Step 8: Verify**
 
@@ -1562,15 +1573,15 @@ export function OverviewHero() {
   const parts = data.sow.length
 
   return (
-    <div className="bg-(--presentation-ground) text-white">
+    <div className="bg-(--presentation-ground) text-on-media">
       <div className="mx-auto grid max-w-5xl gap-8 px-4 py-12 sm:px-8 @min-[700px]/proposal:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] @min-[700px]/proposal:items-center">
         <div className="grid gap-4">
           <p className="text-xs font-bold uppercase tracking-widest text-(--presentation-accent)">{`Your proposal · ${data.label || companyInfo.name}`}</p>
           <h2 id="project-overview-title" className="text-4xl font-semibold leading-tight text-balance">{`${firstName}, here’s the plan for ${project}.`}</h2>
-          <p className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-white/80">
-            <span><b className="text-white">{parts}</b>{` ${parts === 1 ? 'part' : 'parts'}`}</span>
-            {data.timeAllocated && <span><b className="text-white">{data.timeAllocated}</b> on site</span>}
-            <span>Prepared by <b className="text-white">{companyInfo.name}</b></span>
+          <p className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-on-media-muted">
+            <span><b className="text-on-media">{parts}</b>{` ${parts === 1 ? 'part' : 'parts'}`}</span>
+            {data.timeAllocated && <span><b className="text-on-media">{data.timeAllocated}</b> on site</span>}
+            <span>Prepared by <b className="text-on-media">{companyInfo.name}</b></span>
           </p>
         </div>
         <div className="relative aspect-4/3 overflow-hidden rounded-lg">
@@ -1583,6 +1594,8 @@ export function OverviewHero() {
   )
 }
 ```
+
+`--presentation-ground` is a fixed navy in both schemes, so its ink is the scheme-independent `text-on-media` / `text-on-media-muted`, never `text-white` or an alpha of it.
 
 The headline reads "{first name}, here's the plan for {project}." With no label, `project` is "your home"; with a label such as "Front & side yard refresh", it is that label lowercased. Confirm the `data.label` field name in `projectSectionSchema` before relying on it.
 
@@ -1628,8 +1641,8 @@ export function OverviewContextCard() {
         <ol className="grid gap-2 @min-[700px]/proposal:grid-cols-2">
           {sow.map((section, i) => (
             <li key={`${i}-${section.title}`}>
-              <a href="#scope-of-work" className="grid min-h-12 grid-cols-[2rem_1fr] items-center rounded-md border border-border bg-card px-3 py-2 text-sm font-semibold">
-                <span className="tabular-nums text-(--presentation-accent)">{String(i + 1).padStart(2, '0')}</span>
+              <a href="#scope-of-work" className="grid min-h-12 grid-cols-[2rem_1fr] items-center rounded-md border border-border bg-card px-3 py-2 text-sm font-semibold transition-colors hover:bg-row-hover pressed:bg-row-press">
+                <span className="tabular-nums text-muted-foreground">{String(i + 1).padStart(2, '0')}</span>
                 <span>
                   {section.title || `Part ${i + 1}`}
                   {section.trade.label && <span className="block text-xs font-normal text-muted-foreground">{section.trade.label}</span>}
@@ -1726,7 +1739,7 @@ export function ComparisonList({ rows }: { rows: ComparisonRow[] }) {
         <thead>
           <tr className="border-b border-border text-left">
             <th scope="col"><span className="sr-only">Topic</span></th>
-            <th scope="col" className="bg-(--presentation-ground) px-4 py-3 font-bold text-white">{COMPARISON_COLUMNS.triPros}</th>
+            <th scope="col" className="bg-(--presentation-ground) px-4 py-3 font-bold text-on-media">{COMPARISON_COLUMNS.triPros}</th>
             <th scope="col" className="px-4 py-3 font-semibold text-muted-foreground">{COMPARISON_COLUMNS.others}</th>
           </tr>
         </thead>
@@ -1734,7 +1747,7 @@ export function ComparisonList({ rows }: { rows: ComparisonRow[] }) {
           {rows.map(row => (
             <tr key={row.label} className="border-b border-border align-top">
               <th scope="row" className="px-4 py-3 text-left font-bold">{row.label}</th>
-              <td className="bg-(--presentation-ground)/5 px-4 py-3"><CheckIcon className="mr-2 inline size-4 text-(--presentation-accent)" />{row.triPros}</td>
+              <td className="bg-band px-4 py-3"><CheckIcon className="mr-2 inline size-4 text-status-success-fg" />{row.triPros}</td>
               <td className="px-4 py-3 text-muted-foreground"><XIcon className="mr-2 inline size-4" />{row.others}</td>
             </tr>
           ))}
@@ -1744,7 +1757,7 @@ export function ComparisonList({ rows }: { rows: ComparisonRow[] }) {
         {rows.map(row => (
           <li key={row.label} className="overflow-hidden rounded-lg border border-border bg-card">
             <h3 className="px-4 pt-3 text-sm font-bold">{row.label}</h3>
-            <p className="px-4 pt-2 text-sm"><CheckIcon className="mr-2 inline size-4 text-(--presentation-accent)" /><b>{COMPARISON_COLUMNS.triPros}: </b>{row.triPros}</p>
+            <p className="px-4 pt-2 text-sm"><CheckIcon className="mr-2 inline size-4 text-status-success-fg" /><b>{COMPARISON_COLUMNS.triPros}: </b>{row.triPros}</p>
             <p className="px-4 pb-3 pt-1 text-sm text-muted-foreground"><XIcon className="mr-2 inline size-4" />{`${COMPARISON_COLUMNS.others}: ${row.others}`}</p>
           </li>
         ))}
@@ -1812,7 +1825,7 @@ export function RelatedProjects() {
     <div className="px-4 py-12 sm:px-8">
       <div className="mx-auto grid max-w-5xl gap-6">
         <header className="grid gap-2">
-          <p className="text-xs font-bold uppercase tracking-widest text-(--presentation-accent)">Past results</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Past results</p>
           <h2 id="related-projects-title" className="text-3xl font-semibold text-balance">Work we’ve finished for your neighbors</h2>
         </header>
         <ul className="grid gap-4 @min-[700px]/proposal:grid-cols-3">
@@ -1873,12 +1886,12 @@ import { ContractStatusPanel } from '@/shared/components/contract-status-panel/u
 export function NextSteps() {
   const { proposal, token } = useProposalDocument()
   return (
-    <div className="bg-(--presentation-ground) px-4 py-12 text-white sm:px-8">
+    <div className="bg-(--presentation-ground) px-4 py-12 text-on-media sm:px-8">
       <div className="mx-auto grid max-w-5xl gap-6">
         <header className="grid gap-2">
           <p className="text-xs font-bold uppercase tracking-widest text-(--presentation-accent)">Next steps</p>
           <h2 id="agreement-title" className="text-3xl font-semibold text-balance">Next steps</h2>
-          <p className="text-white/80">Here’s how we get your project started.</p>
+          <p className="text-on-media-muted">Here’s how we get your project started.</p>
         </header>
         <div className="rounded-lg bg-card p-5 text-card-foreground">
           <ContractStatusPanel
@@ -1967,9 +1980,9 @@ interface HeaderProps {
 function Header({ icon, eyebrow, title, subtitle, actions, className }: HeaderProps) {
   return (
     <div className={cn('flex items-start gap-3 border-b border-border px-4 py-3', className)}>
-      {icon && <div className="grid size-9 shrink-0 place-items-center rounded-md border border-border bg-muted/50">{icon}</div>}
+      {icon && <div className="grid size-9 shrink-0 place-items-center rounded-md border border-border bg-muted">{icon}</div>}
       <div className="min-w-0 flex-1">
-        {eyebrow && <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{eyebrow}</p>}
+        {eyebrow && <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{eyebrow}</p>}
         <div className="truncate font-bold">{title}</div>
         {subtitle && <div className="text-xs text-muted-foreground">{subtitle}</div>}
       </div>
@@ -1992,7 +2005,7 @@ function Section({ label, className, children }: { label: ReactNode, className?:
 }
 
 function Footer({ className, children }: { className?: string, children: ReactNode }) {
-  return <div className={cn('flex flex-wrap items-center gap-2 border-t border-border bg-muted/30 px-4 py-3', className)}>{children}</div>
+  return <div className={cn('flex flex-wrap items-center gap-2 border-t border-border bg-band px-4 py-3', className)}>{children}</div>
 }
 
 export const EntityCard = Object.assign(Root, { Header, Body, Section, Footer })
@@ -2591,7 +2604,7 @@ Nothing is committed in this task.
   | §4.6 | 3 |
   | §4.7 | 2, 4 (`motion-reduce`) |
   | §4.8 | 2, 6, 8, 13 |
-  | §4.9 | Global Constraints (existing presentation tokens; no new tokens) |
+  | §4.9 | Global Constraints (app ladder, navy stage with on-media ink; no new tokens) |
   | §6 | 4 (fallbacks), 6 (bounds, clamping, debounce, pagehide), 13 (missing email) |
   | §7 | 15 |
 
