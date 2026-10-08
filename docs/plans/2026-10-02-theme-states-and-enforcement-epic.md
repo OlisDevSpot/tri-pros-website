@@ -45,7 +45,7 @@ The marketing world (landing, funnels, `site-navbar.tsx`) keeps its own Blueprin
   - `--on-media` and `--scrim`, for text and veils over photos.
 
   Each token gets `theme:check` pairs on every rung in both schemes, plus alpha-text pairs (M2).
-- **E2. The other primitives on the state tokens:** navigation-menu, the select and multi-select triggers, and the dialog and sheet close buttons (§2a). Button, badge, toggle and calendar shipped in `17d04dac`.
+- **E2. Primitives on the state tokens: done.** Shipped in `17d04dac` (button, badge, toggle, calendar), `12514bbf` (navigation-menu, dialog/sheet close, menu items, select in a control group) and `78c5e0a8` (select and multi-select triggers hover with `--input-hover`).
 - **E3. Lint rules (after Phase 1, per §5.4),** in the `theme-tokens/*` block, with scope extended to `src/app/**`. They ban:
   - `bg|text|border-(white|black)`; use `--on-media`/`--scrim` instead;
   - arbitrary colour values `-[#..]`, `-[rgb(..)]`, `-[oklch(..)]`;
