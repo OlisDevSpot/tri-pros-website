@@ -171,7 +171,7 @@ Theme resolution now happens in two layers:
 The installed app's launch field is the native stage plus one overlay, never the page canvas: iOS paints a startup image from the matrix in `src/shared/domains/pwa/constants/startup-images.ts`, Android paints the manifest `background_color`, and `PwaLaunchCover` (root layout, from `src/shared/domains/pwa/ui/`) is open only in the `/launch` shell document and fades once the dashboard layout has committed. The app follows light/dark from its first paint.
 
 **Why**: hardcoding a dark `<html>` fights `next-themes` and breaks light-mode cold-launch; `color-scheme` + the next-themes blocking script gives correct-theme-on-first-paint without a FOUC in either direction.
-**Reference impl**: `src/app/(frontend)/layout.tsx`, `src/app/(frontend)/globals.css`, `src/shared/components/providers/theme-provider.tsx`, `src/shared/components/providers/index.tsx`
+**Reference impl**: `src/app/(frontend)/layout.tsx`, `src/app/(frontend)/globals.css`, `src/shared/components/providers/theme-provider.tsx`, `src/shared/components/providers/index.tsx`, `src/shared/domains/pwa/ui/pwa-launch-cover.tsx`, `src/shared/domains/pwa/constants/startup-images.ts`, `src/app/manifest.ts`
 **Enforced by**: convention
 
 ### h-dvh-svh-not-needed

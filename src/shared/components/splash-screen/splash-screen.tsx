@@ -12,6 +12,7 @@ import {
   SPLASH_VISIBLE_MS,
 } from '@/shared/components/splash-screen/splash-timing'
 import { BRAND_EASE } from '@/shared/constants/motion'
+import { PWA_LAUNCH_FIELD } from '@/shared/domains/pwa/constants/launch'
 import { useAutoFocus } from '@/shared/hooks/use-auto-focus'
 
 /**
@@ -128,10 +129,13 @@ export function SplashScreen({ open, onDismiss, dismiss, title, subheading, ease
         position: 'fixed',
         inset: 0,
         zIndex: 9999,
-        backgroundColor: '#040f23',
+        // One constant with the startup images and the manifest, so the native stage and this overlay never differ.
+        backgroundColor: PWA_LAUNCH_FIELD,
         opacity: open ? 1 : 0,
         transitionProperty: 'opacity',
-        transitionDuration: `${animate ? SPLASH_FADE_S : 0}s`,
+        // Unconditional: under reduced motion the overlay unmounts in the same render, so the duration never
+        // plays, and a value that depends on the preference would differ between the server and the client.
+        transitionDuration: `${SPLASH_FADE_S}s`,
         transitionTimingFunction: `cubic-bezier(${ease.join(',')})`,
       }}
       onClick={armed ? onDismiss : undefined}

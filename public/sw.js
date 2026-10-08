@@ -23,6 +23,7 @@ const LAUNCH_SEARCH = '?launch=1'
 const SHELL_PATH = '/launch'
 const SHELL_CACHE = 'tpr-launch-shell'
 const STATIC_PREFIX = '/_next/static/'
+const SHELL_FETCH_TIMEOUT_MS = 15000
 const LAUNCH_URL = new URL(LAUNCH_PATH + LAUNCH_SEARCH, self.location.origin).href
 
 self.addEventListener('install', (event) => {
@@ -38,10 +39,14 @@ self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     await self.clients.claim()
     if (!SHELL_ON) return
-    const keys = await caches.keys()
-    await Promise.all(keys
-      .filter(key => key !== SHELL_CACHE && (key.startsWith('tpr-launch-shell') || key.startsWith('app-shell-')))
-      .map(key => caches.delete(key)))
+    try {
+      const keys = await caches.keys()
+      await Promise.all(keys
+        .filter(key => key !== SHELL_CACHE && (key.startsWith('tpr-launch-shell') || key.startsWith('app-shell-')))
+        .map(key => caches.delete(key)))
+    } catch (_err) {
+      // Cache Storage unavailable (private modes): nothing to clean, and preload must still be enabled below.
+    }
     if (self.registration.navigationPreload) {
       await self.registration.navigationPreload.enable().catch(() => {})
     }
@@ -137,7 +142,7 @@ async function writeShell() {
   const assets = staticUrls(fresh.html)
   const fetched = await Promise.all(assets.map(async (asset) => {
     if (await cache.match(asset)) return null
-    const response = await fetch(asset, { credentials: 'omit' })
+    const response = await fetch(asset, { credentials: 'omit', signal: shellFetchSignal() })
     if (!response.ok) throw new Error(`asset ${response.status}: ${asset}`)
     return [asset, response]
   }))
@@ -155,8 +160,16 @@ async function writeShell() {
     .map(key => cache.delete(key)))
 }
 
+// A hung shell or chunk request would hold the install, and a fresh install must activate before push can
+// subscribe, so every precache fetch gives up after a bound.
+function shellFetchSignal() {
+  return typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function'
+    ? AbortSignal.timeout(SHELL_FETCH_TIMEOUT_MS)
+    : undefined
+}
+
 async function fetchShell() {
-  const response = await fetch(SHELL_PATH, { cache: 'reload', credentials: 'omit' })
+  const response = await fetch(SHELL_PATH, { cache: 'reload', credentials: 'omit', signal: shellFetchSignal() })
   const contentType = response.headers.get('content-type') || ''
   if (!response.ok || response.status !== 200 || response.redirected || !contentType.includes('text/html')) {
     throw new Error(`shell ${response.status} ${contentType}`)

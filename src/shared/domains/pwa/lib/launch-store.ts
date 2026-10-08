@@ -60,7 +60,6 @@ export function createPwaLaunchStore(timers: Timers) {
       }
       floor = timers.setTimeout(finish, Math.max(0, beganAt + PWA_LAUNCH_COVER_MIN_MS - timers.now()))
     },
-    wasShellLaunch: () => phase !== 'idle',
   }
 }
 

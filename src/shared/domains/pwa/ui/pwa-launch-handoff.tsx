@@ -16,7 +16,8 @@ declare global {
 /**
  * The shell's only job: mark the launch so the cover stays up, then move to the dashboard in the same
  * document. If this component is still mounted when the stall bound passes, the soft navigation has
- * failed and a hard load of the unmarked dashboard takes over — the one hard load on the launch path.
+ * failed and a hard load of the unmarked dashboard takes over — one of the launch path's two hard-load
+ * watchdogs; the shell's inline script is the other, for a bundle that never hydrates.
  */
 export function PwaLaunchHandoff() {
   const router = useRouter()

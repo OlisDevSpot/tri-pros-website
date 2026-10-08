@@ -15,7 +15,7 @@ export const PWA_START_URL = `${ROOTS.dashboard.root}?${PWA_LAUNCH_PARAM}=${PWA_
 export const PWA_LAUNCH_COVER_MIN_MS = 300
 /**
  * The fail-open ceiling for a server that never answers: past it the cover fades over the shell's skeletons.
- * On a launch the server answers it never binds; the cover lifts when the dashboard layout commits.
+ * On a launch the server answers, it never binds: the cover lifts when the dashboard layout commits.
  */
 export const PWA_LAUNCH_COVER_MAX_MS = 4000
 /** Past this with the shell still on screen the soft navigation has failed; a hard load takes over. */
