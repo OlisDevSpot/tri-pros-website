@@ -13,7 +13,7 @@ From outside a provider directory you may import exactly two things:
 - **`client.ts`** — the provider's actions (the `<provider>Client`).
 - **`types.ts`** — provider-native types, **type-only** (`import type`).
 
-Never `lib/`, `dal/`, `schemas/`, `constants/`, or `webhooks/`.
+Never `lib/`, `dal/`, `schemas/`, or `constants/`.
 
 ```ts
 // ✅

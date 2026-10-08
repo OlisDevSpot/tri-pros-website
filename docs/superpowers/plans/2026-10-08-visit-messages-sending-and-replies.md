@@ -68,8 +68,7 @@ Inputs the spec implies and a person would trip over. Each has a test in the tas
 | `src/shared/services/voip/lib/map-twilio-message-status.ts` | Twilio status to the table's status |
 | `src/shared/constants/enums/voip.ts` | the status rank (never backwards) |
 | `src/shared/entities/voip-messages/dal/server/{queries,mutations}.ts` | `hasOutboundOnThread`; the guarded status patch |
-| `src/shared/services/providers/twilio/schemas/{messaging,voice}.ts`, `client.ts`, `DOCS.md` | the webhook payload Zod moves out of `webhooks/`, a directory a provider does not have; schema additions; the 401 doc fix |
-| `docs/codebase-conventions/service-architecture.md` | the provider shape loses `webhooks/` |
+| `src/shared/services/providers/twilio/schemas/messaging.ts`, `client.ts` | schema additions; the 401 doc fix |
 | `src/app/api/webhooks/twilio/route.ts` | status callbacks |
 | `src/app/api/voip/twiml/messaging-inbound/route.ts` | inbound messages |
 | `src/app/api/company/vcard/route.ts` | the company contact card |
@@ -883,9 +882,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ### Task 5: Delivery status comes back
 
 **Files:**
-- Move: `src/shared/services/providers/twilio/webhooks/{messaging,voice}.ts` to `src/shared/services/providers/twilio/schemas/{messaging,voice}.ts`, then modify `schemas/messaging.ts`
-- Modify: `src/shared/services/providers/twilio/DOCS.md:30,54-59,63,88,92`
-- Modify: `docs/codebase-conventions/service-architecture.md:126,135,155-159,169-172,175,182`
+- Modify: `src/shared/services/providers/twilio/schemas/messaging.ts`
 - Modify: `src/shared/services/providers/twilio/client.ts:196`
 - Modify: `src/shared/constants/enums/voip.ts`
 - Create: `src/shared/services/voip/lib/map-twilio-message-status.ts`
@@ -926,55 +923,7 @@ console.log('13. Twilio status mapping ✓')
 Run: `pnpm tsx scripts/verify-visit-messages.ts`
 Expected: fails at the import.
 
-- [ ] **Step 2: Move the webhook payload schemas into `schemas/`**
-
-A provider has no `webhooks/` directory; its Zod lives in `schemas/`. Nothing imports these two files yet, so the move is a rename, and `git mv` stages it:
-
-```bash
-git mv src/shared/services/providers/twilio/webhooks/messaging.ts src/shared/services/providers/twilio/schemas/messaging.ts
-git mv src/shared/services/providers/twilio/webhooks/voice.ts src/shared/services/providers/twilio/schemas/voice.ts
-```
-
-In both moved files, change `from '../schemas/primitives'` to `from './primitives'`.
-
-`src/shared/services/providers/twilio/DOCS.md` names the old directory five times. Line 30: the phrase "no `webhooks/verify.ts`" becomes "no `lib/verify.ts`". Line 63: "live in `schemas/` / `webhooks/` / `types.ts`" becomes "live in `schemas/` / `types.ts`". Line 88: "`webhooks/voice.ts` + `webhooks/messaging.ts`" becomes "`schemas/voice.ts` + `schemas/messaging.ts`". Line 92: the import path ends in `twilio/schemas/voice`. Lines 54 to 59, the directory tree, become:
-
-```text
-  schemas/              Zod: outbound request shapes and inbound webhook payloads (form-urlencoded parsing at the seam)
-    primitives.ts       e164Schema, twilioSidSchema, isoDateTimeSchema
-    access-token.ts     mintVoiceAccessTokenInputSchema
-    voice.ts            voice* webhook schemas (status callback, dial action, etc.)
-    messaging.ts        messaging* webhook schemas (inbound, status callback)
-```
-
-`docs/codebase-conventions/service-architecture.md` prescribes the same `webhooks/` directory under `provider-directory-shape`, so it changes in the same commit. Line 126: "no `webhooks/verify.ts`" becomes "no `lib/verify.ts`". Line 135: "**Data-shape Zod** (`schemas/`, `webhooks/`)" becomes "**Data-shape Zod** (`schemas/`)". Line 175: "schemas + types live in `schemas/` / `webhooks/` / `types.ts`" becomes "schemas + types live in `schemas/` / `types.ts`". Line 182: "Standalone `webhooks/verify.ts`" becomes "Standalone `lib/verify.ts`", and a new anti-pattern bullet follows it: "- A `webhooks/` directory — webhook payload Zod is a data shape and lives in `schemas/` with the rest." Lines 155 to 159, the two tree entries, become:
-
-```text
-  schemas/                  Zod data shapes: what we send (request shapes) and what the provider sends us (webhook payloads)
-    primitives.ts           shared primitives (E.164, timestamps, IDs)
-    <resource>.ts           per-resource request + response zod schemas
-    <event-class>.ts        per-event-class webhook payload Zod (often a discriminated union)
-```
-
-Lines 169 to 172, the "`schemas/` vs `webhooks/`" block, become:
-
-```text
-**`schemas/` holds both directions:**
-- what WE send to the provider (request shapes, JWT-mint input shapes, etc.)
-- what THE PROVIDER sends to us (inbound webhook form payloads, status callbacks)
-- Zero internal dependencies other than `schemas/primitives.ts`. Parsed with `.parse()` at the boundary.
-```
-
-Run: `grep -rn "webhooks/" docs/codebase-conventions/service-architecture.md src/shared/services/providers/twilio/DOCS.md`
-Expected: no matches.
-
-Run: `grep -rn "twilio/webhooks" src scripts`
-Expected: no matches.
-
-Run: `pnpm tsc`
-Expected: green; the files had no importers.
-
-- [ ] **Step 3: The schemas**
+- [ ] **Step 2: The schemas**
 
 In `src/shared/services/providers/twilio/schemas/messaging.ts`, replace `messagingInboundWebhookSchema` and `messagingStatusCallbackSchema`:
 
@@ -1016,7 +965,7 @@ Keep `messagingStatusSchema` and its type where they are.
 
 In `src/shared/services/providers/twilio/client.ts`, the doc comment above `verifyWebhookSignature`: change `` `false` ⇒ respond 403 `` to `` `false` ⇒ respond 401 ``.
 
-- [ ] **Step 4: The rank and the mapper**
+- [ ] **Step 3: The rank and the mapper**
 
 Append to `src/shared/constants/enums/voip.ts`, after `VoipMessageStatus`:
 
@@ -1056,7 +1005,7 @@ export function mapTwilioMessageStatus(status: string): VoipMessageStatus | null
 }
 ```
 
-- [ ] **Step 5: The guarded patch**
+- [ ] **Step 4: The guarded patch**
 
 In `src/shared/entities/voip-messages/dal/server/mutations.ts`, change the imports to:
 
@@ -1108,7 +1057,7 @@ export async function patchMessageStatusByProviderId(
 }
 ```
 
-- [ ] **Step 6: The service applies the mapping**
+- [ ] **Step 5: The service applies the mapping**
 
 In `voip-messages.service.ts`, add the import:
 
@@ -1162,7 +1111,7 @@ and replace the `applyStatusCallback` member with:
     },
 ```
 
-- [ ] **Step 7: The route**
+- [ ] **Step 6: The route**
 
 Create `src/app/api/webhooks/twilio/route.ts`:
 
@@ -1214,7 +1163,7 @@ export async function POST(request: Request): Promise<Response> {
 }
 ```
 
-- [ ] **Step 8: Verify**
+- [ ] **Step 7: Verify**
 
 Run: `pnpm tsx scripts/verify-visit-messages.ts && pnpm tsc && pnpm lint`
 Expected: section 13 passes; no type or lint errors.
@@ -1262,12 +1211,10 @@ console.log('twilio signature ✓')
 Run: `NODE_OPTIONS=--conditions=react-server pnpm tsx scripts/tmp-twilio-signature.ts`
 Expected: `twilio signature ✓`. Review Focus 5 is the first assertion. Then `rm scripts/tmp-twilio-signature.ts`.
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
-git add src/shared/services/providers/twilio/schemas/messaging.ts src/shared/services/providers/twilio/schemas/voice.ts src/shared/services/providers/twilio/DOCS.md docs/codebase-conventions/service-architecture.md src/shared/services/providers/twilio/client.ts src/shared/constants/enums/voip.ts src/shared/services/voip/lib/map-twilio-message-status.ts src/shared/entities/voip-messages/dal/server/mutations.ts src/shared/services/voip/voip-messages.service.ts src/app/api/webhooks/twilio/route.ts scripts/verify-visit-messages.ts && git commit -m "feat(voip): Twilio status callbacks land on a signed route, map onto the table's states and never move a message backwards
-
-The webhook payload schemas move from webhooks/ to schemas/; a provider has no webhooks directory, and the provider-shape convention says so now.
+git add src/shared/services/providers/twilio/schemas/messaging.ts src/shared/services/providers/twilio/client.ts src/shared/constants/enums/voip.ts src/shared/services/voip/lib/map-twilio-message-status.ts src/shared/entities/voip-messages/dal/server/mutations.ts src/shared/services/voip/voip-messages.service.ts src/app/api/webhooks/twilio/route.ts scripts/verify-visit-messages.ts && git commit -m "feat(voip): Twilio status callbacks land on a signed route, map onto the table's states and never move a message backwards
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```

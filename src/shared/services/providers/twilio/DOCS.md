@@ -27,7 +27,7 @@ const ok  = twilioClient.verifyWebhookSignature({ url, signature, params })
 ```
 
 **There is no other action import path.** No `lib/voice.ts`, no `lib/jwt.ts`,
-no `webhooks/verify.ts`. Anything you can do with Twilio happens through
+no `lib/verify.ts`. Anything you can do with Twilio happens through
 `twilioClient.X(...)`.
 
 **Why uniform**: callers have one mental model + one tab-complete surface
@@ -51,16 +51,15 @@ twilio/
     index.ts            TTLs, VETTING, ACCESS_TOKEN_IDENTITY_PREFIX, INBOUND_VOICE_TTS_VOICE, ...
   lib/
     config.ts           getTwilioConfig() + twilioEnvFragment — internal env-narrowing helper (NOT a client method; the documented `lib/` exception per service-architecture.md)
-  schemas/              outbound-API Zod (request shapes for typed inputs)
+  schemas/              Zod: outbound request shapes and inbound webhook payloads (form-urlencoded parsing at the seam)
     primitives.ts       e164Schema, twilioSidSchema, isoDateTimeSchema
     access-token.ts     mintVoiceAccessTokenInputSchema
-  webhooks/             inbound-payload Zod (form-urlencoded parsing at the seam)
     voice.ts            voice* webhook schemas (status callback, dial action, etc.)
     messaging.ts        messaging* webhook schemas (inbound, status callback)
 ```
 
 **Action surface** = `client.ts` only. **Data shapes** (Zod schemas + SDK
-types) live in `schemas/` / `webhooks/` / `types.ts` and are imported
+types) live in `schemas/` / `types.ts` and are imported
 separately where parsing/typing happens (route handlers, service signatures).
 That mirrors how `zohoSignClient` exposes actions while its companion
 `interface AttachFile` / `interface DocumentOrder` live as sibling exports.
@@ -85,11 +84,11 @@ The provider is a **leaf** — see
 
 ## Webhook payload Zod
 
-`webhooks/voice.ts` + `webhooks/messaging.ts` Zod schemas parse Twilio's
+`schemas/voice.ts` + `schemas/messaging.ts` Zod schemas parse Twilio's
 form-urlencoded webhook bodies into typed records at the route-handler seam:
 
 ```ts
-import { voiceStatusCallbackSchema } from '@/shared/services/providers/twilio/webhooks/voice'
+import { voiceStatusCallbackSchema } from '@/shared/services/providers/twilio/schemas/voice'
 
 // In /api/webhooks/twilio/route.ts
 const params = Object.fromEntries(formData.entries())

@@ -303,7 +303,7 @@ In agent-facing terms, Phase 1 ships:
 
 Everything voip-campaigns adds in its Phase 1 (CloudTalk-side enrollment, attribute sync, webhook handling, graduation) plugs into the schema + DNC + voip routing surface this phase ships.
 
-**Architecture:** Single-provider commit to **Twilio**. NO formal `VoIPProvider` interface — Twilio-only paths. CloudTalk integration is the sibling EPIC's concern; this EPIC just exposes the contract surface (voip routing endpoints, DNC, voip_* tables with `source` discriminator). All `voip_*` tables and the `services/voip/` top-level service tree land here. `providers/twilio/` follows the existing provider shape (`client.ts + voice.ts + messaging.ts + webhooks/`), mirroring `providers/notion/` and `providers/zoho-sign/`. tRPC entity routers use the entity-factory pattern (ADR-0002 — `createEntityRouter` + `createCrudRouter`) that's already live in `src/trpc/lib/`. Mobile (cellular routing) is **deferred to Phase 3**; Phase 1 ships browser softphone only.
+**Architecture:** Single-provider commit to **Twilio**. NO formal `VoIPProvider` interface — Twilio-only paths. CloudTalk integration is the sibling EPIC's concern; this EPIC just exposes the contract surface (voip routing endpoints, DNC, voip_* tables with `source` discriminator). All `voip_*` tables and the `services/voip/` top-level service tree land here. `providers/twilio/` follows the existing provider shape (`client.ts + schemas/ + constants/ + types.ts`), mirroring `providers/notion/` and `providers/zoho-sign/`. tRPC entity routers use the entity-factory pattern (ADR-0002 — `createEntityRouter` + `createCrudRouter`) that's already live in `src/trpc/lib/`. Mobile (cellular routing) is **deferred to Phase 3**; Phase 1 ships browser softphone only.
 
 **Tech stack:** TypeScript, Next.js App Router, tRPC (entity factory), Drizzle ORM (Postgres/Neon), CASL, `twilio` server SDK, `@twilio/voice-sdk` browser SDK, drizzle-zod, QStash (`@migration: → Inngest` annotations). No automated tests in Phase 1 — manual verification per task, per existing codebase pattern. No Retell, no Sendblue, no SIP Trunking, no AI dispatching, no cadence engine (CloudTalk owns those for lead-conversion campaigns).
 
@@ -387,7 +387,7 @@ All schema, entity scaffolds, services, webhooks, providers, softphone widget, a
 - `client.ts` — singleton Twilio client + dev-override gate (mirrors `providers/notion/client.ts`)
 - `voice.ts` — `placeCall`, `endCall`, `mintSoftphoneAccessToken`, `validateVoiceSignature`
 - `messaging.ts` — `sendSms`, `validateMessagingSignature`
-- `webhooks/types.ts` — Zod schemas for inbound webhook payloads
+- `schemas/voice.ts`, `schemas/messaging.ts` — Zod schemas for inbound webhook payloads
 - `constants/` — call-status mapping, message-status mapping
 - `types.ts` — provider-native types
 
@@ -1560,10 +1560,9 @@ src/shared/services/providers/twilio/
                              server-env's boot banner). Throws NotConfiguredError from
                              @/shared/config/not-configured-error. See `provider-env-config-when-optional`
                              in service-architecture.md.
-  schemas/                   outbound-API Zod (what we send to Twilio)
+  schemas/                   Zod: outbound request shapes and inbound webhook payloads
     primitives.ts            e164Schema, twilioSidSchema, isoDateTimeSchema
     access-token.ts          mintVoiceAccessTokenInputSchema
-  webhooks/                  inbound-payload Zod (what Twilio sends us)
     voice.ts                 voiceInboundWebhookSchema, voiceStatusCallbackSchema, voiceDialActionSchema
     messaging.ts             messagingInboundWebhookSchema, messagingStatusCallbackSchema
 ```
@@ -1592,17 +1591,17 @@ src/shared/services/providers/twilio/
 - `RestException` from `client.ts` — for `instanceof` in catch blocks.
 - `TwilioClient` type from `client.ts` — for typing variables that hold the client.
 - SDK type re-exports from `types.ts` — `CallInstance`, `MessageInstance`, etc. — for Slug C service signatures.
-- Zod schemas from `schemas/` and `webhooks/` — for `.parse()` at the seam (route handler form-body → typed payload).
+- Zod schemas from `schemas/` — for `.parse()` at the seam (route handler form-body → typed payload).
 
 **Design rules baked into the scaffold:**
 
-- **Single entry point.** `import { twilioClient } from '@/shared/services/providers/twilio/client'` and only that. No `lib/voice.ts`, no `lib/jwt.ts`, no `webhooks/verify.ts` — these don't exist on purpose. See [DOCS.md](../../../src/shared/services/providers/twilio/DOCS.md#superset-client).
+- **Single entry point.** `import { twilioClient } from '@/shared/services/providers/twilio/client'` and only that. No `lib/voice.ts`, no `lib/jwt.ts`, no `lib/verify.ts` — these don't exist on purpose. See [DOCS.md](../../../src/shared/services/providers/twilio/DOCS.md#superset-client).
 - **Client is a superset of the raw SDK.** REST methods + JWT mint + TwiML builders + webhook signature verify — all on the same handle.
 - **Single vendor.** No abstract `VoIPProvider` interface. Column naming on the consumer side is already vendor-neutral (`provider_call_id`, `provider_message_id`, `provider_did_id`), so a hypothetical future swap rewrites this directory only — schema-stable.
 - **No naked HTTP.** Every Twilio call goes through the typed `twilio` Node SDK (v6.0.2). No `fetch()` to Twilio endpoints.
 - **Provider is a leaf.** No DB writes, no DAL imports, no service imports, no business rules. Methods accept primitives + SDK option types and return primitives + SDK instance types. All orchestration (compliance gate, DNC lookup, recording-retention, STOP-keyword routing, dev-override rewriting) lives in Slug C's `services/voip/*.service.ts`.
 - **SDK types are the source of truth.** `placeOutboundCall` accepts `CallListInstanceCreateOptions` directly; `sendMessage` accepts `MessageListInstanceCreateOptions`.
-- **Webhook payloads are typed at the seam.** Twilio webhooks are form-urlencoded; the SDK does not publish Zod for them. We define Zod in `webhooks/{voice,messaging}.ts` so route handlers in Slug D `.parse()` once and get a typed payload everywhere downstream.
+- **Webhook payloads are typed at the seam.** Twilio webhooks are form-urlencoded; the SDK does not publish Zod for them. We define Zod in `schemas/{voice,messaging}.ts` so route handlers in Slug D `.parse()` once and get a typed payload everywhere downstream.
 - **TwiML via fluent builders.** `twilio.twiml.VoiceResponse` + `twilio.twiml.MessagingResponse` — never hand-written XML.
 - **Webhook signing uses the account auth token.** That's Twilio's standard for both REST + webhook validation. JWTs for the browser softphone, in contrast, sign with `TWILIO_API_KEY_SID + SECRET`.
 - **Lazy SDK singleton.** The underlying `twilio()` SDK instance is constructed on first call inside `client.ts` and reused thereafter. Module-load construction breaks edge-runtime static probes and test environments where env may be partially populated.
@@ -1621,7 +1620,7 @@ import { twilioClient, RestException } from '@/shared/services/providers/twilio/
 
 // Types/schemas where they're needed at the seam:
 import type { CallInstance } from '@/shared/services/providers/twilio/types'
-import { voiceStatusCallbackSchema } from '@/shared/services/providers/twilio/webhooks/voice'
+import { voiceStatusCallbackSchema } from '@/shared/services/providers/twilio/schemas/voice'
 import { VETTING } from '@/shared/services/providers/twilio/constants'
 ```
 
@@ -1750,10 +1749,10 @@ import { twilioClient } from '@/shared/services/providers/twilio/client'
 // Webhook payload Zod for `.parse()` at the seam:
 import {
   voiceInboundWebhookSchema, voiceStatusCallbackSchema, voiceDialActionSchema,
-} from '@/shared/services/providers/twilio/webhooks/voice'
+} from '@/shared/services/providers/twilio/schemas/voice'
 import {
   messagingInboundWebhookSchema, messagingStatusCallbackSchema,
-} from '@/shared/services/providers/twilio/webhooks/messaging'
+} from '@/shared/services/providers/twilio/schemas/messaging'
 ```
 
 #### Verified
@@ -1810,11 +1809,8 @@ import {
   twilioVoiceStatusMap,
   WEBHOOK_SIGNATURE_HEADER,
 } from '@/shared/services/providers/twilio/constants'
-import {
-  messagingStatusPayloadSchema,
-  voiceRecordingPayloadSchema,
-  voiceStatusPayloadSchema,
-} from '@/shared/services/providers/twilio/webhooks/types'
+import { messagingStatusCallbackSchema } from '@/shared/services/providers/twilio/schemas/messaging'
+import { voiceRecordingPayloadSchema, voiceStatusCallbackSchema } from '@/shared/services/providers/twilio/schemas/voice'
 import { upsertFromTwilioWebhook } from '@/shared/entities/voip-calls/dal/server/mutations'
 import { recordCallLifecycle } from '@/shared/services/voip/voip-calls.service'
 import { recordMessageStatus } from '@/shared/services/voip/voip-messages.service'
@@ -1862,7 +1858,7 @@ export async function POST(req: Request) {
 
     // Messaging status
     if (params.MessageStatus) {
-      const parsed = messagingStatusPayloadSchema.safeParse(params)
+      const parsed = messagingStatusCallbackSchema.safeParse(params)
       if (!parsed.success) return NextResponse.json({ ok: true })
       const internalStatus = twilioMessageStatusMap[parsed.data.MessageStatus]
       if (!internalStatus) return NextResponse.json({ ok: true })
@@ -1875,7 +1871,7 @@ export async function POST(req: Request) {
 
     // Voice status
     if (params.CallStatus) {
-      const parsed = voiceStatusPayloadSchema.safeParse(params)
+      const parsed = voiceStatusCallbackSchema.safeParse(params)
       if (!parsed.success) return NextResponse.json({ ok: true })
       const internalStatus = twilioVoiceStatusMap[parsed.data.CallStatus]
       if (!internalStatus) return NextResponse.json({ ok: true })
@@ -1999,7 +1995,7 @@ import { headers } from 'next/headers'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { sendSms, validateTwilioSignature } from '@/shared/services/providers/twilio'
 import { WEBHOOK_SIGNATURE_HEADER } from '@/shared/services/providers/twilio/constants'
-import { messagingInboundPayloadSchema } from '@/shared/services/providers/twilio/webhooks/types'
+import { messagingInboundWebhookSchema } from '@/shared/services/providers/twilio/schemas/messaging'
 import { recordInboundMessage } from '@/shared/services/voip/voip-messages.service'
 import env from '@/shared/config/server-env'
 
@@ -2027,7 +2023,7 @@ export async function POST(req: Request) {
     return new Response('Unauthorized', { status: 403 })
   }
 
-  const parsed = messagingInboundPayloadSchema.safeParse(params)
+  const parsed = messagingInboundWebhookSchema.safeParse(params)
   if (!parsed.success) {
     return new Response(EMPTY_TWIML, { headers: { 'Content-Type': 'text/xml; charset=utf-8' } })
   }

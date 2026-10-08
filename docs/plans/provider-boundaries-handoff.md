@@ -8,7 +8,7 @@
 
 ## The mission (one sentence)
 
-Make every **provider** expose ONE runtime entrypoint (`client.ts`) and every **service** expose ONE entrypoint (`xxxService`); every external consumer imports the client/service and **never** reaches into `lib/`, `dal/`, `schemas/`, `constants/`, `api/`, `webhooks/`, `jobs/`, or loose files.
+Make every **provider** expose ONE runtime entrypoint (`client.ts`) and every **service** expose ONE entrypoint (`xxxService`); every external consumer imports the client/service and **never** reaches into `lib/`, `dal/`, `schemas/`, `constants/`, `api/`, `jobs/`, or loose files.
 
 Source of truth = **GitHub epic [#248](https://github.com/OlisDevSpot/tri-pros-website/issues/248)** (full scorecard + checklist). Read it first. This file is just the working brief.
 

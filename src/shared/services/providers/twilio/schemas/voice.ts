@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { e164Schema, twilioSidSchema } from '../schemas/primitives'
+import { e164Schema, twilioSidSchema } from './primitives'
 
 // Inbound voice webhook payloads. Twilio POSTs these as form-urlencoded;
 // every value arrives as a string. We Zod-coerce the few numeric fields

@@ -198,7 +198,7 @@ VOIP_DEV_OVERRIDE_NUMBER=  # set in dev/preview only; CI gate prevents productio
 | `domains/permissions/abilities.ts` | New entity name constants registered for CASL (`VOIP_CALL`, `VOIP_MESSAGE`, `VOIP_DID`, `VOIP_DNC`, etc.) | Phase 1 |
 | `src/app/(frontend)/dashboard/layout.tsx` | Softphone widget mounted globally | Phase 1 |
 | `src/shared/services/voip/` | NEW: top-level service tree — `voip-calls`, `voip-messages`, `voip-dids`, `voip-dnc`, `voip-disposition`, `voip-compliance`, `voip-routing`, `voip-user-availability`; subdir `campaigns/` is voip-campaigns's domain | All phases |
-| `src/shared/services/providers/twilio/` | NEW: `client.ts`, `voice.ts`, `messaging.ts`, `webhooks/` (no SIP trunking) | Phase 1 |
+| `src/shared/services/providers/twilio/` | NEW: `client.ts` (the one action surface), `schemas/` (request shapes + webhook payload Zod), `constants/`, `types.ts` (no SIP trunking) | Phase 1 |
 | `src/app/api/twilio/voice/*` | NEW: voice status webhooks | Phase 1 |
 | `src/app/api/twilio/messaging/*` | NEW: inbound SMS + status webhooks | Phase 1 |
 | `src/app/api/voip/routing/*` | NEW: voip routing endpoints (caller-lookup, transfer-target, compliance-check) — implemented here, called by CloudTalk per [INTEGRATION-SEAM.md §1](../voip/INTEGRATION-SEAM.md) | Phase 1 |
