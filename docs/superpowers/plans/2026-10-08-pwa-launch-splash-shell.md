@@ -752,9 +752,9 @@ interface SplashScreenProps {
 }
 ```
 
-- [ ] **Step 2: Thread `entrance` into `animate` and move the layout inline**
+- [ ] **Step 2: Thread `entrance` into the entrance animation and move the layout inline**
 
-In the component signature add `entrance = true` to the destructured props, and change `const animate = !reduced` to `const animate = !reduced && entrance`.
+In the component signature add `entrance = true` to the destructured props. Keep `const animate = !reduced` as it is (the closing fade follows it) and add `const playEntrance = animate && entrance` directly below it; `SplashMark`, `SplashCaption` and the press button's `initial` read `playEntrance`, the overlay's `transitionDuration` keeps reading `animate`.
 
 Change the overlay `<div>`:
 

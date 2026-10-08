@@ -203,7 +203,7 @@ The page also carries one inline `<script>` (the file-level eslint disable the p
 
 **`SplashScreen` primitive** (`splash-screen.tsx`) gains two things, both opt-in so the proposal and meeting splashes are unchanged:
 - `dismiss: { mode: 'held' }` — no timer, no press; the caller closes it by flipping `open`.
-- `entrance?: boolean` (default `true`) — `false` renders `SplashMark` at rest from the first frame (`animate = !reduced && entrance`). The mark's rest frame is exactly the native image.
+- `entrance?: boolean` (default `true`) — `false` renders `SplashMark` at rest from the first frame (`playEntrance = animate && entrance`, with `animate = !reduced` untouched so the closing fade still plays). The mark's rest frame is exactly the native image.
 - Its invariant layout (`position: fixed; inset: 0; z-index`) moves from classes into the inline style object it already uses for colour and opacity. A full-screen cover must not depend on a stylesheet rule being present (the August unstyled push-down; research §2). The Tailwind classes it keeps are for flex centring and spacing; losing them cannot uncover the page.
 
 **`PwaLaunchCover`** (client, mounted once in `src/app/(frontend)/layout.tsx` as a sibling after `{children}` inside `Providers`): 
@@ -407,13 +407,13 @@ Each phase is one commit set on local main by explicit path, ships through the o
 | Item | Status |
 |---|---|
 | Research | ✅ 2026-10-08 (`docs/plans/2026-10-08-pwa-launch-research.md`) |
-| Rulings D1–D6 | ✅ 2026-10-08 |
-| Spec review (owner) | ⬜ |
-| Implementation plan | ⬜ |
-| Phase 1 — native assets | ⬜ |
+| Rulings D1–D7 | ✅ 2026-10-08 (D7 added in the revision) |
+| Spec review (owner) | ✅ 2026-10-08 (revision: D2 timing, D7 home) |
+| Implementation plan | ✅ 2026-10-08 (16 tasks; subagent-driven) |
+| Phase 1 — native assets | ✅ 2026-10-08 — commits `8725950c` (docs), `e6ce8cfd` (PWA domain move), `c2b2954c` (launch constants + marker helpers), `b5951294` (navy icons, maskable, manifest id), `f755d7d2` (44 startup images), `6aac8022` (probe page); tsc + lint clean; manifest and `/` HTML verified on the dev server; the maskable icon and a startup image viewed |
 | Phase 1 — device check | ⬜ |
-| Phase 2 — cover + shell route | ⬜ |
-| Phase 2 — browser check | ⬜ |
-| Phase 3 — worker + marker | ⬜ |
+| Phase 2 — cover + shell route | ✅ 2026-10-08 — commits `4d1c139a`+`6beb3991` (primitive: `held`, `entrance`, inline box; `entrance` skips only the entrance), `17f20f18` (launch store + hook), `7a9e0965` (cover in the root layout, beacon in the dashboard layout above the cookie branch), `40f628c8` (`/launch` shell, handoff, watchdogs, robots); tsc + lint clean |
+| Phase 2 — browser check | ✅ 2026-10-08 on the dev server (network-served `/launch`): cover is the first painted element (navy, mark at rest), one navigation entry, cover starts closing 14 ms (signed out) / 8 ms (signed in) after the dashboard layout commits with the RSC delayed 1 s, 300 ms fade; Back never returns to `/launch`; reduced motion lifts with no fade and no overlay left; RSC hanging → cover lifts at 4 s over the shell, unmarked hard load at 8 s; no console errors. Open: under `prefers-reduced-motion` the primitive's SSR'd `transition-duration` mismatches the client's (dev-only React attribute-mismatch error; pre-existing for any SSR-open splash) |
+| Phase 3 — worker + marker | ✅ 2026-10-08 — commits `508811f6` (one registration owner + `tri-pros:sw-disabled` device switch), `f5b954ae` (push payload guard), `0e3539f7`+`8c49a06d` (sw.js launch-shell block; one sync at a time, preload fallback), `82bb0c74` (beacon revalidation after a shell launch, marked `start_url`, app-shell.md); tsc + lint clean; dev-server look: plain `/sw.js` registration (no `?shell=1` under next dev), no shell cache, push handlers byte-for-byte, manifest `start_url` `/dashboard?launch=1` with `id` `/dashboard` |
 | Phase 3 — browser + device checks | ⬜ |
 | Docs deleted (this spec, the research, the plan) | ⬜ |
