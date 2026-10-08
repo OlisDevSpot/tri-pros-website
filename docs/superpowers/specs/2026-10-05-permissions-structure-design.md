@@ -257,7 +257,7 @@ permit(ctx, 'update', customerServerSpec, ['profile.hoa']).sql   // narrowed to 
 | Slot | Behaviour |
 |---|---|
 | `getById` | primary key AND the read filter; the row is projected to the field list of the `read` rule that covers it, when there is one |
-| `create` | the verb must be granted. With a parent, the parent is probed first: readable for an entity with a parent, updatable on this field for a sub-entity. A miss is not found. |
+| `create` | the verb must be granted. With a parent, the parent is probed first: readable for an entity with a parent, updatable on this field for a sub-entity. A miss is not found. A peer root whose create or update takes another entity's id from the client probes that row's read reach in its own hook (a meeting's `customerId`); a miss is not found. |
 | `update` | primary key AND the update filter. Each changed column is checked against the loaded row; for a sub-entity, against the parent row as `field.column`. |
 | `delete` | primary key AND the delete filter |
 | `duplicate` | the source is read through the read filter, then `create` |
@@ -377,7 +377,8 @@ Each unit ends with `pnpm tsc` and `pnpm lint` passing. Main is merged into the 
 
 | Item | Needed before |
 |---|---|
-| The 25 business rulings (report 10 §5) | unit 4; the Meeting rows also wait on #217 and #220 |
+| The 25 business rulings (report 10 §5); #13 ruled 2026-10-08 (a meeting's client-supplied `customerId` must be readable to the creator), landing in unit 3 part 2 | unit 4; the Meeting rows also wait on #217 and #220 |
+| `Application`'s parent: Meeting today, Proposal per main's applications work; it stays on the legacy engine until that work lands | the rest of unit 3 |
 | How `own Meeting` and `assign` map onto the model (report 22 §3.3 proposes `update Meeting ['participants', 'ownerId']` for `assign`) | unit 4 |
 | The homeowner's own phone on a share link (an explicit grant) | unit 3, Proposal family |
 | ~~Restoring the branch's outcome-to-pipeline map~~ — moved out of the epic 2026-10-07: outcome and pipeline derivation belongs to the sales lifecycle work on main (its rules map R34–R36; handoff `docs/plans/2026-10-07-pipeline-derivation-handoff-to-lifecycle.md` there); the branch consumes `derivedPipelineWhere` as an operator and receives main's model by merge | not this epic |
