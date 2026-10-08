@@ -36,8 +36,9 @@ export function DashboardMeetingCard({ row, showScheduledDate = false, className
     <MeetingOverviewCard
       meeting={row}
       customerId={row.customerId ?? ''}
+      data-press
       className={cn(
-        'cursor-pointer rounded-lg border border-border bg-card p-2.5 transition-colors duration-200 hover:bg-row-hover',
+        'cursor-pointer rounded-lg border border-border bg-card p-2.5 transition-colors duration-200 hover:bg-row-hover pressed:bg-row-press',
         className,
       )}
     >

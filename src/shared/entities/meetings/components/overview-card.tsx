@@ -1,6 +1,6 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 
 import type { MeetingOutcome } from '@/shared/constants/enums'
 import type { Meeting } from '@/shared/db/schema/meetings'
@@ -91,10 +91,10 @@ function useMeetingOverviewCard() {
 
 // ── Root ───────────────────────────────────────────────────────────────────────
 
-interface MeetingOverviewCardProps {
+// The root owns the click, so a caller can't replace it; other div attributes (`data-press`, aria) pass through.
+interface MeetingOverviewCardProps extends Omit<ComponentProps<'div'>, 'onClick'> {
   meeting: MeetingOverviewCardData
   customerId: string
-  className?: string
   children: ReactNode
   onAssignOwner?: (entity: MeetingOverviewCardData) => void
   onAssignProject?: (entity: MeetingOverviewCardData) => void
@@ -103,10 +103,10 @@ interface MeetingOverviewCardProps {
 function MeetingOverviewCardRoot({
   meeting,
   customerId,
-  className,
   children,
   onAssignOwner,
   onAssignProject,
+  ...props
 }: MeetingOverviewCardProps) {
   const openProfile = useCallback(() => {
     openModal({
@@ -158,7 +158,7 @@ function MeetingOverviewCardRoot({
       <AssignOwnerDialog />
       <OutcomeReasonDialog />
       <RescheduleDialog />
-      <div className={className} onClick={handleClick}>
+      <div {...props} onClick={handleClick}>
         {children}
       </div>
     </MeetingOverviewCardContext>

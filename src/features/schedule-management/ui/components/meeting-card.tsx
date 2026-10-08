@@ -50,8 +50,9 @@ export function MeetingCard({ event, onAssignOwner, onUpdateScheduledFor, isHigh
       meeting={meetingData}
       customerId={event.customerId ?? ''}
       onAssignOwner={handleAssignOwner}
+      data-press
       className={cn(
-        'group relative flex h-full flex-col gap-1.5 overflow-hidden rounded-md border bg-card p-3 pl-3.5 text-xs cursor-pointer shadow-sm transition-shadow hover:shadow-md',
+        'group relative flex h-full flex-col gap-1.5 overflow-hidden rounded-md border bg-card p-3 pl-3.5 text-xs cursor-pointer shadow-sm transition-[box-shadow,background-color] hover:shadow-md pressed:bg-row-press',
       )}
     >
       {/* Sentiment accent bar — solid left edge that signals the outcome and

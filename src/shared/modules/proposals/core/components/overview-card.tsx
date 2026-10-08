@@ -1,6 +1,6 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 
 import type { Proposal } from '@/shared/db/schema/proposals'
 import type { ProposalRowStyle } from '@/shared/modules/proposals/core/constants/proposal-row-styles'
@@ -84,9 +84,9 @@ export function useProposalOverviewCard() {
 
 // ── Root ───────────────────────────────────────────────────────────────────────
 
-interface ProposalOverviewCardProps {
+// The root owns the click, so a caller can't replace it; other div attributes (`data-press`, aria) pass through.
+interface ProposalOverviewCardProps extends Omit<ComponentProps<'div'>, 'onClick'> {
   proposal: ProposalOverviewCardData
-  className?: string
   children: ReactNode
   onView?: (entity: ProposalOverviewCardData) => void
   onEdit?: (entity: ProposalOverviewCardData) => void
@@ -96,12 +96,12 @@ interface ProposalOverviewCardProps {
 
 function ProposalOverviewCardRoot({
   proposal,
-  className,
   children,
   onView,
   onEdit,
   onAssignOwner,
   meta,
+  ...props
 }: ProposalOverviewCardProps) {
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
@@ -129,7 +129,7 @@ function ProposalOverviewCardRoot({
   return (
     <ProposalOverviewCardContext value={value}>
       <DeleteConfirmDialog />
-      <div className={className} onClick={handleClick}>
+      <div {...props} onClick={handleClick}>
         {children}
       </div>
     </ProposalOverviewCardContext>
