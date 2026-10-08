@@ -138,7 +138,7 @@ export function CustomerPipelineView() {
           </div>
         </div>
         <QueryToolbar query={query} entityName="customers">
-          <QueryToolbar.Standard searchPlaceholder="Search by name or email…" sort />
+          <QueryToolbar.Standard searchPlaceholder="Search by name, email or phone…" sort />
         </QueryToolbar>
       </PageBar>
 

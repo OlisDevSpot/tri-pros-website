@@ -7,13 +7,27 @@ export function toDigits(input: string): string {
   return input.replace(/\D/g, '')
 }
 
+// The leading 1 of an 11-digit run is the country code, never part of the stored number.
+function dropCountryCode(digits: string): string {
+  return digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : digits
+}
+
 export function toNationalDigits(input: string | null | undefined): string | null {
   if (!input) {
     return null
   }
-  const digits = toDigits(input)
-  const national = digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : digits
+  const national = dropCountryCode(toDigits(input))
   return national.length === 10 ? national : null
+}
+
+/** Null unless the term reads as a number (digits plus phone punctuation), so a name search never scans phones; a partial run is kept so "584" can find a stored 8185845629. */
+export function toPhoneSearchDigits(input: string): string | null {
+  const term = input.trim()
+  if (!/^[\d\s().+-]+$/.test(term)) {
+    return null
+  }
+  const digits = dropCountryCode(toDigits(term))
+  return digits.length > 0 ? digits : null
 }
 
 export function toE164(input: string | null | undefined): string | null {

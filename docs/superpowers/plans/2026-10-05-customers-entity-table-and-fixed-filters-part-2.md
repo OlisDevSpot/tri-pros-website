@@ -153,6 +153,7 @@ git show --stat HEAD
   - `CustomerTableRow` = the row type of `customersRouter.business.list`; `CustomerColumnKey = keyof typeof CUSTOMER_COLUMNS`
   - `UseCustomersTableOptions { fixed?: FilterValues<typeof CUSTOMER_FIELDS> }`
   - `useCustomersTable(tableView: EntityTableView<CustomerColumnKey, typeof CUSTOMER_FIELDS>, options?: UseCustomersTableOptions)` → `{ query, visibility, dataTableProps, dialogs }`
+  - Noted 2026-10-08, outside this plan's scope: the hook should also return the toolbar's `searchPlaceholder` ("name, email or phone"), so the three table views stop restating it (D45: the hook holds the wiring that would otherwise be copied).
   - `CUSTOMERS_RECORDS_TABLE_VIEW` (`tableId: 'customers'`, prefix `pc`); `CustomersRecordsTable()` (no props)
 
 - [ ] **Step 1: Baseline, before any edit**
@@ -428,7 +429,7 @@ import { useCustomersTable } from '@/shared/modules/customers/core/components/cu
 
 export function CustomersRecordsTable() {
   const table = useCustomersTable(CUSTOMERS_RECORDS_TABLE_VIEW)
-  return <EntityRecordsTable title="Customers" entityName="customers" searchPlaceholder="Search by name or email…" table={table} />
+  return <EntityRecordsTable title="Customers" entityName="customers" searchPlaceholder="Search by name, email or phone…" table={table} />
 }
 ```
 
@@ -664,7 +665,7 @@ export function AllCustomersSection() {
             <DataView.Count />
           </div>
           <DataView.Toolbar>
-            <QueryToolbar.Standard searchPlaceholder="Filter by name or email…" visibility={visibility} />
+            <QueryToolbar.Standard searchPlaceholder="Filter by name, email or phone…" visibility={visibility} />
           </DataView.Toolbar>
         </div>
         <DataView.Body empty={{ title: 'No customers', description: 'Customers appear here as they are added' }}>
@@ -712,7 +713,7 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
             <DataView.Count />
           </div>
           <DataView.Toolbar>
-            <QueryToolbar.Standard searchPlaceholder="Filter by name or email…" visibility={visibility} />
+            <QueryToolbar.Standard searchPlaceholder="Filter by name, email or phone…" visibility={visibility} />
           </DataView.Toolbar>
         </div>
         <DataView.Body empty={{ title: 'No customers', description: 'No customers have come from this source yet' }}>

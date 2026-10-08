@@ -198,7 +198,7 @@ export function defineFieldList<const T extends Record<string, FieldDefinition>>
 
 **Reserved ids.** `p q sort dir ps d v` are rejected at compile time by `NoReservedIds`. This replaces the dev-only throw in `url-state.ts:31` for field-list consumers. `show` is not reserved: the calendar owns it outside any prefix.
 
-**Search stays separate from fields.** It remains a per-read list of `ilike` columns. A column can be searched and also be a field; the two are independent.
+**Search stays separate from fields.** It remains a per-read search clause, usually a list of `ilike` columns (customers compose theirs in `customerSearchWhere`). A column can be searched and also be a field; the two are independent.
 
 ---
 
@@ -371,7 +371,7 @@ The only accepted gap: with no `d` in the URL, the server and the browser both t
 - **Input.** `{ pipeline, search?, sort?, filters? }` with no pagination.
   - Every branch (leads, rehash/dead, fresh, projects) ANDs `buildFieldWhere(CUSTOMER_FIELDS, …)` onto its `customers` rows.
   - A chosen sort replaces the branch order.
-  - Search is `ilike` on name and email.
+  - Search is `ilike` on name and email; a term that reads as a number also matches the gated phone by its digits (`customerSearchWhere`).
   - The hand-written `isOmni` scoping moves unchanged.
 - **Sort.** `CUSTOMER_PIPELINE_QUERY` (`features/customer-pipelines/constants/`, prefix `cp`, whole-list window, no `defaultSort`) lets each branch keep today's order. `cp_sort` overrides it.
 - **Toolbar.** Search, Filters (Rep, Lead source, Created) and Sort. `pipeline` is not exposed, because the route decides it. The stage "Columns" popover stays as it is.

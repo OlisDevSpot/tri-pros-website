@@ -74,7 +74,7 @@ export function CustomersTable() {
         header={<RecordsPageHeader title="Customers" query={query} />}
         toolbar={(
           <QueryToolbar query={query} entityName="customers">
-            <QueryToolbar.Standard searchPlaceholder="Search by name or email…" visibility={visibility} />
+            <QueryToolbar.Standard searchPlaceholder="Search by name, email or phone…" visibility={visibility} />
           </QueryToolbar>
         )}
         table={(

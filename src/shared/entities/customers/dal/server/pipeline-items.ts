@@ -14,7 +14,6 @@ import { DECIDED_OUTCOMES } from '@/shared/constants/enums/meetings'
 import { deriveProjectStatusBucket, pipelines } from '@/shared/constants/enums/pipelines'
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { fieldListInput } from '@/shared/dal/server/lib/query/field-list-input'
-import { buildSearchWhere } from '@/shared/dal/server/lib/query/search'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { customers } from '@/shared/db/schema/customers'
@@ -26,6 +25,7 @@ import { computeFreshStage } from '@/shared/domains/pipelines/lib/compute-fresh-
 import { computePipelineValue, computeProjectValue } from '@/shared/domains/pipelines/lib/compute-pipeline-value'
 import { CUSTOMER_FIELDS } from '@/shared/entities/customers/dal/customer-fields'
 import { CUSTOMER_FIELD_SQL } from '@/shared/entities/customers/dal/server/customer-field-sql'
+import { customerSearchWhere } from '@/shared/entities/customers/dal/server/customer-search-sql'
 import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { userParticipatesInMeeting } from '@/shared/entities/meetings/dal/server/participants'
 
@@ -52,7 +52,7 @@ export async function getCustomerPipelineItems(ctx: ScopedContext, input: Custom
       isOmni: !ctx.ability || ctx.ability.can('manage', 'all'),
       canSeeUngated: canSeeUngatedPhone(ctx.ability),
       customerWhere: and(
-        buildSearchWhere(input.search, [customers.name, customers.email]),
+        customerSearchWhere(input.search, ctx.ability),
         CUSTOMER_FIELD_SQL.where(input.filters),
       ),
       customerOrder: input.sort ? CUSTOMER_FIELD_SQL.orderBy(input.sort) : undefined,

@@ -80,7 +80,7 @@ export function AllCustomersSection() {
 
         <QueryToolbar query={query} entityName="customers">
           <QueryToolbar.Bar>
-            <QueryToolbar.Search placeholder="Filter by name or email…" />
+            <QueryToolbar.Search placeholder="Filter by name, email or phone…" />
             <QueryToolbar.FilterTrigger />
             <QueryToolbar.ColumnsTrigger visibility={visibility} />
             <QueryToolbar.RefreshButton />
