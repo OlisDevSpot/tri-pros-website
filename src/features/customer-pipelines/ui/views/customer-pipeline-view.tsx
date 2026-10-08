@@ -53,17 +53,22 @@ export function CustomerPipelineView() {
   const query = useDataViewQuery(trpc.customerPipelinesRouter.getCustomerPipelineItems, { pipeline }, CUSTOMER_PIPELINE_QUERY)
   const items = query.rows
 
+  // A refetch the viewer caused (a drag's move) dims the board until the rows land. A background refetch (the
+  // server's prefetch adopted on navigation, a stale re-read on mount) does not: the rows on screen stay at full
+  // opacity until the new ones replace them, as the records tables do.
+  const [settlingMove, setSettlingMove] = useState(false)
   const moveMutation = useMutation(
     trpc.customerPipelinesRouter.moveCustomerPipelineItem.mutationOptions({
       onError: () => {
         toast.error('Failed to move customer. Please try again.')
-        void query.refresh()
       },
       onSettled: () => {
-        void query.refresh()
+        setSettlingMove(true)
+        void query.refresh().finally(() => setSettlingMove(false))
       },
     }),
   )
+  const isMoving = moveMutation.isPending || settlingMove
 
   function handleMoveItem(itemId: string, fromStage: string, toStage: string) {
     // Intercept: any leads stage → meeting_scheduled opens meeting modal
@@ -118,13 +123,11 @@ export function CustomerPipelineView() {
 
   const groupedItems = useMemo(() => groupCustomersByStage(items, config.stages), [items, config.stages])
 
-  const isSwitching = query.isStale || query.isFetching
-
   return (
     <div className="w-full h-full flex flex-col gap-(--gutter) overflow-hidden">
       <PageBar className="shrink-0">
         <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between">
-          <CustomerPipelineMetricsBar items={items} pipeline={pipeline} isLoading={query.isPending || isSwitching} />
+          <CustomerPipelineMetricsBar items={items} pipeline={pipeline} isLoading={query.isPending || query.isStale} />
           <div className="flex w-full items-center justify-between gap-2 lg:w-auto lg:justify-end">
             {canManagePipeline && <PipelineSelect value={pipeline} onChange={setPipeline} />}
             <KanbanStageFilter
@@ -142,12 +145,13 @@ export function CustomerPipelineView() {
         </QueryToolbar>
       </PageBar>
 
-      {/* A filter change dims only after a short delay (quick loads never flash); a background refetch after a drag dims at once. */}
+      {/* A filter change dims only after a short delay (quick loads never flash); a drag's refresh dims at once. */}
       <div
         data-stale={query.isStale || undefined}
+        aria-busy={query.isFetching || undefined}
         className={cn(
           'flex-1 min-h-0 transition-opacity duration-200 data-[stale=true]:pointer-events-none data-[stale=true]:opacity-50 data-[stale=true]:delay-200',
-          query.isFetching && !query.isStale && 'opacity-50 pointer-events-none',
+          isMoving && 'opacity-50 pointer-events-none',
         )}
       >
         {items.length === 0 && !query.isPending && !query.isStale

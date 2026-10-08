@@ -353,7 +353,9 @@ try {
   await page.waitForFunction(() => !document.querySelector('[data-slot="data-view-pending"]') && !document.querySelector('[aria-busy="true"]'), null, { timeout: 120000, polling: 100 })
   await page.waitForTimeout(3000)
 
+  // The wait is on the schedule, before the click: 3 s keeps the board's rows fresh, 35 s makes them stale.
   for (const [label, wait] of [['inside staleTime', 3000], ['past staleTime', 35000]]) {
+    await page.waitForTimeout(wait)
     reads.length = 0
     t0 = Date.now()
     const sampler = page.evaluate(([board, card]) => new Promise((resolve) => {
@@ -384,7 +386,6 @@ try {
     }
     await page.getByRole('link', { name: /schedule/i }).first().click()
     await page.waitForURL('**/dashboard/schedule**', { timeout: 60000 })
-    await page.waitForTimeout(wait)
   }
 }
 catch (error) {
@@ -399,7 +400,7 @@ await browser.close()
 ```
 
 Run: `node .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-nav-dim.mjs`
-Expected: `PASS inside staleTime` (no dim, `client reads: none`) and `FAIL past staleTime: … dimmed-with-cards ≥ 5 samples (opacity 0.5, data-stale unset)` with one `customerPipelinesRouter.getCustomerPipelineItems` client read; exit 1. (The loop's first wait is 3 s and its second 35 s, so the second click is the stale one.)
+Expected: `PASS inside staleTime` (no dim, `client reads: none`) and `FAIL past staleTime: … dimmed-with-cards ≥ 5 samples (opacity 0.5, data-stale unset)` with one `customerPipelinesRouter.getCustomerPipelineItems` client read; exit 1. (Each round waits on the schedule before its click: 3 s, then 35 s, so the second click lands on stale rows.)
 
 - [ ] **Step 2: Dim on the drag's refresh only; the metrics bar loads on stale only**
 
