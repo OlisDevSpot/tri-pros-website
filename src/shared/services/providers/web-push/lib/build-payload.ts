@@ -1,4 +1,5 @@
 import { publicUrl } from '@/shared/config/public-url'
+import { withoutPwaLaunchMarker } from '@/shared/domains/pwa/lib/launch-url'
 import { DECLARATIVE_WEB_PUSH_FORMAT } from './constants'
 
 export interface PushPayloadInput {
@@ -78,10 +79,9 @@ export function buildPushPayload(input: PushPayloadInput): DeclarativeWebPushPay
 // Resolve `/customers/123` -> `https://app.example.com/customers/123`. iOS
 // only routes the deep link into the standalone PWA when the navigate URL
 // matches the origin the PWA was installed FROM, which is why we resolve
-// against `publicUrl()` (NGROK_URL in dev, prod URL in prod).
+// against `publicUrl()` (NGROK_URL in dev, prod URL in prod). The launch
+// marker is dropped: the installed app's start_url carries it and the
+// service worker answers that URL with the static shell, not a page.
 function resolveNavigateUrl(navigate: string): string {
-  if (/^https?:\/\//i.test(navigate)) {
-    return navigate
-  }
-  return new URL(navigate, publicUrl()).href
+  return withoutPwaLaunchMarker(new URL(navigate, publicUrl())).href
 }
