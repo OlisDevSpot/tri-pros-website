@@ -376,13 +376,13 @@ Each unit ends with `pnpm tsc` and `pnpm lint` passing. Main is merged into the 
 | The 25 business rulings (report 10 §5) | unit 4; the Meeting rows also wait on #217 and #220 |
 | How `own Meeting` and `assign` map onto the model (report 22 §3.3 proposes `update Meeting ['participants', 'ownerId']` for `assign`) | unit 4 |
 | The homeowner's own phone on a share link (an explicit grant) | unit 3, Proposal family |
-| Restoring the branch's outcome-to-pipeline map, which moves `not_good` and `ftd` from rehash to dead in production | unit 3, Customer family |
+| ~~Restoring the branch's outcome-to-pipeline map~~ — moved out of the epic 2026-10-07: outcome and pipeline derivation belongs to the sales lifecycle work on main (its rules map R34–R36; handoff `docs/plans/2026-10-07-pipeline-derivation-handoff-to-lifecycle.md` there); the branch consumes `derivedPipelineWhere` as an operator and receives main's model by merge | not this epic |
 | `recordView` driven by the bearer instead of `SYSTEM_CONTEXT`; the proposal-media probe that calls legacy `isVisible` | unit 3, Proposal family |
 | Whether share-link media reads need `proposal_media_files` as its own entity (report 22 §3.4) | when share-link reads are masked |
 | Shape of the lint wall | unit 5 |
 | Which dev records browser tests may change | unit 7 |
 | Cost masking on share-link reads: the bearer's `read` field list drops the money columns (unit 3, Proposal family); the cost lines inside `projectJSON` | unit 5, financial reads |
-| The name of the erased spec union once `ServerSpec` names the list (`AnyServerSpec` proposed) | unit 3's plan |
+| ~~The name of the erased spec union~~ — `AnyServerSpec`, landed in unit 3 part 1 (D-28) | done |
 
 ## 13. What this changes in earlier documents
 
