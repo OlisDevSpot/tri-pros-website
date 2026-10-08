@@ -465,7 +465,7 @@ Two routes, per `docs/codebase-conventions/webhook-routes.md:156`:
 
 Both routes:
 1. Verify `twilioClient.verifyWebhookSignature` (`providers/twilio/client.ts:197-204`) against the exact public URL (`VOIP_WEBHOOK_BASE_URL` + path + query). A bad or missing signature returns **401**; a malformed envelope returns 400; a handler failure returns **200** and is logged (`webhook-routes.md` Rule 4). The doc comment above `verifyWebhookSignature` (`:196`) says 403; it is corrected to 401 in the same change.
-2. Parse with the Zod schemas in `providers/twilio/webhooks/messaging.ts`. The inbound schema gains `OptOutType` and `MessagingServiceSid`.
+2. Parse with the Zod schemas in `providers/twilio/schemas/messaging.ts`. The inbound schema gains `OptOutType` and `MessagingServiceSid`.
 3. Call `meetingService.business` or `voipMessagesService`; the routes hold no business logic.
 
 **Status callbacks.** `voipMessagesService.applyStatusCallback` (`:229`) is today a plain pass-through to `patchMessageStatusByProviderId` (`entities/voip-messages/dal/server/mutations.ts:71`). It gains two rules: map Twilio's statuses that the DB enum lacks (`accepted`, `sending`, …), and never move a message backwards (a late `sent` does not overwrite `delivered`). A `failed` or `undelivered` **visit summary** pushes to the meeting's participants and the system owner: "Text to {name} failed, call them." Error 30006 (landline) arrives this way.

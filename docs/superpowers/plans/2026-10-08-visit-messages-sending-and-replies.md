@@ -68,13 +68,15 @@ Inputs the spec implies and a person would trip over. Each has a test in the tas
 | `src/shared/services/voip/lib/map-twilio-message-status.ts` | Twilio status to the table's status |
 | `src/shared/constants/enums/voip.ts` | the status rank (never backwards) |
 | `src/shared/entities/voip-messages/dal/server/{queries,mutations}.ts` | `hasOutboundOnThread`; the guarded status patch |
-| `src/shared/services/providers/twilio/webhooks/messaging.ts`, `client.ts` | schema additions; the 401 doc fix |
+| `src/shared/services/providers/twilio/schemas/{messaging,voice}.ts`, `client.ts`, `DOCS.md` | the webhook payload Zod moves out of `webhooks/`, a directory a provider does not have; schema additions; the 401 doc fix |
+| `docs/codebase-conventions/service-architecture.md` | the provider shape loses `webhooks/` |
 | `src/app/api/webhooks/twilio/route.ts` | status callbacks |
 | `src/app/api/voip/twiml/messaging-inbound/route.ts` | inbound messages |
 | `src/app/api/company/vcard/route.ts` | the company contact card |
 | `src/shared/modules/meetings/messages/dal/server/{queries,mutations,settings}.ts` | contexts, chain messages, reply target, claims, templates and pauses |
-| `src/shared/modules/meetings/messages/deliver-visit-text.ts` | render a visit text and send it from the main line |
-| `src/shared/modules/meetings/messages/run-automatic-kind.ts` | the loop both runs share |
+| `src/shared/modules/meetings/messages/lib/deliver-visit-text.ts` | render a visit text and send it from the main line |
+| `src/shared/modules/meetings/messages/lib/deliver-visit-email.ts` | the invite, the summary email and the cancellation email |
+| `src/shared/modules/meetings/messages/lib/run-automatic-kind.ts` | the loop both runs share |
 | `src/shared/modules/meetings/messages/service.ts` | `recordDeliveryFailure` |
 | `src/shared/modules/meetings/business/service.ts` | `sendVisitSummary`, `sendDayBeforeReminders`, `sendRepConfirmations`, `sendVisitCancellation`, `confirmByHomeowner`, `handleHomeownerReply` |
 | `src/trpc/routers/meetings.router/business.router.ts` | `sendVisitSummary` on the visit-messages procedure |
@@ -881,7 +883,9 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ### Task 5: Delivery status comes back
 
 **Files:**
-- Modify: `src/shared/services/providers/twilio/webhooks/messaging.ts`
+- Move: `src/shared/services/providers/twilio/webhooks/{messaging,voice}.ts` to `src/shared/services/providers/twilio/schemas/{messaging,voice}.ts`, then modify `schemas/messaging.ts`
+- Modify: `src/shared/services/providers/twilio/DOCS.md:30,54-59,63,88,92`
+- Modify: `docs/codebase-conventions/service-architecture.md:126,135,155-159,169-172,175,182`
 - Modify: `src/shared/services/providers/twilio/client.ts:196`
 - Modify: `src/shared/constants/enums/voip.ts`
 - Create: `src/shared/services/voip/lib/map-twilio-message-status.ts`
@@ -922,9 +926,57 @@ console.log('13. Twilio status mapping ✓')
 Run: `pnpm tsx scripts/verify-visit-messages.ts`
 Expected: fails at the import.
 
-- [ ] **Step 2: The schemas**
+- [ ] **Step 2: Move the webhook payload schemas into `schemas/`**
 
-In `src/shared/services/providers/twilio/webhooks/messaging.ts`, replace `messagingInboundWebhookSchema` and `messagingStatusCallbackSchema`:
+A provider has no `webhooks/` directory; its Zod lives in `schemas/`. Nothing imports these two files yet, so the move is a rename, and `git mv` stages it:
+
+```bash
+git mv src/shared/services/providers/twilio/webhooks/messaging.ts src/shared/services/providers/twilio/schemas/messaging.ts
+git mv src/shared/services/providers/twilio/webhooks/voice.ts src/shared/services/providers/twilio/schemas/voice.ts
+```
+
+In both moved files, change `from '../schemas/primitives'` to `from './primitives'`.
+
+`src/shared/services/providers/twilio/DOCS.md` names the old directory five times. Line 30: the phrase "no `webhooks/verify.ts`" becomes "no `lib/verify.ts`". Line 63: "live in `schemas/` / `webhooks/` / `types.ts`" becomes "live in `schemas/` / `types.ts`". Line 88: "`webhooks/voice.ts` + `webhooks/messaging.ts`" becomes "`schemas/voice.ts` + `schemas/messaging.ts`". Line 92: the import path ends in `twilio/schemas/voice`. Lines 54 to 59, the directory tree, become:
+
+```text
+  schemas/              Zod: outbound request shapes and inbound webhook payloads (form-urlencoded parsing at the seam)
+    primitives.ts       e164Schema, twilioSidSchema, isoDateTimeSchema
+    access-token.ts     mintVoiceAccessTokenInputSchema
+    voice.ts            voice* webhook schemas (status callback, dial action, etc.)
+    messaging.ts        messaging* webhook schemas (inbound, status callback)
+```
+
+`docs/codebase-conventions/service-architecture.md` prescribes the same `webhooks/` directory under `provider-directory-shape`, so it changes in the same commit. Line 126: "no `webhooks/verify.ts`" becomes "no `lib/verify.ts`". Line 135: "**Data-shape Zod** (`schemas/`, `webhooks/`)" becomes "**Data-shape Zod** (`schemas/`)". Line 175: "schemas + types live in `schemas/` / `webhooks/` / `types.ts`" becomes "schemas + types live in `schemas/` / `types.ts`". Line 182: "Standalone `webhooks/verify.ts`" becomes "Standalone `lib/verify.ts`", and a new anti-pattern bullet follows it: "- A `webhooks/` directory — webhook payload Zod is a data shape and lives in `schemas/` with the rest." Lines 155 to 159, the two tree entries, become:
+
+```text
+  schemas/                  Zod data shapes: what we send (request shapes) and what the provider sends us (webhook payloads)
+    primitives.ts           shared primitives (E.164, timestamps, IDs)
+    <resource>.ts           per-resource request + response zod schemas
+    <event-class>.ts        per-event-class webhook payload Zod (often a discriminated union)
+```
+
+Lines 169 to 172, the "`schemas/` vs `webhooks/`" block, become:
+
+```text
+**`schemas/` holds both directions:**
+- what WE send to the provider (request shapes, JWT-mint input shapes, etc.)
+- what THE PROVIDER sends to us (inbound webhook form payloads, status callbacks)
+- Zero internal dependencies other than `schemas/primitives.ts`. Parsed with `.parse()` at the boundary.
+```
+
+Run: `grep -rn "webhooks/" docs/codebase-conventions/service-architecture.md src/shared/services/providers/twilio/DOCS.md`
+Expected: no matches.
+
+Run: `grep -rn "twilio/webhooks" src scripts`
+Expected: no matches.
+
+Run: `pnpm tsc`
+Expected: green; the files had no importers.
+
+- [ ] **Step 3: The schemas**
+
+In `src/shared/services/providers/twilio/schemas/messaging.ts`, replace `messagingInboundWebhookSchema` and `messagingStatusCallbackSchema`:
 
 ```ts
 export const messagingInboundWebhookSchema = z.object({
@@ -964,7 +1016,7 @@ Keep `messagingStatusSchema` and its type where they are.
 
 In `src/shared/services/providers/twilio/client.ts`, the doc comment above `verifyWebhookSignature`: change `` `false` ⇒ respond 403 `` to `` `false` ⇒ respond 401 ``.
 
-- [ ] **Step 3: The rank and the mapper**
+- [ ] **Step 4: The rank and the mapper**
 
 Append to `src/shared/constants/enums/voip.ts`, after `VoipMessageStatus`:
 
@@ -1004,7 +1056,7 @@ export function mapTwilioMessageStatus(status: string): VoipMessageStatus | null
 }
 ```
 
-- [ ] **Step 4: The guarded patch**
+- [ ] **Step 5: The guarded patch**
 
 In `src/shared/entities/voip-messages/dal/server/mutations.ts`, change the imports to:
 
@@ -1056,7 +1108,7 @@ export async function patchMessageStatusByProviderId(
 }
 ```
 
-- [ ] **Step 5: The service applies the mapping**
+- [ ] **Step 6: The service applies the mapping**
 
 In `voip-messages.service.ts`, add the import:
 
@@ -1110,7 +1162,7 @@ and replace the `applyStatusCallback` member with:
     },
 ```
 
-- [ ] **Step 6: The route**
+- [ ] **Step 7: The route**
 
 Create `src/app/api/webhooks/twilio/route.ts`:
 
@@ -1118,7 +1170,7 @@ Create `src/app/api/webhooks/twilio/route.ts`:
 import env from '@/shared/config/server-env'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { twilioClient } from '@/shared/services/providers/twilio/client'
-import { messagingStatusCallbackSchema } from '@/shared/services/providers/twilio/webhooks/messaging'
+import { messagingStatusCallbackSchema } from '@/shared/services/providers/twilio/schemas/messaging'
 import { voipMessagesService } from '@/shared/services/voip/voip-messages.service'
 
 const PATH = '/api/webhooks/twilio'
@@ -1162,7 +1214,7 @@ export async function POST(request: Request): Promise<Response> {
 }
 ```
 
-- [ ] **Step 7: Verify**
+- [ ] **Step 8: Verify**
 
 Run: `pnpm tsx scripts/verify-visit-messages.ts && pnpm tsc && pnpm lint`
 Expected: section 13 passes; no type or lint errors.
@@ -1210,10 +1262,12 @@ console.log('twilio signature ✓')
 Run: `NODE_OPTIONS=--conditions=react-server pnpm tsx scripts/tmp-twilio-signature.ts`
 Expected: `twilio signature ✓`. Review Focus 5 is the first assertion. Then `rm scripts/tmp-twilio-signature.ts`.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
-git add src/shared/services/providers/twilio/webhooks/messaging.ts src/shared/services/providers/twilio/client.ts src/shared/constants/enums/voip.ts src/shared/services/voip/lib/map-twilio-message-status.ts src/shared/entities/voip-messages/dal/server/mutations.ts src/shared/services/voip/voip-messages.service.ts src/app/api/webhooks/twilio/route.ts scripts/verify-visit-messages.ts && git commit -m "feat(voip): Twilio status callbacks land on a signed route, map onto the table's states and never move a message backwards
+git add src/shared/services/providers/twilio/schemas/messaging.ts src/shared/services/providers/twilio/schemas/voice.ts src/shared/services/providers/twilio/DOCS.md docs/codebase-conventions/service-architecture.md src/shared/services/providers/twilio/client.ts src/shared/constants/enums/voip.ts src/shared/services/voip/lib/map-twilio-message-status.ts src/shared/entities/voip-messages/dal/server/mutations.ts src/shared/services/voip/voip-messages.service.ts src/app/api/webhooks/twilio/route.ts scripts/verify-visit-messages.ts && git commit -m "feat(voip): Twilio status callbacks land on a signed route, map onto the table's states and never move a message backwards
+
+The webhook payload schemas move from webhooks/ to schemas/; a provider has no webhooks directory, and the provider-shape convention says so now.
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
@@ -1226,7 +1280,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Create: `src/shared/modules/meetings/messages/dal/server/queries.ts`
 - Create: `src/shared/modules/meetings/messages/dal/server/settings.ts`
 - Modify: `src/shared/entities/voip-messages/dal/server/queries.ts`
-- Create: `src/shared/modules/meetings/messages/deliver-visit-text.ts`
+- Create: `src/shared/modules/meetings/messages/lib/deliver-visit-text.ts`
 - Create: `src/app/api/company/vcard/route.ts`
 - Modify: `src/shared/modules/meetings/business/service.ts`
 - Modify: `src/trpc/routers/meetings.router/business.router.ts`
@@ -1399,7 +1453,7 @@ export async function hasOutboundOnThread(input: { voipDidId: string, remoteE164
 
 - [ ] **Step 2: Deliver one text**
 
-Create `src/shared/modules/meetings/messages/deliver-visit-text.ts`:
+Create `src/shared/modules/meetings/messages/lib/deliver-visit-text.ts`:
 
 ```ts
 import type { ScopedContext } from '@/shared/dal/server/types'
@@ -1553,7 +1607,7 @@ import { publicUrl } from '@/shared/config/public-url'
 import { meetingMessageCrud } from '@/shared/modules/meetings/messages/dal/server/crud'
 import { getVisitMessageContext } from '@/shared/modules/meetings/messages/dal/server/queries'
 import { getTemplateBodies } from '@/shared/modules/meetings/messages/dal/server/settings'
-import { deliverVisitText } from '@/shared/modules/meetings/messages/deliver-visit-text'
+import { deliverVisitText } from '@/shared/modules/meetings/messages/lib/deliver-visit-text'
 import { isVisitMessageEligible } from '@/shared/modules/meetings/messages/lib/is-visit-message-eligible'
 import { voipDidsService } from '@/shared/services/voip/voip-dids.service'
 ```
@@ -1703,7 +1757,7 @@ Expected: `Content-Type: text/vcard`, `Content-Disposition: attachment; filename
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/shared/modules/meetings/messages/dal/server/queries.ts src/shared/modules/meetings/messages/dal/server/settings.ts src/shared/entities/voip-messages/dal/server/queries.ts src/shared/modules/meetings/messages/deliver-visit-text.ts src/app/api/company/vcard/route.ts src/shared/modules/meetings/business/service.ts src/trpc/routers/meetings.router/business.router.ts && git commit -m "feat(meetings): a visit text renders from the current wording and leaves from the main line; the summary goes as MMS with the company contact card
+git add src/shared/modules/meetings/messages/dal/server/queries.ts src/shared/modules/meetings/messages/dal/server/settings.ts src/shared/entities/voip-messages/dal/server/queries.ts src/shared/modules/meetings/messages/lib/deliver-visit-text.ts src/app/api/company/vcard/route.ts src/shared/modules/meetings/business/service.ts src/trpc/routers/meetings.router/business.router.ts && git commit -m "feat(meetings): a visit text renders from the current wording and leaves from the main line; the summary goes as MMS with the company contact card
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
@@ -1717,7 +1771,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Create: `src/shared/services/providers/resend/emails/visit-summary-email.tsx`
 - Modify: `src/shared/services/providers/resend/lib/render-emails.tsx`
 - Modify: `src/shared/services/email.service.ts`
-- Create: `src/shared/modules/meetings/messages/deliver-visit-email.ts`
+- Create: `src/shared/modules/meetings/messages/lib/deliver-visit-email.ts`
 - Modify: `src/shared/modules/meetings/business/service.ts` (`sendVisitSummary`)
 - Create: `scripts/visit-messages.ts` (the dev tool; Tasks 8 and 9 extend it)
 - Modify: `scripts/verify-visit-messages.ts`
@@ -2074,7 +2128,7 @@ and the member, after `sendProposalEmail`:
 
 - [ ] **Step 5: Deliver the email leg**
 
-Create `src/shared/modules/meetings/messages/deliver-visit-email.ts`:
+Create `src/shared/modules/meetings/messages/lib/deliver-visit-email.ts`:
 
 ```ts
 import type { VisitMessageContext } from '@/shared/modules/meetings/messages/dal/server/queries'
@@ -2088,7 +2142,7 @@ import { formatBusinessDay, formatBusinessDayTime } from '@/shared/lib/business-
 import { formatCustomerAddress } from '@/shared/lib/formatters'
 import { formatPhone } from '@/shared/lib/phone'
 import { formatArrivalWindow } from '@/shared/modules/meetings/core/lib/arrival-window'
-import { repDisplayName, visitLinkFor } from '@/shared/modules/meetings/messages/deliver-visit-text'
+import { repDisplayName, visitLinkFor } from '@/shared/modules/meetings/messages/lib/deliver-visit-text'
 import { buildIcs } from '@/shared/modules/meetings/messages/lib/build-ics'
 import { buildGoogleCalendarLink } from '@/shared/modules/meetings/messages/lib/google-calendar-link'
 import { emailService } from '@/shared/services/email.service'
@@ -2210,7 +2264,7 @@ In `business/service.ts`, add the imports:
 ```ts
 import { getRescheduleChain } from '@/shared/entities/meetings/dal/server/queries'
 import { listChainMessages } from '@/shared/modules/meetings/messages/dal/server/queries'
-import { deliverVisitSummaryEmail } from '@/shared/modules/meetings/messages/deliver-visit-email'
+import { deliverVisitSummaryEmail } from '@/shared/modules/meetings/messages/lib/deliver-visit-email'
 ```
 
 (merge `getRescheduleChain` into the existing import from that queries module). Change the return type to `Promise<DalReturn<{ sms: MeetingMessage, email: MeetingMessage }>>` and, after the `sms` row is written, before `return`, add:
@@ -2309,7 +2363,7 @@ import { db } from '@/shared/db'
 import { meetingMessages } from '@/shared/db/schema/meeting-messages'
 import { voipMessages } from '@/shared/db/schema/voip-messages'
 import { getVisitMessageContext } from '@/shared/modules/meetings/messages/dal/server/queries'
-import { buildVisitInvite, buildVisitSummaryEmailProps } from '@/shared/modules/meetings/messages/deliver-visit-email'
+import { buildVisitInvite, buildVisitSummaryEmailProps } from '@/shared/modules/meetings/messages/lib/deliver-visit-email'
 import { meetingService } from '@/shared/modules/meetings/service'
 import { emailService } from '@/shared/services/email.service'
 import { renderVisitSummaryEmail } from '@/shared/services/providers/resend/lib/render-emails'
@@ -2388,7 +2442,7 @@ Expected: `summary email ✓`; every row removed. Then `rm scripts/tmp-summary-e
 - [ ] **Step 9: Commit**
 
 ```bash
-git add src/shared/modules/meetings/messages/lib/google-calendar-link.ts src/shared/services/providers/resend/emails/visit-summary-email.tsx src/shared/services/providers/resend/lib/render-emails.tsx src/shared/services/email.service.ts src/shared/modules/meetings/messages/deliver-visit-email.ts src/shared/modules/meetings/business/service.ts scripts/visit-messages.ts scripts/verify-visit-messages.ts && git commit -m "feat(meetings): the visit summary also goes by email, with a calendar invite that a resend updates instead of duplicating
+git add src/shared/modules/meetings/messages/lib/google-calendar-link.ts src/shared/services/providers/resend/emails/visit-summary-email.tsx src/shared/services/providers/resend/lib/render-emails.tsx src/shared/services/email.service.ts src/shared/modules/meetings/messages/lib/deliver-visit-email.ts src/shared/modules/meetings/business/service.ts scripts/visit-messages.ts scripts/verify-visit-messages.ts && git commit -m "feat(meetings): the visit summary also goes by email, with a calendar invite that a resend updates instead of duplicating
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
@@ -2410,7 +2464,7 @@ Expected: an MMS from the 626 number on the owner's phone with the summary wordi
 **Files:**
 - Create: `src/shared/modules/meetings/messages/lib/run-window.ts`
 - Create: `src/shared/modules/meetings/messages/dal/server/mutations.ts`
-- Create: `src/shared/modules/meetings/messages/run-automatic-kind.ts`
+- Create: `src/shared/modules/meetings/messages/lib/run-automatic-kind.ts`
 - Modify: `src/shared/modules/meetings/business/service.ts`
 - Create: `src/shared/services/providers/upstash/jobs/send-day-before-reminders.ts`
 - Create: `src/shared/services/providers/upstash/jobs/send-rep-confirmations.ts`
@@ -2524,7 +2578,7 @@ export async function setMeetingMessageOutcome(id: string, outcome: {
 
 - [ ] **Step 4: The loop**
 
-Create `src/shared/modules/meetings/messages/run-automatic-kind.ts`:
+Create `src/shared/modules/meetings/messages/lib/run-automatic-kind.ts`:
 
 ```ts
 import type { ScopedContext } from '@/shared/dal/server/types'
@@ -2535,7 +2589,7 @@ import { getRescheduleChain } from '@/shared/entities/meetings/dal/server/querie
 import { claimAutomaticSend, recordAutomaticSkip, setMeetingMessageOutcome } from '@/shared/modules/meetings/messages/dal/server/mutations'
 import { listChainMessages, listVisitMessageContexts } from '@/shared/modules/meetings/messages/dal/server/queries'
 import { getTemplateBodies, listPausedKinds } from '@/shared/modules/meetings/messages/dal/server/settings'
-import { deliverVisitText } from '@/shared/modules/meetings/messages/deliver-visit-text'
+import { deliverVisitText } from '@/shared/modules/meetings/messages/lib/deliver-visit-text'
 import { planVisitMessages } from '@/shared/modules/meetings/messages/lib/plan-visit-messages'
 import { resolveRunInstant } from '@/shared/modules/meetings/messages/lib/resolve-run-instant'
 import { runWindowFor } from '@/shared/modules/meetings/messages/lib/run-window'
@@ -2631,9 +2685,9 @@ export async function runAutomaticKind(ctx: ScopedContext, kind: PausableVisitMe
 In `business/service.ts`, add the imports:
 
 ```ts
-import type { VisitMessageRunReport } from '@/shared/modules/meetings/messages/run-automatic-kind'
+import type { VisitMessageRunReport } from '@/shared/modules/meetings/messages/lib/run-automatic-kind'
 
-import { runAutomaticKind } from '@/shared/modules/meetings/messages/run-automatic-kind'
+import { runAutomaticKind } from '@/shared/modules/meetings/messages/lib/run-automatic-kind'
 ```
 
 and the members:
@@ -2928,7 +2982,7 @@ Expected: `runs ✓`; every row the script created is gone. Then `rm scripts/tmp
 - [ ] **Step 8: Commit**
 
 ```bash
-git add src/shared/modules/meetings/messages/lib/run-window.ts src/shared/modules/meetings/messages/dal/server/mutations.ts src/shared/modules/meetings/messages/run-automatic-kind.ts src/shared/modules/meetings/business/service.ts src/shared/services/providers/upstash/jobs/send-day-before-reminders.ts src/shared/services/providers/upstash/jobs/send-rep-confirmations.ts src/app/api/qstash-jobs/route.ts scripts/setup-visit-message-crons.ts scripts/visit-messages.ts scripts/verify-visit-messages.ts && git commit -m "feat(meetings): the day-before reminder and the rep confirmation run on the plan, claim each send once, and are scheduled from the same constant the dashboard will show
+git add src/shared/modules/meetings/messages/lib/run-window.ts src/shared/modules/meetings/messages/dal/server/mutations.ts src/shared/modules/meetings/messages/lib/run-automatic-kind.ts src/shared/modules/meetings/business/service.ts src/shared/services/providers/upstash/jobs/send-day-before-reminders.ts src/shared/services/providers/upstash/jobs/send-rep-confirmations.ts src/app/api/qstash-jobs/route.ts scripts/setup-visit-message-crons.ts scripts/visit-messages.ts scripts/verify-visit-messages.ts && git commit -m "feat(meetings): the day-before reminder and the rep confirmation run on the plan, claim each send once, and are scheduled from the same constant the dashboard will show
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
@@ -2944,7 +2998,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Create: `src/shared/services/providers/resend/emails/visit-cancellation-email.tsx`
 - Modify: `src/shared/services/providers/resend/lib/render-emails.tsx`
 - Modify: `src/shared/services/email.service.ts`
-- Modify: `src/shared/modules/meetings/messages/deliver-visit-email.ts`
+- Modify: `src/shared/modules/meetings/messages/lib/deliver-visit-email.ts`
 - Modify: `src/shared/modules/meetings/business/service.ts`
 - Modify: `scripts/visit-messages.ts`
 - Test: a throwaway `scripts/tmp-cancellation.ts`, deleted before the commit
@@ -3218,7 +3272,7 @@ In `business/service.ts`, add the imports:
 
 ```ts
 import { claimAutomaticSend, setMeetingMessageOutcome } from '@/shared/modules/meetings/messages/dal/server/mutations'
-import { deliverVisitCancellationEmail } from '@/shared/modules/meetings/messages/deliver-visit-email'
+import { deliverVisitCancellationEmail } from '@/shared/modules/meetings/messages/lib/deliver-visit-email'
 import { shouldSendVisitCancellation } from '@/shared/modules/meetings/messages/lib/should-send-visit-cancellation'
 ```
 
@@ -3295,7 +3349,7 @@ import assert from 'node:assert/strict'
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { getVisitMessageContext } from '@/shared/modules/meetings/messages/dal/server/queries'
-import { deliverVisitCancellationEmail } from '@/shared/modules/meetings/messages/deliver-visit-email'
+import { deliverVisitCancellationEmail } from '@/shared/modules/meetings/messages/lib/deliver-visit-email'
 import { meetingService } from '@/shared/modules/meetings/service'
 import { emailService } from '@/shared/services/email.service'
 
@@ -3333,7 +3387,7 @@ Expected: `cancellation ✓`; nothing was written. Then `rm scripts/tmp-cancella
 - [ ] **Step 6: Commit**
 
 ```bash
-git add src/shared/services/providers/upstash/jobs/send-visit-cancellation.ts src/shared/entities/meetings/dal/server/crud.ts src/app/api/qstash-jobs/route.ts src/shared/services/providers/resend/emails/visit-cancellation-email.tsx src/shared/services/providers/resend/lib/render-emails.tsx src/shared/services/email.service.ts src/shared/modules/meetings/messages/deliver-visit-email.ts src/shared/modules/meetings/business/service.ts scripts/visit-messages.ts && git commit -m "feat(meetings): a cancelled visit whose invite went out gets a calendar cancellation; a reschedule's original does not
+git add src/shared/services/providers/upstash/jobs/send-visit-cancellation.ts src/shared/entities/meetings/dal/server/crud.ts src/app/api/qstash-jobs/route.ts src/shared/services/providers/resend/emails/visit-cancellation-email.tsx src/shared/services/providers/resend/lib/render-emails.tsx src/shared/services/email.service.ts src/shared/modules/meetings/messages/lib/deliver-visit-email.ts src/shared/modules/meetings/business/service.ts scripts/visit-messages.ts && git commit -m "feat(meetings): a cancelled visit whose invite went out gets a calendar cancellation; a reschedule's original does not
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
@@ -3676,7 +3730,7 @@ import env from '@/shared/config/server-env'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { meetingService } from '@/shared/modules/meetings/service'
 import { twilioClient } from '@/shared/services/providers/twilio/client'
-import { messagingInboundWebhookSchema } from '@/shared/services/providers/twilio/webhooks/messaging'
+import { messagingInboundWebhookSchema } from '@/shared/services/providers/twilio/schemas/messaging'
 
 const PATH = '/api/voip/twiml/messaging-inbound'
 
