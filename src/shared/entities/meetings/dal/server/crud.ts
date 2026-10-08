@@ -44,7 +44,7 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
     create: {
       // Authed callers: ownerId is ALWAYS server-resolved (off the `own Meeting` capability, never input
       // or a role string) so a wire client can't create a meeting owned by someone else.
-      // SYSTEM_CONTEXT orchestrators have no user and supply ownerId themselves.
+      // A system caller has no user and supplies ownerId itself.
       async before(input, ctx) {
         if (input.setBy === null) {
           throw new ThrowableDalError({ type: 'precondition-failed', reason: SET_BY_REQUIRED.reason })
@@ -66,8 +66,8 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
         }
         return { ...withToken, ownerId: await resolveMeetingOwnerId(userId, ability) }
       },
-      // row.ownerId, not the acting user's id, so the participant follows the actual owner on the
-      // SYSTEM_CONTEXT path too. dispatchOrThrow: a missed enqueue must fail the mutation, not drop the event.
+      // row.ownerId, not the acting user's id, so the participant follows the actual owner for a system
+      // caller too. dispatchOrThrow: a missed enqueue must fail the mutation, not drop the event.
       async after(row: Meeting, _ctx) {
         const systemOwnerId = await getSystemOwnerId()
         // A system-owned (unassigned) meeting has no owner participant — info@ cannot attend.
@@ -101,7 +101,7 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
           if (data.setBy === null) {
             throw new ThrowableDalError({ type: 'precondition-failed', reason: SET_BY_REQUIRED.reason })
           }
-          // Only super-admins change a setter for now; SYSTEM_CONTEXT (`manage all`) may.
+          // Only super-admins change a setter for now; a system caller (`manage all`) may.
           if (ctx.actor.ability.cannot('assign', 'Meeting')) {
             throw new ThrowableDalError({ type: 'forbidden' })
           }
@@ -122,7 +122,7 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
         }
         return next
       },
-      // excludeUserId is optional: under SYSTEM_CONTEXT there is no actor to exclude.
+      // excludeUserId is optional: a system caller has no actor to exclude.
       // Ably publish stays inline — routing it through QStash would add 100-300ms and defeat the point.
       async after(row: Meeting, ctx, meta) {
         const { previousRow, input: data } = meta
@@ -197,7 +197,7 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
       'gcalEtag',
       'gcalSyncedAt',
     ],
-    // Loses to create.before on the authed path; the source.ownerId fallback keeps a SYSTEM_CONTEXT duplicate from crashing.
+    // Loses to create.before on the authed path; the source.ownerId fallback keeps a system caller's duplicate from crashing.
     overrides: (source, ctx) => ({
       ownerId: ctx.actor.userId ?? source.ownerId,
       setBy: source.setBy ?? undefined,

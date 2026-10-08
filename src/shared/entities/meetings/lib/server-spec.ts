@@ -5,7 +5,6 @@ import {
   selectMeetingSchema,
 } from '@/shared/db/schema'
 import { MEETING } from '@/shared/entities/meetings/lib/constants'
-import { meetingVisibility } from '@/shared/entities/meetings/lib/visibility'
 
 const updateMeetingSchema = insertMeetingSchema.partial()
 
@@ -30,7 +29,6 @@ export const meetingServerSpec = defineEntitySpec({
   entityName: MEETING,
   subject: MEETING,
   conditionColumns: [],
-  visibility: meetingVisibility,
   table: meetings,
   schemas: {
     insert: insertMeetingSchema,

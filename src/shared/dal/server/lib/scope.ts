@@ -21,7 +21,7 @@ import { reachFor } from './permissions/core'
  * scopes them through `permit`. A family joins when it converts; the set and this module go when
  * the last one has.
  */
-export const COMPILED_SUBJECTS: ReadonlySet<EntitySubject> = new Set<EntitySubject>(['Customer', 'CustomerNote'])
+export const COMPILED_SUBJECTS: ReadonlySet<EntitySubject> = new Set<EntitySubject>(['Customer', 'CustomerNote', 'Meeting'])
 
 export function isCompiled(spec: AnyServerSpec): boolean {
   return COMPILED_SUBJECTS.has(subjectOf(spec))

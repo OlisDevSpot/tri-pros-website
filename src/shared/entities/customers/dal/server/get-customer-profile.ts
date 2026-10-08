@@ -65,7 +65,7 @@ export async function getCustomerProfile(ctx: ScopedContext, customerId: string)
   // separate presigned-URL fetch, instead of flashing a skeleton then removing it.
   const hasRecording = Boolean(attribution?.captureJSON?.mp3RecordingKey)
 
-  const { meetings: meetingsWithProposals, proposals: allProposals } = await getMeetingsWithProposals(eq(meetings.customerId, customerId))
+  const { meetings: meetingsWithProposals, proposals: allProposals } = await getMeetingsWithProposals(ctx, eq(meetings.customerId, customerId))
 
   const noteRows = await db
     .select({

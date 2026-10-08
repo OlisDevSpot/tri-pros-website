@@ -4,7 +4,6 @@ import { z } from 'zod'
 import { moveCustomerPipelineItem } from '@/features/customer-pipelines/dal/server/move-customer-pipeline-item'
 import { moveCustomerToPipeline } from '@/features/customer-pipelines/dal/server/move-customer-to-pipeline'
 import { deriveProjectStatusBucket, meetingPipelines, pipelines } from '@/shared/constants/enums/pipelines'
-import { buildUserContext } from '@/shared/dal/server/lib/helpers'
 import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { db } from '@/shared/db'
 import { customerLeadAttribution } from '@/shared/db/schema/customer-lead-attribution'
@@ -15,7 +14,6 @@ import { getCustomerProfile } from '@/shared/entities/customers/dal/server/get-c
 import { customerPipelineItemsInputSchema, getCustomerPipelineItems } from '@/shared/entities/customers/dal/server/pipeline-items'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
-import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { R2_BUCKETS } from '@/shared/services/providers/r2/types'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
@@ -91,8 +89,7 @@ export const customerPipelinesRouter = createTRPCRouter({
   getCustomerProjects: agentProcedure
     .input(z.object({ meetingId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const scopedCtx = buildUserContext({ userId: ctx.session.user.id, ability: ctx.actor.ability }, meetingServerSpec)
-      const meeting = dalToTrpc(await meetingCrud.getById(scopedCtx, { id: input.meetingId }))
+      const meeting = dalToTrpc(await meetingCrud.getById(ctx, { id: input.meetingId }))
       if (!meeting?.customerId) {
         return { projects: [], proposals: [] }
       }
@@ -118,16 +115,11 @@ export const customerPipelinesRouter = createTRPCRouter({
       projectId: z.string().uuid(),
     }))
     .mutation(async ({ ctx, input }) => {
-      if (ctx.actor.ability.cannot('update', 'Meeting')) {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to update meetings' })
-      }
-      return dalToTrpc(await meetingCrud.update(
-        { actor: ctx.actor, scope: null },
-        {
-          id: input.meetingId,
-          data: { projectId: input.projectId, meetingOutcome: 'converted_to_project' },
-        },
-      ))
+      // The meeting side is the actor's reach; the project side waits for the Project family.
+      return dalToTrpc(await meetingCrud.update(ctx, {
+        id: input.meetingId,
+        data: { projectId: input.projectId, meetingOutcome: 'converted_to_project' },
+      }))
     }),
 
 })

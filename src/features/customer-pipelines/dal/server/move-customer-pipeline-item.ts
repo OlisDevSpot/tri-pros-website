@@ -8,6 +8,7 @@ import { TRPCError } from '@trpc/server'
 import { and, asc, eq, gt, isNull, sql } from 'drizzle-orm'
 
 import { buildUserContext, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { db } from '@/shared/db'
 import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
@@ -103,7 +104,7 @@ export async function moveCustomerPipelineItem({
       .from(meetings)
       .where(and(
         eq(meetings.customerId, customerId),
-        ctx.scope ?? undefined,
+        permit(ctx, 'read', meetingServerSpec).sql,
         eq(meetings.pipeline, 'fresh'),
         isNull(meetings.projectId),
         eq(meetings.meetingOutcome, 'not_set'),
@@ -137,7 +138,7 @@ export async function moveCustomerPipelineItem({
       .from(meetings)
       .where(and(
         eq(meetings.customerId, customerId),
-        ctx.scope ?? undefined,
+        permit(ctx, 'read', meetingServerSpec).sql,
         eq(meetings.meetingOutcome, 'not_set'),
       ))
       .orderBy(meetings.createdAt)

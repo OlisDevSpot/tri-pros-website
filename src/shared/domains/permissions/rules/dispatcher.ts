@@ -3,7 +3,7 @@ import { defineRules } from './define-rules'
 // Internal lead-qualifier, NOT a sales agent: deliberately without can('own','Meeting'),
 // so the appointments they book land unassigned (system-owned) for the dispatch flow.
 export function dispatcherRules(userId: string) {
-  return defineRules((can) => {
+  return defineRules((can, cannot) => {
     can('access', 'Dashboard')
     can('read', 'LeadsPool') // the shared leads pool drives phone and pipeline access
 
@@ -17,9 +17,12 @@ export function dispatcherRules(userId: string) {
     can('create', 'CustomerNote')
     can(['update', 'delete'], 'CustomerNote', { authorId: userId })
 
+    // Every meeting, project meetings included: the dispatcher schedules the agents' days.
     can('read', 'Meeting')
     can('create', 'Meeting') // books appointments (lands unassigned — see resolve-owner.ts)
     can('update', 'Meeting')
+    // The in-meeting deal structure is pricing. Not readable, so not writable either.
+    cannot(['read', 'update'], 'Meeting', ['flowStateJSON'])
 
     can('read', 'User')
 

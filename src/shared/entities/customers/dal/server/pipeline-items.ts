@@ -30,6 +30,7 @@ import { CUSTOMER_FIELD_SQL } from '@/shared/entities/customers/dal/server/custo
 import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { userParticipatesInMeeting } from '@/shared/entities/meetings/dal/server/participants'
+import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 
 export const customerPipelineItemsInputSchema = fieldListInput(CUSTOMER_FIELDS, { pagination: false }).extend({
   pipeline: z.enum(pipelines),
@@ -41,6 +42,8 @@ interface PipelineBranchArgs {
   userId: string
   isOmni: boolean
   canSeeUngated: boolean
+  /** The Meeting read reach, for the arms whose outer table is `meetings`. */
+  meetingReach: SQL
   customerWhere: SQL | undefined
   /** Undefined keeps the branch's own natural order. */
   customerOrder: SQL[] | undefined
@@ -49,10 +52,11 @@ interface PipelineBranchArgs {
 export async function getCustomerPipelineItems(ctx: ScopedContext, input: CustomerPipelineItemsInput): Promise<DalReturn<PaginatedResult<CustomerPipelineItem>>> {
   return dalDbOperation(async () => {
     const args: PipelineBranchArgs = {
-      // The customer reach comes from the rules; each branch adds the meeting-side participation its pipeline needs.
+      // The customer reach comes from the rules; the meeting arms add the Meeting read reach; the proposal arms keep participation until the Proposal family converts.
       userId: ctx.actor.userId ?? '',
       isOmni: ctx.actor.ability.can('manage', 'all'),
       canSeeUngated: canSeeUngatedPhone(ctx.actor.ability),
+      meetingReach: permit(ctx, 'read', meetingServerSpec).sql,
       customerWhere: and(
         permit(ctx, 'read', customerServerSpec).sql,
         buildSearchWhere(input.search, [customers.name, customers.email]),
@@ -159,7 +163,7 @@ async function getRehashOrDeadPipelineItems(pipeline: Pipeline, args: PipelineBr
         eq(meetings.customerId, customers.id),
         eq(meetings.pipeline, pipeline as 'fresh' | 'rehash' | 'dead'),
         isNull(meetings.projectId),
-        args.isOmni ? undefined : userParticipatesInMeeting(args.userId, meetings.id),
+        args.meetingReach,
       ))),
       args.customerWhere,
     ))
@@ -224,7 +228,7 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
       eq(meetings.customerId, customers.id),
       eq(meetings.pipeline, 'fresh'),
       isNull(meetings.projectId),
-      args.isOmni ? undefined : userParticipatesInMeeting(args.userId, meetings.id),
+      args.meetingReach,
     ))
     .leftJoin(leadSourcesTable, eq(leadSourcesTable.id, customers.leadSourceId))
     .where(args.customerWhere)
@@ -273,7 +277,7 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
       .innerJoin(user, eq(user.id, meetings.ownerId))
       .where(and(
         inArray(meetings.customerId, customerIds),
-        args.isOmni ? undefined : userParticipatesInMeeting(args.userId, meetings.id),
+        args.meetingReach,
       ))
       .orderBy(meetings.customerId, desc(meetings.scheduledFor)),
     // Individual proposals per customer for card display + value calculation.
@@ -464,7 +468,7 @@ async function getProjectsPipelineItems(args: PipelineBranchArgs): Promise<Custo
     .where(and(
       inArray(meetings.customerId, customerIds),
       isNotNull(meetings.projectId),
-      args.isOmni ? undefined : userParticipatesInMeeting(args.userId, meetings.id),
+      args.meetingReach,
     ))
     .orderBy(desc(meetings.createdAt))
 

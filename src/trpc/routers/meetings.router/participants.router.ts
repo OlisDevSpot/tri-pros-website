@@ -4,6 +4,7 @@ import z from 'zod'
 
 import { meetingParticipantRoles } from '@/shared/constants/enums'
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { db } from '@/shared/db'
 import { isUniqueViolation } from '@/shared/db/lib/pg-errors'
 import { meetingParticipants } from '@/shared/db/schema'
@@ -13,42 +14,30 @@ import {
   countParticipantsByRole,
   getParticipantByRole,
   getParticipantsForMeeting,
-  isParticipant,
   removeParticipant,
   updateParticipantRole,
 } from '@/shared/entities/meetings/dal/server/participants'
+import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
 import { notificationService } from '@/shared/services/notification.service'
 import { schedulingService } from '@/shared/services/scheduling.service'
-import { createTRPCRouter } from '@/trpc/init'
-
-import { meetingProcedure } from './procedures'
+import { agentProcedure, createTRPCRouter } from '@/trpc/init'
 
 export const participantsRouter = createTRPCRouter({
-  // Returns all participants for a meeting with user info (name, email, image).
   // Used by the inline ParticipantPicker and ManageParticipantsModal.
-  // Super-admins (manage all) can read any meeting; agents can only read meetings
-  // they are a participant of.
-  // NOTE: scope middleware applies to `meetings` table, but getParticipantsForMeeting
-  // queries `meetingParticipants` table directly — keep the explicit isParticipant check.
-  getParticipants: meetingProcedure
+  getParticipants: agentProcedure
     .input(z.object({ meetingId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const isOmni = ctx.actor.ability.can('manage', 'all')
-
-      if (!isOmni && !(await isParticipant(input.meetingId, ctx.session.user.id))) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'You do not have access to this meeting',
-        })
+      // The participants table has no spec of its own; whoever reaches the meeting reads its participants.
+      if (!(await permit(ctx, 'read', meetingServerSpec).probe(input.meetingId))) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Meeting not found' })
       }
-
       return getParticipantsForMeeting(input.meetingId)
     }),
 
   // Manage meeting participants (add/remove/change role).
   // Only users with 'assign' permission on Meeting may call this.
-  manageParticipants: meetingProcedure
+  manageParticipants: agentProcedure
     .input(z.object({
       meetingId: z.string().uuid(),
       action: z.enum(['add', 'remove', 'change_role']),

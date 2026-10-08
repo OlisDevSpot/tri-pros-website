@@ -10,6 +10,8 @@ import type { CustomerProfileMeeting } from '@/shared/entities/customers/types'
 import { and, count, eq, exists, getTableColumns, sql } from 'drizzle-orm'
 
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
+import { projectToReadFields } from '@/shared/dal/server/lib/permissions/project'
 import { fieldListInput } from '@/shared/dal/server/lib/query/field-list-input'
 import { paginate } from '@/shared/dal/server/lib/query/output'
 import { buildSearchWhere } from '@/shared/dal/server/lib/query/search'
@@ -26,6 +28,7 @@ import { MEETING_FIELDS } from '@/shared/entities/meetings/dal/meeting-fields'
 import { MEETING_FIELD_SQL, setterUser } from '@/shared/entities/meetings/dal/server/meeting-field-sql'
 import { getMeetingsWithProposals } from '@/shared/entities/meetings/dal/server/meetings-with-proposals'
 import { getAllParticipantsForMeetings } from '@/shared/entities/meetings/dal/server/participants'
+import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 
 export interface MeetingListParticipant {
   id: string
@@ -91,7 +94,7 @@ export async function listMeetings(
 ): Promise<DalReturn<PaginatedResult<MeetingListRow>>> {
   return dalDbOperation(async () => {
     const where = and(
-      ctx.scope ?? undefined,
+      permit(ctx, 'read', meetingServerSpec).sql,
       buildSearchWhere(input.search, [customers.name, sql`${meetings.meetingType}::text`]),
       MEETING_FIELD_SQL.where(input.filters),
     )
@@ -166,7 +169,8 @@ export async function listMeetings(
         const ownerRow = rowParticipants.find(p => p.role === 'owner')
         const coOwnerRow = rowParticipants.find(p => p.role === 'co_owner')
 
-        return {
+        // A read field rule (a dispatcher's withheld deal structure) applies to a hand-written row too.
+        return projectToReadFields(ctx.actor.ability, meetingServerSpec, {
           ...row,
           leadSource: row.leadSource,
           participants: rowParticipants.map(p => ({
@@ -195,7 +199,7 @@ export async function listMeetings(
                 userImage: coOwnerRow.userImage,
               }
             : null,
-        }
+        }, row)
       }),
       total: result.total,
     } as PaginatedResult<MeetingListRow>
@@ -237,7 +241,7 @@ export async function getByIdWithJoins(
       .innerJoin(user, eq(user.id, meetings.ownerId))
       .where(and(
         eq(meetings.id, input.id),
-        ctx.scope ?? undefined,
+        permit(ctx, 'read', meetingServerSpec).sql,
       ))
 
     if (!row) {
@@ -247,7 +251,7 @@ export async function getByIdWithJoins(
     // leftJoin miss yields an all-null customer object rather than null.
     const customer = row.customer?.id ? row.customer : null
 
-    return { ...row, customer } as MeetingWithCustomer
+    return projectToReadFields(ctx.actor.ability, meetingServerSpec, { ...row, customer }, row) as MeetingWithCustomer
   })
 }
 
@@ -278,13 +282,13 @@ export async function listMeetingsForProject(
     const where = ctx.scope
       ? and(projectCondition, exists(db.select({ id: projects.id }).from(projects).where(and(eq(projects.id, input.projectId), ctx.scope)))) ?? projectCondition
       : projectCondition
-    const { meetings: rows } = await getMeetingsWithProposals(where)
+    const { meetings: rows } = await getMeetingsWithProposals(ctx, where)
     return rows
   })
 }
 
 /**
- * A meeting and the meetings it replaced, oldest first. `ctx.scope` gates the meeting asked for;
+ * A meeting and the meetings it replaced, oldest first. The Meeting read reach gates the meeting asked for;
  * the ones it replaced come with it, because they are the same visit.
  */
 export async function getRescheduleChain(
@@ -296,7 +300,7 @@ export async function getRescheduleChain(
       WITH RECURSIVE chain AS (
         SELECT ${meetings.id} AS id, ${meetings.rescheduledFromId} AS rescheduled_from_id, 0 AS depth
         FROM ${meetings}
-        WHERE ${and(eq(meetings.id, input.meetingId), ctx.scope ?? undefined)}
+        WHERE ${and(eq(meetings.id, input.meetingId), permit(ctx, 'read', meetingServerSpec).sql)}
         UNION ALL
         SELECT prior.id, prior.rescheduled_from_id, chain.depth + 1
         FROM meetings prior

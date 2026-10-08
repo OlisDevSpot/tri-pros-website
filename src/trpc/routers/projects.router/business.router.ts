@@ -1,8 +1,7 @@
 import { TRPCError } from '@trpc/server'
-import { buildUserContext, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
-import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 import { projectCrud } from '@/shared/modules/projects/core/dal/server/crud'
 import { setProjectScopes } from '@/shared/modules/projects/core/dal/server/mutations'
 import { extractScopeIdsFromProposals } from '@/shared/modules/projects/core/lib/derive-scope-ids'
@@ -55,10 +54,8 @@ export const businessRouter = createTRPCRouter({
 
       // 5. Link meeting to project and set outcome — through meetingCrud so the
       //    entity update hook fires (sync to GCal with the new project prefix
-      //    + color, broadcast Ably refresh). `projectId` is now in the GCal
-      //    trigger set in meetingServerSpec.hooks.update.after.
-      const meetingCtx = buildUserContext({ userId: ctx.session.user.id, ability: ctx.actor.ability }, meetingServerSpec)
-      dalVerifySuccess(await meetingCrud.update(meetingCtx, {
+      //    + color, broadcast Ably refresh). `projectId` is in the update hook's calendar trigger set.
+      dalVerifySuccess(await meetingCrud.update(ctx, {
         id: input.meetingId,
         data: { projectId: project.id, meetingOutcome: 'converted_to_project' },
       }))

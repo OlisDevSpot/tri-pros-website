@@ -5,15 +5,14 @@ import { LIVE_MEETING_OUTCOMES } from '@/shared/constants/enums'
 import { PARTICIPANT_ROLES, SETTER_ROLES } from '@/shared/entities/meetings/constants/internal-user-roles'
 import { getByIdWithJoins, listMeetings, listMeetingsForProject, meetingListInputSchema } from '@/shared/entities/meetings/dal/server/queries'
 import { listUsersByRoles } from '@/shared/entities/users/dal/server/queries'
-import { createTRPCRouter } from '@/trpc/init'
+import { agentProcedure, createTRPCRouter } from '@/trpc/init'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 
 import { projectProcedure } from '../projects.router/procedures'
-import { meetingProcedure } from './procedures'
 
 export const readsRouter = createTRPCRouter({
   // `liveOnly` stays a top-level input and becomes a fixed filter here, so no toolbar ever shows it.
-  list: meetingProcedure
+  list: agentProcedure
     .input(meetingListInputSchema.extend({ liveOnly: z.boolean().optional() }))
     .query(async ({ ctx, input }) => {
       const { liveOnly, ...query } = input
@@ -21,7 +20,7 @@ export const readsRouter = createTRPCRouter({
       return dalToTrpc(await listMeetings(ctx, { ...query, filters }))
     }),
 
-  getByIdWithJoins: meetingProcedure
+  getByIdWithJoins: agentProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
       const row = dalToTrpc(await getByIdWithJoins(ctx, input))
@@ -37,7 +36,7 @@ export const readsRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => dalToTrpc(await listMeetingsForProject(ctx, input))),
 
   // `setter` adds dispatchers, who book meetings but never sit them, so they stay out of the participant picker.
-  getInternalUsers: meetingProcedure
+  getInternalUsers: agentProcedure
     .input(z.object({ purpose: z.enum(['participant', 'setter']) }).optional())
     .query(async ({ ctx, input }) => {
       if (ctx.actor.ability.cannot('assign', 'Meeting')) {

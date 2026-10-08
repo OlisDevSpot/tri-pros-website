@@ -2,10 +2,12 @@ import { TRPCError } from '@trpc/server'
 import { and, eq, isNotNull, isNull, or } from 'drizzle-orm'
 
 import { gcalSyncableActivityTypes } from '@/shared/constants/enums'
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { db } from '@/shared/db'
 import { activities } from '@/shared/db/schema/activities'
 import { meetings } from '@/shared/db/schema/meetings'
 import { getGoogleAccountForUser } from '@/shared/entities/accounts/dal/server/google-calendar'
+import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
 import { schedulingService } from '@/shared/services/scheduling.service'
 import { agentProcedure, createTRPCRouter } from '@/trpc/init'
@@ -38,14 +40,15 @@ export const syncRouter = createTRPCRouter({
     .mutation(async ({ ctx }) => {
       const userId = ctx.session.user.id
 
-      // 1. Push unsynced meetings (have scheduledFor but no gcalEventId)
-      // All meetings live on the centralized info@ calendar regardless of owner.
+      // 1. Push the unsynced meetings within the caller's reach: every meeting lives on the centralized
+      //    info@ calendar, but an agent pushes only the ones they sit in.
       const unsyncedMeetings = await db
         .select({ id: meetings.id })
         .from(meetings)
         .where(and(
           isNotNull(meetings.scheduledFor),
           isNull(meetings.gcalEventId),
+          permit(ctx, 'read', meetingServerSpec).sql,
         ))
 
       for (const m of unsyncedMeetings) {
