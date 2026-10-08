@@ -11,6 +11,7 @@ import { fetchThread as fetchThreadDal } from '@/shared/entities/voip-messages/d
 import { RestException, twilioClient } from '@/shared/services/providers/twilio/client'
 import { getVetting, VOIP_DEV_OVERRIDE_NUMBER } from '@/shared/services/providers/twilio/constants'
 import { complianceService } from '@/shared/services/voip/compliance.service'
+import { voipDidsService } from '@/shared/services/voip/voip-dids.service'
 
 // ---------------------------------------------------------------------------
 // voipMessagesService — orchestrates outbound SMS + inbound persistence +
@@ -32,11 +33,36 @@ export function isOptOutKeyword(body: string): boolean {
   return STOP_KEYWORD_REGEX.test(body.trim())
 }
 
+// Production is the deployment environment, not the build mode: preview deploys build in production mode too.
+const isProduction = env.VERCEL_ENV === 'production'
+
+interface OutboundLine {
+  id: string
+  e164: string
+}
+
+interface SendOutboundInput {
+  customerId: string | null
+  remoteE164: string
+  body: string
+  from: OutboundLine
+  /** Null for the main line: it is nobody's sticky DID. */
+  agentUserId: string | null
+  mediaUrl?: string[]
+}
+
 interface SendSmsInput {
   customerId: string
   remoteE164: string
   agentUserId: string
   body: string
+}
+
+interface SendFromMainLineInput {
+  customerId: string | null
+  remoteE164: string
+  body: string
+  mediaUrl?: string[]
 }
 
 interface SendSmsResult {
@@ -72,12 +98,14 @@ function buildTwilioMessageParams(input: {
   fromE164: string
   toE164: string
   body: string
+  mediaUrl?: string[]
 }): MessageListInstanceCreateOptions {
   return {
     from: input.fromE164,
     to: input.toE164,
     body: input.body,
     statusCallback: STATUS_CALLBACK_URL,
+    ...(input.mediaUrl && input.mediaUrl.length > 0 ? { mediaUrl: input.mediaUrl } : {}),
   }
 }
 
@@ -88,54 +116,124 @@ function describeTwilioError(e: unknown): string {
   return 'twilio:unknown'
 }
 
+/**
+ * The one path a text leaves on, whichever line it leaves from:
+ *  1. Do-not-contact gate.
+ *  2. 10DLC vetting check, production only.
+ *  3. Dev override on the Twilio leg, fail-closed: outside production the number must be set.
+ *  4. Persist the row as `queued`.
+ *  5. Fire Twilio and patch the row.
+ */
+async function sendOutbound(ctx: ScopedContext, input: SendOutboundInput): Promise<DalReturn<SendSmsResult>> {
+  const allowed = await complianceService.canOutboundTo(input.remoteE164)
+  if (!allowed) {
+    const failureReason = 'dnc'
+    const inserted = await voipMessageCrud.create(ctx, {
+      customerId: input.customerId,
+      voipDidId: input.from.id,
+      remoteE164: input.remoteE164,
+      body: input.body,
+      direction: 'outbound',
+      status: 'failed',
+      failureReason,
+      agentUserId: input.agentUserId,
+    })
+    if (!inserted.success) {
+      return inserted
+    }
+    return dalSuccess({
+      messageId: inserted.data.id,
+      providerMessageId: null,
+      status: 'failed' as const,
+      failureReason,
+    })
+  }
+
+  if (isProduction && !getVetting().tenDlcCampaignSid) {
+    return dalError({
+      type: 'precondition-failed',
+      reason: '10DLC campaign approval pending: outbound SMS is disabled in production.',
+    })
+  }
+
+  // The dev database is a copy of production with real customer phones, so outside production
+  // a text goes to one configured number or does not go.
+  if (!isProduction && !VOIP_DEV_OVERRIDE_NUMBER) {
+    return dalError({
+      type: 'precondition-failed',
+      reason: 'VOIP_DEV_OVERRIDE_NUMBER is not set. Outside production every text goes to that number, so nothing was sent.',
+    })
+  }
+  const dialTarget = VOIP_DEV_OVERRIDE_NUMBER ?? input.remoteE164
+
+  const created = await voipMessageCrud.create(ctx, {
+    customerId: input.customerId,
+    voipDidId: input.from.id,
+    remoteE164: input.remoteE164,
+    body: input.body,
+    direction: 'outbound',
+    status: 'queued',
+    agentUserId: input.agentUserId,
+  })
+  if (!created.success) {
+    return created
+  }
+  const messageRow = created.data
+
+  let twilioMessage: MessageInstance
+  try {
+    twilioMessage = await twilioClient.sendMessage(
+      buildTwilioMessageParams({
+        fromE164: input.from.e164,
+        toE164: dialTarget,
+        body: input.body,
+        mediaUrl: input.mediaUrl,
+      }),
+    )
+  }
+  catch (e) {
+    const errorCode = describeTwilioError(e)
+    const patched = await voipMessageCrud.update(ctx, {
+      id: messageRow.id,
+      data: { status: 'failed', failureReason: errorCode },
+    })
+    if (!patched.success) {
+      return patched
+    }
+    return dalSuccess({
+      messageId: messageRow.id,
+      providerMessageId: null,
+      status: 'failed' as const,
+      failureReason: errorCode,
+    })
+  }
+
+  const patched = await voipMessageCrud.update(ctx, {
+    id: messageRow.id,
+    data: {
+      providerMessageId: twilioMessage.sid,
+      status: 'sent',
+      sentAt: new Date().toISOString(),
+    },
+  })
+  if (!patched.success) {
+    return patched
+  }
+  return dalSuccess({
+    messageId: messageRow.id,
+    providerMessageId: twilioMessage.sid,
+    status: 'sent' as const,
+    failureReason: null,
+  })
+}
+
 function createVoipMessagesService() {
   return {
-    /**
-     * Send an SMS from an agent to a customer.
-     *  1. Compliance gate.
-     *  2. 10DLC vetting check (prod-only).
-     *  3. Sticky DID.
-     *  4. Dev-override on the Twilio leg.
-     *  5. Persist row with `status='queued'`.
-     *  6. Fire Twilio + patch row.
-     */
+    /** An agent texts a customer from the agent's sticky DID. */
     sendSms: async (
       ctx: ScopedContext,
       input: SendSmsInput,
     ): Promise<DalReturn<SendSmsResult>> => {
-      // 1. Compliance gate.
-      const allowed = await complianceService.canOutboundTo(input.remoteE164)
-      if (!allowed) {
-        const failureReason = 'dnc'
-        const inserted = await voipMessageCrud.create(ctx, {
-          customerId: input.customerId,
-          remoteE164: input.remoteE164,
-          body: input.body,
-          direction: 'outbound',
-          status: 'failed',
-          failureReason,
-          agentUserId: input.agentUserId,
-        })
-        if (!inserted.success) {
-          return inserted
-        }
-        return dalSuccess({
-          messageId: inserted.data.id,
-          providerMessageId: null,
-          status: 'failed' as const,
-          failureReason,
-        })
-      }
-
-      // 2. 10DLC vetting check (production only).
-      if (env.NODE_ENV === 'production' && !getVetting().tenDlcCampaignSid) {
-        return dalError({
-          type: 'precondition-failed',
-          reason: '10DLC campaign approval pending — outbound SMS disabled in production',
-        })
-      }
-
-      // 3. Sticky DID.
       const didResult = await getStickyDidForUser(input.agentUserId)
       if (!didResult.success) {
         return didResult
@@ -146,70 +244,37 @@ function createVoipMessagesService() {
           reason: 'agent has no active primary DID — assign one via the admin panel',
         })
       }
-      const stickyDid = didResult.data
-
-      // 4. Dev-override on the Twilio leg.
-      const dialTarget = VOIP_DEV_OVERRIDE_NUMBER ?? input.remoteE164
-
-      // 5. Persist row with status='queued'.
-      const created = await voipMessageCrud.create(ctx, {
+      return sendOutbound(ctx, {
         customerId: input.customerId,
-        voipDidId: stickyDid.id,
         remoteE164: input.remoteE164,
         body: input.body,
-        direction: 'outbound',
-        status: 'queued',
+        from: { id: didResult.data.id, e164: didResult.data.e164 },
         agentUserId: input.agentUserId,
       })
-      if (!created.success) {
-        return created
-      }
-      const messageRow = created.data
+    },
 
-      // 6. Fire Twilio.
-      let twilioMessage: MessageInstance
-      try {
-        twilioMessage = await twilioClient.sendMessage(
-          buildTwilioMessageParams({
-            fromE164: stickyDid.e164,
-            toE164: dialTarget,
-            body: input.body,
-          }),
-        )
+    /** Every visit message leaves from the one main line, with no agent on the row. */
+    sendFromMainLine: async (
+      ctx: ScopedContext,
+      input: SendFromMainLineInput,
+    ): Promise<DalReturn<SendSmsResult>> => {
+      const mainLine = await voipDidsService.getMainLineDid()
+      if (!mainLine.success) {
+        return mainLine
       }
-      catch (e) {
-        const errorCode = describeTwilioError(e)
-        const patched = await voipMessageCrud.update(ctx, {
-          id: messageRow.id,
-          data: { status: 'failed', failureReason: errorCode },
-        })
-        if (!patched.success) {
-          return patched
-        }
-        return dalSuccess({
-          messageId: messageRow.id,
-          providerMessageId: null,
-          status: 'failed' as const,
-          failureReason: errorCode,
+      if (!mainLine.data) {
+        return dalError({
+          type: 'precondition-failed',
+          reason: 'No main line is configured. Flag one DID as the main line first.',
         })
       }
-
-      const patched = await voipMessageCrud.update(ctx, {
-        id: messageRow.id,
-        data: {
-          providerMessageId: twilioMessage.sid,
-          status: 'sent',
-          sentAt: new Date().toISOString(),
-        },
-      })
-      if (!patched.success) {
-        return patched
-      }
-      return dalSuccess({
-        messageId: messageRow.id,
-        providerMessageId: twilioMessage.sid,
-        status: 'sent' as const,
-        failureReason: null,
+      return sendOutbound(ctx, {
+        customerId: input.customerId,
+        remoteE164: input.remoteE164,
+        body: input.body,
+        mediaUrl: input.mediaUrl,
+        from: { id: mainLine.data.id, e164: mainLine.data.e164 },
+        agentUserId: null,
       })
     },
 
