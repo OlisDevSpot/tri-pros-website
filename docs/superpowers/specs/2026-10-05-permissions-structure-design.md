@@ -1,6 +1,6 @@
 # Permissions structure — design (2026-10-05)
 
-**Status.** Approved by the owner on 2026-10-05: six sections in chat, then this written form. Units 1 and 2 of §11, and part 1 of unit 3, are built (2026-10-05, 2026-10-06, 2026-10-07); each further unit gets its own plan.
+**Status.** Approved by the owner on 2026-10-05: six sections in chat, then this written form. Units 1 and 2 of §11, and part 1 of unit 3, are built (2026-10-05, 2026-10-06, 2026-10-07; part 1's owner checks passed 2026-10-08); each further unit gets its own plan.
 
 **What this is.** The structure of the permission system: types, names, layers, where each check happens, and the order of work. It is the written form of decisions D-01 to D-26 in `docs/plans/2026-08-10-casl-scope-compiler-epic.md` and of the decision log L1 to L14 in `docs/plans/2026-09-07-casl-re-grounding/README.md`, plus the rulings of the 2026-10-05 walk-through.
 
@@ -51,7 +51,9 @@ src/shared/domains/permissions/     client-safe unless marked
   rules/<role>.ts                   one file per role that has rules
   rules/bearer.ts                   rules for a share-link holder, per shareable entity
   rules/system.ts                   manage all, with a reason
-  abilities.ts                      defineAbilitiesFor(user), abilityFromRules(rules), the conditions matcher, the startup checks
+  abilities.ts                      defineAbilitiesFor(user); runs the startup checks when it loads; server-only
+  ability-from-rules.ts             abilityFromRules(rules) and the conditions matcher; client-safe
+  rules/check-rules.ts              the startup checks on the rules
   subject.ts                        typed subject(type, row)
   actor.ts                          Actor
   client.tsx                        'use client': AbilityProvider, useAbility()
@@ -60,7 +62,9 @@ src/shared/domains/permissions/     client-safe unless marked
 src/shared/dal/server/              server-only
   types.ts                          ScopedContext, EntitySpec, SubEntitySpec, their erased union (named with the unit 3 plan)
   lib/define-spec.ts                defineEntitySpec, defineSubEntitySpec
-  lib/permissions/permit.ts         permit(); replaces lib/scope.ts
+  lib/permissions/permit.ts         permit()
+  lib/permissions/check-rules.ts    assertRulesCompile(): every rule's conditions walk through the interpreter at boot
+  lib/scope.ts                      COMPILED_SUBJECTS: the families that run on compiled rules; deleted with the legacy engine in unit 6
   lib/permissions/                  rule walk, interpreter, operator SQL bodies
   lib/contexts.ts                   systemContext, bearerContext
   lib/create-crud-dal.ts            scopes itself in every slot
