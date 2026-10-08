@@ -2,8 +2,10 @@ import type { Meeting } from '@/shared/db/schema'
 
 import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { ThrowableDalError } from '@/shared/dal/server/types'
 import { OUTCOME_PIPELINE_MAP } from '@/shared/domains/pipelines/lib/outcome-pipeline-map'
+import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { SETTER_ROLES } from '@/shared/entities/meetings/constants/internal-user-roles'
 import { SET_BY_NOT_INTERNAL } from '@/shared/entities/meetings/constants/set-by-not-internal'
 import { SET_BY_REQUIRED } from '@/shared/entities/meetings/constants/set-by-required'
@@ -48,6 +50,11 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
           throw new ThrowableDalError({ type: 'precondition-failed', reason: SET_BY_REQUIRED.reason })
         }
         const { ability, userId } = ctx.actor
+        // A client-supplied customer id is checked against the creator's Customer reach: booking a meeting
+        // must never be the way to reach a customer. Server-derived creates have no user and skip it.
+        if (userId !== null && input.customerId && !(await permit(ctx, 'read', customerServerSpec).probe(input.customerId))) {
+          throw new ThrowableDalError({ type: 'not-found' })
+        }
         // Unpicked: whoever books the meeting set it. Bookings nobody made in the app (intake, lead ingestion,
         // system-made replacements) have no user, so the office account stands in as their setter.
         const setBy = input.setBy ?? userId ?? await getSystemOwnerId()
@@ -87,6 +94,9 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
     },
     update: {
       async before(data, ctx, { id }) {
+        if (ctx.actor.userId !== null && data.customerId && !(await permit(ctx, 'read', customerServerSpec).probe(data.customerId))) {
+          throw new ThrowableDalError({ type: 'not-found' })
+        }
         if (data.setBy !== undefined) {
           if (data.setBy === null) {
             throw new ThrowableDalError({ type: 'precondition-failed', reason: SET_BY_REQUIRED.reason })

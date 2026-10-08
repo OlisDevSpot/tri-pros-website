@@ -4,8 +4,10 @@ import type { Meeting } from '@/shared/db/schema'
 
 import { canRescheduleFromOutcome, outcomeRequiresReason } from '@/shared/constants/enums/meetings'
 import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { SYSTEM_CONTEXT, ThrowableDalError } from '@/shared/dal/server/types'
 import { customerNoteCrud } from '@/shared/entities/customer-notes/dal/server/crud'
+import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { handOffShareToken } from '@/shared/entities/meetings/dal/server/mutations'
@@ -28,6 +30,16 @@ export const meetingBusinessService = {
           type: 'precondition-failed',
           reason: `Outcome "${input.outcome}" does not require a reason; use crud.update.`,
         })
+      }
+
+      // The note is written after the outcome; its customer is probed first so a meeting is never
+      // changed by an actor whose note on it would then be refused.
+      const current = dalVerifySuccess(await meetingCrud.getById(ctx, { id: input.meetingId }))
+      if (!current) {
+        throw new ThrowableDalError({ type: 'not-found' })
+      }
+      if (current.customerId && !(await permit(ctx, 'read', customerServerSpec).probe(current.customerId))) {
+        throw new ThrowableDalError({ type: 'not-found' })
       }
 
       const updated = dalVerifySuccess(await meetingCrud.update(ctx, {
@@ -63,6 +75,9 @@ export const meetingBusinessService = {
 
       const original = dalVerifySuccess(await meetingCrud.getById(ctx, { id: input.meetingId }))
       if (!original) {
+        throw new ThrowableDalError({ type: 'not-found' })
+      }
+      if (original.customerId && !(await permit(ctx, 'read', customerServerSpec).probe(original.customerId))) {
         throw new ThrowableDalError({ type: 'not-found' })
       }
       if (!canRescheduleFromOutcome(original.meetingOutcome)) {
