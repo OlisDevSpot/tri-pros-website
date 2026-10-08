@@ -3,21 +3,20 @@ import type { AppAbility } from '@/shared/domains/permissions/types'
 
 import { pipelines } from '@/shared/constants/enums/pipelines'
 
-/** Pipelines accessible to agents (non-super-admins) */
 const AGENT_PIPELINES: readonly Pipeline[] = ['projects', 'fresh']
+// The lead buckets the dispatcher works; a customer with a project is never theirs.
+const DISPATCHER_PIPELINES: readonly Pipeline[] = ['leads', 'rehash', 'dead', 'fresh']
 
 /**
- * Returns the pipelines a user can access based on their CASL ability.
- * Super-admins see all pipelines. Dispatchers see the leads pipeline only.
- * Agents see only fresh + projects. Uses the `pipelines` const array to
- * maintain canonical ordering.
+ * The kanban tabs a role may open, in the canonical `pipelines` order. A hand copy of the Customer
+ * read rules until the tabs read the ability directly.
  */
 export function getAccessiblePipelines(ability: AppAbility): Pipeline[] {
   if (ability.can('manage', 'all')) {
     return [...pipelines]
   }
   if (ability.can('read', 'LeadsPool')) {
-    return pipelines.filter(p => p === 'leads') // dispatcher — shared leads pool only
+    return pipelines.filter(p => DISPATCHER_PIPELINES.includes(p))
   }
-  return pipelines.filter(p => (AGENT_PIPELINES as readonly string[]).includes(p))
+  return pipelines.filter(p => AGENT_PIPELINES.includes(p))
 }

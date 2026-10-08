@@ -7,10 +7,10 @@ export function dispatcherRules(userId: string) {
     can('access', 'Dashboard')
     can('read', 'LeadsPool') // the shared leads pool drives phone and pipeline access
 
-    // The shared leads pool: customers no meeting has claimed yet.
-    can('read', 'Customer', { $inDerivedPipeline: ['leads'] })
-    // Lead-contact fields only — not the sales-discovery profile.
-    can('update', 'Customer', ['name', 'phone', 'email', 'address', 'city', 'state', 'zip', 'pipelineStage'])
+    // The operational pipeline: every lead bucket, never a customer who holds a project.
+    can('read', 'Customer', { $inDerivedPipeline: ['leads', 'rehash', 'dead', 'fresh'] })
+    // Lead-contact fields and the discovery profile: collecting a customer's data is the dispatcher's job.
+    can('update', 'Customer', ['name', 'phone', 'email', 'address', 'city', 'state', 'zip', 'pipelineStage', 'profile', 'profile.*'])
 
     // Dispatchers qualify leads, so they work notes exactly like agents: a customer's notes are read with the customer, and only the author edits or deletes.
     can('read', 'CustomerNote')
