@@ -10,6 +10,8 @@ import { useStableCallbacks } from '@/shared/hooks/use-stable-callbacks'
 
 interface CustomerEntity {
   id: string
+  /** The Schedule Meeting override opens the create-meeting modal, which shows the customer's name. */
+  name: string
 }
 
 /**

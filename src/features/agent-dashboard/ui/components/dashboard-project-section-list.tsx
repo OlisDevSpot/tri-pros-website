@@ -8,6 +8,7 @@ import { DashboardListSectionHeader } from '@/features/agent-dashboard/ui/compon
 import { DashboardProjectCard } from '@/features/agent-dashboard/ui/components/dashboard-project-card'
 import { EntityList } from '@/shared/components/entities/entity-list/ui/entity-list'
 import { useHydrationParityCheck } from '@/shared/dal/client/hooks/use-hydration-parity-check'
+import { ProjectActionsHost } from '@/shared/modules/projects/core/components/project-actions-host'
 import { useTRPC } from '@/trpc/helpers'
 
 interface DashboardProjectSectionListProps {
@@ -31,16 +32,18 @@ export function DashboardProjectSectionList({ title, input, emptyMessage }: Dash
   return (
     <section className="flex flex-col gap-2">
       <DashboardListSectionHeader title={title} total={data.total} />
-      <EntityList
-        title={title}
-        hideHeader
-        items={data.rows}
-        getItemKey={row => row.id}
-        renderItem={row => <DashboardProjectCard row={row} />}
-        emptyState={{ message: emptyMessage }}
-        itemsClassName="space-y-2"
-        variant="flush"
-      />
+      <ProjectActionsHost>
+        <EntityList
+          title={title}
+          hideHeader
+          items={data.rows}
+          getItemKey={row => row.id}
+          renderItem={row => <DashboardProjectCard row={row} />}
+          emptyState={{ message: emptyMessage }}
+          itemsClassName="space-y-2"
+          variant="flush"
+        />
+      </ProjectActionsHost>
     </section>
   )
 }

@@ -1145,7 +1145,8 @@ const VIEWS = {
     await openAndCancel(page, page.locator('[data-press]:not(ol *)').first(), 0, 'Delete', 'Delete proposal')
   } },
   'home-project': { path: '/dashboard?dm_d=2026-08-24', cardName: 'DashboardProjectCard', async run(page) {
-    const card = page.locator('div.rounded-lg.border').filter({ has: page.getByRole('button', { name: 'Actions' }) }).filter({ hasText: /./ }).filter({ hasNot: page.locator('[data-press]') }).first()
+    // Meeting and proposal cards press (data-press on the card itself); the project card is the one that does not.
+    const card = page.locator('div.rounded-lg.border:not([data-press])').filter({ has: page.getByRole('button', { name: 'Actions' }) }).first()
     await openAndCancel(page, card, 0, 'Delete', 'Delete project')
   } },
   'profile-meeting': { path: '/dashboard/pipeline/fresh', cardName: 'CustomerKanbanCardImpl', async run(page) {
@@ -1495,8 +1496,9 @@ import { CustomerActionsHost } from '@/shared/modules/customers/core/components/
 import { ProjectActionsHost } from '@/shared/modules/projects/core/components/project-actions-host'
 …
 const item = { id: 'c1', name: 'Customer', stage: 'new', phone: null, address: null, city: null, state: null, zip: null, nextMeetingId: null, nextMeetingAt: null, meetingScheduledFor: null, meetingConfirmedAt: null, meetingCount: 0, assignedRep: null, proposals: [], project: null, totalPipelineValue: 0, latestActivityAt: null, customerId: 'c1' } as any
-expectThrow('CustomerKanbanCard without a customer host', <ProjectActionsHost><CustomerKanbanCard item={item} isMobile={false} /></ProjectActionsHost>, /CustomerKanbanCard needs a <CustomerActionsHost> above it/)
-expectThrow('CustomerKanbanCard without a project host', <CustomerActionsHost><CustomerKanbanCard item={item} isMobile={false} /></CustomerActionsHost>, /CustomerKanbanCard needs a <ProjectActionsHost> above it/)
+// Only the bare card can be proven here: a host's own hook needs the app router, so rendering the card inside one
+// host to reach the other reader never gets past the host. The project reader is the card's second hook.
+expectThrow('CustomerKanbanCard without hosts', <CustomerKanbanCard item={item} isMobile={false} />, /CustomerKanbanCard needs a <CustomerActionsHost> above it/)
 ```
 
 Run: `TSX_TSCONFIG_PATH=.superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/tsconfig.json pnpm exec tsx .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-host-required.tsx`

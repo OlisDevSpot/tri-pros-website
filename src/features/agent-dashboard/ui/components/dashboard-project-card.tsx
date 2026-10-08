@@ -7,7 +7,7 @@ import { FolderOpenIcon, MapPinIcon } from 'lucide-react'
 import { EntityActionMenu } from '@/shared/components/entities/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
 import { cn } from '@/shared/lib/utils'
-import { useProjectActionConfigs } from '@/shared/modules/projects/core/hooks/use-project-action-configs'
+import { useProjectActionsHost } from '@/shared/modules/projects/core/components/project-actions-host'
 
 interface DashboardProjectCardProps {
   row: ProjectRow
@@ -26,41 +26,38 @@ interface DashboardProjectCardProps {
  * the coarse status — this card therefore drops the old always-'active' green
  * `status` badge (it was misleading: `status` is deprecated and ~never
  * advances) and shows only the specific `pipelineStage`, the informative axis.
- * Reuses the same `useProjectActionConfigs` + `EntityActionMenu` action
- * plumbing every other project surface (table, `ProjectEntityCard`) uses, so
- * actions can't drift between surfaces. Matches `DashboardMeetingCard`/
+ * Reads the roster's `ProjectActionsHost` and renders `EntityActionMenu` like
+ * every other project surface, so actions can't drift between surfaces.
+ * Matches `DashboardMeetingCard`/
  * `DashboardProposalCard`'s row treatment (`rounded-lg border bg-card p-2.5`)
  * so the dashboard's list modules read as one visual family.
  */
 export function DashboardProjectCard({ row, className }: DashboardProjectCardProps) {
-  const { actions: projectActions, DeleteConfirmDialog } = useProjectActionConfigs<ProjectRow>()
+  const { actions: projectActions } = useProjectActionsHost('DashboardProjectCard')
 
   return (
-    <>
-      <DeleteConfirmDialog />
-      <div
-        className={cn(
-          'flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-2.5',
-          className,
+    <div
+      className={cn(
+        'flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-2.5',
+        className,
+      )}
+    >
+      <FolderOpenIcon className="size-3.5 shrink-0 text-status-success-fg" />
+      <div className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-medium text-foreground">{row.title}</span>
+        {row.address && (
+          <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+            <MapPinIcon className="size-3 shrink-0" />
+            <span className="truncate">{row.address}</span>
+          </span>
         )}
-      >
-        <FolderOpenIcon className="size-3.5 shrink-0 text-status-success-fg" />
-        <div className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium text-foreground">{row.title}</span>
-          {row.address && (
-            <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-              <MapPinIcon className="size-3 shrink-0" />
-              <span className="truncate">{row.address}</span>
-            </span>
-          )}
-        </div>
-        {row.pipelineStage && (
-          <Badge variant="secondary" className="shrink-0 text-xs">
-            {row.pipelineStage.replace(/_/g, ' ')}
-          </Badge>
-        )}
-        <EntityActionMenu entity={row} actions={projectActions} mode="compact" className="shrink-0 text-muted-foreground hover:text-foreground data-[state=open]:text-foreground" />
       </div>
-    </>
+      {row.pipelineStage && (
+        <Badge variant="secondary" className="shrink-0 text-xs">
+          {row.pipelineStage.replace(/_/g, ' ')}
+        </Badge>
+      )}
+      <EntityActionMenu entity={row} actions={projectActions} mode="compact" className="shrink-0 text-muted-foreground hover:text-foreground data-[state=open]:text-foreground" />
+    </div>
   )
 }

@@ -22,9 +22,12 @@ import { pipelineConfigs } from '@/shared/domains/pipelines/constants/pipeline-r
 import { usePipeline } from '@/shared/domains/pipelines/hooks/pipeline-context'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { CreateMeetingModal } from '@/shared/entities/meetings/components/create-meeting-modal'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { openModal } from '@/shared/lib/open-modal'
 import { cn } from '@/shared/lib/utils'
+import { CustomerActionsHost } from '@/shared/modules/customers/core/components/customer-actions-host'
 import { MeetingActionsHost } from '@/shared/modules/meetings/core/components/meeting-actions-host'
+import { ProjectActionsHost } from '@/shared/modules/projects/core/components/project-actions-host'
 import { ProposalActionsHost } from '@/shared/modules/proposals/core/components/proposal-actions-host'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -104,16 +107,18 @@ export function CustomerPipelineView() {
   // TODO: Wire up when deleteCustomer tRPC procedure is implemented
   // const handleDeleteCustomer = useCallback((customerId: string) => { ... }, [])
 
+  const isMobile = useIsMobile()
+
+  const customerOverrides = useMemo(() => ({
+    onView: (customer: { id: string }) => handleViewProfile(customer.id),
+    onScheduleMeeting: (customer: { id: string, name: string }) => setCreateMeetingForCustomer({ id: customer.id, name: customer.name }),
+  }), [handleViewProfile])
+
   const renderCard = useCallback(
     (item: CustomerPipelineItem, _href: string, isDragOverlay?: boolean) => (
-      <CustomerKanbanCard
-        item={item}
-        isDragOverlay={isDragOverlay}
-        onViewProfile={handleViewProfile}
-        onCreateMeeting={setCreateMeetingForCustomer}
-      />
+      <CustomerKanbanCard item={item} isDragOverlay={isDragOverlay} isMobile={isMobile} />
     ),
-    [handleViewProfile],
+    [isMobile],
   )
 
   const groupedItems = useMemo(() => groupCustomersByStage(items, config.stages), [items, config.stages])
@@ -121,83 +126,87 @@ export function CustomerPipelineView() {
   return (
     <MeetingActionsHost>
       <ProposalActionsHost>
-        <div className="w-full h-full flex flex-col gap-(--gutter) overflow-hidden">
-          <PageBar className="shrink-0">
-            <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between">
-              <CustomerPipelineMetricsBar items={items} pipeline={pipeline} isLoading={query.isPending || query.isStale} />
-              <div className="flex w-full items-center justify-between gap-2 lg:w-auto lg:justify-end">
-                {canManagePipeline && <PipelineSelect value={pipeline} onChange={setPipeline} />}
-                <KanbanStageFilter
-                  stages={config.stageConfig}
-                  visibleStages={stageFilter.visibleStages}
-                  alwaysVisible={stageFilter.alwaysVisible}
-                  onToggleStage={stageFilter.handleToggleStage}
-                  onShowAll={stageFilter.handleShowAll}
-                  onHideAll={stageFilter.handleHideAll}
-                />
-              </div>
-            </div>
-            <QueryToolbar query={query} entityName="customers">
-              <QueryToolbar.Standard searchPlaceholder="Search by name, email or phone…" sort />
-            </QueryToolbar>
-          </PageBar>
-
-          {/* A filter change dims only after a short delay (quick loads never flash); a drag's refresh dims at once. */}
-          <div
-            data-stale={query.isStale || undefined}
-            aria-busy={query.isFetching || undefined}
-            className={cn(
-              'flex-1 min-h-0 transition-opacity duration-200 data-[stale=true]:pointer-events-none data-[stale=true]:opacity-50 data-[stale=true]:delay-200',
-              isMoving && 'opacity-50 pointer-events-none',
-            )}
-          >
-            {items.length === 0 && !query.isPending && !query.isStale
-              ? (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <EmptyState
-                      title="No Customers"
-                      description={query.filterSort.activeFilterCount > 0 || query.filterSort.search ? 'No customers match these filters' : 'Start by scheduling meetings with customers'}
-                      className="bg-card"
+        <CustomerActionsHost overrides={customerOverrides}>
+          <ProjectActionsHost>
+            <div className="w-full h-full flex flex-col gap-(--gutter) overflow-hidden">
+              <PageBar className="shrink-0">
+                <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between">
+                  <CustomerPipelineMetricsBar items={items} pipeline={pipeline} isLoading={query.isPending || query.isStale} />
+                  <div className="flex w-full items-center justify-between gap-2 lg:w-auto lg:justify-end">
+                    {canManagePipeline && <PipelineSelect value={pipeline} onChange={setPipeline} />}
+                    <KanbanStageFilter
+                      stages={config.stageConfig}
+                      visibleStages={stageFilter.visibleStages}
+                      alwaysVisible={stageFilter.alwaysVisible}
+                      onToggleStage={stageFilter.handleToggleStage}
+                      onShowAll={stageFilter.handleShowAll}
+                      onHideAll={stageFilter.handleHideAll}
                     />
                   </div>
-                )
-              : (
-                  <KanbanBoard<CustomerPipelineItem>
-                    stageConfig={stageFilter.filteredStageConfig}
-                    groupedItems={groupedItems}
-                    isPending={query.isPending}
-                    allowedTransitions={config.allowedTransitions}
-                    blockedMessages={config.blockedMessages}
-                    onMoveItem={handleMoveItem}
-                    onBlockedTransition={handleBlockedTransition}
-                    collapsedStages={pipeline === 'fresh' ? FRESH_COLLAPSED_STAGES : NO_COLLAPSED_STAGES}
-                    showColumnValues
-                    getItemValue={getItemValue}
-                    renderCard={renderCard}
-                    className="mobile-bleed-right"
-                  />
+                </div>
+                <QueryToolbar query={query} entityName="customers">
+                  <QueryToolbar.Standard searchPlaceholder="Search by name, email or phone…" sort />
+                </QueryToolbar>
+              </PageBar>
+
+              {/* A filter change dims only after a short delay (quick loads never flash); a drag's refresh dims at once. */}
+              <div
+                data-stale={query.isStale || undefined}
+                aria-busy={query.isFetching || undefined}
+                className={cn(
+                  'flex-1 min-h-0 transition-opacity duration-200 data-[stale=true]:pointer-events-none data-[stale=true]:opacity-50 data-[stale=true]:delay-200',
+                  isMoving && 'opacity-50 pointer-events-none',
                 )}
-          </div>
-          {createMeetingForCustomer && (
-            <CreateMeetingModal
-              isOpen={!!createMeetingForCustomer}
-              onClose={() => setCreateMeetingForCustomer(null)}
-              onSuccess={() => {
-                if (pipeline === 'leads') {
-                  moveMutation.mutate({
-                    customerId: createMeetingForCustomer.id,
-                    fromStage: 'new',
-                    toStage: 'meeting_scheduled',
-                    pipeline: 'leads',
-                  })
-                }
-                void query.refresh()
-              }}
-              customerId={createMeetingForCustomer.id}
-              customerName={createMeetingForCustomer.name}
-            />
-          )}
-        </div>
+              >
+                {items.length === 0 && !query.isPending && !query.isStale
+                  ? (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <EmptyState
+                          title="No Customers"
+                          description={query.filterSort.activeFilterCount > 0 || query.filterSort.search ? 'No customers match these filters' : 'Start by scheduling meetings with customers'}
+                          className="bg-card"
+                        />
+                      </div>
+                    )
+                  : (
+                      <KanbanBoard<CustomerPipelineItem>
+                        stageConfig={stageFilter.filteredStageConfig}
+                        groupedItems={groupedItems}
+                        isPending={query.isPending}
+                        allowedTransitions={config.allowedTransitions}
+                        blockedMessages={config.blockedMessages}
+                        onMoveItem={handleMoveItem}
+                        onBlockedTransition={handleBlockedTransition}
+                        collapsedStages={pipeline === 'fresh' ? FRESH_COLLAPSED_STAGES : NO_COLLAPSED_STAGES}
+                        showColumnValues
+                        getItemValue={getItemValue}
+                        renderCard={renderCard}
+                        className="mobile-bleed-right"
+                      />
+                    )}
+              </div>
+              {createMeetingForCustomer && (
+                <CreateMeetingModal
+                  isOpen={!!createMeetingForCustomer}
+                  onClose={() => setCreateMeetingForCustomer(null)}
+                  onSuccess={() => {
+                    if (pipeline === 'leads') {
+                      moveMutation.mutate({
+                        customerId: createMeetingForCustomer.id,
+                        fromStage: 'new',
+                        toStage: 'meeting_scheduled',
+                        pipeline: 'leads',
+                      })
+                    }
+                    void query.refresh()
+                  }}
+                  customerId={createMeetingForCustomer.id}
+                  customerName={createMeetingForCustomer.name}
+                />
+              )}
+            </div>
+          </ProjectActionsHost>
+        </CustomerActionsHost>
       </ProposalActionsHost>
     </MeetingActionsHost>
   )
