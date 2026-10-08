@@ -29,7 +29,7 @@ const PAGES = {
   'pipeline-leads': { path: '/dashboard/pipeline/leads', link: null, item: '.min-w-70 [data-slot="card"]', htmlMarker: 'cursor-grab', cardNames: ['CustomerKanbanCardImpl'] },
   'pipeline-rehash': { path: '/dashboard/pipeline/rehash', link: null, item: '.min-w-70 [data-slot="card"]', htmlMarker: 'cursor-grab', cardNames: ['CustomerKanbanCardImpl'] },
   'pipeline-projects': { path: '/dashboard/pipeline/projects', link: null, item: '.min-w-70 [data-slot="card"]', htmlMarker: 'cursor-grab', cardNames: ['CustomerKanbanCardImpl'] },
-  'schedule': { path: '/dashboard/schedule?s_d=2026-08-24', link: '/dashboard/schedule', item: '.group.relative.rounded-md.border.bg-card', htmlMarker: 'aria-label="Participants', cardNames: ['MeetingCard'] },
+  'schedule': { path: '/dashboard/schedule?s_d=2026-08-24', link: '/dashboard/schedule', item: '.group.relative.rounded-md.border.bg-card', htmlMarker: 'aria-label="Participants', cardNames: ['MeetingCardImpl'] },
 }
 
 const key = process.argv[2]

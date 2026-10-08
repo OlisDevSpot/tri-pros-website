@@ -1120,7 +1120,7 @@ async function expandRowWithActions(page, title) {
 }
 
 const VIEWS = {
-  'schedule': { path: '/dashboard/schedule?show=meetings&s_d=2026-08-24', cardName: 'MeetingCard', async run(page) {
+  'schedule': { path: '/dashboard/schedule?show=meetings&s_d=2026-08-24', cardName: 'MeetingCardImpl', async run(page) {
     const cards = page.locator(SCHEDULE_CARD)
     await openAndCancel(page, cards.nth(0), 0, 'Manage Participants', 'Manage participants')
     await openAndCancel(page, cards.nth(1), 0, 'Manage Participants', 'Manage participants')
@@ -1715,7 +1715,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 - [ ] **Step 1: Measure (RED)**
 
-Run: `node .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-census.mjs '/dashboard/schedule?show=meetings&s_d=2026-08-24' MeetingCard --step Previous`
+Run: `node .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-census.mjs '/dashboard/schedule?show=meetings&s_d=2026-08-24' MeetingCardImpl --step Previous`
 Expected: `cards 13`, `cardRenders` ≥ 26 (2–3 renders per card on mount), and `step.cardRenders` ≥ 2 × `step.cards` (Phase 1 measured 24 renders for 8 cards, max 3 per card). This is the RED.
 
 - [ ] **Step 2: Memoize the card and its data**
@@ -1772,7 +1772,9 @@ In `schedule-meetings-calendar.tsx`, pass the ref callback only to the highlight
 
 - [ ] **Step 3: Measure (GREEN)**
 
-Run: `node .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-census.mjs '/dashboard/schedule?show=meetings&s_d=2026-08-24' MeetingCard --step Previous`
+`memo` wraps the function, so the fiber walk now sees the inner function's name, `MeetingCardImpl` (as it does `CustomerKanbanCardImpl`); the probe's schedule entry (`scripts/perf/page-probe.mjs`) and the checks name that from here on.
+
+Run: `node .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-census.mjs '/dashboard/schedule?show=meetings&s_d=2026-08-24' MeetingCardImpl --step Previous`
 Expected: `cardRenders 13` (one per card on mount) and `step.cardRenders` equal to `step.cards` (each card of the new week renders once; no card of the old week survives a week step). If `cardRenders` is 26 with every card rendering exactly twice, the second pass comes from above the card (the calendar's `events` memo or `ScheduleCalendar`'s own state after mount): find which prop changed with the probe's `top` line before changing anything else, and ledger the finding; the spec's target is 1.
 
 Run: `pnpm tsc` then `pnpm lint`
@@ -1809,7 +1811,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 node scripts/perf/page-probe.mjs schedule 3 < /dev/null > .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/after-schedule.txt 2>&1
 node scripts/perf/page-probe.mjs pipeline-fresh 3 < /dev/null > .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/after-pipeline-fresh.txt 2>&1
 node scripts/perf/page-probe.mjs pipeline-leads 3 < /dev/null > .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/after-pipeline-leads.txt 2>&1
-node .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-census.mjs '/dashboard/schedule?show=meetings&s_d=2026-08-24' MeetingCard --step Previous > .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/after-census-schedule.txt
+node .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-census.mjs '/dashboard/schedule?show=meetings&s_d=2026-08-24' MeetingCardImpl --step Previous > .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/after-census-schedule.txt
 node .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-census.mjs /dashboard/pipeline/fresh CustomerKanbanCardImpl > .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/after-census-fresh.txt
 ```
 Expected: each probe ends with its `switch pipeline` or `show meetings` scenario and no `failed:` scenario; `console issues` absent or `hydration warnings 0/0/0`.

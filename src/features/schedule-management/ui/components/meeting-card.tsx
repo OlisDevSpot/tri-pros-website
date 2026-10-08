@@ -6,6 +6,7 @@ import type { MeetingOverviewCardData } from '@/shared/entities/meetings/compone
 
 import { ChevronDownIcon, MapPinIcon } from 'lucide-react'
 import { motion } from 'motion/react'
+import { memo, useMemo } from 'react'
 
 import { STATUS_ACCENT_COLORS } from '@/features/schedule-management/constants/schedule-calendar-config'
 import { MeetingOverviewCard } from '@/shared/entities/meetings/components/overview-card'
@@ -19,8 +20,8 @@ interface MeetingCardProps {
   highlightRef?: React.RefCallback<HTMLDivElement>
 }
 
-export function MeetingCard({ event, onUpdateScheduledFor, isHighlighted, highlightRef }: MeetingCardProps) {
-  const meetingData: MeetingOverviewCardData = {
+function MeetingCardImpl({ event, onUpdateScheduledFor, isHighlighted, highlightRef }: MeetingCardProps) {
+  const meetingData = useMemo<MeetingOverviewCardData>(() => ({
     id: event.meetingId,
     meetingOutcome: event.meetingOutcome,
     meetingType: event.meetingType as MeetingType,
@@ -38,7 +39,7 @@ export function MeetingCard({ event, onUpdateScheduledFor, isHighlighted, highli
     customerCity: event.customerCity,
     customerState: event.customerState,
     customerZip: event.customerZip,
-  }
+  }), [event])
 
   const cardContent = (
     <MeetingOverviewCard
@@ -134,3 +135,6 @@ export function MeetingCard({ event, onUpdateScheduledFor, isHighlighted, highli
 
   return cardContent
 }
+
+// A week step re-renders the calendar; a card whose event and handlers are unchanged skips its render.
+export const MeetingCard = memo(MeetingCardImpl)

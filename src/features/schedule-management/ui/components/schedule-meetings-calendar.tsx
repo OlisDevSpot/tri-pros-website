@@ -16,6 +16,7 @@ import { PageBar } from '@/shared/components/page-bar'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { useMeetingActions } from '@/shared/entities/meetings/hooks/use-meeting-actions'
+import { useStableCallbacks } from '@/shared/hooks/use-stable-callbacks'
 import { MeetingActionsHost } from '@/shared/modules/meetings/core/components/meeting-actions-host'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -35,20 +36,28 @@ export function ScheduleMeetingsCalendar({ showToggle, showSaturday, onToggleSat
 
   const events = useMemo<ScheduleCalendarEvent[]>(() => query.rows.map(toCalendarEvent), [query.rows])
 
-  const handleUpdateScheduledFor = useCallback((meetingId: string, date: Date) => {
-    updateScheduledFor.mutate({ id: meetingId, data: { scheduledFor: date.toISOString() } })
-  }, [updateScheduledFor])
+  // A mutation's result is a new object every render, so a callback built on it would hand every card a new prop
+  // each time the calendar re-renders (query state, a host dialog); the stable wrapper lets the memoized cards skip.
+  const { onUpdateScheduledFor: handleUpdateScheduledFor } = useStableCallbacks({
+    onUpdateScheduledFor: (meetingId: string, date: Date) => {
+      updateScheduledFor.mutate({ id: meetingId, data: { scheduledFor: date.toISOString() } })
+    },
+  })
 
-  const renderCard = useCallback((event: ScheduleCalendarEvent) => (event.kind === 'meeting'
-    ? (
-        <MeetingCard
-          event={event}
-          onUpdateScheduledFor={handleUpdateScheduledFor}
-          isHighlighted={isHighlighted(event.meetingId)}
-          highlightRef={highlightRef(event.meetingId)}
-        />
-      )
-    : null), [handleUpdateScheduledFor, isHighlighted, highlightRef])
+  const renderCard = useCallback((event: ScheduleCalendarEvent) => {
+    if (event.kind !== 'meeting') {
+      return null
+    }
+    const highlighted = isHighlighted(event.meetingId)
+    return (
+      <MeetingCard
+        event={event}
+        onUpdateScheduledFor={handleUpdateScheduledFor}
+        isHighlighted={highlighted}
+        highlightRef={highlighted ? highlightRef(event.meetingId) : undefined}
+      />
+    )
+  }, [handleUpdateScheduledFor, isHighlighted, highlightRef])
 
   const renderCompact = useCallback((event: ScheduleCalendarEvent) => (
     <ScheduleCalendarDot event={event} onUpdateScheduledFor={handleUpdateScheduledFor} />
