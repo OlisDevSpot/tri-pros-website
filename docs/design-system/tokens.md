@@ -29,51 +29,94 @@ Theme-agnostic; declared once in `:root, .funnel-light` and reused by both modes
 | Token | Value | Role |
 |---|---|---|
 | `--brand-cyan` | `#03afed` | The raw logo color. Identity only (logo, browser `theme-color`) — never text on light; it fails contrast. |
-| `--brand-cyan-bright` | `oklch(0.80 0.12 228)` | The active nav pill in both modes; dark-mode `--primary`/`--ring`/`--link` share this hue. |
+| `--brand-cyan-bright` | `oklch(0.80 0.12 228)` | The rail's active icon (`--sidebar-active-icon`) and focus ring (`--sidebar-ring`), both modes. |
 | `--brand-blue` | `oklch(0.50 0.15 243)` | Light-mode `--primary` — the action fill. |
-| `--brand-navy` | `oklch(0.215 0.072 262)` | Light-mode `--sidebar`. |
-| `--brand-navy-deep` | `oklch(0.13 0.05 262)` | Dark-mode `--sidebar`. |
+| `--brand-navy` / `--brand-navy-deep` | `oklch(0.215 0.072 262)` / `oklch(0.13 0.05 262)` | Declared, read by nothing today. |
+
+### The elevation ladder (Tier 1 knobs)
+
+Every app surface colour is one hue at a lightness set by its rung, so the surface tokens below have no fixed value: they are formulas over these knobs. Light values sit in `:root, .funnel-light`, dark values in `.dark`. Retune them with the `elevation-ladder` skill, never by hand-editing a surface token.
+
+| Knob | Light | Dark | Meaning |
+|---|---|---|---|
+| `--surface-h` | `253` | = light | Hue of every rung |
+| `--surface-c` | `0.017` | `0.04` | Chroma of every rung |
+| `--canvas-l` | `0.894` | `0.125` | Lightness of rung 0, the page |
+| `--step` | `0.024` | `0.047` | Lightness added per rung |
+| `--lift` | `0` | `0.034` | Extra lightness on the first step off the page only |
+| `--edge` | `0.048` | `0.07` | How far a hairline sits from its surface |
+| `--edge-dir` | `-1` | `1` | Edges go darker in light, lighter in dark |
+| `--depth` | set by nesting | same | Rung count: `bg-card`/`surface` nested 1–3 deep, `bg-popover`/`surface-overlay` 4, `surface-beneath` −1 |
+| `--control-edge` | `4.3` | `2.85` | Edges between a field's fill and its border |
+| `--control-border-edge` | `2.2` | `1.2` | Edges between a button's fill and its border |
+| `--control-selected-mix` | `14%` | `24%` | Primary mixed into an "on" control |
+| `--tab-lift` | `2` | `1.5` | Rungs an active tab climbs above its surface |
+| `--overlay-hover-mix` / `--overlay-selected-mix` | `14%` / `20%` | `8%` / `12%` | Primary mixed into hovered / selected rows inside overlays |
+
+`here` below is the lightness of the rung a token is read on: `--canvas-l + --lift + max(--depth, 1) × --step`. Every surface class re-declares the relative tokens, so a `bg-card` inside a `bg-card` gets the next rung's answer. Read on the page itself, they describe a card placed on it (rung 1).
 
 ### Tier 2 — Semantic Tokens (shadcn roles)
 
-These are the same names every `bg-card` / `text-muted-foreground` consumer already reads — the app re-skins with no component code change. Four roles are **new** (✚), added for the Navy Rail theme.
+These are the same names every `bg-card` / `text-muted-foreground` consumer already reads. ✚ marks a role shadcn does not have.
+
+**Surfaces and edges (ladder-derived; same formula in both modes, the knobs differ):**
+
+| Token | Formula | Role |
+|---|---|---|
+| `--background` | `oklch(--canvas-l …)` | Page canvas, rung 0 |
+| `--card` | `oklch(here …)` | The rung it is read on; a nested `bg-card` climbs, `bg-(--card)` paints the current rung |
+| `--popover` | `--canvas-l + --lift + 4 × --step` | Menus, selects, popovers: the top rung |
+| `--muted` / `--secondary` / `--accent` | one rung above the surface it is read on (on the page: rung 1, the same as `--card`) | Neutral raised fill; `--accent` is no longer a hover colour |
+| ✚ `--band` | `here + 0.5 × --step` | Column bodies, table heads, striped rows |
+| `--border` | `here + --edge-dir × --edge` | Hairline: dividers, card edges |
+| ✚ `--border-strong` / `--axis` | `here + --edge-dir × 2 × --edge` | Dashed empties, emphasized dividers, the chart baseline |
+| ✚ `--grid-line` | `here + --edge-dir × 1.5 × --edge` | Chart and calendar grids |
+| `--input` | `here + --edge-dir × --control-edge × --edge` | **Field border** (≥1.9 vs its surface) |
+| ✚ `--input-background` | `= --card` | Field fill: the rung it sits on, so a field sinks |
+| ✚ `--control` | `= --muted` | Outline-button fill, one rung up |
+| ✚ `--control-border` | `--muted`'s lightness `+ --edge-dir × --control-border-edge × --edge` | Outline buttons, toggles, segmented and tab tracks, button capsules |
+| ✚ `--tab-track` / `--tab-active` | a rung below `here` / `--tab-lift` rungs above it (capped at white) | Segmented and pill-tab track and active item |
+| ✚ `--skeleton` / `--skeleton-soft` | `= --border` / `here + --edge-dir × 0.75 × --edge` | Loading placeholders |
+
+**State tokens (mixes over the ladder):**
+
+| Token | Value | Role |
+|---|---|---|
+| ✚ `--hover` / `--press` | `--foreground` at 6% / 10% over transparent | Hover and press wash on transparent controls (ghost, tabs, menu triggers) |
+| ✚ `--control-hover` | `--foreground` 6% into `--control` | Outline-button hover, solid |
+| ✚ `--secondary-hover` | `--foreground` 6% into `--secondary` | Secondary-button hover, solid |
+| ✚ `--control-selected` | `--primary` at `--control-selected-mix` into `--control` | A control that is on (filters applied, pressed toggle) |
+| ✚ `--row-hover` / `--row-selected` | `--primary` 8% / 12% into `--card` (overlays: the `--overlay-*-mix` knobs) | Hovered and selected rows and menu items |
+| ✚ `--row-press` | `--foreground` 6% into `--row-hover` | Pressed row |
+| ✚ `--primary-hover` / `--destructive-hover` | the fill mixed toward black: 12% (dark `--primary`: 8%) | Filled-button hover, solid |
+
+**Fixed values:**
 
 | Token | Light | Dark | Role |
 |---|---|---|---|
-| `--background` | `oklch(0.965 0.009 246)` | `oklch(0.17 0.045 260)` | Page canvas |
 | `--foreground` | `oklch(0.235 0.045 258)` | `oklch(0.955 0.008 250)` | Body text |
-| `--card` / `--popover` | `oklch(1 0 0)` | `oklch(0.21 0.05 260)` | Raised surface |
-| `--card-foreground` / `--popover-foreground` | = foreground | = foreground | Text on the raised surface |
-| ✚ `--surface-raised` | `oklch(0.978 0.006 250)` | `oklch(0.245 0.055 260)` | Column bodies, table heads, hover rows |
-| `--secondary` / `--muted` | `oklch(0.955 0.008 250)` | `oklch(0.245 0.055 260)` | Neutral raised fill |
-| `--secondary-foreground` | = foreground | = foreground | |
-| `--muted-foreground` | `oklch(0.47 0.03 256)` | `oklch(0.75 0.03 252)` | De-emphasized text |
-| `--accent` | `oklch(0.955 0.012 250)` | `oklch(0.245 0.055 260)` | Neutral hover wash |
-| `--accent-foreground` | = foreground | = foreground | |
-| `--border` | `oklch(0.905 0.012 252)` | `oklch(0.30 0.04 258)` | Hairline: dividers, card edges |
-| ✚ `--border-strong` | `oklch(0.84 0.015 252)` | `oklch(0.38 0.04 258)` | Dashed empties, emphasized dividers |
-| `--input` | ladder: `--control-edge` edges off the surface | same | **Field border** (≥1.9 vs card) — shadcn's `border-input`; checkboxes/radios/switch use `--indicator` (3:1) |
-| ✚ `--input-background` | `oklch(1 0 0)` | `oklch(0.195 0.038 258)` | Control fill |
+| `--card-foreground` / `--popover-foreground` / `--secondary-foreground` / `--accent-foreground` | = foreground | = foreground | |
+| `--muted-foreground` | `oklch(0.47 0.03 256)` | `oklch(0.77 0.03 252)` | De-emphasized text |
 | `--primary` | `oklch(0.50 0.15 243)` (`--brand-blue`) | `oklch(0.76 0.13 230)` | The one action accent — "act here" |
 | `--primary-foreground` | `oklch(1 0 0)` (white) | `oklch(0.19 0.045 258)` (navy) | Label on the accent |
 | ✚ `--link` | `oklch(0.47 0.14 243)` | `oklch(0.81 0.11 228)` | `--primary` as text |
-| `--ring` | `oklch(0.58 0.15 238)` | `oklch(0.78 0.12 228)` | Focus ring |
+| `--ring` | `oklch(0.575 0.15 238)` | `oklch(0.78 0.12 228)` | Focus ring |
+| ✚ `--indicator` | `oklch(0.60 0.03 255)` | `oklch(0.62 0.04 256)` | Checkbox and radio edges, off switch track (3:1) |
 | `--destructive` | `oklch(0.53 0.19 27)` | `oklch(0.53 0.19 27)` | Destructive fill (white label) |
 | ✚ `--destructive-text` | `oklch(0.49 0.17 27)` | `oklch(0.83 0.10 25)` | Destructive as text |
-| `--success` / `--warning` | = `--status-success-fg` / `--status-pending-fg` | = `--status-success-fg` / `--status-pending-fg` | Fills, aliasing the status tones below |
-| `--sidebar` | `oklch(0.215 0.072 262)` (`--brand-navy`) | `oklch(0.13 0.05 262)` (`--brand-navy-deep`) | Rail fill |
-| `--sidebar-foreground` | `oklch(0.93 0.015 250)` | `oklch(0.92 0.012 250)` | Rail label |
+| `--success` / `--warning` | = `--status-success-fg` / `--status-pending-fg` | same | Fills, aliasing the status tones below |
+| `--sidebar` | `oklch(0.22 0.06 262)` | ladder: `--canvas-l + --lift + 2 × --step` | Rail fill |
+| `--sidebar-foreground` | `oklch(0.86 0.02 250)` | `oklch(0.82 0.02 252)` | Rail label |
 | ✚ `--sidebar-muted` | `oklch(0.74 0.05 250)` | `oklch(0.68 0.03 252)` | Group labels, icons at rest |
-| `--sidebar-accent` | `oklch(0.80 0.12 228)` (`--brand-cyan-bright`) | same | Active nav pill fill |
-| `--sidebar-accent-foreground` | `oklch(0.20 0.07 262)` | `oklch(0.18 0.06 262)` | Label on the pill (navy) |
-| `--sidebar-primary` | `oklch(0.20 0.07 262)` | `oklch(0.18 0.06 262)` | Active icon — same navy as its label |
-| `--sidebar-primary-foreground` | `oklch(0.19 0.045 258)` | `oklch(0.19 0.045 258)` | |
-| ✚ `--sidebar-hover` | `oklch(1 0 0 / 0.06)` | `oklch(1 0 0 / 0.05)` | Hover wash, no border/shadow |
-| `--sidebar-border` | `oklch(0.29 0.075 262)` | `oklch(0.25 0.06 262)` | Floating panel edge |
-| `--sidebar-ring` | `oklch(0.80 0.12 228)` | same | |
-| `--popover-glass` | `oklch(from var(--popover) l c h / 0.78)` | `oklch(0.245 0.055 260 / 0.62)` | Frosted-glass fill |
+| `--sidebar-accent` | `oklch(0.30 0.065 262)` | ladder: `… + 4.2 × --step` | Active nav pill fill (a lighter navy, not cyan) |
+| `--sidebar-accent-foreground` | `oklch(0.97 0.01 250)` | `oklch(0.96 0.01 250)` | Label on the pill |
+| ✚ `--sidebar-active-icon` | `--brand-cyan-bright` | same | The active item's icon: the rail's one brand colour |
+| ✚ `--sidebar-hover` | `oklch(0.26 0.06 262)` | ladder: `… + 2.6 × --step` | Hover fill, no border or shadow |
+| `--sidebar-border` | `oklch(0.27 0.06 262)` | ladder: `… + 3 × --step` | Floating panel edge |
+| `--sidebar-ring` | `--brand-cyan-bright` | same | |
+| `--popover-glass` | `--popover` 78% into transparent | 62% | Frosted-glass fill |
 
-Each ✚ role is exposed in `@theme inline` as `--color-<name>`, so it is a Tailwind utility: `bg-surface-raised`, `text-link`, `border-border-strong`, `bg-input-background`, `text-destructive-text`, `text-sidebar-muted`, `bg-sidebar-hover`.
+Each ✚ role is exposed in `@theme inline` as `--color-<name>`, so it is a Tailwind utility: `bg-band`, `bg-hover`, `bg-control`, `border-control-border`, `bg-tab-track`, `bg-row-selected`, `text-link`, `border-border-strong`, `bg-input-background`, `border-indicator`, `text-destructive-text`, `text-sidebar-muted`, `bg-sidebar-hover`.
 
 ### Status Tones (Tier 2, new)
 
@@ -95,9 +138,9 @@ Seven semantic tones replace every raw status/stage palette class. Each has `fg`
 
 | Token | Light | Dark |
 |---|---|---|
-| `--series-leads` | `oklch(0.66 0.12 228)` | `oklch(0.58 0.10 240)` |
-| `--series-booked` | `oklch(0.56 0.14 236)` | `oklch(0.68 0.12 234)` |
-| `--series-sits` | `oklch(0.46 0.14 245)` | `oklch(0.79 0.11 228)` |
+| `--series-leads` | `oklch(0.59 0.12 228)` | `oklch(0.58 0.10 240)` |
+| `--series-booked` | `oklch(0.51 0.14 236)` | `oklch(0.68 0.12 234)` |
+| `--series-sits` | `oklch(0.43 0.14 245)` | `oklch(0.79 0.11 228)` |
 | `--series-sales` | `oklch(0.30 0.075 258)` | `oklch(0.91 0.05 222)` |
 | `--series-neutral-strong` | `oklch(0.40 0.03 256)` | `oklch(0.85 0.02 250)` |
 | `--series-neutral-soft` | `oklch(0.66 0.02 255)` | `oklch(0.55 0.03 255)` |
@@ -157,7 +200,7 @@ The marketing theme is applied by adding the `.theme-marketing` class to a wrapp
 
 | Token | Value | Meaning |
 |---|---|---|
-| `--background` | `#e9e2d6` | Sand — the page/section background |
+| `--background` | `#faf7f1` | Warm off-white — the page/section background |
 | `--foreground` | `#2a2520` | Warm ink — primary text color |
 | `--card` | `#f4efe6` | Panel — card background (lighter than sand) |
 | `--card-foreground` | `#2a2520` | Same warm ink on cards |
@@ -172,7 +215,10 @@ The marketing theme is applied by adding the `.theme-marketing` class to a wrapp
 | `--accent` | `#03afed` | Brand blue (same as `--primary`) |
 | `--accent-foreground` | `#ffffff` | White on accent fills |
 | `--border` | `#ddd4c4` | Hairline — card edges on the sand background |
-| `--input` | `#ddd4c4` | Input borders (same as hairline) |
+| `--input` | `#c6bba9` | Field edge, about 1.8:1 on the page and 1.65:1 on a panel |
+| `--indicator` | `#928674` | Checkbox and radio edge, 3:1 on the panel |
+| `--input-background` | `transparent` | Marketing fields keep a transparent fill |
+| `--control` / `--control-border` | `transparent` / = `--border` | Outline buttons stay literal outlines over photos and panels |
 | `--ring` | `#03afed` | Focus ring — brand blue |
 | `--radius` | `0.375rem` | 6px — the panel radius (NOT uniform 8px) |
 
@@ -187,7 +233,7 @@ These tokens do not exist in the base shadcn system. They are consumed via `var(
 | `--cred-ink` | `#4a443c` | Credential strip text — slightly lighter than ink, slightly heavier than body |
 | `--cred-gap` | `24px` | Fixed gap between credential strip items (never stretch to full width) |
 | `--radius-chip` | `3px` | Chip / diamond / tag radius (not the panel radius) |
-| `--shadow-card` | `0 44px 64px -42px rgb(60 40 15 / 0.5)` | The warm card drop shadow — long, soft, tinted |
+| `--shadow-card` | `0 20px 40px -28px oklch(0 0 0 / 0.16), 0 10px 24px -18px rgb(3 175 237 / 0.08)` | Card drop: a black layer plus a faint brand-blue layer |
 | `--ease-brand` | `cubic-bezier(0.32, 0.72, 0, 1)` | The single approved easing curve |
 | `--dur-fast` | `0.18s` | Micro-interaction duration |
 | `--dur-base` | `0.4s` | Standard transition duration |
@@ -283,6 +329,6 @@ Alternatively, you can reference them in Tailwind arbitrary-value syntax where C
 
 ## Open: OKLCH Conversion
 
-The `.theme-marketing` tokens currently use hex values (`#03afed`, `#e9e2d6`, etc.). The rest of `globals.css` uses OKLCH throughout. Converting the marketing palette to OKLCH is a deferred follow-up (spec §13) — it does not affect rendering, only consistency with the existing convention.
+The `.theme-marketing` tokens currently use hex values (`#03afed`, `#faf7f1`, etc.). The rest of `globals.css` uses OKLCH throughout. Converting the marketing palette to OKLCH is a deferred follow-up (spec §13) — it does not affect rendering, only consistency with the existing convention.
 
 Until that conversion happens, do not mix OKLCH computed values with the hex tokens in the same expression.

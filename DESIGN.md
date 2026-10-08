@@ -169,8 +169,9 @@ exactly one accent, and its rarity is the point.
   the `elevation-ladder` skill; `pnpm theme:check` guards every pair on every rung.
 - **Slate Ink** (`oklch(0.235 0.045 258)`): primary text; a soft blue-slate, never
   pure black.
-- **Bands** (`--band`): column bodies, table heads and striped rows — half a step
-  above their surface. Hovered and selected rows mix primary into the surface
+- **Bands** (`--band`): striped rows, skeleton rows and an opened row's panel — half a
+  step above their surface. A table head paints its surface (`bg-(--card)`), not a band.
+  Hovered and selected rows mix primary into the surface
   (`--row-hover`, `--row-selected`); selected always sits further from it than hover.
 - **Quiet Steel** (`oklch(0.47 0.03 256)`): muted-foreground for secondary text
   and captions.
@@ -203,6 +204,21 @@ exactly one accent, and its rarity is the point.
 - **Concrete Hairline** (`#ddd4c4`): borders. **Concrete Field Edge** (`#c6bba9`,
   about 1.8:1 on the page) edges inputs, selects and textareas; checkboxes and radios
   take `#928674` (3:1 on a panel).
+
+### Over Media
+A photo, video or map looks the same in both schemes and on every rung, so these two
+tokens never change with light/dark, the ladder or the marketing theme.
+- **On Media** (`--on-media`, `oklch(0.98 0 0)`; `--on-media-muted` is it at 80%):
+  text and icons over a photo. `text-on-media`, `text-on-media-muted`.
+- **Scrim** (`--scrim`, navy-black `oklch(0.15 0.02 258)`): the veil behind that ink,
+  always used with an alpha — `bg-scrim/60`, `from-scrim/30 to-scrim/90`.
+- **Rule:** never raw `white`/`black` utilities over a photo. Assume the photo is white
+  where the ink sits: body ink needs a veil of at least 60%, muted ink 70%, icons,
+  large text and control glyphs 50%. A gradient veil meets the floor under the text,
+  not at its faint end. `backdrop-blur` adds nothing to contrast. `theme:check` holds
+  these floors.
+- Marketing's light hero plate (`--hero-scrim`, dark ink on a warm veil) is the other
+  way round and keeps its own token.
 
 ### Status
 - **Destructive** (`oklch(0.53 0.19 27)`), **Success** (`oklch(0.45 0.11 152)`),
@@ -448,18 +464,23 @@ responsive depth.
 - **Shell:** a floating panel (`<Sidebar variant="floating">`), not a flush-edge
   bar — 18px corner radius, `--shadow-lg`, and a `--sidebar-border` hairline. It
   sits inset from the viewport edge on iPad and desktop, in both modes.
-- **Fill:** `--sidebar` — a navy anchor, `oklch(0.215 0.072 262)` in light,
-  `oklch(0.13 0.05 262)` in dark (one step deeper, so dark mode's rail still reads
-  darker than its own cards). Labels sit in `--sidebar-foreground`; group labels
-  and at-rest icons use the dimmer `--sidebar-muted`.
-- **Active state:** a solid cyan pill, `--sidebar-accent` (`oklch(0.80 0.12 228)`,
-  the same value in both modes), with a navy label, `--sidebar-accent-foreground`.
-  The active icon uses `--sidebar-primary`, the same navy as the label — never the
-  rail's own navy fill, or the icon would vanish against it.
-- **Hover:** `--sidebar-hover`, a near-transparent white wash (6% light / 5% dark)
-  — no border, no shadow. It hints interactivity without mimicking the active pill
-  (icon + label rows, `SIDEBAR_NAV_ITEM_CLASS`).
-- **Ring/focus:** `--sidebar-ring`, the same cyan as the active pill.
+- **Fill:** `--sidebar`. In light it is a fixed navy anchor, `oklch(0.22 0.06 262)`.
+  In dark it is a ladder rung: rung 2 of the surface hue, one step above a section,
+  so the rail still stands off the page. Labels sit in `--sidebar-foreground`; group
+  labels and at-rest icons use the dimmer `--sidebar-muted`.
+- **Active state:** a navy lift, not a cyan pill. `--sidebar-accent` is a lighter
+  navy than the rail (`oklch(0.3 0.065 262)` in light; rung 4.2 in dark), with
+  `--sidebar-accent-foreground` for the label. Only the icon carries the brand
+  colour: `--sidebar-active-icon`, the bright cyan.
+- **Hover:** `--sidebar-hover`, a solid step between the rail and the active lift
+  (`oklch(0.26 0.06 262)` in light; rung 2.6 in dark). No border, no shadow
+  (icon + label rows, `SIDEBAR_NAV_ITEM_CLASS`). `theme:check` keeps the climb
+  rail → hover → active in dark.
+- **Gloss:** the rail's material keeps its own light in both schemes. The phone
+  dock and its menu puck take `--sidebar-sheen` / `--sidebar-sheen-radial` and the
+  `--shadow-dock-*` shadows; the theme switch sits in `--sidebar-groove` with
+  `--shadow-sidebar-groove` and a `--shadow-sidebar-thumb` thumb.
+- **Ring/focus:** `--sidebar-ring`, the bright cyan of the active icon.
 
 ### Frosted-Glass Popover (signature)
 - The Command Desk's signature surface: `--popover-glass` fill over `backdrop-filter`
