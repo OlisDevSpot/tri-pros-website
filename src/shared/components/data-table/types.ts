@@ -1,4 +1,4 @@
-// -- Date range shape used by time-preset filter --
+// -- Date range shape behind the time presets --
 
 export interface DateRange {
   from: string
@@ -30,11 +30,6 @@ export interface DataTableSelectFilter extends DataTableFilterBase {
   options: readonly { label: string, value: string }[]
 }
 
-export interface DataTableTimePresetFilter extends DataTableFilterBase {
-  type: 'time-preset'
-  presets: readonly TimePreset[]
-}
-
 export interface DataTableMultiSelectFilter extends DataTableFilterBase {
   type: 'multi-select'
   placeholder?: string
@@ -51,7 +46,6 @@ export type DataTableFilterConfig
   = DataTableSearchFilter
     | DataTableSelectFilter
     | DataTableMultiSelectFilter
-    | DataTableTimePresetFilter
 
 // -- Server-side pagination control --
 

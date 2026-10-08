@@ -1,8 +1,8 @@
 'use client'
 
-import type { ColumnDef, ColumnFiltersState, ColumnSizingState, ExpandedState, FilterFnOption, Row, SortingState, TableMeta, Updater, VisibilityState } from '@tanstack/react-table'
+import type { ColumnDef, ColumnFiltersState, ColumnSizingState, ExpandedState, Row, SortingState, TableMeta, Updater, VisibilityState } from '@tanstack/react-table'
 import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react'
-import type { DataTableFilterConfig, DataTableServerPagination, DataTableServerSorting, DataTableTimePresetFilter } from '@/shared/components/data-table/types'
+import type { DataTableFilterConfig, DataTableServerPagination, DataTableServerSorting } from '@/shared/components/data-table/types'
 
 import {
   flexRender,
@@ -20,7 +20,6 @@ import { FROZEN_COLUMN_SHADOW } from '@/shared/components/data-table/constants/f
 import { SKELETON_ROW_HEIGHT_CLASS } from '@/shared/components/data-table/constants/skeleton-widths'
 import { useTablePreferences } from '@/shared/components/data-table/contexts/table-preferences-context'
 import { usePullToRefresh } from '@/shared/components/data-table/hooks/use-pull-to-refresh'
-import { createDateRangeFilterFn } from '@/shared/components/data-table/lib/filter-fns'
 import { isRowClick } from '@/shared/components/data-table/lib/is-row-click'
 import { mapColumnSortIds } from '@/shared/components/data-table/lib/map-column-sort-ids'
 import { DataTableBody } from '@/shared/components/data-table/ui/data-table-body'
@@ -150,33 +149,6 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
 
   const columnVisibility = controlledColumnVisibility ?? fallbackColumnVisibility
 
-  const timePresetFilters = useMemo(
-    () => (filterConfig?.filter((f): f is DataTableTimePresetFilter => f.type === 'time-preset') ?? []),
-    [filterConfig],
-  )
-
-  const filterFns = useMemo(() => {
-    const fns: Record<string, ReturnType<typeof createDateRangeFilterFn<TData>>> = {}
-    for (const f of timePresetFilters) {
-      fns[`dateRange_${f.columnId}`] = createDateRangeFilterFn<TData>(f.presets)
-    }
-    return fns
-  }, [timePresetFilters])
-
-  const patchedColumns = useMemo(() => {
-    if (timePresetFilters.length === 0) {
-      return columns
-    }
-    const timeColumnIds = new Set(timePresetFilters.map(f => f.columnId))
-    return columns.map((col) => {
-      const accessorKey = 'accessorKey' in col ? col.accessorKey as string : undefined
-      if (accessorKey && timeColumnIds.has(accessorKey)) {
-        return { ...col, filterFn: `dateRange_${accessorKey}` as FilterFnOption<TData> }
-      }
-      return col
-    })
-  }, [columns, timePresetFilters])
-
   useEffect(() => {
     onActiveRowChange?.(activeRowId)
   }, [activeRowId, onActiveRowChange])
@@ -223,8 +195,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
 
   const table = useReactTable({
     data,
-    columns: patchedColumns,
-    filterFns,
+    columns,
     defaultColumn: { minSize: 60, maxSize: 800 },
     state: {
       sorting,
