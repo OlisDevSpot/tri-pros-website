@@ -3,6 +3,7 @@
 import { useMutation } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { isIOSDevice, isStandalonePWA } from '@/shared/domains/pwa/lib/device'
+import { registerServiceWorker } from '@/shared/domains/pwa/lib/register-service-worker'
 import { urlBase64ToUint8Array } from '@/shared/domains/pwa/lib/vapid-key'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -17,8 +18,6 @@ export type PushSubscriptionStatus
 
 export interface UsePushSubscriptionOptions {
   vapidPublicKey?: string
-  /** Must be served from the origin root with no-cache headers. */
-  swPath?: string
 }
 
 export interface UsePushSubscriptionResult {
@@ -28,8 +27,6 @@ export interface UsePushSubscriptionResult {
   unsubscribe: () => Promise<void>
   busy: boolean
 }
-
-const DEFAULT_SW_PATH = '/sw.js'
 
 // Daily is enough: the drift this catches (Apple's silent invalidation, ITP wipes, DB row loss) never happens mid-day.
 const RECONCILE_KEY = 'push-reconcile-at'
@@ -69,7 +66,6 @@ export function usePushSubscription(opts: UsePushSubscriptionOptions = {}): UseP
 
   // eslint-disable-next-line node/prefer-global/process
   const vapidPublicKey = opts.vapidPublicKey ?? process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ''
-  const swPath = opts.swPath ?? DEFAULT_SW_PATH
 
   // Reconciles on mount: Apple invalidates subscriptions on an undocumented schedule, ITP wipes idle SWs
   // after ~7 days, and Apple can return 200 for dead endpoints, so the server's 4xx delete isn't reliable.
@@ -101,8 +97,12 @@ export function usePushSubscription(opts: UsePushSubscriptionOptions = {}): UseP
           return
         }
 
-        const registration = await navigator.serviceWorker.register(swPath)
+        const registration = await registerServiceWorker()
         if (cancelled) {
+          return
+        }
+        if (!registration) {
+          setStatus('unsupported')
           return
         }
         registrationRef.current = registration
@@ -151,7 +151,7 @@ export function usePushSubscription(opts: UsePushSubscriptionOptions = {}): UseP
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vapidPublicKey, swPath])
+  }, [vapidPublicKey])
 
   // Must run inside a click handler: Safari requires user activation for requestPermission
   // and pushManager.subscribe, and iOS fails silently from an effect or async chain.

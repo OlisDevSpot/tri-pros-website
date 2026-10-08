@@ -6,6 +6,7 @@ import { DashboardHomePendingView } from '@/features/agent-dashboard/ui/componen
 import { DataViewPending } from '@/shared/components/data-view-pending'
 import { SidebarInset, SidebarProvider } from '@/shared/components/ui/sidebar'
 import { PwaLaunchHandoff } from '@/shared/domains/pwa/ui/pwa-launch-handoff'
+import { ServiceWorkerRegistrar } from '@/shared/domains/pwa/ui/service-worker-registrar'
 
 /**
  * The dashboard's loading frame, drawn with no session and no data so the page prerenders at build and
@@ -34,6 +35,7 @@ export function LaunchShell() {
         </SidebarInset>
       </SidebarProvider>
       <PwaLaunchHandoff />
+      <ServiceWorkerRegistrar />
     </>
   )
 }
