@@ -193,7 +193,7 @@ function createTwilioClient() {
       return response.toString()
     },
 
-    /** Twilio signs webhooks with HMAC-SHA1 over url + sorted form params using the account auth token; `false` ⇒ respond 403. */
+    /** Twilio signs webhooks with HMAC-SHA1 over url + sorted form params using the account auth token; `false` ⇒ respond 401. */
     verifyWebhookSignature(input: VerifyWebhookSignatureInput): boolean {
       return validateRequest(
         getTwilioConfig().authToken,

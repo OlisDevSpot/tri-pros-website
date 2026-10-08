@@ -37,6 +37,9 @@ export const messagingInboundWebhookSchema = z.object({
   // MediaContentType0..N as separate fields when NumMedia > 0; the route
   // handler iterates by index. We don't model the dynamic-keyed fields here.
   NumMedia: z.coerce.number().int().nonnegative(),
+  // Present when Advanced Opt-Out handled the message; Twilio has already sent the carrier-required reply.
+  OptOutType: z.enum(['STOP', 'START', 'HELP']).optional(),
+  MessagingServiceSid: twilioSidSchema.optional(),
 })
 export type MessagingInboundWebhookPayload = z.infer<typeof messagingInboundWebhookSchema>
 
@@ -47,7 +50,8 @@ export const messagingStatusCallbackSchema = z.object({
   AccountSid: twilioSidSchema,
   From: e164Schema,
   To: e164Schema,
-  MessageStatus: messagingStatusSchema,
+  // Any string: Twilio adds lifecycle states over time, and one it did not have yesterday must not 400 the callback.
+  MessageStatus: z.string().min(1),
   // ErrorCode is present on `undelivered` / `failed`. Twilio's full list:
   // https://www.twilio.com/docs/api/errors
   ErrorCode: z.coerce.number().int().optional(),

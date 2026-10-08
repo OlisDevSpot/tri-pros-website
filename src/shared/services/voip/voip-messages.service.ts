@@ -11,6 +11,7 @@ import { fetchThread as fetchThreadDal } from '@/shared/entities/voip-messages/d
 import { RestException, twilioClient } from '@/shared/services/providers/twilio/client'
 import { getVetting, VOIP_DEV_OVERRIDE_NUMBER } from '@/shared/services/providers/twilio/constants'
 import { complianceService } from '@/shared/services/voip/compliance.service'
+import { mapTwilioMessageStatus } from '@/shared/services/voip/lib/map-twilio-message-status'
 import { voipDidsService } from '@/shared/services/voip/voip-dids.service'
 
 // ---------------------------------------------------------------------------
@@ -82,10 +83,17 @@ interface RecordInboundMessageInput {
 
 interface ApplyMessageStatusCallbackInput {
   providerMessageId: string
-  status: VoipMessage['status']
-  deliveredAt?: string
-  failedAt?: string
-  failureReason?: string
+  /** Twilio's MessageStatus, unmapped. */
+  twilioStatus: string
+  errorCode?: number
+  /** When the callback arrived; Twilio sends no event time. */
+  at: string
+}
+
+interface ApplyMessageStatusCallbackResult {
+  /** Null when Twilio's state has no word in the table. */
+  status: VoipMessage['status'] | null
+  rowsAffected: number
 }
 
 interface FetchThreadInput {
@@ -289,14 +297,27 @@ function createVoipMessagesService() {
       return upsertInboundMessage(input)
     },
 
-    /**
-     * Apply a delivery-status callback. Routes through the DAL mutation.
-     */
-    applyStatusCallback: (
+    /** Maps Twilio's state onto the table's and never moves a message backwards. */
+    applyStatusCallback: async (
       _ctx: ScopedContext,
       input: ApplyMessageStatusCallbackInput,
-    ): Promise<DalReturn<{ rowsAffected: number }>> => {
-      return patchMessageStatusByProviderId(input)
+    ): Promise<DalReturn<ApplyMessageStatusCallbackResult>> => {
+      const status = mapTwilioMessageStatus(input.twilioStatus)
+      if (!status) {
+        return dalSuccess({ status: null, rowsAffected: 0 })
+      }
+      const terminalFailure = status === 'failed' || status === 'undelivered'
+      const patched = await patchMessageStatusByProviderId({
+        providerMessageId: input.providerMessageId,
+        status,
+        deliveredAt: status === 'delivered' ? input.at : undefined,
+        failedAt: terminalFailure ? input.at : undefined,
+        failureReason: terminalFailure ? `twilio:${input.errorCode ?? 'unknown'}` : undefined,
+      })
+      if (!patched.success) {
+        return patched
+      }
+      return dalSuccess({ status, rowsAffected: patched.data.rowsAffected })
     },
 
     /**

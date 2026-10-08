@@ -19,12 +19,14 @@ import { formatArrivalWindow } from '@/shared/modules/meetings/core/lib/arrival-
 import { scheduledForSetByMove } from '@/shared/modules/meetings/core/lib/scheduled-for-set'
 import { confirmationsClearedByMove } from '@/shared/modules/meetings/core/lib/confirmation-reset'
 import { companyInfo } from '@/shared/constants/company'
+import { VOIP_MESSAGE_STATUS_RANK } from '@/shared/constants/enums/voip'
 import { visitMessageTemplateKeys } from '@/shared/modules/meetings/messages/constants/kinds'
 import { VISIT_MESSAGE_TEMPLATE_DEFAULTS } from '@/shared/modules/meetings/messages/constants/templates'
 import { matchReplyKeyword } from '@/shared/modules/meetings/messages/lib/match-reply-keyword'
 import { buildVisitMessageVars, renderVisitMessage } from '@/shared/modules/meetings/messages/lib/render-visit-message'
 import { validateVisitMessageTemplate } from '@/shared/modules/meetings/messages/lib/validate-visit-message-template'
 import { applyDevRecipientOverride } from '@/shared/services/providers/resend/lib/dev-recipients'
+import { mapTwilioMessageStatus } from '@/shared/services/voip/lib/map-twilio-message-status'
 import { listMergeTokens, renderMergeSample, renderMergeTemplate } from '@/shared/services/voip/lib/sms-merge-template'
 import { countSmsSegments, findNonGsm7 } from '@/shared/services/voip/lib/sms-segments'
 
@@ -443,5 +445,16 @@ console.log('11. Cancellation rule ✓')
   assert.deepEqual(scheduledForSetByMove({ scheduledFor: VISIT }, {}, setAt), {}, 'a patch that does not touch the time sets nothing')
 }
 console.log('12. Confirmations hold for one time ✓')
+
+{
+  assert.equal(mapTwilioMessageStatus('accepted'), 'queued')
+  assert.equal(mapTwilioMessageStatus('Sent'), 'sent')
+  assert.equal(mapTwilioMessageStatus('read'), 'delivered')
+  assert.equal(mapTwilioMessageStatus('undelivered'), 'undelivered')
+  assert.equal(mapTwilioMessageStatus('partially_delivered'), null, 'a state the table has no word for is ignored')
+  assert.ok(VOIP_MESSAGE_STATUS_RANK.sent < VOIP_MESSAGE_STATUS_RANK.delivered, 'delivered outranks sent')
+  assert.equal(VOIP_MESSAGE_STATUS_RANK.failed, VOIP_MESSAGE_STATUS_RANK.delivered, 'one terminal state never overwrites another')
+}
+console.log('13. Twilio status mapping ✓')
 
 console.log('✅ verify-visit-messages passed')

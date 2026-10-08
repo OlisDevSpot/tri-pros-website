@@ -26,6 +26,16 @@ export const voipMessageStatuses = [
 ] as const
 export type VoipMessageStatus = (typeof voipMessageStatuses)[number]
 
+/** Delivery only moves forward: a late `sent` callback must not overwrite `delivered`. */
+export const VOIP_MESSAGE_STATUS_RANK: Record<VoipMessageStatus, number> = {
+  queued: 0,
+  received: 0,
+  sent: 1,
+  delivered: 2,
+  undelivered: 2,
+  failed: 2,
+}
+
 export const voipLinkTokenTypes = ['l_doc'] as const
 export type VoipLinkTokenType = (typeof voipLinkTokenTypes)[number]
 
