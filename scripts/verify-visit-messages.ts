@@ -16,6 +16,7 @@ import { ROOTS } from '@/shared/config/roots'
 import { businessDateTime, formatBusinessClock, formatBusinessDay, formatBusinessDayTime } from '@/shared/lib/business-time'
 import { buildIcs } from '@/shared/modules/meetings/messages/lib/build-ics'
 import { formatArrivalWindow } from '@/shared/modules/meetings/core/lib/arrival-window'
+import { scheduledForSetByMove } from '@/shared/modules/meetings/core/lib/scheduled-for-set'
 import { confirmationsClearedByMove } from '@/shared/modules/meetings/core/lib/confirmation-reset'
 import { companyInfo } from '@/shared/constants/company'
 import { visitMessageTemplateKeys } from '@/shared/modules/meetings/messages/constants/kinds'
@@ -267,7 +268,7 @@ function planInput(over: Partial<VisitMessagePlanInput> = {}, meeting: Partial<V
   return {
     meeting: {
       scheduledFor: VISIT,
-      createdAt: '2026-10-07T17:00:00.000Z',
+      scheduledForSetAt: '2026-10-07T17:00:00.000Z',
       meetingType: 'Fresh',
       meetingOutcome: 'not_set',
       confirmedAt: null,
@@ -371,15 +372,20 @@ console.log('8. Confirmation track ✓')
   assert.equal(step(moved, 'rep_confirmation').state, 'scheduled', 'a skip covered the old time only')
 
   // Nothing recorded and nothing will send.
-  const bookedAfterRun = planInput({ now: new Date('2026-10-09T02:30:00.000Z') }, { createdAt: '2026-10-09T02:00:00.000Z' })
+  const bookedAfterRun = planInput({ now: new Date('2026-10-09T02:30:00.000Z') }, { scheduledForSetAt: '2026-10-09T02:00:00.000Z' })
   assert.equal(step(bookedAfterRun, 'day_before_reminder').state, 'not_sent')
   assert.equal(step(bookedAfterRun, 'day_before_reminder').reason, 'booked_after_run', 'booked at 7 PM the day before: the 6 PM run had gone')
-  const sameDay = planInput({ now: new Date('2026-10-09T16:20:00.000Z') }, { createdAt: '2026-10-09T16:15:00.000Z' })
+  const sameDay = planInput({ now: new Date('2026-10-09T16:20:00.000Z') }, { scheduledForSetAt: '2026-10-09T16:15:00.000Z' })
   assert.equal(step(sameDay, 'rep_confirmation').state, 'not_sent')
   assert.equal(step(sameDay, 'rep_confirmation').reason, 'booked_after_run', 'booked at 9:15 AM for 10 AM: no "good morning" text an hour late')
-  const sameDayPostgres = planInput({ now: new Date('2026-10-09T16:20:00.000Z') }, { createdAt: '2026-10-09 16:15:00.123456+00' })
+  const sameDayPostgres = planInput({ now: new Date('2026-10-09T16:20:00.000Z') }, { scheduledForSetAt: '2026-10-09 16:15:00.123456+00' })
   assert.equal(step(sameDayPostgres, 'rep_confirmation').state, 'not_sent')
-  assert.equal(step(sameDayPostgres, 'rep_confirmation').reason, 'booked_after_run', 'a createdAt in Postgres microsecond spelling reads the same')
+  assert.equal(step(sameDayPostgres, 'rep_confirmation').reason, 'booked_after_run', 'a scheduledForSetAt in Postgres microsecond spelling reads the same')
+  const movedAfterRun = planInput({ now: new Date('2026-10-09T16:20:00.000Z') }, { scheduledFor: '2026-10-09T21:00:00.000Z', scheduledForSetAt: '2026-10-09T16:15:00.000Z' })
+  assert.equal(step(movedAfterRun, 'rep_confirmation').state, 'not_sent')
+  assert.equal(step(movedAfterRun, 'rep_confirmation').reason, 'booked_after_run', 'moved in place at 9:15 AM into 2 PM today: the 8:30 run had gone, and a retry must not text it')
+  const movedBeforeRun = planInput({ now: new Date('2026-10-09T16:20:00.000Z') }, { scheduledFor: '2026-10-09T21:00:00.000Z', scheduledForSetAt: '2026-10-09T14:00:00.000Z' })
+  assert.equal(step(movedBeforeRun, 'rep_confirmation').state, 'due', 'moved at 7 AM: the 8:30 run owns it')
   const missed = planInput({ now: new Date('2026-10-09T07:30:00.000Z') })
   assert.equal(step(missed, 'day_before_reminder').state, 'not_sent')
   assert.equal(step(missed, 'day_before_reminder').reason, 'no_record', 'the window closed at midnight with nothing recorded')
@@ -426,6 +432,10 @@ console.log('11. Cancellation rule ✓')
   assert.deepEqual(confirmationsClearedByMove({ ...confirmed, confirmedAt: null }, { scheduledFor: OLD_VISIT }), { homeownerConfirmedAt: null, homeownerConfirmedVia: null }, 'only what was set')
   assert.deepEqual(confirmationsClearedByMove({ ...confirmed, homeownerConfirmedAt: null }, { scheduledFor: OLD_VISIT }), { confirmedAt: null })
   assert.deepEqual(confirmationsClearedByMove(confirmed, { scheduledFor: OLD_VISIT, confirmedAt: '2026-10-08T03:00:00.000Z' }), { homeownerConfirmedAt: null, homeownerConfirmedVia: null }, 'a patch that moves the time and confirms it keeps its own confirmation')
+  const setAt = new Date('2026-10-08T03:00:00.000Z')
+  assert.deepEqual(scheduledForSetByMove({ scheduledFor: VISIT_AS_POSTGRES }, { scheduledFor: OLD_VISIT }, setAt), { scheduledForSetAt: '2026-10-08T03:00:00.000Z' }, 'a moved time is set now')
+  assert.deepEqual(scheduledForSetByMove({ scheduledFor: VISIT_AS_POSTGRES }, { scheduledFor: VISIT }, setAt), {}, 'a same-time re-save in another spelling keeps the fact')
+  assert.deepEqual(scheduledForSetByMove({ scheduledFor: VISIT }, {}, setAt), {}, 'a patch that does not touch the time sets nothing')
 }
 console.log('12. Confirmations hold for one time ✓')
 

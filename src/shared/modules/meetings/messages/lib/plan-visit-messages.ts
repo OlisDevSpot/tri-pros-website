@@ -91,8 +91,8 @@ export function planVisitMessages(input: VisitMessagePlanInput): VisitMessageSte
     if (notApplicable ?? ownNotApplicable) {
       return { ...step, state: 'not_applicable', reason: notApplicable ?? ownNotApplicable }
     }
-    // The run for this step had already gone when the meeting was booked, so no run will ever pick it up.
-    if (new Date(meeting.createdAt).getTime() > plannedFor.getTime()) {
+    // The run for this step had already gone when the time was set, so no run will ever pick it up.
+    if (new Date(meeting.scheduledForSetAt).getTime() > plannedFor.getTime()) {
       return { ...step, reason: 'booked_after_run' }
     }
     if (now.getTime() >= closes.getTime()) {

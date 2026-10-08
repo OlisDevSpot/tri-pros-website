@@ -55,7 +55,8 @@ export interface VisitMessageStep {
 export interface VisitMessagePlanInput {
   meeting: {
     scheduledFor: string
-    createdAt: string
+    /** When scheduledFor was last set; a time moved after a run's instant is never that run's business. */
+    scheduledForSetAt: string
     meetingType: MeetingType
     meetingOutcome: MeetingOutcome
     confirmedAt: string | null

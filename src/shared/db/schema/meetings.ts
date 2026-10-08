@@ -30,6 +30,8 @@ export const meetings = pgTable('meetings', {
   pipeline: text('pipeline', { enum: meetingPipelines }).notNull().default('fresh'),
   projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
   scheduledFor: timestamp('scheduled_for', { mode: 'string', withTimezone: true }).notNull(),
+  // When scheduledFor was last set. A run that had already gone when the time was set never picks the meeting up.
+  scheduledForSetAt: timestamp('scheduled_for_set_at', { mode: 'string', withTimezone: true }).notNull().defaultNow(),
   // Soft, day-of: the homeowner said they'll be home. Cleared whenever scheduledFor moves.
   confirmedAt: timestamp('confirmed_at', { mode: 'string', withTimezone: true }),
   // The homeowner's own "I'll be there" for this time. Never moves the pipeline; the office still sets confirmedAt.

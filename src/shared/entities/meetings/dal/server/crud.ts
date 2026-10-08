@@ -16,6 +16,7 @@ import { getUserRoleById } from '@/shared/entities/users/dal/server/queries'
 import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
 import { generateToken } from '@/shared/lib/generate-token'
 import { confirmationsClearedByMove } from '@/shared/modules/meetings/core/lib/confirmation-reset'
+import { scheduledForSetByMove } from '@/shared/modules/meetings/core/lib/scheduled-for-set'
 import { deleteMeetingEventJob } from '@/shared/services/providers/upstash/jobs/delete-meeting-event'
 import { graduateFromCampaignJob } from '@/shared/services/providers/upstash/jobs/graduate-from-campaign'
 import { metaCapiEventJob } from '@/shared/services/providers/upstash/jobs/meta-capi-event'
@@ -52,7 +53,7 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
         const setBy = input.setBy ?? ctx.session?.user.id ?? await getSystemOwnerId()
         await assertSetterIsInternal(setBy)
         // The token is generated above the session check: intake and reschedule create with no session.
-        const withToken = { ...input, setBy, shareToken: generateToken() }
+        const withToken = { ...input, setBy, shareToken: generateToken(), scheduledForSetAt: new Date().toISOString() }
         if (!ctx.session) {
           return withToken
         }
@@ -106,7 +107,7 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
         if (data.scheduledFor) {
           const current = await getMeetingSchedule(id)
           if (current) {
-            next = { ...next, ...confirmationsClearedByMove(current, data) }
+            next = { ...next, ...confirmationsClearedByMove(current, data), ...scheduledForSetByMove(current, data, new Date()) }
           }
         }
         return next
@@ -178,6 +179,7 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
       'newTimeRequestedAt',
       'shareToken',
       'rescheduledFromId',
+      'scheduledForSetAt',
       'pipeline',
       'flowStateJSON',
       'agentNotes',
