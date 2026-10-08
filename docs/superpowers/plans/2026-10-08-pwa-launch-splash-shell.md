@@ -804,7 +804,7 @@ EOF
 
 **Interfaces:**
 - Consumes: `PWA_LAUNCH_COVER_MIN_MS`, `PWA_LAUNCH_COVER_MAX_MS` (Task 2).
-- Produces: `type PwaLaunchPhase = 'idle' | 'covering' | 'done'`; `createPwaLaunchStore(timers)` returning `{ subscribe, phase, begin, ready, wasShellLaunch }`; the singleton `pwaLaunch` (both from `lib/launch-store`); `usePwaLaunchPhase(): PwaLaunchPhase` (server snapshot `'idle'`, from `hooks/use-pwa-launch-phase`).
+- Produces: `type PwaLaunchPhase = 'idle' | 'covering' | 'done'`; `createPwaLaunchStore(timers)` returning `{ subscribe, phase, begin, ready }`; the singleton `pwaLaunch` (both from `lib/launch-store`); `usePwaLaunchPhase(): PwaLaunchPhase` (server snapshot `'idle'`, from `hooks/use-pwa-launch-phase`).
 
 - [ ] **Step 1: Write the failing check**
 
@@ -847,12 +847,10 @@ function clock() {
   const c = clock()
   const s = createPwaLaunchStore(c.timers)
   assert.equal(s.phase(), 'idle')
-  assert.equal(s.wasShellLaunch(), false)
   s.ready()
   assert.equal(s.phase(), 'idle', 'ready before begin is a no-op')
   s.begin()
   assert.equal(s.phase(), 'covering')
-  assert.equal(s.wasShellLaunch(), true)
   c.advance(PWA_LAUNCH_COVER_MIN_MS + 50)
   s.ready()
   c.advance(0)
@@ -969,7 +967,6 @@ export function createPwaLaunchStore(timers: Timers) {
       }
       floor = timers.setTimeout(finish, Math.max(0, beganAt + PWA_LAUNCH_COVER_MIN_MS - timers.now()))
     },
-    wasShellLaunch: () => phase !== 'idle',
   }
 }
 
@@ -1813,18 +1810,19 @@ import { requestShellRevalidation } from '@/shared/domains/pwa/lib/register-serv
 /**
  * Mounted in the dashboard layout outside its Suspense slots, so it fires on the layout's first commit:
  * the server has answered and its sidebar frame and route skeleton have painted under the cover. The
- * session and the page fill in afterwards behind a visible skeleton, as on any document load. A no-op
- * on every document that is not a launch. After a shell launch it also asks the worker for a fresh
- * shell: on Chrome the launch is answered without the worker running, so this is the only time it
- * hears about one.
+ * session and the page fill in afterwards behind a visible skeleton, as on any document load. `ready`
+ * is a no-op on every document that is not a launch.
+ *
+ * The shell revalidation is asked for on every dashboard document, not only after a shell launch: on
+ * Chrome the launch is answered from Cache Storage without the worker running, and after a deploy the
+ * stale shell hard-loads before its own dashboard commits, so a plain dashboard load is the only moment
+ * the worker can learn that the shell is stale. The worker fetches the static shell once and writes
+ * nothing when it is unchanged; without a controlling worker the message is not sent.
  */
 export function PwaLaunchReady() {
   useEffect(() => {
-    const shellLaunch = pwaLaunch.wasShellLaunch()
     pwaLaunch.ready()
-    if (shellLaunch) {
-      requestShellRevalidation()
-    }
+    requestShellRevalidation()
   }, [])
   return null
 }

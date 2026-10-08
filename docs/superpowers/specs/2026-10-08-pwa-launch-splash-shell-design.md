@@ -221,7 +221,7 @@ return <SplashScreen dismiss={{ mode: 'held' }} entrance={false} open={open} onD
 - It is a leaf: no context, no children. Hazard H6 (an urgent context change during hydration forces client renders of hydrating boundaries) cannot apply.
 - Reduced motion: the primitive already drops the fade; the mark is at rest anyway.
 
-**`PwaLaunchReady`** (client, renders nothing): on mount calls `pwaLaunch.ready()` from an effect, so the frame it reacts to has painted. Mounted once in the dashboard layout, outside both Suspense slots and above the cookie branch (next to the install prompt), so it mounts on the layout's first commit: the moment the server's response has put the sidebar frame and the route's skeleton (or the sign-in screen) on screen under the cover, before the session read or the page data resolve (D2). Those slots then fill in behind a visible skeleton, exactly as on a plain document load today. `DashboardSessionContent` is not touched. On a non-launch document `ready()` is a no-op. When the launch was shell-served it also posts `{ type: 'tpr:revalidate-shell' }` to the controlling worker (§5.5).
+**`PwaLaunchReady`** (client, renders nothing): on mount calls `pwaLaunch.ready()` from an effect, so the frame it reacts to has painted. Mounted once in the dashboard layout, outside both Suspense slots and above the cookie branch (next to the install prompt), so it mounts on the layout's first commit: the moment the server's response has put the sidebar frame and the route's skeleton (or the sign-in screen) on screen under the cover, before the session read or the page data resolve (D2). Those slots then fill in behind a visible skeleton, exactly as on a plain document load today. `DashboardSessionContent` is not touched. On a non-launch document `ready()` is a no-op. It also posts `{ type: 'tpr:revalidate-shell' }` to the controlling worker on every dashboard document, launch or not (§5.5): on Chrome the static route answers the launch without running the worker, and after a deploy the stale shell hard-loads before its own dashboard commits, so a plain dashboard load is the only moment the worker can learn the shell is stale. The worker writes nothing when the shell is unchanged.
 
 **Timing** (in `src/shared/domains/pwa/constants/launch.ts`):
 
@@ -267,7 +267,7 @@ if (url.pathname.startsWith('/_next/static/')) {
 
 `serveShell`: `cache.match(launch URL)`; on a hit, `event.waitUntil(revalidateShell())` and return it; on a miss or any throw, `return fetch(request)` and `event.waitUntil(precacheShell())`. Never a redirect, never a non-200, never anything with an `rsc`/`next-router-prefetch` header or `_rsc` param, never `/api/`, never a POST (`next-action`). Not calling `respondWith` for other navigations leaves them to the browser, which uses the preload response when one exists.
 
-**message:** `{ type: 'tpr:revalidate-shell' }` → `revalidateShell()`. Needed because on Chrome the static route answers the launch without running the handler, so the worker would otherwise never see a launch.
+**message:** `{ type: 'tpr:revalidate-shell' }` → `revalidateShell()`. Needed because on Chrome the static route answers the launch without running the handler, so the worker would otherwise never see a launch; the page posts it on every dashboard commit because after a deploy the stale shell's own dashboard never commits.
 
 **Static routes (Chrome 123+, F17), registered in `install`, in order, all same-origin:**
 1. `{ urlPattern: { pathname: LAUNCH_PATH, search: LAUNCH_SEARCH }, requestMode: 'navigate' }` → `{ cacheName: SHELL_CACHE }`. Cache hit: served with no worker boot. Miss: straight to the network, bypassing the handler.
@@ -329,7 +329,6 @@ phase: 'idle' → begin() → 'covering' → ready() | bound → 'done'
 - `begin()`: records the time, starts the bound timer (`PWA_LAUNCH_COVER_MAX_MS` → `done`).
 - `ready()`: the dashboard layout has committed. If `covering`, moves to `done` at `max(now, beganAt + PWA_LAUNCH_COVER_MIN_MS)`; otherwise no-op.
 - `usePwaLaunchPhase()`: server snapshot `idle`; the client's initial snapshot is also `idle`, so hydration of the shell matches its HTML.
-- `wasShellLaunch()`: `phase !== 'idle'`; `PwaLaunchReady` uses it to decide whether to post the revalidate message.
 
 Nothing in the store touches React context; the cover and the beacon are the only readers.
 
