@@ -12,12 +12,12 @@ import { MeetingSplashScreen } from '@/features/meeting-flow/ui/components/meeti
 import { useTRPC } from '@/trpc/helpers'
 
 /**
- * Where the meeting splash mounts: the dashboard layout, above the dashboard template (E9). The
- * template starts every page at opacity 0 inside a transformed, overflow-hidden `main`
- * (`app/(frontend)/dashboard/template.tsx`), so nothing inside a page can be the first paint;
- * from the layout the splash is in the first HTML chunk, open on the server, and above every
- * stacking context the stage creates. It renders only on `/dashboard/meetings/[meetingId]`,
- * keyed by the meeting so a second meeting in the same tab starts its own readiness clock.
+ * Where the meeting splash mounts: the dashboard layout, above the dashboard template (E9). A page
+ * streams in below the template's overflow-hidden `main` (`app/(frontend)/dashboard/template.tsx`)
+ * and after the layout, so nothing inside a page can be the first paint; from the layout the splash
+ * is in the first HTML chunk, open on the server, and above every stacking context the stage
+ * creates. It renders only on `/dashboard/meetings/[meetingId]`, keyed by the meeting so a second
+ * meeting in the same tab starts its own readiness clock.
  */
 export function MeetingSplashMount() {
   const segments = useSelectedLayoutSegments()
