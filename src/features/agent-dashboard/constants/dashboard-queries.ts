@@ -15,7 +15,7 @@ import type { MeetingListInput } from '@/shared/entities/meetings/dal/server/que
 import type { ProjectListInput } from '@/shared/modules/projects/core/dal/server/queries'
 import type { ProposalListInput } from '@/shared/modules/proposals/core/dal/server/queries'
 
-import { LIVE_MEETING_OUTCOMES } from '@/shared/constants/enums'
+import { LIVE_MEETING_OUTCOMES, proposalStatuses } from '@/shared/constants/enums'
 import { MEETING_FIELDS } from '@/shared/entities/meetings/dal/meeting-fields'
 import { meetingWindow } from '../lib/meeting-windows'
 
@@ -46,12 +46,16 @@ export const DASHBOARD_MEETINGS_QUERY = {
 /** The calendar read's `extra`; the page's prefetch and the hub's hook pass this one object so their keys match. */
 export const DASHBOARD_MEETINGS_EXTRA = { liveOnly: true } as const
 
+const OPEN_PROPOSAL_STATUSES = proposalStatuses.filter(status => status !== 'declined')
+
 /** Proposals awaiting the homeowner's signature (contract sent, unsigned/undeclined). */
 export function awaitingProposalsInput() {
   return {
     pagination: { limit: DASHBOARD_LIMITS.proposalsPerSection, offset: 0 },
     sort: { sortBy: 'contractSentAt', sortDir: 'desc' },
-    filters: { awaitingSignature: true },
+    // A proposal can be declined while its contract envelope still reads unsigned and undeclined; the envelope
+    // alone would keep it listed as waiting for a signature.
+    filters: { awaitingSignature: true, status: OPEN_PROPOSAL_STATUSES },
   } satisfies ProposalListInput
 }
 
