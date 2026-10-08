@@ -57,6 +57,8 @@
   --indicator: oklch(0.6 0.03 255);
   /* How many edges a field's boundary sits off its own fill. Dark needs fewer: the same gap reads brighter there. */
   --control-edge: 4.3;
+  /* Edges a hovered field's boundary adds to that. Dark adds fewer: its edges already sit further out. */
+  --input-hover-edge: 1.2;
   /* A button or track edge is softer than a field's: its lighter fill and shadow already lift it, and at a field's
      2:1 a toolbar of them reads as a row of boxes. Dark's fill steps further off the surface, so its edge needs less. */
   --control-border-edge: 2.2;
@@ -222,6 +224,7 @@
   --input: #c6bba9; /* field edge, about 1.8:1 on the page and 1.65:1 on a panel */
   /* A checkbox or radio is all edge, so it keeps 3:1 on the panel. */
   --indicator: #928674;
+  --input-hover: color-mix(in oklab, var(--input) 50%, var(--indicator));
   --control-border: var(--border);
   --control-selected: var(--row-selected);
   /* Marketing fields keep their transparent fill; the app's white field fill is a Command Desk role. */
@@ -411,6 +414,7 @@
   --warning-foreground: oklch(0.19 0.045 258);
   --indicator: oklch(0.62 0.04 256);
   --control-edge: 2.85;
+  --input-hover-edge: 0.6;
   --control-border-edge: 1.2;
   --control-selected-mix: 24%;
   --tab-lift: 1.5;
@@ -564,6 +568,12 @@
   --input: oklch(
     calc(var(--here-l) + var(--edge-dir) * var(--control-edge) * var(--edge)) var(--surface-c) var(--surface-h)
   );
+  /* A hovered field firms its edge past the field's but stops short of the indicator's 3:1: at 3:1 a whole field
+     reads as a hard box. */
+  --input-hover: oklch(
+    calc(var(--here-l) + var(--edge-dir) * (var(--control-edge) + var(--input-hover-edge)) * var(--edge))
+      var(--surface-c) var(--surface-h)
+  );
   --control-border: oklch(
     calc(
         var(--canvas-l) + min(var(--depth) + 1, 1) * var(--lift) + (var(--depth) + 1) * var(--step) + var(--edge-dir) *
@@ -646,6 +656,7 @@
   --control-border: inherit;
   --control-selected: inherit;
   --input: inherit;
+  --input-hover: inherit;
   --input-background: inherit;
   --row-hover: inherit;
   --row-selected: inherit;
@@ -710,6 +721,7 @@
   --color-warning-foreground: var(--warning-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
+  --color-input-hover: var(--input-hover);
   --color-ring: var(--ring);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
