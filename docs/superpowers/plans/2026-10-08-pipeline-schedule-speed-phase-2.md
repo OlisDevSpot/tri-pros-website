@@ -313,6 +313,151 @@ Append to the ledger (`progress.md` in the workspace) one line per file with the
 
 ---
 
+### Task 2: The board dims only for a refetch the viewer caused
+
+**Files:**
+- Modify: `src/features/customer-pipelines/ui/views/customer-pipeline-view.tsx:56-66,121,128,145-151`
+- Test: `.superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-nav-dim.mjs` (new)
+
+**Why (owner, 2026-10-08):** coming to a pipeline from the schedule, the board shows its cached cards at 50% for about a second. Measured: within 30 s of the last visit there is no dim and no client read; past the 30 s `staleTime` the view mounts on stale cached rows, TanStack refetches them on mount while the server's streamed prefetch is still in flight, and the board's `query.isFetching && !query.isStale → opacity-50` rule dims it until that read returns (`diag`: dimmed 4196–5177 ms after the click, one client `getCustomerPipelineItems` read). The records tables dim on `data-stale` alone ("the one faded state": rows of the previous query) and only mark `aria-busy` while fetching; Phase 1's removed fades used to hide the board's extra dim.
+
+**Interfaces:**
+- Consumes: `useDataViewQuery` result (`isPending`, `isStale`, `isFetching`, `refresh(): Promise<void>` = `invalidateQueries`), `useMutation` for the move.
+- Produces: the board wrapper dims on `data-stale` and while a drag's move is pending or its refresh is settling; `aria-busy` while any fetch runs; `CustomerPipelineMetricsBar` loads on `isPending || isStale` only. Nothing exported changes. Later tasks edit this file further (hosts, `isMobile`) and keep this rule.
+
+- [ ] **Step 1: Write the navigation check (RED)**
+
+`check-nav-dim.mjs` (imports Task 1's library; run from the repo root). It warms the Fresh board, goes to the schedule, comes back at once (inside `staleTime`) and again after 35 s (past it), samples the board wrapper's computed opacity every 50 ms for 6 s after each click, and fails if any sample with cards on screen is below 1. It prints the client tRPC reads so the duplicate read stays visible.
+
+```js
+import { openPage, redact } from './check-lib.mjs'
+
+const BOARD = '[data-stale], .flex-1.min-h-0.transition-opacity'
+const CARD = '.min-w-70 [data-slot="card"]'
+
+const { browser, page, errors } = await openPage('/dashboard/pipeline/fresh')
+const reads = []
+let t0 = Date.now()
+page.on('request', (request) => {
+  if (request.url().includes('/api/trpc/')) {
+    reads.push(`${Date.now() - t0}ms ${decodeURIComponent(request.url().split('/api/trpc/')[1].split('?')[0])}`)
+  }
+})
+try {
+  await page.waitForSelector(CARD, { timeout: 120000 })
+  await page.waitForFunction(selector => Object.keys(document.querySelector(selector) ?? {}).some(k => k.startsWith('__reactFiber')), CARD, { timeout: 120000 })
+  await page.waitForTimeout(3000)
+  await page.getByRole('link', { name: /schedule/i }).first().click()
+  await page.waitForURL('**/dashboard/schedule**', { timeout: 60000 })
+  await page.waitForFunction(() => !document.querySelector('[data-slot="data-view-pending"]') && !document.querySelector('[aria-busy="true"]'), null, { timeout: 120000, polling: 100 })
+  await page.waitForTimeout(3000)
+
+  for (const [label, wait] of [['inside staleTime', 3000], ['past staleTime', 35000]]) {
+    reads.length = 0
+    t0 = Date.now()
+    const sampler = page.evaluate(([board, card]) => new Promise((resolve) => {
+      const samples = []
+      const start = performance.now()
+      const tick = () => {
+        const wrapper = document.querySelector(board)
+        const cards = document.querySelectorAll(card).length
+        samples.push({ t: Math.round(performance.now() - start), cards, dim: wrapper ? Number(getComputedStyle(wrapper).opacity) : null, stale: wrapper?.getAttribute('data-stale') ?? null })
+        if (performance.now() - start < 6000) {
+          setTimeout(tick, 50)
+        }
+        else {
+          resolve(samples)
+        }
+      }
+      tick()
+    }), [BOARD, CARD])
+    await page.getByRole('link', { name: /pipeline/i }).first().click()
+    const samples = await sampler
+    const dimmed = samples.filter(s => s.cards > 0 && s.dim != null && s.dim < 1)
+    const firstCards = samples.find(s => s.cards > 0)
+    const ok = dimmed.length === 0 && firstCards
+    console.log(`${ok ? 'PASS' : 'FAIL'} ${label}: cards at ${firstCards?.t ?? '—'}ms · dimmed-with-cards ${dimmed.length} samples${dimmed.length ? ` (${dimmed[0].t}–${dimmed.at(-1).t}ms, opacity ${dimmed[0].dim}, data-stale ${dimmed[0].stale ?? 'unset'})` : ''}`)
+    console.log(`     client reads: ${reads.join(' | ') || 'none'}`)
+    if (!ok) {
+      process.exitCode = 1
+    }
+    await page.getByRole('link', { name: /schedule/i }).first().click()
+    await page.waitForURL('**/dashboard/schedule**', { timeout: 60000 })
+    await page.waitForTimeout(wait)
+  }
+}
+catch (error) {
+  console.error(`FAIL ${redact(error.message).split('\n')[0]}`)
+  process.exitCode = 1
+}
+if (errors.length > 0) {
+  console.error(`FAIL page errors: ${errors.join(' | ')}`)
+  process.exitCode = 1
+}
+await browser.close()
+```
+
+Run: `node .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-nav-dim.mjs`
+Expected: `PASS inside staleTime` (no dim, `client reads: none`) and `FAIL past staleTime: … dimmed-with-cards ≥ 5 samples (opacity 0.5, data-stale unset)` with one `customerPipelinesRouter.getCustomerPipelineItems` client read; exit 1. (The loop's first wait is 3 s and its second 35 s, so the second click is the stale one.)
+
+- [ ] **Step 2: Dim on the drag's refresh only; the metrics bar loads on stale only**
+
+In `customer-pipeline-view.tsx`, replace the move mutation (lines 56–66) with:
+
+```tsx
+  // A refetch the viewer caused (a drag's move) dims the board until the rows land. A background refetch (the
+  // server's prefetch adopted on navigation, a stale re-read on mount) does not: the rows on screen stay at full
+  // opacity until the new ones replace them, as the records tables do.
+  const [settlingMove, setSettlingMove] = useState(false)
+  const moveMutation = useMutation(
+    trpc.customerPipelinesRouter.moveCustomerPipelineItem.mutationOptions({
+      onError: () => {
+        toast.error('Failed to move customer. Please try again.')
+      },
+      onSettled: () => {
+        setSettlingMove(true)
+        void query.refresh().finally(() => setSettlingMove(false))
+      },
+    }),
+  )
+  const isMoving = moveMutation.isPending || settlingMove
+```
+
+(`onSettled` runs after `onError` too, so the refresh that `onError` used to call on its own is the same refresh.) Delete `const isSwitching = query.isStale || query.isFetching` (line 121). The metrics bar: `isLoading={query.isPending || query.isStale}`. The board wrapper (lines 145–151):
+
+```tsx
+      {/* A filter change dims only after a short delay (quick loads never flash); a drag's refresh dims at once. */}
+      <div
+        data-stale={query.isStale || undefined}
+        aria-busy={query.isFetching || undefined}
+        className={cn(
+          'flex-1 min-h-0 transition-opacity duration-200 data-[stale=true]:pointer-events-none data-[stale=true]:opacity-50 data-[stale=true]:delay-200',
+          isMoving && 'opacity-50 pointer-events-none',
+        )}
+      >
+```
+
+- [ ] **Step 3: Run the check (GREEN), type-check, lint**
+
+Run: `node .superpowers/sdd/2026-10-08-pipeline-schedule-speed-phase-2/check-nav-dim.mjs`
+Expected: `PASS inside staleTime` and `PASS past staleTime` with `dimmed-with-cards 0 samples`; the past-staleTime line still lists the client `getCustomerPipelineItems` read (that duplicate read is the data-view hook's `refetchOnMount` on stale rows racing the server prefetch, shared with every records route; it goes to the owner as a finding, not fixed here). Exit 0.
+
+Run: `pnpm tsc` then `pnpm lint`
+Expected: clean.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add src/features/customer-pipelines/ui/views/customer-pipeline-view.tsx
+git commit -m "fix(pipeline): the board dims only for a drag's own refresh; a background refetch leaves the cards at full opacity, as the records tables do
+
+Coming back from the schedule past staleTime, the stale cached rows refetched on mount while the server's prefetch streamed, and the board sat at 50% until the read returned.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+```
+
+---
+
 ### Task 3: `MeetingActionsHost`
 
 **Files:**
