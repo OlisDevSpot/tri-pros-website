@@ -9,7 +9,7 @@ interface Props extends React.ComponentProps<'div'> {
 
 export function EmptyState({ title, description, children, className, ...props }: Props) {
   return (
-    <div className={cn('w-full h-full flex flex-col items-center justify-center border border-dashed rounded-lg', className)} {...props}>
+    <div className={cn('w-full h-full flex flex-col items-center justify-center border border-dashed border-border-strong rounded-lg', className)} {...props}>
       <div className="flex items-center px-8 py-8 justify-center gap-2 w-full h-full">
         {children ?? <SearchX className="mr-2 size-5" />}
         <div className="flex flex-col">
