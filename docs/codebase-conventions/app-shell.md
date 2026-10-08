@@ -81,6 +81,8 @@ All CSS-based safe-area rules live in `globals.css` under the "PWA safe-area ins
 The dashboard layout has one canonical shape. Do not refactor without reading the Anti-patterns list below.
 
 ```jsx
+<PwaLaunchReady />                                       {/* the launch cover lifts when this layout commits */}
+<ServiceWorkerRegistrar />                               {/* one registration owner; the push hook shares it */}
 <SidebarProvider>                                        {/* height: 100% via CSS */}
   {hasSessionCookie && (
     <SidebarSessionBoundary fallback={<AppSidebarSkeleton />}>  {/* Suspense that re-renders on sidebar context changes */}
@@ -166,7 +168,7 @@ Theme resolution now happens in two layers:
 - **Before first paint**: `next-themes` (`attribute="class"`, `defaultTheme="system"`, `enableSystem` — see `ThemeProvider` in `src/shared/components/providers/index.tsx`) injects a blocking script that sets the `class` and inline `color-scheme` on `<html>` before the browser paints, so the correct theme is live immediately — no client-side flash.
 - **Static/no-JS fallback**: `globals.css` declares `color-scheme: light` on `:root` and `color-scheme: dark` on `.dark`, so the UA-painted canvas (and overscroll gutters) matches the resolved theme even on the very first frame, before the blocking script or React runs.
 
-The intentional **always-dark** PWA cold-launch moment (the moment before hydration, regardless of system theme) is handled separately by an inline `@media (display-mode: standalone)` `<style>` block in `layout.tsx` that forces `html,body` to `#09090b` before the external stylesheet loads or `next-themes` resolves, plus the manifest's `background_color` (`src/app/manifest.ts`) for the pre-web-view surface — not by hardcoded `<html>` markup.
+The installed app's launch field is the native stage plus one overlay, never the page canvas: iOS paints a startup image from the matrix in `src/shared/domains/pwa/constants/startup-images.ts`, Android paints the manifest `background_color`, and `PwaLaunchCover` (root layout, from `src/shared/domains/pwa/ui/`) is open only in the `/launch` shell document and fades once the dashboard layout has committed. The app follows light/dark from its first paint.
 
 **Why**: hardcoding a dark `<html>` fights `next-themes` and breaks light-mode cold-launch; `color-scheme` + the next-themes blocking script gives correct-theme-on-first-paint without a FOUC in either direction.
 **Reference impl**: `src/app/(frontend)/layout.tsx`, `src/app/(frontend)/globals.css`, `src/shared/components/providers/theme-provider.tsx`, `src/shared/components/providers/index.tsx`

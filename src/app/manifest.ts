@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next'
 import { ROOTS } from '@/shared/config/roots'
-import { PWA_LAUNCH_FIELD } from '@/shared/domains/pwa/constants/launch'
+import { PWA_LAUNCH_FIELD, PWA_START_URL } from '@/shared/domains/pwa/constants/launch'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -8,7 +8,8 @@ export default function manifest(): MetadataRoute.Manifest {
     id: ROOTS.dashboard.root,
     name: 'Tri Pros Remodeling',
     short_name: 'TPR',
-    start_url: ROOTS.dashboard.root,
+    // The marker is what the service worker answers with the launch shell; nothing else ever carries it.
+    start_url: PWA_START_URL,
     // Scope MUST be "/" for declarative web push deep links to open the
     // standalone PWA. Without this, scope defaults to the directory of
     // start_url (/dashboard/), and pushes with `navigate: "/customers/123"`
