@@ -1106,14 +1106,15 @@ async function expandRowWithActions(page, title) {
   const rows = page.locator('tbody tr:not([aria-hidden="true"])')
   const total = Math.min(await rows.count(), 20)
   for (let index = 0; index < total; index++) {
-    await rows.nth(index).click()
+    // A row's middle holds interactive cells (status, date); the second cell's corner is plain text and expands the row.
+    await rows.nth(index).locator('td').nth(1).click({ position: { x: 4, y: 4 } })
     const pane = page.locator(PANE).filter({ hasText: new RegExp(`^${title}`) })
     await pane.first().waitFor({ timeout: 30000 })
     await page.waitForFunction(() => !document.querySelector('[aria-busy="true"]'), null, { timeout: 30000, polling: 100 })
     if (await pane.first().getByRole('button', { name: 'Actions' }).count() > 0) {
       return pane.first()
     }
-    await rows.nth(index).click()
+    await rows.nth(index).locator('td').nth(1).click({ position: { x: 4, y: 4 } })
   }
   throw new Error(`no row among the first ${total} has an Actions menu in its "${title}" pane; try ?p=2`)
 }

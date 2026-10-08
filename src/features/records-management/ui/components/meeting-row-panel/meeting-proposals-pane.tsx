@@ -14,6 +14,7 @@ import { ROOTS } from '@/shared/config/roots'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { MeetingProposalRow } from '@/shared/entities/meetings/components/meeting-proposal-row'
 import { ProposalOverviewCard } from '@/shared/modules/proposals/core/components/overview-card'
+import { ProposalActionsHost } from '@/shared/modules/proposals/core/components/proposal-actions-host'
 
 interface MeetingProposalsPaneProps {
   meeting: MeetingRow
@@ -57,22 +58,24 @@ export function MeetingProposalsPane({ meeting, proposals, isLoading, onMutation
         </div>
       )}
       {proposals.length > 0 && (
-        <ul className="flex flex-col gap-2">
-          {proposals.map((proposal) => {
-            const coverage = coverageByProposal.get(proposal.id)
-            return (
-              <li key={proposal.id}>
-                <MeetingProposalRow
-                  proposal={proposal}
-                  onMutationSuccess={onMutationSuccess}
-                  showSentDate
-                  meta={coverage ? { scopeCoverage: coverage } : undefined}
-                  footer={coverage ? <ProposalOverviewCard.ScopeCoverage className="pt-1" /> : undefined}
-                />
-              </li>
-            )
-          })}
-        </ul>
+        <ProposalActionsHost>
+          <ul className="flex flex-col gap-2">
+            {proposals.map((proposal) => {
+              const coverage = coverageByProposal.get(proposal.id)
+              return (
+                <li key={proposal.id}>
+                  <MeetingProposalRow
+                    proposal={proposal}
+                    onMutationSuccess={onMutationSuccess}
+                    showSentDate
+                    meta={coverage ? { scopeCoverage: coverage } : undefined}
+                    footer={coverage ? <ProposalOverviewCard.ScopeCoverage className="pt-1" /> : undefined}
+                  />
+                </li>
+              )
+            })}
+          </ul>
+        </ProposalActionsHost>
       )}
     </ExpandedRowPanel.Pane>
   )

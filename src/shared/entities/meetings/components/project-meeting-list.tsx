@@ -17,11 +17,10 @@ import { cn } from '@/shared/lib/utils'
 interface ProjectMeetingListProps {
   meetings: CustomerProfileMeeting[]
   onMutationSuccess: () => void
-  onNavigate?: () => void
   highlightMeetingId?: string
 }
 
-export function ProjectMeetingList({ meetings, onMutationSuccess, onNavigate, highlightMeetingId }: ProjectMeetingListProps) {
+export function ProjectMeetingList({ meetings, onMutationSuccess, highlightMeetingId }: ProjectMeetingListProps) {
   const ability = useAbility()
   const canCreateProposal = ability.can('create', 'Proposal')
 
@@ -70,7 +69,6 @@ export function ProjectMeetingList({ meetings, onMutationSuccess, onNavigate, hi
                         key={p.id}
                         proposal={p as CustomerProfileProposal}
                         onMutationSuccess={onMutationSuccess}
-                        onNavigate={onNavigate}
                       />
                     )}
                   />

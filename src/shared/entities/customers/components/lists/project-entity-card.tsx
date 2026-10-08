@@ -80,7 +80,6 @@ export function ProjectEntityCard({ project, onMutationSuccess, onNavigate, high
               <ProjectMeetingList
                 meetings={project.meetings}
                 onMutationSuccess={onMutationSuccess}
-                onNavigate={onNavigate}
                 highlightMeetingId={highlightMeetingId}
               />
             </div>

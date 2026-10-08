@@ -313,17 +313,11 @@ function KanbanProjectMeeting({ meeting, customerId, isFirst, isDragOverlay }: {
 }
 
 function KanbanProposalRow({ proposal }: { proposal: PipelineItemProposal }) {
-  const router = useRouter()
-  const handleEdit = useCallback(() => {
-    router.push(ROOTS.dashboard.proposals.byId(proposal.id))
-  }, [proposal.id, router])
-
   const style = PROPOSAL_ROW_STYLES[proposal.status] ?? PROPOSAL_ROW_STYLES.draft
 
   return (
     <ProposalOverviewCard
       proposal={proposal}
-      onEdit={handleEdit}
       className={cn(
         'group/proposal flex items-center justify-between gap-2 rounded-md px-1.5 py-1.5 transition-colors min-h-8',
         style.bg,
