@@ -42,7 +42,7 @@ export const PROPOSAL_COLUMNS = {
               {row.original.kind === 'additional-work' && (
                 <HybridPopoverTooltip content="Addendum">
                   <span
-                    className="inline-flex size-3.5 shrink-0 items-center justify-center rounded-full bg-muted/60 text-muted-foreground ring-1 ring-inset ring-border/60"
+                    className="inline-flex size-3.5 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground ring-1 ring-inset ring-border"
                     aria-label="Addendum"
                   >
                     <PlusIcon className="size-2.5" strokeWidth={2.5} />
@@ -128,7 +128,7 @@ export const PROPOSAL_COLUMNS = {
             <EyeIcon
               className={cn(
                 'h-3.5 w-3.5 shrink-0',
-                views === 0 && 'text-muted-foreground/40',
+                views === 0 && 'text-muted-foreground',
                 views > 0 && views < 3 && 'text-status-pending-fg',
                 views >= 3 && 'text-status-success-fg',
               )}
@@ -136,7 +136,7 @@ export const PROPOSAL_COLUMNS = {
             <span
               className={cn(
                 'tabular-nums text-sm font-semibold',
-                views === 0 && 'text-muted-foreground/50',
+                views === 0 && 'text-muted-foreground',
                 views > 0 && views < 3 && 'text-status-pending-fg',
                 views >= 3 && 'text-status-success-fg',
               )}

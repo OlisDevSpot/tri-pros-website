@@ -15,7 +15,7 @@ export function getMeetingRowClassName(row: { scheduledFor: string | null }): st
   const end = start + MEETING_ESTIMATED_DURATION_MS
 
   if (now < start) {
-    return 'bg-status-pending-bg/60'
+    return 'bg-status-pending-bg'
   }
 
   if (now >= start && now <= end) {

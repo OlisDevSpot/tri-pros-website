@@ -30,10 +30,10 @@ export function UserCommandItem({ user, onSelect, disabled = false, leading, tra
       disabled={disabled}
       onSelect={onSelect}
       aria-label={ariaLabel}
-      // shadcn's selected tint is `accent`, which equals `primary` in the dark theme and floods the row; a muted tint stays quiet.
+      // cmdk's `selected` is the keyboard hover, so it takes the hover tint; shadcn's `accent` would flood the row.
       className={cn(
         'group flex items-center gap-3 rounded-md px-3 py-2.5',
-        'data-[selected=true]:bg-muted/70 hover:bg-muted/70',
+        'data-[selected=true]:bg-row-hover hover:bg-row-hover',
         'data-[selected=true]:text-foreground',
         className,
       )}

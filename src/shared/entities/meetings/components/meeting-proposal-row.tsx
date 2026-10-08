@@ -75,7 +75,7 @@ export function MeetingProposalRow({ proposal, onMutationSuccess: _onMutationSuc
       <div className="flex items-center gap-2 self-center">
         <ProposalOverviewCard.Value className="text-sm" />
         <ProposalOverviewCard.ViewCount />
-        <ProposalOverviewCard.Actions mode="compact" className="opacity-60 hover:opacity-100 transition-opacity" />
+        <ProposalOverviewCard.Actions mode="compact" />
       </div>
       {/* The card's own click opens the proposal; the footer is informational, so clicks stop here. */}
       {footer && <div className="col-span-full" onClick={e => e.stopPropagation()}>{footer}</div>}

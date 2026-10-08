@@ -30,8 +30,9 @@ export function ProjectMeetingList({ customerId, meetings, onMutationSuccess, on
   return (
     <div className="space-y-2.5">
       {meetings.map(meeting => (
-        <Card key={meeting.id} className={cn('group pt-0 pb-0 gap-0', meeting.id === highlightMeetingId && 'outline-2 outline-primary -outline-offset-2 shadow-sm')}>
-          <CardContent className="p-0">
+        <Card key={meeting.id} className="group pt-0 pb-0 gap-0">
+          {/* The tint goes on the content: the card keeps its `bg-card` class, so what sits in it still climbs a rung. */}
+          <CardContent className={cn('p-0', meeting.id === highlightMeetingId && 'rounded-[inherit] bg-row-selected')}>
             <MeetingOverviewCard
               meeting={meeting}
               customerId={customerId}
@@ -46,7 +47,7 @@ export function ProjectMeetingList({ customerId, meetings, onMutationSuccess, on
                 ]}
                 />
                 <MeetingOverviewCard.CreatedAt />
-                <MeetingOverviewCard.Actions mode="compact" className="ml-auto opacity-60 hover:opacity-100 transition-opacity" />
+                <MeetingOverviewCard.Actions mode="compact" className="ml-auto" />
               </MeetingOverviewCard.Header>
               <div className="grid grid-cols-1 border-t divide-y md:grid-cols-[minmax(0,1fr)_minmax(0,3fr)] md:divide-y-0 md:divide-x">
                 <div className="p-3">

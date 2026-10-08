@@ -114,7 +114,7 @@ export function ReadOnlyParticipantSummary({
         : (
             <span
               aria-hidden="true"
-              className="size-5 rounded-full border border-dashed border-muted-foreground/40"
+              className="size-5 rounded-full border border-dashed border-border-strong"
             />
           )}
       {!isCompact && <span className="truncate text-xs font-medium">{summary}</span>}

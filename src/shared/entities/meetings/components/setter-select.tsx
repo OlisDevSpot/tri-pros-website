@@ -31,7 +31,7 @@ export function SetterSelect({ value, onChange, selfId, selfName }: SetterSelect
       <PopoverTrigger asChild>
         <Button type="button" variant="outline" className="w-full justify-between font-normal">
           <span className="truncate">{label}</span>
-          <ChevronsUpDownIcon className="size-4 opacity-50" />
+          <ChevronsUpDownIcon className="size-4 text-muted-foreground" />
         </Button>
       </PopoverTrigger>
       <PopoverContent

@@ -39,7 +39,7 @@ export function AvailableParticipantRow({
       ariaLabel={`${PARTICIPANT_ADD_LABELS[inferredRole]} — ${name}`}
       className={cn(disabled && 'opacity-50')}
       trailing={(
-        <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/60 bg-background/60 px-2.5 py-1 text-xs font-medium text-muted-foreground opacity-0 group-hover:opacity-100 group-data-[selected=true]:opacity-100 group-data-[selected=true]:text-foreground motion-safe:transition-opacity">
+        <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground opacity-0 group-hover:opacity-100 group-data-[selected=true]:opacity-100 group-data-[selected=true]:text-foreground motion-safe:transition-opacity">
           {isPending
             ? <Loader2 className="size-3 animate-spin" />
             : (

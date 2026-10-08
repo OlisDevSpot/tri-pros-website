@@ -52,12 +52,9 @@ export function CurrentParticipantRow({
       user={user}
       meta={{ role }}
       className={cn(
-        'group/row flex items-center gap-3 rounded-lg px-3 py-2.5 focus-within:ring-1 focus-within:ring-ring/60',
-        // Owner row carries the single primary-color moment on the whole modal:
-        // a subtle tint + hairline ring so the eye lands here first.
-        isOwner
-          ? 'bg-primary/5 ring-1 ring-inset ring-primary/15'
-          : 'border border-border/60 bg-card/40',
+        'group/row flex items-center gap-3 rounded-lg border px-3 py-2.5',
+        // The owner row takes the selection tint so the eye lands there first.
+        isOwner ? 'border-transparent bg-row-selected' : 'border-border',
         isPending && 'pointer-events-none opacity-60',
       )}
     >
@@ -66,10 +63,10 @@ export function CurrentParticipantRow({
       <div className="flex min-w-0 flex-1 flex-col gap-px overflow-hidden">
         <UserOverviewCard.Name className="truncate text-sm font-medium text-foreground" />
         <div className="truncate text-xs text-muted-foreground">
-          <span className="font-medium text-foreground/70">{roleLabel}</span>
+          <span className="font-medium text-muted-foreground">{roleLabel}</span>
           {user.email != null && user.email !== '' && (
             <>
-              <span aria-hidden="true" className="mx-1.5 text-muted-foreground/50">·</span>
+              <span aria-hidden="true" className="mx-1.5 text-muted-foreground">·</span>
               <span>{user.email}</span>
             </>
           )}
@@ -88,7 +85,7 @@ export function CurrentParticipantRow({
               onClick={onPromote}
               disabled={isPending}
               aria-label={`Promote ${name} to owner`}
-              className="group inline-flex size-11 items-center justify-center rounded-md hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors"
+              className="group inline-flex size-11 items-center justify-center rounded-md hover:bg-hover pressed:bg-press focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 motion-safe:transition-colors"
             >
               <ParticipantRoleIcon isOwner={false} />
             </button>
@@ -105,7 +102,7 @@ export function CurrentParticipantRow({
                     aria-disabled="true"
                     aria-label={`Cannot remove ${name} — ${removeDisabledReason ?? 'meeting needs at least one owner'}`}
                     aria-describedby={removeDisabledHintId}
-                    className="inline-flex size-11 cursor-not-allowed items-center justify-center rounded-md text-muted-foreground/40"
+                    className="inline-flex size-11 cursor-not-allowed items-center justify-center rounded-md text-muted-foreground"
                   >
                     <X className="size-4" />
                   </button>
@@ -123,7 +120,7 @@ export function CurrentParticipantRow({
                     onClick={onRemove}
                     disabled={isPending}
                     aria-label={`Remove ${name} from this meeting`}
-                    className="inline-flex size-11 items-center justify-center rounded-md text-destructive/60 hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors"
+                    className="inline-flex size-11 items-center justify-center rounded-md text-muted-foreground hover:bg-hover hover:text-destructive-text pressed:bg-press focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 motion-safe:transition-colors"
                   >
                     {isPending ? <Loader2 className="size-4 animate-spin" /> : <X className="size-4" />}
                   </button>
@@ -137,7 +134,7 @@ export function CurrentParticipantRow({
                 onClick={onRemove}
                 disabled={isPending}
                 aria-label={`Remove ${name} from this meeting`}
-                className="inline-flex size-11 items-center justify-center rounded-md text-destructive/60 hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors"
+                className="inline-flex size-11 items-center justify-center rounded-md text-muted-foreground hover:bg-hover hover:text-destructive-text pressed:bg-press focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 motion-safe:transition-colors"
               >
                 {isPending ? <Loader2 className="size-4 animate-spin" /> : <X className="size-4" />}
               </button>

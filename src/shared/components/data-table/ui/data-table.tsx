@@ -305,6 +305,8 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
           )}
         >
           {/* Fills the container or overflows it in CSS alone, so a window resize runs no script and re-renders nothing. */}
+          {/* The dim is the one faded state the theme keeps: it marks rows that belong to the previous query and
+              lifts the moment the new ones land. */}
           <Table
             className="table-fixed border-separate border-spacing-0 transition-opacity duration-200 data-[stale=true]:opacity-60 data-[stale=true]:delay-200"
             style={{ width: totalDeclaredWidth, minWidth: '100%' }}
@@ -313,7 +315,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
           >
             <TableHeader className="sticky top-0 z-10 bg-(--card)">
               {table.getHeaderGroups().map(headerGroup => (
-                <TableRow key={headerGroup.id} className="hover:bg-transparent border-border/50">
+                <TableRow key={headerGroup.id} className="hover:bg-transparent">
                   {headerGroup.headers.map((header, colIdx) => {
                     const isColResizing = header.column.getIsResizing()
                     const isFirstCol = colIdx === 0
@@ -328,7 +330,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                           'group/th relative',
                           CELL_BORDER,
                           isFirstCol && isFrozen && cn(
-                            'sticky left-0 z-30 bg-(--card) border-r border-border/50',
+                            'sticky left-0 z-30 bg-(--card) border-r border-border',
                             FROZEN_COLUMN_SHADOW,
                           ),
                         )}
@@ -351,7 +353,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                                     e.stopPropagation()
                                     toggleFrozen()
                                   }}
-                                  className="shrink-0 cursor-pointer rounded p-0.5 hover:bg-muted"
+                                  className="shrink-0 cursor-pointer rounded p-0.5 hover:bg-hover pressed:bg-press focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                                   title={isFrozen ? 'Unfreeze column' : 'Freeze column'}
                                 >
                                   <PinIcon
@@ -359,7 +361,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                                       'h-3 w-3 rotate-45 transition-colors',
                                       isFrozen
                                         ? 'fill-foreground text-foreground'
-                                        : 'text-muted-foreground/50',
+                                        : 'text-muted-foreground',
                                     )}
                                   />
                                 </button>

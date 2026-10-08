@@ -203,7 +203,7 @@ export const MEETING_COLUMNS = {
                     <li key={selection.tradeId}>
                       <span className="font-medium">{selection.tradeName}</span>
                       {selection.selectedScopes.length > 0 && (
-                        <span className="block text-xs opacity-80">
+                        <span className="block text-xs text-muted-foreground">
                           {selection.selectedScopes.map(scope => scope.label).join(', ')}
                         </span>
                       )}

@@ -17,7 +17,7 @@ interface SlotProps {
 function Root({ className, children }: SlotProps) {
   return (
     <div className="@container">
-      <div className={cn('grid grid-cols-1 items-start gap-x-6 gap-y-4 bg-muted/20 p-4 @min-[640px]:grid-cols-[minmax(0,1fr)_auto]', className)}>
+      <div className={cn('grid grid-cols-1 items-start gap-x-6 gap-y-4 bg-band p-4 @min-[640px]:grid-cols-[minmax(0,1fr)_auto]', className)}>
         {children}
       </div>
     </div>

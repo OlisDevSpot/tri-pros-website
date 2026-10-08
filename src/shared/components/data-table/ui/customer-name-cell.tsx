@@ -24,9 +24,9 @@ export function CustomerNameCell({ customerId, customerName, onViewProfile, clas
       }}
       className={cn(
         'block max-w-full cursor-pointer truncate text-left',
-        'underline decoration-dotted decoration-muted-foreground/40 underline-offset-[3px]',
-        'transition-colors hover:text-foreground hover:decoration-foreground/60',
-        'focus-visible:text-foreground focus-visible:decoration-foreground/60 focus-visible:outline-none',
+        'underline decoration-dotted decoration-border-strong underline-offset-[3px]',
+        'transition-colors hover:text-foreground hover:decoration-foreground',
+        'focus-visible:text-foreground focus-visible:decoration-foreground focus-visible:outline-none',
         className,
       )}
     >

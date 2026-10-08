@@ -66,9 +66,9 @@ export function LeadSourcePicker({
           onClick={e => e.stopPropagation()}
           className={cn(
             'group/lead-source -mx-1.5 -my-1 inline-flex w-[calc(100%+0.75rem)] min-w-0 items-center rounded-md px-1.5 py-1 text-left',
-            'transition-colors hover:bg-foreground/5',
+            'transition-colors hover:bg-hover',
             'focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2',
-            'data-[state=open]:bg-foreground/8',
+            'data-[state=open]:bg-press',
           )}
         >
           {children}

@@ -35,7 +35,7 @@ export function QueryToolbarChipRail({ placement = 'block' }: ChipRailProps) {
         aria-hidden
         className={cn(
           'hidden lg:inline-flex flex-1 min-w-0 justify-center',
-          'truncate text-xs text-muted-foreground/70',
+          'truncate text-xs text-muted-foreground',
           'select-none pointer-events-none',
         )}
       >

@@ -70,12 +70,11 @@ function Root({ source, isSelected, onClick, children, className }: RootProps) {
         className={cn(
           'group/card flex min-h-11 w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left motion-safe:transition-[background-color,opacity,box-shadow] motion-safe:duration-200 sm:min-h-0',
           onClick && 'cursor-pointer',
-          // The one primary-color moment in the list — the selected card.
           isSelected
-            ? 'bg-primary/5 ring-1 ring-inset ring-primary/15'
-            : 'hover:bg-muted/60 focus-visible:bg-muted/60',
-          !source.isActive && !isSelected && 'opacity-75',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60',
+            ? 'bg-row-selected'
+            : 'hover:bg-row-hover focus-visible:bg-row-hover',
+          onClick && !isSelected && 'pressed:bg-row-press',
+          'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
           className,
         )}
       >
@@ -94,7 +93,7 @@ function Indicator({ className }: { className?: string }) {
       aria-hidden="true"
       className={cn(
         'inline-block size-2 shrink-0 rounded-full motion-safe:transition-colors motion-safe:duration-200',
-        source.isActive ? 'bg-status-success-dot' : 'bg-muted-foreground/30',
+        source.isActive ? 'bg-status-success-dot' : 'bg-status-idle-dot',
         className,
       )}
     />
@@ -106,7 +105,7 @@ function Indicator({ className }: { className?: string }) {
 function Name({ className }: { className?: string }) {
   const { source } = useCard()
   return (
-    <span className={cn('truncate text-sm font-medium text-foreground', className)}>
+    <span className={cn('truncate text-sm font-medium', source.isActive ? 'text-foreground' : 'text-muted-foreground', className)}>
       {source.name}
     </span>
   )

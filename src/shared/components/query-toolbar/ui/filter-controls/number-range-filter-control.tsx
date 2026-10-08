@@ -101,13 +101,13 @@ export function NumberRangeFilterControl({ definition, value, onChange }: Props)
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-72 p-0">
-        <div className="flex items-baseline justify-between gap-3 border-b border-border/50 px-4 py-3">
+        <div className="flex items-baseline justify-between gap-3 border-b border-border px-4 py-3">
           <span className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
             {definition.label}
           </span>
           <span className="font-medium text-sm tabular-nums text-foreground">
             {definition.formatValue(draft[0])}
-            <span aria-hidden className="px-1.5 text-muted-foreground/60">–</span>
+            <span aria-hidden className="px-1.5 text-muted-foreground">–</span>
             {definition.formatValue(draft[1])}
           </span>
         </div>
@@ -123,13 +123,13 @@ export function NumberRangeFilterControl({ definition, value, onChange }: Props)
             aria-label={`${definition.label} range`}
             minStepsBetweenThumbs={1}
           />
-          <div className="mt-2 flex items-center justify-between text-xs tabular-nums text-muted-foreground/70">
+          <div className="mt-2 flex items-center justify-between text-xs tabular-nums text-muted-foreground">
             <span>{definition.formatValue(bounds.min)}</span>
             <span>{definition.formatValue(bounds.max)}</span>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 border-t border-border/50 px-4 py-3">
+        <div className="grid grid-cols-2 gap-3 border-t border-border px-4 py-3">
           <NumberField
             label="Min"
             value={draft[0]}
@@ -145,7 +145,7 @@ export function NumberRangeFilterControl({ definition, value, onChange }: Props)
         </div>
 
         {isActive && (
-          <div className="flex justify-end border-t border-border/50 px-4 py-2">
+          <div className="flex justify-end border-t border-border px-4 py-2">
             <button
               type="button"
               onClick={() => onChange(undefined)}
@@ -183,7 +183,7 @@ function NumberField({ label, value, ariaLabel, onChange }: NumberFieldProps) {
 
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground/80">
+      <span className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
         {label}
       </span>
       <Input

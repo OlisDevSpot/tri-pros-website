@@ -19,7 +19,7 @@ export function FilterControlField({ definition }: FilterControlFieldProps) {
       <span
         className={cn(
           'block text-xs font-medium uppercase tracking-[0.08em] transition-colors',
-          isActive ? 'text-foreground' : 'text-muted-foreground/70',
+          isActive ? 'text-foreground' : 'text-muted-foreground',
         )}
       >
         {definition.label}

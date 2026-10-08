@@ -156,7 +156,7 @@ export function CreateMeetingForm({
                 'px-4 py-1.5 rounded-full text-sm font-medium border transition-colors',
                 meetingType === t
                   ? 'bg-primary text-primary-foreground border-primary'
-                  : 'text-muted-foreground border-input hover:bg-hover',
+                  : 'text-muted-foreground border-control-border hover:bg-hover',
               )}
             >
               {t}

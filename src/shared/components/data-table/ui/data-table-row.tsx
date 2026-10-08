@@ -60,7 +60,7 @@ function DataTableRowImpl<TData extends { id: string }>({
             e.stopPropagation()
             row.toggleExpanded()
           }}
-          className="shrink-0 cursor-pointer rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+          className="shrink-0 cursor-pointer rounded p-0.5 text-muted-foreground hover:bg-hover hover:text-foreground pressed:bg-press focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           <ChevronRightIcon className={cn('size-4 motion-safe:transition-transform', isExpanded && 'rotate-90')} />
         </button>
@@ -91,7 +91,7 @@ function DataTableRowImpl<TData extends { id: string }>({
             return (
               <TableCell
                 key={cell.id}
-                className={cn('sticky left-0 z-5 p-0 border-r border-border/50 bg-inherit', FROZEN_COLUMN_SHADOW)}
+                className={cn('sticky left-0 z-5 p-0 border-r border-border bg-inherit', FROZEN_COLUMN_SHADOW)}
                 style={{ borderRightStyle: 'dashed' }}
               >
                 {tintClassName && <div className={cn('absolute inset-0', tintClassName)} />}

@@ -40,7 +40,7 @@ export function QueryToolbarFilterTrigger() {
   const triggerInner = (
     <>
       <span className="sr-only lg:not-sr-only">{visibleLabel}</span>
-      <SlidersHorizontal className="size-4 opacity-80" aria-hidden />
+      <SlidersHorizontal className="size-4" aria-hidden />
     </>
   )
 
