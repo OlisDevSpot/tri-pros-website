@@ -50,7 +50,8 @@ export function validateVisitMessageTemplate(
     errors.push({ code: 'missing_token', message: `This text needs ${missing.map(token => `{{${token}}}`).join(', ')}.` })
   }
 
-  if (/\bstop\b/i.test(body)) {
+  // The renderer appends "Reply STOP to opt out." to a thread's first text; a template that spells it too would repeat it.
+  if (/\b(?:reply|text|send)\s+stop\b/i.test(body)) {
     errors.push({ code: 'contains_stop', message: 'Leave out the STOP line. It is added to the first text automatically.' })
   }
 

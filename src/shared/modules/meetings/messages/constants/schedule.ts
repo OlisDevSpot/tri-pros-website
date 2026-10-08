@@ -18,3 +18,5 @@ export const VISIT_MESSAGE_LATE_AFTER_MS = 15 * 60 * 1000
 export const VISIT_MESSAGE_PENDING_STALE_MS = 10 * 60 * 1000
 /** QStash can deliver a moment early; anything earlier than this is not today's run. */
 export const VISIT_MESSAGE_RUN_EARLY_TOLERANCE_MS = 5 * 60 * 1000
+/** No run sends at or after this Pacific hour: a retried delivery late in the evening would text homeowners at night. */
+export const VISIT_MESSAGE_SEND_CEILING_HOUR = 21
