@@ -325,11 +325,8 @@ export const meetingBusinessService = {
         return { action: 'duplicate', meetingId }
       }
       // Only the main line carries visit replies; a text to an agent's own number is for that agent.
-      if (!did?.isMainLine) {
-        return { action: 'not_main_line', meetingId: null }
-      }
-
-      if (target) {
+      const onMainLine = did?.isMainLine === true
+      if (onMainLine && target) {
         dalVerifySuccess(await meetingMessageCrud.create(ctx, {
           meetingId: target.meeting.id,
           kind: 'homeowner_reply',
@@ -340,12 +337,17 @@ export const meetingBusinessService = {
         }))
       }
 
+      // A STOP to any of our numbers opts out: every line sits in one messaging service, which carriers treat as one sender.
       if (input.optOutType === 'STOP') {
         for (const customer of matched) {
           await complianceService.addToDnc({ customerId: customer.id, reason: 'stop_keyword' })
         }
-        await notificationService.notifyHomeownerOptedOut({ meetingId, scheduledFor, customerName, body: input.body })
-        return { action: 'opt_out', meetingId }
+        const visitId = onMainLine ? meetingId : null
+        await notificationService.notifyHomeownerOptedOut({ meetingId: visitId, scheduledFor: onMainLine ? scheduledFor : null, customerName, body: input.body })
+        return { action: 'opt_out', meetingId: visitId }
+      }
+      if (!onMainLine) {
+        return { action: 'not_main_line', meetingId: null }
       }
       if (input.optOutType === 'START') {
         // Opting back in to texts says nothing about calls, so do-not-contact stays.
