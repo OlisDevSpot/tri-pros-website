@@ -145,19 +145,16 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
           fields: Object.keys(data),
         })
 
-        // A cancelled visit whose invite went out gets a calendar cancellation; the job checks, at run time, whether one is due.
+        // The transition check prevents re-dispatch when an already-cancelled meeting is edited again.
         if (previousRow.meetingOutcome !== 'cancelled' && row.meetingOutcome === 'cancelled') {
+          // A newly-cancelled meeting leaves the shared calendar; the row is kept.
+          if (row.gcalEventId) {
+            await deleteMeetingEventJob.dispatchOrThrow({ gcalEventId: row.gcalEventId })
+            await clearMeetingGCalFields(row.id)
+          }
+          // After the shared-calendar cleanup, so a failed enqueue here cannot strand the office's event.
+          // The job checks, at run time, whether the homeowner's invite needs a cancellation.
           await sendVisitCancellationJob.dispatchOrThrow({ meetingId: row.id })
-        }
-
-        // A newly-cancelled meeting leaves the shared calendar; the row is kept. The transition check prevents re-dispatch.
-        if (
-          previousRow.meetingOutcome !== 'cancelled'
-          && row.meetingOutcome === 'cancelled'
-          && row.gcalEventId
-        ) {
-          await deleteMeetingEventJob.dispatchOrThrow({ gcalEventId: row.gcalEventId })
-          await clearMeetingGCalFields(row.id)
         }
       },
     },
