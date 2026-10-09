@@ -2,6 +2,7 @@ import type { MeetingOutcome } from '@/shared/constants/enums/meetings'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { Meeting } from '@/shared/db/schema'
 import type { MeetingMessage } from '@/shared/db/schema/meeting-messages'
+import type { VisitEmailOutcome } from '@/shared/modules/meetings/messages/lib/deliver-visit-email'
 
 import { publicUrl } from '@/shared/config/public-url'
 import { canRescheduleFromOutcome, outcomeRequiresReason } from '@/shared/constants/enums/meetings'
@@ -196,10 +197,18 @@ export const meetingBusinessService = {
         email = dalVerifySuccess(await meetingMessageCrud.create(ctx, { ...base, status: 'skipped', reason: 'no_email' }))
       }
       else {
-        const chainIds = dalVerifySuccess(await getRescheduleChain(ctx, { meetingId: meeting.id }))
-        const chainMessages = await listChainMessages(chainIds)
-        const sequence = chainMessages.filter(message => message.kind === 'visit_summary' && message.channel === 'email' && message.status === 'sent').length
-        const outcome = await deliverVisitSummaryEmail({ context, chainIds, sequence, officeNote: note, mainLineE164: mainLine.e164, now: new Date() })
+        let outcome: VisitEmailOutcome
+        try {
+          const chainIds = dalVerifySuccess(await getRescheduleChain(ctx, { meetingId: meeting.id }))
+          const chainMessages = await listChainMessages(chainIds)
+          const sequence = chainMessages.filter(message => message.kind === 'visit_summary' && message.channel === 'email' && message.status === 'sent').length
+          outcome = await deliverVisitSummaryEmail({ context, chainIds, sequence, officeNote: note, mainLineE164: mainLine.e164, now: new Date() })
+        }
+        catch (error) {
+          // The text already left; a failure here must not read as the whole summary failing, or a retry texts twice.
+          console.error('[sendVisitSummary] email leg failed', { meetingId: meeting.id, error })
+          outcome = { status: 'failed', reason: 'send_error', emailProviderId: null }
+        }
         email = dalVerifySuccess(await meetingMessageCrud.create(ctx, { ...base, status: outcome.status, reason: outcome.reason, emailProviderId: outcome.emailProviderId }))
       }
 
