@@ -1,5 +1,6 @@
 import env from '@/shared/config/server-env'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { meetingService } from '@/shared/modules/meetings/service'
 import { twilioClient } from '@/shared/services/providers/twilio/client'
 import { messagingStatusCallbackSchema } from '@/shared/services/providers/twilio/schemas/messaging'
 import { voipMessagesService } from '@/shared/services/voip/voip-messages.service'
@@ -37,6 +38,12 @@ export async function POST(request: Request): Promise<Response> {
     })
     if (!applied.success) {
       console.error('[twilio webhook] status callback failed', applied.error)
+    }
+    else if (applied.data.rowsAffected > 0 && (applied.data.status === 'failed' || applied.data.status === 'undelivered')) {
+      await meetingService.messages.recordDeliveryFailure(SYSTEM_CONTEXT, {
+        providerMessageId: parsed.data.MessageSid,
+        reason: `twilio:${parsed.data.ErrorCode ?? 'unknown'}`,
+      })
     }
   }
   catch (error) {

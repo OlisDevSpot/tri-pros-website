@@ -3,16 +3,19 @@ import type { SQL } from 'drizzle-orm'
 import type { Meeting } from '@/shared/db/schema'
 import type { MeetingMessage } from '@/shared/db/schema/meeting-messages'
 
-import { and, asc, eq, gte, inArray, lt } from 'drizzle-orm'
+import { and, asc, eq, gte, inArray, lt, ne } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 
 import { SYSTEM_OWNER_EMAIL } from '@/shared/constants/system-users'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { customers } from '@/shared/db/schema/customers'
 import { meetingMessages } from '@/shared/db/schema/meeting-messages'
 import { meetingParticipants } from '@/shared/db/schema/meeting-participants'
 import { meetings } from '@/shared/db/schema/meetings'
+import { voipMessages } from '@/shared/db/schema/voip-messages'
+import { getRescheduleChain } from '@/shared/entities/meetings/dal/server/queries'
 
 export interface VisitMessageContext {
   meeting: Pick<Meeting, 'id' | 'customerId' | 'ownerId' | 'scheduledFor' | 'scheduledForSetAt' | 'meetingType' | 'meetingOutcome' | 'confirmedAt' | 'homeownerConfirmedAt' | 'homeownerConfirmedVia' | 'shareToken'>
@@ -118,4 +121,51 @@ export async function listChainMessages(meetingIds: string[]): Promise<MeetingMe
     .from(meetingMessages)
     .where(inArray(meetingMessages.meetingId, meetingIds))
     .orderBy(asc(meetingMessages.createdAt))
+}
+
+const REPLY_MATCH_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
+
+/**
+ * The meeting a reply is about: the soonest eligible one in the next 7 days, across every customer with
+ * that phone, whose reschedule chain has a sent visit message. `meetingType <> 'Project'` mirrors isProjectMeeting.
+ */
+export async function findReplyTargetMeeting(input: { customerIds: string[], now: Date }): Promise<VisitMessageContext | null> {
+  if (input.customerIds.length === 0) {
+    return null
+  }
+  const candidates = await listContexts(and(
+    inArray(meetings.customerId, input.customerIds),
+    gte(meetings.scheduledFor, input.now.toISOString()),
+    lt(meetings.scheduledFor, new Date(input.now.getTime() + REPLY_MATCH_WINDOW_MS).toISOString()),
+    ne(meetings.meetingType, 'Project'),
+    eq(meetings.meetingOutcome, 'not_set'),
+  )!)
+  for (const candidate of candidates) {
+    const chain = await getRescheduleChain(SYSTEM_CONTEXT, { meetingId: candidate.meeting.id })
+    const chainMessages = await listChainMessages(chain.success ? chain.data : [candidate.meeting.id])
+    if (chainMessages.some(message => message.status === 'sent')) {
+      return candidate
+    }
+  }
+  return null
+}
+
+export async function getMeetingMessageByVoipMessageId(voipMessageId: string): Promise<MeetingMessage | undefined> {
+  const [row] = await db
+    .select()
+    .from(meetingMessages)
+    .where(eq(meetingMessages.voipMessageId, voipMessageId))
+    .limit(1)
+  return row
+}
+
+/** The visit message behind a Twilio SID, for status callbacks. */
+export async function getMeetingMessageByProviderMessageId(providerMessageId: string): Promise<MeetingMessage | undefined> {
+  const [row] = await db
+    .select({ message: meetingMessages })
+    .from(meetingMessages)
+    .innerJoin(voipMessages, eq(voipMessages.id, meetingMessages.voipMessageId))
+    .where(eq(voipMessages.providerMessageId, providerMessageId))
+    .limit(1)
+  return row?.message
 }

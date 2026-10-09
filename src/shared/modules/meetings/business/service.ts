@@ -1,4 +1,4 @@
-import type { MeetingOutcome } from '@/shared/constants/enums/meetings'
+import type { HomeownerConfirmation, MeetingOutcome } from '@/shared/constants/enums/meetings'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { Meeting } from '@/shared/db/schema'
 import type { MeetingMessage } from '@/shared/db/schema/meeting-messages'
@@ -10,22 +10,30 @@ import { canRescheduleFromOutcome, outcomeRequiresReason } from '@/shared/consta
 import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { SYSTEM_CONTEXT, ThrowableDalError } from '@/shared/dal/server/types'
 import { customerNoteCrud } from '@/shared/entities/customer-notes/dal/server/crud'
+import { findCustomersByPhone } from '@/shared/entities/customers/dal/server/queries'
 import { MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { handOffShareToken } from '@/shared/entities/meetings/dal/server/mutations'
 import { addParticipant, getParticipantsForMeeting } from '@/shared/entities/meetings/dal/server/participants'
 import { getRescheduleChain, getRescheduleSuccessorId } from '@/shared/entities/meetings/dal/server/queries'
 import { buildRescheduleNote, formatMeetingDateShort } from '@/shared/entities/meetings/lib/notes'
+import { formatPhone } from '@/shared/lib/phone'
 import { meetingMessageCrud } from '@/shared/modules/meetings/messages/dal/server/crud'
 import { claimAutomaticSend, setMeetingMessageOutcome } from '@/shared/modules/meetings/messages/dal/server/mutations'
-import { getVisitMessageContext, listChainMessages } from '@/shared/modules/meetings/messages/dal/server/queries'
+import { findReplyTargetMeeting, getMeetingMessageByVoipMessageId, getVisitMessageContext, listChainMessages } from '@/shared/modules/meetings/messages/dal/server/queries'
 import { getTemplateBodies } from '@/shared/modules/meetings/messages/dal/server/settings'
 import { deliverVisitCancellationEmail, deliverVisitSummaryEmail } from '@/shared/modules/meetings/messages/lib/deliver-visit-email'
 import { deliverVisitText } from '@/shared/modules/meetings/messages/lib/deliver-visit-text'
 import { isVisitMessageEligible } from '@/shared/modules/meetings/messages/lib/is-visit-message-eligible'
+import { matchReplyKeyword } from '@/shared/modules/meetings/messages/lib/match-reply-keyword'
 import { runAutomaticKind } from '@/shared/modules/meetings/messages/lib/run-automatic-kind'
 import { shouldSendVisitCancellation } from '@/shared/modules/meetings/messages/lib/should-send-visit-cancellation'
+import { notificationService } from '@/shared/services/notification.service'
+import { complianceService } from '@/shared/services/voip/compliance.service'
 import { voipDidsService } from '@/shared/services/voip/voip-dids.service'
+import { voipMessagesService } from '@/shared/services/voip/voip-messages.service'
+
+export type HomeownerReplyAction = 'opt_out' | 'opt_in' | 'help' | 'confirmed' | 'already_confirmed' | 'forwarded' | 'duplicate'
 
 export const meetingBusinessService = {
   /**
@@ -266,6 +274,107 @@ export const meetingBusinessService = {
       const outcome = await deliverVisitCancellationEmail({ context, chainIds, sequence, mainLineE164: mainLine.e164, now: new Date() })
       await setMeetingMessageOutcome(claim.id, outcome)
       return { sent: outcome.status === 'sent', reason: outcome.reason }
+    })
+  },
+
+  /** The homeowner's own "I'll be there", by text or on the page. Never sets `confirmedAt`: that stays the office's. */
+  async confirmByHomeowner(
+    ctx: ScopedContext,
+    input: { meetingId: string, via: HomeownerConfirmation },
+  ): Promise<DalReturn<Meeting>> {
+    return dalDbOperation(async () => {
+      const meeting = dalVerifySuccess(await meetingCrud.getById(ctx, { id: input.meetingId }))
+      if (!meeting) {
+        throw new ThrowableDalError({ type: 'not-found' })
+      }
+      if (!isVisitMessageEligible(meeting, new Date())) {
+        throw new ThrowableDalError({ type: 'precondition-failed', reason: 'This visit can no longer be confirmed.' })
+      }
+      if (meeting.homeownerConfirmedAt) {
+        return meeting
+      }
+      return dalVerifySuccess(await meetingCrud.update(ctx, {
+        id: meeting.id,
+        data: { homeownerConfirmedAt: new Date().toISOString(), homeownerConfirmedVia: input.via },
+      }))
+    })
+  },
+
+  /**
+   * A text that arrived on the main line. Every reply is stored on the thread; a reply that matches a visit
+   * is recorded against it. Opt-outs come from Twilio's own verdict, never from a keyword list of ours.
+   */
+  async handleHomeownerReply(
+    ctx: ScopedContext,
+    input: { providerMessageId: string, from: string, to: string, body: string, optOutType: 'STOP' | 'START' | 'HELP' | null },
+  ): Promise<DalReturn<{ action: HomeownerReplyAction, meetingId: string | null }>> {
+    return dalDbOperation(async () => {
+      const did = dalVerifySuccess(await voipDidsService.getDidByE164(input.to))
+      const matched = dalVerifySuccess(await findCustomersByPhone(input.from))
+      const recorded = dalVerifySuccess(await voipMessagesService.recordInboundMessage(ctx, {
+        providerMessageId: input.providerMessageId,
+        voipDidId: did?.id ?? null,
+        customerId: matched[0]?.id ?? null,
+        remoteE164: input.from,
+        body: input.body,
+      }))
+
+      const target = await findReplyTargetMeeting({ customerIds: matched.map(customer => customer.id), now: new Date() })
+      const meetingId = target?.meeting.id ?? null
+      const scheduledFor = target?.meeting.scheduledFor ?? null
+      const customerName = target?.customer?.name ?? matched[0]?.name ?? formatPhone(input.from)
+
+      if (target) {
+        // Twilio delivers at least once; the first delivery wrote this row and did everything below.
+        if (await getMeetingMessageByVoipMessageId(recorded.id)) {
+          return { action: 'duplicate', meetingId }
+        }
+        dalVerifySuccess(await meetingMessageCrud.create(ctx, {
+          meetingId: target.meeting.id,
+          kind: 'homeowner_reply',
+          channel: 'sms',
+          forScheduledFor: target.meeting.scheduledFor,
+          status: 'received',
+          voipMessageId: recorded.id,
+        }))
+      }
+
+      if (input.optOutType === 'STOP') {
+        for (const customer of matched) {
+          await complianceService.addToDnc({ customerId: customer.id, reason: 'stop_keyword' })
+        }
+        await notificationService.notifyHomeownerOptedOut({ meetingId, scheduledFor, customerName, body: input.body })
+        return { action: 'opt_out', meetingId }
+      }
+      if (input.optOutType === 'START') {
+        // Opting back in to texts says nothing about calls, so do-not-contact stays.
+        await notificationService.notifyHomeownerReply({ meetingId, scheduledFor, customerName, body: input.body })
+        return { action: 'opt_in', meetingId }
+      }
+      if (input.optOutType === 'HELP') {
+        return { action: 'help', meetingId }
+      }
+
+      if (target && matchReplyKeyword(input.body) === 'confirm') {
+        if (target.meeting.homeownerConfirmedAt) {
+          return { action: 'already_confirmed', meetingId }
+        }
+        dalVerifySuccess(await meetingBusinessService.confirmByHomeowner(ctx, { meetingId: target.meeting.id, via: 'sms_reply' }))
+        const outcome = await deliverVisitText(ctx, { context: target, templateKey: 'confirmation_reply', bodies: await getTemplateBodies() })
+        dalVerifySuccess(await meetingMessageCrud.create(ctx, {
+          meetingId: target.meeting.id,
+          kind: 'confirmation_reply',
+          channel: 'sms',
+          forScheduledFor: target.meeting.scheduledFor,
+          status: outcome.status,
+          reason: outcome.reason,
+          voipMessageId: outcome.voipMessageId,
+        }))
+        return { action: 'confirmed', meetingId }
+      }
+
+      await notificationService.notifyHomeownerReply({ meetingId, scheduledFor, customerName, body: input.body })
+      return { action: 'forwarded', meetingId }
     })
   },
 } as const

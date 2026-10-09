@@ -114,6 +114,20 @@ export async function findCustomerByPhone(phone: string): Promise<DalReturn<Cust
   })
 }
 
+/** Ungated (webhook callers). Every customer with this phone: a household can share one. */
+export async function findCustomersByPhone(phone: string): Promise<DalReturn<Customer[]>> {
+  return dalDbOperation(async () => {
+    const national = toNationalDigits(phone)
+    if (!national) {
+      return []
+    }
+    return db
+      .select()
+      .from(customers)
+      .where(eq(customers.phone, national))
+  })
+}
+
 export async function isCustomerInLeads(customerId: string): Promise<DalReturn<boolean>> {
   return dalDbOperation(async () => {
     const [row] = await db
