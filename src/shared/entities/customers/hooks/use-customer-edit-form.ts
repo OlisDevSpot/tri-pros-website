@@ -51,6 +51,8 @@ export function useCustomerEditForm(customer: CustomerWithProfile) {
   async function handleSave(values: CustomerFormValues) {
     const promises: Promise<unknown>[] = []
 
+    // `formState.dirtyFields` here would be the last render's snapshot, which RHF refreshes only for
+    // keys read while rendering; `getFieldState` reads the live state.
     // Flat column patch — only send the profile-trio keys RHF marked dirty
     // (changed from the row-seeded defaults), so untouched fields stay
     // omitted (undefined) rather than overwriting with defaults. An explicit
@@ -59,7 +61,7 @@ export function useCustomerEditForm(customer: CustomerWithProfile) {
     // no-op. Routes through the customer_profiles child-table upsert
     // (Addendum B) — a separate mutation from the Customer row itself.
     if (canEditProfiles) {
-      const dirtyProfileKeys = PROFILE_COLUMN_KEYS.filter(k => form.formState.dirtyFields[k])
+      const dirtyProfileKeys = PROFILE_COLUMN_KEYS.filter(k => form.getFieldState(k).isDirty)
       if (dirtyProfileKeys.length > 0) {
         const patch = Object.fromEntries(
           dirtyProfileKeys.map(k => [k, values[k] ?? null]),
@@ -75,7 +77,7 @@ export function useCustomerEditForm(customer: CustomerWithProfile) {
 
     // `age` stays a plain Customer column (Addendum B.2) — separate mutation
     // from the profile-trio child-table upsert above; both may fire together.
-    if (canEditAge && form.formState.dirtyFields.age) {
+    if (canEditAge && form.getFieldState('age').isDirty) {
       promises.push(
         ageMutation.mutateAsync({
           id: customer.id,
