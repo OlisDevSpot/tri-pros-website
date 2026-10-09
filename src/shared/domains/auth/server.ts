@@ -72,6 +72,8 @@ export const auth = betterAuth({
       role: {
         type: [...userRoles] as const,
         defaultValue: 'user',
+        // better-auth's /update-user accepts every field not marked input: false, so without it anyone signed in could set their own role.
+        input: false,
       },
       phone: {
         type: 'string',
