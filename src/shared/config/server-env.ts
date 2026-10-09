@@ -220,6 +220,9 @@ if (env.VERCEL_ENV === 'production' && env.META_TEST_EVENT_CODE) {
 //
 // Production omits the banner (clean logs); the typed runtime checks from
 // `NotConfiguredError` still kick in if a misconfigured service is called.
+// `src/instrumentation.ts` calls it once per server start. Printing from this
+// module's top level instead repeats it per compiled route and per Next dev
+// worker process, which each evaluate their own copy.
 //
 // To register a newly-migrated provider: add its `<x>ConfigMeta` import at
 // the top of this file and append to `PROVIDER_METAS` below.
@@ -237,7 +240,7 @@ const PROVIDER_METAS = [
   webPushConfigMeta,
 ] as const
 
-if (env.NODE_ENV !== 'production') {
+export function printProviderStatus() {
   // eslint-disable-next-line no-console
   console.log('[server-env] Configured providers:')
   for (const meta of PROVIDER_METAS) {

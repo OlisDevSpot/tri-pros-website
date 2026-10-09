@@ -25,7 +25,19 @@ const t = initTRPC.context<HTTPTRPCContext>().create({
 export const createTRPCRouter = t.router
 export const createMiddleware = t.middleware
 export const createCallerFactory = t.createCallerFactory
-export const baseProcedure = t.procedure
+
+// Stands in for Next's dev request log, which next.config.ts filters out for
+// /api/trpc because batch URLs carry their whole JSON input.
+const devTiming = t.middleware(async ({ path, type, next }) => {
+  const start = performance.now()
+  const result = await next()
+  // eslint-disable-next-line no-console
+  console.log(` trpc ${type} ${path}${result.ok ? '' : ` ✗ ${result.error.code}`} in ${Math.round(performance.now() - start)}ms`)
+  return result
+})
+
+// eslint-disable-next-line node/prefer-global/process
+export const baseProcedure = process.env.NODE_ENV === 'production' ? t.procedure : t.procedure.use(devTiming)
 
 // ── systemProcedure ─────────────────────────────────────────────────────────
 // Public, unauthenticated procedure for system-level / event-ingestion

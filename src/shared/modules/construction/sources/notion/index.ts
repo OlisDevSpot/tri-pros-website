@@ -5,26 +5,29 @@ import { pageToPainPoint } from './pain-points/adapter'
 import { queryNotionDatabase } from './query'
 import { pageToScope } from './scopes/adapter'
 import { pageToSowTemplate } from './sows/adapter'
-import { pageToTrade } from './trades/adapter'
+import { isDisabledTrade, pageToTrade } from './trades/adapter'
 
 /**
  * The Notion-backed catalog source. The only file that assembles the Notion
  * implementation; nothing outside `sources/` imports `sources/notion/*`.
  *
  * Every list read drops invalid rows rather than throwing, and warns with a
- * count
+ * count. Rows hidden on purpose (a disabled trade) are filtered first, so
+ * the count only ever means rows someone has to fix in Notion.
  */
 function readAll<T>(
   label: string,
   raw: PageObjectResponse[] | undefined,
   adapt: (page: PageObjectResponse) => T | null,
+  isHidden: (page: PageObjectResponse) => boolean = () => false,
 ): T[] {
   if (!raw) {
     return []
   }
-  const rows = raw.flatMap(page => adapt(page) ?? [])
-  if (rows.length < raw.length) {
-    console.warn(`[notionCatalogSource.${label}] dropped ${raw.length - rows.length} of ${raw.length} rows`)
+  const shown = raw.filter(page => !isHidden(page))
+  const rows = shown.flatMap(page => adapt(page) ?? [])
+  if (rows.length < shown.length) {
+    console.warn(`[notionCatalogSource.${label}] dropped ${shown.length - rows.length} invalid of ${shown.length} rows`)
   }
   return rows
 }
@@ -34,6 +37,7 @@ export const notionCatalogSource: ConstructionCatalogSource = {
     'getTrades',
     await queryNotionDatabase('trades', { sortBy: { property: 'name', direction: 'ascending' } }),
     pageToTrade,
+    isDisabledTrade,
   ),
 
   getScopes: async () => readAll('getScopes', await queryNotionDatabase('scopes'), pageToScope),
