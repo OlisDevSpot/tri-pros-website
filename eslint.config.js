@@ -100,6 +100,10 @@ export default antfu({
   rules: {
     'react-refresh/only-export-components': 'off',
     'ts/no-empty-object-type': 'off',
+    // Tailwind reads class names from the raw source text, so `\'` inside a class string
+    // becomes part of the selector: webpack emits a rule that matches nothing and Turbopack
+    // refuses to parse the CSS. Never let the fixer escape a quote to force single quotes.
+    'style/quotes': ['error', 'single', { allowTemplateLiterals: 'always', avoidEscape: true }],
   },
 }).append({
   // Preserve antfu's original no-restricted-syntax entries (TSEnumDeclaration[const=true],
