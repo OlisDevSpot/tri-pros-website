@@ -175,7 +175,7 @@ export const meetingBusinessService = {
         context,
         templateKey: 'visit_summary',
         bodies,
-        officeNote: note,
+        coordinatorNote: note,
         mediaUrl: [publicUrl('/api/company/vcard')],
       })
       const sms = dalVerifySuccess(await meetingMessageCrud.create(ctx, {
@@ -202,7 +202,7 @@ export const meetingBusinessService = {
           const chainIds = dalVerifySuccess(await getRescheduleChain(ctx, { meetingId: meeting.id }))
           const chainMessages = await listChainMessages(chainIds)
           const sequence = chainMessages.filter(message => message.kind === 'visit_summary' && message.channel === 'email' && message.status === 'sent').length
-          outcome = await deliverVisitSummaryEmail({ context, chainIds, sequence, officeNote: note, mainLineE164: mainLine.e164, now: new Date() })
+          outcome = await deliverVisitSummaryEmail({ context, chainIds, sequence, coordinatorNote: note, mainLineE164: mainLine.e164, now: new Date() })
         }
         catch (error) {
           // The text already left; a failure here must not read as the whole summary failing, or a retry texts twice.

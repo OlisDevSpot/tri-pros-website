@@ -10,7 +10,7 @@ import { formatCustomerAddress } from '@/shared/lib/formatters'
 import { formatPhone } from '@/shared/lib/phone'
 import { formatArrivalWindow } from '@/shared/modules/meetings/core/lib/arrival-window'
 import { buildIcs } from '@/shared/modules/meetings/messages/lib/build-ics'
-import { repDisplayName, visitLinkFor } from '@/shared/modules/meetings/messages/lib/deliver-visit-text'
+import { displayFirstName, visitLinkFor } from '@/shared/modules/meetings/messages/lib/deliver-visit-text'
 import { buildGoogleCalendarLink } from '@/shared/modules/meetings/messages/lib/google-calendar-link'
 import { emailService } from '@/shared/services/email.service'
 import { RESEND_LEAD_INBOX } from '@/shared/services/providers/resend/constants'
@@ -49,7 +49,7 @@ export function buildVisitInvite(input: {
     start: meeting.scheduledFor,
     durationMs: MEETING_ESTIMATED_DURATION_MS,
     summary: eventSummary(),
-    description: `${repDisplayName(rep) ?? 'Your rep'} from ${companyInfo.name} will arrive between ${formatArrivalWindow(meeting.scheduledFor)}.\nYour visit details: ${visitUrl}`,
+    description: `${displayFirstName(rep) ?? 'Your specialist'} from ${companyInfo.name} will arrive between ${formatArrivalWindow(meeting.scheduledFor)}.\nYour visit details: ${visitUrl}`,
     location: address?.hasAddress ? address.singleLine : undefined,
     url: visitUrl,
     organizer: { name: companyInfo.name, email: RESEND_LEAD_INBOX },
@@ -60,17 +60,18 @@ export function buildVisitInvite(input: {
 
 export function buildVisitSummaryEmailProps(input: {
   context: VisitMessageContext
-  officeNote: string | null
+  coordinatorNote: string | null
   mainLineE164: string
 }): VisitSummaryEmailProps {
-  const { meeting, customer, rep } = input.context
+  const { meeting, customer, rep, coordinator } = input.context
   const visitUrl = visitLinkFor(meeting)
   const address = customer
     ? formatCustomerAddress({ address: customer.address, city: customer.city, state: customer.state, zip: customer.zip })
     : null
   return {
     firstName: customer?.name.trim().split(/\s+/)[0] || 'there',
-    repName: repDisplayName(rep),
+    specialistName: displayFirstName(rep),
+    coordinatorName: displayFirstName(coordinator),
     visitDayTime: formatBusinessDayTime(meeting.scheduledFor),
     arrivalWindow: formatArrivalWindow(meeting.scheduledFor),
     addressLine1: address?.line1 ?? '',
@@ -83,7 +84,7 @@ export function buildVisitSummaryEmailProps(input: {
       location: address?.hasAddress ? address.singleLine : undefined,
       description: `Your visit details: ${visitUrl}`,
     }),
-    officeNote: input.officeNote,
+    coordinatorNote: input.coordinatorNote,
     mainLinePhone: formatPhone(input.mainLineE164),
     companyName: companyInfo.name,
     logoUrl: publicUrl('/company/logo/logo-light-right.jpg'),
@@ -96,7 +97,7 @@ export async function deliverVisitSummaryEmail(input: {
   chainIds: string[]
   /** How many summary emails the chain already sent; the invite's SEQUENCE. */
   sequence: number
-  officeNote: string | null
+  coordinatorNote: string | null
   mainLineE164: string
   now: Date
 }): Promise<VisitEmailOutcome> {
@@ -104,12 +105,12 @@ export async function deliverVisitSummaryEmail(input: {
   if (!customer?.email) {
     return { status: 'failed', reason: 'no_email', emailProviderId: null }
   }
-  const props = buildVisitSummaryEmailProps({ context: input.context, officeNote: input.officeNote, mainLineE164: input.mainLineE164 })
+  const props = buildVisitSummaryEmailProps({ context: input.context, coordinatorNote: input.coordinatorNote, mainLineE164: input.mainLineE164 })
   try {
     const { buildVisitSummaryText } = await import('@/shared/services/providers/resend/emails/visit-summary-email')
     const { id } = await emailService.sendVisitSummaryEmail({
       to: customer.email,
-      repName: props.repName,
+      coordinatorName: props.coordinatorName,
       visitDay: formatBusinessDay(meeting.scheduledFor),
       props,
       text: buildVisitSummaryText(props),

@@ -4,7 +4,9 @@ import type { Meeting } from '@/shared/db/schema'
 import type { MeetingMessage } from '@/shared/db/schema/meeting-messages'
 
 import { and, asc, eq, gte, inArray, lt } from 'drizzle-orm'
+import { alias } from 'drizzle-orm/pg-core'
 
+import { SYSTEM_OWNER_EMAIL } from '@/shared/constants/system-users'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { customers } from '@/shared/db/schema/customers'
@@ -26,9 +28,13 @@ export interface VisitMessageContext {
     zip: string
     doNotContact: boolean
   } | null
-  /** The owner participant. Null for a system-owned meeting, which has none. */
+  /** The specialist: the owner participant. Null for a system-owned meeting, which has none. */
   rep: { userId: string, name: string, nickname: string | null } | null
+  /** The meeting's setter. Null when nobody set it or the company's own account did; the texts then speak as the company. */
+  coordinator: { userId: string, name: string, nickname: string | null } | null
 }
+
+const coordinatorUser = alias(user, 'coordinator_user')
 
 // Unscoped: jobs and webhooks read these, and a procedure that reaches them has checked the meeting first.
 async function listContexts(where: SQL): Promise<VisitMessageContext[]> {
@@ -59,11 +65,13 @@ async function listContexts(where: SQL): Promise<VisitMessageContext[]> {
         dncOptedOutAt: customers.dncOptedOutAt,
       },
       rep: { userId: user.id, name: user.name, nickname: user.nickname },
+      coordinator: { userId: coordinatorUser.id, name: coordinatorUser.name, nickname: coordinatorUser.nickname, email: coordinatorUser.email },
     })
     .from(meetings)
     .leftJoin(customers, eq(customers.id, meetings.customerId))
     .leftJoin(meetingParticipants, and(eq(meetingParticipants.meetingId, meetings.id), eq(meetingParticipants.role, 'owner')))
     .leftJoin(user, eq(user.id, meetingParticipants.userId))
+    .leftJoin(coordinatorUser, eq(coordinatorUser.id, meetings.setBy))
     .where(where)
     .orderBy(asc(meetings.scheduledFor))
 
@@ -84,6 +92,9 @@ async function listContexts(where: SQL): Promise<VisitMessageContext[]> {
         }
       : null,
     rep: row.rep?.userId ? { userId: row.rep.userId, name: row.rep.name!, nickname: row.rep.nickname } : null,
+    coordinator: row.coordinator?.userId && row.coordinator.email !== SYSTEM_OWNER_EMAIL
+      ? { userId: row.coordinator.userId, name: row.coordinator.name!, nickname: row.coordinator.nickname }
+      : null,
   }))
 }
 

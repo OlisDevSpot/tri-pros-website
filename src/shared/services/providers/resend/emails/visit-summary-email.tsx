@@ -16,8 +16,10 @@ import * as React from 'react'
 
 export interface VisitSummaryEmailProps {
   firstName: string
-  /** Null when the meeting has no rep yet. */
-  repName: string | null
+  /** Null when no specialist is assigned yet. */
+  specialistName: string | null
+  /** Null when the company itself sets the visit. */
+  coordinatorName: string | null
   /** "Wed, Oct 7, 10:00 AM" */
   visitDayTime: string
   /** "10:00 and 10:30 AM" */
@@ -26,7 +28,7 @@ export interface VisitSummaryEmailProps {
   addressLine2: string
   visitUrl: string
   googleCalendarUrl: string
-  officeNote: string | null
+  coordinatorNote: string | null
   /** "(626) 555-0123" */
   mainLinePhone: string
   companyName: string
@@ -105,8 +107,12 @@ const styles = {
   },
 }
 
-function repOrFallback(repName: string | null): string {
-  return repName ?? 'Your rep'
+function specialistOrFallback(specialistName: string | null): string {
+  return specialistName ?? 'Your specialist'
+}
+
+function noteLabel(coordinatorName: string | null): string {
+  return `A note from ${coordinatorName ?? 'our team'}`
 }
 
 export function VisitSummaryEmail(props: VisitSummaryEmailProps) {
@@ -135,7 +141,7 @@ export function VisitSummaryEmail(props: VisitSummaryEmailProps) {
           </Text>
 
           <Text style={styles.text}>
-            {repOrFallback(props.repName)}
+            {specialistOrFallback(props.specialistName)}
             {' '}
             from
             {' '}
@@ -158,10 +164,10 @@ export function VisitSummaryEmail(props: VisitSummaryEmailProps) {
             </Text>
           )}
 
-          {props.officeNote && (
+          {props.coordinatorNote && (
             <Section style={styles.noteSection}>
-              <Text style={styles.noteLabel}>A note from our team</Text>
-              <Text style={styles.noteText}>{props.officeNote}</Text>
+              <Text style={styles.noteLabel}>{noteLabel(props.coordinatorName)}</Text>
+              <Text style={styles.noteText}>{props.coordinatorNote}</Text>
             </Section>
           )}
 
@@ -204,9 +210,9 @@ export function buildVisitSummaryText(props: VisitSummaryEmailProps): string {
   return [
     `Hi ${props.firstName},`,
     '',
-    `${repOrFallback(props.repName)} from ${props.companyName} will see you on ${props.visitDayTime}, arriving between ${props.arrivalWindow}.`,
+    `${specialistOrFallback(props.specialistName)} from ${props.companyName} will see you on ${props.visitDayTime}, arriving between ${props.arrivalWindow}.`,
     [props.addressLine1, props.addressLine2].filter(Boolean).join('\n'),
-    ...(props.officeNote ? ['', `A note from our team: ${props.officeNote}`] : []),
+    ...(props.coordinatorNote ? ['', `${noteLabel(props.coordinatorName)}: ${props.coordinatorNote}`] : []),
     '',
     `Your visit details: ${props.visitUrl}`,
     `Add to Google Calendar: ${props.googleCalendarUrl}`,

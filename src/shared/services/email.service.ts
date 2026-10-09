@@ -94,7 +94,7 @@ function createEmailService() {
     /** The visit summary. The invite travels as a `text/calendar` attachment, which mail clients add to the calendar. */
     sendVisitSummaryEmail: async (params: {
       to: string
-      repName: string | null
+      coordinatorName: string | null
       /** "Wed, Oct 7" */
       visitDay: string
       props: VisitSummaryEmailProps
@@ -103,7 +103,7 @@ function createEmailService() {
     }): Promise<{ id: string }> => {
       const templates = await loadEmailTemplates()
       const { data, error } = await resendClient.emails.send({
-        from: buildSenderFrom(params.repName),
+        from: buildSenderFrom(params.coordinatorName),
         to: params.to,
         replyTo: RESEND_LEAD_INBOX,
         subject: `Your home visit on ${params.visitDay}`,

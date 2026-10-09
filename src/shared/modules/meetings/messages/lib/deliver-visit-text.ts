@@ -23,12 +23,12 @@ export function visitLinkFor(meeting: Pick<VisitMessageContext['meeting'], 'id' 
   return publicUrl(ROOTS.public.homeVisit(meeting.id, meeting.shareToken))
 }
 
-/** Homeowner copy names the rep by nickname, else first name; null when the meeting has no rep. */
-export function repDisplayName(rep: VisitMessageContext['rep']): string | null {
-  if (!rep) {
+/** Homeowner copy names a person by nickname, else first name; null when there is nobody to name. */
+export function displayFirstName(person: { name: string, nickname: string | null } | null): string | null {
+  if (!person) {
     return null
   }
-  return rep.nickname?.trim() || rep.name.trim().split(/\s+/)[0] || null
+  return person.nickname?.trim() || person.name.trim().split(/\s+/)[0] || null
 }
 
 /**
@@ -39,10 +39,10 @@ export async function deliverVisitText(ctx: ScopedContext, input: {
   context: VisitMessageContext
   templateKey: VisitMessageTemplateKey
   bodies: Record<VisitMessageTemplateKey, string>
-  officeNote?: string | null
+  coordinatorNote?: string | null
   mediaUrl?: string[]
 }): Promise<VisitTextOutcome> {
-  const { meeting, customer, rep } = input.context
+  const { meeting, customer, rep, coordinator } = input.context
   const remoteE164 = toE164(customer?.phone)
   if (!customer || !remoteE164) {
     return { status: 'skipped', reason: 'no_phone', voipMessageId: null }
@@ -53,15 +53,17 @@ export async function deliverVisitText(ctx: ScopedContext, input: {
     return { status: 'failed', reason: 'no_main_line', voipMessageId: null }
   }
 
-  const stopLine = !(await hasOutboundOnThread({ voipDidId: mainLine.data.id, remoteE164 }))
+  // The summary is the first text a homeowner gets, and always carries the opt-out; the lookup only matters for the rest.
+  const stopLine = input.templateKey === 'visit_summary' || !(await hasOutboundOnThread({ voipDidId: mainLine.data.id, remoteE164 }))
   const body = renderVisitMessage(
     input.bodies[input.templateKey],
     buildVisitMessageVars({
       customerName: customer.name,
-      repName: repDisplayName(rep),
+      specialistName: displayFirstName(rep),
+      coordinatorName: displayFirstName(coordinator),
       scheduledFor: meeting.scheduledFor,
       visitLink: visitLinkFor(meeting),
-      officeNote: input.officeNote,
+      coordinatorNote: input.coordinatorNote,
     }),
     { stopLine },
   )

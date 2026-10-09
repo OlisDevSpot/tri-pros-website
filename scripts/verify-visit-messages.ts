@@ -1,34 +1,34 @@
-import assert from 'node:assert/strict'
+import type { VisitMessageSequenceKind, VisitMessageTemplateKey } from '@/shared/modules/meetings/messages/constants/kinds'
 
-import type { VisitMessageSequenceKind } from '@/shared/modules/meetings/messages/constants/kinds'
-import type { VisitMessageFact, VisitMessagePlanInput } from '@/shared/modules/meetings/messages/types'
-
-import { deriveConfirmationTrack } from '@/shared/modules/meetings/messages/lib/derive-confirmation-track'
-import { isVisitMessageEligible } from '@/shared/modules/meetings/messages/lib/is-visit-message-eligible'
-import { planVisitMessages } from '@/shared/modules/meetings/messages/lib/plan-visit-messages'
-import { resolveRunInstant } from '@/shared/modules/meetings/messages/lib/resolve-run-instant'
-import { shouldSendVisitCancellation } from '@/shared/modules/meetings/messages/lib/should-send-visit-cancellation'
+import type { VisitMessageFact, VisitMessagePlanInput, VisitMessageVars } from '@/shared/modules/meetings/messages/types'
 
 import type { MergeToken } from '@/shared/services/voip/lib/sms-merge-template'
-import type { VisitMessageTemplateKey } from '@/shared/modules/meetings/messages/constants/kinds'
-
+import assert from 'node:assert/strict'
 import { ROOTS } from '@/shared/config/roots'
-import { businessDateTime, formatBusinessClock, formatBusinessDay, formatBusinessDayTime } from '@/shared/lib/business-time'
-import { buildIcs } from '@/shared/modules/meetings/messages/lib/build-ics'
-import { formatArrivalWindow } from '@/shared/modules/meetings/core/lib/arrival-window'
-import { buildGoogleCalendarLink } from '@/shared/modules/meetings/messages/lib/google-calendar-link'
-import { scheduledForSetByMove } from '@/shared/modules/meetings/core/lib/scheduled-for-set'
-import { confirmationsClearedByMove } from '@/shared/modules/meetings/core/lib/confirmation-reset'
 import { companyInfo } from '@/shared/constants/company'
 import { VOIP_MESSAGE_STATUS_RANK } from '@/shared/constants/enums/voip'
+
+import { businessDateTime, formatBusinessClock, formatBusinessDay, formatBusinessDayTime } from '@/shared/lib/business-time'
+import { formatArrivalWindow } from '@/shared/modules/meetings/core/lib/arrival-window'
+
+import { confirmationsClearedByMove } from '@/shared/modules/meetings/core/lib/confirmation-reset'
+import { scheduledForSetByMove } from '@/shared/modules/meetings/core/lib/scheduled-for-set'
 import { visitMessageTemplateKeys } from '@/shared/modules/meetings/messages/constants/kinds'
-import { VISIT_MESSAGE_TEMPLATE_DEFAULTS } from '@/shared/modules/meetings/messages/constants/templates'
+import { VISIT_MESSAGE_TEMPLATE_DEFAULTS, VISIT_MESSAGE_TOKENS } from '@/shared/modules/meetings/messages/constants/templates'
+import { buildIcs } from '@/shared/modules/meetings/messages/lib/build-ics'
+import { displayFirstName } from '@/shared/modules/meetings/messages/lib/deliver-visit-text'
+import { deriveConfirmationTrack } from '@/shared/modules/meetings/messages/lib/derive-confirmation-track'
+import { buildGoogleCalendarLink } from '@/shared/modules/meetings/messages/lib/google-calendar-link'
+import { isVisitMessageEligible } from '@/shared/modules/meetings/messages/lib/is-visit-message-eligible'
 import { matchReplyKeyword } from '@/shared/modules/meetings/messages/lib/match-reply-keyword'
+import { planVisitMessages } from '@/shared/modules/meetings/messages/lib/plan-visit-messages'
 import { buildVisitMessageVars, renderVisitMessage } from '@/shared/modules/meetings/messages/lib/render-visit-message'
-import { validateVisitMessageTemplate } from '@/shared/modules/meetings/messages/lib/validate-visit-message-template'
+import { resolveRunInstant } from '@/shared/modules/meetings/messages/lib/resolve-run-instant'
+import { shouldSendVisitCancellation } from '@/shared/modules/meetings/messages/lib/should-send-visit-cancellation'
+import { MAX_SEGMENTS, validateVisitMessageTemplate } from '@/shared/modules/meetings/messages/lib/validate-visit-message-template'
 import { applyDevRecipientOverride } from '@/shared/services/providers/resend/lib/dev-recipients'
 import { mapTwilioMessageStatus } from '@/shared/services/voip/lib/map-twilio-message-status'
-import { listMergeTokens, renderMergeSample, renderMergeTemplate } from '@/shared/services/voip/lib/sms-merge-template'
+import { findSectionErrors, listMergeTokens, renderMergeSample, renderMergeTemplate } from '@/shared/services/voip/lib/sms-merge-template'
 import { countSmsSegments, findNonGsm7 } from '@/shared/services/voip/lib/sms-segments'
 
 {
@@ -73,6 +73,24 @@ console.log('1. Dev email recipients ✓')
   assert.equal(renderMergeTemplate('Hi {{nope}}', tokens, { name: 'Sam' }), 'Hi {{nope}}', 'an unknown token stays as typed')
   assert.equal(renderMergeSample('Hi {{first_name}}', tokens), 'Hi Maria', 'samples stand in for values')
   assert.deepEqual(listMergeTokens('{{a}} {{b}} {{a}}'), ['a', 'b'], 'token names, in order, once each')
+
+  const sectionTokens: MergeToken<{ name: string, empty: string }>[] = [
+    { token: 'name', label: 'Name', sample: 'Maria', resolve: vars => vars.name },
+    { token: 'empty', label: 'Empty', sample: '', resolve: vars => vars.empty },
+  ]
+  const sectionVars = { name: 'Sam', empty: '  ' }
+  assert.equal(renderMergeTemplate('Hi{{#name}} {{name}}!{{/name}}', sectionTokens, sectionVars), 'Hi Sam!', '# keeps its text when the token has a value')
+  assert.equal(renderMergeTemplate('Hi{{#empty}} there{{/empty}}.', sectionTokens, sectionVars), 'Hi.', '# drops its text when the token is blank')
+  assert.equal(renderMergeTemplate('Hi{{^empty}} friend{{/empty}}.', sectionTokens, sectionVars), 'Hi friend.', '^ keeps its text when the token is blank')
+  assert.equal(renderMergeTemplate('Hi{{^name}} friend{{/name}}.', sectionTokens, sectionVars), 'Hi.', '^ drops its text when the token has a value')
+  assert.equal(renderMergeTemplate('{{#name}}a{{/name}}{{^name}}b{{/name}}', sectionTokens, sectionVars), 'a', 'both polarities side by side')
+  assert.equal(renderMergeTemplate('{{#nope}}x {{name}}{{/nope}}', sectionTokens, sectionVars), '{{#nope}}x Sam{{/nope}}', 'an unknown section token stays as typed, inner tokens still merge')
+  assert.equal(renderMergeSample('{{#name}}{{name}}{{/name}}|{{#empty}}x{{/empty}}|{{^empty}}y{{/empty}}', sectionTokens), 'Maria||y', 'a sample drives the sections')
+  assert.deepEqual(listMergeTokens('{{#a}}{{b}}{{/a}} {{^c}}x{{/c}} {{a}}'), ['a', 'b', 'c'], 'section tokens are listed in order, once each')
+  assert.deepEqual(findSectionErrors('{{#a}}x{{/a}} {{^b}}y{{/b}}'), [])
+  assert.equal(findSectionErrors('{{#a}}x').length, 1, 'an opener with no closer')
+  assert.equal(findSectionErrors('x{{/a}}').length, 1, 'a closer with no opener')
+  assert.equal(findSectionErrors('{{#a}}{{#b}}x{{/b}}{{/a}}').length, 1, 'a nested section is reported once')
 
   assert.deepEqual(countSmsSegments(''), { chars: 0, segments: 0, encoding: 'gsm7' })
   assert.deepEqual(countSmsSegments('a'.repeat(160)), { chars: 160, segments: 1, encoding: 'gsm7' })
@@ -160,7 +178,7 @@ console.log('3. Pacific time text ✓')
   }).replace(/\r\n /g, '').split('\r\n')
   const attendeeLines = injectionEvent.filter(line => line.startsWith('ATTENDEE'))
   assert.equal(attendeeLines.length, 1, 'exactly one line starts with ATTENDEE')
-  assert.ok(!injectionEvent.some(line => line === 'ATTENDEE;CN=x:mailto:evil@x.com'), 'no line contains the injected property')
+  assert.ok(!injectionEvent.includes('ATTENDEE;CN=x:mailto:evil@x.com'), 'no line contains the injected property')
   assert.ok(injectionEvent.includes('DESCRIPTION:a\\nb'), 'lone CR is escaped to newline escape')
 
   const controlEvent = buildIcs({ ...event, method: 'REQUEST', sequence: 0, description: 'a\u0000b' }).replace(/\r\n /g, '').split('\r\n')
@@ -175,7 +193,7 @@ console.log('3. Pacific time text ✓')
   const byteLines = multibyteEvent.split('\r\n')
   assert.ok(byteLines.every(line => Buffer.byteLength(line, 'utf8') <= 75), 'every physical line is at most 75 octets')
   const unfoldedMultibyte = multibyteEvent.replace(/\r\n /g, '').split('\r\n')
-  assert.ok(unfoldedMultibyte.includes('SUMMARY:' + 'é'.repeat(60)), 'unfolded SUMMARY line contains all 60 multibyte characters')
+  assert.ok(unfoldedMultibyte.includes(`SUMMARY:${'é'.repeat(60)}`), 'unfolded SUMMARY line contains all 60 multibyte characters')
 }
 console.log('4. Calendar invite ✓')
 
@@ -186,70 +204,154 @@ console.log('4. Calendar invite ✓')
 console.log('5. Home visit path ✓')
 
 {
+  const N = companyInfo.name
+  const S = companyInfo.nickname
   for (const key of visitMessageTemplateKeys) {
-    assert.deepEqual(validateVisitMessageTemplate(key, VISIT_MESSAGE_TEMPLATE_DEFAULTS[key]), { errors: [], warnings: [] }, `the default for ${key} is clean`)
+    const { errors, warnings } = validateVisitMessageTemplate(key, VISIT_MESSAGE_TEMPLATE_DEFAULTS[key])
+    assert.deepEqual(errors, [], `the default for ${key} has no errors`)
+    assert.ok(warnings.every(issue => issue.code === 'ucs2'), `the default for ${key} warns about nothing but its emoji`)
+    assert.equal(warnings.length, key === 'visit_summary' ? 0 : 1, `${key}: only the texts billed per segment warn about emoji`)
   }
 
   const errors = (key: VisitMessageTemplateKey, body: string) => validateVisitMessageTemplate(key, body).errors.map(issue => issue.code)
   assert.deepEqual(errors('confirmation_reply', '   '), ['empty'])
-  assert.deepEqual(errors('confirmation_reply', 'See you {{visit_date}} at {{visit_time}} — thanks'), ['not_gsm7'], 'an em dash is rejected')
-  assert.match(validateVisitMessageTemplate('confirmation_reply', 'See you {{visit_date}} at {{visit_time}} — \u{1F600}').errors[0].message, /—.*\u{1F600}/u, 'the message lists each offending character')
+  assert.deepEqual(errors('confirmation_reply', 'See you {{visit_date}} at {{visit_time}} — \u{1F600}'), [], 'special characters and emoji are not errors')
   assert.deepEqual(errors('confirmation_reply', 'See you {{visit_date}} at {{visit_time}} {{nope}}'), ['unknown_token'])
-  assert.deepEqual(errors('confirmation_reply', 'See you {{visit_date}} at {{visit_time}} {{office_note}}'), ['token_not_allowed'])
+  assert.deepEqual(errors('confirmation_reply', 'See you {{visit_date}} at {{visit_time}} {{#nope}}x{{/nope}}'), ['unknown_token'], 'a section token is checked like a plain one')
+  assert.deepEqual(errors('confirmation_reply', 'See you {{visit_date}} at {{visit_time}} {{coordinator_note}}'), ['token_not_allowed'])
+  assert.deepEqual(errors('confirmation_reply', 'See you {{visit_date}} at {{visit_time}} {{#coordinator_note}}x{{/coordinator_note}}'), ['token_not_allowed'], 'so is the summary-only rule')
+  assert.deepEqual(errors('confirmation_reply', 'See you {{visit_date}} at {{visit_time}} {{#coordinator_name}}x'), ['bad_section'], 'an opener nobody closes')
+  assert.deepEqual(errors('confirmation_reply', 'See you {{visit_date}} at {{visit_time}} x{{/coordinator_name}}'), ['bad_section'], 'a closer nobody opened')
   assert.deepEqual(errors('confirmation_reply', 'See you {{visit_date}}'), ['missing_token'])
-  assert.ok(validateVisitMessageTemplate('rep_confirmation', 'Reply STOP to end these texts {{rep_name}} {{arrival_window}} {{visit_link}}').errors.some(issue => issue.code === 'contains_stop'), 'a spelled-out opt-out line would repeat the one the renderer adds')
-  assert.ok(validateVisitMessageTemplate('rep_confirmation', 'text stop to unsubscribe {{rep_name}} {{arrival_window}} {{visit_link}}').errors.some(issue => issue.code === 'contains_stop'))
-  assert.equal(validateVisitMessageTemplate('rep_confirmation', '{{rep_name}} will stop by between {{arrival_window}}. Your visit page: {{visit_link}}').errors.length, 0, '"stop by" is ordinary English')
+  assert.ok(validateVisitMessageTemplate('rep_confirmation', 'Reply STOP to end these texts {{specialist_name}} {{arrival_window}} {{visit_link}}').errors.some(issue => issue.code === 'contains_stop'), 'a spelled-out opt-out line would repeat the one the renderer adds')
+  assert.ok(validateVisitMessageTemplate('rep_confirmation', 'text stop to unsubscribe {{specialist_name}} {{arrival_window}} {{visit_link}}').errors.some(issue => issue.code === 'contains_stop'))
+  assert.equal(validateVisitMessageTemplate('rep_confirmation', '{{specialist_name}} will stop by between {{arrival_window}}. Your visit page: {{visit_link}}').errors.length, 0, '"stop by" is ordinary English')
 
   const warnings = (key: VisitMessageTemplateKey, body: string) => validateVisitMessageTemplate(key, body).warnings.map(issue => issue.code)
-  assert.deepEqual(warnings('rep_confirmation', `${VISIT_MESSAGE_TEMPLATE_DEFAULTS.rep_confirmation} ${'x'.repeat(200)}`), ['too_long'])
+  assert.deepEqual(warnings('confirmation_reply', 'See you {{visit_date}} at {{visit_time}} \u{1F600}'), ['ucs2'], 'an emoji in a per-segment text warns, it does not block')
+  assert.match(validateVisitMessageTemplate('confirmation_reply', 'See you {{visit_date}} at {{visit_time}} \u{1F600}').warnings[0].message, /\u{1F600}.*two to three times as much/u, 'the warning names the characters')
+  assert.deepEqual(warnings('visit_summary', `${VISIT_MESSAGE_TEMPLATE_DEFAULTS.visit_summary} \u{1F600}`), [], 'the summary goes as an MMS, so emoji cost nothing extra')
+  assert.deepEqual(warnings('rep_confirmation', `${VISIT_MESSAGE_TEMPLATE_DEFAULTS.rep_confirmation} ${'x'.repeat(400)}`), ['ucs2', 'too_long'])
   assert.deepEqual(warnings('visit_summary', `${VISIT_MESSAGE_TEMPLATE_DEFAULTS.visit_summary} ${'x'.repeat(400)}`), [], 'the summary goes as MMS, so its length is not flagged')
-  assert.deepEqual(warnings('rep_confirmation', '{{rep_name}} confirmed. He arrives between {{arrival_window}}. {{visit_link}}'), ['pronoun'])
-  assert.deepEqual(warnings('rep_confirmation', '{{rep_name}} is here between {{arrival_window}}, this morning: {{visit_link}}'), [], '"here" and "this" are not pronouns')
+  assert.deepEqual(warnings('rep_confirmation', '{{specialist_name}} confirmed. He arrives between {{arrival_window}}. {{visit_link}}'), ['pronoun'])
+  assert.deepEqual(warnings('rep_confirmation', '{{specialist_name}} is here between {{arrival_window}}, this morning: {{visit_link}}'), [], '"here" and "this" are not pronouns')
   assert.deepEqual(warnings('day_before_reminder_unconfirmed', 'See you tomorrow at {{visit_time}}: {{visit_link}}'), ['no_yes_ask'])
 
-  const vars = buildVisitMessageVars({ customerName: 'Maria Lopez', repName: 'Oliver', scheduledFor: '2026-10-07T17:00:00.000Z', visitLink: 'https://example.com/v' })
+  const vars = buildVisitMessageVars({ customerName: 'Maria Lopez', specialistName: 'Oliver', coordinatorName: 'Dana', scheduledFor: '2026-10-07T17:00:00.000Z', visitLink: 'https://example.com/v' })
   assert.deepEqual(vars, {
     firstName: 'Maria',
-    repName: 'Oliver',
+    specialistName: 'Oliver',
+    coordinatorName: 'Dana',
     visitDate: 'Wed, Oct 7',
     visitTime: '10:00 AM',
     arrivalWindow: '10:00 and 10:30 AM',
     visitLink: 'https://example.com/v',
-    officeNote: '',
+    coordinatorNote: '',
   })
-  assert.equal(
-    renderVisitMessage(VISIT_MESSAGE_TEMPLATE_DEFAULTS.visit_summary, vars, { stopLine: true }),
-    `Hi Maria, this is ${companyInfo.name}. Your home visit is booked for Wed, Oct 7 at 10:00 AM with Oliver. Meet Oliver and see your visit details: https://example.com/v Reply YES to confirm. Reply STOP to opt out.`,
-    'an empty note leaves no double space, and the STOP line is appended',
-  )
-  assert.ok(
-    renderVisitMessage(VISIT_MESSAGE_TEMPLATE_DEFAULTS.visit_summary, { ...vars, officeNote: 'Gate code 1234.' }, { stopLine: false })
-      .includes('with Oliver. Gate code 1234. Meet Oliver'),
-    'the office note sits where the token is',
-  )
-  assert.ok(
-    renderVisitMessage(VISIT_MESSAGE_TEMPLATE_DEFAULTS.visit_summary, { ...vars, repName: null }, { stopLine: false })
-      .includes('with your rep. Meet your rep and see'),
-    'a meeting with no rep yet says "your rep"',
-  )
-  assert.ok(!renderVisitMessage(VISIT_MESSAGE_TEMPLATE_DEFAULTS.rep_confirmation, vars, { stopLine: false }).includes('STOP'))
+  const company = { ...vars, coordinatorName: null }
+  const noSpecialist = { ...vars, specialistName: null }
+  const bare = { ...vars, specialistName: null, coordinatorName: null }
+  const render = (key: VisitMessageTemplateKey, over: VisitMessageVars, stopLine = false) => renderVisitMessage(VISIT_MESSAGE_TEMPLATE_DEFAULTS[key], over, { stopLine })
 
-  for (const key of visitMessageTemplateKeys) {
-    assert.equal(countSmsSegments(renderVisitMessage(VISIT_MESSAGE_TEMPLATE_DEFAULTS[key], vars, { stopLine: true })).encoding, 'gsm7', `${key} renders as GSM-7 with real formatted times`)
+  assert.equal(
+    render('visit_summary', { ...vars, coordinatorNote: 'Gate code 1234.' }, true),
+    `Hi Maria 👋 it's Dana from ${N}.
+
+You're all set for Wed, Oct 7 at 10:00 AM 📅 Oliver will be your specialist.
+
+One more thing: Gate code 1234.
+
+Here's your visit page, where you can see the agenda and manage your visit:
+https://example.com/v
+
+Reply YES to confirm. Reply STOP to opt out.`,
+    'the summary in the coordinator voice, with a specialist and a note; STOP shares the last line',
+  )
+  assert.equal(
+    render('visit_summary', bare, true),
+    `Hi Maria 👋 it's ${N}.
+
+You're all set for Wed, Oct 7 at 10:00 AM 📅
+
+Here's your visit page, where you can see the agenda and manage your visit:
+https://example.com/v
+
+Reply YES to confirm. Reply STOP to opt out.`,
+    'the summary in the company voice: no specialist sentence, no note paragraph, no gap left behind',
+  )
+  assert.ok(!render('visit_summary', bare).includes('\n\n\n'), 'no triple newline')
+  assert.ok(!render('visit_summary', bare).includes('One more thing'))
+  assert.ok(render('visit_summary', company).includes(`it's ${N}.`) && render('visit_summary', company).includes('Oliver will be your specialist.'), 'a specialist without a coordinator')
+  assert.ok(render('visit_summary', noSpecialist).includes('it\'s Dana from') && !render('visit_summary', noSpecialist).includes('specialist'), 'a coordinator without a specialist')
+  assert.ok(render('visit_summary', vars).endsWith('Reply YES to confirm.'), 'no STOP line when none is asked for')
+
+  assert.equal(
+    render('day_before_reminder_unconfirmed', vars),
+    `Hi Maria, Dana here from ${S} 🙂 Just a heads-up that your home visit is tomorrow at 10:00 AM with Oliver.
+
+Can you reply YES so I know we're still on? If the time no longer works, you can pick a new one here: https://example.com/v`,
+  )
+  assert.equal(
+    render('day_before_reminder_unconfirmed', bare),
+    `Hi Maria, it's ${N} 🙂 Just a heads-up that your home visit is tomorrow at 10:00 AM.
+
+Can you reply YES so we know we're still on? If the time no longer works, you can pick a new one here: https://example.com/v`,
+  )
+  assert.ok(render('day_before_reminder_unconfirmed', company).includes(`it's ${N} 🙂`) && render('day_before_reminder_unconfirmed', company).includes('with Oliver.') && render('day_before_reminder_unconfirmed', company).includes('so we know'))
+
+  assert.equal(
+    render('day_before_reminder_confirmed', vars),
+    `Hi Maria! See you tomorrow at 10:00 AM 🏡 Oliver is looking forward to meeting you.
+
+Your visit page, in case you need it: https://example.com/v
+- Dana, ${N}`,
+  )
+  assert.equal(
+    render('day_before_reminder_confirmed', bare),
+    `Hi Maria! See you tomorrow at 10:00 AM 🏡 We're looking forward to meeting you.
+
+Your visit page, in case you need it: https://example.com/v
+- ${N}`,
+  )
+
+  assert.equal(
+    render('rep_confirmation', vars),
+    `Good morning Maria ☀️ Oliver just confirmed and will be there between 10:00 and 10:30 AM. Everything you need is here: https://example.com/v
+- Dana, ${S}`,
+  )
+  assert.equal(
+    render('rep_confirmation', company),
+    `Good morning Maria ☀️ Oliver just confirmed and will be there between 10:00 and 10:30 AM. Everything you need is here: https://example.com/v
+- ${N}`,
+  )
+  assert.ok(!render('rep_confirmation', vars).includes('STOP'))
+
+  assert.equal(render('confirmation_reply', vars), 'Perfect, thank you Maria! You\'re confirmed for Wed, Oct 7 at 10:00 AM ✅')
+
+  assert.equal(
+    renderVisitMessage('a  b   \n\n\n\n c  \n', vars, { stopLine: false }),
+    'a b\n\n c',
+    'runs of spaces collapse, trailing spaces go, three or more newlines become one blank line, the ends are trimmed',
+  )
+
+  assert.equal(countSmsSegments(render('visit_summary', vars)).encoding, 'ucs2', 'the summary may be UCS-2: it goes as an MMS')
+  for (const key of visitMessageTemplateKeys.filter(templateKey => templateKey !== 'visit_summary')) {
+    const sample = renderMergeSample(VISIT_MESSAGE_TEMPLATE_DEFAULTS[key], VISIT_MESSAGE_TOKENS)
+    assert.ok(sample.includes('https://') || !VISIT_MESSAGE_TEMPLATE_DEFAULTS[key].includes('{{visit_link}}'), `${key} counts a real-length link`)
+    assert.ok(countSmsSegments(sample).segments <= MAX_SEGMENTS, `${key} stays within ${MAX_SEGMENTS} segments`)
   }
 
-  const visit = { repName: 'Oliver', scheduledFor: '2026-10-07T17:00:00.000Z', visitLink: 'https://example.com/v' }
+  assert.equal(displayFirstName({ name: 'Dana Whitfield', nickname: 'DJ' }), 'DJ', 'a nickname wins')
+  assert.equal(displayFirstName({ name: ' Dana  Whitfield ', nickname: '  ' }), 'Dana', 'else the first name')
+  assert.equal(displayFirstName({ name: '   ', nickname: null }), null, 'a blank name is nobody')
+  assert.equal(displayFirstName(null), null)
+
+  const visit = { specialistName: 'Oliver', coordinatorName: 'Dana', scheduledFor: '2026-10-07T17:00:00.000Z', visitLink: 'https://example.com/v' }
   assert.equal(buildVisitMessageVars({ ...visit, customerName: null }).firstName, 'there', 'no name on file reads "Hi there"')
   assert.equal(buildVisitMessageVars({ ...visit, customerName: '   ' }).firstName, 'there')
   assert.equal(buildVisitMessageVars({ ...visit, customerName: 'Cher' }).firstName, 'Cher')
   assert.equal(buildVisitMessageVars({ ...visit, customerName: '  Zoë  Kim ' }).firstName, 'Zoë')
-  assert.equal(
-    countSmsSegments(renderVisitMessage(VISIT_MESSAGE_TEMPLATE_DEFAULTS.confirmation_reply, buildVisitMessageVars({ ...visit, customerName: 'Zoë Kim' }), { stopLine: false })).encoding,
-    'ucs2',
-    'a name outside GSM-7 still sends, spelled right',
-  )
-  assert.equal(buildVisitMessageVars({ ...visit, customerName: 'Maria', officeNote: '  Gate\ncode   1234. ' }).officeNote, 'Gate code 1234.', 'a note is one line')
+  assert.equal(buildVisitMessageVars({ ...visit, customerName: 'Maria', coordinatorNote: '  Gate\ncode   1234. ' }).coordinatorNote, 'Gate code 1234.', 'a note is one line')
 
   for (const reply of ['YES', 'yes', ' Yes! ', 'y', 'Confirm.', 'confirmed']) {
     assert.equal(matchReplyKeyword(reply), 'confirm', reply)
