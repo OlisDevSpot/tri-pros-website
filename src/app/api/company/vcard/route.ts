@@ -23,16 +23,17 @@ function officeAddress(): { street: string, city: string, state: string, zip: st
 }
 
 // Phones show a contact photo only when the image travels inside the card, and public/ files are not in the serverless bundle.
+// JPEG, as iOS writes its own cards: with a PNG the Messages bubble showed a blank circle although the opened card had the logo.
 async function logoPhotoLine(): Promise<string | null> {
   try {
     // Twilio fails the MMS if this card is slow, so a stalled logo must not hold it up.
-    const response = await fetch(publicUrl('/pwa/apple-touch-icon.png'), { signal: AbortSignal.timeout(2000) })
+    const response = await fetch(publicUrl('/company/logo/contact-card-photo.jpg'), { signal: AbortSignal.timeout(2000) })
     const type = response.headers.get('content-type') ?? ''
     // A tunnel interstitial or a preview-protection page answers 200 with HTML.
-    if (!response.ok || !type.startsWith('image/png')) {
+    if (!response.ok || !type.startsWith('image/jpeg')) {
       throw new Error(`HTTP ${response.status}, ${type || 'no content type'}`)
     }
-    return `PHOTO;ENCODING=b;TYPE=PNG:${Buffer.from(await response.arrayBuffer()).toString('base64')}`
+    return `PHOTO;ENCODING=b;TYPE=JPEG:${Buffer.from(await response.arrayBuffer()).toString('base64')}`
   }
   catch (error) {
     console.error('[vcard] logo fetch failed, sending the card without a photo', error)
