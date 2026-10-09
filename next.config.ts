@@ -39,7 +39,39 @@ const nextConfig: NextConfig = {
   // effect. pnpm dedupes, so no duplicate pdfkit install.
   // pnpm layout: real files live under .pnpm/pdfkit@<ver>/... — wildcard
   // survives version bumps.
-  serverExternalPackages: ['pdfkit'],
+  //
+  // The rest are server-only SDKs (no React inside) that load lazily at
+  // runtime. Left bundled, every route that reaches the tRPC router compiles
+  // ~1,700 of their modules in dev, and Ably's Node build pulls in an optional
+  // `keyv` require that Turbopack cannot resolve under pnpm. Each must stay a
+  // direct dependency for the same pnpm reason as pdfkit. Never add a package
+  // that renders React (e.g. `resend`, which renders the email templates, or
+  // `ably/react` in client code): an external require loads a second React.
+  // Next keeps these out of the server bundle by default, but under pnpm they
+  // are only transitive (email rendering, sanitize-html), so they cannot be
+  // required from the project root. Webpack bundled them silently; Turbopack
+  // bundles them too but warns on every compile unless told to up front.
+  transpilePackages: ['prettier', 'postcss'],
+  serverExternalPackages: [
+    'pdfkit',
+    'ably',
+    'twilio',
+    'pdf-lib',
+    '@aws-sdk/s3-request-presigner',
+    'web-push',
+  ],
+  // Dispatch worktrees live inside this checkout, so Next sees two lockfiles
+  // and would otherwise pick the outer checkout as the root for tracing and
+  // module resolution.
+  outputFileTracingRoot: import.meta.dirname,
+  turbopack: {
+    root: import.meta.dirname,
+  },
+  logging: {
+    // tRPC batch URLs carry their whole JSON input; the dev tRPC middleware
+    // logs one short line per procedure with its duration instead.
+    incomingRequests: { ignore: [/\/api\/trpc\//] },
+  },
   outputFileTracingIncludes: {
     '/api/qstash-jobs': [
       './node_modules/.pnpm/pdfkit@*/node_modules/pdfkit/js/data/**/*',
