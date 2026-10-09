@@ -144,3 +144,4 @@ Harness and test choices, no cost:
       - "Viewing as" becomes a segmented control;
       - form section cards are nested `bg-card`;
       - the offer badge is secondary.
+13. **Live check (2026-10-09):** the owner checked the shipped Phase 1 work live and accepted it with no corrections. That covers rounds 1–5, the gutter/radius pass, controls, segmented/tabs, E1, E2, the sign-in + dashboard, records + proposal pairs, and the 2026-10-08 follow-ups. Still open: the meeting-flow + customer-profile pair, the public site, E3 lint and E6.
