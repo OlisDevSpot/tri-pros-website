@@ -150,15 +150,6 @@ export async function findReplyTargetMeeting(input: { customerIds: string[], now
   return null
 }
 
-export async function getMeetingMessageByVoipMessageId(voipMessageId: string): Promise<MeetingMessage | undefined> {
-  const [row] = await db
-    .select()
-    .from(meetingMessages)
-    .where(eq(meetingMessages.voipMessageId, voipMessageId))
-    .limit(1)
-  return row
-}
-
 /** The visit message behind a Twilio SID, for status callbacks. */
 export async function getMeetingMessageByProviderMessageId(providerMessageId: string): Promise<MeetingMessage | undefined> {
   const [row] = await db

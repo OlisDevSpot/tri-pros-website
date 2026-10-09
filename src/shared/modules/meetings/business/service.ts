@@ -4,6 +4,7 @@ import type { Meeting } from '@/shared/db/schema'
 import type { MeetingMessage } from '@/shared/db/schema/meeting-messages'
 import type { VisitEmailOutcome } from '@/shared/modules/meetings/messages/lib/deliver-visit-email'
 import type { VisitMessageRunReport } from '@/shared/modules/meetings/messages/lib/run-automatic-kind'
+import type { MessagingInboundWebhookPayload } from '@/shared/services/providers/twilio/schemas/messaging'
 
 import { publicUrl } from '@/shared/config/public-url'
 import { canRescheduleFromOutcome, outcomeRequiresReason } from '@/shared/constants/enums/meetings'
@@ -13,14 +14,14 @@ import { customerNoteCrud } from '@/shared/entities/customer-notes/dal/server/cr
 import { findCustomersByPhone } from '@/shared/entities/customers/dal/server/queries'
 import { MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
-import { handOffShareToken } from '@/shared/entities/meetings/dal/server/mutations'
+import { claimHomeownerConfirmation, handOffShareToken } from '@/shared/entities/meetings/dal/server/mutations'
 import { addParticipant, getParticipantsForMeeting } from '@/shared/entities/meetings/dal/server/participants'
 import { getRescheduleChain, getRescheduleSuccessorId } from '@/shared/entities/meetings/dal/server/queries'
 import { buildRescheduleNote, formatMeetingDateShort } from '@/shared/entities/meetings/lib/notes'
 import { formatPhone } from '@/shared/lib/phone'
 import { meetingMessageCrud } from '@/shared/modules/meetings/messages/dal/server/crud'
 import { claimAutomaticSend, setMeetingMessageOutcome } from '@/shared/modules/meetings/messages/dal/server/mutations'
-import { findReplyTargetMeeting, getMeetingMessageByVoipMessageId, getVisitMessageContext, listChainMessages } from '@/shared/modules/meetings/messages/dal/server/queries'
+import { findReplyTargetMeeting, getVisitMessageContext, listChainMessages } from '@/shared/modules/meetings/messages/dal/server/queries'
 import { getTemplateBodies } from '@/shared/modules/meetings/messages/dal/server/settings'
 import { deliverVisitCancellationEmail, deliverVisitSummaryEmail } from '@/shared/modules/meetings/messages/lib/deliver-visit-email'
 import { deliverVisitText } from '@/shared/modules/meetings/messages/lib/deliver-visit-text'
@@ -33,7 +34,7 @@ import { complianceService } from '@/shared/services/voip/compliance.service'
 import { voipDidsService } from '@/shared/services/voip/voip-dids.service'
 import { voipMessagesService } from '@/shared/services/voip/voip-messages.service'
 
-export type HomeownerReplyAction = 'opt_out' | 'opt_in' | 'help' | 'confirmed' | 'already_confirmed' | 'forwarded' | 'duplicate'
+export type HomeownerReplyAction = 'opt_out' | 'opt_in' | 'help' | 'confirmed' | 'already_confirmed' | 'forwarded' | 'duplicate' | 'not_main_line'
 
 export const meetingBusinessService = {
   /**
@@ -281,7 +282,7 @@ export const meetingBusinessService = {
   async confirmByHomeowner(
     ctx: ScopedContext,
     input: { meetingId: string, via: HomeownerConfirmation },
-  ): Promise<DalReturn<Meeting>> {
+  ): Promise<DalReturn<{ meeting: Meeting, confirmed: boolean }>> {
     return dalDbOperation(async () => {
       const meeting = dalVerifySuccess(await meetingCrud.getById(ctx, { id: input.meetingId }))
       if (!meeting) {
@@ -290,13 +291,8 @@ export const meetingBusinessService = {
       if (!isVisitMessageEligible(meeting, new Date())) {
         throw new ThrowableDalError({ type: 'precondition-failed', reason: 'This visit can no longer be confirmed.' })
       }
-      if (meeting.homeownerConfirmedAt) {
-        return meeting
-      }
-      return dalVerifySuccess(await meetingCrud.update(ctx, {
-        id: meeting.id,
-        data: { homeownerConfirmedAt: new Date().toISOString(), homeownerConfirmedVia: input.via },
-      }))
+      const claimed = await claimHomeownerConfirmation({ meetingId: meeting.id, via: input.via })
+      return { meeting: claimed ?? meeting, confirmed: claimed != null }
     })
   },
 
@@ -306,7 +302,7 @@ export const meetingBusinessService = {
    */
   async handleHomeownerReply(
     ctx: ScopedContext,
-    input: { providerMessageId: string, from: string, to: string, body: string, optOutType: 'STOP' | 'START' | 'HELP' | null },
+    input: { providerMessageId: string, from: string, to: string, body: string, optOutType: MessagingInboundWebhookPayload['OptOutType'] | null },
   ): Promise<DalReturn<{ action: HomeownerReplyAction, meetingId: string | null }>> {
     return dalDbOperation(async () => {
       const did = dalVerifySuccess(await voipDidsService.getDidByE164(input.to))
@@ -324,11 +320,16 @@ export const meetingBusinessService = {
       const scheduledFor = target?.meeting.scheduledFor ?? null
       const customerName = target?.customer?.name ?? matched[0]?.name ?? formatPhone(input.from)
 
+      // Twilio delivers at least once; the first delivery did everything below.
+      if (!recorded.inserted) {
+        return { action: 'duplicate', meetingId }
+      }
+      // Only the main line carries visit replies; a text to an agent's own number is for that agent.
+      if (!did?.isMainLine) {
+        return { action: 'not_main_line', meetingId: null }
+      }
+
       if (target) {
-        // Twilio delivers at least once; the first delivery wrote this row and did everything below.
-        if (await getMeetingMessageByVoipMessageId(recorded.id)) {
-          return { action: 'duplicate', meetingId }
-        }
         dalVerifySuccess(await meetingMessageCrud.create(ctx, {
           meetingId: target.meeting.id,
           kind: 'homeowner_reply',
@@ -356,10 +357,10 @@ export const meetingBusinessService = {
       }
 
       if (target && matchReplyKeyword(input.body) === 'confirm') {
-        if (target.meeting.homeownerConfirmedAt) {
+        const confirmation = dalVerifySuccess(await meetingBusinessService.confirmByHomeowner(ctx, { meetingId: target.meeting.id, via: 'sms_reply' }))
+        if (!confirmation.confirmed) {
           return { action: 'already_confirmed', meetingId }
         }
-        dalVerifySuccess(await meetingBusinessService.confirmByHomeowner(ctx, { meetingId: target.meeting.id, via: 'sms_reply' }))
         const outcome = await deliverVisitText(ctx, { context: target, templateKey: 'confirmation_reply', bodies: await getTemplateBodies() })
         dalVerifySuccess(await meetingMessageCrud.create(ctx, {
           meetingId: target.meeting.id,

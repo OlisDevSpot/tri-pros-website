@@ -40,10 +40,13 @@ export async function POST(request: Request): Promise<Response> {
       console.error('[twilio webhook] status callback failed', applied.error)
     }
     else if (applied.data.rowsAffected > 0 && (applied.data.status === 'failed' || applied.data.status === 'undelivered')) {
-      await meetingService.messages.recordDeliveryFailure(SYSTEM_CONTEXT, {
+      const recorded = await meetingService.messages.recordDeliveryFailure(SYSTEM_CONTEXT, {
         providerMessageId: parsed.data.MessageSid,
         reason: `twilio:${parsed.data.ErrorCode ?? 'unknown'}`,
       })
+      if (!recorded.success) {
+        console.error('[twilio webhook] delivery failure not recorded', parsed.data.MessageSid, recorded.error)
+      }
     }
   }
   catch (error) {

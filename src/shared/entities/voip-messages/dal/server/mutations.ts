@@ -6,7 +6,7 @@
 import type { DalReturn } from '@/shared/dal/server/types'
 import type { VoipMessage } from '@/shared/db/schema/voip-messages'
 
-import { and, eq, lt, sql } from 'drizzle-orm'
+import { and, eq, getTableColumns, lt, sql } from 'drizzle-orm'
 
 import { VOIP_MESSAGE_STATUS_RANK } from '@/shared/constants/enums/voip'
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
@@ -25,8 +25,9 @@ interface UpsertInboundMessageInput {
  * Idempotent upsert for inbound messages — keyed on the unique
  * `provider_message_id`. Webhook re-deliveries hit the conflict branch and
  * re-assert the inbound fields. `updatedAt` auto-bumps via $onUpdate.
+ * `inserted` is false for a re-delivery, so callers can run their side effects once.
  */
-export async function upsertInboundMessage(input: UpsertInboundMessageInput): Promise<DalReturn<VoipMessage>> {
+export async function upsertInboundMessage(input: UpsertInboundMessageInput): Promise<DalReturn<VoipMessage & { inserted: boolean }>> {
   return dalDbOperation(async () => {
     const [row] = await db
       .insert(voipMessages)
@@ -48,7 +49,8 @@ export async function upsertInboundMessage(input: UpsertInboundMessageInput): Pr
           body: input.body,
         },
       })
-      .returning()
+      // xmax is zero only on a row this statement inserted; an updated one carries the updater's transaction id.
+      .returning({ ...getTableColumns(voipMessages), inserted: sql<boolean>`(xmax = 0)` })
 
     return row!
   })

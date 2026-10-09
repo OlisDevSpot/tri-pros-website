@@ -293,7 +293,7 @@ function createVoipMessagesService() {
     recordInboundMessage: (
       _ctx: ScopedContext,
       input: RecordInboundMessageInput,
-    ): Promise<DalReturn<VoipMessage>> => {
+    ): Promise<DalReturn<VoipMessage & { inserted: boolean }>> => {
       return upsertInboundMessage(input)
     },
 

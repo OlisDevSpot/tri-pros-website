@@ -24,13 +24,16 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   try {
-    await meetingService.business.handleHomeownerReply(SYSTEM_CONTEXT, {
+    const handled = await meetingService.business.handleHomeownerReply(SYSTEM_CONTEXT, {
       providerMessageId: parsed.data.MessageSid,
       from: parsed.data.From,
       to: parsed.data.To,
       body: parsed.data.Body,
       optOutType: parsed.data.OptOutType ?? null,
     })
+    if (!handled.success) {
+      console.error('[twilio inbound] handler failed', parsed.data.MessageSid, handled.error)
+    }
   }
   catch (error) {
     console.error('[twilio inbound] handler failed', error)

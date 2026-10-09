@@ -1,8 +1,10 @@
 // Meetings business mutations.
 
+import type { HomeownerConfirmation } from '@/shared/constants/enums/meetings'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
+import type { Meeting } from '@/shared/db/schema'
 
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 
 import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { ThrowableDalError } from '@/shared/dal/server/types'
@@ -10,6 +12,7 @@ import { db } from '@/shared/db'
 import { meetings } from '@/shared/db/schema'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { generateToken } from '@/shared/lib/generate-token'
+import { realtimeClient } from '@/shared/services/providers/upstash/realtime'
 
 const OVERWRITABLE_OUTCOMES = ['not_set', 'proposal_created'] as const
 
@@ -95,4 +98,22 @@ export async function handOffShareToken(input: { fromMeetingId: string, toMeetin
       await tx.update(meetings).set({ shareToken: from.shareToken }).where(eq(meetings.id, input.toMeetingId))
     })
   })
+}
+
+/**
+ * Records the homeowner's confirmation once. Null means it was already confirmed, so of two replies
+ * racing each other only one gets the row back.
+ */
+export async function claimHomeownerConfirmation(input: { meetingId: string, via: HomeownerConfirmation }): Promise<Meeting | null> {
+  const [row] = await db
+    .update(meetings)
+    .set({ homeownerConfirmedAt: new Date().toISOString(), homeownerConfirmedVia: input.via })
+    .where(and(eq(meetings.id, input.meetingId), isNull(meetings.homeownerConfirmedAt)))
+    .returning()
+  if (row) {
+    await realtimeClient.publish(`meeting:${row.id}`, 'meeting.updated', {
+      fields: ['homeownerConfirmedAt', 'homeownerConfirmedVia'],
+    })
+  }
+  return row ?? null
 }
