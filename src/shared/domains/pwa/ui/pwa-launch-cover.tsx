@@ -1,9 +1,11 @@
 'use client'
 
 import { useSelectedLayoutSegment } from 'next/navigation'
+import { useEffect } from 'react'
 import { SplashScreen } from '@/shared/components/splash-screen/splash-screen'
 import { ROOTS } from '@/shared/config/roots'
 import { usePwaLaunchPhase } from '@/shared/domains/pwa/hooks/use-pwa-launch-phase'
+import { liftPwaLaunchField } from '@/shared/domains/pwa/lib/launch-field'
 
 function noop() {}
 
@@ -23,5 +25,11 @@ export function PwaLaunchCover() {
   const phase = usePwaLaunchPhase()
   const segment = useSelectedLayoutSegment()
   const open = phase === 'covering' || (phase === 'idle' && segment === SHELL_SEGMENT)
-  return <SplashScreen dismiss={{ mode: 'held' }} entrance={false} open={open} onDismiss={noop} />
+  // Lifted as the fade starts, so the fade uncovers the dashboard's own background, not the launch field.
+  useEffect(() => {
+    if (!open) {
+      liftPwaLaunchField()
+    }
+  }, [open])
+  return <SplashScreen dismiss={{ mode: 'held' }} entrance={false} extent="screen" open={open} onDismiss={noop} />
 }

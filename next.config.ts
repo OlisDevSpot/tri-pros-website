@@ -7,6 +7,12 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  // Every visitor gets the metadata in <head>. Next otherwise streams it into <body> on per-request routes
+  // (the whole dashboard), and iOS reads the manifest, the capable tag and the startup images only from <head>
+  // when a page is added to the home screen: an app added from such a page launched black. Blocking costs
+  // nothing while every generateMetadata is static or ISR; one that awaits per-request data delays its
+  // route's first byte by that wait.
+  htmlLimitedBots: /.*/,
   // Allow HMR and /_next/* asset requests through the static ngrok tunnel
   // used by `pnpm dev:mobile`. Without this, Next.js logs a cross-origin
   // warning and (in a future major) will block the requests outright.
