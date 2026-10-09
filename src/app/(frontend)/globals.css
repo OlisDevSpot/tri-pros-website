@@ -819,6 +819,7 @@
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-serif: var(--font-serif);
+  --font-script: var(--font-script);
 
   /* Presentation engine tokens. Owner: src/shared/components/presentation/ (spec C U5, U6, S11).
      Role scale: one clamp per role serves the heading column, the band and the comparison
