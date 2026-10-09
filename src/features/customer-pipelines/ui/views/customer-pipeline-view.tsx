@@ -104,9 +104,6 @@ export function CustomerPipelineView() {
     })
   }, [])
 
-  // TODO: Wire up when deleteCustomer tRPC procedure is implemented
-  // const handleDeleteCustomer = useCallback((customerId: string) => { ... }, [])
-
   const isMobile = useIsMobile()
 
   const customerOverrides = useMemo(() => ({

@@ -67,7 +67,6 @@ function CustomerKanbanCardImpl({ item, isDragOverlay, isMobile }: Props) {
     ? formatAddress(item.address, item.city, item.state ?? 'CA', item.zip)
     : null
 
-  // -- Project entity actions (for the project container in projects pipeline) --
   const projectEntity = item.project ? { id: item.project.id } : null
 
   return (
