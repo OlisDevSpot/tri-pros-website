@@ -69,7 +69,8 @@ export async function deliverVisitText(ctx: ScopedContext, input: {
   const sent = await voipMessagesService.sendFromMainLine(ctx, { customerId: customer.id, remoteE164, body, mediaUrl: input.mediaUrl })
   if (!sent.success) {
     console.error('[deliverVisitText] send refused', { meetingId: meeting.id, error: sent.error })
-    return { status: 'failed', reason: 'send_error', voipMessageId: null }
+    // A refusal means texting is switched off (no 10DLC approval, or no dev override), not that this send broke.
+    return { status: 'failed', reason: sent.error.type === 'precondition-failed' ? 'sms_disabled' : 'send_error', voipMessageId: null }
   }
   const { messageId, status, failureReason } = sent.data
   if (status === 'sent') {

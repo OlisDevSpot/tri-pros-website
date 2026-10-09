@@ -19,7 +19,7 @@ function officeAddress(): { street: string, city: string, state: string, zip: st
 }
 
 function escapeVcard(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n')
+  return value.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n')
 }
 
 /** The contact card the visit summary's MMS carries, so the main line shows a name when it texts. */
