@@ -53,7 +53,7 @@ export async function deliverVisitText(ctx: ScopedContext, input: {
     return { status: 'failed', reason: 'no_main_line', voipMessageId: null }
   }
 
-  // The summary is the first text a homeowner gets, and always carries the opt-out; the lookup only matters for the rest.
+  // The summary always carries the opt-out, so only the other texts need to know whether the thread has one already.
   const stopLine = input.templateKey === 'visit_summary' || !(await hasOutboundOnThread({ voipDidId: mainLine.data.id, remoteE164 }))
   const body = renderVisitMessage(
     input.bodies[input.templateKey],

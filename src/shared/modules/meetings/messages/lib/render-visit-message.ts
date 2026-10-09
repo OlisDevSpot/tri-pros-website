@@ -29,9 +29,14 @@ export function renderVisitMessage(body: string, vars: VisitMessageVars, options
   // A dropped section leaves doubled spaces and empty lines where it stood.
   const rendered = renderMergeTemplate(body, VISIT_MESSAGE_TOKENS, vars)
     .split('\n')
-    .map(line => line.replace(/ {2,}/g, ' ').trimEnd())
+    .map(line => line.replace(/ {2,}/g, ' ').trim())
     .join('\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
-  return options.stopLine ? `${rendered} ${VISIT_MESSAGE_STOP_LINE}` : rendered
+  if (!options.stopLine) {
+    return rendered
+  }
+  // Beside a closing "Reply YES..." it reads as one ask; after a signature it needs its own line.
+  const lastLine = rendered.slice(rendered.lastIndexOf('\n') + 1)
+  return `${rendered}${/^reply\b/i.test(lastLine) ? ' ' : '\n'}${VISIT_MESSAGE_STOP_LINE}`
 }

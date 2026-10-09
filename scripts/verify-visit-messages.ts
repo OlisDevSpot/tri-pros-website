@@ -4,6 +4,7 @@ import type { VisitMessageFact, VisitMessagePlanInput, VisitMessageVars } from '
 
 import type { MergeToken } from '@/shared/services/voip/lib/sms-merge-template'
 import assert from 'node:assert/strict'
+import { Buffer } from 'node:buffer'
 import { ROOTS } from '@/shared/config/roots'
 import { companyInfo } from '@/shared/constants/company'
 import { VOIP_MESSAGE_STATUS_RANK } from '@/shared/constants/enums/voip'
@@ -30,6 +31,7 @@ import { applyDevRecipientOverride } from '@/shared/services/providers/resend/li
 import { mapTwilioMessageStatus } from '@/shared/services/voip/lib/map-twilio-message-status'
 import { findSectionErrors, listMergeTokens, renderMergeSample, renderMergeTemplate } from '@/shared/services/voip/lib/sms-merge-template'
 import { countSmsSegments, findNonGsm7 } from '@/shared/services/voip/lib/sms-segments'
+import { escapeVcard, foldVcardLine } from '@/shared/services/voip/lib/vcard'
 
 {
   const payload = {
@@ -325,13 +327,27 @@ Your visit page, in case you need it: https://example.com/v
 - ${N}`,
   )
   assert.ok(!render('rep_confirmation', vars).includes('STOP'))
+  assert.equal(
+    render('day_before_reminder_confirmed', vars, true),
+    `Hi Maria! See you tomorrow at 10:00 AM 🏡 Oliver is looking forward to meeting you.
+
+Your visit page, in case you need it: https://example.com/v
+- Dana, ${N}
+Reply STOP to opt out.`,
+    'after a signature the STOP line takes its own line',
+  )
+  assert.equal(
+    renderVisitMessage('{{#coordinator_name}}x{{/coordinator_name}} Hi {{first_name}}', { ...vars, coordinatorName: null }, { stopLine: false }),
+    'Hi Maria',
+    'a dropped section that starts a line leaves no leading space',
+  )
 
   assert.equal(render('confirmation_reply', vars), 'Perfect, thank you Maria! You\'re confirmed for Wed, Oct 7 at 10:00 AM ✅')
 
   assert.equal(
     renderVisitMessage('a  b   \n\n\n\n c  \n', vars, { stopLine: false }),
-    'a b\n\n c',
-    'runs of spaces collapse, trailing spaces go, three or more newlines become one blank line, the ends are trimmed',
+    'a b\n\nc',
+    'runs of spaces collapse, line ends and starts are trimmed, three or more newlines become one blank line, the ends are trimmed',
   )
 
   assert.equal(countSmsSegments(render('visit_summary', vars)).encoding, 'ucs2', 'the summary may be UCS-2: it goes as an MMS')
@@ -361,6 +377,27 @@ Your visit page, in case you need it: https://example.com/v
   }
 }
 console.log('6. Wording: render, validate, replies ✓')
+
+{
+  assert.equal(foldVcardLine('FN:Tri Pros'), 'FN:Tri Pros', 'a short line is untouched')
+  assert.equal(foldVcardLine(`X:${'a'.repeat(73)}`), `X:${'a'.repeat(73)}`, 'a line of exactly 75 octets is untouched')
+
+  const long = `PHOTO:${'A'.repeat(300)}`
+  const folded = foldVcardLine(long).split('\r\n')
+  assert.ok(folded.length > 1)
+  assert.ok(folded.every(line => Buffer.byteLength(line, 'utf8') <= 75), 'every physical line is at most 75 octets')
+  assert.equal(Buffer.byteLength(folded[0], 'utf8'), 75)
+  assert.ok(folded.slice(1).every(line => line.startsWith(' ')), 'continuations start with one space')
+  assert.equal(foldVcardLine(long).replace(/\r\n /g, ''), long, 'unfolding restores the line')
+
+  const multibyte = `N:${'é'.repeat(100)}\u{1F600}`
+  const foldedMultibyte = foldVcardLine(multibyte)
+  assert.ok(foldedMultibyte.split('\r\n').every(line => Buffer.byteLength(line, 'utf8') <= 75))
+  assert.equal(foldedMultibyte.replace(/\r\n /g, ''), multibyte, 'no character is split, so unfolding restores it')
+
+  assert.equal(escapeVcard('12 Main; Unit 4, a\\b\nrear'), String.raw`12 Main\; Unit 4\, a\\b\nrear`, 'separators, backslashes and newlines are escaped')
+}
+console.log('6b. vCard folding ✓')
 
 // Fri Oct 9 2026, 10:00 AM Pacific. Day before: reminder 6 PM = 2026-10-09T01:00Z, noon = 2026-10-08T19:00Z.
 // Visit day: midnight = 2026-10-09T07:00Z, rep confirmation 8:30 AM = 2026-10-09T15:30Z.

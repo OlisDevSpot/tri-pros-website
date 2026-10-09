@@ -14,7 +14,7 @@ export interface TemplateIssue {
 }
 
 const KNOWN_TOKENS: readonly string[] = VISIT_MESSAGE_TOKENS.map(token => token.token)
-// The longest default is five UCS-2 segments with sample values: the emoji put every text on that encoding.
+// A ceiling that flags a runaway edit. Emoji put these texts on UCS-2, so even the defaults run several segments.
 export const MAX_SEGMENTS = 5
 const ASKS_FOR_YES: readonly VisitMessageTemplateKey[] = ['visit_summary', 'day_before_reminder_unconfirmed']
 

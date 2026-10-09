@@ -4,6 +4,7 @@ import { publicUrl } from '@/shared/config/public-url'
 import { APP_HOSTS } from '@/shared/config/roots'
 import { companyInfo } from '@/shared/constants/company'
 import { toE164 } from '@/shared/lib/phone'
+import { escapeVcard, foldVcardLine } from '@/shared/services/voip/lib/vcard'
 import { voipDidsService } from '@/shared/services/voip/voip-dids.service'
 
 // The phone comes from the database, so the file is built per request, never at build time.
@@ -21,33 +22,15 @@ function officeAddress(): { street: string, city: string, state: string, zip: st
   return { street, city, state, zip }
 }
 
-function escapeVcard(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n')
-}
-
-// RFC 2425: a content line over 75 octets continues on the next line after a CRLF and one space. Splits fall on character boundaries.
-function foldVcardLine(line: string): string {
-  const parts: string[] = []
-  let current = ''
-  let limit = 75
-  for (const char of line) {
-    if (Buffer.byteLength(current + char, 'utf8') > limit) {
-      parts.push(current)
-      current = ''
-      limit = 74
-    }
-    current += char
-  }
-  parts.push(current)
-  return parts.join('\r\n ')
-}
-
 // Phones show a contact photo only when the image travels inside the card, and public/ files are not in the serverless bundle.
 async function logoPhotoLine(): Promise<string | null> {
   try {
-    const response = await fetch(publicUrl('/pwa/apple-touch-icon.png'))
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`)
+    // Twilio fails the MMS if this card is slow, so a stalled logo must not hold it up.
+    const response = await fetch(publicUrl('/pwa/apple-touch-icon.png'), { signal: AbortSignal.timeout(2000) })
+    const type = response.headers.get('content-type') ?? ''
+    // A tunnel interstitial or a preview-protection page answers 200 with HTML.
+    if (!response.ok || !type.startsWith('image/png')) {
+      throw new Error(`HTTP ${response.status}, ${type || 'no content type'}`)
     }
     return `PHOTO;ENCODING=b;TYPE=PNG:${Buffer.from(await response.arrayBuffer()).toString('base64')}`
   }
@@ -80,7 +63,8 @@ export async function GET(): Promise<Response> {
       // Twilio wants a matching content type and a filename of 20 ASCII characters or fewer.
       'Content-Type': 'text/vcard; charset=utf-8',
       'Content-Disposition': 'attachment; filename="tri-pros.vcf"',
-      'Cache-Control': 'public, max-age=86400',
+      // A card without its photo must not stay cached for a day.
+      'Cache-Control': photo ? 'public, max-age=86400' : 'no-store',
     },
   })
 }
