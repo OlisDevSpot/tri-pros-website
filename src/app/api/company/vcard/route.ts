@@ -50,8 +50,11 @@ export async function GET(): Promise<Response> {
   const lines = [
     'BEGIN:VCARD',
     'VERSION:3.0',
+    // Shaped as iOS exports a company contact: vCard 3.0 requires N, and X-ABShowAs marks it a business rather than a person.
+    'N:;;;;',
     `FN:${escapeVcard(companyInfo.name)}`,
-    `ORG:${escapeVcard(companyInfo.name)}`,
+    `ORG:${escapeVcard(companyInfo.name)};`,
+    'X-ABShowAs:COMPANY',
     `TEL;TYPE=CELL,VOICE:${phone}`,
     `EMAIL:${contact('email')}`,
     `URL:https://${APP_HOSTS.prod[0]}`,
