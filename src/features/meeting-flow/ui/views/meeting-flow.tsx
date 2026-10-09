@@ -5,8 +5,8 @@ import type { MeetingOutcome } from '@/shared/constants/enums'
 import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { MeetingContext, MeetingFlowState } from '@/shared/entities/meetings/schemas'
 import { MutationObserver as QueryMutationObserver, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ChannelProvider } from 'ably/react'
 import { MotionConfig } from 'motion/react'
+import dynamic from 'next/dynamic'
 import { useQueryState } from 'nuqs'
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -16,7 +16,6 @@ import { MEETING_STEPS, TOTAL_STEPS } from '@/features/meeting-flow/constants/st
 import { TradeSelectionProvider } from '@/features/meeting-flow/contexts/trade-selection-provider'
 import { useMeetingFlowKeys } from '@/features/meeting-flow/hooks/use-meeting-flow-keys'
 import { useMeetingSplash } from '@/features/meeting-flow/hooks/use-meeting-splash'
-import { useMeetingSync } from '@/features/meeting-flow/hooks/use-meeting-sync'
 import { usePresentMode } from '@/features/meeting-flow/hooks/use-present-mode'
 import { computeContextFilledCount, CONTEXT_TOTAL_FIELDS } from '@/features/meeting-flow/lib/context-fill-count'
 import { toPresentationAgent } from '@/features/meeting-flow/lib/to-presentation-agent'
@@ -46,6 +45,11 @@ import { useOutcomeChange } from '@/shared/entities/meetings/hooks/use-outcome-c
 import { useRescheduleChange } from '@/shared/entities/meetings/hooks/use-reschedule-change'
 import { useTRPC } from '@/trpc/helpers'
 
+const MeetingRealtimeSync = dynamic(
+  () => import('@/features/meeting-flow/ui/components/realtime/meeting-realtime-sync').then(mod => mod.MeetingRealtimeSync),
+  { ssr: false },
+)
+
 interface MeetingFlowViewProps {
   meetingId: string
 }
@@ -59,18 +63,14 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
   // The splash itself mounts from the dashboard layout (`MeetingSplashMount`, E9); the view only
   // reads the shared store to go inert under it and to take focus back when it closes (E4).
   const { open: splashOpen } = useMeetingSplash(meetingId)
-  return (
-    <ChannelProvider channelName={`meeting:${meetingId}`}>
-      <MeetingFlowViewInner meetingId={meetingId} splashOpen={splashOpen} />
-    </ChannelProvider>
-  )
+  return <MeetingFlowViewInner meetingId={meetingId} splashOpen={splashOpen} />
 }
 
 function MeetingFlowViewInner({ meetingId, splashOpen }: MeetingFlowViewInnerProps) {
   const trpc = useTRPC()
   const { invalidateMeeting } = useInvalidation()
   const [currentStep, setCurrentStep] = useQueryState('step', stepParser)
-  const { status: syncStatus } = useMeetingSync(meetingId)
+  const [syncStatus, setSyncStatus] = useState('connecting')
   const { changeOutcome, OutcomeReasonDialog } = useOutcomeChange()
   const { reschedule, RescheduleDialog } = useRescheduleChange()
   const { presenting, toggle: togglePresentMode } = usePresentMode()
@@ -298,6 +298,7 @@ function MeetingFlowViewInner({ meetingId, splashOpen }: MeetingFlowViewInnerPro
 
   return (
     <TradeSelectionProvider flowContext={flowContext}>
+      <MeetingRealtimeSync meetingId={meetingId} onStatusChange={setSyncStatus} />
       <MotionConfig reducedMotion="user">
         <StageFrame ref={rootRef} inert={splashOpen}>
           <TopBar
