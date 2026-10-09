@@ -251,10 +251,10 @@ function createNotificationService() {
     },
 
     /** A homeowner wrote something only a person can answer. Staff answer by calling. */
-    notifyHomeownerReply: async (params: { meetingId: string | null, scheduledFor: string | null, customerName: string, body: string }) => {
+    notifyHomeownerReply: async (params: { meetingId: string | null, scheduledFor: string | null, customerName: string, body: string, hasPhoto: boolean }) => {
       const result = await webPushClient.sendToUsers(await visitRecipientIds(params.meetingId), {
         title: `Reply | ${params.customerName}`,
-        body: `${params.customerName} replied: ${pushExcerpt(params.body)}`,
+        body: params.body.trim() || !params.hasPhoto ? `${params.customerName} replied: ${pushExcerpt(params.body)}` : `${params.customerName} sent a photo`,
         navigate: params.meetingId ? ROOTS.dashboard.scheduleWithMeetingHighlight(params.meetingId, params.scheduledFor) : ROOTS.dashboard.customers.root(),
         urgency: 'high',
       })

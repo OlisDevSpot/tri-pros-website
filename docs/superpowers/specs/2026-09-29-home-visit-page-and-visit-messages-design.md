@@ -798,7 +798,7 @@ The dialog and drawer are code-split behind skeletons (heavy children are code-s
     - message control (§7.5):
       - skip a scheduled rep confirmation, unskip it, skip it again, then trigger the run (expect a `manual` skipped row and no text);
       - as a super-admin, pause the day-before reminder, trigger the run (expect `skipped` / `paused`), then resume;
-      - edit a template, try a curly quote (expect it rejected), save, and trigger a send (expect the new wording); then reset to default;
+      - edit a template, try a curly quote (expect it to save with a `ucs2` cost warning), save, and trigger a send (expect the new wording); then reset to default;
       - book a meeting and send the summary from the toast;
       - check Upcoming, History and Sequence against what was actually sent;
     - open the invite in Gmail and Outlook, then resend after a reschedule (expect one updated event);

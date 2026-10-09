@@ -29,6 +29,7 @@ export async function POST(request: Request): Promise<Response> {
       from: parsed.data.From,
       to: parsed.data.To,
       body: parsed.data.Body,
+      mediaCount: parsed.data.NumMedia,
       optOutType: parsed.data.OptOutType ?? null,
     })
     if (!handled.success) {

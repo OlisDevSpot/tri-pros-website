@@ -67,8 +67,8 @@ export async function GET(): Promise<Response> {
       // Twilio wants a matching content type and a filename of 20 ASCII characters or fewer.
       'Content-Type': 'text/vcard; charset=utf-8',
       'Content-Disposition': 'attachment; filename="tri-pros.vcf"',
-      // A card without its photo must not stay cached for a day.
-      'Cache-Control': photo ? 'public, max-age=86400' : 'no-store',
+      // s-maxage lets Vercel's edge serve the card warm, since Twilio fails the MMS when it is slow; a card without its photo must not stay cached for a day.
+      'Cache-Control': photo ? 'public, max-age=86400, s-maxage=86400' : 'no-store',
     },
   })
 }

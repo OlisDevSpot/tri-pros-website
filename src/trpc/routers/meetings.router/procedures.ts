@@ -33,3 +33,11 @@ export const visitMessagesProcedure = meetingProcedure.use(async ({ ctx, next })
   }
   return next({ ctx })
 })
+
+/** Sending a visit message writes, so it needs `update` where seeing messages needs `read`. */
+export const visitMessagesWriteProcedure = meetingProcedure.use(async ({ ctx, next }) => {
+  if (ctx.ability.cannot('update', 'VisitMessages')) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to send visit messages.' })
+  }
+  return next({ ctx })
+})

@@ -107,11 +107,12 @@ const envSchema = z.object({
   // asserts non-null at the point of use. Build environments without VoIP
   // credentials (CI, prod-before-VoIP-launches, fresh dev clones) parse the
   // schema cleanly; only environments actively using VoIP features need them.
-  VOIP_WEBHOOK_BASE_URL: z.string().optional(),
+  // Twilio signs the exact URL it called, so a trailing slash here would fail every callback's signature check.
+  VOIP_WEBHOOK_BASE_URL: z.string().optional().transform(value => value?.replace(/\/+$/, '') || undefined),
   // (CLOUDTALK_PHASE0_TRANSFER_TARGET_E164 removed 2026-05-27 — AI VoiceAgent off the table per pivot; no transfer mock needed.)
   // Dev safety: redirects all outbound voice/SMS to a single test number in dev/preview.
   // CI gate at bottom of this file prevents this being set in production.
-  VOIP_DEV_OVERRIDE_NUMBER: z.string().optional(),
+  VOIP_DEV_OVERRIDE_NUMBER: z.string().optional().transform(value => value || undefined),
 
   // TWILIO (voip-in-house) — schema fragment lives at
   // `src/shared/services/providers/twilio/lib/config.ts` and is spread in
@@ -187,6 +188,11 @@ export default env
 // number — invaluable in dev/preview, catastrophic in production.
 if (env.VERCEL_ENV === 'production' && env.VOIP_DEV_OVERRIDE_NUMBER) {
   throw new Error('VOIP_DEV_OVERRIDE_NUMBER must NOT be set in production')
+}
+
+// Without it every status callback and inbound text is built against "undefined/..." and fails its signature check.
+if (env.VERCEL_ENV === 'production' && !env.VOIP_WEBHOOK_BASE_URL) {
+  throw new Error('VOIP_WEBHOOK_BASE_URL must be set in production')
 }
 
 // EMAIL_DEV_OVERRIDE reroutes every outbound email to one inbox. In production it would

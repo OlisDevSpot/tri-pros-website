@@ -17,8 +17,8 @@ import { scheduledForSetByMove } from '@/shared/modules/meetings/core/lib/schedu
 import { visitMessageTemplateKeys } from '@/shared/modules/meetings/messages/constants/kinds'
 import { VISIT_MESSAGE_TEMPLATE_DEFAULTS, VISIT_MESSAGE_TOKENS } from '@/shared/modules/meetings/messages/constants/templates'
 import { buildIcs } from '@/shared/modules/meetings/messages/lib/build-ics'
-import { displayFirstName } from '@/shared/modules/meetings/messages/lib/deliver-visit-text'
 import { deriveConfirmationTrack } from '@/shared/modules/meetings/messages/lib/derive-confirmation-track'
+import { displayFirstName } from '@/shared/modules/meetings/messages/lib/display-first-name'
 import { buildGoogleCalendarLink } from '@/shared/modules/meetings/messages/lib/google-calendar-link'
 import { isVisitMessageEligible } from '@/shared/modules/meetings/messages/lib/is-visit-message-eligible'
 import { matchReplyKeyword } from '@/shared/modules/meetings/messages/lib/match-reply-keyword'
@@ -563,12 +563,15 @@ console.log('9. Visit message plan ✓')
 console.log('10. Run time ✓')
 
 {
+  const FUTURE = { scheduledFor: '2026-10-12T17:00:00.000Z', now: new Date('2026-10-09T17:00:00.000Z') }
   const invite = fact('visit_summary', { channel: 'email' })
-  assert.equal(shouldSendVisitCancellation({ chainMessages: [invite], hasSuccessor: false }), true)
-  assert.equal(shouldSendVisitCancellation({ chainMessages: [invite], hasSuccessor: true }), false, 'a reschedule\'s original has a successor: the next summary updates the same calendar entry')
-  assert.equal(shouldSendVisitCancellation({ chainMessages: [fact('visit_summary')], hasSuccessor: false }), false, 'a text-only summary put nothing on a calendar')
-  assert.equal(shouldSendVisitCancellation({ chainMessages: [fact('visit_summary', { channel: 'email', status: 'failed' })], hasSuccessor: false }), false)
-  assert.equal(shouldSendVisitCancellation({ chainMessages: [fact('visit_summary', { channel: 'email', forScheduledFor: OLD_VISIT })], hasSuccessor: false }), true, 'an invite sent before a reschedule is still on their calendar')
+  assert.equal(shouldSendVisitCancellation({ chainMessages: [invite], hasSuccessor: false, ...FUTURE }), true)
+  assert.equal(shouldSendVisitCancellation({ chainMessages: [invite], hasSuccessor: true, ...FUTURE }), false, 'a reschedule\'s original has a successor: the next summary updates the same calendar entry')
+  assert.equal(shouldSendVisitCancellation({ chainMessages: [fact('visit_summary')], hasSuccessor: false, ...FUTURE }), false, 'a text-only summary put nothing on a calendar')
+  assert.equal(shouldSendVisitCancellation({ chainMessages: [fact('visit_summary', { channel: 'email', status: 'failed' })], hasSuccessor: false, ...FUTURE }), false)
+  assert.equal(shouldSendVisitCancellation({ chainMessages: [fact('visit_summary', { channel: 'email', forScheduledFor: OLD_VISIT })], hasSuccessor: false, ...FUTURE }), true, 'an invite sent before a reschedule is still on their calendar')
+  assert.equal(shouldSendVisitCancellation({ chainMessages: [invite], hasSuccessor: false, scheduledFor: '2026-10-09T17:00:00.000Z', now: new Date('2026-10-09T17:00:00.000Z') }), false, 'a visit at or before now has nothing to cancel')
+  assert.equal(shouldSendVisitCancellation({ chainMessages: [invite], hasSuccessor: false, scheduledFor: '2026-10-08T17:00:00.000Z', now: new Date('2026-10-09T17:00:00.000Z') }), false)
 }
 console.log('11. Cancellation rule ✓')
 

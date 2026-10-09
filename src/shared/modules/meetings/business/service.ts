@@ -258,7 +258,11 @@ export const meetingBusinessService = {
       const chainIds = dalVerifySuccess(await getRescheduleChain(SYSTEM_CONTEXT, { meetingId: input.meetingId }))
       const chainMessages = await listChainMessages(chainIds)
       const hasSuccessor = (await getRescheduleSuccessorId(input.meetingId)) != null
-      if (!shouldSendVisitCancellation({ chainMessages, hasSuccessor })) {
+      const now = new Date()
+      if (!shouldSendVisitCancellation({ chainMessages, hasSuccessor, scheduledFor: context.meeting.scheduledFor, now })) {
+        if (new Date(context.meeting.scheduledFor).getTime() <= now.getTime()) {
+          return { sent: false, reason: 'past' }
+        }
         return { sent: false, reason: hasSuccessor ? 'rescheduled' : 'no_invite' }
       }
 
@@ -272,7 +276,7 @@ export const meetingBusinessService = {
         return { sent: false, reason: 'no_main_line' }
       }
       const sequence = chainMessages.filter(message => message.kind === 'visit_summary' && message.channel === 'email' && message.status === 'sent').length
-      const outcome = await deliverVisitCancellationEmail({ context, chainIds, sequence, mainLineE164: mainLine.e164, now: new Date() })
+      const outcome = await deliverVisitCancellationEmail({ context, chainIds, sequence, mainLineE164: mainLine.e164, now })
       await setMeetingMessageOutcome(claim.id, outcome)
       return { sent: outcome.status === 'sent', reason: outcome.reason }
     })
@@ -302,7 +306,7 @@ export const meetingBusinessService = {
    */
   async handleHomeownerReply(
     ctx: ScopedContext,
-    input: { providerMessageId: string, from: string, to: string, body: string, optOutType: MessagingInboundWebhookPayload['OptOutType'] | null },
+    input: { providerMessageId: string, from: string, to: string, body: string, mediaCount: number, optOutType: MessagingInboundWebhookPayload['OptOutType'] | null },
   ): Promise<DalReturn<{ action: HomeownerReplyAction, meetingId: string | null }>> {
     return dalDbOperation(async () => {
       const did = dalVerifySuccess(await voipDidsService.getDidByE164(input.to))
@@ -349,16 +353,18 @@ export const meetingBusinessService = {
       if (!onMainLine) {
         return { action: 'not_main_line', meetingId: null }
       }
-      if (input.optOutType === 'START') {
+      // Twilio flags a YES as an opt-in while YES is one of the messaging service's opt-in keywords.
+      const confirms = target != null && matchReplyKeyword(input.body) === 'confirm'
+      if (input.optOutType === 'START' && !confirms) {
         // Opting back in to texts says nothing about calls, so do-not-contact stays.
-        await notificationService.notifyHomeownerReply({ meetingId, scheduledFor, customerName, body: input.body })
+        await notificationService.notifyHomeownerReply({ meetingId, scheduledFor, customerName, body: input.body, hasPhoto: input.mediaCount > 0 })
         return { action: 'opt_in', meetingId }
       }
       if (input.optOutType === 'HELP') {
         return { action: 'help', meetingId }
       }
 
-      if (target && matchReplyKeyword(input.body) === 'confirm') {
+      if (target && confirms) {
         const confirmation = dalVerifySuccess(await meetingBusinessService.confirmByHomeowner(ctx, { meetingId: target.meeting.id, via: 'sms_reply' }))
         if (!confirmation.confirmed) {
           return { action: 'already_confirmed', meetingId }
@@ -376,7 +382,7 @@ export const meetingBusinessService = {
         return { action: 'confirmed', meetingId }
       }
 
-      await notificationService.notifyHomeownerReply({ meetingId, scheduledFor, customerName, body: input.body })
+      await notificationService.notifyHomeownerReply({ meetingId, scheduledFor, customerName, body: input.body, hasPhoto: input.mediaCount > 0 })
       return { action: 'forwarded', meetingId }
     })
   },

@@ -6,6 +6,7 @@ import { publicUrl } from '@/shared/config/public-url'
 import { ROOTS } from '@/shared/config/roots'
 import { hasOutboundOnThread } from '@/shared/entities/voip-messages/dal/server/queries'
 import { toE164 } from '@/shared/lib/phone'
+import { displayFirstName } from '@/shared/modules/meetings/messages/lib/display-first-name'
 import { buildVisitMessageVars, renderVisitMessage } from '@/shared/modules/meetings/messages/lib/render-visit-message'
 import { voipDidsService } from '@/shared/services/voip/voip-dids.service'
 import { voipMessagesService } from '@/shared/services/voip/voip-messages.service'
@@ -21,14 +22,6 @@ const TWILIO_OPTED_OUT = 'twilio:21610'
 
 export function visitLinkFor(meeting: Pick<VisitMessageContext['meeting'], 'id' | 'shareToken'>): string {
   return publicUrl(ROOTS.public.homeVisit(meeting.id, meeting.shareToken))
-}
-
-/** Homeowner copy names a person by nickname, else first name; null when there is nobody to name. */
-export function displayFirstName(person: { name: string, nickname: string | null } | null): string | null {
-  if (!person) {
-    return null
-  }
-  return person.nickname?.trim() || person.name.trim().split(/\s+/)[0] || null
 }
 
 /**
