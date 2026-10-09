@@ -1,4 +1,5 @@
 import type { GeneralInquiryFormSchema, ScheduleConsultationFormSchema } from '@/shared/entities/landing/schemas'
+import type { VisitCancellationEmailProps } from '@/shared/services/providers/resend/emails/visit-cancellation-email'
 import type { VisitSummaryEmailProps } from '@/shared/services/providers/resend/emails/visit-summary-email'
 
 import { Buffer } from 'node:buffer'
@@ -122,6 +123,40 @@ function createEmailService() {
 
       if (error || !data) {
         throw new Error(`Failed to send visit summary email: ${JSON.stringify(error)}`)
+      }
+
+      return { id: data.id }
+    },
+
+    /** The calendar cancellation: the same UID as the invite, one SEQUENCE above it, METHOD:CANCEL. */
+    sendVisitCancellationEmail: async (params: {
+      to: string
+      coordinatorName: string | null
+      visitDay: string
+      props: VisitCancellationEmailProps
+      text: string
+      ics: string
+    }): Promise<{ id: string }> => {
+      const templates = await loadEmailTemplates()
+      const { data, error } = await resendClient.emails.send({
+        from: buildSenderFrom(params.coordinatorName),
+        to: params.to,
+        replyTo: RESEND_LEAD_INBOX,
+        subject: `Your home visit on ${params.visitDay} is cancelled`,
+        headers: {
+          'List-Unsubscribe': `<mailto:${RESEND_LEAD_INBOX}?subject=unsubscribe>`,
+        },
+        react: templates.renderVisitCancellationEmail(params.props),
+        text: params.text,
+        attachments: [{
+          filename: 'home-visit-cancelled.ics',
+          content: Buffer.from(params.ics, 'utf8'),
+          contentType: 'text/calendar; method=CANCEL',
+        }],
+      })
+
+      if (error || !data) {
+        throw new Error(`Failed to send visit cancellation email: ${JSON.stringify(error)}`)
       }
 
       return { id: data.id }

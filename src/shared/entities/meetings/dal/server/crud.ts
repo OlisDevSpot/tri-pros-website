@@ -21,6 +21,7 @@ import { deleteMeetingEventJob } from '@/shared/services/providers/upstash/jobs/
 import { graduateFromCampaignJob } from '@/shared/services/providers/upstash/jobs/graduate-from-campaign'
 import { metaCapiEventJob } from '@/shared/services/providers/upstash/jobs/meta-capi-event'
 import { notifyMeetingTimeChangedJob } from '@/shared/services/providers/upstash/jobs/notify-meeting-time-changed'
+import { sendVisitCancellationJob } from '@/shared/services/providers/upstash/jobs/send-visit-cancellation'
 import { syncMeetingToGcalJob } from '@/shared/services/providers/upstash/jobs/sync-meeting-to-gcal'
 import { realtimeClient } from '@/shared/services/providers/upstash/realtime'
 
@@ -143,6 +144,11 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
         await realtimeClient.publish(`meeting:${row.id}`, 'meeting.updated', {
           fields: Object.keys(data),
         })
+
+        // A cancelled visit whose invite went out gets a calendar cancellation; the job checks, at run time, whether one is due.
+        if (previousRow.meetingOutcome !== 'cancelled' && row.meetingOutcome === 'cancelled') {
+          await sendVisitCancellationJob.dispatchOrThrow({ meetingId: row.id })
+        }
 
         // A newly-cancelled meeting leaves the shared calendar; the row is kept. The transition check prevents re-dispatch.
         if (

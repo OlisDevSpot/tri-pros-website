@@ -5,6 +5,7 @@
  * Runs without the react-server condition (it renders React email, which that condition forbids); the preload stubs `server-only`.
  *
  *   pnpm tsx --import ./scripts/lib/stub-server-only.mjs scripts/visit-messages.ts summary --meeting <id> [--note "..."]
+ *   pnpm tsx --import ./scripts/lib/stub-server-only.mjs scripts/visit-messages.ts cancel --meeting <id>
  *   pnpm tsx --import ./scripts/lib/stub-server-only.mjs scripts/visit-messages.ts run --kind day_before_reminder [--at 2026-10-09T01:00:00Z]
  */
 /* eslint-disable perfectionist/sort-imports -- load-env must run before any module that reads process.env */
@@ -55,8 +56,14 @@ async function main() {
       console.log(JSON.stringify(report, null, 2))
       return
     }
+    case 'cancel': {
+      const meetingId = requireFlag('--meeting')
+      const result = dalVerifySuccess(await meetingService.business.sendVisitCancellation(SYSTEM_CONTEXT, { meetingId }))
+      console.log(`sent: ${result.sent}${result.reason ? ` (${result.reason})` : ''}`)
+      return
+    }
     default:
-      console.error('Usage: visit-messages.ts summary --meeting <id> [--note "..."] | run --kind day_before_reminder|rep_confirmation [--at <iso instant>]')
+      console.error('Usage: visit-messages.ts summary --meeting <id> [--note "..."] | run --kind day_before_reminder|rep_confirmation [--at <iso instant>] | cancel --meeting <id>')
       process.exit(1)
   }
 }

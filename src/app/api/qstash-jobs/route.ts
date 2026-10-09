@@ -18,6 +18,7 @@ import { propagateCustomerChangeJob } from '@/shared/services/providers/upstash/
 import { sendDayBeforeRemindersJob } from '@/shared/services/providers/upstash/jobs/send-day-before-reminders'
 import { sendRepConfirmationsJob } from '@/shared/services/providers/upstash/jobs/send-rep-confirmations'
 import { sendViewNotificationJob } from '@/shared/services/providers/upstash/jobs/send-view-notification'
+import { sendVisitCancellationJob } from '@/shared/services/providers/upstash/jobs/send-visit-cancellation'
 import { syncCalendarsJob } from '@/shared/services/providers/upstash/jobs/sync-calendars'
 import { syncMeetingToGcalJob } from '@/shared/services/providers/upstash/jobs/sync-meeting-to-gcal'
 import { syncQbInvoiceJob } from '@/shared/services/providers/upstash/jobs/sync-qb-invoice'
@@ -55,6 +56,7 @@ const jobs: Job[] = [
   notifyLastInteractingAgentJob,
   sendDayBeforeRemindersJob,
   sendRepConfirmationsJob,
+  sendVisitCancellationJob,
 ]
 
 /**

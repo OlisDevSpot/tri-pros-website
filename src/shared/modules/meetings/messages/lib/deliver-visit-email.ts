@@ -1,4 +1,5 @@
 import type { VisitMessageContext } from '@/shared/modules/meetings/messages/dal/server/queries'
+import type { VisitCancellationEmailProps } from '@/shared/services/providers/resend/emails/visit-cancellation-email'
 import type { VisitSummaryEmailProps } from '@/shared/services/providers/resend/emails/visit-summary-email'
 
 import { publicUrl } from '@/shared/config/public-url'
@@ -120,6 +121,43 @@ export async function deliverVisitSummaryEmail(input: {
   }
   catch (error) {
     console.error('[deliverVisitSummaryEmail] send failed', { meetingId: meeting.id, error })
+    return { status: 'failed', reason: 'send_error', emailProviderId: null }
+  }
+}
+
+/** Sends the calendar cancellation. `sequence` is how many summary emails the chain sent, so the update outranks the last one. */
+export async function deliverVisitCancellationEmail(input: {
+  context: VisitMessageContext
+  chainIds: string[]
+  sequence: number
+  mainLineE164: string
+  now: Date
+}): Promise<VisitEmailOutcome> {
+  const { meeting, customer, coordinator } = input.context
+  if (!customer?.email) {
+    return { status: 'failed', reason: 'no_email', emailProviderId: null }
+  }
+  const props: VisitCancellationEmailProps = {
+    firstName: customer.name.trim().split(/\s+/)[0] || 'there',
+    visitDayTime: formatBusinessDayTime(meeting.scheduledFor),
+    mainLinePhone: formatPhone(input.mainLineE164),
+    companyName: companyInfo.name,
+    logoUrl: publicUrl('/company/logo/logo-light-right.jpg'),
+  }
+  try {
+    const { buildVisitCancellationText } = await import('@/shared/services/providers/resend/emails/visit-cancellation-email')
+    const { id } = await emailService.sendVisitCancellationEmail({
+      to: customer.email,
+      coordinatorName: displayFirstName(coordinator),
+      visitDay: formatBusinessDay(meeting.scheduledFor),
+      props,
+      text: buildVisitCancellationText(props),
+      ics: buildVisitInvite({ context: input.context, chainIds: input.chainIds, sequence: input.sequence, method: 'CANCEL', now: input.now }),
+    })
+    return { status: 'sent', reason: null, emailProviderId: id }
+  }
+  catch (error) {
+    console.error('[deliverVisitCancellationEmail] send failed', { meetingId: meeting.id, error })
     return { status: 'failed', reason: 'send_error', emailProviderId: null }
   }
 }

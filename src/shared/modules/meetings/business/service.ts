@@ -17,12 +17,14 @@ import { addParticipant, getParticipantsForMeeting } from '@/shared/entities/mee
 import { getRescheduleChain, getRescheduleSuccessorId } from '@/shared/entities/meetings/dal/server/queries'
 import { buildRescheduleNote, formatMeetingDateShort } from '@/shared/entities/meetings/lib/notes'
 import { meetingMessageCrud } from '@/shared/modules/meetings/messages/dal/server/crud'
+import { claimAutomaticSend, setMeetingMessageOutcome } from '@/shared/modules/meetings/messages/dal/server/mutations'
 import { getVisitMessageContext, listChainMessages } from '@/shared/modules/meetings/messages/dal/server/queries'
 import { getTemplateBodies } from '@/shared/modules/meetings/messages/dal/server/settings'
-import { deliverVisitSummaryEmail } from '@/shared/modules/meetings/messages/lib/deliver-visit-email'
+import { deliverVisitCancellationEmail, deliverVisitSummaryEmail } from '@/shared/modules/meetings/messages/lib/deliver-visit-email'
 import { deliverVisitText } from '@/shared/modules/meetings/messages/lib/deliver-visit-text'
 import { isVisitMessageEligible } from '@/shared/modules/meetings/messages/lib/is-visit-message-eligible'
 import { runAutomaticKind } from '@/shared/modules/meetings/messages/lib/run-automatic-kind'
+import { shouldSendVisitCancellation } from '@/shared/modules/meetings/messages/lib/should-send-visit-cancellation'
 import { voipDidsService } from '@/shared/services/voip/voip-dids.service'
 
 export const meetingBusinessService = {
@@ -226,5 +228,44 @@ export const meetingBusinessService = {
   /** The 8:30 AM Pacific run. */
   async sendRepConfirmations(ctx: ScopedContext, input: { now: Date }): Promise<DalReturn<VisitMessageRunReport>> {
     return dalDbOperation(() => runAutomaticKind(ctx, 'rep_confirmation', input.now))
+  },
+
+  /**
+   * Removes the calendar entry of a cancelled visit whose invite went out. A reschedule's original has a
+   * successor whose next summary updates the same entry, so it gets none.
+   */
+  async sendVisitCancellation(
+    ctx: ScopedContext,
+    input: { meetingId: string },
+  ): Promise<DalReturn<{ sent: boolean, reason: string | null }>> {
+    return dalDbOperation(async () => {
+      const context = await getVisitMessageContext(input.meetingId)
+      if (!context) {
+        throw new ThrowableDalError({ type: 'not-found' })
+      }
+      if (context.meeting.meetingOutcome !== 'cancelled') {
+        return { sent: false, reason: 'not_cancelled' }
+      }
+      const chainIds = dalVerifySuccess(await getRescheduleChain(SYSTEM_CONTEXT, { meetingId: input.meetingId }))
+      const chainMessages = await listChainMessages(chainIds)
+      const hasSuccessor = (await getRescheduleSuccessorId(input.meetingId)) != null
+      if (!shouldSendVisitCancellation({ chainMessages, hasSuccessor })) {
+        return { sent: false, reason: hasSuccessor ? 'rescheduled' : 'no_invite' }
+      }
+
+      const claim = await claimAutomaticSend({ meetingId: input.meetingId, kind: 'visit_cancellation', channel: 'email', forScheduledFor: context.meeting.scheduledFor })
+      if (!claim) {
+        return { sent: false, reason: 'already_sent' }
+      }
+      const mainLine = dalVerifySuccess(await voipDidsService.getMainLineDid())
+      if (!mainLine) {
+        await setMeetingMessageOutcome(claim.id, { status: 'failed', reason: 'no_main_line' })
+        return { sent: false, reason: 'no_main_line' }
+      }
+      const sequence = chainMessages.filter(message => message.kind === 'visit_summary' && message.channel === 'email' && message.status === 'sent').length
+      const outcome = await deliverVisitCancellationEmail({ context, chainIds, sequence, mainLineE164: mainLine.e164, now: new Date() })
+      await setMeetingMessageOutcome(claim.id, outcome)
+      return { sent: outcome.status === 'sent', reason: outcome.reason }
+    })
   },
 } as const
