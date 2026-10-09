@@ -10,6 +10,7 @@ import { useCallback, useState } from 'react'
 
 import { ROOTS } from '@/shared/config/roots'
 import { CANNOT_RESCHEDULE_REASON, canRescheduleFromOutcome } from '@/shared/constants/enums/meetings'
+import { useAbility } from '@/shared/domains/permissions/client'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
 import { SetterPicker } from '@/shared/entities/meetings/components/setter-picker'
 import { MEETING_ACTIONS } from '@/shared/entities/meetings/constants/actions'
@@ -75,6 +76,7 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
   overrides: MeetingActionOverrides<T> = {},
 ): MeetingActionConfigsResult<T> {
   const router = useRouter()
+  const ability = useAbility()
   const { deleteMeeting, duplicateMeeting, updateConfirmation, updateSetter } = useMeetingActions()
   const { changeOutcome, OutcomeReasonDialog } = useOutcomeChange()
   const { reschedule, RescheduleDialog } = useRescheduleChange()
@@ -96,6 +98,8 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
 
   const defaultNavigate = (entity: T) => router.push(ROOTS.dashboard.meetings.byId(entity.id))
   const defaultViewSchedule = (entity: T) => router.push(ROOTS.dashboard.scheduleWithMeetingHighlight(entity.id, entity.scheduledFor))
+  // The meeting page is the presentation; a viewer who may not start one sees the meeting where it is scheduled.
+  const defaultView = ability.can(...MEETING_ACTIONS.start.permission) ? defaultNavigate : defaultViewSchedule
   const defaultCreateProposal = (entity: T) => router.push(ROOTS.dashboard.proposals.newForMeeting(entity.id))
 
   // Stable component identity — props change, component reference does not
@@ -107,7 +111,7 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
   const configs: EntityActionConfig<T>[] = [
     {
       action: MEETING_ACTIONS.view,
-      onAction: overrides.onView ?? defaultNavigate,
+      onAction: overrides.onView ?? defaultView,
     },
     {
       action: MEETING_ACTIONS.viewSchedule,

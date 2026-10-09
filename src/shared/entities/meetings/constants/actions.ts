@@ -10,17 +10,18 @@ export const MEETING_ACTIONS = {
     permission: ['read', 'Meeting'],
     primary: true,
   },
+  // Running the meeting writes its deal structure, so the field decides who may start one.
   start: {
     id: 'start',
     label: 'Start Meeting',
     icon: PlayIcon,
-    permission: ['update', 'Meeting'],
+    permission: ['update', 'Meeting', 'flowStateJSON'],
   },
   assignProject: {
     id: 'assignProject',
     label: 'Assign to Project',
     icon: FolderOpenIcon,
-    permission: ['update', 'Meeting'],
+    permission: ['update', 'Meeting', 'projectId'],
   },
   viewSchedule: {
     id: 'viewSchedule',

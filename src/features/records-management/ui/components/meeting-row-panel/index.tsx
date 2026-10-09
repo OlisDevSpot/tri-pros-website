@@ -9,6 +9,7 @@ import { MeetingRowActionBar } from '@/features/records-management/ui/components
 import { MeetingRowDetails } from '@/features/records-management/ui/components/meeting-row-panel/meeting-row-details'
 import { MeetingTradesPane } from '@/features/records-management/ui/components/meeting-row-panel/meeting-trades-pane'
 import { ExpandedRowPanel } from '@/shared/components/data-table/ui/expanded-row-panel'
+import { useAbility } from '@/shared/domains/permissions/client'
 
 interface MeetingRowPanelProps {
   meeting: MeetingRow
@@ -17,6 +18,10 @@ interface MeetingRowPanelProps {
 
 export function MeetingRowPanel({ meeting, actions }: MeetingRowPanelProps) {
   const { profile, proposals } = useMeetingRowPanelData(meeting)
+  const ability = useAbility()
+  // The trades are the meeting's deal structure; the proposals pane is the proposals themselves.
+  const showsTrades = ability.can('read', 'Meeting', 'flowStateJSON')
+  const showsProposals = ability.can('read', 'Proposal') && !profile.isError
 
   return (
     <ExpandedRowPanel>
@@ -26,7 +31,7 @@ export function MeetingRowPanel({ meeting, actions }: MeetingRowPanelProps) {
       <ExpandedRowPanel.Details>
         <MeetingRowDetails meeting={meeting} />
       </ExpandedRowPanel.Details>
-      {profile.isError && (
+      {profile.isError && ability.can('read', 'Proposal') && (
         <ExpandedRowPanel.Error
           title="Couldn't load this meeting's proposals"
           description="Trades still show; retry to load the proposals."
@@ -34,9 +39,9 @@ export function MeetingRowPanel({ meeting, actions }: MeetingRowPanelProps) {
         />
       )}
       {/* Trades come from the row itself, so a failed profile read hides only the proposals pane. */}
-      <ExpandedRowPanel.Panes className={profile.isError ? undefined : '@min-[600px]:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]'}>
-        <MeetingTradesPane meeting={meeting} actions={actions} />
-        {!profile.isError && (
+      <ExpandedRowPanel.Panes className={showsTrades && showsProposals ? '@min-[600px]:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]' : undefined}>
+        {showsTrades && <MeetingTradesPane meeting={meeting} actions={actions} />}
+        {showsProposals && (
           <MeetingProposalsPane
             meeting={meeting}
             proposals={proposals}

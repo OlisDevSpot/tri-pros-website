@@ -1,23 +1,35 @@
+'use client'
+
+import type { Permission } from '@/shared/domains/permissions/types'
+
+import { useAbility } from '@/shared/domains/permissions/client'
+import { cn } from '@/shared/lib/utils'
+
 interface DashboardSnapshotChipsProps {
   /** Omitted while the counts load (or when they failed): each chip shows a muted dash. */
   counts?: {
     meetingsToday: number
-    awaitingSignature: number
-    activeProjects: number
+    awaitingSignature?: number
+    activeProjects?: number
   }
 }
 
-/** Slim, non-sticky ribbon of 3 jump-links: meetings today · out for signature · open projects. */
+/** Slim, non-sticky ribbon of jump-links: meetings today · out for signature · open projects, each only for a viewer who reads what it counts. */
 export function DashboardSnapshotChips({ counts }: DashboardSnapshotChipsProps) {
-  const chips = [
-    { href: '#meetings', label: 'Meetings today', count: counts?.meetingsToday },
-    { href: '#proposals', label: 'Out for signature', count: counts?.awaitingSignature },
-    { href: '#projects', label: 'Open projects', count: counts?.activeProjects },
+  const ability = useAbility()
+  const chips: { href: string, label: string, count: number | undefined, permission: Permission }[] = [
+    { href: '#meetings', label: 'Meetings today', count: counts?.meetingsToday, permission: ['read', 'Meeting'] },
+    { href: '#proposals', label: 'Out for signature', count: counts?.awaitingSignature, permission: ['read', 'Proposal'] },
+    { href: '#projects', label: 'Open projects', count: counts?.activeProjects, permission: ['read', 'Project'] },
   ]
+  const visible = chips.filter(chip => ability.can(...chip.permission))
 
   return (
-    <div className="grid grid-cols-3 gap-(--gutter)" aria-busy={counts === undefined || undefined}>
-      {chips.map(chip => (
+    <div
+      className={cn('grid gap-(--gutter)', visible.length === 3 ? 'grid-cols-3' : visible.length === 2 ? 'grid-cols-2' : 'grid-cols-1')}
+      aria-busy={counts === undefined || undefined}
+    >
+      {visible.map(chip => (
         <a
           key={chip.href}
           href={chip.href}

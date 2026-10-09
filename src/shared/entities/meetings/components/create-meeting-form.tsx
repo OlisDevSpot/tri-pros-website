@@ -57,7 +57,10 @@ export function CreateMeetingForm({
   const [scheduledFor, setScheduledFor] = useState<Date | undefined>(initialValues?.scheduledFor)
   const [tradeSelections, setTradeSelections] = useState<TradeSelection[]>(initialValues?.tradeSelections ?? [])
   const [projectId, setProjectId] = useState<string>(initialValues?.projectId ?? '')
-  const canPickSetter = useAbility().can('assign', 'Meeting')
+  const ability = useAbility()
+  const canPickSetter = ability.can('assign', 'Meeting')
+  // Editing replaces the deal structure's trades, which a viewer who cannot read them would wipe blind.
+  const canPickTrades = isEditMode ? ability.can('update', 'Meeting', 'flowStateJSON') : true
   const { data: session } = useSession()
   const selfId = session?.user.id ?? null
   const selfName = session?.user.name ?? null
@@ -112,7 +115,7 @@ export function CreateMeetingForm({
         data: {
           meetingType,
           scheduledFor: scheduledFor.toISOString(),
-          flowStateJSON: tradeSelections.length > 0
+          flowStateJSON: canPickTrades && tradeSelections.length > 0
             ? { tradeSelections }
             : undefined,
         },
@@ -225,17 +228,19 @@ export function CreateMeetingForm({
       )}
 
       {/* Trade & Scope Selection */}
-      <div className="space-y-2">
-        <Label>
-          Trades & scopes
-          {' '}
-          <span className="text-muted-foreground text-xs font-normal">(optional — can be added during meeting)</span>
-        </Label>
-        <MeetingScopesPicker
-          value={tradeSelections}
-          onChange={setTradeSelections}
-        />
-      </div>
+      {canPickTrades && (
+        <div className="space-y-2">
+          <Label>
+            Trades & scopes
+            {' '}
+            <span className="text-muted-foreground text-xs font-normal">(optional — can be added during meeting)</span>
+          </Label>
+          <MeetingScopesPicker
+            value={tradeSelections}
+            onChange={setTradeSelections}
+          />
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex gap-2">

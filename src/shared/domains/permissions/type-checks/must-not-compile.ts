@@ -284,6 +284,8 @@ export function checksThatMustCompile() {
   ability.can('update', 'Proposal', 'views')
   ability.can('update', 'Proposal', 'views.viewedAt')
   ability.can(...somePermission)
+  const presentMeeting: Permission = ['update', 'Meeting', 'flowStateJSON']
+  ability.can(...presentMeeting)
   ability.can('update', subject('CustomerNote', noteRow))
   ability.can('update', subject('CustomerNote', { authorId: null }))
   ability.can('update', subject('Proposal', { id: 'proposal-1' }), 'financeOptionId')
@@ -315,6 +317,10 @@ subject('Custmer', {})
 ability.can('read', subject('Proposal', { id: 'proposal-1' }))
 // @ts-expect-error a mistyped field on a row check
 ability.can('update', subject('CustomerNote', noteRow), 'contnt')
+// @ts-expect-error a permission's field must be a field of its subject
+export const permissionFieldTypo: Permission = ['update', 'Meeting', 'flowStateJson']
+// @ts-expect-error a subject without a spec has no fields
+export const permissionFieldOnGate: Permission = ['access', 'Dashboard', 'name']
 
 defineRules((can, cannot) => {
   can('read', 'CustomerNote', { authorId: null })

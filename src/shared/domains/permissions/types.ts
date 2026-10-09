@@ -33,8 +33,15 @@ type ActionOn<S extends AppSubject> = S extends EntitySubject
 // `manage` is CASL's "every action": only `manage all` grants it, and a check may ask it of any subject.
 export type AppAction = ActionOn<AppSubject> | 'manage'
 
-/** A verb and the subject it is asked of, as one value: what a nav item, a column or an action carries. */
-export type Permission = { [S in AppSubject]: [action: ActionOn<S> | 'manage', subject: S] }[AppSubject]
+/**
+ * A verb and the subject it is asked of, as one value: what a nav item, a column, an action or a gated
+ * section carries. On an entity it may name the one field it touches, so a field rule decides it too.
+ */
+export type Permission = {
+  [S in AppSubject]: S extends EntitySubject
+    ? [action: ActionOn<S> | 'manage', subject: S, field?: FieldOf<S>]
+    : [action: ActionOn<S> | 'manage', subject: S]
+}[AppSubject]
 
 // A condition on a column the row does not carry reads `undefined` and never matches.
 type SubjectRow<S extends EntitySubject> = Pick<RowOf<S>, ConditionColumnOf<S> & keyof RowOf<S>> & ForcedSubject<S>

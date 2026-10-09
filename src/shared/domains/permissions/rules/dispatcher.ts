@@ -23,6 +23,8 @@ export function dispatcherRules(userId: string) {
     can('update', 'Meeting')
     // The in-meeting deal structure is pricing. Not readable, so not writable either.
     cannot(['read', 'update'], 'Meeting', ['flowStateJSON'])
+    // Tying a meeting to a project is the agent's call.
+    cannot('update', 'Meeting', ['projectId'])
 
     can('read', 'User')
 

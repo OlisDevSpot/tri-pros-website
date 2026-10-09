@@ -6,6 +6,7 @@ import type { useCustomerEditForm } from '@/shared/entities/customers/hooks/use-
 import type { CustomerProfileData } from '@/shared/entities/customers/types'
 import type { ProfileCommands } from '@/shared/entities/customers/types/profile-modal'
 import { TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
+import { Can } from '@/shared/domains/permissions/ui/can'
 import { PROFILE_TAB_LABELS } from '@/shared/entities/customers/constants/profile-modal'
 import { CustomerProfileRail } from './customer-profile-rail'
 import { CustomerProfileTabPanels } from './customer-profile-tab-panels'
@@ -42,7 +43,9 @@ export function CustomerProfileDesktopLayout({ commands, data, editForm, heroAdd
         <TabsList className="shrink-0 px-6" variant="underline">
           <TabsTrigger className="min-h-13" value="overview">{PROFILE_TAB_LABELS.overview}</TabsTrigger>
           <TabsTrigger className="min-h-13" value="meetings">{`${PROFILE_TAB_LABELS.meetings} (${data.meetings.length})`}</TabsTrigger>
-          <TabsTrigger className="min-h-13" value="projects">{`${PROFILE_TAB_LABELS.projects} (${data.projects.length})`}</TabsTrigger>
+          <Can permission={['read', 'Project']}>
+            <TabsTrigger className="min-h-13" value="projects">{`${PROFILE_TAB_LABELS.projects} (${data.projects.length})`}</TabsTrigger>
+          </Can>
         </TabsList>
         <div className="min-h-0 flex-1 overflow-y-auto scrollbar-gutter-stable" data-profile-scroller ref={scrollerRef}>
           <CustomerProfileTabPanels

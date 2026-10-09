@@ -17,21 +17,29 @@ interface Props {
 export default async function DashboardPage({ searchParams }: Props) {
   const authState = await protectDashboardPage()
 
+  const ability = authState.status === 'authenticated' ? authState.actor.ability : null
+  const showsProposals = ability?.can('read', 'Proposal') ?? false
+  const showsProjects = ability?.can('read', 'Project') ?? false
+
   // Unauthenticated visitors get the layout's sign-in screen; skip the prefetch work.
   if (authState.status === 'authenticated') {
     prefetch(trpc.meetingsRouter.reads.list.queryOptions(meetingsWindowInput('today')))
     prefetch(trpc.meetingsRouter.reads.list.queryOptions(await loadDataViewQueryInput(searchParams, DASHBOARD_MEETINGS_QUERY, DASHBOARD_MEETINGS_EXTRA)))
-    prefetch(trpc.proposalsRouter.business.list.queryOptions(awaitingProposalsInput()))
-    prefetch(trpc.proposalsRouter.business.list.queryOptions(sentProposalsInput()))
-    prefetch(trpc.projectsRouter.crud.list.queryOptions(activeProjectsInput()))
-    prefetch(trpc.projectsRouter.crud.list.queryOptions(onHoldProjectsInput()))
+    if (showsProposals) {
+      prefetch(trpc.proposalsRouter.business.list.queryOptions(awaitingProposalsInput()))
+      prefetch(trpc.proposalsRouter.business.list.queryOptions(sentProposalsInput()))
+    }
+    if (showsProjects) {
+      prefetch(trpc.projectsRouter.crud.list.queryOptions(activeProjectsInput()))
+      prefetch(trpc.projectsRouter.crud.list.queryOptions(onHoldProjectsInput()))
+    }
   }
 
   const name = authState.status === 'authenticated' ? authState.session.user.name : null
 
   return (
     <HydrateClient>
-      <DashboardView name={name} />
+      <DashboardView name={name} showsProjects={showsProjects} showsProposals={showsProposals} />
     </HydrateClient>
   )
 }

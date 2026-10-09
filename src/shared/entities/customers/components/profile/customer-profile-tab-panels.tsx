@@ -3,6 +3,7 @@
 import type { useCustomerEditForm } from '@/shared/entities/customers/hooks/use-customer-edit-form'
 import type { CustomerProfileData } from '@/shared/entities/customers/types'
 import { TabsContent } from '@/shared/components/ui/tabs'
+import { Can } from '@/shared/domains/permissions/ui/can'
 import { CustomerMeetingsList } from '../lists/customer-meetings-list'
 import { CustomerProjectsList } from '../lists/customer-projects-list'
 import { CustomerProfileOverview } from './customer-profile-overview'
@@ -28,9 +29,11 @@ export function CustomerProfileTabPanels({ data, editForm, highlightMeetingId, o
           meetings={data.meetings}
         />
       </TabsContent>
-      <TabsContent className="mt-0 p-4 md:p-6" value="projects">
-        <CustomerProjectsList data={data} highlightMeetingId={highlightMeetingId} onMutationSuccess={onMutationSuccess} />
-      </TabsContent>
+      <Can permission={['read', 'Project']}>
+        <TabsContent className="mt-0 p-4 md:p-6" value="projects">
+          <CustomerProjectsList data={data} highlightMeetingId={highlightMeetingId} onMutationSuccess={onMutationSuccess} />
+        </TabsContent>
+      </Can>
     </>
   )
 }
