@@ -2,7 +2,9 @@
  * Drives the visit-message verbs without the dashboard, for dev checks. Sends are real: outside production
  * every text goes to VOIP_DEV_OVERRIDE_NUMBER and every email to EMAIL_DEV_OVERRIDE.
  *
- *   NODE_OPTIONS="--conditions=react-server" pnpm tsx scripts/visit-messages.ts summary --meeting <id> [--note "..."]
+ * Runs without the react-server condition (it renders React email, which that condition forbids); the preload stubs `server-only`.
+ *
+ *   pnpm tsx --import ./scripts/lib/stub-server-only.mjs scripts/visit-messages.ts summary --meeting <id> [--note "..."]
  */
 /* eslint-disable perfectionist/sort-imports -- load-env must run before any module that reads process.env */
 import './lib/load-env'
