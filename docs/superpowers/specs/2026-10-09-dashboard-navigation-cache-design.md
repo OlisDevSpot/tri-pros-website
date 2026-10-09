@@ -1,6 +1,6 @@
 # Dashboard navigation cache — design
 
-Status: awaiting owner review (2026-10-09).
+Status: DEFERRED — needs grilling before a plan (owner, 2026-10-09). Direction agreed; the open questions are the reusable query-pattern set (per-family defaults, refresh intervals, indicator semantics, the server-side prefetch read on soft navigations) and the names below.
 
 ## Problem
 
