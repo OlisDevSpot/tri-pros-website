@@ -67,6 +67,9 @@ export const metadata: Metadata = {
     // after the app is re-added: the generator keeps the list and the files together.
     startupImage: PWA_STARTUP_IMAGES,
   },
+  // Next emits only the unprefixed capable tag; iOS gates the startup images above on the Apple-prefixed
+  // one.
+  other: { 'apple-mobile-web-app-capable': 'yes' },
   description: 'Family-led residential construction company serving Southern California homeowners. Kitchen and bathroom remodels, garage conversions, and home additions across the San Fernando Valley, San Gabriel Valley, and Greater Los Angeles.',
   authors: [{ name: 'Tri Pros Remodeling' }],
   creator: 'Tri Pros Remodeling',
