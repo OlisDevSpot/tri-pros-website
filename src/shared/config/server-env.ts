@@ -190,9 +190,10 @@ if (env.VERCEL_ENV === 'production' && env.VOIP_DEV_OVERRIDE_NUMBER) {
   throw new Error('VOIP_DEV_OVERRIDE_NUMBER must NOT be set in production')
 }
 
-// Without it every status callback and inbound text is built against "undefined/..." and fails its signature check.
-if (env.VERCEL_ENV === 'production' && !env.VOIP_WEBHOOK_BASE_URL) {
-  throw new Error('VOIP_WEBHOOK_BASE_URL must be set in production')
+// Once production texting is switched on (the 10DLC campaign), every status callback and inbound text is checked
+// against this URL; without it each would be built against "undefined/..." and fail. Production before VoIP launches still boots.
+if (env.VERCEL_ENV === 'production' && env.TWILIO_10DLC_CAMPAIGN_SID && !env.VOIP_WEBHOOK_BASE_URL) {
+  throw new Error('VOIP_WEBHOOK_BASE_URL must be set in production once TWILIO_10DLC_CAMPAIGN_SID is')
 }
 
 // EMAIL_DEV_OVERRIDE reroutes every outbound email to one inbox. In production it would
