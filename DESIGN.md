@@ -99,6 +99,8 @@ components:
 
 # Design System: Tri Pros Remodeling
 
+This file lists the tokens. For which one to use, with do/don't examples and a pre-commit self-check, read [`docs/design-system/theme-conventions.md`](docs/design-system/theme-conventions.md).
+
 ## Overview
 
 **Creative North Star: two worlds — "The Command Desk" and "Blueprint Authority"**

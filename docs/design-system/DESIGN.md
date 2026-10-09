@@ -2,7 +2,7 @@
 
 The single source of truth for design intent at Tri Pros Remodeling. Every component, every AI session, and every code review runs against this document.
 
-**Cross-references:** [root DESIGN.md](../../DESIGN.md) · [anti-slop-checklist.md](./anti-slop-checklist.md)
+**Cross-references:** [root DESIGN.md](../../DESIGN.md) · [anti-slop-checklist.md](./anti-slop-checklist.md) · [theme-conventions.md](./theme-conventions.md) (app colour, surface and state rules)
 
 ---
 
