@@ -3,6 +3,7 @@ import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { Meeting } from '@/shared/db/schema'
 import type { MeetingMessage } from '@/shared/db/schema/meeting-messages'
 import type { VisitEmailOutcome } from '@/shared/modules/meetings/messages/lib/deliver-visit-email'
+import type { VisitMessageRunReport } from '@/shared/modules/meetings/messages/lib/run-automatic-kind'
 
 import { publicUrl } from '@/shared/config/public-url'
 import { canRescheduleFromOutcome, outcomeRequiresReason } from '@/shared/constants/enums/meetings'
@@ -21,6 +22,7 @@ import { getTemplateBodies } from '@/shared/modules/meetings/messages/dal/server
 import { deliverVisitSummaryEmail } from '@/shared/modules/meetings/messages/lib/deliver-visit-email'
 import { deliverVisitText } from '@/shared/modules/meetings/messages/lib/deliver-visit-text'
 import { isVisitMessageEligible } from '@/shared/modules/meetings/messages/lib/is-visit-message-eligible'
+import { runAutomaticKind } from '@/shared/modules/meetings/messages/lib/run-automatic-kind'
 import { voipDidsService } from '@/shared/services/voip/voip-dids.service'
 
 export const meetingBusinessService = {
@@ -214,5 +216,15 @@ export const meetingBusinessService = {
 
       return { sms, email }
     })
+  },
+
+  /** The 6 PM Pacific run. `now` is the delivery instant; the run resolves its own scheduled instant from it. */
+  async sendDayBeforeReminders(ctx: ScopedContext, input: { now: Date }): Promise<DalReturn<VisitMessageRunReport>> {
+    return dalDbOperation(() => runAutomaticKind(ctx, 'day_before_reminder', input.now))
+  },
+
+  /** The 8:30 AM Pacific run. */
+  async sendRepConfirmations(ctx: ScopedContext, input: { now: Date }): Promise<DalReturn<VisitMessageRunReport>> {
+    return dalDbOperation(() => runAutomaticKind(ctx, 'rep_confirmation', input.now))
   },
 } as const

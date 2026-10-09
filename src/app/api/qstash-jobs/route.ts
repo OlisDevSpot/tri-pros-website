@@ -15,6 +15,8 @@ import { notifyLastInteractingAgentJob } from '@/shared/services/providers/upsta
 import { notifyMeetingTimeChangedJob } from '@/shared/services/providers/upstash/jobs/notify-meeting-time-changed'
 import { optimizeMediaJob } from '@/shared/services/providers/upstash/jobs/optimize-media'
 import { propagateCustomerChangeJob } from '@/shared/services/providers/upstash/jobs/propagate-customer-change'
+import { sendDayBeforeRemindersJob } from '@/shared/services/providers/upstash/jobs/send-day-before-reminders'
+import { sendRepConfirmationsJob } from '@/shared/services/providers/upstash/jobs/send-rep-confirmations'
 import { sendViewNotificationJob } from '@/shared/services/providers/upstash/jobs/send-view-notification'
 import { syncCalendarsJob } from '@/shared/services/providers/upstash/jobs/sync-calendars'
 import { syncMeetingToGcalJob } from '@/shared/services/providers/upstash/jobs/sync-meeting-to-gcal'
@@ -51,6 +53,8 @@ const jobs: Job[] = [
   bulkDncJob,
   graduateFromCampaignJob,
   notifyLastInteractingAgentJob,
+  sendDayBeforeRemindersJob,
+  sendRepConfirmationsJob,
 ]
 
 /**

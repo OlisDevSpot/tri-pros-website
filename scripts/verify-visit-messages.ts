@@ -25,6 +25,7 @@ import { matchReplyKeyword } from '@/shared/modules/meetings/messages/lib/match-
 import { planVisitMessages } from '@/shared/modules/meetings/messages/lib/plan-visit-messages'
 import { buildVisitMessageVars, renderVisitMessage } from '@/shared/modules/meetings/messages/lib/render-visit-message'
 import { resolveRunInstant } from '@/shared/modules/meetings/messages/lib/resolve-run-instant'
+import { runWindowFor } from '@/shared/modules/meetings/messages/lib/run-window'
 import { shouldSendVisitCancellation } from '@/shared/modules/meetings/messages/lib/should-send-visit-cancellation'
 import { MAX_SEGMENTS, validateVisitMessageTemplate } from '@/shared/modules/meetings/messages/lib/validate-visit-message-template'
 import { applyDevRecipientOverride } from '@/shared/services/providers/resend/lib/dev-recipients'
@@ -605,5 +606,12 @@ console.log('13. Twilio status mapping ✓')
   assert.ok(link.includes('location=1+Main+St%2C+Calabasas%2C+CA+91302'))
 }
 console.log('14. Google Calendar link ✓')
+
+{
+  assert.deepEqual(runWindowFor('day_before_reminder', new Date('2026-10-09T01:00:00.000Z')), { day: '2026-10-09', from: '2026-10-09T07:00:00.000Z', to: '2026-10-10T07:00:00.000Z' }, 'the 6 PM run on Oct 8 covers Oct 9, Pacific')
+  assert.deepEqual(runWindowFor('rep_confirmation', new Date('2026-10-09T15:30:00.000Z')), { day: '2026-10-09', from: '2026-10-09T07:00:00.000Z', to: '2026-10-10T07:00:00.000Z' }, 'the 8:30 run covers its own day')
+  assert.deepEqual(runWindowFor('day_before_reminder', new Date('2026-11-02T02:00:00.000Z')), { day: '2026-11-02', from: '2026-11-02T08:00:00.000Z', to: '2026-11-03T08:00:00.000Z' }, 'the window after the fall-back switch starts at the PST midnight')
+}
+console.log('15. Run window ✓')
 
 console.log('✅ verify-visit-messages passed')
