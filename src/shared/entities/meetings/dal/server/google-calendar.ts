@@ -130,6 +130,7 @@ export async function updateMeetingScheduledFor(
       confirmedAt: sql`CASE WHEN ${meetings.scheduledFor} = ${scheduledFor}::timestamptz THEN ${meetings.confirmedAt} ELSE NULL END`,
       homeownerConfirmedAt: sql`CASE WHEN ${meetings.scheduledFor} = ${scheduledFor}::timestamptz THEN ${meetings.homeownerConfirmedAt} ELSE NULL END`,
       homeownerConfirmedVia: sql`CASE WHEN ${meetings.scheduledFor} = ${scheduledFor}::timestamptz THEN ${meetings.homeownerConfirmedVia} ELSE NULL END`,
+      scheduledForSetAt: sql`CASE WHEN ${meetings.scheduledFor} = ${scheduledFor}::timestamptz THEN ${meetings.scheduledForSetAt} ELSE now() END`,
     })
     .where(eq(meetings.id, meetingId))
 }

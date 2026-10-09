@@ -22,9 +22,13 @@ import { pipelineConfigs } from '@/shared/domains/pipelines/constants/pipeline-r
 import { usePipeline } from '@/shared/domains/pipelines/hooks/pipeline-context'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { CreateMeetingModal } from '@/shared/entities/meetings/components/create-meeting-modal'
-import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { openModal } from '@/shared/lib/open-modal'
 import { cn } from '@/shared/lib/utils'
+import { CustomerActionsHost } from '@/shared/modules/customers/core/components/customer-actions-host'
+import { MeetingActionsHost } from '@/shared/modules/meetings/core/components/meeting-actions-host'
+import { ProjectActionsHost } from '@/shared/modules/projects/core/components/project-actions-host'
+import { ProposalActionsHost } from '@/shared/modules/proposals/core/components/proposal-actions-host'
 import { useTRPC } from '@/trpc/helpers'
 
 const FRESH_COLLAPSED_STAGES = ['declined']
@@ -37,7 +41,6 @@ function getItemValue(item: CustomerPipelineItem): number | null {
 export function CustomerPipelineView() {
   const { pipeline, setPipeline } = usePipeline()
   const [createMeetingForCustomer, setCreateMeetingForCustomer] = useState<{ id: string, name: string } | null>(null)
-  const [assignRepTarget, setAssignRepTarget] = useState<{ meetingIds: string[] } | null>(null)
   const trpc = useTRPC()
   const ability = useAbility()
   const canManagePipeline = ability.can('manage', 'CustomerPipeline')
@@ -53,17 +56,22 @@ export function CustomerPipelineView() {
   const query = useDataViewQuery(trpc.customerPipelinesRouter.getCustomerPipelineItems, { pipeline }, CUSTOMER_PIPELINE_QUERY)
   const items = query.rows
 
+  // A refetch the viewer caused (a drag's move) dims the board until the rows land. A background refetch (the
+  // server's prefetch adopted on navigation, a stale re-read on mount) does not: the rows on screen stay at full
+  // opacity until the new ones replace them, as the records tables do.
+  const [settlingMove, setSettlingMove] = useState(false)
   const moveMutation = useMutation(
     trpc.customerPipelinesRouter.moveCustomerPipelineItem.mutationOptions({
       onError: () => {
         toast.error('Failed to move customer. Please try again.')
-        void query.refresh()
       },
       onSettled: () => {
-        void query.refresh()
+        setSettlingMove(true)
+        void query.refresh().finally(() => setSettlingMove(false))
       },
     }),
   )
+  const isMoving = moveMutation.isPending || settlingMove
 
   function handleMoveItem(itemId: string, fromStage: string, toStage: string) {
     // Intercept: any leads stage → meeting_scheduled opens meeting modal
@@ -96,114 +104,107 @@ export function CustomerPipelineView() {
     })
   }, [])
 
-  const handleAssignRep = useCallback((meetingId: string, _currentRepId: string | null) => {
-    setAssignRepTarget({ meetingIds: [meetingId] })
-  }, [])
+  const isMobile = useIsMobile()
 
-  // TODO: Wire up when deleteCustomer tRPC procedure is implemented
-  // const handleDeleteCustomer = useCallback((customerId: string) => { ... }, [])
+  const customerOverrides = useMemo(() => ({
+    onView: (customer: { id: string }) => handleViewProfile(customer.id),
+    onScheduleMeeting: (customer: { id: string, name: string }) => setCreateMeetingForCustomer({ id: customer.id, name: customer.name }),
+  }), [handleViewProfile])
 
   const renderCard = useCallback(
     (item: CustomerPipelineItem, _href: string, isDragOverlay?: boolean) => (
-      <CustomerKanbanCard
-        item={item}
-        isDragOverlay={isDragOverlay}
-        onViewProfile={handleViewProfile}
-        onCreateMeeting={setCreateMeetingForCustomer}
-        onAssignRep={handleAssignRep}
-      />
+      <CustomerKanbanCard item={item} isDragOverlay={isDragOverlay} isMobile={isMobile} />
     ),
-    [handleViewProfile, handleAssignRep],
+    [isMobile],
   )
 
   const groupedItems = useMemo(() => groupCustomersByStage(items, config.stages), [items, config.stages])
 
-  const isSwitching = query.isStale || query.isFetching
-
   return (
-    <div className="w-full h-full flex flex-col gap-(--gutter) overflow-hidden">
-      <PageBar className="shrink-0">
-        <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between">
-          <CustomerPipelineMetricsBar items={items} pipeline={pipeline} isLoading={query.isPending || isSwitching} />
-          <div className="flex w-full items-center justify-between gap-2 lg:w-auto lg:justify-end">
-            {canManagePipeline && <PipelineSelect value={pipeline} onChange={setPipeline} />}
-            <KanbanStageFilter
-              stages={config.stageConfig}
-              visibleStages={stageFilter.visibleStages}
-              alwaysVisible={stageFilter.alwaysVisible}
-              onToggleStage={stageFilter.handleToggleStage}
-              onShowAll={stageFilter.handleShowAll}
-              onHideAll={stageFilter.handleHideAll}
-            />
-          </div>
-        </div>
-        <QueryToolbar query={query} entityName="customers">
-          <QueryToolbar.Standard searchPlaceholder="Search by name or email…" sort />
-        </QueryToolbar>
-      </PageBar>
+    <MeetingActionsHost>
+      <ProposalActionsHost>
+        <CustomerActionsHost overrides={customerOverrides}>
+          <ProjectActionsHost>
+            <div className="w-full h-full flex flex-col gap-(--gutter) overflow-hidden">
+              <PageBar className="shrink-0">
+                <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between">
+                  <CustomerPipelineMetricsBar items={items} pipeline={pipeline} isLoading={query.isPending || query.isStale} />
+                  <div className="flex w-full items-center justify-between gap-2 lg:w-auto lg:justify-end">
+                    {canManagePipeline && <PipelineSelect value={pipeline} onChange={setPipeline} />}
+                    <KanbanStageFilter
+                      stages={config.stageConfig}
+                      visibleStages={stageFilter.visibleStages}
+                      alwaysVisible={stageFilter.alwaysVisible}
+                      onToggleStage={stageFilter.handleToggleStage}
+                      onShowAll={stageFilter.handleShowAll}
+                      onHideAll={stageFilter.handleHideAll}
+                    />
+                  </div>
+                </div>
+                <QueryToolbar query={query} entityName="customers">
+                  <QueryToolbar.Standard searchPlaceholder="Search by name, email or phone…" sort />
+                </QueryToolbar>
+              </PageBar>
 
-      {/* A filter change dims only after a short delay (quick loads never flash); a background refetch after a drag dims at once. */}
-      <div
-        data-stale={query.isStale || undefined}
-        className={cn(
-          'flex-1 min-h-0 transition-opacity duration-200 data-[stale=true]:pointer-events-none data-[stale=true]:opacity-50 data-[stale=true]:delay-200',
-          query.isFetching && !query.isStale && 'opacity-50 pointer-events-none',
-        )}
-      >
-        {items.length === 0 && !query.isPending && !query.isStale
-          ? (
-              <div className="w-full h-full flex items-center justify-center">
-                <EmptyState
-                  title="No Customers"
-                  description={query.filterSort.activeFilterCount > 0 || query.filterSort.search ? 'No customers match these filters' : 'Start by scheduling meetings with customers'}
-                  className="bg-card"
-                />
+              {/* A filter change dims only after a short delay (quick loads never flash); a drag's refresh dims at once. */}
+              <div
+                data-stale={query.isStale || undefined}
+                aria-busy={query.isFetching || undefined}
+                className={cn(
+                  'flex-1 min-h-0 transition-opacity duration-200 data-[stale=true]:pointer-events-none data-[stale=true]:opacity-50 data-[stale=true]:delay-200',
+                  isMoving && 'opacity-50 pointer-events-none',
+                )}
+              >
+                {items.length === 0 && !query.isPending && !query.isStale
+                  ? (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <EmptyState
+                          title="No Customers"
+                          description={query.filterSort.activeFilterCount > 0 || query.filterSort.search ? 'No customers match these filters' : 'Start by scheduling meetings with customers'}
+                          className="bg-card"
+                        />
+                      </div>
+                    )
+                  : (
+                      <KanbanBoard<CustomerPipelineItem>
+                        stageConfig={stageFilter.filteredStageConfig}
+                        groupedItems={groupedItems}
+                        isPending={query.isPending}
+                        allowedTransitions={config.allowedTransitions}
+                        blockedMessages={config.blockedMessages}
+                        onMoveItem={handleMoveItem}
+                        onBlockedTransition={handleBlockedTransition}
+                        collapsedStages={pipeline === 'fresh' ? FRESH_COLLAPSED_STAGES : NO_COLLAPSED_STAGES}
+                        showColumnValues
+                        getItemValue={getItemValue}
+                        renderCard={renderCard}
+                        className="mobile-bleed-right"
+                      />
+                    )}
               </div>
-            )
-          : (
-              <KanbanBoard<CustomerPipelineItem>
-                stageConfig={stageFilter.filteredStageConfig}
-                groupedItems={groupedItems}
-                isPending={query.isPending}
-                allowedTransitions={config.allowedTransitions}
-                blockedMessages={config.blockedMessages}
-                onMoveItem={handleMoveItem}
-                onBlockedTransition={handleBlockedTransition}
-                collapsedStages={pipeline === 'fresh' ? FRESH_COLLAPSED_STAGES : NO_COLLAPSED_STAGES}
-                showColumnValues
-                getItemValue={getItemValue}
-                renderCard={renderCard}
-                className="mobile-bleed-right"
-              />
-            )}
-      </div>
-      {createMeetingForCustomer && (
-        <CreateMeetingModal
-          isOpen={!!createMeetingForCustomer}
-          onClose={() => setCreateMeetingForCustomer(null)}
-          onSuccess={() => {
-            if (pipeline === 'leads') {
-              moveMutation.mutate({
-                customerId: createMeetingForCustomer.id,
-                fromStage: 'new',
-                toStage: 'meeting_scheduled',
-                pipeline: 'leads',
-              })
-            }
-            void query.refresh()
-          }}
-          customerId={createMeetingForCustomer.id}
-          customerName={createMeetingForCustomer.name}
-        />
-      )}
-      {assignRepTarget && (
-        <ManageParticipantsModal
-          meetingIds={assignRepTarget.meetingIds}
-          open={!!assignRepTarget}
-          onOpenChange={open => !open && setAssignRepTarget(null)}
-          onSuccess={() => void query.refresh()}
-        />
-      )}
-    </div>
+              {createMeetingForCustomer && (
+                <CreateMeetingModal
+                  isOpen={!!createMeetingForCustomer}
+                  onClose={() => setCreateMeetingForCustomer(null)}
+                  onSuccess={() => {
+                    if (pipeline === 'leads') {
+                      moveMutation.mutate({
+                        customerId: createMeetingForCustomer.id,
+                        fromStage: 'new',
+                        toStage: 'meeting_scheduled',
+                        pipeline: 'leads',
+                      })
+                    }
+                    void query.refresh()
+                  }}
+                  customerId={createMeetingForCustomer.id}
+                  customerName={createMeetingForCustomer.name}
+                />
+              )}
+            </div>
+          </ProjectActionsHost>
+        </CustomerActionsHost>
+      </ProposalActionsHost>
+    </MeetingActionsHost>
   )
 }

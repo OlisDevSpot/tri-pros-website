@@ -14,7 +14,6 @@ import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { fieldListInput } from '@/shared/dal/server/lib/query/field-list-input'
 import { paginate } from '@/shared/dal/server/lib/query/output'
-import { buildSearchWhere } from '@/shared/dal/server/lib/query/search'
 import { db } from '@/shared/db'
 import { customerEnrichment } from '@/shared/db/schema/customer-enrichment'
 import { customerLeadAttribution } from '@/shared/db/schema/customer-lead-attribution'
@@ -23,6 +22,7 @@ import { customers } from '@/shared/db/schema/customers'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { CUSTOMER_FIELDS } from '@/shared/entities/customers/dal/customer-fields'
 import { CUSTOMER_FIELD_SQL } from '@/shared/entities/customers/dal/server/customer-field-sql'
+import { customerSearchWhere } from '@/shared/entities/customers/dal/server/customer-search-sql'
 import { derivedPipelineSql, derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
 import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { profileCols } from '@/shared/entities/customers/lib/profile-select'
@@ -116,6 +116,20 @@ export async function findCustomerByPhone(phone: string): Promise<DalReturn<Cust
   })
 }
 
+/** Ungated (webhook callers). Every customer with this phone: a household can share one. */
+export async function findCustomersByPhone(phone: string): Promise<DalReturn<Customer[]>> {
+  return dalDbOperation(async () => {
+    const national = toNationalDigits(phone)
+    if (!national) {
+      return []
+    }
+    return db
+      .select()
+      .from(customers)
+      .where(eq(customers.phone, national))
+  })
+}
+
 export async function isCustomerInLeads(customerId: string): Promise<DalReturn<boolean>> {
   return dalDbOperation(async () => {
     const [row] = await db
@@ -164,7 +178,7 @@ export async function listCustomers(ctx: ScopedContext, input: CustomerListInput
   return dalDbOperation(async () => {
     const where = and(
       permit(ctx, 'read', customerServerSpec).sql,
-      buildSearchWhere(input.search, [customers.name, customers.email]),
+      customerSearchWhere(input.search, ctx.actor.ability),
       CUSTOMER_FIELD_SQL.where(input.filters),
     )
 

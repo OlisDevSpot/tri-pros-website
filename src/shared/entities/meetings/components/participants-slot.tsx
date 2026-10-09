@@ -24,6 +24,7 @@ import { useParticipantMutations } from '@/shared/entities/meetings/hooks/use-pa
 import { UserOverviewCard } from '@/shared/entities/users/components/overview-card'
 import { toDialString } from '@/shared/lib/phone'
 import { cn } from '@/shared/lib/utils'
+import { useMeetingActionsHost } from '@/shared/modules/meetings/core/components/meeting-actions-host'
 import { useTRPC } from '@/trpc/helpers'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -301,10 +302,10 @@ interface CompactVariantProps {
  * glance across the week view.
  */
 function CompactVariant({ meetingId, initialParticipants, className }: CompactVariantProps) {
+  const { manageParticipants } = useMeetingActionsHost('ParticipantsSlot')
   const ability = useAbility()
   const canManage = ability.can('assign', 'Meeting')
   const [popoverOpen, setPopoverOpen] = useState(false)
-  const [manageOpen, setManageOpen] = useState(false)
 
   const shouldFetch = popoverOpen || !initialParticipants
   const { participants: fetched } = useMeetingParticipants(meetingId, shouldFetch)
@@ -324,59 +325,50 @@ function CompactVariant({ meetingId, initialParticipants, className }: CompactVa
   }))
 
   return (
-    <>
-      <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-        <PopoverTrigger asChild>
-          <button
-            type="button"
-            className={cn(
-              'inline-flex w-fit max-w-full items-center gap-2 self-start rounded-md px-1 py-0.5 -mx-1 hover:bg-hover pressed:bg-press transition-colors min-w-0',
-              className,
-            )}
-            aria-label={`Participants: ${thumbnail.map(p => p.name ?? 'Unknown').join(', ')}`}
-            onClick={e => e.stopPropagation()}
-          >
-            <UserOverviewCard.InlineList users={stackUsers} separator="/" size="xs" />
-          </button>
-        </PopoverTrigger>
-        <PopoverContent
-          align="start"
-          className="w-64 p-0"
+    <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            'inline-flex w-fit max-w-full items-center gap-2 self-start rounded-md px-1 py-0.5 -mx-1 hover:bg-hover pressed:bg-press transition-colors min-w-0',
+            className,
+          )}
+          aria-label={`Participants: ${thumbnail.map(p => p.name ?? 'Unknown').join(', ')}`}
           onClick={e => e.stopPropagation()}
         >
-          <EntityList
-            title="Participants"
-            icon={UsersIcon}
-            items={fetched}
-            getItemKey={p => p.id}
-            isLoading={fetched.length === 0}
-            renderItem={p => <ParticipantInlineRow meetingId={meetingId} participant={p} />}
-            headerAction={canManage && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-5 px-1.5 text-xs font-medium uppercase tracking-wide"
-                onClick={() => {
-                  setPopoverOpen(false)
-                  setManageOpen(true)
-                }}
-              >
-                Manage
-              </Button>
-            )}
-            itemsClassName="max-h-64 overflow-y-auto"
-            className="border-0 rounded-none shadow-none"
-          />
-        </PopoverContent>
-      </Popover>
-      {canManage && (
-        <ManageParticipantsModal
-          meetingIds={[meetingId]}
-          open={manageOpen}
-          onOpenChange={setManageOpen}
+          <UserOverviewCard.InlineList users={stackUsers} separator="/" size="xs" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-64 p-0"
+        onClick={e => e.stopPropagation()}
+      >
+        <EntityList
+          title="Participants"
+          icon={UsersIcon}
+          items={fetched}
+          getItemKey={p => p.id}
+          isLoading={fetched.length === 0}
+          renderItem={p => <ParticipantInlineRow meetingId={meetingId} participant={p} />}
+          headerAction={canManage && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-5 px-1.5 text-xs font-medium uppercase tracking-wide"
+              onClick={() => {
+                setPopoverOpen(false)
+                manageParticipants(meetingId)
+              }}
+            >
+              Manage
+            </Button>
+          )}
+          itemsClassName="max-h-64 overflow-y-auto"
+          className="border-0 rounded-none shadow-none"
         />
-      )}
-    </>
+      </PopoverContent>
+    </Popover>
   )
 }

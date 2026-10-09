@@ -15,15 +15,12 @@ import { ParticipantsSlot } from '@/shared/entities/meetings/components/particip
 import { cn } from '@/shared/lib/utils'
 
 interface ProjectMeetingListProps {
-  customerId: string
   meetings: CustomerProfileMeeting[]
   onMutationSuccess: () => void
-  onNavigate?: () => void
-  onAssignRep?: (meetingId: string, currentRepId: string | null) => void
   highlightMeetingId?: string
 }
 
-export function ProjectMeetingList({ customerId, meetings, onMutationSuccess, onNavigate, onAssignRep, highlightMeetingId }: ProjectMeetingListProps) {
+export function ProjectMeetingList({ meetings, onMutationSuccess, highlightMeetingId }: ProjectMeetingListProps) {
   const ability = useAbility()
   const canCreateProposal = ability.can('create', 'Proposal')
 
@@ -33,11 +30,7 @@ export function ProjectMeetingList({ customerId, meetings, onMutationSuccess, on
         <Card key={meeting.id} className="group pt-0 pb-0 gap-0">
           {/* The tint goes on the content: the card keeps its `bg-card` class, so what sits in it still climbs a rung. */}
           <CardContent className={cn('p-0', meeting.id === highlightMeetingId && 'rounded-[inherit] bg-row-selected')}>
-            <MeetingOverviewCard
-              meeting={meeting}
-              customerId={customerId}
-              onAssignOwner={onAssignRep ? () => onAssignRep(meeting.id, meeting.ownerId ?? null) : undefined}
-            >
+            <MeetingOverviewCard meeting={meeting}>
               <MeetingOverviewCard.Header className="px-3 py-2">
                 <MeetingOverviewCard.Fields fields={[
                   { field: 'scheduledDate' },
@@ -76,7 +69,6 @@ export function ProjectMeetingList({ customerId, meetings, onMutationSuccess, on
                         key={p.id}
                         proposal={p as CustomerProfileProposal}
                         onMutationSuccess={onMutationSuccess}
-                        onNavigate={onNavigate}
                       />
                     )}
                   />

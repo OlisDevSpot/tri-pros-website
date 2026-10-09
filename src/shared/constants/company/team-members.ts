@@ -19,7 +19,7 @@ export const teamMembers = [
       'Operations Management',
       'Client Relations',
     ],
-    image: '/company-info/mordi-headshot.jpeg',
+    image: '/company/employees/mordi-headshot.jpeg',
     email: 'sheron@triprosremodeling.com',
   },
   {
@@ -31,7 +31,7 @@ export const teamMembers = [
       'Digital Marketing',
       'Social Media Management',
     ],
-    image: '/company-info/sarah-headshot.jpeg',
+    image: '/company/employees/sarah-headshot.jpeg',
     email: 'ariel@triprosremodeling.com',
   },
   {
@@ -39,7 +39,7 @@ export const teamMembers = [
     position: 'Head Technology Officer',
     bio: '',
     specializations: ['Frontend', 'Backend', 'Budget Control'],
-    image: '/company-info/maria-headshot.jpeg',
+    image: '/company/employees/maria-headshot.jpeg',
     email: 'ethan@triprosremodeling.com',
   },
   {
@@ -51,7 +51,7 @@ export const teamMembers = [
       'Client Acquisition',
       'Partnership Development',
     ],
-    image: '/company-info/david-headshot.jpeg',
+    image: '/company/employees/david-headshot.jpeg',
     email: 'tal@triprosremodeling.com',
   },
   {

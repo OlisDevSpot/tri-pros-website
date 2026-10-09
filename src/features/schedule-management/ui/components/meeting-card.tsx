@@ -1,11 +1,12 @@
 'use client'
 
-import type { ScheduleCalendarEvent, ScheduleMeetingEvent } from '@/features/schedule-management/types'
+import type { ScheduleMeetingEvent } from '@/features/schedule-management/types'
 import type { MeetingType } from '@/shared/constants/enums'
 import type { MeetingOverviewCardData } from '@/shared/entities/meetings/components/overview-card'
 
 import { ChevronDownIcon, MapPinIcon } from 'lucide-react'
 import { motion } from 'motion/react'
+import { memo, useMemo } from 'react'
 
 import { STATUS_ACCENT_COLORS } from '@/features/schedule-management/constants/schedule-calendar-config'
 import { MeetingOverviewCard } from '@/shared/entities/meetings/components/overview-card'
@@ -14,14 +15,13 @@ import { cn } from '@/shared/lib/utils'
 
 interface MeetingCardProps {
   event: ScheduleMeetingEvent
-  onAssignOwner?: (event: ScheduleCalendarEvent) => void
   onUpdateScheduledFor: (meetingId: string, date: Date) => void
   isHighlighted?: boolean
   highlightRef?: React.RefCallback<HTMLDivElement>
 }
 
-export function MeetingCard({ event, onAssignOwner, onUpdateScheduledFor, isHighlighted, highlightRef }: MeetingCardProps) {
-  const meetingData: MeetingOverviewCardData = {
+function MeetingCardImpl({ event, onUpdateScheduledFor, isHighlighted, highlightRef }: MeetingCardProps) {
+  const meetingData = useMemo<MeetingOverviewCardData>(() => ({
     id: event.meetingId,
     meetingOutcome: event.meetingOutcome,
     meetingType: event.meetingType as MeetingType,
@@ -39,19 +39,14 @@ export function MeetingCard({ event, onAssignOwner, onUpdateScheduledFor, isHigh
     customerCity: event.customerCity,
     customerState: event.customerState,
     customerZip: event.customerZip,
-  }
-
-  const handleAssignOwner = onAssignOwner
-    ? () => onAssignOwner(event)
-    : undefined
+  }), [event])
 
   const cardContent = (
     <MeetingOverviewCard
       meeting={meetingData}
-      customerId={event.customerId ?? ''}
-      onAssignOwner={handleAssignOwner}
+      data-press
       className={cn(
-        'group relative flex h-full flex-col gap-1.5 overflow-hidden rounded-md border bg-card p-3 pl-3.5 text-xs cursor-pointer shadow-sm transition-shadow hover:shadow-md',
+        'group relative flex h-full flex-col gap-1.5 overflow-hidden rounded-md border bg-card p-3 pl-3.5 text-xs cursor-pointer shadow-sm transition-[box-shadow,background-color] hover:shadow-md pressed:bg-row-press',
       )}
     >
       {/* Sentiment accent bar — solid left edge that signals the outcome and
@@ -140,3 +135,6 @@ export function MeetingCard({ event, onAssignOwner, onUpdateScheduledFor, isHigh
 
   return cardContent
 }
+
+// A week step re-renders the calendar; a card whose event and handlers are unchanged skips its render.
+export const MeetingCard = memo(MeetingCardImpl)

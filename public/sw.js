@@ -1,7 +1,12 @@
 /* eslint-disable */
-// Tri Pros service worker — push + deep-link only. We deliberately do NOT
-// add offline caching here; if/when we want it, fold a Workbox/Serwist
-// runtime-cache layer into this file rather than spinning up a new SW.
+// Tri Pros service worker: push + deep-link handlers, plus the installed app's launch shell.
+//
+// Launch shell — the installed app's start_url is /dashboard?launch=1 (src/shared/domains/pwa/constants/launch.ts;
+// the literals below mirror it, change them together). For that one navigation the worker answers from
+// Cache Storage with the static /launch document and the chunks it references, precached as one set so a
+// deploy can never leave a cached document pointing at chunks the server no longer has. Every other
+// navigation goes to the network untouched — a push deep link is one of them. Only a production build
+// registers this script with ?shell=1: a document served by a worker under `next dev` never hydrates.
 //
 // Three event handlers cover all the iOS PWA push paths:
 //   - `push`                    → imperative fallback (iOS 16.4–18.3)
@@ -12,14 +17,177 @@
 // payload natively and never invokes our `push` handler. The SW still
 // runs `notificationclick` because the *click* always goes through us.
 
-self.addEventListener('install', () => {
+const SHELL_ON = new URL(self.location.href).searchParams.get('shell') === '1'
+const LAUNCH_PATH = '/dashboard'
+const LAUNCH_SEARCH = '?launch=1'
+const SHELL_PATH = '/launch'
+const SHELL_CACHE = 'tpr-launch-shell'
+const STATIC_PREFIX = '/_next/static/'
+const SHELL_FETCH_TIMEOUT_MS = 15000
+const LAUNCH_URL = new URL(LAUNCH_PATH + LAUNCH_SEARCH, self.location.origin).href
+
+self.addEventListener('install', (event) => {
   // Take control on first install instead of waiting for the next reload.
   self.skipWaiting()
+  if (!SHELL_ON) return
+  // A failed precache must never fail the install: push has to keep working.
+  event.waitUntil(syncShell().catch(() => {}))
+  addStaticRoutes(event)
 })
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim())
+  event.waitUntil((async () => {
+    await self.clients.claim()
+    if (!SHELL_ON) return
+    try {
+      const keys = await caches.keys()
+      await Promise.all(keys
+        .filter(key => key !== SHELL_CACHE && (key.startsWith('tpr-launch-shell') || key.startsWith('app-shell-')))
+        .map(key => caches.delete(key)))
+    } catch (_err) {
+      // Cache Storage unavailable (private modes): nothing to clean, and preload must still be enabled below.
+    }
+    if (self.registration.navigationPreload) {
+      await self.registration.navigationPreload.enable().catch(() => {})
+    }
+  })())
 })
+
+// Chrome 123+: the launch document and the precached chunks come from Cache Storage without starting the
+// worker, and every other same-origin request goes straight to the network, so the public site never pays
+// a worker boot. Safari takes the fetch handler below instead.
+function addStaticRoutes(event) {
+  if (typeof event.addRoutes !== 'function') return
+  try {
+    event.addRoutes([
+      { condition: { urlPattern: { pathname: LAUNCH_PATH, search: LAUNCH_SEARCH.slice(1) }, requestMode: 'navigate' }, source: { cacheName: SHELL_CACHE } },
+      { condition: { urlPattern: { pathname: STATIC_PREFIX + '*' } }, source: { cacheName: SHELL_CACHE } },
+      { condition: { urlPattern: { pathname: '/*' } }, source: 'network' },
+    ]).catch(() => {})
+  } catch (_err) {
+    // A Chrome that rejects the shape: the fetch handler covers it.
+  }
+}
+
+self.addEventListener('fetch', (event) => {
+  if (!SHELL_ON) return
+  const { request } = event
+  if (request.method !== 'GET') return
+  const url = new URL(request.url)
+  if (url.origin !== self.location.origin) return
+  if (request.mode === 'navigate') {
+    if (isLaunchNavigation(request, url)) {
+      event.respondWith(serveShell(event))
+    }
+    // Every other navigation is left to the browser, which uses the preload response when one exists.
+    return
+  }
+  if (url.pathname.startsWith(STATIC_PREFIX)) {
+    event.respondWith(
+      caches.open(SHELL_CACHE)
+        .then(cache => cache.match(request))
+        .then(hit => hit || fetch(request))
+        .catch(() => fetch(request)),
+    )
+  }
+})
+
+self.addEventListener('message', (event) => {
+  if (!SHELL_ON || !event.data || event.data.type !== 'tpr:revalidate-shell') return
+  event.waitUntil(syncShell().catch(() => {}))
+})
+
+function isLaunchNavigation(request, url) {
+  return url.pathname === LAUNCH_PATH
+    && url.search === LAUNCH_SEARCH
+    && !request.headers.has('rsc')
+    && !request.headers.has('next-router-prefetch')
+}
+
+async function serveShell(event) {
+  try {
+    const cache = await caches.open(SHELL_CACHE)
+    const hit = await cache.match(LAUNCH_URL)
+    if (hit) {
+      event.waitUntil(syncShell().catch(() => {}))
+      return hit
+    }
+  } catch (_err) {
+    // Cache Storage unavailable: the network answers, as on every launch before the shell existed.
+  }
+  event.waitUntil(syncShell().catch(() => {}))
+  const preloaded = await Promise.resolve(event.preloadResponse).catch(() => undefined)
+  return preloaded || fetch(event.request)
+}
+
+// A cache-hit launch and the page's revalidate message can ask for a sync in the same instant; two running at
+// once could each prune the chunks the other's document needs, so one runs and later callers share it.
+let syncInFlight = null
+
+function syncShell() {
+  if (!syncInFlight) {
+    syncInFlight = writeShell().finally(() => { syncInFlight = null })
+  }
+  return syncInFlight
+}
+
+// The shell and the chunks it references are one set: assets go in first and the document last, so a
+// launch during the swap finds a complete set or none, and the document never points at a chunk the
+// cache lacks. An unchanged document costs one fetch and no writes.
+async function writeShell() {
+  const cache = await caches.open(SHELL_CACHE)
+  const fresh = await fetchShell()
+  const current = await cache.match(LAUNCH_URL)
+  if (current && (await current.text()) === fresh.html) return
+  const assets = staticUrls(fresh.html)
+  const fetched = await Promise.all(assets.map(async (asset) => {
+    if (await cache.match(asset)) return null
+    const response = await fetch(asset, { credentials: 'omit', signal: shellFetchSignal() })
+    if (!response.ok) throw new Error(`asset ${response.status}: ${asset}`)
+    return [asset, response]
+  }))
+  for (const entry of fetched) {
+    if (entry) await cache.put(entry[0], entry[1])
+  }
+  await cache.put(LAUNCH_URL, new Response(fresh.html, {
+    status: 200,
+    headers: { 'content-type': fresh.contentType, 'cache-control': 'no-store' },
+  }))
+  const keep = new Set(assets)
+  const keys = await cache.keys()
+  await Promise.all(keys
+    .filter(key => key.url.includes(STATIC_PREFIX) && !keep.has(key.url))
+    .map(key => cache.delete(key)))
+}
+
+// A hung shell or chunk request would hold the install, and a fresh install must activate before push can
+// subscribe, so every precache fetch gives up after a bound.
+function shellFetchSignal() {
+  return typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function'
+    ? AbortSignal.timeout(SHELL_FETCH_TIMEOUT_MS)
+    : undefined
+}
+
+async function fetchShell() {
+  const response = await fetch(SHELL_PATH, { cache: 'reload', credentials: 'omit', signal: shellFetchSignal() })
+  const contentType = response.headers.get('content-type') || ''
+  if (!response.ok || response.status !== 200 || response.redirected || !contentType.includes('text/html')) {
+    throw new Error(`shell ${response.status} ${contentType}`)
+  }
+  return { html: await response.text(), contentType }
+}
+
+// Every same-origin /_next/static URL the document references (scripts, stylesheets, fonts), with its
+// ?dpl= deployment tag; HTML escapes `&` inside attributes.
+function staticUrls(html) {
+  const urls = new Set()
+  const attribute = /(?:src|href)="(\/_next\/static\/[^"]+)"/g
+  let match
+  while ((match = attribute.exec(html)) !== null) {
+    urls.add(new URL(match[1].replace(/&amp;/g, '&'), self.location.origin).href)
+  }
+  return [...urls]
+}
 
 // ── push: imperative fallback for iOS 16.4–18.3 / Chromium ──────────────
 //

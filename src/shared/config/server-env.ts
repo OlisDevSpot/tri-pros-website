@@ -107,11 +107,12 @@ const envSchema = z.object({
   // asserts non-null at the point of use. Build environments without VoIP
   // credentials (CI, prod-before-VoIP-launches, fresh dev clones) parse the
   // schema cleanly; only environments actively using VoIP features need them.
-  VOIP_WEBHOOK_BASE_URL: z.string().optional(),
+  // Twilio signs the exact URL it called, so a trailing slash here would fail every callback's signature check.
+  VOIP_WEBHOOK_BASE_URL: z.string().optional().transform(value => value?.replace(/\/+$/, '') || undefined),
   // (CLOUDTALK_PHASE0_TRANSFER_TARGET_E164 removed 2026-05-27 — AI VoiceAgent off the table per pivot; no transfer mock needed.)
   // Dev safety: redirects all outbound voice/SMS to a single test number in dev/preview.
   // CI gate at bottom of this file prevents this being set in production.
-  VOIP_DEV_OVERRIDE_NUMBER: z.string().optional(),
+  VOIP_DEV_OVERRIDE_NUMBER: z.string().optional().transform(value => value || undefined),
 
   // TWILIO (voip-in-house) — schema fragment lives at
   // `src/shared/services/providers/twilio/lib/config.ts` and is spread in
@@ -189,6 +190,12 @@ if (env.VERCEL_ENV === 'production' && env.VOIP_DEV_OVERRIDE_NUMBER) {
   throw new Error('VOIP_DEV_OVERRIDE_NUMBER must NOT be set in production')
 }
 
+// Once production texting is switched on (the 10DLC campaign), every status callback and inbound text is checked
+// against this URL; without it each would be built against "undefined/..." and fail. Production before VoIP launches still boots.
+if (env.VERCEL_ENV === 'production' && env.TWILIO_10DLC_CAMPAIGN_SID && !env.VOIP_WEBHOOK_BASE_URL) {
+  throw new Error('VOIP_WEBHOOK_BASE_URL must be set in production once TWILIO_10DLC_CAMPAIGN_SID is')
+}
+
 // EMAIL_DEV_OVERRIDE reroutes every outbound email to one inbox. In production it would
 // black-hole every customer email.
 if (env.VERCEL_ENV === 'production' && env.EMAIL_DEV_OVERRIDE) {
@@ -213,6 +220,9 @@ if (env.VERCEL_ENV === 'production' && env.META_TEST_EVENT_CODE) {
 //
 // Production omits the banner (clean logs); the typed runtime checks from
 // `NotConfiguredError` still kick in if a misconfigured service is called.
+// `src/instrumentation.ts` calls it once per server start. Printing from this
+// module's top level instead repeats it per compiled route and per Next dev
+// worker process, which each evaluate their own copy.
 //
 // To register a newly-migrated provider: add its `<x>ConfigMeta` import at
 // the top of this file and append to `PROVIDER_METAS` below.
@@ -230,7 +240,7 @@ const PROVIDER_METAS = [
   webPushConfigMeta,
 ] as const
 
-if (env.NODE_ENV !== 'production') {
+export function printProviderStatus() {
   // eslint-disable-next-line no-console
   console.log('[server-env] Configured providers:')
   for (const meta of PROVIDER_METAS) {

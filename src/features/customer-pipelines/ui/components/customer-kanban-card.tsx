@@ -11,44 +11,36 @@ import {
   GripVerticalIcon,
   MapPinIcon,
 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { memo, useCallback } from 'react'
+import { memo } from 'react'
 
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
+import { isClickAction } from '@/shared/components/entities/entity-actions/types'
 import { EntityActionMenu } from '@/shared/components/entities/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { Separator } from '@/shared/components/ui/separator'
-import { ROOTS } from '@/shared/config/roots'
-import { useCustomerActionConfigs } from '@/shared/entities/customers/hooks/use-customer-action-configs'
+import { CUSTOMER_ACTIONS } from '@/shared/entities/customers/constants/actions'
 import { getMeetingTimeLabel } from '@/shared/entities/customers/lib/get-meeting-time-label'
 import { MeetingOverviewCard } from '@/shared/entities/meetings/components/overview-card'
-import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { formatBusinessTime } from '@/shared/lib/business-time'
 import { formatAddress, formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
-import { useProjectActionConfigs } from '@/shared/modules/projects/core/hooks/use-project-action-configs'
+import { useCustomerActionsHost } from '@/shared/modules/customers/core/components/customer-actions-host'
+import { useProjectActionsHost } from '@/shared/modules/projects/core/components/project-actions-host'
 import { ProposalOverviewCard } from '@/shared/modules/proposals/core/components/overview-card'
 import { PROPOSAL_ROW_STYLES } from '@/shared/modules/proposals/core/constants/proposal-row-styles'
 
 interface Props {
   item: CustomerPipelineItem
   isDragOverlay?: boolean
-  onViewProfile: (customerId: string) => void
-  onCreateMeeting?: (customer: { id: string, name: string }) => void
-  onAssignRep?: (meetingId: string, currentRepId: string | null) => void
+  /** The board reads the viewport once; a per-card media query would re-render every card after mount. */
+  isMobile: boolean
 }
 
-function CustomerKanbanCardImpl({
-  item,
-  isDragOverlay,
-  onViewProfile,
-  onCreateMeeting,
-  onAssignRep,
-}: Props) {
-  const isMobile = useIsMobile()
-  const router = useRouter()
+function CustomerKanbanCardImpl({ item, isDragOverlay, isMobile }: Props) {
+  const { actions: customerActions } = useCustomerActionsHost('CustomerKanbanCard')
+  const { actions: projectActions } = useProjectActionsHost('CustomerKanbanCard')
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: item.id,
     data: item,
@@ -57,9 +49,14 @@ function CustomerKanbanCardImpl({
   const cardDragProps = !isDragOverlay && !isMobile ? { ...attributes, ...listeners } : {}
   const handleDragProps = !isDragOverlay && isMobile ? { ...attributes, ...listeners } : {}
 
+  // The click is the customer's View action, so the board decides what viewing a customer means.
   function handleClick() {
-    if (!isDragging && !isDragOverlay) {
-      onViewProfile(item.id)
+    if (isDragging || isDragOverlay) {
+      return
+    }
+    const view = customerActions.find(config => config.action.id === CUSTOMER_ACTIONS.view.id)
+    if (view && isClickAction(view)) {
+      view.onAction(item)
     }
   }
 
@@ -70,235 +67,200 @@ function CustomerKanbanCardImpl({
     ? formatAddress(item.address, item.city, item.state ?? 'CA', item.zip)
     : null
 
-  // -- Customer entity actions --
-  const handleViewCustomer = useCallback(() => {
-    onViewProfile(item.id)
-  }, [item.id, onViewProfile])
-
-  const handleScheduleMeeting = useCallback(() => {
-    onCreateMeeting?.({ id: item.id, name: item.name })
-  }, [item.id, item.name, onCreateMeeting])
-
-  const { actions: customerActions, DeleteConfirmDialog: CustomerDeleteDialog } = useCustomerActionConfigs<CustomerPipelineItem>({
-    onView: handleViewCustomer,
-    onScheduleMeeting: handleScheduleMeeting,
-  })
-
-  // -- Project entity actions (for the project container in projects pipeline) --
   const projectEntity = item.project ? { id: item.project.id } : null
 
-  const handleViewProject = useCallback(() => {
-    if (item.project) {
-      router.push(ROOTS.dashboard.projects.byId(item.project.id))
-    }
-  }, [item.project, router])
-
-  const { actions: projectActions, DeleteConfirmDialog: ProjectDeleteDialog } = useProjectActionConfigs({
-    onEdit: handleViewProject,
-  })
-
   return (
-    <>
-      <CustomerDeleteDialog />
-      <ProjectDeleteDialog />
-      <Card
-        ref={!isDragOverlay ? setNodeRef : undefined}
-        className={cn(
-          'cursor-pointer transition-colors duration-200 hover:bg-primary/5 pt-0 pb-0',
-          isDragging && !isDragOverlay && 'opacity-30',
-          isDragOverlay && 'shadow-lg rotate-1 scale-105',
-        )}
-        onClick={handleClick}
-        {...cardDragProps}
-      >
-        <CardContent className="p-2.5 space-y-2">
-          {/* ── Customer info container ── */}
-          <div className="rounded-md border border-border/60 bg-muted/30 p-2.5 space-y-1.5 shadow-sm dark:bg-muted/20">
-            {/* Name + created timestamp + more menu */}
-            <div className="flex items-start gap-1.5 min-w-0">
-              {!isDragOverlay && (
-                <span
-                  className="shrink-0 cursor-grab active:cursor-grabbing touch-none mt-0.5"
-                  {...handleDragProps}
-                >
-                  <GripVerticalIcon size={14} className="text-muted-foreground/40" />
+    <Card
+      ref={!isDragOverlay ? setNodeRef : undefined}
+      className={cn(
+        'cursor-pointer transition-colors duration-200 hover:bg-primary/5 pt-0 pb-0',
+        isDragging && !isDragOverlay && 'opacity-30',
+        isDragOverlay && 'shadow-lg rotate-1 scale-105',
+      )}
+      onClick={handleClick}
+      {...cardDragProps}
+    >
+      <CardContent className="p-2.5 space-y-2">
+        {/* ── Customer info container ── */}
+        <div className="rounded-md border border-border/60 bg-muted/30 p-2.5 space-y-1.5 shadow-sm dark:bg-muted/20">
+          {/* Name + created timestamp + more menu */}
+          <div className="flex items-start gap-1.5 min-w-0">
+            {!isDragOverlay && (
+              <span
+                className="shrink-0 cursor-grab active:cursor-grabbing touch-none mt-0.5"
+                {...handleDragProps}
+              >
+                <GripVerticalIcon size={14} className="text-muted-foreground/40" />
+              </span>
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-1">
+                <span className="font-semibold text-sm truncate uppercase tracking-wide">
+                  {item.name}
                 </span>
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-1">
-                  <span className="font-semibold text-sm truncate uppercase tracking-wide">
-                    {item.name}
-                  </span>
-                  {!isDragOverlay && (
-                    <EntityActionMenu
-                      entity={item}
-                      actions={customerActions}
-                      mode="compact"
-                    />
-                  )}
-                </div>
-                {/* Relative to now, so the server's render and hydration can straddle a minute boundary. */}
-                {item.latestActivityAt && (
-                  <p className="text-xs text-muted-foreground/70 leading-tight" suppressHydrationWarning>
-                    {'Created '}
-                    {formatDistanceToNow(new Date(item.latestActivityAt), { addSuffix: true })}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Contact details */}
-            <div
-              className="flex flex-col gap-1.5 text-xs text-muted-foreground"
-              onClick={e => e.stopPropagation()}
-            >
-              {item.phone && <PhoneAction phone={item.phone} className="text-xs" />}
-              {fullAddress && (
-                <AddressAction address={fullAddress}>
-                  <button
-                    type="button"
-                    className="flex items-start gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer text-left"
-                    onClick={e => e.stopPropagation()}
-                  >
-                    <MapPinIcon size={14} className="shrink-0 mt-0.5" />
-                    <span className="whitespace-pre-line leading-snug">{fullAddress}</span>
-                  </button>
-                </AddressAction>
-              )}
-            </div>
-          </div>
-
-          {/* ── Project context container (projects pipeline) ── */}
-          {item.project && (
-            <div className="rounded-md border border-status-success-dot/40 bg-status-success-bg/70 p-2.5 space-y-1.5 shadow-sm">
-              {/* Project header: title + actions */}
-              <div className="flex items-center gap-1.5 min-w-0">
-                <FolderOpenIcon size={14} className="shrink-0 text-status-success-fg" />
-                <span className="text-xs font-semibold truncate flex-1">{item.project.title}</span>
-                {!isDragOverlay && projectEntity && (
+                {!isDragOverlay && (
                   <EntityActionMenu
-                    entity={projectEntity}
-                    actions={projectActions}
+                    entity={item}
+                    actions={customerActions}
                     mode="compact"
                   />
                 )}
               </div>
-
-              {/* Started date + total approved value */}
-              <div className="flex items-center gap-2 text-xs">
-                {item.project.startedAt && (
-                  <span className="text-muted-foreground">
-                    {formatBusinessTime(item.project.startedAt, { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </span>
-                )}
-                {item.project.totalValue > 0 && (
-                  <span className="font-bold text-status-success-fg">
-                    {formatAsDollars(item.project.totalValue)}
-                  </span>
-                )}
-              </div>
-
-              {/* Meetings separated by dividers, each with avatar + actions + proposals */}
-              {item.project.meetings.length > 0 && (
-                <div className="space-y-0">
-                  {item.project.meetings.map((mtg, idx) => (
-                    <KanbanProjectMeeting key={mtg.id} meeting={mtg} customerId={item.id} isFirst={idx === 0} isDragOverlay={isDragOverlay} onAssignRep={onAssignRep} />
-                  ))}
-                </div>
+              {/* Relative to now, so the server's render and hydration can straddle a minute boundary. */}
+              {item.latestActivityAt && (
+                <p className="text-xs text-muted-foreground/70 leading-tight" suppressHydrationWarning>
+                  {'Created '}
+                  {formatDistanceToNow(new Date(item.latestActivityAt), { addSuffix: true })}
+                </p>
               )}
             </div>
-          )}
+          </div>
 
-          {/* ── Meeting context container (fresh pipeline) ── */}
-          {!item.project && hasMeetingContext && item.nextMeetingId && (
-            <div className="rounded-md border border-border/50 bg-accent/50 p-2.5 space-y-1.5 shadow-sm dark:bg-accent/30">
-              <MeetingOverviewCard
-                meeting={{
-                  id: item.nextMeetingId,
-                  scheduledFor: item.meetingScheduledFor ?? undefined,
-                  confirmedAt: item.meetingConfirmedAt,
-                  ownerId: item.assignedRep?.id,
-                  ownerName: item.assignedRep?.name,
-                  ownerImage: item.assignedRep?.image,
-                  proposals: item.proposals as MeetingOverviewCardProposal[],
-                }}
-                customerId={item.id}
-                onAssignOwner={onAssignRep
-                  ? () => onAssignRep(item.nextMeetingId!, item.assignedRep?.id ?? null)
-                  : undefined}
-                className="space-y-1.5"
-              >
-                {/* Rep + actions */}
-                <MeetingOverviewCard.Header className="gap-1.5 min-w-0">
-                  <MeetingOverviewCard.Owner size="sm" showName className="flex-1 min-w-0" />
-                  {!isDragOverlay && (
-                    <MeetingOverviewCard.Actions mode="compact" />
-                  )}
-                </MeetingOverviewCard.Header>
+          {/* Contact details */}
+          <div
+            className="flex flex-col gap-1.5 text-xs text-muted-foreground"
+            onClick={e => e.stopPropagation()}
+          >
+            {item.phone && <PhoneAction phone={item.phone} className="text-xs" />}
+            {fullAddress && (
+              <AddressAction address={fullAddress}>
+                <button
+                  type="button"
+                  className="flex items-start gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer text-left"
+                  onClick={e => e.stopPropagation()}
+                >
+                  <MapPinIcon size={14} className="shrink-0 mt-0.5" />
+                  <span className="whitespace-pre-line leading-snug">{fullAddress}</span>
+                </button>
+              </AddressAction>
+            )}
+          </div>
+        </div>
 
-                {/* Meeting time badge — preserved from original kanban rendering */}
-                {isScheduledOrInProgress && meetingLabel
+        {/* ── Project context container (projects pipeline) ── */}
+        {item.project && (
+          <div className="rounded-md border border-status-success-dot/40 bg-status-success-bg/70 p-2.5 space-y-1.5 shadow-sm">
+            {/* Project header: title + actions */}
+            <div className="flex items-center gap-1.5 min-w-0">
+              <FolderOpenIcon size={14} className="shrink-0 text-status-success-fg" />
+              <span className="text-xs font-semibold truncate flex-1">{item.project.title}</span>
+              {!isDragOverlay && projectEntity && (
+                <EntityActionMenu
+                  entity={projectEntity}
+                  actions={projectActions}
+                  mode="compact"
+                />
+              )}
+            </div>
+
+            {/* Started date + total approved value */}
+            <div className="flex items-center gap-2 text-xs">
+              {item.project.startedAt && (
+                <span className="text-muted-foreground">
+                  {formatBusinessTime(item.project.startedAt, { month: 'short', day: 'numeric', year: 'numeric' })}
+                </span>
+              )}
+              {item.project.totalValue > 0 && (
+                <span className="font-bold text-status-success-fg">
+                  {formatAsDollars(item.project.totalValue)}
+                </span>
+              )}
+            </div>
+
+            {/* Meetings separated by dividers, each with avatar + actions + proposals */}
+            {item.project.meetings.length > 0 && (
+              <div className="space-y-0">
+                {item.project.meetings.map((mtg, idx) => (
+                  <KanbanProjectMeeting key={mtg.id} meeting={mtg} customerId={item.id} isFirst={idx === 0} isDragOverlay={isDragOverlay} />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Meeting context container (fresh pipeline) ── */}
+        {!item.project && hasMeetingContext && item.nextMeetingId && (
+          <div className="rounded-md border border-border/50 bg-accent/50 p-2.5 space-y-1.5 shadow-sm dark:bg-accent/30">
+            <MeetingOverviewCard
+              meeting={{
+                id: item.nextMeetingId,
+                customerId: item.id,
+                scheduledFor: item.meetingScheduledFor ?? undefined,
+                confirmedAt: item.meetingConfirmedAt,
+                ownerId: item.assignedRep?.id,
+                ownerName: item.assignedRep?.name,
+                ownerImage: item.assignedRep?.image,
+                proposals: item.proposals as MeetingOverviewCardProposal[],
+              }}
+              className="space-y-1.5"
+            >
+              {/* Rep + actions */}
+              <MeetingOverviewCard.Header className="gap-1.5 min-w-0">
+                <MeetingOverviewCard.Owner size="sm" showName className="flex-1 min-w-0" />
+                {!isDragOverlay && (
+                  <MeetingOverviewCard.Actions mode="compact" />
+                )}
+              </MeetingOverviewCard.Header>
+
+              {/* Meeting time badge — preserved from original kanban rendering */}
+              {isScheduledOrInProgress && meetingLabel
+                ? (
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        'gap-1 text-xs font-normal w-fit',
+                        meetingLabel.variant === 'active' && 'border-status-pending-dot/40 bg-status-pending-bg text-status-pending-fg',
+                        meetingLabel.variant === 'upcoming' && 'border-status-info-dot/40 bg-status-info-bg text-status-info-fg',
+                        meetingLabel.variant === 'past' && 'border-muted-foreground/20 text-muted-foreground',
+                      )}
+                      suppressHydrationWarning
+                    >
+                      <CalendarIcon size={10} />
+                      {meetingLabel.text}
+                    </Badge>
+                  )
+                : item.meetingScheduledFor
                   ? (
                       <Badge
                         variant="outline"
-                        className={cn(
-                          'gap-1 text-xs font-normal w-fit',
-                          meetingLabel.variant === 'active' && 'border-status-pending-dot/40 bg-status-pending-bg text-status-pending-fg',
-                          meetingLabel.variant === 'upcoming' && 'border-status-info-dot/40 bg-status-info-bg text-status-info-fg',
-                          meetingLabel.variant === 'past' && 'border-muted-foreground/20 text-muted-foreground',
-                        )}
+                        className="gap-1 text-xs font-normal w-fit border-muted-foreground/20 text-muted-foreground"
                         suppressHydrationWarning
                       >
                         <CalendarIcon size={10} />
-                        {meetingLabel.text}
+                        {formatDistanceToNow(new Date(item.meetingScheduledFor), { addSuffix: true })}
                       </Badge>
                     )
-                  : item.meetingScheduledFor
-                    ? (
-                        <Badge
-                          variant="outline"
-                          className="gap-1 text-xs font-normal w-fit border-muted-foreground/20 text-muted-foreground"
-                          suppressHydrationWarning
-                        >
-                          <CalendarIcon size={10} />
-                          {formatDistanceToNow(new Date(item.meetingScheduledFor), { addSuffix: true })}
-                        </Badge>
-                      )
-                    : null}
+                  : null}
 
-                {/* Individual proposal rows */}
-                <MeetingOverviewCard.Proposals
-                  showHeader={false}
-                  renderProposal={p => <KanbanProposalRow key={p.id} proposal={p as PipelineItemProposal} />}
-                />
-              </MeetingOverviewCard>
-            </div>
-          )}
+              {/* Individual proposal rows */}
+              <MeetingOverviewCard.Proposals
+                showHeader={false}
+                renderProposal={p => <KanbanProposalRow key={p.id} proposal={p as PipelineItemProposal} />}
+              />
+            </MeetingOverviewCard>
+          </div>
+        )}
 
-        </CardContent>
-      </Card>
-    </>
+      </CardContent>
+    </Card>
   )
 }
 
 /* ── Sub-components ── */
 
-function KanbanProjectMeeting({ meeting, customerId, isFirst, isDragOverlay, onAssignRep }: { meeting: PipelineItemProjectMeeting, customerId: string, isFirst: boolean, isDragOverlay?: boolean, onAssignRep?: (meetingId: string, currentRepId: string | null) => void }) {
+function KanbanProjectMeeting({ meeting, customerId, isFirst, isDragOverlay }: { meeting: PipelineItemProjectMeeting, customerId: string, isFirst: boolean, isDragOverlay?: boolean }) {
   return (
     <>
       {!isFirst && <Separator className="my-1.5" />}
       <MeetingOverviewCard
         meeting={{
           id: meeting.id,
+          customerId,
           ownerId: meeting.ownerId,
           ownerName: meeting.ownerName,
           ownerImage: meeting.ownerImage,
           proposals: meeting.proposals as MeetingOverviewCardProposal[],
         }}
-        customerId={customerId}
-        onAssignOwner={onAssignRep
-          ? () => onAssignRep(meeting.id, meeting.ownerId ?? null)
-          : undefined}
         className="space-y-1"
       >
         {/* Meeting header: avatar + actions */}
@@ -321,17 +283,11 @@ function KanbanProjectMeeting({ meeting, customerId, isFirst, isDragOverlay, onA
 }
 
 function KanbanProposalRow({ proposal }: { proposal: PipelineItemProposal }) {
-  const router = useRouter()
-  const handleEdit = useCallback(() => {
-    router.push(ROOTS.dashboard.proposals.byId(proposal.id))
-  }, [proposal.id, router])
-
   const style = PROPOSAL_ROW_STYLES[proposal.status] ?? PROPOSAL_ROW_STYLES.draft
 
   return (
     <ProposalOverviewCard
       proposal={proposal}
-      onEdit={handleEdit}
       className={cn(
         'group/proposal flex items-center justify-between gap-2 rounded-md px-1.5 py-1.5 transition-colors min-h-8',
         style.bg,

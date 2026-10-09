@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from 'next'
 import process from 'node:process'
 import { Dancing_Script, Nunito, Playfair_Display, Space_Mono, Syne } from 'next/font/google'
 import { Providers } from '@/shared/components/providers'
+import { PWA_STARTUP_IMAGES } from '@/shared/domains/pwa/constants/startup-images'
+import { PwaLaunchCover } from '@/shared/domains/pwa/ui/pwa-launch-cover'
 import './globals.css'
 
 const playfair = Playfair_Display({
@@ -61,7 +63,13 @@ export const metadata: Metadata = {
     capable: true,
     title: 'TPR',
     statusBarStyle: 'black-translucent',
+    // iOS paints one of these before the web view exists, only on an exact device match, and only
+    // after the app is re-added: the generator keeps the list and the files together.
+    startupImage: PWA_STARTUP_IMAGES,
   },
+  // Next emits only the unprefixed capable tag; iOS gates the startup images above on the Apple-prefixed
+  // one.
+  other: { 'apple-mobile-web-app-capable': 'yes' },
   description: 'Family-led residential construction company serving Southern California homeowners. Kitchen and bathroom remodels, garage conversions, and home additions across the San Fernando Valley, San Gabriel Valley, and Greater Los Angeles.',
   authors: [{ name: 'Tri Pros Remodeling' }],
   creator: 'Tri Pros Remodeling',
@@ -130,6 +138,7 @@ export default function RootLayout({
       >
         <Providers>
           {children}
+          <PwaLaunchCover />
         </Providers>
       </body>
     </html>

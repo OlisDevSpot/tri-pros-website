@@ -93,7 +93,7 @@ provider          →  shared/dal/**         NEVER
 
 Providers are leaves. They don't know about the app's domain. If two providers need to coordinate, an internal service orchestrates them.
 
-A provider's `lib/` is **provider-internal** — only that provider's own `client.ts` imports it (config, token caches, internal helpers). External consumers import a provider's `client.ts` (actions) and `types.ts` (type-only). Never `lib/`, `dal/`, `schemas/`, `constants/`, `webhooks/`. **Translators live in domain-land**, not in the provider — see `#providers-have-no-domain-types-in-signatures`.
+A provider's `lib/` is **provider-internal** — only that provider's own `client.ts` imports it (config, token caches, internal helpers). External consumers import a provider's `client.ts` (actions) and `types.ts` (type-only). Never `lib/`, `dal/`, `schemas/`, `constants/`. **Translators live in domain-land**, not in the provider — see `#providers-have-no-domain-types-in-signatures`.
 
 **Why**: keeps providers swappable. Switch Zoho Sign → DocuSign by rewriting one provider directory; no business logic touches.
 **Reference impl**: `src/shared/services/contracts.service.ts` → `zoho-sync.service.ts` → `providers/zoho-sign/`
@@ -123,7 +123,7 @@ await zohoSignClient.attachFiles(requestId, files)
 ```
 
 There is **one import path** for actions per provider. No `lib/voice.ts`, no
-`lib/jwt.ts`, no `webhooks/verify.ts` — every action method hangs off the
+`lib/jwt.ts`, no `lib/verify.ts` — every action method hangs off the
 singleton.
 
 **Why uniform**: callers have one mental model + one tab-complete surface
@@ -132,7 +132,7 @@ spawning a new import path. Pattern-matching across providers becomes trivial.
 
 **What stays as sibling exports** (NOT methods on the client):
 - **Type re-exports** (`types.ts`) — `CallInstance`, `MessageInstance`, etc. — these are compile-time shapes for callers' signatures, not actions.
-- **Data-shape Zod** (`schemas/`, `webhooks/`) — used at the boundary (`.parse()` in route handlers, request input validation) — values, not actions you "do".
+- **Data-shape Zod** (`schemas/`) — used at the boundary (`.parse()` in route handlers, request input validation) — values, not actions you "do".
 - **Error class** (`RestException` re-export from `client.ts`) — needed for `instanceof` in catch blocks alongside the client.
 
 **Reference impl**: `src/shared/services/providers/twilio/` (canonical post-2026-06-02), `src/shared/services/providers/zoho-sign/` (older example, same pattern but pre-dating the formal codification).
@@ -152,11 +152,10 @@ services/providers/<name>/
   client.ts                 THE entry point — singleton + RestException + per-provider error re-exports
   types.ts                  SDK type re-exports for caller signatures (CallInstance, MessageInstance, ...)
   constants/                URLs, IDs, TTLs, thresholds, per-provider env var groupings
-  schemas/                  outbound-API Zod (request shapes — what we send)
+  schemas/                  Zod data shapes: what we send (request shapes) and what the provider sends us (webhook payloads)
     primitives.ts           shared primitives (E.164, timestamps, IDs)
     <resource>.ts           per-resource request + response zod schemas
-  webhooks/                 inbound-payload Zod (what the provider sends us)
-    <resource>.ts           per-event-class payload Zod (often discriminated union)
+    <event-class>.ts        per-event-class webhook payload Zod (often a discriminated union)
   lib/                      OPTIONAL — only for pure-local helpers that are large enough to warrant a file
                             and are NOT actions on the client (e.g., `access-token-cache.ts`, `config.ts` when env vars are optional —
                             see `provider-env-config-when-optional` below). Most providers won't
@@ -166,20 +165,21 @@ services/providers/<name>/
 
 A provider always has `client.ts`, even for a one-endpoint integration. Auth + every action lives there.
 
-**`schemas/` vs `webhooks/`:**
-- `schemas/` — Zod for what WE send to the provider (request shapes, JWT-mint input shapes, etc.)
-- `webhooks/` — Zod for what THE PROVIDER sends to us (inbound webhook form payloads)
-- Both contain zero internal dependencies (other than `schemas/primitives.ts`). They're parsed `.parse()` at the boundary.
+**`schemas/` holds both directions:**
+- what WE send to the provider (request shapes, JWT-mint input shapes, etc.)
+- what THE PROVIDER sends to us (inbound webhook form payloads, status callbacks)
+- Zero internal dependencies other than `schemas/primitives.ts`. Parsed with `.parse()` at the boundary.
 
 **`lib/` is the exception, not the rule:**
-- Most providers don't need a `lib/` directory at all — the client absorbs the action surface; schemas + types live in `schemas/` / `webhooks/` / `types.ts`.
+- Most providers don't need a `lib/` directory at all — the client absorbs the action surface; schemas + types live in `schemas/` / `types.ts`.
 - A `lib/` file is appropriate ONLY for pure-local helpers that are too large to inline in `client.ts` AND are not invoked as client methods (e.g., a token-refresh cache used internally by the client itself, a `config.ts` that hosts the provider's env var fragment + runtime-config builder — see `provider-env-config-when-optional` below).
 - Webhook signature verification, JWT minting, TwiML/payload building are **client methods**, NOT `lib/` files. They are interactions with the provider's ecosystem, even when no HTTP round-trip happens.
 
 **Anti-patterns:**
 - Putting `schemas/` inside `lib/` (e.g. `lib/schemas/`) — nests data definitions inside the directory that consumes them and breaks the cross-codebase parallel.
 - Per-capability action files in `lib/` (e.g. `lib/voice.ts`, `lib/jwt.ts`, `lib/messaging.ts`) — splits the action surface across multiple imports. Use one `client.ts` with all methods.
-- Standalone `webhooks/verify.ts` — should be `<provider>Client.verifyWebhookSignature(...)` on the client.
+- Standalone `lib/verify.ts` — should be `<provider>Client.verifyWebhookSignature(...)` on the client.
+- A `webhooks/` directory — webhook payload Zod is a data shape and lives in `schemas/` with the rest. (`providers/justcall/webhooks/` is the one leftover; it goes with the JustCall pivot.)
 
 **Why uniform**: new providers are pattern-matched against existing ones; the same shape exists across providers, entities, features, and domains, so a developer reading the repo never has to relearn it.
 

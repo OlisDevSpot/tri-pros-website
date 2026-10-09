@@ -18,10 +18,12 @@ import { getUserRoleById } from '@/shared/entities/users/dal/server/queries'
 import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
 import { generateToken } from '@/shared/lib/generate-token'
 import { confirmationsClearedByMove } from '@/shared/modules/meetings/core/lib/confirmation-reset'
+import { scheduledForSetByMove } from '@/shared/modules/meetings/core/lib/scheduled-for-set'
 import { deleteMeetingEventJob } from '@/shared/services/providers/upstash/jobs/delete-meeting-event'
 import { graduateFromCampaignJob } from '@/shared/services/providers/upstash/jobs/graduate-from-campaign'
 import { metaCapiEventJob } from '@/shared/services/providers/upstash/jobs/meta-capi-event'
 import { notifyMeetingTimeChangedJob } from '@/shared/services/providers/upstash/jobs/notify-meeting-time-changed'
+import { sendVisitCancellationJob } from '@/shared/services/providers/upstash/jobs/send-visit-cancellation'
 import { syncMeetingToGcalJob } from '@/shared/services/providers/upstash/jobs/sync-meeting-to-gcal'
 import { realtimeClient } from '@/shared/services/providers/upstash/realtime'
 
@@ -60,7 +62,7 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
         const setBy = input.setBy ?? userId ?? await getSystemOwnerId()
         await assertSetterIsInternal(setBy)
         // The token is generated above the user check: intake and reschedule create with no user.
-        const withToken = { ...input, setBy, shareToken: generateToken() }
+        const withToken = { ...input, setBy, shareToken: generateToken(), scheduledForSetAt: new Date().toISOString() }
         if (userId === null) {
           return withToken
         }
@@ -117,7 +119,7 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
         if (data.scheduledFor) {
           const current = await getMeetingSchedule(id)
           if (current) {
-            next = { ...next, ...confirmationsClearedByMove(current, data) }
+            next = { ...next, ...confirmationsClearedByMove(current, data), ...scheduledForSetByMove(current, data, new Date()) }
           }
         }
         return next
@@ -154,14 +156,16 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
           fields: Object.keys(data),
         })
 
-        // A newly-cancelled meeting leaves the shared calendar; the row is kept. The transition check prevents re-dispatch.
-        if (
-          previousRow.meetingOutcome !== 'cancelled'
-          && row.meetingOutcome === 'cancelled'
-          && row.gcalEventId
-        ) {
-          await deleteMeetingEventJob.dispatchOrThrow({ gcalEventId: row.gcalEventId })
-          await clearMeetingGCalFields(row.id)
+        // The transition check prevents re-dispatch when an already-cancelled meeting is edited again.
+        if (previousRow.meetingOutcome !== 'cancelled' && row.meetingOutcome === 'cancelled') {
+          // A newly-cancelled meeting leaves the shared calendar; the row is kept.
+          if (row.gcalEventId) {
+            await deleteMeetingEventJob.dispatchOrThrow({ gcalEventId: row.gcalEventId })
+            await clearMeetingGCalFields(row.id)
+          }
+          // After the shared-calendar cleanup, so a failed enqueue here cannot strand the office's event.
+          // The job checks, at run time, whether the homeowner's invite needs a cancellation.
+          await sendVisitCancellationJob.dispatchOrThrow({ meetingId: row.id })
         }
       },
     },
@@ -189,6 +193,7 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
       'newTimeRequestedAt',
       'shareToken',
       'rescheduledFromId',
+      'scheduledForSetAt',
       'pipeline',
       'flowStateJSON',
       'agentNotes',

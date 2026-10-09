@@ -19,6 +19,7 @@ Rulings made while executing this plan; the task text below still shows the earl
 - Task 8's guard is the core `no-restricted-imports` aliased as `lazy-only/imports`, not `ts/no-restricted-imports`.
 - Task 10 wraps the sidebar slot in `SidebarSessionBoundary` (fixes a phone-width hydration mismatch) and did not add the two app-shell.md "Critical rules" bullets.
 - Phase 1 tasks 1–10 are done (commits `1f1ee4aa`…`4b6c1845`), not yet pushed.
+- Task 15 Steps 1–2 done 2026-10-09 on the owner's go-ahead, ahead of the other Phase 2 tasks and in a different shape: `RealtimeProvider` is deleted, and the meeting flow loads `MeetingRealtimeSync` (`ui/components/realtime/`) with `next/dynamic` `ssr: false`, which reports the connection status back to the view. Ably's Node build must stay out of server rendering (Turbopack cannot bundle it, and `ably` is now in `serverExternalPackages`). Step 4 (`pnpm remove next-pwa`) is still open.
 - Phase 2 amendments already decided: no new frontend-stack.md paragraph in Task 12; section titles stay inline literals in Task 13; Playwright checks select the page's inner `main main` (the sidebar inset is the outer `<main>`).
 - Phase 2 is blocked on four owner decisions: the proposal-card relative-time hydration fix (shared `overview-card.tsx`), a session keep-alive after Task 14 removes the client `useSession()`, whether the snapshot strip may become all-or-nothing, and accepting the extended views-own-data-fetching drift.
 

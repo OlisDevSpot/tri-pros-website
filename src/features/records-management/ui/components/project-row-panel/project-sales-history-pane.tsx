@@ -4,20 +4,27 @@ import type { CustomerProfileMeeting } from '@/shared/entities/customers/types'
 
 import { ExpandedRowPanel } from '@/shared/components/data-table/ui/expanded-row-panel'
 import { ProjectMeetingList } from '@/shared/entities/meetings/components/project-meeting-list'
+import { MeetingActionsHost } from '@/shared/modules/meetings/core/components/meeting-actions-host'
+import { ProposalActionsHost } from '@/shared/modules/proposals/core/components/proposal-actions-host'
 
 interface ProjectSalesHistoryPaneProps {
-  customerId: string | null
   meetings: CustomerProfileMeeting[]
   isLoading: boolean
   onMutationSuccess: () => void
 }
 
-export function ProjectSalesHistoryPane({ customerId, meetings, isLoading, onMutationSuccess }: ProjectSalesHistoryPaneProps) {
+export function ProjectSalesHistoryPane({ meetings, isLoading, onMutationSuccess }: ProjectSalesHistoryPaneProps) {
   return (
     <ExpandedRowPanel.Pane title="Sales history" isLoading={isLoading}>
-      {!customerId || meetings.length === 0
+      {meetings.length === 0
         ? <p className="text-sm text-muted-foreground">No meetings linked to this project</p>
-        : <ProjectMeetingList customerId={customerId} meetings={meetings} onMutationSuccess={onMutationSuccess} />}
+        : (
+            <MeetingActionsHost>
+              <ProposalActionsHost>
+                <ProjectMeetingList meetings={meetings} onMutationSuccess={onMutationSuccess} />
+              </ProposalActionsHost>
+            </MeetingActionsHost>
+          )}
     </ExpandedRowPanel.Pane>
   )
 }

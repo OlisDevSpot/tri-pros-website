@@ -962,13 +962,13 @@ Exported but only used inside its own file. **Action:** Drop the `export` keywor
 | `src/shared/services/providers/twilio/lib/config.ts:33` | `TwilioRuntimeConfig` | interface | 7 | 1 | only used inside its own file → drop `export` |
 | `src/shared/services/providers/twilio/schemas/access-token.ts:7` | `mintVoiceAccessTokenInputSchema` | schema | 9 | 1 | only used inside its own file → drop `export` |
 | `src/shared/services/providers/twilio/schemas/primitives.ts:23` | `isoDateTimeSchema` | schema | 1 | 1 | only used inside its own file → drop `export` |
-| `src/shared/services/providers/twilio/webhooks/messaging.ts:13` | `messagingStatusSchema` | schema | 12 | 2 | only used inside its own file → drop `export` |
-| `src/shared/services/providers/twilio/webhooks/messaging.ts:29` | `messagingInboundWebhookSchema` | schema | 12 | 1 | only used inside its own file → drop `export` |
-| `src/shared/services/providers/twilio/webhooks/messaging.ts:45` | `messagingStatusCallbackSchema` | schema | 10 | 1 | only used inside its own file → drop `export` |
-| `src/shared/services/providers/twilio/webhooks/voice.ts:16` | `voiceCallStatusSchema` | schema | 10 | 4 | only used inside its own file → drop `export` |
-| `src/shared/services/providers/twilio/webhooks/voice.ts:31` | `voiceInboundWebhookSchema` | schema | 8 | 1 | only used inside its own file → drop `export` |
-| `src/shared/services/providers/twilio/webhooks/voice.ts:43` | `voiceStatusCallbackSchema` | schema | 17 | 1 | only used inside its own file → drop `export` |
-| `src/shared/services/providers/twilio/webhooks/voice.ts:65` | `voiceDialActionSchema` | schema | 10 | 1 | only used inside its own file → drop `export` |
+| `src/shared/services/providers/twilio/schemas/messaging.ts:13` | `messagingStatusSchema` | schema | 12 | 2 | only used inside its own file → drop `export` |
+| `src/shared/services/providers/twilio/schemas/messaging.ts:29` | `messagingInboundWebhookSchema` | schema | 12 | 1 | only used inside its own file → drop `export` |
+| `src/shared/services/providers/twilio/schemas/messaging.ts:45` | `messagingStatusCallbackSchema` | schema | 10 | 1 | only used inside its own file → drop `export` |
+| `src/shared/services/providers/twilio/schemas/voice.ts:16` | `voiceCallStatusSchema` | schema | 10 | 4 | only used inside its own file → drop `export` |
+| `src/shared/services/providers/twilio/schemas/voice.ts:31` | `voiceInboundWebhookSchema` | schema | 8 | 1 | only used inside its own file → drop `export` |
+| `src/shared/services/providers/twilio/schemas/voice.ts:43` | `voiceStatusCallbackSchema` | schema | 17 | 1 | only used inside its own file → drop `export` |
+| `src/shared/services/providers/twilio/schemas/voice.ts:65` | `voiceDialActionSchema` | schema | 10 | 1 | only used inside its own file → drop `export` |
 | `src/shared/services/providers/upstash/jobs/meta-capi-event.ts:15` | `MetaCapiEventPayload` | type | 3 | 1 | only used inside its own file → drop `export` |
 | `src/shared/services/providers/upstash/lib/config.ts:29` | `QstashRuntimeConfig` | interface | 5 | 1 | only used inside its own file → drop `export` |
 | `src/shared/services/providers/upstash/lib/config.ts:68` | `AblyRuntimeConfig` | interface | 3 | 1 | only used inside its own file → drop `export` |
@@ -1215,13 +1215,13 @@ No importer and no use in its own file. **Action:** Delete after a human check (
 | `src/shared/services/providers/twilio/schemas/primitives.ts:12` | `E164` | type | 1 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
 | `src/shared/services/providers/twilio/schemas/primitives.ts:19` | `TwilioSid` | type | 1 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
 | `src/shared/services/providers/twilio/schemas/primitives.ts:24` | `IsoDateTime` | type | 1 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
-| `src/shared/services/providers/twilio/webhooks/messaging.ts:25` | `MessagingStatus` | type | 1 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
-| `src/shared/services/providers/twilio/webhooks/messaging.ts:41` | `MessagingInboundWebhookPayload` | type | 1 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
-| `src/shared/services/providers/twilio/webhooks/messaging.ts:55` | `MessagingStatusCallbackPayload` | type | 1 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
-| `src/shared/services/providers/twilio/webhooks/voice.ts:26` | `VoiceCallStatus` | type | 1 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
-| `src/shared/services/providers/twilio/webhooks/voice.ts:39` | `VoiceInboundWebhookPayload` | type | 1 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
-| `src/shared/services/providers/twilio/webhooks/voice.ts:60` | `VoiceStatusCallbackPayload` | type | 1 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
-| `src/shared/services/providers/twilio/webhooks/voice.ts:75` | `VoiceDialActionPayload` | type | 1 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
+| `src/shared/services/providers/twilio/schemas/messaging.ts:25` | `MessagingStatus` | type | 1 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
+| `src/shared/services/providers/twilio/schemas/messaging.ts:41` | `MessagingInboundWebhookPayload` | type | 1 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
+| `src/shared/services/providers/twilio/schemas/messaging.ts:55` | `MessagingStatusCallbackPayload` | type | 1 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
+| `src/shared/services/providers/twilio/schemas/voice.ts:26` | `VoiceCallStatus` | type | 1 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
+| `src/shared/services/providers/twilio/schemas/voice.ts:39` | `VoiceInboundWebhookPayload` | type | 1 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
+| `src/shared/services/providers/twilio/schemas/voice.ts:60` | `VoiceStatusCallbackPayload` | type | 1 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
+| `src/shared/services/providers/twilio/schemas/voice.ts:75` | `VoiceDialActionPayload` | type | 1 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
 | `src/shared/services/providers/upstash/lib/config.ts:27` | `ParsedQstashEnv` | type | 1 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
 | `src/shared/services/providers/upstash/lib/config.ts:46` | `buildQstashConfig` | const | 1 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
 | `src/shared/services/providers/upstash/lib/config.ts:66` | `ParsedAblyEnv` | type | 1 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |

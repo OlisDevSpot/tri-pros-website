@@ -21,6 +21,19 @@ function buildCustomerLabel(customer: { name: string | null, address: string | n
   return customer.address ? `${name}, ${customer.address}` : name
 }
 
+// Every visit-message alert goes to the meeting's participants and the office account.
+async function visitRecipientIds(meetingId: string | null): Promise<string[]> {
+  const systemOwnerId = await getSystemOwnerId()
+  const participants = meetingId ? (await getParticipantsForMeeting(meetingId)).map(p => p.userId) : []
+  return [...new Set([...participants, systemOwnerId])]
+}
+
+// A push body is a glance; a long reply is read in the app.
+function pushExcerpt(body: string): string {
+  const oneLine = body.replace(/\s+/g, ' ').trim()
+  return oneLine.length > 140 ? `${oneLine.slice(0, 139)}…` : oneLine
+}
+
 function createNotificationService() {
   return {
     /** Stub — real dispatch lands with the notifications overhaul. */
@@ -221,6 +234,45 @@ function createNotificationService() {
 
       if (result.failed > 0 || result.errors.length > 0) {
         console.warn(`[notificationService] notifyMeetingScheduledTimeChanged partial failure:`, result)
+      }
+    },
+
+    /** A visit summary text did not arrive (a landline, a carrier failure): a person has to call. */
+    notifyVisitTextFailed: async (params: { meetingId: string, customerName: string, scheduledFor: string }) => {
+      const result = await webPushClient.sendToUsers(await visitRecipientIds(params.meetingId), {
+        title: `Text failed | ${params.customerName}`,
+        body: `Text to ${params.customerName} failed, call them about ${formatBusinessDayTime(params.scheduledFor)}.`,
+        navigate: ROOTS.dashboard.scheduleWithMeetingHighlight(params.meetingId, params.scheduledFor),
+        urgency: 'high',
+      })
+      if (result.failed > 0 || result.errors.length > 0) {
+        console.warn(`[notificationService] notifyVisitTextFailed partial failure:`, result)
+      }
+    },
+
+    /** A homeowner wrote something only a person can answer. Staff answer by calling. */
+    notifyHomeownerReply: async (params: { meetingId: string | null, scheduledFor: string | null, customerName: string, body: string, hasPhoto: boolean }) => {
+      const result = await webPushClient.sendToUsers(await visitRecipientIds(params.meetingId), {
+        title: `Reply | ${params.customerName}`,
+        body: params.body.trim() || !params.hasPhoto ? `${params.customerName} replied: ${pushExcerpt(params.body)}` : `${params.customerName} sent a photo`,
+        navigate: params.meetingId ? ROOTS.dashboard.scheduleWithMeetingHighlight(params.meetingId, params.scheduledFor) : ROOTS.dashboard.customers.root(),
+        urgency: 'high',
+      })
+      if (result.failed > 0 || result.errors.length > 0) {
+        console.warn(`[notificationService] notifyHomeownerReply partial failure:`, result)
+      }
+    },
+
+    notifyHomeownerOptedOut: async (params: { meetingId: string | null, scheduledFor: string | null, customerName: string, body: string }) => {
+      const about = params.scheduledFor ? ` Call them about ${formatBusinessDayTime(params.scheduledFor)}.` : ''
+      const result = await webPushClient.sendToUsers(await visitRecipientIds(params.meetingId), {
+        title: `Opted out | ${params.customerName}`,
+        body: `${params.customerName} texted '${pushExcerpt(params.body)}' and is opted out of texts.${about}`,
+        navigate: params.meetingId ? ROOTS.dashboard.scheduleWithMeetingHighlight(params.meetingId, params.scheduledFor) : ROOTS.dashboard.customers.root(),
+        urgency: 'high',
+      })
+      if (result.failed > 0 || result.errors.length > 0) {
+        console.warn(`[notificationService] notifyHomeownerOptedOut partial failure:`, result)
       }
     },
   }

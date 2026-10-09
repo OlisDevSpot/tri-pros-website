@@ -24,7 +24,6 @@ export function CustomerProjectsList({ data, onMutationSuccess, highlightMeeting
       {data.projects.map(project => (
         <ProjectEntityCard
           key={project.id}
-          customerId={data.customer.id}
           highlightMeetingId={highlightMeetingId}
           onMutationSuccess={onMutationSuccess}
           project={project}

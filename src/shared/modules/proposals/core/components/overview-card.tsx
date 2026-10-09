@@ -1,6 +1,6 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 
 import type { Proposal } from '@/shared/db/schema/proposals'
 import type { ProposalRowStyle } from '@/shared/modules/proposals/core/constants/proposal-row-styles'
@@ -10,15 +10,16 @@ import { formatDistanceToNow } from 'date-fns'
 import { DollarSignIcon, EyeIcon } from 'lucide-react'
 import React, { createContext, useCallback, useMemo } from 'react'
 
+import { isClickAction } from '@/shared/components/entities/entity-actions/types'
 import { EntityActionMenu } from '@/shared/components/entities/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
-import { ROOTS } from '@/shared/config/roots'
 import { formatBusinessTime } from '@/shared/lib/business-time'
 import { formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
+import { useProposalActionsHost } from '@/shared/modules/proposals/core/components/proposal-actions-host'
+import { PROPOSAL_ACTIONS } from '@/shared/modules/proposals/core/constants/actions'
 import { PROPOSAL_ROW_STYLES } from '@/shared/modules/proposals/core/constants/proposal-row-styles'
 import { PROPOSAL_STATUS_DOT_COLORS } from '@/shared/modules/proposals/core/constants/proposal-status-colors'
-import { useProposalActionConfigs } from '@/shared/modules/proposals/core/hooks/use-proposal-action-configs'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -67,7 +68,7 @@ export interface ProposalOverviewCardMeta {
 
 interface ProposalOverviewCardContextValue {
   proposal: ProposalOverviewCardData
-  actions: ReturnType<typeof useProposalActionConfigs>['actions']
+  actions: ReturnType<typeof useProposalActionsHost>['actions']
   style: ProposalRowStyle
   meta: ProposalOverviewCardMeta
 }
@@ -84,40 +85,24 @@ export function useProposalOverviewCard() {
 
 // ── Root ───────────────────────────────────────────────────────────────────────
 
-interface ProposalOverviewCardProps {
+// The root owns the click, so a caller can't replace it; other div attributes (`data-press`, aria) pass through.
+interface ProposalOverviewCardProps extends Omit<ComponentProps<'div'>, 'onClick'> {
   proposal: ProposalOverviewCardData
-  className?: string
   children: ReactNode
-  onView?: (entity: ProposalOverviewCardData) => void
-  onEdit?: (entity: ProposalOverviewCardData) => void
-  onAssignOwner?: (entity: ProposalOverviewCardData) => void
   meta?: ProposalOverviewCardMeta
 }
 
-function ProposalOverviewCardRoot({
-  proposal,
-  className,
-  children,
-  onView,
-  onEdit,
-  onAssignOwner,
-  meta,
-}: ProposalOverviewCardProps) {
+function ProposalOverviewCardRoot({ proposal, children, meta, ...props }: ProposalOverviewCardProps) {
+  const { actions } = useProposalActionsHost('ProposalOverviewCard')
+
+  // The click is the View action, so a view that overrides View changes the click with it.
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
-    if (onView) {
-      onView(proposal)
+    const view = actions.find(config => config.action.id === PROPOSAL_ACTIONS.view.id)
+    if (view && isClickAction(view)) {
+      view.onAction(proposal)
     }
-    else {
-      window.open(ROOTS.public.proposalReview(proposal.id), '_blank')
-    }
-  }, [proposal, onView])
-
-  const { actions, DeleteConfirmDialog } = useProposalActionConfigs({
-    onView,
-    onEdit,
-    onAssignOwner,
-  })
+  }, [actions, proposal])
 
   const style = PROPOSAL_ROW_STYLES[proposal.status ?? 'draft'] ?? PROPOSAL_ROW_STYLES.draft
 
@@ -128,8 +113,7 @@ function ProposalOverviewCardRoot({
 
   return (
     <ProposalOverviewCardContext value={value}>
-      <DeleteConfirmDialog />
-      <div className={className} onClick={handleClick}>
+      <div {...props} onClick={handleClick}>
         {children}
       </div>
     </ProposalOverviewCardContext>

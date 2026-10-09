@@ -3,7 +3,7 @@ name: Tri Pros Remodeling
 description: A two-world design system — an operational "Command Desk" for the CRM and "Blueprint Authority" for marketing & funnels.
 colors:
   # The Command Desk (app / dashboard) — oklch is the normative source. Light
-  # values; dark-mode pairs are in the Colors section below and docs/design-system/tokens.md.
+  # values; dark-mode pairs are in the Colors section below and globals.css.
   harbor-blue: "oklch(0.50 0.15 243)"
   app-background: "oklch(0.965 0.009 246)"
   app-foreground: "oklch(0.235 0.045 258)"
@@ -99,6 +99,8 @@ components:
 
 # Design System: Tri Pros Remodeling
 
+This file lists the tokens. For which one to use, with do/don't examples and a pre-commit self-check, read [`docs/design-system/theme-conventions.md`](docs/design-system/theme-conventions.md).
+
 ## Overview
 
 **Creative North Star: two worlds — "The Command Desk" and "Blueprint Authority"**
@@ -183,7 +185,9 @@ exactly one accent, and its rarity is the point.
   **Axis** (`--axis`, = Border Strong). Dark edges sit further out than light ones.
 - **Field Edge** (`--input`): `--control-edge` edges (4.3 light, 2.85 dark; about 2:1)
   off the field's own fill. A field is filled with the surface it sits on, so its edge
-  alone marks it.
+  alone marks it. A hovered field firms it to **Field Edge Hover** (`--input-hover`,
+  `--input-hover-edge` more edges: 1.2 light, 0.6 dark), about 2.3–2.8:1, never the
+  indicator's 3:1, which boxes a whole field in.
 - **Control Border** (`--control-border`: outline buttons and toggles, segmented and tab
   tracks, button capsules): `--control-border-edge` edges (2.2 light, 1.2 dark) off the
   rung above, about 1.3–1.45:1 against a button's fill. Softer than a field's, because a
@@ -203,7 +207,22 @@ exactly one accent, and its rarity is the point.
   microcopy.
 - **Concrete Hairline** (`#ddd4c4`): borders. **Concrete Field Edge** (`#c6bba9`,
   about 1.8:1 on the page) edges inputs, selects and textareas; checkboxes and radios
-  take `#928674` (3:1 on a panel).
+  take `#928674` (3:1 on a panel). A hovered field edge sits halfway between the two.
+- **Marketing-only tokens** (`.theme-marketing`; read with `var()` or `-(--x)`, e.g.
+  `text-(--accent-ink)`, `shadow-(--shadow-card)`, since none is in `@theme`):
+
+| Token | Value | Role |
+|---|---|---|
+| `--accent-ink` | `#0784b3` (`#5cc6f2` in `.theme-dark`) | Blueprint Ink: brand blue for small text and hairlines on light |
+| `--body-text` | `#5f574b` (`#c4bbac`) | Body copy inside a panel |
+| `--cred-ink` | `#4a443c` (`#d8cfbf`) | Credential strip text |
+| `--cred-gap` | `24px` | Gap between credential items; never stretched to full width |
+| `--radius-chip` | `3px` | Chips, diamonds, tags |
+| `--shadow-card` | see Shadow Vocabulary | Resting card lift |
+| `--ease-brand` | `cubic-bezier(0.32, 0.72, 0, 1)` | The one easing curve |
+| `--dur-fast` / `--dur-base` / `--dur-draw` | `0.18s` / `0.4s` / `1.4s` | Micro-interaction, transition, decor draw-in |
+| `--decor-stroke` | `#03afed` | `<Decor>` arc stroke |
+| `--decor-gradient-alpha` | `0.34` | Opacity at the decor atmosphere's origin |
 
 ### Over Media
 A photo, video or map looks the same in both schemes and on every rung, so these two
@@ -244,6 +263,53 @@ yellow = in-progress (`pending`), green = converted (`success`),
 purple = action (`action`) — except the **blue** stage, which now renders as a
 muted steel (`info`) instead of a saturated blue, so it stops competing with
 Harbor Blue.
+
+The tones are `--status-<tone>-{fg,bg,dot}` (utilities `text-status-<tone>-fg`,
+`bg-status-<tone>-bg`, …). A tile filled with `attention`, `success` or `danger` hovers
+`--status-<tone>-hover`, a solid step off its fill.
+
+| Tone | Light `fg` / `bg` / `dot` | Dark `fg` / `bg` / `dot` |
+|---|---|---|
+| `info` | `oklch(0.44 0.08 252)` / `oklch(0.945 0.02 250)` / `oklch(0.6 0.09 250)` | `oklch(0.84 0.06 245)` / `oklch(0.3 0.045 250)` / `oklch(0.72 0.08 245)` |
+| `pending` | `oklch(0.46 0.095 72)` / `oklch(0.955 0.05 88)` / `oklch(0.76 0.15 82)` | `oklch(0.87 0.11 88)` / `oklch(0.31 0.05 80)` / `oklch(0.82 0.14 85)` |
+| `attention` | `oklch(0.49 0.14 45)` / `oklch(0.95 0.035 55)` / `oklch(0.67 0.17 48)` | `oklch(0.84 0.1 55)` / `oklch(0.31 0.06 45)` / `oklch(0.74 0.15 50)` |
+| `action` | `oklch(0.46 0.16 300)` / `oklch(0.95 0.03 300)` / `oklch(0.6 0.18 300)` | `oklch(0.84 0.09 300)` / `oklch(0.31 0.07 300)` / `oklch(0.72 0.15 300)` |
+| `success` | `oklch(0.45 0.11 152)` / `oklch(0.95 0.04 152)` / `oklch(0.64 0.15 152)` | `oklch(0.84 0.11 155)` / `oklch(0.3 0.06 155)` / `oklch(0.74 0.15 152)` |
+| `danger` | `oklch(0.49 0.17 27)` / `oklch(0.95 0.025 25)` / `oklch(0.61 0.2 27)` | `oklch(0.83 0.1 25)` / `oklch(0.31 0.08 25)` / `oklch(0.7 0.17 27)` |
+| `idle` | `oklch(0.46 0.02 255)` / `oklch(0.94 0.008 255)` / `oklch(0.66 0.02 255)` | `oklch(0.82 0.02 255)` / `oklch(0.3 0.02 258)` / `oklch(0.66 0.02 255)` |
+
+### Charts
+- **Series** (`--series-*`): the ordinal lead-chain ramp
+  (`features/analytics/constants/chart-series.ts`), cyan → navy on purpose, not a
+  categorical palette. Read as `var(--series-leads)` or `bg-(--series-leads)`.
+- **Chart** (`--chart-1..5`, `bg-chart-1`…): the categorical set for non-ordinal charts
+  (the ROI calculator's `bill-colors.ts`). Still an open item on the dataviz validator;
+  see `docs/plans/2026-09-29-dashboard-theme-follow-ups.md`.
+
+| Token | Light | Dark |
+|---|---|---|
+| `--series-leads` | `oklch(0.59 0.12 228)` | `oklch(0.58 0.1 240)` |
+| `--series-booked` | `oklch(0.51 0.14 236)` | `oklch(0.68 0.12 234)` |
+| `--series-sits` | `oklch(0.43 0.14 245)` | `oklch(0.79 0.11 228)` |
+| `--series-sales` | `oklch(0.3 0.075 258)` | `oklch(0.91 0.05 222)` |
+| `--series-neutral-strong` | `oklch(0.4 0.03 256)` | `oklch(0.85 0.02 250)` |
+| `--series-neutral-soft` | `oklch(0.66 0.02 255)` | `oklch(0.55 0.03 255)` |
+| `--chart-1` (blue) | `oklch(0.52 0.15 243)` | `oklch(0.64 0.15 243)` |
+| `--chart-2` (teal) | `oklch(0.58 0.1 190)` | `oklch(0.7 0.1 190)` |
+| `--chart-3` (amber) | `oklch(0.7 0.14 72)` | `oklch(0.82 0.14 72)` |
+| `--chart-4` (violet) | `oklch(0.55 0.16 300)` | `oklch(0.67 0.16 300)` |
+| `--chart-5` (slate) | `oklch(0.55 0.03 255)` | `oklch(0.67 0.03 255)` |
+
+### Identity
+`shared/entities/users/lib/get-user-color.ts` hashes a person to one of eight hues, so
+the same person keeps the same hue in both schemes: `--identity-<1..8>-{bg,fg,ring}`
+(`bg-identity-1-bg`, …). Hues 25, 70, 115, 155, 200, 245, 290, 335.
+
+| Part | Light | Dark |
+|---|---|---|
+| `bg` | `oklch(0.93 0.045 H)` | `oklch(0.33 0.06 H)` |
+| `fg` | `oklch(0.43 0.11 H)` | `oklch(0.88 0.07 H)` |
+| `ring` | `oklch(0.66 0.13 H)` | same |
 
 **The Warm-Cool Border Rule.** Never paste an app-world cool neutral into a
 marketing surface or vice versa. Warm concrete belongs to Blueprint Authority; cool
@@ -454,7 +520,8 @@ responsive depth.
 ### Inputs / Fields
 - **Style:** filled with the rung it sits on (`bg-input-background`) so it sinks into
   the surface, edged with `border-input` (`--control-edge` edges off that rung, about
-  2:1), `rounded-md`. Select, date and multi-select triggers are fields too. Fields sink,
+  2:1), `rounded-md`. A field trigger that hovers (select, multi-select) takes
+  `hover:border-input-hover`, a firmer edge short of 3:1. Select, date and multi-select triggers are fields too. Fields sink,
   buttons stand: an outline button is filled a rung up and takes the softer
   `--control-border` off that rung. Checkbox, radio and switch keep a 3:1 `--indicator`.
 - **Focus:** a 3px `ring-ring/50` in the world's accent plus a border shift — crisp,

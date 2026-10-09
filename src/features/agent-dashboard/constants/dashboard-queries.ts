@@ -23,7 +23,7 @@ import { meetingWindow } from '../lib/meeting-windows'
 export type ProjectsListInput = ProjectListInput
 
 /** Caps shared by every dashboard module that lists this entity — a Top-N slice for most, the month grid's row cap for the meetings calendar. */
-export const DASHBOARD_LIMITS = { meetings: 8, meetingsCalendar: 500, proposals: 20, proposalsPerSection: 5, projects: 15, projectsPerSection: 5, actionQueue: 8 } as const
+export const DASHBOARD_LIMITS = { meetings: 8, meetingsCalendar: 500, proposals: 20, proposalsPerSection: 5, projects: 15, projectsPerSection: 5 } as const
 
 /** Meetings list input for a Today/Upcoming/Past window, sorted by `scheduledFor`. */
 export function meetingsWindowInput(kind: MeetingWindowKind) {

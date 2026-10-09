@@ -156,6 +156,11 @@ preserved. `no_show` is intentionally NOT treated this way (its event is already
 in the past). The one-time transition guard + gcalEventId null-check prevent
 re-dispatch.
 
+The same transition also dispatches `send-visit-cancellation`. The job sends the
+calendar cancellation email only when a summary email went out in the reschedule
+chain and the meeting has no successor, so a reschedule's cancelled original
+sends nothing (the replacement continues the same calendar entry).
+
 **Reference impl**: `dal/server/crud.ts:hooks.update.after`
 **Enforced by**: convention (one-time transition guard in the hook)
 

@@ -198,7 +198,7 @@ VOIP_DEV_OVERRIDE_NUMBER=  # set in dev/preview only; CI gate prevents productio
 | `domains/permissions/abilities.ts` | New entity name constants registered for CASL (`VOIP_CALL`, `VOIP_MESSAGE`, `VOIP_DID`, `VOIP_DNC`, etc.) | Phase 1 |
 | `src/app/(frontend)/dashboard/layout.tsx` | Softphone widget mounted globally | Phase 1 |
 | `src/shared/services/voip/` | NEW: top-level service tree — `voip-calls`, `voip-messages`, `voip-dids`, `voip-dnc`, `voip-disposition`, `voip-compliance`, `voip-routing`, `voip-user-availability`; subdir `campaigns/` is voip-campaigns's domain | All phases |
-| `src/shared/services/providers/twilio/` | NEW: `client.ts`, `voice.ts`, `messaging.ts`, `webhooks/` (no SIP trunking) | Phase 1 |
+| `src/shared/services/providers/twilio/` | NEW: `client.ts` (the one action surface), `schemas/` (request shapes + webhook payload Zod), `constants/`, `types.ts` (no SIP trunking) | Phase 1 |
 | `src/app/api/twilio/voice/*` | NEW: voice status webhooks | Phase 1 |
 | `src/app/api/twilio/messaging/*` | NEW: inbound SMS + status webhooks | Phase 1 |
 | `src/app/api/voip/routing/*` | NEW: voip routing endpoints (caller-lookup, transfer-target, compliance-check) — implemented here, called by CloudTalk per [INTEGRATION-SEAM.md §1](../voip/INTEGRATION-SEAM.md) | Phase 1 |
@@ -226,6 +226,12 @@ Every `@migration` comment in the voip code points to a future swap.
 ## Decisions log (post-spec, made during implementation)
 
 > Each entry: date, decision, context, link. Append-only.
+
+### 2026-10-09 — Meeting lifecycle SMS ships through the visit-messages spec, from one main line
+
+**Decision:** Texts about a meeting (summary, reminders, confirmation, replies) are sent from one main line (`voip_dids.is_main_line`), not from the agent's sticky DID. This supersedes the meeting parts of Phase 2 and the Phase 5 "Confirm meeting via SMS" item.
+**Context:** the home-visit / visit-messages epic builds the sending, status callbacks and replies (`/api/webhooks/twilio`, `/api/voip/twiml/messaging-inbound`).
+- **Spec:** [home-visit-page-and-visit-messages-design](../../superpowers/specs/2026-09-29-home-visit-page-and-visit-messages-design.md)
 
 ### 2026-05-30 — Critical scope reduction grill (total separation from voip-campaigns)
 

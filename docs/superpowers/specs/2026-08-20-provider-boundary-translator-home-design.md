@@ -22,7 +22,7 @@ The two positions cannot both hold. Owner decision (2026-08-20): enforce the str
 > **Domain translation and domain policy do not live in a provider's `lib/`.**
 > A provider's `lib/` is strictly **provider-internal** — only the provider's own `client.ts` imports it (config, token caches, internal helpers). Anything that (a) returns or consumes app-domain types, or (b) encodes app/business policy, lives in **domain-land**: the owning **entity** (`entities/<x>/lib`, `entities/<x>/schemas`) or a **service** (`services/<x>.service.ts` or a `services/<x>/` dir).
 >
-> External consumers import a provider's **`client.ts`** (actions) and **`types.ts`** (type-only, low-severity exception). Never `lib/`, `dal/`, `schemas/`, `constants/`, `webhooks/`.
+> External consumers import a provider's **`client.ts`** (actions) and **`types.ts`** (type-only, low-severity exception). Never `lib/`, `dal/`, `schemas/`, `constants/`.
 >
 > A **translator/adapter** (vendor payload → domain shape) is domain-land code that may import the provider's **`types.ts`** type-only for its input signature, and imports the domain shapes it produces from the owning entity.
 
@@ -30,7 +30,7 @@ This **supersedes** the two `service-architecture.md` clauses above. Provider `l
 
 ### Constraints that must not break (compiled from service-architecture.md + #248)
 1. `the-deciding-question` — HTTP → provider; orchestration → service; pure-local → shared lib.
-2. `client-is-the-superset-entry-point` — one `<provider>Client`; every action is a method; `types.ts`/`schemas/`/`webhooks/` are allowed sibling exports; `lib/` is not an action surface.
+2. `client-is-the-superset-entry-point` — one `<provider>Client`; every action is a method; `types.ts`/`schemas/` are allowed sibling exports; `lib/` is not an action surface.
 3. `providers-have-no-domain-types-in-signatures` — the client speaks provider-native types only; never returns `IntakeCore`/`LeadMeta`. (Reference impl note updated: translators move to domain-land, not provider lib.)
 4. `dependency-direction-is-one-way` — provider never imports another provider, a service, or the DAL. (Amended: drop the "→ provider lib translators OK" line.)
 5. #248 exceptions preserved: `lib/config.ts` (server-env), type-only imports, client-side hooks as a separate entrypoint.

@@ -6,10 +6,6 @@ import { useCallback, useRef, useState } from 'react'
 import { highlightMeetingParser } from '@/features/schedule-management/constants/query-parsers'
 
 const HIGHLIGHT_DURATION_MS = 10_000
-// On iOS Safari / PWA, a transform still animating on an ancestor breaks scrollIntoView's position math and the
-// scroll silently no-ops. The dashboard template fades the page in over 200 ms with a 4px rise, so the scroll
-// waits for that to settle, with a margin.
-const SCROLL_DEFER_MS = 250
 
 interface UseScheduleHighlightReturn {
   highlightMeetingId: string
@@ -35,12 +31,9 @@ export function useScheduleHighlight(): UseScheduleHighlightReturn {
           return
         }
 
-        // Card has rendered — wait for the template's entrance to settle before scrolling (see SCROLL_DEFER_MS).
-        // `block: 'center'` is also more reliable than 'nearest' when the target sits inside a nested
-        // ScrollArea viewport on mobile.
-        setTimeout(() => {
-          node.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' })
-        }, SCROLL_DEFER_MS)
+        // The card is in the DOM and nothing above it animates, so the scroll runs at once. `block: 'center'` is
+        // more reliable than 'nearest' when the target sits inside a nested ScrollArea viewport on mobile.
+        node.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' })
 
         // NOW start the cleanup timer since the highlight is actually visible
         timerRef.current = setTimeout(() => {

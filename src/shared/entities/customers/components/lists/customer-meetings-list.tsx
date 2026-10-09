@@ -17,13 +17,11 @@ import { cn } from '@/shared/lib/utils'
 
 interface Props {
   meetings: CustomerProfileMeeting[]
-  customerId: string
   highlightMeetingId?: string
 }
 
 export function CustomerMeetingsList({
   meetings,
-  customerId,
   highlightMeetingId,
 }: Props) {
   const ability = useAbility()
@@ -43,7 +41,7 @@ export function CustomerMeetingsList({
             meetings.map(meeting => (
               <Card key={meeting.id} className={cn('group pt-0 pb-0 gap-0', meeting.id === highlightMeetingId && 'outline-2 outline-primary -outline-offset-2 shadow-sm')}>
                 <CardContent className="p-0">
-                  <MeetingOverviewCard meeting={meeting} customerId={customerId}>
+                  <MeetingOverviewCard meeting={meeting}>
                     <MeetingOverviewCard.Header className="px-3 py-2">
                       <MeetingOverviewCard.Fields fields={[
                         { field: 'scheduledDate' },

@@ -9,7 +9,7 @@ import { createProviderConfig } from '@/shared/config/create-provider-config'
 export const resendEnvFragment = z.object({
   RESEND_API_KEY: z.string().optional(),
   // Outside production every email is rerouted to this inbox. server-env refuses it in production.
-  EMAIL_DEV_OVERRIDE: z.email().optional(),
+  EMAIL_DEV_OVERRIDE: z.preprocess(value => value === '' ? undefined : value, z.email().optional()),
 })
 
 export type ParsedResendEnv = z.infer<typeof resendEnvFragment>

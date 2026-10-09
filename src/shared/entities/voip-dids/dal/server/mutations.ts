@@ -10,6 +10,7 @@ import type { IncomingPhoneNumberInstance } from '@/shared/services/providers/tw
 import { and, eq, ne } from 'drizzle-orm'
 
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
+import { ThrowableDalError } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { voipDids } from '@/shared/db/schema/voip-dids'
 
@@ -212,5 +213,32 @@ export async function reconcileWithProvider(
     }
 
     return { updated, created, deactivated }
+  })
+}
+
+interface SetMainLineInput {
+  e164: string
+}
+
+/** One transaction: the partial unique index allows one main line, so the old flag clears before the new one lands. */
+export async function setMainLine(input: SetMainLineInput): Promise<DalReturn<VoipDid>> {
+  return dalDbOperation(async () => {
+    return db.transaction(async (tx) => {
+      const [target] = await tx
+        .select()
+        .from(voipDids)
+        .where(eq(voipDids.e164, input.e164))
+        .limit(1)
+      if (!target) {
+        throw new ThrowableDalError({ type: 'not-found' })
+      }
+      await tx.update(voipDids).set({ isMainLine: false }).where(eq(voipDids.isMainLine, true))
+      const [row] = await tx
+        .update(voipDids)
+        .set({ isMainLine: true, isActive: true })
+        .where(eq(voipDids.id, target.id))
+        .returning()
+      return row!
+    })
   })
 }

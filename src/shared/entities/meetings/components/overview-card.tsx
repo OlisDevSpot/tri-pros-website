@@ -1,6 +1,6 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 
 import type { MeetingOutcome } from '@/shared/constants/enums'
 import type { Meeting } from '@/shared/db/schema/meetings'
@@ -15,24 +15,24 @@ import { AddressAction } from '@/shared/components/contact-actions/ui/address-ac
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
 import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
+import { isClickAction } from '@/shared/components/entities/entity-actions/types'
 import { EntityActionMenu } from '@/shared/components/entities/entity-actions/ui/entity-action-menu'
 import { EntityList } from '@/shared/components/entities/entity-list/ui/entity-list'
 import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
 import { Badge } from '@/shared/components/ui/badge'
 import { selectableMeetingOutcomes } from '@/shared/constants/enums'
 import { useAbility } from '@/shared/domains/permissions/client'
-import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
+import { MEETING_ACTIONS } from '@/shared/entities/meetings/constants/actions'
 import {
   MEETING_LIST_STATUS_COLORS,
   MEETING_OUTCOME_DOT_COLORS,
   MEETING_OUTCOME_LABELS,
 } from '@/shared/entities/meetings/constants/status-colors'
-import { useMeetingActionConfigs } from '@/shared/entities/meetings/hooks/use-meeting-action-configs'
 import { UserOverviewCard } from '@/shared/entities/users/components/overview-card'
 import { formatBusinessTime } from '@/shared/lib/business-time'
 import { formatMeetingShortStamp } from '@/shared/lib/formatters'
-import { openModal } from '@/shared/lib/open-modal'
 import { cn } from '@/shared/lib/utils'
+import { useMeetingActionsHost } from '@/shared/modules/meetings/core/components/meeting-actions-host'
 import { ProposalOverviewCard } from '@/shared/modules/proposals/core/components/overview-card'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -48,8 +48,8 @@ export type MeetingOverviewCardProposal
     }
 
 export type MeetingOverviewCardData
-  = Pick<Meeting, 'id'>
-    & Partial<Pick<Meeting, 'scheduledFor' | 'confirmedAt' | 'createdAt' | 'meetingType' | 'meetingOutcome' | 'ownerId' | 'customerId'>>
+  = Pick<Meeting, 'id' | 'customerId'>
+    & Partial<Pick<Meeting, 'scheduledFor' | 'confirmedAt' | 'createdAt' | 'meetingType' | 'meetingOutcome' | 'ownerId'>>
     & {
       ownerName?: string | null
       ownerImage?: string | null
@@ -74,10 +74,9 @@ export type MeetingFieldConfig
 
 interface MeetingOverviewCardContextValue {
   meeting: MeetingOverviewCardData
-  customerId: string
-  actions: ReturnType<typeof useMeetingActionConfigs>['actions']
+  actions: ReturnType<typeof useMeetingActionsHost>['actions']
   /** Shared with the ⋯ menu's "Set Outcome" — same reason-dialog flow. */
-  changeOutcome: (meetingId: string, outcome: MeetingOutcome) => Promise<void>
+  changeOutcome: ReturnType<typeof useMeetingActionsHost>['changeOutcome']
 }
 
 const MeetingOverviewCardContext = createContext<MeetingOverviewCardContextValue | null>(null)
@@ -92,44 +91,18 @@ function useMeetingOverviewCard() {
 
 // ── Root ───────────────────────────────────────────────────────────────────────
 
-interface MeetingOverviewCardProps {
+// The root owns the click, so a caller can't replace it; other div attributes (`data-press`, aria) pass through.
+interface MeetingOverviewCardProps extends Omit<ComponentProps<'div'>, 'onClick'> {
   meeting: MeetingOverviewCardData
-  customerId: string
-  className?: string
   children: ReactNode
-  onAssignOwner?: (entity: MeetingOverviewCardData) => void
-  onAssignProject?: (entity: MeetingOverviewCardData) => void
 }
 
-function MeetingOverviewCardRoot({
-  meeting,
-  customerId,
-  className,
-  children,
-  onAssignOwner,
-  onAssignProject,
-}: MeetingOverviewCardProps) {
-  const openProfile = useCallback(() => {
-    openModal({
-      accessor: 'CustomerProfile',
-      Component: CustomerProfileModal,
-      props: { customerId, defaultTab: 'meetings' as const, highlightMeetingId: meeting.id },
-    })
-  }, [customerId, meeting.id])
-
-  const { actions, DeleteConfirmDialog, AssignOwnerDialog, OutcomeReasonDialog, RescheduleDialog, changeOutcome } = useMeetingActionConfigs({
-    onView: () => openProfile(),
-    onAssignOwner: onAssignOwner
-      ? () => onAssignOwner(meeting)
-      : undefined,
-    onAssignProject: onAssignProject
-      ? () => onAssignProject(meeting)
-      : undefined,
-  })
+function MeetingOverviewCardRoot({ meeting, children, ...props }: MeetingOverviewCardProps) {
+  const { actions, changeOutcome } = useMeetingActionsHost('MeetingOverviewCard')
 
   const value = useMemo<MeetingOverviewCardContextValue>(
-    () => ({ meeting, customerId, actions, changeOutcome }),
-    [meeting, customerId, actions, changeOutcome],
+    () => ({ meeting, actions, changeOutcome }),
+    [meeting, actions, changeOutcome],
   )
 
   const handleClick = useCallback((e: React.MouseEvent) => {
@@ -140,26 +113,25 @@ function MeetingOverviewCardRoot({
 
     // Reject clicks that originate inside a portaled descendant (Radix Dialog,
     // Popover, etc.). React synthetic events bubble through the React tree
-    // regardless of DOM placement, so a click inside `<ParticipantsSlot>`'s
-    // own ManageParticipantsModal — rendered as a child of this card — would
-    // otherwise bubble here and open the customer profile on every participant
-    // add/remove. The DOM `contains` check is the source of truth: portaled
-    // content lives elsewhere in the DOM, so it fails this check.
+    // regardless of DOM placement, so a click inside a popover rendered as a
+    // child of this card would otherwise bubble here and open the profile on
+    // every participant add/remove. The DOM `contains` check is the source of
+    // truth: portaled content lives elsewhere in the DOM, so it fails this check.
     const target = e.target as Node | null
     if (target && !e.currentTarget.contains(target)) {
       return
     }
 
-    openProfile()
-  }, [openProfile])
+    // The click is the View action, so a view that overrides View changes the click with it.
+    const view = actions.find(config => config.action.id === MEETING_ACTIONS.view.id)
+    if (view && isClickAction(view)) {
+      view.onAction(meeting)
+    }
+  }, [actions, meeting])
 
   return (
     <MeetingOverviewCardContext value={value}>
-      <DeleteConfirmDialog />
-      <AssignOwnerDialog />
-      <OutcomeReasonDialog />
-      <RescheduleDialog />
-      <div className={className} onClick={handleClick}>
+      <div {...props} onClick={handleClick}>
         {children}
       </div>
     </MeetingOverviewCardContext>

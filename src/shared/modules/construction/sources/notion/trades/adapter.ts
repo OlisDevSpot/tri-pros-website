@@ -22,11 +22,15 @@ function extractCoverImageUrl(page: PageObjectResponse): string | null {
   return null
 }
 
+export function isDisabledTrade(page: PageObjectResponse): boolean {
+  return checkbox(page.properties, TRADE_PROPERTIES_MAP.disabled.label)
+}
+
 export function pageToTrade(page: PageObjectResponse): Trade | null {
   try {
     const p = page.properties
 
-    if (checkbox(p, TRADE_PROPERTIES_MAP.disabled.label)) {
+    if (isDisabledTrade(page)) {
       return null
     }
 

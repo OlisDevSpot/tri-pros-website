@@ -105,6 +105,10 @@ const APP_ROOTS = {
     analytics: () => '/dashboard/analytics',
     calculators: () => '/dashboard/calculators',
   },
+  pwa: {
+    /** The static shell document the installed app's launch is served from; it soft-navigates to the dashboard. */
+    shell: '/launch',
+  },
   public: {
     intake: () => '/intake',
     proposals: () => '/proposal-flow',

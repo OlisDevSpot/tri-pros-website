@@ -4,6 +4,9 @@ import type { useCustomerEditForm } from '@/shared/entities/customers/hooks/use-
 import type { CustomerProfileData } from '@/shared/entities/customers/types'
 import { TabsContent } from '@/shared/components/ui/tabs'
 import { Can } from '@/shared/domains/permissions/ui/can'
+import { MeetingActionsHost } from '@/shared/modules/meetings/core/components/meeting-actions-host'
+import { ProjectActionsHost } from '@/shared/modules/projects/core/components/project-actions-host'
+import { ProposalActionsHost } from '@/shared/modules/proposals/core/components/proposal-actions-host'
 import { CustomerMeetingsList } from '../lists/customer-meetings-list'
 import { CustomerProjectsList } from '../lists/customer-projects-list'
 import { CustomerProfileOverview } from './customer-profile-overview'
@@ -18,22 +21,22 @@ interface Props {
 
 export function CustomerProfileTabPanels({ data, editForm, highlightMeetingId, onMutationSuccess, onOpenMeeting }: Props) {
   return (
-    <>
-      <TabsContent className="mt-0 p-4 md:p-6" value="overview">
-        <CustomerProfileOverview data={data} editForm={editForm} onOpenMeeting={onOpenMeeting} />
-      </TabsContent>
-      <TabsContent className="mt-0 p-4 md:p-6" value="meetings">
-        <CustomerMeetingsList
-          customerId={data.customer.id}
-          highlightMeetingId={highlightMeetingId}
-          meetings={data.meetings}
-        />
-      </TabsContent>
-      <Can permission={['read', 'Project']}>
-        <TabsContent className="mt-0 p-4 md:p-6" value="projects">
-          <CustomerProjectsList data={data} highlightMeetingId={highlightMeetingId} onMutationSuccess={onMutationSuccess} />
-        </TabsContent>
-      </Can>
-    </>
+    <MeetingActionsHost>
+      <ProposalActionsHost>
+        <ProjectActionsHost>
+          <TabsContent className="mt-0 p-4 md:p-6" value="overview">
+            <CustomerProfileOverview data={data} editForm={editForm} onOpenMeeting={onOpenMeeting} />
+          </TabsContent>
+          <TabsContent className="mt-0 p-4 md:p-6" value="meetings">
+            <CustomerMeetingsList highlightMeetingId={highlightMeetingId} meetings={data.meetings} />
+          </TabsContent>
+          <Can permission={['read', 'Project']}>
+            <TabsContent className="mt-0 p-4 md:p-6" value="projects">
+              <CustomerProjectsList data={data} highlightMeetingId={highlightMeetingId} onMutationSuccess={onMutationSuccess} />
+            </TabsContent>
+          </Can>
+        </ProjectActionsHost>
+      </ProposalActionsHost>
+    </MeetingActionsHost>
   )
 }

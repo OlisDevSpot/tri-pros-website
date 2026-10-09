@@ -13,7 +13,7 @@ export interface SubjectsWithoutSpec {
   CustomerPipeline: 'read'
   LeadsPool: 'read'
   /** Feature gate: see and send a meeting's visit messages. */
-  VisitMessages: 'read'
+  VisitMessages: 'read' | 'update'
   User: 'read'
   Activity: CrudAction
 }

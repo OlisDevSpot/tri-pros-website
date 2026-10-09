@@ -1,9 +1,9 @@
 import { packRules } from '@casl/ability/extra'
 
 import { DashboardSignIn } from '@/features/agent-dashboard/ui/components/dashboard-sign-in'
-import { PushSubscriptionBanner } from '@/shared/components/push-subscription-banner'
 import { AbilityProvider } from '@/shared/domains/permissions/client'
 import { getRequestActor } from '@/shared/domains/permissions/server/get-request-actor'
+import { PushSubscriptionBanner } from '@/shared/domains/pwa/ui/push-subscription-banner'
 
 // Owns the session read for the page slot. A session cookie that no longer maps
 // to a session (expired, revoked) lands here as null and gets the sign-in

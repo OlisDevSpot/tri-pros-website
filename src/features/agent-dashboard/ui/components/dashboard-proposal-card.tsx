@@ -28,7 +28,8 @@ export function DashboardProposalCard({ row, timeSince = 'contractSentAt', class
   return (
     <ProposalOverviewCard
       proposal={proposal}
-      className={cn('cursor-pointer rounded-lg border border-border bg-card p-2.5 transition-colors duration-200 hover:bg-row-hover', className)}
+      data-press
+      className={cn('cursor-pointer rounded-lg border border-border bg-card p-2.5 transition-colors duration-200 hover:bg-row-hover pressed:bg-row-press', className)}
     >
       <ProposalOverviewCard.Header className="min-w-0 gap-1.5">
         <ProposalOverviewCard.Label className="min-w-0 flex-1 truncate font-medium" />

@@ -15,7 +15,6 @@ import { deriveProjectStatusBucket, pipelines } from '@/shared/constants/enums/p
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { fieldListInput } from '@/shared/dal/server/lib/query/field-list-input'
-import { buildSearchWhere } from '@/shared/dal/server/lib/query/search'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { customers } from '@/shared/db/schema/customers'
@@ -27,6 +26,7 @@ import { computeFreshStage } from '@/shared/domains/pipelines/lib/compute-fresh-
 import { computePipelineValue, computeProjectValue } from '@/shared/domains/pipelines/lib/compute-pipeline-value'
 import { CUSTOMER_FIELDS } from '@/shared/entities/customers/dal/customer-fields'
 import { CUSTOMER_FIELD_SQL } from '@/shared/entities/customers/dal/server/customer-field-sql'
+import { customerSearchWhere } from '@/shared/entities/customers/dal/server/customer-search-sql'
 import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { userParticipatesInMeeting } from '@/shared/entities/meetings/dal/server/participants'
@@ -59,7 +59,7 @@ export async function getCustomerPipelineItems(ctx: ScopedContext, input: Custom
       meetingReach: permit(ctx, 'read', meetingServerSpec).sql,
       customerWhere: and(
         permit(ctx, 'read', customerServerSpec).sql,
-        buildSearchWhere(input.search, [customers.name, customers.email]),
+        customerSearchWhere(input.search, ctx.actor.ability),
         CUSTOMER_FIELD_SQL.where(input.filters),
       ),
       customerOrder: input.sort ? CUSTOMER_FIELD_SQL.orderBy(input.sort) : undefined,

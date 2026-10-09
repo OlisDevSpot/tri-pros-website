@@ -7,24 +7,36 @@ import { renderMergeTemplate } from '@/shared/services/voip/lib/sms-merge-templa
 
 export function buildVisitMessageVars(input: {
   customerName: string | null
-  repName: string | null
+  specialistName: string | null
+  coordinatorName: string | null
   scheduledFor: string
   visitLink: string
-  officeNote?: string | null
+  coordinatorNote?: string | null
 }): VisitMessageVars {
   return {
     firstName: input.customerName?.trim().split(/\s+/)[0] || 'there',
-    repName: input.repName,
+    specialistName: input.specialistName,
+    coordinatorName: input.coordinatorName,
     visitDate: formatBusinessDay(input.scheduledFor),
     visitTime: formatBusinessClock(input.scheduledFor),
     arrivalWindow: formatArrivalWindow(input.scheduledFor),
     visitLink: input.visitLink,
-    officeNote: (input.officeNote ?? '').replace(/\s+/g, ' ').trim(),
+    coordinatorNote: (input.coordinatorNote ?? '').replace(/\s+/g, ' ').trim(),
   }
 }
 
 export function renderVisitMessage(body: string, vars: VisitMessageVars, options: { stopLine: boolean }): string {
-  // An empty office note leaves two spaces where the token was.
-  const rendered = renderMergeTemplate(body, VISIT_MESSAGE_TOKENS, vars).replace(/ {2,}/g, ' ').trim()
-  return options.stopLine ? `${rendered} ${VISIT_MESSAGE_STOP_LINE}` : rendered
+  // A dropped section leaves doubled spaces and empty lines where it stood.
+  const rendered = renderMergeTemplate(body, VISIT_MESSAGE_TOKENS, vars)
+    .split('\n')
+    .map(line => line.replace(/ {2,}/g, ' ').trim())
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+  if (!options.stopLine) {
+    return rendered
+  }
+  // Beside a closing "Reply YES..." it reads as one ask; after a signature it needs its own line.
+  const lastLine = rendered.slice(rendered.lastIndexOf('\n') + 1)
+  return `${rendered}${/^reply\b/i.test(lastLine) ? ' ' : '\n'}${VISIT_MESSAGE_STOP_LINE}`
 }

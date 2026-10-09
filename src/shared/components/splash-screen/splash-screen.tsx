@@ -12,15 +12,19 @@ import {
   SPLASH_VISIBLE_MS,
 } from '@/shared/components/splash-screen/splash-timing'
 import { BRAND_EASE } from '@/shared/constants/motion'
+import { PWA_LAUNCH_FIELD } from '@/shared/domains/pwa/constants/launch'
 import { useAutoFocus } from '@/shared/hooks/use-auto-focus'
 
 /**
  * `timed` fades on its own after `SPLASH_VISIBLE_MS`. `press` holds until the viewer presses:
  * `label` is the button's text and accessible name; while `ready` is false (default true) the
  * button is disabled and reads `pendingLabel`, and no press is accepted — the splash is then also
- * the loading state of what it covers (E10).
+ * the loading state of what it covers (E10). `held` has no clock and no press: the caller closes it.
  */
-type SplashDismiss = { mode: 'timed' } | { mode: 'press', label: string, ready?: boolean, pendingLabel?: string }
+type SplashDismiss
+  = | { mode: 'timed' }
+    | { mode: 'held' }
+    | { mode: 'press', label: string, ready?: boolean, pendingLabel?: string }
 
 interface SplashScreenProps {
   /** Controlled: the caller decides when it shows (once per session, once per meeting). */
@@ -32,6 +36,12 @@ interface SplashScreenProps {
   subheading?: string
   /** The mark's and caption's rise, and the overlay's fade. */
   ease?: [number, number, number, number]
+  /**
+   * Play the mark's entrance (default). `false` paints the finished mark from the first frame, for a
+   * cover that continues a native launch image already showing that mark; the overlay's fade on close
+   * is unaffected.
+   */
+  entrance?: boolean
 }
 
 /**
@@ -47,12 +57,15 @@ interface SplashScreenProps {
  * function keys (review F5).
  * Reduced motion is gated here with `useReducedMotion()`: a host's
  * `MotionConfig reducedMotion="user"` would keep opacity fades and their delays (review F4), and
- * this component mounts wherever the host puts it. Visibility is the caller's policy.
+ * this component mounts wherever the host puts it. Visibility is the caller's policy. In held mode
+ * nothing here closes it; a held cover also usually passes entrance={false}, so the mark it shows is
+ * the one the native launch image already showed.
  */
-export function SplashScreen({ open, onDismiss, dismiss, title, subheading, ease = BRAND_EASE }: SplashScreenProps) {
+export function SplashScreen({ open, onDismiss, dismiss, title, subheading, ease = BRAND_EASE, entrance = true }: SplashScreenProps) {
   const captionId = useId()
   const reduced = useReducedMotion() ?? false
   const animate = !reduced
+  const playEntrance = animate && entrance
   const press = dismiss.mode === 'press'
   // A press counts only once the caller is ready; the cue is aria-disabled until then (E10).
   const armed = press && (dismiss.ready ?? true)
@@ -107,21 +120,28 @@ export function SplashScreen({ open, onDismiss, dismiss, title, subheading, ease
 
   return (
     <div
-      className="fixed inset-0 z-9999 flex flex-col items-center justify-center gap-8 p-10"
+      className="flex flex-col items-center justify-center gap-8 p-10"
       data-splash
       data-state={open ? 'open' : 'closed'}
       inert={!open}
       style={{
-        backgroundColor: '#040f23',
+        // A full-window cover must not depend on a stylesheet rule being present: its box is inline.
+        position: 'fixed',
+        inset: 0,
+        zIndex: 9999,
+        // One constant with the startup images and the manifest, so the native stage and this overlay never differ.
+        backgroundColor: PWA_LAUNCH_FIELD,
         opacity: open ? 1 : 0,
         transitionProperty: 'opacity',
-        transitionDuration: `${animate ? SPLASH_FADE_S : 0}s`,
+        // Unconditional: under reduced motion the overlay unmounts in the same render, so the duration never
+        // plays, and a value that depends on the preference would differ between the server and the client.
+        transitionDuration: `${SPLASH_FADE_S}s`,
         transitionTimingFunction: `cubic-bezier(${ease.join(',')})`,
       }}
       onClick={armed ? onDismiss : undefined}
     >
-      <SplashMark animate={animate} ease={ease} />
-      {title && <SplashCaption animate={animate} ease={ease} id={captionId} subheading={subheading} title={title} />}
+      <SplashMark animate={playEntrance} ease={ease} />
+      {title && <SplashCaption animate={playEntrance} ease={ease} id={captionId} subheading={subheading} title={title} />}
       {press && (
         <motion.button
           ref={pressRef}
@@ -130,7 +150,7 @@ export function SplashScreen({ open, onDismiss, dismiss, title, subheading, ease
           aria-describedby={title ? captionId : undefined}
           aria-disabled={armed ? undefined : true}
           className="cursor-pointer rounded-full px-5 py-2.5 font-sans text-xs tracking-[0.18em] text-on-media-muted uppercase hover:text-on-media aria-disabled:cursor-default aria-disabled:hover:text-on-media-muted focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--presentation-accent)"
-          initial={animate ? { opacity: 0 } : false}
+          initial={playEntrance ? { opacity: 0 } : false}
           transition={{ duration: SPLASH_CUE_DURATION_S, delay: SPLASH_CUE_DELAY_S, ease: 'easeOut' }}
           type="button"
         >

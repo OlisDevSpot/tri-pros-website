@@ -21,6 +21,7 @@ export async function getMeetingsWithProposals(ctx: ScopedContext, where: SQL): 
     .select({
       id: meetings.id,
       ownerId: meetings.ownerId,
+      customerId: meetings.customerId,
       projectId: meetings.projectId,
       meetingType: meetings.meetingType,
       meetingOutcome: meetings.meetingOutcome,
@@ -106,6 +107,7 @@ export async function getMeetingsWithProposals(ctx: ScopedContext, where: SQL): 
   const meetingsWithProposals: CustomerProfileMeeting[] = meetingRows.map(m => ({
     id: m.id,
     ownerId: m.ownerId,
+    customerId: m.customerId,
     projectId: m.projectId,
     meetingType: m.meetingType,
     meetingOutcome: m.meetingOutcome,

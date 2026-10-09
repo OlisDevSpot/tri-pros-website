@@ -295,6 +295,8 @@ const pairs: Pair[] = [
   // A field is filled with its own surface, so its edge alone marks it: about 2:1 keeps a search box from vanishing
   // into a toolbar without the old 3:1 grid of dark boxes. The focus ring carries the 3:1 state change.
   { label: 'field edge vs its surface', fg: '--input', bg: '--card', min: 1.9, on: ON_SURFACES },
+  // A hovered field firms its edge but never reaches the indicator's 3:1; the owner finds a field boxed at 3:1 harsh.
+  { label: 'hovered field edge vs its surface', fg: '--input-hover', bg: '--card', min: 2.2, max: 2.95, on: ON_SURFACES },
   { label: 'body text on band', fg: '--foreground', bg: '--band', min: 4.5, on: ['page', ...CARDS] },
   { label: 'muted text on band', fg: '--muted-foreground', bg: '--band', min: 4.5, on: ['page', ...CARDS] },
   { label: 'body text on hovered row', fg: '--foreground', bg: '--row-hover', min: 4.5, on: ON_SURFACES },
@@ -405,8 +407,9 @@ const climb: [[string, Place], [string, Place]][] = [
   ...ON_SURFACES.map((place): [[string, Place], [string, Place]] => [['--tab-track', place], ['--tab-active', place]]),
 ]
 
-// A selected row has to stand further from its surface than a hovered one, or hover reads as the selection.
-const outranks: [string, string][] = [['--row-selected', '--row-hover']]
+// A selected row has to stand further from its surface than a hovered one, or hover reads as the selection; a
+// hovered field's edge further than its resting edge, or the hover doesn't show.
+const outranks: [string, string][] = [['--row-selected', '--row-hover'], ['--input-hover', '--input']]
 function distanceFromSurface(name: string, mode: Mode, place: Place) {
   const [l1, a1, b1] = toOklab(resolve(name, mode, place))
   const [l2, a2, b2] = toOklab(resolve('--card', mode, place))

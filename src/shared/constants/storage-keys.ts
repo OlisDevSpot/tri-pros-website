@@ -4,7 +4,6 @@ export const STORAGE_KEY_PREFIX = 'tri-pros:'
 /** Centralized localStorage key constants. Use these instead of inline strings. */
 export const STORAGE_KEYS = {
   ACTIVE_PIPELINE: `${STORAGE_KEY_PREFIX}active-pipeline`,
-  SCHEDULE_SCOPE: `${STORAGE_KEY_PREFIX}schedule-scope`,
 } as const
 
 /**

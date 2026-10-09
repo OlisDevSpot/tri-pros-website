@@ -153,14 +153,6 @@ Two shared affordances consume it — both wired once at the shared layer, so ev
 
 **Why**: data goes stale after a foreign edit; manual refresh recovers without a full reload. Canonical design: `docs/superpowers/specs/2026-08-11-records-table-refresh-design.md`.
 
-## Legacy filter scaffolding (deprecated)
-
-These are marked `@deprecated` and used only by the Activities table:
-
-- `DataTableFilterConfig`, `DataTableFilterBar`, `useTableUrlFilters`, `DataTableTimePresetFilter`
-
-Records pages (Meetings, Proposals, Projects) and Customer Pipelines have already been migrated. Activities table migration is a follow-up issue.
-
 ## Anti-patterns
 
 - **`useState(1)` for page + manual debounce for search.** Use `usePaginatedQuery`.

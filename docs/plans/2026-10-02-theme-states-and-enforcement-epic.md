@@ -1,6 +1,6 @@
 # Theme states, tokens and enforcement — epic tracker
 
-Started 2026-10-02, right after the elevation ladder shipped. Goal: every colour on screen comes from a token chosen by meaning, hover/press/selected states come from state tokens instead of ad-hoc `primary/NN` mixes, and the rules are enforced by lint and checks rather than by memory. Delete each line when it ships; delete the file when the epic is done.
+Started 2026-10-02, right after the elevation ladder shipped. Goal: every colour on screen comes from a token chosen by meaning, hover/press/selected states come from state tokens instead of ad-hoc `primary/NN` mixes, and the rules are held by `theme:check` plus written conventions (`docs/design-system/theme-conventions.md`, ruling 14) rather than by memory. Delete each line when it ships; delete the file when the epic is done.
 
 **Read first:** `src/app/(frontend)/globals.css` (the ladder knobs sit in `:root, .funnel-light` and `.dark`), the `elevation-ladder` skill (`.claude/skills/elevation-ladder/`: retune flow, `shoot.mjs` screenshots, `measure.mjs`), `pnpm theme:check` (`scripts/check-theme-contrast.ts`), and the `theme-tokens/*` block in `eslint.config.js`. `DESIGN.md` describes the ladder and the hover/press tokens (E5 done); still trust the code over it.
 
@@ -45,15 +45,8 @@ The marketing world (landing, funnels, `site-navbar.tsx`) keeps its own Blueprin
   - `--on-media` and `--scrim`, for text and veils over photos.
 
   Each token gets `theme:check` pairs on every rung in both schemes, plus alpha-text pairs (M2).
-- **E2. The other primitives on the state tokens:** navigation-menu, the select and multi-select triggers, and the dialog and sheet close buttons (§2a). Button, badge, toggle and calendar shipped in `17d04dac`.
-- **E3. Lint rules (after Phase 1, per §5.4),** in the `theme-tokens/*` block, with scope extended to `src/app/**`. They ban:
-  - `bg|text|border-(white|black)`; use `--on-media`/`--scrim` instead;
-  - arbitrary colour values `-[#..]`, `-[rgb(..)]`, `-[oklch(..)]`;
-  - `dark:` colour patches;
-  - `hover:|active:|focus:` primary fills outside `src/shared/components/ui/**`;
-  - `bg-background` outside an allowlist of page shells.
-
-  No suppressions ratchet: each rule turns on once Phase 1 has cleaned its hits.
+- **E2. Primitives on the state tokens: done.** Shipped in `17d04dac` (button, badge, toggle, calendar), `12514bbf` (navigation-menu, dialog/sheet close, menu items, select in a control group) and `78c5e0a8` (select and multi-select triggers hover with `--input-hover`).
+- **E3. Lint rules: replaced by conventions (ruling 14).** The bans it listed (white/black utilities, arbitrary colours, `dark:` patches, primary state fills outside `ui/`, `bg-background` inside surfaces) live in `docs/design-system/theme-conventions.md` §9, with a grep self-check in §12.
 - **E6 (optional). Primary-coverage probe:** `shoot.mjs` reports the share of pixels in the primary hue per screen, against the ≤10% One Voice rule.
 - **Phase 1. Backlog by area:** sign-in → dashboard → records → proposal → meeting-flow → customer profile → public site. Owner gate per area, both schemes, desktop + phone.
 
@@ -144,3 +137,5 @@ Harness and test choices, no cost:
       - "Viewing as" becomes a segmented control;
       - form section cards are nested `bg-card`;
       - the offer badge is secondary.
+13. **Live check (2026-10-09):** the owner checked the shipped Phase 1 work live and accepted it with no corrections. That covers rounds 1–5, the gutter/radius pass, controls, segmented/tabs, E1, E2, the sign-in + dashboard, records + proposal pairs, and the 2026-10-08 follow-ups. Still open: the meeting-flow + customer-profile pair, the public site and E6.
+14. **Conventions instead of lint (2026-10-09):** no new lint rules. The rules this epic arrived at are written down as on-demand conventions with examples in `docs/design-system/theme-conventions.md`, which any session can be pointed to; its §12 grep self-check stands in for E3.

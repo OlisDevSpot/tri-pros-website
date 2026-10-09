@@ -20,13 +20,15 @@ export interface VisitMessageFact {
 
 export interface VisitMessageVars {
   firstName: string
-  /** null when the meeting has no rep yet. */
-  repName: string | null
+  /** null when no specialist is assigned yet. */
+  specialistName: string | null
+  /** null when the setter is nobody or the company itself; the texts then speak as the company. */
+  coordinatorName: string | null
   visitDate: string
   visitTime: string
   arrivalWindow: string
   visitLink: string
-  officeNote: string
+  coordinatorNote: string
 }
 
 export type VisitMessageStepState
@@ -55,7 +57,8 @@ export interface VisitMessageStep {
 export interface VisitMessagePlanInput {
   meeting: {
     scheduledFor: string
-    createdAt: string
+    /** When scheduledFor was last set; a time moved after a run's instant is never that run's business. */
+    scheduledForSetAt: string
     meetingType: MeetingType
     meetingOutcome: MeetingOutcome
     confirmedAt: string | null

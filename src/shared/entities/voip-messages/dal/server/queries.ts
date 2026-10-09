@@ -5,7 +5,7 @@
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { VoipMessage } from '@/shared/db/schema/voip-messages'
 
-import { and, desc, eq } from 'drizzle-orm'
+import { and, desc, eq, notInArray } from 'drizzle-orm'
 
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { db } from '@/shared/db'
@@ -42,4 +42,19 @@ export async function fetchThread(
 
     return rows
   })
+}
+
+/** Whether this line has ever reached this number: the first text that arrives carries the opt-out line, and a send that failed never arrived. */
+export async function hasOutboundOnThread(input: { voipDidId: string, remoteE164: string }): Promise<boolean> {
+  const [row] = await db
+    .select({ id: voipMessages.id })
+    .from(voipMessages)
+    .where(and(
+      eq(voipMessages.voipDidId, input.voipDidId),
+      eq(voipMessages.remoteE164, input.remoteE164),
+      eq(voipMessages.direction, 'outbound'),
+      notInArray(voipMessages.status, ['failed', 'undelivered']),
+    ))
+    .limit(1)
+  return row !== undefined
 }

@@ -14,6 +14,7 @@ const SERVER_OWNED_COLUMNS = {
   homeownerConfirmedVia: true,
   newTimeRequestedAt: true,
   rescheduledFromId: true,
+  scheduledForSetAt: true,
 } as const
 
 /**
