@@ -1,7 +1,9 @@
 import type { MeetingOutcome } from '@/shared/constants/enums/meetings'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { Meeting } from '@/shared/db/schema'
+import type { MeetingMessage } from '@/shared/db/schema/meeting-messages'
 
+import { publicUrl } from '@/shared/config/public-url'
 import { canRescheduleFromOutcome, outcomeRequiresReason } from '@/shared/constants/enums/meetings'
 import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { SYSTEM_CONTEXT, ThrowableDalError } from '@/shared/dal/server/types'
@@ -12,6 +14,12 @@ import { handOffShareToken } from '@/shared/entities/meetings/dal/server/mutatio
 import { addParticipant, getParticipantsForMeeting } from '@/shared/entities/meetings/dal/server/participants'
 import { getRescheduleSuccessorId } from '@/shared/entities/meetings/dal/server/queries'
 import { buildRescheduleNote, formatMeetingDateShort } from '@/shared/entities/meetings/lib/notes'
+import { meetingMessageCrud } from '@/shared/modules/meetings/messages/dal/server/crud'
+import { getVisitMessageContext } from '@/shared/modules/meetings/messages/dal/server/queries'
+import { getTemplateBodies } from '@/shared/modules/meetings/messages/dal/server/settings'
+import { deliverVisitText } from '@/shared/modules/meetings/messages/lib/deliver-visit-text'
+import { isVisitMessageEligible } from '@/shared/modules/meetings/messages/lib/is-visit-message-eligible'
+import { voipDidsService } from '@/shared/services/voip/voip-dids.service'
 
 export const meetingBusinessService = {
   /**
@@ -129,6 +137,58 @@ export const meetingBusinessService = {
       }
 
       return { ...replacement, shareToken: original.shareToken }
+    })
+  },
+  /**
+   * The setter sends the visit summary during the booking call, and staff resend it after a time change.
+   * One row per leg, so a dialog can report each.
+   */
+  async sendVisitSummary(
+    ctx: ScopedContext,
+    input: { meetingId: string, note?: string | null },
+  ): Promise<DalReturn<{ sms: MeetingMessage }>> {
+    return dalDbOperation(async () => {
+      // The scoped read is the visibility check; the unscoped context read is for the send.
+      const meeting = dalVerifySuccess(await meetingCrud.getById(ctx, { id: input.meetingId }))
+      if (!meeting) {
+        throw new ThrowableDalError({ type: 'not-found' })
+      }
+      if (!isVisitMessageEligible(meeting, new Date())) {
+        throw new ThrowableDalError({ type: 'precondition-failed', reason: 'Visit messages go to upcoming, undecided, non-project meetings only.' })
+      }
+      const mainLine = dalVerifySuccess(await voipDidsService.getMainLineDid())
+      if (!mainLine) {
+        throw new ThrowableDalError({ type: 'precondition-failed', reason: 'No main line is configured.' })
+      }
+
+      const context = await getVisitMessageContext(meeting.id)
+      if (!context) {
+        throw new ThrowableDalError({ type: 'not-found' })
+      }
+      const bodies = await getTemplateBodies()
+      const note = input.note?.trim() || null
+      const actorUserId = ctx.session?.user.id ?? null
+
+      const text = await deliverVisitText(ctx, {
+        context,
+        templateKey: 'visit_summary',
+        bodies,
+        officeNote: note,
+        mediaUrl: [publicUrl('/api/company/vcard')],
+      })
+      const sms = dalVerifySuccess(await meetingMessageCrud.create(ctx, {
+        meetingId: meeting.id,
+        kind: 'visit_summary',
+        channel: 'sms',
+        forScheduledFor: meeting.scheduledFor,
+        status: text.status,
+        reason: text.reason,
+        voipMessageId: text.voipMessageId,
+        actorUserId,
+        note,
+      }))
+
+      return { sms }
     })
   },
 } as const

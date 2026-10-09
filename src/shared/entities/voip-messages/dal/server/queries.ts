@@ -43,3 +43,17 @@ export async function fetchThread(
     return rows
   })
 }
+
+/** Whether this line has ever texted this number: the first text of a thread carries the opt-out line. */
+export async function hasOutboundOnThread(input: { voipDidId: string, remoteE164: string }): Promise<boolean> {
+  const [row] = await db
+    .select({ id: voipMessages.id })
+    .from(voipMessages)
+    .where(and(
+      eq(voipMessages.voipDidId, input.voipDidId),
+      eq(voipMessages.remoteE164, input.remoteE164),
+      eq(voipMessages.direction, 'outbound'),
+    ))
+    .limit(1)
+  return row !== undefined
+}
