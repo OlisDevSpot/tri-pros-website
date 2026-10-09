@@ -12,11 +12,12 @@ import { MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/sta
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { handOffShareToken } from '@/shared/entities/meetings/dal/server/mutations'
 import { addParticipant, getParticipantsForMeeting } from '@/shared/entities/meetings/dal/server/participants'
-import { getRescheduleSuccessorId } from '@/shared/entities/meetings/dal/server/queries'
+import { getRescheduleChain, getRescheduleSuccessorId } from '@/shared/entities/meetings/dal/server/queries'
 import { buildRescheduleNote, formatMeetingDateShort } from '@/shared/entities/meetings/lib/notes'
 import { meetingMessageCrud } from '@/shared/modules/meetings/messages/dal/server/crud'
-import { getVisitMessageContext } from '@/shared/modules/meetings/messages/dal/server/queries'
+import { getVisitMessageContext, listChainMessages } from '@/shared/modules/meetings/messages/dal/server/queries'
 import { getTemplateBodies } from '@/shared/modules/meetings/messages/dal/server/settings'
+import { deliverVisitSummaryEmail } from '@/shared/modules/meetings/messages/lib/deliver-visit-email'
 import { deliverVisitText } from '@/shared/modules/meetings/messages/lib/deliver-visit-text'
 import { isVisitMessageEligible } from '@/shared/modules/meetings/messages/lib/is-visit-message-eligible'
 import { voipDidsService } from '@/shared/services/voip/voip-dids.service'
@@ -146,7 +147,7 @@ export const meetingBusinessService = {
   async sendVisitSummary(
     ctx: ScopedContext,
     input: { meetingId: string, note?: string | null },
-  ): Promise<DalReturn<{ sms: MeetingMessage }>> {
+  ): Promise<DalReturn<{ sms: MeetingMessage, email: MeetingMessage }>> {
     return dalDbOperation(async () => {
       // The scoped read is the visibility check; the unscoped context read is for the send.
       const meeting = dalVerifySuccess(await meetingCrud.getById(ctx, { id: input.meetingId }))
@@ -188,7 +189,21 @@ export const meetingBusinessService = {
         note,
       }))
 
-      return { sms }
+      const forScheduledFor = meeting.scheduledFor
+      const base = { meetingId: meeting.id, kind: 'visit_summary' as const, channel: 'email' as const, forScheduledFor, actorUserId, note }
+      let email: MeetingMessage
+      if (!context.customer?.email) {
+        email = dalVerifySuccess(await meetingMessageCrud.create(ctx, { ...base, status: 'skipped', reason: 'no_email' }))
+      }
+      else {
+        const chainIds = dalVerifySuccess(await getRescheduleChain(ctx, { meetingId: meeting.id }))
+        const chainMessages = await listChainMessages(chainIds)
+        const sequence = chainMessages.filter(message => message.kind === 'visit_summary' && message.channel === 'email' && message.status === 'sent').length
+        const outcome = await deliverVisitSummaryEmail({ context, chainIds, sequence, officeNote: note, mainLineE164: mainLine.e164, now: new Date() })
+        email = dalVerifySuccess(await meetingMessageCrud.create(ctx, { ...base, status: outcome.status, reason: outcome.reason, emailProviderId: outcome.emailProviderId }))
+      }
+
+      return { sms, email }
     })
   },
 } as const

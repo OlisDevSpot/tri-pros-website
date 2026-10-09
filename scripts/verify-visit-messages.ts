@@ -16,6 +16,7 @@ import { ROOTS } from '@/shared/config/roots'
 import { businessDateTime, formatBusinessClock, formatBusinessDay, formatBusinessDayTime } from '@/shared/lib/business-time'
 import { buildIcs } from '@/shared/modules/meetings/messages/lib/build-ics'
 import { formatArrivalWindow } from '@/shared/modules/meetings/core/lib/arrival-window'
+import { buildGoogleCalendarLink } from '@/shared/modules/meetings/messages/lib/google-calendar-link'
 import { scheduledForSetByMove } from '@/shared/modules/meetings/core/lib/scheduled-for-set'
 import { confirmationsClearedByMove } from '@/shared/modules/meetings/core/lib/confirmation-reset'
 import { companyInfo } from '@/shared/constants/company'
@@ -456,5 +457,14 @@ console.log('12. Confirmations hold for one time ✓')
   assert.equal(VOIP_MESSAGE_STATUS_RANK.failed, VOIP_MESSAGE_STATUS_RANK.delivered, 'one terminal state never overwrites another')
 }
 console.log('13. Twilio status mapping ✓')
+
+{
+  const link = buildGoogleCalendarLink({ summary: 'Home visit with Tri Pros', start: VISIT, durationMs: 2 * 60 * 60 * 1000, location: '1 Main St, Calabasas, CA 91302', description: 'Oliver will arrive between 10:00 and 10:30 AM.' })
+  assert.ok(link.startsWith('https://calendar.google.com/calendar/render?action=TEMPLATE'))
+  assert.ok(link.includes('dates=20261009T170000Z%2F20261009T190000Z'), 'UTC stamps for the booked time and two hours after')
+  assert.ok(link.includes('text=Home+visit+with+Tri+Pros'))
+  assert.ok(link.includes('location=1+Main+St%2C+Calabasas%2C+CA+91302'))
+}
+console.log('14. Google Calendar link ✓')
 
 console.log('✅ verify-visit-messages passed')

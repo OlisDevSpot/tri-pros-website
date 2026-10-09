@@ -1,5 +1,6 @@
 import type { GeneralInquiryFormSchema, ScheduleConsultationFormSchema } from '@/shared/entities/landing/schemas'
 import type { CustomerConfirmationEmailProps } from '@/shared/services/providers/resend/emails/customer-confirmation-email'
+import type { VisitSummaryEmailProps } from '@/shared/services/providers/resend/emails/visit-summary-email'
 import { CustomerConfirmationEmail } from '@/shared/services/providers/resend/emails/customer-confirmation-email'
 import { GeneralInquiryEmail } from '@/shared/services/providers/resend/emails/general-inquiry-email'
 import MoveForwardRequestEmail from '@/shared/services/providers/resend/emails/move-forward-request-email'
@@ -7,6 +8,7 @@ import { NewLeadEmail } from '@/shared/services/providers/resend/emails/new-lead
 import { ProjectEmailTemplate } from '@/shared/services/providers/resend/emails/project-inquiry-email'
 import ProposalEmail from '@/shared/services/providers/resend/emails/proposal-email'
 import ProposalViewedEmail from '@/shared/services/providers/resend/emails/proposal-viewed-email'
+import { VisitSummaryEmail } from '@/shared/services/providers/resend/emails/visit-summary-email'
 
 export function renderProposalEmail(params: {
   proposalUrl: string
@@ -84,4 +86,8 @@ export function renderNewLeadEmail(params: {
       dashboardUrl={params.dashboardUrl}
     />
   )
+}
+
+export function renderVisitSummaryEmail(props: VisitSummaryEmailProps) {
+  return <VisitSummaryEmail {...props} />
 }
