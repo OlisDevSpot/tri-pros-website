@@ -1,3 +1,6 @@
+import type { Pipeline } from '@/shared/constants/enums/pipelines'
+import type { AppAbility } from '@/shared/domains/permissions/types'
+
 import { TRPCError } from '@trpc/server'
 import { desc, eq } from 'drizzle-orm'
 import { z } from 'zod'
@@ -10,6 +13,7 @@ import { customerLeadAttribution } from '@/shared/db/schema/customer-lead-attrib
 import { customers } from '@/shared/db/schema/customers'
 import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
+import { getAccessiblePipelines } from '@/shared/domains/pipelines/lib/get-accessible-pipelines'
 import { getCustomerProfile } from '@/shared/entities/customers/dal/server/get-customer-profile'
 import { customerPipelineItemsInputSchema, getCustomerPipelineItems } from '@/shared/entities/customers/dal/server/pipeline-items'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
@@ -20,10 +24,20 @@ import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 
 import { agentProcedure, createTRPCRouter } from '../init'
 
+// A pipeline the role is not offered is refused, not just untabbed: the projects pipeline carries values.
+function assertPipelineOpen(ability: AppAbility, pipeline: Pipeline) {
+  if (!getAccessiblePipelines(ability).includes(pipeline)) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'This pipeline is not available to your role.' })
+  }
+}
+
 export const customerPipelinesRouter = createTRPCRouter({
   getCustomerPipelineItems: agentProcedure
     .input(customerPipelineItemsInputSchema)
-    .query(async ({ ctx, input }) => dalToTrpc(await getCustomerPipelineItems(ctx, input))),
+    .query(async ({ ctx, input }) => {
+      assertPipelineOpen(ctx.actor.ability, input.pipeline)
+      return dalToTrpc(await getCustomerPipelineItems(ctx, input))
+    }),
 
   moveCustomerPipelineItem: agentProcedure
     .input(z.object({
@@ -33,6 +47,7 @@ export const customerPipelinesRouter = createTRPCRouter({
       pipeline: z.enum(pipelines).default('fresh'),
     }))
     .mutation(async ({ ctx, input }) => {
+      assertPipelineOpen(ctx.actor.ability, input.pipeline)
       await moveCustomerPipelineItem({
         ...input,
         user: { userId: ctx.session.user.id, ability: ctx.actor.ability },

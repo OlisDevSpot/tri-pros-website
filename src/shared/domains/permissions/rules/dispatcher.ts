@@ -7,8 +7,9 @@ export function dispatcherRules(userId: string) {
     can('access', 'Dashboard')
     can('read', 'LeadsPool') // the shared leads pool drives phone and pipeline access
 
-    // The operational pipeline: every lead bucket, never a customer who holds a project.
-    can('read', 'Customer', { $inDerivedPipeline: ['leads', 'rehash', 'dead', 'fresh'] })
+    // Every customer, project customers included. What a dispatcher must not see is money, which lives
+    // on proposals and projects, not on the customer.
+    can('read', 'Customer')
     // Lead-contact fields and the discovery profile: collecting a customer's data is the dispatcher's job.
     can('update', 'Customer', ['name', 'phone', 'email', 'address', 'city', 'state', 'zip', 'pipelineStage', 'profile', 'profile.*'])
 
