@@ -227,6 +227,12 @@ Every `@migration` comment in the voip code points to a future swap.
 
 > Each entry: date, decision, context, link. Append-only.
 
+### 2026-10-09 — Meeting lifecycle SMS ships through the visit-messages spec, from one main line
+
+**Decision:** Texts about a meeting (summary, reminders, confirmation, replies) are sent from one main line (`voip_dids.is_main_line`), not from the agent's sticky DID. This supersedes the meeting parts of Phase 2 and the Phase 5 "Confirm meeting via SMS" item.
+**Context:** the home-visit / visit-messages epic builds the sending, status callbacks and replies (`/api/webhooks/twilio`, `/api/voip/twiml/messaging-inbound`).
+- **Spec:** [home-visit-page-and-visit-messages-design](../../superpowers/specs/2026-09-29-home-visit-page-and-visit-messages-design.md)
+
 ### 2026-05-30 — Critical scope reduction grill (total separation from voip-campaigns)
 
 **Phase:** Mid-Phase 1 (after Tasks 0-3 committed; before any schema files written)

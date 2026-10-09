@@ -1,6 +1,6 @@
 # Home Visit Page and Visit Messages — Design
 
-**Date:** 2026-09-29 · **Status:** approved 2026-10-05, building full v1 before launch (D24) · **Brainstorm:** 2026-09-29 session; the owner approved every section of the first draft. **Revised** 2026-09-29 after a stress test against the code, the booking call scripts, Twilio/FCC/iCalendar documentation and 180 days of meeting data. The owner ruled on the stress-test questions the same day (D13–D19; deferred items in §15). **Extended** 2026-09-29 with message control (§7.5, D20–D23). **Ruled and re-checked against the code** 2026-10-05 (D24–D27, §17, §18). **Plans:** `docs/superpowers/plans/2026-10-05-visit-messages-foundation.md` covers §12a step 1; the rest follow in §12a order.
+**Date:** 2026-09-29 · **Status:** approved 2026-10-05, building full v1 before launch (D24) · **Brainstorm:** 2026-09-29 session; the owner approved every section of the first draft. **Revised** 2026-09-29 after a stress test against the code, the booking call scripts, Twilio/FCC/iCalendar documentation and 180 days of meeting data. The owner ruled on the stress-test questions the same day (D13–D19; deferred items in §15). **Extended** 2026-09-29 with message control (§7.5, D20–D23). **Ruled and re-checked against the code** 2026-10-05 (D24–D27, §17, §18). **Plans:** `docs/superpowers/plans/2026-10-05-visit-messages-foundation.md` covers §12a step 1; `docs/superpowers/plans/2026-10-08-visit-messages-sending-and-replies.md` covers §12a steps 2 and 3; step 4 moved to plan 3 (owner, 2026-10-08). The rest follow in §12a order. **Amended** 2026-10-09 with the owner's rulings made while plan 2 was built (coordinator and specialist words, emoji in texts, the contact card, the main line, reply handling).
 
 ## 1. Goal
 
@@ -59,7 +59,7 @@ The means:
 | D3 | Every visit message comes from **one main line**. The rep's personal touch lives in the copy and on the page, not in a different phone number. |
 | D4 | The v1 texts are the summary (sent manually), the day-before reminder (automatic, 6 PM), and the rep confirmation (automatic, 8:30 AM). The 8:30 text *is* the rep's confirmation. The only other outbound text is the thank-you answer to a YES reply (§7.3). |
 | D5 | Page content: what to expect and how to prepare, why homeowners trust us, and projects near you. No "what we heard" section. |
-| D6 | The summary also goes by email, with a calendar invite. Reminders stay SMS-only. **Amended in review:** the sender is the existing single customer sender, `buildSenderFrom(rep)` → "{Rep} at Tri Pros Remodeling <notifications@…>" (`resend/constants.ts:10-14` keeps one mailbox for reputation). Replies and calendar RSVPs go to `RESEND_LEAD_INBOX` (info@). No `hello@` mailbox. |
+| D6 | The summary also goes by email, with a calendar invite. Reminders stay SMS-only. **Amended in review:** the sender is the existing single customer sender, `buildSenderFrom(coordinatorName)` → "{Coordinator} at Tri Pros Remodeling <notifications@…>" (the coordinator, not the rep; owner, 2026-10-09) (`resend/constants.ts:10-14` keeps one mailbox for reputation). Replies and calendar RSVPs go to `RESEND_LEAD_INBOX` (info@). No `hello@` mailbox. |
 | D7 | The link is shaped `home-visits/<meetingId>?token=…` and mirrors `ROOTS.public.proposalReview(id, token)`. The token belongs to the visit: a reschedule hands it to the replacement, and old paths redirect (§5). |
 | D8 | Meeting verbs live in a new `src/shared/modules/meetings/`. It is started **out of order**, ahead of the consolidation, and documented as such (§4.2). |
 | D9 | The arrival window runs from the **booked time to 30 minutes after**. |
@@ -71,7 +71,7 @@ The means:
 | D15 | Only the office moves a meeting to **Confirmed** (`confirmedAt`; the `CONTEXT.md` meaning does not change). The homeowner's confirmation is a separate fact, **homeowner confirmed**, shown on the home visit page and on the office's meeting cards so the office can act on it. |
 | D16 | No way to reply from the main line in v1. Staff answer replies by calling. |
 | D17 | A cancelled meeting whose invite went out gets a calendar cancellation email. |
-| D18 | The main line is the 213 DID for now. It will change later, so nothing assumes a fixed number. |
+| D18 | The main line is one DID for now. It will change later, so nothing assumes a fixed number. The owner chose the 818 DID (+18182084904) as the main line "for now" on 2026-10-08. Which number production uses is the owner's choice at deploy time (owner, 2026-10-09). |
 | D19 | The §3a vocabulary and the `features/visit-confirmation` folder are approved. |
 | D20 | The legacy pgEnum columns on `meetings` convert to `text` in this push (§5) (owner, 2026-09-29). |
 | D21 | The rep confirmation keeps "{Rep} just confirmed your home visit" for now, and is revisited when the team grows (owner, 2026-09-29). Its wording is an editable template (§7.5), so a change needs no code. |
@@ -95,7 +95,9 @@ The means:
 | **Visit summary**, **day-before reminder**, **rep confirmation** | The three sent texts (D4). With **confirmation reply** (the thank-you after a YES), **visit cancellation** (the calendar cancellation email, D17) and **homeowner reply** (inbound), they make up the message kinds. | `meetingMessageKinds` |
 | **Confirmation track** | The three confirmations on the page: the office's (a visit message went out), the homeowner's (**homeowner confirmed**, or the office recorded **Confirmed**), the rep's (a rep confirmation went out for this time). Replaces "three-stage track". | `ConfirmationTrack`, `deriveConfirmationTrack` |
 | **Homeowner confirmed** (added with D15) | The homeowner said they'll be there for this time: tapped *I'll be there* or replied YES. Shown to the office; never moves the pipeline. The office still sets **Confirmed**. | `meetings.homeowner_confirmed_at`, `homeowner_confirmed_via`, `MeetingOverviewCard.HomeownerConfirmed` |
-| **Rep** | The meeting's `owner` participant (existing word). Homeowner copy uses the rep's name. | `meeting_participants.role = 'owner'` |
+| **Rep** | The meeting's `owner` participant (existing word). Internal code and docs keep "rep" and "setter". Homeowner copy does not use "rep"; it uses coordinator and specialist (below). | `meeting_participants.role = 'owner'` |
+| **Coordinator** (homeowner-facing copy word, owner, 2026-10-09) | The meeting's setter (`meetings.setBy`), usually the dispatcher on the phone with the homeowner. Every visit text speaks in the coordinator's voice, and as the company when the setter is null or the system owner. | `coordinator_name` token, `VisitMessageVars.coordinatorName` |
+| **Specialist** (homeowner-facing copy word, owner, 2026-10-09) | The rep who sits the visit. Often unassigned at booking, so no text relies on one. | `specialist_name` token, `VisitMessageVars.specialistName` |
 | **Portfolio match** | Existing term. "Projects near you" is a portfolio match ordered by distance. | `matchPortfolioProjects` |
 | **Reschedule chain** | A meeting and the meetings it replaced, linked by `rescheduled_from_id`. | `getRescheduleChain` |
 
@@ -264,6 +266,7 @@ The ADR-0005 placement rule applies: single facts about a meeting are columns; r
 - `new_time_requested_at timestamptz`: when the homeowner tapped *Request a new time*. A fact for measurement; the page's state follows the outcome.
 - `homeowner_confirmed_at timestamptz` and `homeowner_confirmed_via text` (`sms_reply | in_app`, the `homeownerConfirmationOptions` set: every way a homeowner can confirm): the homeowner's own confirmation (D15). Only `meetingService.business.confirmByHomeowner` writes them; `confirmedAt` stays the office's.
 - `rescheduled_from_id uuid`, FK `meetings`, `ON DELETE SET NULL`: the meeting this one replaced.
+- `scheduled_for_set_at timestamptz NOT NULL`: when `scheduledFor` was last set. Written by create.before, by update.before on a move, and by the Google Calendar inbound mirror. The planner's `booked_after_run` keys on it (owner, 2026-10-08).
 
 **Legacy pgEnum conversion.** This push touches `meetings`, so its three legacy pgEnum columns (`meeting_type`, `meeting_outcome`, `pipeline`, `db/schema/meetings.ts:25-27`) convert to `text` in the same push (`enum-standardization.md#legacy-pgenum-conversion`, D20).
 
@@ -367,9 +370,9 @@ Because the automatic runs look for "no message **for this time**", a moved meet
   - The 10DLC gate keys on `VERCEL_ENV === 'production'` (the `environment` convention), not `NODE_ENV` (`:131`), which preview deploys also set.
   - `sendFromMainLine` sends `from` the main line with `agentUserId` null. It adds `mediaUrl` to the Twilio params (`buildTwilioMessageParams`, `:71-82`).
   - Twilio error **21610** (recipient opted out at the carrier) records the leg as `skipped`, reason `dnc`.
-  - The summary is sent as **MMS** carrying the company contact card (`mediaUrl` → the vCard route).
+  - The summary is sent as **MMS** carrying the company contact card (`mediaUrl` → the vCard route; contents in §8.4).
 - **Email leg**, when the customer has an email:
-  - React Email template, sender `buildSenderFrom(repName)`, `replyTo: RESEND_LEAD_INBOX`, the existing `List-Unsubscribe` mailto, and a plain-text part passed explicitly (no send passes `text` today).
+  - React Email template, sender `buildSenderFrom(coordinatorName)` ("Dana at Tri Pros Remodeling"; the company alone when there is no coordinator; owner, 2026-10-09). The email and the `.ics` say "Your specialist" when none is assigned, and the note is labelled "A note from <coordinator>" (owner, 2026-10-09); `replyTo: RESEND_LEAD_INBOX`, the existing `List-Unsubscribe` mailto, and a plain-text part passed explicitly (no send passes `text` today).
   - An `.ics` attachment, sent as `text/calendar; method=REQUEST`:
     - `METHOD:REQUEST`;
     - `UID = <first meeting id of the reschedule chain>@triprosremodeling.com`, so a resend after a reschedule updates the same calendar entry instead of adding one;
@@ -387,6 +390,7 @@ Because the automatic runs look for "no message **for this time**", a moved meet
 Rules for both runs:
 - One failing meeting never stops the run.
 - The run evaluates the plan at its **scheduled time** (today's 6:00 PM or 8:30 AM Pacific), not the wall clock. A QStash delivery a moment early therefore cannot turn a due step into a scheduled one and miss it.
+- No run sends at or after 9:00 PM Pacific (`VISIT_MESSAGE_SEND_CEILING_HOUR`). A retried delivery that lands later records nothing; the steps then read `not_sent` / `no_record` once their window closes (owner, 2026-10-08).
 - The run sends sequentially; the QStash route's `maxDuration` is 60 s. At today's volume (about one meeting a day) that is ample.
 
 **Day-before reminder:** a QStash cron at `CRON_TZ=America/Los_Angeles 0 18 * * *` → `meetingService.business.sendDayBeforeReminders(SYSTEM_CONTEXT)`.
@@ -408,52 +412,59 @@ Rules for both runs:
 
 **Visit cancellation** (automatic, D17): the `update.after` dispatch (§5) runs `send-visit-cancellation` → `meetingService.business.sendVisitCancellation(SYSTEM_CONTEXT, { meetingId })`.
 - It sends only when a summary email went out in the chain and the meeting has no successor. A reschedule also cancels its original, but the replacement continues the same calendar entry (same UID), so no cancellation goes out. The job checks at run time. A reschedule creates the replacement before it cancels the original, so the successor is always there to see.
-- An email with an `.ics` sent as `text/calendar; method=CANCEL`: the same UID, `SEQUENCE` one above the last summary, `STATUS:CANCELLED`. Email only; no text.
+- An email from the coordinator ("Dana at Tri Pros Remodeling", owner, 2026-10-09) with an `.ics` sent as `text/calendar; method=CANCEL`: the same UID, `SEQUENCE` one above the last summary, `STATUS:CANCELLED`. Email only; no text.
 - One `meeting_messages` row (`kind = visit_cancellation`, `channel = email`).
 
 **Schedules as code.** `scripts/setup-visit-message-crons.ts` creates the two cron schedules with `qstashClient.schedules.create`, following `scripts/setup-gcal-cron.ts`: dry run by default, `--apply` to write, and a duplicate guard. It runs as `DRIZZLE_TARGET=prod NODE_OPTIONS="--conditions=react-server" pnpm tsx scripts/setup-visit-message-crons.ts`, with no `package.json` entry; it reaches `server-only` modules, as `gcal:cron:setup` does. All three job keys are registered in `src/app/api/qstash-jobs/route.ts`, whose unknown keys return 200 silently.
 
 **Pausing automation** is the super-admin switch on the Sequence tab (§7.5). The QStash schedules keep running, and each run records the paused kind's steps as `skipped`, reason `paused`, so the History tab shows what a pause withheld. Resuming does not resend a run that already happened.
 
-**First-message rule.** "Reply STOP to opt out" is included whenever the main-line thread with that number has no earlier outbound message. The summary always includes it. The renderer appends it; it is not part of any template, so an edit cannot remove it.
+**First-message rule.** "Reply STOP to opt out" is included whenever the main-line thread with that number has no earlier outbound message. The summary always includes it. The renderer appends it; it is not part of any template, so an edit cannot remove it. Placement (owner, 2026-10-09): the STOP line joins the last line when that line starts with "Reply" ("Reply YES to confirm. Reply STOP to opt out."), otherwise it takes its own line.
 
 ### 7.2 Copy
 
-All SMS copy is **GSM-7 only**: no emoji, curly quotes or em dashes, because any of them switches the message to UCS-2 and roughly triples its cost. The MMS summary is billed per message, not per segment. With the full link (about 117 characters), a reminder is two segments.
+Emoji are allowed in the texts (owner, 2026-10-09). The cost is UCS-2 encoding, about two to three times the segments, for the plain texts; the MMS summary is billed per message whatever its characters. The validator warns (`ucs2`, `too_long`) instead of rejecting. The segment ceiling is `MAX_SEGMENTS` (5) in `validate-visit-message-template.ts`.
 
-The rep is named `nickname ?? first name`, and the copy never uses a pronoun for the rep.
+Homeowner copy names the **coordinator** and the **specialist** (§3a), never "rep". Each text speaks as the coordinator, and as the company when there is none.
 
-The texts below are the **default templates** (`VISIT_MESSAGE_TEMPLATE_DEFAULTS`, in `modules/meetings/messages/constants/`). A super-admin can replace each one with edited wording (§7.5). Sends render whichever is current with `renderVisitMessage(body, vars, { stopLine })`, a pure function in `modules/meetings/messages/lib/` built on the shared `renderMergeTemplate`. The renderer:
-- collapses the double space an empty `{{office_note}}` leaves;
-- appends the STOP line under the first-message rule (§7.1).
+The texts below are the **default templates** (`VISIT_MESSAGE_TEMPLATE_DEFAULTS`, in `modules/meetings/messages/constants/templates.ts`). A super-admin can replace each one with edited wording (§7.5). Sends render whichever is current with `renderVisitMessage(body, vars, { stopLine })`, a pure function in `modules/meetings/messages/lib/` built on the shared `renderMergeTemplate`.
 
-The verify script (§11) checks that every default passes the template validator. Wording is polished during the build.
+**Sections.** `{{#token}}...{{/token}}` is kept when the token is non-empty. `{{^token}}...{{/token}}` is kept when it is empty. A text therefore never relies on a coordinator, a specialist or a note existing. The validator reports unbalanced or unknown sections as `bad_section`.
+
+The renderer then tidies the result: it collapses doubled spaces, trims each line, and reduces three or more newlines to one blank line, so a dropped section leaves no gap. After that it appends the STOP line under the first-message rule (§7.1).
+
+The verify script (§11) checks that every default passes the template validator.
+
+Defaults, copied from the code (`Tri Pros Remodeling` is `companyInfo.name`, `Tri Pros` is `companyInfo.nickname`):
 
 | Template key | Default |
 |---|---|
-| `visit_summary` | `Hi {{first_name}}, this is Tri Pros Remodeling. Your home visit is booked for {{visit_date}} at {{visit_time}} with {{rep_name}}. {{office_note}} Meet {{rep_name}} and see your visit details: {{visit_link}} Reply YES to confirm.` |
-| `day_before_reminder_unconfirmed` | `Hi {{first_name}}, a reminder that {{rep_name}} from Tri Pros Remodeling will see you tomorrow, {{visit_date}} at {{visit_time}}. Reply YES to confirm, or request a new time here: {{visit_link}}` |
-| `day_before_reminder_confirmed` | `Hi {{first_name}}, see you tomorrow at {{visit_time}}! {{rep_name}} is looking forward to meeting you. Your visit: {{visit_link}} - Tri Pros Remodeling` |
-| `rep_confirmation` | `Good morning {{first_name}}! {{rep_name}} just confirmed your home visit and is scheduled to arrive between {{arrival_window}}. Your visit page: {{visit_link}} - Tri Pros Remodeling` (D21) |
-| `confirmation_reply` | `Thank you, {{first_name}}, you're confirmed for {{visit_date}} at {{visit_time}}. See you then! - Tri Pros Remodeling` |
+| `visit_summary` | `Hi {{first_name}} 👋 it's {{#coordinator_name}}{{coordinator_name}} from {{/coordinator_name}}Tri Pros Remodeling.\n\nYou're all set for {{visit_date}} at {{visit_time}} 📅{{#specialist_name}} {{specialist_name}} will be your specialist.{{/specialist_name}}\n\n{{#coordinator_note}}One more thing: {{coordinator_note}}{{/coordinator_note}}\n\nHere's your visit page, where you can see the agenda and manage your visit:\n{{visit_link}}\n\nReply YES to confirm.` |
+| `day_before_reminder_unconfirmed` | `Hi {{first_name}}, {{#coordinator_name}}{{coordinator_name}} here from Tri Pros{{/coordinator_name}}{{^coordinator_name}}it's Tri Pros Remodeling{{/coordinator_name}} 🙂 Just a heads-up that your home visit is tomorrow at {{visit_time}}{{#specialist_name}} with {{specialist_name}}{{/specialist_name}}.\n\nCan you reply YES so {{#coordinator_name}}I know{{/coordinator_name}}{{^coordinator_name}}we know{{/coordinator_name}} we're still on? If the time no longer works, you can pick a new one here: {{visit_link}}` |
+| `day_before_reminder_confirmed` | `Hi {{first_name}}! See you tomorrow at {{visit_time}} 🏡 {{#specialist_name}}{{specialist_name}} is{{/specialist_name}}{{^specialist_name}}We're{{/specialist_name}} looking forward to meeting you.\n\nYour visit page, in case you need it: {{visit_link}}\n- {{#coordinator_name}}{{coordinator_name}}, {{/coordinator_name}}Tri Pros Remodeling` |
+| `rep_confirmation` | `Good morning {{first_name}} ☀️ {{specialist_name}} just confirmed and will be there between {{arrival_window}}. Everything you need is here: {{visit_link}}\n- {{#coordinator_name}}{{coordinator_name}}, Tri Pros{{/coordinator_name}}{{^coordinator_name}}Tri Pros Remodeling{{/coordinator_name}}` (D21) |
+| `confirmation_reply` | `Perfect, thank you {{first_name}}! You're confirmed for {{visit_date}} at {{visit_time}} ✅` |
+
+(`\n` marks a line break in the stored body.)
 
 **Visit cancellation (email, fixed wording):** subject `Your home visit on {Wed, Oct 7} is cancelled`; the body gives the visit time and "Questions or want a new time? Call or text us at {main line}." The summary email's wording is fixed too. Emails are not templates in v1 (§15).
 
 In the day-before variants, *confirmed* means the track's **You** (§6).
 
-**Tokens** (`VISIT_MESSAGE_TOKENS`, `MergeToken<VisitMessageVars>`):
+**Tokens** (`VISIT_MESSAGE_TOKENS`, `MergeToken<VisitMessageVars>`). An unknown or missing value renders as an empty string, so sections (above) decide what the text says without it.
 
 | Token | Renders | Sample |
 |---|---|---|
-| `first_name` | the customer's first name | Maria |
-| `rep_name` | the rep's `nickname ?? first name`; **"your rep"** when the meeting has no rep (system owner) | Oliver |
+| `first_name` | the customer's first name, or "there" | Maria |
+| `coordinator_name` | the meeting's setter (`meetings.setBy`); empty when the setter is null or the system owner | Dana |
+| `specialist_name` | the rep who sits the visit; empty when unassigned | Oliver |
 | `visit_date` | Pacific date | Wed, Oct 7 |
 | `visit_time` | Pacific time | 10:00 AM |
 | `arrival_window` | the arrival window (D9) | 10:00 and 10:30 AM |
 | `visit_link` | `publicUrl(ROOTS.public.homeVisit(meetingId, token))` | the full link |
-| `office_note` | the note typed in the send dialog (`visit_summary` only) | empty |
+| `coordinator_note` | the note typed in the send dialog (`visit_summary` only), whitespace collapsed | empty |
 
-The rep confirmation needs no fallback because it never sends without a rep (§7.1). Dispatcher bookings land system-owned, so the summary and reminder often use "your rep". The Sequence tab previews both forms.
+The rep confirmation requires `specialist_name`, because it never sends without a rep (§7.1). The Sequence tab previews the named and the unnamed forms.
 
 `{{visit_link}}` = `publicUrl(ROOTS.public.homeVisit(meetingId, token))`. `publicUrl` is `src/shared/config/public-url.ts`. The new `ROOTS` builder mirrors `proposalReview` (`roots.ts:110`). The `/home-visits` prefix is added to `NAV_PATH_RE` (`eslint.config.js:7`).
 
@@ -472,11 +483,15 @@ Both routes:
 
 **Inbound matching.** The sender's number is normalized with `toNationalDigits` and looked up with `findCustomersByPhone`, a new multi-row query (`findCustomerByPhone` returns one row, `customers queries.ts:101-115`). The **matched meeting** is the soonest eligible meeting within the next 7 days, across those customers, whose reschedule chain has at least one `sent` outbound visit message. Every reply is stored in `voip_messages` on the main-line thread `(voipDidId, remoteE164)`, and a matched reply also gets a `meeting_messages` row (`kind = homeowner_reply`, `status = received`). Idempotency comes from `provider_message_id UNIQUE` (`upsertInboundMessage`).
 
+**Only the main line acts on visits** (owner, 2026-10-09). A reply to any other number is stored on its own thread and, apart from STOP, left alone: confirm, forward and the thank-you happen only on the main line (`handleHomeownerReply` returns `not_main_line`).
+
+**Redeliveries and races** (owner, 2026-10-09). Twilio delivers at least once. A redelivered `MessageSid` acts once, because `provider_message_id` is unique and the second delivery finds no new row. Concurrent YES replies confirm once and send one thank-you, because `confirmByHomeowner` claims the confirmation and only the claimant sends.
+
 Keywords follow Twilio's semantics: **the whole message**, trimmed, lowercased and stripped of punctuation, must equal a keyword. A reply that merely starts with one is "anything else".
 
 | Payload | Action |
 |---|---|
-| `OptOutType = STOP` (Advanced Opt-Out reports what Twilio did) | Record. Mark every customer with that phone do-not-contact (`addToDnc`, reason `stop_keyword`). Push to the matched meeting's participants and the system owner: "{name} texted '{body}' and is opted out of texts. Call them about {visit time}." Twilio sends the carrier-required reply. |
+| `OptOutType = STOP` (Advanced Opt-Out reports what Twilio did), sent to **any** of our numbers | Record. Mark every customer with that phone do-not-contact (`addToDnc`, reason `stop_keyword`). Every DID shares one messaging service, which carriers treat as one sender, so a STOP to an agent's own number opts the customer out of the main line too (owner, 2026-10-09). Push to the matched meeting's participants (when it arrived on the main line) and the system owner: "{name} texted '{body}' and is opted out of texts. Call them about {visit time}." Twilio sends the carrier-required reply. |
 | `OptOutType = START` / `HELP` | Record. Twilio's replies apply. START notifies the office, and does **not** clear do-not-contact (which also covers calls). |
 | Confirm keyword (`yes`, `y`, `confirm`, `confirmed`; list in `modules/meetings/messages/constants/`) | `meetingService.business.confirmByHomeowner(ctx, { meetingId, via: 'sms_reply' })` on the matched meeting when the homeowner has not confirmed it, then send the auto-reply (a `confirmation_reply`). It never sets `confirmedAt` (D15). Already homeowner-confirmed: no-op, no reply. No match: treat as "anything else". |
 | Anything else | Record, then push to the matched meeting's participants and the system owner ("{name} replied: …"), linking to the staff Messages drawer. No auto-reply. Unmatched replies push to the system owner only. |
@@ -528,9 +543,9 @@ It returns one step per sequence kind, in `VISIT_MESSAGE_SEQUENCE` order (`visit
 | `not_applicable` | A project meeting, a decided outcome, or a rep confirmation for a visit without a rep or before 9:00 AM | "Doesn't apply: {reason}" |
 | `scheduled` | An automatic step whose planned time is ahead. `skipReason` is set when the run will record a skip: `booked_after_noon`, `paused`, `no_phone`, `dnc`. | "Sends {time}", or "Will skip: {reason}" |
 | `due` | An automatic step whose planned time has passed, window still open, nothing recorded. The runs act on exactly these (§7.1). | "Sending now"; after 15 minutes, "Late: the run has not sent it" |
-| `not_sent` | Nothing is recorded and nothing will send. For the summary before anyone sends it: reason `never_sent`, or `time_changed` when the chain has a summary for another time. For an automatic step whose window closed: `booked_after_run` when the meeting was created after the planned time, otherwise `no_record`. | "Not sent: {reason}"; the summary step offers **Send summary** |
+| `not_sent` | Nothing is recorded and nothing will send. For the summary before anyone sends it: reason `never_sent`, or `time_changed` when the chain has a summary for another time. For an automatic step whose window closed: `booked_after_run` when the time was set (`scheduled_for_set_at`) after the planned time, by booking or by an in-place move, otherwise `no_record`. | "Not sent: {reason}"; the summary step offers **Send summary** |
 
-`no_record` cannot tell an in-place time move from a failed run, because nothing records when `scheduledFor` last changed. The page says both.
+`no_record` means a run was due and recorded nothing; an in-place move after the run reads `booked_after_run`, because the time-set fact is recorded.
 
 Steps are keyed by the current `scheduledFor`, so a moved meeting re-arms both automatic steps (§6) and a skip covers one meeting time. `deriveConfirmationTrack` stays a separate function (§6); both read the same chain.
 
@@ -547,26 +562,27 @@ Steps are keyed by the current `scheduledFor`, so a moved meeting re-arms both a
 
 *Errors* (block the save):
 - an empty body;
-- characters outside GSM-7, each listed (curly quotes, em dashes, emoji; §7.2);
+- unbalanced or unknown `{{#token}}` sections (`bad_section`);
 - unknown tokens, found with the renderer's own pattern;
-- a token the key does not allow (`office_note` outside the summary);
+- a token the key does not allow (`coordinator_note` outside the summary);
 - a required token missing:
 
   | Key | Required |
   |---|---|
   | `visit_summary` | `visit_link`, `visit_date`, `visit_time` |
   | `day_before_reminder_unconfirmed`, `day_before_reminder_confirmed` | `visit_link`, `visit_time` |
-  | `rep_confirmation` | `rep_name`, `arrival_window`, `visit_link` |
+  | `rep_confirmation` | `specialist_name`, `arrival_window`, `visit_link` |
   | `confirmation_reply` | `visit_date`, `visit_time` |
 
-- the word STOP. The renderer adds the STOP line, and a second copy would repeat it.
+- a spelled-out opt-out instruction (`reply STOP`, `text STOP`, `send STOP`). The renderer adds the STOP line, and a second copy would repeat it; "will stop by" passes (owner, 2026-10-08).
 
 *Warnings* (the save goes through):
-- more than two segments when rendered with sample values. The summary is exempt, because it goes as MMS;
-- `he`, `she`, `him`, `his` or `her` as a whole word, since the copy names the rep and never uses a pronoun (§7.2);
+- characters outside GSM-7, each listed (`ucs2`): emoji and special characters cost about two to three times as much (owner, 2026-10-09). The summary is exempt, because it goes as MMS;
+- more than `MAX_SEGMENTS` (5) segments when rendered with sample values (`too_long`). The summary is exempt;
+- `he`, `she`, `him`, `his` or `her` as a whole word (`pronoun`): the copy names the specialist with `{{specialist_name}}` (§7.2);
 - the summary or the unconfirmed reminder no longer asks the homeowner to reply YES.
 
-**The editor.** `SmsBodyEditor` (§4.4) gets the tokens the key allows and the live validator. Its preview renders sample values in both rep forms (named, and "your rep") and shows the appended STOP line where it applies.
+**The editor.** `SmsBodyEditor` (§4.4) gets the tokens the key allows and the live validator. Its preview renders sample values with and without a coordinator and a specialist and shows the appended STOP line where it applies.
 
 **Pauses.** `meetingService.messages.setPaused(ctx, { kind, paused })` inserts or deletes the `visit_message_pauses` row.
 
@@ -688,6 +704,9 @@ The dialog and drawer are code-split behind skeletons (heavy children are code-s
   - iMessage and Google Messages fetch previews client-side and ignore `robots.txt`. Previews from unknown senders need a tap, which *Save our contact* removes.
 - **`.ics` download.** `/api/home-visits/<meetingId>/ics?token=…` serves the same file the email attaches (one builder).
 - **vCard.** `/api/company/vcard` returns `text/vcard` with `Content-Disposition: attachment; filename="tri-pros.vcf"` (Twilio: a matching content type, a filename of 20 ASCII characters or fewer). Name, address, website and email come from the company constants, and the phone is the main line.
+  - The card embeds the logo as a 512 px JPEG photo (`public/company/logo/contact-card-photo.jpg`), because phones show a photo only when the image travels inside the card. The route fetches it with a 2 s timeout (a stalled fetch would fail the MMS) and omits the photo, without caching, on any failure (owner, 2026-10-09).
+  - It is shaped as iOS exports a company contact: `N` (empty), `FN`, `ORG`, `X-ABShowAs:COMPANY`.
+  - **Open (cosmetic):** iOS's Messages bubble preview still shows a blank circle; the opened card shows the logo.
 - `/home-visits` is added to the `src/app/robots.ts` disallow list; `/api` is already there.
 
 ### 8.5 Route layout
@@ -737,8 +756,8 @@ The dialog and drawer are code-split behind skeletons (heavy children are code-s
 | Unskip after the text's time | Not offered: the run has passed (§7.5) |
 | Kind paused during a run's time | The run records `skipped`, reason `paused`. Resuming later does not resend. |
 | Template edited between the preview and the run | The run sends the wording current at send time; History shows the body sent |
-| Summary or reminder for a meeting with no rep | `{{rep_name}}` renders "your rep" (§7.2); no rep confirmation |
-| Template saved with a curly quote or emoji | Rejected, with the characters listed |
+| Summary or reminder for a meeting with no coordinator or specialist | The `{{^...}}` sections speak as the company and leave the specialist out (§7.2); no rep confirmation |
+| Template saved with a curly quote or emoji | Saved, with a `ucs2` warning listing the characters (owner, 2026-10-09) |
 | QStash delivers the run a moment early | The run evaluates the plan at its scheduled time, so the step is still due (§7.1) |
 | The run never fires | Steps show "Late" after 15 minutes, then `not_sent` (`no_record`) once the window closes |
 | A meeting is booked by someone who can `update VisitMessages` | The toast's **Send visit summary** opens the meeting's drawer on the Visit messages page (§7.5) |
@@ -756,8 +775,8 @@ The dialog and drawer are code-split behind skeletons (heavy children are code-s
     - a run evaluated at its scheduled time a moment early;
   - the cancellation rule (no cancellation for a reschedule's original);
   - every default template passes `validateVisitMessageTemplate`;
-  - the validator rejects non-GSM-7 characters, unknown and disallowed tokens, missing required tokens, and STOP, and warns on pronouns, length and a missing YES;
-  - `renderVisitMessage` output: the "your rep" fallback, the collapsed empty note, and the STOP line appended by the first-message rule;
+  - the validator rejects unknown and disallowed tokens, bad sections, missing required tokens and a spelled-out STOP instruction, and warns on non-GSM-7 characters, pronouns, length and a missing YES;
+  - `renderVisitMessage` output: the section fallbacks, the collapsed empty note, and the STOP line appended by the first-message rule;
   - `countSmsSegments` on GSM-7, extension characters and UCS-2;
   - whole-message keyword matching (a reply starting with YES is not a confirm);
   - `.ics` output (stable UID across a chain, SEQUENCE, METHOD);
@@ -767,7 +786,7 @@ The dialog and drawer are code-split behind skeletons (heavy children are code-s
 - **Playwright:** every §8.2 state and staff mode, at phone and desktop widths (`/api/dev/playwright-session` for auth).
 - **Twilio smoke test.** Before any other messaging work is trusted, one real send from the main line and one real reply, because this Twilio path has never carried traffic (no route has existed; `voip_dids` and `voip_messages` are empty).
 - **Owner gate (manual, dev).** The owner prepares the test data by hand; nothing is seeded (no-DB-writes-for-testing rule).
-  - Dev uses the 626 reserve as its main line: flagged `is_main_line` on the dev DB, with its messaging webhook pointed at the tunnel. A number has one messaging webhook, so if the production main line later moves to 626 (D18), dev needs another DID.
+  - Dev uses the 818 DID (+18182084904) as its main line (owner, 2026-10-08): flagged `is_main_line` on the dev DB with `scripts/set-main-line.ts`, its messaging webhook pointed at the tunnel. A number has one messaging webhook, so if production uses the same DID, dev needs another one.
   - The test customer's phone is the `VOIP_DEV_OVERRIDE_NUMBER`, so the owner's replies match the customer (the override texts that number but records the customer's number, `voip-messages.service.ts:152-158`). `EMAIL_DEV_OVERRIDE` points at the owner.
   - Then:
     - send a summary;
@@ -775,7 +794,7 @@ The dialog and drawer are code-split behind skeletons (heavy children are code-s
     - reply "Yes but…", reply with free text, reply STOP then START, and request a new time (expect the kanban Reschedule stage);
     - reschedule, then reply YES again (expect the replacement homeowner-confirmed and no cancellation email);
     - cancel a meeting whose invite you received (expect the calendar entry removed);
-    - trigger both runs by publishing each job URL once from the QStash console;
+    - trigger both runs by publishing each job URL once from the QStash console, or with the dev tool `scripts/visit-messages.ts summary | run | cancel` (the `run` verb takes `--at`); `scripts/set-main-line.ts` flags the main line;
     - message control (§7.5):
       - skip a scheduled rep confirmation, unskip it, skip it again, then trigger the run (expect a `manual` skipped row and no text);
       - as a super-admin, pause the day-before reminder, trigger the run (expect `skipped` / `paused`), then resume;
@@ -788,7 +807,7 @@ The dialog and drawer are code-split behind skeletons (heavy children are code-s
 
 ## 12. Rollout: owner tasks before launch
 
-1. **Flag the main-line DID `is_main_line`** (D18: the 213 number for now). `voip_dids` is empty and nothing fills it today, so this is two steps: run the Twilio resync, then flag the row (the sending plan ships the script). The 213 number was labelled a CloudTalk transfer target in Twilio in May; CloudTalk is retired (the dialer is JustCall) and no code reads that label, so forwarding its calls (item 3) moves nothing in the app. When the main line changes later, keep the old number's messaging webhook, so replies to texts it already sent still arrive.
+1. **Flag the main-line DID `is_main_line`** (D18: the 818 DID for now in dev; production's number is the owner's choice at deploy time). `voip_dids` is empty in prod, so this is two steps: `scripts/set-main-line.ts --resync` pulls the DIDs from Twilio, then `--e164 <number> --apply` flags the row. A 213 number was labelled a CloudTalk transfer target in Twilio in May; CloudTalk is retired (the dialer is JustCall) and no code reads that label, so forwarding its calls (item 3) moves nothing in the app. When the main line changes later, keep the old number's messaging webhook, so replies to texts it already sent still arrive.
 2. **The 10DLC campaign.**
    - Confirm it is approved and set `TWILIO_10DLC_CAMPAIGN_SID`.
    - Its message-flow description covers phone bookings: the verbal consent question from the booking scripts (§14), what the texts are, "Msg & data rates may apply", HELP and STOP.
@@ -847,7 +866,7 @@ The dialog and drawer are code-split behind skeletons (heavy children are code-s
 7. **Docs and rollout** (§12, §14).
    - The owner gate (§11).
 
-**Plans.** One plan per runnable slice, in this order: (1) foundation = step 1; (2) sending and replies = steps 2–4; (3) message control = step 5; (4) the home visit page = step 6; step 7 closes the launch. Plans 3 and 4 start with their UI process, so each is written when its turn comes.
+**Plans.** One plan per runnable slice, in this order: (1) foundation = step 1; (2) sending and replies = steps 2–3; (3) message control and the staff entry points = steps 4–5; (4) the home visit page = step 6; step 7 closes the launch. Plans 3 and 4 start with their UI process, so each is written when its turn comes.
 
 ## 13. Measurement
 

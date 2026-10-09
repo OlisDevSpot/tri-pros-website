@@ -292,7 +292,7 @@ Written for whoever seals the next module. Each step is one commit.
 | activities | core | legacy; the owner plans a rework. Move as-is; Google Calendar sync stays router-side with a note. |
 | users | core, accounts, push-subscriptions | `agent-settings.router` reads `user` with raw `db`; `meetings reads.getInternalUsers` too. |
 | voip-campaigns | campaigns, contacts, contact-fields | `services/voip/campaigns/*`; the entity-lib ↔ service-lib import cycle (`sms-merge-tokens.ts:1`); `LeadStatus` declared twice; campaigns-admin hooks hold entity verbs. |
-| voip (in-house Twilio) | dids, calls, messages, link-tokens | dormant: no route, no job, no caller. Move as-is. |
+| voip (in-house Twilio) | dids, calls, messages, link-tokens | live for visit messages: the main line sends them and receives replies (two routes, three jobs). Move as-is. |
 | `domains/` | — | `analytics` deleted in this spec (§4.5); `multi-step-flow` is used only by a dev page; `funnels` is a feature; `pipelines` mixes UI with rules that belong to meetings and customers. |
 
 ## 8. Verification

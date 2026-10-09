@@ -152,7 +152,7 @@ Sync endpoints can't pretend a failure succeeded — the caller is waiting for a
 | Vendor | Webhook URL (async) | Sync endpoints | Status |
 |---|---|---|---|
 | CloudTalk | `/api/webhooks/cloudtalk` (6 events: call.started/answered/ended/missed + voicemail.received + sms.received) | `/api/voip/routing/{caller-lookup,transfer-target,compliance-check}` (Phase 0 mocked; Phase 1 real) | voip-campaigns Phase 0 in flight |
-| Twilio | `/api/webhooks/twilio` (voice status + recording status + messaging status; one endpoint, switch on payload discriminant `CallStatus` vs `MessageStatus` vs `RecordingStatus`) | `/api/voip/twiml/{voice-inbound,messaging-inbound}` (returns TwiML); `/api/voip/softphone/access-token` (browser softphone) | voip-in-house Phase 1 (not yet scaffolded) |
+| Twilio | `/api/webhooks/twilio` (voice status + recording status + messaging status; one endpoint, switch on payload discriminant `CallStatus` vs `MessageStatus` vs `RecordingStatus`) | `/api/voip/twiml/{voice-inbound,messaging-inbound}` (returns TwiML); `/api/voip/softphone/access-token` (browser softphone) | live for messaging: `/api/webhooks/twilio` (message status) and `/api/voip/twiml/messaging-inbound`; voice and recording callbacks not yet handled |
 | Zoho Sign | `/api/webhooks/zoho-sign` (existing) | — | live |
 | QuickBooks | `/api/webhooks/quickbooks` (existing) | — | live |
 | Bina | `/api/webhooks/bina` (existing) | — | live |

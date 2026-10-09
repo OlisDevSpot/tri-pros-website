@@ -67,7 +67,7 @@ flowchart TD
     OBJ -->|"2 attempts spent"| PENCIL["FALLBACK — pencil-in tentative slot + SMS (+ honor any callback date)"]
 
     SPOUSE --> CONFIRM["5.6 Confirm logistics: address on file, ~30-45 min, who's coming"]
-    CONFIRM --> GUARD["5.7 No-show guard: 'I'll text you now — reply yes so I know it came through'"]
+    CONFIRM --> GUARD["5.7 No-show guard: 'Is it okay to text you? I'm sending your visit details now — reply YES'"]
     GUARD --> WON([Meeting booked])
     PENCIL --> SMS([SMS sent, thread alive])
 
@@ -152,7 +152,11 @@ flowchart TD
 > "Great. So that's {{day}} at {{time}}, at {{street}} — the address we've got on file. It runs about 30 to 45 minutes. {{agent}}'ll be the one coming out."
 
 **5.7 No-show guard (commitment micro-yes)**
-> "I'll shoot you a text confirmation right now — do me a favor and **reply 'yes'** so I know it came through?"
+First ask for consent to text:
+> "Is it okay if we text you the visit details and a reminder at this number? Message and data rates may apply, and you can reply STOP any time."
+
+Then:
+> "I'm sending your visit details from Tri Pros now; reply **YES** so I know it came through."
 
 → ✅ **Meeting booked.** Disposition in CloudTalk + graduate per EPIC handoff.
 
