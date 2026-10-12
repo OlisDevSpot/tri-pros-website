@@ -14,6 +14,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog'
 import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
+import { useAbility } from '@/shared/domains/permissions/hooks'
 import { useCustomerNoteActionConfigs } from '@/shared/entities/customer-notes/hooks/use-customer-note-action-configs'
 import { useCustomerNoteActions } from '@/shared/entities/customer-notes/hooks/use-customer-note-actions'
 import { editNoteSchema } from '@/shared/entities/customer-notes/schemas/edit-note-schema'
@@ -31,9 +32,12 @@ interface Props {
 export function MeetingNotesDialog({ meetingId, open, onOpenChange }: Props) {
   const trpc = useTRPC()
   const qc = useQueryClient()
+  const ability = useAbility()
+  const canReadInternalNotes = ability.can('read', 'CustomerNote')
+  const canAddInternalNote = ability.can('create', 'CustomerNote')
 
   const meetingQuery = useQuery(trpc.meetingsRouter.reads.getByIdWithJoins.queryOptions({ id: meetingId }, { enabled: open }))
-  const notesQuery = useQuery(trpc.meetingsRouter.reads.internalNotes.queryOptions({ meetingId }, { enabled: open }))
+  const notesQuery = useQuery(trpc.meetingsRouter.reads.internalNotes.queryOptions({ meetingId }, { enabled: open && canReadInternalNotes }))
 
   const customerId = meetingQuery.data?.customerId ?? ''
   const savedVisitNote = meetingQuery.data?.visitNote ?? ''
@@ -126,71 +130,75 @@ export function MeetingNotesDialog({ meetingId, open, onOpenChange }: Props) {
           </div>
         </div>
 
-        <div className="space-y-3 border-t border-border/60 pt-4">
-          <Label>{INTERNAL_NOTE_FIELD.label}</Label>
-          <p className="text-xs text-muted-foreground">{INTERNAL_NOTE_FIELD.helper}</p>
+        {canReadInternalNotes && (
+          <div className="space-y-3 border-t border-border/60 pt-4">
+            <Label htmlFor={canAddInternalNote && customerId ? 'meeting-internal-note' : undefined}>{INTERNAL_NOTE_FIELD.label}</Label>
+            <p className="text-xs text-muted-foreground">{INTERNAL_NOTE_FIELD.helper}</p>
 
-          {notes.length === 0 && !notesQuery.isLoading && (
-            <p className="text-sm text-muted-foreground">No internal notes yet.</p>
-          )}
+            {notes.length === 0 && !notesQuery.isLoading && (
+              <p className="text-sm text-muted-foreground">No internal notes yet.</p>
+            )}
 
-          <ul className="space-y-3">
-            {notes.map((note) => {
-              const isEditing = editingNoteId === note.id
-              return (
-                <li className="space-y-2 rounded-lg bg-muted/50 p-3 text-sm" key={note.id}>
-                  {isEditing
-                    ? (
-                        <form className="space-y-2" onSubmit={form.handleSubmit(handleEditSubmit)}>
-                          <Textarea
-                            className="min-h-16 resize-none text-sm"
-                            rows={3}
-                            {...form.register('content')}
-                          />
-                          {form.formState.errors.content && (
-                            <p className="text-xs text-destructive">{form.formState.errors.content.message}</p>
-                          )}
-                          <div className="flex justify-end gap-2">
-                            <Button onClick={() => setEditingNoteId(null)} size="sm" type="button" variant="ghost">
-                              Cancel
-                            </Button>
-                            <Button disabled={updateNote.isPending} size="sm" type="submit">
-                              {updateNote.isPending ? 'Saving...' : 'Save'}
-                            </Button>
-                          </div>
-                        </form>
-                      )
-                    : <p className="whitespace-pre-wrap text-foreground">{note.content}</p>}
+            <ul className="space-y-3">
+              {notes.map((note) => {
+                const isEditing = editingNoteId === note.id
+                return (
+                  <li className="space-y-2 rounded-lg bg-muted/50 p-3 text-sm" key={note.id}>
+                    {isEditing
+                      ? (
+                          <form className="space-y-2" onSubmit={form.handleSubmit(handleEditSubmit)}>
+                            <Textarea
+                              aria-label="Edit internal note"
+                              className="min-h-16 resize-none text-sm"
+                              rows={3}
+                              {...form.register('content')}
+                            />
+                            {form.formState.errors.content && (
+                              <p className="text-xs text-destructive">{form.formState.errors.content.message}</p>
+                            )}
+                            <div className="flex justify-end gap-2">
+                              <Button onClick={() => setEditingNoteId(null)} size="sm" type="button" variant="ghost">
+                                Cancel
+                              </Button>
+                              <Button disabled={updateNote.isPending} size="sm" type="submit">
+                                {updateNote.isPending ? 'Saving...' : 'Save'}
+                              </Button>
+                            </div>
+                          </form>
+                        )
+                      : <p className="whitespace-pre-wrap text-foreground">{note.content}</p>}
 
-                  <div className="flex min-w-0 items-center gap-2">
-                    <Avatar className="size-5 shrink-0">
-                      <AvatarImage src={note.authorImage ?? undefined} />
-                      <AvatarFallback className="text-xs">
-                        {(note.authorName ?? 'System').slice(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="truncate text-xs font-medium text-foreground">{note.authorName ?? 'System'}</span>
-                    <span className="shrink-0 text-xs text-muted-foreground">{formatTimelineDate(note.createdAt)}</span>
-                    {canManage(note) && (
-                      <div className="shrink-0">
-                        <EntityActionMenu actions={noteActions} entity={note} mode="compact" />
-                      </div>
-                    )}
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <Avatar className="size-5 shrink-0">
+                        <AvatarImage src={note.authorImage ?? undefined} />
+                        <AvatarFallback className="text-xs">
+                          {(note.authorName ?? 'System').slice(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="truncate text-xs font-medium text-foreground">{note.authorName ?? 'System'}</span>
+                      <span className="shrink-0 text-xs text-muted-foreground">{formatTimelineDate(note.createdAt)}</span>
+                      {canManage(note) && (
+                        <div className="shrink-0">
+                          <EntityActionMenu actions={noteActions} entity={note} mode="compact" />
+                        </div>
+                      )}
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
 
-          {customerId && (
-            <QuickNoteInput
-              customerId={customerId}
-              link={{ entityType: 'meeting', entityId: meetingId }}
-              onSuccess={() => {}}
-              placeholder={INTERNAL_NOTE_FIELD.placeholder}
-            />
-          )}
-        </div>
+            {canAddInternalNote && customerId && (
+              <QuickNoteInput
+                customerId={customerId}
+                id="meeting-internal-note"
+                link={{ entityType: 'meeting', entityId: meetingId }}
+                onSuccess={() => {}}
+                placeholder={INTERNAL_NOTE_FIELD.placeholder}
+              />
+            )}
+          </div>
+        )}
       </DialogContent>
       <DeleteConfirmDialog />
     </Dialog>

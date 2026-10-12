@@ -13,13 +13,15 @@ import { editNoteSchema } from '@/shared/entities/customer-notes/schemas/edit-no
 
 interface Props {
   customerId: string
+  /** The textarea's id, for a label outside the composer. */
+  id?: string
   /** Ties the note to one thing the customer owns, such as a meeting. */
   link?: { entityType: CustomerNoteEntityType, entityId: string }
   placeholder?: string
   onSuccess: () => void
 }
 
-export function QuickNoteInput({ customerId, link, placeholder = 'Add a note...', onSuccess }: Props) {
+export function QuickNoteInput({ customerId, id, link, placeholder = 'Add a note...', onSuccess }: Props) {
   const form = useForm<EditNoteValues>({
     resolver: zodResolver(editNoteSchema),
     defaultValues: { content: '' },
@@ -50,6 +52,7 @@ export function QuickNoteInput({ customerId, link, placeholder = 'Add a note...'
       <Textarea
         className="min-h-[64px] resize-none text-sm"
         disabled={createNote.isPending}
+        id={id}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         rows={2}

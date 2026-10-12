@@ -22,6 +22,7 @@ import { Textarea } from '@/shared/components/ui/textarea'
 import { creatableMeetingTypes } from '@/shared/constants/enums/meetings'
 import { useSession } from '@/shared/domains/auth/client'
 import { useAbility } from '@/shared/domains/permissions/hooks'
+import { useCustomerNoteActions } from '@/shared/entities/customer-notes/hooks/use-customer-note-actions'
 import { SET_BY_NOT_INTERNAL } from '@/shared/entities/meetings/constants/set-by-not-internal'
 import { INTERNAL_NOTE_FIELD, VISIT_NOTE_FIELD, VISIT_NOTE_MAX_LENGTH } from '@/shared/entities/meetings/constants/visit-note'
 import { cn } from '@/shared/lib/utils'
@@ -59,7 +60,9 @@ export function CreateMeetingForm({
   const [scheduledFor, setScheduledFor] = useState<Date | undefined>(initialValues?.scheduledFor)
   const [tradeSelections, setTradeSelections] = useState<TradeSelection[]>(initialValues?.tradeSelections ?? [])
   const [projectId, setProjectId] = useState<string>(initialValues?.projectId ?? '')
-  const canPickSetter = useAbility().can('assign', 'Meeting')
+  const ability = useAbility()
+  const canPickSetter = ability.can('assign', 'Meeting')
+  const canAddInternalNote = ability.can('create', 'CustomerNote')
   const { data: session } = useSession()
   const selfId = session?.user.id ?? null
   const selfName = session?.user.name ?? null
@@ -77,15 +80,15 @@ export function CreateMeetingForm({
 
   const customerProjects = profileQuery.data?.projects ?? []
 
-  const noteMutation = useMutation(trpc.customerNotesRouter.crud.create.mutationOptions())
+  const { createNote } = useCustomerNoteActions(customerId)
 
   const createMutation = useMutation(
     trpc.meetingsRouter.crud.create.mutationOptions({
       onSuccess: async (created) => {
-        const note = internalNote.trim()
+        const note = canAddInternalNote ? internalNote.trim() : ''
         if (note) {
           try {
-            await noteMutation.mutateAsync({ customerId, content: note, entityType: 'meeting', entityId: created.id })
+            await createNote.mutateAsync({ customerId, content: note, entityType: 'meeting', entityId: created.id })
           }
           catch {
             toast.error('Meeting created, but the internal note did not save.')
@@ -112,7 +115,7 @@ export function CreateMeetingForm({
     }),
   )
 
-  const isPending = createMutation.isPending || noteMutation.isPending || updateMutation.isPending
+  const isPending = createMutation.isPending || createNote.isPending || updateMutation.isPending
   // scheduledFor is required — a meeting without a time isn't a meeting. The
   // central-calendar push hook also depends on it. Gating here keeps the rule
   // visible at the surface; server schema + DB NOT NULL enforce it for real.
@@ -255,30 +258,35 @@ export function CreateMeetingForm({
         />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="create-meeting-visit-note">{VISIT_NOTE_FIELD.label}</Label>
-        <Textarea
-          id="create-meeting-visit-note"
-          maxLength={VISIT_NOTE_MAX_LENGTH}
-          onChange={e => setVisitNote(e.target.value)}
-          placeholder={VISIT_NOTE_FIELD.placeholder}
-          rows={2}
-          value={visitNote}
-        />
-        <p className="text-muted-foreground text-xs">{VISIT_NOTE_FIELD.helper}</p>
-      </div>
+      {/* An existing meeting's notes are edited from its Notes action. */}
+      {!isEditMode && (
+        <div className="space-y-2">
+          <Label htmlFor="create-meeting-visit-note">{VISIT_NOTE_FIELD.label}</Label>
+          <Textarea
+            id="create-meeting-visit-note"
+            maxLength={VISIT_NOTE_MAX_LENGTH}
+            onChange={e => setVisitNote(e.target.value)}
+            placeholder={VISIT_NOTE_FIELD.placeholder}
+            rows={2}
+            value={visitNote}
+          />
+          <p className="text-muted-foreground text-xs">{VISIT_NOTE_FIELD.helper}</p>
+        </div>
+      )}
 
-      <div className="space-y-2">
-        <Label htmlFor="create-meeting-internal-note">{INTERNAL_NOTE_FIELD.label}</Label>
-        <Textarea
-          id="create-meeting-internal-note"
-          onChange={e => setInternalNote(e.target.value)}
-          placeholder={INTERNAL_NOTE_FIELD.placeholder}
-          rows={2}
-          value={internalNote}
-        />
-        <p className="text-muted-foreground text-xs">{INTERNAL_NOTE_FIELD.helper}</p>
-      </div>
+      {!isEditMode && canAddInternalNote && (
+        <div className="space-y-2">
+          <Label htmlFor="create-meeting-internal-note">{INTERNAL_NOTE_FIELD.label}</Label>
+          <Textarea
+            id="create-meeting-internal-note"
+            onChange={e => setInternalNote(e.target.value)}
+            placeholder={INTERNAL_NOTE_FIELD.placeholder}
+            rows={2}
+            value={internalNote}
+          />
+          <p className="text-muted-foreground text-xs">{INTERNAL_NOTE_FIELD.helper}</p>
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex gap-2">
