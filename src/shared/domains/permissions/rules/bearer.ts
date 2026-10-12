@@ -31,8 +31,9 @@ export function proposalBearerRules(proposalId: string): PermissionRule[] {
       'approvedAt',
       'createdAt',
       'updatedAt',
-      // The view row the holder's own visit creates is handed back to them.
-      'views',
+      // The holder gets back only the id and time of the visit they create, never who else viewed.
+      'views.id',
+      'views.viewedAt',
     ], { id: proposalId })
     can('update', 'Proposal', ['financeOptionId', 'cashInDealCents', 'views'], { id: proposalId })
   })
