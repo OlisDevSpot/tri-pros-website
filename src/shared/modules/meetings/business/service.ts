@@ -2,6 +2,7 @@ import type { HomeownerConfirmation, MeetingOutcome } from '@/shared/constants/e
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { Meeting } from '@/shared/db/schema'
 import type { MeetingMessage } from '@/shared/db/schema/meeting-messages'
+import type { CustomerNoteWithAuthor } from '@/shared/entities/customers/types'
 import type { VisitInviteResult } from '@/shared/modules/meetings/messages/constants/kinds'
 import type { VisitMessageRunReport } from '@/shared/modules/meetings/messages/lib/run-automatic-kind'
 import type { MessagingInboundWebhookPayload } from '@/shared/services/providers/twilio/schemas/messaging'
@@ -11,6 +12,7 @@ import { canRescheduleFromOutcome, outcomeRequiresReason } from '@/shared/consta
 import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { SYSTEM_CONTEXT, ThrowableDalError } from '@/shared/dal/server/types'
 import { customerNoteCrud } from '@/shared/entities/customer-notes/dal/server/crud'
+import { listNotesForEntity } from '@/shared/entities/customer-notes/dal/server/queries'
 import { findCustomersByPhone } from '@/shared/entities/customers/dal/server/queries'
 import { MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
@@ -36,6 +38,17 @@ import { voipMessagesService } from '@/shared/services/voip/voip-messages.servic
 export type HomeownerReplyAction = 'opt_out' | 'opt_in' | 'help' | 'confirmed' | 'already_confirmed' | 'forwarded' | 'duplicate' | 'not_main_line'
 
 export const meetingBusinessService = {
+  /** The meeting's internal notes. The scoped read is the visibility check. */
+  async listInternalNotes(ctx: ScopedContext, input: { meetingId: string }): Promise<DalReturn<CustomerNoteWithAuthor[]>> {
+    return dalDbOperation(async () => {
+      const meeting = dalVerifySuccess(await meetingCrud.getById(ctx, { id: input.meetingId }))
+      if (!meeting) {
+        throw new ThrowableDalError({ type: 'not-found' })
+      }
+      return meeting.customerId ? listNotesForEntity({ customerId: meeting.customerId, entityType: 'meeting', entityId: meeting.id }) : []
+    })
+  },
+
   /**
    * Sets an outcome that needs a documented reason and writes the reason as a customer note.
    * Positive, unset and neutral outcomes go through the plain update instead.

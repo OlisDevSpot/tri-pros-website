@@ -37,6 +37,7 @@ interface MeetingActionOverrides<T extends MeetingEntity> {
   onStart?: (entity: T) => void
   onViewSchedule?: (entity: T) => void
   onAssignProject?: (entity: T) => void
+  onEditNotes?: (entity: T) => void
   onCreateProposal?: (entity: T) => void
   /** Required: whoever calls this hook owns the participants modal, so the opener is theirs to supply. */
   onAssignOwner: (entity: T) => void
@@ -114,6 +115,7 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
           ? null
           : CANNOT_RESCHEDULE_REASON,
     },
+    ...(overrides.onEditNotes ? [{ action: MEETING_ACTIONS.notes, onAction: overrides.onEditNotes }] : []),
     {
       action: MEETING_ACTIONS.createProposal,
       onAction: overrides.onCreateProposal ?? defaultCreateProposal,

@@ -18,10 +18,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
+import { Textarea } from '@/shared/components/ui/textarea'
 import { creatableMeetingTypes } from '@/shared/constants/enums/meetings'
 import { useSession } from '@/shared/domains/auth/client'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { SET_BY_NOT_INTERNAL } from '@/shared/entities/meetings/constants/set-by-not-internal'
+import { INTERNAL_NOTE_FIELD, VISIT_NOTE_FIELD, VISIT_NOTE_MAX_LENGTH } from '@/shared/entities/meetings/constants/visit-note'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -62,6 +64,8 @@ export function CreateMeetingForm({
   const selfId = session?.user.id ?? null
   const selfName = session?.user.name ?? null
   const [setBy, setSetBy] = useState<string | undefined>(undefined)
+  const [visitNote, setVisitNote] = useState('')
+  const [internalNote, setInternalNote] = useState('')
 
   const isProjectType = meetingType === 'Project'
 
@@ -73,14 +77,27 @@ export function CreateMeetingForm({
 
   const customerProjects = profileQuery.data?.projects ?? []
 
+  const noteMutation = useMutation(trpc.customerNotesRouter.crud.create.mutationOptions())
+
   const createMutation = useMutation(
     trpc.meetingsRouter.crud.create.mutationOptions({
-      onSuccess: () => {
+      onSuccess: async (created) => {
+        const note = internalNote.trim()
+        if (note) {
+          try {
+            await noteMutation.mutateAsync({ customerId, content: note, entityType: 'meeting', entityId: created.id })
+          }
+          catch {
+            toast.error('Meeting created, but the internal note did not save.')
+          }
+        }
         setMeetingType('Fresh')
         setScheduledFor(undefined)
         setTradeSelections([])
         setProjectId('')
         setSetBy(undefined)
+        setVisitNote('')
+        setInternalNote('')
         onSuccess?.()
       },
       onError: err => toast.error(err.message === SET_BY_NOT_INTERNAL.reason ? SET_BY_NOT_INTERNAL.message : 'Failed to create meeting'),
@@ -95,7 +112,7 @@ export function CreateMeetingForm({
     }),
   )
 
-  const isPending = createMutation.isPending || updateMutation.isPending
+  const isPending = createMutation.isPending || noteMutation.isPending || updateMutation.isPending
   // scheduledFor is required — a meeting without a time isn't a meeting. The
   // central-calendar push hook also depends on it. Gating here keeps the rule
   // visible at the surface; server schema + DB NOT NULL enforce it for real.
@@ -124,6 +141,7 @@ export function CreateMeetingForm({
         meetingType,
         scheduledFor: scheduledFor.toISOString(),
         setBy,
+        visitNote: visitNote.trim() || undefined,
         flowStateJSON: tradeSelections.length > 0
           ? { tradeSelections }
           : undefined,
@@ -235,6 +253,31 @@ export function CreateMeetingForm({
           value={tradeSelections}
           onChange={setTradeSelections}
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="create-meeting-visit-note">{VISIT_NOTE_FIELD.label}</Label>
+        <Textarea
+          id="create-meeting-visit-note"
+          maxLength={VISIT_NOTE_MAX_LENGTH}
+          onChange={e => setVisitNote(e.target.value)}
+          placeholder={VISIT_NOTE_FIELD.placeholder}
+          rows={2}
+          value={visitNote}
+        />
+        <p className="text-muted-foreground text-xs">{VISIT_NOTE_FIELD.helper}</p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="create-meeting-internal-note">{INTERNAL_NOTE_FIELD.label}</Label>
+        <Textarea
+          id="create-meeting-internal-note"
+          onChange={e => setInternalNote(e.target.value)}
+          placeholder={INTERNAL_NOTE_FIELD.placeholder}
+          rows={2}
+          value={internalNote}
+        />
+        <p className="text-muted-foreground text-xs">{INTERNAL_NOTE_FIELD.helper}</p>
       </div>
 
       {/* Actions */}
