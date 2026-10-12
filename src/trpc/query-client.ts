@@ -10,6 +10,9 @@ export function makeQueryClient() {
     defaultOptions: {
       queries: {
         staleTime: 30 * 1000,
+        // A tab used earlier this session reopens on its cached rows. On the server a finite value would hold each
+        // request's cache alive after the response, so it stays at Infinity there.
+        gcTime: isServer ? Infinity : 30 * 60 * 1000,
         retry: (failureCount, error) => {
           if (isServer) {
             return false // keep server prefetch at TanStack's 0-retry server default
