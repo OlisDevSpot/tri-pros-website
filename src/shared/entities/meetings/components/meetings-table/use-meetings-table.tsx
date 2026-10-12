@@ -14,6 +14,7 @@ import { useAbility } from '@/shared/domains/permissions/hooks'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { AssignProjectDialog } from '@/shared/entities/meetings/components/assign-project-dialog'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
+import { MeetingNotesDialog } from '@/shared/entities/meetings/components/meeting-notes-dialog'
 import { useMeetingActionConfigs } from '@/shared/entities/meetings/hooks/use-meeting-action-configs'
 import { useMeetingActions } from '@/shared/entities/meetings/hooks/use-meeting-actions'
 import { MEETING_COLUMNS } from '@/shared/entities/meetings/lib/columns-registry'
@@ -35,6 +36,7 @@ export function useMeetingsTable(
 
   const [participantsMeetingId, setParticipantsMeetingId] = useState<string | null>(null)
   const [assignProjectMeetingId, setAssignProjectMeetingId] = useState<string | null>(null)
+  const [notesMeetingId, setNotesMeetingId] = useState<string | null>(null)
 
   const query = useDataViewQuery(trpc.meetingsRouter.reads.list, {}, tableView.query)
 
@@ -53,6 +55,7 @@ export function useMeetingsTable(
     onView: handleView,
     onAssignOwner: (row: MeetingRow) => setParticipantsMeetingId(row.id),
     onAssignProject: (row: MeetingRow) => setAssignProjectMeetingId(row.id),
+    onEditNotes: (row: MeetingRow) => setNotesMeetingId(row.id),
   }), [handleView])
 
   const { actions, DeleteConfirmDialog, OutcomeReasonDialog, RescheduleDialog, changeOutcome }
@@ -102,6 +105,13 @@ export function useMeetingsTable(
         open={!!assignProjectMeetingId}
         onOpenChange={open => !open && setAssignProjectMeetingId(null)}
       />
+      {notesMeetingId && (
+        <MeetingNotesDialog
+          meetingId={notesMeetingId}
+          open
+          onOpenChange={open => !open && setNotesMeetingId(null)}
+        />
+      )}
     </>
   )
 
