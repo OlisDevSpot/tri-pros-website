@@ -1,6 +1,8 @@
 import type { CustomerNoteWithAuthor } from '@/shared/entities/customers/types'
 import type { TimelineEvent } from '@/shared/entities/customers/types/timeline'
 
+import { customerNoteEntityTypes } from '@/shared/constants/enums/customer-notes'
+
 /**
  * `note_added` events carry the note's fields flattened onto the
  * `TimelineEvent` (title = content, metadata = author fields — see
@@ -21,6 +23,8 @@ export function noteFromTimelineEvent(event: TimelineEvent, customerId: string):
     customerId,
     content: event.title,
     authorId: typeof metadata.authorId === 'string' ? metadata.authorId : null,
+    entityType: customerNoteEntityTypes.find(type => type === metadata.linkedEntityType) ?? null,
+    entityId: typeof metadata.linkedEntityId === 'string' ? metadata.linkedEntityId : null,
     authorName: typeof metadata.authorName === 'string' ? metadata.authorName : null,
     authorImage: typeof metadata.authorImage === 'string' ? metadata.authorImage : null,
     createdAt: event.timestamp,

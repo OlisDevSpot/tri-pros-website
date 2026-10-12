@@ -7,7 +7,9 @@ import assert from 'node:assert/strict'
 import { Buffer } from 'node:buffer'
 import { ROOTS } from '@/shared/config/roots'
 import { companyInfo } from '@/shared/constants/company'
+import { canRescheduleFromOutcome, derivedMeetingOutcomes, DID_NOT_OCCUR_OUTCOMES, LIVE_MEETING_OUTCOMES, MEETING_OUTCOME_SENTIMENT, MEETING_OUTCOME_SIT, outcomeRequiresReason, selectableMeetingOutcomes } from '@/shared/constants/enums/meetings'
 import { VOIP_MESSAGE_STATUS_RANK } from '@/shared/constants/enums/voip'
+import { OUTCOME_PIPELINE_MAP } from '@/shared/domains/pipelines/lib/outcome-pipeline-map'
 
 import { businessDateTime, formatBusinessClock, formatBusinessDay, formatBusinessDayTime } from '@/shared/lib/business-time'
 import { formatArrivalWindow } from '@/shared/modules/meetings/core/lib/arrival-window'
@@ -15,7 +17,7 @@ import { formatArrivalWindow } from '@/shared/modules/meetings/core/lib/arrival-
 import { confirmationsClearedByMove } from '@/shared/modules/meetings/core/lib/confirmation-reset'
 import { scheduledForSetByMove } from '@/shared/modules/meetings/core/lib/scheduled-for-set'
 import { visitMessageTemplateKeys } from '@/shared/modules/meetings/messages/constants/kinds'
-import { VISIT_MESSAGE_TEMPLATE_DEFAULTS, VISIT_MESSAGE_TOKENS } from '@/shared/modules/meetings/messages/constants/templates'
+import { VISIT_MESSAGE_STOP_LINE, VISIT_MESSAGE_TEMPLATE_DEFAULTS, VISIT_MESSAGE_TOKENS } from '@/shared/modules/meetings/messages/constants/templates'
 import { buildIcs } from '@/shared/modules/meetings/messages/lib/build-ics'
 import { deriveConfirmationTrack } from '@/shared/modules/meetings/messages/lib/derive-confirmation-track'
 import { displayFirstName } from '@/shared/modules/meetings/messages/lib/display-first-name'
@@ -267,7 +269,7 @@ One more thing: Gate code 1234.
 Here's your visit page, where you can see the agenda and manage your visit:
 https://example.com/v
 
-Reply YES to confirm. Reply STOP to opt out.`,
+Reply YES to confirm. ${VISIT_MESSAGE_STOP_LINE}`,
     'the summary in the coordinator voice, with a specialist and a note; STOP shares the last line',
   )
   assert.equal(
@@ -279,7 +281,7 @@ You're all set for Wed, Oct 7 at 10:00 AM 📅
 Here's your visit page, where you can see the agenda and manage your visit:
 https://example.com/v
 
-Reply YES to confirm. Reply STOP to opt out.`,
+Reply YES to confirm. ${VISIT_MESSAGE_STOP_LINE}`,
     'the summary in the company voice: no specialist sentence, no note paragraph, no gap left behind',
   )
   assert.ok(!render('visit_summary', bare).includes('\n\n\n'), 'no triple newline')
@@ -334,7 +336,7 @@ Your visit page, in case you need it: https://example.com/v
 
 Your visit page, in case you need it: https://example.com/v
 - Dana, ${N}
-Reply STOP to opt out.`,
+${VISIT_MESSAGE_STOP_LINE}`,
     'after a signature the STOP line takes its own line',
   )
   assert.equal(
@@ -616,5 +618,19 @@ console.log('14. Google Calendar link ✓')
   assert.deepEqual(runWindowFor('day_before_reminder', new Date('2026-11-02T02:00:00.000Z')), { day: '2026-11-02', from: '2026-11-02T08:00:00.000Z', to: '2026-11-03T08:00:00.000Z' }, 'the window after the fall-back switch starts at the PST midnight')
 }
 console.log('15. Run window ✓')
+
+{
+  assert.ok((derivedMeetingOutcomes as readonly string[]).includes('rescheduled'), 'the system sets it; pickers show it disabled')
+  assert.ok(!(selectableMeetingOutcomes as readonly string[]).includes('rescheduled'))
+  assert.equal(MEETING_OUTCOME_SENTIMENT.rescheduled, 'neutral', 'a reschedule is not a loss')
+  assert.equal(MEETING_OUTCOME_SIT.rescheduled, 'not_sat')
+  assert.ok(!LIVE_MEETING_OUTCOMES.includes('rescheduled'), 'the replacement is the live meeting')
+  assert.equal(canRescheduleFromOutcome('rescheduled'), false, 'the replacement is what gets rescheduled next')
+  assert.ok(!(DID_NOT_OCCUR_OUTCOMES as readonly string[]).includes('rescheduled'))
+  assert.equal(outcomeRequiresReason('rescheduled'), false)
+  assert.equal(OUTCOME_PIPELINE_MAP.rescheduled, null, 'the original does not go to rehash')
+  assert.equal(isVisitMessageEligible({ meetingType: 'Fresh', meetingOutcome: 'rescheduled', scheduledFor: '2099-01-01T17:00:00.000Z' }, new Date('2026-10-12T17:00:00.000Z')), false, 'nothing is sent for a rescheduled original')
+}
+console.log('16. The rescheduled outcome ✓')
 
 console.log('✅ verify-visit-messages passed')

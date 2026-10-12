@@ -81,6 +81,8 @@ export async function getCustomerProfile(customerId: string, viewer: CustomerPro
       customerId: customerNotes.customerId,
       content: customerNotes.content,
       authorId: customerNotes.authorId,
+      entityType: customerNotes.entityType,
+      entityId: customerNotes.entityId,
       createdAt: customerNotes.createdAt,
       updatedAt: customerNotes.updatedAt,
       authorName: user.name,

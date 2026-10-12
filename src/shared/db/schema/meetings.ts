@@ -10,6 +10,7 @@ import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import z from 'zod'
 
 import { homeownerConfirmationOptions, meetingOutcomes, meetingPipelines, meetingTypes } from '@/shared/constants/enums'
+import { VISIT_NOTE_MAX_LENGTH } from '@/shared/entities/meetings/constants/visit-note'
 import {
   meetingContextSchema,
   meetingFlowStateSchema,
@@ -46,6 +47,10 @@ export const meetings = pgTable('meetings', {
   contextJSON: jsonb('context_json').$type<MeetingContext>(),
   flowStateJSON: jsonb('flow_state_json').$type<MeetingFlowState>(),
   agentNotes: text('agent_notes'),
+  // Homeowner-facing: the welcome text, the calendar event and the visit page show it.
+  visitNote: text('visit_note'),
+  // Set means the homeowner should be a guest on the meeting's calendar event; the calendar sync makes the event match.
+  homeownerInvitedAt: timestamp('homeowner_invited_at', { mode: 'string', withTimezone: true }),
   // Google Calendar sync
   gcalEventId: text('gcal_event_id'),
   gcalEtag: text('gcal_etag'),
@@ -89,5 +94,6 @@ export const insertMeetingSchema = createInsertSchema(meetings, {
   // Un-omitted: hooks.create.before defaults from ctx.session.
   // Optional so clients don't need to send it (hook fills it in).
   ownerId: z.string().optional(),
+  visitNote: z.string().trim().max(VISIT_NOTE_MAX_LENGTH).nullable().optional(),
 })
 export type InsertMeetingSchema = z.infer<typeof insertMeetingSchema>

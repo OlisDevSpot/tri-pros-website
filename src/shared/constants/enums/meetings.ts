@@ -56,6 +56,7 @@ export const derivedMeetingOutcomes = [
   'proposal_sent',
   'converted_to_project',
   'additional_work',
+  'rescheduled',
 ] as const
 export type DerivedMeetingOutcome = (typeof derivedMeetingOutcomes)[number]
 
@@ -85,6 +86,7 @@ export const MEETING_OUTCOME_SENTIMENT: Record<MeetingOutcome, MeetingOutcomeSen
   not_set: 'unset',
   follow_up_needed: 'neutral',
   reschedule_needed: 'neutral',
+  rescheduled: 'neutral',
   proposal_created: 'neutral',
   proposal_sent: 'neutral',
   converted_to_project: 'positive',
@@ -124,6 +126,7 @@ export const MEETING_OUTCOME_SIT: Record<MeetingOutcome, MeetingSit> = {
   no_show: 'not_sat',
   cancelled: 'not_sat',
   reschedule_needed: 'not_sat',
+  rescheduled: 'not_sat',
   nra: 'not_sat',
 }
 
@@ -155,10 +158,11 @@ export const ATTENTION_OUTCOMES: MeetingOutcome[] = meetingOutcomes.filter(outco
 /** Outcomes that represent a decided/terminal state (anything but not_set). */
 export const DECIDED_OUTCOMES: MeetingOutcome[] = meetingOutcomes.filter(o => o !== 'not_set')
 
-/** Outcomes that keep a meeting "live" — everything except the two that mean it never happened. */
+/** Outcomes that keep a meeting "live" — everything except the outcomes that mean this row's visit never happens. */
 export const LIVE_MEETING_OUTCOMES: MeetingOutcome[]
-  = meetingOutcomes.filter(o => o !== 'cancelled' && o !== 'no_show')
+  = meetingOutcomes.filter(o => o !== 'cancelled' && o !== 'no_show' && o !== 'rescheduled')
 
+// rescheduled is absent on purpose: its replacement is the meeting a later reschedule moves.
 /**
  * Outcomes where the meeting did NOT physically occur — the only states a
  * Reschedule (cancel-and-rebook) may start from. Orthogonal to sentiment: it
