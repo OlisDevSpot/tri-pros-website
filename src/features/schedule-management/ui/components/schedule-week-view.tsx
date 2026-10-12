@@ -3,7 +3,7 @@
 import type { ScheduleCalendarEvent } from '@/features/schedule-management/types'
 
 import { format, parseISO } from 'date-fns'
-import { useEffect, useMemo, useRef } from 'react'
+import { useLayoutEffect, useMemo, useRef } from 'react'
 
 import { SKELETON_EVENTS_PER_DAY } from '@/features/schedule-management/constants/schedule-calendar-config'
 import { getEventsForDay, getWeekDays, isBusinessToday, localDateToCalendarDay, seededIntInRange } from '@/shared/components/calendar/lib/calendar-helpers'
@@ -42,19 +42,33 @@ export function ScheduleWeekView({
   const prevDateRef = useRef<Date | null>(null)
 
   // Snap the horizontal viewport on week navigation for continuity:
-  // - Today landing in the week wins (covers initial mount + "Today" button)
+  // - Today landing in the week wins (covers the "Today" button)
   // - Forward (next week)  → align Sunday at the start of the viewport
   // - Backward (prev week) → align Friday at the end of the viewport
-  useEffect(() => {
+  useLayoutEffect(() => {
     const prev = prevDateRef.current
     prevDateRef.current = currentDate
+    const scroller = scrollRef.current
+    const todayCol = todayColRef.current
 
-    if (todayColRef.current) {
-      todayColRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
+    if (!prev) {
+      // A mount places the viewport before the first paint instead of scrolling there: the route's loading screen and
+      // the page each mount this view, and a slide on every entry reads as the page jumping. Only the horizontal
+      // scroller moves (scrollIntoView would move its ancestors too), and the app-wide smooth scroll-behavior is
+      // lifted for this one assignment.
+      if (scroller && todayCol) {
+        const overflow = todayCol.getBoundingClientRect().right - scroller.getBoundingClientRect().left - scroller.clientWidth
+        if (overflow > 0) {
+          scroller.style.scrollBehavior = 'auto'
+          scroller.scrollLeft = overflow
+          scroller.style.scrollBehavior = ''
+        }
+      }
       return
     }
 
-    if (!prev) {
+    if (todayCol) {
+      todayCol.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
       return
     }
 
