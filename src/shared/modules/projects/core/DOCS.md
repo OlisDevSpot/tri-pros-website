@@ -101,7 +101,7 @@ A project's coarse **status bucket** (`active | completed | on_hold | cancelled`
 Do **not** re-encode the stage→bucket relationship anywhere else. The `projects.status` column was **removed** (#283) — status is derived-only, never stored. Query-side grouping goes through the `statusBucket` filter on `crud.list` (expands buckets → stages via `stagesForBuckets`); display-side goes through `deriveProjectStatusBucket`. Mirrors the meetings classifier (`MEETING_OUTCOME_SENTIMENT`).
 
 **Why**: `status` was set once at creation and never maintained, so nearly every project read `active` regardless of its true state. `pipelineStage` is the axis agents actually move, so it's the truthful source; deriving keeps one source of truth and avoids a status-sync mechanism (JIT derivation — see ADR-0005).
-**Reference impl**: `PROJECT_STAGE_BUCKET` + `deriveProjectStatusBucket` in `src/shared/constants/enums/pipelines.ts`; consumed by `src/features/agent-dashboard/constants/dashboard-queries.ts` (`activeProjectsInput` / `onHoldProjectsInput`)
+**Reference impl**: `PROJECT_STAGE_BUCKET` + `deriveProjectStatusBucket` in `src/shared/constants/enums/pipelines.ts`; consumed by `src/features/agent-dashboard/constants/dashboard-queries.ts` (`DASHBOARD_ACTIVE_PROJECTS_QUERY` / `DASHBOARD_ON_HOLD_PROJECTS_QUERY`)
 **Enforced by**: convention; the `Record<ProjectPipelineStage, …>` type makes the map exhaustive (omitting a stage fails `pnpm tsc`)
 
 ### project-visibility-scope
