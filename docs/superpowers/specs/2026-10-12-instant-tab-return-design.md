@@ -1,6 +1,7 @@
 # Instant tab return — design
 
-Status: awaiting owner review (2026-10-12). Grilled with the owner 2026-10-09 → 2026-10-12. Carved out of the deferred
+Status: APPROVED by the owner 2026-10-12, revised the same day after an adversarial review (three reviewers:
+conventions, runtime, verification) and owner rulings R6–R9. Carved out of the deferred
 `2026-10-09-dashboard-navigation-cache-design.md`, which keeps the wider query-pattern questions.
 
 ## Goal
@@ -15,9 +16,17 @@ place. Skeletons only on a true first visit. `next.config.ts` untouched.
 - R2. The server's streamed copy stays the refresh on in-app navigation (one read per navigation). Browser Back/Forward
   replays Next's cached page, so it refetches only once the rows are past `staleTime`; accepted.
 - R3. `staleTime` stays 30 s. Client `gcTime` 30 min (server unchanged), until Ably realtime takes over freshness.
-- R4. The refresh hairline shows only while refetching rows that are stale (older than 30 s, or marked stale by a save
-  or the refresh button). A return within 30 s refreshes silently.
-- R5. Scope: the six routes with a loading screen plus dashboard home. Detail pages, analytics and lead sources stay out.
+- R4. The refresh hairline shows only while refetching rows that are older than `staleTime` or invalidated (a save, the
+  refresh button). A return within 30 s refreshes silently.
+- R5. Scope: the six routes with a loading screen plus dashboard home. Detail pages, analytics and lead sources get no
+  loading screen of their own.
+- R6. Name: `useLoadingScreenRead` (owner kept it over `usePendingViewRead`), route group `(home)`. "Loading screen"
+  is a new term: a glossary entry goes into `CONTEXT.md` once that file is free (another session holds it).
+- R7. A data view's error fallback stays row-less. The pending context gains a value that tells the two apart, so
+  rows that failed to render never re-render inside their own fallback and escape the section's boundary.
+- R8. Home's loading screen greets by name from the client session, so the greeting doesn't change on every return.
+- R9. R4's rule lives in the two shared read hooks, so it applies to every data view, including lead sources,
+  campaign leads and the proposal-flow table.
 
 ## Why it flashes today
 
@@ -25,36 +34,46 @@ place. Skeletons only on a true first visit. `next.config.ts` untouched.
    and the home sections render their skeletons, whatever the cache holds. Next prefetches `loading.tsx` in production,
    so every click shows skeletons first (dev can't reproduce it: it doesn't prefetch).
 2. Client `gcTime` is TanStack's default 5 min, so older entries are gone anyway.
-3. `isFetching` drives the hairline, and every return refetches, so the hairline runs on every return.
+3. `isFetching` drives the hairline, and every return refetches, so the hairline runs on every return (in production,
+   where the server's streamed copy is still in flight when the page commits).
 4. Dashboard home has no loading screen, so a click on Home keeps the previous page up until the server answers.
-5. `ScheduleWeekView` smooth-scrolls to today from a `useEffect` on every mount: twice per entry (loading view, then the
-   real view).
+5. `ScheduleWeekView` smooth-scrolls to today from a `useEffect` on every mount: twice per entry (loading screen, then
+   the page).
 
 ## Design
 
-### 1. One rule for reads in a loading screen
+### 1. One rule for reads in a pending view
 
-A single helper decides what a read does inside `DataViewPending`, used by every consumer instead of each one
-special-casing the pending context:
+`DataViewPendingContext` carries `false | 'loading' | 'error'` instead of a boolean. `DataViewPending` (route loading
+screens, `DataViewBoundary`'s suspense fallback, the layout's document-load skeleton, the PWA launch shell) provides
+`'loading'`; `DataViewBoundary`'s error fallback provides `'error'`. `useIsDataViewPending()` stays a boolean
+(`!== false`), so its readers don't change.
 
-- Outside a loading screen: the read's options, unchanged.
-- Inside one, when the cache holds the key: the read's options with `refetchOnMount: false`. The rows show, and the
+`useLoadingScreenRead(options)` decides what a read does:
+
+- Outside a pending view: the options, unchanged.
+- In a `'loading'` view, when the cache holds the key: the options with `refetchOnMount: false`. The rows show, and the
   loading screen starts no fetch; the page that replaces it owns the refresh (R2).
-- Inside one, when the cache does not hold the key: nothing, and the consumer draws its skeleton.
+- In a `'loading'` view with nothing cached, or in an `'error'` view: `null`, and the caller draws its skeleton.
 
 Consumers:
 
-- `useDataViewQuery` and `usePaginatedQuery`: "nothing" maps to `EMPTY_DATA_VIEW_READ` (one `useSuspenseQuery` call,
-  so hook order never changes). Their `isPending` then means "no rows to show", true only on a first visit, so empty
-  states, the page clamp and the neighbouring-window preloads behave as on the real page once rows show. The
-  hydration-parity and prefetch-guard checks stay limited to the real page (they are about the server's first render).
-- Dashboard home: `DashboardProjectSection`, `DashboardProposalSection` and `DashboardSnapshotStrip` render their lists
-  when the list's key is cached and the skeleton otherwise; the lists' own reads go through the same helper. The
-  snapshot strip shows its counts only when all three of its keys are cached.
+- `useDataViewQuery` and `usePaginatedQuery`: `null` maps to `EMPTY_DATA_VIEW_READ` (one `useSuspenseQuery` call, so
+  hook order never changes). Their `isPending` then means "no rows to show". In any pending view they start no
+  neighbour preload, write no URL (page clamp) and run no hydration checks: those belong to the page.
+- Both hooks' hydration-drift check moves onto `useHydrationParityCheck`, which skips pending views (their reads are
+  never hydration targets: the recorded keys are the previous page's).
+- Dashboard home: each section's parent builds the read options, calls the hook, and returns its skeleton (or the bare
+  count chips) on `null`; the child list receives the options and reads them unconditionally. No dummy read in
+  feature code.
+- `useScheduleHighlight` does nothing in a pending view: a deep-linked meeting scrolls and starts its 10 s timer once,
+  on the page.
 
-TanStack facts this rests on (5.104 source + docs via Context7): `useSuspenseQuery` never suspends on a cached entry;
-`refetchOnMount: false` stops the mount refetch; on the page, `HydrationBoundary` adopts the server's newer streamed
-copy for an existing entry after commit, which is the in-place refresh.
+TanStack facts this rests on (5.104 source + docs via Context7, re-checked by the runtime review):
+`useSuspenseQuery` never suspends on a cached entry; `refetchOnMount: false` stops the mount refetch; the tRPC options
+spread loses nothing (the DataTag is type-only); on the page, `HydrationBoundary` adopts the server's newer streamed copy
+for an existing entry after commit, which is the in-place refresh. In the loading screen `useSearchParams` (and nuqs)
+already see the new URL, so the loading screen derives the page's key.
 
 ### 2. Cache lifetime
 
@@ -63,60 +82,64 @@ cache alive; TanStack's server default is `Infinity`.
 
 ### 3. The refresh rule in one place
 
-The two read hooks expose `isFetching` as "refetching rows that are stale": TanStack's `isFetching && isStale` on the
-shown read. Every consumer of `query.isFetching` (toolbar hairline, refresh-button spin, table "Updating…", pipeline
-`aria-busy`, the table body's empty-state guard) then follows R4 with no edit of its own. The refresh button and saves
-invalidate first, which marks the rows stale, so they always show. The hooks keep TanStack's raw `isFetching`
-internally for the neighbouring-window preload gate. The result types' doc comments change with it.
+The two read hooks expose `isFetching` as `read.isFetching && read.isStale` on the shown read (a local
+`isPastStaleTime` names TanStack's flag, distinct from the result's own `isStale`, which means "rows of an older URL").
+Every consumer of `query.isFetching` (toolbar hairline, refresh-button spin, table "Updating…", pipeline `aria-busy`,
+the table body's empty-state guard) then follows R4 with no edit of its own (R9). The refresh button and saves
+invalidate first, which marks the rows stale for the whole refetch. Pull-to-refresh and the pipeline's move settling
+await `refresh()` and don't read `isFetching`. The hooks keep TanStack's raw `isFetching` for their own preload gates.
 
 ### 4. A loading screen for dashboard home
 
-The home page moves into a route group, `dashboard/(home)/page.tsx`, with its own `loading.tsx` rendering the existing
+The home page moves into a route group, `dashboard/(home)/page.tsx`, with its own `loading.tsx` rendering
 `DashboardHomePendingView` under `DataViewPending`. A `loading.tsx` beside the current `dashboard/page.tsx` would also
 cover every route under `dashboard/` without its own (analytics, lead sources, detail pages) and show them the home
-view. The URL doesn't change.
+view. The URL doesn't change. `DashboardHomePendingView` reads the name from the client session (`useSession`), which
+is loaded on any in-app navigation (R8); on a document load it is still pending and the greeting has no name, as today.
 
 ### 5. Schedule entry position
 
-`ScheduleWeekView` positions its scroller in a `useLayoutEffect`, before paint: on mount today's column with
-`behavior: 'instant'`, or the left edge when today is outside the shown week. A later change of week keeps the smooth
-scroll to today and the Sunday/Friday alignment.
+On mount `ScheduleWeekView` sets its scroller's `scrollLeft` in a `useLayoutEffect`, before paint, so today's column is
+in view (the left edge when today is outside the shown week). Setting the scroller directly moves only the horizontal
+scroller: `scrollIntoView` would also scroll the ancestors, and `behavior: 'instant'` is not safe across engines (and
+`scroll-behavior: smooth` in `globals.css` rules out `'auto'`). A later change of week keeps the smooth
+`scrollIntoView` to today and the Sunday/Friday alignment.
 
 ## Accepted behaviour
 
 - The loading screen and the page are separate trees, so the view remounts once when the page commits: same rows,
-  same layout; a scroll position set during that fraction of a second resets. The week view repositions before paint
-  (§5).
+  same layout; local UI state and a scroll position set during that fraction of a second reset. The week view
+  repositions before paint (§5).
 - A refetch that fails while cached rows show leaves the rows and stops the hairline; the error UI stays for a read
   with no rows, as today.
 - Past 30 s, the page's observer usually refetches before the boundary adopts the server's copy, so that navigation
   reads twice (TanStack #9610, fix PR #9968 unreleased). Rows still refresh in place.
+- A quick return's refresh needs the server's clock to be ahead of the client's by the rows' age (TanStack adopts the
+  server copy only when `dehydratedAt > dataUpdatedAt`). A client clock running fast can skip that silent refresh;
+  rows older than 30 s are refetched by the page itself anyway.
+- On a document load, the home greeting appears without a name until the session resolves, as today.
 
 ## Out of scope
 
 Everything in the deferred `2026-10-09` spec: per-family freshness, polling, server-side prefetch savings, detail
-pages, analytics, lead sources.
+pages, analytics, lead sources' loading screens.
 
 ## Verification
 
 Playwright on the dev server (auth via `/api/dev/playwright-session`, no database writes). Dev doesn't prefetch
-`loading.tsx`, so each check mounts the loading screen the way production does: it waits for the route's
-`loading.tsx` chunk before the click, or it renders the pending view directly under the pending context.
+`loading.tsx` and receives the server's copy already resolved, so the quick-return and loading-screen checks run under
+CDP download throttling, which keeps the stream in flight the way production sees it.
 
-1. Return to each in-scope route within 30 s: rows on the first frame after the click, one refetch, no hairline, rows
-   replaced in place once the page commits (rows that did not change keep their DOM nodes through that refresh).
-2. Return after 30 s: rows on the first frame, the hairline while the refetch runs, then it clears.
-3. First visit in a fresh tab: skeletons, then rows.
-4. Refresh button: the hairline and the spin show, then clear.
-5. Dashboard home from another tab: the home view on the first frame; analytics and a detail page do not show it.
-6. Schedule at 390 px: the scroller's `scrollLeft` is at today's column on the first frame and never animates on entry;
-   Previous and Next still animate.
+1. Throttled quick return (visit X → pipeline → back to X within seconds) on meetings, customers, projects, proposals,
+   schedule and pipeline: when the loading screen is seen, it shows rows; no hairline; no skeleton frame with no rows.
+2. Refresh button: the hairline shows, then clears.
+3. A failed refetch (tRPC requests aborted, at least one abort observed) keeps the rows.
+4. Dashboard home: `(home)/page.tsx` and `(home)/loading.tsx` exist and `dashboard/page.tsx` and
+   `dashboard/loading.tsx` do not; analytics never shows the home view; the greeting carries the name on every frame of a
+   return.
+5. Schedule at 390 px: the week scroller's `scrollLeft` never moves on entry; Next still animates.
+6. Unit (tsx): the hook's four cases (outside, cached `'loading'`, uncached `'loading'`, cached `'error'`) and the
+   client `gcTime`.
+7. No `[prefetch drift]` console errors throughout.
 
-Then `pnpm tsc` and `pnpm lint`.
-
-## Names (proposed; owner approval needed)
-
-| Name | What it is |
-|---|---|
-| `useLoadingScreenRead` | §1's helper: a read's options inside or outside a loading screen, or nothing when uncached |
-| `(home)` | §4's route group for dashboard home |
+Then `pnpm tsc` and `pnpm lint`. Owner checks in production for what dev cannot show: no skeleton flash on any return.
