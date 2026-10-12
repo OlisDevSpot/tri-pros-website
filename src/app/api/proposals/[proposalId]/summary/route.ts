@@ -2,6 +2,7 @@ import { formatAsDollars } from '@/shared/lib/formatters'
 import { getFullView } from '@/shared/modules/proposals/core/dal/server/queries'
 import { buildPricingBreakdown } from '@/shared/modules/proposals/core/lib/financials'
 import { toFundingInputs } from '@/shared/modules/proposals/core/lib/funding-columns'
+import { SHARE_LINK_LIMITS } from '@/shared/modules/proposals/core/lib/share-link-rate-limit'
 import { shareRouteContext } from '@/shared/modules/proposals/core/lib/share-route-context'
 import { toHomeownerProposalView } from '@/shared/modules/proposals/core/lib/to-homeowner-proposal-view'
 
@@ -21,6 +22,9 @@ export async function GET(
   // One answer for a wrong token and a missing proposal, so nothing reveals which ids exist.
   if (!share || !result?.success || !result.data) {
     return Response.json({ error: 'Not found' }, { status: 404 })
+  }
+  if (share.viaShareLink && token && !(await SHARE_LINK_LIMITS.document.limit(token)).success) {
+    return Response.json({ error: 'Too many requests' }, { status: 429 })
   }
   const proposal = toHomeownerProposalView(share.ctx.actor.ability, result.data)
 
