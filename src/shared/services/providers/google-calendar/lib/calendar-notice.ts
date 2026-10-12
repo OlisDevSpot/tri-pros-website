@@ -47,8 +47,12 @@ export function noticeStateFromEvent(event: GCalEvent): CalendarNoticeState {
 /**
  * Whether Google should email the homeowner about this write. Compared against Google's copy, not our history,
  * so a retried job or an edit already made in Google Calendar never sends a second email.
+ * A visit that has started gets no emails.
  */
-export function decideCalendarNotice(current: CalendarNoticeState | null, next: CalendarNoticeState): CalendarNotice {
+export function decideCalendarNotice(current: CalendarNoticeState | null, next: CalendarNoticeState, now: Date): CalendarNotice {
+  if (next.start !== null && new Date(next.start).getTime() <= now.getTime()) {
+    return 'none'
+  }
   const before = current?.homeownerEmail ?? null
   if (!sameEmail(before, next.homeownerEmail)) {
     return 'notify'

@@ -249,7 +249,7 @@ async function pushMeetingEventToCalendar(
   const write = async (event: GCalEventInput) => {
     if (meeting.gcalEventId) {
       const current = await googleCalendarClient.getEvent(auth.accessToken, calendarId, meeting.gcalEventId)
-      const notice = decideCalendarNotice(noticeStateFromEvent(current), noticeStateFromInput(event))
+      const notice = decideCalendarNotice(noticeStateFromEvent(current), noticeStateFromInput(event), new Date())
       const withResponses = { ...event, attendees: carryAttendeeResponses(event.attendees ?? [], current.attendees) }
       const updated = await googleCalendarClient.updateEvent(
         auth.accessToken,
@@ -257,7 +257,8 @@ async function pushMeetingEventToCalendar(
         meeting.gcalEventId,
         withResponses,
         toSendUpdates(notice, { isProduction }),
-        meeting.gcalEtag ?? undefined,
+        // The notice was decided against this read, so the write must guard this version; the stored etag goes stale on every RSVP.
+        current.etag,
       )
       await updateMeetingGCalFields(meetingId, {
         gcalEtag: updated.etag,
@@ -265,7 +266,7 @@ async function pushMeetingEventToCalendar(
       })
       return
     }
-    const notice = decideCalendarNotice(null, noticeStateFromInput(event))
+    const notice = decideCalendarNotice(null, noticeStateFromInput(event), new Date())
     const created = await googleCalendarClient.createEvent(auth.accessToken, calendarId, event, toSendUpdates(notice, { isProduction }))
     await updateMeetingGCalFields(meetingId, {
       gcalEventId: created.id,

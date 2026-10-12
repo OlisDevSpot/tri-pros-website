@@ -1,5 +1,6 @@
 import type { GCalEventInput } from '../types'
 import type { MeetingGuests } from './meeting-guests'
+import type { MeetingOutcome } from '@/shared/constants/enums/meetings'
 
 import { companyInfo } from '@/shared/constants/company'
 import { GCAL_ACTIVITY_COLORS, GCAL_MEETING_COLORS } from '@/shared/constants/gcal-colors'
@@ -26,6 +27,7 @@ export interface MeetingForGCal {
   visitNote: string | null
   homeownerInvitedAt: string | null
   shareToken: string
+  meetingOutcome: MeetingOutcome
   tradeSelections: TradeSelectionForGCal[]
   // GCal sync fields
   gcalEventId: string | null
@@ -81,7 +83,8 @@ function buildMeetingDescription(meeting: MeetingForGCal, extras: MeetingEventEx
 }
 
 export function meetingToGCalEvent(meeting: MeetingForGCal, extras: MeetingEventExtras): GCalEventInput | null {
-  if (!meeting.scheduledFor) {
+  // A cancelled meeting is gone, and a rescheduled original's event now belongs to its replacement.
+  if (!meeting.scheduledFor || meeting.meetingOutcome === 'cancelled' || meeting.meetingOutcome === 'rescheduled') {
     return null
   }
 

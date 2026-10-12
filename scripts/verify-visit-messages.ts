@@ -657,6 +657,7 @@ console.log('16. The rescheduled outcome ✓')
     gcalEventId: null,
     gcalEtag: null,
     participantEmails: ['rep@triprosremodeling.com'],
+    meetingOutcome: 'not_set',
   }
   const guests = { attendees: [{ email: 'rep@triprosremodeling.com' }, { email: 'maria@example.com' }], homeownerEmail: 'maria@example.com' }
   const extras = { visitLink: 'https://example.com/home-visits/m1?token=tok', questionsPhone: '(818) 555-0100', guests }
@@ -673,6 +674,9 @@ console.log('16. The rescheduled outcome ✓')
   assert.deepEqual(event.attendees, guests.attendees)
   assert.deepEqual(event.extendedProperties, homeownerMarker('maria@example.com'))
   assert.equal(event.location, '1 Main St, Calabasas, CA, 91302')
+  assert.equal(meetingToGCalEvent({ ...meeting, meetingOutcome: 'cancelled' }, extras), null, 'a cancelled meeting has no event')
+  assert.equal(meetingToGCalEvent({ ...meeting, meetingOutcome: 'rescheduled' }, extras), null, 'a rescheduled original has no event')
+  assert.notEqual(meetingToGCalEvent({ ...meeting, meetingOutcome: 'no_show' }, extras), null, 'a no-show keeps its event as history')
 }
 console.log('17. The meeting event ✓')
 
@@ -689,17 +693,21 @@ console.log('18. Meeting guests ✓')
 {
   const at = (start: string, homeownerEmail: string | null, location = '1 Main St') => ({ start, location, homeownerEmail })
   const T = '2026-10-20T17:00:00.000Z'
+  const noticeNow = new Date('2026-10-19T17:00:00.000Z')
   const sameInstantOtherFormat = '2026-10-20T10:00:00-07:00'
-  assert.equal(decideCalendarNotice(null, at(T, null)), 'none', 'a new event without the homeowner emails nobody')
-  assert.equal(decideCalendarNotice(null, at(T, 'maria@example.com')), 'notify', 'a new event with the homeowner is their invite')
-  assert.equal(decideCalendarNotice(at(T, null), at(T, 'maria@example.com')), 'notify', 'homeowner added')
-  assert.equal(decideCalendarNotice(at(T, 'maria@example.com'), at(T, null)), 'notify', 'homeowner removed: Google cancels for them')
-  assert.equal(decideCalendarNotice(at(T, 'maria@example.com'), at(T, 'maria.new@example.com')), 'notify', 'a changed email swaps the guest in one update')
-  assert.equal(decideCalendarNotice(at(T, 'maria@example.com'), at('2026-10-21T17:00:00.000Z', 'maria@example.com')), 'notify', 'start moved')
-  assert.equal(decideCalendarNotice(at(T, 'maria@example.com'), at(T, 'maria@example.com', '2 Oak Ave')), 'notify', 'location moved')
-  assert.equal(decideCalendarNotice(at(sameInstantOtherFormat, 'Maria@Example.com'), at(T, 'maria@example.com')), 'none', 'Google already matches: a retry sends nothing')
-  assert.equal(decideCalendarNotice(at(T, null), at('2026-10-21T17:00:00.000Z', null)), 'none', 'staff-only changes stay silent')
-  assert.equal(decideCalendarNotice(at(T, 'maria@example.com', ' 1 Main St '), at(T, 'maria@example.com')), 'none', 'a note, trades or title change alone is silent')
+  assert.equal(decideCalendarNotice(null, at(T, null), noticeNow), 'none', 'a new event without the homeowner emails nobody')
+  assert.equal(decideCalendarNotice(null, at(T, 'maria@example.com'), noticeNow), 'notify', 'a new event with the homeowner is their invite')
+  assert.equal(decideCalendarNotice(at(T, null), at(T, 'maria@example.com'), noticeNow), 'notify', 'homeowner added')
+  assert.equal(decideCalendarNotice(at(T, 'maria@example.com'), at(T, null), noticeNow), 'notify', 'homeowner removed: Google cancels for them')
+  assert.equal(decideCalendarNotice(at(T, 'maria@example.com'), at(T, 'maria.new@example.com'), noticeNow), 'notify', 'a changed email swaps the guest in one update')
+  assert.equal(decideCalendarNotice(at(T, 'maria@example.com'), at('2026-10-21T17:00:00.000Z', 'maria@example.com'), noticeNow), 'notify', 'start moved')
+  assert.equal(decideCalendarNotice(at(T, 'maria@example.com'), at(T, 'maria@example.com', '2 Oak Ave'), noticeNow), 'notify', 'location moved')
+  assert.equal(decideCalendarNotice(at(sameInstantOtherFormat, 'Maria@Example.com'), at(T, 'maria@example.com'), noticeNow), 'none', 'Google already matches: a retry sends nothing')
+  assert.equal(decideCalendarNotice(at(T, null), at('2026-10-21T17:00:00.000Z', null), noticeNow), 'none', 'staff-only changes stay silent')
+  assert.equal(decideCalendarNotice(at(T, 'maria@example.com', ' 1 Main St '), at(T, 'maria@example.com'), noticeNow), 'none', 'a note, trades or title change alone is silent')
+
+  assert.equal(decideCalendarNotice(at('2026-10-18T17:00:00.000Z', null), at('2026-10-18T17:00:00.000Z', 'maria@example.com'), noticeNow), 'none', 'a visit that has started gets no emails')
+  assert.equal(decideCalendarNotice(at('2026-10-18T17:00:00.000Z', 'maria@example.com'), at(T, 'maria@example.com'), noticeNow), 'notify', 'a past visit moved to the future notifies')
 
   const now = new Date('2026-10-19T17:00:00.000Z')
   assert.equal(decideCancellationNotice({ homeownerInvited: true, scheduledFor: T, now }), 'notify')
