@@ -257,7 +257,8 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
         inArray(customers.id, customerIds),
       ))
       .groupBy(customers.id),
-    // Assigned rep + meeting ID: owner of the most relevant meeting (latest by scheduledFor) per customer
+    // Assigned rep + meeting ID: owner of the most relevant meeting (latest by scheduledFor) per customer.
+    // A rescheduled original is never it: the visit lives on its replacement.
     db
       .selectDistinctOn([meetings.customerId], {
         customerId: meetings.customerId,
@@ -273,6 +274,7 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
       .innerJoin(user, eq(user.id, meetings.ownerId))
       .where(and(
         inArray(meetings.customerId, customerIds),
+        ne(meetings.meetingOutcome, 'rescheduled'),
         args.isOmni ? undefined : userParticipatesInMeeting(args.userId, meetings.id),
       ))
       .orderBy(meetings.customerId, desc(meetings.scheduledFor)),

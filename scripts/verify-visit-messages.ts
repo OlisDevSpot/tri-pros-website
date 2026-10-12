@@ -9,7 +9,7 @@ import assert from 'node:assert/strict'
 import { Buffer } from 'node:buffer'
 import { ROOTS } from '@/shared/config/roots'
 import { companyInfo } from '@/shared/constants/company'
-import { canRescheduleFromOutcome, derivedMeetingOutcomes, DID_NOT_OCCUR_OUTCOMES, LIVE_MEETING_OUTCOMES, MEETING_OUTCOME_SENTIMENT, MEETING_OUTCOME_SIT, outcomeRequiresReason, selectableMeetingOutcomes } from '@/shared/constants/enums/meetings'
+import { canRescheduleFromOutcome, derivedMeetingOutcomes, DID_NOT_OCCUR_OUTCOMES, LIVE_MEETING_OUTCOMES, MEETING_OUTCOME_SENTIMENT, MEETING_OUTCOME_SIT, outcomeRequiresReason, rescheduleBlockedReason, RESCHEDULED_ORIGINAL_REASON, selectableMeetingOutcomes } from '@/shared/constants/enums/meetings'
 import { VOIP_MESSAGE_STATUS_RANK } from '@/shared/constants/enums/voip'
 import { OUTCOME_PIPELINE_MAP } from '@/shared/domains/pipelines/lib/outcome-pipeline-map'
 
@@ -17,6 +17,7 @@ import { businessDateTime, formatBusinessClock, formatBusinessDay, formatBusines
 import { formatArrivalWindow } from '@/shared/modules/meetings/core/lib/arrival-window'
 
 import { confirmationsClearedByMove } from '@/shared/modules/meetings/core/lib/confirmation-reset'
+import { outcomeChangeNeedsSync } from '@/shared/modules/meetings/core/lib/outcome-change-needs-sync'
 import { rescheduledOriginalOutcome } from '@/shared/modules/meetings/core/lib/rescheduled-original-outcome'
 import { scheduledForSetByMove } from '@/shared/modules/meetings/core/lib/scheduled-for-set'
 import { visitMessageTemplateKeys } from '@/shared/modules/meetings/messages/constants/kinds'
@@ -667,5 +668,29 @@ console.log('20. Reschedule original outcome ✓')
   assert.ok(!/calendar|\.ics/i.test(withNote), 'the welcome text carries no calendar link')
 }
 console.log('21. Welcome text and the visit note ✓')
+
+{
+  const cases = [
+    ['not_set', 'cancelled', false, 'the cancel transition deletes the event itself'],
+    ['cancelled', 'not_set', true, 'un-cancelling puts the visit back on the calendar'],
+    ['rescheduled', 'not_set', true, 'an original brought back gets its event back'],
+    ['not_set', 'rescheduled', true, 'a moved visit leaves the calendar'],
+    ['not_set', 'no_show', false, 'a no-show keeps its past event'],
+    ['cancelled', 'cancelled', false, 'no change, no sync'],
+  ] as const
+  for (const [previous, next, expected, why] of cases) {
+    assert.equal(outcomeChangeNeedsSync(previous, next), expected, `${previous} → ${next}: ${why}`)
+  }
+}
+console.log('22. Outcome changes that sync the calendar ✓')
+
+{
+  assert.equal(rescheduleBlockedReason('not_set'), null)
+  assert.equal(rescheduleBlockedReason('no_show'), null)
+  assert.equal(rescheduleBlockedReason('rescheduled'), RESCHEDULED_ORIGINAL_REASON, 'a moved visit points at its replacement')
+  const happened = rescheduleBlockedReason('converted_to_project')
+  assert.ok(happened && happened !== RESCHEDULED_ORIGINAL_REASON && happened.includes('already happened'), String(happened))
+}
+console.log('23. Reschedule blocked reasons ✓')
 
 console.log('✅ verify-visit-messages passed')

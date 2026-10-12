@@ -16,6 +16,7 @@ import { getUserRoleById } from '@/shared/entities/users/dal/server/queries'
 import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
 import { generateToken } from '@/shared/lib/generate-token'
 import { confirmationsClearedByMove } from '@/shared/modules/meetings/core/lib/confirmation-reset'
+import { outcomeChangeNeedsSync } from '@/shared/modules/meetings/core/lib/outcome-change-needs-sync'
 import { scheduledForSetByMove } from '@/shared/modules/meetings/core/lib/scheduled-for-set'
 import { decideCancellationNotice } from '@/shared/services/providers/google-calendar/lib/calendar-notice'
 import { deleteMeetingEventJob } from '@/shared/services/providers/upstash/jobs/delete-meeting-event'
@@ -119,12 +120,13 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
       async after(row: Meeting, ctx, meta) {
         const { previousRow, input: data } = meta
 
-        // The fields the event is built from, and the homeowner's invite.
+        // The fields the event is built from, the homeowner's invite, and an outcome that adds or removes the event.
         const gcalFieldChanged = 'scheduledFor' in data
           || 'meetingType' in data
           || 'projectId' in data
           || 'visitNote' in data
           || 'homeownerInvitedAt' in data
+          || outcomeChangeNeedsSync(previousRow.meetingOutcome, row.meetingOutcome)
         const timeChanged = previousRow.scheduledFor !== row.scheduledFor
 
         const dispatches: Promise<unknown>[] = []

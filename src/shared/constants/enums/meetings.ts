@@ -165,7 +165,7 @@ export const LIVE_MEETING_OUTCOMES: MeetingOutcome[]
 // rescheduled is absent on purpose: its replacement is the meeting a later reschedule moves.
 /**
  * Outcomes where the meeting did NOT physically occur — the only states a
- * Reschedule (cancel-and-rebook) may start from. Orthogonal to sentiment: it
+ * Reschedule (the visit moves to a new meeting) may start from. Orthogonal to sentiment: it
  * cuts across unset / neutral / negative, so it cannot derive from the
  * sentiment map. Single source for the UI action gate AND the server guard.
  */
@@ -181,7 +181,18 @@ export function canRescheduleFromOutcome(outcome: MeetingOutcome): boolean {
 }
 
 /** UI reason shown when a meeting can't be rescheduled because it already happened. */
-export const CANNOT_RESCHEDULE_REASON = 'This meeting already happened — book a new meeting instead of rescheduling.'
+const CANNOT_RESCHEDULE_REASON = 'This meeting already happened — book a new meeting instead of rescheduling.'
+
+/** UI and server reason for a rescheduled original: the visit lives on the replacement now. */
+export const RESCHEDULED_ORIGINAL_REASON = 'This visit was moved; reschedule the new meeting instead.'
+
+/** Why a meeting with this outcome can't be rescheduled, or null when it can. */
+export function rescheduleBlockedReason(outcome: MeetingOutcome): string | null {
+  if (canRescheduleFromOutcome(outcome)) {
+    return null
+  }
+  return outcome === 'rescheduled' ? RESCHEDULED_ORIGINAL_REASON : CANNOT_RESCHEDULE_REASON
+}
 
 /** Every way a homeowner can confirm a visit themselves. The office's own confirmation is `confirmedAt`. */
 export const homeownerConfirmationOptions = ['sms_reply', 'in_app'] as const

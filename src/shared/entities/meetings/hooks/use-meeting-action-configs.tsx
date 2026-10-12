@@ -7,7 +7,7 @@ import type { MeetingOutcome } from '@/shared/constants/enums'
 
 import { useRouter } from 'next/navigation'
 import { ROOTS } from '@/shared/config/roots'
-import { CANNOT_RESCHEDULE_REASON, canRescheduleFromOutcome } from '@/shared/constants/enums/meetings'
+import { rescheduleBlockedReason } from '@/shared/constants/enums/meetings'
 import { SetterPicker } from '@/shared/entities/meetings/components/setter-picker'
 import { MEETING_ACTIONS } from '@/shared/entities/meetings/constants/actions'
 import { MEETING_CONFIRMATION_OPTIONS } from '@/shared/entities/meetings/constants/confirmation-options'
@@ -110,10 +110,7 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
     {
       action: MEETING_ACTIONS.reschedule,
       onAction: (entity: T) => void reschedule(entity.id),
-      getDisabledReason: (entity: T) =>
-        canRescheduleFromOutcome((entity.meetingOutcome ?? 'not_set') as MeetingOutcome)
-          ? null
-          : CANNOT_RESCHEDULE_REASON,
+      getDisabledReason: (entity: T) => rescheduleBlockedReason((entity.meetingOutcome ?? 'not_set') as MeetingOutcome),
     },
     ...(overrides.onEditNotes ? [{ action: MEETING_ACTIONS.notes, onAction: overrides.onEditNotes }] : []),
     {

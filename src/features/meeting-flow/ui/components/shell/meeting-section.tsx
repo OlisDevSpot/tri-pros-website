@@ -10,7 +10,7 @@ import { SHELL_COPY } from '@/features/meeting-flow/constants/shell-copy'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
-import { CANNOT_RESCHEDULE_REASON, canRescheduleFromOutcome } from '@/shared/constants/enums/meetings'
+import { rescheduleBlockedReason } from '@/shared/constants/enums/meetings'
 import { MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
 import { formatMeetingShortStamp } from '@/shared/lib/formatters'
 
@@ -22,7 +22,7 @@ interface MeetingSectionProps {
 /** Panel section: when, type, outcome, the meeting actions, and the keyboard list. */
 export function MeetingSection({ meeting, onReschedule }: MeetingSectionProps) {
   const outcome = (meeting.meetingOutcome ?? 'not_set') as MeetingOutcome
-  const canReschedule = canRescheduleFromOutcome(outcome)
+  const blockedReason = rescheduleBlockedReason(outcome)
 
   return (
     <div className="flex flex-col gap-5">
@@ -40,8 +40,8 @@ export function MeetingSection({ meeting, onReschedule }: MeetingSectionProps) {
       <div className="flex flex-wrap gap-2">
         <Button
           className="h-11 gap-2"
-          disabled={!canReschedule}
-          title={canReschedule ? undefined : CANNOT_RESCHEDULE_REASON}
+          disabled={blockedReason != null}
+          title={blockedReason ?? undefined}
           variant="outline"
           onClick={onReschedule}
         >
