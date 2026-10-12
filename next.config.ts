@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  devIndicators: {
+    position: 'bottom-right',
+  },
   // Every visitor gets the metadata in <head>. Next otherwise streams it into <body> on per-request routes
   // (the whole dashboard), and iOS reads the manifest, the capable tag and the startup images only from <head>
   // when a page is added to the home screen: an app added from such a page launched black. Blocking costs
