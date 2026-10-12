@@ -245,22 +245,21 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
   const customerIds = rows.map(r => r.customerId)
 
   // The three follow-ups need only the customer ids, so they run together.
-  const [proposalRows, repRows, proposalDetailRows] = await Promise.all([
-    // Pipeline value is read per-customer below from the stored final_tcp_cents
-    // rollup (Wave 2). This aggregate query only counts + summarizes statuses.
+  const [stageRows, repRows, proposalDetailRows] = await Promise.all([
+    // The column a customer sits in follows from the proposals on the meetings the actor reaches,
+    // so a role without proposals still sees the customer where they are; the proposals themselves
+    // (count, cards, value) stay behind the proposal reach below.
     db
       .select({
         customerId: customers.id,
-        proposalCount: count(proposals.id).as('proposal_count'),
         proposalStatuses: sql<string[] | string>`array_agg(DISTINCT ${proposals.status})`.as('proposal_statuses'),
         hasSentContract: sql<boolean>`bool_or(${proposals.contractSentAt} IS NOT NULL)`.as('has_sent_contract'),
-        latestProposalAt: max(proposals.createdAt).as('latest_proposal_at'),
       })
       .from(proposals)
       .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
       .innerJoin(customers, eq(customers.id, meetings.customerId))
       .where(and(
-        args.proposalReach,
+        args.meetingReach,
         inArray(customers.id, customerIds),
       ))
       .groupBy(customers.id),
@@ -304,7 +303,7 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
       .orderBy(desc(proposals.createdAt)),
   ])
 
-  const proposalMap = new Map(proposalRows.map(r => [r.customerId, r]))
+  const stageMap = new Map(stageRows.map(r => [r.customerId, r]))
 
   const repMap = new Map(
     repRows
@@ -336,7 +335,8 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
   }
 
   return rows.map((row): CustomerPipelineItem => {
-    const pData = proposalMap.get(row.customerId)
+    const pData = stageMap.get(row.customerId)
+    const reachedProposals = proposalDetailMap.get(row.customerId) ?? []
     const rawStatuses = pData?.proposalStatuses
     const proposalStatuses = Array.isArray(rawStatuses)
       ? rawStatuses.filter(Boolean)
@@ -353,7 +353,7 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
       customerAddress: row.customerAddress,
       customerCity: row.customerCity,
       meetingCount: row.meetingCount,
-      proposalCount: pData?.proposalCount ?? 0,
+      proposalCount: reachedProposals.length,
       hasPastMeeting: row.hasPastMeeting ?? false,
       hasActiveMeeting: row.hasActiveMeeting ?? false,
       hasScheduledFutureMeeting: row.hasScheduledFutureMeeting ?? false,
@@ -362,7 +362,8 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
       hasRescheduleNeeded: row.hasRescheduleNeeded ?? false,
       proposalStatuses,
       hasSentContract: pData?.hasSentContract ?? false,
-      latestActivityAt: pData?.latestProposalAt ?? row.latestMeetingAt ?? null,
+      // Detail rows are newest first.
+      latestActivityAt: reachedProposals[0]?.createdAt ?? row.latestMeetingAt ?? null,
     }
 
     const stage = computeFreshStage({
@@ -397,7 +398,7 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
       meetingScheduledFor: repMap.get(row.customerId)?.meetingScheduledFor ?? null,
       meetingConfirmedAt: repMap.get(row.customerId)?.meetingConfirmedAt ?? null,
       assignedRep: repMap.get(row.customerId)?.rep ?? null,
-      proposals: proposalDetailMap.get(row.customerId) ?? [],
+      proposals: reachedProposals,
       project: null,
     }
   })
