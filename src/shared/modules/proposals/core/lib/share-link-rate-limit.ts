@@ -16,10 +16,22 @@ function hashed(token: string) {
   return createHash('sha256').update(token).digest('hex')
 }
 
+// The homeowner's link is how a proposal gets signed: a limiter outage lets the request through
+// instead of failing the homeowner's view, request or document.
+async function limit(limiter: Ratelimit, name: string, token: string): Promise<{ success: boolean }> {
+  try {
+    return await limiter.limit(hashed(token))
+  }
+  catch (error) {
+    console.error(`[share-link-rate-limit] ${name} limiter failed; letting the request through`, error)
+    return { success: true }
+  }
+}
+
 // One link is one homeowner. A view notifies staff, a move-forward request emails them, and a document
 // is rendered on our server. Keyed by a hash of the token so no live link sits in the store.
 export const SHARE_LINK_LIMITS = {
-  view: (token: string) => view.limit(hashed(token)),
-  moveForward: (token: string) => moveForward.limit(hashed(token)),
-  document: (token: string) => document.limit(hashed(token)),
+  view: (token: string) => limit(view, 'view', token),
+  moveForward: (token: string) => limit(moveForward, 'move-forward', token),
+  document: (token: string) => limit(document, 'document', token),
 }
