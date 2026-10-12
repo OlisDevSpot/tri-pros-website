@@ -1,6 +1,7 @@
 'use client'
 
-import type { ProjectsListInput } from '@/features/agent-dashboard/constants/dashboard-queries'
+import type { DataViewInput } from '@/shared/dal/lib/query/data-view-query-config'
+import type { PROJECT_FIELDS } from '@/shared/modules/projects/core/dal/project-fields'
 
 import { useSuspenseQuery } from '@tanstack/react-query'
 
@@ -13,7 +14,7 @@ import { useTRPC } from '@/trpc/helpers'
 
 interface DashboardProjectSectionListProps {
   title: string
-  input: ProjectsListInput
+  input: DataViewInput<typeof PROJECT_FIELDS>
   emptyMessage: string
 }
 

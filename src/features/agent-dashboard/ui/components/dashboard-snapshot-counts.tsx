@@ -2,9 +2,10 @@
 
 import { useSuspenseQueries } from '@tanstack/react-query'
 
-import { activeProjectsInput, awaitingProposalsInput, meetingsWindowInput } from '@/features/agent-dashboard/constants/dashboard-queries'
+import { awaitingProposalsInput, DASHBOARD_ACTIVE_PROJECTS_QUERY, meetingsWindowInput } from '@/features/agent-dashboard/constants/dashboard-queries'
 import { DashboardSnapshotChips } from '@/features/agent-dashboard/ui/components/dashboard-snapshot-chips'
 import { useHydrationParityCheck } from '@/shared/dal/client/hooks/use-hydration-parity-check'
+import { staticDataViewInput } from '@/shared/dal/lib/query/derive-data-view-input'
 import { useTRPC } from '@/trpc/helpers'
 
 /**
@@ -15,7 +16,7 @@ export function DashboardSnapshotCounts() {
   const trpc = useTRPC()
   const meetingsTodayOptions = trpc.meetingsRouter.reads.list.queryOptions(meetingsWindowInput('today'))
   const awaitingSignatureOptions = trpc.proposalsRouter.business.list.queryOptions(awaitingProposalsInput())
-  const activeProjectsOptions = trpc.projectsRouter.crud.list.queryOptions(activeProjectsInput())
+  const activeProjectsOptions = trpc.projectsRouter.crud.list.queryOptions(staticDataViewInput(DASHBOARD_ACTIVE_PROJECTS_QUERY))
 
   useHydrationParityCheck(meetingsTodayOptions.queryKey)
   useHydrationParityCheck(awaitingSignatureOptions.queryKey)

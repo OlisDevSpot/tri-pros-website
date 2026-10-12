@@ -3,7 +3,7 @@
 import { CalendarCheckIcon } from 'lucide-react'
 import { useState } from 'react'
 
-import { DASHBOARD_MEETINGS_EXTRA, DASHBOARD_MEETINGS_QUERY } from '@/features/agent-dashboard/constants/dashboard-queries'
+import { DASHBOARD_MEETINGS_QUERY } from '@/features/agent-dashboard/constants/dashboard-queries'
 import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
 import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
@@ -21,7 +21,7 @@ import { DashboardSeeAllLink } from './dashboard-see-all-link'
  */
 export function DashboardMeetingsHub() {
   const trpc = useTRPC()
-  const query = useDataViewQuery(trpc.meetingsRouter.reads.list, DASHBOARD_MEETINGS_EXTRA, DASHBOARD_MEETINGS_QUERY)
+  const query = useDataViewQuery(trpc.meetingsRouter.reads.list, {}, DASHBOARD_MEETINGS_QUERY)
   const { anchor, range, isPending, setAnchor } = query.window
   const [pickedDay, setPickedDay] = useState(businessToday)
 

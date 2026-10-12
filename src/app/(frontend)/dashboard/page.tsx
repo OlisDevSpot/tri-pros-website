@@ -1,7 +1,8 @@
 import type { SearchParams } from 'nuqs/server'
 
-import { activeProjectsInput, awaitingProposalsInput, DASHBOARD_MEETINGS_EXTRA, DASHBOARD_MEETINGS_QUERY, meetingsWindowInput, onHoldProjectsInput, sentProposalsInput } from '@/features/agent-dashboard/constants/dashboard-queries'
+import { awaitingProposalsInput, DASHBOARD_ACTIVE_PROJECTS_QUERY, DASHBOARD_MEETINGS_QUERY, DASHBOARD_ON_HOLD_PROJECTS_QUERY, meetingsWindowInput, sentProposalsInput } from '@/features/agent-dashboard/constants/dashboard-queries'
 import { DashboardView } from '@/features/agent-dashboard/ui/views/dashboard-view'
+import { staticDataViewInput } from '@/shared/dal/lib/query/derive-data-view-input'
 import { loadDataViewQueryInput } from '@/shared/dal/server/lib/query/load-data-view-query-input'
 import { protectDashboardPage } from '@/shared/domains/permissions/lib/protect-dashboard-page'
 import { HydrateClient } from '@/trpc/components/hydrate-client'
@@ -20,11 +21,11 @@ export default async function DashboardPage({ searchParams }: Props) {
   // Unauthenticated visitors get the layout's sign-in screen; skip the prefetch work.
   if (authState.status === 'authenticated') {
     prefetch(trpc.meetingsRouter.reads.list.queryOptions(meetingsWindowInput('today')))
-    prefetch(trpc.meetingsRouter.reads.list.queryOptions(await loadDataViewQueryInput(searchParams, DASHBOARD_MEETINGS_QUERY, DASHBOARD_MEETINGS_EXTRA)))
+    prefetch(trpc.meetingsRouter.reads.list.queryOptions(await loadDataViewQueryInput(searchParams, DASHBOARD_MEETINGS_QUERY)))
     prefetch(trpc.proposalsRouter.business.list.queryOptions(awaitingProposalsInput()))
     prefetch(trpc.proposalsRouter.business.list.queryOptions(sentProposalsInput()))
-    prefetch(trpc.projectsRouter.crud.list.queryOptions(activeProjectsInput()))
-    prefetch(trpc.projectsRouter.crud.list.queryOptions(onHoldProjectsInput()))
+    prefetch(trpc.projectsRouter.crud.list.queryOptions(staticDataViewInput(DASHBOARD_ACTIVE_PROJECTS_QUERY)))
+    prefetch(trpc.projectsRouter.crud.list.queryOptions(staticDataViewInput(DASHBOARD_ON_HOLD_PROJECTS_QUERY)))
   }
 
   const name = authState.status === 'authenticated' ? authState.session.user.name : null
