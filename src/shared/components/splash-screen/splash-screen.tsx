@@ -13,7 +13,7 @@ import {
   SPLASH_VISIBLE_MS,
 } from '@/shared/components/splash-screen/splash-timing'
 import { BRAND_EASE } from '@/shared/constants/motion'
-import { PWA_LAUNCH_FIELD } from '@/shared/domains/pwa/constants/launch'
+import { PWA_LAUNCH_FIELD, PWA_SCREEN_HEIGHT_VAR } from '@/shared/domains/pwa/constants/launch'
 import { useAutoFocus } from '@/shared/hooks/use-auto-focus'
 
 /**
@@ -44,11 +44,12 @@ interface SplashScreenProps {
    */
   entrance?: boolean
   /**
-   * `viewport` (default) fills the visible window. `screen` is as tall as the large viewport: an installed
-   * iOS app reports that at the full screen height from its first frame, while its layout viewport stays
-   * short by the status bar until the document outgrows it, so a cover continuing a startup image centred
-   * on the screen keeps the mark where the image put it. In a browser tab the large viewport is taller than
-   * the visible one while the toolbar shows, so in-page splashes keep `viewport`.
+   * `viewport` (default) fills the visible window. `screen` is as tall as the screen, as the launch field
+   * script measured it, so a cover continuing a startup image centred on the screen keeps the mark where the
+   * image put it, from the first frame: an installed iOS app lays that frame out with every viewport unit
+   * short by the status bar. The large viewport stands in where the script did not run; it is the full
+   * screen from the second frame on. In a browser tab the large viewport is taller than the visible one while
+   * the toolbar shows, so in-page splashes keep `viewport`.
    */
   extent?: 'viewport' | 'screen'
 }
@@ -136,7 +137,7 @@ export function SplashScreen({ open, onDismiss, dismiss, title, subheading, ease
       style={{
         // A full-window cover must not depend on a stylesheet rule being present: its box is inline.
         position: 'fixed',
-        ...(extent === 'screen' ? { top: 0, left: 0, right: 0, height: '100lvh' } : { inset: 0 }),
+        ...(extent === 'screen' ? { top: 0, left: 0, right: 0, height: `var(${PWA_SCREEN_HEIGHT_VAR}, 100lvh)` } : { inset: 0 }),
         zIndex: 9999,
         // One constant with the startup images and the manifest, so the native stage and this overlay never differ.
         backgroundColor: PWA_LAUNCH_FIELD,

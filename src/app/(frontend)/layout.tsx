@@ -141,9 +141,11 @@ export default function RootLayout({
       <body
         className={`${syne.variable} ${playfair.variable} ${dancingScript.variable} ${spaceMono.variable} ${nunito.className} antialiased`}
       >
+        {/* First in the body: WebKit can paint a document before the parser reaches the end of it, and any
+            such frame of a launch document must already be the cover. A leaf that needs no provider. */}
+        <PwaLaunchCover />
         <Providers>
           {children}
-          <PwaLaunchCover />
         </Providers>
       </body>
     </html>
