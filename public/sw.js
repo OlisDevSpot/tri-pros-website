@@ -2,9 +2,10 @@
 // Tri Pros service worker: push + deep-link handlers, plus the installed app's launch shell.
 //
 // Launch shell — the installed app's start_url is /dashboard?launch=1 (src/shared/domains/pwa/constants/launch.ts;
-// the literals below mirror it, change them together). For that one navigation the worker answers from
-// Cache Storage with the static /launch document and the chunks it references, precached as one set so a
-// deploy can never leave a cached document pointing at chunks the server no longer has. Every other
+// the literals below mirror it, change them together). For that one navigation the worker answers with the
+// static /launch document: the current one when the network returns it within a deadline, else the copy in
+// Cache Storage, kept with the chunks it references as one set so a deploy can never leave a cached
+// document pointing at chunks the server no longer has. Every other
 // navigation goes to the network untouched — a push deep link is one of them. Only a production build
 // registers this script with ?shell=1: a document served by a worker under `next dev` never hydrates.
 //
@@ -24,6 +25,10 @@ const SHELL_PATH = '/launch'
 const SHELL_CACHE = 'tpr-launch-shell'
 const STATIC_PREFIX = '/_next/static/'
 const SHELL_FETCH_TIMEOUT_MS = 15000
+// How long a Safari launch waits for the current shell before answering with the cached one. The native
+// startup image is on screen meanwhile, so the wait looks like the launch itself; a cached shell from an
+// earlier deploy is what costs, because the launch then shows that deploy's page.
+const SHELL_FRESH_DEADLINE_MS = 1000
 const LAUNCH_URL = new URL(LAUNCH_PATH + LAUNCH_SEARCH, self.location.origin).href
 
 self.addEventListener('install', (event) => {
@@ -104,29 +109,42 @@ function isLaunchNavigation(request, url) {
     && !request.headers.has('next-router-prefetch')
 }
 
+// The current shell first, the cached one when the network is slower than the deadline or absent: a cached
+// shell alone would answer the first launch after every deploy with the previous deploy's page. Either way
+// the fetched shell is written behind the launch, so the next offline launch has it.
 async function serveShell(event) {
+  const fresh = fetchShell()
+  event.waitUntil(syncShell(fresh).catch(() => {}))
+  const current = await Promise.race([
+    fresh.catch(() => null),
+    new Promise(resolve => setTimeout(resolve, SHELL_FRESH_DEADLINE_MS, null)),
+  ])
+  if (current) return shellResponse(current)
   try {
     const cache = await caches.open(SHELL_CACHE)
     const hit = await cache.match(LAUNCH_URL)
-    if (hit) {
-      event.waitUntil(syncShell().catch(() => {}))
-      return hit
-    }
+    if (hit) return hit
   } catch (_err) {
     // Cache Storage unavailable: the network answers, as on every launch before the shell existed.
   }
-  event.waitUntil(syncShell().catch(() => {}))
   const preloaded = await Promise.resolve(event.preloadResponse).catch(() => undefined)
   return preloaded || fetch(event.request)
+}
+
+function shellResponse(shell) {
+  return new Response(shell.html, {
+    status: 200,
+    headers: { 'content-type': shell.contentType, 'cache-control': 'no-store' },
+  })
 }
 
 // A cache-hit launch and the page's revalidate message can ask for a sync in the same instant; two running at
 // once could each prune the chunks the other's document needs, so one runs and later callers share it.
 let syncInFlight = null
 
-function syncShell() {
+function syncShell(fresh) {
   if (!syncInFlight) {
-    syncInFlight = writeShell().finally(() => { syncInFlight = null })
+    syncInFlight = writeShell(fresh).finally(() => { syncInFlight = null })
   }
   return syncInFlight
 }
@@ -134,9 +152,9 @@ function syncShell() {
 // The shell and the chunks it references are one set: assets go in first and the document last, so a
 // launch during the swap finds a complete set or none, and the document never points at a chunk the
 // cache lacks. An unchanged document costs one fetch and no writes.
-async function writeShell() {
+async function writeShell(pending) {
   const cache = await caches.open(SHELL_CACHE)
-  const fresh = await fetchShell()
+  const fresh = await (pending || fetchShell())
   const current = await cache.match(LAUNCH_URL)
   if (current && (await current.text()) === fresh.html) return
   const assets = staticUrls(fresh.html)
@@ -149,10 +167,7 @@ async function writeShell() {
   for (const entry of fetched) {
     if (entry) await cache.put(entry[0], entry[1])
   }
-  await cache.put(LAUNCH_URL, new Response(fresh.html, {
-    status: 200,
-    headers: { 'content-type': fresh.contentType, 'cache-control': 'no-store' },
-  }))
+  await cache.put(LAUNCH_URL, shellResponse(fresh))
   const keep = new Set(assets)
   const keys = await cache.keys()
   await Promise.all(keys

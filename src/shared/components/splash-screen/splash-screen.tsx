@@ -8,11 +8,12 @@ import { SplashMark } from '@/shared/components/splash-screen/splash-mark'
 import {
   SPLASH_CUE_DELAY_S,
   SPLASH_CUE_DURATION_S,
+  SPLASH_FADE_EASE,
   SPLASH_FADE_S,
   SPLASH_VISIBLE_MS,
 } from '@/shared/components/splash-screen/splash-timing'
 import { BRAND_EASE } from '@/shared/constants/motion'
-import { PWA_LAUNCH_FIELD } from '@/shared/domains/pwa/constants/launch'
+import { PWA_LAUNCH_FIELD, PWA_SCREEN_HEIGHT_VAR } from '@/shared/domains/pwa/constants/launch'
 import { useAutoFocus } from '@/shared/hooks/use-auto-focus'
 
 /**
@@ -34,7 +35,7 @@ interface SplashScreenProps {
   /** Caption under the mark. The timed proposal and PWA splashes have none. */
   title?: string
   subheading?: string
-  /** The mark's and caption's rise, and the overlay's fade. */
+  /** The mark's and caption's rise. */
   ease?: [number, number, number, number]
   /**
    * Play the mark's entrance (default). `false` paints the finished mark from the first frame, for a
@@ -42,6 +43,15 @@ interface SplashScreenProps {
    * is unaffected.
    */
   entrance?: boolean
+  /**
+   * `viewport` (default) fills the visible window. `screen` is as tall as the screen, as the launch field
+   * script measured it, so a cover continuing a startup image centred on the screen keeps the mark where the
+   * image put it, from the first frame: an installed iOS app lays that frame out with every viewport unit
+   * short by the status bar. The large viewport stands in where the script did not run; it is the full
+   * screen from the second frame on. In a browser tab the large viewport is taller than the visible one while
+   * the toolbar shows, so in-page splashes keep `viewport`.
+   */
+  extent?: 'viewport' | 'screen'
 }
 
 /**
@@ -61,7 +71,7 @@ interface SplashScreenProps {
  * nothing here closes it; a held cover also usually passes entrance={false}, so the mark it shows is
  * the one the native launch image already showed.
  */
-export function SplashScreen({ open, onDismiss, dismiss, title, subheading, ease = BRAND_EASE, entrance = true }: SplashScreenProps) {
+export function SplashScreen({ open, onDismiss, dismiss, title, subheading, ease = BRAND_EASE, entrance = true, extent = 'viewport' }: SplashScreenProps) {
   const captionId = useId()
   const reduced = useReducedMotion() ?? false
   const animate = !reduced
@@ -127,7 +137,7 @@ export function SplashScreen({ open, onDismiss, dismiss, title, subheading, ease
       style={{
         // A full-window cover must not depend on a stylesheet rule being present: its box is inline.
         position: 'fixed',
-        inset: 0,
+        ...(extent === 'screen' ? { top: 0, left: 0, right: 0, height: `var(${PWA_SCREEN_HEIGHT_VAR}, 100lvh)` } : { inset: 0 }),
         zIndex: 9999,
         // One constant with the startup images and the manifest, so the native stage and this overlay never differ.
         backgroundColor: PWA_LAUNCH_FIELD,
@@ -136,7 +146,7 @@ export function SplashScreen({ open, onDismiss, dismiss, title, subheading, ease
         // Unconditional: under reduced motion the overlay unmounts in the same render, so the duration never
         // plays, and a value that depends on the preference would differ between the server and the client.
         transitionDuration: `${SPLASH_FADE_S}s`,
-        transitionTimingFunction: `cubic-bezier(${ease.join(',')})`,
+        transitionTimingFunction: `cubic-bezier(${SPLASH_FADE_EASE.join(',')})`,
       }}
       onClick={armed ? onDismiss : undefined}
     >

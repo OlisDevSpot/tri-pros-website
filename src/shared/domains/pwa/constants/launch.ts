@@ -4,6 +4,14 @@ import { ROOTS } from '@/shared/config/roots'
 export const PWA_LAUNCH_FIELD = '#040f23'
 
 /**
+ * The screen's height in CSS px, written by the launch field script on a launch document. The only height
+ * WebKit reports correctly in an installed app's first layout: until its first frame commits, every viewport
+ * unit and the layout viewport are short by the status bar (WebKit 254868), and iOS cross-fades the startup
+ * image into exactly that frame.
+ */
+export const PWA_SCREEN_HEIGHT_VAR = '--pwa-screen-h'
+
+/**
  * Only the installed app's start_url carries this marker, and the service worker serves the static shell
  * for that navigation alone. public/sw.js repeats the literals; change them together.
  */
