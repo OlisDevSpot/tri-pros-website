@@ -29,7 +29,7 @@
 ## Review Focus
 
 1. **A signed-in agent opens a share link that carries `?token=`.** Expected: they act as staff (session wins) — the agent view, the Agreement panel and the envelope card work exactly as without the token. Pinned in Task 2 Step 13 (probe as agent with a token) and Task 6.
-2. **A homeowner on a share link uses every control.** Expected: the page renders the price exactly as before (starting price, deposit, cash in deal, misc price, incentives, section prices), the finance option and cash-in-deal saves succeed, the age form saves and the document list reconciles, "request to move forward" notifies. Pinned in Task 2 Step 13 (read half) and the owner's hand checks in Task 6 (write half).
+2. **A homeowner on a share link uses every control.** Expected: the page renders the price exactly as before (starting price, deposit, cash in deal, misc price, incentives, section prices), the finance option and cash-in-deal saves succeed, the age form saves and the document list reconciles (the homeowner may set or change their own age until an envelope exists: `applyEnvelopeContext` with `age` alone stays on the share procedure and is never refused for a link holder), "request to move forward" notifies. Pinned in Task 2 Step 13 (read half) and the owner's hand checks in Task 6 (write half).
 3. **A share-link holder sends any other column.** Expected: `crud.update` with `status`, `token`, `ownerId`, `meetingId`, `projectJSON` or `envelopeDocumentIds` answers FORBIDDEN naming the column; `applyEnvelopeContext` with `envelopeDocumentIds` answers FORBIDDEN. Pinned in Task 1 Step 6 (DB-free rules probe) and Task 6.
 4. **A wrong token and an unknown proposal id.** Expected: the same answer on `getFullView`, `recordView`, the PDF and the summary routes — nothing reveals which ids exist. Pinned in Task 4 Step 8.
 5. **A dispatcher anywhere proposals appear.** Expected: every proposal procedure answers NOT_FOUND or an empty list; the meetings list carries `proposalCount` 0 and `proposalStatuses` []; the profile, kanbans and action queue carry no proposal. Pinned in Task 3 Step 9 and Task 6.
@@ -1000,7 +1000,7 @@ Run `part3-checks.cjs` end to end and `rules-matrix.ts` (extend it with the agen
 |---|---|---|---|
 | W1 | homeowner (incognito, share link) | open the link | page and prices as before; no internal financials |
 | W2 | homeowner | change the finance option; change cash in deal | both save |
-| W3 | homeowner | enter age in the agreement panel | saves; document list updates |
+| W3 | homeowner | enter age in the agreement panel; then, before any envelope exists, save a different age through the same form or call | both save; document list updates each time |
 | W4 | homeowner | request to move forward | staff notified once; a sixth request within the hour is refused |
 | W5 | agent (signed in) | open the same link with `?token=` | agent view; envelope card works |
 | W6 | agent | send a proposal email | the link in the email opens the proposal |
