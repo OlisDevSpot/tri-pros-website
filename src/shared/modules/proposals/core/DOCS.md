@@ -68,11 +68,11 @@ A proposal can be read and partly updated by an unauthenticated client via `?tok
 
 ### pdf-export-token-gated
 
-`GET /api/proposals/[proposalId]/pdf?token=` renders the full proposal PDF on demand via `pdfService.generateProposalPdf` (pdfmake). Auth mirrors the summary route: exact `proposal.token` match, no CASL — the token is the authorization (see [shareable-via-token](#shareable-via-token)). The document is ALWAYS the homeowner view: pricing respects `priceDisplayMode`, the final price is derived via `computeFinalTcp`, and the generator never reads `sow[].financials.costLines`. There is no agent variant.
+`GET /api/proposals/[proposalId]/pdf?token=` renders the full proposal PDF on demand via `pdfService.generateProposalPdf` (pdfmake). Auth is `shareRouteContext`, the route-handler twin of the share procedure: a session wins and acts as staff; without one, the token must name a proposal and the request holds only that proposal's share-link rules (see [shareable-via-token](#shareable-via-token)). A wrong token and a missing proposal both answer one 404. A share-link request is limited per link (`SHARE_LINK_LIMITS.document`, 429). The document is ALWAYS the homeowner view: pricing respects `priceDisplayMode`, the final price is derived via `computeFinalTcp`, and the generator never reads `sow[].financials.costLines`. There is no agent variant.
 
 **Why**: anyone with the share token can fetch it — the document must be homeowner-distributable by construction.
 **Reference impl**: `src/shared/lib/pdf/proposal-doc-definition.ts` + `src/app/api/proposals/[proposalId]/pdf/route.ts`
-**Enforced by**: the doc-definition never accesses `financials.costLines`; the route performs the exact token match before rendering
+**Enforced by**: the doc-definition never accesses `financials.costLines`; the route resolves `shareRouteContext` and reads the proposal through the compiled share-link rules before rendering
 
 ### visibility-via-meeting-participation
 

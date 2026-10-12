@@ -24,7 +24,7 @@ function createAccountingService() {
 
   return {
     ensureCustomer: async (customerId: string): Promise<string> => {
-      const customer = dalVerifySuccess(await customerCrud.getById(systemContext('sync:quickbooks'), { id: customerId }))
+      const customer = dalVerifySuccess(await customerCrud.getById(quickbooks, { id: customerId }))
 
       if (!customer) {
         throw new Error(`Customer ${customerId} not found`)
@@ -77,7 +77,7 @@ function createAccountingService() {
       }
 
       dalVerifySuccess(
-        await customerCrud.update(systemContext('sync:quickbooks'), {
+        await customerCrud.update(quickbooks, {
           id: customerId,
           data: { qbCustomerId },
         }),

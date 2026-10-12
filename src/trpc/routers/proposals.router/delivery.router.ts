@@ -14,7 +14,7 @@ import { dalToTrpc } from '../../lib/dal-to-trpc'
 import { proposalShareableProcedure } from './procedures'
 
 const sendEmailSchema = z.object({
-  proposalId: z.string(),
+  proposalId: z.string().uuid(),
   customerName: z.string(),
   email: z.email(),
   message: z.string().optional(),
@@ -72,7 +72,7 @@ export const deliveryRouter = createTRPCRouter({
     .input(z.object({ id: z.string(), token: z.string() }))
     .mutation(async ({ ctx, input }) => {
       if (!ctx.session) {
-        const { success } = await SHARE_LINK_LIMITS.moveForward.limit(input.token)
+        const { success } = await SHARE_LINK_LIMITS.moveForward(input.token)
         if (!success) {
           throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Your request was already sent. Please wait before sending it again.' })
         }

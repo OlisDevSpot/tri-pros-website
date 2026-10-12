@@ -18,7 +18,7 @@ export async function GET(
   if (!share || !result?.success || !result.data) {
     return Response.json({ error: 'Not found' }, { status: 404 })
   }
-  if (share.viaShareLink && token && !(await SHARE_LINK_LIMITS.document.limit(token)).success) {
+  if (share.viaShareLink && token && !(await SHARE_LINK_LIMITS.document(token)).success) {
     return Response.json({ error: 'Too many requests' }, { status: 429 })
   }
   const proposal = result.data

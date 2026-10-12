@@ -17,7 +17,7 @@ import { PROJECT_MEDIA } from '@/shared/modules/projects/media/lib/constants'
 export const projectCrud = createCrudDal(projectServerSpec, () => ({
   hooks: {
     delete: {
-      // G4: the engine hands us the row. R2 media cleanup runs BEFORE the DB
+      // The engine hands us the row. R2 media cleanup runs BEFORE the DB
       // cascade removes the project media rows. Non-atomic + partial-tolerant,
       // matching the pre-D order.
       //
@@ -25,7 +25,7 @@ export const projectCrud = createCrudDal(projectServerSpec, () => ({
       // is the PROJECTS predicate; applying it to the media table would either
       // filter rows we must delete objects for, or produce a column mismatch.
       // A DAL may not import a service, so this reads through the media module's
-      // table-generic DAL and purges through the leaf helper (C31, D1).
+      // table-generic DAL and purges through the leaf helper.
       async before(row: Project, _ctx: ScopedContext) {
         const files = await listMediaByOwner(
           projectMediaFiles,

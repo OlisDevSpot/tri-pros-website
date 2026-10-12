@@ -3,6 +3,9 @@ import type { AnyServerSpec } from '@/shared/dal/server/types'
 import { TRPCError } from '@trpc/server'
 
 import { bearerContext } from '@/shared/dal/server/lib/contexts'
+import { subjectOf } from '@/shared/dal/server/lib/define-spec'
+import { isCompiled } from '@/shared/dal/server/lib/scope'
+import { BEARER_RULES } from '@/shared/domains/permissions/rules/bearer'
 import { createMiddleware } from '@/trpc/init'
 
 /**
@@ -10,6 +13,10 @@ import { createMiddleware } from '@/trpc/init'
  * and the request then holds only that row's share-link rules. A wrong token and a missing row answer the same.
  */
 export function shareableMiddleware(spec: AnyServerSpec) {
+  // The session path passes no legacy row filter, so only a compiled spec with share-link rules is safe here.
+  if (!isCompiled(spec) || !BEARER_RULES[subjectOf(spec)]) {
+    throw new Error(`[shareableMiddleware] ${spec.entityName} has no share-link rules`)
+  }
   return createMiddleware(async ({ ctx, next, getRawInput }) => {
     if (ctx.session) {
       return next({ ctx: { ...ctx, session: ctx.session } })

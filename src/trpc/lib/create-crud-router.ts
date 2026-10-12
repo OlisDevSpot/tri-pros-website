@@ -48,10 +48,9 @@ export function createCrudRouter<
   // Built inline off agentProcedure so `ctx` infers concretely — no builder-type cast at a param boundary.
   const authedProcedure = agentProcedure.use(async ({ ctx, next }) =>
     next({ ctx: { ...ctx, scope: resolveVisibilityScope(config.spec, { userId: ctx.session.user.id, ability: ctx.actor.ability }) } }))
-  const shareableProcedure = baseProcedure.use(shareableMiddleware(config.spec))
-
-  const readProcedure = config.spec.shareable ? shareableProcedure : authedProcedure
-  const updateProcedure = config.spec.shareable ? shareableProcedure : authedProcedure
+  // Built only for a shareable spec: the middleware refuses a spec without share-link rules.
+  const readProcedure = config.spec.shareable ? baseProcedure.use(shareableMiddleware(config.spec)) : authedProcedure
+  const updateProcedure = readProcedure
 
   // `token` is always optional — harmless on non-shareable entities.
   const { id: idZod } = config.schemas

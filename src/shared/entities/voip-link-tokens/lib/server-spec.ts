@@ -21,8 +21,4 @@ export const voipLinkTokenServerSpec = defineEntitySpec({
     update: updateVoipLinkTokenSchema,
     select: selectVoipLinkTokenSchema,
   },
-  // Customer consume route hits `/api/voip/links/[token]` (Task 29) without a
-  // session — shareable middleware looks up the row via this column and
-  // attaches a synthetic context so the existing getById/update slots Just Work.
-  shareable: { tokenColumn: 'token' },
 })

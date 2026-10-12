@@ -24,11 +24,16 @@ export const viewsRouter = createTRPCRouter({
       if (ctx.session) {
         return
       }
-      const { success } = await SHARE_LINK_LIMITS.view.limit(input.token)
+      const { success } = await SHARE_LINK_LIMITS.view(input.token)
       if (!success) {
         return
       }
-      dalToTrpc(await proposalService.views.record(ctx, input))
+      dalToTrpc(await proposalService.views.record(ctx, {
+        proposalId: input.proposalId,
+        source: input.source,
+        referer: input.referer,
+        userAgent: input.userAgent,
+      }))
     }),
 
   getProposalViews: agentProcedure

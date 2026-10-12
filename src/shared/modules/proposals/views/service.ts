@@ -32,9 +32,8 @@ import { getFullView } from '@/shared/modules/proposals/core/dal/server/queries'
 import { proposalViewCrud } from '@/shared/modules/proposals/views/dal/server/crud'
 import { sendViewNotificationJob } from '@/shared/services/providers/upstash/jobs/send-view-notification'
 
-/** The insert columns the homeowner-open path supplies, plus the share token that authorizes it. */
+/** The insert columns the homeowner-open path supplies. */
 export type RecordProposalViewInput = Pick<InsertProposalView, 'proposalId' | 'referer' | 'userAgent'> & {
-  token: string
   /** Required here (the tRPC schema defaults it) — the notification payload needs a concrete source. */
   source: NonNullable<InsertProposalView['source']>
 }
@@ -43,10 +42,9 @@ export const proposalViewsService = {
   ...proposalViewCrud,
 
   /**
-   * Records a homeowner view. `not-found` when the proposal is invisible to
-   * `ctx`. The push job is
-   * dispatched after the row is committed (naked write = autocommit) and is
-   * fire-and-forget — an enqueue failure never fails the view.
+   * Records a homeowner view. `not-found` when the proposal is invisible to `ctx`.
+   * The push job is dispatched after the row is committed (naked write = autocommit)
+   * and is fire-and-forget — an enqueue failure never fails the view.
    */
   async record(ctx: ScopedContext, input: RecordProposalViewInput): Promise<DalReturn<ProposalView>> {
     return dalDbOperation(async () => {

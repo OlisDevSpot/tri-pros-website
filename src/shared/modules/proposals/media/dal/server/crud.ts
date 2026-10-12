@@ -10,7 +10,7 @@ import { optimizeMediaJob } from '@/shared/services/providers/upstash/jobs/optim
  * CRUD handlers for proposal media files: an unreachable row is `not-found`, no
  * separate authz probe. Serial int PK.
  *
- * Row lifecycle (optimize dispatch, R2 purge) lives in the hooks below (C32, D5),
+ * Row lifecycle (optimize dispatch, R2 purge) lives in the hooks below,
  * not in the service — so it fires on every origin. Same inline/pre-commit caveat
  * as the project twin (`modules/projects/media/dal/server/crud.ts`).
  *

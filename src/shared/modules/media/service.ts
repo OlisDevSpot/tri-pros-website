@@ -3,7 +3,7 @@
 // optimization entry points (queued retry, in-process optimize). It rings the
 // shared table-parameterized DAL ops — it never touches `db` itself.
 //
-// What it does NOT own (C32): the ROW LIFECYCLE. Optimize-on-create and
+// What it does NOT own: the ROW LIFECYCLE. Optimize-on-create and
 // purge-on-delete are entity invariants, so each owner declares them as
 // `createCrudDal` hooks on its own media CRUD (`modules/{projects,proposals}/
 // media/dal/server/crud.ts`). That way they fire on every call and every origin —

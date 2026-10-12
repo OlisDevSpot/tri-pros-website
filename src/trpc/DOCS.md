@@ -53,7 +53,7 @@ src/trpc/
 | `agentProcedure` | Extends protected; FORBIDDEN unless `actor.ability.can('access', 'Dashboard')` (internal users) | same as protected |
 | `superAdminProcedure` | Extends agent; FORBIDDEN unless `actor.ability.can('manage', 'all')` (super-admin omni grant) | same as protected |
 
-Entity sub-routers **never** call `agentProcedure` directly — they import the entity's pre-scoped procedure (`<entity>Procedure` / `<entity>ShareableProcedure`) from `<entity>.router/procedures.ts`, which has scope resolution baked on at definition time. A compiled family (Customer, CustomerNote, Meeting, Proposal) has no scope step: its sub-routers use `agentProcedure` and the DAL scopes through `permit(ctx, action, spec)`.
+A compiled family (Customer, CustomerNote, Meeting, Proposal) has no scope step: its sub-routers use `agentProcedure` (or `proposalShareableProcedure` where a share link may call) directly, and the DAL scopes through `permit(ctx, action, spec)`. A family not yet compiled keeps its per-entity scoped procedure (`<entity>Procedure`) from `<entity>.router/procedures.ts`, which has scope resolution baked on at definition time.
 
 **Why**: for a family not yet compiled, scope resolution injects `ctx.scope` (the per-user visibility predicate). Bypassing it means agents could read rows they shouldn't.
 **Reference impl**: `src/trpc/init.ts`; `src/trpc/routers/applications.router/procedures.ts`
