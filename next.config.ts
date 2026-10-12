@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  devIndicators: {
+    position: 'bottom-right',
+  },
   // Allow HMR and /_next/* asset requests through the static ngrok tunnel
   // used by `pnpm dev:mobile`. Without this, Next.js logs a cross-origin
   // warning and (in a future major) will block the requests outright.
