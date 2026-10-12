@@ -58,3 +58,18 @@ export async function hasOutboundOnThread(input: { voipDidId: string, remoteE164
     .limit(1)
   return row !== undefined
 }
+
+/** The number this line last texted, counting only sends that reached a carrier. */
+export async function getLatestOutboundRemote(input: { voipDidId: string }): Promise<string | null> {
+  const [row] = await db
+    .select({ remoteE164: voipMessages.remoteE164 })
+    .from(voipMessages)
+    .where(and(
+      eq(voipMessages.voipDidId, input.voipDidId),
+      eq(voipMessages.direction, 'outbound'),
+      notInArray(voipMessages.status, ['queued', 'failed', 'undelivered']),
+    ))
+    .orderBy(desc(voipMessages.createdAt))
+    .limit(1)
+  return row?.remoteE164 ?? null
+}

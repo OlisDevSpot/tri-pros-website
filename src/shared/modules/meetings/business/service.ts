@@ -294,19 +294,20 @@ export const meetingBusinessService = {
   ): Promise<DalReturn<{ action: HomeownerReplyAction, meetingId: string | null }>> {
     return dalDbOperation(async () => {
       const did = dalVerifySuccess(await voipDidsService.getDidByE164(input.to))
-      const matched = dalVerifySuccess(await findCustomersByPhone(input.from))
+      const from = await voipMessagesService.resolveInboundSender({ from: input.from, voipDidId: did?.id ?? null })
+      const matched = dalVerifySuccess(await findCustomersByPhone(from))
       const recorded = dalVerifySuccess(await voipMessagesService.recordInboundMessage(ctx, {
         providerMessageId: input.providerMessageId,
         voipDidId: did?.id ?? null,
         customerId: matched[0]?.id ?? null,
-        remoteE164: input.from,
+        remoteE164: from,
         body: input.body,
       }))
 
       const target = await findReplyTargetMeeting({ customerIds: matched.map(customer => customer.id), now: new Date() })
       const meetingId = target?.meeting.id ?? null
       const scheduledFor = target?.meeting.scheduledFor ?? null
-      const customerName = target?.customer?.name ?? matched[0]?.name ?? formatPhone(input.from)
+      const customerName = target?.customer?.name ?? matched[0]?.name ?? formatPhone(from)
 
       // Twilio delivers at least once; the first delivery did everything below.
       if (!recorded.inserted) {
