@@ -14,11 +14,12 @@ import { customerNoteCrud } from '@/shared/entities/customer-notes/dal/server/cr
 import { findCustomersByPhone } from '@/shared/entities/customers/dal/server/queries'
 import { MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
-import { claimHomeownerConfirmation, handOffShareToken } from '@/shared/entities/meetings/dal/server/mutations'
+import { claimHomeownerConfirmation, handOffVisit } from '@/shared/entities/meetings/dal/server/mutations'
 import { addParticipant, getParticipantsForMeeting } from '@/shared/entities/meetings/dal/server/participants'
 import { getRescheduleChain, getRescheduleSuccessorId } from '@/shared/entities/meetings/dal/server/queries'
 import { buildRescheduleNote, formatMeetingDateShort } from '@/shared/entities/meetings/lib/notes'
 import { formatPhone } from '@/shared/lib/phone'
+import { rescheduledOriginalOutcome } from '@/shared/modules/meetings/core/lib/rescheduled-original-outcome'
 import { meetingMessageCrud } from '@/shared/modules/meetings/messages/dal/server/crud'
 import { claimAutomaticSend, setMeetingMessageOutcome } from '@/shared/modules/meetings/messages/dal/server/mutations'
 import { findReplyTargetMeeting, getVisitMessageContext, listChainMessages } from '@/shared/modules/meetings/messages/dal/server/queries'
@@ -30,6 +31,7 @@ import { matchReplyKeyword } from '@/shared/modules/meetings/messages/lib/match-
 import { runAutomaticKind } from '@/shared/modules/meetings/messages/lib/run-automatic-kind'
 import { shouldSendVisitCancellation } from '@/shared/modules/meetings/messages/lib/should-send-visit-cancellation'
 import { notificationService } from '@/shared/services/notification.service'
+import { syncMeetingToGcalJob } from '@/shared/services/providers/upstash/jobs/sync-meeting-to-gcal'
 import { complianceService } from '@/shared/services/voip/compliance.service'
 import { voipDidsService } from '@/shared/services/voip/voip-dids.service'
 import { voipMessagesService } from '@/shared/services/voip/voip-messages.service'
@@ -70,10 +72,11 @@ export const meetingBusinessService = {
   },
 
   /**
-   * Keeps the original (set to cancelled) and books a new meeting at the new time, carrying the owner,
-   * participants, customer, project, type, setter and flow state: the same sit in a new slot.
+   * Books the same visit in a new slot: the replacement carries the owner, participants, customer, project, type,
+   * setter, flow state and visit note, and takes over the link, the calendar event and the invite. The original
+   * then reads `rescheduled`, or keeps a no-show or cancellation it already had.
    * Not one transaction: meetingCrud's after-hooks dispatch jobs and write participants outside one.
-   * The replacement is created first, so a failure never leaves a cancelled meeting with nothing after it.
+   * The replacement is created first, so a failure never leaves a moved visit with nothing after it.
    */
   async reschedule(
     ctx: ScopedContext,
@@ -119,6 +122,7 @@ export const meetingBusinessService = {
         rescheduledFromId: original.id,
         // The insert schema takes undefined, not null.
         flowStateJSON: original.flowStateJSON ?? undefined,
+        visitNote: original.visitNote ?? undefined,
       }))
 
       for (const participant of participants) {
@@ -127,24 +131,29 @@ export const meetingBusinessService = {
         }
       }
 
-      dalVerifySuccess(await meetingCrud.update(ctx, {
-        id: input.meetingId,
-        data: { meetingOutcome: 'cancelled' },
-      }))
-
-      // Once the replacement exists a failure has to say so: a bare error reads as "try again", and a cancelled original can be rescheduled a second time.
-      const handOff = await handOffShareToken({ fromMeetingId: original.id, toMeetingId: replacement.id })
+      // The hand-off comes first: once the original stops being live, nothing may still find an event on it.
+      const handOff = await handOffVisit({ fromMeetingId: original.id, toMeetingId: replacement.id })
       if (!handOff.success) {
         throw new ThrowableDalError({
           type: 'precondition-failed',
-          reason: 'Meeting rescheduled, but the original visit link did not carry over to the new meeting.',
+          reason: 'Meeting rescheduled, but the visit link and calendar event did not carry over to the new meeting.',
         })
       }
+
+      const originalOutcome = rescheduledOriginalOutcome(original.meetingOutcome)
+      if (originalOutcome) {
+        dalVerifySuccess(await meetingCrud.update(ctx, { id: input.meetingId, data: { meetingOutcome: originalOutcome } }))
+      }
+
+      // One sync after the hand-off: Google moves the event the homeowner already has and sends one updated invitation.
+      await syncMeetingToGcalJob.dispatchOrThrow({ meetingId: replacement.id })
 
       if (original.customerId) {
         const note = await customerNoteCrud.create(ctx, {
           customerId: original.customerId,
           content: buildRescheduleNote(original.scheduledFor, input.newScheduledFor, input.reason),
+          entityType: 'meeting',
+          entityId: replacement.id,
         })
         if (!note.success) {
           throw new ThrowableDalError({ type: 'precondition-failed', reason: 'Meeting rescheduled but note failed.' })

@@ -17,6 +17,7 @@ import { businessDateTime, formatBusinessClock, formatBusinessDay, formatBusines
 import { formatArrivalWindow } from '@/shared/modules/meetings/core/lib/arrival-window'
 
 import { confirmationsClearedByMove } from '@/shared/modules/meetings/core/lib/confirmation-reset'
+import { rescheduledOriginalOutcome } from '@/shared/modules/meetings/core/lib/rescheduled-original-outcome'
 import { scheduledForSetByMove } from '@/shared/modules/meetings/core/lib/scheduled-for-set'
 import { visitMessageTemplateKeys } from '@/shared/modules/meetings/messages/constants/kinds'
 import { VISIT_MESSAGE_STOP_LINE, VISIT_MESSAGE_TEMPLATE_DEFAULTS, VISIT_MESSAGE_TOKENS } from '@/shared/modules/meetings/messages/constants/templates'
@@ -740,5 +741,13 @@ console.log('18. Meeting guests ✓')
   )
 }
 console.log('19. Calendar notices ✓')
+
+{
+  assert.equal(rescheduledOriginalOutcome('not_set'), 'rescheduled')
+  assert.equal(rescheduledOriginalOutcome('reschedule_needed'), 'rescheduled')
+  assert.equal(rescheduledOriginalOutcome('no_show'), null, 'a no-show rebooked keeps its no-show')
+  assert.equal(rescheduledOriginalOutcome('cancelled'), null, 'a cancellation rebooked keeps its cancellation')
+}
+console.log('20. Reschedule original outcome ✓')
 
 console.log('✅ verify-visit-messages passed')
