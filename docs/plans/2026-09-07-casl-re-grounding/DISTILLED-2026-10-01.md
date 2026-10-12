@@ -1,13 +1,14 @@
-# Permissions epic (#285) — distilled record (2026-10-01; status and next steps updated 2026-10-09)
+# Permissions epic (#285) — distilled record (2026-10-01; status and next steps updated 2026-10-12)
 
 One page. Everything else in this folder is evidence. Code is the source of truth: re-verify any line here against the code before acting on it.
 
 ## 1. Status
-- Branch `refactor/285-…` in `.worktrees/issue-285` = **main + these docs + units 1 and 2 + parts 1 and 2 of unit 3**. Supersede merge `2b038591` (2026-10-05, main `61d3e1e2`); main merged in again at the unit 1 boundary (`2818bf06`) and at the unit 2 boundary (2026-10-06). Pushed to origin.
+- Branch `refactor/285-…` in `.worktrees/issue-285` = **main + these docs + units 1 and 2 + parts 1, 2 and 3 of unit 3**. Supersede merge `2b038591` (2026-10-05, main `61d3e1e2`); main merged in again at the unit 1 boundary (`2818bf06`) and at the unit 2 boundary (2026-10-06). Pushed to origin.
 - The pre-re-grounding code (tip `b40403b6`, last code commit 2026-09-06) is no longer in the tree. It stays an ancestor of the branch: restore a file with `git show b40403b6:<path>`.
 - **Units 1 and 2 are in the tree; the legacy row filter still enforces.** Unit 1: spec constructors, the type-only list of specs, `defineRules`, the operator declarations. Unit 2 (commits d92e1037 … a467a5e7, tracker §4): one `getRequestActor()` per server render; `ScopedContext { actor, scope }` and the tRPC context `{ session, actor, scope }`; `can` / `cannot` typed from the spec list on server and client; `@casl/react` 7.0.1 behind `permissions/client.tsx`, fed by the server at the dashboard slots and the proposal-flow layout and by `permissionsRouter.rules` elsewhere; `systemProcedure`, `scopeMiddleware`, `getCachedSession` and the four client-side ability rebuilds are gone. Still legacy until unit 3: `ctx.scope`, `spec.visibility` + `resolveEffectiveScope`, the `SYSTEM_CONTEXT` call sites (its ability is now `manage all`), the token branch of `shareableMiddleware` (a holder actor with bare `read` + `update`), and CASL rules that grant verbs without conditions.
 - **Unit 3 part 1 is in the tree (2026-10-07, commits 69720177 … 30cae570):** the compiler, `permit`, `systemContext`, field lists on `read`/`update`, one rules file per role, and the Customer family (`Customer`, `CustomerNote`) enforced by compiled filters; the other families still run on the legacy engine. Browser evidence in tracker Unit 3; the owner's checks by hand passed 2026-10-08. Outcome and pipeline derivation left the epic on 2026-10-07 (main's sales lifecycle map R34–R36; the branch consumes the bucket through `$inDerivedPipeline` and receives the model by merge); the dispatcher's four-bucket reach is proposed for part 2.
 - **Unit 3 part 2 is in the tree (2026-10-08, commits ddfe199d … a6301456):** the Meeting family enforced by compiled filters — agents reach the meetings they sit in (`$participatesViaMeeting` via `self`), dispatchers every meeting without `flowStateJSON` (read and update), the booking probe (Q8 #13), every customer for dispatchers with the projects pipeline closed and refused by the server, and the discovery profile (D-05 as amended 2026-10-09); the legacy meeting scope (`meetingVisibility`, `meetingProcedure`, the hand-built meeting contexts) deleted. Its checks passed and main was merged in on 2026-10-09 (`7c1c64bb`; tracker §4, Unit 3). UI gates take the same rules: `Permission` names a field, and `Can` leaves out what the viewer may not see.
+- **Unit 3 part 3 is in the tree (2026-10-12, commits 6ce4f2dc … b6b50073):** the Proposal family enforced by compiled filters — agents reach the proposals of meetings they sit in, dispatchers none (a dispatcher still sees a customer in its real pipeline stage; only the proposal section is withheld), the `homeowner` role's bare read deleted. A share link is a rule set (`bearerContext`, `proposalBearerRules`): the customer-facing columns incl. prices, `views.id` / `views.viewedAt` only, update on `financeOptionId`, `cashInDealCents`, `views`; a session wins over a token; per-link limits keyed by sha256 of the token; the homeowner's copy carries no cost lines. The owner's checks passed 2026-10-12 (tracker §4, Unit 3).
 - On the unit 2 tip (after the merge of main): `pnpm tsc` and `pnpm lint` pass; browser checks recorded in tracker §4, Unit 2.
 - Main is mid-move from `entities/` to `modules/` (proposals, projects, media, construction done), which relocates the files this epic rewrites.
 
@@ -73,13 +74,13 @@ The full list of 20, with file and line, is the tracker's §5.1. The fixes the e
 
 | Who | What | Where |
 |---|---|---|
-| Anyone, no login | Starts an AI job that writes into any proposal's `projectJSON` | `src/trpc/routers/ai.router/index.ts:7` |
-| Share-link holder | Can change almost any column of their proposal: status, price, scope of work, owner, signing timestamps, the link token | `src/trpc/lib/create-crud-router.ts:89` |
-| Share-link holder | Receives every proposal column, cost lines included (masking deferred by the owner) | `modules/proposals/core/dal/server/queries.ts:78` |
+| Anyone, no login | ~~Starts an AI job that writes into any proposal's `projectJSON`~~ — closed 2026-10-12 (agent procedure + `update projectJSON` probe) | `src/trpc/routers/ai.router/index.ts:7` |
+| Share-link holder | ~~Can change almost any column of their proposal~~ — closed 2026-10-12: a link holds the share-link rules (`financeOptionId`, `cashInDealCents`, `views`) | `src/trpc/lib/create-crud-router.ts:89` |
+| Share-link holder | ~~Receives every proposal column, cost lines included~~ — closed 2026-10-12 (columns by the bearer's read list, cost lines by the homeowner view); the view's internal ids are unit 5 | `modules/proposals/core/dal/server/queries.ts:78` |
 | Agent or dispatcher | Reads, edits and deletes any project | `src/trpc/routers/projects.router/crud.router.ts:13` |
 | Agent or dispatcher | Edits media on any project, and can delete any stored file by pointing a media row at it | `src/trpc/routers/projects.router/media.router.ts:26` |
 | Agent or dispatcher | Download link for any customer's lead call recording | `src/trpc/routers/customer-pipelines.router.ts:65` |
-| Agent or dispatcher | Sends a company-branded proposal email to any address with a chosen link | `src/trpc/routers/proposals.router/delivery.router.ts:37` |
+| Agent or dispatcher | ~~Sends a company-branded proposal email to any address with a chosen link~~ — closed 2026-10-12 (reach checked first; the email carries the proposal's own token) | `src/trpc/routers/proposals.router/delivery.router.ts:37` |
 | Agent | Creates a meeting on any customer and thereby sees that customer, with every rep's proposals and share tokens | `src/trpc/routers/meetings.router/crud.router.ts` |
 | Agent | Overwrites any customer's discovery profile | `src/trpc/routers/meeting-flow.router.ts:26` |
 

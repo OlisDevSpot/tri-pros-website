@@ -1,10 +1,10 @@
 # Permissions structure — design (2026-10-05)
 
-**Status.** Approved by the owner on 2026-10-05: six sections in chat, then this written form. Units 1 and 2 of §11, and parts 1 and 2 of unit 3, are built (2026-10-05, 2026-10-06, 2026-10-07, 2026-10-08; part 1's owner checks passed 2026-10-08, part 2's on 2026-10-09); each further unit gets its own plan.
+**Status.** Approved by the owner on 2026-10-05: six sections in chat, then this written form. Units 1 and 2 of §11, and parts 1, 2 and 3 of unit 3, are built (2026-10-05, 2026-10-06, 2026-10-07, 2026-10-08, 2026-10-12; part 1's owner checks passed 2026-10-08, part 2's on 2026-10-09, part 3's on 2026-10-12); each further unit gets its own plan.
 
 **What this is.** The structure of the permission system: types, names, layers, where each check happens, and the order of work. It is the written form of decisions D-01 to D-26 in `docs/plans/2026-08-10-casl-scope-compiler-epic.md` and of the decision log L1 to L14 in `docs/plans/2026-09-07-casl-re-grounding/README.md`, plus the rulings of the 2026-10-05 walk-through.
 
-**What this is not.** It does not decide which role may do what (the 25 business rulings in report 10 §5), cost masking on share-link reads (deferred by the owner), or the security holes on main (they go through the hotfix path).
+**What this is not.** It does not decide which role may do what (the 25 business rulings in report 10 §5), or the homeowner view's remaining internal ids (unit 5). The security holes on main ship with the epic's single merge (D-31), not through a hotfix.
 
 **The tree today.** Worktree `.worktrees/issue-285` is main plus the permissions docs and unit 1's typed foundation, which enforces nothing yet. It runs main's legacy engine: `ScopedContext { session, ability, scope }`, `SYSTEM_CONTEXT`, `spec.visibility` with `resolveEffectiveScope`, and CASL rules that grant verbs without conditions. The code of the earlier attempt is read from `b40403b6`.
 
@@ -35,7 +35,8 @@ One permission system:
 | `permit(ctx, action, spec, fields?)` | The one entry point for enforcement: returns `{ sql, probe(id), test(row) }`. |
 | `Actor` | `{ ability, userId }`. `userId` is `null` for a share link or the system. |
 | `getRequestActor()` | The actor for the current request, computed once. |
-| `bearerContext(spec, token)` | Validates a share token and returns a context limited to that row, or nothing. |
+| `bearerContext(spec, token)` | Validates a share token and returns a context limited to that row's share-link rules, or nothing. |
+| `shareRouteContext(token)` | The same order for route handlers (a session wins, else the token's share link, else nothing), with a flag for which one applied. |
 | `systemContext(reason)` | An unrestricted context for jobs, webhooks and scripts, with a named reason. |
 
 `entityName` stays on every spec. It is the name error messages use, and a sub-entity has no subject to be named by.
@@ -173,7 +174,7 @@ export const agentRules = (userId: string) => defineRules((can, cannot) => {
 
 // rules/bearer.ts — per proposal row
 export const proposalBearerRules = (proposalId: string) => defineRules((can) => {
-  can('read', 'Proposal', { id: proposalId })
+  can('read', 'Proposal', ['id', 'status', /* ...the other customer-facing columns, prices included */ 'views.id', 'views.viewedAt'], { id: proposalId })
   can('update', 'Proposal', ['financeOptionId', 'cashInDealCents', 'views'], { id: proposalId })
 })
 ```
@@ -197,7 +198,7 @@ User ids are written into the conditions when the rules are built. Nothing looks
 - `'views.*'` is its columns, and the rows with them: CASL's field matcher answers a check on `'views'` from a rule that lists `'views.*'` (D-33). A rule meant for columns only names them, as in `'views.viewedAt'`.
 - `'applications.**'` reaches every level under it.
 - A parent `update` rule with no field list covers every column and every sub-entity of that parent. Narrow it with a field list or a `cannot`.
-- A `read` rule with a field list limits what the actor receives: the row leaves the DAL with those columns only, and a sub-entity path admits that collection. Reading a proposal is not seeing its financial internals: the bearer's list leaves the money columns out. The cost lines inside `projectJSON` are a sub-column mask, which is unit 5's financial-reads work.
+- A `read` rule with a field list limits what the actor receives: the row leaves the DAL with those columns only, and a sub-entity path admits that collection. Reading a proposal is not seeing its financial internals: the bearer's list leaves the internal columns out and keeps the customer-facing prices (the homeowner page shows them; owner, 2026-10-09), and admits only `views.id` and `views.viewedAt` of the view rows, so a holder never reads who else viewed. The cost lines inside `projectJSON` leave through the homeowner view (`toHomeownerProposalView`, which also carries the homeowner's own contact details); the internal ids it still carries are unit 5's financial-reads work.
 
 ### 5.4 Operators
 
@@ -293,7 +294,7 @@ interface ScopedContext { actor: Actor, tx?: Tx }
 - **`Actor.userId`** exists only to stamp data (author, owner). Reach never reads it; user ids are already inside the rule conditions.
 - **`getRequestActor()`** is cached per request: one session lookup, one ability build. tRPC's context, server components, layout guards and route handlers all use it.
 - **The ladder only narrows:** base → protected (a session is required) → agent (`access Dashboard`) → superAdmin (`manage all`). `systemProcedure`, `ctx.scope`, a separate `ctx.ability` and per-entity scope procedures are deleted.
-- **Share links.** One shareable procedure per shareable entity (Proposal today). The order is fixed: a session wins and the caller acts as staff; otherwise `bearerContext(spec, token)` validates the token and returns a context holding the bearer rules for that one row; otherwise unauthorized. The PDF and summary routes follow the same order.
+- **Share links.** One shareable procedure per shareable entity (Proposal today). The order is fixed: a session wins and the caller acts as staff; otherwise `bearerContext(spec, token)` validates the token and returns a context holding the bearer rules for that one row; otherwise unauthorized; a wrong token and a missing row answer the same. A signed-in person with no reach who opens a link gets not found. `shareableMiddleware` refuses at construction a spec that is not compiled or has no share-link rules. The PDF and summary routes take `shareRouteContext`, which follows the same order. Per-link limits cover view recording, document renders (PDF and summary) and move-forward requests, keyed by a sha256 of the token so no live link sits in the rate-limit store.
 - **Server-derived writes** on the share-link path (the homeowner's age, the document reconciliation it triggers) run under `systemContext` with their own reason, keyed off the token-validated proposal and never a client-supplied id.
 - **`systemContext(reason)`** is `manage all` carrying the reason. `SystemReason` is a closed list (`webhook:…`, `sync:…`, `intake:…`, `derived:…`). Each of today's `SYSTEM_CONTEXT` sites is classified into it.
 
@@ -380,13 +381,13 @@ Each unit ends with `pnpm tsc` and `pnpm lint` passing. Main is merged into the 
 | The 25 business rulings (report 10 §5); #13 ruled 2026-10-08 (a meeting's client-supplied `customerId` must be readable to the creator), landing in unit 3 part 2 | unit 4; the Meeting rows also wait on #217 and #220 |
 | `Application`'s parent: Meeting today, Proposal per main's applications work; it stays on the legacy engine until that work lands | the rest of unit 3 |
 | How `own Meeting` and `assign` map onto the model (report 22 §3.3 proposes `update Meeting ['participants', 'ownerId']` for `assign`) | unit 4 |
-| The homeowner's own phone on a share link (an explicit grant) | unit 3, Proposal family |
+| ~~The homeowner's own phone on a share link (an explicit grant)~~ — ruled 2026-10-09: the homeowner's own contact details ride with the homeowner view; built in unit 3 part 3 | done |
 | ~~Restoring the branch's outcome-to-pipeline map~~ — moved out of the epic 2026-10-07: outcome and pipeline derivation belongs to the sales lifecycle work on main (its rules map R34–R36; handoff `docs/plans/2026-10-07-pipeline-derivation-handoff-to-lifecycle.md` there); the branch consumes `derivedPipelineWhere` as an operator and receives main's model by merge | not this epic |
-| `recordView` driven by the bearer instead of `SYSTEM_CONTEXT`; the proposal-media probe that calls legacy `isVisible` | unit 3, Proposal family |
+| ~~`recordView` driven by the bearer instead of `SYSTEM_CONTEXT`; the proposal-media probe that calls legacy `isVisible`~~ — built in unit 3 part 3 (`isVisible` deleted) | done |
 | Whether share-link media reads need `proposal_media_files` as its own entity (report 22 §3.4) | when share-link reads are masked |
 | Shape of the lint wall | unit 5 |
 | Which dev records browser tests may change | unit 7 |
-| Cost masking on share-link reads: the bearer's `read` field list drops the money columns (unit 3, Proposal family); the cost lines inside `projectJSON` | unit 5, financial reads |
+| Cost masking on share-link reads: ~~the bearer's `read` field list~~ and the cost lines inside `projectJSON` were built in unit 3 part 3 (the customer-facing prices stay, owner 2026-10-09); what remains is the homeowner view's customer, incentive and media ids, a `HomeownerProposalView` type, and `getContractStatus`'s `requestId` | unit 5, financial reads |
 | ~~The name of the erased spec union~~ — `AnyServerSpec`, landed in unit 3 part 1 (D-28) | done |
 
 ## 13. What this changes in earlier documents
