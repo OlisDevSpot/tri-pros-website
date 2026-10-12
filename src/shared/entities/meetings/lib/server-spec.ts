@@ -12,6 +12,7 @@ const SERVER_OWNED_COLUMNS = {
   shareToken: true,
   homeownerConfirmedAt: true,
   homeownerConfirmedVia: true,
+  homeownerInvitedAt: true,
   newTimeRequestedAt: true,
   rescheduledFromId: true,
   scheduledForSetAt: true,
