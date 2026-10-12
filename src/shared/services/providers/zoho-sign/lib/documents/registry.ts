@@ -1,6 +1,6 @@
 import type { EnvelopeDocument, FieldSource } from './types'
 import { format } from 'date-fns'
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { systemContext } from '@/shared/dal/server/lib/contexts'
 import { formatPhone } from '@/shared/lib/phone'
 import { cslbEarliestStartDate } from '@/shared/modules/proposals/core/lib/cslb-start-date'
 import { computeFinalTcp } from '@/shared/modules/proposals/core/lib/financials'
@@ -112,7 +112,7 @@ export const ENVELOPE_DOCUMENTS: readonly EnvelopeDocument[] = [
     label: 'Scope of Work',
     source: {
       kind: 'generated-pdf',
-      generator: ctx => pdfService.generateSowPdf(SYSTEM_CONTEXT, { proposalId: ctx.proposal.id }),
+      generator: ctx => pdfService.generateSowPdf(systemContext('derived:envelope-documents'), { proposalId: ctx.proposal.id }),
     },
     applicableKinds: ['initial-sale', 'additional-work'],
     perKindRules: {
