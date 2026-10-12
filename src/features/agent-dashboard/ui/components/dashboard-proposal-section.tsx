@@ -6,8 +6,9 @@ import { Suspense } from 'react'
 
 import { DashboardListSectionSkeleton } from '@/features/agent-dashboard/ui/components/dashboard-list-section-skeleton'
 import { DashboardProposalSectionList } from '@/features/agent-dashboard/ui/components/dashboard-proposal-section-list'
-import { useIsDataViewPending } from '@/shared/dal/client/hooks/use-is-data-view-pending'
+import { useLoadingScreenRead } from '@/shared/dal/client/hooks/use-loading-screen-read'
 import { HydrationErrorBoundary } from '@/trpc/components/hydration-error-boundary'
+import { useTRPC } from '@/trpc/helpers'
 
 interface DashboardProposalSectionProps {
   /** Space-Mono eyebrow naming the section's single state. */
@@ -26,16 +27,16 @@ interface DashboardProposalSectionProps {
  * inside the section.
  */
 export function DashboardProposalSection({ title, input, timeSince, emptyMessage }: DashboardProposalSectionProps) {
-  // The layout's loading state draws this page with no reads (see DataViewPendingContext).
-  const isPending = useIsDataViewPending()
+  const trpc = useTRPC()
+  const options = useLoadingScreenRead(trpc.proposalsRouter.business.list.queryOptions(input))
   const skeleton = <DashboardListSectionSkeleton title={title} card="proposal" />
-  if (isPending) {
+  if (!options) {
     return skeleton
   }
   return (
     <HydrationErrorBoundary variant="section">
       <Suspense fallback={skeleton}>
-        <DashboardProposalSectionList title={title} input={input} timeSince={timeSince} emptyMessage={emptyMessage} />
+        <DashboardProposalSectionList title={title} options={options} timeSince={timeSince} emptyMessage={emptyMessage} />
       </Suspense>
     </HydrationErrorBoundary>
   )
