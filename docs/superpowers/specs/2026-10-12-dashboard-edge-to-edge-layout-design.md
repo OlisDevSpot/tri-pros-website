@@ -62,10 +62,10 @@ Every place that hand-copies the dock today reads the vars instead:
 
 A data view never knows whether it sits on a page, in a tab, in a card or in a modal (data-view spec, `2026-10-07-data-view-surface-design.md` §1). So the shared bodies always apply `bleed-x`, and the allowance decides how far that reaches:
 
-- **Every surface resets `--bleed-*` (never `--edge-*`, 3.3) to 0.** Done on the existing all-surfaces rule (`globals.css:537`, `:is(.bg-card, .surface, .surface-beneath, .bg-popover, .surface-overlay)`). Inside a card, sheet or popover nothing bleeds: a DataTable in the lead-source detail pane renders exactly as today.
+- **Every surface resets `--bleed-*` (never `--bled-*`, 3.3) to 0.** Done on the existing all-surfaces rule (`globals.css:537`, `:is(.bg-card, .surface, .surface-beneath, .bg-popover, .surface-overlay)`). Inside a card, sheet or popover nothing bleeds: a DataTable in the lead-source detail pane renders exactly as today.
 - **Outside `<main>` the vars are unset, so the allowance is 0.** Portalled modals (customer profile) need no rule.
 - **A `bleed-x` element resets `--bleed-l/r` to 0 for its descendants,** so nested scrollers never double-bleed.
-- **A non-surface wrapper that adds horizontal padding** between `<main>` and a `bleed-x` body must declare `bleed-reset`. Today none sits on a bleeding path. The convention doc names the rule.
+- **A non-surface wrapper that adds horizontal padding** between `<main>` and a `bleed-x` body must reset `--bleed-l/r` to 0 itself. Today none sits on a bleeding path, so there is no utility for it yet. The convention doc names the rule.
 
 ### 3.3 `bleed-x`: horizontal scrollers
 
@@ -73,16 +73,31 @@ A data view never knows whether it sits on a page, in a tab, in a card or in a m
 @utility bleed-x {
   /* What this scroller actually took. Inherits past surfaces, so the card and sticky
      pieces inside can line up with the visible edge (4.3). */
-  --edge-l: var(--bleed-l, 0px);
-  --edge-r: var(--bleed-r, 0px);
-  margin-inline: calc(-1 * var(--edge-l)) calc(-1 * var(--edge-r));
-  padding-inline: var(--edge-l) var(--edge-r);
-  scroll-padding-inline: var(--edge-l) var(--edge-r);
+  --bled-l: var(--bleed-l, 0px);
+  --bled-r: var(--bleed-r, 0px);
+  margin-inline: calc(-1 * var(--bled-l)) calc(-1 * var(--bled-r));
+  padding-inline: var(--bled-l) var(--bled-r);
+  scroll-padding-inline: var(--bled-l) var(--bled-r);
   & > * { --bleed-l: 0px; --bleed-r: 0px; }  /* no double bleed below (3.2) */
 }
 ```
 
-The reset sits on the children, not on the scroller: a custom property declared on the element itself would zero its own margin. Surfaces reset `--bleed-*` only, never `--edge-*`, so a card inside a scroller still knows the scroller's edges. Replaces `mobile-bleed-right` (`globals.css:1171`, hard-coded `1rem`, kanban only).
+The reset sits on the children, not on the scroller: a custom property declared on the element itself would zero its own margin. Surfaces reset `--bleed-*` only, never `--bled-*`, so a card inside a scroller still knows the scroller's edges. (`--edge` is taken: it is an elevation knob.) Replaces `mobile-bleed-right` (`globals.css:1171`, hard-coded `1rem`, kanban only).
+
+**Measured 2026-10-12 (static probe, Chromium + WebKit in the Playwright Docker image):**
+
+- **WebKit drops the inline-end padding of a block scroller.** A `bleed-x` scroller must be a flex row, or end its content in a spacer. Flex scrollers keep the end padding in both engines.
+- **Neither engine adds a scroller's padding to a grandchild's overflow.** That's why DataTable ends its content in a spacer of width `--bled-r`.
+- **Sticky offsets resolve against the scroller's content box, not its screen edge.** A pinned column or panel uses `left: calc(-1 * var(--bled-l))` to sit flush at the screen edge.
+- **`overflow: clip` on the riding card keeps sticky working.**
+
+**Ancestors must not clip sideways.** These ancestors are `overflow-hidden` today and become `overflow-y-clip` (vertical containment kept, horizontal visible):
+
+- `RecordsPageFrame`
+- `CustomerPipelineView`'s root
+- `ScheduleView`'s root
+
+This is also why the old `mobile-bleed-right` never reached the screen edge.
 
 ### 3.4 `page-scroll`: a page that scrolls as a whole
 
@@ -119,7 +134,7 @@ This goes into `docs/codebase-conventions/app-shell.md` as a new rule `page-inse
 | `/dashboard/settings` | `settings-view.tsx:29` |
 | `/dashboard/analytics` | `analytics-view.tsx:52` (drops `-mr-2 pr-2`) |
 | `/dashboard/campaigns` overview, setup | `campaigns-overview-view.tsx:40`, `campaigns-setup-view.tsx:15`, and the overview skeleton (drop `pr-1`) |
-| `/dashboard/calculators` | scope tab `calculators-view.tsx:32`; remodel ROI story canvas `story-canvas.tsx:42` (its wrapper chain must reach `<main>`'s bottom; the plan checks) |
+| `/dashboard/calculators` | scope tab `calculators-view.tsx:32`. The remodel ROI story canvas is deferred: it is a pane inside an `overflow-hidden` tab and, from `lg` up, a two-pane grid, so bleeding it means restructuring that workspace. |
 | `/dashboard/projects/new`, `[projectId]` | `create-project-view.tsx:62`, `edit-project-view.tsx:157` below `lg` |
 
 ### 4.2 `bleed-x` (inside the shared bodies, so every consumer inherits it)
@@ -137,11 +152,11 @@ Today (`data-table.tsx:284-433`): frame `rounded-xl border overflow-hidden surfa
 After:
 
 - **The scroller is the outermost box and gets `bleed-x`.** It is not a surface, so the allowance reaches it.
-- **The card moves inside the scroller.** The frame (`surface rounded-xl border`) wraps the table, with width = table width, `min-width: calc(100% - var(--edge-l) - var(--edge-r))`. The table's `min-width: 100%` becomes "fill the card".
+- **The card moves inside the scroller.** The frame (`surface rounded-xl border`) wraps the table, with width = table width, `min-width: calc(100% - var(--bled-l) - var(--bled-r))`. The table's `min-width: 100%` becomes "fill the card".
 - **The sticky header stays** `top-0` on the scroller. The card's top edge scrolls up under it vertically.
-- **The frozen first column stays `left-0`.** At rest it sits at the gap. Once scrolled it pins flush at the screen edge, which is the edge-while-more-content behaviour. The sticky z-order and the dashed border are unchanged.
-- **The expanded-row panel** (`data-table-row.tsx:117`, sticky `left-0`, `width: 100cqw`) becomes sticky at `left: var(--edge-l)` with `width: calc(100cqw - var(--edge-l) - var(--edge-r))`, so it lines up with the visible card, not the screen. The `cqw` container stays the scroller's full-width child.
-- **The pull spinner** (also `cqw`-sized) gets the same correction.
+- **The frozen first column moves from `left-0` to `left: calc(-1 * var(--bled-l))`.** At rest it sits at the gap. Once scrolled it pins flush at the screen edge, which is the edge-while-more-content behaviour. The sticky z-order and the dashed border are unchanged.
+- **The expanded-row panel** (`data-table-row.tsx:117`, sticky `left-0`, `width: 100cqw`) becomes sticky at `left: calc(-1 * var(--bled-l))` with `width: calc(100cqw + var(--bled-l) + var(--bled-r))`. It spans the screen, and the card's `overflow: clip` trims it to the card at rest and at the scroll end. The `cqw` container stays the scroller's full-width child, now a flex `@container` that also holds the trailing spacer.
+- **The pull spinner** is `100cqw` wide and not sticky, so at rest it already centres on the card. No change.
 - **Pagination leaves the card** and becomes its own inset bar below the scroller (`surface rounded-xl border`, same grid as today).
 - **Inside a surface, the allowance is 0.** The scroller then equals today's frame box, and the card fills it with no gap, so the picture matches today apart from pagination being a separate bar.
 
@@ -174,12 +189,13 @@ After:
 - **Geometry:** `inset-x-0 bottom-0`, height `var(--dock-clear)`. Its top therefore stops exactly where contained pages end, so on table, pipeline and schedule pages it only ever covers bare canvas.
 - **Paint:** solid `--background` (canvas, rung 0, `theme-conventions.md`) from the screen bottom up to `--dock-baseline`. From there to the top it fades to transparent. Both schemes follow the token.
 - **Where it shows:** on page-scroll pages, mid-scroll content dissolves into it. At scroll end, the scroller's bottom padding has lifted the last item above it.
+- **Hidden while the menu sheet is open.** Canvas over the sheet's scrim would read as a light band.
 
 ## 6. Interactions with pending work
 
 - **Data-view surface spec (2026-10-07, awaiting review).**
   - Bodies stay unchanged there. This spec changes `DataTable` and `ScheduleCalendar` internals, which is compatible.
-  - Constraint for that work: `DataView.Body` (one plain `div`) must not add horizontal padding, or it must declare `bleed-reset`.
+  - Constraint for that work: `DataView.Body` (one plain `div`) must not add horizontal padding, or it must reset `--bleed-l/r` to 0.
   - Its "hand-copied strip" removal in the schedule views touches the same files as 4.4. Whichever lands second rebases.
 - **Records management R2 part 2 and the pipeline-speed follow-ups** touch `DataTable` and `KanbanBoard`. The plan re-reads both trackers before touching those files.
 
