@@ -1,11 +1,12 @@
 import z from 'zod'
 
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { SHARE_LINK_LIMITS } from '@/shared/modules/proposals/core/lib/share-link-rate-limit'
 import { proposalService } from '@/shared/modules/proposals/service'
 import { getProposalViews } from '@/shared/modules/proposals/views/dal/server/queries'
 
-import { agentProcedure, baseProcedure, createTRPCRouter } from '../../init'
+import { agentProcedure, createTRPCRouter } from '../../init'
 import { dalToTrpc } from '../../lib/dal-to-trpc'
+import { proposalShareableProcedure } from './procedures'
 
 const recordViewSchema = z.object({
   proposalId: z.string(),
@@ -16,11 +17,18 @@ const recordViewSchema = z.object({
 })
 
 export const viewsRouter = createTRPCRouter({
-  recordView: baseProcedure
+  recordView: proposalShareableProcedure
     .input(recordViewSchema)
-    .mutation(async ({ input }) => {
-      // No session here: the share token proves the caller, and the service checks it.
-      dalToTrpc(await proposalService.views.record(SYSTEM_CONTEXT, input))
+    .mutation(async ({ ctx, input }) => {
+      // Staff opening the page is not a homeowner's visit.
+      if (ctx.session) {
+        return
+      }
+      const { success } = await SHARE_LINK_LIMITS.view.limit(input.token)
+      if (!success) {
+        return
+      }
+      dalToTrpc(await proposalService.views.record(ctx, input))
     }),
 
   getProposalViews: agentProcedure

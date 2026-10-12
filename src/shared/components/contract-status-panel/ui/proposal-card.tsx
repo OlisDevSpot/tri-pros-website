@@ -17,7 +17,6 @@ import { ActionConfirmDialog } from './action-confirm-dialog'
 
 interface ProposalCardProps {
   proposalId: string
-  token: string
   customerName: string | null
   customerEmail: string | null
   proposalStatus: ProposalStatus | undefined
@@ -39,7 +38,6 @@ type ConfirmAction = 'resend'
  */
 export function ProposalCard({
   proposalId,
-  token,
   customerName,
   customerEmail,
   proposalStatus,
@@ -69,7 +67,6 @@ export function ProposalCard({
         proposalId,
         customerName: customerName ?? 'Customer',
         email: customerEmail,
-        token,
         message,
       })
       toast.success('Proposal sent!')

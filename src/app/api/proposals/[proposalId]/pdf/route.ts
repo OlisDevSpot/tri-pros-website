@@ -1,7 +1,8 @@
 import { companyInfo } from '@/shared/constants/company'
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { sanitizeFilename } from '@/shared/lib/sanitize-filename'
 import { getFullView } from '@/shared/modules/proposals/core/dal/server/queries'
+import { SHARE_LINK_LIMITS } from '@/shared/modules/proposals/core/lib/share-link-rate-limit'
+import { shareRouteContext } from '@/shared/modules/proposals/core/lib/share-route-context'
 import { pdfService } from '@/shared/services/pdf.service'
 
 export async function GET(
@@ -11,22 +12,19 @@ export async function GET(
   const { proposalId } = await params
   const token = new URL(req.url).searchParams.get('token')
 
-  if (!token) {
-    return Response.json({ error: 'Missing token' }, { status: 401 })
-  }
-
-  const result = await getFullView(SYSTEM_CONTEXT, { id: proposalId })
-  if (!result.success || !result.data) {
+  const share = await shareRouteContext(token)
+  const result = share ? await getFullView(share.ctx, { id: proposalId }) : null
+  // One answer for a wrong token and a missing proposal, so nothing reveals which ids exist.
+  if (!share || !result?.success || !result.data) {
     return Response.json({ error: 'Not found' }, { status: 404 })
+  }
+  if (share.viaShareLink && token && !(await SHARE_LINK_LIMITS.document.limit(token)).success) {
+    return Response.json({ error: 'Too many requests' }, { status: 429 })
   }
   const proposal = result.data
 
-  if (proposal.token !== token) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
   try {
-    const buffer = await pdfService.generateProposalPdf(SYSTEM_CONTEXT, { proposalId })
+    const buffer = await pdfService.generateProposalPdf(share.ctx, { proposalId })
     const baseName = sanitizeFilename(`${companyInfo.nickname} Proposal - ${proposal.customer?.name ?? proposal.label ?? proposalId}`)
       .replace(/["\\]/g, '')
       // Response headers are ByteStrings — non-Latin1 chars (emoji, most non-ASCII) throw.
