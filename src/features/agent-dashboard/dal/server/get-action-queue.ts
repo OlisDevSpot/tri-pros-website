@@ -1,13 +1,17 @@
+import type { ScopedContext } from '@/shared/dal/server/types'
+
 import { and, count, desc, eq, inArray, max, sql } from 'drizzle-orm'
 
 import { ATTENTION_OUTCOMES } from '@/shared/constants/enums/meetings'
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
-import { gatedPhoneSql } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { canSeeUngatedPhone, gatedPhoneSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { userParticipatesInMeeting } from '@/shared/entities/meetings/dal/server/participants'
+import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 
 type ActionTier = 'HOT_NOW' | 'HOT_LEAD' | 'FOLLOW_UP_DUE' | 'STALE' | 'NO_PROPOSAL'
 
@@ -115,7 +119,11 @@ const TIER_ORDER: Record<ActionTier, number> = {
   NO_PROPOSAL: 5,
 }
 
-export async function getActionQueue(userId: string, isOmni = false, canSeeUngated = false): Promise<ActionItem[]> {
+export async function getActionQueue(ctx: ScopedContext): Promise<ActionItem[]> {
+  const canSeeUngated = canSeeUngatedPhone(ctx.actor.ability)
+  const userId = ctx.actor.userId ?? ''
+  const isOmni = ctx.actor.ability.can('manage', 'all')
+
   // 1. Sent proposals with view data
   const sentProposals = await db
     .select({
@@ -133,7 +141,7 @@ export async function getActionQueue(userId: string, isOmni = false, canSeeUngat
     .leftJoin(customers, eq(customers.id, meetings.customerId))
     .leftJoin(proposalViews, eq(proposalViews.proposalId, proposals.id))
     .where(and(
-      isOmni ? undefined : userParticipatesInMeeting(userId, proposals.meetingId),
+      permit(ctx, 'read', proposalServerSpec).sql,
       eq(proposals.status, 'sent'),
     ))
     // customers.id included so the correlated EXISTS subquery inside

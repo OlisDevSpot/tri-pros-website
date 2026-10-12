@@ -1,12 +1,7 @@
 import { getActionQueue } from '@/features/agent-dashboard/dal/server/get-action-queue'
-import { canSeeUngatedPhone } from '@/shared/entities/customers/lib/phone-gating-sql'
 
 import { agentProcedure, createTRPCRouter } from '../init'
 
 export const dashboardRouter = createTRPCRouter({
-  getActionQueue: agentProcedure.query(async ({ ctx }) => {
-    const userId = ctx.session.user.id
-    const isOmni = ctx.actor.ability.can('manage', 'all')
-    return getActionQueue(userId, isOmni, canSeeUngatedPhone(ctx.actor.ability))
-  }),
+  getActionQueue: agentProcedure.query(async ({ ctx }) => getActionQueue(ctx)),
 })

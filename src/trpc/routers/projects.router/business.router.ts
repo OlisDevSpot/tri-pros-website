@@ -13,8 +13,8 @@ export const businessRouter = createTRPCRouter({
   create: agentProcedure
     .input(createProjectFormSchema)
     .mutation(async ({ ctx, input }) => {
-      // 1. Validate meeting has at least one proposal (unscoped read — operational create)
-      const meetingProposals = dalVerifySuccess(await getProposalsByMeetingId({ ...ctx, scope: null }, input.meetingId))
+      // 1. Validate meeting has at least one proposal
+      const meetingProposals = dalVerifySuccess(await getProposalsByMeetingId(ctx, input.meetingId))
 
       if (meetingProposals.length === 0) {
         throw new TRPCError({

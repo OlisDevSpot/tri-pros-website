@@ -3,18 +3,20 @@ import type { SQL } from 'drizzle-orm'
 import type { ScopedContext } from '@/shared/dal/server/types'
 import type { CustomerProfileMeeting, CustomerProfileProposal } from '@/shared/entities/customers/types'
 
-import { count, desc, eq, sql } from 'drizzle-orm'
+import { and, count, desc, eq, sql } from 'drizzle-orm'
 
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { db } from '@/shared/db'
 import { meetings } from '@/shared/db/schema/meetings'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
+import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 import 'server-only'
 
 /**
  * Meetings matching `where`, newest first, each with its proposals: the shape the customer profile and a
- * project's sales history render. An actor with no `read Proposal` rule at all gets the meetings and no
- * proposals: a proposal is money, and the rules say nothing about it for that role.
+ * project's sales history render. Each meeting carries the proposals the actor reaches: an agent sees the
+ * proposals of meetings they sit in, a role with no proposal rule sees none.
  */
 export async function getMeetingsWithProposals(ctx: ScopedContext, where: SQL): Promise<{ meetings: CustomerProfileMeeting[], proposals: CustomerProfileProposal[] }> {
   const meetingRows = await db
@@ -34,7 +36,7 @@ export async function getMeetingsWithProposals(ctx: ScopedContext, where: SQL): 
     .where(where)
     .orderBy(desc(meetings.createdAt))
 
-  const proposalRows = ctx.actor.ability.cannot('read', 'Proposal') || meetingRows.length === 0
+  const proposalRows = meetingRows.length === 0
     ? []
     : await db
         .select({
@@ -53,7 +55,10 @@ export async function getMeetingsWithProposals(ctx: ScopedContext, where: SQL): 
         })
         .from(proposals)
         .leftJoin(proposalViews, eq(proposalViews.proposalId, proposals.id))
-        .where(sql`${proposals.meetingId} IN (${sql.join(meetingRows.map(m => sql`${m.id}`), sql`, `)})`)
+        .where(and(
+          sql`${proposals.meetingId} IN (${sql.join(meetingRows.map(m => sql`${m.id}`), sql`, `)})`,
+          permit(ctx, 'read', proposalServerSpec).sql,
+        ))
         .groupBy(proposals.id)
         .orderBy(desc(proposals.createdAt))
 

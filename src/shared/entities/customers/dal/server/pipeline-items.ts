@@ -29,8 +29,8 @@ import { CUSTOMER_FIELD_SQL } from '@/shared/entities/customers/dal/server/custo
 import { customerSearchWhere } from '@/shared/entities/customers/dal/server/customer-search-sql'
 import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
-import { userParticipatesInMeeting } from '@/shared/entities/meetings/dal/server/participants'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
+import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 
 export const customerPipelineItemsInputSchema = fieldListInput(CUSTOMER_FIELDS, { pagination: false }).extend({
   pipeline: z.enum(pipelines),
@@ -44,6 +44,8 @@ interface PipelineBranchArgs {
   canSeeUngated: boolean
   /** The Meeting read reach, for the arms whose outer table is `meetings`. */
   meetingReach: SQL
+  /** The Proposal read reach, for every proposal read. */
+  proposalReach: SQL
   customerWhere: SQL | undefined
   /** Undefined keeps the branch's own natural order. */
   customerOrder: SQL[] | undefined
@@ -52,11 +54,12 @@ interface PipelineBranchArgs {
 export async function getCustomerPipelineItems(ctx: ScopedContext, input: CustomerPipelineItemsInput): Promise<DalReturn<PaginatedResult<CustomerPipelineItem>>> {
   return dalDbOperation(async () => {
     const args: PipelineBranchArgs = {
-      // The customer reach comes from the rules; the meeting arms add the Meeting read reach; the proposal arms keep participation until the Proposal family converts.
+      // The customer reach comes from the rules; the meeting arms add the Meeting read reach.
       userId: ctx.actor.userId ?? '',
       isOmni: ctx.actor.ability.can('manage', 'all'),
       canSeeUngated: canSeeUngatedPhone(ctx.actor.ability),
       meetingReach: permit(ctx, 'read', meetingServerSpec).sql,
+      proposalReach: permit(ctx, 'read', proposalServerSpec).sql,
       customerWhere: and(
         permit(ctx, 'read', customerServerSpec).sql,
         customerSearchWhere(input.search, ctx.actor.ability),
@@ -257,7 +260,7 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
       .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
       .innerJoin(customers, eq(customers.id, meetings.customerId))
       .where(and(
-        args.isOmni ? undefined : userParticipatesInMeeting(args.userId, proposals.meetingId),
+        args.proposalReach,
         inArray(customers.id, customerIds),
       ))
       .groupBy(customers.id),
@@ -295,7 +298,7 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
       .from(proposals)
       .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
       .where(and(
-        args.isOmni ? undefined : userParticipatesInMeeting(args.userId, proposals.meetingId),
+        args.proposalReach,
         inArray(meetings.customerId, customerIds),
       ))
       .orderBy(desc(proposals.createdAt)),
@@ -487,7 +490,7 @@ async function getProjectsPipelineItems(args: PipelineBranchArgs): Promise<Custo
           finalTcpCents: proposals.finalTcpCents,
         })
         .from(proposals)
-        .where(inArray(proposals.meetingId, meetingIds))
+        .where(and(inArray(proposals.meetingId, meetingIds), args.proposalReach))
         .orderBy(desc(proposals.createdAt))
     : []
 

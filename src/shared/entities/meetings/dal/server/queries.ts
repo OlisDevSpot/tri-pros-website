@@ -22,6 +22,7 @@ import { customers } from '@/shared/db/schema/customers'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
+import { proposals } from '@/shared/db/schema/proposals'
 import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { profileCols } from '@/shared/entities/customers/lib/profile-select'
 import { MEETING_FIELDS } from '@/shared/entities/meetings/dal/meeting-fields'
@@ -29,6 +30,7 @@ import { MEETING_FIELD_SQL, setterUser } from '@/shared/entities/meetings/dal/se
 import { getMeetingsWithProposals } from '@/shared/entities/meetings/dal/server/meetings-with-proposals'
 import { getAllParticipantsForMeetings } from '@/shared/entities/meetings/dal/server/participants'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
+import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 
 export interface MeetingListParticipant {
   id: string
@@ -93,10 +95,13 @@ export async function listMeetings(
   input: MeetingListInput,
 ): Promise<DalReturn<PaginatedResult<MeetingListRow>>> {
   return dalDbOperation(async () => {
+    const proposalReach = permit(ctx, 'read', proposalServerSpec).sql
+    // Filtering by proposal status would tell a role without proposals which meetings have them.
+    const filters = ctx.actor.ability.can('read', 'Proposal') ? input.filters : { ...input.filters, proposalStatus: undefined }
     const where = and(
       permit(ctx, 'read', meetingServerSpec).sql,
       buildSearchWhere(input.search, [customers.name, sql`${meetings.meetingType}::text`]),
-      MEETING_FIELD_SQL.where(input.filters),
+      MEETING_FIELD_SQL.where(filters),
     )
     const orderBy = MEETING_FIELD_SQL.orderBy(input.sort)
 
@@ -116,9 +121,9 @@ export async function listMeetings(
           ownerImage: user.image,
           setterName: setterUser.name,
           setterImage: setterUser.image,
-          proposalCount: sql<number>`(SELECT count(*) FROM proposals p WHERE p.meeting_id = ${meetings.id})`.as('proposal_count'),
-          hasSentProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'sent')`.as('has_sent_proposal'),
-          hasApprovedProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'approved')`.as('has_approved_proposal'),
+          proposalCount: sql<number>`(SELECT count(*) FROM ${proposals} WHERE ${proposals.meetingId} = ${meetings.id} AND ${proposalReach})`.as('proposal_count'),
+          hasSentProposal: sql<boolean>`EXISTS (SELECT 1 FROM ${proposals} WHERE ${proposals.meetingId} = ${meetings.id} AND ${proposals.status} = 'sent' AND ${proposalReach})`.as('has_sent_proposal'),
+          hasApprovedProposal: sql<boolean>`EXISTS (SELECT 1 FROM ${proposals} WHERE ${proposals.meetingId} = ${meetings.id} AND ${proposals.status} = 'approved' AND ${proposalReach})`.as('has_approved_proposal'),
           // Agents can't call leadSourcesRouter (super-admin only), so the row carries the name.
           leadSource: {
             id: leadSourcesTable.id,
@@ -126,7 +131,7 @@ export async function listMeetings(
             slug: leadSourcesTable.slug,
             isActive: leadSourcesTable.isActive,
           },
-          proposalStatuses: sql<ProposalStatus[]>`COALESCE((SELECT json_agg(p.status ORDER BY p.created_at, p.id) FROM proposals p WHERE p.meeting_id = ${meetings.id}), '[]'::json)`.as('proposal_statuses'),
+          proposalStatuses: sql<ProposalStatus[]>`COALESCE((SELECT json_agg(${proposals.status} ORDER BY ${proposals.createdAt}, ${proposals.id}) FROM ${proposals} WHERE ${proposals.meetingId} = ${meetings.id} AND ${proposalReach}), '[]'::json)`.as('proposal_statuses'),
         })
         .from(meetings)
         .leftJoin(customers, eq(customers.id, meetings.customerId))
@@ -212,6 +217,7 @@ export async function getByIdWithJoins(
   input: { id: string },
 ): Promise<DalReturn<MeetingWithCustomer | undefined>> {
   return dalDbOperation(async () => {
+    const proposalReach = permit(ctx, 'read', proposalServerSpec).sql
     // The raw phone column is swapped out of the projection so destructuring `row.customer` can't leak the ungated value.
     const { phone: _customerPhone, ...customerCols } = getTableColumns(customers)
 
@@ -230,9 +236,9 @@ export async function getByIdWithJoins(
         ownerEmail: user.email,
         ownerPhone: user.phone,
         ownerYearsOfExperience: user.yearsOfExperience,
-        proposalCount: sql<number>`(SELECT count(*) FROM proposals p WHERE p.meeting_id = ${meetings.id})`.as('proposal_count'),
-        hasSentProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'sent')`.as('has_sent_proposal'),
-        hasApprovedProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'approved')`.as('has_approved_proposal'),
+        proposalCount: sql<number>`(SELECT count(*) FROM ${proposals} WHERE ${proposals.meetingId} = ${meetings.id} AND ${proposalReach})`.as('proposal_count'),
+        hasSentProposal: sql<boolean>`EXISTS (SELECT 1 FROM ${proposals} WHERE ${proposals.meetingId} = ${meetings.id} AND ${proposals.status} = 'sent' AND ${proposalReach})`.as('has_sent_proposal'),
+        hasApprovedProposal: sql<boolean>`EXISTS (SELECT 1 FROM ${proposals} WHERE ${proposals.meetingId} = ${meetings.id} AND ${proposals.status} = 'approved' AND ${proposalReach})`.as('has_approved_proposal'),
       })
       .from(meetings)
       .leftJoin(customers, eq(customers.id, meetings.customerId))

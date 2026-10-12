@@ -2,7 +2,7 @@ import type { Pipeline } from '@/shared/constants/enums/pipelines'
 import type { AppAbility } from '@/shared/domains/permissions/types'
 
 import { TRPCError } from '@trpc/server'
-import { desc, eq } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { moveCustomerPipelineItem } from '@/features/customer-pipelines/dal/server/move-customer-pipeline-item'
 import { moveCustomerToPipeline } from '@/features/customer-pipelines/dal/server/move-customer-to-pipeline'
@@ -18,6 +18,7 @@ import { getCustomerProfile } from '@/shared/entities/customers/dal/server/get-c
 import { customerPipelineItemsInputSchema, getCustomerPipelineItems } from '@/shared/entities/customers/dal/server/pipeline-items'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
+import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { R2_BUCKETS } from '@/shared/services/providers/r2/types'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
@@ -115,7 +116,7 @@ export const customerPipelinesRouter = createTRPCRouter({
       const meetingProposals = await db
         .select({ id: proposals.id, label: proposals.label, status: proposals.status, createdAt: proposals.createdAt })
         .from(proposals)
-        .where(eq(proposals.meetingId, input.meetingId))
+        .where(and(eq(proposals.meetingId, input.meetingId), permit(ctx, 'read', proposalServerSpec).sql))
         .orderBy(desc(proposals.createdAt))
       return { projects: customerProjects, proposals: meetingProposals }
     }),
