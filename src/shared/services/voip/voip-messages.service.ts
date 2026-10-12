@@ -7,7 +7,7 @@ import { dalError, dalSuccess } from '@/shared/dal/server/types'
 import { getStickyDidForUser } from '@/shared/entities/voip-dids/dal/server/queries'
 import { voipMessageCrud } from '@/shared/entities/voip-messages/dal/server/crud'
 import { patchMessageStatusByProviderId, upsertInboundMessage } from '@/shared/entities/voip-messages/dal/server/mutations'
-import { fetchThread as fetchThreadDal } from '@/shared/entities/voip-messages/dal/server/queries'
+import { fetchThread as fetchThreadDal, getLatestOutboundRemote } from '@/shared/entities/voip-messages/dal/server/queries'
 import { RestException, twilioClient } from '@/shared/services/providers/twilio/client'
 import { getVetting, VOIP_DEV_OVERRIDE_NUMBER } from '@/shared/services/providers/twilio/constants'
 import { complianceService } from '@/shared/services/voip/compliance.service'
@@ -285,6 +285,17 @@ function createVoipMessagesService() {
         from: { id: mainLine.data.id, e164: mainLine.data.e164 },
         agentUserId: null,
       })
+    },
+
+    /**
+     * Who a text really came from. Outside production every send dials the override phone, so a text from it answers
+     * whichever number this line texted last; without this every dev reply lands on the customer who owns that phone.
+     */
+    resolveInboundSender: async (input: { from: string, voipDidId: string | null }): Promise<string> => {
+      if (isProduction || !VOIP_DEV_OVERRIDE_NUMBER || input.from !== VOIP_DEV_OVERRIDE_NUMBER || !input.voipDidId) {
+        return input.from
+      }
+      return (await getLatestOutboundRemote({ voipDidId: input.voipDidId })) ?? input.from
     },
 
     /**
