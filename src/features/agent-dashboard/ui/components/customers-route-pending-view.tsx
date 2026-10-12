@@ -1,5 +1,6 @@
 'use client'
 
+import { DataViewBoundary } from '@/shared/components/data-view-boundary'
 import { RecordsPageFrame } from '@/shared/components/records-page-frame'
 import { CustomersTable } from '@/shared/entities/customers/components/customers-table'
 
@@ -7,7 +8,9 @@ import { CustomersTable } from '@/shared/entities/customers/components/customers
 export function CustomersRoutePendingView() {
   return (
     <RecordsPageFrame>
-      <CustomersTable />
+      <DataViewBoundary>
+        <CustomersTable />
+      </DataViewBoundary>
     </RecordsPageFrame>
   )
 }
