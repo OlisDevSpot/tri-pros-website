@@ -2,7 +2,7 @@
  * Drives the visit-message verbs without the dashboard, for dev checks. Sends are real: outside production
  * every text goes to VOIP_DEV_OVERRIDE_NUMBER, and the homeowner calendar invite goes to EMAIL_DEV_OVERRIDE or nobody.
  *
- * Runs without the react-server condition (it renders React email, which that condition forbids); the preload stubs `server-only`.
+ * The preload stubs `server-only`, which would otherwise throw outside Next.js.
  *
  *   pnpm tsx --import ./scripts/lib/stub-server-only.mjs scripts/visit-messages.ts summary --meeting <id>
  *   pnpm tsx --import ./scripts/lib/stub-server-only.mjs scripts/visit-messages.ts run --kind day_before_reminder [--at 2026-10-09T01:00:00Z]

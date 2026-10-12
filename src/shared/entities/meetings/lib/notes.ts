@@ -11,7 +11,7 @@ export function formatMeetingDateShort(iso: string): string {
   })
 }
 
-/** Customer-note body for a reschedule (original → cancelled, new meeting booked). */
+/** Customer-note body for a reschedule (the visit moves to a new meeting). */
 export function buildRescheduleNote(oldIso: string, newIso: string, reason: string): string {
   return `${formatMeetingDateShort(oldIso)} meeting rescheduled to ${formatMeetingDateShort(newIso)}:\n${reason}`
 }

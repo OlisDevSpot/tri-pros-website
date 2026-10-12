@@ -166,15 +166,16 @@ unless the visit is already past. Tri Pros sends no cancellation email of its ow
 ### reschedule-cancels-and-rebooks
 
 The Reschedule action (`meetingService.business.reschedule`, reached through `meetingsRouter.business.rescheduleMeeting`) keeps the
-original meeting and sets it to `cancelled`, then books a NEW meeting at the new
-time copying the original's owner + all participants + customer + project +
-type + `flowStateJSON` (outcome resets to `not_set`), and posts one customer
-note. Available only from `DID_NOT_OCCUR_OUTCOMES` (`canRescheduleFromOutcome`)
-so a meeting that already happened can never have its disposition clobbered.
+original meeting and books a NEW meeting at the new time copying the original's owner + all participants + customer +
+project + type + setter + `flowStateJSON` + visit note (outcome resets to `not_set`), hands it the visit link, the
+calendar event and the homeowner's invite, and posts one customer note linked to the new meeting. The original then
+reads `rescheduled`, or keeps a `no_show` / `cancelled` it already had. Available only from `DID_NOT_OCCUR_OUTCOMES`
+(`canRescheduleFromOutcome`) so a meeting that already happened can never have its disposition clobbered; a
+`rescheduled` original is not one of them, so the next move starts from its replacement.
 
-The replacement records the meeting it replaced in `rescheduledFromId`, and takes the original's `shareToken` (the original gets a fresh one), so a link the homeowner already holds opens the replacement. `getRescheduleChain` reads a meeting with the meetings it replaced.
+The replacement records the meeting it replaced in `rescheduledFromId`, and takes the original's `shareToken` (the original gets a fresh one), so a link the homeowner already holds opens the replacement. `getRescheduleChain` reads a meeting with the meetings it replaced; a meeting's internal notes are read across that chain, so they follow the visit.
 
-**Why the flow state carries**: a reschedule is the same sit moved to a new slot. Trade selections, program, deal structure and closing adjustments entered before the customer no-showed or had to stop are still the opportunity's working state, and nothing in that blob is bound to the calendar date — so the replacement resumes where the original left off instead of making the agent re-enter it. This is the ONLY path that carries `flowStateJSON`; duplicate deliberately drops it (`#duplicate-copies-setup-only`). The cancelled original keeps its own copy as the archived record.
+**Why the flow state carries**: a reschedule is the same sit moved to a new slot. Trade selections, program, deal structure and closing adjustments entered before the customer no-showed or had to stop are still the opportunity's working state, and nothing in that blob is bound to the calendar date — so the replacement resumes where the original left off instead of making the agent re-enter it. This is the ONLY path that carries `flowStateJSON`; duplicate deliberately drops it (`#duplicate-copies-setup-only`). The original keeps its own copy as the record of the slot it held.
 **Reference impl**: `src/shared/modules/meetings/business/service.ts`
 
 ### trade-selections-snapshot-source
