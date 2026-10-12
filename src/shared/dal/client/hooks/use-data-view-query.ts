@@ -8,7 +8,7 @@ import type { OptionSourceRow } from '@/shared/dal/client/constants/option-sourc
 import type { DataViewFilterSort, DataViewQueryResult, DataViewRowOf, DataViewWindowControls } from '@/shared/dal/client/lib/types'
 import type { OptionSource } from '@/shared/dal/lib/query/constants'
 import type { DataViewInput, DataViewQueryConfig, DataViewWindow } from '@/shared/dal/lib/query/data-view-query-config'
-import type { FieldList, FilterOption, SortDir, ToolbarFilterId, ToolbarFilterSpec } from '@/shared/dal/lib/query/field-list'
+import type { FieldList, FilterOption, FilterValues, SortDir, ToolbarFilterId, ToolbarFilterSpec } from '@/shared/dal/lib/query/field-list'
 import type { PaginatedResult } from '@/shared/dal/lib/query/paginated-result'
 
 import { hashKey, useQueries, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
@@ -21,7 +21,7 @@ import { useIsDataViewPending } from '@/shared/dal/client/hooks/use-is-data-view
 import { usePrefetchQueries } from '@/shared/dal/client/hooks/use-prefetch-queries'
 import { useServerPrefetchGuard } from '@/shared/dal/client/hooks/use-server-prefetch-guard'
 import { adjacentDataViewWindows } from '@/shared/dal/lib/query/adjacent-windows'
-import { dataViewUrlKeys, deriveDataViewWindow, deriveFilterSortState, makeDataViewParsers, toDataViewInput } from '@/shared/dal/lib/query/derive-data-view-input'
+import { dataViewToolbar, dataViewUrlKeys, deriveDataViewWindow, deriveFilterSortState, makeDataViewParsers, toDataViewInput } from '@/shared/dal/lib/query/derive-data-view-input'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { checkHydrationParity } from '@/shared/lib/hydration-drift'
 import { useTRPC } from '@/trpc/helpers'
@@ -44,7 +44,8 @@ function runtimeOptionFields(fields: FieldList, toolbar: readonly string[]): { i
 /**
  * One hook per data view: URL state → the same input the page prefetched → rows, plain setters and
  * the toolbar's runtime options. Call it once per data view, in the component or entity-table hook that owns it,
- * and pass the result down.
+ * and pass the result down. `fixed` pins filter values only the callsite knows (one lead source's id); a pin that
+ * never changes belongs in the config's `fixed`. A page that prefetches passes the same `fixed` to its loader.
  */
 export function useDataViewQuery<
   TProcedure extends AnyQueryProcedure,
@@ -56,13 +57,18 @@ export function useDataViewQuery<
   procedure: TProcedure & AcceptsDataViewInput<TProcedure, DataViewInput<F> & TExtra>,
   extra: TExtra,
   config: DataViewQueryConfig<F, T, W>,
+  fixed?: FilterValues<F>,
 ): DataViewQueryResult<DataViewRowOf<TProcedure>, F, T, W['kind']> {
   const qc = useQueryClient()
   const trpc = useTRPC()
   const ability = useAbility()
   const isPending = useIsDataViewPending()
   const keys = useMemo(() => dataViewUrlKeys(config.paramPrefix), [config.paramPrefix])
-  const parsers = useMemo(() => makeDataViewParsers(config), [config])
+  const fixedKey = JSON.stringify(fixed)
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- deep-keyed, so an inline literal keeps one identity and doesn't refetch
+  const pins = useMemo(() => fixed, [fixedKey])
+  const parsers = useMemo(() => makeDataViewParsers(config, pins), [config, pins])
+  const toolbar = useMemo(() => dataViewToolbar(config, pins), [config, pins])
 
   // useQueryStates' generic can't express a parser map built at runtime; the derivation narrows values.
   const [urlState, setUrlState] = useQueryStates(parsers as never, { clearOnDefault: true })
@@ -74,16 +80,16 @@ export function useDataViewQuery<
   // The toolbar's search box debounces before it commits, so the URL value is already the settled search.
   const search = (state[keys.searchKey] as string | null) ?? ''
 
-  const filterSort = useMemo(() => deriveFilterSortState(state, config), [state, config])
+  const filterSort = useMemo(() => deriveFilterSortState(state, config, pins), [state, config, pins])
   const windowState = useMemo(() => deriveDataViewWindow(state, config), [state, config])
-  const deferredFilterSort = useMemo(() => deriveFilterSortState(shownState, config), [shownState, config])
+  const deferredFilterSort = useMemo(() => deriveFilterSortState(shownState, config, pins), [shownState, config, pins])
   const deferredWindowState = useMemo(() => deriveDataViewWindow(shownState, config), [shownState, config])
 
   const extraKey = JSON.stringify(extra)
   const requestedInput = useMemo(
-    () => ({ ...toDataViewInput(filterSort, windowState, config), ...extra }),
+    () => ({ ...toDataViewInput(filterSort, windowState, config, pins), ...extra }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- extra is deep-keyed via extraKey so an inline literal doesn't refetch
-    [filterSort, windowState, config, extraKey],
+    [filterSort, windowState, config, pins, extraKey],
   )
   const anyProcedure = procedure as AnyQueryProcedure
   const requestedOptions = anyProcedure.queryOptions(requestedInput)
@@ -97,9 +103,9 @@ export function useDataViewQuery<
   const shownWindowState = isCaughtUp ? windowState : deferredWindowState
 
   const shownInput = useMemo(
-    () => ({ ...toDataViewInput(shownFilterSort, shownWindowState, config), ...extra }),
+    () => ({ ...toDataViewInput(shownFilterSort, shownWindowState, config, pins), ...extra }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- extra is deep-keyed via extraKey so an inline literal doesn't refetch
-    [shownFilterSort, shownWindowState, config, extraKey],
+    [shownFilterSort, shownWindowState, config, pins, extraKey],
   )
 
   const shownOptions = anyProcedure.queryOptions(shownInput)
@@ -122,7 +128,7 @@ export function useDataViewQuery<
   const isFetching = !isPending && read.isFetching
 
   // Only the sources this toolbar shows are read, and only by viewers the read would accept.
-  const optionFields = useMemo(() => runtimeOptionFields(config.fields, config.toolbar), [config.fields, config.toolbar])
+  const optionFields = useMemo(() => runtimeOptionFields(config.fields, toolbar), [config.fields, toolbar])
   const loadedOptions = useQueries({
     queries: optionFields.map(({ source }) => ({
       // The registry's type guarantees every read returns option rows; the union of their exact types can't spread here.
@@ -169,14 +175,14 @@ export function useDataViewQuery<
 
   const clearFilters = useCallback(() => {
     const reset: Record<string, null> = { [keys.searchKey]: null, [keys.sortByKey]: null, [keys.sortDirKey]: null }
-    for (const id of config.toolbar) {
+    for (const id of toolbar) {
       reset[keys.filterKey(id)] = null
     }
     if (resetsPage) {
       reset[keys.pageKey] = null
     }
     void setUrlState(reset as never, { history: 'replace' })
-  }, [setUrlState, keys, config.toolbar, resetsPage])
+  }, [setUrlState, keys, toolbar, resetsPage])
 
   const setPage = useCallback((page: number) => {
     void setUrlState({ [keys.pageKey]: Math.max(page, 1) } as never, { history: 'push' })
@@ -214,7 +220,7 @@ export function useDataViewQuery<
   const adjacentWindows = useMemo(() => adjacentDataViewWindows(state, config), [state, config])
   const adjacentQueries = adjacentWindows
     .filter(adjacent => adjacent.kind !== 'page' || (!isStale && adjacent.pagination.offset < total))
-    .map(adjacent => anyProcedure.queryOptions({ ...toDataViewInput(filterSort, adjacent, config), ...extra }))
+    .map(adjacent => anyProcedure.queryOptions({ ...toDataViewInput(filterSort, adjacent, config, pins), ...extra }))
   usePrefetchQueries(adjacentQueries, !isPending && !isFetching)
 
   // Another key's rows would land on the wrong days, so date views draw skeletons until this key's rows arrive.
@@ -235,7 +241,7 @@ export function useDataViewQuery<
 
   const filterSortControls = useMemo((): DataViewFilterSort<F, T> => ({
     fields: config.fields,
-    toolbar: config.toolbar,
+    toolbar,
     filters: filterSort.filters as DataViewFilterSort<F, T>['filters'],
     options: runtimeOptions as DataViewFilterSort<F, T>['options'],
     activeFilterCount: Object.keys(filterSort.filters).length,
@@ -246,7 +252,7 @@ export function useDataViewQuery<
     sortBy: filterSort.sort?.sortBy,
     sortDir: filterSort.sort?.sortDir,
     setSort: setSort as DataViewFilterSort<F, T>['setSort'],
-  }), [config.fields, config.toolbar, filterSort, runtimeOptions, setFilter, clearFilters, search, setSearch, setSort])
+  }), [config.fields, toolbar, filterSort, runtimeOptions, setFilter, clearFilters, search, setSearch, setSort])
 
   return {
     rows,
