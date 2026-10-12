@@ -226,6 +226,8 @@ export function useDataViewQuery<
         return { kind: 'page', page: windowState.page, pageSize: windowState.pageSize, pageSizeOptions: windowState.pageSizeOptions, pageCount, setPage, setPageSize }
       case 'date':
         return { kind: 'date', anchor: windowState.anchor, view: windowState.view, range: windowState.range, cap: windowState.cap, isPending: isWindowPending, setAnchor, setView }
+      case 'first':
+        return { kind: 'first', count: windowState.count }
       case 'whole-list':
         return { kind: 'whole-list' }
     }

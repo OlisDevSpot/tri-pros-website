@@ -197,7 +197,7 @@ export interface DateWindowControls {
 }
 
 export type DataViewWindowControls<K extends DataViewWindowKind = DataViewWindowKind> = Extract<
-  PageWindowControls | DateWindowControls | { kind: 'whole-list' },
+  PageWindowControls | DateWindowControls | { kind: 'first', count: number } | { kind: 'whole-list' },
   { kind: K }
 >
 

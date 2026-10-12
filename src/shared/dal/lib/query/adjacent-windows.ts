@@ -28,7 +28,7 @@ function stepsWithin(radius: number): number[] {
 /**
  * The windows around the current one, nearest first: pages within `ADJACENT_WINDOW_RADIUS.page`, or days, weeks
  * or months within `ADJACENT_WINDOW_RADIUS.date`. Each is derived from URL state the way navigating there would
- * write it, so a prefetched window's read input is the one the view asks for on arrival. A whole-list view has none.
+ * write it, so a prefetched window's read input is the one the view asks for on arrival. A first-rows or whole-list view has none.
  */
 export function adjacentDataViewWindows<F extends FieldList>(urlState: Record<string, unknown>, config: DataViewQueryConfig<F>): DataViewWindowState[] {
   const keys = dataViewUrlKeys(config.paramPrefix)
@@ -43,6 +43,7 @@ export function adjacentDataViewWindows<F extends FieldList>(urlState: Record<st
       return stepsWithin(ADJACENT_WINDOW_RADIUS.date).map(step =>
         deriveDataViewWindow({ ...urlState, [keys.anchorKey]: stepAnchor(current.anchor, current.view, step) }, config),
       )
+    case 'first':
     case 'whole-list':
       return []
   }
