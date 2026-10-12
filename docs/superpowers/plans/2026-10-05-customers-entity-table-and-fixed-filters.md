@@ -12,7 +12,7 @@
 
 ## Owner confirms
 
-Each is isolated so a different answer is a small change. Spec §5.5 (the two customer row actions) is in part 2.
+**All four confirmed by the owner 2026-10-12, as written** (item 4: the empty-pin throw stays). Spec §5.5 (the two customer row actions) is in part 2.
 
 1. **`dataViewToolbar(config, fixed?)`** is the name of the one helper that returns a data view's toolbar ids without its pinned ids (Task 1). The spec describes the behaviour (§3.2.4) and leaves the function unnamed; the name follows its neighbours `dataViewUrlKeys` and `makeDataViewParsers`.
 2. **Dashboard config names** (Task 3), after the existing `DASHBOARD_MEETINGS_QUERY`: `DASHBOARD_MEETINGS_WINDOW_QUERIES` (a record keyed by `today | upcoming | past`), `DASHBOARD_ACTIVE_PROJECTS_QUERY`, `DASHBOARD_ON_HOLD_PROJECTS_QUERY`. `meetingsWindowInput(kind)` stays, as the one place the day's pin is built for both the page and the snapshot strip; `activeProjectsInput` and `onHoldProjectsInput` go (callers call `staticDataViewInput(CONFIG)`).
@@ -23,7 +23,7 @@ Each is isolated so a different answer is a small change. Spec §5.5 (the two cu
 
 - Verification per task: `pnpm tsc` and `pnpm lint`. **Never `pnpm build`.**
 - **No database writes for testing** (dev included). Browser checks read and open UI only; never submit a form.
-- **Order (owner ruling 2026-10-07, tracker D64):** R2 lands before the permissions #285 merge and before pipeline-speed phase 2 (the action hosts). #285 rebases onto R2 (in this plan's files: `columns-registry.tsx`, `use-profile-commands.ts`, the moved `customer-meetings-list.tsx`, `use-meetings-table.tsx`, the customers `queries.ts` and `DOCS.md`); do not wait for it, and do not adopt its names (`permit`, `permissions/client`) before it merges.
+- **Order (owner rulings 2026-10-07, tracker D64 and D65):** this part is data-layer only and runs whenever; part 2 waits for data-view phase 1. Pipeline-speed phase 2 (the action hosts) was built first after all, on 2026-10-08. R2 still lands before the permissions #285 merge, which rebases onto it; do not wait for it, and do not adopt its names (`permit`, `permissions/client`) before it merges.
 - **No schema change.** If a step seems to need one, stop and report it.
 - No unit runner in the repo: pure functions are checked with throwaway `node:test` files under `.superpowers/sdd/2026-10-05-customers-entity-table-and-fixed-filters/tests/` (git-ignored), run from the repo root with `pnpm exec tsx --test <file>` so the `@/` alias resolves. A file that imports a `server-only` module runs with `NODE_OPTIONS=--conditions=react-server`. Never commit them.
 - Work on `main`; other sessions commit concurrently and the index can hold their staged work. Add only new files with `git add -- <path>`, then **commit with an explicit pathspec** (`git commit -m "…" -- <paths>`, as every commit block below does) so nothing already staged rides along; confirm with `git show --stat HEAD`. Never `git add -A`, `git stash`, `checkout`, `reset`, `restore`, `clean` or `commit --amend`. Before editing any file this plan modifies, run `git status --short <file>`: if it shows changes you didn't make, stop and ask. Message shape `type(scope): subject`, ending with `Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>`.
@@ -53,7 +53,7 @@ Each is isolated so a different answer is a small change. Spec §5.5 (the two cu
 | 2 Pins at the callsite | `src/shared/dal/client/hooks/use-data-view-query.ts` · `src/shared/dal/server/lib/query/load-data-view-query-input.ts` |
 | 3 Dashboard reads | `src/features/agent-dashboard/constants/dashboard-queries.ts` · `src/features/agent-dashboard/ui/components/{dashboard-meetings-hub,dashboard-snapshot-counts,dashboard-projects,dashboard-project-section,dashboard-project-section-list}.tsx` · `src/app/(frontend)/dashboard/page.tsx` · `src/trpc/routers/meetings.router/reads.router.ts` · `src/shared/modules/projects/core/DOCS.md` · tracker and spec status lines |
 
-On 2026-10-07 three Task 3 files held another session's uncommitted dashboard rework (`dashboard-queries.ts`, `dashboard-meetings-hub.tsx`, `dashboard-projects.tsx`): Task 3 Step 0 gates on it. Tasks 1–2's files were clean. Check each with `git status --short` anyway.
+On 2026-10-07 three Task 3 files held another session's uncommitted dashboard rework; it was committed by 2026-10-12 and every file this plan touches was clean, except `CONTEXT.md` (Task 3 Step 8). Check each with `git status --short` anyway.
 
 ---
 
@@ -756,19 +756,13 @@ git show --stat HEAD
 
 - [ ] **Step 0: Other sessions' edits come first (owner ruling 2026-10-07)**
 
-A pathspec commit takes the whole file, so no file this task commits may hold another session's uncommitted work. State on 2026-10-07 (re-check with `git status --short` and `git diff -- <file>`):
-- `src/trpc/routers/meetings.router/reads.router.ts`: clean; the setter hunks were committed (`7228df96`, `21e0021d`).
-- `src/shared/modules/projects/core/DOCS.md`: still holds another session's hunks (the `ownerId` bullet rewritten as retiring, R31; the owner-cascade "Why" sentence removed). If they are still uncommitted, commit them as their own commit:
+A pathspec commit takes the whole file, so no file this task commits may hold another session's uncommitted work. On 2026-10-12 every one was clean: the dashboard rework that gated this task on 2026-10-07 is committed (the declined-proposals fix as `68c516fb`, `dashboard-see-all-link.tsx` tracked), and the `projects/core/DOCS.md` hunks are committed too. `CONTEXT.md` (Step 8) was dirty with another session's glossary work. Re-check right before starting:
 
 ```bash
-git commit -m "docs(projects): ownerId marked retiring (R31)
-
-Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/shared/modules/projects/core/DOCS.md
-git show --stat HEAD
+git status --short src/features/agent-dashboard/constants/dashboard-queries.ts "src/app/(frontend)/dashboard/page.tsx" src/features/agent-dashboard/ui/components/{dashboard-meetings-hub,dashboard-snapshot-counts,dashboard-projects,dashboard-project-section,dashboard-project-section-list}.tsx src/trpc/routers/meetings.router/reads.router.ts src/shared/modules/projects/core/DOCS.md CONTEXT.md
 ```
 
-  If its diff holds anything beyond those two hunks, stop and ask.
-- **The dashboard rework (gate).** Another session's dashboard work held about 20 uncommitted files under `src/features/agent-dashboard/`, three of them this task's: `constants/dashboard-queries.ts` (the declined-proposals fix the Step 2 listing carries), `ui/components/dashboard-meetings-hub.tsx` and `ui/components/dashboard-projects.tsx` (both now import the untracked `ui/components/dashboard-see-all-link.tsx`). **Do not start Task 3 while any of the three is dirty**: committing them here would ship half of that session's work, and without the untracked file the commit would not compile. Ask the owner to have that session commit first; Tasks 1–2 do not touch these files and may run meanwhile.
+Any line except `CONTEXT.md`: stop and ask. `CONTEXT.md` is handled in Step 8.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -824,7 +818,7 @@ Expected: FAIL with `does not provide an export named 'DASHBOARD_ACTIVE_PROJECTS
 
 - [ ] **Step 2: The configs**
 
-Replace `src/features/agent-dashboard/constants/dashboard-queries.ts` with the listing below. The two proposal builders are as committed (proposals have no field list until R3): on 2026-10-07 the file held another session's uncommitted fix that keeps declined proposals out of "awaiting signature" (`OPEN_PROPOSAL_STATUSES`, imported `proposalStatuses`); the listing carries it. Before replacing, `git diff` the file: if the proposal builders differ from the listing in any other way, keep the file's version of them and stop to ask.
+Replace `src/features/agent-dashboard/constants/dashboard-queries.ts` with the listing below. The two proposal builders and `DASHBOARD_LIMITS` are as committed on 2026-10-12 (proposals have no field list until R3; `68c516fb` keeps declined proposals out of "awaiting signature"; `943ce486` dropped `actionQueue` from the limits). Before replacing, compare the file's proposal builders and `DASHBOARD_LIMITS` with the listing: if they differ, keep the file's version of them and stop to ask.
 
 ```ts
 // Every dashboard module (snapshot strip, meetings hub, proposals and projects sections) reads through these, so
@@ -843,7 +837,7 @@ import { PROJECT_FIELDS } from '@/shared/modules/projects/core/dal/project-field
 import { meetingWindow } from '../lib/meeting-windows'
 
 /** Caps shared by every dashboard module that lists this entity — a Top-N slice for most, the month grid's row cap for the meetings calendar. */
-export const DASHBOARD_LIMITS = { meetings: 8, meetingsCalendar: 500, proposals: 20, proposalsPerSection: 5, projects: 15, projectsPerSection: 5, actionQueue: 8 } as const
+export const DASHBOARD_LIMITS = { meetings: 8, meetingsCalendar: 500, proposals: 20, proposalsPerSection: 5, projects: 15, projectsPerSection: 5 } as const
 
 /** The Today, Upcoming and Past lists: live outcomes only, the first rows by `scheduledFor` (latest first for Past). */
 export const DASHBOARD_MEETINGS_WINDOW_QUERIES = {
@@ -1065,7 +1059,7 @@ pnpm exec tsx .superpowers/sdd/2026-10-05-customers-entity-table-and-fixed-filte
 
 - [ ] **Step 8: Tracker and spec status**
 
-Re-read both files first; if either carries uncommitted hunks you didn't make, report the edit for the owner instead of committing it.
+Re-read the tracker, the spec and `CONTEXT.md` first; if any of them carries uncommitted hunks you didn't make, make your edit, leave that file out of the Step 9 docs commit, and report it for the owner.
 
 In `docs/plans/2026-09-26-records-management-epic.md`:
 - §3, row **R2**, status cell: replace it with `[~] spec approved 2026-10-05. Part 1 (fixed filters, the first-rows window, dashboard reads) built on local main <first-sha>..<last-sha>: docs/superpowers/plans/2026-10-05-customers-entity-table-and-fixed-filters.md. Part 2 (customers entity table, the three table views) next: …-part-2.md` with this plan's first and last commit hashes.
@@ -1083,7 +1077,7 @@ In `CONTEXT.md`, under **Records terms**, after the **Scope coverage** entry, ad
 
 - [ ] **Step 9: Commit**
 
-Step 0 cleared `DOCS.md` and the dashboard files of other sessions' hunks; run `git diff -- <file>` on every file below and confirm only this task's changes remain.
+Step 0 confirmed these files were clean before you started; run `git diff -- <file>` on every file below and confirm only this task's changes remain.
 
 ```bash
 git commit -m "refactor(dashboard): meetings and project reads come from data-view configs with their filters pinned; liveOnly goes

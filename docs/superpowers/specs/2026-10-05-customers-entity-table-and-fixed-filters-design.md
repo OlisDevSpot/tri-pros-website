@@ -1,7 +1,7 @@
 # Customers entity table and fixed filters — design
 
-> **Status:** approved by the owner 2026-10-05; plans written in two parts (`docs/superpowers/plans/2026-10-05-customers-entity-table-and-fixed-filters.md`, `…-part-2.md`); both stress-tested 2026-10-07 and the owner's rulings of that day applied here (tracker **D64**). Nothing is built.
-> **Tracker:** `docs/plans/2026-09-26-records-management-epic.md` — phase **R2**, rulings **D45, D48, D51, D60, D62, D64**, open item **O9**, audit **O3**.
+> **Status:** approved by the owner 2026-10-05; plans written in two parts (`docs/superpowers/plans/2026-10-05-customers-entity-table-and-fixed-filters.md`, `…-part-2.md`); both stress-tested 2026-10-07 and the owner's rulings of that day applied here (tracker **D64**, **D65**); the plans' open confirmations all accepted 2026-10-12, and Schedule Meeting re-ruled the same day (**D66**, §5.5). Nothing is built.
+> **Tracker:** `docs/plans/2026-09-26-records-management-epic.md` — phase **R2**, rulings **D45, D48, D51, D60, D62, D64, D65, D66**, open item **O9**, audit **O3**.
 > **Facts:** a read-only code audit on 2026-10-05 at `213662b3`. Re-check a `file:line` before relying on it.
 
 ## 1. Goals, non-goals, success criteria
@@ -135,11 +135,11 @@ The pane calls `customersRouter.business.list` with `fixed: { leadSource: [leadS
 
 ### 5.5 A correction: two row actions go to the wrong place
 
-"Edit Profile" and "Schedule Meeting" in every customers table fall through to `router.push(ROOTS.dashboard.pipeline())` (`use-customer-action-configs.ts:44,53-59`), because no table passes `onEdit` or `onScheduleMeeting`. **Ruled (owner, 2026-10-07):** the hook passes both. **Edit Profile** opens the profile modal in its edit mode (`CustomerProfileModal` gains `defaultEditing`, seeding the edit form for a viewer who can edit); opening it as View does would make two actions identical. **Schedule Meeting** opens the profile with its Add meeting dialog up (`defaultMeetingOpen`). **Open, to investigate before it is built:** on a cached profile the modal and the dialog mount in the same commit, and the dialog may lose Escape, outside clicks or focus to the modal; part 2 Task 3 reproduces it first and opens the dialog one commit later if needed. The pipeline kanban card's Edit Profile has the same fallback and stays out of this spec.
+"Edit Profile" and "Schedule Meeting" in every customers table fall through to `router.push(ROOTS.dashboard.pipeline())` (`use-customer-action-configs.ts:44,53-59`), because no table passes `onEdit` or `onScheduleMeeting`. **Ruled (owner, 2026-10-07):** the hook passes both. **Edit Profile** opens the profile modal in its edit mode (`CustomerProfileModal` gains `defaultEditing`, seeding the edit form for a viewer who can edit); opening it as View does would make two actions identical. **Schedule Meeting** opens the standalone `CreateMeetingModal` ("New meeting — <name>"), the target the pipeline kanban's Schedule Meeting already has (owner, 2026-10-12, **D66**; it replaces opening the profile with its Add meeting dialog up, which needed a new prop and risked the dialog losing Escape and focus to the modal). The table hook holds the customer being booked and renders the modal with its other dialogs; both modals wrap the same `CreateMeetingForm`. The pipeline kanban card's Edit Profile has the same fallback and stays out of this spec.
 
 ### 5.6 One way to open the customer profile
 
-`openCustomerProfile(props)` (`src/shared/modules/customers/core/lib/open-customer-profile.ts`, new; owner 2026-10-07) wraps `openModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props })`; its `props` are the modal's own, so `defaultEditing` and `defaultMeetingOpen` pass straight through. Every caller moves to it, except a file another session holds at build time (it moves later). The `customer-pipelines` components barrel, whose only export is the modal, goes once nothing imports it.
+`openCustomerProfile(props)` (`src/shared/modules/customers/core/lib/open-customer-profile.ts`, new; owner 2026-10-07) wraps `openModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props })`; its `props` are the modal's own, so `defaultEditing` passes straight through. Every caller moves to it, except a file another session holds at build time (it moves later). The `customer-pipelines` components barrel, whose only export is the modal, goes once nothing imports it.
 
 ## 6. Dashboard reads
 
@@ -185,9 +185,9 @@ The green left border on `project-entity-card.tsx:40` (a known design finding) i
 
 ## 10. Coordination
 
-- **Order (owner, 2026-10-07; D64):** R2 lands before the #285 permissions merge and before pipeline-speed Phase 2 (action hosts) and Phase 3 (grouped window). #285 (tracker H3; its unit 3 rebuilds the Customer family's permissions) rebases onto R2; the pipeline-speed spec names R2's moved paths and adds its `grouped` kind beside `first`.
+- **Order (owner, 2026-10-07; D64, amended by D65):** part 1 runs whenever; part 2 follows data-view phase 1; R2 lands before the #285 permissions merge and before pipeline-speed Phase 3 (grouped window). Pipeline-speed Phase 2 (action hosts) was built first after all, on 2026-10-08; part 2 builds on its `CustomerActionsHost` and `MeetingActionsHost` as they are. #285 (tracker H3; its unit 3 rebuilds the Customer family's permissions) rebases onto R2; the pipeline-speed spec names R2's moved paths and adds its `grouped` kind beside `first`.
 - **#285** touches customer files (tracker H3). This spec edits the customers table, its constants and the lead-sources router; check `git status` on each before editing.
-- **Dashboard rework (another session, uncommitted on 2026-10-07):** three dashboard files §6 edits hold its work; part 1's dashboard task waits until that session commits.
+- **Dashboard rework:** held three of §6's files uncommitted on 2026-10-07; committed by 2026-10-12, so part 1's dashboard task is no longer gated.
 - **Setter plan** (`docs/superpowers/plans/2026-10-05-meetings-setter.md`) edits `meetings.router/reads.router.ts` (`getInternalUsers`). §6 removes `liveOnly` from the same file's `list`. Build one after the other.
 - **Tracker:** H2 still names `loadPaginatedQueryInput` / `usePaginatedQuery`; the hand-off updates it to the data-view names and records O9 as built.
 
