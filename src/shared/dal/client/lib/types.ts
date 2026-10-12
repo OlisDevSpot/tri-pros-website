@@ -129,11 +129,11 @@ export interface PaginatedQueryResult<TRow> {
   activeFilterCount: number
 
   // -- Query state --
-  /** True only inside a `DataViewBoundary` fallback: no rows exist yet, and the view draws its loading state. */
+  /** True when there are no rows to show: a pending view with nothing cached, so the view draws its skeleton. */
   isPending: boolean
   /** The rows belong to an older URL state while the requested one loads; tables dim them. */
   isStale: boolean
-  /** A background refetch (an invalidation or `refresh()`); the rows stay. */
+  /** Refetching rows older than staleTime or invalidated (a save, `refresh()`); the rows stay. A fresh refetch is silent. */
   isFetching: boolean
 
   // -- Refresh --
@@ -210,11 +210,11 @@ export interface DataViewQueryResult<
 > {
   rows: TRow[]
   total: number
-  /** True only inside a `DataViewBoundary` fallback: no rows exist yet, and the view draws its loading state. */
+  /** True when there are no rows to show: a pending view with nothing cached, so the view draws its skeleton. */
   isPending: boolean
   /** The rows belong to an older URL state while the requested one loads; tables dim them. */
   isStale: boolean
-  /** A background refetch (an invalidation or `refresh()`); the rows stay. */
+  /** Refetching rows older than staleTime or invalidated (a save, `refresh()`); the rows stay. A fresh refetch is silent. */
   isFetching: boolean
   /** Invalidates every cached input of this procedure; resolves when the refetch settles. */
   refresh: () => Promise<void>

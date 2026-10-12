@@ -1,7 +1,6 @@
 import { TRPCError } from '@trpc/server'
 import z from 'zod'
 
-import { LIVE_MEETING_OUTCOMES } from '@/shared/constants/enums'
 import { PARTICIPANT_ROLES, SETTER_ROLES } from '@/shared/entities/meetings/constants/internal-user-roles'
 import { getByIdWithJoins, listMeetings, listMeetingsForProject, meetingListInputSchema } from '@/shared/entities/meetings/dal/server/queries'
 import { listUsersByRoles } from '@/shared/entities/users/dal/server/queries'
@@ -12,14 +11,9 @@ import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 import { projectProcedure } from '../projects.router/procedures'
 
 export const readsRouter = createTRPCRouter({
-  // `liveOnly` stays a top-level input and becomes a fixed filter here, so no toolbar ever shows it.
   list: agentProcedure
-    .input(meetingListInputSchema.extend({ liveOnly: z.boolean().optional() }))
-    .query(async ({ ctx, input }) => {
-      const { liveOnly, ...query } = input
-      const filters = liveOnly ? { ...query.filters, outcome: LIVE_MEETING_OUTCOMES } : query.filters
-      return dalToTrpc(await listMeetings(ctx, { ...query, filters }))
-    }),
+    .input(meetingListInputSchema)
+    .query(async ({ ctx, input }) => dalToTrpc(await listMeetings(ctx, input))),
 
   getByIdWithJoins: agentProcedure
     .input(z.object({ id: z.string().uuid() }))

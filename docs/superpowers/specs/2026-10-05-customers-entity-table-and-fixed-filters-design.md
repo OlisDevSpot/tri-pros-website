@@ -1,6 +1,6 @@
 # Customers entity table and fixed filters — design
 
-> **Status:** approved by the owner 2026-10-05; plans written in two parts (`docs/superpowers/plans/2026-10-05-customers-entity-table-and-fixed-filters.md`, `…-part-2.md`); both stress-tested 2026-10-07 and the owner's rulings of that day applied here (tracker **D64**, **D65**); the plans' open confirmations all accepted 2026-10-12, and Schedule Meeting re-ruled the same day (**D66**, §5.5). Nothing is built.
+> **Status:** approved by the owner 2026-10-05; plans written in two parts (`docs/superpowers/plans/2026-10-05-customers-entity-table-and-fixed-filters.md`, `…-part-2.md`); both stress-tested 2026-10-07 and the owner's rulings of that day applied here (tracker **D64**, **D65**); the plans' open confirmations all accepted 2026-10-12, and Schedule Meeting re-ruled the same day (**D66**, §5.5). Part 1 (§3, §4, §6) is built (88d0fe37..9c56c55e); part 2 (§5, §7) is planned and waits for data-view phase 1 (D65).
 > **Tracker:** `docs/plans/2026-09-26-records-management-epic.md` — phase **R2**, rulings **D45, D48, D51, D60, D62, D64, D65, D66**, open item **O9**, audit **O3**.
 > **Facts:** a read-only code audit on 2026-10-05 at `213662b3`. Re-check a `file:line` before relying on it.
 

@@ -1,6 +1,10 @@
 'use client'
 
-import type { ProjectsListInput } from '@/features/agent-dashboard/constants/dashboard-queries'
+import type { UnusedSkipTokenOptions } from '@tanstack/react-query'
+import type { TRPCClientErrorLike } from '@trpc/client'
+import type { inferOutput, TRPCQueryKey } from '@trpc/tanstack-react-query'
+import type { useTRPC } from '@/trpc/helpers'
+import type { AppRouter } from '@/trpc/routers/app'
 
 import { useSuspenseQuery } from '@tanstack/react-query'
 
@@ -9,11 +13,13 @@ import { DashboardProjectCard } from '@/features/agent-dashboard/ui/components/d
 import { EntityList } from '@/shared/components/entities/entity-list/ui/entity-list'
 import { useHydrationParityCheck } from '@/shared/dal/client/hooks/use-hydration-parity-check'
 import { ProjectActionsHost } from '@/shared/modules/projects/core/components/project-actions-host'
-import { useTRPC } from '@/trpc/helpers'
+
+type ProjectList = inferOutput<ReturnType<typeof useTRPC>['projectsRouter']['crud']['list']>
+type ProjectListOptions = UnusedSkipTokenOptions<ProjectList, TRPCClientErrorLike<AppRouter>, ProjectList, TRPCQueryKey>
 
 interface DashboardProjectSectionListProps {
   title: string
-  input: ProjectsListInput
+  options: ProjectListOptions
   emptyMessage: string
 }
 
@@ -23,9 +29,7 @@ interface DashboardProjectSectionListProps {
  * `PROJECT_STAGE_BUCKET` (not the vestigial `status` column), so the cards carry only their
  * specific pipeline stage.
  */
-export function DashboardProjectSectionList({ title, input, emptyMessage }: DashboardProjectSectionListProps) {
-  const trpc = useTRPC()
-  const options = trpc.projectsRouter.crud.list.queryOptions(input)
+export function DashboardProjectSectionList({ title, options, emptyMessage }: DashboardProjectSectionListProps) {
   useHydrationParityCheck(options.queryKey)
   const { data } = useSuspenseQuery(options)
 

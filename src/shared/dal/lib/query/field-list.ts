@@ -51,7 +51,7 @@ export interface BooleanFilter {
   schema: z.ZodBoolean
 }
 
-/** Set in code by a procedure; never parsed from the URL, never shown in the toolbar. */
+/** Set in code, by a procedure or by a data view's pin (`fixed`); never parsed from the URL, never shown in the toolbar. */
 export interface FixedFilter<TValue = unknown> {
   kind: 'fixed'
   schema: z.ZodType<TValue, TValue>
