@@ -3,6 +3,7 @@ import type { AccountRow } from '@/shared/entities/accounts/dal/server/google-ca
 import type { CalendarNotice } from '@/shared/services/providers/google-calendar/lib/calendar-notice'
 import type { GCalEventInput } from '@/shared/services/providers/google-calendar/types'
 
+import { isProductionData } from '@/shared/config/data-target'
 import { publicUrl } from '@/shared/config/public-url'
 import { ROOTS } from '@/shared/config/roots'
 import env from '@/shared/config/server-env'
@@ -47,7 +48,8 @@ import { resolveMeetingGuests } from '@/shared/services/providers/google-calenda
 import { googleDriveClient } from '@/shared/services/providers/google-drive/client'
 import { voipDidsService } from '@/shared/services/voip/voip-dids.service'
 
-const isProduction = env.VERCEL_ENV === 'production'
+// The data, not the runtime: a local script on production data must keep production's guests and Google's emails.
+const isProduction = isProductionData()
 const TRI_PROS_CALENDAR_NAME = isProduction ? 'Tri Pros Schedule' : 'Tri Pros Schedule (DEV)'
 
 async function getAccessTokenForUser(userId: string): Promise<{ accessToken: string, account: AccountRow } | null> {
