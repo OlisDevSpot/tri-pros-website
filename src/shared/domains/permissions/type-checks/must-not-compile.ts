@@ -164,6 +164,8 @@ export const rulesThatMustCompile = defineRules((can, cannot) => {
 }).length
 
 defineRules((can, cannot) => {
+  // @ts-expect-error a read field list names columns and sub-entity fields; cost lines live inside projectJSON
+  can('read', 'Proposal', ['costLines'], { id: proposalId })
   // @ts-expect-error typo in a field
   can('update', 'Customer', ['agee'])
   // @ts-expect-error typo in a field of a cannot: the restriction would silently not apply
@@ -286,6 +288,8 @@ export function checksThatMustCompile() {
   ability.can(...somePermission)
   const presentMeeting: Permission = ['update', 'Meeting', 'flowStateJSON']
   ability.can(...presentMeeting)
+  // The homeowner's copy of the scope of work is chosen by this check.
+  ability.can('read', 'Proposal', 'projectJSON')
   ability.can('update', subject('CustomerNote', noteRow))
   ability.can('update', subject('CustomerNote', { authorId: null }))
   ability.can('update', subject('Proposal', { id: 'proposal-1' }), 'financeOptionId')

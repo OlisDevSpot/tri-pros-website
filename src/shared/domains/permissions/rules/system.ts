@@ -13,6 +13,10 @@ export type SystemReason
     | 'derived:customer-delete-cascade'
     | 'derived:meeting-reschedule'
     | 'derived:meeting-notification'
+    | 'webhook:zoho-sign'
+    | 'derived:proposal-sent'
+    | 'derived:homeowner-age'
+    | 'derived:envelope-documents'
 
 export function systemRules(reason: SystemReason) {
   return defineRules((can) => {
