@@ -7,8 +7,8 @@ import type { AppAbility, PermissionRule, StockAbility } from '@/shared/domains/
 
 import { unpackRules } from '@casl/ability/extra'
 import { AbilityProvider as StockAbilityProvider, useAbility as useStockAbility } from '@casl/react'
-import { skipToken, useQuery } from '@tanstack/react-query'
-import { useDeferredValue, useMemo, useState } from 'react'
+import { skipToken, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useSession } from '@/shared/domains/auth/client'
 import { abilityFromRules } from '@/shared/domains/permissions/ability-from-rules'
@@ -45,6 +45,18 @@ export function AbilityProvider({ user, rules, children }: AbilityProviderProps)
       setKnown(read ? { id: read.id, role: read.role } : null)
     }
   }
+
+  // Query keys carry no user, and loading screens draw cached rows, so rows read by the previous
+  // user must not outlive their session in this tab. The first user this tab learns of keeps the
+  // hydrated cache.
+  const queryClient = useQueryClient()
+  const previousUserId = useRef(known?.id)
+  useEffect(() => {
+    if (previousUserId.current !== undefined && previousUserId.current !== known?.id) {
+      queryClient.clear()
+    }
+    previousUserId.current = known?.id
+  }, [known?.id, queryClient])
 
   const isServerUser = rules !== undefined && known?.id === user?.id && known?.role === user?.role
 
