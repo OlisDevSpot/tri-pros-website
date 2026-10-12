@@ -1,9 +1,9 @@
 import type { GCalEventInput } from '../types'
+import type { MeetingGuests } from './meeting-guests'
 
-import { publicUrl } from '@/shared/config/public-url'
-import { ROOTS } from '@/shared/config/roots'
+import { companyInfo } from '@/shared/constants/company'
 import { GCAL_ACTIVITY_COLORS, GCAL_MEETING_COLORS } from '@/shared/constants/gcal-colors'
-import { formatPhone } from '@/shared/lib/phone'
+import { homeownerMarker } from './calendar-notice'
 
 interface TradeSelectionForGCal {
   tradeName: string
@@ -17,14 +17,15 @@ export interface MeetingForGCal {
   projectId: string | null
   // Customer info
   customerName: string | null
-  customerPhone: string | null
   customerEmail: string | null
   customerAddress: string | null
   customerCity: string | null
   customerState: string | null
   customerZip: string | null
   // Meeting details
-  agentNotes: string | null
+  visitNote: string | null
+  homeownerInvitedAt: string | null
+  shareToken: string
   tradeSelections: TradeSelectionForGCal[]
   // GCal sync fields
   gcalEventId: string | null
@@ -53,48 +54,33 @@ function buildMeetingAddress(meeting: MeetingForGCal): string | undefined {
   return parts.length > 0 ? parts.join(', ') : undefined
 }
 
-function buildMeetingDescription(meeting: MeetingForGCal): string {
+export interface MeetingEventExtras {
+  visitLink: string
+  /** Formatted for reading, e.g. "(818) 555-0100". */
+  questionsPhone: string
+  guests: MeetingGuests
+}
+
+// Homeowners may be guests, so the event holds nothing internal: no notes, contact details or dashboard links.
+function buildMeetingDescription(meeting: MeetingForGCal, extras: MeetingEventExtras): string {
   const sections: string[] = []
-
-  // Customer contact info
-  const contactLines: string[] = []
-  if (meeting.customerPhone) {
-    contactLines.push(`Phone: ${formatPhone(meeting.customerPhone)}`)
+  const note = meeting.visitNote?.trim()
+  if (note) {
+    sections.push(note)
   }
-  if (meeting.customerEmail) {
-    contactLines.push(`Email: ${meeting.customerEmail}`)
-  }
-  if (contactLines.length > 0) {
-    sections.push(`CUSTOMER CONTACT\n${contactLines.join('\n')}`)
-  }
-
-  // Trade/scope selections
   if (meeting.tradeSelections.length > 0) {
-    const tradeLines = meeting.tradeSelections.map((t) => {
-      const scopes = t.selectedScopes.map(s => s.label).join(', ')
-      return scopes ? `• ${t.tradeName}: ${scopes}` : `• ${t.tradeName}`
+    const tradeLines = meeting.tradeSelections.map((trade) => {
+      const scopes = trade.selectedScopes.map(scope => scope.label).join(', ')
+      return scopes ? `• ${trade.tradeName}: ${scopes}` : `• ${trade.tradeName}`
     })
-    sections.push(`TRADES & SCOPES\n${tradeLines.join('\n')}`)
+    sections.push(`What we'll look at:\n${tradeLines.join('\n')}`)
   }
-
-  // Agent notes
-  if (meeting.agentNotes) {
-    sections.push(`NOTES\n${meeting.agentNotes}`)
-  }
-
-  // Schedule deep link — nuqs params trigger scroll + highlight in schedule view
-  if (meeting.scheduledFor) {
-    const scheduleUrl = publicUrl(ROOTS.dashboard.scheduleWithMeetingHighlight(meeting.id, meeting.scheduledFor))
-    sections.push(`🔗 View in Schedule: ${scheduleUrl}`)
-  }
-
-  // Footer
-  sections.push('— Synced from Tri Pros Remodeling')
-
+  sections.push(`Your visit page: ${extras.visitLink}`)
+  sections.push(`Questions? Call or text ${companyInfo.nickname} at ${extras.questionsPhone}`)
   return sections.join('\n\n')
 }
 
-export function meetingToGCalEvent(meeting: MeetingForGCal): GCalEventInput | null {
+export function meetingToGCalEvent(meeting: MeetingForGCal, extras: MeetingEventExtras): GCalEventInput | null {
   if (!meeting.scheduledFor) {
     return null
   }
@@ -106,18 +92,17 @@ export function meetingToGCalEvent(meeting: MeetingForGCal): GCalEventInput | nu
     ? GCAL_MEETING_COLORS.Project
     : GCAL_MEETING_COLORS[meeting.meetingType as keyof typeof GCAL_MEETING_COLORS] ?? GCAL_MEETING_COLORS.Fresh
 
-  const prefix = meeting.projectId
-    ? 'Project'
-    : meeting.meetingType ?? 'Meeting'
+  const customerName = meeting.customerName ?? 'No customer'
 
   return {
-    summary: `${prefix}: ${meeting.customerName ?? 'No Customer'}`,
-    description: buildMeetingDescription(meeting),
+    summary: meeting.projectId ? `Project: ${customerName}` : `Home visit: ${customerName} · ${companyInfo.name}`,
+    description: buildMeetingDescription(meeting, extras),
     location: buildMeetingAddress(meeting),
     start: { dateTime: start.toISOString() },
     end: { dateTime: end.toISOString() },
     colorId,
-    attendees: meeting.participantEmails.map(email => ({ email })),
+    attendees: extras.guests.attendees,
+    extendedProperties: homeownerMarker(extras.guests.homeownerEmail),
   }
 }
 

@@ -17,11 +17,11 @@ import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
 import { generateToken } from '@/shared/lib/generate-token'
 import { confirmationsClearedByMove } from '@/shared/modules/meetings/core/lib/confirmation-reset'
 import { scheduledForSetByMove } from '@/shared/modules/meetings/core/lib/scheduled-for-set'
+import { decideCancellationNotice } from '@/shared/services/providers/google-calendar/lib/calendar-notice'
 import { deleteMeetingEventJob } from '@/shared/services/providers/upstash/jobs/delete-meeting-event'
 import { graduateFromCampaignJob } from '@/shared/services/providers/upstash/jobs/graduate-from-campaign'
 import { metaCapiEventJob } from '@/shared/services/providers/upstash/jobs/meta-capi-event'
 import { notifyMeetingTimeChangedJob } from '@/shared/services/providers/upstash/jobs/notify-meeting-time-changed'
-import { sendVisitCancellationJob } from '@/shared/services/providers/upstash/jobs/send-visit-cancellation'
 import { syncMeetingToGcalJob } from '@/shared/services/providers/upstash/jobs/sync-meeting-to-gcal'
 import { realtimeClient } from '@/shared/services/providers/upstash/realtime'
 
@@ -69,7 +69,8 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
           await addParticipant(row.id, row.ownerId, 'owner')
         }
 
-        if (row.scheduledFor) {
+        // A replacement takes over the original's event in the reschedule flow, which syncs it after the hand-off; a sync here would create a second event.
+        if (row.scheduledFor && !row.rescheduledFromId) {
           await syncMeetingToGcalJob.dispatchOrThrow({ meetingId: row.id })
         }
 
@@ -118,11 +119,12 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
       async after(row: Meeting, ctx, meta) {
         const { previousRow, input: data } = meta
 
-        // The fields the GCal event is built from (time, title prefix/color, description).
+        // The fields the event is built from, and the homeowner's invite.
         const gcalFieldChanged = 'scheduledFor' in data
           || 'meetingType' in data
-          || 'agentNotes' in data
           || 'projectId' in data
+          || 'visitNote' in data
+          || 'homeownerInvitedAt' in data
         const timeChanged = previousRow.scheduledFor !== row.scheduledFor
 
         const dispatches: Promise<unknown>[] = []
@@ -148,13 +150,14 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
         // The transition check prevents re-dispatch when an already-cancelled meeting is edited again.
         if (previousRow.meetingOutcome !== 'cancelled' && row.meetingOutcome === 'cancelled') {
           // A newly-cancelled meeting leaves the shared calendar; the row is kept.
+          // Google emails an invited homeowner its cancellation, unless the visit is already past.
           if (row.gcalEventId) {
-            await deleteMeetingEventJob.dispatchOrThrow({ gcalEventId: row.gcalEventId })
+            await deleteMeetingEventJob.dispatchOrThrow({
+              gcalEventId: row.gcalEventId,
+              notice: decideCancellationNotice({ homeownerInvited: row.homeownerInvitedAt != null, scheduledFor: row.scheduledFor, now: new Date() }),
+            })
             await clearMeetingGCalFields(row.id)
           }
-          // After the shared-calendar cleanup, so a failed enqueue here cannot strand the office's event.
-          // The job checks, at run time, whether the homeowner's invite needs a cancellation.
-          await sendVisitCancellationJob.dispatchOrThrow({ meetingId: row.id })
         }
       },
     },
@@ -164,7 +167,10 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
       // dispatchOrThrow: a failed enqueue must surface to the deleting agent, not leave a silent orphan event.
       async before(row: Meeting) {
         if (row.gcalEventId) {
-          await deleteMeetingEventJob.dispatchOrThrow({ gcalEventId: row.gcalEventId })
+          await deleteMeetingEventJob.dispatchOrThrow({
+            gcalEventId: row.gcalEventId,
+            notice: decideCancellationNotice({ homeownerInvited: row.homeownerInvitedAt != null, scheduledFor: row.scheduledFor, now: new Date() }),
+          })
         }
       },
     },
