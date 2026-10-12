@@ -11,7 +11,7 @@ export function buildVisitMessageVars(input: {
   coordinatorName: string | null
   scheduledFor: string
   visitLink: string
-  coordinatorNote?: string | null
+  visitNote?: string | null
 }): VisitMessageVars {
   return {
     firstName: input.customerName?.trim().split(/\s+/)[0] || 'there',
@@ -21,7 +21,7 @@ export function buildVisitMessageVars(input: {
     visitTime: formatBusinessClock(input.scheduledFor),
     arrivalWindow: formatArrivalWindow(input.scheduledFor),
     visitLink: input.visitLink,
-    coordinatorNote: (input.coordinatorNote ?? '').replace(/\s+/g, ' ').trim(),
+    visitNote: (input.visitNote ?? '').replace(/\s+/g, ' ').trim(),
   }
 }
 

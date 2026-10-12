@@ -18,7 +18,7 @@ import { voipMessages } from '@/shared/db/schema/voip-messages'
 import { getRescheduleChain } from '@/shared/entities/meetings/dal/server/queries'
 
 export interface VisitMessageContext {
-  meeting: Pick<Meeting, 'id' | 'customerId' | 'ownerId' | 'scheduledFor' | 'scheduledForSetAt' | 'meetingType' | 'meetingOutcome' | 'confirmedAt' | 'homeownerConfirmedAt' | 'homeownerConfirmedVia' | 'shareToken'>
+  meeting: Pick<Meeting, 'id' | 'customerId' | 'ownerId' | 'scheduledFor' | 'scheduledForSetAt' | 'meetingType' | 'meetingOutcome' | 'confirmedAt' | 'homeownerConfirmedAt' | 'homeownerConfirmedVia' | 'shareToken' | 'visitNote' | 'homeownerInvitedAt'>
   customer: {
     id: string
     name: string
@@ -55,6 +55,8 @@ async function listContexts(where: SQL): Promise<VisitMessageContext[]> {
         homeownerConfirmedAt: meetings.homeownerConfirmedAt,
         homeownerConfirmedVia: meetings.homeownerConfirmedVia,
         shareToken: meetings.shareToken,
+        visitNote: meetings.visitNote,
+        homeownerInvitedAt: meetings.homeownerInvitedAt,
       },
       customer: {
         id: customers.id,

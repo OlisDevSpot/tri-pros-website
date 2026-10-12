@@ -21,17 +21,14 @@ import { rescheduledOriginalOutcome } from '@/shared/modules/meetings/core/lib/r
 import { scheduledForSetByMove } from '@/shared/modules/meetings/core/lib/scheduled-for-set'
 import { visitMessageTemplateKeys } from '@/shared/modules/meetings/messages/constants/kinds'
 import { VISIT_MESSAGE_STOP_LINE, VISIT_MESSAGE_TEMPLATE_DEFAULTS, VISIT_MESSAGE_TOKENS } from '@/shared/modules/meetings/messages/constants/templates'
-import { buildIcs } from '@/shared/modules/meetings/messages/lib/build-ics'
 import { deriveConfirmationTrack } from '@/shared/modules/meetings/messages/lib/derive-confirmation-track'
 import { displayFirstName } from '@/shared/modules/meetings/messages/lib/display-first-name'
-import { buildGoogleCalendarLink } from '@/shared/modules/meetings/messages/lib/google-calendar-link'
 import { isVisitMessageEligible } from '@/shared/modules/meetings/messages/lib/is-visit-message-eligible'
 import { matchReplyKeyword } from '@/shared/modules/meetings/messages/lib/match-reply-keyword'
 import { planVisitMessages } from '@/shared/modules/meetings/messages/lib/plan-visit-messages'
 import { buildVisitMessageVars, renderVisitMessage } from '@/shared/modules/meetings/messages/lib/render-visit-message'
 import { resolveRunInstant } from '@/shared/modules/meetings/messages/lib/resolve-run-instant'
 import { runWindowFor } from '@/shared/modules/meetings/messages/lib/run-window'
-import { shouldSendVisitCancellation } from '@/shared/modules/meetings/messages/lib/should-send-visit-cancellation'
 import { MAX_SEGMENTS, validateVisitMessageTemplate } from '@/shared/modules/meetings/messages/lib/validate-visit-message-template'
 import { carryAttendeeResponses, decideCalendarNotice, decideCancellationNotice, homeownerMarker, noticeStateFromEvent, toSendUpdates } from '@/shared/services/providers/google-calendar/lib/calendar-notice'
 import { meetingToGCalEvent } from '@/shared/services/providers/google-calendar/lib/map-to-gcal'
@@ -142,73 +139,6 @@ console.log('2. SMS templates and segments ✓')
 console.log('3. Pacific time text ✓')
 
 {
-  const event = {
-    prodId: '-//Example Co//Home Visit//EN',
-    uid: 'meeting-1@example.com',
-    start: '2026-10-07T17:00:00.000Z',
-    durationMs: 2 * 60 * 60 * 1000,
-    summary: 'Home visit with Oliver; bring questions',
-    description: 'Line one\nLine two',
-    location: '123 Main St, Pasadena, CA 91101',
-    url: 'https://example.com/home-visits/meeting-1?token=abc',
-    organizer: { name: 'Example Co', email: 'info@example.com' },
-    attendee: { name: 'Lopez, Maria', email: 'maria@example.com' },
-    now: new Date('2026-10-05T16:00:00.000Z'),
-  }
-  const invite = buildIcs({ ...event, method: 'REQUEST', sequence: 0 })
-  assert.ok(invite.endsWith('\r\n'), 'lines end in CRLF')
-  assert.ok(invite.split('\r\n').every(line => new TextEncoder().encode(line).length <= 75), 'no line is longer than 75 octets')
-
-  const lines = invite.replace(/\r\n /g, '').split('\r\n')
-  assert.equal(lines[0], 'BEGIN:VCALENDAR')
-  assert.ok(lines.includes('METHOD:REQUEST'))
-  assert.ok(lines.includes('UID:meeting-1@example.com'))
-  assert.ok(lines.includes('SEQUENCE:0'))
-  assert.ok(lines.includes('DTSTAMP:20261005T160000Z'))
-  assert.ok(lines.includes('DTSTART:20261007T170000Z'))
-  assert.ok(lines.includes('DTEND:20261007T190000Z'))
-  assert.ok(lines.includes('SUMMARY:Home visit with Oliver\\; bring questions'), 'semicolons are escaped')
-  assert.ok(lines.includes('DESCRIPTION:Line one\\nLine two'), 'newlines are escaped')
-  assert.ok(lines.includes('LOCATION:123 Main St\\, Pasadena\\, CA 91101'), 'commas are escaped')
-  assert.ok(lines.includes('ORGANIZER;CN=Example Co:mailto:info@example.com'))
-  assert.ok(lines.includes('ATTENDEE;CN="Lopez, Maria";ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:maria@example.com'), 'a name with a comma is quoted')
-  assert.ok(lines.includes('STATUS:CONFIRMED'))
-
-  const cancellation = buildIcs({ ...event, method: 'CANCEL', sequence: 3 }).replace(/\r\n /g, '').split('\r\n')
-  assert.ok(cancellation.includes('METHOD:CANCEL'))
-  assert.ok(cancellation.includes('UID:meeting-1@example.com'), 'a cancellation names the same event')
-  assert.ok(cancellation.includes('SEQUENCE:3'))
-  assert.ok(cancellation.includes('STATUS:CANCELLED'))
-
-  const injectionEvent = buildIcs({
-    ...event,
-    method: 'REQUEST',
-    sequence: 0,
-    attendee: { name: 'Maria\r\nATTENDEE;CN=x:mailto:evil@x.com', email: 'maria@example.com' },
-    description: 'a\rb',
-  }).replace(/\r\n /g, '').split('\r\n')
-  const attendeeLines = injectionEvent.filter(line => line.startsWith('ATTENDEE'))
-  assert.equal(attendeeLines.length, 1, 'exactly one line starts with ATTENDEE')
-  assert.ok(!injectionEvent.includes('ATTENDEE;CN=x:mailto:evil@x.com'), 'no line contains the injected property')
-  assert.ok(injectionEvent.includes('DESCRIPTION:a\\nb'), 'lone CR is escaped to newline escape')
-
-  const controlEvent = buildIcs({ ...event, method: 'REQUEST', sequence: 0, description: 'a\u0000b' }).replace(/\r\n /g, '').split('\r\n')
-  assert.ok(controlEvent.includes('DESCRIPTION:ab'), 'NUL and other C0 controls are dropped from TEXT values')
-
-  const multibyteEvent = buildIcs({
-    ...event,
-    method: 'REQUEST',
-    sequence: 0,
-    summary: 'é'.repeat(60),
-  })
-  const byteLines = multibyteEvent.split('\r\n')
-  assert.ok(byteLines.every(line => Buffer.byteLength(line, 'utf8') <= 75), 'every physical line is at most 75 octets')
-  const unfoldedMultibyte = multibyteEvent.replace(/\r\n /g, '').split('\r\n')
-  assert.ok(unfoldedMultibyte.includes(`SUMMARY:${'é'.repeat(60)}`), 'unfolded SUMMARY line contains all 60 multibyte characters')
-}
-console.log('4. Calendar invite ✓')
-
-{
   assert.equal(ROOTS.public.homeVisit('m-1', 'tok'), '/home-visits/m-1?token=tok')
   assert.equal(ROOTS.public.homeVisit('m-1'), '/home-visits/m-1', 'staff open it signed in, with no token')
 }
@@ -229,8 +159,8 @@ console.log('5. Home visit path ✓')
   assert.deepEqual(errors('confirmation_reply', 'See you {{visit_date}} at {{visit_time}} — \u{1F600}'), [], 'special characters and emoji are not errors')
   assert.deepEqual(errors('confirmation_reply', 'See you {{visit_date}} at {{visit_time}} {{nope}}'), ['unknown_token'])
   assert.deepEqual(errors('confirmation_reply', 'See you {{visit_date}} at {{visit_time}} {{#nope}}x{{/nope}}'), ['unknown_token'], 'a section token is checked like a plain one')
-  assert.deepEqual(errors('confirmation_reply', 'See you {{visit_date}} at {{visit_time}} {{coordinator_note}}'), ['token_not_allowed'])
-  assert.deepEqual(errors('confirmation_reply', 'See you {{visit_date}} at {{visit_time}} {{#coordinator_note}}x{{/coordinator_note}}'), ['token_not_allowed'], 'so is the summary-only rule')
+  assert.deepEqual(errors('confirmation_reply', 'See you {{visit_date}} at {{visit_time}} {{visit_note}}'), ['token_not_allowed'])
+  assert.deepEqual(errors('confirmation_reply', 'See you {{visit_date}} at {{visit_time}} {{#visit_note}}x{{/visit_note}}'), ['token_not_allowed'], 'so is the summary-only rule')
   assert.deepEqual(errors('confirmation_reply', 'See you {{visit_date}} at {{visit_time}} {{#coordinator_name}}x'), ['bad_section'], 'an opener nobody closes')
   assert.deepEqual(errors('confirmation_reply', 'See you {{visit_date}} at {{visit_time}} x{{/coordinator_name}}'), ['bad_section'], 'a closer nobody opened')
   assert.deepEqual(errors('confirmation_reply', 'See you {{visit_date}}'), ['missing_token'])
@@ -257,7 +187,7 @@ console.log('5. Home visit path ✓')
     visitTime: '10:00 AM',
     arrivalWindow: '10:00 and 10:30 AM',
     visitLink: 'https://example.com/v',
-    coordinatorNote: '',
+    visitNote: '',
   })
   const company = { ...vars, coordinatorName: null }
   const noSpecialist = { ...vars, specialistName: null }
@@ -265,7 +195,7 @@ console.log('5. Home visit path ✓')
   const render = (key: VisitMessageTemplateKey, over: VisitMessageVars, stopLine = false) => renderVisitMessage(VISIT_MESSAGE_TEMPLATE_DEFAULTS[key], over, { stopLine })
 
   assert.equal(
-    render('visit_summary', { ...vars, coordinatorNote: 'Gate code 1234.' }, true),
+    render('visit_summary', { ...vars, visitNote: 'Gate code 1234.' }, true),
     `Hi Maria 👋 it's Dana from ${N}.
 
 You're all set for Wed, Oct 7 at 10:00 AM 📅 Oliver will be your specialist.
@@ -376,7 +306,7 @@ ${VISIT_MESSAGE_STOP_LINE}`,
   assert.equal(buildVisitMessageVars({ ...visit, customerName: '   ' }).firstName, 'there')
   assert.equal(buildVisitMessageVars({ ...visit, customerName: 'Cher' }).firstName, 'Cher')
   assert.equal(buildVisitMessageVars({ ...visit, customerName: '  Zoë  Kim ' }).firstName, 'Zoë')
-  assert.equal(buildVisitMessageVars({ ...visit, customerName: 'Maria', coordinatorNote: '  Gate\ncode   1234. ' }).coordinatorNote, 'Gate code 1234.', 'a note is one line')
+  assert.equal(buildVisitMessageVars({ ...visit, customerName: 'Maria', visitNote: '  Gate\ncode   1234. ' }).visitNote, 'Gate code 1234.', 'a note is one line')
 
   for (const reply of ['YES', 'yes', ' Yes! ', 'y', 'Confirm.', 'confirmed']) {
     assert.equal(matchReplyKeyword(reply), 'confirm', reply)
@@ -571,19 +501,6 @@ console.log('9. Visit message plan ✓')
 console.log('10. Run time ✓')
 
 {
-  const FUTURE = { scheduledFor: '2026-10-12T17:00:00.000Z', now: new Date('2026-10-09T17:00:00.000Z') }
-  const invite = fact('visit_summary', { channel: 'email' })
-  assert.equal(shouldSendVisitCancellation({ chainMessages: [invite], hasSuccessor: false, ...FUTURE }), true)
-  assert.equal(shouldSendVisitCancellation({ chainMessages: [invite], hasSuccessor: true, ...FUTURE }), false, 'a reschedule\'s original has a successor: the next summary updates the same calendar entry')
-  assert.equal(shouldSendVisitCancellation({ chainMessages: [fact('visit_summary')], hasSuccessor: false, ...FUTURE }), false, 'a text-only summary put nothing on a calendar')
-  assert.equal(shouldSendVisitCancellation({ chainMessages: [fact('visit_summary', { channel: 'email', status: 'failed' })], hasSuccessor: false, ...FUTURE }), false)
-  assert.equal(shouldSendVisitCancellation({ chainMessages: [fact('visit_summary', { channel: 'email', forScheduledFor: OLD_VISIT })], hasSuccessor: false, ...FUTURE }), true, 'an invite sent before a reschedule is still on their calendar')
-  assert.equal(shouldSendVisitCancellation({ chainMessages: [invite], hasSuccessor: false, scheduledFor: '2026-10-09T17:00:00.000Z', now: new Date('2026-10-09T17:00:00.000Z') }), false, 'a visit at or before now has nothing to cancel')
-  assert.equal(shouldSendVisitCancellation({ chainMessages: [invite], hasSuccessor: false, scheduledFor: '2026-10-08T17:00:00.000Z', now: new Date('2026-10-09T17:00:00.000Z') }), false)
-}
-console.log('11. Cancellation rule ✓')
-
-{
   const confirmed = { scheduledFor: VISIT_AS_POSTGRES, confirmedAt: '2026-10-08T01:00:00.000Z', homeownerConfirmedAt: '2026-10-08T02:00:00.000Z' }
   assert.deepEqual(confirmationsClearedByMove(confirmed, { scheduledFor: OLD_VISIT }), { confirmedAt: null, homeownerConfirmedAt: null, homeownerConfirmedVia: null }, 'a moved time clears both confirmations')
   assert.deepEqual(confirmationsClearedByMove(confirmed, { scheduledFor: VISIT }), {}, 'a same-time re-save in another spelling keeps them')
@@ -608,15 +525,6 @@ console.log('12. Confirmations hold for one time ✓')
   assert.equal(VOIP_MESSAGE_STATUS_RANK.failed, VOIP_MESSAGE_STATUS_RANK.delivered, 'one terminal state never overwrites another')
 }
 console.log('13. Twilio status mapping ✓')
-
-{
-  const link = buildGoogleCalendarLink({ summary: 'Home visit with Tri Pros', start: VISIT, durationMs: 2 * 60 * 60 * 1000, location: '1 Main St, Calabasas, CA 91302', description: 'Oliver will arrive between 10:00 and 10:30 AM.' })
-  assert.ok(link.startsWith('https://calendar.google.com/calendar/render?action=TEMPLATE'))
-  assert.ok(link.includes('dates=20261009T170000Z%2F20261009T190000Z'), 'UTC stamps for the booked time and two hours after')
-  assert.ok(link.includes('text=Home+visit+with+Tri+Pros'))
-  assert.ok(link.includes('location=1+Main+St%2C+Calabasas%2C+CA+91302'))
-}
-console.log('14. Google Calendar link ✓')
 
 {
   assert.deepEqual(runWindowFor('day_before_reminder', new Date('2026-10-09T01:00:00.000Z')), { day: '2026-10-09', from: '2026-10-09T07:00:00.000Z', to: '2026-10-10T07:00:00.000Z' }, 'the 6 PM run on Oct 8 covers Oct 9, Pacific')
@@ -749,5 +657,15 @@ console.log('19. Calendar notices ✓')
   assert.equal(rescheduledOriginalOutcome('cancelled'), null, 'a cancellation rebooked keeps its cancellation')
 }
 console.log('20. Reschedule original outcome ✓')
+
+{
+  const vars = buildVisitMessageVars({ customerName: 'Maria Lopez', specialistName: null, coordinatorName: 'Dana', scheduledFor: '2026-10-20T17:00:00.000Z', visitLink: 'https://example.com/v', visitNote: 'Please park in the driveway.' })
+  const withNote = renderVisitMessage(VISIT_MESSAGE_TEMPLATE_DEFAULTS.visit_summary, vars, { stopLine: true })
+  assert.ok(withNote.includes('One more thing: Please park in the driveway.'), withNote)
+  const withoutNote = renderVisitMessage(VISIT_MESSAGE_TEMPLATE_DEFAULTS.visit_summary, { ...vars, visitNote: '' }, { stopLine: true })
+  assert.ok(!withoutNote.includes('One more thing'), 'the section drops out with no note')
+  assert.ok(!/calendar|\.ics/i.test(withNote), 'the welcome text carries no calendar link')
+}
+console.log('21. Welcome text and the visit note ✓')
 
 console.log('✅ verify-visit-messages passed')

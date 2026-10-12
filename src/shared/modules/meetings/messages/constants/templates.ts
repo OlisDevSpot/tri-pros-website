@@ -19,11 +19,11 @@ export const VISIT_MESSAGE_TOKENS = [
   { token: 'visit_time', label: 'Visit time', sample: '10:00 AM', resolve: vars => vars.visitTime },
   { token: 'arrival_window', label: 'Arrival window', sample: '10:00 and 10:30 AM', resolve: vars => vars.arrivalWindow },
   { token: 'visit_link', label: 'Visit link', sample: VISIT_LINK_SAMPLE, resolve: vars => vars.visitLink },
-  { token: 'coordinator_note', label: 'Coordinator note', sample: '', resolve: vars => vars.coordinatorNote },
+  { token: 'visit_note', label: 'Visit note', sample: '', resolve: vars => vars.visitNote },
 ] as const satisfies readonly MergeToken<VisitMessageVars>[]
 
-/** Typed into the send dialog, so only the summary has one. */
-export const VISIT_MESSAGE_SUMMARY_ONLY_TOKENS: readonly string[] = ['coordinator_note']
+/** The visit note is said once, in the welcome text. */
+export const VISIT_MESSAGE_SUMMARY_ONLY_TOKENS: readonly string[] = ['visit_note']
 
 export const VISIT_MESSAGE_REQUIRED_TOKENS: Record<VisitMessageTemplateKey, readonly string[]> = {
   visit_summary: ['visit_link', 'visit_date', 'visit_time'],
@@ -42,7 +42,7 @@ export const VISIT_MESSAGE_TEMPLATE_DEFAULTS: Record<VisitMessageTemplateKey, st
 
 You're all set for {{visit_date}} at {{visit_time}} 📅{{#specialist_name}} {{specialist_name}} will be your specialist.{{/specialist_name}}
 
-{{#coordinator_note}}One more thing: {{coordinator_note}}{{/coordinator_note}}
+{{#visit_note}}One more thing: {{visit_note}}{{/visit_note}}
 
 Here's your visit page, where you can see the agenda and manage your visit:
 {{visit_link}}
