@@ -8,15 +8,16 @@ import { googleDriveTokenService } from '@/shared/services/providers/google-driv
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
-import { agentProcedure, createTRPCRouter } from '../../init'
+import { createTRPCRouter } from '../../init'
+import { projectAccessProcedure } from './procedures'
 
 export const googleDriveRouter = createTRPCRouter({
-  getAccessToken: agentProcedure
+  getAccessToken: projectAccessProcedure
     .query(async ({ ctx }) => {
       return { accessToken: await googleDriveTokenService.getValidAccessToken(ctx.session.user.id) }
     }),
 
-  uploadFromFile: agentProcedure
+  uploadFromFile: projectAccessProcedure
     .input(z.object({
       driveFileId: z.string(),
       name: z.string(),
