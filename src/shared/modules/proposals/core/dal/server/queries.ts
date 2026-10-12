@@ -15,6 +15,7 @@ import { proposalKinds, proposalStatuses } from '@/shared/constants/enums'
 import { pipelines } from '@/shared/constants/enums/pipelines'
 import { dateRangeSchema, numberRangeSchema } from '@/shared/dal/lib/query/range-schemas'
 import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { buildFilterWhere } from '@/shared/dal/server/lib/query/filters'
 import { paginate } from '@/shared/dal/server/lib/query/output'
 import { paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
@@ -25,6 +26,7 @@ import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
+import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 import { listProposalIncentives } from '@/shared/modules/proposals/incentives/dal/server/queries'
 import { listHomeownerProposalMedia, toProposalMediaView } from '@/shared/modules/proposals/media/dal/server/queries'
 
@@ -108,7 +110,7 @@ export async function getFullView(
       .from(proposals)
       .leftJoin(meetings, eq(meetings.id, proposals.meetingId))
       .leftJoin(customers, eq(customers.id, meetings.customerId))
-      .where(and(eq(proposals.id, input.id), ctx.scope ?? undefined))
+      .where(and(eq(proposals.id, input.id), permit(ctx, 'read', proposalServerSpec).sql))
 
     if (!row) {
       return undefined
@@ -202,7 +204,8 @@ export async function listProposals(
       noProject: (v: boolean) => (v ? isNull(meetings.projectId) : undefined),
     })
 
-    const where = and(ctx.scope ?? undefined, searchWhere, filterWhere)
+    const reach = permit(ctx, 'read', proposalServerSpec).sql
+    const where = and(reach, searchWhere, filterWhere)
 
     const orderBy = buildOrderBy(input.sort, {
       createdAt: proposals.createdAt,
@@ -251,7 +254,7 @@ export async function listProposals(
   })
 }
 
-/** Deliberately unscoped: it exposes nothing beyond lock signals, and the update re-applies `ctx.scope` in its WHERE. */
+/** Unscoped on purpose: it exposes nothing beyond lock signals, and the update it guards applies the actor's reach. */
 export async function getProposalLockSignals(
   proposalId: string,
 ): Promise<DalReturn<ProposalLockSignals>> {
@@ -284,7 +287,7 @@ export async function getProposalsByIds(
     return db
       .select()
       .from(proposals)
-      .where(and(inArray(proposals.id, ids), ctx.scope ?? undefined)) as Promise<Row<typeof proposals>[]>
+      .where(and(inArray(proposals.id, ids), permit(ctx, 'read', proposalServerSpec).sql)) as Promise<Row<typeof proposals>[]>
   })
 }
 
@@ -296,7 +299,7 @@ export async function getProposalsByMeetingId(
     db
       .select({ id: proposals.id, projectJSON: proposals.projectJSON })
       .from(proposals)
-      .where(and(eq(proposals.meetingId, meetingId), ctx.scope ?? undefined)),
+      .where(and(eq(proposals.meetingId, meetingId), permit(ctx, 'read', proposalServerSpec).sql)),
   )
 }
 
@@ -311,7 +314,7 @@ export async function getProposalsByInvoiceIds(
     return db
       .select()
       .from(proposals)
-      .where(and(inArray(proposals.qbInvoiceId, invoiceIds), ctx.scope ?? undefined)) as Promise<Row<typeof proposals>[]>
+      .where(and(inArray(proposals.qbInvoiceId, invoiceIds), permit(ctx, 'read', proposalServerSpec).sql)) as Promise<Row<typeof proposals>[]>
   })
 }
 
@@ -323,7 +326,7 @@ export async function getProposalByInvoiceId(
     const [row] = await db
       .select()
       .from(proposals)
-      .where(and(eq(proposals.qbInvoiceId, invoiceId), ctx.scope ?? undefined))
+      .where(and(eq(proposals.qbInvoiceId, invoiceId), permit(ctx, 'read', proposalServerSpec).sql))
       .limit(1)
     return row
   })
@@ -339,7 +342,7 @@ export async function getByContractEnvelopeId(
       .from(proposals)
       .where(and(
         eq(proposals.contractEnvelopeId, input.contractEnvelopeId),
-        ctx.scope ?? undefined,
+        permit(ctx, 'read', proposalServerSpec).sql,
       ))
       .limit(1)
     return row

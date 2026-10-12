@@ -1,9 +1,8 @@
-import type { AnyServerSpec, DalReturn, ScopedContext, VisibilityScope } from '../types'
+import type { DalReturn, ScopedContext } from '../types'
 
 import { db } from '@/shared/db'
 
 import { dalError, dalSuccess, ThrowableDalError } from '../types'
-import { isCompiled, resolveEffectiveScope } from './scope'
 
 export async function dalDbOperation<T>(
   operation: () => Promise<T>,
@@ -34,15 +33,6 @@ export async function withTx<T>(
   if (ctx.tx)
     return fn(ctx)
   return db.transaction(tx => fn({ ...ctx, tx }))
-}
-
-/** A context for `user` whose row filter is `spec`'s: for probing an entity other than the one `ctx.scope` was resolved for. */
-export function buildUserContext(user: VisibilityScope, spec: AnyServerSpec): ScopedContext {
-  const unscoped = isCompiled(spec) || user.ability.can('manage', 'all')
-  return {
-    actor: { ability: user.ability, userId: user.userId },
-    scope: unscoped ? null : resolveEffectiveScope(spec, user),
-  }
 }
 
 /** For DAL-to-DAL composition; tRPC procedures use `dalToTrpc()` instead. */

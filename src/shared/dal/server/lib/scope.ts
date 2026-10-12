@@ -5,23 +5,22 @@
 import type { SQL } from 'drizzle-orm'
 import type { PgColumn } from 'drizzle-orm/pg-core'
 
-import type { AnyServerSpec, ScopedContext, VisibilityScope } from '@/shared/dal/server/types'
+import type { AnyServerSpec, VisibilityScope } from '@/shared/dal/server/types'
 import type { EntitySubject } from '@/shared/domains/permissions/specs'
 
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { and, inArray } from 'drizzle-orm'
 
 import { db } from '@/shared/db'
 
 import { SERVER_SPECS } from '../specs'
 import { subjectOf } from './define-spec'
-import { reachFor } from './permissions/core'
 
 /**
  * The subjects whose rules are compiled: their specs declare no `visibility`, and `createCrudDal`
  * scopes them through `permit`. A family joins when it converts; the set and this module go when
  * the last one has.
  */
-export const COMPILED_SUBJECTS: ReadonlySet<EntitySubject> = new Set<EntitySubject>(['Customer', 'CustomerNote', 'Meeting'])
+export const COMPILED_SUBJECTS: ReadonlySet<EntitySubject> = new Set<EntitySubject>(['Customer', 'CustomerNote', 'Meeting', 'Proposal'])
 
 export function isCompiled(spec: AnyServerSpec): boolean {
   return COMPILED_SUBJECTS.has(subjectOf(spec))
@@ -56,37 +55,6 @@ function bridgeToParent(parent: NonNullable<AnyServerSpec['parent']>, auth: Visi
     parent.fk,
     db.select({ pk: pkColumn(parent.spec) }).from(parent.spec.table).where(parentScope),
   )
-}
-
-/** Point probe for create/precursor paths that have no host query to compose `ctx.scope` into. NEVER call per-row in a loop — that is what the composable predicate is for. */
-export async function isVisible(spec: AnyServerSpec, ctx: ScopedContext, id: string | number): Promise<boolean> {
-  const { ability, userId } = ctx.actor
-  if (userId === null) {
-    return true // no user: the system, or a share-link holder whose row the token already pinned
-  }
-  if (ability.can('manage', 'all')) {
-    return true // omni
-  }
-  if (isCompiled(spec)) {
-    return reachFor(ctx, 'read', spec).probe(id)
-  }
-  const scope = resolveEffectiveScope(spec, { userId, ability })
-  const [row] = await db
-    .select({ ok: sql`1` })
-    .from(spec.table)
-    .where(and(eq(pkColumn(spec), id), scope))
-    .limit(1)
-  return !!row
-}
-
-/** @deprecated Point probe against the already-resolved `ctx.scope`; use `resolveEffectiveScope` + `isVisible`. Do not add callers. */
-export async function isInScope(spec: AnyServerSpec, ctx: ScopedContext, id: string | number): Promise<boolean> {
-  const [row] = await db
-    .select({ ok: sql`1` })
-    .from(spec.table)
-    .where(and(eq(pkColumn(spec), id), ctx.scope ?? undefined))
-    .limit(1)
-  return !!row
 }
 
 function pkColumn(spec: AnyServerSpec): PgColumn {

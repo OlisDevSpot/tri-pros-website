@@ -57,11 +57,11 @@ When creating a proposal, if the meeting has `flowStateJSON.tradeSelections` and
 
 ### shareable-via-token
 
-A proposal can be read AND updated by an unauthenticated client via `?token=<shareToken>`. The `shareableMiddleware` resolves token-or-session and sets `ctx.scope = eq(proposals.token, token)` on the token path. On the token path the request acts as the share-link holder: an ability with `read` and `update` on the proposal, and no user id.
+A proposal can be read and partly updated by an unauthenticated client via `?token=<shareToken>`. A session wins: staff who open a share link act as staff. Without a session the token must name a proposal, and the request then holds only that proposal's share-link rules (`proposalBearerRules`: the columns the page shows, and writes to the finance option, the cash in deal and its own view). A wrong token and a missing proposal both answer UNAUTHORIZED.
 
-**Why**: customer e-signature flow + finance-option selection both require unauthenticated read/update. Treating token as scope means the DAL is unchanged from the authed path.
-**Reference impl**: `server-spec.ts:shareable`
-**Enforced by**: `shareableMiddleware` (entity toolkit); see ADR-0002 §4 and [`../../../../trpc/DOCS.md`](../../../../trpc/DOCS.md)
+**Why**: customer e-signature flow + finance-option selection both require unauthenticated read/update. The share link is an actor with its own rules, so the DAL scopes it like any other actor.
+**Reference impl**: `server-spec.ts:shareable`, `domains/permissions/rules/bearer.ts`, `dal/server/lib/contexts.ts:bearerContext`
+**Enforced by**: `shareableMiddleware` → `bearerContext`; the compiled rules in every proposal read and write
 
 **Homeowner-open push ("Proposal Viewed")**: every open through the share link records a `proposal_views` row and pushes to the proposal's **meeting participants — all of them — plus the info@ system user, always**. A proposal has no owner: it is reached through its meeting, and the people responsible for it are whoever is on that meeting (`#visibility-via-meeting-participation`); `ownerId` is the author and never a recipient (2026-09-10 ruling). No meeting ⇒ the view is still recorded and info@ alone is pushed. Recipients are resolved by the dispatcher, not the notification service. The homeowner's "Request Agreement" signal (`#proposal-lock-ladder`) uses the same recipient rule.
 **Reference impl**: `views/service.ts:record` → `sendViewNotificationJob` → `notification.service.ts:notifyProposalViewed`
@@ -76,11 +76,11 @@ A proposal can be read AND updated by an unauthenticated client via `?token=<sha
 
 ### visibility-via-meeting-participation
 
-Non-omni agents see a proposal only if they participate in the proposal's meeting (any role). Super-admins (`ability.can('manage', 'all')`) bypass scoping — caller passes `ctx.scope = null`.
+Non-omni agents see a proposal only if they participate in the proposal's meeting (any role). Super-admins (`manage all`) see every proposal.
 
 **Why**: the meeting is where the customer relationship is owned; proposals inherit visibility from there. `ownerId` is the author, not the gate.
-**Reference impl**: `lib/visibility.ts` → `userParticipatesInMeeting`
-**Enforced by**: the inline scope step (`resolveVisibilityScope(proposalServerSpec, …)`) on every entity procedure
+**Reference impl**: `domains/permissions/rules/agent.ts` (`$participatesViaMeeting` via `meetingId`)
+**Enforced by**: `permit(ctx, 'read', proposalServerSpec)` in every proposal read
 
 ### one-approved-initial-sale-per-meeting
 

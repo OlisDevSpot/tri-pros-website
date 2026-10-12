@@ -19,11 +19,9 @@ export const proposalViewSchemas = {
 }
 
 /**
- * `proposal_views` as a first-class CHILD entity. No independent ownership, so
- * no own `visibility`: its effective scope is parent-derived —
- * `proposalId IN (SELECT proposals.id WHERE <proposal effective scope>)` —
- * folded into `ctx.scope` by whichever procedure resolves this spec. It is the
- * field `views` of `Proposal`. No lifecycle hooks: a view is an immutable event
+ * `proposal_views` as a first-class CHILD entity. No independent ownership: it
+ * is the field `views` of `Proposal`, read and written through the proposal's
+ * rules on that field. No lifecycle hooks: a view is an immutable event
  * with nothing to derive.
  */
 export const proposalViewServerSpec = defineSubEntitySpec({

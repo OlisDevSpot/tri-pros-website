@@ -7,11 +7,8 @@ import { proposalMediaServerSpec } from '@/shared/modules/proposals/media/server
 import { optimizeMediaJob } from '@/shared/services/providers/upstash/jobs/optimize-media'
 
 /**
- * Scoped CRUD handlers for proposal media files. `getById`/`update`/`delete`
- * compose `ctx.scope` — the parent bridge folded in by the child-scoped
- * `proposalMediaProcedure` — so an out-of-scope row is `not-found`, no separate
- * authz probe. `setVisibility`/`rename` route straight through `update`.
- * Serial int PK.
+ * CRUD handlers for proposal media files: an unreachable row is `not-found`, no
+ * separate authz probe. Serial int PK.
  *
  * Row lifecycle (optimize dispatch, R2 purge) lives in the hooks below (C32, D5),
  * not in the service — so it fires on every origin. Same inline/pre-commit caveat

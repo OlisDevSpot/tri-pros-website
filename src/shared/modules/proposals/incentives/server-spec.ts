@@ -16,11 +16,9 @@ export const proposalIncentiveSchemas = {
 }
 
 /**
- * `proposal_incentives` as a first-class CHILD entity. No independent ownership,
- * so no own `visibility`: its effective scope is parent-derived —
- * `proposalId IN (SELECT proposals.id WHERE <proposal effective scope>)` —
- * folded into `ctx.scope` by whichever procedure resolves this spec.
- * It is the field `incentives` of `Proposal`. Lifecycle hooks (the
+ * `proposal_incentives` as a first-class CHILD entity. No independent ownership:
+ * it is the field `incentives` of `Proposal`, read and written through the
+ * proposal's rules on that field. Lifecycle hooks (the
  * parent rollup re-drive) live in the createCrudDal config factory at
  * dal/server/crud.ts — never here.
  */

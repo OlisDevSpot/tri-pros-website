@@ -19,7 +19,8 @@ export function agentRules(userId: string) {
     can('update', 'Meeting')
     can('own', 'Meeting') // agents own the meetings they create (implicitly the sales rep)
 
-    can('read', 'Proposal')
+    // A proposal is reached through the meeting it was made in; the row filter and the UI read this one rule.
+    can('read', 'Proposal', { $participatesViaMeeting: { via: 'meetingId', userId } })
     can('create', 'Proposal')
     can('update', 'Proposal')
 

@@ -18,17 +18,10 @@ export const proposalMediaSchemas = {
 }
 
 /**
- * `proposal_media_files` as a first-class CHILD entity. It has no independent
- * ownership, so it declares NO own `visibility` — its effective scope is
- * entirely parent-derived: `resolveEffectiveScope` composes
- * `proposalId IN (SELECT proposals.id WHERE <proposal effective scope>)` and
- * folds it into `ctx.scope`. That single bridged predicate drops into every
- * `createCrudDal` WHERE (getById/update/delete), so scoping a media mutation is
- * ONE query — no per-row authz probe (the N+1 this epic set out to kill).
- *
- * It is the field `media` of `Proposal`: there are no grants for
+ * `proposal_media_files` as a first-class CHILD entity with no independent
+ * ownership. It is the field `media` of `Proposal`: there are no grants for
  * `ProposalMediaFile`, and "may I touch this proposal's media?" IS "may I update
- * this proposal?" — enforced by the router's capability gate + this row scope.
+ * this proposal's `media`?", which the compiled rules answer in each query's WHERE.
  *
  * The spec itself carries no `hooks` — those live on `createCrudDal`'s config factory in `dal/server/crud.ts`, where
  * `create.after`/`delete.before` fire optimize dispatch and R2 cleanup on every

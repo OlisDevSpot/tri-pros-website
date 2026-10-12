@@ -1,5 +1,3 @@
-// src/shared/modules/media/service.ts
-//
 // Media orchestrator. Owns what is the SAME for every media owner: the presigned
 // upload target, the table-generic scoped `list`/`reorder`, and the two
 // optimization entry points (queued retry, in-process optimize). It rings the
@@ -14,7 +12,8 @@
 //
 // Mutations return `DalReturn` so tRPC routers unwrap with `dalToTrpc` and
 // services/jobs inspect the union directly.
-import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
+import type { SQL } from 'drizzle-orm'
+import type { DalReturn } from '@/shared/dal/server/types'
 import type { MediaStore } from '@/shared/modules/media/core/types'
 import { listMediaByOwner, reorderMedia } from '@/shared/modules/media/core/dal/server/media-ops'
 import { resetMediaOptimizationStatus } from '@/shared/modules/media/core/dal/server/optimization'
@@ -35,12 +34,12 @@ export const mediaService = {
   },
 
   /** One scoped transaction — no per-row authz probe (the reorder N+1 kill). */
-  async reorder(store: MediaStore, ctx: ScopedContext, updates: { id: number, sortOrder: number }[]): Promise<DalReturn<void>> {
-    return reorderMedia(store.table, ctx, updates)
+  async reorder(store: MediaStore, where: SQL | undefined, updates: { id: number, sortOrder: number }[]): Promise<DalReturn<void>> {
+    return reorderMedia(store.table, where, updates)
   },
 
-  async list(store: MediaStore, ctx: ScopedContext, ownerId: string): Promise<DalReturn<Record<string, unknown>[]>> {
-    return listMediaByOwner(store.table, store.ownerColumn, ctx, ownerId)
+  async list(store: MediaStore, where: SQL | undefined, ownerId: string): Promise<DalReturn<Record<string, unknown>[]>> {
+    return listMediaByOwner(store.table, store.ownerColumn, where, ownerId)
   },
 
   // async retry — resets status then queues optimization (interactive Retry button)

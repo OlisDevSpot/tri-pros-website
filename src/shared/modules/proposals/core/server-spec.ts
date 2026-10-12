@@ -5,11 +5,8 @@ import {
   selectProposalSchema,
 } from '@/shared/db/schema'
 import { PROPOSAL } from '@/shared/modules/proposals/core/lib/constants'
-import { proposalVisibility } from '@/shared/modules/proposals/core/lib/visibility'
 
-// `kind`/`token` are server-derived: `create.before` always overwrites them. The insert schema
-// carries both as OPTIONAL (not omitted), so this partial() does NOT exclude them from updates —
-// update-path field gating is owned by permissions epic #285.
+// Staff write any column the rules allow; a share link's rules name its few columns.
 const updateProposalSchema = insertProposalSchema.partial()
 
 /** Concrete schemas for `createCrudRouter` type inference (spec carries type-erased copies). */
@@ -26,7 +23,6 @@ export const proposalServerSpec = defineEntitySpec({
   entityName: PROPOSAL,
   subject: PROPOSAL,
   conditionColumns: ['id'],
-  visibility: proposalVisibility,
   table: proposals,
   schemas: {
     insert: insertProposalSchema,

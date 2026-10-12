@@ -48,10 +48,7 @@ export const customerPipelinesRouter = createTRPCRouter({
     }))
     .mutation(async ({ ctx, input }) => {
       assertPipelineOpen(ctx.actor.ability, input.pipeline)
-      await moveCustomerPipelineItem({
-        ...input,
-        user: { userId: ctx.session.user.id, ability: ctx.actor.ability },
-      })
+      await moveCustomerPipelineItem({ ...input, ctx })
     }),
 
   moveCustomerToPipeline: agentProcedure

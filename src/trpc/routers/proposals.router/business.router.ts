@@ -1,31 +1,28 @@
-// ─── Business Router ────────────────────────────────────────────────────────
-// Enriched reads + complex list with proposal-specific joins/filters. These use
-// free-form return types — not Row<TTable> — so they live outside the fixed
-// CRUD slots. Plain leaf: imports pre-scoped procedures from ./procedures.
-
 import z from 'zod'
 
 import { getFinanceOptions } from '@/shared/entities/finance-options/dal/server/queries'
 import { getFullView, listProposals, proposalListInputSchema } from '@/shared/modules/proposals/core/dal/server/queries'
+import { toHomeownerProposalView } from '@/shared/modules/proposals/core/lib/to-homeowner-proposal-view'
 
-import { createTRPCRouter } from '../../init'
+import { agentProcedure, baseProcedure, createTRPCRouter } from '../../init'
 import { dalToTrpc } from '../../lib/dal-to-trpc'
-import { proposalProcedure, proposalPublicProcedure, proposalShareableProcedure } from './procedures'
+import { proposalShareableProcedure } from './procedures'
 
 export const businessRouter = createTRPCRouter({
   getFullView: proposalShareableProcedure
     .input(z.object({ id: z.string().uuid(), token: z.string().optional() }))
     .query(async ({ ctx, input }) => {
-      return dalToTrpc(await getFullView(ctx, input)) ?? null
+      const view = dalToTrpc(await getFullView(ctx, input))
+      return view ? toHomeownerProposalView(ctx.actor.ability, view) : null
     }),
 
-  list: proposalProcedure
+  list: agentProcedure
     .input(proposalListInputSchema)
     .query(async ({ ctx, input }) => {
       return dalToTrpc(await listProposals(ctx, input))
     }),
 
-  getFinanceOptions: proposalPublicProcedure
+  getFinanceOptions: baseProcedure
     .query(async () => {
       return getFinanceOptions()
     }),

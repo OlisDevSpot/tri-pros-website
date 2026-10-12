@@ -2,7 +2,7 @@ import type { Proposal } from '@/shared/db/schema'
 
 import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
-import { SYSTEM_CONTEXT, ThrowableDalError } from '@/shared/dal/server/types'
+import { ThrowableDalError } from '@/shared/dal/server/types'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { recomputeProposalFinancials } from '@/shared/modules/proposals/core/dal/server/mutations'
 import { getProposalLockSignals } from '@/shared/modules/proposals/core/dal/server/queries'
@@ -24,17 +24,19 @@ export const proposalCrud = createCrudDal(proposalServerSpec, () => ({
       // No blob scrub: `insertProposalSchema` omits the frozen blob columns
       // (fundingJSONDeprecated/formMetaJSONDeprecated) since the W3
       // write-seam flip, so nothing can arrive here to scrub.
-      async before(input, _ctx) {
+      async before(input, ctx) {
         if (!input.meetingId) {
           return { ...input, kind: deriveProposalKind(null), token: generateShareToken() }
         }
 
-        const meeting = dalVerifySuccess(
-          await meetingCrud.getById(SYSTEM_CONTEXT, { id: input.meetingId }),
-        )
-        const kind = deriveProposalKind(meeting?.projectId ?? null)
+        // The meeting is read as the creator: a proposal on a meeting they cannot reach is not found.
+        const meeting = dalVerifySuccess(await meetingCrud.getById(ctx, { id: input.meetingId }))
+        if (!meeting) {
+          throw new ThrowableDalError({ type: 'not-found' })
+        }
+        const kind = deriveProposalKind(meeting.projectId ?? null)
         const token = generateShareToken()
-        const enriched = snapSowFromMeeting(input, meeting?.flowStateJSON ?? null)
+        const enriched = snapSowFromMeeting(input, meeting.flowStateJSON ?? null)
 
         return { ...enriched, kind, token }
       },

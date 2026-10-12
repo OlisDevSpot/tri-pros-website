@@ -53,10 +53,10 @@ src/trpc/
 | `agentProcedure` | Extends protected; FORBIDDEN unless `actor.ability.can('access', 'Dashboard')` (internal users) | same as protected |
 | `superAdminProcedure` | Extends agent; FORBIDDEN unless `actor.ability.can('manage', 'all')` (super-admin omni grant) | same as protected |
 
-Entity sub-routers **never** call `agentProcedure` directly — they import the entity's pre-scoped procedure (`<entity>Procedure` / `<entity>ShareableProcedure`) from `<entity>.router/procedures.ts`, which has scope resolution baked on at definition time. A compiled family (Customer, CustomerNote) has no scope step: its sub-routers use `agentProcedure` and the DAL scopes through `permit(ctx, action, spec)`.
+Entity sub-routers **never** call `agentProcedure` directly — they import the entity's pre-scoped procedure (`<entity>Procedure` / `<entity>ShareableProcedure`) from `<entity>.router/procedures.ts`, which has scope resolution baked on at definition time. A compiled family (Customer, CustomerNote, Meeting, Proposal) has no scope step: its sub-routers use `agentProcedure` and the DAL scopes through `permit(ctx, action, spec)`.
 
 **Why**: for a family not yet compiled, scope resolution injects `ctx.scope` (the per-user visibility predicate). Bypassing it means agents could read rows they shouldn't.
-**Reference impl**: `src/trpc/init.ts`; `src/trpc/routers/proposals.router/procedures.ts`
+**Reference impl**: `src/trpc/init.ts`; `src/trpc/routers/applications.router/procedures.ts`
 **Enforced by**: convention (for a family not yet compiled, a bare `agentProcedure` leaves `ctx.scope` null → DAL runs unscoped)
 
 ### superadmin-procedure
@@ -85,26 +85,22 @@ disqualify: agentProcedure.input(...).mutation(async ({ ctx }) => {
 Per-entity pre-scoped procedures are defined **once** as top-level consts in `<entity>.router/procedures.ts` and imported directly by every sub-router. No factory generates them at call time; there is no toolkit argument.
 
 ```ts
-// proposals.router/procedures.ts
-/** Agent-only. Session guaranteed; `ctx.scope` resolved (null for omni). */
-export const proposalProcedure = agentProcedure.use(async ({ ctx, next }) => {
-  const scope = resolveVisibilityScope(proposalServerSpec, { userId: ctx.session.user.id, ability: ctx.actor.ability })
+// applications.router/procedures.ts (a family not yet compiled)
+export const applicationProcedure = agentProcedure.use(async ({ ctx, next }) => {
+  const scope = resolveVisibilityScope(applicationServerSpec, { userId: ctx.session.user.id, ability: ctx.actor.ability })
   return next({ ctx: { ...ctx, scope } })
 })
 
-/** Token-or-session. Token path → the holder's ability and `ctx.scope = eq(token, …)`. */
+// proposals.router/procedures.ts (compiled: only the share variant remains)
 export const proposalShareableProcedure = baseProcedure.use(shareableMiddleware(proposalServerSpec))
-
-/** No auth. Pass-through of baseProcedure — the caller enforces authorization inline. */
-export const proposalPublicProcedure = baseProcedure
 ```
 
 **The agent scope step is inlined in each `procedures.ts`.** An inline `.use()` infers `ctx` from `agentProcedure`, so the non-null session narrowing flows through and no cast is needed. The scope math stays DRY via the shared `resolveVisibilityScope(spec, { userId, ability })`.
 
-**Naming**: the agent procedure is `<entity>Procedure`; shareable and public variants are `<entity>ShareableProcedure` / `<entity>PublicProcedure`. An endpoint whose caller is proven outside the session (a share token, a webhook signature) uses `baseProcedure` and says so in a comment. Only declare the variants an entity actually uses (proposals needs all; meetings/applications need only the agent one).
+**Naming**: the agent procedure is `<entity>Procedure`; shareable and public variants are `<entity>ShareableProcedure` / `<entity>PublicProcedure`. An endpoint whose caller is proven outside the session (a share token, a webhook signature) uses `baseProcedure` and says so in a comment. Only declare the variants an entity actually uses (proposals needs only the shareable one; applications only the agent one).
 
 **Why**: `server-spec.ts` stays a pure data object (imported by the DAL) — the tRPC runtime is pulled in only here, router-side, never into the entity/DAL layer. tRPC-idiomatic `const + typeof` deletes the cast.
-**Reference impl**: `src/trpc/routers/proposals.router/procedures.ts`
+**Reference impl**: `src/trpc/routers/applications.router/procedures.ts`, `src/trpc/routers/proposals.router/procedures.ts`
 **Enforced by**: convention
 
 ### one-leaf-shape
@@ -114,8 +110,8 @@ Every sub-router is `export const xxxRouter = createTRPCRouter({...})` in its ow
 ```ts
 // proposals.router/business.router.ts
 export const businessRouter = createTRPCRouter({
-  list: proposalProcedure.input(schema).query(async ({ ctx, input }) => dalToTrpc(await listProposals(ctx, input))),
-  getFullView: proposalProcedure.input(schema).query(...),
+  list: agentProcedure.input(schema).query(async ({ ctx, input }) => dalToTrpc(await listProposals(ctx, input))),
+  getFullView: proposalShareableProcedure.input(schema).query(...),
 })
 ```
 
@@ -168,15 +164,15 @@ This replaces the `isOmni`-or-predicate dance that previously had to be inlined 
 
 `shareableMiddleware(spec)` resolves dual-credential access:
 
-- **Token present** (e.g., `?token=tpr-xxx`): validates the token column on the entity table, sets `ctx.scope = eq(tokenColumn, token)` and gives the request the holder's actor: an ability with `read` and `update` on that entity, and no user id.
-- **Session present, no token**: requires session; resolves scope from `spec.visibility({ userId, ability })` with the request's actor.
-- **Neither**: throws UNAUTHORIZED.
+- **Session present**: the session wins, even with a token in the input — staff who open a share link act as staff.
+- **No session, token names a row**: `bearerContext(spec, token)` gives the request that row's share-link rules (`BEARER_RULES`), and no user id.
+- **No session, and no token or a token that names no row**: throws UNAUTHORIZED (the two look the same).
 
 Activated by `spec.shareable: { tokenColumn: '...' }` in the entity spec. The middleware peeks at `getRawInput()` for the `token` field before Zod validation — branching has to happen before schema enforcement.
 
-Handler code receives `ctx.scope` either way and applies it identically. The handler doesn't know which credential path was taken. The CRUD router checks the actor's ability on both paths.
+Handler code passes `ctx` to the DAL either way; the compiled rules on the actor decide which rows and columns it reaches. The CRUD router checks the actor's ability on both paths.
 
-**Why**: customer e-signature flow needs unauthenticated read/update. Treating token as scope means the DAL is unchanged from the authed path; only middleware differs.
+**Why**: customer e-signature flow needs unauthenticated read/update. The share link is an actor with its own rules, so the DAL is unchanged from the authed path; only middleware differs.
 **Reference impl**: `src/trpc/lib/middleware/shareable-middleware.ts`
 **Enforced by**: ADR-0002; convention
 
@@ -252,7 +248,7 @@ call automatically without any per-entity router code.
 DAL functions return `DalReturn<T>` (never throw on domain errors). tRPC procedures unwrap with `dalToTrpc()`:
 
 ```ts
-list: proposalProcedure
+list: agentProcedure
   .input(proposalListInputSchema)
   .query(async ({ ctx, input }) => dalToTrpc(await listProposals(ctx, input))),
 ```

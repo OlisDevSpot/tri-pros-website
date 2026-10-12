@@ -4,8 +4,8 @@
 //   ...proposalIncentiveCrud   the engine's five slots on the service itself. Every
 //                              single-row write re-drives the parent's `final_tcp_cents`
 //                              through the factory hooks (dal/server/crud.ts).
-//   replace                    orchestration: read the parent through `proposalService.getById`
-//                              (scoped — an invisible proposal is `not-found`), refuse while
+//   replace                    orchestration: probe the parent's `update` of `incentives`
+//                              (an unreachable proposal is `not-found`), refuse while
 //                              the proposal is on the lock ladder, atomically swap the GLOBAL
 //                              rows via the one engine-inexpressible DAL write, re-drive the
 //                              rollup, read back.
@@ -23,9 +23,11 @@ import type { ProposalIncentiveRow } from '@/shared/db/schema/proposal-incentive
 import type { Incentive } from '@/shared/modules/proposals/core/schemas'
 
 import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { ThrowableDalError } from '@/shared/dal/server/types'
 import { recomputeProposalFinancials } from '@/shared/modules/proposals/core/dal/server/mutations'
 import { isProposalFrozen } from '@/shared/modules/proposals/core/lib/proposal-lock'
+import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 import { proposalIncentiveCrud } from '@/shared/modules/proposals/incentives/dal/server/crud'
 import { replaceGlobalIncentiveRows } from '@/shared/modules/proposals/incentives/dal/server/mutations'
 import { listProposalIncentives } from '@/shared/modules/proposals/incentives/dal/server/queries'
@@ -43,6 +45,9 @@ export const proposalIncentivesService = {
    */
   async replace(ctx: ScopedContext, input: { proposalId: string, incentives: Incentive[] }): Promise<DalReturn<ProposalIncentiveRow[]>> {
     return dalDbOperation(async () => {
+      if (!(await permit(ctx, 'update', proposalServerSpec, ['incentives']).probe(input.proposalId))) {
+        throw new ThrowableDalError({ type: 'not-found' })
+      }
       const proposal = dalVerifySuccess(await proposalService.getById(ctx, { id: input.proposalId }))
       if (!proposal) {
         throw new ThrowableDalError({ type: 'not-found' })

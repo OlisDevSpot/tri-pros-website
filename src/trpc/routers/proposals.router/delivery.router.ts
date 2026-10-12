@@ -1,10 +1,3 @@
-// ─── Delivery Router ────────────────────────────────────────────────────────
-// Service-layer sub-router for proposal delivery: send email + the homeowner
-// "request to move forward" signal. Procedures call pure services + generic
-// CRUD DAL. (View recording + stats moved to views.router.ts in S3a.)
-//
-// Plain leaf: imports pre-scoped procedures from ./procedures — no toolkit arg.
-
 import { TRPCError } from '@trpc/server'
 import z from 'zod'
 
@@ -15,9 +8,9 @@ import { getFullView } from '@/shared/modules/proposals/core/dal/server/queries'
 import { emailService } from '@/shared/services/email.service'
 import { notificationService } from '@/shared/services/notification.service'
 
-import { createTRPCRouter } from '../../init'
+import { agentProcedure, createTRPCRouter } from '../../init'
 import { dalToTrpc } from '../../lib/dal-to-trpc'
-import { proposalProcedure, proposalShareableProcedure } from './procedures'
+import { proposalShareableProcedure } from './procedures'
 
 const sendEmailSchema = z.object({
   proposalId: z.string(),
@@ -34,7 +27,7 @@ export const deliveryRouter = createTRPCRouter({
    * creation is a manual agent decision on the envelope card; nothing
    * auto-creates a draft anymore).
    */
-  sendProposalEmail: proposalProcedure
+  sendProposalEmail: agentProcedure
     .input(sendEmailSchema)
     .mutation(async ({ ctx, input }) => {
       // 1. Send email — pure service, no DB
