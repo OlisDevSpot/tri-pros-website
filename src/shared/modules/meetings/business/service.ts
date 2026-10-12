@@ -2,39 +2,40 @@ import type { HomeownerConfirmation, MeetingOutcome } from '@/shared/constants/e
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { Meeting } from '@/shared/db/schema'
 import type { MeetingMessage } from '@/shared/db/schema/meeting-messages'
-import type { VisitEmailOutcome } from '@/shared/modules/meetings/messages/lib/deliver-visit-email'
+import type { CustomerNoteWithAuthor } from '@/shared/entities/customers/types'
+import type { VisitInviteResult } from '@/shared/modules/meetings/messages/constants/kinds'
 import type { VisitMessageRunReport } from '@/shared/modules/meetings/messages/lib/run-automatic-kind'
 import type { MessagingInboundWebhookPayload } from '@/shared/services/providers/twilio/schemas/messaging'
 
 import { publicUrl } from '@/shared/config/public-url'
-import { canRescheduleFromOutcome, outcomeRequiresReason } from '@/shared/constants/enums/meetings'
+import { canRescheduleFromOutcome, outcomeRequiresReason, RESCHEDULED_ORIGINAL_REASON } from '@/shared/constants/enums/meetings'
 import { systemContext } from '@/shared/dal/server/lib/contexts'
 import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { projectToReadFields } from '@/shared/dal/server/lib/permissions/project'
 import { SYSTEM_CONTEXT, ThrowableDalError } from '@/shared/dal/server/types'
 import { customerNoteCrud } from '@/shared/entities/customer-notes/dal/server/crud'
+import { listNotesForEntity } from '@/shared/entities/customer-notes/dal/server/queries'
 import { findCustomersByPhone } from '@/shared/entities/customers/dal/server/queries'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
-import { claimHomeownerConfirmation, handOffShareToken } from '@/shared/entities/meetings/dal/server/mutations'
+import { claimHomeownerConfirmation, handOffVisit } from '@/shared/entities/meetings/dal/server/mutations'
 import { addParticipant, getParticipantsForMeeting } from '@/shared/entities/meetings/dal/server/participants'
 import { getRescheduleChain, getRescheduleSuccessorId } from '@/shared/entities/meetings/dal/server/queries'
 import { buildRescheduleNote, formatMeetingDateShort } from '@/shared/entities/meetings/lib/notes'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 import { formatPhone } from '@/shared/lib/phone'
+import { rescheduledOriginalOutcome } from '@/shared/modules/meetings/core/lib/rescheduled-original-outcome'
 import { meetingMessageCrud } from '@/shared/modules/meetings/messages/dal/server/crud'
-import { claimAutomaticSend, setMeetingMessageOutcome } from '@/shared/modules/meetings/messages/dal/server/mutations'
-import { findReplyTargetMeeting, getVisitMessageContext, listChainMessages } from '@/shared/modules/meetings/messages/dal/server/queries'
+import { findReplyTargetMeeting, getVisitMessageContext } from '@/shared/modules/meetings/messages/dal/server/queries'
 import { getTemplateBodies } from '@/shared/modules/meetings/messages/dal/server/settings'
-import { deliverVisitCancellationEmail, deliverVisitSummaryEmail } from '@/shared/modules/meetings/messages/lib/deliver-visit-email'
 import { deliverVisitText } from '@/shared/modules/meetings/messages/lib/deliver-visit-text'
 import { isVisitMessageEligible } from '@/shared/modules/meetings/messages/lib/is-visit-message-eligible'
 import { matchReplyKeyword } from '@/shared/modules/meetings/messages/lib/match-reply-keyword'
 import { runAutomaticKind } from '@/shared/modules/meetings/messages/lib/run-automatic-kind'
-import { shouldSendVisitCancellation } from '@/shared/modules/meetings/messages/lib/should-send-visit-cancellation'
 import { notificationService } from '@/shared/services/notification.service'
+import { syncMeetingToGcalJob } from '@/shared/services/providers/upstash/jobs/sync-meeting-to-gcal'
 import { complianceService } from '@/shared/services/voip/compliance.service'
 import { voipDidsService } from '@/shared/services/voip/voip-dids.service'
 import { voipMessagesService } from '@/shared/services/voip/voip-messages.service'
@@ -42,6 +43,28 @@ import { voipMessagesService } from '@/shared/services/voip/voip-messages.servic
 export type HomeownerReplyAction = 'opt_out' | 'opt_in' | 'help' | 'confirmed' | 'already_confirmed' | 'forwarded' | 'duplicate' | 'not_main_line'
 
 export const meetingBusinessService = {
+  /**
+   * The visit's internal notes, newest first. The scoped read is the meeting's visibility check; the notes are
+   * customer notes, so they also need the customer-note read. A reschedule moves the visit, so notes written on
+   * the meetings it replaced come with it.
+   */
+  async listInternalNotes(ctx: ScopedContext, input: { meetingId: string }): Promise<DalReturn<CustomerNoteWithAuthor[]>> {
+    return dalDbOperation(async () => {
+      if (ctx.actor.ability.cannot('read', 'CustomerNote')) {
+        throw new ThrowableDalError({ type: 'forbidden' })
+      }
+      const meeting = dalVerifySuccess(await meetingCrud.getById(ctx, { id: input.meetingId }))
+      if (!meeting) {
+        throw new ThrowableDalError({ type: 'not-found' })
+      }
+      if (!meeting.customerId) {
+        return []
+      }
+      const chain = dalVerifySuccess(await getRescheduleChain(ctx, { meetingId: meeting.id }))
+      return listNotesForEntity({ customerId: meeting.customerId, entityType: 'meeting', entityIds: chain })
+    })
+  },
+
   /**
    * Sets an outcome that needs a documented reason and writes the reason as a customer note.
    * Positive, unset and neutral outcomes go through the plain update instead.
@@ -85,10 +108,11 @@ export const meetingBusinessService = {
   },
 
   /**
-   * Keeps the original (set to cancelled) and books a new meeting at the new time, carrying the owner,
-   * participants, customer, project, type, setter and flow state: the same sit in a new slot.
+   * Books the same visit in a new slot: the replacement carries the owner, participants, customer, project, type,
+   * setter, flow state and visit note, and takes over the link, the calendar event and the invite. The original
+   * then reads `rescheduled`, or keeps a no-show or cancellation it already had.
    * Not one transaction: meetingCrud's after-hooks dispatch jobs and write participants outside one.
-   * The replacement is created first, so a failure never leaves a cancelled meeting with nothing after it.
+   * The replacement is created first, so a failure never leaves a moved visit with nothing after it.
    */
   async reschedule(
     ctx: ScopedContext,
@@ -109,7 +133,9 @@ export const meetingBusinessService = {
       if (!canRescheduleFromOutcome(original.meetingOutcome)) {
         throw new ThrowableDalError({
           type: 'precondition-failed',
-          reason: `A meeting with outcome "${original.meetingOutcome}" already happened and can't be rescheduled — book a new meeting instead.`,
+          reason: original.meetingOutcome === 'rescheduled'
+            ? RESCHEDULED_ORIGINAL_REASON
+            : `A meeting with outcome "${original.meetingOutcome}" already happened and can't be rescheduled — book a new meeting instead.`,
         })
       }
 
@@ -141,6 +167,7 @@ export const meetingBusinessService = {
         rescheduledFromId: original.id,
         // The insert schema takes undefined, not null.
         flowStateJSON: carried?.flowStateJSON ?? undefined,
+        visitNote: carried?.visitNote ?? undefined,
       }))
 
       for (const participant of participants) {
@@ -149,17 +176,30 @@ export const meetingBusinessService = {
         }
       }
 
-      dalVerifySuccess(await meetingCrud.update(ctx, {
-        id: input.meetingId,
-        data: { meetingOutcome: 'cancelled' },
-      }))
-
-      // Once the replacement exists a failure has to say so: a bare error reads as "try again", and a cancelled original can be rescheduled a second time.
-      const handOff = await handOffShareToken({ fromMeetingId: original.id, toMeetingId: replacement.id })
+      // The hand-off comes first: once the original stops being live, nothing may still find an event on it.
+      const handOff = await handOffVisit({ fromMeetingId: original.id, toMeetingId: replacement.id })
       if (!handOff.success) {
         throw new ThrowableDalError({
           type: 'precondition-failed',
-          reason: 'Meeting rescheduled, but the original visit link did not carry over to the new meeting.',
+          reason: 'Meeting rescheduled, but the visit link and calendar event did not carry over to the new meeting.',
+        })
+      }
+
+      // The visit has already moved, so a failure past this point must not read as if nothing happened.
+      try {
+        const originalOutcome = rescheduledOriginalOutcome(original.meetingOutcome)
+        if (originalOutcome) {
+          dalVerifySuccess(await meetingCrud.update(ctx, { id: input.meetingId, data: { meetingOutcome: originalOutcome } }))
+        }
+
+        // One sync after the hand-off: Google moves the event the homeowner already has and sends one updated invitation.
+        await syncMeetingToGcalJob.dispatchOrThrow({ meetingId: replacement.id })
+      }
+      catch (err) {
+        console.error('[meetings] reschedule: the visit moved but its outcome or calendar step failed', { meetingId: original.id, replacementId: replacement.id }, err)
+        throw new ThrowableDalError({
+          type: 'precondition-failed',
+          reason: 'Meeting rescheduled, but the calendar was not updated; open the new meeting and save it to retry.',
         })
       }
 
@@ -167,6 +207,8 @@ export const meetingBusinessService = {
         const note = await customerNoteCrud.create(ctx, {
           customerId: original.customerId,
           content: buildRescheduleNote(original.scheduledFor, input.newScheduledFor, input.reason),
+          entityType: 'meeting',
+          entityId: replacement.id,
         })
         if (!note.success) {
           throw new ThrowableDalError({ type: 'precondition-failed', reason: 'Meeting rescheduled but note failed.' })
@@ -178,13 +220,15 @@ export const meetingBusinessService = {
     })
   },
   /**
-   * The setter sends the visit summary during the booking call, and staff resend it after a time change.
-   * One row per leg, so a dialog can report each.
+   * The meeting welcome text. The setter sends it during the booking call, and staff resend it after a time change.
+   * It also invites the homeowner to the visit's calendar event, whatever the text's outcome: the calendar sync sends
+   * Google's invite. The invite is stored before the text goes: a failure while storing it leaves no text sent, so a
+   * retry texts once.
    */
   async sendVisitSummary(
     ctx: ScopedContext,
-    input: { meetingId: string, note?: string | null },
-  ): Promise<DalReturn<{ sms: MeetingMessage, email: MeetingMessage }>> {
+    input: { meetingId: string },
+  ): Promise<DalReturn<{ sms: MeetingMessage, invite: VisitInviteResult }>> {
     return dalDbOperation(async () => {
       // The scoped read is the visibility check; the unscoped context read is for the send.
       const meeting = dalVerifySuccess(await meetingCrud.getById(ctx, { id: input.meetingId }))
@@ -194,24 +238,30 @@ export const meetingBusinessService = {
       if (!isVisitMessageEligible(meeting, new Date())) {
         throw new ThrowableDalError({ type: 'precondition-failed', reason: 'Visit messages go to upcoming, undecided, non-project meetings only.' })
       }
-      const mainLine = dalVerifySuccess(await voipDidsService.getMainLineDid())
-      if (!mainLine) {
+      if (!dalVerifySuccess(await voipDidsService.getMainLineDid())) {
         throw new ThrowableDalError({ type: 'precondition-failed', reason: 'No main line is configured.' })
       }
-
       const context = await getVisitMessageContext(meeting.id)
       if (!context) {
         throw new ThrowableDalError({ type: 'not-found' })
       }
-      const bodies = await getTemplateBodies()
-      const note = input.note?.trim() || null
-      const actorUserId = ctx.actor.userId
+
+      let invite: VisitInviteResult
+      if (!context.customer?.email) {
+        invite = 'no_email'
+      }
+      else if (meeting.homeownerInvitedAt) {
+        invite = 'already_invited'
+      }
+      else {
+        dalVerifySuccess(await meetingCrud.update(ctx, { id: meeting.id, data: { homeownerInvitedAt: new Date().toISOString() } }))
+        invite = 'invited'
+      }
 
       const text = await deliverVisitText(ctx, {
         context,
         templateKey: 'visit_summary',
-        bodies,
-        coordinatorNote: note,
+        bodies: await getTemplateBodies(),
         mediaUrl: [publicUrl('/api/company/vcard')],
       })
       const sms = dalVerifySuccess(await meetingMessageCrud.create(ctx, {
@@ -222,33 +272,10 @@ export const meetingBusinessService = {
         status: text.status,
         reason: text.reason,
         voipMessageId: text.voipMessageId,
-        actorUserId,
-        note,
+        actorUserId: ctx.actor.userId,
       }))
 
-      const forScheduledFor = meeting.scheduledFor
-      const base = { meetingId: meeting.id, kind: 'visit_summary' as const, channel: 'email' as const, forScheduledFor, actorUserId, note }
-      let email: MeetingMessage
-      if (!context.customer?.email) {
-        email = dalVerifySuccess(await meetingMessageCrud.create(ctx, { ...base, status: 'skipped', reason: 'no_email' }))
-      }
-      else {
-        let outcome: VisitEmailOutcome
-        try {
-          const chainIds = dalVerifySuccess(await getRescheduleChain(ctx, { meetingId: meeting.id }))
-          const chainMessages = await listChainMessages(chainIds)
-          const sequence = chainMessages.filter(message => message.kind === 'visit_summary' && message.channel === 'email' && message.status === 'sent').length
-          outcome = await deliverVisitSummaryEmail({ context, chainIds, sequence, coordinatorNote: note, mainLineE164: mainLine.e164, now: new Date() })
-        }
-        catch (error) {
-          // The text already left; a failure here must not read as the whole summary failing, or a retry texts twice.
-          console.error('[sendVisitSummary] email leg failed', { meetingId: meeting.id, error })
-          outcome = { status: 'failed', reason: 'send_error', emailProviderId: null }
-        }
-        email = dalVerifySuccess(await meetingMessageCrud.create(ctx, { ...base, status: outcome.status, reason: outcome.reason, emailProviderId: outcome.emailProviderId }))
-      }
-
-      return { sms, email }
+      return { sms, invite }
     })
   },
 
@@ -260,49 +287,6 @@ export const meetingBusinessService = {
   /** The 8:30 AM Pacific run. */
   async sendRepConfirmations(ctx: ScopedContext, input: { now: Date }): Promise<DalReturn<VisitMessageRunReport>> {
     return dalDbOperation(() => runAutomaticKind(ctx, 'rep_confirmation', input.now))
-  },
-
-  /**
-   * Removes the calendar entry of a cancelled visit whose invite went out. A reschedule's original has a
-   * successor whose next summary updates the same entry, so it gets none.
-   */
-  async sendVisitCancellation(
-    ctx: ScopedContext,
-    input: { meetingId: string },
-  ): Promise<DalReturn<{ sent: boolean, reason: string | null }>> {
-    return dalDbOperation(async () => {
-      const context = await getVisitMessageContext(input.meetingId)
-      if (!context) {
-        throw new ThrowableDalError({ type: 'not-found' })
-      }
-      if (context.meeting.meetingOutcome !== 'cancelled') {
-        return { sent: false, reason: 'not_cancelled' }
-      }
-      const chainIds = dalVerifySuccess(await getRescheduleChain(SYSTEM_CONTEXT, { meetingId: input.meetingId }))
-      const chainMessages = await listChainMessages(chainIds)
-      const hasSuccessor = (await getRescheduleSuccessorId(input.meetingId)) != null
-      const now = new Date()
-      if (!shouldSendVisitCancellation({ chainMessages, hasSuccessor, scheduledFor: context.meeting.scheduledFor, now })) {
-        if (new Date(context.meeting.scheduledFor).getTime() <= now.getTime()) {
-          return { sent: false, reason: 'past' }
-        }
-        return { sent: false, reason: hasSuccessor ? 'rescheduled' : 'no_invite' }
-      }
-
-      const claim = await claimAutomaticSend({ meetingId: input.meetingId, kind: 'visit_cancellation', channel: 'email', forScheduledFor: context.meeting.scheduledFor })
-      if (!claim) {
-        return { sent: false, reason: 'already_sent' }
-      }
-      const mainLine = dalVerifySuccess(await voipDidsService.getMainLineDid())
-      if (!mainLine) {
-        await setMeetingMessageOutcome(claim.id, { status: 'failed', reason: 'no_main_line' })
-        return { sent: false, reason: 'no_main_line' }
-      }
-      const sequence = chainMessages.filter(message => message.kind === 'visit_summary' && message.channel === 'email' && message.status === 'sent').length
-      const outcome = await deliverVisitCancellationEmail({ context, chainIds, sequence, mainLineE164: mainLine.e164, now })
-      await setMeetingMessageOutcome(claim.id, outcome)
-      return { sent: outcome.status === 'sent', reason: outcome.reason }
-    })
   },
 
   /** The homeowner's own "I'll be there", by text or on the page. Never sets `confirmedAt`: that stays the office's. */

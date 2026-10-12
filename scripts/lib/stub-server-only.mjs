@@ -1,5 +1,5 @@
-// The dev tool renders React email, which the react-server condition forbids; that condition was only
-// there to satisfy `server-only`, so stub that one package and let react resolve to its Node builds.
+// `server-only` throws outside Next.js; stubbing that one package lets a CLI import server modules while
+// react keeps resolving to its Node builds.
 import { registerHooks } from 'node:module'
 
 registerHooks({

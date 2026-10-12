@@ -1,11 +1,10 @@
 /**
  * Drives the visit-message verbs without the dashboard, for dev checks. Sends are real: outside production
- * every text goes to VOIP_DEV_OVERRIDE_NUMBER and every email to EMAIL_DEV_OVERRIDE.
+ * every text goes to VOIP_DEV_OVERRIDE_NUMBER, and the homeowner calendar invite goes to EMAIL_DEV_OVERRIDE or nobody.
  *
- * Runs without the react-server condition (it renders React email, which that condition forbids); the preload stubs `server-only`.
+ * The preload stubs `server-only`, which would otherwise throw outside Next.js.
  *
- *   pnpm tsx --import ./scripts/lib/stub-server-only.mjs scripts/visit-messages.ts summary --meeting <id> [--note "..."]
- *   pnpm tsx --import ./scripts/lib/stub-server-only.mjs scripts/visit-messages.ts cancel --meeting <id>
+ *   pnpm tsx --import ./scripts/lib/stub-server-only.mjs scripts/visit-messages.ts summary --meeting <id>
  *   pnpm tsx --import ./scripts/lib/stub-server-only.mjs scripts/visit-messages.ts run --kind day_before_reminder [--at 2026-10-09T01:00:00Z]
  */
 /* eslint-disable perfectionist/sort-imports -- load-env must run before any module that reads process.env */
@@ -36,9 +35,9 @@ async function main() {
   switch (command) {
     case 'summary': {
       const meetingId = requireFlag('--meeting')
-      const result = dalVerifySuccess(await meetingService.business.sendVisitSummary(SYSTEM_CONTEXT, { meetingId, note: flagValue('--note') }))
-      console.log(`sms:   ${result.sms.status}${result.sms.reason ? ` (${result.sms.reason})` : ''}`)
-      console.log(`email: ${result.email.status}${result.email.reason ? ` (${result.email.reason})` : ''}`)
+      const result = dalVerifySuccess(await meetingService.business.sendVisitSummary(SYSTEM_CONTEXT, { meetingId }))
+      console.log(`sms: ${result.sms.status}${result.sms.reason ? ` (${result.sms.reason})` : ''}`)
+      console.log(`invite: ${result.invite}`)
       return
     }
     case 'run': {
@@ -56,14 +55,8 @@ async function main() {
       console.log(JSON.stringify(report, null, 2))
       return
     }
-    case 'cancel': {
-      const meetingId = requireFlag('--meeting')
-      const result = dalVerifySuccess(await meetingService.business.sendVisitCancellation(SYSTEM_CONTEXT, { meetingId }))
-      console.log(`sent: ${result.sent}${result.reason ? ` (${result.reason})` : ''}`)
-      return
-    }
     default:
-      console.error('Usage: visit-messages.ts summary --meeting <id> [--note "..."] | run --kind day_before_reminder|rep_confirmation [--at <iso instant>] | cancel --meeting <id>')
+      console.error('Usage: visit-messages.ts summary --meeting <id> | run --kind day_before_reminder|rep_confirmation [--at <iso instant>]')
       process.exit(1)
   }
 }

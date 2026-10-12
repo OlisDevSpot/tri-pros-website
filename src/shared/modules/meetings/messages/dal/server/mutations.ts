@@ -6,7 +6,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { meetingMessages } from '@/shared/db/schema/meeting-messages'
 
-type AutomaticKind = Extract<MeetingMessageKind, 'day_before_reminder' | 'rep_confirmation' | 'visit_cancellation'>
+type AutomaticKind = Extract<MeetingMessageKind, 'day_before_reminder' | 'rep_confirmation'>
 
 interface AutomaticRowInput {
   meetingId: string

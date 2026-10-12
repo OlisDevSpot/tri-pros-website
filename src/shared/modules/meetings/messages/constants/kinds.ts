@@ -1,3 +1,4 @@
+// visit_cancellation and the email channel describe rows from before Google sent the invite and the cancellation.
 export const meetingMessageKinds = [
   'visit_summary',
   'day_before_reminder',
@@ -7,6 +8,10 @@ export const meetingMessageKinds = [
   'homeowner_reply',
 ] as const
 export type MeetingMessageKind = (typeof meetingMessageKinds)[number]
+
+/** What the welcome text did about the calendar invite. The meeting column is the record; Google's delivery is not tracked. */
+export const visitInviteResults = ['invited', 'already_invited', 'no_email'] as const
+export type VisitInviteResult = (typeof visitInviteResults)[number]
 
 export const meetingMessageChannels = ['sms', 'email'] as const
 export type MeetingMessageChannel = (typeof meetingMessageChannels)[number]

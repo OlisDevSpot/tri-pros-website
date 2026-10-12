@@ -7,7 +7,7 @@ import type { MeetingOutcome } from '@/shared/constants/enums'
 
 import { useRouter } from 'next/navigation'
 import { ROOTS } from '@/shared/config/roots'
-import { CANNOT_RESCHEDULE_REASON, canRescheduleFromOutcome } from '@/shared/constants/enums/meetings'
+import { rescheduleBlockedReason } from '@/shared/constants/enums/meetings'
 import { useAbility } from '@/shared/domains/permissions/client'
 import { SetterPicker } from '@/shared/entities/meetings/components/setter-picker'
 import { MEETING_ACTIONS } from '@/shared/entities/meetings/constants/actions'
@@ -38,6 +38,7 @@ interface MeetingActionOverrides<T extends MeetingEntity> {
   onStart?: (entity: T) => void
   onViewSchedule?: (entity: T) => void
   onAssignProject?: (entity: T) => void
+  onEditNotes?: (entity: T) => void
   onCreateProposal?: (entity: T) => void
   /** Required: whoever calls this hook owns the participants modal, so the opener is theirs to supply. */
   onAssignOwner: (entity: T) => void
@@ -113,11 +114,9 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
     {
       action: MEETING_ACTIONS.reschedule,
       onAction: (entity: T) => void reschedule(entity.id),
-      getDisabledReason: (entity: T) =>
-        canRescheduleFromOutcome((entity.meetingOutcome ?? 'not_set') as MeetingOutcome)
-          ? null
-          : CANNOT_RESCHEDULE_REASON,
+      getDisabledReason: (entity: T) => rescheduleBlockedReason((entity.meetingOutcome ?? 'not_set') as MeetingOutcome),
     },
+    ...(overrides.onEditNotes ? [{ action: MEETING_ACTIONS.notes, onAction: overrides.onEditNotes }] : []),
     {
       action: MEETING_ACTIONS.createProposal,
       onAction: overrides.onCreateProposal ?? defaultCreateProposal,

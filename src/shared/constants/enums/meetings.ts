@@ -56,6 +56,7 @@ export const derivedMeetingOutcomes = [
   'proposal_sent',
   'converted_to_project',
   'additional_work',
+  'rescheduled',
 ] as const
 export type DerivedMeetingOutcome = (typeof derivedMeetingOutcomes)[number]
 
@@ -85,6 +86,7 @@ export const MEETING_OUTCOME_SENTIMENT: Record<MeetingOutcome, MeetingOutcomeSen
   not_set: 'unset',
   follow_up_needed: 'neutral',
   reschedule_needed: 'neutral',
+  rescheduled: 'neutral',
   proposal_created: 'neutral',
   proposal_sent: 'neutral',
   converted_to_project: 'positive',
@@ -124,6 +126,7 @@ export const MEETING_OUTCOME_SIT: Record<MeetingOutcome, MeetingSit> = {
   no_show: 'not_sat',
   cancelled: 'not_sat',
   reschedule_needed: 'not_sat',
+  rescheduled: 'not_sat',
   nra: 'not_sat',
 }
 
@@ -155,13 +158,14 @@ export const ATTENTION_OUTCOMES: MeetingOutcome[] = meetingOutcomes.filter(outco
 /** Outcomes that represent a decided/terminal state (anything but not_set). */
 export const DECIDED_OUTCOMES: MeetingOutcome[] = meetingOutcomes.filter(o => o !== 'not_set')
 
-/** Outcomes that keep a meeting "live" — everything except the two that mean it never happened. */
+/** Outcomes that keep a meeting "live" — everything except the outcomes that mean this row's visit never happens. */
 export const LIVE_MEETING_OUTCOMES: MeetingOutcome[]
-  = meetingOutcomes.filter(o => o !== 'cancelled' && o !== 'no_show')
+  = meetingOutcomes.filter(o => o !== 'cancelled' && o !== 'no_show' && o !== 'rescheduled')
 
+// rescheduled is absent on purpose: its replacement is the meeting a later reschedule moves.
 /**
  * Outcomes where the meeting did NOT physically occur — the only states a
- * Reschedule (cancel-and-rebook) may start from. Orthogonal to sentiment: it
+ * Reschedule (the visit moves to a new meeting) may start from. Orthogonal to sentiment: it
  * cuts across unset / neutral / negative, so it cannot derive from the
  * sentiment map. Single source for the UI action gate AND the server guard.
  */
@@ -177,7 +181,18 @@ export function canRescheduleFromOutcome(outcome: MeetingOutcome): boolean {
 }
 
 /** UI reason shown when a meeting can't be rescheduled because it already happened. */
-export const CANNOT_RESCHEDULE_REASON = 'This meeting already happened — book a new meeting instead of rescheduling.'
+const CANNOT_RESCHEDULE_REASON = 'This meeting already happened — book a new meeting instead of rescheduling.'
+
+/** UI and server reason for a rescheduled original: the visit lives on the replacement now. */
+export const RESCHEDULED_ORIGINAL_REASON = 'This visit was moved; reschedule the new meeting instead.'
+
+/** Why a meeting with this outcome can't be rescheduled, or null when it can. */
+export function rescheduleBlockedReason(outcome: MeetingOutcome): string | null {
+  if (canRescheduleFromOutcome(outcome)) {
+    return null
+  }
+  return outcome === 'rescheduled' ? RESCHEDULED_ORIGINAL_REASON : CANNOT_RESCHEDULE_REASON
+}
 
 /** Every way a homeowner can confirm a visit themselves. The office's own confirmation is `confirmedAt`. */
 export const homeownerConfirmationOptions = ['sms_reply', 'in_app'] as const

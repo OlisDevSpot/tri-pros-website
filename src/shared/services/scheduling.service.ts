@@ -1,7 +1,13 @@
 import type { AccountRow } from '@/shared/entities/accounts/dal/server/google-calendar'
 
+import type { CalendarNotice } from '@/shared/services/providers/google-calendar/lib/calendar-notice'
+import type { GCalEventInput } from '@/shared/services/providers/google-calendar/types'
+
+import { isProductionData } from '@/shared/config/data-target'
 import { publicUrl } from '@/shared/config/public-url'
+import { ROOTS } from '@/shared/config/roots'
 import env from '@/shared/config/server-env'
+import { companyInfo } from '@/shared/constants/company'
 import { gcalSyncableActivityTypes } from '@/shared/constants/enums'
 import {
   clearAccountGCalFields,
@@ -31,15 +37,20 @@ import {
   updateMeetingScheduledFor,
 } from '@/shared/entities/meetings/dal/server/google-calendar'
 import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
+import { formatPhone } from '@/shared/lib/phone'
 
-import { GCalSyncTokenExpiredError, googleCalendarClient } from '@/shared/services/providers/google-calendar/client'
+import { GCalRequestError, GCalSyncTokenExpiredError, googleCalendarClient } from '@/shared/services/providers/google-calendar/client'
+import { carryAttendeeResponses, decideCalendarNotice, homeownerMarker, noticeStateFromEvent, noticeStateFromInput, toSendUpdates } from '@/shared/services/providers/google-calendar/lib/calendar-notice'
 import { hasRemoteChanged, resolveConflict } from '@/shared/services/providers/google-calendar/lib/conflict'
 import { gcalEventToLocal } from '@/shared/services/providers/google-calendar/lib/map-from-gcal'
 import { activityToGCalEvent, meetingToGCalEvent } from '@/shared/services/providers/google-calendar/lib/map-to-gcal'
+import { resolveMeetingGuests } from '@/shared/services/providers/google-calendar/lib/meeting-guests'
 import { googleDriveClient } from '@/shared/services/providers/google-drive/client'
+import { voipDidsService } from '@/shared/services/voip/voip-dids.service'
 
-const isDev = env.NODE_ENV === 'development'
-const TRI_PROS_CALENDAR_NAME = isDev ? 'Tri Pros Schedule (DEV)' : 'Tri Pros Schedule'
+// The data, not the runtime: a local script on production data must keep production's guests and Google's emails.
+const isProduction = isProductionData()
+const TRI_PROS_CALENDAR_NAME = isProduction ? 'Tri Pros Schedule' : 'Tri Pros Schedule (DEV)'
 
 async function getAccessTokenForUser(userId: string): Promise<{ accessToken: string, account: AccountRow } | null> {
   const row = await getGoogleAccountForUser(userId)
@@ -199,6 +210,27 @@ async function resolveSystemCalendarAuth(): Promise<{
   return { auth, calendarId: auth.account.gcalCalendarId }
 }
 
+// The main line is the number that answers texts; the office line stands in until one is configured.
+async function resolveQuestionsPhone(): Promise<string> {
+  const mainLine = await voipDidsService.getMainLineDid()
+  const fallback = companyInfo.contactInfo.find(item => item.accessor === 'phone')!.value
+  return formatPhone((mainLine.success && mainLine.data?.e164) || fallback)
+}
+
+function buildMeetingEvent(meeting: NonNullable<Awaited<ReturnType<typeof getMeetingForGCal>>>, questionsPhone: string): GCalEventInput | null {
+  const guests = resolveMeetingGuests({
+    isProduction,
+    staffEmails: meeting.participantEmails,
+    invitedHomeownerEmail: meeting.homeownerInvitedAt ? meeting.customerEmail : null,
+    devOverride: env.EMAIL_DEV_OVERRIDE || null,
+  })
+  return meetingToGCalEvent(meeting, {
+    visitLink: publicUrl(ROOTS.public.homeVisit(meeting.id, meeting.shareToken)),
+    questionsPhone,
+    guests,
+  })
+}
+
 /** The null-payload branch is unreachable today (scheduled_for is NOT NULL); kept so a stale linkage still deletes without a separate path. */
 async function pushMeetingEventToCalendar(
   auth: { accessToken: string },
@@ -206,35 +238,59 @@ async function pushMeetingEventToCalendar(
   meetingId: string,
   meeting: NonNullable<Awaited<ReturnType<typeof getMeetingForGCal>>>,
 ): Promise<void> {
-  const payload = meetingToGCalEvent(meeting)
+  const payload = buildMeetingEvent(meeting, await resolveQuestionsPhone())
 
   if (!payload) {
     if (meeting.gcalEventId) {
-      await googleCalendarClient.deleteEvent(auth.accessToken, calendarId, meeting.gcalEventId)
+      await googleCalendarClient.deleteEvent(auth.accessToken, calendarId, meeting.gcalEventId, 'none')
       await clearMeetingGCalFields(meetingId)
     }
     return
   }
 
-  if (meeting.gcalEventId) {
-    const updated = await googleCalendarClient.updateEvent(
-      auth.accessToken,
-      calendarId,
-      meeting.gcalEventId,
-      payload,
-      meeting.gcalEtag ?? undefined,
-    )
-    await updateMeetingGCalFields(meetingId, {
-      gcalEtag: updated.etag,
-      gcalSyncedAt: new Date().toISOString(),
-    })
-  }
-  else {
-    const created = await googleCalendarClient.createEvent(auth.accessToken, calendarId, payload)
+  const write = async (event: GCalEventInput) => {
+    if (meeting.gcalEventId) {
+      const current = await googleCalendarClient.getEvent(auth.accessToken, calendarId, meeting.gcalEventId)
+      const notice = decideCalendarNotice(noticeStateFromEvent(current), noticeStateFromInput(event), new Date())
+      const withResponses = { ...event, attendees: carryAttendeeResponses(event.attendees ?? [], current.attendees) }
+      const updated = await googleCalendarClient.updateEvent(
+        auth.accessToken,
+        calendarId,
+        meeting.gcalEventId,
+        withResponses,
+        toSendUpdates(notice, { isProduction }),
+        // The notice was decided against this read, so the write must guard this version; the stored etag goes stale on every RSVP.
+        current.etag,
+      )
+      await updateMeetingGCalFields(meetingId, {
+        gcalEtag: updated.etag,
+        gcalSyncedAt: new Date().toISOString(),
+      })
+      return
+    }
+    const notice = decideCalendarNotice(null, noticeStateFromInput(event), new Date())
+    const created = await googleCalendarClient.createEvent(auth.accessToken, calendarId, event, toSendUpdates(notice, { isProduction }))
     await updateMeetingGCalFields(meetingId, {
       gcalEventId: created.id,
       gcalEtag: created.etag,
       gcalSyncedAt: new Date().toISOString(),
+    })
+  }
+
+  const homeownerEmail = noticeStateFromInput(payload).homeownerEmail
+  try {
+    await write(payload)
+  }
+  catch (error) {
+    // Google refuses an address it cannot invite with a 400; the visit still belongs on the office calendar, and the stored intent stays for a corrected email.
+    if (!homeownerEmail || !(error instanceof GCalRequestError) || error.status !== 400) {
+      throw error
+    }
+    console.error('[scheduling] Google refused the homeowner as a guest; syncing without them', { meetingId, error })
+    await write({
+      ...payload,
+      attendees: (payload.attendees ?? []).filter(attendee => attendee.email.toLowerCase() !== homeownerEmail.toLowerCase()),
+      extendedProperties: homeownerMarker(null),
     })
   }
 }
@@ -259,15 +315,17 @@ function createSchedulingService() {
       const systemUserId = await getSystemOwnerId()
       if (userId === systemUserId) {
         const allMeetingIds = await getAllMeetingsWithSchedule()
+        const questionsPhone = await resolveQuestionsPhone()
         for (const { id: meetingId } of allMeetingIds) {
           const meeting = await getMeetingForGCal(meetingId)
           if (!meeting) {
             continue
           }
 
-          const payload = meetingToGCalEvent(meeting)
+          const payload = buildMeetingEvent(meeting, questionsPhone)
           if (payload) {
-            const created = await googleCalendarClient.createEvent(auth.accessToken, calendar.id, payload)
+            // A one-time import: homeowners already invited know about their visit, so the backfill emails nobody.
+            const created = await googleCalendarClient.createEvent(auth.accessToken, calendar.id, payload, 'none')
             await updateMeetingGCalFields(meetingId, {
               gcalEventId: created.id,
               gcalEtag: created.etag,
@@ -286,7 +344,7 @@ function createSchedulingService() {
 
         const payload = activityToGCalEvent(activity)
         if (payload) {
-          const created = await googleCalendarClient.createEvent(auth.accessToken, calendar.id, payload)
+          const created = await googleCalendarClient.createEvent(auth.accessToken, calendar.id, payload, 'none')
           await updateActivityGCalFields(activity.id, {
             gcalEventId: created.id,
             gcalEtag: created.etag,
@@ -347,13 +405,13 @@ function createSchedulingService() {
     },
 
     /** Takes the event id, not a meetingId — the row may already be gone; Google's 410 GONE for an already-deleted event is swallowed. */
-    deleteMeetingEvent: async (input: { gcalEventId: string }): Promise<void> => {
+    deleteMeetingEvent: async (input: { gcalEventId: string, notice: CalendarNotice }): Promise<void> => {
       const ctx = await resolveSystemCalendarAuth()
       if (!ctx) {
         return
       }
       await googleCalendarClient
-        .deleteEvent(ctx.auth.accessToken, ctx.calendarId, input.gcalEventId)
+        .deleteEvent(ctx.auth.accessToken, ctx.calendarId, input.gcalEventId, toSendUpdates(input.notice, { isProduction }))
         .catch((err) => {
           console.error(`[scheduling] deleteMeetingEvent failed for ${input.gcalEventId}:`, err)
         })
@@ -413,7 +471,7 @@ function createSchedulingService() {
 
       if (!payload) {
         if (activity.gcalEventId) {
-          await googleCalendarClient.deleteEvent(auth.accessToken, calendarId, activity.gcalEventId)
+          await googleCalendarClient.deleteEvent(auth.accessToken, calendarId, activity.gcalEventId, 'none')
           await clearActivityGCalFields(activityId)
         }
         return
@@ -425,6 +483,7 @@ function createSchedulingService() {
           calendarId,
           activity.gcalEventId,
           payload,
+          'none',
           activity.gcalEtag ?? undefined,
         )
         await updateActivityGCalFields(activityId, {
@@ -433,7 +492,7 @@ function createSchedulingService() {
         })
       }
       else {
-        const created = await googleCalendarClient.createEvent(auth.accessToken, calendarId, payload)
+        const created = await googleCalendarClient.createEvent(auth.accessToken, calendarId, payload, 'none')
         await updateActivityGCalFields(activityId, {
           gcalEventId: created.id,
           gcalEtag: created.etag,

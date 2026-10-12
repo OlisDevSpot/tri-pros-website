@@ -10,6 +10,21 @@ export interface GCalEvent {
   updated: string // ISO 8601 timestamp
   status: 'confirmed' | 'tentative' | 'cancelled'
   htmlLink?: string
+  attendees?: GCalAttendee[]
+  extendedProperties?: GCalExtendedProperties
+}
+
+export type GCalSendUpdates = 'all' | 'externalOnly' | 'none'
+
+export interface GCalAttendee {
+  email: string
+  responseStatus?: 'needsAction' | 'declined' | 'tentative' | 'accepted'
+  organizer?: boolean
+  self?: boolean
+}
+
+export interface GCalExtendedProperties {
+  private?: Record<string, string>
 }
 
 export interface GCalDateTime {
@@ -24,7 +39,8 @@ export interface GCalEventInput {
   location?: string
   start: GCalDateTime
   end: GCalDateTime
-  attendees?: { email: string }[]
+  attendees?: GCalAttendee[]
+  extendedProperties?: GCalExtendedProperties
   colorId?: string
 }
 

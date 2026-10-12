@@ -28,7 +28,7 @@ export interface VisitMessageVars {
   visitTime: string
   arrivalWindow: string
   visitLink: string
-  coordinatorNote: string
+  visitNote: string
 }
 
 export type VisitMessageStepState

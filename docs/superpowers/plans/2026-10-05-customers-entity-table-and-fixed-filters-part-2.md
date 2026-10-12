@@ -14,28 +14,28 @@
 
 ## Owner confirms
 
-Each is isolated so a different answer is a small change.
+**All confirmed by the owner 2026-10-12, as recommended** (items 3–6 and 9 were the open ones). Item 2 was replaced the same day (tracker **D66**), which also retires item 13.
 
-1. **Spec §5.5, ruled 2026-10-07:** Edit Profile opens the profile modal **in its edit mode** (`defaultEditing`, item 12); Schedule Meeting opens it with the Add meeting dialog up, **settled by the investigation in item 13**. Original text: Edit Profile and Schedule Meeting open the customer profile modal (the spec's proposal; the owner said "proceed" without choosing). Edit Profile opens it as View Profile does; Schedule Meeting opens it with the Add meeting dialog already up. All of it is Task 3, one commit. To pick the alternative (hide both actions in tables until they have a real target), drop Task 3 and say so; hiding needs a `hidden` rule on those two configs instead.
-2. **`defaultMeetingOpen`** is the new optional prop on `CustomerProfileModal` that Task 3 needs: the modal has no way today to open on its Add meeting dialog (its props are `customerId`, `defaultTab`, `highlightMeetingId`). The name follows `defaultTab` and the `meetingOpen` state it seeds.
+1. **Spec §5.5, ruled 2026-10-07 and 2026-10-12:** Edit Profile opens the profile modal **in its edit mode** (`defaultEditing`, item 12). Schedule Meeting opens the standalone **`CreateMeetingModal`** ("New meeting — <name>"), as the pipeline kanban's Schedule Meeting already does (item 2). Both are Task 3, one commit.
+2. **Schedule Meeting reuses the kanban's `CreateMeetingModal`** (owner ruling 2026-10-12, D66; replaces the planned `defaultMeetingOpen` prop on the profile modal). `useCustomersTable` holds the customer it is booking for (`{ id, name } | null`) and renders `CreateMeetingModal` in its `dialogs`, as `customer-pipeline-view.tsx` does; the modal wraps the same `CreateMeetingForm` as the profile's Add meeting dialog. Nothing is added to the profile modal for it, and the dialog-stacking question (item 13) no longer arises. Unlike the kanban on the Leads pipeline, a table does not move the customer's stage after booking; the profile's own Add meeting dialog doesn't either.
 3. **File names for the two lead-sources table views:** `all-customers-table-view.ts` and `lead-source-customers-table-view.ts` in `features/lead-sources-admin/constants/`, one constant per file as records-management does; `lead-sources-table-query-configs.ts` is deleted. The options type is `UseCustomersTableOptions`, as `UseMeetingsTableOptions` and `UseProjectsTableOptions`.
 4. **`CustomerTableRow` becomes the list read's row type** (`AppRouterOutputs['customersRouter']['business']['list']['rows'][number]`), as `MeetingRow` and `ProjectRow` are. Today it is a hand-written interface with a nullable `pipeline` and optional lead-source fields, which `useEntityTable` rejects against the read's rows. The name stays.
 5. **What refreshes the one-source pane changes slightly.** It read `leadSourcesRouter.getCustomers`, which every proposal and project change invalidates (for the signed counts). It will read `customersRouter.business.list`, which those changes do not invalidate, as the other two customers tables never were; customer edits, which did not refresh the pane before, now do. A Pipeline badge in the pane can therefore lag a proposal or project change until the next refetch (30 s stale time, window focus, or Refresh). To keep the old behaviour, add `trpc.customersRouter.business.list.queryFilter()` to `invalidateProposal` and `invalidateProject` in `use-invalidation.ts`. Not planned: the tracker's A7 wants those invalidations narrower, not wider.
 6. **The pane loses the Source cell's reassign picker with the column** (the spec drops the column because its value is constant there). A super-admin reassigns a customer's lead source from the "All customers" pane or the customers records page.
-7. **`openCustomerProfile(props)`** (added 2026-10-07; owner asked for it): one helper at `src/shared/modules/customers/core/lib/open-customer-profile.ts` (module address, item 11) replacing the 14 hand-written `openModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props })` calls (Task 0). Its `props` type is the modal's own, so Task 3's `defaultMeetingOpen` flows through with no helper change.
+7. **`openCustomerProfile(props)`** (added 2026-10-07; owner asked for it): one helper at `src/shared/modules/customers/core/lib/open-customer-profile.ts` (module address, item 11) replacing the hand-written `openModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props })` calls (13 in 12 files on 2026-10-12; Task 0). Its `props` type is the modal's own, so Task 3's `defaultEditing` flows through with no helper change.
 8. **No `EntityTableSection`** (retracted by the owner later on 2026-10-07, tracker **D65**, after D64 had recorded it): the two lead-sources sections compose the `DataView` parts (`src/shared/components/data-view/`, built by the data-view spec's phase 1, which lands **before** this plan) in their own `<section>` (Task 2 Steps 3–4). Re-check the part names and import path against that phase's code before dispatch; the sketches below follow the spec as ruled.
 9. **The panes gain the row-cap notice.** `QueryToolbar.Standard` includes `QueryToolbar.RowCapNotice`, which the hand-written pane toolbars left out. It shows only when a read hits the row cap, as on the records pages.
 10. **Customers skeleton row height** (added 2026-10-07): the hook sets `skeletonRowClassName` to the measured row height (Task 1 Step 8), as projects did in `7572c341`. Without it the default `h-[61px]` jumps against the real rows.
 11. **New customers files live at the module address** (owner ruling 2026-10-07, under the 2026-10-05 rule "code lives where its module will be"): `useCustomersTable` at `src/shared/modules/customers/core/components/customers-table/use-customers-table.tsx`, `openCustomerProfile` at `src/shared/modules/customers/core/lib/open-customer-profile.ts`, the first files under `modules/customers/`. Both are client files with no DAL, so D12's "no partial module" (split-brain DAL) does not apply. Existing `entities/customers/**` files are edited where they are until the path-only move; Task 4's moves of existing files are unchanged.
 12. **Edit Profile opens the profile in edit mode** (owner ruling 2026-10-07: "fix as needed"): new optional prop `defaultEditing` on `CustomerProfileModal`, seeding `useCustomerEditForm`'s `isEditing` for a viewer who can edit (Task 3 Step 1). Before, Edit Profile did exactly what View Profile does. The pipeline kanban card's Edit Profile still falls back to the pipeline board: same bug, out of this plan; name it in the Task 5 report.
-13. **Schedule Meeting on an already-loaded profile needs investigating first** (owner ruling 2026-10-07: "we'll need to look deeper"). When the profile is cached, the profile modal and the Add meeting dialog mount in the same commit; the inner dialog's focus trap and dismiss layer may register before the outer one, so Escape or a click in the form could close the whole profile. Unconfirmed. Task 3 Step 2b reproduces it before anything is committed; if it reproduces, the dialog opens one commit after the content mounts (an effect, not a `useState` seed) and Step 4 checks the cached case; if that fails too, Task 3 stops for the owner.
+13. ~~**Schedule Meeting on an already-loaded profile needs investigating first**~~ (2026-10-07). **Retired 2026-10-12 by item 2:** Schedule Meeting no longer opens the profile, so no dialog stacks on it and there is nothing to investigate.
 14. **Switching sources starts the pane on page 1** (owner ruling 2026-10-07). Today, and in the plan as first written, page 3 of source A became page 3 of source B. The selection handler clears the pane's page key (Task 2 Step 4b). Its pipeline filter and search still carry over, as today.
 
 ## Global Constraints
 
 - Verification per task: `pnpm tsc` and `pnpm lint`. **Never `pnpm build`.**
-- **No database writes for testing** (dev included). Browser checks read and open UI only: never submit the Add meeting form, never confirm a delete, never pick a created date. A write check runs only on a customer the owner names, or is verified by code read.
-- **Order (owner ruling 2026-10-07, tracker D64):** R2 lands before the permissions #285 merge and before pipeline-speed phase 2 (the action hosts). #285 rebases onto R2 (in this plan's files: `columns-registry.tsx`, `use-profile-commands.ts`, the moved `customer-meetings-list.tsx`, `use-meetings-table.tsx`, the customers `queries.ts` and `DOCS.md`); do not wait for it, and do not adopt its names (`permit`, `permissions/client`) before it merges.
+- **No database writes for testing** (dev included). Browser checks read and open UI only: never submit the new-meeting form, never confirm a delete, never pick a created date. A write check runs only on a customer the owner names, or is verified by code read.
+- **Order (owner rulings 2026-10-07, tracker D64 and D65):** data-view phase 1 → this plan → data-view phases 2–3 → the permissions #285 merge. Pipeline-speed phase 2 (the action hosts) was built first after all, on 2026-10-08: `CustomerActionsHost` and `MeetingActionsHost` already exist under `src/shared/modules/<m>/core/components/`, and this plan builds on them as they are. #285 rebases onto R2 (in this plan's files: `columns-registry.tsx`, the moved `customer-meetings-list.tsx`, `use-meetings-table.tsx`, the customers `queries.ts` and `DOCS.md`); do not wait for it, and do not adopt its names (`permit`, `permissions/client`) before it merges.
 - **No schema change.** If a step seems to need one, stop and report it.
 - No unit runner in the repo: pure functions are checked with throwaway `node:test` files under `.superpowers/sdd/2026-10-05-customers-entity-table-and-fixed-filters/tests/` (git-ignored; the same workspace as part 1), run from the repo root with `pnpm exec tsx --test <file>`. A file that imports a `server-only` module runs with `NODE_OPTIONS=--conditions=react-server`. Never commit them.
 - Work on `main`; other sessions commit concurrently and the index can hold their staged work. Add only new files with `git add -- <path>`, then **commit with an explicit pathspec** (`git commit -m "…" -- <paths>`, as every commit block below does) so nothing already staged rides along; confirm with `git show --stat HEAD`. Never `git add -A`, `git stash`, `checkout`, `reset`, `restore`, `clean` or `commit --amend`. Before editing, moving or deleting any file this plan touches, run `git status --short <file>`: if it shows changes you didn't make, stop and ask. The #285 permissions worktree and the profile modal's polish pass both touch customer files. Message shape `type(scope): subject`, ending with `Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>`.
@@ -57,20 +57,20 @@ Each is isolated so a different answer is a small change.
 2. **A saved column layout that names the removed Source column still loads.** A viewer who resized or hid Source in the pane has `leadSourceName` in the `dt.lead-source-customers` cookie; the table must load, ignore it, and keep the rest of the layout. Pinned by Task 2 Step 8 (browser, cookie preset through `TABLE_PREFS`).
 3. **An agent sees the same customers as before, and the pane's read cannot widen that.** The records page for an agent shows the baseline's rows; `/dashboard/lead-sources` still sends an agent to the dashboard. Pinned by Task 1 Step 8 and Task 2 Step 8 (browser, agent session).
 4. **An old pane URL keeps its page and filters, and a key that tries to name another source is ignored.** `?src_p=2&src_pipeline=fresh` still applies; `src_leadSource` or `src_sourceId` in the URL never changes whose customers show. Pinned by Task 2 Step 1 (test) and Step 8 (browser).
-5. **Schedule Meeting on a phone, and for a profile that fails to load.** At 390px the profile opens full screen with the Add meeting dialog above it and usable; closing the dialog leaves the profile; if the profile read fails, the error state shows and no dialog floats over it. Pinned by Task 3 Step 4 (browser, nothing submitted) and Step 3 (code read).
+5. **Schedule Meeting and Edit Profile reach their targets, on a phone too.** Schedule Meeting opens "New meeting — <name>" for that row's customer, usable and fully on screen at 390px; closing it leaves the table as it was. Edit Profile opens the profile with its edit form on for a viewer who can edit, and as View Profile does for one who cannot. Pinned by Task 3 Step 4 (browser, nothing submitted) and Step 3 (code read).
 
 ## File map
 
 | Task | Files |
 |---|---|
-| 0 `openCustomerProfile` | `src/shared/modules/customers/core/lib/open-customer-profile.ts` (new) · the 13 files that call `openModal({ accessor: 'CustomerProfile', … })` today (Task 0 Step 1 lists them) |
+| 0 `openCustomerProfile` | `src/shared/modules/customers/core/lib/open-customer-profile.ts` (new) · the files that call `openModal({ accessor: 'CustomerProfile', … })` today (Task 0 Step 1 lists them) |
 | 1 The hook and the records page | `src/shared/entities/customers/lib/columns-registry.tsx` · `src/shared/modules/customers/core/components/customers-table/use-customers-table.tsx` (new) · `src/features/records-management/constants/customers-records-table-view.ts` (new) · `src/features/records-management/ui/components/customers-records-table.tsx` (new) · `src/app/(frontend)/dashboard/(records)/customers/page.tsx` · `src/features/agent-dashboard/ui/components/customers-route-pending-view.tsx` · deleted: `src/shared/entities/customers/components/customers-table.tsx`, `src/shared/entities/customers/constants/customers-table-query-config.ts` |
 | 2 The lead-sources tables | `src/features/lead-sources-admin/constants/{all-customers-table-view,lead-source-customers-table-view}.ts` (new) · `src/features/lead-sources-admin/ui/components/{all-customers-section,lead-source-customers-section}.tsx` · `src/app/(frontend)/dashboard/lead-sources/page.tsx` · `src/trpc/routers/lead-sources.router.ts` · `src/shared/entities/customers/dal/customer-fields.ts` · `src/shared/entities/customers/dal/server/{customer-field-sql,queries}.ts` · deleted: `src/features/lead-sources-admin/constants/lead-sources-table-query-configs.ts` |
-| 3 The two row actions | `src/shared/entities/customers/hooks/{use-profile-commands,use-customer-edit-form}.ts` · `src/shared/entities/customers/components/profile/{customer-profile-modal,customer-profile-modal-content}.tsx` · `src/shared/modules/customers/core/components/customers-table/use-customers-table.tsx` |
+| 3 The two row actions | `src/shared/entities/customers/hooks/use-customer-edit-form.ts` · `src/shared/entities/customers/components/profile/{customer-profile-modal,customer-profile-modal-content}.tsx` · `src/shared/modules/customers/core/components/customers-table/use-customers-table.tsx` |
 | 4 Ownership moves | `src/shared/entities/customers/components/lists/*` → `src/shared/entities/meetings/components/`, `src/shared/modules/projects/core/components/` · `src/shared/entities/customers/components/profile/customer-profile-tab-panels.tsx` |
 | 5 Hand-off | `docs/plans/2026-09-26-records-management-epic.md` · `docs/superpowers/specs/2026-10-05-customers-entity-table-and-fixed-filters-design.md` · `src/shared/entities/customers/DOCS.md` · `docs/ubiquitous-language.md` · `docs/codebase-conventions/{query-toolkit,frontend-stack}.md` |
 
-On 2026-10-07 two Task 0 callers held other sessions' uncommitted edits (`features/customer-pipelines/ui/views/customer-pipeline-view.tsx`, pipeline speed; `features/agent-dashboard/ui/components/dashboard-proposal-customer-link.tsx`, the dashboard rework): Task 0 Step 1 leaves them on `openModal` unless they are committed first. `lead-sources-view.tsx` (Task 2 Step 4b) was clean. Check every file with `git status --short` anyway.
+On 2026-10-12 every Task 0 caller was clean (the two held on 2026-10-07 were committed), as were `lead-sources-view.tsx` and the lead-sources sections. The profile modal's own folder had another session's uncommitted phone-hero work (`customer-contact-buttons.tsx`, `customer-contact-input-row.tsx`, `customer-hero-header.tsx`, `customer-profile-phone-hero.tsx`); none of them is this plan's, but Task 3 edits two files beside them. Check every file with `git status --short` anyway.
 
 ---
 
@@ -78,7 +78,7 @@ On 2026-10-07 two Task 0 callers held other sessions' uncommitted edits (`featur
 
 **Files:**
 - Create: `src/shared/modules/customers/core/lib/open-customer-profile.ts`
-- Modify: every file `grep -rln "accessor: 'CustomerProfile'" src` lists, **except** `src/shared/entities/customers/components/customers-table.tsx` and the two lead-sources sections (Tasks 1–2 replace them). On 2026-10-07 that left: `features/campaigns-admin/ui/views/campaigns-leads-view.tsx`, `features/schedule-management/ui/components/schedule-meetings-calendar.tsx`, `features/customer-pipelines/ui/views/customer-pipeline-view.tsx`, `features/proposal-flow/ui/components/proposal/heading.tsx`, `features/proposal-flow/ui/components/table/index.tsx`, `features/meeting-flow/ui/components/shell/customer-chip.tsx`, `features/agent-dashboard/ui/components/dashboard-proposal-customer-link.tsx`, `shared/entities/meetings/components/overview-card.tsx`, `shared/entities/meetings/components/meetings-table/use-meetings-table.tsx` (two calls), `shared/modules/projects/core/components/projects-table/use-projects-table.tsx`.
+- Modify: every file `grep -rln "accessor: 'CustomerProfile'" src` lists, **except** `src/shared/entities/customers/components/customers-table.tsx` and the two lead-sources sections (Tasks 1–2 replace them). On 2026-10-12 that left nine: `features/campaigns-admin/ui/views/campaigns-leads-view.tsx`, `features/customer-pipelines/ui/views/customer-pipeline-view.tsx`, `features/proposal-flow/ui/components/proposal/heading.tsx`, `features/proposal-flow/ui/components/table/index.tsx`, `features/meeting-flow/ui/components/shell/customer-chip.tsx`, `features/agent-dashboard/ui/components/dashboard-proposal-customer-link.tsx`, `shared/modules/meetings/core/components/meeting-actions-host.tsx` (pipeline speed moved the overview card's and the schedule calendar's calls here), `shared/entities/meetings/components/meetings-table/use-meetings-table.tsx` (two calls), `shared/modules/projects/core/components/projects-table/use-projects-table.tsx`.
 
 **Interfaces:**
 - Produces: `openCustomerProfile(props: ComponentProps<typeof CustomerProfileModal>): void`.
@@ -842,75 +842,45 @@ git show --stat HEAD
 
 ---
 
-### Task 3: Edit Profile and Schedule Meeting open the profile modal (Owner confirms 1, 2, 12, 13)
+### Task 3: Edit Profile opens the profile in edit mode; Schedule Meeting opens the new-meeting modal (Owner confirms 1, 2, 12)
 
 **Files:**
-- Modify: `src/shared/entities/customers/hooks/use-profile-commands.ts`
 - Modify: `src/shared/entities/customers/hooks/use-customer-edit-form.ts`
 - Modify: `src/shared/entities/customers/components/profile/customer-profile-modal-content.tsx`
 - Modify: `src/shared/entities/customers/components/profile/customer-profile-modal.tsx`
 - Modify: `src/shared/modules/customers/core/components/customers-table/use-customers-table.tsx`
 
 **Interfaces:**
-- Consumes: `useCustomersTable` (Task 1); `useCustomerActionConfigs`'s `onEdit` and `onScheduleMeeting` overrides (existing).
-- Produces: `CustomerProfileModal` props `defaultMeetingOpen?: boolean` and `defaultEditing?: boolean`; `useProfileCommands(defaultMeetingOpen = false)`; `useCustomerEditForm(customer, { defaultEditing? })`. In every customers table, Edit Profile opens the profile modal in its edit mode and Schedule Meeting opens it with the Add meeting dialog up. Other callers of `useCustomerActionConfigs` (the pipeline card) are untouched.
+- Consumes: `useCustomersTable` (Task 1); `useCustomerActionConfigs`'s `onEdit` and `onScheduleMeeting` overrides (existing); `CreateMeetingModal` (`src/shared/entities/meetings/components/create-meeting-modal.tsx`, existing; the pipeline kanban's Schedule Meeting target); `invalidateMeeting` from `useInvalidation`.
+- Produces: `CustomerProfileModal` prop `defaultEditing?: boolean`; `useCustomerEditForm(customer, { defaultEditing? })`. In every customers table, Edit Profile opens the profile modal in its edit mode, and Schedule Meeting opens "New meeting — <name>" for that row's customer. Other callers of `useCustomerActionConfigs` (the kanban, through `CustomerActionsHost`) are untouched.
 
 Today both actions fall through to `router.push(ROOTS.dashboard.pipeline())` in every customers table, because no table passes `onEdit` or `onScheduleMeeting` (`use-customer-action-configs.ts`, `defaultNavigate`).
 
-- [ ] **Step 1: The modal can open on its Add meeting dialog or in edit mode**
-
-`src/shared/entities/customers/hooks/use-profile-commands.ts`: replace
-
-```ts
-export function useProfileCommands(): ProfileCommands {
-  const ability = useAbility()
-  const [meetingOpen, setMeetingOpen] = useState(false)
-```
-
-with
-
-```ts
-export function useProfileCommands(defaultMeetingOpen = false): ProfileCommands {
-  const ability = useAbility()
-  const [meetingOpen, setMeetingOpen] = useState(defaultMeetingOpen)
-```
-
-`src/shared/entities/customers/components/profile/customer-profile-modal-content.tsx`: in `Props`, add `defaultMeetingOpen?: boolean` above `defaultTab?: CustomerProfileTab`; add `defaultMeetingOpen` to the destructured props (after `data`); and change `const commands = useProfileCommands()` to
-
-```ts
-  const commands = useProfileCommands(defaultMeetingOpen)
-```
+- [ ] **Step 1: The profile modal can open in edit mode**
 
 `src/shared/entities/customers/components/profile/customer-profile-modal.tsx`: replace the `Props` interface and the function's signature line with
 
 ```tsx
 interface Props {
   customerId: string
-  /** Opens with the Add meeting dialog already up, for a caller whose action was "schedule a meeting". */
-  defaultMeetingOpen?: boolean
+  /** Opens with the edit form on, for a caller whose action was "edit this customer". Ignored for a viewer who cannot edit. */
+  defaultEditing?: boolean
   defaultTab?: CustomerProfileTab
   highlightMeetingId?: string
 }
 
-export function CustomerProfileModal({ customerId, defaultMeetingOpen, defaultTab, highlightMeetingId }: Props) {
+export function CustomerProfileModal({ customerId, defaultEditing, defaultTab, highlightMeetingId }: Props) {
 ```
 
-and pass it down: in the `<CustomerProfileModalContent …>` element, add `defaultMeetingOpen={defaultMeetingOpen}` above `defaultTab={defaultTab}`.
+and pass it down: in the `<CustomerProfileModalContent …>` element, add `defaultEditing={defaultEditing}` above `defaultTab={defaultTab}`.
 
-Edit mode (Owner confirms 12) follows the same path. In the `Props` above add, after `customerId: string`,
-
-```tsx
-  /** Opens with the edit form on, for a caller whose action was "edit this customer". Ignored for a viewer who cannot edit. */
-  defaultEditing?: boolean
-```
-
-add `defaultEditing` to the signature's destructuring (after `customerId`), and pass `defaultEditing={defaultEditing}` to `<CustomerProfileModalContent …>`. In `customer-profile-modal-content.tsx`, add `defaultEditing?: boolean` to `Props`, destructure it, and change `const editForm = useCustomerEditForm(data.customer)` to
+`src/shared/entities/customers/components/profile/customer-profile-modal-content.tsx`: in `Props`, add `defaultEditing?: boolean` above `defaultTab?: CustomerProfileTab`; add `defaultEditing` to the destructured props (after `data`); and change `const editForm = useCustomerEditForm(data.customer)` to
 
 ```ts
   const editForm = useCustomerEditForm(data.customer, { defaultEditing })
 ```
 
-In `src/shared/entities/customers/hooks/use-customer-edit-form.ts`, replace
+`src/shared/entities/customers/hooks/use-customer-edit-form.ts`: replace
 
 ```ts
 export function useCustomerEditForm(customer: CustomerWithProfile) {
@@ -931,13 +901,16 @@ and, right after the line `const canEdit = canEditContact || canEditProfiles || 
   const [isEditing, setIsEditing] = useState(defaultEditing && canEdit)
 ```
 
-(the state moves below the ability reads it depends on; hook order stays fixed on every render).
+(the state moves below the ability reads it depends on; hook order stays fixed on every render). The content mounts only once the profile has loaded, so the form opens on the customer's data, never over the skeleton or the error state.
 
-The content mounts only once the profile has loaded (it is keyed by the customer's id), so the dialog opens with the customer's name in hand and never over the loading skeleton or the error state.
+- [ ] **Step 2: The hook passes both handlers and owns the new-meeting modal**
 
-- [ ] **Step 2: The hook passes both handlers**
+In `src/shared/modules/customers/core/components/customers-table/use-customers-table.tsx`:
 
-In `src/shared/modules/customers/core/components/customers-table/use-customers-table.tsx`, replace
+- the React import becomes `import { useCallback, useMemo, useState } from 'react'`;
+- add `import { CreateMeetingModal } from '@/shared/entities/meetings/components/create-meeting-modal'` directly below the `useCustomerActionConfigs` import;
+- `const { invalidateCustomer, invalidateLeadSource } = useInvalidation()` becomes `const { invalidateCustomer, invalidateLeadSource, invalidateMeeting } = useInvalidation()`;
+- replace
 
 ```tsx
   const { actions, DeleteConfirmDialog } = useCustomerActionConfigs<CustomerTableRow>({ onView: openProfile })
@@ -946,15 +919,14 @@ In `src/shared/modules/customers/core/components/customers-table/use-customers-t
 with
 
 ```tsx
-  const scheduleMeeting = useCallback(
-    (row: CustomerTableRow) => openCustomerProfile({ customerId: row.id, defaultMeetingOpen: true }),
-    [],
-  )
-
   const editProfile = useCallback(
     (row: CustomerTableRow) => openCustomerProfile({ customerId: row.id, defaultEditing: true }),
     [],
   )
+
+  // The same target as the pipeline kanban's Schedule Meeting.
+  const [bookingFor, setBookingFor] = useState<{ id: string, name: string } | null>(null)
+  const scheduleMeeting = useCallback((row: CustomerTableRow) => setBookingFor({ id: row.id, name: row.name }), [])
 
   // Without these two, Edit Profile and Schedule Meeting fall back to opening the pipeline board.
   const { actions, DeleteConfirmDialog } = useCustomerActionConfigs<CustomerTableRow>({
@@ -964,40 +936,57 @@ with
   })
 ```
 
-- [ ] **Step 2b: Investigate Schedule Meeting on an already-loaded profile (Owner confirms 13; before anything is committed)**
+- and replace `return { ...table, dialogs: <DeleteConfirmDialog /> }` with
 
-The profile modal renders its content only once `profileQuery.data` exists. On a fresh open the Add meeting dialog therefore mounts after the modal; on a **cached** profile (the customer was opened earlier in the session) both mount in the same commit, and React runs the inner dialog's effects before the outer modal's. The question: does the inner dialog still own Escape, outside clicks and focus?
+```tsx
+  return {
+    ...table,
+    dialogs: (
+      <>
+        <DeleteConfirmDialog />
+        {bookingFor && (
+          <CreateMeetingModal
+            isOpen
+            onClose={() => setBookingFor(null)}
+            onSuccess={() => invalidateMeeting({ customerId: bookingFor.id })}
+            customerId={bookingFor.id}
+            customerName={bookingFor.name}
+          />
+        )}
+      </>
+    ),
+  }
+```
 
-With Steps 1–2 written (uncommitted), run a local Playwright script (as in Step 4; read-only, nothing submitted) as a super-admin on `/dashboard/customers`: (a) fresh: row 1's Schedule Meeting; (b) cached: row 1's View Profile, close it, then row 1's Schedule Meeting. For each, record which element has focus after open, whether Escape closes only the dialog, whether a click inside the form keeps both open, and both overlays' `data-state`; screenshots go in the report.
-
-- If (b) behaves like (a), keep Step 1 as written.
-- If it does not, seed the dialog one commit after the content mounts instead of in `useState`: in `useProfileCommands`, `useState(false)` plus `useEffect(() => { if (defaultMeetingOpen) setMeetingOpen(true) }, [])` with a why-comment; re-run (a) and (b), and keep (b) in Step 4.
-- If neither works, stop and report to the owner with the recordings; commit nothing from this task.
+`CreateMeetingForm` invalidates nothing itself; the kanban refreshes its board and the profile refetches itself. `invalidateMeeting` refreshes the meetings reads, the pipeline, that customer's profile and the dashboard. The customers row shows nothing a new meeting changes. Opening or closing the modal re-renders the table's host component only: `dataTableProps` keeps its identity, so rows don't re-render (the render rules in `data-table.tsx`).
 
 - [ ] **Step 3: Type-check, lint, code read**
 
 Run: `pnpm tsc && pnpm lint`
 Expected: clean.
 
-Code read for Review Focus 5, with line numbers in the task report: in `customer-profile-modal.tsx`, `CustomerProfileModalContent` renders only inside `{profileQuery.data && …}`, so a failed or pending profile never mounts the dialog; `CUSTOMER_ACTIONS.scheduleMeeting` carries `permission: ['create', 'Meeting']`, so a viewer who cannot book never sees the action that sets `defaultMeetingOpen`. List the other callers (`grep -rn "openCustomerProfile(" src`, plus any file Task 0 left on `openModal`) and confirm none but this hook passes `defaultMeetingOpen` or `defaultEditing`, so they open as before.
+Code read, with line numbers in the task report:
+- `CUSTOMER_ACTIONS.scheduleMeeting` carries `permission: ['create', 'Meeting']`, so a viewer who cannot book never sees the action that opens the modal.
+- `useCustomerEditForm` starts editing only when `canEdit` is true, so Edit Profile opens a viewer who cannot edit on the plain profile.
+- List the other callers (`grep -rn "openCustomerProfile(" src`, plus any file Task 0 left on `openModal`) and confirm that none but this hook passes `defaultEditing`, so they open as before.
 
 - [ ] **Step 4: Browser read check (nothing submitted)**
 
 With the Playwright MCP browser, or a short script beside `capture.ts` that signs in the same way, as a super-admin and then as an agent, on `/dashboard/customers`, at 1440px and at 390px, light and dark:
-- open the first row's menu (the button named "Actions") and choose **Edit Profile**: the customer's profile modal opens (title "<name>'s Profile") with its edit form on (the save and cancel buttons show in place of the edit toggle) for the super-admin; the URL is still `/dashboard/customers`. Press cancel, close it. **Do not save.**
-- choose **Schedule Meeting**: the profile opens and the "Add meeting" dialog is up above it, with its form usable and fully on screen at 390px (Review Focus 5). Press Cancel (or Escape): the dialog closes and the profile stays. Close the profile. **Do not submit the form.**
-- choose **View Profile** and click a row: the profile opens with no dialog, as before.
+- open the first row's menu (the button named "Actions") and choose **Edit Profile**: the customer's profile modal opens (title "<name>'s Profile") with its edit form on (the save and cancel buttons show in place of the edit toggle) for the super-admin; the URL is still `/dashboard/customers`. Press cancel and close it. **Do not save.**
+- choose **Schedule Meeting**: the "New meeting — <name>" modal opens for that row's customer, with its form usable and fully on screen at 390px (Review Focus 5). Press Cancel, then open it again and press Escape: each time the modal closes and the table is as it was. **Do not submit the form.**
+- choose **View Profile** and click a row: the profile opens with no form on, as before.
 - repeat Edit Profile and Schedule Meeting once in `/dashboard/lead-sources` (All pane) and in one source's pane as a super-admin: the same.
-- on `/dashboard/pipeline/fresh`, a card's Schedule Meeting still opens the pipeline's own new-meeting modal (that caller passes its own handler).
+- on `/dashboard/pipeline/fresh`, a card's Schedule Meeting still opens the same modal (that caller passes its own handler).
 
-Screenshots of the Schedule Meeting state at both widths and in both schemes go in the task report.
+Screenshots of the Schedule Meeting and Edit Profile states at both widths and in both schemes go in the task report.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git commit -m "fix(customers): Edit Profile opens the customer's profile in edit mode and Schedule Meeting opens it on Add meeting, not the pipeline board
+git commit -m "fix(customers): Edit Profile opens the customer's profile in edit mode and Schedule Meeting opens the new-meeting modal, as on the pipeline board, instead of navigating there
 
-Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/shared/entities/customers/hooks/use-profile-commands.ts src/shared/entities/customers/hooks/use-customer-edit-form.ts src/shared/entities/customers/components/profile/customer-profile-modal-content.tsx src/shared/entities/customers/components/profile/customer-profile-modal.tsx src/shared/modules/customers/core/components/customers-table/use-customers-table.tsx
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/shared/entities/customers/hooks/use-customer-edit-form.ts src/shared/entities/customers/components/profile/customer-profile-modal-content.tsx src/shared/entities/customers/components/profile/customer-profile-modal.tsx src/shared/modules/customers/core/components/customers-table/use-customers-table.tsx
 git show --stat HEAD
 ```
 

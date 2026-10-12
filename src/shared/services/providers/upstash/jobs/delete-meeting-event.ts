@@ -1,3 +1,5 @@
+import type { CalendarNotice } from '@/shared/services/providers/google-calendar/lib/calendar-notice'
+
 import { schedulingService } from '@/shared/services/scheduling.service'
 
 import { createJob } from '../lib/create-job'
@@ -9,13 +11,14 @@ import { createJob } from '../lib/create-job'
  * pre-delete). Strict dispatch so a missed enqueue surfaces as a 500 on
  * the deleting agent's screen rather than silently leaving an orphan
  * event on the master calendar.
+ * The notice is decided when the meeting changes, since the row may be gone when the job runs.
  *
  * Handler is idempotent: the provider swallows 404/410 (already-gone
  * events). Safe under QStash retry.
  */
 export const deleteMeetingEventJob = createJob(
   'delete-meeting-event',
-  async (payload: { gcalEventId: string }) => {
-    await schedulingService.deleteMeetingEvent({ gcalEventId: payload.gcalEventId })
+  async (payload: { gcalEventId: string, notice: CalendarNotice }) => {
+    await schedulingService.deleteMeetingEvent({ gcalEventId: payload.gcalEventId, notice: payload.notice })
   },
 )

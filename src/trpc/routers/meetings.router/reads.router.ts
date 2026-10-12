@@ -5,6 +5,7 @@ import { LIVE_MEETING_OUTCOMES } from '@/shared/constants/enums'
 import { PARTICIPANT_ROLES, SETTER_ROLES } from '@/shared/entities/meetings/constants/internal-user-roles'
 import { getByIdWithJoins, listMeetings, listMeetingsForProject, meetingListInputSchema } from '@/shared/entities/meetings/dal/server/queries'
 import { listUsersByRoles } from '@/shared/entities/users/dal/server/queries'
+import { meetingService } from '@/shared/modules/meetings/service'
 import { agentProcedure, createTRPCRouter } from '@/trpc/init'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 
@@ -29,6 +30,10 @@ export const readsRouter = createTRPCRouter({
       }
       return row
     }),
+
+  internalNotes: agentProcedure
+    .input(z.object({ meetingId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => dalToTrpc(await meetingService.business.listInternalNotes(ctx, input))),
 
   // Scoped by the project, not the meeting: a rep who can see the project sees every meeting that sold it.
   listForProject: projectProcedure

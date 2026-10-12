@@ -80,22 +80,31 @@ export async function deriveOutcomeOnAdditionalWorkApproved(
 }
 
 /**
- * The token belongs to the visit: after a reschedule the link a homeowner already holds opens the replacement.
- * One transaction and raw updates, so no meeting hook fires and the unique index never sees two rows with one token.
+ * The link, the calendar event and the invite belong to the visit: after a reschedule the homeowner's link opens the
+ * replacement, and Google updates the one event they already have. One transaction and raw updates, so no meeting
+ * hook fires and the unique index never sees two rows with one token.
  */
-export async function handOffShareToken(input: { fromMeetingId: string, toMeetingId: string }): Promise<DalReturn<void>> {
+export async function handOffVisit(input: { fromMeetingId: string, toMeetingId: string }): Promise<DalReturn<void>> {
   return dalDbOperation(async () => {
     await db.transaction(async (tx) => {
       const [from] = await tx
-        .select({ shareToken: meetings.shareToken })
+        .select({
+          shareToken: meetings.shareToken,
+          gcalEventId: meetings.gcalEventId,
+          gcalEtag: meetings.gcalEtag,
+          gcalSyncedAt: meetings.gcalSyncedAt,
+          homeownerInvitedAt: meetings.homeownerInvitedAt,
+        })
         .from(meetings)
         .where(eq(meetings.id, input.fromMeetingId))
         .for('update')
       if (!from) {
         throw new ThrowableDalError({ type: 'not-found' })
       }
-      await tx.update(meetings).set({ shareToken: generateToken() }).where(eq(meetings.id, input.fromMeetingId))
-      await tx.update(meetings).set({ shareToken: from.shareToken }).where(eq(meetings.id, input.toMeetingId))
+      await tx.update(meetings)
+        .set({ shareToken: generateToken(), gcalEventId: null, gcalEtag: null, gcalSyncedAt: null, homeownerInvitedAt: null })
+        .where(eq(meetings.id, input.fromMeetingId))
+      await tx.update(meetings).set(from).where(eq(meetings.id, input.toMeetingId))
     })
   })
 }

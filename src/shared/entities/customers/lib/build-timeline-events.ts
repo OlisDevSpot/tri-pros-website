@@ -22,7 +22,7 @@ export function buildTimelineEvents(data: CustomerProfileData): TimelineEvent[] 
       timestamp: note.createdAt,
       entityId: note.id,
       entityType: 'note',
-      metadata: { authorId: note.authorId, authorName: note.authorName, authorImage: note.authorImage },
+      metadata: { authorId: note.authorId, authorName: note.authorName, authorImage: note.authorImage, linkedEntityType: note.entityType, linkedEntityId: note.entityId },
     })
   }
 

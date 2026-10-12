@@ -1,11 +1,13 @@
 import type { CalendarViewType } from '@/shared/constants/enums'
 import type { DateRangeFilterId, FieldList, FilterValues, SortState, ToolbarFilterId, ToolbarFilterValues } from '@/shared/dal/lib/query/field-list'
 
-/** What limits the rows a data view gets: a table page, a calendar's date window, or the whole list (kanban). */
+/** What limits the rows a data view gets: a table page, a calendar's date window, the first rows of its order, or the whole list (kanban). */
 export type DataViewWindow<F extends FieldList>
   = | { kind: 'page', pageSize: number, pageSizeOptions: readonly number[] }
     // `views`: the calendar views this data view allows; the first is its default.
     | { kind: 'date', field: DateRangeFilterId<F>, cap: number, views: readonly [CalendarViewType, ...CalendarViewType[]] }
+    // Nothing pages: the read's `total` still counts every matching row, so a callsite can say "5 of 23".
+    | { kind: 'first', count: number }
     | { kind: 'whole-list' }
 
 export type DataViewWindowKind = DataViewWindow<FieldList>['kind']
@@ -23,6 +25,8 @@ export interface DataViewQueryConfig<
   paramPrefix: string
   toolbar: readonly T[]
   defaultSort?: SortState<F>
+  /** Filter values this data view always applies. Never read from the URL, never shown in the toolbar. */
+  fixed?: FilterValues<F>
   window: W
 }
 
@@ -42,4 +46,5 @@ export interface FilterSortState<F extends FieldList> {
 export type DataViewWindowState
   = | { kind: 'page', page: number, pageSize: number, pageSizeOptions: readonly number[], pagination: { limit: number, offset: number } }
     | { kind: 'date', anchor: string, view: CalendarViewType, range: { from: string, to: string }, cap: number, pagination: { limit: number, offset: number } }
+    | { kind: 'first', count: number, pagination: { limit: number, offset: number } }
     | { kind: 'whole-list' }

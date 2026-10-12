@@ -32,7 +32,6 @@ export async function deliverVisitText(ctx: ScopedContext, input: {
   context: VisitMessageContext
   templateKey: VisitMessageTemplateKey
   bodies: Record<VisitMessageTemplateKey, string>
-  coordinatorNote?: string | null
   mediaUrl?: string[]
 }): Promise<VisitTextOutcome> {
   const { meeting, customer, rep, coordinator } = input.context
@@ -56,7 +55,7 @@ export async function deliverVisitText(ctx: ScopedContext, input: {
       coordinatorName: displayFirstName(coordinator),
       scheduledFor: meeting.scheduledFor,
       visitLink: visitLinkFor(meeting),
-      coordinatorNote: input.coordinatorNote,
+      visitNote: meeting.visitNote,
     }),
     { stopLine },
   )

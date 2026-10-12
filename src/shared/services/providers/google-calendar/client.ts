@@ -3,6 +3,7 @@ import type {
   GCalEvent,
   GCalEventInput,
   GCalEventListResponse,
+  GCalSendUpdates,
   GCalWatchRequest,
   GCalWatchResponse,
 } from './types'
@@ -16,10 +17,17 @@ function authHeaders(accessToken: string) {
   }
 }
 
+export class GCalRequestError extends Error {
+  constructor(readonly status: number, message: string) {
+    super(message)
+    this.name = 'GCalRequestError'
+  }
+}
+
 async function handleResponse<T>(res: Response, context: string): Promise<T> {
   if (!res.ok) {
     const body = await res.text()
-    throw new Error(`Google Calendar ${context} failed (${res.status}): ${body}`)
+    throw new GCalRequestError(res.status, `Google Calendar ${context} failed (${res.status}): ${body}`)
   }
   return res.json() as Promise<T>
 }
@@ -81,9 +89,10 @@ function createGoogleCalendarClient() {
       accessToken: string,
       calendarId: string,
       event: GCalEventInput,
+      sendUpdates: GCalSendUpdates,
     ): Promise<GCalEvent> => {
       const res = await fetch(
-        `${GCAL_BASE}/calendars/${encodeURIComponent(calendarId)}/events`,
+        `${GCAL_BASE}/calendars/${encodeURIComponent(calendarId)}/events?sendUpdates=${sendUpdates}`,
         {
           method: 'POST',
           headers: authHeaders(accessToken),
@@ -98,6 +107,7 @@ function createGoogleCalendarClient() {
       calendarId: string,
       eventId: string,
       event: GCalEventInput,
+      sendUpdates: GCalSendUpdates,
       etag?: string,
     ): Promise<GCalEvent> => {
       const headers: Record<string, string> = authHeaders(accessToken)
@@ -106,7 +116,7 @@ function createGoogleCalendarClient() {
       }
 
       const res = await fetch(
-        `${GCAL_BASE}/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
+        `${GCAL_BASE}/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}?sendUpdates=${sendUpdates}`,
         {
           method: 'PUT',
           headers,
@@ -120,17 +130,19 @@ function createGoogleCalendarClient() {
       accessToken: string,
       calendarId: string,
       eventId: string,
+      sendUpdates: GCalSendUpdates,
     ): Promise<void> => {
       const res = await fetch(
-        `${GCAL_BASE}/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
+        `${GCAL_BASE}/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}?sendUpdates=${sendUpdates}`,
         {
           method: 'DELETE',
           headers: authHeaders(accessToken),
         },
       )
-      if (!res.ok && res.status !== 404) {
+      // 410 is Google's answer for an event that is already deleted.
+      if (!res.ok && res.status !== 404 && res.status !== 410) {
         const body = await res.text()
-        throw new Error(`Google Calendar deleteEvent failed (${res.status}): ${body}`)
+        throw new GCalRequestError(res.status, `Google Calendar deleteEvent failed (${res.status}): ${body}`)
       }
     },
 

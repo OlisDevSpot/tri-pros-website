@@ -6,6 +6,7 @@ import { createContext, use, useCallback, useState } from 'react'
 
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
+import { MeetingNotesDialog } from '@/shared/entities/meetings/components/meeting-notes-dialog'
 import { useMeetingActionConfigs } from '@/shared/entities/meetings/hooks/use-meeting-action-configs'
 import { useStableCallbacks } from '@/shared/hooks/use-stable-callbacks'
 import { openModal } from '@/shared/lib/open-modal'
@@ -43,12 +44,14 @@ function openMeetingProfile(entity: { id: string, customerId?: string | null }) 
 
 export function MeetingActionsHost({ overrides, children }: MeetingActionsHostProps) {
   const [participantsMeetingId, setParticipantsMeetingId] = useState<string | null>(null)
+  const [notesMeetingId, setNotesMeetingId] = useState<string | null>(null)
   const manageParticipants = useCallback((meetingId: string) => setParticipantsMeetingId(meetingId), [])
 
   const { actions, DeleteConfirmDialog, OutcomeReasonDialog, RescheduleDialog, changeOutcome } = useMeetingActionConfigs({
     onView: openMeetingProfile,
     ...overrides,
     onAssignOwner: entity => manageParticipants(entity.id),
+    onEditNotes: entity => setNotesMeetingId(entity.id),
   })
 
   // Stable while `actions` is: the host re-rendering (its modal opening, a confirm dialog) must not re-render
@@ -65,6 +68,13 @@ export function MeetingActionsHost({ overrides, children }: MeetingActionsHostPr
         open={participantsMeetingId !== null}
         onOpenChange={open => !open && setParticipantsMeetingId(null)}
       />
+      {notesMeetingId && (
+        <MeetingNotesDialog
+          meetingId={notesMeetingId}
+          open
+          onOpenChange={open => !open && setNotesMeetingId(null)}
+        />
+      )}
       {children}
     </MeetingActionsHostContext>
   )

@@ -1,6 +1,7 @@
 export * from './activities'
 export * from './applications'
 export * from './calendar'
+export * from './customer-notes'
 export * from './customer-pipelines'
 export * from './customers'
 export * from './lead-sources'

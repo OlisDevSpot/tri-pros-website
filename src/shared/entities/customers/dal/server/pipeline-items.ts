@@ -7,7 +7,7 @@ import type { PaginatedResult } from '@/shared/dal/lib/query/paginated-result'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { CustomerPipelineItem, CustomerPipelineRawData, PipelineItemProposal, PipelineItemRep } from '@/shared/entities/customers/types/pipeline-item'
 
-import { and, asc, count, desc, eq, exists, inArray, isNotNull, isNull, max, sql } from 'drizzle-orm'
+import { and, asc, count, desc, eq, exists, inArray, isNotNull, isNull, max, ne, sql } from 'drizzle-orm'
 import z from 'zod'
 
 import { DECIDED_OUTCOMES } from '@/shared/constants/enums/meetings'
@@ -162,8 +162,10 @@ async function getRehashOrDeadPipelineItems(pipeline: Pipeline, args: PipelineBr
     .leftJoin(leadSourcesTable, eq(leadSourcesTable.id, customers.leadSourceId))
     // EXISTS rather than join + DISTINCT ON: DISTINCT ON pinned the order to customer id, so no sort could apply.
     .where(and(
+      // A rescheduled original is history: its replacement carries the visit, and the original's time must not read as the next meeting.
       exists(db.select({ id: meetings.id }).from(meetings).where(and(
         eq(meetings.customerId, customers.id),
+        ne(meetings.meetingOutcome, 'rescheduled'),
         eq(meetings.pipeline, pipeline as 'fresh' | 'rehash' | 'dead'),
         isNull(meetings.projectId),
         args.meetingReach,
@@ -229,6 +231,7 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
     .from(customers)
     .innerJoin(meetings, and(
       eq(meetings.customerId, customers.id),
+      ne(meetings.meetingOutcome, 'rescheduled'),
       eq(meetings.pipeline, 'fresh'),
       isNull(meetings.projectId),
       args.meetingReach,
@@ -263,7 +266,8 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
         inArray(customers.id, customerIds),
       ))
       .groupBy(customers.id),
-    // Assigned rep + meeting ID: owner of the most relevant meeting (latest by scheduledFor) per customer
+    // Assigned rep + meeting ID: owner of the most relevant meeting (latest by scheduledFor) per customer.
+    // A rescheduled original is never it: the visit lives on its replacement.
     db
       .selectDistinctOn([meetings.customerId], {
         customerId: meetings.customerId,
@@ -279,6 +283,7 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
       .innerJoin(user, eq(user.id, meetings.ownerId))
       .where(and(
         inArray(meetings.customerId, customerIds),
+        ne(meetings.meetingOutcome, 'rescheduled'),
         args.meetingReach,
       ))
       .orderBy(meetings.customerId, desc(meetings.scheduledFor)),

@@ -26,7 +26,6 @@ export const businessRouter = createTRPCRouter({
   sendVisitSummary: visitMessagesWriteProcedure
     .input(z.object({
       meetingId: z.string().uuid(),
-      note: z.string().trim().max(300).optional(),
     }))
     .mutation(async ({ input, ctx }) => dalToTrpc(await meetingService.business.sendVisitSummary(ctx, input))),
 })

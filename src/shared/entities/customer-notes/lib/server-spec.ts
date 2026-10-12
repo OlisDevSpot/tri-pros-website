@@ -15,12 +15,16 @@ import { CUSTOMER_NOTE } from './constants'
 // direct API caller could write empty or arbitrarily long note content.
 const boundedContent = z.string().min(1).max(2000)
 const insertCustomerNoteSchemaBounded = insertCustomerNoteSchema.extend({ content: boundedContent })
+const insertCustomerNoteSchemaLinked = insertCustomerNoteSchemaBounded.refine(
+  note => (note.entityType == null) === (note.entityId == null),
+  { message: 'A note links to an entity by its type and id together.' },
+)
 // Only `content` is mutable; customerId/authorId are immutable after create.
 const updateCustomerNoteSchema = insertCustomerNoteSchemaBounded.pick({ content: true })
 
 /** Concrete schemas for `createCrudRouter` type inference (spec carries type-erased copies). */
 export const customerNoteSchemas = {
-  insert: insertCustomerNoteSchemaBounded,
+  insert: insertCustomerNoteSchemaLinked,
   update: updateCustomerNoteSchema,
 }
 
@@ -32,7 +36,7 @@ export const customerNoteServerSpec = defineEntitySpec({
   parent: { spec: customerServerSpec, fk: customerNotes.customerId },
   table: customerNotes,
   schemas: {
-    insert: insertCustomerNoteSchemaBounded,
+    insert: insertCustomerNoteSchemaLinked,
     update: updateCustomerNoteSchema,
     select: selectCustomerNoteSchema,
   },

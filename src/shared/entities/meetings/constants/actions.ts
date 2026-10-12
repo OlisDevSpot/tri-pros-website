@@ -1,6 +1,6 @@
 import type { EntityAction } from '@/shared/components/entities/entity-actions/types'
 
-import { CalendarClockIcon, CalendarSearchIcon, CircleDotIcon, CopyIcon, EyeIcon, FilePlusIcon, FolderOpenIcon, PlayIcon, TrashIcon, UserCheckIcon, UserPenIcon, Users2Icon } from 'lucide-react'
+import { CalendarClockIcon, CalendarSearchIcon, CircleDotIcon, CopyIcon, EyeIcon, FilePlusIcon, FolderOpenIcon, PlayIcon, StickyNoteIcon, TrashIcon, UserCheckIcon, UserPenIcon, Users2Icon } from 'lucide-react'
 
 export const MEETING_ACTIONS = {
   view: {
@@ -51,6 +51,12 @@ export const MEETING_ACTIONS = {
     id: 'reschedule',
     label: 'Reschedule',
     icon: CalendarClockIcon,
+    permission: ['update', 'Meeting'],
+  },
+  notes: {
+    id: 'notes',
+    label: 'Notes',
+    icon: StickyNoteIcon,
     permission: ['update', 'Meeting'],
   },
   createProposal: {

@@ -1,7 +1,7 @@
 /**
  * The splash's choreography in one place (spec C §5.1, review S3). Everything after the blue R
  * is timed from the moment it lands, so retuning the spring moves the caption, the cue and the
- * timed splash's hold together. Easing is not here: `SplashScreen` takes an `ease` prop that
+ * timed splash's hold together. The rise's easing is not here: `SplashScreen` takes an `ease` prop that
  * defaults to `BRAND_EASE` (§12 S14).
  */
 
@@ -24,7 +24,13 @@ export const SPLASH_CUE_DELAY_S = SPLASH_CAPTION_DELAY_S + SPLASH_CAPTION_DURATI
 export const SPLASH_CUE_DURATION_S = 0.5
 
 /** The overlay's fade out, press and timed mode alike. */
-export const SPLASH_FADE_S = 0.3
+export const SPLASH_FADE_S = 0.4
+
+/**
+ * The fade's curve, even at both ends. An ease-out front-loads a full-window fade: the brand curve dropped
+ * half the overlay in its first 50 ms, so the field snapped away and a faint mark lingered after it.
+ */
+export const SPLASH_FADE_EASE: [number, number, number, number] = [0.45, 0, 0.55, 1]
 
 /** How long a timed splash holds: until the mark has landed, plus 100 ms of rest (C40). */
 export const SPLASH_VISIBLE_MS = Math.round(SPLASH_MARK_LANDS_S * 1000) + 100

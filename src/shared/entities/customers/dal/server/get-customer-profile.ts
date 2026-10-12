@@ -73,6 +73,8 @@ export async function getCustomerProfile(ctx: ScopedContext, customerId: string)
       customerId: customerNotes.customerId,
       content: customerNotes.content,
       authorId: customerNotes.authorId,
+      entityType: customerNotes.entityType,
+      entityId: customerNotes.entityId,
       createdAt: customerNotes.createdAt,
       updatedAt: customerNotes.updatedAt,
       authorName: user.name,

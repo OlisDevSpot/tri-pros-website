@@ -1,8 +1,10 @@
+/* eslint-disable react-dom/no-dangerously-set-innerhtml */
 import type { Metadata, Viewport } from 'next'
 import process from 'node:process'
 import { Dancing_Script, Nunito, Playfair_Display, Space_Mono, Syne } from 'next/font/google'
 import { Providers } from '@/shared/components/providers'
 import { PWA_STARTUP_IMAGES } from '@/shared/domains/pwa/constants/startup-images'
+import { PWA_LAUNCH_FIELD_SCRIPT } from '@/shared/domains/pwa/lib/launch-field'
 import { PwaLaunchCover } from '@/shared/domains/pwa/ui/pwa-launch-cover'
 import './globals.css'
 
@@ -133,12 +135,17 @@ export default function RootLayout({
       suppressHydrationWarning
       data-scroll-behavior="smooth"
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: PWA_LAUNCH_FIELD_SCRIPT }} />
+      </head>
       <body
         className={`${syne.variable} ${playfair.variable} ${dancingScript.variable} ${spaceMono.variable} ${nunito.className} antialiased`}
       >
+        {/* First in the body: WebKit can paint a document before the parser reaches the end of it, and any
+            such frame of a launch document must already be the cover. A leaf that needs no provider. */}
+        <PwaLaunchCover />
         <Providers>
           {children}
-          <PwaLaunchCover />
         </Providers>
       </body>
     </html>

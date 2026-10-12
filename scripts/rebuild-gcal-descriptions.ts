@@ -30,18 +30,28 @@
  *   pnpm rebuild:gcal -- --dry-run       # prod DB, count only
  *   pnpm rebuild:gcal                    # prod DB, real run
  *
+ * Against production data the run refuses to start unless publicUrl() is the production origin
+ * (NEXT_PUBLIC_BASE_URL on an APP_HOSTS.prod host, no NGROK_URL): every event's visit link is rebuilt from it.
+ *
  * The `--conditions=react-server` Node flag (set by the pnpm scripts) makes
  * `server-only` resolve to its no-op `empty.js` export, which lets this CLI
  * import `schedulingService` — and its transitive `server-only` imports —
  * without needing the Next.js webpack alias that normally provides that
  * behavior inside the running app.
  */
+/* eslint-disable perfectionist/sort-imports -- load-env must run before any module that reads process.env */
 import './lib/load-env'
+import process from 'node:process'
 import { isNotNull } from 'drizzle-orm'
-import { clearMeetingGCalFields, updateMeetingGCalFields } from '@/shared/entities/meetings/dal/server/google-calendar'
+import { isProductionData } from '@/shared/config/data-target'
+import { publicUrl } from '@/shared/config/public-url'
+import { APP_HOSTS } from '@/shared/config/roots'
 import { db } from '@/shared/db'
 import { meetings } from '@/shared/db/schema/meetings'
+import { clearMeetingGCalFields, updateMeetingGCalFields } from '@/shared/entities/meetings/dal/server/google-calendar'
 import { schedulingService } from '@/shared/services/scheduling.service'
+import { describeTargetDb } from './lib/describe-target-db'
+/* eslint-enable perfectionist/sort-imports */
 
 const THROTTLE_MS = 100
 
@@ -60,10 +70,6 @@ function extractGcalStatus(err: unknown): number | null {
   return match ? Number.parseInt(match[1]!, 10) : null
 }
 
-/**
- */
-import { describeTargetDb } from './lib/describe-target-db'
-
 async function main() {
   const dryRun = process.argv.includes('--dry-run')
   const { env, host } = describeTargetDb()
@@ -72,6 +78,14 @@ async function main() {
   console.log(`DB target: ${env}`)
   console.log(`DB host:  ${host}`)
   console.log('')
+
+  // Production events go to homeowners; a local origin in them would be a dead visit link.
+  const linkHost = new URL(publicUrl()).host
+  if (isProductionData() && !(APP_HOSTS.prod as readonly string[]).includes(linkHost)) {
+    console.error(`Refusing to run: production events must carry production visit links, but publicUrl() is ${publicUrl()}.`)
+    console.error('Set NEXT_PUBLIC_BASE_URL to the production origin and take NGROK_URL out of .env / .env.local (it wins over the base URL), then re-run.')
+    process.exit(1)
+  }
 
   const rows = await db
     .select({ id: meetings.id })
