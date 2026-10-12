@@ -17,13 +17,14 @@ import { useCallback, useDeferredValue, useEffect, useMemo } from 'react'
 
 import { EMPTY_DATA_VIEW_READ } from '@/shared/dal/client/constants/empty-data-view-read'
 import { OPTION_SOURCE_READS } from '@/shared/dal/client/constants/option-source-reads'
+import { useHydrationParityCheck } from '@/shared/dal/client/hooks/use-hydration-parity-check'
 import { useIsDataViewPending } from '@/shared/dal/client/hooks/use-is-data-view-pending'
+import { useLoadingScreenRead } from '@/shared/dal/client/hooks/use-loading-screen-read'
 import { usePrefetchQueries } from '@/shared/dal/client/hooks/use-prefetch-queries'
 import { useServerPrefetchGuard } from '@/shared/dal/client/hooks/use-server-prefetch-guard'
 import { adjacentDataViewWindows } from '@/shared/dal/lib/query/adjacent-windows'
 import { dataViewToolbar, dataViewUrlKeys, deriveDataViewWindow, deriveFilterSortState, makeDataViewParsers, toDataViewInput } from '@/shared/dal/lib/query/derive-data-view-input'
 import { useAbility } from '@/shared/domains/permissions/hooks'
-import { checkHydrationParity } from '@/shared/lib/hydration-drift'
 import { useTRPC } from '@/trpc/helpers'
 
 type AnyQueryProcedure = DecorateQueryProcedure<any>
@@ -62,7 +63,7 @@ export function useDataViewQuery<
   const qc = useQueryClient()
   const trpc = useTRPC()
   const ability = useAbility()
-  const isPending = useIsDataViewPending()
+  const isPendingView = useIsDataViewPending()
   const keys = useMemo(() => dataViewUrlKeys(config.paramPrefix), [config.paramPrefix])
   const fixedKey = JSON.stringify(fixed)
   // eslint-disable-next-line react-hooks/exhaustive-deps -- deep-keyed, so an inline literal keeps one identity and doesn't refetch
@@ -109,23 +110,23 @@ export function useDataViewQuery<
   )
 
   const shownOptions = anyProcedure.queryOptions(shownInput)
+  const loadingScreenRead = useLoadingScreenRead(shownOptions)
+  const isPending = loadingScreenRead === null
   const isStale = !isPending && hashKey(requestedOptions.queryKey) !== hashKey(shownOptions.queryKey)
 
-  useServerPrefetchGuard(shownOptions.queryKey, !isPending)
-  useEffect(() => {
-    if (!isPending) {
-      checkHydrationParity(shownOptions.queryKey as readonly unknown[])
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- first mount only; later keys are client-driven, not hydration targets
-  }, [])
+  useServerPrefetchGuard(shownOptions.queryKey, !isPendingView)
+  useHydrationParityCheck(shownOptions.queryKey as readonly unknown[])
 
-  // Suspends until the shown key's rows are in (streamed from the server prefetch on a document load). Inside a
-  // DataViewBoundary fallback it reads a key that already holds an empty page, so the view draws with no rows.
-  const read = useSuspenseQuery(isPending ? (EMPTY_DATA_VIEW_READ as unknown as typeof shownOptions) : shownOptions)
+  // Suspends until the shown key's rows are in (streamed from the server prefetch on a document load). A pending view
+  // with nothing to show reads a key that already holds an empty page, so the view draws with no rows.
+  const read = useSuspenseQuery(loadingScreenRead ?? (EMPTY_DATA_VIEW_READ as unknown as typeof shownOptions))
   const data = read.data as PaginatedResult<DataViewRowOf<TProcedure>>
   const rows = data.rows
   const total = data.total
-  const isFetching = !isPending && read.isFetching
+  // Every return to a route refetches; only a refetch of rows older than staleTime, or invalidated by a save or
+  // refresh, is worth showing, so a quick return refreshes silently.
+  const isPastStaleTime = read.isStale
+  const isFetching = !isPending && read.isFetching && isPastStaleTime
 
   // Only the sources this toolbar shows are read, and only by viewers the read would accept.
   const optionFields = useMemo(() => runtimeOptionFields(config.fields, toolbar), [config.fields, toolbar])
@@ -210,10 +211,10 @@ export function useDataViewQuery<
 
   // Page past the end (rows deleted, filter narrowed elsewhere): clamp; an empty result keeps its own empty state.
   useEffect(() => {
-    if (!isPending && !isStale && windowState.kind === 'page' && pageCount > 0 && windowState.page > pageCount) {
+    if (!isPendingView && !isStale && windowState.kind === 'page' && pageCount > 0 && windowState.page > pageCount) {
       void setUrlState({ [keys.pageKey]: pageCount } as never, { history: 'replace' })
     }
-  }, [isPending, isStale, windowState, pageCount, keys, setUrlState])
+  }, [isPendingView, isStale, windowState, pageCount, keys, setUrlState])
 
   // Around the requested window, not the shown one, so stepping faster than rows arrive still lands on cached
   // windows. Pages wait for the requested key's total, which is what says how many pages exist.
@@ -221,7 +222,8 @@ export function useDataViewQuery<
   const adjacentQueries = adjacentWindows
     .filter(adjacent => adjacent.kind !== 'page' || (!isStale && adjacent.pagination.offset < total))
     .map(adjacent => anyProcedure.queryOptions({ ...toDataViewInput(filterSort, adjacent, config, pins), ...extra }))
-  usePrefetchQueries(adjacentQueries, !isPending && !isFetching)
+  // The page that replaces a pending view warms the neighbours, so a pending view starts no fetch.
+  usePrefetchQueries(adjacentQueries, !isPendingView && !read.isFetching)
 
   // Another key's rows would land on the wrong days, so date views draw skeletons until this key's rows arrive.
   const isWindowPending = isPending || isStale

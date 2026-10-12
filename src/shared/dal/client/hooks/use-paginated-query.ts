@@ -9,12 +9,13 @@ import { useQueryStates } from 'nuqs'
 import { useCallback, useDeferredValue, useEffect, useMemo } from 'react'
 
 import { EMPTY_DATA_VIEW_READ } from '@/shared/dal/client/constants/empty-data-view-read'
+import { useHydrationParityCheck } from '@/shared/dal/client/hooks/use-hydration-parity-check'
 import { useIsDataViewPending } from '@/shared/dal/client/hooks/use-is-data-view-pending'
+import { useLoadingScreenRead } from '@/shared/dal/client/hooks/use-loading-screen-read'
 import { useServerPrefetchGuard } from '@/shared/dal/client/hooks/use-server-prefetch-guard'
 import { DEFAULT_PAGE_SIZE } from '@/shared/dal/lib/query/constants'
 import { derivePaginatedQueryState, makePaginatedParsers } from '@/shared/dal/lib/query/derive-paginated-query-state'
 import { assertNoReservedFilterIds, makeQueryParsers } from '@/shared/dal/lib/query/url-state'
-import { checkHydrationParity } from '@/shared/lib/hydration-drift'
 
 // `any` satisfies contravariance against tRPC's overloaded `queryOptions` signature so callers
 // can pass `trpc.x.y.queryOptions` directly; `_TRow` is a phantom that flows to `PaginatedQueryResult<TRow>`.
@@ -68,7 +69,7 @@ export function usePaginatedQuery<TExtra extends object, TRow>(
   // useQueryStates' inferred generic can't express our dynamic parser map; narrowed by known key names.
   const [urlState, setUrlState] = useQueryStates(parsers as never, { clearOnDefault: true })
   const stateAny = urlState as Record<string, unknown>
-  const isPending = useIsDataViewPending()
+  const isPendingView = useIsDataViewPending()
   // Rows stay on the last URL state whose data is in while the next one loads (covers Back/Forward too).
   const shownStateAny = useDeferredValue(stateAny)
 
@@ -102,6 +103,8 @@ export function usePaginatedQuery<TExtra extends object, TRow>(
     [shownDerived, extraKey],
   )
   const baseOptions = queryOptionsFactory(shownInput)
+  const loadingScreenRead = useLoadingScreenRead(baseOptions)
+  const isPending = loadingScreenRead === null
   const isStale = !isPending && hashKey(requestedOptions.queryKey) !== hashKey(baseOptions.queryKey)
 
   // queryKey[0] is the procedure path, so invalidating by it hits every cached page/filter/sort
@@ -116,36 +119,33 @@ export function usePaginatedQuery<TExtra extends object, TRow>(
     [qc, procedureKeyString],
   )
 
-  // Dev-only: detect server-prefetch key drift (wasted hydration).
-  const baseQueryKey = baseOptions.queryKey as readonly unknown[]
-  useServerPrefetchGuard(baseOptions.queryKey, !isPending)
-  useEffect(() => {
-    if (!isPending) {
-      checkHydrationParity(baseQueryKey)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- first mount only; later key changes are client-driven refetches, not hydration targets
-  }, [])
+  useServerPrefetchGuard(baseOptions.queryKey, !isPendingView)
+  useHydrationParityCheck(baseOptions.queryKey as readonly unknown[])
 
-  // Suspends until the shown key's rows are in; inside a DataViewBoundary fallback it reads an empty page instead.
-  const read = useSuspenseQuery(isPending ? (EMPTY_DATA_VIEW_READ as unknown as typeof baseOptions) : baseOptions)
+  // Suspends until the shown key's rows are in; a pending view with nothing to show reads an empty page instead.
+  const read = useSuspenseQuery(loadingScreenRead ?? (EMPTY_DATA_VIEW_READ as unknown as typeof baseOptions))
   const data = read.data as PaginatedResult<TRow>
-  const isFetching = !isPending && read.isFetching
+  // Every return to a route refetches; only a refetch of rows older than staleTime, or invalidated by a save or
+  // refresh, is worth showing, so a quick return refreshes silently.
+  const isPastStaleTime = read.isStale
+  const isFetching = !isPending && read.isFetching && isPastStaleTime
+  const isReadFetching = read.isFetching
   const total = data.total
   const rows = data.rows
   const pageCount = total > 0 ? Math.ceil(total / effectivePageSize) : 0
 
   // Page-beyond-total clamp; skipped at total=0 because the empty state has its own UX.
   useEffect(() => {
-    if (!isPending && !isStale && pageCount > 0 && page > pageCount) {
+    if (!isPendingView && !isStale && pageCount > 0 && page > pageCount) {
       void setUrlState(
         { [keys.pageKey]: pageCount } as never,
         { history: 'replace' },
       )
     }
-  }, [isPending, isStale, page, pageCount, keys.pageKey, setUrlState])
+  }, [isPendingView, isStale, page, pageCount, keys.pageKey, setUrlState])
 
   useEffect(() => {
-    if (!prefetchNextPage || isPending || isStale || isFetching) {
+    if (!prefetchNextPage || isPendingView || isStale || isReadFetching) {
       return
     }
     const shownOffset = shownDerived.input.pagination.offset
@@ -159,7 +159,7 @@ export function usePaginatedQuery<TExtra extends object, TRow>(
       pagination: { limit: shownPageSize, offset: shownOffset + shownPageSize },
     })
     void qc.prefetchQuery(nextOptions)
-  }, [prefetchNextPage, isPending, isStale, isFetching, data.total, shownDerived, shownInput, queryOptionsFactory, qc])
+  }, [prefetchNextPage, isPendingView, isStale, isReadFetching, data.total, shownDerived, shownInput, queryOptionsFactory, qc])
 
   const setPage = useCallback((next: number) => {
     void setUrlState(

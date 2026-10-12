@@ -6,7 +6,7 @@ import { ROOTS } from '@/shared/config/roots'
 import { pipelines } from '@/shared/constants/enums/pipelines'
 
 // Lazy, so the layout's bundle doesn't carry every page; the pending context (not these components) keeps them from
-// reading, so each one is its page's own loading state.
+// fetching, so each one is its page's own loading state.
 const PipelineRoutePendingView = dynamic(() => import('@/features/agent-dashboard/ui/components/pipeline-route-pending-view').then(m => m.PipelineRoutePendingView))
 
 export const DASHBOARD_ROUTE_PENDING_VIEWS: Record<string, ComponentType> = {
