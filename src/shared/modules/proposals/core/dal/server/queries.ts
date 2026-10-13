@@ -1,4 +1,5 @@
 import type { MeetingPipeline } from '@/shared/constants/enums'
+import type { ProposalStatus } from '@/shared/constants/enums/proposals'
 import type { PaginatedResult } from '@/shared/dal/lib/query/paginated-result'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { ProposalIncentiveRow } from '@/shared/db/schema/proposal-incentives'
@@ -8,7 +9,7 @@ import type { ProposalLockSignals } from '@/shared/modules/proposals/core/lib/pr
 import type { ProjectSection } from '@/shared/modules/proposals/core/types'
 import type { ProposalMediaView } from '@/shared/modules/proposals/media/dal/server/queries'
 
-import { and, count, eq, getTableColumns, gte, inArray, isNotNull, isNull, lte, max, or, sql } from 'drizzle-orm'
+import { and, count, desc, eq, getTableColumns, gte, inArray, isNotNull, isNull, lte, max, or, sql } from 'drizzle-orm'
 import z from 'zod'
 
 import { proposalKinds, proposalStatuses } from '@/shared/constants/enums'
@@ -346,5 +347,37 @@ export async function getByContractEnvelopeId(
       ))
       .limit(1)
     return row
+  })
+}
+
+export interface ProposalSearchRow {
+  id: string
+  customerId: string
+  label: string
+  status: ProposalStatus
+  finalTcpCents: number | null
+}
+
+/** The proposals omni search lists under the customers it matched, most recently sent first. */
+export async function listProposalsForCustomers(ctx: ScopedContext, customerIds: string[], limit: number): Promise<DalReturn<ProposalSearchRow[]>> {
+  return dalDbOperation(async () => {
+    if (customerIds.length === 0) {
+      return []
+    }
+    return db
+      .select({
+        id: proposals.id,
+        customerId: sql<string>`${meetings.customerId}`,
+        label: proposals.label,
+        status: proposals.status,
+        finalTcpCents: proposals.finalTcpCents,
+      })
+      .from(proposals)
+      .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
+      // Joined like listProposals, so the read rules can reach the customer row.
+      .leftJoin(customers, eq(customers.id, meetings.customerId))
+      .where(and(inArray(meetings.customerId, customerIds), permit(ctx, 'read', proposalServerSpec).sql))
+      .orderBy(desc(sql`coalesce(${proposals.sentAt}, ${proposals.createdAt})`))
+      .limit(limit)
   })
 }

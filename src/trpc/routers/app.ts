@@ -20,6 +20,7 @@ import { projectsRouter } from './projects.router'
 import { proposalsRouter } from './proposals.router'
 import { pushRouter } from './push.router'
 import { scheduleRouter } from './schedule.router'
+import { searchRouter } from './search.router'
 import { voipCampaignsRouter } from './voip-campaigns.router'
 
 export const appRouter = createTRPCRouter({
@@ -44,6 +45,7 @@ export const appRouter = createTRPCRouter({
   projectsRouter,
   pushRouter,
   scheduleRouter,
+  searchRouter,
   voipCampaignsRouter,
 })
 

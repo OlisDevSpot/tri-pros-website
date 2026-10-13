@@ -11,7 +11,7 @@ import { db } from '@/shared/db'
 import { customers, projectMediaFiles, projects, x_projectScopes } from '@/shared/db/schema'
 import { PROJECT_FIELDS } from '@/shared/modules/projects/core/dal/project-fields'
 import { PROJECT_FIELD_SQL } from '@/shared/modules/projects/core/dal/server/project-field-sql'
-import { hasAssociatedMeeting } from '@/shared/modules/projects/core/lib/visibility'
+import { hasAssociatedMeeting, projectParticipationScope } from '@/shared/modules/projects/core/lib/visibility'
 import { getMediaPhaseCountsByProjectIds } from '@/shared/modules/projects/media/dal/server/queries'
 
 export async function getPortfolioProjects(): Promise<PortfolioProject[]> {
@@ -284,4 +284,45 @@ export async function getProjectScopeCountsByScopeIds(scopeNotionIds: string[]):
     .groupBy(x_projectScopes.projectId)
 
   return { matchingRows, totalRows }
+}
+
+export interface ProjectSearchRow {
+  id: string
+  customerId: string
+  title: string
+  address: string | null
+  city: string
+}
+
+/** The projects omni search lists under the customers it matched. Portfolio-only projects (no meeting) are left out. */
+export async function listProjectsForCustomers(ctx: ScopedContext, customerIds: string[], limit: number): Promise<DalReturn<ProjectSearchRow[]>> {
+  return dalDbOperation(async () => {
+    const { ability, userId } = ctx.actor
+    if (customerIds.length === 0 || ability.cannot('read', 'Project')) {
+      return []
+    }
+    const scope = ability.can('manage', 'all')
+      ? undefined
+      // Projects are not on compiled rules yet: a non-omni caller is scoped by meeting participation, as projectProcedure does.
+      : userId ? projectParticipationScope(userId) : null
+    if (scope === null) {
+      return []
+    }
+    return db
+      .select({
+        id: projects.id,
+        customerId: sql<string>`${projects.customerId}`,
+        title: projects.title,
+        address: projects.address,
+        city: projects.city,
+      })
+      .from(projects)
+      .where(and(
+        inArray(projects.customerId, customerIds),
+        hasAssociatedMeeting(),
+        scope,
+      ))
+      .orderBy(desc(projects.updatedAt))
+      .limit(limit)
+  })
 }

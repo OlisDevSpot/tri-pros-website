@@ -1,5 +1,6 @@
 import type z from 'zod'
 import type { MeetingParticipantRole } from '@/shared/constants/enums'
+import type { MeetingOutcome, MeetingType } from '@/shared/constants/enums/meetings'
 import type { ProposalStatus } from '@/shared/constants/enums/proposals'
 import type { PaginatedResult } from '@/shared/dal/lib/query/paginated-result'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
@@ -7,7 +8,7 @@ import type { Meeting } from '@/shared/db/schema/meetings'
 
 import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { CustomerProfileMeeting } from '@/shared/entities/customers/types'
-import { and, count, eq, exists, getTableColumns, sql } from 'drizzle-orm'
+import { and, count, desc, eq, exists, getTableColumns, inArray, sql } from 'drizzle-orm'
 
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { permit } from '@/shared/dal/server/lib/permissions/permit'
@@ -326,4 +327,33 @@ export async function getRescheduleSuccessorId(meetingId: string): Promise<strin
     .where(eq(meetings.rescheduledFromId, meetingId))
     .limit(1)
   return row?.id ?? null
+}
+
+export interface MeetingSearchRow {
+  id: string
+  customerId: string
+  scheduledFor: string
+  meetingOutcome: MeetingOutcome
+  meetingType: MeetingType
+}
+
+/** The meetings omni search lists under the customers it matched, newest first. */
+export async function listMeetingsForCustomers(ctx: ScopedContext, customerIds: string[], limit: number): Promise<DalReturn<MeetingSearchRow[]>> {
+  return dalDbOperation(async () => {
+    if (customerIds.length === 0) {
+      return []
+    }
+    return db
+      .select({
+        id: meetings.id,
+        customerId: sql<string>`${meetings.customerId}`,
+        scheduledFor: meetings.scheduledFor,
+        meetingOutcome: meetings.meetingOutcome,
+        meetingType: meetings.meetingType,
+      })
+      .from(meetings)
+      .where(and(inArray(meetings.customerId, customerIds), permit(ctx, 'read', meetingServerSpec).sql))
+      .orderBy(desc(meetings.scheduledFor))
+      .limit(limit)
+  })
 }
