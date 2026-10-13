@@ -11,12 +11,14 @@ type OmniProject = AppRouterOutputs['searchRouter']['omni']['projects'][number]
 interface Props {
   project: OmniProject
   onSelect: (item: RecentOmniItem) => void
+  disabled?: boolean
 }
 
-export function OmniProjectItem({ project, onSelect }: Props) {
+export function OmniProjectItem({ project, onSelect, disabled }: Props) {
   const Icon = OMNI_RECORD_ICONS.project
   return (
     <CommandItem
+      disabled={disabled}
       value={`project:${project.id}`}
       onSelect={() => onSelect({ key: `project:${project.id}`, kind: 'project', label: project.title, sublabel: project.customerName, target: project.target })}
     >

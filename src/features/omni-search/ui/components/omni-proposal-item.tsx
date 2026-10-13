@@ -12,12 +12,14 @@ type OmniProposal = AppRouterOutputs['searchRouter']['omni']['proposals'][number
 interface Props {
   proposal: OmniProposal
   onSelect: (item: RecentOmniItem) => void
+  disabled?: boolean
 }
 
-export function OmniProposalItem({ proposal, onSelect }: Props) {
+export function OmniProposalItem({ proposal, onSelect, disabled }: Props) {
   const Icon = OMNI_RECORD_ICONS.proposal
   return (
     <CommandItem
+      disabled={disabled}
       value={`proposal:${proposal.id}`}
       onSelect={() => onSelect({ key: `proposal:${proposal.id}`, kind: 'proposal', label: proposal.label, sublabel: proposal.customerName, target: proposal.target })}
     >

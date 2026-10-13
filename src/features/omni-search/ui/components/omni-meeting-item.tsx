@@ -13,13 +13,15 @@ type OmniMeeting = AppRouterOutputs['searchRouter']['omni']['meetings'][number]
 interface Props {
   meeting: OmniMeeting
   onSelect: (item: RecentOmniItem) => void
+  disabled?: boolean
 }
 
-export function OmniMeetingItem({ meeting, onSelect }: Props) {
+export function OmniMeetingItem({ meeting, onSelect, disabled }: Props) {
   const Icon = OMNI_RECORD_ICONS.meeting
   const when = formatMeetingShortStamp(meeting.scheduledFor)
   return (
     <CommandItem
+      disabled={disabled}
       value={`meeting:${meeting.id}`}
       onSelect={() => onSelect({ key: `meeting:${meeting.id}`, kind: 'meeting', label: meeting.customerName, sublabel: when, target: meeting.target })}
     >

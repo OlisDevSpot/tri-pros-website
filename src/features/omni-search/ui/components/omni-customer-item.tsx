@@ -21,13 +21,15 @@ function matchExcerpt(customer: OmniCustomer): string | null {
 interface Props {
   customer: OmniCustomer
   onSelect: (item: RecentOmniItem) => void
+  disabled?: boolean
 }
 
-export function OmniCustomerItem({ customer, onSelect }: Props) {
+export function OmniCustomerItem({ customer, onSelect, disabled }: Props) {
   const Icon = OMNI_RECORD_ICONS.customer
   const excerpt = matchExcerpt(customer)
   return (
     <CommandItem
+      disabled={disabled}
       value={`customer:${customer.id}`}
       onSelect={() => onSelect({ key: `customer:${customer.id}`, kind: 'customer', label: customer.name, sublabel: customer.city, target: customer.target })}
     >

@@ -4,7 +4,8 @@ import z from 'zod'
 
 import { omniTargetSchema } from '@/shared/domains/omni-search/schemas'
 
-const STORAGE_KEY = 'omni-search.recent'
+// Per user: a shared device would otherwise show the previous person's customers.
+const storageKey = (userId: string) => `omni-search.recent:${userId}`
 const MAX_RECENT = 5
 
 const recentSchema = z.array(z.object({
@@ -16,9 +17,9 @@ const recentSchema = z.array(z.object({
 })).catch([])
 
 // Storage can be missing or throw (private window, blocked site data); losing the list costs nothing.
-export function readRecentOmniItems(): RecentOmniItem[] {
+export function readRecentOmniItems(userId: string): RecentOmniItem[] {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
+    const raw = window.localStorage.getItem(storageKey(userId))
     return raw ? recentSchema.parse(JSON.parse(raw)).slice(0, MAX_RECENT) : []
   }
   catch {
@@ -26,10 +27,10 @@ export function readRecentOmniItems(): RecentOmniItem[] {
   }
 }
 
-export function pushRecentOmniItem(item: RecentOmniItem): void {
+export function pushRecentOmniItem(userId: string, item: RecentOmniItem): void {
   try {
-    const next = [item, ...readRecentOmniItems().filter(existing => existing.key !== item.key)].slice(0, MAX_RECENT)
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+    const next = [item, ...readRecentOmniItems(userId).filter(existing => existing.key !== item.key)].slice(0, MAX_RECENT)
+    window.localStorage.setItem(storageKey(userId), JSON.stringify(next))
   }
   catch {}
 }
