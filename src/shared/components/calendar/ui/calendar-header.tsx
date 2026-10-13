@@ -40,7 +40,7 @@ export function CalendarHeader({
   }
 
   return (
-    <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
+    <div className="flex items-center justify-between gap-2 px-3 py-2">
       <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
         <div className="flex items-center">
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handlePrevious} aria-label="Previous">

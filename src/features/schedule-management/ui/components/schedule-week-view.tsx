@@ -6,6 +6,7 @@ import { format, parseISO } from 'date-fns'
 import { useLayoutEffect, useMemo, useRef } from 'react'
 
 import { SKELETON_EVENTS_PER_DAY } from '@/features/schedule-management/constants/schedule-calendar-config'
+import { SCHEDULE_FRAME_CLASS } from '@/features/schedule-management/constants/schedule-frame'
 import { getEventsForDay, getWeekDays, isBusinessToday, localDateToCalendarDay, seededIntInRange } from '@/shared/components/calendar/lib/calendar-helpers'
 import { cn } from '@/shared/lib/utils'
 
@@ -58,6 +59,7 @@ export function ScheduleWeekView({
       // lifted for this one assignment.
       if (scroller && todayCol) {
         const overflow = todayCol.getBoundingClientRect().right - scroller.getBoundingClientRect().left - scroller.clientWidth
+          + Number.parseFloat(getComputedStyle(scroller).paddingRight)
         if (overflow > 0) {
           scroller.style.scrollBehavior = 'auto'
           scroller.scrollLeft = overflow
@@ -85,8 +87,9 @@ export function ScheduleWeekView({
   }, [currentDate])
 
   return (
-    <div ref={scrollRef} className="h-full overflow-x-auto" aria-busy={isPending || undefined}>
-      <div className="flex h-full flex-col" style={{ minWidth: `${gridMinWidth}px` }}>
+    // A flex row, so WebKit keeps the right gap at the scroll end.
+    <div ref={scrollRef} className="bleed-x flex h-full overflow-x-auto" aria-busy={isPending || undefined}>
+      <div data-slot="schedule-frame" className={cn(SCHEDULE_FRAME_CLASS, 'flex h-full w-full flex-none flex-col')} style={{ minWidth: `${gridMinWidth}px` }}>
         {/* Day headers */}
         <div
           className="grid shrink-0 border-b border-grid-line bg-(--card)"

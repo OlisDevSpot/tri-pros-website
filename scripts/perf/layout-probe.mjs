@@ -96,8 +96,9 @@ async function bleedXChecks(page, scroller, first, last) {
     const restLeft = firstBox().left
     const max = el.scrollWidth - el.clientWidth
     el.scrollLeft = Math.round(max / 2)
-    const hit = document.elementFromPoint(W - 2, r.top + Math.min(r.height / 2, 120))
-    const midEdgeIsContent = max > 2 * GAP ? el.contains(hit) : true
+    // elementsFromPoint, not elementFromPoint: a Radix scroll area's overlay scrollbar sits above the content at the edge.
+    const hits = document.elementsFromPoint(W - 2, r.top + Math.min(r.height / 2, 120))
+    const midEdgeIsContent = max > 2 * GAP ? hits.some(h => el.contains(h)) : true
     el.scrollLeft = max
     const endRight = lastBox().right
     el.scrollLeft = 0

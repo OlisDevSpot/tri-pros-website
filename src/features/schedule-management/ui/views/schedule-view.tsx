@@ -23,7 +23,7 @@ export function ScheduleView() {
   const showToggle = <ScheduleShowToggle value={show} onChange={next => void setShow(next)} />
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden">
+    <div className="w-full h-full flex flex-col overflow-y-clip">
       {show === 'activities'
         ? (
             <DataViewBoundary>
