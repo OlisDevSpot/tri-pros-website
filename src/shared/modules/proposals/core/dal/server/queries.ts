@@ -374,8 +374,6 @@ export async function listProposalsForCustomers(ctx: ScopedContext, customerIds:
       })
       .from(proposals)
       .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
-      // Joined like listProposals, so the read rules can reach the customer row.
-      .leftJoin(customers, eq(customers.id, meetings.customerId))
       .where(and(inArray(meetings.customerId, customerIds), permit(ctx, 'read', proposalServerSpec).sql))
       .orderBy(desc(sql`coalesce(${proposals.sentAt}, ${proposals.createdAt})`))
       .limit(limit)

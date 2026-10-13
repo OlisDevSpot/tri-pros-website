@@ -28,6 +28,6 @@ export const omniTargetSchema = z.discriminatedUnion('kind', [
     defaultTab: z.enum(profileTabs).optional(),
     highlightMeetingId: z.string().optional(),
   }),
-  z.object({ kind: z.literal('route'), href: z.string().startsWith('/') }),
+  z.object({ kind: z.literal('route'), href: z.string().regex(/^\/(?!\/)/) }),
 ])
 export type OmniTarget = z.infer<typeof omniTargetSchema>
