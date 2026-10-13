@@ -2,6 +2,7 @@
 
 import type { SQL } from 'drizzle-orm'
 
+import type { MeetingOutcome } from '@/shared/constants/enums/meetings'
 import type { Pipeline } from '@/shared/constants/enums/pipelines'
 import type { PaginatedResult } from '@/shared/dal/lib/query/paginated-result'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
@@ -10,7 +11,6 @@ import type { CustomerPipelineItem, CustomerPipelineRawData, PipelineItemProposa
 import { and, asc, count, desc, eq, exists, inArray, isNotNull, isNull, max, ne, sql } from 'drizzle-orm'
 import z from 'zod'
 
-import { DECIDED_OUTCOMES } from '@/shared/constants/enums/meetings'
 import { deriveProjectStatusBucket, pipelines } from '@/shared/constants/enums/pipelines'
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { permit } from '@/shared/dal/server/lib/permissions/permit'
@@ -36,6 +36,9 @@ export const customerPipelineItemsInputSchema = fieldListInput(CUSTOMER_FIELDS, 
   pipeline: z.enum(pipelines),
 })
 export type CustomerPipelineItemsInput = z.infer<typeof customerPipelineItemsInputSchema>
+
+/** An undecided meeting that is upcoming or started within the last two hours: the visit the customer is waiting on. */
+const LIVE_MEETING = sql`${meetings.meetingOutcome} = ${'not_set'} AND ${meetings.scheduledFor} > now() - interval '2 hours'`
 
 /** Everything a branch needs: who is asking, and the customer filter, search and order the kanban toolbar chose. */
 interface PipelineBranchArgs {
@@ -219,12 +222,10 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
       customerState: customers.state,
       customerZip: customers.zip,
       meetingCount: count(meetings.id).as('meeting_count'),
-      hasScheduledFutureMeeting: sql<boolean>`bool_or(${meetings.scheduledFor} > now())`.as('has_future_scheduled'),
-      hasConfirmedFutureMeeting: sql<boolean>`bool_or(${meetings.scheduledFor} > now() AND ${meetings.confirmedAt} IS NOT NULL)`.as('has_confirmed_future'),
-      hasActiveMeeting: sql<boolean>`bool_or(${meetings.scheduledFor} <= now() AND ${meetings.scheduledFor} > now() - interval '2 hours')`.as('has_active'),
-      hasPastMeeting: sql<boolean>`bool_or(${meetings.scheduledFor} <= now() - interval '2 hours' OR (${meetings.scheduledFor} IS NULL AND ${meetings.meetingOutcome} IN (${sql.join(DECIDED_OUTCOMES.map(o => sql`${o}`), sql`, `)})))`.as('has_past'),
-      hasFollowUpNeeded: sql<boolean>`bool_or(${meetings.meetingOutcome} = ${'follow_up_needed'})`.as('has_follow_up_needed'),
-      hasRescheduleNeeded: sql<boolean>`bool_or(${meetings.meetingOutcome} = ${'reschedule_needed'})`.as('has_reschedule_needed'),
+      // Null when the customer has no live meeting.
+      liveMeetingStarted: sql<boolean | null>`(array_agg(${meetings.scheduledFor} <= now() ORDER BY ${meetings.scheduledFor}) FILTER (WHERE ${LIVE_MEETING}))[1]`.as('live_meeting_started'),
+      liveMeetingConfirmed: sql<boolean | null>`(array_agg(${meetings.confirmedAt} IS NOT NULL ORDER BY ${meetings.scheduledFor}) FILTER (WHERE ${LIVE_MEETING}))[1]`.as('live_meeting_confirmed'),
+      latestOutcome: sql<MeetingOutcome>`(array_agg(${meetings.meetingOutcome} ORDER BY ${meetings.scheduledFor} DESC))[1]`.as('latest_outcome'),
       latestMeetingAt: max(meetings.createdAt).as('latest_meeting_at'),
       nextMeetingAt: sql<string | null>`min(CASE WHEN ${meetings.scheduledFor} > now() - interval '2 hours' THEN ${meetings.scheduledFor} END)`.as('next_meeting_at'),
     })
@@ -359,12 +360,10 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
       customerCity: row.customerCity,
       meetingCount: row.meetingCount,
       proposalCount: reachedProposals.length,
-      hasPastMeeting: row.hasPastMeeting ?? false,
-      hasActiveMeeting: row.hasActiveMeeting ?? false,
-      hasScheduledFutureMeeting: row.hasScheduledFutureMeeting ?? false,
-      hasConfirmedFutureMeeting: row.hasConfirmedFutureMeeting ?? false,
-      hasFollowUpNeeded: row.hasFollowUpNeeded ?? false,
-      hasRescheduleNeeded: row.hasRescheduleNeeded ?? false,
+      liveMeeting: row.liveMeetingStarted === null
+        ? null
+        : { started: row.liveMeetingStarted, confirmed: row.liveMeetingConfirmed ?? false },
+      latestOutcome: row.latestOutcome,
       proposalStatuses,
       hasSentContract: pData?.hasSentContract ?? false,
       // Detail rows are newest first.
@@ -372,12 +371,8 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
     }
 
     const stage = computeFreshStage({
-      hasPastMeeting: rawData.hasPastMeeting,
-      hasActiveMeeting: rawData.hasActiveMeeting,
-      hasScheduledFutureMeeting: rawData.hasScheduledFutureMeeting,
-      hasConfirmedFutureMeeting: rawData.hasConfirmedFutureMeeting,
-      hasFollowUpNeeded: rawData.hasFollowUpNeeded,
-      hasRescheduleNeeded: rawData.hasRescheduleNeeded,
+      liveMeeting: rawData.liveMeeting,
+      latestOutcome: rawData.latestOutcome,
       proposalStatuses: rawData.proposalStatuses,
       hasSentContract: rawData.hasSentContract,
     })
