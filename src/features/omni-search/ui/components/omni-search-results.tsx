@@ -2,13 +2,14 @@
 
 import type { OmniEntry, OmniMode, OmniPickedCustomer, RecentOmniItem } from '@/features/omni-search/types'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 
 import { OMNI_COPY } from '@/features/omni-search/constants/copy'
 import { useOmniActions } from '@/features/omni-search/hooks/use-omni-actions'
 import { useOmniSearchQuery } from '@/features/omni-search/hooks/use-omni-search-query'
 import { useOpenOmniTarget } from '@/features/omni-search/hooks/use-open-omni-target'
 import { buildOmniRegistry } from '@/features/omni-search/lib/build-omni-registry'
+import { firstOmniValue } from '@/features/omni-search/lib/first-omni-value'
 import { rankOmniEntries } from '@/features/omni-search/lib/rank-omni-entries'
 import { pushRecentOmniItem, readRecentOmniItems } from '@/features/omni-search/lib/recent-omni-items'
 import { OmniCustomerItem } from '@/features/omni-search/ui/components/omni-customer-item'
@@ -23,12 +24,14 @@ import { useAbility } from '@/shared/domains/permissions/client'
 interface Props {
   search: string
   mode: OmniMode
+  /** Moves the cmdk highlight; the dialog owns the value because cmdk never re-selects when rows flip from disabled to enabled. */
+  onHighlight: (value: string) => void
   onDone: () => void
   onEnterMode: (mode: OmniMode) => void
   onPickCustomer: (customer: OmniPickedCustomer) => void
 }
 
-export function OmniSearchResults({ search, mode, onDone, onEnterMode, onPickCustomer }: Props) {
+export function OmniSearchResults({ search, mode, onHighlight, onDone, onEnterMode, onPickCustomer }: Props) {
   const ability = useAbility()
   const registry = useMemo(() => buildOmniRegistry(ability), [ability])
   const userId = useSession().data?.user.id
@@ -50,6 +53,20 @@ export function OmniSearchResults({ search, mode, onDone, onEnterMode, onPickCus
       <CommandItem value="search:unavailable" disabled>{OMNI_COPY.unavailable}</CommandItem>
     </CommandGroup>
   )
+
+  const ranked = rankOmniEntries(registry, search)
+  const entriesFirst = (ranked[0]?.score ?? 0) > (pending ? 0 : Math.min(data?.customers[0]?.score ?? 0, 1))
+  const first = mode === 'schedule-meeting'
+    ? (data?.customers[0] && `customer:${data.customers[0].id}`)
+    : firstOmniValue(ranked, data, entriesFirst)
+  // Keyed on the settled term only, so refetches and arrow-key navigation don't pull the highlight back to the top.
+  const settledTerm = pending || (term && !data && !query.isError) ? null : term
+  useEffect(() => {
+    if (settledTerm && first) {
+      onHighlight(first)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `first` and `onHighlight` are read at the moment the term settles
+  }, [settledTerm, mode])
 
   if (mode === 'schedule-meeting') {
     return (
@@ -92,10 +109,8 @@ export function OmniSearchResults({ search, mode, onDone, onEnterMode, onPickCus
     openTarget({ kind: 'route', href })
   }
 
-  const ranked = rankOmniEntries(registry, search)
   const entries = <OmniEntryGroups ranked={ranked} onSelect={selectEntry} />
   const records = data && <OmniRecordGroups data={data} onSelectRecord={selectRecord} onSeeAll={seeAll} stale={pending} />
-  const entriesFirst = (ranked[0]?.score ?? 0) > (pending ? 0 : Math.min(data?.customers[0]?.score ?? 0, 1))
 
   return (
     <>

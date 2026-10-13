@@ -16,7 +16,17 @@ export function OmniSearchDialog() {
   const setSearchOpen = useDashboardOverlays(state => state.setSearchOpen)
   const toggleSearch = useDashboardOverlays(state => state.toggleSearch)
   const pathname = usePathname()
+  const [highlighted, setHighlighted] = useState('')
+  const [wasOpen, setWasOpen] = useState(open)
   const [scheduleFor, setScheduleFor] = useState<OmniPickedCustomer | null>(null)
+
+  // A stale value would stop cmdk auto-highlighting on the next open, so it is cleared the render the dialog closes.
+  if (wasOpen !== open) {
+    setWasOpen(open)
+    if (!open) {
+      setHighlighted('')
+    }
+  }
 
   useEffect(() => {
     function onKeydown(event: KeyboardEvent) {
@@ -43,9 +53,10 @@ export function OmniSearchDialog() {
         title={OMNI_COPY.title}
         description={OMNI_COPY.description}
         showCloseButton={false}
-        commandProps={{ shouldFilter: false, loop: true }}
+        commandProps={{ shouldFilter: false, loop: true, value: highlighted, onValueChange: setHighlighted }}
       >
         <OmniSearchPanel
+          onHighlight={setHighlighted}
           onDone={() => setSearchOpen(false)}
           onPickCustomer={(customer) => {
             setSearchOpen(false)

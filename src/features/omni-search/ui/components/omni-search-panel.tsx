@@ -10,12 +10,13 @@ import { CommandInput, CommandList } from '@/shared/components/ui/command'
 import { OMNI_TERM_MAX } from '@/shared/domains/omni-search/schemas'
 
 interface Props {
+  onHighlight: (value: string) => void
   onDone: () => void
   onPickCustomer: (customer: OmniPickedCustomer) => void
 }
 
 // Lives inside the dialog content, which unmounts on close, so every open starts with an empty term at the root.
-export function OmniSearchPanel({ onDone, onPickCustomer }: Props) {
+export function OmniSearchPanel({ onHighlight, onDone, onPickCustomer }: Props) {
   const [search, setSearch] = useState('')
   const [mode, setMode] = useState<OmniMode>('root')
 
@@ -37,6 +38,7 @@ export function OmniSearchPanel({ onDone, onPickCustomer }: Props) {
         <OmniSearchResults
           search={search}
           mode={mode}
+          onHighlight={onHighlight}
           onDone={onDone}
           onEnterMode={(next) => {
             setMode(next)
