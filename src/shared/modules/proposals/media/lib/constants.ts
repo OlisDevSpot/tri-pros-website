@@ -1,3 +1,5 @@
+import { R2_BUCKETS } from '@/shared/services/providers/r2/types'
+
 // Canonical entity-name constant for the ProposalMediaFile entity. Source of
 // truth for `EntityName` (see domains/permissions/abilities.ts). This is a pure
 // CHILD entity: it is the field `media` of the `Proposal` subject (no
@@ -9,4 +11,6 @@ export const PROPOSAL_MEDIA_FILE = 'ProposalMediaFile' as const
 export const PROPOSAL_MEDIA = {
   ownerKind: 'proposal',
   variants: ['xs', 'sm', 'md', 'lg'],
+  bucket: R2_BUCKETS.media,
+  pathKeyPrefix: (proposalId: string) => `proposals/${proposalId}/`,
 } as const
