@@ -107,6 +107,7 @@ export function ScheduleTodayView({
       type="always"
       aria-busy={isPending || undefined}
     >
+      {/* Radix wraps the viewport's children in a display: table div with auto height; as a flex box with a minimum height the card can fill a short or empty day. */}
       <ScrollAreaPrimitive.Viewport ref={viewportRef} className="size-full rounded-[inherit] [&>div]:flex! [&>div]:min-h-full pl-(--bled-l) scroll-pl-(--bled-l) scroll-pr-(--bled-r)">
         <div className="flex flex-1 after:w-(--bled-r) after:flex-none after:content-['']">
           <div data-slot="schedule-frame" className={cn(SCHEDULE_FRAME_CLASS, 'flex flex-1 flex-col')} style={{ minWidth: `${gridMinWidth}px` }}>
@@ -147,7 +148,7 @@ export function ScheduleTodayView({
             {isPending
               ? skeletonCardBuckets.map((cardBucket, lane) => (
                   <motion.div
-                  // eslint-disable-next-line react/no-array-index-key
+                    // eslint-disable-next-line react/no-array-index-key
                     key={lane}
                     className="grid border-b border-dashed border-grid-line"
                     initial={false}

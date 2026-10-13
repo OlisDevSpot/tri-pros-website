@@ -6,11 +6,12 @@
 // shell MAIN width, matching the records pages. MAIN owns overflow-hidden.
 //
 // Scroll ownership is viewport-aware: on mobile the whole view scrolls as one
-// page, behind the dock. From `lg` up the work surface is viewport-bound (the grid fills the
-// remaining height under the hero) and EACH column scrolls internally — a long
-// proposals/projects rail scrolls its own container instead of growing the
-// page. The Action Queue module is intentionally not rendered here (stub
-// removed); the snapshot strip's `#queue` chip is re-skinned in a later task.
+// page, behind the dock. From `lg` up the work surface is viewport-bound (the
+// grid fills the remaining height under the hero) and EACH column scrolls
+// internally — a long proposals/projects rail scrolls its own container
+// instead of growing the page. The Action Queue module is intentionally not
+// rendered here (stub removed); the snapshot strip's `#queue` chip is
+// re-skinned in a later task.
 
 import { DashboardHero } from '@/features/agent-dashboard/ui/components/dashboard-hero'
 import { DashboardMeetingsHub } from '@/features/agent-dashboard/ui/components/dashboard-meetings-hub'

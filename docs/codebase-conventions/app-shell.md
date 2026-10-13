@@ -126,7 +126,7 @@ A route that must render edge to edge inside the dashboard (today: the meeting f
 The stage route then supplies its own gutters where it wants them (the meeting flow's page steps do; its presentation does not) and its own safe-area bottom padding.
 
 **Why**: the dashboard layout shape is fixed (rule above). A route group or a nested layout would fork the shell or remount the sidebar; a pathname-aware template couples the template to routes. One attribute plus two `:has()` selectors keeps one layout and one template.
-**Reference impl**: `src/features/meeting-flow/ui/views/meeting-flow.tsx` (root `data-stage`)
+**Reference impl**: `src/features/meeting-flow/ui/components/shell/stage-frame.tsx` (root `data-stage`)
 **Enforced by**: convention
 
 ### proposal-flow-layout-shape-fixed

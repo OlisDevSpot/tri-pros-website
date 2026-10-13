@@ -1213,7 +1213,8 @@
 
 /* A page that scrolls as a whole reaches into the side and bottom insets and pads its content back,
    so it runs behind the phone dock and its last item still clears it. It takes its own height; as a
-   flex-1 item its flex basis wins instead. Never pair it with an h-* class. */
+   flex-1 item its flex basis wins instead. Never pair it with an h-* or w-*
+   class: a fixed width defeats the side bleed. */
 @utility page-scroll {
   overflow-y: auto;
   overscroll-behavior-y: contain;

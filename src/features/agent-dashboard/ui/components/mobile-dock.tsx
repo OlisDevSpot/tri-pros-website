@@ -49,7 +49,7 @@ export function MobileDock({ user, onActionCenterClick }: MobileDockProps) {
         aria-hidden
         data-slot="dashboard-dock-fade"
         data-menu-open={isMenuOpen || undefined}
-        className="absolute inset-0 bg-[linear-gradient(to_top,var(--background)_var(--dock-baseline),transparent)] transition-opacity duration-200 data-menu-open:opacity-0 motion-reduce:transition-none"
+        className="absolute inset-0 bg-[linear-gradient(to_top,var(--background)_var(--dock-baseline),transparent)] transition-opacity duration-200 ease-out data-menu-open:opacity-0 motion-reduce:transition-none"
       />
       <div className={cn('pointer-events-auto absolute inset-x-3 flex items-center gap-2', MOBILE_DOCK_BOTTOM_CLASS)}>
         <MobileDockMenuButton />
