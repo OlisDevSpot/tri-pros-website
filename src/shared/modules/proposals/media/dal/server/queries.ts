@@ -1,11 +1,13 @@
-// src/shared/modules/proposals/media/dal/server/queries.ts
+import type { ScopedContext } from '@/shared/dal/server/types'
 import type { ProposalMediaFile, ProposalMediaVisibility } from '@/shared/db/schema/proposal-media-files'
 import { and, asc, eq, inArray, like } from 'drizzle-orm'
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { db } from '@/shared/db'
 import { meetings } from '@/shared/db/schema/meetings'
 import { proposalMediaFiles } from '@/shared/db/schema/proposal-media-files'
 import { proposals } from '@/shared/db/schema/proposals'
 import { deriveOriginalMediaUrl } from '@/shared/modules/media/core/lib/get-optimized-urls'
+import { proposalMediaServerSpec } from '@/shared/modules/proposals/media/server-spec'
 
 /**
  * Homeowner-facing projection of a proposal media file. Public canonical bucket
@@ -62,12 +64,11 @@ export interface ImportableProjectMediaRow {
 }
 
 /**
- * Image rows on proposals belonging to THIS project's meetings — the import-picker
- * source set. Authorization by construction: the meeting→project join means only
- * media reachable from the project is returned (no arbitrary-id import). Pass `ids`
- * to restrict to a chosen subset (the actual import call).
+ * Image rows on proposals belonging to THIS project's meetings that the actor can read — the import
+ * picker's source set. Pass `ids` to restrict to a chosen subset (the actual import call).
  */
 export async function listImportableProjectMedia(
+  ctx: ScopedContext,
   projectId: string,
   ids?: number[],
 ): Promise<ImportableProjectMediaRow[]> {
@@ -91,6 +92,7 @@ export async function listImportableProjectMedia(
       eq(meetings.projectId, projectId),
       like(proposalMediaFiles.mimeType, 'image/%'),
       ids && ids.length > 0 ? inArray(proposalMediaFiles.id, ids) : undefined,
+      permit(ctx, 'read', proposalMediaServerSpec).sql,
     ))
 }
 

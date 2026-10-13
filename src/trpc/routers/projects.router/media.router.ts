@@ -1,18 +1,20 @@
 import type { R2BucketName } from '@/shared/services/providers/r2/types'
+import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
 import { mediaPhases } from '@/shared/constants/enums/media'
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { insertProjectMediaFilesSchema } from '@/shared/db/schema'
 import { deriveOriginalMediaUrl, getOptimizedSrc } from '@/shared/modules/media/core/lib/get-optimized-urls'
+import { projectServerSpec } from '@/shared/modules/projects/core/server-spec'
 import { projectMediaStore } from '@/shared/modules/projects/media/store'
 import { projectsService } from '@/shared/modules/projects/service'
 import { listImportableProjectMedia } from '@/shared/modules/proposals/media/dal/server/queries'
 import { R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
-import { createTRPCRouter } from '../../init'
-import { projectAccessProcedure } from './procedures'
+import { agentProcedure, createTRPCRouter } from '../../init'
 
 export const mediaRouter = createTRPCRouter({
-  getUploadUrl: projectAccessProcedure
+  getUploadUrl: agentProcedure
     .input(z.object({
       projectId: z.string().uuid(),
       phase: z.enum(mediaPhases),
@@ -24,7 +26,7 @@ export const mediaRouter = createTRPCRouter({
       return { uploadUrl, pathKey, publicUrl: `${R2_PUBLIC_DOMAINS[bucket as R2BucketName] ?? ''}/${pathKey}` }
     }),
 
-  create: projectAccessProcedure
+  create: agentProcedure
     .input(insertProjectMediaFilesSchema.omit({ bucket: true }).extend({
       bucket: z.string().optional(),
     }))
@@ -32,20 +34,20 @@ export const mediaRouter = createTRPCRouter({
       dalToTrpc(await projectsService.media.create(ctx, { ...input, bucket: input.bucket ?? projectMediaStore.bucket })),
     ),
 
-  retryOptimization: projectAccessProcedure
+  retryOptimization: agentProcedure
     .input(z.object({ mediaFileId: z.number() }))
     .mutation(async ({ ctx, input }) => {
       dalToTrpc(await projectsService.media.retryOptimization(ctx, { id: input.mediaFileId }))
       return { success: true }
     }),
 
-  delete: projectAccessProcedure
+  delete: agentProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       dalToTrpc(await projectsService.media.delete(ctx, { id: input.id }))
     }),
 
-  reorder: projectAccessProcedure
+  reorder: agentProcedure
     .input(z.object({
       updates: z.array(z.object({ id: z.number(), sortOrder: z.number().int() })),
     }))
@@ -53,7 +55,7 @@ export const mediaRouter = createTRPCRouter({
       dalToTrpc(await projectsService.media.reorder(ctx, input))
     }),
 
-  movePhase: projectAccessProcedure
+  movePhase: agentProcedure
     .input(z.object({
       ids: z.array(z.number()).min(1),
       phase: z.enum(mediaPhases),
@@ -62,7 +64,7 @@ export const mediaRouter = createTRPCRouter({
       dalToTrpc(await projectsService.media.movePhase(ctx, input))
     }),
 
-  bulkDelete: projectAccessProcedure
+  bulkDelete: agentProcedure
     .input(z.object({ ids: z.array(z.number()).min(1) }))
     .mutation(async ({ ctx, input }) => {
       // A row that is already gone is not an error for a bulk selection (the user
@@ -75,7 +77,7 @@ export const mediaRouter = createTRPCRouter({
       }
     }),
 
-  rename: projectAccessProcedure
+  rename: agentProcedure
     .input(z.object({
       id: z.number(),
       name: z.string().min(1).max(80),
@@ -84,7 +86,7 @@ export const mediaRouter = createTRPCRouter({
       dalToTrpc(await projectsService.media.update(ctx, { id: input.id, data: { name: input.name } }))
     }),
 
-  toggleHero: projectAccessProcedure
+  toggleHero: agentProcedure
     .input(z.object({
       id: z.number(),
       isHeroImage: z.boolean(),
@@ -93,10 +95,14 @@ export const mediaRouter = createTRPCRouter({
       dalToTrpc(await projectsService.media.setHero(ctx, input))
     }),
 
-  listImportableProposalMedia: projectAccessProcedure
+  listImportableProposalMedia: agentProcedure
     .input(z.object({ projectId: z.string().uuid() }))
-    .query(async ({ input }) => {
-      const rows = await listImportableProjectMedia(input.projectId)
+    .query(async ({ ctx, input }) => {
+      // The picker is the import's first half, so it asks what the import asks.
+      if (!(await permit(ctx, 'update', projectServerSpec, ['media']).probe(input.projectId))) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Project not found' })
+      }
+      const rows = await listImportableProjectMedia(ctx, input.projectId)
 
       // Public bucket — derive the best display URL (variant or original) for
       // the picker preview. No presigning.
@@ -125,7 +131,7 @@ export const mediaRouter = createTRPCRouter({
       return [...byProposal.values()]
     }),
 
-  importFromProposal: projectAccessProcedure
+  importFromProposal: agentProcedure
     .input(z.object({ projectId: z.string().uuid(), proposalMediaFileIds: z.array(z.number()).min(1) }))
     .mutation(async ({ ctx, input }) => {
       return dalToTrpc(await projectsService.media.importFromProposal(ctx, input))

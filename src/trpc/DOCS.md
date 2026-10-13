@@ -345,7 +345,7 @@ Adoption is broad now, not limited to the original canonical example — most ag
 | Customer Note | ✅ Migrated | pure CRUD; author-or-admin hooks, see `../shared/entities/customers/DOCS.md#note-authorship` |
 | Voip (calls, campaigns, DIDs, contacts, messages, link-tokens, contact-attributes) | ✅ Migrated | `entities/voip-*/` |
 | App Settings | ✅ Migrated | `entities/app-settings/` |
-| Project | ⚠️ Partial | `projectServerSpec` + `projectCrud` + `procedures.ts` (`projectProcedure`) exist; `crud.router.ts` is still hand-written (`agentProcedure` / `projectProcedure`), not `createCrudRouter` |
+| Project | ⚠️ Partial | `projectServerSpec` + `projectCrud` on compiled rules; `crud.router.ts` is hand-written on `agentProcedure`, not `createCrudRouter` |
 | Lead Source | ❌ Not migrated | Single-file router on `superAdminProcedure` |
 
 Project (CRUD leaf) and Lead Source are the known gaps. The epic's S8 audit (2026-08-11) spun both out: projects → `docs/plans/2026-08-11-projects-standardization-epic.md`; lead-sources deferred until after projects.

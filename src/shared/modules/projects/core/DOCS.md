@@ -167,10 +167,9 @@ Both paths write `x_project_scopes` **only through the projects DAL** (`modules/
 The projects entity is **mostly migrated** to the Entity Server System (ADR-0002) — projects-standardization epic Phases 1–3 (`docs/plans/2026-08-11-projects-standardization-epic.md`). Shipped:
 - DAL under `src/shared/modules/projects/core/dal/server/`: `queries.ts` (reads incl. `listProjects`), `crud.ts` (`projectCrud = createCrudDal(projectServerSpec)` plus `createProjectWithScopes` / `updateProjectWithScopes`), `mutations.ts` (`setProjectScopes`). The legacy feature-scoped DAL (`features/project-management/dal/`) is gone. (This directory itself moved here from the old top-level projects entity's DAL as a path-only commit — `docs/codebase-conventions/service-architecture.md#entities-vs-modules`.)
 - Mutations route through `projectCrud`, so server-spec hooks fire (`crud.router.ts` create/update/delete, `business.router.ts` create).
-- Per-entity scoped procedures (`procedures.ts` → `projectProcedure`, injecting `ctx.scope` via `resolveVisibilityScope`); `crud.router.ts`'s `list` consumes `ctx.scope`.
 - No inline `db` remains in `src/trpc/routers/projects.router/`.
 
-Not yet done: `crud.router.ts` is hand-written rather than `createCrudRouter`; `getAll`/`getForEdit`/`showroomDisplay.*` and the `media` sub-router run on bare `agentProcedure`/`baseProcedure` (unscoped). Remaining visibility tightening belongs to the permissions epic (#285).
+Not yet done: `crud.router.ts` is hand-written rather than `createCrudRouter`.
 
 Migration order from ADR-0002: Proposal → Customer → Meeting → **Project**. Proposal is done (PR #207).
 

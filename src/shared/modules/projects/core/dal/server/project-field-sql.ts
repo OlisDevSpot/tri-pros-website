@@ -5,7 +5,7 @@ import { dateRangeCondition, defineFieldSql } from '@/shared/dal/server/lib/quer
 import { customers } from '@/shared/db/schema/customers'
 import { projects } from '@/shared/db/schema/projects'
 import { PROJECT_FIELDS } from '@/shared/modules/projects/core/dal/project-fields'
-import { hasAssociatedMeeting } from '@/shared/modules/projects/core/lib/visibility'
+import { hasAssociatedMeeting } from '@/shared/modules/projects/core/lib/has-associated-meeting'
 import 'server-only'
 
 export const PROJECT_FIELD_SQL = defineFieldSql(PROJECT_FIELDS, {

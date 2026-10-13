@@ -17,23 +17,7 @@ export const projectMediaSchemas = {
   update: updateProjectMediaFileSchema,
 }
 
-/**
- * `media_files` (project media) as a first-class CHILD entity, parented to
- * `projects`. Like proposal media it declares NO own `visibility`; its effective
- * scope is the parent bridge `projectId IN (SELECT projects.id WHERE <project
- * participation scope>)`, folded into `ctx.scope` by a child-scoped procedure.
- *
- * NOTE (S5b): the project-media ROUTER still runs on a bare `agentProcedure`
- * (`ctx.scope = null`), so this CRUD DAL currently executes UNSCOPED there —
- * preserving today's behavior. Turning the bridge on (swapping to a child-scoped
- * procedure) is a deliberate security TIGHTENING, deferred to its own reviewed
- * slice. The spec/DAL are ready for that flip; nothing else needs to change.
- *
- * It is the field `media` of `Project`, with no subject of its own. The spec
- * itself carries no `hooks` — those live on `createCrudDal`'s
- * config factory in `dal/server/crud.ts`, where `create.after`/`delete.before`
- * fire optimize dispatch and R2 cleanup on every origin (C32, D5).
- */
+/** `media_files` (project media): the field `media` of `Project`. Reading it needs the project's read reach; writing it, the project's `update` of `media`. Its hooks live on `createCrudDal` in `dal/server/crud.ts`. */
 export const projectMediaServerSpec = defineSubEntitySpec({
   entityName: PROJECT_MEDIA_FILE,
   parent: { spec: projectServerSpec, fk: projectMediaFiles.projectId, field: 'media' },

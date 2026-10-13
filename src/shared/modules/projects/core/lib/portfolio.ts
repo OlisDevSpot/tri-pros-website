@@ -9,7 +9,7 @@
  * Pure-portfolio projects must be disregarded in operational lists, analytics,
  * filtering, and aggregations. This is the row-level predicate (for shapes that
  * carry their meetings, e.g. `CustomerProfileProject`); the server-side twin for
- * list/aggregation queries is `hasAssociatedMeeting()` in `./visibility.ts`.
+ * list/aggregation queries is `hasAssociatedMeeting()` in `./has-associated-meeting.ts`.
  *
  */
 export function isPurePortfolioProject(project: { meetings?: readonly unknown[] | null }): boolean {

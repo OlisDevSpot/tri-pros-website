@@ -7,7 +7,7 @@ import type { Meeting } from '@/shared/db/schema/meetings'
 
 import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { CustomerProfileMeeting } from '@/shared/entities/customers/types'
-import { and, count, eq, exists, getTableColumns, sql } from 'drizzle-orm'
+import { and, count, eq, getTableColumns, sql } from 'drizzle-orm'
 
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { permit } from '@/shared/dal/server/lib/permissions/permit'
@@ -15,13 +15,13 @@ import { projectToReadFields } from '@/shared/dal/server/lib/permissions/project
 import { fieldListInput } from '@/shared/dal/server/lib/query/field-list-input'
 import { paginate } from '@/shared/dal/server/lib/query/output'
 import { buildSearchWhere } from '@/shared/dal/server/lib/query/search'
+import { ThrowableDalError } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { customerProfiles } from '@/shared/db/schema/customer-profiles'
 import { customers } from '@/shared/db/schema/customers'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { meetings } from '@/shared/db/schema/meetings'
-import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
 import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { profileCols } from '@/shared/entities/customers/lib/profile-select'
@@ -30,6 +30,7 @@ import { MEETING_FIELD_SQL, setterUser } from '@/shared/entities/meetings/dal/se
 import { getMeetingsWithProposals } from '@/shared/entities/meetings/dal/server/meetings-with-proposals'
 import { getAllParticipantsForMeetings } from '@/shared/entities/meetings/dal/server/participants'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
+import { projectServerSpec } from '@/shared/modules/projects/core/server-spec'
 import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 
 export interface MeetingListParticipant {
@@ -275,20 +276,16 @@ export async function getMeetingSchedule(id: string): Promise<Pick<Meeting, 'sch
   return row
 }
 
-/**
- * A project's sales history. `ctx.scope` here is the project's visibility (the router runs this under
- * `projectProcedure`), so it is applied through the project: whoever can see the project sees all of its meetings.
- */
+/** A project's sales history: whoever reaches the project sees every meeting on it. */
 export async function listMeetingsForProject(
   ctx: ScopedContext,
   input: { projectId: string },
 ): Promise<DalReturn<CustomerProfileMeeting[]>> {
   return dalDbOperation(async () => {
-    const projectCondition = eq(meetings.projectId, input.projectId)
-    const where = ctx.scope
-      ? and(projectCondition, exists(db.select({ id: projects.id }).from(projects).where(and(eq(projects.id, input.projectId), ctx.scope)))) ?? projectCondition
-      : projectCondition
-    const { meetings: rows } = await getMeetingsWithProposals(ctx, where)
+    if (!(await permit(ctx, 'read', projectServerSpec).probe(input.projectId))) {
+      throw new ThrowableDalError({ type: 'not-found' })
+    }
+    const { meetings: rows } = await getMeetingsWithProposals(ctx, eq(meetings.projectId, input.projectId))
     return rows
   })
 }

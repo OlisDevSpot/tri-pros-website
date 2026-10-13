@@ -1,9 +1,9 @@
 // Project media service — the `media_files` child of a project: the photo set
 // behind the portfolio and the showroom. The R2 object lifecycle and the optimize
-// dispatch belong to this unit's CRUD hooks (dal/server/crud.ts, C32), so the
+// dispatch belong to this unit's CRUD hooks (dal/server/crud.ts), so the
 // spread `create`/`delete` below already carry them. What lives here is what the
 // DAL cannot see: the store binding for the shared media verbs, and the
-// project-only operations that used to sit in the router (MD6).
+// project-only operations that used to sit in the router.
 //
 //   ...projectMediaCrud   the engine's five slots, unwrapped (serial int PK)
 //   buildUploadTarget     presigned R2 PUT under the store's path key
@@ -11,21 +11,19 @@
 //   retryOptimization     own-row probe -> reset status -> optimize dispatch
 //   movePhase / setHero   bulk writes on this unit's DAL
 //   importFromProposal    copy R2 objects from proposal media onto this project
-//
-// NOTE (D4): unlike the proposal twin there is NO parent-visibility probe here —
-// the project media router still runs on a bare `agentProcedure` with
-// `ctx.scope = null`, so adding one would be a live authorization tightening.
-// That flip belongs to #285.
 import type { MediaPhase } from '@/shared/constants/enums/media'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { ProjectMediaFile } from '@/shared/db/schema/project-media-files'
 import type { R2BucketName } from '@/shared/services/providers/r2/types'
 
 import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { ThrowableDalError } from '@/shared/dal/server/types'
 import { mediaService } from '@/shared/modules/media/service'
+import { projectServerSpec } from '@/shared/modules/projects/core/server-spec'
 import { projectMediaCrud } from '@/shared/modules/projects/media/dal/server/crud'
 import { moveMediaPhase, setHeroImage } from '@/shared/modules/projects/media/dal/server/mutations'
+import { projectMediaServerSpec } from '@/shared/modules/projects/media/server-spec'
 import { projectMediaStore } from '@/shared/modules/projects/media/store'
 import { listImportableProjectMedia } from '@/shared/modules/proposals/media/dal/server/queries'
 import { r2Client } from '@/shared/services/providers/r2/client'
@@ -34,37 +32,39 @@ import { R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
 export const projectMediaService = {
   ...projectMediaCrud,
 
-  // ctx-first and DalReturn-wrapped like every other verb, even though there is
-  // nothing to scope here yet (D4) — the proposal twin has the same signature, and
-  // #285 will put a probe in exactly this spot.
   async buildUploadTarget(
-    _ctx: ScopedContext,
+    ctx: ScopedContext,
     input: { projectId: string, filename: string, mimeType: string, phase: MediaPhase },
   ): Promise<DalReturn<{ uploadUrl: string, pathKey: string, bucket: string }>> {
-    return dalDbOperation(async () =>
-      mediaService.buildUploadTarget(projectMediaStore, {
+    return dalDbOperation(async () => {
+      if (!(await permit(ctx, 'update', projectServerSpec, ['media']).probe(input.projectId))) {
+        throw new ThrowableDalError({ type: 'not-found' })
+      }
+      return mediaService.buildUploadTarget(projectMediaStore, {
         ownerId: input.projectId,
         filename: input.filename,
         mimeType: input.mimeType,
         extra: { phase: input.phase },
-      }),
-    )
+      })
+    })
   },
 
   async list(ctx: ScopedContext, input: { projectId: string }): Promise<DalReturn<ProjectMediaFile[]>> {
-    return dalDbOperation(async () =>
-      dalVerifySuccess(await mediaService.list(projectMediaStore, ctx.scope ?? undefined, input.projectId)) as ProjectMediaFile[],
-    )
+    return dalDbOperation(async () => {
+      if (!(await permit(ctx, 'read', projectServerSpec).probe(input.projectId))) {
+        throw new ThrowableDalError({ type: 'not-found' })
+      }
+      return dalVerifySuccess(await mediaService.list(projectMediaStore, permit(ctx, 'read', projectMediaServerSpec).sql, input.projectId)) as ProjectMediaFile[]
+    })
   },
 
   async reorder(ctx: ScopedContext, input: { updates: { id: number, sortOrder: number }[] }): Promise<DalReturn<void>> {
-    return mediaService.reorder(projectMediaStore, ctx.scope ?? undefined, input.updates)
+    return mediaService.reorder(projectMediaStore, permit(ctx, 'update', projectMediaServerSpec).sql, input.updates)
   },
 
   async retryOptimization(ctx: ScopedContext, input: { id: number }): Promise<DalReturn<void>> {
     return dalDbOperation(async () => {
-      const row = dalVerifySuccess(await projectMediaCrud.getById(ctx, { id: input.id }))
-      if (!row) {
+      if (!(await permit(ctx, 'update', projectMediaServerSpec).probe(input.id))) {
         throw new ThrowableDalError({ type: 'not-found' })
       }
       await mediaService.retryOptimization(projectMediaStore, input.id)
@@ -80,19 +80,17 @@ export const projectMediaService = {
   },
 
   /**
-   * Copy proposal media onto this project. Authorization is the source query:
-   * `listImportableProjectMedia` only returns media on proposals attached to THIS
-   * project's meetings, so an arbitrary proposal media id can't be imported.
-   *
-   * Round-2 rush rules kept unchanged on purpose (C30/MD12): no `visibility` check
-   * on the source rows. Revisit with the owner, not here.
+   * Copy proposal media onto this project. The actor must be able to change the project's media, and only media they read on proposals of this project's meetings is copied.
    */
   async importFromProposal(
     ctx: ScopedContext,
     input: { projectId: string, proposalMediaFileIds: number[] },
   ): Promise<DalReturn<{ imported: number }>> {
     return dalDbOperation(async () => {
-      const sources = await listImportableProjectMedia(input.projectId, input.proposalMediaFileIds)
+      if (!(await permit(ctx, 'update', projectServerSpec, ['media']).probe(input.projectId))) {
+        throw new ThrowableDalError({ type: 'not-found' })
+      }
+      const sources = await listImportableProjectMedia(ctx, input.projectId, input.proposalMediaFileIds)
       let imported = 0
       for (const src of sources) {
         if (!src.pathKey || !src.bucket) {

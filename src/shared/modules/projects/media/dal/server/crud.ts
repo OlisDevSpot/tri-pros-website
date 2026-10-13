@@ -9,27 +9,26 @@ import { projectMediaServerSpec } from '@/shared/modules/projects/media/server-s
 import { optimizeMediaJob } from '@/shared/services/providers/upstash/jobs/optimize-media'
 
 /**
- * Scoped CRUD handlers for project media files, with the row lifecycle attached
- * (C32, D5): optimize-on-create and purge-on-delete are entity-invariant, so they
+ * Scoped CRUD handlers for project media files, with the row lifecycle attached:
+ * optimize-on-create and purge-on-delete are entity-invariant, so they
  * are factory hooks here rather than wrappers in a service — they fire on every
  * call and every origin, including a bare `projectMediaCrud.create` from a script.
  *
  * HOOK CAVEAT (same as entities/meetings/dal/server/crud.ts): these run INLINE.
  * On the naked path the write autocommits before the hook fires. If a future
  * orchestrator threads a tx in via `withTx`, the dispatch fires PRE-COMMIT and
- * won't roll back; `afterCommit` (sub-plan C) is deferred.
+ * won't roll back; `afterCommit` is deferred.
  *
  * The hooks read PROJECT_MEDIA (a leaf constants module), never the store — the
  * store imports this file, and going the other way would add a second edge to the
- * cycle D6 already has to defuse.
+ * cycle the store's `crud` getter already has to defuse.
  *
  * ORDERING, considered and kept: `delete.before` purges R2 BEFORE the engine runs
  * the DELETE, so a failed DELETE leaves the row pointing at objects that are gone.
  * That is exactly the old `mediaService.removeRecord` ordering, so it is not a
  * regression, and it is the safer of the two failure modes — the reverse order
  * orphans R2 objects with no DB row left to find them by, which is unrecoverable,
- * whereas a dangling row is visible and re-deletable. Revisit only with afterCommit
- * (sub-plan C).
+ * whereas a dangling row is visible and re-deletable. Revisit only with afterCommit.
  *
  * ⚠️ `duplicate` ALSO fires `create.after`: `duplicateImpl` routes through
  * `createImpl`. A duplicated media row copies `pathKey`/`bucket`/`url` verbatim, so
@@ -38,9 +37,6 @@ import { optimizeMediaJob } from '@/shared/services/providers/upstash/jobs/optim
  * procedure on the media routers) but the service spread exposes
  * `projectsService.media.duplicate` — give media a real copy-the-object path before
  * anyone calls it.
- *
- * See ../../server-spec.ts: the project-media router still passes an unscoped ctx,
- * so these run unscoped there until #285 turns the parent bridge on. Serial int PK.
  */
 export const projectMediaCrud = createCrudDal(projectMediaServerSpec, () => ({
   hooks: {

@@ -8,8 +8,6 @@ import { meetingService } from '@/shared/modules/meetings/service'
 import { agentProcedure, createTRPCRouter } from '@/trpc/init'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 
-import { projectProcedure } from '../projects.router/procedures'
-
 export const readsRouter = createTRPCRouter({
   list: agentProcedure
     .input(meetingListInputSchema)
@@ -29,8 +27,8 @@ export const readsRouter = createTRPCRouter({
     .input(z.object({ meetingId: z.string().uuid() }))
     .query(async ({ ctx, input }) => dalToTrpc(await meetingService.business.listInternalNotes(ctx, input))),
 
-  // Scoped by the project, not the meeting: a rep who can see the project sees every meeting that sold it.
-  listForProject: projectProcedure
+  // Scoped by the project, not the meeting: whoever reaches the project sees every meeting on it.
+  listForProject: agentProcedure
     .input(z.object({ projectId: z.string().uuid() }))
     .query(async ({ ctx, input }) => dalToTrpc(await listMeetingsForProject(ctx, input))),
 

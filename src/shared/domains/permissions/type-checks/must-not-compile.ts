@@ -124,10 +124,9 @@ const conditionsBuiltElsewhere = { token: 'x' }
 const operatorBuiltElsewhere = { $participatesViaMeeting: { via: 'customerId' as const, userId } }
 const sharedFields = ['name', 'phone'] as const
 declare const maybeUserId: string | undefined
-declare const optionalConditions: { ownerId?: string }
+declare const optionalConditions: { id?: string }
 const emptyConditions = {}
 declare const anyAction: 'create' | 'delete' | 'read' | 'update'
-declare const maybeConditions: { ownerId: string } | undefined
 declare const maybeProposalConditions: { id: string } | undefined
 declare const maybeNoteConditions: { authorId: string } | undefined
 
@@ -150,7 +149,7 @@ export const rulesThatMustCompile = defineRules((can, cannot) => {
 
   can('read', 'Meeting', { $participatesViaMeeting: { via: 'self', userId } })
   can('read', 'Project', { $participatesViaMeeting: { via: 'projectId', userId } })
-  can('read', 'Project', { ownerId: userId })
+  cannot('update', 'Project', ['isPublic'])
   can(['update', 'delete'], 'CustomerNote', { authorId: userId })
   can('read', 'VoipCall', { agentUserId: { $in: [userId] } })
   can('read', 'Customer', operatorBuiltElsewhere)
@@ -176,6 +175,8 @@ defineRules((can, cannot) => {
   can('update', 'Proposal', ['views.nope'])
   // @ts-expect-error a condition on a column that is not a declared condition column
   can('update', 'Proposal', { token: 'x' })
+  // @ts-expect-error projects have no owner: ownerId is not a condition column
+  can('update', 'Project', { ownerId: userId })
   // @ts-expect-error a condition value of the wrong type
   can('read', 'Proposal', { id: 42 })
   // @ts-expect-error an operator on a mutation rule
@@ -219,11 +220,11 @@ defineRules((can, cannot) => {
 
   // A condition that may be `undefined` would drop the filter it stands for.
   // @ts-expect-error a condition value that may be undefined
-  can('read', 'Project', { ownerId: maybeUserId })
+  can('read', 'Proposal', { id: maybeUserId })
   // @ts-expect-error a condition value that is undefined
-  can('read', 'Project', { ownerId: undefined })
+  can('read', 'Proposal', { id: undefined })
   // @ts-expect-error conditions whose key may be absent
-  can('read', 'Project', optionalConditions)
+  can('read', 'Proposal', optionalConditions)
   // @ts-expect-error an operator that is undefined
   can('read', 'Customer', { $participatesViaMeeting: undefined })
   // @ts-expect-error an operator payload that may be undefined
@@ -250,15 +251,15 @@ defineRules((can, cannot) => {
 
   // A conditions argument that may be absent would leave a rule with no conditions.
   // @ts-expect-error conditions that may be undefined
-  can('read', 'Project', maybeConditions)
+  can('read', 'Proposal', maybeProposalConditions)
   // @ts-expect-error conditions that may be undefined, after a field list
   can('update', 'Proposal', ['views'], maybeProposalConditions)
   // @ts-expect-error conditions that may be undefined on a cannot
   cannot('update', 'CustomerNote', maybeNoteConditions)
   // @ts-expect-error an empty conditions object: a rule without conditions is written without the argument
-  can('read', 'Project', {})
+  can('read', 'Proposal', {})
   // @ts-expect-error an empty conditions object held in a variable
-  can('read', 'Project', emptyConditions)
+  can('read', 'Proposal', emptyConditions)
   // @ts-expect-error an empty conditions object on an entity with no condition columns
   can('update', 'Application', {})
   // @ts-expect-error an empty conditions object after a field list

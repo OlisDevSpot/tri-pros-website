@@ -1,7 +1,7 @@
 import { defineRules } from './define-rules'
 
 export function agentRules(userId: string) {
-  return defineRules((can) => {
+  return defineRules((can, cannot) => {
     can('access', 'Dashboard')
 
     // A customer is reached through a meeting the agent sits in; the row filter and the UI read this one rule.
@@ -28,9 +28,12 @@ export function agentRules(userId: string) {
     can('create', 'Application')
     can('update', 'Application')
 
-    can('read', 'Project')
+    // A project is reached through the meetings on it; the row filter and the UI read this one rule.
+    can('read', 'Project', { $participatesViaMeeting: { via: 'projectId', userId } })
     can('create', 'Project')
     can('update', 'Project')
+    // Publishing puts a customer's job on the public site: the office decides.
+    cannot('update', 'Project', ['isPublic'])
 
     can(['read', 'create', 'update', 'delete'], 'Activity')
     can('manage', 'Calendar')

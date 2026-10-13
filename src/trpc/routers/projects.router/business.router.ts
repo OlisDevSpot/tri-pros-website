@@ -7,11 +7,10 @@ import { setProjectScopes } from '@/shared/modules/projects/core/dal/server/muta
 import { extractScopeIdsFromProposals } from '@/shared/modules/projects/core/lib/derive-scope-ids'
 import { createProjectFormSchema } from '@/shared/modules/projects/core/schemas'
 import { getProposalsByMeetingId } from '@/shared/modules/proposals/core/dal/server/queries'
-import { createTRPCRouter } from '../../init'
-import { projectAccessProcedure } from './procedures'
+import { agentProcedure, createTRPCRouter } from '../../init'
 
 export const businessRouter = createTRPCRouter({
-  create: projectAccessProcedure
+  create: agentProcedure
     .input(createProjectFormSchema)
     .mutation(async ({ ctx, input }) => {
       // 1. Validate meeting has at least one proposal

@@ -4,15 +4,19 @@ import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { Project, ProjectMediaFile } from '@/shared/db/schema'
 import type { PortfolioProject, PortfolioProjectDetail } from '@/shared/modules/projects/core/types'
 import { and, asc, count, desc, eq, getTableColumns, inArray, sql } from 'drizzle-orm'
-import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
+import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { fieldListInput } from '@/shared/dal/server/lib/query/field-list-input'
 import { buildSearchWhere } from '@/shared/dal/server/lib/query/search'
 import { db } from '@/shared/db'
 import { customers, projectMediaFiles, projects, x_projectScopes } from '@/shared/db/schema'
 import { PROJECT_FIELDS } from '@/shared/modules/projects/core/dal/project-fields'
+import { projectCrud } from '@/shared/modules/projects/core/dal/server/crud'
 import { PROJECT_FIELD_SQL } from '@/shared/modules/projects/core/dal/server/project-field-sql'
-import { hasAssociatedMeeting } from '@/shared/modules/projects/core/lib/visibility'
+import { hasAssociatedMeeting } from '@/shared/modules/projects/core/lib/has-associated-meeting'
+import { projectServerSpec } from '@/shared/modules/projects/core/server-spec'
 import { getMediaPhaseCountsByProjectIds } from '@/shared/modules/projects/media/dal/server/queries'
+import { projectMediaServerSpec } from '@/shared/modules/projects/media/server-spec'
 
 export async function getPortfolioProjects(): Promise<PortfolioProject[]> {
   const rows = await db
@@ -117,67 +121,29 @@ export interface ProjectForEdit {
   media: ProjectMediaFile[]
 }
 
-export async function getProjectForEdit(projectId: string): Promise<ProjectForEdit | null> {
-  const [project] = await db
-    .select()
-    .from(projects)
-    .where(eq(projects.id, projectId))
-
-  if (!project) {
-    return null
-  }
-
-  const [scopeRows, media] = await Promise.all([
-    db
-      .select({ scopeId: x_projectScopes.scopeId })
-      .from(x_projectScopes)
-      .where(eq(x_projectScopes.projectId, projectId)),
-    db
-      .select()
-      .from(projectMediaFiles)
-      .where(eq(projectMediaFiles.projectId, projectId))
-      .orderBy(projectMediaFiles.sortOrder, projectMediaFiles.createdAt),
-  ])
-
-  return {
-    project,
-    scopeIds: scopeRows.map(r => r.scopeId),
-    media,
-  }
+export async function getProjectForEdit(ctx: ScopedContext, projectId: string): Promise<DalReturn<ProjectForEdit | null>> {
+  return dalDbOperation(async () => {
+    const project = dalVerifySuccess(await projectCrud.getById(ctx, { id: projectId }))
+    if (!project) {
+      return null
+    }
+    const [scopeRows, media] = await Promise.all([
+      db
+        .select({ scopeId: x_projectScopes.scopeId })
+        .from(x_projectScopes)
+        .where(eq(x_projectScopes.projectId, projectId)),
+      db
+        .select()
+        .from(projectMediaFiles)
+        .where(and(eq(projectMediaFiles.projectId, projectId), permit(ctx, 'read', projectMediaServerSpec).sql))
+        .orderBy(projectMediaFiles.sortOrder, projectMediaFiles.createdAt),
+    ])
+    return { project, scopeIds: scopeRows.map(r => r.scopeId), media }
+  })
 }
 
 interface ProjectWithScopeIds extends Project {
   scopeIds: string[]
-}
-
-export async function getAllProjects(): Promise<ProjectWithScopeIds[]> {
-  const rows = await db
-    .select()
-    .from(projects)
-    .orderBy(asc(projects.title))
-
-  const scopeRows = rows.length > 0
-    ? await db
-        .select({
-          projectId: x_projectScopes.projectId,
-          scopeId: x_projectScopes.scopeId,
-        })
-        .from(x_projectScopes)
-        .where(inArray(x_projectScopes.projectId, rows.map(r => r.id)))
-    : []
-
-  const scopesByProject = new Map<string, string[]>()
-  for (const row of scopeRows) {
-    if (!scopesByProject.has(row.projectId)) {
-      scopesByProject.set(row.projectId, [])
-    }
-    scopesByProject.get(row.projectId)!.push(row.scopeId)
-  }
-
-  return rows.map(project => ({
-    ...project,
-    scopeIds: scopesByProject.get(project.id) ?? [],
-  }))
 }
 
 export const projectListInputSchema = fieldListInput(PROJECT_FIELDS, { pagination: true })
@@ -192,7 +158,7 @@ export async function listProjects(
 ): Promise<DalReturn<{ rows: ProjectListRow[], total: number }>> {
   return dalDbOperation(async () => {
     const where = and(
-      ctx.scope ?? undefined,
+      permit(ctx, 'read', projectServerSpec).sql,
       buildSearchWhere(input.search, [projects.title, projects.city, customers.name]),
       PROJECT_FIELD_SQL.where(input.filters),
     )

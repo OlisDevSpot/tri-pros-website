@@ -2,22 +2,23 @@ import { Buffer } from 'node:buffer'
 import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
 import { mediaPhases } from '@/shared/constants/enums/media'
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
+import { projectServerSpec } from '@/shared/modules/projects/core/server-spec'
 import { projectMediaStore } from '@/shared/modules/projects/media/store'
 import { projectsService } from '@/shared/modules/projects/service'
 import { googleDriveTokenService } from '@/shared/services/providers/google-drive/token.service'
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
-import { createTRPCRouter } from '../../init'
-import { projectAccessProcedure } from './procedures'
+import { agentProcedure, createTRPCRouter } from '../../init'
 
 export const googleDriveRouter = createTRPCRouter({
-  getAccessToken: projectAccessProcedure
+  getAccessToken: agentProcedure
     .query(async ({ ctx }) => {
       return { accessToken: await googleDriveTokenService.getValidAccessToken(ctx.session.user.id) }
     }),
 
-  uploadFromFile: projectAccessProcedure
+  uploadFromFile: agentProcedure
     .input(z.object({
       driveFileId: z.string(),
       name: z.string(),
@@ -26,6 +27,10 @@ export const googleDriveRouter = createTRPCRouter({
       phase: z.enum(mediaPhases),
     }))
     .mutation(async ({ ctx, input }) => {
+      // Nothing is downloaded or stored for a project out of reach.
+      if (!(await permit(ctx, 'update', projectServerSpec, ['media']).probe(input.projectId))) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Project not found' })
+      }
       const accessToken = await googleDriveTokenService.getValidAccessToken(ctx.session.user.id)
 
       const driveResponse = await fetch(
@@ -61,7 +66,7 @@ export const googleDriveRouter = createTRPCRouter({
 
       // Persist through the project media service — same path as a regular
       // project-media upload (see projects.router/media.router.ts create). The
-      // optimize dispatch rides the CRUD create hook (C32).
+      // optimize dispatch rides the CRUD create hook.
       return dalToTrpc(await projectsService.media.create(ctx, {
         name: input.name.replace(/\.[^/.]+$/, ''),
         url: publicUrl,
