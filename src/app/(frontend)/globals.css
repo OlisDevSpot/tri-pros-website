@@ -28,6 +28,11 @@
   --overlay-selected-mix: 20%;
   /* The floating rail's inset, the page margin and every gap between section cards. */
   --gutter: 0.5rem;
+  /* The phone dock, 56px tall (MobileDockCapsule h-14), on the meeting flow's step-capsule baseline. */
+  --dock-h: 3.5rem;
+  --dock-baseline: max(1rem, env(safe-area-inset-bottom));
+  /* Where content stops so it clears the dock: baseline, dock, 16px of air. */
+  --dock-clear: calc(var(--dock-baseline) + var(--dock-h) + 1rem);
   /* The raw logo color is identity only (logo, browser theme-color): as text on light it fails contrast. */
   --brand-cyan: #03afed;
   --brand-cyan-bright: oklch(0.8 0.12 228);
@@ -1151,12 +1156,6 @@
   }
 }
 
-/* ── Mobile bleed-right ─────────────────────────────────────────
-   Lets a horizontally-scrollable element extend into the
-   dashboard template's right padding on mobile, with matching
-   padding restored at the scroll-end.
-   Usage: add className="mobile-bleed-right" to the scrollable element.
-   ──────────────────────────────────────────────────────────────── */
 /* Inner scroll containers: the html-level gutter rule never reaches them, and a
    classic scrollbar appearing narrows the content by ~10px. `stable` reserves the
    gutter on overflow auto/hidden/scroll alike, so pair it only with the element that
@@ -1167,12 +1166,81 @@
 @utility scrollbar-gutter-both {
   scrollbar-gutter: stable both-edges;
 }
-
-@utility mobile-bleed-right {
-  @media (max-width: 767px) {
-    margin-right: -1rem;
-    padding-right: 1rem;
+/* Data scrollers (tables, boards, the schedule) scroll by touch, trackpad or wheel with no bar: a
+   classic desktop bar takes layout room the overlay bars on phones never do. */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
   }
+}
+
+/* The dashboard <main> pads by these and publishes them as the bleed allowance: how far a scroller
+   inside may reach back out to the screen edge. */
+@utility page-insets {
+  --page-t: 1rem;
+  --page-r: 1rem;
+  --page-b: var(--dock-clear);
+  --page-l: 1rem;
+  @media (width >= 48rem) {
+    --page-t: var(--gutter);
+    --page-r: var(--gutter);
+    --page-b: var(--gutter);
+    /* The floating rail's own right inset is the left gap. */
+    --page-l: 0px;
+  }
+  /* A stage route (the meeting flow) draws edge to edge and supplies its own gutters. */
+  &:has([data-stage]) {
+    --page-t: 0px;
+    --page-r: 0px;
+    --page-b: 0px;
+    --page-l: 0px;
+  }
+  padding: var(--page-t) var(--page-r) var(--page-b) var(--page-l);
+  --bleed-l: var(--page-l);
+  --bleed-r: var(--page-r);
+  --bleed-b: var(--page-b);
+}
+
+/* A horizontal scroller on the page reaches into the side insets and pads its content back: the gap
+   shows at rest and at the scroll end, and content runs to the screen edge while more waits that way.
+   `--bled-*` records what it took, for the sticky pieces and cards inside. WebKit drops the inline-end
+   padding of a block scroller, so the element must be a flex row or end its content in a spacer. */
+@utility bleed-x {
+  --bled-l: var(--bleed-l, 0px);
+  --bled-r: var(--bleed-r, 0px);
+  margin-inline: calc(-1 * var(--bled-l)) calc(-1 * var(--bled-r));
+  padding-inline: var(--bled-l) var(--bled-r);
+  scroll-padding-inline: var(--bled-l) var(--bled-r);
+  /* On the children: declared on this element it would zero its own margin. */
+  & > * {
+    --bleed-l: 0px;
+    --bleed-r: 0px;
+  }
+}
+
+/* A page that scrolls as a whole reaches into the side and bottom insets and pads its content back,
+   so it runs behind the phone dock and its last item still clears it. It takes its own height; as a
+   flex-1 item its flex basis wins instead. Never pair it with an h-* or w-*
+   class: a fixed width defeats the side bleed. */
+@utility page-scroll {
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  height: calc(100% + var(--bleed-b, 0px));
+  margin: 0 calc(-1 * var(--bleed-r, 0px)) calc(-1 * var(--bleed-b, 0px)) calc(-1 * var(--bleed-l, 0px));
+  padding: 0 var(--bleed-r, 0px) var(--bleed-b, 0px) var(--bleed-l, 0px);
+  scroll-padding-bottom: var(--bleed-b, 0px);
+  & > * {
+    --bleed-b: 0px;
+  }
+}
+
+/* A surface draws its own edges, so nothing inside it bleeds to the page edge. `--bled-*` stays:
+   a card riding inside a scroller still needs that scroller's edges. */
+:is(.bg-card, .surface, .surface-beneath, .bg-popover, .surface-overlay) {
+  --bleed-l: 0px;
+  --bleed-r: 0px;
+  --bleed-b: 0px;
 }
 
 @layer base {
@@ -1297,7 +1365,8 @@
 }
 
 /* Stage routes (today: the meeting flow) opt out of the dashboard chrome. The
-   template drops its padding via `has-data-stage:p-0`; this hides the mobile nav.
+   `page-insets` zeroes every inset while a stage is inside `<main>`; this hides the dock
+   (and its fade).
    Rule: docs/codebase-conventions/app-shell.md#stage-routes-opt-out-with-data-stage */
 [data-slot='sidebar-inset']:has([data-stage]) [data-slot='dashboard-mobile-nav'] {
   display: none;

@@ -59,7 +59,7 @@ export function CreateProjectView() {
         Back to Portfolio
       </Button>
 
-      <div className="h-full w-full overflow-auto pr-4">
+      <div className="max-md:page-scroll md:h-full md:w-full md:overflow-auto md:pr-4">
         <Form {...form}>
           <ProjectForm
             isLoading={createProject.isPending}

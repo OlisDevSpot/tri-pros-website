@@ -154,7 +154,7 @@ export function EditProjectView({ projectId }: Props) {
         />
       </div>
 
-      <div className="min-h-0 w-full grow pr-4 lg:flex lg:flex-col lg:overflow-hidden overflow-auto">
+      <div className="min-h-0 grow max-md:page-scroll md:w-full md:overflow-auto md:pr-4 lg:flex lg:flex-col lg:overflow-hidden">
         <Form {...form}>
           <ProjectForm
             isLoading={project.isLoading || updateProject.isPending}

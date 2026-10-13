@@ -8,6 +8,7 @@ import { motion } from 'motion/react'
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import { SKELETON_BUSINESS_HOURS_END_HOUR, SKELETON_EVENTS_PER_DAY } from '@/features/schedule-management/constants/schedule-calendar-config'
+import { SCHEDULE_FRAME_CLASS } from '@/features/schedule-management/constants/schedule-frame'
 import { getEventsForBucket, getUniqueCombos, groupEventsByParticipantCombo } from '@/features/schedule-management/lib/today-view-helpers'
 import { localDateToCalendarDay, seededIntInRange } from '@/shared/components/calendar/lib/calendar-helpers'
 import { ScrollBar } from '@/shared/components/ui/scroll-area'
@@ -91,104 +92,115 @@ export function ScheduleTodayView({
 
   if (!isPending && combos.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center">
+      <div data-slot="schedule-frame" className={cn(SCHEDULE_FRAME_CLASS, 'flex h-full items-center justify-center')}>
         <span className="text-sm text-muted-foreground">No events scheduled for this day</span>
       </div>
     )
   }
 
   return (
-    <ScrollAreaPrimitive.Root className="relative h-full" type="always" aria-busy={isPending || undefined}>
-      <ScrollAreaPrimitive.Viewport ref={viewportRef} className="size-full rounded-[inherit]">
-        <div className="flex min-h-full flex-col" style={{ minWidth: `${gridMinWidth}px` }}>
-          {/* Bucket header row */}
-          <motion.div
-            className="sticky top-0 z-10 grid border-b border-grid-line bg-(--card)"
-            initial={false}
-            animate={{ gridTemplateColumns: gridCols }}
-            transition={TRANSITION}
-          >
-            {/* Corner cell */}
-            <div className="sticky left-0 z-20 overflow-hidden border-r border-grid-line bg-(--card) px-3 py-2">
-              <motion.span
-                className="text-xs font-medium text-muted-foreground whitespace-nowrap"
-                animate={{ opacity: collapsed ? 0 : 1 }}
-                transition={TRANSITION}
-              >
-                Agent
-              </motion.span>
-            </div>
-
-            {TODAY_VIEW_BUCKETS.map(bucket => (
-              <div
-                key={bucket.id}
-                className="border-r border-grid-line px-3 py-2 text-center last:border-r-0"
-              >
-                <span className="hidden text-xs font-medium text-muted-foreground sm:inline">
-                  {bucket.label}
-                </span>
-                <span className="text-xs font-medium text-muted-foreground sm:hidden">
-                  {bucket.shortLabel}
-                </span>
-              </div>
-            ))}
-          </motion.div>
-
-          {/* Swimlane rows — one per unique participant combo */}
-          {isPending
-            ? skeletonCardBuckets.map((cardBucket, lane) => (
-                <motion.div
-                  // eslint-disable-next-line react/no-array-index-key
-                  key={lane}
-                  className="grid border-b border-dashed border-grid-line"
-                  initial={false}
-                  animate={{ gridTemplateColumns: gridCols }}
+    // Radix splits the scroller in two, so `bleed-x` is spelled out: the root reaches into the side
+    // insets, and the viewport (the element that scrolls) pads the left. The right gap is the spacer:
+    // WebKit drops a block scroller's end padding, and Chromium would add it on top of the spacer.
+    <ScrollAreaPrimitive.Root
+      className="relative h-full [--bled-l:var(--bleed-l,0px)] [--bled-r:var(--bleed-r,0px)] -ml-(--bled-l) -mr-(--bled-r)"
+      type="always"
+      aria-busy={isPending || undefined}
+    >
+      {/* Radix wraps the viewport's children in a display: table div with auto height; as a flex box with a minimum height the card can fill a short or empty day. */}
+      <ScrollAreaPrimitive.Viewport ref={viewportRef} className="size-full rounded-[inherit] [&>div]:flex! [&>div]:min-h-full pl-(--bled-l) scroll-pl-(--bled-l) scroll-pr-(--bled-r)">
+        <div className="flex flex-1 after:w-(--bled-r) after:flex-none after:content-['']">
+          <div data-slot="schedule-frame" className={cn(SCHEDULE_FRAME_CLASS, 'flex flex-1 flex-col')} style={{ minWidth: `${gridMinWidth}px` }}>
+            {/* Bucket header row */}
+            <motion.div
+              className="sticky top-0 z-10 grid border-b border-grid-line bg-(--card)"
+              initial={false}
+              animate={{ gridTemplateColumns: gridCols }}
+              transition={TRANSITION}
+            >
+              {/* Corner cell */}
+              <div className="sticky -left-(--bled-l) z-20 overflow-hidden border-r border-grid-line bg-(--card) px-3 py-2">
+                <motion.span
+                  className="text-xs font-medium text-muted-foreground whitespace-nowrap"
+                  animate={{ opacity: collapsed ? 0 : 1 }}
                   transition={TRANSITION}
                 >
-                  <div className="sticky left-0 z-10 flex items-center gap-2 overflow-hidden border-r border-grid-line bg-(--card) px-3 py-3">
-                    <Skeleton className={cn(SKELETON_BLOCK_TONE_CLASS, 'size-6 shrink-0 rounded-full')} />
-                    <Skeleton className={cn(SKELETON_TONE_CLASS, 'h-2.5 w-20')} />
-                  </div>
-                  {TODAY_VIEW_BUCKETS.map((bucket, index) => (
-                    <div
-                      key={bucket.id}
-                      className={cn(
-                        'border-r border-grid-line p-1.5 last:border-r-0 min-h-24',
-                        index !== cardBucket && 'bg-muted/20',
-                      )}
-                    >
-                      {index === cardBucket && <ScheduleCardSkeleton />}
-                    </div>
-                  ))}
-                </motion.div>
-              ))
-            : combos.map(combo => (
-                <SwimlaneRow
-                  key={combo.key}
-                  combo={combo}
-                  comboEvents={eventsByCombo.get(combo.key) ?? []}
-                  renderCard={renderCard}
-                  collapsed={collapsed}
-                  gridCols={gridCols}
-                />
-              ))}
+                  Agent
+                </motion.span>
+              </div>
 
-          {/* Filler row — extends vertical column borders to the bottom */}
-          <motion.div
-            className="grid flex-1"
-            initial={false}
-            animate={{ gridTemplateColumns: gridCols }}
-            transition={TRANSITION}
-          >
-            <div className="sticky left-0 border-r border-grid-line bg-(--card)" />
-            {TODAY_VIEW_BUCKETS.map(bucket => (
-              <div key={bucket.id} className="border-r border-grid-line last:border-r-0" />
-            ))}
-          </motion.div>
+              {TODAY_VIEW_BUCKETS.map(bucket => (
+                <div
+                  key={bucket.id}
+                  className="border-r border-grid-line px-3 py-2 text-center last:border-r-0"
+                >
+                  <span className="hidden text-xs font-medium text-muted-foreground sm:inline">
+                    {bucket.label}
+                  </span>
+                  <span className="text-xs font-medium text-muted-foreground sm:hidden">
+                    {bucket.shortLabel}
+                  </span>
+                </div>
+              ))}
+            </motion.div>
+
+            {/* Swimlane rows — one per unique participant combo */}
+            {isPending
+              ? skeletonCardBuckets.map((cardBucket, lane) => (
+                  <motion.div
+                    // eslint-disable-next-line react/no-array-index-key
+                    key={lane}
+                    className="grid border-b border-dashed border-grid-line"
+                    initial={false}
+                    animate={{ gridTemplateColumns: gridCols }}
+                    transition={TRANSITION}
+                  >
+                    <div className="sticky -left-(--bled-l) z-10 flex items-center gap-2 overflow-hidden border-r border-grid-line bg-(--card) px-3 py-3">
+                      <Skeleton className={cn(SKELETON_BLOCK_TONE_CLASS, 'size-6 shrink-0 rounded-full')} />
+                      <Skeleton className={cn(SKELETON_TONE_CLASS, 'h-2.5 w-20')} />
+                    </div>
+                    {TODAY_VIEW_BUCKETS.map((bucket, index) => (
+                      <div
+                        key={bucket.id}
+                        className={cn(
+                          'border-r border-grid-line p-1.5 last:border-r-0 min-h-24',
+                          index !== cardBucket && 'bg-muted/20',
+                        )}
+                      >
+                        {index === cardBucket && <ScheduleCardSkeleton />}
+                      </div>
+                    ))}
+                  </motion.div>
+                ))
+              : combos.map(combo => (
+                  <SwimlaneRow
+                    key={combo.key}
+                    combo={combo}
+                    comboEvents={eventsByCombo.get(combo.key) ?? []}
+                    renderCard={renderCard}
+                    collapsed={collapsed}
+                    gridCols={gridCols}
+                  />
+                ))}
+
+            {/* Filler row — extends vertical column borders to the bottom */}
+            <motion.div
+              className="grid flex-1"
+              initial={false}
+              animate={{ gridTemplateColumns: gridCols }}
+              transition={TRANSITION}
+            >
+              <div className="sticky -left-(--bled-l) border-r border-grid-line bg-(--card)" />
+              {TODAY_VIEW_BUCKETS.map(bucket => (
+                <div key={bucket.id} className="border-r border-grid-line last:border-r-0" />
+              ))}
+            </motion.div>
+          </div>
         </div>
       </ScrollAreaPrimitive.Viewport>
-      <ScrollBar orientation="horizontal" />
-      <ScrollBar orientation="vertical" />
+      {/* Hidden but mounted: Radix clips any axis that has no scrollbar mounted. */}
+      <ScrollBar orientation="horizontal" className="hidden" />
+      <ScrollBar orientation="vertical" className="hidden" />
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>
   )
@@ -215,7 +227,7 @@ function SwimlaneRow({ combo, comboEvents, renderCard, collapsed, gridCols }: Sw
       transition={TRANSITION}
     >
       {/* Combo label — sticky left, collapses to avatar-stack-only on scroll */}
-      <div className="sticky left-0 z-10 flex items-center gap-2 overflow-hidden border-r border-grid-line bg-(--card) px-3 py-3">
+      <div className="sticky -left-(--bled-l) z-10 flex items-center gap-2 overflow-hidden border-r border-grid-line bg-(--card) px-3 py-3">
         <UserOverviewCard.Stack users={combo.participants} max={3} size="sm" />
         <motion.span
           className="truncate text-xs font-medium leading-6 whitespace-nowrap"

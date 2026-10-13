@@ -32,7 +32,7 @@ export function AnalyticsView() {
   }
 
   return (
-    // The template pads the page; this view owns the scroll so the controls stay put above the data.
+    // The controls stay put; the data below scrolls as the page, behind the phone dock.
     <Tabs value={urlState.tab} onValueChange={changeTab} className="flex h-full min-h-0 flex-col gap-(--gutter)">
       <PageBar className="shrink-0">
         <header className="flex flex-col gap-3">
@@ -49,7 +49,7 @@ export function AnalyticsView() {
           <AnalyticsTabsList spendMissing={(report.data?.spendMissing.length ?? 0) > 0} />
         </header>
       </PageBar>
-      <div className="-mr-2 min-h-0 flex-1 overflow-y-auto overscroll-contain pr-2 pb-0 scrollbar-gutter-stable">
+      <div className="min-h-0 flex-1 page-scroll scrollbar-gutter-stable">
         {REPORT_TAB_KEYS.map(tab => (
           <TabsContent key={tab} value={tab}>
             <ReportTabContent tab={tab} report={report.data} isError={report.isError} stale={report.isPlaceholderData} onRetry={() => void report.refetch()} />

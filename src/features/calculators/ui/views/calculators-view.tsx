@@ -30,7 +30,7 @@ export function CalculatorsView() {
       <TabsContent className="min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden" forceMount value="remodel-roi">
         <RemodelRoiCalculator />
       </TabsContent>
-      <TabsContent className="min-h-0 flex-1 overflow-y-auto data-[state=inactive]:hidden" forceMount value="scope-pricing">
+      <TabsContent className="min-h-0 flex-1 page-scroll data-[state=inactive]:hidden" forceMount value="scope-pricing">
         <ScopePricingCalculator />
       </TabsContent>
     </Tabs>
