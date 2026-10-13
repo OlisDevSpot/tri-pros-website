@@ -1,0 +1,18 @@
+export const OMNI_COPY = {
+  title: 'Search',
+  description: 'Find customers, their records, pages and actions',
+  placeholder: 'Search customers, phone, address, pages…',
+  pickCustomerPlaceholder: 'Which customer?',
+  scheduleMeetingHeading: 'Schedule meeting for…',
+  recent: 'Recent',
+  goTo: 'Go to',
+  actions: 'Actions',
+  customers: 'Customers',
+  meetings: 'Meetings',
+  proposals: 'Proposals',
+  projects: 'Projects',
+  seeAllCustomers: 'See all in Customers',
+  unavailable: 'Search is unavailable, try again',
+  noRecords: (term: string) => `No records match “${term}”`,
+  comingSoon: 'Results land here in the next step.',
+} as const

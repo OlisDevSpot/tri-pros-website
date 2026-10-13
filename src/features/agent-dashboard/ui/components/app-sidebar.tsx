@@ -15,9 +15,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { MOBILE_DOCK_SHEET_CLASS } from '@/features/agent-dashboard/constants/mobile-dock'
 import { SIDEBAR_LABEL_ANIMATE, SIDEBAR_TRANSITION } from '@/features/agent-dashboard/constants/sidebar-motion'
 import { SIDEBAR_NAV_ITEM_CLASS } from '@/features/agent-dashboard/constants/sidebar-styles'
+import { useDashboardOverlays } from '@/features/agent-dashboard/hooks/use-dashboard-overlays'
 import { getSidebarNav } from '@/features/agent-dashboard/lib/get-sidebar-nav'
 import { isNavItemActive } from '@/features/agent-dashboard/lib/is-nav-item-active'
-import { ActionCenterSheet } from '@/features/agent-dashboard/ui/components/action-center-sheet'
 import { SidebarPipelineItem } from '@/features/agent-dashboard/ui/components/sidebar-pipeline-item'
 import { SidebarRecordsGroup } from '@/features/agent-dashboard/ui/components/sidebar-records-group'
 import { SidebarSearchBar } from '@/features/agent-dashboard/ui/components/sidebar-search-bar'
@@ -51,7 +51,7 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ user }: AppSidebarProps) {
-  const [isActionCenterOpen, setIsActionCenterOpen] = useState(false)
+  const setActionCenterOpen = useDashboardOverlays(state => state.setActionCenterOpen)
   const pathname = usePathname()
   const router = useRouter()
   const { state, toggleSidebar, isMobile, setOpenMobile } = useSidebar()
@@ -233,7 +233,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
             <SidebarMenuItem>
               <SidebarMenuButton
                 tooltip="Action Center"
-                onClick={() => setIsActionCenterOpen(true)}
+                onClick={() => setActionCenterOpen(true)}
                 className={cn('gap-4', SIDEBAR_NAV_ITEM_CLASS)}
               >
                 <ZapIcon className="size-4 shrink-0" />
@@ -258,7 +258,6 @@ export function AppSidebar({ user }: AppSidebarProps) {
           />
         </SidebarFooter>
       </Sidebar>
-      <ActionCenterSheet isOpen={isActionCenterOpen} onClose={() => setIsActionCenterOpen(false)} />
     </>
   )
 }

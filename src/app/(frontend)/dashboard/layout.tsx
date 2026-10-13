@@ -6,6 +6,7 @@ import { AppSidebarSkeleton } from '@/features/agent-dashboard/ui/components/app
 import { DashboardContentSkeleton } from '@/features/agent-dashboard/ui/components/dashboard-content-skeleton'
 import { DashboardSessionContent } from '@/features/agent-dashboard/ui/components/dashboard-session-content'
 import { DashboardSessionMobileNav } from '@/features/agent-dashboard/ui/components/dashboard-session-mobile-nav'
+import { DashboardSessionOverlays } from '@/features/agent-dashboard/ui/components/dashboard-session-overlays'
 import { DashboardSessionSidebar } from '@/features/agent-dashboard/ui/components/dashboard-session-sidebar'
 import { DashboardSignIn } from '@/features/agent-dashboard/ui/components/dashboard-sign-in'
 import { SidebarSessionBoundary } from '@/features/agent-dashboard/ui/components/sidebar-session-boundary'
@@ -58,6 +59,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
             {hasSessionCookie && (
               <Suspense>
                 <DashboardSessionMobileNav />
+              </Suspense>
+            )}
+            {hasSessionCookie && (
+              <Suspense>
+                <DashboardSessionOverlays />
               </Suspense>
             )}
           </SidebarInset>

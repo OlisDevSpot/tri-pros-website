@@ -2,7 +2,7 @@
 
 import type { MobileDockTab as MobileDockTabConfig } from '@/features/agent-dashboard/lib/get-mobile-dock-tabs'
 
-import { ZapIcon } from 'lucide-react'
+import { SearchIcon } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { useState, useSyncExternalStore } from 'react'
 
@@ -28,11 +28,11 @@ function useStoredPipelineHref(): string | null {
 
 interface MobileDockCapsuleProps {
   tabs: readonly MobileDockTabConfig[]
-  onActionCenterClick: () => void
+  onSearchClick: () => void
   className?: string
 }
 
-export function MobileDockCapsule({ tabs, onActionCenterClick, className }: MobileDockCapsuleProps) {
+export function MobileDockCapsule({ tabs, onSearchClick, className }: MobileDockCapsuleProps) {
   const pathname = usePathname()
   const pipelineHref = useStoredPipelineHref()
   const { setOpenMobile } = useSidebar()
@@ -90,15 +90,15 @@ export function MobileDockCapsule({ tabs, onActionCenterClick, className }: Mobi
       <span aria-hidden className="mx-0.5 h-7 w-px shrink-0 bg-sidebar-border max-[379px]:mx-0" />
       <button
         type="button"
-        aria-label="Action Center"
-        onClick={onActionCenterClick}
+        aria-label="Search"
+        onClick={onSearchClick}
         className={cn(
           'grid h-full w-11 shrink-0 max-[379px]:w-9 place-items-center rounded-[14px] text-sidebar-muted outline-none [-webkit-tap-highlight-color:transparent]',
           'transition-[color,background-color,transform] duration-150 hover:bg-sidebar-hover hover:text-sidebar-foreground active:scale-[0.94] motion-reduce:transition-none motion-reduce:active:scale-100',
           'focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar',
         )}
       >
-        <ZapIcon aria-hidden className="size-5" />
+        <SearchIcon aria-hidden className="size-5" />
       </button>
     </nav>
   )

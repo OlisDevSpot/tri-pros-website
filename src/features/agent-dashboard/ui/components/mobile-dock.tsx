@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 
 import { MOBILE_DOCK_BOTTOM_CLASS } from '@/features/agent-dashboard/constants/mobile-dock'
+import { useDashboardOverlays } from '@/features/agent-dashboard/hooks/use-dashboard-overlays'
 import { useIsTyping } from '@/features/agent-dashboard/hooks/use-is-typing'
 import { getMobileDockTabs } from '@/features/agent-dashboard/lib/get-mobile-dock-tabs'
 import { getSidebarNav } from '@/features/agent-dashboard/lib/get-sidebar-nav'
@@ -12,15 +13,12 @@ import { useSidebar } from '@/shared/components/ui/sidebar'
 import { useAbility } from '@/shared/domains/permissions/client'
 import { cn } from '@/shared/lib/utils'
 
-interface MobileDockProps {
-  onActionCenterClick: () => void
-}
-
-export function MobileDock({ onActionCenterClick }: MobileDockProps) {
+export function MobileDock() {
   const ability = useAbility()
   const tabs = useMemo(() => getMobileDockTabs(getSidebarNav(ability)), [ability])
   const isTyping = useIsTyping()
   const { setOpenMobile } = useSidebar()
+  const setSearchOpen = useDashboardOverlays(state => state.setSearchOpen)
 
   return (
     // z-40: over page content (a data table's sticky columns reach z-30) and over the menu sheet
@@ -39,9 +37,9 @@ export function MobileDock({ onActionCenterClick }: MobileDockProps) {
       <MobileDockMenuButton />
       <MobileDockCapsule
         tabs={tabs}
-        onActionCenterClick={() => {
+        onSearchClick={() => {
           setOpenMobile(false)
-          onActionCenterClick()
+          setSearchOpen(true)
         }}
         className="min-w-0 flex-1"
       />
