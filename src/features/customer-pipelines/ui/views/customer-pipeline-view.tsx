@@ -125,7 +125,7 @@ export function CustomerPipelineView() {
       <ProposalActionsHost>
         <CustomerActionsHost overrides={customerOverrides}>
           <ProjectActionsHost>
-            <div className="w-full h-full flex flex-col gap-(--gutter) overflow-hidden">
+            <div className="w-full h-full flex flex-col gap-(--gutter) overflow-y-clip">
               <PageBar className="shrink-0">
                 <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between">
                   <CustomerPipelineMetricsBar items={items} pipeline={pipeline} isLoading={query.isPending || query.isStale} />
@@ -178,7 +178,6 @@ export function CustomerPipelineView() {
                         showColumnValues
                         getItemValue={getItemValue}
                         renderCard={renderCard}
-                        className="mobile-bleed-right"
                       />
                     )}
               </div>

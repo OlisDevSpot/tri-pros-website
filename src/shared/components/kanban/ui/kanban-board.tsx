@@ -118,7 +118,7 @@ export function KanbanBoard<T extends KanbanItem>({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className={cn('flex h-full gap-(--gutter) overflow-x-auto pb-2', className)}>
+      <div className={cn('bleed-x flex h-full gap-(--gutter) overflow-x-auto pb-2', className)}>
         {stageConfig.map(stage => (
           <KanbanColumn
             key={stage.key}
