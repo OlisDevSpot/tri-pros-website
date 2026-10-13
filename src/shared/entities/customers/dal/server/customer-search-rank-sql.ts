@@ -13,6 +13,9 @@ export type CustomerMatchField = 'name' | 'phone' | 'address' | 'email'
 /** Below this `word_similarity` a text token is not a hit. */
 export const WORD_SIMILARITY_THRESHOLD = 0.4
 
+/** Whole-name `similarity` a multi-word text term needs when its words don't each match on their own. */
+export const PHRASE_SIMILARITY_THRESHOLD = 0.4
+
 // Must stay identical to `customers_address_trgm_idx` in the schema, or the planner skips the index.
 export const customerAddressDocSql = sql`(coalesce(${customers.address}, '') || ' ' || ${customers.city})`
 
@@ -99,18 +102,26 @@ export function customerSearchSql(query: CustomerSearchQuery, gatedPhone: SQL): 
     return null
   }
   const parts = query.tokens.map(token => tokenSql(token, gatedPhone))
-  const joined = (key: keyof TokenSql, op: 'AND' | 'OR' | '+') => sql.join(parts.map(part => part[key]), sql.raw(` ${op} `))
-  const tokenMean = sql`((${joined('score', '+')}) / ${sql.raw(String(parts.length))})`
-  const textValues = query.tokens.filter(token => token.kind === 'text').map(token => token.value)
+  const joinParts = (list: TokenSql[], key: keyof TokenSql, op: 'AND' | 'OR' | '+') => sql.join(list.map(part => part[key]), sql.raw(` ${op} `))
+  const joined = (key: keyof TokenSql, op: 'AND' | 'OR' | '+') => joinParts(parts, key, op)
+  const textParts = parts.filter((_, i) => query.tokens[i].kind === 'text')
+  const otherParts = parts.filter((_, i) => query.tokens[i].kind !== 'text')
+  const total = sql.raw(String(parts.length))
   // Trigrams can't see a transposed letter inside one short word, but the whole name around it still carries the match.
-  const phrase = textValues.length >= 2 ? textValues.join(' ') : null
+  // Full-string similarity keeps one shared first name from clearing the bar the way word_similarity would.
+  const phrase = textParts.length >= 2 ? query.tokens.filter(t => t.kind === 'text').map(t => t.value).join(' ') : null
+  const otherMatch = otherParts.length > 0 ? sql`${joinParts(otherParts, 'match', 'AND')} AND ` : sql``
+  const textMatch = joinParts(textParts, 'match', 'AND')
+  const textScoreSum = textParts.length > 0 ? joinParts(textParts, 'score', '+') : sql`0`
+  const otherScoreSum = otherParts.length > 0 ? joinParts(otherParts, 'score', '+') : sql`0`
+  const textCount = sql.raw(String(textParts.length))
   return {
     where: phrase
-      ? sql`(${joined('match', 'AND')} OR ${phrase} <% ${customers.name})`
+      ? sql`(${otherMatch}(${textMatch} OR ${phrase} % ${customers.name}))`
       : sql`(${joined('match', 'AND')})`,
     score: phrase
-      ? sql<number>`greatest(${tokenMean}, word_similarity(${phrase}, ${customers.name}))::float8`.mapWith(Number)
-      : sql<number>`${tokenMean}::float8`.mapWith(Number),
+      ? sql<number>`((greatest((${textScoreSum}) / ${textCount}, similarity(${phrase}, ${customers.name})) * ${textCount} + ${otherScoreSum}) / ${total})::float8`.mapWith(Number)
+      : sql<number>`(((${joined('score', '+')}) / ${total})::float8)`.mapWith(Number),
     matchedOn: sql<CustomerMatchField>`CASE
       WHEN ${joined('phoneHit', 'OR')} THEN 'phone'
       WHEN ${joined('emailHit', 'OR')} THEN 'email'
