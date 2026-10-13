@@ -298,7 +298,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
             scroller's own `cqw` with its vertical scrollbar included, so `100cqw` overflowed it sideways.
             The trailing spacer is the right gap at the scroll end: neither engine pads a grandchild's
             overflow with the scroller's padding. */}
-        <div className="@container flex after:w-(--bled-r) after:flex-none after:content-['']">
+        <div className="@container flex min-h-full after:w-(--bled-r) after:flex-none after:content-['']">
           {/* `clip`, not `hidden`: it rounds the corners without becoming a scroller, so sticky cells
               still stick to the scroller above. */}
           <div data-slot="table-frame" className="surface w-max min-w-full flex-none overflow-clip rounded-xl border">
