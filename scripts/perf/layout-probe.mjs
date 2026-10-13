@@ -287,11 +287,17 @@ try {
       continue
     }
     await page.waitForTimeout(800)
-    for (const [check, ok, detail] of await group.run(page)) {
-      console.log(`${ok ? 'PASS' : 'FAIL'} ${name}: ${check}${ok ? '' : `  (${detail})`}`)
-      if (!ok) {
-        failed++
+    try {
+      for (const [check, ok, detail] of await group.run(page)) {
+        console.log(`${ok ? 'PASS' : 'FAIL'} ${name}: ${check}${ok ? '' : `  (${detail})`}`)
+        if (!ok) {
+          failed++
+        }
       }
+    }
+    catch (error) {
+      console.log(`FAIL ${name}: threw ${redact(error.message).split('\n')[0]}`)
+      failed++
     }
   }
 }
