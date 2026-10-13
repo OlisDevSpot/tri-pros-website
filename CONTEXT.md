@@ -32,7 +32,7 @@ The boundary is sharp. voip-in-house does **not** handle lead-conversion outreac
 
 - **Main line** — The one company DID that sends visit messages and receives their replies. Never "company line".
 - **Visit message** — A text or email Tri Pros sends about a meeting, or a homeowner's reply to one (`meeting_messages`). The kinds: **visit summary** (sent by a person), **day-before reminder** and **rep confirmation** (automatic), **confirmation reply** (the thank-you after a YES), **visit cancellation** (the email that removes a calendar entry), **homeowner reply** (inbound).
-- **Sequence** — The ordered visit messages a meeting can get: visit summary → day-before reminder → rep confirmation. The confirmation reply and the visit cancellation are reactions, not steps.
+- **Visit message sequence** — the meeting's **Sequence** (Automation terms): visit summary → day-before reminder → rep confirmation. The confirmation reply and the visit cancellation are reactions, not steps.
 - **Visit message plan** — Each sequence step's state for one meeting, computed from its visit messages, the rules, pauses and the current time (`planVisitMessages`). The scheduled runs send exactly the steps it marks due.
 - **Visit message template** — The wording of one visit text, with `{{tokens}}`. **Default** is the wording in code; **edited** is a super-admin's saved wording.
 - **Skip** — A person stops one automatic text for one meeting time. **Unskip** undoes it before the text's time.
@@ -40,6 +40,17 @@ The boundary is sharp. voip-in-house does **not** handle lead-conversion outreac
 - **Confirmation track** — The three confirmations of one visit: the office's (a visit message went out), the homeowner's, and the rep's (a rep confirmation went out for this time). Never "stage", which is a pipeline word.
 - **Homeowner confirmed** — The homeowner said they will be there for this time, by replying YES or on their home visit page (`meetings.homeownerConfirmedAt`, `homeownerConfirmedVia`). Shown to the office; never moves the pipeline. The office still sets **Confirmed**.
 - **Reschedule chain** — A meeting and the meetings it replaced, linked by `meetings.rescheduledFromId` (`getRescheduleChain`). Visit messages are read across it.
+
+## Automation terms
+
+What the app does at a time it chose, not when a person acts. Owner ruling 2026-10-08: the Phase 1 campaign cadence (the lead-conversion provider's texts) and background jobs with no customer-facing effect (calendar sync, QuickBooks sync, media optimisation) are not automations, whatever mechanism runs them.
+
+- **Automation** — a send or action the app performs on a schedule or at a chosen time: a **sequence** or a **broadcast**. _Avoid_: job, cron, workflow, zap (mechanisms, not the thing).
+- **Sequence** — the ordered automatic steps one record can get, re-planned as the record changes. Visit messages is one sequence (`VISIT_MESSAGE_SEQUENCE`); post-signing and pre-signing follow-up would be others. _Avoid_: drip, cadence (the Phase 1 word, `sms_cadence`), workflow, flow.
+- **Step** — one automatic send in a sequence, with a planned time and a state (`VisitMessageStep`). _Avoid_: task, touch.
+- **Plan** — one record's steps and their states at a moment, computed by a pure function from the record, its message rows, the settings and the clock (`planVisitMessages`). Every screen and every run read the same plan. _Avoid_: schedule (that is the settings), timeline.
+- **Run** — one scheduled execution that acts on every step the plan marks due (`runAutomaticKind`). _Avoid_: tick, job, cron.
+- **Broadcast** — one message to a chosen audience at a chosen time, sent once and never re-planned. The audience can be five hand-picked customers; the word means "once, to a set", not "to everyone". _Avoid_: blast, bulk message, campaign, scheduled send.
 
 ## DNC (Do-Not-Call)
 
@@ -120,8 +131,16 @@ How media is fetched and shown on every surface. "Image" names generic shared UI
 ## Records terms
 
 - **Scope coverage** — for one proposal of a meeting: which of the scopes captured in the meeting it includes, which it leaves out (struck through), and which it adds that the meeting didn't capture (dashed "+"). Matched by scope id (`computeScopeCoverage`, `ProposalOverviewCard.ScopeCoverage`). _Avoid_: scope match, scope diff.
+- **Fixed filter** — a filter value a data view always applies, set by its callsite: in the data-view config (`fixed`) or at the callsite for a value only it knows (the `fixed` argument of `useDataViewQuery` and `loadDataViewQueryInput`). Never read from the URL, never shown in the toolbar. A field declared `fixedOnly` can only be set this way. Narrows what a view asks for; it is not access control. _Avoid_: scope, preset filter.
+- **First-rows window** — a data view window that returns the first N rows of the view's order with no paging (`{ kind: 'first', count }`). A view with no user state builds its input with `staticDataViewInput`. _Avoid_: limit window, top-N.
 
 ## Pipeline terms
 
 - **Stage** — one step of a pipeline; a customer sits in exactly one stage per pipeline. On the kanban board each stage shows as a lane, but the domain word is always stage (`PipelineStageConfig`, `KanbanStageFilter`). _Avoid_: column, lane, status.
 - **Confirmed** — a meeting whose homeowner, reached on the day of the meeting, said they will be home (`meetings.confirmedAt`). A soft confirmation: a confirmed meeting can still be rescheduled or cancelled before the rep arrives. It holds for one appointment time — moving `scheduledFor` clears it, and a reschedule books a new, unconfirmed meeting. Fresh pipeline: every booked meeting starts in **Needs Confirmation** and moves to **Confirmed** once confirmed.
+
+## Flagged ambiguities
+
+- "run" means two things: a presentation **Run** (consecutive column slides, Presentation terms) and a scheduled execution of an automation (`runAutomaticKind`, `VisitMessageRunReport`, `resolveRunInstant`). Both stay, each scoped to its section; in automation copy "run" is always the scheduled execution.
+- "sequence" was defined for visit messages only — resolved 2026-10-08: **Sequence** is the general automation kind (Automation terms); the visit-message sequence is one instance.
+- "campaign" means a lead-conversion provider campaign (`voip_campaigns`) and a Meta ad campaign; never a scheduled send to customers.
