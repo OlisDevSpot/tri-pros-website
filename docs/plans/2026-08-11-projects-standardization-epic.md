@@ -74,7 +74,7 @@ Legend: `AFK` = mergeable without live user decisions · `HITL` = needs a user r
   - `media.router` — `movePhase`/`toggleHero` → new `media-files/dal/server/mutations.ts` (`moveMediaPhase`/`setHeroImage`, naked-writer, hero-exclusivity); importable-media reads → new `listImportableProjectMedia`. `db` import + `TODO(1f)` gone. Hero-exclusivity + phase-move proven by dev-DB smoke.
   - `google-drive.router` — token refresh → new `googleDriveTokenService.getValidAccessToken` + `updateAccountTokens` on the accounts DAL. `db` import + `TODO(1f)` gone. **One accepted behavior nuance:** the upload path's no-account error unifies from `PRECONDITION_FAILED` → `NOT_FOUND` (matches `getAccessToken`; both are re-auth error paths).
   - `business.create` cross-entity READS → `getProposalsByMeetingId` + `customerCrud.getById` (unscoped `scope:null`; project-row WRITE was already routed).
-  - **#285 tail (NOT this epic):** projects routers keep bare `agentProcedure` (unscoped) — swap to `projectProcedure` + gate `delete` on `can('delete','Project')`. This is the ONLY remaining projects item.
+  - **#285 tail: DONE 2026-10-12** — Project and project media run on compiled rules; `procedures.ts` is gone (routers on `agentProcedure`, portfolio create on `superAdminProcedure`); delete is the super-admin's rule.
   - **AC met:** no projects mutation bypasses `createCrudDal`/sanctioned DAL; all four files import no `db`; hero/phase writes proven by smoke; tsc+lint green.
 
 - [ ] **Follow-up phase(s) · HITL · blocked-by: Phase 3 + JSONB Wave 4 (SOW normalization) — Proposal Financials Consolidation.** *(Separate brainstorm — business logic, not architecture.)*

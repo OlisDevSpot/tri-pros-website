@@ -8,7 +8,7 @@ export const proposalMediaStore: MediaStore = {
   table: proposalMediaFiles,
   ownerColumn: proposalMediaFiles.proposalId,
   bucket: PROPOSAL_MEDIA.bucket,
-  // Getter, not a property — see MediaStore.crud (D6).
+  // Getter, not a property — see MediaStore.crud. The store imports the crud, so a property would form an import cycle.
   get crud() {
     return proposalMediaCrud
   },

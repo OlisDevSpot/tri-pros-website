@@ -8,7 +8,7 @@ export const projectMediaStore: MediaStore = {
   table: projectMediaFiles,
   ownerColumn: projectMediaFiles.projectId,
   bucket: PROJECT_MEDIA.bucket,
-  // Getter, not a property — see MediaStore.crud (D6).
+  // Getter, not a property — see MediaStore.crud. The store imports the crud, so a property would form an import cycle.
   get crud() {
     return projectMediaCrud
   },

@@ -55,7 +55,7 @@ Two pathways construct `ScopedContext`:
 
 1. **Via tRPC** — per-entity `procedures.ts` files (e.g. `customers.router/procedures.ts`, `applications.router/procedures.ts`) define pre-scoped procedures that chain `agentProcedure.use(...)` and call `resolveVisibilityScope(spec, { userId, ability })` inline to set `ctx.scope`, forwarding the tRPC context (`BaseTRPCContext` / `HTTPTRPCContext` in `src/trpc/types.ts`, separate from `ScopedContext`) to the procedure body. Dual-credential (session-or-share-token) access goes through `shareableMiddleware`, used by `createCrudRouter` and the proposals share-token path.
 
-2. **Via server-initiated work** (jobs, webhooks, cron, RSC) — caller passes `systemContext('<reason>')` (full access, the reason named on the rule; every site in the families classified so far does) or, in a family not yet classified, `SYSTEM_CONTEXT` (full access, scope = null), or builds a scoped context via a future `buildUserContext()` helper.
+2. **Via server-initiated work** (jobs, webhooks, cron, RSC) — caller passes `systemContext('<reason>')` (full access, the reason named on the rule) or, at a site not yet given a reason, `SYSTEM_CONTEXT` (full access, scope = null), or builds a scoped context via a future `buildUserContext()` helper.
 
 **Why**: a job or webhook receiving a payload from QStash needs the same DAL — but with different auth semantics. Same function, different ctx.
 **Reference impl**: `src/shared/dal/server/lib/contexts.ts:systemContext`, `src/shared/dal/server/types.ts:SYSTEM_CONTEXT`; jobs in `src/shared/services/providers/upstash/jobs/`

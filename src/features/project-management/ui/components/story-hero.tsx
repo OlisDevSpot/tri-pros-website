@@ -9,6 +9,7 @@ import { Badge } from '@/shared/components/ui/badge'
 import { ROOTS } from '@/shared/config/roots'
 import { useAbility } from '@/shared/domains/permissions/client'
 import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
+import { PROJECT_ACTIONS } from '@/shared/modules/projects/core/constants/actions'
 
 interface NamedItem {
   id: string
@@ -28,7 +29,8 @@ interface Props {
 
 export function StoryHero({ project, heroImage, tradesWithScopes }: Props) {
   const ability = useAbility()
-  const canEdit = ability.can('update', 'Project')
+  // The public story is the portfolio's, and the portfolio is whoever publishes; an agent edits their own projects from the dashboard.
+  const canEdit = ability.can(...PROJECT_ACTIONS.showOnPortfolio.permission)
 
   const formattedDate = project.completedAt
     ? new Date(project.completedAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
