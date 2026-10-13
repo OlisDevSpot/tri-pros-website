@@ -25,6 +25,7 @@ import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/
 import { profileCols } from '@/shared/entities/customers/lib/profile-select'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { getMeetingsWithProposals } from '@/shared/entities/meetings/dal/server/meetings-with-proposals'
+import { projectServerSpec } from '@/shared/modules/projects/core/server-spec'
 
 export async function getCustomerProfile(ctx: ScopedContext, customerId: string): Promise<CustomerProfileData> {
   const { phone: _phone, ...customerCols } = getTableColumns(customers)
@@ -113,7 +114,7 @@ export async function getCustomerProfile(ctx: ScopedContext, customerId: string)
       createdAt: projects.createdAt,
     })
     .from(projects)
-    .where(eq(projects.customerId, customerId))
+    .where(and(eq(projects.customerId, customerId), permit(ctx, 'read', projectServerSpec).sql))
     .orderBy(desc(projects.createdAt))
 
   // Group meetings by projectId for project cards

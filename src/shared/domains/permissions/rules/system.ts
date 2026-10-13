@@ -17,6 +17,7 @@ export type SystemReason
     | 'derived:proposal-sent'
     | 'derived:homeowner-age'
     | 'derived:envelope-documents'
+    | 'derived:project-conversion'
 
 export function systemRules(reason: SystemReason) {
   return defineRules((can) => {

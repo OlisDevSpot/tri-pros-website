@@ -30,6 +30,7 @@ import { customerSearchWhere } from '@/shared/entities/customers/dal/server/cust
 import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
+import { projectServerSpec } from '@/shared/modules/projects/core/server-spec'
 import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 
 export const customerPipelineItemsInputSchema = fieldListInput(CUSTOMER_FIELDS, { pagination: false }).extend({
@@ -42,13 +43,13 @@ const LIVE_MEETING = sql`${meetings.meetingOutcome} = ${'not_set'} AND ${meeting
 
 /** Everything a branch needs: who is asking, and the customer filter, search and order the kanban toolbar chose. */
 interface PipelineBranchArgs {
-  userId: string
-  isOmni: boolean
   canSeeUngated: boolean
   /** The Meeting read reach, for the arms whose outer table is `meetings`. */
   meetingReach: SQL
   /** The Proposal read reach, for every proposal read. */
   proposalReach: SQL
+  /** The Project read reach, for the projects arm. */
+  projectReach: SQL
   customerWhere: SQL | undefined
   /** Undefined keeps the branch's own natural order. */
   customerOrder: SQL[] | undefined
@@ -58,11 +59,10 @@ export async function getCustomerPipelineItems(ctx: ScopedContext, input: Custom
   return dalDbOperation(async () => {
     const args: PipelineBranchArgs = {
       // The customer reach comes from the rules; the meeting arms add the Meeting read reach.
-      userId: ctx.actor.userId ?? '',
-      isOmni: ctx.actor.ability.can('manage', 'all'),
       canSeeUngated: canSeeUngatedPhone(ctx.actor.ability),
       meetingReach: permit(ctx, 'read', meetingServerSpec).sql,
       proposalReach: permit(ctx, 'read', proposalServerSpec).sql,
+      projectReach: permit(ctx, 'read', projectServerSpec).sql,
       customerWhere: and(
         permit(ctx, 'read', customerServerSpec).sql,
         customerSearchWhere(input.search, ctx.actor.ability),
@@ -435,9 +435,7 @@ async function getProjectsPipelineItems(args: PipelineBranchArgs): Promise<Custo
     .leftJoin(leadSourcesTable, eq(leadSourcesTable.id, customers.leadSourceId))
     .where(and(
       isNotNull(projects.customerId),
-      args.isOmni
-        ? undefined
-        : sql`(${projects.ownerId} = ${args.userId} OR ${projects.isPublic} = true OR EXISTS (SELECT 1 FROM meetings m INNER JOIN meeting_participants mp ON mp.meeting_id = m.id WHERE m.project_id = ${projects.id} AND mp.user_id = ${args.userId}))`,
+      args.projectReach,
       args.customerWhere,
     ))
     // Customers take their first row's position below, so the chosen customer order leads and each customer's newest project still wins.

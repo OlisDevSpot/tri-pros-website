@@ -5,7 +5,7 @@ import type { ScopedContext } from '@/shared/dal/server/types'
 import type { FreshPipelineStage } from '@/shared/domains/pipelines/constants/fresh-pipeline'
 
 import { TRPCError } from '@trpc/server'
-import { and, asc, eq, gt, isNull, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, isNull, sql } from 'drizzle-orm'
 
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { permit } from '@/shared/dal/server/lib/permissions/permit'
@@ -17,6 +17,8 @@ import { FRESH_ALLOWED_DRAG_TRANSITIONS } from '@/shared/domains/pipelines/const
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
+import { projectCrud } from '@/shared/modules/projects/core/dal/server/crud'
+import { projectServerSpec } from '@/shared/modules/projects/core/server-spec'
 import { proposalCrud } from '@/shared/modules/proposals/core/dal/server/crud'
 import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 
@@ -56,13 +58,13 @@ export async function moveCustomerPipelineItem({
     })
   }
 
-  // Projects pipeline: update projects.pipelineStage directly
+  // Projects pipeline: the card shows the customer's newest project, so that is the one the drag moves.
   if (pipeline === 'projects') {
-    // Find the project for this customer and update its pipelineStage
     const [project] = await db
       .select({ id: projects.id })
       .from(projects)
-      .where(eq(projects.customerId, customerId))
+      .where(and(eq(projects.customerId, customerId), permit(ctx, 'update', projectServerSpec).sql))
+      .orderBy(desc(projects.createdAt))
       .limit(1)
 
     if (!project) {
@@ -72,11 +74,7 @@ export async function moveCustomerPipelineItem({
       })
     }
 
-    await db
-      .update(projects)
-      .set({ pipelineStage: toStage })
-      .where(eq(projects.id, project.id))
-
+    dalVerifySuccess(await projectCrud.update(ctx, { id: project.id, data: { pipelineStage: toStage } }))
     return
   }
 

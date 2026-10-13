@@ -18,6 +18,7 @@ import { getCustomerProfile } from '@/shared/entities/customers/dal/server/get-c
 import { customerPipelineItemsInputSchema, getCustomerPipelineItems } from '@/shared/entities/customers/dal/server/pipeline-items'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
+import { projectServerSpec } from '@/shared/modules/projects/core/server-spec'
 import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { R2_BUCKETS } from '@/shared/services/providers/r2/types'
@@ -109,7 +110,7 @@ export const customerPipelinesRouter = createTRPCRouter({
       const customerProjectRows = await db
         .select({ id: projects.id, title: projects.title, pipelineStage: projects.pipelineStage, createdAt: projects.createdAt })
         .from(projects)
-        .where(eq(projects.customerId, meeting.customerId))
+        .where(and(eq(projects.customerId, meeting.customerId), permit(ctx, 'read', projectServerSpec).sql))
         .orderBy(desc(projects.createdAt))
       // status is derived from pipelineStage (the column was removed)
       const customerProjects = customerProjectRows.map(p => ({ ...p, status: deriveProjectStatusBucket(p.pipelineStage) }))
@@ -128,7 +129,7 @@ export const customerPipelinesRouter = createTRPCRouter({
       projectId: z.string().uuid(),
     }))
     .mutation(async ({ ctx, input }) => {
-      // The meeting side is the actor's reach; the project side waits for the Project family.
+      // The meeting update checks the project's read reach, so a meeting is tied only to a project the actor already reaches.
       return dalToTrpc(await meetingCrud.update(ctx, {
         id: input.meetingId,
         data: { projectId: input.projectId, meetingOutcome: 'converted_to_project' },

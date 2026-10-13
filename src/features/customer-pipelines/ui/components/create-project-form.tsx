@@ -143,7 +143,6 @@ export function CreateProjectForm({
     }
     createMutation.mutate({
       title: title.trim(),
-      customerId,
       meetingId: activeMeetingId,
       description: description.trim() || null,
       projectDuration: projectDuration.trim() || null,

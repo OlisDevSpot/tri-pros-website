@@ -20,6 +20,7 @@ import { generateToken } from '@/shared/lib/generate-token'
 import { confirmationsClearedByMove } from '@/shared/modules/meetings/core/lib/confirmation-reset'
 import { outcomeChangeNeedsSync } from '@/shared/modules/meetings/core/lib/outcome-change-needs-sync'
 import { scheduledForSetByMove } from '@/shared/modules/meetings/core/lib/scheduled-for-set'
+import { projectServerSpec } from '@/shared/modules/projects/core/server-spec'
 import { decideCancellationNotice } from '@/shared/services/providers/google-calendar/lib/calendar-notice'
 import { deleteMeetingEventJob } from '@/shared/services/providers/upstash/jobs/delete-meeting-event'
 import { graduateFromCampaignJob } from '@/shared/services/providers/upstash/jobs/graduate-from-campaign'
@@ -53,9 +54,11 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
           throw new ThrowableDalError({ type: 'precondition-failed', reason: SET_BY_REQUIRED.reason })
         }
         const { ability, userId } = ctx.actor
-        // A client-supplied customer id is checked against the creator's Customer reach: booking a meeting
-        // must never be the way to reach a customer. Server-derived creates have no user and skip it.
+        // Client-supplied customer and project ids are checked against the creator's reach: booking a meeting must never be the way to reach either. Server-derived creates have no user and skip it.
         if (userId !== null && input.customerId && !(await permit(ctx, 'read', customerServerSpec).probe(input.customerId))) {
+          throw new ThrowableDalError({ type: 'not-found' })
+        }
+        if (userId !== null && input.projectId && !(await permit(ctx, 'read', projectServerSpec).probe(input.projectId))) {
           throw new ThrowableDalError({ type: 'not-found' })
         }
         // Unpicked: whoever books the meeting set it. Bookings nobody made in the app (intake, lead ingestion,
@@ -99,6 +102,9 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
     update: {
       async before(data, ctx, { id }) {
         if (ctx.actor.userId !== null && data.customerId && !(await permit(ctx, 'read', customerServerSpec).probe(data.customerId))) {
+          throw new ThrowableDalError({ type: 'not-found' })
+        }
+        if (ctx.actor.userId !== null && data.projectId && !(await permit(ctx, 'read', projectServerSpec).probe(data.projectId))) {
           throw new ThrowableDalError({ type: 'not-found' })
         }
         if (data.setBy !== undefined) {

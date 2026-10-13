@@ -1,7 +1,6 @@
 import type { QBCustomer, QBInvoice, QBInvoiceLine, QBPayment, QBQueryResponse } from '@/shared/services/providers/quickbooks/types'
 import { systemContext } from '@/shared/dal/server/lib/contexts'
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { formatPhone } from '@/shared/lib/phone'
 import { projectCrud } from '@/shared/modules/projects/core/dal/server/crud'
@@ -86,7 +85,7 @@ function createAccountingService() {
     },
 
     ensureProjectSubCustomer: async (projectId: string, qbParentCustomerId: string): Promise<string> => {
-      const project = dalVerifySuccess(await projectCrud.getById(SYSTEM_CONTEXT, { id: projectId }))
+      const project = dalVerifySuccess(await projectCrud.getById(quickbooks, { id: projectId }))
 
       if (!project) {
         throw new Error(`Project ${projectId} not found`)
@@ -117,12 +116,12 @@ function createAccountingService() {
       )
 
       const qbSubCustomerId = newSubCustomer.Customer.Id
-      dalVerifySuccess(await projectCrud.update(SYSTEM_CONTEXT, { id: projectId, data: { qbSubCustomerId } }))
+      dalVerifySuccess(await projectCrud.update(quickbooks, { id: projectId, data: { qbSubCustomerId } }))
       return qbSubCustomerId
     },
 
     createInvoice: async (projectId: string, proposalIds: string[]): Promise<string> => {
-      const project = dalVerifySuccess(await projectCrud.getById(SYSTEM_CONTEXT, { id: projectId }))
+      const project = dalVerifySuccess(await projectCrud.getById(quickbooks, { id: projectId }))
 
       if (!project?.qbSubCustomerId) {
         throw new Error(`Project ${projectId} has no QB sub-customer`)
