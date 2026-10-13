@@ -198,8 +198,9 @@ export function ScheduleTodayView({
           </div>
         </div>
       </ScrollAreaPrimitive.Viewport>
-      <ScrollBar orientation="horizontal" />
-      <ScrollBar orientation="vertical" />
+      {/* Hidden but mounted: Radix clips any axis that has no scrollbar mounted. */}
+      <ScrollBar orientation="horizontal" className="hidden" />
+      <ScrollBar orientation="vertical" className="hidden" />
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>
   )

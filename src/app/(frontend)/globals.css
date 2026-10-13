@@ -1166,6 +1166,14 @@
 @utility scrollbar-gutter-both {
   scrollbar-gutter: stable both-edges;
 }
+/* Data scrollers (tables, boards, the schedule) scroll by touch, trackpad or wheel with no bar: a
+   classic desktop bar takes layout room the overlay bars on phones never do. */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
 
 /* The dashboard <main> pads by these and publishes them as the bleed allowance: how far a scroller
    inside may reach back out to the screen edge. */

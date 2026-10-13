@@ -288,7 +288,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
         ref={scrollRef}
         onScroll={handleScroll}
         className={cn(
-          'bleed-x group/scroller grow min-h-0 overflow-auto overscroll-none touch-pan-x touch-pan-y',
+          'bleed-x scrollbar-none group/scroller grow min-h-0 overflow-auto overscroll-none touch-pan-x touch-pan-y',
           '**:data-[slot=table-container]:overflow-visible',
           isAnyColumnResizing && 'cursor-col-resize select-none',
         )}

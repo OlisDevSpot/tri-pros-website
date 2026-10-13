@@ -88,7 +88,7 @@ export function ScheduleWeekView({
 
   return (
     // A flex row, so WebKit keeps the right gap at the scroll end.
-    <div ref={scrollRef} className="bleed-x flex h-full overflow-x-auto" aria-busy={isPending || undefined}>
+    <div ref={scrollRef} className="bleed-x scrollbar-none flex h-full overflow-x-auto" aria-busy={isPending || undefined}>
       <div data-slot="schedule-frame" className={cn(SCHEDULE_FRAME_CLASS, 'flex h-full w-full flex-none flex-col')} style={{ minWidth: `${gridMinWidth}px` }}>
         {/* Day headers */}
         <div
@@ -146,7 +146,7 @@ export function ScheduleWeekView({
                 key={day.toISOString()}
                 ref={colRef}
                 className={cn(
-                  'flex flex-col gap-1.5 overflow-y-auto scrollbar-gutter-stable border-r border-grid-line p-1.5 last:border-r-0',
+                  'flex flex-col gap-1.5 overflow-y-auto scrollbar-none border-r border-grid-line p-1.5 last:border-r-0',
                   isBusinessToday(day) && 'bg-primary/5',
                 )}
               >
