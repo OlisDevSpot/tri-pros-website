@@ -1,7 +1,7 @@
 // Read-only probe of the dashboard's edge-to-edge layout (page insets, bleed-x, page-scroll, the dock fade)
 // against the running dev server, at a phone viewport. Headless browsers have no safe area, so the dock
 // clearance is 16 + 56 + 16 = 88px. Exits 1 when any check fails.
-//   node scripts/perf/layout-probe.mjs [--browser chromium|webkit] [--only group,group]
+//   node scripts/perf/layout-probe.mjs [--browser chromium|webkit] [--only group,group] [--viewport 390x844]
 // WebKit needs system libraries this machine lacks; run it from the Playwright image instead:
 //   docker run --rm --network host -v "$PWD":/repo:ro -w /repo mcr.microsoft.com/playwright:v1.58.2-noble \
 //     node scripts/perf/layout-probe.mjs --browser webkit
@@ -25,8 +25,7 @@ function flag(name) {
 const browserName = flag('--browser') ?? 'chromium'
 const only = flag('--only')?.split(',')
 
-const W = 390
-const H = 844
+const [W, H] = (flag('--viewport') ?? '390x844').split('x').map(Number)
 const GAP = 16
 const DOCK_CLEAR = 88
 const TABLE_SCROLLER = '[class*="group/scroller"]'
@@ -165,12 +164,16 @@ const GROUPS = {
         }
         el.style.scrollBehavior = 'auto'
         el.scrollLeft = Math.round(max / 2)
-        const left = cell.getBoundingClientRect().left
+        const mid = cell.getBoundingClientRect().left
+        el.scrollLeft = max
+        const end = cell.getBoundingClientRect().left
         el.scrollLeft = 0
-        return left
+        return { mid, end }
       }, [TABLE_SCROLLER, GAP])
       if (frozen !== 'skip') {
-        out.push(['frozen column pins flush at the screen edge', near(frozen, 0), frozen])
+        out.push(['frozen column pins flush at the screen edge mid-scroll', near(frozen.mid, 0), frozen.mid])
+        // A sticky cell never leaves its table, so a frozen column wider than the screen slides off at the end.
+        out.push(['frozen column still pins flush at the scroll end', near(frozen.end, 0), frozen.end])
       }
       return out
     },
@@ -249,7 +252,7 @@ const GROUPS = {
     ready: '[data-stage]',
     run: async (p) => {
       const insets = await p.evaluate(() => {
-        const main = document.querySelector('main')
+        const main = document.querySelector('main.page-insets')
         const cs = getComputedStyle(main)
         const nav = document.querySelector('[data-slot="dashboard-mobile-nav"]')
         return { pad: [cs.paddingTop, cs.paddingRight, cs.paddingBottom, cs.paddingLeft].join(' '), nav: nav ? getComputedStyle(nav).display : 'none' }
@@ -305,5 +308,5 @@ try {
 finally {
   await browser.close()
 }
-console.log(failed ? `\n${failed} check(s) failed (${browserName})` : `\nall checks passed (${browserName})`)
+console.log(failed ? `\n${failed} check(s) failed (${browserName} ${W}x${H})` : `\nall checks passed (${browserName} ${W}x${H})`)
 process.exit(failed ? 1 : 0)
