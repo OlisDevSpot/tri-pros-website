@@ -16,7 +16,7 @@ interface Props {
   onHeroViewChange: (view: HeroView) => void
 }
 
-// Pinned above the scrolling tab content, so the name and the call/email discs never scroll away.
+// Pinned above the scrolling tab content, so the name, contact rows and call/email discs never scroll away.
 // It sizes to its content: edit mode grows it and the content area below gives up the room.
 export function CustomerProfilePhoneHero({ customer, editForm, heroAddress, heroView, onHeroViewChange }: Props) {
   return (
@@ -25,6 +25,9 @@ export function CustomerProfilePhoneHero({ customer, editForm, heroAddress, hero
       data-profile-hero
     >
       <CustomerAddressHero address={heroAddress} key={heroAddress} view={heroView} />
+      {/* The identity block is four rows tall, so its top rows reach where the backdrop's scrim is
+          still thin; this veil keeps body ink at the 60% floor without darkening the rail's map. */}
+      <div aria-hidden className="absolute inset-x-0 bottom-0 h-2/3 bg-linear-to-t from-scrim/40 to-transparent" />
       {heroAddress && (
         // Inline `top`: an arbitrary `top-[max(env(…),…)]` class resolved to top:0 here when
         // measured, so the safe-area offset bypasses the class.

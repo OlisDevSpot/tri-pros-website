@@ -11,7 +11,7 @@ interface Props {
   customer: CustomerProfileData['customer']
 }
 
-// Thumb-sized call and email beside the name on the phone hero; edit mode brings back full rows.
+// Thumb-sized call and email beside the name on the phone hero; the contact rows below carry the values.
 export function CustomerContactButtons({ customer }: Props) {
   if (!customer.phone && !customer.email) {
     return null

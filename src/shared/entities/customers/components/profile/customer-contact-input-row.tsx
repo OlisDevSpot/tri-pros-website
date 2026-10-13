@@ -15,10 +15,11 @@ interface Props {
   type?: 'email' | 'tel' | 'text'
 }
 
-// Edit mode swaps a contact row for its input on the same 40px line, so the layout holds still.
+// Edit mode swaps a contact row for its input on the same line; the vertical padding keeps stacked
+// inputs from touching, since the row's own height is shorter than a field.
 export function CustomerContactInputRow({ icon: Icon, inputProps, label, surface, type = 'text' }: Props) {
   return (
-    <label className={cn(contactActionTriggerVariants({ shape: 'row', surface }), 'cursor-default hover:bg-transparent')}>
+    <label className={cn(contactActionTriggerVariants({ shape: 'row', surface }), 'cursor-default py-0.5 hover:bg-transparent')}>
       <Icon />
       <Input
         {...inputProps}

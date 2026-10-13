@@ -6,7 +6,7 @@ import { APP_HOSTS, ROOTS } from '@/shared/config/roots'
 import { companyInfo } from '@/shared/constants/company'
 
 /** Appended by the renderer on the first text of a thread, so an edit cannot remove it. */
-export const VISIT_MESSAGE_STOP_LINE = 'Reply STOP to opt out.'
+export const VISIT_MESSAGE_STOP_LINE = "By the way, if you'd rather not receive any more messages, just reply STOP."
 
 // The length of a real link, so a preview counts the segments a homeowner's text will use.
 const VISIT_LINK_SAMPLE = `https://${APP_HOSTS.prod[0]}${ROOTS.public.homeVisit('00000000-0000-4000-8000-000000000000', '0'.repeat(32))}`
