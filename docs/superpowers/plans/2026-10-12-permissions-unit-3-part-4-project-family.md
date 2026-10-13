@@ -351,7 +351,8 @@ git push -q origin HEAD
 - Modify: `src/shared/modules/projects/core/dal/server/project-field-sql.ts`, `src/shared/modules/projects/core/lib/portfolio.ts` (comment)
 - Modify: `src/shared/dal/server/lib/scope.ts`
 - Delete: `src/trpc/routers/projects.router/procedures.ts`
-- Modify: `src/trpc/routers/projects.router/crud.router.ts`, `media.router.ts`, `google-drive.router.ts`
+- Modify: `src/trpc/routers/projects.router/crud.router.ts`, `media.router.ts`, `google-drive.router.ts`, `business.router.ts` (procedure only)
+- Modify: `src/trpc/DOCS.md`, `src/shared/modules/projects/core/DOCS.md` (one line each)
 - Modify: `src/trpc/routers/meetings.router/reads.router.ts`
 - Modify: `src/shared/modules/projects/core/dal/server/queries.ts`, `crud.ts`
 - Modify: `src/shared/modules/projects/media/service.ts`, `server-spec.ts`, `dal/server/mutations.ts`, `dal/server/crud.ts` (comment only)
@@ -531,6 +532,19 @@ export const crudRouter = createTRPCRouter({
 
 Imports: `superAdminProcedure` from `../../init`; drop `getAllProjects` and `./procedures`. Delete `src/trpc/routers/projects.router/procedures.ts`. In `meetings.router/reads.router.ts`, `listForProject` becomes `agentProcedure` and its comment reads `// Scoped by the project, not the meeting: whoever reaches the project sees every meeting on it.`; drop the `projectProcedure` import.
 
+`procedures.ts` also holds `projectAccessProcedure`, a release gate that refuses a role with no Project rule because project rows ran unscoped. That premise ends here, so the gate goes with the file. Every procedure still on it moves to `agentProcedure` from `../../init` and drops the `./procedures` import:
+- all of `media.router.ts`;
+- `getAccessToken` and `uploadFromFile` in `google-drive.router.ts` (`getAccessToken` returns the caller's own Drive token and reads no project row);
+- `create` in `business.router.ts` (Task 3 rewrites its body, so Tasks 2 and 3 ship together).
+
+A dashboard role with no Project rule now gets an empty list or `NOT_FOUND` from the compiled reach, as it does on proposals.
+
+Two DOCS lines name the deleted file:
+- in `src/trpc/DOCS.md`, the Project row's middle cell becomes `` `projectServerSpec` + `projectCrud` on compiled rules; `crud.router.ts` is hand-written on `agentProcedure`, not `createCrudRouter` ``;
+- in `src/shared/modules/projects/core/DOCS.md`, delete the bullet that starts `- Per-entity scoped procedures (`.
+
+Nothing else in either file changes.
+
 `google-drive.router.ts` `uploadFromFile` — first lines of the mutation, before the token read:
 
 ```ts
@@ -657,7 +671,7 @@ Drop imports this leaves unused (`projects`, `exists` if no other reader in the 
 Run: `pnpm tsc && pnpm lint`
 Expected: PASS. An unused `@ts-expect-error` in `must-not-compile.ts` means a moved example stopped erroring: report it, do not delete the line.
 
-Run: `grep -rn "projectProcedure\|projectVisibility\|projectParticipationScope\|getAllProjects\|projects/core/lib/visibility" src`
+Run: `grep -rn "projectProcedure\|projectAccessProcedure\|projectVisibility\|projectParticipationScope\|getAllProjects\|projects/core/lib/visibility\|projects.router/procedures" src`
 Expected: no output.
 
 Run: `grep -rn "ctx.scope\|scope: null" src/shared/modules/projects src/trpc/routers/projects.router`
@@ -718,7 +732,7 @@ Expected, against `part4-baseline.txt`: super-admin's `list`, `edit`, `meetingsO
 
 ```bash
 git add -A src/shared/modules/projects/core/lib src/trpc/routers/projects.router
-git add src/shared/domains/permissions/rules/agent.ts src/shared/modules/projects/core/server-spec.ts src/shared/modules/projects/core/dal/server/project-field-sql.ts src/shared/modules/projects/core/dal/server/queries.ts src/shared/modules/projects/core/dal/server/crud.ts src/shared/dal/server/lib/scope.ts src/trpc/routers/meetings.router/reads.router.ts src/shared/modules/projects/media/service.ts src/shared/modules/projects/media/server-spec.ts src/shared/modules/projects/media/dal/server/mutations.ts src/shared/modules/projects/media/dal/server/crud.ts src/shared/modules/proposals/media/dal/server/queries.ts src/shared/entities/meetings/dal/server/queries.ts src/shared/domains/permissions/type-checks/must-not-compile.ts
+git add src/shared/domains/permissions/rules/agent.ts src/shared/modules/projects/core/server-spec.ts src/shared/modules/projects/core/dal/server/project-field-sql.ts src/shared/modules/projects/core/dal/server/queries.ts src/shared/modules/projects/core/dal/server/crud.ts src/shared/dal/server/lib/scope.ts src/trpc/routers/meetings.router/reads.router.ts src/shared/modules/projects/media/service.ts src/shared/modules/projects/media/server-spec.ts src/shared/modules/projects/media/dal/server/mutations.ts src/shared/modules/projects/media/dal/server/crud.ts src/shared/modules/proposals/media/dal/server/queries.ts src/shared/entities/meetings/dal/server/queries.ts src/shared/domains/permissions/type-checks/must-not-compile.ts src/trpc/DOCS.md src/shared/modules/projects/core/DOCS.md
 git status --short   # only the paths above (plus CLAUDE.local.md untracked) may appear staged
 git commit -m "refactor(permissions): the Project family runs on compiled rules
 
