@@ -120,7 +120,7 @@ The dashboard layout has one canonical shape. Do not refactor without reading th
 
 A route that must render edge to edge inside the dashboard (today: the meeting flow, `/dashboard/meetings/[meetingId]`) marks its root element with `data-stage`. Two selectors react to it; `layout.tsx` does not change:
 
-- `src/app/(frontend)/dashboard/template.tsx` — `motion.main` carries `has-data-stage:p-0`, so the template's page padding disappears only while a stage is inside it.
+- `src/app/(frontend)/globals.css` — `page-insets` (the template `<main>`'s class) sets every inset to 0 while a stage is inside it, so the page padding and every bleed disappear.
 - `src/app/(frontend)/globals.css` — `[data-slot='sidebar-inset']:has([data-stage]) [data-slot='dashboard-mobile-nav'] { display: none }` hides the mobile bottom nav for that route.
 
 The stage route then supplies its own gutters where it wants them (the meeting flow's page steps do; its presentation does not) and its own safe-area bottom padding.
@@ -159,6 +159,25 @@ The shell layouts above NEVER set `overflow-y-auto`. Individual pages own their 
 **Why**: layout-level scroll containers cause scrollbar flashes during page transitions when loading skeletons briefly overflow. Page-owned scroll has stable scrollbar behavior.
 **Reference impl**: any agent-dashboard view in `src/features/agent-dashboard/ui/views/`
 **Enforced by**: convention
+
+### page-insets-and-bleed
+
+The template `<main>` pads by `page-insets`: 16px sides and the dock's clearance (`--dock-clear`) on phones, the rail's gaps from `md`. It publishes those insets as a bleed allowance (`--bleed-l|r|b`). Two utilities spend it:
+
+- **`page-scroll`** — put it on the scroller of a page that scrolls as a whole. It reaches into the side and bottom insets and pads its content back, so the page runs behind the phone dock and its last item still clears it. It sets its own height and reaches past its own box; never pair it with `h-*` or `w-*` (a fixed width defeats the side bleed).
+- **`bleed-x`** — on a horizontal scroller that sits on the page. The gap shows at rest and at the scroll end; content runs to the screen edge while more waits that way. `KanbanBoard`, `DataTable` and the schedule grids apply it themselves, so a page that uses them gets it free.
+
+Rules:
+- Every surface (`.surface`, `.bg-card`, popovers, overlays) resets the allowance to 0, so nothing inside a card bleeds.
+- A non-surface ancestor between `<main>` and a bleeding element must not clip that axis. Use `overflow-y-clip` where a page root needs vertical containment. A padded non-surface wrapper (e.g. the lead-sources detail panes, `all-detail.tsx`/`source-detail.tsx`) resets `--bleed-l/r` to 0 itself, so a table inside it stays inside the padding.
+- A `bleed-x` scroller must be a flex row, or end its content in a spacer of width `--bled-r`. WebKit drops a block scroller's inline-end padding.
+- Sticky pieces inside a bleeding scroller pin at `-left-(--bled-l)`, the screen edge. Sticky offsets resolve against the scroller's content box.
+- A riding card must still fill its area when the content is short: DataTable's sizer is `min-h-full`; the Radix ScrollArea in the schedule's today view needs its inner `display: table` wrapper made a flex box with a minimum height.
+- A page that uses neither utility renders as before.
+
+**Why**: the phone dashboard wasted the screen's sides and everything behind the dock. Bleeding is local, so `<main>` never learns what its page is, and the layout shape stays fixed.
+**Reference impl**: `src/app/(frontend)/globals.css` (`page-insets`, `bleed-x`, `page-scroll`), `src/shared/components/data-table/ui/data-table.tsx`, `src/features/agent-dashboard/ui/views/dashboard-view.tsx`
+**Verified by**: `node scripts/perf/layout-probe.mjs` (Chromium; WebKit via the Playwright Docker image, see the script's header)
 
 ### html-theme-boot
 
