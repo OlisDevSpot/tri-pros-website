@@ -19,7 +19,7 @@ export const projectCrud = createCrudDal(projectServerSpec, () => ({
       // The engine hands us the row. R2 media cleanup runs BEFORE the DB
       // cascade removes the project media rows. Non-atomic + partial-tolerant.
       //
-      // No row filter: the purge must reach every object the project owns, and the engine already checked the delete reach on the project.
+      // No row filter: the purge must reach every object the project owns.
       // A DAL may not import a service, so this reads through the media module's
       // table-generic DAL and purges through the leaf helper.
       async before(row: Project, _ctx: ScopedContext) {

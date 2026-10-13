@@ -9,8 +9,7 @@ import { meetings, projects } from '@/shared/db/schema'
  * (created via the portfolio editor to showcase work, never from an approved
  * proposal) and must be disregarded in operational lists, analytics, and
  * aggregations. This is the server-side twin of `isPurePortfolioProject`
- * (negated). Applies even for omni users, whose visibility scope is otherwise
- * unbounded.
+ * (negated). It applies to every actor, whatever their reach.
  */
 export function hasAssociatedMeeting(): SQL {
   return exists(

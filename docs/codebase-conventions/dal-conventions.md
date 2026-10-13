@@ -43,7 +43,7 @@ export async function getById(
 
 ### scoped-context-first-arg
 
-Every DAL function takes `ctx: ScopedContext` as its first argument. `ctx.scope` is the visibility predicate (a Drizzle `SQL` fragment or `null`). DAL applies it to the WHERE clause for any query that should be visibility-scoped. Compiled families (Customer, CustomerNote, Meeting, Proposal, Project) do not use it: its reach is `permit(ctx, action, spec)` (`src/shared/dal/server/lib/permissions/permit.ts`), compiled from the actor's rules, and `createCrudDal` applies it automatically.
+Every DAL function takes `ctx: ScopedContext` as its first argument. `ctx.scope` is the visibility predicate (a Drizzle `SQL` fragment or `null`). DAL applies it to the WHERE clause for any query that should be visibility-scoped. Compiled families (Customer, CustomerNote, Meeting, Proposal, Project) do not use it: their reach is `permit(ctx, action, spec)` (`src/shared/dal/server/lib/permissions/permit.ts`), compiled from the actor's rules, and `createCrudDal` applies it automatically.
 
 **Why**: visibility scoping is enforced by the DAL itself, not the caller. Caller can't forget.
 **Reference impl**: `src/shared/dal/server/lib/create-crud-dal.ts`
