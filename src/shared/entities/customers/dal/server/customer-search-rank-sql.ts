@@ -1,4 +1,3 @@
-// src/shared/entities/customers/dal/server/customer-search-rank-sql.ts
 import type { SQL } from 'drizzle-orm'
 
 import type { CustomerSearchQuery, CustomerSearchToken } from '@/shared/entities/customers/lib/customer-search-tokens'
@@ -10,7 +9,7 @@ import 'server-only'
 
 export type CustomerMatchField = 'name' | 'phone' | 'address' | 'email'
 
-/** Below this `word_similarity` a text token is not a hit. */
+/** Below this `word_similarity` / `strict_word_similarity` a text token is not a hit. */
 export const WORD_SIMILARITY_THRESHOLD = 0.4
 
 /** Fixed score for a name word that is a letter-swapped spelling of the token. */
@@ -44,7 +43,9 @@ export function escapeLike(value: string): string {
 function textTokenSql(value: string): TokenSql {
   const escaped = escapeLike(value)
   const trigramNameScore = sql`word_similarity(${value}, ${customers.name})`
-  const addressScore = sql`word_similarity(${value}, ${customerAddressDocSql})`
+  // Loose word_similarity on the address lets a short token match across word boundaries ("andy" vs "…ana Dr"), so only whole-word (strict) or word-start matches count.
+  const addressPrefix = sql`(${customerAddressDocSql} ILIKE ${`${escaped}%`} OR ${customerAddressDocSql} ILIKE ${`% ${escaped}%`})`
+  const addressScore = sql`greatest(strict_word_similarity(${value}, ${customerAddressDocSql}), CASE WHEN ${addressPrefix} THEN word_similarity(${value}, ${customerAddressDocSql}) ELSE 0 END)`
   const namePrefix = sql`(${customers.name} ILIKE ${`${escaped}%`} OR ${customers.name} ILIKE ${`% ${escaped}%`})`
   // Trigrams can't see two swapped letters in a short word; dropped, doubled or substituted letters are already covered by word_similarity.
   const anagramHit = value.length >= 3 ? nameWordAnagramSql(value) : FALSE
@@ -52,7 +53,7 @@ function textTokenSql(value: string): TokenSql {
   const trigramMatch = value.length < 3
     ? namePrefix
     // Trigrams of a one- or two-letter token match almost anything; short tokens count only as a name-word prefix.
-    : sql`(${value} <% ${customers.name} OR ${value} <% ${customerAddressDocSql})`
+    : sql`(${value} <% ${customers.name} OR ${value} <<% ${customerAddressDocSql} OR ${addressPrefix})`
   return {
     match: value.length < 3 ? trigramMatch : sql`(${trigramMatch} OR ${anagramHit})`,
     score: sql`(greatest(${nameScore}, 0.9 * ${addressScore}) + CASE WHEN ${namePrefix} THEN 0.1 ELSE 0 END)`,
@@ -73,9 +74,9 @@ function nameWordAnagramSql(value: string): SQL {
 }
 
 function numberTokenSql(value: string, gatedPhone: SQL): TokenSql {
-  const houseNumber = sql`(${customers.address} ILIKE ${`${value} %`})`
+  const houseNumber = sql`(coalesce(${customers.address}, '') ILIKE ${`${value} %`})`
   const zip = sql`(${customers.zip} LIKE ${`${value}%`})`
-  const inAddress = sql`(${customers.address} ILIKE ${`%${value}%`})`
+  const inAddress = sql`(coalesce(${customers.address}, '') ILIKE ${`%${value}%`})`
   // Phones are stored as bare digits, so a digit run matches the gated value directly.
   const phone = sql`(coalesce(${gatedPhone}, '') LIKE ${`%${value}%`})`
   const onAddress = sql`(${zip} OR ${inAddress})`

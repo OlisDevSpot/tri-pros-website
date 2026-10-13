@@ -1,4 +1,3 @@
-// src/shared/entities/customers/dal/server/search-customers-ranked.ts
 // LAZY: customers is still a plain entity; this moves to modules/customers/core/dal/server with the promotion.
 import type { Pipeline } from '@/shared/constants/enums/pipelines'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
@@ -40,8 +39,9 @@ export async function searchCustomersRanked(ctx: ScopedContext, term: string, li
       return []
     }
     return db.transaction(async (tx) => {
-      // `<%` reads its threshold from this setting; `true` scopes it to this transaction.
-      await tx.execute(sql`SELECT set_config('pg_trgm.word_similarity_threshold', ${String(WORD_SIMILARITY_THRESHOLD)}, true)`)
+      // `<%` and `<<%` read their thresholds from these settings; `true` scopes them to this transaction.
+      const threshold = String(WORD_SIMILARITY_THRESHOLD)
+      await tx.execute(sql`SELECT set_config('pg_trgm.word_similarity_threshold', ${threshold}, true), set_config('pg_trgm.strict_word_similarity_threshold', ${threshold}, true)`)
       return tx
         .select({
           id: customers.id,
