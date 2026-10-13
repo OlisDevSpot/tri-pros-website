@@ -1,4 +1,5 @@
-import { doublePrecision, integer, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
+import { doublePrecision, index, integer, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import z from 'zod'
 import { customerPipelines, leadTypes } from '@/shared/constants/enums'
@@ -55,7 +56,11 @@ export const customers = pgTable('customers', {
   syncedAt: timestamp('synced_at', { mode: 'string', withTimezone: true }).defaultNow().notNull(),
   createdAt,
   updatedAt,
-})
+}, table => ({
+  nameTrgmIdx: index('customers_name_trgm_idx').using('gin', sql`${table.name} gin_trgm_ops`),
+  // Must match `customerAddressDocSql` exactly, or the planner can't use it.
+  addressTrgmIdx: index('customers_address_trgm_idx').using('gin', sql`(coalesce(${table.address}, '') || ' ' || ${table.city}) gin_trgm_ops`),
+}))
 
 export const selectCustomerSchema = createSelectSchema(customers)
 export type Customer = z.infer<typeof selectCustomerSchema>
