@@ -65,6 +65,8 @@ export function CreateMeetingForm({
   // Editing replaces the deal structure's trades, which a viewer who cannot read them would wipe blind.
   const canPickTrades = isEditMode ? ability.can('update', 'Meeting', 'flowStateJSON') : true
   const canAddInternalNote = ability.can('create', 'CustomerNote')
+  // A project meeting is tied to one of the customer's projects, which a viewer without the project read cannot pick; an existing project meeting keeps its type so the picker shows it.
+  const meetingTypes = ability.can('read', 'Project') || initialValues?.meetingType === 'Project' ? creatableMeetingTypes : creatableMeetingTypes.filter(t => t !== 'Project')
   const { data: session } = useSession()
   const selfId = session?.user.id ?? null
   const selfName = session?.user.name ?? null
@@ -165,7 +167,7 @@ export function CreateMeetingForm({
           <span className="text-destructive">*</span>
         </Label>
         <div className="flex flex-wrap gap-2">
-          {creatableMeetingTypes.map(t => (
+          {meetingTypes.map(t => (
             <button
               key={t}
               type="button"

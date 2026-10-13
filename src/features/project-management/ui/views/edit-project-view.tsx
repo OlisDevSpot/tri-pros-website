@@ -18,6 +18,8 @@ import { Button } from '@/shared/components/ui/button'
 import { Form } from '@/shared/components/ui/form'
 import { ROOTS } from '@/shared/config/roots'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
+import { useAbility } from '@/shared/domains/permissions/client'
+import { PROJECT_ACTIONS } from '@/shared/modules/projects/core/constants/actions'
 import { projectFormDefaults, projectFormSchema } from '@/shared/modules/projects/core/schemas'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -61,6 +63,7 @@ export function EditProjectView({ projectId }: Props) {
     defaultValues: projectFormDefaults,
   })
 
+  const ability = useAbility()
   const updateProject = useMutation(trpc.projectsRouter.crud.update.mutationOptions())
 
   const initialValues = useMemo(() => {
@@ -113,7 +116,9 @@ export function EditProjectView({ projectId }: Props) {
   }
 
   function onSubmit(data: ProjectFormData) {
-    updateProject.mutate({ id: projectId, data }, {
+    // The server checks every column it is sent; a viewer who may not publish never sends the switch.
+    const payload = ability.can(...PROJECT_ACTIONS.showOnPortfolio.permission) ? data : { ...data, isPublic: undefined }
+    updateProject.mutate({ id: projectId, data: payload }, {
       onSuccess: () => {
         toast.success('Project updated')
         invalidateProject({ projectId })

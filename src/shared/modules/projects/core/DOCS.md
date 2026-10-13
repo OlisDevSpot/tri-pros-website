@@ -126,7 +126,7 @@ The predicate is meeting-existence, NOT a null-stage check — meeting existence
 
 ### isPublic-gates-portfolio-visibility
 
-`projects.isPublic` (boolean, default `false`) controls whether the project appears on the public marketing portfolio. Default is private; agents explicitly publish via the portfolio editor.
+`projects.isPublic` (boolean, default `false`) controls whether the project appears on the public marketing portfolio. Default is private; a super-admin publishes from the portfolio editor.
 
 **Why**: most signed projects are NOT marketing-ready (no photos, no story, mid-construction). Defaulting to private prevents accidental portfolio leakage.
 **Reference impl**: column; consumed by `showroom-display.router.ts`

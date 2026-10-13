@@ -20,13 +20,13 @@ export const PROJECT_ACTIONS = {
     id: 'showOnPortfolio',
     label: 'Show on Portfolio',
     icon: EyeIcon,
-    permission: ['update', 'Project'],
+    permission: ['update', 'Project', 'isPublic'],
   },
   hideFromPortfolio: {
     id: 'hideFromPortfolio',
     label: 'Hide from Portfolio',
     icon: EyeOffIcon,
-    permission: ['update', 'Project'],
+    permission: ['update', 'Project', 'isPublic'],
   },
   duplicate: {
     id: 'duplicate',

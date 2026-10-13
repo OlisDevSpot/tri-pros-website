@@ -5,6 +5,8 @@ import { useFormContext } from 'react-hook-form'
 import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 import { Switch } from '@/shared/components/ui/switch'
+import { Can } from '@/shared/domains/permissions/ui/can'
+import { PROJECT_ACTIONS } from '@/shared/modules/projects/core/constants/actions'
 
 export function BasicInfoFields() {
   const form = useFormContext<ProjectFormData>()
@@ -143,28 +145,30 @@ export function BasicInfoFields() {
           />
         </div>
 
-        <div className="flex items-center gap-3">
-          <FormField
-            name="isPublic"
-            control={form.control}
-            render={({ field }) => (
-              <FormItem className="flex items-center gap-3">
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-                <div>
-                  <FormLabel>Public</FormLabel>
-                  <FormDescription>
-                    Make this project visible on the portfolio page
-                  </FormDescription>
-                </div>
-              </FormItem>
-            )}
-          />
-        </div>
+        <Can permission={PROJECT_ACTIONS.showOnPortfolio.permission}>
+          <div className="flex items-center gap-3">
+            <FormField
+              name="isPublic"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem className="flex items-center gap-3">
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div>
+                    <FormLabel>Public</FormLabel>
+                    <FormDescription>
+                      Make this project visible on the portfolio page
+                    </FormDescription>
+                  </div>
+                </FormItem>
+              )}
+            />
+          </div>
+        </Can>
       </div>
     </section>
   )
