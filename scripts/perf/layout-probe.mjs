@@ -157,7 +157,7 @@ const GROUPS = {
       ]
       const frozen = await p.evaluate(([s, GAP]) => {
         const el = document.querySelector(s)
-        const cell = el.querySelector('tbody tr td:first-child')
+        const cell = el.querySelector('tbody tr[data-slot="table-row"] td:first-child')
         const max = el.scrollWidth - el.clientWidth
         if (max <= 2 * GAP || getComputedStyle(cell).position !== 'sticky') {
           return 'skip'

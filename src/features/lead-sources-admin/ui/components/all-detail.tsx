@@ -84,6 +84,7 @@ export function AllDetail({ sourceCount, activeChip, range, sources, onAddCustom
   const customerCountLabel = statsQuery.data?.total
 
   return (
+    // The pane pads itself and holds no surface, so a table inside must not bleed into the page inset.
     <div className="flex h-full min-h-0 flex-col gap-4 px-4 pt-4 [--bleed-l:0px] [--bleed-r:0px] sm:gap-5 sm:px-5 sm:pt-5">
       <header className="flex shrink-0 items-start justify-between gap-4">
         <div className="flex min-w-0 flex-col gap-1">
