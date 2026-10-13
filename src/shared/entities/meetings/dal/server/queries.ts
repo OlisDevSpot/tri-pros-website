@@ -10,6 +10,8 @@ import type { CustomerProfileMeeting } from '@/shared/entities/customers/types'
 import { and, count, eq, exists, getTableColumns, sql } from 'drizzle-orm'
 
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
+import { projectToReadFields } from '@/shared/dal/server/lib/permissions/project'
 import { fieldListInput } from '@/shared/dal/server/lib/query/field-list-input'
 import { paginate } from '@/shared/dal/server/lib/query/output'
 import { buildSearchWhere } from '@/shared/dal/server/lib/query/search'
@@ -20,12 +22,15 @@ import { customers } from '@/shared/db/schema/customers'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
+import { proposals } from '@/shared/db/schema/proposals'
 import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { profileCols } from '@/shared/entities/customers/lib/profile-select'
 import { MEETING_FIELDS } from '@/shared/entities/meetings/dal/meeting-fields'
 import { MEETING_FIELD_SQL, setterUser } from '@/shared/entities/meetings/dal/server/meeting-field-sql'
 import { getMeetingsWithProposals } from '@/shared/entities/meetings/dal/server/meetings-with-proposals'
 import { getAllParticipantsForMeetings } from '@/shared/entities/meetings/dal/server/participants'
+import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
+import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 
 export interface MeetingListParticipant {
   id: string
@@ -90,10 +95,13 @@ export async function listMeetings(
   input: MeetingListInput,
 ): Promise<DalReturn<PaginatedResult<MeetingListRow>>> {
   return dalDbOperation(async () => {
+    const proposalReach = permit(ctx, 'read', proposalServerSpec).sql
+    // Filtering by proposal status would tell a role without proposals which meetings have them.
+    const filters = ctx.actor.ability.can('read', 'Proposal') ? input.filters : { ...input.filters, proposalStatus: undefined }
     const where = and(
-      ctx.scope ?? undefined,
+      permit(ctx, 'read', meetingServerSpec).sql,
       buildSearchWhere(input.search, [customers.name, sql`${meetings.meetingType}::text`]),
-      MEETING_FIELD_SQL.where(input.filters),
+      MEETING_FIELD_SQL.where(filters),
     )
     const orderBy = MEETING_FIELD_SQL.orderBy(input.sort)
 
@@ -102,7 +110,7 @@ export async function listMeetings(
         .select({
           ...getTableColumns(meetings),
           customerName: customers.name,
-          customerPhone: gatedPhoneSql(canSeeUngatedPhone(ctx.ability)),
+          customerPhone: gatedPhoneSql(canSeeUngatedPhone(ctx.actor.ability)),
           customerHasSentProposal: hasSentProposalSql(),
           customerAddress: customers.address,
           customerCity: customers.city,
@@ -113,9 +121,9 @@ export async function listMeetings(
           ownerImage: user.image,
           setterName: setterUser.name,
           setterImage: setterUser.image,
-          proposalCount: sql<number>`(SELECT count(*) FROM proposals p WHERE p.meeting_id = ${meetings.id})`.as('proposal_count'),
-          hasSentProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'sent')`.as('has_sent_proposal'),
-          hasApprovedProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'approved')`.as('has_approved_proposal'),
+          proposalCount: sql<number>`(SELECT count(*) FROM ${proposals} WHERE ${proposals.meetingId} = ${meetings.id} AND ${proposalReach})`.as('proposal_count'),
+          hasSentProposal: sql<boolean>`EXISTS (SELECT 1 FROM ${proposals} WHERE ${proposals.meetingId} = ${meetings.id} AND ${proposals.status} = 'sent' AND ${proposalReach})`.as('has_sent_proposal'),
+          hasApprovedProposal: sql<boolean>`EXISTS (SELECT 1 FROM ${proposals} WHERE ${proposals.meetingId} = ${meetings.id} AND ${proposals.status} = 'approved' AND ${proposalReach})`.as('has_approved_proposal'),
           // Agents can't call leadSourcesRouter (super-admin only), so the row carries the name.
           leadSource: {
             id: leadSourcesTable.id,
@@ -123,7 +131,7 @@ export async function listMeetings(
             slug: leadSourcesTable.slug,
             isActive: leadSourcesTable.isActive,
           },
-          proposalStatuses: sql<ProposalStatus[]>`COALESCE((SELECT json_agg(p.status ORDER BY p.created_at, p.id) FROM proposals p WHERE p.meeting_id = ${meetings.id}), '[]'::json)`.as('proposal_statuses'),
+          proposalStatuses: sql<ProposalStatus[]>`COALESCE((SELECT json_agg(${proposals.status} ORDER BY ${proposals.createdAt}, ${proposals.id}) FROM ${proposals} WHERE ${proposals.meetingId} = ${meetings.id} AND ${proposalReach}), '[]'::json)`.as('proposal_statuses'),
         })
         .from(meetings)
         .leftJoin(customers, eq(customers.id, meetings.customerId))
@@ -166,7 +174,8 @@ export async function listMeetings(
         const ownerRow = rowParticipants.find(p => p.role === 'owner')
         const coOwnerRow = rowParticipants.find(p => p.role === 'co_owner')
 
-        return {
+        // A read field rule (a dispatcher's withheld deal structure) applies to a hand-written row too.
+        return projectToReadFields(ctx.actor.ability, meetingServerSpec, {
           ...row,
           leadSource: row.leadSource,
           participants: rowParticipants.map(p => ({
@@ -195,7 +204,7 @@ export async function listMeetings(
                 userImage: coOwnerRow.userImage,
               }
             : null,
-        }
+        }, row)
       }),
       total: result.total,
     } as PaginatedResult<MeetingListRow>
@@ -208,6 +217,7 @@ export async function getByIdWithJoins(
   input: { id: string },
 ): Promise<DalReturn<MeetingWithCustomer | undefined>> {
   return dalDbOperation(async () => {
+    const proposalReach = permit(ctx, 'read', proposalServerSpec).sql
     // The raw phone column is swapped out of the projection so destructuring `row.customer` can't leak the ungated value.
     const { phone: _customerPhone, ...customerCols } = getTableColumns(customers)
 
@@ -217,7 +227,7 @@ export async function getByIdWithJoins(
         customer: {
           ...customerCols,
           ...profileCols(),
-          phone: gatedPhoneSql(canSeeUngatedPhone(ctx.ability)),
+          phone: gatedPhoneSql(canSeeUngatedPhone(ctx.actor.ability)),
           hasSentProposal: hasSentProposalSql(),
         },
         ownerName: user.name,
@@ -226,9 +236,9 @@ export async function getByIdWithJoins(
         ownerEmail: user.email,
         ownerPhone: user.phone,
         ownerYearsOfExperience: user.yearsOfExperience,
-        proposalCount: sql<number>`(SELECT count(*) FROM proposals p WHERE p.meeting_id = ${meetings.id})`.as('proposal_count'),
-        hasSentProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'sent')`.as('has_sent_proposal'),
-        hasApprovedProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'approved')`.as('has_approved_proposal'),
+        proposalCount: sql<number>`(SELECT count(*) FROM ${proposals} WHERE ${proposals.meetingId} = ${meetings.id} AND ${proposalReach})`.as('proposal_count'),
+        hasSentProposal: sql<boolean>`EXISTS (SELECT 1 FROM ${proposals} WHERE ${proposals.meetingId} = ${meetings.id} AND ${proposals.status} = 'sent' AND ${proposalReach})`.as('has_sent_proposal'),
+        hasApprovedProposal: sql<boolean>`EXISTS (SELECT 1 FROM ${proposals} WHERE ${proposals.meetingId} = ${meetings.id} AND ${proposals.status} = 'approved' AND ${proposalReach})`.as('has_approved_proposal'),
       })
       .from(meetings)
       .leftJoin(customers, eq(customers.id, meetings.customerId))
@@ -237,7 +247,7 @@ export async function getByIdWithJoins(
       .innerJoin(user, eq(user.id, meetings.ownerId))
       .where(and(
         eq(meetings.id, input.id),
-        ctx.scope ?? undefined,
+        permit(ctx, 'read', meetingServerSpec).sql,
       ))
 
     if (!row) {
@@ -247,7 +257,7 @@ export async function getByIdWithJoins(
     // leftJoin miss yields an all-null customer object rather than null.
     const customer = row.customer?.id ? row.customer : null
 
-    return { ...row, customer } as MeetingWithCustomer
+    return projectToReadFields(ctx.actor.ability, meetingServerSpec, { ...row, customer }, row) as MeetingWithCustomer
   })
 }
 
@@ -278,13 +288,13 @@ export async function listMeetingsForProject(
     const where = ctx.scope
       ? and(projectCondition, exists(db.select({ id: projects.id }).from(projects).where(and(eq(projects.id, input.projectId), ctx.scope)))) ?? projectCondition
       : projectCondition
-    const { meetings: rows } = await getMeetingsWithProposals(where)
+    const { meetings: rows } = await getMeetingsWithProposals(ctx, where)
     return rows
   })
 }
 
 /**
- * A meeting and the meetings it replaced, oldest first. `ctx.scope` gates the meeting asked for;
+ * A meeting and the meetings it replaced, oldest first. The Meeting read reach gates the meeting asked for;
  * the ones it replaced come with it, because they are the same visit.
  */
 export async function getRescheduleChain(
@@ -296,7 +306,7 @@ export async function getRescheduleChain(
       WITH RECURSIVE chain AS (
         SELECT ${meetings.id} AS id, ${meetings.rescheduledFromId} AS rescheduled_from_id, 0 AS depth
         FROM ${meetings}
-        WHERE ${and(eq(meetings.id, input.meetingId), ctx.scope ?? undefined)}
+        WHERE ${and(eq(meetings.id, input.meetingId), permit(ctx, 'read', meetingServerSpec).sql)}
         UNION ALL
         SELECT prior.id, prior.rescheduled_from_id, chain.depth + 1
         FROM meetings prior

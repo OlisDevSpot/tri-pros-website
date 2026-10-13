@@ -1,4 +1,4 @@
-import type { EntityServerSpec } from '@/shared/dal/server/types'
+import { defineEntitySpec } from '@/shared/dal/server/lib/define-spec'
 import { insertVoipCallSchema, selectVoipCallSchema, voipCalls } from '@/shared/db/schema'
 import { VOIP_CALL } from './constants'
 import { voipCallVisibility } from './visibility'
@@ -11,9 +11,10 @@ export const voipCallSchemas = {
   update: updateVoipCallSchema,
 }
 
-export const voipCallServerSpec = {
+export const voipCallServerSpec = defineEntitySpec({
   entityName: VOIP_CALL,
-  caslSubject: VOIP_CALL,
+  subject: VOIP_CALL,
+  conditionColumns: ['agentUserId'],
   visibility: voipCallVisibility,
   table: voipCalls,
   schemas: {
@@ -21,4 +22,4 @@ export const voipCallServerSpec = {
     update: updateVoipCallSchema,
     select: selectVoipCallSchema,
   },
-} satisfies EntityServerSpec<typeof voipCalls>
+})

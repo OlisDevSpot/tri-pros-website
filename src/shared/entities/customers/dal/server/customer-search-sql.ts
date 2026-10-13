@@ -15,7 +15,7 @@ import 'server-only'
  * The phone side matches the gated expression the row renders, so a caller can only find a
  * number it can already see; passing the raw column here would be a leak.
  */
-export function customerSearchWhere(search: string | undefined, ability: AppAbility | null): SQL | undefined {
+export function customerSearchWhere(search: string | undefined, ability: AppAbility): SQL | undefined {
   const digits = search ? toPhoneSearchDigits(search) : null
   return or(
     buildSearchWhere(search, [customers.name, customers.email]),

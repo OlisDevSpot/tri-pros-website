@@ -1,5 +1,4 @@
-import type { EntityServerSpec } from '@/shared/dal/server/types'
-
+import { defineSubEntitySpec } from '@/shared/dal/server/lib/define-spec'
 import {
   insertMeetingMessageSchema,
   meetingMessages,
@@ -14,14 +13,13 @@ const updateMeetingMessageSchema = insertMeetingMessageSchema.partial()
  * No visibility of its own: whoever can see the meeting sees its visit messages.
  * Who reaches the visit-message surfaces at all is the VisitMessages gate on the procedure.
  */
-export const meetingMessageServerSpec = {
+export const meetingMessageServerSpec = defineSubEntitySpec({
   entityName: MEETING_MESSAGE,
-  caslSubject: meetingServerSpec.caslSubject,
-  parent: { spec: meetingServerSpec, fk: meetingMessages.meetingId },
   table: meetingMessages,
   schemas: {
     insert: insertMeetingMessageSchema,
     update: updateMeetingMessageSchema,
     select: selectMeetingMessageSchema,
   },
-} satisfies EntityServerSpec<typeof meetingMessages>
+  parent: { spec: meetingServerSpec, fk: meetingMessages.meetingId, field: 'visitMessages' },
+})

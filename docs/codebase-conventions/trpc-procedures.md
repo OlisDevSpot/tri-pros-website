@@ -37,11 +37,11 @@ Entity routers are a directory of plain leaves, assembled by definition (no fact
 - other `*.router.ts` leaves — `createTRPCRouter({...})` importing procedures from `./procedures`.
 - `index.ts` — pure composition, one `createTRPCRouter({...})`.
 
-Never call `agentProcedure` directly inside an entity sub-router — you'd skip scope resolution. `src/trpc/DOCS.md` is canonical for the full rules (`procedures-defined-once`, `one-leaf-shape`, `pure-composition-index`).
+Never call `agentProcedure` directly inside the sub-router of a family that still resolves `ctx.scope` — you'd skip scope resolution. A compiled family (Customer, CustomerNote) has no scope step and uses `agentProcedure`; its DAL scopes through `permit`. `src/trpc/DOCS.md` is canonical for the full rules (`procedures-defined-once`, `one-leaf-shape`, `pure-composition-index`).
 
-**Why**: scope resolution injects `ctx.scope` (the per-user visibility predicate). Bypassing it means agents could read rows they shouldn't.
+**Why**: for a family not yet compiled, scope resolution injects `ctx.scope` (the per-user visibility predicate). Bypassing it means agents could read rows they shouldn't.
 **Reference impl**: `src/trpc/routers/proposals.router/procedures.ts`, `.../crud.router.ts`, `.../index.ts`; `src/trpc/lib/create-crud-router.ts`
-**Enforced by**: ADR-0002 + convention (a bare `agentProcedure` leaves `ctx.scope` null)
+**Enforced by**: ADR-0002 + convention (for a family not yet compiled, a bare `agentProcedure` leaves `ctx.scope` null)
 
 ### procedure-body-is-thin
 

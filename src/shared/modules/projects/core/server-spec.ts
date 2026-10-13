@@ -1,5 +1,4 @@
-import type { EntityServerSpec } from '@/shared/dal/server/types'
-
+import { defineEntitySpec } from '@/shared/dal/server/lib/define-spec'
 import {
   insertProjectSchema,
   projects,
@@ -37,9 +36,10 @@ export const projectSchemas = {
  * `projectProcedure` for `ctx.scope`; gate `delete` on `can('delete','Project')`)
  * is the SEPARATE #285 tail — routing through crud does NOT tighten scope.
  */
-export const projectServerSpec = {
+export const projectServerSpec = defineEntitySpec({
   entityName: PROJECT,
-  caslSubject: PROJECT,
+  subject: PROJECT,
+  conditionColumns: ['ownerId'],
   visibility: projectVisibility,
   table: projects,
   schemas: {
@@ -47,4 +47,4 @@ export const projectServerSpec = {
     update: updateProjectSchema,
     select: selectProjectSchema,
   },
-} satisfies EntityServerSpec<typeof projects>
+})

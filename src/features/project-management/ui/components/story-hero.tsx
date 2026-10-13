@@ -7,7 +7,7 @@ import { motion } from 'motion/react'
 import { InlineEditButton } from '@/shared/components/buttons/inline-edit-button'
 import { Badge } from '@/shared/components/ui/badge'
 import { ROOTS } from '@/shared/config/roots'
-import { useAbility } from '@/shared/domains/permissions/hooks'
+import { useAbility } from '@/shared/domains/permissions/client'
 import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
 
 interface NamedItem {

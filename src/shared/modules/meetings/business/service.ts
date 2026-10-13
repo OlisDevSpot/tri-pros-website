@@ -9,17 +9,22 @@ import type { MessagingInboundWebhookPayload } from '@/shared/services/providers
 
 import { publicUrl } from '@/shared/config/public-url'
 import { canRescheduleFromOutcome, outcomeRequiresReason, RESCHEDULED_ORIGINAL_REASON } from '@/shared/constants/enums/meetings'
+import { systemContext } from '@/shared/dal/server/lib/contexts'
 import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
-import { SYSTEM_CONTEXT, ThrowableDalError } from '@/shared/dal/server/types'
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
+import { projectToReadFields } from '@/shared/dal/server/lib/permissions/project'
+import { ThrowableDalError } from '@/shared/dal/server/types'
 import { customerNoteCrud } from '@/shared/entities/customer-notes/dal/server/crud'
 import { listNotesForEntity } from '@/shared/entities/customer-notes/dal/server/queries'
 import { findCustomersByPhone } from '@/shared/entities/customers/dal/server/queries'
+import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { claimHomeownerConfirmation, handOffVisit } from '@/shared/entities/meetings/dal/server/mutations'
 import { addParticipant, getParticipantsForMeeting } from '@/shared/entities/meetings/dal/server/participants'
 import { getRescheduleChain, getRescheduleSuccessorId } from '@/shared/entities/meetings/dal/server/queries'
 import { buildRescheduleNote, formatMeetingDateShort } from '@/shared/entities/meetings/lib/notes'
+import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 import { formatPhone } from '@/shared/lib/phone'
 import { rescheduledOriginalOutcome } from '@/shared/modules/meetings/core/lib/rescheduled-original-outcome'
 import { meetingMessageCrud } from '@/shared/modules/meetings/messages/dal/server/crud'
@@ -45,7 +50,7 @@ export const meetingBusinessService = {
    */
   async listInternalNotes(ctx: ScopedContext, input: { meetingId: string }): Promise<DalReturn<CustomerNoteWithAuthor[]>> {
     return dalDbOperation(async () => {
-      if (ctx.ability?.cannot('read', 'CustomerNote')) {
+      if (ctx.actor.ability.cannot('read', 'CustomerNote')) {
         throw new ThrowableDalError({ type: 'forbidden' })
       }
       const meeting = dalVerifySuccess(await meetingCrud.getById(ctx, { id: input.meetingId }))
@@ -74,6 +79,16 @@ export const meetingBusinessService = {
           type: 'precondition-failed',
           reason: `Outcome "${input.outcome}" does not require a reason; use crud.update.`,
         })
+      }
+
+      // The note is written after the outcome; its customer is probed first so a meeting is never
+      // changed by an actor whose note on it would then be refused.
+      const current = dalVerifySuccess(await meetingCrud.getById(ctx, { id: input.meetingId }))
+      if (!current) {
+        throw new ThrowableDalError({ type: 'not-found' })
+      }
+      if (current.customerId && !(await permit(ctx, 'read', customerServerSpec).probe(current.customerId))) {
+        throw new ThrowableDalError({ type: 'not-found' })
       }
 
       const updated = dalVerifySuccess(await meetingCrud.update(ctx, {
@@ -112,6 +127,9 @@ export const meetingBusinessService = {
       if (!original) {
         throw new ThrowableDalError({ type: 'not-found' })
       }
+      if (original.customerId && !(await permit(ctx, 'read', customerServerSpec).probe(original.customerId))) {
+        throw new ThrowableDalError({ type: 'not-found' })
+      }
       if (!canRescheduleFromOutcome(original.meetingOutcome)) {
         throw new ThrowableDalError({
           type: 'precondition-failed',
@@ -129,12 +147,16 @@ export const meetingBusinessService = {
         })
       }
 
+      // The replacement carries the whole sit, the deal structure included; the actor's own read may withhold that column.
+      const system = systemContext('derived:meeting-reschedule')
+      const carried = dalVerifySuccess(await meetingCrud.getById(system, { id: original.id }))
+
       // Visibility follows participants, so the replacement's owner is the original's owner participant.
       const participants = await getParticipantsForMeeting(input.meetingId)
       const ownerParticipant = participants.find(participant => participant.role === 'owner')
 
-      // SYSTEM_CONTEXT so create.before keeps this ownerId; an authed create would hand the meeting to the office user.
-      const replacement = dalVerifySuccess(await meetingCrud.create(SYSTEM_CONTEXT, {
+      // A system create keeps this ownerId: an authed create would resolve the owner from the acting user.
+      const replacement = dalVerifySuccess(await meetingCrud.create(system, {
         ownerId: ownerParticipant?.userId ?? original.ownerId,
         customerId: original.customerId,
         projectId: original.projectId,
@@ -144,8 +166,8 @@ export const meetingBusinessService = {
         scheduledFor: input.newScheduledFor,
         rescheduledFromId: original.id,
         // The insert schema takes undefined, not null.
-        flowStateJSON: original.flowStateJSON ?? undefined,
-        visitNote: original.visitNote ?? undefined,
+        flowStateJSON: carried?.flowStateJSON ?? undefined,
+        visitNote: carried?.visitNote ?? undefined,
       }))
 
       for (const participant of participants) {
@@ -193,7 +215,8 @@ export const meetingBusinessService = {
         }
       }
 
-      return { ...replacement, shareToken: original.shareToken }
+      // The system-created row is unprojected; the actor receives what their own read would.
+      return projectToReadFields(ctx.actor.ability, meetingServerSpec, { ...replacement, shareToken: original.shareToken }, replacement) as Meeting
     })
   },
   /**
@@ -249,7 +272,7 @@ export const meetingBusinessService = {
         status: text.status,
         reason: text.reason,
         voipMessageId: text.voipMessageId,
-        actorUserId: ctx.session?.user.id ?? null,
+        actorUserId: ctx.actor.userId,
       }))
 
       return { sms, invite }

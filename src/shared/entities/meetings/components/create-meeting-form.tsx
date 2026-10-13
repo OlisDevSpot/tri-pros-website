@@ -21,7 +21,7 @@ import {
 import { Textarea } from '@/shared/components/ui/textarea'
 import { creatableMeetingTypes } from '@/shared/constants/enums/meetings'
 import { useSession } from '@/shared/domains/auth/client'
-import { useAbility } from '@/shared/domains/permissions/hooks'
+import { useAbility } from '@/shared/domains/permissions/client'
 import { useCustomerNoteActions } from '@/shared/entities/customer-notes/hooks/use-customer-note-actions'
 import { SET_BY_NOT_INTERNAL } from '@/shared/entities/meetings/constants/set-by-not-internal'
 import { INTERNAL_NOTE_FIELD, VISIT_NOTE_FIELD, VISIT_NOTE_MAX_LENGTH } from '@/shared/entities/meetings/constants/visit-note'
@@ -62,6 +62,8 @@ export function CreateMeetingForm({
   const [projectId, setProjectId] = useState<string>(initialValues?.projectId ?? '')
   const ability = useAbility()
   const canPickSetter = ability.can('assign', 'Meeting')
+  // Editing replaces the deal structure's trades, which a viewer who cannot read them would wipe blind.
+  const canPickTrades = isEditMode ? ability.can('update', 'Meeting', 'flowStateJSON') : true
   const canAddInternalNote = ability.can('create', 'CustomerNote')
   const { data: session } = useSession()
   const selfId = session?.user.id ?? null
@@ -132,7 +134,7 @@ export function CreateMeetingForm({
         data: {
           meetingType,
           scheduledFor: scheduledFor.toISOString(),
-          flowStateJSON: tradeSelections.length > 0
+          flowStateJSON: canPickTrades && tradeSelections.length > 0
             ? { tradeSelections }
             : undefined,
         },
@@ -246,17 +248,19 @@ export function CreateMeetingForm({
       )}
 
       {/* Trade & Scope Selection */}
-      <div className="space-y-2">
-        <Label>
-          Trades & scopes
-          {' '}
-          <span className="text-muted-foreground text-xs font-normal">(optional — can be added during meeting)</span>
-        </Label>
-        <MeetingScopesPicker
-          value={tradeSelections}
-          onChange={setTradeSelections}
-        />
-      </div>
+      {canPickTrades && (
+        <div className="space-y-2">
+          <Label>
+            Trades & scopes
+            {' '}
+            <span className="text-muted-foreground text-xs font-normal">(optional — can be added during meeting)</span>
+          </Label>
+          <MeetingScopesPicker
+            value={tradeSelections}
+            onChange={setTradeSelections}
+          />
+        </div>
+      )}
 
       {/* An existing meeting's notes are edited from its Notes action. */}
       {!isEditMode && (

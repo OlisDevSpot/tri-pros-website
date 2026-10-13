@@ -8,10 +8,11 @@ import { projectsService } from '@/shared/modules/projects/service'
 import { listImportableProjectMedia } from '@/shared/modules/proposals/media/dal/server/queries'
 import { R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
-import { agentProcedure, createTRPCRouter } from '../../init'
+import { createTRPCRouter } from '../../init'
+import { projectAccessProcedure } from './procedures'
 
 export const mediaRouter = createTRPCRouter({
-  getUploadUrl: agentProcedure
+  getUploadUrl: projectAccessProcedure
     .input(z.object({
       projectId: z.string().uuid(),
       phase: z.enum(mediaPhases),
@@ -23,7 +24,7 @@ export const mediaRouter = createTRPCRouter({
       return { uploadUrl, pathKey, publicUrl: `${R2_PUBLIC_DOMAINS[bucket as R2BucketName] ?? ''}/${pathKey}` }
     }),
 
-  create: agentProcedure
+  create: projectAccessProcedure
     .input(insertProjectMediaFilesSchema.omit({ bucket: true }).extend({
       bucket: z.string().optional(),
     }))
@@ -31,20 +32,20 @@ export const mediaRouter = createTRPCRouter({
       dalToTrpc(await projectsService.media.create(ctx, { ...input, bucket: input.bucket ?? projectMediaStore.bucket })),
     ),
 
-  retryOptimization: agentProcedure
+  retryOptimization: projectAccessProcedure
     .input(z.object({ mediaFileId: z.number() }))
     .mutation(async ({ ctx, input }) => {
       dalToTrpc(await projectsService.media.retryOptimization(ctx, { id: input.mediaFileId }))
       return { success: true }
     }),
 
-  delete: agentProcedure
+  delete: projectAccessProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       dalToTrpc(await projectsService.media.delete(ctx, { id: input.id }))
     }),
 
-  reorder: agentProcedure
+  reorder: projectAccessProcedure
     .input(z.object({
       updates: z.array(z.object({ id: z.number(), sortOrder: z.number().int() })),
     }))
@@ -52,7 +53,7 @@ export const mediaRouter = createTRPCRouter({
       dalToTrpc(await projectsService.media.reorder(ctx, input))
     }),
 
-  movePhase: agentProcedure
+  movePhase: projectAccessProcedure
     .input(z.object({
       ids: z.array(z.number()).min(1),
       phase: z.enum(mediaPhases),
@@ -61,7 +62,7 @@ export const mediaRouter = createTRPCRouter({
       dalToTrpc(await projectsService.media.movePhase(ctx, input))
     }),
 
-  bulkDelete: agentProcedure
+  bulkDelete: projectAccessProcedure
     .input(z.object({ ids: z.array(z.number()).min(1) }))
     .mutation(async ({ ctx, input }) => {
       // A row that is already gone is not an error for a bulk selection (the user
@@ -74,7 +75,7 @@ export const mediaRouter = createTRPCRouter({
       }
     }),
 
-  rename: agentProcedure
+  rename: projectAccessProcedure
     .input(z.object({
       id: z.number(),
       name: z.string().min(1).max(80),
@@ -83,7 +84,7 @@ export const mediaRouter = createTRPCRouter({
       dalToTrpc(await projectsService.media.update(ctx, { id: input.id, data: { name: input.name } }))
     }),
 
-  toggleHero: agentProcedure
+  toggleHero: projectAccessProcedure
     .input(z.object({
       id: z.number(),
       isHeroImage: z.boolean(),
@@ -92,7 +93,7 @@ export const mediaRouter = createTRPCRouter({
       dalToTrpc(await projectsService.media.setHero(ctx, input))
     }),
 
-  listImportableProposalMedia: agentProcedure
+  listImportableProposalMedia: projectAccessProcedure
     .input(z.object({ projectId: z.string().uuid() }))
     .query(async ({ input }) => {
       const rows = await listImportableProjectMedia(input.projectId)
@@ -124,7 +125,7 @@ export const mediaRouter = createTRPCRouter({
       return [...byProposal.values()]
     }),
 
-  importFromProposal: agentProcedure
+  importFromProposal: projectAccessProcedure
     .input(z.object({ projectId: z.string().uuid(), proposalMediaFileIds: z.array(z.number()).min(1) }))
     .mutation(async ({ ctx, input }) => {
       return dalToTrpc(await projectsService.media.importFromProposal(ctx, input))

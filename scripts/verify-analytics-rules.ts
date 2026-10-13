@@ -102,7 +102,7 @@ assert.deepEqual(
 )
 assert.deepEqual(
   meetingOutcomes.filter(o => MEETING_OUTCOME_SIT[o] === 'not_sat').sort(),
-  ['cancelled', 'no_show', 'nra', 'reschedule_needed'],
+  ['cancelled', 'no_show', 'nra', 'reschedule_needed', 'rescheduled'],
   'not-sat outcomes',
 )
 assert.equal(MEETING_OUTCOME_SIT.not_set, 'unknown', 'not_set is unknown, never a sit')

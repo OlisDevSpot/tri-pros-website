@@ -1,14 +1,13 @@
-import type { EntityServerSpec } from '@/shared/dal/server/types'
-
 import { z } from 'zod'
 
+import { defineEntitySpec } from '@/shared/dal/server/lib/define-spec'
 import {
   customerNotes,
   insertCustomerNoteSchema,
   selectCustomerNoteSchema,
 } from '@/shared/db/schema/customer-notes'
+import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { CUSTOMER_NOTE } from './constants'
-import { customerNoteVisibility } from './visibility'
 
 // `createInsertSchema` derives bounds from the Drizzle column (text — no
 // length limit), so `content` needs an explicit bound here. Restores the
@@ -29,18 +28,16 @@ export const customerNoteSchemas = {
   update: updateCustomerNoteSchema,
 }
 
-// Lifecycle hooks (customer-visibility probe + authorId stamp on create,
-// author-gate on update/delete) live in the config factory in
-// ../dal/server/crud.ts — NOT on this spec. That factory takes `crudHandlers`
-// as an arg, which is why the old TDZ-avoiding lazy import is gone.
-export const customerNoteServerSpec = {
+// The authorId stamp on create lives in the config factory in ../dal/server/crud.ts — NOT on this spec.
+export const customerNoteServerSpec = defineEntitySpec({
   entityName: CUSTOMER_NOTE,
-  caslSubject: CUSTOMER_NOTE,
-  visibility: customerNoteVisibility,
+  subject: CUSTOMER_NOTE,
+  conditionColumns: ['authorId'],
+  parent: { spec: customerServerSpec, fk: customerNotes.customerId },
   table: customerNotes,
   schemas: {
     insert: insertCustomerNoteSchemaLinked,
     update: updateCustomerNoteSchema,
     select: selectCustomerNoteSchema,
   },
-} satisfies EntityServerSpec<typeof customerNotes>
+})

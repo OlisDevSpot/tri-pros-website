@@ -1,3 +1,4 @@
+import type { MeetingOutcome } from '@/shared/constants/enums/meetings'
 import type { ProjectStatusBucket } from '@/shared/constants/enums/pipelines'
 import type { DeadPipelineStage } from '@/shared/domains/pipelines/constants/dead-pipeline'
 import type { FreshPipelineStage } from '@/shared/domains/pipelines/constants/fresh-pipeline'
@@ -76,12 +77,8 @@ export interface CustomerPipelineRawData {
   customerCity: string
   meetingCount: number
   proposalCount: number
-  hasPastMeeting: boolean
-  hasActiveMeeting: boolean
-  hasScheduledFutureMeeting: boolean
-  hasConfirmedFutureMeeting: boolean
-  hasFollowUpNeeded: boolean
-  hasRescheduleNeeded: boolean
+  liveMeeting: { started: boolean, confirmed: boolean } | null
+  latestOutcome: MeetingOutcome | null
   proposalStatuses: string[]
   hasSentContract: boolean
   latestActivityAt: string | null

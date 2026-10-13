@@ -1,5 +1,4 @@
-import type { EntityServerSpec } from '@/shared/dal/server/types'
-
+import { defineEntitySpec } from '@/shared/dal/server/lib/define-spec'
 import {
   insertLeadSourceSchema,
   leadSourcesTable,
@@ -21,9 +20,10 @@ export const leadSourceSchemas = {
 // Lifecycle logic (unique-slug + token generation on create, slug-rotation
 // token-refresh on update, attached-customer delete precondition, duplicate
 // copy semantics) lives in the config factory in ../dal/server/crud.ts.
-export const leadSourceServerSpec = {
+export const leadSourceServerSpec = defineEntitySpec({
   entityName: LEAD_SOURCE,
-  caslSubject: LEAD_SOURCE,
+  subject: LEAD_SOURCE,
+  conditionColumns: [],
   visibility: leadSourceVisibility,
   table: leadSourcesTable,
   schemas: {
@@ -31,4 +31,4 @@ export const leadSourceServerSpec = {
     update: updateLeadSourceSchema,
     select: selectLeadSourceSchema,
   },
-} satisfies EntityServerSpec<typeof leadSourcesTable>
+})

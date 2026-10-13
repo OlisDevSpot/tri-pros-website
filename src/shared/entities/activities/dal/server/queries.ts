@@ -21,12 +21,12 @@ export type ActivityListInput = z.infer<typeof activityListInputSchema>
 
 export type ActivityListRow = typeof activities.$inferSelect & { ownerName: string | null, ownerImage: string | null }
 
-// Agents see only their own activities; omni and system callers see all. No session on a scoped caller matches nothing.
+// Agents see only their own activities; omni and system callers see all. No user on a scoped caller matches nothing.
 function activityOwnerScope(ctx: ScopedContext): SQL | undefined {
-  if (!ctx.ability || ctx.ability.can('manage', 'all')) {
+  if (ctx.actor.ability.can('manage', 'all')) {
     return undefined
   }
-  return eq(activities.ownerId, ctx.session?.user.id ?? '')
+  return eq(activities.ownerId, ctx.actor.userId ?? '')
 }
 
 export async function listActivities(ctx: ScopedContext, input: ActivityListInput): Promise<DalReturn<PaginatedResult<ActivityListRow>>> {

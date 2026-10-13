@@ -1,8 +1,10 @@
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { formatAsDollars } from '@/shared/lib/formatters'
 import { getFullView } from '@/shared/modules/proposals/core/dal/server/queries'
 import { buildPricingBreakdown } from '@/shared/modules/proposals/core/lib/financials'
 import { toFundingInputs } from '@/shared/modules/proposals/core/lib/funding-columns'
+import { SHARE_LINK_LIMITS } from '@/shared/modules/proposals/core/lib/share-link-rate-limit'
+import { shareRouteContext } from '@/shared/modules/proposals/core/lib/share-route-context'
+import { toHomeownerProposalView } from '@/shared/modules/proposals/core/lib/to-homeowner-proposal-view'
 
 function stripHtml(html: string): string {
   return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
@@ -15,24 +17,16 @@ export async function GET(
   const { proposalId } = await params
   const token = new URL(req.url).searchParams.get('token')
 
-  if (!token) {
-    return Response.json({ error: 'Missing token' }, { status: 401 })
-  }
-
-  // TODO: Rebuild as procedure → QStash job → ai.service → DAL update (see spec)
-  const result = await getFullView(SYSTEM_CONTEXT, { id: proposalId })
-  if (!result.success) {
+  const share = await shareRouteContext(token)
+  const result = share ? await getFullView(share.ctx, { id: proposalId }) : null
+  // One answer for a wrong token and a missing proposal, so nothing reveals which ids exist.
+  if (!share || !result?.success || !result.data) {
     return Response.json({ error: 'Not found' }, { status: 404 })
   }
-  const proposal = result.data
-
-  if (!proposal) {
-    return Response.json({ error: 'Not found' }, { status: 404 })
+  if (share.viaShareLink && token && !(await SHARE_LINK_LIMITS.document(token)).success) {
+    return Response.json({ error: 'Too many requests' }, { status: 429 })
   }
-
-  if (proposal.token !== token) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const proposal = toHomeownerProposalView(share.ctx.actor.ability, result.data)
 
   const customer = proposal.customer
   const proj = proposal.projectJSON.data

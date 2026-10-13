@@ -5,18 +5,17 @@ import { PARTICIPANT_ROLES, SETTER_ROLES } from '@/shared/entities/meetings/cons
 import { getByIdWithJoins, listMeetings, listMeetingsForProject, meetingListInputSchema } from '@/shared/entities/meetings/dal/server/queries'
 import { listUsersByRoles } from '@/shared/entities/users/dal/server/queries'
 import { meetingService } from '@/shared/modules/meetings/service'
-import { createTRPCRouter } from '@/trpc/init'
+import { agentProcedure, createTRPCRouter } from '@/trpc/init'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 
 import { projectProcedure } from '../projects.router/procedures'
-import { meetingProcedure } from './procedures'
 
 export const readsRouter = createTRPCRouter({
-  list: meetingProcedure
+  list: agentProcedure
     .input(meetingListInputSchema)
     .query(async ({ ctx, input }) => dalToTrpc(await listMeetings(ctx, input))),
 
-  getByIdWithJoins: meetingProcedure
+  getByIdWithJoins: agentProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
       const row = dalToTrpc(await getByIdWithJoins(ctx, input))
@@ -26,7 +25,7 @@ export const readsRouter = createTRPCRouter({
       return row
     }),
 
-  internalNotes: meetingProcedure
+  internalNotes: agentProcedure
     .input(z.object({ meetingId: z.string().uuid() }))
     .query(async ({ ctx, input }) => dalToTrpc(await meetingService.business.listInternalNotes(ctx, input))),
 
@@ -36,10 +35,10 @@ export const readsRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => dalToTrpc(await listMeetingsForProject(ctx, input))),
 
   // `setter` adds dispatchers, who book meetings but never sit them, so they stay out of the participant picker.
-  getInternalUsers: meetingProcedure
+  getInternalUsers: agentProcedure
     .input(z.object({ purpose: z.enum(['participant', 'setter']) }).optional())
     .query(async ({ ctx, input }) => {
-      if (ctx.ability.cannot('assign', 'Meeting')) {
+      if (ctx.actor.ability.cannot('assign', 'Meeting')) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to assign meeting owners' })
       }
       if (input?.purpose === 'setter') {

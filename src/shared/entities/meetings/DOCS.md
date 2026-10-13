@@ -48,7 +48,7 @@ Participant roles describe a user's function **in the context of a specific meet
 - **`co_owner`**: a second rep with equal functional standing. At most one per meeting (partial unique index).
 - **`helper`**: any number of additional participants. Unconstrained.
 
-**Write capability is separate from participant role.** Whether a user can create/read/update a Meeting at all comes from the CASL `agent` role (`can('read'|'create'|'update'|'own', 'Meeting')` — see `src/shared/domains/permissions/abilities.ts`), not from holding a participant role. A participant row only describes function within a meeting the user is already permitted to act on (dispatch status, visibility bridging) — it is not itself the permission gate.
+**Write capability is separate from participant role.** Whether a user can create/read/update a Meeting at all comes from the CASL `agent` role (`can('read'|'create'|'update'|'own', 'Meeting')` — see `src/shared/domains/permissions/rules/agent.ts`), not from holding a participant role. A participant row only describes function within a meeting the user is already permitted to act on (dispatch status, visibility bridging) — it is not itself the permission gate.
 
 The `(meetingId, userId)` unique constraint prevents the same user holding multiple roles on one meeting.
 
@@ -73,13 +73,13 @@ A meeting is **dispatched** when it has a primary rep — either explicit or imp
 
 ### visibility-via-participation
 
-A non-omni agent sees a meeting only if they are a participant (any of `owner | co_owner | helper`). Super-admins (`ability.can('manage', 'all')`) bypass scoping.
+An agent sees a meeting only if they are a participant (any of `owner | co_owner | helper`); a dispatcher sees every meeting; super-admins (`manage all`) bypass scoping.
 
 This predicate cascades upward to customers (`../customers/DOCS.md#visibility-via-meeting-participation`) and downward to proposals (`../../modules/proposals/core/DOCS.md#visibility-via-meeting-participation`).
 
 **Why**: meeting participation is the single source of "did this agent work with this customer." Every visibility predicate in the entity graph derives from here.
-**Reference impl**: `dal/server/participants.ts:userParticipatesInMeeting`
-**Enforced by**: `scopeMiddleware(meetingServerSpec)` on every entity procedure (when meetings is migrated to the entity server system)
+**Reference impl**: the agent's `read Meeting` rule in `src/shared/domains/permissions/rules/agent.ts` (`$participatesViaMeeting` via `self`), whose SQL body is `src/shared/dal/server/lib/permissions/operators/meeting-participation.ts`. Dispatchers hold a bare `read Meeting` (every meeting) with `flowStateJSON` withheld; `dal/server/participants.ts:userParticipatesInMeeting` remains for the families not yet on compiled rules.
+**Enforced by**: `permit(ctx, 'read', meetingServerSpec)` inside `createCrudDal` and the hand-written meeting readers (`listMeetings`, `getByIdWithJoins`, `getRescheduleChain`, the kanban's meeting arms).
 
 ### meeting-type-vs-pipeline-are-orthogonal
 

@@ -1,76 +1,33 @@
-// Token-or-session dual-credential middleware.
-
-import type { PgColumn } from 'drizzle-orm/pg-core'
-
-import type { EntityServerSpec } from '@/shared/dal/server/types'
+import type { AnyServerSpec } from '@/shared/dal/server/types'
 
 import { TRPCError } from '@trpc/server'
-import { eq } from 'drizzle-orm'
 
-import { resolveEffectiveScope } from '@/shared/dal/server/lib/scope'
-import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
+import { bearerContext } from '@/shared/dal/server/lib/contexts'
+import { subjectOf } from '@/shared/dal/server/lib/define-spec'
+import { isCompiled } from '@/shared/dal/server/lib/scope'
+import { BEARER_RULES } from '@/shared/domains/permissions/rules/bearer'
 import { createMiddleware } from '@/trpc/init'
 
-/** Token path → eq(tokenColumn, token) + ability null. Session path → normal scope resolution. */
-export function shareableMiddleware(spec: EntityServerSpec) {
-  // Cast: Drizzle's PgTable type doesn't expose columns as a keyed record.
-  // Dynamic column lookup by name (from spec.shareable.tokenColumn) requires
-  // treating the table object as a record. No typed API exists for this.
-  const table = spec.table as unknown as Record<string, PgColumn | undefined>
-  const tokenColumnName = spec.shareable?.tokenColumn
-  const tokenColumn = tokenColumnName ? table[tokenColumnName] : undefined
-
-  if (spec.shareable && !tokenColumn) {
-    throw new Error(
-      `[shareable-middleware] spec.shareable.tokenColumn '${tokenColumnName}' `
-      + `is not a column on ${spec.entityName}'s table.`,
-    )
+/**
+ * A session wins: staff who open a share link act as staff. Without one, the token must name a row,
+ * and the request then holds only that row's share-link rules. A wrong token and a missing row answer the same.
+ */
+export function shareableMiddleware(spec: AnyServerSpec) {
+  // The session path passes no legacy row filter, so only a compiled spec with share-link rules is safe here.
+  if (!isCompiled(spec) || !BEARER_RULES[subjectOf(spec)]) {
+    throw new Error(`[shareableMiddleware] ${spec.entityName} has no share-link rules`)
   }
-
   return createMiddleware(async ({ ctx, next, getRawInput }) => {
-    // Cast: tRPC v11's getRawInput() returns Promise<unknown> by design —
-    // input hasn't been Zod-validated yet. We peek at the token field before
-    // validation for the dual-credential branching decision.
+    if (ctx.session) {
+      return next({ ctx: { ...ctx, session: ctx.session } })
+    }
+    // Read before validation: which credential applies decides the context the input runs under.
     const rawInput = await getRawInput() as Record<string, unknown> | undefined
-    const token = rawInput?.token as string | undefined
-
-    // ── Token path ───────────────────────────────────────────────────────
-    // Token IS authorization. No session/ability needed.
-    if (token && tokenColumn) {
-      return next({
-        ctx: {
-          ...ctx,
-          session: ctx.session,
-          ability: null,
-          scope: eq(tokenColumn, token),
-        },
-      })
+    const token = typeof rawInput?.token === 'string' ? rawInput.token : ''
+    const bearer = token ? await bearerContext(spec, token) : null
+    if (!bearer) {
+      throw new TRPCError({ code: 'UNAUTHORIZED', message: 'A valid share link or a signed-in session is required' })
     }
-
-    // ── Session path ─────────────────────────────────────────────────────
-    // No token — require authenticated session.
-    if (!ctx.session) {
-      throw new TRPCError({
-        code: 'UNAUTHORIZED',
-        message: 'A valid token or authenticated session is required',
-      })
-    }
-
-    const ability = defineAbilitiesFor({
-      id: ctx.session.user.id,
-      role: ctx.session.user.role,
-    })
-
-    const isOmni = ability.can('manage', 'all')
-    const scope = isOmni ? null : resolveEffectiveScope(spec, { userId: ctx.session.user.id, ability })
-
-    return next({
-      ctx: {
-        ...ctx,
-        session: ctx.session,
-        ability,
-        scope,
-      },
-    })
+    return next({ ctx: { ...ctx, actor: bearer.actor, scope: null } })
   })
 }

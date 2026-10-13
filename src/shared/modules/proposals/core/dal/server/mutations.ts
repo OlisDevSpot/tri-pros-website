@@ -5,10 +5,12 @@ import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import { and, eq, sql } from 'drizzle-orm'
 
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { ThrowableDalError } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { proposals } from '@/shared/db/schema/proposals'
 import { isProposalFrozen } from '@/shared/modules/proposals/core/lib/proposal-lock'
+import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 
 // ── recomputeProposalFinancials ──────────────────────────────────────────
 
@@ -64,7 +66,7 @@ export async function setCashInDeal(
         contractDeclinedAt: proposals.contractDeclinedAt,
       })
       .from(proposals)
-      .where(and(eq(proposals.id, input.proposalId), ctx.scope ?? undefined))
+      .where(and(eq(proposals.id, input.proposalId), permit(ctx, 'update', proposalServerSpec, ['cashInDealCents']).sql))
     if (!proposal) {
       throw new ThrowableDalError({ type: 'not-found' })
     }
@@ -72,6 +74,7 @@ export async function setCashInDeal(
       throw new ThrowableDalError({ type: 'precondition-failed', reason: 'proposal_frozen' })
     }
 
+    // The select above is the reach check: an unreachable or unwritable row is not found.
     await db.update(proposals)
       .set({ cashInDealCents: Math.round(input.cashInDeal * 100) })
       .where(eq(proposals.id, input.proposalId))

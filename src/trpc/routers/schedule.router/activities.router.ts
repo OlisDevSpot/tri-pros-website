@@ -79,7 +79,7 @@ export const activitiesRouter = createTRPCRouter({
       metaJSON: z.record(z.string(), z.unknown()).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const isOmni = ctx.ability.can('manage', 'all')
+      const isOmni = ctx.actor.ability.can('manage', 'all')
       const { id, ...rest } = input
 
       if (!isOmni) {
@@ -133,7 +133,7 @@ export const activitiesRouter = createTRPCRouter({
   delete: agentProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const isOmni = ctx.ability.can('manage', 'all')
+      const isOmni = ctx.actor.ability.can('manage', 'all')
 
       if (!isOmni) {
         const [existing] = await db

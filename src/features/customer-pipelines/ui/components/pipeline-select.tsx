@@ -3,7 +3,7 @@
 import type { Pipeline } from '@/shared/constants/enums/pipelines'
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
-import { useAbility } from '@/shared/domains/permissions/hooks'
+import { useAbility } from '@/shared/domains/permissions/client'
 import { PIPELINE_LABELS } from '@/shared/domains/pipelines/constants/pipeline-registry'
 import { getAccessiblePipelines } from '@/shared/domains/pipelines/lib/get-accessible-pipelines'
 

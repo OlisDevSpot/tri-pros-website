@@ -2,7 +2,6 @@ import { TRPCError } from '@trpc/server'
 import z from 'zod'
 
 import { paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { setVoipCampaignsPolicy } from '@/shared/entities/lead-sources/dal/server/mutations'
 import { listLeadSources } from '@/shared/entities/lead-sources/dal/server/queries'
 import { countLeadsByStatusPerSource, listActiveCustomerIdsBySource, listEnrolledLeadsBySource, listLeadsPaginated } from '@/shared/entities/voip-campaign-contacts/dal/server/queries'
@@ -114,8 +113,8 @@ export const voipCampaignsRouter = createTRPCRouter({
   /** campaignId omitted → the source's default campaign. */
   enroll: superAdminProcedure
     .input(z.object({ customerId: z.string().uuid(), campaignId: z.string().uuid().optional() }))
-    .mutation(async ({ input }) => {
-      return dalToTrpc(await campaignEnrollmentService.enroll(SYSTEM_CONTEXT, {
+    .mutation(async ({ ctx, input }) => {
+      return dalToTrpc(await campaignEnrollmentService.enroll(ctx, {
         customerId: input.customerId,
         campaignId: input.campaignId,
         allowNonLead: true,
@@ -134,11 +133,11 @@ export const voipCampaignsRouter = createTRPCRouter({
       return { ok: true }
     }),
 
-  /** Runs under SYSTEM_CONTEXT, so this must stay super-admin-only — a scoped agent could otherwise disqualify a customer it can't see. */
+  // Super-admin-only: a scoped agent could otherwise drop any customer out of a campaign.
   disqualify: superAdminProcedure
     .input(z.object({ customerId: z.string().uuid() }))
-    .mutation(async ({ input }) => {
-      return dalToTrpc(await campaignEnrollmentService.unenroll(SYSTEM_CONTEXT, {
+    .mutation(async ({ ctx, input }) => {
+      return dalToTrpc(await campaignEnrollmentService.unenroll(ctx, {
         customerId: input.customerId,
         reason: 'disqualified',
       }))
@@ -146,8 +145,8 @@ export const voipCampaignsRouter = createTRPCRouter({
 
   removeFromCampaign: superAdminProcedure
     .input(z.object({ customerId: z.string().uuid() }))
-    .mutation(async ({ input }) => {
-      return dalToTrpc(await campaignEnrollmentService.unenroll(SYSTEM_CONTEXT, {
+    .mutation(async ({ ctx, input }) => {
+      return dalToTrpc(await campaignEnrollmentService.unenroll(ctx, {
         customerId: input.customerId,
         reason: 'removed',
       }))

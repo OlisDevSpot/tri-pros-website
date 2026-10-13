@@ -1,4 +1,4 @@
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { systemContext } from '@/shared/dal/server/lib/contexts'
 import { justcallDispositionToUnenrollReason } from '@/shared/services/providers/justcall/constants'
 import { justcallWebhookAdapter } from '@/shared/services/providers/justcall/webhooks/adapter'
 import { notifyLastInteractingAgentJob } from '@/shared/services/providers/upstash/jobs/notify-last-interacting-agent'
@@ -59,7 +59,7 @@ export async function POST(req: Request): Promise<Response> {
               reason: 'stop_keyword',
               addedByUserId: null,
             })
-            await campaignEnrollmentService.unenroll(SYSTEM_CONTEXT, {
+            await campaignEnrollmentService.unenroll(systemContext('webhook:justcall'), {
               customerId: customer.id,
               reason: 'opted_out',
             })
@@ -91,7 +91,7 @@ export async function POST(req: Request): Promise<Response> {
                 addedByUserId: null,
               })
             }
-            await campaignEnrollmentService.unenroll(SYSTEM_CONTEXT, {
+            await campaignEnrollmentService.unenroll(systemContext('webhook:justcall'), {
               customerId: customer.id,
               reason,
             })

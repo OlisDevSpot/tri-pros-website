@@ -52,7 +52,6 @@ export function ContractStatusPanel({
     return (
       <AgentContractView
         proposalId={proposalId}
-        token={token ?? ''}
         customerEmail={customerEmail ?? null}
         contractStatus={contractStatus ?? null}
         proposalKind={proposalKind}

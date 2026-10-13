@@ -7,6 +7,7 @@ import { DashboardSnapshotChips } from '@/features/agent-dashboard/ui/components
 import { DashboardSnapshotCounts } from '@/features/agent-dashboard/ui/components/dashboard-snapshot-counts'
 import { useLoadingScreenRead } from '@/shared/dal/client/hooks/use-loading-screen-read'
 import { staticDataViewInput } from '@/shared/dal/lib/query/derive-data-view-input'
+import { useAbility } from '@/shared/domains/permissions/client'
 import { HydrationErrorBoundary } from '@/trpc/components/hydration-error-boundary'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -16,16 +17,24 @@ import { useTRPC } from '@/trpc/helpers'
  */
 export function DashboardSnapshotStrip() {
   const trpc = useTRPC()
+  const ability = useAbility()
+  // A count of something the viewer cannot read is neither fetched nor shown; the page skips its prefetch too.
+  const readsProposals = ability.can('read', 'Proposal')
+  const readsProjects = ability.can('read', 'Project')
   const meetingsToday = useLoadingScreenRead(trpc.meetingsRouter.reads.list.queryOptions(meetingsWindowInput('today')))
   const awaitingSignature = useLoadingScreenRead(trpc.proposalsRouter.business.list.queryOptions(awaitingProposalsInput()))
   const activeProjects = useLoadingScreenRead(trpc.projectsRouter.crud.list.queryOptions(staticDataViewInput(DASHBOARD_ACTIVE_PROJECTS_QUERY)))
-  if (!meetingsToday || !awaitingSignature || !activeProjects) {
+  if (!meetingsToday || (readsProposals && !awaitingSignature) || (readsProjects && !activeProjects)) {
     return <DashboardSnapshotChips />
   }
   return (
     <HydrationErrorBoundary fallback={<DashboardSnapshotChips />}>
       <Suspense fallback={<DashboardSnapshotChips />}>
-        <DashboardSnapshotCounts meetingsToday={meetingsToday} awaitingSignature={awaitingSignature} activeProjects={activeProjects} />
+        <DashboardSnapshotCounts
+          meetingsToday={meetingsToday}
+          awaitingSignature={readsProposals ? awaitingSignature ?? undefined : undefined}
+          activeProjects={readsProjects ? activeProjects ?? undefined : undefined}
+        />
       </Suspense>
     </HydrationErrorBoundary>
   )

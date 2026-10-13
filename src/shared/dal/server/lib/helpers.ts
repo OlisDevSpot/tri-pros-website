@@ -1,12 +1,8 @@
-import type { DalReturn, EntityServerSpec, ScopedContext } from '../types'
-
-import type { UserRole } from '@/shared/constants/enums'
+import type { DalReturn, ScopedContext } from '../types'
 
 import { db } from '@/shared/db'
-import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
 
 import { dalError, dalSuccess, ThrowableDalError } from '../types'
-import { resolveEffectiveScope } from './scope'
 
 export async function dalDbOperation<T>(
   operation: () => Promise<T>,
@@ -37,20 +33,6 @@ export async function withTx<T>(
   if (ctx.tx)
     return fn(ctx)
   return db.transaction(tx => fn({ ...ctx, tx }))
-}
-
-export function buildUserContext(
-  userId: string,
-  userRole: UserRole,
-  spec: EntityServerSpec,
-): ScopedContext {
-  const ability = defineAbilitiesFor({ id: userId, role: userRole })
-  const isOmni = ability.can('manage', 'all')
-  return {
-    session: { user: { id: userId, role: userRole } } as ScopedContext['session'],
-    ability,
-    scope: isOmni ? null : resolveEffectiveScope(spec, { userId, ability }),
-  }
 }
 
 /** For DAL-to-DAL composition; tRPC procedures use `dalToTrpc()` instead. */

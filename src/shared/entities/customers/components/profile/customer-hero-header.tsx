@@ -4,7 +4,7 @@ import type { useCustomerEditForm } from '@/shared/entities/customers/hooks/use-
 import type { CustomerProfileData } from '@/shared/entities/customers/types'
 import { useState } from 'react'
 import { Input } from '@/shared/components/ui/input'
-import { useAbility } from '@/shared/domains/permissions/hooks'
+import { useAbility } from '@/shared/domains/permissions/client'
 import { canAgentSeePhone } from '@/shared/entities/customers/lib/can-see-phone'
 import { formatCustomerAddress } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
@@ -28,12 +28,14 @@ export function CustomerHeroHeader({ customer, editForm, layout }: Props) {
   const phoneUnlocked = canAgentSeePhone(ability, customer)
   const isPhoto = layout === 'photo'
   const surface = isPhoto ? 'image' : 'card'
-  // The phone hero keeps call and email as discs beside the name; edit mode needs the full rows.
-  const showButtons = isPhoto && !editForm.isEditing
+  // The phone hero adds call and email discs in thumb reach beside the name; the rows below still
+  // show the number and the address, since a disc hides the value. Edit mode swaps rows for inputs.
+  const showDiscs = isPhoto && !editForm.isEditing
   const address = formatCustomerAddress({ address: customer.address, city: customer.city, state: customer.state, zip: customer.zip })
 
   return (
-    <div className="flex min-w-0 flex-col gap-1.5">
+    // The step from the name to the contact block is wider than the step between the block's rows.
+    <div className="flex min-w-0 flex-col gap-2.5">
       <div className="flex min-w-0 items-center gap-1.5">
         {editForm.isEditing && editForm.canEditContact
           ? (
@@ -45,26 +47,23 @@ export function CustomerHeroHeader({ customer, editForm, layout }: Props) {
               />
             )
           : (
+              // A phone has no hover to reveal a truncated name, so a long name wraps instead.
               <h2
-                className={cn('min-w-0 truncate text-2xl leading-tight font-semibold tracking-tight', isPhoto ? 'text-white' : 'text-foreground')}
+                className={cn('line-clamp-2 min-w-0 text-2xl leading-tight font-semibold tracking-tight', isPhoto ? 'text-white' : 'text-foreground')}
                 title={customer.name}
               >
                 {customer.name}
               </h2>
             )}
         <CustomerEditToggle editForm={editForm} />
-        {showButtons && <CustomerContactButtons customer={customer} />}
+        {showDiscs && <CustomerContactButtons customer={customer} />}
       </div>
 
       {/* Rows carry their own hover padding; the negative margin lines their text up with the name. */}
       <div className="-mx-2.5 flex min-w-0 flex-col">
         <CustomerContactAddressRow address={address} canEdit={editForm.canEditContact} onEdit={() => setAddressDialogOpen(true)} surface={surface} />
-        {!showButtons && (
-          <>
-            <CustomerContactPhoneRow customer={customer} editForm={editForm} phoneUnlocked={phoneUnlocked} surface={surface} />
-            <CustomerContactEmailRow customer={customer} editForm={editForm} surface={surface} />
-          </>
-        )}
+        <CustomerContactPhoneRow customer={customer} editForm={editForm} phoneUnlocked={phoneUnlocked} surface={surface} />
+        <CustomerContactEmailRow customer={customer} editForm={editForm} surface={surface} />
       </div>
 
       <AddressEditDialog

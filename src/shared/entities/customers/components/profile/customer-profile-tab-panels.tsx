@@ -3,6 +3,7 @@
 import type { useCustomerEditForm } from '@/shared/entities/customers/hooks/use-customer-edit-form'
 import type { CustomerProfileData } from '@/shared/entities/customers/types'
 import { TabsContent } from '@/shared/components/ui/tabs'
+import { Can } from '@/shared/domains/permissions/ui/can'
 import { MeetingActionsHost } from '@/shared/modules/meetings/core/components/meeting-actions-host'
 import { ProjectActionsHost } from '@/shared/modules/projects/core/components/project-actions-host'
 import { ProposalActionsHost } from '@/shared/modules/proposals/core/components/proposal-actions-host'
@@ -29,9 +30,11 @@ export function CustomerProfileTabPanels({ data, editForm, highlightMeetingId, o
           <TabsContent className="mt-0 p-4 md:p-6" value="meetings">
             <CustomerMeetingsList highlightMeetingId={highlightMeetingId} meetings={data.meetings} />
           </TabsContent>
-          <TabsContent className="mt-0 p-4 md:p-6" value="projects">
-            <CustomerProjectsList data={data} highlightMeetingId={highlightMeetingId} onMutationSuccess={onMutationSuccess} />
-          </TabsContent>
+          <Can permission={['read', 'Project']}>
+            <TabsContent className="mt-0 p-4 md:p-6" value="projects">
+              <CustomerProjectsList data={data} highlightMeetingId={highlightMeetingId} onMutationSuccess={onMutationSuccess} />
+            </TabsContent>
+          </Can>
         </ProjectActionsHost>
       </ProposalActionsHost>
     </MeetingActionsHost>

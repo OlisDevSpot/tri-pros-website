@@ -12,7 +12,7 @@ import { useViewMode } from '@/features/proposal-flow/hooks/use-view-mode'
 import { getProposalPdfUrl } from '@/features/proposal-flow/lib/get-proposal-pdf-url'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
-import { useAbility } from '@/shared/domains/permissions/hooks'
+import { useAbility } from '@/shared/domains/permissions/client'
 import { useTRPC } from '@/trpc/helpers'
 
 import { Heading } from './heading'

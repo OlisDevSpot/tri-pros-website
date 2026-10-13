@@ -1,3 +1,5 @@
+import { R2_BUCKETS } from '@/shared/services/providers/r2/types'
+
 // Canonical entity-name constant for the ProjectMediaFile entity. Source of truth
 // for `EntityName` and `AppSubject` (see domains/permissions/abilities.ts).
 export const PROJECT_MEDIA_FILE = 'ProjectMediaFile' as const
@@ -10,4 +12,6 @@ export const PROJECT_MEDIA_FILE = 'ProjectMediaFile' as const
 export const PROJECT_MEDIA = {
   ownerKind: 'project',
   variants: ['sm', 'md', 'lg'],
+  bucket: R2_BUCKETS.media,
+  pathKeyPrefix: (projectId: string) => `projects/${projectId}/`,
 } as const

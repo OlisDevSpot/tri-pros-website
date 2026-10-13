@@ -1,11 +1,10 @@
 import { eq } from 'drizzle-orm'
-import { headers } from 'next/headers'
 import { notFound, redirect } from 'next/navigation'
 import { IntakeFormView } from '@/features/intake/ui/views/intake-form-view'
 import { ROOTS } from '@/shared/config/roots'
 import { db } from '@/shared/db'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
-import { auth } from '@/shared/domains/auth/server'
+import { getRequestActor } from '@/shared/domains/permissions/server/get-request-actor'
 import { leadSourceFormConfigSchema } from '@/shared/entities/lead-sources/schemas'
 
 interface Props {
@@ -19,10 +18,9 @@ export default async function PublicIntakePage({ searchParams }: Props) {
   // everyone else to the home page. External URLs always include both
   // `source` and `token`, so this branch only fires on accidental hits.
   if (!source || !token) {
-    const reqHeaders = await headers()
-    const session = await auth.api.getSession({ headers: reqHeaders })
+    const { actor } = await getRequestActor()
 
-    if (session?.user.role === 'super-admin') {
+    if (actor.ability.can('manage', 'all')) {
       redirect(ROOTS.dashboard.leadSources())
     }
 

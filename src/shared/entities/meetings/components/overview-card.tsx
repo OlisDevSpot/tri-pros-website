@@ -21,6 +21,7 @@ import { EntityList } from '@/shared/components/entities/entity-list/ui/entity-l
 import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
 import { Badge } from '@/shared/components/ui/badge'
 import { selectableMeetingOutcomes } from '@/shared/constants/enums'
+import { useAbility } from '@/shared/domains/permissions/client'
 import { MEETING_ACTIONS } from '@/shared/entities/meetings/constants/actions'
 import {
   MEETING_LIST_STATUS_COLORS,
@@ -392,8 +393,9 @@ function TypeField() {
 
 function ProposalCountField() {
   const { meeting } = useMeetingOverviewCard()
+  const ability = useAbility()
   const count = meeting.proposals?.length ?? 0
-  if (count === 0) {
+  if (count === 0 || ability.cannot('read', 'Proposal')) {
     return null
   }
   return (
@@ -427,8 +429,10 @@ function Fields({ fields, className }: { fields: MeetingFieldConfig[], className
 
 // ── Trades sub-component ───────────────────────────────────────────────────────
 
+// The trades are read off the proposals, so they follow the proposals' rule.
 function Trades({ max, className }: { max?: number, className?: string }) {
   const { meeting } = useMeetingOverviewCard()
+  const ability = useAbility()
 
   const allTrades = useMemo(() => {
     const tradeSet = new Set<string>()
@@ -440,7 +444,7 @@ function Trades({ max, className }: { max?: number, className?: string }) {
     return Array.from(tradeSet)
   }, [meeting.proposals])
 
-  if (allTrades.length === 0) {
+  if (allTrades.length === 0 || ability.cannot('read', 'Proposal')) {
     return null
   }
 
@@ -492,7 +496,13 @@ function Proposals({
   entityListVariant?: 'card' | 'flush'
 }) {
   const { meeting } = useMeetingOverviewCard()
+  const ability = useAbility()
   const proposals = meeting.proposals ?? []
+
+  // Left out, not shown empty: "No proposals yet" would be false to a viewer who cannot read them.
+  if (ability.cannot('read', 'Proposal')) {
+    return null
+  }
 
   if (showHeader) {
     return (

@@ -1,5 +1,4 @@
-import type { EntityServerSpec } from '@/shared/dal/server/types'
-
+import { defineEntitySpec } from '@/shared/dal/server/lib/define-spec'
 import {
   applications,
   insertApplicationSchema,
@@ -18,9 +17,10 @@ export const applicationSchemas = {
   update: updateApplicationSchema,
 }
 
-export const applicationServerSpec = {
+export const applicationServerSpec = defineEntitySpec({
   entityName: APPLICATION,
-  caslSubject: APPLICATION,
+  subject: APPLICATION,
+  conditionColumns: [],
   visibility: applicationVisibility,
   table: applications,
   schemas: {
@@ -28,4 +28,4 @@ export const applicationServerSpec = {
     update: updateApplicationSchema,
     select: selectApplicationSchema,
   },
-} satisfies EntityServerSpec<typeof applications>
+})

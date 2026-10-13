@@ -1,20 +1,20 @@
-import type { UserRole } from '@/shared/constants/enums'
-
 import type { Pipeline } from '@/shared/constants/enums/pipelines'
+
+import type { ScopedContext } from '@/shared/dal/server/types'
 
 import type { FreshPipelineStage } from '@/shared/domains/pipelines/constants/fresh-pipeline'
 
 import { TRPCError } from '@trpc/server'
 import { and, asc, eq, gt, isNull, sql } from 'drizzle-orm'
 
-import { buildUserContext, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { db } from '@/shared/db'
 import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
 import { FRESH_ALLOWED_DRAG_TRANSITIONS } from '@/shared/domains/pipelines/constants/fresh-pipeline'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
-import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 import { proposalCrud } from '@/shared/modules/proposals/core/dal/server/crud'
@@ -25,8 +25,7 @@ interface MoveParams {
   fromStage: string
   toStage: string
   pipeline: Pipeline
-  userId: string
-  userRole: UserRole
+  ctx: ScopedContext
 }
 
 export async function moveCustomerPipelineItem({
@@ -34,14 +33,12 @@ export async function moveCustomerPipelineItem({
   fromStage,
   toStage,
   pipeline,
-  userId,
-  userRole,
+  ctx,
 }: MoveParams): Promise<void> {
   // Leads pipeline: update customers.pipelineStage through customerCrud so any
   // future spec.hooks.update.* fires consistently. The user must be able to see
   // the customer (meeting-participation visibility) for the write to land.
   if (pipeline === 'leads') {
-    const ctx = buildUserContext(userId, userRole, customerServerSpec)
     dalVerifySuccess(
       await customerCrud.update(ctx, {
         id: customerId,
@@ -98,14 +95,12 @@ export async function moveCustomerPipelineItem({
     (fromStage === 'needs_confirmation' && toStage === 'meeting_confirmed')
     || (fromStage === 'meeting_confirmed' && toStage === 'needs_confirmation')
   ) {
-    const ctx = buildUserContext(userId, userRole, meetingServerSpec)
-
     const [nextMeeting] = await db
       .select({ id: meetings.id })
       .from(meetings)
       .where(and(
         eq(meetings.customerId, customerId),
-        ctx.scope ?? undefined,
+        permit(ctx, 'read', meetingServerSpec).sql,
         eq(meetings.pipeline, 'fresh'),
         isNull(meetings.projectId),
         eq(meetings.meetingOutcome, 'not_set'),
@@ -132,14 +127,12 @@ export async function moveCustomerPipelineItem({
   }
 
   if (toStage === 'meeting_completed') {
-    const ctx = buildUserContext(userId, userRole, meetingServerSpec)
-
     const customerMeetings = await db
       .select({ id: meetings.id })
       .from(meetings)
       .where(and(
         eq(meetings.customerId, customerId),
-        ctx.scope ?? undefined,
+        permit(ctx, 'read', meetingServerSpec).sql,
         eq(meetings.meetingOutcome, 'not_set'),
       ))
       .orderBy(meetings.createdAt)
@@ -163,15 +156,13 @@ export async function moveCustomerPipelineItem({
   }
 
   if (fromStage === 'proposal_sent' && toStage === 'declined') {
-    const ctx = buildUserContext(userId, userRole, proposalServerSpec)
-
     const sentProposals = await db
       .select({ id: proposals.id })
       .from(proposals)
       .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
       .where(and(
         eq(meetings.customerId, customerId),
-        ctx.scope ?? undefined,
+        permit(ctx, 'update', proposalServerSpec).sql,
         eq(proposals.status, 'sent'),
       ))
 

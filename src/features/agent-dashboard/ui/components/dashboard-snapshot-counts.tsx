@@ -16,8 +16,9 @@ type ReadOptions<TOutput> = UnusedSkipTokenOptions<TOutput, TRPCClientErrorLike<
 
 interface DashboardSnapshotCountsProps {
   meetingsToday: ReadOptions<inferOutput<TRPC['meetingsRouter']['reads']['list']>>
-  awaitingSignature: ReadOptions<inferOutput<TRPC['proposalsRouter']['business']['list']>>
-  activeProjects: ReadOptions<inferOutput<TRPC['projectsRouter']['crud']['list']>>
+  /** Absent for a viewer who cannot read what it counts: it is neither fetched nor shown. */
+  awaitingSignature?: ReadOptions<inferOutput<TRPC['proposalsRouter']['business']['list']>>
+  activeProjects?: ReadOptions<inferOutput<TRPC['projectsRouter']['crud']['list']>>
 }
 
 /**
@@ -26,20 +27,26 @@ interface DashboardSnapshotCountsProps {
  */
 export function DashboardSnapshotCounts({ meetingsToday, awaitingSignature, activeProjects }: DashboardSnapshotCountsProps) {
   useHydrationParityCheck(meetingsToday.queryKey)
-  useHydrationParityCheck(awaitingSignature.queryKey)
-  useHydrationParityCheck(activeProjects.queryKey)
+  useHydrationParityCheck(awaitingSignature?.queryKey)
+  useHydrationParityCheck(activeProjects?.queryKey)
 
-  // Plural, so the three reads suspend together instead of one after another.
-  const [meetingsTodayRead, awaitingSignatureRead, activeProjectsRead] = useSuspenseQueries({
-    queries: [meetingsToday, awaitingSignature, activeProjects],
+  // Plural, so the reads suspend together instead of one after another.
+  const [meetingsTodayRead, ...rest] = useSuspenseQueries({
+    queries: [
+      meetingsToday,
+      ...(awaitingSignature ? [awaitingSignature] : []),
+      ...(activeProjects ? [activeProjects] : []),
+    ],
   })
+  const awaitingSignatureRead = awaitingSignature ? rest.shift() : undefined
+  const activeProjectsRead = activeProjects ? rest.shift() : undefined
 
   return (
     <DashboardSnapshotChips
       counts={{
         meetingsToday: meetingsTodayRead.data.total,
-        awaitingSignature: awaitingSignatureRead.data.total,
-        activeProjects: activeProjectsRead.data.total,
+        awaitingSignature: awaitingSignatureRead?.data.total,
+        activeProjects: activeProjectsRead?.data.total,
       }}
     />
   )

@@ -12,11 +12,7 @@
 // handler from createCrudDal does a plain SELECT * which would include the
 // ungated phone column, violating phone-visibility-threshold.
 //
-// crud.update uses the framework's field-level CASL enforcement (in
-// create-crud-router.ts). The agent CASL grant on 'Customer' is field-
-// restricted to just `age` now (Addendum B, 2026-07-14) — the 23
-// sales-discovery columns moved to the `customer_profiles` child table and go
-// through `profile.upsert`, gated on the CustomerProfile subject instead.
+// crud.update: the engine checks each changed column against the loaded row. The agent grant on 'Customer' covers `age` and the discovery profile (the `profile` part); dispatchers hold the contact fields.
 
 import z from 'zod'
 

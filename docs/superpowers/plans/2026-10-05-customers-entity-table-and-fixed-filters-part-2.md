@@ -43,7 +43,7 @@
 - Never start, stop or restart a dev server; never touch `.next`. Run `ss -ltnp | grep :3000` and reuse the running one.
 - Browser checks: the local Playwright script (Task 1 Step 1; memory `reference-playwright-auth.md`, `/api/dev/playwright-session`, roles via `&role=super-admin|agent`), desktop and 390px wide, light and dark; screenshots and reports land under `.superpowers/sdd/2026-10-05-customers-entity-table-and-fixed-filters/` and are listed in the task report. Never print `.env.local`, `DEV_LOGIN_SECRET` or a URL containing `secret=`. The script is a tool: if one of its selectors misses, fix the script, never the app, and say so in the report.
 - `tableId`s and URL prefixes do not change: `customers` · `pc`, `all-customers` · `all`, `lead-source-customers` · `src`. Saved column layouts and bookmarked URLs must keep working.
-- A fixed filter narrows what a view asks for; **it is not access control** (spec §2). Who sees which customers is decided by `customerProcedure`'s scope alone.
+- A fixed filter narrows what a view asks for; **it is not access control** (spec §2). Who sees which customers is decided by `permit(ctx, 'read', customerServerSpec)` alone.
 - Layout stays the callsite's (D45): the hook returns wiring, never markup beyond its dialogs. No customer expanded row (spec non-goal); a row click opens the profile modal.
 - Non-defensive migrations: a step that moves a consumer deletes the old path in the same task. No shims, no re-exports.
 - Names: the spec's (`useCustomersTable`, `CUSTOMERS_RECORDS_TABLE_VIEW`, `ALL_CUSTOMERS_TABLE_VIEW`, `LEAD_SOURCE_CUSTOMERS_TABLE_VIEW`, `CustomersRecordsTable`, `CustomerColumnKey`). Do not coin others; the unavoidable ones are under "Owner confirms".
@@ -807,7 +807,7 @@ Expected: clean. (`defineFieldSql` fails `pnpm tsc` if a filter id and its SQL e
 Run: `grep -rn "getCustomers\|CUSTOMERS_TABLE_QUERY_CONFIG\|lead-sources-table-query-configs" src`
 Expected: no output.
 
-Code read for Review Focus 3, with line numbers in the task report: `customersRouter.business.list` is `customerProcedure` (scope from customer visibility, none for a viewer who can `manage all`); `src/app/(frontend)/dashboard/lead-sources/page.tsx` still redirects a viewer who cannot `manage all`. And for spec §8: with a deleted source the list returns no rows, and the pane's parent (`source-detail.tsx`) reads the source itself and reports it missing.
+Code read for Review Focus 3, with line numbers in the task report: `customersRouter.business.list` is `agentProcedure` (reach from `permit(ctx, 'read', customerServerSpec)`, unrestricted for a viewer who can `manage all`); `src/app/(frontend)/dashboard/lead-sources/page.tsx` still redirects a viewer who cannot `manage all`. And for spec §8: with a deleted source the list returns no rows, and the pane's parent (`source-detail.tsx`) reads the source itself and reports it missing.
 
 - [ ] **Step 8: Browser read check (Review Focus 1–4)**
 

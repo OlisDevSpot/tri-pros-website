@@ -1,13 +1,14 @@
+import type { SQL } from 'drizzle-orm'
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core'
 
 import type {
+  AnyServerSpec,
   CreateAfterMeta,
   CrudCallsiteHooks,
   CrudConfig,
   CrudConfigFactory,
   CrudHandlers,
   DalReturn,
-  EntityServerSpec,
   ScopedContext,
   SpecCrudHandlers,
   SpecId,
@@ -16,6 +17,8 @@ import type {
   UpdateAfterMeta,
 } from '../types'
 import type { Insert, Row, Update } from '@/shared/db/types'
+import type { ServerSpec } from '@/shared/domains/permissions/specs'
+import type { CrudAction } from '@/shared/domains/permissions/types'
 
 import { and, eq } from 'drizzle-orm'
 
@@ -23,9 +26,79 @@ import { db } from '@/shared/db'
 
 import { ThrowableDalError } from '../types'
 import { dalDbOperation } from './helpers'
+import { assertGranted, columnKeyOf, reachFor, rootRowFor } from './permissions/core'
+import { projectToReadFields } from './permissions/project'
+import { isCompiled } from './scope'
+
+/**
+ * How a slot narrows its rows while the legacy engine and the compiled rules coexist: a converted
+ * family answers through `permit`, the others through the `ctx.scope` their procedures resolved.
+ */
+interface Scoping {
+  read: (ctx: ScopedContext) => SQL | undefined
+  write: (ctx: ScopedContext, action: 'update' | 'delete') => SQL | undefined
+  /** Forbidden when the actor has no rule at all for the slot's action. */
+  assert: (ctx: ScopedContext, action: CrudAction) => void
+  /** Each changed column against the loaded row, or against the root parent's row for a sub-entity. */
+  assertColumns: (ctx: ScopedContext, row: Record<string, unknown>, columns: string[]) => Promise<void>
+  /** A create under a parent: readable for an entity with a parent, updatable on this field for a sub-entity. A miss is not found. */
+  assertParentReachable: (ctx: ScopedContext, input: Record<string, unknown>) => Promise<void>
+  /** An entity's insert row against its `create` rules' conditions; a sub-entity is covered by the parent probe on its field. */
+  assertCreatable: (ctx: ScopedContext, row: Record<string, unknown>) => void
+  /** Always loaded before an update, so the columns can be checked against it. */
+  loadsRowBeforeUpdate: boolean
+  project: (ctx: ScopedContext, row: Record<string, unknown>) => Promise<Record<string, unknown>>
+}
+
+const legacyScoping: Scoping = {
+  read: ctx => ctx.scope ?? undefined,
+  write: ctx => ctx.scope ?? undefined,
+  assert: () => {},
+  assertColumns: async () => {},
+  assertParentReachable: async () => {},
+  assertCreatable: () => {},
+  loadsRowBeforeUpdate: false,
+  project: async (_ctx, row) => row,
+}
+
+function compiledScoping(spec: AnyServerSpec): Scoping {
+  return {
+    read: ctx => reachFor(ctx, 'read', spec).sql,
+    write: (ctx, action) => reachFor(ctx, action, spec).sql,
+    assert: (ctx, action) => assertGranted(ctx.actor.ability, action, spec),
+    assertColumns: async (ctx, row, columns) => {
+      const target = await rootRowFor(ctx, spec, row)
+      for (const column of columns) {
+        if (!reachFor(ctx, 'update', spec, [column]).test(target)) {
+          throw new ThrowableDalError({ type: 'forbidden', field: `${spec.entityName}.${column}` })
+        }
+      }
+    },
+    assertParentReachable: async (ctx, input) => {
+      if (!spec.parent) {
+        return
+      }
+      const parentId = input[columnKeyOf(spec.table as PgTable, spec.parent.fk)] as string | number
+      const reach = 'subject' in spec
+        ? reachFor(ctx, 'read', spec.parent.spec)
+        : reachFor(ctx, 'update', spec.parent.spec, [spec.parent.field])
+      if (!(await reach.probe(parentId))) {
+        throw new ThrowableDalError({ type: 'not-found' })
+      }
+    },
+    assertCreatable: (ctx, row) => {
+      if ('subject' in spec && !reachFor(ctx, 'create', spec).test(row)) {
+        throw new ThrowableDalError({ type: 'forbidden' })
+      }
+    },
+    loadsRowBeforeUpdate: true,
+    project: async (ctx, row) => projectToReadFields(ctx.actor.ability, spec, row, await rootRowFor(ctx, spec, row)),
+  }
+}
 
 // Generic over the spec, not the table, so handler payload types are the spec's Zod inputs.
-export function createCrudDal<TSpec extends EntityServerSpec<any, any>>(
+// Only a listed spec can be enforced: the rules are typed against the list, and a spec outside it has no subject they can name.
+export function createCrudDal<TSpec extends ServerSpec>(
   spec: TSpec,
   configFactory?: CrudConfigFactory<TSpec['table'], SpecId<TSpec>, SpecInsert<TSpec>, SpecUpdate<TSpec>>,
 ): SpecCrudHandlers<TSpec> {
@@ -33,35 +106,38 @@ export function createCrudDal<TSpec extends EntityServerSpec<any, any>>(
   type TId = SpecId<TSpec>
   type TInsert = SpecInsert<TSpec>
   type TUpdate = SpecUpdate<TSpec>
-  const pkColumn = getPkColumn(spec)
+  const pkColumn = getPkColumn<TTable>(spec)
+  const scoping = isCompiled(spec) ? compiledScoping(spec) : legacyScoping
   const crudHandlers = {} as CrudHandlers<TTable, TId, TInsert, TUpdate> // ← bootstrap cast (spec §2.3)
   const cfg: CrudConfig<TTable, TId, TInsert, TUpdate> = configFactory
     ? configFactory(crudHandlers)
     : {}
 
   Object.assign(crudHandlers, {
-    getById: (ctx: ScopedContext, input: { id: TId }) => getByIdImpl<TTable>(spec, pkColumn, ctx, input),
-    create: (ctx: ScopedContext, input: TInsert, options?: CrudCallsiteHooks<TTable, TId, 'create', TInsert, TUpdate>) =>
-      createImpl<TTable, TId, TInsert, TUpdate>(spec, cfg, ctx, input, options),
-    update: (ctx: ScopedContext, input: { id: TId, data: TUpdate }, options?: CrudCallsiteHooks<TTable, TId, 'update', TInsert, TUpdate>) =>
-      updateImpl<TTable, TId, TInsert, TUpdate>(spec, cfg, pkColumn, ctx, input, options),
+    getById: async (ctx: ScopedContext, input: { id: TId }) => projected(scoping, ctx, await getByIdImpl<TTable>(spec, scoping, pkColumn, ctx, input)),
+    create: async (ctx: ScopedContext, input: TInsert, options?: CrudCallsiteHooks<TTable, TId, 'create', TInsert, TUpdate>) =>
+      projected(scoping, ctx, await createImpl<TTable, TId, TInsert, TUpdate>(spec, scoping, cfg, ctx, input, options)),
+    update: async (ctx: ScopedContext, input: { id: TId, data: TUpdate }, options?: CrudCallsiteHooks<TTable, TId, 'update', TInsert, TUpdate>) =>
+      projected(scoping, ctx, await updateImpl<TTable, TId, TInsert, TUpdate>(spec, scoping, cfg, pkColumn, ctx, input, options)),
     delete: (ctx: ScopedContext, input: { id: TId }, options?: CrudCallsiteHooks<TTable, TId, 'delete', TInsert, TUpdate>) =>
-      deleteImpl<TTable, TId, TInsert, TUpdate>(spec, cfg, pkColumn, ctx, input, options),
-    duplicate: (ctx: ScopedContext, input: { id: TId }, options?: CrudCallsiteHooks<TTable, TId, 'create', TInsert, TUpdate>) =>
-      duplicateImpl<TTable, TId, TInsert, TUpdate>(spec, cfg, pkColumn, ctx, input, options),
+      deleteImpl<TTable, TId, TInsert, TUpdate>(spec, scoping, cfg, pkColumn, ctx, input, options),
+    duplicate: async (ctx: ScopedContext, input: { id: TId }, options?: CrudCallsiteHooks<TTable, TId, 'create', TInsert, TUpdate>) =>
+      projected(scoping, ctx, await duplicateImpl<TTable, TId, TInsert, TUpdate>(spec, scoping, cfg, pkColumn, ctx, input, options)),
   })
   return crudHandlers
 }
 
 async function getByIdImpl<TTable extends PgTable>(
-  spec: EntityServerSpec<TTable>,
+  spec: AnyServerSpec<TTable>,
+  scoping: Scoping,
   pkColumn: PgColumn,
   ctx: ScopedContext,
   input: { id: string | number },
 ): Promise<DalReturn<Row<TTable> | undefined>> {
   return dalDbOperation(async () => {
+    scoping.assert(ctx, 'read')
     const exec = ctx.tx ?? db
-    const where = and(eq(pkColumn, input.id), ctx.scope ?? undefined)
+    const where = and(eq(pkColumn, input.id), scoping.read(ctx))
     const [row] = await exec
       .select()
       .from(spec.table as PgTable)
@@ -71,14 +147,24 @@ async function getByIdImpl<TTable extends PgTable>(
   })
 }
 
+// The one place a row leaves the engine: hooks and prefetches see the full row, callers the projected one.
+async function projected<TRow extends Record<string, unknown> | undefined>(scoping: Scoping, ctx: ScopedContext, result: DalReturn<TRow>): Promise<DalReturn<TRow>> {
+  if (!result.success || !result.data) {
+    return result
+  }
+  return dalDbOperation(async () => (await scoping.project(ctx, result.data as Record<string, unknown>)) as TRow)
+}
+
 async function createImpl<TTable extends PgTable, TId extends string | number, TInsert, TUpdate>(
-  spec: EntityServerSpec<TTable, TId>,
+  spec: AnyServerSpec<TTable>,
+  scoping: Scoping,
   cfg: CrudConfig<TTable, TId, TInsert, TUpdate>,
   ctx: ScopedContext,
   input: TInsert,
   callsite?: CrudCallsiteHooks<TTable, TId, 'create', TInsert, TUpdate>,
 ): Promise<DalReturn<Row<TTable>>> {
   return dalDbOperation(async () => {
+    scoping.assert(ctx, 'create')
     const exec = ctx.tx ?? db
     let data = input
     if (cfg.hooks?.create?.before)
@@ -86,6 +172,8 @@ async function createImpl<TTable extends PgTable, TId extends string | number, T
     if (callsite?.before)
       data = await callsite.before(data, ctx)
     const validated = spec.schemas.insert.parse(data) as Insert<TTable>
+    scoping.assertCreatable(ctx, validated as Record<string, unknown>)
+    await scoping.assertParentReachable(ctx, validated as Record<string, unknown>)
 
     const [inserted] = await exec.insert(spec.table as PgTable).values(validated).returning()
     if (!inserted) {
@@ -103,7 +191,8 @@ async function createImpl<TTable extends PgTable, TId extends string | number, T
 }
 
 async function updateImpl<TTable extends PgTable, TId extends string | number, TInsert, TUpdate>(
-  spec: EntityServerSpec<TTable, TId>,
+  spec: AnyServerSpec<TTable>,
+  scoping: Scoping,
   cfg: CrudConfig<TTable, TId, TInsert, TUpdate>,
   pkColumn: PgColumn,
   ctx: ScopedContext,
@@ -111,6 +200,7 @@ async function updateImpl<TTable extends PgTable, TId extends string | number, T
   callsite?: CrudCallsiteHooks<TTable, TId, 'update', TInsert, TUpdate>,
 ): Promise<DalReturn<Row<TTable>>> {
   return dalDbOperation(async () => {
+    scoping.assert(ctx, 'update')
     const exec = ctx.tx ?? db
     let data = input.data
     if (cfg.hooks?.update?.before)
@@ -120,9 +210,9 @@ async function updateImpl<TTable extends PgTable, TId extends string | number, T
     const validated = spec.schemas.update.parse(data) as Update<TTable>
 
     // An empty update is a no-op: updatedAt must not move and after-hooks must not fire.
-    const hasBusinessData = Object.values(validated as Record<string, unknown>).some(v => v !== undefined)
-    if (!hasBusinessData) {
-      const current = await getByIdImpl(spec, pkColumn, ctx, { id: input.id })
+    const changed = Object.entries(validated as Record<string, unknown>).filter(([, value]) => value !== undefined).map(([key]) => key)
+    if (changed.length === 0) {
+      const current = await getByIdImpl(spec, scoping, pkColumn, ctx, { id: input.id })
       if (!current.success) {
         throw new ThrowableDalError(current.error)
       }
@@ -132,11 +222,12 @@ async function updateImpl<TTable extends PgTable, TId extends string | number, T
       return current.data
     }
 
-    // Prefetched before the write so a failed prefetch aborts with nothing written.
-    const needsPrev = Boolean(cfg.hooks?.update?.after || callsite?.after)
+    // Prefetched before the write so a failed prefetch aborts with nothing written; the compiled
+    // engine always needs the row, to check each changed column against it.
+    const needsPrev = scoping.loadsRowBeforeUpdate || Boolean(cfg.hooks?.update?.after || callsite?.after)
     let previousRow: Row<TTable> | undefined
     if (needsPrev) {
-      const prev = await getByIdImpl(spec, pkColumn, ctx, { id: input.id })
+      const prev = await getByIdImpl(spec, scoping, pkColumn, ctx, { id: input.id })
       if (!prev.success) {
         throw new ThrowableDalError({
           type: 'precondition-failed',
@@ -147,10 +238,14 @@ async function updateImpl<TTable extends PgTable, TId extends string | number, T
         throw new ThrowableDalError({ type: 'not-found' })
       }
       previousRow = prev.data as Row<TTable>
+      // The rules judge what the caller asked to change; a column a before-hook derives from it
+      // (a cleared geocode after an address edit) is the server's own write.
+      const requested = changed.filter(column => (input.data as Record<string, unknown>)[column] !== undefined)
+      await scoping.assertColumns(ctx, previousRow as Record<string, unknown>, requested)
     }
 
     // Drizzle drops undefined keys and appends $onUpdate columns here (updatedAt bumps).
-    const where = and(eq(pkColumn, input.id), ctx.scope ?? undefined)
+    const where = and(eq(pkColumn, input.id), scoping.write(ctx, 'update'))
     const [updated] = await exec.update(spec.table as PgTable).set(validated as Record<string, unknown>).where(where).returning()
     if (!updated) {
       throw new ThrowableDalError({ type: 'not-found' })
@@ -167,7 +262,8 @@ async function updateImpl<TTable extends PgTable, TId extends string | number, T
 }
 
 async function deleteImpl<TTable extends PgTable, TId extends string | number, TInsert, TUpdate>(
-  spec: EntityServerSpec<TTable, TId>,
+  spec: AnyServerSpec<TTable>,
+  scoping: Scoping,
   cfg: CrudConfig<TTable, TId, TInsert, TUpdate>,
   pkColumn: PgColumn,
   ctx: ScopedContext,
@@ -175,13 +271,14 @@ async function deleteImpl<TTable extends PgTable, TId extends string | number, T
   callsite?: CrudCallsiteHooks<TTable, TId, 'delete', TInsert, TUpdate>,
 ): Promise<DalReturn<void>> {
   return dalDbOperation(async () => {
+    scoping.assert(ctx, 'delete')
     const exec = ctx.tx ?? db
     const needsRow = Boolean(
       cfg.hooks?.delete?.before || cfg.hooks?.delete?.after || callsite?.before || callsite?.after,
     )
     let row: Row<TTable> | undefined
     if (needsRow) {
-      const pre = await getByIdImpl(spec, pkColumn, ctx, { id: input.id })
+      const pre = await getByIdImpl(spec, scoping, pkColumn, ctx, { id: input.id })
       if (!pre.success) {
         throw new ThrowableDalError({
           type: 'precondition-failed',
@@ -199,7 +296,7 @@ async function deleteImpl<TTable extends PgTable, TId extends string | number, T
     if (callsite?.before)
       await callsite.before(row!, ctx)
 
-    const where = and(eq(pkColumn, input.id), ctx.scope ?? undefined)
+    const where = and(eq(pkColumn, input.id), scoping.write(ctx, 'delete'))
     const deleted = await exec.delete(spec.table as PgTable).where(where).returning({ id: pkColumn })
     if (deleted.length === 0) {
       throw new ThrowableDalError({ type: 'not-found' })
@@ -213,14 +310,15 @@ async function deleteImpl<TTable extends PgTable, TId extends string | number, T
 }
 
 async function duplicateImpl<TTable extends PgTable, TId extends string | number, TInsert, TUpdate>(
-  spec: EntityServerSpec<TTable, TId>,
+  spec: AnyServerSpec<TTable>,
+  scoping: Scoping,
   cfg: CrudConfig<TTable, TId, TInsert, TUpdate>,
   pkColumn: PgColumn,
   ctx: ScopedContext,
   input: { id: TId },
   callsite?: CrudCallsiteHooks<TTable, TId, 'create', TInsert, TUpdate>,
 ): Promise<DalReturn<Row<TTable>>> {
-  const srcResult = await getByIdImpl(spec, pkColumn, ctx, input)
+  const srcResult = await getByIdImpl(spec, scoping, pkColumn, ctx, input)
   if (!srcResult.success) {
     return srcResult
   }
@@ -241,7 +339,7 @@ async function duplicateImpl<TTable extends PgTable, TId extends string | number
   const overrides = cfg.duplicate?.overrides?.(source, ctx) ?? {}
   const insertData = { ...base, ...overrides } as unknown as TInsert
 
-  const created = await createImpl<TTable, TId, TInsert, TUpdate>(spec, cfg, ctx, insertData, callsite)
+  const created = await createImpl<TTable, TId, TInsert, TUpdate>(spec, scoping, cfg, ctx, insertData, callsite)
   if (!created.success || !cfg.duplicate?.after) {
     return created
   }
@@ -254,7 +352,7 @@ async function duplicateImpl<TTable extends PgTable, TId extends string | number
 }
 
 function getPkColumn<TTable extends PgTable>(
-  spec: EntityServerSpec<TTable>,
+  spec: AnyServerSpec<TTable>,
 ): PgColumn {
   const pkName = spec.primaryKey ?? 'id'
   const table = spec.table as unknown as Record<string, PgColumn>

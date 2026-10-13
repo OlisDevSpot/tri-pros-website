@@ -9,7 +9,6 @@ import { ProposalCard } from './proposal-card'
 
 interface AgentContractViewProps {
   proposalId: string
-  token: string
   customerEmail: string | null
   contractStatus: (ZohoContractStatus & { contractSentAt: string | null }) | null
   proposalKind?: ProposalKind
@@ -38,7 +37,6 @@ interface AgentContractViewProps {
  */
 export function AgentContractView({
   proposalId,
-  token,
   customerEmail,
   contractStatus,
   proposalKind,
@@ -58,7 +56,6 @@ export function AgentContractView({
             <div className="lg:flex-1">
               <ProposalCard
                 proposalId={proposalId}
-                token={token}
                 customerEmail={customerEmail}
                 customerName={customerName ?? null}
                 proposalStatus={proposalStatus}

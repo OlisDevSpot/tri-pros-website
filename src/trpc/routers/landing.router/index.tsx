@@ -1,7 +1,7 @@
 import type { GeneralInquiryFormSchema, ScheduleConsultationFormSchema } from '@/shared/entities/landing/schemas'
 import { TRPCError } from '@trpc/server'
 import { eq } from 'drizzle-orm'
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { systemContext } from '@/shared/dal/server/lib/contexts'
 import { db } from '@/shared/db'
 import { customerNotes } from '@/shared/db/schema/customer-notes'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
@@ -122,7 +122,7 @@ async function ingestWebsiteLead(params: {
     ? buildGeneralInquiryCustomer(formData as GeneralInquiryFormSchema, leadSource.id)
     : buildScheduleConsultationCustomer(formData as ScheduleConsultationFormSchema, leadSource.id)
 
-  const createResult = await customerCrud.create(SYSTEM_CONTEXT, customerInput)
+  const createResult = await customerCrud.create(systemContext('intake:landing'), customerInput)
   if (!createResult.success) {
     throw new Error(`customerCrud.create failed: ${JSON.stringify(createResult.error)}`)
   }

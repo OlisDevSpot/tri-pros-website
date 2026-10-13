@@ -109,7 +109,7 @@ re-typed as a string literal.
 
 Applications have no `ownerId` column. Visibility is
 `userParticipatesInMeeting(userId, applications.meetingId)`
-(`lib/visibility.ts:applicationVisibility`), resolved by `scopeMiddleware`
+(`lib/visibility.ts:applicationVisibility`), resolved by the entity's inline scope step
 into `ctx.scope` for every entity procedure. Non-omni agents see an
 application only if they participate in its meeting (any role) — mirroring
 proposals' "meeting participation is the gate" rule.
@@ -128,9 +128,9 @@ scope instead of inventing an `ownerId` keeps applications consistent with
 how proposals already do it.
 **Reference impl**: `lib/visibility.ts:applicationVisibility` →
 `@/shared/entities/meetings/dal/server/participants:userParticipatesInMeeting`.
-**Enforced by**: `applicationServerSpec.visibility` (wired into
-`scopeMiddleware`); the scope-probe in every business DAL function that reads
-or mutates a child row.
+**Enforced by**: `applicationServerSpec.visibility` (wired into the
+entity's inline scope step); the scope-probe in every business DAL function that
+reads or mutates a child row.
 
 ## Anti-patterns
 

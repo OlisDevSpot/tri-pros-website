@@ -1,7 +1,7 @@
 import type { AccountRow } from '@/shared/entities/accounts/dal/server/google-calendar'
 
 import type { CalendarNotice } from '@/shared/services/providers/google-calendar/lib/calendar-notice'
-import type { GCalEventInput } from '@/shared/services/providers/google-calendar/types'
+import type { GCalEvent, GCalEventInput } from '@/shared/services/providers/google-calendar/types'
 
 import { isProductionData } from '@/shared/config/data-target'
 import { publicUrl } from '@/shared/config/public-url'
@@ -43,7 +43,7 @@ import { GCalRequestError, GCalSyncTokenExpiredError, googleCalendarClient } fro
 import { carryAttendeeResponses, decideCalendarNotice, homeownerMarker, noticeStateFromEvent, noticeStateFromInput, toSendUpdates } from '@/shared/services/providers/google-calendar/lib/calendar-notice'
 import { hasRemoteChanged, resolveConflict } from '@/shared/services/providers/google-calendar/lib/conflict'
 import { gcalEventToLocal } from '@/shared/services/providers/google-calendar/lib/map-from-gcal'
-import { activityToGCalEvent, meetingToGCalEvent } from '@/shared/services/providers/google-calendar/lib/map-to-gcal'
+import { activityToGCalEvent, meetingEventId, meetingToGCalEvent } from '@/shared/services/providers/google-calendar/lib/map-to-gcal'
 import { resolveMeetingGuests } from '@/shared/services/providers/google-calendar/lib/meeting-guests'
 import { googleDriveClient } from '@/shared/services/providers/google-drive/client'
 import { voipDidsService } from '@/shared/services/voip/voip-dids.service'
@@ -231,7 +231,7 @@ function buildMeetingEvent(meeting: NonNullable<Awaited<ReturnType<typeof getMee
   })
 }
 
-/** The null-payload branch is unreachable today (scheduled_for is NOT NULL); kept so a stale linkage still deletes without a separate path. */
+/** A meeting with no event to show (cancelled, or a rescheduled original) loses any event still linked to it, quietly. */
 async function pushMeetingEventToCalendar(
   auth: { accessToken: string },
   calendarId: string,
@@ -248,33 +248,47 @@ async function pushMeetingEventToCalendar(
     return
   }
 
+  // The notice is decided against the event as read, and the PUT guards that version; the stored etag goes stale on every RSVP.
+  const writeOver = async (eventId: string, current: GCalEvent | null, etag: string, event: GCalEventInput) => {
+    const notice = decideCalendarNotice(current && noticeStateFromEvent(current), noticeStateFromInput(event), new Date())
+    const withResponses = { ...event, attendees: carryAttendeeResponses(event.attendees ?? [], current?.attendees) }
+    const updated = await googleCalendarClient.updateEvent(auth.accessToken, calendarId, eventId, withResponses, toSendUpdates(notice, { isProduction }), etag)
+    await updateMeetingGCalFields(meetingId, {
+      gcalEventId: eventId,
+      gcalEtag: updated.etag,
+      gcalSyncedAt: new Date().toISOString(),
+    })
+  }
+
   const write = async (event: GCalEventInput) => {
     if (meeting.gcalEventId) {
       const current = await googleCalendarClient.getEvent(auth.accessToken, calendarId, meeting.gcalEventId)
-      const notice = decideCalendarNotice(noticeStateFromEvent(current), noticeStateFromInput(event), new Date())
-      const withResponses = { ...event, attendees: carryAttendeeResponses(event.attendees ?? [], current.attendees) }
-      const updated = await googleCalendarClient.updateEvent(
-        auth.accessToken,
-        calendarId,
-        meeting.gcalEventId,
-        withResponses,
-        toSendUpdates(notice, { isProduction }),
-        // The notice was decided against this read, so the write must guard this version; the stored etag goes stale on every RSVP.
-        current.etag,
-      )
-      await updateMeetingGCalFields(meetingId, {
-        gcalEtag: updated.etag,
-        gcalSyncedAt: new Date().toISOString(),
-      })
+      await writeOver(meeting.gcalEventId, current, current.etag, event)
       return
     }
-    const notice = decideCalendarNotice(null, noticeStateFromInput(event), new Date())
-    const created = await googleCalendarClient.createEvent(auth.accessToken, calendarId, event, toSendUpdates(notice, { isProduction }))
-    await updateMeetingGCalFields(meetingId, {
-      gcalEventId: created.id,
-      gcalEtag: created.etag,
-      gcalSyncedAt: new Date().toISOString(),
-    })
+    const eventId = meetingEventId(meetingId)
+    try {
+      const notice = decideCalendarNotice(null, noticeStateFromInput(event), new Date())
+      const created = await googleCalendarClient.createEvent(auth.accessToken, calendarId, { ...event, id: eventId }, toSendUpdates(notice, { isProduction }))
+      await updateMeetingGCalFields(meetingId, {
+        gcalEventId: created.id,
+        gcalEtag: created.etag,
+        gcalSyncedAt: new Date().toISOString(),
+      })
+    }
+    catch (error) {
+      if (!(error instanceof GCalRequestError) || error.status !== 409) {
+        throw error
+      }
+      // The id is taken: an overlapping sync created the event first, or a cancellation left it deleted. Google keeps
+      // a deleted event's id forever, so a deleted one is brought back and treated as new (an invited homeowner is re-invited).
+      const existing = await googleCalendarClient.getEvent(auth.accessToken, calendarId, eventId)
+      if (existing.status === 'cancelled') {
+        await writeOver(eventId, null, existing.etag, { ...event, status: 'confirmed' })
+        return
+      }
+      await writeOver(eventId, existing, existing.etag, event)
+    }
   }
 
   const homeownerEmail = noticeStateFromInput(payload).homeownerEmail
@@ -406,6 +420,10 @@ function createSchedulingService() {
 
     /** Takes the event id, not a meetingId — the row may already be gone; Google's 410 GONE for an already-deleted event is swallowed. */
     deleteMeetingEvent: async (input: { gcalEventId: string, notice: CalendarNotice }): Promise<void> => {
+      // A meeting un-cancelled before this job ran has taken its event back under the same id.
+      if (await getMeetingByGCalEventId(input.gcalEventId)) {
+        return
+      }
       const ctx = await resolveSystemCalendarAuth()
       if (!ctx) {
         return

@@ -41,7 +41,7 @@ import {
 import { ROOTS } from '@/shared/config/roots'
 import { pipelines as pipelineValues } from '@/shared/constants/enums/pipelines'
 import { signOut } from '@/shared/domains/auth/client'
-import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
+import { useAbility } from '@/shared/domains/permissions/client'
 import { getStoredPipeline } from '@/shared/domains/pipelines/hooks/pipeline-context'
 import { usePipelineChange } from '@/shared/domains/pipelines/hooks/use-pipeline-change'
 import { cn } from '@/shared/lib/utils'
@@ -75,10 +75,8 @@ export function AppSidebar({ user }: AppSidebarProps) {
     }
   }, [pathname])
 
-  const navConfig = useMemo(
-    () => getSidebarNav(defineAbilitiesFor({ id: user.id, role: user.role })),
-    [user.id, user.role],
-  )
+  const ability = useAbility()
+  const navConfig = useMemo(() => getSidebarNav(ability), [ability])
 
   function renderNavItem(item: SidebarNavItem, { trailing }: { trailing?: ReactNode } = {}) {
     const isActive = isNavItemActive(item, pathname)

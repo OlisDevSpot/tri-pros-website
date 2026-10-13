@@ -227,7 +227,7 @@ export async function listLeadsPaginated(
 ): Promise<DalReturn<{ rows: CampaignLeadRow[], total: number }>> {
   return dalDbOperation(async () => {
     // Phone is gated here, not at the router, so a future scoped caller is leak-proof by construction.
-    const canSeeUngated = canSeeUngatedPhone(ctx.ability)
+    const canSeeUngated = canSeeUngatedPhone(ctx.actor.ability)
 
     const statusPredicate
       = args.status === 'all'

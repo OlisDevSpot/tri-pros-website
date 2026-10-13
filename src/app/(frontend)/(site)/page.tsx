@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-background shadow-xl">
+    <main className="min-h-screen bg-background shadow-(--shadow-page)">
       <HomeHero />
       <ValuePropositions />
       <ServicesPreview />

@@ -9,7 +9,7 @@ import { getProposalPdfUrl } from '@/features/proposal-flow/lib/get-proposal-pdf
 import { Button } from '@/shared/components/ui/button'
 import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-group'
-import { useAbility } from '@/shared/domains/permissions/hooks'
+import { useAbility } from '@/shared/domains/permissions/client'
 import { cn } from '@/shared/lib/utils'
 
 interface Props {

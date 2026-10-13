@@ -184,6 +184,7 @@ export const MEETING_COLUMNS = {
     defaultHidden: true,
   },
   tradeSelections: {
+    permission: ['read', 'Meeting', 'flowStateJSON'],
     label: 'Trades',
     accessorFn: row => row.flowStateJSON?.tradeSelections?.length ?? 0,
     cell: ({ row }) => {
@@ -241,6 +242,7 @@ export const MEETING_COLUMNS = {
     },
   },
   proposalStatuses: {
+    permission: ['read', 'Proposal'],
     label: 'Proposals',
     accessorFn: row => row.proposalStatuses.length,
     cell: ({ row }) => {

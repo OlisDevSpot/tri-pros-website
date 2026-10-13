@@ -1,17 +1,24 @@
 import type { SQL } from 'drizzle-orm'
 
+import type { ScopedContext } from '@/shared/dal/server/types'
 import type { CustomerProfileMeeting, CustomerProfileProposal } from '@/shared/entities/customers/types'
 
-import { count, desc, eq, sql } from 'drizzle-orm'
+import { and, count, desc, eq, sql } from 'drizzle-orm'
 
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { db } from '@/shared/db'
 import { meetings } from '@/shared/db/schema/meetings'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
+import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 import 'server-only'
 
-/** Meetings matching `where`, newest first, each with its proposals: the shape the customer profile and a project's sales history render. */
-export async function getMeetingsWithProposals(where: SQL): Promise<{ meetings: CustomerProfileMeeting[], proposals: CustomerProfileProposal[] }> {
+/**
+ * Meetings matching `where`, newest first, each with its proposals: the shape the customer profile and a
+ * project's sales history render. Each meeting carries the proposals the actor reaches: an agent sees the
+ * proposals of meetings they sit in, a role with no proposal rule sees none.
+ */
+export async function getMeetingsWithProposals(ctx: ScopedContext, where: SQL): Promise<{ meetings: CustomerProfileMeeting[], proposals: CustomerProfileProposal[] }> {
   const meetingRows = await db
     .select({
       id: meetings.id,
@@ -29,33 +36,31 @@ export async function getMeetingsWithProposals(where: SQL): Promise<{ meetings: 
     .where(where)
     .orderBy(desc(meetings.createdAt))
 
-  const proposalRows = await db
-    .select({
-      id: proposals.id,
-      label: proposals.label,
-      status: proposals.status,
-      token: proposals.token,
-      meetingId: proposals.meetingId,
-      sentAt: proposals.sentAt,
-      contractSentAt: proposals.contractSentAt,
-      createdAt: proposals.createdAt,
-      trade: sql<string | null>`${proposals.projectJSON}->'data'->'sow'->0->'trade'->>'label'`.as('trade'),
-      finalTcpCents: proposals.finalTcpCents,
-      sowRaw: sql<string | null>`${proposals.projectJSON}->'data'->'sow'`.as('sow_raw'),
-      viewCount: count(proposalViews.id).as('view_count'),
-    })
-    .from(proposals)
-    .leftJoin(proposalViews, eq(proposalViews.proposalId, proposals.id))
-    .where(
-      sql`${proposals.meetingId} IN (${sql.join(
-        meetingRows.length > 0
-          ? meetingRows.map(m => sql`${m.id}`)
-          : [sql`NULL`],
-        sql`, `,
-      )})`,
-    )
-    .groupBy(proposals.id)
-    .orderBy(desc(proposals.createdAt))
+  const proposalRows = meetingRows.length === 0
+    ? []
+    : await db
+        .select({
+          id: proposals.id,
+          label: proposals.label,
+          status: proposals.status,
+          token: proposals.token,
+          meetingId: proposals.meetingId,
+          sentAt: proposals.sentAt,
+          contractSentAt: proposals.contractSentAt,
+          createdAt: proposals.createdAt,
+          trade: sql<string | null>`${proposals.projectJSON}->'data'->'sow'->0->'trade'->>'label'`.as('trade'),
+          finalTcpCents: proposals.finalTcpCents,
+          sowRaw: sql<string | null>`${proposals.projectJSON}->'data'->'sow'`.as('sow_raw'),
+          viewCount: count(proposalViews.id).as('view_count'),
+        })
+        .from(proposals)
+        .leftJoin(proposalViews, eq(proposalViews.proposalId, proposals.id))
+        .where(and(
+          sql`${proposals.meetingId} IN (${sql.join(meetingRows.map(m => sql`${m.id}`), sql`, `)})`,
+          permit(ctx, 'read', proposalServerSpec).sql,
+        ))
+        .groupBy(proposals.id)
+        .orderBy(desc(proposals.createdAt))
 
   const allProposals: CustomerProfileProposal[] = proposalRows.map((p) => {
     // Parse SOW JSON into trade+scopes summary

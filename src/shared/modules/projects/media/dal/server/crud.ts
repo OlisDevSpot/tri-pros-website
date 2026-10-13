@@ -1,5 +1,7 @@
 import type { ProjectMediaFile } from '@/shared/db/schema/project-media-files'
 import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
+import { ThrowableDalError } from '@/shared/dal/server/types'
+import { isOwnedObject } from '@/shared/modules/media/core/lib/is-owned-object'
 import { isOptimizable } from '@/shared/modules/media/core/lib/optimizable'
 import { purgeMediaObject } from '@/shared/modules/media/core/lib/purge'
 import { PROJECT_MEDIA } from '@/shared/modules/projects/media/lib/constants'
@@ -43,10 +45,26 @@ import { optimizeMediaJob } from '@/shared/services/providers/upstash/jobs/optim
 export const projectMediaCrud = createCrudDal(projectMediaServerSpec, () => ({
   hooks: {
     create: {
+      // Deleting the row deletes the object it names; see isOwnedObject.
+      before(input) {
+        if (!isOwnedObject(input, { bucket: PROJECT_MEDIA.bucket, pathKeyPrefix: PROJECT_MEDIA.pathKeyPrefix(input.projectId) })) {
+          throw new ThrowableDalError({ type: 'forbidden' })
+        }
+        return input
+      },
       after(row: ProjectMediaFile) {
         if (isOptimizable(row.mimeType)) {
           void optimizeMediaJob.dispatch({ ownerKind: PROJECT_MEDIA.ownerKind, mediaId: row.id })
         }
+      },
+    },
+    update: {
+      // An object is chosen once, at upload; nothing re-points a row afterwards.
+      before(data) {
+        if (data.bucket !== undefined || data.pathKey !== undefined) {
+          throw new ThrowableDalError({ type: 'forbidden' })
+        }
+        return data
       },
     },
     delete: {

@@ -5,12 +5,12 @@ import { createProjectWithScopes, projectCrud, updateProjectWithScopes } from '@
 import { getAllProjects, getProjectForEdit, listProjects, projectListInputSchema } from '@/shared/modules/projects/core/dal/server/queries'
 import { projectFormSchema } from '@/shared/modules/projects/core/schemas'
 
-import { agentProcedure, createTRPCRouter } from '../../init'
+import { createTRPCRouter } from '../../init'
 import { dalToTrpc } from '../../lib/dal-to-trpc'
-import { projectProcedure } from './procedures'
+import { projectAccessProcedure, projectProcedure } from './procedures'
 
 export const crudRouter = createTRPCRouter({
-  getAll: agentProcedure
+  getAll: projectAccessProcedure
     .query(async () => {
       return getAllProjects()
     }),
@@ -19,24 +19,24 @@ export const crudRouter = createTRPCRouter({
     .input(projectListInputSchema)
     .query(async ({ ctx, input }) => dalToTrpc(await listProjects(ctx, input))),
 
-  getForEdit: agentProcedure
+  getForEdit: projectAccessProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ input }) => {
       return getProjectForEdit(input.id)
     }),
 
   // Routes through projectCrud via createProjectWithScopes (scopeIds as a
-  // call-site closure). scope:null — bare agentProcedure carries no scope, so
+  // call-site closure). scope:null — projectAccessProcedure carries no scope, so
   // the crud runs unscoped, identical to the pre-D feature-DAL path (scope
   // tightening is the #285 tail).
-  create: agentProcedure
+  create: projectAccessProcedure
     .input(projectFormSchema)
     .mutation(async ({ ctx, input }) => {
       const { scopeIds, ...projectData } = input
       return dalToTrpc(await createProjectWithScopes({ ...ctx, scope: null }, projectData, scopeIds ?? []))
     }),
 
-  update: agentProcedure
+  update: projectAccessProcedure
     .input(z.object({
       id: z.string().uuid(),
       data: projectFormSchema.partial(),
@@ -49,7 +49,7 @@ export const crudRouter = createTRPCRouter({
       return project
     }),
 
-  delete: agentProcedure
+  delete: projectAccessProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       dalToTrpc(await projectCrud.delete({ ...ctx, scope: null }, { id: input.id }))

@@ -1,4 +1,4 @@
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { systemContext } from '@/shared/dal/server/lib/contexts'
 import { customerIntakeService } from '@/shared/services/customer-intake.service'
 import { gohighlevelClient } from '@/shared/services/providers/gohighlevel/client'
 import { normalizeBinaLead } from '@/shared/services/providers/gohighlevel/lib/normalize-bina-lead'
@@ -32,7 +32,7 @@ export async function POST(request: Request): Promise<Response> {
 
   // ── Normalize + ingest ────────────────────────────────────────────────────
   const { core, leadMeta, note } = normalizeBinaLead(parsed.payload)
-  const result = await customerIntakeService.ingestLead(SYSTEM_CONTEXT, {
+  const result = await customerIntakeService.ingestLead(systemContext('webhook:bina'), {
     core,
     leadMeta,
     note,

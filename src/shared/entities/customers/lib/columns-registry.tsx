@@ -8,7 +8,7 @@ import type { CUSTOMER_FIELDS } from '@/shared/entities/customers/dal/customer-f
 
 import { PrimaryCell } from '@/shared/components/data-table/ui/primary-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
-import { useAbility } from '@/shared/domains/permissions/hooks'
+import { useAbility } from '@/shared/domains/permissions/client'
 import { CustomerPipelineBadge } from '@/shared/entities/customers/components/customer-pipeline-badge'
 import { LeadSourcePicker } from '@/shared/entities/customers/components/lead-source-picker'
 import { useUpdateLeadSourceMutation } from '@/shared/entities/customers/hooks/use-update-lead-source-mutation'

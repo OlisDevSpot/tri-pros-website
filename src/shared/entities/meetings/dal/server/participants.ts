@@ -19,20 +19,6 @@ export function userParticipatesInMeeting(userId: string, meetingIdColumn: SQL |
 
 // ── Queries ─────────────────────────────────────────────────────────────────
 
-/** Boolean check (vs embeddable SQL via `userParticipatesInMeeting`). */
-export async function isParticipant(meetingId: string, userId: string): Promise<boolean> {
-  const [row] = await db
-    .select({ id: meetingParticipants.id })
-    .from(meetingParticipants)
-    .where(and(
-      eq(meetingParticipants.meetingId, meetingId),
-      eq(meetingParticipants.userId, userId),
-    ))
-    .limit(1)
-
-  return row !== undefined
-}
-
 export async function getParticipantsForMeeting(meetingId: string) {
   return db
     .select({

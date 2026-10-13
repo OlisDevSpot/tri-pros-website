@@ -53,12 +53,12 @@ export const projectMediaService = {
 
   async list(ctx: ScopedContext, input: { projectId: string }): Promise<DalReturn<ProjectMediaFile[]>> {
     return dalDbOperation(async () =>
-      dalVerifySuccess(await mediaService.list(projectMediaStore, ctx, input.projectId)) as ProjectMediaFile[],
+      dalVerifySuccess(await mediaService.list(projectMediaStore, ctx.scope ?? undefined, input.projectId)) as ProjectMediaFile[],
     )
   },
 
   async reorder(ctx: ScopedContext, input: { updates: { id: number, sortOrder: number }[] }): Promise<DalReturn<void>> {
-    return mediaService.reorder(projectMediaStore, ctx, input.updates)
+    return mediaService.reorder(projectMediaStore, ctx.scope ?? undefined, input.updates)
   },
 
   async retryOptimization(ctx: ScopedContext, input: { id: number }): Promise<DalReturn<void>> {

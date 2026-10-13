@@ -1,12 +1,10 @@
-import type { EntityServerSpec } from '@/shared/dal/server/types'
-
+import { defineEntitySpec } from '@/shared/dal/server/lib/define-spec'
 import {
   insertMeetingSchema,
   meetings,
   selectMeetingSchema,
 } from '@/shared/db/schema'
 import { MEETING } from '@/shared/entities/meetings/lib/constants'
-import { meetingVisibility } from '@/shared/entities/meetings/lib/visibility'
 
 const updateMeetingSchema = insertMeetingSchema.partial()
 
@@ -14,6 +12,7 @@ const SERVER_OWNED_COLUMNS = {
   shareToken: true,
   homeownerConfirmedAt: true,
   homeownerConfirmedVia: true,
+  homeownerInvitedAt: true,
   newTimeRequestedAt: true,
   rescheduledFromId: true,
   scheduledForSetAt: true,
@@ -28,14 +27,14 @@ export const meetingClientSchemas = {
   update: updateMeetingSchema.omit(SERVER_OWNED_COLUMNS),
 }
 
-export const meetingServerSpec = {
+export const meetingServerSpec = defineEntitySpec({
   entityName: MEETING,
-  caslSubject: MEETING,
-  visibility: meetingVisibility,
+  subject: MEETING,
+  conditionColumns: [],
   table: meetings,
   schemas: {
     insert: insertMeetingSchema,
     update: updateMeetingSchema,
     select: selectMeetingSchema,
   },
-} satisfies EntityServerSpec<typeof meetings>
+})

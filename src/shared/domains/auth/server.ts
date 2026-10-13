@@ -22,7 +22,9 @@ export const auth = betterAuth({
       // APP_HOSTS in roots.ts is the single source of truth — every host in
       // there must also be registered in the Google Cloud OAuth Client.
       accessType: 'offline',
-      prompt: 'select_account consent',
+      // No `prompt`: Google issues the refresh token on the first consent and
+      // better-auth keeps the stored one on later logins, so `consent` here
+      // would only force the permissions screen on every sign-in.
       scope: [
         'openid',
         'email',
@@ -72,6 +74,8 @@ export const auth = betterAuth({
       role: {
         type: [...userRoles] as const,
         defaultValue: 'user',
+        // better-auth's /update-user accepts every field not marked input: false, so without it anyone signed in could set their own role.
+        input: false,
       },
       phone: {
         type: 'string',

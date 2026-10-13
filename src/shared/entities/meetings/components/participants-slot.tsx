@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
-import { useAbility } from '@/shared/domains/permissions/hooks'
+import { useAbility } from '@/shared/domains/permissions/client'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
 import { PARTICIPANT_ROLE_SORT_ORDER } from '@/shared/entities/meetings/constants/participants'
 import { useParticipantMutations } from '@/shared/entities/meetings/hooks/use-participant-mutations'

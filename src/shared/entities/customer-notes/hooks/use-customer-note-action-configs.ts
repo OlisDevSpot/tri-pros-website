@@ -7,7 +7,7 @@ import type { CustomerNoteWithAuthor } from '@/shared/entities/customers/types'
 import { useMemo } from 'react'
 
 import { useSession } from '@/shared/domains/auth/client'
-import { useAbility } from '@/shared/domains/permissions/hooks'
+import { useAbility } from '@/shared/domains/permissions/client'
 import { NOTE_ACTIONS } from '@/shared/entities/customer-notes/constants/note-actions'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { useCustomerNoteActions } from './use-customer-note-actions'
@@ -21,8 +21,8 @@ interface Result {
   actions: EntityActionConfig<CustomerNoteWithAuthor>[]
   DeleteConfirmDialog: () => JSX.Element
   /**
-   * Author-or-admin gate — mirrors `assertNoteAuthorOrAdmin` (server enforces
-   * the same rule). The render site (timeline row) applies this per-note to
+   * Author-or-admin gate — mirrors the author rule the server compiles (`authorId`
+   * in the agent's note rule; super-admins hold all). The render site (timeline row) applies this per-note to
    * decide whether to mount the actions menu at all, rather than filtering
    * inside the memoized `actions` array below.
    */

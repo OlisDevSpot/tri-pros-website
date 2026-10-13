@@ -1,43 +1,20 @@
-// ─── createHTTPTRPCContext ───────────────────────────────────────────────────
-// Factory for the HTTP adapter context. Resolves the session from request
-// headers; ability + scope start null (narrowed by procedure middleware).
-
 import type { HTTPTRPCContext } from '@/trpc/types'
 
-import { headers as getHeaders } from 'next/headers'
 import { cache } from 'react'
 
-import { getCachedSession } from '@/shared/domains/auth/lib/get-cached-session'
-import { auth } from '@/shared/domains/auth/server'
+import { getRequestActor } from '@/shared/domains/permissions/server/get-request-actor'
 
-export const createHTTPTRPCContext = cache(async (ctx: { req?: Request, resHeaders: Headers }): Promise<HTTPTRPCContext> => {
-  const reqHeaders = await getHeaders()
+export const createHTTPTRPCContext = cache(async (ctx: { req?: Request, resHeaders: Headers }): Promise<HTTPTRPCContext> => ({
+  ...(await getRequestActor()),
+  scope: null,
+  req: ctx.req,
+  resHeaders: ctx.resHeaders,
+}))
 
-  const session = await auth.api.getSession({
-    headers: reqHeaders,
-  })
-
-  return {
-    session,
-    ability: null,
-    scope: null,
-    req: ctx.req,
-    resHeaders: ctx.resHeaders,
-  }
-})
-
-// ─── createRSCTRPCContext ────────────────────────────────────────────────────
-// Context for server-component prefetching via the options proxy in
-// `src/trpc/server.ts`. It takes the session from getCachedSession, the
-// request memo the dashboard layout and protectDashboardPage share, so a
-// prefetching page reads the session once instead of twice in sequence
-// before its first query starts. There is no adapter Request: `req` stays
-// undefined, which is safe because shareable-token procedures pull `token`
-// out of the procedure input via `getRawInput()` (shareable-middleware.ts),
-// never `req`.
+// For server-component prefetching through the options proxy in `src/trpc/server.ts`. There is no
+// adapter Request, so `req` stays undefined: a procedure that reads `ctx.req` must not be prefetched.
 export const createRSCTRPCContext = cache(async (): Promise<HTTPTRPCContext> => ({
-  session: await getCachedSession(),
-  ability: null,
+  ...(await getRequestActor()),
   scope: null,
   req: undefined,
   resHeaders: new Headers(),

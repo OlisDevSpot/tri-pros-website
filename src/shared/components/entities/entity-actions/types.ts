@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
-import type { AppAction, AppSubject } from '@/shared/domains/permissions/types'
+import type { Permission } from '@/shared/domains/permissions/types'
 
 // ── Standardized entity action system ────────────────────────────────────────
 
@@ -11,7 +11,7 @@ export interface EntityAction {
   label: string
   icon: LucideIcon
   /** CASL permission check: [action, subject]. If undefined, always visible. */
-  permission?: [AppAction, AppSubject]
+  permission?: Permission
   /** If true, render with destructive (red) styling */
   destructive?: boolean
   /** If true, this is the primary action shown as a button in bar and toolbar mode */

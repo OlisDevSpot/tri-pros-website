@@ -1,4 +1,4 @@
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { systemContext } from '@/shared/dal/server/lib/contexts'
 import { isEnvelopeFullySigned, mapZohoOperationToContractEvent, shouldNotifyOnContractEvent } from '@/shared/modules/proposals/core/lib/contract-events'
 import { contractService } from '@/shared/services/contracts.service'
 import { notificationService } from '@/shared/services/notification.service'
@@ -37,7 +37,7 @@ export const syncZohoSignStatusJob = createJob<SyncZohoSignStatusPayload>(
       }
     }
 
-    const updated = await contractService.applyContractEvent(SYSTEM_CONTEXT, { contractEnvelopeId, event, performedAt })
+    const updated = await contractService.applyContractEvent(systemContext('webhook:zoho-sign'), { contractEnvelopeId, event, performedAt })
     if (!updated) {
       return
     }

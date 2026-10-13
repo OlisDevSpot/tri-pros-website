@@ -8,6 +8,7 @@ import type { MeetingOutcome } from '@/shared/constants/enums'
 import { useRouter } from 'next/navigation'
 import { ROOTS } from '@/shared/config/roots'
 import { rescheduleBlockedReason } from '@/shared/constants/enums/meetings'
+import { useAbility } from '@/shared/domains/permissions/client'
 import { SetterPicker } from '@/shared/entities/meetings/components/setter-picker'
 import { MEETING_ACTIONS } from '@/shared/entities/meetings/constants/actions'
 import { MEETING_CONFIRMATION_OPTIONS } from '@/shared/entities/meetings/constants/confirmation-options'
@@ -55,6 +56,7 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
   overrides: MeetingActionOverrides<T>,
 ): MeetingActionConfigsResult<T> {
   const router = useRouter()
+  const ability = useAbility()
   const { deleteMeeting, duplicateMeeting, updateConfirmation, updateSetter } = useMeetingActions()
   const { changeOutcome, OutcomeReasonDialog } = useOutcomeChange()
   const { reschedule, RescheduleDialog } = useRescheduleChange()
@@ -65,12 +67,14 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
 
   const defaultNavigate = (entity: T) => router.push(ROOTS.dashboard.meetings.byId(entity.id))
   const defaultViewSchedule = (entity: T) => router.push(ROOTS.dashboard.scheduleWithMeetingHighlight(entity.id, entity.scheduledFor))
+  // The meeting page is the presentation; a viewer who may not start one sees the meeting where it is scheduled.
+  const defaultView = ability.can(...MEETING_ACTIONS.start.permission) ? defaultNavigate : defaultViewSchedule
   const defaultCreateProposal = (entity: T) => router.push(ROOTS.dashboard.proposals.newForMeeting(entity.id))
 
   const configs: EntityActionConfig<T>[] = [
     {
       action: MEETING_ACTIONS.view,
-      onAction: overrides.onView ?? defaultNavigate,
+      onAction: overrides.onView ?? defaultView,
     },
     {
       action: MEETING_ACTIONS.viewSchedule,

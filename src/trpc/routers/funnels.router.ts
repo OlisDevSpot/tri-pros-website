@@ -4,7 +4,7 @@ import { Redis } from '@upstash/redis'
 import z from 'zod'
 
 import env from '@/shared/config/server-env'
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { systemContext } from '@/shared/dal/server/lib/contexts'
 import { leadMetaSchema } from '@/shared/entities/customers/schemas'
 import { customerIntakeService } from '@/shared/services/customer-intake.service'
 import { notificationService } from '@/shared/services/notification.service'
@@ -118,7 +118,7 @@ export const funnelsRouter = createTRPCRouter({
         })
       }
 
-      const result = await customerIntakeService.ingestLead(SYSTEM_CONTEXT, {
+      const result = await customerIntakeService.ingestLead(systemContext('intake:funnel'), {
         core: {
           name: input.name,
           phone: input.phone,
@@ -214,7 +214,7 @@ export const funnelsRouter = createTRPCRouter({
       if (!success) {
         throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Too many submissions. Please try again later.' })
       }
-      const result = await customerIntakeService.enrichFunnelLead(SYSTEM_CONTEXT, input)
+      const result = await customerIntakeService.enrichFunnelLead(systemContext('intake:funnel'), input)
       if (!result.success) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Could not save your details.' })
       }
@@ -238,7 +238,7 @@ export const funnelsRouter = createTRPCRouter({
       if (!success) {
         throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Too many submissions. Please try again later.' })
       }
-      const result = await customerIntakeService.setFunnelLeadAddress(SYSTEM_CONTEXT, {
+      const result = await customerIntakeService.setFunnelLeadAddress(systemContext('intake:funnel'), {
         ...input,
         state: input.state ?? 'CA', // Funnel is SoCal-only; CA is the safe default
       })

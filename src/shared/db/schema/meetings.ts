@@ -42,7 +42,9 @@ export const meetings = pgTable('meetings', {
   newTimeRequestedAt: timestamp('new_time_requested_at', { mode: 'string', withTimezone: true }),
   // Belongs to the visit, not the row: a reschedule hands it to the replacement.
   // The database default exists only so adding the column fills existing rows; create.before supplies generateToken().
-  shareToken: text('share_token').notNull().default(sql`replace(gen_random_uuid()::text, '-', '')`),
+  // Spelled the way Postgres deparses it: drizzle-kit push compares default text verbatim, and the
+  // natural spelling never round-trips, so every push re-emitted SET DEFAULT for this column.
+  shareToken: text('share_token').notNull().default(sql`replace((gen_random_uuid())::text, '-'::text, ''::text)`),
   rescheduledFromId: uuid('rescheduled_from_id').references((): AnyPgColumn => meetings.id, { onDelete: 'set null' }),
   contextJSON: jsonb('context_json').$type<MeetingContext>(),
   flowStateJSON: jsonb('flow_state_json').$type<MeetingFlowState>(),
@@ -91,7 +93,7 @@ export const insertMeetingSchema = createInsertSchema(meetings, {
   createdAt: true,
   updatedAt: true,
 }).extend({
-  // Un-omitted: hooks.create.before defaults from ctx.session.
+  // Un-omitted: hooks.create.before defaults it from the acting user.
   // Optional so clients don't need to send it (hook fills it in).
   ownerId: z.string().optional(),
   visitNote: z.string().trim().max(VISIT_NOTE_MAX_LENGTH).nullable().optional(),

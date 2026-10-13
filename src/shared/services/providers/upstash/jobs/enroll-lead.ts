@@ -1,4 +1,4 @@
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { systemContext } from '@/shared/dal/server/lib/contexts'
 import { campaignEnrollmentService } from '@/shared/services/voip/campaigns/enrollment.service'
 
 import { createJob } from '../lib/create-job'
@@ -25,7 +25,7 @@ import { createJob } from '../lib/create-job'
 export const enrollLeadJob = createJob(
   'enroll-lead',
   async (payload: { customerId: string }) => {
-    const result = await campaignEnrollmentService.enroll(SYSTEM_CONTEXT, {
+    const result = await campaignEnrollmentService.enroll(systemContext('job:campaign-enrollment'), {
       customerId: payload.customerId,
     })
     if (result.success) {

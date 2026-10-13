@@ -2,19 +2,21 @@ import { TRPCError } from '@trpc/server'
 import z from 'zod'
 
 import { envelopeDocumentIds } from '@/shared/constants/enums'
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { systemContext } from '@/shared/dal/server/lib/contexts'
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { CUSTOMER_AGE_MAX, CUSTOMER_AGE_MIN } from '@/shared/entities/customers/lib/constants'
 import { proposalCrud } from '@/shared/modules/proposals/core/dal/server/crud'
 import { getFullView } from '@/shared/modules/proposals/core/dal/server/queries'
 import { isProposalFrozen } from '@/shared/modules/proposals/core/lib/proposal-lock'
+import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 import { contractService } from '@/shared/services/contracts.service'
 import { EnvelopeSelectionError, evaluateDocuments, projectAgreementDocs, reconcileEnvelopeSelection, validateEnvelopeSelection } from '@/shared/services/providers/zoho-sign/lib/documents/evaluate'
 import { buildProposalContext } from '@/shared/services/providers/zoho-sign/lib/documents/proposal-context'
 
-import { createTRPCRouter } from '../../init'
+import { agentProcedure, createTRPCRouter } from '../../init'
 import { dalToTrpc } from '../../lib/dal-to-trpc'
-import { proposalProcedure, proposalShareableProcedure } from './procedures'
+import { proposalShareableProcedure } from './procedures'
 
 export const contractsRouter = createTRPCRouter({
   getContractStatus: proposalShareableProcedure
@@ -54,32 +56,32 @@ export const contractsRouter = createTRPCRouter({
       }
     }),
 
-  createContractDraft: proposalProcedure
+  createContractDraft: agentProcedure
     .input(z.object({ proposalId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       return contractService.createContractEnvelope(ctx, input.proposalId)
     }),
 
-  submitContract: proposalProcedure
+  submitContract: agentProcedure
     .input(z.object({ proposalId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       return contractService.sendContractEnvelope(ctx, input.proposalId)
     }),
 
-  recallContract: proposalProcedure
+  recallContract: agentProcedure
     .input(z.object({ proposalId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       return contractService.recallContractEnvelope(ctx, input.proposalId)
     }),
 
   /** Zoho drafts can't be recalled — they must be deleted via `PUT /requests/{id}/delete`; `recallContract` is for in-flight envelopes only. */
-  discardDraftContract: proposalProcedure
+  discardDraftContract: agentProcedure
     .input(z.object({ proposalId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       return contractService.discardContractEnvelopeDraft(ctx, input.proposalId)
     }),
 
-  resendContract: proposalProcedure
+  resendContract: agentProcedure
     .input(z.object({ proposalId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       return contractService.resendContractEnvelope(ctx, input.proposalId)
@@ -139,20 +141,17 @@ export const contractsRouter = createTRPCRouter({
       { message: 'Must provide age or envelopeDocumentIds (or both)' },
     ))
     .mutation(async ({ ctx, input }) => {
-      // ability is null on the share-token path (shareableMiddleware).
-      if (ctx.ability == null && input.envelopeDocumentIds !== undefined) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'Envelope document selection is agent-only.',
-        })
-      }
-
       const proposal = dalToTrpc(await getFullView(ctx, { id: input.id }))
       if (!proposal) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' })
       }
       if (!proposal.customer) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'No customer linked to this proposal' })
+      }
+
+      // The document selection is the agent's: a share link's rules do not name the column.
+      if (input.envelopeDocumentIds !== undefined && !(await permit(ctx, 'update', proposalServerSpec, ['envelopeDocumentIds']).probe(input.id))) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Envelope document selection is agent-only.' })
       }
 
       if (isProposalFrozen(proposal)) {
@@ -162,9 +161,9 @@ export const contractsRouter = createTRPCRouter({
         })
       }
 
-      // SYSTEM_CONTEXT: visibility was already established by getFullView, and the share token carries no customer-side scope.
+      // Keyed off the proposal the caller reached above, never a client-supplied customer id.
       if (input.age !== undefined) {
-        dalToTrpc(await customerCrud.update(SYSTEM_CONTEXT, {
+        dalToTrpc(await customerCrud.update(systemContext('derived:homeowner-age'), {
           id: proposal.customer.id,
           data: { age: input.age },
         }))
@@ -191,7 +190,8 @@ export const contractsRouter = createTRPCRouter({
         }
       }
 
-      dalToTrpc(await proposalCrud.update(ctx, {
+      // The reconciled selection follows from the age and the registry, not from what the caller may write.
+      dalToTrpc(await proposalCrud.update(systemContext('derived:envelope-documents'), {
         id: input.id,
         data: { envelopeDocumentIds: finalSelection },
       }))

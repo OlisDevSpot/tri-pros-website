@@ -1,3 +1,4 @@
+import process from 'node:process'
 import antfu from '@antfu/eslint-config'
 import { builtinRules } from 'eslint/use-at-your-own-risk'
 
@@ -87,6 +88,10 @@ const lazyOnlyPlugin = { rules: { imports: builtinRules.get('no-restricted-impor
 export default antfu({
   formatters: true,
   react: true,
+  // antfu downgrades unused imports and prefer-const to warnings when it sees an editor, and a terminal inside
+  // VS Code carries the same variables (VSCODE_CWD), so `pnpm lint` there passed what Vercel's build (CI set)
+  // fails. A package script (lint, the commit gate, build) grades like Vercel; only the editor's ESLint server warns.
+  isInEditor: process.env.npm_lifecycle_event ? false : undefined,
   ignores: [
     'src/payload-types.ts',
     'src/app/(payload)/admin/importMap.js',

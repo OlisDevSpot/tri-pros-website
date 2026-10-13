@@ -1,49 +1,26 @@
-// ─── Dashboard Page Protection ──────────────────────────────────────────────
-// Server-side helper for dashboard pages. Call this from the page's
-// server component to determine what the client view should render.
-//
-// Returns a discriminated union:
-//   { status: 'unauthenticated' }       → show sign-in prompt, no redirect
-//   { status: 'authenticated', ... }    → full dashboard
-//
-// If the user is authenticated but NOT internal, this redirects to '/'
-// (they don't belong in the dashboard).
-//
-// USAGE in a dashboard page server component:
-//   const authState = await protectDashboardPage()
-//   return <DashboardView authState={authState} />
-
-import type { AppAbility } from '../types'
+import type { Actor } from '../actor'
 import type { BetterAuthSession } from '@/shared/domains/auth/server'
+
 import { redirect } from 'next/navigation'
-import { getCachedSession } from '@/shared/domains/auth/lib/get-cached-session'
-import { defineAbilitiesFor } from '../abilities'
+
+import { getRequestActor } from '../server/get-request-actor'
 
 export type DashboardAuthState
   = | { status: 'unauthenticated' }
-    | { status: 'authenticated', session: BetterAuthSession, ability: AppAbility }
+    | { status: 'authenticated', session: BetterAuthSession, actor: Actor }
 
 export async function protectDashboardPage(): Promise<DashboardAuthState> {
-  const session = await getCachedSession()
+  const { session, actor } = await getRequestActor()
 
-  // State 1: No session — could be a logged-out agent. Don't redirect,
-  // let the UI show a sign-in prompt.
+  // A logged-out agent may land here: the layout shows a sign-in prompt, so no redirect.
   if (!session) {
     return { status: 'unauthenticated' }
   }
 
-  // State 2: Authenticated but not internal — redirect home.
-  const ability = defineAbilitiesFor({
-    id: session.user.id,
-    role: session.user.role,
-  })
-
-  if (ability.cannot('access', 'Dashboard')) {
+  // Signed in but not internal: they do not belong in the dashboard.
+  if (actor.ability.cannot('access', 'Dashboard')) {
     redirect('/')
   }
 
-  // State 3: Internal user — proceed with full dashboard.
-  // Return ability so the client view can do granular permission checks
-  // without rebuilding it.
-  return { status: 'authenticated', session, ability }
+  return { status: 'authenticated', session, actor }
 }

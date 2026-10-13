@@ -6,22 +6,23 @@ import type z from 'zod'
 
 import type { Tx } from '@/shared/db'
 import type { Insert, Row, Update } from '@/shared/db/types'
-import type { BetterAuthSession } from '@/shared/domains/auth/server'
 import type { EntityName } from '@/shared/domains/permissions/abilities'
-import type { AppAbility, AppSubject } from '@/shared/domains/permissions/types'
+import type { Actor } from '@/shared/domains/permissions/actor'
+import type { AppAbility } from '@/shared/domains/permissions/types'
 
-/** `scope: null` = no visibility restriction (system/omni). */
+import { abilityFromRules } from '@/shared/domains/permissions/ability-from-rules'
+
 export interface ScopedContext {
-  session: BetterAuthSession | null
-  ability: AppAbility | null
+  actor: Actor
+  /** `null` = no visibility restriction (system/omni). */
   scope: SQL | null
   /** Present ⇒ run on the caller's ambient transaction. Absent ⇒ autocommit on `db`. */
   tx?: Tx
 }
 
+// Sites not yet classified into `systemContext(reason)`; each family moves its own, and the constant goes with the last.
 export const SYSTEM_CONTEXT: ScopedContext = {
-  session: null,
-  ability: null,
+  actor: { ability: abilityFromRules([{ action: 'manage', subject: 'all' }]), userId: null },
   scope: null,
 }
 
@@ -104,33 +105,62 @@ export type CrudConfigFactory<TTable extends PgTable, TId extends string | numbe
 
 // The engine validates payloads with the spec's Zod schemas AFTER the hooks run, so the
 // contract is the schema INPUT (hook-filled columns optional), not Drizzle's insert model.
-export type SpecInsert<TSpec extends EntityServerSpec<any, any>> = z.input<TSpec['schemas']['insert']>
-export type SpecUpdate<TSpec extends EntityServerSpec<any, any>> = z.input<TSpec['schemas']['update']>
+export type SpecInsert<TSpec extends AnyServerSpec> = z.input<TSpec['schemas']['insert']>
+export type SpecUpdate<TSpec extends AnyServerSpec> = z.input<TSpec['schemas']['update']>
 /** PK value type, read off the table's `id` column (serial → number, uuid → string). Tables keyed by another column (`primaryKey` override) fall back to string. */
-export type SpecId<TSpec extends EntityServerSpec<any, any>> = Row<TSpec['table']> extends { id: infer I extends string | number } ? I : string
-export type SpecCrudHandlers<TSpec extends EntityServerSpec<any, any>> = CrudHandlers<TSpec['table'], SpecId<TSpec>, SpecInsert<TSpec>, SpecUpdate<TSpec>>
+export type SpecId<TSpec extends AnyServerSpec> = Row<TSpec['table']> extends { id: infer I extends string | number } ? I : string
+export type SpecCrudHandlers<TSpec extends AnyServerSpec> = CrudHandlers<TSpec['table'], SpecId<TSpec>, SpecInsert<TSpec>, SpecUpdate<TSpec>>
 
-export interface EntityServerSpec<
-  TTable extends PgTable = PgTable,
-  // eslint-disable-next-line unused-imports/no-unused-vars -- Phantom type param carried through to CrudHandlers<TTable, TId> via createCrudDal
-  TId extends string | number = string,
-> {
+type ZodObjectAny = z.ZodObject<Record<string, z.ZodTypeAny>>
+
+export interface ServerSpecSchemas {
+  insert: ZodObjectAny
+  update: ZodObjectAny
+  select: ZodObjectAny
+}
+
+interface ServerSpecBase<TTable extends PgTable, TSchemas extends ServerSpecSchemas> {
   entityName: EntityName
-  caslSubject: AppSubject
-  /** The entity's OWN visibility fragment. Optional only for a child with `parent`; a top-level entity MUST declare it or it is unscoped (checked in `resolveEffectiveScope`). */
-  visibility?: (scope: VisibilityScope) => SQL
-  /** Parent link for a sub-entity: `fk` is the CHILD column referencing the parent's PK; the parent's effective scope is ANDed in through it. Children reuse the parent's `caslSubject`. */
-  parent?: { spec: EntityServerSpec, fk: PgColumn }
   table: TTable
-  schemas: {
-    insert: z.ZodObject<Record<string, z.ZodTypeAny>>
-    update: z.ZodObject<Record<string, z.ZodTypeAny>>
-    select: z.ZodObject<Record<string, z.ZodTypeAny>>
-  }
+  schemas: TSchemas
   /** Defaults to 'id'. Override for serial PKs or custom column names. */
   primaryKey?: string
+}
+
+/** Has its own CASL subject. A `parent` adds reach through another entity without giving up the subject. */
+export interface EntitySpec<
+  TTable extends PgTable,
+  TSchemas extends ServerSpecSchemas,
+  TSubject extends EntityName,
+  TConditionColumn extends string,
+  TParent extends AnyServerSpec,
+> extends ServerSpecBase<TTable, TSchemas> {
+  subject: TSubject
+  /** The only columns a rule condition may name. A row checked against a rule on the client must carry them. */
+  conditionColumns: readonly TConditionColumn[]
+  parent?: { spec: TParent, fk: PgColumn }
+  /** The entity's OWN visibility fragment. An entity without a `parent` MUST declare it or it is unscoped (checked in `resolveEffectiveScope`). */
+  visibility?: (scope: VisibilityScope) => SQL
   shareable?: { tokenColumn: string }
 }
+
+/** Has no subject: it is the field `parent.field` of its parent's subject, and is reached only through that parent. */
+export interface SubEntitySpec<
+  TTable extends PgTable,
+  TSchemas extends ServerSpecSchemas,
+  TParent extends AnyServerSpec,
+  TField extends string,
+> extends ServerSpecBase<TTable, TSchemas> {
+  parent: { spec: TParent, fk: PgColumn, field: TField }
+  // Entity-only. Declared `never` so a sub-entity cannot carry them.
+  visibility?: never
+  shareable?: never
+}
+
+/** Any spec over `TTable`: the two shapes the constructors build. Enforcement is typed against the list in `permissions/specs.ts`. */
+export type AnyServerSpec<TTable extends PgTable = PgTable>
+  = | EntitySpec<TTable, ServerSpecSchemas, EntityName, string, AnyServerSpec>
+    | SubEntitySpec<TTable, ServerSpecSchemas, AnyServerSpec, string>
 
 /** `list` is deliberately not a slot — each entity writes its own list query. */
 export type SlotName = 'getById' | 'create' | 'update' | 'delete' | 'duplicate'
@@ -150,7 +180,7 @@ export type DalReturn<T>
 
 export type DalError
   = | { type: 'not-found' }
-    | { type: 'forbidden' }
+    | { type: 'forbidden', field?: string }
     | { type: 'create-failed', cause?: unknown }
     | { type: 'duplicate-failed', cause?: unknown }
     | { type: 'db-error', cause: unknown }

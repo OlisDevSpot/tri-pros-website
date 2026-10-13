@@ -4,11 +4,11 @@ import { meetingOutcomes } from '@/shared/constants/enums/meetings'
 import { meetingService } from '@/shared/modules/meetings/service'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 
-import { createTRPCRouter } from '../../init'
-import { meetingProcedure, visitMessagesWriteProcedure } from './procedures'
+import { agentProcedure, createTRPCRouter } from '../../init'
+import { visitMessagesWriteProcedure } from './procedures'
 
 export const businessRouter = createTRPCRouter({
-  setOutcomeWithReason: meetingProcedure
+  setOutcomeWithReason: agentProcedure
     .input(z.object({
       meetingId: z.string().uuid(),
       outcome: z.enum(meetingOutcomes),
@@ -16,7 +16,7 @@ export const businessRouter = createTRPCRouter({
     }))
     .mutation(async ({ input, ctx }) => dalToTrpc(await meetingService.business.setOutcomeWithReason(ctx, input))),
 
-  rescheduleMeeting: meetingProcedure
+  rescheduleMeeting: agentProcedure
     .input(z.object({
       meetingId: z.string().uuid(),
       newScheduledFor: z.string().datetime(),

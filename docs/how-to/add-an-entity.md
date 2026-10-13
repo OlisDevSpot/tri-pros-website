@@ -4,7 +4,7 @@ Step-by-step procedure for adding a new business entity to the tRPC layer under 
 
 **Read first**: [`docs/adr/0002-entity-server-system.md`](../adr/0002-entity-server-system.md) for the *why*. This document is the *how*.
 
-Every top-level entity is an `EntityServerSpec` with its own CASL subject and visibility predicate. A child table (per-parent rows, append-only logs) is also an `EntityServerSpec`, but declares `parent: { spec, fk }` and omits its own `visibility` — its scope is derived from the parent (ADR-0002 Amendment 2026-08-11; e.g. `src/shared/modules/proposals/incentives/server-spec.ts`).
+Every top-level entity is an `AnyServerSpec` built with `defineEntitySpec`, with its own CASL subject; a converted family's reach comes from its rules through `permit`, an unconverted one still declares a visibility predicate. A child table (per-parent rows, append-only logs) that has no subject of its own is built with `defineSubEntitySpec`; it declares `parent: { spec, fk, field }`, where `field` is the name it takes inside its parent, and omits its own `visibility` — its scope is derived from the parent (ADR-0002 Amendment 2026-08-11; e.g. `src/shared/modules/proposals/incentives/server-spec.ts`).
 
 ---
 
@@ -42,11 +42,13 @@ export const ENTITY_NAMES = [
 export type EntityName = (typeof ENTITY_NAMES)[number]
 ```
 
-If your entity needs its own CASL rules, add rules per role in `defineAbilitiesFor`.
+Its rules go in `src/shared/domains/permissions/rules/<role>.ts` (one file per role, written with the typed `defineRules`); `abilities.ts` only holds `ENTITY_NAMES` and picks each role's file.
 
 ---
 
-## Step 3: Write the visibility predicate
+## Step 3: Write the visibility predicate (families not yet compiled)
+
+A compiled entity declares no `visibility`: add its subject to `COMPILED_SUBJECTS` (`src/shared/dal/server/lib/scope.ts`), put its row condition in the `read` rule of each role's `rules/<role>.ts`, and `createCrudDal` scopes it through `permit(ctx, 'read', spec)`. A compiled spec that still declares `visibility` throws at load. A sub-entity of a compiled parent inherits its reach. Everything below is for a family still on a predicate.
 
 `src/shared/entities/<entity>/lib/visibility.ts`:
 
@@ -57,7 +59,7 @@ import type { VisibilityScope } from '@/shared/dal/server/types'
 import { and, eq, or, exists } from 'drizzle-orm'
 import { proposals, meetings } from '@/shared/db/schema'
 
-// Signature is fixed by `EntityServerSpec.visibility: (scope: VisibilityScope) => SQL`
+// Signature is fixed by `AnyServerSpec.visibility: (scope: VisibilityScope) => SQL`
 // — a single destructured object, not positional args. `ability` is there for
 // capability-based branching (e.g. a dispatcher-only leads-pool clause); most
 // predicates only need `userId`.
@@ -83,6 +85,7 @@ export function proposalVisibility({ userId }: VisibilityScope): SQL {
 ```ts
 // src/shared/modules/proposals/core/server-spec.ts
 // (a plain entity puts this at src/shared/entities/<entity>/lib/server-spec.ts)
+import { defineEntitySpec } from '@/shared/dal/server/lib/define-spec'
 import { PROPOSAL } from '@/shared/modules/proposals/core/lib/constants'
 import { proposalVisibility } from '@/shared/modules/proposals/core/lib/visibility'
 import { insertProposalSchema, proposals, selectProposalSchema } from '@/shared/db/schema'
@@ -90,17 +93,18 @@ import { insertProposalSchema, proposals, selectProposalSchema } from '@/shared/
 const updateProposalSchema = insertProposalSchema.partial()
 
 // Concrete-typed schemas — consumed by createCrudRouter for tRPC type inference.
-// The spec also holds these objects, but type-erased via the EntityServerSpec
+// The spec also holds these objects, but type-erased via the AnyServerSpec
 // interface (fine for DAL's runtime .parse()).
 export const proposalSchemas = {
   insert: insertProposalSchema,
   update: updateProposalSchema,
 }
 
-export const proposalServerSpec = {
+export const proposalServerSpec = defineEntitySpec({
   entityName: PROPOSAL,
-  caslSubject: PROPOSAL,
-  visibility: proposalVisibility,
+  subject: PROPOSAL,
+  conditionColumns: [],
+  visibility: proposalVisibility, // a compiled entity omits this
   table: proposals,
   schemas: { ...proposalSchemas, select: selectProposalSchema },
   // Optional spec fields — named typed config for cross-entity patterns:
@@ -108,8 +112,10 @@ export const proposalServerSpec = {
   // Note: list is NOT on the spec — it's a business concern with entity-specific
   // joins, derived columns, and filter predicates. Each entity writes its own
   // list query as a business sub-router procedure.
-} satisfies EntityServerSpec<typeof proposals>  // TId defaults to string (UUID)
+})
 ```
+
+Then add the new spec to the `ServerSpec` union in `src/shared/domains/permissions/specs.ts` and to `SERVER_SPECS` in `src/shared/dal/server/specs.ts`, and, for an entity, its subject to the pinned list in `src/shared/domains/permissions/type-checks/must-not-compile.ts`. A spec missing from the list cannot be named in a rule.
 
 ---
 
@@ -126,7 +132,7 @@ export const proposalCrud = createCrudDal(proposalServerSpec, () => ({
   hooks: {
     create: {
       before(input, ctx) {
-        return { ...input, ownerId: ctx.session!.user.id }
+        return { ...input, ownerId: ctx.actor.userId }
       },
       async after(row, ctx) {
         await someService.onCreated(row, ctx)
@@ -138,7 +144,7 @@ export const proposalCrud = createCrudDal(proposalServerSpec, () => ({
     exclude: ['createdAt', 'updatedAt', 'status'],
     overrides: (source, ctx) => ({
       label: `Copy of ${source.label}`,
-      ownerId: ctx.session!.user.id,
+      ownerId: ctx.actor.userId,
     }),
   },
 }))
@@ -159,7 +165,7 @@ orchestrators — extract business logic to `lib/` helpers. Reference impls:
 ```ts
 // procedures.ts — pre-scoped procedures, defined ONCE, imported by every leaf
 export const proposalProcedure = agentProcedure.use(async ({ ctx, next }) => {
-  const scope = resolveVisibilityScope(proposalServerSpec, { userId: ctx.session.user.id, ability: ctx.ability })
+  const scope = resolveVisibilityScope(proposalServerSpec, { userId: ctx.session.user.id, ability: ctx.actor.ability })
   return next({ ctx: { ...ctx, scope } })
 })
 export const proposalShareableProcedure = baseProcedure.use(shareableMiddleware(proposalServerSpec))
@@ -186,7 +192,7 @@ export const proposalsRouter = createTRPCRouter({
 })
 ```
 
-Declare only the procedure variants the entity uses (meetings/applications need only the agent one). These are NOT custom abstractions — `proposalProcedure` IS a real tRPC procedure with full type inference and middleware composability.
+A compiled entity needs no scope step: its leaves use `agentProcedure` directly (`resolveVisibilityScope` returns `null` for it) and the DAL scopes through `permit`. Declare only the procedure variants the entity uses (meetings/applications need only the agent one). These are NOT custom abstractions — `proposalProcedure` IS a real tRPC procedure with full type inference and middleware composability.
 
 ---
 
@@ -227,7 +233,7 @@ trpc.proposalsRouter.crud.getById.useQuery({ id, token: shareToken })
 
 - **Enrich or derive data on create/update**: use `hooks.create.before` / `hooks.update.before` in the entity's `createCrudDal` config factory (`dal/server/crud.ts`). These run at the DAL layer before the DB write and return enriched input. Prefer config-factory hooks over handler overrides for data transformation. Never put hooks on the spec.
 - **Override a CRUD handler** (last resort — bypasses hooks entirely): pass `handlers: { create: customCreateDal }` to `createCrudRouter`. The custom handler must match `CrudHandlers<TTable, TId>` for that slot. Non-overridden slots use the generic DAL defaults from `createCrudDal(spec)`.
-- **Non-`id` primary key** (serial integer, custom column name, etc.): set `primaryKey` on the spec and pass `id: z.number().int()` in the schemas config. Use `EntityServerSpec<typeof table, number>` for the `TId` generic.
+- **Non-`id` primary key** (serial integer, custom column name, etc.): set `primaryKey` on the spec and pass `id: z.number().int()` in the schemas config. The id type is read off the table's `id` column.
 - **Behavior not covered by any spec field**: write it as a business procedure on the business sub-router. If the same pattern appears across 2+ entities, propose adding it as a named typed spec field — that's the promotion bar.
 - **Service-layer sub-router** (email, contracts, etc.): a plain leaf — `export const deliveryRouter = createTRPCRouter({...})` importing procedures from `./procedures`, calling services and the entity's `<entity>Crud` handlers. See `proposals.router/delivery.router.ts` as the reference implementation.
 
@@ -235,10 +241,10 @@ trpc.proposalsRouter.crud.getById.useQuery({ id, token: shareToken })
 
 ## What NOT to do
 
-- ❌ **Don't put callback functions or business logic in the server-spec.** The spec is data. The only function allowed is the visibility predicate (and it's a named spec field, not free-form).
-- ❌ **Don't write a new `userCanSeeX` predicate in `dal/server/`.** Visibility colocates with the entity at `entities/<entity>/lib/visibility.ts`.
+- ❌ **Don't put callback functions or business logic in the server-spec.** The spec is data. The only function allowed is a not-yet-compiled family's visibility predicate (and it's a named spec field, not free-form).
+- ❌ **Don't write a new `userCanSeeX` predicate in `dal/server/`.** Visibility colocates with the entity at `entities/<entity>/lib/visibility.ts`; a compiled entity has none, its rule lives in `rules/<role>.ts`.
 - ❌ **Don't hand-roll CRUD procedures.** Use `createCrudRouter()`. If the factory's output isn't sufficient, you almost certainly want a business procedure, not a custom CRUD slot.
-- ❌ **Don't write `if (ctx.ability.can('manage', 'all')) ...` inline.** The CRUD factory applies CASL and visibility uniformly. Reaching for the omni check inline is a smell.
+- ❌ **Don't write `if (ctx.actor.ability.can('manage', 'all')) ...` inline.** The CRUD factory applies CASL and visibility uniformly. Reaching for the omni check inline is a smell.
 - ❌ **Don't generate procedures or sub-routers from a factory** (`createXxxRouter(entity)`, toolkit params). Define procedures once in `procedures.ts`; CRUD is its own `crud.router.ts` leaf via `createCrudRouter()`.
 - ❌ **Don't define entity-name strings in `domains/permissions/`.** Identity lives in `entities/<entity>/lib/constants.ts` and is *imported* by `permissions/abilities.ts`. Inverting this creates circular logic and breaks the "entity owns its identity" rule.
 

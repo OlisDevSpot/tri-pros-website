@@ -21,7 +21,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
   const authState = await protectDashboardPage()
 
   // Super-admin only. Agents cannot see this page.
-  if (authState.status === 'authenticated' && authState.ability.cannot('manage', 'all')) {
+  if (authState.status === 'authenticated' && authState.actor.ability.cannot('manage', 'all')) {
     redirect(ROOTS.dashboard.root)
   }
 

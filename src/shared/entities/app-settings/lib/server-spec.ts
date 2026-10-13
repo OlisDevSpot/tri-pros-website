@@ -1,4 +1,4 @@
-import type { EntityServerSpec } from '@/shared/dal/server/types'
+import { defineEntitySpec } from '@/shared/dal/server/lib/define-spec'
 import { appSettings, insertAppSettingSchema, selectAppSettingSchema } from '@/shared/db/schema'
 import { APP_SETTING } from './constants'
 import { appSettingVisibility } from './visibility'
@@ -10,9 +10,10 @@ export const appSettingSchemas = {
   update: updateAppSettingSchema,
 }
 
-export const appSettingServerSpec = {
+export const appSettingServerSpec = defineEntitySpec({
   entityName: APP_SETTING,
-  caslSubject: APP_SETTING,
+  subject: APP_SETTING,
+  conditionColumns: [],
   visibility: appSettingVisibility,
   table: appSettings,
   schemas: {
@@ -22,4 +23,4 @@ export const appSettingServerSpec = {
   },
   // Natural string PK — feature key (e.g., 'voip-in-house', 'voip-campaigns', 'compliance').
   primaryKey: 'feature',
-} satisfies EntityServerSpec<typeof appSettings>
+})

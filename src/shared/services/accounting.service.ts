@@ -1,4 +1,5 @@
 import type { QBCustomer, QBInvoice, QBInvoiceLine, QBPayment, QBQueryResponse } from '@/shared/services/providers/quickbooks/types'
+import { systemContext } from '@/shared/dal/server/lib/contexts'
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
@@ -9,6 +10,8 @@ import { getProposalByInvoiceId, getProposalsByIds, getProposalsByInvoiceIds } f
 import { qbRequest } from '@/shared/services/providers/quickbooks/client'
 
 function createAccountingService() {
+  const quickbooks = systemContext('sync:quickbooks')
+
   function derivePaymentStatus(balance: number, total: number): string {
     if (balance <= 0) {
       return 'paid'
@@ -21,7 +24,7 @@ function createAccountingService() {
 
   return {
     ensureCustomer: async (customerId: string): Promise<string> => {
-      const customer = dalVerifySuccess(await customerCrud.getById(SYSTEM_CONTEXT, { id: customerId }))
+      const customer = dalVerifySuccess(await customerCrud.getById(quickbooks, { id: customerId }))
 
       if (!customer) {
         throw new Error(`Customer ${customerId} not found`)
@@ -74,7 +77,7 @@ function createAccountingService() {
       }
 
       dalVerifySuccess(
-        await customerCrud.update(SYSTEM_CONTEXT, {
+        await customerCrud.update(quickbooks, {
           id: customerId,
           data: { qbCustomerId },
         }),
@@ -125,7 +128,7 @@ function createAccountingService() {
         throw new Error(`Project ${projectId} has no QB sub-customer`)
       }
 
-      const proposalRows = dalVerifySuccess(await getProposalsByIds(SYSTEM_CONTEXT, proposalIds))
+      const proposalRows = dalVerifySuccess(await getProposalsByIds(quickbooks, proposalIds))
 
       const lineItems: QBInvoiceLine[] = proposalRows
         .filter(Boolean)
@@ -164,7 +167,7 @@ function createAccountingService() {
 
       if (proposalIds[0]) {
         dalVerifySuccess(
-          await proposalCrud.update(SYSTEM_CONTEXT, {
+          await proposalCrud.update(quickbooks, {
             id: proposalIds[0],
             data: { qbInvoiceId, qbPaymentStatus: 'unpaid' },
           }),
@@ -189,7 +192,7 @@ function createAccountingService() {
       }
 
       // Batch: find proposals linked to these invoices
-      const linkedProposals = dalVerifySuccess(await getProposalsByInvoiceIds(SYSTEM_CONTEXT, invoiceIds))
+      const linkedProposals = dalVerifySuccess(await getProposalsByInvoiceIds(quickbooks, invoiceIds))
 
       if (linkedProposals.length === 0) {
         return
@@ -215,7 +218,7 @@ function createAccountingService() {
 
         const status = derivePaymentStatus(invoice.Balance, invoice.TotalAmt)
         dalVerifySuccess(
-          await proposalCrud.update(SYSTEM_CONTEXT, {
+          await proposalCrud.update(quickbooks, {
             id: proposal.id,
             data: { qbPaymentStatus: status },
           }),
@@ -227,7 +230,7 @@ function createAccountingService() {
       const invoiceData = await qbRequest<{ Invoice: QBInvoice }>(`/invoice/${invoiceId}`)
       const invoice = invoiceData.Invoice
 
-      const proposal = dalVerifySuccess(await getProposalByInvoiceId(SYSTEM_CONTEXT, invoiceId))
+      const proposal = dalVerifySuccess(await getProposalByInvoiceId(quickbooks, invoiceId))
 
       if (!proposal) {
         return
@@ -235,7 +238,7 @@ function createAccountingService() {
 
       const status = derivePaymentStatus(invoice.Balance, invoice.TotalAmt)
       dalVerifySuccess(
-        await proposalCrud.update(SYSTEM_CONTEXT, {
+        await proposalCrud.update(quickbooks, {
           id: proposal.id,
           data: { qbPaymentStatus: status },
         }),

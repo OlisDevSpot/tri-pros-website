@@ -2,6 +2,7 @@
 
 import type { SQL } from 'drizzle-orm'
 
+import type { MeetingOutcome } from '@/shared/constants/enums/meetings'
 import type { Pipeline } from '@/shared/constants/enums/pipelines'
 import type { PaginatedResult } from '@/shared/dal/lib/query/paginated-result'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
@@ -10,9 +11,9 @@ import type { CustomerPipelineItem, CustomerPipelineRawData, PipelineItemProposa
 import { and, asc, count, desc, eq, exists, inArray, isNotNull, isNull, max, ne, sql } from 'drizzle-orm'
 import z from 'zod'
 
-import { DECIDED_OUTCOMES } from '@/shared/constants/enums/meetings'
 import { deriveProjectStatusBucket, pipelines } from '@/shared/constants/enums/pipelines'
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { fieldListInput } from '@/shared/dal/server/lib/query/field-list-input'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
@@ -27,18 +28,27 @@ import { CUSTOMER_FIELDS } from '@/shared/entities/customers/dal/customer-fields
 import { CUSTOMER_FIELD_SQL } from '@/shared/entities/customers/dal/server/customer-field-sql'
 import { customerSearchWhere } from '@/shared/entities/customers/dal/server/customer-search-sql'
 import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
-import { userParticipatesInMeeting } from '@/shared/entities/meetings/dal/server/participants'
+import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
+import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
+import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 
 export const customerPipelineItemsInputSchema = fieldListInput(CUSTOMER_FIELDS, { pagination: false }).extend({
   pipeline: z.enum(pipelines),
 })
 export type CustomerPipelineItemsInput = z.infer<typeof customerPipelineItemsInputSchema>
 
+/** An undecided meeting that is upcoming or started within the last two hours: the visit the customer is waiting on. */
+const LIVE_MEETING = sql`${meetings.meetingOutcome} = ${'not_set'} AND ${meetings.scheduledFor} > now() - interval '2 hours'`
+
 /** Everything a branch needs: who is asking, and the customer filter, search and order the kanban toolbar chose. */
 interface PipelineBranchArgs {
   userId: string
   isOmni: boolean
   canSeeUngated: boolean
+  /** The Meeting read reach, for the arms whose outer table is `meetings`. */
+  meetingReach: SQL
+  /** The Proposal read reach, for every proposal read. */
+  proposalReach: SQL
   customerWhere: SQL | undefined
   /** Undefined keeps the branch's own natural order. */
   customerOrder: SQL[] | undefined
@@ -47,12 +57,15 @@ interface PipelineBranchArgs {
 export async function getCustomerPipelineItems(ctx: ScopedContext, input: CustomerPipelineItemsInput): Promise<DalReturn<PaginatedResult<CustomerPipelineItem>>> {
   return dalDbOperation(async () => {
     const args: PipelineBranchArgs = {
-      // Each pipeline reaches customers through a different table, so scoping stays per branch; without a session the fallback id '' never matches a participant or owner (leads is unscoped; projects still shows public projects).
-      userId: ctx.session?.user.id ?? '',
-      isOmni: !ctx.ability || ctx.ability.can('manage', 'all'),
-      canSeeUngated: canSeeUngatedPhone(ctx.ability),
+      // The customer reach comes from the rules; the meeting arms add the Meeting read reach.
+      userId: ctx.actor.userId ?? '',
+      isOmni: ctx.actor.ability.can('manage', 'all'),
+      canSeeUngated: canSeeUngatedPhone(ctx.actor.ability),
+      meetingReach: permit(ctx, 'read', meetingServerSpec).sql,
+      proposalReach: permit(ctx, 'read', proposalServerSpec).sql,
       customerWhere: and(
-        customerSearchWhere(input.search, ctx.ability),
+        permit(ctx, 'read', customerServerSpec).sql,
+        customerSearchWhere(input.search, ctx.actor.ability),
         CUSTOMER_FIELD_SQL.where(input.filters),
       ),
       customerOrder: input.sort ? CUSTOMER_FIELD_SQL.orderBy(input.sort) : undefined,
@@ -158,7 +171,7 @@ async function getRehashOrDeadPipelineItems(pipeline: Pipeline, args: PipelineBr
         ne(meetings.meetingOutcome, 'rescheduled'),
         eq(meetings.pipeline, pipeline as 'fresh' | 'rehash' | 'dead'),
         isNull(meetings.projectId),
-        args.isOmni ? undefined : userParticipatesInMeeting(args.userId, meetings.id),
+        args.meetingReach,
       ))),
       args.customerWhere,
     ))
@@ -209,12 +222,10 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
       customerState: customers.state,
       customerZip: customers.zip,
       meetingCount: count(meetings.id).as('meeting_count'),
-      hasScheduledFutureMeeting: sql<boolean>`bool_or(${meetings.scheduledFor} > now())`.as('has_future_scheduled'),
-      hasConfirmedFutureMeeting: sql<boolean>`bool_or(${meetings.scheduledFor} > now() AND ${meetings.confirmedAt} IS NOT NULL)`.as('has_confirmed_future'),
-      hasActiveMeeting: sql<boolean>`bool_or(${meetings.scheduledFor} <= now() AND ${meetings.scheduledFor} > now() - interval '2 hours')`.as('has_active'),
-      hasPastMeeting: sql<boolean>`bool_or(${meetings.scheduledFor} <= now() - interval '2 hours' OR (${meetings.scheduledFor} IS NULL AND ${meetings.meetingOutcome} IN (${sql.join(DECIDED_OUTCOMES.map(o => sql`${o}`), sql`, `)})))`.as('has_past'),
-      hasFollowUpNeeded: sql<boolean>`bool_or(${meetings.meetingOutcome} = ${'follow_up_needed'})`.as('has_follow_up_needed'),
-      hasRescheduleNeeded: sql<boolean>`bool_or(${meetings.meetingOutcome} = ${'reschedule_needed'})`.as('has_reschedule_needed'),
+      // Null when the customer has no live meeting.
+      liveMeetingStarted: sql<boolean | null>`(array_agg(${meetings.scheduledFor} <= now() ORDER BY ${meetings.scheduledFor}) FILTER (WHERE ${LIVE_MEETING}))[1]`.as('live_meeting_started'),
+      liveMeetingConfirmed: sql<boolean | null>`(array_agg(${meetings.confirmedAt} IS NOT NULL ORDER BY ${meetings.scheduledFor}) FILTER (WHERE ${LIVE_MEETING}))[1]`.as('live_meeting_confirmed'),
+      latestOutcome: sql<MeetingOutcome>`(array_agg(${meetings.meetingOutcome} ORDER BY ${meetings.scheduledFor} DESC))[1]`.as('latest_outcome'),
       latestMeetingAt: max(meetings.createdAt).as('latest_meeting_at'),
       nextMeetingAt: sql<string | null>`min(CASE WHEN ${meetings.scheduledFor} > now() - interval '2 hours' THEN ${meetings.scheduledFor} END)`.as('next_meeting_at'),
     })
@@ -224,7 +235,7 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
       ne(meetings.meetingOutcome, 'rescheduled'),
       eq(meetings.pipeline, 'fresh'),
       isNull(meetings.projectId),
-      args.isOmni ? undefined : userParticipatesInMeeting(args.userId, meetings.id),
+      args.meetingReach,
     ))
     .leftJoin(leadSourcesTable, eq(leadSourcesTable.id, customers.leadSourceId))
     .where(args.customerWhere)
@@ -238,22 +249,21 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
   const customerIds = rows.map(r => r.customerId)
 
   // The three follow-ups need only the customer ids, so they run together.
-  const [proposalRows, repRows, proposalDetailRows] = await Promise.all([
-    // Pipeline value is read per-customer below from the stored final_tcp_cents
-    // rollup (Wave 2). This aggregate query only counts + summarizes statuses.
+  const [stageRows, repRows, proposalDetailRows] = await Promise.all([
+    // The column a customer sits in follows from the proposals on the meetings the actor reaches,
+    // so a role without proposals still sees the customer where they are; the proposals themselves
+    // (count, cards, value) stay behind the proposal reach below.
     db
       .select({
         customerId: customers.id,
-        proposalCount: count(proposals.id).as('proposal_count'),
         proposalStatuses: sql<string[] | string>`array_agg(DISTINCT ${proposals.status})`.as('proposal_statuses'),
         hasSentContract: sql<boolean>`bool_or(${proposals.contractSentAt} IS NOT NULL)`.as('has_sent_contract'),
-        latestProposalAt: max(proposals.createdAt).as('latest_proposal_at'),
       })
       .from(proposals)
       .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
       .innerJoin(customers, eq(customers.id, meetings.customerId))
       .where(and(
-        args.isOmni ? undefined : userParticipatesInMeeting(args.userId, proposals.meetingId),
+        args.meetingReach,
         inArray(customers.id, customerIds),
       ))
       .groupBy(customers.id),
@@ -275,7 +285,7 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
       .where(and(
         inArray(meetings.customerId, customerIds),
         ne(meetings.meetingOutcome, 'rescheduled'),
-        args.isOmni ? undefined : userParticipatesInMeeting(args.userId, meetings.id),
+        args.meetingReach,
       ))
       .orderBy(meetings.customerId, desc(meetings.scheduledFor)),
     // Individual proposals per customer for card display + value calculation.
@@ -293,13 +303,13 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
       .from(proposals)
       .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
       .where(and(
-        args.isOmni ? undefined : userParticipatesInMeeting(args.userId, proposals.meetingId),
+        args.proposalReach,
         inArray(meetings.customerId, customerIds),
       ))
       .orderBy(desc(proposals.createdAt)),
   ])
 
-  const proposalMap = new Map(proposalRows.map(r => [r.customerId, r]))
+  const stageMap = new Map(stageRows.map(r => [r.customerId, r]))
 
   const repMap = new Map(
     repRows
@@ -331,7 +341,8 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
   }
 
   return rows.map((row): CustomerPipelineItem => {
-    const pData = proposalMap.get(row.customerId)
+    const pData = stageMap.get(row.customerId)
+    const reachedProposals = proposalDetailMap.get(row.customerId) ?? []
     const rawStatuses = pData?.proposalStatuses
     const proposalStatuses = Array.isArray(rawStatuses)
       ? rawStatuses.filter(Boolean)
@@ -348,25 +359,20 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
       customerAddress: row.customerAddress,
       customerCity: row.customerCity,
       meetingCount: row.meetingCount,
-      proposalCount: pData?.proposalCount ?? 0,
-      hasPastMeeting: row.hasPastMeeting ?? false,
-      hasActiveMeeting: row.hasActiveMeeting ?? false,
-      hasScheduledFutureMeeting: row.hasScheduledFutureMeeting ?? false,
-      hasConfirmedFutureMeeting: row.hasConfirmedFutureMeeting ?? false,
-      hasFollowUpNeeded: row.hasFollowUpNeeded ?? false,
-      hasRescheduleNeeded: row.hasRescheduleNeeded ?? false,
+      proposalCount: reachedProposals.length,
+      liveMeeting: row.liveMeetingStarted === null
+        ? null
+        : { started: row.liveMeetingStarted, confirmed: row.liveMeetingConfirmed ?? false },
+      latestOutcome: row.latestOutcome,
       proposalStatuses,
       hasSentContract: pData?.hasSentContract ?? false,
-      latestActivityAt: pData?.latestProposalAt ?? row.latestMeetingAt ?? null,
+      // Detail rows are newest first.
+      latestActivityAt: reachedProposals[0]?.createdAt ?? row.latestMeetingAt ?? null,
     }
 
     const stage = computeFreshStage({
-      hasPastMeeting: rawData.hasPastMeeting,
-      hasActiveMeeting: rawData.hasActiveMeeting,
-      hasScheduledFutureMeeting: rawData.hasScheduledFutureMeeting,
-      hasConfirmedFutureMeeting: rawData.hasConfirmedFutureMeeting,
-      hasFollowUpNeeded: rawData.hasFollowUpNeeded,
-      hasRescheduleNeeded: rawData.hasRescheduleNeeded,
+      liveMeeting: rawData.liveMeeting,
+      latestOutcome: rawData.latestOutcome,
       proposalStatuses: rawData.proposalStatuses,
       hasSentContract: rawData.hasSentContract,
     })
@@ -392,7 +398,7 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
       meetingScheduledFor: repMap.get(row.customerId)?.meetingScheduledFor ?? null,
       meetingConfirmedAt: repMap.get(row.customerId)?.meetingConfirmedAt ?? null,
       assignedRep: repMap.get(row.customerId)?.rep ?? null,
-      proposals: proposalDetailMap.get(row.customerId) ?? [],
+      proposals: reachedProposals,
       project: null,
     }
   })
@@ -466,7 +472,7 @@ async function getProjectsPipelineItems(args: PipelineBranchArgs): Promise<Custo
     .where(and(
       inArray(meetings.customerId, customerIds),
       isNotNull(meetings.projectId),
-      args.isOmni ? undefined : userParticipatesInMeeting(args.userId, meetings.id),
+      args.meetingReach,
     ))
     .orderBy(desc(meetings.createdAt))
 
@@ -485,7 +491,7 @@ async function getProjectsPipelineItems(args: PipelineBranchArgs): Promise<Custo
           finalTcpCents: proposals.finalTcpCents,
         })
         .from(proposals)
-        .where(inArray(proposals.meetingId, meetingIds))
+        .where(and(inArray(proposals.meetingId, meetingIds), args.proposalReach))
         .orderBy(desc(proposals.createdAt))
     : []
 
