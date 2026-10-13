@@ -82,6 +82,14 @@ function buildMeetingDescription(meeting: MeetingForGCal, extras: MeetingEventEx
   return sections.join('\n\n')
 }
 
+/**
+ * The event id a meeting's own event gets: its uuid's hex digits, which Google accepts. One id per meeting turns a
+ * second create (a retried or overlapping sync) into a 409 instead of a second event and a second invite.
+ */
+export function meetingEventId(meetingId: string): string {
+  return meetingId.replaceAll('-', '').toLowerCase()
+}
+
 export function meetingToGCalEvent(meeting: MeetingForGCal, extras: MeetingEventExtras): GCalEventInput | null {
   // A cancelled meeting is gone, and a rescheduled original's event now belongs to its replacement.
   if (!meeting.scheduledFor || meeting.meetingOutcome === 'cancelled' || meeting.meetingOutcome === 'rescheduled') {

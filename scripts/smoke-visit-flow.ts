@@ -28,7 +28,7 @@ import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
 import { toNationalDigits } from '@/shared/lib/phone'
 import { meetingService } from '@/shared/modules/meetings/service'
 import { notificationService } from '@/shared/services/notification.service'
-import { googleCalendarClient } from '@/shared/services/providers/google-calendar/client'
+import { GCalRequestError, googleCalendarClient } from '@/shared/services/providers/google-calendar/client'
 import { twilioClient } from '@/shared/services/providers/twilio/client'
 import { deleteMeetingEventJob } from '@/shared/services/providers/upstash/jobs/delete-meeting-event'
 import { syncMeetingToGcalJob } from '@/shared/services/providers/upstash/jobs/sync-meeting-to-gcal'
@@ -93,14 +93,26 @@ let sidCounter = 0
   return { sid: `SMsmokeout${++sidCounter}`, status: 'queued' }
 }
 
+// The fake behaves like Google where the sync depends on it (checked against the dev calendar 2026-10-12): a create takes
+// a network round trip, an id is refused with 409 while ANY event holds it, a deleted event stays as a `cancelled`
+// tombstone that GET still returns, and a PUT with `status: 'confirmed'` brings a tombstone back.
 const fakeEvents = new Map<string, GCalEvent>()
 const realCalendar = { ...googleCalendarClient }
 let etagCounter = 0
+const roundTrip = () => new Promise(resolve => setTimeout(resolve, 150))
 Object.assign(googleCalendarClient, {
   createEvent: async (token: string, calendarId: string, event: GCalEventInput, sendUpdates: GCalSendUpdates) => {
-    const created = LIVE
-      ? await realCalendar.createEvent(token, calendarId, event, sendUpdates)
-      : { ...event, id: `smoke-evt-${fakeEvents.size + 1}`, etag: `"${++etagCounter}"`, updated: new Date().toISOString(), status: 'confirmed' } as GCalEvent
+    let created: GCalEvent
+    if (LIVE) {
+      created = await realCalendar.createEvent(token, calendarId, event, sendUpdates)
+    }
+    else {
+      await roundTrip()
+      if (event.id && fakeEvents.has(event.id)) {
+        throw new GCalRequestError(409, 'Google Calendar createEvent failed (409): duplicate')
+      }
+      created = { ...event, id: event.id ?? `smokeevt${fakeEvents.size + 1}`, etag: `"${++etagCounter}"`, updated: new Date().toISOString(), status: 'confirmed' } as GCalEvent
+    }
     fakeEvents.set(created.id, created)
     calendar.push({ op: 'create', eventId: created.id, sendUpdates, event })
     return created
@@ -111,14 +123,22 @@ Object.assign(googleCalendarClient, {
     }
     const found = fakeEvents.get(eventId)
     if (!found) {
-      throw new Error(`fake calendar has no event ${eventId}`)
+      throw new GCalRequestError(404, `fake calendar has no event ${eventId}`)
     }
     return found
   },
   updateEvent: async (token: string, calendarId: string, eventId: string, event: GCalEventInput, sendUpdates: GCalSendUpdates, etag?: string) => {
-    const updated = LIVE
-      ? await realCalendar.updateEvent(token, calendarId, eventId, event, sendUpdates, etag)
-      : { ...event, id: eventId, etag: `"${++etagCounter}"`, updated: new Date().toISOString(), status: 'confirmed' } as GCalEvent
+    let updated: GCalEvent
+    if (LIVE) {
+      updated = await realCalendar.updateEvent(token, calendarId, eventId, event, sendUpdates, etag)
+    }
+    else {
+      const existing = fakeEvents.get(eventId)
+      if (etag && existing && existing.etag !== etag) {
+        throw new GCalRequestError(412, 'Google Calendar updateEvent failed (412): precondition')
+      }
+      updated = { ...event, id: eventId, etag: `"${++etagCounter}"`, updated: new Date().toISOString(), status: event.status ?? existing?.status ?? 'confirmed' } as GCalEvent
+    }
     fakeEvents.set(eventId, updated)
     calendar.push({ op: 'update', eventId, sendUpdates, event })
     return updated
@@ -127,10 +147,25 @@ Object.assign(googleCalendarClient, {
     if (LIVE) {
       await realCalendar.deleteEvent(token, calendarId, eventId, sendUpdates)
     }
-    fakeEvents.delete(eventId)
+    const existing = fakeEvents.get(eventId)
+    if (existing) {
+      fakeEvents.set(eventId, { ...existing, status: 'cancelled', etag: `"${++etagCounter}"` })
+    }
     calendar.push({ op: 'delete', eventId, sendUpdates })
   },
 })
+
+/** Whether the meeting's linked event is on the calendar (not a tombstone). Unknowable in LIVE mode without a read, so it reads. */
+async function linkedEventIsLive(meetingId: string) {
+  const row = await readMeeting(meetingId)
+  if (!row.gcalEventId) {
+    return false
+  }
+  if (LIVE) {
+    return true
+  }
+  return fakeEvents.get(row.gcalEventId)?.status === 'confirmed'
+}
 
 /** What QStash would have delivered: the calendar jobs run here, in order; the rest stay recorded only. */
 async function drainJobs() {
@@ -319,19 +354,37 @@ async function run() {
   const [afterStop] = await db.select({ dnc: customers.dncOptedOutAt }).from(customers).where(eq(customers.id, customerId))
   check('9 STOP puts the customer on do-not-contact', stop.action === 'opt_out' && afterStop.dnc != null && since(notified, at.notified).some(n => n.kind === 'opt_out'), `action ${stop.action}, dnc ${afterStop.dnc ?? 'not set'}`)
 
-  // Known gap: two syncs of a fresh meeting at once (a QStash retry overlapping the first run).
+  // The calendar under stress, faked only: these rounds invite the homeowner, so LIVE would email the override inbox each time.
   if (!LIVE) {
+    const invitedNotices = (from: number) => since(calendar, from).filter(c => c.sendUpdates === 'all').length
+
+    // R1. A QStash retry overlapping the first run: two syncs of one invited, never-synced meeting.
     const fresh = await createMeeting(5)
     jobQueue.length = 0
+    await db.update(meetings).set({ homeownerInvitedAt: new Date().toISOString() }).where(eq(meetings.id, fresh.id))
     at = mark()
     await Promise.all([schedulingService.syncMeeting(fresh.id), schedulingService.syncMeeting(fresh.id)])
-    const creates = since(calendar, at.calendar).filter(c => c.op === 'create').length
-    if (creates > 1) {
-      gap('booking race', `two overlapping syncs made ${creates} events for one meeting. BLOCKING before the first production invite (fix: client-supplied event id + 409).`)
-    }
-    else {
-      check('booking race', true, 'one event')
-    }
+    const raceCreates = since(calendar, at.calendar).filter(c => c.op === 'create').length
+    check('R1 two overlapping syncs make one event and one invite', raceCreates === 1 && invitedNotices(at.calendar) === 1 && await linkedEventIsLive(fresh.id), `events created ${raceCreates}, invites ${invitedNotices(at.calendar)}`)
+    const eventId = (await readMeeting(fresh.id)).gcalEventId
+
+    // R2. Cancel, then un-cancel: the same event comes back and the homeowner is invited again.
+    const cancelFresh = () => meetingService.business.setOutcomeWithReason(SYSTEM_CONTEXT, { meetingId: fresh.id, outcome: 'cancelled', reason: 'smoke test' })
+    const uncancelFresh = () => meetingService.update(SYSTEM_CONTEXT, { id: fresh.id, data: { meetingOutcome: 'not_set' } } as any)
+    await cancelFresh()
+    await drainJobs()
+    at = mark()
+    await uncancelFresh()
+    await drainJobs()
+    const restored = await readMeeting(fresh.id)
+    check('R2 un-cancel restores the same event and re-invites', restored.gcalEventId === eventId && await linkedEventIsLive(fresh.id) && invitedNotices(at.calendar) === 1, `event ${restored.gcalEventId === eventId ? 'same' : `changed ${eventId} → ${restored.gcalEventId}`}, live ${await linkedEventIsLive(fresh.id)}, invites ${invitedNotices(at.calendar)}`)
+
+    // R3. Un-cancelled before the cancellation's delete job ran: the late delete must not take the event back off.
+    await cancelFresh()
+    await uncancelFresh()
+    jobQueue.reverse()
+    await drainJobs()
+    check('R3 a late cancellation delete leaves an un-cancelled visit on the calendar', await linkedEventIsLive(fresh.id), `linked ${(await readMeeting(fresh.id)).gcalEventId ?? 'none'}, live ${await linkedEventIsLive(fresh.id)}`)
   }
 }
 

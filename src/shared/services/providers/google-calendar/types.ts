@@ -34,6 +34,10 @@ export interface GCalDateTime {
 }
 
 export interface GCalEventInput {
+  /** Only on create; Google takes base32hex (0-9, a-v), 5–1024 characters, unique per calendar for good. */
+  id?: string
+  /** `confirmed` on a PUT brings back an event deleted under the same id. */
+  status?: 'confirmed'
   summary: string
   description?: string
   location?: string
