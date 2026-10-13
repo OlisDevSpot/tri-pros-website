@@ -10,7 +10,7 @@ import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
-import { customerSearchSql, PHRASE_SIMILARITY_THRESHOLD, WORD_SIMILARITY_THRESHOLD } from '@/shared/entities/customers/dal/server/customer-search-rank-sql'
+import { customerSearchSql, WORD_SIMILARITY_THRESHOLD } from '@/shared/entities/customers/dal/server/customer-search-rank-sql'
 import { parseCustomerSearch } from '@/shared/entities/customers/lib/customer-search-tokens'
 import { derivedPipelineSql } from '@/shared/entities/customers/lib/derived-pipeline-sql'
 import { canSeeUngatedPhone, gatedPhoneSql } from '@/shared/entities/customers/lib/phone-gating-sql'
@@ -42,7 +42,6 @@ export async function searchCustomersRanked(ctx: ScopedContext, term: string, li
     return db.transaction(async (tx) => {
       // `<%` reads its threshold from this setting; `true` scopes it to this transaction.
       await tx.execute(sql`SELECT set_config('pg_trgm.word_similarity_threshold', ${String(WORD_SIMILARITY_THRESHOLD)}, true)`)
-      await tx.execute(sql`SELECT set_config('pg_trgm.similarity_threshold', ${String(PHRASE_SIMILARITY_THRESHOLD)}, true)`)
       return tx
         .select({
           id: customers.id,

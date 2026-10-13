@@ -13,8 +13,8 @@ export type CustomerMatchField = 'name' | 'phone' | 'address' | 'email'
 /** Below this `word_similarity` a text token is not a hit. */
 export const WORD_SIMILARITY_THRESHOLD = 0.4
 
-/** Whole-name `similarity` a multi-word text term needs when its words don't each match on their own. */
-export const PHRASE_SIMILARITY_THRESHOLD = 0.4
+/** Fixed score for a name word that is a letter-swapped spelling of the token. */
+export const TRANSPOSED_NAME_SCORE = 0.8
 
 // Must stay identical to `customers_address_trgm_idx` in the schema, or the planner skips the index.
 export const customerAddressDocSql = sql`(coalesce(${customers.address}, '') || ' ' || ${customers.city})`
@@ -43,20 +43,33 @@ export function escapeLike(value: string): string {
 
 function textTokenSql(value: string): TokenSql {
   const escaped = escapeLike(value)
-  const nameScore = sql`word_similarity(${value}, ${customers.name})`
+  const trigramNameScore = sql`word_similarity(${value}, ${customers.name})`
   const addressScore = sql`word_similarity(${value}, ${customerAddressDocSql})`
   const namePrefix = sql`(${customers.name} ILIKE ${`${escaped}%`} OR ${customers.name} ILIKE ${`% ${escaped}%`})`
-  return {
+  // Trigrams can't see two swapped letters in a short word; dropped, doubled or substituted letters are already covered by word_similarity.
+  const anagramHit = value.length >= 3 ? nameWordAnagramSql(value) : FALSE
+  const nameScore = sql`greatest(${trigramNameScore}, CASE WHEN ${anagramHit} THEN ${sql.raw(String(TRANSPOSED_NAME_SCORE))} ELSE 0 END)`
+  const trigramMatch = value.length < 3
+    ? namePrefix
     // Trigrams of a one- or two-letter token match almost anything; short tokens count only as a name-word prefix.
-    match: value.length < 3
-      ? namePrefix
-      : sql`(${value} <% ${customers.name} OR ${value} <% ${customerAddressDocSql})`,
+    : sql`(${value} <% ${customers.name} OR ${value} <% ${customerAddressDocSql})`
+  return {
+    match: value.length < 3 ? trigramMatch : sql`(${trigramMatch} OR ${anagramHit})`,
     score: sql`(greatest(${nameScore}, 0.9 * ${addressScore}) + CASE WHEN ${namePrefix} THEN 0.1 ELSE 0 END)`,
     nameScore,
     addressScore,
     phoneHit: FALSE,
     emailHit: FALSE,
   }
+}
+
+function nameWordAnagramSql(value: string): SQL {
+  const sorted = [...value].sort().join('')
+  return sql`EXISTS (
+    SELECT 1 FROM regexp_split_to_table(lower(${customers.name}), '\\s+') AS w
+    WHERE length(w) = ${value.length}
+      AND (SELECT string_agg(c, '' ORDER BY c) FROM regexp_split_to_table(w, '') AS c) = ${sorted}
+  )`
 }
 
 function numberTokenSql(value: string, gatedPhone: SQL): TokenSql {
@@ -102,26 +115,10 @@ export function customerSearchSql(query: CustomerSearchQuery, gatedPhone: SQL): 
     return null
   }
   const parts = query.tokens.map(token => tokenSql(token, gatedPhone))
-  const joinParts = (list: TokenSql[], key: keyof TokenSql, op: 'AND' | 'OR' | '+') => sql.join(list.map(part => part[key]), sql.raw(` ${op} `))
-  const joined = (key: keyof TokenSql, op: 'AND' | 'OR' | '+') => joinParts(parts, key, op)
-  const textParts = parts.filter((_, i) => query.tokens[i].kind === 'text')
-  const otherParts = parts.filter((_, i) => query.tokens[i].kind !== 'text')
-  const total = sql.raw(String(parts.length))
-  // Trigrams can't see a transposed letter inside one short word, but the whole name around it still carries the match.
-  // Full-string similarity keeps one shared first name from clearing the bar the way word_similarity would.
-  const phrase = textParts.length >= 2 ? query.tokens.filter(t => t.kind === 'text').map(t => t.value).join(' ') : null
-  const otherMatch = otherParts.length > 0 ? sql`${joinParts(otherParts, 'match', 'AND')} AND ` : sql``
-  const textMatch = joinParts(textParts, 'match', 'AND')
-  const textScoreSum = textParts.length > 0 ? joinParts(textParts, 'score', '+') : sql`0`
-  const otherScoreSum = otherParts.length > 0 ? joinParts(otherParts, 'score', '+') : sql`0`
-  const textCount = sql.raw(String(textParts.length))
+  const joined = (key: keyof TokenSql, op: 'AND' | 'OR' | '+') => sql.join(parts.map(part => part[key]), sql.raw(` ${op} `))
   return {
-    where: phrase
-      ? sql`(${otherMatch}(${textMatch} OR ${phrase} % ${customers.name}))`
-      : sql`(${joined('match', 'AND')})`,
-    score: phrase
-      ? sql<number>`((greatest((${textScoreSum}) / ${textCount}, similarity(${phrase}, ${customers.name})) * ${textCount} + ${otherScoreSum}) / ${total})::float8`.mapWith(Number)
-      : sql<number>`(((${joined('score', '+')}) / ${total})::float8)`.mapWith(Number),
+    where: sql`(${joined('match', 'AND')})`,
+    score: sql<number>`((${joined('score', '+')}) / ${sql.raw(String(parts.length))})::float8`.mapWith(Number),
     matchedOn: sql<CustomerMatchField>`CASE
       WHEN ${joined('phoneHit', 'OR')} THEN 'phone'
       WHEN ${joined('emailHit', 'OR')} THEN 'email'
