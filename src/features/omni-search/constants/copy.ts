@@ -14,5 +14,4 @@ export const OMNI_COPY = {
   seeAllCustomers: 'See all in Customers',
   unavailable: 'Search is unavailable, try again',
   noRecords: (term: string) => `No records match “${term}”`,
-  comingSoon: 'Results land here in the next step.',
 } as const
