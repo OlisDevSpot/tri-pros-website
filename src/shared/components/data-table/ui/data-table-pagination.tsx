@@ -24,8 +24,8 @@ interface Props<TData> {
  * toolbar / mobile filter sheet, not duplicated here.
  *
  * Safe-area inset handling lives on the app-shell content wrapper (see
- * dashboard layout) — not here. The pagination sits inside a bordered card
- * shell, so applying it here would double-pad on iOS.
+ * dashboard layout) — not here. The pagination is its own card below the
+ * table, inside the page's padding, so applying it here would double-pad on iOS.
  */
 export function DataTablePagination<TData>({ table, serverPagination }: Props<TData>) {
   const pageCount = Math.max(table.getPageCount(), 1)
@@ -34,7 +34,7 @@ export function DataTablePagination<TData>({ table, serverPagination }: Props<TD
   return (
     <nav
       aria-label="Pagination"
-      className="grid shrink-0 grid-cols-3 items-stretch border-t border-border"
+      className="surface grid shrink-0 grid-cols-3 items-stretch overflow-hidden rounded-xl border"
     >
       <DataTablePaginationButton
         direction="prev"

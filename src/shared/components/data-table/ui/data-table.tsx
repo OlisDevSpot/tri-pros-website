@@ -281,155 +281,163 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   }, [filteredRows, onFilteredDataChange])
 
   return (
-    <div className="flex flex-col h-full gap-4">
-      <div className="grow min-h-0 flex flex-col rounded-xl border overflow-hidden surface">
-        <div
-          ref={scrollRef}
-          onScroll={handleScroll}
-          className={cn(
-            'group/scroller grow min-h-0 overflow-auto overscroll-none touch-pan-x touch-pan-y',
-            // The pull spinner and expanded panels size to the visible width with `cqw`, without measuring it.
-            // The size container is this scroller's full-width child, not the scroller: Chromium resolves a
-            // scroller's own `cqw` with its vertical scrollbar included, so `100cqw` overflowed it sideways.
-            '**:data-[slot=table-container]:overflow-visible *:data-[slot=table-container]:@container',
-            isAnyColumnResizing && 'cursor-col-resize select-none',
-          )}
-        >
-          {/* Fills the container or overflows it in CSS alone, so a window resize runs no script and re-renders nothing. */}
-          {/* The dim is the one faded state the theme keeps: it marks rows that belong to the previous query and
+    <div className="flex h-full flex-col gap-(--gutter)">
+      {/* On a page the scroller spans the screen and the card rides inside it, as wide as the table, so a
+          card edge shows only where the table ends. Inside a surface the bleed is 0: an ordinary card. */}
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className={cn(
+          'bleed-x group/scroller grow min-h-0 overflow-auto overscroll-none touch-pan-x touch-pan-y',
+          '**:data-[slot=table-container]:overflow-visible',
+          isAnyColumnResizing && 'cursor-col-resize select-none',
+        )}
+      >
+        {/* The pull spinner and expanded panels size to the visible width with `cqw`, without measuring it.
+            The size container is this scroller's full-width child, not the scroller: Chromium resolves a
+            scroller's own `cqw` with its vertical scrollbar included, so `100cqw` overflowed it sideways.
+            The trailing spacer is the right gap at the scroll end: neither engine pads a grandchild's
+            overflow with the scroller's padding. */}
+        <div className="@container flex after:w-(--bled-r) after:flex-none after:content-['']">
+          {/* `clip`, not `hidden`: it rounds the corners without becoming a scroller, so sticky cells
+              still stick to the scroller above. */}
+          <div data-slot="table-frame" className="surface w-max min-w-full flex-none overflow-clip rounded-xl border">
+            {/* Fills the container or overflows it in CSS alone, so a window resize runs no script and re-renders nothing. */}
+            {/* The dim is the one faded state the theme keeps: it marks rows that belong to the previous query and
               lifts the moment the new ones land. */}
-          <Table
-            className="table-fixed border-separate border-spacing-0 transition-opacity duration-200 data-[stale=true]:opacity-60 data-[stale=true]:delay-200"
-            style={{ width: totalDeclaredWidth, minWidth: '100%' }}
-            aria-busy={!!(serverPagination?.isFetching || serverPagination?.isStale)}
-            data-stale={serverPagination?.isStale || undefined}
-          >
-            <TableHeader className="sticky top-0 z-10 bg-(--card)">
-              {table.getHeaderGroups().map(headerGroup => (
-                <TableRow key={headerGroup.id} className="hover:bg-transparent">
-                  {headerGroup.headers.map((header, colIdx) => {
-                    const isColResizing = header.column.getIsResizing()
-                    const isFirstCol = colIdx === 0
-                    const isLastCol = colIdx === headerGroup.headers.length - 1
-                    // Under table-layout: fixed the one auto-width column takes the slack, so the last column fills a wide container.
-                    const colWidth = isLastCol ? undefined : header.getSize()
+            <Table
+              className="table-fixed border-separate border-spacing-0 transition-opacity duration-200 data-[stale=true]:opacity-60 data-[stale=true]:delay-200"
+              style={{ width: totalDeclaredWidth, minWidth: '100%' }}
+              aria-busy={!!(serverPagination?.isFetching || serverPagination?.isStale)}
+              data-stale={serverPagination?.isStale || undefined}
+            >
+              <TableHeader className="sticky top-0 z-10 bg-(--card)">
+                {table.getHeaderGroups().map(headerGroup => (
+                  <TableRow key={headerGroup.id} className="hover:bg-transparent">
+                    {headerGroup.headers.map((header, colIdx) => {
+                      const isColResizing = header.column.getIsResizing()
+                      const isFirstCol = colIdx === 0
+                      const isLastCol = colIdx === headerGroup.headers.length - 1
+                      // Under table-layout: fixed the one auto-width column takes the slack, so the last column fills a wide container.
+                      const colWidth = isLastCol ? undefined : header.getSize()
 
-                    return (
-                      <TableHead
-                        key={header.id}
-                        className={cn(
-                          'group/th relative',
-                          CELL_BORDER,
-                          isFirstCol && isFrozen && cn(
-                            'sticky left-0 z-30 bg-(--card) border-r border-border',
-                            FROZEN_COLUMN_SHADOW,
-                          ),
-                        )}
-                        style={{
-                          width: colWidth,
-                          ...(isFirstCol && isFrozen ? { borderRightStyle: 'dashed' as const } : undefined),
-                        }}
-                      >
-                        {isFirstCol
-                          ? (
-                              <div className="flex items-center gap-1">
-                                <div className="min-w-0 flex-1">
-                                  {header.isPlaceholder
-                                    ? null
-                                    : flexRender(header.column.columnDef.header, header.getContext())}
+                      return (
+                        <TableHead
+                          key={header.id}
+                          className={cn(
+                            'group/th relative',
+                            CELL_BORDER,
+                            isFirstCol && isFrozen && cn(
+                              'sticky -left-(--bled-l) z-30 bg-(--card) border-r border-border',
+                              FROZEN_COLUMN_SHADOW,
+                            ),
+                          )}
+                          style={{
+                            width: colWidth,
+                            ...(isFirstCol && isFrozen ? { borderRightStyle: 'dashed' as const } : undefined),
+                          }}
+                        >
+                          {isFirstCol
+                            ? (
+                                <div className="flex items-center gap-1">
+                                  <div className="min-w-0 flex-1">
+                                    {header.isPlaceholder
+                                      ? null
+                                      : flexRender(header.column.columnDef.header, header.getContext())}
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      toggleFrozen()
+                                    }}
+                                    className="shrink-0 cursor-pointer rounded p-0.5 hover:bg-hover pressed:bg-press focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                    title={isFrozen ? 'Unfreeze column' : 'Freeze column'}
+                                  >
+                                    <PinIcon
+                                      className={cn(
+                                        'h-3 w-3 rotate-45 transition-colors',
+                                        isFrozen
+                                          ? 'fill-foreground text-foreground'
+                                          : 'text-muted-foreground',
+                                      )}
+                                    />
+                                  </button>
                                 </div>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    toggleFrozen()
-                                  }}
-                                  className="shrink-0 cursor-pointer rounded p-0.5 hover:bg-hover pressed:bg-press focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                                  title={isFrozen ? 'Unfreeze column' : 'Freeze column'}
-                                >
-                                  <PinIcon
-                                    className={cn(
-                                      'h-3 w-3 rotate-45 transition-colors',
-                                      isFrozen
-                                        ? 'fill-foreground text-foreground'
-                                        : 'text-muted-foreground',
-                                    )}
-                                  />
-                                </button>
-                              </div>
-                            )
-                          : (header.isPlaceholder
-                              ? null
-                              : flexRender(header.column.columnDef.header, header.getContext())
-                            )}
-
-                        {header.column.getCanResize() && !isLastCol && (
-                          <div
-                            data-resize-handle
-                            onMouseDown={header.getResizeHandler()}
-                            onTouchStart={header.getResizeHandler()}
-                            onDoubleClick={() => header.column.resetSize()}
-                            className="absolute right-0 translate-x-1/2 top-0 z-30 w-2 cursor-col-resize select-none touch-none"
-                            style={{ height: isColResizing ? 9999 : '100%' }}
-                          >
-                            <div
-                              className={cn(
-                                'mx-auto h-full',
-                                isColResizing
-                                  ? 'w-0.5 border-l-2 border-dashed border-primary'
-                                  : 'w-px opacity-0 bg-border group-hover/th:opacity-100',
+                              )
+                            : (header.isPlaceholder
+                                ? null
+                                : flexRender(header.column.columnDef.header, header.getContext())
                               )}
-                            />
-                          </div>
-                        )}
 
-                        {header.column.getCanResize() && isLastCol && (
-                          <div
-                            data-resize-handle
-                            onMouseDown={header.getResizeHandler()}
-                            onTouchStart={header.getResizeHandler()}
-                            onDoubleClick={() => header.column.resetSize()}
-                            className="absolute right-0 top-0 z-30 w-1 cursor-col-resize select-none touch-none"
-                            style={{ height: isColResizing ? 9999 : '100%' }}
-                          >
+                          {header.column.getCanResize() && !isLastCol && (
                             <div
-                              className={cn(
-                                'ml-auto h-full',
-                                isColResizing
-                                  ? 'w-0.5 border-l-2 border-dashed border-primary'
-                                  : 'w-px opacity-0 bg-border group-hover/th:opacity-100',
-                              )}
-                            />
-                          </div>
-                        )}
-                      </TableHead>
-                    )
-                  })}
-                </TableRow>
-              ))}
-            </TableHeader>
+                              data-resize-handle
+                              onMouseDown={header.getResizeHandler()}
+                              onTouchStart={header.getResizeHandler()}
+                              onDoubleClick={() => header.column.resetSize()}
+                              className="absolute right-0 translate-x-1/2 top-0 z-30 w-2 cursor-col-resize select-none touch-none"
+                              style={{ height: isColResizing ? 9999 : '100%' }}
+                            >
+                              <div
+                                className={cn(
+                                  'mx-auto h-full',
+                                  isColResizing
+                                    ? 'w-0.5 border-l-2 border-dashed border-primary'
+                                    : 'w-px opacity-0 bg-border group-hover/th:opacity-100',
+                                )}
+                              />
+                            </div>
+                          )}
 
-            <DataTableBody
-              table={table}
-              rows={table.getRowModel().rows}
-              isColumnResizing={isAnyColumnResizing}
-              columnCount={columns.length}
-              entityName={entityName}
-              tableId={tableId}
-              rowDataAttribute={rowDataAttribute}
-              getRowClassName={getRowClassName}
-              renderExpandedRow={renderExpandedRow}
-              onRowClick={handleRowClick}
-              isFrozen={isFrozen}
-              serverPagination={serverPagination}
-              isRefreshing={isRefreshing}
-              skeletonRowClassName={skeletonRowClassName}
-            />
-          </Table>
+                          {header.column.getCanResize() && isLastCol && (
+                            <div
+                              data-resize-handle
+                              onMouseDown={header.getResizeHandler()}
+                              onTouchStart={header.getResizeHandler()}
+                              onDoubleClick={() => header.column.resetSize()}
+                              className="absolute right-0 top-0 z-30 w-1 cursor-col-resize select-none touch-none"
+                              style={{ height: isColResizing ? 9999 : '100%' }}
+                            >
+                              <div
+                                className={cn(
+                                  'ml-auto h-full',
+                                  isColResizing
+                                    ? 'w-0.5 border-l-2 border-dashed border-primary'
+                                    : 'w-px opacity-0 bg-border group-hover/th:opacity-100',
+                                )}
+                              />
+                            </div>
+                          )}
+                        </TableHead>
+                      )
+                    })}
+                  </TableRow>
+                ))}
+              </TableHeader>
+
+              <DataTableBody
+                table={table}
+                rows={table.getRowModel().rows}
+                isColumnResizing={isAnyColumnResizing}
+                columnCount={columns.length}
+                entityName={entityName}
+                tableId={tableId}
+                rowDataAttribute={rowDataAttribute}
+                getRowClassName={getRowClassName}
+                renderExpandedRow={renderExpandedRow}
+                onRowClick={handleRowClick}
+                isFrozen={isFrozen}
+                serverPagination={serverPagination}
+                isRefreshing={isRefreshing}
+                skeletonRowClassName={skeletonRowClassName}
+              />
+            </Table>
+          </div>
         </div>
-
-        <DataTablePagination table={table} serverPagination={serverPagination} />
       </div>
+
+      <DataTablePagination table={table} serverPagination={serverPagination} />
     </div>
   )
 }

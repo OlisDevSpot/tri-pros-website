@@ -91,7 +91,7 @@ function DataTableRowImpl<TData extends { id: string }>({
             return (
               <TableCell
                 key={cell.id}
-                className={cn('sticky left-0 z-5 p-0 border-r border-border bg-inherit', FROZEN_COLUMN_SHADOW)}
+                className={cn('sticky -left-(--bled-l) z-5 p-0 border-r border-border bg-inherit', FROZEN_COLUMN_SHADOW)}
                 style={{ borderRightStyle: 'dashed' }}
               >
                 {tintClassName && <div className={cn('absolute inset-0', tintClassName)} />}
@@ -112,9 +112,10 @@ function DataTableRowImpl<TData extends { id: string }>({
       {hasExpandedRow && (
         <TableRow data-expanded-row aria-hidden={!isExpanded || undefined} className="hover:bg-transparent">
           <TableCell colSpan={row.getVisibleCells().length} className={cn('p-0 whitespace-normal', isExpanded && CELL_BORDER)}>
-            {/* Pinned to the visible width so the panel stays in view while the columns scroll sideways.
-                Sticky breaks if this cell or any ancestor up to the scroller gets overflow: hidden. */}
-            <div id={detailId} className="sticky left-0" style={{ width: '100cqw' }}>
+            {/* Pinned to the scroller's full width so the panel stays in view while the columns scroll
+                sideways; the card's clip trims it to the card at rest and at the scroll end. Sticky breaks
+                if this cell or any ancestor up to the scroller gets overflow: hidden (clip is fine). */}
+            <div id={detailId} className="sticky -left-(--bled-l)" style={{ width: 'calc(100cqw + var(--bled-l) + var(--bled-r))' }}>
               <AnimatedCollapsibleContent open={isExpanded}>
                 {expandedContent}
               </AnimatedCollapsibleContent>
