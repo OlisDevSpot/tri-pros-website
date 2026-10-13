@@ -55,10 +55,10 @@ async function pageScrollChecks(page, selector = 'main [class*="page-scroll"]') 
     }
     const r = el.getBoundingClientRect()
     const cs = getComputedStyle(el)
-    el.scrollTop = el.scrollHeight
+    el.scrollTo({ top: el.scrollHeight, behavior: 'instant' })
     const bottoms = [...el.children].map(c => c.getBoundingClientRect()).filter(b => b.height > 0).map(b => b.bottom)
     const out = { left: r.left, right: r.right, bottom: r.bottom, padL: Number.parseFloat(cs.paddingLeft), padB: Number.parseFloat(cs.paddingBottom), scrollable: el.scrollHeight > el.clientHeight + 1, lastBottom: Math.max(...bottoms) }
-    el.scrollTop = 0
+    el.scrollTo({ top: 0, behavior: 'instant' })
     return out
   }, [selector])
   if (!m) {
