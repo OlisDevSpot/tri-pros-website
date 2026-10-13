@@ -4,6 +4,7 @@ import type { CalculatorTab } from '@/features/calculators/constants/query-parse
 
 import { useQueryState } from 'nuqs'
 
+import { CALCULATOR_TAB_META } from '@/features/calculators/constants/calculator-tab-meta'
 import { calculatorTabParser } from '@/features/calculators/constants/query-parsers'
 import { RemodelRoiCalculator } from '@/features/calculators/remodel-roi-calculator/ui/views/remodel-roi-calculator'
 import { ScopePricingCalculator } from '@/features/calculators/scope-pricing-calculator/ui/views/scope-pricing-calculator'
@@ -21,8 +22,8 @@ export function CalculatorsView() {
           <h1 className="text-xl font-semibold text-foreground">Calculators</h1>
         </header>
         <TabsList>
-          <TabsTrigger className="min-h-11" value="remodel-roi">Remodel ROI</TabsTrigger>
-          <TabsTrigger className="min-h-11" value="scope-pricing">Scope Pricing</TabsTrigger>
+          <TabsTrigger className="min-h-11" value="remodel-roi">{CALCULATOR_TAB_META['remodel-roi'].label}</TabsTrigger>
+          <TabsTrigger className="min-h-11" value="scope-pricing">{CALCULATOR_TAB_META['scope-pricing'].label}</TabsTrigger>
         </TabsList>
       </PageBar>
 
