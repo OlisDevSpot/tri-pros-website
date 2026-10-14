@@ -11,8 +11,7 @@ import { PrimaryCell } from '@/shared/components/data-table/ui/primary-cell'
 import { Badge } from '@/shared/components/ui/badge'
 import { deriveProjectStatusBucket } from '@/shared/constants/enums'
 import { cn } from '@/shared/lib/utils'
-import { PROJECT_STATUS_BUCKET_COLORS } from '@/shared/modules/projects/core/constants/status-colors'
-import { PROJECT_STATUS_BUCKET_LABELS } from '@/shared/modules/projects/core/constants/status-labels'
+import { ProjectStatusBadge } from '@/shared/modules/projects/core/components/project-status-badge'
 
 export type ProjectRow = AppRouterOutputs['projectsRouter']['crud']['list']['rows'][number]
 
@@ -60,7 +59,7 @@ export const PROJECT_COLUMNS = {
       const bucket = deriveProjectStatusBucket(row.original.pipelineStage)
       return (
         <div className="flex min-w-0 items-center gap-1.5">
-          <Badge className={cn('shrink-0 text-xs', PROJECT_STATUS_BUCKET_COLORS[bucket])}>{PROJECT_STATUS_BUCKET_LABELS[bucket]}</Badge>
+          <ProjectStatusBadge bucket={bucket} className="shrink-0" />
           {row.original.pipelineStage && (
             <span className="truncate text-xs capitalize text-muted-foreground">{row.original.pipelineStage.replace(/_/g, ' ')}</span>
           )}

@@ -22,6 +22,7 @@ import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
 import { Badge } from '@/shared/components/ui/badge'
 import { selectableMeetingOutcomes } from '@/shared/constants/enums'
 import { useAbility } from '@/shared/domains/permissions/client'
+import { MeetingOutcomeBadge } from '@/shared/entities/meetings/components/meeting-outcome-badge'
 import { MEETING_ACTIONS } from '@/shared/entities/meetings/constants/actions'
 import {
   MEETING_LIST_STATUS_COLORS,
@@ -305,14 +306,7 @@ function OutcomeField({ variant = 'badge' }: { variant?: 'badge' | 'dot' | 'edit
     )
   }
 
-  return (
-    <Badge
-      variant="outline"
-      className={cn('text-xs', MEETING_LIST_STATUS_COLORS[outcome] ?? '')}
-    >
-      {MEETING_OUTCOME_LABELS[outcome] ?? outcome.replace(/_/g, ' ')}
-    </Badge>
-  )
+  return <MeetingOutcomeBadge outcome={outcome} />
 }
 
 function ScheduledDateField({
