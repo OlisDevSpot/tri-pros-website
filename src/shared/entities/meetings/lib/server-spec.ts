@@ -5,14 +5,17 @@ import {
   selectMeetingSchema,
 } from '@/shared/db/schema'
 import { MEETING } from '@/shared/entities/meetings/lib/constants'
+import { visitMessageOverridesSchema } from '@/shared/modules/meetings/messages/schemas/visit-message-overrides'
 
-const updateMeetingSchema = insertMeetingSchema.partial()
+// The jsonb column infers as any JSON; the shape is checked here and the wording by the crud update hook.
+const updateMeetingSchema = insertMeetingSchema.partial().extend({ visitMessageOverridesJSON: visitMessageOverridesSchema.nullable().optional() })
 
 const SERVER_OWNED_COLUMNS = {
   shareToken: true,
   homeownerConfirmedAt: true,
   homeownerConfirmedVia: true,
   homeownerInvitedAt: true,
+  homeownerInviteRefusedAt: true,
   newTimeRequestedAt: true,
   rescheduledFromId: true,
   scheduledForSetAt: true,

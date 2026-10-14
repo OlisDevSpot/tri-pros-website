@@ -1,6 +1,7 @@
 import type z from 'zod'
-import { jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
+import { jsonb, pgTable, text } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
+import { updatedAt } from '../lib/schema-helpers'
 import { user } from './auth'
 
 // app_settings — generic per-feature config storage. Natural PK `feature`
@@ -10,7 +11,7 @@ import { user } from './auth'
 export const appSettings = pgTable('app_settings', {
   feature: text('feature').primaryKey(),
   configJson: jsonb('config_json').notNull(),
-  updatedAt: timestamp('updated_at', { mode: 'string', withTimezone: true }).defaultNow().notNull(),
+  updatedAt,
   updatedByUserId: text('updated_by_user_id').references(() => user.id, { onDelete: 'set null' }),
 })
 

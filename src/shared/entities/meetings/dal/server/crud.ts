@@ -207,6 +207,8 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
       'agentNotes',
       'visitNote',
       'homeownerInvitedAt',
+      'homeownerInviteRefusedAt',
+      'visitMessageOverridesJSON',
       'projectId',
       'gcalEventId',
       'gcalEtag',
