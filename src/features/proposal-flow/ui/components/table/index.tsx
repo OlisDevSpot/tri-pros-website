@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 
 import { toast } from 'sonner'
-import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components'
 import { CreateProjectModal } from '@/features/customer-pipelines/ui/components/create-project-modal'
 import { PROPOSALS_TABLE_QUERY_CONFIG } from '@/features/proposal-flow/constants/proposals-table-query-config'
 import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
@@ -21,8 +20,8 @@ import { RecordsPageShell } from '@/shared/components/records-page-shell'
 import { ROOTS } from '@/shared/config/roots'
 import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
 import { fromPaginatedQuery } from '@/shared/dal/client/lib/from-paginated-query'
+import { openCustomerProfile } from '@/shared/modules/customers/core/lib/open-customer-profile'
 
-import { openModal } from '@/shared/lib/open-modal'
 import { useProposalActionConfigs } from '@/shared/modules/proposals/core/hooks/use-proposal-action-configs'
 import { useProposalActions } from '@/shared/modules/proposals/core/hooks/use-proposal-actions'
 import { PROPOSAL_COLUMNS } from '@/shared/modules/proposals/core/lib/columns-registry'
@@ -132,7 +131,7 @@ export function PastProposalsTable() {
       { onSuccess: () => toast.success('Created date updated') },
     ),
     onViewProfile: (customerId) => {
-      openModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props: { customerId } })
+      openCustomerProfile({ customerId })
     },
   }), [sharedActions, handleStatusChange, updateProposal])
 

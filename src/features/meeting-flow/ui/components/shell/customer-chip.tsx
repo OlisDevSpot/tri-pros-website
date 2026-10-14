@@ -4,10 +4,9 @@ import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server
 import { SHELL_COPY } from '@/features/meeting-flow/constants/shell-copy'
 import { Avatar, AvatarFallback } from '@/shared/components/ui/avatar'
 import { Button } from '@/shared/components/ui/button'
-import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { getInitials } from '@/shared/entities/users/lib/get-initials'
 import { formatCustomerAddress } from '@/shared/lib/formatters'
-import { openModal } from '@/shared/lib/open-modal'
+import { openCustomerProfile } from '@/shared/modules/customers/core/lib/open-customer-profile'
 
 interface CustomerChipProps {
   customer: Pick<CustomerWithProfile, 'id' | 'name' | 'address' | 'city' | 'state' | 'zip'> | null
@@ -33,11 +32,7 @@ export function CustomerChip({ customer, meetingId }: CustomerChipProps) {
   const address = formatCustomerAddress(customer)
 
   function handleClick() {
-    openModal({
-      accessor: 'CustomerProfile',
-      Component: CustomerProfileModal,
-      props: { customerId, highlightMeetingId: meetingId },
-    })
+    openCustomerProfile({ customerId, highlightMeetingId: meetingId })
   }
 
   return (

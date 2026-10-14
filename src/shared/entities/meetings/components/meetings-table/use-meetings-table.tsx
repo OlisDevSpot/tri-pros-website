@@ -11,7 +11,6 @@ import { useCallback, useMemo, useState } from 'react'
 import { useEntityTable } from '@/shared/components/data-table/lib/use-entity-table'
 import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { useAbility } from '@/shared/domains/permissions/client'
-import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { AssignProjectDialog } from '@/shared/entities/meetings/components/assign-project-dialog'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
 import { MeetingNotesDialog } from '@/shared/entities/meetings/components/meeting-notes-dialog'
@@ -19,7 +18,7 @@ import { useMeetingActionConfigs } from '@/shared/entities/meetings/hooks/use-me
 import { useMeetingActions } from '@/shared/entities/meetings/hooks/use-meeting-actions'
 import { MEETING_COLUMNS } from '@/shared/entities/meetings/lib/columns-registry'
 import { getMeetingRowClassName } from '@/shared/entities/meetings/lib/meeting-row-class'
-import { openModal } from '@/shared/lib/open-modal'
+import { openCustomerProfile } from '@/shared/modules/customers/core/lib/open-customer-profile'
 import { useTRPC } from '@/trpc/helpers'
 
 export interface UseMeetingsTableOptions {
@@ -44,11 +43,7 @@ export function useMeetingsTable(
     if (!row.customerId) {
       return
     }
-    openModal({
-      accessor: 'CustomerProfile',
-      Component: CustomerProfileModal,
-      props: { customerId: row.customerId, defaultTab: 'meetings' as const, highlightMeetingId: row.id },
-    })
+    openCustomerProfile({ customerId: row.customerId, defaultTab: 'meetings' as const, highlightMeetingId: row.id })
   }, [])
 
   const overrides = useMemo(() => ({
@@ -72,7 +67,7 @@ export function useMeetingsTable(
       updateSetter.mutate({ id: meetingId, data: { setBy } }),
     canAssignMeeting: ability.can('assign', 'Meeting'),
     onViewProfile: (customerId: string) => {
-      openModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props: { customerId } })
+      openCustomerProfile({ customerId })
     },
   }) satisfies Omit<MeetingTableMeta, 'rowActions'>, [changeOutcome, updateScheduledFor, updateSetter, ability])
 

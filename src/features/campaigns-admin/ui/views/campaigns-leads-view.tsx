@@ -17,8 +17,7 @@ import { toDataTablePagination } from '@/shared/components/data-table/lib/to-dat
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
 import { fromPaginatedQuery } from '@/shared/dal/client/lib/from-paginated-query'
-import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
-import { openModal } from '@/shared/lib/open-modal'
+import { openCustomerProfile } from '@/shared/modules/customers/core/lib/open-customer-profile'
 import { useTRPC } from '@/trpc/helpers'
 
 // `DataTable` requires `TData extends { id: string }`. `CampaignLeadRow` uses
@@ -105,11 +104,7 @@ export function CampaignsLeadsView() {
 
   const handleOpenProfile = useCallback(
     (customerId: string) => {
-      openModal({
-        accessor: 'CustomerProfile',
-        Component: CustomerProfileModal,
-        props: { customerId },
-      })
+      openCustomerProfile({ customerId })
     },
     [],
   )

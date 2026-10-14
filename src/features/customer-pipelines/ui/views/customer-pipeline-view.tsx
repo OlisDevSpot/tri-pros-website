@@ -20,12 +20,11 @@ import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { useAbility } from '@/shared/domains/permissions/client'
 import { pipelineConfigs } from '@/shared/domains/pipelines/constants/pipeline-registry'
 import { usePipeline } from '@/shared/domains/pipelines/hooks/pipeline-context'
-import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { CreateMeetingModal } from '@/shared/entities/meetings/components/create-meeting-modal'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
-import { openModal } from '@/shared/lib/open-modal'
 import { cn } from '@/shared/lib/utils'
 import { CustomerActionsHost } from '@/shared/modules/customers/core/components/customer-actions-host'
+import { openCustomerProfile } from '@/shared/modules/customers/core/lib/open-customer-profile'
 import { MeetingActionsHost } from '@/shared/modules/meetings/core/components/meeting-actions-host'
 import { ProjectActionsHost } from '@/shared/modules/projects/core/components/project-actions-host'
 import { ProposalActionsHost } from '@/shared/modules/proposals/core/components/proposal-actions-host'
@@ -97,11 +96,7 @@ export function CustomerPipelineView() {
   }
 
   const handleViewProfile = useCallback((customerId: string) => {
-    openModal({
-      accessor: 'CustomerProfile',
-      Component: CustomerProfileModal,
-      props: { customerId },
-    })
+    openCustomerProfile({ customerId })
   }, [])
 
   const isMobile = useIsMobile()

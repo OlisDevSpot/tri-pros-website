@@ -11,8 +11,7 @@ import { useCallback, useMemo } from 'react'
 import { useEntityTable } from '@/shared/components/data-table/lib/use-entity-table'
 import { ROOTS } from '@/shared/config/roots'
 import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
-import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
-import { openModal } from '@/shared/lib/open-modal'
+import { openCustomerProfile } from '@/shared/modules/customers/core/lib/open-customer-profile'
 import { useProjectActionConfigs } from '@/shared/modules/projects/core/hooks/use-project-action-configs'
 import { PROJECT_COLUMNS } from '@/shared/modules/projects/core/lib/columns-registry'
 import { useTRPC } from '@/trpc/helpers'
@@ -33,7 +32,7 @@ export function useProjectsTable(
 
   const meta = useMemo(() => ({
     onViewProfile: (customerId: string) => {
-      openModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props: { customerId } })
+      openCustomerProfile({ customerId })
     },
   }) satisfies Omit<ProjectTableMeta, 'rowActions'>, [])
 

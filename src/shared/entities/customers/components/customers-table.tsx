@@ -15,12 +15,11 @@ import { RecordsPageHeader } from '@/shared/components/records-page-header'
 import { RecordsPageShell } from '@/shared/components/records-page-shell'
 import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
-import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { CUSTOMERS_TABLE_QUERY_CONFIG, CUSTOMERS_TABLE_SHOW_COLUMNS } from '@/shared/entities/customers/constants/customers-table-query-config'
 import { useCustomerActionConfigs } from '@/shared/entities/customers/hooks/use-customer-action-configs'
-
 import { CUSTOMER_COLUMNS } from '@/shared/entities/customers/lib/columns-registry'
-import { openModal } from '@/shared/lib/open-modal'
+
+import { openCustomerProfile } from '@/shared/modules/customers/core/lib/open-customer-profile'
 import { useTRPC } from '@/trpc/helpers'
 
 export function CustomersTable() {
@@ -41,11 +40,7 @@ export function CustomersTable() {
   )
 
   const handleViewProfile = useCallback((customerId: string) => {
-    openModal({
-      accessor: 'CustomerProfile',
-      Component: CustomerProfileModal,
-      props: { customerId },
-    })
+    openCustomerProfile({ customerId })
   }, [])
 
   const { actions, DeleteConfirmDialog } = useCustomerActionConfigs<CustomerTableRow>({

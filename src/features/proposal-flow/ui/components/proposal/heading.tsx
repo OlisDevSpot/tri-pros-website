@@ -1,7 +1,6 @@
 import { CalculatorIcon, CalendarIcon, PencilIcon, UserIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import Link from 'next/link'
-import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
 import { useViewMode } from '@/features/proposal-flow/hooks/use-view-mode'
 import { InternalFinancialsModal } from '@/features/proposal-flow/ui/components/internal-financials-modal'
@@ -13,6 +12,7 @@ import { companyInfo } from '@/shared/constants/company'
 import { useAbility } from '@/shared/domains/permissions/client'
 import { formatStringAsDate } from '@/shared/lib/formatters'
 import { openModal } from '@/shared/lib/open-modal'
+import { openCustomerProfile } from '@/shared/modules/customers/core/lib/open-customer-profile'
 import { toFundingInputs } from '@/shared/modules/proposals/core/lib/funding-columns'
 
 export function Heading() {
@@ -32,11 +32,7 @@ export function Heading() {
     if (!customerId) {
       return
     }
-    openModal({
-      accessor: 'CustomerProfile',
-      Component: CustomerProfileModal,
-      props: { customerId },
-    })
+    openCustomerProfile({ customerId })
   }
 
   function handleInternalFinancials() {

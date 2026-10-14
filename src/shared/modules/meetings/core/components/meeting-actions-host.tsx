@@ -4,12 +4,11 @@ import type { ReactNode } from 'react'
 
 import { createContext, use, useCallback, useState } from 'react'
 
-import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
 import { MeetingNotesDialog } from '@/shared/entities/meetings/components/meeting-notes-dialog'
 import { useMeetingActionConfigs } from '@/shared/entities/meetings/hooks/use-meeting-action-configs'
 import { useStableCallbacks } from '@/shared/hooks/use-stable-callbacks'
-import { openModal } from '@/shared/lib/open-modal'
+import { openCustomerProfile } from '@/shared/modules/customers/core/lib/open-customer-profile'
 
 type MeetingActionConfigs = ReturnType<typeof useMeetingActionConfigs>
 type MeetingActionOverrides = NonNullable<Parameters<typeof useMeetingActionConfigs>[0]>
@@ -35,11 +34,7 @@ function openMeetingProfile(entity: { id: string, customerId?: string | null }) 
   if (!entity.customerId) {
     return
   }
-  openModal({
-    accessor: 'CustomerProfile',
-    Component: CustomerProfileModal,
-    props: { customerId: entity.customerId, defaultTab: 'meetings' as const, highlightMeetingId: entity.id },
-  })
+  openCustomerProfile({ customerId: entity.customerId, defaultTab: 'meetings' as const, highlightMeetingId: entity.id })
 }
 
 export function MeetingActionsHost({ overrides, children }: MeetingActionsHostProps) {

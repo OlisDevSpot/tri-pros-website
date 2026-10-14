@@ -14,11 +14,10 @@ import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
-import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { useCustomerActionConfigs } from '@/shared/entities/customers/hooks/use-customer-action-configs'
-
 import { CUSTOMER_COLUMNS } from '@/shared/entities/customers/lib/columns-registry'
-import { openModal } from '@/shared/lib/open-modal'
+
+import { openCustomerProfile } from '@/shared/modules/customers/core/lib/open-customer-profile'
 import { useTRPC } from '@/trpc/helpers'
 
 const SHOW_COLUMNS = ['name', 'leadSourceName', 'pipeline', 'createdAt'] as const
@@ -41,11 +40,7 @@ export function AllCustomersSection() {
   )
 
   const handleViewProfile = useCallback((customerId: string) => {
-    openModal({
-      accessor: 'CustomerProfile',
-      Component: CustomerProfileModal,
-      props: { customerId },
-    })
+    openCustomerProfile({ customerId })
   }, [])
 
   const { actions, DeleteConfirmDialog } = useCustomerActionConfigs<CustomerTableRow>({

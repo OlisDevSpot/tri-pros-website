@@ -4,9 +4,8 @@ import type { MouseEvent } from 'react'
 
 import { UserRoundIcon } from 'lucide-react'
 
-import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
-import { openModal } from '@/shared/lib/open-modal'
 import { cn } from '@/shared/lib/utils'
+import { openCustomerProfile } from '@/shared/modules/customers/core/lib/open-customer-profile'
 
 interface DashboardProposalCustomerLinkProps {
   customerId: string | null
@@ -31,11 +30,7 @@ export function DashboardProposalCustomerLink({ customerId, customerName, meetin
 
   function handleClick(e: MouseEvent) {
     e.stopPropagation()
-    openModal({
-      accessor: 'CustomerProfile',
-      Component: CustomerProfileModal,
-      props: { customerId: customerId as string, defaultTab: 'meetings' as const, highlightMeetingId: meetingId ?? undefined },
-    })
+    openCustomerProfile({ customerId: customerId as string, defaultTab: 'meetings' as const, highlightMeetingId: meetingId ?? undefined })
   }
 
   return (

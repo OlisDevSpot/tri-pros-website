@@ -3,8 +3,7 @@ import type { OmniTarget } from '@/shared/domains/omni-search/schemas'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 
-import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
-import { openModal } from '@/shared/lib/open-modal'
+import { openCustomerProfile } from '@/shared/modules/customers/core/lib/open-customer-profile'
 
 export function useOpenOmniTarget() {
   const router = useRouter()
@@ -13,10 +12,6 @@ export function useOpenOmniTarget() {
       router.push(target.href)
       return
     }
-    openModal({
-      accessor: 'CustomerProfile',
-      Component: CustomerProfileModal,
-      props: { customerId: target.customerId, defaultTab: target.defaultTab, highlightMeetingId: target.highlightMeetingId },
-    })
+    openCustomerProfile({ customerId: target.customerId, defaultTab: target.defaultTab, highlightMeetingId: target.highlightMeetingId })
   }, [router])
 }
