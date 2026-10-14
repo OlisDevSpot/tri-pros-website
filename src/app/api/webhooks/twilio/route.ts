@@ -1,9 +1,9 @@
 import env from '@/shared/config/server-env'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { meetingService } from '@/shared/modules/meetings/service'
+import { voipMessageService } from '@/shared/modules/voip/messages/service'
 import { twilioClient } from '@/shared/services/providers/twilio/client'
 import { messagingStatusCallbackSchema } from '@/shared/services/providers/twilio/schemas/messaging'
-import { voipMessagesService } from '@/shared/services/voip/voip-messages.service'
 
 const PATH = '/api/webhooks/twilio'
 
@@ -30,7 +30,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   try {
-    const applied = await voipMessagesService.applyStatusCallback(SYSTEM_CONTEXT, {
+    const applied = await voipMessageService.applyStatusCallback(SYSTEM_CONTEXT, {
       providerMessageId: parsed.data.MessageSid,
       twilioStatus: parsed.data.MessageStatus,
       errorCode: parsed.data.ErrorCode,

@@ -11,7 +11,7 @@ import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { db } from '@/shared/db'
 import { voipMessages } from '@/shared/db/schema/voip-messages'
-import { voipMessageServerSpec } from '@/shared/entities/voip-messages/lib/server-spec'
+import { voipMessageServerSpec } from '@/shared/modules/voip/messages/server-spec'
 
 interface FetchThreadInput {
   voipDidId: string

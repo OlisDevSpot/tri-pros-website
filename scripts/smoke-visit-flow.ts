@@ -41,7 +41,7 @@ import { realtimeClient } from '@/shared/services/providers/upstash/realtime'
 import { webPushClient } from '@/shared/services/providers/web-push/client'
 import { schedulingService } from '@/shared/services/scheduling.service'
 import { voipDidsService } from '@/shared/services/voip/voip-dids.service'
-import { voipMessagesService } from '@/shared/services/voip/voip-messages.service'
+import { voipMessageService } from '@/shared/modules/voip/messages/service'
 /* eslint-enable perfectionist/sort-imports */
 
 const LIVE = process.argv.includes('--live')
@@ -361,7 +361,7 @@ async function run() {
 
   // D. The line rules against the real database.
   at = mark()
-  const lineSend = await voipMessagesService.sendFromMainLine(dispatcherCtx, { customerId, remoteE164: e164(SMOKE_PHONE), body: 'Smoke: dispatcher on the main line', agentUserId: dispatcherCtx.actor.userId })
+  const lineSend = await voipMessageService.sendFromMainLine(dispatcherCtx, { customerId, remoteE164: e164(SMOKE_PHONE), body: 'Smoke: dispatcher on the main line', agentUserId: dispatcherCtx.actor.userId })
   const [lineRow] = lineSend.success ? await db.select().from(voipMessages).where(eq(voipMessages.id, lineSend.data.messageId)) : []
   check('D1 a dispatcher texts from the main line and Twilio\'s answer is recorded', lineSend.success && lineSend.data.status === 'sent' && lineRow?.status === 'sent' && lineRow.agentUserId === dispatcherCtx.actor.userId && since(texts, at.texts).length === 1, lineSend.success ? `row ${lineRow?.status}, sender ${lineRow?.agentUserId ?? 'none'}` : JSON.stringify(lineSend.error))
   const [otherLine] = await db.select({ id: voipDids.id }).from(voipDids).where(eq(voipDids.isMainLine, false)).limit(1)

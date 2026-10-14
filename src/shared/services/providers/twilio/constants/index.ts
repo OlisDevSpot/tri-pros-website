@@ -23,7 +23,7 @@ export const INBOUND_VOICE_TTS_VOICE = 'Polly.Joanna-Neural' as const
 
 // Vetting-clock env vars (optional; Phase 0 still pending). Exposed so callers
 // can guard outbound capabilities behind their availability without re-reading
-// process.env. The voip-messages service will refuse outbound SMS in production
+// process.env. The voip message service (`modules/voip/messages/service.ts`) will refuse outbound SMS in production
 // when TWILIO_10DLC_CAMPAIGN_SID is unset.
 //
 // Lazy getter (NOT a module-scope const) per `provider-env-config-when-optional`

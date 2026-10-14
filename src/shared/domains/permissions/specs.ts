@@ -14,7 +14,6 @@ import type { voipCampaignServerSpec } from '@/shared/entities/voip-campaigns/li
 import type { voipContactFieldServerSpec } from '@/shared/entities/voip-contact-fields/lib/server-spec'
 import type { voipDidServerSpec } from '@/shared/entities/voip-dids/lib/server-spec'
 import type { voipLinkTokenServerSpec } from '@/shared/entities/voip-link-tokens/lib/server-spec'
-import type { voipMessageServerSpec } from '@/shared/entities/voip-messages/lib/server-spec'
 import type { meetingMessageServerSpec } from '@/shared/modules/meetings/messages/server-spec'
 import type { projectServerSpec } from '@/shared/modules/projects/core/server-spec'
 import type { projectMediaServerSpec } from '@/shared/modules/projects/media/server-spec'
@@ -22,6 +21,7 @@ import type { proposalServerSpec } from '@/shared/modules/proposals/core/server-
 import type { proposalIncentiveServerSpec } from '@/shared/modules/proposals/incentives/server-spec'
 import type { proposalMediaServerSpec } from '@/shared/modules/proposals/media/server-spec'
 import type { proposalViewServerSpec } from '@/shared/modules/proposals/views/server-spec'
+import type { voipMessageServerSpec } from '@/shared/modules/voip/messages/server-spec'
 
 /** Every spec. A spec missing here is invisible to rule typing. */
 export type ServerSpec

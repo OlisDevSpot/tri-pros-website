@@ -34,11 +34,11 @@ import { deliverVisitText } from '@/shared/modules/meetings/messages/lib/deliver
 import { isVisitMessageEligible } from '@/shared/modules/meetings/messages/lib/is-visit-message-eligible'
 import { matchReplyKeyword } from '@/shared/modules/meetings/messages/lib/match-reply-keyword'
 import { runAutomaticKind } from '@/shared/modules/meetings/messages/lib/run-automatic-kind'
+import { voipMessageService } from '@/shared/modules/voip/messages/service'
 import { notificationService } from '@/shared/services/notification.service'
 import { syncMeetingToGcalJob } from '@/shared/services/providers/upstash/jobs/sync-meeting-to-gcal'
 import { complianceService } from '@/shared/services/voip/compliance.service'
 import { voipDidsService } from '@/shared/services/voip/voip-dids.service'
-import { voipMessagesService } from '@/shared/services/voip/voip-messages.service'
 
 export type HomeownerReplyAction = 'opt_out' | 'opt_in' | 'help' | 'confirmed' | 'already_confirmed' | 'forwarded' | 'duplicate' | 'not_main_line'
 
@@ -317,9 +317,9 @@ export const meetingBusinessService = {
   ): Promise<DalReturn<{ action: HomeownerReplyAction, meetingId: string | null }>> {
     return dalDbOperation(async () => {
       const did = dalVerifySuccess(await voipDidsService.getDidByE164(input.to))
-      const from = await voipMessagesService.resolveInboundSender({ from: input.from, voipDidId: did?.id ?? null })
+      const from = await voipMessageService.resolveInboundSender({ from: input.from, voipDidId: did?.id ?? null })
       const matched = dalVerifySuccess(await findCustomersByPhone(from))
-      const recorded = dalVerifySuccess(await voipMessagesService.recordInboundMessage(ctx, {
+      const recorded = dalVerifySuccess(await voipMessageService.recordInboundMessage(ctx, {
         providerMessageId: input.providerMessageId,
         voipDidId: did?.id ?? null,
         customerId: matched[0]?.id ?? null,

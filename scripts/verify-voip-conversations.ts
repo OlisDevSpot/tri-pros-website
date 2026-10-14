@@ -5,7 +5,7 @@ import { PgDialect } from 'drizzle-orm/pg-core'
 
 import { filterFor } from '@/shared/dal/server/lib/permissions/core'
 import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
-import { voipMessageServerSpec } from '@/shared/entities/voip-messages/lib/server-spec'
+import { voipMessageServerSpec } from '@/shared/modules/voip/messages/server-spec'
 
 const dispatcher = defineAbilitiesFor({ id: 'user-dispatcher', role: 'dispatcher' })
 const agent = defineAbilitiesFor({ id: 'user-agent', role: 'agent' })

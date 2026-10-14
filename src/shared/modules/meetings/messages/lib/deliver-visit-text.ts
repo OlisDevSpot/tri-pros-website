@@ -4,12 +4,12 @@ import type { VisitMessageContext } from '@/shared/modules/meetings/messages/dal
 
 import { publicUrl } from '@/shared/config/public-url'
 import { ROOTS } from '@/shared/config/roots'
-import { hasOutboundOnThread } from '@/shared/entities/voip-messages/dal/server/queries'
 import { toE164 } from '@/shared/lib/phone'
 import { displayFirstName } from '@/shared/modules/meetings/messages/lib/display-first-name'
 import { buildVisitMessageVars, renderVisitMessage } from '@/shared/modules/meetings/messages/lib/render-visit-message'
+import { hasOutboundOnThread } from '@/shared/modules/voip/messages/dal/server/queries'
+import { voipMessageService } from '@/shared/modules/voip/messages/service'
 import { voipDidsService } from '@/shared/services/voip/voip-dids.service'
-import { voipMessagesService } from '@/shared/services/voip/voip-messages.service'
 
 export interface VisitTextOutcome {
   status: 'sent' | 'failed' | 'skipped'
@@ -60,7 +60,7 @@ export async function deliverVisitText(ctx: ScopedContext, input: {
     { stopLine },
   )
 
-  const sent = await voipMessagesService.sendFromMainLine(ctx, { customerId: customer.id, remoteE164, body, mediaUrl: input.mediaUrl })
+  const sent = await voipMessageService.sendFromMainLine(ctx, { customerId: customer.id, remoteE164, body, mediaUrl: input.mediaUrl })
   if (!sent.success) {
     console.error('[deliverVisitText] send refused', { meetingId: meeting.id, error: sent.error })
     // A refusal means texting is switched off (no 10DLC approval, or no dev override), not that this send broke.
