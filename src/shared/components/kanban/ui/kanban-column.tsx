@@ -103,7 +103,7 @@ function KanbanColumnImpl<T extends KanbanItem>({
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto scrollbar-gutter-stable px-2 pb-2 space-y-2" aria-busy={isPending || undefined}>
+      <div className="flex-1 overflow-y-auto scrollbar-none px-2 pb-2 space-y-2" aria-busy={isPending || undefined}>
         {isPending
           // Seeded by the stage, so the loading board has the same shape on the server, on the client and on the next load.
           ? Array.from({ length: seededIntInRange(stage.key, KANBAN_SKELETON_CARDS_PER_STAGE) }, (_, index) => <KanbanCardSkeleton key={index} />)

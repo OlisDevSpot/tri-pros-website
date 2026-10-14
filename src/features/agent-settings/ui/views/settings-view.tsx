@@ -26,8 +26,8 @@ export function SettingsView() {
   }
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="mx-auto flex max-w-4xl flex-col gap-(--gutter) pb-8">
+    <div className="page-scroll">
+      <div className="mx-auto flex max-w-4xl flex-col gap-(--gutter) md:pb-8">
         <PageBar>
           <h1 className="text-3xl font-bold">Settings</h1>
           <p className="text-muted-foreground">Manage your profile, preferences, and account settings.</p>

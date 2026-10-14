@@ -45,7 +45,7 @@ export function ProjectForm({ isLoading, initialValues, onSubmit, projectId, med
   const hasMedia = isEditMode && mediaFiles && onMediaUpdate
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="flex h-full flex-col">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col md:h-full">
       {hasMedia
         ? (
             <>

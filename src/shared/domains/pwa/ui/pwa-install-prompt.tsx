@@ -81,7 +81,7 @@ export function PwaInstallPrompt() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed right-4 bottom-[calc(max(1rem,env(safe-area-inset-bottom))+4.5rem)] left-4 z-50 md:bottom-6 mx-auto max-w-sm rounded-xl border border-border p-4 text-popover-foreground surface-overlay"
+          className="fixed right-4 bottom-[calc(var(--dock-baseline)+var(--dock-h)+1rem)] left-4 z-50 md:bottom-6 mx-auto max-w-sm rounded-xl border border-border p-4 text-popover-foreground surface-overlay"
           style={GLASS_SURFACE_STYLE}
         >
           <button

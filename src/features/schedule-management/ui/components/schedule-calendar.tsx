@@ -8,10 +8,12 @@ import type { DateWindowControls } from '@/shared/dal/client/lib/types'
 import { useCallback, useMemo } from 'react'
 
 import { DEFAULT_HIDDEN_DAYS } from '@/features/schedule-management/constants/schedule-calendar-config'
+import { SCHEDULE_FRAME_CLASS } from '@/features/schedule-management/constants/schedule-frame'
 import { calendarDayToLocalDate, localDateToCalendarDay } from '@/shared/components/calendar/lib/calendar-helpers'
 import { CalendarHeader } from '@/shared/components/calendar/ui/calendar-header'
 import { CalendarMonthView } from '@/shared/components/calendar/ui/calendar-month-view'
 import { businessToday } from '@/shared/lib/business-time'
+import { cn } from '@/shared/lib/utils'
 
 import { ScheduleTodayView } from './schedule-today-view'
 import { ScheduleWeekView } from './schedule-week-view'
@@ -43,16 +45,18 @@ export function ScheduleCalendar({ events, dateWindow, showSaturday = false, ren
     : [...new Set([...DEFAULT_HIDDEN_DAYS, 6])]
 
   return (
-    // A surface of its own, so the grid reads as one panel off the page and the event cards inside climb a rung.
-    <div className="surface flex h-full w-full flex-col overflow-hidden rounded-xl border">
-      <CalendarHeader
-        currentDate={currentDate}
-        activeView={view}
-        onDateChange={handleDateChange}
-        rightSlot={controlsRight}
-      />
+    <div className="flex h-full w-full flex-col gap-(--gutter)">
+      {/* A card of its own, so the grid below can run to the screen edge while the date controls stay put. */}
+      <div className="surface rounded-xl border">
+        <CalendarHeader
+          currentDate={currentDate}
+          activeView={view}
+          onDateChange={handleDateChange}
+          rightSlot={controlsRight}
+        />
+      </div>
 
-      <div className="w-full flex-1 min-h-0 overflow-hidden">
+      <div className="w-full min-h-0 flex-1">
         {view === 'today' && (
           <ScheduleTodayView events={visibleEvents} currentDate={currentDate} isPending={isPending} renderCard={renderCard} />
         )}
@@ -60,7 +64,9 @@ export function ScheduleCalendar({ events, dateWindow, showSaturday = false, ren
           <ScheduleWeekView events={visibleEvents} currentDate={currentDate} hiddenDays={hiddenDays} isPending={isPending} renderCard={renderCard} />
         )}
         {view === 'month' && (
-          <CalendarMonthView events={visibleEvents} currentDate={currentDate} isPending={isPending} renderCompact={renderCompact} />
+          <div data-slot="schedule-frame" className={cn(SCHEDULE_FRAME_CLASS, 'h-full')}>
+            <CalendarMonthView events={visibleEvents} currentDate={currentDate} isPending={isPending} renderCompact={renderCompact} />
+          </div>
         )}
       </div>
     </div>

@@ -82,7 +82,8 @@ export function SourceDetail({ leadSourceId, activeChip, range, onAddCustomer, o
   const customerCountLabel = countsQuery.data?.all
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4 px-4 pt-4 sm:gap-5 sm:px-5 sm:pt-5">
+    // The pane pads itself and holds no surface, so a table inside must not bleed into the page inset.
+    <div className="flex h-full min-h-0 flex-col gap-4 px-4 pt-4 [--bleed-l:0px] [--bleed-r:0px] sm:gap-5 sm:px-5 sm:pt-5">
       {onBack && <MobileBackButton label="All sources" onClick={onBack} />}
       <LeadSourceDetailHeader
         source={source}
