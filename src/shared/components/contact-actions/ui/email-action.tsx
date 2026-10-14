@@ -1,5 +1,7 @@
 'use client'
 
+import type { ContactMenuControl } from '@/shared/components/contact-actions/types'
+
 import { ChevronDownIcon, CopyIcon, MailIcon, PencilIcon } from 'lucide-react'
 
 import {
@@ -12,7 +14,7 @@ import {
 import { copyToClipboard } from '@/shared/lib/clipboard'
 import { cn } from '@/shared/lib/utils'
 
-interface EmailActionProps {
+interface EmailActionProps extends ContactMenuControl {
   canEdit?: boolean
   children?: React.ReactNode
   className?: string
@@ -21,9 +23,9 @@ interface EmailActionProps {
   onEdit?: () => void
 }
 
-export function EmailAction({ canEdit, children, className, compact = false, email, onEdit }: EmailActionProps) {
+export function EmailAction({ canEdit, children, className, compact = false, email, onEdit, open, onOpenChange, onCloseAutoFocus }: EmailActionProps) {
   const menu = (
-    <DropdownMenuContent align="start">
+    <DropdownMenuContent align="start" onCloseAutoFocus={onCloseAutoFocus}>
       <DropdownMenuItem asChild>
         <a href={`mailto:${email}`}>
           <MailIcon size={14} />
@@ -48,7 +50,7 @@ export function EmailAction({ canEdit, children, className, compact = false, ema
 
   if (children) {
     return (
-      <DropdownMenu>
+      <DropdownMenu open={open} onOpenChange={onOpenChange}>
         <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
         {menu}
       </DropdownMenu>
@@ -66,7 +68,7 @@ export function EmailAction({ canEdit, children, className, compact = false, ema
         {!compact && <span className="truncate">{email}</span>}
       </a>
 
-      <DropdownMenu>
+      <DropdownMenu open={open} onOpenChange={onOpenChange}>
         <DropdownMenuTrigger asChild>
           <button
             type="button"

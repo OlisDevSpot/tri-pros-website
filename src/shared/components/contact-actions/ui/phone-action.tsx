@@ -1,5 +1,7 @@
 'use client'
 
+import type { ContactMenuControl } from '@/shared/components/contact-actions/types'
+
 import { ChevronDownIcon, CopyIcon, MessageSquareIcon, PencilIcon, PhoneIcon } from 'lucide-react'
 
 import {
@@ -13,7 +15,7 @@ import { copyToClipboard } from '@/shared/lib/clipboard'
 import { formatPhone, toDialString } from '@/shared/lib/phone'
 import { cn } from '@/shared/lib/utils'
 
-interface PhoneActionProps {
+interface PhoneActionProps extends ContactMenuControl {
   canEdit?: boolean
   children?: React.ReactNode
   className?: string
@@ -22,9 +24,9 @@ interface PhoneActionProps {
   phone: string
 }
 
-export function PhoneAction({ canEdit, children, className, compact = false, onEdit, phone }: PhoneActionProps) {
+export function PhoneAction({ canEdit, children, className, compact = false, onEdit, phone, open, onOpenChange, onCloseAutoFocus }: PhoneActionProps) {
   const menu = (
-    <DropdownMenuContent align="start">
+    <DropdownMenuContent align="start" onCloseAutoFocus={onCloseAutoFocus}>
       <DropdownMenuItem asChild>
         <a href={`tel:${toDialString(phone)}`}>
           <PhoneIcon size={14} />
@@ -55,7 +57,7 @@ export function PhoneAction({ canEdit, children, className, compact = false, onE
 
   if (children) {
     return (
-      <DropdownMenu>
+      <DropdownMenu open={open} onOpenChange={onOpenChange}>
         <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
         {menu}
       </DropdownMenu>
@@ -73,7 +75,7 @@ export function PhoneAction({ canEdit, children, className, compact = false, onE
         {!compact && <span className="truncate">{formatPhone(phone)}</span>}
       </a>
 
-      <DropdownMenu>
+      <DropdownMenu open={open} onOpenChange={onOpenChange}>
         <DropdownMenuTrigger asChild>
           <button
             type="button"

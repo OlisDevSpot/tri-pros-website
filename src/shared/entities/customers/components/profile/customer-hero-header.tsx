@@ -5,12 +5,12 @@ import type { CustomerProfileData } from '@/shared/entities/customers/types'
 import { useState } from 'react'
 import { Input } from '@/shared/components/ui/input'
 import { useAbility } from '@/shared/domains/permissions/client'
+import { CustomerContactButtons } from '@/shared/entities/customers/components/customer-contact-buttons'
 import { canAgentSeePhone } from '@/shared/entities/customers/lib/can-see-phone'
 import { formatCustomerAddress } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 import { AddressEditDialog } from './address-edit-dialog'
 import { CustomerContactAddressRow } from './customer-contact-address-row'
-import { CustomerContactButtons } from './customer-contact-buttons'
 import { CustomerContactEmailRow } from './customer-contact-email-row'
 import { CustomerContactPhoneRow } from './customer-contact-phone-row'
 import { CustomerEditToggle } from './customer-edit-toggle'
@@ -56,7 +56,7 @@ export function CustomerHeroHeader({ customer, editForm, layout }: Props) {
               </h2>
             )}
         <CustomerEditToggle editForm={editForm} />
-        {showDiscs && <CustomerContactButtons customer={customer} />}
+        {showDiscs && <CustomerContactButtons className="ml-auto" contact={{ phone: customer.phone, email: customer.email }} surface="image" />}
       </div>
 
       {/* Rows carry their own hover padding; the negative margin lines their text up with the name. */}

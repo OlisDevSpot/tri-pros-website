@@ -1,5 +1,7 @@
 'use client'
 
+import type { ContactMenuControl } from '@/shared/components/contact-actions/types'
+
 import { CopyIcon, ExternalLinkIcon, GlobeIcon, MapPinIcon, PencilIcon } from 'lucide-react'
 
 import {
@@ -13,7 +15,7 @@ import { openExternalUrl } from '@/shared/domains/pwa/lib/device'
 import { copyToClipboard } from '@/shared/lib/clipboard'
 import { cn } from '@/shared/lib/utils'
 
-interface AddressActionProps {
+interface AddressActionProps extends ContactMenuControl {
   address: string
   canEdit?: boolean
   children?: React.ReactNode
@@ -22,9 +24,9 @@ interface AddressActionProps {
   onEdit?: () => void
 }
 
-export function AddressAction({ address, canEdit, children, className, compact = false, onEdit }: AddressActionProps) {
+export function AddressAction({ address, canEdit, children, className, compact = false, onEdit, open, onOpenChange, onCloseAutoFocus }: AddressActionProps) {
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={onOpenChange}>
       <DropdownMenuTrigger asChild>
         {children ?? (
           <button
@@ -40,7 +42,7 @@ export function AddressAction({ address, canEdit, children, className, compact =
           </button>
         )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start">
+      <DropdownMenuContent align="start" onCloseAutoFocus={onCloseAutoFocus}>
         <DropdownMenuItem
           onClick={() => {
             openExternalUrl(
