@@ -1,7 +1,7 @@
 // src/shared/modules/media/core/lib/optimize-media.ts
 import type { MediaStore } from '@/shared/modules/media/core/types'
 import type { R2BucketName } from '@/shared/services/providers/r2/types'
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { systemContext } from '@/shared/dal/server/lib/contexts'
 import { optimizeFile } from '@/shared/lib/file-optimization/optimize-file'
 import {
   setMediaOptimizationComplete,
@@ -24,11 +24,8 @@ export async function optimizeMediaFile(
   { store, mediaId }: { store: MediaStore, mediaId: number },
 ): Promise<void> {
   const table = store.table
-  // The row is read through the owner's own scoped CRUD — SYSTEM_CONTEXT because a
-  // background job has no session and must see every row. This is what removes the
-  // last raw `db` read on the media service/optimizer path (MD2) — the table-generic
-  // DAL ops (media-ops.ts, optimization.ts) still import `db` legitimately.
-  const found = await store.crud.getById(SYSTEM_CONTEXT, { id: mediaId })
+  // A queued job has no session and must see every owner's row.
+  const found = await store.crud.getById(systemContext('job:media-optimization'), { id: mediaId })
   if (!found.success) {
     // Transient DB error (cold start, connection reset) — throw so the QStash
     // route handler's promise rejects and QStash sees a 500 and retries. Returning

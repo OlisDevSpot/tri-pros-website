@@ -26,7 +26,6 @@ export type {
 export {
   dalError,
   dalSuccess,
-  SYSTEM_CONTEXT,
   ThrowableDalError,
 } from '@/shared/dal/server/types'
 

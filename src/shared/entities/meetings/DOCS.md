@@ -226,7 +226,7 @@ Meeting `flowStateJSON.dealStructure` carries the agent's in-meeting pricing scr
 `meetings.ownerId` is the user who created the meeting record. It controls **permissions** (delete, full update), not meeting function. See `#ownership-model` for the full ownership rules and `#participant-roles-are-meeting-contextual` for the distinction between ownership and participation.
 
 **Reference impl**: schema (`ownerId` column); `create.before` in `dal/server/crud.ts` (resolves ownerId via `lib/resolve-owner.ts`)
-**Enforced by**: `create.before` in `dal/server/crud.ts` (server-resolves ownerId for authed callers; `SYSTEM_CONTEXT` passes its explicit ownerId through)
+**Enforced by**: `create.before` in `dal/server/crud.ts` (server-resolves ownerId for authed callers; a system context (`systemContext(reason)`) passes its explicit ownerId through)
 
 ### duplicate-copies-setup-only
 
@@ -240,7 +240,7 @@ The Duplicate action (`meetingsRouter.crud.duplicate`) copies the source row min
 | | `agentNotes` |
 | | `shareToken` (a fresh one is minted), `homeownerConfirmedAt` / `homeownerConfirmedVia` / `newTimeRequestedAt` (the copy has no homeowner response), `rescheduledFromId` (the copy replaces nothing) |
 | | `gcalEventId` / `gcalEtag` / `gcalSyncedAt` — the copy is pushed as a new calendar event |
-| | `ownerId` → the duplicating user (`duplicate.overrides`; falls back to the source owner under `SYSTEM_CONTEXT`) |
+| | `ownerId` → the duplicating user (`duplicate.overrides`; falls back to the source owner under a system context) |
 
 **Why**: a duplicate is a fresh sit that shares the customer and setup — not a continuation of the source. Working state, project link, outcome, notes and calendar identity all describe the source sit and must not leak into a new one. The ONE path that carries `flowStateJSON` forward is reschedule (`#reschedule-cancels-and-rebooks`), because a reschedule is the same sit moved to a new slot.
 **Reference impl**: `dal/server/crud.ts` (`duplicate.exclude` + `duplicate.overrides`); engine `src/shared/dal/server/lib/create-crud-dal.ts` (`duplicateImpl`)

@@ -9,6 +9,7 @@ export type SystemReason
     | 'webhook:justcall'
     | 'sync:quickbooks'
     | 'job:campaign-enrollment'
+    | 'job:media-optimization'
     | 'derived:new-lead-notification'
     | 'derived:customer-delete-cascade'
     | 'derived:meeting-reschedule'

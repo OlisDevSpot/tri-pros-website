@@ -42,7 +42,7 @@ export type CustomerFullView = CustomerWithProfile & {
   enrichment: CustomerEnrichmentRow[]
 }
 
-// SYSTEM_CONTEXT (`manage all`) is ungated: system callers never surface the phone to a user.
+// A system context (`manage all`) is ungated: system callers never surface the phone to a user.
 function customerSelectWithGate(ctx: ScopedContext) {
   const { phone: _phone, ...rest } = getTableColumns(customers)
   return {
