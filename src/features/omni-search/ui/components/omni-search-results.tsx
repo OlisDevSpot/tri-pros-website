@@ -73,7 +73,7 @@ export function OmniSearchResults({ search, mode, onHighlight, onDone, onEnterMo
       <>
         {progress}
         {failed}
-        <CommandGroup heading={OMNI_COPY.scheduleMeetingHeading}>
+        <CommandGroup heading={OMNI_COPY.scheduleMeetingChip}>
           {(data?.customers ?? []).map(customer => (
             <OmniCustomerItem key={customer.id} customer={customer} disabled={pending} onSelect={() => onPickCustomer({ id: customer.id, name: customer.name })} />
           ))}
@@ -117,7 +117,7 @@ export function OmniSearchResults({ search, mode, onHighlight, onDone, onEnterMo
       {progress}
       {!search.trim() && <OmniRecentGroup items={recent} onSelect={selectRecord} />}
       {failed}
-      {isEmpty && !busy && term && <p className="px-3 py-2 text-sm text-muted-foreground">{OMNI_COPY.noRecords(term)}</p>}
+      {isEmpty && !busy && term && <p className="px-3 py-2 text-sm text-muted-foreground">{OMNI_COPY.noMatch.title(term)}</p>}
       {entriesFirst
         ? (
             <>
