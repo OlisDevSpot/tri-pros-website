@@ -1,4 +1,4 @@
-# Permissions epic (#285) — distilled record (2026-10-01; status and next steps updated 2026-10-12)
+# Permissions epic (#285) — distilled record (2026-10-01; status and next steps updated 2026-10-14)
 
 One page. Everything else in this folder is evidence. Code is the source of truth: re-verify any line here against the code before acting on it.
 
@@ -87,7 +87,7 @@ The full list of 20, with file and line, is the tracker's §5.1. The fixes the e
 
 ## 7. Next steps, in order
 1. **The holes in §6 ship with the epic** (decision 26). S20 is outside it and stays open.
-2. Unit 3 after part 4: the rest of the families, each with its own plan for the owner's approval; parts 1 to 3 (the compiler, Customer, Meeting, Proposal) are built and checked, part 4 (Project) is built and awaits the owner's hand checks. The items the tracker's Unit 3 note carries go into the plan.
+2. Unit 3 after part 4: merge `origin/main` in, then the rest of the families (Applications, lead sources, VoIP, AppSetting, the system callers with no family, then the `ctx.scope` seam itself), each with its own plan for the owner's approval. Parts 1 to 4 (the compiler, Customer, Meeting, Proposal, Project) are built and accepted (part 4 on 2026-10-14). The tracker's §4 "Unit 3 — what is left" is the inventory.
 3. Rule the open items in the spec's §12: homeowner phone grant; lint wall shape; which dev records browser tests may change; the 25 business rulings in report 10 §5.
 4. Build order (spec §11): typed foundation → one actor per request → compiler + DAL self-scoping per entity family → rules matrix → lint wall + financial reads → delete the legacy engine → full browser pass. The keep-primitives (adapter core, outcome classification) come back from `b40403b6` in the unit that gives each a home.
 5. Merge main into the branch at every unit boundary. The branch reached production during part 4 (the owner's release, `25e677167`), so "one merge to main after the end-to-end pass" is overtaken: each finished task ships with the owner's next release.

@@ -106,13 +106,11 @@ Do **not** re-encode the stage→bucket relationship anywhere else. The `project
 
 ### project-visibility-scope
 
-The **canonical derivation of which projects a user can see** (their visibility scope): a user can see a project **iff they are a participant on ≥1 meeting of the project whose outcome is NOT negative**. Formally — `EXISTS meeting M where M.projectId = project.id AND participant(user, M) AND MEETING_OUTCOME_SENTIMENT[M.meetingOutcome] !== 'negative'`.
+The **canonical derivation of which projects a user can see** (their visibility scope): a user can see a project **iff they are a participant on ≥1 meeting of the project**, whatever that meeting's outcome. Formally — `EXISTS meeting M where M.projectId = project.id AND participant(user, M)`. Super-admin reads every project. Pure-portfolio projects (no meetings) fall outside this predicate by construction — see `#pure-portfolio-projects-are-not-real-projects`.
 
-Negative-outcome meetings (lost/failed — `not_good`, `pns`, `npns`, `ftd`, `no_show`, … per `MEETING_OUTCOME_SENTIMENT`) do **not** confer visibility: a user who attended only a dead-lead meeting on a project has no live operational stake in it. Omni (super-admin) bypasses the predicate entirely (scope = `null`). Pure-portfolio projects (no meetings) fall outside this predicate by construction — see `#pure-portfolio-projects-are-not-real-projects`.
-
-**Why**: participation defines stake, but surfacing a project reached only through a lost meeting is noise. The non-negative filter keeps a user's project list to the ones they have a living stake in.
-**Reference impl**: the agent rule `can('read', 'Project', { $participatesViaMeeting: { via: 'projectId', userId } })` in `src/shared/domains/permissions/rules/agent.ts`, compiled by `permit` (`src/shared/dal/server/lib/permissions/permit.ts`); negative set from `MEETING_OUTCOME_SENTIMENT` (`src/shared/constants/enums/meetings.ts`)
-**Enforced by**: the compiled rule (`permit`). ⚠️ **Code gap**: the negative-outcome exclusion is NOT yet implemented — the rule is participation-only today. Added during the projects standardization epic.
+**Why**: participation defines stake. One meeting's outcome says nothing about the project as a whole, so no outcome narrows it (owner, 2026-10-14). Whether a cancelled project leaves anyone's lists is a question for the project lifecycle, not for this rule.
+**Reference impl**: the agent rule `can('read', 'Project', { $participatesViaMeeting: { via: 'projectId', userId } })` in `src/shared/domains/permissions/rules/agent.ts`, compiled by `permit` (`src/shared/dal/server/lib/permissions/permit.ts`)
+**Enforced by**: the compiled rule (`permit`).
 
 ### pure-portfolio-projects-are-not-real-projects
 
