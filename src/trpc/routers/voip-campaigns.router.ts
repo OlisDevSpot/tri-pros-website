@@ -40,7 +40,7 @@ export const voipCampaignsRouter = createTRPCRouter({
     return dalToTrpc(await listVoipContactFields())
   }),
 
-  getSourceCampaignSummaries: agentProcedure.query(async () => {
+  getSourceCampaignSummaries: superAdminProcedure.query(async () => {
     const sources = dalToTrpc(await listLeadSources())
     const counts = dalToTrpc(await countLeadsByStatusPerSource())
     return sources.map(source => ({
