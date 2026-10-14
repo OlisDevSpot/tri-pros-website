@@ -22,7 +22,7 @@
 **Non-goals**
 - A view-type switch (kanban ↔ table ↔ calendar). `DataViewTypeToggle` is deleted as dead code; a switch is a later data-view question.
 - Moving the dashboard proposal/project card lists and the customer-profile lists onto `useDataViewQuery` (R2 spec §9; D62 defers tables-vs-cards there).
-- Campaign leads (legacy, D57).
+- Moving campaign leads onto `useDataViewQuery` (legacy, D57). It keeps its read and its `LeadsFilterBar`, and in phase 1 only wraps its table in the root and `Body`, so it keeps the empty state and the stale dim that `DataTable` gives up (§11 #17).
 - The action hosts (pipeline-speed §3.2). A host mounts inside the root; this spec does not move dialogs.
 - Row selection and bulk actions (records B2–B4).
 - Changing what any view reads, filters, sorts or shows. Same rows, same URL keys, same controls.
@@ -30,7 +30,7 @@
 **Success criteria**
 - `grep -rln "RecordsPageShell\|RecordsPageHeader\|data-view-type-toggle" src` is empty after phase 1 + R2 Part 2.
 - The hand-written fill cells and strips are gone: `schedule-meetings-calendar.tsx:69-74`, `schedule-activities-calendar.tsx:55-61`, `customer-pipeline-view.tsx:144-152`, and the two panes' (`all-customers-section.tsx:92`, its sibling) after R2 Part 2.
-- Every `useDataViewQuery` caller (and `fromPaginatedQuery`'s one caller, proposals) renders inside a `DataView` root; the root's development check passes on every page.
+- Every `useDataViewQuery` caller (and `fromPaginatedQuery`'s two callers, proposals and campaign leads) renders inside a `DataView` root; the root's development check passes on every page.
 - Records probe (`scripts/perf/records-probe.mjs`): expand re-renders one row, a modal open none, before and after. Pipeline-schedule probe (`.superpowers/harness/pipeline-schedule-perf/`): no regression against its baseline.
 - Browser, read-only, per phase: same rows and URL keys; empty, stale and error states forced and shown once each.
 - Instant return holds on every migrated view, under throttled network:
@@ -96,7 +96,7 @@ Instant tab return put the loading-state rules in the read hooks, `useDataViewQu
 - Provides `{ query, entityName }`. The value is memoised on the query's fields (`rows, total, isPending, isStale, isFetching, refresh, filterSort, window`), each already stable from the hook; the hook itself returns a new object every render (`use-data-view-query.ts:259`), which is why the root memoises and not the caller.
 - Renders a fragment; nothing styled. The entity's dialogs (or, later, its action host) render as children.
 - `DataViewBoundary` sets a one-bit context. In development, a root without it throws: ``<DataView> needs a <DataViewBoundary> above it``. In production it renders. That is how truth #1 is enforced instead of remembered.
-- `query` is `DataViewQueryResult<TRow, F, T, W>` from any window kind; `fromPaginatedQuery`'s result qualifies (proposals, until R3). The root is generic in its prop and stores the query widened once, as `DataViewQueryResult<unknown, FieldList, string>`, exactly as `QueryToolbar`'s root does (`query-toolbar/lib/context.ts:10-11`), so every part reads one non-generic shape and no `any` appears.
+- `query` is `DataViewQueryResult<TRow, F, T, W>` from any window kind; `fromPaginatedQuery`'s result qualifies (proposals until R3, and campaign leads). The root is generic in its prop and stores the query widened once, as `DataViewQueryResult<unknown, FieldList, string>`, exactly as `QueryToolbar`'s root does (`query-toolbar/lib/context.ts:10-11`), so every part reads one non-generic shape and no `any` appears.
 - `entityName` is the plural ("customers"): what every `QueryToolbar` caller passes and what `LiveStatus` reads ("Showing 20 customers"). ⚠️ `query-toolbar/ui/root.tsx:19` documents it as singular; the code has always used the plural, and phase 1 corrects the comment. `useEntityTable`'s `entityName` stays singular (it names one row).
 
 ### 3.2 `Bar`
@@ -184,7 +184,7 @@ The owner chose the rule without a lint guard (2026-10-12). A page that prefetch
 </DataView>
 ```
 
-Meetings and projects call it today; customers does after R2 Part 2; proposals (`proposal-flow/ui/components/table/index.tsx:142-146`, on `fromPaginatedQuery`) composes the parts by hand until R3 moves it onto `useEntityTable`. In the same commit, the proposals route moves onto the loading-screen rule (§3.8): `ProposalsRoutePendingView` and the boundary in `page.tsx` give way to one component. `RecordsPageShell` and `RecordsPageHeader` are deleted with their last caller (`customers-table.tsx`, which R2 Part 2 deletes).
+Meetings and projects call it today; customers does after R2 Part 2; proposals (`proposal-flow/ui/components/table/index.tsx:142-146`, on `fromPaginatedQuery`) composes the parts by hand until R3 moves it onto `useEntityTable`. Campaign leads (`campaigns-leads-view.tsx:74-77`, the other `fromPaginatedQuery` caller) wraps its table in the root and `Body empty` in phase 1 (§11 #17). In the same commit, the proposals route moves onto the loading-screen rule (§3.8): `ProposalsRoutePendingView` and the boundary in `page.tsx` give way to one component. `RecordsPageShell` and `RecordsPageHeader` are deleted with their last caller (`customers-table.tsx`, which R2 Part 2 deletes).
 
 **Calendars (schedule ×2).** Root + `Bar` (`Toolbar` with `Standard leading={showToggle}`) + `Body` with no `empty` around `ScheduleCalendar`; the hand-copied strip (`schedule-meetings-calendar.tsx:69-74`, `schedule-activities-calendar.tsx:55-61`) goes. `ScheduleCalendar` keeps `dateWindow`, its skeleton cards and `controlsRight`. Dialogs render inside the root as today.
 
@@ -210,7 +210,7 @@ Ten views, three phases, one plan each. A phase deletes the chrome it replaces i
 
 | Phase | Views | Deleted |
 |---|---|---|
-| **1 · core + tables** | the compound; `EntityRecordsTable` rebuilt; meetings and projects records (through it); proposals records (by hand); `EntityTableResult` | `DataTable`'s dim class and empty row; `DataViewTypeToggle`; `EntityRecordsTableSource`; `RecordsPageShell` and `RecordsPageHeader` go when R2 Part 2 deletes `customers-table.tsx` |
+| **1 · core + tables** | the compound; `EntityRecordsTable` rebuilt; meetings and projects records (through it); proposals records (by hand); campaign leads (root + `Body` only); `EntityTableResult` | `DataTable`'s dim class and empty row; `DataViewTypeToggle`; `EntityRecordsTableSource`; `RecordsPageShell` and `RecordsPageHeader` go when R2 Part 2 deletes `customers-table.tsx` |
 | **2 · calendars** | schedule meetings, schedule activities, dashboard meetings hub | the two hand-copied strips |
 | **3 · kanban** | the pipeline view (its `DataViewBoundary` moves inside it, §3.8) | its dim wrapper and `EmptyState`; the boundary in `pipeline/[pipeline]/page.tsx` and `loading.tsx`, and the one in `PipelineRoutePendingView` |
 
@@ -288,5 +288,12 @@ Pipeline-speed Phase 2 (action hosts) shipped before this spec was built (`5bc02
 | 14 | Loading screens are a rule, not a guard: a page, its `loading.tsx` and the layout's entry render one component that owns its boundaries (§3.8). No lint rule. |
 | 15 | Order: edge-to-edge layout → phase 1 → R2 Part 2 → phases 2–3 (on the shipped action hosts). #285 units 1–3 shipped before R2 (2026-10-12), so R2 re-checks against them instead of #285 rebasing. Amends #11. |
 | 16 | `Count` renders nothing in the error fallback, so `Loading…` never sits under a retry (Claude's call, approved by the owner 2026-10-14). |
+
+**Phase 1 plan rulings (2026-10-14):**
+
+| # | Decision |
+|---|---|
+| 17 | Campaign leads wraps its `DataTable` in the root and `Body empty` in phase 1. Otherwise it would lose the empty state and the stale dim for good when `DataTable` drops them. Amends the campaign-leads non-goal (#4) only by that wrap. |
+| 18 | The customers page and the two lead-sources panes lose the table's dim and empty row on local main between phase 1 and R2 Part 2. They are not wrapped twice (D14). Phase 1 ships to prod together with R2 Part 2. |
 
 **Open:** none for the design. Plan-level names (test file names, the ledger column's exact header) go under each plan's "Owner confirms".
