@@ -16,8 +16,8 @@ interface Props {
 
 /**
  * Agent-only financial X-ray: the customer pricing breakdown plus the
- * Internal Calculation (margin/multiplier). Opened via the global modal
- * store — never rendered inline, never reachable by the homeowner.
+ * Internal Calculation (margin/multiplier). Opened through `openModal`,
+ * never rendered inline, never reachable by the homeowner.
  */
 export function InternalFinancialsModal({ funding, sow, priceDisplayMode }: Props) {
   const { isOpen, close } = useModalLayer()
