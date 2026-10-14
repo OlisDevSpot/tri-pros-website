@@ -40,14 +40,15 @@ export function agentRules(userId: string) {
 
     can('read', 'User')
 
-    // Row scoping (own rows only) is enforced by entity visibility predicates until these families convert.
+    // Calls are still scoped by the legacy visibility predicate (own rows only); texts are reached through the agent's line.
     can('read', 'VoipCall')
     can('create', 'VoipCall') // placeAgentCall via softphone
 
     can('read', 'VoipMessage')
     can('create', 'VoipMessage') // sendSms via thread UI
 
-    can('read', 'VoipDid') // resolve own sticky DID
+    // An agent's own line, and through it that line's texts.
+    can('read', 'VoipDid', { assignedUserId: userId })
 
     can('read', 'VoipLinkToken')
     can('create', 'VoipLinkToken') // mint L-DOC links

@@ -10,12 +10,14 @@
  */
 /* eslint-disable perfectionist/sort-imports -- load-env must run before any module that reads process.env */
 import './lib/load-env'
+import type { ScopedContext } from '@/shared/dal/server/types'
 import type { GCalEvent, GCalEventInput, GCalSendUpdates } from '@/shared/services/providers/google-calendar/types'
 import process from 'node:process'
 import { Client as QstashClient } from '@upstash/qstash'
 import { and, eq, inArray, like, or } from 'drizzle-orm'
 import { isProductionData } from '@/shared/config/data-target'
 import env from '@/shared/config/server-env'
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { customerNotes } from '@/shared/db/schema/customer-notes'
@@ -23,7 +25,10 @@ import { customers } from '@/shared/db/schema/customers'
 import { meetingMessages } from '@/shared/db/schema/meeting-messages'
 import { meetingParticipants } from '@/shared/db/schema/meeting-participants'
 import { meetings } from '@/shared/db/schema/meetings'
+import { voipDids } from '@/shared/db/schema/voip-dids'
 import { voipMessages } from '@/shared/db/schema/voip-messages'
+import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
+import { voipDidServerSpec } from '@/shared/entities/voip-dids/lib/server-spec'
 import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
 import { toNationalDigits } from '@/shared/lib/phone'
 import { meetingService } from '@/shared/modules/meetings/service'
@@ -36,6 +41,7 @@ import { realtimeClient } from '@/shared/services/providers/upstash/realtime'
 import { webPushClient } from '@/shared/services/providers/web-push/client'
 import { schedulingService } from '@/shared/services/scheduling.service'
 import { voipDidsService } from '@/shared/services/voip/voip-dids.service'
+import { voipMessagesService } from '@/shared/services/voip/voip-messages.service'
 /* eslint-enable perfectionist/sort-imports */
 
 const LIVE = process.argv.includes('--live')
@@ -195,6 +201,8 @@ function gap(step: string, detail: string) {
 let customerId: string | null = null
 let customerName = ''
 const meetingIds: string[] = []
+// A dispatcher acting through the real rules; the office account stands in as the person.
+let dispatcherCtx: ScopedContext
 let inboundCounter = 0
 let mainLineE164 = ''
 
@@ -255,6 +263,9 @@ async function run() {
   if (taken.length) {
     throw new Error(`A customer already holds ${SMOKE_PHONE} or ${STRANGER_PHONE}; a previous run did not clean up. Delete it by hand.`)
   }
+
+  const officeUserId = await getSystemOwnerId()
+  dispatcherCtx = { actor: { ability: defineAbilitiesFor({ id: officeUserId, role: 'dispatcher' }), userId: officeUserId }, scope: null }
 
   customerName = `ZZ Smoke ${new Date().toISOString().slice(11, 19)}`
   const [customer] = await db.insert(customers).values({
@@ -347,6 +358,19 @@ async function run() {
   await drainJobs()
   const cancelCalls = since(calendar, at.calendar)
   check('8 cancel deletes the event and Google emails the homeowner', cancelled.success && cancelCalls.length === 1 && cancelCalls[0].op === 'delete' && cancelCalls[0].sendUpdates === 'all', JSON.stringify(cancelCalls.map(c => ({ op: c.op, sendUpdates: c.sendUpdates }))))
+
+  // D. The line rules against the real database.
+  at = mark()
+  const lineSend = await voipMessagesService.sendFromMainLine(dispatcherCtx, { customerId, remoteE164: e164(SMOKE_PHONE), body: 'Smoke: dispatcher on the main line', agentUserId: dispatcherCtx.actor.userId })
+  const [lineRow] = lineSend.success ? await db.select().from(voipMessages).where(eq(voipMessages.id, lineSend.data.messageId)) : []
+  check('D1 a dispatcher texts from the main line and Twilio\'s answer is recorded', lineSend.success && lineSend.data.status === 'sent' && lineRow?.status === 'sent' && lineRow.agentUserId === dispatcherCtx.actor.userId && since(texts, at.texts).length === 1, lineSend.success ? `row ${lineRow?.status}, sender ${lineRow?.agentUserId ?? 'none'}` : JSON.stringify(lineSend.error))
+  const [otherLine] = await db.select({ id: voipDids.id }).from(voipDids).where(eq(voipDids.isMainLine, false)).limit(1)
+  if (otherLine) {
+    check('D2 a dispatcher cannot reach another line', !(await permit(dispatcherCtx, 'read', voipDidServerSpec).probe(otherLine.id)) && await permit(dispatcherCtx, 'read', voipDidServerSpec).probe(mainLine.data.id), `other line ${otherLine.id}`)
+  }
+  else {
+    gap('D2 a dispatcher cannot reach another line', 'the dev database has no line besides the main line; the rule is covered by verify-voip-conversations.ts')
+  }
 
   // 9. STOP: do-not-contact.
   at = mark()

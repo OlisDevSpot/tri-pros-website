@@ -20,7 +20,7 @@ import { subjectOf } from './define-spec'
  * scopes them through `permit`. A family joins when it converts; the set and this module go when
  * the last one has.
  */
-export const COMPILED_SUBJECTS: ReadonlySet<EntitySubject> = new Set<EntitySubject>(['Customer', 'CustomerNote', 'Meeting', 'Proposal'])
+export const COMPILED_SUBJECTS: ReadonlySet<EntitySubject> = new Set<EntitySubject>(['Customer', 'CustomerNote', 'Meeting', 'Proposal', 'VoipDid', 'VoipMessage'])
 
 export function isCompiled(spec: AnyServerSpec): boolean {
   return COMPILED_SUBJECTS.has(subjectOf(spec))
