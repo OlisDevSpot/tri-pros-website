@@ -20,8 +20,9 @@ interface Props {
 }
 
 export function CustomerProfileTabPanels({ data, editForm, highlightMeetingId, onMutationSuccess, onOpenMeeting }: Props) {
+  // A meeting's View, inside its own customer's profile, moves this profile to the meeting instead of stacking a second copy.
   return (
-    <MeetingActionsHost>
+    <MeetingActionsHost overrides={{ onView: meeting => onOpenMeeting(meeting.id) }}>
       <ProposalActionsHost>
         <ProjectActionsHost>
           <TabsContent className="mt-0 p-4 md:p-6" value="overview">
