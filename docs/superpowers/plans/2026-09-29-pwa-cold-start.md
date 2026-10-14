@@ -135,7 +135,7 @@ import { builtinModules } from 'node:module'
 
 const TOP = Number(process.argv[2] ?? 15)
 const ROUTES = {
-  '/dashboard': '.next/server/app/(frontend)/dashboard/page.js',
+  '/dashboard': '.next/server/app/(frontend)/dashboard/(home)/page.js',
   '/api/trpc': '.next/server/app/api/trpc/[trpc]/route.js',
   '/api/auth': '.next/server/app/api/auth/[...all]/route.js',
 }
@@ -184,7 +184,7 @@ for (const [route, entry] of Object.entries(ROUTES)) {
 }
 
 const pages = JSON.parse(fs.readFileSync('.next/app-build-manifest.json', 'utf8')).pages
-const clientChunks = [...new Set(['/(frontend)/layout', '/(frontend)/dashboard/layout', '/(frontend)/dashboard/page'].flatMap(k => pages[k] ?? []))]
+const clientChunks = [...new Set(['/(frontend)/layout', '/(frontend)/dashboard/layout', '/(frontend)/dashboard/(home)/page'].flatMap(k => pages[k] ?? []))]
 const ablyChunks = clientChunks.filter(f => fs.existsSync(`.next/${f}`) && fs.readFileSync(`.next/${f}`, 'utf8').includes('ably.net'))
 console.log(`\ndashboard client chunks containing Ably: ${ablyChunks.length}`)
 ```
@@ -1975,7 +1975,7 @@ MSG
 - Modify: `src/features/agent-dashboard/ui/components/dashboard-projects.tsx` (whole file)
 
 **Interfaces:**
-- Consumes: the six prefetches in `src/app/(frontend)/dashboard/page.tsx` (unchanged); `HydrationErrorBoundary({ children, fallback? })` from `@/trpc/components/hydration-error-boundary`.
+- Consumes: the six prefetches in `src/app/(frontend)/dashboard/(home)/page.tsx` (unchanged); `HydrationErrorBoundary({ children, fallback? })` from `@/trpc/components/hydration-error-boundary`.
 - Produces: `DashboardSnapshotChips({ meetingsToday?, awaitingSignature?, activeProjects? }: number | undefined)`; `DashboardSectionSkeleton({ title })` with `data-slot="dashboard-section-skeleton"`.
 
 - [ ] **Step 1: `dashboard-snapshot-chips.tsx`**
@@ -2046,7 +2046,7 @@ import { useTRPC } from '@/trpc/helpers'
 
 /**
  * The three snapshot counts, read from the same query inputs the modules below
- * use (they dedupe against the server prefetch in `dashboard/page.tsx`), so the
+ * use (they dedupe against the server prefetch in `dashboard/(home)/page.tsx`), so the
  * strip never fires its own count query. It suspends until they resolve, so the
  * counts arrive in the streamed HTML; DashboardHero supplies the fallback.
  */

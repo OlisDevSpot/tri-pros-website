@@ -51,7 +51,7 @@
 |---|---|
 | 1 Pins, the first-rows window and the static input | `src/shared/dal/lib/query/{data-view-query-config,derive-data-view-input,adjacent-windows}.ts` · `src/shared/dal/client/lib/types.ts` · `src/shared/dal/client/hooks/use-data-view-query.ts` (one `switch` case) |
 | 2 Pins at the callsite | `src/shared/dal/client/hooks/use-data-view-query.ts` · `src/shared/dal/server/lib/query/load-data-view-query-input.ts` |
-| 3 Dashboard reads | `src/features/agent-dashboard/constants/dashboard-queries.ts` · `src/features/agent-dashboard/ui/components/{dashboard-meetings-hub,dashboard-snapshot-counts,dashboard-projects,dashboard-project-section,dashboard-project-section-list}.tsx` · `src/app/(frontend)/dashboard/page.tsx` · `src/trpc/routers/meetings.router/reads.router.ts` · `src/shared/modules/projects/core/DOCS.md` · tracker and spec status lines |
+| 3 Dashboard reads | `src/features/agent-dashboard/constants/dashboard-queries.ts` · `src/features/agent-dashboard/ui/components/{dashboard-meetings-hub,dashboard-snapshot-counts,dashboard-projects,dashboard-project-section,dashboard-project-section-list}.tsx` · `src/app/(frontend)/dashboard/(home)/page.tsx` · `src/trpc/routers/meetings.router/reads.router.ts` · `src/shared/modules/projects/core/DOCS.md` · tracker and spec status lines |
 
 On 2026-10-07 three Task 3 files held another session's uncommitted dashboard rework; it was committed by 2026-10-12 and every file this plan touches was clean, except `CONTEXT.md` (Task 3 Step 8). Check each with `git status --short` anyway.
 
@@ -737,7 +737,7 @@ git show --stat HEAD
 
 **Files:**
 - Modify: `src/features/agent-dashboard/constants/dashboard-queries.ts`
-- Modify: `src/app/(frontend)/dashboard/page.tsx`
+- Modify: `src/app/(frontend)/dashboard/(home)/page.tsx`
 - Modify: `src/features/agent-dashboard/ui/components/dashboard-meetings-hub.tsx`
 - Modify: `src/features/agent-dashboard/ui/components/dashboard-snapshot-counts.tsx`
 - Modify: `src/features/agent-dashboard/ui/components/dashboard-projects.tsx`
@@ -759,7 +759,7 @@ git show --stat HEAD
 A pathspec commit takes the whole file, so no file this task commits may hold another session's uncommitted work. On 2026-10-12 every one was clean: the dashboard rework that gated this task on 2026-10-07 is committed (the declined-proposals fix as `68c516fb`, `dashboard-see-all-link.tsx` tracked), and the `projects/core/DOCS.md` hunks are committed too. `CONTEXT.md` (Step 8) was dirty with another session's glossary work. Re-check right before starting:
 
 ```bash
-git status --short src/features/agent-dashboard/constants/dashboard-queries.ts "src/app/(frontend)/dashboard/page.tsx" src/features/agent-dashboard/ui/components/{dashboard-meetings-hub,dashboard-snapshot-counts,dashboard-projects,dashboard-project-section,dashboard-project-section-list}.tsx src/trpc/routers/meetings.router/reads.router.ts src/shared/modules/projects/core/DOCS.md CONTEXT.md
+git status --short src/features/agent-dashboard/constants/dashboard-queries.ts "src/app/(frontend)/dashboard/(home)/page.tsx" src/features/agent-dashboard/ui/components/{dashboard-meetings-hub,dashboard-snapshot-counts,dashboard-projects,dashboard-project-section,dashboard-project-section-list}.tsx src/trpc/routers/meetings.router/reads.router.ts src/shared/modules/projects/core/DOCS.md CONTEXT.md
 ```
 
 Any line except `CONTEXT.md`: stop and ask. `CONTEXT.md` is handled in Step 8.
@@ -932,7 +932,7 @@ Only `today` has a caller today; `upcoming` and `past` keep `meetingsWindowInput
 
 - [ ] **Step 3: The page's prefetch**
 
-In `src/app/(frontend)/dashboard/page.tsx`, replace the `dashboard-queries` import and add the `staticDataViewInput` import directly above the `loadDataViewQueryInput` import:
+In `src/app/(frontend)/dashboard/(home)/page.tsx`, replace the `dashboard-queries` import and add the `staticDataViewInput` import directly above the `loadDataViewQueryInput` import:
 
 ```ts
 import { awaitingProposalsInput, DASHBOARD_ACTIVE_PROJECTS_QUERY, DASHBOARD_MEETINGS_QUERY, DASHBOARD_ON_HOLD_PROJECTS_QUERY, meetingsWindowInput, sentProposalsInput } from '@/features/agent-dashboard/constants/dashboard-queries'
@@ -1082,7 +1082,7 @@ Step 0 confirmed these files were clean before you started; run `git diff -- <fi
 ```bash
 git commit -m "refactor(dashboard): meetings and project reads come from data-view configs with their filters pinned; liveOnly goes
 
-Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/features/agent-dashboard/constants/dashboard-queries.ts "src/app/(frontend)/dashboard/page.tsx" src/features/agent-dashboard/ui/components/dashboard-meetings-hub.tsx src/features/agent-dashboard/ui/components/dashboard-snapshot-counts.tsx src/features/agent-dashboard/ui/components/dashboard-projects.tsx src/features/agent-dashboard/ui/components/dashboard-project-section.tsx src/features/agent-dashboard/ui/components/dashboard-project-section-list.tsx src/trpc/routers/meetings.router/reads.router.ts
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/features/agent-dashboard/constants/dashboard-queries.ts "src/app/(frontend)/dashboard/(home)/page.tsx" src/features/agent-dashboard/ui/components/dashboard-meetings-hub.tsx src/features/agent-dashboard/ui/components/dashboard-snapshot-counts.tsx src/features/agent-dashboard/ui/components/dashboard-projects.tsx src/features/agent-dashboard/ui/components/dashboard-project-section.tsx src/features/agent-dashboard/ui/components/dashboard-project-section-list.tsx src/trpc/routers/meetings.router/reads.router.ts
 git commit -m "docs(records): fixed filters and the dashboard reads are built; tracker and spec follow
 
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- docs/plans/2026-09-26-records-management-epic.md docs/superpowers/specs/2026-10-05-customers-entity-table-and-fixed-filters-design.md src/shared/modules/projects/core/DOCS.md CONTEXT.md

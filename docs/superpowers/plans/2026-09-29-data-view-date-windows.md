@@ -56,8 +56,8 @@ The spec measures "before" at `2495d193`. None of the files this plan touches ha
 
 Run:
 ```bash
-git diff --stat 2495d193 HEAD -- src/shared/dal src/shared/components/calendar src/shared/components/query-toolbar src/features/schedule-management src/features/agent-dashboard src/trpc/routers/meetings.router 'src/app/(frontend)/dashboard/page.tsx'
-git status --short -- src/shared/dal src/shared/components/calendar src/shared/components/query-toolbar src/features/schedule-management src/features/agent-dashboard src/trpc/routers/meetings.router 'src/app/(frontend)/dashboard/page.tsx'
+git diff --stat 2495d193 HEAD -- src/shared/dal src/shared/components/calendar src/shared/components/query-toolbar src/features/schedule-management src/features/agent-dashboard src/trpc/routers/meetings.router 'src/app/(frontend)/dashboard/(home)/page.tsx'
+git status --short -- src/shared/dal src/shared/components/calendar src/shared/components/query-toolbar src/features/schedule-management src/features/agent-dashboard src/trpc/routers/meetings.router 'src/app/(frontend)/dashboard/(home)/page.tsx'
 ss -ltnp | grep ':3000'
 ```
 Expected: the first two print nothing, and the third shows a `next-server` listening. If either of the first two prints anything, STOP and report: the baseline wouldn't be the spec's baseline.
@@ -1366,7 +1366,7 @@ Expected: exactly that file.
 - Modify: `scripts/verify-analytics-rules.ts` (line 11 import, line 189 assertion)
 - Modify: `src/features/agent-dashboard/ui/components/dashboard-meetings-hub.tsx` (whole file)
 - Modify: `src/features/agent-dashboard/ui/components/dashboard-meetings-calendar.tsx` (whole file)
-- Modify: `src/app/(frontend)/dashboard/page.tsx` (whole file)
+- Modify: `src/app/(frontend)/dashboard/(home)/page.tsx` (whole file)
 
 **Interfaces:**
 - Consumes: `DateWindowControls.isPending` (Task 3), date-window `views` (Task 4), `liveOnly` (Task 5), `useDataViewQuery(procedure, extra, config)` and `loadDataViewQueryInput(searchParams, config, extra)`.
@@ -1630,7 +1630,7 @@ function DashboardMeetingsCalendarSkeleton() {
 
 - [ ] **Step 7: Page prefetch through the loader**
 
-Replace the whole of `src/app/(frontend)/dashboard/page.tsx` with:
+Replace the whole of `src/app/(frontend)/dashboard/(home)/page.tsx` with:
 
 ```tsx
 import type { SearchParams } from 'nuqs/server'
@@ -1681,7 +1681,7 @@ Expected: no output.
 
 Run:
 ```bash
-pnpm exec eslint --fix src/features/agent-dashboard/constants/dashboard-queries.ts src/features/agent-dashboard/lib/meeting-windows.ts src/features/agent-dashboard/ui/components/dashboard-meetings-hub.tsx src/features/agent-dashboard/ui/components/dashboard-meetings-calendar.tsx 'src/app/(frontend)/dashboard/page.tsx'
+pnpm exec eslint --fix src/features/agent-dashboard/constants/dashboard-queries.ts src/features/agent-dashboard/lib/meeting-windows.ts src/features/agent-dashboard/ui/components/dashboard-meetings-hub.tsx src/features/agent-dashboard/ui/components/dashboard-meetings-calendar.tsx 'src/app/(frontend)/dashboard/(home)/page.tsx'
 pnpm tsc && pnpm lint
 ```
 Expected: no errors. `scripts/` isn't linted by `next lint`, but `pnpm tsc` type-checks it.
@@ -1699,7 +1699,7 @@ Expected: `PASS checks:schedule` (the shared hook changed again in Task 4).
 ```bash
 git commit -m "feat(dashboard): meetings calendar on useDataViewQuery — month in the URL, month-grid read, ±2 prefetch, error line
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" -- src/features/agent-dashboard/constants/dashboard-queries.ts src/features/agent-dashboard/lib/meeting-windows.ts scripts/verify-analytics-rules.ts src/features/agent-dashboard/ui/components/dashboard-meetings-hub.tsx src/features/agent-dashboard/ui/components/dashboard-meetings-calendar.tsx 'src/app/(frontend)/dashboard/page.tsx'
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" -- src/features/agent-dashboard/constants/dashboard-queries.ts src/features/agent-dashboard/lib/meeting-windows.ts scripts/verify-analytics-rules.ts src/features/agent-dashboard/ui/components/dashboard-meetings-hub.tsx src/features/agent-dashboard/ui/components/dashboard-meetings-calendar.tsx 'src/app/(frontend)/dashboard/(home)/page.tsx'
 git show --stat HEAD
 ```
 Expected: exactly those six files.
