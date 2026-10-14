@@ -2,7 +2,7 @@ import { and, eq, ne } from 'drizzle-orm'
 
 import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
-import { SYSTEM_CONTEXT, ThrowableDalError } from '@/shared/dal/server/types'
+import { ThrowableDalError } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
@@ -33,8 +33,7 @@ async function generateUniqueSlug(base: string): Promise<string> {
 
 /**
  * Stable CRUD handlers for the lead-sources entity. All lifecycle business
- * logic lives here (config factory), not on the spec. Super-admin-only:
- * callers route through `superAdminProcedure` (omni, `scope: null`).
+ * logic lives here (config factory), not on the spec.
  */
 export const leadSourceCrud = createCrudDal(leadSourceServerSpec, crudHandlers => ({
   hooks: {
@@ -53,7 +52,7 @@ export const leadSourceCrud = createCrudDal(leadSourceServerSpec, crudHandlers =
       // UI echoes the existing slug) must not rotate live intake URLs. Reject
       // malformed slugs and duplicates against any OTHER source. Own-entity
       // read via the crudHandlers factory arg.
-      async before(data, _ctx, { id }) {
+      async before(data, ctx, { id }) {
         if (data.slug === undefined) {
           return data
         }
@@ -63,7 +62,7 @@ export const leadSourceCrud = createCrudDal(leadSourceServerSpec, crudHandlers =
             reason: 'Use lowercase letters, numbers, and hyphens only.',
           })
         }
-        const current = dalVerifySuccess(await crudHandlers.getById(SYSTEM_CONTEXT, { id: String(id) }))
+        const current = dalVerifySuccess(await crudHandlers.getById(ctx, { id: String(id) }))
         if (!current) {
           throw new ThrowableDalError({ type: 'not-found' })
         }

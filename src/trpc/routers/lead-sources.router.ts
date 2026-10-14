@@ -6,6 +6,7 @@ import { and, asc, desc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm'
 import z from 'zod'
 
 import { leadSourceSpendModes } from '@/shared/constants/enums/lead-sources'
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
@@ -19,6 +20,7 @@ import { leadSourceCrud } from '@/shared/entities/lead-sources/dal/server/crud'
 import { listLeadSources } from '@/shared/entities/lead-sources/dal/server/queries'
 import { listLeadSourceSpend, setLeadSourceSpend } from '@/shared/entities/lead-sources/dal/server/spend'
 import { buildSegmentWhere } from '@/shared/entities/lead-sources/lib/segment-sql'
+import { leadSourceServerSpec } from '@/shared/entities/lead-sources/lib/server-spec'
 import { leadSourceFormConfigSchema, leadSourceSpendMonthSchema } from '@/shared/entities/lead-sources/schemas'
 import { generateToken } from '@/shared/lib/generate-token'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
@@ -124,7 +126,7 @@ const spendRouter = createTRPCRouter({
       amountCents: z.number().int().min(0).max(MAX_MONTHLY_SPEND_CENTS).nullable(),
     }))
     .mutation(async ({ ctx, input }) => {
-      dalToTrpc(await setLeadSourceSpend({ ...ctx, scope: null }, input))
+      dalToTrpc(await setLeadSourceSpend(ctx, input))
       return { success: true as const }
     }),
 })
@@ -136,7 +138,7 @@ export const leadSourcesRouter = createTRPCRouter({
       from: z.string().datetime().optional(),
       to: z.string().datetime().optional(),
     }).optional())
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const includeInactive = input?.includeInactive ?? true
 
       const rangePredicates = customerCreatedAtInRange(input?.from, input?.to)
@@ -162,6 +164,7 @@ export const leadSourcesRouter = createTRPCRouter({
         .where(and(
           isNull(leadSourcesTable.archivedAt),
           includeInactive ? undefined : eq(leadSourcesTable.isActive, true),
+          permit(ctx, 'read', leadSourceServerSpec).sql,
         ))
         .groupBy(leadSourcesTable.id)
         .orderBy(desc(leadSourcesTable.isActive), asc(leadSourcesTable.name))
@@ -171,12 +174,8 @@ export const leadSourcesRouter = createTRPCRouter({
 
   getById: superAdminProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .query(async ({ input }) => {
-      const [row] = await db
-        .select()
-        .from(leadSourcesTable)
-        .where(eq(leadSourcesTable.id, input.id))
-        .limit(1)
+    .query(async ({ ctx, input }) => {
+      const row = dalToTrpc(await leadSourceCrud.getById(ctx, { id: input.id }))
       if (!row) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Lead source not found.' })
       }
@@ -185,17 +184,12 @@ export const leadSourcesRouter = createTRPCRouter({
 
   getStats: superAdminProcedure
     .input(z.object({ id: z.string().uuid() }).merge(timeRangeInput))
-    .query(async ({ input }) => {
-      const [src] = await db
-        .select({ id: leadSourcesTable.id })
-        .from(leadSourcesTable)
-        .where(eq(leadSourcesTable.id, input.id))
-        .limit(1)
-      if (!src) {
+    .query(async ({ ctx, input }) => {
+      if (!(await permit(ctx, 'read', leadSourceServerSpec).probe(input.id))) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Lead source not found.' })
       }
 
-      const baseMatch = customersMatchingSource(src.id)
+      const baseMatch = customersMatchingSource(input.id)
       const rangeClauses = customerCreatedAtInRange(input.from, input.to)
       const rangeWhere = rangeClauses.length > 0
         ? and(baseMatch, ...rangeClauses)
@@ -210,7 +204,7 @@ export const leadSourcesRouter = createTRPCRouter({
           .from(proposals)
           .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
           .innerJoin(customers, eq(customers.id, meetings.customerId))
-          .where(and(eq(customers.leadSourceId, src.id), eq(proposals.status, 'approved'))),
+          .where(and(eq(customers.leadSourceId, input.id), eq(proposals.status, 'approved'))),
       ])
 
       let totalSales = 0
@@ -257,34 +251,24 @@ export const leadSourcesRouter = createTRPCRouter({
       segment: z.enum(customerSegments).optional(),
     }))
     .query(async ({ ctx, input }) => {
-      const [src] = await db
-        .select({ id: leadSourcesTable.id })
-        .from(leadSourcesTable)
-        .where(eq(leadSourcesTable.id, input.id))
-        .limit(1)
-      if (!src) {
+      if (!(await permit(ctx, 'read', leadSourceServerSpec).probe(input.id))) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Lead source not found.' })
       }
-      const { id: _id, segment, ...query } = input
+      const { id, segment, ...query } = input
       return dalToTrpc(await listCustomers(
-        { ...ctx, scope: null },
-        { ...query, filters: { ...query.filters, sourceId: src.id, segment } },
+        ctx,
+        { ...query, filters: { ...query.filters, sourceId: id, segment } },
       ))
     }),
 
   getStatusCounts: superAdminProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .query(async ({ input }) => {
-      const [src] = await db
-        .select({ id: leadSourcesTable.id })
-        .from(leadSourcesTable)
-        .where(eq(leadSourcesTable.id, input.id))
-        .limit(1)
-      if (!src) {
+    .query(async ({ ctx, input }) => {
+      if (!(await permit(ctx, 'read', leadSourceServerSpec).probe(input.id))) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Lead source not found.' })
       }
 
-      const match = customersMatchingSource(src.id)
+      const match = customersMatchingSource(input.id)
       const [all, active, signed, dead] = await Promise.all([
         db.$count(customers, match),
         db.$count(customers, and(match, buildSegmentWhere('active'))),
@@ -302,17 +286,12 @@ export const leadSourcesRouter = createTRPCRouter({
       from: z.string().datetime().optional(),
       to: z.string().datetime().optional(),
     }))
-    .query(async ({ input }) => {
-      const [src] = await db
-        .select({ id: leadSourcesTable.id })
-        .from(leadSourcesTable)
-        .where(eq(leadSourcesTable.id, input.id))
-        .limit(1)
-      if (!src) {
+    .query(async ({ ctx, input }) => {
+      if (!(await permit(ctx, 'read', leadSourceServerSpec).probe(input.id))) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Lead source not found.' })
       }
 
-      const baseMatch = customersMatchingSource(src.id)
+      const baseMatch = customersMatchingSource(input.id)
 
       // With no `from`, the window starts at the source's first lead so bucket selection + backfill have a bound.
       let resolvedFrom = input.from
@@ -622,12 +601,12 @@ export const leadSourcesRouter = createTRPCRouter({
       }
     }),
 
-  // Cast: the Zod input lacks the slug + token that create.before fills in. scope: null — super-admin callers are omni.
+  // Cast: the Zod input lacks the slug + token that create.before fills in.
   create: superAdminProcedure
     .input(createInput)
     .mutation(async ({ ctx, input }) =>
       dalToTrpc(await leadSourceCrud.create(
-        { ...ctx, scope: null },
+        ctx,
         input as unknown as Insert<typeof leadSourcesTable>,
       ))),
 
@@ -635,46 +614,28 @@ export const leadSourcesRouter = createTRPCRouter({
     .input(updateInput)
     .mutation(async ({ ctx, input }) => {
       const { id, ...data } = input
-      return dalToTrpc(await leadSourceCrud.update({ ...ctx, scope: null }, { id, data }))
+      return dalToTrpc(await leadSourceCrud.update(ctx, { id, data }))
     }),
 
   rotateToken: superAdminProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .mutation(async ({ input }) => {
-      const [updated] = await db
-        .update(leadSourcesTable)
-        .set({ token: generateToken() })
-        .where(eq(leadSourcesTable.id, input.id))
-        .returning()
-      if (!updated) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Lead source not found.' })
-      }
-      return updated
-    }),
+    .mutation(async ({ ctx, input }) =>
+      dalToTrpc(await leadSourceCrud.update(ctx, { id: input.id, data: { token: generateToken() } }))),
 
   archive: superAdminProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .mutation(async ({ input }) => {
-      const [updated] = await db
-        .update(leadSourcesTable)
-        .set({ archivedAt: new Date().toISOString() })
-        .where(eq(leadSourcesTable.id, input.id))
-        .returning()
-      if (!updated) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Lead source not found.' })
-      }
-      return updated
-    }),
+    .mutation(async ({ ctx, input }) =>
+      dalToTrpc(await leadSourceCrud.update(ctx, { id: input.id, data: { archivedAt: new Date().toISOString() } }))),
 
   duplicate: superAdminProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) =>
-      dalToTrpc(await leadSourceCrud.duplicate({ ...ctx, scope: null }, { id: input.id }))),
+      dalToTrpc(await leadSourceCrud.duplicate(ctx, { id: input.id }))),
 
   delete: superAdminProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      dalToTrpc(await leadSourceCrud.delete({ ...ctx, scope: null }, { id: input.id }))
+      dalToTrpc(await leadSourceCrud.delete(ctx, { id: input.id }))
       return { success: true as const }
     }),
 

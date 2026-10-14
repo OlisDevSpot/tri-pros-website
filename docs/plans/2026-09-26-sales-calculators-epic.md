@@ -194,7 +194,7 @@ Each phase gets its own spec, then plan, then build. A phase closes when every r
 - [ ] **CF3** Session overrides (On-screen, Agent-only) live in form state and are never persisted in C0 (O4).
 - [ ] **CF4** The rep cannot set a multiplier below the floor, whether directly or through target price (PR11). A target that would require going below the floor shows the floor price and says the target cannot be reached.
 - [ ] **CF5** Agent-only values render only inside the agent panel (O1, O2, V6).
-- [ ] **CF6** *(C2)* An admin UI edits the Admin-configured values, visible to super-admins only. Before that, `app_settings` needs an agent-safe read path: today it has no router or UI, and its visibility is `FALSE` for everyone except super-admin (`src/shared/entities/app-settings/lib/visibility.ts`).
+- [ ] **CF6** *(C2)* An admin UI edits the Admin-configured values, visible to super-admins only. Before that, `app_settings` needs an agent-safe read path: today it has no router or UI, and no role but super-admin (`manage all`) holds an `AppSetting` rule (`src/shared/domains/permissions/rules/`).
 
 ### 3.7 Later phases (placeholders, refined at their spec)
 

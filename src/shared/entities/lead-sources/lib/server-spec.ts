@@ -5,7 +5,6 @@ import {
   selectLeadSourceSchema,
 } from '@/shared/db/schema/lead-sources'
 import { LEAD_SOURCE } from './constants'
-import { leadSourceVisibility } from './visibility'
 
 // `insertLeadSourceSchema` requires slug + token (notNull, no default); the
 // config factory's create.before generates both, so the schema validates the
@@ -24,7 +23,6 @@ export const leadSourceServerSpec = defineEntitySpec({
   entityName: LEAD_SOURCE,
   subject: LEAD_SOURCE,
   conditionColumns: [],
-  visibility: leadSourceVisibility,
   table: leadSourcesTable,
   schemas: {
     insert: insertLeadSourceSchema,
