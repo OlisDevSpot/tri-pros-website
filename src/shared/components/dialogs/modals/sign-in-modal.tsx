@@ -1,9 +1,9 @@
 import { SignInGoogleButton } from '@/shared/components/buttons/auth/sign-in-google-button'
-import { useAuthModalStore } from '@/shared/hooks/use-auth-modal-store'
+import { useModalLayer } from '@/shared/hooks/use-modal-layer'
 import { Modal } from './base-modal'
 
 export function SignInModal() {
-  const { isOpen, close } = useAuthModalStore()
+  const { isOpen, close } = useModalLayer()
 
   return (
     <Modal

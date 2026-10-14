@@ -22,13 +22,12 @@ import { companyInfo } from '@/shared/constants/company'
 import { generateNavItemsGroups, marketingNavItems } from '@/shared/constants/nav-items'
 import { signOut, useSession } from '@/shared/domains/auth/client'
 import { useAbility } from '@/shared/domains/permissions/client'
-import { useAuthModalStore } from '@/shared/hooks/use-auth-modal-store'
 import { useHasScrolled } from '@/shared/hooks/use-has-scrolled'
 import { useMatchMedia } from '@/shared/hooks/use-match-media'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
+import { openSignIn } from '@/shared/lib/open-sign-in'
 import { toDialString } from '@/shared/lib/phone'
 import { cn } from '@/shared/lib/utils'
-import { SignInModal } from '../dialogs/modals/sign-in-modal'
 import { SpinnerLoader2 } from '../loaders/spinner-loader-2'
 import { NavItem } from './nav-item'
 import { PopoverNav } from './popover-nav'
@@ -49,7 +48,6 @@ const navContainerVariants: Variants = {
 export function SiteNavbar() {
   const { data: session, isPending } = useSession()
   const ability = useAbility()
-  const { setModal, open: openAuthModal } = useAuthModalStore()
   const [authError] = useQueryState('error', { defaultValue: '' })
   const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null)
   const [isPopoverOpen, setIsPopoverOpen] = useState(false)
@@ -85,13 +83,6 @@ export function SiteNavbar() {
   }, [selectedItemIndex, subitemsContainerHeight])
 
   useEffect(() => {
-    setModal({
-      accessor: 'login-modal',
-      Component: SignInModal,
-    })
-  }, [setModal])
-
-  useEffect(() => {
     if (authError) {
       // eslint-disable-next-line no-alert
       alert(authError.replaceAll('_', ' '))
@@ -120,7 +111,7 @@ export function SiteNavbar() {
 
   function openLoginModal() {
     closeNavigation()
-    openAuthModal()
+    openSignIn()
   }
 
   return (

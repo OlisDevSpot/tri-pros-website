@@ -2,23 +2,21 @@
 
 import { usePathname } from 'next/navigation'
 import { useEffect } from 'react'
-import { useAuthModalStore } from '@/shared/hooks/use-auth-modal-store'
-import { useModalStore } from '@/shared/hooks/use-modal-store'
+import { ModalLayerView } from '@/shared/components/dialogs/modals/modal-layer-view'
+import { useModalLayers } from '@/shared/hooks/use-modal-layers'
 
 export function GlobalDialogs() {
-  const baseModal = useModalStore(state => state.modal)
-  const { modal: authModal } = useAuthModalStore()
+  const layers = useModalLayers(state => state.layers)
   const pathname = usePathname()
 
   // The store outlives client navigation, so a modal opened on one page would otherwise stay open over the next.
   useEffect(() => {
-    useModalStore.getState().close()
+    useModalLayers.getState().closeAll()
   }, [pathname])
 
   return (
     <>
-      {baseModal && <baseModal.Component {...baseModal.props} />}
-      {authModal && <authModal.Component {...authModal.props} />}
+      {layers.map(layer => <ModalLayerView key={layer.id} layer={layer} />)}
     </>
   )
 }

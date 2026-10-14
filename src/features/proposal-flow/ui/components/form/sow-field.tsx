@@ -14,7 +14,6 @@ import { FormControl, FormField, FormItem, FormMessage } from '@/shared/componen
 import { MultiSelect, MultiSelectContent, MultiSelectGroup, MultiSelectItem, MultiSelectTrigger, MultiSelectValue } from '@/shared/components/ui/multi-select'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { useConfirm } from '@/shared/hooks/use-confirm'
-import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { openModal } from '@/shared/lib/open-modal'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
@@ -236,7 +235,6 @@ export function SOWSection({
                                 trade: allTrades.data?.find(trade => trade.id === tradeId),
                                 scopes: form.getValues(`project.data.sow.${index}.scopes`).map(scope => scopesOfTrade.data?.find(scopeOfTrade => scopeOfTrade.id === scope.id)).filter(Boolean) as Scope[],
                                 onSelect: async (sowId) => {
-                                  useModalStore.getState().close()
                                   setIsLoadingTemplate(true)
                                   try {
                                     const json = await queryClient.fetchQuery(trpc.constructionRouter.sow.content.queryOptions({ sowId }))

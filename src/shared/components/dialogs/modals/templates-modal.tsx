@@ -1,6 +1,6 @@
 import type { Scope, Trade } from '@/shared/modules/construction/core/schemas'
 import { useQueries } from '@tanstack/react-query'
-import { useModalStore } from '@/shared/hooks/use-modal-store'
+import { useModalLayer } from '@/shared/hooks/use-modal-layer'
 import { useTRPC } from '@/trpc/helpers'
 import { Modal } from './base-modal'
 
@@ -11,8 +11,7 @@ interface Props {
 }
 
 export function TemplatesModal({ trade, scopes, onSelect }: Props) {
-  const isOpen = useModalStore(state => state.isOpen)
-  const close = useModalStore(state => state.close)
+  const { isOpen, close } = useModalLayer()
 
   const trpc = useTRPC()
   const SOWs = useQueries({
@@ -45,6 +44,7 @@ export function TemplatesModal({ trade, scopes, onSelect }: Props) {
                 >
                   <button
                     onClick={() => {
+                      close()
                       onSelect(sow.id)
                     }}
                   >

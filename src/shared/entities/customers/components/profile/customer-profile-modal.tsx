@@ -8,7 +8,7 @@ import { Modal } from '@/shared/components/dialogs/modals/base-modal'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { Button } from '@/shared/components/ui/button'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
-import { useModalStore } from '@/shared/hooks/use-modal-store'
+import { useModalLayer } from '@/shared/hooks/use-modal-layer'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
 import { CustomerProfileLoadingSkeleton } from './customer-profile-loading-skeleton'
@@ -21,8 +21,7 @@ interface Props {
 }
 
 export function CustomerProfileModal({ customerId, defaultTab, highlightMeetingId }: Props) {
-  const isOpen = useModalStore(state => state.isOpen)
-  const close = useModalStore(state => state.close)
+  const { isOpen, close } = useModalLayer()
   const trpc = useTRPC()
   const { invalidateCustomer } = useInvalidation()
   const [heroView, setHeroView] = useState<HeroView>('street')
