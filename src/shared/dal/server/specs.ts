@@ -17,6 +17,7 @@ import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 import { proposalIncentiveServerSpec } from '@/shared/modules/proposals/incentives/server-spec'
 import { proposalMediaServerSpec } from '@/shared/modules/proposals/media/server-spec'
 import { proposalViewServerSpec } from '@/shared/modules/proposals/views/server-spec'
+import { voipConversationServerSpec } from '@/shared/modules/voip/conversations/server-spec'
 import { voipMessageServerSpec } from '@/shared/modules/voip/messages/server-spec'
 
 /** Every spec, for the checks that need them at run time. The type list in `permissions/specs.ts` is what rules are typed against; the wrong-on-purpose file keeps the two equal. */
@@ -40,6 +41,7 @@ export const SERVER_SPECS = [
   voipCampaignContactServerSpec,
   voipCampaignServerSpec,
   voipContactFieldServerSpec,
+  voipConversationServerSpec,
   voipDidServerSpec,
   voipLinkTokenServerSpec,
   voipMessageServerSpec,

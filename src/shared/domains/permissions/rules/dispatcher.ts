@@ -35,5 +35,7 @@ export function dispatcherRules(userId: string) {
     can('create', 'VoipMessage')
     // The main line is the dispatch line. Texts are reached through their line, so this rule also decides which texts a dispatcher reads and sends.
     can('read', 'VoipDid', { isMainLine: true })
+    // Archive and read on the main line's conversations: a conversation's writes are its line's update of that field.
+    can('update', 'VoipDid', ['conversations', 'conversations.*'], { isMainLine: true })
   })
 }

@@ -21,6 +21,7 @@ import type { proposalServerSpec } from '@/shared/modules/proposals/core/server-
 import type { proposalIncentiveServerSpec } from '@/shared/modules/proposals/incentives/server-spec'
 import type { proposalMediaServerSpec } from '@/shared/modules/proposals/media/server-spec'
 import type { proposalViewServerSpec } from '@/shared/modules/proposals/views/server-spec'
+import type { voipConversationServerSpec } from '@/shared/modules/voip/conversations/server-spec'
 import type { voipMessageServerSpec } from '@/shared/modules/voip/messages/server-spec'
 
 /** Every spec. A spec missing here is invisible to rule typing. */
@@ -44,6 +45,7 @@ export type ServerSpec
     | typeof voipCampaignContactServerSpec
     | typeof voipCampaignServerSpec
     | typeof voipContactFieldServerSpec
+    | typeof voipConversationServerSpec
     | typeof voipDidServerSpec
     | typeof voipLinkTokenServerSpec
     | typeof voipMessageServerSpec
