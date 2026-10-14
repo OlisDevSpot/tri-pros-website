@@ -172,6 +172,10 @@
   --popover-glass-shadow:
     inset 0 1px 0 oklch(1 0 0 / 0.7), inset 0 0 0 1px oklch(0.25 0.05 258 / 0.08),
     0 20px 40px -12px oklch(0.2 0.06 258 / 0.25), 0 6px 16px -8px oklch(0.2 0.06 258 / 0.12);
+  /* The ⌘K palette's panel: thinned less than --popover-glass, so it holds as a panel over the palette's scrim. */
+  --palette-glass: color-mix(in oklab, var(--popover) 84%, transparent);
+  /* Pushes the page back behind the palette without lightening it. */
+  --palette-scrim: oklch(0.2 0.03 258 / 0.26);
   --radius: 0.5rem;
   --shadow-2xs: 0 1px 2px oklch(0.25 0.05 258 / 0.06);
   --shadow-xs: 0 1px 2px oklch(0.25 0.05 258 / 0.06);
@@ -506,6 +510,14 @@
   --popover-glass-shadow:
     inset 0 1px 0 oklch(1 0 0 / 0.09), inset 0 0 0 1px oklch(1 0 0 / 0.06), 0 24px 48px -12px oklch(0 0 0 / 0.6),
     0 8px 24px -8px oklch(0 0 0 / 0.4);
+  /* About one rung above the canvas, not the popover rung: rung 4 at 62% read as a grey slab over the scrim. */
+  --palette-glass: color-mix(
+    in oklab,
+    oklch(calc(var(--canvas-l) + var(--lift) + 1.2 * var(--step)) var(--surface-c) var(--surface-h)) 86%,
+    transparent
+  );
+  /* Darker than the dark canvas, so the page recedes; --scrim (L 0.15) would lighten it. */
+  --palette-scrim: oklch(0.07 0.03 258 / 0.62);
   --radius: 0.5rem;
   --shadow-2xs: 0 1px 2px oklch(0 0 0 / 0.4);
   --shadow-xs: 0 1px 2px oklch(0 0 0 / 0.4);
@@ -710,6 +722,8 @@
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
+  --color-palette-glass: var(--palette-glass);
+  --color-palette-scrim: var(--palette-scrim);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);

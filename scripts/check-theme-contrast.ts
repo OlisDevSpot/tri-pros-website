@@ -16,8 +16,8 @@ interface Pair {
   min: number
   /** Caps a pair that has to stay quiet. */
   max?: number
-  /** Resolves a translucent `bg` against this token first (e.g. a pill fill over the card). */
-  base?: string
+  /** Resolves a translucent `bg` against these tokens first, nearest layer first (e.g. a pill fill over the card). */
+  base?: string | string[]
   /** Surface-relative pairs are checked on every place listed; the rest on the page only. */
   on?: Place[]
   /** Checked in both schemes unless narrowed here. */
@@ -272,10 +272,8 @@ const luminance = (rgb: Rgba) => 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rg
 const luminanceOf = (name: string, mode: Mode, place: Place = 'page') => luminance(toLinearRgba(resolve(name, mode, place)))
 
 function contrast(pair: Pair, mode: Mode, place: Place): number {
-  let background = toLinearRgba(resolve(pair.bg, mode, place))
-  if (pair.base) {
-    background = composite(background, toLinearRgba(resolve(pair.base, mode, place)))
-  }
+  const layers = [pair.bg, ...[pair.base ?? []].flat()].map(name => toLinearRgba(resolve(name, mode, place)))
+  const background = layers.reduceRight((below, above) => composite(above, below))
   const foreground = composite(toLinearRgba(resolve(pair.fg, mode, place)), background)
   const [high, low] = [luminance(foreground), luminance(background)].sort((x, y) => y - x)
   return (high + 0.05) / (low + 0.05)
@@ -389,6 +387,9 @@ const pairs: Pair[] = [
   ...STATUS_TONES.map(tone => ({ label: `status ${tone} text on its fill`, fg: `--status-${tone}-fg`, bg: `--status-${tone}-bg`, min: 4.5, base: '--card', on: CARDS })),
   ...SERIES.map(series => ({ label: `series ${series} vs surface`, fg: `--series-${series}`, bg: '--card', min: 3, on: CARDS })),
   ...Array.from({ length: IDENTITY_COUNT }, (_, i) => ({ label: `identity ${i + 1} text on its fill`, fg: `--identity-${i + 1}-fg`, bg: `--identity-${i + 1}-bg`, min: 4.5, base: '--card', on: CARDS })),
+  // The ⌘K palette: its glass over its scrim over the page. Blur is ignored, so the plain page is the case checked.
+  { label: 'body text on the palette glass', fg: '--foreground', bg: '--palette-glass', base: ['--palette-scrim', '--background'], min: 4.5 },
+  { label: 'muted text on the palette glass', fg: '--muted-foreground', bg: '--palette-glass', base: ['--palette-scrim', '--background'], min: 4.5 },
 ]
 
 // Sunlight from above: the ladder climbs from beneath the page to the overlays, and on every surface the band sits
