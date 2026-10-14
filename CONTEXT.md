@@ -128,6 +128,16 @@ How media is fetched and shown on every surface. "Image" names generic shared UI
 - **Crossfade** — one image fading out while the next fades in, once per change (`CrossfadeImage`).
 - **Preload** — fetch and decode an image before it is shown, so showing it never waits (`usePreloadImages`).
 
+## Data view terms
+
+How a list of one entity's records is read and shown, on any surface. The `DataView` compound that gives every data view the same parts is planned, not built: today each view composes `DataViewBoundary` and `QueryToolbar` itself.
+
+- **Data view** — one surface showing a list of one entity's records through the data layer: a `useDataViewQuery` read set up by a `DataViewQueryConfig`, inside a `DataViewBoundary` (the proposals table and campaign leads still read through `fromPaginatedQuery`). It is the same whether it is a page or sits in a tab, a card or a modal. Implements an **Entity View Context** (`docs/ubiquitous-language.md`). _Avoid_: list view, data page.
+- **Body** — the view-specific presentation inside a data view: `DataTable`, `ScheduleCalendar`, `KanbanBoard`, a card list. The heading, count, toolbar, empty and stale states around it are the same for every data view. _Avoid_: renderer, widget.
+- **Orchestrator** — the page or component that mounts a data view and writes the wrapper around it; it may drop the bar, swap the heading or pick toolbar pieces. No per-callsite layout component does this for it. _Avoid_: container (a records-management term).
+- **Loading screen** — a route's `loading.tsx`: the page's own component under `DataViewPending`, its data views showing their cached rows or none (`useLoadingScreenRead`). It starts no fetch; the page that replaces it refreshes the rows. _Avoid_: skeleton page.
+- **Pending view** — any render where `DataViewPendingContext` is not `false`. `'loading'`: a loading screen, a `DataViewBoundary`'s suspense fallback, the layout's document-load skeleton, the PWA launch shell. `'error'`: a boundary's error fallback. Reads never suspend inside one, and only `'loading'` shows cached rows (`useIsDataViewPending`).
+
 ## Records terms
 
 - **Scope coverage** — for one proposal of a meeting: which of the scopes captured in the meeting it includes, which it leaves out (struck through), and which it adds that the meeting didn't capture (dashed "+"). Matched by scope id (`computeScopeCoverage`, `ProposalOverviewCard.ScopeCoverage`). _Avoid_: scope match, scope diff.
@@ -143,4 +153,5 @@ How media is fetched and shown on every surface. "Image" names generic shared UI
 
 - "run" means two things: a presentation **Run** (consecutive column slides, Presentation terms) and a scheduled execution of an automation (`runAutomaticKind`, `VisitMessageRunReport`, `resolveRunInstant`). Both stay, each scoped to its section; in automation copy "run" is always the scheduled execution.
 - "sequence" was defined for visit messages only — resolved 2026-10-08: **Sequence** is the general automation kind (Automation terms); the visit-message sequence is one instance.
+- "body" is a data view's **Body** (Data view terms); on a presentation slide the word is **Content**, never body.
 - "campaign" means a lead-conversion provider campaign (`voip_campaigns`) and a Meta ad campaign; never a scheduled send to customers.
