@@ -18,8 +18,9 @@ interface DashboardProposalCustomerLinkProps {
 /**
  * The proposal's customer, rendered as the clickable anchor of the card's meta
  * row. Opens the shared `CustomerProfileModal` on the meetings tab with the
- * proposal's own meeting highlighted — the same `openModal` entrypoint the
- * dashboard meeting card uses, so both rosters open the identical modal. Stops
+ * proposal's own meeting highlighted — the same `openCustomerProfile`
+ * entrypoint the dashboard meeting card uses, so both rosters open the
+ * identical modal. Stops
  * propagation so the click never also triggers the card root's "open proposal
  * review" handler. Renders nothing when the row has no joined customer.
  */
