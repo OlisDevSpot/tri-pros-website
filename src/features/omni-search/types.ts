@@ -98,3 +98,15 @@ export interface OmniStatus {
 }
 
 export type OmniHintSet = 'default' | 'customer' | 'contact'
+
+/** What both result composers take; the panel mounts one of them by layout. */
+export interface OmniRecordsProps {
+  data: OmniData
+  term: string
+  onSelectRecord: (item: RecentOmniItem) => void
+  onSeeAll: (href: string) => void
+  /** Moves the highlight; a customer row calls it while the pointer is on its capsule. */
+  onHighlight: (value: string) => void
+  /** Records of an earlier term: shown dimmed and skipped by the keyboard until the current term answers. */
+  stale: boolean
+}

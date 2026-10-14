@@ -110,7 +110,7 @@ export function OmniSearchResults({ search, mode, onHighlight, onDone, onEnterMo
   }
 
   const entries = <OmniEntryGroups ranked={ranked} onSelect={selectEntry} />
-  const records = data && <OmniRecordGroups data={data} onSelectRecord={selectRecord} onSeeAll={seeAll} stale={pending} term={term ?? ''} />
+  const records = data && <OmniRecordGroups data={data} onSelectRecord={selectRecord} onSeeAll={seeAll} onHighlight={onHighlight} stale={pending} term={term ?? ''} />
 
   return (
     <>
