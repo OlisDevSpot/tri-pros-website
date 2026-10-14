@@ -2,9 +2,9 @@
 
 import type { ComponentProps } from 'react'
 
-import { Command as CommandPrimitive, useCommandState } from 'cmdk'
+import { Command as CommandPrimitive } from 'cmdk'
 import { SearchIcon } from 'lucide-react'
-import { useLayoutEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 
 import { OMNI_COPY } from '@/features/omni-search/constants/copy'
 import { LoadingHairline } from '@/shared/components/loading-hairline'
@@ -17,20 +17,31 @@ type Props = ComponentProps<typeof CommandPrimitive.Input> & {
 
 export function OmniInputRow({ busy, chip, ...props }: Props) {
   const input = useRef<HTMLInputElement>(null)
-  // Subscribing re-renders this row on every highlight move, so the effect below runs for each one.
-  useCommandState(state => state.value)
   // cmdk recomputes aria-activedescendant only on its own selection moves. When the dialog sets the value, or the
   // rows remount, it points at nothing, so a screen reader would announce no option; the selected row is the truth.
-  useLayoutEffect(() => {
+  // Watched in the DOM, not on render: a remounted row marks itself selected only after the commit that mounts it,
+  // and with an unchanged highlight nothing renders again to catch that.
+  useEffect(() => {
     const element = input.current
-    const id = element?.closest('[cmdk-root]')?.querySelector('[cmdk-item][data-selected="true"]')?.id
-    if (id) {
-      element?.setAttribute('aria-activedescendant', id)
+    const root = element?.closest('[cmdk-root]')
+    if (!element || !root) {
+      return
     }
-    else {
-      element?.removeAttribute('aria-activedescendant')
+    const sync = () => {
+      const id = root.querySelector('[cmdk-item][data-selected="true"]')?.id
+      // Writes only on change: the observer watches this attribute too, so an equal write would loop.
+      if (id && element.getAttribute('aria-activedescendant') !== id) {
+        element.setAttribute('aria-activedescendant', id)
+      }
+      else if (!id && element.hasAttribute('aria-activedescendant')) {
+        element.removeAttribute('aria-activedescendant')
+      }
     }
-  })
+    sync()
+    const observer = new MutationObserver(sync)
+    observer.observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-selected', 'aria-activedescendant'] })
+    return () => observer.disconnect()
+  }, [])
 
   return (
     <div className="relative flex h-14 shrink-0 items-center gap-2.5 border-b border-border px-4">
