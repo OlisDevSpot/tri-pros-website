@@ -19,14 +19,15 @@ interface Props {
   onSeeAll: (href: string) => void
   /** Records of an earlier term: shown dimmed and skipped by the keyboard until the current term answers. */
   stale: boolean
+  term: string
 }
 
-export function OmniRecordGroups({ data, onSelectRecord, onSeeAll, stale }: Props) {
+export function OmniRecordGroups({ data, onSelectRecord, onSeeAll, stale, term }: Props) {
   return (
     <>
       {data.customers.length > 0 && (
         <CommandGroup heading={OMNI_COPY.customers}>
-          {data.customers.map(customer => <OmniCustomerItem key={customer.id} customer={customer} onSelect={onSelectRecord} disabled={stale} />)}
+          {data.customers.map(customer => <OmniCustomerItem key={customer.id} customer={customer} layout="line" term={term} onSelect={onSelectRecord} disabled={stale} />)}
           {data.customers.length >= OMNI_LIMITS.customers && (
             <CommandItem value="customers:see-all" disabled={stale} onSelect={() => onSeeAll(data.seeAllHref)}>
               <ArrowRightIcon aria-hidden className="text-muted-foreground" />
@@ -37,17 +38,17 @@ export function OmniRecordGroups({ data, onSelectRecord, onSeeAll, stale }: Prop
       )}
       {data.meetings.length > 0 && (
         <CommandGroup heading={OMNI_COPY.meetings}>
-          {data.meetings.map(meeting => <OmniMeetingItem key={meeting.id} meeting={meeting} onSelect={onSelectRecord} disabled={stale} />)}
+          {data.meetings.map(meeting => <OmniMeetingItem key={meeting.id} meeting={meeting} layout="line" onSelect={onSelectRecord} disabled={stale} />)}
         </CommandGroup>
       )}
       {data.proposals.length > 0 && (
         <CommandGroup heading={OMNI_COPY.proposals}>
-          {data.proposals.map(proposal => <OmniProposalItem key={proposal.id} proposal={proposal} onSelect={onSelectRecord} disabled={stale} />)}
+          {data.proposals.map(proposal => <OmniProposalItem key={proposal.id} proposal={proposal} layout="line" onSelect={onSelectRecord} disabled={stale} />)}
         </CommandGroup>
       )}
       {data.projects.length > 0 && (
         <CommandGroup heading={OMNI_COPY.projects}>
-          {data.projects.map(project => <OmniProjectItem key={project.id} project={project} onSelect={onSelectRecord} disabled={stale} />)}
+          {data.projects.map(project => <OmniProjectItem key={project.id} project={project} layout="line" onSelect={onSelectRecord} disabled={stale} />)}
         </CommandGroup>
       )}
     </>

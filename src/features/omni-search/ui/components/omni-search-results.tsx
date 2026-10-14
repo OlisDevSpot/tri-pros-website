@@ -75,7 +75,7 @@ export function OmniSearchResults({ search, mode, onHighlight, onDone, onEnterMo
         {failed}
         <CommandGroup heading={OMNI_COPY.scheduleMeetingChip}>
           {(data?.customers ?? []).map(customer => (
-            <OmniCustomerItem key={customer.id} customer={customer} disabled={pending} onSelect={() => onPickCustomer({ id: customer.id, name: customer.name })} />
+            <OmniCustomerItem key={customer.id} customer={customer} layout="line" term={term ?? ''} withContact={false} disabled={pending} onSelect={() => onPickCustomer({ id: customer.id, name: customer.name })} />
           ))}
         </CommandGroup>
       </>
@@ -110,7 +110,7 @@ export function OmniSearchResults({ search, mode, onHighlight, onDone, onEnterMo
   }
 
   const entries = <OmniEntryGroups ranked={ranked} onSelect={selectEntry} />
-  const records = data && <OmniRecordGroups data={data} onSelectRecord={selectRecord} onSeeAll={seeAll} stale={pending} />
+  const records = data && <OmniRecordGroups data={data} onSelectRecord={selectRecord} onSeeAll={seeAll} stale={pending} term={term ?? ''} />
 
   return (
     <>
