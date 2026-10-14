@@ -81,7 +81,7 @@ Legend: `AFK` = mergeable without live user decisions · `HITL` = needs a user r
   Surfaced during the Phase 2 grill (2026-08-12): the finalTcp calculation is implemented **twice** — SQL (`recomputeProposalFinancials`, persisted `finalTcpCents`) and TypeScript (`computeProposalFinancials`, live editor) — which can drift; and the recompute *trigger* is scattered across 4 call sites. Consolidate onto ONE calculation + single-source trigger. **Driving realization (directional, verify to 100% in the follow-up):** eliminate `startingTcp` (meaningless now); project price = Σ individual SOW section prices; each SOW carries its own price/incentives/costs; proposal has global incentives; **finalTcp = Σ(SOWᵢ price − SOWᵢ discounts) − Σ(global incentives)** with `max(0,…)` floor; margin = finalTcp − Σ(SOW costs); `pricingDisplayMode` = the single lever for per-section-breakdown vs project-total display. **Driver:** JSONB decomposition waves (`projectJSON` decomposes at Wave 4 → SOW price/incentives/costs become first-class structured inputs, collapsing SQL rollup + TS façade). Full context: `docs/plans/2026-08-12-crud-dal-mutation-interface-extension.md` §12.4–12.5.
 
 - **Coordinated externally (NOT this epic's slices):**
-  - Projects **visibility** (participation, `projects/DOCS.md#project-visibility-scope`) → built by #285 unit 3 part 4 (2026-10-12). The negative-outcome clause was dropped by the owner 2026-10-14: no meeting outcome narrows a project's visibility.
+  - Projects **visibility** (participation, `projects/DOCS.md#project-visibility-scope`) → participation built by #285 unit 3 part 4 (2026-10-12); the negative-outcome clause stands (owner 2026-10-14, sharpened: a rep whose agreement on the project was cancelled loses it) and is #285 unit 4 (Q8 #8), after the sales lifecycle sets `cancelled_scopes`.
   - Project-**media scope flip** (unscoped bare `agentProcedure` → child-scoped) → with #285 (parent bridge under the new compiler).
 
 ## Handoff — how a fresh session starts
@@ -93,4 +93,4 @@ Legend: `AFK` = mergeable without live user decisions · `HITL` = needs a user r
 ## Open pings (carry into the epic)
 
 - `dal-conventions.md:46` — stale `scopeMiddleware` ref → fix in Phase 1.
-- ~~`projectParticipationScope` missing the negative-outcome filter~~ → dropped 2026-10-14 (owner): the rule is participation only.
+- The Project read rule lacks the negative-outcome clause → **#285 unit 4 (Q8 #8)**, after the lifecycle sets `cancelled_scopes` (owner 2026-10-14).
