@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** `LeadSource` and `AppSetting` run on compiled CASL rules, every hand-written lead-source read and write in the lead-sources router ANDs the compiled reach, and the one agent-reachable lead-source reader (`getSourceCampaignSummaries`) becomes super-admin only.
+**Goal:** `LeadSource` and `AppSetting` run on compiled CASL rules, every lead-source read and write in the lead-sources router goes through the entity's existing surface (`leadSourceCrud`, `permit(...).probe`) instead of a raw query, the one remaining raw lead-source query (`list`, an aggregate join) ANDs the compiled reach, and the one agent-reachable lead-source reader (`getSourceCampaignSummaries`) becomes super-admin only.
 
-**Architecture:** `'LeadSource'` and `'AppSetting'` join `COMPILED_SUBJECTS`, so `createCrudDal` scopes both specs through `permit`; their `visibility` functions (both `sql\`false\``) are deleted. No rule is added: only super-admin's `manage all` reaches either subject, so the compiled filter is `true` for super-admin and `false` for every other role. The router's `{ ...ctx, scope: null }` spreads become `ctx`; the CRUD update hook reads the current row under its own context instead of `SYSTEM_CONTEXT`.
+**Architecture:** `'LeadSource'` and `'AppSetting'` join `COMPILED_SUBJECTS`, so `createCrudDal` scopes both specs through `permit`; their `visibility` functions (both `sql\`false\``) are deleted. No rule is added: only super-admin's `manage all` reaches either subject, so the compiled filter is `true` for super-admin and `false` for every other role. The router's `{ ...ctx, scope: null }` spreads become `ctx`; `getById`, `rotateToken` and `archive` call `leadSourceCrud` (which already ANDs the reach and checks each changed column); the four "does the source exist" selects become `permit(ctx, 'read', leadSourceServerSpec).probe(id)`; the CRUD update hook reads the current row under its own context instead of `SYSTEM_CONTEXT`. `AppSetting` has no reader or writer in the code today (only its spec and the spec registry name the table), so compiling it changes no runtime path; the rules probe is its only evidence.
 
 **Tech Stack:** Next.js 15 app router, tRPC 11, Drizzle (Postgres/Neon), `@casl/ability` 6.8.0, better-auth.
 
@@ -47,7 +47,7 @@
 | `src/shared/entities/app-settings/lib/server-spec.ts` | 1 | `visibility` dropped |
 | `src/shared/entities/app-settings/lib/visibility.ts` | 1 | deleted |
 | `src/shared/entities/lead-sources/dal/server/crud.ts` | 1 | `SYSTEM_CONTEXT` → the hook's `ctx`; comment |
-| `src/trpc/routers/lead-sources.router.ts` | 1 | `scope: null` spreads gone; 6 reads and 2 writes AND `permit` |
+| `src/trpc/routers/lead-sources.router.ts` | 1 | `scope: null` spreads gone; `getById`/`rotateToken`/`archive` → `leadSourceCrud`; 4 existence selects → `permit(...).probe`; `list` ANDs `permit(...).sql` |
 | `src/trpc/DOCS.md`, `docs/codebase-conventions/dal-conventions.md`, `docs/codebase-conventions/trpc-procedures.md`, `docs/plans/2026-09-26-sales-calculators-epic.md` | 1 | compiled-family lists; the stale `visibility.ts` citation |
 | `src/trpc/routers/voip-campaigns.router.ts` | 2 | `getSourceCampaignSummaries` on `superAdminProcedure` |
 | tracker, DISTILLED, memory | 3 | record |
@@ -260,9 +260,9 @@ In `hooks.update`, the signature and the current-row read become (the rest of th
 
 The comment block above the hook stays as it is.
 
-- [ ] **Step 4: The router passes its context and ANDs the reach on every hand-written lead-source query**
+- [ ] **Step 4: The router passes its context and uses the entity's surface instead of raw lead-source queries**
 
-`src/trpc/routers/lead-sources.router.ts`:
+`src/trpc/routers/lead-sources.router.ts`. Rule for this step: a lead-source read or write the entity already exposes goes through that surface (`leadSourceCrud`, `permit(...).probe`); only `list` (an aggregate join with no CRUD equivalent) keeps its own query and ANDs `permit(...).sql`, as `customers.router/business.router.ts` does. No new exported name.
 
 Add to the imports (alphabetical position among the `@/shared/...` imports, as the sorter wants):
 
@@ -290,18 +290,37 @@ import { leadSourceServerSpec } from '@/shared/entities/lead-sources/lib/server-
         ))
 ```
 
-`getById`, `getStats`, `getStatusCounts`, `getAnalytics`, `getCustomers`: each handler takes `ctx` (`async ({ ctx, input })`), and each existence read's `where` becomes:
+`getById` reads through the CRUD (same row shape: the projection keeps every column for `manage all`):
 
 ```ts
-        .where(and(eq(leadSourcesTable.id, input.id), permit(ctx, 'read', leadSourceServerSpec).sql))
+  getById: superAdminProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const row = dalToTrpc(await leadSourceCrud.getById(ctx, { id: input.id }))
+      if (!row) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Lead source not found.' })
+      }
+      return row
+    }),
 ```
+
+`getStats`, `getStatusCounts`, `getAnalytics`, `getCustomers`: each handler takes `ctx` (`async ({ ctx, input })`), and the `const [src] = await db.select({ id: leadSourcesTable.id })…limit(1)` block with its `if (!src)` throw becomes:
+
+```ts
+      if (!(await permit(ctx, 'read', leadSourceServerSpec).probe(input.id))) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Lead source not found.' })
+      }
+```
+
+and every later `src.id` in that handler becomes `input.id` (`customersMatchingSource(input.id)`, `eq(customers.leadSourceId, input.id)`, `sourceId: input.id`).
 
 `getCustomers` additionally passes `ctx` to `listCustomers`:
 
 ```ts
+      const { id, segment, ...query } = input
       return dalToTrpc(await listCustomers(
         ctx,
-        { ...query, filters: { ...query.filters, sourceId: src.id, segment } },
+        { ...query, filters: { ...query.filters, sourceId: id, segment } },
       ))
 ```
 
@@ -324,31 +343,21 @@ import { leadSourceServerSpec } from '@/shared/entities/lead-sources/lib/server-
       return dalToTrpc(await leadSourceCrud.update(ctx, { id, data }))
 ```
 
-`rotateToken`:
+`rotateToken` and `archive` go through the CRUD update (the update schema is the insert schema made partial, so it accepts `token` and `archivedAt`; the factory ANDs the update reach and checks each changed column; the update hook acts only when `slug` is sent, so neither call reaches it):
 
 ```ts
   rotateToken: superAdminProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .mutation(async ({ ctx, input }) => {
-      const [updated] = await db
-        .update(leadSourcesTable)
-        .set({ token: generateToken() })
-        .where(and(eq(leadSourcesTable.id, input.id), permit(ctx, 'update', leadSourceServerSpec, ['token']).sql))
-        .returning()
-```
+    .mutation(async ({ ctx, input }) =>
+      dalToTrpc(await leadSourceCrud.update(ctx, { id: input.id, data: { token: generateToken() } }))),
 
-`archive`:
-
-```ts
   archive: superAdminProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .mutation(async ({ ctx, input }) => {
-      const [updated] = await db
-        .update(leadSourcesTable)
-        .set({ archivedAt: new Date().toISOString() })
-        .where(and(eq(leadSourcesTable.id, input.id), permit(ctx, 'update', leadSourceServerSpec, ['archivedAt']).sql))
-        .returning()
+    .mutation(async ({ ctx, input }) =>
+      dalToTrpc(await leadSourceCrud.update(ctx, { id: input.id, data: { archivedAt: new Date().toISOString() } }))),
 ```
+
+A missing row now answers NOT_FOUND through `dalToTrpc` without the "Lead source not found." text; the client's `onError` falls back to its own toast ("Failed to rotate token" / "Failed to archive"). Accepted.
 
 `duplicate` and `delete`:
 
@@ -360,7 +369,15 @@ import { leadSourceServerSpec } from '@/shared/entities/lead-sources/lib/server-
       dalToTrpc(await leadSourceCrud.delete(ctx, { id: input.id }))
 ```
 
-If `pnpm tsc` rejects `['token']` or `['archivedAt']` as a field of `LeadSource`, read `FieldOf` in `src/shared/domains/permissions/specs.ts` and report it; do not cast.
+After the step, the router has exactly one query against `leadSourcesTable`:
+
+```bash
+git grep -n "from(leadSourcesTable)\|update(leadSourcesTable)" -- src/trpc/routers/lead-sources.router.ts
+```
+
+Expected: one line (`list`). `db`, `generateToken` and `TRPCError` stay imported (still used); lint flags any import that went unused.
+
+If `pnpm tsc` rejects `token` or `archivedAt` in the update `data`, read `leadSourceSchemas` in `src/shared/entities/lead-sources/lib/server-spec.ts` and report it; do not cast.
 
 - [ ] **Step 5: The docs this change makes false**
 
