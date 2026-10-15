@@ -33,7 +33,6 @@ export function dispatcherRules(userId: string) {
     can('create', 'VoipCall')
     can('read', 'VoipMessage')
     can('create', 'VoipMessage')
-    // The main line is the dispatch line. Texts are reached through their line, so this rule also decides which texts a dispatcher reads and sends.
-    can('read', 'VoipDid', { isMainLine: true })
+    can('read', 'VoipDid')
   })
 }

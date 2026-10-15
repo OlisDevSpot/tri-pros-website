@@ -28,7 +28,6 @@ export const voipMessages = pgTable('voip_messages', {
   sentAt: timestamp('sent_at', { mode: 'string', withTimezone: true }),
   deliveredAt: timestamp('delivered_at', { mode: 'string', withTimezone: true }),
   failedAt: timestamp('failed_at', { mode: 'string', withTimezone: true }),
-  // Who sent an outbound text: the staff member, or null for an automatic one. Lines, not this column, decide who sees a text.
   agentUserId: text('agent_user_id').references(() => user.id, { onDelete: 'set null' }),
   createdAt,
   updatedAt,

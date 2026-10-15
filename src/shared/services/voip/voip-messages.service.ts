@@ -3,7 +3,6 @@ import type { VoipMessage } from '@/shared/db/schema/voip-messages'
 import type { MessageInstance, MessageListInstanceCreateOptions } from '@/shared/services/providers/twilio/types'
 
 import env from '@/shared/config/server-env'
-import { systemContext } from '@/shared/dal/server/lib/contexts'
 import { dalError, dalSuccess } from '@/shared/dal/server/types'
 import { getStickyDidForUser } from '@/shared/entities/voip-dids/dal/server/queries'
 import { voipMessageCrud } from '@/shared/entities/voip-messages/dal/server/crud'
@@ -48,7 +47,7 @@ interface SendOutboundInput {
   remoteE164: string
   body: string
   from: OutboundLine
-  /** Who sent it: the staff member, or null for an automatic text. */
+  /** Null for the main line: it is nobody's sticky DID. */
   agentUserId: string | null
   mediaUrl?: string[]
 }
@@ -64,8 +63,6 @@ interface SendFromMainLineInput {
   customerId: string | null
   remoteE164: string
   body: string
-  /** The staff member who typed it; absent for an automatic text. */
-  agentUserId?: string | null
   mediaUrl?: string[]
 }
 
@@ -126,9 +123,6 @@ function describeTwilioError(e: unknown): string {
   }
   return 'twilio:unknown'
 }
-
-// Twilio's answer is the server's to record: a sender may create texts without being allowed to edit them.
-const SEND_RESULT_CONTEXT = systemContext('derived:sms-send-result')
 
 /**
  * The one path a text leaves on, whichever line it leaves from:
@@ -207,7 +201,7 @@ async function sendOutbound(ctx: ScopedContext, input: SendOutboundInput): Promi
   }
   catch (e) {
     const errorCode = describeTwilioError(e)
-    const patched = await voipMessageCrud.update(SEND_RESULT_CONTEXT, {
+    const patched = await voipMessageCrud.update(ctx, {
       id: messageRow.id,
       data: { status: 'failed', failureReason: errorCode },
     })
@@ -222,7 +216,7 @@ async function sendOutbound(ctx: ScopedContext, input: SendOutboundInput): Promi
     })
   }
 
-  const patched = await voipMessageCrud.update(SEND_RESULT_CONTEXT, {
+  const patched = await voipMessageCrud.update(ctx, {
     id: messageRow.id,
     data: {
       providerMessageId: twilioMessage.sid,
@@ -268,7 +262,7 @@ function createVoipMessagesService() {
       })
     },
 
-    /** Every main-line text leaves here. A staff reply names its sender; an automatic text has none. */
+    /** Every visit message leaves from the one main line, with no agent on the row. */
     sendFromMainLine: async (
       ctx: ScopedContext,
       input: SendFromMainLineInput,
@@ -289,7 +283,7 @@ function createVoipMessagesService() {
         body: input.body,
         mediaUrl: input.mediaUrl,
         from: { id: mainLine.data.id, e164: mainLine.data.e164 },
-        agentUserId: input.agentUserId ?? null,
+        agentUserId: null,
       })
     },
 

@@ -8,10 +8,8 @@ import type { VoipMessage } from '@/shared/db/schema/voip-messages'
 import { and, desc, eq, notInArray } from 'drizzle-orm'
 
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
-import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { db } from '@/shared/db'
 import { voipMessages } from '@/shared/db/schema/voip-messages'
-import { voipMessageServerSpec } from '@/shared/entities/voip-messages/lib/server-spec'
 
 interface FetchThreadInput {
   voipDidId: string
@@ -22,7 +20,7 @@ interface FetchThreadInput {
 /**
  * Fetch a thread — all messages between a specific Tri Pros DID and a
  * customer phone, newest-first. Composite key `(voipDidId, remoteE164)` is
- * the indexed access path. The caller's read rules decide which lines' texts come back.
+ * the indexed access path. Visibility scope is applied via `ctx.scope`.
  */
 export async function fetchThread(
   ctx: ScopedContext,
@@ -37,7 +35,7 @@ export async function fetchThread(
       .where(and(
         eq(voipMessages.voipDidId, input.voipDidId),
         eq(voipMessages.remoteE164, input.remoteE164),
-        permit(ctx, 'read', voipMessageServerSpec).sql,
+        ctx.scope ?? undefined,
       ))
       .orderBy(desc(voipMessages.createdAt))
       .limit(limit)
