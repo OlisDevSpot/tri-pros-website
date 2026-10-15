@@ -1,77 +1,50 @@
-import Link from 'next/link'
-import { PROJECT_TYPES } from '@/features/proposal-flow/constants/project-types'
-import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
-import { CustomImageSlider } from '@/shared/components/image-slider'
-import { Logo } from '@/shared/components/logo'
-import { LoadingState } from '@/shared/components/states/loading-state'
-import { Button } from '@/shared/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
-import { ROOTS } from '@/shared/config/roots'
-import { projectsData } from '@/shared/db/seeds/data/projects'
-import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
+'use client'
 
-const PORTFOLIO_BASE = R2_PUBLIC_DOMAINS[R2_BUCKETS.media] ?? ''
+import { useQuery } from '@tanstack/react-query'
+import Link from 'next/link'
+
+import { PAST_RESULTS_SHOWN } from '@/features/proposal-flow/constants/past-results'
+import { ROOTS } from '@/shared/config/roots'
+import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
+import { useTRPC } from '@/trpc/helpers'
 
 export function RelatedProjects() {
-  const proposal = useCurrentProposal()
-
-  if (proposal.isLoading) {
-    return <LoadingState title="Loading Related Projects" description="This might take a few seconds" />
-  }
-
-  if (!proposal.data) {
-    return null
-  }
-
-  const projectType = PROJECT_TYPES[proposal.data.projectJSON.data.type]
+  const trpc = useTRPC()
+  const projects = useQuery(trpc.landingRouter.projectsRouter.getProjects.queryOptions())
+  const rows = (projects.data ?? []).filter(r => r.heroImage).slice(0, PAST_RESULTS_SHOWN)
 
   return (
-    <Card>
-      <CardHeader className="text-center md:text-start">
-        <div className="w-full flex flex-col md:flex-row gap-6 items-center justify-between">
-          <div className="flex flex-col gap-2">
-            <CardTitle>
-              <h2>
-                {`Our Past ${projectType.title} Projects`}
-              </h2>
-            </CardTitle>
-            <CardDescription>View similar completed projects from our portfolio. We prefer letting our results do the talking.</CardDescription>
-          </div>
-          <Button variant="outline" className="w-full sm:w-fit">
-            <Link href={`${ROOTS.landing.portfolioProjects()}`}>View Full Portfolio</Link>
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="w-full max-h-125 flex flex-col md:flex-row gap-4 overflow-y-auto md:overflow-x-auto pb-4">
-          {projectsData.map(project => (
-            <Button
-              key={project.accessor}
-              variant="ghost"
-              className="relative group w-full lg:w-75 min-h-100 overflow-hidden z-10 bg-transparent rounded-lg flex items-center justify-center cursor-pointer p-0"
-              asChild
-            >
-              <div>
-                <CustomImageSlider
-                  beforeSrc={`${PORTFOLIO_BASE}/${project.title}/hero-before.jpeg`}
-                  afterSrc={`${PORTFOLIO_BASE}/${project.title}/hero-after.jpeg`}
-                />
-                <div className="pointer-events-none opacity-100 group-hover:opacity-20 flex flex-col items-center justify-center transition h-full z-20 w-full text-wrap relative">
-                  <div className="h-fit bg-scrim/60 w-full flex flex-col items-center justify-center group-active:opacity-30 transition">
-                    <h2 className="uppercase text-on-media">{project.title}</h2>
-                  </div>
-                  <div className="absolute bottom-2 right-2 opacity-50">
-                    <Logo
-                      variant="right"
-                      className="h-10 w-30"
-                    />
-                  </div>
-                </div>
-              </div>
-            </Button>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+    <div className="px-4 py-12 sm:px-8">
+      <div className="mx-auto grid max-w-5xl gap-6">
+        <header className="grid gap-2">
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Past results</p>
+          <h2 id="related-projects-title" className="text-3xl font-semibold text-balance">Work we’ve finished for your neighbors</h2>
+        </header>
+        {/* A homeowner never meets an empty chapter: with nothing to show, one line points at the portfolio. */}
+        {projects.isSuccess && rows.length === 0
+          ? (
+              <p className="text-muted-foreground">
+                {'Browse our finished projects in the '}
+                <Link href={ROOTS.landing.portfolioProjects()} target="_blank" className="font-semibold text-foreground underline underline-offset-4">portfolio</Link>
+                .
+              </p>
+            )
+          : (
+              <ul className="grid gap-4 @min-[700px]/proposal:grid-cols-3">
+                {rows.map(({ project, heroImage }) => (
+                  <li key={project.id}>
+                    <Link href={ROOTS.landing.portfolioProject(project.accessor)} target="_blank" className="grid gap-2">
+                      <div className="relative aspect-4/3 overflow-hidden rounded-lg bg-muted">
+                        {heroImage && <OptimizedImage file={heroImage} alt={project.title} fill sizes="(max-width: 700px) 100vw, 33vw" />}
+                      </div>
+                      <p className="font-bold">{project.title}</p>
+                      <p className="text-sm text-muted-foreground">{[project.city, project.state].filter(Boolean).join(', ')}</p>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+      </div>
+    </div>
   )
 }
