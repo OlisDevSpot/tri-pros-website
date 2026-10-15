@@ -20,8 +20,8 @@ export function agentRules(userId: string) {
     // A rep removes only what they booked; a meeting the office handed them is the office's to remove.
     can('delete', 'Meeting', { setBy: userId })
     can('own', 'Meeting') // agents own the meetings they create (implicitly the sales rep)
-    // Ownership moves with the participants, through `assign`.
-    cannot('update', 'Meeting', ['ownerId'])
+    // Ownership moves with the participants, and who set a meeting with the office, both through `assign`.
+    cannot('update', 'Meeting', ['ownerId', 'setBy'])
 
     // A proposal is reached through the meeting it was made in; the row filter and the UI read this one rule.
     can('read', 'Proposal', { $participatesViaMeeting: { via: 'meetingId', userId } })
@@ -58,8 +58,9 @@ export function agentRules(userId: string) {
     can('read', 'Project', { $participatesViaMeeting: { via: 'projectId', userId } })
     can('create', 'Project')
     can('update', 'Project')
-    // Publishing puts a customer's job on the public site: the office decides.
-    cannot('update', 'Project', ['isPublic'])
+    // Publishing puts a customer's job on the public site: the office decides. A project's customer is
+    // set from its meeting when it is created, and a project has no owner to move.
+    cannot('update', 'Project', ['isPublic', 'customerId', 'ownerId'])
 
     // An activity is its owner's note about a record. Reading it also takes that record, so a customer or
     // meeting handed to someone else takes its reminders out of reach with it.

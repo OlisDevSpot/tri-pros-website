@@ -26,8 +26,8 @@ export function dispatcherRules(userId: string) {
     cannot(['read', 'update'], 'Meeting', ['flowStateJSON'])
     // Tying a meeting to a project is the agent's call.
     cannot('update', 'Meeting', ['projectId'])
-    // Ownership moves with the participants, through `assign`.
-    cannot('update', 'Meeting', ['ownerId'])
+    // Ownership moves with the participants, and who set a meeting with the office, both through `assign`.
+    cannot('update', 'Meeting', ['ownerId', 'setBy'])
 
     // An activity is its owner's note about a record. Reading it also takes that record, so a customer or
     // meeting handed to someone else takes its reminders out of reach with it.
