@@ -1,14 +1,18 @@
 'use client'
 
 import type { PriceDisplayMode } from '@/shared/constants/enums'
+import type { BreakdownSectionLine } from '@/shared/modules/proposals/core/lib/financials'
 import type { FundingData } from '@/shared/modules/proposals/core/schemas'
 import type { SOW } from '@/shared/modules/proposals/core/types'
-import { CheckIcon } from 'lucide-react'
-import { ExpandableLineItems } from '@/shared/components/expandable-line-items'
+
+import { CheckIcon, GiftIcon } from 'lucide-react'
+
+import { getTotalModeParts } from '@/features/proposal-flow/lib/get-total-mode-parts'
 import { formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 import { buildPricingBreakdown } from '@/shared/modules/proposals/core/lib/financials'
 import { ExpirationBadge } from './expiration-badge'
+import { PriceRow } from './pricing-breakdown/price-row'
 
 interface Props {
   funding: FundingData
@@ -16,138 +20,87 @@ interface Props {
   priceDisplayMode: PriceDisplayMode
 }
 
-export function PricingBreakdown({ funding, sow, priceDisplayMode }: Props) {
-  const breakdown = buildPricingBreakdown({
-    funding,
-    sow,
-    priceDisplayMode,
-  })
+// A part's own price shows only in breakdown mode, and its net only when it has incentives to net out.
+type PartLine = Omit<BreakdownSectionLine, 'price' | 'netPrice'> & { price: number | null, netPrice: number | null }
 
-  const isBreakdown = breakdown.priceDisplayMode === 'breakdown'
-  // In breakdown mode, section incentives render inline under their section's
-  // price row. In total mode, they go in the global block.
-  const globalLines = isBreakdown
-    ? breakdown.globalLines
-    : [...breakdown.sectionIncentiveLines, ...breakdown.globalLines]
-  const hasAnyIncentives = globalLines.length > 0
+export function PricingBreakdown({ funding, sow, priceDisplayMode }: Props) {
+  const breakdown = buildPricingBreakdown({ funding, sow, priceDisplayMode })
+  const showPrices = breakdown.priceDisplayMode === 'breakdown'
+  const parts: PartLine[] = showPrices
+    ? breakdown.sections.map(section => ({ ...section, netPrice: section.incentives.length > 0 ? section.netPrice : null }))
+    : getTotalModeParts(sow).map(part => ({ ...part, price: null, netPrice: null }))
+  const now = new Date()
 
   return (
-    <div className="rounded-xl border border-border overflow-hidden text-sm">
-      <div className="px-5 py-4 space-y-2.5">
-        {isBreakdown
-          ? (
-              <>
-                {breakdown.sections.map(section => (
-                  section.incentives.length === 0
-                    ? (
-                        <div key={section.key} className="flex items-center justify-between">
-                          <span className="text-muted-foreground">{section.title}</span>
-                          <span>{formatAsDollars(section.price)}</span>
-                        </div>
-                      )
-                    : (
-                        <ExpandableLineItems
-                          key={section.key}
-                          label={<span className="text-muted-foreground">{section.title}</span>}
-                          value={(
-                            <span className="flex items-center gap-2">
-                              <span className="text-muted-foreground line-through text-xs tabular-nums">
-                                {formatAsDollars(section.price)}
-                              </span>
-                              <span className="tabular-nums">{formatAsDollars(section.netPrice)}</span>
-                            </span>
-                          )}
-                          items={[
-                            { id: '_original', label: 'Original price', value: formatAsDollars(section.price) },
-                            ...section.incentives.map(inc => ({
-                              id: inc.id,
-                              label: inc.label,
-                              value: `-${formatAsDollars(inc.amount)}`,
-                              className: 'text-status-success-fg',
-                            })),
-                          ]}
-                        />
-                      )
-                ))}
-                {breakdown.miscPrice != null && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Misc</span>
-                    <span>{formatAsDollars(breakdown.miscPrice)}</span>
-                  </div>
+    <div className="overflow-hidden rounded-lg border border-border bg-card text-sm">
+      {!showPrices && (
+        <PriceRow className="px-4 py-3.5 font-semibold" label="Contract price" value={formatAsDollars(breakdown.subtotal)} />
+      )}
+      <div className={cn('divide-y divide-border', !showPrices && 'border-t border-border')}>
+        {parts.map(part => (
+          <div key={part.key} className="grid gap-2 px-4 py-3.5">
+            <PriceRow label={<span className="font-bold">{part.title}</span>} value={part.price !== null ? <span className="font-semibold">{formatAsDollars(part.price)}</span> : null} />
+            {part.incentives.map(inc => (
+              <PriceRow
+                key={inc.id}
+                className="text-status-success-fg"
+                label={(
+                  <span className="inline-flex items-center gap-1.5">
+                    <GiftIcon className="size-3.5 shrink-0" />
+                    {inc.label}
+                  </span>
                 )}
-              </>
-            )
-          : (
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Contract Price</span>
-                <span>{formatAsDollars(breakdown.subtotal)}</span>
-              </div>
+                value={`−${formatAsDollars(inc.amount)}`}
+              />
+            ))}
+            {part.netPrice !== null && (
+              <PriceRow className="border-t border-dashed border-border pt-2 font-semibold" label="Your price for this part" value={formatAsDollars(part.netPrice)} />
             )}
+          </div>
+        ))}
+        {showPrices && breakdown.miscPrice != null && (
+          <PriceRow className="px-4 py-3.5" label={<span className="font-bold">Additional items</span>} value={formatAsDollars(breakdown.miscPrice)} />
+        )}
       </div>
 
-      {isBreakdown && (
-        <div className="border-t border-border px-5 py-3 flex items-center justify-between text-muted-foreground">
-          <span>Subtotal</span>
-          <span>{formatAsDollars(breakdown.netSubtotal)}</span>
+      <PriceRow className="border-t border-border px-4 py-3.5 text-muted-foreground" label={showPrices ? 'Subtotal of all parts' : 'Subtotal'} value={formatAsDollars(breakdown.netSubtotal)} />
+
+      {breakdown.globalLines.length > 0 && (
+        <div className="grid gap-2.5 border-t border-border bg-status-success-bg px-4 py-3.5 text-status-success-fg">
+          <p className="text-xs font-bold uppercase tracking-wider">Applies to the whole project</p>
+          {breakdown.globalLines.map((line) => {
+            const expiresAt = line.expiresAt ? new Date(line.expiresAt) : null
+            const expired = expiresAt ? now >= expiresAt : false
+            return (
+              <div key={line.key} className="grid gap-1">
+                <PriceRow
+                  className={cn(expired && 'text-muted-foreground line-through')}
+                  label={(
+                    <span className="inline-flex items-center gap-1.5">
+                      <GiftIcon className="size-3.5 shrink-0" />
+                      {line.label}
+                      {line.kind === 'exclusive-offer' && line.notes && <span className="text-muted-foreground">{` · ${line.notes}`}</span>}
+                    </span>
+                  )}
+                  value={line.amount != null
+                    ? `−${formatAsDollars(line.amount)}`
+                    : (
+                        <span className="inline-flex items-center gap-1">
+                          <CheckIcon className="size-3.5" />
+                          Included
+                        </span>
+                      )}
+                />
+                {expiresAt && !expired && <ExpirationBadge expiresAt={expiresAt} />}
+              </div>
+            )
+          })}
         </div>
       )}
 
-      {hasAnyIncentives && (
-        <>
-          <div className="border-t border-border" />
-          <div className="px-5 py-4 space-y-2.5 text-status-success-fg">
-            {globalLines.map((line) => {
-              const isExpired = line.expiresAt ? new Date() >= new Date(line.expiresAt) : false
-              const expiresAt = line.expiresAt ? new Date(line.expiresAt) : null
-
-              return (
-                <div key={line.key} className="space-y-1">
-                  <div className={cn('flex items-center justify-between', isExpired && 'text-muted-foreground line-through')}>
-                    {line.kind === 'exclusive-offer'
-                      ? (
-                          <div className="flex items-center">
-                            <span>{line.label}</span>
-                            {line.notes && (
-                              <span className="mx-2 flex items-center gap-2">
-                                {' '}
-                                -
-                                <p className="text-muted-foreground text-xs">{line.notes}</p>
-                              </span>
-                            )}
-                          </div>
-                        )
-                      : <span>{line.label}</span>}
-                    {line.amount != null
-                      ? (
-                          <span className="font-medium">
-                            -
-                            {formatAsDollars(line.amount)}
-                          </span>
-                        )
-                      : (
-                          <span className="font-medium flex items-center gap-1">
-                            <CheckIcon className="w-3.5 h-3.5" />
-                            Included
-                          </span>
-                        )}
-                  </div>
-                  {expiresAt && !isExpired && (
-                    <ExpirationBadge expiresAt={expiresAt} />
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </>
-      )}
-
-      <div className={cn(
-        'border-t border-border bg-band px-5 py-4 flex items-center justify-between',
-        !hasAnyIncentives && !isBreakdown && 'border-t-0',
-      )}
-      >
-        <span className="font-semibold">Final Contract Price</span>
-        <span className="font-semibold text-base">{formatAsDollars(breakdown.finalTcp)}</span>
+      <div className="grid gap-1.5 border-t border-border bg-band px-4 py-3.5">
+        <PriceRow label={<span className="font-bold">Final contract price</span>} value={<span className="text-2xl font-semibold">{formatAsDollars(breakdown.finalTcp)}</span>} />
+        <PriceRow className="text-muted-foreground" label="Deposit at signing" value={formatAsDollars(breakdown.deposit)} />
       </div>
     </div>
   )
