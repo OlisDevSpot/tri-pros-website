@@ -24,6 +24,8 @@ interface EnvelopeCardProps {
   customerName: string | null
   proposalKind?: ProposalKind
   className?: string
+  /** For a screen the homeowner can see: the age stays masked until the agent taps Show. */
+  concealAge?: boolean
 }
 
 type ConfirmAction = 'createDraft' | 'send' | 'discard' | 'recall' | 'resend' | 'recreate'
@@ -51,6 +53,7 @@ export function EnvelopeCard({
   customerName,
   proposalKind,
   className,
+  concealAge,
 }: EnvelopeCardProps) {
   const trpc = useTRPC()
   const { invalidateProposal } = useInvalidation()
@@ -182,6 +185,7 @@ export function EnvelopeCard({
           proposalId={proposalId}
           locked={isActive || requestStatus === 'completed'}
           lockReason={ageLockReason}
+          concealAge={concealAge}
         />
 
         {/* State-specific body */}

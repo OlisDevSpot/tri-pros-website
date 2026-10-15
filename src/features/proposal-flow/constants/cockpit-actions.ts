@@ -4,3 +4,5 @@ export const COCKPIT_PROPOSAL_TOOLBAR = { promotedIds: ['shareByEmail', 'edit'] 
 export const COCKPIT_PROPOSAL_HIDDEN_ACTIONS = ['view', 'delete'] as const
 
 export const COCKPIT_CUSTOMER_HIDDEN_ACTIONS = ['edit', 'delete'] as const
+
+export const COCKPIT_MEETING_HIDDEN_ACTIONS = ['delete'] as const

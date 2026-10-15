@@ -1,6 +1,7 @@
 'use client'
 
 import type { CustomerProfileMeeting } from '@/shared/entities/customers/types'
+import { COCKPIT_MEETING_HIDDEN_ACTIONS } from '@/features/proposal-flow/constants/cockpit-actions'
 import { MeetingOverviewCard } from '@/shared/entities/meetings/components/overview-card'
 
 export function CockpitMeetingCard({ meeting }: { meeting: CustomerProfileMeeting }) {
@@ -8,7 +9,7 @@ export function CockpitMeetingCard({ meeting }: { meeting: CustomerProfileMeetin
     <MeetingOverviewCard meeting={meeting} className="overflow-hidden rounded-lg border border-border bg-card">
       <MeetingOverviewCard.Header className="border-b border-border px-4 py-3">
         <MeetingOverviewCard.Fields fields={[{ field: 'scheduledDate' }, { field: 'type' }]} />
-        <MeetingOverviewCard.Actions mode="compact" className="ml-auto" />
+        <MeetingOverviewCard.Actions mode="compact" hide={COCKPIT_MEETING_HIDDEN_ACTIONS} className="ml-auto" />
       </MeetingOverviewCard.Header>
       <MeetingOverviewCard.Body className="px-4 py-3">
         <MeetingOverviewCard.Fields fields={[{ field: 'outcome', variant: 'editable' }]} />

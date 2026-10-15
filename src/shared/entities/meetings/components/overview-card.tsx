@@ -548,16 +548,20 @@ function DefaultProposalRow({ proposal }: { proposal: MeetingOverviewCardProposa
 
 function Actions({
   mode = 'compact',
+  hide,
   className,
 }: {
   mode?: 'compact' | 'bar' | 'toolbar'
+  /** Action ids this surface leaves out. */
+  hide?: readonly string[]
   className?: string
 }) {
   const { meeting, actions } = useMeetingOverviewCard()
+  const shown = useMemo(() => (hide ? actions.filter(config => !hide.includes(config.action.id)) : actions), [actions, hide])
   return (
     <EntityActionMenu
       entity={meeting}
-      actions={actions}
+      actions={shown}
       mode={mode}
       className={className}
     />

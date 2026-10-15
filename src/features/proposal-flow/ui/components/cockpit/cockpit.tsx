@@ -35,6 +35,7 @@ export function Cockpit({ open, onOpenChange }: Props) {
     enabled: open && Boolean(customerId),
   })
   const meeting = profile.data?.meetings.find(m => m.id === proposal.meetingId)
+  const profileUnreachable = profile.error?.data?.code === 'NOT_FOUND' || profile.error?.data?.code === 'FORBIDDEN'
 
   const proposalOverrides = useMemo(() => ({
     // The page is the proposal, so View (and the card's click, which runs it) has nowhere to go.
@@ -74,7 +75,11 @@ export function Cockpit({ open, onOpenChange }: Props) {
                   <Skeleton className="h-24 rounded-lg" />
                 </>
               )}
-              {profile.isError && <p className="text-sm text-muted-foreground">This customer’s profile isn’t available to you.</p>}
+              {profile.isError && (
+                <p className="text-sm text-muted-foreground">
+                  {profileUnreachable ? 'This customer’s profile isn’t available to you.' : 'Couldn’t load the customer. Try again.'}
+                </p>
+              )}
               {profile.data && <CockpitCustomerCard profile={profile.data} />}
               {profile.data && meeting && <CockpitMeetingCard meeting={meeting} />}
             </div>

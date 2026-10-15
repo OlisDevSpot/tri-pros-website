@@ -3,9 +3,10 @@
 import type { EnvelopeDocumentId } from '@/shared/constants/enums'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
+import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { Switch } from '@/shared/components/ui/switch'
@@ -22,6 +23,8 @@ interface EnvelopeConfigurationSectionProps {
   token?: string
   locked: boolean
   lockReason?: string
+  /** Masks the saved age until the agent taps Show. */
+  concealAge?: boolean
 }
 
 function parseAge(input: string): number | null {
@@ -49,6 +52,7 @@ export function EnvelopeConfigurationSection({
   token,
   locked,
   lockReason,
+  concealAge = false,
 }: EnvelopeConfigurationSectionProps) {
   const trpc = useTRPC()
   const { invalidateProposal } = useInvalidation()
@@ -114,12 +118,25 @@ export function EnvelopeConfigurationSection({
   const isAgeSaving = applyContext.isPending && applyContext.variables?.age != null
   const hasAge = serverAge != null
 
+  const [ageRevealed, setAgeRevealed] = useState(false)
+  const ageInputRef = useRef<HTMLInputElement>(null)
+  // With no saved age there is nothing to hide, and the agent needs the input to enter one.
+  const isAgeMasked = concealAge && hasAge && !ageRevealed
+  const ageInputId = `envelope-age-${proposalId}`
+
+  // The Show button unmounts as it reveals, so focus moves to the field it opened.
+  useEffect(() => {
+    if (ageRevealed) {
+      ageInputRef.current?.focus()
+    }
+  }, [ageRevealed])
+
   return (
     <div className="space-y-3 rounded-lg border border-border bg-muted p-3.5">
       {/* Age */}
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between gap-2">
-          <Label htmlFor={`envelope-age-${proposalId}`} className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <Label htmlFor={isAgeMasked ? undefined : ageInputId} className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Customer Age
           </Label>
           {isAgeSaving && (
@@ -129,18 +146,33 @@ export function EnvelopeConfigurationSection({
             </span>
           )}
         </div>
-        <Input
-          id={`envelope-age-${proposalId}`}
-          type="number"
-          min={CUSTOMER_AGE_MIN}
-          max={CUSTOMER_AGE_MAX}
-          value={ageInput}
-          onChange={e => setAgeInput(e.target.value)}
-          disabled={locked || contextQuery.isLoading}
-          aria-describedby={locked ? `envelope-age-${proposalId}-lock` : undefined}
-          className="h-9 max-w-35"
-          placeholder="Enter age"
-        />
+        {isAgeMasked
+          ? (
+              <div className="flex items-center gap-2">
+                <span className="flex h-9 w-full max-w-35 items-center rounded-md border border-input bg-input-background px-3 text-sm tracking-widest text-muted-foreground">
+                  <span aria-hidden>••</span>
+                  <span className="sr-only">Hidden</span>
+                </span>
+                <Button type="button" variant="outline" size="sm" onClick={() => setAgeRevealed(true)} aria-label="Show customer age">
+                  Show
+                </Button>
+              </div>
+            )
+          : (
+              <Input
+                ref={ageInputRef}
+                id={ageInputId}
+                type="number"
+                min={CUSTOMER_AGE_MIN}
+                max={CUSTOMER_AGE_MAX}
+                value={ageInput}
+                onChange={e => setAgeInput(e.target.value)}
+                disabled={locked || contextQuery.isLoading}
+                aria-describedby={locked ? `envelope-age-${proposalId}-lock` : undefined}
+                className="h-9 max-w-35"
+                placeholder="Enter age"
+              />
+            )}
         {locked && lockReason && (
           <p id={`envelope-age-${proposalId}-lock`} className="text-xs text-muted-foreground">
             {lockReason}
