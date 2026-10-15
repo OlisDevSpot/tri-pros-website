@@ -5,7 +5,7 @@ import type { ProjectRow } from '@/shared/modules/projects/core/lib/columns-regi
 
 import { ProjectRowPanel } from '@/features/records-management/ui/components/project-row-panel'
 import { ProjectsRecordsTable } from '@/features/records-management/ui/components/projects-records-table'
-import { DataViewBoundary } from '@/shared/components/data-view-boundary'
+import { DataViewBoundary } from '@/shared/components/data-view/ui/boundary'
 import { RecordsPageFrame } from '@/shared/components/records-page-frame'
 
 // Module level keeps its identity stable, so the table's props don't churn.

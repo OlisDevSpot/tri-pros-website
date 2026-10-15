@@ -14,7 +14,7 @@ import { LeadSourcePerformanceStrip } from '@/features/lead-sources-admin/ui/com
 import { LeadSourceSettingsPanel } from '@/features/lead-sources-admin/ui/components/lead-source-settings-panel'
 import { MobileBackButton } from '@/features/lead-sources-admin/ui/components/mobile-back-button'
 import { SourceTabTrigger } from '@/features/lead-sources-admin/ui/components/source-tab-trigger'
-import { DataViewBoundary } from '@/shared/components/data-view-boundary'
+import { DataViewBoundary } from '@/shared/components/data-view/ui/boundary'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList } from '@/shared/components/ui/tabs'
 import { useTRPC } from '@/trpc/helpers'

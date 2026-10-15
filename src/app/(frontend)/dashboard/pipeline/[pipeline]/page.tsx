@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { CUSTOMER_PIPELINE_QUERY } from '@/features/customer-pipelines/constants/customer-pipeline-query'
 
 import { CustomerPipelineView } from '@/features/customer-pipelines/ui/views'
-import { DataViewBoundary } from '@/shared/components/data-view-boundary'
+import { DataViewBoundary } from '@/shared/components/data-view/ui/boundary'
 import { ROOTS } from '@/shared/config/roots'
 import { loadDataViewQueryInput } from '@/shared/dal/server/lib/query/load-data-view-query-input'
 import { protectDashboardPage } from '@/shared/domains/permissions/lib/protect-dashboard-page'

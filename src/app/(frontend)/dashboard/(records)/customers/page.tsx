@@ -1,6 +1,6 @@
 import type { SearchParams } from 'nuqs/server'
 
-import { DataViewBoundary } from '@/shared/components/data-view-boundary'
+import { DataViewBoundary } from '@/shared/components/data-view/ui/boundary'
 import { RecordsPageFrame } from '@/shared/components/records-page-frame'
 import { loadDataViewQueryInput } from '@/shared/dal/server/lib/query/load-data-view-query-input'
 import { protectDashboardPage } from '@/shared/domains/permissions/lib/protect-dashboard-page'

@@ -2,7 +2,7 @@ import type { SearchParams } from 'nuqs/server'
 
 import { PROPOSALS_TABLE_QUERY_CONFIG } from '@/features/proposal-flow/constants/proposals-table-query-config'
 import { PastProposalsTable } from '@/features/proposal-flow/ui/components/table'
-import { DataViewBoundary } from '@/shared/components/data-view-boundary'
+import { DataViewBoundary } from '@/shared/components/data-view/ui/boundary'
 import { RecordsPageFrame } from '@/shared/components/records-page-frame'
 import { loadPaginatedQueryInput } from '@/shared/dal/server/lib/query/load-paginated-query-input'
 import { protectDashboardPage } from '@/shared/domains/permissions/lib/protect-dashboard-page'

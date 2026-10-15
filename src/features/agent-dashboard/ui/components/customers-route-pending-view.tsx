@@ -1,6 +1,6 @@
 'use client'
 
-import { DataViewBoundary } from '@/shared/components/data-view-boundary'
+import { DataViewBoundary } from '@/shared/components/data-view/ui/boundary'
 import { RecordsPageFrame } from '@/shared/components/records-page-frame'
 import { CustomersTable } from '@/shared/entities/customers/components/customers-table'
 

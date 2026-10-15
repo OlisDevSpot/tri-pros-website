@@ -9,7 +9,7 @@ import { ActivityForm } from '@/features/schedule-management/ui/components/activ
 import { ScheduleActivitiesCalendar } from '@/features/schedule-management/ui/components/schedule-activities-calendar'
 import { ScheduleMeetingsCalendar } from '@/features/schedule-management/ui/components/schedule-meetings-calendar'
 import { ScheduleShowToggle } from '@/features/schedule-management/ui/components/schedule-show-toggle'
-import { DataViewBoundary } from '@/shared/components/data-view-boundary'
+import { DataViewBoundary } from '@/shared/components/data-view/ui/boundary'
 
 export function ScheduleView() {
   const [show, setShow] = useQueryState('show', scheduleShowParser)

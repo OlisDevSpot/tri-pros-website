@@ -1,5 +1,5 @@
 import { MeetingsRecordsView } from '@/features/records-management/ui/views/meetings-records-view'
-import { DataViewPending } from '@/shared/components/data-view-pending'
+import { DataViewPending } from '@/shared/components/data-view/ui/pending'
 
 export default function MeetingsLoading() {
   return (
