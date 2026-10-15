@@ -9,11 +9,13 @@ import { useTRPC } from '@/trpc/helpers'
 
 interface Mp3UploadFieldProps {
   customerName: string
+  leadSourceSlug?: string
+  token?: string
   onUploaded: (key: string) => void
   onClear: () => void
 }
 
-export function Mp3UploadField({ customerName, onUploaded, onClear }: Mp3UploadFieldProps) {
+export function Mp3UploadField({ customerName, leadSourceSlug, token, onUploaded, onClear }: Mp3UploadFieldProps) {
   const trpc = useTRPC()
   const inputRef = useRef<HTMLInputElement>(null)
   const [fileName, setFileName] = useState('')
@@ -37,7 +39,7 @@ export function Mp3UploadField({ customerName, onUploaded, onClear }: Mp3UploadF
     }
 
     try {
-      const { uploadUrl, key } = await getUploadUrl.mutateAsync({ contentType: 'audio/mpeg', customerName })
+      const { uploadUrl, key } = await getUploadUrl.mutateAsync({ contentType: 'audio/mpeg', customerName, leadSourceSlug, token })
       await fetch(uploadUrl, {
         method: 'PUT',
         body: file,

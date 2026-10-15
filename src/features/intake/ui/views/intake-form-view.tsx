@@ -26,9 +26,10 @@ interface IntakeFormViewProps {
   mode: IntakeMode
   formConfig: LeadSourceFormConfig
   leadSourceSlug?: string
+  token?: string
 }
 
-export function IntakeFormView({ mode, formConfig, leadSourceSlug }: IntakeFormViewProps) {
+export function IntakeFormView({ mode, formConfig, leadSourceSlug, token }: IntakeFormViewProps) {
   const trpc = useTRPC()
 
   const form = useForm<IntakeFormData>({
@@ -91,6 +92,7 @@ export function IntakeFormView({ mode, formConfig, leadSourceSlug }: IntakeFormV
       notes: data.notes || undefined,
       mode: data.mode,
       leadSourceSlug,
+      token,
       leadMetaJSON,
     })
   }
@@ -222,6 +224,8 @@ export function IntakeFormView({ mode, formConfig, leadSourceSlug }: IntakeFormV
                           <FormLabel>Call Recording</FormLabel>
                           <Mp3UploadField
                             customerName={form.watch('name')}
+                            leadSourceSlug={leadSourceSlug}
+                            token={token}
                             onUploaded={key => form.setValue('mp3Key', key)}
                             onClear={() => form.setValue('mp3Key', '')}
                           />

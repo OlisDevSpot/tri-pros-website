@@ -3,7 +3,7 @@
 import type { DalReturn } from '@/shared/dal/server/types'
 import type { LeadSourceRecord } from '@/shared/db/schema/lead-sources'
 
-import { asc, eq } from 'drizzle-orm'
+import { and, asc, eq } from 'drizzle-orm'
 
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { db } from '@/shared/db'
@@ -41,6 +41,18 @@ export async function getLeadSourceBySlug(slug: string): Promise<DalReturn<LeadS
       .select()
       .from(leadSourcesTable)
       .where(eq(leadSourcesTable.slug, slug))
+      .limit(1)
+    return (row ?? null) as LeadSourceRecord | null
+  })
+}
+
+/** The active source an intake link names, or null: an unknown slug, a wrong token and an archived source look the same. */
+export async function getActiveLeadSourceByLink(slug: string, token: string): Promise<DalReturn<LeadSourceRecord | null>> {
+  return dalDbOperation(async () => {
+    const [row] = await db
+      .select()
+      .from(leadSourcesTable)
+      .where(and(eq(leadSourcesTable.slug, slug), eq(leadSourcesTable.token, token), eq(leadSourcesTable.isActive, true)))
       .limit(1)
     return (row ?? null) as LeadSourceRecord | null
   })

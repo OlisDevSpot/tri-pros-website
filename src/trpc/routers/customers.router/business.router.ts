@@ -20,6 +20,7 @@ import { toDigits } from '@/shared/lib/phone'
 import { constructionService } from '@/shared/modules/construction/service'
 import { customerIntakeService } from '@/shared/services/customer-intake.service'
 import { validatePhoneLine } from '@/shared/services/providers/twilio/lib/validate-phone-line'
+import { assertIntakeLink } from '@/trpc/lib/assert-intake-link'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 
 import { agentProcedure, createTRPCRouter } from '../../init'
@@ -90,6 +91,7 @@ export const businessRouter = createTRPCRouter({
       notes: z.string().optional(),
       mode: z.enum(intakeModes),
       leadSourceSlug: z.string().optional(),
+      token: z.string().optional(),
       // Channel-narrowed: the in-app intake form only ever originates
       // operational fields + requestedTrades — never a bina/generic/funnel
       // source payload (those enter via their own ingest channels).
@@ -101,7 +103,7 @@ export const businessRouter = createTRPCRouter({
       }).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const { notes, mode, leadSourceSlug, ...customerData } = input
+      const { notes, mode, leadSourceSlug, token, ...customerData } = input
 
       // Rate limit by IP
       const ip = clientIp((ctx as { req?: Request }).req)
@@ -109,6 +111,8 @@ export const businessRouter = createTRPCRouter({
       if (!success) {
         throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Too many submissions. Please try again later.' })
       }
+
+      await assertIntakeLink(ctx.actor.ability, { leadSourceSlug, token })
 
       // Mobile-or-landline gate (hard-block; VoIP/virtual rejected). Fail-open
       // inside validatePhoneLine never drops a real lead on a Twilio outage.

@@ -8,6 +8,7 @@ import { r2Client } from '@/shared/services/providers/r2/client'
 import { R2_BUCKETS } from '@/shared/services/providers/r2/types'
 
 import { baseProcedure, createTRPCRouter } from '../init'
+import { assertIntakeLink } from '../lib/assert-intake-link'
 import { clientIp } from '../lib/client-ip'
 
 const redis = new Redis({
@@ -27,6 +28,8 @@ export const intakeRouter = createTRPCRouter({
     .input(z.object({
       contentType: z.enum(['audio/mpeg', 'audio/mp4']),
       customerName: z.string().min(1),
+      leadSourceSlug: z.string().optional(),
+      token: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       // Rate limit by IP
@@ -39,6 +42,8 @@ export const intakeRouter = createTRPCRouter({
           message: 'Too many upload attempts. Please try again later.',
         })
       }
+
+      await assertIntakeLink(ctx.actor.ability, input)
 
       const slug = input.customerName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
       const key = `recordings/${slug}-${crypto.randomUUID()}.mp3`

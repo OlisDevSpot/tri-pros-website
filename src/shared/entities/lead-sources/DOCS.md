@@ -29,7 +29,7 @@ Both must validate at the public route — guessing a slug alone is insufficient
 
 **Why**: slug is the marketing handle (we want it shareable + recognizable); token is the access control (we don't want random visitors creating leads). Manual rotation is the breakglass for compromised tokens.
 **Reference impl**: `lib/intake-url.ts:getIntakeUrl`; public intake route at `src/app/(frontend)/intake/`
-**Enforced by**: DB unique constraint on `slug` + `token`; intake route validates both
+**Enforced by**: DB unique constraint on `slug` + `token`; the `/intake` page and both intake procedures (`createFromIntake`, `getRecordingUploadUrl`) check the pair through `getActiveLeadSourceByLink` (`assertIntakeLink` for the procedures; super-admins are exempt)
 
 ### form-config-modes-customer-only-vs-meeting
 

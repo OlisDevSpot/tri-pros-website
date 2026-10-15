@@ -1,10 +1,9 @@
-import { eq } from 'drizzle-orm'
 import { notFound, redirect } from 'next/navigation'
 import { IntakeFormView } from '@/features/intake/ui/views/intake-form-view'
 import { ROOTS } from '@/shared/config/roots'
-import { db } from '@/shared/db'
-import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
+import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { getRequestActor } from '@/shared/domains/permissions/server/get-request-actor'
+import { getActiveLeadSourceByLink } from '@/shared/entities/lead-sources/dal/server/queries'
 import { leadSourceFormConfigSchema } from '@/shared/entities/lead-sources/schemas'
 
 interface Props {
@@ -27,15 +26,9 @@ export default async function PublicIntakePage({ searchParams }: Props) {
     redirect('/')
   }
 
-  // Fetch lead source by slug, then verify token matches. 404 on any mismatch
-  // so attackers can't distinguish "slug doesn't exist" from "wrong token".
-  const [row] = await db
-    .select()
-    .from(leadSourcesTable)
-    .where(eq(leadSourcesTable.slug, source))
-    .limit(1)
-
-  if (!row || !row.isActive || row.token !== token) {
+  // One answer for an unknown slug, a wrong token and an archived source, so a guess learns nothing.
+  const row = dalVerifySuccess(await getActiveLeadSourceByLink(source, token))
+  if (!row) {
     notFound()
   }
 
@@ -55,6 +48,7 @@ export default async function PublicIntakePage({ searchParams }: Props) {
           mode={formConfig.mode}
           formConfig={formConfig}
           leadSourceSlug={row.slug}
+          token={token}
         />
       </div>
     </main>
