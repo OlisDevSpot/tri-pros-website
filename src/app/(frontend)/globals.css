@@ -1195,22 +1195,56 @@
   }
 }
 
-/* Inner scroll containers: the html-level gutter rule never reaches them, and a
-   classic scrollbar appearing narrows the content by ~10px. `stable` reserves the
-   gutter on overflow auto/hidden/scroll alike, so pair it only with the element that
-   scrolls. `both` keeps centered content centered. */
-@utility scrollbar-gutter-stable {
-  scrollbar-gutter: stable;
-}
-@utility scrollbar-gutter-both {
-  scrollbar-gutter: stable both-edges;
-}
 /* Data scrollers (tables, boards, the schedule) scroll by touch, trackpad or wheel with no bar: a
-   classic desktop bar takes layout room the overlay bars on phones never do. */
+   classic desktop bar takes layout room the overlay bars on phones never do. Tailwind's own
+   scrollbar-none merges with this; the WebKit rule is for Safari before 18.2. */
 @utility scrollbar-none {
   scrollbar-width: none;
   &::-webkit-scrollbar {
     display: none;
+  }
+}
+
+/* The message scroller fades its last line under the reply box; copied from shadcn's tailwind.css,
+   which this app does not import. */
+@property --scroll-fade-b {
+  syntax: '<length-percentage>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --scroll-fade-mask {
+  syntax: '*';
+  inherits: false;
+}
+@theme inline {
+  @keyframes scroll-fade-reveal-b {
+    from {
+      --scroll-fade-b: var(--_scroll-fade-size-b, var(--scroll-fade-size, min(12%, calc(var(--spacing) * 10))));
+    }
+    to {
+      --scroll-fade-b: 0px;
+    }
+  }
+}
+@utility scroll-fade-b {
+  --_scroll-fade-size-b: var(--scroll-fade-b-size, var(--scroll-fade-size, min(12%, calc(var(--spacing) * 10))));
+  --scroll-fade-mask: linear-gradient(to bottom, #000 0, #000 calc(100% - var(--scroll-fade-b, 0px)), transparent 100%);
+  -webkit-mask-image: var(--scroll-fade-mask);
+  mask-image: var(--scroll-fade-mask);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+
+  @supports (animation-timeline: scroll()) {
+    animation: scroll-fade-reveal-b 1ms ease-in-out;
+    animation-timeline: scroll(self y);
+    animation-range: calc(100% - var(--scroll-fade-reveal, calc(var(--spacing) * 24))) 100%;
+    animation-fill-mode: both;
+  }
+
+  @supports not (animation-timeline: scroll()) {
+    --scroll-fade-b: var(--_scroll-fade-size-b);
   }
 }
 
