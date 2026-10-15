@@ -18,6 +18,7 @@ export type SystemReason
     | 'derived:proposal-sent'
     | 'derived:homeowner-age'
     | 'derived:envelope-documents'
+    | 'derived:contract-envelope'
     | 'derived:project-conversion'
 
 export function systemRules(reason: SystemReason) {

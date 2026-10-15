@@ -2,15 +2,35 @@ import type { ContractEvent } from '@/shared/constants/enums'
 import type { ScopedContext } from '@/shared/dal/server/types'
 import type { InsertProposalSchema } from '@/shared/db/schema/proposals'
 import type { ZohoContractStatus } from '@/shared/services/providers/zoho-sign/types'
+import { systemContext } from '@/shared/dal/server/lib/contexts'
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { deriveOutcomeOnAdditionalWorkApproved } from '@/shared/entities/meetings/dal/server/mutations'
 import { proposalCrud } from '@/shared/modules/proposals/core/dal/server/crud'
 import { getByContractEnvelopeId, getFullView } from '@/shared/modules/proposals/core/dal/server/queries'
 import { contractEventColumn, contractEventIdempotencyPolicy, shouldAutoApproveOnContractEvent } from '@/shared/modules/proposals/core/lib/contract-events'
+import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 import { buildProposalContext } from '@/shared/services/providers/zoho-sign/lib/documents/proposal-context'
 import { zohoSyncService } from '@/shared/services/zoho-sync.service'
 
 function createContractService() {
+  // The envelope columns mirror what Zoho holds, so only this service writes them. The caller's right to
+  // work the proposal is checked before Zoho is called, so a refused caller never creates or recalls an envelope.
+  async function loadWorkable(ctx: ScopedContext, proposalId: string) {
+    if (!(await permit(ctx, 'update', proposalServerSpec).probe(proposalId))) {
+      throw new Error(`Proposal ${proposalId} not found`)
+    }
+    const proposal = dalVerifySuccess(await getFullView(ctx, { id: proposalId }))
+    if (!proposal) {
+      throw new Error(`Proposal ${proposalId} not found`)
+    }
+    return proposal
+  }
+
+  async function writeEnvelope(proposalId: string, data: Pick<InsertProposalSchema, 'contractEnvelopeId' | 'contractSentAt'>) {
+    dalVerifySuccess(await proposalCrud.update(systemContext('derived:contract-envelope'), { id: proposalId, data }))
+  }
+
   /**
    * Creates a Zoho Sign draft envelope via the kind-aware registry path.
    * `assembleEnvelope` self-heals against context drift — required docs
@@ -19,24 +39,18 @@ function createContractService() {
    * see `docs/adr/0004-proposal-contract-independence.md`
    */
   async function createDraft(ctx: ScopedContext, proposalId: string) {
-    const proposal = dalVerifySuccess(await getFullView(ctx, { id: proposalId }))
-    if (!proposal) {
-      throw new Error(`Proposal ${proposalId} not found`)
-    }
+    const proposal = await loadWorkable(ctx, proposalId)
 
     const proposalCtx = buildProposalContext(proposal)
     const { requestId, status } = await zohoSyncService.createEnvelope(proposalCtx)
-    dalVerifySuccess(await proposalCrud.update(ctx, { id: proposalId, data: { contractEnvelopeId: requestId } }))
+    await writeEnvelope(proposalId, { contractEnvelopeId: requestId })
     return { requestId, status }
   }
 
   return {
     /** Creates a draft contract envelope (not sent to signers). 0 credits if truly draft. */
     createContractEnvelope: async (ctx: ScopedContext, proposalId: string) => {
-      const proposal = dalVerifySuccess(await getFullView(ctx, { id: proposalId }))
-      if (!proposal) {
-        throw new Error(`Proposal ${proposalId} not found`)
-      }
+      const proposal = await loadWorkable(ctx, proposalId)
 
       // If a contract envelope already exists, return it
       if (proposal.contractEnvelopeId) {
@@ -59,10 +73,7 @@ function createContractService() {
      * the draft first — so an existing draft is fresh by construction.
      */
     sendContractEnvelope: async (ctx: ScopedContext, proposalId: string) => {
-      const proposal = dalVerifySuccess(await getFullView(ctx, { id: proposalId }))
-      if (!proposal) {
-        throw new Error(`Proposal ${proposalId} not found`)
-      }
+      const proposal = await loadWorkable(ctx, proposalId)
 
       const requestId = proposal.contractEnvelopeId
       if (!requestId) {
@@ -75,20 +86,14 @@ function createContractService() {
       // Submit the draft for signing
       await zohoSyncService.submitForSigning(requestId)
 
-      dalVerifySuccess(await proposalCrud.update(ctx, {
-        id: proposalId,
-        data: { contractSentAt: new Date().toISOString() },
-      }))
+      await writeEnvelope(proposalId, { contractSentAt: new Date().toISOString() })
 
       return { requestId }
     },
 
     /** Recalls (cancels) an in-progress contract envelope. Clears contractEnvelopeId. */
     recallContractEnvelope: async (ctx: ScopedContext, proposalId: string) => {
-      const proposal = dalVerifySuccess(await getFullView(ctx, { id: proposalId }))
-      if (!proposal) {
-        throw new Error(`Proposal ${proposalId} not found`)
-      }
+      const proposal = await loadWorkable(ctx, proposalId)
 
       if (!proposal.contractEnvelopeId) {
         throw new Error(`Proposal ${proposalId} has no contract envelope to recall`)
@@ -96,13 +101,7 @@ function createContractService() {
 
       await zohoSyncService.recallRequest(proposal.contractEnvelopeId)
 
-      dalVerifySuccess(await proposalCrud.update(ctx, {
-        id: proposalId,
-        data: {
-          contractEnvelopeId: null,
-          contractSentAt: null,
-        },
-      }))
+      await writeEnvelope(proposalId, { contractEnvelopeId: null, contractSentAt: null })
 
       return { recalled: true }
     },
@@ -114,10 +113,7 @@ function createContractService() {
      * can be created.
      */
     discardContractEnvelopeDraft: async (ctx: ScopedContext, proposalId: string) => {
-      const proposal = dalVerifySuccess(await getFullView(ctx, { id: proposalId }))
-      if (!proposal) {
-        throw new Error(`Proposal ${proposalId} not found`)
-      }
+      const proposal = await loadWorkable(ctx, proposalId)
 
       if (!proposal.contractEnvelopeId) {
         throw new Error(`Proposal ${proposalId} has no draft to discard`)
@@ -128,23 +124,14 @@ function createContractService() {
         throw new Error(`Zoho Sign delete failed for request ${proposal.contractEnvelopeId}`)
       }
 
-      dalVerifySuccess(await proposalCrud.update(ctx, {
-        id: proposalId,
-        data: {
-          contractEnvelopeId: null,
-          contractSentAt: null,
-        },
-      }))
+      await writeEnvelope(proposalId, { contractEnvelopeId: null, contractSentAt: null })
 
       return { discarded: true }
     },
 
     /** Recalls existing request (if any), creates a fresh draft, and submits it. */
     resendContractEnvelope: async (ctx: ScopedContext, proposalId: string) => {
-      const proposal = dalVerifySuccess(await getFullView(ctx, { id: proposalId }))
-      if (!proposal) {
-        throw new Error(`Proposal ${proposalId} not found`)
-      }
+      const proposal = await loadWorkable(ctx, proposalId)
 
       if (proposal.contractEnvelopeId) {
         await zohoSyncService.recallRequestSilent(proposal.contractEnvelopeId)
@@ -155,10 +142,7 @@ function createContractService() {
 
       await zohoSyncService.submitForSigning(requestId)
 
-      dalVerifySuccess(await proposalCrud.update(ctx, {
-        id: proposalId,
-        data: { contractSentAt: new Date().toISOString() },
-      }))
+      await writeEnvelope(proposalId, { contractSentAt: new Date().toISOString() })
 
       return { requestId }
     },

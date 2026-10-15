@@ -26,7 +26,27 @@ export function agentRules(userId: string) {
     // A proposal is reached through the meeting it was made in; the row filter and the UI read this one rule.
     can('read', 'Proposal', { $participatesViaMeeting: { via: 'meetingId', userId } })
     can('create', 'Proposal')
-    can('update', 'Proposal')
+    // What a rep builds and sends. The share link, the contract trail, the books, the created date and
+    // the meeting a proposal belongs to are the system's or the office's.
+    can('update', 'Proposal', [
+      'label',
+      'priceDisplayMode',
+      'projectJSON',
+      'startingTcpCents',
+      'depositAmountCents',
+      'cashInDealCents',
+      'miscPriceCents',
+      'financeOptionId',
+      'status',
+      'sentAt',
+      'approvedAt',
+      // Choosing the documents is the rep's; the reconciled selection is written as a derived system write.
+      'envelopeDocumentIds',
+      'incentives',
+      'incentives.*',
+      'media',
+      'media.*',
+    ])
 
     can('read', 'Application')
     can('create', 'Application')
