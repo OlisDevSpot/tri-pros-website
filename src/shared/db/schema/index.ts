@@ -46,7 +46,6 @@ export * from './push-subscriptions'
 export * from './voip-dids'
 export * from './voip-calls'
 export * from './voip-messages'
-export * from './voip-conversations'
 export * from './voip-link-tokens'
 export * from './app-settings'
 

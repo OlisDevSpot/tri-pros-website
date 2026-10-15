@@ -3,7 +3,6 @@ import type {
   MeetingContext,
   MeetingFlowState,
 } from '@/shared/entities/meetings/schemas'
-import type { VisitMessageOverrides } from '@/shared/modules/meetings/messages/schemas/visit-message-overrides'
 
 import { relations, sql } from 'drizzle-orm'
 import { index, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
@@ -49,15 +48,11 @@ export const meetings = pgTable('meetings', {
   rescheduledFromId: uuid('rescheduled_from_id').references((): AnyPgColumn => meetings.id, { onDelete: 'set null' }),
   contextJSON: jsonb('context_json').$type<MeetingContext>(),
   flowStateJSON: jsonb('flow_state_json').$type<MeetingFlowState>(),
-  // Sits over the team's templates for this visit only; it moves to a reschedule's replacement with the invite.
-  visitMessageOverridesJSON: jsonb('visit_message_overrides_json').$type<VisitMessageOverrides>(),
   agentNotes: text('agent_notes'),
   // Homeowner-facing: the welcome text, the calendar event and the visit page show it.
   visitNote: text('visit_note'),
   // Set means the homeowner should be a guest on the meeting's calendar event; the calendar sync makes the event match.
   homeownerInvitedAt: timestamp('homeowner_invited_at', { mode: 'string', withTimezone: true }),
-  // Google refused the email on file as a guest; the event exists without the homeowner until a sync adds them.
-  homeownerInviteRefusedAt: timestamp('homeowner_invite_refused_at', { mode: 'string', withTimezone: true }),
   // Google Calendar sync
   gcalEventId: text('gcal_event_id'),
   gcalEtag: text('gcal_etag'),
