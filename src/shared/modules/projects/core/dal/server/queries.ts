@@ -3,7 +3,7 @@ import type z from 'zod'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { Project, ProjectMediaFile } from '@/shared/db/schema'
 import type { PortfolioProject, PortfolioProjectDetail } from '@/shared/modules/projects/core/types'
-import { and, asc, count, desc, eq, getTableColumns, inArray, sql } from 'drizzle-orm'
+import { and, asc, count, desc, eq, getTableColumns, inArray, lte, sql } from 'drizzle-orm'
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { fieldListInput } from '@/shared/dal/server/lib/query/field-list-input'
 import { buildSearchWhere } from '@/shared/dal/server/lib/query/search'
@@ -292,9 +292,11 @@ export interface ProjectSearchRow {
   title: string
   address: string | null
   city: string
+  /** All of this customer's projects the caller can see, including those past the cap. */
+  customerTotal: number
 }
 
-/** The projects omni search lists under the customers it matched. Portfolio-only projects (no meeting) are left out. */
+/** The projects omni search lists under the customers it matched: each customer's `limit` most recently updated. Portfolio-only projects (no meeting) are left out. */
 export async function listProjectsForCustomers(ctx: ScopedContext, customerIds: string[], limit: number): Promise<DalReturn<ProjectSearchRow[]>> {
   return dalDbOperation(async () => {
     const { ability, userId } = ctx.actor
@@ -308,13 +310,17 @@ export async function listProjectsForCustomers(ctx: ScopedContext, customerIds: 
     if (scope === null) {
       return []
     }
-    return db
+    // The cap is per customer, so one customer's many projects can't crowd out another's.
+    const ranked = db
       .select({
         id: projects.id,
-        customerId: sql<string>`${projects.customerId}`,
+        customerId: sql<string>`${projects.customerId}`.as('customer_id'),
         title: projects.title,
         address: projects.address,
         city: projects.city,
+        updatedAt: projects.updatedAt,
+        customerTotal: sql<number>`(count(*) over (partition by ${projects.customerId}))::int`.as('customer_total'),
+        perCustomerRank: sql<number>`row_number() over (partition by ${projects.customerId} order by ${projects.updatedAt} desc)`.as('per_customer_rank'),
       })
       .from(projects)
       .where(and(
@@ -322,7 +328,18 @@ export async function listProjectsForCustomers(ctx: ScopedContext, customerIds: 
         hasAssociatedMeeting(),
         scope,
       ))
-      .orderBy(desc(projects.updatedAt))
-      .limit(limit)
+      .as('ranked')
+    return db
+      .select({
+        id: ranked.id,
+        customerId: ranked.customerId,
+        title: ranked.title,
+        address: ranked.address,
+        city: ranked.city,
+        customerTotal: ranked.customerTotal,
+      })
+      .from(ranked)
+      .where(lte(ranked.perCustomerRank, limit))
+      .orderBy(desc(ranked.updatedAt))
   })
 }

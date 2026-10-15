@@ -16,6 +16,8 @@ export const OMNI_ENTRY_CAPS: Record<OmniEntryGroup, number> = { 'go-to': 5, 'ac
 export const OMNI_STACK_CAPS = [OMNI_LIMITS.related, 2, 2] as const satisfies { length: typeof OMNI_LIMITS.relatedCustomers }
 /** A stack takes one record of each kind at a time, in this order, then shows them grouped in it. */
 export const OMNI_STACK_KIND_ORDER = ['meeting', 'proposal', 'project'] as const satisfies readonly OmniStackRecord['kind'][]
+/** The record kinds a customer's count chips show, in this order. */
+export const OMNI_COUNT_KINDS = ['meeting', 'proposal', 'project'] as const
 /** Rows per kind in the phone list. */
 export const OMNI_LIST_KIND_CAP = OMNI_LIMITS.related
 export const OMNI_SKELETON_ROWS = [0, 1, 2] as const

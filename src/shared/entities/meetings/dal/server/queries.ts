@@ -8,7 +8,7 @@ import type { Meeting } from '@/shared/db/schema/meetings'
 
 import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { CustomerProfileMeeting } from '@/shared/entities/customers/types'
-import { and, count, desc, eq, exists, getTableColumns, inArray, sql } from 'drizzle-orm'
+import { and, count, desc, eq, exists, getTableColumns, inArray, lte, sql } from 'drizzle-orm'
 
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { permit } from '@/shared/dal/server/lib/permissions/permit'
@@ -335,25 +335,41 @@ export interface MeetingSearchRow {
   scheduledFor: string
   meetingOutcome: MeetingOutcome
   meetingType: MeetingType
+  /** All of this customer's meetings the caller can read, including those past the cap. */
+  customerTotal: number
 }
 
-/** The meetings omni search lists under the customers it matched, newest first. */
+/** The meetings omni search lists under the customers it matched: each customer's newest `limit`, newest first. */
 export async function listMeetingsForCustomers(ctx: ScopedContext, customerIds: string[], limit: number): Promise<DalReturn<MeetingSearchRow[]>> {
   return dalDbOperation(async () => {
     if (customerIds.length === 0) {
       return []
     }
-    return db
+    // The cap is per customer, so one customer's many meetings can't crowd out another's.
+    const ranked = db
       .select({
         id: meetings.id,
-        customerId: sql<string>`${meetings.customerId}`,
+        customerId: sql<string>`${meetings.customerId}`.as('customer_id'),
         scheduledFor: meetings.scheduledFor,
         meetingOutcome: meetings.meetingOutcome,
         meetingType: meetings.meetingType,
+        customerTotal: sql<number>`(count(*) over (partition by ${meetings.customerId}))::int`.as('customer_total'),
+        perCustomerRank: sql<number>`row_number() over (partition by ${meetings.customerId} order by ${meetings.scheduledFor} desc)`.as('per_customer_rank'),
       })
       .from(meetings)
       .where(and(inArray(meetings.customerId, customerIds), permit(ctx, 'read', meetingServerSpec).sql))
-      .orderBy(desc(meetings.scheduledFor))
-      .limit(limit)
+      .as('ranked')
+    return db
+      .select({
+        id: ranked.id,
+        customerId: ranked.customerId,
+        scheduledFor: ranked.scheduledFor,
+        meetingOutcome: ranked.meetingOutcome,
+        meetingType: ranked.meetingType,
+        customerTotal: ranked.customerTotal,
+      })
+      .from(ranked)
+      .where(lte(ranked.perCustomerRank, limit))
+      .orderBy(desc(ranked.scheduledFor))
   })
 }

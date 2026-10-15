@@ -8,6 +8,8 @@ import { customerContact } from '@/features/omni-search/lib/customer-contact'
 import { customerExcerpt } from '@/features/omni-search/lib/customer-excerpt'
 import { focusOmniInput } from '@/features/omni-search/lib/omni-focus'
 import { omniRowLabel } from '@/features/omni-search/lib/omni-row-label'
+import { recordCountsPhrase } from '@/features/omni-search/lib/record-counts-phrase'
+import { OmniCountChips } from '@/features/omni-search/ui/components/omni-count-chips'
 import { OmniMatchText } from '@/features/omni-search/ui/components/omni-match-text'
 import { CommandItem } from '@/shared/components/ui/command'
 import { CustomerContactButtons } from '@/shared/entities/customers/components/customer-contact-buttons'
@@ -35,7 +37,7 @@ export function OmniCustomerItem({ customer, layout, term, onSelect, disabled, w
   const select = () => onSelect({ key: value, kind: 'customer', label: customer.name, sublabel: customer.city, target: customer.target })
   const excerptText = excerpt && <OmniMatchText text={excerpt.text} term={term} mode={excerpt.mode} />
   const itemProps = {
-    'aria-label': omniRowLabel(customer.name, customer.city, excerpt?.text),
+    'aria-label': omniRowLabel(customer.name, customer.city, excerpt?.text, layout !== 'line' && recordCountsPhrase(customer.counts)),
     disabled,
     value,
     'onSelect': select,
@@ -62,6 +64,7 @@ export function OmniCustomerItem({ customer, layout, term, onSelect, disabled, w
             )}
           </span>
         </span>
+        <OmniCountChips counts={customer.counts} />
       </CommandItem>
     )
   }
@@ -82,6 +85,7 @@ export function OmniCustomerItem({ customer, layout, term, onSelect, disabled, w
             )}
           </span>
         </span>
+        <OmniCountChips counts={customer.counts} />
       </CommandItem>
     )
   }

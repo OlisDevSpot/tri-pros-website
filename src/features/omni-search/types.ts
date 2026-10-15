@@ -46,6 +46,7 @@ export type OmniCustomer = OmniData['customers'][number]
 export type OmniMeeting = OmniData['meetings'][number]
 export type OmniProposal = OmniData['proposals'][number]
 export type OmniProject = OmniData['projects'][number]
+export type OmniRecordCounts = NonNullable<OmniCustomer['counts']>
 
 export type OmniStackRecord
   = | { kind: 'meeting', row: OmniMeeting }

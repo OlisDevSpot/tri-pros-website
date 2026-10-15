@@ -356,26 +356,44 @@ export interface ProposalSearchRow {
   label: string
   status: ProposalStatus
   finalTcpCents: number | null
+  /** All of this customer's proposals the caller can read, including those past the cap. */
+  customerTotal: number
 }
 
-/** The proposals omni search lists under the customers it matched, most recently sent first. */
+/** The proposals omni search lists under the customers it matched: each customer's `limit` most recently sent, newest first. */
 export async function listProposalsForCustomers(ctx: ScopedContext, customerIds: string[], limit: number): Promise<DalReturn<ProposalSearchRow[]>> {
   return dalDbOperation(async () => {
     if (customerIds.length === 0) {
       return []
     }
-    return db
+    const recency = sql`coalesce(${proposals.sentAt}, ${proposals.createdAt})`
+    // The cap is per customer, so one customer's many proposals can't crowd out another's.
+    const ranked = db
       .select({
         id: proposals.id,
-        customerId: sql<string>`${meetings.customerId}`,
+        customerId: sql<string>`${meetings.customerId}`.as('customer_id'),
         label: proposals.label,
         status: proposals.status,
         finalTcpCents: proposals.finalTcpCents,
+        recency: recency.as('recency'),
+        customerTotal: sql<number>`(count(*) over (partition by ${meetings.customerId}))::int`.as('customer_total'),
+        perCustomerRank: sql<number>`row_number() over (partition by ${meetings.customerId} order by ${recency} desc)`.as('per_customer_rank'),
       })
       .from(proposals)
       .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
       .where(and(inArray(meetings.customerId, customerIds), permit(ctx, 'read', proposalServerSpec).sql))
-      .orderBy(desc(sql`coalesce(${proposals.sentAt}, ${proposals.createdAt})`))
-      .limit(limit)
+      .as('ranked')
+    return db
+      .select({
+        id: ranked.id,
+        customerId: ranked.customerId,
+        label: ranked.label,
+        status: ranked.status,
+        finalTcpCents: ranked.finalTcpCents,
+        customerTotal: ranked.customerTotal,
+      })
+      .from(ranked)
+      .where(lte(ranked.perCustomerRank, limit))
+      .orderBy(desc(ranked.recency))
   })
 }

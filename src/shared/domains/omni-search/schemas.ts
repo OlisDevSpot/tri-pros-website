@@ -6,6 +6,7 @@ import { PROFILE_TAB_LABELS } from '@/shared/entities/customers/constants/profil
 
 export const OMNI_TERM_MIN = 2
 export const OMNI_TERM_MAX = 80
+/** `related` caps each kind of record per customer; records are listed under the first `relatedCustomers` matches only. */
 export const OMNI_LIMITS = { customers: 5, relatedCustomers: 3, related: 5 } as const
 
 /** The term the server sees: trimmed, whitespace collapsed, clamped. `null` when too short to search. */
