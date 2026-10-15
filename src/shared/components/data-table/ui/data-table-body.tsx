@@ -18,7 +18,6 @@ interface DataTableBodyProps<TData extends { id: string }> {
   /** `table.getRowModel().rows`: a column drag leaves it unchanged, which is what lets the body skip the drag. */
   rows: Row<TData>[]
   isColumnResizing: boolean
-  columnCount: number
   entityName: string
   tableId?: string
   rowDataAttribute: string
@@ -34,7 +33,6 @@ interface DataTableBodyProps<TData extends { id: string }> {
 function DataTableBodyImpl<TData extends { id: string }>({
   table,
   rows,
-  columnCount,
   entityName,
   tableId,
   rowDataAttribute,
@@ -93,16 +91,8 @@ function DataTableBodyImpl<TData extends { id: string }>({
             </TableRow>
           ))
         }
-        return (
-          <TableRow>
-            <TableCell colSpan={columnCount} className="h-24 text-center text-muted-foreground">
-              No
-              {' '}
-              {entityName}
-              s match your filter.
-            </TableCell>
-          </TableRow>
-        )
+        // The empty state is the data view's, drawn in place of the whole table.
+        return null
       })()}
       {rows.map((row, index) => {
         const isExpanded = row.getIsExpanded()

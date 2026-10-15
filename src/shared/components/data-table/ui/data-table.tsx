@@ -303,13 +303,9 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
               still stick to the scroller above. */}
           <div data-slot="table-frame" className="surface w-max min-w-full flex-none overflow-clip rounded-xl border">
             {/* Fills the container or overflows it in CSS alone, so a window resize runs no script and re-renders nothing. */}
-            {/* The dim is the one faded state the theme keeps: it marks rows that belong to the previous query and
-              lifts the moment the new ones land. */}
             <Table
-              className="table-fixed border-separate border-spacing-0 transition-opacity duration-200 data-[stale=true]:opacity-60 data-[stale=true]:delay-200"
+              className="table-fixed border-separate border-spacing-0"
               style={{ width: totalDeclaredWidth, minWidth: '100%' }}
-              aria-busy={!!(serverPagination?.isFetching || serverPagination?.isStale)}
-              data-stale={serverPagination?.isStale || undefined}
             >
               <TableHeader className="sticky top-0 z-10 bg-(--card)">
                 {table.getHeaderGroups().map(headerGroup => (
@@ -420,7 +416,6 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                 table={table}
                 rows={table.getRowModel().rows}
                 isColumnResizing={isAnyColumnResizing}
-                columnCount={columns.length}
                 entityName={entityName}
                 tableId={tableId}
                 rowDataAttribute={rowDataAttribute}
