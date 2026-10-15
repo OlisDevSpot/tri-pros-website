@@ -1,6 +1,6 @@
 import type { EntityAction } from '@/shared/components/entities/entity-actions/types'
 
-import { CopyIcon, EyeIcon, MailIcon, MessageSquareIcon, PencilIcon, TrashIcon, UserPlusIcon } from 'lucide-react'
+import { CalculatorIcon, ClipboardCopyIcon, CopyIcon, EyeIcon, MailIcon, MessageSquareIcon, PencilIcon, TrashIcon, UserPlusIcon } from 'lucide-react'
 
 export const PROPOSAL_ACTIONS = {
   view: {
@@ -14,6 +14,18 @@ export const PROPOSAL_ACTIONS = {
     id: 'edit',
     label: 'Edit Proposal',
     icon: PencilIcon,
+    permission: ['update', 'Proposal'],
+  },
+  internalFinancials: {
+    id: 'internalFinancials',
+    label: 'View Internal Financials',
+    icon: CalculatorIcon,
+    permission: ['update', 'Proposal'],
+  },
+  copySow: {
+    id: 'copySow',
+    label: 'Copy Scope of Work',
+    icon: ClipboardCopyIcon,
     permission: ['update', 'Proposal'],
   },
   shareByEmail: {

@@ -33,6 +33,8 @@ interface ProposalActionOverrides<T extends ProposalEntity> {
   onView?: (entity: T) => void
   onEdit?: (entity: T) => void
   onAssignOwner?: (entity: T) => void
+  onInternalFinancials?: (entity: T) => void
+  onCopySow?: (entity: T) => void
 }
 
 interface ProposalActionConfigsResult<T extends ProposalEntity> {
@@ -87,6 +89,12 @@ export function useProposalActionConfigs<T extends ProposalEntity>(
       action: PROPOSAL_ACTIONS.edit,
       onAction: overrides.onEdit ?? defaultNavigate,
     },
+    ...(overrides.onInternalFinancials
+      ? [{ action: PROPOSAL_ACTIONS.internalFinancials, onAction: overrides.onInternalFinancials }]
+      : []),
+    ...(overrides.onCopySow
+      ? [{ action: PROPOSAL_ACTIONS.copySow, onAction: overrides.onCopySow }]
+      : []),
     {
       action: PROPOSAL_ACTIONS.shareByEmail,
       onAction: (entity) => {
