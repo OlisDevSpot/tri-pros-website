@@ -4,7 +4,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useParams, useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
-import { customizableSections, generateProposalSteps } from '@/features/proposal-flow/constants/proposal-steps'
+import { generateProposalSteps } from '@/features/proposal-flow/constants/proposal-steps'
 import { ProposalDocumentProvider } from '@/features/proposal-flow/contexts/proposal-document-context'
 import { useScrollRoot } from '@/features/proposal-flow/contexts/scroll-context'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
@@ -76,9 +76,8 @@ export function Proposal() {
   }
 
   const proposalData = proposal.data
-  const { token, customer } = proposalData
+  const { token } = proposalData
   const urlToken = searchParams.get('token') ?? undefined
-  const customerEmail = customer?.email ?? null
 
   const viewerRole = ability.can('update', 'Proposal') ? 'agent' : 'homeowner'
   const proposalSteps = generateProposalSteps(viewerRole)
@@ -100,23 +99,7 @@ export function Proposal() {
                     aria-labelledby={`${step.accessor}-title`}
                     className="scroll-mt-12 @min-[1100px]/proposal:scroll-mt-0"
                   >
-                    {customizableSections.includes(step.accessor) && step.accessor === 'agreement' && (
-                      <step.Component
-                        proposalId={params.proposalId}
-                        token={token ?? undefined}
-                        isAgent={viewMode === 'agent'}
-                        customerAge={customer?.customerAge ?? null}
-                        envelopeDocumentIds={proposalData.envelopeDocumentIds ?? null}
-                        proposalKind={proposalData.kind}
-                        customerName={customer?.name ?? null}
-                        customerEmail={customerEmail}
-                        proposalStatus={proposalData.status}
-                        proposalSentAt={proposalData.sentAt}
-                      />
-                    )}
-                    {!customizableSections.includes(step.accessor) && (
-                      <step.Component />
-                    )}
+                    <step.Component />
                   </section>
                 ))}
                 {token && (

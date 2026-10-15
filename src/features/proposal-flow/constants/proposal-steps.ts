@@ -1,11 +1,11 @@
 import type { ProposalStep } from '@/features/proposal-flow/types'
 import type { UserRole } from '@/shared/constants/enums'
 import { Funding } from '@/features/proposal-flow/ui/components/proposal/funding'
+import { NextSteps } from '@/features/proposal-flow/ui/components/proposal/next-steps'
 import { ProjectOverview } from '@/features/proposal-flow/ui/components/proposal/project-overview'
 import { RelatedProjects } from '@/features/proposal-flow/ui/components/proposal/related-projects'
 import { ScopeOfWork } from '@/features/proposal-flow/ui/components/proposal/scope-of-work'
 import { TrustedContractor } from '@/features/proposal-flow/ui/components/proposal/trusted-contractor'
-import { ContractStatusPanel } from '@/shared/components/contract-status-panel/ui/contract-status-panel'
 
 export const proposalSteps = [
   {
@@ -53,7 +53,7 @@ export const proposalSteps = [
     shortLabel: 'Next steps',
     accessor: 'agreement',
     description: 'Proposal delivery and contract signing',
-    Component: ContractStatusPanel as unknown as (props: Record<string, any>) => React.ReactNode,
+    Component: NextSteps,
     roles: ['homeowner', 'agent'],
   },
 ] as const satisfies ProposalStep<Record<string, any>>[]
@@ -66,4 +66,3 @@ export function generateProposalSteps(userRole: UserRole) {
 }
 
 export type ProposalAccessor = typeof proposalSteps[number]['accessor']
-export const customizableSections: ProposalAccessor[] = ['agreement']
