@@ -10,7 +10,7 @@ import { voipCampaignServerSpec } from '@/shared/entities/voip-campaigns/lib/ser
 import { voipContactFieldServerSpec } from '@/shared/entities/voip-contact-fields/lib/server-spec'
 import { voipDidServerSpec } from '@/shared/entities/voip-dids/lib/server-spec'
 import { voipLinkTokenServerSpec } from '@/shared/entities/voip-link-tokens/lib/server-spec'
-import { meetingMessageServerSpec } from '@/shared/modules/meetings/conversations/server-spec'
+import { meetingMessageServerSpec } from '@/shared/modules/meetings/messages/server-spec'
 import { projectServerSpec } from '@/shared/modules/projects/core/server-spec'
 import { projectMediaServerSpec } from '@/shared/modules/projects/media/server-spec'
 import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'

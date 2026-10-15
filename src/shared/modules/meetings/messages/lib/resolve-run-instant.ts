@@ -1,11 +1,11 @@
-import type { PausableVisitMessageKind } from '@/shared/modules/meetings/conversations/constants/kinds'
+import type { PausableVisitMessageKind } from '@/shared/modules/meetings/messages/constants/kinds'
 
 import { businessDateTime, businessDayKey, businessHour } from '@/shared/lib/business-time'
 import {
   VISIT_MESSAGE_RUN_EARLY_TOLERANCE_MS,
   VISIT_MESSAGE_SCHEDULE,
   VISIT_MESSAGE_SEND_CEILING_HOUR,
-} from '@/shared/modules/meetings/conversations/constants/schedule'
+} from '@/shared/modules/meetings/messages/constants/schedule'
 
 /**
  * The instant a run evaluates the plan at, or null when this delivery is not today's run.

@@ -3,7 +3,6 @@
 
 import { createTRPCRouter } from '../../init'
 import { businessRouter } from './business.router'
-import { conversationsRouter } from './conversations.router'
 import { crudRouter } from './crud.router'
 import { participantsRouter } from './participants.router'
 import { readsRouter } from './reads.router'
@@ -13,5 +12,4 @@ export const meetingsRouter = createTRPCRouter({
   reads: readsRouter,
   participants: participantsRouter,
   business: businessRouter,
-  conversations: conversationsRouter,
 })

@@ -6,7 +6,7 @@ import type {
   PausableVisitMessageKind,
   VisitMessageSequenceKind,
   VisitMessageSkipReason,
-} from '@/shared/modules/meetings/conversations/constants/kinds'
+} from '@/shared/modules/meetings/messages/constants/kinds'
 
 /** The part of a visit message the rules read. A `meeting_messages` row satisfies it. */
 export interface VisitMessageFact {

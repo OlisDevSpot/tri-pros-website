@@ -1,5 +1,5 @@
 import type { MeetingMessage } from '@/shared/db/schema/meeting-messages'
-import type { MeetingMessageChannel, MeetingMessageKind } from '@/shared/modules/meetings/conversations/constants/kinds'
+import type { MeetingMessageChannel, MeetingMessageKind } from '@/shared/modules/meetings/messages/constants/kinds'
 
 import { eq } from 'drizzle-orm'
 

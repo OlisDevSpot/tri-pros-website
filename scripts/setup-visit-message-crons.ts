@@ -8,13 +8,13 @@
  */
 /* eslint-disable perfectionist/sort-imports -- load-env must run before any module that reads process.env */
 import './lib/load-env'
-import type { PausableVisitMessageKind } from '@/shared/modules/meetings/conversations/constants/kinds'
+import type { PausableVisitMessageKind } from '@/shared/modules/meetings/messages/constants/kinds'
 import process from 'node:process'
 import { publicUrl } from '@/shared/config/public-url'
 import { APP_HOSTS } from '@/shared/config/roots'
 import { BUSINESS_TIMEZONE } from '@/shared/lib/business-time'
-import { pausableVisitMessageKinds } from '@/shared/modules/meetings/conversations/constants/kinds'
-import { VISIT_MESSAGE_SCHEDULE } from '@/shared/modules/meetings/conversations/constants/schedule'
+import { pausableVisitMessageKinds } from '@/shared/modules/meetings/messages/constants/kinds'
+import { VISIT_MESSAGE_SCHEDULE } from '@/shared/modules/meetings/messages/constants/schedule'
 import { sendDayBeforeRemindersJob } from '@/shared/services/providers/upstash/jobs/send-day-before-reminders'
 import { sendRepConfirmationsJob } from '@/shared/services/providers/upstash/jobs/send-rep-confirmations'
 import { qstashClient } from '@/shared/services/providers/upstash/qstash-client'

@@ -228,7 +228,7 @@ async function readMeeting(id: string) {
 }
 
 async function reply(from: string, body: string, optOutType: 'STOP' | 'START' | 'HELP' | null = null) {
-  const handled = await meetingService.conversations.handleHomeownerReply(SYSTEM_CONTEXT, {
+  const handled = await meetingService.business.handleHomeownerReply(SYSTEM_CONTEXT, {
     providerMessageId: `SMsmokein${++inboundCounter}${Date.now()}`,
     from,
     to: mainLineE164,
@@ -303,7 +303,7 @@ async function run() {
 
   // 1. Welcome text: link, no calendar link, invite stored, Google invites the (override) inbox.
   at = mark()
-  const welcome = await meetingService.conversations.sendSummary(SYSTEM_CONTEXT, { meetingId: visit.id })
+  const welcome = await meetingService.business.sendVisitSummary(SYSTEM_CONTEXT, { meetingId: visit.id })
   await drainJobs()
   const afterWelcome = await readMeeting(visit.id)
   const welcomeText = since(texts, at.texts)[0]

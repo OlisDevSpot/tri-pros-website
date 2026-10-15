@@ -1,10 +1,10 @@
-import type { VisitMessageTemplateKey } from '@/shared/modules/meetings/conversations/constants/kinds'
+import type { VisitMessageTemplateKey } from '@/shared/modules/meetings/messages/constants/kinds'
 
 import {
   VISIT_MESSAGE_REQUIRED_TOKENS,
   VISIT_MESSAGE_SUMMARY_ONLY_TOKENS,
   VISIT_MESSAGE_TOKENS,
-} from '@/shared/modules/meetings/conversations/constants/templates'
+} from '@/shared/modules/meetings/messages/constants/templates'
 import { findSectionErrors, listMergeTokens, renderMergeSample } from '@/shared/services/voip/lib/sms-merge-template'
 import { countSmsSegments, findNonGsm7 } from '@/shared/services/voip/lib/sms-segments'
 

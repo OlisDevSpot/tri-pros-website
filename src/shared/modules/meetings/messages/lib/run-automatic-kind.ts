@@ -1,15 +1,15 @@
 import type { ScopedContext } from '@/shared/dal/server/types'
-import type { PausableVisitMessageKind, VisitMessageTemplateKey } from '@/shared/modules/meetings/conversations/constants/kinds'
+import type { PausableVisitMessageKind, VisitMessageTemplateKey } from '@/shared/modules/meetings/messages/constants/kinds'
 
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { getRescheduleChain } from '@/shared/entities/meetings/dal/server/queries'
-import { claimAutomaticSend, recordAutomaticSkip, setMeetingMessageOutcome } from '@/shared/modules/meetings/conversations/dal/server/mutations'
-import { listChainMessages, listVisitMessageContexts } from '@/shared/modules/meetings/conversations/dal/server/queries'
-import { getTemplateBodies, listPausedKinds } from '@/shared/modules/meetings/conversations/dal/server/settings'
-import { deliverVisitText } from '@/shared/modules/meetings/conversations/lib/deliver-visit-text'
-import { planVisitMessages } from '@/shared/modules/meetings/conversations/lib/plan-visit-messages'
-import { resolveRunInstant } from '@/shared/modules/meetings/conversations/lib/resolve-run-instant'
-import { runWindowFor } from '@/shared/modules/meetings/conversations/lib/run-window'
+import { claimAutomaticSend, recordAutomaticSkip, setMeetingMessageOutcome } from '@/shared/modules/meetings/messages/dal/server/mutations'
+import { listChainMessages, listVisitMessageContexts } from '@/shared/modules/meetings/messages/dal/server/queries'
+import { getTemplateBodies, listPausedKinds } from '@/shared/modules/meetings/messages/dal/server/settings'
+import { deliverVisitText } from '@/shared/modules/meetings/messages/lib/deliver-visit-text'
+import { planVisitMessages } from '@/shared/modules/meetings/messages/lib/plan-visit-messages'
+import { resolveRunInstant } from '@/shared/modules/meetings/messages/lib/resolve-run-instant'
+import { runWindowFor } from '@/shared/modules/meetings/messages/lib/run-window'
 
 export interface VisitMessageRunReport {
   kind: PausableVisitMessageKind

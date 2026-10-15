@@ -9,7 +9,7 @@ import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { getRescheduleChain } from '@/shared/entities/meetings/dal/server/queries'
 
 import { meetingBusinessService } from './business/service'
-import { meetingConversationService } from './conversations/service'
+import { meetingMessageService } from './messages/service'
 
 export const meetingService = {
   ...meetingCrud,
@@ -24,8 +24,8 @@ export const meetingService = {
     return meetingBusinessService
   },
 
-  get conversations() {
-    return meetingConversationService
+  get messages() {
+    return meetingMessageService
   },
 } satisfies SpecCrudHandlers<typeof meetingServerSpec>
 

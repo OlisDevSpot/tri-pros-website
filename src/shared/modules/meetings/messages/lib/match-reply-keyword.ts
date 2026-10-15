@@ -1,4 +1,4 @@
-import { CONFIRM_KEYWORDS } from '@/shared/modules/meetings/conversations/constants/keywords'
+import { CONFIRM_KEYWORDS } from '@/shared/modules/meetings/messages/constants/keywords'
 
 /** Twilio's own rule for keywords: the whole message, not its first word. */
 export function matchReplyKeyword(body: string): 'confirm' | null {

@@ -1,8 +1,8 @@
-import type { VisitMessageVars } from '@/shared/modules/meetings/conversations/types'
+import type { VisitMessageVars } from '@/shared/modules/meetings/messages/types'
 
 import { formatBusinessClock, formatBusinessDay } from '@/shared/lib/business-time'
-import { VISIT_MESSAGE_STOP_LINE, VISIT_MESSAGE_TOKENS } from '@/shared/modules/meetings/conversations/constants/templates'
 import { formatArrivalWindow } from '@/shared/modules/meetings/core/lib/arrival-window'
+import { VISIT_MESSAGE_STOP_LINE, VISIT_MESSAGE_TOKENS } from '@/shared/modules/meetings/messages/constants/templates'
 import { renderMergeTemplate } from '@/shared/services/voip/lib/sms-merge-template'
 
 export function buildVisitMessageVars(input: {

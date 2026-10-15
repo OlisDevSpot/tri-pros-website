@@ -1,5 +1,5 @@
-import type { VisitMessageTemplateKey } from '@/shared/modules/meetings/conversations/constants/kinds'
-import type { VisitMessageVars } from '@/shared/modules/meetings/conversations/types'
+import type { VisitMessageTemplateKey } from '@/shared/modules/meetings/messages/constants/kinds'
+import type { VisitMessageVars } from '@/shared/modules/meetings/messages/types'
 import type { MergeToken } from '@/shared/services/voip/lib/sms-merge-template'
 
 import { APP_HOSTS, ROOTS } from '@/shared/config/roots'
