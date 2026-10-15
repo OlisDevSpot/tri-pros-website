@@ -3,7 +3,7 @@
 import type { EntityActionConfig, EntityActionCustomConfig, EntityActionSelectConfig } from '@/shared/components/entities/entity-actions/types'
 
 import { CheckIcon, MoreHorizontalIcon, MoreVerticalIcon } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 
 import { getVisibleActions } from '@/shared/components/entities/entity-actions/lib/visible-actions'
 import { isCustomAction, isSelectAction } from '@/shared/components/entities/entity-actions/types'
@@ -44,6 +44,24 @@ export function EntityActionDropdown<TEntity>({
   const ability = useAbility()
   const [open, setOpen] = useState(false)
   const closeDropdown = useCallback(() => setOpen(false), [])
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  // A picked action waits for the menu to finish closing. Run from the item's click, a dialog it opens would
+  // remember the still-mounted item as the place to return focus to, and focus would land on <body> instead.
+  const pickedAction = useRef<(() => void) | null>(null)
+  const queueAction = useCallback((run: () => void) => {
+    pickedAction.current = run
+  }, [])
+
+  function runPickedAction(event: Event) {
+    const run = pickedAction.current
+    if (!run) {
+      return
+    }
+    pickedAction.current = null
+    event.preventDefault()
+    triggerRef.current?.focus()
+    run()
+  }
 
   const permitted = getVisibleActions(actions, ability, entity)
 
@@ -59,6 +77,7 @@ export function EntityActionDropdown<TEntity>({
         {triggerLabel
           ? (
               <Button
+                ref={triggerRef}
                 variant="outline"
                 size="sm"
                 className={cn('gap-1', triggerClassName)}
@@ -70,6 +89,7 @@ export function EntityActionDropdown<TEntity>({
             )
           : (
               <Button
+                ref={triggerRef}
                 variant="ghost"
                 size="icon"
                 className={cn('h-6 w-6 shrink-0', triggerClassName)}
@@ -80,7 +100,7 @@ export function EntityActionDropdown<TEntity>({
               </Button>
             )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" onClick={e => e.stopPropagation()}>
+      <DropdownMenuContent align="end" onClick={e => e.stopPropagation()} onCloseAutoFocus={runPickedAction}>
         {permitted.map((config) => {
           if (isSelectAction(config)) {
             return (
@@ -88,6 +108,7 @@ export function EntityActionDropdown<TEntity>({
                 key={config.action.id}
                 config={config}
                 entity={entity}
+                queueAction={queueAction}
               />
             )
           }
@@ -107,6 +128,7 @@ export function EntityActionDropdown<TEntity>({
               action={config.action}
               entity={entity}
               onAction={config.onAction}
+              queueAction={queueAction}
               isLoading={config.isLoading}
               isDisabled={config.isDisabled}
               disabledReason={config.getDisabledReason?.(entity) ?? null}
@@ -124,6 +146,7 @@ interface ClickItemProps<TEntity> {
   action: EntityActionConfig<TEntity>['action']
   entity: TEntity
   onAction: (entity: TEntity) => void
+  queueAction: (run: () => void) => void
   isLoading?: boolean
   isDisabled?: boolean
   disabledReason?: string | null
@@ -133,6 +156,7 @@ function EntityActionClickItem<TEntity>({
   action,
   entity,
   onAction,
+  queueAction,
   isLoading,
   isDisabled,
   disabledReason,
@@ -144,7 +168,7 @@ function EntityActionClickItem<TEntity>({
     <DropdownMenuItem
       disabled={disabled}
       className={cn(action.destructive && 'text-destructive focus:text-destructive')}
-      onClick={() => onAction(entity)}
+      onClick={() => queueAction(() => onAction(entity))}
     >
       <Icon className="h-3.5 w-3.5" />
       {action.label}
@@ -175,11 +199,13 @@ function EntityActionClickItem<TEntity>({
 interface SelectItemProps<TEntity> {
   config: EntityActionSelectConfig<TEntity>
   entity: TEntity
+  queueAction: (run: () => void) => void
 }
 
 function EntityActionSelectItem<TEntity>({
   config,
   entity,
+  queueAction,
 }: SelectItemProps<TEntity>) {
   const { action, options, getCurrentValue, onSelect, isLoading, isDisabled } = config
   const Icon = action.icon
@@ -198,7 +224,7 @@ function EntityActionSelectItem<TEntity>({
             <DropdownMenuItem
               key={option.value}
               className={cn(option.value === currentValue && 'font-medium')}
-              onClick={() => onSelect(entity, option.value)}
+              onClick={() => queueAction(() => onSelect(entity, option.value))}
             >
               <CheckIcon
                 className={cn(
