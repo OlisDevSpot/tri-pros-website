@@ -8,7 +8,7 @@ import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
 import { abilityFromRules } from '@/shared/domains/permissions/ability-from-rules'
 import { BEARER_RULES } from '@/shared/domains/permissions/rules/bearer'
 
-import { pkColumnOf } from './core'
+import { operatorContextFor } from './core'
 import { interpret } from './interpret'
 
 const PLACEHOLDER_ID = '00000000-0000-4000-8000-000000000000'
@@ -39,7 +39,7 @@ export function assertRulesCompile(): void {
           // CASL builds a rule's `ast` on the rule objects it hands out per action and subject, not on the raw data.
           for (const rule of ability.possibleRulesFor(action, subject)) {
             if (rule.conditions) {
-              interpret(rule.ast as ScopeNode, { table: spec.table, pk: pkColumnOf(spec) })
+              interpret(rule.ast as ScopeNode, operatorContextFor(ability, spec))
             }
           }
         }

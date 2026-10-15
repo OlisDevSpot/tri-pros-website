@@ -2,6 +2,7 @@ import type { SQL } from 'drizzle-orm'
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core'
 
 import type { AnyServerSpec, ScopedContext } from '../../types'
+import type { OperatorContext } from './operators'
 import type { AppAbility, CrudAction } from '@/shared/domains/permissions/types'
 
 import { subject as tagSubject } from '@casl/ability'
@@ -50,7 +51,7 @@ export function fieldPathOf(spec: AnyServerSpec): string {
 
 // The `as never` casts here and below are the one place run-time strings meet CASL's typed parameters:
 // `rulesFor` and `relevantRuleFor` keep CASL's loose signatures on purpose.
-function walk(ability: AppAbility, action: CrudAction, subject: string, fields: readonly string[], ctx: { table: PgTable, pk: PgColumn }): SQL {
+function walk(ability: AppAbility, action: CrudAction, subject: string, fields: readonly string[], ctx: OperatorContext): SQL {
   if (fields.length === 0) {
     return whereFor(ability, action, subject as never, undefined, ctx)
   }
@@ -65,6 +66,15 @@ function through(ability: AppAbility, action: CrudAction, parent: AnyServerSpec,
   )
 }
 
+/** The operator context for filters on `spec`'s table, built for one actor. */
+export function operatorContextFor(ability: AppAbility, spec: AnyServerSpec): OperatorContext {
+  return {
+    table: spec.table as PgTable,
+    pk: pkColumnOf(spec),
+    inReadReach: (target, fk) => through(ability, 'read', target, fk, undefined),
+  }
+}
+
 /**
  * An entity reads through its own `read` rules, and through its parent's when it has one; it writes
  * through its own rules for the action AND its read filter. A sub-entity reads through the parent's
@@ -72,7 +82,7 @@ function through(ability: AppAbility, action: CrudAction, parent: AnyServerSpec,
  * AND that read. A row that cannot be read cannot be changed.
  */
 export function filterFor(ability: AppAbility, action: CrudAction, spec: AnyServerSpec, fields: readonly string[] | undefined): SQL {
-  const ctx = { table: spec.table as PgTable, pk: pkColumnOf(spec) }
+  const ctx = operatorContextFor(ability, spec)
   if ('subject' in spec) {
     const own = walk(ability, action, spec.subject, fields ?? [], ctx)
     const read = action === 'read' ? own : walk(ability, 'read', spec.subject, [], ctx)

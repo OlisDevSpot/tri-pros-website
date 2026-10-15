@@ -74,7 +74,7 @@ export type SchemasStayPrecise = [
 // ── what the list derives ──────────────────────────────────────────────────
 
 export type TheListIsExact = [
-  Expect<Equal<EntitySubject, 'AppSetting' | 'Application' | 'Customer' | 'CustomerNote' | 'LeadSource' | 'Meeting' | 'Project' | 'Proposal' | 'VoipCall' | 'VoipCampaign' | 'VoipCampaignContact' | 'VoipContactField' | 'VoipDid' | 'VoipLinkToken' | 'VoipMessage'>>,
+  Expect<Equal<EntitySubject, 'Activity' | 'AppSetting' | 'Application' | 'Customer' | 'CustomerNote' | 'LeadSource' | 'Meeting' | 'Project' | 'Proposal' | 'VoipCall' | 'VoipCampaign' | 'VoipCampaignContact' | 'VoipContactField' | 'VoipDid' | 'VoipLinkToken' | 'VoipMessage'>>,
   Expect<Equal<ConditionColumnOf<'CustomerNote'>, 'authorId'>>,
   Expect<Equal<ConditionColumnOf<'Customer'>, never>>,
   Expect<Equal<RowOf<'Proposal'>['status'], 'approved' | 'declined' | 'draft' | 'sent'>>,
@@ -136,6 +136,8 @@ export const rulesThatMustCompile = defineRules((can, cannot) => {
   can('own', 'Meeting')
   can('read', 'User')
   can(['read', 'create', 'update', 'delete'], 'Activity')
+  can('read', 'Activity', { ownerId: userId, $linkedRecordInReach: true })
+  can(['create', 'update', 'delete'], 'Activity', { ownerId: userId })
 
   can('read', 'Customer', { $participatesViaMeeting: { via: 'customerId', userId } })
   can('read', 'Customer', { $inDerivedPipeline: ['leads', 'rehash', 'dead', 'fresh'] })
@@ -191,6 +193,10 @@ defineRules((can, cannot) => {
   can('read', 'Customer', { $participatesViaMeeting: { via: 'meetingId', userId } })
   // @ts-expect-error not a pipeline
   can('read', 'Customer', { $inDerivedPipeline: ['nope'] })
+  // @ts-expect-error the link operator belongs to Activity
+  can('read', 'Customer', { $linkedRecordInReach: true })
+  // @ts-expect-error an operator on a mutation rule
+  can('update', 'Activity', { ownerId: userId, $linkedRecordInReach: true })
   // @ts-expect-error an action that does not exist for an entity
   can('access', 'Customer')
   // @ts-expect-error `own` is declared for Meeting only
@@ -293,6 +299,7 @@ export function checksThatMustCompile() {
   ability.can('read', 'Proposal', 'projectJSON')
   ability.can('update', subject('CustomerNote', noteRow))
   ability.can('update', subject('CustomerNote', { authorId: null }))
+  ability.can('delete', subject('Activity', { ownerId: 'user-1' }))
   ability.can('update', subject('Proposal', { id: 'proposal-1' }), 'financeOptionId')
   ability.can('read', subject('CustomerNote', noteRow))
   ability.can('delete', subject('Application', {}))
@@ -320,6 +327,8 @@ subject('CustomerNote', { id: 'note-1' })
 subject('Custmer', {})
 // @ts-expect-error a read rule on Proposal may carry an operator, which only SQL can evaluate
 ability.can('read', subject('Proposal', { id: 'proposal-1' }))
+// @ts-expect-error a read rule on Activity carries an operator, which only SQL can evaluate
+ability.can('read', subject('Activity', { ownerId: 'user-1' }))
 // @ts-expect-error a mistyped field on a row check
 ability.can('update', subject('CustomerNote', noteRow), 'contnt')
 // @ts-expect-error a permission's field must be a field of its subject

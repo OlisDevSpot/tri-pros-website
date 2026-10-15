@@ -2,6 +2,7 @@
 
 import type { PgTable } from 'drizzle-orm/pg-core'
 
+import type { activityServerSpec } from '@/shared/entities/activities/lib/server-spec'
 import type { appSettingServerSpec } from '@/shared/entities/app-settings/lib/server-spec'
 import type { applicationServerSpec } from '@/shared/entities/applications/lib/server-spec'
 import type { customerNoteServerSpec } from '@/shared/entities/customer-notes/lib/server-spec'
@@ -25,7 +26,8 @@ import type { proposalViewServerSpec } from '@/shared/modules/proposals/views/se
 
 /** Every spec. A spec missing here is invisible to rule typing. */
 export type ServerSpec
-  = | typeof appSettingServerSpec
+  = | typeof activityServerSpec
+    | typeof appSettingServerSpec
     | typeof applicationServerSpec
     | typeof customerLeadAttributionServerSpec
     | typeof customerNoteServerSpec

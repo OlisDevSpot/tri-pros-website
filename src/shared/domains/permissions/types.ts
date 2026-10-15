@@ -15,7 +15,6 @@ export interface SubjectsWithoutSpec {
   /** Feature gate: see and send a meeting's visit messages. */
   VisitMessages: 'read' | 'update'
   User: 'read'
-  Activity: CrudAction
 }
 
 /** Capabilities on an entity that are not about a row. */

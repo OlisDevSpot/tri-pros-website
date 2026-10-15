@@ -13,8 +13,9 @@ import { assertRegistryMatchesDeclarations, getOperator } from './operators'
 
 import './operators/meeting-participation'
 import './operators/derived-pipeline'
+import './operators/linked-record'
 
-// Runs once the two modules above have registered their bodies; the declarations are client-safe and hold no SQL.
+// Runs once the modules above have registered their bodies; the declarations are client-safe and hold no SQL.
 assertRegistryMatchesDeclarations(OPERATOR_NAMES)
 
 /** One rule's conditions as a predicate on `ctx.table`. Always a real SQL value; an unknown operator throws rather than guessing. */

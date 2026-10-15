@@ -1,3 +1,4 @@
+import { activityServerSpec } from '@/shared/entities/activities/lib/server-spec'
 import { appSettingServerSpec } from '@/shared/entities/app-settings/lib/server-spec'
 import { applicationServerSpec } from '@/shared/entities/applications/lib/server-spec'
 import { customerNoteServerSpec } from '@/shared/entities/customer-notes/lib/server-spec'
@@ -21,6 +22,7 @@ import { proposalViewServerSpec } from '@/shared/modules/proposals/views/server-
 
 /** Every spec, for the checks that need them at run time. The type list in `permissions/specs.ts` is what rules are typed against; the wrong-on-purpose file keeps the two equal. */
 export const SERVER_SPECS = [
+  activityServerSpec,
   appSettingServerSpec,
   applicationServerSpec,
   customerLeadAttributionServerSpec,

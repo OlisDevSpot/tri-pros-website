@@ -1,7 +1,7 @@
 import type { Pipeline } from '@/shared/constants/enums/pipelines'
 
 // The names are the contract between the rules (client-safe) and the SQL bodies (server-only).
-export const OPERATOR_NAMES = ['participatesViaMeeting', 'inDerivedPipeline'] as const
+export const OPERATOR_NAMES = ['participatesViaMeeting', 'inDerivedPipeline', 'linkedRecordInReach'] as const
 export type OperatorName = (typeof OPERATOR_NAMES)[number]
 
 /**
@@ -16,4 +16,5 @@ export interface ReadOperators {
   Meeting: { $participatesViaMeeting?: { via: 'self', userId: string } }
   Proposal: { $participatesViaMeeting?: { via: 'meetingId', userId: string } }
   Project: { $participatesViaMeeting?: { via: 'projectId', userId: string } }
+  Activity: { $linkedRecordInReach?: true }
 }

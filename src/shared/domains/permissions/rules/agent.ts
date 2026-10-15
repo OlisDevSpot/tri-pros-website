@@ -59,7 +59,10 @@ export function agentRules(userId: string) {
     // Publishing puts a customer's job on the public site: the office decides.
     cannot('update', 'Project', ['isPublic'])
 
-    can(['read', 'create', 'update', 'delete'], 'Activity')
+    // An activity is its owner's note about a record. Reading it also takes that record, so a customer or
+    // meeting handed to someone else takes its reminders out of reach with it.
+    can('read', 'Activity', { ownerId: userId, $linkedRecordInReach: true })
+    can(['create', 'update', 'delete'], 'Activity', { ownerId: userId })
     can('manage', 'Calendar')
 
     // Read only: leads, rehash and dead pipelines are super-admin-managed.

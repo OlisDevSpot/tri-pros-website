@@ -1,12 +1,19 @@
 import type { SQL } from 'drizzle-orm'
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core'
 
+import type { AnyServerSpec } from '../../types'
+
 import type { FieldNode } from './ast'
 
-/** The outer table a filter is built for and its primary key, for an operator to correlate on. */
+/**
+ * What an operator compiles against: the outer table and its primary key to correlate on, and the
+ * same actor's read reach on another entity, so an operator that follows a link reads through the
+ * target's own rules.
+ */
 export interface OperatorContext {
   table: PgTable
   pk: PgColumn
+  inReadReach: (spec: AnyServerSpec, fk: PgColumn) => SQL
 }
 
 export interface Operator {
