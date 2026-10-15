@@ -55,8 +55,8 @@ export const OMNI_STATUS_DOT_CLASSES: Record<OmniStatusKind, string> = {
 export const OMNI_PANEL_STYLE = {
   backgroundColor: 'var(--palette-glass)',
   backgroundImage: 'var(--popover-glass-overlay)',
-  backdropFilter: 'blur(12px) saturate(150%)',
-  WebkitBackdropFilter: 'blur(12px) saturate(150%)',
+  backdropFilter: 'blur(8px) saturate(150%)',
+  WebkitBackdropFilter: 'blur(8px) saturate(150%)',
   boxShadow: 'var(--popover-glass-shadow)',
 } as const satisfies CSSProperties
 
