@@ -1517,7 +1517,7 @@ git push
   - **H4 (agent):**
     - On a draft proposal on your meeting, Delete shows and works.
     - On a sent proposal, there is no Delete.
-    - A proposal card in the pipeline or records panes shows no Delete.
+    - On a draft card in the kanban, a records pane or the profile, Delete shows and works; on a sent card it does not. (Every proposal row the actions receive carries `status`, so the no-status fallback has no caller today.)
   - **H5 (agent):**
     - On the proposal page for a customer with no sent proposal, there is no phone.
     - After a proposal for that customer is sent, the phone shows.
