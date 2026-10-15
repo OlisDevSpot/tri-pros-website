@@ -30,10 +30,6 @@ interface UpsertInboundMessageInput {
  */
 export async function upsertInboundMessage(input: UpsertInboundMessageInput): Promise<DalReturn<VoipMessage & { inserted: boolean }>> {
   return dalDbOperation(async () => {
-    // Before the insert, and on every delivery: a failure here must leave no text behind, or Twilio's retry reads as a duplicate and the reply's work is lost.
-    if (input.voipDidId) {
-      await upsertConversation({ voipDidId: input.voipDidId, remoteE164: input.remoteE164 })
-    }
     const [row] = await db
       .insert(voipMessages)
       .values({
@@ -57,6 +53,10 @@ export async function upsertInboundMessage(input: UpsertInboundMessageInput): Pr
       // xmax is zero only on a row this statement inserted; an updated one carries the updater's transaction id.
       .returning({ ...getTableColumns(voipMessages), inserted: sql<boolean>`(xmax = 0)` })
 
+    // Inbound texts arrive through this upsert, not the crud create, so they join their conversation here.
+    if (row!.inserted && input.voipDidId) {
+      await upsertConversation({ voipDidId: input.voipDidId, remoteE164: input.remoteE164 })
+    }
     return row!
   })
 }
