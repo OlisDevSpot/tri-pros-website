@@ -52,7 +52,6 @@ export * from './app-settings'
 
 // visit messages
 export * from './meeting-messages'
-export * from './meeting-conversations'
 export * from './visit-message-templates'
 export * from './visit-message-pauses'
 

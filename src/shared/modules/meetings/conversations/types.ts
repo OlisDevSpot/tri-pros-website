@@ -1,5 +1,6 @@
 import type { HomeownerConfirmation, MeetingOutcome, MeetingType } from '@/shared/constants/enums/meetings'
 import type {
+  MeetingMessageChannel,
   MeetingMessageKind,
   MeetingMessageStatus,
   PausableVisitMessageKind,
@@ -10,6 +11,7 @@ import type {
 /** The part of a visit message the rules read. A `meeting_messages` row satisfies it. */
 export interface VisitMessageFact {
   kind: MeetingMessageKind
+  channel: MeetingMessageChannel
   status: MeetingMessageStatus
   reason: string | null
   forScheduledFor: string

@@ -153,13 +153,12 @@ export async function findReplyTargetMeeting(input: { customerIds: string[], now
 }
 
 /** The visit message behind a Twilio SID, for status callbacks. */
-export async function getMeetingMessageByProviderMessageId(providerMessageId: string): Promise<(MeetingMessage & { meetingId: string }) | undefined> {
+export async function getMeetingMessageByProviderMessageId(providerMessageId: string): Promise<MeetingMessage | undefined> {
   const [row] = await db
-    .select({ message: meetingMessages, meetingId: meetings.id })
+    .select({ message: meetingMessages })
     .from(meetingMessages)
-    .innerJoin(meetings, eq(meetings.id, meetingMessages.meetingId))
     .innerJoin(voipMessages, eq(voipMessages.id, meetingMessages.voipMessageId))
     .where(eq(voipMessages.providerMessageId, providerMessageId))
     .limit(1)
-  return row ? { ...row.message, meetingId: row.meetingId } : undefined
+  return row?.message
 }

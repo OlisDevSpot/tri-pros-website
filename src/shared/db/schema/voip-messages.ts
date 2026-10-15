@@ -5,18 +5,21 @@ import { createdAt, id, updatedAt } from '../lib/schema-helpers'
 import { user } from './auth'
 import { customers } from './customers'
 import { voipDirectionEnum, voipMessageStatusEnum } from './meta'
-import { voipConversations } from './voip-conversations'
 import { voipDids } from './voip-dids'
 
-// One text. It belongs to one conversation, which holds the line, the number and the customer.
+// voip_messages — Twilio SMS records. Threads are keyed by `(voipDidId, remoteE164)` —
+// the same customer texting two Tri Pros DIDs = two separate threads. UI: when an
+// agent opens a customer thread, they see messages on THEIR DID with that customer,
+// not a flat merge across all DIDs.
+//
 export const voipMessages = pgTable('voip_messages', {
   id,
   // UNIQUE for webhook idempotency (status callbacks re-deliver).
   providerMessageId: text('provider_message_id').unique(),
-  conversationId: uuid('conversation_id').references(() => voipConversations.id, { onDelete: 'restrict' }),
   customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'set null' }),
   voipDidId: uuid('voip_did_id').references(() => voipDids.id, { onDelete: 'set null' }),
-  remoteE164: text('remote_e164'),
+  // Other party. Immune to customer.phone updates later.
+  remoteE164: text('remote_e164').notNull(),
   body: text('body').notNull(),
   direction: voipDirectionEnum('direction').notNull(),
   status: voipMessageStatusEnum('status').notNull().default('queued'),
@@ -32,7 +35,6 @@ export const voipMessages = pgTable('voip_messages', {
 }, table => ({
   customerIdx: index('voip_messages_customer_idx').on(table.customerId),
   agentIdx: index('voip_messages_agent_idx').on(table.agentUserId),
-  conversationIdx: index('voip_messages_conversation_idx').on(table.conversationId, table.createdAt),
   // Primary thread key. Per-thread queries AND per-DID list queries are
   // both covered via left-prefix.
   threadIdx: index('voip_messages_thread_idx').on(table.voipDidId, table.remoteE164),
