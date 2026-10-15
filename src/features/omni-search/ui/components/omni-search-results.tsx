@@ -11,6 +11,7 @@ import { useOmniActions } from '@/features/omni-search/hooks/use-omni-actions'
 import { useOpenOmniTarget } from '@/features/omni-search/hooks/use-open-omni-target'
 import { buildOmniRegistry } from '@/features/omni-search/lib/build-omni-registry'
 import { firstOmniValue } from '@/features/omni-search/lib/first-omni-value'
+import { omniEntriesFirst } from '@/features/omni-search/lib/omni-entries-first'
 import { rankOmniEntries } from '@/features/omni-search/lib/rank-omni-entries'
 import { pushRecentOmniItem, readRecentOmniItems } from '@/features/omni-search/lib/recent-omni-items'
 import { OmniCustomerItem } from '@/features/omni-search/ui/components/omni-customer-item'
@@ -59,7 +60,7 @@ export function OmniSearchResults({ state, view, onHighlight, onDone, onEnterMod
 
   const isEmpty = !!data && data.customers.length + data.meetings.length + data.proposals.length + data.projects.length === 0
   const ranked = rankOmniEntries(registry, search)
-  const liveEntriesFirst = (ranked[0]?.score ?? 0) > (pending ? 0 : Math.min(data?.customers[0]?.score ?? 0, 1))
+  const liveEntriesFirst = omniEntriesFirst(ranked, data, pending)
   const [entriesFirst, setEntriesFirst] = useState(liveEntriesFirst)
   // While stale rows are on screen they keep the order they were placed in: flipping it mid-typing would move every row.
   if (!(pending && data) && entriesFirst !== liveEntriesFirst) {
