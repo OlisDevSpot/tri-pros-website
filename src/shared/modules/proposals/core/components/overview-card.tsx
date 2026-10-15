@@ -10,8 +10,10 @@ import { formatDistanceToNow } from 'date-fns'
 import { DollarSignIcon, EyeIcon } from 'lucide-react'
 import React, { createContext, useCallback, useMemo } from 'react'
 
+import { withToolbarRoles } from '@/shared/components/entities/entity-actions/lib/with-toolbar-roles'
 import { isClickAction } from '@/shared/components/entities/entity-actions/types'
 import { EntityActionMenu } from '@/shared/components/entities/entity-actions/ui/entity-action-menu'
+import { OverviewCard } from '@/shared/components/entities/overview-card/overview-card'
 import { Badge } from '@/shared/components/ui/badge'
 import { formatBusinessTime } from '@/shared/lib/business-time'
 import { formatAsDollars } from '@/shared/lib/formatters'
@@ -409,20 +411,35 @@ function ScopeCoverage({ className }: { className?: string }) {
 
 function Actions({
   mode = 'compact',
+  roles,
+  hide,
   className,
 }: {
-  mode?: 'compact' | 'bar'
+  mode?: 'compact' | 'bar' | 'toolbar'
+  /** This surface's toolbar buttons; the shared action constants keep driving every other surface. */
+  roles?: Parameters<typeof withToolbarRoles>[1]
+  /** Action ids this surface leaves out. */
+  hide?: readonly string[]
   className?: string
 }) {
   const { proposal, actions } = useProposalOverviewCard()
+  const shown = useMemo(() => {
+    const kept = hide ? actions.filter(config => !hide.includes(config.action.id)) : actions
+    return roles ? withToolbarRoles(kept, roles) : kept
+  }, [actions, hide, roles])
   return (
     <EntityActionMenu
       entity={proposal}
-      actions={actions}
+      actions={shown}
       mode={mode}
       className={className}
     />
   )
+}
+
+// Footers hold inputs and buttons; a click there must not open the proposal.
+function Footer({ className, children }: { className?: string, children: ReactNode }) {
+  return <div onClick={e => e.stopPropagation()}><OverviewCard.Footer className={className}>{children}</OverviewCard.Footer></div>
 }
 
 // ── Compound export ────────────────────────────────────────────────────────────
@@ -443,4 +460,5 @@ export const ProposalOverviewCard = Object.assign(ProposalOverviewCardRoot, {
   Trades,
   ScopeCoverage,
   Actions,
+  Footer,
 })

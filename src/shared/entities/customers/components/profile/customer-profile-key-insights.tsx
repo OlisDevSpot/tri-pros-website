@@ -4,21 +4,35 @@ import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server
 
 import { Badge } from '@/shared/components/ui/badge'
 
+export type KeyInsightField = 'triggerEvent' | 'decisionTimeline' | 'outcomePriority' | 'householdType' | 'timeInHome' | 'yearBuilt'
+
 interface Props {
-  customer: Pick<CustomerWithProfile, 'triggerEvent' | 'decisionTimeline' | 'outcomePriority' | 'householdType'> | null | undefined
+  customer: Pick<CustomerWithProfile, KeyInsightField> | null | undefined
+  fields?: readonly KeyInsightField[]
 }
 
-export function CustomerProfileKeyInsights({ customer }: Props) {
+function formatInsight(field: KeyInsightField, value: string): string {
+  switch (field) {
+    case 'outcomePriority':
+      return `Priority: ${value}`
+    case 'timeInHome':
+      return `${value} in home`
+    case 'yearBuilt':
+      return `Built ${value}`
+    default:
+      return value
+  }
+}
+
+export function CustomerProfileKeyInsights({ customer, fields = ['triggerEvent', 'decisionTimeline', 'outcomePriority', 'householdType'] }: Props) {
   if (!customer) {
     return null
   }
 
-  const insights = [
-    customer.triggerEvent != null && String(customer.triggerEvent),
-    customer.decisionTimeline != null && String(customer.decisionTimeline),
-    customer.outcomePriority != null && `Priority: ${String(customer.outcomePriority)}`,
-    customer.householdType != null && String(customer.householdType),
-  ].filter(Boolean) as string[]
+  const insights = fields.flatMap((field) => {
+    const value = customer[field]
+    return value != null ? [formatInsight(field, String(value))] : []
+  })
 
   if (insights.length === 0) {
     return null

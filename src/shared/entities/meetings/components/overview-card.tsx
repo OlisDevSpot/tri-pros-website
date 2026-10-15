@@ -550,7 +550,7 @@ function Actions({
   mode = 'compact',
   className,
 }: {
-  mode?: 'compact' | 'bar'
+  mode?: 'compact' | 'bar' | 'toolbar'
   className?: string
 }) {
   const { meeting, actions } = useMeetingOverviewCard()
