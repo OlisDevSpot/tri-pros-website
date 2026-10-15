@@ -21,6 +21,7 @@ import { RecordsPageShell } from '@/shared/components/records-page-shell'
 import { ROOTS } from '@/shared/config/roots'
 import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
 import { fromPaginatedQuery } from '@/shared/dal/client/lib/from-paginated-query'
+import { useAbility } from '@/shared/domains/permissions/client'
 
 import { openModal } from '@/shared/lib/open-modal'
 import { useProposalActionConfigs } from '@/shared/modules/proposals/core/hooks/use-proposal-action-configs'
@@ -41,6 +42,8 @@ export function PastProposalsTable() {
   const trpc = useTRPC()
   const router = useRouter()
   const { updateProposal } = useProposalActions()
+  const ability = useAbility()
+  const canBackdate = ability.can('update', 'Proposal', 'createdAt')
   const [projectPrompt, setProjectPrompt] = useState<ProjectPrompt | null>(null)
 
   const pagination = usePaginatedQuery<Record<string, never>, ProposalRow>(
@@ -127,14 +130,16 @@ export function PastProposalsTable() {
   const meta = useMemo<ProposalTableMeta>(() => ({
     rowActions: sharedActions,
     onUpdateStatus: handleStatusChange,
-    onUpdateCreatedAt: (id, date) => updateProposal.mutate(
-      { id, data: { createdAt: date.toISOString() } },
-      { onSuccess: () => toast.success('Created date updated') },
-    ),
+    onUpdateCreatedAt: canBackdate
+      ? (id, date) => updateProposal.mutate(
+          { id, data: { createdAt: date.toISOString() } },
+          { onSuccess: () => toast.success('Created date updated') },
+        )
+      : undefined,
     onViewProfile: (customerId) => {
       openModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props: { customerId } })
     },
-  }), [sharedActions, handleStatusChange, updateProposal])
+  }), [sharedActions, handleStatusChange, canBackdate, updateProposal])
 
   return (
     <>

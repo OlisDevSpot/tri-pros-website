@@ -91,20 +91,27 @@ export const PROPOSAL_COLUMNS = {
     cell: ({ row, table }) => {
       const meta = table.options.meta as ProposalTableMeta | undefined
       const { relative, dayAtTime } = formatDateCell(row.original.createdAt)
+      const stack = (
+        <div className="flex flex-col">
+          <span className="text-sm font-medium leading-tight">{relative}</span>
+          <span className="text-xs text-muted-foreground">{dayAtTime}</span>
+        </div>
+      )
+      if (!meta?.onUpdateCreatedAt) {
+        return <div className="max-w-40">{stack}</div>
+      }
+      const onUpdate = meta.onUpdateCreatedAt
       return (
         <div className="max-w-40" onClick={e => e.stopPropagation()}>
           <DateTimePicker
             value={new Date(row.original.createdAt)}
             onChange={(date) => {
               if (date) {
-                meta?.onUpdateCreatedAt?.(row.original.id, date)
+                onUpdate(row.original.id, date)
               }
             }}
           >
-            <div className="flex flex-col">
-              <span className="text-sm font-medium leading-tight">{relative}</span>
-              <span className="text-xs text-muted-foreground">{dayAtTime}</span>
-            </div>
+            {stack}
           </DateTimePicker>
         </div>
       )

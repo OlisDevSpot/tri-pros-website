@@ -15,6 +15,7 @@ import { RecordsPageHeader } from '@/shared/components/records-page-header'
 import { RecordsPageShell } from '@/shared/components/records-page-shell'
 import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
+import { useAbility } from '@/shared/domains/permissions/client'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { CUSTOMERS_TABLE_QUERY_CONFIG, CUSTOMERS_TABLE_SHOW_COLUMNS } from '@/shared/entities/customers/constants/customers-table-query-config'
 import { useCustomerActionConfigs } from '@/shared/entities/customers/hooks/use-customer-action-configs'
@@ -26,6 +27,8 @@ import { useTRPC } from '@/trpc/helpers'
 export function CustomersTable() {
   const trpc = useTRPC()
   const { invalidateCustomer, invalidateLeadSource } = useInvalidation()
+  const ability = useAbility()
+  const canBackdate = ability.can('update', 'Customer', 'createdAt')
 
   const query = useDataViewQuery(trpc.customersRouter.business.list, {}, CUSTOMERS_TABLE_QUERY_CONFIG)
 
@@ -60,10 +63,11 @@ export function CustomersTable() {
   const meta = useMemo<CustomerTableMeta>(
     () => ({
       rowActions: actions,
-      onUpdateCreatedAt: (customerId, date) =>
-        updateCreatedAt.mutate({ id: customerId, data: { createdAt: date.toISOString() } }),
+      onUpdateCreatedAt: canBackdate
+        ? (customerId, date) => updateCreatedAt.mutate({ id: customerId, data: { createdAt: date.toISOString() } })
+        : undefined,
     }),
-    [actions, updateCreatedAt],
+    [actions, canBackdate, updateCreatedAt],
   )
 
   return (
