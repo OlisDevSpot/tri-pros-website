@@ -1,7 +1,7 @@
 import { defineRules } from './define-rules'
 
 export function agentRules(userId: string) {
-  return defineRules((can, cannot) => {
+  return defineRules((can) => {
     can('access', 'Dashboard')
 
     // A customer is reached through a meeting the agent sits in; the row filter and the UI read this one rule.
@@ -49,8 +49,6 @@ export function agentRules(userId: string) {
 
     // An agent's own line, and through it that line's texts.
     can('read', 'VoipDid', { assignedUserId: userId })
-    // An agent's own-line conversations arrive with the post-meeting build; until then an agent reaches none.
-    cannot('read', 'VoipDid', ['conversations', 'conversations.*'])
 
     can('read', 'VoipLinkToken')
     can('create', 'VoipLinkToken') // mint L-DOC links

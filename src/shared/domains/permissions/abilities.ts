@@ -23,7 +23,6 @@ import { PROPOSAL } from '@/shared/modules/proposals/core/lib/constants'
 import { PROPOSAL_INCENTIVE } from '@/shared/modules/proposals/incentives/lib/constants'
 import { PROPOSAL_MEDIA_FILE } from '@/shared/modules/proposals/media/lib/constants'
 import { PROPOSAL_VIEW } from '@/shared/modules/proposals/views/lib/constants'
-import { VOIP_CONVERSATION } from '@/shared/modules/voip/conversations/lib/constants'
 import { VOIP_MESSAGE } from '@/shared/modules/voip/messages/lib/constants'
 
 import { abilityFromRules } from './ability-from-rules'
@@ -53,7 +52,6 @@ export const ENTITY_NAMES = [
   ACTIVITY,
   VOIP_CALL,
   VOIP_DID,
-  VOIP_CONVERSATION,
   VOIP_MESSAGE,
   VOIP_LINK_TOKEN,
   APP_SETTING,

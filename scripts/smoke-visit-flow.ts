@@ -25,7 +25,6 @@ import { customers } from '@/shared/db/schema/customers'
 import { meetingMessages } from '@/shared/db/schema/meeting-messages'
 import { meetingParticipants } from '@/shared/db/schema/meeting-participants'
 import { meetings } from '@/shared/db/schema/meetings'
-import { voipConversations } from '@/shared/db/schema/voip-conversations'
 import { voipDids } from '@/shared/db/schema/voip-dids'
 import { voipMessages } from '@/shared/db/schema/voip-messages'
 import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
@@ -247,21 +246,6 @@ const e164 = (national: string) => `+1${national}`
 
 // ── Steps ────────────────────────────────────────────────────────────────────
 
-// ── Gate (HV6): what the visit sheet and the conversation tab read and write ─
-
-async function smokeConversation() {
-  const mainLine = await voipDidsService.getMainLineDid()
-  const [row] = mainLine.success && mainLine.data
-    ? await db.select().from(voipConversations).where(and(eq(voipConversations.voipDidId, mainLine.data.id), eq(voipConversations.remoteE164, e164(SMOKE_PHONE))))
-    : []
-  return row
-}
-
-async function gateChecks(_visitId: string, _smokeCustomerId: string) {
-  const conversation = await smokeConversation()
-  check('G1 the first text made the conversation row', conversation != null && conversation.archivedAt == null, JSON.stringify(conversation ?? null))
-}
-
 async function run() {
   if (isProductionData()) {
     throw new Error('Refusing to run: this process points at production data.')
@@ -334,7 +318,6 @@ async function run() {
   const free = await reply(e164(SMOKE_PHONE), 'Can we make it 3pm instead?')
   const freeNotified = since(notified, at.notified)
   check('4 free text goes to the office under the right name', free.action === 'forwarded' && freeNotified[0]?.customerName === customerName && freeNotified[0]?.meetingId === visit.id, `action ${free.action}, notified ${JSON.stringify(freeNotified)}`)
-  await gateChecks(visit.id, customerId!)
 
   // 5. A YES nobody can place.
   at = mark()
@@ -457,7 +440,6 @@ async function cleanup() {
     await db.delete(meetingMessages).where(inArray(meetingMessages.voipMessageId, messageIds))
     await db.delete(voipMessages).where(inArray(voipMessages.id, messageIds))
   }
-  await db.delete(voipConversations).where(inArray(voipConversations.remoteE164, [e164(SMOKE_PHONE), e164(STRANGER_PHONE)]))
   await db.delete(customerNotes).where(eq(customerNotes.customerId, customerId))
   await db.delete(meetings).where(eq(meetings.customerId, customerId))
   await db.delete(customers).where(and(eq(customers.id, customerId), eq(customers.phone, SMOKE_PHONE)))

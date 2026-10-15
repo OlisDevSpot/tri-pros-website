@@ -5,7 +5,6 @@ import { PgDialect } from 'drizzle-orm/pg-core'
 
 import { filterFor } from '@/shared/dal/server/lib/permissions/core'
 import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
-import { voipConversationServerSpec } from '@/shared/modules/voip/conversations/server-spec'
 import { voipMessageServerSpec } from '@/shared/modules/voip/messages/server-spec'
 
 const dispatcher = defineAbilitiesFor({ id: 'user-dispatcher', role: 'dispatcher' })
@@ -32,15 +31,5 @@ assert.ok(dispatcherTexts.sql.includes('"is_main_line"'), dispatcherTexts.sql)
 const agentTexts = dialect.sqlToQuery(filterFor(agent, 'read', voipMessageServerSpec, undefined))
 assert.ok(agentTexts.sql.includes('"assigned_user_id"'), agentTexts.sql)
 assert.ok(agentTexts.params.includes('user-agent'), JSON.stringify(agentTexts.params))
-
-// Conversations: a field of their line. Dispatchers write the main line's; agents reach none in this build.
-assert.equal(dispatcher.can('update', line(mainLine), 'conversations.archivedAt'), true)
-assert.equal(dispatcher.can('update', line(agentLine), 'conversations.archivedAt'), false)
-assert.equal(dispatcher.can('update', line(mainLine), 'label'), false)
-assert.equal(agent.can('read', line(agentLine), 'conversations'), false)
-assert.equal(agent.can('read', line(agentLine)), true)
-const dispatcherWrites = dialect.sqlToQuery(filterFor(dispatcher, 'update', voipConversationServerSpec, ['archivedAt']))
-assert.ok(dispatcherWrites.sql.includes('"is_main_line"'), dispatcherWrites.sql)
-assert.equal(dialect.sqlToQuery(filterFor(agent, 'read', voipConversationServerSpec, undefined)).sql.includes('false'), true)
 
 console.log('✅ voip rules verified')

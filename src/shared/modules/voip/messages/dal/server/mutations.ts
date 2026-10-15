@@ -12,7 +12,6 @@ import { VOIP_MESSAGE_STATUS_RANK } from '@/shared/constants/enums/voip'
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { db } from '@/shared/db'
 import { voipMessages } from '@/shared/db/schema/voip-messages'
-import { upsertConversation } from '@/shared/modules/voip/conversations/dal/server/mutations'
 
 interface UpsertInboundMessageInput {
   providerMessageId: string
@@ -53,10 +52,6 @@ export async function upsertInboundMessage(input: UpsertInboundMessageInput): Pr
       // xmax is zero only on a row this statement inserted; an updated one carries the updater's transaction id.
       .returning({ ...getTableColumns(voipMessages), inserted: sql<boolean>`(xmax = 0)` })
 
-    // Inbound texts arrive through this upsert, not the crud create, so they join their conversation here.
-    if (row!.inserted && input.voipDidId) {
-      await upsertConversation({ voipDidId: input.voipDidId, remoteE164: input.remoteE164 })
-    }
     return row!
   })
 }
