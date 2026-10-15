@@ -3,26 +3,21 @@
 import { ExternalLinkIcon, EyeIcon, FileTextIcon, MoreVerticalIcon, ShieldIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
-import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
+import { useProposalDocument } from '@/features/proposal-flow/contexts/proposal-document-context'
 import { useViewModeToggle } from '@/features/proposal-flow/hooks/use-view-mode-toggle'
 import { getProposalPdfUrl } from '@/features/proposal-flow/lib/get-proposal-pdf-url'
 import { Button } from '@/shared/components/ui/button'
 import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-group'
 import { useAbility } from '@/shared/domains/permissions/client'
-import { cn } from '@/shared/lib/utils'
-
-interface Props {
-  variant: 'desktop' | 'mobile'
-}
 
 /**
  * Kebab menu for auxiliary proposal-flow actions: "View as PDF" (everyone)
  * and the agent/homeowner view-mode toggle (CASL-gated). Replaces the old
  * fixed desktop pill and the mobile navbar toggle icon.
  */
-export function ProposalNavbarMenu({ variant }: Props) {
-  const proposal = useCurrentProposal()
+export function ProposalNavbarMenu() {
+  const { proposal, token } = useProposalDocument()
   const ability = useAbility()
   const { isAgent, toggle } = useViewModeToggle()
   const [mounted, setMounted] = useState(false)
@@ -31,9 +26,8 @@ export function ProposalNavbarMenu({ variant }: Props) {
     setMounted(true)
   }, [])
 
-  const proposalId = proposal.data?.id
-  const token = proposal.data?.token
-  const pdfUrl = proposalId && token ? getProposalPdfUrl(proposalId, token) : null
+  const pdfToken = token ?? proposal.token
+  const pdfUrl = pdfToken ? getProposalPdfUrl(proposal.id, pdfToken) : null
   const showViewToggle = mounted && ability.can('update', 'Proposal')
 
   return (
@@ -43,11 +37,7 @@ export function ProposalNavbarMenu({ variant }: Props) {
           type="button"
           variant="ghost"
           aria-label="Proposal options"
-          className={cn(
-            variant === 'desktop'
-              ? 'h-full w-12 rounded-none data-[state=open]:bg-press'
-              : 'size-9 rounded-lg shrink-0 data-[state=open]:bg-press',
-          )}
+          className="size-9 shrink-0 rounded-md data-[state=open]:bg-press"
         >
           <MoreVerticalIcon className="size-5" />
         </Button>

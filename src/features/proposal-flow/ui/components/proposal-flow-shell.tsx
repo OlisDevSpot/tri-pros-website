@@ -17,7 +17,7 @@ export function ProposalFlowShell({ children }: Props) {
         '--sidebar-width': '76px',
         '--sidebar-height': '68px',
       } as React.CSSProperties}
-      className="h-full flex flex-col bg-background"
+      className="h-full flex flex-col bg-background text-foreground"
       data-no-gutter-stable
       data-view-mode={viewMode}
     >

@@ -1,9 +1,8 @@
 'use client'
 
 import { useMutation } from '@tanstack/react-query'
-import { motion } from 'motion/react'
 import { useParams, useSearchParams } from 'next/navigation'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { customizableSections, generateProposalSteps } from '@/features/proposal-flow/constants/proposal-steps'
 import { ProposalDocumentProvider } from '@/features/proposal-flow/contexts/proposal-document-context'
@@ -16,8 +15,10 @@ import { LoadingState } from '@/shared/components/states/loading-state'
 import { useAbility } from '@/shared/domains/permissions/client'
 import { useTRPC } from '@/trpc/helpers'
 
-import { Heading } from './heading'
+import { ChapterNav } from './chapter-nav'
 import { PdfFallbackCard } from './pdf-fallback-card'
+import { ProposalTopBar } from './top-bar'
+import { ProposalTopBarFrame } from './top-bar-frame'
 
 export function Proposal() {
   const params = useParams() as { proposalId: string }
@@ -29,6 +30,7 @@ export function Proposal() {
   const ability = useAbility()
   const viewMode = useViewMode()
   const hasRecorded = useRef(false)
+  const [, setCockpitOpen] = useState(false)
 
   useEffect(() => {
     if (hasRecorded.current || !proposal.data) {
@@ -57,19 +59,19 @@ export function Proposal() {
 
   if (proposal.isLoading) {
     return (
-      <LoadingState
-        title="Loading Proposal"
-        description="This may take a few seconds"
-      />
+      <div className="flex h-full min-h-0 flex-col">
+        <ProposalTopBarFrame />
+        <LoadingState title="Loading Proposal" description="This may take a few seconds" />
+      </div>
     )
   }
 
-  if (proposal.isError || !proposal.data) {
+  if (!proposal.data) {
     return (
-      <ErrorState
-        title="Error: Could not load proposal"
-        description={proposal.error?.message ?? 'Please try again'}
-      />
+      <div className="flex h-full min-h-0 flex-col">
+        <ProposalTopBarFrame />
+        <ErrorState title="Error: Could not load proposal" description={proposal.error?.message ?? 'Please try again'} />
+      </div>
     )
   }
 
@@ -82,54 +84,56 @@ export function Proposal() {
   const proposalSteps = generateProposalSteps(viewerRole)
 
   return (
-    <div className="h-full overflow-auto">
-      <div ref={setRootEl} id="proposal-container" className="h-full overflow-auto scroll-smooth">
-        <ProposalDocumentProvider proposal={proposalData} viewMode={viewMode} token={urlToken}>
-          <div className="space-y-20 lg:pr-8">
-            <Heading />
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="space-y-20"
-            >
-              {proposalSteps.map(step => (
-                <div
-                  id={step.accessor}
-                  key={step.accessor}
-                >
-                  {customizableSections.includes(step.accessor) && step.accessor === 'funding' && (
-                    <step.Component onPickFinancingOption={(option) => {
-                      // eslint-disable-next-line no-console
-                      console.log(option)
-                    }}
-                    />
-                  )}
-                  {customizableSections.includes(step.accessor) && step.accessor === 'agreement' && (
-                    <step.Component
-                      proposalId={params.proposalId}
-                      token={token ?? undefined}
-                      isAgent={viewMode === 'agent'}
-                      customerAge={customer?.customerAge ?? null}
-                      envelopeDocumentIds={proposalData.envelopeDocumentIds ?? null}
-                      proposalKind={proposalData.kind}
-                      customerName={customer?.name ?? null}
-                      customerEmail={customerEmail}
-                      proposalStatus={proposalData.status}
-                      proposalSentAt={proposalData.sentAt}
-                    />
-                  )}
-                  {!customizableSections.includes(step.accessor) && (
-                    <step.Component />
-                  )}
-                </div>
-              ))}
-              {token && (
-                <PdfFallbackCard pdfUrl={getProposalPdfUrl(params.proposalId, token)} />
-              )}
-            </motion.div>
+    <ProposalDocumentProvider proposal={proposalData} viewMode={viewMode} token={urlToken}>
+      <div className="flex h-full min-h-0 flex-col">
+        <ProposalTopBar onOpenCockpit={() => setCockpitOpen(true)} />
+        <div ref={setRootEl} id="proposal-container" className="min-h-0 flex-1 overflow-y-auto">
+          <div className="@container/proposal">
+            <div className="grid @min-[1100px]/proposal:grid-cols-[220px_minmax(0,1fr)]">
+              <div className="hidden @min-[1100px]/proposal:block"><ChapterNav variant="rail" /></div>
+              <div className="min-w-0">
+                <div className="@min-[1100px]/proposal:hidden"><ChapterNav variant="tabs" /></div>
+                {proposalSteps.map(step => (
+                  <section
+                    key={step.accessor}
+                    id={step.accessor}
+                    aria-labelledby={`${step.accessor}-title`}
+                    className="scroll-mt-12 @min-[1100px]/proposal:scroll-mt-0"
+                  >
+                    {customizableSections.includes(step.accessor) && step.accessor === 'funding' && (
+                      <step.Component onPickFinancingOption={(option) => {
+                        // eslint-disable-next-line no-console
+                        console.log(option)
+                      }}
+                      />
+                    )}
+                    {customizableSections.includes(step.accessor) && step.accessor === 'agreement' && (
+                      <step.Component
+                        proposalId={params.proposalId}
+                        token={token ?? undefined}
+                        isAgent={viewMode === 'agent'}
+                        customerAge={customer?.customerAge ?? null}
+                        envelopeDocumentIds={proposalData.envelopeDocumentIds ?? null}
+                        proposalKind={proposalData.kind}
+                        customerName={customer?.name ?? null}
+                        customerEmail={customerEmail}
+                        proposalStatus={proposalData.status}
+                        proposalSentAt={proposalData.sentAt}
+                      />
+                    )}
+                    {!customizableSections.includes(step.accessor) && (
+                      <step.Component />
+                    )}
+                  </section>
+                ))}
+                {token && (
+                  <PdfFallbackCard pdfUrl={getProposalPdfUrl(params.proposalId, token)} />
+                )}
+              </div>
+            </div>
           </div>
-        </ProposalDocumentProvider>
+        </div>
       </div>
-    </div>
+    </ProposalDocumentProvider>
   )
 }
