@@ -92,7 +92,7 @@ export function Proposal() {
             <div className="grid @min-[1100px]/proposal:grid-cols-[220px_minmax(0,1fr)]">
               <div className="hidden @min-[1100px]/proposal:block"><ChapterNav variant="rail" /></div>
               <div className="min-w-0">
-                <div className="@min-[1100px]/proposal:hidden"><ChapterNav variant="tabs" /></div>
+                <div className="contents @min-[1100px]/proposal:hidden"><ChapterNav variant="tabs" /></div>
                 {proposalSteps.map(step => (
                   <section
                     key={step.accessor}

@@ -11,11 +11,6 @@ import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from '@/shared/
 import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-group'
 import { useAbility } from '@/shared/domains/permissions/client'
 
-/**
- * Kebab menu for auxiliary proposal-flow actions: "View as PDF" (everyone)
- * and the agent/homeowner view-mode toggle (CASL-gated). Replaces the old
- * fixed desktop pill and the mobile navbar toggle icon.
- */
 export function ProposalNavbarMenu() {
   const { proposal, token } = useProposalDocument()
   const ability = useAbility()
@@ -26,7 +21,7 @@ export function ProposalNavbarMenu() {
     setMounted(true)
   }, [])
 
-  const pdfToken = token ?? proposal.token
+  const pdfToken = proposal.token ?? token
   const pdfUrl = pdfToken ? getProposalPdfUrl(proposal.id, pdfToken) : null
   const showViewToggle = mounted && ability.can('update', 'Proposal')
 
