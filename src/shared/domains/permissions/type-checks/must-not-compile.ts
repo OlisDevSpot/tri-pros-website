@@ -135,6 +135,7 @@ export const rulesThatMustCompile = defineRules((can, cannot) => {
   can('access', 'Dashboard')
   can('own', 'Meeting')
   can('read', 'User')
+  can('read', 'CustomerPipeline', ['projects', 'fresh'])
   can(['read', 'create', 'update', 'delete'], 'Activity')
   can('read', 'Activity', { ownerId: userId, $linkedRecordInReach: true })
   can(['create', 'update', 'delete'], 'Activity', { ownerId: userId })
@@ -210,6 +211,8 @@ defineRules((can, cannot) => {
   can('read', 'User', ['name'])
   // @ts-expect-error a subject without a spec takes no conditions
   can('read', 'User', { id: userId })
+  // @ts-expect-error not a pipeline
+  can('read', 'CustomerPipeline', ['nope'])
 
   // An entity with no condition columns has an empty conditions type; an empty type must not accept everything.
   // @ts-expect-error no condition columns: no conditions on a mutation
@@ -290,6 +293,7 @@ export function checksThatMustCompile() {
   ability.can('assign', 'Proposal')
   ability.can('own', 'Meeting')
   ability.can('read', 'User')
+  ability.can('read', 'CustomerPipeline', 'fresh')
   ability.can('update', 'Customer', 'profile')
   ability.can('update', 'Customer', 'profile.hoa')
   ability.can('update', 'Customer', 'age')
@@ -320,6 +324,8 @@ ability.can('read', 'Custmer')
 ability.cannot('edit', 'Customer')
 // @ts-expect-error a field on a subject that has no spec
 ability.can('read', 'User', 'name')
+// @ts-expect-error not a pipeline
+ability.can('read', 'CustomerPipeline', 'nope')
 // @ts-expect-error `own` belongs to Meeting
 ability.can('own', 'Proposal')
 // @ts-expect-error the profile is a part of Customer, not a subject

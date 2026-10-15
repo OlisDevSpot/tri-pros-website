@@ -5,7 +5,9 @@ import { defineRules } from './define-rules'
 export function dispatcherRules(userId: string) {
   return defineRules((can, cannot) => {
     can('access', 'Dashboard')
-    can('read', 'LeadsPool') // the shared leads pool drives phone and pipeline access
+    can('read', 'LeadsPool') // the shared leads pool ungates the phone
+    // The lead boards. The projects board carries project and proposal values.
+    can('read', 'CustomerPipeline', ['leads', 'rehash', 'dead', 'fresh'])
 
     // Every customer, project customers included. What a dispatcher must not see is money, which lives
     // on proposals and projects, not on the customer.

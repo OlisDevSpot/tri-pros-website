@@ -68,8 +68,8 @@ export function agentRules(userId: string) {
     can(['create', 'update', 'delete'], 'Activity', { ownerId: userId })
     can('manage', 'Calendar')
 
-    // Read only: leads, rehash and dead pipelines are super-admin-managed.
-    can('read', 'CustomerPipeline')
+    // The boards a rep works; leads, rehash and dead are the office's.
+    can('read', 'CustomerPipeline', ['projects', 'fresh'])
 
     can('read', 'User')
 

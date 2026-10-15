@@ -1,7 +1,9 @@
 import type { ForcedSubject, MongoAbility, RawRuleOf } from '@casl/ability'
 
 import type { ReadOperators } from './operators'
+
 import type { ConditionColumnOf, EntitySubject, FieldOf, RowOf } from './specs'
+import type { Pipeline } from '@/shared/constants/enums/pipelines'
 
 export type CrudAction = 'create' | 'delete' | 'read' | 'update'
 
@@ -15,6 +17,12 @@ export interface SubjectsWithoutSpec {
   /** Feature gate: see and send a meeting's visit messages. */
   VisitMessages: 'read' | 'update'
   User: 'read'
+}
+
+/** Subjects without a spec whose rules name fields: each field is one thing the subject opens. */
+export interface SubjectFieldsWithoutSpec {
+  /** The pipeline boards a role opens. */
+  CustomerPipeline: Pipeline
 }
 
 /** Capabilities on an entity that are not about a row. */
@@ -39,7 +47,9 @@ export type AppAction = ActionOn<AppSubject> | 'manage'
 export type Permission = {
   [S in AppSubject]: S extends EntitySubject
     ? [action: ActionOn<S> | 'manage', subject: S, field?: FieldOf<S>]
-    : [action: ActionOn<S> | 'manage', subject: S]
+    : S extends keyof SubjectFieldsWithoutSpec
+      ? [action: ActionOn<S> | 'manage', subject: S, field?: SubjectFieldsWithoutSpec[S]]
+      : [action: ActionOn<S> | 'manage', subject: S]
 }[AppSubject]
 
 // A condition on a column the row does not carry reads `undefined` and never matches.
@@ -51,6 +61,7 @@ type RowAction<S extends EntitySubject> = S extends keyof ReadOperators ? Exclud
 interface AbilityCheck {
   (...permission: Permission): boolean
   <S extends EntitySubject>(action: CrudAction, subject: S, field: FieldOf<S>): boolean
+  <S extends keyof SubjectFieldsWithoutSpec>(action: SubjectsWithoutSpec[S], subject: S, field: SubjectFieldsWithoutSpec[S]): boolean
   <S extends EntitySubject>(action: RowAction<S>, subject: SubjectRow<S>, field?: FieldOf<S>): boolean
 }
 

@@ -1,6 +1,6 @@
 import type { ReadOperators } from '@/shared/domains/permissions/operators'
 import type { ConditionColumnOf, EntitySubject, FieldOf, RowOf } from '@/shared/domains/permissions/specs'
-import type { CrudAction, ExtraEntityActions, PermissionRule, SubjectsWithoutSpec } from '@/shared/domains/permissions/types'
+import type { CrudAction, ExtraEntityActions, PermissionRule, SubjectFieldsWithoutSpec, SubjectsWithoutSpec } from '@/shared/domains/permissions/types'
 
 // Equality and `$in` are the two forms the SQL compiler turns into a filter.
 type ColumnConditions<S extends EntitySubject> = {
@@ -54,6 +54,7 @@ export interface AddRule {
   <S extends EntitySubject>(action: FieldAction | readonly FieldAction[], subject: S, fields: FieldList<S>): RuleHandle
   <S extends EntitySubject, const C extends ColumnConditions<S>>(action: FieldAction | readonly FieldAction[], subject: S, fields: FieldList<S>, conditions: Only<C, ColumnConditions<S>>): RuleHandle
   <S extends keyof ExtraEntityActions>(action: ExtraEntityActions[S], subject: S): RuleHandle
+  <S extends keyof SubjectFieldsWithoutSpec>(action: SubjectsWithoutSpec[S] | readonly SubjectsWithoutSpec[S][], subject: S, fields: readonly [SubjectFieldsWithoutSpec[S], ...SubjectFieldsWithoutSpec[S][]]): RuleHandle
   <S extends keyof SubjectsWithoutSpec>(action: SubjectsWithoutSpec[S] | readonly SubjectsWithoutSpec[S][], subject: S): RuleHandle
 }
 
