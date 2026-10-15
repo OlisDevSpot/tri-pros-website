@@ -6,8 +6,8 @@ type Tokens = Map<string, string>
 type Mode = 'light' | 'dark'
 type Rgba = [number, number, number, number]
 
-/** Where a token is read: the page, a surface on a rung of the elevation ladder, an overlay, or beneath the page. */
-type Place = 'beneath' | 'page' | 'rung 1' | 'rung 2' | 'rung 3' | 'overlay'
+/** Where a token is read: the page, a surface on a rung of the elevation ladder, an overlay, beneath the page, or the ⌘K palette. */
+type Place = 'beneath' | 'page' | 'rung 1' | 'rung 2' | 'rung 3' | 'overlay' | 'palette'
 
 interface Pair {
   label: string
@@ -68,6 +68,7 @@ const pageBlock = readBlock(/^:root,\s*\.dark\s*\{/m)
 const relativeBlock = readBlock(/^:root,\s*\.dark,\s*:is\(\.bg-card/m)
 const overlayBlock = readBlock(/^:is\(\.bg-popover,\s*\.surface-overlay\)\s*\{/m)
 const beneathBlock = readBlock(/^\.surface-beneath\s*\{/m)
+const paletteBlock = readBlock(/^\.surface-palette\s*\{/m)
 const mediaBlock = readBlock(/^:root\s*\{(?=[^{}]*--on-media)/m)
 
 const PLACES: Record<Place, Tokens> = {
@@ -77,6 +78,8 @@ const PLACES: Record<Place, Tokens> = {
   'rung 2': new Map([['--depth', '2']]),
   'rung 3': new Map([['--depth', '3']]),
   'overlay': overlayBlock,
+  // The ⌘K palette is a dialog (rung 1) whose highlight and hairlines take the palette's own knobs.
+  'palette': new Map([['--depth', '1'], ...paletteBlock]),
 }
 const CARDS: Place[] = ['rung 1', 'rung 2', 'rung 3']
 
@@ -390,6 +393,12 @@ const pairs: Pair[] = [
   // The ⌘K palette: its glass over its scrim over the page. Blur is ignored, so the plain page is the case checked.
   { label: 'body text on the palette glass', fg: '--foreground', bg: '--palette-glass', base: ['--palette-scrim', '--background'], min: 4.5 },
   { label: 'muted text on the palette glass', fg: '--muted-foreground', bg: '--palette-glass', base: ['--palette-scrim', '--background'], min: 4.5 },
+  { label: 'body text on the palette highlight', fg: '--foreground', bg: '--row-hover', min: 4.5, on: ['palette'] },
+  { label: 'muted text on the palette highlight', fg: '--muted-foreground', bg: '--row-hover', min: 4.5, on: ['palette'] },
+  // A stack head is highlighted on the stack's band: the row must stand off it at a glance.
+  { label: 'palette highlight vs a stack band', fg: '--row-hover', bg: '--band', min: 1.12, on: ['palette'] },
+  // The keycap and dividers on the glass: visible, but still a quiet edge.
+  { label: 'palette hairline vs the glass', fg: '--border', bg: '--palette-glass', base: ['--palette-scrim', '--background'], min: 1.25, max: 1.7, on: ['palette'] },
 ]
 
 // Sunlight from above: the ladder climbs from beneath the page to the overlays, and on every surface the band sits

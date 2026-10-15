@@ -561,6 +561,11 @@ responsive depth.
   lighten a dark canvas. The palette keeps `--popover-glass-overlay` and `--popover-glass-shadow`, and
   paints a solid `--popover` for viewers who ask for reduced transparency. `theme:check` holds both
   inks on the glass over the scrim over the page.
+- **Palette rows and hairlines** (`.surface-palette` on the panel): its highlight (`--row-hover`) mixes
+  `--palette-hover-mix` of primary and its hairlines (`--border`, the esc keycap, the dividers) sit
+  `--palette-edge` edges off the dialog's rung. Light keeps the plain 8% and one edge; dark takes 20% and two,
+  because the thin dark glass over its near-black scrim swallows both. `theme:check` holds both inks on the
+  highlight, the highlight against a stack's band, and the hairline against the glass (floor and cap).
 
 ### Credential Strip / Blueprint Eyebrow (signature, marketing)
 - `BlockEyebrow` (Nunito uppercase, `--fs-eyebrow`, `--tracking-eyebrow`) in Blueprint Ink,

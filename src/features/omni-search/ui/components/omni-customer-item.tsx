@@ -41,7 +41,7 @@ export function OmniCustomerItem({ customer, layout, term, onSelect, disabled, w
     'onSelect': select,
   }
   // Beside a capsule the row shares its wrapper, which paints the highlight across both.
-  const besideCapsule = hasCapsule && 'min-w-0 flex-1 data-[selected=true]:bg-transparent dark:data-[selected=true]:bg-transparent'
+  const besideCapsule = hasCapsule && 'min-w-0 flex-1 data-[selected=true]:bg-transparent'
 
   let item
   if (layout === 'nested') {
