@@ -13,7 +13,8 @@ export function NextSteps() {
           <h2 id="agreement-title" className="text-3xl font-semibold text-balance">Next steps</h2>
           <p className="text-on-media-muted">Here’s how we get your project started.</p>
         </header>
-        <div className="rounded-lg bg-card p-5 text-card-foreground">
+        {/* The panel brings its own card; only its ink has to be reset off the navy stage. */}
+        <div className="text-card-foreground">
           <ContractStatusPanel
             proposalId={proposal.id}
             token={proposal.token ?? undefined}

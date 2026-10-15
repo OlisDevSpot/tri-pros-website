@@ -1,7 +1,7 @@
 'use client'
 
 import { ExternalLinkIcon, EyeIcon, FileTextIcon, MoreVerticalIcon, ShieldIcon } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
 
 import { useProposalDocument } from '@/features/proposal-flow/contexts/proposal-document-context'
 import { useViewModeToggle } from '@/features/proposal-flow/hooks/use-view-mode-toggle'
@@ -11,15 +11,16 @@ import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from '@/shared/
 import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-group'
 import { useAbility } from '@/shared/domains/permissions/client'
 
+function subscribeNever() {
+  return () => {}
+}
+
 export function ProposalNavbarMenu() {
   const { proposal, token } = useProposalDocument()
   const ability = useAbility()
   const { isAgent, toggle } = useViewModeToggle()
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  // False on the server and during hydration, true once on the client.
+  const mounted = useSyncExternalStore(subscribeNever, () => true, () => false)
 
   const pdfToken = proposal.token ?? token
   const pdfUrl = pdfToken ? getProposalPdfUrl(proposal.id, pdfToken) : null
@@ -32,7 +33,7 @@ export function ProposalNavbarMenu() {
           type="button"
           variant="ghost"
           aria-label="Proposal options"
-          className="size-9 shrink-0 rounded-md data-[state=open]:bg-press"
+          className="size-11 shrink-0 rounded-md data-[state=open]:bg-press sm:size-9"
         >
           <MoreVerticalIcon className="size-5" />
         </Button>

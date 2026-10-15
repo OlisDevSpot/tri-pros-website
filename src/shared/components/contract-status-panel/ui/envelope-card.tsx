@@ -193,8 +193,7 @@ export function EnvelopeCard({
           <div className="rounded-lg border border-border bg-muted p-4">
             <p className="text-sm text-muted-foreground">
               Configuration ready. Create a draft to prepare the envelope
-              for signing — or sending the proposal will prepare one
-              automatically as its first step.
+              for signing. Sending the proposal doesn’t create one.
             </p>
           </div>
         )}

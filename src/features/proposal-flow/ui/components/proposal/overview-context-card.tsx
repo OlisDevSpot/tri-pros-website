@@ -1,13 +1,12 @@
 'use client'
 
+import { COMPANY_PHONE } from '@/features/proposal-flow/constants/company-phone'
 import { useProposalDocument } from '@/features/proposal-flow/contexts/proposal-document-context'
 import { scrollToChapter } from '@/features/proposal-flow/lib/scroll-to-chapter'
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
 import { EmailAction } from '@/shared/components/contact-actions/ui/email-action'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
 import { companyInfo } from '@/shared/constants/company'
-
-const companyPhone = companyInfo.contactInfo.find(info => info.accessor === 'phone')?.value
 
 export function OverviewContextCard() {
   const { proposal } = useProposalDocument()
@@ -31,7 +30,7 @@ export function OverviewContextCard() {
           <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Your consultant</p>
           {/* The owner profile isn't on the read yet, so the company stands in for the consultant. */}
           <p className="font-semibold">{companyInfo.name}</p>
-          {companyPhone && <PhoneAction phone={companyPhone} />}
+          {COMPANY_PHONE && <PhoneAction phone={COMPANY_PHONE} />}
         </div>
       </div>
       <div className="grid gap-2">

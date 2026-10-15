@@ -10,8 +10,9 @@ import { OptimizedImage } from '@/shared/modules/media/core/components/display/o
 export function OverviewHero() {
   const { proposal } = useProposalDocument()
   const data = proposal.projectJSON.data
-  const firstName = proposal.customer?.name?.split(' ')[0] ?? 'there'
-  const project = data.label?.trim() ? data.label.trim().toLowerCase() : 'your home'
+  const firstName = proposal.customer?.name?.trim().split(/\s+/)[0]
+  const plan = `here’s the plan for your ${data.label?.trim() || 'home'}.`
+  const headline = firstName ? `${firstName}, ${plan}` : `${plan.charAt(0).toUpperCase()}${plan.slice(1)}`
   const photo = (proposal.media ?? []).find(m => m.mimeType.startsWith('image/'))
   const parts = data.sow.length
 
@@ -20,7 +21,7 @@ export function OverviewHero() {
       <div className="mx-auto grid max-w-5xl gap-8 px-4 py-12 sm:px-8 @min-[700px]/proposal:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] @min-[700px]/proposal:items-center">
         <div className="grid gap-4">
           <p className="text-xs font-bold uppercase tracking-widest text-(--presentation-accent)">{`Your proposal · ${data.label || companyInfo.name}`}</p>
-          <h1 id="project-overview-title" className="text-4xl font-semibold leading-tight text-balance">{`${firstName}, here’s the plan for ${project}.`}</h1>
+          <h1 id="project-overview-title" className="text-4xl font-semibold leading-tight text-balance">{headline}</h1>
           <p className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-on-media-muted">
             <span>
               <b className="text-on-media">{parts}</b>
@@ -40,7 +41,7 @@ export function OverviewHero() {
         </div>
         <div className="relative aspect-4/3 overflow-hidden rounded-lg">
           {photo
-            ? <OptimizedImage file={photo} alt={photo.name} fill sizes="(max-width: 700px) 100vw, 40vw" priority />
+            ? <OptimizedImage file={photo} alt="" fill sizes="(max-width: 700px) 100vw, 40vw" priority />
             : <Image src={FALLBACK_HERO_PHOTO} alt="" fill sizes="(max-width: 700px) 100vw, 40vw" className="object-cover" priority />}
         </div>
       </div>

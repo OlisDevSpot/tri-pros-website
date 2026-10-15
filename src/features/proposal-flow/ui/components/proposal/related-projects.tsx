@@ -21,7 +21,7 @@ export function RelatedProjects() {
           <h2 id="related-projects-title" className="text-3xl font-semibold text-balance">Work we’ve finished for your neighbors</h2>
         </header>
         {/* A homeowner never meets an empty chapter: with nothing to show, one line points at the portfolio. */}
-        {projects.isSuccess && rows.length === 0
+        {!projects.isPending && rows.length === 0
           ? (
               <p className="text-muted-foreground">
                 {'Browse our finished projects in the '}

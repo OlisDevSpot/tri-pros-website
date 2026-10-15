@@ -22,7 +22,7 @@ export function ProposalTopBar({ onOpenCockpit }: Props) {
       <div className="ml-auto flex items-center gap-2">
         <AgentViewBadge />
         {isAgent && onOpenCockpit && (
-          <Button size="sm" variant="outline" onClick={onOpenCockpit}>
+          <Button size="sm" variant="outline" className="h-11 sm:h-8" onClick={onOpenCockpit}>
             <PanelRightIcon className="size-4" />
             Cockpit
           </Button>

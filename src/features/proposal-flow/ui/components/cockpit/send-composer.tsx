@@ -33,7 +33,7 @@ export function SendComposer() {
 
   return (
     <div className="grid w-full gap-2">
-      <Textarea value={message} onChange={e => setMessage(e.target.value)} placeholder={`A note for ${proposal.customer?.name?.split(' ')[0] ?? 'the homeowner'} (optional)`} rows={3} />
+      <Textarea aria-label="Note to send with the proposal" value={message} onChange={e => setMessage(e.target.value)} placeholder={`A note for ${proposal.customer?.name?.split(' ')[0] ?? 'the homeowner'} (optional)`} rows={3} />
       <div className="flex justify-end">
         <Button size="sm" onClick={submit} disabled={!email || send.isPending}>
           {isSent ? (message.trim() ? 'Resend with note' : 'Resend') : 'Send'}
