@@ -46,6 +46,9 @@ export function Funding() {
   // Clamped on every render, not synced in an effect: a price change that would leave under $3,500 financed
   // shows the clamped value at once, and the debounced save below stores it.
   const cash = locked ? storedCash : clampCashDown(pickedCash ?? storedCash, finalTcp)
+  // Only a slider move or a stored "Some cash" amount that breaks the floor or the step is written. An all-cash deal
+  // stores the whole price and an all-finance one $0, and opening the page must leave both as they are.
+  const cashToSave = !locked && (pickedCash !== null || storedMode === 'some-cash') ? cash : storedCash
   const selectedOptionId = locked ? proposal.financeOptionId : pickedOptionId ?? proposal.financeOptionId
 
   const financeOptions = useGetFinanceOptions()
@@ -61,18 +64,22 @@ export function Funding() {
   }
 
   // The slider is the only cash write: switching to All cash or All finance never sends $0.
-  useDebouncedSave(cash, storedCash, (value) => {
+  useDebouncedSave(cashToSave, storedCash, (value, failed) => {
     saveCash.mutate({ token, id: proposal.id, cashInDeal: value }, {
-      onError: error => onWriteError(error, 'Couldn’t save your cash down. Your choice is kept on this screen.'),
+      onError: (error) => {
+        failed()
+        onWriteError(error, 'Couldn’t save your cash down. Your choice is kept on this screen.')
+      },
     })
   })
 
-  useDebouncedSave(selectedOptionId, proposal.financeOptionId, (optionId) => {
+  useDebouncedSave(selectedOptionId, proposal.financeOptionId, (optionId, failed) => {
     if (optionId === null) {
       return
     }
     updateProposal.mutate({ token, id: proposal.id, data: { financeOptionId: optionId } }, {
       onError: (error) => {
+        failed()
         setPickedOptionId(null)
         onWriteError(error, 'Couldn’t save your finance option.')
       },

@@ -24,8 +24,10 @@ export function isPaymentModeAvailable(mode: PaymentMode, finalTcp: number): boo
 }
 
 // Only the cash down is stored until the payment plan is, so a reload infers the mode from it.
+// The proposal form and the meeting handoff store an all-cash deal as a cash down of the whole price;
+// compared in cents because the stored column is rounded to the cent and the computed price may not be.
 export function getStoredPaymentMode(storedCash: number, finalTcp: number): PaymentMode {
-  if (!getCashDownBounds(finalTcp).canFinance) {
+  if (!getCashDownBounds(finalTcp).canFinance || Math.round(storedCash * 100) >= Math.round(finalTcp * 100)) {
     return 'all-cash'
   }
   return storedCash > 0 ? 'some-cash' : 'all-finance'
