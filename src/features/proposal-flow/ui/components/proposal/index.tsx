@@ -10,6 +10,7 @@ import { useScrollRoot } from '@/features/proposal-flow/contexts/scroll-context'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
 import { useViewMode } from '@/features/proposal-flow/hooks/use-view-mode'
 import { getProposalPdfUrl } from '@/features/proposal-flow/lib/get-proposal-pdf-url'
+import { Cockpit } from '@/features/proposal-flow/ui/components/cockpit/cockpit'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { useAbility } from '@/shared/domains/permissions/client'
@@ -30,7 +31,7 @@ export function Proposal() {
   const ability = useAbility()
   const viewMode = useViewMode()
   const hasRecorded = useRef(false)
-  const [, setCockpitOpen] = useState(false)
+  const [cockpitOpen, setCockpitOpen] = useState(false)
 
   useEffect(() => {
     if (hasRecorded.current || !proposal.data) {
@@ -109,6 +110,7 @@ export function Proposal() {
             </div>
           </div>
         </div>
+        {viewMode === 'agent' && <Cockpit open={cockpitOpen} onOpenChange={setCockpitOpen} />}
       </div>
     </ProposalDocumentProvider>
   )

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 
 import { cn } from '@/shared/lib/utils'
 
@@ -42,8 +42,8 @@ function Section({ label, className, children }: { label: ReactNode, className?:
   )
 }
 
-function Footer({ className, children }: { className?: string, children: ReactNode }) {
-  return <div className={cn('flex flex-wrap items-center gap-2 border-t border-border bg-band px-4 py-3', className)}>{children}</div>
+function Footer({ className, ...props }: ComponentProps<'div'>) {
+  return <div {...props} className={cn('flex flex-wrap items-center gap-2 border-t border-border bg-band px-4 py-3', className)} />
 }
 
 export const OverviewCard = Object.assign(Root, { Header, Body, Section, Footer })

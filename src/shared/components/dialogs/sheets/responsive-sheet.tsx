@@ -32,6 +32,8 @@ interface ResponsiveSheetProps {
   sheetClassName?: string
   /** Classes for the bottom Drawer (below lg), for example a height cap. */
   drawerClassName?: string
+  /** Classes for the scrolling body on both sides of the breakpoint. */
+  bodyClassName?: string
   /** The title stays for assistive tech but is visually hidden, for content that brings its own header. */
   hideTitle?: boolean
   /** Applied to both the `SheetContent` and the `DrawerContent`, for example so an external `aria-controls` resolves on either side of the breakpoint. */
@@ -64,6 +66,7 @@ export function ResponsiveSheet({
   footer,
   sheetClassName,
   drawerClassName,
+  bodyClassName,
   hideTitle,
   contentId,
   onOpenAutoFocus,
@@ -98,7 +101,7 @@ export function ResponsiveSheet({
             <DrawerTitle>{title}</DrawerTitle>
             {description !== undefined && <DrawerDescription>{description}</DrawerDescription>}
           </DrawerHeader>
-          <div className={cn('min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-gutter-stable px-4', footer === undefined ? 'pb-[max(1rem,env(safe-area-inset-bottom))]' : 'pb-4')}>{children}</div>
+          <div data-slot="responsive-sheet-body" className={cn('min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-gutter-stable px-4', footer === undefined ? 'pb-[max(1rem,env(safe-area-inset-bottom))]' : 'pb-4', bodyClassName)}>{children}</div>
           {footer !== undefined && (
             <DrawerFooter className="border-t pb-[max(1rem,env(safe-area-inset-bottom))]">{footer}</DrawerFooter>
           )}
@@ -114,7 +117,7 @@ export function ResponsiveSheet({
           <SheetTitle>{title}</SheetTitle>
           {description !== undefined && <SheetDescription>{description}</SheetDescription>}
         </SheetHeader>
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-gutter-stable px-4 pb-4">{children}</div>
+        <div data-slot="responsive-sheet-body" className={cn('min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-gutter-stable px-4 pb-4', bodyClassName)}>{children}</div>
         {footer !== undefined && <SheetFooter className="border-t">{footer}</SheetFooter>}
       </SheetContent>
     </Sheet>

@@ -162,17 +162,17 @@ export function EnvelopeConfigurationSection({
           <p className="text-sm text-muted-foreground">No documents available for this configuration.</p>
         )}
         {hasAge && docs.length > 0 && (
-          <ul className="flex flex-col gap-2">
+          <ul className="flex flex-col gap-0">
             {docs.map((doc) => {
               const isRequired = doc.status === 'required'
               const checked = isRequired || savedSet.has(doc.id)
               const inputId = `envelope-doc-${proposalId}-${doc.id}`
               return (
-                <li key={doc.id} className="flex items-center justify-between gap-3">
+                <li key={doc.id} className="flex min-h-11 items-center justify-between gap-3">
                   <Label
                     htmlFor={inputId}
                     className={cn(
-                      'flex-1 text-sm leading-tight cursor-pointer',
+                      'flex-1 self-stretch text-sm leading-tight cursor-pointer',
                       (locked || isRequired) && 'cursor-default',
                     )}
                   >

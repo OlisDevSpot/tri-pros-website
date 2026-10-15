@@ -23,6 +23,7 @@ interface EnvelopeCardProps {
   contractStatus: (ZohoContractStatus & { contractSentAt: string | null }) | null
   customerName: string | null
   proposalKind?: ProposalKind
+  className?: string
 }
 
 type ConfirmAction = 'createDraft' | 'send' | 'discard' | 'recall' | 'resend' | 'recreate'
@@ -49,6 +50,7 @@ export function EnvelopeCard({
   contractStatus,
   customerName,
   proposalKind,
+  className,
 }: EnvelopeCardProps) {
   const trpc = useTRPC()
   const { invalidateProposal } = useInvalidation()
@@ -151,7 +153,7 @@ export function EnvelopeCard({
   }
 
   return (
-    <div className="rounded-lg border border-border bg-card p-4 sm:p-5">
+    <div className={cn('rounded-lg border border-border bg-card p-4 sm:p-5', className)}>
       {/* Header */}
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>

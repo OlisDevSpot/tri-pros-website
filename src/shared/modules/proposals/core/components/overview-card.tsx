@@ -439,7 +439,7 @@ function Actions({
 
 // Footers hold inputs and buttons; a click there must not open the proposal.
 function Footer({ className, children }: { className?: string, children: ReactNode }) {
-  return <div onClick={e => e.stopPropagation()}><OverviewCard.Footer className={className}>{children}</OverviewCard.Footer></div>
+  return <OverviewCard.Footer className={className} onClick={e => e.stopPropagation()}>{children}</OverviewCard.Footer>
 }
 
 // ── Compound export ────────────────────────────────────────────────────────────
