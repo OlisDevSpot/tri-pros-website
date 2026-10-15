@@ -1,5 +1,4 @@
 // LAZY: customers is still a plain entity; this moves to modules/customers/core/dal/server with the promotion.
-import type { Pipeline } from '@/shared/constants/enums/pipelines'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { CustomerMatchField } from '@/shared/entities/customers/dal/server/customer-search-rank-sql'
 
@@ -11,7 +10,6 @@ import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { customerSearchSql, WORD_SIMILARITY_THRESHOLD } from '@/shared/entities/customers/dal/server/customer-search-rank-sql'
 import { parseCustomerSearch } from '@/shared/entities/customers/lib/customer-search-tokens'
-import { derivedPipelineSql } from '@/shared/entities/customers/lib/derived-pipeline-sql'
 import { canSeeUngatedPhone, gatedPhoneSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import 'server-only'
@@ -22,10 +20,10 @@ export interface RankedCustomer {
   city: string
   address: string | null
   zip: string
+  state: string | null
   email: string | null
   /** Gated: null when the caller may not see it. */
   phone: string | null
-  pipeline: Pipeline
   score: number
   matchedOn: CustomerMatchField
 }
@@ -49,9 +47,9 @@ export async function searchCustomersRanked(ctx: ScopedContext, term: string, li
           city: customers.city,
           address: customers.address,
           zip: customers.zip,
+          state: customers.state,
           email: customers.email,
           phone: gatedPhone,
-          pipeline: derivedPipelineSql(),
           score: rank.score,
           matchedOn: rank.matchedOn,
         })

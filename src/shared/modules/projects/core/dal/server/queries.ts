@@ -292,6 +292,7 @@ export interface ProjectSearchRow {
   title: string
   address: string | null
   city: string
+  pipelineStage: Project['pipelineStage']
   /** All of this customer's projects the caller can see, including those past the cap. */
   customerTotal: number
 }
@@ -318,6 +319,7 @@ export async function listProjectsForCustomers(ctx: ScopedContext, customerIds: 
         title: projects.title,
         address: projects.address,
         city: projects.city,
+        pipelineStage: projects.pipelineStage,
         updatedAt: projects.updatedAt,
         customerTotal: sql<number>`(count(*) over (partition by ${projects.customerId}))::int`.as('customer_total'),
         perCustomerRank: sql<number>`row_number() over (partition by ${projects.customerId} order by ${projects.updatedAt} desc)`.as('per_customer_rank'),
@@ -336,6 +338,7 @@ export async function listProjectsForCustomers(ctx: ScopedContext, customerIds: 
         title: ranked.title,
         address: ranked.address,
         city: ranked.city,
+        pipelineStage: ranked.pipelineStage,
         customerTotal: ranked.customerTotal,
       })
       .from(ranked)
