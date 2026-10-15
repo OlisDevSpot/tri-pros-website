@@ -16,7 +16,7 @@ import { cn } from '@/shared/lib/utils'
 
 interface RootProps<F extends FieldList, T extends ToolbarFilterId<F>> {
   query: DataViewQueryResult<unknown, F, T>
-  /** Singular noun for the records this toolbar filters (e.g. "proposal"). */
+  /** Plural noun for the records this toolbar filters (e.g. "proposals"), as the live status reads it. */
   entityName?: string
   className?: string
   children: ReactNode
