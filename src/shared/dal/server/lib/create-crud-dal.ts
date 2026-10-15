@@ -278,17 +278,17 @@ async function deleteImpl<TTable extends PgTable, TId extends string | number, T
     )
     let row: Row<TTable> | undefined
     if (needsRow) {
-      const pre = await getByIdImpl(spec, scoping, pkColumn, ctx, { id: input.id })
-      if (!pre.success) {
-        throw new ThrowableDalError({
-          type: 'precondition-failed',
-          reason: `[create-crud-dal] delete-row prefetch failed for '${spec.entityName}' — refusing to delete without hook context`,
-        })
-      }
-      if (!pre.data) {
+      // The delete reach, not the read reach: the hooks purge stored files and calendar events, so a
+      // row the caller may read but not delete must stop before them.
+      const [found] = await exec
+        .select()
+        .from(spec.table as PgTable)
+        .where(and(eq(pkColumn, input.id), scoping.write(ctx, 'delete')))
+        .limit(1)
+      if (!found) {
         throw new ThrowableDalError({ type: 'not-found' })
       }
-      row = pre.data as Row<TTable>
+      row = found as Row<TTable>
     }
 
     if (cfg.hooks?.delete?.before)
