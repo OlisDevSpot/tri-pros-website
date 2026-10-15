@@ -12,7 +12,8 @@ import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { customers } from '@/shared/db/schema/customers'
 import { customerListInputSchema, listCustomers } from '@/shared/entities/customers/dal/server/queries'
-import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { canSeeUngatedPhone } from '@/shared/entities/customers/lib/phone-access'
+import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { leadMetaSchema } from '@/shared/entities/customers/schemas'
 import { toDigits } from '@/shared/lib/phone'
@@ -44,7 +45,7 @@ export const businessRouter = createTRPCRouter({
 
   // Search customers by name (agents) or name + phone (super-admins). Phone
   // is returned gated — agents only see it once a proposal has been sent for
-  // the customer. See canAgentSeePhone / phone-gating-sql.
+  // the customer. See phone-access / phone-gating-sql.
   search: agentProcedure
     .input(z.object({ query: z.string().min(1) }))
     .query(async ({ input, ctx }) => {
@@ -68,7 +69,7 @@ export const businessRouter = createTRPCRouter({
           id: customers.id,
           name: customers.name,
           phone: gatedPhoneSql(canSeeUngatedPhone(ctx.actor.ability)),
-          hasSentProposal: hasSentProposalSql(),
+          hasSentProposal: hasSentProposalSql(ctx.actor.ability.can('read', 'Proposal')),
           address: customers.address,
         })
         .from(customers)

@@ -26,6 +26,8 @@ import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
+import { canSeeUngatedPhone } from '@/shared/entities/customers/lib/phone-access'
+import { gatedPhoneSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 import { listProposalIncentives } from '@/shared/modules/proposals/incentives/dal/server/queries'
 import { listHomeownerProposalMedia, toProposalMediaView } from '@/shared/modules/proposals/media/dal/server/queries'
@@ -80,6 +82,7 @@ export type ProposalListInput = z.infer<typeof proposalListInputSchema>
 export async function getFullView(
   ctx: ScopedContext,
   input: { id: string },
+  options: { gatePhone?: boolean } = {},
 ): Promise<DalReturn<ProposalWithCustomer | undefined>> {
   return dalDbOperation(async () => {
     const [row] = await db
@@ -88,7 +91,8 @@ export async function getFullView(
         customer: {
           id: customers.id,
           name: customers.name,
-          phone: customers.phone,
+          // A rep sees the phone once a proposal goes out. The contract, the PDFs and the homeowner's own view need it whole.
+          phone: gatedPhoneSql(!options.gatePhone || canSeeUngatedPhone(ctx.actor.ability)),
           email: customers.email,
           address: customers.address,
           city: customers.city,

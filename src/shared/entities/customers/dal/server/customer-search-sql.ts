@@ -6,7 +6,8 @@ import { ilike, or } from 'drizzle-orm'
 
 import { buildSearchWhere } from '@/shared/dal/server/lib/query/search'
 import { customers } from '@/shared/db/schema/customers'
-import { canSeeUngatedPhone, gatedPhoneSql } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { canSeeUngatedPhone } from '@/shared/entities/customers/lib/phone-access'
+import { gatedPhoneSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { toPhoneSearchDigits } from '@/shared/lib/phone'
 import 'server-only'
 

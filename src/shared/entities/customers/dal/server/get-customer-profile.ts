@@ -21,7 +21,8 @@ import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { customerNoteServerSpec } from '@/shared/entities/customer-notes/lib/server-spec'
-import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { canSeeUngatedPhone } from '@/shared/entities/customers/lib/phone-access'
+import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { profileCols } from '@/shared/entities/customers/lib/profile-select'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { getMeetingsWithProposals } from '@/shared/entities/meetings/dal/server/meetings-with-proposals'
@@ -35,7 +36,7 @@ export async function getCustomerProfile(ctx: ScopedContext, customerId: string)
       ...customerCols,
       ...profileCols(),
       phone: gatedPhoneSql(canSeeUngatedPhone(ctx.actor.ability)),
-      hasSentProposal: hasSentProposalSql(),
+      hasSentProposal: hasSentProposalSql(ctx.actor.ability.can('read', 'Proposal')),
       attribution: getTableColumns(customerLeadAttribution),
     })
     .from(customers)

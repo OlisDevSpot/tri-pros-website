@@ -12,7 +12,8 @@ export const businessRouter = createTRPCRouter({
   getFullView: proposalShareableProcedure
     .input(z.object({ id: z.string().uuid(), token: z.string().optional() }))
     .query(async ({ ctx, input }) => {
-      const view = dalToTrpc(await getFullView(ctx, input))
+      // A signed-in reader is staff; a share link's holder is the homeowner, and the phone is their own.
+      const view = dalToTrpc(await getFullView(ctx, input, { gatePhone: ctx.actor.userId !== null }))
       return view ? toHomeownerProposalView(ctx.actor.ability, view) : null
     }),
 

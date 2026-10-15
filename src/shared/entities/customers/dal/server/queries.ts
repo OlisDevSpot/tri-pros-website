@@ -24,7 +24,8 @@ import { CUSTOMER_FIELDS } from '@/shared/entities/customers/dal/customer-fields
 import { CUSTOMER_FIELD_SQL } from '@/shared/entities/customers/dal/server/customer-field-sql'
 import { customerSearchWhere } from '@/shared/entities/customers/dal/server/customer-search-sql'
 import { derivedPipelineSql, derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
-import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { canSeeUngatedPhone } from '@/shared/entities/customers/lib/phone-access'
+import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { profileCols } from '@/shared/entities/customers/lib/profile-select'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { toNationalDigits } from '@/shared/lib/phone'
@@ -48,7 +49,7 @@ function customerSelectWithGate(ctx: ScopedContext) {
   return {
     ...rest,
     phone: gatedPhoneSql(canSeeUngatedPhone(ctx.actor.ability)),
-    hasSentProposal: hasSentProposalSql(),
+    hasSentProposal: hasSentProposalSql(ctx.actor.ability.can('read', 'Proposal')),
   }
 }
 

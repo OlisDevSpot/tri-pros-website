@@ -5,7 +5,7 @@ import type { CustomerProfileData } from '@/shared/entities/customers/types'
 import { useState } from 'react'
 import { Input } from '@/shared/components/ui/input'
 import { useAbility } from '@/shared/domains/permissions/client'
-import { canAgentSeePhone } from '@/shared/entities/customers/lib/can-see-phone'
+import { canSeeUngatedPhone } from '@/shared/entities/customers/lib/phone-access'
 import { formatCustomerAddress } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 import { AddressEditDialog } from './address-edit-dialog'
@@ -25,7 +25,8 @@ interface Props {
 export function CustomerHeroHeader({ customer, editForm, layout }: Props) {
   const ability = useAbility()
   const [addressDialogOpen, setAddressDialogOpen] = useState(false)
-  const phoneUnlocked = canAgentSeePhone(ability, customer)
+  // A null phone is locked only when the gate applied and no proposal has gone out; otherwise it is empty.
+  const phoneUnlocked = canSeeUngatedPhone(ability) || customer.hasSentProposal === true
   const isPhoto = layout === 'photo'
   const surface = isPhoto ? 'image' : 'card'
   // The phone hero adds call and email discs in thumb reach beside the name; the rows below still

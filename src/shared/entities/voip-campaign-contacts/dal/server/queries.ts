@@ -10,7 +10,8 @@ import { customerLeadAttribution } from '@/shared/db/schema/customer-lead-attrib
 import { customers } from '@/shared/db/schema/customers'
 import { voipCampaignContacts } from '@/shared/db/schema/voip-campaign-contacts'
 import { voipCampaigns } from '@/shared/db/schema/voip-campaigns'
-import { canSeeUngatedPhone, gatedPhoneSql } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { canSeeUngatedPhone } from '@/shared/entities/customers/lib/phone-access'
+import { gatedPhoneSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { isCampaignLeadSql, isDncSql, isEligibleSql, isEnrolledSql, isRemovedSql, leadStatusCaseSql } from '@/shared/entities/voip-campaign-contacts/lib/lead-campaign-status'
 import { toDigits } from '@/shared/lib/phone'
 

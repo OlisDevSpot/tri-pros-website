@@ -27,7 +27,8 @@ import { computePipelineValue, computeProjectValue } from '@/shared/domains/pipe
 import { CUSTOMER_FIELDS } from '@/shared/entities/customers/dal/customer-fields'
 import { CUSTOMER_FIELD_SQL } from '@/shared/entities/customers/dal/server/customer-field-sql'
 import { customerSearchWhere } from '@/shared/entities/customers/dal/server/customer-search-sql'
-import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { canSeeUngatedPhone } from '@/shared/entities/customers/lib/phone-access'
+import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 import { projectServerSpec } from '@/shared/modules/projects/core/server-spec'
@@ -44,6 +45,7 @@ const LIVE_MEETING = sql`${meetings.meetingOutcome} = ${'not_set'} AND ${meeting
 /** Everything a branch needs: who is asking, and the customer filter, search and order the kanban toolbar chose. */
 interface PipelineBranchArgs {
   canSeeUngated: boolean
+  readsProposals: boolean
   /** The Meeting read reach, for the arms whose outer table is `meetings`. */
   meetingReach: SQL
   /** The Proposal read reach, for every proposal read. */
@@ -60,6 +62,7 @@ export async function getCustomerPipelineItems(ctx: ScopedContext, input: Custom
     const args: PipelineBranchArgs = {
       // The customer reach comes from the rules; the meeting arms add the Meeting read reach.
       canSeeUngated: canSeeUngatedPhone(ctx.actor.ability),
+      readsProposals: ctx.actor.ability.can('read', 'Proposal'),
       meetingReach: permit(ctx, 'read', meetingServerSpec).sql,
       proposalReach: permit(ctx, 'read', proposalServerSpec).sql,
       projectReach: permit(ctx, 'read', projectServerSpec).sql,
@@ -100,7 +103,7 @@ async function getLeadsPipelineItems(args: PipelineBranchArgs): Promise<Customer
       id: customers.id,
       name: customers.name,
       phone: gatedPhoneSql(args.canSeeUngated),
-      hasSentProposal: hasSentProposalSql(),
+      hasSentProposal: hasSentProposalSql(args.readsProposals),
       email: customers.email,
       address: customers.address,
       city: customers.city,
@@ -154,7 +157,7 @@ async function getRehashOrDeadPipelineItems(pipeline: Pipeline, args: PipelineBr
       id: customers.id,
       name: customers.name,
       phone: gatedPhoneSql(args.canSeeUngated),
-      hasSentProposal: hasSentProposalSql(),
+      hasSentProposal: hasSentProposalSql(args.readsProposals),
       email: customers.email,
       address: customers.address,
       city: customers.city,
@@ -215,7 +218,7 @@ async function getFreshPipelineItems(args: PipelineBranchArgs): Promise<Customer
       customerId: customers.id,
       customerName: customers.name,
       customerPhone: gatedPhoneSql(args.canSeeUngated),
-      customerHasSentProposal: hasSentProposalSql(),
+      customerHasSentProposal: hasSentProposalSql(args.readsProposals),
       customerEmail: customers.email,
       customerAddress: customers.address,
       customerCity: customers.city,
@@ -423,7 +426,7 @@ async function getProjectsPipelineItems(args: PipelineBranchArgs): Promise<Custo
       customerId: customers.id,
       customerName: customers.name,
       customerPhone: gatedPhoneSql(args.canSeeUngated),
-      customerHasSentProposal: hasSentProposalSql(),
+      customerHasSentProposal: hasSentProposalSql(args.readsProposals),
       customerEmail: customers.email,
       customerAddress: customers.address,
       customerCity: customers.city,

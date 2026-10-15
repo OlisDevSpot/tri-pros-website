@@ -30,7 +30,7 @@ Agents see a customer's phone number only when the customer has a proposal at st
 UI surfaces also receive `hasSentProposal: boolean` so they can distinguish "phone null because gated" (show unlock CTA) from "phone null because the customer genuinely has no phone" (super-admin sees, agent shouldn't be told).
 
 **Why**: protects against agents shopping leads pre-commitment. Threshold (not equality) matters — phone stays unlocked through approval and project stages because forward progression only deepens the relationship.
-**Reference impl**: `lib/phone-gating-sql.ts` (`gatedPhoneSql`, `canSeeUngatedPhone`, `hasSentProposalSql`); `lib/can-see-phone.ts` (client-side render helper)
+**Reference impl**: `lib/phone-access.ts` (`canSeeUngatedPhone`, read by the SQL gate and the profile header); `lib/phone-gating-sql.ts` (`gatedPhoneSql`, `hasSentProposalSql`)
 **Enforced by**: DAL-level SQL null-coalesce on every agent-facing query that exposes `customers.phone`
 **Related ping**: see `memory/feedback-phone-visibility-threshold.md` for the threshold-vs-equality history and the recent (2026-05-19) fix.
 

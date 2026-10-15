@@ -23,7 +23,8 @@ import { customers } from '@/shared/db/schema/customers'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { meetings } from '@/shared/db/schema/meetings'
 import { proposals } from '@/shared/db/schema/proposals'
-import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { canSeeUngatedPhone } from '@/shared/entities/customers/lib/phone-access'
+import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { profileCols } from '@/shared/entities/customers/lib/profile-select'
 import { MEETING_FIELDS } from '@/shared/entities/meetings/dal/meeting-fields'
 import { MEETING_FIELD_SQL, setterUser } from '@/shared/entities/meetings/dal/server/meeting-field-sql'
@@ -112,7 +113,7 @@ export async function listMeetings(
           ...getTableColumns(meetings),
           customerName: customers.name,
           customerPhone: gatedPhoneSql(canSeeUngatedPhone(ctx.actor.ability)),
-          customerHasSentProposal: hasSentProposalSql(),
+          customerHasSentProposal: hasSentProposalSql(ctx.actor.ability.can('read', 'Proposal')),
           customerAddress: customers.address,
           customerCity: customers.city,
           customerState: customers.state,
@@ -229,7 +230,7 @@ export async function getByIdWithJoins(
           ...customerCols,
           ...profileCols(),
           phone: gatedPhoneSql(canSeeUngatedPhone(ctx.actor.ability)),
-          hasSentProposal: hasSentProposalSql(),
+          hasSentProposal: hasSentProposalSql(ctx.actor.ability.can('read', 'Proposal')),
         },
         ownerName: user.name,
         ownerImage: user.image,
