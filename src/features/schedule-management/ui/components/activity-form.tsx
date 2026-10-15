@@ -75,14 +75,17 @@ export function ActivityForm({ open, onOpenChange }: ActivityFormProps) {
       return
     }
 
+    // A link is a type and an id together; half of one is left off rather than refused.
+    const linkedId = entityId.trim()
+    const isLinked = Boolean(entityType && linkedId)
     createActivity.mutate({
       type,
       title: title.trim(),
       description: description.trim() || undefined,
       scheduledFor: scheduledFor || undefined,
       dueAt: dueAt || undefined,
-      entityType: entityType || undefined,
-      entityId: entityId.trim() || undefined,
+      entityType: isLinked && entityType ? entityType : undefined,
+      entityId: isLinked ? linkedId : undefined,
     })
   }, [type, title, description, scheduledFor, dueAt, entityType, entityId, createActivity])
 

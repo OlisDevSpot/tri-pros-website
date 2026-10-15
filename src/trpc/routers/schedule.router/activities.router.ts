@@ -1,35 +1,19 @@
-import { TRPCError } from '@trpc/server'
-import { eq, getTableColumns } from 'drizzle-orm'
 import z from 'zod'
 
 import { activityEntityTypes, activityTypes, gcalSyncableActivityTypes } from '@/shared/constants/enums'
-import { db } from '@/shared/db'
-import { activities, user } from '@/shared/db/schema'
+import { activityCrud } from '@/shared/entities/activities/dal/server/crud'
 import { activityListInputSchema, listActivities } from '@/shared/entities/activities/dal/server/queries'
+import { isWholeLink } from '@/shared/entities/activities/lib/server-spec'
 import { schedulingService } from '@/shared/services/scheduling.service'
 import { agentProcedure, createTRPCRouter } from '@/trpc/init'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 
+const WHOLE_LINK = { message: 'A linked record needs its type and its id together.' }
+
 export const activitiesRouter = createTRPCRouter({
   list: agentProcedure
     .input(activityListInputSchema)
-    .query(async ({ ctx, input }) => dalToTrpc(await listActivities({ ...ctx, scope: null }, input))),
-
-  getById: agentProcedure
-    .input(z.object({ id: z.string().uuid() }))
-    .query(async ({ input }) => {
-      const [row] = await db
-        .select({
-          ...getTableColumns(activities),
-          ownerName: user.name,
-          ownerImage: user.image,
-        })
-        .from(activities)
-        .leftJoin(user, eq(user.id, activities.ownerId))
-        .where(eq(activities.id, input.id))
-
-      return row ?? null
-    }),
+    .query(async ({ ctx, input }) => dalToTrpc(await listActivities(ctx, input))),
 
   create: agentProcedure
     .input(z.object({
@@ -41,19 +25,9 @@ export const activitiesRouter = createTRPCRouter({
       scheduledFor: z.string().optional(),
       dueAt: z.string().optional(),
       metaJSON: z.record(z.string(), z.unknown()).optional(),
-    }))
+    }).refine(isWholeLink, WHOLE_LINK))
     .mutation(async ({ ctx, input }) => {
-      const [created] = await db
-        .insert(activities)
-        .values({
-          ...input,
-          ownerId: ctx.session.user.id,
-        })
-        .returning()
-
-      if (!created) {
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create activity' })
-      }
+      const created = dalToTrpc(await activityCrud.create(ctx, input))
 
       const isSyncable = (gcalSyncableActivityTypes as readonly string[]).includes(created.type)
         && !!created.scheduledFor
@@ -77,35 +51,10 @@ export const activitiesRouter = createTRPCRouter({
       scheduledFor: z.string().optional(),
       dueAt: z.string().optional(),
       metaJSON: z.record(z.string(), z.unknown()).optional(),
-    }))
+    }).refine(isWholeLink, WHOLE_LINK))
     .mutation(async ({ ctx, input }) => {
-      const isOmni = ctx.actor.ability.can('manage', 'all')
-      const { id, ...rest } = input
-
-      if (!isOmni) {
-        const [existing] = await db
-          .select({ ownerId: activities.ownerId })
-          .from(activities)
-          .where(eq(activities.id, id))
-
-        if (!existing) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Activity not found' })
-        }
-
-        if (existing.ownerId !== ctx.session.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to update this activity' })
-        }
-      }
-
-      const [updated] = await db
-        .update(activities)
-        .set(rest)
-        .where(eq(activities.id, id))
-        .returning()
-
-      if (!updated) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Activity not found' })
-      }
+      const { id, ...data } = input
+      const updated = dalToTrpc(await activityCrud.update(ctx, { id, data }))
 
       await schedulingService
         .syncActivity(ctx.session.user.id, updated.id)
@@ -116,42 +65,13 @@ export const activitiesRouter = createTRPCRouter({
 
   complete: agentProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .mutation(async ({ input }) => {
-      const [updated] = await db
-        .update(activities)
-        .set({ completedAt: new Date().toISOString() })
-        .where(eq(activities.id, input.id))
-        .returning()
-
-      if (!updated) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Activity not found' })
-      }
-
-      return updated
-    }),
+    .mutation(async ({ ctx, input }) =>
+      dalToTrpc(await activityCrud.update(ctx, { id: input.id, data: { completedAt: new Date().toISOString() } }))),
 
   delete: agentProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const isOmni = ctx.actor.ability.can('manage', 'all')
-
-      if (!isOmni) {
-        const [existing] = await db
-          .select({ ownerId: activities.ownerId })
-          .from(activities)
-          .where(eq(activities.id, input.id))
-
-        if (!existing) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Activity not found' })
-        }
-
-        if (existing.ownerId !== ctx.session.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to delete this activity' })
-        }
-      }
-
-      await db.delete(activities).where(eq(activities.id, input.id))
-
+      dalToTrpc(await activityCrud.delete(ctx, { id: input.id }))
       return { deleted: true }
     }),
 })
