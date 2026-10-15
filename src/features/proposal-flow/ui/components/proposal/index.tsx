@@ -100,13 +100,6 @@ export function Proposal() {
                     aria-labelledby={`${step.accessor}-title`}
                     className="scroll-mt-12 @min-[1100px]/proposal:scroll-mt-0"
                   >
-                    {customizableSections.includes(step.accessor) && step.accessor === 'funding' && (
-                      <step.Component onPickFinancingOption={(option) => {
-                        // eslint-disable-next-line no-console
-                        console.log(option)
-                      }}
-                      />
-                    )}
                     {customizableSections.includes(step.accessor) && step.accessor === 'agreement' && (
                       <step.Component
                         proposalId={params.proposalId}

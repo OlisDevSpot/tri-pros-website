@@ -1,229 +1,144 @@
-import type { FinanceOption } from '@/shared/db/schema'
-import { motion } from 'motion/react'
-import { useQueryState } from 'nuqs'
-import { useEffect, useMemo, useState } from 'react'
+'use client'
+
+import type { PaymentMode } from '@/features/proposal-flow/lib/get-cash-down-bounds'
+
+import { addDays, format } from 'date-fns'
+import { ClockIcon, LockIcon } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
+
+import { FUNDING_LOCKED_NOTE, PROPOSAL_FROZEN_REASON } from '@/features/proposal-flow/constants/funding-lock'
+import { useProposalDocument } from '@/features/proposal-flow/contexts/proposal-document-context'
 import { useSetCashInDeal } from '@/features/proposal-flow/dal/client/mutations/use-set-cash-in-deal'
 import { useUpdateProposal } from '@/features/proposal-flow/dal/client/mutations/use-update-proposal'
 import { useGetFinanceOptions } from '@/features/proposal-flow/dal/client/queries/use-get-finance-options'
-import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
+import { useDebouncedSave } from '@/features/proposal-flow/hooks/use-debounced-save'
+import { clampCashDown, getCashDownBounds, getStoredPaymentMode, isPaymentModeAvailable } from '@/features/proposal-flow/lib/get-cash-down-bounds'
 import { PricingBreakdown } from '@/features/proposal-flow/ui/components/pricing-breakdown'
-import { LoadingState } from '@/shared/components/states/loading-state'
-import { Button } from '@/shared/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
-import { Input } from '@/shared/components/ui/input'
-import { Label } from '@/shared/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
-import { getLoanValues } from '@/shared/lib/loan-calculations'
+import { CashDownSlider } from '@/features/proposal-flow/ui/components/proposal/cash-down-slider'
+import { FinanceOptionGroup } from '@/features/proposal-flow/ui/components/proposal/finance-option-group'
+import { PaymentPlanGroup } from '@/features/proposal-flow/ui/components/proposal/payment-plan-group'
+import { toneClasses } from '@/shared/constants/status-tones'
+import { formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 import { computeFinalTcp } from '@/shared/modules/proposals/core/lib/financials'
 import { toFundingInputs } from '@/shared/modules/proposals/core/lib/funding-columns'
+import { isProposalFrozen } from '@/shared/modules/proposals/core/lib/proposal-lock'
 
-interface Props {
-  onPickFinancingOption?: (option: FinanceOption) => void
-}
+export function Funding() {
+  const { proposal, token } = useProposalDocument()
+  const funding = useMemo(() => toFundingInputs(proposal), [proposal])
+  const sow = proposal.projectJSON.data.sow
+  const finalTcp = computeFinalTcp({ funding, sow })
+  const { max } = getCashDownBounds(finalTcp)
+  const storedCash = funding.cashInDeal ?? 0
+  const storedMode = getStoredPaymentMode(storedCash, finalTcp)
 
-export function Funding({ onPickFinancingOption }: Props) {
-  const proposal = useCurrentProposal()
-  const [cashInDeal, setCashInDeal] = useState<number | null>(null)
-  const [token] = useQueryState('token', { defaultValue: '' })
+  // A share-link read carries no envelope id, so for a homeowner a draft envelope shows up only as the server refusing the write.
+  const [refused, setRefused] = useState(false)
+  const locked = refused || isProposalFrozen(proposal)
 
-  const updateProposal = useUpdateProposal()
-  const saveCashInDeal = useSetCashInDeal()
+  const [pickedMode, setPickedMode] = useState<PaymentMode | null>(null)
+  const [pickedCash, setPickedCash] = useState<number | null>(null)
+  const [pickedOptionId, setPickedOptionId] = useState<number | null>(null)
+
+  const mode = !locked && pickedMode && isPaymentModeAvailable(pickedMode, finalTcp) ? pickedMode : storedMode
+  // Clamped on every render, not synced in an effect: a price change that would leave under $3,500 financed
+  // shows the clamped value at once, and the debounced save below stores it.
+  const cash = locked ? storedCash : clampCashDown(pickedCash ?? storedCash, finalTcp)
+  const selectedOptionId = locked ? proposal.financeOptionId : pickedOptionId ?? proposal.financeOptionId
+
   const financeOptions = useGetFinanceOptions()
+  const saveCash = useSetCashInDeal()
+  const updateProposal = useUpdateProposal()
 
-  const fundingInputs = useMemo(() => (proposal.data ? toFundingInputs(proposal.data) : null), [proposal.data])
-
-  useEffect(() => {
-    if (proposal.data && fundingInputs && cashInDeal === null) {
-      const tcp = computeFinalTcp({ funding: fundingInputs, sow: proposal.data.projectJSON.data.sow })
-      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
-      setCashInDeal(fundingInputs.cashInDeal ?? tcp)
-    }
-  }, [proposal.data, fundingInputs, cashInDeal])
-
-  const amountFinanced = useMemo(() => {
-    if (!proposal.data || !fundingInputs || cashInDeal === null) {
-      return 0
-    }
-
-    return computeFinalTcp({ funding: fundingInputs, sow: proposal.data.projectJSON.data.sow }) - cashInDeal
-  }, [cashInDeal, proposal.data, fundingInputs])
-
-  function pickFinancingOption(option: FinanceOption) {
-    if (!proposal.data) {
+  function onWriteError(error: { message: string }, fallback: string) {
+    if (error.message === PROPOSAL_FROZEN_REASON) {
+      setRefused(true)
       return
     }
+    toast.error(fallback)
+  }
 
-    onPickFinancingOption?.(option)
-    updateProposal.mutate({
-      token,
-      id: proposal.data.id,
-      data: {
-        financeOptionId: option.id,
-      },
-    }, {
-      onSuccess: () => {
-        toast.success('Financing option updated')
+  // The slider is the only cash write: switching to All cash or All finance never sends $0.
+  useDebouncedSave(cash, storedCash, (value) => {
+    saveCash.mutate({ token, id: proposal.id, cashInDeal: value }, {
+      onError: error => onWriteError(error, 'Couldn’t save your cash down. Your choice is kept on this screen.'),
+    })
+  })
+
+  useDebouncedSave(selectedOptionId, proposal.financeOptionId, (optionId) => {
+    if (optionId === null) {
+      return
+    }
+    updateProposal.mutate({ token, id: proposal.id, data: { financeOptionId: optionId } }, {
+      onError: (error) => {
+        setPickedOptionId(null)
+        onWriteError(error, 'Couldn’t save your finance option.')
       },
     })
-  }
+  })
 
-  if (proposal.isPending) {
-    return (
-      <LoadingState
-        title="Loading Proposal"
-        description="This might take a few seconds"
-        className="bg-card"
-      />
-    )
-  }
-
-  const proposalData = proposal.data
-
-  if (!proposalData) {
-    return null
-  }
-
-  const funding = toFundingInputs(proposalData)
+  const cashDown = mode === 'some-cash' ? cash : 0
+  const amountFinanced = finalTcp - cashDown
+  const validDays = proposal.projectJSON.data.validThroughTimeframe
+  // The timeframe is a fixed "N days" choice, and the hold runs from the day the proposal was sent.
+  const holdLine = proposal.sentAt
+    ? `Pricing held through ${format(addDays(new Date(proposal.sentAt), Number.parseInt(validDays, 10)), 'MMMM d, yyyy')} (${validDays})`
+    : `Pricing held for ${validDays}`
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-    >
-      <Card>
-        <CardHeader className="text-center md:text-start">
-          <CardTitle>
-            <h2>Funding Summary</h2>
-          </CardTitle>
-          <CardDescription>Home improvement, at your own terms</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-8">
-          <PricingBreakdown
-            funding={funding}
-            sow={proposalData.projectJSON.data.sow}
-            priceDisplayMode={proposalData.priceDisplayMode}
-          />
-          <Tabs defaultValue="cash" className="space-y-8">
-            <TabsList className="mx-auto md:mx-0">
-              <TabsTrigger value="cash">Cash / cash + finance</TabsTrigger>
-              <TabsTrigger value="consolidate">Consolidate</TabsTrigger>
-            </TabsList>
-            { financeOptions.data && (
-              <TabsContent value="cash">
-                <div className="space-y-8">
-                  <div className="text-center md:text-start">
-                    <h3 className="text-lg font-semibold">Cash / cash + finance</h3>
-                    <p className="text-muted-foreground">
-                      Some lenders may request a minimum cash investement.
-                    </p>
-                  </div>
-                  <div className="p-6 border rounded-xl flex flex-col lg:flex-row gap-6">
-                    <div className="space-y-4 flex-1">
-                      <h3 className="text-lg font-semibold">Upfront Costs</h3>
-                      <div className="space-y-2">
-                        <Label>Cash down *</Label>
-                        <Input
-                          type="text"
-                          placeholder="Cash Down"
-                          value={cashInDeal?.toLocaleString('en-US', {
-                            style: 'currency',
-                            currency: 'USD',
-                            maximumFractionDigits: 0,
-                          }) || ''}
-                          onChange={(e) => {
-                            setCashInDeal(Number(e.target.value.replace(/\D/g, '').replace(/\$/g, '')))
-                          }}
-                          disabled={saveCashInDeal.isPending}
-                        />
-                        {cashInDeal !== funding.cashInDeal && (
-                          <Button
-                            size="sm"
-                            onClick={() => {
-                              // Narrow write — never reconstruct the funding
-                              // blob client-side (jsonb deprecation ledger).
-                              saveCashInDeal.mutate({
-                                token,
-                                id: proposalData.id,
-                                cashInDeal: cashInDeal || 0,
-                              }, {
-                                onSuccess: () => {
-                                  toast.success('Cash in deal updated')
-                                },
-                              })
-                            }}
-                            disabled={saveCashInDeal.isPending}
-                          >
-                            Save
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                    <div className="space-y-4 flex-1">
-                      <h3 className="text-lg font-semibold">Financial Options</h3>
-                      <div className="space-y-4">
-                        {financeOptions.data.map(option => (
-                          <button
-                            key={`${option.id}-${option.interestRate}`}
-                            className={
-                              cn(
-                                'p-4 border rounded-xl w-full flex items-center justify-between transition-colors hover:bg-row-hover pressed:bg-row-press disabled:text-muted-foreground disabled:cursor-not-allowed',
-                                option.id === proposalData.financeOptionId && 'bg-row-selected hover:bg-row-selected',
-                              )
-                            }
-                            type="button"
-                            onClick={() => {
-                              pickFinancingOption(option)
-                            }}
-                            disabled={updateProposal.isPending}
-                          >
-                            <div className="text-start h-fit space-y-1">
-                              <p className="font-semibold">
-                                {option.termInMonths / 12}
-                                {' '}
-                                years
-                              </p>
-                              <span className="block text-muted-foreground text-sm">
-                                {option.termInMonths}
-                                {' '}
-                                months
-                              </span>
-                              <span className="block text-muted-foreground text-sm">
-                                {Math.round(option.interestRate * 10000) / 100}
-                                % APR
-                              </span>
-                            </div>
-                            <div className="flex gap-1 items-center flex-wrap text-end w-fit">
-                              <p className="shrink-0">
-                                {getLoanValues(amountFinanced, option.interestRate, option.termInMonths).monthlyFormatted}
-                              </p>
-                              <span className="text-muted-foreground text-xs">/ month</span>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
+    <div className="px-4 py-12 sm:px-8">
+      <div className="mx-auto grid max-w-5xl gap-6">
+        <header className="grid gap-2">
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Funding</p>
+          <h2 id="funding-title" className="text-3xl font-semibold text-balance">Your investment</h2>
+          <p className="text-muted-foreground">Every part priced, every saving shown. Choose how you’d like to pay.</p>
+        </header>
+        <div className="grid gap-6 @min-[1100px]/proposal:grid-cols-2">
+          <div className="grid content-start gap-3">
+            <PricingBreakdown funding={funding} sow={sow} priceDisplayMode={proposal.priceDisplayMode} />
+            {validDays && (
+              <p className={cn('flex items-center gap-2 rounded-md border px-3 py-2.5 text-sm font-semibold', toneClasses('pending').fill)}>
+                <ClockIcon className="size-4" />
+                {holdLine}
+              </p>
             )}
-            <TabsContent value="consolidate">
-              <div>
-                <div>
-                  <h3 className="text-lg font-semibold">Consolidate</h3>
-                  <p className="text-muted-foreground">
-                    Coming soon!
-                  </p>
-                </div>
-                <div>
-                  ConsolidationForm
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-    </motion.div>
+          </div>
+          <div className="grid content-start gap-4 rounded-lg border border-border bg-card p-5">
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">How you’d like to pay</p>
+            {locked && (
+              <p className="flex items-center gap-2 text-sm font-semibold">
+                <LockIcon className="size-4 shrink-0" />
+                {FUNDING_LOCKED_NOTE}
+              </p>
+            )}
+            <PaymentPlanGroup value={mode} finalTcp={finalTcp} disabled={locked} onChange={setPickedMode} />
+            {mode === 'all-cash' && (
+              <p className="text-sm">{`${formatAsDollars(finalTcp)} in total: ${formatAsDollars(funding.depositAmount)} at signing, the balance on completion.`}</p>
+            )}
+            {mode === 'scheduled' && (
+              <p className="text-sm text-muted-foreground">Your consultant will set up a payment schedule with you.</p>
+            )}
+            {mode === 'some-cash' && <CashDownSlider value={cash} max={max} disabled={locked} onChange={setPickedCash} />}
+            {(mode === 'some-cash' || mode === 'all-finance') && (
+              <>
+                <p className="text-sm">{`${formatAsDollars(amountFinanced)} to finance${cashDown > 0 ? ` after ${formatAsDollars(cashDown)} down` : ''}.`}</p>
+                {financeOptions.data && financeOptions.data.length > 0 && (
+                  <FinanceOptionGroup
+                    options={financeOptions.data}
+                    selectedId={selectedOptionId}
+                    amountFinanced={amountFinanced}
+                    disabled={locked}
+                    onSelect={setPickedOptionId}
+                  />
+                )}
+                <p className="text-xs text-muted-foreground">Estimates, subject to lender approval. Financing starts at $3,500.</p>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
