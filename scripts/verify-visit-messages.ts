@@ -346,7 +346,7 @@ const VISIT_AS_POSTGRES = '2026-10-09 17:00:00+00'
 const OLD_VISIT = '2026-10-08T17:00:00.000Z'
 
 function fact(kind: VisitMessageFact['kind'], over: Partial<VisitMessageFact> = {}): VisitMessageFact {
-  return { kind, channel: 'sms', status: 'sent', reason: null, forScheduledFor: VISIT, createdAt: '2026-10-07T18:00:00.000Z', ...over }
+  return { kind, status: 'sent', reason: null, forScheduledFor: VISIT, createdAt: '2026-10-07T18:00:00.000Z', ...over }
 }
 function planInput(over: Partial<VisitMessagePlanInput> = {}, meeting: Partial<VisitMessagePlanInput['meeting']> = {}): VisitMessagePlanInput {
   return {
