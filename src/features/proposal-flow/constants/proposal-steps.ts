@@ -9,28 +9,32 @@ import { ContractStatusPanel } from '@/shared/components/contract-status-panel/u
 
 export const proposalSteps = [
   {
-    title: 'Project Overview',
+    title: 'Overview',
+    shortLabel: 'Overview',
     accessor: 'project-overview',
     description: 'Project overview',
     Component: ProjectOverview,
     roles: ['homeowner', 'agent'],
   },
   {
-    title: 'Trusted Contractor',
+    title: 'Trusted contractor',
+    shortLabel: 'Contractor',
     accessor: 'about-tri-pros',
     description: 'About Tri Pros Remodeling',
     Component: TrustedContractor,
     roles: ['homeowner', 'agent'],
   },
   {
-    title: 'Past Results',
+    title: 'Past results',
+    shortLabel: 'Results',
     accessor: 'related-projects',
     description: 'View similar completed projects from our portfolio',
     Component: RelatedProjects,
     roles: ['homeowner', 'agent'],
   },
   {
-    title: 'Scope of Work',
+    title: 'Scope of work',
+    shortLabel: 'Scope',
     accessor: 'scope-of-work',
     description: 'Scope of Work',
     Component: ScopeOfWork,
@@ -38,13 +42,15 @@ export const proposalSteps = [
   },
   {
     title: 'Funding',
+    shortLabel: 'Funding',
     accessor: 'funding',
     description: 'Funding',
     Component: Funding,
     roles: ['homeowner', 'agent'],
   },
   {
-    title: 'Agreement',
+    title: 'Next steps',
+    shortLabel: 'Next steps',
     accessor: 'agreement',
     description: 'Proposal delivery and contract signing',
     Component: ContractStatusPanel as unknown as (props: Record<string, any>) => React.ReactNode,

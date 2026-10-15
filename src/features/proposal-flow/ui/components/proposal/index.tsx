@@ -6,6 +6,7 @@ import { useParams, useSearchParams } from 'next/navigation'
 import { useEffect, useRef } from 'react'
 
 import { customizableSections, generateProposalSteps } from '@/features/proposal-flow/constants/proposal-steps'
+import { ProposalDocumentProvider } from '@/features/proposal-flow/contexts/proposal-document-context'
 import { useScrollRoot } from '@/features/proposal-flow/contexts/scroll-context'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
 import { useViewMode } from '@/features/proposal-flow/hooks/use-view-mode'
@@ -35,7 +36,12 @@ export function Proposal() {
     }
     hasRecorded.current = true
 
-    const token = searchParams.get('token') ?? ''
+    const token = searchParams.get('token')
+    // An agent previewing the page is not a homeowner view, and the server rejects a missing token anyway.
+    if (viewMode === 'agent' || !token) {
+      return
+    }
+
     const utmSource = searchParams.get('utm_source')
     const source = utmSource === 'email' ? 'email' : utmSource === 'sms' ? 'sms' : 'direct'
 
@@ -69,6 +75,7 @@ export function Proposal() {
 
   const proposalData = proposal.data
   const { token, customer } = proposalData
+  const urlToken = searchParams.get('token') ?? undefined
   const customerEmail = customer?.email ?? null
 
   const viewerRole = ability.can('update', 'Proposal') ? 'agent' : 'homeowner'
@@ -77,49 +84,51 @@ export function Proposal() {
   return (
     <div className="h-full overflow-auto">
       <div ref={setRootEl} id="proposal-container" className="h-full overflow-auto scroll-smooth">
-        <div className="space-y-20 lg:pr-8">
-          <Heading />
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="space-y-20"
-          >
-            {proposalSteps.map(step => (
-              <div
-                id={step.accessor}
-                key={step.accessor}
-              >
-                {customizableSections.includes(step.accessor) && step.accessor === 'funding' && (
-                  <step.Component onPickFinancingOption={(option) => {
-                  // eslint-disable-next-line no-console
-                    console.log(option)
-                  }}
-                  />
-                )}
-                {customizableSections.includes(step.accessor) && step.accessor === 'agreement' && (
-                  <step.Component
-                    proposalId={params.proposalId}
-                    token={token ?? undefined}
-                    isAgent={viewMode === 'agent'}
-                    customerAge={customer?.customerAge ?? null}
-                    envelopeDocumentIds={proposalData.envelopeDocumentIds ?? null}
-                    proposalKind={proposalData.kind}
-                    customerName={customer?.name ?? null}
-                    customerEmail={customerEmail}
-                    proposalStatus={proposalData.status}
-                    proposalSentAt={proposalData.sentAt}
-                  />
-                )}
-                {!customizableSections.includes(step.accessor) && (
-                  <step.Component />
-                )}
-              </div>
-            ))}
-            {token && (
-              <PdfFallbackCard pdfUrl={getProposalPdfUrl(params.proposalId, token)} />
-            )}
-          </motion.div>
-        </div>
+        <ProposalDocumentProvider proposal={proposalData} viewMode={viewMode} token={urlToken}>
+          <div className="space-y-20 lg:pr-8">
+            <Heading />
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="space-y-20"
+            >
+              {proposalSteps.map(step => (
+                <div
+                  id={step.accessor}
+                  key={step.accessor}
+                >
+                  {customizableSections.includes(step.accessor) && step.accessor === 'funding' && (
+                    <step.Component onPickFinancingOption={(option) => {
+                      // eslint-disable-next-line no-console
+                      console.log(option)
+                    }}
+                    />
+                  )}
+                  {customizableSections.includes(step.accessor) && step.accessor === 'agreement' && (
+                    <step.Component
+                      proposalId={params.proposalId}
+                      token={token ?? undefined}
+                      isAgent={viewMode === 'agent'}
+                      customerAge={customer?.customerAge ?? null}
+                      envelopeDocumentIds={proposalData.envelopeDocumentIds ?? null}
+                      proposalKind={proposalData.kind}
+                      customerName={customer?.name ?? null}
+                      customerEmail={customerEmail}
+                      proposalStatus={proposalData.status}
+                      proposalSentAt={proposalData.sentAt}
+                    />
+                  )}
+                  {!customizableSections.includes(step.accessor) && (
+                    <step.Component />
+                  )}
+                </div>
+              ))}
+              {token && (
+                <PdfFallbackCard pdfUrl={getProposalPdfUrl(params.proposalId, token)} />
+              )}
+            </motion.div>
+          </div>
+        </ProposalDocumentProvider>
       </div>
     </div>
   )

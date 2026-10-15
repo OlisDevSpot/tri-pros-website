@@ -3,6 +3,7 @@ import type { UserRole } from '@/shared/constants/enums'
 
 export interface ProposalStep<P> {
   title: string
+  shortLabel: string
   roles: UserRole[]
   accessor: string
   description: string
