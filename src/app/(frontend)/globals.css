@@ -120,6 +120,9 @@
   --status-danger-fg: oklch(0.49 0.17 27);
   --status-danger-bg: oklch(0.95 0.025 25);
   --status-danger-dot: oklch(0.61 0.2 27);
+  /* Our side of a conversation. Solid, so white ink holds 4.5:1 on any rung. */
+  --bubble-ours: oklch(0.52 0.13 152);
+  --bubble-ours-foreground: oklch(1 0 0);
   --status-idle-fg: oklch(0.46 0.02 255);
   --status-idle-bg: oklch(0.94 0.008 255);
   --status-idle-dot: oklch(0.66 0.02 255);
@@ -466,6 +469,8 @@
   --status-danger-fg: oklch(0.83 0.1 25);
   --status-danger-bg: oklch(0.31 0.08 25);
   --status-danger-dot: oklch(0.7 0.17 27);
+  --bubble-ours: oklch(0.5 0.12 152);
+  --bubble-ours-foreground: oklch(1 0 0);
   --status-idle-fg: oklch(0.82 0.02 255);
   --status-idle-bg: oklch(0.3 0.02 258);
   --status-idle-dot: oklch(0.66 0.02 255);
@@ -826,6 +831,8 @@
   --color-status-danger-fg: var(--status-danger-fg);
   --color-status-danger-bg: var(--status-danger-bg);
   --color-status-danger-dot: var(--status-danger-dot);
+  --color-bubble-ours: var(--bubble-ours);
+  --color-bubble-ours-foreground: var(--bubble-ours-foreground);
   --color-status-idle-fg: var(--status-idle-fg);
   --color-status-idle-bg: var(--status-idle-bg);
   --color-status-idle-dot: var(--status-idle-dot);

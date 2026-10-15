@@ -353,6 +353,8 @@ const pairs: Pair[] = [
   { label: 'hovered secondary vs secondary', fg: '--secondary-hover', bg: '--secondary', min: 1.1, on: ON_SURFACES },
   { label: 'hovered primary vs primary', fg: '--primary-hover', bg: '--primary', min: 1.15 },
   { label: 'button label on primary', fg: '--primary-foreground', bg: '--primary', min: 4.5 },
+  // Our texts in a conversation are white on a solid green, iOS style; a lighter green drops the ink under 4.5:1.
+  { label: 'text on our message bubble', fg: '--bubble-ours-foreground', bg: '--bubble-ours', min: 4.5 },
   { label: 'button label on hovered primary', fg: '--primary-foreground', bg: '--primary-hover', min: 4.5 },
   { label: 'label on hovered destructive', fg: '--destructive-foreground', bg: '--destructive-hover', min: 4.5 },
   // Records: proposal tiles are filled with their status tone and hover a solid step off it; their secondary lines are

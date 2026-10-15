@@ -33,6 +33,11 @@ const bubbleVariants = cva(
           'border-none *:data-[slot=bubble-content]:rounded-none *:data-[slot=bubble-content]:bg-transparent *:data-[slot=bubble-content]:p-0 [&>[data-slot=bubble-content]:is(button,a):hover]:bg-muted [&>[data-slot=bubble-content]:is(button,a):hover]:text-foreground dark:[&>[data-slot=bubble-content]:is(button,a):hover]:bg-muted/50',
         destructive:
           '*:data-[slot=bubble-content]:bg-destructive/10 *:data-[slot=bubble-content]:text-destructive dark:*:data-[slot=bubble-content]:bg-destructive/20 [&>[data-slot=bubble-content]:is(button,a):hover]:bg-destructive/20 dark:[&>[data-slot=bubble-content]:is(button,a):hover]:bg-destructive/30',
+        // Ours and theirs, iOS style: a solid green under white ink, and one rung above the conversation
+        // surface with its edge. `scheduled` is a text that has not gone out yet.
+        ours: '*:data-[slot=bubble-content]:bg-bubble-ours *:data-[slot=bubble-content]:text-bubble-ours-foreground',
+        theirs: '*:data-[slot=bubble-content]:border-border *:data-[slot=bubble-content]:bg-muted *:data-[slot=bubble-content]:text-foreground',
+        scheduled: '*:data-[slot=bubble-content]:border-dashed *:data-[slot=bubble-content]:border-border-strong *:data-[slot=bubble-content]:bg-transparent *:data-[slot=bubble-content]:text-muted-foreground',
       },
     },
     defaultVariants: {
