@@ -16,6 +16,12 @@ export function clampCashDown(value: number, finalTcp: number): number {
   return Math.min(stepped, max)
 }
 
+// A stored amount is only pulled under the max, never snapped to the step: an off-step amount the agent
+// entered is a real choice, and opening the page must not rewrite it.
+export function clampStoredCashDown(storedCash: number, finalTcp: number): number {
+  return Math.min(storedCash, getCashDownBounds(finalTcp).max)
+}
+
 export function isPaymentModeAvailable(mode: PaymentMode, finalTcp: number): boolean {
   if (mode === 'all-cash' || mode === 'scheduled') {
     return true
@@ -23,11 +29,15 @@ export function isPaymentModeAvailable(mode: PaymentMode, finalTcp: number): boo
   return getCashDownBounds(finalTcp).canFinance
 }
 
-// Only the cash down is stored until the payment plan is, so a reload infers the mode from it.
 // The proposal form and the meeting handoff store an all-cash deal as a cash down of the whole price;
 // compared in cents because the stored column is rounded to the cent and the computed price may not be.
+export function coversWholePrice(storedCash: number, finalTcp: number): boolean {
+  return Math.round(storedCash * 100) >= Math.round(finalTcp * 100)
+}
+
+// Only the cash down is stored until the payment plan is, so a reload infers the mode from it.
 export function getStoredPaymentMode(storedCash: number, finalTcp: number): PaymentMode {
-  if (!getCashDownBounds(finalTcp).canFinance || Math.round(storedCash * 100) >= Math.round(finalTcp * 100)) {
+  if (!getCashDownBounds(finalTcp).canFinance || coversWholePrice(storedCash, finalTcp)) {
     return 'all-cash'
   }
   return storedCash > 0 ? 'some-cash' : 'all-finance'

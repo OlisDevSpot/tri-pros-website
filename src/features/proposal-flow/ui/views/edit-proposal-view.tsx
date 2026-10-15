@@ -13,6 +13,7 @@ import { toast } from 'sonner'
 import { useReplaceIncentives } from '@/features/proposal-flow/dal/client/mutations/use-replace-incentives'
 import { useUpdateProposal } from '@/features/proposal-flow/dal/client/mutations/use-update-proposal'
 import { useGetProposal } from '@/features/proposal-flow/dal/client/queries/use-get-proposal'
+import { coversWholePrice } from '@/features/proposal-flow/lib/get-cash-down-bounds'
 import { baseDefaultValues, proposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import { ProposalForm } from '@/features/proposal-flow/ui/components/form'
 import { ErrorState } from '@/shared/components/states/error-state'
@@ -106,12 +107,13 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
   }
 
   const customer = proposal.data.customer
+  const storedFunding = toFundingInputs(proposal.data)
+  const storedAllCash = coversWholePrice(storedFunding.cashInDeal, computeFinalTcp({ funding: storedFunding, sow: proposal.data.projectJSON.data.sow }))
 
   function buildMutationData(rawData: ProposalFormSchema) {
-    // finalTcp is derived via `computeFinalTcp`, not persisted. We still
-    // clamp cashInDeal to the current final TCP so a downward revision of
-    // startingTcp / discounts cannot leave a cash-in-deal that exceeds
-    // what the homeowner actually owes.
+    // finalTcp is derived, not persisted, and an all-cash deal is stored as a cash down of the whole price.
+    // A price drop must not leave more cash than is owed, and a price rise must not quietly turn an
+    // all-cash deal into a partial cash down, so all-cash follows the new price.
     const nextFinalTcp = computeFinalTcp({ funding: rawData.funding, sow: rawData.project.data.sow })
 
     return {
@@ -125,7 +127,7 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
         // applyEnvelopeContext is the only writer (spec §2).
         ...fundingDomainToColumns({
           ...rawData.funding,
-          cashInDeal: Math.min(rawData.funding.cashInDeal, nextFinalTcp),
+          cashInDeal: storedAllCash ? nextFinalTcp : Math.min(rawData.funding.cashInDeal, nextFinalTcp),
         }),
       },
     }

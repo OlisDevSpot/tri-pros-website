@@ -2,8 +2,7 @@
 
 import type { PaymentMode } from '@/features/proposal-flow/lib/get-cash-down-bounds'
 
-import { addDays, format } from 'date-fns'
-import { ClockIcon, LockIcon } from 'lucide-react'
+import { LockIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -13,14 +12,12 @@ import { useSetCashInDeal } from '@/features/proposal-flow/dal/client/mutations/
 import { useUpdateProposal } from '@/features/proposal-flow/dal/client/mutations/use-update-proposal'
 import { useGetFinanceOptions } from '@/features/proposal-flow/dal/client/queries/use-get-finance-options'
 import { useDebouncedSave } from '@/features/proposal-flow/hooks/use-debounced-save'
-import { clampCashDown, getCashDownBounds, getStoredPaymentMode, isPaymentModeAvailable } from '@/features/proposal-flow/lib/get-cash-down-bounds'
+import { clampCashDown, clampStoredCashDown, getCashDownBounds, getStoredPaymentMode, isPaymentModeAvailable } from '@/features/proposal-flow/lib/get-cash-down-bounds'
 import { PricingBreakdown } from '@/features/proposal-flow/ui/components/pricing-breakdown'
 import { CashDownSlider } from '@/features/proposal-flow/ui/components/proposal/cash-down-slider'
 import { FinanceOptionGroup } from '@/features/proposal-flow/ui/components/proposal/finance-option-group'
 import { PaymentPlanGroup } from '@/features/proposal-flow/ui/components/proposal/payment-plan-group'
-import { toneClasses } from '@/shared/constants/status-tones'
 import { formatAsDollars } from '@/shared/lib/formatters'
-import { cn } from '@/shared/lib/utils'
 import { computeFinalTcp } from '@/shared/modules/proposals/core/lib/financials'
 import { toFundingInputs } from '@/shared/modules/proposals/core/lib/funding-columns'
 import { isProposalFrozen } from '@/shared/modules/proposals/core/lib/proposal-lock'
@@ -45,8 +42,10 @@ export function Funding() {
   const mode = !locked && pickedMode && isPaymentModeAvailable(pickedMode, finalTcp) ? pickedMode : storedMode
   // Clamped on every render, not synced in an effect: a price change that would leave under $3,500 financed
   // shows the clamped value at once, and the debounced save below stores it.
-  const cash = locked ? storedCash : clampCashDown(pickedCash ?? storedCash, finalTcp)
-  // Only a slider move or a stored "Some cash" amount that breaks the floor or the step is written. An all-cash deal
+  const cash = locked
+    ? storedCash
+    : pickedCash !== null ? clampCashDown(pickedCash, finalTcp) : clampStoredCashDown(storedCash, finalTcp)
+  // Only a slider move or a stored "Some cash" amount that breaks the floor is written. An all-cash deal
   // stores the whole price and an all-finance one $0, and opening the page must leave both as they are.
   const cashToSave = !locked && (pickedCash !== null || storedMode === 'some-cash') ? cash : storedCash
   const selectedOptionId = locked ? proposal.financeOptionId : pickedOptionId ?? proposal.financeOptionId
@@ -55,20 +54,21 @@ export function Funding() {
   const saveCash = useSetCashInDeal()
   const updateProposal = useUpdateProposal()
 
-  function onWriteError(error: { message: string }, fallback: string) {
+  function onWriteError(error: { message: string }, fallback: string, isNewFailure: boolean) {
     if (error.message === PROPOSAL_FROZEN_REASON) {
       setRefused(true)
       return
     }
-    toast.error(fallback)
+    if (isNewFailure) {
+      toast.error(fallback)
+    }
   }
 
   // The slider is the only cash write: switching to All cash or All finance never sends $0.
   useDebouncedSave(cashToSave, storedCash, (value, failed) => {
     saveCash.mutate({ token, id: proposal.id, cashInDeal: value }, {
       onError: (error) => {
-        failed()
-        onWriteError(error, 'Couldn’t save your cash down. Your choice is kept on this screen.')
+        onWriteError(error, 'Couldn’t save your cash down. Your choice is kept on this screen.', failed())
       },
     })
   })
@@ -79,20 +79,15 @@ export function Funding() {
     }
     updateProposal.mutate({ token, id: proposal.id, data: { financeOptionId: optionId } }, {
       onError: (error) => {
-        failed()
+        const isNewFailure = failed()
         setPickedOptionId(null)
-        onWriteError(error, 'Couldn’t save your finance option.')
+        onWriteError(error, 'Couldn’t save your finance option.', isNewFailure)
       },
     })
   })
 
   const cashDown = mode === 'some-cash' ? cash : 0
   const amountFinanced = finalTcp - cashDown
-  const validDays = proposal.projectJSON.data.validThroughTimeframe
-  // The timeframe is a fixed "N days" choice, and the hold runs from the day the proposal was sent.
-  const holdLine = proposal.sentAt
-    ? `Pricing held through ${format(addDays(new Date(proposal.sentAt), Number.parseInt(validDays, 10)), 'MMMM d, yyyy')} (${validDays})`
-    : `Pricing held for ${validDays}`
 
   return (
     <div className="px-4 py-12 sm:px-8">
@@ -100,17 +95,14 @@ export function Funding() {
         <header className="grid gap-2">
           <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Funding</p>
           <h2 id="funding-title" className="text-3xl font-semibold text-balance">Your investment</h2>
-          <p className="text-muted-foreground">Every part priced, every saving shown. Choose how you’d like to pay.</p>
+          <p className="text-muted-foreground">
+            {proposal.priceDisplayMode === 'breakdown' ? 'Every part priced, every saving shown.' : 'Your price, with every saving shown.'}
+            {' Choose how you’d like to pay.'}
+          </p>
         </header>
         <div className="grid gap-6 @min-[1100px]/proposal:grid-cols-2">
           <div className="grid content-start gap-3">
             <PricingBreakdown funding={funding} sow={sow} priceDisplayMode={proposal.priceDisplayMode} />
-            {validDays && (
-              <p className={cn('flex items-center gap-2 rounded-md border px-3 py-2.5 text-sm font-semibold', toneClasses('pending').fill)}>
-                <ClockIcon className="size-4" />
-                {holdLine}
-              </p>
-            )}
           </div>
           <div className="grid content-start gap-4 rounded-lg border border-border bg-card p-5">
             <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">How you’d like to pay</p>

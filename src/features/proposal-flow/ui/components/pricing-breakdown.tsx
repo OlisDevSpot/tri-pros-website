@@ -29,6 +29,8 @@ export function PricingBreakdown({ funding, sow, priceDisplayMode }: Props) {
   const parts: PartLine[] = showPrices
     ? breakdown.sections.map(section => ({ ...section, netPrice: section.incentives.length > 0 ? section.netPrice : null }))
     : getTotalModeParts(sow).map(part => ({ ...part, price: null, netPrice: null }))
+  // In total mode the subtotal only says something when part incentives already took it below the contract price.
+  const showSubtotal = showPrices || Math.round(breakdown.netSubtotal * 100) !== Math.round(breakdown.subtotal * 100)
   const now = new Date()
 
   return (
@@ -63,7 +65,9 @@ export function PricingBreakdown({ funding, sow, priceDisplayMode }: Props) {
         )}
       </div>
 
-      <PriceRow className="border-t border-border px-4 py-3.5 text-muted-foreground" label={showPrices ? 'Subtotal of all parts' : 'Subtotal'} value={formatAsDollars(breakdown.netSubtotal)} />
+      {showSubtotal && (
+        <PriceRow className="border-t border-border px-4 py-3.5 text-muted-foreground" label={showPrices ? 'Subtotal of all parts' : 'Subtotal'} value={formatAsDollars(breakdown.netSubtotal)} />
+      )}
 
       {breakdown.globalLines.length > 0 && (
         <div className="grid gap-2.5 border-t border-border bg-status-success-bg px-4 py-3.5 text-status-success-fg">
