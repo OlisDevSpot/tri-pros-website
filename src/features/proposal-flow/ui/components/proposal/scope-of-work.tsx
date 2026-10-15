@@ -19,7 +19,11 @@ export function ScopeOfWork() {
         </header>
         {sow.length === 0
           ? <p className="text-muted-foreground">Scope being finalized.</p>
-          : sow.map((section, i) => <ScopeSpecCard key={`${i}-${section.title}`} section={section} index={i} showPrice={showPrice} />)}
+          : sow.map((section, i) => (
+              // SOW parts have no id; the list is read-only and never reordered.
+              // eslint-disable-next-line react/no-array-index-key
+              <ScopeSpecCard key={i} section={section} index={i} showPrice={showPrice} />
+            ))}
         <ProposalMediaGallery media={proposal.media ?? []} />
       </div>
     </div>
