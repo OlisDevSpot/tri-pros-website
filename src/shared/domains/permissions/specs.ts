@@ -14,7 +14,7 @@ import type { voipCampaignServerSpec } from '@/shared/entities/voip-campaigns/li
 import type { voipContactFieldServerSpec } from '@/shared/entities/voip-contact-fields/lib/server-spec'
 import type { voipDidServerSpec } from '@/shared/entities/voip-dids/lib/server-spec'
 import type { voipLinkTokenServerSpec } from '@/shared/entities/voip-link-tokens/lib/server-spec'
-import type { meetingMessageServerSpec } from '@/shared/modules/meetings/messages/server-spec'
+import type { meetingMessageServerSpec } from '@/shared/modules/meetings/conversations/server-spec'
 import type { projectServerSpec } from '@/shared/modules/projects/core/server-spec'
 import type { projectMediaServerSpec } from '@/shared/modules/projects/media/server-spec'
 import type { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'

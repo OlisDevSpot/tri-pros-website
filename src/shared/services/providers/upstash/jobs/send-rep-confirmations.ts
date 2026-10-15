@@ -6,6 +6,6 @@ import { createJob } from '../lib/create-job'
 
 /** Published by the 8:30 AM Pacific schedule. */
 export const sendRepConfirmationsJob = createJob('send-rep-confirmations', async () => {
-  const report = dalVerifySuccess(await meetingService.business.sendRepConfirmations(SYSTEM_CONTEXT, { now: new Date() }))
+  const report = dalVerifySuccess(await meetingService.conversations.sendRepConfirmations(SYSTEM_CONTEXT, { now: new Date() }))
   console.warn('[send-rep-confirmations]', report)
 })

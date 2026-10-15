@@ -5,7 +5,6 @@ import { meetingService } from '@/shared/modules/meetings/service'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 
 import { agentProcedure, createTRPCRouter } from '../../init'
-import { visitMessagesWriteProcedure } from './procedures'
 
 export const businessRouter = createTRPCRouter({
   setOutcomeWithReason: agentProcedure
@@ -23,9 +22,4 @@ export const businessRouter = createTRPCRouter({
       reason: z.string().trim().min(1).max(2000),
     }))
     .mutation(async ({ input, ctx }) => dalToTrpc(await meetingService.business.reschedule(ctx, input))),
-  sendVisitSummary: visitMessagesWriteProcedure
-    .input(z.object({
-      meetingId: z.string().uuid(),
-    }))
-    .mutation(async ({ input, ctx }) => dalToTrpc(await meetingService.business.sendVisitSummary(ctx, input))),
 })

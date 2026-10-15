@@ -1,7 +1,7 @@
 import type z from 'zod'
 import { pgTable, text } from 'drizzle-orm/pg-core'
 import { createSelectSchema } from 'drizzle-zod'
-import { pausableVisitMessageKinds } from '@/shared/modules/meetings/messages/constants/kinds'
+import { pausableVisitMessageKinds } from '@/shared/modules/meetings/conversations/constants/kinds'
 import { createdAt } from '../lib/schema-helpers'
 import { user } from './auth'
 

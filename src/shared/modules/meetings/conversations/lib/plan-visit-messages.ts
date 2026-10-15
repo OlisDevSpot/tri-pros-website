@@ -3,8 +3,8 @@ import type {
   PausableVisitMessageKind,
   VisitMessageSequenceKind,
   VisitMessageSkipReason,
-} from '@/shared/modules/meetings/messages/constants/kinds'
-import type { VisitMessageFact, VisitMessagePlanInput, VisitMessageStep } from '@/shared/modules/meetings/messages/types'
+} from '@/shared/modules/meetings/conversations/constants/kinds'
+import type { VisitMessageFact, VisitMessagePlanInput, VisitMessageStep } from '@/shared/modules/meetings/conversations/types'
 
 import { isProjectMeeting } from '@/shared/constants/enums/meetings'
 import { addCalendarDays, businessDateTime, businessDayKey, businessHour } from '@/shared/lib/business-time'
@@ -12,7 +12,7 @@ import {
   VISIT_MESSAGE_LATE_AFTER_MS,
   VISIT_MESSAGE_PENDING_STALE_MS,
   VISIT_MESSAGE_SCHEDULE,
-} from '@/shared/modules/meetings/messages/constants/schedule'
+} from '@/shared/modules/meetings/conversations/constants/schedule'
 
 // A sent leg outranks a failed one: a summary whose text went and whose email bounced was sent.
 const STATUS_RANK: Record<MeetingMessageStatus, number> = { sent: 0, pending: 1, failed: 2, skipped: 3, received: 4 }

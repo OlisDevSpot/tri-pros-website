@@ -5,7 +5,7 @@ import {
   selectMeetingMessageSchema,
 } from '@/shared/db/schema/meeting-messages'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
-import { MEETING_MESSAGE } from '@/shared/modules/meetings/messages/lib/constants'
+import { MEETING_MESSAGE } from '@/shared/modules/meetings/conversations/lib/constants'
 
 const updateMeetingMessageSchema = insertMeetingMessageSchema.partial()
 

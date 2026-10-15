@@ -1,4 +1,4 @@
-import type { PausableVisitMessageKind } from '@/shared/modules/meetings/messages/constants/kinds'
+import type { PausableVisitMessageKind } from '@/shared/modules/meetings/conversations/constants/kinds'
 
 /** Pacific wall-clock send times. The cron expressions are built from this, so what a screen shows is what runs. */
 export const VISIT_MESSAGE_SCHEDULE = {

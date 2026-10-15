@@ -12,7 +12,7 @@ import './lib/load-env'
 import process from 'node:process'
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
-import { pausableVisitMessageKinds } from '@/shared/modules/meetings/messages/constants/kinds'
+import { pausableVisitMessageKinds } from '@/shared/modules/meetings/conversations/constants/kinds'
 import { meetingService } from '@/shared/modules/meetings/service'
 /* eslint-enable perfectionist/sort-imports */
 
@@ -35,7 +35,7 @@ async function main() {
   switch (command) {
     case 'summary': {
       const meetingId = requireFlag('--meeting')
-      const result = dalVerifySuccess(await meetingService.business.sendVisitSummary(SYSTEM_CONTEXT, { meetingId }))
+      const result = dalVerifySuccess(await meetingService.conversations.sendSummary(SYSTEM_CONTEXT, { meetingId }))
       console.log(`sms: ${result.sms.status}${result.sms.reason ? ` (${result.sms.reason})` : ''}`)
       console.log(`invite: ${result.invite}`)
       return
@@ -50,8 +50,8 @@ async function main() {
       const at = flagValue('--at')
       const now = at ? new Date(at) : new Date()
       const report = dalVerifySuccess(kind === 'day_before_reminder'
-        ? await meetingService.business.sendDayBeforeReminders(SYSTEM_CONTEXT, { now })
-        : await meetingService.business.sendRepConfirmations(SYSTEM_CONTEXT, { now }))
+        ? await meetingService.conversations.sendDayBeforeReminders(SYSTEM_CONTEXT, { now })
+        : await meetingService.conversations.sendRepConfirmations(SYSTEM_CONTEXT, { now }))
       console.log(JSON.stringify(report, null, 2))
       return
     }

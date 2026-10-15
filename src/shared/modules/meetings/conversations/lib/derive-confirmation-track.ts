@@ -1,5 +1,5 @@
 import type { HomeownerConfirmation } from '@/shared/constants/enums/meetings'
-import type { ConfirmationTrack, VisitMessageFact } from '@/shared/modules/meetings/messages/types'
+import type { ConfirmationTrack, VisitMessageFact } from '@/shared/modules/meetings/conversations/types'
 
 function isFor(message: VisitMessageFact, scheduledFor: string): boolean {
   return new Date(message.forScheduledFor).getTime() === new Date(scheduledFor).getTime()

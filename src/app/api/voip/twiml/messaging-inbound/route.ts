@@ -24,7 +24,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   try {
-    const handled = await meetingService.business.handleHomeownerReply(SYSTEM_CONTEXT, {
+    const handled = await meetingService.conversations.handleHomeownerReply(SYSTEM_CONTEXT, {
       providerMessageId: parsed.data.MessageSid,
       from: parsed.data.From,
       to: parsed.data.To,
