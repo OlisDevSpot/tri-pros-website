@@ -30,7 +30,7 @@ export const meetingClientSchemas = {
 export const meetingServerSpec = defineEntitySpec({
   entityName: MEETING,
   subject: MEETING,
-  conditionColumns: [],
+  conditionColumns: ['setBy'],
   table: meetings,
   schemas: {
     insert: insertMeetingSchema,

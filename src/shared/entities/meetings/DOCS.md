@@ -18,15 +18,14 @@ Customer ──► Meeting ──► Proposal
 
 ### ownership-model
 
-`meetings.ownerId` is a **permission level**, not a meeting role. It answers "who can delete/fully-edit this meeting?" The owner is the user who created the meeting record.
+Participation is the truth: who works a meeting is its `meeting_participants` rows (owner, co-owner, …). `meetings.ownerId` is legacy and moves only with the participants, through `assign` (super-admin); no role writes it directly.
 
-- If info@ (system account) creates → info@ is owner. The meeting has no implicit primary rep.
-- If any other user creates → that user is owner AND is implicitly the meeting's primary rep (equivalent to the `owner` participant role) until explicit participants are added.
-- Only the owner OR a super-admin can delete a meeting.
+- Any participant may update the meeting. Dispatchers update every meeting, the outcome included.
+- `setBy` is whoever booked the meeting. Only a caller holding `assign` books under another's name; for anyone else the server sets it to the caller, a duplicate included. Bookings with no user (intake, lead ingestion, reschedule replacements) keep the setter they are given, or the system account.
+- An agent deletes only the meetings they set. Super-admin deletes any. Dispatchers delete none.
 
-**Why**: ownership controls permissions (delete, full update). Participation roles control meeting-contextual function (who's the sales rep, who's QA). These are orthogonal concerns — see `#participant-roles-are-meeting-contextual`.
-**Reference impl**: schema (`ownerId` column); `create.before` in `dal/server/crud.ts` (resolves ownerId via `lib/resolve-owner.ts`)
-**Enforced by**: CASL conditions (planned: `can('delete', 'Meeting', { ownerId: user.id })`) + convention
+**Reference impl**: `rules/agent.ts`, `rules/dispatcher.ts`; `create.before` in `dal/server/crud.ts` (the setter); the delete action's row check in `hooks/use-meeting-action-configs.tsx`
+**Enforced by**: CASL rules compiled into the DAL's row reach
 
 ### system-account-not-a-person
 
@@ -44,7 +43,7 @@ When any other user owns a meeting with no participants: that user **implicitly 
 
 Participant roles describe a user's function **in the context of a specific meeting**, not their system-wide role. Real, current roles (`meetingParticipantRoles`):
 
-- **`owner`**: the primary rep running this meeting — the dispatch-relevant role. At most one per meeting (Postgres partial unique index). This is a *participant role*, distinct from `meetings.ownerId` (the row-level permission owner, see `#ownership-model`) — the two are often but not always the same user, and the doubled "owner" name is a known naming collision, not two names for the same thing.
+- **`owner`**: the primary rep running this meeting — the dispatch-relevant role. At most one per meeting (Postgres partial unique index). This is a *participant role*, distinct from `meetings.ownerId` (the legacy owner column, see `#ownership-model`) — the two are often but not always the same user, and the doubled "owner" name is a known naming collision, not two names for the same thing.
 - **`co_owner`**: a second rep with equal functional standing. At most one per meeting (partial unique index).
 - **`helper`**: any number of additional participants. Unconstrained.
 
@@ -52,7 +51,7 @@ Participant roles describe a user's function **in the context of a specific meet
 
 The `(meetingId, userId)` unique constraint prevents the same user holding multiple roles on one meeting.
 
-**Why**: `meetings.ownerId` is a permission concern (who can delete/fully-edit?); participation is a functional concern (who's the primary rep, who's the co-rep, who's just along). Separating them lets both systems evolve independently — see `#ownership-model` for the ownership half.
+**Why**: participation is what the rules read (who may see and update a meeting) and what the meeting needs (who's the primary rep, who's the co-rep, who's just along); `meetings.ownerId` is legacy — see `#ownership-model`.
 **Reference impl**: `src/shared/constants/enums/meeting-participants.ts` (`meetingParticipantRoles`); `src/shared/db/schema/meeting-participants.ts` (partial unique indexes on `owner`/`co_owner`); `dal/server/participants.ts` (`getOwnerCoOwnerForMeetings`, `getParticipantByRole`); `src/shared/domains/permissions/abilities.ts` (CASL `agent` role grants)
 **Enforced by**: Postgres unique constraint (one `owner`, one `co_owner` per meeting) + CASL ability checks (`can('read'|'create'|'update'|'own', 'Meeting')`) + convention
 
@@ -223,7 +222,7 @@ Meeting `flowStateJSON.dealStructure` carries the agent's in-meeting pricing scr
 
 ### meeting-owner-is-creator
 
-`meetings.ownerId` is the user who created the meeting record. It controls **permissions** (delete, full update), not meeting function. See `#ownership-model` for the full ownership rules and `#participant-roles-are-meeting-contextual` for the distinction between ownership and participation.
+`meetings.ownerId` is the user who created the meeting record. It is legacy: permissions read participation and `setBy`, not this column. See `#ownership-model` for the full ownership rules and `#participant-roles-are-meeting-contextual` for the distinction between ownership and participation.
 
 **Reference impl**: schema (`ownerId` column); `create.before` in `dal/server/crud.ts` (resolves ownerId via `lib/resolve-owner.ts`)
 **Enforced by**: `create.before` in `dal/server/crud.ts` (server-resolves ownerId for authed callers; a system context (`systemContext(reason)`) passes its explicit ownerId through)
@@ -255,10 +254,10 @@ The Duplicate action (`meetingsRouter.crud.duplicate`) copies the source row min
 - **Storing computed deal values** (`finalTcp`, `monthlyPayment`, `depositPercent`) on the meeting. Always derive.
 - **Joining `meetingParticipants` directly into a meetings list query without `getOwnerCoOwnerForMeetings`.** The raw join cross-products when duplicates exist; the batch helper deduplicates safely.
 - **Re-snapshotting trade selections from meeting on proposal update.** Snapshot is at create only.
-- **Trusting `meetings.ownerId` as the salesperson.** `meetings.ownerId` is a permission level, not a functional role. Check the `owner` participant role (or implicit owner-fills-role for non-system row owners). See `#ownership-model`.
+- **Trusting `meetings.ownerId` as the salesperson.** `meetings.ownerId` is a legacy column, not a functional role. Check the `owner` participant role (or implicit owner-fills-role for non-system row owners). See `#ownership-model`.
 - **Treating the system account (info@) as a person.** It cannot be dispatched, cannot be a sales agent. See `#system-account-not-a-person`.
 - **Storing `isDispatched` as a column.** Always derive from ownerId + participants. See `#dispatched-derived`.
-- **Conflating `meetings.ownerId` (row permission owner) with the `owner` participant role (primary rep).** They track different concerns on different tables and are not always the same user. See `#ownership-model` and `#participant-roles-are-meeting-contextual`.
+- **Conflating `meetings.ownerId` (legacy owner column) with the `owner` participant role (primary rep).** They track different concerns on different tables and are not always the same user. See `#ownership-model` and `#participant-roles-are-meeting-contextual`.
 
 ## See also
 

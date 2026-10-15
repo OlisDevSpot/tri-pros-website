@@ -26,6 +26,8 @@ export function dispatcherRules(userId: string) {
     cannot(['read', 'update'], 'Meeting', ['flowStateJSON'])
     // Tying a meeting to a project is the agent's call.
     cannot('update', 'Meeting', ['projectId'])
+    // Ownership moves with the participants, through `assign`.
+    cannot('update', 'Meeting', ['ownerId'])
 
     can('read', 'User')
 

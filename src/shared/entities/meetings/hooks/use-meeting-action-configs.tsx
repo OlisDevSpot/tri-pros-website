@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation'
 import { ROOTS } from '@/shared/config/roots'
 import { rescheduleBlockedReason } from '@/shared/constants/enums/meetings'
 import { useAbility } from '@/shared/domains/permissions/client'
+import { subject } from '@/shared/domains/permissions/subject'
 import { SetterPicker } from '@/shared/entities/meetings/components/setter-picker'
 import { MEETING_ACTIONS } from '@/shared/entities/meetings/constants/actions'
 import { MEETING_CONFIRMATION_OPTIONS } from '@/shared/entities/meetings/constants/confirmation-options'
@@ -156,6 +157,8 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
 
   configs.push({
     action: MEETING_ACTIONS.delete,
+    // Who may delete depends on who booked the meeting, so a row without its setter offers no delete.
+    hidden: entity => ability.cannot('delete', subject('Meeting', { setBy: entity.setBy ?? null })),
     onAction: async (entity: T) => {
       const ok = await confirmDelete()
       if (ok) {

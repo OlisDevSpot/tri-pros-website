@@ -17,7 +17,11 @@ export function agentRules(userId: string) {
     can('read', 'Meeting', { $participatesViaMeeting: { via: 'self', userId } })
     can('create', 'Meeting')
     can('update', 'Meeting')
+    // A rep removes only what they booked; a meeting the office handed them is the office's to remove.
+    can('delete', 'Meeting', { setBy: userId })
     can('own', 'Meeting') // agents own the meetings they create (implicitly the sales rep)
+    // Ownership moves with the participants, through `assign`.
+    cannot('update', 'Meeting', ['ownerId'])
 
     // A proposal is reached through the meeting it was made in; the row filter and the UI read this one rule.
     can('read', 'Proposal', { $participatesViaMeeting: { via: 'meetingId', userId } })

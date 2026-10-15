@@ -61,9 +61,12 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
         if (userId !== null && input.projectId && !(await permit(ctx, 'read', projectServerSpec).probe(input.projectId))) {
           throw new ThrowableDalError({ type: 'not-found' })
         }
-        // Unpicked: whoever books the meeting set it. Bookings nobody made in the app (intake, lead ingestion,
-        // system-made replacements) have no user, so the office account stands in as their setter.
-        const setBy = input.setBy ?? userId ?? await getSystemOwnerId()
+        // Only someone who assigns setters books under another's name; anyone else is the setter of what they
+        // book, a duplicate included, and the delete rule keys on it. Bookings nobody made in the app (intake,
+        // lead ingestion, system-made replacements) have no user, so the office account stands in as their setter.
+        const setBy = userId !== null && ability.cannot('assign', 'Meeting')
+          ? userId
+          : input.setBy ?? userId ?? await getSystemOwnerId()
         await assertSetterIsInternal(setBy)
         // The token is generated above the user check: intake and reschedule create with no user.
         const withToken = { ...input, setBy, shareToken: generateToken(), scheduledForSetAt: new Date().toISOString() }
