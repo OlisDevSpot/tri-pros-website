@@ -93,7 +93,7 @@ export function OmniSearchResults({ state, view, onHighlight, onDone, onEnterMod
       </CommandItem>
     </CommandGroup>
   )
-  const noMatch = isEmpty && !busy && term && note(OMNI_COPY.noMatch.title(term), OMNI_COPY.noMatch.body)
+  const noMatch = isEmpty && !pending && term && note(OMNI_COPY.noMatch.title(term), OMNI_COPY.noMatch.body)
   const skeleton = busy && !data && !failed && <OmniRecordSkeleton layout={view === 'stacks' ? 'nested' : 'line'} />
 
   if (view === 'pick') {

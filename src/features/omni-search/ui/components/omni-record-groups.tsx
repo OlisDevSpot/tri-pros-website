@@ -2,7 +2,7 @@
 
 import type { OmniRecordsProps } from '@/features/omni-search/types'
 
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 
 import { OMNI_COPY } from '@/features/omni-search/constants/copy'
 import { groupRecordsByCustomer } from '@/features/omni-search/lib/group-records-by-customer'
@@ -14,7 +14,7 @@ import { OMNI_LIMITS } from '@/shared/domains/omni-search/schemas'
 
 // Memoized with stable callbacks, so a keystroke re-renders the input and entries, not the stacks.
 function OmniRecordGroupsImpl({ data, term, onSelectRecord, onSeeAll, onHighlight, stale }: OmniRecordsProps) {
-  const { stacks, more } = groupRecordsByCustomer(data)
+  const { stacks, more } = useMemo(() => groupRecordsByCustomer(data), [data])
   return (
     <>
       {stacks.map(stack => <OmniCustomerStack key={stack.customer.id} stack={stack} term={term} onSelect={onSelectRecord} onHighlight={onHighlight} stale={stale} />)}

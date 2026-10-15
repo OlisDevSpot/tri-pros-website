@@ -9,7 +9,7 @@ import { OMNI_LIMITS } from '@/shared/domains/omni-search/schemas'
 export const OMNI_DEBOUNCE_MS = 150
 export const OMNI_STALE_MS = 30_000
 /** Shorter than this (a phone on its side) leaves too little room above the keyboard for stacks, so the phone list shows. */
-export const OMNI_DESKTOP_MIN_HEIGHT = 500
+const OMNI_DESKTOP_MIN_HEIGHT = 500
 export const OMNI_DESKTOP_QUERY = `(min-width: ${BREAKPOINTS.sm}px) and (min-height: ${OMNI_DESKTOP_MIN_HEIGHT}px)`
 export const OMNI_ENTRY_CAPS: Record<OmniEntryGroup, number> = { 'go-to': 5, 'actions': 4 }
 /** Records under each of the top customers on desktop: one stack per related customer, the first as deep as the server's per-customer cap. */
@@ -38,7 +38,7 @@ export const OMNI_ROW_CLASSES: Record<OmniItemLayout, string> = {
 }
 // A customer row and its capsule sit side by side, so the capsule's buttons are never inside the option; the
 // wrapper paints the highlight across both.
-export const OMNI_CONTACT_ROW_CLASS = 'flex items-center has-[[cmdk-item][data-selected=true]]:bg-row-hover'
+export const OMNI_CONTACT_ROW_CLASS = 'flex items-center has-[[cmdk-item][data-selected=true]:not([data-pressed])]:bg-row-hover has-[[cmdk-item][data-pressed]]:bg-row-press'
 export const OMNI_ICON_TILE_CLASS = 'grid size-9 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground [&_svg]:size-4'
 export const OMNI_KIND_LABEL_CLASS = 'w-16 shrink-0 text-xs font-medium text-muted-foreground'
 

@@ -86,6 +86,7 @@ export function OmniSearchDialog() {
         }}
         commandProps={{
           className: 'min-h-0 bg-transparent [&_[cmdk-item]]:py-0 [&_[cmdk-item]>svg]:size-4',
+          label: OMNI_COPY.title,
           shouldFilter: false,
           loop: true,
           value: highlighted,
