@@ -13,19 +13,20 @@ export const meetingMessages = pgTable('meeting_messages', {
   id,
   // The visit and the recipient this visit message was for.
   meetingConversationId: uuid('meeting_conversation_id').references(() => meetingConversations.id, { onDelete: 'cascade' }),
+  // On its way out: meeting_conversation_id replaces it. Kept only until the conversations migration has moved every row; then dropped with channel, email_provider_id and note.
   meetingId: uuid('meeting_id').references(() => meetings.id, { onDelete: 'cascade' }),
-  kind: text('kind', { enum: meetingMessageKinds }).notNull(),
   channel: text('channel', { enum: meetingMessageChannels }),
+  emailProviderId: text('email_provider_id'),
+  note: text('note'),
+  kind: text('kind', { enum: meetingMessageKinds }).notNull(),
   // The meeting time this message described. A moved meeting re-arms its automatic texts because lookups key on it.
   forScheduledFor: timestamp('for_scheduled_for', { mode: 'string', withTimezone: true }).notNull(),
   status: text('status', { enum: meetingMessageStatuses }).notNull(),
   // Why a row is failed or skipped: twilio:<code>, send_error, dnc, no_phone, no_email, booked_after_noon, paused, manual.
   reason: text('reason'),
   voipMessageId: uuid('voip_message_id').references(() => voipMessages.id, { onDelete: 'restrict' }),
-  emailProviderId: text('email_provider_id'),
   // Who sent a summary or skipped a step. Null means automatic.
   actorUserId: text('actor_user_id').references(() => user.id, { onDelete: 'set null' }),
-  note: text('note'),
   createdAt,
   updatedAt,
 }, table => ({

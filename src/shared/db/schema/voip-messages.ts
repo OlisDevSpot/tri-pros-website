@@ -14,6 +14,7 @@ export const voipMessages = pgTable('voip_messages', {
   // UNIQUE for webhook idempotency (status callbacks re-deliver).
   providerMessageId: text('provider_message_id').unique(),
   conversationId: uuid('conversation_id').references(() => voipConversations.id, { onDelete: 'restrict' }),
+  // On its way out: the conversation holds the line, the number and the customer. Kept only until the conversations migration has moved every text; then dropped with their indexes.
   customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'set null' }),
   voipDidId: uuid('voip_did_id').references(() => voipDids.id, { onDelete: 'set null' }),
   remoteE164: text('remote_e164'),
