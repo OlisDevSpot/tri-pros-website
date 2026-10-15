@@ -160,7 +160,7 @@ export async function moveCustomerPipelineItem({
       .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
       .where(and(
         eq(meetings.customerId, customerId),
-        permit(ctx, 'update', proposalServerSpec).sql,
+        permit(ctx, 'update', proposalServerSpec, ['status']).sql,
         eq(proposals.status, 'sent'),
       ))
 

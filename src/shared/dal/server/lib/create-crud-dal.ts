@@ -276,14 +276,15 @@ async function deleteImpl<TTable extends PgTable, TId extends string | number, T
     const needsRow = Boolean(
       cfg.hooks?.delete?.before || cfg.hooks?.delete?.after || callsite?.before || callsite?.after,
     )
+    // The delete reach, not the read reach: the hooks purge stored files and calendar events, so a
+    // row the caller may read but not delete must stop before them.
+    const where = and(eq(pkColumn, input.id), scoping.write(ctx, 'delete'))
     let row: Row<TTable> | undefined
     if (needsRow) {
-      // The delete reach, not the read reach: the hooks purge stored files and calendar events, so a
-      // row the caller may read but not delete must stop before them.
       const [found] = await exec
         .select()
         .from(spec.table as PgTable)
-        .where(and(eq(pkColumn, input.id), scoping.write(ctx, 'delete')))
+        .where(where)
         .limit(1)
       if (!found) {
         throw new ThrowableDalError({ type: 'not-found' })
@@ -296,7 +297,6 @@ async function deleteImpl<TTable extends PgTable, TId extends string | number, T
     if (callsite?.before)
       await callsite.before(row!, ctx)
 
-    const where = and(eq(pkColumn, input.id), scoping.write(ctx, 'delete'))
     const deleted = await exec.delete(spec.table as PgTable).where(where).returning({ id: pkColumn })
     if (deleted.length === 0) {
       throw new ThrowableDalError({ type: 'not-found' })
