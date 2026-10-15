@@ -145,6 +145,7 @@ export const rulesThatMustCompile = defineRules((can, cannot) => {
   can('update', 'Customer', ['name', 'phone', 'email', 'address', 'city', 'state', 'zip', 'pipelineStage'])
 
   can('read', 'Proposal', { id: proposalId })
+  can('delete', 'Proposal', { status: 'draft' })
   can('update', 'Proposal', ['financeOptionId', 'cashInDealCents', 'views'], { id: proposalId })
   can('read', 'Proposal', { $participatesViaMeeting: { via: 'meetingId', userId } })
   cannot('update', 'Proposal', ['incentives', 'incentives.*'], { id: proposalId })
@@ -181,6 +182,8 @@ defineRules((can, cannot) => {
   can('update', 'Project', { ownerId: userId })
   // @ts-expect-error a condition value of the wrong type
   can('read', 'Proposal', { id: 42 })
+  // @ts-expect-error not a proposal status
+  can('delete', 'Proposal', { status: 'nope' })
   // @ts-expect-error an operator on a mutation rule
   can('update', 'Customer', { $participatesViaMeeting: { via: 'customerId', userId } })
   // @ts-expect-error an operator together with a field list
@@ -300,7 +303,7 @@ export function checksThatMustCompile() {
   ability.can('update', subject('CustomerNote', noteRow))
   ability.can('update', subject('CustomerNote', { authorId: null }))
   ability.can('delete', subject('Activity', { ownerId: 'user-1' }))
-  ability.can('update', subject('Proposal', { id: 'proposal-1' }), 'financeOptionId')
+  ability.can('update', subject('Proposal', { id: 'proposal-1', status: 'draft' }), 'financeOptionId')
   ability.can('read', subject('CustomerNote', noteRow))
   ability.can('delete', subject('Application', {}))
 }
@@ -326,7 +329,7 @@ subject('CustomerNote', { id: 'note-1' })
 // @ts-expect-error a row tagged as an unknown subject
 subject('Custmer', {})
 // @ts-expect-error a read rule on Proposal may carry an operator, which only SQL can evaluate
-ability.can('read', subject('Proposal', { id: 'proposal-1' }))
+ability.can('read', subject('Proposal', { id: 'proposal-1', status: 'draft' }))
 // @ts-expect-error a read rule on Activity carries an operator, which only SQL can evaluate
 ability.can('read', subject('Activity', { ownerId: 'user-1' }))
 // @ts-expect-error a mistyped field on a row check

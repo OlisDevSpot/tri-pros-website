@@ -1,6 +1,10 @@
 export const proposalStatuses = ['draft', 'sent', 'approved', 'declined'] as const
 export type ProposalStatus = (typeof proposalStatuses)[number]
 
+export function isProposalStatus(value: unknown): value is ProposalStatus {
+  return (proposalStatuses as readonly unknown[]).includes(value)
+}
+
 /**
  * Initial-sale: first proposal on a customer/project (no project exists yet
  * at creation; one is created on approval).

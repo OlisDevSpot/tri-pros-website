@@ -26,6 +26,8 @@ export function agentRules(userId: string) {
     // A proposal is reached through the meeting it was made in; the row filter and the UI read this one rule.
     can('read', 'Proposal', { $participatesViaMeeting: { via: 'meetingId', userId } })
     can('create', 'Proposal')
+    // A draft is the rep's work in progress; once it has gone out, it is the customer's record.
+    can('delete', 'Proposal', { status: 'draft' })
     // What a rep builds and sends. The share link, the contract trail, the books, the created date and
     // the meeting a proposal belongs to are the system's or the office's.
     can('update', 'Proposal', [

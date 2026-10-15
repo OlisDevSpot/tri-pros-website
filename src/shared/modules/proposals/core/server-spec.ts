@@ -22,7 +22,7 @@ export const proposalSchemas = {
 export const proposalServerSpec = defineEntitySpec({
   entityName: PROPOSAL,
   subject: PROPOSAL,
-  conditionColumns: ['id'],
+  conditionColumns: ['id', 'status'],
   table: proposals,
   schemas: {
     insert: insertProposalSchema,

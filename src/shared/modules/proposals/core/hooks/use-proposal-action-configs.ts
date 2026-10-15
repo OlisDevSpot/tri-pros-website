@@ -6,7 +6,10 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 import { ROOTS } from '@/shared/config/roots'
+import { isProposalStatus } from '@/shared/constants/enums/proposals'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
+import { useAbility } from '@/shared/domains/permissions/client'
+import { subject } from '@/shared/domains/permissions/subject'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { useStableCallbacks } from '@/shared/hooks/use-stable-callbacks'
 import { copyToClipboard } from '@/shared/lib/clipboard'
@@ -17,6 +20,7 @@ import { useTRPC } from '@/trpc/helpers'
 interface ProposalEntity {
   id: string
   token: string | null
+  status?: string
 }
 
 function buildShareableUrl(proposalId: string, token: string | null, utmSource: 'email' | 'sms'): string {
@@ -48,6 +52,7 @@ export function useProposalActionConfigs<T extends ProposalEntity>(
   overrides: ProposalActionOverrides<T> = {},
 ): ProposalActionConfigsResult<T> {
   const trpc = useTRPC()
+  const ability = useAbility()
   const router = useRouter()
   const { invalidateProposal } = useInvalidation()
   const [DeleteConfirmDialog, confirmDelete] = useConfirm({
@@ -112,6 +117,10 @@ export function useProposalActionConfigs<T extends ProposalEntity>(
     },
     {
       action: PROPOSAL_ACTIONS.delete,
+      // Who may delete depends on the proposal's status, so a row without it offers delete only to whoever may delete any.
+      hidden: entity => isProposalStatus(entity.status)
+        ? ability.cannot('delete', subject('Proposal', { id: entity.id, status: entity.status }))
+        : ability.cannot('manage', 'all'),
       onAction: async (entity) => {
         const ok = await confirmDelete()
         if (ok) {
