@@ -198,7 +198,8 @@ export const meetingCrud = createCrudDal(meetingServerSpec, () => ({
     },
   },
   // A duplicate is a fresh sit, not a continuation — only reschedule carries flow state forward.
-  // The setter is copied: the lead is still theirs. A source that predates setters has none, so the copy takes the default.
+  // The setter is copied for someone who assigns setters: the lead is still theirs. Anyone else becomes the setter of
+  // their copy in create.before. A source that predates setters has none, so the copy takes the default.
   duplicate: {
     exclude: [
       'createdAt',
