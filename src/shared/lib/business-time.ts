@@ -94,6 +94,16 @@ export function formatBusinessDayTime(date: Date | string): string {
   return plainSpaces(formatBusinessTime(date, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))
 }
 
+/** "Fri" */
+export function formatBusinessWeekday(date: Date | string): string {
+  return formatBusinessTime(date, { weekday: 'short' })
+}
+
+/** "Sat 11:09 AM" */
+export function formatBusinessWeekdayTime(date: Date | string): string {
+  return plainSpaces(formatBusinessTime(date, { weekday: 'short', hour: 'numeric', minute: '2-digit' }))
+}
+
 /** The instant of `hour:minute` wall-clock time on a business day. Two-pass offset, like `startOfDayInTimeZone`. */
 export function businessDateTime(calendarDay: string, hour: number, minute: number): Date {
   const [year, month, day] = calendarDay.split('-').map(Number)

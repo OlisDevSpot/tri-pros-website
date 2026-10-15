@@ -17,9 +17,13 @@ import {
 interface UseConfirmProps {
   title: string
   message: string
+  /** Defaults to "Confirm". */
+  confirmLabel?: string
+  /** Defaults to destructive: most confirms guard a delete. */
+  confirmVariant?: 'default' | 'destructive'
 }
 
-export function useConfirm({ title, message }: UseConfirmProps): [() => JSX.Element, () => Promise<boolean>] {
+export function useConfirm({ title, message, confirmLabel = 'Confirm', confirmVariant = 'destructive' }: UseConfirmProps): [() => JSX.Element, () => Promise<boolean>] {
   const [promise, setPromise] = useState<{ resolve: (value: boolean) => void } | null>(null)
 
   const confirm = () => {
@@ -28,30 +32,22 @@ export function useConfirm({ title, message }: UseConfirmProps): [() => JSX.Elem
     })
   }
 
-  const handleClose = () => {
+  // Escape and an outside click close the dialog too; settling `false` there keeps an awaiting caller from hanging.
+  const settle = (value: boolean) => {
+    promise?.resolve(value)
     setPromise(null)
   }
 
-  const handleConfirm = () => {
-    promise?.resolve(true)
-    handleClose()
-  }
-
-  const handleCancel = () => {
-    promise?.resolve(false)
-    handleClose()
-  }
-
   const ConfirmDialog = () => (
-    <Dialog open={promise !== null} onOpenChange={handleClose}>
+    <Dialog open={promise !== null} onOpenChange={open => !open && settle(false)}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{message}</DialogDescription>
         </DialogHeader>
         <DialogFooter className="pt-2">
-          <Button onClick={handleCancel} variant="outline">Cancel</Button>
-          <Button onClick={handleConfirm} variant="destructive">Confirm</Button>
+          <Button onClick={() => settle(false)} variant="outline">Cancel</Button>
+          <Button onClick={() => settle(true)} variant={confirmVariant}>{confirmLabel}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
