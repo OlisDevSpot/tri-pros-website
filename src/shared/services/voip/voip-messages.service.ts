@@ -6,9 +6,9 @@ import env from '@/shared/config/server-env'
 import { systemContext } from '@/shared/dal/server/lib/contexts'
 import { dalError, dalSuccess } from '@/shared/dal/server/types'
 import { getStickyDidForUser } from '@/shared/entities/voip-dids/dal/server/queries'
-import { voipMessageCrud } from '@/shared/modules/voip/messages/dal/server/crud'
-import { patchMessageStatusByProviderId, upsertInboundMessage } from '@/shared/modules/voip/messages/dal/server/mutations'
-import { fetchThread as fetchThreadDal, getLatestOutboundRemote } from '@/shared/modules/voip/messages/dal/server/queries'
+import { voipMessageCrud } from '@/shared/entities/voip-messages/dal/server/crud'
+import { patchMessageStatusByProviderId, upsertInboundMessage } from '@/shared/entities/voip-messages/dal/server/mutations'
+import { fetchThread as fetchThreadDal, getLatestOutboundRemote } from '@/shared/entities/voip-messages/dal/server/queries'
 import { RestException, twilioClient } from '@/shared/services/providers/twilio/client'
 import { getVetting, VOIP_DEV_OVERRIDE_NUMBER } from '@/shared/services/providers/twilio/constants'
 import { complianceService } from '@/shared/services/voip/compliance.service'
@@ -16,7 +16,7 @@ import { mapTwilioMessageStatus } from '@/shared/services/voip/lib/map-twilio-me
 import { voipDidsService } from '@/shared/services/voip/voip-dids.service'
 
 // ---------------------------------------------------------------------------
-// voipMessageService — orchestrates outbound SMS + inbound persistence +
+// voipMessagesService — orchestrates outbound SMS + inbound persistence +
 // STOP-keyword opt-out + delivery-status callback patches.
 //
 // THIS FILE IS PURE ORCHESTRATION. Composes DAL + provider + compliance.
@@ -242,7 +242,7 @@ async function sendOutbound(ctx: ScopedContext, input: SendOutboundInput): Promi
   })
 }
 
-function createVoipMessageService() {
+function createVoipMessagesService() {
   return {
     /** An agent texts a customer from the agent's sticky DID. */
     sendSms: async (
@@ -356,4 +356,4 @@ function createVoipMessageService() {
   }
 }
 
-export const voipMessageService = createVoipMessageService()
+export const voipMessagesService = createVoipMessagesService()

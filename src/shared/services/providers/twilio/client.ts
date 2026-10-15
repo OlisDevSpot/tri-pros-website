@@ -81,7 +81,7 @@ function createTwilioClient() {
       return (await sdk()).calls(callSid).update({ status: 'completed' })
     },
 
-    /** NEVER call from a route handler — go through the voip message service (`modules/voip/messages/service.ts`) so the compliance gate, STOP-keyword guard, and 10DLC check run first. */
+    /** NEVER call from a route handler — go through `voip-messages.service` so the compliance gate, STOP-keyword guard, and 10DLC check run first. */
     async sendMessage(params: MessageListInstanceCreateOptions): Promise<MessageInstance> {
       return (await sdk()).messages.create(params)
     },
