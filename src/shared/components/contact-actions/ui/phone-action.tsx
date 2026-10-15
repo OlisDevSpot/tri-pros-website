@@ -26,7 +26,7 @@ interface PhoneActionProps extends ContactMenuControl {
 
 export function PhoneAction({ canEdit, children, className, compact = false, onEdit, phone, open, onOpenChange, onCloseAutoFocus }: PhoneActionProps) {
   const menu = (
-    <DropdownMenuContent align="start" onCloseAutoFocus={onCloseAutoFocus}>
+    <DropdownMenuContent align="start" collisionPadding={8} onCloseAutoFocus={onCloseAutoFocus}>
       <DropdownMenuItem asChild>
         <a href={`tel:${toDialString(phone)}`}>
           <PhoneIcon size={14} />

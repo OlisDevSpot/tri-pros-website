@@ -25,7 +25,7 @@ interface EmailActionProps extends ContactMenuControl {
 
 export function EmailAction({ canEdit, children, className, compact = false, email, onEdit, open, onOpenChange, onCloseAutoFocus }: EmailActionProps) {
   const menu = (
-    <DropdownMenuContent align="start" onCloseAutoFocus={onCloseAutoFocus}>
+    <DropdownMenuContent align="start" collisionPadding={8} onCloseAutoFocus={onCloseAutoFocus}>
       <DropdownMenuItem asChild>
         <a href={`mailto:${email}`}>
           <MailIcon size={14} />

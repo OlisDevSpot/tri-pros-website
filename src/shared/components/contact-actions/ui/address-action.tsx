@@ -42,7 +42,7 @@ export function AddressAction({ address, canEdit, children, className, compact =
           </button>
         )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" onCloseAutoFocus={onCloseAutoFocus}>
+      <DropdownMenuContent align="start" collisionPadding={8} onCloseAutoFocus={onCloseAutoFocus}>
         <DropdownMenuItem
           onClick={() => {
             openExternalUrl(
