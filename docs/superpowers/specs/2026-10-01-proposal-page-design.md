@@ -1,6 +1,6 @@
 # Proposal page redesign: the Journey + the agent cockpit
 
-> **Status:** written 2026-10-01 from a `/ui-exploration` run (rounds 1–5, studies artifact https://claude.ai/artifact/LoR7Mjz2xZ8Wb7fR6soKGA, version 6). **Approved by the owner on 2026-10-01** with the amendments to C1 and C2 folded in (D22–D24, R7, F6–F8). Nothing built.
+> **Status:** written 2026-10-01 from a `/ui-exploration` run (rounds 1–5, studies artifact https://claude.ai/artifact/LoR7Mjz2xZ8Wb7fR6soKGA, version 6). **Approved by the owner on 2026-10-01** with the amendments to C1 and C2 folded in (D22–D24, R7, F6–F8). Nothing built. **Re-aligned 2026-10-15** to the action hosts, modal layers, permissions client path, frozen-proposal lock and owner rulings O1–O4 (stress test).
 > **Relates to:** the multi-proposal epic `docs/plans/2026-09-20-multi-proposal-meeting-flow-epic.md`. Spec A owns `sent_message` and the send verb (§4.3). Spec F and #285 own the homeowner projection (H10) and the token resolver (H11). Spec G and C46 own "Let's build!" on the same document surface. The single-pricing-mode follow-up (`docs/plans/2026-09-26-proposal-single-pricing-mode-follow-up.md`, R2) owns `show_section_prices`. W4 (`docs/superpowers/specs/2026-09-24-wave-4-sow-normalization-design.md`) owns SOW normalization.
 
 ## 1. Goal
@@ -34,7 +34,7 @@ The proposal page is "our main customer-facing artifact that's meant to make the
 | D21 | The cockpit has no visible scrollbar. It scrolls, but the bar is hidden. | R5 |
 | D22 | **Payment plan** has four modes: **All cash**, **Some cash** (cash down plus finance), **All finance**, and **Scheduled payments**. These are the same options the Zoho contract uses. The codebase is the source of truth and the scheduled payments structure is flexible; Zoho's fields are changed to match in a follow-up (F6). | Spec gate |
 | D23 | **Financing minimum: $3,500.** Whenever a mode finances (Some cash, All finance), the financed amount is at least $3,500, so in Some cash the slider's maximum is `finalTcp − 3,500`. When `finalTcp` is under $3,500 + $500, only All cash and Scheduled payments are offered. | Spec gate |
-| D24 | **The homeowner's choices are saved, debounced**: the payment mode, the cash-down amount and the finance option, through the existing token-path (shareable) writes. The agent sees them in the cockpit. | Spec gate |
+| D24 | **The homeowner's choices are saved, debounced**: the payment mode, the cash-down amount and the finance option, through the existing token-path (shareable) writes. The agent sees them in the cockpit. **Before R7 (owner ruling O1, 2026-10-15):** only the cash-down slider and the finance option save. The mode is on-screen state, "All cash" and "All finance" never write, and a reload opens on "Some cash" when the stored cash down is above $0, else on "All finance" (on "All cash" when nothing can be financed). | Spec gate |
 
 ## 3. Content
 
@@ -68,7 +68,7 @@ Each beat names its source. Company facts come only from `src/shared/constants/c
 - **Key details** (key:value pairs);
 - **Not included** (exclusions);
 - **Phases** as a numbered list with step counts, each opening a drawer with its steps;
-- a "We've done this before" chip that links to the matching Past results project.
+- a "We've done this before" chip that links to the matching Past results project (after R6, which supplies the match).
 
 Until F1 lands, details, exclusions and phases are parsed from the section HTML at the edge (§4.6).
 
@@ -85,6 +85,7 @@ Until F1 lands, details, exclusions and phases are parsed from the section HTML 
   - **Scheduled payments:** the schedule as an ordered list (label, amount, when it's due), with the deposit first and amounts summing to `finalTcp`. Homeowners read it; agents edit it from the Proposal card (R7).
   - Finance options come from `finance_options`, with the monthly payment from `getLoanValues`.
   - Under any financing mode: "Estimates, subject to lender approval. Financing starts at $3,500."
+  - **Frozen proposal (owner ruling O2, 2026-10-15).** When `isProposalFrozen` holds (a draft envelope, a contract sent, signed or declined, or the proposal approved; `src/shared/modules/proposals/core/lib/proposal-lock.ts`), the card is read-only: the saved cash down, finance option and monthly payment are shown, every control is disabled, and one line reads "These choices are in your agreement. Ask your consultant to change them." A share-link read carries no envelope id, so for a homeowner a draft envelope shows up as the server's `proposal_frozen` refusal; the card then switches to this state with no error toast.
 
 **6 · Next steps (navy).**
 - H2 "Next steps".
@@ -96,15 +97,17 @@ Until F1 lands, details, exclusions and phases are parsed from the section HTML 
 **Cockpit (agent only).**
 - **Proposal card:**
   - Header: status, label, value, view count and sent date.
-  - Toolbar: Send/Resend (primary), Copy link, and Edit. Overflow holds Duplicate, **View internal financials** (marked new), Share by SMS and Share by email.
-  - The **send composer** (textarea, then "Send" or "Resend with note") shows the last note sent and when.
+  - Send/Resend in the composer is the card's one primary (filled) action (owner ruling 2026-10-15).
+  - Toolbar: Copy link (email) and Edit, both outline; overflow holds Copy link (SMS), **View internal financials** (marked new), **Copy scope of work** (moved from the document), Duplicate and Assign rep. View and Delete are not offered here: the page is the proposal, and deleting it would leave a dead page.
+  - The **send composer** (textarea, then "Send" or "Resend with note") is the card's send action and shows the last note sent and when. It shows only for a `draft` or `sent` proposal that is not frozen, because a send stamps status `sent`.
 - **Agreement card:** the timeline, the signers (the contractor only on `initial-sale`), customer age, and envelope switches (D13, D14). Footer: Create draft, Submit, Recall and Resend, matching today's `envelope-card` mutations.
 - **Customer card:**
   - Contact rows with call, text, email and copy.
   - Lead source.
-  - Insight chips: `timeInHome`, `yearBuilt`, `outcomePriority`, `decisionTimeline`. Never `creditScore`, age, `householdType` or `sellPlan`.
+  - Insight chips: `timeInHome`, `yearBuilt`, `outcomePriority`, `decisionTimeline`. Never `creditScore`, age, `householdType` or `sellPlan`, nor `triggerEvent` (its "Selling soon" value reveals a selling plan).
   - The latest notes, and an inline note composer (QuickNoteInput).
-  - Overflow: View profile, Edit, and Schedule meeting.
+  - Overflow: View profile and Schedule meeting. Edit is not offered (the profile edits contact fields inline), nor Delete.
+  - While the profile loads, the Customer and Meeting cards show skeletons; when the agent can't reach the customer, one line replaces them.
 - **Meeting card:** scheduled date, type and an editable outcome. Overflow holds Start, View in schedule, Set outcome, Confirmation, Reschedule, Create proposal and Manage participants.
 
 ## 4. Architecture
@@ -128,15 +131,18 @@ This is the prerequisite seam epic item F15 names. Doing it here means the redes
 - **Breakpoints inside chapters:**
   - 700px: the overview card goes to two columns, and the Funding cards go side by side at 1100px.
   - Below 700px: the comparison table stacks into cards.
-- **The page replaces** today's navbar step links and mobile `<Select>` (`ui/components/navbar/navbar.tsx`). `ProposalPageNavbar` keeps the kebab menu (View as PDF, the view toggle).
+- **The page replaces** today's navbar step links and mobile `<Select>` (`ui/components/navbar/navbar.tsx`). The new top bar keeps the kebab menu (View as PDF, the view toggle).
+- **The top bar is there in every state:** its back link and logo show while the proposal loads and when it fails to load. Below it, `#proposal-container` is the page's only scroller, and the safe-area top inset sits on the element that holds the bar.
+- **One `<h1>`:** the hero headline.
 
 ### 4.3 Viewer and gating
 
 - `viewer` is `'agent'` only when `useViewMode()` returns `'agent'`, meaning `?view=agent` **and** `can('update','Proposal')`.
 - Everything agent-only renders only when `viewer === 'agent'`: the cockpit button, the cockpit, View internal financials, the send composer and the scheduled-payments editor.
 - **The homeowner gating gaps close here:**
-  - `CopySowButton` becomes agent only and moves into the Proposal card's overflow.
-  - The homeowner's **payment mode, cash down and finance pick stay writable and are saved, debounced** (D24). This is a deliberate token-path write, not a gap. The writes stay limited to these fields once #285 adds field-level gating on the update path.
+  - `CopySowButton` is removed from the document. Copying the scope becomes the agent-only `copySow` proposal action in the Proposal card's overflow (shown only where a host passes `onCopySow`).
+  - The homeowner's **cash down and finance pick stay writable and are saved, debounced** (D24; the payment mode joins them with R7). This is a deliberate token-path write, not a gap. The share-link rules already limit it: `proposalBearerRules` grants `update` on `financeOptionId`, `cashInDealCents` and `views` only (`src/shared/domains/permissions/rules/bearer.ts`).
+  - A frozen proposal takes no funding write from the page (§3, O2).
 - **Ability vs view mode:** these controls are gated by `can()`. The view mode decides only whether agent chrome is shown, so an agent can preview the homeowner view.
 - **Agent mode has no page tint** (no red wash or gradient). It shows as a small secondary "Agent view" badge in the top bar, plus the segmented "Viewing as" switch (Homeowner / Agent) in the kebab menu.
 
@@ -146,24 +152,25 @@ This is the prerequisite seam epic item F15 names. Doing it here means the redes
 - `ResponsiveSheet` (`src/shared/components/dialogs/sheets/responsive-sheet.tsx`), with `title="Cockpit"` and the description "{customer} · {label}".
 - It is always mounted and toggled by `open`.
 - Per `reference-modal-sheet-body-writes`, frequent sheets should avoid remount cost. The plan measures open cost and keeps the default if it is under 100ms.
-- Body: a vertical stack of the four cards with `scrollbar-width: none` and `::-webkit-scrollbar { display: none }` (D21).
+- Body: a vertical stack of the four cards inside `ResponsiveSheet`'s own scrolling body. The sheet already owns that scroller, so the cockpit nests no second one; a new optional `bodyClassName` prop on `ResponsiveSheet` takes the existing `scrollbar-none` utility (`scrollbar-width: none` plus `::-webkit-scrollbar { display: none }`, D21).
 
-**New shared primitive `EntityCard`**, in `src/shared/components/entities/entity-card/`. Today each overview card repeats its own Header and Body as plain divs, and none has a Footer.
+**The action hosts.** Cards no longer own their action configs. `ProposalOverviewCard` reads `useProposalActionsHost`, `MeetingOverviewCard` reads `useMeetingActionsHost`, and each throws without its host. The cockpit body is wrapped in `ProposalActionsHost` (overrides: `onView` a no-op, since the page is the proposal and the card's click runs View; `onInternalFinancials`; `onCopySow`), `MeetingActionsHost` (its defaults; View opens the customer profile) and `CustomerActionsHost` (View opens the profile; Schedule meeting opens `CreateMeetingModal`). The toolbar's buttons for this surface are set with `withToolbarRoles`, so the shared action constants keep driving every other surface.
+
+**New shared primitive `OverviewCard`**, in `src/shared/components/entities/overview-card/overview-card.tsx`: the frame the `*OverviewCard` compounds sit on. Today each overview card repeats its own Header and Body as plain divs, and none has a Footer.
 - Parts: `Root`, `Header` (icon tile, eyebrow, title, subtitle, actions slot), `Body`, `Section` (label plus content), `Footer`.
 - No data, no context, only layout and tokens.
-- Each overview card's existing `Header` and `Body` compose these parts, so callsites are unchanged.
 
 **Changes to each card:**
-- **`ProposalOverviewCard`:** `Actions` accepts `mode: 'toolbar'`. `EntityActionMenu` already supports it; only the card's prop type restricts it. It also gets a `Footer` part.
-- **`CustomerOverviewCard`:** gains `Header`, `Footer` and `Actions`. `Actions` runs `useCustomerActionConfigs` and renders its `DeleteConfirmDialog` at the root. A `Notes` part shows the latest notes and `QuickNoteInput`.
-- **`MeetingOverviewCard`:** `Actions` accepts `'toolbar'`.
-- **Click handling:** the Proposal and Meeting roots handle clicks (navigate, or open the profile modal). Composer and footer areas stop propagation, using the same pattern the meeting root uses to ignore portaled descendants.
-- **The Agreement card:** `EntityCard` around the existing contract-status-panel pieces (`agreement-timeline`, `envelope-signer-grid`, `envelope-configuration-section`, the `envelope-card` mutations). The panel's logic is not forked.
+- **`ProposalOverviewCard`:** `Actions` accepts `mode: 'toolbar'`, plus this surface's toolbar roles and the action ids it hides. `EntityActionMenu` already supports `toolbar`; only the card's prop type restricts it. It also gets a `Footer` part.
+- **`CustomerOverviewCard`:** gains `Actions`, which reads `useCustomerActionsHost` (the host already renders the `DeleteConfirmDialog`), and a `Notes` part with the latest notes and `QuickNoteInput`. Its existing `Insights` part takes an optional field list, passed to `CustomerProfileKeyInsights`, which gains `timeInHome` and `yearBuilt`; the cockpit passes `PRESENTABLE_INSIGHT_FIELDS` (`src/shared/modules/customers/core/constants/`) rather than a second chip component.
+- **`MeetingOverviewCard`:** `Actions` accepts `'toolbar'`. It takes no `customerId` prop; the id is on its data.
+- **Click handling:** the Proposal and Meeting roots handle clicks (the View action). Composer and footer areas stop propagation, using the same pattern the meeting root uses to ignore portaled descendants.
+- **The Agreement card:** `OverviewCard` around `AgreementTimeline` (as `homeowner-contract-view.tsx` renders it) and the existing `EnvelopeCard` (signer grid, `envelope-configuration-section`, the envelope mutations). `EnvelopeCard` gains an optional `className` so the cockpit can drop its own border inside the card. The panel's logic is not forked.
 
-**New proposal action `internalFinancials`.**
-- Defined in `PROPOSAL_ACTIONS`: `CalculatorIcon`, `permission: ['update','Proposal']`.
-- `useProposalActionConfigs` takes an `onInternalFinancials` override. The cockpit passes a handler that opens the existing `InternalFinancialsModal` through `useModalStore`, as `heading.tsx:43-57` does today.
-- Any screen holding the funding data can pass the same override. The action hides when no handler is passed.
+**New proposal actions `internalFinancials` and `copySow`.**
+- Defined in `PROPOSAL_ACTIONS`: `CalculatorIcon` and `ClipboardCopyIcon`, both `permission: ['update','Proposal']`.
+- `useProposalActionConfigs` takes `onInternalFinancials` and `onCopySow` overrides, through `ProposalActionsHost`'s `overrides`. The cockpit's `onInternalFinancials` opens the existing `InternalFinancialsModal` with `openModal` (`@/shared/lib/open-modal`; `useModalStore` was removed 2026-10-14), as `heading.tsx` does today, as a modal layer above the sheet. `onCopySow` copies the whole scope of work as text (`sowToPlaintext`).
+- Any host holding the data can pass the same overrides. Each action hides when its handler is not passed.
 
 ### 4.5 Funding components
 
@@ -172,15 +179,16 @@ This is the prerequisite seam epic item F15 names. Doing it here means the redes
   - then the subtotal, the "Applies to the whole project" block (global lines with expiry badges, offers shown as "Included"), the final contract price and the deposit.
   - The strike-through `ExpandableLineItems` treatment goes.
   - The PDF (`pdf.service`) is out of scope (§9).
-- **Payment plan control** (`payment-plan-group.tsx`): a radio group of the four modes (D22). Modes that would finance less than $3,500 are disabled with the reason as visible text (D23). The selection saves debounced (D24).
+- **Payment plan control** (`payment-plan-group.tsx`): the shadcn `RadioGroup` (`src/shared/components/ui/radio-group.tsx`) with the four modes (D22), each row a label carrying the row fills (`bg-row-selected` when chosen). Modes that would finance less than $3,500 are disabled with the reason as visible text (D23). The selection is on-screen state until R7 (D24, O1).
 - **Cash down** (Some cash only) uses the shadcn `Slider` (`src/shared/components/ui/slider.tsx`):
   - range 0 to `finalTcp − MIN_FINANCED_AMOUNT` in steps of $500;
-  - `aria-valuetext` gives the dollar amount;
+  - Radix puts `role="slider"` on the thumb, so the label (`aria-labelledby` to a shadcn `Label`) and `aria-valuetext` (the dollar amount) go on the thumb through a new optional `thumbProps` on the shared `Slider`;
+  - the slider's root is 44px tall, so the whole row is the touch target (§4.8);
   - the value is mirrored into the "to finance" line and the monthly payments as it moves;
-  - the value saves through `setCashInDeal` **debounced 600ms after the last change** (D24), for homeowner and agent alike, with no Save button. A failed save shows a toast and keeps the local value.
-- **`MIN_FINANCED_AMOUNT = 3500`** lives with the proposal financial constants (`src/shared/modules/proposals/core/constants/`), never inline.
+  - the value saves through `setCashInDeal` **debounced 600ms after the last change** (D24), for homeowner and agent alike, with no Save button. A failed save shows a toast and keeps the local value; a `proposal_frozen` refusal locks the card instead (§3).
+- **`MIN_FINANCED_AMOUNT = 3500`** lives with the proposal financial constants (`src/shared/modules/proposals/core/constants/`), never inline. Until R7 the floor is enforced in the UI only: `setCashInDeal` validates `cashInDeal ≥ 0` and nothing more.
 - **Scheduled payments list** (`scheduled-payments.tsx`): read-only on the document. Agents edit it in a dialog opened from the Proposal card, adding, removing and reordering rows, and the rows must sum to `finalTcp`.
-- **Finance options** form a radio group: `role="radiogroup"`, arrow-key navigation, the monthly payment in tabular numbers.
+- **Finance options** form a shadcn `RadioGroup` (Radix gives `role="radiogroup"`, one tab stop and arrow-key selection; nothing hand-written), the monthly payment in tabular numbers. The pick shows at once and saves debounced through `crud.update`, so arrowing through the options sends one write.
 
 ### 4.6 Scope spec sheet (interim parser, marked LAZY)
 
@@ -238,13 +246,13 @@ This section is the single hand-off for backend work. Build tasks that depend on
 
 | # | Change | Why | Owner / blocks |
 |---|---|---|---|
-| R1 | **Homeowner projection on the token path.** `getFullView` selects every `proposals` column, so token holders receive `sow[].financials.costLines` (job cost, margin), `cashInDealCents`, `miscPriceCents`, incentive `notes`, QB refs and `customers.age`. | T1/H10. Internal numbers must never leak (D11). Hiding them in the UI is not enough. | #285 / spec F (H10). **Blocks prod release of this page**, not the build. |
+| R1 | **Homeowner projection on the token path.** `getFullView` selects every `proposals` column, so token holders receive `sow[].financials.costLines` (job cost, margin), `cashInDealCents`, `miscPriceCents`, incentive `notes`, QB refs and `customers.age`. | T1/H10. Internal numbers must never leak (D11). Hiding them in the UI is not enough. | **Done, live 2026-10-12** (`5b9a23fd9`): `getFullView` returns `toHomeownerProposalView`, which gives a share-link holder only the columns `proposalBearerRules` lists, plus their own `customer`, the incentives, the homeowner media and `projectJSON` with every `costLines` emptied. No longer a release gate. |
 | R2 | `proposals.sent_message` and `proposalService.send` (stores the note, first send stamps `sentAt`, resend replaces the message). | The "resend with a new note" composer and the "A note from…" beat (D12). | Spec A task A5. The composer ships on `sendProposalEmail` first and switches when A5 lands. Only the stored-note display waits. |
-| R3 | Join the **owner profile** into the read: `user.name`, `headshotUrl`, `phone`, `yearsOfExperience` through `proposals.ownerId`. These are homeowner-safe fields. | The "Your consultant" beat. | New. Small DAL change in `core/dal/server/queries.ts`, added to the projection's allow list. |
-| R4 | Return `gatedPhoneSql` instead of the raw `customers.phone` on the **session** path of `getFullView`. | Breaks the rule at `customers/lib/phone-gating-sql.ts:7-15`. | New. One-line DAL fix. |
-| R5 | Join `meetings.scheduledFor` (and `meetingType` for the agent) through `proposals.meetingId`. | The overview's "Visited {date}" and the Meeting card header. | New. Homeowner-safe: the date only, never outcome or participants (H10). |
+| R3 | Join the **owner profile** into the read: `user.name`, `headshotUrl`, `phone`, `yearsOfExperience` through `proposals.ownerId`. These are homeowner-safe fields. | The "Your consultant" beat. | New. Small DAL change in `core/dal/server/queries.ts`, **and** a pass-through in `toHomeownerProposalView` (`core/lib/to-homeowner-proposal-view.ts`): it drops everything the bearer read rule doesn't list, so a joined `owner` must be passed through there the way `customer` is. |
+| R4 | Return `gatedPhoneSql` instead of the raw `customers.phone` on the **session** path of `getFullView`. | Breaks the rule at `customers/lib/phone-gating-sql.ts:7-15`. Today a signed-in agent gets the raw phone on the document's context card; a share-link holder gets their own number on purpose. | New. One-line DAL fix. |
+| R5 | Join `meetings.scheduledFor` (and `meetingType` for the agent) through `proposals.meetingId`. | The overview's "Visited {date}" and the Meeting card header. | New. Homeowner-safe: the date only, never outcome or participants (H10). Like R3, it needs a pass-through in `toHomeownerProposalView`; `meetingId` itself is not in the bearer read rule. |
 | R7 | **Payment plan on the proposal**: a mode (`all-cash · some-cash · all-finance · scheduled`) and a flexible ordered list of scheduled payments (label, amount, due description). Column versus child table is settled under ADR 0005 at plan time with the owner. Writable on the token path for the mode only (D24), and by agents for the schedule. `MIN_FINANCED_AMOUNT` is enforced server-side in the write, not only in the UI. | D22–D24. Nothing like it exists today: Zoho only receives `deposit` (`registry.ts:26`), and `dealStructure` (the meeting scratchpad) is being retired by spec E. | New. **Blocks the payment-plan UI tasks.** The rest of Funding (breakdown, slider, finance options) builds without it. |
-| R6 | A public portfolio read **filtered by trade** (or scope), with each project's hero before/after media. | Past results matched to this proposal (#64), replacing the hardcoded seed. | New. Extends `getPublicProjects`. Until it lands, the edge filters the full public list. |
+| R6 | A public portfolio read **filtered by trade** (or scope), with each project's hero before/after media. | Past results matched to this proposal (#64), replacing the hardcoded seed. The before/after cards and the scope card's "We've done this before" chip (§3) depend on it. | New. Extends `getPublicProjects`. Until it lands, Past results shows the first public projects with a hero image (an empty list shows a one-line link to the portfolio, never a bare heading), and the cards and chip are not built. |
 
 **UI adaptations at the edge** (no backend change)
 - The SOW parser (§4.6, LAZY).
@@ -265,7 +273,10 @@ This section is the single hand-off for backend work. Build tasks that depend on
 - **Cash down above the final price:** clamped by the slider's maximum (`finalTcp − 3,500`).
 - **Final price under $4,000:** the financing modes are disabled with "Financing starts at $3,500" (D23).
 - **Price changes after a saved choice** (the agent edits the proposal): if the stored cash down would leave less than $3,500 financed, it is clamped down on the next render and saved. If the schedule no longer sums to `finalTcp`, the document shows "Schedule being updated" to the homeowner and a warning in the cockpit.
-- **Debounced saves racing:** only the last value is sent, and a pending save flushes when the page hides (`visibilitychange`).
+- **Debounced saves racing:** only the last value is sent, and a pending save flushes when the page hides (`visibilitychange` to hidden, and `pagehide`).
+- **Frozen proposal** (a draft envelope, a contract sent, signed or declined, or the proposal approved): Funding is read-only with the saved choices shown (§3, O2). A homeowner whose share-link read can't see the draft envelope finds out from the server's `proposal_frozen` refusal; the card locks with no error toast. Status `declined` alone does not lock Funding (owner ruling 2026-10-15): the page locks exactly when `isProposalFrozen` does, plus on the refusal, matching the server. The cockpit's send composer is hidden too.
+- **A background refetch fails** (after a save's invalidation, on refocus): the document stays on screen; the error state shows only when there is no proposal to show.
+- **The agent can't reach the customer:** `getCustomerProfile` answers not found, and the cockpit shows one line in place of the Customer and Meeting cards.
 - **`recordView`:** the agent's own open with `?view=agent` must not count as a view. Today an agent with a token records one, and without a token gets a forbidden error. The plan skips the call when `viewer === 'agent'`.
 - **Offline or a failed mutation:** a toast with the error. The local slider value is kept.
 
@@ -278,21 +289,25 @@ Playwright scripts in the session scratchpad drive the real page with the dev se
 | Chapter rail sticks and tracks the active chapter; tabs show all six short labels uncut | 1440, 1180 (iPad landscape), 820 (iPad portrait), 390, 360 | light, dark |
 | Cockpit opens as a right sheet at 1180 and as a bottom drawer at 820 and 390; the document doesn't shift; no visible scrollbar; focus returns | 1180, 820, 390 | light, dark |
 | Agreement card: `initial-sale` shows two signers, `additional-work` one; required switches are disabled; age ≥ 65 swaps in the senior documents | 1180 | light |
-| Homeowner view (no `?view=agent`): no cockpit button, no copy-SOW, no scheduled-payments editor, no internal-financials anywhere in the DOM | 390, 1180 | light |
+| Homeowner view (no `?view=agent`): no cockpit button, no copy-SOW, no scheduled-payments editor, no internal-financials anywhere in the DOM; the share-link `getFullView` payload has every `costLines` empty | 390, 1180 | light |
 | Pricing: per-part list price, incentives and net; whole-project block; final price matches `buildPricingBreakdown.finalTcp`; total-mode proposal renders without part prices | 1440, 390 | light, dark |
 | Slider updates the amount to finance and every monthly payment live; keyboard arrows step $500; the maximum leaves $3,500 financed; one debounced write per drag (network-intercepted, not sent to the DB) | 1180, 390 | light |
-| Payment plan: each of the four modes renders its block; financing modes are disabled under $4,000; the selection persists across a reload (intercepted write, mocked response) | 1180, 390 | light |
+| Payment plan: each of the four modes renders its block; financing modes are disabled under $4,000; switching modes sends no write; the saved cash down survives a reload and opens on "Some cash" (intercepted write, mocked response). The mode itself persisting across a reload is an R7 item | 1180, 390 | light |
+| Frozen proposal: the lock line shows, every control is disabled, no write is sent; a `proposal_frozen` refusal locks the card with no toast | 1180 | light |
+| Cockpit modal layers: Internal Financials and the customer profile open above the sheet and close back to it | 1180, 390 | light |
 | Spec sheet parses both description variants, shows no "0 steps" phase, and falls back to HTML on a malformed section | 1440, 390 | light |
 | No horizontal page scroll at 360 | 360 | light, dark |
 
-`pnpm tsc` and `pnpm lint` pass. Never `pnpm build`. Clear `.next` (after `ss -ltnp`) before judging rendered CSS. Before/after page height at 1440 and 390 is compared against the baseline: 9,932px and 16,055px.
+`pnpm tsc` and `pnpm lint` pass. Never `pnpm build`. The dev server is the owner's: never restart it or clear `.next`; for a class missing from the page, read the served CSS and report. Before/after page height at 1440 and 390 is compared against the baseline: 9,932px and 16,055px.
 
 ## 8. Files
 
 **Create**
-- `src/shared/components/entities/entity-card/entity-card.tsx` (compound `Root`, `Header`, `Body`, `Section`, `Footer`), plus its `index.ts`
+- `src/shared/components/entities/overview-card/overview-card.tsx` (`OverviewCard`: compound `Root`, `Header`, `Body`, `Section`, `Footer`)
+- `src/shared/modules/customers/core/constants/presentable-insight-fields.ts` (`PRESENTABLE_INSIGHT_FIELDS`)
 - `src/features/proposal-flow/contexts/proposal-document-context.tsx` (`ProposalDocumentProvider`, `useProposalDocument`)
-- `src/features/proposal-flow/ui/components/proposal/chapter-nav.tsx` (rail and tabs)
+- `src/features/proposal-flow/ui/components/proposal/top-bar-frame.tsx` and `top-bar.tsx`
+- `src/features/proposal-flow/ui/components/proposal/chapter-nav.tsx` (rail and tabs) and `src/features/proposal-flow/lib/scroll-to-chapter.ts`
 - `src/features/proposal-flow/ui/components/proposal/overview-hero.tsx`
 - `src/features/proposal-flow/ui/components/proposal/overview-context-card.tsx`
 - `src/features/proposal-flow/ui/components/proposal/scope-spec-sheet.tsx`
@@ -311,7 +326,7 @@ Playwright scripts in the session scratchpad drive the real page with the dev se
 - `src/features/proposal-flow/ui/components/cockpit/send-composer.tsx`
 - `src/features/proposal-flow/lib/parse-sow-section.ts` (LAZY)
 - `src/features/proposal-flow/constants/proposal-chapters.ts` (short labels; or extend `proposal-steps.ts` with `shortLabel`, which the plan prefers)
-- `src/shared/entities/customers/components/customer-notes-part.tsx`
+- `src/features/proposal-flow/constants/cockpit-actions.ts` (the cockpit's toolbar roles and hidden action ids)
 
 **Modify**
 - `src/features/proposal-flow/ui/components/proposal/index.tsx`: provider, chapters, cockpit, `recordView` skip for agents.
@@ -319,10 +334,14 @@ Playwright scripts in the session scratchpad drive the real page with the dev se
 - `src/features/proposal-flow/ui/components/pricing-breakdown.tsx`: D19.
 - `src/features/proposal-flow/ui/components/navbar/navbar.tsx`: step links and mobile select give way to `chapter-nav`.
 - `src/features/proposal-flow/hooks/use-current-proposal.ts`: becomes the route host's feeder only.
-- `src/shared/modules/proposals/core/components/overview-card.tsx`: `EntityCard` parts, `'toolbar'` mode, `Footer`.
-- `src/shared/entities/customers/components/overview-card.tsx`: `Header`, `Footer`, `Actions`, `Notes`.
-- `src/shared/entities/meetings/components/overview-card.tsx`: `EntityCard` parts, `'toolbar'` mode.
-- `src/shared/modules/proposals/core/constants/actions.ts` and `hooks/use-proposal-action-configs.ts`: `internalFinancials`.
+- `src/shared/modules/proposals/core/components/overview-card.tsx`: `'toolbar'` mode with per-surface roles and hidden ids, `Footer` (an `OverviewCard.Footer`).
+- `src/shared/entities/customers/components/overview-card.tsx`: `Actions` (from `CustomerActionsHost`), `Notes`, `Insights` with a field list.
+- `src/shared/entities/customers/components/profile/customer-profile-key-insights.tsx`: optional `fields`, plus `timeInHome` and `yearBuilt`.
+- `src/shared/entities/meetings/components/overview-card.tsx`: `'toolbar'` mode.
+- `src/shared/modules/proposals/core/constants/actions.ts` and `hooks/use-proposal-action-configs.ts`: `internalFinancials`, `copySow`.
+- `src/shared/components/dialogs/sheets/responsive-sheet.tsx`: optional `bodyClassName` and a `data-slot="responsive-sheet-body"` on its body (owner ruling 2026-10-15: in scope).
+- `src/shared/components/ui/slider.tsx`: optional `thumbProps` (owner ruling 2026-10-15: in scope).
+- `src/shared/components/contract-status-panel/ui/envelope-card.tsx` (optional `className`; owner ruling 2026-10-15: in scope) and `envelope-configuration-section.tsx` (switch rows).
 - `src/shared/modules/proposals/core/dal/server/queries.ts`: R3, R4 and R5, once approved in §5.
 
 **Delete**
@@ -357,5 +376,5 @@ Playwright scripts in the session scratchpad drive the real page with the dev se
 - **C1 · Slider maximum → decided:** payment plan modes plus a $3,500 financing minimum (D22, D23).
 - **C2 · Homeowner choices → decided:** saved, debounced (D24).
 - **C3 · R1 timing.** The page can be built before the projection (#285/H10) lands, but must not go to prod without it. **Recommended:** release gate, not build gate.
-- **C4 · `EntityCard` as a shared primitive** in `src/shared/components/entities/` rather than feature-local. Three entity cards already duplicate Header and Body, so it is promoted now rather than later.
-- **C5 · New names** for sign-off, per R.5: `ProposalDocumentProvider`/`useProposalDocument`, `EntityCard`, `internalFinancials` (action id), "Cockpit" (the UI label you used), `parseSowSection`, `shortLabel`, `MIN_FINANCED_AMOUNT`, and for R7: "payment plan" (proposed domain term) with the modes `all-cash · some-cash · all-finance · scheduled`.
+- **C4 · `OverviewCard` as a shared primitive** in `src/shared/components/entities/overview-card/` rather than feature-local. Three entity cards already duplicate Header and Body, so it is promoted now rather than later. Named `OverviewCard` (owner ruling O3, 2026-10-15) because it is the frame the `*OverviewCard` compounds sit on.
+- **C5 · New names** for sign-off, per R.5: `ProposalDocumentProvider`/`useProposalDocument`, `OverviewCard`, `internalFinancials` and `copySow` (action ids), "Cockpit" (the UI label you used), `parseSowSection`, `shortLabel`, `MIN_FINANCED_AMOUNT`, and for R7: "payment plan" (proposed domain term) with the modes `all-cash · some-cash · all-finance · scheduled`. "Cockpit" and "Proposal chapter" are in `CONTEXT.md` (Proposal page terms, owner ruling O4, 2026-10-15).
