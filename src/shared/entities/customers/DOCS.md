@@ -216,13 +216,13 @@ Customers carry `latitude`, `longitude`, `geocodedAt`. Address-edit flows trigge
 
 A customer note may be edited or deleted only by its **author** or an **admin** (super-admin / `manage:all`). Notes live on `customer_notes` — a sibling top-level entity on the Entity Server System (`entities/customer-notes/`), not a column on `customers` — documented here because notes are a customer-child business concept, same as the other rules in this file.
 
-Enforced **server-side** by the compiled rules: `createCrudDal` scopes `CustomerNote` through its customer and tests the author condition (`authorId`) on update and delete; admins (`ctx.actor.ability.can('manage', 'all')`) pass unconditionally. Mirrored **client-side** by `canManage` in `useCustomerNoteActionConfigs` (`entities/customer-notes/hooks/use-customer-note-action-configs.ts`), which the timeline row uses to decide whether to mount the edit/delete action menu at all for a given note — the server rule is the real enforcement boundary; the client gate only avoids showing controls that would 403.
+Enforced **server-side** by the compiled rules: `createCrudDal` scopes `CustomerNote` through its customer and tests the author condition (`authorId`) on update and delete; admins (`ctx.actor.ability.can('manage', 'all')`) pass unconditionally. The client asks the same rule on the note (`ability.can('update', subject('CustomerNote', note))` in `useCustomerNoteActionConfigs`) to decide whether the timeline row mounts the edit/delete menu; the server rule is the real enforcement boundary, and the client gate only avoids showing controls that would 403.
 
 Separately: the customer profile's **activity timeline** (Overview tab) is **derived just-in-time**, not persisted. `buildTimelineEvents` (`lib/build-timeline-events.ts`) recomputes the event list on every render from the live meetings/proposals/notes already fetched for the profile — there is no `timeline_events` table or snapshot to keep in sync. Follows the codebase's default derived-value rule (`docs/codebase-conventions/derived-values.md`): compute from a single canonical helper unless persistence earns its keep via the snapshot or cache-column exceptions, neither of which applies here.
 
 **Why**: authorship is the natural ownership boundary for a note (only the person who wrote it should be able to change what it says), with an admin override for moderation/cleanup. The timeline stays JIT because it's a read-only composition of data that's already fetched for the profile — persisting a duplicate would just be another cache to invalidate.
 **Reference impl**: `entities/customer-notes/lib/server-spec.ts` (`parent`) and the note rules in `src/shared/domains/permissions/rules/agent.ts`; `entities/customer-notes/hooks/use-customer-note-action-configs.ts` (`canManage`); `lib/build-timeline-events.ts` (`buildTimelineEvents`)
-**Enforced by**: compiled rules in `createCrudDal` (server, authoritative) + `canManage` (client, UX-only mirror)
+**Enforced by**: compiled rules in `createCrudDal` (server); the same rule tested on the note (client, UX only)
 
 ## Anti-patterns
 

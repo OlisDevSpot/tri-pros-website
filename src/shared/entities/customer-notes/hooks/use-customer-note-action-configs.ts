@@ -6,8 +6,8 @@ import type { CustomerNoteWithAuthor } from '@/shared/entities/customers/types'
 
 import { useMemo } from 'react'
 
-import { useSession } from '@/shared/domains/auth/client'
 import { useAbility } from '@/shared/domains/permissions/client'
+import { subject } from '@/shared/domains/permissions/subject'
 import { NOTE_ACTIONS } from '@/shared/entities/customer-notes/constants/note-actions'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { useCustomerNoteActions } from './use-customer-note-actions'
@@ -21,25 +21,19 @@ interface Result {
   actions: EntityActionConfig<CustomerNoteWithAuthor>[]
   DeleteConfirmDialog: () => JSX.Element
   /**
-   * Author-or-admin gate — mirrors the author rule the server compiles (`authorId`
-   * in the agent's note rule; super-admins hold all). The render site (timeline row) applies this per-note to
-   * decide whether to mount the actions menu at all, rather than filtering
-   * inside the memoized `actions` array below.
+   * The author rule, tested on the note: the render site mounts the actions menu only on notes the
+   * reader may change, rather than filtering inside the memoized `actions` array below.
    */
   canManage: (note: CustomerNoteWithAuthor) => boolean
 }
 
 export function useCustomerNoteActionConfigs({ customerId, onEdit }: Args): Result {
   const ability = useAbility()
-  const { data: session } = useSession()
   const { deleteNote } = useCustomerNoteActions(customerId)
   const [DeleteConfirmDialog, confirmDelete] = useConfirm({
     title: 'Delete note',
     message: 'This permanently deletes the note. This cannot be undone.',
   })
-
-  const currentUserId = session?.user?.id
-  const isAdmin = ability.can('manage', 'all')
 
   const actions = useMemo((): EntityActionConfig<CustomerNoteWithAuthor>[] => {
     return [
@@ -60,8 +54,7 @@ export function useCustomerNoteActionConfigs({ customerId, onEdit }: Args): Resu
     ]
   }, [confirmDelete, deleteNote, onEdit])
 
-  const canManage = (note: CustomerNoteWithAuthor) =>
-    isAdmin || (!!currentUserId && note.authorId === currentUserId)
+  const canManage = (note: CustomerNoteWithAuthor) => ability.can('update', subject('CustomerNote', note))
 
   return { actions, DeleteConfirmDialog, canManage }
 }
