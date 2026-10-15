@@ -14,6 +14,7 @@ export interface ParsedSowSection {
   specs: [label: string, value: string][]
   exclusions: string[]
   phases: ParsedSowPhase[]
+  notes: string[]
   addOns: string[]
 }
 
@@ -29,13 +30,20 @@ function inline(node: TiptapNode): string {
   if (node.type === 'text') {
     return node.text ?? ''
   }
-  return (node.content ?? []).map(inline).join('')
+  if (node.type === 'hardBreak') {
+    return ' '
+  }
+  // Text runs inside a paragraph touch; the blocks inside a list item would otherwise run their words together.
+  const separator = node.type === 'paragraph' || node.type === 'heading' ? '' : ' '
+  return (node.content ?? []).map(inline).join(separator)
+}
+
+function plain(node: TiptapNode): string {
+  return inline(node).replace(/\s+/g, ' ').trim()
 }
 
 function listItems(node: TiptapNode): string[] {
-  return (node.content ?? [])
-    .map(item => inline(item).replace(/\s+/g, ' ').trim())
-    .filter(Boolean)
+  return (node.content ?? []).map(plain).filter(Boolean)
 }
 
 function parseDoc(json: string): TiptapNode | null {
@@ -59,25 +67,32 @@ export function parseSowSection(contentJSON: string): ParsedSowSection | null {
   let current: ParsedSowPhase | null = null
 
   for (const node of root.content ?? []) {
-    const t = inline(node).replace(/\s+/g, ' ').trim()
+    const t = plain(node)
+    if (!t) {
+      continue
+    }
     if (!description && (node.type === 'paragraph' || node.type === 'heading') && DESCRIPTION.test(t)) {
       description = t.replace(DESCRIPTION, '')
       continue
     }
-    if (node.type === 'heading' && node.attrs?.level === 2 && t) {
+    if (node.type === 'heading' && node.attrs?.level === 2) {
       current = { title: t, steps: [] }
       groups.push(current)
       continue
     }
     if ((node.type === 'bulletList' || node.type === 'orderedList') && current) {
       current.steps.push(...listItems(node))
+      continue
     }
+    // Text in any shape the card doesn't lay out would vanish from the page, so the card shows the HTML instead.
+    return null
   }
 
   const specs: [string, string][] = []
   const exclusions: string[] = []
   const addOns: string[] = []
   const phases: ParsedSowPhase[] = []
+  const notes: string[] = []
 
   for (const group of groups) {
     if (group.steps.length === 0) {
@@ -91,7 +106,6 @@ export function parseSowSection(contentJSON: string): ParsedSowSection | null {
       phases.push(group)
       continue
     }
-    const notes: string[] = []
     for (const line of group.steps) {
       const match = line.match(/^([^:]{2,40}):\s*(\S.*)$/)
       if (match && EXCLUSIONS_KEY.test(match[1].trim())) {
@@ -107,13 +121,10 @@ export function parseSowSection(contentJSON: string): ParsedSowSection | null {
         notes.push(line)
       }
     }
-    if (notes.length > 0) {
-      phases.push({ title: group.title, steps: notes })
-    }
   }
 
-  if (!description && phases.length === 0 && specs.length === 0) {
+  if (!description && phases.length === 0 && specs.length === 0 && notes.length === 0) {
     return null
   }
-  return { description, specs, exclusions, phases, addOns }
+  return { description, specs, exclusions, phases, notes, addOns }
 }

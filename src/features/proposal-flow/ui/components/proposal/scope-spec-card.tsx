@@ -13,9 +13,6 @@ import { formatAsDollars } from '@/shared/lib/formatters'
 import { sanitizeUserHtml } from '@/shared/lib/sanitize-html'
 import { cn } from '@/shared/lib/utils'
 
-// The parser leaves the free-text agreement notes as a trailing group; it is not a work phase.
-const NOTES_TITLE = /^agreement notes$/i
-
 interface Props {
   section: SOW
   index: number
@@ -24,8 +21,6 @@ interface Props {
 
 export function ScopeSpecCard({ section, index, showPrice }: Props) {
   const parsed = useMemo(() => parseSowSection(section.contentJSON), [section.contentJSON])
-  const phases = parsed?.phases.filter(phase => !NOTES_TITLE.test(phase.title)) ?? []
-  const notes = parsed?.phases.filter(phase => NOTES_TITLE.test(phase.title)).flatMap(phase => phase.steps) ?? []
   const [openPhase, setOpenPhase] = useState<number | null>(0)
   const price = section.financials.sectionPrice ?? 0
 
@@ -69,11 +64,11 @@ export function ScopeSpecCard({ section, index, showPrice }: Props) {
                 </div>
               )}
 
-              {phases.length > 0 && (
+              {parsed.phases.length > 0 && (
                 <div className="grid gap-2">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Phases</h4>
                   <ol className="divide-y divide-border rounded-md border border-border">
-                    {phases.map((phase, i) => {
+                    {parsed.phases.map((phase, i) => {
                       const open = openPhase === i
                       return (
                         <li key={i}>
@@ -100,11 +95,11 @@ export function ScopeSpecCard({ section, index, showPrice }: Props) {
                 </div>
               )}
 
-              {notes.length > 0 && (
+              {parsed.notes.length > 0 && (
                 <div className="grid gap-2">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Notes</h4>
                   <ul className="grid list-disc gap-1 pl-5 text-sm text-muted-foreground">
-                    {notes.map((line, i) => <li key={i}>{line}</li>)}
+                    {parsed.notes.map((line, i) => <li key={i}>{line}</li>)}
                   </ul>
                 </div>
               )}
