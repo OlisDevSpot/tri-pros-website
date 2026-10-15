@@ -28,15 +28,18 @@ export const OMNI_RECORD_ICONS = {
   project: ImageIcon,
 } as const
 
+// On the dark glass the row tint barely clears a stack's band, so the highlight takes the selection blue, which dark
+// mixes stronger (--control-selected-mix). Light keeps the primitive's row tint.
+const OMNI_DARK_HIGHLIGHT = 'dark:data-[selected=true]:bg-control-selected'
 // The dialog zeroes cmdk items' vertical padding, so each recipe sets its own height. 44px rows on a coarse pointer.
 export const OMNI_ROW_CLASSES: Record<OmniItemLayout, string> = {
-  line: 'min-h-14 gap-3 rounded-lg',
-  nested: 'h-9 gap-2.5 rounded-md pointer-coarse:h-11',
-  compact: 'h-10 gap-2.5 rounded-md pointer-coarse:h-11',
+  line: `min-h-14 gap-3 rounded-lg ${OMNI_DARK_HIGHLIGHT}`,
+  nested: `h-9 gap-2.5 rounded-md pointer-coarse:h-11 ${OMNI_DARK_HIGHLIGHT}`,
+  compact: `h-10 gap-2.5 rounded-md pointer-coarse:h-11 ${OMNI_DARK_HIGHLIGHT}`,
 }
 // A customer row and its capsule sit side by side, so the capsule's buttons are never inside the option; the
 // wrapper paints the highlight across both.
-export const OMNI_CONTACT_ROW_CLASS = 'flex items-center has-[[cmdk-item][data-selected=true]]:bg-row-hover'
+export const OMNI_CONTACT_ROW_CLASS = 'flex items-center has-[[cmdk-item][data-selected=true]]:bg-row-hover dark:has-[[cmdk-item][data-selected=true]]:bg-control-selected'
 export const OMNI_ICON_TILE_CLASS = 'grid size-9 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground [&_svg]:size-4'
 export const OMNI_KIND_LABEL_CLASS = 'w-16 shrink-0 text-xs font-medium text-muted-foreground'
 
@@ -53,8 +56,8 @@ export const OMNI_STATUS_DOT_CLASSES: Record<OmniStatusKind, string> = {
 export const OMNI_PANEL_STYLE = {
   backgroundColor: 'var(--palette-glass)',
   backgroundImage: 'var(--popover-glass-overlay)',
-  backdropFilter: 'blur(24px) saturate(150%)',
-  WebkitBackdropFilter: 'blur(24px) saturate(150%)',
+  backdropFilter: 'blur(12px) saturate(150%)',
+  WebkitBackdropFilter: 'blur(12px) saturate(150%)',
   boxShadow: 'var(--popover-glass-shadow)',
 } as const satisfies CSSProperties
 

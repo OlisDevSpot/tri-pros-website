@@ -51,7 +51,8 @@ export function OmniInputRow({ busy, chip, ...props }: Props) {
       {chip && <span className="shrink-0 rounded-md bg-control-selected px-2 py-0.5 text-xs font-semibold text-foreground">{chip}</span>}
       {/* 16px on phones so iOS doesn't zoom the page on focus. */}
       <CommandPrimitive.Input className="h-full min-w-0 flex-1 bg-transparent text-base outline-hidden placeholder:text-muted-foreground sm:text-sm" {...props} ref={input} />
-      <kbd className="shrink-0 rounded border border-border px-1.5 py-0.5 font-mono text-xs text-muted-foreground pointer-coarse:hidden">{OMNI_COPY.escKey}</kbd>
+      {/* The glass sits a little above the dialog's rung in dark, so the rung's hairline all but vanishes there. */}
+      <kbd className="shrink-0 rounded border border-border dark:border-border-strong px-1.5 py-0.5 font-mono text-xs text-muted-foreground pointer-coarse:hidden">{OMNI_COPY.escKey}</kbd>
       <LoadingHairline isLoading={busy} />
     </div>
   )
