@@ -54,15 +54,6 @@ Steps are filtered by user role via `generateProposalSteps(userRole)` — curren
 
 The toggle UI itself lives in the navbar kebab popover (`ui/components/navbar/navbar-menu.tsx:ProposalNavbarMenu`, replacing the old fixed desktop pill and mobile navbar toggle icon), driven by `hooks/use-view-mode-toggle.ts:useViewModeToggle`. `useViewMode` remains the CASL-gated source of truth the toggle writes through — the popover only renders when `ability.can('update', 'Proposal')`.
 
-### customizable-sections-vs-static
-
-Most steps are **static**: their content comes from constants + portfolio data. Two steps are **customizable**: agents edit `funding` and `agreement` per proposal (defined in `proposal-steps.ts:customizableSections`).
-
-**Why**: project overview, trusted contractor, past results are brand/portfolio surfaces — same for every proposal. Scope of Work edits the proposal's `projectJSON.data.sow`. Funding edits the proposal's scalar money columns (`starting_tcp_cents`, `deposit_amount_cents`, `cash_in_deal_cents`, `misc_price_cents`) plus its `proposal_incentives` rows — W3 retired the `fundingJSON` blob. Agreement reads contract status from the proposal record (no edits in flow — signing is via Zoho).
-
-**Reference impl**: `constants/proposal-steps.ts:customizableSections`
-**Enforced by**: convention (which steps render edit UI for the agent view)
-
 ### sow-edits-merge-jsonb-not-replace
 
 **Retired (Wave 1, epic #256; the merge mechanism itself was deleted entirely in Wave

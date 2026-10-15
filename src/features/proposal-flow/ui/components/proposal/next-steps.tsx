@@ -17,14 +17,7 @@ export function NextSteps() {
           <ContractStatusPanel
             proposalId={proposal.id}
             token={proposal.token ?? undefined}
-            isAgent={false}
             customerAge={proposal.customer?.customerAge ?? null}
-            envelopeDocumentIds={proposal.envelopeDocumentIds ?? null}
-            proposalKind={proposal.kind}
-            customerName={proposal.customer?.name ?? null}
-            customerEmail={proposal.customer?.email ?? null}
-            proposalStatus={proposal.status}
-            proposalSentAt={proposal.sentAt}
           />
         </div>
       </div>
