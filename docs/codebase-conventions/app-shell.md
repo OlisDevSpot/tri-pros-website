@@ -61,8 +61,7 @@ Padding goes on the **inner content wrapper**, NOT on the container that paints 
 | Surface | Element | Padding |
 |---|---|---|
 | Dashboard layout | Content wrapper div | `pt-[env(safe-area-inset-top)]` |
-| Proposal flow | `<ProposalPageNavbar>` wrapper | `pt-[env(safe-area-inset-top)]` |
-| Proposal flow | Content container | `pb-[max(env(safe-area-inset-bottom),1rem)]` |
+| Proposal flow | Content column inside `ScrollRootProvider` | `pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]` |
 | Sidebar (desktop) | `SidebarHeader` / `SidebarFooter` | CSS on data-slot selectors in `globals.css` |
 | Sidebar (mobile sheet) | Sheet inner div | CSS in `globals.css` |
 | Site navbar | Inner content wrapper | `pt-[env(safe-area-inset-top)]` |
@@ -131,22 +130,23 @@ The stage route then supplies its own gutters where it wants them (the meeting f
 
 ### proposal-flow-layout-shape-fixed
 
-The proposal flow has its own canonical shape — gradient bg, scroll root context, full-height column:
+The proposal flow has its own canonical shape — a full-height `bg-background` shell, scroll root context, one padded column:
 
 ```jsx
-<div className="h-full flex flex-col" style={{ background: '..gradient..' }}>
-  <ScrollRootProvider>
-    <div className="pt-[env(safe-area-inset-top)]">
-      <ProposalPageNavbar />
-    </div>
-    <div className="container grow min-h-0 py-4 lg:py-8 pb-[max(env(safe-area-inset-bottom),1rem)]">
-      {children}
-    </div>
-  </ScrollRootProvider>
-</div>
+<AbilityProvider user={…} rules={…}>
+  <ProposalSplashScreen isAuthenticated={…} />
+  <GlobalDialogs />
+  <ProposalFlowShell> {/* h-full flex flex-col bg-background */}
+    <ScrollRootProvider>
+      <div className="flex min-h-0 grow flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+        <Suspense fallback={<ProposalFlowLoadingState />}>{children}</Suspense>
+      </div>
+    </ScrollRootProvider>
+  </ProposalFlowShell>
+</AbilityProvider>
 ```
 
-Same safe-area discipline: gradient lives on the outer container (paints behind the notch); content is the inner padded div.
+The layout renders no navbar and no container: the proposal page brings its own top bar (`ProposalTopBar`) and its own gutters. Same safe-area discipline: the shell paints the background behind the notch; the inner column carries the insets.
 
 **Why**: same as `dashboard-layout-shape-fixed` — every reshape has produced a regression.
 **Reference impl**: `src/app/(frontend)/proposal-flow/layout.tsx`
