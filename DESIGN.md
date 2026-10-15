@@ -556,9 +556,9 @@ responsive depth.
   makes the app feel premium rather than templated.
 - **The ⌘K palette** takes its own pair. `--palette-glass` is the popover rung at 84% in light and,
   in dark, about one rung above the canvas at 86% (rung 4 at 62% read as a grey slab over the
-  scrim). `--palette-scrim` is a blue-black veil with no blur that pushes the page back (the panel's
-  own blur already softens the page behind it, and a second blur pass costs frames); `--scrim` would
-  lighten a dark canvas. The palette keeps `--popover-glass-overlay` and `--popover-glass-shadow`, and
+  scrim). The palette panel has no backdrop blur (at 84-86% the glass showed no visible frost and the
+  filter cost ~40 ms per keystroke). `--palette-scrim` is a blue-black veil with no blur that pushes
+  the page back; `--scrim` would lighten a dark canvas. The palette keeps `--popover-glass-overlay` and `--popover-glass-shadow`, and
   paints a solid `--popover` for viewers who ask for reduced transparency. `theme:check` holds both
   inks on the glass over the scrim over the page.
 - **Palette rows and hairlines** (`.surface-palette` on the panel): its highlight (`--row-hover`) mixes

@@ -392,7 +392,7 @@ const pairs: Pair[] = [
   ...STATUS_TONES.map(tone => ({ label: `status ${tone} text on its fill`, fg: `--status-${tone}-fg`, bg: `--status-${tone}-bg`, min: 4.5, base: '--card', on: CARDS })),
   ...SERIES.map(series => ({ label: `series ${series} vs surface`, fg: `--series-${series}`, bg: '--card', min: 3, on: CARDS })),
   ...Array.from({ length: IDENTITY_COUNT }, (_, i) => ({ label: `identity ${i + 1} text on its fill`, fg: `--identity-${i + 1}-fg`, bg: `--identity-${i + 1}-bg`, min: 4.5, base: '--card', on: CARDS })),
-  // The ⌘K palette: its glass over its scrim over the page. Blur is ignored, so the plain page is the case checked.
+  // The ⌘K palette: its glass over its scrim over the page. The panel has no blur, so the plain page is the case checked.
   { label: 'body text on the palette glass', fg: '--foreground', bg: '--palette-glass', base: ['--palette-scrim', '--background'], min: 4.5 },
   { label: 'muted text on the palette glass', fg: '--muted-foreground', bg: '--palette-glass', base: ['--palette-scrim', '--background'], min: 4.5 },
   { label: 'body text on the palette highlight', fg: '--foreground', bg: '--row-hover', min: 4.5, on: ['palette'] },

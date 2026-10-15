@@ -50,13 +50,11 @@ export const OMNI_STATUS_DOT_CLASSES: Record<OmniStatusKind, string> = {
   error: 'bg-status-danger-dot',
 }
 
-// Inline, not backdrop-blur-*: Chrome's compositor drops the class's CSS-var chain on portal-rendered, transformed
-// elements, and the dialog content is both (same reason as GLASS_SURFACE_STYLE).
+// No backdrop blur: at 84-86% opacity the glass showed no visible frost, and the filter cost ~40 ms per keystroke.
+// Inline so the reduced-transparency !important fallback in OMNI_PANEL_CLASS is the only thing that overrides it.
 export const OMNI_PANEL_STYLE = {
   backgroundColor: 'var(--palette-glass)',
   backgroundImage: 'var(--popover-glass-overlay)',
-  backdropFilter: 'blur(8px) saturate(150%)',
-  WebkitBackdropFilter: 'blur(8px) saturate(150%)',
   boxShadow: 'var(--popover-glass-shadow)',
 } as const satisfies CSSProperties
 
@@ -70,7 +68,7 @@ export const OMNI_PANEL_CLASS = [
   'top-[calc(env(safe-area-inset-top)_+_0.5rem)] translate-y-0 max-w-[calc(100%-1rem)] sm:max-w-180',
   'max-h-[min(calc(var(--omni-vvh,100dvh)_-_env(safe-area-inset-top)_-_1rem),30rem)]',
   '[@media(min-width:640px)_and_(min-height:500px)]:top-[12vh] [@media(min-width:640px)_and_(min-height:500px)]:max-h-[calc(var(--omni-vvh,100dvh)_-_12vh_-_1rem)]',
-  '[@media(prefers-reduced-transparency:reduce)]:bg-popover! [@media(prefers-reduced-transparency:reduce)]:bg-none! [@media(prefers-reduced-transparency:reduce)]:[backdrop-filter:none]! [@media(prefers-reduced-transparency:reduce)]:[-webkit-backdrop-filter:none]!',
+  '[@media(prefers-reduced-transparency:reduce)]:bg-popover! [@media(prefers-reduced-transparency:reduce)]:bg-none!',
 ].join(' ')
 /** The list flexes inside the bounded panel; desktop also caps it, as the stacks are judged at that height. */
 export const OMNI_LIST_CLASS = 'max-h-none min-h-0 flex-auto scroll-py-2 py-1 [@media(min-width:640px)_and_(min-height:500px)]:max-h-[min(60vh,30rem)]'
