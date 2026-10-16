@@ -814,7 +814,7 @@ git commit -m "feat(theme): floating navy rail with a solid cyan active pill" --
 **Files:**
 - Create: `src/shared/constants/status-tones.ts`
 - Modify:
-  - `src/shared/components/kanban/constants/color-maps.ts`
+  - `src/shared/components/data-view/kanban/constants/color-maps.ts`
   - `src/shared/modules/proposals/core/constants/proposal-status-colors.ts`, `proposal-row-styles.ts`, `multiplier-styles.ts`
   - `src/shared/entities/meetings/constants/status-colors.ts`, `src/shared/entities/meetings/lib/meeting-row-class.ts`
   - `src/shared/components/contract-status-panel/lib/get-status-badge.ts`, `constants/contract-statuses.ts`, `constants/action-impacts.ts`
@@ -890,7 +890,7 @@ export function toneClasses(tone: StatusTone): ToneClasses {
 
 Run:
 ```bash
-grep -cE '(bg|text|border|ring)-(slate|zinc|blue|indigo|cyan|red|green|emerald|amber|yellow|orange|purple)-[0-9]{2,3}' src/shared/components/kanban/constants/color-maps.ts src/shared/modules/proposals/core/constants/{proposal-status-colors,proposal-row-styles,multiplier-styles}.ts src/shared/entities/meetings/constants/status-colors.ts src/shared/entities/meetings/lib/meeting-row-class.ts src/shared/components/contract-status-panel/lib/get-status-badge.ts src/shared/components/contract-status-panel/constants/{contract-statuses,action-impacts}.ts src/features/agent-dashboard/constants/tier-color-map.ts src/features/campaigns-admin/constants/lead-status.ts src/features/schedule-management/constants/schedule-calendar-config.ts src/shared/entities/activities/constants/index.ts src/shared/entities/customers/components/customer-pipeline-badge.tsx
+grep -cE '(bg|text|border|ring)-(slate|zinc|blue|indigo|cyan|red|green|emerald|amber|yellow|orange|purple)-[0-9]{2,3}' src/shared/components/data-view/kanban/constants/color-maps.ts src/shared/modules/proposals/core/constants/{proposal-status-colors,proposal-row-styles,multiplier-styles}.ts src/shared/entities/meetings/constants/status-colors.ts src/shared/entities/meetings/lib/meeting-row-class.ts src/shared/components/contract-status-panel/lib/get-status-badge.ts src/shared/components/contract-status-panel/constants/{contract-statuses,action-impacts}.ts src/features/agent-dashboard/constants/tier-color-map.ts src/features/campaigns-admin/constants/lead-status.ts src/features/schedule-management/constants/schedule-calendar-config.ts src/shared/entities/activities/constants/index.ts src/shared/entities/customers/components/customer-pipeline-badge.tsx
 ```
 Expected: non-zero counts (red).
 
@@ -1040,7 +1040,7 @@ Expected: `status tones: ok`.
 - [ ] **Step 7: Commit**
 
 ```bash
-git commit -m "feat(theme): one status-tone module; every status and stage map reads it" -- src/shared/constants/status-tones.ts src/shared/components/kanban/constants/color-maps.ts src/shared/modules/proposals/core/constants/proposal-status-colors.ts src/shared/modules/proposals/core/constants/proposal-row-styles.ts src/shared/modules/proposals/core/constants/multiplier-styles.ts src/shared/entities/meetings/constants/status-colors.ts src/shared/entities/meetings/lib/meeting-row-class.ts src/shared/components/contract-status-panel/lib/get-status-badge.ts src/shared/components/contract-status-panel/constants/contract-statuses.ts src/shared/components/contract-status-panel/constants/action-impacts.ts src/features/agent-dashboard/constants/tier-color-map.ts src/features/campaigns-admin/constants/lead-status.ts src/features/schedule-management/constants/schedule-calendar-config.ts src/shared/entities/activities/constants/index.ts src/shared/entities/customers/components/customer-pipeline-badge.tsx
+git commit -m "feat(theme): one status-tone module; every status and stage map reads it" -- src/shared/constants/status-tones.ts src/shared/components/data-view/kanban/constants/color-maps.ts src/shared/modules/proposals/core/constants/proposal-status-colors.ts src/shared/modules/proposals/core/constants/proposal-row-styles.ts src/shared/modules/proposals/core/constants/multiplier-styles.ts src/shared/entities/meetings/constants/status-colors.ts src/shared/entities/meetings/lib/meeting-row-class.ts src/shared/components/contract-status-panel/lib/get-status-badge.ts src/shared/components/contract-status-panel/constants/contract-statuses.ts src/shared/components/contract-status-panel/constants/action-impacts.ts src/features/agent-dashboard/constants/tier-color-map.ts src/features/campaigns-admin/constants/lead-status.ts src/features/schedule-management/constants/schedule-calendar-config.ts src/shared/entities/activities/constants/index.ts src/shared/entities/customers/components/customer-pipeline-badge.tsx
 ```
 
 ---
@@ -1180,7 +1180,7 @@ const THEME_TOKEN_IGNORES = [
 Run the **guard report** (Global Constraints) with `theme-tokens/palette`.
 Expected: `theme-tokens/palette: N hits in M files` with N > 0. `/tmp/theme-tokens-palette.txt` is the task's checklist.
 
-Confirm the nav-path guard survived (the alias exists so it would): `CI=true pnpm exec eslint --print-config src/shared/components/kanban/ui/kanban-column.tsx | grep -c 'theme-tokens/palette\|no-restricted-syntax'` → `2` or more.
+Confirm the nav-path guard survived (the alias exists so it would): `CI=true pnpm exec eslint --print-config src/shared/components/data-view/kanban/ui/kanban-column.tsx | grep -c 'theme-tokens/palette\|no-restricted-syntax'` → `2` or more.
 
 - [ ] **Step 3: Migrate each file by meaning**
 

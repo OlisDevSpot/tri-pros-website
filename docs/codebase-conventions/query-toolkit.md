@@ -125,7 +125,7 @@ When two paginated tables coexist on one page, give each a `paramPrefix` so thei
 `<QueryToolbar pagination={p}>` works above DataTable, kanban, card grid — same toolbar component. New containers add their own adapter.
 
 **Why**: the toolbar UX is consistent across the app; only the result-rendering changes per container.
-**Reference impl**: `src/shared/components/query-toolbar/`
+**Reference impl**: `src/shared/components/data-view/query-toolbar/`
 **Enforced by**: convention
 
 ## TanStack Query `placeholderData: keepPreviousData`
@@ -164,6 +164,6 @@ Two shared affordances consume it — both wired once at the shared layer, so ev
 ## See also
 
 - `src/features/lead-sources-admin/ui/components/lead-source-customers-section.tsx` — reference full-stack impl
-- `src/shared/components/data-table/lib/` — container adapters
+- `src/shared/components/data-view/table/lib/` — container adapters
 - `docs/codebase-conventions/dal-conventions.md` — DAL conventions (paginate lives in shared DAL)
 - `docs/codebase-conventions/frontend-stack.md#server-prefetch-two-tiers` — server-side prefetch + `<HydrateClient>` for paginated tables (Tier 2)

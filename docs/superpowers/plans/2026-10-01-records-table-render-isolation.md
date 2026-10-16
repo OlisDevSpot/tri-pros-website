@@ -42,7 +42,7 @@ A Playwright probe in `scripts/perf/` measures all of it before and after.
 ## Before Task 1: working tree (orchestrator, not a subagent)
 
 These files carry uncommitted edits: the owner's own work, plus the meetings customer-cell change from earlier in this session.
-- `src/shared/components/data-table/ui/data-table-body.tsx`
+- `src/shared/components/data-view/table/ui/data-table-body.tsx`
 - `data-table.tsx`, `primary-cell.tsx` and `customer-name-cell.tsx`
 - the `should-toggle-row.ts → is-row-click.ts` rename
 - `src/shared/entities/meetings/components/meeting-customer-cell.tsx`
@@ -753,10 +753,10 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 ### Task 4: `DataTable` stable meta and memoized rows
 
 **Files:**
-- Create: `src/shared/components/data-table/ui/data-table-row.tsx`
-- Create: `src/shared/components/data-table/constants/frozen-column-shadow.ts`
-- Modify: `src/shared/components/data-table/ui/data-table-body.tsx` (whole row loop and props)
-- Modify: `src/shared/components/data-table/ui/data-table.tsx`:
+- Create: `src/shared/components/data-view/table/ui/data-table-row.tsx`
+- Create: `src/shared/components/data-view/table/constants/frozen-column-shadow.ts`
+- Modify: `src/shared/components/data-view/table/ui/data-table-body.tsx` (whole row loop and props)
+- Modify: `src/shared/components/data-view/table/ui/data-table.tsx`:
   - the `meta` prop doc, at line 34
   - the `isScrolled` state and `handleScroll`, at lines 105–116
   - `meta:` in `useReactTable`, at lines 258–261
@@ -773,7 +773,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 
 - [ ] **Step 1: Add the shadow constant**
 
-`src/shared/components/data-table/constants/frozen-column-shadow.ts`:
+`src/shared/components/data-view/table/constants/frozen-column-shadow.ts`:
 
 ```ts
 // Keyed off the scroller's `data-scrolled`, which the scroll handler sets on the DOM directly, so scrolling renders nothing.
@@ -782,7 +782,7 @@ export const FROZEN_COLUMN_SHADOW = 'transition-shadow duration-200 group-data-[
 
 - [ ] **Step 2: Write `DataTableRow`**
 
-`src/shared/components/data-table/ui/data-table-row.tsx`:
+`src/shared/components/data-view/table/ui/data-table-row.tsx`:
 
 ```tsx
 'use client'
@@ -794,8 +794,8 @@ import { flexRender } from '@tanstack/react-table'
 import { ChevronRightIcon } from 'lucide-react'
 import { Fragment, memo } from 'react'
 
-import { CELL_BORDER } from '@/shared/components/data-table/constants/cell-border'
-import { FROZEN_COLUMN_SHADOW } from '@/shared/components/data-table/constants/frozen-column-shadow'
+import { CELL_BORDER } from '@/shared/components/data-view/table/constants/cell-border'
+import { FROZEN_COLUMN_SHADOW } from '@/shared/components/data-view/table/constants/frozen-column-shadow'
 import { AnimatedCollapsibleContent } from '@/shared/components/ui/collapsible'
 import { TableCell, TableRow } from '@/shared/components/ui/table'
 import { cn } from '@/shared/lib/utils'
@@ -968,8 +968,8 @@ In `data-table.tsx`:
 1. Imports:
    - add `import type { Row } from '@tanstack/react-table'`
    - add `MouseEvent` to the `react` type import
-   - add `import { FROZEN_COLUMN_SHADOW } from '@/shared/components/data-table/constants/frozen-column-shadow'`
-   - add `import { isRowClick } from '@/shared/components/data-table/lib/is-row-click'`
+   - add `import { FROZEN_COLUMN_SHADOW } from '@/shared/components/data-view/table/constants/frozen-column-shadow'`
+   - add `import { isRowClick } from '@/shared/components/data-view/table/lib/is-row-click'`
    - add `import { useStableCallbacks } from '@/shared/hooks/use-stable-callbacks'`
 2. The `meta` prop doc:
 
@@ -1061,10 +1061,10 @@ On the dev server:
 - [ ] **Step 8: Commit**
 
 ```bash
-git add src/shared/components/data-table/ui/data-table-row.tsx \
-  src/shared/components/data-table/constants/frozen-column-shadow.ts \
-  src/shared/components/data-table/ui/data-table-body.tsx \
-  src/shared/components/data-table/ui/data-table.tsx
+git add src/shared/components/data-view/table/ui/data-table-row.tsx \
+  src/shared/components/data-view/table/constants/frozen-column-shadow.ts \
+  src/shared/components/data-view/table/ui/data-table-body.tsx \
+  src/shared/components/data-view/table/ui/data-table.tsx
 git commit -m "perf(data-table): rows re-render only when their data, expansion, meta values or columns change
 
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"

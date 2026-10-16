@@ -52,7 +52,7 @@ The agent dashboard calendar has no prefetch at all. It reads `meetingsRouter.re
 - `ScheduleCalendar` already receives `dateWindow`. While the flag is true it hands its views no events, and each view draws skeletons in place of its content and its empty-state copy:
   - **Week:** two skeleton cards at meeting-card height in each visible day column.
   - **Day:** skeleton rows in the bucket grid in place of the "No events scheduled for this day" early return. The day view draws no grid without events (its lanes are participant combos), so the pending branch draws the bucket header plus a fixed number of placeholder lanes.
-  - **Month** (`CalendarMonthView`, `src/shared/components/calendar/ui/`): skeleton lines in each cell in place of dots.
+  - **Month** (`CalendarMonthView`, `src/shared/components/data-view/calendar/ui/`): skeleton lines in each cell in place of dots.
 - The container showing skeletons carries `aria-busy="true"`.
 - The week and day views share one skeleton card component, in its own file under `features/schedule-management/ui/components/`. The month view uses the shadcn `Skeleton` inline.
 - The meetings and activities calendars both render through `ScheduleCalendar`, so both get this.
@@ -138,13 +138,13 @@ The agent dashboard calendar has no prefetch at all. It reads `meetingsRouter.re
 | `src/shared/dal/lib/query/derive-data-view-input.ts` | view parser and fallback use `views` |
 | `src/shared/dal/client/lib/types.ts` | `DateWindowControls.isPending` |
 | `src/shared/dal/client/hooks/use-data-view-query.ts` | sets `isPending`; `setView` guard |
-| `src/shared/components/query-toolbar/ui/row-cap-notice.tsx` | hidden while pending |
+| `src/shared/components/data-view/query-toolbar/ui/row-cap-notice.tsx` | hidden while pending |
 | `src/features/schedule-management/constants/schedule-queries.ts` | `views` on both configs |
 | `src/features/schedule-management/ui/components/schedule-calendar.tsx` | no events while pending; passes the flag down |
 | `src/features/schedule-management/ui/components/schedule-week-view.tsx` | skeletons while pending |
 | `src/features/schedule-management/ui/components/schedule-today-view.tsx` | skeletons while pending |
 | `src/features/schedule-management/ui/components/schedule-card-skeleton.tsx` | **new** |
-| `src/shared/components/calendar/ui/calendar-month-view.tsx` | skeleton lines while pending |
+| `src/shared/components/data-view/calendar/ui/calendar-month-view.tsx` | skeleton lines while pending |
 | `src/trpc/routers/meetings.router/reads.router.ts` | `liveOnly` |
 | `src/features/agent-dashboard/constants/dashboard-queries.ts` | dashboard config and extra; `meetingsMonthInput` deleted |
 | `src/features/agent-dashboard/lib/meeting-windows.ts` | `meetingMonthWindow` deleted |

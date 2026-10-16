@@ -8,7 +8,7 @@ Markers: `DIRTY` = file has uncommitted changes in the shared tree right now (ot
 
 > ⚠️ Stale ref — `docs/plans/2026-09-29-dashboard-theme-follow-ups.md` (line "Six files carry theme edits that are NOT committed…") says those six files are uncommitted, but commit `6065c2ab` ("fix(theme): commit the type-ramp swaps left pending in six files") committed all six and none is dirty now. The follow-up line can be deleted.
 
-Files dirty in the tree now that hold in-scope hits: `shared/components/data-table/ui/data-table.tsx`, `shared/components/pwa-install-prompt.tsx`, `shared/components/ui/drawer.tsx`, `shared/components/ui/sidebar-mobile-drawer.tsx`. Other dirty files (`ui/sidebar.tsx`, `app-sidebar.tsx`, mobile dock files, etc.) have no alpha-surface hits.
+Files dirty in the tree now that hold in-scope hits: `shared/components/data-view/table/ui/data-table.tsx`, `shared/components/pwa-install-prompt.tsx`, `shared/components/ui/drawer.tsx`, `shared/components/ui/sidebar-mobile-drawer.tsx`. Other dirty files (`ui/sidebar.tsx`, `app-sidebar.tsx`, mobile dock files, etc.) have no alpha-surface hits.
 
 ## 1. Totals
 
@@ -429,7 +429,7 @@ Cross-cutting questions first, then the per-line list.
 | `shared/components/navigation/site-navbar.tsx:332`  | `hover:bg-background/20` | hover on navbar icon over hero | keep: translucent (navbar over hero) | text-neutral-300 means it sits on a dark hero |
 | `shared/components/navigation/site-navbar.tsx:362`  | `hover:bg-background/20` | hover on navbar icon over hero | keep: translucent (navbar over hero) | text-neutral-300 means it sits on a dark hero |
 | `shared/components/navigation/site-navbar.tsx:385`  | `hover:bg-background/20` | hover on navbar icon over hero | keep: translucent (navbar over hero) | text-neutral-300 means it sits on a dark hero |
-| `shared/components/data-table/ui/status-dropdown-cell.tsx:82`  | `bg-accent/60` | selected (current) option in menu | muted | selected option — muted, or a primary-tint row-selected step |
+| `shared/components/data-view/table/ui/status-dropdown-cell.tsx:82`  | `bg-accent/60` | selected (current) option in menu | muted | selected option — muted, or a primary-tint row-selected step |
 | `shared/components/ui/dropdown-menu.tsx:78`  | `'focus:bg-muted/50` | hover/focus (row) | row-hover | menu item highlight inside a glass menu — row-hover (primary tint) or muted |
 | `shared/components/ui/dropdown-menu.tsx:96`  | `'focus:bg-muted/50` | hover/focus (row) | row-hover | menu item highlight inside a glass menu — row-hover (primary tint) or muted |
 | `shared/components/ui/dropdown-menu.tsx:132`  | `'focus:bg-muted/50` | hover/focus (row) | row-hover | menu item highlight inside a glass menu — row-hover (primary tint) or muted |
@@ -445,9 +445,9 @@ Cross-cutting questions first, then the per-line list.
 | `shared/components/buttons/user-button.tsx:24`  | `bg-foreground/20` | avatar fill | muted | avatar placeholder; public navbar over hero? |
 | `shared/components/buttons/user-button.tsx:26`  | `bg-foreground/20` | avatar fill | muted | same |
 | `shared/components/buttons/inline-edit-button.tsx:32`  | `hover:bg-foreground/10` | hover on icon button (glass) | muted | backdrop-blur suggests it is also used over the customer hero photo — check callers |
-| `shared/components/query-toolbar/ui/filter-trigger.tsx:37`  | `border-foreground/60` | active-filter trigger border | border-strong | /60 is an emphasis state; border-strong may be too quiet |
-| `shared/components/query-toolbar/ui/columns-trigger.tsx:33`  | `border-foreground/60` | active trigger border | border-strong | same |
-| `shared/components/query-toolbar/ui/page-size-segmented.tsx:27`  | `bg-foreground/10` | selected segment | raised | selected segment in a segmented control — raised (tab-on-track) or row-hover tint |
+| `shared/components/data-view/query-toolbar/ui/filter-trigger.tsx:37`  | `border-foreground/60` | active-filter trigger border | border-strong | /60 is an emphasis state; border-strong may be too quiet |
+| `shared/components/data-view/query-toolbar/ui/columns-trigger.tsx:33`  | `border-foreground/60` | active trigger border | border-strong | same |
+| `shared/components/data-view/query-toolbar/ui/page-size-segmented.tsx:27`  | `bg-foreground/10` | selected segment | raised | selected segment in a segmented control — raised (tab-on-track) or row-hover tint |
 | `shared/modules/proposals/core/components/overview-card.tsx:202`  | `bg-background/40` | icon tile on status-tinted row | keep: translucent (sits on a status tint via border-current) | tile over a status-coloured row |
 | `shared/constants/skeleton-tone.ts:3`  | `bg-foreground/15` | skeleton | border-strong (skeleton tone) | skeleton tone was raised to foreground/15 for contrast (1.06:1 otherwise) — needs a solid step with enough contrast on card; muted is too faint |
 | `shared/constants/skeleton-tone.ts:3`  | `dark:bg-foreground/10` | skeleton | border-strong (skeleton tone) | skeleton tone was raised to foreground/15 for contrast (1.06:1 otherwise) — needs a solid step with enough contrast on card; muted is too faint |

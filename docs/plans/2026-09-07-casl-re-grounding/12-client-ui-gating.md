@@ -59,7 +59,7 @@ Legend — **CASL**: evaluates the context ability. **MIRROR**: re-implements a 
 | `src/features/proposal-flow/ui/components/proposal/heading.tsx` | 19,110,122,136 | `read Customer`, `update Proposal` ×2 | ANDed with `viewMode === 'agent'` |
 | `src/features/proposal-flow/ui/components/proposal/index.tsx` | 28,74 | `update Proposal` → `viewerRole` | feeds `generateProposalSteps` |
 | `src/features/schedule-management/ui/components/schedule-calendar-dot.tsx` | 24,28-33 | `action.permission` tuples | duplicate of the EntityActionMenu filter |
-| `src/shared/components/data-table/lib/use-entity-columns.tsx` | 49,80,94 | `ColumnSpec.permission` tuple | mechanism exists; **0 registries use it** (grep `permission:` in `*/lib/columns-registry.tsx` → none) |
+| `src/shared/components/data-view/table/lib/use-entity-columns.tsx` | 49,80,94 | `ColumnSpec.permission` tuple | mechanism exists; **0 registries use it** (grep `permission:` in `*/lib/columns-registry.tsx` → none) |
 | `src/shared/components/entity-actions/ui/entity-action-menu.tsx` | 25,27-32 | `action.permission` tuples | central filter |
 | `src/shared/components/entity-actions/ui/entity-action-dropdown.tsx` | 39,43-48 | `action.permission` tuples | re-filters what the menu already filtered |
 | `src/shared/components/navigation/popover-nav.tsx` | 41-42,61 | `access Dashboard` → "TPR Internal" nav | marketing site |

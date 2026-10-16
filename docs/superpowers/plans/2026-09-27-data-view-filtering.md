@@ -168,10 +168,10 @@ Ruled 2026-09-27 (plan review): `customerId` and `projectId` are dropped from th
 | `src/shared/dal/client/constants/option-source-reads.ts` | each option source's read and ability check |
 | `src/shared/dal/client/lib/from-paginated-query.ts` | legacy adapter |
 | `src/shared/constants/enums/calendar.ts` | `calendarViewTypes` + `CalendarViewType` |
-| `src/shared/components/query-toolbar/ui/*.tsx` (one per component) | split toolbar |
-| `src/shared/components/query-toolbar/lib/to-toolbar-filters.ts` | field → control descriptor |
-| `src/shared/components/query-toolbar/constants/sort.ts` | `DEFAULT_ORDER_VALUE` |
-| `src/shared/components/data-table/lib/get-column-id.ts`, `map-column-sort-ids.ts` | column helpers |
+| `src/shared/components/data-view/query-toolbar/ui/*.tsx` (one per component) | split toolbar |
+| `src/shared/components/data-view/query-toolbar/lib/to-toolbar-filters.ts` | field → control descriptor |
+| `src/shared/components/data-view/query-toolbar/constants/sort.ts` | `DEFAULT_ORDER_VALUE` |
+| `src/shared/components/data-view/table/lib/get-column-id.ts`, `map-column-sort-ids.ts` | column helpers |
 | `src/shared/entities/meetings/dal/meeting-fields.ts`, `dal/server/meeting-field-sql.ts` | meetings field list + SQL |
 | `src/shared/entities/meetings/components/meeting-customer-cell.tsx` | Customer cell |
 | `src/shared/entities/activities/dal/activity-fields.ts`, `dal/server/activity-field-sql.ts`, `dal/server/queries.ts` | activities |
@@ -289,9 +289,9 @@ Expected: note any errors that already exist so later tasks don't mistake them f
 - Modify (import lines only):
   - `src/shared/dal/lib/query/filter-parser-registry.ts`
   - `src/shared/dal/client/hooks/use-paginated-query.ts`
-  - `src/shared/components/query-toolbar/lib/filter-renderer-registry.tsx`
-  - `src/shared/components/query-toolbar/ui/filter-controls/date-range-filter-control.tsx`
-  - `src/shared/components/query-toolbar/ui/filter-controls/number-range-filter-control.tsx`
+  - `src/shared/components/data-view/query-toolbar/lib/filter-renderer-registry.tsx`
+  - `src/shared/components/data-view/query-toolbar/ui/filter-controls/date-range-filter-control.tsx`
+  - `src/shared/components/data-view/query-toolbar/ui/filter-controls/number-range-filter-control.tsx`
   - `src/shared/entities/meetings/dal/server/queries.ts`
   - `src/shared/modules/proposals/core/dal/server/queries.ts`
   - `src/shared/modules/projects/core/dal/server/queries.ts`
@@ -611,7 +611,7 @@ Expected: no new errors. The move changes no behaviour and no query key.
 - [ ] **Step 8: Commit**
 
 ```bash
-P="src/shared/dal/lib/query/range-schemas.ts src/shared/dal/lib/query/paginated-result.ts src/shared/dal/lib/query/constants.ts src/shared/dal/lib/query/field-list.ts src/shared/dal/server/lib/query/schemas.ts src/shared/dal/client/lib/types.ts src/shared/dal/server/lib/query/output.ts src/shared/dal/lib/query/filter-parser-registry.ts src/shared/dal/client/hooks/use-paginated-query.ts src/shared/components/query-toolbar/lib/filter-renderer-registry.tsx src/shared/components/query-toolbar/ui/filter-controls/date-range-filter-control.tsx src/shared/components/query-toolbar/ui/filter-controls/number-range-filter-control.tsx src/shared/entities/meetings/dal/server/queries.ts src/shared/modules/proposals/core/dal/server/queries.ts src/shared/modules/projects/core/dal/server/queries.ts src/trpc/routers/lead-sources.router.ts src/trpc/routers/customers.router/business.router.ts src/trpc/routers/projects.router/crud.router.ts src/trpc/routers/schedule.router/activities.router.ts"
+P="src/shared/dal/lib/query/range-schemas.ts src/shared/dal/lib/query/paginated-result.ts src/shared/dal/lib/query/constants.ts src/shared/dal/lib/query/field-list.ts src/shared/dal/server/lib/query/schemas.ts src/shared/dal/client/lib/types.ts src/shared/dal/server/lib/query/output.ts src/shared/dal/lib/query/filter-parser-registry.ts src/shared/dal/client/hooks/use-paginated-query.ts src/shared/components/data-view/query-toolbar/lib/filter-renderer-registry.tsx src/shared/components/data-view/query-toolbar/ui/filter-controls/date-range-filter-control.tsx src/shared/components/data-view/query-toolbar/ui/filter-controls/number-range-filter-control.tsx src/shared/entities/meetings/dal/server/queries.ts src/shared/modules/proposals/core/dal/server/queries.ts src/shared/modules/projects/core/dal/server/queries.ts src/trpc/routers/lead-sources.router.ts src/trpc/routers/customers.router/business.router.ts src/trpc/routers/projects.router/crud.router.ts src/trpc/routers/schedule.router/activities.router.ts"
 git diff -- $P
 git add src/shared/dal/lib/query/range-schemas.ts src/shared/dal/lib/query/paginated-result.ts src/shared/dal/lib/query/field-list.ts
 git commit -m "feat(data-view): shared range schemas and list-result shape move into the core; field-list contract — typed ids, value schemas, option sources, builders" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" -- $P
@@ -627,9 +627,9 @@ git show --stat HEAD
 - Modify: `src/features/agent-dashboard/lib/meeting-windows.ts`
 - Create: `src/shared/constants/enums/calendar.ts`
 - Modify: `src/shared/constants/enums/index.ts`
-- Modify: `src/shared/components/calendar/types.ts`, and every file that imports `CalendarViewType` from it:
-  - `src/shared/components/calendar/ui/calendar-header.tsx`
-  - `src/shared/components/calendar/lib/calendar-helpers.ts`
+- Modify: `src/shared/components/data-view/calendar/types.ts`, and every file that imports `CalendarViewType` from it:
+  - `src/shared/components/data-view/calendar/ui/calendar-header.tsx`
+  - `src/shared/components/data-view/calendar/lib/calendar-helpers.ts`
   - `src/features/schedule-management/ui/views/schedule-view.tsx`
   - `src/features/schedule-management/ui/components/schedule-calendar.tsx`
   - `src/features/schedule-management/ui/components/schedule-controls-bar.tsx`
@@ -799,8 +799,8 @@ export type CalendarViewType = (typeof calendarViewTypes)[number]
 ```
 
 - In `src/shared/constants/enums/index.ts`, add `export * from './calendar'` in alphabetical position (after `./applications`).
-- In `src/shared/components/calendar/types.ts`, delete the line `export type CalendarViewType = 'today' | 'week' | 'month'`.
-- In each of the five importers listed under **Files**, change `import type { CalendarViewType } from '@/shared/components/calendar/types'` to `import type { CalendarViewType } from '@/shared/constants/enums'`.
+- In `src/shared/components/data-view/calendar/types.ts`, delete the line `export type CalendarViewType = 'today' | 'week' | 'month'`.
+- In each of the five importers listed under **Files**, change `import type { CalendarViewType } from '@/shared/components/data-view/calendar/types'` to `import type { CalendarViewType } from '@/shared/constants/enums'`.
   - `calendar-helpers.ts` also imports `CalendarEvent` from the same module. Keep that import and move only `CalendarViewType`.
 
 Run: `cd $REPO && grep -rn "CalendarViewType" src --include=*.ts --include=*.tsx | grep "components/calendar/types"`
@@ -818,7 +818,7 @@ Open `/dashboard`. Expected: the snapshot strip's "today" count and the month ca
 - [ ] **Step 9: Commit**
 
 ```bash
-P="src/shared/lib/business-time.ts src/features/agent-dashboard/lib/meeting-windows.ts src/shared/constants/enums/calendar.ts src/shared/constants/enums/index.ts src/shared/components/calendar/types.ts src/shared/components/calendar/ui/calendar-header.tsx src/shared/components/calendar/lib/calendar-helpers.ts src/features/schedule-management/ui/views/schedule-view.tsx src/features/schedule-management/ui/components/schedule-calendar.tsx src/features/schedule-management/ui/components/schedule-controls-bar.tsx"
+P="src/shared/lib/business-time.ts src/features/agent-dashboard/lib/meeting-windows.ts src/shared/constants/enums/calendar.ts src/shared/constants/enums/index.ts src/shared/components/data-view/calendar/types.ts src/shared/components/data-view/calendar/ui/calendar-header.tsx src/shared/components/data-view/calendar/lib/calendar-helpers.ts src/features/schedule-management/ui/views/schedule-view.tsx src/features/schedule-management/ui/components/schedule-calendar.tsx src/features/schedule-management/ui/components/schedule-controls-bar.tsx"
 git diff -- $P
 git add src/shared/constants/enums/calendar.ts
 git commit -m "feat(business-time): LA day, week and month-grid windows, one inclusive-range helper; dashboard windows stop double-counting midnight" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" -- $P
@@ -2023,11 +2023,11 @@ git show --stat HEAD
 
 ### Task 6: Split `query-toolbar.tsx` into one component per file (no behaviour change)
 
-`src/shared/components/query-toolbar/ui/query-toolbar.tsx` holds 19 components in 759 lines, which breaks Rule 1. This task moves each one verbatim into its own file. The next task then changes behaviour in a reviewable diff.
+`src/shared/components/data-view/query-toolbar/ui/query-toolbar.tsx` holds 19 components in 759 lines, which breaks Rule 1. This task moves each one verbatim into its own file. The next task then changes behaviour in a reviewable diff.
 
 **Files:**
-- Create in `src/shared/components/query-toolbar/ui/`: the 19 files in the table below.
-- Modify: `src/shared/components/query-toolbar/ui/query-toolbar.tsx` (becomes the compound assembly only).
+- Create in `src/shared/components/data-view/query-toolbar/ui/`: the 19 files in the table below.
+- Modify: `src/shared/components/data-view/query-toolbar/ui/query-toolbar.tsx` (becomes the compound assembly only).
 
 | New file | Export (renamed from) | Source lines in today's file |
 |---|---|---|
@@ -2053,7 +2053,7 @@ git show --stat HEAD
 
 - [ ] **Step 1: Confirm the line map is still current**
 
-Run: `cd $REPO && grep -n "^function \|^interface \|^export const QueryToolbar" src/shared/components/query-toolbar/ui/query-toolbar.tsx`
+Run: `cd $REPO && grep -n "^function \|^interface \|^export const QueryToolbar" src/shared/components/data-view/query-toolbar/ui/query-toolbar.tsx`
 Expected: the start lines match the table (Root at 37, Bar at 83, … Standard at 733). If they don't, map by function name, not by line.
 
 - [ ] **Step 2: Create the 19 files**
@@ -2073,23 +2073,23 @@ Sibling imports each file needs:
 - `chip-rail.tsx` → `FilterChip`.
 - `standard.tsx` → the eight `QueryToolbar*` slots it renders.
 
-Use absolute `@/shared/components/query-toolbar/ui/<file>` imports, as the rest of the folder does.
+Use absolute `@/shared/components/data-view/query-toolbar/ui/<file>` imports, as the rest of the folder does.
 
 - [ ] **Step 3: Reduce `query-toolbar.tsx` to the compound**
 
 ```tsx
 'use client'
 
-import { QueryToolbarBar } from '@/shared/components/query-toolbar/ui/bar'
-import { QueryToolbarChipRail } from '@/shared/components/query-toolbar/ui/chip-rail'
-import { QueryToolbarColumnsTrigger } from '@/shared/components/query-toolbar/ui/columns-trigger'
-import { QueryToolbarFilterTrigger } from '@/shared/components/query-toolbar/ui/filter-trigger'
-import { QueryToolbarLiveStatus } from '@/shared/components/query-toolbar/ui/live-status'
-import { QueryToolbarPageSize } from '@/shared/components/query-toolbar/ui/page-size'
-import { QueryToolbarRefreshButton } from '@/shared/components/query-toolbar/ui/refresh-button'
-import { QueryToolbarRoot } from '@/shared/components/query-toolbar/ui/root'
-import { QueryToolbarSearch } from '@/shared/components/query-toolbar/ui/search'
-import { QueryToolbarStandard } from '@/shared/components/query-toolbar/ui/standard'
+import { QueryToolbarBar } from '@/shared/components/data-view/query-toolbar/ui/bar'
+import { QueryToolbarChipRail } from '@/shared/components/data-view/query-toolbar/ui/chip-rail'
+import { QueryToolbarColumnsTrigger } from '@/shared/components/data-view/query-toolbar/ui/columns-trigger'
+import { QueryToolbarFilterTrigger } from '@/shared/components/data-view/query-toolbar/ui/filter-trigger'
+import { QueryToolbarLiveStatus } from '@/shared/components/data-view/query-toolbar/ui/live-status'
+import { QueryToolbarPageSize } from '@/shared/components/data-view/query-toolbar/ui/page-size'
+import { QueryToolbarRefreshButton } from '@/shared/components/data-view/query-toolbar/ui/refresh-button'
+import { QueryToolbarRoot } from '@/shared/components/data-view/query-toolbar/ui/root'
+import { QueryToolbarSearch } from '@/shared/components/data-view/query-toolbar/ui/search'
+import { QueryToolbarStandard } from '@/shared/components/data-view/query-toolbar/ui/standard'
 
 export const QueryToolbar = Object.assign(QueryToolbarRoot, {
   Bar: QueryToolbarBar,
@@ -2106,15 +2106,15 @@ export const QueryToolbar = Object.assign(QueryToolbarRoot, {
 
 - [ ] **Step 4: Verify nothing changed for callers**
 
-Run: `cd $REPO && pnpm tsc && pnpm lint && grep -c "^export function" src/shared/components/query-toolbar/ui/*.tsx | grep -v ":1$"`
+Run: `cd $REPO && pnpm tsc && pnpm lint && grep -c "^export function" src/shared/components/data-view/query-toolbar/ui/*.tsx | grep -v ":1$"`
 Expected: tsc and lint clean. The grep prints only `query-toolbar.tsx:0`, meaning every other file exports exactly one function.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/shared/components/query-toolbar/ui/
-git diff --cached --stat -- src/shared/components/query-toolbar/ui/
-git commit -m "refactor(query-toolbar): one component per file; the compound export is unchanged" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" -- src/shared/components/query-toolbar/ui/
+git add src/shared/components/data-view/query-toolbar/ui/
+git diff --cached --stat -- src/shared/components/data-view/query-toolbar/ui/
+git commit -m "refactor(query-toolbar): one component per file; the compound export is unchanged" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" -- src/shared/components/data-view/query-toolbar/ui/
 git show --stat HEAD
 ```
 
@@ -2123,8 +2123,8 @@ git show --stat HEAD
 ### Task 7: `QueryToolbar` reads a data-view result (legacy tables through the adapter)
 
 **Files:**
-- Modify: `src/shared/components/query-toolbar/lib/context.ts`, `lib/format-chip-value.ts`, `constants/keyboard-hints.ts`
-- Create: `src/shared/components/query-toolbar/lib/to-toolbar-filters.ts`, `constants/sort.ts`, `ui/sort.tsx`, `ui/row-cap-notice.tsx`
+- Modify: `src/shared/components/data-view/query-toolbar/lib/context.ts`, `lib/format-chip-value.ts`, `constants/keyboard-hints.ts`
+- Create: `src/shared/components/data-view/query-toolbar/lib/to-toolbar-filters.ts`, `constants/sort.ts`, `ui/sort.tsx`, `ui/row-cap-notice.tsx`
 - Modify (in `ui/`): `root.tsx`, `bar.tsx`, `search.tsx`, `filter-trigger.tsx`, `refresh-button.tsx`, `filter-sheet-body.tsx`, `filter-popover-body.tsx`, `filter-control-field.tsx`, `page-size.tsx`, `chip-rail.tsx`, `live-status.tsx`, `standard.tsx`, `query-toolbar.tsx`
 - Modify: `src/shared/components/records-page-header.tsx`
 - Modify (legacy callers):
@@ -2163,9 +2163,9 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import z from 'zod'
 
-import { DEFAULT_TIME_PRESETS } from '@/shared/components/data-table/constants/time-filter-presets'
-import { formatChipValue } from '@/shared/components/query-toolbar/lib/format-chip-value'
-import { toSortOptions, toToolbarFilters } from '@/shared/components/query-toolbar/lib/to-toolbar-filters'
+import { DEFAULT_TIME_PRESETS } from '@/shared/components/data-view/table/constants/time-filter-presets'
+import { formatChipValue } from '@/shared/components/data-view/query-toolbar/lib/format-chip-value'
+import { toSortOptions, toToolbarFilters } from '@/shared/components/data-view/query-toolbar/lib/to-toolbar-filters'
 import { dateRange, defineFieldList, fixedOnly, multiSelect } from '@/shared/dal/lib/query/field-list'
 
 const FIELDS = defineFieldList({
@@ -2213,7 +2213,7 @@ Expected: FAIL, `to-toolbar-filters` is missing.
 import type { FilterDefinition } from '@/shared/dal/client/lib/types'
 import type { FieldList, FilterOption, ToolbarFilterSpec } from '@/shared/dal/lib/query/field-list'
 
-import { DEFAULT_TIME_PRESETS } from '@/shared/components/data-table/constants/time-filter-presets'
+import { DEFAULT_TIME_PRESETS } from '@/shared/components/data-view/table/constants/time-filter-presets'
 
 export interface ToolbarFilter {
   definition: FilterDefinition
@@ -2259,7 +2259,7 @@ export function toSortOptions(fields: FieldList): FilterOption[] {
 
 - [ ] **Step 4: Chip formatting for unknown values**
 
-In `src/shared/components/query-toolbar/lib/format-chip-value.ts`:
+In `src/shared/components/data-view/query-toolbar/lib/format-chip-value.ts`:
 
 Replace the `select` case with:
 
@@ -2286,12 +2286,12 @@ Replace the `multi-select` case with:
 
 - [ ] **Step 5: Context, constants**
 
-Replace `src/shared/components/query-toolbar/lib/context.ts` with:
+Replace `src/shared/components/data-view/query-toolbar/lib/context.ts` with:
 
 ```ts
 'use client'
 
-import type { ToolbarFilter } from '@/shared/components/query-toolbar/lib/to-toolbar-filters'
+import type { ToolbarFilter } from '@/shared/components/data-view/query-toolbar/lib/to-toolbar-filters'
 import type { DataViewQueryResult } from '@/shared/dal/client/lib/types'
 import type { FieldList, FilterOption } from '@/shared/dal/lib/query/field-list'
 
@@ -2340,16 +2340,16 @@ Replace `ui/root.tsx` with:
 
 import type { ReactNode } from 'react'
 
-import type { QueryToolbarContextValue } from '@/shared/components/query-toolbar/lib/context'
+import type { QueryToolbarContextValue } from '@/shared/components/data-view/query-toolbar/lib/context'
 import type { DataViewQueryResult } from '@/shared/dal/client/lib/types'
 import type { FieldList, ToolbarFilterId } from '@/shared/dal/lib/query/field-list'
 
 import { useCallback, useMemo, useRef, useState } from 'react'
 
-import { useToolbarShortcuts } from '@/shared/components/query-toolbar/hooks/use-toolbar-shortcuts'
-import { QueryToolbarProvider } from '@/shared/components/query-toolbar/lib/context'
-import { ToolbarInternalProvider } from '@/shared/components/query-toolbar/lib/internal-context'
-import { toSortOptions, toToolbarFilters } from '@/shared/components/query-toolbar/lib/to-toolbar-filters'
+import { useToolbarShortcuts } from '@/shared/components/data-view/query-toolbar/hooks/use-toolbar-shortcuts'
+import { QueryToolbarProvider } from '@/shared/components/data-view/query-toolbar/lib/context'
+import { ToolbarInternalProvider } from '@/shared/components/data-view/query-toolbar/lib/internal-context'
+import { toSortOptions, toToolbarFilters } from '@/shared/components/data-view/query-toolbar/lib/to-toolbar-filters'
 import { cn } from '@/shared/lib/utils'
 
 interface RootProps<F extends FieldList, T extends ToolbarFilterId<F>> {
@@ -2477,7 +2477,7 @@ export function FilterPopoverBody() {
 }
 ```
 
-Replace `filter-sheet-body.tsx`'s component with the code below, and add `import { QueryToolbarSort } from '@/shared/components/query-toolbar/ui/sort'`:
+Replace `filter-sheet-body.tsx`'s component with the code below, and add `import { QueryToolbarSort } from '@/shared/components/data-view/query-toolbar/ui/sort'`:
 
 ```tsx
 export function FilterSheetBody({ onClose }: FilterSheetBodyProps) {
@@ -2616,8 +2616,8 @@ Also replace `{KEYBOARD_HINT_TEXT}` in the empty inline branch with `{hint}`.
 
 import { ArrowDownWideNarrowIcon, ArrowUpNarrowWideIcon } from 'lucide-react'
 
-import { DEFAULT_ORDER_VALUE } from '@/shared/components/query-toolbar/constants/sort'
-import { useQueryToolbarContext } from '@/shared/components/query-toolbar/lib/context'
+import { DEFAULT_ORDER_VALUE } from '@/shared/components/data-view/query-toolbar/constants/sort'
+import { useQueryToolbarContext } from '@/shared/components/data-view/query-toolbar/lib/context'
 import { Button } from '@/shared/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { cn } from '@/shared/lib/utils'
@@ -2672,7 +2672,7 @@ export function QueryToolbarSort({ className }: SortProps) {
 ```tsx
 'use client'
 
-import { useQueryToolbarContext } from '@/shared/components/query-toolbar/lib/context'
+import { useQueryToolbarContext } from '@/shared/components/data-view/query-toolbar/lib/context'
 import { formatTotalCount } from '@/shared/lib/pagination-format'
 import { cn } from '@/shared/lib/utils'
 
@@ -2818,14 +2818,14 @@ git show --stat HEAD
 ### Task 8: Columns sort by sort id; `DataTable` translates; hidden-by-default columns
 
 **Files:**
-- Create: `src/shared/components/data-table/lib/get-column-id.ts`, `lib/map-column-sort-ids.ts`
+- Create: `src/shared/components/data-view/table/lib/get-column-id.ts`, `lib/map-column-sort-ids.ts`
 - Modify:
-  - `src/shared/components/data-table/lib/use-entity-columns.tsx`
-  - `src/shared/components/data-table/lib/use-column-visibility.ts`
-  - `src/shared/components/data-table/ui/data-table.tsx`
-  - `src/shared/components/data-table/lib/to-data-table-pagination.ts`
-  - `src/shared/components/data-table/lib/to-data-table-sorting.ts`
-  - `src/shared/components/data-table/types.ts` (doc comments only)
+  - `src/shared/components/data-view/table/lib/use-entity-columns.tsx`
+  - `src/shared/components/data-view/table/lib/use-column-visibility.ts`
+  - `src/shared/components/data-view/table/ui/data-table.tsx`
+  - `src/shared/components/data-view/table/lib/to-data-table-pagination.ts`
+  - `src/shared/components/data-view/table/lib/to-data-table-sorting.ts`
+  - `src/shared/components/data-view/table/types.ts` (doc comments only)
 - Modify (registries, mechanical `sortable: true` → `sort: '<same key>'`):
   - `src/shared/modules/proposals/core/lib/columns-registry.tsx` (`label`, `price`, `createdAt`, `sentAt`, `viewCount`)
   - `src/shared/modules/projects/core/lib/columns-registry.tsx` (`title`, `city`, `isPublic`, `completedAt`, `createdAt`)
@@ -2850,7 +2850,7 @@ git show --stat HEAD
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { mapColumnSortIds } from '@/shared/components/data-table/lib/map-column-sort-ids'
+import { mapColumnSortIds } from '@/shared/components/data-view/table/lib/map-column-sort-ids'
 
 test('maps column ids to sort ids both ways and skips unsortable columns', () => {
   const { sortIdByColumnId, columnIdBySortId } = mapColumnSortIds([
@@ -2893,7 +2893,7 @@ export function getColumnId<TData>(col: ColumnDef<TData>): string | undefined {
 ```ts
 import type { ColumnDef } from '@tanstack/react-table'
 
-import { getColumnId } from '@/shared/components/data-table/lib/get-column-id'
+import { getColumnId } from '@/shared/components/data-view/table/lib/get-column-id'
 
 /** Column keys and server sort ids differ (the Rep column sorts by `rep`), so header state is translated both ways. */
 export function mapColumnSortIds<TData>(columns: readonly ColumnDef<TData>[]): {
@@ -3016,7 +3016,7 @@ Also update the `hiddenCount` doc on `UseColumnVisibilityResult` to "Columns the
 - [ ] **Step 6: `DataTable` translates between column ids and sort ids**
 
 In `ui/data-table.tsx`:
-- Add `import { mapColumnSortIds } from '@/shared/components/data-table/lib/map-column-sort-ids'`.
+- Add `import { mapColumnSortIds } from '@/shared/components/data-view/table/lib/map-column-sort-ids'`.
 - Replace the `sorting` memo with:
 
 ```tsx
@@ -3056,7 +3056,7 @@ In `ui/data-table.tsx`:
 Replace `lib/to-data-table-pagination.ts`:
 
 ```ts
-import type { DataTableServerPagination } from '@/shared/components/data-table/types'
+import type { DataTableServerPagination } from '@/shared/components/data-view/table/types'
 import type { DataViewQueryResult } from '@/shared/dal/client/lib/types'
 import type { FieldList, ToolbarFilterId } from '@/shared/dal/lib/query/field-list'
 
@@ -3080,7 +3080,7 @@ export function toDataTablePagination<F extends FieldList, T extends ToolbarFilt
 Replace `lib/to-data-table-sorting.ts`:
 
 ```ts
-import type { DataTableServerSorting } from '@/shared/components/data-table/types'
+import type { DataTableServerSorting } from '@/shared/components/data-view/table/types'
 import type { DataViewQueryResult } from '@/shared/dal/client/lib/types'
 import type { FieldList, SortId, ToolbarFilterId } from '@/shared/dal/lib/query/field-list'
 
@@ -3135,7 +3135,7 @@ On `/dashboard/proposals`, `/dashboard/projects`, `/dashboard/customers` and `/d
 ```bash
 P="src/shared/components/data-table src/shared/modules/proposals/core/lib/columns-registry.tsx src/shared/modules/projects/core/lib/columns-registry.tsx src/shared/entities/meetings/lib/columns-registry.tsx src/shared/entities/customers/lib/columns-registry.tsx src/features/proposal-flow/ui/components/table/index.tsx src/features/project-management/ui/components/table/index.tsx src/features/campaigns-admin/ui/views/campaigns-leads-view.tsx src/shared/entities/customers/components/customers-table.tsx src/features/lead-sources-admin/ui/components/all-customers-section.tsx src/features/lead-sources-admin/ui/components/lead-source-customers-section.tsx src/shared/entities/meetings/components/meetings-table/use-meetings-table.tsx"
 git diff -- $P | head -300
-git add src/shared/components/data-table/lib/get-column-id.ts src/shared/components/data-table/lib/map-column-sort-ids.ts
+git add src/shared/components/data-view/table/lib/get-column-id.ts src/shared/components/data-view/table/lib/map-column-sort-ids.ts
 git commit -m "feat(data-table): columns declare a server sort id; DataTable maps column ids to sort ids; hidden-by-default columns" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" -- $P
 git show --stat HEAD
 ```
@@ -3346,7 +3346,7 @@ The runtime option reads now live in `OPTION_SOURCE_READS` (Task 5), and `useDat
 - Modify:
   - `src/shared/entities/meetings/dal/server/queries.ts`
   - `src/shared/dal/server/lib/query/search.ts` (accepts SQL expressions)
-  - `src/shared/components/data-table/types/entity-table-view.ts`
+  - `src/shared/components/data-view/table/types/entity-table-view.ts`
   - `src/features/records-management/constants/meetings-records-table-view.ts`
   - `src/shared/entities/meetings/lib/columns-registry.tsx`
   - `src/shared/entities/meetings/components/meetings-table/use-meetings-table.tsx`
@@ -3438,7 +3438,7 @@ Run `cd $REPO && pnpm exec tsc -p "$SCRATCH/tsconfig.json"`. Expected: the scrat
 
 - [ ] **Step 1: The table view type**
 
-Replace `src/shared/components/data-table/types/entity-table-view.ts` with:
+Replace `src/shared/components/data-view/table/types/entity-table-view.ts` with:
 
 ```ts
 import type { DataViewQueryConfig, DataViewWindow } from '@/shared/dal/lib/query/data-view-query-config'
@@ -3460,7 +3460,7 @@ export interface EntityTableView<TColumnKey extends string, F extends FieldList,
 Replace `src/features/records-management/constants/meetings-records-table-view.ts` with:
 
 ```ts
-import type { EntityTableView } from '@/shared/components/data-table/types/entity-table-view'
+import type { EntityTableView } from '@/shared/components/data-view/table/types/entity-table-view'
 import type { MeetingColumnKey } from '@/shared/entities/meetings/lib/columns-registry'
 
 import { DEFAULT_RECORDS_PAGE_SIZE_OPTIONS } from '@/shared/dal/client/lib/constants'
@@ -3495,7 +3495,7 @@ import type { MeetingRow } from '@/shared/entities/meetings/lib/columns-registry
 
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
-import { PrimaryCell } from '@/shared/components/data-table/ui/primary-cell'
+import { PrimaryCell } from '@/shared/components/data-view/table/ui/primary-cell'
 import { formatAddress } from '@/shared/lib/formatters'
 
 interface MeetingCustomerCellProps {
@@ -3612,7 +3612,7 @@ Expected: clean.
 - [ ] **Step 9: Commit**
 
 ```bash
-P="src/shared/entities/meetings/dal/server/queries.ts src/shared/dal/server/lib/query/search.ts src/shared/components/data-table/types/entity-table-view.ts src/features/records-management/constants/meetings-records-table-view.ts src/shared/entities/meetings/lib/columns-registry.tsx src/shared/entities/meetings/components/meeting-customer-cell.tsx src/shared/entities/meetings/components/meetings-table/use-meetings-table.tsx src/shared/entities/meetings/components/meetings-table/meetings-table.tsx src/features/records-management/ui/views/meetings-records-view.tsx src/app/(frontend)/dashboard/(records)/meetings/page.tsx src/shared/entities/meetings/constants/meeting-filter-config.ts"
+P="src/shared/entities/meetings/dal/server/queries.ts src/shared/dal/server/lib/query/search.ts src/shared/components/data-view/table/types/entity-table-view.ts src/features/records-management/constants/meetings-records-table-view.ts src/shared/entities/meetings/lib/columns-registry.tsx src/shared/entities/meetings/components/meeting-customer-cell.tsx src/shared/entities/meetings/components/meetings-table/use-meetings-table.tsx src/shared/entities/meetings/components/meetings-table/meetings-table.tsx src/features/records-management/ui/views/meetings-records-view.tsx src/app/(frontend)/dashboard/(records)/meetings/page.tsx src/shared/entities/meetings/constants/meeting-filter-config.ts"
 git diff -- $P | head -300
 git add src/shared/entities/meetings/components/meeting-customer-cell.tsx
 git commit -m "feat(meetings): listMeetings and the records table on the field list — new filters, sortable columns, meeting type and booked-on columns, customer quick actions" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" -- $P
@@ -4131,7 +4131,7 @@ Expected: `ℹ pass 5`, `ℹ fail 0` twice.
   - `src/features/schedule-management/ui/views/schedule-view.tsx`
   - `src/features/schedule-management/lib/to-calendar-event.ts`
   - `src/features/meeting-flow/lib/to-calendar-event.ts`
-  - `src/shared/components/calendar/lib/calendar-helpers.ts`
+  - `src/shared/components/data-view/calendar/lib/calendar-helpers.ts`
 - Delete: `src/features/schedule-management/constants/schedule-query-inputs.ts`
 
 **Interfaces:**
@@ -4147,7 +4147,7 @@ Expected: `ℹ pass 5`, `ℹ fail 0` twice.
 
 - [ ] **Step 1: Calendar helpers**
 
-In `src/shared/components/calendar/lib/calendar-helpers.ts`:
+In `src/shared/components/data-view/calendar/lib/calendar-helpers.ts`:
 - delete `getDateRange` (run `grep -rn "getDateRange" src` first: its only reader is `schedule-calendar.tsx`, rewritten below);
 - delete its now-unused `date-fns` imports;
 - add:
@@ -4209,9 +4209,9 @@ import type { DateWindowControls } from '@/shared/dal/client/lib/types'
 import { useCallback, useMemo } from 'react'
 
 import { DEFAULT_HIDDEN_DAYS } from '@/features/schedule-management/constants/schedule-calendar-config'
-import { calendarDayToLocalDate, localDateToCalendarDay } from '@/shared/components/calendar/lib/calendar-helpers'
-import { CalendarHeader } from '@/shared/components/calendar/ui/calendar-header'
-import { CalendarMonthView } from '@/shared/components/calendar/ui/calendar-month-view'
+import { calendarDayToLocalDate, localDateToCalendarDay } from '@/shared/components/data-view/calendar/lib/calendar-helpers'
+import { CalendarHeader } from '@/shared/components/data-view/calendar/ui/calendar-header'
+import { CalendarMonthView } from '@/shared/components/data-view/calendar/ui/calendar-month-view'
 import { businessToday } from '@/shared/lib/business-time'
 
 import { ScheduleTodayView } from './schedule-today-view'
@@ -4331,7 +4331,7 @@ import { MeetingCard } from '@/features/schedule-management/ui/components/meetin
 import { ScheduleCalendar } from '@/features/schedule-management/ui/components/schedule-calendar'
 import { ScheduleCalendarDot } from '@/features/schedule-management/ui/components/schedule-calendar-dot'
 import { ScheduleControlsBar } from '@/features/schedule-management/ui/components/schedule-controls-bar'
-import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
+import { QueryToolbar } from '@/shared/components/data-view/query-toolbar/ui/query-toolbar'
 import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
@@ -4464,7 +4464,7 @@ import { activityToCalendarEvent } from '@/features/schedule-management/lib/to-c
 import { ActivityDotContent } from '@/features/schedule-management/ui/components/activity-dot-content'
 import { ScheduleCalendar } from '@/features/schedule-management/ui/components/schedule-calendar'
 import { ScheduleControlsBar } from '@/features/schedule-management/ui/components/schedule-controls-bar'
-import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
+import { QueryToolbar } from '@/shared/components/data-view/query-toolbar/ui/query-toolbar'
 import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { useActivityActionConfigs } from '@/shared/entities/activities/hooks/use-activity-action-configs'
@@ -4605,7 +4605,7 @@ Expected: clean.
 - [ ] **Step 9: Commit (Tasks 14 + 15)**
 
 ```bash
-P="src/features/schedule-management/constants/schedule-queries.ts src/features/schedule-management/lib/to-schedule-window-href.ts src/shared/config/roots.ts src/features/schedule-management/constants/query-parsers.ts src/features/schedule-management/hooks/use-schedule-highlight.ts src/app/(frontend)/dashboard/schedule/page.tsx src/features/schedule-management/ui/components/schedule-meetings-calendar.tsx src/features/schedule-management/ui/components/schedule-activities-calendar.tsx src/features/schedule-management/ui/components/schedule-show-toggle.tsx src/features/schedule-management/ui/components/schedule-calendar.tsx src/features/schedule-management/ui/views/schedule-view.tsx src/features/schedule-management/lib/to-calendar-event.ts src/features/meeting-flow/lib/to-calendar-event.ts src/shared/components/calendar/lib/calendar-helpers.ts src/features/schedule-management/constants/schedule-query-inputs.ts"
+P="src/features/schedule-management/constants/schedule-queries.ts src/features/schedule-management/lib/to-schedule-window-href.ts src/shared/config/roots.ts src/features/schedule-management/constants/query-parsers.ts src/features/schedule-management/hooks/use-schedule-highlight.ts src/app/(frontend)/dashboard/schedule/page.tsx src/features/schedule-management/ui/components/schedule-meetings-calendar.tsx src/features/schedule-management/ui/components/schedule-activities-calendar.tsx src/features/schedule-management/ui/components/schedule-show-toggle.tsx src/features/schedule-management/ui/components/schedule-calendar.tsx src/features/schedule-management/ui/views/schedule-view.tsx src/features/schedule-management/lib/to-calendar-event.ts src/features/meeting-flow/lib/to-calendar-event.ts src/shared/components/data-view/calendar/lib/calendar-helpers.ts src/features/schedule-management/constants/schedule-query-inputs.ts"
 git diff -- $P | head -400
 git add src/features/schedule-management/constants/schedule-queries.ts src/features/schedule-management/lib/to-schedule-window-href.ts src/features/schedule-management/ui/components/schedule-meetings-calendar.tsx src/features/schedule-management/ui/components/schedule-activities-calendar.tsx src/features/schedule-management/ui/components/schedule-show-toggle.tsx
 git commit -m "feat(schedule): calendar on URL date windows with a Show toggle, filters and a row-cap notice; schedule links open the LA day, old links redirect" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" -- $P
@@ -5406,7 +5406,7 @@ git show --stat HEAD
 Write `$SCRATCH/types/success-criteria.ts`:
 
 ```ts
-import type { ColumnRegistry } from '@/shared/components/data-table/lib/use-entity-columns'
+import type { ColumnRegistry } from '@/shared/components/data-view/table/lib/use-entity-columns'
 import type { DataViewQueryConfig } from '@/shared/dal/lib/query/data-view-query-config'
 import type { SortId } from '@/shared/dal/lib/query/field-list'
 import type { CUSTOMER_FIELDS } from '@/shared/entities/customers/dal/customer-fields'

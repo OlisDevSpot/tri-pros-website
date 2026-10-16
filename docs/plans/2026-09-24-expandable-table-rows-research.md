@@ -1,6 +1,6 @@
 # Expandable table rows: research
 
-Date: 2026-09-24. Scope: `src/shared/components/data-table/ui/data-table.tsx` (HEAD `b6396b0f`).
+Date: 2026-09-24. Scope: `src/shared/components/data-view/table/ui/data-table.tsx` (HEAD `b6396b0f`).
 Installed: `@tanstack/react-table` 8.21.3 (`@tanstack/table-core` 8.21.3), `@radix-ui/react-popover` 1.1.15, `@radix-ui/react-dropdown-menu` 2.1.16, `motion` 12.31.0, `react` 19.2.4.
 
 ## Question

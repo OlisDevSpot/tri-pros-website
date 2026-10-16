@@ -745,7 +745,7 @@ Expected: `group-slides: ok`.
 In `src/features/meeting-flow/types/index.ts`, add one type import, in path order between the calendar and enums imports:
 
 ```ts
-import type { CalendarEvent } from '@/shared/components/calendar/types'
+import type { CalendarEvent } from '@/shared/components/data-view/calendar/types'
 import type { PresentationSlide } from '@/shared/components/presentation/types'
 import type { MeetingOutcome, MeetingType } from '@/shared/constants/enums'
 ```

@@ -236,14 +236,14 @@ A shared/components/ component consumed by exactly one feature. **Action:** Deci
 
 | Defined at | Export | Kind | Lines | Sole consumer | Note |
 |---|---|---|---|---|---|
-| `src/shared/components/calendar/ui/calendar-header.tsx:21` | `CalendarHeader` | component | 66 | `src/features/schedule-management/ui/components/schedule-calendar.tsx` · cross-module | shared component with one feature consumer → move into that feature (locality) |
-| `src/shared/components/calendar/ui/calendar-month-view.tsx:21` | `CalendarMonthView` | component | 77 | `src/features/schedule-management/ui/components/schedule-calendar.tsx` · cross-module | shared component with one feature consumer → move into that feature (locality) |
+| `src/shared/components/data-view/calendar/ui/calendar-header.tsx:21` | `CalendarHeader` | component | 66 | `src/features/schedule-management/ui/components/schedule-calendar.tsx` · cross-module | shared component with one feature consumer → move into that feature (locality) |
+| `src/shared/components/data-view/calendar/ui/calendar-month-view.tsx:21` | `CalendarMonthView` | component | 77 | `src/features/schedule-management/ui/components/schedule-calendar.tsx` · cross-module | shared component with one feature consumer → move into that feature (locality) |
 | `src/shared/components/contract-status-panel/ui/contract-status-panel.tsx:29` | `ContractStatusPanel` | component | 46 | `src/features/proposal-flow/constants/proposal-steps.ts` · cross-module | shared component with one feature consumer → move into that feature (locality) |
 | `src/shared/components/dialogs/modals/templates-modal.tsx:14` | `TemplatesModal` | component | 48 | `src/features/proposal-flow/ui/components/form/sow-field.tsx` · cross-module | shared component with one feature consumer → move into that feature (locality) |
 | `src/shared/components/entity-actions/entity-view-button.tsx:18` | `EntityViewButton` | component | 40 | `src/features/project-management/ui/views/edit-project-view.tsx` · cross-module | shared component with one feature consumer → move into that feature (locality) |
 | `src/shared/components/image-slider.tsx:14` | `CustomImageSlider` | component | 44 | `src/features/proposal-flow/ui/components/proposal/related-projects.tsx` · cross-module | shared component with one feature consumer → move into that feature (locality) |
-| `src/shared/components/kanban/ui/kanban-board.tsx:36` | `KanbanBoard` | component | 90 | `src/features/customer-pipelines/ui/views/customer-pipeline-view.tsx` · cross-module | shared component with one feature consumer → move into that feature (locality) |
-| `src/shared/components/kanban/ui/kanban-column-filter.tsx:21` | `KanbanColumnFilter` | component | 67 | `src/features/customer-pipelines/ui/views/customer-pipeline-view.tsx` · cross-module | shared component with one feature consumer → move into that feature (locality) |
+| `src/shared/components/data-view/kanban/ui/kanban-board.tsx:36` | `KanbanBoard` | component | 90 | `src/features/customer-pipelines/ui/views/customer-pipeline-view.tsx` · cross-module | shared component with one feature consumer → move into that feature (locality) |
+| `src/shared/components/data-view/kanban/ui/kanban-column-filter.tsx:21` | `KanbanColumnFilter` | component | 67 | `src/features/customer-pipelines/ui/views/customer-pipeline-view.tsx` · cross-module | shared component with one feature consumer → move into that feature (locality) |
 | `src/shared/components/media/media-manager.tsx:38` | `MediaManager` | component | 92 | `src/features/proposal-flow/ui/components/form/proposal-media-manager.tsx` · cross-module | shared component with one feature consumer → move into that feature (locality) |
 | `src/shared/components/reviews/review-card.tsx:33` | `ReviewCard` | component | 25 | `src/shared/domains/funnels/ui/blocks/reviews-block.tsx` · cross-module | shared component with one feature consumer → move into that feature (locality) |
 | `src/shared/components/stat-bar/ui/stat-bar.tsx:19` | `StatBar` | component | 83 | `src/features/customer-pipelines/ui/components/customer-pipeline-metrics-bar.tsx` · cross-module | shared component with one feature consumer → move into that feature (locality) |
@@ -344,8 +344,8 @@ Largest bucket: a symbol defined in one module and consumed by exactly one file 
 | ⚠ `src/features/meeting-flow/lib/build-proposal-defaults.ts:9` | `buildProposalDefaults` | function | 77 | `src/features/proposal-flow/ui/views/create-new-proposal-view.tsx` · cross-module | cross-module helper with one UI consumer → move next to it |
 | `src/features/meeting-flow/lib/get-cached-pain-points.ts:5` | `getCachedPainPoints` | const-call | 8 | `src/trpc/routers/meeting-flow.router.ts` · cross-module | cross-module constant with one consumer |
 | `src/features/meeting-flow/lib/to-calendar-event.ts:8` | `toCalendarEvent` | function | 24 | `src/features/schedule-management/ui/components/schedule-calendar.tsx` (via `src/features/meeting-flow/lib/index.ts`) · cross-module | cross-module helper with one UI consumer → move next to it |
-| `src/shared/components/calendar/lib/calendar-helpers.ts:60` | `getDateRange` | function | 13 | `src/features/schedule-management/ui/components/schedule-calendar.tsx` · cross-module | cross-module helper with one UI consumer → move next to it |
-| `src/shared/components/calendar/lib/calendar-helpers.ts:107` | `getWeekDays` | function | 5 | `src/features/schedule-management/ui/components/schedule-week-view.tsx` · cross-module | cross-module helper with one UI consumer → move next to it |
+| `src/shared/components/data-view/calendar/lib/calendar-helpers.ts:60` | `getDateRange` | function | 13 | `src/features/schedule-management/ui/components/schedule-calendar.tsx` · cross-module | cross-module helper with one UI consumer → move next to it |
+| `src/shared/components/data-view/calendar/lib/calendar-helpers.ts:107` | `getWeekDays` | function | 5 | `src/features/schedule-management/ui/components/schedule-week-view.tsx` · cross-module | cross-module helper with one UI consumer → move next to it |
 | `src/shared/config/subdomains.ts:13` | `SUBDOMAIN_ROUTES` | const-call | 3 | `src/middleware.ts` · cross-module | cross-module constant with one consumer |
 | `src/shared/config/subdomains.ts:22` | `SUBDOMAIN_LABELS` | const-call | 1 | `src/shared/lib/main-site-url.ts` · cross-module | cross-module constant with one consumer |
 | `src/shared/constants/company/service-area-cities.ts:12` | `SERVICE_AREA_CITIES` | const-data | 86 | `src/shared/domains/funnels/lib/resolve-zip.ts` · cross-module | cross-module constant with one consumer |
@@ -484,7 +484,7 @@ Largest bucket: a symbol defined in one module and consumed by exactly one file 
 | `src/shared/lib/hydration-drift.ts:23` | `recordHydratedKeys` | function | 8 | `src/trpc/components/hydration-key-recorder.tsx` · cross-module | cross-module helper with one consumer |
 | `src/shared/lib/loan-calculations.ts:6` | `amortizedMonthlyPayment` | function | 14 | `src/shared/entities/meetings/lib/compute-deal-derived.ts` · cross-module | cross-module helper with one consumer |
 | ⚠ `src/shared/lib/loan-calculations.ts:26` | `getLoanValues` | function | 11 | `src/features/proposal-flow/ui/components/proposal/funding.tsx` · cross-module | cross-module helper with one UI consumer → move next to it |
-| `src/shared/lib/pagination-format.ts:8` | `formatPageOf` | function | 7 | `src/shared/components/data-table/ui/data-table-pagination.tsx` · cross-module | cross-module helper with one UI consumer → move next to it |
+| `src/shared/lib/pagination-format.ts:8` | `formatPageOf` | function | 7 | `src/shared/components/data-view/table/ui/data-table-pagination.tsx` · cross-module | cross-module helper with one UI consumer → move next to it |
 | ⚠ `src/shared/lib/pdf/proposal-doc-definition.ts:26` | `buildProposalDocDefinition` | function | 58 | `src/shared/services/pdf.service.ts` · cross-module | cross-module helper with one consumer |
 | ⚠ `src/shared/lib/pdf/render-pdf.ts:33` | `renderPdf` | function | 5 | `src/shared/services/pdf.service.ts` · cross-module | cross-module helper with one consumer |
 | `src/shared/lib/phone.ts:78` | `formatPhoneAsYouType` | function | 13 | `src/shared/domains/funnels/ui/steps/phone-input.tsx` · cross-module | cross-module helper with one UI consumer → move next to it |
@@ -737,21 +737,21 @@ Exported but only used inside its own file. **Action:** Drop the `export` keywor
 | `src/shared/components/block/block.tsx:29` | `BlockMedia` | unknown | 1 | 1 | only used inside its own file → drop `export` |
 | `src/shared/components/block/block.tsx:29` | `BlockRoot` | unknown | 1 | 1 | only used inside its own file → drop `export` |
 | `src/shared/components/block/block.tsx:29` | `BlockTrust` | unknown | 1 | 1 | only used inside its own file → drop `export` |
-| `src/shared/components/calendar/lib/calendar-helpers.ts:23` | `CalendarCell` | interface | 5 | 1 | only used inside its own file → drop `export` |
+| `src/shared/components/data-view/calendar/lib/calendar-helpers.ts:23` | `CalendarCell` | interface | 5 | 1 | only used inside its own file → drop `export` |
 | `src/shared/components/contract-status-panel/lib/derive-timeline-state.ts:4` | `StepState` | type | 1 | 1 | only used inside its own file → drop `export` |
 | `src/shared/components/contract-status-panel/ui/contract-status-panel.tsx:8` | `ContractStatusPanelProps` | interface | 20 | 1 | only used inside its own file → drop `export` |
-| `src/shared/components/data-table/hooks/use-pull-to-refresh.ts:8` | `PULL_TO_REFRESH_THRESHOLD` | const-literal | 1 | 2 | only used inside its own file → drop `export` |
-| `src/shared/components/data-table/lib/use-column-visibility.ts:9` | `ToggleableColumn` | interface | 6 | 3 | only used inside its own file → drop `export` |
-| `src/shared/components/data-table/lib/use-entity-columns.tsx:16` | `ColumnFormat` | type | 1 | 1 | only used inside its own file → drop `export` |
-| `src/shared/components/data-table/lib/use-entity-columns.tsx:18` | `ColumnSpec` | interface | 33 | 3 | only used inside its own file → drop `export` |
-| `src/shared/components/data-table/types.ts:3` | `DateRange` | interface | 4 | 1 | only used inside its own file → drop `export` |
-| `src/shared/components/data-table/types.ts:22` | `DataTableSearchFilter` | interface | 4 | 1 | only used inside its own file → drop `export` |
-| `src/shared/components/data-table/ui/data-table.tsx:28` | `DataTableProps` | interface | 37 | 1 | only used inside its own file → drop `export` |
+| `src/shared/components/data-view/table/hooks/use-pull-to-refresh.ts:8` | `PULL_TO_REFRESH_THRESHOLD` | const-literal | 1 | 2 | only used inside its own file → drop `export` |
+| `src/shared/components/data-view/table/lib/use-column-visibility.ts:9` | `ToggleableColumn` | interface | 6 | 3 | only used inside its own file → drop `export` |
+| `src/shared/components/data-view/table/lib/use-entity-columns.tsx:16` | `ColumnFormat` | type | 1 | 1 | only used inside its own file → drop `export` |
+| `src/shared/components/data-view/table/lib/use-entity-columns.tsx:18` | `ColumnSpec` | interface | 33 | 3 | only used inside its own file → drop `export` |
+| `src/shared/components/data-view/table/types.ts:3` | `DateRange` | interface | 4 | 1 | only used inside its own file → drop `export` |
+| `src/shared/components/data-view/table/types.ts:22` | `DataTableSearchFilter` | interface | 4 | 1 | only used inside its own file → drop `export` |
+| `src/shared/components/data-view/table/ui/data-table.tsx:28` | `DataTableProps` | interface | 37 | 1 | only used inside its own file → drop `export` |
 | `src/shared/components/data-view-type-toggle.tsx:8` | `DataViewType` | type | 1 | 5 | only used inside its own file → drop `export` |
 | `src/shared/components/decor/lib/build-decor-geometry.ts:4` | `RingDescriptor` | type | 4 | 1 | only used inside its own file → drop `export` |
 | `src/shared/components/entity-actions/entity-view-button.tsx:10` | `EntityActionButtonProps` | interface | 7 | 1 | only used inside its own file → drop `export` |
 | `src/shared/components/image-slider.tsx:59` | `ImageSliderControls` | component | 17 | 1 | only used inside its own file → drop `export` |
-| `src/shared/components/kanban/hooks/use-kanban-column-filter.ts:7` | `KanbanColumnFilterConfig` | interface | 6 | 1 | only used inside its own file → drop `export` |
+| `src/shared/components/data-view/kanban/hooks/use-kanban-column-filter.ts:7` | `KanbanColumnFilterConfig` | interface | 6 | 1 | only used inside its own file → drop `export` |
 | `src/shared/components/media/media-manager.tsx:10` | `MediaManagerProps` | interface | 21 | 1 | only used inside its own file → drop `export` |
 | `src/shared/components/trust/lib/build-credentials.ts:3` | `Credential` | interface | 1 | 1 | only used inside its own file → drop `export` |
 | `src/shared/config/create-provider-config.ts:47` | `ConfigMeta` | interface | 5 | 2 | only used inside its own file → drop `export` |
@@ -1048,8 +1048,8 @@ No importer and no use in its own file. **Action:** Delete after a human check (
 | `src/shared/components/contract-status-panel/constants/contract-statuses.ts:23` | `ACTION_STATUS_CONFIG` | const-data | 6 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
 | `src/shared/components/contract-status-panel/constants/contract-statuses.ts:30` | `ACTION_TOOLTIPS` | const-data | 5 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
 | `src/shared/components/customer-search.tsx:17` | `CustomerSearch` | component | 90 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
-| `src/shared/components/data-table/hooks/use-table-url-filters.ts:26` | `useTableUrlFilters` | hook | 41 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
-| `src/shared/components/data-table/ui/customer-name-cell.tsx:9` | `CustomerNameCell` | component | 22 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
+| `src/shared/components/data-view/table/hooks/use-table-url-filters.ts:26` | `useTableUrlFilters` | hook | 41 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
+| `src/shared/components/data-view/table/ui/customer-name-cell.tsx:9` | `CustomerNameCell` | component | 22 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
 | `src/shared/components/data-view-type-toggle.tsx:23` | `DataViewTypeToggle` | component | 30 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
 | `src/shared/components/inputs/search-input.tsx:13` | `SearchInput` | component | 37 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
 | `src/shared/components/navigation/app-sidebar/app-sidebar.tsx:44` | `AppSidebar` | component | 74 | 0 | no consumer and no local use → delete candidate (verify: string refs, framework, tests) |
