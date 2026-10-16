@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react'
 
 import { useDataView } from '@/shared/components/data-view/core/lib/context'
-import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
+import { QueryToolbar } from '@/shared/components/data-view/query-toolbar/ui/query-toolbar'
 
 export function DataViewToolbar({ className, children }: { className?: string, children: ReactNode }) {
   const { query, entityName } = useDataView()

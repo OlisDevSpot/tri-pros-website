@@ -13,7 +13,7 @@ import { ScheduleCalendar } from '@/features/schedule-management/ui/components/s
 import { ScheduleCalendarDot } from '@/features/schedule-management/ui/components/schedule-calendar-dot'
 import { ScheduleControlsBar } from '@/features/schedule-management/ui/components/schedule-controls-bar'
 import { PageBar } from '@/shared/components/data-view/core/ui/page-bar'
-import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
+import { QueryToolbar } from '@/shared/components/data-view/query-toolbar/ui/query-toolbar'
 import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { useMeetingActions } from '@/shared/entities/meetings/hooks/use-meeting-actions'
 import { useStableCallbacks } from '@/shared/hooks/use-stable-callbacks'

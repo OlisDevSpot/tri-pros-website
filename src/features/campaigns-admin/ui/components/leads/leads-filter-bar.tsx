@@ -4,7 +4,7 @@ import type { DataViewQueryResult } from '@/shared/dal/client/lib/types'
 import type { FieldList } from '@/shared/dal/lib/query/field-list'
 import type { CampaignLeadRow } from '@/shared/entities/voip-campaign-contacts/dal/server/queries'
 
-import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
+import { QueryToolbar } from '@/shared/components/data-view/query-toolbar/ui/query-toolbar'
 
 interface LeadsFilterBarProps {
   query: DataViewQueryResult<CampaignLeadRow, FieldList, string, 'page'>

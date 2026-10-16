@@ -4,7 +4,7 @@ import { useAnalyticsLabels } from '@/features/analytics/hooks/use-analytics-lab
 import { useAnalyticsUrlState } from '@/features/analytics/hooks/use-analytics-url-state'
 import { buildFilterFields } from '@/features/analytics/lib/filter-fields'
 import { filterUpdate } from '@/features/analytics/lib/filter-update'
-import { MultiSelectFilterControl } from '@/shared/components/query-toolbar/ui/filter-controls/multi-select-filter-control'
+import { MultiSelectFilterControl } from '@/shared/components/data-view/query-toolbar/ui/filter-controls/multi-select-filter-control'
 import { Label } from '@/shared/components/ui/label'
 
 export function AnalyticsFiltersForm() {

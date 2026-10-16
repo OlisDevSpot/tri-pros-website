@@ -1,4 +1,4 @@
-import type { CalendarEvent } from '@/shared/components/calendar/types'
+import type { CalendarEvent } from '@/shared/components/data-view/calendar/types'
 import type { ActivityType, MeetingOutcome, MeetingParticipantRole } from '@/shared/constants/enums'
 
 export interface ScheduleMeetingParticipant {

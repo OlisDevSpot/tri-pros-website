@@ -6,8 +6,8 @@ import type { EntityTableResult } from '@/shared/components/data-view/table/type
 import type { FieldList, ToolbarFilterId } from '@/shared/dal/lib/query/field-list'
 
 import { DataView } from '@/shared/components/data-view/core/data-view'
+import { QueryToolbar } from '@/shared/components/data-view/query-toolbar/ui/query-toolbar'
 import { DataTable } from '@/shared/components/data-view/table/ui/data-table'
-import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 
 interface EntityRecordsTableProps<TRow extends { id: string }, TMeta, F extends FieldList, T extends ToolbarFilterId<F>> {
   title: string
