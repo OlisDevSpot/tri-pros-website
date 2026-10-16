@@ -1,6 +1,6 @@
 import type { FilterDefinition } from '@/shared/dal/client/lib/types'
 
-import { DEFAULT_TIME_PRESETS } from '@/shared/components/data-table/constants/time-filter-presets'
+import { DEFAULT_TIME_PRESETS } from '@/shared/components/data-view/table/constants/time-filter-presets'
 import { proposalStatuses } from '@/shared/constants/enums'
 import { formatAsDollars } from '@/shared/lib/formatters'
 

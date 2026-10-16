@@ -1,6 +1,6 @@
 import type { ColumnDef } from '@tanstack/react-table'
 
-import { getColumnId } from '@/shared/components/data-table/lib/get-column-id'
+import { getColumnId } from '@/shared/components/data-view/table/lib/get-column-id'
 
 /** Column keys and server sort ids differ (the Rep column sorts by `rep`), so header state is translated both ways. */
 export function mapColumnSortIds<TData>(columns: readonly ColumnDef<TData>[]): {

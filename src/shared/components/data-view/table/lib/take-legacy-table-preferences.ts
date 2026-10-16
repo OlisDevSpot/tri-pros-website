@@ -1,4 +1,4 @@
-import type { TablePreferences } from '@/shared/components/data-table/schemas/table-preferences'
+import type { TablePreferences } from '@/shared/components/data-view/table/schemas/table-preferences'
 
 const LEGACY_KEYS = {
   sizes: 'dt-col-sizes:',

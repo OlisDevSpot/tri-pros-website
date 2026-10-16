@@ -4,7 +4,7 @@ import type { ProjectRow } from '@/shared/modules/projects/core/lib/columns-regi
 
 import { useMemo } from 'react'
 
-import { ExpandedRowPanel } from '@/shared/components/data-table/ui/expanded-row-panel'
+import { ExpandedRowPanel } from '@/shared/components/data-view/table/ui/expanded-row-panel'
 import { useConstructionCatalog } from '@/shared/modules/construction/core/hooks/use-construction-catalog'
 import { resolveScopes } from '@/shared/modules/construction/core/lib/resolve-catalog-ids'
 

@@ -1,14 +1,14 @@
 'use client'
 
-import type { TablePreferencesStore, TablePreferencesUpdate } from '@/shared/components/data-table/contexts/table-preferences-context'
-import type { TablePreferences } from '@/shared/components/data-table/schemas/table-preferences'
+import type { TablePreferencesStore, TablePreferencesUpdate } from '@/shared/components/data-view/table/contexts/table-preferences-context'
+import type { TablePreferences } from '@/shared/components/data-view/table/schemas/table-preferences'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { TablePreferencesContext } from '@/shared/components/data-table/contexts/table-preferences-context'
-import { takeLegacyTablePreferences } from '@/shared/components/data-table/lib/take-legacy-table-preferences'
-import { writeTablePreferencesCookie } from '@/shared/components/data-table/lib/write-table-preferences-cookie'
-import { tablePreferencesSchema } from '@/shared/components/data-table/schemas/table-preferences'
+import { TablePreferencesContext } from '@/shared/components/data-view/table/contexts/table-preferences-context'
+import { takeLegacyTablePreferences } from '@/shared/components/data-view/table/lib/take-legacy-table-preferences'
+import { writeTablePreferencesCookie } from '@/shared/components/data-view/table/lib/write-table-preferences-cookie'
+import { tablePreferencesSchema } from '@/shared/components/data-view/table/schemas/table-preferences'
 
 /** An emptied map is the column defaults again, so it drops out rather than keep the cookie alive. */
 function withoutEmptyMaps(preferences: TablePreferences): TablePreferences {

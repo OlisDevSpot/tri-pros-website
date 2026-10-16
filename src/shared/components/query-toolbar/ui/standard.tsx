@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 
-import type { UseColumnVisibilityResult } from '@/shared/components/data-table/lib/use-column-visibility'
+import type { UseColumnVisibilityResult } from '@/shared/components/data-view/table/lib/use-column-visibility'
 
 import { QueryToolbarBar } from '@/shared/components/query-toolbar/ui/bar'
 import { QueryToolbarChipRail } from '@/shared/components/query-toolbar/ui/chip-rail'

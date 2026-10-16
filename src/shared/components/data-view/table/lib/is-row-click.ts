@@ -1,4 +1,4 @@
-import { ROW_INTERACTIVE_SELECTOR } from '@/shared/components/data-table/constants/row-interactive-selector'
+import { ROW_INTERACTIVE_SELECTOR } from '@/shared/components/data-view/table/constants/row-interactive-selector'
 
 interface RowClickEventLike {
   currentTarget: { contains: (other: Node | null) => boolean }

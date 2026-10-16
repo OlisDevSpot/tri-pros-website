@@ -1,13 +1,13 @@
 'use client'
 
-import type { ColumnRegistry } from '@/shared/components/data-table/lib/use-entity-columns'
-import type { EntityTableMeta } from '@/shared/components/data-table/types/entity-table-meta'
+import type { ColumnRegistry } from '@/shared/components/data-view/table/lib/use-entity-columns'
+import type { EntityTableMeta } from '@/shared/components/data-view/table/types/entity-table-meta'
 import type { MeetingOutcome } from '@/shared/constants/enums'
 import type { SortId } from '@/shared/dal/lib/query/field-list'
 import type { MEETING_FIELDS } from '@/shared/entities/meetings/dal/meeting-fields'
 import type { AppRouterOutputs } from '@/trpc/routers/app'
 
-import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
+import { StatusDropdownCell } from '@/shared/components/data-view/table/ui/status-dropdown-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
 import { meetingOutcomes } from '@/shared/constants/enums'

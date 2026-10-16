@@ -13,7 +13,7 @@ import React, { createContext, useCallback, useMemo } from 'react'
 
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
-import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
+import { StatusDropdownCell } from '@/shared/components/data-view/table/ui/status-dropdown-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { isClickAction } from '@/shared/components/entities/entity-actions/types'
 import { EntityActionMenu } from '@/shared/components/entities/entity-actions/ui/entity-action-menu'

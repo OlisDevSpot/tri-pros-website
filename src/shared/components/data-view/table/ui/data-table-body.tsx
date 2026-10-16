@@ -2,13 +2,13 @@
 
 import type { Row, Table } from '@tanstack/react-table'
 import type { MouseEvent, ReactNode } from 'react'
-import type { DataTableServerPagination } from '@/shared/components/data-table/types'
+import type { DataTableServerPagination } from '@/shared/components/data-view/table/types'
 
 import { RefreshCw } from 'lucide-react'
 import { memo } from 'react'
 
-import { SKELETON_CELL_WIDTHS } from '@/shared/components/data-table/constants/skeleton-widths'
-import { DataTableRow } from '@/shared/components/data-table/ui/data-table-row'
+import { SKELETON_CELL_WIDTHS } from '@/shared/components/data-view/table/constants/skeleton-widths'
+import { DataTableRow } from '@/shared/components/data-view/table/ui/data-table-row'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { TableBody, TableCell, TableRow } from '@/shared/components/ui/table'
 import { cn } from '@/shared/lib/utils'

@@ -2,7 +2,7 @@
 
 import type { CustomerProfileMeeting } from '@/shared/entities/customers/types'
 
-import { ExpandedRowPanel } from '@/shared/components/data-table/ui/expanded-row-panel'
+import { ExpandedRowPanel } from '@/shared/components/data-view/table/ui/expanded-row-panel'
 import { ProjectMeetingList } from '@/shared/entities/meetings/components/project-meeting-list'
 import { MeetingActionsHost } from '@/shared/modules/meetings/core/components/meeting-actions-host'
 import { ProposalActionsHost } from '@/shared/modules/proposals/core/components/proposal-actions-host'

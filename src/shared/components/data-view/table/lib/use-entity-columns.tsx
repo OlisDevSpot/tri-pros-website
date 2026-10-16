@@ -8,8 +8,8 @@ import type { Permission } from '@/shared/domains/permissions/types'
 
 import { useMemo } from 'react'
 
-import { DateCell } from '@/shared/components/data-table/ui/date-cell'
-import { SortableHeader } from '@/shared/components/data-table/ui/sortable-header'
+import { DateCell } from '@/shared/components/data-view/table/ui/date-cell'
+import { SortableHeader } from '@/shared/components/data-view/table/ui/sortable-header'
 import { useAbility } from '@/shared/domains/permissions/client'
 import { formatAsDollars } from '@/shared/lib/formatters'
 

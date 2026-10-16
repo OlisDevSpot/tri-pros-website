@@ -1,6 +1,6 @@
 'use client'
 
-import type { EntityExpandedRowContext } from '@/shared/components/data-table/types/entity-expanded-row'
+import type { EntityExpandedRowContext } from '@/shared/components/data-view/table/types/entity-expanded-row'
 import type { MeetingRow } from '@/shared/entities/meetings/lib/columns-registry'
 
 import { MeetingRowPanel } from '@/features/records-management/ui/components/meeting-row-panel'

@@ -1,4 +1,4 @@
-import type { DataTableServerPagination } from '@/shared/components/data-table/types'
+import type { DataTableServerPagination } from '@/shared/components/data-view/table/types'
 import type { DataViewQueryResult } from '@/shared/dal/client/lib/types'
 import type { FieldList, ToolbarFilterId } from '@/shared/dal/lib/query/field-list'
 

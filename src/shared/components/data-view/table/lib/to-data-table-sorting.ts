@@ -1,4 +1,4 @@
-import type { DataTableServerSorting } from '@/shared/components/data-table/types'
+import type { DataTableServerSorting } from '@/shared/components/data-view/table/types'
 import type { DataViewQueryResult } from '@/shared/dal/client/lib/types'
 import type { FieldList, SortId, ToolbarFilterId } from '@/shared/dal/lib/query/field-list'
 

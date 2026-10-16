@@ -1,6 +1,6 @@
 'use client'
 
-import type { EntityExpandedRowContext } from '@/shared/components/data-table/types/entity-expanded-row'
+import type { EntityExpandedRowContext } from '@/shared/components/data-view/table/types/entity-expanded-row'
 import type { ProjectRow } from '@/shared/modules/projects/core/lib/columns-registry'
 
 import { ProjectRowPanel } from '@/features/records-management/ui/components/project-row-panel'

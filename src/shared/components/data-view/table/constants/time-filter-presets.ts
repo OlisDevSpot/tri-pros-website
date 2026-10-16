@@ -1,4 +1,4 @@
-import type { TimePreset } from '@/shared/components/data-table/types'
+import type { TimePreset } from '@/shared/components/data-view/table/types'
 
 import { endOfDay, endOfMonth, endOfWeek, endOfYear, startOfDay, startOfMonth, startOfWeek, startOfYear, subWeeks } from 'date-fns'
 

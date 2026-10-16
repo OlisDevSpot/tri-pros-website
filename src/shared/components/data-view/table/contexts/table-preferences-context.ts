@@ -1,6 +1,6 @@
 'use client'
 
-import type { TablePreferences } from '@/shared/components/data-table/schemas/table-preferences'
+import type { TablePreferences } from '@/shared/components/data-view/table/schemas/table-preferences'
 
 import { createContext, use, useCallback, useState } from 'react'
 

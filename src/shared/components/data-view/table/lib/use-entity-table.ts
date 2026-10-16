@@ -1,20 +1,20 @@
 'use client'
 
-import type { ColumnRegistry } from '@/shared/components/data-table/lib/use-entity-columns'
-import type { RenderExpandedRow } from '@/shared/components/data-table/types/entity-expanded-row'
-import type { EntityTableMeta } from '@/shared/components/data-table/types/entity-table-meta'
-import type { EntityTableView } from '@/shared/components/data-table/types/entity-table-view'
-import type { DataTableProps } from '@/shared/components/data-table/ui/data-table'
+import type { ColumnRegistry } from '@/shared/components/data-view/table/lib/use-entity-columns'
+import type { RenderExpandedRow } from '@/shared/components/data-view/table/types/entity-expanded-row'
+import type { EntityTableMeta } from '@/shared/components/data-view/table/types/entity-table-meta'
+import type { EntityTableView } from '@/shared/components/data-view/table/types/entity-table-view'
+import type { DataTableProps } from '@/shared/components/data-view/table/ui/data-table'
 import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
 import type { DataViewQueryResult } from '@/shared/dal/client/lib/types'
 import type { FieldList, ToolbarFilterId } from '@/shared/dal/lib/query/field-list'
 
 import { useMemo } from 'react'
 
-import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
-import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
-import { useColumnVisibility } from '@/shared/components/data-table/lib/use-column-visibility'
-import { useEntityColumns } from '@/shared/components/data-table/lib/use-entity-columns'
+import { toDataTablePagination } from '@/shared/components/data-view/table/lib/to-data-table-pagination'
+import { toDataTableSorting } from '@/shared/components/data-view/table/lib/to-data-table-sorting'
+import { useColumnVisibility } from '@/shared/components/data-view/table/lib/use-column-visibility'
+import { useEntityColumns } from '@/shared/components/data-view/table/lib/use-entity-columns'
 
 export interface UseEntityTableOptions<TRow extends { id: string }, TExtra extends object, F extends FieldList, T extends ToolbarFilterId<F>> {
   tableView: EntityTableView<string, F, T>

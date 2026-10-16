@@ -7,8 +7,8 @@ import { MapPinIcon } from 'lucide-react'
 
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
-import { CustomerNameCell } from '@/shared/components/data-table/ui/customer-name-cell'
-import { PrimaryCell } from '@/shared/components/data-table/ui/primary-cell'
+import { CustomerNameCell } from '@/shared/components/data-view/table/ui/customer-name-cell'
+import { PrimaryCell } from '@/shared/components/data-view/table/ui/primary-cell'
 import { formatAddress } from '@/shared/lib/formatters'
 
 interface MeetingCustomerCellProps {

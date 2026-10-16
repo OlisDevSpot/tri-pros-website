@@ -1,12 +1,12 @@
 'use client'
 
-import type { ColumnRegistry } from '@/shared/components/data-table/lib/use-entity-columns'
-import type { EntityTableMeta } from '@/shared/components/data-table/types/entity-table-meta'
+import type { ColumnRegistry } from '@/shared/components/data-view/table/lib/use-entity-columns'
+import type { EntityTableMeta } from '@/shared/components/data-view/table/types/entity-table-meta'
 import type { Pipeline } from '@/shared/constants/enums/pipelines'
 import type { SortId } from '@/shared/dal/lib/query/field-list'
 import type { CUSTOMER_FIELDS } from '@/shared/entities/customers/dal/customer-fields'
 
-import { PrimaryCell } from '@/shared/components/data-table/ui/primary-cell'
+import { PrimaryCell } from '@/shared/components/data-view/table/ui/primary-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { useAbility } from '@/shared/domains/permissions/client'
 import { CustomerPipelineBadge } from '@/shared/entities/customers/components/customer-pipeline-badge'

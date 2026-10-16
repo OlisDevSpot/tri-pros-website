@@ -1,10 +1,10 @@
-import type { TablePreferences } from '@/shared/components/data-table/schemas/table-preferences'
+import type { TablePreferences } from '@/shared/components/data-view/table/schemas/table-preferences'
 
 import {
   TABLE_PREFERENCES_COOKIE_MAX_AGE,
   TABLE_PREFERENCES_COOKIE_PATH,
   TABLE_PREFERENCES_COOKIE_PREFIX,
-} from '@/shared/components/data-table/constants/table-preferences-cookie'
+} from '@/shared/components/data-view/table/constants/table-preferences-cookie'
 
 /** Writes one table's preferences; a table back on all defaults drops its cookie. */
 export function writeTablePreferencesCookie(tableId: string, preferences: TablePreferences) {

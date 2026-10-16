@@ -2,9 +2,9 @@
 
 import type { Table } from '@tanstack/react-table'
 
-import type { DataTableServerPagination } from '@/shared/components/data-table/types'
+import type { DataTableServerPagination } from '@/shared/components/data-view/table/types'
 
-import { DataTablePaginationButton } from '@/shared/components/data-table/ui/data-table-pagination-button'
+import { DataTablePaginationButton } from '@/shared/components/data-view/table/ui/data-table-pagination-button'
 import { formatPageOf } from '@/shared/lib/pagination-format'
 
 interface Props<TData> {

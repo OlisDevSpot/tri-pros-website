@@ -1,6 +1,6 @@
 'use client'
 
-import type { UseColumnVisibilityResult } from '@/shared/components/data-table/lib/use-column-visibility'
+import type { UseColumnVisibilityResult } from '@/shared/components/data-view/table/lib/use-column-visibility'
 import { Columns3Icon } from 'lucide-react'
 
 import { useState } from 'react'

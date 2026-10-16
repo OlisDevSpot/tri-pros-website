@@ -2,7 +2,7 @@
 
 import type { ColumnDef, ColumnFiltersState, ColumnSizingState, ExpandedState, Row, SortingState, TableMeta, Updater, VisibilityState } from '@tanstack/react-table'
 import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react'
-import type { DataTableServerPagination, DataTableServerSorting } from '@/shared/components/data-table/types'
+import type { DataTableServerPagination, DataTableServerSorting } from '@/shared/components/data-view/table/types'
 
 import {
   flexRender,
@@ -15,15 +15,15 @@ import {
 import { PinIcon } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { CELL_BORDER } from '@/shared/components/data-table/constants/cell-border'
-import { FROZEN_COLUMN_SHADOW } from '@/shared/components/data-table/constants/frozen-column-shadow'
-import { SKELETON_ROW_HEIGHT_CLASS } from '@/shared/components/data-table/constants/skeleton-widths'
-import { useTablePreferences } from '@/shared/components/data-table/contexts/table-preferences-context'
-import { usePullToRefresh } from '@/shared/components/data-table/hooks/use-pull-to-refresh'
-import { isRowClick } from '@/shared/components/data-table/lib/is-row-click'
-import { mapColumnSortIds } from '@/shared/components/data-table/lib/map-column-sort-ids'
-import { DataTableBody } from '@/shared/components/data-table/ui/data-table-body'
-import { DataTablePagination } from '@/shared/components/data-table/ui/data-table-pagination'
+import { CELL_BORDER } from '@/shared/components/data-view/table/constants/cell-border'
+import { FROZEN_COLUMN_SHADOW } from '@/shared/components/data-view/table/constants/frozen-column-shadow'
+import { SKELETON_ROW_HEIGHT_CLASS } from '@/shared/components/data-view/table/constants/skeleton-widths'
+import { useTablePreferences } from '@/shared/components/data-view/table/contexts/table-preferences-context'
+import { usePullToRefresh } from '@/shared/components/data-view/table/hooks/use-pull-to-refresh'
+import { isRowClick } from '@/shared/components/data-view/table/lib/is-row-click'
+import { mapColumnSortIds } from '@/shared/components/data-view/table/lib/map-column-sort-ids'
+import { DataTableBody } from '@/shared/components/data-view/table/ui/data-table-body'
+import { DataTablePagination } from '@/shared/components/data-view/table/ui/data-table-pagination'
 import { Table, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { useStableCallbacks } from '@/shared/hooks/use-stable-callbacks'

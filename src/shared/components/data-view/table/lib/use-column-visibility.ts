@@ -4,8 +4,8 @@ import type { ColumnDef, VisibilityState } from '@tanstack/react-table'
 
 import { useCallback, useMemo } from 'react'
 
-import { useTablePreferences } from '@/shared/components/data-table/contexts/table-preferences-context'
-import { getColumnId } from '@/shared/components/data-table/lib/get-column-id'
+import { useTablePreferences } from '@/shared/components/data-view/table/contexts/table-preferences-context'
+import { getColumnId } from '@/shared/components/data-view/table/lib/get-column-id'
 
 export interface ToggleableColumn {
   id: string

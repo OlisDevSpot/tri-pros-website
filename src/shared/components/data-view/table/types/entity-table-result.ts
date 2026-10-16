@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
-import type { UseColumnVisibilityResult } from '@/shared/components/data-table/lib/use-column-visibility'
-import type { DataTableProps } from '@/shared/components/data-table/ui/data-table'
+import type { UseColumnVisibilityResult } from '@/shared/components/data-view/table/lib/use-column-visibility'
+import type { DataTableProps } from '@/shared/components/data-view/table/ui/data-table'
 import type { DataViewQueryResult } from '@/shared/dal/client/lib/types'
 import type { FieldList, ToolbarFilterId } from '@/shared/dal/lib/query/field-list'
 

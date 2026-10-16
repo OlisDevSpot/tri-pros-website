@@ -1,7 +1,7 @@
-import type { TablePreferences } from '@/shared/components/data-table/schemas/table-preferences'
+import type { TablePreferences } from '@/shared/components/data-view/table/schemas/table-preferences'
 
-import { TABLE_PREFERENCES_COOKIE_PREFIX } from '@/shared/components/data-table/constants/table-preferences-cookie'
-import { tablePreferencesSchema } from '@/shared/components/data-table/schemas/table-preferences'
+import { TABLE_PREFERENCES_COOKIE_PREFIX } from '@/shared/components/data-view/table/constants/table-preferences-cookie'
+import { tablePreferencesSchema } from '@/shared/components/data-view/table/schemas/table-preferences'
 
 /** Every table's saved preferences from the request's cookies, keyed by table id. A malformed cookie reads as none. */
 export function readTablePreferences(cookies: readonly { name: string, value: string }[]): Record<string, TablePreferences> {
