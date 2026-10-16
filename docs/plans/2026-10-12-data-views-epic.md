@@ -1,6 +1,6 @@
 # Data views — Epic Tracker
 
-> **Status:** 🔨 **BUILDING.** DV0 (instant tab return) and DV1 (edge-to-edge) are on prod. DV2 (the data-view spec) was approved on 2026-10-14. Next is the DV3 plan.
+> **Status:** 🔨 **BUILDING.** DV0 (instant tab return) and DV1 (edge-to-edge) are on prod. DV2 (the data-view spec) was approved on 2026-10-14. DV3 was built on local main on 2026-10-15 and is not shipped. Next is DV3a (the folder hierarchy), then DV4.
 > **Started:** 2026-10-12, when the owner re-anchored the dashboard work on one structure: an entity rendered in a data view.
 > **This file is the live index of the order.** Update it as each step lands, and cite its IDs (DV1…) in specs, plans and commits. It holds no design. The design lives in the specs below, and the entity-table work keeps its own tracker.
 > **Baseline:** `origin/main` at `eff6ff23f` (2026-10-13).
@@ -28,6 +28,19 @@ Each layer is defined in exactly one place:
 
 Vocabulary is in data-view spec §2. Any new name goes to the owner first.
 
+**Where the code lives (owner, 2026-10-16).** Every data view's UI sits under one folder, so "an entity in a data view" has one stable path:
+
+```
+src/shared/components/data-view/
+  core/       data-view.tsx (the compound), lib/, ui/ (root, bar, title, count, toolbar, body, empty, boundary, pending)
+  table/      today's shared/components/data-table/
+  calendar/   today's shared/components/calendar/
+  kanban/     today's shared/components/kanban/
+  …           one folder per new body
+```
+
+DV3 built `data-view/` flat (`data-view.tsx`, `lib/`, `ui/`); DV3a moves it into this shape.
+
 ---
 
 ## 2. Order
@@ -40,6 +53,7 @@ One step at a time, in this order (D67), unless the step itself says otherwise.
 | **DV1** | **Edge-to-edge layout.** On a phone, page scrollers run to the screen edge, pages scroll behind the dock, and the table card rides along. It goes first because it rewrites the frames the data-view parts wrap. | shipped; spec and plan deleted (git history: `690c63408`, `eff6ff23f`); the rule lives in `docs/codebase-conventions/app-shell.md#page-insets-and-bleed` | [x] on prod 2026-10-13 (`25e677167..eff6ff23f`) |
 | **DV2** | **Data-view spec approved.** This is the 2026-10-07 design as amended on 2026-10-12 to match DV0 (§11 #13–#16). Its facts were re-checked on 2026-10-13 against the shipped DV1 and #285 code (the line references, `Body`'s no-horizontal-clip rule, and the cache that clears on a user change), and the line references again at `2ef151415`. | data-view spec | [x] approved by the owner 2026-10-14, #16 included |
 | **DV3** | **Data-view phase 1: the compound and the tables.** This covers `DataView` and its parts, with `EntityRecordsTable` rebuilt on them. Meetings and projects move through it. Proposals is composed by hand, and its route moves onto the loading-screen rule. The table's own dim and empty row go. | data-view spec §6; plan `docs/superpowers/plans/2026-10-13-data-view-phase-1.md` (approved 2026-10-14, with campaign leads' root + `Body` wrap, spec §11 #17) | [x] built on local main (`e6d18170f`, `bb7fc6dcf`, `b9146055b`, `aaaa40726`, `048345bb8`), awaiting owner ship; boundary + pending moved to `src/shared/components/data-view/ui/` (docs citing the old path re-checked at DV4). Ships to prod with DV4 (spec §11 #18). |
+| **DV3a** | **One folder for every data view.** Move DV3's flat `data-view/` into `data-view/core/`, and `data-table/`, `calendar/` and `kanban/` into `data-view/table/`, `data-view/calendar/` and `data-view/kanban/` (§1 "Where the code lives"). Re-point every importer (today: 31 import `data-view/`, 48 `data-table/`, 10 `calendar/`, 6 `kanban/`) and the plans and specs that cite the old paths, DV4's plan first. Path moves only, no behaviour change. Owner to rule before the plan: (a) do `entity-records-table.tsx`, `records-page-frame.tsx` and `page-bar.tsx` move into `data-view/table/` / `data-view/core/` too; (b) does `query-toolbar/` move under `data-view/` (it is the `Toolbar` part's body, and also used outside data views); (c) do the bodies' own `constants/` folders become `lib/constants/` now, or wait for the larger constants migration. | owner direction 2026-10-16; plan to write | [ ] before DV4, so DV4 is written against the final paths. Ships to prod with DV3 and DV4. |
 | **DV4** | **R2 Part 2: the customers entity table.** This adds `useCustomersTable`, the records page and the two lead-sources panes as table views composed from the parts, and `leadSourcesRouter.getCustomers` goes. The customers route moves onto the loading-screen rule. | records tracker R2 and D64–D66; plan `docs/superpowers/plans/2026-10-05-customers-entity-table-and-fixed-filters-part-2.md`. Its Task 2 Steps 3–4 are sketches to re-check against DV3's code. The whole plan (written 2026-10-05) is also re-checked against the customer files #285 units 1–3 changed, which shipped first (DV7). | ⏸ DV3 |
 | **DV5** | **Data-view phase 2: the calendars.** Schedule meetings, schedule activities and the dashboard meetings hub, built on the shipped action hosts. | data-view spec §4, §6; plan to write | ⏸ DV3. May interleave with DV4. |
 | **DV6** | **Data-view phase 3: the kanban.** The pipeline view. Its boundary moves inside the view, onto the loading-screen rule, and its move settle passes through `Body`'s `className`. | data-view spec §3.5, §4, §6; plan to write | ⏸ DV3. May interleave with DV4. |
@@ -122,3 +136,9 @@ Every step that touches a data view re-runs these, read-only, on the dev server:
 - The schedule highlight's pending gate reads the context above `ScheduleView`'s boundary, so it doesn't see a boundary's own fallback. This is harmless today. Revisit in DV5.
 - The `isPending` doc in `src/shared/dal/client/lib/types.ts` doesn't mention the error fallback. Fix it in DV3, when `Count` starts reading it.
 - The custom-read options type (`UnusedSkipTokenOptions<…>`) is written out in three home files. Give it one shared name (owner approves the name) when DV11 or another custom read needs it.
+
+**From DV3's final review (2026-10-15):**
+- Three comments still say the table dims stale rows; the `Body` part does now: `src/shared/dal/client/lib/types.ts:134` and `:215`, `src/shared/components/data-table/types.ts:34`. Fix in DV4.
+- Under a data view's error fallback, the table footer still says "Updating…" over skeleton rows (from `90b7beefc`, `to-data-table-pagination.ts:15`). Same contradiction spec §11 #16 fixed for `Count`. Owner call: fix in DV4 or its own step.
+- While a view draws its first-load skeleton, nothing carries `aria-busy` (the spec is silent). Owner call.
+- The records-page header row (`Title` + `Count` + actions) is written out in `entity-records-table.tsx` and `proposal-flow/ui/components/table/index.tsx`, as spec §11 #3 wants (fine parts, free wrapper). It becomes one copy when proposals moves onto `EntityRecordsTable` (DV8).
