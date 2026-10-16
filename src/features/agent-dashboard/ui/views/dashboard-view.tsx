@@ -17,7 +17,7 @@ import { DashboardHero } from '@/features/agent-dashboard/ui/components/dashboar
 import { DashboardMeetingsHub } from '@/features/agent-dashboard/ui/components/dashboard-meetings-hub'
 import { DashboardProjects } from '@/features/agent-dashboard/ui/components/dashboard-projects'
 import { DashboardProposals } from '@/features/agent-dashboard/ui/components/dashboard-proposals'
-import { DataViewBoundary } from '@/shared/components/data-view/ui/boundary'
+import { DataViewBoundary } from '@/shared/components/data-view/core/ui/boundary'
 import { cn } from '@/shared/lib/utils'
 
 interface Props {

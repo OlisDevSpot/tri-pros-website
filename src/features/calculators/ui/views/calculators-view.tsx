@@ -8,7 +8,7 @@ import { CALCULATOR_TAB_META } from '@/features/calculators/constants/calculator
 import { calculatorTabParser } from '@/features/calculators/constants/query-parsers'
 import { RemodelRoiCalculator } from '@/features/calculators/remodel-roi-calculator/ui/views/remodel-roi-calculator'
 import { ScopePricingCalculator } from '@/features/calculators/scope-pricing-calculator/ui/views/scope-pricing-calculator'
-import { PageBar } from '@/shared/components/page-bar'
+import { PageBar } from '@/shared/components/data-view/core/ui/page-bar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 
 // Nothing entered here is saved: the calculators are a live aid in the home until results can be kept against a meeting or proposal.

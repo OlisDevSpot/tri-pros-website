@@ -2,7 +2,7 @@
 
 import { use } from 'react'
 
-import { useDataView } from '@/shared/components/data-view/lib/context'
+import { useDataView } from '@/shared/components/data-view/core/lib/context'
 import { DataViewPendingContext } from '@/shared/dal/client/lib/data-view-pending-context'
 import { formatTotalCount } from '@/shared/lib/pagination-format'
 

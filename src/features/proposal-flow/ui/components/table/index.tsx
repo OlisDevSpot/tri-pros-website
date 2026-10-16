@@ -14,7 +14,7 @@ import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-t
 import { useColumnVisibility } from '@/shared/components/data-table/lib/use-column-visibility'
 import { useEntityColumns } from '@/shared/components/data-table/lib/use-entity-columns'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
-import { DataView } from '@/shared/components/data-view/data-view'
+import { DataView } from '@/shared/components/data-view/core/data-view'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 import { ROOTS } from '@/shared/config/roots'
 import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'

@@ -16,7 +16,7 @@ import { LeadSourceList } from '@/features/lead-sources-admin/ui/components/lead
 import { NewLeadSourceSheet } from '@/features/lead-sources-admin/ui/components/new-lead-source-sheet'
 import { SourceDetail } from '@/features/lead-sources-admin/ui/components/source-detail'
 import { TimeRangeChips } from '@/features/lead-sources-admin/ui/components/time-range-chips'
-import { PageBar } from '@/shared/components/page-bar'
+import { PageBar } from '@/shared/components/data-view/core/ui/page-bar'
 import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'

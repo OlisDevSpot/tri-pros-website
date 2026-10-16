@@ -11,7 +11,7 @@ import { AnalyticsFilterBar } from '@/features/analytics/ui/components/filter-ba
 import { ProjectsPlaceholder } from '@/features/analytics/ui/components/projects-placeholder'
 import { ReportTabContent } from '@/features/analytics/ui/components/report/report-tab-content'
 import { SpendGrid } from '@/features/analytics/ui/components/spend/spend-grid'
-import { PageBar } from '@/shared/components/page-bar'
+import { PageBar } from '@/shared/components/data-view/core/ui/page-bar'
 import { Tabs, TabsContent } from '@/shared/components/ui/tabs'
 import { useHydrationParityCheck } from '@/shared/dal/client/hooks/use-hydration-parity-check'
 import { useTRPC } from '@/trpc/helpers'

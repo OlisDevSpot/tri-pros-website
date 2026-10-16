@@ -5,8 +5,8 @@ import type { MeetingRow } from '@/shared/entities/meetings/lib/columns-registry
 
 import { MeetingRowPanel } from '@/features/records-management/ui/components/meeting-row-panel'
 import { MeetingsRecordsTable } from '@/features/records-management/ui/components/meetings-records-table'
-import { DataViewBoundary } from '@/shared/components/data-view/ui/boundary'
-import { RecordsPageFrame } from '@/shared/components/records-page-frame'
+import { DataViewBoundary } from '@/shared/components/data-view/core/ui/boundary'
+import { RecordsPageFrame } from '@/shared/components/data-view/core/ui/records-page-frame'
 
 // Module level keeps its identity stable, so the table's props don't churn.
 function renderMeetingRowPanel(row: MeetingRow, { actions }: EntityExpandedRowContext<MeetingRow>) {

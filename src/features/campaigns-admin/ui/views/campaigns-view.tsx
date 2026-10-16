@@ -10,8 +10,8 @@ import { CampaignsOverviewSkeleton } from '@/features/campaigns-admin/ui/compone
 import { CampaignsLeadsView } from '@/features/campaigns-admin/ui/views/campaigns-leads-view'
 import { CampaignsOverviewView } from '@/features/campaigns-admin/ui/views/campaigns-overview-view'
 import { CampaignsSetupView } from '@/features/campaigns-admin/ui/views/campaigns-setup-view'
-import { DataViewBoundary } from '@/shared/components/data-view/ui/boundary'
-import { PageBar } from '@/shared/components/page-bar'
+import { DataViewBoundary } from '@/shared/components/data-view/core/ui/boundary'
+import { PageBar } from '@/shared/components/data-view/core/ui/page-bar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 
 export function CampaignsView() {

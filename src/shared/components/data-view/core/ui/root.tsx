@@ -2,14 +2,14 @@
 
 import type { ReactNode } from 'react'
 
-import type { DataViewContextValue } from '@/shared/components/data-view/lib/context'
+import type { DataViewContextValue } from '@/shared/components/data-view/core/lib/context'
 import type { DataViewQueryResult } from '@/shared/dal/client/lib/types'
 import type { DataViewWindowKind } from '@/shared/dal/lib/query/data-view-query-config'
 import type { FieldList, ToolbarFilterId } from '@/shared/dal/lib/query/field-list'
 
 import { use, useMemo } from 'react'
 
-import { DataViewBoundaryContext, DataViewContext } from '@/shared/components/data-view/lib/context'
+import { DataViewBoundaryContext, DataViewContext } from '@/shared/components/data-view/core/lib/context'
 
 interface DataViewRootProps<TRow, F extends FieldList, T extends ToolbarFilterId<F>, K extends DataViewWindowKind> {
   query: DataViewQueryResult<TRow, F, T, K>

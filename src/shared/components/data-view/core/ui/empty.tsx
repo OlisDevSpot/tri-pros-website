@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 
-import { useDataView } from '@/shared/components/data-view/lib/context'
+import { useDataView } from '@/shared/components/data-view/core/lib/context'
 import { EmptyState } from '@/shared/components/states/empty-state'
 
 interface DataViewEmptyProps {

@@ -9,7 +9,7 @@ import { HeadshotUpload } from '@/features/agent-settings/ui/components/headshot
 import { IdentityContactSection } from '@/features/agent-settings/ui/components/identity-contact-section'
 import { IntegrationsSection } from '@/features/agent-settings/ui/components/integrations-section'
 import { ProfileHeaderCard } from '@/features/agent-settings/ui/components/profile-header-card'
-import { PageBar } from '@/shared/components/page-bar'
+import { PageBar } from '@/shared/components/data-view/core/ui/page-bar'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { useTRPC } from '@/trpc/helpers'
 

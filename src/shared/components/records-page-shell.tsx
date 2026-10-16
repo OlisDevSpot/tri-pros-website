@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 
-import { PageBar } from '@/shared/components/page-bar'
+import { PageBar } from '@/shared/components/data-view/core/ui/page-bar'
 import { cn } from '@/shared/lib/utils'
 
 interface RecordsPageShellProps {

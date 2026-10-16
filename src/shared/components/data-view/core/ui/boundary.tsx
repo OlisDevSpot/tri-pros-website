@@ -5,8 +5,8 @@ import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 import { ErrorBoundary } from 'react-error-boundary'
 
-import { DataViewBoundaryContext } from '@/shared/components/data-view/lib/context'
-import { DataViewPending } from '@/shared/components/data-view/ui/pending'
+import { DataViewBoundaryContext } from '@/shared/components/data-view/core/lib/context'
+import { DataViewPending } from '@/shared/components/data-view/core/ui/pending'
 import { DataViewPendingContext } from '@/shared/dal/client/lib/data-view-pending-context'
 import { HydrationErrorFallback } from '@/trpc/components/hydration-error-fallback'
 

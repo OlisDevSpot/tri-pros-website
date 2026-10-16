@@ -4,8 +4,8 @@ import type { ReactElement, ReactNode } from 'react'
 
 import { isValidElement } from 'react'
 
-import { useDataView } from '@/shared/components/data-view/lib/context'
-import { DataViewEmpty } from '@/shared/components/data-view/ui/empty'
+import { useDataView } from '@/shared/components/data-view/core/lib/context'
+import { DataViewEmpty } from '@/shared/components/data-view/core/ui/empty'
 import { cn } from '@/shared/lib/utils'
 
 interface DataViewBodyProps {

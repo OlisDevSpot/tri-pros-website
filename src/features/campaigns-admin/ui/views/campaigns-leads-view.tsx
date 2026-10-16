@@ -15,7 +15,7 @@ import { LeadsFilterBar } from '@/features/campaigns-admin/ui/components/leads/l
 import { buildLeadsColumns } from '@/features/campaigns-admin/ui/lib/leads-columns'
 import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
-import { DataView } from '@/shared/components/data-view/data-view'
+import { DataView } from '@/shared/components/data-view/core/data-view'
 import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
 import { fromPaginatedQuery } from '@/shared/dal/client/lib/from-paginated-query'
 import { openCustomerProfile } from '@/shared/modules/customers/core/lib/open-customer-profile'

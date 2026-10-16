@@ -12,7 +12,7 @@ import { MeetingCard } from '@/features/schedule-management/ui/components/meetin
 import { ScheduleCalendar } from '@/features/schedule-management/ui/components/schedule-calendar'
 import { ScheduleCalendarDot } from '@/features/schedule-management/ui/components/schedule-calendar-dot'
 import { ScheduleControlsBar } from '@/features/schedule-management/ui/components/schedule-controls-bar'
-import { PageBar } from '@/shared/components/page-bar'
+import { PageBar } from '@/shared/components/data-view/core/ui/page-bar'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { useMeetingActions } from '@/shared/entities/meetings/hooks/use-meeting-actions'
