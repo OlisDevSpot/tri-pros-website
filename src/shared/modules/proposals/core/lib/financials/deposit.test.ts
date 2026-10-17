@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
-import { describe, it } from 'vitest'
+// eslint-disable-next-line test/no-import-node-test -- tests run on node:test via tsx; vitest is not installed
+import { describe, it } from 'node:test'
 import { getDepositCap, resolveDeposit } from './deposit'
 
 describe('getDepositCap', () => {
