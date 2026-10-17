@@ -14,7 +14,7 @@ export function OverviewFacts() {
   const address = customer ? formatCustomerAddress(customer) : null
   const reps = proposal.meetingReps
   const visitDate = proposal.meetingScheduledFor
-    ? formatBusinessTime(new Date(proposal.meetingScheduledFor), { month: 'short', day: 'numeric', year: 'numeric' })
+    ? formatBusinessTime(proposal.meetingScheduledFor, { month: 'short', day: 'numeric', year: 'numeric' })
     : null
 
   return (

@@ -150,8 +150,10 @@ export async function getFullView(
     const media = mediaRows.map(toProposalMediaView)
 
     const meetingReps = row.meetingId ? await getMeetingReps(row.meetingId) : []
+    // Postgres hands back "2026-10-14 19:00:00+00"; Safari's Date may reject that shape, and the page formats it.
+    const meetingScheduledFor = row.meetingScheduledFor ? new Date(row.meetingScheduledFor).toISOString() : null
 
-    return { ...row, customer, incentives, media, meetingReps } as ProposalWithCustomer
+    return { ...row, customer, incentives, media, meetingReps, meetingScheduledFor } as ProposalWithCustomer
   })
 }
 
