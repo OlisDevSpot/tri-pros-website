@@ -7,7 +7,7 @@ import { useProposalDocument } from '@/features/proposal-flow/contexts/proposal-
 import { getProposalPdfUrl } from '@/features/proposal-flow/lib/get-proposal-pdf-url'
 import { firstName } from '@/features/proposal-flow/lib/rep-names'
 import { companyInfo, companyPhone } from '@/shared/constants/company'
-import { formatPhone } from '@/shared/lib/phone'
+import { formatPhone, toDialString } from '@/shared/lib/phone'
 import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
 
 import { ChapterHeader } from './chapter-header'
@@ -38,7 +38,12 @@ export function NextSteps() {
         <ChapterHeader chapter="next-steps" tone="media" title="Here’s what happens next" lede="Four steps from this page to your start date." />
         <NextStepsAction reps={proposal.meetingReps} />
         <div className="flex flex-wrap gap-x-6 gap-y-2.5 text-sm opacity-90">
-          {contactPhone && <span>{`Questions? Call ${contactName} at ${formatPhone(contactPhone)}`}</span>}
+          {contactPhone && (
+            <span>
+              {`Questions? Call ${contactName} at `}
+              <a href={`tel:${toDialString(contactPhone)}`} className="underline underline-offset-3">{formatPhone(contactPhone)}</a>
+            </span>
+          )}
           {pdfUrl && (
             <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="font-bold underline underline-offset-3">View the PDF version</a>
           )}

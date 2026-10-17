@@ -1,13 +1,31 @@
 import type { ZohoRequestStatus } from '@/shared/services/providers/zoho-sign/types'
 
 export type NextStepState = 'done' | 'current' | 'upcoming'
+export type NextStepsAction = 'request' | 'requested' | 'prepared' | 'review' | 'sign' | 'declined' | 'kickoff'
 
-export function deriveNextSteps({ requested, requestStatus, signed }: { requested: boolean, requestStatus: ZohoRequestStatus | null, signed: boolean }): { states: NextStepState[], action: 'request' | 'requested' | 'sign' | 'kickoff' } {
-  if (signed) {
+interface Input {
+  requested: boolean
+  requestStatus: ZohoRequestStatus | null
+  contractorSigned: boolean
+  signed: boolean
+}
+
+// Declined is permanent: a declined contract is renegotiated on a new proposal, never re-requested.
+export function deriveNextSteps({ requested, requestStatus, contractorSigned, signed }: Input): { states: NextStepState[], action: NextStepsAction } {
+  if (signed || requestStatus === 'completed') {
     return { states: ['done', 'done', 'done', 'current'], action: 'kickoff' }
   }
+  if (requestStatus === 'declined') {
+    return { states: ['done', 'upcoming', 'upcoming', 'upcoming'], action: 'declined' }
+  }
   if (requestStatus === 'inprogress') {
-    return { states: ['done', 'done', 'current', 'upcoming'], action: 'sign' }
+    // The signing email goes out only after the contractor signs.
+    return contractorSigned
+      ? { states: ['done', 'done', 'current', 'upcoming'], action: 'sign' }
+      : { states: ['done', 'current', 'upcoming', 'upcoming'], action: 'review' }
+  }
+  if (requestStatus === 'draft') {
+    return { states: ['done', 'done', 'upcoming', 'upcoming'], action: 'prepared' }
   }
   if (requested) {
     return { states: ['done', 'done', 'upcoming', 'upcoming'], action: 'requested' }

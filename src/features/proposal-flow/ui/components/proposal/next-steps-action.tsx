@@ -3,7 +3,7 @@
 import type { MeetingRep } from '@/shared/modules/meetings/core/types'
 
 import { useMutation } from '@tanstack/react-query'
-import { Loader2Icon, MailIcon, PartyPopperIcon } from 'lucide-react'
+import { Loader2Icon, MailIcon, PartyPopperIcon, TriangleAlertIcon } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { useProposalDocument } from '@/features/proposal-flow/contexts/proposal-document-context'
@@ -33,24 +33,25 @@ export function NextStepsAction({ reps }: { reps: MeetingRep[] }) {
         startCooldown()
         invalidateProposal()
       },
-      onError: () => {
-        toast.error('We couldn’t send your request. Please try again in a moment.')
+      onError: (error) => {
+        toast.error(error.message || 'We couldn’t send your request. Please try again in a moment.')
       },
     }),
   )
 
   const requestStatus = contractStatus?.requestStatus ?? null
-  // A draft means an agent already prepared the agreement from an earlier request.
   const { states, action } = deriveNextSteps({
-    requested: requestMoveForward.isSuccess || requestStatus === 'draft',
+    requested: requestMoveForward.isSuccess,
     requestStatus,
-    signed: requestStatus === 'completed',
+    contractorSigned: contractStatus?.signerStatuses.some(s => s.role === 'Contractor' && s.status === 'SIGNED') ?? false,
+    signed: requestStatus === 'completed' || Boolean(contractStatus?.contractSignedAt),
   })
 
   const team = repsPhrase(reps)
   const lead = repsPhrase(reps, { sentenceStart: true })
   const prepares = repsVerb(reps, 'prepares', 'prepare')
   const has = repsVerb(reps, 'has', 'have')
+  const isAre = repsVerb(reps, 'is', 'are')
 
   return (
     <>
@@ -68,7 +69,7 @@ export function NextStepsAction({ reps }: { reps: MeetingRep[] }) {
             size="lg"
             disabled={requestMoveForward.isPending || isCoolingDown || !accessToken}
             onClick={() => accessToken && requestMoveForward.mutate({ id: proposal.id, token: accessToken })}
-            className="h-12 bg-(--presentation-accent) px-5.5 text-base text-[oklch(0.17_0.04_262)] hover:bg-(--presentation-accent)/90"
+            className="h-12 bg-(--presentation-accent) px-5.5 text-base text-(--presentation-ground) hover:bg-(--presentation-accent)/90"
           >
             {requestMoveForward.isPending
               ? (
@@ -85,6 +86,24 @@ export function NextStepsAction({ reps }: { reps: MeetingRep[] }) {
         <Message icon={<PartyPopperIcon aria-hidden className="mt-0.5 size-5 shrink-0" />}>
           <b>Request sent.</b>
           {` ${lead} ${has} been notified and will prepare your agreement. You’ll get an email when it’s ready to sign.`}
+        </Message>
+      )}
+      {action === 'prepared' && (
+        <Message icon={<MailIcon aria-hidden className="mt-0.5 size-5 shrink-0" />}>
+          <b>Your agreement is prepared.</b>
+          {` ${lead} ${isAre} giving it a final review. You’ll get an email when it’s ready to sign.`}
+        </Message>
+      )}
+      {action === 'review' && (
+        <Message icon={<MailIcon aria-hidden className="mt-0.5 size-5 shrink-0" />}>
+          <b>Your agreement is being reviewed.</b>
+          {` ${lead} ${isAre} approving it now. You’ll get a signing email once it’s approved.`}
+        </Message>
+      )}
+      {action === 'declined' && (
+        <Message icon={<TriangleAlertIcon aria-hidden className="mt-0.5 size-5 shrink-0" />}>
+          <b>This agreement is no longer active.</b>
+          {` Please contact ${team} to talk about an updated proposal.`}
         </Message>
       )}
       {action === 'sign' && (

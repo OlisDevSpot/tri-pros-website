@@ -1,7 +1,13 @@
+'use client'
+
 import type { NextStepState } from '@/features/proposal-flow/lib/derive-next-steps'
 
 import { CheckIcon } from 'lucide-react'
+import { useMemo } from 'react'
 
+import { useScrollRoot } from '@/features/proposal-flow/contexts/scroll-context'
+import { RevealGroup } from '@/shared/components/reveal/reveal-group'
+import { RevealItem } from '@/shared/components/reveal/reveal-item'
 import { cn } from '@/shared/lib/utils'
 
 interface Props {
@@ -10,6 +16,8 @@ interface Props {
 }
 
 export function NextStepsTimeline({ states, repsLine }: Props) {
+  const { rootEl } = useScrollRoot()
+  const rootRef = useMemo(() => ({ current: rootEl }), [rootEl])
   const steps = [
     { title: 'Review your proposal', body: 'Take your time; it’s saved here.' },
     { title: 'Tell us you’re ready', body: repsLine },
@@ -18,11 +26,12 @@ export function NextStepsTimeline({ states, repsLine }: Props) {
   ]
 
   return (
-    <ol className="m-0 grid list-none gap-0 p-0 @min-[800px]/proposal:grid-cols-4 @min-[800px]/proposal:gap-3">
+    <RevealGroup root={rootRef} role="list" className="grid gap-0 @min-[800px]/proposal:grid-cols-4 @min-[800px]/proposal:gap-3">
       {steps.map((step, i) => {
         const state = states[i] ?? 'upcoming'
         return (
-          <li
+          <RevealItem
+            role="listitem"
             key={step.title}
             aria-current={state === 'current' ? 'step' : undefined}
             className={cn(
@@ -35,7 +44,7 @@ export function NextStepsTimeline({ states, repsLine }: Props) {
               aria-hidden
               className={cn(
                 'relative z-1 grid size-8.5 place-items-center rounded-full border-2 border-current font-sans text-sm leading-none font-bold',
-                state === 'done' && 'border-(--presentation-accent) bg-(--presentation-accent) text-[oklch(0.17_0.04_262)]',
+                state === 'done' && 'border-(--presentation-accent) bg-(--presentation-accent) text-(--presentation-ground)',
                 state === 'current' && 'border-(--presentation-accent) text-(--presentation-accent)',
                 state === 'upcoming' && 'opacity-60',
               )}
@@ -46,9 +55,9 @@ export function NextStepsTimeline({ states, repsLine }: Props) {
               <b className="font-sans text-base leading-snug font-semibold">{step.title}</b>
               <p className="text-sm text-on-media-muted">{step.body}</p>
             </div>
-          </li>
+          </RevealItem>
         )
       })}
-    </ol>
+    </RevealGroup>
   )
 }
