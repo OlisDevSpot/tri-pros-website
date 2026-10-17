@@ -12,14 +12,27 @@ import { Button } from '@/shared/components/ui/button'
 import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { ProposalOverviewCard } from '@/shared/modules/proposals/core/components/overview-card'
+import { PROPOSAL_NOTE_MAX_LENGTH } from '@/shared/modules/proposals/core/constants/send'
 import { useSendProposal } from '@/shared/modules/proposals/core/hooks/use-send-proposal'
+
+import { useCockpitOpen } from './cockpit-open-context'
 
 export function SendComposer() {
   const { proposal } = useProposalDocument()
-  const first = firstName(proposal.customer?.name ?? '') || 'the homeowner'
+  const name = firstName(proposal.customer?.name ?? '')
+  const first = name || 'the homeowner'
   const email = proposal.customer?.email ?? null
-  const [note, setNote] = useState(() => `Thanks for having us over, ${first}. Here’s the proposal we walked through.`)
+  const [note, setNote] = useState(() => `Thanks for having us over${name ? `, ${name}` : ''}. Here’s the proposal we walked through.`)
   const [confirming, setConfirming] = useState(false)
+  const { open } = useCockpitOpen()
+  const [wasOpen, setWasOpen] = useState(open)
+  // The sheet stays mounted, so a confirmation left up would greet the next visit; closing the cockpit backs out of it.
+  if (open !== wasOpen) {
+    setWasOpen(open)
+    if (!open) {
+      setConfirming(false)
+    }
+  }
   const send = useSendProposal()
   const isResend = proposal.status === 'sent'
   const hasNote = note.trim().length > 0
@@ -60,7 +73,7 @@ export function SendComposer() {
   return (
     <div ref={rootRef} className="grid gap-2">
       <Label htmlFor="cockpit-note" className="text-sm font-bold text-muted-foreground">{`Note for ${first}`}</Label>
-      <Textarea id="cockpit-note" value={note} onChange={e => setNote(e.target.value)} rows={3} className="min-h-19" />
+      <Textarea id="cockpit-note" value={note} onChange={e => setNote(e.target.value)} rows={3} maxLength={PROPOSAL_NOTE_MAX_LENGTH} className="min-h-19" />
       <div className="flex flex-wrap items-center gap-1">
         <Button size="sm" onClick={() => setConfirming(true)} disabled={!email}>
           <MailIcon className="size-4" />

@@ -171,6 +171,8 @@ export default function ProposalEmail({
                   <Text style={styles.repNoteLabel}>A personal note from your rep</Text>
                   <Text style={styles.repNoteText}>
                     {repMessage.split('\n').map((line, i) => (
+                      // Lines repeat and never reorder, so the position is the key.
+                      // eslint-disable-next-line react/no-array-index-key
                       <Fragment key={i}>
                         {i > 0 && <br />}
                         {line}
@@ -220,13 +222,14 @@ export default function ProposalEmail({
 
           <Section>
             <Text style={styles.text}>
-              If you have any questions, just reply to this email or contact me
-              directly.
+              {`If you have any questions, just reply to this email or contact ${reps.length === 1 ? 'me' : 'us'} directly.`}
             </Text>
 
             <Text style={styles.signature}>
-              {reps.map(rep => (
-                <Fragment key={rep.name}>
+              {reps.map((rep, index) => (
+                // Two reps can share a name, and the list never reorders, so its position is the stable key.
+                // eslint-disable-next-line react/no-array-index-key
+                <Fragment key={index}>
                   {rep.name}
                   {rep.phone && ` · ${formatPhone(rep.phone)}`}
                   <br />

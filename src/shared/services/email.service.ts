@@ -2,6 +2,7 @@ import type { GeneralInquiryFormSchema, ScheduleConsultationFormSchema } from '@
 
 import { publicUrl } from '@/shared/config/public-url'
 import { ROOTS } from '@/shared/config/roots'
+import { companyInfo } from '@/shared/constants/company/company-info'
 import { resendClient } from '@/shared/services/providers/resend/client'
 import { RESEND_FROM, RESEND_LEAD_INBOX } from '@/shared/services/providers/resend/constants'
 import { buildSenderFrom } from '@/shared/services/providers/resend/lib/build-sender-from'
@@ -69,7 +70,7 @@ function createEmailService() {
         from: buildSenderFrom(params.repName),
         to: params.email,
         replyTo: params.replyTo,
-        subject: `${firstName}, your Tri Pros proposal is ready`,
+        subject: `${firstName}, your ${companyInfo.nickname} proposal is ready`,
         // Gmail/Yahoo expect List-Unsubscribe even on transactional mail; its
         // absence raises spam score. mailto: form needs no endpoint — replies
         // land in the monitored inbox. One-click (RFC 8058) is a later follow-up.

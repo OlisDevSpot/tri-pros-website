@@ -1,6 +1,7 @@
 import { TRPCError } from '@trpc/server'
 import z from 'zod'
 
+import { PROPOSAL_NOTE_MAX_LENGTH } from '@/shared/modules/proposals/core/constants/send'
 import { getFullView } from '@/shared/modules/proposals/core/dal/server/queries'
 import { SHARE_LINK_LIMITS } from '@/shared/modules/proposals/core/lib/share-link-rate-limit'
 import { proposalService } from '@/shared/modules/proposals/service'
@@ -12,7 +13,7 @@ import { proposalShareableProcedure } from './procedures'
 
 const sendEmailSchema = z.object({
   proposalId: z.string().uuid(),
-  message: z.string().optional(),
+  message: z.string().max(PROPOSAL_NOTE_MAX_LENGTH).optional(),
 })
 
 export const deliveryRouter = createTRPCRouter({
