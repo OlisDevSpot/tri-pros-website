@@ -1,10 +1,8 @@
 import type { ProposalFormSchema } from '../schemas/form-schema'
-import type { UserRole } from '@/shared/constants/enums'
 
 export interface ProposalStep<P> {
   title: string
   shortLabel: string
-  roles: UserRole[]
   accessor: string
   description: string
   Component: (props: P) => React.ReactNode

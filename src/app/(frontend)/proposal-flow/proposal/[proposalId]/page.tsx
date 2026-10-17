@@ -1,6 +1,4 @@
 import type { Metadata } from 'next'
-import type { SearchParams } from 'nuqs/server'
-import { loadProposalSearchParams } from '@/features/proposal-flow/lib/search-params'
 import { Proposal } from '@/features/proposal-flow/ui/components/proposal'
 
 // Homeowner proposal view renders property photos + pricing behind an
@@ -11,15 +9,6 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-interface PageProps {
-  searchParams: Promise<SearchParams>
-}
-
-export default async function ProposalPage({ searchParams }: PageProps) {
-  // Seed nuqs with server-side search params so client components
-  // calling useQueryState('view') get the correct value on first
-  // render — prevents hydration mismatch in ProposalFlowShell.
-  await loadProposalSearchParams(searchParams)
-
+export default function ProposalPage() {
   return <Proposal />
 }

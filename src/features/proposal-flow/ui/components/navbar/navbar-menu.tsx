@@ -1,30 +1,27 @@
 'use client'
 
-import { ExternalLinkIcon, EyeIcon, FileTextIcon, MoreVerticalIcon, ShieldIcon } from 'lucide-react'
-import { useSyncExternalStore } from 'react'
+import { ExternalLinkIcon, FileTextIcon, MoreVerticalIcon, PhoneIcon } from 'lucide-react'
 
 import { useProposalDocument } from '@/features/proposal-flow/contexts/proposal-document-context'
-import { useViewModeToggle } from '@/features/proposal-flow/hooks/use-view-mode-toggle'
 import { getProposalPdfUrl } from '@/features/proposal-flow/lib/get-proposal-pdf-url'
+import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
 import { Button } from '@/shared/components/ui/button'
 import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
-import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-group'
-import { useAbility } from '@/shared/domains/permissions/client'
+import { companyInfo, companyPhone } from '@/shared/constants/company'
+import { cn } from '@/shared/lib/utils'
 
-function subscribeNever() {
-  return () => {}
-}
+const MENU_ROW = 'w-full justify-start gap-2.5 min-h-11 rounded-md px-3 py-2.5 text-sm font-medium'
 
 export function ProposalNavbarMenu() {
-  const { proposal, token } = useProposalDocument()
-  const ability = useAbility()
-  const { isAgent, toggle } = useViewModeToggle()
-  // False on the server and during hydration, true once on the client.
-  const mounted = useSyncExternalStore(subscribeNever, () => true, () => false)
+  const { proposal, token, canAct } = useProposalDocument()
 
   const pdfToken = proposal.token ?? token
   const pdfUrl = pdfToken ? getProposalPdfUrl(proposal.id, pdfToken) : null
-  const showViewToggle = mounted && ability.can('update', 'Proposal')
+
+  // The label names whoever answers that number: the owner rep, or the company line when the rep has no phone.
+  const ownerRep = proposal.meetingReps[0]
+  const contactPhone = ownerRep?.phone ?? companyPhone
+  const contactName = ownerRep?.phone ? ownerRep.name.trim().split(/\s+/)[0] : companyInfo.nickname
 
   return (
     <Popover>
@@ -43,11 +40,7 @@ export function ProposalNavbarMenu() {
         {pdfUrl
           ? (
               <PopoverClose asChild>
-                <Button
-                  asChild
-                  variant="ghost"
-                  className="w-full justify-start gap-2.5 min-h-11 rounded-md px-3 py-2.5 text-sm font-medium"
-                >
+                <Button asChild variant="ghost" className={MENU_ROW}>
                   <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
                     <FileTextIcon className="size-4 text-muted-foreground" />
                     View as PDF
@@ -57,44 +50,19 @@ export function ProposalNavbarMenu() {
               </PopoverClose>
             )
           : (
-              <Button
-                type="button"
-                variant="ghost"
-                disabled
-                className="w-full justify-start gap-2.5 min-h-11 rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground"
-              >
+              <Button type="button" variant="ghost" disabled className={cn(MENU_ROW, 'text-muted-foreground')}>
                 <FileTextIcon className="size-4" />
                 View as PDF
               </Button>
             )}
 
-        {showViewToggle && (
-          <>
-            <div className="-mx-1.5 my-1.5 h-px bg-border" />
-            <div className="px-3 pt-1.5 pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-              Viewing as
-            </div>
-            <ToggleGroup
-              type="single"
-              variant="segmented"
-              aria-label="View mode"
-              value={isAgent ? 'agent' : 'homeowner'}
-              onValueChange={(value) => {
-                if (value && (value === 'agent') !== isAgent)
-                  toggle()
-              }}
-              className="mx-1 mb-1 w-[calc(100%-0.5rem)]"
-            >
-              <ToggleGroupItem value="homeowner" className="h-10 flex-1 gap-1.5">
-                <EyeIcon className="size-4" />
-                Homeowner
-              </ToggleGroupItem>
-              <ToggleGroupItem value="agent" className="h-10 flex-1 gap-1.5">
-                <ShieldIcon className="size-4" />
-                Agent
-              </ToggleGroupItem>
-            </ToggleGroup>
-          </>
+        {!canAct && contactPhone && (
+          <PhoneAction phone={contactPhone}>
+            <Button type="button" variant="ghost" className={MENU_ROW}>
+              <PhoneIcon className="size-4 text-muted-foreground" />
+              {`Call or text ${contactName}`}
+            </Button>
+          </PhoneAction>
         )}
       </PopoverContent>
     </Popover>

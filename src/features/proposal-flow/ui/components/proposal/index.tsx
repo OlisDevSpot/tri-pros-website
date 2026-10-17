@@ -2,22 +2,19 @@
 
 import { useMutation } from '@tanstack/react-query'
 import { useParams, useSearchParams } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 
-import { generateProposalSteps } from '@/features/proposal-flow/constants/proposal-steps'
+import { proposalSteps } from '@/features/proposal-flow/constants/proposal-steps'
+import { ActiveChapterProvider } from '@/features/proposal-flow/contexts/active-chapter-context'
 import { ProposalDocumentProvider } from '@/features/proposal-flow/contexts/proposal-document-context'
 import { useScrollRoot } from '@/features/proposal-flow/contexts/scroll-context'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
-import { useViewMode } from '@/features/proposal-flow/hooks/use-view-mode'
-import { getProposalPdfUrl } from '@/features/proposal-flow/lib/get-proposal-pdf-url'
-import { Cockpit } from '@/features/proposal-flow/ui/components/cockpit/cockpit'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { useAbility } from '@/shared/domains/permissions/client'
 import { useTRPC } from '@/trpc/helpers'
 
 import { ChapterNav } from './chapter-nav'
-import { PdfFallbackCard } from './pdf-fallback-card'
 import { ProposalTopBar } from './top-bar'
 import { ProposalTopBarFrame } from './top-bar-frame'
 
@@ -29,9 +26,8 @@ export function Proposal() {
   const trpc = useTRPC()
   const recordView = useMutation(trpc.proposalsRouter.views.recordView.mutationOptions())
   const ability = useAbility()
-  const viewMode = useViewMode()
+  const canAct = ability.can('update', 'Proposal')
   const hasRecorded = useRef(false)
-  const [cockpitOpen, setCockpitOpen] = useState(false)
 
   useEffect(() => {
     if (hasRecorded.current || !proposal.data) {
@@ -40,8 +36,8 @@ export function Proposal() {
     hasRecorded.current = true
 
     const token = searchParams.get('token')
-    // An agent previewing the page is not a homeowner view, and the server rejects a missing token anyway.
-    if (viewMode === 'agent' || !token) {
+    // The server already skips sessions, and rejects a missing token.
+    if (!token) {
       return
     }
 
@@ -76,42 +72,30 @@ export function Proposal() {
     )
   }
 
-  const proposalData = proposal.data
-  const { token } = proposalData
   const urlToken = searchParams.get('token') ?? undefined
 
-  const viewerRole = ability.can('update', 'Proposal') ? 'agent' : 'homeowner'
-  const proposalSteps = generateProposalSteps(viewerRole)
-
   return (
-    <ProposalDocumentProvider proposal={proposalData} viewMode={viewMode} token={urlToken}>
-      <div className="flex h-full min-h-0 flex-col">
-        <ProposalTopBar onOpenCockpit={() => setCockpitOpen(true)} />
-        <div ref={setRootEl} id="proposal-container" className="min-h-0 flex-1 overflow-y-auto">
-          <div className="@container/proposal">
-            <div className="grid @min-[1100px]/proposal:grid-cols-[220px_minmax(0,1fr)]">
-              <div className="hidden @min-[1100px]/proposal:block"><ChapterNav variant="rail" /></div>
-              <div className="min-w-0">
-                <div className="contents @min-[1100px]/proposal:hidden"><ChapterNav variant="tabs" /></div>
-                {proposalSteps.map(step => (
-                  <section
-                    key={step.accessor}
-                    id={step.accessor}
-                    aria-labelledby={`${step.accessor}-title`}
-                    className="scroll-mt-12 @min-[1100px]/proposal:scroll-mt-0"
-                  >
-                    <step.Component />
-                  </section>
-                ))}
-                {token && (
-                  <PdfFallbackCard pdfUrl={getProposalPdfUrl(params.proposalId, token)} />
-                )}
+    <ProposalDocumentProvider proposal={proposal.data} token={urlToken} canAct={canAct}>
+      <ActiveChapterProvider>
+        <div className="@container/proposal flex h-full min-h-0 flex-col">
+          <ProposalTopBar />
+          <div ref={setRootEl} id="proposal-container" className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-gutter-stable">
+            {/* The rail sits on the canvas and the chapters on the document plane, as the mock's `.doc` and `.paper`. */}
+            <div className="min-h-full bg-background">
+              <div className="grid @min-[1100px]/proposal:grid-cols-[220px_minmax(0,1fr)]">
+                <div className="hidden @min-[1100px]/proposal:block"><ChapterNav variant="rail" /></div>
+                <main className="surface min-w-0">
+                  {proposalSteps.map(step => (
+                    <section key={step.accessor} id={step.accessor} aria-labelledby={`${step.accessor}-title`} className="relative scroll-mt-0">
+                      <step.Component />
+                    </section>
+                  ))}
+                </main>
               </div>
             </div>
           </div>
         </div>
-        {viewMode === 'agent' && <Cockpit open={cockpitOpen} onOpenChange={setCockpitOpen} />}
-      </div>
+      </ActiveChapterProvider>
     </ProposalDocumentProvider>
   )
 }

@@ -2,7 +2,6 @@
 
 import type { inferRouterOutputs } from '@trpc/server'
 import type { ReactNode } from 'react'
-import type { ViewMode } from '@/features/proposal-flow/hooks/use-view-mode'
 import type { AppRouter } from '@/trpc/routers/app'
 
 import { createContext, use, useMemo } from 'react'
@@ -11,25 +10,24 @@ export type ProposalDocument = NonNullable<inferRouterOutputs<AppRouter>['propos
 
 interface ProposalDocumentValue {
   proposal: ProposalDocument
-  viewMode: ViewMode
   token: string | undefined
-  isAgent: boolean
+  canAct: boolean
 }
 
 const ProposalDocumentContext = createContext<ProposalDocumentValue | null>(null)
 
 interface ProviderProps {
   proposal: ProposalDocument
-  viewMode: ViewMode
   token: string | undefined
+  canAct: boolean
   children: ReactNode
 }
 
 // The document never reads route params, so another host (a meeting page, the Let's build! tab) can drive it.
-export function ProposalDocumentProvider({ proposal, viewMode, token, children }: ProviderProps) {
+export function ProposalDocumentProvider({ proposal, token, canAct, children }: ProviderProps) {
   const value = useMemo<ProposalDocumentValue>(
-    () => ({ proposal, viewMode, token, isAgent: viewMode === 'agent' }),
-    [proposal, viewMode, token],
+    () => ({ proposal, token, canAct }),
+    [proposal, token, canAct],
   )
   return <ProposalDocumentContext value={value}>{children}</ProposalDocumentContext>
 }
