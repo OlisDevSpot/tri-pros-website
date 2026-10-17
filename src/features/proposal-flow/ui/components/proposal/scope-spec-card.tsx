@@ -3,15 +3,16 @@
 // Parsed SOW content is static and read-only, and real content repeats strings, so index keys are the stable choice.
 /* eslint-disable react/no-array-index-key */
 
+import type { ReactNode } from 'react'
 import type { SOW } from '@/shared/modules/proposals/core/types'
 
-import { ChevronDownIcon } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 
 import { parseSowSection } from '@/features/proposal-flow/lib/parse-sow-section'
+import { ScopeDoneBeforeChip } from '@/features/proposal-flow/ui/components/proposal/scope-done-before-chip'
+import { ScopePhaseList } from '@/features/proposal-flow/ui/components/proposal/scope-phase-list'
 import { formatAsDollars } from '@/shared/lib/formatters'
 import { sanitizeUserHtml } from '@/shared/lib/sanitize-html'
-import { cn } from '@/shared/lib/utils'
 
 interface Props {
   section: SOW
@@ -19,99 +20,68 @@ interface Props {
   showPrice: boolean
 }
 
+function Block({ label, children }: { label: string, children: ReactNode }) {
+  return (
+    <div className="grid gap-2.5">
+      <h4 className="text-xs font-bold tracking-[0.14em] text-muted-foreground uppercase">{label}</h4>
+      {children}
+    </div>
+  )
+}
+
+function LineList({ lines }: { lines: string[] }) {
+  return (
+    <ul className="grid list-disc gap-1.5 pl-[18px] text-base text-muted-foreground">
+      {lines.map((line, i) => <li key={i}>{line}</li>)}
+    </ul>
+  )
+}
+
 export function ScopeSpecCard({ section, index, showPrice }: Props) {
   const parsed = useMemo(() => parseSowSection(section.contentJSON), [section.contentJSON])
-  const [openPhase, setOpenPhase] = useState<number | null>(0)
   const price = section.financials.sectionPrice ?? 0
 
   return (
-    <article id={`scope-part-${index + 1}`} className="scroll-mt-12 overflow-hidden rounded-lg border border-border bg-card shadow-sm @min-[1100px]/proposal:scroll-mt-0">
-      <header className="flex items-start gap-4 border-b border-border px-5 py-4">
-        <span className="pt-0.5 text-lg font-semibold tabular-nums text-muted-foreground">{String(index + 1).padStart(2, '0')}</span>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-base font-bold text-balance">{section.title || 'Untitled part'}</h3>
-          {section.trade.label && <p className="text-xs font-semibold text-muted-foreground">{section.trade.label}</p>}
+    <article id={`scope-part-${index + 1}`} className="scroll-mt-0 overflow-hidden rounded-xl border border-border bg-card">
+      <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-3.5 gap-y-1 border-b border-border px-5 py-4.5">
+        <span className="pt-0.5 font-sans text-xl leading-none text-muted-foreground">{String(index + 1).padStart(2, '0')}</span>
+        <div className="min-w-0">
+          <h3 className="font-sans text-xl font-medium text-balance">{section.title || 'Untitled part'}</h3>
+          {section.trade.label && <small className="text-sm font-bold text-muted-foreground">{section.trade.label}</small>}
         </div>
-        {showPrice && price > 0 && <span className="shrink-0 font-semibold tabular-nums">{formatAsDollars(price)}</span>}
+        {showPrice && price > 0 && <span className="font-sans text-lg tabular-nums">{formatAsDollars(price)}</span>}
       </header>
 
       {!parsed
         ? <div className="proposal-sow px-5 py-4" dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(section.html) }} />
         : (
-            <div className="grid gap-5 px-5 py-4">
-              {parsed.description && <p className="text-sm leading-relaxed text-muted-foreground">{parsed.description}</p>}
+            <div className="grid gap-5.5 px-5 pt-4.5 pb-5">
+              {parsed.description && <p className="max-w-[62ch] text-base text-foreground">{parsed.description}</p>}
 
               {parsed.specs.length > 0 && (
-                <div className="grid gap-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Key details</h4>
-                  <dl className="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-sm">
+                <Block label="Key details">
+                  <dl className="grid border-t border-border @min-[760px]/proposal:grid-cols-2 @min-[760px]/proposal:gap-x-8">
                     {parsed.specs.map(([label, value], i) => (
-                      <div key={i} className="contents">
+                      <div key={i} className="grid grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-3 border-b border-border py-2.25 text-base">
                         <dt className="text-muted-foreground">{label}</dt>
-                        <dd className="font-semibold">{value}</dd>
+                        <dd className="font-bold">{value}</dd>
                       </div>
                     ))}
                   </dl>
-                </div>
-              )}
-
-              {parsed.exclusions.length > 0 && (
-                <div className="grid gap-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Not included</h4>
-                  <ul className="grid list-disc gap-1 pl-5 text-sm text-muted-foreground">
-                    {parsed.exclusions.map((line, i) => <li key={i}>{line}</li>)}
-                  </ul>
-                </div>
+                </Block>
               )}
 
               {parsed.phases.length > 0 && (
-                <div className="grid gap-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Phases</h4>
-                  <ol className="divide-y divide-border rounded-md border border-border">
-                    {parsed.phases.map((phase, i) => {
-                      const open = openPhase === i
-                      return (
-                        <li key={i}>
-                          <button
-                            type="button"
-                            aria-expanded={open}
-                            onClick={() => setOpenPhase(open ? null : i)}
-                            className="flex min-h-11 w-full items-center gap-3 px-3 text-left text-sm font-semibold transition-colors hover:bg-row-hover pressed:bg-row-press"
-                          >
-                            <span className="w-5 tabular-nums text-muted-foreground">{i + 1}</span>
-                            <span className="min-w-0 flex-1">{phase.title}</span>
-                            <span className="text-xs text-muted-foreground">{`${phase.steps.length} ${phase.steps.length === 1 ? 'step' : 'steps'}`}</span>
-                            <ChevronDownIcon className={cn('size-4 transition-transform motion-reduce:transition-none', open && 'rotate-180')} />
-                          </button>
-                          {open && (
-                            <ul className="grid list-disc gap-1 pb-3 pl-12 pr-3 text-sm text-muted-foreground">
-                              {phase.steps.map((step, j) => <li key={j}>{step}</li>)}
-                            </ul>
-                          )}
-                        </li>
-                      )
-                    })}
-                  </ol>
-                </div>
+                <Block label={`How we’ll do it · ${parsed.phases.length} ${parsed.phases.length === 1 ? 'phase' : 'phases'}`}>
+                  <ScopePhaseList phases={parsed.phases} />
+                </Block>
               )}
 
-              {parsed.notes.length > 0 && (
-                <div className="grid gap-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Notes</h4>
-                  <ul className="grid list-disc gap-1 pl-5 text-sm text-muted-foreground">
-                    {parsed.notes.map((line, i) => <li key={i}>{line}</li>)}
-                  </ul>
-                </div>
-              )}
+              {parsed.notes.length > 0 && <Block label="Notes"><LineList lines={parsed.notes} /></Block>}
+              {parsed.exclusions.length > 0 && <Block label="Not included"><LineList lines={parsed.exclusions} /></Block>}
+              {parsed.addOns.length > 0 && <Block label="Optional add-ons"><LineList lines={parsed.addOns} /></Block>}
 
-              {parsed.addOns.length > 0 && (
-                <div className="grid gap-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Optional add-ons</h4>
-                  <ul className="grid list-disc gap-1 pl-5 text-sm text-muted-foreground">
-                    {parsed.addOns.map((line, i) => <li key={i}>{line}</li>)}
-                  </ul>
-                </div>
-              )}
+              <ScopeDoneBeforeChip tradeId={section.trade.id} />
             </div>
           )}
     </article>
