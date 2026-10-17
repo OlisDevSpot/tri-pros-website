@@ -73,7 +73,7 @@ const baseHomeownerFieldMappings: Record<string, FieldSource> = {
 export const ENVELOPE_DOCUMENTS: readonly EnvelopeDocument[] = [
   {
     id: 'main-hi-base',
-    label: 'Main HI agreement (non-senior)',
+    label: 'Main HI agreement',
     source: { kind: 'zoho-template', zohoTemplateId: ZOHO_SIGN_TEMPLATES.base.templateId },
     applicableKinds: ['initial-sale'],
     perKindRules: {

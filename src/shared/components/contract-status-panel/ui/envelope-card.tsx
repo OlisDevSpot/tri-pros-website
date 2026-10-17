@@ -24,8 +24,7 @@ interface EnvelopeCardProps {
   customerName: string | null
   proposalKind?: ProposalKind
   className?: string
-  /** For a screen the homeowner can see: the age stays masked until the agent taps Show. */
-  concealAge?: boolean
+  configurationLayout?: 'stacked' | 'inline'
 }
 
 type ConfirmAction = 'createDraft' | 'send' | 'discard' | 'recall' | 'resend' | 'recreate'
@@ -53,7 +52,7 @@ export function EnvelopeCard({
   customerName,
   proposalKind,
   className,
-  concealAge,
+  configurationLayout,
 }: EnvelopeCardProps) {
   const trpc = useTRPC()
   const { invalidateProposal } = useInvalidation()
@@ -156,36 +155,13 @@ export function EnvelopeCard({
   }
 
   return (
-    <div className={cn('rounded-lg border border-border bg-card p-4 sm:p-5', className)}>
-      {/* Header */}
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <h4 className="text-sm font-semibold tracking-tight sm:text-base">
-            Signing Envelope
-          </h4>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Legally binding Zoho Sign package
-          </p>
-        </div>
-        {statusBadge && (
-          <span
-            className={cn(
-              'shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium',
-              statusBadge.className,
-            )}
-          >
-            {statusBadge.label}
-          </span>
-        )}
-      </div>
-
-      {/* Body */}
+    <div className={cn('space-y-4', className)}>
       <div className="space-y-4">
         <EnvelopeConfigurationSection
           proposalId={proposalId}
           locked={isActive || requestStatus === 'completed'}
           lockReason={ageLockReason}
-          concealAge={concealAge}
+          layout={configurationLayout}
         />
 
         {/* State-specific body */}
@@ -219,7 +195,7 @@ export function EnvelopeCard({
         )}
 
         {/* Actions */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
+        <div className="flex flex-wrap items-center gap-3">
           {!contractStatus && (
             <ActionButtonWithImpact
               variant="default"
@@ -294,6 +270,17 @@ export function EnvelopeCard({
               isPending={resendContract.isPending}
               disabled={isPending || isCoolingDown}
             />
+          )}
+
+          {statusBadge && (
+            <span
+              className={cn(
+                'shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium',
+                statusBadge.className,
+              )}
+            >
+              {statusBadge.label}
+            </span>
           )}
         </div>
       </div>

@@ -22,8 +22,6 @@ export function CockpitAgreementCard() {
           contractStatus={contractStatus ?? null}
           customerName={proposal.customer?.name ?? null}
           proposalKind={proposal.kind}
-          className="rounded-none border-0 bg-transparent p-0 sm:p-0"
-          concealAge
         />
       </OverviewCard.Body>
     </OverviewCard>
