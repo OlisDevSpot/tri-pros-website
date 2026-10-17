@@ -84,11 +84,22 @@ export interface EntityActionCustomConfig<TEntity> {
   hidden?: (entity: TEntity) => boolean
 }
 
+/** A split action: the first item runs from the button, the chevron opens all of them. A submenu in a dropdown. */
+export interface EntityActionGroupConfig<TEntity> {
+  action: EntityAction
+  type: 'group'
+  items: EntityActionClickConfig<TEntity>[]
+  isDisabled?: boolean
+  /** Leaves the action out for this entity. Runs while rendering, so it reads only its argument. */
+  hidden?: (entity: TEntity) => boolean
+}
+
 /** Union of all action config types. */
 export type EntityActionConfig<TEntity>
   = EntityActionClickConfig<TEntity>
     | EntityActionSelectConfig<TEntity>
     | EntityActionCustomConfig<TEntity>
+    | EntityActionGroupConfig<TEntity>
 
 /** Type guard: is this a select (sub-menu) action? */
 export function isSelectAction<TEntity>(config: EntityActionConfig<TEntity>): config is EntityActionSelectConfig<TEntity> {
@@ -100,7 +111,11 @@ export function isCustomAction<TEntity>(config: EntityActionConfig<TEntity>): co
   return 'type' in config && config.type === 'custom'
 }
 
+export function isGroupAction<TEntity>(config: EntityActionConfig<TEntity>): config is EntityActionGroupConfig<TEntity> {
+  return 'type' in config && config.type === 'group'
+}
+
 /** Type guard: is this a plain click action? Only these can render as buttons. */
 export function isClickAction<TEntity>(config: EntityActionConfig<TEntity>): config is EntityActionClickConfig<TEntity> {
-  return !isSelectAction(config) && !isCustomAction(config)
+  return !isSelectAction(config) && !isCustomAction(config) && !isGroupAction(config)
 }

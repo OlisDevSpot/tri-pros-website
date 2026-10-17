@@ -6,7 +6,8 @@ import { CheckIcon, MoreHorizontalIcon, MoreVerticalIcon } from 'lucide-react'
 import { useCallback, useState } from 'react'
 
 import { getVisibleActions } from '@/shared/components/entities/entity-actions/lib/visible-actions'
-import { isCustomAction, isSelectAction } from '@/shared/components/entities/entity-actions/types'
+import { isCustomAction, isGroupAction, isSelectAction } from '@/shared/components/entities/entity-actions/types'
+import { EntityActionGroupItem } from '@/shared/components/entities/entity-actions/ui/entity-action-group-item'
 
 import { Button } from '@/shared/components/ui/button'
 import {
@@ -101,6 +102,11 @@ export function EntityActionDropdown<TEntity>({
               />
             )
           }
+          if (isGroupAction(config)) {
+            return (
+              <EntityActionGroupItem key={config.action.id} config={config} entity={entity} />
+            )
+          }
           return (
             <EntityActionClickItem
               key={config.action.id}
@@ -129,7 +135,7 @@ interface ClickItemProps<TEntity> {
   disabledReason?: string | null
 }
 
-function EntityActionClickItem<TEntity>({
+export function EntityActionClickItem<TEntity>({
   action,
   entity,
   onAction,

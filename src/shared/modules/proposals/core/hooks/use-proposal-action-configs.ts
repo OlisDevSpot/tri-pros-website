@@ -1,8 +1,9 @@
 import type { JSX } from 'react'
-import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
+import type { EntityActionClickConfig, EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
 
 import { useMutation } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
+import { useMemo } from 'react'
 import { toast } from 'sonner'
 
 import { ROOTS } from '@/shared/config/roots'
@@ -79,6 +80,12 @@ export function useProposalActionConfigs<T extends ProposalEntity>(
     }),
   )
 
+  // useStableCallbacks compares a nested array by identity, so a fresh items array would re-render every row.
+  const copyLinkItems = useMemo<EntityActionClickConfig<T>[]>(() => [
+    { action: PROPOSAL_ACTIONS.shareByEmail, onAction: entity => copyToClipboard(buildShareableUrl(entity.id, entity.token, 'email'), 'Proposal link (email)') },
+    { action: PROPOSAL_ACTIONS.shareBySms, onAction: entity => copyToClipboard(buildShareableUrl(entity.id, entity.token, 'sms'), 'Proposal link (SMS)') },
+  ], [])
+
   // The configs' callbacks close over this render's mutations; only the loading flag should re-render rows.
   const actions = useStableCallbacks<EntityActionConfig<T>[]>([
     {
@@ -96,18 +103,9 @@ export function useProposalActionConfigs<T extends ProposalEntity>(
       ? [{ action: PROPOSAL_ACTIONS.copySow, onAction: overrides.onCopySow }]
       : []),
     {
-      action: PROPOSAL_ACTIONS.shareByEmail,
-      onAction: (entity) => {
-        const url = buildShareableUrl(entity.id, entity.token, 'email')
-        copyToClipboard(url, 'Proposal link (email)')
-      },
-    },
-    {
-      action: PROPOSAL_ACTIONS.shareBySms,
-      onAction: (entity) => {
-        const url = buildShareableUrl(entity.id, entity.token, 'sms')
-        copyToClipboard(url, 'Proposal link (SMS)')
-      },
+      action: PROPOSAL_ACTIONS.copyLink,
+      type: 'group',
+      items: copyLinkItems,
     },
     {
       action: PROPOSAL_ACTIONS.duplicate,

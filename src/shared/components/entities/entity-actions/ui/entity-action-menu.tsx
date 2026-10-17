@@ -1,10 +1,11 @@
 'use client'
 
-import type { EntityActionClickConfig, EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
+import type { EntityActionClickConfig, EntityActionConfig, EntityActionGroupConfig } from '@/shared/components/entities/entity-actions/types'
 
 import { getVisibleActions } from '@/shared/components/entities/entity-actions/lib/visible-actions'
-import { isClickAction, isCustomAction, isSelectAction } from '@/shared/components/entities/entity-actions/types'
+import { isClickAction, isGroupAction } from '@/shared/components/entities/entity-actions/types'
 import { EntityActionDropdown } from '@/shared/components/entities/entity-actions/ui/entity-action-dropdown'
+import { ToolbarSplitButton } from '@/shared/components/entities/entity-actions/ui/toolbar-split-button'
 import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
 import { Button } from '@/shared/components/ui/button'
 import { useAbility } from '@/shared/domains/permissions/client'
@@ -51,13 +52,17 @@ export function EntityActionMenu<TEntity>({
   if (mode === 'toolbar') {
     const primary = permitted.find((c): c is EntityActionClickConfig<TEntity> => c.action.primary === true && isClickAction(c))
     const promoted = permitted.filter((c): c is EntityActionClickConfig<TEntity> => c.action.promoted === true && c !== primary && isClickAction(c))
-    const overflow = permitted.filter(c => c !== primary && !promoted.includes(c as EntityActionClickConfig<TEntity>))
+    const promotedGroups = permitted.filter((c): c is EntityActionGroupConfig<TEntity> => c.action.promoted === true && isGroupAction(c))
+    const overflow = permitted.filter(c => c !== primary && !promoted.includes(c as EntityActionClickConfig<TEntity>) && !promotedGroups.includes(c as EntityActionGroupConfig<TEntity>))
 
     return (
       <div className={cn('flex flex-wrap items-center gap-2', className)} onClick={e => e.stopPropagation()}>
         {primary && <ToolbarButton config={primary} entity={entity} variant="default" toolbarRole="primary" />}
         {promoted.map(config => (
           <ToolbarButton key={config.action.id} config={config} entity={entity} variant="outline" toolbarRole="promoted" />
+        ))}
+        {promotedGroups.map(config => (
+          <ToolbarSplitButton key={config.action.id} config={config} entity={entity} />
         ))}
         {overflow.length > 0 && (
           <EntityActionDropdown entity={entity} actions={overflow} orientation="horizontal" triggerLabel="More" />
@@ -67,8 +72,8 @@ export function EntityActionMenu<TEntity>({
   }
 
   // Bar mode: primary action as button + overflow dropdown for the rest.
-  // Only click actions can be primary (select/custom actions need a sub-menu).
-  const primary = permitted.find((c): c is EntityActionClickConfig<TEntity> => c.action.primary === true && !isSelectAction(c) && !isCustomAction(c))
+  // Only click actions can be primary (select/custom/group actions need a sub-menu).
+  const primary = permitted.find((c): c is EntityActionClickConfig<TEntity> => c.action.primary === true && isClickAction(c))
   const overflow = permitted.filter(c => c !== primary)
 
   const PrimaryIcon = primary?.action.icon
