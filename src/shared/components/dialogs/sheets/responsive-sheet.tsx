@@ -205,6 +205,14 @@ export function ResponsiveSheet({
       return
     }
     const onWheel = (event: WheelEvent) => {
+      // Ctrl+wheel and a trackpad pinch are page zoom, not scrolling.
+      if (event.ctrlKey) {
+        return
+      }
+      if (event.target === backdrop) {
+        event.preventDefault()
+        return
+      }
       for (let node = event.target instanceof Element ? event.target : null; node && node !== sheet; node = node.parentElement) {
         const style = getComputedStyle(node)
         const scrollsY = node.scrollHeight > node.clientHeight && /auto|scroll/.test(style.overflowY)
@@ -240,10 +248,14 @@ export function ResponsiveSheet({
       const items = [...sheet.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)].filter(el => el.offsetParent !== null)
       const first = items[0]
       const last = items.at(-1)
+      // With nothing to tab to, the sheet itself keeps focus rather than letting Tab walk out behind the scrim.
       if (!first || !last) {
+        event.preventDefault()
+        sheet.focus({ preventScroll: true })
         return
       }
-      if (event.shiftKey && (active === first || !sheet.contains(active))) {
+      // Focus on the sheet itself (a pointer or screen-reader open) sits before its first control.
+      if (event.shiftKey && (active === first || active === sheet || !sheet.contains(active))) {
         event.preventDefault()
         last.focus()
       }
