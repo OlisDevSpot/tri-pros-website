@@ -15,6 +15,13 @@ export interface BreakdownSectionLine {
   netPrice: number
 }
 
+/** A total-mode part: its title and incentives, no price of its own. */
+export interface BreakdownTotalModePart {
+  key: string
+  title: string
+  incentives: BreakdownSectionLine['incentives']
+}
+
 export interface BreakdownGlobalLine {
   key: string
   kind: 'discount' | 'exclusive-offer' | 'section-discount'
@@ -31,6 +38,8 @@ export interface PricingBreakdownModel {
   priceDisplayMode: PriceDisplayMode
   /** Breakdown mode: priced sections with incentives resolved. Empty in total mode. */
   sections: BreakdownSectionLine[]
+  /** Total mode: every SOW section, keyed and titled as `sections` would be. Empty in breakdown mode. */
+  totalModeParts: BreakdownTotalModePart[]
   /** Breakdown-mode misc price; null when absent or 0. */
   miscPrice: number | null
   /** startingTcp — the pre-discount contract price. */
@@ -58,22 +67,30 @@ export function buildPricingBreakdown({
   sow,
   priceDisplayMode,
 }: PricingBreakdownInput): PricingBreakdownModel {
+  const parts = sow.map((section, i) => ({
+    section,
+    key: `${i}-${section.title || 'section'}`,
+    title: section.title || `Section ${i + 1}`,
+    incentives: (section.financials.incentives ?? []).map(inc => ({
+      id: inc.id,
+      label: inc.label || 'Discount',
+      amount: inc.amount,
+    })),
+  }))
+
   const sections: BreakdownSectionLine[]
     = priceDisplayMode === 'breakdown'
-      ? sow
-          .map((section, i) => ({ section, title: section.title || `Section ${i + 1}`, key: `${i}-${section.title || 'section'}` }))
+      ? parts
           .filter(({ section }) => (section.financials.sectionPrice ?? 0) > 0)
-          .map(({ section, title, key }) => {
-            const incentives = (section.financials.incentives ?? []).map(inc => ({
-              id: inc.id,
-              label: inc.label || 'Discount',
-              amount: inc.amount,
-            }))
+          .map(({ section, title, key, incentives }) => {
             const price = section.financials.sectionPrice!
             const incentiveTotal = incentives.reduce((sum, inc) => sum + inc.amount, 0)
             return { key, title, price, incentives, netPrice: price - incentiveTotal }
           })
       : []
+
+  const totalModeParts: BreakdownTotalModePart[]
+    = priceDisplayMode === 'total' ? parts.map(({ key, title, incentives }) => ({ key, title, incentives })) : []
 
   const globalLines: BreakdownGlobalLine[] = funding.incentives.map((inc, i) =>
     inc.type === 'discount'
@@ -109,6 +126,7 @@ export function buildPricingBreakdown({
   return {
     priceDisplayMode,
     sections,
+    totalModeParts,
     miscPrice: (funding.miscPrice ?? 0) > 0 ? funding.miscPrice! : null,
     subtotal,
     netSubtotal: subtotal - computeTotalSectionIncentives(sow),
