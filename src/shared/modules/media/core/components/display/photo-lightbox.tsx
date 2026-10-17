@@ -152,6 +152,11 @@ export function PhotoLightbox({ photos, currentIndex, onClose, onNavigate, title
             onPointerCancel={() => {
               swipeStartX.current = null
             }}
+            // Not pointer capture: that would retarget the click away from the prev/next buttons inside this area.
+            // A press released outside the photo is dropped instead, so no stale start pages by surprise later.
+            onPointerLeave={() => {
+              swipeStartX.current = null
+            }}
             // A mouse drag on the photo would start a native image drag, which cancels the pointer.
             onDragStart={e => e.preventDefault()}
           >

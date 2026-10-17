@@ -69,17 +69,21 @@ export function ResultsFeatured({ matches, kicker }: Props) {
         {project.description && <p className="max-w-[44ch] text-base text-muted-foreground">{project.description}</p>}
         <div className="mt-1 flex flex-wrap items-center gap-1.5">
           {/* One pair needs no switch: the slider's own label names it. */}
-          {pairs.length > 1 && pairs.map((p, i) => (
-            <button
-              key={`${p.before.id}-${p.after.id}`}
-              type="button"
-              aria-pressed={p === pair}
-              onClick={() => setPairIndex(i)}
-              className="min-h-9 rounded-full border border-border-strong bg-card px-3 py-2 text-sm leading-none font-bold text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-pressed:border-foreground aria-pressed:bg-foreground aria-pressed:text-background"
-            >
-              {p.label}
-            </button>
-          ))}
+          {pairs.length > 1 && (
+            <div role="group" aria-label="Before and after views" className="flex flex-wrap gap-1.5">
+              {pairs.map((p, i) => (
+                <button
+                  key={`${p.before.id}-${p.after.id}`}
+                  type="button"
+                  aria-pressed={p === pair}
+                  onClick={() => setPairIndex(i)}
+                  className="min-h-9 rounded-full border border-border-strong bg-card px-3 py-2 text-sm leading-none font-bold text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-pressed:border-foreground aria-pressed:bg-foreground aria-pressed:text-background"
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          )}
           {photos.length > 0 && (
             <Button ref={galleryButtonRef} variant="ghost" aria-haspopup="dialog" onClick={() => setPhotoIndex(0)} className="font-bold">
               <ImagesIcon aria-hidden />

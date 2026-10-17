@@ -39,7 +39,7 @@ export function CompanyDocumentsRow() {
       </button>
       {/* The page's container query makes its box the containing block for fixed children; the lightbox covers the viewport from body. */}
       {index !== null && createPortal(
-        <PhotoLightbox photos={DOCUMENT_PHOTOS} currentIndex={index} onClose={close} onNavigate={setIndex} title="License and insurance" />,
+        <PhotoLightbox photos={DOCUMENT_PHOTOS} currentIndex={index} onClose={close} onNavigate={setIndex} title="License and insurance" topInset="safe-area" />,
         document.body,
       )}
     </>
