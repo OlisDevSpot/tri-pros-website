@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 // eslint-disable-next-line test/no-import-node-test -- tests run on node:test via tsx; vitest is not installed
 import { describe, it } from 'node:test'
 import { PROPOSAL_REFUSALS } from '@/shared/modules/proposals/core/constants/proposal-refusals'
-import { cashDownRefusal, depositRefusal, depositWithinCapOrNull } from './funding-guards'
+import { cashDownRefusal, depositRefusal, depositWithinCapOrNull, fundingValuesToCheck, writeMovesPrice } from './funding-guards'
 
 describe('depositRefusal', () => {
   it('passes a deposit at the cap of a $7,300 price', () => {
@@ -56,5 +56,45 @@ describe('depositWithinCapOrNull', () => {
   })
   it('drops a deposit when the source has no price rollup', () => {
     assert.equal(depositWithinCapOrNull(50_000, null), null)
+  })
+})
+
+describe('writeMovesPrice', () => {
+  it('ignores a price key sent as undefined', () => {
+    assert.equal(writeMovesPrice({ cashInDealCents: 100, projectJSON: undefined }), false)
+    assert.equal(writeMovesPrice({ startingTcpCents: undefined }), false)
+  })
+  it('sees a real price move', () => {
+    assert.equal(writeMovesPrice({ startingTcpCents: 730_000 }), true)
+    assert.equal(writeMovesPrice({ projectJSON: { data: {} } }), true)
+  })
+})
+
+describe('fundingValuesToCheck', () => {
+  it('checks a cash down sent beside an undefined price key', () => {
+    assert.deepEqual(fundingValuesToCheck({ cashInDealCents: 100, projectJSON: undefined }), { depositAmountCents: null, cashInDealCents: 100 })
+  })
+  it('checks an empty cash down as $0', () => {
+    assert.deepEqual(fundingValuesToCheck({ cashInDealCents: null }), { depositAmountCents: null, cashInDealCents: 0 })
+  })
+  it('checks a plain cash write', () => {
+    assert.deepEqual(fundingValuesToCheck({ cashInDealCents: 380_000 }), { depositAmountCents: null, cashInDealCents: 380_000 })
+  })
+  it('leaves a write that moves the price to the edit view', () => {
+    assert.deepEqual(fundingValuesToCheck({ cashInDealCents: 100, depositAmountCents: 999_999, startingTcpCents: 730_000 }), { depositAmountCents: null, cashInDealCents: null })
+  })
+  it('checks a deposit and leaves an empty one, which means the cap', () => {
+    assert.deepEqual(fundingValuesToCheck({ depositAmountCents: 73_001, projectJSON: undefined }), { depositAmountCents: 73_001, cashInDealCents: null })
+    assert.deepEqual(fundingValuesToCheck({ depositAmountCents: null }), { depositAmountCents: null, cashInDealCents: null })
+  })
+  it('checks nothing when no funding value is written', () => {
+    assert.deepEqual(fundingValuesToCheck({}), { depositAmountCents: null, cashInDealCents: null })
+  })
+})
+
+describe('an empty cash down is held to the bound', () => {
+  it('refuses $0 on a financed proposal', () => {
+    const { cashInDealCents } = fundingValuesToCheck({ cashInDealCents: null })
+    assert.equal(cashDownRefusal(cashInDealCents!, { finalTcpCents: 730_000, depositAmountCents: 73_000 }), PROPOSAL_REFUSALS.invalidCashDown)
   })
 })

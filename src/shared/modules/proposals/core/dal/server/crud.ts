@@ -8,7 +8,7 @@ import { PROPOSAL_REFUSALS } from '@/shared/modules/proposals/core/constants/pro
 import { recomputeProposalFinancials, withRollup } from '@/shared/modules/proposals/core/dal/server/mutations'
 import { getProposalLockSignals } from '@/shared/modules/proposals/core/dal/server/queries'
 import { deriveProposalKind } from '@/shared/modules/proposals/core/lib/derive-proposal-kind'
-import { cashDownRefusal, computeFinalTcp, depositRefusal, depositWithinCapOrNull } from '@/shared/modules/proposals/core/lib/financials'
+import { cashDownRefusal, computeFinalTcp, depositRefusal, depositWithinCapOrNull, fundingValuesToCheck, writeMovesPrice } from '@/shared/modules/proposals/core/lib/financials'
 import { toFundingInputs } from '@/shared/modules/proposals/core/lib/funding-columns'
 import { generateShareToken } from '@/shared/modules/proposals/core/lib/generate-share-token'
 import { isProposalFrozen, touchesFrozenLockedFields } from '@/shared/modules/proposals/core/lib/proposal-lock'
@@ -81,17 +81,15 @@ export const proposalCrud = createCrudDal(proposalServerSpec, () => ({
         if (isProposalFrozen(signals)) {
           throw new ThrowableDalError({ type: 'precondition-failed', reason: PROPOSAL_REFUSALS.frozen })
         }
-        // A write that also moves the price is the edit view's, which clamps against the new price; the stored rollup
-        // would be stale here, and every reader clamps through the resolver anyway.
-        const movesPrice = 'startingTcpCents' in input || 'projectJSON' in input
-        if (input.depositAmountCents != null && !movesPrice) {
-          const reason = depositRefusal(input.depositAmountCents, signals.finalTcpCents)
+        const toCheck = fundingValuesToCheck(input)
+        if (toCheck.depositAmountCents != null) {
+          const reason = depositRefusal(toCheck.depositAmountCents, signals.finalTcpCents)
           if (reason) {
             throw new ThrowableDalError({ type: 'precondition-failed', reason })
           }
         }
-        if (input.cashInDealCents != null && !movesPrice) {
-          const reason = cashDownRefusal(input.cashInDealCents, await withRollup(ctx, String(meta.id), signals))
+        if (toCheck.cashInDealCents != null) {
+          const reason = cashDownRefusal(toCheck.cashInDealCents, await withRollup(ctx, String(meta.id), signals))
           if (reason) {
             throw new ThrowableDalError({ type: 'precondition-failed', reason })
           }
@@ -102,7 +100,7 @@ export const proposalCrud = createCrudDal(proposalServerSpec, () => ({
       // the startingTcp column, or projectJSON (section incentives, until W4).
       // Cheap + idempotent; skipped when neither was touched.
       async after(row: Proposal, _ctx, meta) {
-        if ('startingTcpCents' in meta.input || 'projectJSON' in meta.input) {
+        if (writeMovesPrice(meta.input)) {
           dalVerifySuccess(await recomputeProposalFinancials(row.id))
         }
       },
