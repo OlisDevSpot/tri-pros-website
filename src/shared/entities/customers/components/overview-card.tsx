@@ -11,7 +11,6 @@ import { AddressAction } from '@/shared/components/contact-actions/ui/address-ac
 import { EmailAction } from '@/shared/components/contact-actions/ui/email-action'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
 import { EntityActionMenu } from '@/shared/components/entities/entity-actions/ui/entity-action-menu'
-import { CustomerProfileKeyInsights } from '@/shared/entities/customers/components/profile/customer-profile-key-insights'
 import { ProfileCard } from '@/shared/entities/customers/components/profile/profile-card'
 import { CUSTOMER_OVERVIEW_PROFILE_FIELDS } from '@/shared/entities/customers/constants/customer-overview-profile-fields'
 import { LeadSourceOverviewCard } from '@/shared/entities/lead-sources/components/overview-card'
@@ -84,11 +83,6 @@ function LeadSource({ className }: { className?: string }) {
   )
 }
 
-function Insights() {
-  const { customer } = useCard()
-  return <CustomerProfileKeyInsights customer={customer} />
-}
-
 function ProfileFields() {
   const { customer } = useCard()
   return <ProfileCard variant="inline" title="Profile" fields={CUSTOMER_OVERVIEW_PROFILE_FIELDS} data={customer} />
@@ -109,7 +103,6 @@ function Actions({ mode = 'compact', hide, className }: {
 export const CustomerOverviewCard = Object.assign(Root, {
   ContactActions,
   LeadSource,
-  Insights,
   ProfileFields,
   Actions,
 })

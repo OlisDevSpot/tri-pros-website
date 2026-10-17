@@ -13,9 +13,10 @@ import { SendComposer } from './send-composer'
 export function ShareStep() {
   const { proposal } = useProposalDocument()
   const { proposal: card } = useProposalOverviewCard()
-  const views = card.viewCount ?? 0
+  const views = card.viewCount
+  // The count is left out until it has loaded, so a slow or failed read never claims no views.
   const status = proposal.sentAt
-    ? `Sent ${formatBusinessTime(proposal.sentAt, { month: 'short', day: 'numeric' })} · ${views} ${views === 1 ? 'view' : 'views'}`
+    ? [`Sent ${formatBusinessTime(proposal.sentAt, { month: 'short', day: 'numeric' })}`, views !== undefined && `${views} ${views === 1 ? 'view' : 'views'}`].filter(Boolean).join(' · ')
     : 'Not sent yet'
 
   return (

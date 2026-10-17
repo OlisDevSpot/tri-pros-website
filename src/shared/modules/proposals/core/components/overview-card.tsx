@@ -100,6 +100,11 @@ function ProposalOverviewCardRoot({ proposal, children, meta, ...props }: Propos
   // The click is the View action, so a view that overrides View changes the click with it.
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
+    // React bubbles clicks through portals, so a press in a menu, dialog or sheet rendered from inside the card is not a click on it.
+    const target = e.target as Node | null
+    if (target && !e.currentTarget.contains(target)) {
+      return
+    }
     const view = actions.find(config => config.action.id === PROPOSAL_ACTIONS.view.id)
     if (view && isClickAction(view)) {
       view.onAction(proposal)
