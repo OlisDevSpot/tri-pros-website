@@ -4,7 +4,7 @@ import type { EntityActionGroupConfig } from '@/shared/components/entities/entit
 
 import { ChevronDownIcon } from 'lucide-react'
 
-import { EntityActionClickItem } from '@/shared/components/entities/entity-actions/ui/entity-action-dropdown'
+import { EntityActionClickItem } from '@/shared/components/entities/entity-actions/ui/entity-action-click-item'
 import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
 import { Button } from '@/shared/components/ui/button'
 import {

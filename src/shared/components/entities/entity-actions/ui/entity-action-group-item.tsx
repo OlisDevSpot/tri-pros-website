@@ -2,7 +2,7 @@
 
 import type { EntityActionGroupConfig } from '@/shared/components/entities/entity-actions/types'
 
-import { EntityActionClickItem } from '@/shared/components/entities/entity-actions/ui/entity-action-dropdown'
+import { EntityActionClickItem } from '@/shared/components/entities/entity-actions/ui/entity-action-click-item'
 import {
   DropdownMenuSeparator,
   DropdownMenuSub,
