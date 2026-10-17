@@ -13,7 +13,6 @@ import { toast } from 'sonner'
 import { useReplaceIncentives } from '@/features/proposal-flow/dal/client/mutations/use-replace-incentives'
 import { useUpdateProposal } from '@/features/proposal-flow/dal/client/mutations/use-update-proposal'
 import { useGetProposal } from '@/features/proposal-flow/dal/client/queries/use-get-proposal'
-import { coversWholePrice } from '@/features/proposal-flow/lib/get-cash-down-bounds'
 import { baseDefaultValues, proposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import { ProposalForm } from '@/features/proposal-flow/ui/components/form'
 import { ErrorState } from '@/shared/components/states/error-state'
@@ -24,7 +23,7 @@ import { Form } from '@/shared/components/ui/form'
 import { ROOTS } from '@/shared/config/roots'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { useConfirm } from '@/shared/hooks/use-confirm'
-import { computeFinalTcp } from '@/shared/modules/proposals/core/lib/financials'
+import { computeFinalTcp, deriveEditCashDown, resolveDeposit } from '@/shared/modules/proposals/core/lib/financials'
 import { fundingDomainToColumns, toFundingInputs } from '@/shared/modules/proposals/core/lib/funding-columns'
 import { getProposalLockState } from '@/shared/modules/proposals/core/lib/proposal-lock'
 import { useTRPC } from '@/trpc/helpers'
@@ -108,13 +107,14 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
 
   const customer = proposal.data.customer
   const storedFunding = toFundingInputs(proposal.data)
-  const storedAllCash = coversWholePrice(storedFunding.cashInDeal, computeFinalTcp({ funding: storedFunding, sow: proposal.data.projectJSON.data.sow }))
+  const storedFinalTcp = computeFinalTcp({ funding: storedFunding, sow: proposal.data.projectJSON.data.sow })
 
   function buildMutationData(rawData: ProposalFormSchema) {
-    // finalTcp is derived, not persisted, and an all-cash deal is stored as a cash down of the whole price.
-    // A price drop must not leave more cash than is owed, and a price rise must not quietly turn an
-    // all-cash deal into a partial cash down, so all-cash follows the new price.
     const nextFinalTcp = computeFinalTcp({ funding: rawData.funding, sow: rawData.project.data.sow })
+    const nextDeposit = resolveDeposit(rawData.funding.depositAmount, nextFinalTcp)
+    const nextCash = deriveEditCashDown({ storedCash: storedFunding.cashInDeal, storedFinalTcp, nextFinalTcp, nextDeposit })
+    const { cashInDealCents, ...columns } = fundingDomainToColumns({ ...rawData.funding, cashInDeal: nextCash })
+    const cashChanged = cashInDealCents !== Math.round(storedFunding.cashInDeal * 100)
 
     return {
       id: proposalId,
@@ -125,10 +125,8 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
         // Incentives are rows — they flow through proposalService.incentives.replace,
         // never the update payload. envelopeDocumentIds deliberately absent —
         // applyEnvelopeContext is the only writer (spec §2).
-        ...fundingDomainToColumns({
-          ...rawData.funding,
-          cashInDeal: storedAllCash ? nextFinalTcp : Math.min(rawData.funding.cashInDeal, nextFinalTcp),
-        }),
+        ...columns,
+        ...(cashChanged ? { cashInDealCents } : {}),
       },
     }
   }

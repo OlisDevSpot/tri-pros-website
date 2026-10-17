@@ -3,7 +3,7 @@ import { format } from 'date-fns'
 import { systemContext } from '@/shared/dal/server/lib/contexts'
 import { formatPhone } from '@/shared/lib/phone'
 import { cslbEarliestStartDate } from '@/shared/modules/proposals/core/lib/cslb-start-date'
-import { computeFinalTcp } from '@/shared/modules/proposals/core/lib/financials'
+import { computeFinalTcp, resolveDeposit } from '@/shared/modules/proposals/core/lib/financials'
 import { pdfService } from '@/shared/services/pdf.service'
 import { ZOHO_SIGN_TEMPLATES } from '../../constants'
 
@@ -23,7 +23,7 @@ const customerCityStateZipSrc: FieldSource = (ctx) => {
 const customerAgeSrc: FieldSource = ctx => String(ctx.proposal.customer?.customerAge ?? '')
 
 const tcpSrc: FieldSource = ctx => String(ctx.finalTcp)
-const depositSrc: FieldSource = ctx => String((ctx.proposal.depositAmountCents ?? 0) / 100)
+const depositSrc: FieldSource = ctx => String(resolveDeposit(ctx.proposal.depositAmountCents == null ? null : ctx.proposal.depositAmountCents / 100, ctx.finalTcp))
 
 // AWD's start/completion/original-contract dates are Zoho CustomDate fields validated as `MMM dd yyyy`; base/senior dates are plain text — use the *ZohoSrc variants for AWD.
 // Start date = earliest legal start under CSLB (3- or 5-business-day rescission, Cal. Civil Code §1689.6/.7) — never a naive today + N days.

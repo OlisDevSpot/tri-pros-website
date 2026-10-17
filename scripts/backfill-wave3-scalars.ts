@@ -49,7 +49,7 @@ async function main() {
     const f = funding.data.data
     const target = {
       startingTcpCents: Math.round(f.startingTcp * 100),
-      depositAmountCents: Math.round(f.depositAmount * 100),
+      depositAmountCents: f.depositAmount == null ? null : Math.round(f.depositAmount * 100),
       cashInDealCents: Math.round(f.cashInDeal * 100),
       miscPriceCents: f.miscPrice == null ? null : Math.round(f.miscPrice * 100),
       priceDisplayMode: formMeta.data.pricingMode,

@@ -7,11 +7,13 @@ import { getProposalAggregates } from '@/features/proposal-flow/lib/get-proposal
 import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { Button } from '@/shared/components/ui/button'
 import { AnimatedCollapsibleContent, Collapsible, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
+import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { useConfirm } from '@/shared/hooks/use-confirm'
+import { formatAsDollars } from '@/shared/lib/formatters'
+import { getDepositCap } from '@/shared/modules/proposals/core/lib/financials'
 import { incentiveTypes } from '@/shared/modules/proposals/core/schemas'
 import { IncentiveCollapsibleHeader } from './incentive-collapsible-header'
 
@@ -37,6 +39,9 @@ export function FundingFields({ pricingMode }: Props) {
   const incentives = useWatch({ control: form.control, name: 'funding.incentives' })
   const sow = useWatch({ control: form.control, name: 'project.data.sow' })
   const miscPrice = useWatch({ control: form.control, name: 'funding.miscPrice' })
+  // Watched only to re-render on a price change, so the cap below follows it with the incentives, sow and misc price.
+  useWatch({ control: form.control, name: 'funding.startingTcp' })
+  const depositCap = getDepositCap(getProposalAggregates(form.getValues()).finalTcp)
 
   function toggleIncentive(index: number) {
     setOpenIncentives((prev) => {
@@ -89,7 +94,7 @@ export function FundingFields({ pricingMode }: Props) {
       <div className="flex flex-col gap-4 lg:gap-6">
         {/* Base Pricing */}
         <div className="space-y-3">
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 lg:gap-4">
+          <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-3 lg:gap-4">
             {pricingMode === 'breakdown' && (
               <FormField
                 name="funding.miscPrice"
@@ -142,13 +147,16 @@ export function FundingFields({ pricingMode }: Props) {
                   <FormControl>
                     <Input
                       {...field}
-                      placeholder="$1,000"
-                      onChange={(value) => {
-                        const numericValue = Number(value.target.value.replace(/\D/g, ''))
-                        field.onChange(numericValue)
+                      value={field.value ?? ''}
+                      inputMode="numeric"
+                      placeholder={`${formatAsDollars(depositCap)} (the legal cap)`}
+                      onChange={(event) => {
+                        const digits = event.target.value.replace(/\D/g, '')
+                        field.onChange(digits === '' ? null : Number(digits))
                       }}
                     />
                   </FormControl>
+                  <FormDescription>Leave empty to use the cap: $1,000 or 10% of the price, whichever is less.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

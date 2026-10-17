@@ -258,7 +258,7 @@ export async function listProposals(
 /** Unscoped on purpose: it exposes nothing beyond lock signals, and the update it guards applies the actor's reach. */
 export async function getProposalLockSignals(
   proposalId: string,
-): Promise<DalReturn<ProposalLockSignals>> {
+): Promise<DalReturn<ProposalLockSignals & { finalTcpCents: number | null, depositAmountCents: number | null }>> {
   return dalDbOperation(async () => {
     const [row] = await db
       .select({
@@ -267,6 +267,8 @@ export async function getProposalLockSignals(
         contractSentAt: proposals.contractSentAt,
         contractSignedAt: proposals.contractSignedAt,
         contractDeclinedAt: proposals.contractDeclinedAt,
+        finalTcpCents: proposals.finalTcpCents,
+        depositAmountCents: proposals.depositAmountCents,
       })
       .from(proposals)
       .where(eq(proposals.id, proposalId))

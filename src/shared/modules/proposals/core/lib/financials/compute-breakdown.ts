@@ -2,6 +2,7 @@ import type { PriceDisplayMode } from '@/shared/constants/enums'
 import type { FundingData } from '@/shared/modules/proposals/core/schemas'
 import type { ProjectSection } from '@/shared/modules/proposals/core/types'
 import { computeFinalTcp, computeTotalSectionIncentives } from './compute-price-side'
+import { resolveDeposit } from './deposit'
 
 export interface BreakdownSectionLine {
   /** Stable render key — unique even when two sections share a title. */
@@ -104,6 +105,7 @@ export function buildPricingBreakdown({
   )
 
   const subtotal = funding.startingTcp
+  const finalTcp = computeFinalTcp({ funding, sow })
   return {
     priceDisplayMode,
     sections,
@@ -112,8 +114,8 @@ export function buildPricingBreakdown({
     netSubtotal: subtotal - computeTotalSectionIncentives(sow),
     globalLines,
     sectionIncentiveLines,
-    finalTcp: computeFinalTcp({ funding, sow }),
-    deposit: funding.depositAmount,
+    finalTcp,
+    deposit: resolveDeposit(funding.depositAmount, finalTcp),
     cashInDeal: funding.cashInDeal,
   }
 }

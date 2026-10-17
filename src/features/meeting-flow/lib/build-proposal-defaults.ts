@@ -4,6 +4,7 @@ import type { ProposalFormSchema } from '@/shared/modules/proposals/core/schemas
 import { getProgramByAccessor } from '@/features/meeting-flow/constants/programs'
 import { computeDealFinalTcp } from '@/shared/entities/meetings/lib/compute-deal-derived'
 import { createEmptySowSection } from '@/shared/modules/proposals/core/lib/create-empty-sow-section'
+import { computeFinalTcp, getDepositCap } from '@/shared/modules/proposals/core/lib/financials'
 import { proposalFormBaseDefaultValues } from '@/shared/modules/proposals/core/schemas'
 
 export function buildProposalDefaults(
@@ -33,9 +34,6 @@ export function buildProposalDefaults(
     if (ds.startingTcp !== undefined) {
       defaults.funding.startingTcp = ds.startingTcp
     }
-    if (ds.depositAmount !== undefined) {
-      defaults.funding.depositAmount = ds.depositAmount
-    }
     // Cash mode: seed cashInDeal with the meeting's derived final TCP.
     // Neither side stores finalTcp — both compute it on demand.
     if (ds.mode === 'cash') {
@@ -54,6 +52,13 @@ export function buildProposalDefaults(
           amount: inc.amount ?? 0,
           notes: `${inc.label} (${inc.source})`,
         }))
+    }
+
+    // After the incentives, which lower the price and so the cap. A meeting figure above the cap would make creating
+    // the proposal fail, so the proposal follows the cap instead.
+    if (ds.depositAmount !== undefined) {
+      const cap = getDepositCap(computeFinalTcp({ funding: defaults.funding, sow: defaults.project.data.sow }))
+      defaults.funding.depositAmount = ds.depositAmount <= cap ? ds.depositAmount : null
     }
   }
 

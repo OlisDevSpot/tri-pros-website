@@ -18,7 +18,7 @@ import { CashDownSlider } from '@/features/proposal-flow/ui/components/proposal/
 import { FinanceOptionGroup } from '@/features/proposal-flow/ui/components/proposal/finance-option-group'
 import { PaymentPlanGroup } from '@/features/proposal-flow/ui/components/proposal/payment-plan-group'
 import { formatAsDollars } from '@/shared/lib/formatters'
-import { computeFinalTcp } from '@/shared/modules/proposals/core/lib/financials'
+import { computeFinalTcp, resolveDeposit } from '@/shared/modules/proposals/core/lib/financials'
 import { toFundingInputs } from '@/shared/modules/proposals/core/lib/funding-columns'
 import { isProposalFrozen } from '@/shared/modules/proposals/core/lib/proposal-lock'
 
@@ -114,7 +114,7 @@ export function Funding() {
             )}
             <PaymentPlanGroup value={mode} finalTcp={finalTcp} disabled={locked} onChange={setPickedMode} />
             {mode === 'all-cash' && (
-              <p className="text-sm">{`${formatAsDollars(finalTcp)} in total: ${formatAsDollars(funding.depositAmount)} at signing, the balance on completion.`}</p>
+              <p className="text-sm">{`${formatAsDollars(finalTcp)} in total: ${formatAsDollars(resolveDeposit(funding.depositAmount, finalTcp))} at signing, the balance on completion.`}</p>
             )}
             {mode === 'scheduled' && (
               <p className="text-sm text-muted-foreground">Your consultant will set up a payment schedule with you.</p>
