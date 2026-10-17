@@ -1,27 +1,49 @@
 'use client'
 
+import Image from 'next/image'
+
+import { FALLBACK_HERO_PHOTO } from '@/features/proposal-flow/constants/proposal-hero'
 import { useProposalDocument } from '@/features/proposal-flow/contexts/proposal-document-context'
-import { ContractStatusPanel } from '@/shared/components/contract-status-panel/ui/contract-status-panel'
+import { getProposalPdfUrl } from '@/features/proposal-flow/lib/get-proposal-pdf-url'
+import { firstName } from '@/features/proposal-flow/lib/rep-names'
+import { companyInfo, companyPhone } from '@/shared/constants/company'
+import { formatPhone } from '@/shared/lib/phone'
+import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
+
+import { ChapterHeader } from './chapter-header'
+import { ChapterInner } from './chapter-inner'
+import { NextStepsAction } from './next-steps-action'
 
 export function NextSteps() {
-  const { proposal } = useProposalDocument()
+  const { proposal, token } = useProposalDocument()
+  const images = (proposal.media ?? []).filter(m => m.mimeType.startsWith('image/'))
+  const photo = images[1] ?? images[0]
+  const pdfToken = proposal.token ?? token
+  const pdfUrl = pdfToken ? getProposalPdfUrl(proposal.id, pdfToken) : null
+
+  // `||`, not `??`: an empty phone string must fall through to the company line.
+  const ownerRep = proposal.meetingReps[0]
+  const contactPhone = ownerRep?.phone || companyPhone
+  const contactName = ownerRep?.phone ? firstName(ownerRep.name) : companyInfo.nickname
+
   return (
-    <div className="bg-(--presentation-ground) px-4 py-12 text-on-media sm:px-8">
-      <div className="mx-auto grid max-w-5xl gap-6">
-        <header className="grid gap-2">
-          <p className="text-xs font-bold uppercase tracking-widest text-(--presentation-accent)">Next steps</p>
-          <h2 id="agreement-title" className="text-3xl font-semibold text-balance">Next steps</h2>
-          <p className="text-on-media-muted">Here’s how we get your project started.</p>
-        </header>
-        {/* The panel brings its own card; only its ink has to be reset off the navy stage. */}
-        <div className="text-card-foreground">
-          <ContractStatusPanel
-            proposalId={proposal.id}
-            token={proposal.token ?? undefined}
-            customerAge={proposal.customer?.customerAge ?? null}
-          />
-        </div>
+    <div className="relative text-on-media">
+      <div className="absolute inset-0">
+        {photo
+          ? <OptimizedImage file={photo} alt="" fill sizes="100vw" />
+          : <Image src={FALLBACK_HERO_PHOTO} alt="" fill sizes="100vw" className="object-cover" />}
       </div>
+      <div aria-hidden className="absolute inset-0 z-1 bg-scrim/82" />
+      <ChapterInner className="relative z-2">
+        <ChapterHeader chapter="next-steps" tone="media" title="Here’s what happens next" lede="Four steps from this page to your start date." />
+        <NextStepsAction reps={proposal.meetingReps} />
+        <div className="flex flex-wrap gap-x-6 gap-y-2.5 text-sm opacity-90">
+          {contactPhone && <span>{`Questions? Call ${contactName} at ${formatPhone(contactPhone)}`}</span>}
+          {pdfUrl && (
+            <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="font-bold underline underline-offset-3">View the PDF version</a>
+          )}
+        </div>
+      </ChapterInner>
     </div>
   )
 }
