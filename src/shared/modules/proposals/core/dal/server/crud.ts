@@ -73,7 +73,7 @@ export const proposalCrud = createCrudDal(proposalServerSpec, () => ({
       // edit path kills the envelope first (discard/recall). Field-scoped so
       // lifecycle writes (status, signing ids, contract timestamps — webhooks,
       // auto-approve, send flows) keep flowing on a locked proposal.
-      async before(input, _ctx, meta) {
+      async before(input, ctx, meta) {
         if (!touchesFrozenLockedFields(input)) {
           return input
         }
@@ -91,7 +91,7 @@ export const proposalCrud = createCrudDal(proposalServerSpec, () => ({
           }
         }
         if (input.cashInDealCents != null && !movesPrice) {
-          const reason = cashDownRefusal(input.cashInDealCents, await withRollup(String(meta.id), signals))
+          const reason = cashDownRefusal(input.cashInDealCents, await withRollup(ctx, String(meta.id), signals))
           if (reason) {
             throw new ThrowableDalError({ type: 'precondition-failed', reason })
           }

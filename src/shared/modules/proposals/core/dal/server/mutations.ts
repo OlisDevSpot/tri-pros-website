@@ -4,7 +4,7 @@ import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 
 import { and, eq, sql } from 'drizzle-orm'
 
-import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { ThrowableDalError } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
@@ -13,6 +13,16 @@ import { PROPOSAL_REFUSALS } from '@/shared/modules/proposals/core/constants/pro
 import { cashDownRefusal } from '@/shared/modules/proposals/core/lib/financials'
 import { isProposalFrozen } from '@/shared/modules/proposals/core/lib/proposal-lock'
 import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
+
+const finalTcpRollupSql = sql`GREATEST(0::numeric, (
+    COALESCE(${proposals.startingTcpCents}, 0)
+    - COALESCE((SELECT SUM(pi.amount_cents) FROM proposal_incentives pi
+        WHERE pi.proposal_id = ${proposals.id} AND pi.type = 'discount'
+          AND pi.sow_item_id IS NULL), 0)
+    - COALESCE((SELECT ROUND(SUM((si->>'amount')::numeric) * 100)
+        FROM jsonb_array_elements(${proposals.projectJSON}->'data'->'sow') AS sec,
+             jsonb_array_elements(COALESCE(sec->'financials'->'incentives', '[]'::jsonb)) AS si), 0)
+  ))::bigint`
 
 // ── recomputeProposalFinancials ──────────────────────────────────────────
 
@@ -30,15 +40,7 @@ export async function recomputeProposalFinancials(
 ): Promise<DalReturn<{ finalTcpCents: number | null }>> {
   return dalDbOperation(async () => {
     const [row] = await db.update(proposals).set({
-      finalTcpCents: sql`GREATEST(0::numeric, (
-        COALESCE(${proposals.startingTcpCents}, 0)
-        - COALESCE((SELECT SUM(pi.amount_cents) FROM proposal_incentives pi
-            WHERE pi.proposal_id = ${proposals.id} AND pi.type = 'discount'
-              AND pi.sow_item_id IS NULL), 0)
-        - COALESCE((SELECT ROUND(SUM((si->>'amount')::numeric) * 100)
-            FROM jsonb_array_elements(${proposals.projectJSON}->'data'->'sow') AS sec,
-                 jsonb_array_elements(COALESCE(sec->'financials'->'incentives', '[]'::jsonb)) AS si), 0)
-      ))::bigint`,
+      finalTcpCents: finalTcpRollupSql,
     }).where(eq(proposals.id, proposalId)).returning({ finalTcpCents: proposals.finalTcpCents })
     if (!row) {
       throw new ThrowableDalError({ type: 'not-found' })
@@ -47,12 +49,23 @@ export async function recomputeProposalFinancials(
   })
 }
 
-/** A row that predates the rollup has no price yet; one recompute gives it one so the cash-down bounds have a price to hold against. */
-export async function withRollup<T extends { finalTcpCents: number | null }>(proposalId: string, row: T): Promise<T> {
+/**
+ * Read-only on purpose: the crud update hook calls this before the row-reach and column authorization, so it must not
+ * write, and it reads on the caller's transaction so it never waits on a row lock that same caller holds. A row that
+ * predates the rollup gets the price it would be given, without storing it.
+ */
+export async function withRollup<T extends { finalTcpCents: number | null }>(ctx: ScopedContext, proposalId: string, row: T): Promise<T> {
   if (row.finalTcpCents != null) {
     return row
   }
-  return { ...row, ...dalVerifySuccess(await recomputeProposalFinancials(proposalId)) }
+  const [rolled] = await (ctx.tx ?? db)
+    .select({ finalTcpCents: sql<number>`${finalTcpRollupSql}`.mapWith(Number) })
+    .from(proposals)
+    .where(eq(proposals.id, proposalId))
+  if (!rolled) {
+    throw new ThrowableDalError({ type: 'not-found' })
+  }
+  return { ...row, ...rolled }
 }
 
 // ── setCashInDeal ────────────────────────────────────────────────────────
@@ -85,7 +98,7 @@ export async function setCashInDeal(
     if (isProposalFrozen(proposal)) {
       throw new ThrowableDalError({ type: 'precondition-failed', reason: PROPOSAL_REFUSALS.frozen })
     }
-    const reason = cashDownRefusal(Math.round(input.cashInDeal * 100), await withRollup(proposal.id, proposal))
+    const reason = cashDownRefusal(Math.round(input.cashInDeal * 100), await withRollup(ctx, proposal.id, proposal))
     if (reason) {
       throw new ThrowableDalError({ type: 'precondition-failed', reason })
     }
