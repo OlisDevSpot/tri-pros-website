@@ -5,6 +5,7 @@ import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { ProposalIncentiveRow } from '@/shared/db/schema/proposal-incentives'
 import type { Proposal } from '@/shared/db/schema/proposals'
 import type { Row } from '@/shared/db/types'
+import type { MeetingRep } from '@/shared/modules/meetings/core/types'
 import type { ProposalLockSignals } from '@/shared/modules/proposals/core/lib/proposal-lock'
 import type { ProjectSection } from '@/shared/modules/proposals/core/types'
 import type { ProposalMediaView } from '@/shared/modules/proposals/media/dal/server/queries'
@@ -27,6 +28,8 @@ import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
+import { hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { getMeetingReps } from '@/shared/entities/meetings/dal/server/participants'
 import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 import { listProposalIncentives } from '@/shared/modules/proposals/incentives/dal/server/queries'
 import { listHomeownerProposalMedia, toProposalMediaView } from '@/shared/modules/proposals/media/dal/server/queries'
@@ -41,6 +44,8 @@ export interface ProposalCustomer {
   state: string | null
   zip: string
   customerAge: number | null
+  // Unlocks the agent's view of `phone`; internal, so the share-link view drops it.
+  hasSentProposal: boolean
 }
 
 export type ProposalWithCustomer = Proposal & {
@@ -49,6 +54,8 @@ export type ProposalWithCustomer = Proposal & {
   projectFirstContractSentAt: string | null
   incentives: ProposalIncentiveRow[]
   media: ProposalMediaView[]
+  meetingReps: MeetingRep[]
+  meetingScheduledFor: string | null
 }
 
 export type ProposalListRow = Proposal & {
@@ -96,7 +103,10 @@ export async function getFullView(
           state: customers.state,
           zip: customers.zip,
           age: customers.age,
+          // "customers"."id" inside this subquery needs customers joined unaliased, as below.
+          hasSentProposal: hasSentProposalSql(),
         },
+        meetingScheduledFor: meetings.scheduledFor,
         // The meeting's *current* projectId — distinct from the frozen proposal.kind.
         meetingProjectId: meetings.projectId,
         // COALESCE order matters: the project exists (conversion on approval) before the original
@@ -128,6 +138,7 @@ export async function getFullView(
           state: row.customer.state,
           zip: row.customer.zip,
           customerAge: row.customer.age ?? null,
+          hasSentProposal: row.customer.hasSentProposal,
         }
       : null
 
@@ -138,7 +149,9 @@ export async function getFullView(
     const mediaRows = await listHomeownerProposalMedia(row.id)
     const media = mediaRows.map(toProposalMediaView)
 
-    return { ...row, customer, incentives, media } as ProposalWithCustomer
+    const meetingReps = row.meetingId ? await getMeetingReps(row.meetingId) : []
+
+    return { ...row, customer, incentives, media, meetingReps } as ProposalWithCustomer
   })
 }
 

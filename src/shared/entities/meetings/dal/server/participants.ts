@@ -1,9 +1,12 @@
 import type { SQL } from 'drizzle-orm'
 import type { MeetingParticipantRole } from '@/shared/constants/enums'
 import type { DbOrTx } from '@/shared/db'
+import type { MeetingRep } from '@/shared/modules/meetings/core/types'
 import { and, asc, eq, exists, inArray, or } from 'drizzle-orm'
+import { SYSTEM_OWNER_EMAIL } from '@/shared/constants/system-users'
 import { db } from '@/shared/db'
 import { meetingParticipants, user } from '@/shared/db/schema'
+import { PARTICIPANT_ROLE_SORT_ORDER } from '@/shared/entities/meetings/constants/participants'
 
 // Visibility helper.
 export function userParticipatesInMeeting(userId: string, meetingIdColumn: SQL | any): SQL {
@@ -73,6 +76,8 @@ export interface OwnerCoOwnerRow {
   userName: string
   userEmail: string
   userImage: string | null
+  userPhone: string | null
+  userHeadshotUrl: string | null
 }
 
 /**
@@ -94,6 +99,8 @@ export async function getOwnerCoOwnerForMeetings(meetingIds: string[]): Promise<
       userName: user.name,
       userEmail: user.email,
       userImage: user.image,
+      userPhone: user.phone,
+      userHeadshotUrl: user.headshotUrl,
     })
     .from(meetingParticipants)
     .innerJoin(user, eq(user.id, meetingParticipants.userId))
@@ -115,6 +122,15 @@ export async function getOwnerCoOwnerForMeetings(meetingIds: string[]): Promise<
     }
   }
   return result
+}
+
+/** The owner and co-owner of a meeting, owner first: the people a proposal belongs to. Helpers and the system user never count. */
+export async function getMeetingReps(meetingId: string): Promise<MeetingRep[]> {
+  const rows = await getOwnerCoOwnerForMeetings([meetingId])
+  return rows
+    .filter(row => row.userEmail !== SYSTEM_OWNER_EMAIL)
+    .toSorted((a, b) => PARTICIPANT_ROLE_SORT_ORDER[a.role] - PARTICIPANT_ROLE_SORT_ORDER[b.role])
+    .map(row => ({ name: row.userName, email: row.userEmail, phone: row.userPhone, headshotUrl: row.userHeadshotUrl }))
 }
 
 export interface MeetingParticipantRow {
