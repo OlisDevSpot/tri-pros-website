@@ -2,6 +2,8 @@
 
 import type { ReactNode, SyntheticEvent } from 'react'
 import { XIcon } from 'lucide-react'
+// The sentinel joins the stacks Radix's dialogs and menus use only while this resolves to the same single copy of
+// dismissable-layer and focus-scope that @radix-ui/react-dialog and react-menu load.
 import { DismissableLayer, FocusScope } from 'radix-ui/internal'
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -121,9 +123,27 @@ export function ResponsiveSheet({
     }
   }, [open])
 
+  // A close from the parent sets `inert` in the same commit, which drops focus to <body> before any effect runs,
+  // so where focus last went is tracked rather than read at close.
+  const hasFocusRef = useRef(false)
+  useEffect(() => {
+    const sheet = sheetRef.current
+    if (!isMounted || !sheet) {
+      return
+    }
+    const onFocusIn = (event: FocusEvent) => {
+      hasFocusRef.current = event.target instanceof Node && sheet.contains(event.target)
+    }
+    document.addEventListener('focusin', onFocusIn)
+    return () => document.removeEventListener('focusin', onFocusIn)
+  }, [isMounted])
+
   const returnFocus = useCallback(() => {
     const opener = openerRef.current
-    if (sheetRef.current?.contains(document.activeElement) && opener?.isConnected) {
+    const active = document.activeElement
+    const hadFocus = sheetRef.current?.contains(active) || (hasFocusRef.current && (active === document.body || active === null))
+    hasFocusRef.current = false
+    if (hadFocus && opener?.isConnected) {
       opener.focus()
     }
   }, [])
@@ -133,7 +153,7 @@ export function ResponsiveSheet({
     latest.current.onOpenChange(false)
   }, [returnFocus])
 
-  // A close from outside (the parent flips `open`) gets the same return before `inert` lands.
+  // A close from outside (the parent flips `open`) gets the same return.
   useLayoutEffect(() => {
     if (!isShown) {
       returnFocus()
@@ -156,18 +176,52 @@ export function ResponsiveSheet({
     close()
   }, [close])
 
-  useEffect(() => {
-    if (!isShown) {
-      return
-    }
+  // Runs from the sentinel FocusScope's mount, after it has paused any Radix trap underneath; focusing earlier
+  // would be pulled straight back into a modal below the sheet.
+  const onSentinelMount = useCallback((mountEvent: Event) => {
+    mountEvent.preventDefault()
     const sheet = sheetRef.current
     const event = new Event('openautofocus', { cancelable: true })
     latest.current.onOpenAutoFocus?.(event)
-    // A keyboard press on the opener moves focus in; a tap leaves it on the opener.
-    if (sheet && !event.defaultPrevented && document.activeElement?.matches(':focus-visible')) {
-      sheet.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)?.focus()
+    if (!sheet || event.defaultPrevented) {
+      return
     }
-  }, [isShown])
+    // A keyboard press on the opener lands on the first control; a tap or a screen reader lands on the sheet itself,
+    // so focus never stays on an opener behind the scrim.
+    const first = document.activeElement?.matches(':focus-visible') ? sheet.querySelector<HTMLElement>(FOCUSABLE_SELECTOR) : null
+    if (first) {
+      first.focus()
+    }
+    else {
+      sheet.focus({ preventScroll: true })
+    }
+  }, [])
+
+  // Nothing holds a scroll lock, so a wheel over the scrim or the sheet's fixed rows would chain to the page behind.
+  useEffect(() => {
+    const sheet = sheetRef.current
+    const backdrop = backdropRef.current
+    if (!isMounted || !sheet || !backdrop) {
+      return
+    }
+    const onWheel = (event: WheelEvent) => {
+      for (let node = event.target instanceof Element ? event.target : null; node && node !== sheet; node = node.parentElement) {
+        const style = getComputedStyle(node)
+        const scrollsY = node.scrollHeight > node.clientHeight && /auto|scroll/.test(style.overflowY)
+        const scrollsX = node.scrollWidth > node.clientWidth && /auto|scroll/.test(style.overflowX)
+        if (scrollsY || scrollsX) {
+          return
+        }
+      }
+      event.preventDefault()
+    }
+    backdrop.addEventListener('wheel', onWheel, { passive: false })
+    sheet.addEventListener('wheel', onWheel, { passive: false })
+    return () => {
+      backdrop.removeEventListener('wheel', onWheel)
+      sheet.removeEventListener('wheel', onWheel)
+    }
+  }, [isMounted])
 
   useEffect(() => {
     const sheet = sheetRef.current
@@ -219,6 +273,8 @@ export function ResponsiveSheet({
           'pointer-events-auto fixed inset-0 z-50 touch-none bg-scrim/50 dark:bg-scrim/60',
           'transition-opacity duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none',
           'data-[state=closed]:pointer-events-none data-[state=closed]:opacity-0',
+          // A modal menu or dialog opened from the sheet marks the sentinel's layer below it; a press then only dismisses that layer.
+          "[&:has(+[data-slot=responsive-sheet]>[data-sheet-layer][style*='pointer-events:_none'])]:pointer-events-none",
         )}
       />
       <div
@@ -237,6 +293,7 @@ export function ResponsiveSheet({
         onTouchMove={isAboveModal ? releaseScrollLock : undefined}
         className={cn(
           'pointer-events-auto fixed z-50 flex flex-col bg-card text-card-foreground shadow-lg outline-none',
+          "[&:has(>[data-sheet-layer][style*='pointer-events:_none'])]:pointer-events-none",
           // Closed, the sheet sits one travel outside and turns invisible once the slide ends; open, it turns visible at once.
           'invisible [transition:translate_500ms_cubic-bezier(0.32,0.72,0,1),visibility_0s_500ms]',
           'data-[state=open]:visible data-[state=open]:[transition:translate_500ms_cubic-bezier(0.32,0.72,0,1),visibility_0s]',
@@ -248,8 +305,8 @@ export function ResponsiveSheet({
       >
         {isShown && (
           <DismissableLayer.Root asChild disableOutsidePointerEvents={isAboveModal} onEscapeKeyDown={onEscapeKeyDown}>
-            <FocusScope.Root asChild onMountAutoFocus={preventDefault} onUnmountAutoFocus={preventDefault}>
-              <span hidden />
+            <FocusScope.Root asChild onMountAutoFocus={onSentinelMount} onUnmountAutoFocus={preventDefault}>
+              <span hidden data-sheet-layer />
             </FocusScope.Root>
           </DismissableLayer.Root>
         )}
