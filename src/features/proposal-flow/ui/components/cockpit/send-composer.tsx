@@ -20,7 +20,7 @@ export function SendComposer() {
       return
     }
     send.mutate(
-      { proposalId: proposal.id, customerName: proposal.customer?.name ?? '', email, message: message.trim() || undefined },
+      { proposalId: proposal.id, message: message.trim() || undefined },
       {
         onSuccess: () => {
           toast.success(isSent ? 'Proposal resent' : 'Proposal sent')

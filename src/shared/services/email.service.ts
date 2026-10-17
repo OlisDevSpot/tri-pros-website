@@ -59,6 +59,7 @@ function createEmailService() {
       message?: string
       replyTo?: string
       repName?: string
+      reps: { name: string, phone: string | null }[]
     }) => {
       const templates = await loadEmailTemplates()
       const proposalUrl = publicUrl(`${ROOTS.public.proposalReview(params.proposalId, params.token)}&utm_source=email`)
@@ -79,6 +80,7 @@ function createEmailService() {
           proposalUrl,
           customerName: params.customerName,
           message: params.message,
+          reps: params.reps,
         }),
       })
 

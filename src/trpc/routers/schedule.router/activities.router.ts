@@ -5,6 +5,7 @@ import z from 'zod'
 import { activityEntityTypes, activityTypes, gcalSyncableActivityTypes } from '@/shared/constants/enums'
 import { db } from '@/shared/db'
 import { activities, user } from '@/shared/db/schema'
+import { createActivity } from '@/shared/entities/activities/dal/server/mutations'
 import { activityListInputSchema, listActivities } from '@/shared/entities/activities/dal/server/queries'
 import { schedulingService } from '@/shared/services/scheduling.service'
 import { agentProcedure, createTRPCRouter } from '@/trpc/init'
@@ -43,17 +44,7 @@ export const activitiesRouter = createTRPCRouter({
       metaJSON: z.record(z.string(), z.unknown()).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const [created] = await db
-        .insert(activities)
-        .values({
-          ...input,
-          ownerId: ctx.session.user.id,
-        })
-        .returning()
-
-      if (!created) {
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create activity' })
-      }
+      const created = dalToTrpc(await createActivity(ctx, { ...input, ownerId: ctx.session.user.id }))
 
       const isSyncable = (gcalSyncableActivityTypes as readonly string[]).includes(created.type)
         && !!created.scheduledFor

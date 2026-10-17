@@ -1,6 +1,6 @@
 export { awards } from './awards'
 export { certifications } from './certifications'
-export { companyInfo } from './company-info'
+export { companyInfo, companyPhone } from './company-info'
 export { contactInfo } from './contact-info'
 export { credentials } from './credentials'
 export { insurances } from './insurances'

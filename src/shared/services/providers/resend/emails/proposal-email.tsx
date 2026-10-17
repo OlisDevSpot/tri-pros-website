@@ -13,6 +13,8 @@ import {
 } from '@react-email/components'
 import { Fragment } from 'react'
 import { publicUrl } from '@/shared/config/public-url'
+import { companyInfo, companyPhone } from '@/shared/constants/company/company-info'
+import { formatPhone } from '@/shared/lib/phone'
 
 const styles = {
   body: {
@@ -113,8 +115,7 @@ interface Props {
   proposalUrl: string
   companyName?: string
   customerName: string
-  repName?: string
-  repPhone?: string
+  reps?: { name: string, phone: string | null }[]
   heroImageUrl?: string
   logoUrl?: string
   projectSummary?: string
@@ -125,10 +126,9 @@ const base = publicUrl()
 
 export default function ProposalEmail({
   proposalUrl,
-  companyName = 'Tri Pros Remodeling',
+  companyName = companyInfo.name,
   customerName,
-  repName = 'TPR Office',
-  repPhone = '8184707656',
+  reps = [],
   heroImageUrl = `${base}/hero-photos/modern-house-5.jpg`,
   logoUrl = `${base}/company/logo/logo-light-right.jpg`,
   projectSummary = 'We\'ve prepared a customized proposal outlining the scope, pricing, and next steps for the scope of work we discussed.',
@@ -225,15 +225,15 @@ export default function ProposalEmail({
             </Text>
 
             <Text style={styles.signature}>
-              {repName}
-              <br />
-              {companyName}
-              {repPhone && (
-                <>
+              {reps.map(rep => (
+                <Fragment key={rep.name}>
+                  {rep.name}
+                  {rep.phone && ` · ${formatPhone(rep.phone)}`}
                   <br />
-                  {repPhone}
-                </>
-              )}
+                </Fragment>
+              ))}
+              {companyName}
+              {reps.length === 0 && companyPhone && ` · ${formatPhone(companyPhone)}`}
             </Text>
           </Section>
 
@@ -254,5 +254,5 @@ export default function ProposalEmail({
 ProposalEmail.PreviewProps = {
   customerName: 'Sean Yehuda',
   proposalUrl: '#',
-  repName: 'Oliver Porat',
+  reps: [{ name: 'Sean Phil', phone: '8184707656' }],
 } satisfies Props

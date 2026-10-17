@@ -12,7 +12,9 @@
 //                     does. None today: the proposal-COMPLETE duplicate (incentive
 //                     rows cloned, rollup re-driven) is the `duplicate.after` hook
 //                     in core/dal/server/crud.ts, so it fires for every caller.
-//   <verbs>           orchestrations composing the slots with reads, peers and jobs
+//   business          the verbs: orchestrations composing the slots with reads, peers
+//                     and jobs, as `proposalService.business.send`. A child, because
+//                     `satisfies SpecCrudHandlers` rejects an extra method on this literal
 //   <children>        sub-entity services, each with the same shape, reached as
 //                     `proposalService.views.record`, `proposalService.incentives.create`,
 //                     `proposalService.media.delete`
@@ -40,6 +42,7 @@ import type { SpecCrudHandlers } from '@/shared/dal/server/types'
 import type { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 import { proposalCrud } from '@/shared/modules/proposals/core/dal/server/crud'
 
+import { proposalBusinessService } from './business/service'
 import { proposalIncentivesService } from './incentives/service'
 import { proposalMediaService } from './media/service'
 import { proposalViewsService } from './views/service'
@@ -47,6 +50,9 @@ import { proposalViewsService } from './views/service'
 export const proposalService = {
   ...proposalCrud,
 
+  get business() {
+    return proposalBusinessService
+  },
   get incentives() {
     return proposalIncentivesService
   },

@@ -15,11 +15,13 @@ import { useTRPC } from '@/trpc/helpers'
  */
 export function useSendProposal() {
   const trpc = useTRPC()
-  const { invalidateProposal } = useInvalidation()
+  const { invalidateProposal, invalidateActivities } = useInvalidation()
 
   return useMutation(trpc.proposalsRouter.delivery.sendProposalEmail.mutationOptions({
     onSuccess: (_data, variables) => {
       invalidateProposal({ proposalId: variables.proposalId })
+      // The rep's note lands as an activity on the proposal.
+      invalidateActivities()
     },
   }))
 }
