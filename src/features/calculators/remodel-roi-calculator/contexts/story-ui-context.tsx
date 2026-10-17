@@ -6,8 +6,6 @@ import type { StorySheet } from '@/features/calculators/remodel-roi-calculator/t
 
 import { createContext, use, useCallback, useMemo, useState } from 'react'
 
-import { chapterElementId } from '@/features/calculators/remodel-roi-calculator/constants/chapters'
-
 interface StoryUi {
   sheet: StorySheet
   openInfo: (chapter: ChapterId) => void
@@ -21,7 +19,6 @@ interface StoryUi {
   setCollapsed: (collapsed: boolean) => void
   scroller: HTMLDivElement | null
   registerScroller: (node: HTMLDivElement | null) => void
-  scrollToChapter: (chapter: ChapterId) => void
 }
 
 const StoryUiContext = createContext<StoryUi | null>(null)
@@ -43,17 +40,6 @@ export function StoryUiProvider({ isBelowLg, children }: Props) {
     setSheet(isBelowLg ? { kind: 'inputs' } : null)
   }, [isBelowLg])
 
-  const scrollToChapter = useCallback((chapter: ChapterId) => {
-    const target = scroller?.querySelector<HTMLElement>(`#${chapterElementId(chapter)}`)
-    if (!scroller || !target) {
-      return
-    }
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    // The sticky top bar sits inside the scroller, so land the chapter just below it.
-    const bar = scroller.querySelector<HTMLElement>('[data-slot="story-top-bar"]')?.offsetHeight ?? 0
-    scroller.scrollTo({ top: target.offsetTop - bar, behavior: reduce ? 'auto' : 'smooth' })
-  }, [scroller])
-
   const value = useMemo<StoryUi>(() => ({
     sheet,
     openInfo: chapter => setSheet({ kind: 'info', chapter }),
@@ -67,8 +53,7 @@ export function StoryUiProvider({ isBelowLg, children }: Props) {
     setCollapsed,
     scroller,
     registerScroller,
-    scrollToChapter,
-  }), [sheet, openSection, editSection, collapsed, scroller, scrollToChapter])
+  }), [sheet, openSection, editSection, collapsed, scroller])
 
   return <StoryUiContext value={value}>{children}</StoryUiContext>
 }

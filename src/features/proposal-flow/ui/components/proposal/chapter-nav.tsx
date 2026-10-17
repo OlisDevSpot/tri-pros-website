@@ -4,7 +4,6 @@ import { useEffect, useRef } from 'react'
 
 import { proposalSteps } from '@/features/proposal-flow/constants/proposal-steps'
 import { useScrollRoot } from '@/features/proposal-flow/contexts/scroll-context'
-import { scrollToChapter } from '@/features/proposal-flow/lib/scroll-to-chapter'
 import { useActiveSection } from '@/shared/hooks/use-active-section'
 import { cn } from '@/shared/lib/utils'
 
@@ -16,7 +15,7 @@ const ids = proposalSteps.map(step => step.accessor)
 
 export function ChapterNav({ variant }: Props) {
   const { rootEl } = useScrollRoot()
-  const active = useActiveSection(ids, { rootEl })
+  const { activeId: active, select } = useActiveSection(ids, { rootEl })
   const stripRef = useRef<HTMLOListElement>(null)
 
   // scrollIntoView would also move the page's vertical scroller; only the strip should move.
@@ -39,7 +38,7 @@ export function ChapterNav({ variant }: Props) {
             <li key={step.accessor}>
               <button
                 type="button"
-                onClick={() => scrollToChapter(step.accessor)}
+                onClick={() => select(step.accessor)}
                 aria-current={active === step.accessor ? 'true' : undefined}
                 className={cn(
                   'flex w-full items-center gap-3 border-l-2 border-transparent px-3 py-2 text-left text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground pressed:text-foreground',
@@ -63,7 +62,7 @@ export function ChapterNav({ variant }: Props) {
           <li key={step.accessor} className="shrink-0">
             <button
               type="button"
-              onClick={() => scrollToChapter(step.accessor)}
+              onClick={() => select(step.accessor)}
               aria-current={active === step.accessor ? 'true' : undefined}
               className={cn(
                 'min-h-11 whitespace-nowrap border-b-2 border-transparent px-2.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground pressed:text-foreground',
