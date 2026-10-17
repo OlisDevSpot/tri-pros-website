@@ -2,11 +2,9 @@
 
 import type { ReactNode } from 'react'
 
-import type { KeyInsightField } from '@/shared/entities/customers/components/profile/customer-profile-key-insights'
-import type { CustomerNoteWithAuthor, CustomerProfileData } from '@/shared/entities/customers/types'
+import type { CustomerProfileData } from '@/shared/entities/customers/types'
 import type { LeadSourceOverviewCardSource } from '@/shared/entities/lead-sources/components/overview-card'
 
-import { formatDistanceToNow } from 'date-fns'
 import { createContext, use, useMemo } from 'react'
 
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
@@ -15,7 +13,6 @@ import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action
 import { EntityActionMenu } from '@/shared/components/entities/entity-actions/ui/entity-action-menu'
 import { CustomerProfileKeyInsights } from '@/shared/entities/customers/components/profile/customer-profile-key-insights'
 import { ProfileCard } from '@/shared/entities/customers/components/profile/profile-card'
-import { QuickNoteInput } from '@/shared/entities/customers/components/timeline/quick-note-input'
 import { CUSTOMER_OVERVIEW_PROFILE_FIELDS } from '@/shared/entities/customers/constants/customer-overview-profile-fields'
 import { LeadSourceOverviewCard } from '@/shared/entities/lead-sources/components/overview-card'
 import { cn } from '@/shared/lib/utils'
@@ -87,9 +84,9 @@ function LeadSource({ className }: { className?: string }) {
   )
 }
 
-function Insights({ fields }: { fields?: readonly KeyInsightField[] }) {
+function Insights() {
   const { customer } = useCard()
-  return <CustomerProfileKeyInsights customer={customer} fields={fields} />
+  return <CustomerProfileKeyInsights customer={customer} />
 }
 
 function ProfileFields() {
@@ -109,29 +106,10 @@ function Actions({ mode = 'compact', hide, className }: {
   return <EntityActionMenu entity={customer} actions={shown} mode={mode} className={className} />
 }
 
-function Notes({ notes, limit = 2 }: { notes: CustomerNoteWithAuthor[], limit?: number }) {
-  const { customer } = useCard()
-  return (
-    <div className="grid gap-2">
-      <ul className="grid gap-2">
-        {notes.slice(0, limit).map(note => (
-          <li key={note.id} className="border-t border-border pt-2 text-sm first:border-t-0 first:pt-0">
-            <p>{note.content}</p>
-            <p className="text-xs text-muted-foreground">{[note.authorName, formatDistanceToNow(new Date(note.createdAt), { addSuffix: true })].filter(Boolean).join(' · ')}</p>
-          </li>
-        ))}
-      </ul>
-      {/* createNote already invalidates this customer's profile read, which is where `notes` comes from. */}
-      <QuickNoteInput customerId={customer.id} onSuccess={() => {}} />
-    </div>
-  )
-}
-
 export const CustomerOverviewCard = Object.assign(Root, {
   ContactActions,
   LeadSource,
   Insights,
   ProfileFields,
   Actions,
-  Notes,
 })

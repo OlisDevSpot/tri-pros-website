@@ -139,7 +139,8 @@ export function EnvelopeConfigurationSection({
         onChange={e => setAgeInput(e.target.value)}
         disabled={locked || contextQuery.isLoading}
         aria-describedby={locked ? `envelope-age-${proposalId}-lock` : undefined}
-        className="h-9 max-w-35"
+        // Inline, the senior marker shares the row with the input, so on a phone the input keeps to an age's width.
+        className={cn('h-9', isInline ? 'w-20' : 'max-w-35')}
         placeholder="Enter age"
       />
       {isSeniorByAge(parseAge(ageInput)) && (

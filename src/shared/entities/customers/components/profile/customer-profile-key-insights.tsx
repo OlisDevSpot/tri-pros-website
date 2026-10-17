@@ -4,32 +4,24 @@ import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server
 
 import { Badge } from '@/shared/components/ui/badge'
 
-export type KeyInsightField = 'triggerEvent' | 'decisionTimeline' | 'outcomePriority' | 'householdType' | 'timeInHome' | 'yearBuilt'
+const KEY_INSIGHT_FIELDS = ['triggerEvent', 'decisionTimeline', 'outcomePriority', 'householdType'] as const
+
+type KeyInsightField = (typeof KEY_INSIGHT_FIELDS)[number]
 
 interface Props {
   customer: Pick<CustomerWithProfile, KeyInsightField> | null | undefined
-  fields?: readonly KeyInsightField[]
 }
 
 function formatInsight(field: KeyInsightField, value: string): string {
-  switch (field) {
-    case 'outcomePriority':
-      return `Priority: ${value}`
-    case 'timeInHome':
-      return `${value} in home`
-    case 'yearBuilt':
-      return `Built ${value}`
-    default:
-      return value
-  }
+  return field === 'outcomePriority' ? `Priority: ${value}` : value
 }
 
-export function CustomerProfileKeyInsights({ customer, fields = ['triggerEvent', 'decisionTimeline', 'outcomePriority', 'householdType'] }: Props) {
+export function CustomerProfileKeyInsights({ customer }: Props) {
   if (!customer) {
     return null
   }
 
-  const insights = fields.flatMap((field) => {
+  const insights = KEY_INSIGHT_FIELDS.flatMap((field) => {
     const value = customer[field]
     return value != null ? [formatInsight(field, String(value))] : []
   })

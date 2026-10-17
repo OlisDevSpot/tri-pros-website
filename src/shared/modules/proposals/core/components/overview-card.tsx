@@ -13,7 +13,6 @@ import React, { createContext, useCallback, useMemo } from 'react'
 import { withToolbarRoles } from '@/shared/components/entities/entity-actions/lib/with-toolbar-roles'
 import { isClickAction } from '@/shared/components/entities/entity-actions/types'
 import { EntityActionMenu } from '@/shared/components/entities/entity-actions/ui/entity-action-menu'
-import { OverviewCard } from '@/shared/components/entities/overview-card/overview-card'
 import { Badge } from '@/shared/components/ui/badge'
 import { formatBusinessTime } from '@/shared/lib/business-time'
 import { formatAsDollars } from '@/shared/lib/formatters'
@@ -46,6 +45,7 @@ export type ProposalFieldConfig
     | { field: 'value', showIcon?: boolean }
     | { field: 'viewCount' }
     | { field: 'createdAt', format?: 'full' | 'date-only' | 'relative' }
+    | { field: 'sentAt' }
 
 export interface ScopeRef {
   id: string
@@ -299,6 +299,18 @@ function CreatedAt({
   )
 }
 
+function SentAt({ className }: { className?: string }) {
+  const { proposal } = useProposalOverviewCard()
+  if (!proposal.sentAt) {
+    return null
+  }
+  return (
+    <span className={cn('text-xs text-muted-foreground shrink-0', className)}>
+      {`Sent ${formatBusinessTime(proposal.sentAt, { month: 'short', day: 'numeric' })}`}
+    </span>
+  )
+}
+
 // ── Fields sub-component ───────────────────────────────────────────────────────
 
 function StatusFieldRenderer({ variant = 'badge' }: { variant?: 'badge' | 'icon' | 'dot' }) {
@@ -329,6 +341,8 @@ function Fields({ fields, className }: { fields: ProposalFieldConfig[], classNam
             return <ViewCount key={config.field} />
           case 'createdAt':
             return <CreatedAt key={config.field} format={config.format} />
+          case 'sentAt':
+            return <SentAt key={config.field} />
           default:
             return null
         }
@@ -412,21 +426,24 @@ function ScopeCoverage({ className }: { className?: string }) {
 function Actions({
   mode = 'compact',
   roles,
+  show,
   hide,
   className,
 }: {
   mode?: 'compact' | 'bar' | 'toolbar'
   /** This surface's toolbar buttons; the shared action constants keep driving every other surface. */
   roles?: Parameters<typeof withToolbarRoles>[1]
+  /** The only action ids this surface offers. */
+  show?: readonly string[]
   /** Action ids this surface leaves out. */
   hide?: readonly string[]
   className?: string
 }) {
   const { proposal, actions } = useProposalOverviewCard()
   const shown = useMemo(() => {
-    const kept = hide ? actions.filter(config => !hide.includes(config.action.id)) : actions
+    const kept = actions.filter(config => (!show || show.includes(config.action.id)) && !hide?.includes(config.action.id))
     return roles ? withToolbarRoles(kept, roles) : kept
-  }, [actions, hide, roles])
+  }, [actions, show, hide, roles])
   return (
     <EntityActionMenu
       entity={proposal}
@@ -435,11 +452,6 @@ function Actions({
       className={className}
     />
   )
-}
-
-// Footers hold inputs and buttons; a click there must not open the proposal.
-function Footer({ className, children }: { className?: string, children: ReactNode }) {
-  return <OverviewCard.Footer className={className} onClick={e => e.stopPropagation()}>{children}</OverviewCard.Footer>
 }
 
 // ── Compound export ────────────────────────────────────────────────────────────
@@ -456,9 +468,9 @@ export const ProposalOverviewCard = Object.assign(ProposalOverviewCardRoot, {
   Value,
   ViewCount,
   CreatedAt,
+  SentAt,
   Fields,
   Trades,
   ScopeCoverage,
   Actions,
-  Footer,
 })

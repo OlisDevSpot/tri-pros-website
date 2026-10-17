@@ -10,6 +10,8 @@ import { PortfolioMatchProvider } from '@/features/proposal-flow/contexts/portfo
 import { ProposalDocumentProvider } from '@/features/proposal-flow/contexts/proposal-document-context'
 import { useScrollRoot } from '@/features/proposal-flow/contexts/scroll-context'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
+import { Cockpit } from '@/features/proposal-flow/ui/components/cockpit/cockpit'
+import { CockpitOpenProvider } from '@/features/proposal-flow/ui/components/cockpit/cockpit-open-context'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { useAbility } from '@/shared/domains/permissions/client'
@@ -75,28 +77,34 @@ export function Proposal() {
 
   const urlToken = searchParams.get('token') ?? undefined
 
+  const page = (
+    <div className="@container/proposal flex h-full min-h-0 flex-col">
+      <ProposalTopBar />
+      <div ref={setRootEl} id="proposal-container" className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-gutter-stable">
+        {/* The rail sits on the canvas and the chapters on the document plane, as the mock's `.doc` and `.paper`. */}
+        <div className="min-h-full bg-background">
+          <div className="grid @min-[1100px]/proposal:grid-cols-[220px_minmax(0,1fr)]">
+            <div className="hidden @min-[1100px]/proposal:block"><ChapterNav variant="rail" /></div>
+            <main className="surface min-w-0">
+              {proposalSteps.map(step => (
+                <section key={step.accessor} id={step.accessor} aria-labelledby={`${step.accessor}-title`} className="relative scroll-mt-0">
+                  <step.Component />
+                </section>
+              ))}
+            </main>
+          </div>
+        </div>
+      </div>
+      {canAct && <Cockpit />}
+    </div>
+  )
+
   return (
     <ProposalDocumentProvider proposal={proposal.data} token={urlToken} canAct={canAct}>
       <PortfolioMatchProvider>
         <ActiveChapterProvider>
-          <div className="@container/proposal flex h-full min-h-0 flex-col">
-            <ProposalTopBar />
-            <div ref={setRootEl} id="proposal-container" className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-gutter-stable">
-              {/* The rail sits on the canvas and the chapters on the document plane, as the mock's `.doc` and `.paper`. */}
-              <div className="min-h-full bg-background">
-                <div className="grid @min-[1100px]/proposal:grid-cols-[220px_minmax(0,1fr)]">
-                  <div className="hidden @min-[1100px]/proposal:block"><ChapterNav variant="rail" /></div>
-                  <main className="surface min-w-0">
-                    {proposalSteps.map(step => (
-                      <section key={step.accessor} id={step.accessor} aria-labelledby={`${step.accessor}-title`} className="relative scroll-mt-0">
-                        <step.Component />
-                      </section>
-                    ))}
-                  </main>
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* `page` is built here, so the provider's toggle passes it through unchanged and the chapters never re-render. */}
+          {canAct ? <CockpitOpenProvider>{page}</CockpitOpenProvider> : page}
         </ActiveChapterProvider>
       </PortfolioMatchProvider>
     </ProposalDocumentProvider>
