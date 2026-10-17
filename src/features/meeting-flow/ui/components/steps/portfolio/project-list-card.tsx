@@ -1,4 +1,4 @@
-import type { PortfolioMatch } from '@/features/meeting-flow/types'
+import type { PortfolioMatch } from '@/shared/modules/projects/core/types'
 import { cn } from '@/shared/lib/utils'
 import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
 

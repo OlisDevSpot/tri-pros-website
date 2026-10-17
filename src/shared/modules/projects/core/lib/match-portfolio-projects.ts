@@ -1,9 +1,8 @@
-import type { PortfolioMatch } from '@/features/meeting-flow/types'
 import type { TradeSelection } from '@/shared/entities/meetings/schemas'
 import type { CatalogIndex } from '@/shared/modules/construction/core/lib/build-catalog-index'
-import type { PortfolioProject } from '@/shared/modules/projects/core/types'
-import { FALLBACK_MATCH_COUNT } from '@/features/meeting-flow/constants/portfolio-step'
+import type { PortfolioMatch, PortfolioProject } from '@/shared/modules/projects/core/types'
 import { resolveScopes } from '@/shared/modules/construction/core/lib/resolve-catalog-ids'
+import { FALLBACK_MATCH_COUNT } from '@/shared/modules/projects/core/constants/portfolio-match'
 import { compareStoryStrength } from '@/shared/modules/projects/core/lib/compare-story-strength'
 import { hasHeroImage } from '@/shared/modules/projects/core/lib/has-hero-image'
 
@@ -12,9 +11,9 @@ function byStoryStrength(a: PortfolioMatch, b: PortfolioMatch): number {
 }
 
 /**
- * The meeting's portfolio, most relevant first: projects sharing a selected scope, then projects in a
- * selected trade, then the rest. When nothing matches by scope or trade, the strongest
- * `FALLBACK_MATCH_COUNT` projects lead, so the step never opens on nothing.
+ * The portfolio for a homeowner's selections, most relevant first: projects sharing a selected scope,
+ * then projects in a selected trade, then the rest. When nothing matches by scope or trade, the strongest
+ * `FALLBACK_MATCH_COUNT` projects lead, so the list never opens on nothing.
  */
 export function matchPortfolioProjects(
   projects: PortfolioProject[],

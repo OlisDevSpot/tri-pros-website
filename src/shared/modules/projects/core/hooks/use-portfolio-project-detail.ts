@@ -1,13 +1,12 @@
 'use client'
 
-import type { PortfolioMatch } from '@/features/meeting-flow/types'
+import type { PortfolioMatch } from '@/shared/modules/projects/core/types'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
-import { PREFETCH_AHEAD } from '@/features/meeting-flow/constants/portfolio-step'
-import { SHOWCASE_PROJECTS_STALE_MS } from '@/features/meeting-flow/constants/showcase'
+import { PREFETCH_AHEAD, SHOWCASE_PROJECTS_STALE_MS } from '@/shared/modules/projects/core/constants/portfolio-match'
 import { useTRPC } from '@/trpc/helpers'
 
-/** The detail (media by phase) of the project on screen, with the next few fetched ahead so ↓ never waits. */
+/** The detail (media by phase) of the project on screen, with the next few fetched ahead so moving on never waits. */
 export function usePortfolioProjectDetail(matches: PortfolioMatch[], projectIndex: number) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()

@@ -1,9 +1,10 @@
 'use client'
 
-import type { PortfolioMatch, PortfolioPosition } from '@/features/meeting-flow/types'
+import type { PortfolioPosition } from '@/features/meeting-flow/types'
+import type { PortfolioMatch } from '@/shared/modules/projects/core/types'
 import { useCallback, useMemo, useState } from 'react'
-import { usePortfolioProjectDetail } from '@/features/meeting-flow/hooks/use-portfolio-project-detail'
 import { isLastPhoto, nextPhotoPosition } from '@/features/meeting-flow/lib/portfolio-position'
+import { usePortfolioProjectDetail } from '@/shared/modules/projects/core/hooks/use-portfolio-project-detail'
 import { buildProjectStoryPhases } from '@/shared/modules/projects/core/lib/build-project-story-phases'
 
 interface NavigationState {

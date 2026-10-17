@@ -9,4 +9,6 @@ export const teamInfo = {
     },
   ],
   numSupportStaff: 12,
+  /** Supervisors on every job, at the least. */
+  minSupervisorsPerJob: 2,
 } as const

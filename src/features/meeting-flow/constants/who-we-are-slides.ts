@@ -1,17 +1,11 @@
-import type { PresentationDocument, ReputationMark, WhoWeAreSlide } from '@/features/meeting-flow/types'
+import type { PresentationDocument, WhoWeAreSlide } from '@/features/meeting-flow/types'
 import { BadgeCheckIcon, CameraIcon, ClockIcon, FileTextIcon, HeartIcon, HomeIcon, ShieldCheckIcon, UserIcon, UsersIcon } from 'lucide-react'
 import { DUE_DILIGENCE_ITEMS } from '@/features/meeting-flow/constants/due-diligence'
 import { groupSlides } from '@/shared/components/presentation/group-slides'
-import { companyInfo, insurances, reviews } from '@/shared/constants/company'
-import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
+import { COMPANY_DOCUMENTS, companyInfo, CONTRACTOR_COMPARISON_ROWS, CONTRACTOR_COMPARISON_SLIDE_ROWS, liabilityCoverage, primaryLicense, REPUTATION_MARKS, supportStaff } from '@/shared/constants/company'
 
-const DOCS_BASE = R2_PUBLIC_DOMAINS[R2_BUCKETS.companyDocs]!
-const license = companyInfo.licenses[0]
 const partner = companyInfo.teamInfo.owners[0]
 const partnerFirstName = partner.name.split(' ')[0]
-const supportStaff = `${companyInfo.teamInfo.numSupportStaff}+`
-// e.g. '$2M per project' -> '$2M'
-const liabilityCoverage = insurances.find(i => i.label === 'General Liability Insurance')!.coverage.split(' ')[0]
 const [licensing, scope, supervision, communication, office, performance] = DUE_DILIGENCE_ITEMS
 
 /** Stand-in imagery from the public site until the step gets its own shoot. */
@@ -43,12 +37,6 @@ export const COMPARISON_COLUMNS = {
 /** The visible cue on documents the homeowner can open (U11). */
 const TAP_TO_VIEW = 'Tap to view'
 
-/** The public review standing. It proves performance, so it sits on the Performance slide. */
-const REPUTATION: ReputationMark[] = [
-  { kind: 'stars', platform: reviews.google.platform, rating: reviews.google.rating.toFixed(1), count: reviews.google.count, href: reviews.google.url },
-  { kind: 'stars', platform: reviews.yelp.platform, rating: reviews.yelp.rating.toFixed(1), count: reviews.yelp.count, href: reviews.yelp.url },
-  { kind: 'grade', platform: reviews.bbb.platform, grade: reviews.bbb.rating, href: reviews.bbb.url },
-]
 // e.g. 9_000_000 -> '$9M'; truncated, not rounded, so $9.5M never reads as the unearned '$10M'.
 const valueDelivered = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 0, roundingMode: 'trunc' }).format(companyInfo.valueOfProjectsInDollars)
 const clientSatisfaction = `${Math.floor(companyInfo.clientSatisfaction * 100)}%`
@@ -75,27 +63,12 @@ export const WHO_WE_ARE_SLIDES: WhoWeAreSlide[] = [
     heading: { number: 1, title: 'Proper licensing and permits', subheading: { text: licensing.short } },
     content: {
       kind: 'credentials',
-      documents: [
-        {
-          title: 'Contractor license',
-          alt: `${companyInfo.name} contractor license`,
-          pages: [`${DOCS_BASE}/tpr-license.jpg`],
-          width: 1800,
-          height: 1200,
-        },
-        {
-          title: 'Certificate of insurance',
-          alt: `${companyInfo.name} certificate of liability insurance`,
-          pages: [`${DOCS_BASE}/tpr-coi-2026.jpg`],
-          width: 2550,
-          height: 3300,
-        },
-      ],
+      documents: [COMPANY_DOCUMENTS.license, COMPANY_DOCUMENTS.insurance],
       rail: {
         eyebrow: 'What protects you',
         tiles: [
           // Focus points are fractions of the current scans: re-measure them when a document is replaced.
-          { kicker: 'License', icon: ShieldCheckIcon, value: `#${license.licenseNumber}`, label: 'CA contractor license', opens: { document: 0, focus: { x: 0.29, y: 0.35 } } },
+          { kicker: 'License', icon: ShieldCheckIcon, value: `#${primaryLicense.licenseNumber}`, label: 'CA contractor license', opens: { document: 0, focus: { x: 0.29, y: 0.35 } } },
           { kicker: 'Insurance', icon: FileTextIcon, value: liabilityCoverage, label: 'Insurance per project', opens: { document: 1, focus: { x: 0.62, y: 0.45 } } },
           { kicker: 'Bond', icon: BadgeCheckIcon, value: 'Bonded', label: 'Most contractors aren’t' },
         ],
@@ -171,7 +144,8 @@ export const WHO_WE_ARE_SLIDES: WhoWeAreSlide[] = [
           { kicker: 'Satisfaction', icon: HeartIcon, value: clientSatisfaction, label: 'Client satisfaction' },
         ],
       },
-      reputation: REPUTATION,
+      // The public review standing proves performance, so it sits on the Performance slide.
+      reputation: REPUTATION_MARKS,
     },
   },
   {
@@ -179,22 +153,7 @@ export const WHO_WE_ARE_SLIDES: WhoWeAreSlide[] = [
     heading: { title: `${COMPARISON_COLUMNS.triPros} vs other contractors`, subheading: { text: 'The six, side by side.' } },
     content: {
       kind: 'comparison',
-      rows: [
-        {
-          label: 'Licensing and insurance',
-          triPros: `CA #${license.licenseNumber} · ${liabilityCoverage} per project · bonded`,
-          others: 'Unlicensed or underinsured, and you carry the risk',
-        },
-        { label: 'Scope of work', triPros: 'Detailed and in writing before work starts', others: 'A one-line estimate or a handshake' },
-        { label: 'Supervision', triPros: `${supervision.stat} sets of eyes on every job`, others: 'The crew, unsupervised' },
-        { label: 'Communication', triPros: 'One direct contact · same-day replies · weekly updates', others: 'Chasing calls for days' },
-        { label: 'Team and support', triPros: `A senior partner and ${supportStaff} support staff`, others: 'One person and a truck' },
-        {
-          label: 'Proof of performance',
-          triPros: `${companyInfo.numProjects}+ projects · Google ${reviews.google.rating.toFixed(1)} · ${reviews.bbb.platform} ${reviews.bbb.rating}`,
-          others: '“Trust me”',
-        },
-      ],
+      rows: CONTRACTOR_COMPARISON_SLIDE_ROWS.comparison.map(id => CONTRACTOR_COMPARISON_ROWS[id]),
     },
   },
   {
@@ -202,16 +161,7 @@ export const WHO_WE_ARE_SLIDES: WhoWeAreSlide[] = [
     heading: { title: '…and what most homeowners never think to ask.' },
     content: {
       kind: 'comparison',
-      rows: [
-        { label: 'Product warranties', triPros: 'Lifetime warranties on many of our products', others: 'Whatever the box says, if it’s still valid' },
-        { label: 'Experience', triPros: `${companyInfo.combinedYearsExperience}+ years of combined experience`, others: 'Learning on your house' },
-        { label: 'Operations', triPros: 'Office, field crew, and you on one live system', others: 'Lost paperwork and “let me check with the guys”' },
-        { label: 'Progress', triPros: 'Every phase photographed and on record', others: 'You drive by to check' },
-        { label: 'Financing', triPros: 'Financing and payment programs', others: 'Cash or check up front' },
-        { label: 'Change orders', triPros: 'Any change is priced and signed before it happens', others: 'A surprise bill at the end' },
-        { label: 'Payments', triPros: 'You pay as work is completed', others: 'A big deposit, then silence' },
-        { label: 'Rebates', triPros: 'We find and file your energy rebates and tax credits', others: 'You’re on your own' },
-      ],
+      rows: CONTRACTOR_COMPARISON_SLIDE_ROWS.extras.map(id => CONTRACTOR_COMPARISON_ROWS[id]),
     },
   },
   {

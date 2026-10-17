@@ -1,4 +1,4 @@
-import type { PortfolioMatch } from '@/features/meeting-flow/types'
+import type { PortfolioMatch } from '@/shared/modules/projects/core/types'
 import { PORTFOLIO_COPY, PROJECT_LIST_ROW_COUNT } from '@/features/meeting-flow/constants/portfolio-step'
 import { ProjectListCard } from '@/features/meeting-flow/ui/components/steps/portfolio/project-list-card'
 import { ProjectListSheet } from '@/features/meeting-flow/ui/components/steps/portfolio/project-list-sheet'

@@ -6,7 +6,7 @@ import { motion, useInView } from 'motion/react'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { PHASE_CONFIG } from '@/features/project-management/constants/phase-config'
 import { PhaseCarousel } from '@/features/project-management/ui/components/phase-carousel'
-import { PhotoLightbox } from '@/features/project-management/ui/components/photo-lightbox'
+import { PhotoLightbox } from '@/shared/modules/media/core/components/display/photo-lightbox'
 import { PHASE_LABELS } from '@/shared/modules/projects/media/constants/phase-labels'
 
 interface TimelinePhase {

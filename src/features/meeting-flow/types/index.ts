@@ -1,13 +1,14 @@
 import type { LucideIcon } from 'lucide-react'
 import type { CalendarEvent } from '@/shared/components/calendar/types'
 import type { PresentationHandle, PresentationSlide } from '@/shared/components/presentation/types'
+import type { ReputationMarkData } from '@/shared/components/reputation-mark'
 import type { MeetingOutcome, MeetingType } from '@/shared/constants/enums'
 import type { Project, ProjectMediaFile } from '@/shared/db/schema'
 import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { MeetingFlowState, TradeSelection } from '@/shared/entities/meetings/schemas'
 import type { ConstructionCatalog } from '@/shared/modules/construction/core/hooks/use-construction-catalog'
 import type { Trade } from '@/shared/modules/construction/core/schemas'
-import type { PortfolioProjectWithHero } from '@/shared/modules/projects/core/types'
+import type { PortfolioMatch } from '@/shared/modules/projects/core/types'
 import type { JsonbSection } from '@/shared/types/jsonb'
 
 // ── Intake Collection Field (used by intake step components) ────────────────
@@ -112,11 +113,6 @@ export interface ProofFigure {
   label: string
 }
 
-/** A public rating on the Performance slide; `href` opens where the homeowner can check it. */
-export type ReputationMark
-  = | { kind: 'stars', platform: 'Google' | 'Yelp', rating: string, count: number, href: string }
-    | { kind: 'grade', platform: 'BBB', grade: string, href: string }
-
 /** The meeting owner, introduced on the Communication slide. */
 export interface PresentationAgent {
   name: string
@@ -190,7 +186,7 @@ export type WhoWeAreContent
     | { kind: 'point', proof: ProofFigure }
     | { kind: 'agent', cardRole: string, timelineLabel: string, timeline: TimelineStage[], rail: ProofRail }
     | { kind: 'team', proof: ProofFigure, partner: PresentationPartner, teamPhotoLabel: string }
-    | { kind: 'performance', media: BeforeAfterMedia, rail: ProofRail, reputation: ReputationMark[] }
+    | { kind: 'performance', media: BeforeAfterMedia, rail: ProofRail, reputation: ReputationMarkData[] }
     | { kind: 'comparison', rows: ComparisonRow[] }
     | { kind: 'closing', quote: string, cta: { label: string } }
 
@@ -302,18 +298,6 @@ export interface SwitcherGroup {
 
 /** What a presentation-layout meeting step exposes to the flow's key map. `advance` is the Space key; a step without it ignores Space. */
 export type MeetingStepHandle = PresentationHandle & { advance?: () => void }
-
-export type PortfolioMatchKind = 'scope' | 'trade' | 'fallback' | 'none'
-
-/** A portfolio project and why it is shown for this meeting. */
-export interface PortfolioMatch {
-  row: PortfolioProjectWithHero
-  kind: PortfolioMatchKind
-  matchedScopeIds: string[]
-  matchedTradeIds: string[]
-  /** The pills: matched scope labels, or trade names, as the meeting named them. */
-  matchLabels: string[]
-}
 
 export interface PortfolioMatchSection {
   label: string

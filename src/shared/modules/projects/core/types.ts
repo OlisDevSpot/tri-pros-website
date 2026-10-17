@@ -26,6 +26,18 @@ export interface PortfolioProject {
 
 export type PortfolioProjectWithHero = PortfolioProject & { heroImage: ProjectMediaFile }
 
+export type PortfolioMatchKind = 'scope' | 'trade' | 'fallback' | 'none'
+
+/** A portfolio project and why it is shown for this homeowner. */
+export interface PortfolioMatch {
+  row: PortfolioProjectWithHero
+  kind: PortfolioMatchKind
+  matchedScopeIds: string[]
+  matchedTradeIds: string[]
+  /** The pills: matched scope labels, or trade names, as the selections named them. */
+  matchLabels: string[]
+}
+
 export interface PortfolioProjectDetail {
   project: Project
   media: ProjectMediaGroups

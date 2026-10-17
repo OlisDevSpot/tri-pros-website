@@ -1,19 +1,19 @@
 'use client'
 
+import type { TradeSelection } from '@/shared/entities/meetings/schemas'
 import { useMemo } from 'react'
-import { SHOWCASE_PROJECTS_STALE_MS } from '@/features/meeting-flow/constants/showcase'
-import { useTradeCatalogContext } from '@/features/meeting-flow/contexts/trade-catalog-context'
-import { useTradeSelections } from '@/features/meeting-flow/contexts/trade-selections-context'
-import { matchPortfolioProjects } from '@/features/meeting-flow/lib/match-portfolio-projects'
+import { useConstructionCatalog } from '@/shared/modules/construction/core/hooks/use-construction-catalog'
+import { SHOWCASE_PROJECTS_STALE_MS } from '@/shared/modules/projects/core/constants/portfolio-match'
 import { usePortfolioProjects } from '@/shared/modules/projects/core/hooks/use-portfolio-projects'
+import { matchPortfolioProjects } from '@/shared/modules/projects/core/lib/match-portfolio-projects'
 
-export function usePortfolioMatches() {
-  const selections = useTradeSelections()
-  const { catalog } = useTradeCatalogContext()
+/** The portfolio ordered for these selections: the meeting's trade selections, or a proposal's parts. */
+export function usePortfolioMatches(selections: TradeSelection[]) {
+  const catalog = useConstructionCatalog()
   const query = usePortfolioProjects({ staleTime: SHOWCASE_PROJECTS_STALE_MS })
 
   const isPending = query.isPending || catalog.isLoading
-  // Navigation adopts matches[0] as the opening project, so it must not see a pre-catalog order.
+  // Callers adopt matches[0] as the opening project, so they must not see a pre-catalog order.
   const matches = useMemo(
     () => (isPending ? [] : matchPortfolioProjects(query.data ?? [], selections, catalog)),
     [isPending, query.data, selections, catalog],

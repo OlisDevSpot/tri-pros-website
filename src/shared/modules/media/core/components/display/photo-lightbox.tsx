@@ -3,19 +3,25 @@
 import type { ProjectMediaFile } from '@/shared/db/schema'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
+import Image from 'next/image'
 import { useCallback, useEffect, useRef } from 'react'
 import { cn } from '@/shared/lib/utils'
 import { CrossfadeImage } from '@/shared/modules/media/core/components/display/crossfade-image'
 import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
 
+/** A project photo, or a plain image (a scanned document) that has no media row behind it. */
+export type LightboxPhoto = ProjectMediaFile | { src: string, alt: string, width: number, height: number }
+
 interface Props {
-  photos: ProjectMediaFile[]
+  photos: LightboxPhoto[]
   currentIndex: number
   onClose: () => void
   onNavigate: (index: number) => void
+  /** What the photos are of, e.g. a project name; it labels the dialog and leads the top bar. */
+  title?: string
 }
 
-export function PhotoLightbox({ photos, currentIndex, onClose, onNavigate }: Props) {
+export function PhotoLightbox({ photos, currentIndex, onClose, onNavigate, title }: Props) {
   const photo = photos[currentIndex]
   const thumbnailContainerRef = useRef<HTMLDivElement>(null)
   const thumbnailRefs = useRef<Map<number, HTMLButtonElement>>(new Map())
@@ -69,18 +75,24 @@ export function PhotoLightbox({ photos, currentIndex, onClose, onNavigate }: Pro
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
         className="fixed inset-0 z-60 flex flex-col bg-background/95"
+        role="dialog"
+        aria-modal="true"
+        aria-label={title ? `${title} photos` : 'Photos'}
       >
         {/* Top bar — pushed below navbar on mobile, picks up safe-area-inset-top in PWA via --navbar-bottom */}
         <div
           className="flex shrink-0 items-center justify-between px-4 py-3"
           style={{ paddingTop: 'calc(var(--navbar-bottom, var(--navbar-height, 80px)) + 12px)' }}
         >
-          <span className="text-sm text-foreground/60">
-            {currentIndex + 1}
-            {' '}
-            /
-            {' '}
-            {photos.length}
+          <span className="flex min-w-0 items-baseline gap-2 text-sm text-foreground/60">
+            {title && <b className="truncate font-semibold text-foreground">{title}</b>}
+            <span className="shrink-0">
+              {currentIndex + 1}
+              {' '}
+              /
+              {' '}
+              {photos.length}
+            </span>
           </span>
           <button
             type="button"
@@ -108,14 +120,29 @@ export function PhotoLightbox({ photos, currentIndex, onClose, onNavigate }: Pro
 
           {/* Image — constrained to same max-width as thumbnail strip */}
           <div className="relative mx-auto h-full w-full max-w-4xl overflow-hidden rounded-lg">
-            <CrossfadeImage
-              alt={photo.name}
-              className="object-contain"
-              image={{ file: photo }}
-              persistBlur
-              priority
-              sizes="(max-width: 896px) 100vw, 896px"
-            />
+            {'id' in photo
+              ? (
+                  <CrossfadeImage
+                    alt={photo.name}
+                    className="object-contain"
+                    image={{ file: photo }}
+                    persistBlur
+                    priority
+                    sizes="(max-width: 896px) 100vw, 896px"
+                  />
+                )
+              : (
+                  <Image
+                    key={photo.src}
+                    alt={photo.alt}
+                    className="size-full object-contain"
+                    height={photo.height}
+                    priority
+                    sizes="(max-width: 896px) 100vw, 896px"
+                    src={photo.src}
+                    width={photo.width}
+                  />
+                )}
           </div>
 
           {/* Next button — overlaid on image */}
@@ -140,7 +167,7 @@ export function PhotoLightbox({ photos, currentIndex, onClose, onNavigate }: Pro
             >
               {photos.map((thumb, i) => (
                 <button
-                  key={thumb.id}
+                  key={'id' in thumb ? thumb.id : thumb.src}
                   ref={(el) => {
                     if (el) {
                       thumbnailRefs.current.set(i, el)
@@ -159,12 +186,16 @@ export function PhotoLightbox({ photos, currentIndex, onClose, onNavigate }: Pro
                   )}
                   aria-label={`View photo ${i + 1}`}
                 >
-                  <OptimizedImage
-                    file={thumb}
-                    alt={thumb.name}
-                    fill
-                    sizes="80px"
-                  />
+                  {'id' in thumb
+                    ? (
+                        <OptimizedImage
+                          file={thumb}
+                          alt={thumb.name}
+                          fill
+                          sizes="80px"
+                        />
+                      )
+                    : <Image alt={thumb.alt} className="object-cover" fill sizes="80px" src={thumb.src} />}
                 </button>
               ))}
             </div>

@@ -1,4 +1,4 @@
-import type { PortfolioMatch } from '@/features/meeting-flow/types'
+import type { PortfolioMatch } from '@/shared/modules/projects/core/types'
 import { MatchPills } from '@/features/meeting-flow/ui/components/steps/portfolio/match-pills'
 import { formatProjectCaption } from '@/shared/modules/projects/core/lib/format-project-caption'
 

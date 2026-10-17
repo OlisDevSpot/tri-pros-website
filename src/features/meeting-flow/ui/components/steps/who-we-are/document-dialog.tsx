@@ -1,10 +1,9 @@
 'use client'
 
-// LAZY: first-pass stopgap. The shared `PhotoLightbox`
-// (src/features/project-management/ui/components/photo-lightbox.tsx) is bound to
-// `ProjectMediaFile` records, so this ships a minimal dialog instead of extending it.
-// Migrate onto the lightbox and delete this file when that container is
-// generalized.
+// LAZY: first-pass stopgap with its own minimal dialog. The shared `PhotoLightbox`
+// (src/shared/modules/media/core/components/display/photo-lightbox.tsx) now takes plain
+// images as well as project media, but has no zoom yet. Migrate onto it and delete this
+// file once it can zoom to a focus point.
 
 import type { FocusPoint, PresentationDocument } from '@/features/meeting-flow/types'
 import { ZoomInIcon, ZoomOutIcon } from 'lucide-react'
