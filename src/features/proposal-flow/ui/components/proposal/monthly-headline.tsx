@@ -3,7 +3,7 @@
 import type { FinanceOption } from '@/shared/db/schema'
 
 import { Skeleton } from '@/shared/components/ui/skeleton'
-import { formatAsDollars, numberToUSD } from '@/shared/lib/formatters'
+import { numberToUSD } from '@/shared/lib/formatters'
 
 interface Props {
   allCash: boolean
@@ -15,15 +15,16 @@ interface Props {
   picked: boolean
   loading: boolean
   monthlyFor: (option: FinanceOption) => number
+  format: (value: number) => string
 }
 
-export function MonthlyHeadline({ allCash, finalTcp, deposit, financed, shown, picked, loading, monthlyFor }: Props) {
+export function MonthlyHeadline({ allCash, finalTcp, deposit, financed, shown, picked, loading, monthlyFor, format }: Props) {
   if (allCash) {
     return (
       <div className="grid gap-1 rounded-lg border border-border bg-band p-4">
         <p className="text-xs font-bold tracking-[0.14em] text-muted-foreground uppercase">Pay all cash</p>
-        <p className="font-sans text-4xl leading-none tabular-nums">{formatAsDollars(finalTcp)}</p>
-        <p className="text-sm text-muted-foreground">{`No loan. You pay ${formatAsDollars(deposit)} at signing, then the rest as the work is done, on the schedule below.`}</p>
+        <p className="font-sans text-4xl leading-none tabular-nums">{format(finalTcp)}</p>
+        <p className="text-sm text-muted-foreground">{`No loan. You pay ${format(deposit)} at signing, then the rest as the work is done, on the schedule below.`}</p>
       </div>
     )
   }
@@ -44,8 +45,8 @@ export function MonthlyHeadline({ allCash, finalTcp, deposit, financed, shown, p
               </p>
               <p className="text-sm text-muted-foreground">
                 {picked
-                  ? `${shown.termInMonths / 12} years · ${(shown.interestRate * 100).toFixed(2)}% APR · ${formatAsDollars(financed)} financed`
-                  : `with the ${shown.termInMonths / 12}-year term · ${formatAsDollars(financed)} financed`}
+                  ? `${shown.termInMonths / 12} years · ${(shown.interestRate * 100).toFixed(2)}% APR · ${format(financed)} financed`
+                  : `with the ${shown.termInMonths / 12}-year term · ${format(financed)} financed`}
               </p>
             </>
           )}

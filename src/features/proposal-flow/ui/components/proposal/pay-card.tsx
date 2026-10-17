@@ -5,6 +5,7 @@ import type { FundingChoice } from '@/features/proposal-flow/hooks/use-funding-c
 import { LockIcon } from 'lucide-react'
 
 import { FINANCING_STARTS_AT, FUNDING_LOCKED_NOTE } from '@/features/proposal-flow/constants/funding-copy'
+import { pickMoneyFormat } from '@/features/proposal-flow/lib/money-format'
 import { CashDownControl } from '@/features/proposal-flow/ui/components/proposal/cash-down-control'
 import { FinanceOptionGroup } from '@/features/proposal-flow/ui/components/proposal/finance-option-group'
 import { MonthlyHeadline } from '@/features/proposal-flow/ui/components/proposal/monthly-headline'
@@ -17,6 +18,7 @@ interface Props {
 export function PayCard({ choice }: Props) {
   const { allCash, canFinance, locked, options, selectedOptionId } = choice
   const picked = options.find(option => option.id === selectedOptionId) ?? null
+  const format = pickMoneyFormat([choice.finalTcp, choice.deposit, choice.cash, choice.financed])
 
   return (
     <div className="rounded-xl border border-border bg-card">
@@ -28,7 +30,7 @@ export function PayCard({ choice }: Props) {
             {FUNDING_LOCKED_NOTE}
           </p>
         )}
-        {!canFinance && <p className="text-xs text-muted-foreground">{`${FINANCING_STARTS_AT}, so this project is paid in cash.`}</p>}
+        {!canFinance && allCash && <p className="text-xs text-muted-foreground">{`${FINANCING_STARTS_AT}, so this project is paid in cash.`}</p>}
         <MonthlyHeadline
           allCash={allCash}
           finalTcp={choice.finalTcp}
@@ -38,6 +40,7 @@ export function PayCard({ choice }: Props) {
           picked={picked !== null}
           loading={choice.optionsLoading}
           monthlyFor={choice.monthlyFor}
+          format={format}
         />
         {!allCash && (
           <>
@@ -47,6 +50,7 @@ export function PayCard({ choice }: Props) {
               finalTcp={choice.finalTcp}
               stops={choice.stops}
               disabled={locked}
+              format={format}
               onChange={choice.setCash}
             />
             {options.length > 0 && (

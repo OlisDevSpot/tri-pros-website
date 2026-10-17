@@ -6,8 +6,8 @@ import { ChevronDownIcon, ScaleIcon } from 'lucide-react'
 import { useId, useState } from 'react'
 
 import { PAYMENT_DUE_COPY } from '@/features/proposal-flow/constants/funding-copy'
+import { pickMoneyFormat } from '@/features/proposal-flow/lib/money-format'
 import { Button } from '@/shared/components/ui/button'
-import { formatAsDollars, numberToUSD } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 import { PAYMENT_SCHEDULE_LAW_NOTE } from '@/shared/modules/proposals/core/constants/payment-schedule'
 
@@ -24,8 +24,7 @@ function shade(index: number): string {
 export function PaymentScheduleFold({ schedule, finalTcp }: Props) {
   const [open, setOpen] = useState(false)
   const bodyId = useId()
-  // Whole dollars read cleaner, but a price with cents shows them on every row so the column still adds up.
-  const format = [finalTcp, ...schedule.map(row => row.amount)].some(amount => Math.round(amount * 100) % 100 !== 0) ? numberToUSD : formatAsDollars
+  const format = pickMoneyFormat([finalTcp, ...schedule.map(row => row.amount)])
 
   return (
     <div className="col-span-full overflow-hidden rounded-xl border border-border bg-card">

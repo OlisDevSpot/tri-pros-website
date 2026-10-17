@@ -4,7 +4,6 @@ import { useId } from 'react'
 
 import { Label } from '@/shared/components/ui/label'
 import { Slider } from '@/shared/components/ui/slider'
-import { formatAsDollars } from '@/shared/lib/formatters'
 import { CASH_DOWN_PRESET_PERCENTS } from '@/shared/modules/proposals/core/constants/financing'
 import { getCashDownPreset, nearestStopIndex } from '@/shared/modules/proposals/core/lib/financials'
 
@@ -14,17 +13,18 @@ interface Props {
   finalTcp: number
   stops: number[]
   disabled: boolean
+  format: (value: number) => string
   onChange: (value: number) => void
 }
 
-export function CashDownControl({ cash, deposit, finalTcp, stops, disabled, onChange }: Props) {
+export function CashDownControl({ cash, deposit, finalTcp, stops, disabled, format, onChange }: Props) {
   const labelId = useId()
   const sliderId = useId()
   const chips = [
     { key: 'deposit', label: 'Deposit', value: deposit, off: false },
     ...CASH_DOWN_PRESET_PERCENTS.map((percent) => {
       const preset = getCashDownPreset(percent, finalTcp, stops)
-      return { key: String(percent), label: `${percent}% · ${formatAsDollars(preset.value)}`, value: preset.value, off: preset.disabled }
+      return { key: String(percent), label: `${percent}% · ${format(preset.value)}`, value: preset.value, off: preset.disabled }
     }),
   ]
 
@@ -32,14 +32,15 @@ export function CashDownControl({ cash, deposit, finalTcp, stops, disabled, onCh
     <div className="grid gap-1.5">
       <div className="flex items-baseline justify-between gap-3">
         <Label id={labelId} htmlFor={sliderId} className="text-xs font-bold tracking-[0.14em] text-muted-foreground uppercase">Cash down</Label>
-        <span className="font-sans text-xl leading-none tabular-nums">{formatAsDollars(cash)}</span>
+        <span className="font-sans text-xl leading-none tabular-nums">{format(cash)}</span>
       </div>
       <div role="group" aria-label="Quick cash down" className="flex flex-wrap gap-1.5 pt-1">
         {chips.map(chip => (
           <button
             key={chip.key}
             type="button"
-            aria-pressed={chip.value === cash}
+            // A preset that snaps to the deposit stop leaves the Deposit chip as the one pressed.
+            aria-pressed={chip.value === cash && (chip.key === 'deposit' || chip.value !== deposit)}
             disabled={disabled || chip.off}
             onClick={() => onChange(chip.value)}
             className="min-h-9 rounded-full border border-border-strong bg-card px-3 text-sm font-bold transition-colors hover:bg-hover disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-card aria-pressed:border-primary/45 aria-pressed:bg-row-selected aria-pressed:text-primary pointer-coarse:min-h-11"
@@ -58,11 +59,11 @@ export function CashDownControl({ cash, deposit, finalTcp, stops, disabled, onCh
             value={[nearestStopIndex(cash, stops)]}
             disabled={disabled}
             onValueChange={([i]) => onChange(stops[i ?? 0]!)}
-            thumbProps={{ 'id': sliderId, 'aria-labelledby': labelId, 'aria-valuetext': formatAsDollars(cash), 'className': 'size-5' }}
+            thumbProps={{ 'id': sliderId, 'aria-labelledby': labelId, 'aria-valuetext': format(cash), 'className': 'size-5' }}
           />
           <div className="flex justify-between text-xs font-bold tabular-nums text-muted-foreground">
-            <span>{`${formatAsDollars(deposit)} deposit`}</span>
-            <span>{formatAsDollars(stops.at(-1)!)}</span>
+            <span>{`${format(deposit)} deposit`}</span>
+            <span>{format(stops.at(-1)!)}</span>
           </div>
         </>
       )}

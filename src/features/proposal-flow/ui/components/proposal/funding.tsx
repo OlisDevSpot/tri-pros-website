@@ -22,7 +22,7 @@ export function Funding() {
   return (
     <ChapterInner>
       <ChapterHeader chapter="funding" title="Your investment" lede={lede} />
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-5 @min-[1000px]/proposal:grid-cols-2 @min-[1000px]/proposal:items-start @min-[1000px]/proposal:gap-6">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
         <PricingBreakdown funding={funding} sow={proposal.projectJSON.data.sow} priceDisplayMode={proposal.priceDisplayMode} />
         <PayCard choice={choice} />
         <PaymentScheduleFold schedule={choice.schedule} finalTcp={choice.finalTcp} />

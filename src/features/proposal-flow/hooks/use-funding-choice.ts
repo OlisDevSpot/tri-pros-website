@@ -40,13 +40,14 @@ export interface FundingChoice {
 
 export function useFundingChoice(): FundingChoice {
   const { proposal, token } = useProposalDocument()
-  const stored = useMemo(() => deriveStoredFundingChoice(proposal), [proposal])
-  const { finalTcp, deposit, canFinance: financeable, storedCash } = stored
-  const stops = useMemo(() => getCashDownStops(finalTcp, deposit), [finalTcp, deposit])
-
   // A share-link read carries no envelope id, so for a homeowner a draft envelope shows up only as the server refusing the write.
   const [refused, setRefused] = useState(false)
   const locked = refused || isProposalFrozen(proposal)
+
+  // A locked proposal shows the choice as the agreement prints it, never pulled into today's bounds.
+  const stored = useMemo(() => deriveStoredFundingChoice(proposal, locked ? 'saved' : 'editable'), [proposal, locked])
+  const { finalTcp, deposit, canFinance: financeable, storedCash } = stored
+  const stops = useMemo(() => getCashDownStops(finalTcp, deposit), [finalTcp, deposit])
 
   const [picked, setPicked] = useState<{ cash: number, allCash: boolean } | null>(null)
   const choosing = !locked && picked !== null
