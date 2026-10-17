@@ -4,12 +4,13 @@ import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 
 import { and, eq, sql } from 'drizzle-orm'
 
-import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
+import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { ThrowableDalError } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { proposals } from '@/shared/db/schema/proposals'
 import { PROPOSAL_REFUSALS } from '@/shared/modules/proposals/core/constants/proposal-refusals'
+import { cashDownRefusal } from '@/shared/modules/proposals/core/lib/financials'
 import { isProposalFrozen } from '@/shared/modules/proposals/core/lib/proposal-lock'
 import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 
@@ -46,6 +47,14 @@ export async function recomputeProposalFinancials(
   })
 }
 
+/** A row that predates the rollup has no price yet; one recompute gives it one so the cash-down bounds have a price to hold against. */
+export async function withRollup<T extends { finalTcpCents: number | null }>(proposalId: string, row: T): Promise<T> {
+  if (row.finalTcpCents != null) {
+    return row
+  }
+  return { ...row, ...dalVerifySuccess(await recomputeProposalFinancials(proposalId)) }
+}
+
 // ── setCashInDeal ────────────────────────────────────────────────────────
 
 /**
@@ -65,6 +74,8 @@ export async function setCashInDeal(
         contractSentAt: proposals.contractSentAt,
         contractSignedAt: proposals.contractSignedAt,
         contractDeclinedAt: proposals.contractDeclinedAt,
+        finalTcpCents: proposals.finalTcpCents,
+        depositAmountCents: proposals.depositAmountCents,
       })
       .from(proposals)
       .where(and(eq(proposals.id, input.proposalId), permit(ctx, 'update', proposalServerSpec, ['cashInDealCents']).sql))
@@ -73,6 +84,10 @@ export async function setCashInDeal(
     }
     if (isProposalFrozen(proposal)) {
       throw new ThrowableDalError({ type: 'precondition-failed', reason: PROPOSAL_REFUSALS.frozen })
+    }
+    const reason = cashDownRefusal(Math.round(input.cashInDeal * 100), await withRollup(proposal.id, proposal))
+    if (reason) {
+      throw new ThrowableDalError({ type: 'precondition-failed', reason })
     }
 
     // The select above is the reach check: an unreachable or unwritable row is not found.

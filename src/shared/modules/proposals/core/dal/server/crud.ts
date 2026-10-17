@@ -5,10 +5,10 @@ import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { ThrowableDalError } from '@/shared/dal/server/types'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { PROPOSAL_REFUSALS } from '@/shared/modules/proposals/core/constants/proposal-refusals'
-import { recomputeProposalFinancials } from '@/shared/modules/proposals/core/dal/server/mutations'
+import { recomputeProposalFinancials, withRollup } from '@/shared/modules/proposals/core/dal/server/mutations'
 import { getProposalLockSignals } from '@/shared/modules/proposals/core/dal/server/queries'
 import { deriveProposalKind } from '@/shared/modules/proposals/core/lib/derive-proposal-kind'
-import { computeFinalTcp, depositRefusal, depositWithinCapOrNull } from '@/shared/modules/proposals/core/lib/financials'
+import { cashDownRefusal, computeFinalTcp, depositRefusal, depositWithinCapOrNull } from '@/shared/modules/proposals/core/lib/financials'
 import { toFundingInputs } from '@/shared/modules/proposals/core/lib/funding-columns'
 import { generateShareToken } from '@/shared/modules/proposals/core/lib/generate-share-token'
 import { isProposalFrozen, touchesFrozenLockedFields } from '@/shared/modules/proposals/core/lib/proposal-lock'
@@ -86,6 +86,12 @@ export const proposalCrud = createCrudDal(proposalServerSpec, () => ({
         const movesPrice = 'startingTcpCents' in input || 'projectJSON' in input
         if (input.depositAmountCents != null && !movesPrice) {
           const reason = depositRefusal(input.depositAmountCents, signals.finalTcpCents)
+          if (reason) {
+            throw new ThrowableDalError({ type: 'precondition-failed', reason })
+          }
+        }
+        if (input.cashInDealCents != null && !movesPrice) {
+          const reason = cashDownRefusal(input.cashInDealCents, await withRollup(String(meta.id), signals))
           if (reason) {
             throw new ThrowableDalError({ type: 'precondition-failed', reason })
           }
