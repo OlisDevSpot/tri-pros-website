@@ -30,20 +30,24 @@ export interface UserOverviewCardMeta {
   isOwner?: boolean
 }
 
-export type UserAvatarSize = 'xs' | 'sm' | 'md' | 'lg'
+export type UserAvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
 
 const AVATAR_SIZE_CLASSES: Record<UserAvatarSize, string> = {
-  xs: 'size-5',
-  sm: 'size-6',
-  md: 'size-8',
-  lg: 'size-10',
+  'xs': 'size-5',
+  'sm': 'size-6',
+  'md': 'size-8',
+  'lg': 'size-10',
+  'xl': 'size-12',
+  '2xl': 'size-14',
 }
 
 const AVATAR_FALLBACK_TEXT: Record<UserAvatarSize, string> = {
-  xs: 'text-xs',
-  sm: 'text-xs',
-  md: 'text-xs',
-  lg: 'text-sm',
+  'xs': 'text-xs',
+  'sm': 'text-xs',
+  'md': 'text-xs',
+  'lg': 'text-sm',
+  'xl': 'text-base',
+  '2xl': 'text-lg',
 }
 
 const ROLE_LABELS: Record<MeetingParticipantRole, string> = {
@@ -97,9 +101,11 @@ interface AvatarSlotProps {
   size?: UserAvatarSize
   withTooltip?: boolean
   className?: string
+  /** Replaces the per-user colour, for a surface where every face shares one tint. */
+  fallbackClassName?: string
 }
 
-function AvatarSlot({ size = 'sm', withTooltip = false, className }: AvatarSlotProps) {
+function AvatarSlot({ size = 'sm', withTooltip = false, className, fallbackClassName }: AvatarSlotProps) {
   const { user } = useUserOverviewCard()
   const displayName = user.name ?? 'Unknown'
   const color = getUserColorToken(user.id)
@@ -107,7 +113,7 @@ function AvatarSlot({ size = 'sm', withTooltip = false, className }: AvatarSlotP
   const avatar = (
     <Avatar className={cn(AVATAR_SIZE_CLASSES[size], 'shrink-0', className)}>
       <AvatarImage src={user.image ?? undefined} alt={displayName} />
-      <AvatarFallback className={cn('font-medium', AVATAR_FALLBACK_TEXT[size], color.bg, color.text)}>
+      <AvatarFallback className={cn('font-medium', AVATAR_FALLBACK_TEXT[size], fallbackClassName ?? cn(color.bg, color.text))}>
         {getInitials(displayName)}
       </AvatarFallback>
     </Avatar>
@@ -206,10 +212,12 @@ function RowSlot({ children, className }: RowSlotProps) {
 interface ContactActionsSlotProps {
   include?: ReadonlyArray<'phone' | 'email'>
   className?: string
+  /** Icons only; false also prints the number or email beside them. */
+  compact?: boolean
 }
 
 /** Reuses the shared contact-actions primitives so formatting and dropdowns match customer contact surfaces. */
-function ContactActionsSlot({ include = ['phone', 'email'], className }: ContactActionsSlotProps) {
+function ContactActionsSlot({ include = ['phone', 'email'], className, compact = true }: ContactActionsSlotProps) {
   const { user } = useUserOverviewCard()
   const phoneEnabled = include.includes('phone') && !!user.phone
   const emailEnabled = include.includes('email') && !!user.email
@@ -220,8 +228,8 @@ function ContactActionsSlot({ include = ['phone', 'email'], className }: Contact
 
   return (
     <div className={cn('flex items-center gap-2 text-xs text-muted-foreground', className)}>
-      {phoneEnabled && user.phone && <PhoneAction phone={user.phone} compact />}
-      {emailEnabled && user.email && <EmailAction email={user.email} compact />}
+      {phoneEnabled && user.phone && <PhoneAction phone={user.phone} compact={compact} />}
+      {emailEnabled && user.email && <EmailAction email={user.email} compact={compact} />}
     </div>
   )
 }

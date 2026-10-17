@@ -4,6 +4,7 @@ import { ExternalLinkIcon, FileTextIcon, MoreVerticalIcon, PhoneIcon } from 'luc
 
 import { useProposalDocument } from '@/features/proposal-flow/contexts/proposal-document-context'
 import { getProposalPdfUrl } from '@/features/proposal-flow/lib/get-proposal-pdf-url'
+import { firstName } from '@/features/proposal-flow/lib/rep-names'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
 import { Button } from '@/shared/components/ui/button'
 import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
@@ -20,8 +21,9 @@ export function ProposalNavbarMenu() {
 
   // The label names whoever answers that number: the owner rep, or the company line when the rep has no phone.
   const ownerRep = proposal.meetingReps[0]
-  const contactPhone = ownerRep?.phone ?? companyPhone
-  const contactName = ownerRep?.phone ? ownerRep.name.trim().split(/\s+/)[0] : companyInfo.nickname
+  // `||`, not `??`: an empty phone string must fall through to the company line, not hide the row.
+  const contactPhone = ownerRep?.phone || companyPhone
+  const contactName = ownerRep?.phone ? firstName(ownerRep.name) : companyInfo.nickname
 
   return (
     <Popover>
