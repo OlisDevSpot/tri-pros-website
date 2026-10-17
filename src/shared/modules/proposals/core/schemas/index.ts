@@ -2,7 +2,7 @@ import z from 'zod'
 import { envelopeDocumentIds, priceDisplayModes, projectTypes, validThroughTimeframes } from '@/shared/constants/enums'
 import { formatAsDollars } from '@/shared/lib/formatters'
 import { homeAreas } from '@/shared/modules/construction/core/constants/enums'
-import { computeFinalTcp, getDepositCap } from '@/shared/modules/proposals/core/lib/financials'
+import { computeFinalTcp, describeDepositCap, getDepositCap } from '@/shared/modules/proposals/core/lib/financials'
 import { createEmptySowSection } from '../lib/create-empty-sow-section'
 
 // SUB-SCHEMAS
@@ -223,7 +223,7 @@ export const proposalFormSchema = proposalFormShape.superRefine((proposal, ctx) 
       ctx.addIssue({
         code: 'custom',
         path: ['funding', 'depositAmount'],
-        message: `The deposit can’t be more than ${formatAsDollars(cap)}: by law, $1,000 or 10% of the price, whichever is less.`,
+        message: `The deposit can’t be more than ${formatAsDollars(cap)}: by law, ${describeDepositCap()}.`,
       })
     }
   }

@@ -28,6 +28,10 @@ describe('buildProposalDefaults deposit', () => {
     const defaults = buildProposalDefaults(meetingWithDeal({ mode: 'cash', startingTcp: 10_000, incentives, depositAmount: 1000 }), null)
     assert.equal(defaults.funding.depositAmount, null)
   })
+  it('reads a meeting deposit of 0 as not set, so the cap applies', () => {
+    const defaults = buildProposalDefaults(meetingWithDeal({ mode: 'cash', startingTcp: 20_000, incentives: [], depositAmount: 0 }), null)
+    assert.equal(defaults.funding.depositAmount, null)
+  })
   it('leaves the deposit to the cap when the meeting has none', () => {
     const defaults = buildProposalDefaults(meetingWithDeal({ mode: 'finance', startingTcp: 20_000, incentives: [] }), null)
     assert.equal(defaults.funding.depositAmount, null)

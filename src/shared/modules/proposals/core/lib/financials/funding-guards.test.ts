@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 // eslint-disable-next-line test/no-import-node-test -- tests run on node:test via tsx; vitest is not installed
 import { describe, it } from 'node:test'
 import { PROPOSAL_REFUSALS } from '@/shared/modules/proposals/core/constants/proposal-refusals'
-import { cashDownRefusal, depositRefusal } from './funding-guards'
+import { cashDownRefusal, depositRefusal, depositWithinCapOrNull } from './funding-guards'
 
 describe('depositRefusal', () => {
   it('passes a deposit at the cap of a $7,300 price', () => {
@@ -41,5 +41,20 @@ describe('cashDownRefusal', () => {
   it('reads an empty deposit as the cap', () => {
     assert.equal(cashDownRefusal(73_000, { finalTcpCents: 730_000, depositAmountCents: null }), null)
     assert.equal(cashDownRefusal(72_999, { finalTcpCents: 730_000, depositAmountCents: null }), PROPOSAL_REFUSALS.invalidCashDown)
+  })
+})
+
+describe('depositWithinCapOrNull', () => {
+  it('keeps a copied deposit within the cap', () => {
+    assert.equal(depositWithinCapOrNull(73_000, 730_000), 73_000)
+  })
+  it('drops a copied deposit above the cap, so the copy follows the cap', () => {
+    assert.equal(depositWithinCapOrNull(100_000, 730_000), null)
+  })
+  it('keeps an empty deposit empty', () => {
+    assert.equal(depositWithinCapOrNull(null, 730_000), null)
+  })
+  it('drops a deposit when the source has no price rollup', () => {
+    assert.equal(depositWithinCapOrNull(50_000, null), null)
   })
 })

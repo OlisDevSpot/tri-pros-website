@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 // eslint-disable-next-line test/no-import-node-test -- tests run on node:test via tsx; vitest is not installed
 import { describe, it } from 'node:test'
-import { getDepositCap, resolveDeposit } from './deposit'
+import { describeDepositCap, getDepositCap, resolveDeposit } from './deposit'
 
 describe('getDepositCap', () => {
   it('is $1,000 at and above a $10,000 price', () => {
@@ -26,5 +26,11 @@ describe('resolveDeposit', () => {
   })
   it('pulls a stored value above the cap back to the cap', () => {
     assert.equal(resolveDeposit(1000, 7300), 730)
+  })
+})
+
+describe('describeDepositCap', () => {
+  it('states the cap from the constants', () => {
+    assert.equal(describeDepositCap(), '$1,000 or 10% of the price, whichever is less')
   })
 })

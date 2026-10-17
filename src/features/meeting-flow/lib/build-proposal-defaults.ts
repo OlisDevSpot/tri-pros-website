@@ -55,8 +55,8 @@ export function buildProposalDefaults(
     }
 
     // After the incentives, which lower the price and so the cap. A meeting figure above the cap would make creating
-    // the proposal fail, so the proposal follows the cap instead.
-    if (ds.depositAmount !== undefined) {
+    // the proposal fail, so the proposal follows the cap instead; a 0 at the meeting means it was never set.
+    if (ds.depositAmount !== undefined && ds.depositAmount > 0) {
       const cap = getDepositCap(computeFinalTcp({ funding: defaults.funding, sow: defaults.project.data.sow }))
       defaults.funding.depositAmount = ds.depositAmount <= cap ? ds.depositAmount : null
     }

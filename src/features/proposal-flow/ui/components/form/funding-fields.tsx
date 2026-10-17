@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/shared/components/ui/textarea'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { formatAsDollars } from '@/shared/lib/formatters'
-import { getDepositCap } from '@/shared/modules/proposals/core/lib/financials'
+import { describeDepositCap, getDepositCap } from '@/shared/modules/proposals/core/lib/financials'
 import { incentiveTypes } from '@/shared/modules/proposals/core/schemas'
 import { IncentiveCollapsibleHeader } from './incentive-collapsible-header'
 
@@ -156,7 +156,7 @@ export function FundingFields({ pricingMode }: Props) {
                       }}
                     />
                   </FormControl>
-                  <FormDescription>Leave empty to use the cap: $1,000 or 10% of the price, whichever is less.</FormDescription>
+                  <FormDescription>{`Leave empty to use the cap: ${describeDepositCap()}.`}</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

@@ -8,7 +8,7 @@ import { PROPOSAL_REFUSALS } from '@/shared/modules/proposals/core/constants/pro
 import { recomputeProposalFinancials } from '@/shared/modules/proposals/core/dal/server/mutations'
 import { getProposalLockSignals } from '@/shared/modules/proposals/core/dal/server/queries'
 import { deriveProposalKind } from '@/shared/modules/proposals/core/lib/derive-proposal-kind'
-import { computeFinalTcp, depositRefusal } from '@/shared/modules/proposals/core/lib/financials'
+import { computeFinalTcp, depositRefusal, depositWithinCapOrNull } from '@/shared/modules/proposals/core/lib/financials'
 import { toFundingInputs } from '@/shared/modules/proposals/core/lib/funding-columns'
 import { generateShareToken } from '@/shared/modules/proposals/core/lib/generate-share-token'
 import { isProposalFrozen, touchesFrozenLockedFields } from '@/shared/modules/proposals/core/lib/proposal-lock'
@@ -131,6 +131,9 @@ export const proposalCrud = createCrudDal(proposalServerSpec, () => ({
       label: `Copy of ${source.label}`,
       ownerId: ctx.actor.userId ?? source.ownerId,
       status: 'draft' as const,
+      // The copy has the source's price (every price input is cloned), and its incentive rows land after the insert,
+      // so a deposit within the cap of that price also clears the create check.
+      depositAmountCents: depositWithinCapOrNull(source.depositAmountCents, source.finalTcpCents),
     }),
     // Proposal-COMPLETE duplicate for EVERY caller (router, meeting flow,
     // scripts): the engine copies `spec.table` only, so the source's GLOBAL
