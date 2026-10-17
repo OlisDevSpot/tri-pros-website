@@ -4,6 +4,7 @@ import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { ThrowableDalError } from '@/shared/dal/server/types'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
+import { PROPOSAL_REFUSALS } from '@/shared/modules/proposals/core/constants/proposal-refusals'
 import { recomputeProposalFinancials } from '@/shared/modules/proposals/core/dal/server/mutations'
 import { getProposalLockSignals } from '@/shared/modules/proposals/core/dal/server/queries'
 import { deriveProposalKind } from '@/shared/modules/proposals/core/lib/derive-proposal-kind'
@@ -59,7 +60,7 @@ export const proposalCrud = createCrudDal(proposalServerSpec, () => ({
         }
         const signals = dalVerifySuccess(await getProposalLockSignals(String(meta.id)))
         if (isProposalFrozen(signals)) {
-          throw new ThrowableDalError({ type: 'precondition-failed', reason: 'proposal_frozen' })
+          throw new ThrowableDalError({ type: 'precondition-failed', reason: PROPOSAL_REFUSALS.frozen })
         }
         return input
       },

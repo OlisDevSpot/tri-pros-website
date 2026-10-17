@@ -9,6 +9,7 @@ import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { ThrowableDalError } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { proposals } from '@/shared/db/schema/proposals'
+import { PROPOSAL_REFUSALS } from '@/shared/modules/proposals/core/constants/proposal-refusals'
 import { isProposalFrozen } from '@/shared/modules/proposals/core/lib/proposal-lock'
 import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
 
@@ -71,7 +72,7 @@ export async function setCashInDeal(
       throw new ThrowableDalError({ type: 'not-found' })
     }
     if (isProposalFrozen(proposal)) {
-      throw new ThrowableDalError({ type: 'precondition-failed', reason: 'proposal_frozen' })
+      throw new ThrowableDalError({ type: 'precondition-failed', reason: PROPOSAL_REFUSALS.frozen })
     }
 
     // The select above is the reach check: an unreachable or unwritable row is not found.

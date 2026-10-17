@@ -25,6 +25,7 @@ import type { Incentive } from '@/shared/modules/proposals/core/schemas'
 import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { permit } from '@/shared/dal/server/lib/permissions/permit'
 import { ThrowableDalError } from '@/shared/dal/server/types'
+import { PROPOSAL_REFUSALS } from '@/shared/modules/proposals/core/constants/proposal-refusals'
 import { recomputeProposalFinancials } from '@/shared/modules/proposals/core/dal/server/mutations'
 import { isProposalFrozen } from '@/shared/modules/proposals/core/lib/proposal-lock'
 import { proposalServerSpec } from '@/shared/modules/proposals/core/server-spec'
@@ -53,7 +54,7 @@ export const proposalIncentivesService = {
         throw new ThrowableDalError({ type: 'not-found' })
       }
       if (isProposalFrozen(proposal)) {
-        throw new ThrowableDalError({ type: 'precondition-failed', reason: 'proposal_frozen' })
+        throw new ThrowableDalError({ type: 'precondition-failed', reason: PROPOSAL_REFUSALS.frozen })
       }
 
       dalVerifySuccess(await replaceGlobalIncentiveRows(input.proposalId, domainIncentivesToRows(input.proposalId, input.incentives)))
