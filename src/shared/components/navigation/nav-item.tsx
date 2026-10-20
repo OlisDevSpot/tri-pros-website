@@ -12,7 +12,9 @@ interface Props {
   index: number
   isActive: boolean
   onClick?: (e: React.MouseEvent) => void
-  onMouseEnter?: () => void
+  onPointerEnter?: (e: React.PointerEvent) => void
+  onPointerDown?: (e: React.PointerEvent) => void
+  expanded?: boolean
   selectedItemIndex: number | null
   width?: MotionValue<number>
   left?: MotionValue<number>
@@ -23,7 +25,9 @@ export function NavItem({
   index,
   isActive,
   onClick,
-  onMouseEnter,
+  onPointerEnter,
+  onPointerDown,
+  expanded,
   selectedItemIndex,
   width,
   left,
@@ -49,7 +53,8 @@ export function NavItem({
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      onMouseEnter={onMouseEnter}
+      onPointerEnter={onPointerEnter}
+      onPointerDown={onPointerDown}
       onClick={(e) => {
         onClick?.(e)
       }}
@@ -59,6 +64,7 @@ export function NavItem({
         ? (
             <button
               type="button"
+              aria-expanded={item.subItems.length > 0 ? expanded : undefined}
               className={cn(
                 'relative inline-block px-6 py-3 2xl:px-8 2xl:py-4 hover:text-foreground/70 transition-colors duration-200 font-medium cursor-default',
                 scrolled ? 'text-foreground' : 'text-foreground',

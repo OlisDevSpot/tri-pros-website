@@ -73,6 +73,7 @@ export function PopoverNav({
                         setSelectedAgentItemIndex(prev => prev === index ? null : index)
                       }
                     }}
+                    expanded={selectedAgentItemIndex === index}
                     selectedItemIndex={null}
                   />
                   <AnimatePresence>
@@ -120,6 +121,7 @@ export function PopoverNav({
                         setSelectedMarketingItemIndex(prev => prev === index ? null : index)
                       }
                     }}
+                    expanded={selectedMarketingItemIndex === index}
                     selectedItemIndex={selectedMarketingItemIndex}
                   />
                   <AnimatePresence>

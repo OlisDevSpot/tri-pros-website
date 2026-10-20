@@ -59,6 +59,7 @@ export function SiteNavbar() {
   const matches = useMatchMedia()
 
   const pendingNavRef = useRef<string | null>(null)
+  const pressPointerRef = useRef<string>('')
   const width = useMotionValue(0)
   const left = useMotionValue(0)
   const subitemsContainerHeight = useMotionValue(150)
@@ -161,6 +162,10 @@ export function SiteNavbar() {
               onMouseLeave={() => {
                 closeNavigation()
               }}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape')
+                  closeNavigation()
+              }}
               className="relative hidden xl:block"
             >
               {/* Navigation Items */}
@@ -183,11 +188,22 @@ export function SiteNavbar() {
                     left={left}
                     index={index}
                     isActive={isActive(item.action === 'navigate' ? item.href : '')}
-                    onClick={() => {
-                      setSelectedItemIndex(null)
+                    expanded={selectedItemIndex === index}
+                    onPointerDown={(e) => {
+                      pressPointerRef.current = e.pointerType
                     }}
-                    onMouseEnter={() => {
-                      setSelectedItemIndex(index)
+                    // A tap also fires compat mouse events and then a click, so only a real mouse opens on hover and any other press toggles.
+                    onPointerEnter={(e) => {
+                      if (e.pointerType === 'mouse')
+                        setSelectedItemIndex(index)
+                    }}
+                    onClick={(e) => {
+                      const pointer = e.detail === 0 ? '' : pressPointerRef.current
+                      pressPointerRef.current = ''
+                      if (item.action === 'readonly' && (pointer === 'mouse' || selectedItemIndex !== index))
+                        setSelectedItemIndex(index)
+                      else
+                        closeNavigation()
                     }}
                     selectedItemIndex={selectedItemIndex}
                   />
@@ -195,7 +211,7 @@ export function SiteNavbar() {
               </div>
               {/* Additional Content */}
               <AnimatePresence>
-                {selectedItemIndex && marketingNavItems[selectedItemIndex].action === 'readonly' && (
+                {selectedItemIndex !== null && marketingNavItems[selectedItemIndex].action === 'readonly' && (
                   <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
