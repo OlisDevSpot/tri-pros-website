@@ -2,12 +2,14 @@
 
 import type { Variants } from 'motion/react'
 import { CalendarPlus2Icon, LogInIcon, LogOutIcon, MenuIcon, PhoneIcon } from 'lucide-react'
-import { animate, AnimatePresence, motion, useMotionValue } from 'motion/react'
+import { animate, AnimatePresence, motion, useMotionValue, useReducedMotion } from 'motion/react'
+import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useQueryState } from 'nuqs'
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   // useMemo,
   useRef,
   useState,
@@ -19,6 +21,7 @@ import { ThemeToggleButton } from '@/shared/components/theme-toggle-button'
 import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
 import { companyInfo } from '@/shared/constants/company'
+import { BRAND_EASE } from '@/shared/constants/motion'
 import { generateNavItemsGroups, marketingNavItems } from '@/shared/constants/nav-items'
 import { signOut, useSession } from '@/shared/domains/auth/client'
 import { useAbility } from '@/shared/domains/permissions/client'
@@ -39,8 +42,10 @@ const navContainerVariants: Variants = {
   animate: {
     y: 0,
     transition: {
+      type: 'tween',
+      ease: BRAND_EASE,
       staggerChildren: 0.4,
-      duration: 0.5,
+      duration: 0.4,
     },
   },
 }
@@ -57,13 +62,16 @@ export function SiteNavbar() {
   const isMobile = useIsMobile()
   const pathname = usePathname()
   const matches = useMatchMedia()
+  const reduceMotion = useReducedMotion()
 
   const pendingNavRef = useRef<string | null>(null)
   const pressPointerRef = useRef<string>('')
   const width = useMotionValue(0)
   const left = useMotionValue(0)
-  const subitemsContainerHeight = useMotionValue(150)
+  const subitemsContainerHeight = useMotionValue(0)
   const subitemsContainerRef = useRef<HTMLDivElement | null>(null)
+  const prevSelectedItemIndexRef = useRef<number | null>(null)
+  const shownPanelRef = useRef<{ node: HTMLDivElement | null, openedAt: number }>({ node: null, openedAt: 0 })
 
   const getPopoverNavItems = useCallback(() => {
     const items = generateNavItemsGroups({ ability })
@@ -75,13 +83,35 @@ export function SiteNavbar() {
   //   return Object.values(getPopoverNavItems()).flatMap(group => group?.items).filter(Boolean).length > 0
   // }, [getPopoverNavItems])
 
-  useEffect(() => {
-    if (!subitemsContainerRef.current)
+  // Measured before paint, so the panel opens at its final height instead of growing into it.
+  useLayoutEffect(() => {
+    const prevIndex = prevSelectedItemIndexRef.current
+    prevSelectedItemIndexRef.current = selectedItemIndex
+    if (prevIndex === null)
+      width.jump(0)
+
+    const content = subitemsContainerRef.current
+    if (!content || selectedItemIndex === null || marketingNavItems[selectedItemIndex].action !== 'readonly')
       return
 
-    const containerRect = subitemsContainerRef.current.getBoundingClientRect()
-    animate(subitemsContainerHeight, containerRect.height, { type: 'tween', duration: 0.2 })
-  }, [selectedItemIndex, subitemsContainerHeight])
+    const height = content.offsetHeight
+    const panelWasShowing = content === shownPanelRef.current.node
+    if (!panelWasShowing || reduceMotion) {
+      if (!panelWasShowing)
+        shownPanelRef.current = { node: content, openedAt: performance.now() }
+      subitemsContainerHeight.jump(height)
+      if (!panelWasShowing)
+        return
+    }
+    else {
+      animate(subitemsContainerHeight, height, { duration: 0.18, ease: BRAND_EASE })
+    }
+    // A reopen mid-exit, or a switch right after opening, is already covered by the panel's own fade; a second one would stack.
+    if (prevIndex !== null && performance.now() - shownPanelRef.current.openedAt > 150) {
+      content.style.opacity = '0'
+      animate(content, { opacity: [0, 1] }, { duration: 0.18, ease: BRAND_EASE })
+    }
+  }, [selectedItemIndex, subitemsContainerHeight, width, reduceMotion])
 
   useEffect(() => {
     if (authError) {
@@ -107,7 +137,7 @@ export function SiteNavbar() {
   function closeNavigation() {
     setSelectedItemIndex(null)
     setIsPopoverOpen(false)
-    animate(width, 0)
+    animate(width, 0, { duration: 0.18, ease: BRAND_EASE })
   }
 
   function openLoginModal() {
@@ -148,7 +178,7 @@ export function SiteNavbar() {
         >
           <motion.div
             variants={navContainerVariants}
-            initial="initial"
+            initial={reduceMotion ? false : 'initial'}
             animate="animate"
             className="flex justify-between items-center h-(--navbar-height) w-full"
           >
@@ -213,45 +243,47 @@ export function SiteNavbar() {
               <AnimatePresence>
                 {selectedItemIndex !== null && marketingNavItems[selectedItemIndex].action === 'readonly' && (
                   <motion.div
-                    initial={{ opacity: 0, y: -20 }}
+                    initial={{ opacity: 0, y: reduceMotion ? 0 : -8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.2 }}
-                    style={{
-                      height: subitemsContainerHeight,
-                    }}
-                    className="absolute top-[calc(100%+24px)] left-0 right-0 transition-all bg-background/80 backdrop-blur-sm border-foreground/30 shadow-2xl rounded-lg"
+                    exit={{ opacity: 0, y: reduceMotion ? 0 : -8 }}
+                    transition={{ type: 'tween', ease: BRAND_EASE, duration: 0.18 }}
+                    className="absolute top-[calc(100%+24px)] left-0 right-0 bg-background/80 backdrop-blur-sm border-foreground/30 shadow-2xl rounded-lg"
                   >
                     {/* Bridge */}
                     <div className="absolute -top-6 h-6 left-0 w-full" />
 
-                    {/* Content */}
-                    <div
-                      ref={subitemsContainerRef}
-                      onClick={() => {
-                        closeNavigation()
+                    {/* The clip lives here, not on the panel, or it would clip the bridge above and break the hover path into the panel. */}
+                    <motion.div
+                      style={{
+                        height: subitemsContainerHeight,
                       }}
-                      className="flex flex-col"
+                      className="overflow-hidden rounded-lg"
                     >
-                      {marketingNavItems[selectedItemIndex].subItems?.map((subItem, index) => (
-                        <Button
-                          key={subItem.name}
-                          variant="link"
-                          className="h-12"
-                          asChild
-                        >
-                          <MotionLink
-                            href={subItem.href}
-                            initial={{ opacity: 0, y: -20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.1 }}
-                            className="flex items-center justify-start h-20"
+                      {/* Content */}
+                      <div
+                        ref={subitemsContainerRef}
+                        onClick={() => {
+                          closeNavigation()
+                        }}
+                        className="flex flex-col"
+                      >
+                        {marketingNavItems[selectedItemIndex].subItems?.map(subItem => (
+                          <Button
+                            key={subItem.name}
+                            variant="link"
+                            className="h-12 focus-visible:ring-inset"
+                            asChild
                           >
-                            {subItem.name}
-                          </MotionLink>
-                        </Button>
-                      ))}
-                    </div>
+                            <Link
+                              href={subItem.href}
+                              className="flex items-center justify-start h-20"
+                            >
+                              {subItem.name}
+                            </Link>
+                          </Button>
+                        ))}
+                      </div>
+                    </motion.div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -268,8 +300,9 @@ export function SiteNavbar() {
                         <MotionButton
                           size="icon"
                           variant="outline"
-                          initial={{ opacity: 0, y: -20 }}
+                          initial={{ opacity: 0, y: reduceMotion ? 0 : -20 }}
                           animate={{ opacity: 1, y: 0 }}
+                          transition={{ type: 'tween', ease: BRAND_EASE, duration: 0.4 }}
                           style={{
                             borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
                           }}
@@ -313,8 +346,9 @@ export function SiteNavbar() {
                   asChild
                 >
                   <motion.div
-                    initial={{ opacity: 0, y: -20 }}
+                    initial={{ opacity: 0, y: reduceMotion ? 0 : -20 }}
                     animate={{ opacity: 1, y: 0 }}
+                    transition={{ type: 'tween', ease: BRAND_EASE, duration: 0.4 }}
                   >
                     <Button
                       variant="outline"
@@ -327,8 +361,6 @@ export function SiteNavbar() {
                       asChild
                     >
                       <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
                         style={{
                           borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
                         }}
@@ -346,8 +378,6 @@ export function SiteNavbar() {
                         >
                           <MotionLink
                             href={ROOTS.landing.contact()}
-                            initial={{ opacity: 0, y: -20 }}
-                            animate={{ opacity: 1, y: 0 }}
                             style={{
                               borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
                             }}
@@ -376,8 +406,6 @@ export function SiteNavbar() {
                         >
                           <motion.a
                             href={`tel:${toDialString(companyInfo.contactInfo.find(info => info.accessor === 'phone')?.value)}`}
-                            initial={{ opacity: 0, y: -20 }}
-                            animate={{ opacity: 1, y: 0 }}
                             style={{
                               borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
                             }}
@@ -392,8 +420,6 @@ export function SiteNavbar() {
                     <MotionButton
                       size="icon"
                       variant="ghost"
-                      initial={{ opacity: 0, y: -20 }}
-                      animate={{ opacity: 1, y: 0 }}
                       style={{
                         borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
                       }}

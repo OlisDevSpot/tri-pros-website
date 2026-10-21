@@ -2,8 +2,9 @@
 
 import type { DynamicNavSections, NavItemsGroup } from '@/shared/types/nav'
 
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { Fragment, useState } from 'react'
+import { BRAND_EASE } from '@/shared/constants/motion'
 import { useSession } from '@/shared/domains/auth/client'
 import { useAbility } from '@/shared/domains/permissions/client'
 import { useMatchMedia } from '@/shared/hooks/use-match-media'
@@ -13,6 +14,7 @@ import { cn } from '@/shared/lib/utils'
 import { SignInGoogleButton } from '../buttons/auth/sign-in-google-button'
 import { UserButton } from '../buttons/user-button'
 import { ThemeToggleButton } from '../theme-toggle-button'
+import { AnimatedCollapsibleContent } from '../ui/collapsible'
 import { Separator } from '../ui/separator'
 import { NavItem } from './nav-item'
 
@@ -37,6 +39,7 @@ export function PopoverNav({
   const isMobile = useIsMobile()
   const matches = useMatchMedia()
   const sessionQuery = useSession()
+  const reduceMotion = useReducedMotion()
 
   const ability = useAbility()
   const isInternalUser = ability.can('access', 'Dashboard')
@@ -45,12 +48,10 @@ export function PopoverNav({
     <AnimatePresence onExitComplete={onExitComplete}>
       {isOpen && (
         <motion.div
-          initial={{ opacity: 0, x: 100 }}
+          initial={{ opacity: 0, x: reduceMotion ? 0 : 100 }}
           animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 100 }}
-          transition={{
-            type: 'tween',
-          }}
+          exit={{ opacity: 0, x: reduceMotion ? 0 : 100 }}
+          transition={{ type: 'tween', ease: BRAND_EASE, duration: 0.4 }}
           className={cn(
             'fixed inset-y-0 bg-background/70 backdrop-blur-md w-full',
             isMobile ? 'right-0 w-[70%]' : 'right-0 w-80 border-l',
@@ -60,36 +61,32 @@ export function PopoverNav({
             <div className="flex flex-col gap-4 items-center w-full">
               {isInternalUser && navItems['tpr-internal']?.items.map((item, index) => (
                 <Fragment key={item.name}>
-                  <NavItem
-                    item={item}
-                    index={0}
-                    isActive={false}
-                    onClick={(e) => {
-                      if (item.action === 'navigate') {
-                        e.preventDefault()
-                        onNavigate(item.href)
-                      }
-                      else {
-                        setSelectedAgentItemIndex(prev => prev === index ? null : index)
-                      }
-                    }}
-                    expanded={selectedAgentItemIndex === index}
-                    selectedItemIndex={null}
-                  />
-                  <AnimatePresence>
-                    {selectedAgentItemIndex === index && navItems['tpr-internal'] && 'subItems' in navItems['tpr-internal'].items?.[selectedAgentItemIndex] && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="space-y-2"
-                        key={selectedAgentItemIndex}
-                      >
-                        {navItems['tpr-internal']?.items?.[selectedAgentItemIndex]?.subItems?.map((subItem, subItemIndex) => (
+                  {/* The section's top gap lives inside its reveal: a collapsed section left in the gap-4 column would still take a gap, so everything below would pop 16px as it mounts and unmounts. */}
+                  <div className="flex w-full flex-col items-center">
+                    <NavItem
+                      item={item}
+                      index={0}
+                      isActive={false}
+                      onClick={(e) => {
+                        if (item.action === 'navigate') {
+                          e.preventDefault()
+                          onNavigate(item.href)
+                        }
+                        else {
+                          setSelectedAgentItemIndex(prev => prev === index ? null : index)
+                        }
+                      }}
+                      expanded={selectedAgentItemIndex === index}
+                      selectedItemIndex={null}
+                      animateEntrance={false}
+                    />
+                    <AnimatedCollapsibleContent open={selectedAgentItemIndex === index}>
+                      <div className="space-y-2 pt-4">
+                        {'subItems' in item && item.subItems.map(subItem => (
                           <NavItem
                             key={subItem.name}
                             item={subItem}
-                            index={subItemIndex}
+                            index={0}
                             isActive={false}
                             onClick={(e) => {
                               if ('href' in subItem) {
@@ -98,16 +95,17 @@ export function PopoverNav({
                               }
                             }}
                             selectedItemIndex={null}
+                            animateEntrance={false}
                           />
                         ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                      </div>
+                    </AnimatedCollapsibleContent>
+                  </div>
                   <Separator />
                 </Fragment>
               ))}
               {!matches.xl && navItems['marketing-links'] && navItems['marketing-links'].items.map((item, index) => (
-                <Fragment key={item.name}>
+                <div key={item.name} className="flex w-full flex-col items-center">
                   <NavItem
                     item={item}
                     index={0}
@@ -123,35 +121,29 @@ export function PopoverNav({
                     }}
                     expanded={selectedMarketingItemIndex === index}
                     selectedItemIndex={selectedMarketingItemIndex}
+                    animateEntrance={false}
                   />
-                  <AnimatePresence>
-                    {selectedMarketingItemIndex === index && navItems['marketing-links'] && 'subItems' in navItems['marketing-links'].items?.[selectedMarketingItemIndex] && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="space-y-2"
-                        key={selectedMarketingItemIndex}
-                      >
-                        {navItems['marketing-links']?.items?.[selectedMarketingItemIndex]?.subItems?.map((subItem, subItemIndex) => (
-                          <NavItem
-                            key={'href' in subItem ? subItem.href : ''}
-                            item={subItem}
-                            index={subItemIndex}
-                            isActive={false}
-                            onClick={(e) => {
-                              if ('href' in subItem) {
-                                e.preventDefault()
-                                onNavigate(subItem.href)
-                              }
-                            }}
-                            selectedItemIndex={null}
-                          />
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </Fragment>
+                  <AnimatedCollapsibleContent open={selectedMarketingItemIndex === index}>
+                    <div className="space-y-2 pt-4">
+                      {'subItems' in item && item.subItems.map(subItem => (
+                        <NavItem
+                          key={'href' in subItem ? subItem.href : ''}
+                          item={subItem}
+                          index={0}
+                          isActive={false}
+                          onClick={(e) => {
+                            if ('href' in subItem) {
+                              e.preventDefault()
+                              onNavigate(subItem.href)
+                            }
+                          }}
+                          selectedItemIndex={null}
+                          animateEntrance={false}
+                        />
+                      ))}
+                    </div>
+                  </AnimatedCollapsibleContent>
+                </div>
               ))}
             </div>
             <div className="flex items-center gap-2">

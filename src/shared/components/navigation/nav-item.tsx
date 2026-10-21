@@ -1,9 +1,10 @@
 import type { MotionValue } from 'motion/react'
 import type { NavItem as TNavItem } from '@/shared/types/nav'
 import { ChevronUpIcon } from 'lucide-react'
-import { animate, motion } from 'motion/react'
+import { animate, motion, useReducedMotion } from 'motion/react'
 import Link from 'next/link'
 import { useEffect, useRef } from 'react'
+import { BRAND_EASE } from '@/shared/constants/motion'
 import { useHasScrolled } from '@/shared/hooks/use-has-scrolled'
 import { cn } from '@/shared/lib/utils'
 
@@ -18,6 +19,7 @@ interface Props {
   selectedItemIndex: number | null
   width?: MotionValue<number>
   left?: MotionValue<number>
+  animateEntrance?: boolean
 }
 
 export function NavItem({
@@ -31,8 +33,10 @@ export function NavItem({
   selectedItemIndex,
   width,
   left,
+  animateEntrance = true,
 }: Props) {
   const scrolled = useHasScrolled(10)
+  const reduceMotion = useReducedMotion()
   const buttonRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -42,17 +46,20 @@ export function NavItem({
     const clientRect = buttonRef.current.getBoundingClientRect()
     const containerLeft = document.getElementById('nav-items-container')?.getBoundingClientRect()!.left as number
 
-    animate(width, clientRect.width)
-    animate(left, clientRect.x - containerLeft)
-  }, [selectedItemIndex, index, left, width])
+    const x = clientRect.x - containerLeft
+    if (width.get() === 0 || reduceMotion)
+      left.jump(x)
+    animate(width, clientRect.width, { duration: 0.18, ease: BRAND_EASE })
+    animate(left, x, { duration: 0.18, ease: BRAND_EASE })
+  }, [selectedItemIndex, index, left, width, reduceMotion])
 
   return (
     <motion.div
       ref={buttonRef}
       key={item.name}
-      initial={{ opacity: 0, y: -20 }}
+      initial={animateEntrance ? { opacity: 0, y: reduceMotion ? 0 : -20 } : false}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 }}
+      transition={{ type: 'tween', ease: BRAND_EASE, duration: 0.4, delay: index * 0.1 }}
       onPointerEnter={onPointerEnter}
       onPointerDown={onPointerDown}
       onClick={(e) => {
