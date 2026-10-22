@@ -2,15 +2,18 @@
 
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import { PlusIcon, TrashIcon } from 'lucide-react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useState } from 'react'
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
 import { Button } from '@/shared/components/ui/button'
+import { AnimatedCollapsibleContent, Collapsible, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 import { MoneyField } from '@/shared/components/ui/money-field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Textarea } from '@/shared/components/ui/textarea'
+import { COLLAPSE_HEIGHT_VARIANTS, COLLAPSE_TRANSITION } from '@/shared/constants/motion'
 import { SectionFinancialsSummary } from '@/shared/modules/proposals/core/components/section-financials-summary'
 
 interface Props {
@@ -32,6 +35,8 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
   })
 
   const [openNotes, setOpenNotes] = useState<Set<string>>(() => new Set())
+  const reduceMotion = useReducedMotion()
+  const rowTransition = reduceMotion ? { duration: 0 } : COLLAPSE_TRANSITION
 
   const selectedScopes = useWatch({
     control: form.control,
@@ -128,7 +133,7 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
       />
 
       {/* Cost Lines */}
-      <div className="space-y-3">
+      <div>
         <div className="flex items-center justify-between border-t border-border pt-3">
           <h5 className="text-sm font-semibold">Cost Lines</h5>
           <div className="flex items-center gap-2">
@@ -157,19 +162,24 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
           </div>
         </div>
 
-        {costFields.length === 0
-          ? (
-              <p className="py-3 text-center text-xs text-muted-foreground">
-                No cost lines yet
-              </p>
-            )
-          : (
-              <div className="space-y-3">
-                {costFields.map((field, lineIndex) => (
-                  <div
-                    key={field.id}
-                    className="rounded-lg border border-border bg-card p-3 space-y-3"
-                  >
+        {/* Every row carries its own gap, so an entering or leaving row grows or shrinks with it and nothing snaps. */}
+        <AnimatePresence initial={false}>
+          {costFields.map((field, lineIndex) => (
+            <motion.div
+              key={field.id}
+              initial={COLLAPSE_HEIGHT_VARIANTS.initial}
+              animate={COLLAPSE_HEIGHT_VARIANTS.animate}
+              exit={COLLAPSE_HEIGHT_VARIANTS.exit}
+              transition={rowTransition}
+              className="overflow-hidden"
+            >
+              <div className="pt-3">
+                <Collapsible
+                  asChild
+                  open={openNotes.has(field.id)}
+                  onOpenChange={() => toggleNotes(field.id)}
+                >
+                  <div className="rounded-lg border border-border bg-card p-3">
                     <div className="grid grid-cols-1 gap-3 lg:grid-cols-[2fr_1fr_1.5fr_auto]">
                       <FormField
                         name={`project.data.sow.${index}.financials.costLines.${lineIndex}.label`}
@@ -226,15 +236,16 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
                         )}
                       />
                       <div className="flex items-end gap-1">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          className="text-xs"
-                          onClick={() => toggleNotes(field.id)}
-                        >
-                          {openNotes.has(field.id) ? 'Hide notes' : 'Add notes'}
-                        </Button>
+                        <CollapsibleTrigger asChild>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="text-xs"
+                          >
+                            {openNotes.has(field.id) ? 'Hide notes' : 'Add notes'}
+                          </Button>
+                        </CollapsibleTrigger>
                         <Button
                           type="button"
                           size="icon"
@@ -247,34 +258,54 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
                         </Button>
                       </div>
                     </div>
-                    {openNotes.has(field.id) && (
-                      <FormField
-                        name={`project.data.sow.${index}.financials.costLines.${lineIndex}.notes`}
-                        control={form.control}
-                        render={({ field: lineField }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs">Notes</FormLabel>
-                            <FormControl>
-                              <Textarea
-                                {...lineField}
-                                value={lineField.value ?? ''}
-                                placeholder="Additional context for this cost line"
-                                rows={2}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    )}
+                    <AnimatedCollapsibleContent open={openNotes.has(field.id)}>
+                      <div className="pt-3">
+                        <FormField
+                          name={`project.data.sow.${index}.financials.costLines.${lineIndex}.notes`}
+                          control={form.control}
+                          render={({ field: lineField }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs">Notes</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  {...lineField}
+                                  value={lineField.value ?? ''}
+                                  placeholder="Additional context for this cost line"
+                                  rows={2}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </AnimatedCollapsibleContent>
                   </div>
-                ))}
+                </Collapsible>
               </div>
-            )}
+            </motion.div>
+          ))}
+          {costFields.length === 0 && (
+            <motion.div
+              key="empty"
+              initial={COLLAPSE_HEIGHT_VARIANTS.initial}
+              animate={COLLAPSE_HEIGHT_VARIANTS.animate}
+              exit={COLLAPSE_HEIGHT_VARIANTS.exit}
+              transition={rowTransition}
+              className="overflow-hidden"
+            >
+              <div className="pt-3">
+                <p className="py-3 text-center text-xs text-muted-foreground">
+                  No cost lines yet
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Section Incentives */}
-      <div className="space-y-3">
+      <div>
         <div className="flex items-center justify-between border-t border-border pt-3">
           <h5 className="text-sm font-semibold">Section Incentives</h5>
           <Button
@@ -296,67 +327,83 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
           </Button>
         </div>
 
-        {incentiveFields.length === 0
-          ? (
-              <p className="py-3 text-center text-xs text-muted-foreground">
-                No section incentives
-              </p>
-            )
-          : (
-              <div className="space-y-3">
-                {incentiveFields.map((field, incIndex) => (
-                  <div
-                    key={field.id}
-                    className="rounded-lg border border-status-success-dot/40 bg-status-success-bg p-3"
-                  >
-                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-[2fr_1fr_auto]">
-                      <FormField
-                        name={`project.data.sow.${index}.financials.incentives.${incIndex}.label`}
-                        control={form.control}
-                        render={({ field: incField }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs">Label</FormLabel>
-                            <FormControl>
-                              <Input {...incField} placeholder="Scope discount" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        name={`project.data.sow.${index}.financials.incentives.${incIndex}.amount`}
-                        control={form.control}
-                        render={({ field: incField }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs">Amount</FormLabel>
-                            <FormControl>
-                              <MoneyField
-                                placeholder="$500"
-                                value={incField.value || null}
-                                onChange={value => incField.onChange(value ?? 0)}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <div className="flex items-end">
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => removeIncentive(incIndex)}
-                          aria-label="Remove incentive"
-                        >
-                          <TrashIcon className="size-4" />
-                        </Button>
-                      </div>
+        <AnimatePresence initial={false}>
+          {incentiveFields.map((field, incIndex) => (
+            <motion.div
+              key={field.id}
+              initial={COLLAPSE_HEIGHT_VARIANTS.initial}
+              animate={COLLAPSE_HEIGHT_VARIANTS.animate}
+              exit={COLLAPSE_HEIGHT_VARIANTS.exit}
+              transition={rowTransition}
+              className="overflow-hidden"
+            >
+              <div className="pt-3">
+                <div className="rounded-lg border border-status-success-dot/40 bg-status-success-bg p-3">
+                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-[2fr_1fr_auto]">
+                    <FormField
+                      name={`project.data.sow.${index}.financials.incentives.${incIndex}.label`}
+                      control={form.control}
+                      render={({ field: incField }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">Label</FormLabel>
+                          <FormControl>
+                            <Input {...incField} placeholder="Scope discount" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      name={`project.data.sow.${index}.financials.incentives.${incIndex}.amount`}
+                      control={form.control}
+                      render={({ field: incField }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">Amount</FormLabel>
+                          <FormControl>
+                            <MoneyField
+                              placeholder="$500"
+                              value={incField.value || null}
+                              onChange={value => incField.onChange(value ?? 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="flex items-end">
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => removeIncentive(incIndex)}
+                        aria-label="Remove incentive"
+                      >
+                        <TrashIcon className="size-4" />
+                      </Button>
                     </div>
                   </div>
-                ))}
+                </div>
               </div>
-            )}
+            </motion.div>
+          ))}
+          {incentiveFields.length === 0 && (
+            <motion.div
+              key="empty"
+              initial={COLLAPSE_HEIGHT_VARIANTS.initial}
+              animate={COLLAPSE_HEIGHT_VARIANTS.animate}
+              exit={COLLAPSE_HEIGHT_VARIANTS.exit}
+              transition={rowTransition}
+              className="overflow-hidden"
+            >
+              <div className="pt-3">
+                <p className="py-3 text-center text-xs text-muted-foreground">
+                  No section incentives
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <SectionFinancialsSummary financials={watchedFinancials} priceDisplayMode={pricingMode} />

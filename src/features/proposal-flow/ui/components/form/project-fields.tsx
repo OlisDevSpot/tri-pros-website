@@ -5,10 +5,9 @@ import { useState } from 'react'
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import { Button } from '@/shared/components/ui/button'
 import { AnimatedCollapsibleContent, Collapsible, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
-import { Textarea } from '@/shared/components/ui/textarea'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { createEmptySowSection } from '@/shared/modules/proposals/core/lib/create-empty-sow-section'
+import { AgreementNotesItem } from './agreement-notes-item'
 import { SOWCollapsibleHeader } from './sow-collapsible-header'
 import { SOWSection } from './sow-field'
 
@@ -92,91 +91,65 @@ export function ProjectFields({ priceDisplayMode }: Props) {
   return (
     <>
       <DeleteConfirmDialog />
-      <div className="flex flex-col gap-4 lg:gap-6">
-        <div className="flex flex-col items-start gap-3">
-          <h3 className="text-lg font-semibold">Complete Scope of Work</h3>
-          <div className="flex flex-col gap-4 w-full">
-            {fields.map((fieldOfArray, index) => {
-              const isOpen = openSections.has(index)
-              return (
-                <Collapsible
-                  key={fieldOfArray.id}
-                  open={isOpen}
-                  onOpenChange={() => toggleSection(index)}
-                >
-                  <div className="border border-border rounded-xl overflow-hidden bg-card">
-                    <CollapsibleTrigger asChild>
-                      <div>
-                        <SOWCollapsibleHeader
-                          isOpen={isOpen}
-                          onDelete={(e) => {
-                            e.stopPropagation()
-                            handleDeleteSection(index)
-                          }}
-                          onDuplicate={(e) => {
-                            e.stopPropagation()
-                            handleDuplicateSection(index)
-                          }}
-                          onTitleChange={(title) => {
-                            form.setValue(`project.data.sow.${index}.title`, title)
-                          }}
-                          priceDisplayMode={priceDisplayMode}
-                          sow={sowValues[index] ?? fieldOfArray}
-                        />
-                      </div>
-                    </CollapsibleTrigger>
-                    <AnimatedCollapsibleContent open={isOpen}>
-                      <SOWSection
-                        index={index}
-                        priceDisplayMode={priceDisplayMode}
-                        sowSnapshot={fieldOfArray}
-                      />
-                    </AnimatedCollapsibleContent>
-                  </div>
-                </Collapsible>
-              )
-            })}
-            <Button
-              type="button"
-              size="icon"
-              variant="outline"
-              onClick={() => {
-                append(createEmptySowSection())
-                setOpenSections(prev => new Set(prev).add(fields.length))
-              }}
+      <div className="flex min-h-0 flex-[0_1_auto] flex-col gap-2">
+        {fields.map((fieldOfArray, index) => {
+          const isOpen = openSections.has(index)
+          return (
+            <Collapsible
+              key={fieldOfArray.id}
+              open={isOpen}
+              onOpenChange={() => toggleSection(index)}
+              // The floor grows over 200ms on CSS `ease`, which is COLLAPSE_TRANSITION's cubic-bezier(.25,.1,.25,1),
+              // so the box and its body open together; change one and the box snaps ahead of its body.
+              // The box keeps shrinking while its body exits: as flex-none it would jump to the body's full
+              // height for the first frame of the collapse.
+              className="flex min-h-0 flex-none flex-col overflow-hidden rounded-xl border border-border bg-card transition-[min-height] duration-200 ease-[ease] data-[state=open]:min-h-60 data-[state=open]:flex-[0_1_auto] has-[>[data-sow-body]]:flex-[0_1_auto] motion-reduce:transition-none"
             >
-              <PlusIcon />
-            </Button>
-          </div>
-        </div>
-        <FormField
-          name="project.data.agreementNotes"
-          control={form.control}
-          render={({ field }) => (
-            <FormItem>
-              <div className="flex gap-2 items-center">
-                <FormLabel>Agreement Notes</FormLabel>
-                <Button
-                  variant="outline"
-                  type="button"
-                  className="text-xs text-muted-foreground hover:underline"
-                  size="sm"
-                >
-                  Templates
-                </Button>
-              </div>
-              <FormControl>
-                <Textarea
-                  {...field}
-                  value={field.value || ''}
-                  placeholder="Tri Pros Remodeling will..."
-                  className="min-h-62.5"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+              <CollapsibleTrigger asChild>
+                <div className="flex-none data-[state=open]:border-b">
+                  <SOWCollapsibleHeader
+                    isOpen={isOpen}
+                    onDelete={(e) => {
+                      e.stopPropagation()
+                      handleDeleteSection(index)
+                    }}
+                    onDuplicate={(e) => {
+                      e.stopPropagation()
+                      handleDuplicateSection(index)
+                    }}
+                    onTitleChange={(title) => {
+                      form.setValue(`project.data.sow.${index}.title`, title)
+                    }}
+                    priceDisplayMode={priceDisplayMode}
+                    sow={sowValues[index] ?? fieldOfArray}
+                  />
+                </div>
+              </CollapsibleTrigger>
+              <AnimatedCollapsibleContent open={isOpen} className="flex min-h-0 flex-col" data-sow-body>
+                <div className="min-h-0 overflow-y-auto overscroll-contain">
+                  <SOWSection
+                    index={index}
+                    priceDisplayMode={priceDisplayMode}
+                    sowSnapshot={fieldOfArray}
+                  />
+                </div>
+              </AnimatedCollapsibleContent>
+            </Collapsible>
+          )
+        })}
+        <AgreementNotesItem />
+        <Button
+          type="button"
+          size="icon"
+          variant="outline"
+          className="flex-none self-start"
+          onClick={() => {
+            append(createEmptySowSection())
+            setOpenSections(prev => new Set(prev).add(fields.length))
+          }}
+        >
+          <PlusIcon />
+        </Button>
       </div>
     </>
   )
