@@ -4,6 +4,7 @@ import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-s
 import { useFormContext, useWatch } from 'react-hook-form'
 import { FORM_PARTS } from '@/features/proposal-flow/constants/form-parts'
 import { useFormPart } from '@/features/proposal-flow/hooks/use-form-part'
+import { usePartListNavigation } from '@/features/proposal-flow/hooks/use-part-list-navigation'
 import { FundingFields } from '@/features/proposal-flow/ui/components/form/funding-fields'
 import { GeneralFields } from '@/features/proposal-flow/ui/components/form/general-fields'
 import { ProjectFields } from '@/features/proposal-flow/ui/components/form/project-fields'
@@ -21,6 +22,7 @@ interface Props {
 export function EditProposalBody({ proposalId }: Props) {
   const form = useFormContext<ProposalFormSchema>()
   const { part, activePart, setPart } = useFormPart()
+  const { openFromList, backToList } = usePartListNavigation()
   // The one value the parts take as a prop; it changes only through the settings switch, so typing never
   // re-renders the body.
   const pricingMode = useWatch({ control: form.control, name: 'priceDisplayMode' })
@@ -29,7 +31,7 @@ export function EditProposalBody({ proposalId }: Props) {
     <div className="flex min-h-0 flex-1 flex-col gap-(--gutter) lg:grid lg:grid-cols-[240px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
       <PartRail proposalId={proposalId} active={activePart} onSelect={setPart} />
       <PartStrip proposalId={proposalId} active={activePart} onSelect={setPart} />
-      {part === null && <PartList proposalId={proposalId} onSelect={setPart} />}
+      {part === null && <PartList proposalId={proposalId} onSelect={openFromList} />}
 
       <div className={cn('flex min-h-0 flex-1 flex-col', part === null && 'hidden md:flex')}>
         {FORM_PARTS.map(({ id, label }) => (
@@ -37,7 +39,7 @@ export function EditProposalBody({ proposalId }: Props) {
             key={id}
             title={label}
             hidden={id !== activePart}
-            onBack={() => setPart(null)}
+            onBack={backToList}
             contentClassName={id === 'sow' ? 'flex flex-col' : undefined}
           >
             {id === 'general' && <GeneralFields />}
