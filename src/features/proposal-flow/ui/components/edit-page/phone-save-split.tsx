@@ -1,12 +1,10 @@
 'use client'
 
 import type { ProposalFormActions } from '@/features/proposal-flow/hooks/use-proposal-form-actions'
-import { ChevronDownIcon, SaveIcon } from 'lucide-react'
 import { useState } from 'react'
 import { TOOLBAR_BUTTON_ACTIVE, TOOLBAR_BUTTON_BASE, TOOLBAR_BUTTON_INACTIVE } from '@/features/proposal-flow/constants/proposal-toolbar'
-import { Button } from '@/shared/components/ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import { cn } from '@/shared/lib/utils'
+import { CompactSaveSplit } from './compact-save-split'
 
 interface Props {
   isLoading: boolean
@@ -26,47 +24,19 @@ export function PhoneSaveSplit({ isLoading, actions }: Props) {
           isLoading && 'pointer-events-none opacity-50',
         )}
       >
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              disabled={isLoading}
-              aria-label="Save"
-              className="inline-flex items-center gap-0.5 px-1.5"
-            >
-              <SaveIcon className="size-3.5" />
-              <ChevronDownIcon className="size-3" />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent className="w-44 p-1" align="end">
-            <div className="flex flex-col">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="justify-start"
-                onClick={() => {
-                  setOpen(false)
-                  actions.saveOnly()
-                }}
-              >
-                Save
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="justify-start"
-                onClick={() => {
-                  setOpen(false)
-                  actions.saveAndPreview()
-                }}
-              >
-                Save & Preview
-              </Button>
-            </div>
-          </PopoverContent>
-        </Popover>
+        <CompactSaveSplit
+          open={open}
+          onOpenChange={setOpen}
+          isLoading={isLoading}
+          onSave={() => {
+            setOpen(false)
+            actions.saveOnly()
+          }}
+          onSaveAndPreview={() => {
+            setOpen(false)
+            actions.saveAndPreview()
+          }}
+        />
       </div>
     </div>
   )

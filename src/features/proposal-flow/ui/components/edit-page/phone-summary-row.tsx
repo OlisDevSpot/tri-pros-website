@@ -36,7 +36,12 @@ export function PhoneSummaryRow({ proposalId, status, isLoading, viewHref, actio
             <span className="truncate text-sm font-semibold tabular-nums">{funding.summary}</span>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <DropdownMenu>
+            <DropdownMenu onOpenChange={(open) => {
+              if (open) {
+                openSettingsOnClose.current = false
+              }
+            }}
+            >
               <DropdownMenuTrigger asChild>
                 <Button type="button" variant="ghost" size="icon" aria-label="More">
                   <MoreHorizontalIcon />
@@ -45,8 +50,8 @@ export function PhoneSummaryRow({ proposalId, status, isLoading, viewHref, actio
               <DropdownMenuContent
                 align="end"
                 onCloseAutoFocus={(event) => {
-                  event.preventDefault()
                   if (openSettingsOnClose.current) {
+                    event.preventDefault()
                     openSettingsOnClose.current = false
                     setSettingsOpen(true)
                   }

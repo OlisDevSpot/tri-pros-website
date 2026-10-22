@@ -7,6 +7,7 @@ import { TOOLBAR_BUTTON_ACTIVE, TOOLBAR_BUTTON_BASE, TOOLBAR_BUTTON_INACTIVE } f
 import { Button } from '@/shared/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import { cn } from '@/shared/lib/utils'
+import { CompactSaveSplit } from './compact-save-split'
 import { PricingModeSettings } from './pricing-mode-settings'
 
 interface Props {
@@ -115,25 +116,13 @@ export function ProposalToolbar({ isLoading, viewHref, actions }: Props) {
             </div>
           </PopoverContent>
         </Popover>
-        {/* Mobile: entire button opens popover */}
-        <Popover open={saveOpenMobile} onOpenChange={setSaveOpenMobile}>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              disabled={isLoading}
-              className="inline-flex items-center gap-0.5 px-1.5 lg:hidden"
-            >
-              <SaveIcon className="size-3.5" />
-              <ChevronDownIcon className="size-3" />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent className="w-44 p-1" align="end">
-            <div className="flex flex-col">
-              <Button type="button" variant="ghost" size="sm" className="justify-start" onClick={handleSaveOnly}>Save</Button>
-              <Button type="button" variant="ghost" size="sm" className="justify-start" onClick={handleSaveAndPreview}>Save & Preview</Button>
-            </div>
-          </PopoverContent>
-        </Popover>
+        <CompactSaveSplit
+          open={saveOpenMobile}
+          onOpenChange={setSaveOpenMobile}
+          isLoading={isLoading}
+          onSave={handleSaveOnly}
+          onSaveAndPreview={handleSaveAndPreview}
+        />
       </div>
     </div>
   )
