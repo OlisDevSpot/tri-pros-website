@@ -4,11 +4,14 @@ import type { ReactNode } from 'react'
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { OverrideProposalValues } from '@/features/proposal-flow/types'
 import type { Proposal } from '@/shared/db/schema'
+import { useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { useProposalFormActions } from '@/features/proposal-flow/hooks/use-proposal-form-actions'
 import { deepMergeFormDefaults } from '@/features/proposal-flow/lib/deep-merge-form-defaults'
 import { baseDefaultValues } from '@/features/proposal-flow/schemas/form-schema'
+import { useIdleReady } from '@/shared/hooks/use-idle-ready'
+import { useTRPC } from '@/trpc/helpers'
 import { EditProposalBody } from './edit-proposal-body'
 import { EditProposalOverview } from './edit-proposal-overview'
 import { PhoneSummaryRow } from './phone-summary-row'
@@ -44,6 +47,20 @@ export function EditProposalShell({
 }: Props) {
   const form = useFormContext<ProposalFormSchema>()
   const actions = useProposalFormActions({ onSubmit, onSave })
+  const trpc = useTRPC()
+  const queryClient = useQueryClient()
+  const isIdle = useIdleReady()
+  const customerId = customer?.id
+
+  // The reads behind the pill's panel, fetched once the page settles so the panel opens on its data and never grows under the rep.
+  useEffect(() => {
+    if (isIdle && customerId) {
+      void queryClient.prefetchQuery(trpc.customerPipelinesRouter.getCustomerProfile.queryOptions({ customerId }))
+    }
+    if (isIdle && meetingId) {
+      void queryClient.prefetchQuery(trpc.meetingsRouter.participants.getParticipants.queryOptions({ meetingId }))
+    }
+  }, [isIdle, customerId, meetingId, queryClient, trpc])
 
   useEffect(() => {
     if (initialValues) {

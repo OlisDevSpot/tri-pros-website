@@ -83,6 +83,13 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
     }
   }, [proposal.data])
 
+  const customerId = proposal.data?.customer?.id
+  const customerName = proposal.data?.customer?.name
+  const customer = useMemo(
+    () => (customerId && customerName != null ? { id: customerId, name: customerName } : null),
+    [customerId, customerName],
+  )
+
   if (proposal.isLoading) {
     return (
       <LoadingState
@@ -103,7 +110,6 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
     )
   }
 
-  const customer = proposal.data.customer
   const storedFunding = toFundingInputs(proposal.data)
   const storedFinalTcp = computeFinalTcp({ funding: storedFunding, sow: proposal.data.projectJSON.data.sow })
 
@@ -222,7 +228,7 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
         <EditProposalShell
           proposalId={proposalId}
           status={proposal.data.status}
-          customer={customer ? { id: customer.id, name: customer.name } : null}
+          customer={customer}
           meetingId={proposal.data.meetingId}
           meetingScheduledFor={proposal.data.meetingScheduledFor}
           initialValues={initProposalValues}
