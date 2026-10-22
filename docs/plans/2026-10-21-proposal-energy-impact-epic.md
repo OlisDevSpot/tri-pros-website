@@ -1,6 +1,6 @@
 # Proposal Energy Impact — Epic Tracker
 
-> **Status:** opened 2026-10-20. Design drafted, owner review pending. Nothing built.
+> **Status:** opened 2026-10-20. Design approved 2026-10-21; foundation plan (EI0–EI2) `docs/superpowers/plans/2026-10-21-proposal-energy-impact-foundation.md` written, stress-tested 2026-10-21 (EI-D19–D22 folded in), awaiting owner review. Nothing built.
 > **Goal:** a proposal chapter right after Funding that answers "wow, it's expensive" with live bill-savings projections (dollars, kWh, therms, gallons, environmental equivalents) for the proposal's energy upgrades. The rep presents it, and the homeowner can play with it alone through their link.
 > **Design:** `docs/superpowers/specs/2026-10-20-proposal-energy-impact-design.md`. Requirement IDs (M, S, P, C) and phases (EI0–EI6) are defined there. This tracker holds their status, the owner's rulings, the research, and what is still open.
 > **Adjacent, owned elsewhere (link, don't duplicate):**
@@ -37,6 +37,10 @@ Legend: `[ ]` open · `[x]` done · `[~]` in progress · ⚠️ blocked on a §2
 | EI-D16 | **Attic:** air sealing is an add-on and doesn't count. Radiant barrier counts: "definitely helps with reducing the attic heat and the ambient heat around the cold air running in the air ducts (also lower overall ambient attic temperature). Great product for this actually." Top-off counts too (Claude's recommendation; not contradicted). (Closes Q-A; the radiant barrier's number is EI-D18.) | 2026-10-21 |
 | EI-D17 | **Rates:** §3.3 stands "for now", but "we may need to look deeper in the future". (Closes Q-R; the deeper look is F-R1.) | 2026-10-21 |
 | EI-D18 | **Radiant barrier's cut**: a new add-on on `attic-and-basement`, **electric +5 · gas +2**, earned even when sold without insulation. Owner on gas: "as long as it doesn't allow ambient heat to escape, it will trap more heat in the attic, thus increasing the ceiling temperature (less furnace usage required for the same temp)". The +5 is Claude's recommendation and the +2 is Claude's number for "even if tiny". (Closes Q-RB.) | 2026-10-21 |
+| EI-D19 | **The bills get their own table** under the customer (`customer_utility_bills`, 1:1, like `customer_profiles`), per ADR-0005's 2026-07-14 amendment: the homeowner writes it through the token while staff write the rest of the customer. Still "on the customer" in EI-D6's sense. | 2026-10-21 |
+| EI-D20 | **Bills are stored in cents** (`*_cents`), the house money convention; the sliders still move in whole dollars. | 2026-10-21 |
+| EI-D21 | **One yearly bill loop** in the construction module, called by the Remodel ROI calculator and the energy model, so they can never compound differently. The calculator's numbers must not move (its verify script guards it). | 2026-10-21 |
+| EI-D22 | **Vocabulary:** a scope that makes its trade's bill cut count is a **bill-cutting scope** ("bill-cut scope" for short). Owner: "this is a bill-cutting scope", "we're after bill-cuts, that's why we choose this scope", "a badge for bill-cutting". Not "qualify" (that is program eligibility). The customer's power company is the **electric utility** (code: `electricProvider`); the route is `proposalsRouter.customerBills`; the table is `customer_utility_bills`. Recorded in `CONTEXT.md` § Energy impact terms. Owner rejected "earns" as unclear. | 2026-10-21 |
 
 ---
 
@@ -44,7 +48,7 @@ Legend: `[ ]` open · `[x]` done · `[~]` in progress · ⚠️ blocked on a §2
 
 | # | Question | Blocks | Claude's recommendation |
 |---|---|---|---|
-| Q-L | Chapter label and accessor (working: "Energy impact" / `energy`) and the new customer field names. These are new domain terms (CONTEXT.md). | P1, S1 | Decide at the UI exploration. |
+| Q-L | Chapter label and accessor (working: "Energy impact" / `energy`). The field, table and route names were ruled in EI-D19–D22. | P1 | Decide at the UI exploration. |
 
 ---
 
@@ -95,22 +99,22 @@ Main has not touched `src/shared/modules/construction/core/`. The only main-side
 
 Afterwards, `git diff <old-tip> HEAD -- <slice paths>` must be empty. Watch for duplicated `resolveOverridable` asserts in `verify-remodel-roi.ts`. Merging main into the branch would be easier: its only real conflict is a `types.ts` add/add, where you take the branch's version.
 
-### 3.2 Qualifying scopes (EI-D10, EI-D13–D16 → catalog, live Notion read 2026-10-21)
+### 3.2 Bill-cutting scopes (EI-D10, EI-D13–D16, EI-D22 → catalog, live Notion read 2026-10-21)
 
-Cuts are keyed by catalog scope id, with a name comment, like the branch's `SCOPE_INSTALLS` (scope slugs don't exist yet). A trade earns its cut only when the proposal includes at least one qualifying scope under it.
+Cuts are keyed by catalog scope id, with a name comment, like the branch's `SCOPE_INSTALLS` (scope slugs don't exist yet). A trade's bill cut counts only when the proposal includes at least one bill-cutting scope under it (code: `BILL_CUTTING_SCOPES`).
 
-| Trade (slug) | Qualifying scopes | Not qualifying | Cut |
+| Trade (slug) | Bill-cutting scopes | Not bill-cutting | Cut |
 |---|---|---|---|
 | `windows-and-doors` | `3e40ca1b-548b-824d-b0db-81cc10787e73` Window replacement (any quantity = all windows, EI-D14) | Window installation (new), French door replacement, sliding door replacement or installation | electric 10 · gas 8 |
 | `exterior-paint-stucco-and-siding` | `9d60ca1b-548b-824a-8aef-81f1e29b9b34` Repaint w/ Cool Life (exterior) | water-based repaint, trim, stucco, stain, siding repair, epoxy | electric 4 |
-| `roof-and-gutters` | `bd60ca1b-548b-821d-bd96-011624aa0fbb` Roof tear-off (shingles) · `31a0ca1b-548b-8013-9ad6-fbb929ef9b06` Roof torch down (flat) · `a2c0ca1b-548b-8296-a58d-01b88fb83405` Roof redeck · `32f0ca1b-548b-804e-9fa1-f5009c68668e` Roof overlay (a cool-roof layer, EI-D13) | tile reset, every repair, tune-up, fascia, gutters | electric 8. Cool roof is assumed with every qualifying roof scope (the branch's `cool-roof` add-on is always on). |
+| `roof-and-gutters` | `bd60ca1b-548b-821d-bd96-011624aa0fbb` Roof tear-off (shingles) · `31a0ca1b-548b-8013-9ad6-fbb929ef9b06` Roof torch down (flat) · `a2c0ca1b-548b-8296-a58d-01b88fb83405` Roof redeck · `32f0ca1b-548b-804e-9fa1-f5009c68668e` Roof overlay (a cool-roof layer, EI-D13) | tile reset, every repair, tune-up, fascia, gutters | electric 8. Cool roof is assumed with every bill-cutting roof scope (the branch's `cool-roof` add-on is always on). |
 | `hvac` | **Full:** `6450ca1b-548b-830a-ac5e-018e7fd3064a` Split system replacement · `9460ca1b-548b-8375-8d63-814dddf36b71` Package unit replacement. **Electric only:** `e450ca1b-548b-8269-adc7-019776a6acf7` A/C replacement. **Gas only:** `88d0ca1b-548b-82b2-bb26-017081659f61` Furnace replacement (EI-D15) | `8aa0ca1b-548b-82dd-9148-81d0b51076bf` Split system new-cut installation, `dcb0ca1b-548b-8303-9f65-01730423e685` Mini-split installation, `3190ca1b-548b-805f-8d87-f51275832424` Kit: mini-split | Full: electric 25 · gas 20, **plus ducts (+5 / +5) always on** ("assume ducts included"). A/C only: electric 25 + 5. Furnace only: gas 20 + 5. |
 | `attic-and-basement` | **Insulation:** `a5f0ca1b-548b-838a-89da-8134c5bfc738` Attic insulation replacement · `6d70ca1b-548b-835e-a8be-017c9038ac42` Attic insulation top-off. **Radiant barrier:** `c050ca1b-548b-825d-b707-01aff56ca25d` Radiant barrier installation (EI-D16) | `32f0ca1b-548b-80da-a907-ee6613d8d94e` Air-leak sealing, `e050ca1b-548b-8263-8634-01293821c390` Attic fan installation | Insulation: electric 10 · gas 15. Radiant barrier: add-on, electric +5 · gas +2, earned even without insulation (EI-D18). |
 | `dryscaping` | every scope except sod: artificial grass, gravel, river rocks, mulch, DG, pavers, concrete, hardscaping, general mixed landscaping/hardscaping | `3490ca1b-548b-8086-8f5c-d5727a876786` Install sod (natural grass, which needs water) | water 40 (gardening 50 is not shown; see the spec §6) |
 | `water-heating` | none: not on the owner's list | Tankless installation | — |
 
 - `Air ducts replacement` (`bc50ca1b-548b-8366-9ef9-811c2f36877f`) adds nothing more, because ducts are already assumed.
-- **Model consequence:** HVAC's base cut now depends on which scope qualifies (full, electric only, or gas only), and radiant barrier joins `BILL_CUT_ADD_ON_IDS`. So M2 returns per-trade categories, not just trade slugs. The branch's `combineCuts` reads a whole trade's `base`, so EI1 extends it after EI0 lands.
+- **Model consequence:** HVAC's base cut now depends on which bill-cutting scope is on the proposal (full, electric only, or gas only), and radiant barrier joins `BILL_CUT_ADD_ON_IDS`. So M2 returns per-trade categories, not just trade slugs. The branch's `combineCuts` reads a whole trade's `base`, so EI1 extends it after EI0 lands.
 
 ### 3.3 Rates and factors (researched 2026-10-21; working numbers, Admin-configured later)
 
@@ -140,9 +144,9 @@ Rates escalate with the calculator's existing yearly rates (electric 7.57, gas 9
 
 | Phase | IDs | Status | Commits |
 |---|---|---|---|
-| EI0 construction slice onto main | §3.1 | [ ] recipe ready; waits for design approval | — |
-| EI1 energy model | M1–M9 | [ ] all inputs settled | — |
-| EI2 customer storage and token write | S1–S6 | [ ] (Q-L names) | — |
+| EI0 construction slice onto main | §3.1 | [ ] planned (foundation plan Task 1). Scenes branch tip was `f8d49b0de` on 2026-10-21; slice unchanged since `47be8f8e3`. | — |
+| EI1 energy model | M1–M9 | [ ] planned (Tasks 2–6; Task 5 = the shared yearly loop, EI-D21) | — |
+| EI2 customer storage and token write | S1–S6 | [ ] planned (Tasks 7–8). **Owner to-do:** `pnpm db:push:prod` for `customer_utility_bills` before any commit from Task 7 on reaches origin/main. | — |
 | EI3 shared charts | C1–C2 | [ ] (after EI4 picks the charts) | — |
 | EI4 `/ui-exploration` | P3–P8 | [ ] | — |
 | EI5 build the chapter | P1–P8 | [ ] | — |

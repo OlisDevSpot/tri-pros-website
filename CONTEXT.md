@@ -149,9 +149,19 @@ How a list of one entity's records is read and shown, on any surface. The `DataV
 - **Stage** — one step of a pipeline; a customer sits in exactly one stage per pipeline. On the kanban board each stage shows as a lane, but the domain word is always stage (`PipelineStageConfig`, `KanbanStageFilter`). _Avoid_: column, lane, status.
 - **Confirmed** — a meeting whose homeowner, reached on the day of the meeting, said they will be home (`meetings.confirmedAt`). A soft confirmation: a confirmed meeting can still be rescheduled or cancelled before the rep arrives. It holds for one appointment time — moving `scheduledFor` clears it, and a reschedule books a new, unconfirmed meeting. Fresh pipeline: every booked meeting starts in **Needs Confirmation** and moves to **Confirmed** once confirmed.
 
+## Energy impact terms
+
+The proposal's bill-savings projection and the Remodel ROI calculator share these (logic in `src/shared/modules/construction/core`). Ruled 2026-10-21 (energy impact tracker EI-D19–D22); the chapter's own label is decided at its UI exploration.
+
+- **Bill cut** — the share of a bill a trade or an add-on takes off, in percent: the team's working numbers, assuming old inefficient material is replaced with efficient material (`TRADE_BILL_CUTS`). Cuts stack multiplicatively. _Avoid_: savings rate, reduction.
+- **Bill-cutting scope** ("bill-cut scope" for short) — a scope that, on a proposal, makes its trade's bill cut count, for the bills named; only complete replacements are (all windows, full Cool Life repaint, roof tear-off/torch down/redeck/overlay, split or package HVAC, attic insulation, radiant barrier, every dryscaping scope but sod). An A/C replacement cuts only electric and a furnace replacement only gas (`BILL_CUTTING_SCOPES`). _Avoid_: qualifying scope (qualify is program eligibility), energy scope, earning scope.
+- **Electric utility** — the customer's power company, LADWP or SCE, priced at its average $/kWh; gas is always SoCalGas. Code: `electricProvider` (the `electricProviders` enum). _Avoid_: "provider" alone (service providers, finance providers and the lead-conversion provider already use it).
+- **Utility bills** — the customer's monthly electric, gas and water bills plus their electric utility, one row per customer, shared by all their proposals and settable by the homeowner through the share link (`customer_utility_bills`, stored in cents). _Avoid_: energy bills.
+
 ## Flagged ambiguities
 
 - "run" means two things: a presentation **Run** (consecutive column slides, Presentation terms) and a scheduled execution of an automation (`runAutomaticKind`, `VisitMessageRunReport`, `resolveRunInstant`). Both stay, each scoped to its section; in automation copy "run" is always the scheduled execution.
 - "sequence" was defined for visit messages only — resolved 2026-10-08: **Sequence** is the general automation kind (Automation terms); the visit-message sequence is one instance.
 - "body" is a data view's **Body** (Data view terms); on a presentation slide the word is **Content**, never body.
+- "qualify" means program eligibility (Energy Saver+ through `qualifyEnergySaver`, decided by a trade's category); whether a scope lowers a bill is a **Bill-cutting scope**, decided per scope. The two can differ: an A/C replacement qualifies for Energy Saver+ but cuts only the electric bill.
 - "campaign" means a lead-conversion provider campaign (`voip_campaigns`) and a Meta ad campaign; never a scheduled send to customers.

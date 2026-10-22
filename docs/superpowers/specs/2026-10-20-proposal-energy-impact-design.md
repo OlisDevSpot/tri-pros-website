@@ -1,7 +1,7 @@
 # Proposal energy impact: design
 
-Date: 2026-10-20 · Status: draft, owner review pending · Visual design: handed to `/ui-exploration` after this is approved (EI4).
-**Tracker:** `docs/plans/2026-10-21-proposal-energy-impact-epic.md` holds the owner rulings, the open questions, the research (rates, factors, qualifying scopes) and each requirement's status.
+Date: 2026-10-20 · Status: approved 2026-10-21; foundation plan (EI0–EI2) `docs/superpowers/plans/2026-10-21-proposal-energy-impact-foundation.md` · Visual design: handed to `/ui-exploration` after this is approved (EI4).
+**Tracker:** `docs/plans/2026-10-21-proposal-energy-impact-epic.md` holds the owner rulings, the open questions, the research (rates, factors, bill-cutting scopes) and each requirement's status.
 
 ## 1. Intent
 
@@ -47,6 +47,7 @@ The maths is the Remodel ROI calculator's bill-savings maths, not a second model
 | EI-D7 | The homeowner **sees the saved bills** when they open the link and **can move the sliders**, which saves them, through the token, the way they set their own age. |
 | EI-D8 | Shared energy logic and charts **live in `modules/construction` for now**, because they are real-world construction data and derivations. |
 | EI-D9 | Layout, charts and interaction are mapped out with **`/ui-exploration`** before the chapter is built. |
+| EI-D19–D22 | From the plan stress test (2026-10-21, tracker §1): the bills live in their **own 1:1 table** under the customer (D19), stored in **cents** (D20); the calculator and the proposal share **one yearly bill loop** (D21); the vocabulary is **bill cut**, **bill-cutting scope**, **electric utility** and **utility bills** (D22). |
 
 ## 4. What already exists (verified 2026-10-20)
 
@@ -62,20 +63,20 @@ Stable ids. Plans and PRs cite them.
 ### 5.1 Model (`modules/construction/core`, pure, no React)
 
 - **M1. One source of cuts.** Bill cuts per trade and add-on come from the construction module's `TRADE_BILL_CUTS` through `resolveTradeBillCuts()`. The calculator and the proposal both call it. No surface keeps its own copy.
-- **M2. Energy trades from a proposal.** A pure function turns a proposal's SOW (trade ids and scope ids) plus the catalog into `{ trades: TradeSlug[], addOns: BillCutAddOnId[] }`. **Only complete replacements count** (EI-D10). A trade earns its cut only when the proposal includes a qualifying scope under it, and the list of qualifying scope ids lives in the construction module (tracker §3.2). Ducts are always on when HVAC qualifies ("assume ducts included"). Cool roof is always on when a roof scope qualifies, overlay included. An HVAC partial earns only its own bill: A/C alone cuts electric, and furnace alone cuts gas, with ducts following the same split. Radiant barrier is a new add-on on attic-and-basement and earns electric +5 and gas +2 even without insulation (tracker EI-D13–D18).
+- **M2. Bill-cutting scopes.** A pure function turns a proposal's SOW (trade ids and scope ids) plus the catalog into bill-cut picks: trades, add-ons, and per-trade limits. **Only complete replacements are bill-cutting scopes** (EI-D10). A trade's bill cut counts only when the proposal includes a bill-cutting scope under it, and the list of bill-cutting scope ids lives in the construction module (tracker §3.2). Ids match with or without dashes, in any case. Ducts are always on when HVAC counts ("assume ducts included"). Cool roof is always on when a roof scope counts, overlay included. An HVAC partial cuts only its own bill: A/C alone cuts electric, and furnace alone cuts gas, with ducts following the same split. Radiant barrier is a new add-on on attic-and-basement and cuts electric 5 and gas 2 even without insulation (tracker EI-D13–D18).
 - **M3. Bills after.** For each of electric, gas and water: `after = now × (1 − combined)`, with `combined` from `combineCuts` (each cut takes its share of what the earlier ones left).
 - **M4. Utility rates.** Working numbers, visible and editable like the calculator's rates: an average $/kWh for LADWP, an average $/kWh for SCE, an average $/therm for SoCalGas, and an average $/gallon for water. They are served through one resolver, like `resolveTradeBillCuts`, so admin settings can replace them later. The researched values and their sources are in tracker §3.3.
 - **M5. Physical units.** Monthly kWh saved = electric $ saved ÷ utility $/kWh. Monthly therms saved = gas $ saved ÷ SoCalGas $/therm. Monthly gallons saved = water $ saved ÷ $/gallon. These use **today's** rate and stay flat across the years, because prices rise but usage does not.
-- **M6. Dollars over time.** Yearly dollars saved escalate with the calculator's bill rates (the same constants, moved into the shared module or read from where the calculator keeps them, never duplicated). Cumulative savings over the look-ahead use the same compounding as `project-remodel-roi.ts`.
+- **M6. Dollars over time.** Yearly dollars saved escalate with the calculator's bill rates (the same constants, moved into the shared module or read from where the calculator keeps them, never duplicated). The yearly bills come from **one shared loop** in the construction module that the calculator also calls, so the two can never compound differently (EI-D21).
 - **M7. Emissions and equivalents.** CO₂ = kWh × CO₂ per kWh + therms × CO₂ per therm. Equivalents come from CO₂: tree seedlings grown for 10 years, gallons of gasoline, pounds of coal, miles driven, and others the UI exploration picks. Factors are copied from the EPA Greenhouse Gas Equivalencies Calculator, with its URL in a comment (an external constant, so the comment is warranted). Electricity uses the California (CAMX) marginal rate from that page, not the national one (tracker §3.3). Gas savings count toward CO₂ (owner, 2026-10-20).
 - **M8. One projection function.** `projectEnergyImpact({ bills, provider, picks, config, years })` returns the per-category before and after, monthly and yearly dollars, kWh, therms and gallons, CO₂, the equivalents, and a per-year series for charts. Inputs are plain values. It never reads storage.
-- **M9. Goldens.** Verify scripts or tests pin a few cases: full HVAC; A/C only; furnace only; windows plus attic; radiant barrier alone; roof overlay without HVAC; dryscaping (water only); a proposal with only non-qualifying scopes, where the chapter is hidden; and every trade at once. For the same trades and bills, the calculator's after-bills and the proposal's must match.
+- **M9. Goldens.** Verify scripts or tests pin a few cases: full HVAC; A/C only; furnace only; windows plus attic; radiant barrier alone; roof overlay without HVAC; dryscaping (water only); a proposal with no bill-cutting scope, where the chapter is hidden; and every trade at once. For the same trades and bills, the calculator's after-bills and the proposal's must match.
 
 ### 5.2 Storage and access
 
-- **S1. Customer columns** (ADR-0005: written by the homeowner through the token and read on every proposal open; same reason `age` is a column): electric provider (text, constrained to `electricProviders`), and monthly electric, gas and water bills (whole dollars, nullable). Names are checked against `CONTEXT.md` and `docs/ubiquitous-language.md`, and new terms are agreed with the owner. Only `pnpm db:push:dev`; prod is pushed by the owner.
-- **S2. Read.** `getFullView` returns the four fields with the customer, so the chapter has them for staff and for the homeowner view.
-- **S3. Write.** One proposal-shareable mutation sets any subset of the four fields. It resolves the customer from the proposal the caller reached, never from a client-sent customer id (the `applyEnvelopeContext` pattern), and it can write nothing else. Values are validated (non-negative, capped to the slider range).
+- **S1. The customer's utility bills table** (EI-D19, ADR-0005's 2026-07-14 amendment: the homeowner writes it through the token while staff write the rest of the customer, and a row existing means the bills were collected). `customer_utility_bills`, one row per customer (PK-as-FK, cascade), like `customer_profiles`: electric utility (`electric_provider`, text constrained to `electricProviders`), and monthly electric, gas and water bills in **integer cents** (EI-D20; `*_cents`, nullable, checked ≥ 0). A part of the customer for permissions, named `utilityBills`. Only `pnpm db:push:dev`; prod is pushed by the owner, **before** the code that reads it reaches prod.
+- **S2. Read.** `getFullView` left-joins the table and returns the four fields flattened into the customer (null when no row), so the chapter has them for staff and for the homeowner view.
+- **S3. Write.** One proposal-shareable mutation (`proposalsRouter.customerBills.set`) sets any subset of the four fields, and `null` clears one. It resolves the customer from the proposal the caller reached, never from a client-sent customer id (the `applyEnvelopeContext` pattern), and it can write nothing else (a strict input). It upserts through `upsertOneToOne`, as the discovery profile does: a staff session is checked against its role's `utilityBills` grant (agents and dispatchers have it), and a share link writes under a system reason once `getFullView` has proved the token reaches that proposal. Values are validated by the table's own schema (whole cents, 0 to the storage cap).
 - **S4. Not locked by signing.** Bills are the customer's data and the chapter is a projection, so a frozen proposal does not block the write. *(Claude's call)*
 - **S5. Shared across proposals.** Every proposal of that customer shows the same bills. Moving a slider on one moves it for all of them. *(follows from EI-D6)*
 - **S6. Saving cadence.** The slider updates the figures live, every frame, client side, and saves when the drag is released (`onValueCommit`), not on every tick. If a save fails, the figures stay where the hand left them, and the failure is surfaced the way the funding slider surfaces one.
@@ -99,14 +100,16 @@ Stable ids. Plans and PRs cite them.
 ## 6. Calls Claude made (owner to check)
 
 - Environmental factors come from the EPA equivalencies calculator (fixed conversion constants, not savings research). Electricity uses EPA's California (CAMX) marginal rate, because the national factor would overstate CO₂ for a California home.
-- Dryscaping qualifies for every scope except sod, because natural grass needs water.
+- Every dryscaping scope except sod is a bill-cutting scope, because natural grass needs water.
 - Water converts at one average $/gallon (water providers vary too much to model now).
 - Gardening, a dollar saving the calculator shows for dryscaping, is **not** in the chapter, because the owner named electric, gas and water. This is easy to add as a fourth slider if wanted.
 - Sliders the proposal's trades can't move are hidden (P3). The empty start uses typical amounts and preselects SCE (P4).
 - Bills stay editable after signing (S4).
+- Agents and dispatchers get the `utilityBills` grant beside `profile`, because the rep sets the bills while presenting (S3).
+- The model works in dollars (rates are per kWh, therm and gallon); stored cents become dollars at the chapter's edge.
 - The calculator's behaviour is unchanged by this build, and its energy and environment panel comes later (C2).
 - **Providers.** The column takes the existing `electricProviders` values. The chapter offers only LADWP and SCE (`edison`). If a customer holds any other value (set elsewhere later), the chapter uses the SCE rate and names the assumption.
-- **What's adjustable on the proposal.** Only the four customer fields (bills and provider). Utility rates and yearly escalation are fixed to the working numbers on the proposal; they stay editable in the calculator only. If the UI exploration shows a look-ahead picker, it is session-only and is not saved. M4's "editable" applies to the calculator.
+- **What's adjustable on the proposal.** Only the four utility-bill fields (bills and electric utility). Utility rates and yearly escalation are fixed to the working numbers on the proposal; they stay editable in the calculator only. If the UI exploration shows a look-ahead picker, it is session-only and is not saved. M4's "editable" applies to the calculator.
 
 ## 7. Roadmap
 
