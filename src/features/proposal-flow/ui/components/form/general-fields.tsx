@@ -37,6 +37,7 @@ export function GeneralFields({ withName = false }: { withName?: boolean }) {
               <FormControl>
                 <Select
                   defaultValue="general-remodeling"
+                  disabled={field.disabled}
                   onValueChange={(val: ProjectType) => {
                     field.onChange(val)
                   }}
@@ -79,6 +80,7 @@ export function GeneralFields({ withName = false }: { withName?: boolean }) {
               <FormControl>
                 <Select
                   defaultValue="60 days"
+                  disabled={field.disabled}
                   onValueChange={(val: ProjectType) => {
                     field.onChange(val)
                   }}

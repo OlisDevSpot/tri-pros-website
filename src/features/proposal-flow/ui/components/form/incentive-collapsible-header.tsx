@@ -9,12 +9,14 @@ import { cn } from '@/shared/lib/utils'
 type Incentive = ProposalFormSchema['funding']['incentives'][number]
 
 interface Props {
+  disabled?: boolean
   incentive: Incentive
   isOpen: boolean
   onDelete: (e: React.MouseEvent) => void
 }
 
 export function IncentiveCollapsibleHeader({
+  disabled = false,
   incentive,
   isOpen,
   onDelete,
@@ -57,6 +59,7 @@ export function IncentiveCollapsibleHeader({
             size="icon"
             variant="ghost"
             className="size-8 text-destructive-text"
+            disabled={disabled}
             onClick={onDelete}
           >
             <TrashIcon className="size-4" />

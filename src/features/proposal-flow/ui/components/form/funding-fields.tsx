@@ -2,7 +2,7 @@ import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-s
 import type { IncentiveType } from '@/shared/modules/proposals/core/schemas'
 import { PlusIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
+import { useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form'
 import { formatProjectType } from '@/features/proposal-flow/lib/format-project-type'
 import { getProposalAggregates } from '@/features/proposal-flow/lib/get-proposal-aggregates'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
@@ -33,6 +33,7 @@ export function FundingFields({ pricingMode }: Props) {
   })
 
   const [openIncentives, setOpenIncentives] = useState<Set<number>>(() => new Set())
+  const { disabled } = useFormState({ control: form.control })
 
   const [DeleteConfirmDialog, confirmDelete] = useConfirm({
     title: 'Delete Incentive',
@@ -124,6 +125,7 @@ export function FundingFields({ pricingMode }: Props) {
               size="sm"
               variant="outline"
               className="gap-1.5"
+              disabled={disabled}
               onClick={() => {
                 append({
                   type: 'discount',
@@ -158,6 +160,7 @@ export function FundingFields({ pricingMode }: Props) {
                           <CollapsibleTrigger asChild>
                             <div>
                               <IncentiveCollapsibleHeader
+                                disabled={disabled}
                                 incentive={incentives[index] ?? field}
                                 isOpen={isOpen}
                                 onDelete={(e) => {
@@ -179,6 +182,7 @@ export function FundingFields({ pricingMode }: Props) {
                                       <FormControl>
                                         <Select
                                           defaultValue="discount"
+                                          disabled={field.disabled}
                                           onValueChange={(val: IncentiveType) => {
                                             field.onChange(val)
                                           }}
@@ -273,16 +277,19 @@ export function FundingFields({ pricingMode }: Props) {
                                   render={({ field }) => (
                                     <FormItem>
                                       <FormLabel>Expiration</FormLabel>
-                                      <FormControl>
-                                        <DateTimePicker
-                                          className="h-9 w-full justify-start rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
-                                          placeholder="Set expiration"
-                                          value={field.value ? new Date(field.value) : undefined}
-                                          onChange={(date) => {
-                                            field.onChange(date ? date.toISOString() : undefined)
-                                          }}
-                                        />
-                                      </FormControl>
+                                      {/* The shared picker takes no disabled prop; a disabled fieldset disables its trigger button. */}
+                                      <fieldset disabled={field.disabled} className="contents">
+                                        <FormControl>
+                                          <DateTimePicker
+                                            className="h-9 w-full justify-start rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
+                                            placeholder="Set expiration"
+                                            value={field.value ? new Date(field.value) : undefined}
+                                            onChange={(date) => {
+                                              field.onChange(date ? date.toISOString() : undefined)
+                                            }}
+                                          />
+                                        </FormControl>
+                                      </fieldset>
                                       <FormMessage />
                                     </FormItem>
                                   )}

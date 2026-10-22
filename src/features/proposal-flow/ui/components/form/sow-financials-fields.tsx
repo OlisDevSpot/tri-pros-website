@@ -4,7 +4,7 @@ import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-s
 import { PlusIcon, TrashIcon } from 'lucide-react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useState } from 'react'
-import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
+import { useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form'
 import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
 import { Button } from '@/shared/components/ui/button'
 import { AnimatedCollapsibleContent, Collapsible, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
@@ -35,6 +35,7 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
   })
 
   const [openNotes, setOpenNotes] = useState<Set<string>>(() => new Set())
+  const { disabled } = useFormState({ control: form.control })
   const reduceMotion = useReducedMotion()
   const rowTransition = reduceMotion ? { duration: 0 } : COLLAPSE_TRANSITION
 
@@ -122,6 +123,7 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
                     <MoneyField
                       placeholder="$10,000"
                       className="w-full lg:w-48"
+                      disabled={field.disabled}
                       value={field.value}
                       onChange={field.onChange}
                     />
@@ -145,7 +147,7 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
               size="sm"
               variant="outline"
               className="gap-1.5"
-              disabled={!canAddCostLine}
+              disabled={disabled || !canAddCostLine}
               onClick={() => {
                 appendCost({
                   id: crypto.randomUUID(),
@@ -203,6 +205,7 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
                             <FormControl>
                               <MoneyField
                                 placeholder="$1,000"
+                                disabled={lineField.disabled}
                                 value={lineField.value || null}
                                 onChange={value => lineField.onChange(value ?? 0)}
                               />
@@ -218,7 +221,7 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
                           <FormItem>
                             <FormLabel className="text-xs">Related Scope</FormLabel>
                             <FormControl>
-                              <Select value={lineField.value} onValueChange={lineField.onChange}>
+                              <Select value={lineField.value} onValueChange={lineField.onChange} disabled={lineField.disabled}>
                                 <SelectTrigger className="w-full">
                                   <SelectValue placeholder="Select scope" />
                                 </SelectTrigger>
@@ -251,6 +254,7 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
                           size="icon"
                           variant="ghost"
                           className="text-destructive hover:text-destructive"
+                          disabled={disabled}
                           onClick={() => removeCostLine(lineIndex, field.id)}
                           aria-label="Remove cost line"
                         >
@@ -313,6 +317,7 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
             size="sm"
             variant="outline"
             className="gap-1.5"
+            disabled={disabled}
             onClick={() => {
               appendIncentive({
                 id: crypto.randomUUID(),
@@ -362,6 +367,7 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
                           <FormControl>
                             <MoneyField
                               placeholder="$500"
+                              disabled={incField.disabled}
                               value={incField.value || null}
                               onChange={value => incField.onChange(value ?? 0)}
                             />
@@ -376,6 +382,7 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
                         size="icon"
                         variant="ghost"
                         className="text-destructive hover:text-destructive"
+                        disabled={disabled}
                         onClick={() => removeIncentive(incIndex)}
                         aria-label="Remove incentive"
                       >

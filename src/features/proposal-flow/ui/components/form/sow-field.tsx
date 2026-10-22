@@ -135,6 +135,7 @@ export function SOWSection({
                   <Select
                     value={field.value}
                     onValueChange={handleTradeChange}
+                    disabled={field.disabled}
                   >
                     <SelectTrigger {...field} className="w-full bg-transparent border-0">
                       <SelectValue placeholder="Select a trade" />
@@ -228,6 +229,7 @@ export function SOWSection({
                           type="button"
                           className="text-xs text-muted-foreground hover:underline"
                           size="sm"
+                          disabled={field.disabled}
                           onClick={() => {
                             openModal({
                               accessor: 'Templates',

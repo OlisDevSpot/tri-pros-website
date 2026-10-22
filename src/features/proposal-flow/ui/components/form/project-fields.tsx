@@ -2,7 +2,7 @@ import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-s
 import type { PriceDisplayMode } from '@/shared/constants/enums'
 import { PlusIcon } from 'lucide-react'
 import { useState } from 'react'
-import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
+import { useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form'
 import { Button } from '@/shared/components/ui/button'
 import { AnimatedCollapsibleContent, Collapsible, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
 import { useConfirm } from '@/shared/hooks/use-confirm'
@@ -31,6 +31,7 @@ export function ProjectFields({ priceDisplayMode }: Props) {
   })
 
   const sowValues = useWatch({ control: form.control, name: 'project.data.sow' })
+  const { disabled } = useFormState({ control: form.control })
 
   async function handleDeleteSection(index: number) {
     const confirmed = await confirmDelete()
@@ -108,6 +109,7 @@ export function ProjectFields({ priceDisplayMode }: Props) {
               <CollapsibleTrigger asChild>
                 <div className="flex-none data-[state=open]:border-b">
                   <SOWCollapsibleHeader
+                    disabled={disabled}
                     isOpen={isOpen}
                     onDelete={(e) => {
                       e.stopPropagation()
@@ -145,6 +147,7 @@ export function ProjectFields({ priceDisplayMode }: Props) {
           size="icon"
           variant="outline"
           className="flex-none self-start"
+          disabled={disabled}
           onClick={() => {
             append(createEmptySowSection())
             setOpenSections(prev => new Set(prev).add(fields.length))

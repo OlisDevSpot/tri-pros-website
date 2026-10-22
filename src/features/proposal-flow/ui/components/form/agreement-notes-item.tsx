@@ -56,6 +56,7 @@ export function AgreementNotesItem() {
                     type="button"
                     className="text-xs text-muted-foreground hover:underline"
                     size="sm"
+                    disabled={field.disabled}
                   >
                     Templates
                   </Button>

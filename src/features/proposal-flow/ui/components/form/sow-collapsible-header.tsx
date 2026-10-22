@@ -10,6 +10,7 @@ import { formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 
 interface Props {
+  disabled?: boolean
   isOpen: boolean
   onDelete: (e: React.MouseEvent) => void
   onDuplicate: (e: React.MouseEvent) => void
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export function SOWCollapsibleHeader({
+  disabled = false,
   isOpen,
   onDelete,
   onDuplicate,
@@ -56,7 +58,7 @@ export function SOWCollapsibleHeader({
   return (
     <div className="flex w-full cursor-pointer flex-col gap-1 px-3 py-2.5 transition-colors hover:bg-row-hover pressed:bg-row-press lg:px-4 lg:py-3">
       <div className="flex items-center justify-between gap-3">
-        {isEditing
+        {isEditing && !disabled
           ? (
               <Input
                 ref={inputRef}
@@ -69,23 +71,29 @@ export function SOWCollapsibleHeader({
                 onKeyDown={handleTitleKeyDown}
               />
             )
-          : (
-              <span
-                role="button"
-                tabIndex={0}
-                className={cn(
-                  'min-w-0 truncate rounded px-1 py-0.5 text-sm font-medium transition-colors hover:bg-hover lg:text-base',
-                  !hasTitle && 'text-muted-foreground italic',
-                )}
-                onClick={handleTitleClick}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter')
-                    handleTitleClick(e as unknown as React.MouseEvent)
-                }}
-              >
-                {hasTitle ? sow.title : 'Click to add title...'}
-              </span>
-            )}
+          : disabled
+            ? (
+                <span className="min-w-0 truncate px-1 py-0.5 text-sm font-medium lg:text-base">
+                  {sow.title}
+                </span>
+              )
+            : (
+                <span
+                  role="button"
+                  tabIndex={0}
+                  className={cn(
+                    'min-w-0 truncate rounded px-1 py-0.5 text-sm font-medium transition-colors hover:bg-hover lg:text-base',
+                    !hasTitle && 'text-muted-foreground italic',
+                  )}
+                  onClick={handleTitleClick}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter')
+                      handleTitleClick(e as unknown as React.MouseEvent)
+                  }}
+                >
+                  {hasTitle ? sow.title : 'Click to add title...'}
+                </span>
+              )}
         <div className="flex shrink-0 items-center gap-1">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -100,11 +108,11 @@ export function SOWCollapsibleHeader({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" onClick={e => e.stopPropagation()}>
-              <DropdownMenuItem onClick={onDuplicate}>
+              <DropdownMenuItem disabled={disabled} onClick={onDuplicate}>
                 <CopyIcon className="size-4" />
                 Duplicate
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
+              <DropdownMenuItem disabled={disabled} onClick={onDelete} className="text-destructive focus:text-destructive">
                 <TrashIcon className="size-4" />
                 Delete
               </DropdownMenuItem>
