@@ -3,6 +3,7 @@ import type { IncentiveType } from '@/shared/modules/proposals/core/schemas'
 import { PlusIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
+import { formatProjectType } from '@/features/proposal-flow/lib/format-project-type'
 import { getProposalAggregates } from '@/features/proposal-flow/lib/get-proposal-aggregates'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { Button } from '@/shared/components/ui/button'
@@ -16,6 +17,7 @@ import { useConfirm } from '@/shared/hooks/use-confirm'
 import { formatAsDollars } from '@/shared/lib/formatters'
 import { describeDepositCap, getDepositCap } from '@/shared/modules/proposals/core/lib/financials'
 import { incentiveTypes } from '@/shared/modules/proposals/core/schemas'
+import { FundingLedger } from './funding-ledger'
 import { IncentiveCollapsibleHeader } from './incentive-collapsible-header'
 
 interface Props {
@@ -92,72 +94,30 @@ export function FundingFields({ pricingMode }: Props) {
   return (
     <>
       <DeleteConfirmDialog />
-      <div className="flex flex-col gap-4 lg:gap-6">
-        {/* Base Pricing */}
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-3 lg:gap-4">
-            {pricingMode === 'breakdown' && (
-              <FormField
-                name="funding.miscPrice"
-                control={form.control}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Misc Pricing</FormLabel>
-                    <FormControl>
-                      <MoneyField
-                        {...field}
-                        placeholder="$0"
-                        value={field.value || null}
-                        onChange={value => field.onChange(value ?? 0)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-            <FormField
-              name="funding.startingTcp"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Total Contract Price</FormLabel>
-                  <FormControl>
-                    <MoneyField
-                      {...field}
-                      disabled={pricingMode === 'breakdown'}
-                      placeholder="$50,000"
-                      value={field.value || null}
-                      onChange={value => field.onChange(value ?? 0)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              name="funding.depositAmount"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Deposit</FormLabel>
-                  <FormControl>
-                    <MoneyField
-                      {...field}
-                      placeholder={`${formatAsDollars(depositCap)} (the legal cap)`}
-                    />
-                  </FormControl>
-                  <FormDescription>{`Leave empty to use the cap: ${describeDepositCap()}.`}</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        </div>
+      <div className="flex flex-col gap-4">
+        <FundingLedger pricingMode={pricingMode} />
+
+        <FormField
+          name="funding.depositAmount"
+          control={form.control}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Deposit</FormLabel>
+              <FormControl>
+                <MoneyField
+                  {...field}
+                  placeholder={`${formatAsDollars(depositCap)} (the legal cap)`}
+                />
+              </FormControl>
+              <FormDescription>{`Leave empty to use the cap: ${describeDepositCap()}.`}</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         {/* Incentives */}
-        <div className="space-y-3 lg:space-y-4">
-          <div className="flex items-center justify-between border-t border-border pt-3 lg:pt-4">
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between border-t border-border pt-4">
             <h4 className="text-base font-semibold lg:text-lg">Incentives</h4>
             <Button
               type="button"
@@ -229,7 +189,7 @@ export function FundingFields({ pricingMode }: Props) {
                                           <SelectContent {...field}>
                                             {incentiveTypes.map(t => (
                                               <SelectItem key={t} value={t}>
-                                                {t.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                                                {formatProjectType(t)}
                                               </SelectItem>
                                             ))}
                                           </SelectContent>
