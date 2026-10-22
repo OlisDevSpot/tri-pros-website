@@ -7,6 +7,7 @@ import { skipToken, useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 
 import { PROPOSAL_CONTEXT_CUSTOMER_HIDDEN, PROPOSAL_CONTEXT_MEETING_HIDDEN } from '@/features/proposal-flow/constants/proposal-context-actions'
+import { canReadLeadSource } from '@/features/proposal-flow/lib/can-read-lead-source'
 import { Button } from '@/shared/components/ui/button'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
@@ -28,10 +29,10 @@ export function ProposalContextPanel({ customerId, meetingId, tab, onTabChange }
   const ability = useAbility()
   const profile = useQuery(trpc.customerPipelinesRouter.getCustomerProfile.queryOptions({ customerId }))
 
-  // The profile carries the lead source's id only, and the lookup is super-admin only: other roles never send a read the server refuses.
+  // The profile carries the lead source's id only.
   const leadSourceId = profile.data?.customer.leadSourceId
   const leadSourceRead = useQuery(trpc.leadSourcesRouter.getById.queryOptions(
-    leadSourceId && ability.can('manage', 'all') ? { id: leadSourceId } : skipToken,
+    leadSourceId && canReadLeadSource(ability) ? { id: leadSourceId } : skipToken,
   ))
   // The profile's meetings carry the owner's id but not the name the card's Owner part needs.
   const participants = useQuery(trpc.meetingsRouter.participants.getParticipants.queryOptions(
@@ -123,7 +124,7 @@ export function ProposalContextPanel({ customerId, meetingId, tab, onTabChange }
                     <MeetingOverviewCard.Proposals entityListVariant="flush" />
                   </MeetingOverviewCard>
                 )
-              : <p className="text-sm text-muted-foreground">This visit isn’t available to you.</p>}
+              : <p className="text-sm text-muted-foreground">This customer’s profile isn’t available to you.</p>}
           </TabsContent>
         )}
       </div>

@@ -3,16 +3,17 @@
 import type { MouseEvent } from 'react'
 import type { ProposalContextTab } from '@/features/proposal-flow/types'
 
-import { format } from 'date-fns'
 import { CalendarIcon, ChevronDownIcon } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 
 import { PROPOSAL_CUSTOMER_OVERRIDES } from '@/features/proposal-flow/lib/customer-action-overrides'
 import { Avatar, AvatarFallback } from '@/shared/components/ui/avatar'
 import { Drawer, DrawerContent, DrawerTitle } from '@/shared/components/ui/drawer'
 import { Popover, PopoverAnchor, PopoverContent } from '@/shared/components/ui/popover'
+import { ROOTS } from '@/shared/config/roots'
 import { getInitials } from '@/shared/entities/users/lib/get-initials'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
+import { formatBusinessTime } from '@/shared/lib/business-time'
 import { cn } from '@/shared/lib/utils'
 import { CustomerActionsHost } from '@/shared/modules/customers/core/components/customer-actions-host'
 import { MeetingActionsHost } from '@/shared/modules/meetings/core/components/meeting-actions-host'
@@ -20,18 +21,28 @@ import { ProposalActionsHost } from '@/shared/modules/proposals/core/components/
 import { ProposalContextPanel } from './proposal-context-panel'
 
 interface Props {
+  proposalId: string
   customer: { id: string, name: string }
   meetingId: string | null
   meetingScheduledFor: string | null
 }
 
-export function ProposalContextTrigger({ customer, meetingId, meetingScheduledFor }: Props) {
+export function ProposalContextTrigger({ proposalId, customer, meetingId, meetingScheduledFor }: Props) {
   const isMobile = useIsMobile()
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState<ProposalContextTab>('customer')
   const pillRef = useRef<HTMLDivElement>(null)
   const lastHalfRef = useRef<HTMLButtonElement | null>(null)
-  const visitDate = meetingScheduledFor ? format(meetingScheduledFor, 'MMM d') : null
+  const visitDate = meetingScheduledFor ? formatBusinessTime(meetingScheduledFor, { month: 'short', day: 'numeric' }) : null
+
+  const proposalOverrides = useMemo(() => ({
+    // This proposal is the page, so its own row's View has nowhere to go; the visit's other proposals open their review as by default.
+    onView: (proposal: { id: string }) => {
+      if (proposal.id !== proposalId) {
+        window.open(ROOTS.public.proposalReview(proposal.id), '_blank')
+      }
+    },
+  }), [proposalId])
 
   function onHalfClick(next: ProposalContextTab, event: MouseEvent<HTMLButtonElement>) {
     lastHalfRef.current = event.currentTarget
@@ -92,7 +103,7 @@ export function ProposalContextTrigger({ customer, meetingId, meetingScheduledFo
   // The hosts sit outside the panel: the dialogs they own (reschedule, outcome, participants) must outlive the panel closing under them.
   // The proposal host serves the visit card's proposal rows.
   return (
-    <ProposalActionsHost>
+    <ProposalActionsHost overrides={proposalOverrides}>
       <MeetingActionsHost>
         <CustomerActionsHost overrides={PROPOSAL_CUSTOMER_OVERRIDES}>
           {isMobile
