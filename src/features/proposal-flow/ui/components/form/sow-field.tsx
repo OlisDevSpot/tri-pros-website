@@ -86,7 +86,7 @@ export function SOWSection({
           return false
         }
         const remaining = costLines.filter(line => !removedIds.includes(line.relatedScopeId))
-        form.setValue(`project.data.sow.${index}.financials.costLines`, remaining)
+        form.setValue(`project.data.sow.${index}.financials.costLines`, remaining, { shouldDirty: true })
       }
     }
 
@@ -99,7 +99,7 @@ export function SOWSection({
         return { id: scopeOfTrade.id, label: scopeOfTrade.name }
       })
       .filter((scope): scope is { id: string, label: string } => scope !== null)
-    form.setValue(`project.data.sow.${index}.scopes`, newScopesArray)
+    form.setValue(`project.data.sow.${index}.scopes`, newScopesArray, { shouldDirty: true })
     return true
   }
 
@@ -111,10 +111,11 @@ export function SOWSection({
     if (!proceeded) {
       return
     }
-    form.setValue(`project.data.sow.${index}.trade.id`, val)
+    form.setValue(`project.data.sow.${index}.trade.id`, val, { shouldDirty: true })
     form.setValue(
       `project.data.sow.${index}.trade.label`,
       allTrades.data?.find(trade => trade.id === val)?.name || '',
+      { shouldDirty: true },
     )
     getScopesOfTrade(val)
   }

@@ -21,7 +21,7 @@ export function PricingModeSettings() {
             id="pricing-mode"
             checked={pricingMode === 'breakdown'}
             onCheckedChange={checked =>
-              form.setValue('priceDisplayMode', checked ? 'breakdown' : 'total')}
+              form.setValue('priceDisplayMode', checked ? 'breakdown' : 'total', { shouldDirty: true })}
           />
         </div>
       </div>

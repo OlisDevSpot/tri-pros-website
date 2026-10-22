@@ -118,7 +118,7 @@ export function ProjectFields({ priceDisplayMode }: Props) {
                       handleDuplicateSection(index)
                     }}
                     onTitleChange={(title) => {
-                      form.setValue(`project.data.sow.${index}.title`, title)
+                      form.setValue(`project.data.sow.${index}.title`, title, { shouldDirty: true })
                     }}
                     priceDisplayMode={priceDisplayMode}
                     sow={sowValues[index] ?? fieldOfArray}
