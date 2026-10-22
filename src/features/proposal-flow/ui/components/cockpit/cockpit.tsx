@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo } from 'react'
 
 import { useProposalDocument } from '@/features/proposal-flow/contexts/proposal-document-context'
+import { PROPOSAL_CUSTOMER_OVERRIDES } from '@/features/proposal-flow/lib/customer-action-overrides'
 import { InternalFinancialsModal } from '@/features/proposal-flow/ui/components/internal-financials-modal'
 import { ResponsiveSheet } from '@/shared/components/dialogs/sheets/responsive-sheet'
 import { useIdleReady } from '@/shared/hooks/use-idle-ready'
@@ -13,7 +14,6 @@ import { copyToClipboard } from '@/shared/lib/clipboard'
 import { openModal } from '@/shared/lib/open-modal'
 import { sowToPlaintext } from '@/shared/lib/tiptap-to-text'
 import { CustomerActionsHost } from '@/shared/modules/customers/core/components/customer-actions-host'
-import { openCustomerProfile } from '@/shared/modules/customers/core/lib/open-customer-profile'
 import { MeetingActionsHost } from '@/shared/modules/meetings/core/components/meeting-actions-host'
 import { ProposalOverviewCard } from '@/shared/modules/proposals/core/components/overview-card'
 import { ProposalActionsHost } from '@/shared/modules/proposals/core/components/proposal-actions-host'
@@ -25,7 +25,6 @@ import { AgreementStep } from './agreement-step'
 import { ChoiceStep } from './choice-step'
 import { CockpitHeader } from './cockpit-header'
 import { useCockpitOpen } from './cockpit-open-context'
-import { CreateMeetingLayer } from './create-meeting-layer'
 import { CustomerRow } from './customer-row'
 import { MeetingRow } from './meeting-row'
 import { ShareStep } from './share-step'
@@ -69,20 +68,11 @@ export function Cockpit() {
     onCopySow: () => copyToClipboard(sowToPlaintext(proposal.projectJSON.data.sow), 'Scope of work'),
   }), [proposal])
 
-  const customerOverrides = useMemo(() => ({
-    onView: (customer: { id: string }) => openCustomerProfile({ customerId: customer.id }),
-    onScheduleMeeting: (customer: { id: string, name: string }) => openModal({
-      accessor: 'CreateMeeting',
-      Component: CreateMeetingLayer,
-      props: { customerId: customer.id, customerName: customer.name },
-    }),
-  }), [])
-
   // The hosts and the card root sit outside the sheet: its header renders outside the body, and context crosses the portal.
   return (
     <ProposalActionsHost overrides={proposalOverrides}>
       <MeetingActionsHost>
-        <CustomerActionsHost overrides={customerOverrides}>
+        <CustomerActionsHost overrides={PROPOSAL_CUSTOMER_OVERRIDES}>
           <ProposalOverviewCard proposal={card} className="contents">
             <ResponsiveSheet
               open={open}

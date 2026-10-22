@@ -27,7 +27,7 @@ import { computeFinalTcp, deriveEditCashDown, resolveDeposit } from '@/shared/mo
 import { fundingDomainToColumns, toFundingInputs } from '@/shared/modules/proposals/core/lib/funding-columns'
 import { getProposalLockState } from '@/shared/modules/proposals/core/lib/proposal-lock'
 import { useTRPC } from '@/trpc/helpers'
-import { CustomerInfoHeader } from '../components/customer-info-header'
+import { ProposalContextBand } from '../components/proposal-context-band'
 
 interface EditProposalViewProps {
   proposalId: string
@@ -183,9 +183,7 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
       className="w-full h-full flex flex-col gap-4"
     >
       {customer && (
-        <div className="shrink-0">
-          <CustomerInfoHeader customer={customer} />
-        </div>
+        <ProposalContextBand customerId={customer.id} meetingId={proposal.data.meetingId} className="shrink-0 md:pr-4" />
       )}
       {lockState === 'draft-locked' && (
         <Alert className="shrink-0">
