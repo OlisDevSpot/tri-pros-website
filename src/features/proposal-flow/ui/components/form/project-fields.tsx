@@ -126,7 +126,9 @@ export function ProjectFields({ priceDisplayMode }: Props) {
                 </div>
               </CollapsibleTrigger>
               <AnimatedCollapsibleContent open={isOpen} className="flex min-h-0 flex-col" data-sow-body>
-                <div className="min-h-0 overflow-y-auto overscroll-contain">
+                {/* relative: Radix Select's hidden native <select> is absolute; without a positioned ancestor here it
+                    escapes to <main>, makes main scrollable, and a focus then shifts the whole page. */}
+                <div className="relative min-h-0 overflow-y-auto overscroll-contain">
                   <SOWSection
                     index={index}
                     priceDisplayMode={priceDisplayMode}

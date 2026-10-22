@@ -21,22 +21,26 @@ export function AgreementNotesItem() {
       className="flex min-h-0 flex-none flex-col overflow-hidden rounded-xl border border-border bg-card"
     >
       <CollapsibleTrigger asChild>
-        <div className="flex-none data-[state=open]:border-b">
-          <div className="flex w-full cursor-pointer items-center justify-between gap-3 px-3 py-2.5 transition-colors hover:bg-row-hover pressed:bg-row-press lg:px-4 lg:py-3">
-            <div className="flex min-w-0 flex-col gap-1">
-              <span className="px-1 py-0.5 text-sm font-medium lg:text-base">Agreement Notes</span>
-              {!open && preview && (
-                <span className="truncate px-1 text-sm text-muted-foreground">{preview}</span>
-              )}
-            </div>
-            <ChevronDownIcon
-              className={cn(
-                'size-5 shrink-0 text-muted-foreground transition-transform duration-200',
-                !open && '-rotate-90',
-              )}
-            />
-          </div>
-        </div>
+        {/* The rule is always drawn (transparent while closed) so opening never adds a pixel to the header. */}
+        <button
+          type="button"
+          className="flex w-full flex-none cursor-pointer items-center justify-between gap-3 border-b border-transparent px-3 py-2.5 text-left outline-none transition-colors hover:bg-row-hover pressed:bg-row-press focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset data-[state=open]:border-border lg:px-4 lg:py-3"
+        >
+          <span className="flex min-w-0 flex-col gap-1">
+            <span className="px-1 py-0.5 text-sm font-medium lg:text-base">Agreement Notes</span>
+            {preview && (
+              <span aria-hidden={open || undefined} className={cn('truncate px-1 text-sm text-muted-foreground', open && 'invisible')}>
+                {preview}
+              </span>
+            )}
+          </span>
+          <ChevronDownIcon
+            className={cn(
+              'size-5 shrink-0 text-muted-foreground transition-transform duration-200',
+              !open && '-rotate-90',
+            )}
+          />
+        </button>
       </CollapsibleTrigger>
       <AnimatedCollapsibleContent open={open} className="flex min-h-0 flex-col">
         <div className="min-h-0 overflow-y-auto overscroll-contain px-3 py-3 lg:px-4 lg:py-4">
@@ -46,7 +50,7 @@ export function AgreementNotesItem() {
             render={({ field }) => (
               <FormItem>
                 <div className="flex gap-2 items-center">
-                  <FormLabel>Agreement Notes</FormLabel>
+                  <FormLabel className="sr-only">Agreement Notes</FormLabel>
                   <Button
                     variant="outline"
                     type="button"
