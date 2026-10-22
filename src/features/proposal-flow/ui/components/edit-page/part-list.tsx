@@ -20,7 +20,7 @@ export function PartList({ proposalId, onSelect }: Props) {
             key={id}
             type="button"
             onClick={() => onSelect(id)}
-            className="grid min-h-13 grid-cols-[16px_minmax(0,1fr)_auto_auto] items-center gap-x-3 px-4 py-3 text-left transition-colors first:rounded-t-xl last:rounded-b-xl hover:bg-row-hover"
+            className="grid min-h-13 grid-cols-[16px_minmax(0,1fr)_auto_auto] items-center gap-x-3 px-4 py-3 text-left transition-colors first:rounded-t-xl last:rounded-b-xl hover:bg-row-hover pressed:bg-row-press"
           >
             <Icon className="size-4 text-muted-foreground" />
             <span className="flex min-w-0 flex-col">

@@ -23,7 +23,7 @@ export function PartRail({ proposalId, active, onSelect }: Props) {
             aria-current={id === active ? 'page' : undefined}
             onClick={() => onSelect(id)}
             className={cn(
-              'grid grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-x-2 rounded-lg px-2.5 py-2 text-left transition-colors',
+              'grid grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-x-2 rounded-lg px-2.5 py-2 text-left transition-colors pressed:bg-row-press',
               id === active ? 'bg-row-selected' : 'hover:bg-row-hover',
             )}
           >

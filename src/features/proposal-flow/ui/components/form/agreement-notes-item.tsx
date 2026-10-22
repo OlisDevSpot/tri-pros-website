@@ -28,11 +28,10 @@ export function AgreementNotesItem() {
         >
           <span className="flex min-w-0 flex-col gap-1">
             <span className="px-1 py-0.5 text-sm font-medium lg:text-base">Agreement Notes</span>
-            {preview && (
-              <span aria-hidden={open || undefined} className={cn('truncate px-1 text-sm text-muted-foreground', open && 'invisible')}>
-                {preview}
-              </span>
-            )}
+            {/* Always rendered (a non-breaking space when empty), so the first typed character never grows the header. */}
+            <span aria-hidden={open || !preview || undefined} className={cn('truncate px-1 text-sm text-muted-foreground', open && 'invisible')}>
+              {preview || '\u00A0'}
+            </span>
           </span>
           <ChevronDownIcon
             className={cn(

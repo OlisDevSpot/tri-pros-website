@@ -17,3 +17,8 @@ export const FORM_PART_FIELD_PREFIXES: Record<'general' | 'sow' | 'funding', rea
   sow: ['project.data.sow', 'project.data.agreementNotes'],
   funding: ['funding', 'priceDisplayMode'],
 }
+
+export const PART_STATE_TEXT = {
+  dirty: 'has unsaved changes',
+  error: 'has errors',
+} as const

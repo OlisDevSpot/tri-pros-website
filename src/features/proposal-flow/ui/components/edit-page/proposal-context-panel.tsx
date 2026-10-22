@@ -58,6 +58,10 @@ export function ProposalContextPanel({ customerId, meetingId, tab, onTabChange }
     }
   }, [profile.data, meetingId, participants.data])
 
+  // A visit the profile doesn't hold has no card to show, so its half of the pill lands on the customer.
+  const showVisit = meeting !== null
+  const activeTab: ProposalContextTab = showVisit ? tab : 'customer'
+
   if (profile.isPending) {
     return <Skeleton className="h-64 rounded-xl" />
   }
@@ -78,18 +82,18 @@ export function ProposalContextPanel({ customerId, meetingId, tab, onTabChange }
   const { customer } = profile.data
 
   return (
-    <Tabs value={tab} onValueChange={value => onTabChange(value === 'visit' ? 'visit' : 'customer')} className="gap-4">
+    <Tabs value={activeTab} onValueChange={value => onTabChange(value === 'visit' ? 'visit' : 'customer')} className="gap-4">
       <TabsList className="w-full">
         <TabsTrigger value="customer">Customer</TabsTrigger>
-        {meetingId && <TabsTrigger value="visit">In-home visit</TabsTrigger>}
+        {showVisit && <TabsTrigger value="visit">In-home visit</TabsTrigger>}
       </TabsList>
       {/* Both panes share one cell, so the panel is as tall as the taller card on either tab. */}
       <div className="grid">
         <TabsContent
           value="customer"
           forceMount
-          inert={tab !== 'customer'}
-          className={cn('flex min-w-0 flex-col gap-3 [grid-area:1/1]', tab !== 'customer' && 'invisible')}
+          inert={activeTab !== 'customer'}
+          className={cn('flex min-w-0 flex-col gap-3 [grid-area:1/1]', activeTab !== 'customer' && 'invisible')}
         >
           <p className="font-semibold">{customer.name}</p>
           <CustomerOverviewCard customer={customer} leadSource={leadSource}>
@@ -99,32 +103,28 @@ export function ProposalContextPanel({ customerId, meetingId, tab, onTabChange }
             <CustomerOverviewCard.ProfileFields />
           </CustomerOverviewCard>
         </TabsContent>
-        {meetingId && (
+        {meeting && (
           <TabsContent
             value="visit"
             forceMount
-            inert={tab !== 'visit'}
-            className={cn('min-w-0 [grid-area:1/1]', tab !== 'visit' && 'invisible')}
+            inert={activeTab !== 'visit'}
+            className={cn('min-w-0 [grid-area:1/1]', activeTab !== 'visit' && 'invisible')}
           >
-            {meeting
-              ? (
-                  <MeetingOverviewCard meeting={meeting} className="flex flex-col gap-3">
-                    <MeetingOverviewCard.Header>
-                      <p className="font-semibold">In-home visit</p>
-                    </MeetingOverviewCard.Header>
-                    <MeetingOverviewCard.Actions mode="toolbar" hide={PROPOSAL_CONTEXT_MEETING_HIDDEN} />
-                    <MeetingOverviewCard.Fields fields={[
-                      { field: 'scheduledDate', format: 'full' },
-                      { field: 'type' },
-                      { field: 'outcome', variant: 'badge' },
-                    ]}
-                    />
-                    <MeetingOverviewCard.Owner showName />
-                    <MeetingOverviewCard.Trades />
-                    <MeetingOverviewCard.Proposals entityListVariant="flush" />
-                  </MeetingOverviewCard>
-                )
-              : <p className="text-sm text-muted-foreground">This customer’s profile isn’t available to you.</p>}
+            <MeetingOverviewCard meeting={meeting} className="flex flex-col gap-3">
+              <MeetingOverviewCard.Header>
+                <p className="font-semibold">In-home visit</p>
+              </MeetingOverviewCard.Header>
+              <MeetingOverviewCard.Actions mode="toolbar" hide={PROPOSAL_CONTEXT_MEETING_HIDDEN} />
+              <MeetingOverviewCard.Fields fields={[
+                { field: 'scheduledDate', format: 'full' },
+                { field: 'type' },
+                { field: 'outcome', variant: 'badge' },
+              ]}
+              />
+              <MeetingOverviewCard.Owner showName />
+              <MeetingOverviewCard.Trades />
+              <MeetingOverviewCard.Proposals entityListVariant="flush" />
+            </MeetingOverviewCard>
           </TabsContent>
         )}
       </div>

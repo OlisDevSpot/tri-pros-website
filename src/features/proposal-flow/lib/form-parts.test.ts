@@ -66,6 +66,9 @@ describe('firstErrorPart', () => {
     }
     assert.equal(firstErrorPart(errors), 'sow')
   })
+  it('treats a field named type as a field, not as an error object', () => {
+    assert.equal(firstErrorPart({ project: { data: { type: { type: 'custom', message: 'x' } } } }), 'general')
+  })
   it('returns null with no errors', () => {
     assert.equal(firstErrorPart({}), null)
   })

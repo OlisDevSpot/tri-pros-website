@@ -39,7 +39,6 @@ export function ProposalToolbar({ isLoading, viewHref, actions }: Props) {
 
   return (
     <div className="inline-flex h-9 items-center gap-0.5 rounded-lg border border-control-border bg-tab-track p-0.5">
-      {/* Internal financials */}
       <button
         type="button"
         onClick={actions.openInternalFinancials}
@@ -49,11 +48,11 @@ export function ProposalToolbar({ isLoading, viewHref, actions }: Props) {
         <CalculatorIcon className="size-3.5" />
       </button>
 
-      {/* Settings */}
       <Popover open={settingsOpen} onOpenChange={setSettingsOpen}>
         <PopoverTrigger asChild>
           <button
             type="button"
+            aria-label="Proposal settings"
             className={cn(
               TOOLBAR_BUTTON_BASE,
               'aspect-square',
@@ -68,19 +67,18 @@ export function ProposalToolbar({ isLoading, viewHref, actions }: Props) {
         </PopoverContent>
       </Popover>
 
-      {/* View */}
       {viewHref && (
         <a
           href={viewHref}
           target="_blank"
           rel="noopener noreferrer"
+          aria-label="Preview"
           className={cn(TOOLBAR_BUTTON_BASE, 'aspect-square', TOOLBAR_BUTTON_INACTIVE)}
         >
           <EyeIcon className="size-3.5" />
         </a>
       )}
 
-      {/* Save — split button */}
       <div
         className={cn(
           TOOLBAR_BUTTON_BASE,
@@ -89,7 +87,6 @@ export function ProposalToolbar({ isLoading, viewHref, actions }: Props) {
           isLoading && 'pointer-events-none opacity-50',
         )}
       >
-        {/* Desktop: label triggers save, chevron opens popover */}
         <button
           type="button"
           disabled={isLoading}
