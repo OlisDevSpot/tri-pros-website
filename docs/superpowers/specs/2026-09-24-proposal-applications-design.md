@@ -255,7 +255,7 @@ Nothing in this spec is built yet. `programs.ts`, `qualify-programs.ts` and `ene
 3. **One profile write path.** The customers module spec (`2026-09-29-customers-module-design.md`) makes `customer_profiles` writes one scoped path with an optional meeting broadcast. Its Phase 0 fixes the meeting-flow profile write, which currently takes a client `customerId` under `SYSTEM_CONTEXT`. §9 uses that path and must not copy the meeting-flow router.
 4. **Meetings bulk delete.** The records bulk spec (`2026-09-28-records-bulk-actions-and-entity-tables-design.md`) skips meetings with `hasApplications` because meeting deletes cascade applications. That stops being true once applications belong to proposals, so drop the clause. It isn't built yet, so nothing in code needs changing.
 5. **Homeowner visibility of granted incentives.**
-   - On the redesigned proposal page (`2026-10-01-proposal-page-design.md`, D19), global incentives render in "Applies to the whole project", and that includes rows an approval wrote.
+   - On the redesigned proposal page (`2026-10-16-proposal-page-rework-design.md`, P19), global incentives render in "Applies to the whole project", and that includes rows an approval wrote.
    - Its R1 leak means the token path still sends incentive `notes` to homeowners until H10 (#285 / spec F) ships. Until then, the review page's incentive editor treats `notes` as text the homeowner will read.
 6. **Binding per scope item (A13)** waits on W4. The W4 spec is awaiting owner review, and the single pricing-mode ruling blocks it.
 

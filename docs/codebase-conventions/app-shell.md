@@ -136,7 +136,7 @@ The proposal flow has its own canonical shape — a full-height `bg-background` 
 <AbilityProvider user={…} rules={…}>
   <ProposalSplashScreen isAuthenticated={…} />
   <GlobalDialogs />
-  <ProposalFlowShell> {/* h-full flex flex-col bg-background */}
+  <ProposalFlowShell> {/* relative h-full flex flex-col overflow-hidden bg-background */}
     <ScrollRootProvider>
       <div className="flex min-h-0 grow flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
         <Suspense fallback={<ProposalFlowLoadingState />}>{children}</Suspense>
@@ -157,6 +157,8 @@ The layout renders no navbar and no container: the proposal page brings its own 
 The shell layouts above NEVER set `overflow-y-auto`. Individual pages own their scrolling — most commonly via an inner `<div className="h-full overflow-y-auto">` wrapping the page body.
 
 **Why**: layout-level scroll containers cause scrollbar flashes during page transitions when loading skeletons briefly overflow. Page-owned scroll has stable scrollbar behavior.
+
+A shell that sets `data-no-gutter-stable` must make the document unable to scroll (`relative h-full overflow-hidden`), and own exactly one scroller; otherwise an absolutely placed element (an `sr-only` span) escapes it and the body grows a second scrollbar.
 **Reference impl**: any agent-dashboard view in `src/features/agent-dashboard/ui/views/`
 **Enforced by**: convention
 

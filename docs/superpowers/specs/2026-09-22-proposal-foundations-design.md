@@ -122,6 +122,8 @@ Enforced at: `proposalService.send` (§4.3 — inside `dalDbOperation`, so `asse
 
 ### 4.3 Send as a service verb + `sent_message` (P2, H16 · C44, C45)
 
+> **Superseded 2026-10-16 by the proposal page rework's ruling T3** (`docs/superpowers/specs/2026-10-16-proposal-page-rework-design.md` §2.5, P32): the verb is built there as `proposalService.business.send` with input `{ proposalId, message? }` plus the sender; it records the note as an `activities` row (type `note`, entity `proposal`), stamps `sentAt` on every send, and sends before it writes. There is no `sent_message` column. What remains for spec A here is the readiness gate (§4.2) inside that verb.
+
 Schema: `sentMessage: text('sent_message')` — nullable, **lifecycle** (not in `frozenProposalLockedFields`, so a locked proposal can still be re-sent with a message; in `duplicate.exclude`, a copy was never sent).
 
 ```ts
@@ -316,7 +318,7 @@ W4 (`docs/plans/2026-07-26-wave-4-design-handoff.md` + `docs/plans/2026-08-25-wa
 2. **A2 — duplicate:** proposals `duplicate.after` config; delete `proposalService.duplicate`; `crud.router.ts` → `proposalService`; DOCS `#duplicate-resets-and-redrives`. Smoke: duplicate clones global incentives and re-drives the rollup from the router path.
 3. **A3 — SOW shape:** `id`/`painPoints`/`notes`; `min(1)` removed; `sow: []` default + form empty state; `createEmptySowSection` id; `duplicate.overrides` → `regenerateSowSectionIds`; the form's duplicate-section regenerates the section id; `scripts/backfill-sow-section-ids.ts` (run on dev); readers per §4.1.
 4. **A4 — pre-draft + visibility:** enum value; `create.before` / `duplicate.overrides` set it; `proposal-pre-draft.ts` (`shouldPromotePreDraft`) called from `update.before`; badge case; `proposal-visibility.ts`; every consumer in the §4.5 table (`listProposals` + `includePreDraft`).
-5. **A5 — readiness + send:** `proposal-readiness.ts`; `sentMessage` column (dev push); `proposalService.send`; delivery router adapter; contracts gate; heading display; `duplicate.exclude` + `sentMessage`.
+5. **A5 — readiness:** `proposal-readiness.ts`; contracts gate; the readiness gate added to the built send verb. **Amended 2026-10-16 (proposal page rework, ruling T3):** A5 no longer adds a `sentMessage` column, the `proposalService.send` verb, the delivery router adapter, the heading display or the `duplicate.exclude` entry. The verb is built by the rework as `proposalService.business.send` (`modules/proposals/business/service.ts`; it refuses through `canSendProposal`, so readiness joins it there), and its note is an `activities` row, not a column.
 6. **A6 — seed:** `seed-sow-sections.ts`; delete `snap-sow-from-meeting.ts`; `buildProposalDefaults` trades half onto the seed, objectives mapping removed.
 7. **A7 — meeting required:** schema `notNull` + `restrict` (dev push after the dev pre-check); `create.before` branch removed; meetings `delete.before` message; `sow/` unit (`service.ts`, engine-shaped content-only verbs, §4.6) + smoke; DOCS rules (§4.10); tracker ticks.
 

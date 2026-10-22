@@ -63,6 +63,8 @@ A proposal can be read and partly updated by an unauthenticated client via `?tok
 **Reference impl**: `server-spec.ts:shareable`, `domains/permissions/rules/bearer.ts`, `dal/server/lib/contexts.ts:bearerContext`
 **Enforced by**: `shareableMiddleware` → `bearerContext`; the compiled rules in every proposal read and write
 
+The share-link read also carries the **meeting reps** (`name, email, phone, headshotUrl` of the meeting's owner and co-owner, never helpers or the system user) and the meeting's `scheduledFor`, passed through explicitly in `toHomeownerProposalView` (`toShareableMeetingReps`) as a deliberate exception to the read rule; the customer's internal `hasSentProposal` flag is dropped there (`toShareableCustomer`). The agent's view of the customer phone is gated in the `business.getFullView` procedure (`gateCustomerPhone`), not in the DAL read, which stays raw for contracts, the PDF and the send verb.
+
 **Homeowner-open push ("Proposal Viewed")**: every open through the share link records a `proposal_views` row and pushes to the proposal's **meeting participants — all of them — plus the info@ system user, always**. A proposal has no owner: it is reached through its meeting, and the people responsible for it are whoever is on that meeting (`#visibility-via-meeting-participation`); `ownerId` is the author and never a recipient (2026-09-10 ruling). No meeting ⇒ the view is still recorded and info@ alone is pushed. Recipients are resolved by the dispatcher, not the notification service. The homeowner's "Request Agreement" signal (`#proposal-lock-ladder`) uses the same recipient rule.
 **Reference impl**: `views/service.ts:record` → `sendViewNotificationJob` → `notification.service.ts:notifyProposalViewed`
 
