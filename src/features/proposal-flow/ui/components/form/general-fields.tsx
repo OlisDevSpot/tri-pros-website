@@ -1,29 +1,32 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { ProjectType } from '@/shared/constants/enums'
 import { useFormContext } from 'react-hook-form'
+import { formatProjectType } from '@/features/proposal-flow/lib/format-project-type'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { projectTypes, validThroughTimeframes } from '@/shared/constants/enums'
 
-export function GeneralFields() {
+export function GeneralFields({ withName = false }: { withName?: boolean }) {
   const form = useFormContext<ProposalFormSchema>()
 
   return (
     <div className="flex flex-col gap-4 lg:gap-6">
-      <FormField
-        name="project.data.label"
-        control={form.control}
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Project Name</FormLabel>
-            <FormControl>
-              <Input placeholder="John Doe" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      {withName && (
+        <FormField
+          name="project.data.label"
+          control={form.control}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Project Name</FormLabel>
+              <FormControl>
+                <Input placeholder="John Doe" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 lg:gap-4">
         <FormField
           name="project.data.type"
@@ -44,7 +47,7 @@ export function GeneralFields() {
                   <SelectContent {...field}>
                     {projectTypes.map(type => (
                       <SelectItem key={type} value={type}>
-                        {type.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                        {formatProjectType(type)}
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -1,41 +1,25 @@
 'use client'
 
+import type { FormPartId } from '@/features/proposal-flow/constants/form-parts'
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { OverrideProposalValues } from '@/features/proposal-flow/types'
-import { CalculatorIcon, ChevronDownIcon, EyeIcon, SaveIcon, SettingsIcon } from 'lucide-react'
+import { SaveIcon } from 'lucide-react'
 import { motion } from 'motion/react'
-import { parseAsStringLiteral, useQueryState } from 'nuqs'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
-import { toast } from 'sonner'
+import { FORM_PART_IDS, FORM_PARTS } from '@/features/proposal-flow/constants/form-parts'
+import { useFormPart } from '@/features/proposal-flow/hooks/use-form-part'
+import { useProposalFormActions } from '@/features/proposal-flow/hooks/use-proposal-form-actions'
+import { deepMergeFormDefaults } from '@/features/proposal-flow/lib/deep-merge-form-defaults'
 import { baseDefaultValues } from '@/features/proposal-flow/schemas/form-schema'
-import { InternalFinancialsModal } from '@/features/proposal-flow/ui/components/internal-financials-modal'
+import { ProposalToolbar } from '@/features/proposal-flow/ui/components/edit-page/proposal-toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Card } from '@/shared/components/ui/card'
-import { Label } from '@/shared/components/ui/label'
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
-import { Switch } from '@/shared/components/ui/switch'
 import { Tabs, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
-import { openModal } from '@/shared/lib/open-modal'
-import { cn } from '@/shared/lib/utils'
 import { FundingFields } from './funding-fields'
 import { GeneralFields } from './general-fields'
 import { ProjectFields } from './project-fields'
 import { ProposalMediaManager } from './proposal-media-manager'
-
-const FORM_TABS = ['general', 'sow', 'funding', 'files'] as const
-type FormTab = (typeof FORM_TABS)[number]
-
-const TAB_LABELS: Record<FormTab, string> = {
-  files: 'Files',
-  funding: 'Funding',
-  general: 'General',
-  sow: 'Scope of Work',
-}
-
-const TOOLBAR_BUTTON_BASE = 'inline-flex size-[calc(100%-1px)] items-center justify-center rounded-md border border-transparent transition-[color,box-shadow]'
-const TOOLBAR_BUTTON_INACTIVE = 'text-muted-foreground hover:bg-hover hover:text-foreground pressed:bg-press'
-const TOOLBAR_BUTTON_ACTIVE = 'bg-tab-active text-foreground shadow-xs'
 
 interface Props {
   onSubmit: (data: ProposalFormSchema) => void
@@ -46,234 +30,51 @@ interface Props {
   proposalId?: string
 }
 
-function deepMergeDefaults(base: ProposalFormSchema, override: Props['initialValues'] = {}): ProposalFormSchema {
-  if (Object.keys(override).length === 0) {
-    return base
-  }
-
-  return {
-    ...base,
-    ...(override.priceDisplayMode ? { priceDisplayMode: override.priceDisplayMode } : {}),
-    project: { ...base.project, ...(override.project ?? {}) },
-    funding: { ...base.funding, ...(override.funding ?? {}) },
-  }
-}
-
 export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewHref, proposalId }: Props) {
   const form = useFormContext<ProposalFormSchema>()
-  const [nuqsTab, setNuqsTab] = useQueryState(
-    'formTab',
-    parseAsStringLiteral(FORM_TABS).withDefault('general'),
-  )
-  const [activeTab, setActiveTab] = useState<FormTab>(nuqsTab)
+  const { activePart, setPart } = useFormPart()
+  const actions = useProposalFormActions({ onSubmit, onSave })
   const isEditMode = !!onSave
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [saveOpenMobile, setSaveOpenMobile] = useState(false)
-  const [saveOpenDesktop, setSaveOpenDesktop] = useState(false)
-  const saveOpen = saveOpenMobile || saveOpenDesktop
   const pricingMode = useWatch({ control: form.control, name: 'priceDisplayMode' })
-
-  function handleInternalFinancials() {
-    const v = form.getValues()
-    openModal({
-      accessor: 'InternalFinancials',
-      Component: InternalFinancialsModal,
-      props: {
-        funding: v.funding,
-        sow: v.project.data.sow,
-        priceDisplayMode: v.priceDisplayMode,
-      },
-    })
-  }
-
-  useEffect(() => {
-    setActiveTab(nuqsTab)
-  }, [nuqsTab])
-
-  function handleTabChange(val: string) {
-    const tab = val as FormTab
-    setActiveTab(tab)
-    setNuqsTab(tab)
-  }
 
   useEffect(() => {
     if (initialValues) {
-      form.reset(deepMergeDefaults(baseDefaultValues, initialValues))
+      form.reset(deepMergeFormDefaults(baseDefaultValues, initialValues))
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialValues])
 
-  const onInvalid = (errors: any) => {
-    // eslint-disable-next-line no-console
-    console.log(form.getValues())
-    // eslint-disable-next-line no-console
-    console.log('INVALID SUBMIT', errors)
-    toast.error('Form is invalid (check console)')
-  }
-
-  function closeSavePopovers() {
-    setSaveOpenMobile(false)
-    setSaveOpenDesktop(false)
-  }
-
-  function handleSaveAndPreview() {
-    closeSavePopovers()
-    form.handleSubmit(onSubmit, onInvalid)()
-  }
-
-  function handleSaveOnly() {
-    closeSavePopovers()
-    if (onSave) {
-      form.handleSubmit(onSave, onInvalid)()
-    }
-    else {
-      form.handleSubmit(onSubmit, onInvalid)()
-    }
-  }
-
   return (
     <form
       id="proposal-form"
-      onSubmit={form.handleSubmit(onSubmit, onInvalid)}
+      onSubmit={(event) => {
+        event.preventDefault()
+        actions.saveAndPreview()
+      }}
       className="flex h-full w-full flex-col gap-3"
     >
       <div className="flex shrink-0 items-center justify-between gap-2">
         <Tabs
-          value={activeTab}
-          onValueChange={handleTabChange}
+          value={activePart}
+          onValueChange={val => setPart(val as FormPartId)}
         >
           <TabsList>
-            {FORM_TABS.map(tab => (
-              <TabsTrigger key={tab} value={tab}>
-                {TAB_LABELS[tab]}
+            {FORM_PARTS.map(part => (
+              <TabsTrigger key={part.id} value={part.id}>
+                {part.label}
               </TabsTrigger>
             ))}
           </TabsList>
         </Tabs>
 
         {isEditMode
-          ? (
-              <div className="inline-flex h-9 items-center gap-0.5 rounded-lg border border-control-border bg-tab-track p-0.5">
-                {/* Internal financials */}
-                <button
-                  type="button"
-                  onClick={handleInternalFinancials}
-                  className={cn(TOOLBAR_BUTTON_BASE, 'aspect-square', TOOLBAR_BUTTON_INACTIVE)}
-                  aria-label="Internal financials"
-                >
-                  <CalculatorIcon className="size-3.5" />
-                </button>
-
-                {/* Settings */}
-                <Popover open={settingsOpen} onOpenChange={setSettingsOpen}>
-                  <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      className={cn(
-                        TOOLBAR_BUTTON_BASE,
-                        'aspect-square',
-                        settingsOpen ? TOOLBAR_BUTTON_ACTIVE : TOOLBAR_BUTTON_INACTIVE,
-                      )}
-                    >
-                      <SettingsIcon className="size-3.5" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-72" align="end">
-                    <div className="space-y-4">
-                      <div className="space-y-3">
-                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">General</p>
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="pricing-mode" className="text-sm font-normal">
-                            Breakdown Pricing
-                          </Label>
-                          <Switch
-                            id="pricing-mode"
-                            checked={pricingMode === 'breakdown'}
-                            onCheckedChange={checked =>
-                              form.setValue('priceDisplayMode', checked ? 'breakdown' : 'total')}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-
-                {/* View */}
-                {viewHref && (
-                  <a
-                    href={viewHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={cn(TOOLBAR_BUTTON_BASE, 'aspect-square', TOOLBAR_BUTTON_INACTIVE)}
-                  >
-                    <EyeIcon className="size-3.5" />
-                  </a>
-                )}
-
-                {/* Save — split button */}
-                <div
-                  className={cn(
-                    TOOLBAR_BUTTON_BASE,
-                    'gap-0 px-0',
-                    saveOpen ? TOOLBAR_BUTTON_ACTIVE : TOOLBAR_BUTTON_INACTIVE,
-                    isLoading && 'pointer-events-none opacity-50',
-                  )}
-                >
-                  {/* Desktop: label triggers save, chevron opens popover */}
-                  <button
-                    type="button"
-                    disabled={isLoading}
-                    className="hidden items-center gap-1.5 px-2 leading-none lg:inline-flex"
-                    onClick={handleSaveOnly}
-                  >
-                    <SaveIcon className="size-3.5 shrink-0" />
-                    <span className="text-sm font-medium">Save</span>
-                  </button>
-                  <Popover open={saveOpenDesktop} onOpenChange={setSaveOpenDesktop}>
-                    <PopoverTrigger asChild>
-                      <button
-                        type="button"
-                        disabled={isLoading}
-                        className="hidden items-center border-l border-control-border ml-1 px-1.5 rounded-r-md transition-colors hover:bg-hover pressed:bg-press lg:inline-flex"
-                      >
-                        <ChevronDownIcon className="size-3" />
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-44 p-1" align="end">
-                      <div className="flex flex-col">
-                        <Button type="button" variant="ghost" size="sm" className="justify-start" onClick={handleSaveOnly}>Save</Button>
-                        <Button type="button" variant="ghost" size="sm" className="justify-start" onClick={handleSaveAndPreview}>Save & Preview</Button>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                  {/* Mobile: entire button opens popover */}
-                  <Popover open={saveOpenMobile} onOpenChange={setSaveOpenMobile}>
-                    <PopoverTrigger asChild>
-                      <button
-                        type="button"
-                        disabled={isLoading}
-                        className="inline-flex items-center gap-0.5 px-1.5 lg:hidden"
-                      >
-                        <SaveIcon className="size-3.5" />
-                        <ChevronDownIcon className="size-3" />
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-44 p-1" align="end">
-                      <div className="flex flex-col">
-                        <Button type="button" variant="ghost" size="sm" className="justify-start" onClick={handleSaveOnly}>Save</Button>
-                        <Button type="button" variant="ghost" size="sm" className="justify-start" onClick={handleSaveAndPreview}>Save & Preview</Button>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-            )
+          ? <ProposalToolbar isLoading={isLoading} viewHref={viewHref ?? ''} actions={actions} />
           : (
               <Button
                 type="button"
                 size="sm"
                 disabled={isLoading}
-                onClick={handleSaveAndPreview}
+                onClick={actions.saveAndPreview}
               >
                 <SaveIcon className="size-3.5" />
                 Save & Preview
@@ -283,8 +84,8 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
 
       <div className="min-h-0 flex-1 overflow-y-auto scrollbar-gutter-stable">
         <Card className="w-full p-3 lg:p-5">
-          {FORM_TABS.map((tab) => {
-            const isActive = activeTab === tab
+          {FORM_PART_IDS.map((tab) => {
+            const isActive = activePart === tab
             return (
               <motion.div
                 key={tab}
@@ -292,7 +93,7 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
                 transition={{ duration: 0.15 }}
                 className={isActive ? '' : 'hidden'}
               >
-                {tab === 'general' && <GeneralFields />}
+                {tab === 'general' && <GeneralFields withName />}
                 {tab === 'sow' && <ProjectFields priceDisplayMode={pricingMode} />}
                 {tab === 'funding' && <FundingFields pricingMode={pricingMode} />}
                 {tab === 'files' && (
