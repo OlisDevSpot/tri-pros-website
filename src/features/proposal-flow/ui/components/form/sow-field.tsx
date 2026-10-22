@@ -161,7 +161,7 @@ export function SOWSection({
                   values={field.value.map(scope => scope.id)}
                 >
                   <FormControl>
-                    <MultiSelectTrigger className="w-full" disabled={scopesOfTrade.isLoading}>
+                    <MultiSelectTrigger className="w-full" disabled={field.disabled || scopesOfTrade.isLoading}>
                       <MultiSelectValue placeholder={scopesOfTrade.isLoading ? 'Loading...' : 'Select scopes'} />
                     </MultiSelectTrigger>
                   </FormControl>
