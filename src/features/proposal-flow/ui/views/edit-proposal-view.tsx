@@ -227,6 +227,7 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
           meetingScheduledFor={proposal.data.meetingScheduledFor}
           initialValues={initProposalValues}
           isLoading={proposal.isLoading || updateProposal.isPending}
+          locked={proposalLocked}
           viewHref={viewHref}
           lockNotice={lockNotice}
           onSubmit={onSubmit}

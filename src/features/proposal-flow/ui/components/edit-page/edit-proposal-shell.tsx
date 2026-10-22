@@ -20,6 +20,7 @@ interface Props {
   meetingScheduledFor: string | null
   initialValues: OverrideProposalValues | undefined
   isLoading: boolean
+  locked: boolean
   viewHref: string
   lockNotice: ReactNode
   onSubmit: (data: ProposalFormSchema) => void
@@ -34,6 +35,7 @@ export function EditProposalShell({
   meetingScheduledFor,
   initialValues,
   isLoading,
+  locked,
   viewHref,
   lockNotice,
   onSubmit,
@@ -63,7 +65,7 @@ export function EditProposalShell({
         customer={customer}
         meetingId={meetingId}
         meetingScheduledFor={meetingScheduledFor}
-        isLoading={isLoading}
+        isLoading={isLoading || locked}
         viewHref={viewHref}
         actions={actions}
       />

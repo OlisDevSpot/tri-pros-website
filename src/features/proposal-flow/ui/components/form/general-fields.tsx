@@ -27,7 +27,7 @@ export function GeneralFields({ withName = false }: { withName?: boolean }) {
           )}
         />
       )}
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 lg:gap-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <FormField
           name="project.data.type"
           control={form.control}
