@@ -5,7 +5,6 @@ import type { OverrideProposalValues } from '../../types'
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
-import { motion } from 'motion/react'
 import { useRouter } from 'next/navigation'
 import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
@@ -14,7 +13,7 @@ import { useReplaceIncentives } from '@/features/proposal-flow/dal/client/mutati
 import { useUpdateProposal } from '@/features/proposal-flow/dal/client/mutations/use-update-proposal'
 import { useGetProposal } from '@/features/proposal-flow/dal/client/queries/use-get-proposal'
 import { baseDefaultValues, proposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
-import { ProposalForm } from '@/features/proposal-flow/ui/components/form'
+import { EditProposalShell } from '@/features/proposal-flow/ui/components/edit-page/edit-proposal-shell'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/components/ui/alert'
@@ -27,7 +26,6 @@ import { computeFinalTcp, deriveEditCashDown, resolveDeposit } from '@/shared/mo
 import { fundingDomainToColumns, toFundingInputs } from '@/shared/modules/proposals/core/lib/funding-columns'
 import { getProposalLockState } from '@/shared/modules/proposals/core/lib/proposal-lock'
 import { useTRPC } from '@/trpc/helpers'
-import { ProposalContextBand } from '../components/proposal-context-band'
 
 interface EditProposalViewProps {
   proposalId: string
@@ -174,17 +172,8 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
 
   const viewHref = ROOTS.public.proposalReview(proposalId)
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -30 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -30 }}
-      transition={{ duration: 0.25 }}
-      className="w-full h-full flex flex-col gap-4"
-    >
-      {customer && (
-        <ProposalContextBand customerId={customer.id} meetingId={proposal.data.meetingId} className="shrink-0 md:pr-4" />
-      )}
+  const lockNotice = (
+    <>
       {lockState === 'draft-locked' && (
         <Alert className="shrink-0">
           <AlertTitle>A contract draft exists for this proposal</AlertTitle>
@@ -194,6 +183,7 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
               draft&apos;s documents stale. Discard the draft to edit; you can prepare a new one afterward.
             </span>
             <Button
+              type="button"
               variant="outline"
               size="sm"
               className="w-fit"
@@ -223,19 +213,27 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
           </AlertDescription>
         </Alert>
       )}
-      <div className="h-full w-full overflow-auto md:pr-4">
-        <Form {...form}>
-          <ProposalForm
-            isLoading={proposal.isLoading || updateProposal.isPending}
-            initialValues={initProposalValues}
-            onSubmit={onSubmit}
-            onSave={onSave}
-            viewHref={viewHref}
-            proposalId={proposalId}
-          />
-        </Form>
-      </div>
+    </>
+  )
+
+  return (
+    <>
+      <Form {...form}>
+        <EditProposalShell
+          proposalId={proposalId}
+          status={proposal.data.status}
+          customer={customer ? { id: customer.id, name: customer.name } : null}
+          meetingId={proposal.data.meetingId}
+          meetingScheduledFor={proposal.data.meetingScheduledFor}
+          initialValues={initProposalValues}
+          isLoading={proposal.isLoading || updateProposal.isPending}
+          viewHref={viewHref}
+          lockNotice={lockNotice}
+          onSubmit={onSubmit}
+          onSave={onSave}
+        />
+      </Form>
       <DiscardConfirmDialog />
-    </motion.div>
+    </>
   )
 }
