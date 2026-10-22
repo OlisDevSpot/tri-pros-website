@@ -1,16 +1,13 @@
 'use client'
 
 import type { ProposalFormActions } from '@/features/proposal-flow/hooks/use-proposal-form-actions'
-import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import { CalculatorIcon, ChevronDownIcon, EyeIcon, SaveIcon, SettingsIcon } from 'lucide-react'
 import { useState } from 'react'
-import { useFormContext, useWatch } from 'react-hook-form'
 import { TOOLBAR_BUTTON_ACTIVE, TOOLBAR_BUTTON_BASE, TOOLBAR_BUTTON_INACTIVE } from '@/features/proposal-flow/constants/proposal-toolbar'
 import { Button } from '@/shared/components/ui/button'
-import { Label } from '@/shared/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
-import { Switch } from '@/shared/components/ui/switch'
 import { cn } from '@/shared/lib/utils'
+import { PricingModeSettings } from './pricing-mode-settings'
 
 interface Props {
   isLoading: boolean
@@ -19,12 +16,10 @@ interface Props {
 }
 
 export function ProposalToolbar({ isLoading, viewHref, actions }: Props) {
-  const form = useFormContext<ProposalFormSchema>()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [saveOpenMobile, setSaveOpenMobile] = useState(false)
   const [saveOpenDesktop, setSaveOpenDesktop] = useState(false)
   const saveOpen = saveOpenMobile || saveOpenDesktop
-  const pricingMode = useWatch({ control: form.control, name: 'priceDisplayMode' })
 
   function closeSavePopovers() {
     setSaveOpenMobile(false)
@@ -68,22 +63,7 @@ export function ProposalToolbar({ isLoading, viewHref, actions }: Props) {
           </button>
         </PopoverTrigger>
         <PopoverContent className="w-72" align="end">
-          <div className="space-y-4">
-            <div className="space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">General</p>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="pricing-mode" className="text-sm font-normal">
-                  Breakdown Pricing
-                </Label>
-                <Switch
-                  id="pricing-mode"
-                  checked={pricingMode === 'breakdown'}
-                  onCheckedChange={checked =>
-                    form.setValue('priceDisplayMode', checked ? 'breakdown' : 'total')}
-                />
-              </div>
-            </div>
-          </div>
+          <PricingModeSettings />
         </PopoverContent>
       </Popover>
 

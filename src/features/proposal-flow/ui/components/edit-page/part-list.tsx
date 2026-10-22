@@ -1,6 +1,7 @@
 import type { FormPartId } from '@/features/proposal-flow/constants/form-parts'
 import { ChevronRightIcon } from 'lucide-react'
 import { FORM_PARTS } from '@/features/proposal-flow/constants/form-parts'
+import { useFormPartState } from '@/features/proposal-flow/hooks/use-form-part-state'
 import { PartDot } from './part-dot'
 
 interface Props {
@@ -8,7 +9,9 @@ interface Props {
   onSelect: (part: FormPartId) => void
 }
 
-export function PartList({ onSelect }: Props) {
+export function PartList({ proposalId, onSelect }: Props) {
+  const state = useFormPartState(proposalId)
+
   return (
     <nav aria-label="Proposal parts" className="surface rounded-xl border md:hidden">
       <div className="flex flex-col divide-y">
@@ -22,8 +25,9 @@ export function PartList({ onSelect }: Props) {
             <Icon className="size-4 text-muted-foreground" />
             <span className="flex min-w-0 flex-col">
               <span className="truncate text-sm font-medium">{label}</span>
+              <span className="truncate text-xs text-muted-foreground">{state[id].listSummary}</span>
             </span>
-            <PartDot dirty={false} error={false} />
+            <PartDot dirty={state[id].dirty} error={state[id].error} />
             <ChevronRightIcon className="size-4 text-muted-foreground" />
           </button>
         ))}

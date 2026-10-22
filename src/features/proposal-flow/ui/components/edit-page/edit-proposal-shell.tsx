@@ -11,6 +11,7 @@ import { deepMergeFormDefaults } from '@/features/proposal-flow/lib/deep-merge-f
 import { baseDefaultValues } from '@/features/proposal-flow/schemas/form-schema'
 import { EditProposalBody } from './edit-proposal-body'
 import { EditProposalOverview } from './edit-proposal-overview'
+import { PhoneSummaryRow } from './phone-summary-row'
 
 interface Props {
   proposalId: string
@@ -71,6 +72,7 @@ export function EditProposalShell({
       />
       {lockNotice}
       <EditProposalBody proposalId={proposalId} />
+      <PhoneSummaryRow proposalId={proposalId} status={status} isLoading={isLoading || locked} viewHref={viewHref} actions={actions} />
     </form>
   )
 }

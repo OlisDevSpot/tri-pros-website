@@ -1,5 +1,6 @@
 import type { FormPartId } from '@/features/proposal-flow/constants/form-parts'
 import { FORM_PARTS } from '@/features/proposal-flow/constants/form-parts'
+import { useFormPartState } from '@/features/proposal-flow/hooks/use-form-part-state'
 import { cn } from '@/shared/lib/utils'
 import { PartDot } from './part-dot'
 
@@ -9,7 +10,9 @@ interface Props {
   onSelect: (part: FormPartId) => void
 }
 
-export function PartRail({ active, onSelect }: Props) {
+export function PartRail({ proposalId, active, onSelect }: Props) {
+  const state = useFormPartState(proposalId)
+
   return (
     <nav aria-label="Proposal parts" className="surface hidden rounded-xl border p-1 lg:block lg:self-start">
       <div className="flex flex-col gap-0.5">
@@ -27,8 +30,9 @@ export function PartRail({ active, onSelect }: Props) {
             <Icon className="size-4 text-muted-foreground" />
             <span className="flex min-w-0 flex-col">
               <span className="truncate text-sm font-medium">{label}</span>
+              <span className="truncate text-xs text-muted-foreground">{state[id].summary}</span>
             </span>
-            <PartDot dirty={false} error={false} />
+            <PartDot dirty={state[id].dirty} error={state[id].error} />
           </button>
         ))}
       </div>

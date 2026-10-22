@@ -3,11 +3,9 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { Proposal } from '@/shared/db/schema'
 import { useFormContext } from 'react-hook-form'
-import { Badge } from '@/shared/components/ui/badge'
 import { FormControl, FormField, FormItem, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
-import { cn } from '@/shared/lib/utils'
-import { PROPOSAL_ROW_STYLES } from '@/shared/modules/proposals/core/constants/proposal-row-styles'
+import { ProposalStatusChip } from './proposal-status-chip'
 
 interface Props {
   status: Proposal['status']
@@ -41,9 +39,7 @@ export function ProposalNameInput({ status }: Props) {
                 />
               </FormControl>
             </div>
-            <Badge variant="outline" className={cn('hidden shrink-0 text-xs capitalize md:inline-flex', PROPOSAL_ROW_STYLES[status].textClass)}>
-              {status}
-            </Badge>
+            <ProposalStatusChip status={status} className="hidden md:inline-flex" />
           </div>
           <FormMessage />
         </FormItem>

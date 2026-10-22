@@ -1,5 +1,6 @@
 import type { FormPartId } from '@/features/proposal-flow/constants/form-parts'
 import { FORM_PARTS } from '@/features/proposal-flow/constants/form-parts'
+import { useFormPartState } from '@/features/proposal-flow/hooks/use-form-part-state'
 import { cn } from '@/shared/lib/utils'
 import { PartDot } from './part-dot'
 
@@ -9,7 +10,9 @@ interface Props {
   onSelect: (part: FormPartId) => void
 }
 
-export function PartStrip({ active, onSelect }: Props) {
+export function PartStrip({ proposalId, active, onSelect }: Props) {
+  const state = useFormPartState(proposalId)
+
   return (
     <nav
       aria-label="Proposal parts"
@@ -27,7 +30,7 @@ export function PartStrip({ active, onSelect }: Props) {
           )}
         >
           <span className="truncate">{label}</span>
-          <PartDot dirty={false} error={false} />
+          <PartDot dirty={state[id].dirty} error={state[id].error} />
         </button>
       ))}
     </nav>
