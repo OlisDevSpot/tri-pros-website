@@ -9,9 +9,9 @@ import { ROOTS } from '@/shared/config/roots'
 import { makeQueryParsers } from '@/shared/dal/lib/query/url-state'
 import { dalSuccess } from '@/shared/dal/server/types'
 import { OMNI_LIMITS } from '@/shared/domains/omni-search/schemas'
-import { CUSTOMERS_TABLE_QUERY_CONFIG } from '@/shared/entities/customers/constants/customers-table-query-config'
 import { searchCustomersRanked } from '@/shared/entities/customers/dal/server/search-customers-ranked'
 import { listMeetingsForCustomers } from '@/shared/entities/meetings/dal/server/queries'
+import { CUSTOMERS_RECORDS_TABLE_VIEW } from '@/shared/modules/customers/core/constants/customers-records-table-view'
 import { listProjectsForCustomers } from '@/shared/modules/projects/core/dal/server/queries'
 import { listProposalsForCustomers } from '@/shared/modules/proposals/core/dal/server/queries'
 import 'server-only'
@@ -37,7 +37,7 @@ export interface OmniSearchResult {
 }
 
 function customersPageHref(term: string): string {
-  const { searchKey } = makeQueryParsers(CUSTOMERS_TABLE_QUERY_CONFIG.paramPrefix)
+  const { searchKey } = makeQueryParsers(CUSTOMERS_RECORDS_TABLE_VIEW.query.paramPrefix)
   return `${ROOTS.dashboard.customers.root()}?${searchKey}=${encodeURIComponent(term)}`
 }
 

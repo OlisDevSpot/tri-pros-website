@@ -11,7 +11,7 @@ const PipelineRoutePendingView = dynamic(() => import('@/features/agent-dashboar
 
 export const DASHBOARD_ROUTE_PENDING_VIEWS: Record<string, ComponentType> = {
   [ROOTS.dashboard.root]: dynamic(() => import('@/features/agent-dashboard/ui/components/dashboard-home-pending-view').then(m => m.DashboardHomePendingView)),
-  [ROOTS.dashboard.customers.root()]: dynamic(() => import('@/features/agent-dashboard/ui/components/customers-route-pending-view').then(m => m.CustomersRoutePendingView)),
+  [ROOTS.dashboard.customers.root()]: dynamic(() => import('@/features/records-management/ui/views/customers-records-view').then(m => m.CustomersRecordsView)),
   [ROOTS.dashboard.meetings.root()]: dynamic(() => import('@/features/records-management/ui/views/meetings-records-view').then(m => m.MeetingsRecordsView)),
   [ROOTS.dashboard.proposals.root()]: dynamic(() => import('@/features/records-management/ui/views/proposals-records-view').then(m => m.ProposalsRecordsView)),
   [ROOTS.dashboard.projects.root()]: dynamic(() => import('@/features/records-management/ui/views/projects-records-view').then(m => m.ProjectsRecordsView)),

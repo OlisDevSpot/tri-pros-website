@@ -2,9 +2,9 @@
 
 import type { ColumnRegistry } from '@/shared/components/data-view/table/lib/use-entity-columns'
 import type { EntityTableMeta } from '@/shared/components/data-view/table/types/entity-table-meta'
-import type { Pipeline } from '@/shared/constants/enums/pipelines'
 import type { SortId } from '@/shared/dal/lib/query/field-list'
 import type { CUSTOMER_FIELDS } from '@/shared/entities/customers/dal/customer-fields'
+import type { AppRouterOutputs } from '@/trpc/routers/app'
 
 import { PrimaryCell } from '@/shared/components/data-view/table/ui/primary-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
@@ -14,23 +14,8 @@ import { LeadSourcePicker } from '@/shared/entities/customers/components/lead-so
 import { useUpdateLeadSourceMutation } from '@/shared/entities/customers/hooks/use-update-lead-source-mutation'
 import { formatDateCell } from '@/shared/lib/formatters'
 
-/**
- * Shape every customer row passed to a customers table must satisfy. This
- * is the union of fields any customer-list procedure returns — the joined
- * source fields are optional because not all consumers join them, but
- * `pipeline` is always the derived 5-bucket classification (the underlying
- * 3-bucket DB column is exploded server-side via `derivedPipelineSql`).
- */
-export interface CustomerTableRow {
-  id: string
-  name: string
-  email: string | null
-  createdAt: string
-  pipeline: Pipeline | null
-  leadSourceId?: string | null
-  leadSourceName?: string | null
-  leadSourceSlug?: string | null
-}
+/** `pipeline` is the derived five-bucket classification, not the stored three-bucket column. */
+export type CustomerTableRow = AppRouterOutputs['customersRouter']['business']['list']['rows'][number]
 
 export interface CustomerTableMeta extends EntityTableMeta<CustomerTableRow> {
   onUpdateCreatedAt?: (customerId: string, date: Date) => void
@@ -176,3 +161,5 @@ export const CUSTOMER_COLUMNS = {
     },
   },
 } as const satisfies ColumnRegistry<CustomerTableRow, SortId<typeof CUSTOMER_FIELDS>>
+
+export type CustomerColumnKey = keyof typeof CUSTOMER_COLUMNS
