@@ -31,7 +31,7 @@ export interface DataTableServerPagination {
   pageSizeOptions?: readonly number[]
   /** When true, render a muted "Loading…" hint in the pagination bar. */
   isFetching?: boolean
-  /** The rows belong to an older query while the next one loads; the table dims them after a short delay. */
+  /** The rows belong to an older query while the next one loads; with no rows to show, the table draws skeleton rows (the dim is `DataView.Body`'s). */
   isStale?: boolean
   /**
    * Invalidate + refetch the whole dataset for this table's procedure. Wired to

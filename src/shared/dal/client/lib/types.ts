@@ -131,7 +131,7 @@ export interface PaginatedQueryResult<TRow> {
   // -- Query state --
   /** True when there are no rows to show: a pending view with nothing cached (the view draws its skeleton) or an error fallback (row-less). */
   isPending: boolean
-  /** The rows belong to an older URL state while the requested one loads; tables dim them. */
+  /** The rows belong to an older URL state while the requested one loads; `DataView.Body` dims them. */
   isStale: boolean
   /** Refetching rows older than staleTime or invalidated (a save, `refresh()`); the rows stay. A fresh refetch is silent. */
   isFetching: boolean
@@ -212,7 +212,7 @@ export interface DataViewQueryResult<
   total: number
   /** True when there are no rows to show: a pending view with nothing cached (the view draws its skeleton) or an error fallback (row-less). */
   isPending: boolean
-  /** The rows belong to an older URL state while the requested one loads; tables dim them. */
+  /** The rows belong to an older URL state while the requested one loads; `DataView.Body` dims them. */
   isStale: boolean
   /** Refetching rows older than staleTime or invalidated (a save, `refresh()`); the rows stay. A fresh refetch is silent. */
   isFetching: boolean
