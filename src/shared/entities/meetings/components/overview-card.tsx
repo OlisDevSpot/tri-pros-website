@@ -15,6 +15,7 @@ import { AddressAction } from '@/shared/components/contact-actions/ui/address-ac
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
 import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
+import { withToolbarRoles } from '@/shared/components/entities/entity-actions/lib/with-toolbar-roles'
 import { isClickAction } from '@/shared/components/entities/entity-actions/types'
 import { EntityActionMenu } from '@/shared/components/entities/entity-actions/ui/entity-action-menu'
 import { EntityList } from '@/shared/components/entities/entity-list/ui/entity-list'
@@ -548,16 +549,22 @@ function DefaultProposalRow({ proposal }: { proposal: MeetingOverviewCardProposa
 
 function Actions({
   mode = 'compact',
+  roles,
   hide,
   className,
 }: {
   mode?: 'compact' | 'bar' | 'toolbar'
+  /** This surface's toolbar buttons; the shared action constants keep driving every other surface. */
+  roles?: Parameters<typeof withToolbarRoles>[1]
   /** Action ids this surface leaves out. */
   hide?: readonly string[]
   className?: string
 }) {
   const { meeting, actions } = useMeetingOverviewCard()
-  const shown = useMemo(() => (hide ? actions.filter(config => !hide.includes(config.action.id)) : actions), [actions, hide])
+  const shown = useMemo(() => {
+    const kept = hide ? actions.filter(config => !hide.includes(config.action.id)) : actions
+    return roles ? withToolbarRoles(kept, roles) : kept
+  }, [actions, hide, roles])
   return (
     <EntityActionMenu
       entity={meeting}

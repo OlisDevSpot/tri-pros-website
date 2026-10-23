@@ -6,12 +6,14 @@ import type { ProposalContextTab } from '@/features/proposal-flow/types'
 import { CalendarIcon, ChevronDownIcon } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 
+import { PROPOSAL_CONTEXT_POPOVER_STYLE } from '@/features/proposal-flow/constants/proposal-context-popover'
 import { PROPOSAL_CUSTOMER_OVERRIDES } from '@/features/proposal-flow/lib/customer-action-overrides'
 import { Avatar, AvatarFallback } from '@/shared/components/ui/avatar'
 import { Drawer, DrawerContent, DrawerTitle } from '@/shared/components/ui/drawer'
 import { Popover, PopoverAnchor, PopoverContent } from '@/shared/components/ui/popover'
 import { ROOTS } from '@/shared/config/roots'
 import { getInitials } from '@/shared/entities/users/lib/get-initials'
+import { getUserColorToken } from '@/shared/entities/users/lib/get-user-color'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { formatBusinessTime } from '@/shared/lib/business-time'
 import { cn } from '@/shared/lib/utils'
@@ -33,6 +35,7 @@ export function ProposalContextTrigger({ proposalId, customer, meetingId, meetin
   const [tab, setTab] = useState<ProposalContextTab>('customer')
   const pillRef = useRef<HTMLDivElement>(null)
   const lastHalfRef = useRef<HTMLButtonElement | null>(null)
+  const avatarColor = getUserColorToken(customer.id)
   const visitDate = meetingScheduledFor ? formatBusinessTime(meetingScheduledFor, { month: 'short', day: 'numeric' }) : null
 
   const proposalOverrides = useMemo(() => ({
@@ -77,7 +80,7 @@ export function ProposalContextTrigger({ proposalId, customer, meetingId, meetin
         className={cn(halfClassName, 'flex-1 gap-2 pr-3 pl-1.5 md:flex-initial')}
       >
         <Avatar className="size-6">
-          <AvatarFallback className="bg-primary text-xs font-medium text-primary-foreground">{getInitials(customer.name)}</AvatarFallback>
+          <AvatarFallback className={cn('text-xs font-medium', avatarColor.bg, avatarColor.text)}>{getInitials(customer.name)}</AvatarFallback>
         </Avatar>
         <span className="truncate font-semibold">{customer.name}</span>
       </button>
@@ -98,7 +101,7 @@ export function ProposalContextTrigger({ proposalId, customer, meetingId, meetin
     </div>
   )
 
-  const panel = <ProposalContextPanel customerId={customer.id} meetingId={meetingId} tab={tab} onTabChange={setTab} />
+  const panel = <ProposalContextPanel proposalId={proposalId} customerId={customer.id} meetingId={meetingId} tab={tab} onTabChange={setTab} />
 
   // The hosts sit outside the panel: the dialogs they own (reschedule, outcome, participants) must outlive the panel closing under them.
   // The proposal host serves the visit card's proposal rows.
@@ -111,8 +114,7 @@ export function ProposalContextTrigger({ proposalId, customer, meetingId, meetin
                 <>
                   {pill}
                   <Drawer open={open} onOpenChange={setOpen} autoFocus>
-                    {/* A fixed height keeps the actions row high on the screen, so their menus have room to open downward. */}
-                    <DrawerContent aria-describedby={undefined} onCloseAutoFocus={returnFocus} className="h-[80dvh]">
+                    <DrawerContent aria-describedby={undefined} onCloseAutoFocus={returnFocus} className="max-h-[85dvh]">
                       <DrawerTitle className="sr-only">{tab === 'customer' ? 'Customer' : 'In-home visit'}</DrawerTitle>
                       <div className="min-h-0 flex-1 overflow-y-auto p-4">{panel}</div>
                     </DrawerContent>
@@ -126,6 +128,7 @@ export function ProposalContextTrigger({ proposalId, customer, meetingId, meetin
                     align="center"
                     className="max-h-(--radix-popover-content-available-height) w-100 overflow-y-auto p-4"
                     onCloseAutoFocus={returnFocus}
+                    style={PROPOSAL_CONTEXT_POPOVER_STYLE}
                     // The pill is the anchor, not a trigger: a press on it is a half's click, which toggles or switches tabs.
                     onInteractOutside={(event) => {
                       if (event.target instanceof Node && pillRef.current?.contains(event.target)) {

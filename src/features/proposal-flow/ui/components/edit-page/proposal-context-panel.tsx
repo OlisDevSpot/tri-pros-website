@@ -6,8 +6,14 @@ import type { MeetingOverviewCardData } from '@/shared/entities/meetings/compone
 import { skipToken, useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 
-import { PROPOSAL_CONTEXT_CUSTOMER_HIDDEN, PROPOSAL_CONTEXT_MEETING_HIDDEN } from '@/features/proposal-flow/constants/proposal-context-actions'
+import {
+  PROPOSAL_CONTEXT_CUSTOMER_HIDDEN,
+  PROPOSAL_CONTEXT_CUSTOMER_ROLES,
+  PROPOSAL_CONTEXT_MEETING_HIDDEN,
+  PROPOSAL_CONTEXT_MEETING_ROLES,
+} from '@/features/proposal-flow/constants/proposal-context-actions'
 import { canReadLeadSource } from '@/features/proposal-flow/lib/can-read-lead-source'
+import { formatCustomerSince } from '@/features/proposal-flow/lib/format-customer-since'
 import { Button } from '@/shared/components/ui/button'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
@@ -18,13 +24,14 @@ import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
 
 interface Props {
+  proposalId: string
   customerId: string
   meetingId: string | null
   tab: ProposalContextTab
   onTabChange: (tab: ProposalContextTab) => void
 }
 
-export function ProposalContextPanel({ customerId, meetingId, tab, onTabChange }: Props) {
+export function ProposalContextPanel({ proposalId, customerId, meetingId, tab, onTabChange }: Props) {
   const trpc = useTRPC()
   const ability = useAbility()
   const profile = useQuery(trpc.customerPipelinesRouter.getCustomerProfile.queryOptions({ customerId }))
@@ -59,6 +66,11 @@ export function ProposalContextPanel({ customerId, meetingId, tab, onTabChange }
   }, [profile.data, meetingId, participants.data])
 
   // A visit the profile doesn't hold has no card to show, so its half of the pill lands on the customer.
+  const otherProposals = useMemo(
+    () => (meeting?.proposals ?? []).filter(p => p.id !== proposalId),
+    [meeting, proposalId],
+  )
+
   const showVisit = meeting !== null
   const activeTab: ProposalContextTab = showVisit ? tab : 'customer'
 
@@ -95,11 +107,19 @@ export function ProposalContextPanel({ customerId, meetingId, tab, onTabChange }
           inert={activeTab !== 'customer'}
           className={cn('flex min-w-0 flex-col gap-3 [grid-area:1/1]', activeTab !== 'customer' && 'invisible')}
         >
-          <p className="font-semibold">{customer.name}</p>
+          <div>
+            <p className="font-semibold">{customer.name}</p>
+            <p className="text-xs text-muted-foreground">{formatCustomerSince(customer.createdAt)}</p>
+          </div>
           <CustomerOverviewCard customer={customer} leadSource={leadSource}>
-            <CustomerOverviewCard.Actions mode="toolbar" hide={PROPOSAL_CONTEXT_CUSTOMER_HIDDEN} />
+            <CustomerOverviewCard.Actions mode="toolbar" roles={PROPOSAL_CONTEXT_CUSTOMER_ROLES} hide={PROPOSAL_CONTEXT_CUSTOMER_HIDDEN} />
             <CustomerOverviewCard.ContactActions />
-            <CustomerOverviewCard.LeadSource />
+            {leadSource && (
+              <dl>
+                <dt className="text-xs text-muted-foreground">Lead source</dt>
+                <dd className="mt-0.5 text-sm font-medium"><CustomerOverviewCard.LeadSource /></dd>
+              </dl>
+            )}
             <CustomerOverviewCard.ProfileFields />
           </CustomerOverviewCard>
         </TabsContent>
@@ -113,18 +133,26 @@ export function ProposalContextPanel({ customerId, meetingId, tab, onTabChange }
             <MeetingOverviewCard meeting={meeting} className="flex flex-col gap-3">
               <MeetingOverviewCard.Header>
                 <p className="font-semibold">In-home visit</p>
+                <MeetingOverviewCard.Fields fields={[{ field: 'scheduledDate', format: 'full' }]} />
               </MeetingOverviewCard.Header>
-              <MeetingOverviewCard.Actions mode="toolbar" hide={PROPOSAL_CONTEXT_MEETING_HIDDEN} />
+              <MeetingOverviewCard.Actions mode="toolbar" roles={PROPOSAL_CONTEXT_MEETING_ROLES} hide={PROPOSAL_CONTEXT_MEETING_HIDDEN} />
               <MeetingOverviewCard.Fields fields={[
-                { field: 'scheduledDate', format: 'full' },
                 { field: 'type' },
                 { field: 'outcome', variant: 'badge' },
               ]}
               />
               <MeetingOverviewCard.Owner showName />
               <MeetingOverviewCard.Trades />
-              <MeetingOverviewCard.Proposals entityListVariant="flush" />
             </MeetingOverviewCard>
+            {otherProposals.length > 0 && ability.can('read', 'Proposal') && (
+              <section className="mt-3 flex flex-col gap-1">
+                <h3 className="text-xs text-muted-foreground">Other proposals from this visit</h3>
+                {/* Its own root: filtering the main one would drop this proposal's trades from the Trades above. */}
+                <MeetingOverviewCard meeting={{ ...meeting, proposals: otherProposals }}>
+                  <MeetingOverviewCard.Proposals showHeader={false} />
+                </MeetingOverviewCard>
+              </section>
+            )}
           </TabsContent>
         )}
       </div>
