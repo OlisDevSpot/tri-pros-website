@@ -10,9 +10,11 @@ import { useFormContext, useWatch } from 'react-hook-form'
 import { PROJECTION_YEARS } from '@/features/calculators/remodel-roi-calculator/constants/look-ahead'
 import { TRADE_LABELS } from '@/features/calculators/remodel-roi-calculator/constants/trades'
 import { formatYears } from '@/features/calculators/remodel-roi-calculator/lib/format-years'
+import { FormMoneyField } from '@/shared/components/inputs/form-money-field'
 import { FormNumberField } from '@/shared/components/inputs/form-number-field'
 import { FormControl, FormField, FormItem, FormLabel } from '@/shared/components/ui/form'
 import { Switch } from '@/shared/components/ui/switch'
+import { formatAsDollars } from '@/shared/lib/formatters'
 
 interface Props {
   trade: AgingTradeKey
@@ -46,8 +48,8 @@ export function TradeRow({ trade, config, replacement }: Props) {
       )}
       <FormNumberField control={control} hint={ageHint} label="Current one's age" max={100} name={`trades.${trade}.current.ageYears`} suffix="yrs" />
       <div className="grid grid-cols-2 gap-2">
-        <FormNumberField control={control} label="Same kind today" name={`trades.${trade}.current.likeForLikePrice`} placeholder={working.likeForLikePrice.toLocaleString('en-US')} prefix="$" />
-        <FormNumberField control={control} label="Repairs" name={`trades.${trade}.current.repairsPerYear`} placeholder={working.repairsPerYear.toLocaleString('en-US')} prefix="$" suffix="/yr" />
+        <FormMoneyField control={control} label="Same kind today" name={`trades.${trade}.current.likeForLikePrice`} placeholder={formatAsDollars(working.likeForLikePrice)} />
+        <FormMoneyField control={control} label="Repairs" name={`trades.${trade}.current.repairsPerYear`} placeholder={formatAsDollars(working.repairsPerYear)} suffix="/yr" />
       </div>
     </div>
   )

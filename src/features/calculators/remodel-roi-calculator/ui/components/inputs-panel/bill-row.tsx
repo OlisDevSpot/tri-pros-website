@@ -10,6 +10,7 @@ import { useFormContext, useWatch } from 'react-hook-form'
 import { BILL_SWATCH_CLASSES } from '@/features/calculators/remodel-roi-calculator/constants/bill-colors'
 import { CUT_SOURCE_LABELS } from '@/features/calculators/remodel-roi-calculator/constants/trades'
 import { formatMoney } from '@/features/calculators/remodel-roi-calculator/lib/format-money'
+import { FormMoneyField } from '@/shared/components/inputs/form-money-field'
 import { FormNumberField } from '@/shared/components/inputs/form-number-field'
 import { FormControl, FormField, FormItem } from '@/shared/components/ui/form'
 import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-group'
@@ -30,7 +31,7 @@ export function BillRow({ category, cut }: Props) {
     <div className="grid gap-2 border-b border-dashed pb-3.5 last:border-b-0">
       <div className="flex items-end gap-3">
         <span aria-hidden className={cn('mb-4 size-2.5 shrink-0 rounded-full', BILL_SWATCH_CLASSES[category])} />
-        <div className="min-w-0 flex-1"><FormNumberField control={control} label={label} name={`bills.${category}.now`} prefix="$" suffix="/mo" /></div>
+        <div className="min-w-0 flex-1"><FormMoneyField cents control={control} label={label} name={`bills.${category}.now`} suffix="/mo" /></div>
         <div className="grid min-w-18 justify-items-end pb-2.5">
           <span className="text-xs font-bold">After</span>
           <b className="font-sans text-base font-semibold tabular-nums text-primary">{cut.bill ? formatMoney(cut.after) : '—'}</b>
@@ -53,7 +54,7 @@ export function BillRow({ category, cut }: Props) {
           />
           {mode === 'trades'
             ? <p className="text-xs text-muted-foreground">{cut.parts.length ? `−${Math.round(cut.combined * 1000) / 10}% · ${cut.parts.map(part => CUT_SOURCE_LABELS[part.source]).join(', ')}` : 'No picked trade cuts this bill'}</p>
-            : <div className="w-40"><FormNumberField control={control} hideLabel label={`${label} cut`} max={mode === 'percent' ? 100 : undefined} name={`bills.${category}.cut.value`} prefix={mode === 'amount' ? '$' : undefined} suffix={mode === 'percent' ? '%' : 'less/mo'} /></div>}
+            : <div className="w-40">{mode === 'amount' ? <FormMoneyField cents control={control} hideLabel label={`${label} cut`} name={`bills.${category}.cut.value`} suffix="less/mo" /> : <FormNumberField control={control} hideLabel label={`${label} cut`} max={100} name={`bills.${category}.cut.value`} suffix="%" />}</div>}
         </div>
       )}
     </div>

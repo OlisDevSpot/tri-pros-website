@@ -7,7 +7,7 @@ import { useFieldArray, useFormContext } from 'react-hook-form'
 
 import { createOtherLiability } from '@/features/calculators/remodel-roi-calculator/constants/form-defaults'
 import { LiabilityRow } from '@/features/calculators/remodel-roi-calculator/ui/components/inputs-panel/liability-row'
-import { FormNumberField } from '@/shared/components/inputs/form-number-field'
+import { FormMoneyField } from '@/shared/components/inputs/form-money-field'
 import { Button } from '@/shared/components/ui/button'
 
 interface Props {
@@ -20,7 +20,7 @@ export function HomeAndLoansSection({ projection }: Props) {
   return (
     <>
       <p className="text-xs leading-snug text-muted-foreground">Home value and loans are the same on both paths, so they don't change the comparison. They add total net worth to the story.</p>
-      <FormNumberField control={control} label="Home value today" name="homeValue" prefix="$" />
+      <FormMoneyField control={control} label="Home value today" name="homeValue" />
       {fields.map((field, index) => (
         <LiabilityRow
           heldFlat={projection.liabilities.find(liability => liability.index === index)?.heldFlat ?? false}

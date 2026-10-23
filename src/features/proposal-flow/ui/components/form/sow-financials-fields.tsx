@@ -8,6 +8,7 @@ import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
 import { Button } from '@/shared/components/ui/button'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
+import { MoneyField } from '@/shared/components/ui/money-field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { SectionFinancialsSummary } from '@/shared/modules/proposals/core/components/section-financials-summary'
@@ -102,26 +103,22 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
                       side="right"
                     >
                       <span className="w-full lg:w-48">
-                        <Input
-                          type="text"
+                        <MoneyField
                           placeholder="$10,000"
                           disabled
                           className="pointer-events-none"
-                          value={field.value == null ? '' : String(field.value)}
+                          value={field.value}
+                          onChange={field.onChange}
                         />
                       </span>
                     </HybridPopoverTooltip>
                   )
                 : (
-                    <Input
-                      type="text"
+                    <MoneyField
                       placeholder="$10,000"
                       className="w-full lg:w-48"
-                      value={field.value == null ? '' : String(field.value)}
-                      onChange={(e) => {
-                        const raw = e.target.value
-                        field.onChange(raw.trim() === '' ? null : Number(raw.replace(/\D/g, '')))
-                      }}
+                      value={field.value}
+                      onChange={field.onChange}
                     />
                   )}
             </FormControl>
@@ -194,14 +191,10 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
                           <FormItem>
                             <FormLabel className="text-xs">Amount</FormLabel>
                             <FormControl>
-                              <Input
-                                type="text"
+                              <MoneyField
                                 placeholder="$1,000"
-                                value={lineField.value === 0 ? '' : String(lineField.value)}
-                                onChange={(e) => {
-                                  const numeric = Number(e.target.value.replace(/\D/g, ''))
-                                  lineField.onChange(numeric)
-                                }}
+                                value={lineField.value || null}
+                                onChange={value => lineField.onChange(value ?? 0)}
                               />
                             </FormControl>
                             <FormMessage />
@@ -337,14 +330,10 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
                           <FormItem>
                             <FormLabel className="text-xs">Amount</FormLabel>
                             <FormControl>
-                              <Input
-                                type="text"
+                              <MoneyField
                                 placeholder="$500"
-                                value={incField.value === 0 ? '' : String(incField.value)}
-                                onChange={(e) => {
-                                  const numeric = Number(e.target.value.replace(/\D/g, ''))
-                                  incField.onChange(numeric)
-                                }}
+                                value={incField.value || null}
+                                onChange={value => incField.onChange(value ?? 0)}
                               />
                             </FormControl>
                             <FormMessage />

@@ -9,6 +9,7 @@ import { Button } from '@/shared/components/ui/button'
 import { AnimatedCollapsibleContent, Collapsible, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
 import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
+import { MoneyField } from '@/shared/components/ui/money-field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { useConfirm } from '@/shared/hooks/use-confirm'
@@ -103,13 +104,11 @@ export function FundingFields({ pricingMode }: Props) {
                   <FormItem>
                     <FormLabel>Misc Pricing</FormLabel>
                     <FormControl>
-                      <Input
+                      <MoneyField
                         {...field}
                         placeholder="$0"
-                        onChange={(value) => {
-                          const numericValue = Number(value.target.value.replace(/\D/g, ''))
-                          field.onChange(numericValue)
-                        }}
+                        value={field.value || null}
+                        onChange={value => field.onChange(value ?? 0)}
                       />
                     </FormControl>
                     <FormMessage />
@@ -124,14 +123,12 @@ export function FundingFields({ pricingMode }: Props) {
                 <FormItem>
                   <FormLabel>Total Contract Price</FormLabel>
                   <FormControl>
-                    <Input
+                    <MoneyField
                       {...field}
                       disabled={pricingMode === 'breakdown'}
                       placeholder="$50,000"
-                      onChange={(value) => {
-                        const numericValue = Number(value.target.value.replace(/\D/g, ''))
-                        field.onChange(numericValue)
-                      }}
+                      value={field.value || null}
+                      onChange={value => field.onChange(value ?? 0)}
                     />
                   </FormControl>
                   <FormMessage />
@@ -145,15 +142,9 @@ export function FundingFields({ pricingMode }: Props) {
                 <FormItem>
                   <FormLabel>Deposit</FormLabel>
                   <FormControl>
-                    <Input
+                    <MoneyField
                       {...field}
-                      value={field.value ?? ''}
-                      inputMode="numeric"
                       placeholder={`${formatAsDollars(depositCap)} (the legal cap)`}
-                      onChange={(event) => {
-                        const digits = event.target.value.replace(/\D/g, '')
-                        field.onChange(digits === '' ? null : Number(digits))
-                      }}
                     />
                   </FormControl>
                   <FormDescription>{`Leave empty to use the cap: ${describeDepositCap()}.`}</FormDescription>
@@ -256,13 +247,11 @@ export function FundingFields({ pricingMode }: Props) {
                                       <FormItem>
                                         <FormLabel>Amount</FormLabel>
                                         <FormControl>
-                                          <Input
+                                          <MoneyField
                                             {...field}
                                             placeholder="$1,000"
-                                            onChange={(value) => {
-                                              const numericValue = Number(value.target.value.replace(/\D/g, ''))
-                                              field.onChange(numericValue)
-                                            }}
+                                            value={field.value || null}
+                                            onChange={value => field.onChange(value ?? 0)}
                                           />
                                         </FormControl>
                                         <FormMessage />

@@ -8,7 +8,7 @@ import { useFormContext } from 'react-hook-form'
 import { describeTargetResult } from '@/features/calculators/scope-pricing-calculator/lib/describe-target-result'
 import { Button } from '@/shared/components/ui/button'
 import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
-import { NumberField } from '@/shared/components/ui/number-field'
+import { MoneyField } from '@/shared/components/ui/money-field'
 
 interface Props {
   solved: SolveMultiplierResult | null
@@ -26,7 +26,7 @@ export function TargetPriceControl({ solved, floor }: Props) {
         <FormItem>
           <FormLabel>Target price</FormLabel>
           <FormControl>
-            <NumberField {...field} className="h-11" inputMode="decimal" min={0} placeholder="Total the homeowner should see" />
+            <MoneyField {...field} className="h-11" placeholder="Total the homeowner should see" />
           </FormControl>
           <FormDescription>{describeTargetResult(solved, floor)}</FormDescription>
           <FormMessage />

@@ -11,6 +11,7 @@ import { useFormContext, useWatch } from 'react-hook-form'
 import { calculatorTabParser } from '@/features/calculators/constants/query-parsers'
 import { PAYMENT_MODE_LABELS, PAYMENT_MODES, TERM_YEARS } from '@/features/calculators/remodel-roi-calculator/constants/form-options'
 import { formatMoney } from '@/features/calculators/remodel-roi-calculator/lib/format-money'
+import { FormMoneyField } from '@/shared/components/inputs/form-money-field'
 import { FormNumberField } from '@/shared/components/inputs/form-number-field'
 import { FormControl, FormField, FormItem, FormLabel } from '@/shared/components/ui/form'
 import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-group'
@@ -27,7 +28,7 @@ export function ProjectSection({ projection, config }: Props) {
   return (
     <>
       <div className="grid gap-1">
-        <FormNumberField control={control} label="Project price" name="project.price" prefix="$" />
+        <FormMoneyField control={control} label="Project price" name="project.price" />
         <button className="min-h-11 justify-self-start text-xs font-bold text-primary" onClick={() => setTab('scope-pricing')} type="button">Price it in Scope Pricing →</button>
       </div>
       <FormField
@@ -48,7 +49,7 @@ export function ProjectSection({ projection, config }: Props) {
         <>
           <div className="grid grid-cols-2 gap-3">
             <FormNumberField control={control} label="APR" max={40} name="project.aprPercent" placeholder={String(config.defaultFinancing.aprPercent)} step={0.01} suffix="%" />
-            <FormNumberField control={control} label="Down payment" name="project.downPayment" placeholder="0" prefix="$" />
+            <FormMoneyField control={control} label="Down payment" name="project.downPayment" />
           </div>
           <FormField
             control={control}
@@ -76,7 +77,7 @@ export function ProjectSection({ projection, config }: Props) {
           />
         </>
       )}
-      <FormNumberField control={control} label="Incentives" name="project.incentives" placeholder="0" prefix="$" />
+      <FormMoneyField control={control} label="Incentives" name="project.incentives" />
     </>
   )
 }

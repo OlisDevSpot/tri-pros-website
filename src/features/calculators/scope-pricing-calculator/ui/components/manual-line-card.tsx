@@ -8,7 +8,7 @@ import { LineActions } from '@/features/calculators/scope-pricing-calculator/ui/
 import { Card } from '@/shared/components/ui/card'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
-import { NumberField } from '@/shared/components/ui/number-field'
+import { MoneyField } from '@/shared/components/ui/money-field'
 
 interface Props {
   index: number
@@ -42,7 +42,7 @@ export function ManualLineCard({ index, onDuplicate, onRemove }: Props) {
             <FormItem>
               <FormLabel>Price</FormLabel>
               <FormControl>
-                <NumberField {...field} className="h-11" inputMode="decimal" min={0} />
+                <MoneyField {...field} className="h-11" placeholder="$0" />
               </FormControl>
               <FormMessage />
             </FormItem>
