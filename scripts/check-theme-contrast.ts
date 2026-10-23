@@ -502,7 +502,7 @@ for (const mode of ['light', 'dark'] as const) {
           : undefined)
     }
   }
-  for (const place of CARDS) {
+  for (const place of [...CARDS, 'well 1'] as Place[]) {
     guard(`${mode}: edge on ${place}`, () => {
       const edgeIsLighter = luminanceOf('--border', mode, place) > luminanceOf('--card', mode, place)
       return edgeIsLighter === (edgeLeans[mode] === 'lighter') ? undefined : `${mode}: the edge on ${place} must be ${edgeLeans[mode]} than its surface`
