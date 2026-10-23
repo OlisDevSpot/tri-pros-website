@@ -4,6 +4,7 @@ import type { ProposalFormActions } from '@/features/proposal-flow/hooks/use-pro
 import type { Proposal } from '@/shared/db/schema'
 import { MoreHorizontalIcon } from 'lucide-react'
 import { useRef, useState } from 'react'
+import { useEditLoading } from '@/features/proposal-flow/contexts/edit-loading-context'
 import { useFormPartState } from '@/features/proposal-flow/hooks/use-form-part-state'
 import { Button } from '@/shared/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shared/components/ui/dropdown-menu'
@@ -23,6 +24,8 @@ interface Props {
 
 export function PhoneSummaryRow({ proposalId, status, isLoading, viewHref, actions }: Props) {
   const { funding } = useFormPartState(proposalId)
+  // A locked proposal still opens its financials and settings read-only; only the page load holds them.
+  const pageLoading = useEditLoading()
   const [settingsOpen, setSettingsOpen] = useState(false)
   // The popover opens only once the menu has released focus, or the menu's focus return dismisses it.
   const openSettingsOnClose = useRef(false)
@@ -65,9 +68,9 @@ export function PhoneSummaryRow({ proposalId, status, isLoading, viewHref, actio
                     <a href={viewHref} target="_blank" rel="noopener noreferrer">Preview</a>
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem disabled={isLoading} onSelect={() => actions.openInternalFinancials()}>Internal financials</DropdownMenuItem>
+                <DropdownMenuItem disabled={pageLoading} onSelect={() => actions.openInternalFinancials()}>Internal financials</DropdownMenuItem>
                 <DropdownMenuItem
-                  disabled={isLoading}
+                  disabled={pageLoading}
                   onSelect={() => {
                     openSettingsOnClose.current = true
                   }}

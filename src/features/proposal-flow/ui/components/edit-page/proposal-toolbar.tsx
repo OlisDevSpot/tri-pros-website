@@ -4,6 +4,7 @@ import type { ProposalFormActions } from '@/features/proposal-flow/hooks/use-pro
 import { CalculatorIcon, ChevronDownIcon, EyeIcon, SaveIcon, SettingsIcon } from 'lucide-react'
 import { useState } from 'react'
 import { TOOLBAR_BUTTON_ACTIVE, TOOLBAR_BUTTON_BASE, TOOLBAR_BUTTON_INACTIVE } from '@/features/proposal-flow/constants/proposal-toolbar'
+import { useEditLoading } from '@/features/proposal-flow/contexts/edit-loading-context'
 import { Button } from '@/shared/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import { cn } from '@/shared/lib/utils'
@@ -17,6 +18,8 @@ interface Props {
 }
 
 export function ProposalToolbar({ isLoading, viewHref, actions }: Props) {
+  // A locked proposal still opens its financials and settings read-only; only the page load holds them.
+  const pageLoading = useEditLoading()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [saveOpenMobile, setSaveOpenMobile] = useState(false)
   const [saveOpenDesktop, setSaveOpenDesktop] = useState(false)
@@ -42,7 +45,7 @@ export function ProposalToolbar({ isLoading, viewHref, actions }: Props) {
       <button
         type="button"
         onClick={actions.openInternalFinancials}
-        disabled={isLoading}
+        disabled={pageLoading}
         className={cn(TOOLBAR_BUTTON_BASE, 'aspect-square', TOOLBAR_BUTTON_INACTIVE)}
         aria-label="Internal financials"
       >
@@ -54,7 +57,7 @@ export function ProposalToolbar({ isLoading, viewHref, actions }: Props) {
           <button
             type="button"
             aria-label="Proposal settings"
-            disabled={isLoading}
+            disabled={pageLoading}
             className={cn(
               TOOLBAR_BUTTON_BASE,
               'aspect-square',
