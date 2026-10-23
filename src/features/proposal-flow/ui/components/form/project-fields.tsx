@@ -88,7 +88,8 @@ export function ProjectFields({ priceDisplayMode, active }: Props) {
     if (submitCount === 0) {
       return
     }
-    const target = firstSowErrorTarget(errors)
+    // Only the SOW subtree: an earlier funding or general error would otherwise hide the SOW one.
+    const target = firstSowErrorTarget({ project: { data: { sow: errors.project?.data?.sow } } })
     if (!target) {
       return
     }
@@ -167,8 +168,9 @@ export function ProjectFields({ priceDisplayMode, active }: Props) {
             >
               <CollapsibleTrigger asChild>
                 {/* bg-(--card), not bg-card: a third nested bg-card climbs a rung and would paint a lighter band
-                    over its own item. */}
-                <div className="flex-none data-[state=open]:border-b md:data-[state=open]:sticky md:data-[state=open]:top-0 md:data-[state=open]:z-10 md:data-[state=open]:rounded-t-xl md:data-[state=open]:bg-(--card)">
+                    over its own item. The item can't clip at md (the sticky header needs it overflow-visible), so the
+                    header clips its own hover band to the item's inner radius: the outer radius less the 1px border. */}
+                <div className="flex-none data-[state=open]:border-b md:overflow-hidden md:rounded-[calc(var(--radius-xl)-1px)] md:data-[state=open]:sticky md:data-[state=open]:top-0 md:data-[state=open]:z-10 md:data-[state=open]:rounded-b-none md:data-[state=open]:bg-(--card)">
                   <SOWCollapsibleHeader
                     disabled={disabled}
                     isOpen={isOpen}
