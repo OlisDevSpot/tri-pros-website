@@ -35,7 +35,7 @@ export function IncentiveCollapsibleHeader({
             {typeLabel}
           </span>
           {hasAmount && (
-            <Badge variant="secondary" className="bg-status-success-bg text-xs font-semibold tabular-nums text-status-success-fg">
+            <Badge variant="secondary" className="text-xs font-semibold tabular-nums">
               -
               {formatAsDollars(incentive.amount)}
             </Badge>

@@ -15,7 +15,7 @@ export function PhoneSaveSplit({ isLoading, actions }: Props) {
   const [open, setOpen] = useState(false)
 
   return (
-    <div className="inline-flex h-9 items-center rounded-lg border border-control-border bg-tab-track p-0.5">
+    <div className="inline-flex h-9 items-center rounded-lg border border-control-border bg-control p-0.5 shadow-xs">
       <div
         className={cn(
           TOOLBAR_BUTTON_BASE,

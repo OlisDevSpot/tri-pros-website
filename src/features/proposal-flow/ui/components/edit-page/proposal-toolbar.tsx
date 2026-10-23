@@ -38,7 +38,7 @@ export function ProposalToolbar({ isLoading, viewHref, actions }: Props) {
   }
 
   return (
-    <div className="inline-flex h-9 items-center gap-0.5 rounded-lg border border-control-border bg-tab-track p-0.5">
+    <div className="inline-flex h-9 items-center gap-0.5 rounded-lg border border-control-border bg-control p-0.5 shadow-xs">
       <button
         type="button"
         onClick={actions.openInternalFinancials}

@@ -112,7 +112,7 @@ export function SOWCollapsibleHeader({
                 <CopyIcon className="size-4" />
                 Duplicate
               </DropdownMenuItem>
-              <DropdownMenuItem disabled={disabled} onClick={onDelete} className="text-destructive focus:text-destructive">
+              <DropdownMenuItem disabled={disabled} onClick={onDelete} className="text-destructive-text focus:text-destructive-text">
                 <TrashIcon className="size-4" />
                 Delete
               </DropdownMenuItem>

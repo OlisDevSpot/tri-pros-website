@@ -27,7 +27,7 @@ export function GeneralFields({ withName = false }: { withName?: boolean }) {
           )}
         />
       )}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)]">
         <FormField
           name="project.data.type"
           control={form.control}
