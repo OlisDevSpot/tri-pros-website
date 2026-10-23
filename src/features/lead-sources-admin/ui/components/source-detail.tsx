@@ -134,7 +134,8 @@ export function SourceDetail({ leadSourceId, activeChip, range, onAddCustomer, o
         </div>
 
         <TabsContent value="customers" className="flex min-h-0 flex-1 flex-col">
-          <DataViewBoundary>
+          {/* One mount per source: the pane's page and error belong to the source they were read for. */}
+          <DataViewBoundary key={source.id}>
             <LeadSourceCustomersSection leadSourceId={source.id} />
           </DataViewBoundary>
         </TabsContent>
