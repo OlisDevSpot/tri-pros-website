@@ -7,7 +7,7 @@ type Mode = 'light' | 'dark'
 type Rgba = [number, number, number, number]
 
 /** Where a token is read: the page, a surface on a rung of the elevation ladder, an overlay, beneath the page, or the ⌘K palette. */
-type Place = 'beneath' | 'page' | 'rung 1' | 'rung 2' | 'rung 3' | 'overlay' | 'palette'
+type Place = 'beneath' | 'page' | 'rung 1' | 'rung 2' | 'rung 3' | 'well 0' | 'well 1' | 'overlay' | 'palette'
 
 interface Pair {
   label: string
@@ -68,6 +68,7 @@ const pageBlock = readBlock(/^:root,\s*\.dark\s*\{/m)
 const relativeBlock = readBlock(/^:root,\s*\.dark,\s*:is\(\.bg-card/m)
 const overlayBlock = readBlock(/^:is\(\.bg-popover,\s*\.surface-overlay\)\s*\{/m)
 const beneathBlock = readBlock(/^\.surface-beneath\s*\{/m)
+const wellBlock = readBlock(/^\.surface-well\s*\{/m)
 const paletteBlock = readBlock(/^\.surface-palette\s*\{/m)
 const mediaBlock = readBlock(/^:root\s*\{(?=[^{}]*--on-media)/m)
 const blueprintBlock = readBlock(/^:root\s*\{(?=[^{}]*--blueprint-paper)/m)
@@ -78,6 +79,9 @@ const PLACES: Record<Place, Tokens> = {
   'rung 1': new Map([['--depth', '1']]),
   'rung 2': new Map([['--depth', '2']]),
   'rung 3': new Map([['--depth', '3']]),
+  // A well is a region cut one rung below the surface it sits in: 'well 0' in a rung-1 card, 'well 1' in a rung-2 card.
+  'well 0': new Map([...wellBlock, ['--depth', '0']]),
+  'well 1': new Map([...wellBlock, ['--depth', '1']]),
   'overlay': overlayBlock,
   // The ⌘K palette is a dialog (rung 1) whose highlight and hairlines take the palette's own knobs.
   'palette': new Map([['--depth', '1'], ...paletteBlock]),
@@ -288,7 +292,9 @@ function contrast(pair: Pair, mode: Mode, place: Place): number {
 }
 
 const EVERYWHERE: Place[] = ['beneath', 'page', ...CARDS, 'overlay']
-const ON_SURFACES: Place[] = ['page', ...CARDS, 'overlay']
+// A well cut into a rung-1 surface sits at canvas lightness, where control edges and muted-on-hover fall below floor,
+// so only rung-2+ wells are checked and documented as usable. 'well 0' stays defined for the climb.
+const ON_SURFACES: Place[] = ['page', ...CARDS, 'well 1', 'overlay']
 
 const pairs: Pair[] = [
   { label: 'body text on page', fg: '--foreground', bg: '--background', min: 4.5 },
@@ -415,6 +421,8 @@ const climb: [[string, Place], [string, Place]][] = [
   [['--background', 'page'], ['--card', 'rung 1']],
   [['--card', 'rung 1'], ['--card', 'rung 2']],
   [['--card', 'rung 2'], ['--card', 'rung 3']],
+  [['--card', 'well 0'], ['--card', 'rung 1']],
+  [['--card', 'well 1'], ['--card', 'rung 2']],
   [['--card', 'rung 3'], ['--card', 'overlay']],
   [['--card', 'rung 3'], ['--popover', 'page']],
   ...CARDS.flatMap((place): [[string, Place], [string, Place]][] => [

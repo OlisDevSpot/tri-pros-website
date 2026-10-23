@@ -65,6 +65,7 @@ Every app surface is one hue at a lightness set by its **rung**. The canvas (`--
 - `bg-muted` is always one rung above wherever it is read. It suits chips, badges and quiet fills, not panels.
 - Variants such as `md:bg-card` or `bg-card/50` are different class names, so they are **not** surfaces and don't climb. Use them only when that is what you want.
 - A dialog is a portaled `bg-card`, so it starts at rung 1. Menus, selects and popovers are `bg-popover` / `surface-overlay`, the top rung.
+- `surface-well` is the recessed region: one rung below the surface it is cut into, with its edges, text and controls derived from that rung. Use it only inside rung-2+ surfaces; inside a rung-1 surface it lands at canvas lightness, where control edges and muted-on-hover text fail the floor (light checkbox edge 2.87:1, dark field edge 1.62:1). `bg-background` stays a hole.
 - `bg-background` belongs only on page shells (the dashboard `main`, a full-page route). Inside a surface it punches a hole.
 - To change how far apart the rungs sit, retune the knobs (`--canvas-l`, `--step`, `--edge`, `--lift`) with the `elevation-ladder` skill. Never patch a single surface.
 
@@ -220,7 +221,7 @@ A gradient must meet the floor **under the text**, not at its faint end. `backdr
 | `dark:` colour patches | Tokens already carry both schemes, so a patch hides a light-only value | fix the token choice |
 | `text-foreground/60`, `opacity-60` on text | Unchecked contrast on rungs 2–3 | `text-muted-foreground` |
 | `hover:`/`active:` primary fills outside `src/shared/components/ui/**` | Blue is for "act here" | §5 state tokens |
-| `bg-background` inside a surface | A hole to the canvas | `bg-(--card)` or `bg-band` |
+| `bg-background` inside a surface | A hole to the canvas | `bg-(--card)` or `bg-band`; recessed: `surface-well` |
 | `active:` for press styling | Fires too briefly and on ancestors | `pressed:` |
 | `text-[13px]`, `font-black`, `font-extrabold` | The 2px type ramp; weights stop at 700 (lint-enforced) | Tailwind steps, `font-bold` max |
 
