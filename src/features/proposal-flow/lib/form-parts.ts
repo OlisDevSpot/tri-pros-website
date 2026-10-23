@@ -51,9 +51,18 @@ function walkDirty(node: unknown, path: string, parts: Set<FormPartId>) {
   }
 }
 
-export function firstErrorPart(errors: unknown): FormPartId | null {
+function errorPaths(errors: unknown): string[] {
   const paths: string[] = []
   collectPaths(errors, node => typeof (node as { message?: unknown }).message === 'string' || typeof (node as { type?: unknown }).type === 'string', '', paths)
+  return paths
+}
+
+export function firstErrorPath(errors: unknown): string | null {
+  return errorPaths(errors)[0] ?? null
+}
+
+export function firstErrorPart(errors: unknown): FormPartId | null {
+  const paths = errorPaths(errors)
   const found = new Set<FormPartId>()
   for (const path of paths) {
     const part = partOfFieldPath(path)
@@ -64,7 +73,7 @@ export function firstErrorPart(errors: unknown): FormPartId | null {
   return FORM_PART_IDS.find(id => found.has(id)) ?? null
 }
 
-function plural(count: number, noun: string): string {
+export function plural(count: number, noun: string): string {
   return `${count} ${noun}${count === 1 ? '' : 's'}`
 }
 
