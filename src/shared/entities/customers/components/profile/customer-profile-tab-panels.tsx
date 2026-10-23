@@ -4,11 +4,11 @@ import type { useCustomerEditForm } from '@/shared/entities/customers/hooks/use-
 import type { CustomerProfileData } from '@/shared/entities/customers/types'
 import { TabsContent } from '@/shared/components/ui/tabs'
 import { Can } from '@/shared/domains/permissions/ui/can'
+import { CustomerMeetingsList } from '@/shared/entities/meetings/components/customer-meetings-list'
 import { MeetingActionsHost } from '@/shared/modules/meetings/core/components/meeting-actions-host'
+import { CustomerProjectsList } from '@/shared/modules/projects/core/components/customer-projects-list'
 import { ProjectActionsHost } from '@/shared/modules/projects/core/components/project-actions-host'
 import { ProposalActionsHost } from '@/shared/modules/proposals/core/components/proposal-actions-host'
-import { CustomerMeetingsList } from '../lists/customer-meetings-list'
-import { CustomerProjectsList } from '../lists/customer-projects-list'
 import { CustomerProfileOverview } from './customer-profile-overview'
 
 interface Props {
