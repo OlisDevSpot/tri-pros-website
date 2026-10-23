@@ -53,7 +53,7 @@
 
 **Ruled by the owner during execution (2026-10-23, tracker D69).**
 
-25. **The Edit Profile action goes** ("No need for the edit profile action (it is a legacy action no one uses)"). `CUSTOMER_ACTIONS.edit` and `useCustomerActionConfigs`'s `onEdit` override are deleted, so every customer surface lists View Profile, Schedule Meeting and Delete. Task 3 Step 1 (`defaultEditing`) is not built, and Task 3 also edits `constants/actions.ts` and `hooks/use-customer-action-configs.ts`. Supersedes items 1 (its Edit Profile half) and 12, and the Edit Profile parts of Review Focus 5 and Task 3 Steps 2–4.
+25. **The Edit Profile action goes** ("No need for the edit profile action (it is a legacy action no one uses)"). `CUSTOMER_ACTIONS.edit` and `useCustomerActionConfigs`'s `onEdit` override are deleted, so every customer surface offers at most View Profile, Schedule Meeting and Delete, as each surface and the viewer's permissions allow. Task 3 Step 1 (`defaultEditing`) is not built, and Task 3 also edits `constants/actions.ts` and `hooks/use-customer-action-configs.ts`. Supersedes items 1 (its Edit Profile half) and 12, and the Edit Profile parts of Review Focus 5 and Task 3 Steps 2–4.
 
 ## Global Constraints
 
