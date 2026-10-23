@@ -2,12 +2,13 @@ import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-s
 import type { PriceDisplayMode } from '@/shared/constants/enums'
 import { ChevronDownIcon, CopyIcon, MoreHorizontalIcon, TrashIcon } from 'lucide-react'
 import { useRef, useState } from 'react'
+import { sectionPriceDisplay } from '@/features/proposal-flow/lib/section-price'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shared/components/ui/dropdown-menu'
 import { Input } from '@/shared/components/ui/input'
-import { formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
+import { SectionPrice } from './section-price'
 
 interface Props {
   disabled?: boolean
@@ -34,9 +35,8 @@ export function SOWCollapsibleHeader({
   const hasTitle = sow.title.trim().length > 0
   const hasTrade = sow.trade.label.trim().length > 0
   const scopeCount = sow.scopes.length
-  const sectionPrice = sow.financials.sectionPrice
-  const showPrice = priceDisplayMode === 'breakdown' && sectionPrice != null && sectionPrice > 0
-  const hasBadges = hasTrade || scopeCount > 0 || showPrice
+  const price = sectionPriceDisplay(sow.financials, priceDisplayMode)
+  const hasBadges = hasTrade || scopeCount > 0
 
   function handleTitleClick(e: React.MouseEvent) {
     e.stopPropagation()
@@ -56,78 +56,80 @@ export function SOWCollapsibleHeader({
   }
 
   return (
-    <div className="flex w-full cursor-pointer flex-col gap-1 px-3 py-2.5 transition-colors hover:bg-row-hover pressed:bg-row-press lg:px-4 lg:py-3">
-      <div className="flex items-center justify-between gap-3">
-        {isEditing && !disabled
+    <div className="grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-1 px-3 py-2.5 transition-colors hover:bg-row-hover pressed:bg-row-press lg:px-4 lg:py-3">
+      {isEditing && !disabled
+        ? (
+            <Input
+              ref={inputRef}
+              value={sow.title}
+              placeholder="Section title..."
+              className="h-7 min-w-0 flex-1 text-sm font-medium lg:text-base"
+              onClick={e => e.stopPropagation()}
+              onBlur={handleTitleBlur}
+              onChange={e => onTitleChange(e.target.value)}
+              onKeyDown={handleTitleKeyDown}
+            />
+          )
+        : disabled
           ? (
-              <Input
-                ref={inputRef}
-                value={sow.title}
-                placeholder="Section title..."
-                className="h-7 min-w-0 flex-1 text-sm font-medium lg:text-base"
-                onClick={e => e.stopPropagation()}
-                onBlur={handleTitleBlur}
-                onChange={e => onTitleChange(e.target.value)}
-                onKeyDown={handleTitleKeyDown}
-              />
+              <span className="min-w-0 truncate px-1 py-0.5 text-sm font-medium lg:text-base">
+                {sow.title}
+              </span>
             )
-          : disabled
-            ? (
-                <span className="min-w-0 truncate px-1 py-0.5 text-sm font-medium lg:text-base">
-                  {sow.title}
-                </span>
-              )
-            : (
-                <span
-                  role="button"
-                  tabIndex={0}
-                  className={cn(
-                    'min-w-0 truncate rounded px-1 py-0.5 text-sm font-medium transition-colors hover:bg-hover lg:text-base',
-                    !hasTitle && 'text-muted-foreground italic',
-                  )}
-                  onClick={handleTitleClick}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter')
-                      handleTitleClick(e as unknown as React.MouseEvent)
-                  }}
-                >
-                  {hasTitle ? sow.title : 'Click to add title...'}
-                </span>
-              )}
-        <div className="flex shrink-0 items-center gap-1">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                className="size-8"
-                onClick={e => e.stopPropagation()}
+          : (
+              <span
+                role="button"
+                tabIndex={0}
+                className={cn(
+                  'min-w-0 truncate rounded px-1 py-0.5 text-sm font-medium transition-colors hover:bg-hover lg:text-base',
+                  !hasTitle && 'text-muted-foreground italic',
+                )}
+                onClick={handleTitleClick}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter')
+                    handleTitleClick(e as unknown as React.MouseEvent)
+                }}
               >
-                <MoreHorizontalIcon className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" onClick={e => e.stopPropagation()}>
-              <DropdownMenuItem disabled={disabled} onClick={onDuplicate}>
-                <CopyIcon className="size-4" />
-                Duplicate
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled={disabled} onClick={onDelete} className="text-destructive-text focus:text-destructive-text">
-                <TrashIcon className="size-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <ChevronDownIcon
-            className={cn(
-              'size-5 text-muted-foreground transition-transform duration-200',
-              !isOpen && '-rotate-90',
+                {hasTitle ? sow.title : 'Click to add title...'}
+              </span>
             )}
-          />
-        </div>
+      <SectionPrice
+        {...price}
+        className="max-md:col-span-2 max-md:col-start-2 max-md:row-start-2 max-md:justify-self-end md:col-start-2 md:row-start-1"
+      />
+      <div className="col-start-3 row-start-1 flex shrink-0 items-center gap-1">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="size-8"
+              onClick={e => e.stopPropagation()}
+            >
+              <MoreHorizontalIcon className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" onClick={e => e.stopPropagation()}>
+            <DropdownMenuItem disabled={disabled} onClick={onDuplicate}>
+              <CopyIcon className="size-4" />
+              Duplicate
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={disabled} onClick={onDelete} className="text-destructive-text focus:text-destructive-text">
+              <TrashIcon className="size-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <ChevronDownIcon
+          className={cn(
+            'size-5 text-muted-foreground transition-transform duration-200',
+            !isOpen && '-rotate-90',
+          )}
+        />
       </div>
       {hasBadges && (
-        <div className="flex items-center gap-2">
+        <div className="col-start-1 row-start-2 flex min-w-0 items-center gap-2">
           {hasTrade && (
             <Badge variant="secondary" className="text-xs">
               {sow.trade.label}
@@ -138,11 +140,6 @@ export function SOWCollapsibleHeader({
               {scopeCount}
               {' '}
               {scopeCount === 1 ? 'scope' : 'scopes'}
-            </Badge>
-          )}
-          {showPrice && (
-            <Badge variant="secondary" className="bg-status-success-bg text-xs font-semibold tabular-nums text-status-success-fg">
-              {formatAsDollars(sectionPrice!)}
             </Badge>
           )}
         </div>

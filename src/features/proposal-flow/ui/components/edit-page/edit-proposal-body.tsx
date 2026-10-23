@@ -10,10 +10,12 @@ import { GeneralFields } from '@/features/proposal-flow/ui/components/form/gener
 import { ProjectFields } from '@/features/proposal-flow/ui/components/form/project-fields'
 import { ProposalMediaManager } from '@/features/proposal-flow/ui/components/form/proposal-media-manager'
 import { cn } from '@/shared/lib/utils'
+import { FilesCardSummary } from './files-card-summary'
 import { PartCard } from './part-card'
 import { PartList } from './part-list'
 import { PartRail } from './part-rail'
 import { PartStrip } from './part-strip'
+import { SowCardSummary } from './sow-card-summary'
 
 interface Props {
   proposalId: string
@@ -40,6 +42,7 @@ export function EditProposalBody({ proposalId }: Props) {
             title={label}
             hidden={id !== activePart}
             onBack={backToList}
+            summary={id === 'sow' ? <SowCardSummary /> : id === 'files' ? <FilesCardSummary proposalId={proposalId} /> : undefined}
             contentClassName={id === 'sow' ? 'flex flex-col' : undefined}
           >
             {id === 'general' && <GeneralFields />}
