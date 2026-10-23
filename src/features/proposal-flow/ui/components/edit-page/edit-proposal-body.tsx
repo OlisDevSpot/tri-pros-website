@@ -46,7 +46,7 @@ export function EditProposalBody({ proposalId }: Props) {
             contentClassName={id === 'sow' ? 'flex flex-col' : undefined}
           >
             {id === 'general' && <GeneralFields />}
-            {id === 'sow' && <ProjectFields priceDisplayMode={pricingMode} />}
+            {id === 'sow' && <ProjectFields priceDisplayMode={pricingMode} active={activePart === 'sow'} />}
             {id === 'funding' && <FundingFields pricingMode={pricingMode} />}
             {id === 'files' && <ProposalMediaManager proposalId={proposalId} />}
           </PartCard>

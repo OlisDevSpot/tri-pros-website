@@ -1,22 +1,36 @@
+import type { SowSectionTab } from '@/features/proposal-flow/constants/sow-section-tabs'
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { PriceDisplayMode } from '@/shared/constants/enums'
-import { PlusIcon } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form'
-import { Button } from '@/shared/components/ui/button'
+import { firstSowErrorTarget } from '@/features/proposal-flow/lib/sow-error-target'
+import {
+  insertIntoOpenSet,
+  insertIntoTabMap,
+  openSection,
+  removeFromOpenSet,
+  removeFromTabMap,
+  toggleSection,
+} from '@/features/proposal-flow/lib/sow-open-sections'
 import { AnimatedCollapsibleContent, Collapsible, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
 import { useConfirm } from '@/shared/hooks/use-confirm'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
+import { cn } from '@/shared/lib/utils'
 import { createEmptySowSection } from '@/shared/modules/proposals/core/lib/create-empty-sow-section'
 import { AgreementNotesItem } from './agreement-notes-item'
+import { SowAddRow } from './sow-add-row'
 import { SOWCollapsibleHeader } from './sow-collapsible-header'
 import { SOWSection } from './sow-field'
 
 interface Props {
   priceDisplayMode: PriceDisplayMode
+  // Whether the Scope of Work part is the one on screen; the create page leaves it unset.
+  active?: boolean
 }
 
-export function ProjectFields({ priceDisplayMode }: Props) {
+export function ProjectFields({ priceDisplayMode, active }: Props) {
   const form = useFormContext<ProposalFormSchema>()
+  const isMobile = useIsMobile()
 
   const { fields, append, insert, remove } = useFieldArray({
     control: form.control,
@@ -24,14 +38,68 @@ export function ProjectFields({ priceDisplayMode }: Props) {
   })
 
   const [openSections, setOpenSections] = useState<Set<number>>(() => new Set([0]))
+  const [sectionTabs, setSectionTabs] = useState<Map<number, SowSectionTab>>(() => new Map())
 
   const [DeleteConfirmDialog, confirmDelete] = useConfirm({
     title: 'Delete SOW Section',
     message: 'Are you sure you want to delete this scope of work section? This action cannot be undone.',
   })
+  const [RemoveNotesDialog, confirmRemoveNotes] = useConfirm({
+    title: 'Remove agreement notes?',
+    message: 'This clears the notes for this proposal.',
+    confirmLabel: 'Remove',
+  })
 
   const sowValues = useWatch({ control: form.control, name: 'project.data.sow' })
-  const { disabled } = useFormState({ control: form.control })
+  const { disabled, defaultValues } = useFormState({ control: form.control })
+  const { errors, submitCount } = useFormState({ control: form.control, name: 'project.data.sow' })
+
+  // Follows each form reset (the loaded proposal), never typing: clearing every character keeps the item mounted
+  // while the rep is still in it. Adjusted during render so no frame shows the reset values with the old choice.
+  const savedNotes = !!defaultValues?.project?.data?.agreementNotes
+  const [notes, setNotes] = useState(() => ({ source: defaultValues, visible: savedNotes, openOnMount: false }))
+  if (notes.source !== defaultValues) {
+    setNotes({ source: defaultValues, visible: savedNotes, openOnMount: false })
+  }
+
+  // Phone opens on the section list. Not in the initialiser: it also runs on the server, where every viewport is
+  // the desktop one.
+  useEffect(() => {
+    if (isMobile) {
+      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect -- the viewport is only known after mount
+      setOpenSections(new Set())
+    }
+  }, [isMobile])
+
+  // The Part Cards are hidden, never unmounted, so leaving the part on phone has to close the drilled-in section.
+  useEffect(() => {
+    if (isMobile && active === false) {
+      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect -- follows the part leaving the screen
+      setOpenSections(new Set())
+    }
+  }, [isMobile, active])
+
+  const revealedSubmit = useRef(0)
+  useEffect(() => {
+    if (submitCount === revealedSubmit.current) {
+      return
+    }
+    revealedSubmit.current = submitCount
+    if (submitCount === 0) {
+      return
+    }
+    const target = firstSowErrorTarget(errors)
+    if (!target) {
+      return
+    }
+    // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect -- follows a submit's errors
+    setOpenSections(prev => openSection(prev, target.index, isMobile))
+    const { tab } = target
+    if (tab !== null) {
+      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect -- follows a submit's errors
+      setSectionTabs(prev => new Map(prev).set(target.index, tab))
+    }
+  }, [submitCount, errors, isMobile])
 
   async function handleDeleteSection(index: number) {
     const confirmed = await confirmDelete()
@@ -39,16 +107,8 @@ export function ProjectFields({ priceDisplayMode }: Props) {
       return
 
     remove(index)
-    setOpenSections((prev) => {
-      const next = new Set<number>()
-      for (const i of prev) {
-        if (i < index)
-          next.add(i)
-        else if (i > index)
-          next.add(i - 1)
-      }
-      return next
-    })
+    setOpenSections(prev => removeFromOpenSet(prev, index))
+    setSectionTabs(prev => removeFromTabMap(prev, index))
   }
 
   function handleDuplicateSection(index: number) {
@@ -63,51 +123,52 @@ export function ProjectFields({ priceDisplayMode }: Props) {
       },
     }
     insert(index + 1, duplicate)
-    setOpenSections((prev) => {
-      const next = new Set<number>()
-      for (const i of prev) {
-        if (i <= index)
-          next.add(i)
-        else
-          next.add(i + 1)
-      }
-      next.add(index + 1)
-      return next
-    })
+    setOpenSections(prev => openSection(insertIntoOpenSet(prev, index + 1), index + 1, isMobile))
+    setSectionTabs(prev => insertIntoTabMap(prev, index + 1))
   }
 
-  function toggleSection(index: number) {
-    setOpenSections((prev) => {
-      const next = new Set(prev)
-      if (next.has(index)) {
-        next.delete(index)
-      }
-      else {
-        next.add(index)
-      }
-      return next
-    })
+  function handleAddSection() {
+    append(createEmptySowSection())
+    setOpenSections(prev => openSection(prev, fields.length, isMobile))
   }
+
+  async function handleRemoveNotes() {
+    if (!(await confirmRemoveNotes()))
+      return
+    form.setValue('project.data.agreementNotes', '', { shouldDirty: true })
+    setNotes(prev => ({ ...prev, visible: false }))
+  }
+
+  // Phone drill-in: while a section is open, everything else in the list steps aside.
+  const stepAside = openSections.size > 0 ? 'max-md:hidden' : undefined
 
   return (
     <>
       <DeleteConfirmDialog />
-      <div className="flex min-h-0 flex-[0_1_auto] flex-col gap-2">
+      <RemoveNotesDialog />
+      <div className="flex flex-col gap-2 max-md:min-h-0 max-md:flex-[0_1_auto] md:flex-none">
         {fields.map((fieldOfArray, index) => {
           const isOpen = openSections.has(index)
           return (
             <Collapsible
               key={fieldOfArray.id}
               open={isOpen}
-              onOpenChange={() => toggleSection(index)}
-              // The floor grows over 200ms on CSS `ease`, which is COLLAPSE_TRANSITION's cubic-bezier(.25,.1,.25,1),
-              // so the box and its body open together; change one and the box snaps ahead of its body.
-              // The box keeps shrinking while its body exits: as flex-none it would jump to the body's full
-              // height for the first frame of the collapse.
-              className="flex min-h-0 flex-none flex-col overflow-hidden rounded-xl border border-border bg-card transition-[min-height] duration-200 ease-[ease] data-[state=open]:min-h-60 data-[state=open]:flex-[0_1_auto] has-[>[data-sow-body]]:flex-[0_1_auto] motion-reduce:transition-none"
+              onOpenChange={() => setOpenSections(prev => toggleSection(prev, index, isMobile))}
+              // Phone: the floor grows over 200ms on CSS `ease`, which is COLLAPSE_TRANSITION's
+              // cubic-bezier(.25,.1,.25,1), so the box and its body open together; change one and the box snaps
+              // ahead of its body. The box keeps shrinking while its body exits: as flex-none it would jump to the
+              // body's full height for the first frame of the collapse.
+              // md and up: the item grows to its content and the Card scrolls; overflow stays visible so the open
+              // header can stick to the Card's scroller.
+              className={cn(
+                'flex flex-col rounded-xl border border-border bg-card max-md:min-h-0 max-md:flex-none max-md:overflow-hidden max-md:transition-[min-height] max-md:duration-200 max-md:ease-[ease] max-md:data-[state=open]:min-h-60 max-md:data-[state=open]:flex-[0_1_auto] max-md:has-[>[data-sow-body]]:flex-[0_1_auto] motion-reduce:transition-none md:flex-none md:overflow-visible',
+                !isOpen && stepAside,
+              )}
             >
               <CollapsibleTrigger asChild>
-                <div className="flex-none data-[state=open]:border-b">
+                {/* bg-(--card), not bg-card: a third nested bg-card climbs a rung and would paint a lighter band
+                    over its own item. */}
+                <div className="flex-none data-[state=open]:border-b md:data-[state=open]:sticky md:data-[state=open]:top-0 md:data-[state=open]:z-10 md:data-[state=open]:rounded-t-xl md:data-[state=open]:bg-(--card)">
                   <SOWCollapsibleHeader
                     disabled={disabled}
                     isOpen={isOpen}
@@ -127,34 +188,32 @@ export function ProjectFields({ priceDisplayMode }: Props) {
                   />
                 </div>
               </CollapsibleTrigger>
-              <AnimatedCollapsibleContent open={isOpen} className="flex min-h-0 flex-col" data-sow-body>
+              <AnimatedCollapsibleContent open={isOpen} className="flex flex-col max-md:min-h-0" data-sow-body>
                 {/* relative: Radix Select's hidden native <select> is absolute; without a positioned ancestor here it
                     escapes to <main>, makes main scrollable, and a focus then shifts the whole page. */}
-                <div className="relative min-h-0 overflow-y-auto overscroll-contain">
+                <div className="relative max-md:min-h-0 max-md:overflow-y-auto max-md:overscroll-contain">
                   <SOWSection
                     index={index}
                     priceDisplayMode={priceDisplayMode}
                     sowSnapshot={fieldOfArray}
+                    tab={sectionTabs.get(index) ?? 'description'}
+                    onTabChange={tab => setSectionTabs(prev => new Map(prev).set(index, tab))}
                   />
                 </div>
               </AnimatedCollapsibleContent>
             </Collapsible>
           )
         })}
-        <AgreementNotesItem />
-        <Button
-          type="button"
-          size="icon"
-          variant="outline"
-          className="flex-none self-start"
+        {notes.visible && (
+          <AgreementNotesItem defaultOpen={notes.openOnMount} onRemove={handleRemoveNotes} className={stepAside} />
+        )}
+        <SowAddRow
+          className={stepAside}
           disabled={disabled}
-          onClick={() => {
-            append(createEmptySowSection())
-            setOpenSections(prev => new Set(prev).add(fields.length))
-          }}
-        >
-          <PlusIcon />
-        </Button>
+          showNotes={!notes.visible}
+          onAddSection={handleAddSection}
+          onAddNotes={() => setNotes(prev => ({ ...prev, visible: true, openOnMount: true }))}
+        />
       </div>
     </>
   )
