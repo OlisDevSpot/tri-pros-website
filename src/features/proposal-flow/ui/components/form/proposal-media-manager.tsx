@@ -6,8 +6,12 @@ import type { AppRouter } from '@/trpc/routers/app'
 import { useQuery } from '@tanstack/react-query'
 import { FileTextIcon } from 'lucide-react'
 import { useMemo } from 'react'
+import { useEditLoading } from '@/features/proposal-flow/contexts/edit-loading-context'
+import { Skeleton } from '@/shared/components/ui/skeleton'
 import { Switch } from '@/shared/components/ui/switch'
+import { SKELETON_BLOCK_TONE_CLASS } from '@/shared/constants/skeleton-tone'
 import { useConfirm } from '@/shared/hooks/use-confirm'
+import { cn } from '@/shared/lib/utils'
 import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
 import { MediaManager } from '@/shared/modules/media/core/components/media-manager'
 import { useMediaUpload } from '@/shared/modules/media/core/hooks/use-media-upload'
@@ -35,7 +39,8 @@ function toItems(rows: ProposalMediaRow[]): MediaItem[] {
 
 export function ProposalMediaManager({ proposalId }: Props) {
   const trpc = useTRPC()
-  const { data: rows = [] } = useQuery(trpc.proposalsRouter.media.list.queryOptions({ proposalId }))
+  const { data: rows = [], isPending } = useQuery(trpc.proposalsRouter.media.list.queryOptions({ proposalId }))
+  const loading = useEditLoading()
   const media = useProposalMedia(proposalId)
 
   const viewById = useMemo(() => new Map(rows.map(r => [r.id, r])), [rows])
@@ -58,6 +63,15 @@ export function ProposalMediaManager({ proposalId }: Props) {
   ]
 
   const [DeleteDialog, confirmDelete] = useConfirm({ title: 'Delete file', message: 'This cannot be undone.' })
+
+  // Until the list is known the groups would claim "(0)" and "No files yet"; one tile-sized block stands in.
+  if (loading || isPending) {
+    return (
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-3">
+        <Skeleton className={cn('aspect-5/4 rounded-lg', SKELETON_BLOCK_TONE_CLASS)} />
+      </div>
+    )
+  }
 
   return (
     <>

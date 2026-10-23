@@ -5,6 +5,7 @@ import { useFormContext, useWatch } from 'react-hook-form'
 import { plural } from '@/features/proposal-flow/lib/form-parts'
 import { summarizeSowPrices } from '@/features/proposal-flow/lib/section-price'
 import { SectionPrice } from '@/features/proposal-flow/ui/components/form/section-price'
+import { LoadingValue } from './loading-value'
 
 export function SowCardSummary() {
   const form = useFormContext<ProposalFormSchema>()
@@ -14,7 +15,7 @@ export function SowCardSummary() {
   const showPrice = final !== null && final > 0
 
   return (
-    <>
+    <LoadingValue width={170}>
       {plural(count, 'section')}
       {showPrice && (
         <>
@@ -22,6 +23,6 @@ export function SowCardSummary() {
           <SectionPrice starting={starting} final={final} struck={struck} />
         </>
       )}
-    </>
+    </LoadingValue>
   )
 }

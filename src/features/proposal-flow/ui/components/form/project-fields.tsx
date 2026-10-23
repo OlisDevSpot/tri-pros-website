@@ -3,6 +3,7 @@ import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-s
 import type { PriceDisplayMode } from '@/shared/constants/enums'
 import { useEffect, useRef, useState } from 'react'
 import { useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form'
+import { useEditLoading } from '@/features/proposal-flow/contexts/edit-loading-context'
 import { firstSowErrorTarget } from '@/features/proposal-flow/lib/sow-error-target'
 import {
   insertIntoOpenSet,
@@ -31,6 +32,7 @@ interface Props {
 export function ProjectFields({ priceDisplayMode, active }: Props) {
   const form = useFormContext<ProposalFormSchema>()
   const isMobile = useIsMobile()
+  const loading = useEditLoading()
 
   const { fields, append, insert, remove } = useFieldArray({
     control: form.control,
@@ -142,6 +144,26 @@ export function ProjectFields({ priceDisplayMode, active }: Props) {
 
   // Phone drill-in: while a section is open, everything else in the list steps aside.
   const stepAside = openSections.size > 0 ? 'max-md:hidden' : undefined
+
+  // The section count is unknown until the proposal arrives: one closed header stands in, and the list grows
+  // downward from it.
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-2 max-md:min-h-0 max-md:flex-[0_1_auto] md:flex-none">
+        <div className="pointer-events-none flex flex-none flex-col rounded-xl border border-border bg-card md:overflow-hidden">
+          <SOWCollapsibleHeader
+            disabled
+            isOpen={false}
+            onDelete={() => {}}
+            onDuplicate={() => {}}
+            onTitleChange={() => {}}
+            priceDisplayMode={priceDisplayMode}
+            sow={sowValues[0] ?? createEmptySowSection()}
+          />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>

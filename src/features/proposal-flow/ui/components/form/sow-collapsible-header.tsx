@@ -2,7 +2,9 @@ import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-s
 import type { PriceDisplayMode } from '@/shared/constants/enums'
 import { ChevronDownIcon, CopyIcon, MoreHorizontalIcon, TrashIcon } from 'lucide-react'
 import { useRef, useState } from 'react'
+import { useEditLoading } from '@/features/proposal-flow/contexts/edit-loading-context'
 import { sectionPriceDisplay } from '@/features/proposal-flow/lib/section-price'
+import { LoadingValue } from '@/features/proposal-flow/ui/components/edit-page/loading-value'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shared/components/ui/dropdown-menu'
@@ -31,12 +33,14 @@ export function SOWCollapsibleHeader({
 }: Props) {
   const [isEditing, setIsEditing] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const loading = useEditLoading()
 
   const hasTitle = sow.title.trim().length > 0
   const hasTrade = sow.trade.label.trim().length > 0
   const scopeCount = sow.scopes.length
   const price = sectionPriceDisplay(sow.financials, priceDisplayMode)
-  const hasBadges = hasTrade || scopeCount > 0
+  const hasBadges = loading || hasTrade || scopeCount > 0
+  const priceCellClassName = 'max-md:col-span-2 max-md:col-start-2 max-md:row-start-2 max-md:justify-self-end md:col-start-2 md:row-start-1'
 
   function handleTitleClick(e: React.MouseEvent) {
     e.stopPropagation()
@@ -73,7 +77,7 @@ export function SOWCollapsibleHeader({
         : disabled
           ? (
               <span className="min-w-0 truncate px-1 py-0.5 text-sm font-medium lg:text-base">
-                {sow.title}
+                <LoadingValue width={300}>{sow.title}</LoadingValue>
               </span>
             )
           : (
@@ -93,10 +97,9 @@ export function SOWCollapsibleHeader({
                 {hasTitle ? sow.title : 'Click to add title...'}
               </span>
             )}
-      <SectionPrice
-        {...price}
-        className="max-md:col-span-2 max-md:col-start-2 max-md:row-start-2 max-md:justify-self-end md:col-start-2 md:row-start-1"
-      />
+      <LoadingValue width={124} className={cn('text-sm', priceCellClassName)}>
+        <SectionPrice {...price} className={priceCellClassName} />
+      </LoadingValue>
       <div className="col-start-3 row-start-1 flex shrink-0 items-center gap-1">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -130,18 +133,20 @@ export function SOWCollapsibleHeader({
       </div>
       {hasBadges && (
         <div className="col-start-1 row-start-2 flex min-w-0 items-center gap-2">
-          {hasTrade && (
-            <Badge variant="secondary" className="text-xs">
-              {sow.trade.label}
-            </Badge>
-          )}
-          {scopeCount > 0 && (
-            <Badge variant="secondary" className="bg-muted text-xs text-muted-foreground">
-              {scopeCount}
-              {' '}
-              {scopeCount === 1 ? 'scope' : 'scopes'}
-            </Badge>
-          )}
+          <LoadingValue width={54} className="text-xs">
+            {hasTrade && (
+              <Badge variant="secondary" className="text-xs">
+                {sow.trade.label}
+              </Badge>
+            )}
+            {scopeCount > 0 && (
+              <Badge variant="secondary" className="bg-muted text-xs text-muted-foreground">
+                {scopeCount}
+                {' '}
+                {scopeCount === 1 ? 'scope' : 'scopes'}
+              </Badge>
+            )}
+          </LoadingValue>
         </div>
       )}
     </div>

@@ -2,6 +2,7 @@ import type { FormPartId } from '@/features/proposal-flow/constants/form-parts'
 import { FORM_PARTS } from '@/features/proposal-flow/constants/form-parts'
 import { useFormPartState } from '@/features/proposal-flow/hooks/use-form-part-state'
 import { cn } from '@/shared/lib/utils'
+import { LoadingValue } from './loading-value'
 import { PartDot } from './part-dot'
 
 interface Props {
@@ -30,7 +31,10 @@ export function PartRail({ proposalId, active, onSelect }: Props) {
             <Icon className="size-4 text-muted-foreground" />
             <span className="flex min-w-0 flex-col">
               <span className="truncate text-sm font-medium">{label}</span>
-              <span className="truncate text-xs text-muted-foreground">{state[id].summary}</span>
+              {/* min-h: an empty summary (no file count yet, no project type) keeps its line, so the rows never shift. */}
+              <span className="min-h-4 truncate text-xs text-muted-foreground">
+                <LoadingValue width={70}>{state[id].summary}</LoadingValue>
+              </span>
             </span>
             <PartDot dirty={state[id].dirty} error={state[id].error} />
           </button>

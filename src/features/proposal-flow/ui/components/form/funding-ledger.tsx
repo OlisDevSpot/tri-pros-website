@@ -2,6 +2,7 @@ import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-s
 import type { PriceDisplayMode } from '@/shared/constants/enums'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { FUNDING_LEDGER_ROW } from '@/features/proposal-flow/constants/funding-ledger'
+import { useEditLoading } from '@/features/proposal-flow/contexts/edit-loading-context'
 import { digitsToNumber } from '@/features/proposal-flow/lib/digits-to-number'
 import { formatLedgerAmount } from '@/features/proposal-flow/lib/format-ledger-amount'
 import { fundingLedgerLines } from '@/features/proposal-flow/lib/funding-ledger-lines'
@@ -17,7 +18,10 @@ export function FundingLedger({ pricingMode }: Props) {
   const form = useFormContext<ProposalFormSchema>()
   const funding = useWatch({ control: form.control, name: 'funding' })
   const sow = useWatch({ control: form.control, name: 'project.data.sow' })
-  const lines = fundingLedgerLines({ funding, sow }, pricingMode)
+  // Before the proposal arrives its mode is unknown; the breakdown is the longer shape, so the ledger only
+  // ever loses rows when the values land.
+  const loading = useEditLoading()
+  const lines = fundingLedgerLines({ funding, sow }, loading ? 'breakdown' : pricingMode)
 
   return (
     <dl>
