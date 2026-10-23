@@ -1,4 +1,4 @@
-import { formatAsDollars } from '@/shared/lib/formatters'
+import { formatLedgerAmount } from '@/features/proposal-flow/lib/format-ledger-amount'
 import { cn } from '@/shared/lib/utils'
 
 interface Props {
@@ -17,12 +17,12 @@ export function SectionPrice({ starting, final, struck, className }: Props) {
       {struck && starting !== null && (
         <s className="font-medium text-muted-foreground">
           <span className="sr-only">was </span>
-          {formatAsDollars(starting)}
+          {formatLedgerAmount(starting)}
         </s>
       )}
       <span>
         {struck && <span className="sr-only">now </span>}
-        {formatAsDollars(final)}
+        {formatLedgerAmount(final)}
       </span>
     </span>
   )

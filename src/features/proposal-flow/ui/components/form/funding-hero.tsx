@@ -10,7 +10,7 @@ interface Props {
 
 export function FundingHero({ finalPrice, totalIncentives, depositField }: Props) {
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,320px)] lg:items-start">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,320px)] md:items-start">
       <div className="flex flex-col gap-1">
         <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Price</span>
         <span className="font-sans text-3xl font-semibold tabular-nums">

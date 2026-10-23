@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react'
 import { useFormPart } from '@/features/proposal-flow/hooks/use-form-part'
 
 // A part opened from the phone list pushes an entry, so the back gesture returns to the list instead of leaving
-// the page. "All parts" pops that entry; with nothing pushed (a deep link, an error jump) it clears the param in
+// the page. Back pops that entry; with nothing pushed (a deep link, an error jump) it clears the param in
 // place, because popping would leave the page.
 export function usePartListNavigation() {
   const router = useRouter()

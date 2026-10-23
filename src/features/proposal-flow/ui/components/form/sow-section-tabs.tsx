@@ -4,9 +4,9 @@ import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-s
 import type { PriceDisplayMode } from '@/shared/constants/enums'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { SOW_SECTION_TABS } from '@/features/proposal-flow/constants/sow-section-tabs'
+import { formatLedgerAmount } from '@/features/proposal-flow/lib/format-ledger-amount'
 import { sectionPriceDisplay } from '@/features/proposal-flow/lib/section-price'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
-import { formatAsDollars } from '@/shared/lib/formatters'
 
 interface Props {
   index: number
@@ -38,7 +38,7 @@ export function SowSectionTabs({ index, tab, onTabChange, priceDisplayMode, desc
           <TabsTrigger key={t.id} value={t.id} className="px-3">
             {t.label}
             {t.id === 'pricing' && final !== null && (
-              <span className="tabular-nums">{formatAsDollars(final)}</span>
+              <span className="tabular-nums">{formatLedgerAmount(final)}</span>
             )}
           </TabsTrigger>
         ))}

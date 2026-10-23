@@ -150,7 +150,7 @@ export function ProjectFields({ priceDisplayMode, active }: Props) {
   if (loading) {
     return (
       <div className="flex flex-col gap-2 max-md:min-h-0 max-md:flex-[0_1_auto] md:flex-none">
-        <div className="pointer-events-none flex flex-none flex-col rounded-xl border border-border bg-card md:overflow-hidden">
+        <div inert className="pointer-events-none flex flex-none flex-col rounded-xl border border-border bg-card md:overflow-hidden">
           <SOWCollapsibleHeader
             disabled
             isOpen={false}

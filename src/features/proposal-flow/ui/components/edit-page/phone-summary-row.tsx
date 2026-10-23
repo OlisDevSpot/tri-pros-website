@@ -65,10 +65,12 @@ export function PhoneSummaryRow({ proposalId, status, isLoading, viewHref, actio
                     <a href={viewHref} target="_blank" rel="noopener noreferrer">Preview</a>
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onSelect={() => actions.openInternalFinancials()}>Internal financials</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => {
-                  openSettingsOnClose.current = true
-                }}
+                <DropdownMenuItem disabled={isLoading} onSelect={() => actions.openInternalFinancials()}>Internal financials</DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={isLoading}
+                  onSelect={() => {
+                    openSettingsOnClose.current = true
+                  }}
                 >
                   Proposal settings
                 </DropdownMenuItem>

@@ -42,6 +42,7 @@ export function ProposalToolbar({ isLoading, viewHref, actions }: Props) {
       <button
         type="button"
         onClick={actions.openInternalFinancials}
+        disabled={isLoading}
         className={cn(TOOLBAR_BUTTON_BASE, 'aspect-square', TOOLBAR_BUTTON_INACTIVE)}
         aria-label="Internal financials"
       >
@@ -53,6 +54,7 @@ export function ProposalToolbar({ isLoading, viewHref, actions }: Props) {
           <button
             type="button"
             aria-label="Proposal settings"
+            disabled={isLoading}
             className={cn(
               TOOLBAR_BUTTON_BASE,
               'aspect-square',

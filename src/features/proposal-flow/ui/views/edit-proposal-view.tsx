@@ -120,7 +120,7 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
           projectJSON: rawData.project,
           // Incentives are rows — they flow through proposalService.incentives.replace,
           // never the update payload. envelopeDocumentIds deliberately absent —
-          // applyEnvelopeContext is the only writer (spec §2).
+          // applyEnvelopeContext is the only writer.
           ...columns,
           ...(cashChanged ? { cashInDealCents } : {}),
         },

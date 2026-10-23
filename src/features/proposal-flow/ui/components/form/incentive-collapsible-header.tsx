@@ -1,8 +1,8 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import { format } from 'date-fns'
 import { ChevronDownIcon } from 'lucide-react'
+import { formatLedgerAmount } from '@/features/proposal-flow/lib/format-ledger-amount'
 import { Badge } from '@/shared/components/ui/badge'
-import { formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 
 type Incentive = ProposalFormSchema['funding']['incentives'][number]
@@ -31,8 +31,7 @@ export function IncentiveCollapsibleHeader({
           </span>
           {hasAmount && (
             <Badge variant="secondary" className="text-xs font-semibold tabular-nums">
-              -
-              {formatAsDollars(incentive.amount)}
+              {formatLedgerAmount(0 - incentive.amount)}
             </Badge>
           )}
           {hasOffer && (

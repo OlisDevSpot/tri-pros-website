@@ -6,6 +6,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useState } from 'react'
 import { useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form'
 import { SOW_PRICING_FIGURE, SOW_PRICING_ROW } from '@/features/proposal-flow/constants/sow-pricing-grid'
+import { formatLedgerAmount } from '@/features/proposal-flow/lib/format-ledger-amount'
 import { pricingRowsWithErrors } from '@/features/proposal-flow/lib/pricing-rows-with-errors'
 import { SowCostLineRow } from '@/features/proposal-flow/ui/components/form/sow-cost-line-row'
 import { SowIncentiveRow } from '@/features/proposal-flow/ui/components/form/sow-incentive-row'
@@ -207,7 +208,7 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
         <div className={cn(SOW_PRICING_ROW, 'border-t border-border-strong px-2')}>
           <span className="font-semibold">Section final price</span>
           <span className={cn(SOW_PRICING_FIGURE, 'font-sans text-lg font-bold')}>
-            {formatAsDollars(section.netPrice ?? 0)}
+            {formatLedgerAmount(section.netPrice ?? 0)}
           </span>
         </div>
       )}
