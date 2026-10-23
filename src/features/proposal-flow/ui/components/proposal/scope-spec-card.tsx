@@ -77,7 +77,7 @@ export function ScopeSpecCard({ section, index, showPrice }: Props) {
               )}
 
               {parsed.phases.length > 0 && (
-                <ScopePhaseList phases={parsed.phases} />
+                <ScopePhaseList phases={parsed.phases} partHeadHeight={headHeight} />
               )}
 
               {parsed.notes.length > 0 && <Block label="Notes"><LineList lines={parsed.notes} /></Block>}
