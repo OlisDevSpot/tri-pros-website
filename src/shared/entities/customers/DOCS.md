@@ -2,7 +2,7 @@
 
 A **Customer** is a household we may sell to. Customer (1) → Meeting (many) → Proposal (many) → Project (created on approval). Customers exist independent of meetings; a customer with no meeting is a **lead**.
 
-This directory holds: schemas (`schemas/`), types (`types/`), constants and column registries (`constants/`), business helpers + server spec + SQL helpers (`lib/`), CRUD + business DAL (`dal/server/`), action-config hooks (`hooks/`), and components grouped by surface (`components/profile/`, `components/lists/`, `components/timeline/`).
+This directory holds: schemas (`schemas/`), types (`types/`), constants (`constants/`), business helpers, the column registry (`lib/columns-registry.tsx`), server spec and SQL helpers (`lib/`), CRUD + business DAL (`dal/server/`), action-config hooks (`hooks/`), and components grouped by surface (`components/profile/`, `components/timeline/`); the entity table hook and `openCustomerProfile` already sit at the module address, `src/shared/modules/customers/core/`.
 
 ## Relationships
 

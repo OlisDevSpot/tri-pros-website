@@ -51,6 +51,10 @@
 23. **Schedule Meeting opens through the modal layer** (amends D66, item 2). The cockpit's `CreateMeetingLayer` (`features/proposal-flow/ui/components/cockpit/create-meeting-layer.tsx`, 2026-10-17) moves to `src/shared/entities/meetings/components/create-meeting-layer.tsx`; new `openCreateMeeting(props)` at `src/shared/modules/meetings/core/lib/open-create-meeting.ts` names its accessor once, as `openCustomerProfile` does; the cockpit and the customers tables call it. The pipeline kanban and omni-search keep their inline `CreateMeetingModal`. Task 3 Step 2.
 24. **A booking refreshes the customers list.** A customer's Pipeline reads "fresh" once any meeting exists (`derived-pipeline-sql.ts:26-30`), but `invalidateMeeting` (`use-invalidation.ts:53-58`) never touched `customersRouter`, so a row stayed "Leads" after its first meeting. `invalidateMeeting` gains the customers list, which covers every caller (meeting deletes too), and the layer calls `invalidateMeeting` on success (the cockpit's booking refreshed nothing before). Task 3 Step 2.
 
+**Ruled by the owner during execution (2026-10-23, tracker D69).**
+
+25. **The Edit Profile action goes** ("No need for the edit profile action (it is a legacy action no one uses)"). `CUSTOMER_ACTIONS.edit` and `useCustomerActionConfigs`'s `onEdit` override are deleted, so every customer surface lists View Profile, Schedule Meeting and Delete. Task 3 Step 1 (`defaultEditing`) is not built, and Task 3 also edits `constants/actions.ts` and `hooks/use-customer-action-configs.ts`. Supersedes items 1 (its Edit Profile half) and 12, and the Edit Profile parts of Review Focus 5 and Task 3 Steps 2–4.
+
 ## Global Constraints
 
 - Verification per task: `pnpm tsc`, `pnpm lint` and `pnpm theme:check` (the Claude pre-commit gate runs all three). **Never `pnpm build`.**
@@ -71,7 +75,7 @@
 - Names: the spec's (`useCustomersTable`, `CUSTOMERS_RECORDS_TABLE_VIEW`, `ALL_CUSTOMERS_TABLE_VIEW`, `LEAD_SOURCE_CUSTOMERS_TABLE_VIEW`, `CustomersRecordsTable`, `CustomerColumnKey`). Do not coin others; the unavoidable ones are under "Owner confirms".
 - Code conventions (memory `coding-conventions.md`): one component per file, named exports, constants in `constants/`, only DAL files import `db`. Comments say why, never what; no plan, spec or tracker citations in code.
 - Render rules (`data-table.tsx` meta doc): meta function entries are event callbacks; action config arrays come from `useStableCallbacks` (inside `useCustomerActionConfigs`), never `useMemo` over mutation objects.
-- Action labels stay as they are ("View Profile", "Edit Profile", "Schedule Meeting", "Delete").
+- Action labels stay as they are ("View Profile", "Schedule Meeting", "Delete"); Edit Profile goes (Owner confirms 25).
 
 ## Review Focus
 
@@ -1038,7 +1042,9 @@ git show --stat HEAD
 
 ---
 
-### Task 3: Edit Profile opens the profile in edit mode; Schedule Meeting opens the new-meeting modal (Owner confirms 1, 2, 12)
+### Task 3: Schedule Meeting opens the new-meeting modal; the Edit Profile action goes (Owner confirms 2, 23–25)
+
+> **Amended 2026-10-23 (Owner confirms 25, D69), while this task ran:** Step 1 is not built; the hook passes only `onScheduleMeeting`; `CUSTOMER_ACTIONS.edit` and the `onEdit` override go from `src/shared/entities/customers/constants/actions.ts` and `src/shared/entities/customers/hooks/use-customer-action-configs.ts`; the Edit Profile checks in Steps 3–4 are replaced by "the row menu lists exactly View Profile, Schedule Meeting and Delete". The steps below are kept as first written for the record.
 
 **Files:**
 - Modify: `src/shared/entities/customers/hooks/use-customer-edit-form.ts`
@@ -1368,7 +1374,7 @@ In `docs/plans/2026-10-12-data-views-epic.md`: the **DV4** row's status cell bec
 
 - [ ] **Step 2: The spec's status**
 
-In the spec, replace the **Status** line with `> **Status:** approved by the owner 2026-10-05; rulings of 2026-10-07 applied; built (plans: \`docs/superpowers/plans/2026-10-05-customers-entity-table-and-fixed-filters.md\` and \`…-part-2.md\`).` Under §5.5, say in one sentence what was built: Edit Profile opens the profile with `defaultEditing`, and Schedule Meeting opens the new-meeting modal through `openCreateMeeting` (D66, D68).
+In the spec, replace the **Status** line with `> **Status:** approved by the owner 2026-10-05; rulings of 2026-10-07 applied; built (plans: \`docs/superpowers/plans/2026-10-05-customers-entity-table-and-fixed-filters.md\` and \`…-part-2.md\`).` Under §5.5, say in one sentence what was built: Schedule Meeting opens the new-meeting modal through `openCreateMeeting` (D66, D68), and the Edit Profile action was deleted (D69, already recorded there).
 
 - [ ] **Step 3: Notes that name moved or deleted paths**
 
@@ -1387,7 +1393,6 @@ In the spec, replace the **Status** line with `> **Status:** approved by the own
 Do not edit these; list them in the task report for the owner:
 - `docs/superpowers/specs/2026-09-29-customers-module-design.md` (lines naming `core/components/lists/project-entity-card.tsx` as moving with customers, and `lists/proposal-row.tsx` as a Phase 1 deletion): both already happened here.
 - `docs/superpowers/specs/2026-10-01-customer-profile-modal-design.md` and its plan name `components/lists/customer-meetings-list.tsx`, now `src/shared/entities/meetings/components/customer-meetings-list.tsx`.
-- The pipeline kanban card's Edit Profile (`customer-kanban-card.tsx`) still falls back to the pipeline board: it passes no `onEdit` (Owner confirms 12).
 - Found by the 2026-10-23 stress test, outside this plan:
   - A deleted lead source draws `source-detail.tsx`'s skeleton forever (`getById` throws NOT_FOUND); the customers spec §8 says the parent reports it missing.
   - `docs/adr/0002-entity-server-system.md` (line 175 on 2026-10-23) allows `db` imports only from `shared/dal/` and `shared/entities/*/dal/`, but `src/shared/modules/*/core/dal/server/` exists.

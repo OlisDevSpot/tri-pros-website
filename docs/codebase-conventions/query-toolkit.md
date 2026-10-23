@@ -34,10 +34,10 @@ Each layer is replaceable. New containers (kanban, calendar) get their own adapt
 
 ### always-use-usepaginatedquery
 
-Any tRPC procedure with pagination is consumed via `usePaginatedQuery(factory, extra, options)`. Never hand-roll page state with `useState`, never wire your own search debounce, never set `placeholderData` manually for paginated views.
+A paginated read over a field list is consumed via `useDataViewQuery` and its page loader `loadDataViewQueryInput`, as the projects, meetings and customers tables do. `usePaginatedQuery` remains only for proposals and campaign leads, until R3 and DV9 move them. Never hand-roll page state with `useState`, never wire your own search debounce, never set `placeholderData` manually for paginated views.
 
 **Why**: hand-rolled state diverges. Filter URL syntax, page-size reset rules, prefetch logic, `keepPreviousData` semantics — the toolkit gets these right consistently. Hand-rolled gets them wrong differently each time.
-**Reference impl**: `src/shared/entities/customers/components/customers-table.tsx`
+**Reference impl**: `src/shared/modules/customers/core/components/customers-table/use-customers-table.tsx`
 **Enforced by**: convention
 
 ### paginated-input-via-composer
@@ -99,7 +99,7 @@ Every paginated table exports ONE `PaginatedQueryConfig` object from `constants/
 The input assembly itself lives in `derivePaginatedQueryState()` (`src/shared/dal/lib/query/derive-paginated-query-state.ts`) — the isomorphic single source of truth for page floor, pageSize allowlist, sortDir suppression, search trim, and filter-active normalization. Never re-implement these coercions.
 
 **Why**: the server-prefetched query key must hash identically to the client's first-mount key; one config + one builder makes divergence structurally impossible.
-**Reference impl**: `src/shared/entities/customers/constants/customers-table-query-config.ts`
+**Reference impl**: `src/shared/modules/customers/core/constants/customers-records-table-view.ts` (the `query` of a table view)
 **Enforced by**: convention
 
 Dynamic `FilterDefinition.options` are key-IRRELEVANT only when the shared config declares `options: []` for that filter — `derivePaginatedQueryState` free-string-parses an empty-options filter identically on both sides (`derive-paginated-query-state.ts:60`), so filter ids + types are the key-relevant surface in that case, not the option list. Once a config carries non-empty `options`, they ARE parser-relevant (`parseAsStringLiteral` validation applies, since Wave 1 P1's isomorphic option validation) — don't generalize the empty-options case into "options never matter." When a table's options are computed at runtime (e.g. campaigns-leads builds them from queries), split the config: a static shared constant carrying ids/types with `options: [] as const` for every runtime-populated filter (`src/features/campaigns-admin/constants/campaign-leads-table-query-config.ts` is the reference), used by BOTH the page's `loadPaginatedQueryInput` call and the view's `usePaginatedQuery` call, with the view merging the dynamic `options` in before rendering the toolbar. Never inline the ids/types side — that's still the key-relevant surface the shared-config rule protects.
@@ -117,7 +117,7 @@ URL keys `p`, `q`, `sort`, `dir`, `ps` are reserved for pagination, search, sort
 When two paginated tables coexist on one page, give each a `paramPrefix` so their URL states don't collide: `usePaginatedQuery(..., ..., { paramPrefix: 'src' })` produces `?src_p=2&src_q=foo`.
 
 **Why**: two tables sharing `?p=` reset each other on every page change.
-**Reference impl**: `src/features/lead-sources-admin/ui/components/lead-source-customers-section.tsx` (`src_*`) vs `all-customers-section.tsx` (`all_*`)
+**Reference impl**: `src/features/lead-sources-admin/constants/lead-source-customers-table-view.ts` (`src`) vs `all-customers-table-view.ts` (`all`)
 **Enforced by**: convention
 
 ### query-toolbar-is-container-agnostic
@@ -163,7 +163,7 @@ Two shared affordances consume it — both wired once at the shared layer, so ev
 
 ## See also
 
-- `src/features/lead-sources-admin/ui/components/lead-source-customers-section.tsx` — reference full-stack impl
+- `src/shared/modules/customers/core/components/customers-table/use-customers-table.tsx` — reference entity table hook: read, pinned filters, actions, meta
 - `src/shared/components/data-view/table/lib/` — container adapters
 - `docs/codebase-conventions/dal-conventions.md` — DAL conventions (paginate lives in shared DAL)
 - `docs/codebase-conventions/frontend-stack.md#server-prefetch-two-tiers` — server-side prefetch + `<HydrateClient>` for paginated tables (Tier 2)
