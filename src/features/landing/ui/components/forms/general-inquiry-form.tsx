@@ -16,6 +16,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
+import { PhoneField } from '@/shared/components/ui/phone-field'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { ROOTS } from '@/shared/config/roots'
 import { contactInfo } from '@/shared/constants/company'
@@ -128,7 +129,8 @@ export function GeneralInquiryForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Phone Number *</FormLabel>
-                      <Input placeholder="818-555-4444" {...field} />
+                      <FormControl><PhoneField {...field} /></FormControl>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />

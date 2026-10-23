@@ -21,7 +21,7 @@ export function CustomerContactPhoneRow({ customer, editForm, phoneUnlocked, sur
   const canEdit = editForm.canEditContact
 
   if (editForm.isEditing && canEdit) {
-    return <CustomerContactInputRow icon={PhoneIcon} inputProps={editForm.form.register('phone')} label="Phone" surface={surface} type="tel" />
+    return <CustomerContactInputRow control={editForm.form.control} icon={PhoneIcon} label="Phone" name="phone" surface={surface} />
   }
 
   if (customer.phone) {

@@ -47,21 +47,6 @@ export function formatPhone(input: string | null | undefined): string {
   return `(${national.slice(0, 3)}) ${national.slice(3, 6)}-${national.slice(6)}`
 }
 
-/** Reformats from raw digits every keystroke so backspace, paste, and mid-string edits stay correct. */
-export function formatPhoneAsYouType(input: string): string {
-  const d = toDigits(input).slice(0, 10)
-  if (d.length === 0) {
-    return ''
-  }
-  if (d.length <= 3) {
-    return `(${d}`
-  }
-  if (d.length <= 6) {
-    return `(${d.slice(0, 3)}) ${d.slice(3)}`
-  }
-  return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`
-}
-
 /** E.164 is the most reliable form across native dialers; falls back to the raw input. */
 export function toDialString(input: string | null | undefined): string {
   return toE164(input) ?? input?.trim() ?? ''
