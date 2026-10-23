@@ -704,7 +704,8 @@
 }
 
 /* The marketing world keeps its literal palette: its surfaces take the scope's values, not the ladder's. */
-:is(.theme-marketing, .funnel-light) :is(.bg-card, .surface, .surface-beneath, .surface-well, .bg-popover, .surface-overlay) {
+:is(.theme-marketing, .funnel-light)
+  :is(.bg-card, .surface, .surface-beneath, .surface-well, .bg-popover, .surface-overlay) {
   --card: inherit;
   --muted: inherit;
   --secondary: inherit;
