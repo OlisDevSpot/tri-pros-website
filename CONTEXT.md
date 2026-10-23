@@ -137,6 +137,12 @@ How a list of one entity's records is read and shown, on any surface. The `DataV
 - **Orchestrator** — the page or component that mounts a data view and writes the wrapper around it; it may drop the bar, swap the heading or pick toolbar pieces. No per-callsite layout component does this for it. _Avoid_: container (a records-management term).
 - **Loading screen** — a route's `loading.tsx`: the page's own component under `DataViewPending`, its data views showing their cached rows or none (`useLoadingScreenRead`). It starts no fetch; the page that replaces it refreshes the rows. _Avoid_: skeleton page.
 - **Pending view** — any render where `DataViewPendingContext` is not `false`. `'loading'`: a loading screen, a `DataViewBoundary`'s suspense fallback, the layout's document-load skeleton, the PWA launch shell. `'error'`: a boundary's error fallback. Reads never suspend inside one, and only `'loading'` shows cached rows (`useIsDataViewPending`).
+- **Filter rule** — one condition a viewer sets on a data view: a field, **is** or **is not**, and values (`FilterRule`). Planned (filter rules epic FR4). _Avoid_: rule alone in code (CASL rules live in the same server layer), condition, criterion.
+- **Filter group** — filter rules joined by AND or OR, one level deep inside a filter rule tree (`FilterGroup`). _Avoid_: group alone in code (analytics "group by" is a different thing), clause.
+- **Filter rule tree** — everything a viewer filters a data view by: an AND / OR root holding filter rules and filter groups, in one URL key `${prefix}_f` (`FilterRuleTree`). Fixed filters and the date window stay outside it. _Avoid_: query, filter state.
+- **Filter grouping field** — a multi-select field whose values are a classifier's groups (Sit: Sat · Didn't Sit · Not Set) and whose SQL expands them through the classifier's inverse (`valuesInGroups`); a new value classified in the map reaches every filter. Projects' `statusBucket` is the first. _Avoid_: derived filter, virtual field.
+- **Outcome type** — the UI name for a meeting outcome's group under `MEETING_OUTCOME_SENTIMENT`: Positive · Neutral · Negative · Not Set (field `outcomeSentiment`). _Avoid_: sentiment in UI copy (it is the code name only).
+- **Quick filter** — named filter rules declared once per entity and shown as a one-tap toggle on every view of it (meetings "Sits": Sit is Sat AND Meeting type is not Project). Code, not the database. _Avoid_: preset, saved view, smart filter.
 
 ## Records terms
 
@@ -164,4 +170,5 @@ The proposal's bill-savings projection and the Remodel ROI calculator share thes
 - "sequence" was defined for visit messages only — resolved 2026-10-08: **Sequence** is the general automation kind (Automation terms); the visit-message sequence is one instance.
 - "body" is a data view's **Body** (Data view terms); on a presentation slide the word is **Content**, never body.
 - "qualify" means program eligibility (Energy Saver+ through `qualifyEnergySaver`, decided by a trade's category); whether a scope lowers a bill is a **Bill-cutting scope**, decided per scope. The two can differ: an A/C replacement qualifies for Energy Saver+ but cuts only the electric bill.
+- "sits" means two counts: the **Sit** filter grouping field and the "Sits" quick filter count meetings (every sat non-project meeting), while analytics "Sits" counts booked leads (first sit per lead, `pickBookedLead`). Both stay; the two numbers differ by design.
 - "campaign" means a lead-conversion provider campaign (`voip_campaigns`) and a Meta ad campaign; never a scheduled send to customers.
