@@ -125,7 +125,7 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
                           <MoneyField
                             placeholder="$10,000"
                             disabled
-                            className="pointer-events-none w-full pr-3 text-right"
+                            className="pointer-events-none w-full pr-[11px] text-right"
                             value={field.value}
                             onChange={field.onChange}
                           />
@@ -135,7 +135,7 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
                   : (
                       <MoneyField
                         placeholder="$10,000"
-                        className="w-full pr-3 text-right"
+                        className="w-full pr-[11px] text-right"
                         disabled={field.disabled}
                         value={field.value}
                         onChange={field.onChange}

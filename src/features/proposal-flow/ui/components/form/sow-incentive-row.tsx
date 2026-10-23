@@ -43,7 +43,7 @@ export function SowIncentiveRow({ index, incentiveIndex, disabled, onRemove }: P
                 inputMode="numeric"
                 placeholder="$500"
                 aria-label="Incentive amount"
-                className="pr-3 text-right"
+                className="pr-[11px] text-right"
                 disabled={field.disabled}
                 value={field.value === 0 ? '' : String(field.value)}
                 onChange={(e) => {

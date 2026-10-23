@@ -80,7 +80,7 @@ export function SowCostLineRow({ index, lineIndex, scopes, notesOpen, onNotesOpe
                   inputMode="numeric"
                   placeholder="$1,000"
                   aria-label="Cost line amount"
-                  className="pr-3 text-right"
+                  className="pr-[11px] text-right"
                   disabled={field.disabled}
                   value={field.value === 0 ? '' : String(field.value)}
                   onChange={(e) => {
