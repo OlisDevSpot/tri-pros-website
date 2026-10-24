@@ -27,12 +27,12 @@ export function SowCostLineRow({ index, lineIndex, scopes, notesOpen, onNotesOpe
   return (
     <Collapsible open={notesOpen} onOpenChange={onNotesOpenChange} className="mt-1 rounded-lg bg-band px-2 py-1.5">
       <div className={cn(SOW_PRICING_ROW, 'items-start')}>
-        <div className="flex min-w-0 flex-col gap-2 md:flex-row md:items-start">
+        <div className="flex min-w-0 flex-col gap-2 md:flex-row md:flex-wrap md:items-start">
           <FormField
             name={`${base}.label`}
             control={form.control}
             render={({ field }) => (
-              <FormItem className="min-w-0 md:flex-1">
+              <FormItem className="min-w-0 md:min-w-40 md:flex-1">
                 <FormControl>
                   <Input {...field} placeholder="Labor" aria-label="Cost line label" />
                 </FormControl>

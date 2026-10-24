@@ -32,14 +32,17 @@ export function SowPricingSummaryRow({ label, count, sub, total, open, onOpenCha
         disabled={disabled}
         className={cn(
           ledger ? cn(FUNDING_LEDGER_ROW, 'w-full border-t-0 text-left') : cn(SOW_PRICING_ROW, 'rounded-lg px-2 text-left text-sm'),
-          'w-full transition-colors hover:bg-row-hover pressed:bg-row-press disabled:cursor-default disabled:hover:bg-transparent',
+          'w-full outline-none transition-colors hover:bg-row-hover pressed:bg-row-press focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset disabled:cursor-default disabled:hover:bg-transparent',
           ledger && 'py-2',
         )}
       >
         <span className={cn('flex flex-col', !ledger && 'font-medium')}>
           <span className="flex items-center gap-1.5">
-            {label}
-            {count != null && <span className="font-normal text-muted-foreground">{`· ${count}`}</span>}
+            {/* Inline, so a narrow phone column wraps the words and keeps "· N" whole beside the last one. */}
+            <span>
+              {label}
+              {count != null && <span className="ml-1.5 whitespace-nowrap font-normal text-muted-foreground">{`· ${count}`}</span>}
+            </span>
             {ledger && chevron}
           </span>
           {sub && <span className="text-xs font-normal text-muted-foreground">{sub}</span>}

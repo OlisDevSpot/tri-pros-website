@@ -3,6 +3,7 @@ import type { IncentiveType } from '@/shared/modules/proposals/core/schemas'
 import { ChevronDownIcon, PlusIcon, TrashIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form'
+import { FUNDING_EYEBROW } from '@/features/proposal-flow/constants/funding-ledger'
 import { useEditLoading } from '@/features/proposal-flow/contexts/edit-loading-context'
 import { formatProjectType } from '@/features/proposal-flow/lib/format-project-type'
 import { getProposalAggregates } from '@/features/proposal-flow/lib/get-proposal-aggregates'
@@ -106,14 +107,14 @@ export function FundingFields({ pricingMode }: Props) {
           <section className="flex flex-col gap-2">
             {/* The Incentives heading shares a row with its Add button; this row matches its height so the two eyebrows line up. */}
             <div className="flex h-8 items-center">
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Breakdown</h4>
+              <h4 className={FUNDING_EYEBROW}>Breakdown</h4>
             </div>
             <FundingLedger pricingMode={pricingMode} />
           </section>
 
           <section className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Incentives</h4>
+              <h4 className={FUNDING_EYEBROW}>Incentives</h4>
               <Button
                 type="button"
                 size="sm"
@@ -182,7 +183,7 @@ export function FundingFields({ pricingMode }: Props) {
                                           <FormLabel>Incentive Type</FormLabel>
                                           <FormControl>
                                             <Select
-                                              defaultValue="discount"
+                                              value={field.value}
                                               disabled={field.disabled}
                                               onValueChange={(val: IncentiveType) => {
                                                 field.onChange(val)
@@ -214,6 +215,7 @@ export function FundingFields({ pricingMode }: Props) {
                                             <FormControl>
                                               <MoneyField
                                                 {...field}
+                                                inputMode="numeric"
                                                 placeholder="$1,000"
                                                 value={field.value || null}
                                                 onChange={value => field.onChange(value ?? 0)}
@@ -282,7 +284,7 @@ export function FundingFields({ pricingMode }: Props) {
                                           <fieldset disabled={field.disabled} className="contents">
                                             <FormControl>
                                               <DateTimePicker
-                                                className="h-9 w-full justify-start rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
+                                                className="h-9 w-full justify-start rounded-md border border-input bg-input-background px-3 py-1 text-sm shadow-xs hover:border-input-hover hover:bg-input-background"
                                                 placeholder="Set expiration"
                                                 value={field.value ? new Date(field.value) : undefined}
                                                 onChange={(date) => {

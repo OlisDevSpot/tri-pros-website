@@ -21,7 +21,7 @@ export function PartCard({ title, hidden, onBack, summary, contentClassName, chi
       <CardHeader>
         <div className="flex items-center gap-1.5 md:block">
           {onBack && (
-            <Button type="button" variant="ghost" size="sm" className="shrink-0 rounded-none border-r border-border pr-2 max-md:h-10 md:hidden" onClick={onBack}>
+            <Button type="button" variant="ghost" size="sm" className="-ml-2.5 shrink-0 rounded-none border-r border-border pr-2 max-md:h-10 md:hidden" onClick={onBack}>
               <ChevronLeftIcon />
               Back
             </Button>

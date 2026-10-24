@@ -47,7 +47,9 @@ export function SOWCollapsibleHeader({
   const price = sectionPriceDisplay(sow.financials, priceDisplayMode)
   // A short title hugs its text like the proposal name beside its chip, so the floor sits on the pickers: they are
   // capped to leave a long title ~6rem, and the title gives way first down to that before the badges cut off.
-  const titleCellClassName = 'max-md:col-start-1 max-md:row-start-1 md:shrink-[100]'
+  const titleCellClassName = 'max-md:col-span-2 max-md:col-start-1 max-md:row-start-1 md:shrink-[100]'
+  // Phone: the title text hugs its words, so a tap on the free space beside it opens the section, not the title editor.
+  const titleTextCellClassName = cn(titleCellClassName, 'max-md:max-w-full max-md:justify-self-start')
   const pickersCellClassName = 'max-md:col-start-1 max-md:row-start-2 md:max-w-[calc(100%-6.5rem)]'
   const priceCellClassName = 'max-md:col-span-2 max-md:col-start-2 max-md:row-start-2 max-md:justify-self-end md:col-start-2 md:row-start-1'
 
@@ -98,7 +100,7 @@ export function SOWCollapsibleHeader({
             )
           : disabled
             ? (
-                <span className={cn('min-w-0 truncate px-1 py-0.5 text-sm font-medium lg:text-base', titleCellClassName)}>
+                <span className={cn('min-w-0 truncate px-1 py-0.5 text-sm font-medium lg:text-base', titleTextCellClassName)}>
                   <LoadingValue width={300}>{sow.title}</LoadingValue>
                 </span>
               )
@@ -108,7 +110,7 @@ export function SOWCollapsibleHeader({
                   tabIndex={0}
                   className={cn(
                     'min-w-0 truncate rounded px-1 py-0.5 text-sm font-medium transition-colors hover:bg-hover lg:text-base',
-                    titleCellClassName,
+                    titleTextCellClassName,
                     !hasTitle && 'text-muted-foreground italic',
                   )}
                   onClick={handleTitleClick}

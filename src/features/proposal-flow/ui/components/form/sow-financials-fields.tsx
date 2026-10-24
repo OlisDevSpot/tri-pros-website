@@ -108,7 +108,7 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
         control={form.control}
         render={({ field }) => (
           <FormItem className={cn(SOW_PRICING_ROW, 'px-2')}>
-            <FormLabel className="whitespace-nowrap">Section starting price</FormLabel>
+            <FormLabel className="md:whitespace-nowrap">Section starting price</FormLabel>
             <div>
               <FormControl>
                 {!isBreakdown

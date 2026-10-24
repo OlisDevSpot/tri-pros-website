@@ -1,3 +1,4 @@
+import { FUNDING_EYEBROW } from '@/features/proposal-flow/constants/funding-ledger'
 import { LoadingValue } from '@/features/proposal-flow/ui/components/edit-page/loading-value'
 import { formatAsDollars } from '@/shared/lib/formatters'
 
@@ -9,7 +10,7 @@ interface Props {
 export function FundingHero({ finalPrice, totalIncentives }: Props) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Final price</span>
+      <span className={FUNDING_EYEBROW}>Final price</span>
       <span className="font-sans text-3xl font-semibold tabular-nums">
         <LoadingValue width={150}>{formatAsDollars(finalPrice)}</LoadingValue>
       </span>
