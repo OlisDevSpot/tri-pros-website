@@ -8,6 +8,7 @@ import { formatLedgerAmount } from '@/features/proposal-flow/lib/format-ledger-a
 import { fundingLedgerLines } from '@/features/proposal-flow/lib/funding-ledger-lines'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
+import { FundingDepositRow } from './funding-deposit-row'
 import { FundingLedgerRow } from './funding-ledger-row'
 import { FundingScopeLine } from './funding-scope-line'
 
@@ -76,6 +77,7 @@ export function FundingLedger({ pricingMode }: Props) {
           />
         )
       })}
+      <FundingDepositRow />
     </dl>
   )
 }

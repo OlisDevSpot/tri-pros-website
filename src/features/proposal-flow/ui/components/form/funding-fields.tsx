@@ -10,14 +10,13 @@ import { LoadingValue } from '@/features/proposal-flow/ui/components/edit-page/l
 import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { Button } from '@/shared/components/ui/button'
 import { AnimatedCollapsibleContent, Collapsible, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
-import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 import { MoneyField } from '@/shared/components/ui/money-field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { useConfirm } from '@/shared/hooks/use-confirm'
-import { formatAsDollars } from '@/shared/lib/formatters'
-import { computeFinalTcp, computeTotalDiscounts, computeTotalSectionIncentives, describeDepositCap, getDepositCap } from '@/shared/modules/proposals/core/lib/financials'
+import { computeFinalTcp, computeTotalDiscounts, computeTotalSectionIncentives } from '@/shared/modules/proposals/core/lib/financials'
 import { incentiveTypes } from '@/shared/modules/proposals/core/schemas'
 import { FundingHero } from './funding-hero'
 import { FundingLedger } from './funding-ledger'
@@ -48,29 +47,6 @@ export function FundingFields({ pricingMode }: Props) {
   const incentives = useWatch({ control: form.control, name: 'funding.incentives' })
   const sow = useWatch({ control: form.control, name: 'project.data.sow' })
   const miscPrice = useWatch({ control: form.control, name: 'funding.miscPrice' })
-  // Watched only to re-render on a price change, so the cap below follows it with the incentives, sow and misc price.
-  useWatch({ control: form.control, name: 'funding.startingTcp' })
-  const depositCap = getDepositCap(getProposalAggregates(form.getValues()).finalTcp)
-
-  const depositField = (
-    <FormField
-      name="funding.depositAmount"
-      control={form.control}
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>Deposit</FormLabel>
-          <FormControl>
-            <MoneyField
-              {...field}
-              placeholder={`${formatAsDollars(depositCap)} (the legal cap)`}
-            />
-          </FormControl>
-          <FormDescription>{`Leave empty to use the cap: ${describeDepositCap()}.`}</FormDescription>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-  )
 
   function toggleIncentive(index: number) {
     setOpenIncentives((prev) => {
@@ -124,7 +100,6 @@ export function FundingFields({ pricingMode }: Props) {
         <FundingHero
           finalPrice={computeFinalTcp({ funding, sow })}
           totalIncentives={computeTotalSectionIncentives(sow) + computeTotalDiscounts(funding)}
-          depositField={depositField}
         />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
