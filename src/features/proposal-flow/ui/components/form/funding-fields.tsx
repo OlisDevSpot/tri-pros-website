@@ -129,7 +129,10 @@ export function FundingFields({ pricingMode }: Props) {
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
           <section className="flex flex-col gap-2">
-            <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Breakdown</h4>
+            {/* The Incentives heading shares a row with its Add button; this row matches its height so the two eyebrows line up. */}
+            <div className="flex h-8 items-center">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Breakdown</h4>
+            </div>
             <FundingLedger pricingMode={pricingMode} />
           </section>
 
