@@ -9,6 +9,7 @@ import { Button } from '@/shared/components/ui/button'
 import { CollapsibleTrigger } from '@/shared/components/ui/collapsible'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shared/components/ui/dropdown-menu'
 import { Input } from '@/shared/components/ui/input'
+import { useMediaQuery } from '@/shared/hooks/use-media-query'
 import { cn } from '@/shared/lib/utils'
 import { SectionPrice } from './section-price'
 import { SowHeaderPickers } from './sow-header-pickers'
@@ -42,6 +43,8 @@ export function SOWCollapsibleHeader({
   const [isEditing, setIsEditing] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const loading = useEditLoading()
+  // On a phone a tap on a closed section's title opens the section; the title becomes editable once it is open.
+  const titleOpensSection = useMediaQuery('(max-width: 767px)') && !isOpen
 
   const hasTitle = sow.title.trim().length > 0
   const price = sectionPriceDisplay(sow.financials, priceDisplayMode)
@@ -98,10 +101,16 @@ export function SOWCollapsibleHeader({
                 onKeyDown={handleTitleKeyDown}
               />
             )
-          : disabled
+          : disabled || titleOpensSection
             ? (
-                <span className={cn('min-w-0 truncate px-1 py-0.5 text-sm font-medium lg:text-base', titleTextCellClassName)}>
-                  <LoadingValue width={300}>{sow.title}</LoadingValue>
+                <span
+                  className={cn(
+                    'min-w-0 truncate px-1 py-0.5 text-sm font-medium lg:text-base',
+                    titleTextCellClassName,
+                    !disabled && !hasTitle && 'text-muted-foreground italic',
+                  )}
+                >
+                  <LoadingValue width={300}>{disabled || hasTitle ? sow.title : 'Untitled section'}</LoadingValue>
                 </span>
               )
             : (
@@ -133,14 +142,15 @@ export function SOWCollapsibleHeader({
       <LoadingValue width={124} className={cn('text-sm', priceCellClassName)}>
         <SectionPrice {...price} className={priceCellClassName} />
       </LoadingValue>
-      <div className="col-start-3 row-start-1 flex shrink-0 items-center gap-1">
+      <div className="col-start-3 row-start-1 flex shrink-0 items-center">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               type="button"
               size="icon"
               variant="ghost"
-              className="size-8"
+              className="-mr-1 size-8"
+              aria-label="Section actions"
               onClick={e => e.stopPropagation()}
             >
               <MoreHorizontalIcon className="size-4" />

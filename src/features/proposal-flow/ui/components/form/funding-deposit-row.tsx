@@ -1,10 +1,11 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
+import { InfoIcon } from 'lucide-react'
 import { useFormContext } from 'react-hook-form'
 import { FUNDING_LEDGER_ROW } from '@/features/proposal-flow/constants/funding-ledger'
-import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
-import { Input } from '@/shared/components/ui/input'
+import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/shared/components/ui/input-group'
 import { formatAsDollars } from '@/shared/lib/formatters'
-import { cn } from '@/shared/lib/utils'
 import { describeDepositCap, getDepositCap } from '@/shared/modules/proposals/core/lib/financials'
 
 interface Props {
@@ -20,25 +21,31 @@ export function FundingDepositRow({ finalTcp }: Props) {
       name="funding.depositAmount"
       control={form.control}
       render={({ field }) => (
-        <FormItem className={cn(FUNDING_LEDGER_ROW, 'py-2')}>
-          <dt className="flex flex-col">
-            <FormLabel>Deposit</FormLabel>
-            <FormDescription>{`Leave empty to use the cap: ${describeDepositCap()}.`}</FormDescription>
-          </dt>
+        <FormItem className={FUNDING_LEDGER_ROW}>
+          <dt><FormLabel>Deposit</FormLabel></dt>
           <dd>
-            <FormControl>
-              <Input
-                {...field}
-                value={field.value ?? ''}
-                inputMode="numeric"
-                className="w-36 text-right"
-                placeholder={formatAsDollars(depositCap)}
-                onChange={(event) => {
-                  const digits = event.target.value.replace(/\D/g, '')
-                  field.onChange(digits === '' ? null : Number(digits))
-                }}
-              />
-            </FormControl>
+            <InputGroup className="w-36" data-disabled={field.disabled}>
+              <InputGroupAddon>
+                <HybridPopoverTooltip content={`Leave empty to use the cap: ${describeDepositCap()}.`}>
+                  <InputGroupButton size="icon-xs" aria-label="About the deposit cap">
+                    <InfoIcon />
+                  </InputGroupButton>
+                </HybridPopoverTooltip>
+              </InputGroupAddon>
+              <FormControl>
+                <InputGroupInput
+                  {...field}
+                  value={field.value ?? ''}
+                  inputMode="numeric"
+                  className="text-right"
+                  placeholder={formatAsDollars(depositCap)}
+                  onChange={(event) => {
+                    const digits = event.target.value.replace(/\D/g, '')
+                    field.onChange(digits === '' ? null : Number(digits))
+                  }}
+                />
+              </FormControl>
+            </InputGroup>
             <FormMessage />
           </dd>
         </FormItem>
