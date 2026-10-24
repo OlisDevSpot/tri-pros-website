@@ -23,6 +23,8 @@ import { SowAddRow } from './sow-add-row'
 import { SOWCollapsibleHeader } from './sow-collapsible-header'
 import { SOWSection } from './sow-field'
 import { SowPickerMessages } from './sow-picker-messages'
+import { SowSectionTabList } from './sow-section-tab-list'
+import { SowSectionTabs } from './sow-section-tabs'
 
 interface Props {
   priceDisplayMode: PriceDisplayMode
@@ -181,9 +183,11 @@ export function ProjectFields({ priceDisplayMode, active }: Props) {
       <div className="flex flex-col gap-2 max-md:min-h-0 max-md:flex-[0_1_auto] md:flex-none">
         {fields.map((fieldOfArray, index) => {
           const isOpen = openSections.has(index)
+          const tab = sectionTabs.get(index) ?? 'description'
           return (
             <Collapsible
               key={fieldOfArray.id}
+              asChild
               open={isOpen}
               onOpenChange={() => setOpenSections(prev => toggleSection(prev, index, isMobile))}
               // Phone: the floor grows over 200ms on CSS `ease`, which is COLLAPSE_TRANSITION's
@@ -191,51 +195,58 @@ export function ProjectFields({ priceDisplayMode, active }: Props) {
               // ahead of its body. The box keeps shrinking while its body exits: as flex-none it would jump to the
               // body's full height for the first frame of the collapse.
               // md and up: the item grows to its content and the Card scrolls; overflow stays visible so the open
-              // header can stick to the Card's scroller.
+              // header and tab list can stick to the Card's scroller.
               className={cn(
                 'flex flex-col rounded-xl border border-border bg-card max-md:min-h-0 max-md:flex-none max-md:overflow-hidden max-md:transition-[min-height] max-md:duration-200 max-md:ease-[ease] max-md:data-[state=open]:min-h-60 max-md:data-[state=open]:flex-[0_1_auto] max-md:has-[>[data-sow-body]]:flex-[0_1_auto] motion-reduce:transition-none md:flex-none md:overflow-visible',
                 !isOpen && stepAside,
               )}
             >
-              <CollapsibleTrigger asChild>
-                {/* bg-(--card), not bg-card: a third nested bg-card climbs a rung and would paint a lighter band
-                    over its own item. The item can't clip at md (the sticky header needs it overflow-visible), so the
-                    header clips its own hover band to the item's inner radius: the outer radius less the 1px border. */}
-                <div className="flex-none data-[state=open]:border-b md:overflow-hidden md:rounded-[calc(var(--radius-xl)-1px)] md:data-[state=open]:sticky md:data-[state=open]:top-0 md:data-[state=open]:z-10 md:data-[state=open]:rounded-b-none md:data-[state=open]:bg-(--card)">
-                  <SOWCollapsibleHeader
-                    disabled={disabled}
-                    index={index}
-                    isOpen={isOpen}
-                    messageBaseId={messageBaseId}
-                    onDelete={(e) => {
-                      e.stopPropagation()
-                      handleDeleteSection(index)
-                    }}
-                    onDuplicate={(e) => {
-                      e.stopPropagation()
-                      handleDuplicateSection(index)
-                    }}
-                    onTitleChange={(title) => {
-                      form.setValue(`project.data.sow.${index}.title`, title, { shouldDirty: true })
-                    }}
-                    priceDisplayMode={priceDisplayMode}
-                    sow={sowValues[index] ?? fieldOfArray}
-                  />
+              <SowSectionTabs tab={tab} onTabChange={next => setSectionTabs(prev => new Map(prev).set(index, next))}>
+                {/* md and up, while open: the header and the tab list stick together and the tab content scrolls
+                    under them. bg-(--card), not bg-card: a third nested bg-card climbs a rung and would paint a
+                    lighter band over its own item. */}
+                <div className={cn('flex flex-none flex-col', isOpen && 'md:sticky md:top-0 md:z-10 md:rounded-t-[calc(var(--radius-xl)-1px)] md:bg-(--card)')}>
+                  <CollapsibleTrigger asChild>
+                    {/* The item can't clip at md (the sticky block needs it overflow-visible), so the header clips its
+                        own hover band to the item's inner radius: the outer radius less the 1px border. */}
+                    <div className="data-[state=open]:border-b md:overflow-hidden md:rounded-[calc(var(--radius-xl)-1px)] md:data-[state=open]:rounded-b-none">
+                      <SOWCollapsibleHeader
+                        disabled={disabled}
+                        index={index}
+                        isOpen={isOpen}
+                        messageBaseId={messageBaseId}
+                        onDelete={(e) => {
+                          e.stopPropagation()
+                          handleDeleteSection(index)
+                        }}
+                        onDuplicate={(e) => {
+                          e.stopPropagation()
+                          handleDuplicateSection(index)
+                        }}
+                        onTitleChange={(title) => {
+                          form.setValue(`project.data.sow.${index}.title`, title, { shouldDirty: true })
+                        }}
+                        priceDisplayMode={priceDisplayMode}
+                        sow={sowValues[index] ?? fieldOfArray}
+                      />
+                    </div>
+                  </CollapsibleTrigger>
+                  {isOpen && <SowPickerMessages index={index} messageBaseId={messageBaseId} />}
+                  <AnimatedCollapsibleContent open={isOpen} className="max-md:hidden">
+                    {/* The gap under the tabs rides in the sticky block, so scrolled content passes under card colour. */}
+                    <div className="p-3 lg:p-4">
+                      <SowSectionTabList index={index} priceDisplayMode={priceDisplayMode} />
+                    </div>
+                  </AnimatedCollapsibleContent>
                 </div>
-              </CollapsibleTrigger>
-              {isOpen && <SowPickerMessages index={index} messageBaseId={messageBaseId} />}
-              <AnimatedCollapsibleContent open={isOpen} className="flex flex-col max-md:min-h-0" data-sow-body>
-                {/* relative: Radix Select's hidden native <select> is absolute; without a positioned ancestor here it
-                    escapes to <main>, makes main scrollable, and a focus then shifts the whole page. */}
-                <div className="relative max-md:min-h-0 max-md:overflow-y-auto max-md:overscroll-contain max-md:scrollbar-gutter-stable">
-                  <SOWSection
-                    index={index}
-                    priceDisplayMode={priceDisplayMode}
-                    tab={sectionTabs.get(index) ?? 'description'}
-                    onTabChange={tab => setSectionTabs(prev => new Map(prev).set(index, tab))}
-                  />
-                </div>
-              </AnimatedCollapsibleContent>
+                <AnimatedCollapsibleContent open={isOpen} className="flex flex-col max-md:min-h-0" data-sow-body>
+                  {/* relative: Radix Select's hidden native <select> is absolute; without a positioned ancestor here
+                      it escapes to <main>, makes main scrollable, and a focus then shifts the whole page. */}
+                  <div className="relative max-md:min-h-0 max-md:overflow-y-auto max-md:overscroll-contain max-md:scrollbar-gutter-stable">
+                    <SOWSection index={index} priceDisplayMode={priceDisplayMode} tab={tab} />
+                  </div>
+                </AnimatedCollapsibleContent>
+              </SowSectionTabs>
             </Collapsible>
           )
         })}

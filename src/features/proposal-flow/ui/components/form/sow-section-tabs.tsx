@@ -1,29 +1,20 @@
-import type { ReactNode } from 'react'
+import type { ComponentProps } from 'react'
 import type { SowSectionTab } from '@/features/proposal-flow/constants/sow-section-tabs'
-import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
-import type { PriceDisplayMode } from '@/shared/constants/enums'
-import { useFormContext, useWatch } from 'react-hook-form'
 import { SOW_SECTION_TABS } from '@/features/proposal-flow/constants/sow-section-tabs'
-import { formatLedgerAmount } from '@/features/proposal-flow/lib/format-ledger-amount'
-import { sectionPriceDisplay } from '@/features/proposal-flow/lib/section-price'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
+import { Tabs } from '@/shared/components/ui/tabs'
+import { cn } from '@/shared/lib/utils'
 
-interface Props {
-  index: number
+type Props = Omit<ComponentProps<typeof Tabs>, 'value' | 'defaultValue' | 'onValueChange'> & {
   tab: SowSectionTab
   onTabChange: (tab: SowSectionTab) => void
-  priceDisplayMode: PriceDisplayMode
-  description: ReactNode
-  pricing: ReactNode
 }
 
-export function SowSectionTabs({ index, tab, onTabChange, priceDisplayMode, description, pricing }: Props) {
-  const form = useFormContext<ProposalFormSchema>()
-  const financials = useWatch({ control: form.control, name: `project.data.sow.${index}.financials` })
-  const { final } = sectionPriceDisplay(financials, priceDisplayMode)
-
+// The tabs' root is the whole section item (the Collapsible renders through it): at md and up the tab list rides in
+// the sticky block beside the header while the panels sit in the body. gap-0 keeps the Tabs default gap off the item.
+export function SowSectionTabs({ tab, onTabChange, className, ...props }: Props) {
   return (
     <Tabs
+      {...props}
       value={tab}
       onValueChange={(value) => {
         const next = SOW_SECTION_TABS.find(t => t.id === value)
@@ -31,25 +22,7 @@ export function SowSectionTabs({ index, tab, onTabChange, priceDisplayMode, desc
           onTabChange(next.id)
         }
       }}
-      className="gap-3"
-    >
-      <TabsList className="max-md:w-full">
-        {SOW_SECTION_TABS.map(t => (
-          <TabsTrigger key={t.id} value={t.id} className="px-3">
-            {t.label}
-            {t.id === 'pricing' && final !== null && (
-              <span className="tabular-nums">{formatLedgerAmount(final)}</span>
-            )}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-      {/* Mounted while hidden: the editor keeps its undo history and caret across tab switches. */}
-      <TabsContent value="description" forceMount hidden={tab !== 'description'}>
-        {description}
-      </TabsContent>
-      <TabsContent value="pricing">
-        {pricing}
-      </TabsContent>
-    </Tabs>
+      className={cn('gap-0', className)}
+    />
   )
 }
