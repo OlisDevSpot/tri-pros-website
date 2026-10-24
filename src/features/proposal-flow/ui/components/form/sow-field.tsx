@@ -46,49 +46,51 @@ export function SOWSection({
           control={form.control}
           render={({ field }) => (
             <FormItem>
-              <div className="flex items-center justify-end">
-                <Button
-                  variant="outline"
-                  type="button"
-                  className="text-xs text-muted-foreground hover:underline"
-                  size="sm"
-                  disabled={field.disabled}
-                  onClick={() => {
-                    openModal({
-                      accessor: 'Templates',
-                      Component: TemplatesModal,
-                      props: {
-                        trade: allTrades.data?.find(trade => trade.id === tradeId),
-                        scopes: form.getValues(`project.data.sow.${index}.scopes`).map(scope => scopesOfTrade.data?.find(scopeOfTrade => scopeOfTrade.id === scope.id)).filter(Boolean) as Scope[],
-                        onSelect: async (sowId) => {
-                          setIsLoadingTemplate(true)
-                          try {
-                            const json = await queryClient.fetchQuery(trpc.constructionRouter.sow.content.queryOptions({ sowId }))
-                            tiptapRef.current?.insertContent(JSON.parse(json) || '')
-                          }
-                          finally {
-                            setIsLoadingTemplate(false)
-                          }
-                        },
-                      },
-                    })
-                  }}
-                >
-                  Templates
-                </Button>
+              {/* A field, so it sinks: the card's own fill and the field edge, the toolbar row split off by a hairline. */}
+              <div className="overflow-hidden rounded-lg border border-input bg-input-background **:data-[slot=tiptap-toolbar]:border-b">
+                <FormControl>
+                  <Tiptap
+                    ref={tiptapRef}
+                    isLoading={isLoadingTemplate}
+                    loadingMessage="Loading template from Notion..."
+                    toolbarStart={(
+                      <Button
+                        variant="outline"
+                        type="button"
+                        className="h-9 rounded-none text-xs text-muted-foreground"
+                        disabled={field.disabled}
+                        onClick={() => {
+                          openModal({
+                            accessor: 'Templates',
+                            Component: TemplatesModal,
+                            props: {
+                              trade: allTrades.data?.find(trade => trade.id === tradeId),
+                              scopes: form.getValues(`project.data.sow.${index}.scopes`).map(scope => scopesOfTrade.data?.find(scopeOfTrade => scopeOfTrade.id === scope.id)).filter(Boolean) as Scope[],
+                              onSelect: async (sowId) => {
+                                setIsLoadingTemplate(true)
+                                try {
+                                  const json = await queryClient.fetchQuery(trpc.constructionRouter.sow.content.queryOptions({ sowId }))
+                                  tiptapRef.current?.insertContent(JSON.parse(json) || '')
+                                }
+                                finally {
+                                  setIsLoadingTemplate(false)
+                                }
+                              },
+                            },
+                          })
+                        }}
+                      >
+                        Templates
+                      </Button>
+                    )}
+                    onChange={({ html, json }) => {
+                      field.onChange(JSON.stringify(json))
+                      form.setValue(`project.data.sow.${index}.html`, html)
+                    }}
+                    initialValues={field.value ? JSON.parse(field.value) : undefined}
+                  />
+                </FormControl>
               </div>
-              <FormControl>
-                <Tiptap
-                  ref={tiptapRef}
-                  isLoading={isLoadingTemplate}
-                  loadingMessage="Loading template from Notion..."
-                  onChange={({ html, json }) => {
-                    field.onChange(JSON.stringify(json))
-                    form.setValue(`project.data.sow.${index}.html`, html)
-                  }}
-                  initialValues={field.value ? JSON.parse(field.value) : undefined}
-                />
-              </FormControl>
               <FormMessage />
             </FormItem>
           )}
