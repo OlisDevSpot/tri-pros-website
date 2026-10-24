@@ -6,6 +6,7 @@ import { useEditLoading } from '@/features/proposal-flow/contexts/edit-loading-c
 import { sectionPriceDisplay } from '@/features/proposal-flow/lib/section-price'
 import { LoadingValue } from '@/features/proposal-flow/ui/components/edit-page/loading-value'
 import { Button } from '@/shared/components/ui/button'
+import { CollapsibleTrigger } from '@/shared/components/ui/collapsible'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shared/components/ui/dropdown-menu'
 import { Input } from '@/shared/components/ui/input'
 import { cn } from '@/shared/lib/utils'
@@ -19,6 +20,8 @@ interface Props {
   messageBaseId: string
   onDelete: (e: React.MouseEvent) => void
   onDuplicate: (e: React.MouseEvent) => void
+  // Absent outside a Collapsible (the loading stand-in), where the chevron is only a picture.
+  onToggle?: () => void
   onTitleChange: (title: string) => void
   priceDisplayMode: PriceDisplayMode
   sow: ProposalFormSchema['project']['data']['sow'][0]
@@ -31,6 +34,7 @@ export function SOWCollapsibleHeader({
   messageBaseId,
   onDelete,
   onDuplicate,
+  onToggle,
   onTitleChange,
   priceDisplayMode,
   sow,
@@ -64,8 +68,20 @@ export function SOWCollapsibleHeader({
     }
   }
 
+  const chevron = (
+    <ChevronDownIcon
+      className={cn(
+        'size-5 text-muted-foreground transition-transform duration-200',
+        !isOpen && '-rotate-90',
+      )}
+    />
+  )
+
   return (
-    <div className="grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-1 px-3 py-2.5 transition-colors hover:bg-row-hover pressed:bg-row-press lg:px-4 lg:py-3">
+    <div
+      onClick={onToggle}
+      className="grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-1 px-3 py-2.5 transition-colors hover:bg-row-hover pressed:bg-row-press lg:px-4 lg:py-3"
+    >
       <div className="flex min-w-0 items-center gap-2 max-md:contents md:col-start-1 md:row-start-1">
         {isEditing && !disabled
           ? (
@@ -139,12 +155,22 @@ export function SOWCollapsibleHeader({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <ChevronDownIcon
-          className={cn(
-            'size-5 text-muted-foreground transition-transform duration-200',
-            !isOpen && '-rotate-90',
-          )}
-        />
+        {onToggle
+          ? (
+              <CollapsibleTrigger asChild>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="size-8"
+                  aria-label={`${isOpen ? 'Collapse' : 'Expand'} ${sow.title.trim() || sow.trade.label || 'section'}`}
+                  onClick={e => e.stopPropagation()}
+                >
+                  {chevron}
+                </Button>
+              </CollapsibleTrigger>
+            )
+          : chevron}
       </div>
     </div>
   )

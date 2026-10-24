@@ -1,5 +1,6 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import { useFormContext } from 'react-hook-form'
+import { SOW_HEADER_CHIP } from '@/features/proposal-flow/constants/sow-header-chip'
 import { plural } from '@/features/proposal-flow/lib/form-parts'
 import { scopesTriggerLabel } from '@/features/proposal-flow/lib/scopes-trigger-label'
 import { FormControl, FormField, FormItem } from '@/shared/components/ui/form'
@@ -40,7 +41,7 @@ export function SowScopesPicker({ index, disabled, messageId, options, loading, 
                   disabled={field.disabled || disabled || loading || !options}
                   // shrink: the button base is shrink-0, and the "+N" cutoff only engages once the trigger gives way.
                   // The md floor keeps a two-digit "+N" whole; past it the title truncates instead.
-                  className="h-5.5 min-h-0 w-auto min-w-0 shrink gap-1 md:min-w-18 border-transparent bg-transparent px-1 py-0 text-xs font-medium shadow-none hover:border-transparent hover:bg-hover pressed:bg-press disabled:cursor-default disabled:opacity-100 has-[>svg]:px-1 max-md:bg-muted max-md:px-2 max-md:text-muted-foreground max-md:hover:bg-secondary-hover max-md:has-[>svg]:px-2 [&>svg]:size-3 disabled:[&>svg]:hidden max-md:[&>svg]:hidden"
+                  className={cn(SOW_HEADER_CHIP, 'h-5.5 min-h-0 w-auto bg-transparent px-1 hover:bg-hover has-[>svg]:px-1 md:min-w-18 max-md:bg-muted max-md:px-2 max-md:text-muted-foreground max-md:hover:bg-secondary-hover max-md:has-[>svg]:px-2')}
                 >
                   {field.value.length === 0
                     ? <span className="text-muted-foreground">{loading ? 'Loading...' : 'Select scopes'}</span>

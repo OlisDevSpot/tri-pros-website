@@ -1,19 +1,19 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
-import { useFormContext, useWatch } from 'react-hook-form'
+import { useFormContext } from 'react-hook-form'
 import { FUNDING_LEDGER_ROW } from '@/features/proposal-flow/constants/funding-ledger'
-import { getProposalAggregates } from '@/features/proposal-flow/lib/get-proposal-aggregates'
 import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 import { formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 import { describeDepositCap, getDepositCap } from '@/shared/modules/proposals/core/lib/financials'
 
-export function FundingDepositRow() {
+interface Props {
+  finalTcp: number
+}
+
+export function FundingDepositRow({ finalTcp }: Props) {
   const form = useFormContext<ProposalFormSchema>()
-  // Watched only to re-render: the cap follows the live final price, which either can move.
-  useWatch({ control: form.control, name: 'funding' })
-  useWatch({ control: form.control, name: 'project.data.sow' })
-  const depositCap = getDepositCap(getProposalAggregates(form.getValues()).finalTcp)
+  const depositCap = getDepositCap(finalTcp)
 
   return (
     <FormField

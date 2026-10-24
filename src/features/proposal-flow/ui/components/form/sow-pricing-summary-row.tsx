@@ -12,12 +12,13 @@ interface Props {
   total: ReactNode
   open: boolean
   onOpenChange: (open: boolean) => void
+  disabled?: boolean
   // The ledger has no chevron column: its figures share one right edge, so the chevron sits after the label.
   layout?: 'pricing' | 'ledger'
   children: ReactNode
 }
 
-export function SowPricingSummaryRow({ label, count, sub, total, open, onOpenChange, layout = 'pricing', children }: Props) {
+export function SowPricingSummaryRow({ label, count, sub, total, open, onOpenChange, disabled, layout = 'pricing', children }: Props) {
   const ledger = layout === 'ledger'
   const chevron = (
     <ChevronDownIcon
@@ -28,9 +29,10 @@ export function SowPricingSummaryRow({ label, count, sub, total, open, onOpenCha
   return (
     <Collapsible open={open} onOpenChange={onOpenChange}>
       <CollapsibleTrigger
+        disabled={disabled}
         className={cn(
           ledger ? cn(FUNDING_LEDGER_ROW, 'w-full border-t-0 text-left') : cn(SOW_PRICING_ROW, 'rounded-lg px-2 text-left text-sm'),
-          'w-full transition-colors hover:bg-row-hover pressed:bg-row-press',
+          'w-full transition-colors hover:bg-row-hover pressed:bg-row-press disabled:cursor-default disabled:hover:bg-transparent',
           ledger && 'py-2',
         )}
       >
@@ -42,7 +44,7 @@ export function SowPricingSummaryRow({ label, count, sub, total, open, onOpenCha
           </span>
           {sub && <span className="text-xs font-normal text-muted-foreground">{sub}</span>}
         </span>
-        <span className={cn(!ledger && SOW_PRICING_FIGURE, 'font-medium tabular-nums')}>{total}</span>
+        <span className={cn(!ledger && SOW_PRICING_FIGURE, 'tabular-nums', !ledger && 'font-medium')}>{total}</span>
         {!ledger && chevron}
       </CollapsibleTrigger>
       <AnimatedCollapsibleContent open={open}>

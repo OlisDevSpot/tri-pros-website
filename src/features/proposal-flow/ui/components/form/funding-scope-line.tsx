@@ -1,6 +1,7 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { PriceDisplayMode } from '@/shared/constants/enums'
 import { useState } from 'react'
+import { useEditLoading } from '@/features/proposal-flow/contexts/edit-loading-context'
 import { scopeOfWorkRows } from '@/features/proposal-flow/lib/scope-of-work-rows'
 import { LoadingValue } from '@/features/proposal-flow/ui/components/edit-page/loading-value'
 import { SectionPrice } from './section-price'
@@ -16,6 +17,7 @@ interface Props {
 
 export function FundingScopeLine({ label, value, sub, sow, pricingMode }: Props) {
   const [open, setOpen] = useState(false)
+  const loading = useEditLoading()
   const rows = scopeOfWorkRows(sow, pricingMode)
 
   return (
@@ -28,6 +30,7 @@ export function FundingScopeLine({ label, value, sub, sow, pricingMode }: Props)
           total={<LoadingValue width={64}>{value}</LoadingValue>}
           open={open}
           onOpenChange={setOpen}
+          disabled={loading}
         >
           <ul className="flex flex-col gap-2 pt-1 pb-3 pl-3">
             {rows.map((row, index) => (

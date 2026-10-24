@@ -13,7 +13,7 @@ import {
   removeFromTabMap,
   toggleSection,
 } from '@/features/proposal-flow/lib/sow-open-sections'
-import { AnimatedCollapsibleContent, Collapsible, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
+import { AnimatedCollapsibleContent, Collapsible } from '@/shared/components/ui/collapsible'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/lib/utils'
@@ -206,31 +206,30 @@ export function ProjectFields({ priceDisplayMode, active }: Props) {
                     under them. bg-(--card), not bg-card: a third nested bg-card climbs a rung and would paint a
                     lighter band over its own item. */}
                 <div className={cn('flex flex-none flex-col', isOpen && 'md:sticky md:top-0 md:z-10 md:rounded-t-[calc(var(--radius-xl)-1px)] md:bg-(--card)')}>
-                  <CollapsibleTrigger asChild>
-                    {/* The item can't clip at md (the sticky block needs it overflow-visible), so the header clips its
-                        own hover band to the item's inner radius: the outer radius less the 1px border. */}
-                    <div className="data-[state=open]:border-b md:overflow-hidden md:rounded-[calc(var(--radius-xl)-1px)] md:data-[state=open]:rounded-b-none">
-                      <SOWCollapsibleHeader
-                        disabled={disabled}
-                        index={index}
-                        isOpen={isOpen}
-                        messageBaseId={messageBaseId}
-                        onDelete={(e) => {
-                          e.stopPropagation()
-                          handleDeleteSection(index)
-                        }}
-                        onDuplicate={(e) => {
-                          e.stopPropagation()
-                          handleDuplicateSection(index)
-                        }}
-                        onTitleChange={(title) => {
-                          form.setValue(`project.data.sow.${index}.title`, title, { shouldDirty: true })
-                        }}
-                        priceDisplayMode={priceDisplayMode}
-                        sow={sowValues[index] ?? fieldOfArray}
-                      />
-                    </div>
-                  </CollapsibleTrigger>
+                  {/* The item can't clip at md (the sticky block needs it overflow-visible), so the header clips its
+                       own hover band to the item's inner radius: the outer radius less the 1px border. */}
+                  <div data-state={isOpen ? 'open' : 'closed'} className="data-[state=open]:border-b md:overflow-hidden md:rounded-[calc(var(--radius-xl)-1px)] md:data-[state=open]:rounded-b-none">
+                    <SOWCollapsibleHeader
+                      disabled={disabled}
+                      index={index}
+                      isOpen={isOpen}
+                      messageBaseId={messageBaseId}
+                      onToggle={() => setOpenSections(prev => toggleSection(prev, index, isMobile))}
+                      onDelete={(e) => {
+                        e.stopPropagation()
+                        handleDeleteSection(index)
+                      }}
+                      onDuplicate={(e) => {
+                        e.stopPropagation()
+                        handleDuplicateSection(index)
+                      }}
+                      onTitleChange={(title) => {
+                        form.setValue(`project.data.sow.${index}.title`, title, { shouldDirty: true })
+                      }}
+                      priceDisplayMode={priceDisplayMode}
+                      sow={sowValues[index] ?? fieldOfArray}
+                    />
+                  </div>
                   {isOpen && <SowPickerMessages index={index} messageBaseId={messageBaseId} />}
                   <AnimatedCollapsibleContent open={isOpen} className="max-md:hidden">
                     {/* The gap under the tabs rides in the sticky block, so scrolled content passes under card colour. */}

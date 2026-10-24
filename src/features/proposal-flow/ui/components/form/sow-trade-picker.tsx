@@ -1,7 +1,9 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import { useFormContext, useWatch } from 'react-hook-form'
+import { SOW_HEADER_CHIP } from '@/features/proposal-flow/constants/sow-header-chip'
 import { FormControl, FormField, FormItem } from '@/shared/components/ui/form'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
+import { cn } from '@/shared/lib/utils'
 
 interface Props {
   index: number
@@ -31,7 +33,7 @@ export function SowTradePicker({ index, disabled, messageId, trades, onTradeChan
                 size="sm"
                 aria-label={label ? `Trade: ${label}` : undefined}
                 // Phone's meta row shares its width with the price: the label truncates and the chevron goes.
-                className="max-w-48 min-w-0 shrink gap-1 rounded-md border-transparent bg-secondary px-2 py-0 text-xs font-medium text-secondary-foreground shadow-none hover:border-transparent hover:bg-secondary-hover pressed:bg-press disabled:cursor-default disabled:opacity-100 data-[size=sm]:h-5.5 *:data-[slot=select-value]:min-w-0 [&>svg]:size-3 disabled:[&>svg]:hidden max-md:[&>svg]:hidden"
+                className={cn(SOW_HEADER_CHIP, 'max-w-48 rounded-md bg-secondary px-2 text-secondary-foreground hover:bg-secondary-hover data-[size=sm]:h-5.5 *:data-[slot=select-value]:min-w-0')}
               >
                 {/* The saved label, so the chip reads right before the trade list has loaded. */}
                 <SelectValue placeholder="Select trade">
