@@ -36,7 +36,7 @@ export function GeneralFields({ withName = false }: { withName?: boolean }) {
               <FormLabel>Project Type</FormLabel>
               <FormControl>
                 <Select
-                  defaultValue="general-remodeling"
+                  value={field.value}
                   disabled={field.disabled}
                   onValueChange={(val: ProjectType) => {
                     field.onChange(val)
@@ -79,11 +79,9 @@ export function GeneralFields({ withName = false }: { withName?: boolean }) {
               <FormLabel>Valid Through Timeframe</FormLabel>
               <FormControl>
                 <Select
-                  defaultValue="60 days"
+                  value={field.value}
                   disabled={field.disabled}
-                  onValueChange={(val: ProjectType) => {
-                    field.onChange(val)
-                  }}
+                  onValueChange={field.onChange}
                 >
                   <SelectTrigger {...field} className="w-full">
                     <SelectValue placeholder="Select a timeframe" />
