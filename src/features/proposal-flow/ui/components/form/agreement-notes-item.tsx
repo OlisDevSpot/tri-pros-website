@@ -72,7 +72,7 @@ export function AgreementNotesItem({ defaultOpen = false, onRemove, className }:
         </div>
       </CollapsibleTrigger>
       <AnimatedCollapsibleContent open={open} className="flex min-h-0 flex-col">
-        <div className="min-h-0 overflow-y-auto overscroll-contain px-3 py-3 lg:px-4 lg:py-4">
+        <div className="min-h-0 overflow-y-auto overscroll-contain scrollbar-gutter-stable px-3 py-3 lg:px-4 lg:py-4">
           <FormField
             name="project.data.agreementNotes"
             control={form.control}
