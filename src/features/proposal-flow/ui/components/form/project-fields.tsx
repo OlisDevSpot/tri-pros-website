@@ -1,7 +1,7 @@
 import type { SowSectionTab } from '@/features/proposal-flow/constants/sow-section-tabs'
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { PriceDisplayMode } from '@/shared/constants/enums'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form'
 import { useEditLoading } from '@/features/proposal-flow/contexts/edit-loading-context'
 import { firstSowErrorTarget } from '@/features/proposal-flow/lib/sow-error-target'
@@ -22,6 +22,7 @@ import { AgreementNotesItem } from './agreement-notes-item'
 import { SowAddRow } from './sow-add-row'
 import { SOWCollapsibleHeader } from './sow-collapsible-header'
 import { SOWSection } from './sow-field'
+import { SowPickerMessages } from './sow-picker-messages'
 
 interface Props {
   priceDisplayMode: PriceDisplayMode
@@ -33,6 +34,7 @@ export function ProjectFields({ priceDisplayMode, active }: Props) {
   const form = useFormContext<ProposalFormSchema>()
   const isMobile = useIsMobile()
   const loading = useEditLoading()
+  const messageBaseId = useId()
 
   const { fields, append, insert, remove } = useFieldArray({
     control: form.control,
@@ -102,7 +104,12 @@ export function ProjectFields({ priceDisplayMode, active }: Props) {
       // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect -- follows a submit's errors
       setSectionTabs(prev => new Map(prev).set(target.index, tab))
     }
-  }, [submitCount, errors, isMobile])
+    // On phone the header was hidden behind another open section when the submit tried to focus it.
+    const { picker } = target
+    if (picker !== null) {
+      requestAnimationFrame(() => form.setFocus(picker === 'trade' ? `project.data.sow.${target.index}.trade.id` : `project.data.sow.${target.index}.scopes`))
+    }
+  }, [submitCount, errors, isMobile, form])
 
   async function handleDeleteSection(index: number) {
     const confirmed = await confirmDelete()
@@ -153,7 +160,9 @@ export function ProjectFields({ priceDisplayMode, active }: Props) {
         <div inert className="pointer-events-none flex flex-none flex-col rounded-xl border border-border bg-card md:overflow-hidden">
           <SOWCollapsibleHeader
             disabled
+            index={0}
             isOpen={false}
+            messageBaseId={messageBaseId}
             onDelete={() => {}}
             onDuplicate={() => {}}
             onTitleChange={() => {}}
@@ -195,7 +204,9 @@ export function ProjectFields({ priceDisplayMode, active }: Props) {
                 <div className="flex-none data-[state=open]:border-b md:overflow-hidden md:rounded-[calc(var(--radius-xl)-1px)] md:data-[state=open]:sticky md:data-[state=open]:top-0 md:data-[state=open]:z-10 md:data-[state=open]:rounded-b-none md:data-[state=open]:bg-(--card)">
                   <SOWCollapsibleHeader
                     disabled={disabled}
+                    index={index}
                     isOpen={isOpen}
+                    messageBaseId={messageBaseId}
                     onDelete={(e) => {
                       e.stopPropagation()
                       handleDeleteSection(index)
@@ -212,6 +223,7 @@ export function ProjectFields({ priceDisplayMode, active }: Props) {
                   />
                 </div>
               </CollapsibleTrigger>
+              {isOpen && <SowPickerMessages index={index} messageBaseId={messageBaseId} />}
               <AnimatedCollapsibleContent open={isOpen} className="flex flex-col max-md:min-h-0" data-sow-body>
                 {/* relative: Radix Select's hidden native <select> is absolute; without a positioned ancestor here it
                     escapes to <main>, makes main scrollable, and a focus then shifts the whole page. */}
@@ -219,7 +231,6 @@ export function ProjectFields({ priceDisplayMode, active }: Props) {
                   <SOWSection
                     index={index}
                     priceDisplayMode={priceDisplayMode}
-                    sowSnapshot={fieldOfArray}
                     tab={sectionTabs.get(index) ?? 'description'}
                     onTabChange={tab => setSectionTabs(prev => new Map(prev).set(index, tab))}
                   />
