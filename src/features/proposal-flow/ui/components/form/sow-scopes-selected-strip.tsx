@@ -17,8 +17,10 @@ export function SowScopesSelectedStrip({ scopes, onRemove }: Props) {
     <div
       role="group"
       aria-label="Selected scopes"
-      // The command list's own fill, so rows slide under it; bg-(--popover), not bg-popover, which is a surface class.
-      className="sticky bottom-0 z-10 flex flex-wrap items-center gap-1 border-t bg-(--popover) p-2"
+      // One row that scrolls sideways, so its height is fixed: a 22px badge, py-2 and the 1px top edge, which the
+      // list's bottom scroll padding repeats. The command list's own fill, so rows slide under it; bg-(--popover),
+      // not bg-popover, which is a surface class.
+      className="sticky bottom-0 z-10 flex flex-nowrap items-center gap-1 overflow-x-auto border-t bg-(--popover) p-2 scrollbar-none *:shrink-0"
       // cmdk takes Enter for the highlighted option; a focused remove button keeps it.
       onKeyDown={(e) => {
         if (e.key === 'Enter') {

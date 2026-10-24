@@ -41,11 +41,10 @@ export function SOWCollapsibleHeader({
 
   const hasTitle = sow.title.trim().length > 0
   const price = sectionPriceDisplay(sow.financials, priceDisplayMode)
-  // Phone: title on row 1, the pickers and the price on row 2. md and up: title and pickers share row 1's first
-  // cell, the way the proposal name carries its status chip.
-  // md and up: when the line runs short the title gives way first (down to its floor), then the scope badges cut off.
-  const titleCellClassName = 'max-md:col-start-1 max-md:row-start-1 md:min-w-24 md:shrink-[100]'
-  const pickersCellClassName = 'max-md:col-start-1 max-md:row-start-2'
+  // A short title hugs its text like the proposal name beside its chip, so the floor sits on the pickers: they are
+  // capped to leave a long title ~6rem, and the title gives way first down to that before the badges cut off.
+  const titleCellClassName = 'max-md:col-start-1 max-md:row-start-1 md:shrink-[100]'
+  const pickersCellClassName = 'max-md:col-start-1 max-md:row-start-2 md:max-w-[calc(100%-6.5rem)]'
   const priceCellClassName = 'max-md:col-span-2 max-md:col-start-2 max-md:row-start-2 max-md:justify-self-end md:col-start-2 md:row-start-1'
 
   function handleTitleClick(e: React.MouseEvent) {
@@ -111,7 +110,7 @@ export function SOWCollapsibleHeader({
                 <LoadingValue width={54} className="text-xs">{null}</LoadingValue>
               </span>
             )
-          : <SowHeaderPickers index={index} disabled={disabled} messageBaseId={messageBaseId} className={pickersCellClassName} />}
+          : <SowHeaderPickers index={index} disabled={disabled} messageBaseId={messageBaseId} isOpen={isOpen} className={pickersCellClassName} />}
       </div>
       <LoadingValue width={124} className={cn('text-sm', priceCellClassName)}>
         <SectionPrice {...price} className={priceCellClassName} />

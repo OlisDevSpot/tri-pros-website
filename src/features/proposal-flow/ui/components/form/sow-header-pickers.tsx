@@ -11,10 +11,12 @@ interface Props {
   index: number
   disabled: boolean
   messageBaseId: string
+  // The messages render only in the open section; a closed one has nothing to point at.
+  isOpen: boolean
   className?: string
 }
 
-export function SowHeaderPickers({ index, disabled, messageBaseId, className }: Props) {
+export function SowHeaderPickers({ index, disabled, messageBaseId, isOpen, className }: Props) {
   const form = useFormContext<ProposalFormSchema>()
   const { allTrades, scopesOfTrade } = useSowCatalog(index)
 
@@ -86,7 +88,7 @@ export function SowHeaderPickers({ index, disabled, messageBaseId, className }: 
       <SowTradePicker
         index={index}
         disabled={disabled}
-        messageId={sowPickerMessageId(messageBaseId, index, 'trade')}
+        messageId={isOpen ? sowPickerMessageId(messageBaseId, index, 'trade') : undefined}
         trades={allTrades.data}
         onTradeChange={handleTradeChange}
       />
@@ -94,7 +96,7 @@ export function SowHeaderPickers({ index, disabled, messageBaseId, className }: 
       <SowScopesPicker
         index={index}
         disabled={disabled}
-        messageId={sowPickerMessageId(messageBaseId, index, 'scopes')}
+        messageId={isOpen ? sowPickerMessageId(messageBaseId, index, 'scopes') : undefined}
         options={scopesOfTrade.data}
         loading={scopesOfTrade.isLoading}
         onScopesChange={handleScopesChange}

@@ -6,7 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 interface Props {
   index: number
   disabled: boolean
-  messageId: string
+  // Only while the section is open: that is when the message under the header renders.
+  messageId?: string
   trades: { id: string, name: string }[] | undefined
   onTradeChange: (id: string) => void
 }
@@ -22,7 +23,7 @@ export function SowTradePicker({ index, disabled, messageId, trades, onTradeChan
       render={({ field, fieldState }) => (
         <FormItem className="contents">
           <Select value={field.value} onValueChange={onTradeChange} disabled={field.disabled || disabled}>
-            <FormControl aria-describedby={fieldState.error ? messageId : undefined}>
+            <FormControl aria-describedby={fieldState.error && messageId ? messageId : undefined}>
               <SelectTrigger
                 ref={field.ref}
                 name={field.name}

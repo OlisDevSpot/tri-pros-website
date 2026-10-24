@@ -10,7 +10,8 @@ import { SowScopesSelectedStrip } from './sow-scopes-selected-strip'
 interface Props {
   index: number
   disabled: boolean
-  messageId: string
+  // Only while the section is open: that is when the message under the header renders.
+  messageId?: string
   options: { id: string, name: string }[] | undefined
   loading: boolean
   onScopesChange: (values: string[]) => Promise<boolean>
@@ -30,12 +31,13 @@ export function SowScopesPicker({ index, disabled, messageId, options, loading, 
         return (
           <FormItem className="contents">
             <MultiSelect onValuesChange={onScopesChange} values={ids}>
-              <FormControl aria-describedby={fieldState.error ? messageId : undefined}>
+              <FormControl aria-describedby={fieldState.error && messageId ? messageId : undefined}>
                 <MultiSelectTrigger
                   ref={field.ref}
                   variant="ghost"
                   aria-label={scopesTriggerLabel(field.value.map(scope => scope.label))}
-                  disabled={field.disabled || disabled || loading}
+                  // Without the trade's options the picks can't be mapped back to labels, so a change would drop them.
+                  disabled={field.disabled || disabled || loading || !options}
                   // shrink: the button base is shrink-0, and the "+N" cutoff only engages once the trigger gives way.
                   // The md floor keeps a two-digit "+N" whole; past it the title truncates instead.
                   className="h-5.5 min-h-0 w-auto min-w-0 shrink gap-1 md:min-w-18 border-transparent bg-transparent px-1 py-0 text-xs font-medium shadow-none hover:border-transparent hover:bg-hover pressed:bg-press disabled:cursor-default disabled:opacity-100 has-[>svg]:px-1 max-md:bg-muted max-md:px-2 max-md:text-muted-foreground max-md:hover:bg-secondary-hover max-md:has-[>svg]:px-2 [&>svg]:size-3 disabled:[&>svg]:hidden max-md:[&>svg]:hidden"
@@ -56,7 +58,7 @@ export function SowScopesPicker({ index, disabled, messageId, options, loading, 
                   placeholder: 'Search scopes...',
                 }}
                 // Keyboard highlighting scrolls a row into view; the padding keeps it clear of the pinned strip.
-                className={cn(field.value.length > 0 && '**:data-[slot=command-list]:scroll-pb-11')}
+                className={cn(field.value.length > 0 && '**:data-[slot=command-list]:scroll-pb-[calc(1.375rem+1rem+1px)]')}
               >
                 <MultiSelectGroup>
                   {options?.map(scope => (
