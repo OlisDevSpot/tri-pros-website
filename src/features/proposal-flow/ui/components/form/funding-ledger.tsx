@@ -9,6 +9,7 @@ import { fundingLedgerLines } from '@/features/proposal-flow/lib/funding-ledger-
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 import { FundingLedgerRow } from './funding-ledger-row'
+import { FundingScopeLine } from './funding-scope-line'
 
 interface Props {
   pricingMode: PriceDisplayMode
@@ -21,17 +22,17 @@ export function FundingLedger({ pricingMode }: Props) {
   // Before the proposal arrives its mode is unknown; the breakdown is the longer shape, so the ledger only
   // ever loses rows when the values land.
   const loading = useEditLoading()
-  const lines = fundingLedgerLines({ funding, sow }, loading ? 'breakdown' : pricingMode)
+  const mode = loading ? 'breakdown' : pricingMode
+  const lines = fundingLedgerLines({ funding, sow }, mode)
 
   return (
     <dl>
       {lines.map((line) => {
         if (line.input) {
-          const name = line.input === 'miscPrice' ? 'funding.miscPrice' : 'funding.startingTcp'
           return (
             <FormField
               key={line.key}
-              name={name}
+              name="funding.startingTcp"
               control={form.control}
               render={({ field }) => (
                 <FormItem className={FUNDING_LEDGER_ROW}>
@@ -42,7 +43,7 @@ export function FundingLedger({ pricingMode }: Props) {
                         {...field}
                         value={field.value ?? ''}
                         className="w-36 text-right"
-                        placeholder={line.input === 'miscPrice' ? '$0' : '$50,000'}
+                        placeholder="$50,000"
                         onChange={event => field.onChange(digitsToNumber(event.target.value))}
                       />
                     </FormControl>
@@ -50,6 +51,18 @@ export function FundingLedger({ pricingMode }: Props) {
                   </dd>
                 </FormItem>
               )}
+            />
+          )
+        }
+        if (line.key === 'scopeOfWork') {
+          return (
+            <FundingScopeLine
+              key={line.key}
+              label={line.label}
+              value={formatLedgerAmount(line.amount)}
+              sub={line.sub}
+              sow={sow}
+              pricingMode={mode}
             />
           )
         }

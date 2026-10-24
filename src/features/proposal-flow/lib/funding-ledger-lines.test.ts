@@ -9,15 +9,24 @@ import { sec, values } from './price-fixtures'
 describe('fundingLedgerLines', () => {
   it('breakdown folds section incentives into the Scope of Work line', () => {
     const lines = fundingLedgerLines(values({ sow: [sec(26980, [8350]), sec(14250)], misc: 0, discounts: [1000] }), 'breakdown')
-    assert.deepEqual(lines.map(l => [l.key, l.amount]), [['scopeOfWork', 32880], ['misc', 0], ['subtotal', 32880], ['incentives', -1000], ['price', 31880]])
+    assert.deepEqual(lines.map(l => [l.key, l.amount]), [['scopeOfWork', 32880], ['incentives', -1000], ['price', 31880]])
     assert.equal(lines[0].sub, '2 sections · final prices')
+  })
+  it('a stored Misc Pricing shows as a read-only line with the Subtotal it feeds', () => {
+    const lines = fundingLedgerLines(values({ sow: [sec(10000)], misc: 500, discounts: [1000] }), 'breakdown')
+    assert.deepEqual(lines.map(l => [l.key, l.amount]), [['scopeOfWork', 10000], ['misc', 500], ['subtotal', 10500], ['incentives', -1000], ['price', 9500]])
+    assert.ok(lines.every(l => l.input === undefined))
+  })
+  it('the last line is the Final price', () => {
+    assert.equal(fundingLedgerLines(values({ sow: [sec(100)] }), 'breakdown').at(-1)!.label, 'Final price')
+    assert.equal(fundingLedgerLines(values({ sow: [sec(null)], startingTcp: 100 }), 'total').at(-1)!.label, 'Final price')
   })
   it('singular section count', () => {
     assert.equal(fundingLedgerLines(values({ sow: [sec(100)] }), 'breakdown')[0].sub, '1 section · final prices')
   })
   it('an unpriced section\'s incentives still come off Scope of Work', () => {
     const lines = fundingLedgerLines(values({ sow: [sec(10000), sec(null, [500])], misc: 0, discounts: [] }), 'breakdown')
-    assert.deepEqual(lines.map(l => [l.key, l.amount]), [['scopeOfWork', 9500], ['misc', 0], ['subtotal', 9500], ['incentives', 0], ['price', 9500]])
+    assert.deepEqual(lines.map(l => [l.key, l.amount]), [['scopeOfWork', 9500], ['incentives', 0], ['price', 9500]])
     assert.ok(lines.every(l => !Object.is(l.amount, -0)))
   })
   it('the $0 clamp is flagged, not hidden', () => {
@@ -58,8 +67,13 @@ describe('fundingLedgerLines', () => {
         continue
       }
       if (mode === 'breakdown') {
-        assert.equal(amount('subtotal') + amount('incentives'), price)
-        assert.equal(amount('scopeOfWork') + amount('misc'), amount('subtotal'))
+        const hasMisc = lines.some(l => l.key === 'misc')
+        assert.equal(hasMisc, (v.funding.miscPrice ?? 0) !== 0)
+        assert.equal(lines.some(l => l.key === 'subtotal'), hasMisc)
+        const subtotal = hasMisc ? amount('scopeOfWork') + amount('misc') : amount('scopeOfWork')
+        if (hasMisc)
+          assert.equal(subtotal, amount('subtotal'))
+        assert.equal(subtotal + amount('incentives'), price)
       }
       else {
         const sectionLine = lines.some(l => l.key === 'sectionIncentives') ? amount('sectionIncentives') : 0

@@ -8,7 +8,7 @@ export interface FundingLedgerLine {
   label: string
   amount: number
   sub?: string
-  input?: 'miscPrice' | 'startingTcp'
+  input?: 'startingTcp'
   clamped?: boolean
 }
 
@@ -24,7 +24,7 @@ export function fundingLedgerLines(values: LedgerValues, mode: PriceDisplayMode)
   const incentivesLine: FundingLedgerLine = { key: 'incentives', label: 'Incentives', amount: 0 - discounts }
   const priceLine: FundingLedgerLine = {
     key: 'price',
-    label: 'Price',
+    label: 'Final price',
     amount: computeFinalTcp({ funding, sow }),
     ...(clamped && { clamped }),
   }
@@ -34,8 +34,14 @@ export function fundingLedgerLines(values: LedgerValues, mode: PriceDisplayMode)
     const misc = funding.miscPrice ?? 0
     return [
       { key: 'scopeOfWork', label: 'Scope of Work', amount: scopeOfWork, sub: `${plural(sow.length, 'section')} · final prices` },
-      { key: 'misc', label: 'Misc Pricing', amount: misc, input: 'miscPrice' },
-      { key: 'subtotal', label: 'Subtotal', amount: scopeOfWork + misc },
+      // Misc Pricing is no longer entered; a proposal that still stores one shows it so the ledger adds up. Without
+      // it the Subtotal would only repeat Scope of Work.
+      ...(misc !== 0
+        ? [
+          { key: 'misc', label: 'Misc Pricing', amount: misc },
+          { key: 'subtotal', label: 'Subtotal', amount: scopeOfWork + misc },
+        ] satisfies FundingLedgerLine[]
+        : []),
       incentivesLine,
       priceLine,
     ]
