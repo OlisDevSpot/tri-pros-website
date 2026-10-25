@@ -23,13 +23,10 @@ describe('sectionPriceDisplay', () => {
 })
 
 describe('summarizeSowPrices', () => {
-  it('sums starting and final across sections', () => {
-    assert.deepEqual(summarizeSowPrices([sec(26980, [8350]), sec(14250), sec(null)], 'breakdown'), { count: 3, starting: 41230, final: 32880, struck: true })
-  })
-  it('is not struck when nothing moves the price', () => {
-    assert.deepEqual(summarizeSowPrices([sec(1000), sec(2000)], 'breakdown'), { count: 2, starting: 3000, final: 3000, struck: false })
+  it('sums the final prices across sections', () => {
+    assert.deepEqual(summarizeSowPrices([sec(26980, [8350]), sec(14250), sec(null)], 'breakdown'), { count: 3, final: 32880 })
   })
   it('total mode keeps the count and no price', () => {
-    assert.deepEqual(summarizeSowPrices([sec(1000, [100])], 'total'), { count: 1, starting: null, final: null, struck: false })
+    assert.deepEqual(summarizeSowPrices([sec(1000, [100])], 'total'), { count: 1, final: null })
   })
 })

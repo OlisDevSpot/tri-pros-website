@@ -25,11 +25,9 @@ export function sectionPriceDisplay(financials: SowFinancials, mode: PriceDispla
 export function summarizeSowPrices(
   sow: SowSection[],
   mode: PriceDisplayMode,
-): { count: number, starting: number | null, final: number | null, struck: boolean } {
+): { count: number, final: number | null } {
   if (mode !== 'breakdown') {
-    return { count: sow.length, starting: null, final: null, struck: false }
+    return { count: sow.length, final: null }
   }
-  const starting = computeTotalSectionPrices(sow)
-  const final = starting - computeTotalSectionIncentives(sow)
-  return { count: sow.length, starting, final, struck: final !== starting }
+  return { count: sow.length, final: computeTotalSectionPrices(sow) - computeTotalSectionIncentives(sow) }
 }
