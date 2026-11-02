@@ -239,6 +239,15 @@ tokens never change with light/dark, the ladder or the marketing theme.
 - Marketing's light hero plate (`--hero-scrim`, dark ink on a warm veil) is the other
   way round and keeps its own token.
 
+### Blueprint Paper (trade scene load)
+The 3D trade scene's load view is drawn on a navy sheet. The stage is scoped dark, so
+one value serves both schemes and neither is redeclared.
+- **Blueprint Paper** (`--blueprint-paper`, `oklch(0.29 0.075 254)`): the sheet behind the
+  grids, the sheet border and the loading line.
+- **Blueprint Ink** (`--blueprint-ink`, `rgb(214 240 255)`): the lines' colour and the loading
+  text. `rgb()` because the lines canvas reads it raw into a 2D `fillStyle`. `theme:check`
+  holds it at 4.5:1 on the paper.
+
 ### Status
 - **Destructive** (`oklch(0.53 0.19 27)`), **Success** (`oklch(0.45 0.11 152)`),
   **Warning** (`oklch(0.46 0.095 72)`): functional shadcn fills. Destructive's
