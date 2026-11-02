@@ -4,6 +4,7 @@ import type { AppAbility } from '@/shared/domains/permissions/types'
 
 import {
   BarChart3Icon,
+  BoxIcon,
   CalculatorIcon,
   CalendarIcon,
   FileTextIcon,
@@ -73,6 +74,13 @@ export function getSidebarNav(ability: AppAbility): SidebarNavConfig {
       label: 'Schedule',
       enabled: ability.can('read', 'Meeting'),
       aliases: ['calendar', 'appointments', 'agenda'],
+    },
+    {
+      href: ROOTS.dashboard.tradeScene(),
+      icon: BoxIcon,
+      label: 'Trade scene',
+      enabled: ability.can('access', 'Dashboard'),
+      aliases: ['3d', 'scene'],
     },
     {
       href: ROOTS.dashboard.calculators(),
