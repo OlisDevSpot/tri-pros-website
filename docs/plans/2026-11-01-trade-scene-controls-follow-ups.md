@@ -1,10 +1,11 @@
 # Trade scene Controls: follow-ups
 
-The Controls build (`d8f49477b..4de8411ad`, branch `feat/trade-scenes-foundation`) made these calls for the owner while it ran. Each one is cheap to change. Rule on it, or leave it as built.
+The Controls build (`d8f49477b..7e317ca09`, branch `feat/trade-scenes-foundation`) made these calls for the owner while it ran. Each one is cheap to change. Rule on it, or leave it as built.
 
 ## Copy calls
 - **The toggle's accessible name changes with its state**, alongside `aria-pressed`, using the mock's copy. A screen reader hears the new name on every flip.
-- **An unset foundation** reads "Slab, no crawl space" on the Today row, and "Nothing to add on a slab" under the build. The mock does the same for any system without upgrades.
+- **An unset foundation** offers its chip on the Foundation card's Today row, so the rep can set it there. The build row asks for the foundation first. "Slab, no crawl space" shows only for a slab.
+- **R-8 ducts' hint** (new): "Preview new ducts to step up to R-8."
 - **Frame and package-unit build chips** keep their part labels; the mock has no wording for them.
 - **The keys sheet's Escape line** now describes the whole order: a menu, then the system, then the window, then the close-up.
 
@@ -13,6 +14,8 @@ The Controls build (`d8f49477b..4de8411ad`, branch `feat/trade-scenes-foundation
 - **`m` only opens Modify.** With Modify already open, it puts the cursor back in the search and keeps the query.
 - **Age group has no Not sure** (as in the mock), so a set age group can't be cleared from Home facts.
 - **Heating & cooling's camera aims at the condenser pad for every HVAC type**, including package and wall units, which draw no pad. TS3b.4b's system views replace this.
+- **Modify lists an add-on it can't take yet** (cool roof, R-8) with its reason, and Enter skips it. The mock always lists it, and an empty result read as broken search.
+- **On a narrow stage** (600–799 wide, e.g. an iPad 10.2" with the nav open) the system card sits along the top, as on the phone, stopping short of the dock. The Systems rail scrolls sideways on every shape.
 - **Leaving a close-up** (Escape or Whole home) hands focus to the pin that opened it, or else to the Systems button.
 
 ## Look calls (the mock lost to a standing rule)
@@ -32,6 +35,8 @@ The Controls build (`d8f49477b..4de8411ad`, branch `feat/trade-scenes-foundation
 
 ## Code left for later
 - **`era-code-line.ts` casts the era tables.** The fix lives in `src/shared/modules/construction/core/`, which was off limits: declare `HOME_MATERIALS` with `satisfies` so `windows.eraGuess` keeps `WindowsType`. That needs clearance to touch the construction module.
+- **On short wide stages** (about 560 tall), the Systems rail overlaps the dock's last weather tile (Rain). This predates the build's last fix wave.
+- **After a foundation pick** from the Foundation card's chip, keyboard focus falls to the page.
 - **`CONTEXT.md` "Scopes and addons (the Upgrades tab's list)"** names components the build deleted (`ScopesAndAddons`, `ScopeOrAddonRow`). The term still describes Systems' build rows. Re-word it with the owner.
 - **TS3b.4b's plan** cites the scene card, panel, build switch and `'under-floor'` focus. It must be re-planned on this head: it now replaces `close-up-card.tsx` and builds on `SYSTEM_CAMERA_VIEWS`.
 
