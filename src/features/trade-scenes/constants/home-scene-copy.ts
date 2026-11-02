@@ -101,7 +101,7 @@ export const AGE_GROUP_LABELS = { 'under-25': 'Under 25', '25-45': '25–45', '4
 
 export const SCENE_COPY = {
   label: 'The home, drawn from its profile',
-  fallback: 'The 3D home cannot start on this device. The panel still tells the story.',
+  fallback: 'The 3D home cannot start on this device. The controls below still work.',
   stillAlt: (weather: Weather) => `A still of the home in ${WEATHER_LABELS[weather].toLowerCase()} weather`,
   loading: 'Loading the home…',
   backToHome: 'Whole home',

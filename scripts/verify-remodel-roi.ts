@@ -4,6 +4,7 @@ import type { ReceiptLine, RemodelRoiProjection } from '@/features/calculators/r
 import assert from 'node:assert/strict'
 
 import { createRemodelRoiDefaults, createTradePicks } from '@/features/calculators/remodel-roi-calculator/constants/form-defaults'
+import { TRADE_KEYS } from '@/features/calculators/remodel-roi-calculator/constants/trades'
 import { buildCostOfWaiting } from '@/features/calculators/remodel-roi-calculator/lib/build-cost-of-waiting'
 import { buildReturnWaterfall } from '@/features/calculators/remodel-roi-calculator/lib/build-return-waterfall'
 import { formatMoney, roundMoney } from '@/features/calculators/remodel-roi-calculator/lib/format-money'
@@ -53,6 +54,9 @@ assert.deepEqual(resolveOverridable(250, 600), { value: 250, source: 'input' })
 const config = resolveRemodelRoiConfig()
 assert.equal(config.defaultLookAheadYears, 10, 'default look-ahead is 10 years')
 assert.equal(config.defaultValueAddedPercent, 80, 'value added defaults to 80%')
+for (const trade of TRADE_KEYS) {
+  assert.ok(config.billCuts[trade]?.base, ` has a bill-cut row; the calculator reads the table optionally, so a missing row would read as no cut`)
+}
 assert.equal(remodelRoiConfigSchema.safeParse({ ...config, defaultLookAheadYears: 30 }).success, false, 'look-ahead outside 10/15/20 rejected')
 assert.equal(
   remodelRoiConfigSchema.safeParse({ ...config, trades: { ...config.trades, hvac: { ...config.trades.hvac, newLifeYears: 15 } } }).success,

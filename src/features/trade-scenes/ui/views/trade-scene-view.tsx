@@ -23,6 +23,7 @@ import { ControlsWindow } from '@/features/trade-scenes/ui/components/controls/c
 import { SceneControls } from '@/features/trade-scenes/ui/components/controls/scene-controls'
 import { SystemsSection } from '@/features/trade-scenes/ui/components/controls/systems-section'
 import { SceneDock } from '@/features/trade-scenes/ui/components/dock/scene-dock'
+import { HomeSceneBoundary } from '@/features/trade-scenes/ui/components/home-scene-boundary'
 import { CloseUpCard } from '@/features/trade-scenes/ui/components/panel/close-up-card'
 import { SceneKeysButton } from '@/features/trade-scenes/ui/components/scene-keys-button'
 import { SceneStage } from '@/features/trade-scenes/ui/components/scene-stage'
@@ -83,7 +84,9 @@ export function TradeSceneView() {
                         style={stage.width > 0 ? { width: stage.width + canvasOverhang } : undefined}
                       >
                         <SceneColourIn>
-                          <HomeSceneCanvas />
+                          <HomeSceneBoundary>
+                            <HomeSceneCanvas />
+                          </HomeSceneBoundary>
                         </SceneColourIn>
                         {/* Over the canvas pixel for pixel, but outside the colour-in, so its filter never reaches the lines.
                           Its fade ends last, so it is the one that ends the load. */}

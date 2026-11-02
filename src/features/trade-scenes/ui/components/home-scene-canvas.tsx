@@ -3,7 +3,7 @@
 import type { HomeAnchorId, ReadingId } from '@/features/trade-scenes/constants/home-anchors'
 import type { HomeKitInputs, TradeSceneInputs } from '@/features/trade-scenes/types'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { AgXToneMapping } from 'three'
 import { useShallow } from 'zustand/react/shallow'
 
@@ -13,7 +13,6 @@ import { HOME_ANCHORS, INSIDE_READING_IDS, READING_CALLOUTS } from '@/features/t
 import { HOME_CAMERA_FAR } from '@/features/trade-scenes/constants/home-geometry'
 import { ANCHOR_PIN_LABELS, READING_COPY, SCENE_COPY } from '@/features/trade-scenes/constants/home-scene-copy'
 import { HOME_PRIMARY_ASSEMBLY } from '@/features/trade-scenes/constants/scene-controls'
-import { SCENE_LOAD } from '@/features/trade-scenes/constants/scene-load'
 import { useSceneLoad, useSceneLoadApi } from '@/features/trade-scenes/contexts/scene-load-context'
 import { useSceneTargets } from '@/features/trade-scenes/hooks/use-scene-targets'
 import { anchorFromPinId } from '@/features/trade-scenes/lib/anchor-pin-id'
@@ -67,25 +66,6 @@ export function HomeSceneCanvas() {
   const wake = () => setTouches(count => count + 1)
   const burstKey = `${inputKey}|${touches}|${live}`
   const store = useSceneInputsApi<TradeSceneInputs>()
-
-  // Outside the Canvas, so it still fires when no frame ever comes: whatever stalls, the stage never stays covered.
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (load.getState().phase !== 'live') {
-        console.warn('The scene took too long to load; showing it as it is.')
-        advanceSceneLoad(load, 'live')
-      }
-    }, SCENE_LOAD.watchdogMs)
-    const unsubscribe = load.subscribe((state) => {
-      if (state.phase === 'live') {
-        clearTimeout(timer)
-      }
-    })
-    return () => {
-      clearTimeout(timer)
-      unsubscribe()
-    }
-  }, [load])
 
   const kit = zoom !== null ? ASSEMBLY_KITS[zoom] : undefined
   const form = homeRoofForm(targets.assemblies[HOME_PRIMARY_ASSEMBLY]?.form)

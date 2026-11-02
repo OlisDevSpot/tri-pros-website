@@ -46,7 +46,7 @@ assert.equal(HOME_SCENE_DEFAULTS.thermalCamera, false, 'the scene mounts without
 assert.equal(HOME_SCENE_DEFAULTS.zoom, null, 'the scene mounts with no system kit')
 assert.equal(HOME_SCENE_DEFAULTS.climate, null, 'coastal or inland is missing until set')
 
-// The caps run from SceneReadySignal's mount and the watchdog from HomeSceneCanvas's, and the gate's frame and one rAF are left
+// The caps run from SceneReadySignal's mount and the watchdog from HomeSceneBoundary's, and the gate's frame and one rAF are left
 // out, so this is a same-clock lower bound, not proof the watchdog never cuts a slow handover.
 assert.ok(SCENE_LOAD.watchdogMs > SCENE_LOAD.overallCapMs + SCENE_LOAD.drawMs + SCENE_LOAD.linesDelayMs + SCENE_LOAD.linesFadeMs, 'the watchdog comes after every cap')
 assert.ok(BLUEPRINT_LINE_CLASS.includes(`${SCENE_LAYOUT.portraitBelowWidth}px`), 'the loading line\'s portrait condition is stageShapeOf\'s')
