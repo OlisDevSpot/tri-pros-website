@@ -98,7 +98,7 @@ export const BENEFIT_TEMPLATES: Record<PainPointCategory, BenefitTemplate> = {
       'Solar': 'Solar locks in your energy rate for 25+ years — no more rate hikes, and potential tax credits reduce the upfront cost',
       'Windows & doors': 'ENERGY STAR windows can reduce heating/cooling costs by 12-33%, depending on your climate zone',
       'Attic & Basement': 'Insulation upgrades typically pay for themselves within 2-4 years through energy savings alone',
-      'HVAC': 'A high-efficiency system can cut your heating and cooling costs by 30-50% compared to an aging unit',
+      'HVAC': 'A high-efficiency system can cut cooling costs by about a quarter and heating by about a fifth compared to an aging unit',
     },
   },
   'Structural Risk': {
@@ -134,7 +134,7 @@ export const BENEFIT_TEMPLATES: Record<PainPointCategory, BenefitTemplate> = {
     genericBody: 'Your home should be your retreat — not a list of things you wish were different',
     byTrade: {
       'Exterior Upgrades & Lot Layout': 'A designed outdoor living area extends your usable square footage and becomes the heart of your entertaining',
-      'Dryscaping': 'Drought-resistant landscaping cuts water bills by 50-75% and eliminates maintenance headaches',
+      'Dryscaping': 'Drought-resistant landscaping cuts water bills by about 40% and eliminates maintenance headaches',
     },
   },
   'Life Trigger': {

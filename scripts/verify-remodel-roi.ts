@@ -3,11 +3,9 @@ import type { ReceiptLine, RemodelRoiProjection } from '@/features/calculators/r
 
 import assert from 'node:assert/strict'
 
-import { BILL_CATEGORIES } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
 import { createRemodelRoiDefaults, createTradePicks } from '@/features/calculators/remodel-roi-calculator/constants/form-defaults'
 import { buildCostOfWaiting } from '@/features/calculators/remodel-roi-calculator/lib/build-cost-of-waiting'
 import { buildReturnWaterfall } from '@/features/calculators/remodel-roi-calculator/lib/build-return-waterfall'
-import { combineCuts } from '@/features/calculators/remodel-roi-calculator/lib/combine-cuts'
 import { formatMoney, roundMoney } from '@/features/calculators/remodel-roi-calculator/lib/format-money'
 import { formatYears } from '@/features/calculators/remodel-roi-calculator/lib/format-years'
 import { glueFigures } from '@/features/calculators/remodel-roi-calculator/lib/glue-figures'
@@ -19,6 +17,10 @@ import { buildStory } from '@/features/calculators/remodel-roi-calculator/lib/st
 import { remodelRoiConfigSchema } from '@/features/calculators/remodel-roi-calculator/schemas/config'
 import { remodelRoiFormSchema } from '@/features/calculators/remodel-roi-calculator/schemas/form'
 import { amortizedMonthlyPayment, monthsToPayOff, remainingBalance } from '@/shared/lib/loan-calculations'
+import { resolveOverridable } from '@/shared/lib/resolve-overridable'
+import { BILL_CATEGORIES } from '@/shared/modules/construction/core/constants/bill-categories'
+import { combineCuts } from '@/shared/modules/construction/core/lib/combine-cuts'
+import { cutFor } from '@/shared/modules/construction/core/lib/cut-for'
 
 function near(actual: number, expected: number, message: string, tolerance = 0.01) {
   assert.ok(Math.abs(actual - expected) <= tolerance, `${message}: expected ${expected}, got ${actual}`)
@@ -41,6 +43,11 @@ near(monthsToPayOff(12000, 0, 1000)!, 12, '0% APR: balance over payment')
 assert.equal(monthsToPayOff(0, 6, 100), 0, 'nothing owed → 0 months')
 assert.equal(monthsToPayOff(5000, 24, 0), null, 'no payment → never')
 assert.equal(monthsToPayOff(5000, 24, 100), null, 'payment at or under the interest → never')
+
+// An entered value wins, tagged as the homeowner's; otherwise the working default stands in.
+assert.deepEqual(resolveOverridable(null, 600), { value: 600, source: 'working' })
+assert.deepEqual(resolveOverridable(0, 600), { value: 0, source: 'input' }, 'a typed zero is still an input')
+assert.deepEqual(resolveOverridable(250, 600), { value: 250, source: 'input' })
 
 // ── Remodel ROI Calculator ──────────────────────────────────────────────────────
 const config = resolveRemodelRoiConfig()
@@ -72,35 +79,43 @@ function run(values: RemodelRoiFormValues): RemodelRoiProjection {
 
 const JOB_A = job((v) => {
   v.trades.hvac = { ducts: true, current: { ...picks.hvac.current, ageYears: 15 } }
-  v.trades.atticBasement = picks.atticBasement
+  v.trades['attic-and-basement'] = picks['attic-and-basement']
   v.project.price = 32000
 })
 const JOB_B = job((v) => {
-  v.trades.roof = { current: { ...picks.roof.current, ageYears: 23 } }
+  v.trades['roof-and-gutters'] = { current: { ...picks['roof-and-gutters'].current, ageYears: 23 } }
   v.trades.hvac = { ducts: false, current: { ...picks.hvac.current, ageYears: 14 } }
-  v.trades.atticBasement = picks.atticBasement
+  v.trades['attic-and-basement'] = picks['attic-and-basement']
   v.project.price = 65000
 })
 const JOB_C = job((v) => {
-  v.trades.windowsAndDoors = picks.windowsAndDoors
-  v.trades.atticBasement = picks.atticBasement
+  v.trades['windows-and-doors'] = picks['windows-and-doors']
+  v.trades['attic-and-basement'] = picks['attic-and-basement']
   v.project.price = 30000
 })
 const JOB_D = job((v) => {
-  v.trades.exteriorPaintSiding = { current: { ...picks.exteriorPaintSiding.current, ageYears: 8 } }
+  v.trades['exterior-paint-stucco-and-siding'] = { current: { ...picks['exterior-paint-stucco-and-siding'].current, ageYears: 8 } }
   v.project.price = 12000
 })
 // Incentives cover the whole price: net price is exactly 0, not a tiny negative or positive residue.
 const JOB_E = job((v) => {
-  v.trades.atticBasement = picks.atticBasement
+  v.trades['attic-and-basement'] = picks['attic-and-basement']
   v.project.price = 20000
   v.project.incentives = 20000
 })
 
-// Cuts combine multiplicatively, so they never pass 100%; ducts count only with HVAC.
-near(combineCuts({ trades: ['hvac', 'atticBasement'], ducts: true }, 'electric', config.trades).combined, 0.35875, 'HVAC 25%, attic 10%, ducts 5% → 35.875%', 1e-9)
-assert.equal(combineCuts({ trades: ['roof'], ducts: true }, 'electric', config.trades).parts.length, 1, 'ducts without HVAC cut nothing')
-assert.equal(combineCuts({ trades: [], ducts: false }, 'electric', config.trades).combined, 0, 'no trades → no cut')
+// Cuts combine multiplicatively, so they never pass 100%; an add-on counts only with its trade.
+near(combineCuts({ trades: ['hvac', 'attic-and-basement'], addOns: ['ducts'] }, 'electric', config.billCuts).combined, 0.35875, 'HVAC 25%, attic 10%, ducts 5% → 35.875%', 1e-9)
+assert.deepEqual(combineCuts({ trades: ['hvac', 'attic-and-basement'], addOns: ['ducts'] }, 'electric', config.billCuts).parts.map(part => part.source), ['hvac', 'attic-and-basement', 'ducts'], 'trades first, add-ons after, as the story lists them')
+assert.equal(combineCuts({ trades: ['windows-and-doors'], addOns: ['ducts'] }, 'electric', config.billCuts).parts.length, 1, 'ducts without HVAC cut nothing')
+assert.deepEqual(combineCuts({ trades: ['roof-and-gutters'], addOns: ['ducts'] }, 'electric', config.billCuts).parts.map(part => part.source), ['roof-and-gutters'], 'ducts without HVAC cut nothing, even beside a roof')
+assert.equal(combineCuts({ trades: [], addOns: [] }, 'electric', config.billCuts).combined, 0, 'no trades → no cut')
+
+// The three cut modes, on a $300 bill with a 20% combined cut from trades.
+assert.equal(cutFor({ now: 300, cut: { mode: 'trades', value: null } }, [], 0.2).after, 240)
+assert.equal(cutFor({ now: 300, cut: { mode: 'percent', value: 50 } }, [], 0.2).after, 150)
+assert.equal(cutFor({ now: 300, cut: { mode: 'amount', value: 400 } }, [], 0.2).after, 0, 'a $ cut never passes the bill')
+assert.equal(cutFor({ now: null, cut: { mode: 'trades', value: null } }, [], 0.2).after, 0, 'no bill → nothing to cut')
 
 // Job A. Hand-checked: 32,000 at 8.99% over 180 months = $324.37; year 1 = 380 × 0.64125 + 90 × 0.646 + 324.37 = $626.19 vs 470 + 600 / 12 = $520; HVAC aged 15 of 18 → year 3 at 16,000 × 1.05³ = $18,522 after 600 + 630 + 661.50 = $1,891.50 of repairs.
 {
@@ -170,6 +185,19 @@ assert.ok(!buildReturnWaterfall(run(cash(JOB_A)), 10).rows.some(row => row.label
   const c = run(JOB_C)
   assert.deepEqual(c.milestones, { paysForItselfYear: 10, costsLessMonthlyYear: 16, payoffYear: 15 }, 'C milestones')
   near(c.years[10].benefit, 272.54, 'C +10 yrs')
+}
+
+// The roof carries its own electric 8% (the cool covering's): there is no switch, a roof pick is all it takes.
+{
+  const roof = run(job((v) => {
+    v.trades['roof-and-gutters'] = picks['roof-and-gutters']
+    v.project.price = 32000
+  }))
+  assert.deepEqual(roof.cuts.electric.parts, [{ source: 'roof-and-gutters', percent: 8 }], 'a roof pick cuts electric 8%')
+  assert.equal(roof.cuts.electric.combined, 0.07999999999999996, 'the roof-alone electric cut from before, to the last digit')
+  assert.equal(run(JOB_B).cuts.electric.combined, 0.3789999999999999, 'B: HVAC, roof and attic combine to the pre-change cut, to the last digit')
+  const basisLine = (projection: RemodelRoiProjection) => buildStory({ projection, config, lookAhead: 10 }).basis.receipt.find(row => row.kind === 'line' && row.label === 'Roof cuts')
+  assert.deepEqual(basisLine(roof), { kind: 'line', label: 'Roof cuts', value: 'Electric −8%', tag: 'assumption' }, 'the basis lists the roof cut')
 }
 
 // Job E. Incentives cover the whole price, so netPrice is 0 and the job is still ready — the project-price
@@ -253,7 +281,7 @@ for (const values of [JOB_A, JOB_B, JOB_C, JOB_D, JOB_E].flatMap(values => [valu
   }))
   assert.equal(old.replacements[0].installs[0].year, 1, 'past its standard life → gives out in year 1')
   const young = run(job((v) => {
-    v.trades.roof = { current: { ...picks.roof.current, ageYears: 2 } }
+    v.trades['roof-and-gutters'] = { current: { ...picks['roof-and-gutters'].current, ageYears: 2 } }
     v.project.price = 32000
   }))
   assert.equal(young.replacements.length, 0, 'a current one that outlasts the projection → not on the wait path')
@@ -335,7 +363,7 @@ for (const values of [createRemodelRoiDefaults(config), JOB_A, cash(JOB_D), { ..
   assert.match(text(c.waiting.answer), /Nothing in this project is about to give out/, 'no aging current one → said plainly')
 
   const windows = story(job((v) => {
-    v.trades.windowsAndDoors = { current: { ...picks.windowsAndDoors.current, ageYears: 22 } }
+    v.trades['windows-and-doors'] = { current: { ...picks['windows-and-doors'].current, ageYears: 22 } }
     v.project.price = 30000
   }))
   assert.match(windows.intro.body, /Your windows and doors are near the end of their life\./, 'plural reads as plural')
@@ -420,7 +448,7 @@ for (const values of [createRemodelRoiDefaults(config), JOB_A, cash(JOB_D), { ..
     const big = story(job((v) => {
       v.bills.electric.now = 780
       v.bills.gas.now = 467
-      v.trades.atticBasement = picks.atticBasement
+      v.trades['attic-and-basement'] = picks['attic-and-basement']
       v.project.price = 30000
     }))
     assert.equal(text(big.today.answer), 'You pay about $1,200 a month in household bills today.', 'a bills total over $1,000 rounds in the sentence')
@@ -430,7 +458,7 @@ for (const values of [createRemodelRoiDefaults(config), JOB_A, cash(JOB_D), { ..
   // Every aged current one outlasts the projection: say so, never ask for its age.
   {
     const young = story(job((v) => {
-      v.trades.roof = { current: { ...picks.roof.current, ageYears: 2 } }
+      v.trades['roof-and-gutters'] = { current: { ...picks['roof-and-gutters'].current, ageYears: 2 } }
       v.project.price = 32000
     }))
     assert.equal(text(young.waiting.answer), 'Your roof lasts past year 20, so waiting has no replacement bill attached.', 'an outlasting current one is said plainly')

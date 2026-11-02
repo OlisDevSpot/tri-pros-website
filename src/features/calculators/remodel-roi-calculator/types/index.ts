@@ -1,32 +1,16 @@
-import type { BillCategory } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
 import type { ChapterId, DetailChapterId } from '@/features/calculators/remodel-roi-calculator/constants/chapters'
 import type { LiabilityKind, PaymentMode, TermYears } from '@/features/calculators/remodel-roi-calculator/constants/form-options'
 import type { LookAheadYears } from '@/features/calculators/remodel-roi-calculator/constants/look-ahead'
 import type { PanelSectionKey } from '@/features/calculators/remodel-roi-calculator/constants/panel-sections'
 import type { AgingTradeKey, CutSource, TradeKey } from '@/features/calculators/remodel-roi-calculator/constants/trades'
 import type { RemodelRoiConfig } from '@/features/calculators/remodel-roi-calculator/schemas/config'
-
-export type ValueSource = 'input' | 'working'
-
-export interface Resolved {
-  value: number
-  source: ValueSource
-}
+import type { Resolved } from '@/shared/lib/resolve-overridable'
+import type { BillCategory } from '@/shared/modules/construction/core/constants/bill-categories'
+import type { BillCut as ConstructionBillCut } from '@/shared/modules/construction/core/types'
 
 export type ByCategory = Record<BillCategory, number>
 
-export interface CutPart {
-  source: CutSource
-  percent: number
-}
-
-export interface BillCut {
-  bill: number
-  parts: CutPart[]
-  combined: number
-  after: number
-  typed: boolean
-}
+export type BillCut = ConstructionBillCut<CutSource>
 
 export interface ReturnParts {
   billsSaved: number

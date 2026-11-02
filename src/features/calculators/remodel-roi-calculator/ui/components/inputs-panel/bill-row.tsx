@@ -1,21 +1,21 @@
 'use client'
 
-import type { BillCategory } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
-import type { CutMode } from '@/features/calculators/remodel-roi-calculator/constants/form-options'
 import type { RemodelRoiFormValues } from '@/features/calculators/remodel-roi-calculator/schemas/form'
 import type { BillCut } from '@/features/calculators/remodel-roi-calculator/types'
+import type { BillCategory } from '@/shared/modules/construction/core/constants/bill-categories'
+import type { CutMode } from '@/shared/modules/construction/core/constants/cut-modes'
 
 import { useFormContext, useWatch } from 'react-hook-form'
 
-import { BILL_CATEGORY_LABELS } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
 import { BILL_SWATCH_CLASSES } from '@/features/calculators/remodel-roi-calculator/constants/bill-colors'
-import { CUT_MODE_LABELS, CUT_MODES } from '@/features/calculators/remodel-roi-calculator/constants/form-options'
 import { CUT_SOURCE_LABELS } from '@/features/calculators/remodel-roi-calculator/constants/trades'
 import { formatMoney } from '@/features/calculators/remodel-roi-calculator/lib/format-money'
 import { FormNumberField } from '@/shared/components/inputs/form-number-field'
 import { FormControl, FormField, FormItem } from '@/shared/components/ui/form'
 import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-group'
 import { cn } from '@/shared/lib/utils'
+import { BILL_CATEGORY_LABELS } from '@/shared/modules/construction/core/constants/bill-categories'
+import { CUT_MODE_LABELS, CUT_MODES } from '@/shared/modules/construction/core/constants/cut-modes'
 
 interface Props {
   category: BillCategory

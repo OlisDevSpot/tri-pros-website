@@ -73,7 +73,7 @@ export function getProfileBenefits(
   if (painPoints.includes('High maintenance / utility costs') || painPoints.includes('Home has inefficiencies')) {
     benefits.push({
       headline: 'Stop bleeding money every month',
-      body: 'Every month you wait, the inefficiency costs you. Families in your situation typically see a 30-55% reduction in energy costs after upgrading. The project pays for itself.',
+      body: 'Every month you wait, the inefficiency costs you. Families in your situation can expect up to about 40% off heating and cooling costs after upgrading, by our estimate from customer bills. The project pays for itself.',
       category: 'financial',
     })
   }

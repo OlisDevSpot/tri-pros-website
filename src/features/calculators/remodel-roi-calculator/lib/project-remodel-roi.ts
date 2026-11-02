@@ -1,21 +1,20 @@
-import type { BillCategory } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
 import type { AgingTradeKey, TradeKey } from '@/features/calculators/remodel-roi-calculator/constants/trades'
 import type { RemodelRoiConfig } from '@/features/calculators/remodel-roi-calculator/schemas/config'
 import type { RemodelRoiFormValues } from '@/features/calculators/remodel-roi-calculator/schemas/form'
-import type { BillCut, ByCategory, Install, LiabilityProjection, ProjectionYear, RemodelRoiProjection, ReplacementProjection, Resolved, ResolvedAssumptions } from '@/features/calculators/remodel-roi-calculator/types'
+import type { BillCut, ByCategory, Install, LiabilityProjection, ProjectionYear, RemodelRoiProjection, ReplacementProjection, ResolvedAssumptions } from '@/features/calculators/remodel-roi-calculator/types'
+import type { BillCategory } from '@/shared/modules/construction/core/constants/bill-categories'
+import type { BillCutAddOnId } from '@/shared/modules/construction/core/constants/bill-cut-add-ons'
 
-import { BILL_CATEGORIES } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
 import { PROJECTION_YEARS } from '@/features/calculators/remodel-roi-calculator/constants/look-ahead'
 import { AGING_TRADE_KEYS, TRADE_KEYS } from '@/features/calculators/remodel-roi-calculator/constants/trades'
-import { combineCuts } from '@/features/calculators/remodel-roi-calculator/lib/combine-cuts'
 import { amortizedMonthlyPayment, monthsToPayOff, remainingBalance } from '@/shared/lib/loan-calculations'
+import { resolveOverridable } from '@/shared/lib/resolve-overridable'
+import { BILL_CATEGORIES } from '@/shared/modules/construction/core/constants/bill-categories'
+import { combineCuts } from '@/shared/modules/construction/core/lib/combine-cuts'
+import { cutFor } from '@/shared/modules/construction/core/lib/cut-for'
 
 function amountOf(value: number | null | undefined): number {
   return value != null && Number.isFinite(value) && value > 0 ? value : 0
-}
-
-function resolve(value: number | null, working: number): Resolved {
-  return value == null ? { value: working, source: 'working' } : { value, source: 'input' }
 }
 
 function byCategory(read: (category: BillCategory) => number): ByCategory {
@@ -35,27 +34,13 @@ function holdsFrom(years: ProjectionYear[], test: (year: ProjectionYear) => bool
   return from
 }
 
-function cutFor(input: RemodelRoiFormValues, category: BillCategory, parts: BillCut['parts'], combined: number): BillCut {
-  const bill = amountOf(input.bills[category].now)
-  const { mode, value } = input.bills[category].cut
-  if (mode === 'percent' && value != null) {
-    const share = Math.min(100, amountOf(value)) / 100
-    return { bill, parts, combined: share, after: bill * (1 - share), typed: true }
-  }
-  if (mode === 'amount' && value != null) {
-    const saved = Math.min(bill, amountOf(value))
-    return { bill, parts, combined: bill > 0 ? saved / bill : 0, after: bill - saved, typed: true }
-  }
-  return { bill, parts, combined, after: bill * (1 - combined), typed: false }
-}
-
 // Kept free of React and I/O so the engine can move to a shared module once its permanent home is decided.
 export function projectRemodelRoi(input: RemodelRoiFormValues, config: RemodelRoiConfig): RemodelRoiProjection {
   const assumptions: ResolvedAssumptions = {
-    ratesPercent: Object.fromEntries(BILL_CATEGORIES.map(category => [category, resolve(input.assumptions.ratesPercent[category], config.defaultRatesPercent[category])])) as ResolvedAssumptions['ratesPercent'],
-    constructionPercent: resolve(input.assumptions.constructionPercent, config.defaultConstructionPercent),
-    homeAppreciationPercent: resolve(input.assumptions.homeAppreciationPercent, config.defaultHomeAppreciationPercent),
-    valueAddedPercent: resolve(input.assumptions.valueAddedPercent, config.defaultValueAddedPercent),
+    ratesPercent: Object.fromEntries(BILL_CATEGORIES.map(category => [category, resolveOverridable(input.assumptions.ratesPercent[category], config.defaultRatesPercent[category])])) as ResolvedAssumptions['ratesPercent'],
+    constructionPercent: resolveOverridable(input.assumptions.constructionPercent, config.defaultConstructionPercent),
+    homeAppreciationPercent: resolveOverridable(input.assumptions.homeAppreciationPercent, config.defaultHomeAppreciationPercent),
+    valueAddedPercent: resolveOverridable(input.assumptions.valueAddedPercent, config.defaultValueAddedPercent),
   }
   const growth = (category: BillCategory) => assumptions.ratesPercent[category].value / 100
   const construction = assumptions.constructionPercent.value / 100
@@ -64,12 +49,13 @@ export function projectRemodelRoi(input: RemodelRoiFormValues, config: RemodelRo
 
   const trades: TradeKey[] = TRADE_KEYS.filter(trade => input.trades[trade] != null)
   const ducts = input.trades.hvac?.ducts ?? false
+  const addOns: BillCutAddOnId[] = ducts ? ['ducts'] : []
 
   const price = amountOf(input.project.price)
   const incentives = Math.min(price, amountOf(input.project.incentives))
   const netPrice = price - incentives
   const financed = input.project.paymentMode === 'financed'
-  const aprPercent = resolve(input.project.aprPercent, config.defaultFinancing.aprPercent)
+  const aprPercent = resolveOverridable(input.project.aprPercent, config.defaultFinancing.aprPercent)
   const termYears = input.project.termYears
   const termMonths = financed ? termYears * 12 : 0
   const upfront = financed ? Math.min(amountOf(input.project.downPayment), netPrice) : netPrice
@@ -79,8 +65,8 @@ export function projectRemodelRoi(input: RemodelRoiFormValues, config: RemodelRo
   const hasLoan = financed && principal > 0
 
   const cuts = Object.fromEntries(BILL_CATEGORIES.map((category) => {
-    const { parts, combined } = combineCuts({ trades, ducts }, category, config.trades)
-    return [category, cutFor(input, category, parts, combined)]
+    const { parts, combined } = combineCuts({ trades, addOns }, category, config.billCuts)
+    return [category, cutFor(input.bills[category], parts, combined)]
   })) as Record<BillCategory, BillCut>
 
   const outlasting: AgingTradeKey[] = []
@@ -90,8 +76,8 @@ export function projectRemodelRoi(input: RemodelRoiFormValues, config: RemodelRo
       return []
     }
     const working = config.trades[trade].current
-    const likeForLikePrice = resolve(current.likeForLikePrice, working.likeForLikePrice)
-    const repairsPerYear = resolve(current.repairsPerYear, working.repairsPerYear)
+    const likeForLikePrice = resolveOverridable(current.likeForLikePrice, working.likeForLikePrice)
+    const repairsPerYear = resolveOverridable(current.repairsPerYear, working.repairsPerYear)
     const firstFail = Math.max(1, Math.round(working.standardLifeYears - current.ageYears))
     // One that outlasts the projection has nothing to replace on the wait path.
     if (firstFail > PROJECTION_YEARS) {

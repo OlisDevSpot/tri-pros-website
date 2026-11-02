@@ -3,8 +3,9 @@
 import type { RefObject } from 'react'
 import type { MeetingStepHandle } from '@/features/meeting-flow/types'
 import { useEffect } from 'react'
-import { ACTIVATABLE_TARGET_SELECTOR, ARROW_KEYS, REPEATABLE_KEYS, TYPING_TARGET_SELECTOR } from '@/features/meeting-flow/constants/keyboard-hints'
+import { ACTIVATABLE_TARGET_SELECTOR, ARROW_KEYS, REPEATABLE_KEYS } from '@/features/meeting-flow/constants/keyboard-hints'
 import { TOTAL_STEPS } from '@/features/meeting-flow/constants/step-config'
+import { isUnclaimedKey } from '@/shared/lib/is-unclaimed-key'
 
 interface UseMeetingFlowKeysArgs {
   /** The flow root: top bar, stage, rail and panel. Radix layers are portaled outside it. */
@@ -41,29 +42,12 @@ export function useMeetingFlowKeys({
 }: UseMeetingFlowKeysArgs) {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.defaultPrevented) {
-        return
-      }
-      if (event.isComposing || event.keyCode === 229) {
-        return
-      }
-      if (event.metaKey || event.ctrlKey || event.altKey) {
-        return
-      }
-      const root = rootRef.current
-      const target = event.target
-      if (!root || !(target instanceof Element)) {
-        return
-      }
-      // Focus inside a portaled Radix layer (dialog, sheet, select, menu): not ours.
-      if (target !== document.body && !root.contains(target)) {
-        return
-      }
-      if (target.closest(TYPING_TARGET_SELECTOR) || (target instanceof HTMLElement && target.isContentEditable)) {
+      if (!isUnclaimedKey(event, rootRef.current)) {
         return
       }
 
       const key = event.key
+      const target = event.target
 
       if (key === 'Escape') {
         if (panelOpen) {
@@ -131,7 +115,7 @@ export function useMeetingFlowKeys({
         case ' ': {
           const advance = presentationRef.current?.advance
           // A focused button already clicks on Space; acting here too would move twice.
-          if (!advance || target.closest(ACTIVATABLE_TARGET_SELECTOR)) {
+          if (!advance || !(target instanceof Element) || target.closest(ACTIVATABLE_TARGET_SELECTOR)) {
             return
           }
           event.preventDefault()

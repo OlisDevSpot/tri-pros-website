@@ -4,7 +4,7 @@ import type { RemodelRoiFormValues } from '@/features/calculators/remodel-roi-ca
 
 type Trades = RemodelRoiFormValues['trades']
 type Bill = RemodelRoiFormValues['bills']['electric']
-type Current = NonNullable<Trades['roof']>['current']
+type Current = NonNullable<Trades['roof-and-gutters']>['current']
 type Liability = RemodelRoiFormValues['liabilities'][number]
 
 function emptyBill(): Bill {
@@ -17,12 +17,12 @@ function emptyCurrent(): Current {
 
 export function createTradePicks(): { [K in TradeKey]: NonNullable<Trades[K]> } {
   return {
-    hvac: { ducts: false, current: emptyCurrent() },
-    roof: { current: emptyCurrent() },
-    windowsAndDoors: { current: emptyCurrent() },
-    atticBasement: {},
-    exteriorPaintSiding: { current: emptyCurrent() },
-    dryscapingHardscaping: {},
+    'hvac': { ducts: false, current: emptyCurrent() },
+    'roof-and-gutters': { current: emptyCurrent() },
+    'windows-and-doors': { current: emptyCurrent() },
+    'attic-and-basement': {},
+    'exterior-paint-stucco-and-siding': { current: emptyCurrent() },
+    'dryscaping': {},
   }
 }
 
@@ -32,7 +32,7 @@ export function createOtherLiability(): Liability {
 
 export function createRemodelRoiDefaults(config: RemodelRoiConfig): RemodelRoiFormValues {
   return {
-    trades: { hvac: null, roof: null, windowsAndDoors: null, atticBasement: null, exteriorPaintSiding: null, dryscapingHardscaping: null },
+    trades: { 'hvac': null, 'roof-and-gutters': null, 'windows-and-doors': null, 'attic-and-basement': null, 'exterior-paint-stucco-and-siding': null, 'dryscaping': null },
     bills: { electric: emptyBill(), water: emptyBill(), gas: emptyBill(), gardening: emptyBill(), misc: emptyBill() },
     project: { price: null, incentives: null, downPayment: null, paymentMode: 'financed', aprPercent: null, termYears: config.defaultFinancing.termYears },
     homeValue: null,

@@ -1,11 +1,11 @@
 import type { ChapterContent, StoryInputs } from '@/features/calculators/remodel-roi-calculator/types'
 
-import { BILL_CATEGORIES, BILL_CATEGORY_LABELS } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
 import { BILL_RATE_LABELS } from '@/features/calculators/remodel-roi-calculator/constants/rates'
 import { STORY_COPY } from '@/features/calculators/remodel-roi-calculator/constants/story-copy'
 import { formatMoney, roundMoney } from '@/features/calculators/remodel-roi-calculator/lib/format-money'
 import { emphasis, plain } from '@/features/calculators/remodel-roi-calculator/lib/story/answer-parts'
 import { tagFor } from '@/features/calculators/remodel-roi-calculator/lib/story/tag-for'
+import { BILL_CATEGORIES, BILL_CATEGORY_LABELS } from '@/shared/modules/construction/core/constants/bill-categories'
 
 export function buildToday({ projection, lookAhead }: StoryInputs): ChapterContent {
   const { cuts, years, assumptions } = projection

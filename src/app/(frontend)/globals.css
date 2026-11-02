@@ -1466,6 +1466,14 @@
   --presentation-scrim: 0.14 0.03 257;
 }
 
+/* Blueprint paper. Owner: src/features/trade-scenes/ (the trade scene's load view). The stage is scoped dark, so one
+   value serves both schemes and neither is redeclared under .dark. The ink is `rgb()` because the lines canvas reads
+   it raw into a 2D `fillStyle`, which cannot resolve a `var()` or oklch channel list. */
+:root {
+  --blueprint-paper: oklch(0.29 0.075 254);
+  --blueprint-ink: rgb(214 240 255);
+}
+
 /* Over media. A photo or video looks the same in both schemes and on every rung, so ink over it and the veil
    behind that ink are declared once, outside .dark and the ladder. The veil is navy-black rather than pure black so
    it sits with the brand instead of greying the photo. Callers set the strength with an alpha (`bg-scrim/60`); the

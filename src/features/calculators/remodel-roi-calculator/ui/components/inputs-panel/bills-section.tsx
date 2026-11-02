@@ -1,7 +1,7 @@
 import type { RemodelRoiProjection } from '@/features/calculators/remodel-roi-calculator/types'
 
-import { BILL_CATEGORIES } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
 import { BillRow } from '@/features/calculators/remodel-roi-calculator/ui/components/inputs-panel/bill-row'
+import { BILL_CATEGORIES } from '@/shared/modules/construction/core/constants/bill-categories'
 
 interface Props {
   projection: RemodelRoiProjection

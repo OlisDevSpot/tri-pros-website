@@ -1,5 +1,7 @@
 import type { RemodelRoiConfig } from '@/features/calculators/remodel-roi-calculator/schemas/config'
 
+import { REPAIRS_PER_YEAR } from '@/shared/modules/construction/core/constants/repairs-per-year'
+
 export const REMODEL_ROI_CONFIG_DEFAULTS = {
   defaultLookAheadYears: 10,
   // The team's estimate from thousands of customer bills analysed over the years; they stay visible and editable on screen.
@@ -11,36 +13,29 @@ export const REMODEL_ROI_CONFIG_DEFAULTS = {
   defaultValueAddedPercent: 80,
   // Placeholder terms until the owner sets the house's default financing.
   defaultFinancing: { aprPercent: 8.99, termYears: 15 },
-  // Bill cuts, new-install lives and the current one's standard life, price and repairs are the team's working numbers, not yet sourced; new-install lives are the owner's (warranties run up to 25 years).
+  // New-install lives and the current one's standard life and price are the team's working numbers, not yet sourced; new-install lives are the owner's (warranties run up to 25 years).
   trades: {
-    hvac: {
-      cutsPercent: { electric: 25, gas: 20 },
-      ductsCutsPercent: { electric: 5, gas: 5 },
+    'hvac': {
       newLifeYears: 25,
-      current: { standardLifeYears: 18, likeForLikePrice: 16000, repairsPerYear: 600 },
+      current: { standardLifeYears: 18, likeForLikePrice: 16000, repairsPerYear: REPAIRS_PER_YEAR.hvac },
     },
-    roof: {
-      cutsPercent: { electric: 8 },
+    'roof-and-gutters': {
       newLifeYears: 25,
-      current: { standardLifeYears: 25, likeForLikePrice: 28000, repairsPerYear: 400 },
+      current: { standardLifeYears: 25, likeForLikePrice: 28000, repairsPerYear: REPAIRS_PER_YEAR['roof-and-gutters'] },
     },
-    windowsAndDoors: {
-      cutsPercent: { electric: 10, gas: 8 },
+    'windows-and-doors': {
       newLifeYears: 25,
-      current: { standardLifeYears: 25, likeForLikePrice: 15000, repairsPerYear: 200 },
+      current: { standardLifeYears: 25, likeForLikePrice: 15000, repairsPerYear: REPAIRS_PER_YEAR['windows-and-doors'] },
     },
-    atticBasement: {
-      cutsPercent: { electric: 10, gas: 15 },
+    'attic-and-basement': {
       newLifeYears: null,
     },
-    exteriorPaintSiding: {
-      cutsPercent: { electric: 4 },
+    'exterior-paint-stucco-and-siding': {
       newLifeYears: 25,
-      current: { standardLifeYears: 10, likeForLikePrice: 8000, repairsPerYear: 150 },
+      current: { standardLifeYears: 10, likeForLikePrice: 8000, repairsPerYear: REPAIRS_PER_YEAR['exterior-paint-stucco-and-siding'] },
     },
-    dryscapingHardscaping: {
-      cutsPercent: { water: 40, gardening: 50 },
+    'dryscaping': {
       newLifeYears: 25,
     },
   },
-} satisfies RemodelRoiConfig
+} satisfies Omit<RemodelRoiConfig, 'billCuts'>

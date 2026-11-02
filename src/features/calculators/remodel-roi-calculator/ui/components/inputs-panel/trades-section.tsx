@@ -44,7 +44,7 @@ export function TradesSection({ projection, config }: Props) {
           </ToggleGroupItem>
         ))}
       </ToggleGroup>
-      <p className="text-xs leading-snug text-muted-foreground">Bill cuts assume the energy-efficient version: cool roof, cool-life paint, turf. If the current one of a trade is aging, add its age: waiting means repairing it until it gives out, then paying that year's price.</p>
+      <p className="text-xs leading-snug text-muted-foreground">Bill cuts assume the energy-efficient version: cool-life paint, turf. If the current one of a trade is aging, add its age: waiting means repairing it until it gives out, then paying that year's price.</p>
       {picked.filter(isAgingTrade).map(trade => <TradeRow config={config} key={trade} replacement={projection.replacements.find(replacement => replacement.trade === trade)} trade={trade} />)}
     </>
   )

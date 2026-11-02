@@ -131,10 +131,10 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
       faqs: [
         { question: 'How do I know if I qualify for the tax credit?', answer: 'The $1,200 IRA Section 25C credit applies to qualifying insulation installation or window/sliding door replacement in your primary residence. We help you document everything for your tax preparer.' },
         { question: 'Is the tax credit deducted from my price?', answer: 'No — the tax credit is applied when you file your taxes, not deducted from the contract price. It\'s a separate benefit on top of your project.' },
-        { question: 'How much will I actually save on my bill?', answer: 'Most families see a 30-55% reduction in heating and cooling costs. The exact number depends on your current insulation, HVAC efficiency, and window condition — which the energy audit quantifies.' },
+        { question: 'How much will I actually save on my bill?', answer: 'Our estimate from customer bills is up to about 40% off heating and cooling costs. The exact number depends on your current insulation, HVAC efficiency, and window condition — which the energy audit quantifies.' },
       ],
       keyStats: [
-        { label: 'Avg. bill reduction', value: '30-55%' },
+        { label: 'Est. bill reduction', value: 'Up to ~40%' },
         { label: 'IRA 25C credit', value: '$1,200' },
         { label: 'Qualifying scopes', value: 'Insulation, Windows' },
       ],

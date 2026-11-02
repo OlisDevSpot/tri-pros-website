@@ -1,16 +1,13 @@
 import { z } from 'zod'
 
-import { BILL_CATEGORIES } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
 import { TERM_YEARS } from '@/features/calculators/remodel-roi-calculator/constants/form-options'
 import { LOOK_AHEAD_YEARS, PROJECTION_YEARS } from '@/features/calculators/remodel-roi-calculator/constants/look-ahead'
+import { tradeBillCutsSchema } from '@/shared/modules/construction/core/schemas/bill-cuts'
 
 export const ratePercentSchema = z.number().min(-20).max(50)
 export const sharePercentSchema = z.number().min(0).max(100)
 
-const cutsPercent = z.partialRecord(z.enum(BILL_CATEGORIES), sharePercentSchema)
-
 const tradeConfig = z.object({
-  cutsPercent,
   // null: lasts the life of the home.
   newLifeYears: z.number().int().min(PROJECTION_YEARS, 'A new install must outlast the longest look-ahead').nullable(),
 })
@@ -37,13 +34,14 @@ export const remodelRoiConfigSchema = z.object({
   defaultValueAddedPercent: sharePercentSchema,
   defaultFinancing: z.object({ aprPercent: z.number().min(0).max(40), termYears: z.literal(TERM_YEARS) }),
   trades: z.object({
-    hvac: agingTradeConfig.extend({ ductsCutsPercent: cutsPercent }),
-    roof: agingTradeConfig,
-    windowsAndDoors: agingTradeConfig,
-    atticBasement: tradeConfig,
-    exteriorPaintSiding: agingTradeConfig,
-    dryscapingHardscaping: tradeConfig,
+    'hvac': agingTradeConfig,
+    'roof-and-gutters': agingTradeConfig,
+    'windows-and-doors': agingTradeConfig,
+    'attic-and-basement': tradeConfig,
+    'exterior-paint-stucco-and-siding': agingTradeConfig,
+    'dryscaping': tradeConfig,
   }),
+  billCuts: tradeBillCutsSchema,
 })
 
 export type RemodelRoiConfig = z.infer<typeof remodelRoiConfigSchema>

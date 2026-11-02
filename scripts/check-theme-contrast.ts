@@ -70,6 +70,7 @@ const overlayBlock = readBlock(/^:is\(\.bg-popover,\s*\.surface-overlay\)\s*\{/m
 const beneathBlock = readBlock(/^\.surface-beneath\s*\{/m)
 const paletteBlock = readBlock(/^\.surface-palette\s*\{/m)
 const mediaBlock = readBlock(/^:root\s*\{(?=[^{}]*--on-media)/m)
+const blueprintBlock = readBlock(/^:root\s*\{(?=[^{}]*--blueprint-paper)/m)
 
 const PLACES: Record<Place, Tokens> = {
   'beneath': beneathBlock,
@@ -93,7 +94,7 @@ const PHOTO_PROBES: Tokens = new Map([
 ])
 
 function tokensFor(mode: Mode, place: Place): Tokens {
-  return new Map([...rootBlock, ...(mode === 'dark' ? darkBlock : []), ...pageBlock, ...relativeBlock, ...mediaBlock, ...PHOTO_PROBES, ...PLACES[place]])
+  return new Map([...rootBlock, ...(mode === 'dark' ? darkBlock : []), ...pageBlock, ...relativeBlock, ...mediaBlock, ...blueprintBlock, ...PHOTO_PROBES, ...PLACES[place]])
 }
 
 function substitute(value: string, tokens: Tokens, depth = 0): string {
@@ -250,7 +251,14 @@ function oklabToLinear([lightness, a, b, alpha]: Oklab): Rgba {
   ]
 }
 
+const encode = (value: number) => (value <= 0.0031308 ? value * 12.92 : 1.055 * value ** (1 / 2.4) - 0.055)
+const decode = (value: number) => (value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4)
+
 function toLinearRgba(color: string): Rgba {
+  const rgb = /^rgb\((\d+) (\d+) (\d+)\)$/.exec(color)
+  if (rgb) {
+    return [1, 2, 3].map(i => decode(Number(rgb[i]) / 255)).concat(1) as Rgba
+  }
   const hex = /^#([0-9a-f]{6})$/i.exec(color)
   if (hex) {
     const channel = (offset: number) => {
@@ -261,9 +269,6 @@ function toLinearRgba(color: string): Rgba {
   }
   return oklabToLinear(toOklab(color))
 }
-
-const encode = (value: number) => (value <= 0.0031308 ? value * 12.92 : 1.055 * value ** (1 / 2.4) - 0.055)
-const decode = (value: number) => (value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4)
 
 // Browsers blend a translucent fill in gamma-encoded sRGB, not in linear light.
 function composite(top: Rgba, bottom: Rgba): Rgba {
@@ -440,6 +445,11 @@ const mediaPairs: Pair[] = [
   { label: 'on-media muted text on the solid scrim', fg: '--on-media-muted', bg: '--scrim', min: 4.5 },
 ]
 
+// The blueprint paper is scoped dark and one value in both schemes, so one case stands for both.
+const blueprintPairs: Pair[] = [
+  { label: 'blueprint ink on the blueprint paper', fg: '--blueprint-ink', bg: '--blueprint-paper', min: 4.5 },
+]
+
 const railClimb: [string, string][] = [['--background', '--sidebar'], ['--sidebar', '--sidebar-hover'], ['--sidebar-hover', '--sidebar-accent']]
 
 const failures: string[] = []
@@ -459,7 +469,7 @@ function guard(label: string, test: () => string | undefined) {
 }
 
 for (const mode of ['light', 'dark'] as const) {
-  for (const pair of [...pairs, ...mediaPairs].filter(pair => !pair.modes || pair.modes.includes(mode))) {
+  for (const pair of [...pairs, ...mediaPairs, ...blueprintPairs].filter(pair => !pair.modes || pair.modes.includes(mode))) {
     for (const place of pair.on ?? ['page']) {
       guard(`${mode}: ${pair.label} (${place})`, () => {
         const ratio = contrast(pair, mode, place)

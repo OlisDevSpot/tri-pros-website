@@ -7,8 +7,8 @@ export const TRADE_BENEFIT_EXCLUSIONS: ReadonlySet<string> = new Set([
   'Solar locks in your energy rate for 25+ years — no more rate hikes, and potential tax credits reduce the upfront cost',
   'ENERGY STAR windows can reduce heating/cooling costs by 12-33%, depending on your climate zone',
   'Insulation upgrades typically pay for themselves within 2-4 years through energy savings alone',
-  'A high-efficiency system can cut your heating and cooling costs by 30-50% compared to an aging unit',
+  'A high-efficiency system can cut cooling costs by about a quarter and heating by about a fifth compared to an aging unit',
   'A modern bathroom remodel returns 60-70% at resale — and you get to enjoy it every single day until then',
   'Kitchen upgrades are the #1 ROI driver in real estate — buyers pay a premium for a move-in-ready kitchen',
-  'Drought-resistant landscaping cuts water bills by 50-75% and eliminates maintenance headaches',
+  'Drought-resistant landscaping cuts water bills by about 40% and eliminates maintenance headaches',
 ])
