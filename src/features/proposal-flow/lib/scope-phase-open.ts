@@ -11,7 +11,7 @@ export function togglePhase(open: ReadonlySet<number>, index: number): ReadonlyS
 }
 
 export function isEveryPhaseOpen(open: ReadonlySet<number>, count: number): boolean {
-  return open.size >= count
+  return Array.from({ length: count }, (_, i) => i).every(i => open.has(i))
 }
 
 // Folding a stuck row collapses the content below it; scrolling by this much first keeps the next row under the sticky header instead of letting the page jump.

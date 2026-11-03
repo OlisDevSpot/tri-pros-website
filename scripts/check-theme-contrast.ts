@@ -334,12 +334,12 @@ const pairs: Pair[] = [
   // An outline button is filled a rung above what it sits on. On the page that is the canvas, not a card. An overlay
   // is the top rung, so a button in a menu has no rung left to climb and is not checked there.
   { label: 'outline button fill vs the page', fg: '--control', bg: '--background', min: 1.06 },
-  { label: 'outline button fill vs its surface', fg: '--control', bg: '--card', min: 1.06, on: CARDS },
+  { label: 'outline button fill vs its surface', fg: '--control', bg: '--card', min: 1.06, on: [...CARDS, 'well 1'] },
   // A button's edge is a quiet outline, not a field's 2:1 box: its fill and shadow already lift it. The caps catch a
   // retune that brings back the bold toolbar of boxes the owner rejected on 2026-10-07.
   { label: 'outline button edge vs its fill', fg: '--control-border', bg: '--control', min: 1.25, max: 1.5, on: ['page', ...CARDS, 'well 1'] },
   // Stronger than a card's own edge (1.14–1.34), so a button reads as standing on the card, not drawn on it.
-  { label: 'outline button edge vs its surface', fg: '--control-border', bg: '--card', min: 1.2, on: CARDS },
+  { label: 'outline button edge vs its surface', fg: '--control-border', bg: '--card', min: 1.2, on: [...CARDS, 'well 1'] },
   // Segmented tracks and button capsules take the button's edge. The edge is taken off the rung above the surface and
   // the track sinks below it, so light's deepest rungs bring the two closest and dark's sunken track sits furthest off.
   { label: 'segmented track edge vs its track', fg: '--control-border', bg: '--tab-track', min: 1.12, max: 2, on: ['page', ...CARDS, 'well 1'] },

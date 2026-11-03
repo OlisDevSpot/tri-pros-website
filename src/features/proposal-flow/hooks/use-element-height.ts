@@ -10,9 +10,9 @@ export function useElementHeight<T extends HTMLElement>() {
     if (!node) {
       return
     }
-    setHeight(Math.round(node.getBoundingClientRect().height))
+    setHeight(node.getBoundingClientRect().height)
     const observer = new ResizeObserver(([entry]) => {
-      setHeight(Math.round(entry.borderBoxSize[0].blockSize))
+      setHeight(entry.borderBoxSize[0].blockSize)
     })
     observer.observe(node, { box: 'border-box' })
     observerRef.current = observer

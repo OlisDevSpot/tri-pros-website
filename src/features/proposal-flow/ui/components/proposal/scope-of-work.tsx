@@ -24,6 +24,7 @@ export function ScopeOfWork() {
     <div className="bg-background" style={{ '--scope-eyebrow-h': `${SCOPE_EYEBROW_H_PX}px` } as CSSProperties}>
       {/* The eyebrow row's own height replaces ChapterInner's top padding, so this spacer is that padding minus the row's centring offset. */}
       <div className="h-11.5 @min-[700px]/proposal:h-17.5" />
+      {/* Same fill as the chapter wrapper's canvas so content never shows under the stuck label; change both together. */}
       <div ref={setEyebrowRow} className={cn('sticky top-0 z-3 h-(--scope-eyebrow-h) border-b bg-background', stuck ? 'border-border' : 'border-transparent')}>
         <div className="mx-auto flex h-full max-w-230 items-center px-4.5 @min-[700px]/proposal:px-10">
           <ChapterEyebrow chapter="scope" />

@@ -18,6 +18,7 @@ The marketing world (`.theme-marketing`, `.funnel-light`: landing, funnels, `sit
 |---|---|---|
 | A panel on the page | `bg-card` (or `surface`) + `border rounded-xl` | `bg-white`, `bg-background` |
 | A panel inside a panel | another `bg-card`: it climbs a rung by itself | `bg-gray-50`, `bg-muted/50` |
+| A recessed region inside a panel | `surface-well` (rung-2+ only, not in overlays) | `bg-background` |
 | The current rung's fill, without climbing | `bg-(--card)` (table heads, sticky cells, timeline discs) | a second `bg-card` |
 | A quiet fill one rung up (chips, badges, tracks) | `bg-muted` / `bg-secondary` | `bg-foreground/5` |
 | Striped rows, skeleton rows, an opened-row panel | `bg-band` | `bg-muted/40` |
@@ -65,7 +66,7 @@ Every app surface is one hue at a lightness set by its **rung**. The canvas (`--
 - `bg-muted` is always one rung above wherever it is read. It suits chips, badges and quiet fills, not panels.
 - Variants such as `md:bg-card` or `bg-card/50` are different class names, so they are **not** surfaces and don't climb. Use them only when that is what you want.
 - A dialog is a portaled `bg-card`, so it starts at rung 1. Menus, selects and popovers are `bg-popover` / `surface-overlay`, the top rung.
-- `surface-well` is the recessed region: one rung below the surface it is cut into, with its edges, text and controls derived from that rung. Use it only inside rung-2+ surfaces; inside a rung-1 surface it lands at canvas lightness, where control edges and muted-on-hover text fail the floor (light checkbox edge 2.87:1, dark field edge 1.62:1). `bg-background` stays a hole.
+- `surface-well` is the recessed region: one rung below the surface it is cut into, with its edges, text and controls derived from that rung. Use it only inside rung-2+ surfaces, never in an overlay (a well there resolves below the page); inside a rung-1 surface it lands at canvas lightness, where control edges and muted-on-hover text fall below the contrast floor. `bg-background` stays a hole.
 - `bg-background` belongs only on page shells (the dashboard `main`, a full-page route). Inside a surface it punches a hole.
 - To change how far apart the rungs sit, retune the knobs (`--canvas-l`, `--step`, `--edge`, `--lift`) with the `elevation-ladder` skill. Never patch a single surface.
 

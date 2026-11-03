@@ -26,7 +26,8 @@ export function ScopePhaseList({ phases, partHeadHeight }: Props) {
     if (!rootEl) {
       return
     }
-    const delta = foldScrollDelta(el.getBoundingClientRect().top - rootEl.getBoundingClientRect().top, stickyTop)
+    // A later row's li carries a 1px top border; the button, not the border, is what must meet the header.
+    const delta = foldScrollDelta(el.getBoundingClientRect().top + el.clientTop - rootEl.getBoundingClientRect().top, stickyTop)
     if (delta === 0) {
       return
     }

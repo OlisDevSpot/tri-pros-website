@@ -30,6 +30,10 @@ describe('isEveryPhaseOpen', () => {
     assert.equal(isEveryPhaseOpen(new Set([0, 2]), 3), false)
     assert.equal(isEveryPhaseOpen(new Set(), 0), true)
   })
+
+  it('ignores stale indices past the count', () => {
+    assert.equal(isEveryPhaseOpen(new Set([0, 1, 5]), 3), false)
+  })
 })
 
 describe('foldScrollDelta', () => {
