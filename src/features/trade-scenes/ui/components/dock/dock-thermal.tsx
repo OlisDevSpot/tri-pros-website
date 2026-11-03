@@ -11,6 +11,7 @@ import { DOCK_BUTTON_CLASS, DOCK_SIZES } from '@/features/trade-scenes/constants
 import { SCENE_SHORTCUT_KEYS } from '@/features/trade-scenes/constants/scene-shortcuts'
 import { Keycap } from '@/features/trade-scenes/ui/components/keycap'
 import { useSceneInputs, useSceneInputsApi } from '@/shared/components/scene/contexts/scene-inputs-context'
+import { Button } from '@/shared/components/ui/button'
 
 const RAMP = `linear-gradient(to right, ${HOME_THERMAL_PALETTE.join(', ')})`
 
@@ -20,8 +21,10 @@ export function DockThermal() {
   const hintId = useId()
 
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="icon"
       aria-pressed={thermalCamera}
       aria-describedby={hintId}
       aria-keyshortcuts={SCENE_SHORTCUT_KEYS.thermal}
@@ -36,6 +39,6 @@ export function DockThermal() {
       <span aria-hidden style={{ backgroundImage: RAMP }} className="h-1 w-7 rounded-full opacity-35 group-aria-pressed/dock:opacity-100" />
       <span id={hintId} className="sr-only">{DOCK_COPY.thermalHint}</span>
       <Keycap keyLabel={SCENE_SHORTCUT_KEYS.thermal.toUpperCase()} />
-    </button>
+    </Button>
   )
 }

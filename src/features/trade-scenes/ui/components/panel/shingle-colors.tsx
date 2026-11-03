@@ -8,6 +8,7 @@ import { SHINGLE_COPY, SHINGLE_LINE_LABELS } from '@/features/trade-scenes/const
 import { useApplySceneChange } from '@/features/trade-scenes/hooks/use-apply-scene-change'
 import { ChoicePill } from '@/features/trade-scenes/ui/components/controls/choice-pill'
 import { useSceneInputs } from '@/shared/components/scene/contexts/scene-inputs-context'
+import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/lib/utils'
 import { LA_MIN_AGED_SRI, OWENS_CORNING_SHINGLES } from '@/shared/modules/construction/core/constants/owens-corning-shingles'
 
@@ -37,9 +38,11 @@ export function ShingleColors() {
       {/* 12 apart, so each swatch's 40 px reach meets its neighbour's without taking a press meant for it. */}
       <div role="radiogroup" aria-label={SHINGLE_COPY.label} className="flex flex-wrap gap-3">
         {colors.map(color => (
-          <button
+          <Button
             key={color.id}
             type="button"
+            variant="ghost"
+            size="icon"
             role="radio"
             aria-checked={color.id === colorId}
             aria-label={color.name}
@@ -47,7 +50,7 @@ export function ShingleColors() {
             onClick={() => applyChange({ kind: 'fact', patch: { shingleColor: color.id } })}
             style={{ backgroundColor: color.hex }}
             // The 28 px swatch reaches 40 past its edge.
-            className={cn('relative size-7 cursor-pointer rounded-md outline-none ring-1 ring-foreground/20 ring-inset after:absolute after:-inset-1.5 focus-visible:ring-[3px] focus-visible:ring-ring/50', color.id === colorId && 'ring-2 ring-primary')}
+            className={cn('relative size-7 rounded-md ring-1 ring-foreground/20 ring-inset after:absolute after:-inset-1.5', color.id === colorId && 'ring-2 ring-primary')}
           />
         ))}
       </div>

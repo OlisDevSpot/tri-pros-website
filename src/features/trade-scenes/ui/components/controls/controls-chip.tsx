@@ -7,6 +7,7 @@ import type { StatusTone } from '@/shared/constants/status-tones'
 import { ChevronDownIcon } from 'lucide-react'
 
 import { CONTROLS_CLASSES } from '@/features/trade-scenes/constants/controls-classes'
+import { Button } from '@/shared/components/ui/button'
 import { toneClasses } from '@/shared/constants/status-tones'
 import { cn } from '@/shared/lib/utils'
 
@@ -26,8 +27,9 @@ interface ControlsChipProps extends ComponentProps<'button'> {
 // Takes `ref` and every button prop, so a popover trigger can slot onto it.
 export function ControlsChip({ variant, tone, icon: Icon, keyLabel, caret = false, open = false, className, children, ...props }: ControlsChipProps) {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       data-state={open ? 'open' : undefined}
       {...props}
       className={cn(
@@ -44,6 +46,6 @@ export function ControlsChip({ variant, tone, icon: Icon, keyLabel, caret = fals
       {keyLabel && <span className={variant === 'miss' ? toneClasses('attention').text : 'text-muted-foreground'}>{keyLabel}</span>}
       {children}
       {caret && <ChevronDownIcon aria-hidden className="-mr-0.75 size-3.25 shrink-0 opacity-70" />}
-    </button>
+    </Button>
   )
 }

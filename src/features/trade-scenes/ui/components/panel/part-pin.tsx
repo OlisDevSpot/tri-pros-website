@@ -1,5 +1,6 @@
 'use client'
 
+import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/lib/utils'
 
 interface PartPinProps {
@@ -14,13 +15,15 @@ interface PartPinProps {
 // A numbered pin on a part, the same number the part list gives it; tapping either emphasises the part.
 export function PartPin({ number, label, selected, shown, onSelect }: PartPinProps) {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="icon"
       aria-label={label}
       aria-pressed={selected}
       tabIndex={shown ? 0 : -1}
       onClick={onSelect}
-      className="group/pin grid size-11 cursor-pointer place-items-center rounded-full focus-visible:outline-none"
+      className="group/pin grid size-11 place-items-center rounded-full hover:bg-transparent pressed:bg-transparent focus-visible:ring-0 focus-visible:outline-none"
     >
       <span
         className={cn(
@@ -32,6 +35,6 @@ export function PartPin({ number, label, selected, shown, onSelect }: PartPinPro
       >
         {number}
       </span>
-    </button>
+    </Button>
   )
 }

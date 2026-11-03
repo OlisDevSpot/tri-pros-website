@@ -19,6 +19,7 @@ import { SystemCardBody } from '@/features/trade-scenes/ui/components/controls/s
 import { YearBuiltCardBody } from '@/features/trade-scenes/ui/components/controls/year-built-card-body'
 import { focusFell } from '@/features/trade-scenes/ui/lib/leave-close-up'
 import { useSceneInputs } from '@/shared/components/scene/contexts/scene-inputs-context'
+import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/lib/utils'
 
 interface SystemCardProps {
@@ -93,9 +94,9 @@ export function SystemCard({ focus }: SystemCardProps) {
           </span>
         )}
         {/* The 36 px button reaches 40 past its edge. */}
-        <button type="button" aria-label={CONTROLS_COPY.close} onClick={letGo} className={cn(CONTROLS_CLASSES.closeButton, 'relative size-9 rounded-[10px] after:absolute after:-inset-0.5')}>
+        <Button type="button" variant="ghost" size="icon" aria-label={CONTROLS_COPY.close} onClick={letGo} className={cn(CONTROLS_CLASSES.closeButton, 'relative size-9 rounded-[10px] after:absolute after:-inset-0.5 hover:bg-muted')}>
           <XIcon aria-hidden />
-        </button>
+        </Button>
       </div>
       <div className="grid gap-2.5 px-3.5 pt-3 pb-3.5">
         {yearBuilt ? <YearBuiltCardBody /> : <SystemCardBody system={focus} />}

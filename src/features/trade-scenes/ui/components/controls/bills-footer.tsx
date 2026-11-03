@@ -15,6 +15,7 @@ import { climateDefaultBill } from '@/features/trade-scenes/lib/climate-default-
 import { ChoicePill } from '@/features/trade-scenes/ui/components/controls/choice-pill'
 import { UnitMoneyField } from '@/features/trade-scenes/ui/components/fields/unit-money-field'
 import { useSceneInputs } from '@/shared/components/scene/contexts/scene-inputs-context'
+import { Button } from '@/shared/components/ui/button'
 import { formatAsDollars } from '@/shared/lib/formatters'
 import { BILL_CATEGORY_LABELS } from '@/shared/modules/construction/core/constants/bill-categories'
 import { CLIMATE_LABELS, CLIMATES } from '@/shared/modules/construction/core/constants/climate-presets'
@@ -71,9 +72,9 @@ export function BillsFooter() {
           <b className="text-foreground">{summary}</b>
         </span>
         {/* First in the window's focus order while the row is shut, so the window opens on it. */}
-        <button type="button" data-bills-toggle aria-expanded={billsOpen} aria-controls={billsOpen ? rowId : undefined} onClick={toggleBills} className={CONTROLS_CLASSES.link}>
+        <Button type="button" variant="link" data-bills-toggle aria-expanded={billsOpen} aria-controls={billsOpen ? rowId : undefined} onClick={toggleBills} className={CONTROLS_CLASSES.link}>
           {billsOpen ? CONTROLS_COPY.benefits.closeBills : CONTROLS_COPY.benefits.editBills}
-        </button>
+        </Button>
       </div>
     </div>
   )

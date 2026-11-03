@@ -7,6 +7,7 @@ import { useId } from 'react'
 
 import { PART_COPY } from '@/features/trade-scenes/constants/home-scene-copy'
 import { SCENE_MOTION } from '@/shared/components/scene/constants/scene-motion'
+import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/lib/utils'
 
 interface PartListProps {
@@ -28,13 +29,14 @@ export function PartList({ parts, emphasized, onEmphasize }: PartListProps) {
           const absent = part.condition === 'absent'
           return (
             <li key={part.id}>
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 aria-expanded={selected}
                 onClick={() => onEmphasize(part.id)}
                 className={cn(
-                  'grid min-h-11 w-full cursor-pointer grid-cols-[1.75rem_1fr_auto] items-center gap-x-3 rounded-lg px-2 py-1.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-(--presentation-accent)',
-                  selected ? 'bg-row-selected' : 'hover:bg-hover',
+                  'grid h-auto min-h-11 w-full grid-cols-[1.75rem_1fr_auto] items-center gap-x-3 rounded-lg px-2 py-1.5 text-left font-normal whitespace-normal transition-colors focus-visible:ring-0 focus-visible:outline-2 focus-visible:outline-(--presentation-accent)',
+                  selected ? 'bg-row-selected hover:bg-row-selected' : 'hover:bg-hover',
                 )}
               >
                 <span
@@ -70,7 +72,7 @@ export function PartList({ parts, emphasized, onEmphasize }: PartListProps) {
                     </motion.span>
                   )}
                 </AnimatePresence>
-              </button>
+              </Button>
             </li>
           )
         })}

@@ -12,6 +12,7 @@ import { useSceneVisibleArea } from '@/features/trade-scenes/contexts/scene-visi
 import { useOpenShortcutSheet } from '@/features/trade-scenes/contexts/shortcut-sheet-context'
 import { useKeysInUse } from '@/features/trade-scenes/hooks/use-keys-in-use'
 import { useSceneInputs } from '@/shared/components/scene/contexts/scene-inputs-context'
+import { Button } from '@/shared/components/ui/button'
 import { useMediaQuery } from '@/shared/hooks/use-media-query'
 
 const { controls, keysButton } = SCENE_LAYOUT
@@ -31,8 +32,10 @@ export function SceneKeysButton() {
     return null
   }
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="icon"
       aria-label={SHORTCUT_COPY.title}
       aria-keyshortcuts={SCENE_SHORTCUT_KEYS.sheet}
       title={SHORTCUT_COPY.title}
@@ -43,9 +46,9 @@ export function SceneKeysButton() {
         width: keysButton.size,
         height: keysButton.size,
       }}
-      className="absolute z-10 grid place-items-center rounded-[12px] border bg-card text-muted-foreground shadow-lg outline-none hover:bg-hover hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      className="absolute z-10 grid place-items-center rounded-[12px] border bg-card text-muted-foreground shadow-lg hover:text-foreground"
     >
       <KeyboardIcon aria-hidden className="size-4.5" />
-    </button>
+    </Button>
   )
 }

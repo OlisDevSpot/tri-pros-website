@@ -12,6 +12,7 @@ import { useApplySceneChange } from '@/features/trade-scenes/hooks/use-apply-sce
 import { climateDefaultBill } from '@/features/trade-scenes/lib/climate-default-bill'
 import { UnitMoneyField } from '@/features/trade-scenes/ui/components/fields/unit-money-field'
 import { useSceneInputs } from '@/shared/components/scene/contexts/scene-inputs-context'
+import { Button } from '@/shared/components/ui/button'
 import { toneClasses } from '@/shared/constants/status-tones'
 import { formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
@@ -105,17 +106,18 @@ export function ModifyResultRow({ slot, hit, lead, flash, onApply, onBillEntered
                   const isCurrent = option.value === slot.current
                   const isTarget = option.value === target
                   return (
-                    <button
+                    <Button
                       key={option.value}
                       type="button"
+                      variant="ghost"
                       data-hit={isTarget || undefined}
                       aria-pressed={isCurrent}
                       onClick={() => onApply(option.value)}
                       className={cn(CONTROLS_CLASSES.option, isCurrent && CONTROLS_CLASSES.optionCurrent, isTarget && CONTROLS_CLASSES.optionHit)}
                     >
-                      {isCurrent && <CheckIcon aria-hidden />}
+                      {isCurrent && <CheckIcon aria-hidden className="size-3.25" />}
                       {option.label}
-                    </button>
+                    </Button>
                   )
                 })}
               </div>

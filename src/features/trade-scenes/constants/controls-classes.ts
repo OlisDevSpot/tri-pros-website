@@ -8,9 +8,9 @@ export const CONTROLS_CLASSES = {
     portrait: 'min-w-10 px-2.5',
   },
   // The 34 px chip reaches 42 px past its edge, so a wrapped row keeps its targets without growing its rhythm.
-  chip: 'relative inline-flex h-8.5 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-border bg-input-background px-2.75 text-sm font-bold whitespace-nowrap text-foreground outline-none after:absolute after:inset-x-0 after:-inset-y-1 hover:border-border-strong pressed:bg-press focus-visible:ring-[3px] focus-visible:ring-ring/50',
-  chipOn: 'border-border-strong bg-muted',
-  chipAdd: 'border-dashed bg-transparent text-muted-foreground hover:text-foreground',
+  chip: 'relative inline-flex h-8.5 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-border bg-input-background px-2.75 text-sm font-bold whitespace-nowrap text-foreground outline-none has-[>svg]:px-2.75 after:absolute after:inset-x-0 after:-inset-y-1 hover:border-border-strong hover:bg-input-background pressed:bg-press focus-visible:ring-[3px] focus-visible:ring-ring/50',
+  chipOn: 'border-border-strong bg-muted hover:bg-muted',
+  chipAdd: 'border-dashed bg-transparent text-muted-foreground hover:bg-transparent hover:text-foreground',
   chipMiss: 'border-status-attention-dot/60',
   // Radix marks a chip whose menu is open; the chip's own `open` sets the same mark.
   chipOpen: 'data-[state=open]:border-primary data-[state=open]:ring-1 data-[state=open]:ring-primary data-[state=open]:ring-inset',
@@ -42,9 +42,9 @@ export const CONTROLS_CLASSES = {
   field: 'h-11 rounded-xl shadow-none has-[[data-slot=input-group-control]:focus-visible]:border-border-strong has-[[data-slot=input-group-control]:focus-visible]:ring-primary/18 has-[>[data-align=inline-start]]:[&>input]:pl-3',
   groupTitle: 'pb-2 text-xs font-bold tracking-[.14em] text-muted-foreground uppercase',
   // A value a result row can set; reaches 42 px past its 34 px edge, as the chip does.
-  option: 'relative inline-flex h-8.5 cursor-pointer items-center gap-1.25 rounded-lg border border-border bg-input-background px-2.75 text-sm font-bold whitespace-nowrap text-muted-foreground outline-none after:absolute after:inset-x-0 after:-inset-y-1 hover:border-border-strong hover:text-foreground pressed:bg-press focus-visible:ring-[3px] focus-visible:ring-ring/50 [&_svg]:size-3.25 [&_svg]:text-primary',
-  optionCurrent: 'border-border-strong bg-muted text-foreground',
+  option: 'relative inline-flex h-8.5 cursor-pointer items-center gap-1.25 rounded-lg border border-border bg-input-background px-2.75 text-sm font-bold whitespace-nowrap text-muted-foreground outline-none has-[>svg]:px-2.75 after:absolute after:inset-x-0 after:-inset-y-1 hover:border-border-strong hover:bg-input-background hover:text-foreground pressed:bg-press focus-visible:ring-[3px] focus-visible:ring-ring/50 [&_svg]:size-3.25 [&_svg]:text-primary',
+  optionCurrent: 'border-border-strong bg-muted text-foreground hover:bg-muted',
   // The value Enter would set.
   optionHit: 'border-primary text-foreground ring-1 ring-primary ring-inset',
-  link: 'min-h-10 shrink-0 cursor-pointer rounded-md px-1 text-xs font-bold whitespace-nowrap text-primary outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50',
+  link: 'h-auto min-h-10 shrink-0 cursor-pointer rounded-md px-1 text-xs font-bold whitespace-nowrap text-primary outline-none hover:text-primary hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50',
 } as const

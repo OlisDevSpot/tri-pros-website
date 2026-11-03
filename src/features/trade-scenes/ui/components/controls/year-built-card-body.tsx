@@ -13,6 +13,7 @@ import { eraCodeLine } from '@/features/trade-scenes/lib/era-code-line'
 import { fromChoice, toChoice } from '@/features/trade-scenes/lib/profile-choice'
 import { ChoicePill } from '@/features/trade-scenes/ui/components/controls/choice-pill'
 import { useSceneInputs } from '@/shared/components/scene/contexts/scene-inputs-context'
+import { Button } from '@/shared/components/ui/button'
 import { toneClasses } from '@/shared/constants/status-tones'
 import { cn } from '@/shared/lib/utils'
 
@@ -52,14 +53,15 @@ export function YearBuiltCardBody() {
             <span data-era-kept className={cn('font-bold', toneClasses('attention').text)}>
               {CONTROLS_COPY.systems.kept(kept.map(id => HOME_MATERIAL_LABELS[id]).join(CONTROLS_COPY.systems.keptJoin), kept.length)}
             </span>
-            <button
+            <Button
               type="button"
+              variant="link"
               onClick={() => applyChange({ kind: 'era-code' })}
               // The 32 px line reaches 40 past its edge, so the link keeps its target without opening the line up.
-              className="relative cursor-pointer rounded-md px-1 py-2 font-bold text-primary outline-none after:absolute after:inset-x-0 after:-inset-y-1 hover:underline hover:underline-offset-2 focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              className="relative h-auto rounded-md px-1 py-2 text-xs font-bold text-primary after:absolute after:inset-x-0 after:-inset-y-1 hover:text-primary hover:underline hover:underline-offset-2"
             >
               {CONTROLS_COPY.systems.useCode}
-            </button>
+            </Button>
           </>
         )}
       </p>
