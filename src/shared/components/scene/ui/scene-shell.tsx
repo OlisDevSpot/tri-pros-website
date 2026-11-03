@@ -6,6 +6,7 @@ import type { SceneRenderer } from '@/shared/components/scene/types'
 
 import { Canvas } from '@react-three/fiber'
 import { useReducedMotion } from 'motion/react'
+import dynamic from 'next/dynamic'
 import { useMemo, useRef, useState } from 'react'
 import { ErrorBoundary } from 'react-error-boundary'
 
@@ -13,8 +14,11 @@ import { SCENE_DEFAULT_CAMERA, SCENE_DEFAULT_FAR } from '@/shared/components/sce
 import { SceneMotionContext } from '@/shared/components/scene/contexts/scene-motion-context'
 import { createWebGpuRenderer } from '@/shared/components/scene/lib/create-webgpu-renderer'
 import { startsWheelStream } from '@/shared/components/scene/lib/starts-wheel-stream'
-import { SceneBloom } from '@/shared/components/scene/ui/scene-bloom'
 import { SceneLights } from '@/shared/components/scene/ui/scene-lights'
+
+// postprocessing downloads only for a scene that asks for bloom (look-dev today); the home scene never pays for it.
+// No loading UI: anything but null inside the canvas would be a DOM node in a three.js tree.
+const SceneBloom = dynamic(() => import('@/shared/components/scene/ui/scene-bloom').then(m => m.SceneBloom), { ssr: false, loading: () => null })
 
 interface SceneShellProps {
   label: string
