@@ -15,7 +15,7 @@ interface Props {
   index: number
   open: boolean
   stickyTop: number
-  onToggle: (rowEl: HTMLLIElement, wasStuck: boolean) => void
+  onToggle: (rowEl: HTMLLIElement) => void
 }
 
 export function ScopePhaseRow({ phase, index, open, stickyTop, onToggle }: Props) {
@@ -28,7 +28,7 @@ export function ScopePhaseRow({ phase, index, open, stickyTop, onToggle }: Props
         ref={setButton}
         type="button"
         aria-expanded={open}
-        onClick={e => onToggle(e.currentTarget.closest('li') as HTMLLIElement, stuck)}
+        onClick={e => onToggle(e.currentTarget.closest('li') as HTMLLIElement)}
         className={cn(
           'sticky top-[calc(var(--scope-eyebrow-h)+var(--scope-part-head-h))] z-1 grid min-h-12 w-full grid-cols-[26px_minmax(0,1fr)_auto_18px] items-center gap-2.5 bg-(--card) px-5 text-left text-base font-bold',
           'before:pointer-events-none before:absolute before:inset-0 before:bg-hover before:opacity-0 hover:before:opacity-100',
