@@ -6,15 +6,16 @@ import { useReducedMotion } from 'motion/react'
 import dynamic from 'next/dynamic'
 import { useCallback, useMemo, useState } from 'react'
 import { resolveRoofAssembly } from '@/features/meeting-visualizations/lib/resolve-roof-assembly'
-import { BuildToggle, ExplodeControl } from '@/features/meeting-visualizations/ui/components/roof-cutaway/cutaway-controls'
+import { BuildToggle } from '@/features/meeting-visualizations/ui/components/roof-cutaway/build-toggle'
+import { ExplodeControl } from '@/features/meeting-visualizations/ui/components/roof-cutaway/explode-control'
 import { LayerList } from '@/features/meeting-visualizations/ui/components/roof-cutaway/layer-list'
 import { LayerPins } from '@/features/meeting-visualizations/ui/components/roof-cutaway/layer-pins'
 import { ProfileControls } from '@/features/meeting-visualizations/ui/components/roof-cutaway/profile-controls'
 
 // three.js is ~600 kB before gzip; only the step that shows the cutaway should pay for it.
-const CutawayCanvas = dynamic(() => import('@/features/meeting-visualizations/ui/components/roof-cutaway/cutaway-canvas'), {
+const CutawayCanvas = dynamic(() => import('@/features/meeting-visualizations/ui/components/roof-cutaway/cutaway-canvas').then(m => m.CutawayCanvas), {
   ssr: false,
-  loading: () => <div className="grid h-full place-items-center text-sm text-white/50">Loading the cutaway…</div>,
+  loading: () => <div className="grid h-full place-items-center text-sm text-on-media/50">Loading the cutaway…</div>,
 })
 
 const ERA_PHRASE: Record<YearBuiltRange, string> = {
@@ -52,7 +53,7 @@ export function RoofCutawayView({ initialProfile = DEMO_PROFILE, initialScope = 
       : `Built ${ERA_PHRASE[profile.yearBuilt ?? '1950-1978']}. This is what is above your ceiling.`
 
   return (
-    <div data-stage className="@container/cutaway relative h-dvh overflow-hidden bg-(--presentation-ground) text-white">
+    <div data-stage className="@container/cutaway relative h-dvh overflow-hidden bg-(--presentation-ground) text-on-media">
       <div className="absolute inset-x-0 top-0 h-[54%] @[60rem]/cutaway:inset-y-0 @[60rem]/cutaway:right-0 @[60rem]/cutaway:left-[min(30rem,38%)] @[60rem]/cutaway:h-auto">
         <CutawayCanvas
           assembly={assembly}
@@ -65,11 +66,11 @@ export function RoofCutawayView({ initialProfile = DEMO_PROFILE, initialScope = 
         <LayerPins layers={assembly.layers} registry={pins} selected={selected} showAll={explode > 0.2} onSelect={toggleSelected} />
       </div>
 
-      <aside className="absolute inset-x-0 bottom-0 flex h-[46%] flex-col gap-5 overflow-y-auto border-t border-white/10 px-5 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] @[60rem]/cutaway:inset-y-0 @[60rem]/cutaway:left-0 @[60rem]/cutaway:h-auto @[60rem]/cutaway:w-[min(30rem,38%)] @[60rem]/cutaway:border-t-0 @[60rem]/cutaway:border-r @[60rem]/cutaway:px-8 @[60rem]/cutaway:py-10">
+      <aside className="absolute inset-x-0 bottom-0 flex h-[46%] flex-col gap-5 overflow-y-auto border-t border-on-media/10 px-5 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] @[60rem]/cutaway:inset-y-0 @[60rem]/cutaway:left-0 @[60rem]/cutaway:h-auto @[60rem]/cutaway:w-[min(30rem,38%)] @[60rem]/cutaway:border-t-0 @[60rem]/cutaway:border-r @[60rem]/cutaway:px-8 @[60rem]/cutaway:py-10">
         <header className="grid gap-2">
           <p className="text-xs font-bold tracking-[0.2em] text-(--presentation-accent) uppercase">Roof & attic, x-rayed</p>
           <h1 className="text-3xl leading-tight font-semibold tracking-tight text-balance">What is really over your head</h1>
-          <p className="text-base text-pretty text-white/70">{lead}</p>
+          <p className="text-base text-pretty text-on-media/70">{lead}</p>
         </header>
 
         <BuildToggle build={build} todayLabel={assembly.isTypical ? 'A typical roof today' : 'Your roof today'} onChange={setBuild} />

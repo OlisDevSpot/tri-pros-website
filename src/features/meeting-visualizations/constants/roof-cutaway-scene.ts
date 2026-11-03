@@ -26,6 +26,8 @@ export const SCENE = {
 export const JOIST_DEPTH = 5.5 * SCENE.unitsPerInch
 export const SLOPE_LENGTH = SCENE.halfSpan / Math.cos(SCENE.pitch)
 export const RIDGE_HEIGHT = SCENE.halfSpan * Math.tan(SCENE.pitch)
+export const SPAN = SCENE.halfSpan * 2
+export const COVERING_BASE = SCENE.deckThickness + SCENE.membraneThickness * 2
 
 /** Explode order outward from the rafters; the attic pair moves on its own axis. */
 export const EXPLODE_INDEX: Record<LayerId, number> = {

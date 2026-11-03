@@ -2,14 +2,18 @@
 
 import type { LayerId, PinRegistry, RoofAssembly } from '@/features/meeting-visualizations/types'
 import { Environment, Grid, Lightformer, OrbitControls } from '@react-three/drei'
-import { Canvas, useThree } from '@react-three/fiber'
-import { useCallback, useLayoutEffect } from 'react'
-import { Vector3 } from 'three'
+import { Canvas } from '@react-three/fiber'
+import { useCallback } from 'react'
 import { MATERIAL_COLORS, SCENE } from '@/features/meeting-visualizations/constants/roof-cutaway-scene'
-import { AtticFloor, RidgeVent, WallStubs } from '@/features/meeting-visualizations/ui/components/roof-cutaway/attic-floor'
-import { CutawayMotionProvider, ExplodeLift } from '@/features/meeting-visualizations/ui/components/roof-cutaway/cutaway-motion'
-import { PinAnchor, PinProjector, PinRegistryProvider } from '@/features/meeting-visualizations/ui/components/roof-cutaway/pin-anchors'
+import { AtticFloor } from '@/features/meeting-visualizations/ui/components/roof-cutaway/attic-floor'
+import { CAMERA_TARGET, CameraRig } from '@/features/meeting-visualizations/ui/components/roof-cutaway/camera-rig'
+import { CutawayMotionProvider } from '@/features/meeting-visualizations/ui/components/roof-cutaway/cutaway-motion'
+import { ExplodeLift } from '@/features/meeting-visualizations/ui/components/roof-cutaway/explode-lift'
+import { PinAnchor, PinRegistryProvider } from '@/features/meeting-visualizations/ui/components/roof-cutaway/pin-anchors'
+import { PinProjector } from '@/features/meeting-visualizations/ui/components/roof-cutaway/pin-projector'
+import { RidgeVent } from '@/features/meeting-visualizations/ui/components/roof-cutaway/ridge-vent'
 import { RoofSlope } from '@/features/meeting-visualizations/ui/components/roof-cutaway/roof-slope'
+import { WallStubs } from '@/features/meeting-visualizations/ui/components/roof-cutaway/wall-stubs'
 
 interface CutawayCanvasProps {
   assembly: RoofAssembly
@@ -26,34 +30,12 @@ const ENTRY_STEP_SECONDS = 0.13
 
 const SCENE_DROP = -1.1
 const FLOOR_Y = SCENE_DROP - SCENE.wallHeight - 0.04
-const CAMERA_TARGET = new Vector3(0, 0.9, 0)
-const CAMERA_DIRECTION = new Vector3(-0.62, 0.36, 0.7).normalize()
-/** Far enough that the fully opened roof fits a canvas this wide relative to its height. */
-const FRAMING_DISTANCE = 14.5
-const FRAMING_ASPECT = 1.6
 
 function renderPin(id: LayerId, position: [number, number, number]) {
   return <PinAnchor id={id} position={position} />
 }
 
-/** Backs the camera off on narrow canvases (a portrait iPad, the split layout) so nothing is cropped. */
-function CameraRig() {
-  const camera = useThree(state => state.camera)
-  const aspect = useThree(state => state.size.width / state.size.height)
-  const invalidate = useThree(state => state.invalidate)
-
-  useLayoutEffect(() => {
-    const distance = FRAMING_DISTANCE * Math.max(1, FRAMING_ASPECT / aspect) ** 0.7
-    camera.position.copy(CAMERA_TARGET).addScaledVector(CAMERA_DIRECTION, distance)
-    camera.lookAt(CAMERA_TARGET)
-    invalidate()
-  }, [aspect, camera, invalidate])
-
-  return null
-}
-
-/** Default export so the step can lazy-load three.js only when the cutaway is on screen. */
-export default function CutawayCanvas({ assembly, explode, selected, reducedMotion, pins, onSelect }: CutawayCanvasProps) {
+export function CutawayCanvas({ assembly, explode, selected, reducedMotion, pins, onSelect }: CutawayCanvasProps) {
   const entryDelay = useCallback((id: LayerId) => ENTRY_ORDER.indexOf(id) * ENTRY_STEP_SECONDS, [])
 
   return (
@@ -61,7 +43,7 @@ export default function CutawayCanvas({ assembly, explode, selected, reducedMoti
       dpr={[1, 2]}
       frameloop="demand"
       camera={{ fov: 30, near: 0.1, far: 120 }}
-      fallback={<p className="p-6 text-sm text-white/70">This device cannot draw 3D. The layer list still walks through every layer.</p>}
+      fallback={<p className="p-6 text-sm text-on-media/70">This device cannot draw 3D. The layer list still walks through every layer.</p>}
       aria-label="A cutaway of a roof and attic that peels apart layer by layer"
       role="img"
     >

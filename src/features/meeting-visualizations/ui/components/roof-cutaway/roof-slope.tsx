@@ -2,21 +2,12 @@
 
 import type { ReactNode } from 'react'
 import type { LayerId, RoofAssembly } from '@/features/meeting-visualizations/types'
-import { useMemo } from 'react'
-import { BoxGeometry, CylinderGeometry } from 'three'
 import { EXPLODE_INDEX, JOIST_DEPTH, MATERIAL_COLORS, SCENE, SLOPE_LENGTH } from '@/features/meeting-visualizations/constants/roof-cutaway-scene'
-import {
-  framingPositions,
-  layoutShingles,
-  layoutTiles,
-  SHINGLE_LENGTH,
-  skipSheathingBoards,
-  slopeEndFor,
-  TILE_LENGTH,
-} from '@/features/meeting-visualizations/lib/roof-geometry'
-import { LayerMotion } from '@/features/meeting-visualizations/ui/components/roof-cutaway/cutaway-motion'
-import { InstancedPieces } from '@/features/meeting-visualizations/ui/components/roof-cutaway/instanced-pieces'
-import { Slab, useOwnedGeometry } from '@/features/meeting-visualizations/ui/components/roof-cutaway/scene-primitives'
+import { framingPositions, skipSheathingBoards, slopeEndFor } from '@/features/meeting-visualizations/lib/roof-geometry'
+import { LayerMotion } from '@/features/meeting-visualizations/ui/components/roof-cutaway/layer-motion'
+import { Slab } from '@/features/meeting-visualizations/ui/components/roof-cutaway/scene-primitives'
+import { Shingles } from '@/features/meeting-visualizations/ui/components/roof-cutaway/shingles'
+import { Tiles } from '@/features/meeting-visualizations/ui/components/roof-cutaway/tiles'
 
 const DECK_TOP = SCENE.deckThickness
 const MEMBRANE = SCENE.membraneThickness
@@ -111,39 +102,5 @@ export function RoofSlope({ assembly, face, entryDelay, renderPin }: RoofSlopePr
         </LayerMotion>
       </group>
     </group>
-  )
-}
-
-function Shingles({ worn, seed }: { worn: boolean, seed: number }) {
-  const pieces = useMemo(() => layoutShingles({ seed, worn, base: COVERING_BASE }), [seed, worn])
-  const geometry = useOwnedGeometry(() => new BoxGeometry(SHINGLE_LENGTH, SCENE.shingleThickness, 1), [])
-  return (
-    <InstancedPieces
-      geometry={geometry}
-      pieces={pieces}
-      color={worn ? MATERIAL_COLORS.shingleWorn : MATERIAL_COLORS.shingleNew}
-      stretchToWidth
-      roughness={worn ? 1 : 0.8}
-    />
-  )
-}
-
-/** A half-pipe whose axis runs down the slope; `upper` picks the cap's arc over the pan's. */
-function halfPipe(upper: boolean): CylinderGeometry {
-  const geometry = new CylinderGeometry(SCENE.tileRadius, SCENE.tileRadius, TILE_LENGTH, 14, 1, true, upper ? 0 : Math.PI, Math.PI)
-  geometry.rotateZ(Math.PI / 2)
-  return geometry
-}
-
-function Tiles({ worn, seed }: { worn: boolean, seed: number }) {
-  const { pans, caps } = useMemo(() => layoutTiles({ seed, worn, base: COVERING_BASE }), [seed, worn])
-  const capGeometry = useOwnedGeometry(() => halfPipe(true), [])
-  const panGeometry = useOwnedGeometry(() => halfPipe(false), [])
-  const color = worn ? MATERIAL_COLORS.tileWorn : MATERIAL_COLORS.tileNew
-  return (
-    <>
-      <InstancedPieces geometry={panGeometry} pieces={pans} color={color} roughness={0.75} doubleSided />
-      <InstancedPieces geometry={capGeometry} pieces={caps} color={color} roughness={0.75} doubleSided />
-    </>
   )
 }

@@ -49,7 +49,7 @@ export function LayerPins({ layers, registry, selected, showAll, onSelect }: Lay
                 'flex size-7 items-center justify-center rounded-full border text-xs font-bold shadow-lg tabular-nums transition-colors',
                 isSelected
                   ? 'border-(--presentation-accent) bg-(--presentation-accent) text-(--presentation-ground)'
-                  : 'border-white/70 bg-(--presentation-ground)/80 text-white backdrop-blur-sm',
+                  : 'border-on-media/70 bg-(--presentation-ground)/80 text-on-media backdrop-blur-sm',
               )}
             >
               {index + 1}

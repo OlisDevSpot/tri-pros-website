@@ -1,8 +1,8 @@
 'use client'
 
-import type { ReactNode } from 'react'
 import type { CutawayProfile, CutawayScope } from '@/features/meeting-visualizations/types'
 import { SlidersHorizontalIcon } from 'lucide-react'
+import { Field } from '@/features/meeting-visualizations/ui/components/roof-cutaway/field'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-group'
 import { yearBuiltRanges } from '@/shared/constants/enums/customers'
@@ -30,7 +30,7 @@ function fromChoice<T extends string>(value: string, allowed: readonly T[]): T |
 export function ProfileControls({ profile, scope, onProfileChange, onScopeChange }: ProfileControlsProps) {
   return (
     <Popover>
-      <PopoverTrigger className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-white/20 bg-white/5 px-3 text-sm font-semibold text-white/85 backdrop-blur-sm hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-(--presentation-accent)">
+      <PopoverTrigger className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-on-media/20 bg-on-media/5 px-3 text-sm font-semibold text-on-media/85 backdrop-blur-sm hover:bg-on-media/10 focus-visible:outline-2 focus-visible:outline-(--presentation-accent)">
         <SlidersHorizontalIcon aria-hidden className="size-4" />
         Home profile
       </PopoverTrigger>
@@ -91,14 +91,5 @@ export function ProfileControls({ profile, scope, onProfileChange, onScopeChange
         </Field>
       </PopoverContent>
     </Popover>
-  )
-}
-
-function Field({ label, children }: { label: string, children: ReactNode }) {
-  return (
-    <div className="grid gap-1.5">
-      <span className="text-xs font-semibold text-foreground">{label}</span>
-      {children}
-    </div>
   )
 }

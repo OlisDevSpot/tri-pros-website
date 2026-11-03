@@ -32,27 +32,27 @@ export function LayerList({ layers, selected, onSelect }: LayerListProps) {
               className={cn(
                 'grid min-h-11 w-full cursor-pointer grid-cols-[1.75rem_1fr_auto] items-center gap-x-3 rounded-lg px-2 py-1.5 text-left transition-colors',
                 'focus-visible:outline-2 focus-visible:outline-(--presentation-accent)',
-                isSelected ? 'bg-white/12' : 'hover:bg-white/6',
+                isSelected ? 'bg-on-media/12' : 'hover:bg-on-media/6',
               )}
             >
               <span
                 className={cn(
                   'flex size-7 items-center justify-center rounded-full border text-xs font-bold tabular-nums',
-                  isSelected ? 'border-(--presentation-accent) bg-(--presentation-accent) text-(--presentation-ground)' : 'border-white/40 text-white/80',
-                  layer.status === 'missing' && 'border-dashed text-white/50',
+                  isSelected ? 'border-(--presentation-accent) bg-(--presentation-accent) text-(--presentation-ground)' : 'border-on-media/40 text-on-media-muted',
+                  layer.status === 'missing' && 'border-dashed text-on-media/50',
                 )}
               >
                 {index + 1}
               </span>
-              <span className={cn('text-base font-semibold', layer.status === 'missing' && 'text-white/60 line-through decoration-white/40')}>
+              <span className={cn('text-base font-semibold', layer.status === 'missing' && 'text-on-media/60 line-through decoration-on-media/40')}>
                 {layer.label}
               </span>
               <span
                 className={cn(
                   'rounded-full px-2 py-0.5 text-xs font-bold tracking-wide uppercase',
                   layer.status === 'new' && 'bg-(--presentation-accent)/20 text-(--presentation-accent)',
-                  layer.status === 'missing' && 'border border-dashed border-white/40 text-white/70',
-                  (layer.status === 'aged' || layer.status === 'existing') && 'text-white/50',
+                  layer.status === 'missing' && 'border border-dashed border-on-media/40 text-on-media/70',
+                  (layer.status === 'aged' || layer.status === 'existing') && 'text-on-media/50',
                 )}
               >
                 {STATUS_LABEL[layer.status]}
@@ -67,7 +67,7 @@ export function LayerList({ layers, selected, onSelect }: LayerListProps) {
                     transition={{ duration: 0.25, ease: 'easeOut' }}
                     className="col-start-2 col-end-4 overflow-hidden"
                   >
-                    <span className="block pt-1 pb-1 text-sm text-pretty text-white/75">{layer.detail}</span>
+                    <span className="block pt-1 pb-1 text-sm text-pretty text-on-media/75">{layer.detail}</span>
                   </motion.span>
                 )}
               </AnimatePresence>
