@@ -1,4 +1,3 @@
-// LAZY: replaced by the general system view (TS3b.4b).
 'use client'
 
 import type { CSSProperties } from 'react'
