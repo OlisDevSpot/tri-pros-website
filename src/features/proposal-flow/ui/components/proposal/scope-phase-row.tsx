@@ -30,15 +30,18 @@ export function ScopePhaseRow({ phase, index, open, stickyTop, onToggle }: Props
         aria-expanded={open}
         onClick={e => onToggle(e.currentTarget.closest('li') as HTMLLIElement)}
         className={cn(
-          'sticky top-[calc(var(--scope-eyebrow-h)+var(--scope-part-head-h))] z-1 grid min-h-12 w-full grid-cols-[26px_minmax(0,1fr)_auto_18px] items-center gap-2.5 bg-(--card) px-5 text-left text-base font-bold',
+          'sticky top-[calc(var(--scope-eyebrow-h)+var(--scope-part-head-h))] z-1 grid min-h-12 w-full grid-cols-[26px_minmax(0,1fr)_auto_18px] items-start gap-2.5 bg-(--card) px-5 py-3 text-left text-base font-bold outline-none',
+          // Inset, because the row runs edge to edge inside a clipped card and an outer ring would be cut off.
+          'focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset',
           'before:pointer-events-none before:absolute before:inset-0 before:bg-hover before:opacity-0 hover:before:opacity-100',
           stuck && 'shadow-[0_1px_0_var(--border)]',
         )}
       >
-        <span className="relative font-sans text-sm leading-none font-bold text-muted-foreground">{String(index + 1).padStart(2, '0')}</span>
+        {/* Each cell takes the title's 24 px line box, so a title that wraps keeps the number, count and chevron on its first line. */}
+        <span className="relative font-sans text-sm leading-6 font-bold text-muted-foreground">{String(index + 1).padStart(2, '0')}</span>
         <span className="relative min-w-0">{phase.title}</span>
-        <small className="relative text-sm font-semibold text-muted-foreground">{`${phase.steps.length} ${phase.steps.length === 1 ? 'step' : 'steps'}`}</small>
-        <ChevronDownIcon className={cn('relative size-4 transition-transform duration-200 motion-reduce:transition-none', open && 'rotate-180')} aria-hidden />
+        <small className="relative text-sm leading-6 font-semibold text-muted-foreground">{`${phase.steps.length} ${phase.steps.length === 1 ? 'step' : 'steps'}`}</small>
+        <ChevronDownIcon className={cn('relative mt-1 size-4 transition-transform duration-200 motion-reduce:transition-none', open && 'rotate-180')} aria-hidden />
       </button>
       <div
         inert={!open}
