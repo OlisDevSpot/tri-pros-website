@@ -2,6 +2,8 @@
 
 The Controls build (`d8f49477b..7e317ca09`, branch `feat/trade-scenes-foundation`) made these calls for the owner while it ran. Each one is cheap to change. Rule on it, or leave it as built.
 
+The owner accepted the build on 2026-11-02: "miles better than what we had, and works smoothly for now". Modifications are expected and come as new rulings once the scene is in use.
+
 ## Copy calls
 - **The toggle's accessible name changes with its state**, alongside `aria-pressed`, using the mock's copy. A screen reader hears the new name on every flip.
 - **An unset foundation** offers its chip on the Foundation card's Today row, so the rep can set it there. The build row asks for the foundation first. "Slab, no crawl space" shows only for a slab.
