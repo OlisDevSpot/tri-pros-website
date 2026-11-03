@@ -68,7 +68,7 @@ The Energy-Saver Incentive Program bundles:
 >
 > Most companies come in and say 'you need new windows' or 'you need insulation.' But those things work together. Better insulation makes your HVAC more efficient. Better windows reduce the radiant heat that your HVAC has to fight.
 >
-> When we do all three — insulation, windows, and HVAC — the effect compounds. Families typically see 30 to 55 percent reductions in their heating and cooling costs.
+> When we do all three — insulation, windows, and HVAC — the effect compounds. By our estimate from customer bills, families see up to about 40 percent off their heating and cooling costs.
 >
 > One contractor. One mobilization. One invoice."
 

@@ -1,6 +1,8 @@
 import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { TradeSelection } from '@/shared/entities/meetings/schemas'
 
+import { claimCutPercent, formatCompoundClaim } from '@/shared/modules/construction/core/lib/bill-cut-claims'
+
 export interface ProfileBenefit {
   headline: string
   body: string
@@ -73,7 +75,7 @@ export function getProfileBenefits(
   if (painPoints.includes('High maintenance / utility costs') || painPoints.includes('Home has inefficiencies')) {
     benefits.push({
       headline: 'Stop bleeding money every month',
-      body: 'Every month you wait, the inefficiency costs you. Families in your situation can expect up to about 40% off heating and cooling costs after upgrading, by our estimate from customer bills. The project pays for itself.',
+      body: `Every month you wait, the inefficiency costs you. Families in your situation can expect ${formatCompoundClaim(claimCutPercent('heating-and-cooling', 'electric'))} off heating and cooling costs after upgrading, by our estimate from customer bills. The project pays for itself.`,
       category: 'financial',
     })
   }
