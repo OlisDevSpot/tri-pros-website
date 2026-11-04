@@ -45,49 +45,49 @@
 </header>
 
 <section id="lanes">
-  <div class="sec-head"><p class="ve-label caps">Children</p><h2>Nothing built; the foundation waits on the scenes branch</h2></div>
+  <div class="sec-head"><p class="ve-label caps">Children</p><h2>Nothing built; EI0 waits on the §3.1 re-run, not on the fold</h2></div>
   <div class="lanes">
     <div class="lane"><h3>Done</h3>
       <div class="card"><div class="t">Design + rulings <span class="chip ok">spec</span></div><div class="s">approved 2026-10-21 · EI-D1–D27 · verified: spec file, tracker §1</div></div>
     </div>
     <div class="lane"><h3>In flight</h3>
-      <div class="card"><div class="t">EI0 construction slice lift <span class="chip risk">plan</span></div><div class="s">blocked: cool-roof fold on feat/trade-scenes-foundation (EI-D25) · no customer_utility_bills on any ref · verified</div></div>
-      <div class="card"><div class="t">EI1 bills + sliders <span class="chip warn">plan</span></div><div class="s">foundation plan tasks 3–5 · nothing on main · verified</div></div>
-      <div class="card"><div class="t">EI2 chapter shell <span class="chip warn">plan</span></div><div class="s">foundation plan tasks 6–7 · reads EI1's hook · verified</div></div>
+      <div class="card"><div class="t">EI0 construction slice lift <span class="chip risk">plan</span></div><div class="s">Task 1 · fold landed upstream 5c341b6d8 · §3.1 re-run pending · verified</div></div>
+      <div class="card"><div class="t">EI1 energy model <span class="chip warn">plan</span></div><div class="s">Tasks 2–6 · nothing on main · four add-ons already on the branch (EI-D28) · verified</div></div>
+      <div class="card"><div class="t">EI2 bills table + token write <span class="chip warn">plan</span></div><div class="s">Tasks 7–8 · nothing on main · depends on nothing · verified</div></div>
     </div>
     <div class="lane"><h3>Ahead</h3>
-      <div class="card"><div class="t">EI3 environmental equivalents <span class="chip">spec</span></div><div class="s">phase row only · no plan · unverified</div></div>
-      <div class="card"><div class="t">EI4 water + landscape <span class="chip">spec</span></div><div class="s">phase row only · no plan · unverified</div></div>
-      <div class="card"><div class="t">EI5 getFullView join + prod gate <span class="chip">spec</span></div><div class="s">EI-D23 moved S2 here · no plan · unverified</div></div>
-      <div class="card"><div class="t">EI6 homeowner token play <span class="chip">brainstorm</span></div><div class="s">Q-L open (owner) · unverified</div></div>
+      <div class="card"><div class="t">EI3 environmental equivalents <span class="chip">spec</span></div><div class="s">phase row only · after EI0 and EI4 · unverified</div></div>
+      <div class="card"><div class="t">EI4 chapter UI <span class="chip">spec</span></div><div class="s">phase row only · after EI1 · unverified</div></div>
+      <div class="card"><div class="t">EI5 getFullView join + prod gate <span class="chip">spec</span></div><div class="s">EI-D23 · after EI1, EI2, EI4 · unverified</div></div>
+      <div class="card"><div class="t">EI6 homeowner token play <span class="chip">brainstorm</span></div><div class="s">Q-L open (owner, at EI4) · after EI5 · unverified</div></div>
     </div>
   </div>
 </section>
 
 <section id="relations">
-  <div class="sec-head lo"><p class="ve-label caps">Relations · one external block, then a straight line</p></div>
+  <div class="sec-head lo"><p class="ve-label caps">Relations · EI1 and EI2 run side by side; the rest is a chain</p></div>
   <figure>
-    <ve-flow label="EI0 is blocked by the scenes branch; EI0 unblocks EI1, which EI2 reads; EI3 and EI4 run in parallel after EI2; EI5 then EI6 follow.">
-      <ve-node id="ei0" at="1 1" sub="blocked upstream" key hot>EI0 lift</ve-node>
-      <ve-node id="ei1" at="2 1">EI1 sliders</ve-node>
-      <ve-node id="ei2" at="3 1">EI2 shell</ve-node>
-      <ve-node id="ei34" at="4 1" sub="parallel">EI3 ∥ EI4</ve-node>
-      <ve-node id="ei56" at="5 1" sub="then EI6">EI5 join + gate</ve-node>
-      <ve-edge from="ei0" to="ei1" label="unblocks" hot/>
-      <ve-edge from="ei1" to="ei2" label="hook"/>
-      <ve-edge from="ei2" to="ei34" label="after"/>
-      <ve-edge from="ei34" to="ei56" label="then"/>
+    <ve-flow label="The §3.1 re-run unblocks EI0; EI1 and EI2 then run in parallel; EI4 follows EI1; EI3 and EI5 follow; EI6 last.">
+      <ve-node id="ei0" at="1 1" sub="§3.1 re-run first" key hot>EI0 lift</ve-node>
+      <ve-node id="ei12" at="2 1" sub="parallel">EI1 ∥ EI2</ve-node>
+      <ve-node id="ei4" at="3 1" sub="after EI1">EI4 chapter</ve-node>
+      <ve-node id="ei35" at="4 1" sub="then EI5">EI3 equivalents</ve-node>
+      <ve-node id="ei6" at="5 1" sub="Q-L">EI6 token play</ve-node>
+      <ve-edge from="ei0" to="ei12" label="unblocks" hot/>
+      <ve-edge from="ei12" to="ei4" label="model"/>
+      <ve-edge from="ei4" to="ei35" label="picks"/>
+      <ve-edge from="ei35" to="ei6" label="then"/>
     </ve-flow>
-    <figcaption><span class="fig-n">Fig. 1</span>EI3 and EI4 are the only parallel-safe pair; everything else is a chain behind the scenes branch.</figcaption>
+    <figcaption><span class="fig-n">Fig. 1</span>EI1 and EI2 are the parallel-safe pair (two worktrees); everything else chains behind the §3.1 re-run.</figcaption>
   </figure>
 </section>
 
 <section id="sheet">
   <div class="sec-head lo"><p class="ve-label caps">Decision sheet · answered in the session, one at a time · first option is the recommendation</p></div>
   <ol class="ask">
-    <li><b>1 · Next child?</b><span class="o"><em>wait for the cool-roof fold, then EI0 as planned</em> · lift EI0 now without the fold (EI-D11 option b, re-ruled)</span></li>
-    <li><b>2 · Q-L, homeowner token play?</b><span class="o"><em>rule when EI6 is planned</em> · rule now</span></li>
-    <li><b>3 · EI3 and EI4?</b><span class="o"><em>two worktrees in parallel after EI2</em> · one plan, in sequence</span></li>
+    <li><b>1 · How does EI0 land now that the fold is built?</b><span class="o"><em>re-run §3.1 at the branch tip and lift the slice</em> · wait for the scenes branch to ship first · build EI1–EI2 on the scenes branch</span></li>
+    <li><b>2 · Tasks 1–5 against the drifted slice?</b><span class="o"><em>re-plan against the branch tip</em> · keep the plan and let Task 2's stop fire</span></li>
+    <li><b>3 · EI2 beside EI0?</b><span class="o"><em>start EI2 now in its own worktree</em> · keep it after EI0</span></li>
   </ol>
 </section>
 

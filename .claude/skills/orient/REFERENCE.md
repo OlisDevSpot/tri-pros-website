@@ -86,9 +86,10 @@ Judge from the divergence list's diffs and the rulings, not from re-reading the 
 
 - Read: the target's status block; the plan; the spec's decision list (not the whole spec); the tracker's status block, rulings table and open questions (not the whole tracker); the one memory `project-*` file the `MEMORY.md` index marks "READ before" for this area; the roadmap's answered `decisions` and `edits` for the node, via `ArtifactData` on `https://claude.ai/artifact/66odNQKdxqZdN6n5SEPY9n`, only after the target is picked.
 - Diffs, not files: `git log`, `git show --stat`, `git diff --stat`, and `git diff <baseline>..<ref> -- <file>` only for a divergence entry whose effect on a requirement is unclear. Never read a named file in full unless no verdict is possible otherwise.
+- Big plans are read by their skeleton: for a plan over about 30 KB, read the header, the Global Constraints, and each task's title, **Files** and **Interfaces** blocks only (`grep -n '^### Task\|^- Create:\|^- Modify:\|^- Produces:'` then `sed -n` around the hits); step bodies are read only for a task whose verdict is `partial`.
 - The checkpoint makes repeats cheap: when `git rev-parse <ref>` equals the `Verified at` sha, skip checks 1 and 2 and run check 3 against new rulings only.
 - Subagents only above about twelve tasks, at most three in parallel, read-only, each owning a slice of the task list and returning its rows of the task table in the shape above.
-- Budget: about two minutes of wall time for a plan, longer for an epic with several planned children. When the budget is spent, the remaining verdicts are `inferred` and the page says which.
+- Budget: about two minutes of wall time for the checks on a plan, longer for an epic with several planned children; the first page render adds about a minute, so render once (fix the renderer's ✗ list in one pass) and pull the roadmap only after the checks. When the budget is spent, the remaining verdicts are `inferred` and the page says which.
 
 ## Cold-start ranking
 
