@@ -2,20 +2,17 @@
   "mcpServers": {
     "playwright": {
       "command": "npx",
-      "args": ["@playwright/mcp@latest", "--browser", "chromium"]
+      "args": [
+        "@playwright/mcp@latest",
+        "--browser",
+        "chromium"
+      ]
     },
     "shadcn": {
       "command": "npx",
       "args": [
         "shadcn@latest",
         "mcp"
-      ]
-    },
-    "Neon": {
-      "command": "sh",
-      "args": [
-        "-c",
-        "set -a; . ./.env; set +a; exec npx -y mcp-remote https://mcp.neon.tech/mcp --header 'Authorization:Bearer ${NEON_API_KEY}'"
       ]
     }
   }

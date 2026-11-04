@@ -13,7 +13,7 @@ Auto-loaded every session. Address book + commands. Keep it short.
 ## Commands
 
 ```bash
-pnpm dev              # Start dev server
+pnpm dev              # Start dev server (restarts itself above DEV_MEM_LIMIT_GB, default 6)
 pnpm dev:mobile       # Dev + ngrok tunnel + QR (mobile testing)
 pnpm tunnel           # ngrok tunnel only
 pnpm lint             # ESLint
