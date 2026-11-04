@@ -130,7 +130,9 @@ cp .claude/skills/orient/templates/<plan|epic>-page.src.html ~/.agent/diagrams/o
 node ~/.claude/skills/visual-explainer/kit/render.mjs ~/.agent/diagrams/orient-<slug>.src.html -o ~/.agent/diagrams/orient-<slug>.html   # writes, then looks once; fix every ✗ it prints and render again (`--lint` only checks and writes nothing)
 ```
 
-Publish the rendered file with the Artifact tool: to the block's URL when it has one, else as a new artifact (icon `map`, title `Orient · <plan or epic>`). Without the Artifact tool, open the local rendered file and write its path in the block followed by `(local)`.
+Before publishing, strip the document wrapper from the rendered file: keep the children of `<head>` (title, fonts link, inline styles and scripts; drop the charset and viewport metas) followed by the content of `<body>`, because the Artifact tool wraps the file in its own skeleton. Publish that file with the Artifact tool: to the block's URL when it has one, else as a new artifact (icon `map`, title `Orient · <plan or epic>`). Without the Artifact tool, open the local rendered file and write its path in the block followed by `(local)`.
+
+The templates already override the kit's spacing (`main` row gap, header gap, label-only section heads) so a page fits; keep those rules when filling a template, and keep each table to at most five rows and each lane to at most four cards. Detail beyond that goes in the status block.
 
 **Plan page**, one screen, section ids in order:
 
@@ -142,7 +144,7 @@ Publish the rendered file with the Artifact tool: to the block's URL when it has
 | `decided` | rulings and requirement IDs that `still hold`, newest first |
 | `open` | open questions and blockers |
 | `stale` | `holds, path stale` and `invalidated` IDs, and the divergence list with shas |
-| `sheet` | the decision items as `<ve-ask>` blocks with a visible note "answer in the session" |
+| `sheet` | the decision items as a two-column list: the question in bold, then the options with the recommended one first and accented; the section label says "answered in the session, one at a time" (no `<ve-ask>` widgets: they are tall and the answers come through `AskUserQuestion`) |
 
 **Epic page**, one screen:
 
@@ -150,7 +152,7 @@ Publish the rendered file with the Artifact tool: to the block's URL when it has
 |---|---|
 | header | h1 = the epic, lead and meta as above |
 | `lanes` | three lanes, Done · In flight · Ahead, one card per child with its stage chip and one-line verified state |
-| `relations` | a `<ve-flow>` of children with `blocks` edges and a boundary around the parallel-safe group |
+| `relations` | a one-row `<ve-flow>` of at most five nodes: a parallel-safe pair is one node (`EI3 ∥ EI4`, sub `parallel`), a tail of sequential children is one node with the rest in its `sub`, and an external blocker is the first node's `sub` (`blocked upstream`; subs stay under 18 characters), never its own column; six or more columns clip at 1440 px |
 | `sheet` | as above |
 
-Fit: no scrolling at 1440×900; text is caption, not content. Detail that does not fit goes in the status block, not on the page.
+Fit: at 1440×900 the header through the decision sheet sits inside the first screen; only the sources line may fall below it. Text is caption, not content. Detail that does not fit goes in the status block, not on the page.

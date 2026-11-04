@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en" data-register="instrument">
+<head>
+<title>Orient · Proposal Energy Impact</title>
+<link rel="stylesheet" href="kit.css" data-ve-kit>
+<style>
+  main { max-width: 1320px; padding-block: 24px; row-gap: 10px; }
+  main > section.sources { padding-top: 6px; font-size: 11px; }
+  main > section.sources p { margin: 0; }
+  main > header { row-gap: 4px; }
+  main > header { margin-bottom: 10px; padding-bottom: 0; }
+  main > section { margin-block: 12px; padding-block: 0; }
+  main > section + section { border-top: 1px solid var(--line); padding-top: 8px; }
+  .sec-head.lo { margin-bottom: 6px; display: block; }
+  .sec-head.lo .ve-label { max-width: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sec-head { padding-top: 0 !important; border-top: 0 !important; }
+  header h1 { font-size: clamp(22px, 2.2vw, 28px); margin: 2px 0; }
+  header .lead { font-size: 13.5px; max-width: 90ch; margin: 2px 0; }
+  header .meta, header .eyebrow { overflow-wrap: anywhere; margin: 4px 0; }
+  .sec-head { margin-bottom: 8px; }
+  .sec-head h2 { font-size: 16px; }
+  .ask { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; }
+  .ask li { font-size: 13px; line-height: 1.35; }
+  .ask li b { display: block; font-weight: 600; }
+  .ask li .o { color: var(--text-dim); }
+  .ask li .o em { color: var(--accent); font-style: normal; font-weight: 600; }
+  .lanes { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; margin-top: 8px; }
+  .lane h3 { margin: 0 0 8px; font: 500 12px/1.2 var(--mono); text-transform: uppercase; letter-spacing: .04em; color: var(--text-dim); }
+  .card { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; margin-bottom: 5px; background: var(--surface); }
+  .card .t { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; }
+  .card .s { color: var(--text-dim); font-size: 11.5px; margin-top: 2px; line-height: 1.3; }
+  .card .chip { font-size: 11px; }
+  .note { color: var(--text-dim); font-size: 12px; }
+  .card .s { overflow-wrap: anywhere; }
+  @media (max-width: 760px) { .lanes, .ask { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body><main>
+
+<header>
+  <p class="eyebrow">epic · docs/plans/2026-10-21-proposal-energy-impact-epic.md</p>
+  <h1>Proposal Energy Impact</h1>
+  <p class="lead">A chapter right after Funding that answers "wow, it's expensive" with live bill-savings projections for the proposal's energy upgrades.</p>
+  <p class="meta">plan · stress-tested twice · verified main@1189904d7 · 2026-11-03 · rulings EI-D1–D27</p>
+</header>
+
+<section id="lanes">
+  <div class="sec-head"><p class="ve-label caps">Children</p><h2>Nothing built; the foundation waits on the scenes branch</h2></div>
+  <div class="lanes">
+    <div class="lane"><h3>Done</h3>
+      <div class="card"><div class="t">Design + rulings <span class="chip ok">spec</span></div><div class="s">approved 2026-10-21 · EI-D1–D27 · verified: spec file, tracker §1</div></div>
+    </div>
+    <div class="lane"><h3>In flight</h3>
+      <div class="card"><div class="t">EI0 construction slice lift <span class="chip risk">plan</span></div><div class="s">blocked: cool-roof fold on feat/trade-scenes-foundation (EI-D25) · no customer_utility_bills on any ref · verified</div></div>
+      <div class="card"><div class="t">EI1 bills + sliders <span class="chip warn">plan</span></div><div class="s">foundation plan tasks 3–5 · nothing on main · verified</div></div>
+      <div class="card"><div class="t">EI2 chapter shell <span class="chip warn">plan</span></div><div class="s">foundation plan tasks 6–7 · reads EI1's hook · verified</div></div>
+    </div>
+    <div class="lane"><h3>Ahead</h3>
+      <div class="card"><div class="t">EI3 environmental equivalents <span class="chip">spec</span></div><div class="s">phase row only · no plan · unverified</div></div>
+      <div class="card"><div class="t">EI4 water + landscape <span class="chip">spec</span></div><div class="s">phase row only · no plan · unverified</div></div>
+      <div class="card"><div class="t">EI5 getFullView join + prod gate <span class="chip">spec</span></div><div class="s">EI-D23 moved S2 here · no plan · unverified</div></div>
+      <div class="card"><div class="t">EI6 homeowner token play <span class="chip">brainstorm</span></div><div class="s">Q-L open (owner) · unverified</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="relations">
+  <div class="sec-head lo"><p class="ve-label caps">Relations · one external block, then a straight line</p></div>
+  <figure>
+    <ve-flow label="EI0 is blocked by the scenes branch; EI0 unblocks EI1, which EI2 reads; EI3 and EI4 run in parallel after EI2; EI5 then EI6 follow.">
+      <ve-node id="ei0" at="1 1" sub="blocked upstream" key hot>EI0 lift</ve-node>
+      <ve-node id="ei1" at="2 1">EI1 sliders</ve-node>
+      <ve-node id="ei2" at="3 1">EI2 shell</ve-node>
+      <ve-node id="ei34" at="4 1" sub="parallel">EI3 ∥ EI4</ve-node>
+      <ve-node id="ei56" at="5 1" sub="then EI6">EI5 join + gate</ve-node>
+      <ve-edge from="ei0" to="ei1" label="unblocks" hot/>
+      <ve-edge from="ei1" to="ei2" label="hook"/>
+      <ve-edge from="ei2" to="ei34" label="after"/>
+      <ve-edge from="ei34" to="ei56" label="then"/>
+    </ve-flow>
+    <figcaption><span class="fig-n">Fig. 1</span>EI3 and EI4 are the only parallel-safe pair; everything else is a chain behind the scenes branch.</figcaption>
+  </figure>
+</section>
+
+<section id="sheet">
+  <div class="sec-head lo"><p class="ve-label caps">Decision sheet · answered in the session, one at a time · first option is the recommendation</p></div>
+  <ol class="ask">
+    <li><b>1 · Next child?</b><span class="o"><em>wait for the cool-roof fold, then EI0 as planned</em> · lift EI0 now without the fold (EI-D11 option b, re-ruled)</span></li>
+    <li><b>2 · Q-L, homeowner token play?</b><span class="o"><em>rule when EI6 is planned</em> · rule now</span></li>
+    <li><b>3 · EI3 and EI4?</b><span class="o"><em>two worktrees in parallel after EI2</em> · one plan, in sequence</span></li>
+  </ol>
+</section>
+
+<section class="sources" aria-label="Sources"><p class="ve-label caps">Sources</p><p><code>docs/plans/2026-10-21-proposal-energy-impact-epic.md §1 §4</code> · <code>docs/superpowers/plans/2026-10-21-proposal-energy-impact-foundation.md</code> · <code>git grep customer_utility_bills main origin/main</code></p></section>
+
+</main></body>
+</html>
