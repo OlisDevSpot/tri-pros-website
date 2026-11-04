@@ -172,3 +172,11 @@ The proposal's bill-savings projection and the Remodel ROI calculator share thes
 - "qualify" means program eligibility (Energy Saver+ through `qualifyEnergySaver`, decided by a trade's category); whether a scope lowers a bill is a **Bill-cutting scope**, decided per scope. The two can differ: an A/C replacement qualifies for Energy Saver+ but cuts only the electric bill.
 - "sits" means two counts: the **Sit** filter grouping field and the "Sits" quick filter count meetings (every sat non-project meeting), while analytics "Sits" counts booked leads (first sit per lead, `pickBookedLead`). Both stay; the two numbers differ by design.
 - "campaign" means a lead-conversion provider campaign (`voip_campaigns`) and a Meta ad campaign; never a scheduled send to customers.
+## Planning terms
+
+- **Stage** — where a plan or epic stands, one of six words: **brainstorm** (grilled, no design doc) · **spec** (design written or approved, no plan) · **plan** (plan written, nothing built) · **building** (tasks in progress on a ref) · **built** (every task done on its ref, not on `origin/main`) · **shipped** (reachable from `origin/main`). A qualifier may follow (`stress-tested`, `awaiting iPad check`, `unmerged`). Owner agreed 2026-11-03.
+- **Orientation** — the verified delta between what a plan intended, what the tree and git show was done, and what moved underneath it since; produced by `/orient`. Not a recap of the plan file.
+- **Status block** — the structured header every tracker and plan carries (Stage · Built on · Verified at · page · Done · Next · Open · Blocked). `/orient` reads it as its checkpoint and rewrites it; `session-capture` writes it at session end as the hand-off. Replaces the old `> **Status:**` paragraph on first touch.
+- **Child** (of an epic) — a plan file under the epic, or a phase row in the tracker that has no plan yet; the latter is always `brainstorm` or `spec` and unverified.
+- _Avoid_: "handoff mode" (there is none; the hand-off is `session-capture` writing the status block), "resume block" (it is the status block).
+

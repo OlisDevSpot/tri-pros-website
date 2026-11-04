@@ -42,6 +42,7 @@ Package manager: **pnpm**. Path alias: `@/` → `src/`.
 - `docs/README.md` — index of `docs/sales/`, `docs/proposal/`, `docs/company/`, `docs/customer/`, `docs/programs/`, `docs/marketing/` (`showcase-offer.md` is THE Showcase offer), `docs/seo/`
 
 **Planning**
+- `/orient <path|words>` — verified orientation on a plan or epic tracker (tasks vs tree, plan vs git, requirements vs delta), a lean page, a decision sheet, and the structured status block written back; `session-capture` writes the same block at session end so `/orient <path>` is a fresh session's whole prompt.
 - `docs/plans/` — live epic trackers, standing contracts and ledgers, research that open work cites, and the VoIP epics. `docs/superpowers/specs|plans/` — pending, partial, or in-progress designs and plans only. Delete a plan when it ships.
 
 **Session memory**
