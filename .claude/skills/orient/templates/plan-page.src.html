@@ -36,6 +36,10 @@
   .cols .ve-table td:first-child { white-space: nowrap; font-family: var(--mono); font-size: 12px; }
   .cols .ve-table td { padding: 3px 8px; font-size: 12.5px; }
   .note { color: var(--text-dim); font-size: 12px; }
+  .ev { margin-top: 6px; font-size: 12px; color: var(--text-dim); }
+  .ev summary { cursor: pointer; }
+  .ev ul { margin: 4px 0 0; padding-left: 18px; }
+  .ev li { line-height: 1.4; }
   .kin { color: var(--text-dim); font-size: 13px; margin-top: 2px; overflow-wrap: anywhere; }
   @media (max-width: 760px) { .ribbon { grid-template-columns: repeat(3, 1fr); } .cols, .ask { grid-template-columns: 1fr; } }
 </style>
@@ -70,7 +74,15 @@
     <span class="chip ok" title="scope-phase-open.ts:1 · scope-phases-toggle.tsx:18 · scope-phase-row.tsx:33">T4 phase well · done</span>
     <span class="chip warn" title="steps 1–5 in eaa7fd16c, 37ea5cb8c, 162d2b49d · step 6 owner iPad gate open">T5 verify + polish · partial</span>
   </div>
-  <p class="note">Hover a chip for its evidence. All five verdicts verified against main@1189904d7.</p>
+  <details class="ev"><summary>Evidence · all five verdicts verified against main@1189904d7</summary>
+    <ul>
+      <li><b>T1</b> globals.css:692,765 · check-theme-contrast.ts:10 · b2a2fadc7</li>
+      <li><b>T2</b> scope-sticky.ts:1 · chapter-eyebrow.tsx:12 · use-is-stuck.ts:5</li>
+      <li><b>T3</b> plan names src/entities/…; work at src/features/proposal-flow/…/scope-spec-card.tsx:48 (⚠️ stale ref)</li>
+      <li><b>T4</b> scope-phase-open.ts:1 · scope-phases-toggle.tsx:18 · scope-phase-row.tsx:33</li>
+      <li><b>T5</b> steps 1–5 in eaa7fd16c, 37ea5cb8c, 162d2b49d · step 6 owner iPad gate open</li>
+    </ul>
+  </details>
 </section>
 
 <section>

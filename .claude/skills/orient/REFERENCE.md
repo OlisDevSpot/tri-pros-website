@@ -22,7 +22,7 @@ Field rules, one line each, no sentence longer than a line, IDs over prose:
 |---|---|
 | `Stage` | one of `brainstorm · spec · plan · building · built · shipped`, then an optional qualifier and date (`stress-tested 2026-10-22`, `awaiting iPad check`, `unmerged`) |
 | `Built on` | the ref the work lives on; `main` when it is on local main |
-| `Verified at` | `ref@sha (date)` of the last `/orient` run; the next run's baseline |
+| `Verified at` | `ref@sha (date)` of the last `/orient` run; the next run's baseline. Only `/orient` writes `Verified at`; `session-capture` writes `Verified at: —` so a hot session's `Done` line is never mistaken for verified state |
 | `page` | the artifact URL; or a local path followed by `(local)` when the session had no Artifact tool |
 | `Done` | task or phase IDs that are `done`, in order |
 | `Next` | the ordered next steps, with the dependency in brackets when one step must precede another |
@@ -35,13 +35,13 @@ Stage meanings: `brainstorm` = grilled, no design doc · `spec` = design written
 
 ## Checks
 
-Always all three, never deeper. One named ref per run: the block's `Built on`, else the branch the tracker names for that plan, else the current worktree's HEAD. No checkout; another session's worktree is never entered.
+Always all three, never deeper. One named ref per plan checked (an epic uses each child's): the block's `Built on`, else the branch the tracker names for that plan, else the current worktree's HEAD. Confirm it with `git rev-parse --verify <ref>`; a ref that no longer exists (squash-merged and deleted under the ship flow) falls through to `origin/main`, the page says so, and names found there make the stage `shipped`. No checkout; another session's worktree is never entered.
 
 **Baseline**, first that applies: the block's `Verified at` sha · the tracker's `Baseline` line · the plan file's first commit (`git log --diff-filter=A --format=%h -- <plan>`) · for an untracked plan, the oldest commit touching any named file on or after the date in the plan's filename: `git log --reverse --format='%h %cs' <ref> -- <files>` and take the first row whose date is on or after that date (`--since` stops at an older interleaved commit and mis-reports). A baseline sha that is not an ancestor of the ref (`git merge-base --is-ancestor <sha> <ref>` fails; a squash merge happened) falls through to the next rung, and the page says so.
 
 ### 1. Tasks against the tree
 
-For each `### Task N` in the plan, take the paths under **Files** and the names under **Interfaces › Produces** (tables, columns, DAL functions, procedures, hooks, components, constants).
+For each task heading (`grep -nE '^#{2,3} Task'`; plans here use both `##` and `###`), take the paths under **Files** and the names under **Interfaces › Produces** (tables, columns, DAL functions, procedures, hooks, components, constants). A plan or spec with no task headings gets no rows: check 1 reports "no task list", the stage is at most `spec`, and the page's task strip says so instead of inventing tasks from prose.
 
 ```sh
 git ls-tree -r --name-only <ref> -- <path>            # exists on the ref?
@@ -87,7 +87,7 @@ Judge from the divergence list's diffs and the rulings, not from re-reading the 
 - Read: the target's status block; the plan; the spec's decision list (not the whole spec); the tracker's status block, rulings table and open questions (not the whole tracker); the one memory `project-*` file the `MEMORY.md` index marks "READ before" for this area; the roadmap's answered `decisions` and `edits` for the node, via `ArtifactData` on `https://claude.ai/artifact/66odNQKdxqZdN6n5SEPY9n`, only after the target is picked.
 - Diffs, not files: `git log`, `git show --stat`, `git diff --stat`, and `git diff <baseline>..<ref> -- <file>` only for a divergence entry whose effect on a requirement is unclear. Never read a named file in full unless no verdict is possible otherwise.
 - Big plans are read by their skeleton: for a plan over about 30 KB, read the header, the Global Constraints, and each task's title, **Files** and **Interfaces** blocks only (`grep -n '^### Task\|^- Create:\|^- Modify:\|^- Produces:'` then `sed -n` around the hits); step bodies are read only for a task whose verdict is `partial`.
-- The checkpoint makes repeats cheap: when `git rev-parse <ref>` equals the `Verified at` sha, skip checks 1 and 2 and run check 3 against new rulings only.
+- The checkpoint makes repeats cheap: when `Verified at` holds a sha (never `—`) and `git rev-parse <ref>` equals it, skip checks 1 and 2 and run check 3 against new rulings only. A block with `Verified at: —` was written by `session-capture`; its `Done` line is a claim, and all three checks run.
 - Subagents only above about twelve tasks, at most three in parallel, read-only, each owning a slice of the task list and returning its rows of the task table in the shape above.
 - Budget: about two minutes of wall time for the checks on a plan, longer for an epic with several planned children; the first page render adds about a minute, so render once (fix the renderer's ✗ list in one pass) and pull the roadmap only after the checks. When the budget is spent, the remaining verdicts are `inferred` and the page says which.
 
@@ -119,7 +119,7 @@ In this order, after the last answer:
 
 1. **Rulings.** One dated row per answer, in the owner's words, in the tracker's rulings table (`| # | Ruling | Date |`). The ID is the next free one in that table's series, read from the existing rows (`EI-D`, `R`, `K`, `C` …). When the tracker, or a plan with no tracker, has no table, insert `## Rulings` with the three columns right after the status block, continuing from the highest ID of that series found anywhere in the file; never restart at 1.
 2. **Status block.** Regenerated from the verified state plus the new rulings, in the shape of §Status block, in the plan (plan altitude) or the tracker (epic altitude).
-3. **Memory.** Refresh the one-line status in the matching `project-*` file and its `MEMORY.md` index line; no new memory file.
+3. **Memory.** In the matching `project-*` file, refresh the frontmatter `description` and the first status sentence of the body, and refresh its `MEMORY.md` index line. With no `project-*` file for this area, skip this step and say so; never add a memory file or a `MEMORY.md` line from here.
 4. **One line in chat** saying what changed, then stop. Nothing is committed unless the owner asks, and then only by explicit path.
 
 ## Pages
@@ -131,9 +131,9 @@ cp .claude/skills/orient/templates/<plan|epic>-page.src.html ~/.agent/diagrams/o
 node ~/.claude/skills/visual-explainer/kit/render.mjs ~/.agent/diagrams/orient-<slug>.src.html -o ~/.agent/diagrams/orient-<slug>.html   # writes, then looks once; fix every ✗ it prints and render again (`--lint` only checks and writes nothing)
 ```
 
-Before publishing, strip the document wrapper from the rendered file: keep the children of `<head>` (title, fonts link, inline styles and scripts; drop the charset and viewport metas) followed by the content of `<body>`, because the Artifact tool wraps the file in its own skeleton. Publish that file with the Artifact tool: to the block's URL when it has one, else as a new artifact (icon `map`, title `Orient · <plan or epic>`). Without the Artifact tool, open the local rendered file and write its path in the block followed by `(local)`.
+Before publishing, strip the document wrapper from the rendered file: keep the children of `<head>` (title, fonts link, inline styles and scripts; drop the charset and viewport metas) followed by the content of `<body>`, because the Artifact tool wraps the file in its own skeleton. Publish that file with the Artifact tool: to the block's URL when it has one (read it first with the Artifact tool's `read` action; a publish to an unread URL is refused), else as a new artifact (icon `map`, title `Orient · <plan or epic>`). Without the Artifact tool, open the local rendered file and write its path in the block followed by `(local)`.
 
-The templates already override the kit's spacing (`main` row gap, header gap, label-only section heads) so a page fits; keep those rules when filling a template, and keep each table to at most five rows and each lane to at most four cards. Detail beyond that goes in the status block.
+The templates already override the kit's spacing (`main` row gap, header gap, label-only section heads) so a page fits; keep those rules when filling a template, and keep each table to at most five rows and each lane to at most four cards; a lane with more ends with one line `+N more: <IDs>` and those IDs go in the status block, so no child is dropped silently. Detail beyond that goes in the status block.
 
 **Plan page**, one screen, section ids in order:
 
@@ -141,7 +141,7 @@ The templates already override the kit's spacing (`main` row gap, header gap, la
 |---|---|
 | header | eyebrow = the epic (or `standalone`), h1 = the plan, lead = two sentences of what and why from the spec, meta = `stage · verified ref@sha date` |
 | `stage` | the six stages as a ribbon, the current one lit, with its date |
-| `tasks` | one chip per task, class by verdict (`ok` done, `warn` partial or stale, `risk` not started), `title` = the evidence |
+| `tasks` | one chip per task, class by verdict (`ok` done, `warn` partial or stale, `risk` not started), `title` = the evidence, plus a collapsed `<details class="ev">` under the strip listing the evidence per task, because the owner reads on an iPad where hover tooltips never show |
 | `decided` | rulings and requirement IDs that `still hold`, newest first |
 | `open` | open questions and blockers |
 | `stale` | `holds, path stale` and `invalidated` IDs, and the divergence list with shas |
