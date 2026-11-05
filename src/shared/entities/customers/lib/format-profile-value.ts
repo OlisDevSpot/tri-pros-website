@@ -1,4 +1,9 @@
-export function formatProfileValue(value: unknown): string {
+import type { ProfileFieldConfig } from '@/shared/entities/customers/types'
+
+export function formatProfileValue(value: unknown, field?: ProfileFieldConfig): string {
+  if (typeof value === 'string') {
+    return field?.optionLabels?.[value] ?? value
+  }
   if (typeof value === 'boolean') {
     return value ? 'Yes' : 'No'
   }

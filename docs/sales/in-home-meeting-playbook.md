@@ -182,9 +182,9 @@ Sell the destination, not the ticket. Customers don't care about R-38 insulation
 | Trade | Outcome statement |
 |---|---|
 | Roofing | "Your home will be fully protected from weather damage for the next 30 years, and the cool-roof system will reduce attic heat by up to 30%." |
-| Insulation | "You'll notice the difference in comfort within the first month, and most customers see their energy bill drop by 20-40%." |
+| Insulation | "You'll notice the difference in comfort within the first month, and our estimate from customer bills is about 10% off the electric bill and 15% off gas." |
 | Windows | "No more drafts, no more noise from outside, and your home will hold temperature much more consistently." |
-| HVAC | "Your system will be efficient enough that most customers cut their cooling bill nearly in half." |
+| HVAC | "Your system will be efficient, and our estimate from customer bills is about a quarter off cooling and a fifth off heating." |
 | Solar | "You're essentially locking in your energy rate for 25 years — while your neighbors keep seeing their bills go up." |
 | Bathroom | "You'll have a completely updated bathroom that feels brand new — and it adds significantly to your home's resale value." |
 

@@ -19,30 +19,6 @@ export const KEY_SHORTCUTS = {
   portfolio: 'Space ArrowUp ArrowDown A Z',
 } as const
 
-/**
- * Elements whose own keyboard interaction must win over the flow map: text entry
- * plus the APG roles that consume arrows, Home/End and printable characters
- * (Radix Select = combobox + listbox, Menu = menu/menuitem, cmdk = combobox).
- */
-export const TYPING_TARGET_SELECTOR = [
-  'input',
-  'textarea',
-  'select',
-  '[contenteditable=""]',
-  '[contenteditable="true"]',
-  '[role="combobox"]',
-  '[role="listbox"]',
-  '[role="option"]',
-  '[role="textbox"]',
-  '[role="searchbox"]',
-  '[role="slider"]',
-  '[role="spinbutton"]',
-  '[role="menu"]',
-  '[role="menuitem"]',
-  '[role="menuitemcheckbox"]',
-  '[role="menuitemradio"]',
-].join(',')
-
 /** Controls the browser already activates on Space; the flow must not act on the same press. */
 export const ACTIVATABLE_TARGET_SELECTOR = 'button, a[href], summary, [role="button"], [role="link"], [role="tab"]'
 

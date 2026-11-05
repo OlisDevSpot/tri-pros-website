@@ -84,6 +84,8 @@ function lazyOnlyImports({ except = [], patterns = [TWILIO_REST_PATTERN, EMAIL_T
 // `no-restricted-imports` for the same files would replace this rule's entry
 // rather than layer onto it.
 const lazyOnlyPlugin = { rules: { imports: builtinRules.get('no-restricted-imports') } }
+// Aliased for the same reason: a second `no-restricted-imports` entry would replace the lazy-only one.
+const sceneBoundaryPlugin = { rules: { imports: builtinRules.get('no-restricted-imports') } }
 
 export default antfu({
   formatters: true,
@@ -238,5 +240,25 @@ export default antfu({
       { selector: 'Literal[value=/\\bfont-(extrabold|black)\\b/]', message: 'Weights stop at font-bold (700); Syne stops at font-semibold (600).' },
       { selector: 'TemplateElement[value.raw=/\\bfont-(extrabold|black)\\b/]', message: 'Weights stop at font-bold (700); Syne stops at font-semibold (600).' },
     ],
+  },
+}).append({
+  // three.js is ~600 kB; it loads only where a scene is drawn, and the construction model stays drawable any way.
+  name: 'project/three-only-in-scenes',
+  files: ['src/**/*.ts', 'src/**/*.tsx'],
+  ignores: ['src/shared/components/scene/**', 'src/features/trade-scenes/**', 'src/features/meeting-visualizations/**'],
+  plugins: { 'scene-boundary': sceneBoundaryPlugin },
+  rules: {
+    'scene-boundary/imports': ['error', {
+      patterns: [{ group: ['three', 'three/*', '@react-three/*', 'postprocessing', 'postprocessing/*', 'three-stdlib', 'three-stdlib/*', 'maath', 'maath/*'], message: 'three.js belongs to scene primitives and trade scenes only.' }],
+    }],
+  },
+}).append({
+  name: 'project/scene-primitives-know-no-construction',
+  files: ['src/shared/components/scene/**'],
+  plugins: { 'scene-boundary': sceneBoundaryPlugin },
+  rules: {
+    'scene-boundary/imports': ['error', {
+      patterns: [{ group: ['@/shared/modules/construction', '@/shared/modules/construction/*'], message: 'Scene primitives are app-wide: pass construction facts in as props.' }],
+    }],
   },
 })

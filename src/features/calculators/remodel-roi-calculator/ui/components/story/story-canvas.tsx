@@ -6,7 +6,6 @@ import type { RemodelRoiProjection, StoryContent } from '@/features/calculators/
 
 import { useMemo } from 'react'
 
-import { BILL_CATEGORIES } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
 import { CHAPTER_IDS, chapterElementId, CHAPTERS_WITH_INFO, INTRO_ONLY, isDetailChapter } from '@/features/calculators/remodel-roi-calculator/constants/chapters'
 import { STORY_COPY } from '@/features/calculators/remodel-roi-calculator/constants/story-copy'
 import { useStoryUi } from '@/features/calculators/remodel-roi-calculator/contexts/story-ui-context'
@@ -20,6 +19,7 @@ import { StoryChapter } from '@/features/calculators/remodel-roi-calculator/ui/c
 import { TopBar } from '@/features/calculators/remodel-roi-calculator/ui/components/story/top-bar'
 import { Button } from '@/shared/components/ui/button'
 import { useActiveSection } from '@/shared/hooks/use-active-section'
+import { BILL_CATEGORIES } from '@/shared/modules/construction/core/constants/bill-categories'
 
 interface Props {
   projection: RemodelRoiProjection

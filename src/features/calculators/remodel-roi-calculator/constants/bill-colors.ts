@@ -1,6 +1,6 @@
-import type { BillCategory } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
+import type { BillCategory } from '@/shared/modules/construction/core/constants/bill-categories'
 
-import { BILL_CATEGORIES, BILL_CATEGORY_LABELS } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
+import { BILL_CATEGORIES, BILL_CATEGORY_LABELS } from '@/shared/modules/construction/core/constants/bill-categories'
 
 // Bill categories are unordered, so they take the categorical chart set, not status colors.
 export const BILL_COLORS = {

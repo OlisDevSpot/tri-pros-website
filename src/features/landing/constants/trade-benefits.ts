@@ -1,4 +1,5 @@
-// src/features/landing/constants/trade-benefits.ts
+import { formatRowTile, tradeCutPercent } from '@/shared/modules/construction/core/lib/bill-cut-claims'
+
 export interface TradeBenefit {
   title: string
   description: string
@@ -7,7 +8,7 @@ export interface TradeBenefit {
 
 export const tradeBenefits: Partial<Record<string, TradeBenefit[]>> = {
   'hvac': [
-    { title: 'Lower Utility Bills', description: 'High-SEER systems that cut heating and cooling costs dramatically', stat: '–40–60%' },
+    { title: 'Lower Utility Bills', description: 'High-SEER systems that cut heating and cooling costs dramatically', stat: formatRowTile(tradeCutPercent('hvac', 'electric')) },
     { title: 'Consistent Comfort', description: 'Even temperatures throughout your home, every room, every season' },
     { title: 'Reduced Carbon Footprint', description: 'Energy-efficient units that are better for your home and the environment' },
     { title: 'Rebate Eligible', description: 'Qualifies for federal tax credits and utility company rebates', stat: 'Up to $3,200' },
@@ -19,14 +20,14 @@ export const tradeBenefits: Partial<Record<string, TradeBenefit[]>> = {
     { title: 'Home Value', description: 'One of the highest-ROI improvements for resale' },
   ],
   'windows-and-doors': [
-    { title: 'Lower Utility Bills', description: 'Reduced heat gain and loss through dual or triple-pane glass', stat: '–15–25%' },
+    { title: 'Lower Utility Bills', description: 'Reduced heat gain and loss through dual or triple-pane glass', stat: formatRowTile(tradeCutPercent('windows-and-doors', 'electric')) },
     { title: 'Quieter Living Spaces', description: 'Significant noise reduction from outside' },
     { title: 'Enhanced Security', description: 'Modern frames and locking mechanisms' },
     { title: 'Consistent Comfort', description: 'No more drafts or hot spots near windows' },
   ],
   'attic-and-basement': [
     { title: 'Immediate Comfort', description: 'Notice the temperature difference the same day', stat: 'Same day' },
-    { title: 'Energy Bill Reduction', description: 'Significant heating and cooling cost savings', stat: '–20–40%' },
+    { title: 'Energy Bill Reduction', description: 'Significant heating and cooling cost savings', stat: formatRowTile(tradeCutPercent('attic-and-basement', 'electric')) },
     { title: 'Annual Savings', description: 'Real dollar savings that compound year over year', stat: '$1,400+ avg' },
     { title: 'Federal Tax Credit', description: 'Qualifies for federal and utility rebate programs', stat: '30%' },
   ],
@@ -58,13 +59,13 @@ export const tradeBenefits: Partial<Record<string, TradeBenefit[]>> = {
     { title: 'Moisture Control', description: 'Properly applied coatings prevent wall penetration and structural damage' },
   ],
   'water-heating': [
-    { title: 'Energy Savings', description: 'Tankless and heat-pump systems dramatically cut water heating costs', stat: '–30–50%' },
+    { title: 'Energy Savings', description: 'Tankless and heat-pump systems dramatically cut water heating costs' },
     { title: 'Instant Hot Water', description: 'No more waiting — hot water at the fixture in seconds' },
     { title: 'System Lifespan', description: 'Modern water heaters outlast old tank units by years', stat: '20 years' },
     { title: 'Rebate Eligible', description: 'Heat-pump water heaters qualify for federal and utility rebates', stat: 'Up to $2,000' },
   ],
   'dryscaping': [
-    { title: 'Water Bill Reduction', description: 'Drought-tolerant landscaping cuts outdoor water use significantly', stat: '–50–70%' },
+    { title: 'Water Bill Reduction', description: 'Drought-tolerant landscaping cuts outdoor water use significantly', stat: formatRowTile(tradeCutPercent('dryscaping', 'water')) },
     { title: 'Zero Maintenance Lawn', description: 'No mowing, no irrigation cycles, no seasonal replanting' },
     { title: 'HOA Compliant', description: 'Native and drought-tolerant designs meet or exceed HOA standards' },
     { title: 'Drought Proof', description: 'A yard that looks great regardless of water restrictions' },

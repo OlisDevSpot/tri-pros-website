@@ -1,0 +1,1238 @@
+<title>Scene Card Studies</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Syne:wght@600;700&display=swap">
+<style>
+/* Layout: one review page, one question; three versions, each a pair of live device frames (iPad landscape, phone) driven by one shared home, with notes underneath. Round 6. */
+:root {
+  --bg: oklch(0.972 0.007 250);
+  --surface: oklch(0.995 0.003 250);
+  --ink: oklch(0.24 0.045 258);
+  --ink-2: oklch(0.47 0.03 256);
+  --line: oklch(0.89 0.012 250);
+  --accent: oklch(0.56 0.15 238);
+  --accent-soft: oklch(0.93 0.04 238);
+  --done: oklch(0.5 0.11 152);
+  --font-display: 'Syne', 'Avenir Next', 'Segoe UI', sans-serif;
+  --font-body: 'Nunito', 'Segoe UI', system-ui, sans-serif;
+
+  /* The scene card is dark in both app themes, so the mocks commit to the app's dark scene tokens. */
+  --m-ground: oklch(0.125 0.04 253);
+  --m-card: oklch(0.206 0.04 253);
+  --m-raised: oklch(0.253 0.04 253);
+  --m-edge: oklch(0.276 0.04 253);
+  --m-pop: oklch(0.347 0.04 253);
+  --m-fg: oklch(0.955 0.008 250);
+  --m-fg-2: oklch(0.77 0.03 252);
+  --m-primary: oklch(0.76 0.13 230);
+  --m-primary-soft: oklch(0.76 0.13 230 / 0.16);
+  --m-on-primary: oklch(0.19 0.045 258);
+  --m-success: oklch(0.84 0.11 155);
+  --m-attention: oklch(0.84 0.1 55);
+  --m-danger: oklch(0.83 0.1 25);
+  --m-glass: oklch(0.17 0.04 253 / 0.92);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: oklch(0.155 0.03 253); --surface: oklch(0.2 0.035 253); --ink: oklch(0.95 0.008 250); --ink-2: oklch(0.77 0.03 252);
+    --line: oklch(0.3 0.035 253); --accent: oklch(0.76 0.13 230); --accent-soft: oklch(0.27 0.06 240); --done: oklch(0.84 0.11 155); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: oklch(0.155 0.03 253); --surface: oklch(0.2 0.035 253); --ink: oklch(0.95 0.008 250); --ink-2: oklch(0.77 0.03 252);
+  --line: oklch(0.3 0.035 253); --accent: oklch(0.76 0.13 230); --accent-soft: oklch(0.27 0.06 240); --done: oklch(0.84 0.11 155); color-scheme: dark;
+}
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.55 }
+.page { max-width: 1320px; margin: 0 auto; padding-block: 40px 96px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em }
+h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.1 }
+h2 { font-size: clamp(22px, 3vw, 28px); line-height: 1.15 }
+h3 { font-size: 17px }
+p { margin: 0; max-width: 68ch }
+.eyebrow { font-size: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent) }
+.lede { color: var(--ink-2); margin-top: 12px; font-size: 16px }
+.intro { display: grid; gap: 8px; margin-bottom: 20px }
+.carried { display: grid; gap: 8px; padding: 16px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px }
+.carried ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr)); gap: 6px 20px }
+.carried li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 8px; color: var(--ink-2); font-size: 14px }
+.carried li::before { content: "✓"; color: var(--done); font-weight: 800 }
+.carried li.new::before { content: "+"; color: var(--accent) }
+.carried b { color: var(--ink) }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+
+section.q { padding-top: 36px; display: grid; gap: 18px }
+.q-head { display: grid; gap: 8px }
+.variants { display: flex; flex-wrap: wrap; gap: 8px }
+.variants button { font: inherit; font-weight: 700; font-size: 14px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; cursor: pointer; text-align: left; display: grid; gap: 0 }
+.variants button small { font-weight: 600; color: var(--ink-2); font-size: 12px }
+.variants button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft) }
+.variants .rec { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent) }
+.pitch { color: var(--ink-2); min-height: 3em }
+.pitch b { color: var(--ink) }
+.try { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 14px; color: var(--ink-2) }
+.try button { font: inherit; font-weight: 700; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; cursor: pointer }
+
+.frames { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: start }
+@media (max-width: 860px) { .frames { grid-template-columns: minmax(0, 1fr) } }
+.device { display: grid; gap: 8px; min-width: 0 }
+.device-label { font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-2) }
+.bezel { background: oklch(0.2 0.02 253); padding: 10px; border-radius: 22px; width: max-content; max-width: 100% }
+.bezel.phone { border-radius: 34px; padding: 9px }
+.screen { position: relative; overflow: hidden; border-radius: 13px; background: var(--m-ground) }
+.bezel.phone .screen { border-radius: 26px }
+.stage { position: absolute; top: 0; left: 0; transform-origin: 0 0 }
+
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px }
+.note { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 8px; align-content: start }
+.note ul { margin: 0; padding-left: 18px; color: var(--ink-2) }
+.note li + li { margin-top: 4px }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface) }
+table { border-collapse: collapse; width: 100%; min-width: 680px; font-size: 14px }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top }
+th { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2) }
+tr:last-child td { border-bottom: 0 }
+.legend { display: grid; gap: 10px; margin-top: 52px; padding: 20px; border: 1px dashed var(--line); border-radius: 14px }
+.legend dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; margin: 0 }
+.legend dt { font-weight: 800 }
+.legend dd { margin: 0; color: var(--ink-2) }
+@media (max-width: 560px) { .legend dl { grid-template-columns: minmax(0, 1fr) } .legend dd { margin-bottom: 8px } }
+
+/* ---------- The mock (native device pixels) ---------- */
+.m { position: relative; overflow: hidden; color: var(--m-fg); font-family: var(--font-body); font-size: 14px; line-height: 1.4; background-size: cover; background-position: center; -webkit-font-smoothing: antialiased; contain: layout paint }
+:where(.m) button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer }
+.m svg { width: 16px; height: 16px; flex: none; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round }
+.m .glass { background: var(--m-glass); border: 1px solid var(--m-edge); box-shadow: 0 8px 24px oklch(0.1 0.04 253 / 0.35) }
+.m-build-tint { position: absolute; inset: 0; pointer-events: none; z-index: 1; box-shadow: inset 0 0 0 3px var(--m-primary); opacity: 0; transition: opacity 0.25s }
+.m.is-build .m-build-tint { opacity: 0.55 }
+.m-dock { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); display: grid; gap: 14px; padding: 12px 8px; border-radius: 14px; font-size: 11px; font-weight: 700; color: var(--m-fg-2); text-align: center; z-index: 4 }
+.m-dock span { display: grid; justify-items: center; gap: 3px }
+.m.phone .m-dock { top: 10px; right: 10px; transform: none; grid-auto-flow: column; gap: 12px; padding: 6px 12px; font-size: 10px; border-radius: 999px }
+.m.phone .m-dock span { grid-auto-flow: column; gap: 4px; align-items: center }
+
+/* The group. Drawn once; every change after that is a class or an attribute, so it animates instead of jumping. */
+/* max-content: a group centred at 50% would otherwise be squeezed into the right half and clip its names. */
+.bar { position: absolute; z-index: 9; bottom: 16px; width: max-content; display: flex; align-items: center; gap: 2px; padding: 5px; border-radius: 999px }
+.bar.v-B, .bar.v-C { transform: translateX(-50%) }
+.bar.v-A { transition: left 0.3s cubic-bezier(.2,.8,.2,1) }
+.m.phone .bar { left: 50% !important; bottom: 10px; transform: translateX(-50%); transition: none; border-radius: 26px }
+.m.phone .bar.v-C { display: grid; grid-template-columns: repeat(3, 44px) auto 44px 44px; justify-items: center }
+.bar-item { display: inline-flex; align-items: center; justify-content: center; height: 44px; min-width: 44px; padding: 0 12px; border-radius: 999px; font-weight: 800; font-size: 13.5px; white-space: nowrap; color: var(--m-fg-2); position: relative; transition: background 0.2s, color 0.2s, padding 0.28s cubic-bezier(.2,.8,.2,1) }
+.bar-item:hover { color: var(--m-fg) }
+.bar-item[aria-expanded="true"] { background: var(--m-raised); color: var(--m-fg); box-shadow: inset 0 0 0 1px var(--m-pop) }
+/* A name opens on a 0fr to 1fr column, so its width grows on the same curve as A's slide and the toggle holds exactly still. */
+.bar-item .lbl { display: inline-grid; grid-template-columns: 0fr; opacity: 0; margin-left: 0; transition: grid-template-columns 0.3s cubic-bezier(.2,.8,.2,1), opacity 0.18s, margin-left 0.3s cubic-bezier(.2,.8,.2,1) }
+.bar-item .lbl > span { min-width: 0; overflow: hidden }
+.bar-item[aria-expanded="true"] .lbl { grid-template-columns: 1fr; opacity: 1; margin-left: 8px; transition-delay: 0s, 0.08s, 0s }
+.dotmiss { position: absolute; top: 9px; left: 26px; width: 8px; height: 8px; border-radius: 50%; background: var(--m-attention); box-shadow: 0 0 0 2px var(--m-glass); pointer-events: none }
+.badge { position: absolute; top: 3px; left: 25px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; display: grid; place-items: center; font-size: 10.5px; font-weight: 800; background: var(--m-primary); color: var(--m-on-primary); transition: background 0.2s, color 0.2s; pointer-events: none }
+.badge.dim { background: var(--m-pop); color: var(--m-fg-2) }
+.bar-sep { width: 1px; height: 22px; background: var(--m-edge); flex: none; margin: 0 3px }
+.m.phone .bar-sep { display: none }
+
+/* The toggle: one button. The two names share one cell, so it is as wide as the longer one and never changes size. */
+.toggle { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 16px 0 12px; border-radius: 999px; font-weight: 800; font-size: 13.5px; background: var(--m-raised); color: var(--m-fg); box-shadow: inset 0 0 0 1px var(--m-pop); transition: background 0.22s, color 0.22s, box-shadow 0.22s }
+.toggle.build { background: var(--m-primary); color: var(--m-on-primary); box-shadow: none }
+.toggle .sw { display: inline-flex; transition: transform 0.35s cubic-bezier(.2,.8,.2,1) }
+.toggle.build .sw { transform: rotate(180deg) }
+.toggle .names { display: grid }
+.toggle .names span { grid-area: 1 / 1; transition: opacity 0.18s, transform 0.28s cubic-bezier(.2,.8,.2,1) }
+.toggle .names .b, .toggle.build .names .t { opacity: 0; transform: translateY(7px) }
+.toggle.build .names .b { opacity: 1; transform: none }
+.m.phone .toggle { padding: 0 12px 0 10px; gap: 6px; font-size: 13px }
+.m.phone .bar-item { min-width: 40px; padding: 0 10px; font-size: 13px }
+.m.phone .bar-item[aria-expanded="true"] .lbl { margin-left: 6px }
+
+/* Recenter: A and B slide it in and out; C keeps its slot and fades the icon. */
+.rc-wrap { display: inline-flex; align-items: center; max-width: 0; opacity: 0; overflow: hidden; transition: max-width 0.3s cubic-bezier(.2,.8,.2,1), opacity 0.18s }
+.bar.moved .rc-wrap { max-width: 60px; opacity: 1 }
+.v-C .rc-wrap { max-width: none; opacity: 1 }
+.v-C .rc-wrap .bar-item { opacity: 0; transform: scale(0.7); pointer-events: none; transition: opacity 0.2s, transform 0.28s cubic-bezier(.2,.8,.2,1) }
+.v-C.moved .rc-wrap .bar-item { opacity: 1; transform: none; pointer-events: auto }
+/* C: names rise above the icon as a tab, so nothing in the group moves. */
+.v-C .bar-item .lbl { position: absolute; bottom: calc(100% + 10px); left: 50%; grid-template-columns: max-content; margin: 0; padding: 4px 10px; border-radius: 999px; background: var(--m-raised); border: 1px solid var(--m-pop); color: var(--m-fg); font-size: 12px; transform: translate(-50%, 6px) scale(0.92); transition: opacity 0.18s, transform 0.28s cubic-bezier(.2,.8,.2,1) }
+.v-C .bar-item[aria-expanded="true"] .lbl { margin: 0; transform: translate(-50%, 0) }
+@media (prefers-reduced-motion: reduce) { .bar *, .m-build-tint { transition: none !important } }
+.measure, .measure * { transition: none !important }
+.toast { position: absolute; z-index: 11; top: 14px; transform: translateX(-50%); padding: 8px 14px; border-radius: 999px; font-weight: 800; font-size: 13px; background: var(--m-primary); color: var(--m-on-primary); box-shadow: 0 10px 30px oklch(0.1 0.04 253 / 0.45); animation: toast 1.9s ease forwards; white-space: nowrap; pointer-events: none }
+@keyframes toast { 0% { opacity: 0; transform: translate(-50%, -6px) } 12%, 80% { opacity: 1; transform: translate(-50%, 0) } 100% { opacity: 0 } }
+
+/* One modal shell for every section: Home facts, Benefits and Modify; Systems is a rail, not a modal. */
+.m-scrim { position: absolute; inset: 0; background: oklch(0.1 0.04 253 / 0.45); z-index: 7 }
+.m-modal { position: absolute; z-index: 8; display: flex; flex-direction: column; background: var(--m-card); border: 1px solid var(--m-edge); border-radius: 16px; box-shadow: 0 24px 60px oklch(0.08 0.04 253 / 0.6) }
+.m.phone .m-modal { border-radius: 20px }
+.opening .m-scrim { animation: fade 0.16s ease-out }
+.opening .m-modal { animation: rise 0.22s cubic-bezier(.2,.8,.2,1) }
+.swapping [data-part="mbody"] { animation: fade 0.16s ease-out }
+@keyframes fade { from { opacity: 0 } }
+@keyframes rise { from { opacity: 0; transform: translateY(10px) } }
+@media (prefers-reduced-motion: reduce) { .opening .m-scrim, .opening .m-modal, .swapping [data-part="mbody"], .menu, .toast, .flash { animation: none !important } }
+.mm-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--m-edge); min-height: 67px }
+.mm-ico { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: var(--m-raised); color: var(--m-fg-2); flex: none }
+.mm-title { font-family: var(--font-display); font-weight: 700; font-size: 18px }
+.mm-tag { font-size: 10.5px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--m-fg-2); border: 1px solid var(--m-edge); border-radius: 999px; padding: 2px 8px; white-space: nowrap; transition: background 0.2s, color 0.2s, border-color 0.2s }
+.mm-tag.build { color: var(--m-on-primary); background: var(--m-primary); border-color: var(--m-primary) }
+.mm-filter { flex: 1; display: flex; align-items: center; gap: 10px; padding: 0 12px; height: 42px; border-radius: 12px; background: var(--m-ground); border: 1px solid var(--m-edge); color: var(--m-fg-2) }
+.mm-filter input { flex: 1; min-width: 0; background: none; border: 0; outline: none; color: var(--m-fg); font: inherit; font-size: 15px }
+/* hidden must win over the buttons' own display rules; min-width lets the search give room to Undo and Done. */
+.m [hidden] { display: none !important }
+.mm-filter { padding-right: 6px; height: 44px; min-width: 0 }
+.mm-filter:focus-within { border-color: var(--m-pop); box-shadow: 0 0 0 3px oklch(0.76 0.13 230 / 0.18) }
+.mm-clear { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; color: var(--m-fg-2); flex: none }
+.mm-clear:hover { background: var(--m-raised); color: var(--m-fg) }
+.mm-clear svg { width: 15px; height: 15px }
+/* Modify: one row (search, Undo after a change, Done); the results panel opens and shuts below it. */
+.is-modify .mm-head { border-bottom: 0; min-height: 0 }
+.is-modify .mm-done { height: 44px; padding: 0 18px !important; flex: none }
+.mm-undo { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--m-raised); color: var(--m-fg-2); flex: none }
+.mm-undo:hover { color: var(--m-fg) }
+.sr-wrap { display: grid; grid-template-rows: 0fr; opacity: 0; min-height: 0; flex: 0 1 auto; transition: grid-template-rows 0.26s cubic-bezier(.2,.8,.2,1), opacity 0.2s }
+.sr-wrap.has { grid-template-rows: 1fr; opacity: 1 }
+.sr-clip { min-height: 0; overflow: hidden; display: flex; flex-direction: column }
+.sr-clip .mm-body { flex: 1 1 auto; min-height: 0; border-top: 1px solid var(--m-edge) }
+@media (prefers-reduced-motion: reduce) { .sr-wrap { transition: none } }
+.mm-x { margin-left: auto; width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: var(--m-raised); flex: none }
+.mm-body { overflow-y: auto; flex: 1; padding: 4px 16px 16px; scrollbar-width: thin; scrollbar-color: var(--m-pop) transparent; overscroll-behavior: contain }
+.mm-foot { display: grid; gap: 10px; padding: 10px 14px; border-top: 1px solid var(--m-edge); font-size: 12.5px; color: var(--m-fg-2) }
+.mm-foot-row { display: flex; align-items: center; gap: 12px; min-height: 40px }
+.mm-foot-row .grow { flex: 1; min-width: 0 }
+.mm-foot b { color: var(--m-fg) }
+.mm-link { font-weight: 800; color: var(--m-primary) !important; padding: 8px 4px !important }
+.mm-done { background: var(--m-primary) !important; color: var(--m-on-primary) !important; font-weight: 800 !important; padding: 10px 22px !important; border-radius: 10px !important }
+.grp { padding-top: 14px }
+.grp-title { font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--m-fg-2); padding-bottom: 8px; display: flex; gap: 8px; align-items: baseline }
+.grp-title .tag { letter-spacing: 0.06em; font-size: 10px; padding: 1px 6px; border-radius: 999px; border: 1px solid var(--m-edge) }
+.lane { padding: 9px 0; border-bottom: 1px solid var(--m-edge); display: grid; gap: 7px }
+.lane:last-child { border-bottom: 0 }
+.lane .name { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--m-fg-2); display: flex; gap: 6px; align-items: center }
+.lane .name .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--m-primary) }
+/* The side the scene is not showing dims; display: contents keeps both sides in one wrapping row. */
+.side { display: contents }
+.side.dimmed > * { opacity: 0.45 }
+.side.dimmed > .chip:hover, .side.dimmed > .chip:focus-visible { opacity: 0.85 }
+.era { display: grid; gap: 10px; padding: 12px; border-radius: 12px; background: var(--m-ground); border: 1px solid var(--m-edge) }
+.era-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 12.5px; color: var(--m-fg-2) }
+.era-line b { color: var(--m-fg) }
+.era-line .kept { color: var(--m-attention); font-weight: 700 }
+.flash { animation: flash 1.2s ease-out }
+@keyframes flash { 0%, 30% { box-shadow: 0 0 0 3px oklch(0.84 0.1 55 / 0.55); border-color: var(--m-attention) } }
+
+/* Systems: a rail of systems above the group. The system in focus fills the camera and only its own inputs show. */
+.m-pic { position: absolute; inset: 0; background-size: cover; background-position: center; transform-origin: 0 0; transition: transform 0.65s cubic-bezier(.2,.8,.2,1); z-index: 0 }
+.rail { position: absolute; z-index: 9; bottom: 80px; left: 590px; translate: -50% 0; display: flex; gap: 4px; padding: 5px; border-radius: 999px; width: max-content; animation: railin 0.22s cubic-bezier(.2,.8,.2,1) }
+.m.phone .rail { left: 10px; right: 10px; bottom: 72px; translate: none; width: auto; border-radius: 22px; overflow-x: auto; scrollbar-width: none }
+@keyframes railin { from { opacity: 0; transform: translateY(8px) } }
+.rchip { display: inline-flex; align-items: center; gap: 7px; height: 40px; padding: 0 14px; border-radius: 999px; font-weight: 800; font-size: 13px; color: var(--m-fg-2); white-space: nowrap; flex: none }
+.rchip:hover { color: var(--m-fg) }
+.rchip[aria-pressed="true"] { background: var(--m-raised); color: var(--m-fg); box-shadow: inset 0 0 0 1px var(--m-primary) }
+.rchip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--m-primary) }
+.rchip.built { color: var(--m-fg) }
+.rchip .k { color: var(--m-fg-2); font-weight: 700 }
+.rchip.miss .k { color: var(--m-attention) }
+.rail-sep { width: 1px; height: 22px; background: var(--m-edge); align-self: center; flex: none; margin: 0 2px }
+.sys-card { position: absolute; z-index: 8; background: var(--m-card); border: 1px solid var(--m-edge); border-radius: 16px; box-shadow: 0 24px 60px oklch(0.08 0.04 253 / 0.6); display: grid; animation: rise 0.22s cubic-bezier(.2,.8,.2,1) }
+.m.phone .sys-card { border-radius: 20px }
+.sys-card.v-A { left: 590px; translate: -50% 0; bottom: 140px; width: 660px }
+.m.phone .sys-card.v-A { left: 10px; right: 10px; width: auto; translate: none; bottom: 130px }
+.sys-card.v-B { left: 636px; top: 140px; width: 440px }
+.m.phone .sys-card.v-B { left: 10px; right: 10px; width: auto; top: 54px }
+.sc-head { display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 12px; border-bottom: 1px solid var(--m-edge) }
+.sc-head .mm-ico { width: 36px; height: 36px; border-radius: 10px }
+.sc-head .mm-title { font-size: 16px }
+.sc-head .mm-x { width: 36px; height: 36px; border-radius: 10px }
+.sc-body { display: grid; gap: 10px; padding: 12px 14px 14px }
+.sc-row { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px; align-items: start }
+.sys-card.v-B .sc-row, .m.phone .sc-row { grid-template-columns: minmax(0, 1fr); gap: 6px }
+.sc-row > .k { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--m-fg-2); padding-top: 10px }
+.sys-card.v-B .sc-row > .k, .m.phone .sc-row > .k { padding-top: 0 }
+.sc-row.dimmed .chips > * { opacity: 0.45 }
+.sc-row.dimmed .chips > .chip:hover { opacity: 0.85 }
+.focus-mark { position: absolute; z-index: 2; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 2px solid var(--m-primary); pointer-events: none; opacity: 0; animation: ping 1.1s ease-out 0.5s }
+@keyframes ping { 0% { opacity: 0.9; transform: scale(0.5) } 100% { opacity: 0; transform: scale(1.15) } }
+@media (prefers-reduced-motion: reduce) { .m-pic { transition: none } .rail, .sys-card, .focus-mark { animation: none !important } }
+/* Home facts: on wide frames the tabs share the head row, centred on the title's line like the icon and the x. */
+.mm-head .utabs { border-bottom: 0; margin: 0 0 0 18px; align-self: center; align-items: center }
+.mm-head .utab { min-height: 42px; margin-bottom: 0 }
+.soonx { height: 100%; display: grid; justify-items: center; align-content: center; text-align: center; gap: 10px; padding: 32px 0 }
+.soonx strong { font-family: var(--font-display); font-size: 22px }
+.soonx p { max-width: 40ch }
+
+/* Controls */
+.m-field { padding: 10px 0; border-bottom: 1px solid var(--m-edge); display: grid; gap: 8px }
+.m-field:last-child { border-bottom: 0 }
+.m-label-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px }
+.m-label { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--m-fg-2) }
+.m-value { font-weight: 700; font-size: 13.5px }
+.m-hint { font-size: 12px; color: var(--m-fg-2) }
+.m-seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: 999px; background: var(--m-card); border: 1px solid var(--m-edge); justify-self: start; align-self: start }
+.m-seg button { padding: 6px 13px; border-radius: 999px; font-weight: 700; font-size: 13px; color: var(--m-fg-2); min-height: 34px }
+.m-seg button[aria-pressed="true"] { background: var(--m-raised); color: var(--m-fg); box-shadow: inset 0 0 0 1px var(--m-pop) }
+.m.phone .era .m-seg { border-radius: 18px }
+.m-scale { display: grid; gap: 4px }
+.m-scale-track { display: flex; justify-content: space-between; align-items: center; position: relative; height: 28px }
+.m-scale-track::before { content: ""; position: absolute; left: 6px; right: 6px; top: 50%; border-top: 2px dotted var(--m-pop) }
+.m-scale-track button { position: relative; width: 28px; height: 28px; display: grid; place-items: center }
+.m-scale-track button::after { content: ""; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--m-fg-2); background: var(--m-card) }
+.m-scale-track button[aria-pressed="true"]::after { width: 14px; height: 14px; background: var(--m-primary); border-color: var(--m-primary) }
+.m-scale-ends { display: flex; justify-content: space-between; font-size: 12px; color: var(--m-fg-2) }
+.m-money { display: inline-flex; align-items: center; gap: 4px; background: var(--m-ground); border: 1px solid var(--m-edge); border-radius: 10px; padding: 0 10px; height: 38px; width: 118px }
+.m-money input { width: 100%; min-width: 0; background: none; border: 0; color: var(--m-fg); font: inherit; font-weight: 800; font-variant-numeric: tabular-nums; outline: none }
+.m-money span { color: var(--m-fg-2); font-size: 12px; font-weight: 700 }
+.m-dots { display: flex; gap: 2px }
+.m-dots button { width: 26px; height: 26px; display: grid; place-items: center }
+.m-dots button::after { content: ""; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--m-fg-2) }
+.m-dots button.on::after { background: var(--tone); border-color: var(--tone) }
+.m-soon { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px }
+.m-soon div { border: 1px dashed var(--m-pop); border-radius: 10px; padding: 10px 12px; display: grid; gap: 2px }
+.m-soon b { font-size: 13.5px }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 0 11px; height: 34px; border-radius: 999px; border: 1px solid var(--m-edge); background: var(--m-ground); font-weight: 700; font-size: 13px; color: var(--m-fg); white-space: nowrap; transition: background 0.12s, border-color 0.12s, opacity 0.22s }
+.chip .tone { width: 7px; height: 7px; border-radius: 50%; background: var(--tone) }
+.chip .k { color: var(--m-fg-2); font-weight: 700 }
+.chip svg { width: 13px; height: 13px }
+.chip .caret { opacity: 0.7; margin-right: -3px }
+.chip.open { border-color: var(--m-primary); box-shadow: inset 0 0 0 1px var(--m-primary) }
+.chip.up { background: var(--m-primary); border-color: var(--m-primary); color: var(--m-on-primary) }
+.chip.add { border-style: dashed; color: var(--m-fg-2); background: none }
+.chip.soon { border-style: dashed; color: var(--m-fg-2); background: none; cursor: default }
+.chip:hover { border-color: var(--m-pop) }
+.chip.up:hover { border-color: var(--m-primary) }
+.arrow-sep { color: var(--m-fg-2); display: inline-flex; padding: 0 2px }
+.menu { position: absolute; z-index: 12; min-width: 210px; max-width: 320px; background: var(--m-raised); border: 1px solid var(--m-pop); border-radius: 12px; box-shadow: 0 16px 40px oklch(0.08 0.04 253 / 0.6); padding: 6px; display: grid; gap: 1px; animation: drop 0.14s ease-out }
+@keyframes drop { from { opacity: 0; transform: translateY(-4px) } }
+.menu-h { font-size: 10.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--m-fg-2); padding: 6px 10px 4px }
+.menu-i { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border-radius: 8px; font-weight: 700; text-align: left; width: 100% }
+.menu-i:hover { background: var(--m-pop) }
+.menu-i .ck { width: 16px; color: var(--m-primary); display: inline-flex }
+.menu-i[aria-checked="false"] { color: var(--m-fg-2) }
+.menu-i.up[aria-checked="true"] { color: var(--m-primary) }
+.menu-sep { height: 1px; background: var(--m-pop); margin: 4px 2px }
+.menu-row { display: flex; align-items: center; gap: 8px; padding: 6px 10px; flex-wrap: wrap }
+.menu .m-seg { background: var(--m-card) }
+
+/* Benefits */
+.bx { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 18px; padding-top: 14px; align-items: start }
+.m.phone .bx { grid-template-columns: minmax(0, 1fr); gap: 14px }
+.bx-left { display: grid; gap: 10px }
+.bx-right { display: grid; gap: 10px; position: sticky; top: 0 }
+.bx-sum { display: flex; justify-content: space-between; align-items: baseline; gap: 10px }
+.bx-sum strong { font-family: var(--font-display); font-size: 16px }
+.mx { display: grid; grid-template-columns: 92px repeat(7, minmax(0, 1fr)); align-items: center; row-gap: 2px }
+.mx-h { display: grid; justify-items: center; padding: 7px 0; border-radius: 8px; color: var(--m-fg-2) }
+.mx-h[aria-pressed="true"], .mx-sys[aria-pressed="true"] { background: var(--m-raised); color: var(--m-fg) }
+.mx-sys { text-align: left; font-size: 12px; font-weight: 800; padding: 6px; border-radius: 8px; line-height: 1.15 }
+.mx-c { height: 32px; display: grid; place-items: center; border-radius: 8px }
+.mx-c::after { content: ""; width: 10px; height: 10px; border-radius: 50% }
+.mx-c.has::after { background: var(--m-primary) }
+.mx-c.soon::after { border: 1.5px dashed var(--m-fg-2); background: none }
+.mx-c.lit { background: var(--m-primary-soft) }
+.mx-c.sel { box-shadow: inset 0 0 0 2px var(--m-primary) }
+.mx-key { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11px; font-weight: 700; color: var(--m-fg-2) }
+.mx-key span { display: inline-flex; align-items: center; gap: 4px }
+.mx-key svg { width: 12px; height: 12px }
+.bcard { background: var(--m-raised); border: 1px solid var(--m-pop); border-radius: 12px; padding: 14px; display: grid; gap: 6px }
+.bmeta { display: flex; gap: 8px; align-items: center; font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--m-primary) }
+.bstate { font-family: var(--font-display); font-size: 17px; font-weight: 700; line-height: 1.25 }
+.bdetail { font-size: 13px; color: var(--m-fg-2) }
+.bdoc { justify-self: start; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 800; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--m-pop); color: var(--m-fg) }
+.bitem { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--m-edge); align-items: start; color: var(--m-fg-2) }
+.bitem:last-child { border-bottom: 0 }
+.bitem .t { font-weight: 700; font-size: 13.5px; color: var(--m-fg) }
+.bitem .s { font-size: 12px }
+.bills-edit { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center }
+/* Home facts tabs; each says what it is missing. */
+.tabpanel { min-height: 200px; padding-top: 4px }
+/* Underlined tabs, as the scene card's own sub-tabs draw them. */
+.utabs { display: flex; gap: 22px; border-bottom: 1px solid var(--m-edge); margin-top: 6px }
+.m.phone .utabs { gap: 16px }
+.utab { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; margin-bottom: -1px; border-bottom: 2px solid transparent; font-weight: 700; font-size: 14px; color: var(--m-fg-2); white-space: nowrap; transition: color 0.15s, border-color 0.15s }
+.utab svg { width: 15px; height: 15px }
+.utab:hover { color: var(--m-fg) }
+.utab[aria-selected="true"] { color: var(--m-fg); border-bottom-color: var(--m-primary) }
+.ind { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; display: inline-grid; place-items: center; font-size: 10.5px; font-weight: 800 }
+.ind.miss { background: oklch(0.84 0.1 55 / 0.2); color: var(--m-attention) }
+.soon-mark { font-size: 9.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--m-fg-2); border: 1px dashed var(--m-fg-2); border-radius: 999px; padding: 0 5px; line-height: 15px }
+.m.phone .soon-mark { width: 7px; height: 7px; padding: 0 }
+
+/* Build side. A: quiet chips; B: what the home will have; C: one chip per system. Blue stays a small mark, never a fill. */
+.chip.on { background: var(--m-raised); border-color: var(--m-pop); color: var(--m-fg) }
+.chip.on > svg { color: var(--m-primary) }
+.chip.sum { white-space: normal; height: auto; min-height: 34px; padding-block: 6px; text-align: left; line-height: 1.3 }
+.cbx { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--m-fg-2); display: inline-grid; place-items: center; flex: none }
+.cbx.on { background: var(--m-primary); border-color: var(--m-primary); color: var(--m-on-primary) }
+.cbx svg { width: 12px; height: 12px; stroke-width: 3 }
+.menu-i.sub { padding-left: 36px }
+.menu-pick { display: grid; gap: 6px; padding: 8px 10px }
+.menu-pick-name { font-weight: 700; font-size: 13px; color: var(--m-fg) }
+
+/* Omni Modify: search for one change */
+.sr { padding: 10px 0; border-bottom: 1px solid var(--m-edge); display: grid; gap: 8px }
+.sr:last-child { border-bottom: 0 }
+.sr-h { display: flex; align-items: center; gap: 8px; min-width: 0 }
+.scope { font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--m-fg-2); border: 1px solid var(--m-edge); border-radius: 999px; padding: 1px 7px; flex: none }
+.scope.b { color: var(--m-primary); border-color: oklch(0.76 0.13 230 / 0.45) }
+.sr-name { font-weight: 800; font-size: 14px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.sr-cur { color: var(--m-fg-2); font-size: 13px; margin-left: auto; white-space: nowrap }
+.sr-cur.miss { color: var(--m-attention); font-weight: 700 }
+.sr-opts { display: flex; flex-wrap: wrap; gap: 4px }
+.opt { display: inline-flex; align-items: center; gap: 5px; height: 34px; padding: 0 11px; border-radius: 8px; border: 1px solid var(--m-edge); background: var(--m-ground); font-weight: 700; font-size: 13px; color: var(--m-fg-2); transition: border-color 0.12s, color 0.12s }
+.opt svg { width: 13px; height: 13px; color: var(--m-primary) }
+.opt:hover { border-color: var(--m-pop); color: var(--m-fg) }
+.opt.cur { color: var(--m-fg); background: var(--m-raised); border-color: var(--m-pop) }
+.opt.hit { color: var(--m-fg); border-color: var(--m-primary); box-shadow: inset 0 0 0 1px var(--m-primary) }
+.enter { font: inherit; font-size: 10.5px; font-weight: 800; padding: 1px 6px; border-radius: 5px; background: var(--m-raised); color: var(--m-fg-2) }
+.m.phone .enter { display: none }
+.sr.flash-ok { animation: okflash 1.1s ease-out }
+@keyframes okflash { 0%, 35% { background: oklch(0.84 0.11 155 / 0.1) } }
+@media (prefers-reduced-motion: reduce) { .sr.flash-ok { animation: none } }
+.m-field.missing .m-label { color: var(--m-attention) }
+.m-field.missing .m-label::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-right: 6px; vertical-align: 1px }
+.soon-list { display: grid; gap: 8px; padding-top: 10px }
+.soon-list div { border: 1px dashed var(--m-pop); border-radius: 10px; padding: 10px 12px; display: grid; gap: 2px }
+.soon-list b { font-size: 13.5px }
+.chip.miss { border-color: oklch(0.84 0.1 55 / 0.6) }
+.chip.miss .k { color: var(--m-attention) }
+.soon-tag { font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; border: 1px dashed var(--m-fg-2); color: var(--m-fg-2) }
+</style>
+
+<script src="assets.js"></script>
+
+<div class="page">
+  <header class="intro">
+    <span class="eyebrow">Trade scene · UI exploration · round 12 · 1 Nov 2026</span>
+    <h1>Systems in focus</h1>
+    <p class="lede">Round 12, your last corrections before the requirements close. Materials becomes Systems: no modal, just a rail of systems; tap one and the camera goes to it while only its inputs show. Home facts' tabs move up beside the title, and every Done is gone.</p>
+  </header>
+  <div class="carried" aria-label="Carried and new">
+    <h3>Carried and new</h3>
+    <ul>
+      <li><span><b>The group</b>: Home facts, Systems, Modify, the toggle, Benefits, Recenter coming and going; names only for the open section; centred.</span></li>
+      <li><span><b>Modify</b> is a bare search with chips for missing facts, autofocused; the x inside clears; Escape clears, then closes.</span></li>
+      <li><span><b>Coastal or inland</b> is one value in the Area tab and the bills; missing until set, with the inland default bills meanwhile.</span></li>
+      <li class="new"><span><b>Systems replaces Materials.</b> It opens a rail above the group, Year built first, then Roof &amp; gutters, Attic, Windows, Walls, Heating &amp; cooling, Foundation. Nothing else shows until you tap one.</span></li>
+      <li class="new"><span><b>A system in focus</b>: the camera goes to it and one card shows only its inputs, today and the Tri Pros build (quiet chips), the side not showing dimmed. Tap it again, its x, Escape or Recenter to let go.</span></li>
+      <li class="new"><span><b>Year built</b> is the rail's first chip; its card is the era picker and the code line. It does not move the camera.</span></li>
+      <li class="new"><span><b>No Done anywhere.</b> The x closes a modal; Modify closes with Escape, a tap outside, or Modify again.</span></li>
+      <li class="new"><span><b>Home facts</b> drops its tag; on the iPad the tabs sit in the head row, on the phone they stay on their own row.</span></li>
+      <li class="new"><span><b>Benefits</b> shows coming soon with the bills footer, as agreed for the build.</span></li>
+    </ul>
+  </div>
+
+  <section class="q" id="dock">
+    <div class="q-head">
+      <span class="eyebrow">Approved 1 Nov 2026</span>
+      <h2>The system's card sits beside the system</h2>
+      <p class="lede">Open Systems and tap through the systems in each version. The camera move is a stand-in made from the captured picture; in the app the camera glides to the system.</p>
+    </div>
+    <div class="variants" role="group" aria-label="Group versions"></div>
+    <p class="pitch"></p>
+    <div class="try"><span>Try:</span><button data-try="systems">Focus a system</button><button data-try="year">Change year built</button><button data-try="flip">Flip Today ⇄ build</button><button data-try="search">Search "tile"</button><button data-try="facts">Open Home facts</button><button data-try="benefits">Tap Benefits</button></div>
+    <div class="frames"></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Version</th><th>Where the inputs sit</th><th>Where the camera puts the system</th><th>Phone</th></tr></thead>
+      <tbody>
+        <tr><td><b>A · Card above the rail</b> (reference)</td><td>One card, centred above the rail, like every other sheet</td><td>In the open top half of the scene</td><td>Card above the rail, system at the top</td></tr>
+        <tr><td><b>B · Card beside the system</b> (picked)</td><td>A card at the right, beside the system</td><td>Left of centre, next to its card</td><td>Card from the top, system below it</td></tr>
+      </tbody>
+    </table></div>
+    <div class="notes">
+      <div class="note"><h3>Picked: B</h3><p>The card sits beside the system it changes, so the homeowner sees the input and the part it changes together. On the phone the card drops in from the top and the system shows below it. A stays below for reference.</p></div>
+      <div class="note"><h3>How focus behaves</h3><ul><li>Tapping another system moves the camera straight there; the card swaps.</li><li>Opening Home facts, Modify or Benefits puts Systems away and brings the camera back.</li><li>A dot on a system chip means the build changes it.</li><li>Picks stay in the card; the scene changes behind it.</li></ul></div>
+      <div class="note"><h3>My calls, to check</h3><ul><li>Systems has no dimmed layer: the scene is the point, so it stays bright and you can still turn the camera.</li><li>Without Done, Modify on the phone closes with a tap above or below it, or Modify in the group.</li><li>A tap on the scene, away from the group, the rail and the card, puts Systems away and brings the camera back, as a tap outside a modal does. Dragging to turn the camera does not count as a tap.</li></ul></div>
+    </div>
+  </section>
+
+  <aside class="legend" id="legend" aria-label="Real versus stand-in">
+    <h3>Real vs stand-in</h3>
+    <dl>
+      <dt>Real</dt><dd>The scene picture (captured from the lab page), the card's tokens, type and padding, every label and choice (the scene's copy constants), the upgrade rows and their verbs, the flat-roof rule, the 8% cool-roof and 4% attic-fan electric cuts, your default bills, the attic insulation each era starts with and the 1950–1978 fallback (the app's era table), and Recenter's coming and going.</dd>
+      <dt>Stand-in</dt><dd>The camera moving to a system (a zoom of the captured picture; the app will glide its camera); Area's and Lot's future inputs; the scene dock. The windows, paint, ducts and crawl each era sets are the app's own era tables. The scene picture does not change when you flip; the real scene does.</dd>
+      <dt>Left out</dt><dd>Warranty terms, manufacturer documents (shown as a chip only), CO₂ figures, and voice and natural language (step 3).</dd>
+    </dl>
+  </aside>
+</div>
+
+<script>
+(() => {
+  const ASSETS = window.TRIPROS_ASSETS || {}
+  const NATIVE = { ipad: [1180, 820], phone: [390, 844] }
+  const I = {
+    sliders: '<line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/>',
+    x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+    down: '<path d="m6 9 6 6 6-6"/>',
+    left: '<path d="m15 18-6-6 6-6"/>',
+    arrow: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+    swap: '<path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/>',
+    plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
+    locate: '<line x1="2" x2="5" y1="12" y2="12"/><line x1="19" x2="22" y1="12" y2="12"/><line x1="12" x2="12" y1="2" y2="5"/><line x1="12" x2="12" y1="19" y2="22"/><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="3"/>',
+    users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    home: '<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+    wrench: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+    check: '<path d="M20 6 9 17l-5-5"/>',
+    calendar: '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>',
+    layers: '<path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>',
+    sparkle: '<path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>',
+    saves: '<line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+    comfort: '<path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/>',
+    protects: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
+    lasts: '<path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.17a2 2 0 0 0-.59-1.42L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22"/><path d="M7 2v4.17a2 2 0 0 0 .59 1.42L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2"/>',
+    warranty: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m9 15 2 2 4-4"/>',
+    planet: '<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>',
+    looks: '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+    thermal: '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+    square: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/>',
+  }
+  const ic = (n) => `<svg viewBox="0 0 24 24" aria-hidden="true">${I[n] || ''}</svg>`
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+
+  // ---- Real choices, from the scene's copy constants ----
+  const NOT_SURE = 'Not sure'
+  const C = {
+    household: ['Single man', 'Single woman', 'Couple', 'Family', 'Relatives'],
+    age: ['Under 25', '25–45', '45–65', '65–75', '75+'],
+    climate: ['Coastal', 'Inland'],
+    built: ['Before 1950', '1950–1978', '1978–1998', '1998–2014', 'After 2014'],
+    foundation: ['Raised', 'Slab'],
+    roofForm: ['Pitched', 'Flat'],
+    roofPitched: ['Shingle', 'Tile', 'Wood shake', 'Metal'],
+    roofFlat: ['Torch down'],
+    attic: ['None', 'Low', 'Medium', 'High'],
+    windows: ['Single pane', 'Double pane'],
+    paint: ['Water-based paint', 'Cool Life reflective paint'],
+    hvac: ['Central', 'Wall unit', 'Portable', 'Package unit'],
+    tons: ['3 ton', '4 ton', '5 ton'],
+    ducts: ['Original', 'R-6 silver flex', 'R-8 flex'],
+    crawl: ['None', 'Insulated'],
+    gutters: ['Gutters', 'No gutters'],
+  }
+  const WEAR = ['New', 'Good', 'Fair', 'Worn', 'Failing']
+  const WEAR_TONE = ['var(--m-success)', 'var(--m-success)', 'var(--m-attention)', 'var(--m-danger)', 'var(--m-danger)']
+  const BILLS = { Inland: { electric: 200, gas: 100 }, Coastal: { electric: 155, gas: 110 } }
+  const BATTS = { None: 'No insulation', Low: 'R-11', Medium: 'R-19', High: 'R-30' }
+  const SYS = { roof: 'Roof & gutters', attic: 'Attic', windows: 'Windows', walls: 'Walls', hc: 'Heating & cooling', foundation: 'Foundation' }
+  const SYS_ICON = { roof: 'home', attic: 'layers', windows: 'square', walls: 'sparkle', hc: 'thermal', foundation: 'layers' }
+  const MATS_OF = { roof: ['roof'], attic: ['attic'], windows: ['windows'], walls: ['paint'], hc: ['hvac', 'ducts'], foundation: [] }
+  const MAT_NAME = { roof: 'Roof', attic: 'Attic insulation', windows: 'Windows', paint: 'Exterior paint', hvac: 'Heating & cooling', ducts: 'Ducts' }
+
+  // ---- The one home every frame reads ----
+  const spec = {
+    household: 'Couple', age: null, climate: null, electric: null, gas: null,
+    built: '1950–1978', foundation: 'Raised', roofForm: 'Pitched',
+    m: { roof: 'Shingle', attic: 'Low', windows: 'Single pane', paint: 'Water-based paint', hvac: 'Central', ducts: 'Original', crawl: 'None', gutters: 'Gutters', tons: '4 ton' },
+    w: { roof: 3, attic: 4, windows: 4, paint: 3, hvac: 2, ducts: 4 },
+    up: { covering: 'Tear-off', coolRoof: true, redeck: 'No change', gutters: 'New', radiant: 'Add', insulation: 'Replace', sealing: 'No change', fan: 'Add', windows: 'Replace', paint: 'No change', airHandler: 'No change', ducts: 'Replace', r8: false, crawl: 'No change' },
+  }
+  // Until coastal or inland is known, the default bills are the inland ones.
+  const bill = (k) => spec[k] ?? BILLS[spec.climate || 'Inland'][k]
+  const flat = () => spec.roofForm === 'Flat'
+  const matOpts = (k) => k === 'roof' ? (flat() ? C.roofFlat : C.roofPitched) : C[k]
+  const matLabel = (k) => k === 'attic' ? BATTS[spec.m.attic] : spec.m[k]
+  const money = (n) => `$${Math.round(n)}`
+
+  const UPGRADES = () => [
+    { sys: 'roof', key: 'covering', name: 'Roof covering', opts: flat() ? ['No change', 'Torch down'] : ['No change', 'Overlay', 'Tear-off'], short: (v) => v, add: 'New roof', addon: flat() ? null : { key: 'coolRoof', label: 'Cool roof' } },
+    { sys: 'roof', key: 'redeck', name: 'Roof redeck', opts: ['No change', 'Redeck'], short: () => 'Redeck', add: 'Redeck' },
+    { sys: 'roof', key: 'gutters', name: 'Gutters', opts: ['No change', 'New'], short: () => 'New gutters', add: 'Gutters' },
+    !flat() && { sys: 'attic', key: 'radiant', name: 'Radiant barrier', opts: ['No change', 'Add'], short: () => 'Radiant barrier', add: 'Radiant barrier' },
+    { sys: 'attic', key: 'insulation', name: 'Attic insulation', opts: ['No change', 'Top off', 'Replace'], short: (v) => v === 'Top off' ? 'Top off' : 'R-30 insulation', add: 'Insulation' },
+    !flat() && { sys: 'attic', key: 'sealing', name: 'Air sealing', opts: ['No change', 'Seal'], short: () => 'Air sealing', add: 'Air sealing' },
+    !flat() && { sys: 'attic', key: 'fan', name: 'Attic fan', opts: ['No change', 'Add'], short: () => 'Attic fan', add: 'Attic fan' },
+    { sys: 'windows', key: 'windows', name: 'Window glass', opts: ['No change', 'Replace'], short: () => 'Dual-pane windows', add: 'New windows' },
+    { sys: 'walls', key: 'paint', name: 'Exterior paint', opts: ['No change', 'Repaint'], short: () => 'Cool Life repaint', add: 'Cool Life repaint' },
+    { sys: 'hc', key: 'airHandler', name: 'Air handler', opts: ['No change', 'Replace'], short: () => 'New system', add: 'New system' },
+    { sys: 'hc', key: 'ducts', name: 'Ducts', opts: ['No change', 'Replace'], short: () => 'New ducts', add: 'New ducts', addon: { key: 'r8', label: 'Step up to R-8' } },
+    spec.foundation === 'Raised' && { sys: 'foundation', key: 'crawl', name: 'Crawl space insulation', opts: ['No change', 'Add'], short: () => 'Crawl insulation', add: 'Crawl insulation' },
+  ].filter(Boolean)
+  const onUp = (u) => spec.up[u.key] !== 'No change'
+  const sysUps = (sys) => UPGRADES().filter((u) => u.sys === sys)
+  const buildSummary = (sys) => sysUps(sys).filter(onUp).map((u) => u.short(spec.up[u.key]) + (u.addon && spec.up[u.addon.key] ? ` + ${u.addon.label.replace('Step up to ', '')}` : '')).join(', ')
+  const todaySummary = (sys) => sys === 'foundation' ? (spec.foundation === 'Raised' ? `Crawl ${spec.m.crawl.toLowerCase()}` : 'Slab') : MATS_OF[sys].map((k) => `${matLabel(k)}${k === 'hvac' ? ` · ${spec.m.tons}` : ''} · ${WEAR[spec.w[k]]}`).join(', ')
+
+  // ---- Benefits follow the picked upgrades (statements are a draft) ----
+  const KINDS = [['saves', 'Saves'], ['comfort', 'Comfort'], ['protects', 'Protects'], ['lasts', 'Lasts longer'], ['warranty', 'Warranty'], ['planet', 'Planet'], ['looks', 'Looks & use']]
+  const KIND_LABEL = Object.fromEntries(KINDS)
+  function benefits() {
+    const u = spec.up, out = [], e = bill('electric')
+    const add = (sys, kind, title, detail, extra = {}) => out.push({ sys, kind, title, detail, ...extra })
+    if (u.covering !== 'No change') {
+      add('roof', 'protects', 'No more roof leaks', 'A new covering and underlayment keep the ceiling dry in rain.')
+      add('roof', 'warranty', flat() ? 'A new torch-down roof' : 'Owens Corning shingles', 'The maker’s documents, plus the Tri Pros workmanship warranty.', { doc: true })
+    }
+    if (!flat() && u.covering !== 'No change' && u.coolRoof) {
+      add('roof', 'saves', 'Electric bill about 8% lower', `A cool roof reflects the sun, so the attic starts cooler: ${money(e)}/mo to about ${money(e * 0.92)}/mo.`)
+      add('roof', 'lasts', 'The roof ages slower', 'Less heat in the shingles means less heat decay.')
+    }
+    if (u.radiant === 'Add' && !flat()) add('attic', 'comfort', 'A cooler attic in summer', 'The barrier turns the roof’s heat back before it reaches the insulation.')
+    if (u.insulation !== 'No change') {
+      add('attic', 'comfort', 'Rooms hold their temperature', 'Thicker insulation keeps the heat above the ceiling.')
+      add('attic', 'lasts', 'The AC runs less and lasts longer', 'Passive cooling takes load off the system.')
+    }
+    if (u.sealing === 'Seal' && !flat()) add('attic', 'protects', 'No attic air through ceiling gaps', 'Every opening in the ceiling is sealed.')
+    if (u.fan === 'Add' && !flat()) add('attic', 'saves', 'Electric bill about 4% lower', `On hot days the fan pushes hot attic air out the gable: ${money(e)}/mo to about ${money(e * 0.96)}/mo.`)
+    if (u.windows === 'Replace') {
+      add('windows', 'comfort', 'Less heat through the glass', 'Dual-pane glass slows the heat both ways.')
+      add('windows', 'looks', 'Windows that open easily', 'And a screen on every window.')
+      add('windows', 'warranty', 'WMB windows', 'The maker’s documents, plus the Tri Pros workmanship warranty.', { doc: true })
+    }
+    if (u.paint === 'Repaint') {
+      add('walls', 'protects', 'Walls kept from heat decay', 'Cool Life paint reflects the sun off the walls.')
+      add('walls', 'warranty', 'Cool Life paint', 'The maker’s documents, plus the Tri Pros workmanship warranty.', { doc: true })
+    }
+    if (u.airHandler === 'Replace') {
+      add('hc', 'comfort', 'Even heating and cooling', 'A new system sized to the home.')
+      add('hc', 'warranty', 'Goodman system', 'The maker’s documents, plus the Tri Pros workmanship warranty.', { doc: true })
+    }
+    if (u.ducts === 'Replace') add('hc', 'comfort', 'Air arrives at the rooms cool', 'New insulated ducts lose less on the way.')
+    if (u.crawl === 'Add' && spec.foundation === 'Raised') add('foundation', 'comfort', 'Warmer floors in winter', 'Insulation under the floor holds the house’s heat.')
+    if (out.length) out.push({ sys: '*', kind: 'planet', title: 'CO₂ saved and trees equivalent', detail: 'Figures come soon after launch.', soon: true })
+    return out
+  }
+
+  I.pin = '<path d="M20 10c0 4.99-5.54 10.19-7.4 11.8a1 1 0 0 1-1.2 0C9.54 20.19 4 14.99 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>'
+  I.plot = '<path d="m12 8 6-3-6-3v10"/><path d="m8 11.99-5.5 3.14a1 1 0 0 0 0 1.74l8.5 4.86a2 2 0 0 0 2 0l8.5-4.86a1 1 0 0 0 0-1.74L16 12"/><path d="m6.49 12.85 11.02 6.3"/><path d="M17.51 12.85 6.5 19.15"/>'
+  I.undo = '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/>'
+  I.search = '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>'
+  const G_LABEL = { household: 'Household', age: 'Age group', built: 'Year built', foundation: 'Foundation', roofForm: 'Roof form', climate: 'Coastal or inland' }
+
+  // What a home of each era starts with. Attic follows the app's era table; windows and ducts are a stand-in.
+  const ERA_FALLBACK = '1950–1978'
+  const ERA = {
+    'Before 1950': { attic: 'Low', windows: 'Single pane', ducts: 'Original' },
+    '1950–1978': { attic: 'Low', windows: 'Single pane', ducts: 'Original' },
+    '1978–1998': { attic: 'Medium', windows: 'Single pane', ducts: 'Original' },
+    '1998–2014': { attic: 'Medium', windows: 'Double pane', ducts: 'R-6 silver flex' },
+    'After 2014': { attic: 'High', windows: 'Double pane', ducts: 'R-8 flex' },
+  }
+  const touched = {}
+  const eraOf = () => ERA[spec.built || ERA_FALLBACK]
+  const eraLabel = (k, v) => k === 'attic' ? `${BATTS[v]} attic` : k === 'ducts' ? `${v} ducts` : v
+  // A material set by hand keeps its pick when the year changes; returns the ones the year rewrote.
+  function applyEra(all = false) {
+    const changed = []
+    for (const [k, v] of Object.entries(eraOf())) {
+      if (touched[k] && !all) continue
+      if (spec.m[k] !== v) changed.push(k)
+      spec.m[k] = v
+      if (all) delete touched[k]
+    }
+    return changed
+  }
+
+  // ---- View state; both frames share it ----
+  // v is how the group holds still: centred on the frame, like the modals (round 9). bs is the build side: quiet chips (the owner's pick, round 8).
+  const V = { v: 'B', bs: 'A', sv: 'B', focus: null, build: 'today', moved: true, open: null, factsTab: 'main', ed: null, filter: '', cell: null, billsOpen: false, flash: [], history: [], justSet: null }
+  const VARIANTS = [
+    ['B', 'Card beside the system', 'Inputs next to what they change', true, '<b>The card sits beside the system it changes</b>, and the camera moves the system to the left so the two read side by side. On the phone the card drops in from the top and the system shows below it.'],
+    ['A', 'Card above the rail', 'The scene keeps its top half', false, '<b>The system’s inputs sit in one card above the rail</b>, centred on the scene like every other sheet. The camera moves the system into the open space above the card. Your eye goes down to change and up to see.'],
+  ]
+  const isBuild = () => V.build === 'build'
+  const SECTIONS = {
+    facts: { icon: 'home', name: 'Home facts' },
+    systems: { icon: 'layers', name: 'Systems' },
+    benefits: { icon: 'sparkle', name: 'Benefits' },
+    modify: { icon: 'sliders', name: 'Modify' },
+  }
+
+  // ---- Small builders ----
+  function getPath(path) { return path.split('.').reduce((o, p) => (o == null ? o : o[p]), spec) }
+  function setPath(path, value) { const parts = path.split('.'); let o = spec; while (parts.length > 1) o = o[parts.shift()]; o[parts[0]] = value }
+  const isSel = (path, o) => { const v = getPath(path); return v === o || (v == null && o === NOT_SURE) }
+  const seg = (path, opts, notSure = true) => `<div class="m-seg">${[...opts, ...(notSure ? [NOT_SURE] : [])].map((o) => `<button data-act="set" data-k="${path}" data-v="${esc(o)}" aria-pressed="${isSel(path, o)}">${esc(o)}</button>`).join('')}</div>`
+  const scale = (path, opts) => `<div class="m-scale"><div class="m-scale-track">${opts.map((o) => `<button data-act="set" data-k="${path}" data-v="${esc(o)}" aria-pressed="${getPath(path) === o}" aria-label="${esc(o)}"></button>`).join('')}</div><div class="m-scale-ends"><span>${opts[0]}</span><span>${opts[opts.length - 1]}</span></div></div>`
+  const dots = (mat) => `<div class="m-dots" role="group" aria-label="Condition">${WEAR.map((wl, i) => `<button class="${i <= spec.w[mat] ? 'on' : ''}" style="--tone:${WEAR_TONE[spec.w[mat]]}" data-act="wear" data-k="${mat}" data-v="${i}" aria-label="${wl}"></button>`).join('')}</div>`
+  const moneyIn = (k) => `<label class="m-money"><span>$</span><input inputmode="numeric" data-money="${k}" value="${bill(k)}" aria-label="${k} bill"><span>/mo</span></label>`
+  const fromWhere = (k) => spec[k] == null ? `${spec.climate || 'Inland'} default` : 'typed'
+  const field = (label, value, control) => `<div class="m-field"><div class="m-label-row"><span class="m-label">${label}</span><span class="m-value">${value ?? '<span class="m-hint">Not sure</span>'}</span></div>${control}</div>`
+  const soonPair = () => `<div class="m-soon"><div><b>Area</b><span class="m-hint">Coastal or inland, utility, wind. Mapped later.</span></div><div><b>Lot</b><span class="m-hint">Size, fence, driveway, landscape, hardscape.</span></div></div>`
+  const billsSummary = () => `${spec.climate || 'Area missing'} · ${money(bill('electric'))} electric · ${money(bill('gas'))} gas`
+  const upCount = () => UPGRADES().filter(onUp).length
+  const benefitCount = () => benefits().filter((b) => !b.soon).length
+
+  // Chips with menus, as agreed for Omni Modify.
+  function ddChip(key, label, opts = {}) {
+    const open = V.ed === key, flash = opts.mat && V.flash.includes(opts.mat)
+    return `<button class="chip ${opts.cls || ''} ${open ? 'open' : ''} ${flash ? 'flash' : ''}" data-act="ed" data-v="${esc(key)}" data-anchor="ed:${esc(key)}" aria-haspopup="menu" aria-expanded="${open}" ${opts.tone != null ? `style="--tone:${WEAR_TONE[opts.tone]}"` : ''}>${opts.tone != null ? '<span class="tone"></span>' : ''}${opts.icon ? ic(opts.icon) : ''}${opts.k ? `<span class="k">${esc(opts.k)}</span>` : ''}${esc(label)}<span class="caret">${ic('down')}</span></button>`
+  }
+  const matChip = (k) => ddChip(`mat:${k}`, `${matLabel(k)}${k === 'hvac' ? ` · ${spec.m.tons}` : ''} · ${WEAR[spec.w[k]]}`, { tone: spec.w[k], mat: k })
+  const extraToday = (sys) => sys === 'roof' ? ddChip('g:gutters', spec.m.gutters) : sys === 'foundation' ? (spec.foundation === 'Raised' ? ddChip('g:crawl', `Crawl ${spec.m.crawl.toLowerCase()}`) : '<span class="m-hint">Slab, no crawl space</span>') : ''
+  const todayChips = (sys) => MATS_OF[sys].map(matChip).join('') + extraToday(sys)
+  const quietChips = (sys) => sysUps(sys).map((u) => upChip(u) + addonChip(u)).join('')
+  function upChip(u) {
+    const on = onUp(u)
+    if (u.opts.length === 2) return `<button class="chip ${on ? 'on' : 'add'}" data-act="toggle" data-k="up.${u.key}" aria-pressed="${on}">${ic(on ? 'check' : 'plus')}${esc(on ? u.short(spec.up[u.key]) : u.add)}</button>`
+    return ddChip(`up:${u.key}`, on ? u.short(spec.up[u.key]) : u.add, { cls: on ? 'on' : 'add', icon: on ? 'check' : 'plus' })
+  }
+  const addonChip = (u) => u.addon && onUp(u) ? `<button class="chip ${spec.up[u.addon.key] ? 'on' : 'add'}" data-act="toggle" data-k="up.${u.addon.key}" aria-pressed="${!!spec.up[u.addon.key]}">${ic(spec.up[u.addon.key] ? 'check' : 'plus')}${u.addon.label}</button>` : ''
+  // B: each material says what the home will have; the work that makes it so sits in the system's menu.
+  const MAIN_UP = { roof: 'covering', attic: 'insulation', windows: 'windows', paint: 'paint', hvac: 'airHandler', ducts: 'ducts' }
+  const EXTRA_UPS = ['redeck', 'gutters', 'radiant', 'sealing', 'fan', 'crawl']
+  function afterLabel(k) {
+    const u = spec.up[MAIN_UP[k]]
+    if (u === 'No change') return [`${matLabel(k)}${k === 'hvac' ? ` · ${spec.m.tons}` : ''} · as is`, spec.w[k]]
+    const v = { roof: `${flat() ? 'Torch down' : spec.m.roof}${!flat() && spec.up.coolRoof ? ' · cool' : ''}`, attic: u === 'Top off' ? 'Topped off to R-30' : 'R-30', windows: 'Double pane', paint: 'Cool Life paint', hvac: `${spec.m.hvac} · ${spec.m.tons}`, ducts: spec.up.r8 ? 'R-8 ducts' : 'R-6 ducts' }[k]
+    return [`${v} · New`, 0]
+  }
+  function afterChips(sys) {
+    const ups = sysUps(sys)
+    const mats = MATS_OF[sys].map((k, i) => { const [label, tone] = afterLabel(k); return ddChip(`sys:${sys}|${i}`, label, { tone }) }).join('')
+    const extras = ups.filter((u) => EXTRA_UPS.includes(u.key) && onUp(u)).map((u, i) => ddChip(`sys:${sys}|x${i}`, u.short(spec.up[u.key]), { tone: 0 })).join('')
+    const open = ups.some((u) => !onUp(u) || (u.addon && !spec.up[u.addon.key]))
+    return mats + extras + (open ? ddChip(`sys:${sys}|add`, 'Add work', { cls: 'add', icon: 'plus' }) : '')
+  }
+  // C: one chip per system listing its work; the menu is the checklist.
+  function countChip(sys) {
+    const n = sysUps(sys).filter(onUp).length
+    return ddChip(`sys:${sys}`, n ? buildSummary(sys) : 'Add work', { cls: n ? 'on sum' : 'add', icon: n ? 'check' : 'plus' })
+  }
+  const buildChips = (sys) => !sysUps(sys).length ? '<span class="m-hint">Nothing to add on a slab</span>' : V.bs === 'B' ? afterChips(sys) : V.bs === 'C' ? countChip(sys) : quietChips(sys)
+  function menuHtml() {
+    if (!V.ed) return ''
+    const [kind, k] = V.ed.split(':')
+    const list = (path, opts, notSure = true, up = false, display = (o) => o) => [...opts, ...(notSure ? [NOT_SURE] : [])].map((o) => `<button class="menu-i ${up ? 'up' : ''}" role="menuitemradio" aria-checked="${isSel(path, o)}" data-act="set" data-k="${path}" data-v="${esc(o)}" data-close="1"><span class="ck">${isSel(path, o) ? ic('check') : ''}</span>${esc(display(o))}</button>`).join('')
+    let body = ''
+    if (kind === 'mat') body = `<div class="menu-h">${MAT_NAME[k]}</div>${list(`m.${k}`, matOpts(k), true, false, (o) => k === 'attic' ? (BATTS[o] || o) : o)}${k === 'hvac' ? `<div class="menu-sep"></div><div class="menu-h">AC size</div><div class="menu-row">${seg('m.tons', C.tons, false)}</div>` : ''}<div class="menu-sep"></div><div class="menu-h">Condition · ${WEAR[spec.w[k]]}</div><div class="menu-row">${dots(k)}</div>`
+    if (kind === 'up') { const u = UPGRADES().find((x) => x.key === k); if (u) body = `<div class="menu-h">${u.name}</div>${list(`up.${k}`, u.opts, false, true)}` }
+    if (kind === 'sys') {
+      const sys = k.split('|')[0]
+      const box = (on) => `<span class="cbx ${on ? 'on' : ''}">${on ? ic('check') : ''}</span>`
+      body = `<div class="menu-h">${SYS[sys]} · the build</div>` + sysUps(sys).map((u) => {
+        const on = onUp(u), addOn = u.addon && !!spec.up[u.addon.key]
+        const row = u.opts.length === 2
+          ? `<button class="menu-i" role="menuitemcheckbox" aria-checked="${on}" data-act="toggle" data-k="up.${u.key}">${box(on)}${esc(u.name)}</button>`
+          : `<div class="menu-pick"><span class="menu-pick-name">${esc(u.name)}</span>${seg(`up.${u.key}`, u.opts, false)}</div>`
+        return row + (u.addon && on ? `<button class="menu-i sub" role="menuitemcheckbox" aria-checked="${addOn}" data-act="toggle" data-k="up.${u.addon.key}">${box(addOn)}${u.addon.label}</button>` : '')
+      }).join('')
+    }
+    if (kind === 'g') {
+      if (G_LABEL[k]) body = `<div class="menu-h">${G_LABEL[k]}</div>${list(k, C[k], k !== 'climate')}`
+      if (k === 'gutters') body = `<div class="menu-h">Gutters</div>${list('m.gutters', C.gutters, false)}`
+      if (k === 'crawl') body = `<div class="menu-h">Crawl space insulation</div>${list('m.crawl', C.crawl, false)}`
+      if (k === 'bills') body = `<div class="menu-h">Monthly bills</div><div class="menu-row"><span class="m-label">Electric</span>${moneyIn('electric')}</div><div class="menu-row"><span class="m-label">Gas</span>${moneyIn('gas')}</div><div class="menu-row m-hint">Electric ${fromWhere('electric')}, gas ${fromWhere('gas')}.</div>`
+    }
+    return body ? `<div class="menu" role="menu">${body}</div>` : ''
+  }
+
+  // ---- Section bodies ----
+  const match = (s) => { const f = V.filter.trim().toLowerCase(); return !f || f.split(/\s+/).every((w) => s.toLowerCase().includes(w)) }
+  function lanes(filtered) {
+    const html = Object.keys(SYS).map((sys) => {
+      const ups = sysUps(sys)
+      const hay = `${SYS[sys]} ${MATS_OF[sys].map((k) => matLabel(k) + ' ' + MAT_NAME[k]).join(' ')} ${ups.map((u) => u.name + ' ' + u.add).join(' ')} ${sys === 'hc' ? 'hvac ac ton' : ''} ${sys === 'foundation' ? 'crawl' : ''} ${sys === 'roof' ? 'gutters' : ''}`
+      if (filtered && !match(hay)) return ''
+      return `<div class="lane"><div class="name">${ups.some(onUp) ? '<span class="dot"></span>' : ''}${SYS[sys]}</div><div class="chips"><span class="side ${isBuild() ? 'dimmed' : ''}">${todayChips(sys)}</span><span class="arrow-sep">${ic('arrow')}</span><span class="side ${isBuild() ? '' : 'dimmed'}">${buildChips(sys)}</span></div></div>`
+    }).join('')
+    return html
+  }
+  function eraBlock() {
+    const era = eraOf(), kept = Object.keys(era).filter((k) => touched[k] && spec.m[k] !== era[k])
+    const codes = Object.entries(era).map(([k, v]) => `<b>${esc(eraLabel(k, v))}</b>`).join(' · ')
+    return `<div class="era">${seg('built', C.built)}<div class="era-line"><span>${spec.built ? `${spec.built} code:` : `Not sure, so ${ERA_FALLBACK}:`} ${codes}</span>${kept.length ? `<span class="kept">${kept.map((k) => MAT_NAME[k]).join(' and ')} kept as you set ${kept.length > 1 ? 'them' : 'it'}</span><button class="mm-link" data-act="era-reset">Use code</button>` : ''}</div></div>`
+  }
+  const materialsBody = () => `<div class="mm-body"><div class="grp"><div class="grp-title">Year built<span class="tag">sets today’s materials</span></div>${eraBlock()}</div><div class="grp"><div class="grp-title">Systems<span class="tag">today → build</span></div>${lanes(false)}</div></div>`
+  // Each tab lists the facts it owns; a fact left at Not sure counts as missing. Area and Lot are coming.
+  const FACT_TABS = [['main', 'Main home', ['foundation', 'roofForm'], 'home'], ['household', 'Household', ['household', 'age'], 'users'], ['area', 'Area', ['climate'], 'pin'], ['lot', 'Lot', null, 'plot']]
+  const missingIn = (keys) => keys ? keys.filter((k) => spec[k] == null) : []
+  const missingCount = () => FACT_TABS.reduce((n, [, , keys]) => n + missingIn(keys).length, 0)
+  const fact = (k, control) => `<div class="m-field ${spec[k] == null ? 'missing' : ''}"><div class="m-label-row"><span class="m-label">${G_LABEL[k]}</span><span class="m-value">${spec[k] ?? '<span class="m-hint">Missing</span>'}</span></div>${control}</div>`
+  const FACT_PANEL = {
+    main: () => `${fact('foundation', seg('foundation', C.foundation))}${fact('roofForm', seg('roofForm', C.roofForm, false))}`,
+    household: () => `${fact('household', seg('household', C.household))}${fact('age', scale('age', C.age))}`,
+    area: () => `${fact('climate', seg('climate', C.climate, false))}<div class="soon-list"><div><b>Utility</b><span class="m-hint">LADWP, SCE and the rest.</span></div><div><b>Wind</b><span class="m-hint">The wind zone the home sits in.</span></div></div>`,
+    lot: () => `<div class="soon-list"><div><b>Lot size, fence, driveway</b><span class="m-hint">For fencing and an ADU.</span></div><div><b>Landscape and hardscape</b><span class="m-hint">For dryscaping.</span></div></div>`,
+  }
+  function factTabs(dev) {
+    const tabs = FACT_TABS.map(([id, name, keys, icon]) => {
+      const n = missingIn(keys).length
+      const ind = !keys ? `<span class="soon-mark" title="Coming">${dev === 'phone' ? '' : 'soon'}</span>` : n ? `<span class="ind miss" title="${n} missing">${n}</span>` : ''
+      return `<button class="utab" role="tab" data-act="ftab" data-v="${id}" aria-selected="${V.factsTab === id}">${dev === 'phone' ? '' : ic(icon)}${name}${ind}</button>`
+    }).join('')
+    return `<div class="utabs" role="tablist" aria-label="Home facts">${tabs}</div>`
+  }
+  // The phone keeps the tabs on their own row under the head.
+  const factsBody = (dev) => `<div class="mm-body">${dev === 'phone' ? factTabs(dev) : ''}<div class="tabpanel" role="tabpanel">${FACT_PANEL[V.factsTab]()}</div></div>`
+  // Coming soon: its interior is its own exploration, from the matrix. The bills below already feed it.
+  const benefitsBody = () => `<div class="mm-body"><div class="soonx"><span class="mm-ico">${ic('sparkle')}</span><strong>What the build brings</strong><span class="soon-tag">Coming soon</span><p class="m-hint">Benefits are being designed. The bills below already feed them.</p></div></div>`
+  const SYN = { roof: 'roof roofing', attic: 'attic insulation batts', windows: 'window windows glass', paint: 'paint walls exterior stucco', hvac: 'hvac ac air conditioner heating cooling system furnace', ducts: 'duct ducts ductwork' }
+  const SYS_SYN = { roof: `${SYN.roof} gutter gutters redeck`, attic: `${SYN.attic} fan radiant barrier sealing`, windows: SYN.windows, walls: SYN.paint, hc: `${SYN.hvac} ${SYN.ducts}`, foundation: 'foundation crawl space floor' }
+  const slot = (o) => ({ get: () => getPath(o.path), set: (v) => setValue(o.path, v), show: (v) => v, ...o })
+  function SLOTS() {
+    const out = [
+      slot({ id: 'household', fact: true, scope: 'Home facts', name: 'Household', path: 'household', opts: C.household, words: 'household family couple single relatives' }),
+      slot({ id: 'age', fact: true, scope: 'Home facts', name: 'Age group', path: 'age', opts: C.age, words: 'age group old seniors' }),
+      slot({ id: 'foundation', fact: true, scope: 'Home facts', name: 'Foundation', path: 'foundation', opts: C.foundation, words: 'foundation raised slab crawl' }),
+      slot({ id: 'roofForm', fact: true, scope: 'Home facts', name: 'Roof form', path: 'roofForm', opts: C.roofForm, words: 'roof form pitched flat low slope' }),
+      slot({ id: 'built', scope: 'Systems', name: 'Year built', path: 'built', opts: C.built, words: 'year built era code age when' }),
+    ]
+    for (const k of ['roof', 'attic', 'windows', 'paint', 'hvac', 'ducts']) {
+      out.push(slot({ id: `m.${k}`, scope: 'Today', name: MAT_NAME[k], path: `m.${k}`, opts: matOpts(k), show: (v) => k === 'attic' ? BATTS[v] : v, words: SYN[k] }))
+      if (k === 'hvac') out.push(slot({ id: 'm.tons', scope: 'Today', name: 'AC size', path: 'm.tons', opts: C.tons, words: `ac size ton tons tonnage ${SYN.hvac}` }))
+      out.push(slot({ id: `w.${k}`, scope: 'Today', name: `${MAT_NAME[k]} condition`, opts: WEAR, get: () => WEAR[spec.w[k]], set: (v) => { spec.w[k] = WEAR.indexOf(v) }, words: `${SYN[k]} condition wear` }))
+    }
+    out.push(slot({ id: 'm.gutters', scope: 'Today', name: 'Gutters', path: 'm.gutters', opts: C.gutters, words: 'gutter gutters roof' }))
+    if (spec.foundation === 'Raised') out.push(slot({ id: 'm.crawl', scope: 'Today', name: 'Crawl space insulation', path: 'm.crawl', opts: C.crawl, words: 'crawl space foundation floor' }))
+    for (const u of UPGRADES()) {
+      out.push(slot({ id: `up.${u.key}`, scope: 'Build', name: u.name, path: `up.${u.key}`, opts: u.opts, words: `${SYS_SYN[u.sys]} ${u.add} upgrade` }))
+      if (u.addon) out.push(slot({ id: `up.${u.addon.key}`, scope: 'Build', name: u.addon.label, opts: ['Add', 'No'], get: () => spec.up[u.addon.key] ? 'Add' : 'No', set: (v) => { spec.up[u.addon.key] = v === 'Add' }, words: `${SYS_SYN[u.sys]} ${u.addon.label}` }))
+    }
+    out.push(slot({ id: 'climate', fact: true, scope: 'Area', name: 'Coastal or inland', path: 'climate', opts: C.climate, words: 'climate coastal inland area bills' }))
+    out.push({ id: 'electric', scope: 'Bills', name: 'Electric bill', money: 'electric', words: 'electric electricity bill bills power' })
+    out.push({ id: 'gas', scope: 'Bills', name: 'Gas bill', money: 'gas', words: 'gas bill bills' })
+    return out
+  }
+  const tokens = () => V.filter.trim().toLowerCase().split(/\s+/).filter(Boolean)
+  const optHits = (label, t) => { const l = String(label).toLowerCase(); return l.split(/\s+/).some((w) => w.startsWith(t)) || (t.length > 2 && l.includes(t)) }
+  // Every word must hit the slot's words or one of its values; a word that picks out one value makes that value the Enter target.
+  function search() {
+    const ts = tokens()
+    return SLOTS().map((s) => {
+      const hay = `${s.scope} ${s.name} ${s.words}`.toLowerCase()
+      let score = 0, hit = null
+      for (const t of ts) {
+        const inName = s.name.toLowerCase().split(/\s+/).some((w) => w.startsWith(t))
+        const vals = (s.opts || []).filter((o) => optHits(s.show(o), t))
+        if (!hay.includes(t) && !inName && !vals.length) return null
+        if (vals.length === 1) { hit = vals[0]; score += 3 }
+        score += inName ? 2 : hay.includes(t) ? 1 : 0
+      }
+      return { s, score, hit }
+    }).filter(Boolean).sort((a, b) => b.score - a.score).slice(0, 8)
+  }
+  function srRow({ s, hit }, lead) {
+    const cur = s.money ? null : s.get()
+    const curText = s.money ? `${money(bill(s.money))}/mo` : cur == null ? 'Missing' : s.show(cur)
+    const target = hit && hit !== cur ? hit : null
+    const opts = s.money ? moneyIn(s.money) : s.opts.map((o) => `<button class="opt ${o === cur ? 'cur' : ''} ${o === target ? 'hit' : ''}" data-act="sapply" data-id="${esc(s.id)}" data-v="${esc(o)}" aria-pressed="${o === cur}">${o === cur ? ic('check') : ''}${esc(s.show(o))}</button>`).join('')
+    return `<div class="sr ${V.justSet === s.id ? 'flash-ok' : ''}"><div class="sr-h"><span class="scope ${s.scope === 'Build' ? 'b' : ''}">${s.scope}</span><span class="sr-name">${esc(s.name)}</span>${lead && target ? '<kbd class="enter">Enter</kbd>' : ''}<span class="sr-cur ${cur == null && !s.money ? 'miss' : ''}">${esc(curText)}</span></div><div class="sr-opts">${opts}</div></div>`
+  }
+  const QUICK = ['built', 'm.roof', 'up.covering', 'm.tons', 'up.fan', 'electric']
+  // The results sit in a panel that slides shut when there is nothing to show, so an empty search is just the search row.
+  function modifyInner() {
+    const all = SLOTS()
+    // Empty search: only what is missing, each chip opening the same value menu as everywhere else.
+    if (!tokens().length) {
+      const missing = all.filter((x) => x.fact && x.get() == null)
+      return missing.length ? `<div class="grp"><div class="grp-title">Missing</div><div class="chips">${missing.map((x) => ddChip(`g:${x.id}`, 'Missing', { k: x.name, cls: 'miss' })).join('')}</div></div>` : ''
+    }
+    const res = search()
+    return res.length ? `<div class="grp">${res.map((r, i) => srRow(r, i === 0)).join('')}</div>` : `<p class="m-hint" style="padding:16px 0">Nothing matches “${esc(V.filter)}”. Try a material, a system or a value: tile, attic fan, 4 ton.</p>`
+  }
+  function modifyBody() {
+    const inner = modifyInner()
+    return `<div class="sr-wrap ${inner ? 'has' : ''}"><div class="sr-clip"><div class="mm-body">${inner}</div></div></div>`
+  }
+  // Collapsing keeps the old content on screen while the panel closes, then empties it.
+  function updateModifyBody(bodyEl) {
+    const wrap = bodyEl.querySelector('.sr-wrap')
+    if (!wrap) { bodyEl.innerHTML = modifyBody(); return }
+    const inner = modifyInner(), box = wrap.querySelector('.mm-body')
+    if (inner) { const top = box.scrollTop; box.innerHTML = inner; box.scrollTop = top; wrap.classList.add('has'); return }
+    if (!wrap.classList.contains('has')) { box.innerHTML = ''; return }
+    wrap.classList.remove('has')
+    wrap.addEventListener('transitionend', () => { if (!wrap.classList.contains('has')) box.innerHTML = '' }, { once: true })
+  }
+  const syncUndo = () => {
+    const h = V.history[V.history.length - 1]
+    for (const { root } of screens) {
+      const b = root.querySelector('[data-undo]')
+      if (!b) continue
+      b.hidden = !h
+      if (h) b.setAttribute('aria-label', `Undo ${h.name} → ${h.show(h.next)}`), b.title = `Undo ${h.name} → ${h.show(h.next)}`
+    }
+  }
+  function applySlot(id, v) {
+    const x = SLOTS().find((y) => y.id === id)
+    if (!x) return
+    V.history.push({ id, name: x.name, prev: x.get(), next: v, show: x.show })
+    x.set(v); V.justSet = id
+    homeChanged(); V.justSet = null
+  }
+  function undo() {
+    const h = V.history.pop()
+    const x = h && SLOTS().find((y) => y.id === h.id)
+    if (x) { x.set(h.prev); V.justSet = h.id; homeChanged(); V.justSet = null }
+  }
+  const BODY = { facts: factsBody, benefits: benefitsBody, modify: modifyBody }
+
+  function headHtml(dev) {
+    const s = SECTIONS[V.open], x = `<button class="mm-x" data-act="close" aria-label="Close">${ic('x')}</button>`
+    if (V.open === 'modify') return `<div class="mm-filter">${ic('search')}<input data-filter="1" placeholder="${dev === 'phone' ? 'Search a change' : 'Search a change: tile, attic fan, 4 ton…'}" value="${esc(V.filter)}" aria-label="Search a change"><button class="mm-clear" data-act="clear" data-clear aria-label="Clear search" ${V.filter ? '' : 'hidden'}>${ic('x')}</button></div>`
+    // Home facts needs no tag; on wide frames its tabs take the room beside the title.
+    const tag = V.open === 'benefits' ? '<span class="mm-tag build">Tri Pros build</span>' : V.open === 'facts' && dev !== 'phone' ? factTabs(dev) : ''
+    return `<span class="mm-ico">${ic(s.icon)}</span><span class="mm-title">${s.name}</span>${tag}${x}`
+  }
+  // No Done anywhere: the head's x closes. Only Benefits keeps a footer, for its bills.
+  function footHtml() {
+    if (V.open !== 'benefits') return ''
+    return `${V.billsOpen ? `<div class="bills-edit">${seg('climate', C.climate, false)}<span class="m-label">Electric</span>${moneyIn('electric')}<span class="m-label">Gas</span>${moneyIn('gas')}<span class="m-hint">Electric ${fromWhere('electric')}, gas ${fromWhere('gas')}.</span></div>` : ''}<div class="mm-foot-row"><span class="grow">Based on <b>${billsSummary()}</b></span><button class="mm-link" data-act="bills">${V.billsOpen ? 'Close bills' : 'Edit bills'}</button></div>`
+  }
+
+  // ---- Layout ----
+  // The group's bottom edge and the gap the modal keeps above it; C's tab needs a little more room.
+  const modalBottom = (dev) => (dev === 'phone' ? 76 : 80) + (V.v === 'C' ? 26 : 0)
+  // Modals grow up from the group to fit their content, so a short section stays short.
+  // Search hangs from the top, so the box you type in never moves while the results below it change.
+  const modalPos = (dev) => {
+    const top = dev === 'phone' ? 58 : 24, room = (dev === 'phone' ? 844 : 820) - top - modalBottom(dev)
+    if (V.open === 'benefits') return dev === 'phone' ? `left:10px;right:10px;top:${top}px;bottom:${modalBottom(dev)}px` : `left:24px;right:24px;top:${top}px;bottom:${modalBottom(dev)}px`
+    const edge = V.open === 'modify' ? `top:${top}px` : `bottom:${modalBottom(dev)}px`
+    return dev === 'phone' ? `left:10px;right:10px;${edge};max-height:${room}px` : `left:50%;${edge};max-height:${room}px;width:780px;margin-left:-390px`
+  }
+  function barHtml(dev) {
+    const item = (sec) => `<button class="bar-item" data-act="open" data-v="${sec}" aria-label="${SECTIONS[sec].name}" aria-expanded="false">${ic(SECTIONS[sec].icon)}<span class="lbl"><span>${SECTIONS[sec].name}</span></span>${sec === 'benefits' ? '<span class="badge" data-badge></span>' : sec === 'facts' ? '<span class="dotmiss" data-miss hidden></span>' : ''}</button>`
+    const rc = `<span class="rc-wrap"><button class="bar-item" data-act="recenter" aria-label="Recenter" title="Recenter">${ic('locate')}</button></span>`
+    const toggle = `<button class="toggle" data-act="flip" data-toggle><span class="sw">${ic('swap')}</span><span class="names"><span class="t">Today</span><span class="b">Build</span></span></button>`
+    const sep = dev === 'phone' || V.v === 'C' ? '' : '<span class="bar-sep"></span>'
+    return `<div class="bar glass v-${V.v}" data-bar>${item('facts')}${item('systems')}${item('modify')}${sep}${toggle}${sep}${item('benefits')}${rc}</div>`
+  }
+  // Every state change after the first draw lands here: classes and attributes only, so the CSS can animate it.
+  function syncBar() {
+    for (const { root } of screens) {
+      const bar = root.querySelector('[data-bar]')
+      if (!bar) continue
+      // Under a modal the camera cannot move, so Recenter steps out while one is open.
+      // A system in focus has moved the camera too, so Recenter offers the way back; Systems is not a modal, so it stays.
+      bar.classList.toggle('moved', (V.moved || camOn()) && (!V.open || V.open === 'systems'))
+      const t = bar.querySelector('[data-toggle]')
+      t.classList.toggle('build', isBuild())
+      t.setAttribute('aria-label', `Showing ${isBuild() ? 'the Tri Pros build' : 'today'}; tap to show ${isBuild() ? 'today' : 'the Tri Pros build'}`)
+      bar.querySelectorAll('[data-act="open"]').forEach((b) => b.setAttribute('aria-expanded', String(V.open === b.dataset.v)))
+      const badge = bar.querySelector('[data-badge]'), n = benefitCount()
+      badge.textContent = n; badge.hidden = true
+      const miss = missingCount(), dot = bar.querySelector('[data-miss]')
+      dot.hidden = !miss
+      bar.querySelector('[data-v="facts"]').setAttribute('aria-label', miss ? `Home facts, ${miss} missing` : 'Home facts')
+      // A: the toggle's spot is fixed, so the group slides left by exactly the names opening to its left.
+      const g = screens.find((x) => x.root === root).geo
+      if (g) bar.style.left = `${g.pin - g.t0 - LEFT_OF_TOGGLE.reduce((sum, k) => sum + (V.open === k ? g.lbl[k] : 0), 0)}px`
+      root.classList.toggle('is-build', isBuild())
+    }
+  }
+
+  // ---- Stage shell: built once per frame; only its parts are re-drawn ----
+  const screens = []
+  const LEFT_OF_TOGGLE = ['facts', 'systems', 'modify']
+  function build(dev, scr) {
+    const [w, h] = NATIVE[dev]
+    const stg = scr.querySelector('.stage')
+    stg.innerHTML = `<div class="m ${dev}" data-scene style="width:${w}px;height:${h}px"><div class="m-pic" style="${ASSETS[dev] ? `background-image:url(${ASSETS[dev]})` : ''}"></div><div class="m-build-tint"></div><div data-slot="sys"></div><div data-slot="dock"><div class="m-dock glass"><span>${ic('square')}Complete</span><span>${ic('thermal')}Thermal</span><span>${ic('sparkle')}Normal</span></div></div><div data-slot="modal"></div><div data-slot="bar"></div><div data-slot="menu"></div><div data-slot="toast"></div></div>`
+    screens.push({ dev, root: stg.firstElementChild })
+  }
+  // A pins the toggle where it sits when the closed group is centred under the house; drawn with every section closed.
+  function drawBars() {
+    for (const scr of screens) {
+      const { dev, root } = scr
+      const slot = root.querySelector('[data-slot="bar"]')
+      slot.innerHTML = barHtml(dev)
+      const bar = slot.firstElementChild
+      scr.geo = null
+      if (dev === 'phone') continue
+      if (V.v !== 'A') { bar.style.left = '590px'; continue }
+      bar.classList.add('measure')
+      bar.style.left = '0px'
+      const t0 = bar.querySelector('[data-toggle]').offsetLeft
+      const closed = bar.offsetWidth - bar.querySelector('.rc-wrap').offsetWidth
+      // Open each name for real (transitions off) and read how far it pushes the toggle.
+      const lbl = Object.fromEntries(LEFT_OF_TOGGLE.map((k) => {
+        const it = bar.querySelector(`[data-v="${k}"]`)
+        it.setAttribute('aria-expanded', 'true')
+        const d = bar.querySelector('[data-toggle]').offsetLeft - t0
+        it.setAttribute('aria-expanded', 'false')
+        return [k, d]
+      }))
+      scr.geo = { t0, pin: Math.round(560 - closed / 2) + t0, lbl }
+      bar.style.left = `${scr.geo.pin - t0}px`
+      bar.offsetWidth
+      bar.classList.remove('measure')
+    }
+    syncBar()
+  }
+  const SCROLLERS = '.mm-body'
+  function keepScroll(el, fn) {
+    const pos = [...el.querySelectorAll(SCROLLERS)].map((b) => b.scrollTop)
+    fn()
+    el.querySelectorAll(SCROLLERS).forEach((b, i) => { b.scrollTop = pos[i] || 0 })
+  }
+  function anchorTo(root, anchor, el) {
+    const k = root.getBoundingClientRect().width / root.offsetWidth
+    const r = root.getBoundingClientRect(), a = anchor.getBoundingClientRect()
+    const x = (a.left - r.left) / k, y = (a.top - r.top) / k, h = a.height / k
+    const W = root.offsetWidth, H = root.offsetHeight, ew = el.offsetWidth, eh = el.offsetHeight
+    el.style.left = `${Math.max(12, Math.min(W - ew - 12, x))}px`
+    el.style.top = `${y + h + eh + 8 > H - 12 ? Math.max(12, y - eh - 6) : y + h + 6}px`
+  }
+  // mode: 'open' plays the entrance, 'swap' cross-fades the content, 'body' re-draws in place.
+  function paintModal(mode = 'body') {
+    for (const { dev, root } of screens) {
+      const slot = root.querySelector('[data-slot="modal"]')
+      if (!V.open || V.open === 'systems') { slot.innerHTML = ''; continue }
+      if (mode === 'open' || mode === 'swap' || !slot.firstChild) {
+        slot.className = mode === 'open' || !slot.firstChild ? 'opening' : 'swapping'
+        // Modify has no footer: Done sits beside the search.
+        const foot = footHtml()
+        slot.innerHTML = `<div class="m-scrim" data-act="close"></div><div class="m-modal is-${V.open}" role="dialog" aria-label="${SECTIONS[V.open].name}" style="${modalPos(dev)}"><div class="mm-head" data-part="mhead">${headHtml(dev)}</div><div data-part="mbody" style="display:flex;flex-direction:column;flex:1;min-height:0">${BODY[V.open](dev)}</div>${foot ? `<div class="mm-foot" data-part="mfoot">${foot}</div>` : ''}</div>`
+        if (V.open === 'modify') syncUndo()
+        continue
+      }
+      slot.className = ''
+      const body = slot.querySelector('[data-part="mbody"]')
+      if (V.open === 'modify') { updateModifyBody(body); syncUndo(); continue }
+      slot.querySelector('[data-part="mhead"]').innerHTML = headHtml(dev)
+      keepScroll(body, () => { body.innerHTML = BODY[V.open](dev) })
+      const foot = slot.querySelector('[data-part="mfoot"]')
+      if (foot) foot.innerHTML = footHtml()
+    }
+    paintSystems()
+  }
+
+  // ---- Systems: the rail, the system in focus, the camera ----
+  // Where each system sits in the captured pictures, where the camera brings it, and how close it goes (native pixels).
+  const FOCAL = {
+    ipad: { roof: [741, 330], attic: [741, 372], windows: [588, 451], walls: [881, 464], hc: [960, 430], foundation: [754, 545] },
+    phone: { roof: [148, 198], attic: [148, 214], windows: [91, 244], walls: [220, 244], hc: [236, 236], foundation: [154, 268] },
+  }
+  const TARGET = { ipad: { A: [590, 270], B: [350, 390] }, phone: { A: [195, 250], B: [195, 560] } }
+  const ZOOM = { ipad: 1.8, phone: 2 }
+  const camOn = () => !!V.focus && V.focus !== 'built'
+  function camFor(dev, f) {
+    if (!f || f === 'built') return null
+    const [W, H] = NATIVE[dev], s = ZOOM[dev], [fx, fy] = FOCAL[dev][f], [cx, cy] = TARGET[dev][V.sv]
+    // Keep the picture covering the frame, so the system lands as near the target as the edges allow.
+    const tx = Math.min(0, Math.max(W - W * s, cx - fx * s)), ty = Math.min(0, Math.max(H - H * s, cy - fy * s))
+    return { s, tx, ty, px: fx * s + tx, py: fy * s + ty }
+  }
+  function setFocus(f) {
+    V.focus = f; V.ed = null
+    for (const { dev, root } of screens) {
+      const cam = camFor(dev, f)
+      root.querySelector('.m-pic').style.transform = cam ? `translate(${cam.tx}px, ${cam.ty}px) scale(${cam.s})` : ''
+    }
+    paintSystems(true); paintMenu(); syncBar()
+  }
+  const railHtml = () => `<button class="rchip built ${spec.built ? '' : 'miss'}" data-act="focus" data-v="built" aria-pressed="${V.focus === 'built'}">${ic('calendar')}${spec.built ? `<span class="k">Built</span>${spec.built}` : '<span class="k">Year built</span>Not sure'}</button><span class="rail-sep"></span>${Object.keys(SYS).map((k) => `<button class="rchip" data-act="focus" data-v="${k}" aria-pressed="${V.focus === k}">${sysUps(k).some(onUp) ? '<span class="dot" title="Changed by the build"></span>' : ''}${SYS[k]}</button>`).join('')}`
+  function cardHtml(dev) {
+    const x = `<button class="mm-x" data-act="unfocus" aria-label="Close">${ic('x')}</button>`
+    if (V.focus === 'built') return `<div class="sc-head"><span class="mm-ico">${ic('calendar')}</span><span class="mm-title">Year built</span>${dev === 'phone' ? '' : '<span class="mm-tag">Sets today’s materials</span>'}${x}</div><div class="sc-body">${eraBlock()}</div>`
+    const k = V.focus, tag = dev === 'phone' ? '' : `<span class="mm-tag ${isBuild() ? 'build' : ''}">Showing ${isBuild() ? 'the build' : 'today'}</span>`
+    return `<div class="sc-head"><span class="mm-ico">${ic(SYS_ICON[k])}</span><span class="mm-title">${SYS[k]}</span>${tag}${x}</div><div class="sc-body"><div class="sc-row ${isBuild() ? 'dimmed' : ''}"><span class="k">Today</span><div class="chips">${todayChips(k)}</div></div><div class="sc-row ${isBuild() ? '' : 'dimmed'}"><span class="k">Tri Pros build</span><div class="chips">${buildChips(k)}</div></div></div>`
+  }
+  // The rail and the card are kept between paints, so a pick inside the card never replays its entrance; a new focus does.
+  function paintSystems(fresh = false) {
+    for (const { dev, root } of screens) {
+      const slot = root.querySelector('[data-slot="sys"]')
+      if (V.open !== 'systems') { slot.innerHTML = ''; continue }
+      let rail = slot.querySelector('.rail')
+      if (!rail) { slot.insertAdjacentHTML('beforeend', '<div class="rail glass" role="toolbar" aria-label="Systems"></div>'); rail = slot.querySelector('.rail') }
+      rail.innerHTML = railHtml()
+      const on = rail.querySelector('[aria-pressed="true"]')
+      if (on && dev === 'phone') rail.scrollLeft = on.offsetLeft - (rail.clientWidth - on.offsetWidth) / 2
+      let card = slot.querySelector('.sys-card')
+      if (fresh || !V.focus) { slot.querySelectorAll('.sys-card, .focus-mark').forEach((n) => n.remove()); card = null }
+      if (!V.focus) continue
+      if (!card) {
+        slot.insertAdjacentHTML('afterbegin', `<div class="sys-card v-${V.sv}" role="region"></div>`)
+        card = slot.querySelector('.sys-card')
+        const cam = camFor(dev, V.focus)
+        if (cam) slot.insertAdjacentHTML('afterbegin', `<div class="focus-mark" style="left:${cam.px}px;top:${cam.py}px"></div>`)
+      }
+      card.setAttribute('aria-label', V.focus === 'built' ? 'Year built' : SYS[V.focus])
+      card.innerHTML = cardHtml(dev)
+    }
+  }
+  function paintMenu() {
+    for (const { root } of screens) {
+      const mn = root.querySelector('[data-slot="menu"]')
+      mn.innerHTML = menuHtml()
+      const box = mn.querySelector('.menu'), anchor = root.querySelector(`[data-anchor="ed:${CSS.escape(V.ed || '')}"]`)
+      if (box && anchor) anchorTo(root, anchor, box)
+      else if (box) mn.innerHTML = ''
+    }
+  }
+  function toast(text) {
+    for (const { dev, root } of screens) root.querySelector('[data-slot="toast"]').innerHTML = `<div class="toast" style="left:${dev === 'phone' ? 195 : 590}px">${text}</div>`
+  }
+
+  // ---- The stability meter: how far the toggle and Modify moved on the last change (iPad, native pixels) ----
+  const meterEl = document.querySelector('[data-meter]')
+  const ipadBar = () => screens.find((s) => s.dev === 'ipad').root.querySelector('[data-bar]')
+  const xOf = (sel) => { const bar = ipadBar(), el = bar.querySelector(sel); return bar.offsetLeft - (V.v === 'A' ? 0 : bar.offsetWidth / 2) + el.offsetLeft }
+  let meterTimer
+  function measure(what, fn) {
+    if (!meterEl) return fn()
+    const t0 = xOf('[data-toggle]'), m0 = xOf('[data-v="benefits"]')
+    fn()
+    clearTimeout(meterTimer)
+    meterTimer = setTimeout(() => {
+      const dt = Math.round(Math.abs(xOf('[data-toggle]') - t0)), dm = Math.round(Math.abs(xOf('[data-v="benefits"]') - m0))
+      meterEl.innerHTML = `<span>Last change, <b>${what}</b>: on the iPad the toggle moved <b>${dt} px</b> and Benefits moved <b>${dm} px</b>.</span>`
+    }, 380)
+  }
+
+  // ---- Mount, scale ----
+  const el = document.querySelector('section.q')
+  function renderVariants() {
+    el.querySelector('.variants').innerHTML = VARIANTS.map(([k, name, sub, rec]) => `<button data-variant="${k}" aria-pressed="${V.sv === k}">${rec ? '<span class="rec">Picked</span>' : ''}${k} · ${name}<small>${sub}</small></button>`).join('')
+    el.querySelector('.pitch').innerHTML = VARIANTS.find(([k]) => k === V.sv)[4]
+  }
+  function fit() {
+    const frames = el.querySelector('.frames')
+    const stacked = getComputedStyle(frames).gridTemplateColumns.split(' ').length === 1
+    const total = frames.clientWidth
+    const phoneCol = stacked ? total : Math.min(320, total * 0.27)
+    const ipadW = (stacked ? total : total - phoneCol - 24) - 20
+    const sI = Math.min(1, ipadW / 1180)
+    const sP = stacked ? Math.min(1, (total - 18) / 390, 620 / 844) : Math.min(1, (820 * sI) / 844, (phoneCol - 18) / 390)
+    el.querySelectorAll('.screen').forEach((scr) => {
+      const s = scr.dataset.dev === 'ipad' ? sI : sP
+      const [w, h] = NATIVE[scr.dataset.dev]
+      scr.style.width = `${Math.floor(w * s)}px`; scr.style.height = `${Math.floor(h * s)}px`
+      scr.querySelector('.stage').style.transform = `scale(${s})`
+    })
+  }
+  el.querySelector('.frames').innerHTML = ['ipad', 'phone'].map((dev) => `<div class="device"><span class="device-label">${dev === 'ipad' ? 'iPad, landscape' : 'Phone'}</span><div class="bezel ${dev}"><div class="screen" data-dev="${dev}"><div class="stage"></div></div></div></div>`).join('')
+  el.querySelectorAll('.screen').forEach((scr) => build(scr.dataset.dev, scr))
+  renderVariants(); fit(); drawBars()
+  // A's measurements depend on the label font, so take them again once the web font has loaded.
+  document.fonts?.ready.then(() => { if (!V.open) drawBars() })
+
+  // ---- Actions ----
+  function flip() {
+    measure('flip', () => {
+      V.build = isBuild() ? 'today' : 'build'
+      V.ed = null
+      // Benefits shows only the build, so flipping to Today puts it away.
+      if (!isBuild() && V.open === 'benefits') { V.open = null; paintModal() }
+      else if (V.open) paintModal('body')
+      paintMenu(); syncBar()
+    })
+  }
+  function openSection(sec) {
+    // Leaving Systems, or opening anything else, brings the camera back to the whole home.
+    if (V.focus) setFocus(null)
+    measure(V.open === sec ? `close ${SECTIONS[sec].name}` : `open ${SECTIONS[sec].name}`, () => {
+      V.ed = null
+      if (V.open === sec) { V.open = null; paintModal() }
+      else {
+        const mode = V.open ? 'swap' : 'open'
+        if (sec === 'benefits' && !isBuild()) { V.build = 'build'; toast('Showing the Tri Pros build') }
+        V.open = sec; V.billsOpen = false
+        paintModal(mode)
+        if (sec === 'modify') focusSearch()
+      }
+      paintMenu(); syncBar()
+    })
+  }
+  // Focus lands in the frame that was tapped; the caret goes to the end of anything already typed.
+  function focusSearch() {
+    const scr = screens.find((x) => x.dev === (V.dev || 'ipad'))
+    const inp = scr && scr.root.querySelector('[data-filter]')
+    if (inp) { inp.focus({ preventScroll: true }); inp.setSelectionRange(inp.value.length, inp.value.length) }
+  }
+  function clearSearch() {
+    V.filter = ''; V.ed = null
+    for (const { root } of screens) { const inp = root.querySelector('[data-filter]'); if (inp) inp.value = '' }
+    syncClear(); paintMenu(); paintModal('body'); focusSearch()
+  }
+  const syncClear = () => { for (const { root } of screens) { const b = root.querySelector('[data-clear]'); if (b) b.hidden = !V.filter } }
+  function close() { if (!V.open) return; measure(`close ${SECTIONS[V.open].name}`, () => { if (V.focus) setFocus(null); V.open = null; V.ed = null; paintModal(); paintMenu(); syncBar() }) }
+  function setMoved(moved) { if (V.moved === moved) return; measure(moved ? 'camera moved' : 'recenter', () => { V.moved = moved; syncBar() }) }
+  // Inside Modify, a change hands focus back to the search so the next word can be typed straight away.
+  function homeChanged() { paintModal('body'); paintMenu(); syncBar(); V.flash = []; if (V.open === 'modify' && !V.ed) focusSearch() }
+  function setYear(value) {
+    spec.built = value
+    V.flash = applyEra()
+  }
+  // One way to set any spec, so a pick in a section and a pick in search behave the same.
+  function setValue(k, value) {
+    if (k === 'roofForm') {
+      spec.roofForm = value || 'Pitched'
+      spec.m.roof = spec.roofForm === 'Flat' ? 'Torch down' : (C.roofPitched.includes(spec.m.roof) ? spec.m.roof : 'Shingle')
+      if (!UPGRADES().find((u) => u.key === 'covering').opts.includes(spec.up.covering)) spec.up.covering = 'No change'
+    }
+    else if (k === 'built') setYear(value)
+    else { setPath(k, value); if (k.startsWith('m.')) touched[k.slice(2)] = true }
+  }
+  document.addEventListener('click', (e) => {
+    const tr = e.target.closest('[data-try]')
+    if (tr) {
+      const k = tr.dataset.try
+      if (k === 'flip') return flip()
+      if (k === 'benefits') return openSection('benefits')
+      if (k === 'systems') { if (V.open !== 'systems') openSection('systems'); return setFocus(V.focus === 'roof' ? 'hc' : 'roof') }
+      if (k === 'facts') return V.open === 'facts' ? null : openSection('facts')
+      if (k === 'search') { V.dev = 'ipad'; V.filter = 'tile'; if (V.open === 'modify') { paintModal('swap'); return focusSearch() } return openSection('modify') }
+      if (k === 'year') {
+        if (V.open !== 'systems') openSection('systems')
+        if (V.focus !== 'built') setFocus('built')
+        const i = C.built.indexOf(spec.built)
+        setYear(C.built[(i + 1) % C.built.length]); return homeChanged()
+      }
+      return setMoved(true)
+    }
+    const vb = e.target.closest('[data-variant]')
+    if (vb) { V.sv = vb.dataset.variant; renderVariants(); if (V.open !== 'systems') openSection('systems'); return setFocus(camOn() ? V.focus : 'roof') }
+    const t = e.target.closest('[data-act]')
+    const scr = e.target.closest('.screen')
+    if (scr) V.dev = scr.dataset.dev
+    const scene = e.target.closest('[data-scene]')
+    if (scene && !t && !e.target.closest('.menu, .m-modal, .bar, .m-dock, .rail, .sys-card, input')) {
+      // Systems has no dimmed layer, but a tap on the open scene still puts it away, as a tap outside a modal does.
+      if (V.open === 'systems') return close()
+      if (V.ed) { V.ed = null; return paintModal('body'), paintMenu() }
+      return setMoved(true)
+    }
+    if (V.ed && !e.target.closest('.menu') && !(t && t.dataset.act === 'ed')) { V.ed = null; paintModal('body'); paintMenu() }
+    if (!t) return
+    const { act, k, v } = t.dataset
+    if (act === 'set') {
+      setValue(k, v === NOT_SURE ? null : v)
+      if (t.dataset.close) V.ed = null
+      return homeChanged()
+    }
+    if (act === 'era-reset') { V.flash = applyEra(true); return homeChanged() }
+    if (act === 'wear') { spec.w[k] = +v; return homeChanged() }
+    if (act === 'toggle') {
+      const cur = getPath(k)
+      if (typeof cur === 'boolean') setPath(k, !cur)
+      else { const u = UPGRADES().find((x) => `up.${x.key}` === k); setPath(k, cur === 'No change' ? u.opts[1] : 'No change') }
+      return homeChanged()
+    }
+    if (act === 'ed') { V.ed = V.ed === v ? null : v; paintModal('body'); return paintMenu() }
+    if (act === 'flip') return flip()
+    if (act === 'recenter') { if (camOn()) setFocus(null); return setMoved(false) }
+    // A tap on the system in focus lets it go, like a second tap on a group item.
+    if (act === 'focus') return setFocus(V.focus === v ? null : v)
+    if (act === 'unfocus') return setFocus(null)
+    if (act === 'open') return openSection(v)
+    if (act === 'close') return close()
+    if (act === 'bills') { V.billsOpen = !V.billsOpen; return paintModal('body') }
+    if (act === 'cell') { V.cell = v; return paintModal('body') }
+    if (act === 'ftab') { V.factsTab = v; return paintModal('body') }
+    if (act === 'sapply') return applySlot(t.dataset.id, v)
+    if (act === 'undo') return undo()
+    if (act === 'clear') return clearSearch()
+  })
+  document.addEventListener('input', (e) => {
+    if (!e.target.dataset.filter) return
+    V.filter = e.target.value
+    syncClear()
+    for (const { root } of screens) { const inp = root.querySelector('[data-filter]'); if (inp && inp !== e.target) inp.value = V.filter }
+    V.ed = null; paintMenu()
+    for (const { root } of screens) { const body = root.querySelector('[data-part="mbody"]'); if (body) updateModifyBody(body) }
+  })
+  document.addEventListener('change', (e) => {
+    const m = e.target.dataset.money
+    if (m) { const n = parseInt(e.target.value.replace(/\D/g, ''), 10); spec[m] = Number.isFinite(n) ? n : null; homeChanged() }
+  })
+  document.addEventListener('keydown', (e) => {
+    const typing = e.target.closest && e.target.closest('input')
+    if (e.key === 'Enter' && e.target.dataset && e.target.dataset.filter) { const top = search()[0]; if (top && top.hit && top.hit !== top.s.get()) applySlot(top.s.id, top.hit); return }
+    // Escape steps back one layer: an open menu, then typed text, then the modal.
+    if (e.key === 'Escape') { if (V.ed) { V.ed = null; paintModal('body'); return paintMenu() } if (V.open === 'systems' && V.focus) return setFocus(null); if (V.open === 'modify' && V.filter) return clearSearch(); return close() }
+    // The shortcut opens the search with focus in it, so the key itself must not be typed there too.
+    if ((e.key === 'm' || e.key === 'M') && !typing && !e.metaKey && !e.ctrlKey && !e.altKey) { e.preventDefault(); openSection('modify') }
+  })
+  new ResizeObserver(() => { fit(); paintMenu() }).observe(el.querySelector('.frames'))
+})()
+</script>

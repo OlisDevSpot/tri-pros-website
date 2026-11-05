@@ -2,14 +2,13 @@
 
 import type { TooltipContentProps } from 'recharts'
 
-import type { BillCategory } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
 import type { LookAheadYears } from '@/features/calculators/remodel-roi-calculator/constants/look-ahead'
 import type { RemodelRoiProjection } from '@/features/calculators/remodel-roi-calculator/types'
+import type { BillCategory } from '@/shared/modules/construction/core/constants/bill-categories'
 
 import { useReducedMotion } from 'motion/react'
 import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from 'recharts'
 
-import { BILL_CATEGORIES, BILL_CATEGORY_LABELS } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
 import { BILL_CHART_CONFIG, BILL_SWATCH_CLASSES } from '@/features/calculators/remodel-roi-calculator/constants/bill-colors'
 import { formatMoney } from '@/features/calculators/remodel-roi-calculator/lib/format-money'
 import { SegmentRect } from '@/features/calculators/remodel-roi-calculator/ui/components/charts/segment-rect'
@@ -18,6 +17,7 @@ import { LegendSwatches } from '@/shared/components/charts/legend-swatches'
 import { PinnedChartTooltip } from '@/shared/components/charts/pinned-chart-tooltip'
 import { ChartContainer } from '@/shared/components/ui/chart'
 import { usePinnedChartTooltip } from '@/shared/hooks/use-pinned-chart-tooltip'
+import { BILL_CATEGORIES, BILL_CATEGORY_LABELS } from '@/shared/modules/construction/core/constants/bill-categories'
 
 interface Props {
   projection: RemodelRoiProjection

@@ -169,7 +169,7 @@ export function ContextPanelField({ config, value, onChange }: ContextPanelField
               <SelectContent>
                 {config.options.map(opt => (
                   <SelectItem key={opt} value={opt}>
-                    {opt}
+                    {config.optionLabels?.[opt] ?? opt}
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -5,6 +5,7 @@ import {
   foundationTypes,
   hvacComponents,
   hvacTypes,
+  INSULATION_LEVEL_LABELS,
   insulationLevels,
   roofTypes,
   windowsTypes,
@@ -18,5 +19,5 @@ export const PROPERTY_PROFILE_FIELDS: ProfileFieldConfig[] = [
   { id: 'hvacType', label: 'HVAC Type', type: 'select', options: hvacTypes },
   { id: 'hvacComponents', label: 'HVAC Components', type: 'select', options: hvacComponents },
   { id: 'windowsType', label: 'Windows Type', type: 'select', options: windowsTypes },
-  { id: 'insulationLevel', label: 'Insulation Level', type: 'select', options: insulationLevels },
+  { id: 'insulationLevel', label: 'Insulation Level', type: 'select', options: insulationLevels, optionLabels: INSULATION_LEVEL_LABELS },
 ]

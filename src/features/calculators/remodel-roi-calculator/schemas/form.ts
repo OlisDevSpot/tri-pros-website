@@ -1,7 +1,8 @@
 import { z } from 'zod'
 
-import { CUT_MODES, LIABILITY_KINDS, PAYMENT_MODES, TERM_YEARS } from '@/features/calculators/remodel-roi-calculator/constants/form-options'
+import { LIABILITY_KINDS, PAYMENT_MODES, TERM_YEARS } from '@/features/calculators/remodel-roi-calculator/constants/form-options'
 import { ratePercentSchema, sharePercentSchema } from '@/features/calculators/remodel-roi-calculator/schemas/config'
+import { CUT_MODES } from '@/shared/modules/construction/core/constants/cut-modes'
 
 const amount = z.number().min(0).nullable()
 const aprPercent = z.number().min(0).max(40).nullable()
@@ -11,12 +12,12 @@ const current = z.object({ ageYears: z.number().min(0).max(100).nullable(), like
 
 export const remodelRoiFormSchema = z.object({
   trades: z.object({
-    hvac: z.object({ ducts: z.boolean(), current }).nullable(),
-    roof: z.object({ current }).nullable(),
-    windowsAndDoors: z.object({ current }).nullable(),
-    atticBasement: z.object({}).nullable(),
-    exteriorPaintSiding: z.object({ current }).nullable(),
-    dryscapingHardscaping: z.object({}).nullable(),
+    'hvac': z.object({ ducts: z.boolean(), current }).nullable(),
+    'roof-and-gutters': z.object({ current }).nullable(),
+    'windows-and-doors': z.object({ current }).nullable(),
+    'attic-and-basement': z.object({}).nullable(),
+    'exterior-paint-stucco-and-siding': z.object({ current }).nullable(),
+    'dryscaping': z.object({}).nullable(),
   }),
   bills: z.object({ electric: bill, water: bill, gas: bill, gardening: bill, misc: bill }),
   project: z.object({

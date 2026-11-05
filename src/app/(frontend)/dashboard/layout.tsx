@@ -47,7 +47,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             </SidebarSessionBoundary>
           )}
           <SidebarInset className="h-full min-w-0 overflow-hidden bg-background">
-            <div className="flex-1 min-h-0 pt-[env(safe-area-inset-top)]">
+            <div className="flex flex-1 min-h-0 flex-col pt-[env(safe-area-inset-top)]">
               {hasSessionCookie
                 ? (
                     <Suspense fallback={<DashboardContentSkeleton />}>

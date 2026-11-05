@@ -9,7 +9,6 @@ import { useReducedMotion } from 'motion/react'
 import { useId } from 'react'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 
-import { BILL_CATEGORIES, BILL_CATEGORY_LABELS } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
 import { BILL_SWATCH_CLASSES } from '@/features/calculators/remodel-roi-calculator/constants/bill-colors'
 import { MONTHLY_BREAKDOWN_CHART_CONFIG } from '@/features/calculators/remodel-roi-calculator/constants/chart-configs'
 import { STORY_COPY } from '@/features/calculators/remodel-roi-calculator/constants/story-copy'
@@ -19,6 +18,7 @@ import { ChartTooltipCard } from '@/shared/components/charts/chart-tooltip-card'
 import { PinnedChartTooltip } from '@/shared/components/charts/pinned-chart-tooltip'
 import { ChartContainer } from '@/shared/components/ui/chart'
 import { usePinnedChartTooltip } from '@/shared/hooks/use-pinned-chart-tooltip'
+import { BILL_CATEGORIES, BILL_CATEGORY_LABELS } from '@/shared/modules/construction/core/constants/bill-categories'
 
 interface Props {
   projection: RemodelRoiProjection

@@ -1,5 +1,7 @@
 import type { PainPointCategory, PainPointEmotionalDriver } from '@/shared/constants/enums'
 
+import { formatRowClaim, tradeCutPercent } from '@/shared/modules/construction/core/lib/bill-cut-claims'
+
 // ---------------------------------------------------------------------------
 // Fear templates: keyed by pain point category, each with a generic fear
 // statement and a trade-contextualized variant map. The builder picks the
@@ -81,6 +83,15 @@ interface BenefitTemplate {
   byTrade: Record<string, string>
 }
 
+// Named so `trade-benefit-exclusions.ts` holds the same values rather than a copy that drifts.
+export const SOLAR_RATE_LOCK_BENEFIT = 'Solar locks in your energy rate for 25+ years — no more rate hikes, and potential tax credits reduce the upfront cost'
+export const WINDOWS_BILL_CUT_BENEFIT = `ENERGY STAR windows can reduce heating/cooling costs by ${formatRowClaim(tradeCutPercent('windows-and-doors', 'electric'))}, depending on your climate zone`
+export const INSULATION_PAYBACK_BENEFIT = 'Insulation upgrades typically pay for themselves within 2-4 years through energy savings alone'
+export const HVAC_BILL_CUT_BENEFIT = `A high-efficiency system can cut cooling costs by ${formatRowClaim(tradeCutPercent('hvac', 'electric'))} and heating by ${formatRowClaim(tradeCutPercent('hvac', 'gas'))} compared to an aging unit`
+export const BATHROOM_RESALE_BENEFIT = 'A modern bathroom remodel returns 60-70% at resale — and you get to enjoy it every single day until then'
+export const KITCHEN_RESALE_BENEFIT = 'Kitchen upgrades are the #1 ROI driver in real estate — buyers pay a premium for a move-in-ready kitchen'
+export const DRYSCAPING_WATER_CUT_BENEFIT = `Drought-resistant landscaping cuts water bills by ${formatRowClaim(tradeCutPercent('dryscaping', 'water'))} and eliminates maintenance headaches`
+
 export const BENEFIT_TEMPLATES: Record<PainPointCategory, BenefitTemplate> = {
   'Thermal Inefficiencies & Discomfort': {
     headline: 'Year-round comfort in every room',
@@ -95,10 +106,10 @@ export const BENEFIT_TEMPLATES: Record<PainPointCategory, BenefitTemplate> = {
     headline: 'Lower your monthly bills permanently',
     genericBody: 'Energy-efficient upgrades reduce utility costs from day one — and the savings compound every month',
     byTrade: {
-      'Solar': 'Solar locks in your energy rate for 25+ years — no more rate hikes, and potential tax credits reduce the upfront cost',
-      'Windows & doors': 'ENERGY STAR windows can reduce heating/cooling costs by 12-33%, depending on your climate zone',
-      'Attic & Basement': 'Insulation upgrades typically pay for themselves within 2-4 years through energy savings alone',
-      'HVAC': 'A high-efficiency system can cut your heating and cooling costs by 30-50% compared to an aging unit',
+      'Solar': SOLAR_RATE_LOCK_BENEFIT,
+      'Windows & doors': WINDOWS_BILL_CUT_BENEFIT,
+      'Attic & Basement': INSULATION_PAYBACK_BENEFIT,
+      'HVAC': HVAC_BILL_CUT_BENEFIT,
     },
   },
   'Structural Risk': {
@@ -123,8 +134,8 @@ export const BENEFIT_TEMPLATES: Record<PainPointCategory, BenefitTemplate> = {
     headline: 'Maximize your home\'s value',
     genericBody: 'Strategic upgrades deliver the highest ROI at resale while improving your daily experience',
     byTrade: {
-      'Bathroom Remodel': 'A modern bathroom remodel returns 60-70% at resale — and you get to enjoy it every single day until then',
-      'Kitchen Remodel': 'Kitchen upgrades are the #1 ROI driver in real estate — buyers pay a premium for a move-in-ready kitchen',
+      'Bathroom Remodel': BATHROOM_RESALE_BENEFIT,
+      'Kitchen Remodel': KITCHEN_RESALE_BENEFIT,
       'Exterior Paint, Stucco & Siding': 'Fresh exterior finish delivers instant curb appeal and signals a well-maintained home to buyers',
       'Flooring': 'New flooring transforms the look and feel of every room it touches — one of the highest-impact upgrades',
     },
@@ -134,7 +145,7 @@ export const BENEFIT_TEMPLATES: Record<PainPointCategory, BenefitTemplate> = {
     genericBody: 'Your home should be your retreat — not a list of things you wish were different',
     byTrade: {
       'Exterior Upgrades & Lot Layout': 'A designed outdoor living area extends your usable square footage and becomes the heart of your entertaining',
-      'Dryscaping': 'Drought-resistant landscaping cuts water bills by 50-75% and eliminates maintenance headaches',
+      'Dryscaping': DRYSCAPING_WATER_CUT_BENEFIT,
     },
   },
   'Life Trigger': {

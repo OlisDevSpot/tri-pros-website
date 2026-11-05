@@ -1,11 +1,11 @@
 import type { PanelSectionKey } from '@/features/calculators/remodel-roi-calculator/constants/panel-sections'
 import type { RemodelRoiProjection } from '@/features/calculators/remodel-roi-calculator/types'
 
-import { BILL_CATEGORIES } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
 import { TRADE_LABELS } from '@/features/calculators/remodel-roi-calculator/constants/trades'
 import { formatMoney } from '@/features/calculators/remodel-roi-calculator/lib/format-money'
 import { formatYears } from '@/features/calculators/remodel-roi-calculator/lib/format-years'
 import { joinWords } from '@/features/calculators/remodel-roi-calculator/lib/join-words'
+import { BILL_CATEGORIES } from '@/shared/modules/construction/core/constants/bill-categories'
 
 export function panelSummaries(projection: RemodelRoiProjection): Record<PanelSectionKey, string> {
   const { trades, replacements, project, cuts, homeValue, liabilities, liabilitiesMonthly } = projection

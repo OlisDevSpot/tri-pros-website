@@ -1,4 +1,4 @@
-import type { BillCategory } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
+import type { BillCategory } from '@/shared/modules/construction/core/constants/bill-categories'
 
 export const BILL_RATE_LABELS = {
   electric: 'Electric rates rise',

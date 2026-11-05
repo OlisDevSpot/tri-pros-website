@@ -1,8 +1,10 @@
+import { formatRowClaim, tradeCutPercent } from '@/shared/modules/construction/core/lib/bill-cut-claims'
+
 export const tradeOutcomeStatements: Record<string, string> = {
   'hvac': 'Your system will use roughly half the energy of your current unit — and you\'ll be able to control it from your phone.',
   'roof-and-gutters': 'Your home will be fully protected from weather damage for the next 30 years — no more worrying about the next storm.',
   'windows-and-doors': 'No more drafts, no more noise from outside, and your home stays at a consistent temperature without your HVAC working overtime.',
-  'attic-and-basement': 'You\'ll notice the comfort difference almost immediately — and most customers see their heating and cooling bills drop by 20–40%.',
+  'attic-and-basement': `You'll notice the comfort difference almost immediately — and our estimate from customer bills is ${formatRowClaim(tradeCutPercent('attic-and-basement', 'electric'))} off the electric bill and ${tradeCutPercent('attic-and-basement', 'gas')}% off gas.`,
   'solar': 'You\'re locking in your energy rate for 25 years while your neighbors keep paying whatever the utility charges.',
   'exterior-paint-stucco-and-siding': 'A refreshed exterior that protects your home from the elements and dramatically improves curb appeal.',
   'water-heating': 'Endless hot water on demand, with a unit that takes up a fraction of the space and uses significantly less energy.',

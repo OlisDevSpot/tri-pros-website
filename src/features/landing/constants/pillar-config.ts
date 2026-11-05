@@ -1,5 +1,6 @@
 import type { PillarSlug } from '@/features/landing/lib/notion-trade-helpers'
 import { companyInfo } from '@/shared/constants/company'
+import { claimCutPercent, formatCompoundTile } from '@/shared/modules/construction/core/lib/bill-cut-claims'
 
 interface PillarStat {
   value: string
@@ -37,7 +38,7 @@ export const pillarConfigs: Record<PillarSlug, PillarConfig> = {
     heroHeadline: 'Your Home Is Costing You More Than It Should',
     heroSubheadline: 'A complete energy envelope upgrade — insulation, HVAC, windows, roofing — delivered by one contractor, in one mobilization, with compounding savings.',
     stats: [
-      { value: '30–55%', label: 'Average Bill Reduction' },
+      { value: formatCompoundTile(claimCutPercent('heating-and-cooling', 'electric')), label: 'Est. Bill Reduction' },
       { value: '$3,200', label: 'In Federal Tax Credits' },
       { value: '6–18 mo', label: 'Typical Payback' },
     ],

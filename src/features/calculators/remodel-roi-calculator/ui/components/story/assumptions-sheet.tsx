@@ -6,7 +6,6 @@ import type { RemodelRoiProjection } from '@/features/calculators/remodel-roi-ca
 
 import { useFormContext } from 'react-hook-form'
 
-import { BILL_CATEGORIES, BILL_CATEGORY_LABELS } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
 import { STORY_COPY } from '@/features/calculators/remodel-roi-calculator/constants/story-copy'
 import { AGING_TRADE_KEYS, CURRENT_LABELS, TRADE_KEYS, TRADE_LABELS } from '@/features/calculators/remodel-roi-calculator/constants/trades'
 import { useStoryUi } from '@/features/calculators/remodel-roi-calculator/contexts/story-ui-context'
@@ -16,6 +15,7 @@ import { SourceTag } from '@/features/calculators/remodel-roi-calculator/ui/comp
 import { BlockEyebrow } from '@/shared/components/block/block-eyebrow'
 import { ResponsiveSheet } from '@/shared/components/dialogs/sheets/responsive-sheet'
 import { FormNumberField } from '@/shared/components/inputs/form-number-field'
+import { BILL_CATEGORIES, BILL_CATEGORY_LABELS } from '@/shared/modules/construction/core/constants/bill-categories'
 
 interface Props {
   projection: RemodelRoiProjection
@@ -48,8 +48,8 @@ export function AssumptionsSheet({ projection, config }: Props) {
             <div className="flex justify-between gap-3 border-b border-dashed py-1.5 text-sm" key={trade}>
               <span>{TRADE_LABELS[trade]}</span>
               <span className="text-right text-muted-foreground">
-                {formatCuts(config.trades[trade].cutsPercent)}
-                {trade === 'hvac' && ` · ducts ${formatCuts(config.trades.hvac.ductsCutsPercent)}`}
+                {formatCuts(config.billCuts[trade]?.base ?? {})}
+                {trade === 'hvac' && ` · ducts ${formatCuts(config.billCuts.hvac?.addOns?.ducts ?? {})}`}
                 {` · lasts ${config.trades[trade].newLifeYears == null ? 'the life of the home' : `${config.trades[trade].newLifeYears} yrs`}`}
               </span>
             </div>

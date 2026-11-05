@@ -104,6 +104,7 @@ const APP_ROOTS = {
     team: () => '/dashboard/team',
     analytics: () => '/dashboard/analytics',
     calculators: () => '/dashboard/calculators',
+    tradeScene: () => '/dashboard/trade-scene',
   },
   pwa: {
     /** The static shell document the installed app's launch is served from; it soft-navigates to the dashboard. */

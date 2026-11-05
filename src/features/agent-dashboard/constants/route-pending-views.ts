@@ -16,6 +16,7 @@ export const DASHBOARD_ROUTE_PENDING_VIEWS: Record<string, ComponentType> = {
   [ROOTS.dashboard.proposals.root()]: dynamic(() => import('@/features/agent-dashboard/ui/components/proposals-route-pending-view').then(m => m.ProposalsRoutePendingView)),
   [ROOTS.dashboard.projects.root()]: dynamic(() => import('@/features/records-management/ui/views/projects-records-view').then(m => m.ProjectsRecordsView)),
   [ROOTS.dashboard.schedule()]: dynamic(() => import('@/features/schedule-management/ui/views/schedule-view').then(m => m.ScheduleView)),
+  [ROOTS.dashboard.tradeScene()]: dynamic(() => import('@/features/trade-scenes/ui/views/trade-scene-pending-view').then(m => m.TradeScenePendingView)),
   // The map matches the exact pathname, so every pipeline path gets its own key.
   ...Object.fromEntries(pipelines.map(pipeline => [ROOTS.dashboard.pipeline(pipeline), PipelineRoutePendingView])),
 }

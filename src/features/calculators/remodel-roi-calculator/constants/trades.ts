@@ -1,48 +1,48 @@
-import type { TradeAccessor } from '@/shared/db/types/trades'
+import type { BillCutAddOnId } from '@/shared/modules/construction/core/constants/bill-cut-add-ons'
+import type { TradeSlug } from '@/shared/modules/construction/core/constants/trade-slugs'
 
-export const TRADE_KEYS = ['hvac', 'roof', 'windowsAndDoors', 'atticBasement', 'exteriorPaintSiding', 'dryscapingHardscaping'] as const satisfies readonly TradeAccessor[]
+import { BILL_CUT_ADD_ON_LABELS } from '@/shared/modules/construction/core/constants/bill-cut-add-ons'
+
+export const TRADE_KEYS = ['hvac', 'roof-and-gutters', 'windows-and-doors', 'attic-and-basement', 'exterior-paint-stucco-and-siding', 'dryscaping'] as const satisfies readonly TradeSlug[]
 
 export type TradeKey = typeof TRADE_KEYS[number]
 
-export const AGING_TRADE_KEYS = ['hvac', 'roof', 'windowsAndDoors', 'exteriorPaintSiding'] as const satisfies readonly TradeKey[]
+export const AGING_TRADE_KEYS = ['hvac', 'roof-and-gutters', 'windows-and-doors', 'exterior-paint-stucco-and-siding'] as const satisfies readonly TradeKey[]
 
 export type AgingTradeKey = typeof AGING_TRADE_KEYS[number]
 
-export type CutSource = TradeKey | 'ducts'
+export type CutSource = TradeKey | BillCutAddOnId
 
 export const TRADE_LABELS = {
-  hvac: 'HVAC',
-  roof: 'Roof',
-  windowsAndDoors: 'Windows & Doors',
-  atticBasement: 'Attic & Basement',
-  exteriorPaintSiding: 'Exterior Paint & Siding',
-  dryscapingHardscaping: 'Dryscaping & Hardscaping',
+  'hvac': 'HVAC',
+  'roof-and-gutters': 'Roof',
+  'windows-and-doors': 'Windows & Doors',
+  'attic-and-basement': 'Attic & Basement',
+  'exterior-paint-stucco-and-siding': 'Exterior Paint & Siding',
+  'dryscaping': 'Dryscaping & Hardscaping',
 } as const satisfies Record<TradeKey, string>
 
-export const CUT_SOURCE_LABELS = {
-  ...TRADE_LABELS,
-  ducts: 'Ducts',
-} as const satisfies Record<CutSource, string>
+export const CUT_SOURCE_LABELS = { ...TRADE_LABELS, ...BILL_CUT_ADD_ON_LABELS } as const satisfies Record<CutSource, string>
 
 export const CURRENT_LABELS = {
-  hvac: 'HVAC',
-  roof: 'Roof',
-  windowsAndDoors: 'Windows & doors',
-  exteriorPaintSiding: 'Exterior paint',
+  'hvac': 'HVAC',
+  'roof-and-gutters': 'Roof',
+  'windows-and-doors': 'Windows & doors',
+  'exterior-paint-stucco-and-siding': 'Exterior paint',
 } as const satisfies Record<AgingTradeKey, string>
 
 export const CURRENT_SENTENCE_LABELS = {
-  hvac: 'HVAC',
-  roof: 'roof',
-  windowsAndDoors: 'windows and doors',
-  exteriorPaintSiding: 'exterior paint',
+  'hvac': 'HVAC',
+  'roof-and-gutters': 'roof',
+  'windows-and-doors': 'windows and doors',
+  'exterior-paint-stucco-and-siding': 'exterior paint',
 } as const satisfies Record<AgingTradeKey, string>
 
 export const CURRENT_IS_PLURAL = {
-  hvac: false,
-  roof: false,
-  windowsAndDoors: true,
-  exteriorPaintSiding: false,
+  'hvac': false,
+  'roof-and-gutters': false,
+  'windows-and-doors': true,
+  'exterior-paint-stucco-and-siding': false,
 } as const satisfies Record<AgingTradeKey, boolean>
 
 export function isAgingTrade(trade: TradeKey): trade is AgingTradeKey {

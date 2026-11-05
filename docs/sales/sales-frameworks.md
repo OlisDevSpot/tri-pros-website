@@ -83,7 +83,7 @@ Present outcomes, not process. Customers buy destinations, not tickets.
 **Core principle**: The more you explain about the technical details of what you're doing, the more ammunition you give the customer to argue or hesitate. Keep it about what their life looks like after.
 
 **Good (vacation)**:
-> "You'll notice the comfort difference within the first month. Most customers see their energy bill drop by 20-40%. No more drafts, no more hot spots, no more arguments over the thermostat."
+> "You'll notice the comfort difference within the first month. Our estimate from customer bills is about 10% off the electric bill and 15% off gas. No more drafts, no more hot spots, no more arguments over the thermostat."
 
 **Bad (plane flight)**:
 > "We'll install R-38 blown-in fiberglass with air sealing at all penetration points, and a radiant barrier on the underside of the roof deck."

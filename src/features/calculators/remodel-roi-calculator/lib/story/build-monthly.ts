@@ -1,6 +1,5 @@
 import type { AnswerPart, ChapterContent, ReceiptRow, StoryInputs, UsesRow } from '@/features/calculators/remodel-roi-calculator/types'
 
-import { BILL_CATEGORIES, BILL_CATEGORY_LABELS } from '@/features/calculators/remodel-roi-calculator/constants/bill-categories'
 import { PROJECTION_YEARS } from '@/features/calculators/remodel-roi-calculator/constants/look-ahead'
 import { BILL_RATE_LABELS } from '@/features/calculators/remodel-roi-calculator/constants/rates'
 import { STORY_COPY } from '@/features/calculators/remodel-roi-calculator/constants/story-copy'
@@ -11,6 +10,7 @@ import { emphasis, plain } from '@/features/calculators/remodel-roi-calculator/l
 import { changeVerb } from '@/features/calculators/remodel-roi-calculator/lib/story/describe-change'
 import { waitIsFinanced } from '@/features/calculators/remodel-roi-calculator/lib/story/describe-waits'
 import { tagFor } from '@/features/calculators/remodel-roi-calculator/lib/story/tag-for'
+import { BILL_CATEGORIES, BILL_CATEGORY_LABELS } from '@/shared/modules/construction/core/constants/bill-categories'
 
 function percentText(share: number): string {
   return `${Math.round(share * 1000) / 10}%`
