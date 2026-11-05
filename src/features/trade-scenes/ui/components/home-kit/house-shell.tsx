@@ -1,5 +1,6 @@
 'use client'
 
+import type { ThreeEvent } from '@react-three/fiber'
 import type { HouseWall, PaintLook, StainBoxes, WallOpening } from '@/features/trade-scenes/types'
 import type { WallSkinSpec } from '@/features/trade-scenes/ui/lib/wall-skin-geometry'
 import type { WindowsType } from '@/shared/modules/construction/core/constants/enums'
@@ -36,6 +37,8 @@ interface HouseShellProps {
   roofForm: RoofForm
   windowGlow: number
   thermal: boolean
+  // A tap on any window's glass or frame asks which systems are there.
+  onWindowTap: (event: ThreeEvent<MouseEvent>) => void
 }
 
 const WALLS = Object.values(HOUSE_WALLS)
@@ -78,7 +81,7 @@ const FRONT_STUCCO: WallSkinSpec[] = [{
 }]
 const FRONT_ZONE = facesSummerSun(0, FRONT_WALL.outward) ? 'sunlit' : null
 
-export function HouseShell({ windowsType, frameWear, glassWear, paint, roofForm, windowGlow, thermal }: HouseShellProps) {
+export function HouseShell({ windowsType, frameWear, glassWear, paint, roofForm, windowGlow, thermal, onWindowTap }: HouseShellProps) {
   // Unknown glazing draws as single: the common case in the homes we visit, and the one the work changes.
   const frame = WINDOW_FRAMES[windowsType ?? 'single']
   const { frames, glass, front } = useMemo(() => {
@@ -153,11 +156,11 @@ export function HouseShell({ windowsType, frameWear, glassWear, paint, roofForm,
       <group userData={HOME_FADE_TAGS.slab}>
         <PaintStains lists={stains.sidesSplash} thermal={thermal} />
       </group>
-      <group userData={systemPartTag('frame')}>
+      <group onClick={onWindowTap} userData={systemPartTag('frame')}>
         <MergedBoxes boxes={frames} color={trim} radius={0.01} roughness={0.7} />
       </group>
       <group userData={thermalTag('window')}>
-        <group userData={systemPartTag('glazing')}>
+        <group onClick={onWindowTap} userData={systemPartTag('glazing')}>
           <MergedBoxes boxes={glass} color={glassColor} roughness={glassRoughness} opacity={glassOpacity} emissive={HOME_PALETTE.glassGlow} emissiveIntensity={windowGlow} />
         </group>
       </group>
@@ -176,11 +179,11 @@ export function HouseShell({ windowsType, frameWear, glassWear, paint, roofForm,
         <group userData={HOME_FADE_TAGS.slab}>
           <PaintStains lists={stains.frontSplash} thermal={thermal} />
         </group>
-        <group userData={systemPartTag('frame')}>
+        <group onClick={onWindowTap} userData={systemPartTag('frame')}>
           <MergedBoxes boxes={front.frames} color={trim} radius={0.01} roughness={0.7} />
         </group>
         <group userData={thermalTag('window')}>
-          <group userData={systemPartTag('glazing')}>
+          <group onClick={onWindowTap} userData={systemPartTag('glazing')}>
             <MergedBoxes boxes={front.glass} color={glassColor} roughness={glassRoughness} opacity={glassOpacity} emissive={HOME_PALETTE.glassGlow} emissiveIntensity={windowGlow} />
           </group>
         </group>

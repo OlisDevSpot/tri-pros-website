@@ -1,12 +1,13 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import type { ControlsSection, FactsTab, SystemsFocus, TradeSceneInputs } from '@/features/trade-scenes/types'
+import type { ControlsSection, FactsTab, HomeSystemId, SystemsFocus, TradeSceneInputs } from '@/features/trade-scenes/types'
 
 import { createContext, use, useMemo, useState } from 'react'
 
 import { LEAVE_LOOK_INSIDE } from '@/features/trade-scenes/constants/scene-controls'
-import { flipView, pressFocus, pressSection } from '@/features/trade-scenes/lib/controls-press'
+import { SceneTapClaimProvider } from '@/features/trade-scenes/contexts/scene-tap-claim-context'
+import { flipView, pressFocus, pressPin, pressSection } from '@/features/trade-scenes/lib/controls-press'
 import { useSceneInputs, useSceneInputsApi } from '@/shared/components/scene/contexts/scene-inputs-context'
 
 interface SceneControlsValue {
@@ -20,6 +21,8 @@ interface SceneControlsValue {
   close: () => void
   flip: () => void
   focusSystem: (focus: SystemsFocus) => void
+  // A pin on the house: its system's rail chip, and the pins go with the pick.
+  pickFromPin: (system: HomeSystemId) => void
   setQuery: (query: string) => void
   setFactsTab: (tab: FactsTab) => void
 }
@@ -47,14 +50,14 @@ export function SceneControlsProvider({ children }: SceneControlsProviderProps) 
 
   const value = useMemo<SceneControlsValue>(() => {
     const now = () => ({ open, focus, view: store.getState().view })
-    const apply = (next: ReturnType<typeof pressSection>) => {
+    const apply = (next: ReturnType<typeof pressSection>, also: Partial<TradeSceneInputs> = {}) => {
       setOpen(next.open)
       setYearBuilt(next.focus === 'year-built')
       // One write, so the camera's glide and the side shown start on the same frame. Up close is a step into the system in
       // focus, so letting that system go, for another or for none, comes back out of it.
       const { lookInside, cameraFocus: held } = store.getState()
       const cameraFocus = next.focus === 'year-built' ? null : next.focus
-      store.setState({ view: next.view, cameraFocus, ...(lookInside && cameraFocus !== held ? LEAVE_LOOK_INSIDE : {}) })
+      store.setState({ view: next.view, cameraFocus, ...(lookInside && cameraFocus !== held ? LEAVE_LOOK_INSIDE : {}), ...also })
       if (next.toast) {
         setToast(count => count + 1)
       }
@@ -69,6 +72,7 @@ export function SceneControlsProvider({ children }: SceneControlsProviderProps) 
       close: () => apply({ ...now(), open: null, focus: null, toast: false }),
       flip: () => apply(flipView(now())),
       focusSystem: next => apply(pressFocus(now(), next)),
+      pickFromPin: system => apply(pressPin(now(), system), { tappedSpot: null }),
       setQuery,
       setFactsTab,
     }
@@ -76,7 +80,10 @@ export function SceneControlsProvider({ children }: SceneControlsProviderProps) 
 
   return (
     <SceneControlsContext value={value}>
-      <ControlsOpenContext value={open}>{children}</ControlsOpenContext>
+      <ControlsOpenContext value={open}>
+        {/* Here, above both the canvas whose house taps claim and the controls whose tap-away reads the claim. */}
+        <SceneTapClaimProvider>{children}</SceneTapClaimProvider>
+      </ControlsOpenContext>
     </SceneControlsContext>
   )
 }

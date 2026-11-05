@@ -47,6 +47,7 @@ import { SCOPE_VERBS } from '@/features/trade-scenes/constants/scope-verbs'
 import { lookInsideView, SYSTEM_CAMERA_VIEWS } from '@/features/trade-scenes/constants/system-camera-views'
 import { SYSTEM_PARTS } from '@/features/trade-scenes/constants/system-parts'
 import { WEAR_AMOUNT, WEAR_LOOKS } from '@/features/trade-scenes/constants/wear-looks'
+import { createTapClaim } from '@/features/trade-scenes/contexts/scene-tap-claim-context'
 import { applySceneChange } from '@/features/trade-scenes/lib/apply-scene-change'
 import { arrowStations } from '@/features/trade-scenes/lib/arrow-stations'
 import { atticFanRuns } from '@/features/trade-scenes/lib/attic-fan-runs'
@@ -57,6 +58,7 @@ import { buildBenefits } from '@/features/trade-scenes/lib/build-benefits'
 import { castResidents } from '@/features/trade-scenes/lib/cast-residents'
 import { ceilingOpenings } from '@/features/trade-scenes/lib/ceiling-openings'
 import { comfortFromReadings } from '@/features/trade-scenes/lib/comfort-from-readings'
+import { pressHomeView } from '@/features/trade-scenes/lib/controls-press'
 import { coveringBaseY } from '@/features/trade-scenes/lib/covering-base-y'
 import { currentYear } from '@/features/trade-scenes/lib/current-year'
 import { downspoutBoxes } from '@/features/trade-scenes/lib/downspout-boxes'
@@ -94,10 +96,12 @@ import { missingFacts } from '@/features/trade-scenes/lib/missing-facts'
 import { packageUnitDrop, packageUnitPlacement } from '@/features/trade-scenes/lib/package-unit-placement'
 import { doorFramePeeling, fasciaPeeling, wallPeeling } from '@/features/trade-scenes/lib/paint-peeling'
 import { FRONT_STAIN_WALL, gableVentOpening, paintedSurfaceStains, paintTopEdge, roofPeeling, splitAlong, splitAtSeam, STAIN_WALLS } from '@/features/trade-scenes/lib/painted-surface-stains'
+import { partPinId } from '@/features/trade-scenes/lib/part-pin-id'
 import { partState } from '@/features/trade-scenes/lib/part-state'
 import { pickedUpgrades } from '@/features/trade-scenes/lib/picked-upgrades'
 import { piecesInSpan } from '@/features/trade-scenes/lib/pieces-in-span'
 import { railGroups } from '@/features/trade-scenes/lib/rail-groups'
+import { readingPinId } from '@/features/trade-scenes/lib/reading-pin-id'
 import { repairsRows } from '@/features/trade-scenes/lib/repairs-rows'
 import { resolveScene } from '@/features/trade-scenes/lib/resolve-scene'
 import { gableCracks, LEFT_PARAPET_CUT, parapetCracks } from '@/features/trade-scenes/lib/roof-cracks'
@@ -109,6 +113,8 @@ import { offersEfficiencyUpgrade } from '@/features/trade-scenes/lib/scope-chip-
 import { scopePreviewPatch } from '@/features/trade-scenes/lib/scope-preview-patch'
 import { searchSceneChanges } from '@/features/trade-scenes/lib/search-scene-changes'
 import { layoutShingles } from '@/features/trade-scenes/lib/shingle-layout'
+import { spotFromPinId, spotPinId } from '@/features/trade-scenes/lib/spot-pin-id'
+import { spotPinPoint } from '@/features/trade-scenes/lib/spot-pin-point'
 import { fadeBlotches, runoffStreaks, sillDirt, splashBand } from '@/features/trade-scenes/lib/stain-boxes'
 import { stuccoCracks } from '@/features/trade-scenes/lib/stucco-cracks'
 import { systemCuts } from '@/features/trade-scenes/lib/system-cuts'
@@ -3307,6 +3313,44 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
   assert.equal(escapeStep({ ...bare, pins: true }), 'pins', 'the pins at a spot, over the bare scene')
   assert.equal(escapeStep({ ...bare, open: 'modify', pins: true }), null, 'a window owns its Escape')
   assert.equal(escapeStep(bare), null, 'nothing to step back')
+
+  // A tap on the house pins its systems where it was tapped, under ids no part or reading pin takes.
+  for (const system of LOOK_INSIDE_SYSTEM_IDS) {
+    assert.equal(spotFromPinId(spotPinId(system)), system, `${system}: its spot pin's id reads back`)
+    assert.equal(spotFromPinId(partPinId(system)), null, `${system}: a part pin is no spot pin`)
+  }
+  assert.equal(spotFromPinId(readingPinId('roof')), null, 'a reading is no spot pin')
+  assert.equal(spotFromPinId(spotPinId('walls')), null, 'no spot opens the walls')
+  assert.ok(!spotPinId('roof').startsWith('part:') && !spotPinId('roof').startsWith('reading:'), 'the spot prefix is its own')
+  for (const homeView of ['complete', 'partly-open'] as const) {
+    const patch = pressHomeView(homeView)
+    assert.notEqual(patch.homeView, homeView, `${homeView}: the home view turns`)
+    assert.equal(patch.tappedSpot, null, `${homeView}: turning the home view lets the pins at a spot go`)
+  }
+  for (const form of ['pitched', 'low-slope'] as const) {
+    assert.deepEqual(spotPinPoint('roof', form, null), HOME_ANCHORS[form].roof.position, `${form}: the roof's pin stands where its view looks`)
+    assert.deepEqual(spotPinPoint('attic', form, null), HOME_ANCHORS[form].attic.position, `${form}: so does the attic's`)
+    assert.deepEqual(spotPinPoint('windows', form, null), systemPartFocus('windows', form, 'glazing'), `${form}: the window's on the glass its view frames`)
+    const [cx, cy, cz] = systemPartFocus('heating-cooling', form, 'condenser')!
+    const [condenserX, condenserY, condenserZ] = spotPinPoint('heating-cooling', form, 'central')
+    assert.ok(condenserX === cx && condenserZ === cz && condenserY > cy, `${form}: heating & cooling's stands over the condenser`)
+    const [ux, uy, uz] = systemPartFocus('heating-cooling', form, 'package-unit')!
+    const [unitX, unitY, unitZ] = spotPinPoint('heating-cooling', form, 'package-unit')
+    assert.ok(unitX === ux && unitZ === uz && unitY > uy, `${form}: and over the package unit on a package home`)
+  }
+  // A house tap that answers itself claims the gesture, and the claim lasts until the next press.
+  const claim = createTapClaim()
+  assert.equal(claim.claimed(), false, 'a press starts unclaimed')
+  claim.claimTap()
+  assert.equal(claim.claimed(), true, 'a claim holds for the click that ends the tap')
+  claim.release()
+  assert.equal(claim.claimed(), false, 'the next press lets it go')
+  // A pin over the canvas is a pick, like a rail chip: its tap is a tap on the scene too, so each claims it before it picks,
+  // or the tap-away would close Systems (and leave Look inside) on the same click.
+  for (const [file, pick] of [['src/features/trade-scenes/ui/components/panel/part-pins.tsx', 'emphasize(partId)'], ['src/features/trade-scenes/ui/components/spot-pin.tsx', 'pickFromPin(system)']] as const) {
+    const code = readFileSync(file, 'utf8')
+    assert.match(code, new RegExp(String.raw`claimTap\(\)\s*\n\s*${pick.replace(/[()]/g, String.raw`\$&`)}`), `${file}: the pin claims its tap before it picks`)
+  }
 
   // A change that leaves nothing to look inside steps back to the system in the same write; the system keeps the camera.
   const stepsBack = (label: string, state: TradeSceneInputs, change: SceneChange) => {

@@ -7,14 +7,14 @@ import { partPinId } from '@/features/trade-scenes/lib/part-pin-id'
 import { systemPartFocus } from '@/features/trade-scenes/lib/system-part-focus'
 import { SceneAnchor } from '@/shared/components/scene/ui/scene-anchor'
 
-interface HomeAnchorsLayerProps {
+interface PartAnchorsLayerProps {
   form: string | null
-  // The system up close, whose shown parts take a pin each; no pin stands on the whole home.
+  // The system up close, whose shown parts take a pin each.
   lit: SystemLit | null
 }
 
 // On the house's lift, so each pin rises with the part it names.
-export function HomeAnchorsLayer({ form, lit }: HomeAnchorsLayerProps) {
+export function PartAnchorsLayer({ form, lit }: PartAnchorsLayerProps) {
   if (lit === null) {
     return null
   }

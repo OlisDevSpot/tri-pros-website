@@ -1,4 +1,4 @@
-import type { ControlsSection, SystemsFocus, TradeSceneInputs } from '@/features/trade-scenes/types'
+import type { ControlsSection, HomeSystemId, SystemsFocus, TradeSceneInputs } from '@/features/trade-scenes/types'
 
 interface ControlsPressState {
   open: ControlsSection | null
@@ -29,4 +29,15 @@ export function flipView(state: ControlsPressState): ControlsPressResult {
 
 export function pressFocus(state: ControlsPressState, focus: SystemsFocus): ControlsPressResult {
   return { open: state.open, focus: state.focus === focus ? null : focus, view: state.view, toast: false }
+}
+
+// A pin on the house is the system's rail chip: Systems opens with that system in focus, whatever was open, and never steps
+// inside it.
+export function pressPin(state: ControlsPressState, system: HomeSystemId): ControlsPressResult {
+  return { open: 'systems', focus: system, view: state.view, toast: false }
+}
+
+// The pins at a spot belong to the house as it was tapped, so turning it lets them go.
+export function pressHomeView(homeView: TradeSceneInputs['homeView']): Pick<TradeSceneInputs, 'homeView' | 'tappedSpot'> {
+  return { homeView: homeView === 'complete' ? 'partly-open' : 'complete', tappedSpot: null }
 }

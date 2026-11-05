@@ -1,4 +1,5 @@
 import type { ReadingId } from '@/features/trade-scenes/constants/home-anchors'
+import type { LOOK_INSIDE_SYSTEM_IDS } from '@/features/trade-scenes/constants/home-systems'
 import type { BuildRowPartId, FactsTab, HomeSystemId, HomeView, SavingsCategory, SlotGroup, SystemPieceId, TradeSceneInputs } from '@/features/trade-scenes/types'
 import type { CustomerAgeGroup, HouseholdType, YearBuiltRange } from '@/shared/constants/enums/customers'
 import type { Climate } from '@/shared/modules/construction/core/constants/climate-presets'
@@ -414,3 +415,10 @@ export const SYSTEM_PART_LABELS = {
 
 // Placeholder copy until the owner's copy pass.
 export const LOOK_INSIDE_COPY = { open: 'Look inside', close: 'Back to the system' } as const
+
+export const SYSTEM_PIN_LABELS = {
+  'roof': 'Look inside the roof',
+  'attic': 'Look inside the attic',
+  'windows': 'Look inside the window',
+  'heating-cooling': 'Look inside heating & cooling',
+} as const satisfies Record<(typeof LOOK_INSIDE_SYSTEM_IDS)[number], string>

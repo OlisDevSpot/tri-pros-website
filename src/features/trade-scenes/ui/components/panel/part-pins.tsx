@@ -6,6 +6,7 @@ import type { SystemPartRow, TradeSceneInputs } from '@/features/trade-scenes/ty
 
 import { LOOK_INSIDE } from '@/features/trade-scenes/constants/look-inside'
 import { useEmphasizePart } from '@/features/trade-scenes/hooks/use-emphasize-part'
+import { useSceneTapClaim } from '@/features/trade-scenes/hooks/use-scene-tap-claim'
 import { partFromPinId } from '@/features/trade-scenes/lib/part-pin-id'
 import { readingFromPinId } from '@/features/trade-scenes/lib/reading-pin-id'
 import { PartPin } from '@/features/trade-scenes/ui/components/panel/part-pin'
@@ -26,8 +27,14 @@ export function PartPins({ parts, renderReading }: PartPinsProps) {
   const open = useSceneInputs((state: TradeSceneInputs) => state.peel > LOOK_INSIDE.pinsFromPeel)
   const emphasized = useSceneInputs((state: TradeSceneInputs) => state.emphasizedPart)
   const emphasize = useEmphasizePart()
+  const { claimTap } = useSceneTapClaim()
 
   const shown = (partId: string | null) => partId !== null && (open || partId === emphasized)
+  // The pins stand over the canvas, so their tap is a tap on the scene too; a pick answers it, and Look inside stays.
+  const select = (partId: SystemPartRow['id']) => {
+    claimTap()
+    emphasize(partId)
+  }
 
   return (
     <ScenePins
@@ -42,7 +49,7 @@ export function PartPins({ parts, renderReading }: PartPinsProps) {
           return null
         }
         const part = parts[index]
-        return <PartPin number={index + 1} label={part.label} selected={part.id === emphasized} shown={shown(part.id)} onSelect={() => emphasize(part.id)} />
+        return <PartPin number={index + 1} label={part.label} selected={part.id === emphasized} shown={shown(part.id)} onSelect={() => select(part.id)} />
       }}
     />
   )

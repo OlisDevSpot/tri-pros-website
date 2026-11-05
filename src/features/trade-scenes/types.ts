@@ -75,11 +75,13 @@ export interface TradeSceneInputs {
   cameraFocus: HomeSystemId | null
   peel: number
   emphasizedPart: SystemPartId | null
+  // Where the house was last tapped; its systems' pins show until a pick, a tap away, Escape or a home-view change.
+  tappedSpot: HomeSpotId | null
   bills: Record<SavingsCategory, BillEntry>
   repairsOverrides: Partial<Record<TradeSlug, number | null>>
 }
 
-// What resolveScene reads; the drawing-only inputs (peel, emphasis, home view, thermal camera, look) change no target, so a write to
+// What resolveScene reads; the drawing-only inputs (peel, emphasis, a tapped spot, home view, thermal camera, look) change no target, so a write to
 // them must not re-resolve the scene.
 export type SceneResolveInputs = Pick<TradeSceneInputs, 'property' | 'household' | 'view' | 'weather' | 'climate' | 'proposedScopeIds' | 'efficiencyUpgrades' | 'installStyles' | 'bills' | 'repairsOverrides'> & {
   // The AC size, the shingle colour and the paint wear only draw, so a write to any of them must not re-resolve.

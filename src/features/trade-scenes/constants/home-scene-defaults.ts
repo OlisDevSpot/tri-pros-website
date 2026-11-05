@@ -27,6 +27,7 @@ export const HOME_SCENE_DEFAULTS: TradeSceneInputs = {
   cameraFocus: null,
   peel: 0,
   emphasizedPart: null,
+  tappedSpot: null,
   bills: {
     electric: { now: null, cut: { mode: 'trades', value: null } },
     gas: { now: null, cut: { mode: 'trades', value: null } },

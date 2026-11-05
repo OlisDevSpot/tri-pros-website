@@ -11,6 +11,7 @@ import { SCENE_SHORTCUTS } from '@/features/trade-scenes/constants/scene-shortcu
 import { useSceneControls } from '@/features/trade-scenes/contexts/scene-controls-context'
 import { useSceneLoadApi } from '@/features/trade-scenes/contexts/scene-load-context'
 import { useKeysInUse } from '@/features/trade-scenes/hooks/use-keys-in-use'
+import { pressHomeView } from '@/features/trade-scenes/lib/controls-press'
 import { escapeStep } from '@/features/trade-scenes/lib/escape-step'
 import { focusFell, leaveLookInside } from '@/features/trade-scenes/ui/lib/leave-look-inside'
 import { useSceneCameraApi } from '@/shared/components/scene/contexts/scene-camera-context'
@@ -49,10 +50,9 @@ export function useSceneShortcuts(stageRef: RefObject<HTMLElement | null>, openS
       const action = SCENE_SHORTCUTS[key]
       const stage = stageRef.current!
       // Systems is no Radix layer, so its Escape is ours; a window's is its dialog's, and a menu's its popover's, which
-      // take it first. A press with no layer of ours to step back is left to whatever else listens for it. No tap pins
-      // the systems at a spot yet.
+      // take it first. A press with no layer of ours to step back is left to whatever else listens for it.
       const step = action === 'wholeHome'
-        ? escapeStep({ menu: stage.querySelector('[data-value-menu]') !== null, lookInside: state.lookInside, focus, open, pins: false })
+        ? escapeStep({ menu: stage.querySelector('[data-value-menu]') !== null, lookInside: state.lookInside, focus, open, pins: state.tappedSpot !== null })
         : null
       if (action === 'wholeHome' && step === null) {
         return
@@ -66,7 +66,7 @@ export function useSceneShortcuts(stageRef: RefObject<HTMLElement | null>, openS
       markInUse()
       switch (action) {
         case 'homeView':
-          store.setState({ homeView: state.homeView === 'complete' ? 'partly-open' : 'complete' })
+          store.setState(pressHomeView(state.homeView))
           return
         case 'thermal':
           store.setState({ thermalCamera: !state.thermalCamera })
@@ -93,8 +93,9 @@ export function useSceneShortcuts(stageRef: RefObject<HTMLElement | null>, openS
           openSection('modify')
           return
         case 'wholeHome': {
-          // One layer a press: up close, the system in focus, then Systems. Focus the layer took with it goes to the way
-          // back in: Look inside, the system's rail chip, then the Systems button. A menu's popover closes itself.
+          // One layer a press: up close, the system in focus, then Systems, or over the bare scene the pins at a spot. Focus
+          // the layer took with it goes to the way back in: Look inside, the system's rail chip, then the Systems button. A
+          // menu's popover closes itself.
           const held = document.activeElement
           if (step === 'look-inside') {
             leaveLookInside(store, stage)
@@ -105,6 +106,9 @@ export function useSceneShortcuts(stageRef: RefObject<HTMLElement | null>, openS
             if (focusFell(held)) {
               stage.querySelector<HTMLElement>(`[data-rail-chip="${focus}"]`)!.focus()
             }
+          }
+          else if (step === 'pins') {
+            store.setState({ tappedSpot: null })
           }
           else if (step === 'systems') {
             // eslint-disable-next-line react-dom/no-flush-sync -- the rail leaves only once this write renders

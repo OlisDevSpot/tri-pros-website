@@ -15,7 +15,7 @@ import { SCENE_LAYOUT } from '@/features/trade-scenes/constants/scene-layout'
 import { SCENE_SHORTCUTS, SHORTCUT_SHEET_ROWS } from '@/features/trade-scenes/constants/scene-shortcuts'
 import { SCOPE_VERBS } from '@/features/trade-scenes/constants/scope-verbs'
 import { applySceneChange } from '@/features/trade-scenes/lib/apply-scene-change'
-import { flipView, pressFocus, pressSection } from '@/features/trade-scenes/lib/controls-press'
+import { flipView, pressFocus, pressPin, pressSection } from '@/features/trade-scenes/lib/controls-press'
 import { dockHeightFor, dockLayoutFor, dockRegionFor } from '@/features/trade-scenes/lib/dock-layout-for'
 import { efficiencyUpgradePatch } from '@/features/trade-scenes/lib/efficiency-upgrade-patch'
 import { homeHeat } from '@/features/trade-scenes/lib/home-heat'
@@ -344,6 +344,12 @@ assert.deepEqual(flipView(at('benefits', null, 'proposed')), { ...at(null), toas
 assert.deepEqual(flipView(at('systems', 'roof')), { ...at('systems', 'roof', 'proposed'), toast: false }, 'a flip keeps the system in focus')
 assert.deepEqual(pressFocus(at('systems', 'roof'), 'roof'), { ...at('systems'), toast: false }, 'the same system again lets it go')
 assert.deepEqual(pressFocus(at('systems', 'roof'), 'attic'), { ...at('systems', 'attic'), toast: false })
+assert.deepEqual(pressPin({ open: null, focus: null, view: 'existing' }, 'roof'), { open: 'systems', focus: 'roof', view: 'existing', toast: false }, 'a pin opens Systems on its system')
+// A pin is exactly its rail chip: open Systems, then press the chip.
+for (const [from, system] of [[at(null), 'roof'], [at(null, null, 'proposed'), 'attic'], [at('systems'), 'windows'], [at('systems', 'roof'), 'heating-cooling']] as const) {
+  const opened = from.open === 'systems' ? from : pressSection(from, 'systems')
+  assert.deepEqual(pressPin(from, system), pressFocus(opened, system), `from ${from.open ?? 'nothing'} on ${from.view}: the ${system} pin is its rail chip`)
+}
 assert.equal(stageShapeOf(1440, 900), 'landscape')
 assert.equal(stageShapeOf(768, 700), 'narrow')
 assert.equal(stageShapeOf(820, 1180), 'portrait')

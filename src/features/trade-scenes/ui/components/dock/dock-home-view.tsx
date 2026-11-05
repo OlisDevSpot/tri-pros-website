@@ -8,6 +8,7 @@ import { DOCK_COPY, HOME_VIEW_LABELS } from '@/features/trade-scenes/constants/h
 import { HOME_VIEW_ICONS } from '@/features/trade-scenes/constants/scene-control-icons'
 import { DOCK_BUTTON_CLASS, DOCK_SIZES } from '@/features/trade-scenes/constants/scene-dock'
 import { SCENE_SHORTCUT_KEYS } from '@/features/trade-scenes/constants/scene-shortcuts'
+import { pressHomeView } from '@/features/trade-scenes/lib/controls-press'
 import { Keycap } from '@/features/trade-scenes/ui/components/keycap'
 import { useSceneInputs, useSceneInputsApi } from '@/shared/components/scene/contexts/scene-inputs-context'
 import { Button } from '@/shared/components/ui/button'
@@ -28,7 +29,7 @@ export function DockHomeView() {
       size="icon"
       aria-labelledby={labelId}
       aria-keyshortcuts={VIEW_KEY}
-      onClick={() => inputs.setState({ homeView: homeView === 'complete' ? 'partly-open' : 'complete' })}
+      onClick={() => inputs.setState(pressHomeView(homeView))}
       style={DOCK_SIZES.tile}
       className={DOCK_BUTTON_CLASS}
     >

@@ -1,5 +1,6 @@
 'use client'
 
+import type { ThreeEvent } from '@react-three/fiber'
 import type { BoxSpec, FurniturePlacement } from '@/features/trade-scenes/types'
 import type { SceneBurst } from '@/shared/components/scene/types'
 
@@ -28,6 +29,8 @@ interface CondenserUnitProps {
   wear: number
   /** The AC size's multiplier on the unit, about its base centre; 1 is the unit as modelled. */
   scale: number
+  // A tap on the unit, its pad or its lines asks which systems are there.
+  onTap: (event: ThreeEvent<MouseEvent>) => void
 }
 
 const [x, , z] = EQUIPMENT.condenser.position
@@ -55,11 +58,11 @@ function dustyPlacement(wear: number): FurniturePlacement {
   }
 }
 
-export function CondenserUnit({ load, burst, wear, scale }: CondenserUnitProps) {
+export function CondenserUnit({ load, burst, wear, scale, onTap }: CondenserUnitProps) {
   const shake = useStrainShake(load, burst)
   const placement = useMemo(() => dustyPlacement(wear), [wear])
   return (
-    <group>
+    <group onClick={onTap}>
       <group userData={thermalTag('exterior')}>
         {/* The pad is set with the unit, so it lights with it. */}
         <group userData={systemPartTag('condenser')}>

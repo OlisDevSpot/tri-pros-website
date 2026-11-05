@@ -1,5 +1,6 @@
 'use client'
 
+import type { ThreeEvent } from '@react-three/fiber'
 import type { Ref } from 'react'
 import type { Group } from 'three'
 import type { PaintLook } from '@/features/trade-scenes/types'
@@ -23,6 +24,8 @@ import { VentPipeStubs } from '@/features/trade-scenes/ui/components/home-kit/ve
 interface HouseRoofProps {
   form: string | null
   parts: readonly ResolvedPart[]
+  // A tap on the roof asks which systems are there.
+  onTap: (event: ThreeEvent<MouseEvent>) => void
   // Holds the attic floor, which the home hides whenever nothing can see into the attic.
   attic: Ref<Group>
   shingleColor: OwensCorningColorId | null
@@ -35,7 +38,7 @@ interface HouseRoofProps {
 }
 
 // The form and every part come from the resolved roof, never the profile: metal arrives here already drawn as its nearest covering.
-export function HouseRoof({ form, parts, attic, shingleColor, paint, thermal, atticFanRunning, burst, ducted }: HouseRoofProps) {
+export function HouseRoof({ form, parts, onTap, attic, shingleColor, paint, thermal, atticFanRunning, burst, ducted }: HouseRoofProps) {
   const lowSlope = form === 'low-slope'
   const covering = partState(parts, 'covering')
   const deck = partState(parts, 'deck')
@@ -45,7 +48,7 @@ export function HouseRoof({ form, parts, attic, shingleColor, paint, thermal, at
   const collars = foamCollarsShown(homeRoofForm(form), partState(parts, 'air-sealing').material, insulation.material)
 
   return (
-    <group userData={thermalTag('roof')}>
+    <group onClick={onTap} userData={thermalTag('roof')}>
       <group ref={attic}>
         <AtticFloor lowSlope={lowSlope} insulation={insulation} />
         <group userData={thermalTag('attic')}>
