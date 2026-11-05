@@ -1,20 +1,24 @@
 'use client'
 
 import type { Group } from 'three'
+import type { UnitCurb } from '@/features/trade-scenes/lib/package-unit-placement'
 import type { BoxSpec } from '@/features/trade-scenes/types'
 import type { SceneBurst } from '@/shared/components/scene/types'
 
 import { useMemo, useRef } from 'react'
+import { BoxGeometry } from 'three'
 
 import { PACKAGE_UNIT } from '@/features/trade-scenes/constants/home-equipment-sizes'
 import { EQUIPMENT_STRAIN } from '@/features/trade-scenes/constants/home-life'
 import { WEAR_LOOKS } from '@/features/trade-scenes/constants/wear-looks'
 import { useStrainShake } from '@/features/trade-scenes/hooks/use-strain-shake'
 import { packageUnitPlacement } from '@/features/trade-scenes/lib/package-unit-placement'
+import { systemPartTag } from '@/features/trade-scenes/lib/system-part-tag'
 import { thermalTag } from '@/features/trade-scenes/lib/thermal-tag'
 import { MergedBoxes } from '@/features/trade-scenes/ui/components/home-kit/merged-boxes'
 import { wornColor } from '@/features/trade-scenes/ui/lib/worn-color'
 import { useBurstMotion } from '@/shared/components/scene/hooks/use-burst-motion'
+import { useOwnedGeometry } from '@/shared/components/scene/hooks/use-owned-geometry'
 
 interface PackageUnitProps {
   lowSlope: boolean
@@ -35,11 +39,26 @@ const LOUVRES: BoxSpec[] = [-1, 1].map(side => ({ size: [LENGTH * 0.78, HEIGHT *
 const LID: BoxSpec[] = [{ size: [LENGTH + 0.06, 0.04, DEPTH + 0.06], position: [0, HEIGHT + 0.02, 0] }]
 const SERVICE_PANEL: BoxSpec[] = [{ size: [0.012, HEIGHT * 0.62, DEPTH * 0.55], position: [LENGTH / 2, HEIGHT * 0.5, 0] }]
 
+// A box whose top stays level and whose underside is pulled down to the curb's own back and front heights, so on the
+// slope its sides read as the tapered frame a pitched-roof curb is.
+function curbGeometry({ at: [x, z], footprint: [length, depth], top, bottom: { back, front } }: UnitCurb): BoxGeometry {
+  const geometry = new BoxGeometry(length, 1, depth)
+  const positions = geometry.attributes.position
+  for (let index = 0; index < positions.count; index++) {
+    const localZ = positions.getZ(index)
+    positions.setY(index, positions.getY(index) > 0 ? top : localZ < 0 ? back : front)
+    positions.setX(index, positions.getX(index) + x)
+    positions.setZ(index, localZ + z)
+  }
+  geometry.computeVertexNormals()
+  return geometry
+}
+
 // A low rectangular roof unit with its fan on top, built from boxes; the case takes the dust a worn one collects, as the condenser does.
 export function PackageUnit({ lowSlope, scale, load, burst, wear }: PackageUnitProps) {
   const { position, curb } = useMemo(() => packageUnitPlacement(lowSlope, scale), [lowSlope, scale])
   const body: BoxSpec[] = useMemo(() => [{ size: [LENGTH, HEIGHT, DEPTH], position: [0, HEIGHT / 2, 0] }], [])
-  const curbBoxes = useMemo(() => [curb], [curb])
+  const curbShape = useOwnedGeometry(() => curbGeometry(curb), [curb])
   const shake = useStrainShake(load, burst)
   const rotor = useRef<Group>(null)
   useBurstMotion(burst, (life, seconds) => {
@@ -52,10 +71,13 @@ export function PackageUnit({ lowSlope, scale, load, burst, wear }: PackageUnitP
   const caseColour = wornColor(colors.case, dust, wear * caseShare)
   const louvreColour = wornColor(colors.louvre, dust, wear * grille)
 
+  // The curb is set with the unit, so it lights with it.
   return (
-    <group>
+    <group userData={systemPartTag('package-unit')}>
       <group userData={thermalTag('exterior')}>
-        <MergedBoxes boxes={curbBoxes} color={colors.curb} radius={0.01} castShadow />
+        <mesh geometry={curbShape} castShadow>
+          <meshStandardMaterial color={colors.curb} roughness={0.9} />
+        </mesh>
       </group>
       <group ref={shake} userData={thermalTag('condenser')}>
         <group position={position} scale={scale}>

@@ -7,6 +7,7 @@ import { CEILING_OPENINGS, LOW_SLOPE_DECK_Y, WALL_TOP_Y } from '@/features/trade
 import { HOME_PALETTE } from '@/features/trade-scenes/constants/home-palette'
 import { ceilingOpenings } from '@/features/trade-scenes/lib/ceiling-openings'
 import { roofUndersideY } from '@/features/trade-scenes/lib/roof-underside'
+import { systemPartTag } from '@/features/trade-scenes/lib/system-part-tag'
 import { mergeCylinders } from '@/features/trade-scenes/ui/lib/merge-cylinders'
 import { useOwnedGeometry } from '@/shared/components/scene/hooks/use-owned-geometry'
 
@@ -64,9 +65,11 @@ export function AtticOpenings({ lowSlope, ducted, collars }: AtticOpeningsProps)
         <meshStandardMaterial color={HOME_PALETTE.pipe} roughness={0.6} />
       </mesh>
       {collars && (
-        <mesh geometry={collarGeometry}>
-          <meshStandardMaterial color={HOME_PALETTE.foam} roughness={1} />
-        </mesh>
+        <group userData={systemPartTag('air-sealing')}>
+          <mesh geometry={collarGeometry}>
+            <meshStandardMaterial color={HOME_PALETTE.foam} roughness={1} />
+          </mesh>
+        </group>
       )}
     </group>
   )

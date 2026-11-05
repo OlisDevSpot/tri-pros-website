@@ -73,6 +73,8 @@ const COPY_FILES = [
   'src/features/landing/constants/pillar-config.ts',
   'src/features/landing/constants/trade-benefits.ts',
   'src/features/landing/constants/trade-outcome-statements.ts',
+  'src/shared/modules/construction/core/constants/upgrade-registry.ts',
+  'src/features/trade-scenes/constants/home-scene-copy.ts',
 ]
 const STRING_LITERAL = /'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`/g
 const RANGE_CLAIM = /(?<!\d)\d{1,2}[–—-]\d{1,2}%/

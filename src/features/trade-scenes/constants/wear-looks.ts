@@ -39,6 +39,9 @@ export const WEAR_LOOKS = {
     blotchWidth: [0.7, 1.4],
     blotchAspect: [0.45, 0.8],
     blotchesPerMetre: { sunlit: 0.45, shaded: 0.15 },
+    // A shaded wall carried on up into a gable or a parapet: its face reaches well above the seam, so it takes enough patches
+    // that one lands up there too. The other walls keep the plain shaded rate.
+    raisedShadedBlotchesPerMetre: 0.26,
     // The atlas's strength stops, from 0 to 1: the splash from grade up, the streak across its width and from its foot up, the
     // blotch from its centre out. The splash's first stop holds full strength for the thin grime line at grade.
     stainAtlas: {

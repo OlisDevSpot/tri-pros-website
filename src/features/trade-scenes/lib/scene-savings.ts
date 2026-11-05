@@ -33,7 +33,7 @@ interface Landed {
 }
 
 // The scene credits only work it draws, part by part. A bill moves only for an installed part that beats what the home has there (a
-// like-for-like part earns nothing), while repairs are avoided by any part a material that carries repairs draws, once per material.
+// like-for-like part earns nothing), while repairs are avoided only by a part that is the material itself (a new gutter is not a new roof), once per material.
 function landed({ resolved, home, proposedScopeIds }: SceneSavingsInput, installs: Partial<Record<string, ScopeInstall>>): Landed {
   const baseTrades = new Set<TradeSlug>()
   const addOns = new Set<BillCutAddOnId>()
@@ -51,10 +51,21 @@ function landed({ resolved, home, proposedScopeIds }: SceneSavingsInput, install
       if (!scope || !definition) {
         continue
       }
-      if (installKind(definition, existing.parts[part.id]?.material ?? null, part.material) === 'saves-energy') {
-        const addOn = definition.materials[part.material]?.cut
-        if (addOn) {
-          addOns.add(addOn)
+      const saves = (material: string) => installKind(definition, existing.parts[part.id]?.material ?? null, material) === 'saves-energy'
+      const { cut, stepUp } = definition.materials[part.material]
+      // A step up earns the base only over a home below where it steps up from, so topping off R-30 to R-38 earns the step alone.
+      if (stepUp) {
+        if (saves(stepUp.from)) {
+          baseTrades.add(scope.trade)
+        }
+        if (saves(part.material)) {
+          addOns.add(stepUp.cut)
+          addOnTrades.add(scope.trade)
+        }
+      }
+      else if (saves(part.material)) {
+        if (cut) {
+          addOns.add(cut)
           addOnTrades.add(scope.trade)
         }
         else {
@@ -63,8 +74,8 @@ function landed({ resolved, home, proposedScopeIds }: SceneSavingsInput, install
       }
       for (const id of HOME_MATERIAL_IDS) {
         const material = home[id]
-        const { repairs: carriesRepairs, trade, parts: drawn } = HOME_MATERIALS[id]
-        if (carriesRepairs && material && !material.absent && !credited.has(id) && drawn.some(entry => entry.assembly === assembly.id && entry.part === part.id)) {
+        const { repairs: carriesRepairs, trade, repairsEndWith } = HOME_MATERIALS[id]
+        if (carriesRepairs && material && !material.absent && !credited.has(id) && repairsEndWith.some(entry => entry.assembly === assembly.id && entry.part === part.id)) {
           credited.add(id)
           repairs.set(trade, material.wear)
         }

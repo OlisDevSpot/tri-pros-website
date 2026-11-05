@@ -1,23 +1,30 @@
 'use client'
 
-import { HOME_ANCHOR_IDS, HOME_ANCHORS } from '@/features/trade-scenes/constants/home-anchors'
-import { anchorPinId } from '@/features/trade-scenes/lib/anchor-pin-id'
-import { assemblyAtAnchor } from '@/features/trade-scenes/lib/assembly-at-anchor'
+import type { SystemLit } from '@/features/trade-scenes/types'
+
 import { homeRoofForm } from '@/features/trade-scenes/lib/home-roof-form'
+import { partPinId } from '@/features/trade-scenes/lib/part-pin-id'
+import { systemPartFocus } from '@/features/trade-scenes/lib/system-part-focus'
 import { SceneAnchor } from '@/shared/components/scene/ui/scene-anchor'
 
 interface HomeAnchorsLayerProps {
   form: string | null
+  // The system up close, whose shown parts take a pin each; no pin stands on the whole home.
+  lit: SystemLit | null
 }
 
-// Only anchors with a kit get a pin: an anchor with nothing to zoom into would be a dead tap.
-const ZOOMABLE = HOME_ANCHOR_IDS.filter(anchor => assemblyAtAnchor(anchor) !== null)
-
-export function HomeAnchorsLayer({ form }: HomeAnchorsLayerProps) {
-  const anchors = HOME_ANCHORS[homeRoofForm(form)]
+// On the house's lift, so each pin rises with the part it names.
+export function HomeAnchorsLayer({ form, lit }: HomeAnchorsLayerProps) {
+  if (lit === null) {
+    return null
+  }
+  const roofForm = homeRoofForm(form)
   return (
     <>
-      {ZOOMABLE.map(anchor => <SceneAnchor key={anchor} id={anchorPinId(anchor)} position={anchors[anchor].position} />)}
+      {[...lit.shown].map((id) => {
+        const point = systemPartFocus(lit.system, roofForm, id)
+        return point && <SceneAnchor key={id} id={partPinId(id)} position={[...point]} />
+      })}
     </>
   )
 }

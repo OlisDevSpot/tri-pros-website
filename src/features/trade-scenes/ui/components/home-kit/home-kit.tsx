@@ -1,21 +1,21 @@
 'use client'
 
-import type { ReactNode, RefObject } from 'react'
+import type { RefObject } from 'react'
 import type { Group, Object3D } from 'three'
-import type { HomeAnchorId } from '@/features/trade-scenes/constants/home-anchors'
-import type { HomeFade, HomeKitInputs, SceneTargets } from '@/features/trade-scenes/types'
+import type { HomeFade, HomeKitInputs, SceneTargets, SystemLit } from '@/features/trade-scenes/types'
 import type { ResolvedPart } from '@/shared/modules/construction/core/types'
 
 import { useThree } from '@react-three/fiber'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import { HEAT_ARROW_LOOK } from '@/features/trade-scenes/constants/heat-arrow-look'
 import { AC_SCALE } from '@/features/trade-scenes/constants/home-equipment-sizes'
 import { HOME_FADES_SHOWN, HOME_GHOST_TAG } from '@/features/trade-scenes/constants/home-fades'
-import { HOME_FLOOR_Y, HOME_GHOST_OPACITY, HOME_OPENING_RISE } from '@/features/trade-scenes/constants/home-geometry'
+import { HOME_FLOOR_Y, HOME_OPENING_RISE } from '@/features/trade-scenes/constants/home-geometry'
 import { LEAK } from '@/features/trade-scenes/constants/home-life'
 import { RAIN_PRESET_WEATHER } from '@/features/trade-scenes/constants/home-temperatures'
 import { OWN_PAINT } from '@/features/trade-scenes/constants/home-thermal-zones'
+import { LOOK_INSIDE } from '@/features/trade-scenes/constants/look-inside'
 import { HOME_PRIMARY_ASSEMBLY } from '@/features/trade-scenes/constants/scene-controls'
 import { WEATHER_SKIES } from '@/features/trade-scenes/constants/weather-skies'
 import { useSceneScan } from '@/features/trade-scenes/hooks/use-scene-scan'
@@ -67,21 +67,19 @@ interface HomeKitProps {
   inputs: HomeKitInputs
   // Changes whenever the home has something new to live through; each change wakes it for one burst.
   burstKey: string
-  ghosted: boolean
-  // Partly open, or up close: the Complete house's cut-away parts rise and fade off in front of the homeowner, camera still.
+  // The system up close: its parts stay solid while the rest of the house ghosts.
+  lit: SystemLit | null
+  // Partly open: the Complete house's cut-away parts rise and fade off in front of the homeowner, camera still.
   open: boolean
   thermal: boolean
-  onAnchorTap: (anchor: HomeAnchorId) => void
-  // Drawn on the house's lift, so it rises with the house, but outside the house group the ghost and the thermal paint touch.
-  children?: ReactNode
 }
 
 const NO_PARTS: readonly ResolvedPart[] = []
 const RAISED_SHARE = { min: HOME_FLOOR_Y.slab, max: HOME_FLOOR_Y.raised } as const
 const HOUSE_TAG = Object.freeze({ ...thermalTag('exterior'), ...HOME_GHOST_TAG })
 
-// The whole home, drawn once from the profile and the resolved roof: every trade's assembly kit sits at one of its anchors.
-export function HomeKit({ targets, inputs, burstKey, ghosted, open, thermal, onAnchorTap, children }: HomeKitProps) {
+// The whole home, drawn once from the profile and the resolved roof; up close is this same house, faded by system.
+export function HomeKit({ targets, inputs, burstKey, lit, open, thermal }: HomeKitProps) {
   const lift = useRef<Group>(null)
   const house = useRef<Group>(null)
   const ground = useRef<Group>(null)
@@ -103,13 +101,25 @@ export function HomeKit({ targets, inputs, burstKey, ghosted, open, thermal, onA
   const invalidate = useThree(state => state.invalidate)
   const { weather, climate, property, homeMaterials } = inputs
   const floorY = homeFloorY(property.foundationType)
+  // The lit system the fades draw. A new one takes over at once; a leaving one holds until the ghost has eased home, or its
+  // parts would drop to the ghost and climb back with everything else. It holds whole: an emphasis it left with would keep
+  // the rest of the system dimmed through the ease and snap it back once settled.
+  const shownLit = useRef<SystemLit | null>(lit)
+  useLayoutEffect(() => {
+    if (lit !== null) {
+      shownLit.current = lit
+    }
+    else if (shownLit.current !== null) {
+      shownLit.current = { ...shownLit.current, emphasized: null }
+    }
+  }, [lit])
 
   const fadeHome = useCallback(() => {
     if (house.current) {
-      applyGhost(house.current, ghost.current, levels.current, sheets)
+      applyGhost(house.current, ghost.current, levels.current, sheets, shownLit.current)
     }
     if (groundLevel.current) {
-      applyGhost(groundLevel.current, ghost.current, levels.current, sheets)
+      applyGhost(groundLevel.current, ghost.current, levels.current, sheets, shownLit.current)
     }
     settleFadeSheets(sheets)
   }, [sheets])
@@ -117,14 +127,15 @@ export function HomeKit({ targets, inputs, burstKey, ghosted, open, thermal, onA
   // A settled Complete house draws nothing it cannot show: no window looks into the attic, and under the thermal camera the
   // paint turns the glass solid, so the rooms and everyone in them go out of sight too. Group flags, so they never fight
   // the ghost's per-mesh ones; the paint and the fades still reach what they hide, so it is right the frame it shows again.
+  // Up close on the attic or on heating & cooling, their parts show even through a sealed house.
   const hideUnseen = useCallback((thermalOn: boolean) => {
-    const atticShown = !sealed.current
     const roomsShown = !(sealed.current && thermalOn)
+    const system = shownLit.current?.system
     if (attic.current) {
-      attic.current.visible = atticShown
+      attic.current.visible = !sealed.current || system === 'attic'
     }
     if (ducts.current) {
-      ducts.current.visible = atticShown
+      ducts.current.visible = !sealed.current || system === 'heating-cooling'
     }
     if (rooms.current) {
       rooms.current.visible = roomsShown
@@ -134,8 +145,11 @@ export function HomeKit({ targets, inputs, burstKey, ghosted, open, thermal, onA
     }
   }, [])
 
-  useEased([ghosted ? HOME_GHOST_OPACITY : 1, floorY, open ? 1 : 0], ([opacity, easedFloorY, opened]) => {
+  useEased([lit !== null ? LOOK_INSIDE.ghostOpacity : 1, floorY, open ? 1 : 0], ([opacity, easedFloorY, opened]) => {
     ghost.current = opacity
+    if (lit === null && opacity === 1) {
+      shownLit.current = null
+    }
     if (lift.current && ground.current) {
       applyHomeFloor(lift.current, ground.current, easedFloorY)
     }
@@ -159,11 +173,11 @@ export function HomeKit({ targets, inputs, burstKey, ghosted, open, thermal, onA
     hideUnseen(thermal)
     fadeHome()
   })
-  // A part that mounts under a fade (a model finishing its load, a new covering, a condenser while zoomed) takes it on its
+  // A part that mounts under a fade (a model finishing its load, a new covering, a condenser while up close) takes it on its
   // first frame. One foundation is always faded out, so this runs at rest too.
   const scanHome = (root: Object3D) => {
     if (homeFadeNeeded(ghost.current, levels.current)) {
-      applyGhost(root, ghost.current, levels.current, sheets)
+      applyGhost(root, ghost.current, levels.current, sheets, shownLit.current)
     }
     return false
   }
@@ -174,11 +188,12 @@ export function HomeKit({ targets, inputs, burstKey, ghosted, open, thermal, onA
     wakeGround()
   }, [wakeHouse, wakeGround])
   // The thermal camera swaps materials in and out under the fades: whichever it hands the meshes takes the current fade at
-  // once, including originals put back after the fade has moved on without them.
+  // once, including originals put back after the fade has moved on without them. A new lit system needs no ease to show.
   useEffect(() => {
     hideUnseen(thermal)
     fadeHome()
-  }, [thermal, hideUnseen, fadeHome])
+    invalidate()
+  }, [thermal, lit, hideUnseen, fadeHome, invalidate])
 
   const roof = targets.assemblies[HOME_PRIMARY_ASSEMBLY]
   const parts = roof?.parts ?? NO_PARTS
@@ -195,7 +210,7 @@ export function HomeKit({ targets, inputs, burstKey, ghosted, open, thermal, onA
   const covering = coveringPart.material
   const windowParts = targets.assemblies.windows?.parts ?? NO_PARTS
   const wallParts = targets.assemblies['exterior-wall']?.parts ?? NO_PARTS
-  const paint = paintLook(partState(wallParts, 'paint'), paintWearInForce(targets.home['exterior-paint'], homeMaterials.paintWear))
+  const paint = paintLook(partState(wallParts, 'paint'), paintWearInForce(targets.home['exterior-paint'], homeMaterials.paintWear), wallParts.find(part => part.id === 'paint')?.condition === 'installed')
   const garageRoofTone = coveringTone(covering, roofForm === 'low-slope' ? 'membrane' : 'shingle', coveringPart.wear, installedShingleTone(parts, homeMaterials.shingleColor))
   // The resolver leaves the attic's ducts out for a home whose system has none.
   const ducted = targets.assemblies['hvac-attic'] !== undefined
@@ -227,14 +242,13 @@ export function HomeKit({ targets, inputs, burstKey, ghosted, open, thermal, onA
           </group>
         )}
       </group>
-      {/* Rain around a zoomed assembly kit would fall through the kit's own sky. Under the thermal camera the streaks keep
-          their own see-through look: painted, they would turn into solid sticks. */}
-      {weather === 'rain' && !ghosted && (
+      {/* Under the thermal camera the streaks keep their own see-through look: painted, they would turn into solid sticks. */}
+      {weather === 'rain' && (
         <group userData={thermalTag(OWN_PAINT)}>
           <HomeRain running={burst.running} gutters={partState(parts, 'gutter').material !== null} lowSlope={lowSlope} />
         </group>
       )}
-      {/* Untagged, so the thermal paint reaches only the house group in it, never the kit, the arrows or the anchors. */}
+      {/* Untagged, so the thermal paint reaches only the house group in it, never the arrows or the anchors. */}
       <group ref={lift}>
         {/* Outside air is the thermal camera's reading for any part of the house no group below names otherwise. */}
         <group ref={house} userData={HOUSE_TAG}>
@@ -244,13 +258,14 @@ export function HomeKit({ targets, inputs, burstKey, ghosted, open, thermal, onA
             frameWear={partState(windowParts, 'frame').wear}
             glassWear={partState(windowParts, 'glazing').wear}
             paint={paint}
+            roofForm={roofForm}
             windowGlow={sky.windowGlow}
             thermal={thermal}
           />
           <group ref={rooms}>
             <Rooms roomLight={sky.roomLight} />
           </group>
-          <HouseRoof form={form} parts={parts} tappable={!ghosted} onTap={() => onAnchorTap('roof')} attic={attic} shingleColor={homeMaterials.shingleColor} paint={paint} thermal={thermal} atticFanRunning={heat?.atticFanRunning ?? false} burst={burst} ducted={ducted} />
+          <HouseRoof form={form} parts={parts} attic={attic} shingleColor={homeMaterials.shingleColor} paint={paint} thermal={thermal} atticFanRunning={heat?.atticFanRunning ?? false} burst={burst} ducted={ducted} />
           <HomeEquipment
             hvacType={property.hvacType}
             hvacComponents={property.hvacComponents}
@@ -282,21 +297,19 @@ export function HomeKit({ targets, inputs, burstKey, ghosted, open, thermal, onA
             )}
           </group>
         </group>
-        <HomeAnchorsLayer form={form} />
-        {/* While zoomed the assembly kit pins the readings in its section instead, under the same pin ids. */}
-        {thermal && !ghosted && targets.heat !== null && <ReadingLabels form={form} />}
+        <HomeAnchorsLayer form={form} lit={lit} />
+        {thermal && targets.heat !== null && <ReadingLabels form={form} />}
         {/* Unmounted whenever the arrows leave, so a hidden arrow never keeps the canvas drawing. While they show, the
             Complete and the open house's sets both stay mounted and cross-fade as the house opens: a set faded to 0 stops
             asking for frames and stops drawing. The Complete set hides behind the house's own walls and roof, so the back
             windows' arrows show only through the open house. Outside the house group, so neither the ghost nor the thermal
-            paint touches them. */}
-        {thermal && !ghosted && weather !== 'rain' && heat !== null && (
+            paint touches them. Up close they would cross the system the rep is showing. */}
+        {thermal && lit === null && weather !== 'rain' && heat !== null && (
           <>
             <HeatArrows lanes={completeHeatLanes} size={HEAT_ARROW_LOOK.size.home} fade={completeArrowFade} depthTest />
             <HeatArrows lanes={openHeatLanes} size={HEAT_ARROW_LOOK.size.home} fade={openShare} />
           </>
         )}
-        {children}
       </group>
       {thermal && (
         <HomeThermalPaint

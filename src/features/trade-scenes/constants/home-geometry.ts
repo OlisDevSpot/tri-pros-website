@@ -95,7 +95,9 @@ export const INSULATION_DEPTH: Readonly<Record<string, number>> = {
   'batts-r11': 0.09,
   'batts-r19': 0.16,
   'batts-r30': 0.24,
+  'blown-r30': 0.24,
   'blown-r38': 0.31,
+  'batts-r38': 0.31,
 }
 // What sits over the blanket clears the deepest of them, so a deeper material added later moves it too.
 export const DEEPEST_INSULATION = Math.max(...Object.values(INSULATION_DEPTH))

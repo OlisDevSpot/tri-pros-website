@@ -5,12 +5,12 @@ import type { Weather } from '@/shared/modules/construction/core/types'
 
 export const HOME_VIEWS = ['complete', 'partly-open'] as const
 
-// Leaving a close-up for the whole home: the next zoom opens closed and unemphasised, wherever this one was left.
-export const LEAVE_CLOSE_UP = { zoom: null, peel: 0, emphasizedPart: null } as const satisfies Partial<TradeSceneInputs>
+// Back to the system from up close: the next Look inside opens closed and unemphasised, wherever this one was left.
+export const LEAVE_LOOK_INSIDE = { lookInside: false, peel: 0, emphasizedPart: null } as const satisfies Partial<TradeSceneInputs>
 
 export const SCENE_WEATHERS = ['normal', 'summer', 'winter', 'rain'] as const satisfies readonly Weather[]
 
-// Until the agent zooms into another assembly, the home offers the roof's work: the roof is the story the scene opens on.
+// The home offers the roof's work first: the roof is the story the scene opens on.
 export const HOME_PRIMARY_ASSEMBLY: AssemblyId = 'roof-attic'
 
 // Radix toggle groups carry strings, so a profile field that is not on record travels as this value.

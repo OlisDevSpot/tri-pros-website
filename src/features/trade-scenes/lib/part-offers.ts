@@ -1,19 +1,24 @@
 import type { AssemblyId } from '@/shared/modules/construction/core/constants/assembly-ids'
+import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
 import type { RoofType, Wear } from '@/shared/modules/construction/core/constants/enums'
 import type { HomeMaterialId } from '@/shared/modules/construction/core/constants/home-material-ids'
 import type { ScopeId } from '@/shared/modules/construction/core/constants/scope-ids'
 import type { HomeFacts, ResolvedHomeMaterials, ResolvedPart } from '@/shared/modules/construction/core/types'
 
 import { INFER_EXISTING_CONDITIONS } from '@/features/trade-scenes/constants/existing-conditions'
+import { requiredUpgrade } from '@/features/trade-scenes/lib/required-upgrade'
+import { unnamedUpgradeScopes } from '@/features/trade-scenes/lib/upgrade-scopes'
 import { ASSEMBLIES } from '@/shared/modules/construction/core/constants/assemblies'
 import { ASSEMBLY_IDS } from '@/shared/modules/construction/core/constants/assembly-ids'
 import { HOME_MATERIAL_IDS } from '@/shared/modules/construction/core/constants/home-material-ids'
 import { HOME_MATERIALS } from '@/shared/modules/construction/core/constants/home-materials'
 import { SCOPE_INSTALLS } from '@/shared/modules/construction/core/constants/scope-installs'
 import { SCOPES_BY_EXISTING_ROOF } from '@/shared/modules/construction/core/constants/scopes-by-existing-roof'
+import { atticReachable } from '@/shared/modules/construction/core/lib/attic-reachable'
 import { redeckAllowed } from '@/shared/modules/construction/core/lib/redeck-allowed'
 import { resolveAssembly } from '@/shared/modules/construction/core/lib/resolve-assembly'
 import { resolveHomeMaterials } from '@/shared/modules/construction/core/lib/resolve-home-materials'
+import { roofFormOf } from '@/shared/modules/construction/core/lib/roof-form-of'
 
 export interface PartOffer {
   assemblyId: AssemblyId
@@ -22,7 +27,7 @@ export interface PartOffer {
   dependsOnRoof: boolean
 }
 
-export type OfferBlockedReason = 'roof-not-set' | 'nothing-on-roof' | 'needs-tear-off' | 'base-included' | 'already-new' | 'no-offer-for-unit'
+export type OfferBlockedReason = 'roof-not-set' | 'nothing-on-roof' | 'needs-tear-off' | 'needs-redeck' | 'base-included' | 'already-new' | 'no-offer-for-unit'
 
 // A scope's own reasons; a unit with nothing to offer blocks the whole system's row, not one scope.
 type ScopeBlockedReason = Exclude<OfferBlockedReason, 'no-offer-for-unit'>
@@ -34,6 +39,7 @@ interface OfferContext {
   assemblyId: AssemblyId
   // The wear of the home material that draws the part; unset reads as Worn.
   wear: Wear | null | undefined
+  efficiencyUpgrades: readonly EfficiencyUpgradeId[]
 }
 
 type HomeAssemblyId = Exclude<AssemblyId, 'yard-ground'>
@@ -98,15 +104,31 @@ function includedBase(partId: string, ctx: Pick<OfferContext, 'picks' | 'existin
   return picksBases(ctx.assemblyId, ctx.picks).find(base => base.part === partId && existingMaterial != null && base.replaces.includes(existingMaterial))
 }
 
+// What the home already has decides what is offered on its part: with nothing there only an install that adds to it, and
+// never a scope that could not at least match what is there.
+function followsWhatIsThere(offer: PartOffer, ctx: Pick<OfferContext, 'existing' | 'assemblyId'>, scopeIds: readonly ScopeId[], homeHasPart: boolean): ScopeId[] {
+  const part = ASSEMBLIES[ctx.assemblyId].parts.find(candidate => candidate.id === offer.partId)!
+  const existing = ctx.existing.find(candidate => candidate.id === offer.partId)?.material ?? null
+  const addsTo = (id: ScopeId) => SCOPE_INSTALLS[id]?.installs.some(install => install.part === offer.partId && install.addsTo) ?? false
+  const onEmpty = !homeHasPart && offer.scopeIds.some(addsTo) ? scopeIds.filter(addsTo) : scopeIds
+  return onEmpty.filter(id => requiredUpgrade(id, part, existing) !== 'not-offered')
+}
+
 export function offeredScopes(offer: PartOffer, ctx: OfferContext): { scopeIds: ScopeId[], blocked: ScopeBlockedReason | null } {
   // A part the home lacks (gutters on a roof with none) is still offered under a new roof: there is nothing new to protect.
   const homeHasPart = ctx.existing.some(part => part.id === offer.partId && part.condition !== 'absent')
   if (ctx.wear === 'new' && homeHasPart) {
     return { scopeIds: [], blocked: 'already-new' }
   }
+  if (offer.partId === 'attic-insulation' && !atticReachable(roofFormOf(ctx.roofType), ctx.picks)) {
+    return { scopeIds: [], blocked: 'needs-redeck' }
+  }
   // A part its form lacks never resolves, so it has no row to offer from.
   if (!offer.dependsOnRoof) {
-    return { scopeIds: offer.scopeIds, blocked: null }
+    // An upgrade that files its options as two scopes offers the one it names, and only on the row for the part the pair installs.
+    const unnamed = unnamedUpgradeScopes(ctx.assemblyId, ctx.efficiencyUpgrades, ctx.existing)
+      .filter(id => SCOPE_INSTALLS[id]?.installs.some(install => install.part === offer.partId))
+    return { scopeIds: followsWhatIsThere(offer, ctx, offer.scopeIds.filter(id => !unnamed.includes(id)), homeHasPart), blocked: null }
   }
   if (ctx.roofType === null) {
     return { scopeIds: [], blocked: 'roof-not-set' }
@@ -122,7 +144,7 @@ export function offeredScopes(offer: PartOffer, ctx: OfferContext): { scopeIds: 
   if (offer.partId === 'deck' && !redeckAllowed(ctx.picks)) {
     return { scopeIds: [], blocked: 'needs-tear-off' }
   }
-  return { scopeIds: onRoof, blocked: null }
+  return { scopeIds: followsWhatIsThere(offer, ctx, onRoof, homeHasPart), blocked: null }
 }
 
 export function baseIncludedLabel(assemblyId: AssemblyId, picks: readonly string[], existing: readonly ResolvedPart[]): string | null {
@@ -130,7 +152,7 @@ export function baseIncludedLabel(assemblyId: AssemblyId, picks: readonly string
   return bases.flatMap(base => includedBase(base.part, { assemblyId, picks, existing }) ?? []).at(0)?.copy.label ?? null
 }
 
-export function keepOffered(picks: readonly string[], facts: HomeFacts): string[] {
+export function keepOffered(picks: readonly string[], facts: HomeFacts, efficiencyUpgrades: readonly EfficiencyUpgradeId[]): string[] {
   const home = resolveHomeMaterials(facts)
   const { property } = facts
   const views = HOME_ASSEMBLY_IDS.map(id => ({
@@ -151,7 +173,7 @@ export function keepOffered(picks: readonly string[], facts: HomeFacts): string[
       if (!view.applies || !view.existing.some(part => part.id === offer.partId)) {
         return false
       }
-      const ctx = { roofType: property.roofType, picks: kept, existing: view.existing, assemblyId: view.id, wear: partWear(view.id, offer.partId, home) }
+      const ctx = { roofType: property.roofType, picks: kept, existing: view.existing, assemblyId: view.id, wear: partWear(view.id, offer.partId, home), efficiencyUpgrades }
       return (offeredScopes(offer, ctx).scopeIds as string[]).includes(pick)
     })
     if (next.length === kept.length) {

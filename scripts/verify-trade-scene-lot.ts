@@ -10,13 +10,16 @@ import { join } from 'node:path'
 import { Box3, Euler, Matrix4, OrthographicCamera, Ray, Vector3 } from 'three'
 import { HEAT_ARROW_LOOK } from '@/features/trade-scenes/constants/heat-arrow-look'
 import { HOME_ANCHOR_IDS, HOME_ANCHORS } from '@/features/trade-scenes/constants/home-anchors'
+import { AC_SCALE } from '@/features/trade-scenes/constants/home-equipment-sizes'
 import { FRONT_DOOR, HOME_CAMERA_FAR, HOME_FRAMINGS, HOME_ORBIT, HOUSE, RIDGE_Y } from '@/features/trade-scenes/constants/home-geometry'
 import { HOME_COMPLETE_WALL_HEAT_LANES, HOME_COMPLETE_WINDOW_HEAT_LANES, HOME_WALL_HEAT_LANES, HOME_WINDOW_HEAT_LANES } from '@/features/trade-scenes/constants/home-heat-lanes'
 import { HOME_RAIN } from '@/features/trade-scenes/constants/home-life'
 import { GARAGE, GRADE, GROUND_ROWS, LOT, LOT_SHADOW_BOX, STREET_Z, WALK } from '@/features/trade-scenes/constants/home-lot'
 import { COVERING_COLORS } from '@/features/trade-scenes/constants/home-palette'
+import { LOOK_INSIDE_SYSTEM_IDS } from '@/features/trade-scenes/constants/home-systems'
 import { FAR_PLANT_SPECIES, PLANT_PLACEMENTS, PLANT_SPECIES } from '@/features/trade-scenes/constants/lot-plants'
 import { NEIGHBOUR_HOUSES, NEIGHBOUR_LOOK } from '@/features/trade-scenes/constants/neighbourhood'
+import { lookInsideView, SYSTEM_CAMERA_VIEWS } from '@/features/trade-scenes/constants/system-camera-views'
 import { WEAR_AMOUNT } from '@/features/trade-scenes/constants/wear-looks'
 import { SKY_IMAGE, SKY_RIG, WEATHER_SKIES } from '@/features/trade-scenes/constants/weather-skies'
 import { facesSummerSun } from '@/features/trade-scenes/lib/faces-summer-sun'
@@ -163,6 +166,21 @@ for (const form of ['pitched', 'low-slope'] as const) {
   }
 }
 assert.equal(viewLines.length, 2 + 2 * (2 * HOME_ANCHOR_IDS.length - 1), 'every up-close framing is walked')
+// Heating & cooling looks at a package unit on its roof, at every size the unit is drawn.
+for (const form of ['pitched', 'low-slope'] as const) {
+  for (const foundation of ['slab', 'raised'] as const) {
+    for (const scale of Object.values(AC_SCALE)) {
+      viewLines.push({ label: `${form} ${foundation} package unit at scale ${scale}: heating & cooling`, framing: SYSTEM_CAMERA_VIEWS['heating-cooling'](form, 'landscape', homeLift(foundation), { type: 'package-unit', scale }) })
+    }
+    // Up close on each system, for either outdoor unit. The pad's own system view stands outside the lot's left wall, so it is
+    // not walked; up close on the pad comes inside the wall, so that one is.
+    for (const system of LOOK_INSIDE_SYSTEM_IDS) {
+      for (const type of system === 'heating-cooling' ? ['central', 'package-unit'] as const : ['central'] as const) {
+        viewLines.push({ label: `${form} ${foundation} ${type}: up close on ${system}`, framing: lookInsideView(system, form, 'landscape', homeLift(foundation), { type, scale: 1 }) })
+      }
+    }
+  }
+}
 
 // A framing past the orbit's reach is clamped on the first touch, and the view jumps.
 const OPENING_MIDDLE_X = (-6.3 + 12.7) / 2

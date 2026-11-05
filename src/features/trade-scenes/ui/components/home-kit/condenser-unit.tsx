@@ -13,6 +13,7 @@ import { HOME_PALETTE } from '@/features/trade-scenes/constants/home-palette'
 import { OWN_PAINT } from '@/features/trade-scenes/constants/home-thermal-zones'
 import { WEAR_LOOKS } from '@/features/trade-scenes/constants/wear-looks'
 import { useStrainShake } from '@/features/trade-scenes/hooks/use-strain-shake'
+import { systemPartTag } from '@/features/trade-scenes/lib/system-part-tag'
 import { thermalTag } from '@/features/trade-scenes/lib/thermal-tag'
 import { CondenserFan } from '@/features/trade-scenes/ui/components/home-kit/condenser-fan'
 import { FurniturePiece } from '@/features/trade-scenes/ui/components/home-kit/furniture-piece'
@@ -60,12 +61,17 @@ export function CondenserUnit({ load, burst, wear, scale }: CondenserUnitProps) 
   return (
     <group>
       <group userData={thermalTag('exterior')}>
-        <MergedBoxes boxes={PAD} color={HOME_PALETTE.concrete} radius={0.02} receiveShadow />
-        <MergedBoxes boxes={LINE_SET} color={HOME_PALETTE.felt} radius={0.02} />
+        {/* The pad is set with the unit, so it lights with it. */}
+        <group userData={systemPartTag('condenser')}>
+          <MergedBoxes boxes={PAD} color={HOME_PALETTE.concrete} radius={0.02} receiveShadow />
+        </group>
+        <group userData={systemPartTag('refrigerant-lines')}>
+          <MergedBoxes boxes={LINE_SET} color={HOME_PALETTE.felt} radius={0.02} />
+        </group>
       </group>
       {/* It reads above the outside air by its cooling load: idle on a winter night or in the rain, at the air itself. */}
       <group ref={shake} userData={thermalTag('condenser')}>
-        <group position={[px, py, pz]} scale={scale}>
+        <group position={[px, py, pz]} scale={scale} userData={systemPartTag('condenser')}>
           <group position={[-px, -py, -pz]}>
             <FurniturePiece placement={placement} />
             <group position={[px, py, pz]} rotation={[0, rotationY, 0]}>

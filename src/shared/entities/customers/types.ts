@@ -39,6 +39,7 @@ export interface ProfileFieldConfig {
   label: string
   type: 'select' | 'multi-select' | 'number' | 'boolean' | 'textarea' | 'text'
   options?: readonly string[]
+  optionLabels?: Readonly<Record<string, string>>
   placeholder?: string
   min?: number
   max?: number

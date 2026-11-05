@@ -43,7 +43,7 @@ assert.equal(2 ** Math.floor(Math.log2(Number(size[2]) / 4)), LIGHTFORMER_RESOLU
 
 assert.notEqual(HOME_SCENE_DEFAULTS.weather, 'rain', 'the scene mounts dry')
 assert.equal(HOME_SCENE_DEFAULTS.thermalCamera, false, 'the scene mounts without the thermal camera')
-assert.equal(HOME_SCENE_DEFAULTS.zoom, null, 'the scene mounts with no system kit')
+assert.equal(HOME_SCENE_DEFAULTS.lookInside, false, 'the scene mounts not looking inside')
 assert.equal(HOME_SCENE_DEFAULTS.climate, null, 'coastal or inland is missing until set')
 
 // The caps run from SceneReadySignal's mount and the watchdog from HomeSceneBoundary's, and the gate's frame and one rAF are left

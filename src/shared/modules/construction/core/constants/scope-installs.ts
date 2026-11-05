@@ -26,13 +26,15 @@ export const SCOPE_INSTALLS: Partial<Record<string, ScopeInstall>> = {
   [SCOPE_IDS.roofTileReset]: { assembly: 'roof-attic', trade: 'roof-and-gutters', installs: TILE_ROOF },
   [SCOPE_IDS.gutters]: { assembly: 'roof-attic', trade: 'roof-and-gutters', installs: [{ part: 'gutter', material: 'aluminum' }] },
   [SCOPE_IDS.airSealing]: { assembly: 'roof-attic', trade: 'attic-and-basement', installs: [{ part: 'air-sealing', material: 'sealed' }] },
-  [SCOPE_IDS.atticInsulationReplacement]: { assembly: 'roof-attic', trade: 'attic-and-basement', installs: [{ part: 'attic-insulation', material: 'blown-r38' }] },
-  [SCOPE_IDS.atticInsulationTopOff]: { assembly: 'roof-attic', trade: 'attic-and-basement', installs: [{ part: 'attic-insulation', material: 'blown-r38' }] },
+  [SCOPE_IDS.atticInsulationReplacement]: { assembly: 'roof-attic', trade: 'attic-and-basement', installs: [{ part: 'attic-insulation', material: 'blown-r30', swapsWith: { 'r38-insulation': 'blown-r38' }, styles: { batts: { 'blown-r30': 'batts-r30', 'blown-r38': 'batts-r38' } } }] },
+  // Always blown in: batts cannot be laid over what is there.
+  [SCOPE_IDS.atticInsulationTopOff]: { assembly: 'roof-attic', trade: 'attic-and-basement', installs: [{ part: 'attic-insulation', material: 'blown-r30', swapsWith: { 'r38-insulation': 'blown-r38' }, addsTo: true }] },
   [SCOPE_IDS.radiantBarrier]: { assembly: 'roof-attic', trade: 'attic-and-basement', installs: [{ part: 'radiant-barrier', material: 'foil' }] },
   [SCOPE_IDS.atticFan]: { assembly: 'roof-attic', trade: 'attic-and-basement', installs: [{ part: 'attic-fan', material: 'thermostat-fan' }] },
   // The glazing comes first: a scope is filed under its first install's part.
   [SCOPE_IDS.windowReplacement]: { assembly: 'windows', trade: 'windows-and-doors', installs: [{ part: 'glazing', material: 'double-pane' }, { part: 'frame', material: 'vinyl-frame' }] },
   [SCOPE_IDS.coolLifeRepaint]: { assembly: 'exterior-wall', trade: 'exterior-paint-stucco-and-siding', installs: [{ part: 'paint', material: 'cool' }] },
+  [SCOPE_IDS.waterBasedRepaint]: { assembly: 'exterior-wall', trade: 'exterior-paint-stucco-and-siding', installs: [{ part: 'paint', material: 'standard' }] },
   // A full system, so a furnace-only home gains a condenser.
   [SCOPE_IDS.splitSystemReplacement]: { assembly: 'hvac-attic', trade: 'hvac', installs: [{ part: 'air-handler', material: 'high-efficiency' }, { part: 'condenser', material: 'high-seer' }, { part: 'refrigerant-lines', material: 'copper' }] },
   [SCOPE_IDS.packageUnitReplacement]: { assembly: 'hvac-attic', trade: 'hvac', installs: [{ part: 'package-unit', material: 'high-efficiency-package' }] },

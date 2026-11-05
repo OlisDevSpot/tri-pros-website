@@ -62,14 +62,23 @@ export function mergeTintedBoxes(lists: readonly TintedBoxes[]): BufferGeometry 
 }
 
 // A painted surface's see-through stains in one draw, each list squeezed into its own cell of the stain atlas and carrying its
-// strength in its vertex colour. Null when there is nothing to draw.
+// strength in its vertex colour. A box that shows only part of its cell (`u`, `v`) is squeezed into that part. Null when there is
+// nothing to draw.
 export function mergeStainBoxes(lists: readonly StainBoxes[]): BufferGeometry | null {
   const parts = lists.filter(list => list.boxes.length > 0).map((list) => {
     const geometry = mergeBoxes(list.boxes)
     const uv = geometry.getAttribute('uv')
     const [from, to] = STAIN_CELL_U[list.cell]
+    // Square boxes merge unindexed and in order, each the same count of vertices, which is how a vertex finds its box.
+    const perBox = uv.count / list.boxes.length
+    if (!Number.isInteger(perBox)) {
+      throw new TypeError(`mergeStainBoxes: ${uv.count} vertices do not split evenly over ${list.boxes.length} boxes`)
+    }
     for (let vertex = 0; vertex < uv.count; vertex++) {
-      uv.setX(vertex, from + uv.getX(vertex) * (to - from))
+      const box = list.boxes[Math.floor(vertex / perBox)]
+      const [u0, u1] = box.u ?? [0, 1]
+      const [v0, v1] = box.v ?? [0, 1]
+      uv.setXY(vertex, from + (u0 + uv.getX(vertex) * (u1 - u0)) * (to - from), v0 + uv.getY(vertex) * (v1 - v0))
     }
     return tintVertices(geometry, list.color, 0, 1, list.alpha)
   })

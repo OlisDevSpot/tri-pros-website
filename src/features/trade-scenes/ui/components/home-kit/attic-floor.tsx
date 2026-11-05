@@ -9,6 +9,7 @@ import { ATTIC_SPANS } from '@/features/trade-scenes/constants/home-geometry'
 import { HOME_PALETTE } from '@/features/trade-scenes/constants/home-palette'
 import { atticInsulationBoxes } from '@/features/trade-scenes/lib/attic-insulation-boxes'
 import { atticJoistBoxes } from '@/features/trade-scenes/lib/attic-joist-boxes'
+import { systemPartTag } from '@/features/trade-scenes/lib/system-part-tag'
 import { thermalTag } from '@/features/trade-scenes/lib/thermal-tag'
 import { MergedBoxes } from '@/features/trade-scenes/ui/components/home-kit/merged-boxes'
 import { wornColor } from '@/features/trade-scenes/ui/lib/worn-color'
@@ -33,17 +34,26 @@ export function AtticFloor({ lowSlope, insulation }: AtticFloorProps) {
 
   return (
     <group userData={thermalTag('attic')}>
-      <MergedBoxes boxes={framing} color={HOME_PALETTE.lumber} />
+      {/* The joists are the ceiling's framing: the drywall hangs from them. */}
+      <group userData={systemPartTag('ceiling')}>
+        <MergedBoxes boxes={framing} color={HOME_PALETTE.lumber} />
+      </group>
       {blankets.open.length > 0 && (
         <group userData={thermalTag(null, 'attic-insulation')}>
-          <MergedBoxes boxes={blankets.open} color={insulationColour} radius={0.03} roughness={1} />
+          <group userData={systemPartTag('attic-insulation')}>
+            <MergedBoxes boxes={blankets.open} color={insulationColour} radius={0.03} roughness={1} />
+          </group>
         </group>
       )}
       <group userData={HOME_FADE_TAGS.complete}>
-        <MergedBoxes boxes={completeFraming} color={HOME_PALETTE.lumber} />
+        <group userData={systemPartTag('ceiling')}>
+          <MergedBoxes boxes={completeFraming} color={HOME_PALETTE.lumber} />
+        </group>
         {blankets.complete.length > 0 && (
           <group userData={thermalTag(null, 'attic-insulation')}>
-            <MergedBoxes boxes={blankets.complete} color={insulationColour} radius={0.03} roughness={1} />
+            <group userData={systemPartTag('attic-insulation')}>
+              <MergedBoxes boxes={blankets.complete} color={insulationColour} radius={0.03} roughness={1} />
+            </group>
           </group>
         )}
       </group>

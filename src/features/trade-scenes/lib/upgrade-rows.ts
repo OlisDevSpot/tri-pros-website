@@ -5,19 +5,28 @@ import type { HomeFacts, OfferKind, ResolvedPart } from '@/shared/modules/constr
 
 import { HOME_SYSTEMS } from '@/features/trade-scenes/constants/home-systems'
 import { existingParts, materialOfPart, offeredScopes, partOffers, partWear } from '@/features/trade-scenes/lib/part-offers'
+import { requiredUpgrade } from '@/features/trade-scenes/lib/required-upgrade'
 import { ASSEMBLIES } from '@/shared/modules/construction/core/constants/assemblies'
 import { SCOPE_INSTALLS } from '@/shared/modules/construction/core/constants/scope-installs'
 import { installKind } from '@/shared/modules/construction/core/lib/install-kind'
+import { installedMaterialId } from '@/shared/modules/construction/core/lib/installed-material'
 import { resolveHomeMaterials } from '@/shared/modules/construction/core/lib/resolve-home-materials'
 
 // The scene credits an install only when it beats what the home has there, with the efficiency upgrades applied, so the row says the same.
+// An upgrade the scope cannot go without counts before it is picked, so a top off over R-30 reads as the R-38 it will be.
 function kindOf(scopeId: ScopeId, existing: readonly ResolvedPart[], efficiencyUpgrades: readonly EfficiencyUpgradeId[]): OfferKind {
   const entry = SCOPE_INSTALLS[scopeId]
   const parts = entry ? ASSEMBLIES[entry.assembly].parts : []
-  const saves = (entry?.installs ?? []).some(({ part, material, swapsWith }) => {
+  const saves = (entry?.installs ?? []).some((install) => {
+    const { part } = install
     const definition = parts.find(candidate => candidate.id === part)
-    const installed = efficiencyUpgrades.flatMap(upgrade => swapsWith?.[upgrade] ?? []).at(0) ?? material
-    return definition !== undefined && installKind(definition, existing.find(candidate => candidate.id === part)?.material ?? null, installed) === 'saves-energy'
+    if (definition === undefined) {
+      return false
+    }
+    const existingMaterial = existing.find(candidate => candidate.id === part)?.material ?? null
+    const required = requiredUpgrade(scopeId, definition, existingMaterial)
+    const installed = installedMaterialId(install, required === null || required === 'not-offered' ? efficiencyUpgrades : [...efficiencyUpgrades, required])
+    return installKind(definition, existingMaterial, installed) === 'saves-energy'
   })
   return saves ? 'saves-energy' : 'like-for-like'
 }
@@ -45,7 +54,7 @@ export function upgradeRows(facts: HomeFacts, picks: readonly string[], efficien
       if (!offer || !existing) {
         return []
       }
-      const { scopeIds, blocked } = offeredScopes(offer, { roofType: property.roofType, picks, existing: existingAssembly, assemblyId: assembly, wear: partWear(assembly, part, home) })
+      const { scopeIds, blocked } = offeredScopes(offer, { roofType: property.roofType, picks, existing: existingAssembly, assemblyId: assembly, wear: partWear(assembly, part, home), efficiencyUpgrades })
       return [{
         part,
         offer,

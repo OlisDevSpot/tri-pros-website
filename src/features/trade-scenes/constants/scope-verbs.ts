@@ -17,6 +17,7 @@ export const SCOPE_VERBS = {
   [SCOPE_IDS.atticFan]: 'add',
   [SCOPE_IDS.windowReplacement]: 'replace',
   [SCOPE_IDS.coolLifeRepaint]: 'repaint',
+  [SCOPE_IDS.waterBasedRepaint]: 'repaint',
   [SCOPE_IDS.splitSystemReplacement]: 'replace',
   [SCOPE_IDS.packageUnitReplacement]: 'replace',
   [SCOPE_IDS.airDuctsReplacement]: 'replace',

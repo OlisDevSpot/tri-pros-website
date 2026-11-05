@@ -10,7 +10,6 @@ export const NOT_DRAWN: Partial<Record<string, true>> = {
   '3490ca1b-548b-804e-bebd-d0cbb945f1c5': true, // Wood / siding repair — a patch repair, the finish is not replaced
   'ee10ca1b-548b-82ba-a6c7-01ab7dc39c3a': true, // Re-stucco — the wall's stucco coats are not a pick yet
   'f290ca1b-548b-8357-8036-017304b34487': true, // Wood stain application (exterior) — a stain is not paint, and moves no part
-  '4020ca1b-548b-82d2-96c2-81068068e903': true, // Repaint w/ water-based (exterior) — ordinary paint over ordinary paint, the part stays as it is
   '32f0ca1b-548b-805a-b1ec-e8026c403bb1': true, // French door replacement — doors are not a window part
   '2550ca1b-548b-8257-acfd-816f0f96a64a': true, // Sliding door installation (new) — doors are not a window part
   '25b0ca1b-548b-8281-af32-01c2e1b2f080': true, // Sliding door replacement — doors are not a window part

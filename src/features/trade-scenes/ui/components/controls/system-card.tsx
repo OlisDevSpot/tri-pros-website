@@ -17,7 +17,7 @@ import { useSceneVisibleArea } from '@/features/trade-scenes/contexts/scene-visi
 import { useSystemCardBottom } from '@/features/trade-scenes/contexts/system-card-bottom-context'
 import { SystemCardBody } from '@/features/trade-scenes/ui/components/controls/system-card-body'
 import { YearBuiltCardBody } from '@/features/trade-scenes/ui/components/controls/year-built-card-body'
-import { focusFell } from '@/features/trade-scenes/ui/lib/leave-close-up'
+import { focusFell } from '@/features/trade-scenes/ui/lib/leave-look-inside'
 import { useSceneInputs } from '@/shared/components/scene/contexts/scene-inputs-context'
 import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/lib/utils'
@@ -29,10 +29,11 @@ interface SystemCardProps {
 // Mounted once per focus, so a pick inside never replays its rise while a new system does. Beside the system on a wide
 // stage, clear of the dock. A narrower stage has no room beside it, so the card spans the top (clear of the dock, which
 // the phone has no width to spare for) and the camera frames the system below it, by its measured bottom, since its
-// height follows its chips.
+// height follows its chips. Either way it stops short of what it must leave in sight (the rail, or the system below it),
+// and its body scrolls.
 export function SystemCard({ focus }: SystemCardProps) {
   const { focusSystem } = useSceneControls()
-  const { shape, stageElement } = useSceneVisibleArea()
+  const { shape, stage, stageElement } = useSceneVisibleArea()
   const { setBottom } = useSystemCardBottom()
   const view = useSceneInputs((state: TradeSceneInputs) => state.view)
   const reduceMotion = useReducedMotion()
@@ -42,11 +43,11 @@ export function SystemCard({ focus }: SystemCardProps) {
   const yearBuilt = focus === 'year-built'
   const title = yearBuilt ? CONTROLS_COPY.systems.yearBuilt : HOME_SYSTEM_LABELS[focus]
   const Icon = yearBuilt ? YEAR_BUILT_ICON : HOME_SYSTEM_ICONS[focus]
-  const { dock, systemCard } = SCENE_LAYOUT
+  const { controls, dock, systemCard } = SCENE_LAYOUT
   const besideDock = dock.width + dock.gap + systemCard.dockGap
   const placement: CSSProperties = topStrip
-    ? { top: systemCard.portraitTop, left: systemCard.portraitSide, right: portrait ? systemCard.portraitSide : besideDock }
-    : { top: systemCard.top, right: besideDock, width: systemCard.width }
+    ? { top: systemCard.portraitTop, left: systemCard.portraitSide, right: portrait ? systemCard.portraitSide : besideDock, maxHeight: Math.round(stage.height * systemCard.topShare) }
+    : { top: systemCard.top, right: besideDock, width: systemCard.width, maxHeight: stage.height - systemCard.top - controls.railBottom.wide - controls.railHeight - systemCard.visibleGap }
 
   // The x leaves with the card, so its focus goes to the system's rail chip.
   const letGo = () => {
@@ -83,7 +84,7 @@ export function SystemCard({ focus }: SystemCardProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.22, ease: CONTROLS_EASE }}
       style={placement}
-      className={cn('absolute z-20 grid border bg-card shadow-2xl', portrait ? 'rounded-[20px]' : 'rounded-2xl')}
+      className={cn('absolute z-20 grid grid-rows-[auto_minmax(0,1fr)] overflow-hidden border bg-card shadow-2xl', portrait ? 'rounded-[20px]' : 'rounded-2xl')}
     >
       <div className="flex items-center gap-2.5 border-b border-border py-2.5 pr-2.5 pl-3">
         <span aria-hidden className={cn(CONTROLS_CLASSES.tile, 'size-9 rounded-[10px]')}><Icon /></span>
@@ -98,7 +99,7 @@ export function SystemCard({ focus }: SystemCardProps) {
           <XIcon aria-hidden />
         </Button>
       </div>
-      <div className="grid gap-2.5 px-3.5 pt-3 pb-3.5">
+      <div className="grid min-h-0 content-start gap-2.5 overflow-y-auto overscroll-contain px-3.5 pt-3 pb-3.5">
         {yearBuilt ? <YearBuiltCardBody /> : <SystemCardBody system={focus} />}
       </div>
     </motion.section>

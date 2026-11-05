@@ -9,6 +9,7 @@ import { SCENE_COPY } from '@/features/trade-scenes/constants/home-scene-copy'
 import { HOME_SCENE_DEFAULTS } from '@/features/trade-scenes/constants/home-scene-defaults'
 import { SCENE_LOAD } from '@/features/trade-scenes/constants/scene-load'
 import { SKY_IMAGE } from '@/features/trade-scenes/constants/weather-skies'
+import { BenefitsProvider } from '@/features/trade-scenes/contexts/benefits-context'
 import { SceneControlsProvider } from '@/features/trade-scenes/contexts/scene-controls-context'
 import { SceneLoadProvider } from '@/features/trade-scenes/contexts/scene-load-context'
 import { SceneTargetsProvider } from '@/features/trade-scenes/contexts/scene-targets-context'
@@ -24,7 +25,6 @@ import { SceneControls } from '@/features/trade-scenes/ui/components/controls/sc
 import { SystemsSection } from '@/features/trade-scenes/ui/components/controls/systems-section'
 import { SceneDock } from '@/features/trade-scenes/ui/components/dock/scene-dock'
 import { HomeSceneBoundary } from '@/features/trade-scenes/ui/components/home-scene-boundary'
-import { CloseUpCard } from '@/features/trade-scenes/ui/components/panel/close-up-card'
 import { SceneKeysButton } from '@/features/trade-scenes/ui/components/scene-keys-button'
 import { SceneStage } from '@/features/trade-scenes/ui/components/scene-stage'
 import { SceneCameraProvider } from '@/shared/components/scene/contexts/scene-camera-context'
@@ -61,69 +61,69 @@ export function TradeSceneView() {
     <SceneInputsProvider store={store}>
       <SceneTargetsProvider>
         <SceneControlsProvider>
-          <SystemCardBottomProvider>
-            <SceneCameraProvider store={camera}>
-              <SceneLoadProvider store={load} lines={lines}>
-                {/* `inert` takes the stage out of the accessibility tree, so the status sits beside it. */}
-                {loading && <p role="status" className="sr-only">{SCENE_COPY.loading}</p>}
-                <SceneStage>
-                  {({ shape, stage, zoomed, canvasOverhang, area }) => (
-                    <>
-                      {loading && (
-                        <BlueprintFade durationMs={paperFadeMs}>
-                          <BlueprintPaper area={stage.width > 0 ? area : undefined} />
-                        </BlueprintFade>
-                      )}
-                      {/* Full size whatever the cards over it do, and reaching under the dashboard sidebar to the window's
-                        left edge, so neither a close-up nor the sidebar's slide resizes it: a resized canvas redraws
-                        stretched and then reframes. The stage clips the strip under the sidebar. Its own stacking context
-                        keeps the pins under the cards. */}
-                      <div
-                        data-scene-canvas
-                        className={stage.width > 0 ? 'absolute inset-y-0 right-0 isolate' : 'absolute inset-0 isolate'}
-                        style={stage.width > 0 ? { width: stage.width + canvasOverhang } : undefined}
-                      >
-                        <SceneColourIn>
-                          <HomeSceneBoundary>
-                            <HomeSceneCanvas />
-                          </HomeSceneBoundary>
-                        </SceneColourIn>
-                        {/* Over the canvas pixel for pixel, but outside the colour-in, so its filter never reaches the lines.
-                          Its fade ends last, so it is the one that ends the load. */}
+          <BenefitsProvider>
+            <SystemCardBottomProvider>
+              <SceneCameraProvider store={camera}>
+                <SceneLoadProvider store={load} lines={lines}>
+                  {/* `inert` takes the stage out of the accessibility tree, so the status sits beside it. */}
+                  {loading && <p role="status" className="sr-only">{SCENE_COPY.loading}</p>}
+                  <SceneStage>
+                    {({ shape, stage, canvasOverhang, area }) => (
+                      <>
                         {loading && (
-                          <BlueprintFade durationMs={linesFadeMs} delayMs={linesDelayMs} onFaded={() => advanceSceneLoad(load, 'live')}>
-                            <BlueprintLines />
+                          <BlueprintFade durationMs={paperFadeMs}>
+                            <BlueprintPaper area={stage.width > 0 ? area : undefined} />
                           </BlueprintFade>
                         )}
-                      </div>
+                        {/* Full size whatever the cards over it do, and reaching under the dashboard sidebar to the window's
+                        left edge, so neither a card nor the sidebar's slide resizes it: a resized canvas redraws
+                        stretched and then reframes. The stage clips the strip under the sidebar. Its own stacking context
+                        keeps the pins under the cards. */}
+                        <div
+                          data-scene-canvas
+                          className={stage.width > 0 ? 'absolute inset-y-0 right-0 isolate' : 'absolute inset-0 isolate'}
+                          style={stage.width > 0 ? { width: stage.width + canvasOverhang } : undefined}
+                        >
+                          <SceneColourIn>
+                            <HomeSceneBoundary>
+                              <HomeSceneCanvas />
+                            </HomeSceneBoundary>
+                          </SceneColourIn>
+                          {/* Over the canvas pixel for pixel, but outside the colour-in, so its filter never reaches the lines.
+                          Its fade ends last, so it is the one that ends the load. */}
+                          {loading && (
+                            <BlueprintFade durationMs={linesFadeMs} delayMs={linesDelayMs} onFaded={() => advanceSceneLoad(load, 'live')}>
+                              <BlueprintLines />
+                            </BlueprintFade>
+                          )}
+                        </div>
 
-                      {/* Placed by the measured shape, which the server cannot know, so nothing is laid out until the stage
+                        {/* Placed by the measured shape, which the server cannot know, so nothing is laid out until the stage
                         has its size. */}
-                      {stage.width > 0 && (
-                        <>
-                          {/* The dock is centred on the stage's right edge, above the band the bottom group stands in, or
-                            above a portrait close-up card. The region passes taps through to the canvas everywhere but on
-                            the dock. */}
-                          <div
-                            data-dock-region
-                            className="pointer-events-none absolute right-0 z-10 w-24 *:pointer-events-auto"
-                            style={dockRegionFor(shape, stage, zoomed)}
-                          >
-                            <SceneDock />
-                          </div>
-                          <CloseUpCard />
-                          <SceneKeysButton />
-                          <SceneControls windowId={windowId} railId={railId} />
-                          <SystemsSection railId={railId} />
-                          <ControlsWindow id={windowId} />
-                        </>
-                      )}
-                    </>
-                  )}
-                </SceneStage>
-              </SceneLoadProvider>
-            </SceneCameraProvider>
-          </SystemCardBottomProvider>
+                        {stage.width > 0 && (
+                          <>
+                            {/* The dock is centred on the stage's right edge, above the band the bottom group stands in. The
+                            region passes taps through to the canvas everywhere but on the dock. */}
+                            <div
+                              data-dock-region
+                              className="pointer-events-none absolute right-0 z-10 w-24 *:pointer-events-auto"
+                              style={dockRegionFor(shape, stage)}
+                            >
+                              <SceneDock />
+                            </div>
+                            <SceneKeysButton />
+                            <SceneControls windowId={windowId} railId={railId} />
+                            <SystemsSection railId={railId} />
+                            <ControlsWindow id={windowId} />
+                          </>
+                        )}
+                      </>
+                    )}
+                  </SceneStage>
+                </SceneLoadProvider>
+              </SceneCameraProvider>
+            </SystemCardBottomProvider>
+          </BenefitsProvider>
         </SceneControlsProvider>
       </SceneTargetsProvider>
     </SceneInputsProvider>

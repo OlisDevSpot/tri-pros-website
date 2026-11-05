@@ -1,6 +1,5 @@
 'use client'
 
-import type { ThreeEvent } from '@react-three/fiber'
 import type { Ref } from 'react'
 import type { Group } from 'three'
 import type { PaintLook } from '@/features/trade-scenes/types'
@@ -20,14 +19,10 @@ import { AtticOpenings } from '@/features/trade-scenes/ui/components/home-kit/at
 import { GableRoof } from '@/features/trade-scenes/ui/components/home-kit/gable-roof'
 import { LowSlopeRoof } from '@/features/trade-scenes/ui/components/home-kit/low-slope-roof'
 import { VentPipeStubs } from '@/features/trade-scenes/ui/components/home-kit/vent-pipe-stubs'
-import { SCENE_MOTION } from '@/shared/components/scene/constants/scene-motion'
 
 interface HouseRoofProps {
   form: string | null
   parts: readonly ResolvedPart[]
-  // Off while zoomed: the ghosted roof surrounds the assembly kit and must let its taps through.
-  tappable: boolean
-  onTap: () => void
   // Holds the attic floor, which the home hides whenever nothing can see into the attic.
   attic: Ref<Group>
   shingleColor: OwensCorningColorId | null
@@ -40,7 +35,7 @@ interface HouseRoofProps {
 }
 
 // The form and every part come from the resolved roof, never the profile: metal arrives here already drawn as its nearest covering.
-export function HouseRoof({ form, parts, tappable, onTap, attic, shingleColor, paint, thermal, atticFanRunning, burst, ducted }: HouseRoofProps) {
+export function HouseRoof({ form, parts, attic, shingleColor, paint, thermal, atticFanRunning, burst, ducted }: HouseRoofProps) {
   const lowSlope = form === 'low-slope'
   const covering = partState(parts, 'covering')
   const deck = partState(parts, 'deck')
@@ -49,16 +44,8 @@ export function HouseRoof({ form, parts, tappable, onTap, attic, shingleColor, p
   const insulation = partState(parts, 'attic-insulation')
   const collars = foamCollarsShown(homeRoofForm(form), partState(parts, 'air-sealing').material, insulation.material)
 
-  const handleClick = (event: ThreeEvent<MouseEvent>) => {
-    if (!tappable || event.delta > SCENE_MOTION.tapSlopPx) {
-      return
-    }
-    event.stopPropagation()
-    onTap()
-  }
-
   return (
-    <group onClick={handleClick} userData={thermalTag('roof')}>
+    <group userData={thermalTag('roof')}>
       <group ref={attic}>
         <AtticFloor lowSlope={lowSlope} insulation={insulation} />
         <group userData={thermalTag('attic')}>

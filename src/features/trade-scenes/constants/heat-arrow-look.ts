@@ -1,7 +1,7 @@
-// Working numbers, tuned at the owner's review. Size is the arrow's length in metres: the whole home is seen from far
-// off, the roof section up close. Drawn with no depth test, so it goes last to lay over the scene.
+// Working numbers, tuned at the owner's review. Size is the arrow's length in metres, for a home seen from far off. Drawn
+// with no depth test, so it goes last to lay over the scene.
 export const HEAT_ARROW_LOOK = {
-  size: { home: 0.55, kit: 0.22 },
+  size: { home: 0.55 },
   edgeFade: 0.12,
   colors: { head: '#e4572e', tip: '#f7d38a', tail: '#f48a3c' },
   // Out of the thermal camera the arrows lie over the parts' own colours, where added light washes to white on anything

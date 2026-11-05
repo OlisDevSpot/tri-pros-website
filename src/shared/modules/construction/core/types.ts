@@ -1,10 +1,12 @@
 import type { YearBuiltRange } from '@/shared/constants/enums/customers'
 import type { AssemblyId } from '@/shared/modules/construction/core/constants/assembly-ids'
+import type { WrittenBenefitKind } from '@/shared/modules/construction/core/constants/benefit-kinds'
 import type { BillCutAddOnId } from '@/shared/modules/construction/core/constants/bill-cut-add-ons'
 import type { CutMode } from '@/shared/modules/construction/core/constants/cut-modes'
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
 import type { AcTons, CrawlInsulation, DuctMaterial, ExteriorPaint, FoundationType, GutterOption, HVACComponent, HVACType, InsulationLevel, PaintWearKind, PaintWearLevel, RoofType, Wear, WindowsType } from '@/shared/modules/construction/core/constants/enums'
 import type { HomeMaterialId } from '@/shared/modules/construction/core/constants/home-material-ids'
+import type { InstallStyleId } from '@/shared/modules/construction/core/constants/install-styles'
 import type { OwensCorningColorId } from '@/shared/modules/construction/core/constants/owens-corning-shingles'
 import type { TradeSlug } from '@/shared/modules/construction/core/constants/trade-slugs'
 
@@ -52,7 +54,7 @@ export interface PartCopy {
   detail: string
 }
 
-export interface PartMaterialDefinition {
+interface PartMaterialFields {
   copy: PartCopy
   conditionCopy?: Partial<Record<PartCondition, PartCopy>>
   // Forms this material can be built on; absent means any.
@@ -61,11 +63,16 @@ export interface PartMaterialDefinition {
   water?: { demand?: number, passThrough?: number }
   // Higher saves more energy; a material without one never saves.
   energyRank?: number
-  // A saving install of this material earns this add-on of its scope's trade instead of the trade's base cut.
-  cut?: BillCutAddOnId
   // Installing this material also installs `with` on `part` when that part currently holds one of `replaces`.
   needsBase?: { part: string, replaces: readonly string[], with: string, copy: PartCopy }
 }
+
+// A saving install earns its trade's base cut, or `cut`, an add-on of its scope's trade, in its place. A step up earns both, each
+// on its own: the base when `from` would save over what the home has, and the add-on when the material itself does.
+export type PartMaterialDefinition = PartMaterialFields & (
+  | { cut?: BillCutAddOnId, stepUp?: never }
+  | { cut?: never, stepUp?: { from: string, cut: BillCutAddOnId } }
+)
 
 export interface PartDefinition {
   id: string
@@ -113,13 +120,36 @@ export interface ResolvedPart {
   detail: string
   thermal: { rValue?: number, reflectance?: number, winterReflectance?: number } | null
   water: { demand?: number, passThrough?: number } | null
+  // What the installed material is laid over, when its install adds to the part instead of replacing it.
+  over?: string
 }
 
 export interface ScopeInstall {
   assembly: AssemblyId
   // The catalog owns a scope's trade; it is copied here because the core cannot read the catalog, and the scope check holds the two equal.
   trade: TradeSlug
-  installs: readonly { part: string, material: string, swapsWith?: Partial<Record<EfficiencyUpgradeId, string>> }[]
+  installs: readonly {
+    part: string
+    material: string
+    swapsWith?: Partial<Record<EfficiencyUpgradeId, string>>
+    // Laid on top of what the part already holds, which stays under it.
+    addsTo?: true
+    // The material after the efficiency swap, mapped to its look in each style.
+    styles?: Partial<Record<InstallStyleId, Readonly<Record<string, string>>>>
+  }[]
+}
+
+export interface UpgradeBenefit {
+  kind: WrittenBenefitKind
+  title: string
+  detail: string
+  onlyWith?: EfficiencyUpgradeId
+  onlyWithout?: EfficiencyUpgradeId
+}
+
+export interface UpgradeEntry {
+  name: string
+  benefits: readonly UpgradeBenefit[]
 }
 
 export interface FlowProfile {
@@ -189,6 +219,8 @@ export interface HomeMaterialDefinition {
   trade: TradeSlug
   repairs: boolean
   parts: readonly { assembly: AssemblyId, part: string }[]
+  // The part that is the material: a new gutter is not a new roof.
+  repairsEndWith: readonly { assembly: AssemblyId, part: string }[]
   // Keyed 'all', or by roof type for the roof.
   bands: Readonly<Record<string, AgeBands>>
   replaceable: ReplaceableField | null
@@ -208,3 +240,9 @@ export interface ResolvedHomeMaterial {
 }
 
 export type ResolvedHomeMaterials = Partial<Record<HomeMaterialId, ResolvedHomeMaterial>>
+
+export interface BillYear<C extends string> {
+  t: number
+  billsNow: Record<C, number>
+  billsAfter: Record<C, number>
+}

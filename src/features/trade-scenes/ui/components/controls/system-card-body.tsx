@@ -2,18 +2,22 @@
 
 import type { CSSProperties, ReactNode } from 'react'
 import type { HomeSystemId, SceneChangeSlotId, TradeSceneInputs } from '@/features/trade-scenes/types'
+import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
 
 import { CONTROLS_CLASSES } from '@/features/trade-scenes/constants/controls-classes'
-import { CONTROLS_COPY, EFFICIENCY_UPGRADE_LABELS, PART_LABELS, SCENE_VIEW_LABELS } from '@/features/trade-scenes/constants/home-scene-copy'
+import { CONTROLS_COPY, EFFICIENCY_UPGRADE_LABELS, PART_LABELS, REQUIRED_UPGRADE_COPY, SCENE_VIEW_LABELS } from '@/features/trade-scenes/constants/home-scene-copy'
 import { NO_CHANGE_CHOICE } from '@/features/trade-scenes/constants/scene-controls'
 import { CONTROLS_EASE_CSS } from '@/features/trade-scenes/constants/scene-layout'
 import { useApplySceneChange } from '@/features/trade-scenes/hooks/use-apply-scene-change'
 import { useSceneTargets } from '@/features/trade-scenes/hooks/use-scene-targets'
 import { currentYear } from '@/features/trade-scenes/lib/current-year'
 import { sceneChangeSlots } from '@/features/trade-scenes/lib/scene-change-slots'
+import { systemMaterialIds } from '@/features/trade-scenes/lib/system-material-ids'
 import { upgradeRowBlockedLine, upgradeRowState } from '@/features/trade-scenes/lib/upgrade-row-state'
 import { upgradeRows } from '@/features/trade-scenes/lib/upgrade-rows'
 import { ExistingChip } from '@/features/trade-scenes/ui/components/controls/existing-chip'
+import { LookInsideBody } from '@/features/trade-scenes/ui/components/controls/look-inside-body'
+import { LookInsideButton } from '@/features/trade-scenes/ui/components/controls/look-inside-button'
 import { MissingChip } from '@/features/trade-scenes/ui/components/controls/missing-chip'
 import { ProposedChip } from '@/features/trade-scenes/ui/components/controls/proposed-chip'
 import { ShingleColors } from '@/features/trade-scenes/ui/components/panel/shingle-colors'
@@ -24,7 +28,8 @@ interface SystemCardBodyProps {
   system: HomeSystemId
 }
 
-// Today and the Tri Pros build, one row each. The side the scene is not showing dims, but its chips still work.
+// Today and the Tri Pros build, one row each, then the way up close. The side the scene is not showing dims, but its chips
+// still work.
 export function SystemCardBody({ system }: SystemCardBodyProps) {
   const state = useSceneInputs((inputs: TradeSceneInputs) => inputs)
   const targets = useSceneTargets()
@@ -35,11 +40,8 @@ export function SystemCardBody({ system }: SystemCardBodyProps) {
   const facts = { property: state.property, materials: state.homeMaterials, year }
   const picks = state.proposedScopeIds
   const rows = upgradeRows(facts, picks, state.efficiencyUpgrades).find(entry => entry.id === system)?.rows ?? []
-  // The materials the system's rows are made of, as far as the home has them; gutters rides with the roof.
-  const materials = [...new Set(rows.flatMap(row => row.material === null ? [] : [row.material]))]
-    .filter(id => targets.home[id] !== undefined)
-
-  const existing = materials.flatMap(id => [
+  // Gutters rides with the roof.
+  const existing = systemMaterialIds(system, targets.home).flatMap(id => [
     <ExistingChip key={id} slot={slotOf(id)!} slots={slots} material={targets.home[id]!} />,
     ...id === 'roof' ? [<ExistingChip key="gutters" slot={slotOf('gutters')!} slots={slots} material={null} />] : [],
   ])
@@ -61,7 +63,7 @@ export function SystemCardBody({ system }: SystemCardBodyProps) {
       return [<ProposedChip key={id} id={id} kind="reason" label={label} text={words.add} reason={line.text} included={line.included} />]
     }
     const slot = slotOf(id)!
-    const { holdsCoolRoof, holdsR8, installsCoolShingle } = upgradeRowState(row, picks, state.efficiencyUpgrades)
+    const { holdsCoolRoof, holdsR8, holdsCoolPaint, holdsR38, holdsBatts, installsCoolShingle } = upgradeRowState(row, picks, state.efficiencyUpgrades)
     const chips: ReactNode[] = [
       row.scopeIds.length === 1
         ? (
@@ -77,17 +79,26 @@ export function SystemCardBody({ system }: SystemCardBodyProps) {
         : <ProposedChip key={id} id={id} kind="menu" label={label} add={words.add} short={words.short} slot={slot} extra={installsCoolShingle && shingleColors} />,
     ]
     // A row that holds an upgrade always lists its slot, taken or not yet.
-    const upgrade = (upgradeId: 'cool-roof' | 'r8-ducts', saysWhy: boolean) => {
+    const upgrade = (upgradeId: EfficiencyUpgradeId, saysWhy: boolean) => {
       const key = `upgrade:${upgradeId}` as const
       const upgradeSlot = slotOf(key)!
+      if (upgradeSlot.required) {
+        return <ProposedChip key={key} id={key} kind="reason" label={EFFICIENCY_UPGRADE_LABELS[upgradeId]} text={EFFICIENCY_UPGRADE_LABELS[upgradeId]} reason={REQUIRED_UPGRADE_COPY.reason} included />
+      }
       if (upgradeSlot.unavailable === null) {
         const on = upgradeSlot.current === 'on'
         return <ProposedChip key={key} id={key} kind="toggle" text={EFFICIENCY_UPGRADE_LABELS[upgradeId]} on={on} onToggle={() => applyChange(upgradeSlot.change(on ? 'off' : 'on'))} />
       }
       return saysWhy && <ProposedChip key={key} id={key} kind="reason" label={EFFICIENCY_UPGRADE_LABELS[upgradeId]} text={EFFICIENCY_UPGRADE_LABELS[upgradeId]} reason={upgradeSlot.unavailable} included={false} />
     }
-    // The R-8 step comes only with new ducts, which the chip beside it already says.
-    return [...chips, holdsCoolRoof && upgrade('cool-roof', true), holdsR8 && upgrade('r8-ducts', false)]
+    // Batts are a look on a picked replace only; before one is picked the menu beside it already offers the replace.
+    const batts = () => {
+      const battsSlot = slotOf('style:batts')!
+      const on = battsSlot.current === 'on'
+      return battsSlot.unavailable === null && <ProposedChip key={battsSlot.id} id={battsSlot.id} kind="toggle" text={battsSlot.name} on={on} onToggle={() => applyChange(battsSlot.change(on ? 'off' : 'on'))} />
+    }
+    // The R-8 and R-38 steps, Cool Life paint and batts come only with the chip beside them, which already says why.
+    return [...chips, holdsCoolRoof && upgrade('cool-roof', true), holdsR8 && upgrade('r8-ducts', false), holdsCoolPaint && upgrade('cool-paint', false), holdsR38 && upgrade('r38-insulation', false), holdsBatts && batts()]
   })
 
   const dimmed = state.view === 'existing' ? 'proposed' : 'existing'
@@ -123,6 +134,8 @@ export function SystemCardBody({ system }: SystemCardBodyProps) {
     <>
       {sideRow('existing', existing.length === 0 ? note(CONTROLS_COPY.systems.noCrawlSpace) : existing)}
       {sideRow('proposed', rows.length === 0 ? note(CONTROLS_COPY.systems.noneOnSlab) : proposed)}
+      <LookInsideButton system={system} />
+      {state.lookInside && <LookInsideBody system={system} />}
     </>
   )
 }

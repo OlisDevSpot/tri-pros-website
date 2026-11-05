@@ -1,14 +1,11 @@
-import type { AssemblyKit } from '@/features/trade-scenes/constants/assembly-kits'
 import type { AssemblyTargets, HomeShell, SceneResolveInputs, SceneTargets } from '@/features/trade-scenes/types'
 import type { AssemblyId } from '@/shared/modules/construction/core/constants/assembly-ids'
 import type { TradeBillCuts } from '@/shared/modules/construction/core/schemas/bill-cuts'
 import type { Assembly, ExistingConditions, HomeFacts, ResolvedHomeMaterials, ResolvedPart, WaterFlow } from '@/shared/modules/construction/core/types'
 
-import { ASSEMBLY_KITS } from '@/features/trade-scenes/constants/assembly-kits'
 import { CLIMATE_FALLBACK } from '@/features/trade-scenes/constants/climate-bills'
 import { INFER_EXISTING_CONDITIONS } from '@/features/trade-scenes/constants/existing-conditions'
 import { METER_LEVEL } from '@/features/trade-scenes/constants/home-heat-figures'
-import { ASSEMBLY_HEADINGS, ERA_PHRASE } from '@/features/trade-scenes/constants/home-scene-copy'
 import { castResidents } from '@/features/trade-scenes/lib/cast-residents'
 import { comfortFromReadings } from '@/features/trade-scenes/lib/comfort-from-readings'
 import { currentYear } from '@/features/trade-scenes/lib/current-year'
@@ -18,7 +15,6 @@ import { sceneSavings } from '@/features/trade-scenes/lib/scene-savings'
 import { ASSEMBLIES } from '@/shared/modules/construction/core/constants/assemblies'
 import { ASSEMBLY_IDS } from '@/shared/modules/construction/core/constants/assembly-ids'
 import { CLIMATE_PRESETS } from '@/shared/modules/construction/core/constants/climate-presets'
-import { ERA_FALLBACK } from '@/shared/modules/construction/core/constants/era-defaults'
 import { relativeWaterFlow } from '@/shared/modules/construction/core/lib/relative-water-flow'
 import { resolveAssembly } from '@/shared/modules/construction/core/lib/resolve-assembly'
 import { resolveHomeMaterials, wearInForce } from '@/shared/modules/construction/core/lib/resolve-home-materials'
@@ -44,15 +40,14 @@ function partsForRain(parts: ResolvedPart[], id: AssemblyId, home: ResolvedHomeM
   return parts.map(part => part.condition === 'worn' ? { ...part, condition: 'retained' } : part)
 }
 
-function resolveHomeAssembly(id: Exclude<AssemblyId, 'yard-ground'>, kit: AssemblyKit | undefined, inputs: SceneResolveInputs, facts: HomeFacts, home: ResolvedHomeMaterials): ResolvedAssembly {
+function resolveHomeAssembly(id: Exclude<AssemblyId, 'yard-ground'>, inputs: SceneResolveInputs, facts: HomeFacts, home: ResolvedHomeMaterials): ResolvedAssembly {
   const assembly = ASSEMBLIES[id]
   const { weather } = inputs
   const existing = INFER_EXISTING_CONDITIONS[id](facts, home)
-  const parts = resolveAssembly(assembly, { existing, proposedScopeIds: inputs.proposedScopeIds, view: inputs.view, efficiencyUpgrades: inputs.efficiencyUpgrades })
+  const parts = resolveAssembly(assembly, { existing, proposedScopeIds: inputs.proposedScopeIds, view: inputs.view, efficiencyUpgrades: inputs.efficiencyUpgrades, installStyles: inputs.installStyles })
 
-  const modelMode = assembly.modes[weather] ?? null
-  const water = modelMode === 'water' ? relativeWaterFlow(weather === 'rain' ? partsForRain(parts, id, home) : parts, weather === 'rain' ? 'rain' : 'irrigation') : null
-  const drawn = kit?.weathers.includes(weather) ?? false
+  const mode = assembly.modes[weather] ?? null
+  const water = mode === 'water' ? relativeWaterFlow(weather === 'rain' ? partsForRain(parts, id, home) : parts, weather === 'rain' ? 'rain' : 'irrigation') : null
 
   return {
     assembly,
@@ -64,30 +59,15 @@ function resolveHomeAssembly(id: Exclude<AssemblyId, 'yard-ground'>, kit: Assemb
       form: existing.form,
       basis: existing.basis,
       parts,
-      mode: drawn ? modelMode : null,
-      water: drawn ? water : null,
+      mode,
+      water,
     },
   }
 }
 
-function headingFor(inputs: SceneResolveInputs, resolved: readonly ResolvedAssembly[]): SceneTargets['heading'] {
-  // The zoomed assembly speaks first; at home, the first kit with copy does.
-  const candidates = [resolved.find(entry => entry.targets.assemblyId === inputs.zoom), ...resolved]
-  const headed = candidates.find(entry => entry !== undefined && ASSEMBLY_HEADINGS[entry.targets.assemblyId] !== undefined)
-  const copy = headed && ASSEMBLY_HEADINGS[headed.targets.assemblyId]
-  if (!headed || !copy) {
-    throw new Error('No registered assembly kit has heading copy')
-  }
-  return {
-    eyebrow: copy.eyebrow,
-    title: copy.title[headed.targets.basis](ERA_PHRASE[inputs.property.yearBuilt ?? ERA_FALLBACK]),
-    lead: copy.lead[inputs.view][inputs.weather],
-  }
-}
-
-// One call composes the construction model for every surface (home, assembly kit, panel), so a colour, a reading, a ribbon width and a
+// One call composes the construction model for every surface (home, system card, Benefits), so a colour, a reading, a ribbon width and a
 // dollar figure can never disagree.
-export function resolveScene(inputs: SceneResolveInputs, cuts: TradeBillCuts, kits: Partial<Record<AssemblyId, AssemblyKit>> = ASSEMBLY_KITS, year: number = currentYear()): SceneTargets {
+export function resolveScene(inputs: SceneResolveInputs, cuts: TradeBillCuts, year: number = currentYear()): SceneTargets {
   const climate = inputs.climate ?? CLIMATE_FALLBACK
   // The drawing-only facts (AC size, shingle colour, paint wear) never reach the resolver, and no inference reads them.
   const facts: HomeFacts = { property: inputs.property, materials: { ...inputs.homeMaterials, acTons: null, shingleColor: null, paintWear: {} }, year }
@@ -96,7 +76,7 @@ export function resolveScene(inputs: SceneResolveInputs, cuts: TradeBillCuts, ki
     if (id === 'yard-ground' || !(ASSEMBLIES[id].appliesTo?.(inputs.property) ?? true)) {
       return []
     }
-    return [resolveHomeAssembly(id, kits[id], inputs, facts, home)]
+    return [resolveHomeAssembly(id, inputs, facts, home)]
   })
 
   const roofAttic = resolved.find(entry => entry.targets.assemblyId === 'roof-attic')
@@ -132,6 +112,5 @@ export function resolveScene(inputs: SceneResolveInputs, cuts: TradeBillCuts, ki
     home,
     residents: castResidents(inputs.household),
     savings,
-    heading: headingFor(inputs, resolved.filter(entry => kits[entry.targets.assemblyId])),
   }
 }

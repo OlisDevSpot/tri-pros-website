@@ -12,13 +12,14 @@ import { resolveOverridable } from '@/shared/lib/resolve-overridable'
 import { BILL_CATEGORIES } from '@/shared/modules/construction/core/constants/bill-categories'
 import { combineCuts } from '@/shared/modules/construction/core/lib/combine-cuts'
 import { cutFor } from '@/shared/modules/construction/core/lib/cut-for'
+import { projectBillYears } from '@/shared/modules/construction/core/lib/project-bill-years'
 
 function amountOf(value: number | null | undefined): number {
   return value != null && Number.isFinite(value) && value > 0 ? value : 0
 }
 
-function byCategory(read: (category: BillCategory) => number): ByCategory {
-  return Object.fromEntries(BILL_CATEGORIES.map(category => [category, read(category)])) as ByCategory
+function byCategory<T = number>(read: (category: BillCategory) => T): Record<BillCategory, T> {
+  return Object.fromEntries(BILL_CATEGORIES.map(category => [category, read(category)])) as Record<BillCategory, T>
 }
 
 function sumOf(values: ByCategory): number {
@@ -42,7 +43,6 @@ export function projectRemodelRoi(input: RemodelRoiFormValues, config: RemodelRo
     homeAppreciationPercent: resolveOverridable(input.assumptions.homeAppreciationPercent, config.defaultHomeAppreciationPercent),
     valueAddedPercent: resolveOverridable(input.assumptions.valueAddedPercent, config.defaultValueAddedPercent),
   }
-  const growth = (category: BillCategory) => assumptions.ratesPercent[category].value / 100
   const construction = assumptions.constructionPercent.value / 100
   const appreciation = assumptions.homeAppreciationPercent.value / 100
   const valueShare = assumptions.valueAddedPercent.value / 100
@@ -125,9 +125,9 @@ export function projectRemodelRoi(input: RemodelRoiFormValues, config: RemodelRo
   let repairsSkipped = 0
   let projectPaid = 0
   let replacementPaid = 0
+  const billYears = projectBillYears(byCategory(category => ({ now: cuts[category].bill, after: cuts[category].after })), byCategory(category => assumptions.ratesPercent[category].value), PROJECTION_YEARS)
   for (let t = 0; t <= PROJECTION_YEARS; t++) {
-    const billsNowByCategory = byCategory(category => (t === 0 ? 0 : cuts[category].bill * (1 + growth(category)) ** (t - 1)))
-    const billsAfterByCategory = byCategory(category => (t === 0 ? 0 : cuts[category].after * (1 + growth(category)) ** (t - 1)))
+    const { billsNow: billsNowByCategory, billsAfter: billsAfterByCategory } = billYears[t]
     const billsNow = sumOf(billsNowByCategory)
     const billsAfter = sumOf(billsAfterByCategory)
     const repairsYear = replacements.reduce((total, replacement) => {

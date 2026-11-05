@@ -4,7 +4,7 @@ import { CONTROLS_COPY } from '@/features/trade-scenes/constants/home-scene-copy
 import { SCENE_CHANGE_RESULTS_MAX } from '@/features/trade-scenes/constants/scene-change-words'
 
 function wordsOf(text: string): string[] {
-  return text.toLowerCase().split(/\s+/).filter(Boolean)
+  return text.toLowerCase().replace(/[()]/g, '').split(/\s+/).filter(Boolean)
 }
 
 function prefixesAWord(token: string, text: string): boolean {

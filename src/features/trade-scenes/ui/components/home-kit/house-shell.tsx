@@ -1,8 +1,9 @@
 'use client'
 
-import type { BoxSpec, HouseWall, PaintLook, StainBoxes, StainCell, WallOpening } from '@/features/trade-scenes/types'
+import type { HouseWall, PaintLook, StainBoxes, WallOpening } from '@/features/trade-scenes/types'
 import type { WallSkinSpec } from '@/features/trade-scenes/ui/lib/wall-skin-geometry'
 import type { WindowsType } from '@/shared/modules/construction/core/constants/enums'
+import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
 
 import { useMemo } from 'react'
 
@@ -14,9 +15,11 @@ import { WEAR_LOOKS } from '@/features/trade-scenes/constants/wear-looks'
 import { facesSummerSun } from '@/features/trade-scenes/lib/faces-summer-sun'
 import { FRONT_DOOR_BOXES } from '@/features/trade-scenes/lib/front-door-boxes'
 import { doorFramePeeling, peelingMarks, wallPeeling } from '@/features/trade-scenes/lib/paint-peeling'
+import { FRONT_STAIN_WALL, paintedSurfaceStains, STAIN_WALLS, surfaceStainLists } from '@/features/trade-scenes/lib/painted-surface-stains'
 import { wornShare, wornValue } from '@/features/trade-scenes/lib/part-state'
-import { fadeBlotches, runoffStreaks, sillDirt, splashBand } from '@/features/trade-scenes/lib/stain-boxes'
+import { sillDirt, splashBand } from '@/features/trade-scenes/lib/stain-boxes'
 import { stuccoCracks } from '@/features/trade-scenes/lib/stucco-cracks'
+import { systemPartTag } from '@/features/trade-scenes/lib/system-part-tag'
 import { thermalTag } from '@/features/trade-scenes/lib/thermal-tag'
 import { windowBoxes } from '@/features/trade-scenes/lib/window-boxes'
 import { MergedBoxes } from '@/features/trade-scenes/ui/components/home-kit/merged-boxes'
@@ -30,6 +33,7 @@ interface HouseShellProps {
   frameWear: number
   glassWear: number
   paint: PaintLook
+  roofForm: RoofForm
   windowGlow: number
   thermal: boolean
 }
@@ -74,16 +78,7 @@ const FRONT_STUCCO: WallSkinSpec[] = [{
 }]
 const FRONT_ZONE = facesSummerSun(0, FRONT_WALL.outward) ? 'sunlit' : null
 
-// The stains and the peeling run out to each corner, over the end of the wall that meets it there: the back wall's ends behind
-// the side walls, and the front corners past the front wall's ends. Stopped at the walls' own ends, a corner would show a clean
-// strip.
-const STAIN_WALLS = (Object.keys(HOUSE_WALLS) as (keyof typeof HOUSE_WALLS)[]).map((side) => {
-  const wall = HOUSE_WALLS[side]
-  return { side, wall: wall.run === 'z' ? { ...wall, from: -HOUSE.halfDepth } : wall, sunlit: SUNLIT_WALLS.includes(wall) }
-})
-const FRONT_STAIN_WALL: HouseWall = { ...FRONT_WALL, from: -HOUSE.halfLength, to: HOUSE.halfLength }
-
-export function HouseShell({ windowsType, frameWear, glassWear, paint, windowGlow, thermal }: HouseShellProps) {
+export function HouseShell({ windowsType, frameWear, glassWear, paint, roofForm, windowGlow, thermal }: HouseShellProps) {
   // Unknown glazing draws as single: the common case in the homes we visit, and the one the work changes.
   const frame = WINDOW_FRAMES[windowsType ?? 'single']
   const { frames, glass, front } = useMemo(() => {
@@ -134,21 +129,17 @@ export function HouseShell({ windowsType, frameWear, glassWear, paint, windowGlo
   }, [cracks, dirt, peeling])
   const stains = useMemo(() => {
     const look = WEAR_LOOKS.paint
-    const list = (cell: StainCell, boxes: readonly BoxSpec[], color: string, alpha: number): StainBoxes => ({ cell, boxes, color, alpha: Math.min(1, alpha) })
-    const splash = (walls: readonly HouseWall[], openings?: readonly WallOpening[]) => [
-      list('splash', walls.flatMap(wall => splashBand(wall, STUCCO_BOTTOM, stainShare, openings ?? wall.openings)), look.splashColor, look.splashAlpha * stainShare),
+    const splash = (walls: readonly HouseWall[], openings?: readonly WallOpening[]): StainBoxes[] => [
+      { cell: 'splash', boxes: walls.flatMap(wall => splashBand(wall, STUCCO_BOTTOM, stainShare, openings ?? wall.openings)), color: look.splashColor, alpha: Math.min(1, look.splashAlpha * stainShare) },
     ]
-    const onWalls = (walls: readonly { wall: HouseWall, sunlit: boolean }[], seed: number, openings?: readonly WallOpening[]) => [
-      list('streak', walls.flatMap(({ wall }, index) => runoffStreaks(wall, HOUSE.floorY, WALL_TOP_Y, stainShare, seed + index, openings ?? wall.openings)), look.streakColor, look.streakAlpha * stainShare),
-      list('blotch', walls.flatMap(({ wall, sunlit }, index) => fadeBlotches(wall, HOUSE.floorY, WALL_TOP_Y, fadeShare, seed + 10 + index, sunlit, openings ?? wall.openings)), look.blotchColor, look.blotchAlpha * fadeShare),
-    ]
+    const { sides, front } = paintedSurfaceStains(roofForm, stainShare, fadeShare).walls
     return {
-      sides: onWalls(STAIN_WALLS, 21),
-      front: onWalls([{ wall: FRONT_STAIN_WALL, sunlit: FRONT_ZONE === 'sunlit' }], 25, FRONT_OPENINGS),
+      sides: surfaceStainLists(sides, stainShare, fadeShare),
+      front: surfaceStainLists(front, stainShare, fadeShare),
       sidesSplash: splash(STAIN_WALLS.map(({ wall }) => wall)),
       frontSplash: splash([FRONT_STAIN_WALL], FRONT_OPENINGS),
     }
-  }, [stainShare, fadeShare])
+  }, [roofForm, stainShare, fadeShare])
 
   return (
     <group>
@@ -162,9 +153,13 @@ export function HouseShell({ windowsType, frameWear, glassWear, paint, windowGlo
       <group userData={HOME_FADE_TAGS.slab}>
         <PaintStains lists={stains.sidesSplash} thermal={thermal} />
       </group>
-      <MergedBoxes boxes={frames} color={trim} radius={0.01} roughness={0.7} />
+      <group userData={systemPartTag('frame')}>
+        <MergedBoxes boxes={frames} color={trim} radius={0.01} roughness={0.7} />
+      </group>
       <group userData={thermalTag('window')}>
-        <MergedBoxes boxes={glass} color={glassColor} roughness={glassRoughness} opacity={glassOpacity} emissive={HOME_PALETTE.glassGlow} emissiveIntensity={windowGlow} />
+        <group userData={systemPartTag('glazing')}>
+          <MergedBoxes boxes={glass} color={glassColor} roughness={glassRoughness} opacity={glassOpacity} emissive={HOME_PALETTE.glassGlow} emissiveIntensity={windowGlow} />
+        </group>
       </group>
       <group userData={HOME_FADE_TAGS.complete}>
         <group userData={thermalTag('sunlit')}>
@@ -181,9 +176,13 @@ export function HouseShell({ windowsType, frameWear, glassWear, paint, windowGlo
         <group userData={HOME_FADE_TAGS.slab}>
           <PaintStains lists={stains.frontSplash} thermal={thermal} />
         </group>
-        <MergedBoxes boxes={front.frames} color={trim} radius={0.01} roughness={0.7} />
+        <group userData={systemPartTag('frame')}>
+          <MergedBoxes boxes={front.frames} color={trim} radius={0.01} roughness={0.7} />
+        </group>
         <group userData={thermalTag('window')}>
-          <MergedBoxes boxes={front.glass} color={glassColor} roughness={glassRoughness} opacity={glassOpacity} emissive={HOME_PALETTE.glassGlow} emissiveIntensity={windowGlow} />
+          <group userData={systemPartTag('glazing')}>
+            <MergedBoxes boxes={front.glass} color={glassColor} roughness={glassRoughness} opacity={glassOpacity} emissive={HOME_PALETTE.glassGlow} emissiveIntensity={windowGlow} />
+          </group>
         </group>
       </group>
     </group>

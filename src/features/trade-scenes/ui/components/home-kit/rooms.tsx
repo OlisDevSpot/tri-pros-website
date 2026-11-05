@@ -5,6 +5,7 @@ import type { BoxSpec, HouseWall, RoomSpan } from '@/features/trade-scenes/types
 import { HOME_FADE_TAGS } from '@/features/trade-scenes/constants/home-fades'
 import { HOUSE, HOUSE_WALLS, PARTITION_DOOR, PARTITIONS_X, ROOMS, WALL_TOP_Y } from '@/features/trade-scenes/constants/home-geometry'
 import { HOME_PALETTE } from '@/features/trade-scenes/constants/home-palette'
+import { systemPartTag } from '@/features/trade-scenes/lib/system-part-tag'
 import { thermalTag } from '@/features/trade-scenes/lib/thermal-tag'
 import { wallBoxes } from '@/features/trade-scenes/lib/wall-boxes'
 import { MergedBoxes } from '@/features/trade-scenes/ui/components/home-kit/merged-boxes'
@@ -68,9 +69,11 @@ export function Rooms({ roomLight }: RoomsProps) {
       <MergedBoxes boxes={PAINT.living} color={ROOMS.living.paint} radius={0.008} />
       <MergedBoxes boxes={PAINT.kitchen} color={ROOMS.kitchen.paint} radius={0.008} />
       <group userData={thermalTag('ceiling', 'ceiling')}>
-        <MergedBoxes boxes={CEILING} color={HOME_PALETTE.ceiling} />
-        <group userData={HOME_FADE_TAGS.complete}>
-          <MergedBoxes boxes={COMPLETE_CEILING} color={HOME_PALETTE.ceiling} />
+        <group userData={systemPartTag('ceiling')}>
+          <MergedBoxes boxes={CEILING} color={HOME_PALETTE.ceiling} />
+          <group userData={HOME_FADE_TAGS.complete}>
+            <MergedBoxes boxes={COMPLETE_CEILING} color={HOME_PALETTE.ceiling} />
+          </group>
         </group>
       </group>
       <RoomFurnishings roomLight={roomLight} />

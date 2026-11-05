@@ -2,7 +2,7 @@
 
 import { motion, useReducedMotion } from 'motion/react'
 
-import { CONTROLS_COPY } from '@/features/trade-scenes/constants/home-scene-copy'
+import { BENEFITS_COPY } from '@/features/trade-scenes/constants/home-scene-copy'
 import { CONTROLS_EASE } from '@/features/trade-scenes/constants/scene-layout'
 import { useSceneControls } from '@/features/trade-scenes/contexts/scene-controls-context'
 
@@ -25,7 +25,7 @@ export function ControlsToast() {
             : { duration: 1.9, times: [0, 0.12, 0.8, 1], ease: CONTROLS_EASE }}
           className="rounded-full bg-primary px-3.5 py-2 text-sm font-bold whitespace-nowrap text-primary-foreground shadow-2xl"
         >
-          {CONTROLS_COPY.benefits.toast}
+          {BENEFITS_COPY.toast}
         </motion.div>
       )}
     </div>

@@ -12,8 +12,8 @@ const { dock } = SCENE_LAYOUT
 
 // Only what changes the scene; the shortcut keys have their own button in the stage's corner.
 export function SceneDock() {
-  const { shape, stage, zoomed } = useSceneVisibleArea()
-  const fold = dockLayoutFor({ shape, stage, zoomed })
+  const { shape, stage } = useSceneVisibleArea()
+  const fold = dockLayoutFor({ shape, stage })
   // A folded strip is a short column that reads as one without its dividers.
   const divider = fold === 'none' && <span aria-hidden style={DOCK_SIZES.divider} className="w-13 bg-border" />
 

@@ -37,6 +37,9 @@ export const CONTROLS_CLASSES = {
   capsLabel: 'text-xs font-bold tracking-[.12em] text-muted-foreground uppercase',
   tag: 'rounded-full border border-border px-2 py-0.5 text-xs font-bold tracking-[.08em] whitespace-nowrap text-muted-foreground uppercase',
   tagProposed: 'border-primary bg-primary text-primary-foreground',
+  // Where a figure comes from; the working number takes the attention tone, a typed one the selected fill.
+  sourceTag: 'inline-flex h-6 shrink-0 items-center justify-self-start rounded-full border px-2 text-xs font-bold whitespace-nowrap',
+  sourceTagTyped: 'border-transparent bg-control-selected text-primary',
   // Laid over the shared InputGroup: its own focus classes are restated so the merge replaces them rather than both
   // applying, and its input sits 12 px past the icon.
   field: 'h-11 rounded-xl shadow-none has-[[data-slot=input-group-control]:focus-visible]:border-border-strong has-[[data-slot=input-group-control]:focus-visible]:ring-primary/18 has-[>[data-align=inline-start]]:[&>input]:pl-3',
@@ -46,5 +49,6 @@ export const CONTROLS_CLASSES = {
   optionCurrent: 'border-border-strong bg-muted text-foreground hover:bg-muted',
   // The value Enter would set.
   optionHit: 'border-primary text-foreground ring-1 ring-primary ring-inset',
-  link: 'h-auto min-h-10 shrink-0 cursor-pointer rounded-md px-1 text-xs font-bold whitespace-nowrap text-primary outline-none hover:text-primary hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50',
+  // A Benefits matrix head: a whole kind or system to pick, pressed as the rail's chips are.
+  matrixHead: 'size-full cursor-pointer rounded-[10px] outline-none not-aria-pressed:enabled:hover:bg-hover pressed:bg-press focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-default aria-pressed:bg-muted aria-pressed:inset-ring aria-pressed:inset-ring-primary',
 } as const

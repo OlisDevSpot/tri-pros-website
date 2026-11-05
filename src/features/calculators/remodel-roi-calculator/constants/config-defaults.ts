@@ -1,14 +1,14 @@
 import type { RemodelRoiConfig } from '@/features/calculators/remodel-roi-calculator/schemas/config'
 
+import { BILL_GROWTH_RATES_PERCENT } from '@/shared/modules/construction/core/constants/bill-growth-rates'
+import { CONSTRUCTION_GROWTH_RATE_PERCENT } from '@/shared/modules/construction/core/constants/construction-growth-rate'
 import { REPAIRS_PER_YEAR } from '@/shared/modules/construction/core/constants/repairs-per-year'
 
 export const REMODEL_ROI_CONFIG_DEFAULTS = {
   defaultLookAheadYears: 10,
-  // The team's estimate from thousands of customer bills analysed over the years; they stay visible and editable on screen.
-  defaultRatesPercent: { electric: 7.57, water: 8.9, gas: 9.1, gardening: 5, misc: 0 },
+  defaultRatesPercent: { ...BILL_GROWTH_RATES_PERCENT },
   defaultHomeAppreciationPercent: 4,
-  // The team's working estimate until a sourced construction-cost index replaces it.
-  defaultConstructionPercent: 5,
+  defaultConstructionPercent: CONSTRUCTION_GROWTH_RATE_PERCENT,
   // The team's working share of the price a remodel adds to the home, until sourced per trade.
   defaultValueAddedPercent: 80,
   // Placeholder terms until the owner sets the house's default financing.

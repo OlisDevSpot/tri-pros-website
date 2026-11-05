@@ -26,7 +26,7 @@ const ERA_PHRASE: Record<YearBuiltRange, string> = {
   'Post-2014': 'after 2014',
 }
 
-const DEMO_PROFILE: CutawayProfile = { roofType: 'shingle', yearBuilt: '1950-1978', insulationLevel: 'low' }
+const DEMO_PROFILE: CutawayProfile = { roofType: 'shingle', yearBuilt: '1950-1978', insulationLevel: 'r11' }
 
 interface RoofCutawayViewProps {
   initialProfile?: CutawayProfile

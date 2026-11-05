@@ -6,10 +6,12 @@ import type { ControlsSection } from '@/features/trade-scenes/types'
 import { useRef } from 'react'
 
 import { FACTS_TABS } from '@/features/trade-scenes/constants/facts-tabs'
+import { BenefitsFiguresProvider } from '@/features/trade-scenes/contexts/benefits-figures-context'
 import { useSceneControls } from '@/features/trade-scenes/contexts/scene-controls-context'
-import { BenefitsBody } from '@/features/trade-scenes/ui/components/controls/benefits-body'
-import { BenefitsHead } from '@/features/trade-scenes/ui/components/controls/benefits-head'
-import { BillsFooter } from '@/features/trade-scenes/ui/components/controls/bills-footer'
+import { useBenefits } from '@/features/trade-scenes/hooks/use-benefits'
+import { benefitsStepBack } from '@/features/trade-scenes/lib/benefits-step-back'
+import { BenefitsBody } from '@/features/trade-scenes/ui/components/benefits/benefits-body'
+import { BenefitsHead } from '@/features/trade-scenes/ui/components/benefits/benefits-head'
 import { ControlsModal } from '@/features/trade-scenes/ui/components/controls/controls-modal'
 import { ControlsToast } from '@/features/trade-scenes/ui/components/controls/controls-toast'
 import { HomeFactsBody } from '@/features/trade-scenes/ui/components/controls/home-facts-body'
@@ -32,6 +34,7 @@ interface WindowSection {
 // The one window every section but Systems shows in, and the toast that says the side shown changed.
 export function ControlsWindow({ id }: ControlsWindowProps) {
   const { open, factsTab, setFactsTab, query, setQuery } = useSceneControls()
+  const benefits = useBenefits()
   const searchRef = useRef<HTMLInputElement>(null)
   const sections: Record<Exclude<ControlsSection, 'systems'>, WindowSection> = {
     // One tabs root across the head and the body, so the tabs beside the title still own the panels below it.
@@ -65,12 +68,23 @@ export function ControlsWindow({ id }: ControlsWindowProps) {
     },
     benefits: {
       content: (
-        <>
+        <BenefitsFiguresProvider>
           <BenefitsHead />
           <BenefitsBody />
-          <BillsFooter />
-        </>
+        </BenefitsFiguresProvider>
       ),
+      // Each Escape closes one layer and hands focus to the control that opened it.
+      onEscapeKeyDown: (event) => {
+        const { selection, lookAhead, costsOpen, whyOpen, openers, restore } = benefits
+        const next = benefitsStepBack({ selection, lookAhead, costsOpen, whyOpen })
+        if (next === null) {
+          return
+        }
+        event.preventDefault()
+        const opener = whyOpen ? openers.why : costsOpen ? openers.costs : openers.selection
+        restore(next)
+        opener.current!.focus()
+      },
     },
   }
   const shown = open === null || open === 'systems' ? null : sections[open]

@@ -1,31 +1,34 @@
 import type { SceneChangeSlot, SceneChangeSlotId, SceneTargets, TradeSceneInputs } from '@/features/trade-scenes/types'
 import type { CustomerAgeGroup, HouseholdType, YearBuiltRange } from '@/shared/constants/enums/customers'
 import type { Climate } from '@/shared/modules/construction/core/constants/climate-presets'
+import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
 import type { AcTons, CrawlInsulation, DuctMaterial, ExteriorPaint, FoundationType, GutterOption, HVACComponent, HVACType, InsulationLevel, RoofType, Wear, WindowsType } from '@/shared/modules/construction/core/constants/enums'
 import type { HomeMaterialId } from '@/shared/modules/construction/core/constants/home-material-ids'
 import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
 import type { ScopeId } from '@/shared/modules/construction/core/constants/scope-ids'
 import type { HomeFacts, ResolvedHomeMaterial } from '@/shared/modules/construction/core/types'
 
-import { AC_TON_LABELS, AGE_GROUP_LABELS, CONTROLS_COPY, CRAWL_INSULATION_LABELS, DUCT_LABELS, EFFICIENCY_UPGRADE_LABELS, EXTERIOR_PAINT_LABELS, FOUNDATION_TYPE_LABELS, GUTTER_LABELS, HOME_MATERIAL_LABELS, HOME_MATERIALS_COPY, HOUSEHOLD_TYPE_LABELS, HVAC_COMPONENT_LABELS, HVAC_TYPE_LABELS, INSULATION_LEVEL_LABELS, PANEL_COPY, PART_LABELS, PROFILE_COPY, ROOF_FORM_LABELS, ROOF_TYPE_LABELS, SAVINGS_COPY, SCOPES_AND_ADDONS_COPY, WEAR_LABELS, WINDOWS_TYPE_LABELS, YEAR_BUILT_LABELS } from '@/features/trade-scenes/constants/home-scene-copy'
+import { AC_TON_LABELS, AGE_GROUP_LABELS, CONTROLS_COPY, CRAWL_INSULATION_LABELS, DUCT_LABELS, EFFICIENCY_UPGRADE_LABELS, EXTERIOR_PAINT_LABELS, FOUNDATION_TYPE_LABELS, GUTTER_LABELS, HOME_MATERIAL_LABELS, HOME_MATERIALS_COPY, HOUSEHOLD_TYPE_LABELS, HVAC_COMPONENT_LABELS, HVAC_TYPE_LABELS, INSTALL_STYLE_HINTS, INSTALL_STYLE_LABELS, PANEL_COPY, PART_LABELS, PROFILE_COPY, REQUIRED_UPGRADE_COPY, ROOF_FORM_LABELS, ROOF_TYPE_LABELS, SAVINGS_COPY, SCOPES_AND_ADDONS_COPY, WEAR_LABELS, WINDOWS_TYPE_LABELS, YEAR_BUILT_LABELS } from '@/features/trade-scenes/constants/home-scene-copy'
 import { SAVINGS_CATEGORIES } from '@/features/trade-scenes/constants/savings-categories'
 import { SCENE_CHANGE_WORDS } from '@/features/trade-scenes/constants/scene-change-words'
 import { NO_CHANGE_CHOICE } from '@/features/trade-scenes/constants/scene-controls'
 import { SCOPE_VERBS } from '@/features/trade-scenes/constants/scope-verbs'
+import { requiredUpgrades } from '@/features/trade-scenes/lib/keep-pick-options'
 import { existingDuctChoices, hasAcUnit, roofTypeChoices, showsEquipment } from '@/features/trade-scenes/lib/material-option-choices'
 import { upgradeRowState } from '@/features/trade-scenes/lib/upgrade-row-state'
 import { upgradeRows } from '@/features/trade-scenes/lib/upgrade-rows'
 import { customerAgeGroups, householdTypes, yearBuiltRanges } from '@/shared/constants/enums/customers'
 import { CLIMATE_LABELS, CLIMATES } from '@/shared/modules/construction/core/constants/climate-presets'
-import { acTonnages, crawlInsulations, exteriorPaints, foundationTypes, gutterOptions, hvacComponents, hvacTypes, insulationLevels, wears, windowsTypes } from '@/shared/modules/construction/core/constants/enums'
+import { acTonnages, crawlInsulations, exteriorPaints, foundationTypes, gutterOptions, hvacComponents, hvacTypes, INSULATION_LEVEL_LABELS, insulationLevels, wears, windowsTypes } from '@/shared/modules/construction/core/constants/enums'
 import { HOME_MATERIAL_IDS } from '@/shared/modules/construction/core/constants/home-material-ids'
 import { ROOF_FORMS } from '@/shared/modules/construction/core/constants/roof-forms'
+import { SCOPE_INSTALLS } from '@/shared/modules/construction/core/constants/scope-installs'
 import { roofFormOf } from '@/shared/modules/construction/core/lib/roof-form-of'
 
-type SlotFields = Pick<SceneChangeSlot, 'id' | 'group' | 'name' | 'options' | 'current' | 'change'> & Partial<Pick<SceneChangeSlot, 'isFact' | 'offersNotSure' | 'bill' | 'unavailable'>>
+type SlotFields = Pick<SceneChangeSlot, 'id' | 'group' | 'name' | 'options' | 'current' | 'change'> & Partial<Pick<SceneChangeSlot, 'isFact' | 'offersNotSure' | 'bill' | 'unavailable' | 'required'>>
 
 function slot(fields: SlotFields): SceneChangeSlot {
-  return { words: SCENE_CHANGE_WORDS[fields.id], isFact: false, offersNotSure: false, bill: null, unavailable: null, ...fields }
+  return { words: SCENE_CHANGE_WORDS[fields.id], isFact: false, offersNotSure: false, bill: null, unavailable: null, required: false, ...fields }
 }
 
 function optionsOf<T extends string>(values: readonly T[], labels: Record<T, string>): { value: T, label: string }[] {
@@ -89,18 +92,42 @@ export function sceneChangeSlots(state: TradeSceneInputs, targets: SceneTargets,
   const states = everyState.filter(entry => entry.row.blocked === null)
   // A row the home cannot take yet still holds its upgrade, so the upgrade is listed with why.
   const coolRoof = everyState.find(entry => entry.holdsCoolRoof)
-  const r8Taken = states.find(entry => entry.holdsR8 && entry.picked !== null)
-  const r8 = r8Taken ?? everyState.find(entry => entry.holdsR8)
+  const heldBy = (hold: 'holdsR8' | 'holdsCoolPaint' | 'holdsR38') => {
+    const taken = states.find(entry => entry[hold] && entry.picked !== null)
+    return { taken, row: taken ?? everyState.find(entry => entry[hold]) }
+  }
+  const r8 = heldBy('holdsR8')
+  const coolPaint = heldBy('holdsCoolPaint')
+  const r38 = heldBy('holdsR38')
+  const required = requiredUpgrades(state.proposedScopeIds, facts)
   const toggleOptions = optionsOf(['on', 'off'] as const, CONTROLS_COPY.modify.upgradeChoices)
+  // A required upgrade is always on, so its one option says so and has nothing to switch.
+  const includedOptions = [{ value: 'on', label: REQUIRED_UPGRADE_COPY.included }]
   // An upgrade a row holds stays listed while no pick can take it yet, and says why in place of its options.
-  const upgradeSlot = (upgrade: 'cool-roof' | 'r8-ducts', taken: boolean, on: boolean) => slot({
-    id: `upgrade:${upgrade}`,
+  const upgradeSlot = (upgrade: EfficiencyUpgradeId, taken: boolean, on: boolean) => {
+    const isRequired = taken && required.includes(upgrade)
+    return slot({
+      id: `upgrade:${upgrade}`,
+      group: 'proposed',
+      name: EFFICIENCY_UPGRADE_LABELS[upgrade],
+      options: taken ? (isRequired ? includedOptions : toggleOptions) : [],
+      current: taken ? (on ? 'on' : 'off') : null,
+      unavailable: taken ? null : PANEL_COPY.efficiencyUpgradeHints[upgrade],
+      required: isRequired,
+      change: value => ({ kind: 'efficiency-upgrade', upgrade, on: value === 'on' }),
+    })
+  }
+  // Batts are a look a replace can take: listed while the row holds a replace, switchable once one is picked.
+  const batts = everyState.find(entry => entry.holdsBatts)
+  const battsTaken = batts !== undefined && batts.row.blocked === null && batts.picked !== null && (SCOPE_INSTALLS[batts.picked]?.installs.some(install => install.styles?.batts !== undefined) ?? false)
+  const battsSlot = slot({
+    id: 'style:batts',
     group: 'proposed',
-    name: EFFICIENCY_UPGRADE_LABELS[upgrade],
-    options: taken ? toggleOptions : [],
-    current: taken ? (on ? 'on' : 'off') : null,
-    unavailable: taken ? null : PANEL_COPY.efficiencyUpgradeHints[upgrade],
-    change: value => ({ kind: 'efficiency-upgrade', upgrade, on: value === 'on' }),
+    name: INSTALL_STYLE_LABELS.batts,
+    options: battsTaken ? toggleOptions : [],
+    current: battsTaken ? (state.installStyles.includes('batts') ? 'on' : 'off') : null,
+    unavailable: battsTaken ? null : INSTALL_STYLE_HINTS.batts,
+    change: value => ({ kind: 'install-style', style: 'batts', on: value === 'on' }),
   })
 
   return [
@@ -122,7 +149,10 @@ export function sceneChangeSlots(state: TradeSceneInputs, targets: SceneTargets,
       change: value => ({ kind: 'scope', offer: row.offer, scopeId: value === NO_CHANGE_CHOICE ? null : value as ScopeId }),
     })),
     ...coolRoof ? [upgradeSlot('cool-roof', coolRoof.coolRoofOffered, coolRoof.coolRoofOn)] : [],
-    ...r8 ? [upgradeSlot('r8-ducts', r8 === r8Taken, r8.r8On)] : [],
+    ...r8.row ? [upgradeSlot('r8-ducts', r8.row === r8.taken, r8.row.r8On)] : [],
+    ...coolPaint.row ? [upgradeSlot('cool-paint', coolPaint.row === coolPaint.taken, coolPaint.row.coolPaintOn)] : [],
+    ...r38.row ? [upgradeSlot('r38-insulation', r38.row === r38.taken, state.efficiencyUpgrades.includes('r38-insulation'))] : [],
+    ...batts ? [battsSlot] : [],
     slot({ id: 'climate', group: 'area', name: CONTROLS_COPY.facts.climate, options: optionsOf(CLIMATES, CLIMATE_LABELS), current: state.climate, isFact: true, change: value => ({ kind: 'climate', climate: value as Climate }) }),
     // A cleared field goes back to the climate's default bill.
     ...SAVINGS_CATEGORIES.map(category => slot({ id: `bill:${category}`, group: 'bills', name: SAVINGS_COPY.billLabel(category), options: [], current: String(targets.savings.cuts[category].bill), bill: category, change: value => ({ kind: 'bill', category, now: value === '' ? null : Number(value) }) })),

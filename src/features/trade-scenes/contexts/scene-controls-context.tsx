@@ -5,7 +5,7 @@ import type { ControlsSection, FactsTab, SystemsFocus, TradeSceneInputs } from '
 
 import { createContext, use, useMemo, useState } from 'react'
 
-import { LEAVE_CLOSE_UP } from '@/features/trade-scenes/constants/scene-controls'
+import { LEAVE_LOOK_INSIDE } from '@/features/trade-scenes/constants/scene-controls'
 import { flipView, pressFocus, pressSection } from '@/features/trade-scenes/lib/controls-press'
 import { useSceneInputs, useSceneInputsApi } from '@/shared/components/scene/contexts/scene-inputs-context'
 
@@ -13,7 +13,6 @@ interface SceneControlsValue {
   open: ControlsSection | null
   factsTab: FactsTab
   query: string
-  billsOpen: boolean
   focus: SystemsFocus
   // Bumps each time the toast should play again.
   toast: number
@@ -23,7 +22,6 @@ interface SceneControlsValue {
   focusSystem: (focus: SystemsFocus) => void
   setQuery: (query: string) => void
   setFactsTab: (tab: FactsTab) => void
-  toggleBills: () => void
 }
 
 const SceneControlsContext = createContext<SceneControlsValue | null>(null)
@@ -41,7 +39,6 @@ export function SceneControlsProvider({ children }: SceneControlsProviderProps) 
   const [open, setOpen] = useState<ControlsSection | null>(null)
   const [factsTab, setFactsTab] = useState<FactsTab>('main')
   const [query, setQuery] = useState('')
-  const [billsOpen, setBillsOpen] = useState(false)
   const [yearBuilt, setYearBuilt] = useState(false)
   const [toast, setToast] = useState(0)
   const cameraFocus = useSceneInputs((state: TradeSceneInputs) => state.cameraFocus)
@@ -53,10 +50,11 @@ export function SceneControlsProvider({ children }: SceneControlsProviderProps) 
     const apply = (next: ReturnType<typeof pressSection>) => {
       setOpen(next.open)
       setYearBuilt(next.focus === 'year-built')
-      // One write, so the camera's glide and the side shown start on the same frame. Systems frames the whole home's
-      // systems, so it takes the scene out of a close-up, as a zoom puts Systems away.
-      const leave = next.open === 'systems' && store.getState().zoom !== null
-      store.setState({ view: next.view, cameraFocus: next.focus === 'year-built' ? null : next.focus, ...(leave ? LEAVE_CLOSE_UP : {}) })
+      // One write, so the camera's glide and the side shown start on the same frame. Up close is a step into the system in
+      // focus, so letting that system go, for another or for none, comes back out of it.
+      const { lookInside, cameraFocus: held } = store.getState()
+      const cameraFocus = next.focus === 'year-built' ? null : next.focus
+      store.setState({ view: next.view, cameraFocus, ...(lookInside && cameraFocus !== held ? LEAVE_LOOK_INSIDE : {}) })
       if (next.toast) {
         setToast(count => count + 1)
       }
@@ -65,21 +63,16 @@ export function SceneControlsProvider({ children }: SceneControlsProviderProps) 
       open,
       factsTab,
       query,
-      billsOpen,
       focus,
       toast,
-      openSection: (section) => {
-        setBillsOpen(false)
-        apply(pressSection(now(), section))
-      },
+      openSection: section => apply(pressSection(now(), section)),
       close: () => apply({ ...now(), open: null, focus: null, toast: false }),
       flip: () => apply(flipView(now())),
       focusSystem: next => apply(pressFocus(now(), next)),
       setQuery,
       setFactsTab,
-      toggleBills: () => setBillsOpen(current => !current),
     }
-  }, [open, factsTab, query, billsOpen, focus, toast, store])
+  }, [open, factsTab, query, focus, toast, store])
 
   return (
     <SceneControlsContext value={value}>

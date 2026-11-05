@@ -34,7 +34,6 @@ export function SceneStage({ children }: SceneStageProps) {
     // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect -- the element exists only once mounted, and the portals need it before paint
     setStageElement(ref.current)
   }, [])
-  const zoomed = useSceneInputs((state: TradeSceneInputs) => state.zoom !== null)
   const systemHeld = useSceneInputs((state: TradeSceneInputs) => state.cameraFocus !== null)
   const { bottom: systemCardBottom } = useSystemCardBottom()
   // Only a system that holds the camera is framed clear of its card.
@@ -57,14 +56,13 @@ export function SceneStage({ children }: SceneStageProps) {
   }, [])
   const layout = useMemo<SceneVisibleAreaValue>(
     () => ({
-      area: sceneVisibleAreaFor({ shape, width: stage.width, height: stage.height, zoomed, focusCardBottom }),
+      area: sceneVisibleAreaFor({ shape, width: stage.width, height: stage.height, focusCardBottom }),
       shape,
       stage: { width: stage.width, height: stage.height },
-      zoomed,
       canvasOverhang: Math.max(0, Math.round(stage.right - stage.width)),
       stageElement,
     }),
-    [shape, zoomed, focusCardBottom, stage, stageElement],
+    [shape, focusCardBottom, stage, stageElement],
   )
   const { area, canvasOverhang } = layout
   const visibleNarrow = stage.width - area.left - area.right < SCENE_LAYOUT.calloutNarrowBelow

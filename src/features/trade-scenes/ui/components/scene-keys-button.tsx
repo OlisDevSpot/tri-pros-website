@@ -1,7 +1,5 @@
 'use client'
 
-import type { TradeSceneInputs } from '@/features/trade-scenes/types'
-
 import { KeyboardIcon } from 'lucide-react'
 
 import { SHORTCUT_COPY } from '@/features/trade-scenes/constants/home-scene-copy'
@@ -11,24 +9,22 @@ import { useControlsOpen } from '@/features/trade-scenes/contexts/scene-controls
 import { useSceneVisibleArea } from '@/features/trade-scenes/contexts/scene-visible-area-context'
 import { useOpenShortcutSheet } from '@/features/trade-scenes/contexts/shortcut-sheet-context'
 import { useKeysInUse } from '@/features/trade-scenes/hooks/use-keys-in-use'
-import { useSceneInputs } from '@/shared/components/scene/contexts/scene-inputs-context'
 import { Button } from '@/shared/components/ui/button'
 import { useMediaQuery } from '@/shared/hooks/use-media-query'
 
 const { controls, keysButton } = SCENE_LAYOUT
 
 // The stage's bottom-right corner; on portrait it stands on the band, where the dock's region leaves it room, and steps
-// away while the rail, a window or the close-up card spans the band. A touch screen has no use for it until a key is
+// away while the rail or a window spans the band. A touch screen has no use for it until a key is
 // pressed; the `?` key opens the sheet either way.
 export function SceneKeysButton() {
   const { shape } = useSceneVisibleArea()
   const open = useControlsOpen()
-  const zoomed = useSceneInputs((state: TradeSceneInputs) => state.zoom !== null)
   const [keysInUse] = useKeysInUse()
   const finePointer = useMediaQuery('(pointer: fine)')
   const openSheet = useOpenShortcutSheet()
   const portrait = shape === 'portrait'
-  if ((!finePointer && !keysInUse) || (portrait && (open !== null || zoomed))) {
+  if ((!finePointer && !keysInUse) || (portrait && open !== null)) {
     return null
   }
   return (

@@ -1,13 +1,16 @@
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
+import type { InstallStyleId } from '@/shared/modules/construction/core/constants/install-styles'
 import type { Assembly, ExistingConditions, PartCopy, PartDefinition, ResolvedPart, ScopeInstall } from '@/shared/modules/construction/core/types'
 
 import { SCOPE_INSTALLS } from '@/shared/modules/construction/core/constants/scope-installs'
+import { installedMaterialId } from '@/shared/modules/construction/core/lib/installed-material'
 
 interface ResolveInput {
   existing: ExistingConditions
   proposedScopeIds: readonly string[]
   view: 'existing' | 'proposed'
   efficiencyUpgrades?: readonly EfficiencyUpgradeId[]
+  installStyles?: readonly InstallStyleId[]
 }
 
 function copyFor(part: PartDefinition, material: string | null, condition: ResolvedPart['condition']): PartCopy {
@@ -43,17 +46,19 @@ function installBases(assembly: Assembly, existing: ExistingConditions, installe
 }
 
 // One resolver for every assembly: parts, forms and copy are data, so a new assembly never adds a branch here.
-export function resolveAssembly(assembly: Assembly, { existing, proposedScopeIds, view, efficiencyUpgrades = [] }: ResolveInput, installs: Partial<Record<string, ScopeInstall>> = SCOPE_INSTALLS): ResolvedPart[] {
+export function resolveAssembly(assembly: Assembly, { existing, proposedScopeIds, view, efficiencyUpgrades = [], installStyles = [] }: ResolveInput, installs: Partial<Record<string, ScopeInstall>> = SCOPE_INSTALLS): ResolvedPart[] {
   const installed = new Map<string, string>()
+  const addedTo = new Set<string>()
   if (view === 'proposed') {
     for (const scopeId of proposedScopeIds) {
       const entry = installs[scopeId]
       if (entry?.assembly !== assembly.id) {
         continue
       }
-      for (const { part, material: planned, swapsWith } of entry.installs) {
+      for (const install of entry.installs) {
+        const { part } = install
         // Swapped here, before the base pass, so a swapped covering still brings the deck it needs.
-        const material = efficiencyUpgrades.flatMap(upgrade => swapsWith?.[upgrade] ?? []).at(0) ?? planned
+        const material = installedMaterialId(install, efficiencyUpgrades, installStyles)
         const definition = assembly.parts.find(candidate => candidate.id === part)
         if (!definition) {
           throw new Error(`Scope ${scopeId} installs part "${part}", which assembly ${assembly.id} does not have`)
@@ -66,6 +71,12 @@ export function resolveAssembly(assembly: Assembly, { existing, proposedScopeIds
           continue
         }
         installed.set(part, material)
+        if (install.addsTo) {
+          addedTo.add(part)
+        }
+        else {
+          addedTo.delete(part)
+        }
       }
     }
   }
@@ -82,6 +93,7 @@ export function resolveAssembly(assembly: Assembly, { existing, proposedScopeIds
       const wear = installedMaterial ? undefined : existing.parts[part.id]?.wear
       const copy = baseCopy.get(part.id) ?? copyFor(part, material, condition)
       const definition = material === null ? null : part.materials[material]
+      const under = installedMaterial && addedTo.has(part.id) ? existing.parts[part.id]?.material ?? null : null
       return {
         id: part.id,
         group: part.group,
@@ -94,6 +106,7 @@ export function resolveAssembly(assembly: Assembly, { existing, proposedScopeIds
         detail: copy.detail,
         thermal: definition?.thermal ?? null,
         water: definition?.water ?? null,
+        ...(under !== null ? { over: under } : {}),
       }
     })
 }

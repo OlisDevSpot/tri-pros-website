@@ -9,11 +9,12 @@ export const SCENE_LAYOUT = {
   keysButton: { size: 44, gap: 16, spacing: 8 },
   calloutNarrowBelow: 1024,
   // The bottom group stands `groupBottom` above the stage's edge; the modals and the systems rail stop at the band above it.
-  controls: { groupBottom: { wide: 16, portrait: 10 }, groupHeight: 56, modalBottom: { wide: 80, portrait: 76 }, railBottom: { wide: 80, portrait: 72 }, modalTop: { wide: 24, portrait: 12 }, modalSide: { wide: 24, portrait: 10 }, modalWidth: 780 },
+  // The rail stands its 40 px chips in 5 px of padding and a 1 px edge.
+  controls: { groupBottom: { wide: 16, portrait: 10 }, groupHeight: 56, railHeight: 52, modalBottom: { wide: 80, portrait: 76 }, railBottom: { wide: 80, portrait: 72 }, modalTop: { wide: 24, portrait: 12 }, modalSide: { wide: 24, portrait: 10 }, modalWidth: 780 },
   // Beside the dock on wide shapes, `dockGap` from its region; on portrait it spans the stage above the dock column. The
-  // system it frames starts `visibleGap` clear of it.
-  systemCard: { top: 140, width: 440, dockGap: 10, portraitTop: 12, portraitSide: 10, visibleGap: 12 },
-  closeUp: { gap: 16, width: 372, narrowWidth: 320, padding: 18, portrait: { side: 12, share: 0.46, gap: 12, padding: 20 } },
+  // system it frames starts `visibleGap` clear of it. Across the top it stops at `topShare` of the stage, so the system
+  // still shows below it up close, where its parts list scrolls; the share is a working number.
+  systemCard: { top: 140, width: 440, dockGap: 10, portraitTop: 12, portraitSide: 10, visibleGap: 12, topShare: 0.5 },
 } as const
 
 export const CONTROLS_EASE = [0.2, 0.8, 0.2, 1] as const

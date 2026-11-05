@@ -26,8 +26,13 @@ export const ROOF_ATTIC = {
     { id: 'attic-insulation', group: 'attic', role: 'insulate', absentCopy: { label: 'No insulation', detail: 'Nothing between the summer attic and the ceiling.' }, materials: {
       'batts-r11': { copy: { label: 'R-11 insulation', detail: 'Thin and settled. The summer sun comes straight through the ceiling.' }, thermal: { rValue: 11 }, energyRank: 0 },
       'batts-r19': { copy: { label: 'R-19 insulation', detail: 'Below what the attic needs, and gaps between batts leak heat.' }, thermal: { rValue: 19 }, energyRank: 1 },
-      'batts-r30': { copy: { label: 'R-30 insulation', detail: 'Reasonable depth, often compressed or disturbed over the years.' }, thermal: { rValue: 30 }, energyRank: 2 },
-      'blown-r38': { copy: { label: 'R-38 blown-in insulation', detail: 'A deep, even blanket that covers the joists completely.' }, thermal: { rValue: 38 }, energyRank: 3 },
+      // A home's R-30 is batts, and so is a replace laid as batts; the benefit lines read this label, so it names them.
+      'batts-r30': { copy: { label: 'R-30 batts', detail: 'Reasonable depth, often compressed or disturbed over the years.' }, conditionCopy: {
+        installed: { label: 'R-30 batts', detail: 'Fiberglass batts in orderly rows, the joists slightly showing. Exactly as efficient as blown-in.' },
+      }, thermal: { rValue: 30 }, energyRank: 2 },
+      'blown-r30': { copy: { label: 'R-30 blown-in insulation', detail: 'An even blown-in blanket, deep enough to keep the summer heat above the ceiling.' }, thermal: { rValue: 30 }, energyRank: 2 },
+      'blown-r38': { copy: { label: 'R-38 blown-in insulation', detail: 'A deep, even blanket that covers the joists completely.' }, thermal: { rValue: 38 }, energyRank: 3, stepUp: { from: 'blown-r30', cut: 'insulation-step-up' } },
+      'batts-r38': { copy: { label: 'R-38 batts', detail: 'Fiberglass batts in orderly rows, the joists slightly showing. Exactly as efficient as blown-in.' }, thermal: { rValue: 38 }, energyRank: 3, stepUp: { from: 'batts-r30', cut: 'insulation-step-up' } },
     } },
     { id: 'rafters', group: 'roof', role: 'structure', materials: {
       lumber: { copy: { label: 'Rafters', detail: 'The bones of the roof. We inspect every one and keep what is sound.' } },

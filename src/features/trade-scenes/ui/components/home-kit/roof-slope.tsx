@@ -14,6 +14,7 @@ import { PAINT_WEAR_SHARE, PEELING_SEEDS } from '@/features/trade-scenes/constan
 import { WEAR_LOOKS } from '@/features/trade-scenes/constants/wear-looks'
 import { framingGrid } from '@/features/trade-scenes/lib/home-roof-layout'
 import { fasciaPeeling, peelingMarks } from '@/features/trade-scenes/lib/paint-peeling'
+import { systemPartTag } from '@/features/trade-scenes/lib/system-part-tag'
 import { thermalTag } from '@/features/trade-scenes/lib/thermal-tag'
 import { PaintMarks } from '@/features/trade-scenes/ui/components/home-kit/paint-marks'
 import { RoofCovering } from '@/features/trade-scenes/ui/components/home-kit/roof-covering'
@@ -101,34 +102,44 @@ export function RoofSlope({ face, zFrom, zTo, layout, covering, deck, underlayme
       <group rotation={[0, 0, pitch]}>
         {/* The rafters and the foil hang in the attic air; everything from the deck up is the roof the sun beats on. */}
         <group userData={thermalTag('attic', 'rafters')}>
-          <InstancedPieces geometry={rafterGeometry} pieces={rafters} color={HOME_PALETTE.lumber} stretchToWidth />
+          <group userData={systemPartTag('rafters')}>
+            <InstancedPieces geometry={rafterGeometry} pieces={rafters} color={HOME_PALETTE.lumber} stretchToWidth />
+          </group>
         </group>
 
         <group userData={thermalTag(null, 'deck')}>
-          {spaced
-            ? <InstancedPieces geometry={boardGeometry} pieces={boards} color={HOME_PALETTE.boardsWorn} stretchToWidth />
-            : (
-                <mesh position={[DECK_CENTRE, DECK / 2, zMid]} castShadow>
-                  <boxGeometry args={[DECK_LENGTH, DECK, run]} />
-                  <meshStandardMaterial color={deckColour} roughness={0.9} />
-                </mesh>
-              )}
+          <group userData={systemPartTag('deck')}>
+            {spaced
+              ? <InstancedPieces geometry={boardGeometry} pieces={boards} color={HOME_PALETTE.boardsWorn} stretchToWidth />
+              : (
+                  <mesh position={[DECK_CENTRE, DECK / 2, zMid]} castShadow>
+                    <boxGeometry args={[DECK_LENGTH, DECK, run]} />
+                    <meshStandardMaterial color={deckColour} roughness={0.9} />
+                  </mesh>
+                )}
+          </group>
         </group>
 
         {radiantBarrier.material !== null && foilTo > foilFrom && (
           <group userData={thermalTag('attic', 'radiant-barrier')}>
-            <Slab size={[SLOPE_LENGTH, 0.004, foilTo - foilFrom]} position={[SLOPE_LENGTH / 2, -0.004, (foilFrom + foilTo) / 2]} color={HOME_PALETTE.foil} roughness={0.35} metalness={0.7} />
+            <group userData={systemPartTag('radiant-barrier')}>
+              <Slab size={[SLOPE_LENGTH, 0.004, foilTo - foilFrom]} position={[SLOPE_LENGTH / 2, -0.004, (foilFrom + foilTo) / 2]} color={HOME_PALETTE.foil} roughness={0.35} metalness={0.7} />
+            </group>
           </group>
         )}
 
         {underlayment.material !== null && (
           <group userData={thermalTag(null, 'underlayment')}>
-            <Slab size={[DECK_LENGTH, underlaymentThickness, run]} position={[DECK_CENTRE, DECK + underlaymentThickness / 2, zMid]} color={underlaymentColour} roughness={1} />
+            <group userData={systemPartTag('underlayment')}>
+              <Slab size={[DECK_LENGTH, underlaymentThickness, run]} position={[DECK_CENTRE, DECK + underlaymentThickness / 2, zMid]} color={underlaymentColour} roughness={1} />
+            </group>
           </group>
         )}
 
         <group userData={thermalTag(null, 'covering')}>
-          <RoofCovering material={covering.material} wear={covering.wear} zFrom={zFrom} zTo={zTo} layout={coveringLayout} seed={face === 'front' ? 7 : 19} newTone={shingleTone} />
+          <group userData={systemPartTag('covering')}>
+            <RoofCovering material={covering.material} wear={covering.wear} zFrom={zFrom} zTo={zTo} layout={coveringLayout} seed={face === 'front' ? 7 : 19} newTone={shingleTone} />
+          </group>
         </group>
 
         {/* Plumb in the world, so it is turned back against the pitch. */}

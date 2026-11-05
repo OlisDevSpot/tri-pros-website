@@ -14,6 +14,7 @@ import { PROFILE_ROOF_TYPES } from '@/features/trade-scenes/constants/scene-cont
 import { SCENE_LAYOUT } from '@/features/trade-scenes/constants/scene-layout'
 import { SCENE_SHORTCUTS, SHORTCUT_SHEET_ROWS } from '@/features/trade-scenes/constants/scene-shortcuts'
 import { SCOPE_VERBS } from '@/features/trade-scenes/constants/scope-verbs'
+import { applySceneChange } from '@/features/trade-scenes/lib/apply-scene-change'
 import { flipView, pressFocus, pressSection } from '@/features/trade-scenes/lib/controls-press'
 import { dockHeightFor, dockLayoutFor, dockRegionFor } from '@/features/trade-scenes/lib/dock-layout-for'
 import { efficiencyUpgradePatch } from '@/features/trade-scenes/lib/efficiency-upgrade-patch'
@@ -53,9 +54,9 @@ function offerOf(partId: string) {
 }
 const unset = (property: PropertyProfile): HomeFacts => ({ property, materials: HOME_MATERIAL_FACTS_UNSET, year: YEAR })
 function offered(partId: string, roofType: PropertyProfile['roofType'], picks: readonly string[] = []) {
-  return offeredScopes(offerOf(partId), { roofType, picks, existing: existingParts(ID, unset(profile({ roofType }))), assemblyId: ID, wear: null })
+  return offeredScopes(offerOf(partId), { roofType, picks, existing: existingParts(ID, unset(profile({ roofType }))), assemblyId: ID, wear: null, efficiencyUpgrades: [] })
 }
-const keep = (picks: string[], roofType: PropertyProfile['roofType']) => keepOffered(picks, unset(profile({ roofType })))
+const keep = (picks: string[], roofType: PropertyProfile['roofType']) => keepOffered(picks, unset(profile({ roofType })), [])
 
 const { roofTorchDown, roofOverlay, roofTearOff, roofRedeck, gutters, radiantBarrier, airSealing, atticInsulationReplacement, atticInsulationTopOff } = SCOPE_IDS
 
@@ -118,8 +119,9 @@ for (const partId of ['radiant-barrier', 'attic-fan', 'air-sealing']) {
 for (const row of HOME_SYSTEMS.flatMap(system => system.rows)) {
   assert.ok(PART_LABELS[row.part], `${row.part}: has a label`)
 }
-assert.deepEqual(offered('attic-insulation', 'flat').scopeIds, [atticInsulationReplacement, atticInsulationTopOff], 'flat: insulation still offered')
-assert.deepEqual(keep([roofTorchDown, radiantBarrier, airSealing, atticInsulationTopOff], 'flat'), [roofTorchDown, atticInsulationTopOff], 'flat drops every attic-only pick')
+assert.deepEqual(offered('attic-insulation', 'flat'), { scopeIds: [], blocked: 'needs-redeck' }, 'flat: insulation waits on a redeck')
+assert.deepEqual(offered('attic-insulation', 'flat', [roofTorchDown, roofRedeck]).scopeIds, [atticInsulationTopOff], 'flat with a redeck: insulation offered, a top off over the unknown')
+assert.deepEqual(keep([roofTorchDown, roofRedeck, radiantBarrier, airSealing, atticInsulationTopOff], 'flat'), [roofTorchDown, roofRedeck, atticInsulationTopOff], 'flat drops every attic-only pick')
 for (const part of ROOF_ATTIC.parts.filter(part => !partOffers(ID).find(offer => offer.partId === part.id)?.dependsOnRoof)) {
   for (const [id, material] of Object.entries(part.materials)) {
     assert.equal((material as { forms?: unknown }).forms, undefined, `${part.id} ${id}: a form limit sits on the part, not the material`)
@@ -135,7 +137,7 @@ assert.equal(bare.basis, 'recorded', 'none is a recorded level, not a guess')
 // A flat roof's ceiling runs far hotter than a vented attic's, insulation alike, and colder on a winter night.
 for (const climate of CLIMATES) {
   const ceilingOf = (roofType: 'shingle' | 'flat', weather: 'normal' | 'summer' | 'winter') => {
-    const scene = resolveScene({ ...HOME_SCENE_DEFAULTS, property: profile({ yearBuilt: '1950-1978', roofType, insulationLevel: 'low' }), weather, climate }, resolveTradeBillCuts())
+    const scene = resolveScene({ ...HOME_SCENE_DEFAULTS, property: profile({ yearBuilt: '1950-1978', roofType, insulationLevel: 'r11' }), weather, climate }, resolveTradeBillCuts())
     assert.ok(scene.heat)
     return scene.heat.readings.ceiling
   }
@@ -206,14 +208,27 @@ function pick(state: TradeSceneInputs, partId: string, picked: ScopeId | null): 
 }
 const coveringId = partOffers(ID).find(offer => (offer.scopeIds as string[]).includes(roofTearOff))!.partId
 let walk = pick(pickState(), coveringId, roofTearOff)
-assert.deepEqual(HOME_SCENE_DEFAULTS.efficiencyUpgrades, ['cool-roof'], 'every roof pick starts cool')
-assert.deepEqual(walk.efficiencyUpgrades, ['cool-roof'], 'a covering pick leaves the cool roof as it was')
+assert.deepEqual(HOME_SCENE_DEFAULTS.efficiencyUpgrades, ['cool-roof', 'cool-paint'], 'every roof and repaint pick starts on the upgrade')
+assert.deepEqual(walk.efficiencyUpgrades, ['cool-roof', 'cool-paint'], 'a covering pick leaves the upgrades as they were')
 walk = { ...walk, ...efficiencyUpgradePatch(walk, 'cool-roof', false) }
-assert.deepEqual(walk.efficiencyUpgrades, [], 'the chip turns the cool roof off')
+assert.deepEqual(walk.efficiencyUpgrades, ['cool-paint'], 'the chip turns the cool roof off')
 walk = pick(walk, coveringId, roofOverlay)
-assert.deepEqual(walk.efficiencyUpgrades, [], 'and a later covering pick does not turn it back on')
+assert.deepEqual(walk.efficiencyUpgrades, ['cool-paint'], 'and a later covering pick does not turn it back on')
 walk = { ...walk, ...efficiencyUpgradePatch(walk, 'cool-roof', true) }
-assert.deepEqual(walk.efficiencyUpgrades, ['cool-roof'], 'the chip turns it on again')
+assert.deepEqual(walk.efficiencyUpgrades, ['cool-paint', 'cool-roof'], 'the chip turns it on again')
+// Cool Life paint walk: the repaint pick is the scope the switch names, and it survives an unpick and a repick.
+const paintOffer = partOffers('exterior-wall').find(offer => offer.partId === 'paint')!
+const paintPick = (state: TradeSceneInputs, picked: ScopeId | null): TradeSceneInputs => ({ ...state, ...scopePick(state, paintOffer, picked) })
+let paintWalk = pickState({ property: profile({ roofType: 'shingle' }) })
+paintWalk = paintPick(paintWalk, SCOPE_IDS.coolLifeRepaint)
+assert.deepEqual(paintWalk.proposedScopeIds, [SCOPE_IDS.coolLifeRepaint], 'picking Repaint with the switch on holds the Cool Life scope')
+paintWalk = { ...paintWalk, ...applySceneChange(paintWalk, { kind: 'efficiency-upgrade', upgrade: 'cool-paint', on: false }, YEAR) }
+assert.deepEqual(paintWalk.proposedScopeIds, [SCOPE_IDS.waterBasedRepaint], 'switching Cool Life paint off swaps the pick')
+paintWalk = paintPick(paintWalk, null)
+assert.deepEqual(paintWalk.proposedScopeIds, [])
+paintWalk = paintPick(paintWalk, SCOPE_IDS.coolLifeRepaint)
+assert.deepEqual(paintWalk.proposedScopeIds, [SCOPE_IDS.waterBasedRepaint], 'a repick keeps the water-based scope')
+assert.ok(!paintWalk.efficiencyUpgrades.includes('cool-paint'), 'with Cool Life paint still off')
 walk = pick(walk, coveringId, roofTearOff)
 walk = pick(walk, 'deck', roofRedeck)
 assert.deepEqual(walk.proposedScopeIds, [roofTearOff, roofRedeck])
@@ -303,9 +318,9 @@ const eraMoved = propertyPatch(eraWear, { yearBuilt: 'Post-2014' }, YEAR)
 assert.deepEqual(eraMoved.homeMaterials.wear, { 'windows': 'good', 'attic-insulation': 'good', 'ducts': 'good' }, 'an era change keeps a wear the rep set')
 const eraOnly = state({ property: { ...sixties, windowsType: null }, homeMaterials: { ...HOME_MATERIAL_FACTS_UNSET, wear: { windows: 'good' } } })
 assert.equal(propertyPatch(eraOnly, { yearBuilt: 'Post-2014' }, YEAR).homeMaterials.wear.windows, 'good', 'a windows wear set without a recorded type survives an era change')
-const levelWear = state({ property: { ...sixties, insulationLevel: 'low' }, homeMaterials: { ...HOME_MATERIAL_FACTS_UNSET, wear: { 'attic-insulation': 'good' } } })
-assert.equal(propertyPatch(levelWear, { insulationLevel: 'high' }, YEAR).homeMaterials.wear['attic-insulation'], undefined, 'an explicit insulation level that moves the option clears its wear')
-assert.equal(propertyPatch(levelWear, { insulationLevel: 'low' }, YEAR).homeMaterials.wear['attic-insulation'], 'good', 'the same level keeps it')
+const levelWear = state({ property: { ...sixties, insulationLevel: 'r11' }, homeMaterials: { ...HOME_MATERIAL_FACTS_UNSET, wear: { 'attic-insulation': 'good' } } })
+assert.equal(propertyPatch(levelWear, { insulationLevel: 'r30' }, YEAR).homeMaterials.wear['attic-insulation'], undefined, 'an explicit insulation level that moves the option clears its wear')
+assert.equal(propertyPatch(levelWear, { insulationLevel: 'r11' }, YEAR).homeMaterials.wear['attic-insulation'], 'good', 'the same level keeps it')
 const unitGroup = upgradeRows({ property: { ...sixties, hvacType: 'wall-mounted' }, materials: HOME_MATERIAL_FACTS_UNSET, year: YEAR }, [], []).find(system => system.id === 'heating-cooling')!
 assert.deepEqual(unitGroup.rows.map(row => row.blocked), ['no-offer-for-unit'])
 const packageGroup = upgradeRows({ property: { ...sixties, hvacType: 'package-unit', hvacComponents: 'furnace' }, materials: HOME_MATERIAL_FACTS_UNSET, year: YEAR }, [], []).find(system => system.id === 'heating-cooling')!
@@ -335,33 +350,36 @@ assert.equal(stageShapeOf(820, 1180), 'portrait')
 assert.equal(stageShapeOf(764, 1000), 'portrait')
 assert.equal(stageShapeOf(390, 844), 'portrait')
 assert.equal(stageShapeOf(599, 300), 'portrait')
-const area = (shape: StageShape, width: number, height: number, zoomed = false, focusCardBottom: number | null = null) => sceneVisibleAreaFor({ shape, width, height, zoomed, focusCardBottom })
+const area = (shape: StageShape, width: number, height: number, focusCardBottom: number | null = null) => sceneVisibleAreaFor({ shape, width, height, focusCardBottom })
 assert.deepEqual(area('landscape', 1180, 820), { left: 0, right: 94, bottom: 80, top: 0 })
-assert.deepEqual(area('landscape', 1180, 820, true), { left: 388, right: 94, bottom: 80, top: 0 })
-assert.deepEqual(area('narrow', 768, 700, true), { left: 336, right: 94, bottom: 80, top: 0 })
 assert.deepEqual(area('portrait', 390, 844), { left: 0, right: 94, bottom: 76, top: 0 })
-assert.deepEqual(area('portrait', 390, 844, true), { left: 0, right: 94, bottom: 76 + Math.round(844 * 0.46) + 12, top: 0 })
-assert.deepEqual(area('landscape', 1180, 820, false, 400), { left: 0, right: 94 + 10 + 440, bottom: 80, top: 0 }, 'the card beside the system')
-assert.deepEqual(area('portrait', 390, 844, false, 260), { left: 0, right: 94, bottom: 76, top: 260 + 12 }, 'the system below its card')
-assert.deepEqual(area('narrow', 760, 560, false, 220), { left: 0, right: 94, bottom: 80, top: 220 + 12 }, 'a narrow stage has no room beside the system, so it frames it below its card')
+assert.deepEqual(area('landscape', 1180, 820, 400), { left: 0, right: 94 + 10 + 440, bottom: 80, top: 0 }, 'the card beside the system')
+assert.deepEqual(area('portrait', 390, 844, 260), { left: 0, right: 94, bottom: 76, top: 260 + 12 }, 'the system below its card')
+assert.deepEqual(area('narrow', 760, 560, 220), { left: 0, right: 94, bottom: 80, top: 220 + 12 }, 'a narrow stage has no room beside the system, so it frames it below its card')
+// Up close is the same card holding its system's parts, so the area has nothing of its own to ask: the card's measured
+// bottom is all that moves it, and on portrait the card stops at its share of the stage, the system still in sight below.
+for (const [shape, width, height, bottom] of [['landscape', 1180, 820, 520], ['narrow', 760, 560, 280], ['portrait', 390, 844, 422]] as const) {
+  // @ts-expect-error up close asks nothing of its own of the area
+  const upCloseArea = sceneVisibleAreaFor({ shape, width, height, focusCardBottom: bottom, lookInside: true })
+  assert.deepEqual(upCloseArea, area(shape, width, height, bottom), `${shape}: up close frames the system as its focus does`)
+}
+const cardCap = Math.round(844 * SCENE_LAYOUT.systemCard.topShare)
+const upClose = area('portrait', 390, 844, SCENE_LAYOUT.systemCard.portraitTop + cardCap)
+assert.ok(844 - upClose.top - upClose.bottom >= 260, `up close on a phone the system keeps ${844 - upClose.top - upClose.bottom} px below the tallest card`)
 assert.deepEqual(area('portrait', 0, 0), { left: 0, right: 0, bottom: 0, top: 0 })
 // On portrait the weather always folds; otherwise the dock folds only as far as the room above the band asks. On portrait
 // the dock's region stops above the keys button's corner whether the button shows.
 assert.equal(dockHeightFor('none'), 414, 'the home view, Thermal and four weathers, with both dividers')
 assert.equal(dockHeightFor('weather'), 200)
-assert.equal(dockLayoutFor({ shape: 'landscape', stage: { width: 1440, height: 900 }, zoomed: false }), 'none')
-assert.equal(dockLayoutFor({ shape: 'landscape', stage: { width: 1024, height: 690 }, zoomed: false }), 'none', 'an iPad inside the browser\'s bars keeps every weather')
-assert.equal(dockLayoutFor({ shape: 'landscape', stage: { width: 1024, height: 560 }, zoomed: false }), 'none', 'the build switch\'s room is the dock\'s now')
-assert.equal(dockLayoutFor({ shape: 'landscape', stage: { width: 1024, height: 480 }, zoomed: false }), 'weather')
-assert.equal(dockLayoutFor({ shape: 'portrait', stage: { width: 820, height: 1180 }, zoomed: false }), 'weather', 'a portrait stage folds the weather even with room for the strip')
-assert.equal(dockLayoutFor({ shape: 'portrait', stage: { width: 375, height: 667 }, zoomed: false }), 'weather', 'the shortest phone still fits the folded strip above the keys corner')
+assert.equal(dockLayoutFor({ shape: 'landscape', stage: { width: 1440, height: 900 } }), 'none')
+assert.equal(dockLayoutFor({ shape: 'landscape', stage: { width: 1024, height: 690 } }), 'none', 'an iPad inside the browser\'s bars keeps every weather')
+assert.equal(dockLayoutFor({ shape: 'landscape', stage: { width: 1024, height: 560 } }), 'none', 'the build switch\'s room is the dock\'s now')
+assert.equal(dockLayoutFor({ shape: 'landscape', stage: { width: 1024, height: 480 } }), 'weather')
+assert.equal(dockLayoutFor({ shape: 'portrait', stage: { width: 820, height: 1180 } }), 'weather', 'a portrait stage folds the weather even with room for the strip')
+assert.equal(dockLayoutFor({ shape: 'portrait', stage: { width: 375, height: 667 } }), 'weather', 'the shortest phone still fits the folded strip above the keys corner')
 const { keysButton } = SCENE_LAYOUT
-assert.deepEqual(dockRegionFor('portrait', { width: 390, height: 844 }, false), { top: 16, bottom: 76 + keysButton.gap + keysButton.size + keysButton.spacing }, 'above the keys button, which sits on the band')
-assert.deepEqual(dockRegionFor('landscape', { width: 1440, height: 900 }, false), { top: 16, bottom: 80 }, 'the build switch\'s room is freed; the dock stays above the band')
-// Up close on portrait the card stands on the band and the keys button steps away, so the dock folds above the card.
-assert.deepEqual(dockRegionFor('portrait', { width: 390, height: 844 }, true), { top: 16, bottom: 76 + Math.round(844 * 0.46) + 12 }, 'up close on portrait, above the close-up card')
-assert.deepEqual(dockRegionFor('landscape', { width: 1180, height: 820 }, true), { top: 16, bottom: 80 }, 'up close on a wide shape the card is on the left, so the dock keeps its region')
-assert.equal(dockLayoutFor({ shape: 'portrait', stage: { width: 375, height: 667 }, zoomed: true }), 'weather', 'the shortest phone still fits the folded strip above the close-up card')
+assert.deepEqual(dockRegionFor('portrait', { width: 390, height: 844 }), { top: 16, bottom: 76 + keysButton.gap + keysButton.size + keysButton.spacing }, 'above the keys button, which sits on the band')
+assert.deepEqual(dockRegionFor('landscape', { width: 1440, height: 900 }), { top: 16, bottom: 80 }, 'the build switch\'s room is freed; the dock stays above the band')
 
 // The shortcut-keys dialog is the one place every key is listed, so each key the stage handles has a line, once.
 const sheetKeys: string[] = SHORTCUT_SHEET_ROWS.flatMap(row => [...row.keys])
@@ -369,7 +387,8 @@ assert.deepEqual([...sheetKeys].sort(), Object.keys(SCENE_SHORTCUTS).sort(), 'th
 assert.ok(sheetKeys.includes('m') && !sheetKeys.includes('/'), 'the sheet lists M and no slash')
 assert.equal(SCENE_SHORTCUTS.m, 'modify', 'M opens Modify')
 assert.equal(SHORTCUT_COPY.lines.modify, 'Modify: search a change')
-assert.equal(SCENE_SHORTCUTS.escape, 'wholeHome', 'Escape leaves a close-up for the whole home')
+assert.equal(SCENE_SHORTCUTS.escape, 'wholeHome', 'Escape steps back toward the whole home')
+assert.equal(SHORTCUT_COPY.lines.wholeHome, 'Step back: a menu, a Benefits detail, Look inside, the system, then the window', 'the sheet names the order Escape steps back in')
 assert.equal(SCENE_SHORTCUTS.r, 'recenter', 'R glides the camera back to the framing')
 assert.equal(SHORTCUT_COPY.lines.recenter, 'Recenter the camera')
 assert.equal(SCENE_COPY.recenter, 'Recenter')

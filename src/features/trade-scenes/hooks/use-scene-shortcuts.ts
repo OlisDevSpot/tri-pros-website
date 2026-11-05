@@ -11,7 +11,8 @@ import { SCENE_SHORTCUTS } from '@/features/trade-scenes/constants/scene-shortcu
 import { useSceneControls } from '@/features/trade-scenes/contexts/scene-controls-context'
 import { useSceneLoadApi } from '@/features/trade-scenes/contexts/scene-load-context'
 import { useKeysInUse } from '@/features/trade-scenes/hooks/use-keys-in-use'
-import { focusFell, leaveCloseUp } from '@/features/trade-scenes/ui/lib/leave-close-up'
+import { escapeStep } from '@/features/trade-scenes/lib/escape-step'
+import { focusFell, leaveLookInside } from '@/features/trade-scenes/ui/lib/leave-look-inside'
 import { useSceneCameraApi } from '@/shared/components/scene/contexts/scene-camera-context'
 import { useSceneInputsApi } from '@/shared/components/scene/contexts/scene-inputs-context'
 import { recenterCamera } from '@/shared/components/scene/lib/create-scene-camera'
@@ -46,10 +47,14 @@ export function useSceneShortcuts(stageRef: RefObject<HTMLElement | null>, openS
       }
       const state = store.getState()
       const action = SCENE_SHORTCUTS[key]
+      const stage = stageRef.current!
       // Systems is no Radix layer, so its Escape is ours; a window's is its dialog's, and a menu's its popover's, which
-      // take it first. With nothing open, Escape only means something up close; elsewhere it is left to whatever else
-      // listens for it.
-      if (action === 'wholeHome' && open !== 'systems' && (open !== null || state.zoom === null)) {
+      // take it first. A press with no layer of ours to step back is left to whatever else listens for it. No tap pins
+      // the systems at a spot yet.
+      const step = action === 'wholeHome'
+        ? escapeStep({ menu: stage.querySelector('[data-value-menu]') !== null, lookInside: state.lookInside, focus, open, pins: false })
+        : null
+      if (action === 'wholeHome' && step === null) {
         return
       }
       // With the camera on its framing and no system holding it, there is nothing to go back to, so a press is no sign
@@ -72,7 +77,7 @@ export function useSceneShortcuts(stageRef: RefObject<HTMLElement | null>, openS
           flushSync(flip)
           // Focus inside the Benefits window the flip closed goes to the toggle, which a press would have left it on.
           if (held instanceof HTMLElement && !held.isConnected) {
-            stageRef.current!.querySelector<HTMLElement>('[data-build-toggle]')!.focus()
+            stage.querySelector<HTMLElement>('[data-build-toggle]')!.focus()
           }
           return
         }
@@ -81,36 +86,35 @@ export function useSceneShortcuts(stageRef: RefObject<HTMLElement | null>, openS
         // field that takes focus never types it.
         case 'modify':
           if (open === 'modify') {
-            stageRef.current!.querySelector<HTMLElement>('[data-modify-search] input')!.focus()
+            stage.querySelector<HTMLElement>('[data-modify-search] input')!.focus()
             return
           }
           setQuery('')
           openSection('modify')
           return
-        case 'wholeHome':
-          // One layer a press: the system in focus, then Systems. Focus the layer took with it goes to the way back in:
-          // the system's rail chip, then the Systems button.
-          if (open === 'systems') {
-            const held = document.activeElement
-            const stage = stageRef.current!
-            if (focus !== null) {
-              // eslint-disable-next-line react-dom/no-flush-sync -- the card leaves only once this write renders
-              flushSync(() => focusSystem(null))
-              if (focusFell(held)) {
-                stage.querySelector<HTMLElement>(`[data-rail-chip="${focus}"]`)!.focus()
-              }
-            }
-            else {
-              // eslint-disable-next-line react-dom/no-flush-sync -- the rail leaves only once this write renders
-              flushSync(close)
-              if (focusFell(held)) {
-                stage.querySelector<HTMLElement>('[data-section-button="systems"]')!.focus()
-              }
-            }
-            return
+        case 'wholeHome': {
+          // One layer a press: up close, the system in focus, then Systems. Focus the layer took with it goes to the way
+          // back in: Look inside, the system's rail chip, then the Systems button. A menu's popover closes itself.
+          const held = document.activeElement
+          if (step === 'look-inside') {
+            leaveLookInside(store, stage)
           }
-          leaveCloseUp(store, stageRef.current!)
+          else if (step === 'focus') {
+            // eslint-disable-next-line react-dom/no-flush-sync -- the card leaves only once this write renders
+            flushSync(() => focusSystem(null))
+            if (focusFell(held)) {
+              stage.querySelector<HTMLElement>(`[data-rail-chip="${focus}"]`)!.focus()
+            }
+          }
+          else if (step === 'systems') {
+            // eslint-disable-next-line react-dom/no-flush-sync -- the rail leaves only once this write renders
+            flushSync(close)
+            if (focusFell(held)) {
+              stage.querySelector<HTMLElement>('[data-section-button="systems"]')!.focus()
+            }
+          }
           return
+        }
         case 'recenter':
           if (state.cameraFocus !== null) {
             focusSystem(null)

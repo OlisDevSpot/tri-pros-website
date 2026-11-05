@@ -41,8 +41,9 @@ export const windowsTypes = ['single', 'double'] as const
 export type WindowsType = (typeof windowsTypes)[number]
 
 // Some homes have no attic insulation at all, so none is a level the rep can record.
-export const insulationLevels = ['none', 'low', 'medium', 'high'] as const
+export const insulationLevels = ['none', 'r11', 'r19', 'r30', 'r38'] as const
 export type InsulationLevel = (typeof insulationLevels)[number]
+export const INSULATION_LEVEL_LABELS = { none: 'None', r11: '3.5 in. (R-11)', r19: '6 in. (R-19)', r30: '10 in. (R-30)', r38: '12 in. (R-38)' } as const satisfies Record<InsulationLevel, string>
 
 export const foundationTypes = ['raised', 'slab'] as const
 export type FoundationType = (typeof foundationTypes)[number]

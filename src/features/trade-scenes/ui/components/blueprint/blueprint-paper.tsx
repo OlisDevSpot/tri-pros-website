@@ -44,7 +44,7 @@ function centreOf(area: Pick<SceneVisibleArea, 'left' | 'right'>) {
 // A page opens on the whole home and the stage's shape is a container query, so each shape's visible area is known before
 // the stage is measured, and the measure finds the line already standing where it belongs.
 function lineLefts(): CSSProperties {
-  const centre = (shape: StageShape) => centreOf(sceneVisibleAreaFor({ shape, width: 1, height: 1, zoomed: false, focusCardBottom: null }))
+  const centre = (shape: StageShape) => centreOf(sceneVisibleAreaFor({ shape, width: 1, height: 1, focusCardBottom: null }))
   return { '--line-left-wide': centre('landscape'), '--line-left-narrow': centre('narrow'), '--line-left-portrait': centre('portrait') } as CSSProperties
 }
 

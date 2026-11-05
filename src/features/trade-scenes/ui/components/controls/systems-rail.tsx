@@ -37,7 +37,7 @@ export function SystemsRail({ id }: SystemsRailProps) {
     .map(system => system.id)))
   const portrait = shape === 'portrait'
   const rail = useRef<HTMLDivElement>(null)
-  const { railBottom } = SCENE_LAYOUT.controls
+  const { railBottom, railHeight } = SCENE_LAYOUT.controls
   const YearIcon = YEAR_BUILT_ICON
 
   useLayoutEffect(() => {
@@ -57,7 +57,7 @@ export function SystemsRail({ id }: SystemsRailProps) {
         initial={reduceMotion ? false : { opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.22, ease: CONTROLS_EASE }}
-        style={{ bottom: portrait ? railBottom.portrait : railBottom.wide }}
+        style={{ bottom: portrait ? railBottom.portrait : railBottom.wide, height: railHeight }}
         className={cn(
           'absolute z-30 flex items-center gap-1 overflow-x-auto border bg-card p-1.25 shadow-lg [scrollbar-width:none]',
           portrait ? 'inset-x-2.5 rounded-[22px]' : 'left-1/2 w-max max-w-[calc(100%-20px)] -translate-x-1/2 rounded-full',

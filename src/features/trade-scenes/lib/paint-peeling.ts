@@ -44,14 +44,16 @@ const spanOf = (box: BoxSpec, axis: 0 | 1): Span => [box.position[axis] - box.si
 // Peeling where water gets behind a wall's paint: small clusters at its foot, just under each sill and at its outside corners,
 // never whole sheets. Each cluster takes the same draws whatever comes of them, so a higher share keeps every patch a lower one
 // placed and adds more. `bottom` is the wall's foot; heights are laid out in metres above it at their real size within a frame
-// stretched upward by `stretch`, and stay under `top`.
-export function wallPeeling(wall: HouseWall, floorY: number, bottom: number, share: number, seed: number, openings: readonly WallOpening[] = wall.openings, stretch = 1, top = floorY + HOUSE.wallHeight): PeelingBoxes {
+// stretched upward by `stretch`, and stay under `top`; `foot: false` leaves the foot's clusters out.
+export function wallPeeling(wall: HouseWall, floorY: number, bottom: number, share: number, seed: number, openings: readonly WallOpening[] = wall.openings, stretch = 1, top = floorY + HOUSE.wallHeight, foot = true): PeelingBoxes {
   const metres = (y: number) => (y - bottom) * stretch
   const drawn = (above: number) => bottom + above / stretch
   const height = metres(top)
   const count = Math.round((wall.to - wall.from) * LOOK.clustersPerMetre * Math.min(1, height / LOOK.clusterHeight) * share)
-  // Every other cluster goes to the foot, where the water sits longest.
-  const spots = ([...openings.filter(opening => opening.sill > 0), 'from', 'to'] as const).flatMap(spot => ['foot', spot] as const)
+  // Every other cluster goes to the foot, where the water sits longest. A raised face has none: its bottom edge is a seam with
+  // the wall below, not a place water collects.
+  const places = [...openings.filter(opening => opening.sill > 0), 'from', 'to'] as const
+  const spots = foot ? places.flatMap(spot => ['foot', spot] as const) : places
   const clear = (along: Span, rise: Span) => openings.every(opening => along[1] <= opening.along - opening.width / 2 - OPENING_MARGIN
     || along[0] >= opening.along + opening.width / 2 + OPENING_MARGIN
     || rise[1] <= metres(floorY + opening.sill) - OPENING_MARGIN || rise[0] >= metres(floorY + opening.head) + OPENING_MARGIN)

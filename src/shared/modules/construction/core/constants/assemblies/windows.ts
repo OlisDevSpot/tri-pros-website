@@ -10,8 +10,8 @@ export const WINDOWS = {
       'double-pane': { copy: { label: 'Double-pane glass', detail: 'Two sheets with a sealed gap that slows the heat.' }, thermal: { rValue: 2 }, energyRank: 1 },
     } },
     { id: 'frame', group: 'window', role: 'structure', materials: {
-      'original-frame': { copy: { label: 'Original frames', detail: 'The frames the windows came with.' }, conditionCopy: { worn: { label: 'Aging frames', detail: 'Frames that have warped and let air around the glass.' } } },
-      'vinyl-frame': { copy: { label: 'Vinyl frames', detail: 'Insulated frames that hold the glass tight.' } },
+      'original-frame': { copy: { label: 'Original frames', detail: 'The frames the windows came with: aluminum on single-pane windows, vinyl on double-pane.' }, conditionCopy: { worn: { label: 'Aging frames', detail: 'Frames that have warped and let air around the glass.' } } },
+      'vinyl-frame': { copy: { label: 'Vinyl frames', detail: 'Insulated frames of virgin vinyl, sturdier than recycled vinyl, that hold the glass tight.' } },
     } },
   ],
 } as const satisfies Assembly

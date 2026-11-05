@@ -5,6 +5,7 @@ import type { HomeMaterialFacts, PropertyProfile, ReplaceableField } from '@/sha
 import { keepEfficiencyUpgrades } from '@/features/trade-scenes/lib/keep-efficiency-upgrades'
 import { keepOffered } from '@/features/trade-scenes/lib/part-offers'
 import { propertyPatch } from '@/features/trade-scenes/lib/property-patch'
+import { withUpgradeScopes } from '@/features/trade-scenes/lib/upgrade-scopes'
 import { HOME_MATERIAL_IDS } from '@/shared/modules/construction/core/constants/home-material-ids'
 import { HOME_MATERIALS } from '@/shared/modules/construction/core/constants/home-materials'
 import { resolveHomeMaterials } from '@/shared/modules/construction/core/lib/resolve-home-materials'
@@ -23,7 +24,8 @@ function withoutWear(materials: HomeMaterialFacts, id: HomeMaterialId): HomeMate
 
 // The picks are trimmed against the facts the write leaves, in the same write, so a New material never keeps a pick it can no longer take.
 function settled(state: PatchState, property: PropertyProfile, materials: HomeMaterialFacts, year: number): Partial<TradeSceneInputs> {
-  const proposedScopeIds = keepOffered(state.proposedScopeIds, { property, materials, year })
+  const facts = { property, materials, year }
+  const proposedScopeIds = keepOffered(withUpgradeScopes(state.proposedScopeIds, state.efficiencyUpgrades, facts), facts, state.efficiencyUpgrades)
   return { property, homeMaterials: materials, proposedScopeIds, efficiencyUpgrades: keepEfficiencyUpgrades(state.efficiencyUpgrades, proposedScopeIds) }
 }
 

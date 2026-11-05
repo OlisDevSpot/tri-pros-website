@@ -14,12 +14,17 @@ import { PAINT_WEAR_SHARE } from '@/features/trade-scenes/constants/paint-wear'
 import { WEAR_LOOKS } from '@/features/trade-scenes/constants/wear-looks'
 import { downspoutBoxes } from '@/features/trade-scenes/lib/downspout-boxes'
 import { facesSummerSun } from '@/features/trade-scenes/lib/faces-summer-sun'
+import { peelingMarks } from '@/features/trade-scenes/lib/paint-peeling'
+import { paintedSurfaceStains, roofPeeling, surfaceStainLists } from '@/features/trade-scenes/lib/painted-surface-stains'
+import { wornShare } from '@/features/trade-scenes/lib/part-state'
 import { gableCracks } from '@/features/trade-scenes/lib/roof-cracks'
+import { systemPartTag } from '@/features/trade-scenes/lib/system-part-tag'
 import { thermalTag } from '@/features/trade-scenes/lib/thermal-tag'
 import { GableVent } from '@/features/trade-scenes/ui/components/home-kit/gable-vent'
 import { GableVentBackings } from '@/features/trade-scenes/ui/components/home-kit/gable-vent-backings'
 import { MergedBoxes } from '@/features/trade-scenes/ui/components/home-kit/merged-boxes'
 import { PaintMarks } from '@/features/trade-scenes/ui/components/home-kit/paint-marks'
+import { PaintStains } from '@/features/trade-scenes/ui/components/home-kit/paint-stains'
 import { RoofSlope } from '@/features/trade-scenes/ui/components/home-kit/roof-slope'
 import { wornColor } from '@/features/trade-scenes/ui/lib/worn-color'
 import { useOwnedGeometry } from '@/shared/components/scene/hooks/use-owned-geometry'
@@ -61,10 +66,23 @@ function gableGeometry(): ExtrudeGeometry {
 
 export function GableRoof({ covering, deck, underlayment, radiantBarrier, ridgeVent, gutter, shingleTone, paint, thermal }: GableRoofProps) {
   const crackShare = PAINT_WEAR_SHARE[paint.paintWear.cracks]
+  const stainShare = PAINT_WEAR_SHARE[paint.paintWear.stains]
+  const fadeShare = wornShare(paint.wear)
+  const peelingShare = PAINT_WEAR_SHARE[paint.paintWear.peeling]
+  // Each kind is placed on its own level, so a change to one leaves the others' placing alone.
+  const cracks = useMemo(() => gableCracks(crackShare), [crackShare])
+  const stains = useMemo(() => {
+    const { left, right } = paintedSurfaceStains('pitched', stainShare, fadeShare).gables
+    return { left: surfaceStainLists(left, stainShare, fadeShare), right: surfaceStainLists(right, stainShare, fadeShare) }
+  }, [stainShare, fadeShare])
+  const peeling = useMemo(() => roofPeeling('pitched', peelingShare).gables, [peelingShare])
   const marks = useMemo(() => {
-    const { left, right } = gableCracks(crackShare)
-    return { left: [{ boxes: left, color: WEAR_LOOKS.paint.crackColor }], right: [{ boxes: right, color: WEAR_LOOKS.paint.crackColor }] }
-  }, [crackShare])
+    const { crackColor, peeling: look } = WEAR_LOOKS.paint
+    return {
+      left: [{ boxes: cracks.left, color: crackColor }, ...peelingMarks([peeling.left], look.bareStucco)],
+      right: [{ boxes: cracks.right, color: crackColor }, ...peelingMarks([peeling.right], look.bareStucco)],
+    }
+  }, [cracks, peeling])
   const gable = useOwnedGeometry(gableGeometry, [])
   const coveringColours = COVERING_COLORS[covering.material ?? 'shingle'] ?? COVERING_COLORS.shingle
   const coveringColour = wornColor(shingleTone ?? coveringColours.new, coveringColours.worn, covering.wear)
@@ -95,6 +113,7 @@ export function GableRoof({ covering, deck, underlayment, radiantBarrier, ridgeV
           <meshStandardMaterial color={paint.color} roughness={0.9} />
         </mesh>
         <PaintMarks lists={marks.left} thermal={thermal} />
+        <PaintStains lists={stains.left} thermal={thermal} />
         <GableVent side={-1} />
       </group>
       <group userData={thermalTag(RIGHT_GABLE_ZONE)}>
@@ -102,6 +121,7 @@ export function GableRoof({ covering, deck, underlayment, radiantBarrier, ridgeV
           <meshStandardMaterial color={paint.color} roughness={0.9} />
         </mesh>
         <PaintMarks lists={marks.right} thermal={thermal} />
+        <PaintStains lists={stains.right} thermal={thermal} />
         <GableVent side={1} />
       </group>
       <GableVentBackings />
@@ -110,11 +130,15 @@ export function GableRoof({ covering, deck, underlayment, radiantBarrier, ridgeV
       <RoofSlope face="front" zFrom={HOUSE.cutX} zTo={ROOF_HALF_LENGTH} layout={NEAR_SLOPE_LAYOUT} trimmedEnds={['to']} covering={covering} deck={deck} underlayment={underlayment} radiantBarrier={radiantBarrier} shingleTone={shingleTone} paint={paint} thermal={thermal} />
 
       <group userData={thermalTag(null, vented ? 'ridge-vent' : 'covering')}>
-        <MergedBoxes boxes={ridge} color={vented ? HOME_PALETTE.ridgeVent : coveringColour} radius={0.025} roughness={0.85} />
+        <group userData={systemPartTag(vented ? 'ridge-vent' : 'covering')}>
+          <MergedBoxes boxes={ridge} color={vented ? HOME_PALETTE.ridgeVent : coveringColour} radius={0.025} roughness={0.85} />
+        </group>
       </group>
       {gutters.length > 0 && (
         <group userData={thermalTag(null, 'gutter')}>
-          <MergedBoxes boxes={gutters} color={gutterColour} radius={0.03} roughness={0.55} castShadow />
+          <group userData={systemPartTag('gutter')}>
+            <MergedBoxes boxes={gutters} color={gutterColour} radius={0.03} roughness={0.55} castShadow />
+          </group>
         </group>
       )}
 
@@ -123,7 +147,9 @@ export function GableRoof({ covering, deck, underlayment, radiantBarrier, ridgeV
         <RoofSlope face="front" zFrom={-ROOF_HALF_LENGTH} zTo={HOUSE.cutX} layout={NEAR_SLOPE_LAYOUT} trimmedEnds={['from']} covering={covering} deck={deck} underlayment={underlayment} radiantBarrier={radiantBarrier} shingleTone={shingleTone} paint={paint} thermal={thermal} />
         {completeGutter.length > 0 && (
           <group userData={thermalTag(null, 'gutter')}>
-            <MergedBoxes boxes={completeGutter} color={gutterColour} radius={0.03} roughness={0.55} castShadow />
+            <group userData={systemPartTag('gutter')}>
+              <MergedBoxes boxes={completeGutter} color={gutterColour} radius={0.03} roughness={0.55} castShadow />
+            </group>
           </group>
         )}
       </group>

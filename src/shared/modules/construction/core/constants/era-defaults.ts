@@ -5,11 +5,11 @@ import type { InsulationLevel } from '@/shared/modules/construction/core/constan
 export const ERA_FALLBACK: YearBuiltRange = '1950-1978'
 
 export const INSULATION_BY_ERA = {
-  'Pre-1950': 'low',
-  '1950-1978': 'low',
-  '1978-1998': 'medium',
-  '1998-2014': 'medium',
-  'Post-2014': 'high',
+  'Pre-1950': 'r11',
+  '1950-1978': 'r11',
+  '1978-1998': 'r19',
+  '1998-2014': 'r19',
+  'Post-2014': 'r30',
 } as const satisfies Record<YearBuiltRange, InsulationLevel>
 
 // The year a typical home of each era was built, so a home's age grows with the calendar.

@@ -12,6 +12,7 @@ export const SCOPE_IDS = {
   atticFan: 'e050ca1b-548b-8263-8634-01293821c390',
   windowReplacement: '3e40ca1b-548b-824d-b0db-81cc10787e73',
   coolLifeRepaint: '9d60ca1b-548b-824a-8aef-81f1e29b9b34',
+  waterBasedRepaint: '4020ca1b-548b-82d2-96c2-81068068e903',
   splitSystemReplacement: '6450ca1b-548b-830a-ac5e-018e7fd3064a',
   packageUnitReplacement: '9460ca1b-548b-8375-8d63-814dddf36b71',
   airDuctsReplacement: 'bc50ca1b-548b-8366-9ef9-811c2f36877f',

@@ -63,7 +63,7 @@ function renderEditField(
             <SelectContent>
               {field.options!.map(option => (
                 <SelectItem key={option} value={option}>
-                  {option}
+                  {field.optionLabels?.[option] ?? option}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -168,7 +168,7 @@ export function ProfileCard({
                 ? renderEditField(field, field.id, control)
                 : (
                     <span className="text-sm font-medium">
-                      {hasValue(value) ? formatProfileValue(value) : '-'}
+                      {hasValue(value) ? formatProfileValue(value, field) : '-'}
                     </span>
                   )}
             </dd>

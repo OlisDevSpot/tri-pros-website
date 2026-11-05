@@ -3,6 +3,7 @@ import type { PropertyProfile } from '@/shared/modules/construction/core/types'
 
 import { keepEfficiencyUpgrades } from '@/features/trade-scenes/lib/keep-efficiency-upgrades'
 import { keepOffered } from '@/features/trade-scenes/lib/part-offers'
+import { withUpgradeScopes } from '@/features/trade-scenes/lib/upgrade-scopes'
 import { HOME_MATERIAL_IDS } from '@/shared/modules/construction/core/constants/home-material-ids'
 import { HOME_MATERIALS } from '@/shared/modules/construction/core/constants/home-materials'
 import { resolveHomeMaterials } from '@/shared/modules/construction/core/lib/resolve-home-materials'
@@ -23,6 +24,7 @@ export function propertyPatch(state: PatchState, patch: Partial<PropertyProfile>
     }
   }
   const homeMaterials = { ...state.homeMaterials, wear }
-  const proposedScopeIds = keepOffered(state.proposedScopeIds, { property, materials: homeMaterials, year })
+  const facts = { property, materials: homeMaterials, year }
+  const proposedScopeIds = keepOffered(withUpgradeScopes(state.proposedScopeIds, state.efficiencyUpgrades, facts), facts, state.efficiencyUpgrades)
   return { property, homeMaterials, proposedScopeIds, efficiencyUpgrades: keepEfficiencyUpgrades(state.efficiencyUpgrades, proposedScopeIds) }
 }

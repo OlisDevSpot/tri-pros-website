@@ -13,8 +13,11 @@ const PARAPET_BAND = [WALL_TOP_Y + 0.08, PARAPET_TOP - 0.08] as const
 const GABLE_COUNT = 12
 const PARAPET_COUNT = 3
 
-const LEFT_FRONT_HALF = { ...HOUSE_WALLS.left, from: 0 }
-const LEFT_BACK_HALF = { ...HOUSE_WALLS.left, to: 0 }
+// Where the left parapet's front half, which lifts away with the Complete house, meets its kept back half.
+export const LEFT_PARAPET_CUT = 0
+
+const LEFT_FRONT_HALF = { ...HOUSE_WALLS.left, from: LEFT_PARAPET_CUT }
+const LEFT_BACK_HALF = { ...HOUSE_WALLS.left, to: LEFT_PARAPET_CUT }
 
 // Cracks on the end-wall gables, kept under the rake: a gable is a pentagon, narrower than the wall below it.
 export function gableCracks(share: number): { left: BoxSpec[], right: BoxSpec[] } {

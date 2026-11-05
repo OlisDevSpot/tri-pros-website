@@ -12,6 +12,10 @@ interface Picks<T extends TradeSlug> {
 }
 
 // Each cut takes its share of what the previous ones left, so the combined cut can never pass 100%.
+export function compoundCut(parts: readonly CutPart[]): number {
+  return 1 - parts.reduce((kept, part) => kept * (1 - part.percent / 100), 1)
+}
+
 export function combineCuts<T extends TradeSlug>({ trades, addOns, addOnTrades = trades }: Picks<T>, category: BillCategory, cuts: TradeBillCuts): { parts: CutPart<T | BillCutAddOnId>[], combined: number } {
   const parts: CutPart<T | BillCutAddOnId>[] = trades.flatMap((trade) => {
     const percent = cuts[trade]?.base[category]
@@ -25,6 +29,5 @@ export function combineCuts<T extends TradeSlug>({ trades, addOns, addOnTrades =
       }
     }
   }
-  const combined = 1 - parts.reduce((kept, part) => kept * (1 - part.percent / 100), 1)
-  return { parts, combined }
+  return { parts, combined: compoundCut(parts) }
 }

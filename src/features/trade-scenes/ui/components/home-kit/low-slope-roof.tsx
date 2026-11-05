@@ -13,11 +13,15 @@ import { PAINT_WEAR_SHARE } from '@/features/trade-scenes/constants/paint-wear'
 import { WEAR_AMOUNT, WEAR_LOOKS } from '@/features/trade-scenes/constants/wear-looks'
 import { downspoutBoxes } from '@/features/trade-scenes/lib/downspout-boxes'
 import { lowSlopeRoofBoxes } from '@/features/trade-scenes/lib/low-slope-roof-boxes'
-import { wornValue } from '@/features/trade-scenes/lib/part-state'
+import { peelingMarks } from '@/features/trade-scenes/lib/paint-peeling'
+import { paintedSurfaceStains, roofPeeling, surfaceStainLists } from '@/features/trade-scenes/lib/painted-surface-stains'
+import { wornShare, wornValue } from '@/features/trade-scenes/lib/part-state'
 import { parapetCracks } from '@/features/trade-scenes/lib/roof-cracks'
+import { systemPartTag } from '@/features/trade-scenes/lib/system-part-tag'
 import { thermalTag } from '@/features/trade-scenes/lib/thermal-tag'
 import { MergedBoxes } from '@/features/trade-scenes/ui/components/home-kit/merged-boxes'
 import { PaintMarks } from '@/features/trade-scenes/ui/components/home-kit/paint-marks'
+import { PaintStains } from '@/features/trade-scenes/ui/components/home-kit/paint-stains'
 import { wornColor } from '@/features/trade-scenes/ui/lib/worn-color'
 
 interface LowSlopeRoofProps {
@@ -67,10 +71,23 @@ const DRAINS = downspoutBoxes('low-slope')
 
 export function LowSlopeRoof({ covering, deck, gutter, paint, thermal }: LowSlopeRoofProps) {
   const crackShare = PAINT_WEAR_SHARE[paint.paintWear.cracks]
+  const stainShare = PAINT_WEAR_SHARE[paint.paintWear.stains]
+  const fadeShare = wornShare(paint.wear)
+  const peelingShare = PAINT_WEAR_SHARE[paint.paintWear.peeling]
+  // Each kind is placed on its own level, so a change to one leaves the others' placing alone.
+  const cracks = useMemo(() => parapetCracks(crackShare), [crackShare])
+  const stains = useMemo(() => {
+    const { kept, complete } = paintedSurfaceStains('low-slope', stainShare, fadeShare).parapets
+    return { kept: surfaceStainLists(kept, stainShare, fadeShare), complete: surfaceStainLists(complete, stainShare, fadeShare) }
+  }, [stainShare, fadeShare])
+  const peeling = useMemo(() => roofPeeling('low-slope', peelingShare).parapets, [peelingShare])
   const marks = useMemo(() => {
-    const { kept, complete } = parapetCracks(crackShare)
-    return { kept: [{ boxes: kept, color: WEAR_LOOKS.paint.crackColor }], complete: [{ boxes: complete, color: WEAR_LOOKS.paint.crackColor }] }
-  }, [crackShare])
+    const { crackColor, peeling: look } = WEAR_LOOKS.paint
+    return {
+      kept: [{ boxes: cracks.kept, color: crackColor }, ...peelingMarks(peeling.kept, look.bareStucco)],
+      complete: [{ boxes: cracks.complete, color: crackColor }, ...peelingMarks(peeling.complete, look.bareStucco)],
+    }
+  }, [cracks, peeling])
   const colours = COVERING_COLORS[covering.material ?? 'membrane'] ?? COVERING_COLORS.membrane
   const membrane = wornColor(colours.new, colours.worn, covering.wear)
   const membraneRoughness = wornValue(0.75, 0.95, covering.wear)
@@ -81,18 +98,23 @@ export function LowSlopeRoof({ covering, deck, gutter, paint, thermal }: LowSlop
   return (
     <group>
       <group userData={thermalTag(null, 'deck')}>
-        <MergedBoxes boxes={DECK_BOXES} color={deckColour} castShadow />
+        <group userData={systemPartTag('deck')}>
+          <MergedBoxes boxes={DECK_BOXES} color={deckColour} castShadow />
+        </group>
       </group>
       <group userData={thermalTag(null, 'covering')}>
-        <MergedBoxes boxes={MEMBRANE_BOXES} color={membrane} roughness={membraneRoughness} />
-        <MergedBoxes boxes={SEAMS} color={membrane} roughness={1} />
-        {patches.length > 0 && <MergedBoxes boxes={patches} color={HOME_PALETTE.felt} radius={0.002} roughness={1} />}
+        <group userData={systemPartTag('covering')}>
+          <MergedBoxes boxes={MEMBRANE_BOXES} color={membrane} roughness={membraneRoughness} />
+          <MergedBoxes boxes={SEAMS} color={membrane} roughness={1} />
+          {patches.length > 0 && <MergedBoxes boxes={patches} color={HOME_PALETTE.felt} radius={0.002} roughness={1} />}
+        </group>
       </group>
       {/* The parapets are the walls carried up, so they read as the walls do. */}
       <group userData={thermalTag('exterior')}>
         {/* Square: a rounded edge on a square wall top leaves a groove all round. */}
         <MergedBoxes boxes={PARAPETS} color={paint.color} castShadow receiveShadow />
         <PaintMarks lists={marks.kept} thermal={thermal} />
+        <PaintStains lists={stains.kept} thermal={thermal} />
         <MergedBoxes boxes={COPING} color={HOME_PALETTE.trim} radius={0.015} roughness={0.7} />
       </group>
       <group userData={thermalTag('exterior')}>
@@ -100,22 +122,29 @@ export function LowSlopeRoof({ covering, deck, gutter, paint, thermal }: LowSlop
       </group>
       <group userData={HOME_FADE_TAGS.complete}>
         <group userData={thermalTag(null, 'deck')}>
-          <MergedBoxes boxes={COMPLETE_DECK} color={deckColour} castShadow />
+          <group userData={systemPartTag('deck')}>
+            <MergedBoxes boxes={COMPLETE_DECK} color={deckColour} castShadow />
+          </group>
         </group>
         <group userData={thermalTag(null, 'covering')}>
-          <MergedBoxes boxes={COMPLETE_MEMBRANE} color={membrane} roughness={membraneRoughness} />
-          <MergedBoxes boxes={COMPLETE_SEAMS} color={membrane} roughness={1} />
+          <group userData={systemPartTag('covering')}>
+            <MergedBoxes boxes={COMPLETE_MEMBRANE} color={membrane} roughness={membraneRoughness} />
+            <MergedBoxes boxes={COMPLETE_SEAMS} color={membrane} roughness={1} />
+          </group>
         </group>
         <group userData={thermalTag('exterior')}>
           <MergedBoxes boxes={COMPLETE_PARAPETS} color={paint.color} castShadow receiveShadow />
           <MergedBoxes boxes={PARAPET_CORNERS} color={paint.color} castShadow receiveShadow />
           <PaintMarks lists={marks.complete} thermal={thermal} />
+          <PaintStains lists={stains.complete} thermal={thermal} />
           <MergedBoxes boxes={COMPLETE_COPING} color={HOME_PALETTE.trim} radius={0.015} roughness={0.7} />
         </group>
       </group>
       {gutter.material !== null && (
         <group userData={thermalTag(null, 'gutter')}>
-          <MergedBoxes boxes={DRAINS} color={gutterColour} radius={0.02} roughness={0.55} />
+          <group userData={systemPartTag('gutter')}>
+            <MergedBoxes boxes={DRAINS} color={gutterColour} radius={0.02} roughness={0.55} />
+          </group>
         </group>
       )}
     </group>

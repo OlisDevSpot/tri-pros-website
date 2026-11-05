@@ -6,7 +6,7 @@ import { Field } from '@/features/meeting-visualizations/ui/components/roof-cuta
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-group'
 import { yearBuiltRanges } from '@/shared/constants/enums/customers'
-import { insulationLevels } from '@/shared/modules/construction/core/constants/enums'
+import { INSULATION_LEVEL_LABELS, insulationLevels } from '@/shared/modules/construction/core/constants/enums'
 
 const UNKNOWN = 'unknown'
 
@@ -72,7 +72,7 @@ export function ProfileControls({ profile, scope, onProfileChange, onScopeChange
             value={profile.insulationLevel ?? UNKNOWN}
             onValueChange={value => value && onProfileChange({ ...profile, insulationLevel: fromChoice(value, insulationLevels) })}
           >
-            {insulationLevels.map(option => <ToggleGroupItem key={option} value={option} className="capitalize">{option}</ToggleGroupItem>)}
+            {insulationLevels.map(option => <ToggleGroupItem key={option} value={option}>{INSULATION_LEVEL_LABELS[option]}</ToggleGroupItem>)}
             <ToggleGroupItem value={UNKNOWN}>Unknown</ToggleGroupItem>
           </ToggleGroup>
         </Field>

@@ -54,7 +54,7 @@ export function HomeEquipment({ hvacType, hvacComponents, lowSlope, weather, loa
       {/* The ducts lie in the attic air until the system pushes warm or cold air through them. */}
       {ducted && (
         <group ref={ducts} userData={thermalTag(side ?? 'attic')}>
-          <AtticDucts lowSlope={lowSlope} heatLoad={heatLoad} material={ductRuns.material} wear={ductRuns.wear} airHandler={type === 'central'} />
+          <AtticDucts lowSlope={lowSlope} heatLoad={heatLoad} material={ductRuns.material} wear={ductRuns.wear} airHandler={type === 'central'} acScale={acScale} />
         </group>
       )}
       {type === 'package-unit' && (

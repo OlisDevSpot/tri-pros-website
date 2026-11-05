@@ -10,6 +10,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { ATTIC_FAN_LOOK } from '@/features/trade-scenes/constants/attic-fan-look'
 import { HOME_PALETTE } from '@/features/trade-scenes/constants/home-palette'
 import { OWN_PAINT } from '@/features/trade-scenes/constants/home-thermal-zones'
+import { systemPartTag } from '@/features/trade-scenes/lib/system-part-tag'
 import { thermalTag } from '@/features/trade-scenes/lib/thermal-tag'
 import { useBurstMotion } from '@/shared/components/scene/hooks/use-burst-motion'
 import { useOwnedGeometry } from '@/shared/components/scene/hooks/use-owned-geometry'
@@ -53,7 +54,7 @@ export function AtticFan({ running, burst }: AtticFanProps) {
   })
 
   return (
-    <group>
+    <group userData={systemPartTag('attic-fan')}>
       {/* Open both ends, so it is seen from either side as a drum. */}
       <mesh rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[radius, radius, depth, 28, 1, true]} />

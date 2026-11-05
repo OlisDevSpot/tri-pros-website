@@ -1,4 +1,4 @@
-import type { HomeSystemId, SceneChangeSlotId, SystemPartId } from '@/features/trade-scenes/types'
+import type { BuildRowPartId, HomeSystemId, SceneChangeSlotId } from '@/features/trade-scenes/types'
 import type { HomeMaterialId } from '@/shared/modules/construction/core/constants/home-material-ids'
 
 import { HOME_SYSTEMS } from '@/features/trade-scenes/constants/home-systems'
@@ -10,7 +10,7 @@ export const SCENE_CHANGE_RESULTS_MAX = 8
 // every roof upgrade.
 const MATERIAL_WORDS = {
   'roof': 'roof roofing',
-  'attic-insulation': 'attic insulation batts',
+  'attic-insulation': 'attic insulation batts r11 r19 r30 r38',
   'windows': 'window windows glass',
   'exterior-paint': 'paint walls exterior stucco',
   'heating-cooling': 'hvac ac air conditioner heating cooling system furnace',
@@ -37,16 +37,16 @@ const BUILD_WORDS = {
   'air-sealing': 'air sealing',
   'attic-fan': 'attic fan',
   'glazing': 'new windows',
-  'paint': 'cool life repaint',
+  'paint': 'repaint',
   'air-handler': 'new system',
   'package-unit': 'new system',
   'duct-runs': 'new ducts',
   'floor-insulation': 'crawl insulation',
-} as const satisfies Record<SystemPartId, string>
+} as const satisfies Record<BuildRowPartId, string>
 
 // Object.fromEntries widens its keys to string; each list below holds every id of its kind.
 const WEAR_WORDS = Object.fromEntries(HOME_MATERIAL_IDS.map(id => [`wear:${id}`, `${MATERIAL_WORDS[id]} condition wear`])) as Record<`wear:${HomeMaterialId}`, string>
-const BUILD_ROW_WORDS = Object.fromEntries(HOME_SYSTEMS.flatMap(({ id, rows }) => rows.map(({ part }) => [`build:${part}`, `${SYSTEM_WORDS[id]} ${BUILD_WORDS[part]} upgrade`]))) as Record<`build:${SystemPartId}`, string>
+const BUILD_ROW_WORDS = Object.fromEntries(HOME_SYSTEMS.flatMap(({ id, rows }) => rows.map(({ part }) => [`build:${part}`, `${SYSTEM_WORDS[id]} ${BUILD_WORDS[part]} upgrade`]))) as Record<`build:${BuildRowPartId}`, string>
 
 export const SCENE_CHANGE_WORDS = {
   'household': 'household family couple single relatives',
@@ -62,6 +62,9 @@ export const SCENE_CHANGE_WORDS = {
   ...BUILD_ROW_WORDS,
   'upgrade:cool-roof': `${SYSTEM_WORDS.roof} cool roof`,
   'upgrade:r8-ducts': `${SYSTEM_WORDS['heating-cooling']} step up to r-8`,
+  'upgrade:cool-paint': `${SYSTEM_WORDS.walls} cool life paint`,
+  'upgrade:r38-insulation': `${SYSTEM_WORDS.attic} step up to r-38`,
+  'style:batts': `${SYSTEM_WORDS.attic} batts fiberglass replace`,
   'climate': 'climate coastal inland area bills',
   'bill:electric': 'electric electricity bill bills power',
   'bill:gas': 'gas bill bills',

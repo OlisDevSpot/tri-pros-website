@@ -1,28 +1,30 @@
 import type { FACTS_TABS } from '@/features/trade-scenes/constants/facts-tabs'
 import type { ReadingId } from '@/features/trade-scenes/constants/home-anchors'
 import type { HOME_FADES } from '@/features/trade-scenes/constants/home-fades'
-import type { HOME_SYSTEM_IDS, SYSTEM_PART_IDS } from '@/features/trade-scenes/constants/home-systems'
-import type { HomePaintKey } from '@/features/trade-scenes/constants/home-thermal-zones'
+import type { BUILD_ROW_PART_IDS, HOME_SPOT_IDS, HOME_SYSTEM_IDS } from '@/features/trade-scenes/constants/home-systems'
 import type { LookDevView, MaterialTreatment } from '@/features/trade-scenes/constants/look-dev-options'
 import type { PLANT_SPECIES } from '@/features/trade-scenes/constants/lot-plants'
 import type { HOME_VIEWS } from '@/features/trade-scenes/constants/scene-controls'
 import type { DOCK_FOLDS } from '@/features/trade-scenes/constants/scene-dock'
 import type { SCENE_LOAD_PHASES } from '@/features/trade-scenes/constants/scene-load'
+import type { SYSTEM_PARTS } from '@/features/trade-scenes/constants/system-parts'
 import type { OfferBlockedReason, PartOffer } from '@/features/trade-scenes/lib/part-offers'
 import type { RibbonStyle } from '@/shared/components/scene/constants/ribbon-styles'
 import type { ThermalSeason, ThermalStyle } from '@/shared/components/scene/constants/thermal-palettes'
-import type { SceneBurst, SceneRenderer } from '@/shared/components/scene/types'
+import type { SceneRenderer } from '@/shared/components/scene/types'
 import type { CustomerAgeGroup, HouseholdType } from '@/shared/constants/enums/customers'
 import type { Resolved } from '@/shared/lib/resolve-overridable'
 import type { AssemblyId } from '@/shared/modules/construction/core/constants/assembly-ids'
+import type { BenefitKind } from '@/shared/modules/construction/core/constants/benefit-kinds'
 import type { Climate } from '@/shared/modules/construction/core/constants/climate-presets'
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
-import type { PaintWearKind, PaintWearLevel, Wear } from '@/shared/modules/construction/core/constants/enums'
+import type { HVACType, PaintWearKind, PaintWearLevel, Wear } from '@/shared/modules/construction/core/constants/enums'
 import type { HomeMaterialId } from '@/shared/modules/construction/core/constants/home-material-ids'
+import type { InstallStyleId } from '@/shared/modules/construction/core/constants/install-styles'
 import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
 import type { ScopeId } from '@/shared/modules/construction/core/constants/scope-ids'
 import type { TradeSlug } from '@/shared/modules/construction/core/constants/trade-slugs'
-import type { Basis, BillCut, BillEntry, EnergyMode, HeatWeather, HomeMaterialFacts, OfferKind, PartCondition, PropertyProfile, ReplaceableField, ResolvedHomeMaterials, ResolvedPart, WaterFlow, Weather } from '@/shared/modules/construction/core/types'
+import type { Basis, BillCut, BillEntry, EnergyMode, HeatWeather, HomeMaterialFacts, OfferKind, PropertyProfile, ReplaceableField, ResolvedHomeMaterials, ResolvedPart, WaterFlow, Weather } from '@/shared/modules/construction/core/types'
 
 export interface LookDevOptions {
   treatment: MaterialTreatment
@@ -65,20 +67,21 @@ export interface TradeSceneInputs {
   climate: Climate | null
   homeView: HomeView
   thermalCamera: boolean
-  zoom: AssemblyId | null
+  lookInside: boolean
   proposedScopeIds: string[]
   efficiencyUpgrades: EfficiencyUpgradeId[]
+  installStyles: InstallStyleId[]
   homeMaterials: HomeMaterialFacts
   cameraFocus: HomeSystemId | null
   peel: number
-  emphasizedPart: string | null
+  emphasizedPart: SystemPartId | null
   bills: Record<SavingsCategory, BillEntry>
   repairsOverrides: Partial<Record<TradeSlug, number | null>>
 }
 
 // What resolveScene reads; the drawing-only inputs (peel, emphasis, home view, thermal camera, look) change no target, so a write to
 // them must not re-resolve the scene.
-export type SceneResolveInputs = Pick<TradeSceneInputs, 'property' | 'household' | 'view' | 'weather' | 'climate' | 'zoom' | 'proposedScopeIds' | 'efficiencyUpgrades' | 'bills' | 'repairsOverrides'> & {
+export type SceneResolveInputs = Pick<TradeSceneInputs, 'property' | 'household' | 'view' | 'weather' | 'climate' | 'proposedScopeIds' | 'efficiencyUpgrades' | 'installStyles' | 'bills' | 'repairsOverrides'> & {
   // The AC size, the shingle colour and the paint wear only draw, so a write to any of them must not re-resolve.
   homeMaterials: Omit<HomeMaterialFacts, 'acTons' | 'shingleColor' | 'paintWear'>
 }
@@ -146,6 +149,20 @@ export interface SceneSavings {
   repairsByTrade: Partial<Record<TradeSlug, Resolved>>
 }
 
+export interface MonthlyCosts {
+  electric: number
+  gas: number
+  repairs: number
+  total: number
+}
+
+export interface FutureYear {
+  year: number
+  without: MonthlyCosts
+  with: MonthlyCosts
+  saves: number
+}
+
 export interface SceneTargets {
   assemblies: Partial<Record<AssemblyId, AssemblyTargets>>
   heat: HomeHeat | null
@@ -158,7 +175,6 @@ export interface SceneTargets {
   home: ResolvedHomeMaterials
   residents: ResidentSpec[]
   savings: SceneSavings
-  heading: { eyebrow: string, title: string, lead: string }
 }
 
 // What the home kit reads from the scene inputs: a narrower slice than the whole inputs, so a peel drag never redraws the house.
@@ -201,31 +217,6 @@ export interface ShakeCourse {
   /** Share of the worn shakes drawn split down the grain, and the crack each opens. */
   splitShare?: number
   splitGap?: number
-}
-
-// What every part renderer of an assembly kit draws from; its fade, peel and emphasis come from the part's motion around it.
-export interface PartRendererProps {
-  material: string
-  condition: PartCondition
-  form: string | null
-}
-
-// The props every registered assembly kit takes, so the host mounts any of them the same way.
-export interface AssemblyKitProps {
-  targets: AssemblyTargets
-  /** 0..1 */
-  peel: number
-  emphasizedPart: string | null
-  onEmphasize: (partId: string) => void
-  weather: Weather
-  climate: Climate
-  thermalCamera: boolean
-  /** The home's heat, so the section pins the same values the home does. */
-  heat: HomeHeat | null
-  // Off as soon as the rep backs out, while the kit is still fading: the home takes its reading pins back at once.
-  pinReadings: boolean
-  // The home's burst: the kit's flows move while the home does, and hold still at rest.
-  burst: SceneBurst
 }
 
 export interface BoxSpec {
@@ -291,9 +282,6 @@ export interface WeatherSky {
   /** The warm lamps in the rooms; zero by day. */
   roomLight: number
 }
-
-// The blocks an assembly's up-close screen stacks, in order. The union grows with the first assembly that carries its own copy.
-export type AssemblyScreenBlock = { kind: 'parts' } | { kind: 'peel' }
 
 export type HomeReadings = Record<ReadingId, number>
 
@@ -363,22 +351,6 @@ export type Vec3 = readonly [number, number, number]
 
 // A point in a slope's own frame: x up the slope from the wall line's top edge, y out along the roof's normal.
 export type SlopePoint = readonly [number, number]
-
-// Mutable, so a flow's path can be built up point by point.
-export type RibbonPoint = [number, number, number]
-
-// Where the line crosses one part: its face toward the rooms and its face toward the sky, in the kit at this peel.
-export interface LineSpan {
-  partId: string
-  inner: RibbonPoint
-  outer: RibbonPoint
-}
-
-// The home's paint zones a kit part's two faces read as: the face toward the rooms, and the face toward the sky.
-export interface PaintFaces {
-  inner: HomePaintKey
-  outer: HomePaintKey
-}
 
 export interface ArrowLane {
   points: readonly Vec3[]
@@ -458,7 +430,7 @@ export type SceneResolveSelection = Omit<SceneResolveInputs, 'homeMaterials'> & 
 export type HomeSystemId = typeof HOME_SYSTEM_IDS[number]
 
 export interface HomeSystemRow {
-  part: SystemPartId
+  part: BuildRowPartId
   offer: PartOffer
   existing: ResolvedPart
   material: HomeMaterialId | null
@@ -567,9 +539,11 @@ export type SceneChange
     | { kind: 'fact', patch: Partial<Pick<HomeMaterialFacts, 'gutters' | 'acTons' | 'shingleColor' | 'paintWear'>> }
     | { kind: 'scope', offer: PartOffer, scopeId: ScopeId | null }
     | { kind: 'efficiency-upgrade', upgrade: EfficiencyUpgradeId, on: boolean }
+    | { kind: 'install-style', style: InstallStyleId, on: boolean }
     | { kind: 'household', patch: Partial<TradeSceneInputs['household']> }
     | { kind: 'climate', climate: Climate }
     | { kind: 'bill', category: SavingsCategory, now: number | null }
+    | { kind: 'repairs', trade: TradeSlug, perYear: number | null }
 
 export type SlotGroup = 'facts' | 'area' | 'systems' | 'existing' | 'proposed' | 'bills'
 
@@ -591,6 +565,8 @@ export interface SceneChangeSlot {
   bill: SavingsCategory | null
   // Set only on an add-on no pick can take yet: why, said in place of its options, so a search for it still finds it.
   unavailable: string | null
+  // An upgrade a pick cannot go without: listed as included, with no switch.
+  required: boolean
   change: (value: string) => SceneChange
 }
 
@@ -598,9 +574,15 @@ export interface UpgradeRowState {
   picked: ScopeId | null
   holdsCoolRoof: boolean
   holdsR8: boolean
+  holdsCoolPaint: boolean
+  holdsR38: boolean
+  // The row's replace can be laid as batts.
+  holdsBatts: boolean
   // A picked covering has a cool version, so the cool roof can be switched on.
   coolRoofOffered: boolean
   coolRoofOn: boolean
+  // The pick is the truth: a Cool Life home holds the upgraded scope while the switch is off.
+  coolPaintOn: boolean
   r8On: boolean
   installsCoolShingle: boolean
 }
@@ -626,9 +608,30 @@ export type StainCell = 'splash' | 'streak' | 'blotch'
 // colour, since the view fades own the material's opacity.
 export interface StainBoxes {
   cell: StainCell
-  boxes: readonly BoxSpec[]
+  boxes: readonly StainBox[]
   color: string
   alpha: number
+}
+
+// A stain may show only part of its atlas cell: a stain cut where the wall meets the gable or parapet above it is two boxes, each
+// showing its own share of the one shape, so the eye reads one stain across the seam. `u` is the share along the run, as seen
+// from outside, and `v` the share of the height; each defaults to the whole cell.
+export interface StainBox extends BoxSpec {
+  u?: readonly [number, number]
+  v?: readonly [number, number]
+}
+
+// A painted surface that wears up past its wall's top: its top edge at each point along the run, and the vents in it. A vent
+// hangs streaks as a window does but has no sill to gather dirt, and the stains read any opening above the floor as a window, so a
+// vent is never one of the wall's openings.
+export interface PaintedSurface {
+  topEdge: (along: number) => number
+  vents: readonly WallOpening[]
+}
+
+export interface SurfaceStains {
+  streaks: StainBox[]
+  blotches: StainBox[]
 }
 
 // Peeling on one painted surface: the bare patches where the paint has gone, lying flush a hair proud of the face, and the flakes
@@ -647,10 +650,82 @@ export interface SceneChangeResult {
 // The change Modify last applied, counted so its row's flash replays on each apply.
 export type AppliedSceneChange = { id: string, count: number } | null
 
-// A part the Upgrades list offers.
-export type SystemPartId = typeof SYSTEM_PART_IDS[number]
+// A part a system card's build row offers.
+export type BuildRowPartId = typeof BUILD_ROW_PART_IDS[number]
 
 export type SceneChangeSlotId
   = | 'household' | 'age-group' | 'foundation' | 'roof-form' | 'year-built' | 'climate'
     | HomeMaterialId | 'gutters' | 'hvac-components' | 'ac-tons' | `wear:${HomeMaterialId}`
-    | `build:${SystemPartId}` | `upgrade:${EfficiencyUpgradeId}` | `bill:${SavingsCategory}`
+    | `build:${BuildRowPartId}` | `upgrade:${EfficiencyUpgradeId}` | `style:${InstallStyleId}` | `bill:${SavingsCategory}`
+
+// What the Benefits window has picked: one dot, a whole system row, or a whole kind column.
+export type BenefitSelection
+  = | { type: 'dot', system: HomeSystemId, kind: BenefitKind }
+    | { type: 'system', system: HomeSystemId }
+    | { type: 'kind', kind: BenefitKind }
+
+export interface BenefitsState {
+  selection: BenefitSelection | null
+  // The year the two futures are read at.
+  lookAhead: number
+  costsOpen: boolean
+  whyOpen: boolean
+}
+
+// One statement in the Benefits window: written in the upgrade registry, or worked out from the picks and the savings.
+export interface BenefitLine {
+  system: HomeSystemId
+  kind: BenefitKind
+  title: string
+  detail: string
+  // The upgrade it is written for; null for a line worked out from the picks.
+  from: string | null
+  // Dollars a month.
+  figure: number | null
+  soon: boolean
+}
+
+// Where a tap on the house asks which systems are there.
+export type HomeSpotId = typeof HOME_SPOT_IDS[number]
+
+// What a spot needs to know to say which systems it opens.
+export interface HomeSpotContext {
+  form: RoofForm
+  picks: readonly string[]
+  hvacType: HVACType | null
+}
+
+// What a shared system part is lit for in each of its systems.
+export type SystemPartStory = 'leak' | 'air-gaps'
+
+// A whole construction part (its id is the part's) or a piece drawn on one, which names and steps open but never moves a
+// figure; membership is its own list because the part's group drives the heat math.
+export interface SystemPart<Id extends string = SystemPartId> {
+  id: Id
+  assembly: AssemblyId
+  part: string
+  systems: readonly HomeSystemId[]
+  story?: Partial<Record<HomeSystemId, SystemPartStory>>
+  drawnFor?: (part: ResolvedPart) => boolean
+}
+
+export type SystemPartId = (typeof SYSTEM_PARTS)[number]['id']
+
+type PieceIdOf<P> = P extends { id: infer Id, part: infer Part } ? (Id extends Part ? never : Id) : never
+// The system parts that are pieces of a construction part rather than the whole of one.
+export type SystemPieceId = PieceIdOf<(typeof SYSTEM_PARTS)[number]>
+
+// What a group whose meshes draw one system part carries in its `userData`; untagged groups carry none.
+export interface SystemPartTagData {
+  scenePart?: SystemPartId
+}
+
+// The system up close: the system parts it keeps solid, and the one a tap keeps whole while the rest of it dims.
+export interface SystemLit {
+  system: HomeSystemId
+  shown: ReadonlySet<SystemPartId>
+  emphasized: SystemPartId | null
+}
+
+// A shown system part as its system's list and its pins name it.
+export type SystemPartRow = ResolvedPart & { id: SystemPartId }

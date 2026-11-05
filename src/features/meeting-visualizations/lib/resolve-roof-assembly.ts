@@ -6,28 +6,18 @@ import type {
   CutawayScope,
   RoofAssembly,
 } from '@/features/meeting-visualizations/types'
-import type { YearBuiltRange } from '@/shared/constants/enums/customers'
 import type { InsulationLevel, RoofType } from '@/shared/modules/construction/core/constants/enums'
 import { LAYER_COPY } from '@/features/meeting-visualizations/constants/roof-cutaway-copy'
+import { ERA_FALLBACK, INSULATION_BY_ERA } from '@/shared/modules/construction/core/constants/era-defaults'
 
 // The R-value we show for a Tri Pros attic is a placeholder: Title 24 alteration minimums differ by
 // climate zone, and the field team has not yet confirmed the depth they blow in across the service area.
 const TRI_PROS_ATTIC_R_VALUE = 38
 
-const R_VALUE_BY_LEVEL: Record<InsulationLevel, number> = { none: 0, low: 11, medium: 19, high: 30 }
+const R_VALUE_BY_LEVEL: Record<InsulationLevel, number> = { none: 0, r11: 11, r19: 19, r30: 30, r38: 38 }
 
 // Installed depth per R-value, so the drawing's blanket height is honest relative to the joists.
-const INCHES_BY_R_VALUE: Record<number, number> = { 11: 3.5, 19: 6.25, 30: 10, 38: 13 }
-
-const ERA_FALLBACK: YearBuiltRange = '1950-1978'
-
-const INSULATION_BY_ERA: Record<YearBuiltRange, InsulationLevel> = {
-  'Pre-1950': 'low',
-  '1950-1978': 'low',
-  '1978-1998': 'medium',
-  '1998-2014': 'medium',
-  'Post-2014': 'high',
-}
+const INCHES_BY_R_VALUE: Record<number, number> = { 11: 3.5, 19: 6.25, 30: 10, 38: 12 }
 
 function coveringFor(roofType: RoofType | null): CoveringKind {
   return roofType === 'tile' ? 'tile' : 'shingle'

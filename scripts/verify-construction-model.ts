@@ -1,5 +1,8 @@
 import type { Climate } from '@/shared/modules/construction/core/constants/climate-presets'
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
+import type { InstallStyleId } from '@/shared/modules/construction/core/constants/install-styles'
+import type { ScopeId } from '@/shared/modules/construction/core/constants/scope-ids'
+import type { TradeBillCuts } from '@/shared/modules/construction/core/schemas/bill-cuts'
 import type { Assembly, ExistingConditions, HeatWeather, HomeFacts, HomeMaterialFacts, PartMaterialDefinition, PropertyProfile, ResolvedPart, ScopeInstall, Season, ThermalReadings } from '@/shared/modules/construction/core/types'
 import assert from 'node:assert/strict'
 
@@ -8,13 +11,16 @@ import { readFileSync } from 'node:fs'
 import { yearBuiltRanges } from '@/shared/constants/enums/customers'
 import { ASSEMBLIES } from '@/shared/modules/construction/core/constants/assemblies'
 import { ASSEMBLY_IDS } from '@/shared/modules/construction/core/constants/assembly-ids'
+import { BILL_CUT_ADD_ON_LABELS } from '@/shared/modules/construction/core/constants/bill-cut-add-ons'
 import { CLIMATE_PRESETS, CLIMATES, HEAT_WEATHER_PROFILES, THERMAL_SCALE_F } from '@/shared/modules/construction/core/constants/climate-presets'
-import { insulationLevels, roofTypes, wears } from '@/shared/modules/construction/core/constants/enums'
+import { INSULATION_LEVEL_LABELS, insulationLevels, roofTypes, wears } from '@/shared/modules/construction/core/constants/enums'
+import { INSULATION_BY_ERA } from '@/shared/modules/construction/core/constants/era-defaults'
 import { HOME_MATERIAL_IDS } from '@/shared/modules/construction/core/constants/home-material-ids'
 import { HOME_MATERIAL_FACTS_UNSET, HOME_MATERIALS } from '@/shared/modules/construction/core/constants/home-materials'
 import { OWENS_CORNING_SHINGLES } from '@/shared/modules/construction/core/constants/owens-corning-shingles'
 import { SCOPE_IDS } from '@/shared/modules/construction/core/constants/scope-ids'
 import { SCOPE_INSTALLS } from '@/shared/modules/construction/core/constants/scope-installs'
+import { NOT_DRAWN } from '@/shared/modules/construction/core/constants/scope-not-drawn'
 import { SCOPES_BY_EXISTING_ROOF } from '@/shared/modules/construction/core/constants/scopes-by-existing-roof'
 import { TRADE_BILL_CUTS } from '@/shared/modules/construction/core/constants/trade-bill-cuts'
 import { tradeSlugs } from '@/shared/modules/construction/core/constants/trade-slugs'
@@ -24,9 +30,11 @@ import { inferExteriorWallExistingConditions } from '@/shared/modules/constructi
 import { inferHvacAtticExistingConditions } from '@/shared/modules/construction/core/lib/assemblies/hvac-attic/infer-existing-conditions'
 import { inferRoofAtticExistingConditions } from '@/shared/modules/construction/core/lib/assemblies/roof-attic/infer-existing-conditions'
 import { inferWindowsExistingConditions } from '@/shared/modules/construction/core/lib/assemblies/windows/infer-existing-conditions'
+import { atticReachable } from '@/shared/modules/construction/core/lib/attic-reachable'
 import { combineCuts } from '@/shared/modules/construction/core/lib/combine-cuts'
 import { homeAge } from '@/shared/modules/construction/core/lib/home-age'
 import { installKind } from '@/shared/modules/construction/core/lib/install-kind'
+import { installedMaterial } from '@/shared/modules/construction/core/lib/installed-material'
 import { redeckAllowed } from '@/shared/modules/construction/core/lib/redeck-allowed'
 import { relativeHeatFlow } from '@/shared/modules/construction/core/lib/relative-heat-flow'
 import { relativeWaterFlow } from '@/shared/modules/construction/core/lib/relative-water-flow'
@@ -123,7 +131,7 @@ function inferRoof(property: PropertyProfile) {
   const homeFacts = facts(property)
   return inferRoofAtticExistingConditions(homeFacts, resolveHomeMaterials(homeFacts))
 }
-const profile = (patch: Partial<PropertyProfile>): PropertyProfile => ({ yearBuilt: '1950-1978', roofType: 'shingle', foundationType: 'slab', hvacType: 'central', insulationLevel: 'low', windowsType: null, hvacComponents: null, ...patch })
+const profile = (patch: Partial<PropertyProfile>): PropertyProfile => ({ yearBuilt: '1950-1978', roofType: 'shingle', foundationType: 'slab', hvacType: 'central', insulationLevel: 'r11', windowsType: null, hvacComponents: null, ...patch })
 
 // Basis: "recorded" only when every input was recorded and draws exactly.
 for (const roofType of [...roofTypes, null]) {
@@ -151,7 +159,12 @@ const shakeHome = inferRoof(profile({ roofType: 'woodshake' }))
 assert.equal(shakeHome.parts.covering.material, 'wood-shake', 'shakes draw as themselves')
 assert.equal(shakeHome.parts.deck.material, 'spaced-boards', 'shakes sit on spaced boards')
 assert.equal(shakeHome.basis, 'recorded', 'a recorded wood-shake profile is exact')
-assert.equal(inferRoof(profile({ insulationLevel: 'medium' })).parts['attic-insulation'].material, 'batts-r19')
+assert.equal(inferRoof(profile({ insulationLevel: 'r19' })).parts['attic-insulation'].material, 'batts-r19')
+assert.deepEqual([...insulationLevels], ['none', 'r11', 'r19', 'r30', 'r38'], 'insulation levels are named by R-value')
+assert.equal(INSULATION_LEVEL_LABELS.r38, '12 in. (R-38)', 'one set of depth and R-value labels')
+assert.equal(inferRoof(profile({ insulationLevel: 'r38' })).parts['attic-insulation'].material, 'blown-r38')
+assert.equal(inferRoof(profile({ insulationLevel: 'none' })).parts['attic-insulation'].material, null, 'none infers absent')
+assert.equal(INSULATION_BY_ERA['Post-2014'], 'r30', 'the newest era guess is R-30')
 assert.equal(inferRoof(profile({ insulationLevel: null, yearBuilt: 'Post-2014' })).parts['attic-insulation'].material, 'batts-r30', 'era fallback')
 
 // Spaced boards only ever sit under wood shakes.
@@ -165,7 +178,7 @@ for (const yearBuilt of yearBuiltRanges) {
 // A low-slope roof with no recorded insulation draws no batts; a recorded level still does.
 assert.equal(inferRoof(profile({ roofType: 'flat', insulationLevel: null })).parts['attic-insulation'].material, null, 'no era guess under a flat roof')
 assert.equal(inferRoof(profile({ roofType: 'flat', insulationLevel: null })).parts['attic-insulation'].condition, 'absent')
-assert.equal(inferRoof(profile({ roofType: 'flat', insulationLevel: 'low' })).parts['attic-insulation'].material, 'batts-r11')
+assert.equal(inferRoof(profile({ roofType: 'flat', insulationLevel: 'r11' })).parts['attic-insulation'].material, 'batts-r11')
 
 // A new covering that cannot be fastened to spaced boards brings its solid deck.
 for (const roofType of roofTypes) {
@@ -598,7 +611,7 @@ assert.equal(rated.windows?.wear, 'good')
 assert.equal(rated.windows?.wearBasis, 'recorded')
 const moved = resolveHomeMaterials(facts(profile({ yearBuilt: 'Post-2014', windowsType: 'double', insulationLevel: null }), { wear: { windows: 'good' } }))
 assert.equal(moved.windows?.wear, 'good', 'an era change leaves what the rep set')
-assert.equal(moved['attic-insulation']?.option, 'high', 'and refills what the rep left')
+assert.equal(moved['attic-insulation']?.option, 'r30', 'and refills what the rep left')
 for (const roofType of [null, 'shingle'] as const) {
   const recent = resolveHomeMaterials(facts(profile({ yearBuilt: 'Post-2014', roofType })))
   assert.ok(['new', 'good'].includes(recent.roof!.wear!), `Post-2014 roof (${roofType}): New or Good, so no leak`)
@@ -646,6 +659,25 @@ const ductsOnly = combineCuts({ trades: [], addOns: ['ducts'], addOnTrades: ['hv
 assert.deepEqual(ductsOnly.parts, [{ source: 'ducts', percent: 5 }], 'ducts alone earn only their +5')
 assert.deepEqual(combineCuts({ trades: ['hvac'], addOns: ['ducts'] }, 'gas', TRADE_BILL_CUTS).parts.map(part => part.percent), [20, 5], 'the calculator\'s call is unchanged')
 assert.deepEqual(TRADE_BILL_CUTS['foundation-and-crawl-space'], { base: { electric: 2, gas: 5 } })
+// R-38 steps up past R-30: 2 points more on both bills, kept apart from the efficiency upgrade that picks it.
+const billCuts: TradeBillCuts = TRADE_BILL_CUTS
+assert.deepEqual(billCuts['attic-and-basement']?.addOns?.['insulation-step-up'], { electric: 2, gas: 2 }, 'R-38 cuts 2 points more than R-30 on both bills')
+assert.equal(BILL_CUT_ADD_ON_LABELS['insulation-step-up'], 'R-38 insulation')
+assert.deepEqual(insulation.materials['blown-r38'].stepUp, { from: 'blown-r30', cut: 'insulation-step-up' }, 'blown R-38 steps up from blown R-30')
+assert.deepEqual(insulation.materials['batts-r38'].stepUp, { from: 'batts-r30', cut: 'insulation-step-up' }, 'batts R-38 steps up from R-30 batts')
+for (const assembly of Object.values(ASSEMBLIES)) {
+  for (const part of assembly.parts) {
+    for (const [id, material] of Object.entries(part.materials)) {
+      if (material.stepUp) {
+        const from = part.materials[material.stepUp.from]
+        assert.ok(from && from.energyRank !== undefined && material.energyRank !== undefined && from.energyRank < material.energyRank, `${part.id} ${id}: steps up from a lower-ranked material`)
+      }
+    }
+  }
+}
+// @ts-expect-error a material earns an add-on in place of the base, or steps up past a material, never both
+const cutAndStepUp: PartMaterialDefinition = { copy: { label: 'x', detail: 'x' }, cut: 'attic-fan', stepUp: { from: 'blown-r30', cut: 'insulation-step-up' } }
+assert.ok(cutAndStepUp)
 assert.equal(OWENS_CORNING_SHINGLES.length, 17)
 assert.ok(OWENS_CORNING_SHINGLES.every(color => color.agedSri >= 16), 'every colour meets Title 24')
 assert.deepEqual(OWENS_CORNING_SHINGLES.filter(color => color.line === 'cool' && color.agedSri >= 20).map(color => color.name).sort(), ['Amber', 'Oyster Shell', 'Shasta White', 'Sierra Gray'])
@@ -679,6 +711,10 @@ assert.equal(windowsFor({ windowsType: 'double' }).glazing.material, 'double-pan
 assert.equal(windowsFor({ windowsType: null, yearBuilt: '1950-1978' }).glazing.material, 'single-pane', 'the era guess')
 assert.equal(windowsFor({ windowsType: 'single' }).frame.material, 'original-frame')
 const wallFor = (f: HomeFacts) => inferExteriorWallExistingConditions(f, resolveHomeMaterials(f))
+const repaintWith = (scopeId: ScopeId) => resolveAssembly(ASSEMBLIES['exterior-wall'], { existing: wallFor({ property: profile({}), materials: HOME_MATERIAL_FACTS_UNSET, year: 2026 }), proposedScopeIds: [scopeId], view: 'proposed' }).find(part => part.id === 'paint')!
+assert.deepEqual([repaintWith(SCOPE_IDS.waterBasedRepaint).material, repaintWith(SCOPE_IDS.waterBasedRepaint).condition], ['standard', 'installed'], 'the water-based repaint puts on regular paint, new')
+assert.equal(repaintWith(SCOPE_IDS.coolLifeRepaint).material, 'cool')
+assert.equal(NOT_DRAWN[SCOPE_IDS.waterBasedRepaint], undefined, 'the water-based repaint is drawn')
 assert.equal(wallFor(facts(profile({}))).form, 'stucco')
 assert.equal(wallFor(facts(profile({}))).parts.paint.material, 'standard')
 assert.equal(wallFor(facts(profile({}), { exteriorPaint: 'cool' })).parts.paint.material, 'cool')
@@ -696,5 +732,38 @@ const resolvedRoof = resolveAssembly(roofAttic, { existing: inferRoof(profile({}
 assert.ok(resolvedRoof.find(part => part.id === 'covering')?.wear, 'wear rides through the resolver')
 const installedRoof = resolveAssembly(roofAttic, { existing: inferRoof(profile({})), proposedScopeIds: [SCOPE_IDS.roofTearOff], view: 'proposed' })
 assert.equal(installedRoof.find(part => part.id === 'covering')?.wear, undefined, 'an installed part has no wear')
+
+// Attic insulation follows what is there: a top off lays its blanket over the old one, a replace takes the old one's place,
+// and batts change only how a replace looks.
+{
+  const insulationOf = (level: PropertyProfile['insulationLevel'], scopeId: ScopeId, efficiencyUpgrades: EfficiencyUpgradeId[], installStyles: InstallStyleId[]) =>
+    resolveAssembly(roofAttic, { existing: inferRoof(profile({ insulationLevel: level })), proposedScopeIds: [scopeId], view: 'proposed', efficiencyUpgrades, installStyles }).find(part => part.id === 'attic-insulation')!
+  const topOff = insulationOf('r19', SCOPE_IDS.atticInsulationTopOff, [], [])
+  assert.deepEqual([topOff.material, topOff.over], ['blown-r30', 'batts-r19'], 'a top off over R-19 is blown R-30 laid over the old batts')
+  const replace = insulationOf('r19', SCOPE_IDS.atticInsulationReplacement, [], [])
+  assert.deepEqual([replace.material, 'over' in replace], ['blown-r30', false], 'a replace is blown R-30 with nothing under it')
+  assert.equal(insulationOf('r19', SCOPE_IDS.atticInsulationReplacement, [], ['batts']).material, 'batts-r30', 'batts lay the replace as R-30 batts')
+  assert.equal(insulationOf('r19', SCOPE_IDS.atticInsulationReplacement, ['r38-insulation'], ['batts']).material, 'batts-r38', 'batts with the R-38 step are R-38 batts')
+  assert.equal(insulationOf('r19', SCOPE_IDS.atticInsulationReplacement, ['r38-insulation'], []).material, 'blown-r38')
+  const toppedBatts = insulationOf('r19', SCOPE_IDS.atticInsulationTopOff, [], ['batts'])
+  assert.deepEqual([toppedBatts.material, toppedBatts.over], ['blown-r30', 'batts-r19'], 'a top off is always blown in, whatever the style')
+  assert.equal('over' in insulationOf('none', SCOPE_IDS.atticInsulationTopOff, [], []), false, 'a top off over nothing lies over nothing')
+  assert.equal(insulationOf('r19', SCOPE_IDS.atticInsulationTopOff, [], []).condition, 'installed')
+
+  const materials = roofAttic.parts.find(part => part.id === 'attic-insulation')!.materials
+  const insulates = (id: string) => [materials[id].thermal?.rValue, materials[id].energyRank]
+  assert.deepEqual(insulates('blown-r30'), insulates('batts-r30'), 'blown and batts R-30 insulate the same')
+  assert.deepEqual(insulates('batts-r38'), insulates('blown-r38'), 'blown and batts R-38 insulate the same')
+  assert.deepEqual([materials['blown-r30'].copy.label, materials['batts-r38'].copy.label], ['R-30 blown-in insulation', 'R-38 batts'])
+  assert.equal(installedMaterial(SCOPE_IDS.atticInsulationReplacement, [], ['batts']), materials['batts-r30'], 'the installed material reads the style')
+  assert.equal(installedMaterial(SCOPE_IDS.atticInsulationReplacement, ['r38-insulation'], ['batts']), materials['batts-r38'])
+  assert.equal(installedMaterial(SCOPE_IDS.atticInsulationTopOff, ['r38-insulation'], ['batts']), materials['blown-r38'])
+
+  // The insulation under a flat roof is in closed joists, reached only when the deck comes off.
+  assert.equal(atticReachable('pitched', []), true)
+  assert.equal(atticReachable('low-slope', []), false)
+  assert.equal(atticReachable('low-slope', [SCOPE_IDS.roofTorchDown]), false, 'torch down alone keeps the deck on')
+  assert.equal(atticReachable('low-slope', [SCOPE_IDS.roofTorchDown, SCOPE_IDS.roofRedeck]), true)
+}
 
 console.log('✓ construction model')

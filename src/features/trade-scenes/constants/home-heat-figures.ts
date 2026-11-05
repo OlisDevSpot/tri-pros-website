@@ -41,6 +41,19 @@ export const STARTING_HOME_HEAT: Record<Climate, Record<HeatWeather, StartingHom
   },
 }
 
+// Blown-in and batts at one R-value are one blanket to the heat: the style is only a look.
+const R30_HEAT: WeatherHeatEffects = {
+  normal: { readings: { ceiling: -1.9 }, flows: { roofPasses: [1, 0.65] }, load: 0.63 },
+  summer: { readings: { ceiling: -4.2 }, flows: { roofPasses: [1, 0.65] }, load: 0.63 },
+  winter: { readings: { roof: -1.4, attic: -3.5, ceiling: 2.2 }, flows: { roofSource: 0.75, roofPasses: [0.65, 1] }, load: 0.63 },
+}
+
+const R38_HEAT: WeatherHeatEffects = {
+  normal: { readings: { ceiling: -2.5 }, flows: { roofPasses: [1, 0.5] }, load: 0.55 },
+  summer: { readings: { ceiling: -5.6 }, flows: { roofPasses: [1, 0.5] }, load: 0.55 },
+  winter: { readings: { roof: -2, attic: -5, ceiling: 2.8 }, flows: { roofSource: 0.6, roofPasses: [0.5, 1] }, load: 0.55 },
+}
+
 // A part id maps to its material, or 'absent' for a part drawn with no material, then to what that does in each weather.
 export const PART_HEAT_EFFECTS: Readonly<Record<string, Readonly<Record<string, WeatherHeatEffects>>>> = {
   // Insulation lies under the attic's air, so on a mild or hot day it leaves the attic as hot as it was and holds the heat
@@ -56,16 +69,10 @@ export const PART_HEAT_EFFECTS: Readonly<Record<string, Readonly<Record<string, 
       summer: { readings: { ceiling: -2.8 }, flows: { roofPasses: [1, 0.8] }, load: 0.8 },
       winter: { readings: { roof: -0.8, attic: -2, ceiling: 1.4 }, flows: { roofSource: 0.85, roofPasses: [0.8, 1] }, load: 0.8 },
     },
-    'batts-r30': {
-      normal: { readings: { ceiling: -1.9 }, flows: { roofPasses: [1, 0.65] }, load: 0.63 },
-      summer: { readings: { ceiling: -4.2 }, flows: { roofPasses: [1, 0.65] }, load: 0.63 },
-      winter: { readings: { roof: -1.4, attic: -3.5, ceiling: 2.2 }, flows: { roofSource: 0.75, roofPasses: [0.65, 1] }, load: 0.63 },
-    },
-    'blown-r38': {
-      normal: { readings: { ceiling: -2.5 }, flows: { roofPasses: [1, 0.5] }, load: 0.55 },
-      summer: { readings: { ceiling: -5.6 }, flows: { roofPasses: [1, 0.5] }, load: 0.55 },
-      winter: { readings: { roof: -2, attic: -5, ceiling: 2.8 }, flows: { roofSource: 0.6, roofPasses: [0.5, 1] }, load: 0.55 },
-    },
+    'batts-r30': R30_HEAT,
+    'blown-r30': R30_HEAT,
+    'blown-r38': R38_HEAT,
+    'batts-r38': R38_HEAT,
   },
   'radiant-barrier': {
     foil: {

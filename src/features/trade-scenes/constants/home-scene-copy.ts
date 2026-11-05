@@ -1,62 +1,15 @@
-import type { HomeAnchorId, ReadingId } from '@/features/trade-scenes/constants/home-anchors'
-import type { FactsTab, HomeSystemId, HomeView, SavingsCategory, SlotGroup, SystemPartId, TradeSceneInputs } from '@/features/trade-scenes/types'
+import type { ReadingId } from '@/features/trade-scenes/constants/home-anchors'
+import type { BuildRowPartId, FactsTab, HomeSystemId, HomeView, SavingsCategory, SlotGroup, SystemPieceId, TradeSceneInputs } from '@/features/trade-scenes/types'
 import type { CustomerAgeGroup, HouseholdType, YearBuiltRange } from '@/shared/constants/enums/customers'
-import type { AssemblyId } from '@/shared/modules/construction/core/constants/assembly-ids'
 import type { Climate } from '@/shared/modules/construction/core/constants/climate-presets'
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
 import type { AcTons, CrawlInsulation, DuctMaterial, ExteriorPaint, FoundationType, GutterOption, HVACComponent, HVACType, InsulationLevel, PaintWearKind, PaintWearLevel, RoofType, Wear, WindowsType } from '@/shared/modules/construction/core/constants/enums'
 import type { HomeMaterialId } from '@/shared/modules/construction/core/constants/home-material-ids'
+import type { InstallStyleId } from '@/shared/modules/construction/core/constants/install-styles'
 import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
-import type { Basis, HeatWeather, PartCondition, ShingleColor, Weather } from '@/shared/modules/construction/core/types'
+import type { HeatWeather, PartCondition, ShingleColor, Weather } from '@/shared/modules/construction/core/types'
 
 import { BILL_CATEGORY_LABELS } from '@/shared/modules/construction/core/constants/bill-categories'
-
-export const ERA_PHRASE = {
-  'Pre-1950': 'before 1950',
-  '1950-1978': 'between 1950 and 1978',
-  '1978-1998': 'between 1978 and 1998',
-  '1998-2014': 'between 1998 and 2014',
-  'Post-2014': 'after 2014',
-} as const satisfies Record<YearBuiltRange, string>
-
-export interface HeadingCopy {
-  eyebrow: string
-  // "your" only over a recorded basis: anything else is a guess about the home, never a claim about it.
-  title: Record<Basis, (eraPhrase: string) => string>
-  lead: Record<TradeSceneInputs['view'], Record<Weather, string>>
-}
-
-// Placeholder copy until the owner's copy pass. The proposed lines promise no result, because the previewed scopes may change little.
-export const ASSEMBLY_HEADINGS: Partial<Record<AssemblyId, HeadingCopy>> = {
-  'roof-attic': {
-    eyebrow: 'Roof & attic, x-rayed',
-    title: {
-      'recorded': () => 'What is above your ceiling',
-      'era-typical': eraPhrase => `What homes built ${eraPhrase} usually hide`,
-      'typical': () => 'What is above a typical ceiling',
-    },
-    lead: {
-      existing: {
-        normal: 'A mild afternoon. A little of the sun\'s heat still works its way down to the ceiling.',
-        summer: 'A summer afternoon. The sun bakes the roof, and the heat works its way down to the ceiling.',
-        winter: 'A cold night. The warmth in the rooms below rises through the ceiling and out through the roof.',
-        rain: 'A steady rain tests every layer, from the roof down to the ceiling.',
-      },
-      proposed: {
-        normal: 'The same mild afternoon, with the new layers in place.',
-        summer: 'The same afternoon sun, with the new layers in place.',
-        winter: 'The same cold night, with the new layers in place.',
-        rain: 'The same steady rain, with the new layers in place.',
-      },
-    },
-  },
-}
-
-// Placeholder copy until the owner's copy pass. Names an assembly's group of upgrades; the heading's eyebrow says "x-rayed",
-// which reads wrong over a list of work.
-export const ASSEMBLY_LABELS: Partial<Record<AssemblyId, string>> = {
-  'roof-attic': 'Roof & attic',
-}
 
 export const SCENE_VIEW_LABELS = { existing: 'Today', proposed: 'Tri Pros build' } as const satisfies Record<TradeSceneInputs['view'], string>
 
@@ -66,10 +19,7 @@ export const HOME_VIEW_LABELS = { 'complete': 'Complete', 'partly-open': 'Partly
 
 // Placeholder copy until the owner's copy pass.
 export const PANEL_COPY = {
-  closeUp: 'Close-up',
-  efficiencyUpgradeHints: { 'cool-roof': 'Preview a shingle or flat roof to add a cool roof.', 'r8-ducts': 'Preview new ducts to step up to R-8.' },
-  // The home still shows a weather the zoomed kit cannot draw, so the panel says why the close-up has no flow.
-  kitWeatherMissing: (weather: string) => `The close-up has no ${weather.toLowerCase()} view yet. The home still shows it.`,
+  efficiencyUpgradeHints: { 'cool-roof': 'Preview a shingle or flat roof to add a cool roof.', 'r8-ducts': 'Preview new ducts to step up to R-8.', 'cool-paint': 'Preview a repaint to add Cool Life paint.', 'r38-insulation': 'Preview insulation to step up to R-38.' },
 } as const
 
 export const DOCK_COPY = {
@@ -91,7 +41,6 @@ export const PROFILE_COPY = {
 
 export const ROOF_TYPE_LABELS = { shingle: 'Shingle', tile: 'Tile', woodshake: 'Wood shake', flat: 'Torch down', metal: 'Metal' } as const satisfies Record<RoofType, string>
 export const YEAR_BUILT_LABELS = { 'Pre-1950': 'Before 1950', '1950-1978': '1950–1978', '1978-1998': '1978–1998', '1998-2014': '1998–2014', 'Post-2014': 'After 2014' } as const satisfies Record<YearBuiltRange, string>
-export const INSULATION_LEVEL_LABELS = { none: 'None', low: 'Low', medium: 'Medium', high: 'High' } as const satisfies Record<InsulationLevel, string>
 export const FOUNDATION_TYPE_LABELS = { raised: 'Raised', slab: 'Slab' } as const satisfies Record<FoundationType, string>
 export const HVAC_TYPE_LABELS = { 'central': 'Central', 'wall-mounted': 'Wall unit', 'portable': 'Portable', 'package-unit': 'Package unit' } as const satisfies Record<HVACType, string>
 export const HVAC_COMPONENT_LABELS = { furnace: 'Furnace', ac: 'AC', both: 'Both' } as const satisfies Record<HVACComponent, string>
@@ -104,11 +53,10 @@ export const SCENE_COPY = {
   fallback: 'The 3D home cannot start on this device. The controls below still work.',
   stillAlt: (weather: Weather) => `A still of the home in ${WEATHER_LABELS[weather].toLowerCase()} weather`,
   loading: 'Loading the home…',
-  backToHome: 'Whole home',
   recenter: 'Recenter',
 } as const
 
-// Placeholder copy until the owner's copy pass. What the zoomed close-up says about its parts.
+// Placeholder copy until the owner's copy pass. What a system card says about the parts up close.
 export const PART_COPY = {
   listLabel: 'What is up there',
   peel: 'Peel it apart',
@@ -117,11 +65,6 @@ export const PART_COPY = {
   // Shown beside each part: what the work does to it, in the homeowner's terms.
   condition: { retained: 'Kept', worn: 'Original', installed: 'New', absent: 'Missing' } satisfies Record<PartCondition, string>,
 } as const
-
-// What tapping each anchor opens; an anchor with no kit has no pin, so no label.
-export const ANCHOR_PIN_LABELS: Partial<Record<HomeAnchorId, string>> = {
-  roof: 'Inside the roof',
-}
 
 // Placeholder copy until the owner's copy pass and the disclosure sign-off. The figures are claims made to a homeowner, so
 // each carries an asterisk, and no line says "your": the bill is typed in the room, not read from a record.
@@ -201,7 +144,7 @@ export const PART_LABELS: Record<string, string> = {
 export const SCOPES_AND_ADDONS_COPY = {
   noChange: 'No change',
   verbs: { overlay: 'Overlay', torchDown: 'Torch down', tearOff: 'Tear-off', tileReset: 'Tile reset', redeck: 'Redeck', add: 'Add', topOff: 'Top off', replace: 'Replace', seal: 'Seal', new: 'New', repaint: 'Repaint' },
-  blocked: { 'roof-not-set': 'Set the roof under Home facts', 'nothing-on-roof': 'Nothing offered on a metal roof yet', 'needs-tear-off': 'Needs a tear-off: an overlay keeps the old roof on', 'already-new': 'Already new' },
+  blocked: { 'roof-not-set': 'Set the roof under Home facts', 'nothing-on-roof': 'Nothing offered on a metal roof yet', 'needs-tear-off': 'Needs a tear-off: an overlay keeps the old roof on', 'needs-redeck': 'Needs a redeck: the insulation is under the deck', 'already-new': 'Already new' },
   unitBlocked: { 'wall-mounted': 'Nothing offered for a wall unit yet', 'portable': 'Nothing offered for a portable unit yet' },
   notSet: 'Not set',
 } as const
@@ -210,9 +153,9 @@ export const ROOF_FORM_LABELS = { 'pitched': 'Pitched', 'low-slope': 'Flat' } as
 
 export const BUILD_SWITCH_COPY = { compact: { existing: 'Today', proposed: 'Build' } } as const
 
-export const SHORTCUT_COPY = { title: 'Shortcut keys', lines: { weather: 'Weather: Normal, Summer, Winter, Rain', homeView: 'Complete or Partly open', thermal: 'Thermal on or off', build: 'Today or the Tri Pros build', modify: 'Modify: search a change', wholeHome: 'Step back: a menu, the system, the window, then the close-up', recenter: 'Recenter the camera', sheet: 'These keys' }, keyNames: { escape: 'Esc' } } as const
+export const SHORTCUT_COPY = { title: 'Shortcut keys', lines: { weather: 'Weather: Normal, Summer, Winter, Rain', homeView: 'Complete or Partly open', thermal: 'Thermal on or off', build: 'Today or the Tri Pros build', modify: 'Modify: search a change', wholeHome: 'Step back: a menu, a Benefits detail, Look inside, the system, then the window', recenter: 'Recenter the camera', sheet: 'These keys' }, keyNames: { escape: 'Esc' } } as const
 
-export const EFFICIENCY_UPGRADE_LABELS = { 'cool-roof': 'Cool roof', 'r8-ducts': 'Step up to R-8' } as const satisfies Partial<Record<EfficiencyUpgradeId, string>>
+export const EFFICIENCY_UPGRADE_LABELS = { 'cool-roof': 'Cool roof', 'r8-ducts': 'Step up to R-8', 'cool-paint': 'Cool Life paint', 'r38-insulation': 'Step up to R-38' } as const satisfies Partial<Record<EfficiencyUpgradeId, string>>
 
 export const WEAR_LABELS = { new: 'New', good: 'Good', fair: 'Fair', worn: 'Worn', failing: 'Failing' } as const satisfies Record<Wear, string>
 export const HOME_MATERIAL_LABELS = { 'roof': 'Roof & gutters', 'attic-insulation': 'Attic insulation', 'windows': 'Windows', 'exterior-paint': 'Exterior paint', 'heating-cooling': 'Heating & cooling', 'ducts': 'Ducts', 'crawl-insulation': 'Crawl space insulation' } as const satisfies Record<HomeMaterialId, string>
@@ -271,7 +214,7 @@ export const CONTROLS_COPY = {
     showing: { existing: 'Showing today', proposed: 'Showing the build' } satisfies Record<TradeSceneInputs['view'], string>,
     noneOnSlab: 'Nothing to add on a slab',
     condition: 'Condition',
-    eraAttic: { none: 'No attic insulation', low: 'R-11 attic', medium: 'R-19 attic', high: 'R-30 attic' } as const satisfies Record<InsulationLevel, string>,
+    eraAttic: { none: 'No attic insulation', r11: 'R-11 attic', r19: 'R-19 attic', r30: 'R-30 attic', r38: 'R-38 attic' } as const satisfies Record<InsulationLevel, string>,
     // DUCT_LABELS reads "Original", which loses the noun in the line; the era guesses never give R-8.
     eraDucts: { 'original-flex': 'Original ducts', 'r6-silver-flex': 'R-6 ducts' } as const satisfies Record<Exclude<DuctMaterial, 'r8-flex'>, string>,
     eraLine: (eraLabel: string, guessed: boolean) => guessed ? `Not sure, so ${eraLabel}:` : `${eraLabel} code:`,
@@ -290,17 +233,18 @@ export const CONTROLS_COPY = {
       'deck': { add: 'Redeck', short: () => 'Redeck' },
       'gutter': { add: 'Gutters', short: () => 'New gutters' },
       'radiant-barrier': { add: 'Radiant barrier', short: () => 'Radiant barrier' },
-      'attic-insulation': { add: 'Insulation', short: (verb: string) => verb === SCOPES_AND_ADDONS_COPY.verbs.topOff ? verb : 'R-30 insulation' },
+      // The way, never an R-value: the R-38 chip beside it says which level goes in.
+      'attic-insulation': { add: 'Insulation', short: (verb: string) => verb },
       'air-sealing': { add: 'Air sealing', short: () => 'Air sealing' },
       'attic-fan': { add: 'Attic fan', short: () => 'Attic fan' },
       'glazing': { add: 'New windows', short: () => 'Dual-pane windows' },
-      'paint': { add: 'Cool Life repaint', short: () => 'Cool Life repaint' },
+      'paint': { add: 'Repaint', short: () => 'Repaint' },
       'air-handler': { add: 'New system', short: () => 'New system' },
       // No chip words of its own yet, so it reads its part's name.
       'package-unit': { add: PART_LABELS['package-unit'], short: () => PART_LABELS['package-unit'] },
       'duct-runs': { add: 'New ducts', short: () => 'New ducts' },
       'floor-insulation': { add: 'Crawl insulation', short: () => 'Crawl insulation' },
-    } satisfies Record<SystemPartId, { add: string, short: (verb: string) => string }>,
+    } satisfies Record<BuildRowPartId, { add: string, short: (verb: string) => string }>,
   },
   modify: {
     placeholder: { wide: 'Search a change: tile, attic fan, 4 ton…', phone: 'Search a change' },
@@ -315,21 +259,158 @@ export const CONTROLS_COPY = {
     wearName: (material: string) => `${material} condition`,
     upgradeChoices: { on: 'Add', off: 'No' },
   },
-  benefits: {
-    title: 'What the build brings',
-    soon: 'Coming soon',
-    body: 'Benefits are being designed. The bills below already feed them.',
-    tag: SCENE_VIEW_LABELS.proposed,
-    basedOn: 'Based on',
-    areaMissing: 'Area missing',
-    billsLine: (climateLabel: string, electric: number, gas: number) => `${climateLabel} · $${Math.round(electric)} electric · $${Math.round(gas)} gas`,
-    editBills: 'Edit bills',
-    closeBills: 'Close bills',
-    // One sentence for both bills, each as typed or from its climate's default.
-    billsSource: (electricTyped: boolean, gasTyped: boolean, climateLabel: string) => {
-      const source = (typed: boolean) => typed ? 'as typed' : `from the ${climateLabel.toLowerCase()} defaults`
-      return `${BILL_CATEGORY_LABELS.electric} ${source(electricTyped)}, ${BILL_CATEGORY_LABELS.gas.toLowerCase()} ${source(gasTyped)}.`
+} as const
+
+export const BENEFITS_COPY = {
+  tag: SCENE_VIEW_LABELS.proposed,
+  areaMissing: 'Area missing',
+  toast: 'Showing the Tri Pros build',
+  head: {
+    todayCosts: 'Today\'s costs',
+    // The area leads the line in its own span, so a missing one can take the attention tone.
+    parts: (electric: string, gas: string, repairs: string) => ` · $${electric} electric · $${gas} gas · $${repairs} repairs`,
+    editCosts: 'Edit costs',
+    why: 'What are future savings?',
+  },
+  editor: {
+    label: 'Today\'s costs',
+    bills: 'The bills, a month',
+    repairs: 'Repairs, a year',
+    area: 'Area',
+    missing: 'missing',
+    missingNote: 'Until it is set the bills use the inland defaults.',
+    setNote: 'From Home facts → Area; change it there.',
+    billName: (bill: string) => `${bill} bill a month`,
+    repairsName: (material: string) => `${material} repairs a year`,
+    tags: { working: 'Working number', typed: 'Typed' },
+    foot: 'Working numbers are the team\'s, not yet sourced; a typed figure wins. A material\'s condition is set in Systems.',
+  },
+  savings: {
+    clause: (bill: string, claim: string) => `${bill.toLowerCase()} ${claim}`,
+    title: (clauses: string) => `${clauses.charAt(0).toUpperCase()}${clauses.slice(1)} lower`,
+    billAmount: (bill: string, amount: string) => `$${amount} ${bill.toLowerCase()}`,
+    detail: (saved: string, bills: string) => `About $${saved} a month off ${bills}, on the team's working numbers.`,
+    and: ' and ',
+  },
+  upkeep: {
+    materials: {
+      'roof': { title: 'Roof upkeep ends', old: 'the old roof' },
+      'windows': { title: 'Window upkeep ends', old: 'the old windows' },
+      'exterior-paint': { title: 'Paint upkeep ends', old: 'the old paint' },
+      'heating-cooling': { title: 'Heating & cooling upkeep ends', old: 'the old system' },
     },
-    toast: 'Showing the Tri Pros build',
+    typed: 'typed',
+    cost: (amount: string) => `about $${amount} a year`,
+    costTyped: (amount: string) => `$${amount} a year`,
+    condition: (label: string) => ` (${label})`,
+    detail: (old: string, cost: string, condition: string) => `Keeping up ${old} costs ${cost}${condition}. The new one starts that at zero.`,
+  },
+  planet: {
+    title: 'CO₂ saved and trees equivalent',
+    detail: 'Figures come soon after launch.',
+  },
+  matrix: {
+    noChange: 'No change',
+    upgradesJoin: ', ',
+    soon: 'soon',
+    count: (count: number) => count === 1 ? '1 benefit' : `${count} benefits`,
+    none: 'none',
+    cellName: (system: string, kind: string, count: string) => `${system}, ${kind}: ${count}`,
+    headName: (head: string, count: string) => `${head}: ${count}`,
+  },
+  rail: {
+    back: 'All benefits',
+    join: ' · ',
+    across: (kind: string) => `${kind} across the home`,
+    savings: (amount: string) => `${amount}${SAVINGS_COPY.billSuffix} in savings`,
+    soon: 'Coming soon',
+  },
+  empty: {
+    title: 'Nothing picked for the build yet',
+    body: 'Pick upgrades in Modify or Systems, and every benefit they bring appears here.',
+    openModify: 'Open Modify',
+  },
+  futures: {
+    by: (year: string) => `By ${year}`,
+    without: 'Without',
+    with: 'With',
+    // Dropped on the phone, where the three figures share one row.
+    theBuild: ' the build',
+    saves: 'Saves',
+    today: { lead: 'Today ', to: ' → ', saves: ', saves ', tail: ' a month' },
+    axis: 'Look ahead to',
+  },
+  why: {
+    answer: {
+      without: (today: string, then: string, when: string) => `Without the build the costs would be $${today} a month today and $${then} by ${when}.`,
+      with: (today: string, then: string, when: string) => ` With it they could be $${today}, and $${then} by ${when}.`,
+      withoutNow: (today: string) => `Without the build the costs would be $${today} a month today.`,
+      withNow: (today: string) => ` With it they could be $${today}.`,
+      saves: ' The difference is the saving: about ',
+      savesNow: (amount: string) => `$${amount} a month now`,
+      and: ' and ',
+      savesBy: (amount: string, when: string) => `$${amount} by ${when}`,
+      end: '.',
+    },
+    heads: { uses: 'What it uses', method: 'How it’s worked out', math: 'The math' },
+    tags: { working: 'Working number', typed: 'Typed', calculated: 'Calculated' },
+    uses: {
+      bill: (bill: string) => `${bill} bill`,
+      cut: (bill: string) => `The build’s ${bill.toLowerCase()} cut`,
+      rise: (bill: string) => `${bill} rates rise`,
+      repairs: (material: string) => `${material} repairs`,
+      repairsEnded: (material: string) => `${material} repairs, ended by the build`,
+      construction: 'Construction prices rise',
+      rate: (rate: string) => `${rate}%/yr`,
+    },
+    methodText: 'Without the build is what the home costs to run and keep up: the two bills and the repairs on each material at its condition. With the build, the bills drop by the build’s cuts and the repairs end on every material the build replaces; the others keep theirs. The saving is the difference. Ahead, the bills rise at their rates and the repairs with construction prices.',
+    methodYear: (when: string, year: string) => ` The coming twelve months are year 1 at today’s figures, so ${when} is year ${year}.`,
+    methodNow: ' The coming twelve months are year 1, at today’s figures.',
+    methodRates: ' The rates are the team’s working numbers, not yet sourced, the same ones the ROI calculator uses.',
+    blocks: {
+      today: 'Today, year 1',
+      year: (when: string, year: string) => `${when}, year ${year}`,
+    },
+    rows: {
+      without: 'Without the build',
+      with: 'With the build',
+      saves: 'Saves',
+      equals: '=',
+      parts: (electric: string, gas: string, repairs: string) => `$${electric} electric + $${gas} gas + $${repairs} repairs`,
+      cutOf: (claim: string, bill: string) => `${claim} of ${bill.toLowerCase()}`,
+      repairsEnded: 'the repairs on what the build replaces',
+      growthLead: 'today’s figures',
+      times: ' × ',
+      next: ',',
+      repairs: 'repairs',
+    },
   },
 } as const
+
+// Placeholder copy until the owner's copy pass.
+export const INSTALL_STYLE_LABELS = { batts: 'Batts' } as const satisfies Record<InstallStyleId, string>
+export const INSTALL_STYLE_HINTS = { batts: 'Preview an insulation replace to lay batts.' } as const satisfies Record<InstallStyleId, string>
+
+// Placeholder copy until the owner's copy pass. An upgrade a pick cannot go without, as Modify lists it and the card says why.
+export const REQUIRED_UPGRADE_COPY = {
+  included: 'Included',
+  reason: 'Included: without it the build would not beat or match what the home already has.',
+} as const
+
+// The pieces a construction part opens into up close; a whole system part reads its resolved part's label.
+export const SYSTEM_PART_LABELS = {
+  'pane': 'Glass',
+  'outer-pane': 'Outer pane',
+  'low-e': 'Low-E coating',
+  'argon': 'Argon gas',
+  'air-gap': 'Air gap',
+  'inner-pane': 'Inner pane',
+  'seals': 'Seals',
+  'flashing': 'Flashing',
+  'jacket': 'Silver mylar jacket',
+  'blanket': 'Insulation blanket',
+  'core': 'Inner core on its wire coil',
+} as const satisfies Record<SystemPieceId, string>
+
+// Placeholder copy until the owner's copy pass.
+export const LOOK_INSIDE_COPY = { open: 'Look inside', close: 'Back to the system' } as const

@@ -9,8 +9,6 @@ export interface SceneVisibleAreaValue {
   area: SceneVisibleArea
   shape: StageShape
   stage: { width: number, height: number }
-  // A close-up is open: its card covers part of the stage, so what places itself by the area reads this too.
-  zoomed: boolean
   // The strip of canvas left of the stage, under the dashboard sidebar: the canvas spans it so a sidebar slide never
   // resizes the canvas. 0 until the stage is measured.
   canvasOverhang: number
