@@ -13,7 +13,7 @@ Auto-loaded every session. Address book + commands. Keep it short.
 ## Commands
 
 ```bash
-pnpm dev              # Start dev server (restarts itself above DEV_MEM_LIMIT_GB, default 6)
+pnpm dev              # Dev server behind a router: stops after DEV_IDLE_MIN idle (30), wakes on the next request, restarts above DEV_MEM_LIMIT_GB (6). Use the PORT URL; the :PORT+1000 line in Next output is internal.
 pnpm dev:mobile       # Dev + ngrok tunnel + QR (mobile testing)
 pnpm tunnel           # ngrok tunnel only
 pnpm lint             # ESLint

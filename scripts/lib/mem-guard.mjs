@@ -41,12 +41,14 @@ export function treeRssBytes(rootPid) {
 
 /**
  * Polls the tree under `getPid()` and calls `restart()` when it exceeds
- * `limitBytes`. Waits `settleMs` after each (re)start before judging, and
+ * `limitBytes`. Waits `settleMs` after each (re)start (own restarts, or the
+ * caller's via `getStartedAt`) before judging, and
  * gives up (with a log line) if two restarts land within `loopWindowMs`, so a
  * server that legitimately needs more than the limit is not restarted forever.
  */
 export function startMemGuard({
   getPid,
+  getStartedAt,
   restart,
   limitBytes,
   intervalMs = 30_000,
@@ -60,7 +62,8 @@ export function startMemGuard({
   let lastRestartAt = 0
   const timer = setInterval(() => {
     const pid = getPid()
-    if (!pid || Date.now() - startedAt < settleMs) return
+    const since = getStartedAt ? Math.max(getStartedAt(), startedAt) : startedAt
+    if (!pid || Date.now() - since < settleMs) return
     const bytes = treeRssBytes(pid)
     if (bytes <= limitBytes) return
     if (lastRestartAt && Date.now() - lastRestartAt < loopWindowMs) {
