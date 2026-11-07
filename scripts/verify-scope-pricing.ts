@@ -26,8 +26,10 @@ const config = resolveScopePricingConfig()
 // ── Config ──────────────────────────────────────────────────────────────────
 assert.equal(config.unitCosts.roof.BSQTearOffShingles, 480, 'roof tear-off shingles unit cost')
 assert.equal(config.unitCosts.hvac.perTonStep, 800, 'HVAC per-ton step')
-assert.equal(config.unitCosts.electricals.mpuBase, 3200, 'MPU base')
-assert.equal(config.unitCosts.electricals.mpuWithRelocation, 4000, 'MPU with relocation')
+assert.equal(config.unitCosts.electricals.mpuBase, 4500, 'MPU base')
+assert.equal(config.unitCosts.electricals.mpuWithRelocation, 5500, 'MPU with relocation')
+assert.deepEqual(config.multiplier.byScope, { installExteriorPaint: 3.5, mpu: 2.5 }, 'scope defaults')
+assert.equal(scopePricingConfigSchema.safeParse({ ...config, multiplier: { ...config.multiplier, byScope: { mpu: 1.5 } } }).success, false, 'scope default below floor is rejected')
 assert.equal(config.unitCosts.dryscapingHardscaping.dollarPerSqFtDg, 5, 'DG $/sqft')
 assert.equal(config.multiplier.default, 2.8, 'default multiplier')
 assert.equal(config.multiplier.floor, 2, 'multiplier floor')
@@ -56,17 +58,18 @@ const oneStory: ProjectContext = { numStories: 1, currentRoofType: 'shingle' }
 const twoStory: ProjectContext = { numStories: 2, currentRoofType: 'shingle' }
 const twoStoryTile: ProjectContext = { numStories: 2, currentRoofType: 'tile' }
 
-function costOf(key: PricingKey, inputs: VariableInputs, context: ProjectContext): number {
+function costOf(key: PricingKey, inputs: VariableInputs, context: ProjectContext): number | null {
   const formula = FORMULAS[key]
   const resolved = resolveFormulaVariables(formula, inputs)
   if (!resolved.ok) {
     throw new Error(`${key}: expected variables to resolve, missing ${resolved.needs.join(', ')}`)
   }
-  return Math.round(formula.compute(resolved.values, context, config.unitCosts[formula.trade], config))
+  const cost = formula.compute(resolved.values, context, config.unitCosts[formula.trade], config)
+  return cost == null ? null : Math.round(cost)
 }
 
 const roofInputs: VariableInputs = { numFlatBSQ: 5, numPitchedBSQ: 20, numLayers: 2 }
-const golden: [PricingKey, VariableInputs, ProjectContext, number][] = [
+const golden: [PricingKey, VariableInputs, ProjectContext, number | null][] = [
   ['overlay', { numFlatBSQ: 5, numPitchedBSQ: 20 }, twoStory, 11125],
   ['tearOff', roofInputs, twoStory, 13375],
   ['tearOff', roofInputs, twoStoryTile, 18775],
@@ -89,8 +92,8 @@ const golden: [PricingKey, VariableInputs, ProjectContext, number][] = [
   ['installConcrete', { installSqFt: 500 }, oneStory, 5500],
   ['installPavers', { installSqFt: 500 }, oneStory, 5500],
   ['installDg', { installSqFt: 500 }, oneStory, 2500], // prices instead of NaN
-  ['mpu', { relocationRequired: false }, oneStory, 3200],
-  ['mpu', { relocationRequired: true }, oneStory, 4000],
+  ['mpu', { relocationRequired: false }, oneStory, 4500],
+  ['mpu', { relocationRequired: true }, oneStory, 5500],
   ['installExteriorPaint', { paintType: 'coolLife', homeSqFt: 1200, garageSqFt: 200 }, oneStory, 6000],
   ['installExteriorPaint', { paintType: 'water', homeSqFt: 2000, garageSqFt: 400 }, oneStory, 5000],
   ['installExteriorPaint', { paintType: 'coolLife', homeSqFt: 2800, garageSqFt: 400 }, oneStory, 8500],
@@ -138,7 +141,7 @@ for (const key of PRICING_KEYS) {
     for (const numStories of NUM_STORIES_OPTIONS) {
       for (const currentRoofType of CURRENT_ROOF_TYPES) {
         const cost = costOf(key, inputs, { numStories, currentRoofType })
-        assert.ok(Number.isFinite(cost) && cost >= 0, `${key} ${JSON.stringify(inputs)} gave ${cost}`)
+        assert.ok(cost != null && Number.isFinite(cost) && cost >= 0, `${key} ${JSON.stringify(inputs)} gave ${cost}`)
         swept++
       }
     }
@@ -165,7 +168,8 @@ assert.equal(priceQuote({ lines: [attic], context: oneStory, config, overrides: 
 assert.equal(priceQuote({ lines: [attic], context: oneStory, config, overrides: { multiplier: Number.NaN } }).multiplier, 2.8, 'NaN override is ignored')
 assert.equal(priceQuote({ lines: [attic], context: oneStory, config, overrides: { multiplier: 3.25 } }).totalPrice, 32500, 'override above the floor applies')
 
-const tearOffLine = (id: string): QuoteLineInput => ({ id, kind: 'formula', pricingKey: 'tearOff', variables: { numFlatBSQ: 5, numPitchedBSQ: 20, numLayers: 2 } })
+type FormulaLineInput = Extract<QuoteLineInput, { kind: 'formula' }>
+const tearOffLine = (id: string): FormulaLineInput => ({ id, kind: 'formula', pricingKey: 'tearOff', variables: { numFlatBSQ: 5, numPitchedBSQ: 20, numLayers: 2 } })
 const twice = priceQuote({ lines: [tearOffLine('r1'), tearOffLine('r2')], context: twoStory, config })
 assert.equal(twice.lines.filter(line => line.status === 'priced').length, 2, 'the same scope twice prices twice')
 assert.equal(twice.totalCost, 26750, 'both tear-offs counted')
@@ -204,6 +208,31 @@ assert.deepEqual(
 assert.equal(permitted.lines[permitted.lines.length - 1]?.kind, 'permit', 'permit lines come last')
 assert.equal(priceQuote({ lines: [attic], context: oneStory, config: withPermit }).lines.length, 1, 'no roof line → no roof permit')
 
+// ── Multiplier layers ──────────────────────────────────────────────────────
+const mpuLine = (id: string, multiplierOverride: number | null = null): FormulaLineInput => ({ id, kind: 'formula', pricingKey: 'mpu', variables: { relocationRequired: false }, multiplierOverride })
+const roofLine = tearOffLine('roof') // cost 13,375 at twoStory
+const mpuQuote = priceQuote({ lines: [mpuLine('m1'), mpuLine('m2', null)], context: oneStory, config })
+const mpuPriced = mpuQuote.lines[0]
+assert.ok(mpuPriced?.status === 'priced', 'MPU priced')
+assert.deepEqual({ cost: mpuPriced.cost, price: mpuPriced.price, multiplier: mpuPriced.multiplier }, { cost: 4500, price: 11250, multiplier: 2.5 }, 'MPU sells at its scope default 2.5')
+assert.equal(priceQuote({ lines: [{ ...mpuLine('m'), variables: { relocationRequired: true } }], context: oneStory, config }).totalPrice, 13750, 'MPU with relocation at 2.5')
+assert.equal(mpuQuote.multiplier, 2.8, 'the proposal-wide value rests at the default even when every scope has its own default')
+
+const shifted = priceQuote({ lines: [mpuLine('m'), roofLine], context: twoStory, config, overrides: { multiplier: 2.85 } })
+assert.deepEqual(shifted.lines.map(line => line.status === 'priced' && line.price), [11475, 38119], 'proposal-wide 2.85 shifts MPU to 2.55 and roof to 2.85')
+assert.ok(shifted.lines[0]?.status === 'priced' && Math.abs((shifted.lines[0].multiplier ?? 0) - 2.55) < 1e-9, 'shifted MPU multiplier is 2.55')
+assert.equal(shifted.multiplier, 2.85, 'QuoteResult.multiplier is the control value, not the shift')
+
+const overridden = priceQuote({ lines: [mpuLine('m', 3), roofLine], context: twoStory, config, overrides: { multiplier: 2.85 } })
+assert.deepEqual(overridden.lines.map(line => line.status === 'priced' && line.price), [13500, 38119], 'a scope multiplier override is absolute and ignores the shift')
+assert.equal(priceQuote({ lines: [mpuLine('m', 1.5)], context: oneStory, config }).totalPrice, 9000, 'an override below the floor is clamped')
+assert.equal(priceQuote({ lines: [mpuLine('m')], context: oneStory, config, overrides: { multiplier: 2.6 } }).totalPrice, 10350, 'the control shifts a scope default down too (2.5 − 0.2 = 2.3)')
+assert.equal(priceQuote({ lines: [mpuLine('m')], context: oneStory, config, overrides: { multiplier: 2 } }).totalPrice, 9000, 'proposal-wide at the floor would put MPU at 1.7; the floor clamps it to 2.0')
+assert.equal(priceQuote({ lines: [mpuLine('m')], context: oneStory, config: { ...config, multiplier: { ...config.multiplier, byScope: { mpu: 2 } } }, overrides: { multiplier: 2.5 } }).totalPrice, 9000, 'a scope default at the floor shifted down prices at the floor')
+assert.ok(mixed.lines[1]?.status === 'priced' && mixed.lines[1].multiplier === null, 'manual lines carry no multiplier')
+const permitShifted = priceQuote({ lines: [roofLine], context: twoStory, config: withPermit, overrides: { multiplier: 2.85 } }).lines.find(line => line.kind === 'permit')
+assert.equal(permitShifted?.status === 'priced' && permitShifted.price, 713, 'permit lines use default + shift (250 × 2.85)')
+
 // ── Target price ──────────────────────────────────────────────────────────
 const atticInput: PriceQuoteInput = { lines: [attic], context: oneStory, config }
 const reached = solveMultiplier(35000, atticInput)
@@ -215,6 +244,21 @@ const tooLow = solveMultiplier(15000, atticInput)
 assert.deepEqual(tooLow, { status: 'below-floor', multiplier: 2, achievedTotal: 20000 }, 'target under the floor → floor price')
 assert.equal(solveMultiplier(1000, { lines: [attic, manual], context: oneStory, config }).status, 'below-floor', 'target under the manual lines → below floor')
 assert.deepEqual(solveMultiplier(100000, { lines: [manual], context: oneStory, config }), { status: 'no-cost' }, 'no Cost to solve against')
+const spread: PriceQuoteInput = { lines: [mpuLine('m'), roofLine], context: twoStory, config }
+const resting = priceQuote(spread) // 11,250 + 37,450 = 48,700
+const keepTotal = solveMultiplier(resting.totalPrice, spread)
+assert.ok(keepTotal.status === 'reached' && Math.abs(keepTotal.multiplier - 2.8) < 1e-9, 'target = current total solves to the resting 2.8')
+assert.equal(keepTotal.status === 'reached' && keepTotal.achievedTotal, resting.totalPrice, 'and no line moves')
+const higher = solveMultiplier(resting.totalPrice + 17875, spread) // Σ cost = 17,875, so +1.00 on every scope
+assert.ok(higher.status === 'reached' && Math.abs(higher.multiplier - 3.8) < 1e-9, 'a higher target shifts every scope equally')
+const overriddenSolve = solveMultiplier(13500 + 40125, { ...spread, lines: [mpuLine('m', 3), roofLine] }) // MPU overridden at 3 → 13,500; roof must reach 40,125 = 13,375 × 3
+assert.ok(overriddenSolve.status === 'reached' && Math.abs(overriddenSolve.multiplier - 3) < 1e-9, 'an overridden scope stays put and the shift reaches the target through the others')
+assert.deepEqual(solveMultiplier(50000, { ...spread, lines: [mpuLine('m', 3), { ...roofLine, multiplierOverride: 3 }] }), { status: 'all-overridden' }, 'every costed scope overridden → nothing to solve')
+assert.equal(solveMultiplier(9000 + 13375 * 2.3, spread).status, 'reached', 'a shift that lands MPU exactly on the floor is reached')
+const clampedCarry = solveMultiplier(8000 + 13375 * 2.3, spread) // −0.556 would put MPU at 1.944: MPU is held at the floor ($9,000) and the roof carries the rest
+assert.ok(clampedCarry.status === 'reached' && Math.abs(clampedCarry.multiplier - (2.8 - 7687.5 / 13375)) < 1e-9, 'a scope the floor clamps is held there and the shift is re-solved over the rest')
+assert.ok(clampedCarry.status === 'reached' && Math.abs(clampedCarry.achievedTotal - (8000 + 13375 * 2.3)) <= 1, 'the target is still reached within rounding')
+assert.deepEqual(solveMultiplier(30000, spread), { status: 'below-floor', multiplier: 2, achievedTotal: 35750 }, 'a target under the floor total reports the floor and the floor total')
 
 // ── Agent panel helpers ─────────────────────────────────────────────────────
 assert.equal(stepMultiplier(2.8, 0.05, 2), 2.85, 'step up rounds to 2 decimals')
@@ -222,11 +266,12 @@ assert.equal(stepMultiplier(2.03, -0.05, 2), 2, 'step down stops at the floor')
 assert.equal(formatUnitCost(3.5), '$3.50', 'fractional Unit Cost keeps cents')
 assert.equal(formatUnitCost(8500), '$8,500', 'whole Unit Cost has no cents')
 assert.deepEqual(unitCostEntries(config, 'electricals'), [
-  { key: 'mpuBase', label: 'Main panel upgrade', value: 3200 },
-  { key: 'mpuWithRelocation', label: 'Main panel upgrade (with relocation)', value: 4000 },
+  { key: 'mpuBase', label: 'Main panel upgrade', value: 4500 },
+  { key: 'mpuWithRelocation', label: 'Main panel upgrade (with relocation)', value: 5500 },
 ], 'Unit Cost entries carry the seed labels')
 assert.deepEqual(tradesInQuote(mixed), ['atticBasement'], 'trades from formula lines only')
 assert.match(describeTargetResult(tooLow, 2), /2\.00x floor/, 'below-floor copy names the floor')
 assert.match(describeTargetResult({ status: 'no-cost' }, 2), /formula/, 'no-cost copy')
+assert.match(describeTargetResult({ status: 'all-overridden' }, 2), /own multiplier/, 'all-overridden copy')
 
 console.log('✅ verify-scope-pricing passed')

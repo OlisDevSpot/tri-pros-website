@@ -14,7 +14,7 @@ export function useScopePricingQuote(control: Control<ScopePricingFormValues>, c
   return useMemo(() => {
     const input = { lines, context, config }
     const solved = agent.targetPrice == null ? null : solveMultiplier(agent.targetPrice, input)
-    const multiplier = solved != null && solved.status !== 'no-cost' ? solved.multiplier : agent.multiplier
+    const multiplier = solved != null && 'multiplier' in solved ? solved.multiplier : agent.multiplier
     return { quote: priceQuote({ ...input, overrides: { multiplier } }), solved }
   }, [context, lines, agent, config])
 }

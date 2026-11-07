@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { PRICING_KEYS } from '@/features/calculators/scope-pricing-calculator/constants/pricing-keys'
+
 const unitCost = z.number().min(0)
 const permitFee = z.object({ amount: z.number().min(0), enabled: z.boolean() })
 
@@ -61,8 +63,15 @@ export const scopePricingConfigSchema = z.object({
     .refine(tiers => tiers.smallBelowSqFt < tiers.largeAboveSqFt, { message: 'The small-home threshold must be below the large-home threshold' }),
   permitFees: z.object({ roof: permitFee, hvac: permitFee }),
   multiplier: z
-    .object({ default: z.number().positive(), floor: z.number().positive() })
-    .refine(multiplier => multiplier.default >= multiplier.floor, { message: 'The default multiplier cannot be below the floor' }),
+    .object({
+      default: z.number().positive(),
+      floor: z.number().positive(),
+      byScope: z.partialRecord(z.enum(PRICING_KEYS), z.number().positive()),
+    })
+    .refine(
+      multiplier => multiplier.default >= multiplier.floor && Object.values(multiplier.byScope).every(scopeDefault => scopeDefault >= multiplier.floor),
+      { message: 'No multiplier default can be below the floor' },
+    ),
   taxRatePercent: z.number().min(0).max(20),
 })
 

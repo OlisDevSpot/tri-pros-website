@@ -25,7 +25,7 @@ export const SCOPE_PRICING_CONFIG_DEFAULTS = {
       dollarPerSqFtPavers: 11,
       dollarPerSqFtDg: 5,
     },
-    electricals: { mpuBase: 3200, mpuWithRelocation: 4000 },
+    electricals: { mpuBase: 4500, mpuWithRelocation: 5500 },
     exteriorPaintSiding: {
       coolLifePaintSm: 6000,
       coolLifePaintAvg: 7000,
@@ -37,6 +37,6 @@ export const SCOPE_PRICING_CONFIG_DEFAULTS = {
   },
   exteriorPaintTiers: { smallBelowSqFt: 1500, largeAboveSqFt: 3000 },
   permitFees: { roof: { amount: 250, enabled: false }, hvac: { amount: 250, enabled: false } },
-  multiplier: { default: 2.8, floor: 2 },
+  multiplier: { default: 2.8, floor: 2, byScope: { installExteriorPaint: 3.5, mpu: 2.5 } },
   taxRatePercent: 7.5,
 } satisfies ScopePricingConfig

@@ -34,7 +34,7 @@ export function AgentPanel({ config, quote, solved }: Props) {
         </SheetHeader>
         <div className="flex flex-col gap-6 px-4 pb-6">
           <AgentReadouts quote={quote} />
-          <MultiplierControl appliedMultiplier={quote.multiplier} config={config} targetActive={solved != null && solved.status !== 'no-cost'} />
+          <MultiplierControl appliedMultiplier={quote.multiplier} config={config} targetActive={solved != null && 'multiplier' in solved} />
           <TargetPriceControl floor={config.multiplier.floor} solved={solved} />
           <UnitCostsList config={config} trades={tradesInQuote(quote)} />
         </div>
