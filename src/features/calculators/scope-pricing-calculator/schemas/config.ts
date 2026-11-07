@@ -56,11 +56,13 @@ export const scopePricingConfigSchema = z.object({
       waterPaintSm: unitCost,
       waterPaintAvg: unitCost,
       waterPaintLarge: unitCost,
+      garage: unitCost,
+      additionalStory: unitCost,
     }),
   }),
-  exteriorPaintTiers: z
-    .object({ smallBelowSqFt: z.number().positive(), largeAboveSqFt: z.number().positive() })
-    .refine(tiers => tiers.smallBelowSqFt < tiers.largeAboveSqFt, { message: 'The small-home threshold must be below the large-home threshold' }),
+  exteriorPaintHomeSizes: z
+    .object({ smallMaxSqFt: z.number().positive(), averageMaxSqFt: z.number().positive(), largeMaxSqFt: z.number().positive() })
+    .refine(sizes => sizes.smallMaxSqFt < sizes.averageMaxSqFt && sizes.averageMaxSqFt < sizes.largeMaxSqFt, { message: 'Home sizes must ascend: small, average, large' }),
   permitFees: z.object({ roof: permitFee, hvac: permitFee }),
   multiplier: z
     .object({

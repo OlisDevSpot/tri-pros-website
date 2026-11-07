@@ -49,7 +49,7 @@ export type VariableValues<Keys extends readonly VariableKey[]> = { [K in Keys[n
 /** What the rep has entered on one line: any declared Variable may still be empty. */
 export type VariableInputs = Partial<Record<VariableKey, SelectOption | boolean | null>>
 
-export type FormulaConfig = Pick<ScopePricingConfig, 'exteriorPaintTiers'>
+export type FormulaConfig = Pick<ScopePricingConfig, 'exteriorPaintHomeSizes'>
 
 // The method shorthand inside this helper (never called directly) makes TS check `compute` bivariantly,
 // which is what lets the registry hold Formulas with different Variable sets under one `Formula` type;

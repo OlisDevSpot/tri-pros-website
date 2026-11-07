@@ -9,6 +9,7 @@ import { CURRENT_ROOF_TYPES, NUM_STORIES_OPTIONS } from '@/features/calculators/
 import { PRICING_TRADES } from '@/features/calculators/scope-pricing-calculator/constants/trade-labels'
 import { UNIT_COST_LABELS } from '@/features/calculators/scope-pricing-calculator/constants/unit-cost-labels'
 import { VARIABLES } from '@/features/calculators/scope-pricing-calculator/constants/variables'
+import { describeCustomLine } from '@/features/calculators/scope-pricing-calculator/lib/describe-custom-line'
 import { describeTargetResult } from '@/features/calculators/scope-pricing-calculator/lib/describe-target-result'
 import { formatUnitCost } from '@/features/calculators/scope-pricing-calculator/lib/format-unit-cost'
 import { FORMULAS } from '@/features/calculators/scope-pricing-calculator/lib/formula-registry'
@@ -37,7 +38,8 @@ assert.equal(config.taxRatePercent, 7.5, 'tax rate')
 assert.equal(config.permitFees.roof.enabled, false, 'roof permit off by default')
 assert.equal(scopePricingConfigSchema.safeParse({ ...config, multiplier: { default: 1.5, floor: 2 } }).success, false, 'default below floor is rejected')
 assert.equal(scopePricingConfigSchema.safeParse({ ...config, taxRatePercent: 25 }).success, false, 'tax rate above 20 is rejected')
-assert.equal(scopePricingConfigSchema.safeParse({ ...config, exteriorPaintTiers: { smallBelowSqFt: 3000, largeAboveSqFt: 1500 } }).success, false, 'inverted paint tiers are rejected')
+assert.deepEqual(config.exteriorPaintHomeSizes, { smallMaxSqFt: 1350, averageMaxSqFt: 1800, largeMaxSqFt: 3000 }, 'paint home sizes')
+assert.equal(scopePricingConfigSchema.safeParse({ ...config, exteriorPaintHomeSizes: { smallMaxSqFt: 1800, averageMaxSqFt: 1350, largeMaxSqFt: 3000 } }).success, false, 'home sizes must ascend')
 for (const trade of PRICING_TRADES) {
   assert.deepEqual(Object.keys(UNIT_COST_LABELS[trade]).sort(), Object.keys(config.unitCosts[trade]).sort(), `${trade}: every Unit Cost has a label`)
 }
@@ -94,11 +96,18 @@ const golden: [PricingKey, VariableInputs, ProjectContext, number | null][] = [
   ['installDg', { installSqFt: 500 }, oneStory, 2500], // prices instead of NaN
   ['mpu', { relocationRequired: false }, oneStory, 4500],
   ['mpu', { relocationRequired: true }, oneStory, 5500],
-  ['installExteriorPaint', { paintType: 'coolLife', homeSqFt: 1200, garageSqFt: 200 }, oneStory, 6000],
-  ['installExteriorPaint', { paintType: 'water', homeSqFt: 2000, garageSqFt: 400 }, oneStory, 5000],
-  ['installExteriorPaint', { paintType: 'coolLife', homeSqFt: 2800, garageSqFt: 400 }, oneStory, 8500],
-  ['installExteriorPaint', { paintType: 'water', homeSqFt: 1500, garageSqFt: 0 }, oneStory, 5000], // exactly 1,500 → average
-  ['installExteriorPaint', { paintType: 'water', homeSqFt: 3000, garageSqFt: 0 }, oneStory, 5000], // exactly 3,000 → average
+  ['installExteriorPaint', { paintType: 'coolLife', homeSqFt: 1200, garageIncluded: false }, oneStory, 6560],
+  ['installExteriorPaint', { paintType: 'coolLife', homeSqFt: 1350, garageIncluded: false }, oneStory, 6560], // on the edge → small
+  ['installExteriorPaint', { paintType: 'coolLife', homeSqFt: 1351, garageIncluded: false }, oneStory, 7140],
+  ['installExteriorPaint', { paintType: 'coolLife', homeSqFt: 1800, garageIncluded: false }, oneStory, 7140], // on the edge → average
+  ['installExteriorPaint', { paintType: 'coolLife', homeSqFt: 3000, garageIncluded: false }, oneStory, 7720], // on the edge → large
+  ['installExteriorPaint', { paintType: 'coolLife', homeSqFt: 3001, garageIncluded: false }, oneStory, null], // custom scope
+  ['installExteriorPaint', { paintType: 'water', homeSqFt: 0, garageIncluded: false }, oneStory, 4430],
+  ['installExteriorPaint', { paintType: 'water', homeSqFt: 1500, garageIncluded: false }, oneStory, 4990],
+  ['installExteriorPaint', { paintType: 'water', homeSqFt: 2500, garageIncluded: false }, oneStory, 5570],
+  ['installExteriorPaint', { paintType: 'coolLife', homeSqFt: 1200, garageIncluded: true }, oneStory, 7045], // + garage 485
+  ['installExteriorPaint', { paintType: 'coolLife', homeSqFt: 1200, garageIncluded: false }, twoStory, 7560], // + 1,000 per story above the first
+  ['installExteriorPaint', { paintType: 'coolLife', homeSqFt: 1200, garageIncluded: true }, { numStories: 3, currentRoofType: 'shingle' }, 9045],
 ]
 for (const [key, inputs, context, expected] of golden) {
   assert.equal(costOf(key, inputs, context), expected, `${key} ${JSON.stringify(inputs)} ${JSON.stringify(context)}`)
@@ -112,7 +121,7 @@ function needsOf(key: PricingKey, inputs: VariableInputs): VariableKey[] {
   return resolved.ok ? [] : resolved.needs
 }
 assert.deepEqual(needsOf('rnrAttic', { sqft: null }), ['sqft'], 'required Variable cleared')
-assert.deepEqual(needsOf('installExteriorPaint', { homeSqFt: 1200, garageSqFt: 200 }), ['paintType'], 'missing paint type')
+assert.deepEqual(needsOf('installExteriorPaint', { homeSqFt: 1200, garageIncluded: false }), ['paintType'], 'missing paint type')
 assert.deepEqual(needsOf('overlay', { numFlatBSQ: 5, numPitchedBSQ: 900 }), ['numPitchedBSQ'], 'out of range')
 assert.deepEqual(needsOf('replaceSplitSystem', { systemTonnage: 7 }), ['systemTonnage'], 'not one of the options')
 assert.deepEqual(needsOf('rnrAttic', { sqft: -5 }), ['sqft'], 'negative area')
@@ -141,7 +150,13 @@ for (const key of PRICING_KEYS) {
     for (const numStories of NUM_STORIES_OPTIONS) {
       for (const currentRoofType of CURRENT_ROOF_TYPES) {
         const cost = costOf(key, inputs, { numStories, currentRoofType })
-        assert.ok(cost != null && Number.isFinite(cost) && cost >= 0, `${key} ${JSON.stringify(inputs)} gave ${cost}`)
+        const custom = key === 'installExteriorPaint' && typeof inputs.homeSqFt === 'number' && inputs.homeSqFt > config.exteriorPaintHomeSizes.largeMaxSqFt
+        if (custom) {
+          assert.equal(cost, null, `${key} ${JSON.stringify(inputs)} above the large home is a custom scope`)
+        }
+        else {
+          assert.ok(cost != null && Number.isFinite(cost) && cost >= 0, `${key} ${JSON.stringify(inputs)} gave ${cost}`)
+        }
         swept++
       }
     }
@@ -282,5 +297,26 @@ assert.deepEqual(tradesInQuote(mixed), ['atticBasement'], 'trades from formula l
 assert.match(describeTargetResult(tooLow, 2), /2\.00x floor/, 'below-floor copy names the floor')
 assert.match(describeTargetResult({ status: 'no-cost' }, 2), /formula/, 'no-cost copy')
 assert.match(describeTargetResult({ status: 'all-overridden' }, 2), /own multiplier/, 'all-overridden copy')
+
+// ── Paint prices and the custom scope ──────────────────────────────────────
+const paintLine = (homeSqFt: number, paintType: 'coolLife' | 'water' = 'coolLife', extra: Partial<FormulaLineInput> = {}): FormulaLineInput =>
+  ({ id: `p-${paintType}-${homeSqFt}`, kind: 'formula', pricingKey: 'installExteriorPaint', variables: { paintType, homeSqFt, garageIncluded: false }, ...extra })
+const paintPrices = priceQuote({ lines: [paintLine(1000), paintLine(1500), paintLine(2500), paintLine(1000, 'water'), paintLine(1500, 'water'), paintLine(2500, 'water')], context: oneStory, config })
+assert.deepEqual(paintPrices.lines.map(line => line.status === 'priced' && line.price), [22960, 24990, 27020, 15505, 17465, 19495], 'paint ladder at the scope default 3.5')
+assert.equal(priceQuote({ lines: [{ ...paintLine(1000), variables: { paintType: 'coolLife', homeSqFt: 1000, garageIncluded: true } }], context: oneStory, config }).totalPrice, 24658, 'garage adds 485 × 3.5 = 1,698 on the price')
+assert.equal(priceQuote({ lines: [paintLine(1000)], context: twoStory, config }).totalPrice, 26460, 'a second story adds 1,000 × 3.5 = 3,500')
+
+const customUnpriced = priceQuote({ lines: [paintLine(3001)], context: twoStory, config })
+assert.deepEqual(customUnpriced.lines[0], { id: 'p-coolLife-3001', kind: 'formula', status: 'incomplete', label: 'Install exterior paint', trade: 'exteriorPaintSiding', needs: [], reason: 'custom' }, 'above 3,000 sq ft is a custom scope until priced')
+assert.equal(customUnpriced.totalPrice, 0, 'an unpriced custom scope is left out of the total')
+const customPriced = priceQuote({ lines: [paintLine(3001, 'coolLife', { price: 31000 }), mpuLine('m')], context: twoStory, config, overrides: { multiplier: 3 } })
+const customLine = customPriced.lines[0]
+assert.ok(customLine?.status === 'priced', 'custom scope priced once the agent enters a price')
+assert.deepEqual({ cost: customLine.cost, price: customLine.price, multiplier: customLine.multiplier }, { cost: null, price: 31000, multiplier: null }, 'custom scope is uncosted: no cost, no multiplier, stories and the proposal-wide shift leave the typed price alone')
+assert.equal(customPriced.hasUncostedLines, true, 'custom scopes flag as uncosted')
+assert.equal(customPriced.margin, 12150 - 4500, 'custom scope left out of margin')
+assert.equal(priceQuote({ lines: [paintLine(3001, 'coolLife', { price: null })], context: oneStory, config }).lines[0]?.status, 'incomplete', 'custom scope unpriced again')
+assert.equal(solveMultiplier(40000, { lines: [paintLine(3001, 'coolLife', { price: 31000 }), mpuLine('m')], context: oneStory, config }).status, 'reached', 'the custom price is held before solving, like a manual line')
+assert.equal(describeCustomLine(config), 'Over 3,000 sq ft, enter a price', 'custom scope copy names the size edge')
 
 console.log('✅ verify-scope-pricing passed')
