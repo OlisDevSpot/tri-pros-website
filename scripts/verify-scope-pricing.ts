@@ -10,12 +10,14 @@ import { PRICING_TRADES } from '@/features/calculators/scope-pricing-calculator/
 import { UNIT_COST_LABELS } from '@/features/calculators/scope-pricing-calculator/constants/unit-cost-labels'
 import { VARIABLES } from '@/features/calculators/scope-pricing-calculator/constants/variables'
 import { describeCustomLine } from '@/features/calculators/scope-pricing-calculator/lib/describe-custom-line'
+import { describeMultiplierDefaults } from '@/features/calculators/scope-pricing-calculator/lib/describe-multiplier-defaults'
 import { describeTargetResult } from '@/features/calculators/scope-pricing-calculator/lib/describe-target-result'
 import { formatUnitCost } from '@/features/calculators/scope-pricing-calculator/lib/format-unit-cost'
 import { FORMULAS } from '@/features/calculators/scope-pricing-calculator/lib/formula-registry'
 import { priceQuote } from '@/features/calculators/scope-pricing-calculator/lib/price-quote'
 import { resolveScopePricingConfig } from '@/features/calculators/scope-pricing-calculator/lib/resolve-config'
 import { resolveFormulaVariables } from '@/features/calculators/scope-pricing-calculator/lib/resolve-formula-variables'
+import { scopeMultiplierRows } from '@/features/calculators/scope-pricing-calculator/lib/scope-multiplier-rows'
 import { solveMultiplier } from '@/features/calculators/scope-pricing-calculator/lib/solve-multiplier'
 import { stepMultiplier } from '@/features/calculators/scope-pricing-calculator/lib/step-multiplier'
 import { tradesInQuote } from '@/features/calculators/scope-pricing-calculator/lib/trades-in-quote'
@@ -297,6 +299,10 @@ assert.deepEqual(tradesInQuote(mixed), ['atticBasement'], 'trades from formula l
 assert.match(describeTargetResult(tooLow, 2), /2\.00x floor/, 'below-floor copy names the floor')
 assert.match(describeTargetResult({ status: 'no-cost' }, 2), /formula/, 'no-cost copy')
 assert.match(describeTargetResult({ status: 'all-overridden' }, 2), /own multiplier/, 'all-overridden copy')
+assert.equal(describeMultiplierDefaults(config, [], 2.8), 'Floor 2.00x · default 2.80x', 'no scopes: floor and default only')
+assert.equal(describeMultiplierDefaults(config, ['installExteriorPaint', 'mpu', 'rnrAttic', 'mpu'], 2.8), 'Floor 2.00x · default 2.80x · Install exterior paint 3.50x · Main panel upgrade 2.50x', 'lists each scope default present once; scopes on the default are not repeated')
+assert.equal(describeMultiplierDefaults(config, ['mpu'], 2.85), 'Floor 2.00x · default 2.80x · Main panel upgrade 2.50x · +0.05x on every scope', 'a shift is named')
+assert.equal(describeMultiplierDefaults(config, ['mpu'], 2.7), 'Floor 2.00x · default 2.80x · Main panel upgrade 2.50x · −0.10x on every scope', 'a negative shift uses a real minus sign')
 
 // ── Paint prices and the custom scope ──────────────────────────────────────
 const paintLine = (homeSqFt: number, paintType: 'coolLife' | 'water' = 'coolLife', extra: Partial<FormulaLineInput> = {}): FormulaLineInput =>
@@ -318,5 +324,9 @@ assert.equal(customPriced.margin, 12150 - 4500, 'custom scope left out of margin
 assert.equal(priceQuote({ lines: [paintLine(3001, 'coolLife', { price: null })], context: oneStory, config }).lines[0]?.status, 'incomplete', 'custom scope unpriced again')
 assert.equal(solveMultiplier(40000, { lines: [paintLine(3001, 'coolLife', { price: 31000 }), mpuLine('m')], context: oneStory, config }).status, 'reached', 'the custom price is held before solving, like a manual line')
 assert.equal(describeCustomLine(config), 'Over 3,000 sq ft, enter a price', 'custom scope copy names the size edge')
+
+const rowLines = [mpuLine('m1'), mpuLine('m2', 3), manual, paintLine(3001), paintLine(3002, 'coolLife', { multiplierOverride: 3 })]
+const rows = scopeMultiplierRows(priceQuote({ lines: rowLines, context: oneStory, config }), rowLines)
+assert.deepEqual(rows.map(row => [row.index, row.pricingKey, row.override, row.priced?.price ?? null]), [[0, 'mpu', null, 11250], [1, 'mpu', 3, 13500], [4, 'installExteriorPaint', 3, null]], 'a row per costed scope, plus an overridden custom scope so its override can be cleared; manual and plain custom scopes have none')
 
 console.log('✅ verify-scope-pricing passed')
