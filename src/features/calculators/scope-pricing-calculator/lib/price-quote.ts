@@ -13,13 +13,13 @@ function resolveMultiplier(config: ScopePricingConfig, overrides: QuoteOverrides
   return Math.max(config.multiplier.floor, multiplier)
 }
 
-function resolveLineMultiplier(config: ScopePricingConfig, jobMultiplier: number, pricingKey: PricingKey, override: number | null | undefined): number {
+function resolveLineMultiplier(config: ScopePricingConfig, proposalMultiplier: number, pricingKey: PricingKey, override: number | null | undefined): number {
   const { default: defaultMultiplier, floor, byScope } = config.multiplier
   if (override != null && Number.isFinite(override)) {
     return Math.max(floor, override)
   }
   // The shift is additive so moving the proposal-wide control keeps the spread between scope defaults.
-  return Math.max(floor, (byScope[pricingKey] ?? defaultMultiplier) + (jobMultiplier - defaultMultiplier))
+  return Math.max(floor, (byScope[pricingKey] ?? defaultMultiplier) + (proposalMultiplier - defaultMultiplier))
 }
 
 function splitPrice(cost: number | null, multiplier: number | null, price: number, taxRatePercent: number) {
@@ -67,7 +67,7 @@ function summarize(lines: QuoteLineResult[], multiplier: number): QuoteResult {
 
 // Kept free of React and I/O so the engine can move to a shared module once its permanent home is decided.
 export function priceQuote({ lines, context, config, overrides }: PriceQuoteInput): QuoteResult {
-  const jobMultiplier = resolveMultiplier(config, overrides)
+  const proposalMultiplier = resolveMultiplier(config, overrides)
   const results: QuoteLineResult[] = []
   const pricedTrades = new Set<PricingTrade>()
 
@@ -98,18 +98,17 @@ export function priceQuote({ lines, context, config, overrides }: PriceQuoteInpu
       continue
     }
     const cost = Math.round(computed)
-    const multiplier = resolveLineMultiplier(config, jobMultiplier, line.pricingKey, line.multiplierOverride)
+    const multiplier = resolveLineMultiplier(config, proposalMultiplier, line.pricingKey, line.multiplierOverride)
     pricedTrades.add(formula.trade)
     results.push({ id: line.id, kind: 'formula', status: 'priced', label: formula.label, trade: formula.trade, ...splitPrice(cost, multiplier, Math.round(cost * multiplier), config.taxRatePercent) })
   }
 
-  const permitMultiplier = Math.max(config.multiplier.floor, jobMultiplier)
   for (const trade of PERMIT_TRADES) {
     const fee = config.permitFees[trade]
     if (fee.enabled && pricedTrades.has(trade)) {
-      results.push({ id: `permit-${trade}`, kind: 'permit', status: 'priced', label: `Permit (${TRADE_LABELS[trade]})`, trade, ...splitPrice(fee.amount, permitMultiplier, Math.round(fee.amount * permitMultiplier), config.taxRatePercent) })
+      results.push({ id: `permit-${trade}`, kind: 'permit', status: 'priced', label: `Permit (${TRADE_LABELS[trade]})`, trade, ...splitPrice(fee.amount, proposalMultiplier, Math.round(fee.amount * proposalMultiplier), config.taxRatePercent) })
     }
   }
 
-  return summarize(results, jobMultiplier)
+  return summarize(results, proposalMultiplier)
 }

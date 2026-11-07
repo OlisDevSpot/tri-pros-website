@@ -259,6 +259,15 @@ const clampedCarry = solveMultiplier(8000 + 13375 * 2.3, spread) // −0.556 wou
 assert.ok(clampedCarry.status === 'reached' && Math.abs(clampedCarry.multiplier - (2.8 - 7687.5 / 13375)) < 1e-9, 'a scope the floor clamps is held there and the shift is re-solved over the rest')
 assert.ok(clampedCarry.status === 'reached' && Math.abs(clampedCarry.achievedTotal - (8000 + 13375 * 2.3)) <= 1, 'the target is still reached within rounding')
 assert.deepEqual(solveMultiplier(30000, spread), { status: 'below-floor', multiplier: 2, achievedTotal: 35750 }, 'a target under the floor total reports the floor and the floor total')
+assert.deepEqual(solveMultiplier(50000, { lines: [{ ...attic, variables: { sqft: 0 } }], context: oneStory, config }), { status: 'no-cost' }, 'a zero-cost line cannot carry a target')
+const nanOverride = solveMultiplier(60000, { ...spread, lines: [mpuLine('m', Number.NaN), roofLine] })
+assert.ok(nanOverride.status === 'reached' && Math.abs(nanOverride.achievedTotal - 60000) <= 1, 'a NaN override is not held: the engine shifts that scope, so the solver does too')
+assert.deepEqual(solveMultiplier(60000, { lines: [mpuLine('m', 3), { ...roofLine, multiplierOverride: 3 }], context: twoStory, config: withPermit }), { status: 'all-overridden' }, 'a permit alone never carries a target')
+const permitSpread: PriceQuoteInput = { ...spread, config: withPermit }
+const permitSolve = solveMultiplier(60000, permitSpread)
+assert.ok(permitSolve.status === 'reached' && Math.abs(permitSolve.achievedTotal - 60000) <= 1, 'with an open scope the permit moves with the shift and the target is reached')
+const permitAtSolve = permitSolve.status === 'reached' ? priceQuote({ ...permitSpread, overrides: { multiplier: permitSolve.multiplier } }).lines.find(line => line.kind === 'permit') : undefined
+assert.ok(permitSolve.status === 'reached' && permitAtSolve?.status === 'priced' && permitAtSolve.price === Math.round(250 * permitSolve.multiplier), 'the permit prices at 250 × the solved proposal-wide multiplier')
 
 // ── Agent panel helpers ─────────────────────────────────────────────────────
 assert.equal(stepMultiplier(2.8, 0.05, 2), 2.85, 'step up rounds to 2 decimals')

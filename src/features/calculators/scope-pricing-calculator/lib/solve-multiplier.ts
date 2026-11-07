@@ -6,12 +6,18 @@ export function solveMultiplier(targetTotal: number, input: PriceQuoteInput): So
   const { default: defaultMultiplier, floor } = input.config.multiplier
   // At the resting value the shift is zero, so every open scope sits at its own scope default.
   const resting = priceQuote({ ...input, overrides: { multiplier: defaultMultiplier } })
-  const overriddenIds = new Set(input.lines.flatMap(line => (line.kind === 'formula' && line.multiplierOverride != null ? [line.id] : [])))
+  const overriddenIds = new Set(input.lines.flatMap(line => (line.kind === 'formula' && Number.isFinite(line.multiplierOverride) ? [line.id] : [])))
   let open: { cost: number, scopeDefault: number }[] = []
+  const permits: { cost: number, scopeDefault: number }[] = []
   let heldPrice = resting.uncostedPrice
   let costedLines = 0
   for (const line of resting.lines) {
-    if (line.status !== 'priced' || line.cost == null || line.multiplier == null) {
+    // A zero-cost line prices at $0 at any multiplier, so it cannot carry any part of a target.
+    if (line.status !== 'priced' || line.cost == null || line.multiplier == null || line.cost <= 0) {
+      continue
+    }
+    if (line.kind === 'permit') {
+      permits.push({ cost: line.cost, scopeDefault: line.multiplier })
       continue
     }
     costedLines += 1
@@ -24,9 +30,11 @@ export function solveMultiplier(targetTotal: number, input: PriceQuoteInput): So
   if (costedLines === 0) {
     return { status: 'no-cost' }
   }
+  // A permit only follows the scopes it belongs to; on its own it would absorb the whole target.
   if (open.length === 0) {
     return { status: 'all-overridden' }
   }
+  open.push(...permits)
   const target = Number.isFinite(targetTotal) ? targetTotal : 0
   const atFloor = (): SolveMultiplierResult => ({ status: 'below-floor', multiplier: floor, achievedTotal: priceQuote({ ...input, overrides: { multiplier: floor } }).totalPrice })
   let shift = 0
