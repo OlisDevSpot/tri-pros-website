@@ -28,7 +28,7 @@ export function AgentReadouts({ quote }: Props) {
       </dl>
       {quote.hasUncostedLines && (
         <p className="text-xs text-status-pending-fg">
-          Manual lines have no cost data, so they are left out of cost, margin and multiplier.
+          Lines without cost data (manual, or a custom scope priced by hand) are left out of cost, margin and multiplier.
         </p>
       )}
     </div>

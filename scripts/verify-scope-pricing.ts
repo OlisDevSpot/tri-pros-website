@@ -14,6 +14,7 @@ import { describeMultiplierDefaults } from '@/features/calculators/scope-pricing
 import { describeTargetResult } from '@/features/calculators/scope-pricing-calculator/lib/describe-target-result'
 import { formatUnitCost } from '@/features/calculators/scope-pricing-calculator/lib/format-unit-cost'
 import { FORMULAS } from '@/features/calculators/scope-pricing-calculator/lib/formula-registry'
+import { isCustomLine } from '@/features/calculators/scope-pricing-calculator/lib/is-custom-line'
 import { priceQuote } from '@/features/calculators/scope-pricing-calculator/lib/price-quote'
 import { resolveScopePricingConfig } from '@/features/calculators/scope-pricing-calculator/lib/resolve-config'
 import { resolveFormulaVariables } from '@/features/calculators/scope-pricing-calculator/lib/resolve-formula-variables'
@@ -324,6 +325,11 @@ assert.equal(customPriced.margin, 12150 - 4500, 'custom scope left out of margin
 assert.equal(priceQuote({ lines: [paintLine(3001, 'coolLife', { price: null })], context: oneStory, config }).lines[0]?.status, 'incomplete', 'custom scope unpriced again')
 assert.equal(solveMultiplier(40000, { lines: [paintLine(3001, 'coolLife', { price: 31000 }), mpuLine('m')], context: oneStory, config }).status, 'reached', 'the custom price is held before solving, like a manual line')
 assert.equal(describeCustomLine(config), 'Over 3,000 sq ft, enter a price', 'custom scope copy names the size edge')
+assert.equal(isCustomLine(customUnpriced.lines[0]), true, 'custom scope, unpriced')
+assert.equal(isCustomLine(customPriced.lines[0]), true, 'custom scope stays custom once priced, so its price field stays')
+assert.equal(isCustomLine(mixed.lines[1]), false, 'a manual line is not a custom scope')
+assert.equal(isCustomLine(incompleteAttic), false, 'an incomplete formula line with needs is not custom')
+assert.equal(isCustomLine(undefined), false, 'no result yet')
 
 const rowLines = [mpuLine('m1'), mpuLine('m2', 3), manual, paintLine(3001), paintLine(3002, 'coolLife', { multiplierOverride: 3 })]
 const rows = scopeMultiplierRows(priceQuote({ lines: rowLines, context: oneStory, config }), rowLines)
