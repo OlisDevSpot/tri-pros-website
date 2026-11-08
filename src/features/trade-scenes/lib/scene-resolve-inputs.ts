@@ -1,7 +1,7 @@
 import type { SceneResolveInputs, SceneResolveSelection, TradeSceneInputs } from '@/features/trade-scenes/types'
 
 // The peel follows every pointer move, so only the inputs the scene resolves from may wake the resolver. The home materials are
-// spread flat because a shallow compare sees one level: the AC size, the shingle colour and the paint wear only draw, so they are left out.
+// spread flat because a shallow compare sees one level: the drawing-only facts (AC size, colours, paint wear) are left out.
 export function selectResolveInputs(state: TradeSceneInputs): SceneResolveSelection {
   const { wear, gutters, exteriorPaint, ducts, crawlInsulation } = state.homeMaterials
   return {

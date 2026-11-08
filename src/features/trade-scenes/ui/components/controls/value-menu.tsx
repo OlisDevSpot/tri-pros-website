@@ -25,11 +25,13 @@ interface ValueMenuProps<T extends string> {
   extra?: ReactNode
   // Where focus goes once a pick closes the menu, the value it held included; else it goes back to the chip.
   afterPick?: () => void
+  // A new pick that brings details of its own keeps the menu open, so they show under it.
+  staysOpenOn?: (value: T) => boolean
 }
 
 // A popover rather than a menu: it holds a radio group and the extra controls, and Radix menus take only items. It
 // portals into the stage, so the scene's keys still count it as the stage's, and it flips to stay inside the stage.
-export function ValueMenu<T extends string>({ trigger, label, options, value, onPick, proposed = false, extra, afterPick }: ValueMenuProps<T>) {
+export function ValueMenu<T extends string>({ trigger, label, options, value, onPick, proposed = false, extra, afterPick, staysOpenOn }: ValueMenuProps<T>) {
   const { stageElement } = useSceneVisibleArea()
   const [open, setOpen] = useState(false)
   const labelId = useId()
@@ -89,7 +91,7 @@ export function ValueMenu<T extends string>({ trigger, label, options, value, on
                         if (!picked) {
                           onPick(option.value)
                         }
-                        if (!arrowKey.current) {
+                        if (!arrowKey.current && (picked || !staysOpenOn?.(option.value))) {
                           closedByPick.current = true
                           setOpen(false)
                         }

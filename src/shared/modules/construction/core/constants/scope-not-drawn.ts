@@ -3,7 +3,6 @@ export const NOT_DRAWN: Partial<Record<string, true>> = {
   '31a0ca1b-548b-80ff-8692-e1db91818a7a': true, // Roof torch down (repair) — a patch repair, the covering is not replaced
   '31a0ca1b-548b-802c-917c-d7252224c617': true, // Roof tear-off shingles (repair) — a partial repair, the covering is not replaced
   '3190ca1b-548b-80e7-9863-f892fbfb6108': true, // Tile roof reset (repair) — a partial repair, the covering is not replaced
-  '8860ca1b-548b-83c5-adb1-01edfc5be0fc': true, // Fascia board replacement — the assembly has no fascia part
   '32f0ca1b-548b-805e-bf76-e8a65bc3cbc7': true, // Foundation repair — structural work, the crawl space draws no foundation part yet
   '3760ca1b-548b-8063-97e0-ef74848b3e7b': true, // Epoxy flooring application — an interior floor finish, no wall part
   '36f0ca1b-548b-8083-93c8-ef5c32a68032': true, // Repaint exterior trim — trim is not a wall part

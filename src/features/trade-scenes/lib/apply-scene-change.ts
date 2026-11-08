@@ -5,13 +5,16 @@ import type { RoofForm } from '@/shared/modules/construction/core/constants/roof
 import { efficiencyUpgradePatch } from '@/features/trade-scenes/lib/efficiency-upgrade-patch'
 import { eraCodeLine } from '@/features/trade-scenes/lib/era-code-line'
 import { homeMaterialPatch } from '@/features/trade-scenes/lib/home-material-patch'
+import { keepFasciaReplacement } from '@/features/trade-scenes/lib/keep-fascia-replacement'
 import { keepLookInside } from '@/features/trade-scenes/lib/keep-look-inside'
 import { keepPickOptions } from '@/features/trade-scenes/lib/keep-pick-options'
 import { propertyPatch } from '@/features/trade-scenes/lib/property-patch'
 import { scopePick } from '@/features/trade-scenes/lib/scope-pick'
 import { withUpgradeScopes } from '@/features/trade-scenes/lib/upgrade-scopes'
+import { FASCIA_REPLACEMENT_SCOPE_ID } from '@/shared/modules/construction/core/constants/fascia-replacement'
 import { resolveHomeMaterials } from '@/shared/modules/construction/core/lib/resolve-home-materials'
 import { roofFormOf } from '@/shared/modules/construction/core/lib/roof-form-of'
+import { shingleColorFor } from '@/shared/modules/construction/core/lib/shingle-color-for'
 
 // The form is read off the covering rather than stored. A pitched roof keeps its covering; coming from flat or unset it
 // starts as shingle, the covering the scene already draws for an unset roof, so the controls and the house agree.
@@ -55,7 +58,10 @@ function changePatch(state: TradeSceneInputs, change: SceneChange, year: number)
     {
       const patch = efficiencyUpgradePatch(state, change.upgrade, change.on)
       const facts = { property: state.property, materials: state.homeMaterials, year }
-      return { ...patch, proposedScopeIds: withUpgradeScopes(state.proposedScopeIds, patch.efficiencyUpgrades, facts) }
+      const scopes = { proposedScopeIds: withUpgradeScopes(state.proposedScopeIds, patch.efficiencyUpgrades, facts) }
+      return change.upgrade === 'cool-roof'
+        ? { ...patch, ...scopes, homeMaterials: { ...state.homeMaterials, shingleColor: shingleColorFor(state.homeMaterials.shingleColor, change.on) } }
+        : { ...patch, ...scopes }
     }
     case 'install-style':
     {
@@ -70,6 +76,11 @@ function changePatch(state: TradeSceneInputs, change: SceneChange, year: number)
       return { bills: { ...state.bills, [change.category]: { ...state.bills[change.category], now: change.now } } }
     case 'repairs':
       return { repairsOverrides: { ...state.repairsOverrides, [change.trade]: change.perYear } }
+    case 'fascia-replacement':
+    {
+      const others = state.proposedScopeIds.filter(id => id !== FASCIA_REPLACEMENT_SCOPE_ID)
+      return { proposedScopeIds: change.on ? [...others, FASCIA_REPLACEMENT_SCOPE_ID] : others }
+    }
   }
 }
 
@@ -80,16 +91,17 @@ function unchangedAsBefore<T>(before: T[], after: T[]): T[] {
 }
 
 // Every control writes through here, so the options the picks need, or can no longer take, follow every change once, and
-// a change that leaves nothing to look inside steps back to the system in the same write.
+// a change that leaves nothing to look inside steps back to the system in the same write. The scope ids are always written:
+// a change that patches none (the rot set back to None) can still take the fascia replacement out.
 export function applySceneChange(state: TradeSceneInputs, change: SceneChange, year: number): Partial<TradeSceneInputs> {
   const patch = changePatch(state, change, year)
   const next = { ...state, ...patch }
-  const { efficiencyUpgrades, installStyles } = keepPickOptions(next, year)
+  const options = keepPickOptions(next, year)
   return {
     ...patch,
     ...keepLookInside(next),
-    ...(patch.proposedScopeIds ? { proposedScopeIds: unchangedAsBefore(state.proposedScopeIds, patch.proposedScopeIds) } : {}),
-    efficiencyUpgrades: unchangedAsBefore(state.efficiencyUpgrades, efficiencyUpgrades),
-    installStyles: unchangedAsBefore(state.installStyles, installStyles),
+    proposedScopeIds: unchangedAsBefore(state.proposedScopeIds, keepFasciaReplacement(next, year)),
+    efficiencyUpgrades: unchangedAsBefore(state.efficiencyUpgrades, options.efficiencyUpgrades),
+    installStyles: unchangedAsBefore(state.installStyles, options.installStyles),
   }
 }

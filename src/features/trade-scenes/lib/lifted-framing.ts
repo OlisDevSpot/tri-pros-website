@@ -1,6 +1,6 @@
 import type { CameraFraming } from '@/shared/components/scene/types'
 
-// The anchors are drawn on the house at one height; the zoom has to rise or settle with the house to land on them.
+// The views are set on the house at one height; each has to rise or settle with the house's lift to land on what it looks at.
 export function liftedFraming(framing: CameraFraming, lift: number): CameraFraming {
   const [px, py, pz] = framing.position
   const [tx, ty, tz] = framing.target

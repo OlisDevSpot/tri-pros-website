@@ -65,6 +65,7 @@ export const SCENE_CHANGE_WORDS = {
   'upgrade:cool-paint': `${SYSTEM_WORDS.walls} cool life paint`,
   'upgrade:r38-insulation': `${SYSTEM_WORDS.attic} step up to r-38`,
   'style:batts': `${SYSTEM_WORDS.attic} batts fiberglass replace`,
+  'replace:fascia': `${SYSTEM_WORDS.walls} fascia rot replace boards trim`,
   'climate': 'climate coastal inland area bills',
   'bill:electric': 'electric electricity bill bills power',
   'bill:gas': 'gas bill bills',

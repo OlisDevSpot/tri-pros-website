@@ -1,7 +1,7 @@
 'use client'
 
 import type { PartState } from '@/features/trade-scenes/lib/part-state'
-import type { PaintLook } from '@/features/trade-scenes/types'
+import type { PaintLook, SystemLit } from '@/features/trade-scenes/types'
 
 import { useMemo } from 'react'
 import { ExtrudeGeometry, Shape } from 'three'
@@ -23,9 +23,11 @@ import { thermalTag } from '@/features/trade-scenes/lib/thermal-tag'
 import { GableVent } from '@/features/trade-scenes/ui/components/home-kit/gable-vent'
 import { GableVentBackings } from '@/features/trade-scenes/ui/components/home-kit/gable-vent-backings'
 import { MergedBoxes } from '@/features/trade-scenes/ui/components/home-kit/merged-boxes'
-import { PaintMarks } from '@/features/trade-scenes/ui/components/home-kit/paint-marks'
 import { PaintStains } from '@/features/trade-scenes/ui/components/home-kit/paint-stains'
 import { RoofSlope } from '@/features/trade-scenes/ui/components/home-kit/roof-slope'
+import { RoofSteps } from '@/features/trade-scenes/ui/components/home-kit/roof-steps'
+import { TintedMarks } from '@/features/trade-scenes/ui/components/home-kit/tinted-marks'
+import { wallSkinLook } from '@/features/trade-scenes/ui/lib/wall-skin-look'
 import { wornColor } from '@/features/trade-scenes/ui/lib/worn-color'
 import { useOwnedGeometry } from '@/shared/components/scene/hooks/use-owned-geometry'
 
@@ -36,9 +38,14 @@ interface GableRoofProps {
   radiantBarrier: PartState
   ridgeVent: PartState
   gutter: PartState
+  dripEdge: PartState
+  iceAndWater: PartState
   shingleTone: string | null
   paint: PaintLook
+  // The new fascia boards' colour where the build replaced the rotted fascia; null where it did not.
+  fasciaBoards: string | null
   thermal: boolean
+  lit: SystemLit | null
 }
 
 const { halfLength: L, halfDepth: D, wallThickness: T, pitch } = HOUSE
@@ -46,6 +53,9 @@ const GUTTER = { size: ROOF_TRIM.gutter.size, out: D + GUTTER_BACK + ROOF_TRIM.g
 const DOWNSPOUT_BOXES = downspoutBoxes('pitched')
 // Both parts of the near slope lay their covering from the same end, so its courses run on across the cut unbroken.
 const NEAR_SLOPE_LAYOUT = [-ROOF_HALF_LENGTH, ROOF_HALF_LENGTH] as const
+// Module-level, so the drip edge's merged geometry is built once rather than on every render.
+const BACK_ENDS = ['from', 'to'] as const
+const COMPLETE_ENDS = ['from'] as const
 // The gable triangles carry on the stucco of the end walls below them, so they warm with them in the sun.
 const LEFT_GABLE_ZONE = facesSummerSun(-1, 0) ? 'sunlit' : 'exterior'
 const RIGHT_GABLE_ZONE = facesSummerSun(1, 0) ? 'sunlit' : 'exterior'
@@ -64,7 +74,7 @@ function gableGeometry(): ExtrudeGeometry {
   return geometry
 }
 
-export function GableRoof({ covering, deck, underlayment, radiantBarrier, ridgeVent, gutter, shingleTone, paint, thermal }: GableRoofProps) {
+export function GableRoof({ covering, deck, underlayment, radiantBarrier, ridgeVent, gutter, dripEdge, iceAndWater, shingleTone, paint, fasciaBoards, thermal, lit }: GableRoofProps) {
   const crackShare = PAINT_WEAR_SHARE[paint.paintWear.cracks]
   const stainShare = PAINT_WEAR_SHARE[paint.paintWear.stains]
   const fadeShare = wornShare(paint.wear)
@@ -76,13 +86,14 @@ export function GableRoof({ covering, deck, underlayment, radiantBarrier, ridgeV
     return { left: surfaceStainLists(left, stainShare, fadeShare), right: surfaceStainLists(right, stainShare, fadeShare) }
   }, [stainShare, fadeShare])
   const peeling = useMemo(() => roofPeeling('pitched', peelingShare).gables, [peelingShare])
+  const skin = wallSkinLook(lit, paint.color)
   const marks = useMemo(() => {
-    const { crackColor, peeling: look } = WEAR_LOOKS.paint
+    const { crackColor } = WEAR_LOOKS.paint
     return {
-      left: [{ boxes: cracks.left, color: crackColor }, ...peelingMarks([peeling.left], look.bareStucco)],
-      right: [{ boxes: cracks.right, color: crackColor }, ...peelingMarks([peeling.right], look.bareStucco)],
+      left: [{ boxes: cracks.left, color: crackColor }, ...peelingMarks([peeling.left], skin.peeled)],
+      right: [{ boxes: cracks.right, color: crackColor }, ...peelingMarks([peeling.right], skin.peeled)],
     }
-  }, [cracks, peeling])
+  }, [cracks, peeling, skin.peeled])
   const gable = useOwnedGeometry(gableGeometry, [])
   const coveringColours = COVERING_COLORS[covering.material ?? 'shingle'] ?? COVERING_COLORS.shingle
   const coveringColour = wornColor(shingleTone ?? coveringColours.new, coveringColours.worn, covering.wear)
@@ -109,25 +120,33 @@ export function GableRoof({ covering, deck, underlayment, radiantBarrier, ridgeV
   return (
     <group>
       <group userData={thermalTag(LEFT_GABLE_ZONE)}>
-        <mesh geometry={gable} position={[-L, 0, 0]} castShadow receiveShadow>
-          <meshStandardMaterial color={paint.color} roughness={0.9} />
-        </mesh>
-        <PaintMarks lists={marks.left} thermal={thermal} />
-        <PaintStains lists={stains.left} thermal={thermal} />
+        <group userData={skin.tag}>
+          <mesh geometry={gable} position={[-L, 0, 0]} castShadow receiveShadow>
+            <meshStandardMaterial color={skin.color} roughness={0.9} />
+          </mesh>
+        </group>
+        <group userData={skin.finish}>
+          <TintedMarks lists={marks.left} thermal={thermal} />
+          <PaintStains lists={stains.left} thermal={thermal} />
+        </group>
         <GableVent side={-1} />
       </group>
       <group userData={thermalTag(RIGHT_GABLE_ZONE)}>
-        <mesh geometry={gable} position={[L - T, 0, 0]} castShadow receiveShadow>
-          <meshStandardMaterial color={paint.color} roughness={0.9} />
-        </mesh>
-        <PaintMarks lists={marks.right} thermal={thermal} />
-        <PaintStains lists={stains.right} thermal={thermal} />
+        <group userData={skin.tag}>
+          <mesh geometry={gable} position={[L - T, 0, 0]} castShadow receiveShadow>
+            <meshStandardMaterial color={skin.color} roughness={0.9} />
+          </mesh>
+        </group>
+        <group userData={skin.finish}>
+          <TintedMarks lists={marks.right} thermal={thermal} />
+          <PaintStains lists={stains.right} thermal={thermal} />
+        </group>
         <GableVent side={1} />
       </group>
       <GableVentBackings />
 
-      <RoofSlope face="back" zFrom={-ROOF_HALF_LENGTH} zTo={ROOF_HALF_LENGTH} trimmedEnds={['from', 'to']} covering={covering} deck={deck} underlayment={underlayment} radiantBarrier={radiantBarrier} shingleTone={shingleTone} paint={paint} thermal={thermal} />
-      <RoofSlope face="front" zFrom={HOUSE.cutX} zTo={ROOF_HALF_LENGTH} layout={NEAR_SLOPE_LAYOUT} trimmedEnds={['to']} covering={covering} deck={deck} underlayment={underlayment} radiantBarrier={radiantBarrier} shingleTone={shingleTone} paint={paint} thermal={thermal} />
+      <RoofSlope face="back" zFrom={-ROOF_HALF_LENGTH} zTo={ROOF_HALF_LENGTH} trimmedEnds={BACK_ENDS} covering={covering} deck={deck} underlayment={underlayment} radiantBarrier={radiantBarrier} dripEdge={dripEdge} shingleTone={shingleTone} paint={paint} fasciaBoards={fasciaBoards} thermal={thermal} />
+      <RoofSteps covering={covering} deck={deck} underlayment={underlayment} radiantBarrier={radiantBarrier} dripEdge={dripEdge} iceAndWater={iceAndWater} shingleTone={shingleTone} layout={NEAR_SLOPE_LAYOUT} paint={paint} fasciaBoards={fasciaBoards} thermal={thermal} lit={lit} />
 
       <group userData={thermalTag(null, vented ? 'ridge-vent' : 'covering')}>
         <group userData={systemPartTag(vented ? 'ridge-vent' : 'covering')}>
@@ -144,7 +163,7 @@ export function GableRoof({ covering, deck, underlayment, radiantBarrier, ridgeV
 
       {/* The props say z, but along the ridge the near slope runs in x. */}
       <group userData={HOME_FADE_TAGS.complete}>
-        <RoofSlope face="front" zFrom={-ROOF_HALF_LENGTH} zTo={HOUSE.cutX} layout={NEAR_SLOPE_LAYOUT} trimmedEnds={['from']} covering={covering} deck={deck} underlayment={underlayment} radiantBarrier={radiantBarrier} shingleTone={shingleTone} paint={paint} thermal={thermal} />
+        <RoofSlope face="front" zFrom={-ROOF_HALF_LENGTH} zTo={HOUSE.cutX} layout={NEAR_SLOPE_LAYOUT} trimmedEnds={COMPLETE_ENDS} covering={covering} deck={deck} underlayment={underlayment} radiantBarrier={radiantBarrier} dripEdge={dripEdge} shingleTone={shingleTone} paint={paint} fasciaBoards={fasciaBoards} thermal={thermal} />
         {completeGutter.length > 0 && (
           <group userData={thermalTag(null, 'gutter')}>
             <group userData={systemPartTag('gutter')}>

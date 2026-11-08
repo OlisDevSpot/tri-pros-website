@@ -17,8 +17,15 @@ export const HOME_SYSTEMS: readonly { id: HomeSystemId, rows: readonly { assembl
 ]
 
 // A list, not an id type of its own, so the later rename of systems to areas touches one type.
-export const LOOK_INSIDE_SYSTEM_IDS = ['roof', 'attic', 'windows', 'heating-cooling'] as const satisfies readonly HomeSystemId[]
+export const LOOK_INSIDE_SYSTEM_IDS = ['roof', 'attic', 'windows', 'walls', 'heating-cooling'] as const satisfies readonly HomeSystemId[]
 
-export const HOME_SPOT_IDS = ['roof', 'window', 'equipment'] as const
+// The systems whose parts sit under the roof, so the house opens while one is in focus.
+export const HOUSE_OPENING_SYSTEM_IDS = ['attic', 'heating-cooling'] as const satisfies readonly HomeSystemId[]
 
-export const SPOT_OF: Record<(typeof LOOK_INSIDE_SYSTEM_IDS)[number], HomeSpotId> = { 'roof': 'roof', 'attic': 'roof', 'windows': 'window', 'heating-cooling': 'equipment' }
+// The systems whose parts stand in the front wall, which only the Complete house draws, so the house stays closed while one
+// is in focus, whatever home view the rep picked: the window its Look inside opens, and the walls' whole painted skin.
+export const HOUSE_CLOSING_SYSTEM_IDS = ['windows', 'walls'] as const satisfies readonly HomeSystemId[]
+
+export const HOME_SPOT_IDS = ['roof', 'window', 'wall', 'equipment'] as const
+
+export const SPOT_OF: Record<(typeof LOOK_INSIDE_SYSTEM_IDS)[number], HomeSpotId> = { 'roof': 'roof', 'attic': 'roof', 'windows': 'window', 'walls': 'wall', 'heating-cooling': 'equipment' }

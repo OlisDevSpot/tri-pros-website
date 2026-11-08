@@ -1,7 +1,13 @@
+import type { PartState } from '@/features/trade-scenes/lib/part-state'
 import type { DuctLayout, Vec3 } from '@/features/trade-scenes/types'
+import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
 
 import { HUNG_DUCTS, LOW_SLOPE_DUCTS } from '@/features/trade-scenes/constants/home-details'
-import { DEEPEST_INSULATION, EQUIPMENT, HOUSE, REGISTER_BOOT_TOP, WALL_TOP_Y } from '@/features/trade-scenes/constants/home-geometry'
+import { DEEPEST_INSULATION, EQUIPMENT, HOUSE, LOW_SLOPE, REGISTER_BOOT_TOP, WALL_TOP_Y } from '@/features/trade-scenes/constants/home-geometry'
+import { LOOK_INSIDE_DUCT_RUN } from '@/features/trade-scenes/constants/look-inside'
+import { WEAR_LOOKS } from '@/features/trade-scenes/constants/wear-looks'
+import { ductsHang, hungDuctMaterial } from '@/features/trade-scenes/lib/ducts-hang'
+import { wornShare } from '@/features/trade-scenes/lib/part-state'
 
 // A working number: a hung run's points stand at most this far apart. Pulled taut between its straps, a hung run is straight
 // from bend to bend; through its corners alone the curve would bow off the straight line its straps hang on.
@@ -45,4 +51,24 @@ export function ductRunPoints(layout: DuctLayout, radius: number, sag: number): 
     const legEnd: Vec3 = [endX + (fromX - endX) * back, level, endZ + (fromZ - endZ) * back]
     return [...taut([...run.slice(0, -1), legEnd], level), [endX, REGISTER_BOOT_TOP, endZ]]
   })
+}
+
+const LOW_SLOPE_RADIUS = LOW_SLOPE.joistSpace * LOW_SLOPE_DUCTS.radiusShare
+
+// How the house lays the runs for what is there: runs put in to current code hang on their straps, an R-8 run the fatter;
+// original runs lie on the joists and sag with their years; under a flat roof every run lies in the joist space.
+export function ductRunLook(material: string | null, wear: number, lowSlope: boolean): { layout: DuctLayout, radius: number, sag: number } {
+  const girth = material === 'r8-flex' ? WEAR_LOOKS.newDucts.r8Girth : 1
+  return {
+    layout: lowSlope ? 'low-slope' : ductsHang(material, lowSlope) ? 'hung' : 'floor',
+    radius: (lowSlope ? LOW_SLOPE_RADIUS : EQUIPMENT.ductRadius) * girth,
+    sag: hungDuctMaterial(material) ? 0 : WEAR_LOOKS.ducts.sag * wornShare(wear),
+  }
+}
+
+// The run heating & cooling opens, on the line the house draws it, so its pieces' pins and a lean toward one land on the
+// piece whether the run hangs or lies.
+export function openedDuctRun(ducts: PartState, form: RoofForm): Vec3[] {
+  const { layout, radius, sag } = ductRunLook(ducts.material, ducts.wear, form === 'low-slope')
+  return ductRunPoints(layout, radius, sag)[LOOK_INSIDE_DUCT_RUN]
 }

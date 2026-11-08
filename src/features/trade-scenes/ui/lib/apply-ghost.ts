@@ -45,7 +45,7 @@ function sheetFadeOf(node: Object3D, levels: HomeFadeLevels): number {
 
 // Returns whether every material of the mesh writes depth when shown in full.
 function ghostMesh(mesh: Mesh, opacity: number): boolean {
-  // A ghost casting a full shadow would darken the yard around the zoomed kit; the shadow goes with the depth.
+  // A ghost casting a full shadow would darken the yard around the system up close; the shadow goes with the depth.
   const castsShadow = (mesh.userData.ghostCastShadow ??= mesh.castShadow) as boolean
   mesh.castShadow = castsShadow && opacity > 0.5
   const visible = (mesh.userData.ghostVisible ??= mesh.visible) as boolean
@@ -94,7 +94,7 @@ function walk(object: Object3D, pass: GhostPass, opacity: number, fade: number, 
   }
 }
 
-// Fades everything under the root at once, so the zoomed assembly reads through the house, and each fade-tagged group's
+// Fades everything under the root at once, so the system up close reads through the house, and each fade-tagged group's
 // parts by its level on top; glass keeps its own see-through share. With `lit`, the system's own parts stay solid and only
 // the rest takes the ghost. Tags are read up to the scene, so a subtree that mounts late still takes the fades and the
 // system part above it. three compiles `transparent` into the program, so flipping it needs a recompile, done only on the

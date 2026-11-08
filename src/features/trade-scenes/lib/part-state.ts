@@ -15,7 +15,8 @@ export function wornShare(wear: number): number {
   return wear / WEAR_AMOUNT.worn
 }
 
-// The home draws each part from the resolved parts, never the profile, so the house and the assembly kit always agree.
+// The home draws each part from the resolved parts, never the profile, so what it draws is what the card lists and the
+// savings count.
 export function partState(parts: readonly ResolvedPart[], id: string): PartState {
   const part = parts.find(entry => entry.id === id)
   if (!part) {

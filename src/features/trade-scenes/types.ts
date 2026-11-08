@@ -3,10 +3,12 @@ import type { ReadingId } from '@/features/trade-scenes/constants/home-anchors'
 import type { HOME_FADES } from '@/features/trade-scenes/constants/home-fades'
 import type { BUILD_ROW_PART_IDS, HOME_SPOT_IDS, HOME_SYSTEM_IDS } from '@/features/trade-scenes/constants/home-systems'
 import type { LookDevView, MaterialTreatment } from '@/features/trade-scenes/constants/look-dev-options'
+import type { FULLY_OPEN_SYSTEM_IDS, PULLED_APART_SYSTEM_IDS, STEP_DEPTHS } from '@/features/trade-scenes/constants/look-inside'
 import type { PLANT_SPECIES } from '@/features/trade-scenes/constants/lot-plants'
 import type { HOME_VIEWS } from '@/features/trade-scenes/constants/scene-controls'
 import type { DOCK_FOLDS } from '@/features/trade-scenes/constants/scene-dock'
 import type { SCENE_LOAD_PHASES } from '@/features/trade-scenes/constants/scene-load'
+import type { PANE_LOOKS } from '@/features/trade-scenes/constants/system-part-looks'
 import type { SYSTEM_PARTS } from '@/features/trade-scenes/constants/system-parts'
 import type { OfferBlockedReason, PartOffer } from '@/features/trade-scenes/lib/part-offers'
 import type { RibbonStyle } from '@/shared/components/scene/constants/ribbon-styles'
@@ -84,8 +86,8 @@ export interface TradeSceneInputs {
 // What resolveScene reads; the drawing-only inputs (peel, emphasis, a tapped spot, home view, thermal camera, look) change no target, so a write to
 // them must not re-resolve the scene.
 export type SceneResolveInputs = Pick<TradeSceneInputs, 'property' | 'household' | 'view' | 'weather' | 'climate' | 'proposedScopeIds' | 'efficiencyUpgrades' | 'installStyles' | 'bills' | 'repairsOverrides'> & {
-  // The AC size, the shingle colour and the paint wear only draw, so a write to any of them must not re-resolve.
-  homeMaterials: Omit<HomeMaterialFacts, 'acTons' | 'shingleColor' | 'paintWear'>
+  // The drawing-only facts only draw, so a write to any of them must not re-resolve.
+  homeMaterials: Omit<HomeMaterialFacts, DrawingOnlyMaterialFact>
 }
 
 export type Comfort = 'strained' | 'fair' | 'comfortable'
@@ -177,6 +179,9 @@ export interface SceneTargets {
   home: ResolvedHomeMaterials
   residents: ResidentSpec[]
   savings: SceneSavings
+  // The build replaces the rotted fascia: a new length over each rotted end, and a whole board where the rot has run along
+  // its bottom edge.
+  fasciaReplaced: boolean
 }
 
 // What the home kit reads from the scene inputs: a narrower slice than the whole inputs, so a peel drag never redraws the house.
@@ -427,7 +432,7 @@ export interface SceneVisibleArea {
 export type DockFold = typeof DOCK_FOLDS[number]
 
 // What the store selects for the resolver: the home material facts spread flat so a shallow compare sees each one.
-export type SceneResolveSelection = Omit<SceneResolveInputs, 'homeMaterials'> & Omit<HomeMaterialFacts, 'acTons' | 'shingleColor' | 'paintWear'>
+export type SceneResolveSelection = Omit<SceneResolveInputs, 'homeMaterials'> & Omit<HomeMaterialFacts, DrawingOnlyMaterialFact>
 
 export type HomeSystemId = typeof HOME_SYSTEM_IDS[number]
 
@@ -449,6 +454,7 @@ export interface HomeSystemRows {
 
 export interface PaintLook {
   color: string
+  trim: string
   wear: number
   paintWear: PaintWear
 }
@@ -538,7 +544,7 @@ export type SceneChange
     | { kind: 'option', field: ReplaceableField, value: string | null }
     | { kind: 'era-guess', id: HomeMaterialId }
     | { kind: 'era-code' }
-    | { kind: 'fact', patch: Partial<Pick<HomeMaterialFacts, 'gutters' | 'acTons' | 'shingleColor' | 'paintWear'>> }
+    | { kind: 'fact', patch: Partial<Pick<HomeMaterialFacts, 'gutters' | DrawingOnlyMaterialFact>> }
     | { kind: 'scope', offer: PartOffer, scopeId: ScopeId | null }
     | { kind: 'efficiency-upgrade', upgrade: EfficiencyUpgradeId, on: boolean }
     | { kind: 'install-style', style: InstallStyleId, on: boolean }
@@ -546,6 +552,7 @@ export type SceneChange
     | { kind: 'climate', climate: Climate }
     | { kind: 'bill', category: SavingsCategory, now: number | null }
     | { kind: 'repairs', trade: TradeSlug, perYear: number | null }
+    | { kind: 'fascia-replacement', on: boolean }
 
 export type SlotGroup = 'facts' | 'area' | 'systems' | 'existing' | 'proposed' | 'bills'
 
@@ -586,7 +593,6 @@ export interface UpgradeRowState {
   // The pick is the truth: a Cool Life home holds the upgraded scope while the switch is off.
   coolPaintOn: boolean
   r8On: boolean
-  installsCoolShingle: boolean
 }
 
 // A blocked row says why, or names the base its covering already brings.
@@ -658,7 +664,7 @@ export type BuildRowPartId = typeof BUILD_ROW_PART_IDS[number]
 export type SceneChangeSlotId
   = | 'household' | 'age-group' | 'foundation' | 'roof-form' | 'year-built' | 'climate'
     | HomeMaterialId | 'gutters' | 'hvac-components' | 'ac-tons' | `wear:${HomeMaterialId}`
-    | `build:${BuildRowPartId}` | `upgrade:${EfficiencyUpgradeId}` | `style:${InstallStyleId}` | `bill:${SavingsCategory}`
+    | `build:${BuildRowPartId}` | `upgrade:${EfficiencyUpgradeId}` | `style:${InstallStyleId}` | `bill:${SavingsCategory}` | 'replace:fascia'
 
 // What the Benefits window has picked: one dot, a whole system row, or a whole kind column.
 export type BenefitSelection
@@ -709,6 +715,9 @@ export interface SystemPart<Id extends string = SystemPartId> {
   systems: readonly HomeSystemId[]
   story?: Partial<Record<HomeSystemId, SystemPartStory>>
   drawnFor?: (part: ResolvedPart) => boolean
+  roofForms?: readonly RoofForm[]
+  // Shown and lit, but the card and the pins leave it out: its pieces say what it is.
+  listed?: false
 }
 
 export type SystemPartId = (typeof SYSTEM_PARTS)[number]['id']
@@ -720,6 +729,8 @@ export type SystemPieceId = PieceIdOf<(typeof SYSTEM_PARTS)[number]>
 // What a group whose meshes draw one system part carries in its `userData`; untagged groups carry none.
 export interface SystemPartTagData {
   scenePart?: SystemPartId
+  // Lit with its part even where it stands on what only the Complete house draws: the framed window on the faded front wall.
+  overFront?: true
 }
 
 // The system up close: the system parts it keeps solid, and the one a tap keeps whole while the rest of it dims.
@@ -730,4 +741,98 @@ export interface SystemLit {
 }
 
 // A shown system part as its system's list and its pins name it.
-export type SystemPartRow = ResolvedPart & { id: SystemPartId }
+export type SystemPartRow = ResolvedPart & { id: SystemPartId, listed?: false }
+
+// The systems whose flows cross the house up close.
+export type CutawaySystemId = 'roof' | 'attic'
+
+// How the cutaway stands: the system it opens, the parts it shows, and how far its steps are open.
+export interface CutawaySteps {
+  system: CutawaySystemId
+  shown: ReadonlySet<SystemPartId>
+  peel: number
+}
+
+// Where a flow crosses one system part up close, at the part's step: its outer face and its inner face, plus its outer face
+// in the middle of the strip the step shows, where a flow from outside lands on it.
+export interface CutawayCrossing {
+  partId: SystemPartId
+  outer: Vec3
+  inner: Vec3
+  tread: Vec3
+}
+
+// The rain's line through the cutaway and its share (0..1) at each point; `drip` when it gets past the ceiling.
+export interface CutawayRainPath {
+  points: [number, number, number][]
+  widths: number[]
+  drip: boolean
+}
+
+// A rotted area on a wood part's step: its turn about the house's x (the slope's pitch on a gable), and how thick it is drawn,
+// right through a thin part so it shows from the attic too. `size` is its two sides, along the house and up the slope: a
+// stain's span, or, where the build cut the old deck's rot out (`woodReplaced`), the fresh sheet set in its place.
+export interface CutawayRotSpot {
+  partId: SystemPartId
+  position: Vec3
+  tilt: number
+  thickness: number
+  size: readonly [number, number]
+  woodReplaced?: true
+}
+
+// A part's temperatures on the fixed thermal scale, 0..1: its face toward the rooms and its face toward the sky.
+export interface PartPaint {
+  inner: number
+  outer: number
+}
+
+// The home's readings a part's two faces take: the one toward the rooms and the one toward the sky.
+export interface PartPaintFaces {
+  inner: 'roof' | 'attic' | 'ceiling'
+  outer: 'roof' | 'attic' | 'ceiling'
+}
+
+// The systems that step open up close: the ones with a step depth.
+export type SteppedSystemId = keyof typeof STEP_DEPTHS
+
+// The systems with a slider to drag up close: the stepped ones but those that stand fully open, and the ones that pull apart.
+export type PeeledSystemId = Exclude<SteppedSystemId, (typeof FULLY_OPEN_SYSTEM_IDS)[number]> | (typeof PULLED_APART_SYSTEM_IDS)[number]
+
+// The window's glazing pieces up close.
+export type WindowPieceId = keyof typeof PANE_LOOKS
+
+// The systems whose heat crosses one face of the house up close: the window through its parts, the wall whole.
+export type CutawayFaceSystemId = 'windows' | 'walls'
+
+// A face's heat as its legs, outside in as for summer: the yard's side up to the face, the room's side on from it (the
+// Complete house draws none), and the heat the face turns back (none where nothing on it does).
+export interface FaceLegPoints {
+  outside: readonly Vec3[]
+  inside: readonly Vec3[] | null
+  bounce: readonly Vec3[] | null
+}
+
+// The home material facts that only draw: no scope, part, material or figure reads them, so a change never re-resolves the scene.
+export type DrawingOnlyMaterialFact = 'acTons' | 'shingleColor' | 'paintWear' | 'existingPaintColors' | 'proposedPaintColors' | 'windowFrameColor'
+
+// The two hexes the house's paint draws: the body of the walls and the trim round them.
+export interface PaintHexes {
+  body: string
+  trim: string
+}
+
+// One eave fascia's run, measured along its own board as `fasciaPeeling` measures it: the house's two eaves in their slope's
+// frame, the garage's along x.
+export interface FasciaRun {
+  face: 'front' | 'back' | 'garage'
+  from: number
+  to: number
+}
+
+// Rot on a fascia: at a board end, the full board's height, or along a board's bottom edge (`bottom`).
+export interface FasciaRotSpot {
+  face: FasciaRun['face']
+  along: readonly [number, number]
+  bottom: boolean
+}

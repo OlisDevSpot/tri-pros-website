@@ -1,18 +1,20 @@
 'use client'
 
-import type { BoxSpec, HouseWall, RoomSpan } from '@/features/trade-scenes/types'
+import type { BoxSpec, HouseWall, RoomSpan, SystemLit } from '@/features/trade-scenes/types'
 
 import { HOME_FADE_TAGS } from '@/features/trade-scenes/constants/home-fades'
 import { HOUSE, HOUSE_WALLS, PARTITION_DOOR, PARTITIONS_X, ROOMS, WALL_TOP_Y } from '@/features/trade-scenes/constants/home-geometry'
 import { HOME_PALETTE } from '@/features/trade-scenes/constants/home-palette'
-import { systemPartTag } from '@/features/trade-scenes/lib/system-part-tag'
 import { thermalTag } from '@/features/trade-scenes/lib/thermal-tag'
 import { wallBoxes } from '@/features/trade-scenes/lib/wall-boxes'
+import { AtticSteps } from '@/features/trade-scenes/ui/components/home-kit/attic-steps'
 import { MergedBoxes } from '@/features/trade-scenes/ui/components/home-kit/merged-boxes'
 import { RoomFurnishings } from '@/features/trade-scenes/ui/components/home-kit/room-furnishings'
 
 interface RoomsProps {
   roomLight: number
+  // The system up close; the drywall steps with the joists over it while the ceiling is one of its steps.
+  lit: SystemLit | null
 }
 
 const { halfLength: L, halfDepth: D, wallThickness: T, paintThickness: P, partitionThickness, ceilingThickness, floorThickness, floorY } = HOUSE
@@ -58,9 +60,10 @@ const ceilingOver = (from: number, to: number): BoxSpec[] => [{ size: [L * 2 - T
 const CEILING = ceilingOver(BACK_INNER, HOUSE.atticFrontZ)
 // Partly open cuts the ceiling back; the Complete house carries it on to the front wall.
 const COMPLETE_CEILING = ceilingOver(HOUSE.atticFrontZ, D - T)
+const CEILING_TAG = thermalTag('ceiling', 'ceiling')
 
 // A living room, a kitchen and one bedroom, open toward the camera.
-export function Rooms({ roomLight }: RoomsProps) {
+export function Rooms({ roomLight, lit }: RoomsProps) {
   return (
     <group userData={thermalTag('interior')}>
       <MergedBoxes boxes={WOOD_FLOORS} color={ROOMS.living.floor} roughness={0.8} />
@@ -68,13 +71,9 @@ export function Rooms({ roomLight }: RoomsProps) {
       <MergedBoxes boxes={PAINT.bedroom} color={ROOMS.bedroom.paint} radius={0.008} />
       <MergedBoxes boxes={PAINT.living} color={ROOMS.living.paint} radius={0.008} />
       <MergedBoxes boxes={PAINT.kitchen} color={ROOMS.kitchen.paint} radius={0.008} />
-      <group userData={thermalTag('ceiling', 'ceiling')}>
-        <group userData={systemPartTag('ceiling')}>
-          <MergedBoxes boxes={CEILING} color={HOME_PALETTE.ceiling} />
-          <group userData={HOME_FADE_TAGS.complete}>
-            <MergedBoxes boxes={COMPLETE_CEILING} color={HOME_PALETTE.ceiling} />
-          </group>
-        </group>
+      <AtticSteps part="ceiling" lit={lit} thermal={CEILING_TAG} boxes={CEILING} color={HOME_PALETTE.ceiling} />
+      <group userData={HOME_FADE_TAGS.complete}>
+        <AtticSteps part="ceiling" lit={lit} thermal={CEILING_TAG} boxes={COMPLETE_CEILING} color={HOME_PALETTE.ceiling} />
       </group>
       <RoomFurnishings roomLight={roomLight} />
     </group>

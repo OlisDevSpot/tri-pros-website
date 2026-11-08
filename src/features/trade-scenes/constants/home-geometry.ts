@@ -53,6 +53,13 @@ export const RIDGE_Y = RAFTER_ORIGIN_Y + RIDGE_RISE
 export const SLOPE_LENGTH = HOUSE.halfDepth / Math.cos(HOUSE.pitch)
 export const EAVE_RUN = HOUSE.eaveOverhang / Math.cos(HOUSE.pitch)
 export const COVERING_BASE = HOUSE.deckThickness + HOUSE.underlaymentThickness
+// The deck in a slope's own frame, from the eave's overhang to the ridge.
+export const DECK_END = SLOPE_LENGTH + HOUSE.deckThickness * Math.tan(HOUSE.pitch)
+export const DECK_LENGTH = DECK_END + EAVE_RUN
+export const DECK_CENTRE = (DECK_END - EAVE_RUN) / 2
+// Tri Pros retrofits the radiant barrier from inside the attic: foil stapled across the rafters' undersides, with the
+// rafter bay's air between it and the deck. Its [inner, outer] faces off the rafters' top; the foil's gauge is a working number.
+export const RADIANT_BARRIER_FACES = [-HOUSE.rafterDepth - 0.004, -HOUSE.rafterDepth] as const
 export const GUTTER_Y = RAFTER_ORIGIN_Y - HOUSE.eaveOverhang * Math.tan(HOUSE.pitch) - ROOF_TRIM.gutter.drop
 export const ROOF_HALF_LENGTH = HOUSE.halfLength + HOUSE.rakeOverhang
 // In a slope's own frame, as the roof draws it.
@@ -241,14 +248,16 @@ export const EQUIPMENT = {
   ductRuns: [
     [[-0.95, WALL_TOP_Y + 0.38, -1.5], [-2.4, WALL_TOP_Y + 0.37, -1.3], [-4.23, WALL_TOP_Y + 0.36, -0.5]],
     [[-0.25, WALL_TOP_Y + 0.38, -1.4], [0.1, WALL_TOP_Y + 0.37, -1], [0.44, WALL_TOP_Y + 0.36, -0.5]],
-    [[-0.25, WALL_TOP_Y + 0.4, -1.75], [2, WALL_TOP_Y + 0.38, -2], [4.17, WALL_TOP_Y + 0.36, -0.6]],
+    [[-0.25, WALL_TOP_Y + 0.4, -1.75], [2, WALL_TOP_Y + 0.38, -2], [2.9, WALL_TOP_Y + 0.36, -1.3]],
   ] as const,
 } as const
 
 // Every hole through the ceiling: a boot at each run's end, a recessed light's can in each room, and the two plumbing vents,
 // the kitchen sink's and the bath stack's. Each stands in a joist bay, clear of its foam collar, and behind the cut line.
 // Both pipes leave through the back slope, between two rafters: Partly open takes the front slope off over the bedroom.
-// Working positions, tuned by eye.
+// The right room's can, boot and sink vent share the joist bay just past the cut, back to front, where the attic's air
+// sealing strip shows them up close; the slim vent stands nearest the attic's heat line, so the arrows pass clear of the
+// boot. Working positions, tuned by eye.
 export const CEILING_OPENINGS: readonly CeilingOpening[] = [
   ...EQUIPMENT.ductRuns.map((run): CeilingOpening => {
     const [x, , z] = run[run.length - 1]
@@ -256,8 +265,10 @@ export const CEILING_OPENINGS: readonly CeilingOpening[] = [
   }),
   { kind: 'can', at: [-4.4, -2.2], radius: 0.09 },
   { kind: 'can', at: [1.2, -2.3], radius: 0.09 },
-  { kind: 'can', at: [3.4, -2.2], radius: 0.09 },
-  { kind: 'pipe', at: [4.6, -1.3], radius: 0.04 },
+  { kind: 'can', at: [2.9, -2.2], radius: 0.09 },
+  // The one can past the bare strip, under the kept blanket, so the dust over it shows up close. A working position, set by screenshot.
+  { kind: 'can', at: [4.1, -1.9], radius: 0.09 },
+  { kind: 'pipe', at: [2.9, -0.6], radius: 0.04 },
   { kind: 'pipe', at: [-3.15, -2.7], radius: 0.04 },
 ]
 

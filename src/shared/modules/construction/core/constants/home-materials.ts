@@ -71,4 +71,4 @@ export const HOME_MATERIALS: Record<HomeMaterialId, HomeMaterialDefinition> = {
   },
 }
 
-export const HOME_MATERIAL_FACTS_UNSET: HomeMaterialFacts = { wear: {}, gutters: null, exteriorPaint: null, ducts: null, crawlInsulation: null, acTons: null, shingleColor: null, paintWear: {} }
+export const HOME_MATERIAL_FACTS_UNSET: HomeMaterialFacts = { wear: {}, gutters: null, exteriorPaint: null, ducts: null, crawlInsulation: null, acTons: null, shingleColor: null, paintWear: {}, existingPaintColors: { body: null, trim: null }, proposedPaintColors: { body: null, trim: null, combo: null }, windowFrameColor: 'white' }

@@ -15,11 +15,13 @@ import { NO_CHANGE_CHOICE } from '@/features/trade-scenes/constants/scene-contro
 import { SCOPE_VERBS } from '@/features/trade-scenes/constants/scope-verbs'
 import { requiredUpgrades } from '@/features/trade-scenes/lib/keep-pick-options'
 import { existingDuctChoices, hasAcUnit, roofTypeChoices, showsEquipment } from '@/features/trade-scenes/lib/material-option-choices'
+import { fasciaRotInForce } from '@/features/trade-scenes/lib/paint-wear-in-force'
 import { upgradeRowState } from '@/features/trade-scenes/lib/upgrade-row-state'
 import { upgradeRows } from '@/features/trade-scenes/lib/upgrade-rows'
 import { customerAgeGroups, householdTypes, yearBuiltRanges } from '@/shared/constants/enums/customers'
 import { CLIMATE_LABELS, CLIMATES } from '@/shared/modules/construction/core/constants/climate-presets'
 import { acTonnages, crawlInsulations, exteriorPaints, foundationTypes, gutterOptions, hvacComponents, hvacTypes, INSULATION_LEVEL_LABELS, insulationLevels, wears, windowsTypes } from '@/shared/modules/construction/core/constants/enums'
+import { FASCIA_REPLACEMENT_SCOPE_ID } from '@/shared/modules/construction/core/constants/fascia-replacement'
 import { HOME_MATERIAL_IDS } from '@/shared/modules/construction/core/constants/home-material-ids'
 import { ROOF_FORMS } from '@/shared/modules/construction/core/constants/roof-forms'
 import { SCOPE_INSTALLS } from '@/shared/modules/construction/core/constants/scope-installs'
@@ -129,6 +131,17 @@ export function sceneChangeSlots(state: TradeSceneInputs, targets: SceneTargets,
     unavailable: battsTaken ? null : INSTALL_STYLE_HINTS.batts,
     change: value => ({ kind: 'install-style', style: 'batts', on: value === 'on' }),
   })
+  // The fascia replacement fixes only rot the rep has set, so it is switchable only then; Modify lists it either way.
+  const rot = fasciaRotInForce(targets.home, state.homeMaterials.paintWear) !== 'none'
+  const fasciaSlot = slot({
+    id: 'replace:fascia',
+    group: 'proposed',
+    name: CONTROLS_COPY.systems.fasciaReplacement,
+    options: rot ? toggleOptions : [],
+    current: rot ? (state.proposedScopeIds.includes(FASCIA_REPLACEMENT_SCOPE_ID) ? 'on' : 'off') : null,
+    unavailable: rot ? null : PANEL_COPY.fasciaReplacementHint,
+    change: value => ({ kind: 'fascia-replacement', on: value === 'on' }),
+  })
 
   return [
     slot({ id: 'household', group: 'facts', name: PROFILE_COPY.householdType, options: optionsOf(householdTypes, HOUSEHOLD_TYPE_LABELS), current: household.type, isFact: true, offersNotSure: true, change: value => ({ kind: 'household', patch: { type: value as HouseholdType } }) }),
@@ -153,6 +166,7 @@ export function sceneChangeSlots(state: TradeSceneInputs, targets: SceneTargets,
     ...coolPaint.row ? [upgradeSlot('cool-paint', coolPaint.row === coolPaint.taken, coolPaint.row.coolPaintOn)] : [],
     ...r38.row ? [upgradeSlot('r38-insulation', r38.row === r38.taken, state.efficiencyUpgrades.includes('r38-insulation'))] : [],
     ...batts ? [battsSlot] : [],
+    fasciaSlot,
     slot({ id: 'climate', group: 'area', name: CONTROLS_COPY.facts.climate, options: optionsOf(CLIMATES, CLIMATE_LABELS), current: state.climate, isFact: true, change: value => ({ kind: 'climate', climate: value as Climate }) }),
     // A cleared field goes back to the climate's default bill.
     ...SAVINGS_CATEGORIES.map(category => slot({ id: `bill:${category}`, group: 'bills', name: SAVINGS_COPY.billLabel(category), options: [], current: String(targets.savings.cuts[category].bill), bill: category, change: value => ({ kind: 'bill', category, now: value === '' ? null : Number(value) }) })),

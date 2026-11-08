@@ -5,7 +5,7 @@ import { motion, useReducedMotion } from 'motion/react'
 import { CONTROLS_EASE } from '@/features/trade-scenes/constants/scene-layout'
 
 // Inside the stage, so it dims the scene and leaves the sidebar alone. It lets presses through: the window closes on a
-// press outside it, and a press on a part pin must still reach the pin to zoom.
+// press outside it, and a press on a part pin must still reach the pin to emphasise its part.
 export function ControlsScrim() {
   const reduceMotion = useReducedMotion()
   return (

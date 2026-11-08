@@ -1,5 +1,23 @@
 import type { Wear } from '@/shared/modules/construction/core/constants/enums'
 
+// The old felt underlayment, dried out and brittle. All working numbers, set by screenshot; sizes are metres on the felt.
+// `course` is the exposure of one roll before the next laps over it.
+export const FELT_WEAR = {
+  course: 0.9,
+  holes: 24,
+  holeSize: [0.14, 0.3],
+  cracks: 90,
+  crackWidth: 0.012,
+  crackLength: [0.25, 0.7],
+  tearsPerLap: [3, 5],
+  tearLength: [0.5, 1.6],
+  tearWidth: [0.04, 0.09],
+  crackColor: '#26221e',
+  tearColor: '#8d8377',
+  // The rain's hole is a patch this wide, square, centred where the water crosses the felt.
+  rainHole: 0.3,
+} as const
+
 export const WEAR_AMOUNT = { new: 0, good: 0.25, fair: 0.5, worn: 0.75, failing: 1 } satisfies Record<Wear, number>
 
 // Hand-tuned working numbers, set by eye against the scene. Colours are the Worn look; Failing goes a third past them. Strengths
@@ -16,6 +34,9 @@ export const WEAR_LOOKS = {
     chalk: '#d2c9b6',
     crackCount: 7,
     crackColor: '#8d7f6a',
+    // A crack the repaint filled, shown on the bare base coat: a smear of patching compound wider than the hairline and
+    // lighter than the coat around it. Working numbers, set by screenshot.
+    patch: { width: 0.035, color: '#9a9284' },
     // The stains, all working numbers. Each alpha is a list's strength at Moderate, scaled by its level's share; sizes are
     // metres on the wall.
     splashColor: '#7d5f3f',
@@ -56,6 +77,9 @@ export const WEAR_LOOKS = {
       // The grey base coat where the stucco's paint has gone, the weathered grey-brown wood of the trim's, and the paint still
       // lifting off a patch's rim, its edge catching the light.
       bareStucco: '#6e675c',
+      // On the Stucco pick the whole wall shows that base coat, so the patches the paint has left take a darker tone of it to
+      // still read. A working number, set by screenshot.
+      bareOnCoat: '#4f4a42',
       bareWood: '#5e5243',
       flake: '#e9dcc5',
       // On a wall: clusters of a few ragged patches round one spot, at the foot, under a sill or at an end. A wall shorter than
@@ -96,6 +120,8 @@ export const WEAR_LOOKS = {
       fasciaTopShare: 0.25,
     },
   },
+  // Rot at the fascia's board ends, a soft darkening through the trim's paint. A working colour, set by screenshot.
+  fascia: { rot: '#3a2c20' },
   condenser: {
     dust: '#b3a58b',
     // Share of the dust tone each case colour takes at Worn.

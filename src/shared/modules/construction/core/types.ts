@@ -2,13 +2,16 @@ import type { YearBuiltRange } from '@/shared/constants/enums/customers'
 import type { AssemblyId } from '@/shared/modules/construction/core/constants/assembly-ids'
 import type { WrittenBenefitKind } from '@/shared/modules/construction/core/constants/benefit-kinds'
 import type { BillCutAddOnId } from '@/shared/modules/construction/core/constants/bill-cut-add-ons'
+import type { CoolLifeColorId, CoolLifeFamilyId, PaintComboId } from '@/shared/modules/construction/core/constants/cool-life-colors'
 import type { CutMode } from '@/shared/modules/construction/core/constants/cut-modes'
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
 import type { AcTons, CrawlInsulation, DuctMaterial, ExteriorPaint, FoundationType, GutterOption, HVACComponent, HVACType, InsulationLevel, PaintWearKind, PaintWearLevel, RoofType, Wear, WindowsType } from '@/shared/modules/construction/core/constants/enums'
 import type { HomeMaterialId } from '@/shared/modules/construction/core/constants/home-material-ids'
 import type { InstallStyleId } from '@/shared/modules/construction/core/constants/install-styles'
 import type { OwensCorningColorId } from '@/shared/modules/construction/core/constants/owens-corning-shingles'
+import type { StandardShingleColorId } from '@/shared/modules/construction/core/constants/standard-shingles'
 import type { TradeSlug } from '@/shared/modules/construction/core/constants/trade-slugs'
+import type { WindowFrameColorId } from '@/shared/modules/construction/core/constants/window-frame-colors'
 
 export type CutSource = TradeSlug | BillCutAddOnId
 
@@ -65,6 +68,8 @@ interface PartMaterialFields {
   energyRank?: number
   // Installing this material also installs `with` on `part` when that part currently holds one of `replaces`.
   needsBase?: { part: string, replaces: readonly string[], with: string, copy: PartCopy }
+  // What the part says once a scope takes the old roof off to it and the build keeps it, with its bad sections replaced.
+  woodReplacementCopy?: PartCopy
 }
 
 // A saving install earns its trade's base cut, or `cut`, an add-on of its scope's trade, in its place. A step up earns both, each
@@ -113,6 +118,8 @@ export interface ResolvedPart {
   group: string
   role: PartRole
   edge?: true
+  // The build keeps this part and replaces its rotted sections; the part's condition, wear and figures stay as they were.
+  woodReplaced?: true
   material: string | null
   condition: PartCondition
   wear?: Wear
@@ -128,6 +135,8 @@ export interface ScopeInstall {
   assembly: AssemblyId
   // The catalog owns a scope's trade; it is copied here because the core cannot read the catalog, and the scope check holds the two equal.
   trade: TradeSlug
+  // Parts the scope bares and keeps, replacing their rotted wood on the way.
+  replacesWood?: readonly string[]
   installs: readonly {
     part: string
     material: string
@@ -198,6 +207,45 @@ export interface ShingleColor {
   agedSri: number
 }
 
+export interface StandardShingleColor {
+  id: string
+  name: string
+  hex: string
+  coolTwin: OwensCorningColorId
+}
+
+export type ShingleColorId = OwensCorningColorId | StandardShingleColorId
+
+export interface CoolLifeColor {
+  id: string
+  name: string
+  code: string
+  hex: string
+  family: CoolLifeFamilyId
+}
+
+export interface PaintColorIds {
+  body: CoolLifeColorId | null
+  trim: CoolLifeColorId | null
+}
+
+export interface PaintPick extends PaintColorIds {
+  combo: PaintComboId | null
+}
+
+export interface PaintCombo {
+  id: string
+  name: string
+  body: CoolLifeColorId
+  trim: CoolLifeColorId
+}
+
+export interface WindowFrameColor {
+  name: string
+  outside: string
+  inside: string
+}
+
 export interface HomeMaterialFacts {
   wear: Partial<Record<HomeMaterialId, Wear>>
   gutters: GutterOption | null
@@ -205,8 +253,11 @@ export interface HomeMaterialFacts {
   ducts: DuctMaterial | null
   crawlInsulation: CrawlInsulation | null
   acTons: AcTons | null
-  shingleColor: OwensCorningColorId | null
+  shingleColor: ShingleColorId | null
   paintWear: Partial<Record<PaintWearKind, PaintWearLevel>>
+  existingPaintColors: PaintColorIds
+  proposedPaintColors: PaintPick
+  windowFrameColor: WindowFrameColorId
 }
 
 export interface HomeFacts {

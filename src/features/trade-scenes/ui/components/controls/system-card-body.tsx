@@ -1,11 +1,11 @@
 'use client'
 
 import type { CSSProperties, ReactNode } from 'react'
-import type { HomeSystemId, SceneChangeSlotId, TradeSceneInputs } from '@/features/trade-scenes/types'
-import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
+import type { WorkDetailsKind } from '@/features/trade-scenes/lib/work-details-kind'
 
+import type { HomeSystemId, SceneChangeSlotId, TradeSceneInputs } from '@/features/trade-scenes/types'
 import { CONTROLS_CLASSES } from '@/features/trade-scenes/constants/controls-classes'
-import { CONTROLS_COPY, EFFICIENCY_UPGRADE_LABELS, PART_LABELS, REQUIRED_UPGRADE_COPY, SCENE_VIEW_LABELS } from '@/features/trade-scenes/constants/home-scene-copy'
+import { CONTROLS_COPY, PART_LABELS, SCENE_VIEW_LABELS } from '@/features/trade-scenes/constants/home-scene-copy'
 import { NO_CHANGE_CHOICE } from '@/features/trade-scenes/constants/scene-controls'
 import { CONTROLS_EASE_CSS } from '@/features/trade-scenes/constants/scene-layout'
 import { useApplySceneChange } from '@/features/trade-scenes/hooks/use-apply-scene-change'
@@ -15,12 +15,14 @@ import { sceneChangeSlots } from '@/features/trade-scenes/lib/scene-change-slots
 import { systemMaterialIds } from '@/features/trade-scenes/lib/system-material-ids'
 import { upgradeRowBlockedLine, upgradeRowState } from '@/features/trade-scenes/lib/upgrade-row-state'
 import { upgradeRows } from '@/features/trade-scenes/lib/upgrade-rows'
+import { workDetailsKind } from '@/features/trade-scenes/lib/work-details-kind'
 import { ExistingChip } from '@/features/trade-scenes/ui/components/controls/existing-chip'
 import { LookInsideBody } from '@/features/trade-scenes/ui/components/controls/look-inside-body'
 import { LookInsideButton } from '@/features/trade-scenes/ui/components/controls/look-inside-button'
 import { MissingChip } from '@/features/trade-scenes/ui/components/controls/missing-chip'
 import { ProposedChip } from '@/features/trade-scenes/ui/components/controls/proposed-chip'
-import { ShingleColors } from '@/features/trade-scenes/ui/components/panel/shingle-colors'
+import { UpgradeSwitch } from '@/features/trade-scenes/ui/components/controls/upgrade-switch'
+import { WorkDetails } from '@/features/trade-scenes/ui/components/controls/work-details'
 import { useSceneInputs } from '@/shared/components/scene/contexts/scene-inputs-context'
 import { cn } from '@/shared/lib/utils'
 
@@ -46,13 +48,12 @@ export function SystemCardBody({ system }: SystemCardBodyProps) {
     ...id === 'roof' ? [<ExistingChip key="gutters" slot={slotOf('gutters')!} slots={slots} material={null} />] : [],
   ])
 
-  // Inside the menu the colours line up with its header, and the line pill, which wraps at the menu's width, keeps a
-  // radius that reads at two rows.
-  const shingleColors = (
-    <div className="px-1.5 pb-1.5 [&_[data-slot=toggle-group]]:rounded-[18px]">
-      <ShingleColors />
-    </div>
+  const details = (kind: WorkDetailsKind) => (
+    <WorkDetails kind={kind} upgrade={kind === 'vinyl-frame' ? null : slotOf(kind === 'paint' ? 'upgrade:cool-paint' : 'upgrade:cool-roof') ?? null} />
   )
+  // A toggle's details go last in the row, on a line of their own, so a chip a pick unlocks stays beside the chip that
+  // unlocked it. Keyed by the system: Cool Life swaps the repaint's scope, and the panel must not remount with it.
+  const panels: ReactNode[] = []
 
   const proposed = rows.flatMap((row): ReactNode[] => {
     const id = `build:${row.part}` as const
@@ -63,7 +64,11 @@ export function SystemCardBody({ system }: SystemCardBodyProps) {
       return [<ProposedChip key={id} id={id} kind="reason" label={label} text={words.add} reason={line.text} included={line.included} />]
     }
     const slot = slotOf(id)!
-    const { holdsCoolRoof, holdsR8, holdsCoolPaint, holdsR38, holdsBatts, installsCoolShingle } = upgradeRowState(row, picks, state.efficiencyUpgrades)
+    const { picked, holdsCoolRoof, holdsR8, holdsCoolPaint, holdsR38, holdsBatts } = upgradeRowState(row, picks, state.efficiencyUpgrades)
+    const kind = workDetailsKind(picked)
+    if (kind !== null && row.scopeIds.length === 1) {
+      panels.push(<div key={`details:${system}`} className={CONTROLS_CLASSES.detailsPanel}>{details(kind)}</div>)
+    }
     const chips: ReactNode[] = [
       row.scopeIds.length === 1
         ? (
@@ -76,29 +81,46 @@ export function SystemCardBody({ system }: SystemCardBodyProps) {
               onToggle={() => applyChange(slot.change(slot.current === NO_CHANGE_CHOICE ? row.scopeIds[0] : NO_CHANGE_CHOICE))}
             />
           )
-        : <ProposedChip key={id} id={id} kind="menu" label={label} add={words.add} short={words.short} slot={slot} extra={installsCoolShingle && shingleColors} />,
+        : (
+            <ProposedChip
+              key={id}
+              id={id}
+              kind="menu"
+              label={label}
+              add={words.add}
+              short={words.short}
+              slot={slot}
+              staysOpenOn={value => workDetailsKind(value) !== null}
+              // Inside the menu the colours line up with its header, and the line pill, which wraps at the menu's width,
+              // keeps a radius that reads at two rows.
+              extra={kind !== null && <div className="px-1.5 pb-1.5 [&_[data-slot=toggle-group]]:rounded-[18px]">{details(kind)}</div>}
+            />
+          ),
     ]
-    // A row that holds an upgrade always lists its slot, taken or not yet.
-    const upgrade = (upgradeId: EfficiencyUpgradeId, saysWhy: boolean) => {
-      const key = `upgrade:${upgradeId}` as const
-      const upgradeSlot = slotOf(key)!
-      if (upgradeSlot.required) {
-        return <ProposedChip key={key} id={key} kind="reason" label={EFFICIENCY_UPGRADE_LABELS[upgradeId]} text={EFFICIENCY_UPGRADE_LABELS[upgradeId]} reason={REQUIRED_UPGRADE_COPY.reason} included />
-      }
-      if (upgradeSlot.unavailable === null) {
-        const on = upgradeSlot.current === 'on'
-        return <ProposedChip key={key} id={key} kind="toggle" text={EFFICIENCY_UPGRADE_LABELS[upgradeId]} on={on} onToggle={() => applyChange(upgradeSlot.change(on ? 'off' : 'on'))} />
-      }
-      return saysWhy && <ProposedChip key={key} id={key} kind="reason" label={EFFICIENCY_UPGRADE_LABELS[upgradeId]} text={EFFICIENCY_UPGRADE_LABELS[upgradeId]} reason={upgradeSlot.unavailable} included={false} />
-    }
     // Batts are a look on a picked replace only; before one is picked the menu beside it already offers the replace.
     const batts = () => {
       const battsSlot = slotOf('style:batts')!
       const on = battsSlot.current === 'on'
       return battsSlot.unavailable === null && <ProposedChip key={battsSlot.id} id={battsSlot.id} kind="toggle" text={battsSlot.name} on={on} onToggle={() => applyChange(battsSlot.change(on ? 'off' : 'on'))} />
     }
-    // The R-8 and R-38 steps, Cool Life paint and batts come only with the chip beside them, which already says why.
-    return [...chips, holdsCoolRoof && upgrade('cool-roof', true), holdsR8 && upgrade('r8-ducts', false), holdsCoolPaint && upgrade('cool-paint', false), holdsR38 && upgrade('r38-insulation', false), holdsBatts && batts()]
+    // The fascia replacement sits beside the repaint, the one row on the walls, and only while the rep has set rot to replace.
+    const fasciaReplacement = () => {
+      const fasciaSlot = slotOf('replace:fascia')!
+      const on = fasciaSlot.current === 'on'
+      return fasciaSlot.unavailable === null && <ProposedChip key={fasciaSlot.id} id={fasciaSlot.id} kind="toggle" text={fasciaSlot.name} on={on} onToggle={() => applyChange(fasciaSlot.change(on ? 'off' : 'on'))} />
+    }
+    // A row that holds an upgrade always lists its slot, taken or not yet; the cool roof and Cool Life move into a pick's
+    // details once one is made. The R-8 and R-38 steps, Cool Life paint and batts come only with the chip beside them, which
+    // already says why.
+    return [
+      ...chips,
+      row.part === 'paint' && fasciaReplacement(),
+      holdsCoolRoof && kind === null && <UpgradeSwitch key="upgrade:cool-roof" slot={slotOf('upgrade:cool-roof')!} upgrade="cool-roof" saysWhy />,
+      holdsR8 && <UpgradeSwitch key="upgrade:r8-ducts" slot={slotOf('upgrade:r8-ducts')!} upgrade="r8-ducts" saysWhy={false} />,
+      holdsCoolPaint && kind === null && <UpgradeSwitch key="upgrade:cool-paint" slot={slotOf('upgrade:cool-paint')!} upgrade="cool-paint" saysWhy={false} />,
+      holdsR38 && <UpgradeSwitch key="upgrade:r38-insulation" slot={slotOf('upgrade:r38-insulation')!} upgrade="r38-insulation" saysWhy={false} />,
+      holdsBatts && batts(),
+    ]
   })
 
   const dimmed = state.view === 'existing' ? 'proposed' : 'existing'
@@ -133,7 +155,7 @@ export function SystemCardBody({ system }: SystemCardBodyProps) {
   return (
     <>
       {sideRow('existing', existing.length === 0 ? note(CONTROLS_COPY.systems.noCrawlSpace) : existing)}
-      {sideRow('proposed', rows.length === 0 ? note(CONTROLS_COPY.systems.noneOnSlab) : proposed)}
+      {sideRow('proposed', rows.length === 0 ? note(CONTROLS_COPY.systems.noneOnSlab) : [...proposed, ...panels])}
       <LookInsideButton system={system} />
       {state.lookInside && <LookInsideBody system={system} />}
     </>

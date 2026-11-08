@@ -11,6 +11,7 @@ export function systemsAtSpot(spot: HomeSpotId, ctx: HomeSpotContext): HomeSyste
     // The ducts' assembly reads only the system type, so a profile that knows nothing else answers the same.
     case 'equipment': return HVAC_ATTIC.appliesTo({ ...HOME_SCENE_DEFAULTS.property, hvacType: ctx.hvacType }) ? ['heating-cooling'] : []
     case 'window': return ['windows']
+    case 'wall': return ['walls']
   }
 }
 

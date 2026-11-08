@@ -14,14 +14,22 @@ export const CONTROLS_CLASSES = {
   chipMiss: 'border-status-attention-dot/60',
   // Radix marks a chip whose menu is open; the chip's own `open` sets the same mark.
   chipOpen: 'data-[state=open]:border-primary data-[state=open]:ring-1 data-[state=open]:ring-primary data-[state=open]:ring-inset',
-  // The stage's controls read at 14 px; a popover would take the page's 16.
-  menu: 'z-40 grid max-w-80 min-w-52.5 gap-px rounded-xl border border-border-strong bg-popover p-1.5 text-sm text-popover-foreground shadow-2xl outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1 duration-140 ease-out motion-reduce:animate-none',
+  // The stage's controls read at 14 px; a popover would take the page's 16. A menu holding a pick's details can outgrow a
+  // phone's stage, so it scrolls inside the room Radix measures.
+  menu: 'z-40 grid max-h-(--radix-popover-content-available-height) max-w-80 min-w-52.5 gap-px overflow-y-auto overscroll-contain rounded-xl border border-border-strong bg-popover p-1.5 text-sm text-popover-foreground shadow-2xl outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1 duration-140 ease-out motion-reduce:animate-none',
   // A chip on the Systems rail: 40 px, quiet until pressed, when it takes the raised fill and a primary ring.
   railChip: 'inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.75 rounded-full px-3.5 text-sm font-bold whitespace-nowrap text-muted-foreground outline-none hover:text-foreground not-aria-pressed:hover:bg-hover pressed:bg-press focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-pressed:bg-muted aria-pressed:text-foreground aria-pressed:inset-ring aria-pressed:inset-ring-primary [&_svg]:size-4 [&_svg]:shrink-0',
   menuHeader: 'px-2.5 pt-1.5 pb-1 text-xs font-bold tracking-[.14em] text-muted-foreground uppercase',
   menuItem: 'relative flex min-h-10 items-center gap-2.5 rounded-lg px-2.5 text-left font-bold',
   // A transparent radio over the drawn row, as the wear dots are drawn: the row keeps its check and label as plain elements.
   menuRadio: 'absolute inset-0 aspect-auto size-auto cursor-pointer rounded-lg border-0 bg-transparent shadow-none hover:bg-hover pressed:bg-press *:data-[slot=radio-group-indicator]:hidden',
+  // A picked piece of work's details under the build's chips, on a line of their own. Edged, with no fill of its own: a
+  // surface nested in the card takes no new rung. Its padding is a working number, settled by shot; the top comes from the
+  // pieces. A pill that wraps on a phone keeps a radius that reads at two rows, as it does in the roof's menu.
+  detailsPanel: 'grid w-full basis-full justify-items-start rounded-lg border border-border px-1 pb-2 [&_[data-slot=toggle-group]]:rounded-[18px]',
+  // Each piece of the details brings its own space above and its inset, as the shingle colours do, so the pieces line up
+  // and space alike in a menu and in a panel.
+  detailsPiece: 'px-1 pt-2',
   menuSeparator: 'mx-0.5 my-1 h-px bg-border-strong',
   menuRow: 'flex flex-wrap items-center gap-2 px-2.5 py-1.5',
   // A wrapped pill's rows stand 8 apart, so each option's 42 px reach stays its own.

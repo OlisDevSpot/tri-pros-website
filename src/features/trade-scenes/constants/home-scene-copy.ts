@@ -21,6 +21,7 @@ export const HOME_VIEW_LABELS = { 'complete': 'Complete', 'partly-open': 'Partly
 // Placeholder copy until the owner's copy pass.
 export const PANEL_COPY = {
   efficiencyUpgradeHints: { 'cool-roof': 'Preview a shingle or flat roof to add a cool roof.', 'r8-ducts': 'Preview new ducts to step up to R-8.', 'cool-paint': 'Preview a repaint to add Cool Life paint.', 'r38-insulation': 'Preview insulation to step up to R-38.' },
+  fasciaReplacementHint: 'Set fascia rot to offer this.',
 } as const
 
 export const DOCK_COPY = {
@@ -63,6 +64,9 @@ export const PART_COPY = {
   peel: 'Peel it apart',
   open: 'Open it up',
   close: 'Close it up',
+  // The window comes apart instead of peeling.
+  pull: 'Pull it apart',
+  together: 'Put it back together',
   // Shown beside each part: what the work does to it, in the homeowner's terms.
   condition: { retained: 'Kept', worn: 'Original', installed: 'New', absent: 'Missing' } satisfies Record<PartCondition, string>,
 } as const
@@ -180,12 +184,27 @@ export const SHINGLE_LINE_LABELS = { 'cool': 'Duration COOL', 'cool-plus': 'Dura
 
 export const SHINGLE_COPY = {
   label: 'Shingle line',
+  colorLabel: 'Shingle colour',
   notPicked: 'Colour not picked',
   sriMeetsLa: (sri: string) => `Aged SRI ${sri}: meets Title 24 and the City of LA's 20`,
   sriMeetsTitle24: (sri: string) => `Aged SRI ${sri}: meets Title 24`,
 } as const
 
-export const PAINT_WEAR_LABELS = { cracks: 'Cracks', stains: 'Stains', peeling: 'Peeling' } as const satisfies Record<PaintWearKind, string>
+export const FRAME_COLOR_COPY = { label: 'Frame colour' } as const
+
+export const PAINT_COLOR_COPY = {
+  colors: 'Colours',
+  combos: 'Popular combos',
+  customFrom: (combo: string) => `Custom, from ${combo}`,
+  body: 'Body',
+  trim: 'Trim',
+  notPicked: 'Not picked',
+  more: 'More colours',
+  fewer: 'Fewer colours',
+  fanDeck: 'See the full Cool Life fan deck',
+} as const
+
+export const PAINT_WEAR_LABELS = { 'cracks': 'Cracks', 'stains': 'Stains', 'peeling': 'Peeling', 'fascia-rot': 'Fascia rot' } as const satisfies Record<PaintWearKind, string>
 export const PAINT_WEAR_LEVEL_LABELS = { none: 'None', light: 'Light', moderate: 'Moderate', heavy: 'Heavy' } as const satisfies Record<PaintWearLevel, string>
 
 // Placeholder copy until the owner's copy pass.
@@ -226,6 +245,7 @@ export const CONTROLS_COPY = {
     useCode: 'Use code',
     noCrawlSpace: 'Slab, no crawl space',
     foundationFirst: 'Set the foundation first',
+    fasciaReplacement: 'Replace rotted fascia',
     // A rail chip's name where its dot shows.
     changedByBuild: (system: string) => `${system}, changed by the build`,
     // By part: what a build chip says before a pick, and once picked, from the picked way's verb.
@@ -400,7 +420,9 @@ export const REQUIRED_UPGRADE_COPY = {
 
 // The pieces a construction part opens into up close; a whole system part reads its resolved part's label.
 export const SYSTEM_PART_LABELS = {
-  'pane': 'Glass',
+  'ceiling-joists': 'Ceiling joists',
+  'pane': 'Single-pane glass',
+  'screen': 'Screen',
   'outer-pane': 'Outer pane',
   'low-e': 'Low-E coating',
   'argon': 'Argon gas',
@@ -411,14 +433,30 @@ export const SYSTEM_PART_LABELS = {
   'jacket': 'Silver mylar jacket',
   'blanket': 'Insulation blanket',
   'core': 'Inner core on its wire coil',
+  'stucco': 'Stucco',
+  'siding': 'Siding',
+  'eaves-trim': 'Eaves & trim',
 } as const satisfies Record<SystemPieceId, string>
+
+// A piece's own line under its name once picked; a piece with none shows no line.
+export const SYSTEM_PART_DETAILS = {
+  'low-e': 'The coating that gives the gas-filled glass its darker, more opaque look: harder to see inside, so more privacy.',
+  'screen': 'Comes with every new window.',
+} as const satisfies Partial<Record<SystemPieceId, string>>
+
+// The Eaves & trim row's line once picked, while the home's fascia has rot.
+export const EAVES_TRIM_DETAILS = {
+  rot: 'Rotted fascia ends. Water gets behind the paint and softens the wood.',
+  replaced: 'Rotted fascia cut out and replaced with new boards.',
+} as const
 
 // Placeholder copy until the owner's copy pass.
 export const LOOK_INSIDE_COPY = { open: 'Look inside', close: 'Back to the system' } as const
 
 export const SYSTEM_PIN_LABELS = {
-  'roof': 'Look inside the roof',
-  'attic': 'Look inside the attic',
-  'windows': 'Look inside the window',
-  'heating-cooling': 'Look inside heating & cooling',
+  'roof': `${HOME_SYSTEM_LABELS.roof} system`,
+  'attic': `${HOME_SYSTEM_LABELS.attic} system`,
+  'windows': `${HOME_SYSTEM_LABELS.windows} system`,
+  'walls': `${HOME_SYSTEM_LABELS.walls} system`,
+  'heating-cooling': `${HOME_SYSTEM_LABELS['heating-cooling']} system`,
 } as const satisfies Record<(typeof LOOK_INSIDE_SYSTEM_IDS)[number], string>
