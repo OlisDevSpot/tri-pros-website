@@ -3,7 +3,7 @@
 import type { Ref } from 'react'
 import type { Group } from 'three'
 import type { PartState } from '@/features/trade-scenes/lib/part-state'
-import type { BoxSpec, HouseWall, PaintLook, StainBoxes } from '@/features/trade-scenes/types'
+import type { BoxSpec, HouseWall, PaintLook, StainBoxes, SystemLit } from '@/features/trade-scenes/types'
 
 import { useMemo } from 'react'
 
@@ -22,8 +22,9 @@ import { stuccoCracks } from '@/features/trade-scenes/lib/stucco-cracks'
 import { thermalTag } from '@/features/trade-scenes/lib/thermal-tag'
 import { CrawlInsulation } from '@/features/trade-scenes/ui/components/home-kit/crawl-insulation'
 import { MergedBoxes } from '@/features/trade-scenes/ui/components/home-kit/merged-boxes'
-import { PaintMarks } from '@/features/trade-scenes/ui/components/home-kit/paint-marks'
 import { PaintStains } from '@/features/trade-scenes/ui/components/home-kit/paint-stains'
+import { TintedMarks } from '@/features/trade-scenes/ui/components/home-kit/tinted-marks'
+import { wallSkinLook } from '@/features/trade-scenes/ui/lib/wall-skin-look'
 
 interface FoundationProps {
   // Spans grade to the floor's underside; the kit sets its height and stretch to the foundation's floor.
@@ -33,6 +34,8 @@ interface FoundationProps {
   // The raised foundation's skirt is painted with the walls, so it wears their paint.
   paint: PaintLook
   thermal: boolean
+  // The system up close: the skirt is the walls' skin, so it lights with their picks.
+  lit: SystemLit | null
 }
 
 const UNDER_FLOOR = HOUSE.floorY - HOUSE.floorThickness
@@ -67,7 +70,8 @@ const STEPS: BoxSpec[] = Array.from({ length: FRONT_STEPS.risers }, (_, index) =
 
 // Both foundations are always mounted; their fades show one. What stands on grade sits in the ground frame and grows or folds
 // with the floor; the framing, piers and vents hang under the floor at fixed depths.
-export function Foundation({ ground, floorInsulation, paint, thermal }: FoundationProps) {
+export function Foundation({ ground, floorInsulation, paint, thermal, lit }: FoundationProps) {
+  const skin = wallSkinLook(lit, paint.color)
   const crackShare = PAINT_WEAR_SHARE[paint.paintWear.cracks]
   const cracks = useMemo(() => {
     const crack = (wall: HouseWall, seed: number) => [{
@@ -84,10 +88,10 @@ export function Foundation({ ground, floorInsulation, paint, thermal }: Foundati
     const peel = (walls: readonly { wall: HouseWall, peelingSeed: number }[]) => walls.map(({ wall, peelingSeed }) => wallPeeling(wall, 0, 0, peelingShare, peelingSeed, wall.openings, RAISED_GROUND_STRETCH, UNDER_FLOOR))
     return { kept: peel(SKIRT_STAIN_WALLS), front: peel([FRONT_SKIRT_STAIN_WALL]) }
   }, [peelingShare])
-  const marks = useMemo(() => {
-    const { bareStucco } = WEAR_LOOKS.paint.peeling
-    return { kept: [...cracks.kept, ...peelingMarks(peeling.kept, bareStucco)], front: [...cracks.front, ...peelingMarks(peeling.front, bareStucco)] }
-  }, [cracks, peeling])
+  const marks = useMemo(() => ({
+    kept: [...cracks.kept, ...peelingMarks(peeling.kept, skin.peeled)],
+    front: [...cracks.front, ...peelingMarks(peeling.front, skin.peeled)],
+  }), [cracks, peeling, skin.peeled])
   const stainShare = PAINT_WEAR_SHARE[paint.paintWear.stains]
   const fadeShare = wornShare(paint.wear)
   const stains = useMemo(() => {
@@ -106,17 +110,25 @@ export function Foundation({ ground, floorInsulation, paint, thermal }: Foundati
           <MergedBoxes boxes={SLAB} color={HOME_PALETTE.concrete} radius={0.02} castShadow receiveShadow />
         </group>
         <group userData={HOME_FADE_TAGS.raised}>
-          <MergedBoxes boxes={CRAWL_SKIRT_BOXES} color={paint.color} radius={0.02} castShadow receiveShadow />
-          <PaintMarks lists={marks.kept} thermal={thermal} />
-          <PaintStains lists={stains.kept} thermal={thermal} />
+          <group userData={skin.tag}>
+            <MergedBoxes boxes={CRAWL_SKIRT_BOXES} color={skin.color} radius={0.02} castShadow receiveShadow />
+          </group>
+          <group userData={skin.finish}>
+            <TintedMarks lists={marks.kept} thermal={thermal} />
+            <PaintStains lists={stains.kept} thermal={thermal} />
+          </group>
           <group userData={thermalTag('crawl')}>
             <MergedBoxes boxes={CRAWL_GROUND} color={HOME_PALETTE.crawlGround} roughness={1} />
           </group>
           <MergedBoxes boxes={STEPS} color={HOME_PALETTE.concrete} radius={0.015} castShadow receiveShadow />
           <group userData={HOME_FADE_TAGS.complete}>
-            <MergedBoxes boxes={FRONT_CRAWL_SKIRT_BOXES} color={paint.color} radius={0.02} castShadow receiveShadow />
-            <PaintMarks lists={marks.front} thermal={thermal} />
-            <PaintStains lists={stains.front} thermal={thermal} />
+            <group userData={skin.tag}>
+              <MergedBoxes boxes={FRONT_CRAWL_SKIRT_BOXES} color={skin.color} radius={0.02} castShadow receiveShadow />
+            </group>
+            <group userData={skin.finish}>
+              <TintedMarks lists={marks.front} thermal={thermal} />
+              <PaintStains lists={stains.front} thermal={thermal} />
+            </group>
           </group>
         </group>
       </group>

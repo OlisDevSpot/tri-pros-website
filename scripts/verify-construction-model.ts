@@ -21,7 +21,7 @@ import { OWENS_CORNING_SHINGLES } from '@/shared/modules/construction/core/const
 import { SCOPE_IDS } from '@/shared/modules/construction/core/constants/scope-ids'
 import { SCOPE_INSTALLS } from '@/shared/modules/construction/core/constants/scope-installs'
 import { NOT_DRAWN } from '@/shared/modules/construction/core/constants/scope-not-drawn'
-import { SCOPES_BY_EXISTING_ROOF } from '@/shared/modules/construction/core/constants/scopes-by-existing-roof'
+import { ROOF_OFF_SCOPE_IDS, SCOPES_BY_EXISTING_ROOF } from '@/shared/modules/construction/core/constants/scopes-by-existing-roof'
 import { TRADE_BILL_CUTS } from '@/shared/modules/construction/core/constants/trade-bill-cuts'
 import { tradeSlugs } from '@/shared/modules/construction/core/constants/trade-slugs'
 import { ageBandOf } from '@/shared/modules/construction/core/lib/age-band-of'
@@ -477,6 +477,25 @@ assert.equal(relativeWaterFlow(lawnYard, 'irrigation').boundaries[0], 1, 'a wate
 const turfYard = lawnYard.map(part => part.id === 'surface' ? { ...part, material: 'turf', water: { demand: 0 } } : part.id === 'irrigation' ? { ...part, material: null, condition: 'absent' as const, water: null } : part)
 assert.equal(relativeWaterFlow(turfYard, 'irrigation').boundaries[0], 0, 'turf with the sprinklers removed draws nothing')
 
+// Wood replacement: a scope that takes the old roof off to the deck leaves it worn and names its replaced sections; nothing else does.
+const deckOf = (home: ExistingConditions, scopeIds: string[], view: 'existing' | 'proposed' = 'proposed') => resolveAssembly(roofAttic, { existing: home, proposedScopeIds: scopeIds, view }).find(part => part.id === 'deck')!
+for (const [name, home, scope] of [['tear-off', existing, SCOPE_IDS.roofTearOff], ['tile reset', tileHome, SCOPE_IDS.roofTileReset], ['torch down', flat, SCOPE_IDS.roofTorchDown]] as const) {
+  const kept = deckOf(home, [scope])
+  const existingDeck = deckOf(home, [scope], 'existing')
+  assert.equal(kept.woodReplaced, true, `${name}: the kept deck has its wood replaced`)
+  assert.equal(kept.condition, 'worn', `${name}: the deck is still the old one`)
+  assert.equal(kept.label, 'Original decking, repaired', `${name}: it reads the wood replacement copy`)
+  assert.deepEqual(kept.thermal, existingDeck.thermal, `${name}: the deck's R-value does not move`)
+  assert.deepEqual(kept.water, existingDeck.water, `${name}: nor its water figures`)
+  assert.equal(existingDeck.woodReplaced, undefined, `${name}: the existing view's deck has none replaced`)
+}
+assert.equal(deckOf(existing, [SCOPE_IDS.roofOverlay]).woodReplaced, undefined, 'an overlay keeps the deck and replaces nothing')
+assert.equal(deckOf(existing, [SCOPE_IDS.roofTearOff], 'existing').woodReplaced, undefined, 'the existing view ignores the scopes')
+assert.equal(deckOf(existing, [SCOPE_IDS.roofTearOff, SCOPE_IDS.roofRedeck]).woodReplaced, undefined, 'a redeck is all new wood')
+assert.equal(deckOf(shakeHome, [SCOPE_IDS.roofTearOff]).woodReplaced, undefined, 'spaced boards replaced by solid decking are installed, never wood replaced')
+assert.deepEqual(Object.entries(SCOPE_INSTALLS).filter(([, entry]) => entry?.replacesWood).map(([scopeId]) => scopeId).sort(), [...ROOF_OFF_SCOPE_IDS].sort(), 'the scopes that replace wood are exactly the ones that take the roof off')
+assert.ok(Object.values(SCOPE_INSTALLS).every(entry => (entry?.replacesWood ?? []).every(partId => roofAttic.parts.find(part => part.id === partId)?.materials.plywood?.woodReplacementCopy)), 'every part a scope replaces wood on has its copy')
+
 // Rain: a worn covering lets it through to the deck; a new roof sheds all of it.
 const rainOn = (home: ExistingConditions, scopeIds: string[]) => relativeWaterFlow(resolveAssembly(roofAttic, { existing: home, proposedScopeIds: scopeIds, view: scopeIds.length ? 'proposed' : 'existing' }), 'rain')
 const rainBefore = rainOn(existing, [])
@@ -575,7 +594,7 @@ for (const roofType of roofTypes) {
 function facts(property: PropertyProfile, materials: Partial<HomeMaterialFacts> = {}, year = 2026): HomeFacts {
   return {
     property,
-    materials: { wear: {}, gutters: null, exteriorPaint: null, ducts: null, crawlInsulation: null, acTons: null, shingleColor: null, paintWear: {}, ...materials },
+    materials: { ...HOME_MATERIAL_FACTS_UNSET, ...materials },
     year,
   }
 }
@@ -638,7 +657,7 @@ assert.equal(installKind(ducts, 'original-flex', 'r6-silver-flex'), 'saves-energ
 assert.equal(installKind(ducts, 'r6-silver-flex', 'r8-flex'), 'saves-energy', 'R-6 → R-8 still saves')
 assert.equal(installKind(ducts, 'r8-flex', 'r6-silver-flex'), 'like-for-like')
 const insulation = ASSEMBLIES['roof-attic'].parts.find(part => part.id === 'attic-insulation')!
-assert.equal(installKind(insulation, 'batts-r30', 'blown-r38'), 'saves-energy', 'high (R-30) → R-38 saves a little')
+assert.equal(installKind(insulation, 'batts-r30', 'blown-r38'), 'saves-energy', '10 in. (R-30) → R-38 saves a little')
 // The existing roof is never cool, so a regular covering over any existing roof is like for like and a cool one always saves.
 const coveringPart = ASSEMBLIES['roof-attic'].parts.find(part => part.id === 'covering')!
 for (const roofType of roofTypes) {

@@ -3,6 +3,7 @@
 import type { Ref } from 'react'
 import type { Group } from 'three'
 import type { PartState } from '@/features/trade-scenes/lib/part-state'
+import type { SystemLit } from '@/features/trade-scenes/types'
 import type { SceneBurst } from '@/shared/components/scene/types'
 import type { HVACComponent, HVACType } from '@/shared/modules/construction/core/constants/enums'
 import type { Weather } from '@/shared/modules/construction/core/types'
@@ -38,9 +39,11 @@ interface HomeEquipmentProps {
   acScale: number
   // Whether the home has ducts in the attic: a wall or window unit has none.
   ducted: boolean
+  // The system up close, held while its steps ease shut.
+  lit: SystemLit | null
 }
 
-export function HomeEquipment({ hvacType, hvacComponents, lowSlope, weather, load, meterSpeed, setpoint, burst, ducts, ductRuns, packageUnit, acScale, ducted }: HomeEquipmentProps) {
+export function HomeEquipment({ hvacType, hvacComponents, lowSlope, weather, load, meterSpeed, setpoint, burst, ducts, ductRuns, packageUnit, acScale, ducted, lit }: HomeEquipmentProps) {
   // Unknown draws as central, the common SoCal system.
   const type = hvacType ?? 'central'
   const side = indoorSide(weather, hvacType, hvacComponents)
@@ -54,7 +57,7 @@ export function HomeEquipment({ hvacType, hvacComponents, lowSlope, weather, loa
       {/* The ducts lie in the attic air until the system pushes warm or cold air through them. */}
       {ducted && (
         <group ref={ducts} userData={thermalTag(side ?? 'attic')}>
-          <AtticDucts lowSlope={lowSlope} heatLoad={heatLoad} material={ductRuns.material} wear={ductRuns.wear} airHandler={type === 'central'} acScale={acScale} />
+          <AtticDucts lowSlope={lowSlope} heatLoad={heatLoad} material={ductRuns.material} wear={ductRuns.wear} airHandler={type === 'central'} acScale={acScale} lit={lit} />
         </group>
       )}
       {type === 'package-unit' && (

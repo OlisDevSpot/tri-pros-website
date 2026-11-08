@@ -17,7 +17,7 @@ import { cn } from '@/shared/lib/utils'
 // and its chip says `add` until a way is picked, then `short` of the picked way's verb.
 type ProposedChipProps = { id: string } & (
   | { kind: 'toggle', text: string, on: boolean, onToggle: () => void }
-  | { kind: 'menu', label: string, add: string, short: (verb: string) => string, slot: SceneChangeSlot, extra?: ReactNode }
+  | { kind: 'menu', label: string, add: string, short: (verb: string) => string, slot: SceneChangeSlot, extra?: ReactNode, staysOpenOn?: (value: string) => boolean }
   | { kind: 'reason', label: string, text: string, reason: string | null, included: boolean }
 )
 
@@ -35,7 +35,7 @@ export function ProposedChip(props: ProposedChipProps) {
   }
 
   if (props.kind === 'menu') {
-    const { label, add, short, slot, extra } = props
+    const { label, add, short, slot, extra, staysOpenOn } = props
     const picked = slot.current !== NO_CHANGE_CHOICE
     return (
       <ValueMenu
@@ -45,6 +45,7 @@ export function ProposedChip(props: ProposedChipProps) {
         onPick={value => applyChange(slot.change(value))}
         proposed
         extra={extra}
+        staysOpenOn={staysOpenOn}
         trigger={(
           <ControlsChip data-proposed-chip={id} variant={picked ? 'on' : 'add'} icon={picked ? CheckIcon : PlusIcon} caret>
             {picked ? short(slot.options.find(option => option.value === slot.current)!.label) : add}

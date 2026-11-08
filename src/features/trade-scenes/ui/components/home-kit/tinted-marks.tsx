@@ -9,16 +9,16 @@ import { mergeTintedBoxes } from '@/features/trade-scenes/ui/lib/vertex-tinted-g
 import { useOwnedGeometry } from '@/shared/components/scene/hooks/use-owned-geometry'
 import { ignoreRaycast } from '@/shared/components/scene/lib/ignore-raycast'
 
-interface PaintMarksProps {
+interface TintedMarksProps {
   // Callers pass a memoized list: a new array rebuilds the geometry.
   lists: readonly TintedBoxes[]
   thermal: boolean
 }
 
-// The opaque marks on a painted surface, in one draw. The Thermal lens paints temperatures and a mark is none, so they step aside
-// under it: a group flag, since the view fades write each mesh's own. They stay out of the blueprint, which draws the clean house,
-// and a tap passes through them to the wall.
-export function PaintMarks({ lists, thermal }: PaintMarksProps) {
+// Opaque marks lying on a part, each list in its own colour, in one draw. The Thermal lens paints temperatures and a mark is none,
+// so they step aside under it: a group flag, since the view fades write each mesh's own. They stay out of the blueprint, which
+// draws the clean house, and a tap passes through them to the part.
+export function TintedMarks({ lists, thermal }: TintedMarksProps) {
   // An empty geometry stands in when there is nothing to draw, so the hook always has one to own.
   const geometry = useOwnedGeometry(() => mergeTintedBoxes(lists) ?? new BufferGeometry(), [lists])
   if (!geometry.hasAttribute('position')) {

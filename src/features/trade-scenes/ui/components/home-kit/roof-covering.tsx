@@ -48,18 +48,20 @@ export function RoofCovering({ material, wear, zFrom, zTo, layout, seed, newTone
     cap: useOwnedGeometry(() => halfPipe(true), []),
   }
 
-  const courses = useMemo((): { course: Course, pieces: PieceLayout[] }[] => {
+  // Laid once over the layout's run; a step that moves `zFrom` only takes another span of the same courses.
+  const laid = useMemo((): { course: Course, pieces: PieceLayout[], trimmed: boolean }[] => {
     const [layoutFrom, layoutTo] = layout
     const area = { seed, wear, xFrom: COVERING_EAVE_X, xTo: SLOPE_LENGTH + COVERING_BASE * Math.tan(HOUSE.pitch), zFrom: layoutFrom, zTo: layoutTo, base: COVERING_BASE }
     if (material === 'tile') {
       const { pans, caps } = layoutTiles(area, TILE)
-      return [{ course: 'pan', pieces: piecesInSpan(pans, zFrom, zTo, false) }, { course: 'cap', pieces: piecesInSpan(caps, zFrom, zTo, false) }]
+      return [{ course: 'pan', pieces: pans, trimmed: false }, { course: 'cap', pieces: caps, trimmed: false }]
     }
     if (material === 'wood-shake') {
-      return [{ course: 'shake', pieces: piecesInSpan(layoutShakes(area, SHAKE), zFrom, zTo, true) }]
+      return [{ course: 'shake', pieces: layoutShakes(area, SHAKE), trimmed: true }]
     }
-    return [{ course: 'shingle', pieces: piecesInSpan(layoutShingles(area, SHINGLE), zFrom, zTo, true) }]
-  }, [material, wear, zFrom, zTo, layout, seed])
+    return [{ course: 'shingle', pieces: layoutShingles(area, SHINGLE), trimmed: true }]
+  }, [material, wear, layout, seed])
+  const courses = useMemo(() => laid.map(({ course, pieces, trimmed }) => ({ course, pieces: piecesInSpan(pieces, zFrom, zTo, trimmed) })), [laid, zFrom, zTo])
 
   const colours = COVERING_COLORS[material ?? 'shingle'] ?? COVERING_COLORS.shingle
   const color = wornColor(newTone ?? colours.new, colours.worn, wear)

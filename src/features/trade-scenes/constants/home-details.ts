@@ -6,7 +6,8 @@ export const ROOF_TRIM = {
   // The spaced boards an older gable is sheathed with.
   board: { width: 0.14, gap: 0.1, thickness: 0.024 },
   fascia: { height: 0.2, thickness: 0.035 },
-  rake: { height: 0.16, thickness: 0.035 },
+  // The rake's top stands `proud` above the deck, so a drip edge on the rake caps it there.
+  rake: { height: 0.16, thickness: 0.035, proud: 0.03 },
   // The gable's gutter: its section, the gap it hangs off the fascia by and how far below the eave it sits.
   gutter: { size: 0.13, standoff: 0.005, drop: 0.05 },
 } as const

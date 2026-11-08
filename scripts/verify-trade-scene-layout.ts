@@ -258,12 +258,13 @@ assert.equal({ ...sixties, ...eraBack.property }.roofType, 'shingle', 'back to t
 assert.equal(eraBack.homeMaterials?.gutters, 'none', 'nor the gutters')
 assert.equal(eraBack.homeMaterials?.wear.roof, undefined, 'it clears the wear')
 const paint = (f: HomeFacts) => resolveHomeMaterials(f)['exterior-paint']
-const none = { cracks: 'none', stains: 'none', peeling: 'none' }
+const none = { 'cracks': 'none', 'stains': 'none', 'peeling': 'none', 'fascia-rot': 'none' }
 assert.deepEqual(paintWearInForce(paint(unset(sixties)), {}), PAINT_WEAR_START.failing, 'an unset 1950-1978 paint takes its era guess')
 const replaced = { ...HOME_MATERIAL_FACTS_UNSET, exteriorPaint: 'cool' } as const
 assert.deepEqual(paintWearInForce(paint({ property: sixties, materials: replaced, year: YEAR }), {}), PAINT_WEAR_START.worn, 'no wear and no era guess reads as Worn')
 const fair = { ...HOME_MATERIAL_FACTS_UNSET, wear: { 'exterior-paint': 'fair' } } as const
-assert.deepEqual(paintWearInForce(paint({ property: sixties, materials: fair, year: YEAR }), { stains: 'heavy' }), { cracks: 'light', stains: 'heavy', peeling: 'none' })
+assert.deepEqual(paintWearInForce(paint({ property: sixties, materials: fair, year: YEAR }), { stains: 'heavy' }), { 'cracks': 'light', 'stains': 'heavy', 'peeling': 'none', 'fascia-rot': 'none' })
+assert.equal(paintWearInForce(paint({ property: sixties, materials: fair, year: YEAR }), { stains: 'heavy' })['fascia-rot'], 'none', 'a home saved before fascia rot reads None')
 const fresh = { ...HOME_MATERIAL_FACTS_UNSET, wear: { 'exterior-paint': 'new' } } as const
 assert.deepEqual(paintWearInForce(paint({ property: sixties, materials: fresh, year: YEAR }), { stains: 'heavy' }), none, 'new paint draws nothing')
 assert.deepEqual(paintWearInForce(undefined, { stains: 'heavy' }), none, 'no paint, no marks')
@@ -271,6 +272,11 @@ for (const kind of paintWearKinds) {
   const steps = wears.map(wear => paintWearLevels.indexOf(PAINT_WEAR_START[wear][kind]))
   assert.ok(steps.every((step, index) => index === 0 || step >= steps[index - 1]), `${kind} never gets better as the paint wears`)
 }
+for (const wear of wears) {
+  assert.equal(PAINT_WEAR_START[wear]['fascia-rot'], 'none', `${wear} paint starts with no fascia rot`)
+}
+const worn = { ...HOME_MATERIAL_FACTS_UNSET, wear: { 'exterior-paint': 'worn' } } as const
+assert.equal(paintWearInForce(paint({ property: sixties, materials: worn, year: YEAR }), { 'fascia-rot': 'moderate' })['fascia-rot'], 'moderate', 'the rep sets the fascia rot')
 const wornPaint = state({ property: sixties, homeMaterials: { ...HOME_MATERIAL_FACTS_UNSET, wear: { 'exterior-paint': 'worn' } } })
 const withStains = state({ ...wornPaint, ...homeMaterialPatch(wornPaint, { kind: 'fact', patch: { paintWear: { stains: 'heavy' } } }, YEAR) })
 assert.deepEqual(withStains.homeMaterials.paintWear, { stains: 'heavy' })

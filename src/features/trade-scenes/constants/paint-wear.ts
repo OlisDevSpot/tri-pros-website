@@ -4,12 +4,26 @@ import type { PaintWearLevel, Wear } from '@/shared/modules/construction/core/co
 import { WEAR_AMOUNT } from '@/features/trade-scenes/constants/wear-looks'
 
 export const PAINT_WEAR_START = {
-  new: { cracks: 'none', stains: 'none', peeling: 'none' },
-  good: { cracks: 'none', stains: 'light', peeling: 'none' },
-  fair: { cracks: 'light', stains: 'light', peeling: 'none' },
-  worn: { cracks: 'moderate', stains: 'moderate', peeling: 'light' },
-  failing: { cracks: 'heavy', stains: 'heavy', peeling: 'moderate' },
+  new: { 'cracks': 'none', 'stains': 'none', 'peeling': 'none', 'fascia-rot': 'none' },
+  good: { 'cracks': 'none', 'stains': 'light', 'peeling': 'none', 'fascia-rot': 'none' },
+  fair: { 'cracks': 'light', 'stains': 'light', 'peeling': 'none', 'fascia-rot': 'none' },
+  worn: { 'cracks': 'moderate', 'stains': 'moderate', 'peeling': 'light', 'fascia-rot': 'none' },
+  failing: { 'cracks': 'heavy', 'stains': 'heavy', 'peeling': 'moderate', 'fascia-rot': 'none' },
 } satisfies Record<Wear, PaintWear>
+
+// Fascia rot at the board ends. A spot at an end is `endWidth` along the board and runs its full height; heavy rot also runs a
+// strip `bottomHeight` tall along the bottom edge of each board with a rotted end. A board joint falls every `boardLength` from
+// the run's start. Working numbers, set by screenshot; `seed` keeps the rotted ends in place.
+// A replacement cuts each rotted end out and sets in `newLength` of new board, a joint's both sides in one piece; a board rotted
+// along its bottom is replaced whole. A seam shows `seam` past each end. Working numbers, set by screenshot.
+export const FASCIA_ROT = {
+  endWidth: 0.35,
+  bottomHeight: 0.07,
+  boardLength: 3.66,
+  seed: 186,
+  newLength: 1.2,
+  seam: 0.012,
+} as const
 
 // A share of the Worn look, the scale wornShare returns. Moderate is the Worn look and heavy is the Failing look. The light share is a
 // hand-tuned working number.

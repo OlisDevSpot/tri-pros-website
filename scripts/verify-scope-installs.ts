@@ -2,6 +2,7 @@
 import './lib/load-env'
 import process from 'node:process'
 import { ASSEMBLIES } from '@/shared/modules/construction/core/constants/assemblies'
+import { FASCIA_REPLACEMENT_SCOPE_ID } from '@/shared/modules/construction/core/constants/fascia-replacement'
 import { SCOPE_INSTALLS } from '@/shared/modules/construction/core/constants/scope-installs'
 import { NOT_DRAWN } from '@/shared/modules/construction/core/constants/scope-not-drawn'
 import { catalogSource } from '@/shared/modules/construction/sources'
@@ -68,10 +69,18 @@ async function main() {
     }
   }
 
+  // The fascia replacement is accounted for on its own: it installs no part, yet the scene draws it.
+  if (!scopeById.has(FASCIA_REPLACEMENT_SCOPE_ID)) {
+    errors.push(`FASCIA_REPLACEMENT_SCOPE_ID ${FASCIA_REPLACEMENT_SCOPE_ID} is not a live scope (renamed or recreated in Notion?)`)
+  }
+  if (SCOPE_INSTALLS[FASCIA_REPLACEMENT_SCOPE_ID] || NOT_DRAWN[FASCIA_REPLACEMENT_SCOPE_ID]) {
+    errors.push(`FASCIA_REPLACEMENT_SCOPE_ID ${FASCIA_REPLACEMENT_SCOPE_ID} is also in SCOPE_INSTALLS or NOT_DRAWN`)
+  }
+
   for (const assembly of Object.values(ASSEMBLIES)) {
     const covered = coveredTrades.get(assembly.id)
     for (const slug of assembly.trades) {
-      const unmapped = scopes.filter(scope => slugByTradeId.get(scope.tradeId) === slug && !SCOPE_INSTALLS[scope.id] && !NOT_DRAWN[scope.id])
+      const unmapped = scopes.filter(scope => slugByTradeId.get(scope.tradeId) === slug && !SCOPE_INSTALLS[scope.id] && !NOT_DRAWN[scope.id] && scope.id !== FASCIA_REPLACEMENT_SCOPE_ID)
       for (const scope of unmapped) {
         if (covered?.has(slug)) {
           errors.push(`${scope.name} (${scope.id}) of trade ${slug} is in neither SCOPE_INSTALLS nor NOT_DRAWN`)
@@ -89,7 +98,7 @@ async function main() {
     }
     process.exit(1)
   }
-  console.log(`✓ scope installs (${Object.keys(SCOPE_INSTALLS).length} mapped, ${Object.keys(NOT_DRAWN).length} not drawn)`)
+  console.log(`✓ scope installs (${Object.keys(SCOPE_INSTALLS).length} mapped, ${Object.keys(NOT_DRAWN).length} not drawn, the fascia replacement drawn on its own)`)
 }
 
 main().catch((error) => {

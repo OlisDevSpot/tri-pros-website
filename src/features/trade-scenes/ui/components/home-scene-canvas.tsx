@@ -1,7 +1,7 @@
 'use client'
 
 import type { ReadingId } from '@/features/trade-scenes/constants/home-anchors'
-import type { HomeKitInputs, HomeSpotId, SystemLit, TradeSceneInputs } from '@/features/trade-scenes/types'
+import type { HomeKitInputs, HomeSpotId, TradeSceneInputs } from '@/features/trade-scenes/types'
 
 import { useMemo, useState } from 'react'
 import { AgXToneMapping } from 'three'
@@ -19,9 +19,13 @@ import { useSceneTapClaim } from '@/features/trade-scenes/hooks/use-scene-tap-cl
 import { useSceneTargets } from '@/features/trade-scenes/hooks/use-scene-targets'
 import { advanceSceneLoad } from '@/features/trade-scenes/lib/create-scene-load'
 import { homeRoofForm } from '@/features/trade-scenes/lib/home-roof-form'
+import { houseOpen } from '@/features/trade-scenes/lib/house-open'
+import { isCutawaySystem } from '@/features/trade-scenes/lib/is-cutaway-system'
+import { listedRows } from '@/features/trade-scenes/lib/listed-rows'
 import { readingFromPinId } from '@/features/trade-scenes/lib/reading-pin-id'
 import { sceneBurstKey } from '@/features/trade-scenes/lib/scene-burst-key'
 import { spotFromPinId } from '@/features/trade-scenes/lib/spot-pin-id'
+import { systemLit } from '@/features/trade-scenes/lib/system-lit'
 import { systemPartRows } from '@/features/trade-scenes/lib/system-parts-shown'
 import { BlueprintPass } from '@/features/trade-scenes/ui/components/blueprint/blueprint-pass'
 import { SceneReadySignal } from '@/features/trade-scenes/ui/components/blueprint/scene-ready-signal'
@@ -74,13 +78,12 @@ export function HomeSceneCanvas() {
   const burstKey = `${inputKey}|${touches}|${live}`
 
   const form = homeRoofForm(targets.assemblies[HOME_PRIMARY_ASSEMBLY]?.form)
-  const open = inputs.homeView === 'partly-open'
+  const open = houseOpen({ homeView: inputs.homeView, cameraFocus })
   // Looking inside always has a system in focus.
   const system = lookInside ? cameraFocus : null
   const rows = useMemo(() => system === null ? [] : systemPartRows(system, targets), [system, targets])
-  const lit = useMemo((): SystemLit | null => system === null
-    ? null
-    : { system, shown: new Set(rows.map(row => row.id)), emphasized: emphasizedPart }, [system, rows, emphasizedPart])
+  // The one place the emphasis meets the rows: the house, the camera and the pins all take it from here.
+  const lit = useMemo(() => system === null ? null : systemLit(system, rows, emphasizedPart), [system, rows, emphasizedPart])
 
   // The tap that shows a spot's pins must not also let them go; with Systems open it is still the tap that puts Systems away.
   const tapSpot = (spot: HomeSpotId) => {
@@ -90,20 +93,21 @@ export function HomeSceneCanvas() {
     }
   }
 
-  // One reading pin wherever it is taken: the same label, value and disclosure, held just off the house.
+  // One reading pin wherever it is taken: the same label, value and disclosure.
   const renderReading = (reading: ReadingId) => {
     const value = targets.heat?.readings[reading]
     // Readings exist only in a heat weather, the cases the disclosure covers.
     if (value === undefined || inputs.weather === 'rain') {
       return null
     }
+    const pin = <ReadingPin label={READING_COPY.labels[form][reading]} value={value} disclosure={READING_COPY.disclosure(inputs.climate, inputs.weather)} />
+    // Up close on the roof or the attic the readings sit on the steps; only the whole home stands them off the house.
+    if (lit !== null && isCutawaySystem(lit.system)) {
+      return pin
+    }
     const callout = READING_CALLOUTS[reading]
     const hollow = !open && (INSIDE_READING_IDS as readonly string[]).includes(reading)
-    return (
-      <CalloutPin offset={callout.offset} narrowOffset={callout.narrowOffset} hollow={hollow}>
-        <ReadingPin label={READING_COPY.labels[form][reading]} value={value} disclosure={READING_COPY.disclosure(inputs.climate, inputs.weather)} />
-      </CalloutPin>
-    )
+    return <CalloutPin offset={callout.offset} narrowOffset={callout.narrowOffset} hollow={hollow}>{pin}</CalloutPin>
   }
 
   return (
@@ -125,7 +129,7 @@ export function HomeSceneCanvas() {
           </>
         )}
       >
-        <HomeCameraRig />
+        <HomeCameraRig lit={lit} />
         {/* Up close leaves the home view as the homeowner picked it: the system's own fade shows what is inside. */}
         <HomeKit targets={targets} inputs={inputs} burstKey={burstKey} lit={lit} open={open} thermal={thermal} onSpotTap={tapSpot} />
         <ScenePinsProjector />
@@ -139,7 +143,7 @@ export function HomeSceneCanvas() {
 
       {/* One overlay at a time owns the shared registry's pin elements: the home's readings and a tapped spot's systems, or the
           system's parts with the readings. */}
-      {live && lit !== null && <PartPins parts={rows} renderReading={renderReading} />}
+      {live && lit !== null && <PartPins system={lit.system} parts={listedRows(rows)} emphasized={lit.emphasized} renderReading={renderReading} />}
       {live && lit === null && (
         <ScenePins
           visible={id => readingFromPinId(id) !== null || spotFromPinId(id) !== null}

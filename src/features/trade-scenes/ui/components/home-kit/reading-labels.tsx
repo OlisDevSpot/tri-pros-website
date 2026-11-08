@@ -1,8 +1,11 @@
 'use client'
 
-import { READING_ANCHORS, READING_IDS } from '@/features/trade-scenes/constants/home-anchors'
+import type { TradeSceneInputs } from '@/features/trade-scenes/types'
+
+import { READING_IDS, readingAnchors } from '@/features/trade-scenes/constants/home-anchors'
 import { homeRoofForm } from '@/features/trade-scenes/lib/home-roof-form'
 import { readingPinId } from '@/features/trade-scenes/lib/reading-pin-id'
+import { useSceneInputs } from '@/shared/components/scene/contexts/scene-inputs-context'
 import { SceneAnchor } from '@/shared/components/scene/ui/scene-anchor'
 
 interface ReadingLabelsProps {
@@ -11,7 +14,8 @@ interface ReadingLabelsProps {
 
 // Where each reading is taken; the labels themselves are DOM pins drawn over the canvas at these points.
 export function ReadingLabels({ form }: ReadingLabelsProps) {
-  const anchors = READING_ANCHORS[homeRoofForm(form)]
+  const cameraFocus = useSceneInputs((state: TradeSceneInputs) => state.cameraFocus)
+  const anchors = readingAnchors(homeRoofForm(form), cameraFocus)
   return (
     <>
       {READING_IDS.map(reading => (

@@ -1,5 +1,5 @@
 // What the thermal camera reads each surface of the home as. A surface takes the zone of its nearest tagged group; a mesh
-// with no tagged group above it is not the home's (an assembly kit paints its own parts) and is left alone.
+// with no tagged group above it is not the home's (the arrows, the anchors, the flows up close) and is left alone.
 export const HOME_THERMAL_ZONES = ['roof', 'attic', 'ceiling', 'interior', 'exterior', 'sunlit', 'window', 'condenser', 'heating', 'cooling', 'resident', 'sky', 'leak', 'crawl', 'crawl-floor'] as const
 export type HomeThermalZone = typeof HOME_THERMAL_ZONES[number]
 

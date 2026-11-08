@@ -6,12 +6,13 @@ import type { ResolvedHomeMaterial } from '@/shared/modules/construction/core/ty
 import { Fragment } from 'react'
 
 import { CONTROLS_CLASSES } from '@/features/trade-scenes/constants/controls-classes'
-import { CONTROLS_COPY, HOME_MATERIAL_LABELS, SCOPES_AND_ADDONS_COPY, WEAR_LABELS } from '@/features/trade-scenes/constants/home-scene-copy'
+import { CONTROLS_COPY, HOME_MATERIAL_LABELS, PAINT_COLOR_COPY, SCOPES_AND_ADDONS_COPY, WEAR_LABELS } from '@/features/trade-scenes/constants/home-scene-copy'
 import { WEAR_TONES } from '@/features/trade-scenes/constants/wear-tones'
 import { useApplySceneChange } from '@/features/trade-scenes/hooks/use-apply-scene-change'
 import { ChoicePill } from '@/features/trade-scenes/ui/components/controls/choice-pill'
 import { ControlsChip } from '@/features/trade-scenes/ui/components/controls/controls-chip'
 import { ValueMenu } from '@/features/trade-scenes/ui/components/controls/value-menu'
+import { PaintColors } from '@/features/trade-scenes/ui/components/panel/paint-colors'
 import { PaintWearFields } from '@/features/trade-scenes/ui/components/panel/paint-wear-fields'
 import { WearDots } from '@/features/trade-scenes/ui/components/panel/wear-dots'
 
@@ -50,6 +51,7 @@ export function ExistingChip({ slot, slots, material }: ExistingChipProps) {
   const groups = [
     equipment && { id: equipment.id, header: equipment.name, body: pill(equipment) },
     acTons && { id: acTons.id, header: acTons.name, body: pill(acTons) },
+    slot.id === 'exterior-paint' ? { id: 'colors', header: PAINT_COLOR_COPY.colors, body: <PaintColors side="existing" /> } : null,
     rated && {
       id: 'condition',
       header: rated.wear ? `${CONTROLS_COPY.systems.condition}${CONTROLS_COPY.systems.valueJoin}${WEAR_LABELS[rated.wear]}` : CONTROLS_COPY.systems.condition,

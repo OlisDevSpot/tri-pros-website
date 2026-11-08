@@ -15,6 +15,8 @@ import { sceneSavings } from '@/features/trade-scenes/lib/scene-savings'
 import { ASSEMBLIES } from '@/shared/modules/construction/core/constants/assemblies'
 import { ASSEMBLY_IDS } from '@/shared/modules/construction/core/constants/assembly-ids'
 import { CLIMATE_PRESETS } from '@/shared/modules/construction/core/constants/climate-presets'
+import { FASCIA_REPLACEMENT_SCOPE_ID } from '@/shared/modules/construction/core/constants/fascia-replacement'
+import { HOME_MATERIAL_FACTS_UNSET } from '@/shared/modules/construction/core/constants/home-materials'
 import { relativeWaterFlow } from '@/shared/modules/construction/core/lib/relative-water-flow'
 import { resolveAssembly } from '@/shared/modules/construction/core/lib/resolve-assembly'
 import { resolveHomeMaterials, wearInForce } from '@/shared/modules/construction/core/lib/resolve-home-materials'
@@ -69,8 +71,8 @@ function resolveHomeAssembly(id: Exclude<AssemblyId, 'yard-ground'>, inputs: Sce
 // dollar figure can never disagree.
 export function resolveScene(inputs: SceneResolveInputs, cuts: TradeBillCuts, year: number = currentYear()): SceneTargets {
   const climate = inputs.climate ?? CLIMATE_FALLBACK
-  // The drawing-only facts (AC size, shingle colour, paint wear) never reach the resolver, and no inference reads them.
-  const facts: HomeFacts = { property: inputs.property, materials: { ...inputs.homeMaterials, acTons: null, shingleColor: null, paintWear: {} }, year }
+  // The drawing-only facts (see DrawingOnlyMaterialFact) never reach the resolver, and no inference reads them, so they stay unset here.
+  const facts: HomeFacts = { property: inputs.property, materials: { ...HOME_MATERIAL_FACTS_UNSET, ...inputs.homeMaterials }, year }
   const home = resolveHomeMaterials(facts)
   const resolved = ASSEMBLY_IDS.flatMap((id) => {
     if (id === 'yard-ground' || !(ASSEMBLIES[id].appliesTo?.(inputs.property) ?? true)) {
@@ -112,5 +114,6 @@ export function resolveScene(inputs: SceneResolveInputs, cuts: TradeBillCuts, ye
     home,
     residents: castResidents(inputs.household),
     savings,
+    fasciaReplaced: inputs.view === 'proposed' && inputs.proposedScopeIds.includes(FASCIA_REPLACEMENT_SCOPE_ID),
   }
 }

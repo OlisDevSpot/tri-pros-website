@@ -9,7 +9,7 @@ import { join } from 'node:path'
 
 import { Box3, Euler, Matrix4, OrthographicCamera, Ray, Vector3 } from 'three'
 import { HEAT_ARROW_LOOK } from '@/features/trade-scenes/constants/heat-arrow-look'
-import { HOME_ANCHOR_IDS, HOME_ANCHORS } from '@/features/trade-scenes/constants/home-anchors'
+import { CRAWL_FRAMING } from '@/features/trade-scenes/constants/home-anchors'
 import { AC_SCALE } from '@/features/trade-scenes/constants/home-equipment-sizes'
 import { FRONT_DOOR, HOME_CAMERA_FAR, HOME_FRAMINGS, HOME_ORBIT, HOUSE, RIDGE_Y } from '@/features/trade-scenes/constants/home-geometry'
 import { HOME_COMPLETE_WALL_HEAT_LANES, HOME_COMPLETE_WINDOW_HEAT_LANES, HOME_WALL_HEAT_LANES, HOME_WINDOW_HEAT_LANES } from '@/features/trade-scenes/constants/home-heat-lanes'
@@ -154,18 +154,15 @@ const viewLines: { label: string, framing: CameraFraming }[] = [
   { label: 'the wide opening view', framing: HOME_FRAMINGS.wide },
   { label: 'the tall opening view', framing: HOME_FRAMINGS.tall },
 ]
+// The views that look at the home's anchors, and the crawl view, which only a raised home has.
 for (const form of ['pitched', 'low-slope'] as const) {
   for (const foundation of ['slab', 'raised'] as const) {
-    for (const anchor of HOME_ANCHOR_IDS) {
-      // A slab has no crawl space to look at, so its crawl framing is never used.
-      if (foundation === 'slab' && anchor === 'under-floor') {
-        continue
-      }
-      viewLines.push({ label: `${form} ${foundation} ${anchor}`, framing: liftedFraming(HOME_ANCHORS[form][anchor].framing, homeLift(foundation)) })
+    for (const system of ['roof', 'attic', 'foundation'] as const) {
+      viewLines.push({ label: `${form} ${foundation} ${system}'s view`, framing: SYSTEM_CAMERA_VIEWS[system](form, 'landscape', homeLift(foundation), { type: 'central', scale: 1 }) })
     }
   }
 }
-assert.equal(viewLines.length, 2 + 2 * (2 * HOME_ANCHOR_IDS.length - 1), 'every up-close framing is walked')
+viewLines.push({ label: 'the crawl view', framing: liftedFraming(CRAWL_FRAMING, homeLift('raised')) })
 // Heating & cooling looks at a package unit on its roof, at every size the unit is drawn.
 for (const form of ['pitched', 'low-slope'] as const) {
   for (const foundation of ['slab', 'raised'] as const) {

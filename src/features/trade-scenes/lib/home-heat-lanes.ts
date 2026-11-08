@@ -1,4 +1,4 @@
-import type { ArrowLane, CeilingOpening, HomeHeat, HomeView, Vec3 } from '@/features/trade-scenes/types'
+import type { ArrowLane, CeilingOpening, FaceLegPoints, HomeHeat, HomeView, Vec3 } from '@/features/trade-scenes/types'
 import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
 import type { Season } from '@/shared/modules/construction/core/types'
 
@@ -22,6 +22,23 @@ export function coveringStandoff(covering: string | null): number {
   return (covering === null ? undefined : COVERING_STANDOFF[covering]) ?? DEFAULT_COVERING_STANDOFF
 }
 
+// A face's legs in this season, as the whole home and up close both draw them. The flows run from the heat's source: the sun
+// on it and then what gets in in summer, the rooms' heat at it and then what escapes in winter. The outer leg is the yard's
+// side either way, and with no sun nothing bounces.
+export function faceLegs(lane: FaceLegPoints, flows: readonly [number, number], bounce: number, season: Season): ArrowLane[] {
+  const summer = season === 'summer'
+  const run = (points: readonly Vec3[], flow: number) => heatArrowLane(summer ? points : [...points].reverse(), flow)
+  const legs = [run(lane.outside, flows[summer ? 0 : 1])]
+  if (lane.inside !== null) {
+    legs.push(run(lane.inside, flows[summer ? 1 : 0]))
+  }
+  const turned = summer && lane.bounce !== null ? bounceArrowLane(lane.bounce, bounce) : null
+  if (turned !== null) {
+    legs.push(turned)
+  }
+  return legs
+}
+
 // Every lane the whole home draws for this heat. Summer heat comes in from the sky and the sun-struck walls and windows;
 // winter heat leaves the rooms the same way out, and with no sun there is nothing to bounce. The Complete house shows only
 // the outside legs, up to the faces they strike; the covering decides how far off the roof they stop. `leaks` is the ceiling
@@ -29,10 +46,6 @@ export function coveringStandoff(covering: string | null): number {
 export function homeHeatLanes(form: RoofForm, heat: HomeHeat, season: Season, homeView: HomeView, covering: string | null, leaks: readonly CeilingOpening[]): ArrowLane[] {
   const flows = heatLaneFlows(heat)
   const summer = season === 'summer'
-  // A face's flows run from the heat's source: the sun on it and then what gets in in summer, the rooms' heat at it and then
-  // what escapes in winter. The outer leg is the yard's side either way.
-  const outer = summer ? 0 : 1
-  const inner = summer ? 1 : 0
   const faces = [
     { flows: flows.wall, bounce: flows.wallBounce, complete: HOME_COMPLETE_WALL_HEAT_LANES, open: HOME_WALL_HEAT_LANES },
     { flows: flows.window, bounce: flows.windowBounce, complete: HOME_COMPLETE_WINDOW_HEAT_LANES, open: HOME_WINDOW_HEAT_LANES },
@@ -60,8 +73,7 @@ export function homeHeatLanes(form: RoofForm, heat: HomeHeat, season: Season, ho
     }
     for (const face of faces) {
       for (const lane of face.complete) {
-        run(lane.outside, lane.face, face.flows[outer])
-        bounce(lane.face, lane.bounceTo, face.bounce)
+        lanes.push(...faceLegs({ outside: [lane.outside, lane.face], inside: null, bounce: [lane.face, lane.bounceTo] }, face.flows, face.bounce, season))
       }
     }
     return lanes.filter(lane => lane.count > 0)
@@ -79,9 +91,7 @@ export function homeHeatLanes(form: RoofForm, heat: HomeHeat, season: Season, ho
   }
   for (const face of faces) {
     for (const lane of face.open) {
-      run(lane.outside, lane.face, face.flows[outer])
-      run(lane.face, lane.inside, face.flows[inner])
-      bounce(lane.face, lane.bounceTo, face.bounce)
+      lanes.push(...faceLegs({ outside: [lane.outside, lane.face], inside: [lane.face, lane.inside], bounce: [lane.face, lane.bounceTo] }, face.flows, face.bounce, season))
     }
   }
   // The gaps are in the ceiling, under the blanket, so they leak whatever the insulation; a flat roof has no attic over them.

@@ -1,7 +1,7 @@
-import type { CompleteRoofLane, CompleteWallLane, HouseWall, RoofHeatLane, Vec3, WallHeatLane } from '@/features/trade-scenes/types'
+import type { CompleteRoofLane, CompleteWallLane, CutawayFaceSystemId, HeatLaneFlows, HouseWall, RoofHeatLane, Vec3, WallHeatLane } from '@/features/trade-scenes/types'
 import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
 
-import { FRONT_WALL, GABLE_VENT_Y, HOUSE, HOUSE_WALLS, WALL_TOP_Y } from '@/features/trade-scenes/constants/home-geometry'
+import { COVERING_BASE, FRONT_WALL, GABLE_VENT_Y, HOUSE, HOUSE_WALLS, RADIANT_BARRIER_FACES, WALL_TOP_Y } from '@/features/trade-scenes/constants/home-geometry'
 import { coveringBaseY } from '@/features/trade-scenes/lib/covering-base-y'
 import { GARAGE_BOXES } from '@/features/trade-scenes/lib/garage-boxes'
 
@@ -17,8 +17,13 @@ const ROOF_LANE_Z: Record<RoofForm, number> = { 'pitched': -0.8, 'low-slope': -1
 const SKY_ABOVE = 2.6
 const ATTIC_FLOOR: { y: number, z: number } = { y: WALL_TOP_Y + 0.1, z: HOUSE.atticFrontZ - 0.25 }
 const ROOM: { y: number, z: number } = { y: HOUSE.floorY + 1.1, z: 1.1 }
-// The foil hangs just under the deck; drawn a little lower so its bounce reads apart from the covering's.
-const BARRIER_BELOW_COVERING = 0.14
+// Tri Pros staples the foil across the rafters' undersides from inside the attic, so its share turns back from there, a
+// rafter's depth under the deck: plumb below the covering's base by the slope's run between their faces. A flat roof never
+// takes one (it is worked from inside an attic), so its point only keeps the lane's shape.
+const BARRIER_BELOW_COVERING: Record<RoofForm, number> = {
+  'pitched': (COVERING_BASE - RADIANT_BARRIER_FACES[0]) / Math.cos(HOUSE.pitch),
+  'low-slope': COVERING_BASE - RADIANT_BARRIER_FACES[0],
+}
 // Sunlight a cool covering turns back leaves up and away off the slope; the barrier sends its share back up at the deck.
 const COVERING_BOUNCE: Vec3 = [0.3, 1.3, -0.9]
 const BARRIER_BOUNCE: Vec3 = [-0.3, 0.75, -0.5]
@@ -27,7 +32,7 @@ function roofLane(x: number, form: RoofForm): RoofHeatLane {
   const z = ROOF_LANE_Z[form]
   const y = coveringBaseY(z, form)
   const covering: Vec3 = [x, y, z]
-  const barrier: Vec3 = [x, y - BARRIER_BELOW_COVERING, z]
+  const barrier: Vec3 = [x, y - BARRIER_BELOW_COVERING[form], z]
   return {
     sky: [x, y + SKY_ABOVE, z],
     covering,
@@ -94,12 +99,13 @@ const FACE_BOUNCE_OFFSET = { out: 0.8, up: 0.9, along: 0.3 } as const
 const FACE_OUT = HOUSE.wallThickness / 2 + LANE_STANDOFF
 
 // A point on a wall's lane, `out` metres from its centre line toward the outside, placed as the wall's boxes are.
-function wallPoint(wall: HouseWall, along: number, y: number, out: number): Vec3 {
+export function wallPoint(wall: HouseWall, along: number, y: number, out: number): Vec3 {
   const across = wall.line + wall.outward * out
   return wall.run === 'x' ? [along, y, across] : [across, y, along]
 }
 
-function faceBounceTo(wall: HouseWall, along: number, y: number): Vec3 {
+// Where the sun a face turns back at `along`, `y` goes: out off its outside into the yard, whatever depth it turned at.
+export function faceBounceTo(wall: HouseWall, along: number, y: number): Vec3 {
   return wallPoint(wall, along + FACE_BOUNCE_OFFSET.along, y + FACE_BOUNCE_OFFSET.up, FACE_OUT + FACE_BOUNCE_OFFSET.out)
 }
 
@@ -164,3 +170,6 @@ export const ATTIC_FAN_LANE: { vent: Vec3, outside: Vec3 } = {
 // Working numbers, tuned by eye. A ceiling opening's leak runs this far above and below the ceiling at the wall top, at a
 // flow that draws two arrows: a gap, not a face, so it reads as a trickle beside the roof's lanes.
 export const CEILING_LEAK_LANE = { above: 0.35, below: 0.5, flow: 0.3 } as const
+
+// Up close each face system draws the whole home's flows for its face.
+export const CUTAWAY_FACE_FLOW_KEY = { windows: 'window', walls: 'wall' } as const satisfies Record<CutawayFaceSystemId, keyof HeatLaneFlows>

@@ -20,10 +20,10 @@ const TILE_ROOF = [
 
 export const SCOPE_INSTALLS: Partial<Record<string, ScopeInstall>> = {
   [SCOPE_IDS.roofOverlay]: { assembly: 'roof-attic', trade: 'roof-and-gutters', installs: [{ part: 'covering', material: 'shingle', swapsWith: { 'cool-roof': 'cool-shingle' } }] },
-  [SCOPE_IDS.roofTorchDown]: { assembly: 'roof-attic', trade: 'roof-and-gutters', installs: [{ part: 'covering', material: 'membrane', swapsWith: { 'cool-roof': 'cool-membrane' } }] },
-  [SCOPE_IDS.roofTearOff]: { assembly: 'roof-attic', trade: 'roof-and-gutters', installs: SHINGLE_ROOF },
+  [SCOPE_IDS.roofTorchDown]: { assembly: 'roof-attic', trade: 'roof-and-gutters', replacesWood: ['deck'], installs: [{ part: 'covering', material: 'membrane', swapsWith: { 'cool-roof': 'cool-membrane' } }] },
+  [SCOPE_IDS.roofTearOff]: { assembly: 'roof-attic', trade: 'roof-and-gutters', replacesWood: ['deck'], installs: SHINGLE_ROOF },
   [SCOPE_IDS.roofRedeck]: { assembly: 'roof-attic', trade: 'roof-and-gutters', installs: [{ part: 'deck', material: 'plywood' }] },
-  [SCOPE_IDS.roofTileReset]: { assembly: 'roof-attic', trade: 'roof-and-gutters', installs: TILE_ROOF },
+  [SCOPE_IDS.roofTileReset]: { assembly: 'roof-attic', trade: 'roof-and-gutters', replacesWood: ['deck'], installs: TILE_ROOF },
   [SCOPE_IDS.gutters]: { assembly: 'roof-attic', trade: 'roof-and-gutters', installs: [{ part: 'gutter', material: 'aluminum' }] },
   [SCOPE_IDS.airSealing]: { assembly: 'roof-attic', trade: 'attic-and-basement', installs: [{ part: 'air-sealing', material: 'sealed' }] },
   [SCOPE_IDS.atticInsulationReplacement]: { assembly: 'roof-attic', trade: 'attic-and-basement', installs: [{ part: 'attic-insulation', material: 'blown-r30', swapsWith: { 'r38-insulation': 'blown-r38' }, styles: { batts: { 'blown-r30': 'batts-r30', 'blown-r38': 'batts-r38' } } }] },

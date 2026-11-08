@@ -10,6 +10,8 @@ import { CONTROLS_COPY, SAVINGS_COPY } from '@/features/trade-scenes/constants/h
 import { useSceneVisibleArea } from '@/features/trade-scenes/contexts/scene-visible-area-context'
 import { useApplySceneChange } from '@/features/trade-scenes/hooks/use-apply-scene-change'
 import { climateDefaultBill } from '@/features/trade-scenes/lib/climate-default-bill'
+import { workDetailsKind } from '@/features/trade-scenes/lib/work-details-kind'
+import { WorkDetails } from '@/features/trade-scenes/ui/components/controls/work-details'
 import { UnitMoneyField } from '@/features/trade-scenes/ui/components/fields/unit-money-field'
 import { useSceneInputs } from '@/shared/components/scene/contexts/scene-inputs-context'
 import { Button } from '@/shared/components/ui/button'
@@ -44,6 +46,10 @@ export function ModifyResultRow({ slot, hit, lead, flash, onApply, onBillEntered
   const current = slot.bill !== null
     ? `${formatAsDollars(Number(slot.current))}${SAVINGS_COPY.billSuffix}`
     : slot.options.find(option => option.value === slot.current)?.label ?? CONTROLS_COPY.facts.missing
+  // Modify lists the efficiency switches as rows of their own, so a build's details here hold no second copy, and a
+  // membrane, whose only detail is the cool roof, shows none.
+  const kind = slot.id.startsWith('build:') ? workDetailsKind(slot.current) : null
+  const details = kind === 'membrane' ? null : kind
 
   return (
     <div data-result-row={slot.id} className="relative grid gap-2 border-b border-border py-2.5 last:border-b-0">
@@ -122,6 +128,11 @@ export function ModifyResultRow({ slot, hit, lead, flash, onApply, onBillEntered
                 })}
               </div>
             )}
+      {details !== null && (
+        <div className={CONTROLS_CLASSES.detailsPanel}>
+          <WorkDetails kind={details} upgrade={null} />
+        </div>
+      )}
     </div>
   )
 }

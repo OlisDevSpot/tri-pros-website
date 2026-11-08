@@ -26,3 +26,8 @@ export const HOME_FADE_TAGS: Readonly<Record<HomeFade, Readonly<{ homeFade: Home
 // The `userData` of a root the home's ghost fades (the house, and what stands on the ground beside it). The thermal paint
 // keeps what lies under one apart from the same zone's paint elsewhere, so the ghost never dims the yard with the house.
 export const HOME_GHOST_TAG: Readonly<{ homeGhost: true }> = Object.freeze({ homeGhost: true })
+
+// The `userData` of the garage's root, always set. The garage ghosts with the house only while the walls are up close, so its
+// thermal paint is its own: shared with the yard, the walls' ghost would dim the yard; with the house, another system's
+// ghost would dim the garage.
+export const HOME_GARAGE_TAG: Readonly<{ homeGarage: true }> = Object.freeze({ homeGarage: true })

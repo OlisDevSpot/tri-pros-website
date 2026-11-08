@@ -45,6 +45,23 @@ function installBases(assembly: Assembly, existing: ExistingConditions, installe
   return copies
 }
 
+// A deck the build leaves in place under the new covering says so; a part the build installs is all new wood and never counts.
+function woodReplacements(assembly: Assembly, proposedScopeIds: readonly string[], installed: ReadonlyMap<string, string>, installs: Partial<Record<string, ScopeInstall>>): Set<string> {
+  const replaced = new Set<string>()
+  for (const scopeId of proposedScopeIds) {
+    const entry = installs[scopeId]
+    if (entry?.assembly !== assembly.id) {
+      continue
+    }
+    for (const partId of entry.replacesWood ?? []) {
+      if (!installed.has(partId)) {
+        replaced.add(partId)
+      }
+    }
+  }
+  return replaced
+}
+
 // One resolver for every assembly: parts, forms and copy are data, so a new assembly never adds a branch here.
 export function resolveAssembly(assembly: Assembly, { existing, proposedScopeIds, view, efficiencyUpgrades = [], installStyles = [] }: ResolveInput, installs: Partial<Record<string, ScopeInstall>> = SCOPE_INSTALLS): ResolvedPart[] {
   const installed = new Map<string, string>()
@@ -82,6 +99,7 @@ export function resolveAssembly(assembly: Assembly, { existing, proposedScopeIds
   }
 
   const baseCopy = installBases(assembly, existing, installed)
+  const woodReplaced = view === 'proposed' ? woodReplacements(assembly, proposedScopeIds, installed, installs) : new Set<string>()
 
   // Skipped on purpose, never thrown: a part the current form lacks (a ridge vent on a flat roof), and a material that cannot be built on the home's form (torch-down on a pitched home with a flat section). The existing part stays as it is.
   return assembly.parts
@@ -91,14 +109,16 @@ export function resolveAssembly(assembly: Assembly, { existing, proposedScopeIds
       const material = installedMaterial ?? existing.parts[part.id]?.material ?? null
       const condition = installedMaterial ? 'installed' : existing.parts[part.id]?.condition ?? 'absent'
       const wear = installedMaterial ? undefined : existing.parts[part.id]?.wear
-      const copy = baseCopy.get(part.id) ?? copyFor(part, material, condition)
       const definition = material === null ? null : part.materials[material]
+      const replacementCopy = woodReplaced.has(part.id) ? definition?.woodReplacementCopy : undefined
+      const copy = replacementCopy ?? baseCopy.get(part.id) ?? copyFor(part, material, condition)
       const under = installedMaterial && addedTo.has(part.id) ? existing.parts[part.id]?.material ?? null : null
       return {
         id: part.id,
         group: part.group,
         role: part.role,
         ...(part.edge ? { edge: true as const } : {}),
+        ...(replacementCopy ? { woodReplaced: true as const } : {}),
         material,
         condition,
         ...(wear ? { wear } : {}),

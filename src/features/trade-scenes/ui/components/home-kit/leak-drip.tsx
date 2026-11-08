@@ -10,17 +10,26 @@ import { useBurstMotion } from '@/shared/components/scene/hooks/use-burst-motion
 
 interface LeakDripProps {
   burst: SceneBurst
+  /** Drawn larger where it is seen from close up; the house's own drip is 1. */
+  scale?: number
+  /** Laid over the scene, as the flows are, so it reads through the lit ceiling from above it. */
+  overlay?: boolean
 }
+
+// Drawn after the scene, with the heat arrows. A working number.
+const OVERLAY_ORDER = 10
 
 const { spot: [x, z], ceilingY, floorY, bucket, drip } = LEAK
 const WATER_Y = floorY + bucket.height * bucket.waterLine
-const FALL = ceilingY - drip.radius - WATER_Y
 const GATHER = drip.gather
 
 // Drips gather and fall at a steady rate for the whole burst; when it ends, a full drop sits on the ceiling, which is the rest pose.
-export function LeakDrip({ burst }: LeakDripProps) {
+export function LeakDrip({ burst, scale = 1, overlay = false }: LeakDripProps) {
   const drop = useRef<Mesh>(null)
   const phase = useRef(0)
+  const radius = drip.radius * scale
+  const top = ceilingY - radius
+  const fall = top - WATER_Y
 
   useBurstMotion(burst, (life, seconds) => {
     const next = phase.current + seconds / drip.periodSeconds
@@ -30,15 +39,15 @@ export function LeakDrip({ burst }: LeakDripProps) {
     const falling = resting ? 0 : Math.max(0, (phase.current - GATHER) / (1 - GATHER))
     const growing = resting ? 1 : Math.min(1, phase.current / GATHER)
     if (drop.current) {
-      drop.current.position.y = ceilingY - drip.radius - FALL * falling * falling
+      drop.current.position.y = top - fall * falling * falling
       drop.current.scale.setScalar(0.4 + 0.6 * growing)
     }
   })
 
   return (
-    <mesh ref={drop} position={[x, ceilingY - drip.radius, z]}>
-      <sphereGeometry args={[drip.radius, 12, 8]} />
-      <meshStandardMaterial color={drip.color} roughness={0.1} />
+    <mesh ref={drop} position={[x, top, z]} renderOrder={overlay ? OVERLAY_ORDER : 0}>
+      <sphereGeometry args={[radius, 12, 8]} />
+      <meshStandardMaterial color={drip.color} roughness={0.1} depthTest={!overlay} depthWrite={!overlay} />
     </mesh>
   )
 }

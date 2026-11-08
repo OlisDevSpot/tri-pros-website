@@ -1,5 +1,7 @@
 import type { Assembly } from '@/shared/modules/construction/core/types'
 
+const OLD_DECK_DETAIL = 'An old deck often has some areas that need to be replaced due to wood rot or water damage over time.'
+
 const SOLID_DECK = {
   part: 'deck',
   replaces: ['spaced-boards'],
@@ -18,7 +20,7 @@ export const ROOF_ATTIC = {
   forms: ['pitched', 'low-slope'],
   parts: [
     { id: 'ceiling', group: 'attic', role: 'structure', materials: {
-      drywall: { copy: { label: 'Ceiling', detail: 'Ceiling joists and drywall. The line between the attic and the living room.' }, thermal: { rValue: 0.5 } },
+      drywall: { copy: { label: 'Ceiling', detail: 'The drywall ceiling. The line between the attic and the living room.' }, thermal: { rValue: 0.5 } },
     } },
     { id: 'air-sealing', group: 'attic', role: 'seal', forms: ATTIC_ONLY, absentCopy: { label: 'Open gaps', detail: 'Light fixtures, pipes and wiring leave holes that let attic air pour into the house.' }, materials: {
       sealed: { copy: { label: 'Air sealing', detail: 'Every gap into the living space foamed or caulked shut before insulation goes down.' } },
@@ -42,14 +44,14 @@ export const ROOF_ATTIC = {
     } },
     { id: 'radiant-barrier', group: 'roof', role: 'reflect', forms: ATTIC_ONLY, absentCopy: { label: 'No radiant barrier', detail: 'The deck radiates the sun\'s heat straight down into the attic.' }, materials: {
       // The winter reflectance is a working number, sourced before release.
-      foil: { copy: { label: 'Radiant barrier', detail: 'A reflective layer under the deck that turns back most of the heat the roof radiates.' }, thermal: { reflectance: 0.6, winterReflectance: 0.2 }, energyRank: 0, cut: 'radiant-barrier' },
+      foil: { copy: { label: 'Radiant barrier', detail: 'Foil stapled to the rafters from inside the attic. It turns back most of the heat the roof radiates.' }, thermal: { reflectance: 0.6, winterReflectance: 0.2 }, energyRank: 0, cut: 'radiant-barrier' },
     } },
     { id: 'deck', group: 'roof', role: 'structure', materials: {
       'spaced-boards': { copy: { label: 'Spaced board sheathing', detail: 'Built for wood shakes. The gaps leave nothing solid to nail a modern roof into.' }, thermal: { rValue: 0.3 } },
-      'plywood': { copy: { label: 'Solid decking', detail: 'The roof\'s base layer.' }, conditionCopy: {
-        worn: { label: 'Original decking', detail: 'Decades of heat and leaks leave soft spots you cannot see from the street.' },
+      'plywood': { copy: { label: 'Solid decking', detail: OLD_DECK_DETAIL }, conditionCopy: {
+        worn: { label: 'Original decking', detail: OLD_DECK_DETAIL },
         installed: { label: 'New solid decking', detail: 'Every sheet checked. Soft or rotted wood is replaced before anything goes on top.' },
-      }, thermal: { rValue: 0.6 } },
+      }, woodReplacementCopy: { label: 'Original decking, repaired', detail: `${OLD_DECK_DETAIL} Once the old roof is off, we repair those sections up to the allowable limit.` }, thermal: { rValue: 0.6 } },
     } },
     { id: 'ice-and-water', group: 'roof', role: 'shed-water', absentCopy: { label: 'No eave membrane', detail: 'Wind-driven rain at the eaves goes straight to the wood.' }, materials: {
       membrane: { copy: { label: 'Self-sealing eave membrane', detail: 'Seals around every nail at the eaves, where water backs up first.' } },

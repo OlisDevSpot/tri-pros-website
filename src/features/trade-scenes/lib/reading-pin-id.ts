@@ -2,7 +2,7 @@ import type { ReadingId } from '@/features/trade-scenes/constants/home-anchors'
 
 import { READING_IDS } from '@/features/trade-scenes/constants/home-anchors'
 
-// Readings share the pin registry with the anchors and the assembly kits' part pins, so their ids carry a prefix of their own.
+// Readings share the pin registry with the spot pins and the system parts' pins, so their ids carry a prefix of their own.
 const PREFIX = 'reading:'
 
 export function readingPinId(reading: ReadingId): string {
