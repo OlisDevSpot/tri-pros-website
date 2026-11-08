@@ -277,6 +277,8 @@ const clampedCarry = solveMultiplier(8000 + 13375 * 2.3, spread) // −0.556 wou
 assert.ok(clampedCarry.status === 'reached' && Math.abs(clampedCarry.multiplier - (2.8 - 7687.5 / 13375)) < 1e-9, 'a scope the floor clamps is held there and the shift is re-solved over the rest')
 assert.ok(clampedCarry.status === 'reached' && Math.abs(clampedCarry.achievedTotal - (8000 + 13375 * 2.3)) <= 1, 'the target is still reached within rounding')
 assert.deepEqual(solveMultiplier(30000, spread), { status: 'below-floor', multiplier: 2, achievedTotal: 35750 }, 'a target under the floor total reports the floor and the floor total')
+const atFloorTotal = solveMultiplier(35750, spread)
+assert.ok(atFloorTotal.status === 'reached' && atFloorTotal.multiplier >= 2, 'a target equal to the floor total is reached at exactly the floor')
 assert.deepEqual(solveMultiplier(50000, { lines: [{ ...attic, variables: { sqft: 0 } }], context: oneStory, config }), { status: 'no-cost' }, 'a zero-cost line cannot carry a target')
 const nanOverride = solveMultiplier(60000, { ...spread, lines: [mpuLine('m', Number.NaN), roofLine] })
 assert.ok(nanOverride.status === 'reached' && Math.abs(nanOverride.achievedTotal - 60000) <= 1, 'a NaN override is not held: the engine shifts that scope, so the solver does too')
@@ -298,12 +300,12 @@ assert.deepEqual(unitCostEntries(config, 'electricals'), [
 ], 'Unit Cost entries carry the seed labels')
 assert.deepEqual(tradesInQuote(mixed), ['atticBasement'], 'trades from formula lines only')
 assert.match(describeTargetResult(tooLow, 2), /2\.00x floor/, 'below-floor copy names the floor')
-assert.match(describeTargetResult({ status: 'no-cost' }, 2), /formula/, 'no-cost copy')
+assert.match(describeTargetResult({ status: 'no-cost' }, 2), /scope with a cost/, 'no-cost copy')
 assert.match(describeTargetResult({ status: 'all-overridden' }, 2), /own multiplier/, 'all-overridden copy')
 assert.equal(describeMultiplierDefaults(config, [], 2.8), 'Floor 2.00x · default 2.80x', 'no scopes: floor and default only')
 assert.equal(describeMultiplierDefaults(config, ['installExteriorPaint', 'mpu', 'rnrAttic', 'mpu'], 2.8), 'Floor 2.00x · default 2.80x · Install exterior paint 3.50x · Main panel upgrade 2.50x', 'lists each scope default present once; scopes on the default are not repeated')
-assert.equal(describeMultiplierDefaults(config, ['mpu'], 2.85), 'Floor 2.00x · default 2.80x · Main panel upgrade 2.50x · +0.05x on every scope', 'a shift is named')
-assert.equal(describeMultiplierDefaults(config, ['mpu'], 2.7), 'Floor 2.00x · default 2.80x · Main panel upgrade 2.50x · −0.10x on every scope', 'a negative shift uses a real minus sign')
+assert.equal(describeMultiplierDefaults(config, ['mpu'], 2.85), 'Floor 2.00x · default 2.80x · Main panel upgrade 2.50x · +0.05x on every scope without its own multiplier', 'a shift is named')
+assert.equal(describeMultiplierDefaults(config, ['mpu'], 2.7), 'Floor 2.00x · default 2.80x · Main panel upgrade 2.50x · −0.10x on every scope without its own multiplier', 'a negative shift uses a real minus sign')
 
 // ── Paint prices and the custom scope ──────────────────────────────────────
 const paintLine = (homeSqFt: number, paintType: 'coolLife' | 'water' = 'coolLife', extra: Partial<FormulaLineInput> = {}): FormulaLineInput =>
@@ -330,6 +332,9 @@ assert.equal(isCustomLine(customPriced.lines[0]), true, 'custom scope stays cust
 assert.equal(isCustomLine(mixed.lines[1]), false, 'a manual line is not a custom scope')
 assert.equal(isCustomLine(incompleteAttic), false, 'an incomplete formula line with needs is not custom')
 assert.equal(isCustomLine(undefined), false, 'no result yet')
+const paintBelowFloor = solveMultiplier(20000, { lines: [paintLine(1000)], context: twoStory, config }) // cost 7,560: the proposal-wide floor puts paint at 3.5 − 0.8 = 2.70x
+assert.deepEqual(paintBelowFloor, { status: 'below-floor', multiplier: 2, achievedTotal: 20412 }, 'paint alone: the proposal-wide floor leaves paint at 2.70x, above the 2.00x floor')
+assert.match(describeTargetResult(paintBelowFloor, 2), /proposal-wide multiplier at the 2\.00x floor/, 'below-floor copy names the proposal-wide control')
 
 const rowLines = [mpuLine('m1'), mpuLine('m2', 3), manual, paintLine(3001), paintLine(3002, 'coolLife', { multiplierOverride: 3 })]
 const rows = scopeMultiplierRows(priceQuote({ lines: rowLines, context: oneStory, config }), rowLines)

@@ -9,11 +9,11 @@ export function describeTargetResult(result: SolveMultiplierResult | null, floor
   }
   if (!('multiplier' in result)) {
     return result.status === 'no-cost'
-      ? 'Only lines with a formula have cost data, so a target needs at least one.'
+      ? 'A target needs at least one scope with a cost.'
       : 'Every costed scope has its own multiplier, so there is nothing left to solve. Clear one to use a target.'
   }
   if (result.status === 'below-floor') {
-    return `Out of reach without going under the ${formatMultiplier(floor)} floor. Lowest price: ${formatAsDollars(result.achievedTotal)}.`
+    return `Out of reach with the proposal-wide multiplier at the ${formatMultiplier(floor)} floor. Lowest price this way: ${formatAsDollars(result.achievedTotal)}.`
   }
   return `${formatMultiplier(result.multiplier)} gives ${formatAsDollars(result.achievedTotal)}.`
 }

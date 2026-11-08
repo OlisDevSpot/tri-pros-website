@@ -16,7 +16,7 @@ export function describeMultiplierDefaults(config: ScopePricingConfig, pricingKe
   const shift = proposalMultiplier - defaultMultiplier
   // Below half a hundredth the shift prints as 0.00x, so naming it would only add noise.
   if (Math.abs(shift) >= 0.005) {
-    parts.push(`${shift > 0 ? '+' : '−'}${formatMultiplier(Math.abs(shift))} on every scope`)
+    parts.push(`${shift > 0 ? '+' : '−'}${formatMultiplier(Math.abs(shift))} on every scope without its own multiplier`)
   }
   return parts.join(' · ')
 }

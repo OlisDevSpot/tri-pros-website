@@ -57,7 +57,8 @@ export function solveMultiplier(targetTotal: number, input: PriceQuoteInput): So
   if (open.length === 0) {
     return atFloor()
   }
-  const multiplier = defaultMultiplier + shift
+  // The tolerance above lets a hair-under-floor shift through as reached; a result is never below the floor.
+  const multiplier = Math.max(floor, defaultMultiplier + shift)
   // Line prices round to whole dollars, so report what the quote actually adds up to at this multiplier.
   const achievedTotal = priceQuote({ ...input, overrides: { multiplier } }).totalPrice
   return { status: 'reached', multiplier, achievedTotal }
