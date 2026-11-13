@@ -49,14 +49,14 @@ export type VariableValues<Keys extends readonly VariableKey[]> = { [K in Keys[n
 /** What the rep has entered on one line: any declared Variable may still be empty. */
 export type VariableInputs = Partial<Record<VariableKey, SelectOption | boolean | null>>
 
-export type FormulaConfig = Pick<ScopePricingConfig, 'exteriorPaintTiers'>
+export type FormulaConfig = Pick<ScopePricingConfig, 'exteriorPaintHomeSizes'>
 
 // The method shorthand inside this helper (never called directly) makes TS check `compute` bivariantly,
 // which is what lets the registry hold Formulas with different Variable sets under one `Formula` type;
 // `ts/method-signature-style` forces `compute` itself to stay a property, so the shorthand has to live here.
 type ComputeFn<T extends PricingTrade, Keys extends readonly VariableKey[]> = {
   // eslint-disable-next-line ts/method-signature-style -- method shorthand needed for bivariant parameter checking, see comment above
-  bivarianceHack(vars: VariableValues<Keys>, context: ProjectContext, unitCosts: UnitCostsOf<T>, config: FormulaConfig): number
+  bivarianceHack(vars: VariableValues<Keys>, context: ProjectContext, unitCosts: UnitCostsOf<T>, config: FormulaConfig): number | null
 }['bivarianceHack']
 
 export interface FormulaDef<T extends PricingTrade, Keys extends readonly VariableKey[]> {
@@ -72,7 +72,7 @@ export interface FormulaDef<T extends PricingTrade, Keys extends readonly Variab
 export type Formula = FormulaDef<PricingTrade, readonly VariableKey[]>
 
 export type QuoteLineInput
-  = | { id: string, kind: 'formula', pricingKey: PricingKey, variables: VariableInputs }
+  = | { id: string, kind: 'formula', pricingKey: PricingKey, variables: VariableInputs, multiplierOverride?: number | null, price?: number | null }
     | { id: string, kind: 'manual', label: string, price: number | null }
 
 export interface QuoteOverrides {
@@ -93,6 +93,7 @@ export interface PricedLine {
   label: string
   trade: PricingTrade | null
   cost: number | null
+  multiplier: number | null
   price: number
   tax: number
   base: number
@@ -105,6 +106,7 @@ export interface IncompleteLine {
   label: string
   trade: PricingTrade | null
   needs: VariableKey[]
+  reason?: 'custom'
 }
 
 export type QuoteLineResult = PricedLine | IncompleteLine
@@ -126,4 +128,4 @@ export interface QuoteResult {
 
 export type SolveMultiplierResult
   = | { status: 'reached' | 'below-floor', multiplier: number, achievedTotal: number }
-    | { status: 'no-cost' }
+    | { status: 'no-cost' | 'all-overridden' }

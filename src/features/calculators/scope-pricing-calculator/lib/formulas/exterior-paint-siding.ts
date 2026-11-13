@@ -5,19 +5,22 @@ export const installExteriorPaint = defineFormula({
   trade: 'exteriorPaintSiding',
   label: 'Install exterior paint',
   outcome: 'Protect your home from weather while giving it a fresh, modern exterior look',
-  variables: ['paintType', 'homeSqFt', 'garageSqFt'],
-  compute({ paintType, homeSqFt, garageSqFt }, _context, costs, config) {
-    const totalSqFt = homeSqFt + garageSqFt
-    const { smallBelowSqFt, largeAboveSqFt } = config.exteriorPaintTiers
-    if (paintType === 'coolLife') {
-      if (totalSqFt < smallBelowSqFt) {
-        return costs.coolLifePaintSm
-      }
-      return totalSqFt > largeAboveSqFt ? costs.coolLifePaintLarge : costs.coolLifePaintAvg
+  variables: ['paintType', 'homeSqFt', 'garageIncluded'],
+  compute({ paintType, homeSqFt, garageIncluded }, context, costs, config) {
+    const { smallMaxSqFt, averageMaxSqFt, largeMaxSqFt } = config.exteriorPaintHomeSizes
+    if (homeSqFt > largeMaxSqFt) {
+      return null
     }
-    if (totalSqFt < smallBelowSqFt) {
-      return costs.waterPaintSm
+    const [small, average, large] = paintType === 'coolLife'
+      ? [costs.coolLifePaintSm, costs.coolLifePaintAvg, costs.coolLifePaintLarge]
+      : [costs.waterPaintSm, costs.waterPaintAvg, costs.waterPaintLarge]
+    let sizeCost = large
+    if (homeSqFt <= smallMaxSqFt) {
+      sizeCost = small
     }
-    return totalSqFt > largeAboveSqFt ? costs.waterPaintLarge : costs.waterPaintAvg
+    else if (homeSqFt <= averageMaxSqFt) {
+      sizeCost = average
+    }
+    return sizeCost + (garageIncluded ? costs.garage : 0) + (context.numStories - 1) * costs.additionalStory
   },
 })

@@ -155,3 +155,13 @@ How a list of one entity's records is read and shown, on any surface. The `DataV
 - "sequence" was defined for visit messages only — resolved 2026-10-08: **Sequence** is the general automation kind (Automation terms); the visit-message sequence is one instance.
 - "body" is a data view's **Body** (Data view terms); on a presentation slide the word is **Content**, never body.
 - "campaign" means a lead-conversion provider campaign (`voip_campaigns`) and a Meta ad campaign; never a scheduled send to customers.
+## Scope Pricing terms
+
+Calculator vocabulary (owner, 2026-11-06). Formula, Variable, Unit Cost, Cost, Price, Multiplier and Pricing Key are the tracker's D1 names (`docs/plans/2026-09-26-sales-calculators-epic.md`).
+
+- **Scope default** — the multiplier a pricing key sells at when nothing else is set (`multiplier.byScope`, Admin-configured from code): exterior paint 3.5, MPU 2.5; every other scope uses the 2.8 default. _Avoid_: per-trade default (defaults are per scope, not per trade).
+- **Proposal-wide multiplier** — the agent panel's one control. It rests at 2.8 and shifts every scope without an override by `m − 2.8`, so the spread between scope defaults survives; the target price solves for it. Bounded below by the floor. The C0 calculator is a standalone quote (R2), so the code says `QuoteResult.multiplier`; the term is the proposal's. _Avoid_: job-wide, global multiplier.
+- **Scope multiplier override** — the agent's absolute multiplier on one scope line (`multiplierOverride`); it ignores the shift and the solver never moves it. A line is one scope on the quote; the same scope added twice carries two overrides. _Avoid_: pinned, fixed, line override.
+- **Custom scope** — a formula line the formula cannot cost (exterior paint above 3,000 sq ft): the agent types its price on the card and it is carried uncosted like a manual line (`reason: 'custom'`). _Avoid_: manual line for it, custom band.
+- **Home size** — exterior paint's small / average / large classes by home square footage (≤ 1,350 / ≤ 1,800 / ≤ 3,000; an edge takes the smaller size; above 3,000 is a custom scope) (`exteriorPaintHomeSizes`). _Avoid_: tier (the multiplier tier and the R9 configuration tiers), band, threshold.
+
