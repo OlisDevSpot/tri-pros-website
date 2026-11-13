@@ -1,0 +1,13 @@
+scripts:
+  setup: |
+    cd "$ORCA_WORKTREE_PATH"
+    pnpm install --frozen-lockfile
+    # .env pins PORT=3000 for main; each worktree claims the next port no sibling .env.local holds and nothing listens on.
+    used=$(git worktree list --porcelain | sed -n 's/^worktree //p' | while read -r wt; do grep -hs '^PORT=' "$wt/.env.local" || true; done | cut -d= -f2)
+    port=3001
+    while echo "$used" | grep -qx "$port" || ss -ltnH "sport = :$port" | grep -q .; do port=$((port + 1)); done
+    touch .env.local
+    sed -i '/^PORT=/d' .env.local
+    echo "PORT=$port" >> .env.local
+    echo "Worktree dev port: $port"
+setupAgentStartupPolicy: wait-for-setup

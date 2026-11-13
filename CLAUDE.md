@@ -23,8 +23,9 @@ pnpm db:reset:dev / db:seed:dev
 pnpm db:refresh:dev [--dry-run]   # dev DB ← Neon reset from parent + scrub (no children allowed on the dev branch)
 # Scripts target the prod DB ONLY via DRIZZLE_TARGET=prod — never NODE_ENV (see src/shared/config/server-env.ts).
 pnpm push:test --to <email> --title "..." [--body "..."] [--navigate /path]
-pnpm dispatch help    # Parallel issue work
 ```
+
+**Only Oliver starts a dev server.** No session or subagent runs `pnpm dev`, `pnpm dev:mobile` or `next dev`. If a task needs the server and the port does not answer (`ss -ltnp`), stop and ask Oliver to start it. `permissions.deny` in `~/.claude/settings.json` blocks the commands.
 
 Package manager: **pnpm**. Path alias: `@/` → `src/`.
 
@@ -42,11 +43,11 @@ Package manager: **pnpm**. Path alias: `@/` → `src/`.
 - `docs/README.md` — index of `docs/sales/`, `docs/proposal/`, `docs/company/`, `docs/customer/`, `docs/programs/`, `docs/marketing/` (`showcase-offer.md` is THE Showcase offer), `docs/seo/`
 
 **Planning**
-- `/orient <path|words>` — verified orientation on a plan or epic tracker (tasks vs tree, plan vs git, requirements vs delta), a lean page, a decision sheet, and the structured status block written back; `session-capture` writes the same block at session end so `/orient <path>` is a fresh session's whole prompt.
 - `docs/plans/` — live epic trackers, standing contracts and ledgers, research that open work cites, and the VoIP epics. `docs/superpowers/specs|plans/` — pending, partial, or in-progress designs and plans only. Delete a plan when it ships.
+- `/orient <path|words>` — verified orientation on a plan or epic tracker (tasks vs tree, plan vs git, requirements vs delta), a lean page, a decision sheet, and the structured status block written back; `session-capture` writes the same block at session end so `/orient <path>` is a fresh session's whole prompt.
 
 **Session memory**
-- `memory/MEMORY.md` — auto-loaded index; `reference-dispatch-system.md`, `reference-github-workflow.md` for ops details
+- `memory/MEMORY.md` — auto-loaded index; `reference-github-workflow.md` for ops details
 
 ## Mobile testing
 
@@ -60,12 +61,16 @@ DevTools mobile viewport: Chrome `Cmd-Shift-M` / Safari Develop → Responsive D
 
 ## GitHub workflow
 
-- **Board:** https://github.com/users/OlisDevSpot/projects/3 (single source of truth for status)
-- **Issues:** https://github.com/OlisDevSpot/tri-pros-website/issues
-- **Branch:** `{type}/{issue-number}-{slug}` — types: `feat | fix | refactor | chore | docs`
-- **PR:** open with `Closes #N`, run `pnpm lint && pnpm tsc` first, use the template
-- **Parallel issue work:** `pnpm dispatch help` (full reference: `memory/reference-dispatch-system.md`)
-- **Full workflow reference** (labels, board IDs, automations): `memory/reference-github-workflow.md`
+One feature = one worktree branch = one session = one PR. `main` is prod.
+
+- **Start:** a new worktree per feature, in Orca (`orca.yaml` installs deps and claims a free `PORT`) or `claude --worktree`. `.worktreeinclude` copies `.env`, `.env.local`, `.claude/settings.local.json`.
+- **Base:** branch from `origin/main`. A branch off local main carries every unshipped commit on it and can't ship until they do.
+- **Branch:** `{type}/{issue-number}-{slug}`, or `{type}/{slug}` with no issue. Types: `feat | fix | refactor | chore | docs`
+- **PR:** `pnpm lint && pnpm tsc` first, use the template, `Closes #N` when there is an issue. The PR gets a Vercel preview; the owner checks it on the iPad and merges. Agents never merge or push to `main`.
+- **Ship (owner-standardized 2026-11-01):** push the branch, open the PR, check the Vercel preview on the iPad. If `main` moved, merge `origin/main` **into the branch** (GitHub "Update branch" or `git merge origin/main`); never rebase, never force-push. Merge the PR with **Squash and merge** only; that is the one step that deploys prod. Then `git pull --ff-only origin main` on local main (a refusal means local main has commits of its own: stop and look, never let it merge). Delete the branch and worktree; a squashed branch is never reused.
+- **End:** the session ends when its PR merges. New work starts a new session, not a compacted old one.
+- **Transition:** until the local-main queue is drained by one last `/pre-ship`, local main is still the workbench (stage by explicit path, prod fixes only via `pnpm hotfix`; memory `feedback-work-on-main.md`). After the drain a hotfix is an ordinary PR.
+- **Board / issues:** https://github.com/users/OlisDevSpot/projects/3 (status lives here) · https://github.com/OlisDevSpot/tri-pros-website/issues · labels, board IDs, automations: `memory/reference-github-workflow.md`
 
 ## Who we are
 
