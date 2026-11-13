@@ -295,9 +295,9 @@ Each one needs a doc fix, made to match the code.
 
 ## Owner decisions collected
 
-1. **Live exposure:** contain B1 and C1 now (narrow fixes) or go root-first?
-2. **The two homeowner-named portfolio projects:** consent, rename or unpublish.
-3. **Data fixes:** gcal sync for the 30 cancelled meetings; backfill `approved_at` for 5 proposals; merge 10 duplicate-phone groups; record the 28 overdue outcomes; resolve 3 orphans; re-save 7 phones.
-4. **Theme D ownership and sequencing** with the lifecycle work.
-5. **Theme A scope:** inside part 4, or a separate "one seam" unit before it?
-6. **QuickBooks:** is the integration in use, given the `invalid_client` on prod?
+1. **Live exposure — RULED 2026-11-13: root-first for both.** No narrow containment. B1 is fixed by the Theme B public read model; C1 moves to the QuickBooks epic (item 6).
+2. **The two homeowner-named portfolio projects — RULED 2026-11-13: keep; the homeowners consented.** Names, titles and slugs stay. Street address, zip and internal ids still leave the public payload through the Theme B read model.
+3. **Data fixes:** gcal sync for the 30 cancelled meetings; backfill `approved_at` for 5 proposals; merge 10 duplicate-phone groups; record the 28 overdue outcomes; resolve 3 orphans; re-save 7 phones. *Open; taken one by one with Theme E.*
+4. **Theme D ownership and sequencing** with the lifecycle work. *Open; asked when Theme D starts.*
+5. **Theme A scope — RULED 2026-11-13: merge part 4 first.** The "one seam" work is its own unit after part 4 reaches main. Note (2026-11-13): the permissions branch, last touched 2026-10-15, also carries parts 5–6, unit 4 part 1 and Q8 batches 3–4, including the intake token check (`5412e1dca`) that answers part of Theme C.
+6. **QuickBooks — RULED 2026-11-13: the integration will be in use soon.** The callback (C1) is fixed properly when QuickBooks is built (memory `project-quickbooks-setup`), not in this work. Until then the callback stays as it is on prod: no session, no `state`.
