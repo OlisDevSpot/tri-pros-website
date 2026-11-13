@@ -86,7 +86,7 @@ export const MEETING_OUTCOME_SENTIMENT: Record<MeetingOutcome, MeetingOutcomeSen
   not_set: 'unset',
   follow_up_needed: 'neutral',
   reschedule_needed: 'neutral',
-  rescheduled: 'neutral',
+  rescheduled: 'negative',
   proposal_created: 'neutral',
   proposal_sent: 'neutral',
   converted_to_project: 'positive',

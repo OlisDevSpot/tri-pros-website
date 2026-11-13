@@ -60,12 +60,15 @@ function shape(state: ModalLayersState) {
   console.warn = (...args: unknown[]) => warnings.push(args)
   try {
     let s = EMPTY_MODAL_LAYERS
-    for (const accessor of ['A', 'B', 'C']) {
-      s = pushModalLayer(s, descriptor(accessor))
+    const full: string[] = []
+    for (let id = 1; id <= MODAL_LAYER_CAP; id++) {
+      s = pushModalLayer(s, descriptor(`L${id}`))
+      full.push(`L${id}#${id}`)
     }
-    assert.equal(MODAL_LAYER_CAP, 3)
-    s = pushModalLayer(s, descriptor('D'))
-    assert.deepEqual(shape(s), ['A#1', 'B#2', 'D#4'], 'past the cap, the new layer replaces the top one')
+    assert.deepEqual(shape(s), full, 'up to the cap, every open pushes')
+    assert.equal(warnings.length, 0, 'reaching the cap does not warn')
+    s = pushModalLayer(s, descriptor('Over'))
+    assert.deepEqual(shape(s), [...full.slice(0, -1), `Over#${MODAL_LAYER_CAP + 1}`], 'past the cap, the new layer replaces the top one')
     assert.equal(warnings.length, 1, 'past the cap warns once in development')
   }
   finally {
