@@ -164,6 +164,15 @@ The customer-facing proposal page (`/proposal-flow/proposal/[proposalId]`).
 - **All cash** — a proposal whose cash down equals the contract price; derived from `cashInDeal`, never stored. _Avoid_: all-cash mode, payment mode.
 - **Proposal chapter** — one of the six sections of the proposal page, Overview → Trusted contractor → Past results → Scope of work → Funding → Next steps (`proposalSteps`). Scoped to the proposal page: in a presentation the grouping is a **Run** and in a project story a **Story phase**, and their _Avoid_ lists still bar "chapter" there. _Avoid_: step (the code's `proposalSteps` predates the term), section.
 
+## Proposal editor pricing terms
+
+The edit proposal page's labels for numbers that `docs/ubiquitous-language.md` already defines. Money math lives in `src/shared/modules/proposals/core/lib/financials/`.
+
+- **Section starting price** — a SOW section's price before its section incentives: `financials.sectionPrice`. The glossary's "Section Price". _Avoid_: list price, base price.
+- **Section final price** — the section's price after its section incentives: `computeSectionFinancials(...).netPrice`. Shown with the starting price struck beside it when they differ. Only inside a section. In Funding the final TCP is labelled **Final price** (owner, 2026-10-23). _Avoid_: net price (in editor copy), section total.
+- **Cost Lines** — what Tri Pros pays for a section's work (job costs). They feed margin and multiplier, never the homeowner's price. _Avoid_: expenses, costs (alone).
+- **Subtotal** — the Funding ledger line in breakdown mode: Σ section starting prices − Σ section incentives + Misc Pricing. Not the Total Contract Price: **TCP** stays `startingTcp` (the starting TCP); the final TCP is the ledger's **Final price**. _Avoid_: Total Contract Price for this line.
+
 ## Flagged ambiguities
 
 - "run" means two things: a presentation **Run** (consecutive column slides, Presentation terms) and a scheduled execution of an automation (`runAutomaticKind`, `VisitMessageRunReport`, `resolveRunInstant`). Both stay, each scoped to its section; in automation copy "run" is always the scheduled execution.
