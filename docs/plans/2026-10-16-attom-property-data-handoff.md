@@ -1,5 +1,12 @@
 # ATTOM property data: handoff to a fresh session (2026-10-16)
 
+> **Updated 2026-11-05. Do not paste this prompt as it stands.** The address lookup is now being designed elsewhere, and ATTOM is not the first provider.
+> - **Where the lookup is designed:** TS4's first design, "the home on file", in the trade-scenes tracker (branch `feat/trade-scenes-foundation`, `docs/plans/2026-10-16-trade-scenes-epic.md`, rows R237–R246 and R253 onward).
+> - **Owner rulings there that replace parts of §3 here:** the provider is swappable, RentCast first, and the stored fields are ours and never change (R245); a paid lookup runs only on request (R244); the free address facts (map point, utility, climate) run by themselves (R254); the budget is $1 per address (R241); a fetch overrides only the facts it returned (R258); storage is under design (R246).
+> - **ATTOM itself:** its pricing page showed "Starting at $500/month" on 2026-11-05, over that budget at our volume. §2 stays as reference in case ATTOM is added as a provider later.
+> - **Still only in this file:** the uses that design does not cover: owner names and the owner match (§3.7), value and equity, permit history, where reps and the dispatcher see the data (§3.8), and the outreach initiative reading it (§4). Carry these into the home-on-file spec or brainstorm them after it, then delete this file.
+> - **Research across providers, with costs and terms:** `docs/plans/2026-11-05-property-data-sources-research.md` (same branch).
+
 **Paste the prompt below into a new session.** It was written by the lead-to-meeting-set brainstorm session from its own reads of the tree and one web-research pass on ATTOM's docs. Nothing was built or written to any database.
 
 Delete this file once the ATTOM spec carries what it says.
@@ -39,7 +46,7 @@ You are setting up an integration with the **ATTOM property data API** (attomdat
 - **Auth:** an `APIKey` header and `Accept: application/json`.
 - **Lookup:** by `address1` (street) + `address2` ("City, ST" or zip), by `attomId`, or by `fips` + `APN`. Match once by address, store the `attomId`, and key every later call on it.
 - **Envelope:** `status{code,msg,total,...}` + `property[]`. Body code 0 means a match; code 400 means no match. The docs say only HTTP 200 calls count toward the allowance. Unconfirmed: whether a no-match comes back as HTTP 400 and is therefore free.
-- **Trial:** 30 days, about **1,000 lifetime calls**. When the cap is hit, calls return HTTP 401. Pricing is a custom annual quote and is not published.
+- **Trial:** 30 days, about **1,000 lifetime calls**. When the cap is hit, calls return HTTP 401. Pricing: the pricing page showed "Starting at $500/month" on 2026-11-05 (https://www.attomdata.com/solutions/delivery/property-data-api/pricing/); on 2026-10-16 it was a custom annual quote, not published.
 - **Smallest useful set: three calls per lead.**
   1. `/property/expandedprofile` (by address). Returns the attomId, building facts (`roofCover`, heating, pool, size, year built, beds/baths), owner names, `absenteeInd` (owner-occupied or not), last sale date and price, assessed values, and the first mortgage amount.
   2. `/valuation/homeequity/?attomId=`. Returns the AVM value with high, low and score, LTV, estimated loan balance, and available equity.
@@ -54,6 +61,8 @@ You are setting up an integration with the **ATTOM property data API** (attomdat
 - **License:** API use falls under a separate agreement that is not public. The owner must get written answers from ATTOM sales on: showing value or equity to the homeowner, permanent storage versus caching, keeping data after the contract ends, and the FCRA "not a consumer report" clause. Until then, treat the data as **internal only**: show it to reps, never to homeowners.
 
 ### 3. Owner decisions the session must settle
+
+*2026-11-05: items 2, 3, 5, 6 and 9 are being settled in the home-on-file design (see the note at the top). Items 1, 4, 7 and 8 are still open.*
 
 1. **The term.** What the data is called, given that `customer_enrichment` is taken: property record, property facts, or something else. Agree the term with the owner and add it to CONTEXT.md (memory: `feedback-domain-vocabulary-before-naming.md`).
 2. **The trigger.** Options:

@@ -220,7 +220,7 @@ Message:
 Run `ListAgents`. If a session is working on trade scenes, `SendMessage` it these facts:
 
 1. The EI0 commit hash. Its branch now rebases onto main, following the energy tracker §3.1 notes. `scripts/verify-remodel-roi.ts` may come out with a duplicated `resolveOverridable` block.
-2. Main adds `'radiant-barrier'` to `BILL_CUT_ADD_ON_IDS` (Task 2).
+2. Main's Task 2 completes `BILL_CUT_ADD_ON_IDS` as `['ducts', 'radiant-barrier', 'attic-fan']`, keeping any of them the fold already brought.
 3. Bill-cutting scopes are now defined in `core/constants/bill-cutting-scopes.ts` (Task 3).
 4. The branch's `SCOPE_INSTALLS` credits the whole attic trade for Air-leak sealing (`32f0ca1b-548b-80da-a907-ee6613d8d94e`), which cuts no bill under EI-D16. It does the same for Radiant barrier (`c050ca1b-548b-825d-b707-01aff56ca25d`), which cuts only through its own add-on under EI-D18. Its savings should read `pickBillCuts`.
 
@@ -236,7 +236,7 @@ If no such session is listed, put the same note in the hand-back to the owner. N
 - Modify: `docs/plans/2026-10-21-proposal-energy-impact-epic.md` (the EI0 hash)
 
 **Interfaces:**
-- **Consumes:** Task 1's `combineCuts`, `TRADE_BILL_CUTS`, `BillCategory`, `BillCutAddOnId`, `TradeSlug`. After the fold, `BILL_CUT_ADD_ON_IDS` is `['ducts']` and `TRADE_BILL_CUTS['roof-and-gutters']` is `{ base: { electric: 8 } }`; if the lifted files differ, stop.
+- **Consumes:** Task 1's `combineCuts`, `TRADE_BILL_CUTS`, `BillCategory`, `BillCutAddOnId`, `TradeSlug`. After the fold, `TRADE_BILL_CUTS['roof-and-gutters']` is `{ base: { electric: 8 } }`. `BILL_CUT_ADD_ON_IDS` is a prefix of the list below: `['ducts']`, `['ducts', 'radiant-barrier']` (the scenes branch has carried radiant barrier since TS3b.4a), or all three once the scenes branch's attic work lands. Each add-on already there must match the entries below exactly (label, id order, cut). Add only the missing ones. If the lifted files differ in any other way, stop.
 - **Produces:**
   - `BILL_CUT_ADD_ON_IDS = ['ducts', 'radiant-barrier', 'attic-fan']`, with the labels `'Radiant barrier'` and `'Attic fan'`. All three are catalog add-ons (EI-D25, EI-D27).
   - `TRADE_BILL_CUTS['attic-and-basement'] = { base: { electric: 10, gas: 15 }, addOns: { 'radiant-barrier': { electric: 5, gas: 2 }, 'attic-fan': { electric: 4 } } }`.
@@ -290,7 +290,7 @@ Expected: it fails, either on types or on `A/C only cuts no gas`.
 
 - [ ] **Step 3: Implement**
 
-- Add `'radiant-barrier'` and `'attic-fan'` to the add-on ids and labels, and add their cuts to the attic entry.
+- Add whichever of `'radiant-barrier'` and `'attic-fan'` the fold did not bring to the add-on ids and labels, and add their cuts to the attic entry.
 - Move `BillCutPicks` into `types.ts`.
 - In `combineCuts`:
   - skip the base part for a trade in `addOnsOnly`;
