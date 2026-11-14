@@ -2,11 +2,9 @@ import type { HvacIndoorLocation } from '@/shared/modules/construction/core/cons
 import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
 import type { HomeMaterialFacts } from '@/shared/modules/construction/core/types'
 
+import { INDOOR_UNIT_PLACEMENTS } from '@/features/trade-scenes/constants/indoor-unit-placements'
 import { MOVABLE_INDOOR_UNIT_SCOPES } from '@/features/trade-scenes/constants/movable-indoor-unit-scopes'
 import { SCOPE_INSTALLS } from '@/shared/modules/construction/core/constants/scope-installs'
-
-// The locations the scene can draw a unit in; any other stands in the closet until it has a place of its own.
-const PLACEABLE: readonly HvacIndoorLocation[] = ['attic', 'closet']
 
 // A flat roof's joist space holds no indoor unit, redeck or not, so a reachable attic is not enough.
 export function atticHoldsUnit(form: RoofForm): boolean {
@@ -17,7 +15,8 @@ function drawable(location: HvacIndoorLocation, form: RoofForm): HvacIndoorLocat
   if (location === 'attic' && !atticHoldsUnit(form)) {
     return 'closet'
   }
-  return PLACEABLE.includes(location) ? location : 'closet'
+  // A location with no placement yet stands in the closet until it has one of its own.
+  return INDOOR_UNIT_PLACEMENTS[location] !== undefined ? location : 'closet'
 }
 
 function firstPlace(form: RoofForm): HvacIndoorLocation {

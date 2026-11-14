@@ -4,13 +4,18 @@ import type { Ref } from 'react'
 import type { Group } from 'three'
 import type { DrawnHvac, SystemLit } from '@/features/trade-scenes/types'
 import type { SceneBurst } from '@/shared/components/scene/types'
+import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
 
 import { EQUIPMENT_STRAIN } from '@/features/trade-scenes/constants/home-life'
 import { facesSummerSun } from '@/features/trade-scenes/lib/faces-summer-sun'
+import { indoorUnitPlacement } from '@/features/trade-scenes/lib/indoor-unit-placement'
 import { thermalTag } from '@/features/trade-scenes/lib/thermal-tag'
 import { AtticDucts } from '@/features/trade-scenes/ui/components/home-kit/attic-ducts'
 import { ElectricMeter } from '@/features/trade-scenes/ui/components/home-kit/electric-meter'
+import { HvacCloset } from '@/features/trade-scenes/ui/components/home-kit/hvac-closet'
+import { IndoorUnit } from '@/features/trade-scenes/ui/components/home-kit/indoor-unit'
 import { PackageUnit } from '@/features/trade-scenes/ui/components/home-kit/package-unit'
+import { Registers } from '@/features/trade-scenes/ui/components/home-kit/registers'
 import { Thermostat } from '@/features/trade-scenes/ui/components/home-kit/thermostat'
 import { WallUnit } from '@/features/trade-scenes/ui/components/home-kit/wall-unit'
 import { WindowUnit } from '@/features/trade-scenes/ui/components/home-kit/window-unit'
@@ -40,15 +45,24 @@ export function HomeEquipment({ hvac, side, lowSlope, load, meterSpeed, setpoint
   // weather carries nothing, so an AC alone never glows heat and a furnace alone never cools.
   const heatLoad = side === 'heating' ? load : 0
   const running = side !== null && load > EQUIPMENT_STRAIN.runningAbove ? (side === 'heating' ? 'winter' : 'summer') : null
+  const form: RoofForm = lowSlope ? 'low-slope' : 'pitched'
+  const placement = hvac.indoor === null ? null : indoorUnitPlacement(hvac.indoor.location, form)
+  const vacated = hvac.vacated === null ? null : indoorUnitPlacement(hvac.vacated, form)
+  const unit = hvac.indoor !== null && placement !== null && (
+    <IndoorUnit placement={placement} furnace={hvac.indoor.furnace !== null} coil={hvac.indoor.coil !== null} lineSet={hvac.lineSet} heatLoad={heatLoad} form={form} />
+  )
 
   return (
     <group userData={thermalTag(side ?? 'interior')}>
-      {/* The ducts lie in the attic air until the system pushes warm or cold air through them. */}
-      {hvac.ducts !== null && (
-        <group ref={ducts} userData={thermalTag(side ?? 'attic')}>
-          <AtticDucts lowSlope={lowSlope} heatLoad={heatLoad} ducts={hvac.ducts} indoor={hvac.indoor !== null} acScale={acScale} lit={lit} />
-        </group>
-      )}
+      {/* The ducts and an attic unit lie in the attic air until the system pushes warm or cold air through them. */}
+      <group ref={ducts} userData={thermalTag(side ?? 'attic')}>
+        {hvac.ducts !== null && <AtticDucts lowSlope={lowSlope} heatLoad={heatLoad} ducts={hvac.ducts} indoor={hvac.indoor !== null} acScale={acScale} lit={lit} />}
+        {placement?.upright === false && unit}
+      </group>
+      {placement?.upright === true && unit}
+      {placement !== null && <HvacCloset walls={placement.closet} />}
+      {vacated !== null && <HvacCloset walls={vacated.closet} />}
+      {hvac.registers && <Registers />}
       {hvac.packageUnit !== null && (
         <PackageUnit lowSlope={lowSlope} scale={acScale} load={side === 'cooling' ? load : 0} burst={burst} wear={hvac.packageUnit.wear} />
       )}

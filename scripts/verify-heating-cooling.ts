@@ -1,4 +1,5 @@
-import type { TradeSceneInputs } from '@/features/trade-scenes/types'
+import type { IndoorUnitPlacement } from '@/features/trade-scenes/lib/indoor-unit-placement'
+import type { BoxSpec, TradeSceneInputs, Vec3 } from '@/features/trade-scenes/types'
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
 import type { HVACComponent, HVACType } from '@/shared/modules/construction/core/constants/enums'
 import type { Assembly, ExistingConditions, HomeFacts, HomeMaterialFacts, PropertyProfile, ResolvedPart, ScopeInstall, Weather } from '@/shared/modules/construction/core/types'
@@ -8,12 +9,20 @@ import { createRemodelRoiDefaults, createTradePicks } from '@/features/calculato
 import { projectRemodelRoi } from '@/features/calculators/remodel-roi-calculator/lib/project-remodel-roi'
 import { resolveRemodelRoiConfig } from '@/features/calculators/remodel-roi-calculator/lib/resolve-config'
 import { TRADE_OUTCOMES } from '@/features/meeting-flow/constants/trade-outcomes'
+import { CONDENSER_LINE_SET, THERMOSTAT_BOX } from '@/features/trade-scenes/constants/home-details'
+import { FURNISHING_BOXES, HOME_FURNITURE } from '@/features/trade-scenes/constants/home-furnishings'
+import { BACK_INNER, EQUIPMENT, HOME_FLOOR_Y, HOUSE } from '@/features/trade-scenes/constants/home-geometry'
 import { HOME_SCENE_DEFAULTS } from '@/features/trade-scenes/constants/home-scene-defaults'
+import { INDOOR_UNIT_PLACEMENTS } from '@/features/trade-scenes/constants/indoor-unit-placements'
+import { HOME_PRIMARY_ASSEMBLY } from '@/features/trade-scenes/constants/scene-controls'
 import { drawnHvac } from '@/features/trade-scenes/lib/drawn-hvac'
+import { ductRunPoints } from '@/features/trade-scenes/lib/duct-run-points'
 import { hasDucts } from '@/features/trade-scenes/lib/has-ducts'
 import { homeRoofForm } from '@/features/trade-scenes/lib/home-roof-form'
-import { atticHoldsUnit } from '@/features/trade-scenes/lib/indoor-location'
+import { atticHoldsUnit, indoorLocation } from '@/features/trade-scenes/lib/indoor-location'
 import { indoorSide } from '@/features/trade-scenes/lib/indoor-side'
+import { indoorUnitBoxes, indoorUnitLineSet } from '@/features/trade-scenes/lib/indoor-unit-boxes'
+import { indoorUnitPlacement } from '@/features/trade-scenes/lib/indoor-unit-placement'
 import { propertyPatch } from '@/features/trade-scenes/lib/property-patch'
 import { resolveScene } from '@/features/trade-scenes/lib/resolve-scene'
 import { sceneChangeSlots } from '@/features/trade-scenes/lib/scene-change-slots'
@@ -22,7 +31,9 @@ import { scopePick } from '@/features/trade-scenes/lib/scope-pick'
 import { upgradeRowState } from '@/features/trade-scenes/lib/upgrade-row-state'
 import { upgradeRows } from '@/features/trade-scenes/lib/upgrade-rows'
 import { ASSEMBLIES } from '@/shared/modules/construction/core/constants/assemblies'
+import { hvacIndoorLocations } from '@/shared/modules/construction/core/constants/enums'
 import { HOME_MATERIAL_FACTS_UNSET } from '@/shared/modules/construction/core/constants/home-materials'
+import { ROOF_FORMS } from '@/shared/modules/construction/core/constants/roof-forms'
 import { SCOPE_IDS } from '@/shared/modules/construction/core/constants/scope-ids'
 import { inferRoofAtticExistingConditions } from '@/shared/modules/construction/core/lib/assemblies/roof-attic/infer-existing-conditions'
 import { billsPaid } from '@/shared/modules/construction/core/lib/bills-paid'
@@ -269,7 +280,7 @@ assert.ok(!/\d+\s*%/.test(hvacStatement.replace(/\$\{formatRowClaim\(tradeCutPer
 function drawn(property: Partial<PropertyProfile>, options: SceneOptions = {}) {
   const targets = scene(property, options)
   const materials = { ...HOME_MATERIAL_FACTS_UNSET, ...options.materials }
-  return drawnHvac(hvacPartsOf(targets), { ...HOME_SCENE_DEFAULTS.property, ...property }, materials, options.view ?? 'existing', homeRoofForm(targets.assemblies['roof-attic']?.form), options.scopes ?? [])
+  return drawnHvac(hvacPartsOf(targets), { ...HOME_SCENE_DEFAULTS.property, ...property }, materials, options.view ?? 'existing', homeRoofForm(targets.assemblies[HOME_PRIMARY_ASSEMBLY]?.form), options.scopes ?? [])
 }
 const build = (scopes: string[], materials: Partial<HomeMaterialFacts> = {}): SceneOptions => ({ scopes, view: 'proposed', materials })
 const both = { cools: true, heats: true }
@@ -280,7 +291,8 @@ const wallFurnace: Partial<PropertyProfile> = { hvacType: 'wall-mounted', hvacCo
 
 const unknownToday = drawn({})
 assert.equal(unknownToday.indoor?.location, 'attic', 'an unknown system stands its indoor unit in the attic')
-assert.ok(unknownToday.indoor?.blower.material !== null && unknownToday.indoor?.furnace !== null && unknownToday.indoor?.coil !== null, 'an unknown system has a blower, furnace and coil')
+assert.ok(unknownToday.indoor !== null, 'an unknown system has an indoor unit')
+assert.ok(unknownToday.indoor.blower.material !== null && unknownToday.indoor.furnace !== null && unknownToday.indoor.coil !== null, 'an unknown system has a blower, furnace and coil')
 assert.equal(unknownToday.outdoor?.kind, 'condenser', 'an unknown system has a condenser')
 assert.ok(unknownToday.lineSet && unknownToday.registers, 'an unknown system has its line set and registers')
 assert.deepEqual(unknownToday.duties, both, 'an unknown system heats and cools')
@@ -291,7 +303,8 @@ assert.equal(furnaceToday.outdoor, null, 'a furnace alone draws no condenser')
 assert.equal(furnaceToday.lineSet, false, 'a furnace alone draws no line set')
 assert.deepEqual(furnaceToday.duties, heatsOnly, 'a furnace alone only heats')
 const furnaceSplit = drawn(centralFurnaceProperty, build([split]))
-assert.ok(furnaceSplit.indoor?.coil !== null && furnaceSplit.outdoor?.kind === 'condenser', 'a whole system on a furnace-only home draws the coil and condenser it adds')
+assert.ok((furnaceSplit.indoor?.coil ?? null) !== null && furnaceSplit.outdoor?.kind === 'condenser', 'a whole system on a furnace-only home draws the coil and condenser it adds')
+assert.equal(furnaceSplit.lineSet, true, 'and the line set between them')
 assert.deepEqual(furnaceSplit.duties, both, 'and the home then heats and cools')
 
 const acToday = drawn(centralAcProperty)
@@ -341,6 +354,9 @@ assert.equal(movedToday.vacated, null, 'and vacates nothing')
 const notMoved = drawn({}, build([], closetHome))
 assert.equal(notMoved.indoor?.location, 'closet', 'without a whole system the unit stays where it stands')
 assert.equal(notMoved.vacated, null, 'and vacates nothing')
+const flatMoved = drawn(flat, build([split], { proposedHvacIndoorLocation: 'attic' }))
+assert.equal(flatMoved.indoor?.location, 'closet', 'a flat roof\'s whole system never moves into the joist space')
+assert.equal(flatMoved.vacated, null, 'and vacates nothing')
 assert.equal(atticHoldsUnit('pitched'), true, 'a pitched roof\'s attic holds an indoor unit')
 assert.equal(atticHoldsUnit('low-slope'), false, 'a flat roof\'s does not')
 
@@ -383,6 +399,89 @@ for (const [hvacType, hvacComponents, summer, winter] of sidesBefore) {
 }
 for (const hvacComponents of [null, 'furnace', 'ac', 'both'] as const) {
   assert.deepEqual(drawn({ hvacType: 'mini-split', hvacComponents }).duties, both, `mini-split + ${hvacComponents ?? 'unset'}: mini-splits heat and cool whatever the components say`)
+}
+
+// The indoor unit lies flat in the attic or stands upright in an HVAC closet, its sections in the order the air passes
+const along = (placement: IndoorUnitPlacement, point: Vec3) => point.reduce((sum, value, axis) => sum + value * placement.toward[axis]!, 0)
+const distance = (a: Vec3, b: Vec3) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])
+for (const location of ['attic', 'closet'] as const) {
+  for (const form of ROOF_FORMS) {
+    const placement = indoorUnitPlacement(location, form)
+    assert.ok(placement !== null, `${location} under a ${form} roof has a placement`)
+    const name = `${location}, ${form}`
+    const whole = indoorUnitBoxes(placement, { furnace: true, coil: true })
+    assert.deepEqual(whole.map(section => section.id), ['blower', 'furnace', 'coil', 'plenum'], `${name}: return, blower, furnace, coil, plenum`)
+    assert.ok(Math.abs(along(placement, whole[0]!.box.position) - placement.lengths.blower / 2 - along(placement, placement.base)) < 1e-6, `${name}: the blower starts at the return`)
+    whole.slice(1).forEach((section, index) => {
+      const before = whole[index]!
+      const farFace = along(placement, before.box.position) + placement.lengths[before.id] / 2
+      const nearFace = along(placement, section.box.position) - placement.lengths[section.id] / 2
+      assert.ok(Math.abs(farFace - nearFace) < 1e-6, `${name}: the ${before.id} meets the ${section.id}`)
+    })
+    const acOnly = indoorUnitBoxes(placement, { furnace: false, coil: true })
+    assert.deepEqual(acOnly.map(section => section.id), ['blower', 'coil', 'plenum'], `${name}: a unit with no furnace closes up`)
+    const plenumAt = (sections: typeof whole) => along(placement, sections.find(section => section.id === 'plenum')!.box.position)
+    assert.ok(Math.abs(plenumAt(whole) - plenumAt(acOnly) - placement.lengths.furnace) < 1e-6, `${name}: and its plenum stands nearer the return by the furnace`)
+  }
+}
+const atticPlenum = indoorUnitBoxes(indoorUnitPlacement('attic', 'pitched')!, { furnace: true, coil: true }).find(section => section.id === 'plenum')!
+assert.ok(distance(atticPlenum.box.position, EQUIPMENT.plenum.position) < 0.05, 'the attic unit\'s plenum stands where the runs leave')
+assert.equal(INDOOR_UNIT_PLACEMENTS.garage, undefined, 'the garage has no placement yet')
+
+const overlaps = (a: BoxSpec, b: BoxSpec) => a.size.every((size, axis) => Math.abs(a.position[axis]! - b.position[axis]!) < (size + b.size[axis]!) / 2 - 1e-9)
+function furnitureBox({ position: [x, y, z], rotationY, standIn: { size: [width, height, depth] } }: (typeof HOME_FURNITURE)[number]): BoxSpec {
+  const turned = Math.abs(Math.sin(rotationY)) > 0.5
+  return { size: turned ? [depth, height, width] : [width, height, depth], position: [x, y + height / 2, z] }
+}
+const [thermostatX, thermostatY, thermostatWall] = EQUIPMENT.thermostat.position
+const thermostatBox: BoxSpec = { size: THERMOSTAT_BOX.body, position: [thermostatX, thermostatY, thermostatWall + THERMOSTAT_BOX.body[2] / 2] }
+const innerX = HOUSE.halfLength - HOUSE.wallThickness
+for (const form of ROOF_FORMS) {
+  const { closet } = indoorUnitPlacement('closet', form)!
+  assert.ok(closet.length > 0, `${form}: the closet has walls`)
+  for (const wall of closet) {
+    const [width, , depth] = wall.size
+    const [x, , z] = wall.position
+    assert.ok(Math.abs(x) + width / 2 <= innerX + 1e-9 && z - depth / 2 >= BACK_INNER - 1e-9 && z + depth / 2 <= HOUSE.halfDepth, `${form}: a closet wall at x ${x.toFixed(2)} stands inside the house`)
+  }
+  // The whole space its walls and open door take, so nothing stands inside the closet either.
+  const low = [0, 1, 2].map(axis => Math.min(...closet.map(wall => wall.position[axis]! - wall.size[axis]! / 2)))
+  const high = [0, 1, 2].map(axis => Math.max(...closet.map(wall => wall.position[axis]! + wall.size[axis]! / 2)))
+  const space: BoxSpec = { size: [high[0]! - low[0]!, high[1]! - low[1]!, high[2]! - low[2]!], position: [(low[0]! + high[0]!) / 2, (low[1]! + high[1]!) / 2, (low[2]! + high[2]!) / 2] }
+  for (const piece of HOME_FURNITURE) {
+    assert.ok(!overlaps(space, furnitureBox(piece)), `${form}: the closet stands clear of the ${piece.id}`)
+  }
+  for (const [kind, boxes] of Object.entries(FURNISHING_BOXES)) {
+    assert.ok(boxes.every(box => !overlaps(space, box)), `${form}: the closet stands clear of the ${kind}`)
+  }
+  assert.ok(!overlaps(space, thermostatBox), `${form}: the closet stands clear of the thermostat`)
+  assert.ok(Math.abs(Math.min(...closet.map(wall => wall.position[2] - wall.size[2] / 2)) - BACK_INNER) < 1e-6, `${form}: the closet stands against the back wall`)
+}
+const lowSlopeStarts = ductRunPoints('low-slope', EQUIPMENT.ductRadius, 0).map(run => run[0]!)
+const [flatTrunkX, flatTrunkY, flatTrunkZ] = indoorUnitPlacement('closet', 'low-slope')!.trunk.at(-1)!
+assert.ok(Math.hypot(flatTrunkX - EQUIPMENT.plenum.position[0], flatTrunkZ - EQUIPMENT.plenum.position[2]) < 0.05 && lowSlopeStarts.every(([, y]) => Math.abs(flatTrunkY - y) < 0.05), 'a flat roof\'s closet trunk ends where today\'s low-slope runs start')
+assert.ok(distance(indoorUnitPlacement('closet', 'pitched')!.trunk.at(-1)!, EQUIPMENT.plenum.position) < 0.05, 'a pitched roof\'s closet trunk ends where the attic runs leave')
+// The line set leaves the coil and meets the condenser's own lines where they come into the wall, on either floor
+const condenserEntry: Vec3 = [-HOUSE.halfLength - CONDENSER_LINE_SET.size / 2, CONDENSER_LINE_SET.y, EQUIPMENT.condenser.position[2] + CONDENSER_LINE_SET.z]
+for (const location of ['attic', 'closet'] as const) {
+  for (const has of [{ furnace: true, coil: true }, { furnace: false, coil: true }]) {
+    for (const floor of ['slab', 'raised'] as const) {
+      const placement = indoorUnitPlacement(location, 'pitched')!
+      const sections = indoorUnitBoxes(placement, has)
+      const lines = indoorUnitLineSet(placement, sections, HOME_FLOOR_Y[floor])!
+      const name = `${location}${has.furnace ? '' : ' with no furnace'} on a ${floor} floor`
+      const coil = sections.find(section => section.id === 'coil')!.box
+      assert.ok(lines[0]!.every((value, axis) => Math.abs(value - coil.position[axis]!) <= coil.size[axis]! / 2 + 1e-9), `${name}: the line set leaves the coil`)
+      const [x, y, z] = lines.at(-1)!
+      assert.ok(distance([x, y + HOME_FLOOR_Y[floor] - HOUSE.floorY, z], condenserEntry) < 1e-6, `${name}: the line set meets the condenser's lines`)
+      assert.ok(lines.slice(1).every((point, index) => distance(point, lines[index]!) > 1e-3), `${name}: no two line set points coincide`)
+    }
+  }
+}
+assert.equal(indoorUnitLineSet(indoorUnitPlacement('attic', 'pitched')!, indoorUnitBoxes(indoorUnitPlacement('attic', 'pitched')!, { furnace: true, coil: false }), HOME_FLOOR_Y.slab), null, 'a furnace alone has no line set')
+for (const location of hvacIndoorLocations) {
+  const placed = INDOOR_UNIT_PLACEMENTS[location] !== undefined
+  assert.equal(indoorLocation({ ...HOME_MATERIAL_FACTS_UNSET, hvacIndoorLocation: location }, 'pitched', 'existing', [], true), placed ? location : 'closet', `${location}: drawn where it has a placement, else in the closet`)
 }
 
 console.log('verify-heating-cooling: ok')

@@ -33,7 +33,7 @@ interface AtticDuctsProps {
   lowSlope: boolean
   heatLoad: number
   ducts: PartState
-  /** Whether an indoor unit sits in the attic; a package unit has none, its air comes down from the roof. */
+  /** Whether the system has an indoor unit, which draws its own plenum; a package unit's air comes down from the roof. */
   indoor: boolean
   /** The package unit's size, which sets where its drop comes down. */
   acScale: number
@@ -62,11 +62,11 @@ function ductRuns(points: readonly (readonly Vec3[])[], radius: number): TubeGeo
   })
 }
 
-// On a winter night the furnace's warm air shows as a glow at the plenum and at each register, as strong as the load.
+// On a winter night the warm air shows as a glow at each register, and at a package unit's trunk, as strong as the load.
 export function AtticDucts({ lowSlope, heatLoad, ducts, indoor, acScale, lit }: AtticDuctsProps) {
   const { material, wear } = ducts
   const bootGlow = useHeatGlow(heatLoad)
-  const plenumGlow = useHeatGlow(heatLoad)
+  const trunkGlow = useHeatGlow(heatLoad)
   const renewed = hungDuctMaterial(material)
   const { layout, radius, sag } = ductRunLook(material, wear, lowSlope)
   const hung = layout === 'hung'
@@ -91,13 +91,9 @@ export function AtticDucts({ lowSlope, heatLoad, ducts, indoor, acScale, lit }: 
     const height = lowSlope ? BOOT_HEIGHT.lowSlope : BOOT_HEIGHT.pitched
     return BOOTS.map(({ at: [x, z] }) => ({ size: [REGISTER_BOOT.size, height, REGISTER_BOOT.size], position: [x, WALL_TOP_Y + height / 2, z] }))
   }, [lowSlope])
-  const plenum = useMemo((): BoxSpec[] => {
-    // Under a flat roof the air handler sits in a closet below, out of sight.
-    if (lowSlope) {
+  const trunk = useMemo((): BoxSpec[] => {
+    if (lowSlope || indoor) {
       return []
-    }
-    if (indoor) {
-      return [{ size: EQUIPMENT.plenum.size, position: EQUIPMENT.plenum.position }]
     }
     const top = Math.max(TRUNK.top, ...points.map(run => run[0][1] + radius))
     return [
@@ -106,8 +102,7 @@ export function AtticDucts({ lowSlope, heatLoad, ducts, indoor, acScale, lit }: 
     ]
   }, [lowSlope, indoor, points, radius, acScale])
 
-  // The straps, the boots and a package unit's trunk and drop are all the duct runs' install; on a central system the
-  // plenum box is the air handler itself.
+  // The straps, the boots and a package unit's trunk and drop are all the duct runs' install.
   return (
     <group userData={systemPartTag('duct-runs')}>
       <mesh geometry={geometry}>
@@ -119,11 +114,7 @@ export function AtticDucts({ lowSlope, heatLoad, ducts, indoor, acScale, lit }: 
       <group userData={fixtures === null ? NO_TAG : systemPartTag(fixtures)}>
         <MergedBoxes boxes={boots} color={HOME_PALETTE.ductBoot} radius={0.02} emissive={EQUIPMENT_STRAIN.heat.color} materialRef={bootGlow} />
       </group>
-      {plenum.length > 0 && (
-        <group userData={systemPartTag(indoor ? 'blower' : 'duct-runs')}>
-          <MergedBoxes boxes={plenum} color={indoor ? HOME_PALETTE.unit : HOME_PALETTE.ductBoot} radius={0.04} roughness={0.7} emissive={EQUIPMENT_STRAIN.heat.color} materialRef={plenumGlow} />
-        </group>
-      )}
+      {trunk.length > 0 && <MergedBoxes boxes={trunk} color={HOME_PALETTE.ductBoot} radius={0.04} roughness={0.7} emissive={EQUIPMENT_STRAIN.heat.color} materialRef={trunkGlow} />}
     </group>
   )
 }
